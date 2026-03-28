@@ -11,8 +11,6 @@ dist/
 .env.*
 !.env.example
 
-# Local Claude Code overrides (project settings are tracked; local overrides are not)
-.claude/settings.local.json
 
 # OS
 .DS_Store
@@ -21,3 +19,13 @@ Thumbs.db
 # Editor
 *.swp
 *.swo
+
+# Local Claude Code overrides (project settings are tracked; local overrides are not)
+.claude/settings.local.json
+
+# gsd related files
+.claude/commands/gsd/
+.claude/agents/
+.claude/get-shit-done/
+.claude/hooks/gsd*
+.claude/gsd-file-manifest.json
