@@ -1,10 +1,20 @@
 # Dependencies
 node_modules/
+.pnp/
+.pnp.js
 
 # Build outputs
 dist/
 .output/
+.nitro/
+.tanstack/
 .vinxi/
+
+# Testing
+coverage/
+
+# Turbo
+.turbo/
 
 # Environment variables
 .env
@@ -15,6 +25,8 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
+*.pem
+*.key
 
 # Editor
 *.swp
