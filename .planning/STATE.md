@@ -3,7 +3,7 @@
 ## Current Position
 
 **Milestone:** v0.1 MVP
-**Active Phase:** None — initialization complete, ready for Phase 1
+**Active Phase:** None — Phase 1 planned, ready to execute
 **Status:** READY
 
 ## Next Action
@@ -49,6 +49,12 @@
 - Neon connection limit on chosen plan — verify before Phase 1 goes live
 - ReUI Tailwind v4 compatibility — verify DataGrid/Filters before Phase 3
 - Cloudflare proxy for `clerk.ploutizo.app` — must be "DNS only" (grey cloud)
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260329-ivf | Update Phase 1 plans to reference old-artifacts schema files | 2026-03-29 | b39a815 | [260329-ivf-analyze-impact-of-old-artifacts-schemas-](./quick/260329-ivf-analyze-impact-of-old-artifacts-schemas-/) |
 
 ## Git Note
 
