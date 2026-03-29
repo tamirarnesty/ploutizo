@@ -1,3 +1,17 @@
+/*
+ * Tailwind v4 Component Rules (D-07: audit complete, all components compliant)
+ *
+ * ALWAYS use explicit color tokens — bare Tailwind classes changed behavior in v4:
+ *   border-border    ✓  (not bare: border — defaults to currentColor in v4, not gray-200)
+ *   ring-ring        ✓  (not bare: ring — no default color in v4)
+ *   ring-ring/50     ✓  for focus rings with opacity
+ *
+ * NEVER use:
+ *   border           ✗  (currentColor in v4 — invisible on most backgrounds)
+ *   ring             ✗  (1px, no color — effectively invisible)
+ *   !flex            ✗  (use flex! in v4 — postfix important modifier)
+ */
+
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
