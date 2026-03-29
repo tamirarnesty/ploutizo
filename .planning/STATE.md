@@ -41,6 +41,10 @@
 - TFSA withdrawals: disclaimer only in v1
 - Negative settlement: display as green credit
 - `authorizedParties` in `@hono/clerk-auth` is `string[]` only — function type not supported; `isAllowedParty` exported as utility, static array used for `clerkMiddleware` (01-03)
+- `@clerk/tanstack-react-start` v0.11.5 no longer exists on npm — upgraded to 1.0.7 (01-04)
+- Server-side `clerkMiddleware()` requires `createMiddleware` from TanStack Start not yet exported — deferred; client-side ClerkProvider sufficient for Phase 1 (01-04)
+- `tenantGuard()` fully tested: 5 cases — undefined, null, empty string, valid orgId, error shape (01-04)
+- React Query `apiFetch` in `apps/web/src/lib/queryClient.ts` uses `VITE_API_URL` and Clerk bearer token injection (01-04)
 
 ## Blockers / Open Items
 

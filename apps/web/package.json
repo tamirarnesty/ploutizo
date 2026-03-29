@@ -12,7 +12,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@clerk/tanstack-react-start": "^1.0.7",
     "@tailwindcss/vite": "^4.1.18",
+    "@tanstack/react-query": "^5.95.2",
     "@tanstack/react-router": "^1.132.0",
     "@tanstack/react-start": "^1.132.0",
     "@tanstack/router-plugin": "^1.132.0",
