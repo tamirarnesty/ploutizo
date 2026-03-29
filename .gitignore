@@ -37,6 +37,7 @@ Thumbs.db
 .claude/settings.local.json
 
 # gsd related files
+.claude/worktrees/
 .claude/commands/gsd/
 .claude/agents/
 .claude/get-shit-done/
