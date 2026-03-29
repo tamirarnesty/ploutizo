@@ -55,6 +55,7 @@ Plan: 1 of 6
 - Budget rollover capped at 1× base limit
 - TFSA withdrawals: disclaimer only in v1
 - Negative settlement: display as green credit
+- `postgres.js` initialized at module scope in `@ploutizo/db` with `DATABASE_URL` (no VITE_ prefix); `@ploutizo/db` is api-only (never imported by apps/web)
 
 ## Blockers / Open Items
 

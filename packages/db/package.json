@@ -1,0 +1,25 @@
+{
+  "name": "@ploutizo/db",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.2",
+    "postgres": "^3.4.8"
+  },
+  "devDependencies": {
+    "@types/node": "^25.1.0",
+    "drizzle-kit": "^0.31.10",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.2"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./seeds": "./src/seeds/index.ts",
+    "./schema": "./src/schema/index.ts"
+  }
+}
