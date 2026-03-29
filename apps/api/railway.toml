@@ -1,0 +1,7 @@
+[build]
+builder = "RAILPACK"
+
+[deploy]
+preDeployCommand = ["pnpm db:migrate"]
+startCommand = "node dist/index.js"
+healthcheckPath = "/health"
