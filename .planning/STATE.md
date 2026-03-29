@@ -1,25 +1,10 @@
----
-gsd_state_version: 1.0
-milestone: v0.1
-milestone_name: MVP
-status: executing
-last_updated: "2026-03-29T19:37:40.922Z"
-progress:
-  total_phases: 7
-  completed_phases: 0
-  total_plans: 6
-  completed_plans: 0
----
-
 # Project State
 
 ## Current Position
 
-Phase: 01 (foundation-auth-infrastructure) — EXECUTING
-Plan: 1 of 6
 **Milestone:** v0.1 MVP
 **Active Phase:** None — Phase 1 planned, ready to execute
-**Status:** Executing Phase 01
+**Status:** READY
 
 ## Next Action
 
@@ -55,7 +40,7 @@ Plan: 1 of 6
 - Budget rollover capped at 1× base limit
 - TFSA withdrawals: disclaimer only in v1
 - Negative settlement: display as green credit
-- `postgres.js` initialized at module scope in `@ploutizo/db` with `DATABASE_URL` (no VITE_ prefix); `@ploutizo/db` is api-only (never imported by apps/web)
+- `authorizedParties` in `@hono/clerk-auth` is `string[]` only — function type not supported; `isAllowedParty` exported as utility, static array used for `clerkMiddleware` (01-03)
 
 ## Blockers / Open Items
 
