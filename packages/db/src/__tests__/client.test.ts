@@ -20,7 +20,8 @@ describe('db client', () => {
   })
 
   it('initializes postgres.js with DATABASE_URL', async () => {
-    const postgres = (await import('postgres')).default as ReturnType<typeof vi.fn>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const postgres = (await import('postgres')).default as unknown as ReturnType<typeof vi.fn>
     await import('../client.js')
     expect(postgres).toHaveBeenCalledWith(
       'postgresql://test:test@localhost/test',
