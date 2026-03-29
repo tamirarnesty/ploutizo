@@ -26,10 +26,10 @@ infrastructure prerequisites are in place before any feature code is written.
 - Env var isolation: `DATABASE_URL` and `CLERK_SECRET_KEY` at service level, not project level
 - `clockSkewInMs: 10000` set on Clerk middleware to handle Railway container clock drift
 
-**Plans:** 6 plans
+**Plans:** 1/6 plans executed
 
 Plans:
-- [ ] 01-01-PLAN.md — Package namespace rename: @workspace/ui -> @ploutizo/ui, create @ploutizo/validators + @ploutizo/types skeletons, vitest workspace, turbo.json tasks
+- [x] 01-01-PLAN.md — Package namespace rename: @workspace/ui -> @ploutizo/ui, create @ploutizo/validators + @ploutizo/types skeletons, vitest workspace, turbo.json tasks
 - [ ] 01-02-PLAN.md — @ploutizo/db package: postgres.js Drizzle client at module scope, drizzle.config.ts, schema stubs, DB client unit tests
 - [ ] 01-03-PLAN.md — apps/api scaffold: Hono app with CORS -> Clerk -> tenantGuard middleware order, health endpoint, vitest configured
 - [ ] 01-04-PLAN.md — Clerk + tenantGuard: complete tenantGuard with 5 unit tests, Clerk in apps/web, React Query with token injection
