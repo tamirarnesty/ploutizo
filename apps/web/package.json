@@ -16,7 +16,7 @@
     "@tanstack/react-router": "^1.132.0",
     "@tanstack/react-start": "^1.132.0",
     "@tanstack/router-plugin": "^1.132.0",
-    "@workspace/ui": "workspace:*",
+    "@ploutizo/ui": "workspace:*",
     "lucide-react": "^1.7.0",
     "nitro": "latest",
     "react": "^19.2.4",

@@ -1,6 +1,6 @@
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
 
-import appCss from "@workspace/ui/globals.css?url"
+import appCss from "@ploutizo/ui/globals.css?url"
 
 export const Route = createRootRoute({
   head: () => ({
