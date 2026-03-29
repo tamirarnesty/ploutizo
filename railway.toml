@@ -1,0 +1,22 @@
+# Railway deployment configuration for ploutizo monorepo
+# Two services: web (apps/web) and api (apps/api)
+
+[build]
+builder = "nixpacks"
+
+# API service configuration
+[[services]]
+name = "api"
+source = "apps/api"
+
+[services.deploy]
+preDeployCommand = "pnpm db:migrate"
+startCommand = "node dist/index.js"
+
+# Web service configuration
+[[services]]
+name = "web"
+source = "apps/web"
+
+[services.deploy]
+startCommand = "node .output/server/index.mjs"

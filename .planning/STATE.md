@@ -40,6 +40,9 @@
 - Budget rollover capped at 1× base limit
 - TFSA withdrawals: disclaimer only in v1
 - Negative settlement: display as green credit
+- `authorizedParties` in `@hono/clerk-auth` is `string[]` only — function type not supported; `isAllowedParty` exported as utility, static array used for `clerkMiddleware` (01-03)
+- Seed data uses schema field names: `pattern` and `renameTo` (not plan aliases `matchValue`/`renameDescription`) — 01-05
+- Test mocks for Drizzle insert use `unknown` intermediate cast to satisfy `PgInsertBuilder` strict types — 01-05
 
 ## Blockers / Open Items
 

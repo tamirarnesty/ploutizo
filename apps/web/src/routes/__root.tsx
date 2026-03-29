@@ -1,6 +1,34 @@
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
+import { ClerkProvider, useAuth } from "@clerk/tanstack-react-start"
+import { useEffect } from "react"
+import appCss from "@ploutizo/ui/globals.css?url"
+import { setTokenGetter } from "../lib/queryClient.js"
 
-import appCss from "@workspace/ui/globals.css?url"
+// TokenInitializer: wires Clerk's getToken into the React Query apiFetch helper.
+// Must run inside ClerkProvider so useAuth() has access to the Clerk session.
+// setTokenGetter must be called before any query fires — this component renders at app root.
+const TokenInitializer = () => {
+  const { getToken } = useAuth()
+  useEffect(() => {
+    setTokenGetter(() => getToken())
+  }, [getToken])
+  return null
+}
+
+const RootDocument = ({ children }: { children: React.ReactNode }) => (
+  <html lang="en">
+    <head>
+      <HeadContent />
+    </head>
+    <body>
+      <ClerkProvider>
+        <TokenInitializer />
+        {children}
+      </ClerkProvider>
+      <Scripts />
+    </body>
+  </html>
+)
 
 export const Route = createRootRoute({
   head: () => ({
@@ -13,7 +41,7 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1",
       },
       {
-        title: "TanStack Start Starter",
+        title: "ploutizo",
       },
     ],
     links: [
@@ -25,17 +53,3 @@ export const Route = createRootRoute({
   }),
   shellComponent: RootDocument,
 })
-
-function RootDocument({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  )
-}
