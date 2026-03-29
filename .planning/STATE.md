@@ -40,6 +40,7 @@
 - Budget rollover capped at 1× base limit
 - TFSA withdrawals: disclaimer only in v1
 - Negative settlement: display as green credit
+- `authorizedParties` in `@hono/clerk-auth` is `string[]` only — function type not supported; `isAllowedParty` exported as utility, static array used for `clerkMiddleware` (01-03)
 
 ## Blockers / Open Items
 
