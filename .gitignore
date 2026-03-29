@@ -41,3 +41,8 @@ Thumbs.db
 .claude/get-shit-done/
 .claude/hooks/gsd*
 .claude/gsd-file-manifest.json
+
+.cursor/agents/
+.cursor/skills/gsd*
+.cursor/get-shit-done/
+.cursor/gsd-file-manifest.json
