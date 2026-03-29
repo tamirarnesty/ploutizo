@@ -22,7 +22,7 @@ describe('tenantGuard()', () => {
     vi.mocked(getAuth).mockReturnValue({ orgId: undefined } as ReturnType<typeof getAuth>)
     const res = await buildApp().request('/')
     expect(res.status).toBe(401)
-    const body = await res.json()
+    const body = await res.json() as { error: { code: string } }
     expect(body.error.code).toBe('TENANT_REQUIRED')
   })
 
@@ -30,7 +30,7 @@ describe('tenantGuard()', () => {
     vi.mocked(getAuth).mockReturnValue({ orgId: null } as unknown as ReturnType<typeof getAuth>)
     const res = await buildApp().request('/')
     expect(res.status).toBe(401)
-    const body = await res.json()
+    const body = await res.json() as { error: { code: string } }
     expect(body.error.code).toBe('TENANT_REQUIRED')
   })
 
@@ -44,14 +44,14 @@ describe('tenantGuard()', () => {
     vi.mocked(getAuth).mockReturnValue({ orgId: 'org_abc123' } as ReturnType<typeof getAuth>)
     const res = await buildApp().request('/')
     expect(res.status).toBe(200)
-    const body = await res.json()
+    const body = await res.json() as { data: { ok: boolean } }
     expect(body.data.ok).toBe(true)
   })
 
   it('error body has correct shape', async () => {
     vi.mocked(getAuth).mockReturnValue({ orgId: undefined } as ReturnType<typeof getAuth>)
     const res = await buildApp().request('/')
-    const body = await res.json()
+    const body = await res.json() as Record<string, unknown>
     expect(body).toHaveProperty('error.code')
     expect(body).toHaveProperty('error.message')
     expect(body).not.toHaveProperty('data')
