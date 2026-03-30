@@ -1,5 +1,12 @@
 [build]
 builder = "RAILPACK"
+buildCommand = "pnpm --filter web... build"
 
 [deploy]
-startCommand = "node .output/server/index.mjs"
+startCommand = "node apps/web/.output/server/index.mjs"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[deploy.multiRegionConfig]
+[deploy.multiRegionConfig.us-east4-eqdc4a]
+numReplicas = 1

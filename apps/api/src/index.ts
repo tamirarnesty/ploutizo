@@ -1,4 +1,8 @@
-import 'dotenv/config'
+import { config } from 'dotenv'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+config({ path: resolve(dirname(fileURLToPath(import.meta.url)), '../.env') })
+
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'

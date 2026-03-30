@@ -32,6 +32,7 @@ Thumbs.db
 # Editor
 *.swp
 *.swo
+.vscode/
 
 # Local Claude Code overrides (project settings are tracked; local overrides are not)
 .claude/settings.local.json
@@ -43,7 +44,9 @@ Thumbs.db
 .claude/get-shit-done/
 .claude/hooks/gsd*
 .claude/gsd-file-manifest.json
+.claude/skills/
 
+*.agents/
 .cursor/agents/
 .cursor/skills/gsd*
 .cursor/get-shit-done/
