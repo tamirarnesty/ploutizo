@@ -32,6 +32,7 @@ Thumbs.db
 # Editor
 *.swp
 *.swo
+.vscode/
 
 # Local Claude Code overrides (project settings are tracked; local overrides are not)
 .claude/settings.local.json
