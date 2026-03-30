@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
@@ -42,6 +43,8 @@ const authorizedParties: string[] = [
 app.use(
   '*',
   clerkMiddleware({
+    secretKey: process.env.CLERK_SECRET_KEY,
+    publishableKey: process.env.CLERK_PUBLISHABLE_KEY,
     clockSkewInMs: 10000,
     authorizedParties,
   })
