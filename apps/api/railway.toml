@@ -1,6 +1,16 @@
 [build]
 builder = "RAILPACK"
 buildCommand = "pnpm --filter api... build"
+watchPatterns = [
+  "apps/api/**",
+  "packages/db/**",
+  "packages/types/**",
+  "packages/validators/**",
+  "package.json",
+  "pnpm-lock.yaml",
+  "turbo.json",
+  "drizzle.config.ts"
+]
 
 [deploy]
 preDeployCommand = ["pnpm db:migrate"]
