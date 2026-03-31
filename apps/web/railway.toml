@@ -1,6 +1,15 @@
 [build]
 builder = "RAILPACK"
 buildCommand = "pnpm --filter web... build"
+watchPatterns = [
+  "apps/web/**",
+  "packages/ui/**",
+  "packages/types/**",
+  "packages/validators/**",
+  "package.json",
+  "pnpm-lock.yaml",
+  "turbo.json"
+]
 
 [deploy]
 startCommand = "node apps/web/.output/server/index.mjs"
