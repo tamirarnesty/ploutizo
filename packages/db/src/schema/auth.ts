@@ -17,7 +17,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core"
 
-import { invitationStatusEnum, memberRoleEnum } from "./enums.js"
+import { memberRoleEnum } from "./enums.js"
 
 // ---------------------------------------------------------------------------
 // Shared helpers (local to this file — imported from client.ts in real usage)
@@ -52,27 +52,20 @@ export const users = pgTable("users", {
 
 /**
  * orgs
- * The tenancy unit. User-facing term is "household" but the schema uses
- * "orgs" for brevity and provider-agnosticism, consistent with org_id
- * conventions throughout.
+ * Org settings anchor. Clerk owns org identity (name, members, invitations) —
+ * this table stores only app-specific org-level data.
+ * `id` is the Clerk org ID (e.g. "org_2abc...") — not a generated UUID.
  *
- * subdomain is immutable after creation — enforced in the application layer.
  * settlementThreshold is the household-level override in cents.
  * Precedence: org_member.settlementThreshold > orgs.settlementThreshold > 5000 (global default)
  */
-export const orgs = pgTable(
-  "orgs",
-  {
-    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-    displayName: text("display_name").notNull(),
-    subdomain: text("subdomain").notNull(),
-    settlementThreshold: cents(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (t) => [uniqueIndex("orgs_subdomain_idx").on(t.subdomain)]
-)
+export const orgs = pgTable("orgs", {
+  id: text("id").primaryKey(),
+  settlementThreshold: cents(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+})
 
 /**
  * org_members
@@ -85,7 +78,7 @@ export const orgMembers = pgTable(
   "org_members",
   {
     id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-    orgId: uuid("org_id")
+    orgId: text("org_id")
       .notNull()
       .references(() => orgs.id, { onDelete: "cascade" }),
     userId: uuid("user_id")
@@ -110,35 +103,3 @@ export const orgMembers = pgTable(
   ]
 )
 
-/**
- * invitations
- * Email-based invitation to join an org.
- * One pending invitation per email per org at a time — enforced by partial
- * unique index on (org_id, invitee_email) WHERE status = 'pending'.
- * Expires 7 days after creation — enforced in application layer.
- */
-export const invitations = pgTable(
-  "invitations",
-  {
-    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-    orgId: uuid("org_id")
-      .notNull()
-      .references(() => orgs.id, { onDelete: "cascade" }),
-    invitedById: uuid("invited_by_id")
-      .notNull()
-      .references(() => orgMembers.id),
-    inviteeEmail: text("invitee_email").notNull(),
-    token: text("token").notNull().unique(),
-    status: invitationStatusEnum("status").notNull().default("pending"),
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (t) => [
-    uniqueIndex("invitations_org_email_pending_idx")
-      .on(t.orgId, t.inviteeEmail)
-      .where(sql`status = 'pending'`),
-    index("invitations_token_idx").on(t.token),
-  ]
-)

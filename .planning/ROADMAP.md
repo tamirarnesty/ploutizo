@@ -17,7 +17,7 @@ infrastructure prerequisites are in place before any feature code is written.
 
 **Delivers:**
 - Turborepo monorepo with all packages (`web`, `api`, `ui`, `db`, `validators`, `types`) building successfully
-- Clerk satellite domain configuration so `{subdomain}.ploutizo.app` sessions work correctly
+- Clerk org configuration: `<OrganizationSwitcher />` for in-app household switching, `authorizedParties: ['https://ploutizo.app']`, `clockSkewInMs: 10000`
 - `postgres.js` direct-connection Drizzle client in `apps/api` (not `neon-http`)
 - `tenantGuard()` middleware with falsy `orgId` check, correct middleware order (CORS → Clerk → tenant guard)
 - `Railway pre-deploy` migration command (`db:migrate`) wired and verified
@@ -43,7 +43,7 @@ Plans:
 
 **Success criteria:**
 - [ ] `pnpm build` succeeds across all packages with zero type errors
-- [ ] Navigating to a household subdomain while signed in returns the app; navigating to an unjoined subdomain returns 403
+- [ ] Switching household via `<OrganizationSwitcher />` updates the active `orgId` in the Clerk session; the next API request is scoped to the new org
 - [ ] Any API request without an active org (`orgId` is `undefined`) returns 401 — confirmed by sending a request with a valid Clerk user JWT but no active org
 - [ ] `apps/api` can execute a multi-step DB transaction (INSERT + INSERT in a single `tx`) without error — confirming `postgres.js` driver
 - [ ] Org creation inserts default categories and merchant rules with non-nullable `org_id` rows; no nullable `org_id` rows exist in the DB
@@ -59,8 +59,8 @@ classify transactions. All prerequisite data structures are in place before the
 first transaction is created.
 
 **Delivers:**
-- Household creation flow with user-chosen subdomain (random slug default, reserved slugs blocked, immutable after creation)
-- Member invitation flow: email invite → accept/decline → redirect to household subdomain
+- Household creation flow: user sets display name, Clerk org created via `organizations.createOrganization()`, local `orgs` row inserted via webhook
+- Member invitation flow via Clerk's `<OrganizationProfile />` component — Clerk handles email delivery, token lifecycle, accept/decline
 - Household switcher in sidebar
 - Account CRUD: all 7 types, personal/shared ownership, "each person pays their own" flag, active/archived status
 - Category CRUD: default seed list visible after org creation, add/rename/reorder/archive, no deletion if referenced
@@ -69,8 +69,8 @@ first transaction is created.
 - `formatCurrency(cents)` utility available in `apps/web`
 
 **Plans:**
-1. Households & invitations API — create org endpoint (calls `seedOrg`), invitation create/accept/decline endpoints, subdomain uniqueness + reserved slug validation
-2. Households & invitations UI — creation flow with subdomain input + random slug generator, invitation management, household switcher, 403 page
+1. Households API — create org endpoint (calls `seedOrg` with Clerk org ID, inserts into local `orgs` table), household settings endpoint for `settlementThreshold`
+2. Households UI — creation flow (display name input, `organizations.createOrganization()` call), `<OrganizationSwitcher />` in sidebar, `<OrganizationProfile />` for member and invitation management
 3. Accounts API & UI — account CRUD endpoints with full field set, `account_members` join table, per-account membership management
 4. Categories, tags & merchant rules API & UI — category CRUD with Lucide icon field, tag select-or-create-inline, merchant rule CRUD with priority reorder and regex validation
 
@@ -81,8 +81,7 @@ first transaction is created.
 - §9 Merchant Rules (CRUD — rule application deferred to Phase 5 where it's exercised)
 
 **Success criteria:**
-- [ ] User can create a household with a user-chosen subdomain; random slug is suggested; reserved slugs (`api`, `www`, `admin`, etc.) are rejected with a clear error
-- [ ] Invited member can accept and immediately see household data on `{subdomain}.ploutizo.app`; declined invitations leave the household unchanged
+- [ ] Invited member can accept via Clerk's invitation email and immediately see household data at `ploutizo.app`; declined invitations leave the household unchanged
 - [ ] Account created with "each person pays their own" flag is visible in account list but excluded from settlement balance queries (verified in Phase 4)
 - [ ] Default category list (11 categories with Lucide icons) is present immediately after org creation; a category referenced by at least one transaction cannot be hard-deleted, only archived
 - [ ] Tag created inline during a form flow is available for reuse in subsequent transaction forms
@@ -284,7 +283,7 @@ require attention — without requiring them to check every page manually.
 
 | REQUIREMENTS.md Section | Phase | Notes |
 |--------------------------|-------|-------|
-| §1 Households & Users | Phase 1 (infra/seeds) + Phase 2 (full feature) | Clerk satellite domain config in Phase 1; UI/invitation flow in Phase 2 |
+| §1 Households & Users | Phase 1 (infra/seeds) + Phase 2 (full feature) | Clerk native org config in Phase 1; creation/switching UI and Clerk-managed invitation flow in Phase 2 |
 | §2 Accounts | Phase 2 | Full CRUD including "each person pays their own" flag |
 | §3 Categories & Tags | Phase 2 | Full CRUD; default seed list present after Phase 1 org creation |
 | §4 Transactions | Phase 3 | All 6 types, splits, soft delete, filters, edit |
