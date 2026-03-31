@@ -1,147 +1,9 @@
 {
-  "id": "206028dd-37ef-4f21-b20c-b35363a4b622",
+  "id": "e498f12b-1445-4736-aa2e-d09746d9dd43",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.invitations": {
-      "name": "invitations",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "org_id": {
-          "name": "org_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "invited_by_id": {
-          "name": "invited_by_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "invitee_email": {
-          "name": "invitee_email",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "token": {
-          "name": "token",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "invitation_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'pending'"
-        },
-        "expires_at": {
-          "name": "expires_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "invitations_org_email_pending_idx": {
-          "name": "invitations_org_email_pending_idx",
-          "columns": [
-            {
-              "expression": "org_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "invitee_email",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "where": "status = 'pending'",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "invitations_token_idx": {
-          "name": "invitations_token_idx",
-          "columns": [
-            {
-              "expression": "token",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "invitations_org_id_orgs_id_fk": {
-          "name": "invitations_org_id_orgs_id_fk",
-          "tableFrom": "invitations",
-          "tableTo": "orgs",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "invitations_invited_by_id_org_members_id_fk": {
-          "name": "invitations_invited_by_id_org_members_id_fk",
-          "tableFrom": "invitations",
-          "tableTo": "org_members",
-          "columnsFrom": [
-            "invited_by_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "invitations_token_unique": {
-          "name": "invitations_token_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "token"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.org_members": {
       "name": "org_members",
       "schema": "",
@@ -155,7 +17,7 @@
         },
         "org_id": {
           "name": "org_id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -277,21 +139,8 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "display_name": {
-          "name": "display_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "subdomain": {
-          "name": "subdomain",
-          "type": "text",
-          "primaryKey": false,
           "notNull": true
         },
         "settlementThreshold": {
@@ -308,23 +157,7 @@
           "default": "now()"
         }
       },
-      "indexes": {
-        "orgs_subdomain_idx": {
-          "name": "orgs_subdomain_idx",
-          "columns": [
-            {
-              "expression": "subdomain",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -885,16 +718,6 @@
         "resp",
         "non_registered",
         "other"
-      ]
-    },
-    "public.invitation_status": {
-      "name": "invitation_status",
-      "schema": "public",
-      "values": [
-        "pending",
-        "accepted",
-        "declined",
-        "expired"
       ]
     },
     "public.member_role": {
