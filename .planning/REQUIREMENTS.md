@@ -18,12 +18,14 @@
 
 ## Infrastructure Requirements (research-derived — not in REQUIREMENTS.md)
 
-### Clerk Satellite Domains (CRITICAL — must be in Phase 1)
-- `{subdomain}.ploutizo.app` multi-tenancy requires Clerk satellite domain configuration
-- Configure `satelliteAutoSync: true` in Clerk dashboard
-- Cloudflare CNAME record per subdomain pointing to app
-- `authorizedParties` set in `clerkMiddleware()` to prevent cross-subdomain cookie leakage
+### Clerk Native Orgs (CRITICAL — must be in Phase 1)
+- All users access the app at `ploutizo.app` — no subdomain routing; satellite domains are a paid add-on and are not used
+- Active org is carried in the Clerk JWT and accessed via `getAuth(c).orgId`; org name and metadata fetched via `useOrganization()` on the frontend
+- Org switching handled by `<OrganizationSwitcher />` calling `setActive({ organization })` — no domain navigation
+- `authorizedParties: ['https://ploutizo.app']` set in `clerkMiddleware()` for cross-origin defense
+- Invitations managed entirely by Clerk via `<OrganizationProfile />` — no local invitation table
 - Clerk dev-to-prod is a hard cutover — user data cannot be migrated between instances; use production instance from the start or accept data loss on switch
+- Cloudflare needs only `ploutizo.app` and `api.ploutizo.app` — no wildcard record
 
 ### Database Driver
 - Use `postgres.js` with direct Neon connection URL — NOT `neon-http` (no transaction support) and NOT PgBouncer pooler (breaks prepared statements)
@@ -50,15 +52,14 @@
 
 **Implementation notes:**
 - Clerk JWT v2 uses compact claim names (`o.id` not `org_id`) — abstracted by `getAuth(c)` middleware, do not read raw JWT claims
-- Household subdomain = Clerk org slug — keep in sync
-- Org creation must call `seedOrg(orgId)` which invokes both `seedOrgCategories(orgId)` and `seedOrgMerchantRules(orgId)`
+- Org creation webhook must call `seedOrg(orgId)` which invokes both `seedOrgCategories(orgId)` and `seedOrgMerchantRules(orgId)`, and inserts a row into the local `orgs` table (app-specific settings anchor)
+- Org name and metadata displayed via `useOrganization()` (`organization.name`, `organization.id`, `organization.imageUrl`) — no ploutizo API call needed for org display info
 - Member `birth_year` is private to that member — never include in org-scoped queries visible to other members
 
 **Verification:**
-- [ ] User can create household, invite member, member can accept and see shared data
-- [ ] Navigating to a household subdomain the user isn't a member of returns 403
+- [ ] User can create household, invite member via Clerk's invitation flow, member can accept and see shared data
 - [ ] Org creation triggers seed scripts; default categories and merchant rules are present
-- [ ] Switching households updates `orgId` context; subsequent queries are scoped to new org
+- [ ] Switching households via `<OrganizationSwitcher />` updates `orgId` in the Clerk session; subsequent queries are scoped to new org
 
 ---
 

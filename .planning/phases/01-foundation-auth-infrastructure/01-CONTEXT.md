@@ -10,7 +10,7 @@ Sets up all infrastructure prerequisites before any feature code is written:
 - Monorepo packages created and building (`web`, `api`, `ui`, `db`, `validators`, `types`)
 - Packages renamed to `@ploutizo/*` namespace
 - Drizzle + `postgres.js` database client wired in `apps/api`
-- Clerk auth + satellite domain configuration
+- Clerk auth with in-app org switching (`<OrganizationSwitcher />`, native Clerk orgs — no subdomain routing)
 - `tenantGuard()` middleware with correct order and falsy `orgId` check
 - Railway pre-deploy migration and live deployment smoke-tested
 - Seed scripts for org creation
@@ -27,7 +27,7 @@ Sets up all infrastructure prerequisites before any feature code is written:
 
 ### Clerk Instance Strategy
 - **D-03:** Use the **production Clerk instance from day 1** — configure with production API keys even for local development. No dev instance. This avoids the hard cutover problem (Clerk dev→prod cannot migrate user/org data).
-- **D-04:** Local `.env` files use production Clerk API keys. Satellite domain config, `authorizedParties`, and `clockSkewInMs: 10000` all target the production instance.
+- **D-04:** Local `.env` files use production Clerk API keys. `authorizedParties: ['https://ploutizo.app']` and `clockSkewInMs: 10000` set on `clerkMiddleware()`. No satellite domain configuration — org identity is carried in the Clerk JWT; all users access the app at `ploutizo.app`.
 
 ### Railway Deployment Scope
 - **D-05:** Phase 1 ends with a **live Railway deployment and smoke test** — not just local wiring. Verification criteria: `pnpm build` passes in Railway CI, `db:migrate` runs as pre-deploy command, health endpoint (`GET /health`) returns 200, `DATABASE_URL` and `CLERK_SECRET_KEY` are scoped to individual services (not project-level).
@@ -38,6 +38,10 @@ Sets up all infrastructure prerequisites before any feature code is written:
   - Explicit border colors on all components (`border-border` or specific color tokens, not bare `border`)
   - Explicit ring colors (`ring-ring` or specific tokens, not bare `ring`)
   - Shadow and rounded scale names verified/updated for v4
+
+### Schema: `orgs` Table Design
+- **D-08:** The local `orgs` table uses the Clerk org ID (`org_2abc...`) as its `text` primary key — not a generated UUID. This is the anchor for app-specific org-level data. `orgMembers.orgId` is a `text` FK referencing `orgs.id`.
+- **D-09:** The `invitations` table is dropped — Clerk manages the full invitation lifecycle via `<OrganizationProfile />`. The `orgs` table drops `display_name` and `subdomain`; it retains only `id` (Clerk org ID), `settlement_threshold`, and `created_at`.
 
 ### Claude's Discretion
 - Exact Railway service names and project structure on Railway dashboard
@@ -56,7 +60,7 @@ Sets up all infrastructure prerequisites before any feature code is written:
 - `CLAUDE.md` — Package import boundaries, stack choices, naming conventions, coding style, multi-tenancy rules, API conventions, testing rules
 
 ### Requirements & planning
-- `.planning/REQUIREMENTS.md` — Infrastructure requirements section (Clerk satellite domains, `postgres.js` driver, Tailwind v4 audit notes, `tenantGuard()` falsy check, `clockSkewInMs`)
+- `.planning/REQUIREMENTS.md` — Infrastructure requirements section (Clerk native orgs, `postgres.js` driver, Tailwind v4 audit notes, `tenantGuard()` falsy check, `clockSkewInMs`)
 - `.planning/ROADMAP.md` §Phase 1 — Exact deliverables, plan breakdown, success criteria
 
 ### Existing packages to modify
@@ -95,7 +99,7 @@ Sets up all infrastructure prerequisites before any feature code is written:
 - `DATABASE_URL` uses `postgres.js`-compatible direct Neon URL (not PgBouncer pooler, not `neon-http`)
 - `db:migrate` wired as Railway pre-deploy command (not `db:push`)
 - Seed scripts: `seedOrgCategories(orgId)` + `seedOrgMerchantRules(orgId)` called via `seedOrg(orgId)` wrapper at org creation webhook
-- `authorizedParties` set in `clerkMiddleware()` to prevent cross-subdomain cookie leakage
+- `authorizedParties: ['https://ploutizo.app']` set in `clerkMiddleware()` for cross-origin defense (not subdomain-specific — single domain app)
 
 </specifics>
 

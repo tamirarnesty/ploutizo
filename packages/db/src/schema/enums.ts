@@ -121,13 +121,3 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "invitation_received",
 ])
 
-// ---------------------------------------------------------------------------
-// Auth only
-// ---------------------------------------------------------------------------
-
-export const invitationStatusEnum = pgEnum("invitation_status", [
-  "pending",
-  "accepted",
-  "declined",
-  "expired",
-])
