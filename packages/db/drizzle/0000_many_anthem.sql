@@ -37,7 +37,7 @@ CREATE TABLE "users" (
 --> statement-breakpoint
 CREATE TABLE "categories" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"org_id" uuid NOT NULL,
+	"org_id" text NOT NULL,
 	"name" text NOT NULL,
 	"icon" text,
 	"colour" text,
@@ -54,7 +54,7 @@ CREATE TABLE "merchant_rule_tags" (
 --> statement-breakpoint
 CREATE TABLE "merchant_rules" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"org_id" uuid NOT NULL,
+	"org_id" text NOT NULL,
 	"pattern" text NOT NULL,
 	"match_type" "merchant_match_type" NOT NULL,
 	"rename_to" text,
@@ -66,7 +66,7 @@ CREATE TABLE "merchant_rules" (
 --> statement-breakpoint
 CREATE TABLE "tags" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"org_id" uuid NOT NULL,
+	"org_id" text NOT NULL,
 	"name" text NOT NULL,
 	"colour" text,
 	"archived_at" timestamp with time zone,

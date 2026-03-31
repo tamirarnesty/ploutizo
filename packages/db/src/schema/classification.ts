@@ -32,7 +32,7 @@ export const categories = pgTable(
   "categories",
   {
     id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-    orgId: uuid("org_id")
+    orgId: text("org_id")
       .notNull()
       .references(() => orgs.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
@@ -62,7 +62,7 @@ export const tags = pgTable(
   "tags",
   {
     id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-    orgId: uuid("org_id")
+    orgId: text("org_id")
       .notNull()
       .references(() => orgs.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
@@ -90,7 +90,7 @@ export const merchantRules = pgTable(
   "merchant_rules",
   {
     id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-    orgId: uuid("org_id")
+    orgId: text("org_id")
       .notNull()
       .references(() => orgs.id, { onDelete: "cascade" }),
     pattern: text("pattern").notNull(),

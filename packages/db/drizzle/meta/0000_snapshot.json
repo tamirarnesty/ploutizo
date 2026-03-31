@@ -1,5 +1,5 @@
 {
-  "id": "e498f12b-1445-4736-aa2e-d09746d9dd43",
+  "id": "daa4f3d3-6a6d-4f68-921c-d9fdc41a9505",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -238,7 +238,7 @@
         },
         "org_id": {
           "name": "org_id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -434,7 +434,7 @@
         },
         "org_id": {
           "name": "org_id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -582,7 +582,7 @@
         },
         "org_id": {
           "name": "org_id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
