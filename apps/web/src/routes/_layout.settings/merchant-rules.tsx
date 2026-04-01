@@ -22,6 +22,17 @@ import {
 } from '@ploutizo/ui/components/alert-dialog'
 import { GripVertical } from 'lucide-react'
 import { Sortable, SortableItem, SortableItemHandle } from '@ploutizo/ui/components/reui/sortable'
+import { Button } from '@ploutizo/ui/components/button'
+import { Input } from '@ploutizo/ui/components/input'
+import { Label } from '@ploutizo/ui/components/label'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@ploutizo/ui/components/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@ploutizo/ui/components/dialog'
 
 export const Route = createFileRoute('/_layout/settings/merchant-rules')({
   component: MerchantRulesPage,
@@ -50,7 +61,7 @@ function RuleDialog({
   const [pattern, setPattern] = useState(rule?.pattern ?? '')
   const [matchType, setMatchType] = useState(rule?.matchType ?? 'contains')
   const [renameTo, setRenameTo] = useState(rule?.renameTo ?? '')
-  const [categoryId, setCategoryId] = useState<string>(rule?.categoryId ?? '')
+  const [categoryId, setCategoryId] = useState<string>(rule?.categoryId ?? '__none__')
   const [isRegexError, setIsRegexError] = useState(false)
   const [patternError, setPatternError] = useState('')
   const [mutationError, setMutationError] = useState('')
@@ -69,7 +80,7 @@ function RuleDialog({
       pattern: pattern.trim(),
       matchType,
       renameTo: renameTo.trim() || undefined,
-      categoryId: categoryId || null,
+      categoryId: categoryId === '__none__' ? null : categoryId,
     }
     if (isEditing) {
       updateRule.mutate(payload, {
@@ -95,96 +106,87 @@ function RuleDialog({
   const isSaving = createRule.isPending || updateRule.isPending
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      onClick={onClose}
-    >
-      <div
-        className="bg-card rounded-lg shadow-xl w-full max-w-md mx-4 p-6 space-y-4"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 className="text-base font-semibold">{isEditing ? 'Edit rule' : 'Add rule'}</h2>
+    <Dialog open={true} onOpenChange={(open) => { if (!open) onClose() }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{isEditing ? 'Edit rule' : 'Add rule'}</DialogTitle>
+        </DialogHeader>
 
-        <div className="space-y-1">
-          <label className="text-xs font-medium">Match type</label>
-          <select
-            value={matchType}
-            onChange={(e) => { setMatchType(e.target.value); setIsRegexError(false) }}
-            className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring/50"
-          >
-            {Object.entries(MATCH_TYPE_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
+        <div className="space-y-4 py-2">
+          {/* Match type */}
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">Match type</Label>
+            <Select value={matchType} onValueChange={(v) => { setMatchType(v); setIsRegexError(false) }}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(MATCH_TYPE_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Pattern */}
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">Pattern</Label>
+            <Input
+              value={pattern}
+              onChange={(e) => { setPattern(e.target.value); if (isRegexError) setIsRegexError(false) }}
+              onBlur={() => validateRegex(pattern)}
+              placeholder={matchType === 'regex' ? '^AMAZON.*' : 'AMAZON'}
+              aria-invalid={isRegexError}
+            />
+            {patternError && <p className="text-xs text-destructive">{patternError}</p>}
+            {isRegexError && <p className="text-xs text-destructive">Invalid regular expression.</p>}
+          </div>
+
+          {/* Rename to */}
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">
+              Rename to{' '}
+              <span className="text-muted-foreground font-normal">(optional)</span>
+            </Label>
+            <Input
+              value={renameTo}
+              onChange={(e) => setRenameTo(e.target.value)}
+              placeholder="e.g. Amazon"
+            />
+          </div>
+
+          {/* Category */}
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">
+              Category{' '}
+              <span className="text-muted-foreground font-normal">(optional)</span>
+            </Label>
+            <Select value={categoryId} onValueChange={setCategoryId}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">No category</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {mutationError && <p className="text-xs text-destructive">{mutationError}</p>}
         </div>
 
-        <div className="space-y-1">
-          <label className="text-xs font-medium">Pattern</label>
-          <input
-            value={pattern}
-            onChange={(e) => { setPattern(e.target.value); if (isRegexError) setIsRegexError(false) }}
-            onBlur={() => validateRegex(pattern)}
-            placeholder={matchType === 'regex' ? '^AMAZON.*' : 'AMAZON'}
-            className={[
-              'w-full h-9 px-3 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring/50',
-              isRegexError ? 'border-destructive' : 'border-input',
-            ].join(' ')}
-          />
-          {patternError && <p className="text-xs text-destructive">{patternError}</p>}
-          {isRegexError && <p className="text-xs text-destructive">Invalid regular expression.</p>}
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-xs font-medium">
-            Rename to{' '}
-            <span className="text-muted-foreground font-normal">(optional)</span>
-          </label>
-          <input
-            value={renameTo}
-            onChange={(e) => setRenameTo(e.target.value)}
-            placeholder="e.g. Amazon"
-            className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring/50"
-          />
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-xs font-medium">
-            Category{' '}
-            <span className="text-muted-foreground font-normal">(optional)</span>
-          </label>
-          <select
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-            className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring/50"
-          >
-            <option value="">No category</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
-            ))}
-          </select>
-        </div>
-
-        {mutationError && <p className="text-xs text-destructive">{mutationError}</p>}
-
-        <div className="flex justify-end gap-2 pt-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="h-9 px-4 text-sm border border-border rounded-md hover:bg-muted"
-          >
+        <DialogFooter>
+          <Button variant="outline" type="button" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={isSaving || isRegexError}
-            className="h-9 px-4 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
-          >
+          </Button>
+          <Button type="button" onClick={handleSave} disabled={isSaving || isRegexError}>
             Save rule
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -206,13 +208,9 @@ function MerchantRulesPage() {
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold font-[--font-heading]">Merchant Rules</h1>
-        <button
-          type="button"
-          onClick={() => setDialogRule(null)}
-          className="h-9 px-4 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-        >
+        <Button type="button" onClick={() => setDialogRule(null)}>
           Add rule
-        </button>
+        </Button>
       </div>
 
       {isLoading ? (
@@ -257,21 +255,25 @@ function MerchantRulesPage() {
                       </p>
                     )}
                   </div>
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setDialogRule(rule)}
-                    className="text-xs text-muted-foreground hover:text-foreground px-2 py-1"
+                    className="text-muted-foreground"
                   >
                     Edit
-                  </button>
+                  </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <button
+                      <Button
                         type="button"
-                        className="text-xs text-muted-foreground hover:text-destructive px-2 py-1"
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground hover:text-destructive"
                       >
                         Delete
-                      </button>
+                      </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
