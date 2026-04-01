@@ -68,11 +68,13 @@ first transaction is created.
 - Merchant rule CRUD: add/edit/delete/reorder rules, all 5 match types, regex validation at save time
 - `formatCurrency(cents)` utility available in `apps/web`
 
-**Plans:**
-1. Households API — create org endpoint (calls `seedOrg` with Clerk org ID, inserts into local `orgs` table), household settings endpoint for `settlementThreshold`
-2. Households UI — creation flow (display name input, `organizations.createOrganization()` call), `<OrganizationSwitcher />` in sidebar, `<OrganizationProfile />` for member and invitation management
-3. Accounts API & UI — account CRUD endpoints with full field set, `account_members` join table, per-account membership management
-4. Categories, tags & merchant rules API & UI — category CRUD with Lucide icon field, tag select-or-create-inline, merchant rule CRUD with priority reorder and regex validation
+**Plans:** 4 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Accounts DB schema + validators + types + API routes for /api/accounts and /api/households
+- [ ] 02-02-PLAN.md — Root org guard + /onboarding + sidebar shell + /dashboard stub + /settings/household
+- [ ] 02-03-PLAN.md — Accounts page UI: DataTable, slide-over sheet (create/edit/archive), React Query hooks
+- [ ] 02-04-PLAN.md — Categories/tags/merchant-rules API routes + Settings pages with ReUI Sortable, regex validation
 
 **Requirements covered:**
 - §1 Households & Users (full feature)
