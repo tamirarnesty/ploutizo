@@ -68,13 +68,14 @@ first transaction is created.
 - Merchant rule CRUD: add/edit/delete/reorder rules, all 5 match types, regex validation at save time
 - `formatCurrency(cents)` utility available in `apps/web`
 
-**Plans:** 4 plans
+**Plans:** 5 plans
 
 Plans:
 - [x] 02-01-PLAN.md — Accounts DB schema + validators + types + API routes for /api/accounts and /api/households
 - [x] 02-02-PLAN.md — Root org guard + /onboarding + sidebar shell + /dashboard stub + /settings/household
 - [x] 02-03-PLAN.md — Accounts page UI: DataTable, slide-over sheet (create/edit/archive), React Query hooks
-- [ ] 02-04-PLAN.md — Categories/tags/merchant-rules API routes + Settings pages with ReUI Sortable, regex validation
+- [x] 02-04-PLAN.md — Categories/tags/merchant-rules API routes + Settings pages with ReUI Sortable, regex validation
+- [ ] 02-05-PLAN.md — Gap closure: insert orgs row in webhook before seedOrg(), ReUI Combobox for tag inline-create, add missing seed icons (HeartPulse, Sparkles, MoreHorizontal)
 
 **Requirements covered:**
 - §1 Households & Users (full feature)
