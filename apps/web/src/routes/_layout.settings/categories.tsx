@@ -26,6 +26,16 @@ import {
   ComboboxList,
   ComboboxTrigger,
 } from '@ploutizo/ui/components/reui/combobox'
+import { Button } from '@ploutizo/ui/components/button'
+import { Input } from '@ploutizo/ui/components/input'
+import { Label } from '@ploutizo/ui/components/label'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@ploutizo/ui/components/dialog'
 
 export const Route = createFileRoute('/_layout/settings/categories')({
   component: CategoriesSettingsPage,
@@ -69,58 +79,47 @@ function CategoryDialog({
   const isSaving = createCategory.isPending || updateCategory.isPending
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      onClick={onClose}
-    >
-      <div
-        className="bg-card rounded-lg shadow-xl w-full max-w-sm mx-4 p-6 space-y-4"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 className="text-base font-semibold">{isEditing ? 'Edit category' : 'Add category'}</h2>
+    <Dialog open={true} onOpenChange={(open) => { if (!open) onClose() }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{isEditing ? 'Edit category' : 'Add category'}</DialogTitle>
+        </DialogHeader>
 
-        <div className="space-y-1">
-          <label className="text-xs font-medium">Name</label>
-          <input
-            autoFocus
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring/50"
-          />
-          {nameError && <p className="text-xs text-destructive">{nameError}</p>}
+        <div className="space-y-4 py-2">
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">Name</Label>
+            <Input
+              autoFocus
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              aria-invalid={!!nameError}
+            />
+            {nameError && <p className="text-xs text-destructive">{nameError}</p>}
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">Icon</Label>
+            <LucideIconPicker value={icon} onChange={setIcon} />
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">Colour</Label>
+            <ColourPicker value={colour} onChange={setColour} />
+          </div>
+
+          {mutationError && <p className="text-xs text-destructive">{mutationError}</p>}
         </div>
 
-        <div className="space-y-1">
-          <label className="text-xs font-medium">Icon</label>
-          <LucideIconPicker value={icon} onChange={setIcon} />
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-xs font-medium">Colour</label>
-          <ColourPicker value={colour} onChange={setColour} />
-        </div>
-
-        {mutationError && <p className="text-xs text-destructive">{mutationError}</p>}
-
-        <div className="flex justify-end gap-2 pt-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="h-9 px-4 text-sm border border-border rounded-md hover:bg-muted"
-          >
+        <DialogFooter>
+          <Button variant="outline" type="button" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={isSaving}
-            className="h-9 px-4 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
-          >
+          </Button>
+          <Button type="button" onClick={handleSave} disabled={isSaving}>
             Save category
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -157,13 +156,9 @@ function CategoriesSettingsPage() {
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">Categories</h2>
-          <button
-            type="button"
-            onClick={() => setDialogCategory(null)}
-            className="h-8 px-3 text-xs bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-          >
+          <Button type="button" size="sm" onClick={() => setDialogCategory(null)}>
             Add category
-          </button>
+          </Button>
         </div>
 
         {catLoading ? (
@@ -196,21 +191,25 @@ function CategoriesSettingsPage() {
                       />
                     )}
                     <span className="flex-1 text-sm">{cat.name}</span>
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setDialogCategory(cat)}
-                      className="text-xs text-muted-foreground hover:text-foreground px-2 py-1"
+                      className="text-muted-foreground"
                     >
                       Edit
-                    </button>
+                    </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <button
+                        <Button
                           type="button"
-                          className="text-xs text-muted-foreground hover:text-destructive px-2 py-1"
+                          variant="ghost"
+                          size="sm"
+                          className="text-muted-foreground hover:text-destructive"
                         >
                           Archive
-                        </button>
+                        </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
@@ -314,14 +313,16 @@ function CategoriesSettingsPage() {
                 className="flex items-center gap-1 px-3 py-1 rounded-full bg-muted text-sm"
               >
                 <span>{tag.name}</span>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-xs"
                   onClick={() => archiveTag.mutate(tag.id)}
-                  className="text-muted-foreground hover:text-destructive ml-1 text-xs"
+                  className="ml-1 text-muted-foreground hover:text-destructive"
                   aria-label={`Archive tag ${tag.name}`}
                 >
                   &times;
-                </button>
+                </Button>
               </div>
             ))}
           </div>
