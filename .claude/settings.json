@@ -2,13 +2,14 @@
   "permissions": {
     "deny": [
       "Read(.env)",
-      "Read(.env.*)",
       "Read(**/secrets/*)",
       "Read(**/*credential*)",
       "Read(**/*.pem)",
       "Read(**/*.key)"
     ],
+    "ask": ["Read(.env.*)"],
     "allow": [
+      "Read(.env.example)",
       "Bash(date:*)",
       "Bash(echo:*)",
       "Bash(cat:*)",
