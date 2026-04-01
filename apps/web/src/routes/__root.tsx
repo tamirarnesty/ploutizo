@@ -19,6 +19,13 @@ const authGuard = createServerFn().handler(async () => {
   }
 })
 
+const orgGuard = createServerFn().handler(async () => {
+  const { orgId } = await auth()
+  if (!orgId) {
+    throw redirect({ to: "/onboarding" })
+  }
+})
+
 // TokenInitializer: wires Clerk's getToken into the React Query apiFetch helper.
 // Must run inside ClerkProvider so useAuth() has access to the Clerk session.
 // setTokenGetter must be called before any query fires — this component renders at app root.
@@ -50,8 +57,12 @@ export const Route = createRootRoute({
     const isAuthRoute =
       location.pathname.startsWith("/sign-in") ||
       location.pathname.startsWith("/sign-up")
+    const isOnboarding = location.pathname === "/onboarding"
     if (!isAuthRoute) {
       await authGuard()
+      if (!isOnboarding) {
+        await orgGuard()
+      }
     }
   },
   head: () => ({

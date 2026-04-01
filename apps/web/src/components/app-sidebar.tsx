@@ -1,0 +1,96 @@
+import { Link, useRouterState } from "@tanstack/react-router"
+import { OrganizationSwitcher, UserButton } from "@clerk/tanstack-react-start"
+import { LayoutDashboard, CreditCard, Tag, Store, Home } from "lucide-react"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+} from "@ploutizo/ui/components/sidebar"
+
+const navItems = [
+  { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
+  // /accounts 404s until Plan 03 creates the route — expected during Plan 02 execution
+  { label: "Accounts", to: "/accounts", icon: CreditCard },
+] as const
+
+const settingsItems = [
+  { label: "Categories & Tags", to: "/settings/categories", icon: Tag },
+  { label: "Merchant Rules", to: "/settings/merchant-rules", icon: Store },
+  { label: "Household", to: "/settings/household", icon: Home },
+] as const
+
+export function AppSidebar() {
+  const { location } = useRouterState()
+
+  return (
+    <Sidebar>
+      {/* OrganizationSwitcher pinned at top (D-02) */}
+      <SidebarHeader>
+        <OrganizationSwitcher
+          hidePersonal={true}
+          afterCreateOrganizationUrl="/dashboard"
+          afterSelectOrganizationUrl="/dashboard"
+        />
+      </SidebarHeader>
+
+      <SidebarContent>
+        {/* Primary nav items */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navItems.map(({ label, to, icon: Icon }) => {
+                const active =
+                  location.pathname === to ||
+                  location.pathname.startsWith(to + "/")
+                return (
+                  <SidebarMenuItem key={to}>
+                    <SidebarMenuButton asChild isActive={active}>
+                      <Link to={to}>
+                        <Icon />
+                        {label}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Settings group (D-01) */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Settings</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {settingsItems.map(({ label, to, icon: Icon }) => {
+                const active = location.pathname === to
+                return (
+                  <SidebarMenuItem key={to}>
+                    <SidebarMenuButton asChild isActive={active}>
+                      <Link to={to}>
+                        <Icon />
+                        {label}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      {/* UserButton pinned at bottom (D-02) */}
+      <SidebarFooter>
+        <UserButton />
+      </SidebarFooter>
+    </Sidebar>
+  )
+}
