@@ -15,16 +15,16 @@ progress:
 
 ## Current Position
 
-Phase: 02 (households-accounts-classification) — EXECUTING
-Plan: 3 of 4 complete
+Phase: 02 (households-accounts-classification) — COMPLETE
+Plan: 4 of 4 complete
 **Milestone:** v0.1 MVP
-**Active Phase:** Phase 02 — Households, Accounts & Classification
-**Status:** Executing Phase 02 (02-01, 02-02, 02-03 complete; 02-04 remaining)
-**Last session:** 2026-04-01 — Completed 02-03-PLAN.md
+**Active Phase:** Phase 02 — Households, Accounts & Classification — COMPLETE
+**Status:** Phase 02 complete; ready for Phase 03 (Transactions)
+**Last session:** 2026-04-01 — Completed 02-04-PLAN.md
 
 ## Next Action
 
-Execute plan 02-04 (categories/tags UI)
+Begin Phase 03 (Transactions)
 
 ## Phase Status
 
@@ -68,6 +68,8 @@ Execute plan 02-04 (categories/tags UI)
 - RRSP 2026 dollar cap — verify against CRA before Phase 6
 - Bank CSV real exports — collect before Phase 5 (LOW confidence on column names)
 - Neon connection limit on chosen plan — verify before Phase 1 goes live
+- reorderSchema uses z.string().uuid() — test orderedIds must be valid UUIDs (non-UUID strings correctly rejected) — 02-04
+- ReUI Sortable component uses strategy='vertical' prop (not layout prop) — confirm before using in future plans — 02-04
 - ReUI Tailwind v4 compatibility — DataGrid confirmed working in 02-03; Filters not yet tested
 - Cloudflare proxy for `clerk.ploutizo.app` — must be "DNS only" (grey cloud)
 
