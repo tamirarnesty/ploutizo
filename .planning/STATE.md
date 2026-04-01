@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: MVP
 status: executing
-last_updated: "2026-04-01T20:02:19.489Z"
+last_updated: "2026-04-01T20:16:35.325Z"
 progress:
   total_phases: 7
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 12
-  completed_plans: 11
+  completed_plans: 12
 ---
 
 # Project State
@@ -16,11 +16,11 @@ progress:
 ## Current Position
 
 Phase: 02 (households-accounts-classification) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 **Milestone:** v0.1 MVP
 **Active Phase:** Phase 02 — Households, Accounts & Classification — COMPLETE
-**Status:** Executing Phase 02
-**Last session:** 2026-04-01 — Completed 02-05-PLAN.md
+**Status:** Ready to execute
+**Last session:** 2026-04-01T20:16:35.321Z
 
 ## Next Action
 
@@ -63,6 +63,9 @@ Begin Phase 03 (Transactions)
 - @ploutizo/types path mapping must be added to apps/web/tsconfig.json for web app to import shared types — 02-03
 - ReUI combobox not in radix-nova registry — built manually from Popover primitives; exports same API surface as plan specified — 02-05
 - onConflictDoNothing() used on orgs insert in webhook handler so Svix retries are safe — 02-05
+- Dialog open={true} with parent-gated rendering for CategoryDialog/RuleDialog — simpler than prop threading, correct because parent mounts/unmounts conditionally — 02-06
+- __none__ sentinel for optional Radix Select fields (categoryId) — Radix Select doesn't support value="" reliably; payload converts back to null before API call — 02-06
+- Checkbox + Label sibling pattern (not wrapping label) — shadcn Checkbox is a Radix button primitive, must use htmlFor+id association — 02-06
 
 ## Blockers / Open Items
 
