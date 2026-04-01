@@ -4,6 +4,7 @@ import { AccountsTable } from '../components/accounts/accounts-table'
 import { AccountSheet } from '../components/accounts/account-sheet'
 import { useAccounts } from '../hooks/use-accounts'
 import type { Account } from '@ploutizo/types'
+import { Button } from '@ploutizo/ui/components/button'
 
 export const Route = createFileRoute('/_layout/accounts')({
   component: AccountsPage,
@@ -31,13 +32,9 @@ function AccountsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold font-[--font-heading]">Accounts</h1>
-        <button
-          type="button"
-          onClick={handleAddClick}
-          className="h-9 px-4 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-        >
+        <Button type="button" onClick={handleAddClick}>
           Add account
-        </button>
+        </Button>
       </div>
 
       <AccountsTable

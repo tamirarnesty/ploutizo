@@ -11,6 +11,7 @@ import {
 } from '@ploutizo/ui/components/reui/data-grid/data-grid'
 import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-table'
 import { Badge } from '@ploutizo/ui/components/badge'
+import { Button } from '@ploutizo/ui/components/button'
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   chequing: 'Chequing',
@@ -97,13 +98,9 @@ export function AccountsTable({ accounts, isLoading, onRowClick, onAddClick }: A
         <p className="text-sm text-muted-foreground max-w-xs">
           Add your first account to start tracking transactions.
         </p>
-        <button
-          type="button"
-          onClick={onAddClick}
-          className="mt-2 h-9 px-4 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-        >
+        <Button type="button" onClick={onAddClick} className="mt-2">
           Add account
-        </button>
+        </Button>
       </div>
     )
   }

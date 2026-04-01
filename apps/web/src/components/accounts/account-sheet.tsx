@@ -31,6 +31,13 @@ import {
   CollapsibleTrigger,
 } from '@ploutizo/ui/components/collapsible'
 import { ChevronDown } from 'lucide-react'
+import { Button } from '@ploutizo/ui/components/button'
+import { Input } from '@ploutizo/ui/components/input'
+import { Label } from '@ploutizo/ui/components/label'
+import { Checkbox } from '@ploutizo/ui/components/checkbox'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@ploutizo/ui/components/select'
+import { ToggleGroup, ToggleGroupItem } from '@ploutizo/ui/components/toggle-group'
+import { Spinner } from '@ploutizo/ui/components/spinner'
 
 const ACCOUNT_TYPES = [
   { value: 'chequing', label: 'Chequing' },
@@ -139,102 +146,95 @@ export function AccountSheet({ open, account, onClose }: AccountSheetProps) {
 
         <div className="px-6 py-4 space-y-4 overflow-y-auto flex-1">
           {/* Ownership toggle (D-12) */}
-          <div className="flex rounded-md border border-border overflow-hidden text-sm">
-            {(['personal', 'shared'] as const).map((o) => (
-              <button
-                key={o}
-                type="button"
-                onClick={() => setOwnership(o)}
-                className={[
-                  'flex-1 py-2 capitalize transition-colors',
-                  ownership === o ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
-                ].join(' ')}
-              >
-                {o.charAt(0).toUpperCase() + o.slice(1)}
-              </button>
-            ))}
-          </div>
+          <ToggleGroup
+            type="single"
+            value={ownership}
+            onValueChange={(v) => { if (v) setOwnership(v as 'personal' | 'shared') }}
+            className="w-full"
+          >
+            <ToggleGroupItem value="personal" className="flex-1">Personal</ToggleGroupItem>
+            <ToggleGroupItem value="shared" className="flex-1">Shared</ToggleGroupItem>
+          </ToggleGroup>
 
           {/* Account name */}
           <div className="space-y-1">
-            <label className="text-xs font-medium" htmlFor="account-name">Name</label>
-            <input
+            <Label className="text-xs font-medium" htmlFor="account-name">Name</Label>
+            <Input
               id="account-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Joint Chequing"
-              className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring/50"
             />
             {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
           </div>
 
           {/* Account type */}
           <div className="space-y-1">
-            <label className="text-xs font-medium" htmlFor="account-type">Account type</label>
-            <select
-              id="account-type"
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-              className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring/50"
-            >
-              {ACCOUNT_TYPES.map(({ value, label }) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
+            <Label className="text-xs font-medium" htmlFor="account-type">Account type</Label>
+            <Select value={type} onValueChange={setType}>
+              <SelectTrigger id="account-type" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ACCOUNT_TYPES.map(({ value, label }) => (
+                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {errors.type && <p className="text-xs text-destructive">{errors.type}</p>}
           </div>
 
           {/* Institution */}
           <div className="space-y-1">
-            <label className="text-xs font-medium" htmlFor="account-institution">
+            <Label className="text-xs font-medium" htmlFor="account-institution">
               Institution <span className="text-muted-foreground font-normal">(optional)</span>
-            </label>
-            <input
+            </Label>
+            <Input
               id="account-institution"
               value={institution}
               onChange={(e) => setInstitution(e.target.value)}
               placeholder="e.g. TD Bank"
-              className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring/50"
             />
           </div>
 
           {/* Last 4 digits */}
           <div className="space-y-1">
-            <label className="text-xs font-medium" htmlFor="account-last-four">
+            <Label className="text-xs font-medium" htmlFor="account-last-four">
               Last 4 digits <span className="text-muted-foreground font-normal">(optional)</span>
-            </label>
-            <input
+            </Label>
+            <Input
               id="account-last-four"
               value={lastFour}
               onChange={(e) => setLastFour(e.target.value.replace(/\D/g, '').slice(0, 4))}
               placeholder="1234"
               maxLength={4}
-              className="w-full h-9 px-3 text-sm border border-input rounded-md bg-background font-mono focus:outline-none focus:ring-2 focus:ring-ring/50"
+              className="font-mono"
             />
           </div>
 
           {/* Co-owners (shared only, D-12) */}
           {ownership === 'shared' && (
             <div className="space-y-1">
-              <label className="text-xs font-medium">Co-owners</label>
+              <Label className="text-xs font-medium">Co-owners</Label>
               {members.length === 0 ? (
                 <p className="text-xs text-muted-foreground">No other members in this household yet.</p>
               ) : (
                 <div className="space-y-1">
                   {members.map((member) => (
-                    <label key={member.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                      <input
-                        type="checkbox"
+                    <div key={member.id} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`member-${member.id}`}
                         checked={selectedMemberIds.includes(member.id)}
-                        onChange={(e) => {
-                          setSelectedMemberIds(e.target.checked
+                        onCheckedChange={(checked) => {
+                          setSelectedMemberIds(checked
                             ? [...selectedMemberIds, member.id]
                             : selectedMemberIds.filter((id) => id !== member.id))
                         }}
-                        className="rounded"
                       />
-                      {member.displayName}
-                    </label>
+                      <Label htmlFor={`member-${member.id}`} className="text-sm cursor-pointer">
+                        {member.displayName}
+                      </Label>
+                    </div>
                   ))}
                 </div>
               )}
@@ -252,20 +252,20 @@ export function AccountSheet({ open, account, onClose }: AccountSheetProps) {
               Advanced
             </CollapsibleTrigger>
             <CollapsibleContent className="pt-3">
-              <label className="flex items-start gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
+              <div className="flex items-start gap-2">
+                <Checkbox
+                  id="each-person-pays-own"
                   checked={eachPersonPaysOwn}
-                  onChange={(e) => setEachPersonPaysOwn(e.target.checked)}
-                  className="mt-0.5 rounded"
+                  onCheckedChange={(checked) => setEachPersonPaysOwn(Boolean(checked))}
+                  className="mt-0.5"
                 />
                 <div className="space-y-0.5">
-                  <span className="text-sm">Each person pays their own</span>
+                  <Label htmlFor="each-person-pays-own" className="text-sm cursor-pointer">Each person pays their own</Label>
                   <p className="text-xs text-muted-foreground">
                     Excludes this account from shared settlement calculations.
                   </p>
                 </div>
-              </label>
+              </div>
             </CollapsibleContent>
           </Collapsible>
 
@@ -279,9 +279,9 @@ export function AccountSheet({ open, account, onClose }: AccountSheetProps) {
           {isEditing && !account?.archivedAt && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <button type="button" className="text-sm text-destructive hover:underline">
+                <Button variant="ghost" type="button" className="text-destructive hover:text-destructive">
                   Archive
-                </button>
+                </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
@@ -305,27 +305,13 @@ export function AccountSheet({ open, account, onClose }: AccountSheetProps) {
             </AlertDialog>
           )}
           <div className="flex gap-2 ml-auto">
-            <button
-              type="button"
-              onClick={onClose}
-              className="h-9 px-4 text-sm border border-border rounded-md hover:bg-muted"
-            >
+            <Button variant="outline" type="button" onClick={onClose}>
               Discard
-            </button>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isSaving}
-              className="h-9 px-4 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
-            >
-              {isSaving && (
-                <svg className="size-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                </svg>
-              )}
+            </Button>
+            <Button type="button" onClick={handleSubmit} disabled={isSaving}>
+              {isSaving && <Spinner className="mr-1" />}
               {isEditing ? 'Save changes' : 'Add account'}
-            </button>
+            </Button>
           </div>
         </SheetFooter>
       </SheetContent>
