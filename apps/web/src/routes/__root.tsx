@@ -10,7 +10,7 @@ import { shadcn } from "@clerk/ui/themes"
 import { useEffect } from "react"
 import { createServerFn } from "@tanstack/react-start"
 import appCss from "@ploutizo/ui/globals.css?url"
-import { setTokenGetter } from "../lib/queryClient.js"
+import { setTokenGetter } from "../lib/queryClient"
 
 const authGuard = createServerFn().handler(async () => {
   const { isAuthenticated } = await auth()

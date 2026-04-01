@@ -1,9 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import { useCategories, useCreateCategory, useUpdateCategory, useArchiveCategory, useReorderCategories, type Category } from '../../hooks/use-categories.js'
-import { useTags, useCreateTag, useArchiveTag } from '../../hooks/use-tags.js'
-import { LucideIconPicker, renderLucideIcon } from '../../components/categories/icon-picker.js'
-import { ColourPicker } from '../../components/categories/colour-picker.js'
+import { useCategories, useCreateCategory, useUpdateCategory, useArchiveCategory, useReorderCategories, type Category } from '../../hooks/use-categories'
+import { useTags, useCreateTag, useArchiveTag } from '../../hooks/use-tags'
+import { LucideIconPicker, renderLucideIcon } from '../../components/categories/icon-picker'
+import { ColourPicker } from '../../components/categories/colour-picker'
 import {
   AlertDialog,
   AlertDialogAction,

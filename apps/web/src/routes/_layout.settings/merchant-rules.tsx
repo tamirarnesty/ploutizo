@@ -7,8 +7,8 @@ import {
   useDeleteMerchantRule,
   useReorderMerchantRules,
   type MerchantRule,
-} from '../../hooks/use-merchant-rules.js'
-import { useCategories } from '../../hooks/use-categories.js'
+} from '../../hooks/use-merchant-rules'
+import { useCategories } from '../../hooks/use-categories'
 import {
   AlertDialog,
   AlertDialogAction,

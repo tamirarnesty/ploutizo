@@ -6,7 +6,7 @@ import {
   useArchiveAccount,
   useOrgMembers,
   useAccountMembers,
-} from '../../hooks/use-accounts.js'
+} from '../../hooks/use-accounts'
 import {
   Sheet,
   SheetContent,

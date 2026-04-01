@@ -6,7 +6,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query"
 import { useState, useEffect } from "react"
-import { apiFetch } from "../../lib/queryClient.js"
+import { apiFetch } from "../../lib/queryClient"
 
 // HouseholdSettings type — mirrors packages/types once plan 02-01 populates it
 interface HouseholdSettings {

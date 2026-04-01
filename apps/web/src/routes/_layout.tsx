@@ -4,7 +4,7 @@ import {
   SidebarInset,
   SidebarTrigger,
 } from "@ploutizo/ui/components/sidebar"
-import { AppSidebar } from "../components/app-sidebar.js"
+import { AppSidebar } from "../components/app-sidebar"
 
 export const Route = createFileRoute("/_layout")({
   component: LayoutShell,

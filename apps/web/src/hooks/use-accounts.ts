@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiFetch } from '../lib/queryClient.js'
+import { apiFetch } from '../lib/queryClient'
 import type { Account, OrgMember, AccountMember } from '@ploutizo/types'
 
 // Accounts queries

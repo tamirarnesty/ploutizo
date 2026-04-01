@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import { AccountsTable } from '../components/accounts/accounts-table.js'
-import { AccountSheet } from '../components/accounts/account-sheet.js'
-import { useAccounts } from '../hooks/use-accounts.js'
+import { AccountsTable } from '../components/accounts/accounts-table'
+import { AccountSheet } from '../components/accounts/account-sheet'
+import { useAccounts } from '../hooks/use-accounts'
 import type { Account } from '@ploutizo/types'
 
 export const Route = createFileRoute('/_layout/accounts')({
