@@ -283,20 +283,21 @@ Executor must use these components. Do not hand-roll alternatives.
 
 | UI Need                         | Component                                                                    | Source                | Notes                                                                                     |
 | ------------------------------- | ---------------------------------------------------------------------------- | --------------------- | ----------------------------------------------------------------------------------------- |
-| Account list table              | shadcn DataTable or ReUI DataGrid                                            | `@ploutizo/ui` / ReUI | Columns: Name, Type, Institution, Last 4, Owners, Status                                  |
-| Account create/edit form        | shadcn `<Sheet side="right">`                                                | `@ploutizo/ui`        | 400px width on desktop; full-width on mobile                                              |
-| Personal/Shared toggle          | shadcn `<Tabs>` or `<ToggleGroup>`                                           | `@ploutizo/ui`        | Two-state toggle at top of account form                                                   |
-| Advanced collapsible            | shadcn `<Collapsible>` + `<CollapsibleTrigger>`                              | `@ploutizo/ui`        | Contains "Each person pays their own" checkbox                                            |
-| Member multi-select             | shadcn `<Command>` multi-select variant                                      | `@ploutizo/ui`        | Shared accounts only; hidden when Personal selected                                       |
-| Tag combobox with inline create | shadcn `<Command>` + `<CommandInput>`                                        | `@ploutizo/ui`        | "Create 'X'" option at bottom when no match (D-20)                                        |
-| Icon picker                     | shadcn `<Popover>` + `<PopoverContent>` + curated Lucide icon grid           | custom                | ~60 curated icons; search by name; stores icon name string (D-17)                         |
-| Colour swatch picker            | Inline div grid (12 swatches) inside `<Popover>`                             | custom                | No shadcn component needed; simple grid + ring selection state                            |
-| Category/rule drag-to-reorder   | ReUI Sortable (`@reui/sortable`)                                             | ReUI registry         | Install via `pnpm dlx shadcn@latest add @reui/sortable` after adding ReUI registry (D-19) |
-| Archive/delete confirmation     | shadcn `<AlertDialog>`                                                       | `@ploutizo/ui`        | Title, description, cancel, confirm actions                                               |
-| Sidebar nav                     | custom `sidebar.tsx` component                                               | custom                | Fixed 240px; `bg-sidebar`; Clerk components top/bottom                                    |
-| Mobile sidebar                  | shadcn `<Sheet side="left">` triggered by hamburger                          | `@ploutizo/ui`        | Drawer overlay on mobile (D-06); hamburger button `aria-label="Open navigation"`          |
-| Form field wrappers             | shadcn `<Form>`, `<FormField>`, `<FormItem>`, `<FormLabel>`, `<FormMessage>` | `@ploutizo/ui`        | React Hook Form integration                                                               |
-| Select inputs                   | shadcn `<Select>`                                                            | `@ploutizo/ui`        | Account type, match type selects                                                          |
+| Account list table              | ReUI DataGrid (`@reui/data-grid`)                                                                           | ReUI registry  | Columns: Name, Type, Institution, Last 4, Owners, Status; built on `@tanstack/react-table` + `@tanstack/react-virtual` |
+| Account create/edit form        | shadcn `<Sheet side="right">`                                                                               | `@ploutizo/ui` | 400px width on desktop; full-width on mobile                                                                           |
+| Personal/Shared toggle          | shadcn `<Tabs>` or `<ToggleGroup>`                                                                          | `@ploutizo/ui` | Two-state toggle at top of account form                                                                                |
+| Advanced collapsible            | shadcn `<Collapsible>` + `<CollapsibleTrigger>`                                                             | `@ploutizo/ui` | Contains "Each person pays their own" checkbox                                                                         |
+| Member multi-select             | shadcn `<Command>` multi-select variant                                                                     | `@ploutizo/ui` | Shared accounts only; hidden when Personal selected                                                                    |
+| Tag combobox with inline create | ReUI Combobox (`@reui/combobox`) — use primitives directly, do not re-build with `<Command>`+`<CommandInput>` | ReUI registry  | "Create 'X'" option at bottom when no match (D-20)                                                                   |
+| Icon picker                     | shadcn `<Popover>` + `<PopoverContent>` + curated Lucide icon grid                                         | custom         | ~60 curated icons; search by name; stores icon name string (D-17); no registry equivalent                             |
+| Colour swatch picker            | Inline div grid (12 swatches) inside `<Popover>`                                                            | custom         | No registry equivalent; simple grid + ring selection state                                                             |
+| Category/rule drag-to-reorder   | ReUI Sortable (`@reui/sortable`)                                                                            | ReUI registry  | Install via `pnpm dlx shadcn@latest add @reui/sortable` after adding ReUI registry (D-19)                             |
+| Archive/delete confirmation     | shadcn `<AlertDialog>`                                                                                      | `@ploutizo/ui` | Title, description, cancel, confirm actions                                                                            |
+| Sidebar nav                     | shadcn Sidebar system — `<Sidebar>`, `<SidebarHeader>`, `<SidebarContent>`, `<SidebarFooter>`, `<SidebarMenu>`, `<SidebarMenuItem>`, `<SidebarMenuButton>`, `<SidebarGroup>` | `@ploutizo/ui` | Install via `pnpm dlx shadcn@latest add sidebar`; file: `app-sidebar.tsx`, export `AppSidebar` |
+| Mobile sidebar                  | Handled natively by `<SidebarProvider>` + `<SidebarTrigger>` — no custom Sheet needed                      | `@ploutizo/ui` | `SidebarTrigger` renders hamburger on mobile, nothing on desktop (D-06)                                                |
+| App shell layout                | `<SidebarProvider>` wrapping `<AppSidebar />` + `<SidebarInset>` (main content)                            | `@ploutizo/ui` | Replaces manual `flex h-screen` layout; `SidebarInset` provides correct main area sizing                              |
+| Form field wrappers             | shadcn `<Form>`, `<FormField>`, `<FormItem>`, `<FormLabel>`, `<FormMessage>`                               | `@ploutizo/ui` | React Hook Form integration                                                                                            |
+| Select inputs                   | shadcn `<Select>`                                                                                           | `@ploutizo/ui` | Account type, match type selects                                                                                       |
 
 ### Lucide Icon Picker — Curated Icon List
 
@@ -335,13 +336,13 @@ Total: ~52 icons. Render as 24×24px (`size-6`) in picker grid, 3 columns on mob
 └─────────────────────────────────────────────────────────────┘
 ```
 
-- Sidebar: `bg-sidebar text-sidebar-foreground border-r border-sidebar-border`
-- Main content area: `bg-background` with `px-8 py-6` inset (32px horizontal, 24px vertical)
-- Sidebar internal padding: `px-4 py-4` (16px)
-- Nav item height: 32px (`h-8`), `px-2 py-2 rounded-md`
-- Active nav item: `bg-sidebar-primary text-sidebar-primary-foreground`
+- Shell: `<SidebarProvider>` wraps `<AppSidebar />` + `<SidebarInset>` (no manual `flex h-screen`)
+- Sidebar surface tokens still apply: `bg-sidebar text-sidebar-foreground border-r border-sidebar-border` (shadcn Sidebar applies these via `data-[side]` CSS vars)
+- Main content area (`SidebarInset`): `bg-background` with `p-6` inset; add a `<header>` row containing `<SidebarTrigger>` before the `<main>` content
+- Nav item height: 32px (`h-8`) via `SidebarMenuButton` size; active state via `isActive` prop → `data-[active=true]` styles
+- Active nav item: `bg-sidebar-primary text-sidebar-primary-foreground` (applied by shadcn via `isActive`)
 - Inactive nav item hover: `hover:bg-sidebar-accent hover:text-sidebar-accent-foreground`
-- Active nav item gets a 3px `bg-primary` left border indicator
+- Active nav item 3px left border indicator: apply via `[&[data-active=true]]:border-l-[3px] [&[data-active=true]]:border-primary` override on `SidebarMenuButton`
 
 ### Onboarding Page (standalone — no sidebar)
 
@@ -411,7 +412,7 @@ Row action: 3-dot overflow menu or row-click opens edit sheet.
 | Archive confirmation                 | shadcn `<AlertDialog>` controlled open; blocks background interaction; "Archive" confirm fires mutation; closes on success                 |
 | Delete rule confirmation             | Same `<AlertDialog>` pattern as archive                                                                                                    |
 | Regex field blur                     | `try { new RegExp(value) } catch` — if invalid, set `isRegexError: true` in local state; clear on next valid input                         |
-| Mobile hamburger                     | Opens sidebar as `<Sheet side="left">`; `aria-label="Open navigation"` on trigger button; closes on nav click or outside click             |
+| Mobile hamburger                     | `<SidebarTrigger>` (shadcn) toggles sidebar open/close; mobile drawer behaviour handled natively by `SidebarProvider`; no manual Sheet or open-state needed |
 
 ---
 
@@ -419,8 +420,8 @@ Row action: 3-dot overflow menu or row-click opens edit sheet.
 
 | Registry                                          | Blocks Used                                                                                                     | Safety Gate                                                                                                                                        |
 | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| shadcn official                                   | Button, Sheet, Tabs, ToggleGroup, Command, Popover, Collapsible, AlertDialog, Form, Select, Skeleton, DataTable | not required                                                                                                                                       |
-| `@reui` (https://reui.io/r/base-nova/{name}.json) | `@reui/sortable`                                                                                                | view passed — no network calls, no `process.env`, no eval — verified via ReUI docs source inspection + RESEARCH.md Pitfall 4 analysis — 2026-03-31 |
+| shadcn official                                   | Button, Sheet, Tabs, ToggleGroup, Command, Popover, Collapsible, AlertDialog, Form, Select, Skeleton, Sidebar   | not required                                                                                                                                       |
+| `@reui` (https://reui.io/r/base-nova/{name}.json) | `@reui/sortable`, `@reui/data-grid`, `@reui/combobox`                                                          | view passed — no network calls, no `process.env`, no eval — verified via ReUI docs source inspection + RESEARCH.md Pitfall 4 analysis — 2026-03-31 |
 
 ReUI registry configuration to add to `components.json` before installing (from RESEARCH.md Pattern 5):
 
