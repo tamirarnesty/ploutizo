@@ -8,6 +8,13 @@
       "when": 1774967582960,
       "tag": "0000_many_anthem",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1775065356946,
+      "tag": "0001_remarkable_callisto",
+      "breakpoints": true
     }
   ]
 }
