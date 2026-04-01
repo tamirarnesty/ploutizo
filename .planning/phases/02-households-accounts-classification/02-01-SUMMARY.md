@@ -151,3 +151,15 @@ None — no external service configuration required.
 ---
 *Phase: 02-households-accounts-classification*
 *Completed: 2026-04-01*
+
+## Self-Check: PASSED
+
+- FOUND: packages/db/src/schema/accounts.ts
+- FOUND: packages/db/drizzle/0001_remarkable_callisto.sql
+- FOUND: packages/validators/src/index.ts
+- FOUND: packages/types/src/index.ts
+- FOUND: apps/api/src/routes/accounts.ts
+- FOUND: apps/api/src/routes/households.ts
+- FOUND: .planning/phases/02-households-accounts-classification/02-01-SUMMARY.md
+- FOUND commit 6cc802b (Task 1)
+- FOUND commit 773feda (Task 2)

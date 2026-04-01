@@ -10,6 +10,8 @@ import { clerkMiddleware } from '@hono/clerk-auth'
 import { tenantGuard } from './middleware/tenantGuard.js'
 import { healthRouter } from './routes/health.js'
 import { webhooksRouter } from './routes/webhooks.js'
+import { accountsRouter } from './routes/accounts.js'
+import { householdsRouter } from './routes/households.js'
 
 const app = new Hono()
 
@@ -61,7 +63,8 @@ app.use('/api/*', tenantGuard())
 app.route('/health', healthRouter)
 app.route('/webhooks', webhooksRouter)
 
-// Protected API routes added in Phase 2+
-// app.route('/api/accounts', accountsRouter)
+// Protected API routes (tenant guard enforced via /api/* middleware above)
+app.route('/api/accounts', accountsRouter)
+app.route('/api/households', householdsRouter)
 
 serve({ fetch: app.fetch, port: Number(process.env.PORT ?? 8080) })
