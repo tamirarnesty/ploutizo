@@ -17,6 +17,15 @@ import {
 } from '@ploutizo/ui/components/alert-dialog'
 import { GripVertical } from 'lucide-react'
 import { Sortable, SortableItem, SortableItemHandle } from '@ploutizo/ui/components/reui/sortable'
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+} from '@ploutizo/ui/components/reui/combobox'
 
 export const Route = createFileRoute('/_layout/settings/categories')({
   component: CategoriesSettingsPage,
@@ -125,7 +134,7 @@ function CategoriesSettingsPage() {
 
   // false = dialog closed, null = create mode, Category = edit mode
   const [dialogCategory, setDialogCategory] = useState<Category | null | false>(false)
-  const [newTagName, setNewTagName] = useState('')
+  const [tagInputValue, setTagInputValue] = useState('')
 
   // Locally manage category order for optimistic reorder UX
   const [localCategories, setLocalCategories] = useState<Category[]>([])
@@ -136,11 +145,6 @@ function CategoriesSettingsPage() {
   const handleReorder = (newOrder: Category[]) => {
     setLocalCategories(newOrder)
     reorderCategories.mutate(newOrder.map((c) => c.id))
-  }
-
-  const handleAddTag = () => {
-    if (!newTagName.trim()) return
-    createTag.mutate({ name: newTagName.trim() }, { onSuccess: () => setNewTagName('') })
   }
 
   const displayCategories = localCategories.length > 0 ? localCategories : categories
@@ -240,24 +244,54 @@ function CategoriesSettingsPage() {
           <h2 className="text-sm font-semibold">Tags</h2>
         </div>
 
-        {/* Inline tag creation */}
-        <div className="flex gap-2">
-          <input
-            value={newTagName}
-            onChange={(e) => setNewTagName(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleAddTag() }}
-            placeholder="New tag name"
-            className="flex-1 h-8 px-3 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring/50"
-          />
-          <button
-            type="button"
-            onClick={handleAddTag}
-            disabled={createTag.isPending}
-            className="h-8 px-3 text-xs bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
-          >
-            Add tag
-          </button>
-        </div>
+        {/* Tag inline creation via Combobox — D-20 */}
+        <Combobox
+          value=""
+          onValueChange={(selectedValue) => {
+            if (selectedValue.startsWith('__create__')) {
+              const name = selectedValue.replace('__create__', '')
+              createTag.mutate(
+                { name },
+                { onSuccess: () => setTagInputValue('') },
+              )
+            }
+            // Selecting an existing tag: tag already exists — no action needed on this page
+            // (the combobox is for creating tags; existing tags are shown in the pill list below)
+          }}
+        >
+          <ComboboxTrigger className="w-full max-w-sm h-9 px-3 text-sm text-left">
+            {tagInputValue || 'Search or create a tag…'}
+          </ComboboxTrigger>
+          <ComboboxContent>
+            <ComboboxInput
+              placeholder="Search tags…"
+              value={tagInputValue}
+              onValueChange={setTagInputValue}
+            />
+            <ComboboxList>
+              {tags
+                .filter((t) =>
+                  tagInputValue
+                    ? t.name.toLowerCase().includes(tagInputValue.toLowerCase())
+                    : true,
+                )
+                .map((tag) => (
+                  <ComboboxItem key={tag.id} value={tag.id}>
+                    {tag.name}
+                  </ComboboxItem>
+                ))}
+              {tagInputValue &&
+                !tags.some(
+                  (t) => t.name.toLowerCase() === tagInputValue.toLowerCase(),
+                ) && (
+                  <ComboboxItem value={`__create__${tagInputValue}`}>
+                    Create &ldquo;{tagInputValue}&rdquo;
+                  </ComboboxItem>
+                )}
+              <ComboboxEmpty>No tags found</ComboboxEmpty>
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
 
         {tagLoading ? (
           <div className="space-y-2">

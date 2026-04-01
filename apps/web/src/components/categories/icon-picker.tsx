@@ -6,6 +6,7 @@ import {
   PiggyBank, TrendingUp, Building, Stethoscope, Pill, Wrench, Hammer, Laptop,
   Smartphone, Tv, Camera, Shirt, Package, Leaf, Sun, Moon, Zap, Droplets,
   Flame, Snowflake, Globe, MapPin, Star, Tag, CircleDollarSign,
+  HeartPulse, Sparkles, MoreHorizontal,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -16,6 +17,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   PiggyBank, TrendingUp, Building, Stethoscope, Pill, Wrench, Hammer, Laptop,
   Smartphone, Tv, Camera, Shirt, Package, Leaf, Sun, Moon, Zap, Droplets,
   Flame, Snowflake, Globe, MapPin, Star, Tag, CircleDollarSign,
+  HeartPulse, Sparkles, MoreHorizontal,
 }
 
 const ICON_NAMES = Object.keys(ICON_MAP)
