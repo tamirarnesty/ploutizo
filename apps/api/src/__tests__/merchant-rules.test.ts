@@ -40,7 +40,7 @@ describe('POST /api/merchant-rules', () => {
 
 describe('PATCH /api/merchant-rules/reorder', () => {
   it('returns 200 on valid reorder', async () => {
-    const res = await app.request('/reorder', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderedIds: ['rule_1', 'rule_2'] }) })
+    const res = await app.request('/reorder', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderedIds: ['00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002'] }) })
     expect(res.status).toBe(200)
   })
 })

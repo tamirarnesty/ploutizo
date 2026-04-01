@@ -12,6 +12,9 @@ import { healthRouter } from './routes/health.js'
 import { webhooksRouter } from './routes/webhooks.js'
 import { accountsRouter } from './routes/accounts.js'
 import { householdsRouter } from './routes/households.js'
+import { categoriesRouter } from './routes/categories.js'
+import { tagsRouter } from './routes/tags.js'
+import { merchantRulesRouter } from './routes/merchant-rules.js'
 
 const app = new Hono()
 
@@ -66,5 +69,8 @@ app.route('/webhooks', webhooksRouter)
 // Protected API routes (tenant guard enforced via /api/* middleware above)
 app.route('/api/accounts', accountsRouter)
 app.route('/api/households', householdsRouter)
+app.route('/api/categories', categoriesRouter)
+app.route('/api/tags', tagsRouter)
+app.route('/api/merchant-rules', merchantRulesRouter)
 
 serve({ fetch: app.fetch, port: Number(process.env.PORT ?? 8080) })

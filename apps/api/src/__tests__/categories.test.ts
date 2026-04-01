@@ -42,7 +42,7 @@ describe('POST /api/categories', () => {
 
 describe('PATCH /api/categories/reorder', () => {
   it('returns 200 with ok true', async () => {
-    const res = await app.request('/reorder', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderedIds: ['cat_1', 'cat_2'] }) })
+    const res = await app.request('/reorder', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderedIds: ['00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002'] }) })
     expect(res.status).toBe(200)
   })
 })
