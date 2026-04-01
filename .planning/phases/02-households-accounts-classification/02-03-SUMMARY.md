@@ -190,3 +190,16 @@ None - no external service configuration required.
 ---
 *Phase: 02-households-accounts-classification*
 *Completed: 2026-04-01*
+
+## Self-Check: PASSED
+
+- FOUND: apps/web/src/lib/format-currency.ts
+- FOUND: apps/web/src/routes/_layout.accounts.tsx
+- FOUND: apps/web/src/components/accounts/accounts-table.tsx
+- FOUND: apps/web/src/components/accounts/account-sheet.tsx
+- FOUND: apps/web/src/hooks/use-accounts.ts
+- FOUND: apps/api/src/routes/households.ts
+- FOUND: apps/api/src/routes/accounts.ts
+- FOUND: .planning/phases/02-households-accounts-classification/02-03-SUMMARY.md
+- FOUND commit 10dfaf1 (Task 1)
+- FOUND commit c960167 (Task 2)

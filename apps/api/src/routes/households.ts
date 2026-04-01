@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { getAuth } from '@hono/clerk-auth'
 import { db } from '@ploutizo/db'
-import { orgs } from '@ploutizo/db/schema'
+import { orgs, orgMembers } from '@ploutizo/db/schema'
 import { eq } from 'drizzle-orm'
 import { updateHouseholdSettingsSchema } from '@ploutizo/validators'
 
@@ -30,6 +30,23 @@ householdsRouter.patch('/settings', async (c) => {
     .where(eq(orgs.id, orgId!))
     .returning()
   return c.json({ data: { settlementThreshold: updated?.settlementThreshold ?? null } })
+})
+
+// GET /members — list active members in current org (for co-owner picker)
+householdsRouter.get('/members', async (c) => {
+  const { orgId } = getAuth(c)
+  const rows = await db
+    .select({
+      id: orgMembers.id,
+      orgId: orgMembers.orgId,
+      displayName: orgMembers.displayName,
+      role: orgMembers.role,
+      joinedAt: orgMembers.joinedAt,
+    })
+    .from(orgMembers)
+    .where(eq(orgMembers.orgId, orgId!))
+    .orderBy(orgMembers.displayName)
+  return c.json({ data: rows })
 })
 
 export { householdsRouter }

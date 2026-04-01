@@ -74,6 +74,26 @@ accountsRouter.patch('/:id', async (c) => {
   return c.json({ data: updated })
 })
 
+// GET /:id/members — return current member rows for one account (for edit-mode pre-population)
+accountsRouter.get('/:id/members', async (c) => {
+  const { orgId } = getAuth(c)
+  const id = c.req.param('id')
+  // Scope through accounts to enforce org isolation
+  const account = await db
+    .select({ id: accounts.id })
+    .from(accounts)
+    .where(and(eq(accounts.id, id), eq(accounts.orgId, orgId!)))
+    .limit(1)
+  if (!account.length) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'Account not found.' } }, 404)
+  }
+  const rows = await db
+    .select()
+    .from(accountMembers)
+    .where(eq(accountMembers.accountId, id))
+  return c.json({ data: rows })
+})
+
 // DELETE /:id/archive — soft-archive the account by setting archivedAt
 accountsRouter.delete('/:id/archive', async (c) => {
   const { orgId } = getAuth(c)

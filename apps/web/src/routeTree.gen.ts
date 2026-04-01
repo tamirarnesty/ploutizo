@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SignUpSplatRouteImport } from './routes/sign-up.$'
 import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
 import { Route as LayoutDashboardRouteImport } from './routes/_layout.dashboard'
+import { Route as LayoutAccountsRouteImport } from './routes/_layout.accounts'
 import { Route as LayoutSettingsRouteRouteImport } from './routes/_layout.settings/route'
 import { Route as LayoutSettingsHouseholdRouteImport } from './routes/_layout.settings/household'
 
@@ -47,6 +48,11 @@ const LayoutDashboardRoute = LayoutDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutAccountsRoute = LayoutAccountsRouteImport.update({
+  id: '/accounts',
+  path: '/accounts',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutSettingsRouteRoute = LayoutSettingsRouteRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -62,6 +68,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/onboarding': typeof OnboardingRoute
   '/settings': typeof LayoutSettingsRouteRouteWithChildren
+  '/accounts': typeof LayoutAccountsRoute
   '/dashboard': typeof LayoutDashboardRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
@@ -71,6 +78,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/onboarding': typeof OnboardingRoute
   '/settings': typeof LayoutSettingsRouteRouteWithChildren
+  '/accounts': typeof LayoutAccountsRoute
   '/dashboard': typeof LayoutDashboardRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
@@ -82,6 +90,7 @@ export interface FileRoutesById {
   '/_layout': typeof LayoutRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/_layout/settings': typeof LayoutSettingsRouteRouteWithChildren
+  '/_layout/accounts': typeof LayoutAccountsRoute
   '/_layout/dashboard': typeof LayoutDashboardRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
@@ -93,6 +102,7 @@ export interface FileRouteTypes {
     | '/'
     | '/onboarding'
     | '/settings'
+    | '/accounts'
     | '/dashboard'
     | '/sign-in/$'
     | '/sign-up/$'
@@ -102,6 +112,7 @@ export interface FileRouteTypes {
     | '/'
     | '/onboarding'
     | '/settings'
+    | '/accounts'
     | '/dashboard'
     | '/sign-in/$'
     | '/sign-up/$'
@@ -112,6 +123,7 @@ export interface FileRouteTypes {
     | '/_layout'
     | '/onboarding'
     | '/_layout/settings'
+    | '/_layout/accounts'
     | '/_layout/dashboard'
     | '/sign-in/$'
     | '/sign-up/$'
@@ -170,6 +182,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutDashboardRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/accounts': {
+      id: '/_layout/accounts'
+      path: '/accounts'
+      fullPath: '/accounts'
+      preLoaderRoute: typeof LayoutAccountsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/settings': {
       id: '/_layout/settings'
       path: '/settings'
@@ -200,11 +219,13 @@ const LayoutSettingsRouteRouteWithChildren =
 
 interface LayoutRouteChildren {
   LayoutSettingsRouteRoute: typeof LayoutSettingsRouteRouteWithChildren
+  LayoutAccountsRoute: typeof LayoutAccountsRoute
   LayoutDashboardRoute: typeof LayoutDashboardRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutSettingsRouteRoute: LayoutSettingsRouteRouteWithChildren,
+  LayoutAccountsRoute: LayoutAccountsRoute,
   LayoutDashboardRoute: LayoutDashboardRoute,
 }
 

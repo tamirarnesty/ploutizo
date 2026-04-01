@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: MVP
 status: executing
-last_updated: "2026-04-01T17:58:04.999Z"
+last_updated: "2026-04-01T18:15:50.855Z"
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 10
-  completed_plans: 7
+  completed_plans: 9
 ---
 
 # Project State
@@ -16,15 +16,15 @@ progress:
 ## Current Position
 
 Phase: 02 (households-accounts-classification) — EXECUTING
-Plan: 2 of 4 complete
+Plan: 3 of 4 complete
 **Milestone:** v0.1 MVP
 **Active Phase:** Phase 02 — Households, Accounts & Classification
-**Status:** Executing Phase 02 (02-01 and 02-02 complete; 02-03 and 02-04 remaining)
-**Last session:** 2026-04-01 — Completed 02-02-PLAN.md
+**Status:** Executing Phase 02 (02-01, 02-02, 02-03 complete; 02-04 remaining)
+**Last session:** 2026-04-01 — Completed 02-03-PLAN.md
 
 ## Next Action
 
-Execute plan 02-01 (API: accounts + household settings) then 02-03 (accounts UI) then 02-04 (categories/tags UI)
+Execute plan 02-04 (categories/tags UI)
 
 ## Phase Status
 
@@ -59,6 +59,8 @@ Execute plan 02-01 (API: accounts + household settings) then 02-03 (accounts UI)
 - Test mocks for Drizzle insert use `unknown` intermediate cast to satisfy `PgInsertBuilder` strict types — 01-05
 - HouseholdSettings type defined inline in household.tsx until @ploutizo/types is populated by plan 02-01 — 02-02
 - shadcn Sidebar installed at packages/ui level (not apps/web) so all apps share the same component — 02-02
+- ReUI DataGrid requires vite resolve.alias for @ploutizo/components + ui/ re-export stubs; plain string headers avoid DataGridColumnHeader import issues — 02-03
+- @ploutizo/types path mapping must be added to apps/web/tsconfig.json for web app to import shared types — 02-03
 
 ## Blockers / Open Items
 
@@ -66,7 +68,7 @@ Execute plan 02-01 (API: accounts + household settings) then 02-03 (accounts UI)
 - RRSP 2026 dollar cap — verify against CRA before Phase 6
 - Bank CSV real exports — collect before Phase 5 (LOW confidence on column names)
 - Neon connection limit on chosen plan — verify before Phase 1 goes live
-- ReUI Tailwind v4 compatibility — verify DataGrid/Filters before Phase 3
+- ReUI Tailwind v4 compatibility — DataGrid confirmed working in 02-03; Filters not yet tested
 - Cloudflare proxy for `clerk.ploutizo.app` — must be "DNS only" (grey cloud)
 
 ### Quick Tasks Completed
