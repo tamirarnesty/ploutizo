@@ -25,7 +25,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@ploutizo/ui/*": ["../../packages/ui/src/*"],
-      "@ploutizo/types": ["../../packages/types/src/index.ts"]
+      "@ploutizo/types": ["../../packages/types/src/index.ts"],
+      "@ploutizo/components/*": ["../../packages/ui/src/components/*"]
     }
   }
 }
