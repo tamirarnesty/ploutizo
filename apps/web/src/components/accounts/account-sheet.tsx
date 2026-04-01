@@ -1,12 +1,4 @@
 import { useState, useEffect } from 'react'
-import type { Account } from '@ploutizo/types'
-import {
-  useCreateAccount,
-  useUpdateAccount,
-  useArchiveAccount,
-  useOrgMembers,
-  useAccountMembers,
-} from '../../hooks/use-accounts'
 import {
   Sheet,
   SheetContent,
@@ -32,12 +24,20 @@ import {
 } from '@ploutizo/ui/components/collapsible'
 import { ChevronDown } from 'lucide-react'
 import { Button } from '@ploutizo/ui/components/button'
+import { Checkbox } from '@ploutizo/ui/components/checkbox'
 import { Input } from '@ploutizo/ui/components/input'
 import { Label } from '@ploutizo/ui/components/label'
-import { Checkbox } from '@ploutizo/ui/components/checkbox'
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@ploutizo/ui/components/select'
-import { ToggleGroup, ToggleGroupItem } from '@ploutizo/ui/components/toggle-group'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ploutizo/ui/components/select'
 import { Spinner } from '@ploutizo/ui/components/spinner'
+import { ToggleGroup, ToggleGroupItem } from '@ploutizo/ui/components/toggle-group'
+import type { Account } from '@ploutizo/types'
+import {
+  useCreateAccount,
+  useUpdateAccount,
+  useArchiveAccount,
+  useOrgMembers,
+  useAccountMembers,
+} from '../../hooks/use-accounts'
 
 const ACCOUNT_TYPES = [
   { value: 'chequing', label: 'Chequing' },
@@ -70,7 +70,7 @@ export function AccountSheet({ open, account, onClose }: AccountSheetProps) {
   const [institution, setInstitution] = useState('')
   const [lastFour, setLastFour] = useState('')
   const [ownership, setOwnership] = useState<'personal' | 'shared'>('personal')
-  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([])
+  const [selectedMemberIds, setSelectedMemberIds] = useState<Array<string>>([])
   const [eachPersonPaysOwn, setEachPersonPaysOwn] = useState(false)
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
