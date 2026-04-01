@@ -3,29 +3,27 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: MVP
 status: executing
-last_updated: "2026-03-31T01:40:33.153Z"
+last_updated: "2026-04-01T17:48:01.020Z"
 progress:
   total_phases: 7
-  completed_phases: 0
-  total_plans: 6
-  completed_plans: 5
+  completed_phases: 1
+  total_plans: 10
+  completed_plans: 7
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 01 (foundation-auth-infrastructure) — EXECUTING
-Plan: 1 of 6
+Phase: 02 (households-accounts-classification) — EXECUTING
+Plan: 2 of 4
 **Milestone:** v0.1 MVP
-**Active Phase:** None — Phase 1 planned, ready to execute
-**Status:** Executing Phase 01
+**Active Phase:** 02 — Households, Accounts & Classification
+**Status:** Executing Phase 02, Plan 01 complete
 
 ## Next Action
 
-```
-/gsd:plan-phase 1
-```
+Execute Plan 02-02 (Accounts UI)
 
 ## Phase Status
 
@@ -58,6 +56,8 @@ Plan: 1 of 6
 - `authorizedParties` in `@hono/clerk-auth` is `string[]` only — function type not supported; `isAllowedParty` exported as utility, static array used for `clerkMiddleware` (01-03)
 - Seed data uses schema field names: `pattern` and `renameTo` (not plan aliases `matchValue`/`renameDescription`) — 01-05
 - Test mocks for Drizzle insert use `unknown` intermediate cast to satisfy `PgInsertBuilder` strict types — 01-05
+- `drizzle-orm` added as direct dep to `apps/api` — was transitive only, caused test import failures (02-01)
+- accountMembers replace-on-update pattern: delete all then re-insert when memberIds provided in PATCH (02-01)
 
 ## Blockers / Open Items
 
