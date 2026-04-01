@@ -9,6 +9,9 @@ import {
   HeartPulse, Sparkles, MoreHorizontal,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { Popover, PopoverTrigger, PopoverContent } from '@ploutizo/ui/components/popover'
+import { Button } from '@ploutizo/ui/components/button'
+import { Input } from '@ploutizo/ui/components/input'
 
 const ICON_MAP: Record<string, LucideIcon> = {
   ShoppingCart, UtensilsCrossed, Car, Home, Heart, Briefcase, GraduationCap,
@@ -38,57 +41,54 @@ export function LucideIconPicker({ value, onChange }: IconPickerProps) {
   const SelectedIcon = value ? ICON_MAP[value] : null
 
   return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 h-9 px-3 text-sm border border-input rounded-md bg-background hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring/50"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-      >
-        {SelectedIcon ? <SelectedIcon size={16} aria-hidden="true" /> : <span className="text-muted-foreground">Select icon</span>}
-        {value && <span className="text-muted-foreground text-xs">{value}</span>}
-      </button>
-
-      {open && (
-        <div className="absolute top-full mt-1 left-0 z-50 w-72 rounded-md border border-border bg-popover shadow-md p-3 space-y-2">
-          <input
-            autoFocus
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search icons..."
-            className="w-full h-8 px-2 text-sm border border-input rounded bg-background focus:outline-none focus:ring-2 focus:ring-ring/50"
-          />
-          {filtered.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-2 text-center">
-              No icons match &ldquo;{search}&rdquo;.
-            </p>
-          ) : (
-            <div className="grid grid-cols-6 gap-1 max-h-48 overflow-y-auto" role="listbox">
-              {filtered.map((name) => {
-                const Icon = ICON_MAP[name]
-                return (
-                  <button
-                    key={name}
-                    type="button"
-                    role="option"
-                    aria-selected={value === name}
-                    onClick={() => { onChange(name); setOpen(false); setSearch('') }}
-                    title={name}
-                    className={[
-                      'flex items-center justify-center size-9 rounded hover:bg-muted transition-colors',
-                      value === name ? 'ring-2 ring-primary bg-primary/10' : '',
-                    ].join(' ')}
-                  >
-                    <Icon size={18} aria-hidden="true" />
-                  </button>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className="flex items-center gap-2"
+          aria-haspopup="listbox"
+          aria-expanded={open}
+        >
+          {SelectedIcon ? <SelectedIcon size={16} aria-hidden="true" /> : <span className="text-muted-foreground">Select icon</span>}
+          {value && <span className="text-muted-foreground text-xs">{value}</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-72 space-y-2 p-3">
+        <Input
+          autoFocus
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search icons..."
+        />
+        {filtered.length === 0 ? (
+          <p className="text-xs text-muted-foreground py-2 text-center">
+            No icons match &ldquo;{search}&rdquo;.
+          </p>
+        ) : (
+          <div className="grid grid-cols-6 gap-1 max-h-48 overflow-y-auto" role="listbox">
+            {filtered.map((name) => {
+              const Icon = ICON_MAP[name]
+              return (
+                <Button
+                  key={name}
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  role="option"
+                  aria-selected={value === name}
+                  onClick={() => { onChange(name); setOpen(false); setSearch('') }}
+                  title={name}
+                  className={value === name ? 'ring-2 ring-primary bg-primary/10' : ''}
+                >
+                  <Icon size={18} aria-hidden="true" />
+                </Button>
+              )
+            })}
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
   )
 }
 
