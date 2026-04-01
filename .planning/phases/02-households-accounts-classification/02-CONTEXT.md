@@ -31,24 +31,26 @@ Transaction creation, settlement, and import are out of scope — those referenc
 - **D-06:** On mobile: sidebar hides off-screen; hamburger button opens it as a drawer overlay.
 
 ### First-Use / No-Org Flow
-- **D-07:** A signed-in user with no active org is redirected to `/onboarding`. The `beforeLoad` hook in the root route checks `orgId` from the Clerk session — if falsy, redirect to `/onboarding`.
-- **D-08:** `/onboarding` is standalone — no sidebar, no app shell. Just the household creation form: display name input → `organizations.createOrganization()` call → redirect to `/dashboard` on success.
-- **D-09:** After accepting a Clerk invitation, the user lands on `/dashboard` with the invited org set as the active org.
+- **D-07:** Primary sign-up flow uses Clerk's built-in org creation step — it already appears inline in the `<SignUp />` wizard after email verification (configured in Clerk Dashboard). No custom creation form is built. The sign-up wizard is styled via the existing `shadcn` appearance theme; no further customization of Clerk's org creation step UI.
+- **D-08:** `<SignUp />` is configured with `afterSignUpUrl="/dashboard"`. `<OrganizationSwitcher />` is configured with `hidePersonal={true}` and `afterCreateOrganizationUrl="/dashboard"`.
+- **D-09:** `/onboarding` is a **fallback guard only** — standalone page (no sidebar) that renders Clerk's `<CreateOrganization />` component. It is never the primary sign-up path; only reached when a signed-in user has no active org (edge case: stale session, org deleted, etc.). Redirects to `/dashboard` after org creation via `afterCreateOrganizationUrl`.
+- **D-10:** The root route `beforeLoad` guard checks `orgId` from the Clerk session — if falsy (and user is not on an auth route or `/onboarding`), redirect to `/onboarding`.
+- **D-11:** After accepting a Clerk invitation, the user lands on `/dashboard` with the invited org set as the active org.
 
 ### Account Ownership UX
-- **D-10:** Account creation form has a Personal / Shared ownership toggle at the top. Personal: creating user auto-assigned as sole owner, no member picker shown. Shared: multi-select member picker reveals for co-owner selection.
-- **D-11:** "Each person pays their own" flag lives in an `Advanced` collapsible section within the account form — not shown at top level.
-- **D-12:** Accounts live at `/accounts` as a full page with a DataGrid table. Create and edit via a slide-over sheet.
-- **D-13:** Account owners are editable post-creation via the same member picker in the edit sheet.
-- **D-14:** Accounts table columns: Name, Type, Institution, Last 4 digits, Owners, Status (active/archived).
+- **D-12:** Account creation form has a Personal / Shared ownership toggle at the top. Personal: creating user auto-assigned as sole owner, no member picker shown. Shared: multi-select member picker reveals for co-owner selection.
+- **D-13:** "Each person pays their own" flag lives in an `Advanced` collapsible section within the account form — not shown at top level.
+- **D-14:** Accounts live at `/accounts` as a full page with a DataGrid table. Create and edit via a slide-over sheet.
+- **D-15:** Account owners are editable post-creation via the same member picker in the edit sheet.
+- **D-16:** Accounts table columns: Name, Type, Institution, Last 4 digits, Owners, Status (active/archived).
 
 ### Category, Tag & Merchant Rule UX
-- **D-15:** Category icon selection uses a searchable Lucide icon picker — a popover with a search input and icon grid. User types (e.g. "cart") to find matching icons, clicks to select. Stores the Lucide icon name string.
-- **D-16:** Category colour selection uses a preset palette of 10–12 colour swatches. No free-form hex input. Swatches chosen to match the brand palette.
-- **D-17:** Category reordering and merchant rule priority reordering both use drag-and-drop via the **ReUI Sortable component** (not dnd-kit directly). See canonical ref.
-- **D-18:** Tag inline creation uses a shadcn Combobox: type to search existing tags, see "Create 'X'" option at the bottom if no match. Single component handles select and create.
-- **D-19:** Merchant rule regex validation is client-side on blur: when the pattern field loses focus, validate the regex locally and show an inline "Invalid regex pattern" error. Block form submit if invalid. API also validates server-side.
-- **D-20:** Category/Tags management lives at Settings → Categories & Tags. Merchant Rules management lives at Settings → Merchant Rules. Both are dedicated sub-pages, not inline within other flows.
+- **D-17:** Category icon selection uses a searchable Lucide icon picker — a popover with a search input and icon grid. User types (e.g. "cart") to find matching icons, clicks to select. Stores the Lucide icon name string.
+- **D-18:** Category colour selection uses a preset palette of 10–12 colour swatches. No free-form hex input. Swatches chosen to match the brand palette.
+- **D-19:** Category reordering and merchant rule priority reordering both use drag-and-drop via the **ReUI Sortable component** (not dnd-kit directly). See canonical ref.
+- **D-20:** Tag inline creation uses a shadcn Combobox: type to search existing tags, see "Create 'X'" option at the bottom if no match. Single component handles select and create.
+- **D-21:** Merchant rule regex validation is client-side on blur: when the pattern field loses focus, validate the regex locally and show an inline "Invalid regex pattern" error. Block form submit if invalid. API also validates server-side.
+- **D-22:** Category/Tags management lives at Settings → Categories & Tags. Merchant Rules management lives at Settings → Merchant Rules. Both are dedicated sub-pages, not inline within other flows.
 
 ### Claude's Discretion
 - Exact colour values for the category preset palette (choose 10–12 that look good with Tailwind v4 + shadcn theme)
@@ -115,7 +117,9 @@ Transaction creation, settlement, and import are out of scope — those referenc
 
 - Drag-and-drop reordering: use **ReUI Sortable** (not bare dnd-kit). User specifically called this out — check docs at https://reui.io/docs/components/base/sortable before planning.
 - Tag combobox "Create X" pattern: the Combobox shows a "Create 'typed text'" option when no existing tag matches. Creating inline must POST to `POST /api/tags` and immediately make the new tag available for selection in the same form session without a page refresh.
-- Onboarding page: welcome message → household name input → Create button. No org name validation beyond what Clerk enforces. After `organizations.createOrganization()` succeeds, Clerk fires the `organization.created` webhook which seeds the org. The UI redirect to `/dashboard` can happen immediately; seed script runs async in the background.
+- Clerk sign-up configuration: `<SignUp afterSignUpUrl="/dashboard" />` — Clerk's built-in org creation wizard step handles household creation; no custom creation form needed. `<OrganizationSwitcher hidePersonal={true} afterCreateOrganizationUrl="/dashboard" afterSelectOrganizationUrl="/dashboard" />`.
+- `/onboarding` renders `<CreateOrganization afterCreateOrganizationUrl="/dashboard" />` from `@clerk/tanstack-react-start` — this is a Clerk-managed component, not a custom form. The page is only reached as a fallback guard, not as the primary sign-up path.
+- When `organization.created` webhook fires (from both sign-up and the fallback `/onboarding`), `seedOrg(orgId)` is already wired and runs async — no changes needed to the webhook handler.
 
 </specifics>
 
