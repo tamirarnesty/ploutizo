@@ -3,29 +3,28 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: MVP
 status: executing
-last_updated: "2026-03-31T01:40:33.153Z"
+last_updated: "2026-04-01T17:58:04.999Z"
 progress:
   total_phases: 7
-  completed_phases: 0
-  total_plans: 6
-  completed_plans: 5
+  completed_phases: 1
+  total_plans: 10
+  completed_plans: 7
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 01 (foundation-auth-infrastructure) — EXECUTING
-Plan: 1 of 6
+Phase: 02 (households-accounts-classification) — EXECUTING
+Plan: 2 of 4 complete
 **Milestone:** v0.1 MVP
-**Active Phase:** None — Phase 1 planned, ready to execute
-**Status:** Executing Phase 01
+**Active Phase:** Phase 02 — Households, Accounts & Classification
+**Status:** Executing Phase 02 (02-01 and 02-02 complete; 02-03 and 02-04 remaining)
+**Last session:** 2026-04-01 — Completed 02-02-PLAN.md
 
 ## Next Action
 
-```
-/gsd:plan-phase 1
-```
+Execute plan 02-01 (API: accounts + household settings) then 02-03 (accounts UI) then 02-04 (categories/tags UI)
 
 ## Phase Status
 
@@ -58,6 +57,8 @@ Plan: 1 of 6
 - `authorizedParties` in `@hono/clerk-auth` is `string[]` only — function type not supported; `isAllowedParty` exported as utility, static array used for `clerkMiddleware` (01-03)
 - Seed data uses schema field names: `pattern` and `renameTo` (not plan aliases `matchValue`/`renameDescription`) — 01-05
 - Test mocks for Drizzle insert use `unknown` intermediate cast to satisfy `PgInsertBuilder` strict types — 01-05
+- HouseholdSettings type defined inline in household.tsx until @ploutizo/types is populated by plan 02-01 — 02-02
+- shadcn Sidebar installed at packages/ui level (not apps/web) so all apps share the same component — 02-02
 
 ## Blockers / Open Items
 

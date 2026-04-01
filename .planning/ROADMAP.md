@@ -72,7 +72,7 @@ first transaction is created.
 
 Plans:
 - [ ] 02-01-PLAN.md — Accounts DB schema + validators + types + API routes for /api/accounts and /api/households
-- [ ] 02-02-PLAN.md — Root org guard + /onboarding + sidebar shell + /dashboard stub + /settings/household
+- [x] 02-02-PLAN.md — Root org guard + /onboarding + sidebar shell + /dashboard stub + /settings/household
 - [ ] 02-03-PLAN.md — Accounts page UI: DataTable, slide-over sheet (create/edit/archive), React Query hooks
 - [ ] 02-04-PLAN.md — Categories/tags/merchant-rules API routes + Settings pages with ReUI Sortable, regex validation
 
