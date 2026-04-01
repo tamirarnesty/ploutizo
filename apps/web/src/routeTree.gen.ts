@@ -9,10 +9,24 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SignUpSplatRouteImport } from './routes/sign-up.$'
 import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
+import { Route as LayoutDashboardRouteImport } from './routes/_layout.dashboard'
+import { Route as LayoutSettingsRouteRouteImport } from './routes/_layout.settings/route'
+import { Route as LayoutSettingsHouseholdRouteImport } from './routes/_layout.settings/household'
 
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LayoutRoute = LayoutRouteImport.update({
+  id: '/_layout',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -28,39 +42,106 @@ const SignInSplatRoute = SignInSplatRouteImport.update({
   path: '/sign-in/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LayoutDashboardRoute = LayoutDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutSettingsRouteRoute = LayoutSettingsRouteRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutSettingsHouseholdRoute = LayoutSettingsHouseholdRouteImport.update({
+  id: '/household',
+  path: '/household',
+  getParentRoute: () => LayoutSettingsRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/onboarding': typeof OnboardingRoute
+  '/settings': typeof LayoutSettingsRouteRouteWithChildren
+  '/dashboard': typeof LayoutDashboardRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
+  '/settings/household': typeof LayoutSettingsHouseholdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/onboarding': typeof OnboardingRoute
+  '/settings': typeof LayoutSettingsRouteRouteWithChildren
+  '/dashboard': typeof LayoutDashboardRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
+  '/settings/household': typeof LayoutSettingsHouseholdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_layout': typeof LayoutRouteWithChildren
+  '/onboarding': typeof OnboardingRoute
+  '/_layout/settings': typeof LayoutSettingsRouteRouteWithChildren
+  '/_layout/dashboard': typeof LayoutDashboardRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
+  '/_layout/settings/household': typeof LayoutSettingsHouseholdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/sign-in/$' | '/sign-up/$'
+  fullPaths:
+    | '/'
+    | '/onboarding'
+    | '/settings'
+    | '/dashboard'
+    | '/sign-in/$'
+    | '/sign-up/$'
+    | '/settings/household'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/sign-in/$' | '/sign-up/$'
-  id: '__root__' | '/' | '/sign-in/$' | '/sign-up/$'
+  to:
+    | '/'
+    | '/onboarding'
+    | '/settings'
+    | '/dashboard'
+    | '/sign-in/$'
+    | '/sign-up/$'
+    | '/settings/household'
+  id:
+    | '__root__'
+    | '/'
+    | '/_layout'
+    | '/onboarding'
+    | '/_layout/settings'
+    | '/_layout/dashboard'
+    | '/sign-in/$'
+    | '/sign-up/$'
+    | '/_layout/settings/household'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LayoutRoute: typeof LayoutRouteWithChildren
+  OnboardingRoute: typeof OnboardingRoute
   SignInSplatRoute: typeof SignInSplatRoute
   SignUpSplatRoute: typeof SignUpSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_layout': {
+      id: '/_layout'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof LayoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -82,11 +163,58 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignInSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_layout/dashboard': {
+      id: '/_layout/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof LayoutDashboardRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/settings': {
+      id: '/_layout/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof LayoutSettingsRouteRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/settings/household': {
+      id: '/_layout/settings/household'
+      path: '/household'
+      fullPath: '/settings/household'
+      preLoaderRoute: typeof LayoutSettingsHouseholdRouteImport
+      parentRoute: typeof LayoutSettingsRouteRoute
+    }
   }
 }
 
+interface LayoutSettingsRouteRouteChildren {
+  LayoutSettingsHouseholdRoute: typeof LayoutSettingsHouseholdRoute
+}
+
+const LayoutSettingsRouteRouteChildren: LayoutSettingsRouteRouteChildren = {
+  LayoutSettingsHouseholdRoute: LayoutSettingsHouseholdRoute,
+}
+
+const LayoutSettingsRouteRouteWithChildren =
+  LayoutSettingsRouteRoute._addFileChildren(LayoutSettingsRouteRouteChildren)
+
+interface LayoutRouteChildren {
+  LayoutSettingsRouteRoute: typeof LayoutSettingsRouteRouteWithChildren
+  LayoutDashboardRoute: typeof LayoutDashboardRoute
+}
+
+const LayoutRouteChildren: LayoutRouteChildren = {
+  LayoutSettingsRouteRoute: LayoutSettingsRouteRouteWithChildren,
+  LayoutDashboardRoute: LayoutDashboardRoute,
+}
+
+const LayoutRouteWithChildren =
+  LayoutRoute._addFileChildren(LayoutRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LayoutRoute: LayoutRouteWithChildren,
+  OnboardingRoute: OnboardingRoute,
   SignInSplatRoute: SignInSplatRoute,
   SignUpSplatRoute: SignUpSplatRoute,
 }
