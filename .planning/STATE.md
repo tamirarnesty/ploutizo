@@ -3,24 +3,24 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: MVP
 status: executing
-last_updated: "2026-04-01T18:15:50.855Z"
+last_updated: "2026-04-01T20:02:19.489Z"
 progress:
   total_phases: 7
   completed_phases: 1
-  total_plans: 10
-  completed_plans: 9
+  total_plans: 12
+  completed_plans: 11
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 02 (households-accounts-classification) — COMPLETE
-Plan: 4 of 4 complete
+Phase: 02 (households-accounts-classification) — EXECUTING
+Plan: 2 of 6
 **Milestone:** v0.1 MVP
 **Active Phase:** Phase 02 — Households, Accounts & Classification — COMPLETE
-**Status:** Phase 02 complete; ready for Phase 03 (Transactions)
-**Last session:** 2026-04-01 — Completed 02-04-PLAN.md
+**Status:** Executing Phase 02
+**Last session:** 2026-04-01 — Completed 02-05-PLAN.md
 
 ## Next Action
 
@@ -61,6 +61,8 @@ Begin Phase 03 (Transactions)
 - shadcn Sidebar installed at packages/ui level (not apps/web) so all apps share the same component — 02-02
 - ReUI DataGrid requires vite resolve.alias for @ploutizo/components + ui/ re-export stubs; plain string headers avoid DataGridColumnHeader import issues — 02-03
 - @ploutizo/types path mapping must be added to apps/web/tsconfig.json for web app to import shared types — 02-03
+- ReUI combobox not in radix-nova registry — built manually from Popover primitives; exports same API surface as plan specified — 02-05
+- onConflictDoNothing() used on orgs insert in webhook handler so Svix retries are safe — 02-05
 
 ## Blockers / Open Items
 
