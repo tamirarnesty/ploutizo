@@ -302,6 +302,22 @@ require attention — without requiring them to check every page manually.
 
 ---
 
+## Backlog
+
+### Phase 999.1: Adopt react-i18next and wrap all user-visible string literals (BACKLOG)
+
+**Goal:** Eliminate all hardcoded string literals in JSX. Route all user-visible text through `react-i18next`'s `useTranslation` hook with feature-namespaced locale JSON files.
+
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with /gsd:review-backlog when ready)
+
+**Context:** Library already chosen (`react-i18next`). Strings go in locale JSON files keyed by feature namespace (e.g. `public/locales/en/accounts.json`). Deferred from STANDARDS.md planned refactors — applies to all features once the translation layer is established.
+
+---
+
 ## Deferred (Post-Milestone)
 
 | Item | Reason |
