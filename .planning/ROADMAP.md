@@ -93,6 +93,22 @@ Plans:
 
 ---
 
+### Phase 02.1: Code Style & Form Patterns Refactor (INSERTED)
+
+**Goal:** Migrate all 4 forms in apps/web to TanStack Form + Zod with the useAppForm
+composition hook. Extract form JSX into dedicated sibling components (shell/form split).
+Remove all per-field useState. Apply null categoryId pattern (eliminate __none__ sentinel).
+Extract MerchantRuleRow from inline map(). No UX changes — pure internal refactor.
+**Requirements**: n/a (internal code quality)
+**Depends on:** Phase 2
+**Plans:** 4 plans
+
+Plans:
+- [ ] 02.1-01-PLAN.md — Foundation: install @tanstack/react-form + zod-form-adapter, create packages/ui/src/components/form.tsx (useAppForm), add 4 form schemas to packages/validators with tests
+- [ ] 02.1-02-PLAN.md — AccountSheet refactor: chrome/form split, loading gate for async co-owners, TanStack Form with ownership + memberIds as form fields
+- [ ] 02.1-03-PLAN.md — CategoryDialog + RuleDialog refactor: custom picker binding (D-08), null categoryId with Radix Select bridge, cross-field regex validator on blur
+- [ ] 02.1-04-PLAN.md — HouseholdSettings refactor (D-07) + MerchantRuleRow extraction (D-11)
+
 ### Phase 3: Transactions
 
 **Goal:** Users can create, view, edit, and soft-delete all six transaction types
