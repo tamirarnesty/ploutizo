@@ -1,35 +1,39 @@
 import * as React from "react"
+import type {
+  CSSProperties,
+  HTMLAttributes,
+  ReactElement,
+  ReactNode,
+} from "react"
 import {
   Children,
   cloneElement,
   createContext,
-  CSSProperties,
-  HTMLAttributes,
   isValidElement,
-  ReactElement,
-  ReactNode,
   useCallback,
   useContext,
   useLayoutEffect,
   useMemo,
   useState,
 } from "react"
+import type {
+  DragEndEvent,
+  DragStartEvent,
+  DropAnimation,
+  Modifiers,
+  UniqueIdentifier,
+  DraggableSyntheticListeners,
+} from "@dnd-kit/core"
 import {
   defaultDropAnimationSideEffects,
   DndContext,
-  DragEndEvent,
   DragOverlay,
-  DragStartEvent,
-  DropAnimation,
   KeyboardSensor,
   MeasuringStrategy,
-  Modifiers,
   MouseSensor,
   TouchSensor,
-  UniqueIdentifier,
   useSensor,
   useSensors,
-  type DraggableSyntheticListeners,
 } from "@dnd-kit/core"
 import {
   arrayMove,

@@ -50,7 +50,7 @@ import { CSS } from "@dnd-kit/utilities"
 import { Cell, flexRender, HeaderGroup, Row } from "@tanstack/react-table"
 
 import { cn } from "@ploutizo/ui/lib/utils"
-import { Button } from "@ploutizo/components/ui/button"
+import { Button } from "@ploutizo/components/button"
 import { GripHorizontalIcon } from "lucide-react"
 
 // Context to share sortable listeners from row to handle

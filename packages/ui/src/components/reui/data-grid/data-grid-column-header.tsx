@@ -8,7 +8,7 @@ import {
 import { Column } from "@tanstack/react-table"
 
 import { cn } from "@ploutizo/ui/lib/utils"
-import { Button } from "@ploutizo/components/ui/button"
+import { Button } from "@ploutizo/components/button"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -21,7 +21,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "@ploutizo/components/ui/dropdown-menu"
+} from "@ploutizo/components/dropdown-menu"
 import { ArrowDownIcon, ArrowUpIcon, ChevronsUpDownIcon, CheckIcon, ArrowLeftToLineIcon, ArrowRightToLineIcon, ArrowLeftIcon, ArrowRightIcon, Settings2Icon, PinOffIcon } from "lucide-react"
 
 interface DataGridColumnHeaderProps<
