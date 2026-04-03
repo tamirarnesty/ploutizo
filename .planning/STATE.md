@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: MVP
 status: executing
-last_updated: "2026-04-01T20:16:35.325Z"
+last_updated: "2026-04-02T22:04:11.453Z"
 progress:
-  total_phases: 7
+  total_phases: 9
   completed_phases: 2
   total_plans: 12
   completed_plans: 12
@@ -20,7 +20,7 @@ Plan: 3 of 6
 **Milestone:** v0.1 MVP
 **Active Phase:** Phase 02 — Households, Accounts & Classification — COMPLETE
 **Status:** Ready to execute
-**Last session:** 2026-04-01T20:16:35.321Z
+**Last session:** 2026-04-02T22:04:11.450Z
 
 ## Next Action
 
@@ -66,6 +66,12 @@ Begin Phase 03 (Transactions)
 - Dialog open={true} with parent-gated rendering for CategoryDialog/RuleDialog — simpler than prop threading, correct because parent mounts/unmounts conditionally — 02-06
 - __none__ sentinel for optional Radix Select fields (categoryId) — Radix Select doesn't support value="" reliably; payload converts back to null before API call — 02-06
 - Checkbox + Label sibling pattern (not wrapping label) — shadcn Checkbox is a Radix button primitive, must use htmlFor+id association — 02-06
+
+## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 02.1 inserted after Phase 2: Code Style & Form Patterns Refactor (URGENT)
 
 ## Blockers / Open Items
 
