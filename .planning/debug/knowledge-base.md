@@ -45,3 +45,11 @@ Resolved debug sessions. Used by `gsd-debugger` to surface known-pattern hypothe
 - **Files changed:** apps/web/package.json, packages/ui/package.json, .claude/hooks/gsd-lint-fix.js, .claude/settings.local.json, AccountSheet.tsx, AccountForm.tsx, CategoryDialog.tsx, CategoryForm.tsx, RuleDialog.tsx, RuleForm.tsx, HouseholdSettingsForm.tsx, vite.config.ts
 ---
 
+## create-account-fk-violation — accounts insert fails with FK violation because orgs row was never seeded by webhook
+- **Date:** 2026-04-03
+- **Error patterns:** DrizzleQueryError, foreign key constraint, accounts_org_id_orgs_id_fk, insert into accounts, org_id, orgs, FK violation, webhook, organization.created
+- **Root cause:** The orgs row for the active Clerk org was never inserted into the local database. The only path that creates an orgs row is the organization.created Clerk webhook (webhooks.ts). If that webhook fails to deliver — misconfigured CLERK_WEBHOOK_SECRET, network failure, or org created before the app was deployed — no orgs row exists, and every subsequent insert into accounts (or any table with FK to orgs.id) throws the FK constraint violation.
+- **Fix:** Added an upsert guard in tenantGuard.ts: before calling next(), runs db.insert(orgs).values({ id: orgId }).onConflictDoNothing() guarded by a process-lifetime seenOrgs Set to skip the DB round-trip after the first successful upsert per org. The webhook remains the authoritative creation path; this is an idempotent safety net.
+- **Files changed:** apps/api/src/middleware/tenantGuard.ts, apps/api/src/__tests__/tenantGuard.test.ts
+---
+

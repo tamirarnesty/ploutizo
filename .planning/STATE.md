@@ -2,36 +2,40 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: MVP
-status: "Phase 02.1 shipped — PR #19"
-last_updated: "2026-04-03T19:11:23.105Z"
+status: "Phase 02.1.1 shipped — PR #21"
+last_updated: "2026-04-03T20:12:08.336Z"
 progress:
   total_phases: 12
-  completed_phases: 3
-  total_plans: 16
-  completed_plans: 16
+  completed_phases: 4
+  total_plans: 17
+  completed_plans: 17
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 02.1 (code-style-form-patterns-refactor) — EXECUTING
-Plan: 4 of 4 complete
+Phase: 02.2
+Plan: Not started
 **Milestone:** v0.1 MVP
-**Active Phase:** Phase 02.1 — Code Style & Form Patterns Refactor — EXECUTING
-**Status:** Phase 02.1 shipped — PR #19
-**Last session:** 2026-04-03T19:11:23.100Z
+**Active Phase:** Phase 02.1.1 — Audit and Migrate to Neon Serverless — COMPLETE
+**Status:** Phase 02.1.1 shipped — PR #21
+**Last session:** 2026-04-03T19:58:11.793Z
 
 ## Next Action
 
-Begin Phase 03 (Transactions)
+Begin Phase 02.2 (light/dark/system theme toggle)
 
 ## Phase Status
 
 | Phase | Name | Status |
 |-------|------|--------|
-| 1 | Foundation & Auth Infrastructure | pending |
-| 2 | Households, Accounts & Classification | pending |
+| 1 | Foundation & Auth Infrastructure | complete |
+| 2 | Households, Accounts & Classification | complete |
+| 02.1 | Code Style & Form Patterns Refactor | complete |
+| 02.1.1 | Audit and migrate to neon-serverless per Neon best practices | complete |
+| 02.2 | Add light/dark/system theme toggle | pending |
+| 02.3 | Vercel skills audit and guidelines | pending |
 | 3 | Transactions | pending |
 | 4 | Settlement & Budgets | pending |
 | 5 | CSV Import | pending |
@@ -48,6 +52,8 @@ Begin Phase 03 (Transactions)
 
 ## Key Decisions Logged
 
+- packages/db uses @neondatabase/serverless WebSocket Pool (not postgres.js) — neonConfig.webSocketConstructor set before Pool construction for scale-to-zero (02.1.1-01)
+- Pool constructor vi.fn mock requires regular function (not arrow fn) — arrow functions are not constructable in JS (02.1.1-01)
 - Use `postgres.js` direct Neon connection (not `neon-http`, not PgBouncer)
 - Clerk satellite domains required for `{subdomain}.ploutizo.app` — must be Phase 1
 - `tenantGuard()` checks `!orgId` (falsy), not `orgId === null`
