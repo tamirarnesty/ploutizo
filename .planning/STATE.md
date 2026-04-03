@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: MVP
 status: executing
-last_updated: "2026-04-02T22:04:11.453Z"
+last_updated: "2026-04-03T02:16:39.447Z"
 progress:
   total_phases: 9
   completed_phases: 2
-  total_plans: 12
-  completed_plans: 12
+  total_plans: 16
+  completed_plans: 13
 ---
 
 # Project State
@@ -16,11 +16,11 @@ progress:
 ## Current Position
 
 Phase: 02 (households-accounts-classification) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 **Milestone:** v0.1 MVP
 **Active Phase:** Phase 02 — Households, Accounts & Classification — COMPLETE
 **Status:** Ready to execute
-**Last session:** 2026-04-02T22:04:11.450Z
+**Last session:** 2026-04-03T02:16:39.444Z
 
 ## Next Action
 
@@ -66,6 +66,8 @@ Begin Phase 03 (Transactions)
 - Dialog open={true} with parent-gated rendering for CategoryDialog/RuleDialog — simpler than prop threading, correct because parent mounts/unmounts conditionally — 02-06
 - __none__ sentinel for optional Radix Select fields (categoryId) — Radix Select doesn't support value="" reliably; payload converts back to null before API call — 02-06
 - Checkbox + Label sibling pattern (not wrapping label) — shadcn Checkbox is a Radix button primitive, must use htmlFor+id association — 02-06
+- packages/ui exports map uses glob ./components/* — no manual package.json entries needed for form.tsx or field.tsx — 02.1-01
+- createFormHookContexts + createFormHook composition pattern used for project-wide useAppForm; shadcn tanstack-form block not in radix-nova registry so form.tsx is hand-written — 02.1-01
 
 ## Accumulated Context
 
