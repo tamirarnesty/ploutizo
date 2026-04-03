@@ -1,12 +1,14 @@
-import { drizzle } from "drizzle-orm/postgres-js"
-import postgres from "postgres"
-import * as schema from "./schema/index.js"
+import { Pool, neonConfig } from '@neondatabase/serverless'
+import { drizzle } from 'drizzle-orm/neon-serverless'
+import * as schema from './schema/index.js'
 
-// postgres.js client initialized at module scope — NOT per-request.
-// Using direct Neon URL (not pooler) — postgres.js manages its own pool.
-// See: https://orm.drizzle.team/docs/connect-neon
-const client = postgres(process.env.DATABASE_URL!, {
-  max: 10, // tune later; start with default
-})
+// WebSocket mode: full transaction support + allows Neon compute to scale-to-zero.
+// Node 22 provides native WebSocket globally — no 'ws' package needed.
+// CRITICAL: neonConfig must be set BEFORE constructing the Pool.
+// Note: Neon docs recommend TCP (postgres.js) for persistent servers; WebSocket is chosen
+// here explicitly for scale-to-zero benefit (phase 02.1.1 D-05).
+neonConfig.webSocketConstructor = globalThis.WebSocket
 
-export const db = drizzle({ client, schema })
+const pool = new Pool({ connectionString: process.env.DATABASE_URL! })
+
+export const db = drizzle({ client: pool, schema })

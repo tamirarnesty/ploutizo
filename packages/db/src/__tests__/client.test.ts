@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock @neondatabase/serverless and drizzle-orm/neon-serverless before importing client
 vi.mock('@neondatabase/serverless', () => ({
-  Pool: vi.fn(() => ({})),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Pool: vi.fn(function (this: any) { return this }),
   neonConfig: {},  // plain writable object — must NOT be frozen (Pitfall 2)
 }))
 vi.mock('drizzle-orm/neon-serverless', () => ({
