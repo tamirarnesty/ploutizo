@@ -1,15 +1,15 @@
-import type { CategoryForm as CategoryFormType } from "@ploutizo/validators"
 import { CategoryFormSchema } from "@ploutizo/validators"
 import { useAppForm } from "@ploutizo/ui/components/form"
 import { Button } from "@ploutizo/ui/components/button"
 import { Input } from "@ploutizo/ui/components/input"
 import { DialogFooter } from "@ploutizo/ui/components/dialog"
 import {
-  FieldGroup,
   Field,
-  FieldLabel,
   FieldError,
+  FieldGroup,
+  FieldLabel,
 } from "@ploutizo/ui/components/field"
+import type { CategoryForm as CategoryFormType } from "@ploutizo/validators"
 import type { Category } from "@/lib/data-access/categories"
 import { useCreateCategory, useUpdateCategory } from "@/lib/data-access/categories"
 import { ColourPicker } from "@/components/categories/ColourPicker"

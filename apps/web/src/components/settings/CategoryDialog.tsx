@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@ploutizo/ui/components/dialog"
-import type { Category } from "@/lib/data-access/categories"
 import { CategoryForm } from "./CategoryForm"
+import type { Category } from "@/lib/data-access/categories"
 
 interface CategoryDialogProps {
   category: Category | null

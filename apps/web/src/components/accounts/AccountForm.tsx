@@ -27,10 +27,10 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@ploutizo/ui/components/field"
-import type { Account, AccountMember } from "@ploutizo/types"
-import type { AccountForm as AccountFormType } from "@ploutizo/validators"
 import { AccountFormSchema } from "@ploutizo/validators"
 import { useAppForm } from "@ploutizo/ui/components/form"
+import type { Account, AccountMember } from "@ploutizo/types"
+import type { AccountForm as AccountFormType } from "@ploutizo/validators"
 import {
   useCreateAccount,
   useGetAccountMembers,
@@ -83,7 +83,7 @@ const AccountFormInner = ({ account, existingMembers, onClose }: AccountFormInne
   const loadedMemberIds = existingMembers.map((m) => m.memberId)
 
   const form = useAppForm({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     defaultValues: ({
       name: account?.name ?? "",
       type: account?.type ?? "chequing",

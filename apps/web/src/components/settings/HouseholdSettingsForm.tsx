@@ -1,9 +1,9 @@
-import type { HouseholdSettingsForm as HouseholdSettingsFormType } from "@ploutizo/validators"
 import { HouseholdSettingsFormSchema } from "@ploutizo/validators"
 import { useAppForm } from "@ploutizo/ui/components/form"
 import { Button } from "@ploutizo/ui/components/button"
 import { Input } from "@ploutizo/ui/components/input"
 import { Spinner } from "@ploutizo/ui/components/spinner"
+import type { HouseholdSettingsForm as HouseholdSettingsFormType } from "@ploutizo/validators"
 import { useGetHouseholdSettings, useUpdateHouseholdSettings } from "@/lib/data-access/household"
 
 export const HouseholdSettingsForm = () => {

@@ -16,9 +16,9 @@ import {
   AlertDialogTrigger,
 } from "@ploutizo/ui/components/alert-dialog"
 import { Button } from "@ploutizo/ui/components/button"
+import { AccountForm } from "./AccountForm"
 import type { Account } from "@ploutizo/types"
 import { useArchiveAccount } from "@/lib/data-access/accounts"
-import { AccountForm } from "./AccountForm"
 
 interface AccountSheetProps {
   open: boolean

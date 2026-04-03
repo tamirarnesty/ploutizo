@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@ploutizo/ui/components/dialog"
-import type { MerchantRule } from "@/lib/data-access/merchant-rules"
 import { RuleForm } from "./RuleForm"
+import type { MerchantRule } from "@/lib/data-access/merchant-rules"
 
 interface RuleDialogProps {
   rule: MerchantRule | null
