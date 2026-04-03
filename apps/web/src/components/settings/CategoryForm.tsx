@@ -31,8 +31,14 @@ export const CategoryForm = ({ category, onClose }: CategoryFormProps) => {
       icon: category?.icon ?? undefined,
       colour: category?.colour ?? undefined,
     } satisfies CategoryFormType,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    validators: { onSubmit: CategoryFormSchema as any },
+    validators: {
+      onSubmit: ({ value }: { value: CategoryFormType }) => {
+        const result = CategoryFormSchema.safeParse(value)
+        if (!result.success) {
+          return result.error.issues.map((i) => i.message).join(", ")
+        }
+      },
+    },
     onSubmit: ({ value }) => {
       const payload = {
         name: value.name.trim(),
@@ -43,8 +49,7 @@ export const CategoryForm = ({ category, onClose }: CategoryFormProps) => {
       mutation.mutate(payload, {
         onSuccess: onClose,
         onError: () =>
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (form as any).setErrorMap({
+          form.setErrorMap({
             onSubmit: "Couldn't save changes. Check your connection and try again.",
           }),
       })

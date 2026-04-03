@@ -113,8 +113,7 @@ const AccountFormInner = ({ account, existingMembers, onClose }: AccountFormInne
       const mutation = isEditing ? updateAccount : createAccount
       mutation.mutate(payload, {
         onSuccess: onClose,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        onError: () => (form.setErrorMap as any)({ onSubmit: "Couldn't save changes. Check your connection and try again." }),
+        onError: () => form.setErrorMap({ onSubmit: "Couldn't save changes. Check your connection and try again." }),
       })
     },
   })

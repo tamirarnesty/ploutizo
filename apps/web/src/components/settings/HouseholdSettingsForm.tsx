@@ -16,14 +16,19 @@ export const HouseholdSettingsForm = () => {
         ? String(data.settlementThreshold / 100)
         : "",
     } satisfies HouseholdSettingsFormType,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    validators: { onSubmit: HouseholdSettingsFormSchema as any },
+    validators: {
+      onSubmit: ({ value }: { value: HouseholdSettingsFormType }) => {
+        const result = HouseholdSettingsFormSchema.safeParse(value)
+        if (!result.success) {
+          return result.error.issues.map((i) => i.message).join(", ")
+        }
+      },
+    },
     onSubmit: ({ value }) => {
       const dollars = parseFloat(value.thresholdDollars ?? "")
       const cents = isNaN(dollars) ? null : Math.round(dollars * 100)
       mutation.mutate({ settlementThreshold: cents }, {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        onError: () => (form as any).setErrorMap({ onSubmit: "Couldn't save changes. Check your connection and try again." }),
+        onError: () => form.setErrorMap({ onSubmit: "Couldn't save changes. Check your connection and try again." }),
       })
     },
   })
@@ -34,8 +39,10 @@ export const HouseholdSettingsForm = () => {
         <span className="text-sm text-muted-foreground">$</span>
         <form.AppField
           name="thresholdDollars"
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          validators={{ onChange: HouseholdSettingsFormSchema.shape.thresholdDollars as any }}
+          validators={{ onChange: ({ value }: { value: string }) => {
+            const r = HouseholdSettingsFormSchema.shape.thresholdDollars.safeParse(value)
+            if (!r.success) return r.error.issues.map((i) => i.message).join(", ")
+          } }}
         >
           {(field) => (
             <>

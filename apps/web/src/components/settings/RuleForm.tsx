@@ -47,8 +47,14 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
       renameTo: rule?.renameTo ?? "",
       categoryId: rule?.categoryId ?? null, // null — NOT "__none__" (D-06)
     } satisfies RuleFormType,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    validators: { onSubmit: RuleFormSchema as any },
+    validators: {
+      onSubmit: ({ value }: { value: RuleFormType }) => {
+        const result = RuleFormSchema.safeParse(value)
+        if (!result.success) {
+          return result.error.issues.map((i) => i.message).join(", ")
+        }
+      },
+    },
     onSubmit: ({ value }) => {
       const payload = {
         pattern: value.pattern.trim(),
@@ -67,8 +73,7 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
               errors: ["Invalid regular expression."],
             }))
           } else {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ;(form as any).setErrorMap({
+            form.setErrorMap({
               onSubmit: "Couldn't save changes. Check your connection and try again.",
             })
           }
