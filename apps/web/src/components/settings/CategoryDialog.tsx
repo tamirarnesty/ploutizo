@@ -1,0 +1,19 @@
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@ploutizo/ui/components/dialog"
+import type { Category } from "@/lib/data-access/categories"
+import { CategoryForm } from "./CategoryForm"
+
+interface CategoryDialogProps {
+  category: Category | null
+  onClose: () => void
+}
+
+export const CategoryDialog = ({ category, onClose }: CategoryDialogProps) => (
+  <Dialog open={true} onOpenChange={(open) => { if (!open) onClose() }}>
+    <DialogContent className="max-w-sm">
+      <DialogHeader>
+        <DialogTitle>{category !== null ? "Edit category" : "Add category"}</DialogTitle>
+      </DialogHeader>
+      <CategoryForm category={category} onClose={onClose} />
+    </DialogContent>
+  </Dialog>
+)
