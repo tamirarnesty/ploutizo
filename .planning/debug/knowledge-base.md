@@ -21,6 +21,14 @@ Resolved debug sessions. Used by `gsd-debugger` to surface known-pattern hypothe
 - **Files changed:** AccountForm.tsx, CategoryForm.tsx, RuleForm.tsx, HouseholdSettingsForm.tsx
 ---
 
+## tailwind-font-classes-incorrect — Arbitrary CSS variable syntax used instead of semantic Tailwind v4 font utility classes
+- **Date:** 2026-04-03
+- **Error patterns:** font-[--font-heading], font-heading, arbitrary value syntax, CSS custom property, Tailwind v4, --font-heading, font utility
+- **Root cause:** During phase 02.1 refactor, font utility classes were written using arbitrary CSS variable syntax `font-[--font-heading]` instead of the semantic Tailwind v4 utility `font-heading`. In Tailwind v4, CSS custom properties defined in `:root` (like `--font-heading`) auto-generate corresponding utility classes (like `font-heading`), so the arbitrary syntax is both unnecessary and incorrect.
+- **Fix:** Replace all occurrences of `font-[--font-heading]` with `font-heading` across affected source files.
+- **Files changed:** apps/web/src/components/onboarding/Onboarding.tsx, apps/web/src/components/dashboard/Dashboard.tsx, apps/web/src/components/settings/CategoriesSettings.tsx, apps/web/src/components/settings/HouseholdSettings.tsx, apps/web/src/components/accounts/Accounts.tsx
+---
+
 ## db-connection-refused-local-api — ESM import hoisting causes dotenv to run after postgres.js client initializes, silently connecting to localhost:5432
 - **Date:** 2026-04-03
 - **Error patterns:** ECONNREFUSED, DrizzleQueryError, AggregateError, internalConnectMultiple, afterConnectMultiple, DATABASE_URL, postgres.js, localhost, 5432
