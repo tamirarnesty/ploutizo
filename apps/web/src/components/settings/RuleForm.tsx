@@ -1,7 +1,6 @@
 import type { RuleForm as RuleFormType } from "@ploutizo/validators"
 import { RuleFormSchema } from "@ploutizo/validators"
 import { useAppForm } from "@ploutizo/ui/components/form"
-import { zodValidator } from "@tanstack/zod-form-adapter"
 import { Button } from "@ploutizo/ui/components/button"
 import { Input } from "@ploutizo/ui/components/input"
 import { DialogFooter } from "@ploutizo/ui/components/dialog"
@@ -48,8 +47,8 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
       renameTo: rule?.renameTo ?? "",
       categoryId: rule?.categoryId ?? null, // null — NOT "__none__" (D-06)
     } satisfies RuleFormType,
-    validatorAdapter: zodValidator(),
-    validators: { onSubmit: RuleFormSchema },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    validators: { onSubmit: RuleFormSchema as any },
     onSubmit: ({ value }) => {
       const payload = {
         pattern: value.pattern.trim(),
@@ -68,7 +67,8 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
               errors: ["Invalid regular expression."],
             }))
           } else {
-            form.setErrorMap({
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ;(form as any).setErrorMap({
               onSubmit: "Couldn't save changes. Check your connection and try again.",
             })
           }

@@ -1,7 +1,6 @@
 import type { HouseholdSettingsForm as HouseholdSettingsFormType } from "@ploutizo/validators"
 import { HouseholdSettingsFormSchema } from "@ploutizo/validators"
 import { useAppForm } from "@ploutizo/ui/components/form"
-import { zodValidator } from "@tanstack/zod-form-adapter"
 import { Button } from "@ploutizo/ui/components/button"
 import { Input } from "@ploutizo/ui/components/input"
 import { Spinner } from "@ploutizo/ui/components/spinner"
@@ -17,13 +16,14 @@ export const HouseholdSettingsForm = () => {
         ? String(data.settlementThreshold / 100)
         : "",
     } satisfies HouseholdSettingsFormType,
-    validatorAdapter: zodValidator(),
-    validators: { onSubmit: HouseholdSettingsFormSchema },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    validators: { onSubmit: HouseholdSettingsFormSchema as any },
     onSubmit: ({ value }) => {
       const dollars = parseFloat(value.thresholdDollars ?? "")
       const cents = isNaN(dollars) ? null : Math.round(dollars * 100)
       mutation.mutate({ settlementThreshold: cents }, {
-        onError: () => form.setErrorMap({ onSubmit: "Couldn't save changes. Check your connection and try again." }),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        onError: () => (form as any).setErrorMap({ onSubmit: "Couldn't save changes. Check your connection and try again." }),
       })
     },
   })
@@ -34,7 +34,8 @@ export const HouseholdSettingsForm = () => {
         <span className="text-sm text-muted-foreground">$</span>
         <form.AppField
           name="thresholdDollars"
-          validators={{ onChange: HouseholdSettingsFormSchema.shape.thresholdDollars }}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          validators={{ onChange: HouseholdSettingsFormSchema.shape.thresholdDollars as any }}
         >
           {(field) => (
             <>

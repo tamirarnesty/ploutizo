@@ -1,7 +1,6 @@
 import type { CategoryForm as CategoryFormType } from "@ploutizo/validators"
 import { CategoryFormSchema } from "@ploutizo/validators"
 import { useAppForm } from "@ploutizo/ui/components/form"
-import { zodValidator } from "@tanstack/zod-form-adapter"
 import { Button } from "@ploutizo/ui/components/button"
 import { Input } from "@ploutizo/ui/components/input"
 import { DialogFooter } from "@ploutizo/ui/components/dialog"
@@ -32,8 +31,8 @@ export const CategoryForm = ({ category, onClose }: CategoryFormProps) => {
       icon: category?.icon ?? undefined,
       colour: category?.colour ?? undefined,
     } satisfies CategoryFormType,
-    validatorAdapter: zodValidator(),
-    validators: { onSubmit: CategoryFormSchema },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    validators: { onSubmit: CategoryFormSchema as any },
     onSubmit: ({ value }) => {
       const payload = {
         name: value.name.trim(),
@@ -44,7 +43,8 @@ export const CategoryForm = ({ category, onClose }: CategoryFormProps) => {
       mutation.mutate(payload, {
         onSuccess: onClose,
         onError: () =>
-          form.setErrorMap({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (form as any).setErrorMap({
             onSubmit: "Couldn't save changes. Check your connection and try again.",
           }),
       })
