@@ -1,6 +1,8 @@
 import { Hono } from 'hono'
 import { Webhook } from 'svix'
 import { seedOrg } from '@ploutizo/db/seeds'
+import { db } from '@ploutizo/db'
+import { orgs } from '@ploutizo/db/schema'
 
 const webhooksRouter = new Hono()
 
@@ -28,6 +30,7 @@ webhooksRouter.post('/clerk', async (c) => {
   }
 
   if (event.type === 'organization.created') {
+    await db.insert(orgs).values({ id: event.data.id }).onConflictDoNothing()
     await seedOrg(event.data.id)
   }
 

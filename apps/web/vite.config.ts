@@ -4,6 +4,7 @@ import viteReact from "@vitejs/plugin-react"
 import viteTsConfigPaths from "vite-tsconfig-paths"
 import tailwindcss from "@tailwindcss/vite"
 import { nitro } from "nitro/vite"
+import path from "path"
 
 const config = defineConfig({
   plugins: [
@@ -15,6 +16,12 @@ const config = defineConfig({
     tanstackStart(),
     viteReact(),
   ],
+  resolve: {
+    alias: {
+      // Required for ReUI DataGrid internal imports (uses @ploutizo/components/* alias)
+      "@ploutizo/components": path.resolve(__dirname, "../../packages/ui/src/components"),
+    },
+  },
 })
 
 export default config

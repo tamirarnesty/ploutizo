@@ -3,29 +3,28 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: MVP
 status: executing
-last_updated: "2026-03-31T01:40:33.153Z"
+last_updated: "2026-04-01T20:16:35.325Z"
 progress:
   total_phases: 7
-  completed_phases: 0
-  total_plans: 6
-  completed_plans: 5
+  completed_phases: 2
+  total_plans: 12
+  completed_plans: 12
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 01 (foundation-auth-infrastructure) — EXECUTING
-Plan: 1 of 6
+Phase: 02 (households-accounts-classification) — EXECUTING
+Plan: 3 of 6
 **Milestone:** v0.1 MVP
-**Active Phase:** None — Phase 1 planned, ready to execute
-**Status:** Executing Phase 01
+**Active Phase:** Phase 02 — Households, Accounts & Classification — COMPLETE
+**Status:** Ready to execute
+**Last session:** 2026-04-01T20:16:35.321Z
 
 ## Next Action
 
-```
-/gsd:plan-phase 1
-```
+Begin Phase 03 (Transactions)
 
 ## Phase Status
 
@@ -58,6 +57,15 @@ Plan: 1 of 6
 - `authorizedParties` in `@hono/clerk-auth` is `string[]` only — function type not supported; `isAllowedParty` exported as utility, static array used for `clerkMiddleware` (01-03)
 - Seed data uses schema field names: `pattern` and `renameTo` (not plan aliases `matchValue`/`renameDescription`) — 01-05
 - Test mocks for Drizzle insert use `unknown` intermediate cast to satisfy `PgInsertBuilder` strict types — 01-05
+- HouseholdSettings type defined inline in household.tsx until @ploutizo/types is populated by plan 02-01 — 02-02
+- shadcn Sidebar installed at packages/ui level (not apps/web) so all apps share the same component — 02-02
+- ReUI DataGrid requires vite resolve.alias for @ploutizo/components + ui/ re-export stubs; plain string headers avoid DataGridColumnHeader import issues — 02-03
+- @ploutizo/types path mapping must be added to apps/web/tsconfig.json for web app to import shared types — 02-03
+- ReUI combobox not in radix-nova registry — built manually from Popover primitives; exports same API surface as plan specified — 02-05
+- onConflictDoNothing() used on orgs insert in webhook handler so Svix retries are safe — 02-05
+- Dialog open={true} with parent-gated rendering for CategoryDialog/RuleDialog — simpler than prop threading, correct because parent mounts/unmounts conditionally — 02-06
+- __none__ sentinel for optional Radix Select fields (categoryId) — Radix Select doesn't support value="" reliably; payload converts back to null before API call — 02-06
+- Checkbox + Label sibling pattern (not wrapping label) — shadcn Checkbox is a Radix button primitive, must use htmlFor+id association — 02-06
 
 ## Blockers / Open Items
 
@@ -65,7 +73,9 @@ Plan: 1 of 6
 - RRSP 2026 dollar cap — verify against CRA before Phase 6
 - Bank CSV real exports — collect before Phase 5 (LOW confidence on column names)
 - Neon connection limit on chosen plan — verify before Phase 1 goes live
-- ReUI Tailwind v4 compatibility — verify DataGrid/Filters before Phase 3
+- reorderSchema uses z.string().uuid() — test orderedIds must be valid UUIDs (non-UUID strings correctly rejected) — 02-04
+- ReUI Sortable component uses strategy='vertical' prop (not layout prop) — confirm before using in future plans — 02-04
+- ReUI Tailwind v4 compatibility — DataGrid confirmed working in 02-03; Filters not yet tested
 - Cloudflare proxy for `clerk.ploutizo.app` — must be "DNS only" (grey cloud)
 
 ### Quick Tasks Completed

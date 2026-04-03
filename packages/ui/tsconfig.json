@@ -10,7 +10,8 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@ploutizo/ui/*": ["./src/*"]
+      "@ploutizo/ui/*": ["./src/*"],
+      "@ploutizo/components/*": ["./src/components/*"]
     }
   },
   "include": ["."],
