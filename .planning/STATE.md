@@ -33,7 +33,7 @@ Begin Phase 02.2 (light/dark/system theme toggle)
 | 1 | Foundation & Auth Infrastructure | complete |
 | 2 | Households, Accounts & Classification | complete |
 | 02.1 | Code Style & Form Patterns Refactor | complete |
-| 02.1.1 | Audit and migrate to neon-serverless per Neon best practices | active |
+| 02.1.1 | Audit and migrate to neon-serverless per Neon best practices | complete |
 | 02.2 | Add light/dark/system theme toggle | pending |
 | 02.3 | Vercel skills audit and guidelines | pending |
 | 3 | Transactions | pending |

@@ -137,7 +137,7 @@ Plans:
 **Plans:** 1 plan
 
 Plans:
-- [ ] 02.1.1-01-PLAN.md — Driver swap: package.json deps, client.ts rewrite, client.test.ts mock update, route audit
+- [x] 02.1.1-01-PLAN.md — Driver swap: package.json deps, client.ts rewrite, client.test.ts mock update, route audit
 
 ### Phase 3: Transactions
 
