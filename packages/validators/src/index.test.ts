@@ -172,7 +172,7 @@ describe('AccountFormSchema', () => {
     expect(result.success).toBe(false)
     if (!result.success) {
       const typeErrors = result.error.issues.filter((i) => i.path.includes('type'))
-      expect(typeErrors[0]?.code).toBe('invalid_enum_value')
+      expect(typeErrors[0]?.code).toBe('invalid_value')
     }
   })
 

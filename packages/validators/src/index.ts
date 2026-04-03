@@ -13,7 +13,7 @@ export const accountTypeValues = [
 
 export const createAccountSchema = z.object({
   name: z.string().min(1, 'Account name is required.'),
-  type: z.enum(accountTypeValues, { required_error: 'Account type is required.' }),
+  type: z.enum(accountTypeValues, { error: 'Account type is required.' }),
   institution: z.string().optional(),
   lastFour: z.string().max(4).optional(),
   eachPersonPaysOwn: z.boolean().optional().default(false),
@@ -72,7 +72,7 @@ export type UpdateMerchantRuleInput = z.infer<typeof updateMerchantRuleSchema>
 // AccountFormSchema — extends API schema with UI-only ownership field
 export const AccountFormSchema = z.object({
   name: z.string().min(1, 'Account name is required.'),
-  type: z.enum(accountTypeValues, { required_error: 'Account type is required.' }),
+  type: z.enum(accountTypeValues, { error: 'Account type is required.' }),
   institution: z.string().optional(),
   lastFour: z.string().max(4).optional(),
   eachPersonPaysOwn: z.boolean().default(false),
