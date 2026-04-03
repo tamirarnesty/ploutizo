@@ -8,8 +8,8 @@
     "test": "vitest run --passWithNoTests"
   },
   "devDependencies": {
-    "@types/node": "^25.1.0",
-    "typescript": "^5.9.3",
+    "@types/node": "^25.5.2",
+    "typescript": "^6.0.2",
     "vitest": "^4.1.2"
   },
   "exports": {
