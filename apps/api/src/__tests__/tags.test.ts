@@ -19,7 +19,7 @@ describe('POST /api/tags', () => {
   it('returns 201 with created tag', async () => {
     const res = await app.request('/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'vacation' }) })
     expect(res.status).toBe(201)
-    const body = await res.json()
+    const body = await res.json() as { data: { name: string } }
     expect(body.data.name).toBe('vacation')
   })
   it('returns 400 on missing name', async () => {

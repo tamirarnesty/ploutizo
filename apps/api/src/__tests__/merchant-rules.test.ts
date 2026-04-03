@@ -25,7 +25,7 @@ describe('POST /api/merchant-rules', () => {
   it('returns 400 INVALID_REGEX on invalid regex pattern', async () => {
     const res = await app.request('/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pattern: '[invalid(regex', matchType: 'regex' }) })
     expect(res.status).toBe(400)
-    const body = await res.json()
+    const body = await res.json() as { error: { code: string } }
     expect(body.error.code).toBe('INVALID_REGEX')
   })
   it('returns 201 on valid regex pattern', async () => {
@@ -40,7 +40,7 @@ describe('POST /api/merchant-rules', () => {
 
 describe('PATCH /api/merchant-rules/reorder', () => {
   it('returns 200 on valid reorder', async () => {
-    const res = await app.request('/reorder', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderedIds: ['00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002'] }) })
+    const res = await app.request('/reorder', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderedIds: ['550e8400-e29b-41d4-a716-446655440000', '6ba7b810-9dad-11d1-80b4-00c04fd430c8'] }) })
     expect(res.status).toBe(200)
   })
 })

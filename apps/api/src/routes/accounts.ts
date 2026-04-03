@@ -54,7 +54,8 @@ accountsRouter.patch('/:id', async (c) => {
   const updated = await db.transaction(async (tx) => {
     const rows = await tx
       .update(accounts)
-      .set({ ...(updateData as Parameters<typeof tx.update>[0]), updatedAt: new Date() })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .set({ ...(updateData as any), updatedAt: new Date() })
       .where(and(eq(accounts.id, id), eq(accounts.orgId, orgId!)))
       .returning()
     if (!rows.length) return null
