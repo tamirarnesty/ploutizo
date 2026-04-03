@@ -139,193 +139,482 @@ Plans:
 Plans:
 - [x] 02.1.1-01-PLAN.md — Driver swap: package.json deps, client.ts rewrite, client.test.ts mock update, route audit
 
-### Phase 3: Transactions
+### Phase 3.1: Transaction Schema & Migrations
 
-**Goal:** Users can create, view, edit, and soft-delete all six transaction types
-with correct field enforcement, split math, and filtering. This is the core
-data model all other features derive from.
+**Goal:** The transactions data model is fully defined in the database with all
+type-specific columns, join tables, and indexes in place. No API or UI work —
+this phase is the schema gate that 3.2–3.4 depend on.
 
 **Delivers:**
-- Transaction CRUD for all 6 types: expense, refund, income, transfer, settlement, contribution
-- Per-type field validation enforced by Zod discriminated unions and returned as 400 on violation
-- Split math: even default distribution, Largest Remainder Method for odd-cent remainder, customizable by % or $
-- Soft delete (`deleted_at` timestamp); all queries exclude soft-deleted rows via partial index
-- Transaction list with filters (type, date range, account, category, assignee, tags)
-- Transaction edit: any field editable post-creation; original imported values preserved when present
-- Refund: optional `refund_of` FK pre-fills original split; reduces net category spend, not income
-- Transfer: excluded from budget/expense/income calculations
-- `formatCurrency(cents)` utility used at display layer only
-- React Query `QueryClient` with Clerk bearer token injection; `onSettled` invalidation pattern established
-- All SUM aggregates cast to `bigint`
+- `transactions` table with all nullable type-specific columns and `deleted_at` soft-delete timestamp
+- `transaction_assignees` join table
+- Partial index on `deleted_at IS NULL` (all queries exclude soft-deleted rows)
+- `(org_id, account_id)` composite index
+- `recurring_template_id` column reserved (generation logic deferred to v2)
+- Zod discriminated unions for all 6 transaction types added to `@ploutizo/validators`
 
-**Plans:**
-1. Transaction schema & migrations — `transactions` table with all nullable type-specific columns, `transaction_assignees` join table, required partial indexes (`deleted_at IS NULL`), `(org_id, account_id)` composite index
-2. Transaction API — CRUD endpoints for all 6 types, Zod discriminated unions in `@ploutizo/validators`, split calculation logic with Largest Remainder Method, `badRequest()` helper
-3. Transaction list UI — DataGrid table with pagination, filter bar (Filters component), date range selector, soft-delete action
-4. Transaction create/edit forms — per-type form with conditional field rendering, split UI (assignee picker, % or $ mode), refund linker, tag picker with inline create
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 3.1 to break down)
 
 **Requirements covered:**
-- §4 Transactions (full feature)
+- §4 Transactions (schema foundation)
+
+**Success criteria:**
+- [ ] Migration runs cleanly against a fresh database with no errors
+- [ ] `transactions` table has all 6 type-specific nullable column groups and `deleted_at`
+- [ ] Partial index on `deleted_at IS NULL` confirmed via `\d transactions` in psql
+
+---
+
+### Phase 3.2: Transaction API
+
+**Goal:** All six transaction types can be created, read, updated, and soft-deleted
+via the API with correct field enforcement, split math, and validation errors.
+
+**Delivers:**
+- CRUD endpoints for all 6 types: expense, refund, income, transfer, settlement, contribution
+- Per-type field validation via Zod discriminated unions; missing required fields return 400 with structured error
+- Split calculation logic: even default distribution, Largest Remainder Method for odd-cent remainder
+- Refund: optional `refund_of` FK; reduces net category spend, not income
+- Transfer: excluded from budget/expense/income calculations
+- Soft delete via `deleted_at` timestamp; all queries filter via partial index
+- `badRequest()` helper
+- All SUM aggregates cast to `bigint`
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 3.2 to break down)
+
+**Requirements covered:**
+- §4 Transactions (API layer)
 
 **Success criteria:**
 - [ ] All 6 transaction types can be created; missing required fields return 400 with structured error (e.g. expense without category, income without income type)
 - [ ] A 3-assignee split on a $100.01 transaction distributes as $33.34 + $33.34 + $33.33 (Largest Remainder Method — first assignees get extra cent)
 - [ ] Adding a second assignee to an existing 1-assignee transaction resets split to 50/50; removing one assignee from a 3-way split resets to 50/50
-- [ ] Soft-deleted transactions are absent from the transaction list and from all balance, budget, and category spend calculations
+- [ ] Soft-deleted transactions are excluded from all balance, budget, and category spend calculations
 - [ ] A refund linked to an original expense reduces net category spend (not income); unlinked refund also reduces category spend
 - [ ] Transfer transactions are excluded from budget spend and income summary totals
+
+---
+
+### Phase 3.3: Transaction List UI
+
+**Goal:** Users can view all transactions in a paginated, filterable list and
+soft-delete individual entries.
+
+**Delivers:**
+- Transaction list DataGrid with pagination
+- Filter bar (Filters component): type, date range, account, category, assignee, tags
+- Date range selector
+- Soft-delete action
+- `formatCurrency(cents)` utility used at display layer only
+- React Query `QueryClient` with Clerk bearer token injection; `onSettled` invalidation pattern established
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 3.3 to break down)
+
+**Requirements covered:**
+- §4 Transactions (list view)
+
+**Success criteria:**
+- [ ] Soft-deleted transactions are absent from the transaction list immediately after deletion — no page refresh required (React Query invalidation)
+- [ ] Filter by type, date range, account, category, assignee, and tag each narrow the list correctly; combinations of filters are AND-ed
+
+---
+
+### Phase 3.4: Transaction Forms UI
+
+**Goal:** Users can create and edit any of the six transaction types through a
+single form that conditionally renders the correct fields per type.
+
+**Delivers:**
+- Per-type form with conditional field rendering
+- Split UI: assignee picker, % or $ toggle, even-split default
+- Refund linker: optional `refund_of` field pre-fills original split
+- Tag picker with inline create
+- Transaction edit: any field editable post-creation; original imported values preserved and visible in edit view
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 3.4 to break down)
+
+**Requirements covered:**
+- §4 Transactions (create/edit forms)
+
+**Success criteria:**
+- [ ] Switching transaction type in the form clears type-specific fields from the previous type and shows the correct fields for the new type
 - [ ] Any field on a posted transaction can be edited; original description from import is preserved and visible in edit view
 
 ---
 
-### Phase 4: Settlement & Budgets
+### Phase 4.1: Settlement API
 
-**Goal:** Household members can see exactly what they owe each other across all
-shared accounts and record settlements, and can set budgets per category with
-status tracking and rollover.
+**Goal:** The API can compute settlement balances at query time for any household
+and return per-account, per-member breakdown including net settlement lines.
 
 **Delivers:**
-- Per-account settlement cards: header with total balance, per-member rows, "Settle" CTA
 - Running balance computation at query time (no materialization)
-- Net settlement line when two members have opposing balances across accounts
-- Negative balance displayed as green credit ("Emily is owed $X")
-- "Settle" form: defaults to outstanding balance, overridable for partial settlement; records `settlement` transaction type
-- Settlement reminder threshold: member setting > household setting > $50 default (stored; notifications triggered in Phase 7)
-- Household-wide budgets per category: monthly default, weekly/bi-weekly/yearly/custom date range
-- Budget status thresholds: On Track < 80% (blue), Caution 80–99% (amber), Over ≥ 100% (red)
-- Budget rollover: surplus only, capped at 1× base limit; `effective_limit_cents` stored per period
-- Budget dashboard: summary row + per-category progress bars; historical view by period
+- Settlement card data endpoint: per-account header with total balance + per-member rows
+- Net settlement line logic: when member A and member B have opposing balances across accounts
+- Composite indexes to support balance queries
 
-**Plans:**
-1. Settlement balance API — query-time balance computation with composite indexes, settlement card data endpoint, net settlement line logic
-2. Settlement UI — settlement cards per account, "Settle" CTA form, net settlement display, negative balance as green credit, threshold settings
-3. Budgets API — budget CRUD endpoints, spend calculation (SUM expenses in category per period cast to bigint), rollover computation with 1× cap, `effective_limit_cents` storage
-4. Budget dashboard UI — summary row, per-category DataGrid with progress bars, status badges, historical period navigation
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 4.1 to break down)
 
 **Requirements covered:**
-- §5 Settlement (full feature)
-- §6 Budgets (full feature)
+- §5 Settlement (API layer)
 
 **Success criteria:**
-- [ ] Settlement card shows correct per-member balance immediately after a new expense transaction is added — no page refresh required (React Query invalidation)
-- [ ] "Each person pays their own" account does not appear in any settlement card
-- [ ] When member A owes member B on one account and member B owes member A on another, a net settlement line appears; when debt flows only one direction, the line is absent
-- [ ] Member with a negative balance (overpaid) is shown as "Name is owed $X" in green, not as a negative number
-- [ ] Partial settlement records a `settlement` transaction for the partial amount; outstanding balance reflects the remainder immediately
-- [ ] Budget spend for a category correctly sums only expense transactions in that category within the period; transfers, income, and settlements are excluded
-- [ ] Budget with rollover enabled carries forward surplus (not overspend) to the next period; accumulated surplus never exceeds 1× the base limit
-- [ ] Budget dashboard shows On Track / Caution / Over status with correct colour coding at exact 80% and 100% thresholds
+- [ ] Settlement card endpoint returns correct per-member balance immediately after a new expense transaction is added
+- [ ] "Each person pays their own" account does not appear in any settlement card response
+- [ ] When member A owes member B on one account and member B owes member A on another, the net settlement line is present; when debt flows only one direction, the line is absent
 
 ---
 
-### Phase 5: CSV Import
+### Phase 4.2: Settlement UI
 
-**Goal:** Users can import transactions from any major Canadian bank by uploading
-a CSV export, review and correct the parsed rows, and confirm the import — with
-automatic duplicate detection and merchant rule application.
+**Goal:** Household members can see what they owe each other and record full or
+partial settlements from the UI.
 
 **Delivers:**
-- Bank format auto-detection and normalizers for: TD, RBC, CIBC, Scotiabank, BMO, Amex, Tangerine, EQ Bank, and ploutizo normalized format
-- Amex CA sign inversion handled explicitly (positive = expense)
-- Bank-specific date parsers (CIBC/EQ Bank: `YYYY-MM-DD`; all others: `MM/DD/YYYY`)
-- BOM stripping on all CSV inputs
-- Import review table (DataGrid) with inline editing: description, category, assignee, account, tags per row
-- Duplicate detection: `external_id` exact match (primary); Levenshtein distance < 0.2 on pre-normalized description filtered by date + amount (secondary)
-- Duplicate rows unchecked by default; "Skip all duplicates" toggle
-- Account resolution: unmatched account → dropdown; "Create new account" inline dialog; propagates to all unresolved rows in session
-- Bulk actions: select all/deselect all, bulk-assign category, bulk-assign assignee, skip all duplicates
-- Merchant rule application on import preview; user can override per row
-- Import batch recorded; individual transactions retain `import_batch_id`
-- Rows deleted during review are never written to DB
+- Per-account settlement cards: header with total balance, per-member rows, "Settle" CTA
+- Negative balance displayed as green credit ("Emily is owed $X")
+- "Settle" form: defaults to outstanding balance, overridable for partial settlement; records `settlement` transaction type
+- Settlement reminder threshold settings: member setting > household setting > $50 default (stored; notifications triggered in Phase 7.1)
 
-**Plans:**
-1. Bank normalizers — pure-function normalizers per bank with fixture-based unit tests; BOM stripping; Amex sign inversion; bank-specific date parsers; format detection with unrecognized-format error
-2. Import batch API — batch creation endpoint, row validation with merchant rule application, duplicate detection (two-signal), `import_batches` record, batch finalize endpoint that writes only confirmed rows
-3. Import UI — Stepper component (upload → review → confirm), FileUpload component, import review DataGrid with inline editing, row status badges, account resolution dropdown with inline create
-4. Import bulk actions & duplicate handling — select all/deselect, bulk category/assignee, skip-all-duplicates toggle, duplicate row visual treatment (strikethrough, amber)
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 4.2 to break down)
 
 **Requirements covered:**
-- §8 CSV Import (full feature)
-- §9 Merchant Rules (rule application during import — CRUD was Phase 2)
+- §5 Settlement (UI layer)
+
+**Success criteria:**
+- [ ] Member with a negative balance (overpaid) is shown as "Name is owed $X" in green, not as a negative number
+- [ ] Partial settlement records a `settlement` transaction for the partial amount; outstanding balance reflects the remainder immediately
+
+---
+
+### Phase 4.3: Budgets API
+
+**Goal:** Budgets can be created and managed per category; the API computes spend
+against each budget and handles rollover.
+
+**Delivers:**
+- Budget CRUD endpoints: household-wide budgets per category, monthly default, weekly/bi-weekly/yearly/custom date range
+- Spend calculation: SUM of expenses in category per period, cast to `bigint`
+- Budget status thresholds: On Track < 80%, Caution 80–99%, Over ≥ 100%
+- Budget rollover: surplus only, capped at 1× base limit; `effective_limit_cents` stored per period
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 4.3 to break down)
+
+**Requirements covered:**
+- §6 Budgets (API layer)
+
+**Success criteria:**
+- [ ] Budget spend correctly sums only expense transactions in that category within the period; transfers, income, and settlements are excluded
+- [ ] Budget with rollover enabled carries forward surplus (not overspend) to the next period; accumulated surplus never exceeds 1× the base limit
+
+---
+
+### Phase 4.4: Budget Dashboard UI
+
+**Goal:** Users can view all category budgets with spend progress, status
+indicators, and historical period navigation from a single dashboard.
+
+**Delivers:**
+- Budget dashboard: summary row + per-category DataGrid with progress bars
+- On Track (blue) / Caution (amber) / Over (red) status badges
+- Historical view by period
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 4.4 to break down)
+
+**Requirements covered:**
+- §6 Budgets (UI layer)
+
+**Success criteria:**
+- [ ] Budget dashboard shows On Track / Caution / Over status with correct colour coding at exact 80% and 100% thresholds
+- [ ] Historical period navigation loads spend data for the selected period without a full page reload
+
+---
+
+### Phase 5.1: Bank Normalizers
+
+**Goal:** Pure-function normalizers exist for all supported bank CSV formats with
+full fixture-based test coverage. No DB or UI dependencies — this phase can be
+merged and tested in isolation.
+
+**Delivers:**
+- Pure-function normalizers for: TD, RBC, CIBC, Scotiabank, BMO, Amex, Tangerine, EQ Bank, and ploutizo normalized format
+- Amex CA sign inversion (positive = expense)
+- Bank-specific date parsers (CIBC/EQ Bank: `YYYY-MM-DD`; all others: `MM/DD/YYYY`)
+- BOM stripping on all CSV inputs
+- Format auto-detection with unrecognized-format error
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 5.1 to break down)
+
+**Requirements covered:**
+- §8 CSV Import (normalizer layer)
 
 **Success criteria:**
 - [ ] Amex CA CSV: a row with positive amount `234.80` is parsed as a $234.80 expense (not income)
 - [ ] CIBC CSV: a date formatted `2026-01-15` is parsed correctly; a TD CSV with date `01/15/2026` is parsed correctly
-- [ ] A duplicate row (matching `external_id`) appears unchecked in the import review table; enabling "Skip all duplicates" unchecks all duplicate rows
-- [ ] Merchant rule match applied automatically on import preview; description is renamed and category pre-filled per rule; user can override the category without affecting the rule
-- [ ] Unmatched account cell renders as dropdown; selecting "Create new account" opens inline dialog; on confirm the new account is assigned to the current row and silently pre-selected in all other unresolved account dropdowns in the same session
-- [ ] A row deleted during review is absent from the DB after confirming import — confirmed by checking transaction count before and after
-- [ ] Import batch record saved with source bank, date, row count, and account reference; each imported transaction has non-null `import_batch_id`
-- [ ] Uploading a CSV from an unrecognized bank format surfaces a user-visible error message
+- [ ] Uploading a CSV from an unrecognized bank format returns the unrecognized-format error
 
 ---
 
-### Phase 6: Savings, Investments & Net Worth
+### Phase 5.2: Import Batch API
 
-**Goal:** Members can track TFSA, RRSP, and FHSA contribution room, record
-contributions, receive over-contribution warnings, and view a real-time net
-worth snapshot with monthly historical trend.
+**Goal:** The API can receive a parsed import batch, apply merchant rules, detect
+duplicates, and write only confirmed rows to the database.
 
 **Delivers:**
-- Investment account types: TFSA, RRSP, FHSA, RESP, non-registered, other
-- TFSA room calculation from `TFSA_ANNUAL_LIMITS` constant (verify 2026 limit against CRA before shipping)
-- RRSP: manual room entry ("from your NOA or CRA My Account"); app tracks contributions against it
-- FHSA: $8,000/year from account open year; carry-forward from prior year only (capped at $8,000, does not compound); $40,000 lifetime cap
-- Over-contribution warnings for TFSA and FHSA triggered on contribution entry (same request/mutation response)
-- TFSA disclaimer: "Your CRA room may differ due to withdrawals made in prior years or years of non-residency" — no manual adjustment field
-- Member `birth_year` stored as private profile field; never visible to other household members
-- Net worth real-time snapshot: assets (chequing + savings + cash + investments as contributions) minus liabilities (credit cards)
-- Per-member and household-level breakdowns
-- Monthly historical snapshots (computed on first view of historical period, stored for subsequent loads)
+- Batch creation endpoint
+- Row validation with merchant rule application on import preview
+- Duplicate detection: `external_id` exact match (primary); Levenshtein distance < 0.2 on pre-normalized description filtered by date + amount (secondary)
+- `import_batches` record with source bank, date, row count, account reference
+- Batch finalize endpoint: writes only confirmed (non-deleted, non-skipped) rows
+- Individual transactions retain `import_batch_id`
 
-**Plans:**
-1. Investment schema & contribution room API — `investment_accounts`, `contribution_room_settings` tables; TFSA/FHSA/RRSP room calculation endpoints; `TFSA_ANNUAL_LIMITS` constant in `packages/types`; over-contribution warning logic
-2. Savings contributions UI — contribution create form (pre-typed as `contribution` transaction), remaining room progress indicator, over-contribution warning display, TFSA disclaimer, birth year prompt
-3. Net worth API — balance query (assets minus liabilities), per-member breakdown, monthly snapshot compute + store
-4. Net worth UI — net worth page with total, account breakdown, per-member section, historical trend chart, investment value disclaimer ("contribution totals only")
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 5.2 to break down)
 
 **Requirements covered:**
-- §7 Savings & Investments (full feature)
-- §10 Net Worth (full feature)
+- §8 CSV Import (API layer)
+- §9 Merchant Rules (rule application during import — CRUD was Phase 2)
+
+**Success criteria:**
+- [ ] Merchant rule match applied automatically on import preview; description is renamed and category pre-filled per rule; user can override the category without affecting the rule
+- [ ] Import batch record saved with source bank, date, row count, and account reference; each imported transaction has non-null `import_batch_id`
+
+---
+
+### Phase 5.3: Import UI
+
+**Goal:** Users can upload a CSV, step through a review table with inline editing,
+and resolve unmatched accounts before confirming the import.
+
+**Delivers:**
+- Stepper component: upload → review → confirm
+- FileUpload component
+- Import review DataGrid with inline editing: description, category, assignee, account, tags per row
+- Row status badges
+- Account resolution: unmatched account → dropdown; "Create new account" inline dialog; propagates to all unresolved rows in session
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 5.3 to break down)
+
+**Requirements covered:**
+- §8 CSV Import (UI layer)
+
+**Success criteria:**
+- [ ] Unmatched account cell renders as dropdown; selecting "Create new account" opens inline dialog; on confirm the new account is assigned to the current row and silently pre-selected in all other unresolved account dropdowns in the same session
+
+---
+
+### Phase 5.4: Import Bulk Actions & Duplicate Handling
+
+**Goal:** Users can efficiently process large import batches via bulk actions and
+have duplicate rows surfaced and skippable before confirming.
+
+**Delivers:**
+- Bulk actions: select all/deselect all, bulk-assign category, bulk-assign assignee
+- "Skip all duplicates" toggle; duplicate rows unchecked by default
+- Duplicate row visual treatment: strikethrough, amber highlight
+- Rows deleted during review are never written to DB
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 5.4 to break down)
+
+**Requirements covered:**
+- §8 CSV Import (bulk actions and duplicate handling)
+
+**Success criteria:**
+- [ ] A duplicate row (matching `external_id`) appears unchecked in the import review table; enabling "Skip all duplicates" unchecks all duplicate rows
+- [ ] A row deleted during review is absent from the DB after confirming import — confirmed by checking transaction count before and after
+
+---
+
+### Phase 6.1: Investment Schema & Contribution Room API
+
+**Goal:** The API can track TFSA, RRSP, and FHSA contribution room per member
+and fire over-contribution warnings on contribution entry.
+
+**Delivers:**
+- `investment_accounts` table: types TFSA, RRSP, FHSA, RESP, non-registered, other
+- `contribution_room_settings` table
+- TFSA room calculation from `TFSA_ANNUAL_LIMITS` constant in `packages/types` (verify 2026 limit against CRA before shipping)
+- RRSP: manual room entry ("from your NOA or CRA My Account"); app tracks contributions against it
+- FHSA: $8,000/year from account open year; carry-forward from prior year only (capped at $8,000, does not compound); $40,000 lifetime cap
+- Over-contribution warnings for TFSA and FHSA on contribution entry (same request/mutation response)
+- Member `birth_year` stored as private profile field; never visible to other household members
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 6.1 to break down)
+
+**Requirements covered:**
+- §7 Savings & Investments (schema and API layer)
 
 **Success criteria:**
 - [ ] Member born in 1991 who has made $20,000 in contributions sees the correct remaining TFSA room (cumulative limit 1991→2026 minus $20,000); member born in 2000 sees room starting from 2018 (age 18)
 - [ ] FHSA carry-forward: if member contributed $4,000 in year 1, carry-forward to year 2 is $4,000 (capped at $8,000); carry-forward does not compound into year 3
-- [ ] TFSA over-contribution warning fires immediately on the contribution form when entered amount would exceed remaining room; same behavior for FHSA
-- [ ] TFSA disclaimer is visible on the TFSA account view; no manual withdrawal adjustment field exists
-- [ ] Net worth total = sum of chequing + savings + cash + investment contribution totals − credit card balances; investment section is clearly labeled "contribution totals — not market value"
-- [ ] Per-member breakdown assigns net worth to the member(s) who own each account
-- [ ] `birth_year` is absent from any API response that is accessible to other household members
+- [ ] `birth_year` is absent from any API response accessible to other household members
 
 ---
 
-### Phase 7: Notifications
+### Phase 6.2: Savings Contributions UI
 
-**Goal:** Users are proactively alerted in-app when budgets approach or exceed
-their limit, when contribution room is exceeded, and when settlement balances
-require attention — without requiring them to check every page manually.
+**Goal:** Members can record contributions, track remaining room with a progress
+indicator, and see over-contribution warnings inline.
 
 **Delivers:**
-- In-app notification feed (bell icon); fetch-based on page load — no websockets
-- Budget caution alert (80%) and over-budget alert (100%) — written to `notifications` table when thresholds are crossed on transaction create/edit
-- TFSA and FHSA over-contribution warning notification — also written on contribution entry
-- Settlement reminder: persists until balance drops below threshold; threshold precedence enforced (member > household > $50)
-- January contribution room refresh reminder
-- Notifications dismissed individually or all at once
+- Contribution create form (pre-typed as `contribution` transaction)
+- Remaining room progress indicator per account type
+- Over-contribution warning display on the contribution form
+- TFSA disclaimer: "Your CRA room may differ due to withdrawals made in prior years or years of non-residency"
+- Birth year prompt (stored as private profile field)
 
-**Plans:**
-1. Notifications table & write triggers — `notifications` schema, write logic called from budget mutation, contribution mutation, and settlement balance check; threshold precedence logic
-2. Notification feed UI — bell icon with unread count badge, feed panel, notification items with type icons, dismiss actions, January reminder logic
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 6.2 to break down)
 
 **Requirements covered:**
-- §11 Notifications & Alerts (full feature)
+- §7 Savings & Investments (contributions UI)
 
 **Success criteria:**
-- [ ] Adding a transaction that pushes a budget from 79% to 81% used creates a budget caution notification; adding another that pushes it to 100% creates an over-budget notification; neither fires again until the budget resets
+- [ ] TFSA over-contribution warning fires immediately on the contribution form when entered amount would exceed remaining room; same behavior for FHSA
+- [ ] TFSA disclaimer is visible on the TFSA account view; no manual withdrawal adjustment field exists
+
+---
+
+### Phase 6.3: Net Worth API
+
+**Goal:** The API can compute a household's real-time net worth snapshot and store
+monthly historical data points.
+
+**Delivers:**
+- Net worth real-time snapshot: assets (chequing + savings + cash + investments as contributions) minus liabilities (credit cards)
+- Per-member and household-level breakdowns
+- Monthly historical snapshots (computed on first view of historical period, stored for subsequent loads)
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 6.3 to break down)
+
+**Requirements covered:**
+- §10 Net Worth (API layer)
+
+**Success criteria:**
+- [ ] Net worth total = sum of chequing + savings + cash + investment contribution totals − credit card balances
+- [ ] Per-member breakdown correctly assigns accounts to their owner(s)
+
+---
+
+### Phase 6.4: Net Worth UI
+
+**Goal:** Members can view their household's net worth, per-member breakdown, and
+monthly historical trend in a single page.
+
+**Delivers:**
+- Net worth page: total, account breakdown, per-member section
+- Historical trend chart
+- Investment value disclaimer ("contribution totals — not market value")
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 6.4 to break down)
+
+**Requirements covered:**
+- §10 Net Worth (UI layer)
+
+**Success criteria:**
+- [ ] Investment section is clearly labeled "contribution totals — not market value"
+- [ ] Per-member breakdown assigns net worth to the member(s) who own each account
+
+---
+
+### Phase 7.1: Notifications Table & Write Triggers
+
+**Goal:** Notification rows are written to the database whenever a budget
+threshold is crossed, a contribution exceeds room, or a settlement balance
+exceeds a member's threshold.
+
+**Delivers:**
+- `notifications` table schema
+- Write logic called from budget mutation (80% caution + 100% over; neither re-fires until budget resets)
+- Write logic called from contribution mutation (TFSA + FHSA over-contribution)
+- Write logic called from settlement balance check (persists until balance drops below threshold)
+- Threshold precedence: member setting > household setting > $50 default
+- January contribution room refresh reminder logic
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 7.1 to break down)
+
+**Requirements covered:**
+- §11 Notifications & Alerts (data layer)
+
+**Success criteria:**
+- [ ] Adding a transaction that pushes a budget from 79% to 81% creates a budget caution notification; pushing it to 100% creates an over-budget notification; neither fires again until the budget resets
 - [ ] Recording a contribution that exceeds TFSA room creates an over-contribution notification immediately on the same request
 - [ ] A member with a settlement balance of $60 on a household with $50 threshold (no member-level override) sees a settlement reminder; a member who sets their own threshold to $100 does not see the reminder at $60
-- [ ] On January 1, a contribution room refresh reminder appears for members who have tracked TFSA or FHSA accounts
+
+---
+
+### Phase 7.2: Notification Feed UI
+
+**Goal:** Users can view all pending notifications in an in-app feed and dismiss
+them individually or all at once.
+
+**Delivers:**
+- Bell icon in header with unread count badge; fetch-based on page load — no websockets
+- Notification feed panel with type icons per notification
+- Dismiss individual notification
+- "Dismiss all" clears entire feed
+- January contribution room refresh reminder displayed in feed
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 7.2 to break down)
+
+**Requirements covered:**
+- §11 Notifications & Alerts (UI layer)
+
+**Success criteria:**
 - [ ] Dismissing a notification removes it from the feed; "Dismiss all" clears the entire feed
+- [ ] On January 1, a contribution room refresh reminder appears for members who have tracked TFSA or FHSA accounts
 
 ---
 
@@ -336,19 +625,33 @@ require attention — without requiring them to check every page manually.
 | §1 Households & Users | Phase 1 (infra/seeds) + Phase 2 (full feature) | Clerk native org config in Phase 1; creation/switching UI and Clerk-managed invitation flow in Phase 2 |
 | §2 Accounts | Phase 2 | Full CRUD including "each person pays their own" flag |
 | §3 Categories & Tags | Phase 2 | Full CRUD; default seed list present after Phase 1 org creation |
-| §4 Transactions | Phase 3 | All 6 types, splits, soft delete, filters, edit |
-| §5 Settlement | Phase 4 | Query-time balance, settlement cards, net settlement line, partial settlement |
-| §6 Budgets | Phase 4 | Per-category budgets, rollover with 1× cap, dashboard, historical |
-| §7 Savings & Investments | Phase 6 | TFSA/RRSP/FHSA room tracking, contributions, over-contribution warnings |
-| §8 CSV Import | Phase 5 | 8 bank normalizers + ploutizo format, review table, duplicate detection |
-| §9 Merchant Rules | Phase 2 (CRUD) + Phase 5 (application during import) | Seed scripts in Phase 1 |
-| §10 Net Worth | Phase 6 | Real-time snapshot, per-member breakdown, monthly historical |
-| §11 Notifications & Alerts | Phase 7 | Budget, contribution, settlement, and January reminders |
+| §4 Transactions | Phases 3.1–3.4 | Schema (3.1), API (3.2), list UI (3.3), create/edit forms (3.4) |
+| §5 Settlement | Phases 4.1–4.2 | API (4.1), UI (4.2) |
+| §6 Budgets | Phases 4.3–4.4 | API (4.3), dashboard UI (4.4) |
+| §7 Savings & Investments | Phases 6.1–6.2 | Schema + contribution room API (6.1), contributions UI (6.2) |
+| §8 CSV Import | Phases 5.1–5.4 | Normalizers (5.1), batch API (5.2), review UI (5.3), bulk actions (5.4) |
+| §9 Merchant Rules | Phase 2 (CRUD) + Phase 5.2 (application during import) | Seed scripts in Phase 1 |
+| §10 Net Worth | Phases 6.3–6.4 | API (6.3), UI (6.4) |
+| §11 Notifications & Alerts | Phases 7.1–7.2 | Write triggers (7.1), feed UI (7.2) |
 | Infrastructure requirements | Phase 1 | Clerk satellites, postgres.js, tenantGuard, Tailwind v4 audit |
 
 ---
 
 ## Backlog
+
+### Phase 999.2: Replace in-memory seenOrgs Set in tenantGuard with proper long-term org seeding solution (BACKLOG)
+
+**Goal:** Replace the process-lifetime `seenOrgs` Set cache in `tenantGuard` with a durable solution that works across multiple processes/instances and doesn't rely on a safety-net upsert on every cold start.
+
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with /gsd:review-backlog when ready)
+
+**Context:** The `seenOrgs` Set was added as a cheap fix to avoid a DB round-trip on every request (the upsert safety net for when the Clerk `organization.created` webhook fails to deliver). Options: (1) configure reliable webhook delivery in all environments — ngrok/Clerk tunnel for local, verified secret + endpoint for prod — making the upsert unnecessary; (2) if multi-process, use a shared cache (Redis/Upstash) instead of the in-process Set. Current approach resets on cold start, which is safe but not ideal long-term.
+
+---
 
 ### Phase 999.1: Adopt react-i18next and wrap all user-visible string literals (BACKLOG)
 
@@ -368,7 +671,7 @@ Plans:
 
 | Item | Reason |
 |------|--------|
-| Recurring transactions — generation logic | Schema column (`recurring_template_id`) reserved in Phase 3; generation logic deferred to v2 |
+| Recurring transactions — generation logic | Schema column (`recurring_template_id`) reserved in Phase 3.1; generation logic deferred to v2 |
 | AI auto-fill on import | v2 — no ML infrastructure in v1 |
 | Manual CSV column mapping | v2 — bank-specific normalizers only in v1 |
 | Per-member budgets | v2 — household-wide only in v1 |
@@ -389,9 +692,9 @@ Plans:
 
 | Item | Blocks | Action |
 |------|--------|--------|
-| TFSA 2026 annual limit | Phase 6 | Verify at CRA website before implementing `TFSA_ANNUAL_LIMITS` constant |
-| RRSP 2025/2026 dollar cap | Phase 6 | Verify exact cap at CRA website |
-| Bank CSV column names (TD, RBC, CIBC, Scotiabank, BMO, Amex, Tangerine, EQ Bank) | Phase 5 | Collect real bank export files; treat SUMMARY.md signatures as starting point only |
+| TFSA 2026 annual limit | Phase 6.1 | Verify at CRA website before implementing `TFSA_ANNUAL_LIMITS` constant |
+| RRSP 2025/2026 dollar cap | Phase 6.1 | Verify exact cap at CRA website |
+| Bank CSV column names (TD, RBC, CIBC, Scotiabank, BMO, Amex, Tangerine, EQ Bank) | Phase 5.1 | Collect real bank export files; treat SUMMARY.md signatures as starting point only |
 | Cloudflare proxy setting for `clerk.ploutizo.app` | Phase 1 | Must be "DNS only" (grey cloud) — document in deployment runbook |
-| ReUI Tailwind v4 compatibility | Phase 3 | Verify `DataGrid` and `Filters` compatibility at https://reui.io/docs before building transaction list |
+| ReUI Tailwind v4 compatibility | Phase 3.3 | Verify `DataGrid` and `Filters` compatibility at https://reui.io/docs before building transaction list |
 | Neon connection limits on chosen plan tier | Phase 1 | Verify plan limit vs postgres.js pool `max` before production launch |
