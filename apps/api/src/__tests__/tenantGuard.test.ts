@@ -8,6 +8,25 @@ vi.mock('@hono/clerk-auth', () => ({
   clerkMiddleware: vi.fn(() => async (_c: unknown, next: () => Promise<void>) => next()),
 }))
 
+// vi.hoisted ensures this variable is initialized before vi.mock factories run (hoisting order).
+const { mockOnConflictDoNothing } = vi.hoisted(() => ({
+  mockOnConflictDoNothing: vi.fn().mockResolvedValue(undefined),
+}))
+
+// Mock @ploutizo/db so the upsert guard doesn't make real DB calls.
+// onConflictDoNothing() is the terminal call in the chain.
+vi.mock('@ploutizo/db', () => ({
+  db: {
+    insert: vi.fn().mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        onConflictDoNothing: mockOnConflictDoNothing,
+      }),
+    }),
+  },
+}))
+
+vi.mock('@ploutizo/db/schema', () => ({ orgs: {} }))
+
 import { getAuth } from '@hono/clerk-auth'
 
 const buildApp = () => {
@@ -46,6 +65,22 @@ describe('tenantGuard()', () => {
     expect(res.status).toBe(200)
     const body = await res.json() as { data: { ok: boolean } }
     expect(body.data.ok).toBe(true)
+  })
+
+  it('upserts the org row before calling next() when orgId is valid', async () => {
+    mockOnConflictDoNothing.mockClear()
+    vi.mocked(getAuth).mockReturnValue({ orgId: 'org_abc123' } as ReturnType<typeof getAuth>)
+    const res = await buildApp().request('/')
+    expect(res.status).toBe(200)
+    expect(mockOnConflictDoNothing).toHaveBeenCalledOnce()
+  })
+
+  it('does not upsert when orgId is missing (401 returned early)', async () => {
+    mockOnConflictDoNothing.mockClear()
+    vi.mocked(getAuth).mockReturnValue({ orgId: undefined } as ReturnType<typeof getAuth>)
+    const res = await buildApp().request('/')
+    expect(res.status).toBe(401)
+    expect(mockOnConflictDoNothing).not.toHaveBeenCalled()
   })
 
   it('error body has correct shape', async () => {
