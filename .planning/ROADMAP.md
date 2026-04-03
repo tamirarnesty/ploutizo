@@ -134,7 +134,7 @@ Plans:
 **Goal:** Swap `packages/db` from `postgres.js` + `drizzle-orm/postgres-js` to `@neondatabase/serverless` (WebSocket mode) + `drizzle-orm/neon-serverless`. Enable Neon compute scale-to-zero. No schema changes, no API changes, no route changes.
 **Requirements**: D-01 through D-09 (see 02.1.1-CONTEXT.md)
 **Depends on:** Phase 02.1
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 - [x] 02.1.1-01-PLAN.md — Driver swap: package.json deps, client.ts rewrite, client.test.ts mock update, route audit
