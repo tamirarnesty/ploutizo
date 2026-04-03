@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: MVP
 status: "Phase 02.1 shipped — PR #19"
-last_updated: "2026-04-03T17:43:00.852Z"
+last_updated: "2026-04-03T19:11:23.105Z"
 progress:
-  total_phases: 9
+  total_phases: 12
   completed_phases: 3
   total_plans: 16
   completed_plans: 16
@@ -20,7 +20,7 @@ Plan: 4 of 4 complete
 **Milestone:** v0.1 MVP
 **Active Phase:** Phase 02.1 — Code Style & Form Patterns Refactor — EXECUTING
 **Status:** Phase 02.1 shipped — PR #19
-**Last session:** 2026-04-03T02:33:35.456Z
+**Last session:** 2026-04-03T19:11:23.100Z
 
 ## Next Action
 
@@ -74,6 +74,9 @@ Begin Phase 03 (Transactions)
 ### Roadmap Evolution
 
 - Phase 02.1 inserted after Phase 2: Code Style & Form Patterns Refactor (URGENT)
+- Phase 02.1.1 inserted after Phase 02.1: Audit and migrate to neon-serverless per Neon best practices (URGENT)
+- Phase 02.2 inserted after Phase 2: add light/dark/system theme toggle with default 'system' theme being set (URGENT)
+- Phase 02.3 inserted after Phase 02: vercel skills audit and guidelines (URGENT)
 
 ## Blockers / Open Items
 

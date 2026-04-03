@@ -36,3 +36,12 @@ Resolved debug sessions. Used by `gsd-debugger` to surface known-pattern hypothe
 - **Fix:** Remove the dotenv block from `apps/api/src/index.ts` entirely. Change the `dev` script in `apps/api/package.json` from `tsx watch src/index.ts` to `node --env-file=.env --import tsx --watch src/index.ts`. Node's `--env-file` loads the `.env` before any module evaluation, solving the hoisting problem. Remove `dotenv` from `dependencies`.
 - **Files changed:** apps/api/src/index.ts, apps/api/package.json
 ---
+
+## eslint-import-order-agent-violations — PostToolUse hook missing ESLint fix; agents leave import/order violations in generated files
+- **Date:** 2026-04-03
+- **Error patterns:** import/order, eslint, @ploutizo/validators, type import, should occur after, sort-imports, PostToolUse hook, lint:fix
+- **Root cause:** The .claude/settings.local.json PostToolUse hook only ran Prettier (pnpm format) after Write/Edit calls. No ESLint --fix hook existed. The @tanstack/eslint-config enforces import/order as an error via eslint-plugin-import-x, but without a hook to trigger eslint --fix, violations accumulated silently. No lint:fix scripts existed in package.json files.
+- **Fix:** (1) Added "lint:fix": "eslint --fix" to apps/web and packages/ui package.json. (2) Created .claude/hooks/gsd-lint-fix.js — reads file_path from stdin JSON, detects package root, runs eslint --fix from that directory for .ts/.tsx files, always exits 0. (3) Registered hook in settings.local.json PostToolUse block alongside Prettier hook. (4) Fixed all existing import/order violations across 8 source files.
+- **Files changed:** apps/web/package.json, packages/ui/package.json, .claude/hooks/gsd-lint-fix.js, .claude/settings.local.json, AccountSheet.tsx, AccountForm.tsx, CategoryDialog.tsx, CategoryForm.tsx, RuleDialog.tsx, RuleForm.tsx, HouseholdSettingsForm.tsx, vite.config.ts
+---
+
