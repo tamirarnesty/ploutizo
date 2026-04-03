@@ -17,7 +17,9 @@ import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
 import { Route as LayoutDashboardRouteImport } from './routes/_layout.dashboard'
 import { Route as LayoutAccountsRouteImport } from './routes/_layout.accounts'
 import { Route as LayoutSettingsRouteRouteImport } from './routes/_layout.settings/route'
+import { Route as LayoutSettingsMerchantRulesRouteImport } from './routes/_layout.settings/merchant-rules'
 import { Route as LayoutSettingsHouseholdRouteImport } from './routes/_layout.settings/household'
+import { Route as LayoutSettingsCategoriesRouteImport } from './routes/_layout.settings/categories'
 
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
@@ -58,11 +60,23 @@ const LayoutSettingsRouteRoute = LayoutSettingsRouteRouteImport.update({
   path: '/settings',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutSettingsMerchantRulesRoute =
+  LayoutSettingsMerchantRulesRouteImport.update({
+    id: '/merchant-rules',
+    path: '/merchant-rules',
+    getParentRoute: () => LayoutSettingsRouteRoute,
+  } as any)
 const LayoutSettingsHouseholdRoute = LayoutSettingsHouseholdRouteImport.update({
   id: '/household',
   path: '/household',
   getParentRoute: () => LayoutSettingsRouteRoute,
 } as any)
+const LayoutSettingsCategoriesRoute =
+  LayoutSettingsCategoriesRouteImport.update({
+    id: '/categories',
+    path: '/categories',
+    getParentRoute: () => LayoutSettingsRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -72,7 +86,9 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof LayoutDashboardRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
+  '/settings/categories': typeof LayoutSettingsCategoriesRoute
   '/settings/household': typeof LayoutSettingsHouseholdRoute
+  '/settings/merchant-rules': typeof LayoutSettingsMerchantRulesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -82,7 +98,9 @@ export interface FileRoutesByTo {
   '/dashboard': typeof LayoutDashboardRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
+  '/settings/categories': typeof LayoutSettingsCategoriesRoute
   '/settings/household': typeof LayoutSettingsHouseholdRoute
+  '/settings/merchant-rules': typeof LayoutSettingsMerchantRulesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -94,7 +112,9 @@ export interface FileRoutesById {
   '/_layout/dashboard': typeof LayoutDashboardRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
+  '/_layout/settings/categories': typeof LayoutSettingsCategoriesRoute
   '/_layout/settings/household': typeof LayoutSettingsHouseholdRoute
+  '/_layout/settings/merchant-rules': typeof LayoutSettingsMerchantRulesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -106,7 +126,9 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/sign-in/$'
     | '/sign-up/$'
+    | '/settings/categories'
     | '/settings/household'
+    | '/settings/merchant-rules'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -116,7 +138,9 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/sign-in/$'
     | '/sign-up/$'
+    | '/settings/categories'
     | '/settings/household'
+    | '/settings/merchant-rules'
   id:
     | '__root__'
     | '/'
@@ -127,7 +151,9 @@ export interface FileRouteTypes {
     | '/_layout/dashboard'
     | '/sign-in/$'
     | '/sign-up/$'
+    | '/_layout/settings/categories'
     | '/_layout/settings/household'
+    | '/_layout/settings/merchant-rules'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -196,6 +222,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsRouteRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/settings/merchant-rules': {
+      id: '/_layout/settings/merchant-rules'
+      path: '/merchant-rules'
+      fullPath: '/settings/merchant-rules'
+      preLoaderRoute: typeof LayoutSettingsMerchantRulesRouteImport
+      parentRoute: typeof LayoutSettingsRouteRoute
+    }
     '/_layout/settings/household': {
       id: '/_layout/settings/household'
       path: '/household'
@@ -203,15 +236,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsHouseholdRouteImport
       parentRoute: typeof LayoutSettingsRouteRoute
     }
+    '/_layout/settings/categories': {
+      id: '/_layout/settings/categories'
+      path: '/categories'
+      fullPath: '/settings/categories'
+      preLoaderRoute: typeof LayoutSettingsCategoriesRouteImport
+      parentRoute: typeof LayoutSettingsRouteRoute
+    }
   }
 }
 
 interface LayoutSettingsRouteRouteChildren {
+  LayoutSettingsCategoriesRoute: typeof LayoutSettingsCategoriesRoute
   LayoutSettingsHouseholdRoute: typeof LayoutSettingsHouseholdRoute
+  LayoutSettingsMerchantRulesRoute: typeof LayoutSettingsMerchantRulesRoute
 }
 
 const LayoutSettingsRouteRouteChildren: LayoutSettingsRouteRouteChildren = {
+  LayoutSettingsCategoriesRoute: LayoutSettingsCategoriesRoute,
   LayoutSettingsHouseholdRoute: LayoutSettingsHouseholdRoute,
+  LayoutSettingsMerchantRulesRoute: LayoutSettingsMerchantRulesRoute,
 }
 
 const LayoutSettingsRouteRouteWithChildren =

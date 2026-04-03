@@ -50,7 +50,7 @@ import {
   Row,
 } from "@tanstack/react-table"
 
-import { Button } from "@ploutizo/components/ui/button"
+import { Button } from "@ploutizo/components/button"
 import { GripVerticalIcon } from "lucide-react"
 
 function DataGridTableDndHeader<TData>({

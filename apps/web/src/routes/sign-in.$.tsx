@@ -9,7 +9,7 @@ export const Route = createFileRoute("/sign-in/$")({
 function Page() {
   return (
     <div className="flex min-h-screen items-center justify-center">
-      <SignIn afterSignInUrl="/dashboard" />
+      <SignIn fallbackRedirectUrl="/dashboard" />
     </div>
   )
 }

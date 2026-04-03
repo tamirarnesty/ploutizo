@@ -4,15 +4,15 @@ import React, { ReactNode } from "react"
 import { useDataGrid } from "@ploutizo/components/reui/data-grid/data-grid"
 
 import { cn } from "@ploutizo/ui/lib/utils"
-import { Button } from "@ploutizo/components/ui/button"
+import { Button } from "@ploutizo/components/button"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@ploutizo/components/ui/select"
-import { Skeleton } from "@ploutizo/components/ui/skeleton"
+} from "@ploutizo/components/select"
+import { Skeleton } from "@ploutizo/components/skeleton"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 
 interface DataGridPaginationProps {

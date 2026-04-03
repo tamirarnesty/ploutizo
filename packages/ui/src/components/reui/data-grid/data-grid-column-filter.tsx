@@ -3,14 +3,14 @@ import { Badge } from "@ploutizo/components/reui/badge"
 import { Column } from "@tanstack/react-table"
 
 import { cn } from "@ploutizo/ui/lib/utils"
-import { Button } from "@ploutizo/components/ui/button"
-import { Input } from "@ploutizo/components/ui/input"
+import { Button } from "@ploutizo/components/button"
+import { Input } from "@ploutizo/components/input"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@ploutizo/components/ui/popover"
-import { Separator } from "@ploutizo/components/ui/separator"
+} from "@ploutizo/components/popover"
+import { Separator } from "@ploutizo/components/separator"
 import { CirclePlusIcon, CheckIcon } from "lucide-react"
 
 interface DataGridColumnFilterProps<TData, TValue> {

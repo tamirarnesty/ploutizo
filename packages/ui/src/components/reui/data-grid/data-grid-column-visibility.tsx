@@ -9,7 +9,7 @@ import {
   DropdownMenuGroup,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-} from "@ploutizo/components/ui/dropdown-menu"
+} from "@ploutizo/components/dropdown-menu"
 
 function DataGridColumnVisibility<TData>({
   table,

@@ -1,26 +1,28 @@
-import {
+import type {
   CSSProperties,
-  Fragment,
-  memo,
   MouseEvent as ReactMouseEvent,
   ReactNode,
   TouchEvent as ReactTouchEvent,
   Ref,
+} from "react"
+import {
+  Fragment,
+  memo,
   useCallback,
   useEffect,
   useMemo,
   useState,
 } from "react"
 import { useDataGrid } from "@ploutizo/components/reui/data-grid/data-grid"
-import {
+import type {
   Cell,
   Column,
-  flexRender,
   Header,
   HeaderGroup,
   Row,
   Table,
 } from "@tanstack/react-table"
+import { flexRender } from "@tanstack/react-table"
 import { cva } from "class-variance-authority"
 
 import { cn } from "@ploutizo/ui/lib/utils"

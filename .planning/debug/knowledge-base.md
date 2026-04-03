@@ -10,4 +10,29 @@ Resolved debug sessions. Used by `gsd-debugger` to surface known-pattern hypothe
 - **Root cause:** Two compounding issues — (1) CLERK_SIGN_UP_URL was set to /sign-in (same as the sign-in URL), causing Clerk to suppress the "Sign up" link in the <SignIn /> component to avoid a circular UI. (2) No sign-up.$.tsx route existed, so even if the env var were corrected, the sign-up URL would 404.
 - **Fix:** (1) Created apps/web/src/routes/sign-up.$.tsx with a <SignUp /> component. (2) Changed CLERK_SIGN_UP_URL from /sign-in to /sign-up in apps/web/.env.example. (3) Updated __root.tsx auth guard isAuthRoute check to also allow /sign-up/* through without triggering the redirect.
 - **Files changed:** apps/web/src/routes/sign-up.$.tsx, apps/web/.env.example, apps/web/src/routes/__root.tsx
+
+---
+
+## tanstack-form-zod-v4-validator-types — Passing Zod v4 schema directly to form-level validators causes `setErrorMap` type errors
+- **Date:** 2026-04-03
+- **Error patterns:** `as any`, `setErrorMap`, `zodValidator`, `validators onSubmit`, `StandardSchemaV1Issue`, `Record<string, StandardSchemaV1Issue[]>`, TanStack Form, zod schema validator
+- **Root cause:** When a Zod schema is passed directly as a form-level validator (`validators: { onSubmit: Schema }`), TanStack Form's `UnwrapFormValidateOrFn` resolves its error type to `Record<string, StandardSchemaV1Issue[]>`. This makes `form.setErrorMap({ onSubmit: "string" })` a TS type error because a plain string isn't assignable to that type. The agent had silenced this with `as any`.
+- **Fix:** Replace `validators: { onSubmit: Schema as any }` with a custom validator function that calls `Schema.safeParse()` and returns a `string` — this gives `UnwrapFormValidateOrFn` a `string | undefined` error type, making `setErrorMap({ onSubmit: "string" })` valid. Also applies to field-level validators where the schema input type doesn't exactly match the field's TypeScript type (e.g. `ZodOptional<ZodString>` on a `string` field).
+- **Files changed:** AccountForm.tsx, CategoryForm.tsx, RuleForm.tsx, HouseholdSettingsForm.tsx
+---
+
+## tailwind-font-classes-incorrect — Arbitrary CSS variable syntax used instead of semantic Tailwind v4 font utility classes
+- **Date:** 2026-04-03
+- **Error patterns:** font-[--font-heading], font-heading, arbitrary value syntax, CSS custom property, Tailwind v4, --font-heading, font utility
+- **Root cause:** During phase 02.1 refactor, font utility classes were written using arbitrary CSS variable syntax `font-[--font-heading]` instead of the semantic Tailwind v4 utility `font-heading`. In Tailwind v4, CSS custom properties defined in `:root` (like `--font-heading`) auto-generate corresponding utility classes (like `font-heading`), so the arbitrary syntax is both unnecessary and incorrect.
+- **Fix:** Replace all occurrences of `font-[--font-heading]` with `font-heading` across affected source files.
+- **Files changed:** apps/web/src/components/onboarding/Onboarding.tsx, apps/web/src/components/dashboard/Dashboard.tsx, apps/web/src/components/settings/CategoriesSettings.tsx, apps/web/src/components/settings/HouseholdSettings.tsx, apps/web/src/components/accounts/Accounts.tsx
+---
+
+## db-connection-refused-local-api — ESM import hoisting causes dotenv to run after postgres.js client initializes, silently connecting to localhost:5432
+- **Date:** 2026-04-03
+- **Error patterns:** ECONNREFUSED, DrizzleQueryError, AggregateError, internalConnectMultiple, afterConnectMultiple, DATABASE_URL, postgres.js, localhost, 5432
+- **Root cause:** In `apps/api/src/index.ts`, `dotenv.config()` was called as top-level code after static import declarations. In ESM, all static imports are hoisted and fully evaluated before any top-level code runs. The import chain `index.ts → routes → @ploutizo/db → client.ts` called `postgres(process.env.DATABASE_URL!)` before dotenv had populated `process.env`. `DATABASE_URL` was `undefined`; `postgres.js` `parseUrl(undefined)` returns an empty object, causing `parseOptions()` to fall back to `host='localhost'`, `port=5432`. Nothing listens on localhost:5432 → ECONNREFUSED.
+- **Fix:** Remove the dotenv block from `apps/api/src/index.ts` entirely. Change the `dev` script in `apps/api/package.json` from `tsx watch src/index.ts` to `node --env-file=.env --import tsx --watch src/index.ts`. Node's `--env-file` loads the `.env` before any module evaluation, solving the hoisting problem. Remove `dotenv` from `dependencies`.
+- **Files changed:** apps/api/src/index.ts, apps/api/package.json
 ---

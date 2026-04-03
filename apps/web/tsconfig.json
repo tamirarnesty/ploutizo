@@ -21,12 +21,12 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "allowJs": true,
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@ploutizo/ui/*": ["../../packages/ui/src/*"],
       "@ploutizo/types": ["../../packages/types/src/index.ts"],
-      "@ploutizo/components/*": ["../../packages/ui/src/components/*"]
+      "@ploutizo/components/*": ["../../packages/ui/src/components/*"],
+      "@ploutizo/validators": ["../../packages/validators/src/index.ts"]
     }
   }
 }

@@ -7,10 +7,11 @@ import {
 import { ClerkProvider, useAuth } from "@clerk/tanstack-react-start"
 import { auth } from "@clerk/tanstack-react-start/server"
 import { shadcn } from "@clerk/ui/themes"
+import { QueryClientProvider } from "@tanstack/react-query"
 import { useEffect } from "react"
 import { createServerFn } from "@tanstack/react-start"
 import appCss from "@ploutizo/ui/globals.css?url"
-import { setTokenGetter } from "../lib/queryClient"
+import { queryClient, setTokenGetter } from "../lib/queryClient"
 
 const authGuard = createServerFn().handler(async () => {
   const { isAuthenticated } = await auth()
@@ -43,10 +44,12 @@ const RootDocument = ({ children }: { children: React.ReactNode }) => (
       <HeadContent />
     </head>
     <body>
-      <ClerkProvider appearance={{ theme: shadcn }}>
-        <TokenInitializer />
-        {children}
-      </ClerkProvider>
+      <QueryClientProvider client={queryClient}>
+        <ClerkProvider appearance={{ theme: shadcn }}>
+          <TokenInitializer />
+          {children}
+        </ClerkProvider>
+      </QueryClientProvider>
       <Scripts />
     </body>
   </html>
