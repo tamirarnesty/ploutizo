@@ -2,29 +2,29 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: MVP
-status: "Phase 02.1 shipped — PR #19"
-last_updated: "2026-04-03T19:11:23.105Z"
+status: verifying
+last_updated: "2026-04-03T19:58:11.797Z"
 progress:
   total_phases: 12
   completed_phases: 3
   total_plans: 16
-  completed_plans: 16
+  completed_plans: 17
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 02.1 (code-style-form-patterns-refactor) — EXECUTING
-Plan: 4 of 4 complete
+Phase: 02.1.1 (audit-and-migrate-to-neon-serverless-per-neon-best-practices) — COMPLETE
+Plan: 1 of 1 complete
 **Milestone:** v0.1 MVP
-**Active Phase:** Phase 02.1 — Code Style & Form Patterns Refactor — EXECUTING
-**Status:** Phase 02.1 shipped — PR #19
-**Last session:** 2026-04-03T19:11:23.100Z
+**Active Phase:** Phase 02.1.1 — Audit and Migrate to Neon Serverless — COMPLETE
+**Status:** Phase 02.1.1 shipped — all 3 tasks complete, tests green
+**Last session:** 2026-04-03T19:58:11.793Z
 
 ## Next Action
 
-Begin Phase 03 (Transactions)
+Begin Phase 02.2 (light/dark/system theme toggle)
 
 ## Phase Status
 
@@ -48,6 +48,8 @@ Begin Phase 03 (Transactions)
 
 ## Key Decisions Logged
 
+- packages/db uses @neondatabase/serverless WebSocket Pool (not postgres.js) — neonConfig.webSocketConstructor set before Pool construction for scale-to-zero (02.1.1-01)
+- Pool constructor vi.fn mock requires regular function (not arrow fn) — arrow functions are not constructable in JS (02.1.1-01)
 - Use `postgres.js` direct Neon connection (not `neon-http`, not PgBouncer)
 - Clerk satellite domains required for `{subdomain}.ploutizo.app` — must be Phase 1
 - `tenantGuard()` checks `!orgId` (falsy), not `orgId === null`
