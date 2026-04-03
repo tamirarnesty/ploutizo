@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// Mock postgres.js and drizzle-orm before importing client
-vi.mock('postgres', () => ({
-  default: vi.fn(() => ({ end: vi.fn() })),
+// Mock @neondatabase/serverless and drizzle-orm/neon-serverless before importing client
+vi.mock('@neondatabase/serverless', () => ({
+  Pool: vi.fn(() => ({})),
+  neonConfig: {},  // plain writable object — must NOT be frozen (Pitfall 2)
 }))
-vi.mock('drizzle-orm/postgres-js', () => ({
+vi.mock('drizzle-orm/neon-serverless', () => ({
   drizzle: vi.fn(() => ({ _: 'drizzle-instance' })),
 }))
 
@@ -19,13 +20,13 @@ describe('db client', () => {
     expect(db).toBeDefined()
   })
 
-  it('initializes postgres.js with DATABASE_URL', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const postgres = (await import('postgres')).default as unknown as ReturnType<typeof vi.fn>
+  it('initializes Pool with DATABASE_URL', async () => {
+    const { Pool } = (await import('@neondatabase/serverless')) as unknown as {
+      Pool: ReturnType<typeof vi.fn>
+    }
     await import('../client.js')
-    expect(postgres).toHaveBeenCalledWith(
-      'postgresql://test:test@localhost/test',
-      expect.objectContaining({ max: 10 })
+    expect(Pool).toHaveBeenCalledWith(
+      expect.objectContaining({ connectionString: 'postgresql://test:test@localhost/test' })
     )
   })
 })
