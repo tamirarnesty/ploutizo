@@ -105,13 +105,13 @@ Plans:
 
 ### Phase 02.2: add light/dark/system theme toggle with default 'system' theme being set (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
+**Goal:** Add a light/dark/system theme toggle to the sidebar with system as the default. next-themes handles OS preference detection, localStorage persistence, and injects the .dark class on html. A single cycling icon button (Monitor/Sun/Moon) lives in the sidebar footer to the left of UserButton.
+**Requirements**: n/a (UI enhancement)
 **Depends on:** Phase 2
-**Plans:** 0 plans
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 02.2 to break down)
+- [ ] 02.2-01-PLAN.md — Install next-themes, create ThemeToggle component in packages/ui, wire ThemeProvider into __root.tsx, add ThemeToggle to AppSidebar footer
 
 ### Phase 02.1: Code Style & Form Patterns Refactor (INSERTED)
 
