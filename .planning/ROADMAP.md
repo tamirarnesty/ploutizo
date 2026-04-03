@@ -42,12 +42,12 @@ Plans:
 - Infrastructure requirements from `.planning/REQUIREMENTS.md`: Clerk satellite domains, `postgres.js` driver, Tailwind v4 audit, `tenantGuard()` falsy check
 
 **Success criteria:**
-- [ ] `pnpm build` succeeds across all packages with zero type errors
-- [ ] Switching household via `<OrganizationSwitcher />` updates the active `orgId` in the Clerk session; the next API request is scoped to the new org
-- [ ] Any API request without an active org (`orgId` is `undefined`) returns 401 — confirmed by sending a request with a valid Clerk user JWT but no active org
-- [ ] `apps/api` can execute a multi-step DB transaction (INSERT + INSERT in a single `tx`) without error — confirming `postgres.js` driver
-- [ ] Org creation inserts default categories and merchant rules with non-nullable `org_id` rows; no nullable `org_id` rows exist in the DB
-- [ ] `VITE_DATABASE_URL` and `VITE_CLERK_SECRET_KEY` do not appear in the browser JavaScript bundle
+- [x] `pnpm build` succeeds across all packages with zero type errors
+- [x] Switching household via `<OrganizationSwitcher />` updates the active `orgId` in the Clerk session; the next API request is scoped to the new org
+- [x] Any API request without an active org (`orgId` is `undefined`) returns 401 — confirmed by sending a request with a valid Clerk user JWT but no active org
+- [x] `apps/api` can execute a multi-step DB transaction (INSERT + INSERT in a single `tx`) without error — confirming `postgres.js` driver
+- [x] Org creation inserts default categories and merchant rules with non-nullable `org_id` rows; no nullable `org_id` rows exist in the DB
+- [x] `VITE_DATABASE_URL` and `VITE_CLERK_SECRET_KEY` do not appear in the browser JavaScript bundle
 
 ---
 
