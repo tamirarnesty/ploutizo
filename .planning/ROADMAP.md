@@ -93,6 +93,26 @@ Plans:
 
 ---
 
+### Phase 02.3: vercel skills audit and guidelines (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 02
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 02.3 to break down)
+
+### Phase 02.2: add light/dark/system theme toggle with default 'system' theme being set (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 2
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 02.2 to break down)
+
 ### Phase 02.1: Code Style & Form Patterns Refactor (INSERTED)
 
 **Goal:** Migrate all 4 forms in apps/web to TanStack Form + Zod with the useAppForm
@@ -108,6 +128,16 @@ Plans:
 - [x] 02.1-02-PLAN.md — AccountSheet refactor: chrome/form split, loading gate for async co-owners, TanStack Form with ownership + memberIds as form fields
 - [x] 02.1-03-PLAN.md — CategoryDialog + RuleDialog refactor: custom picker binding (D-08), null categoryId with Radix Select bridge, cross-field regex validator on blur
 - [x] 02.1-04-PLAN.md — HouseholdSettings refactor (D-07) + MerchantRuleRow extraction (D-11)
+
+### Phase 02.1.1: Audit and migrate to neon-serverless per Neon best practices (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 02.1
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 02.1.1 to break down)
 
 ### Phase 3: Transactions
 
