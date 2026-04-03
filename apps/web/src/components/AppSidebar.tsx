@@ -13,6 +13,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@ploutizo/ui/components/sidebar"
+import { ThemeToggle } from "@ploutizo/ui/components/theme-toggle"
 
 const navItems = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
@@ -87,9 +88,12 @@ export const AppSidebar = () => {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* UserButton pinned at bottom (D-02) */}
+      {/* ThemeToggle + UserButton pinned at bottom (D-02, D-04) */}
       <SidebarFooter>
-        <UserButton />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <UserButton />
+        </div>
       </SidebarFooter>
     </Sidebar>
   )
