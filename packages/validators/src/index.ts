@@ -64,3 +64,43 @@ export type UpdateCategoryInput = z.infer<typeof updateCategorySchema>
 export type CreateTagInput = z.infer<typeof createTagSchema>
 export type CreateMerchantRuleInput = z.infer<typeof createMerchantRuleSchema>
 export type UpdateMerchantRuleInput = z.infer<typeof updateMerchantRuleSchema>
+
+// --- Form schemas (client-side validation for TanStack Form) ---
+// Naming: PascalCase variables and type exports (D-03a)
+// Location: all form schemas live in this package (D-03c)
+
+// AccountFormSchema — extends API schema with UI-only ownership field
+export const AccountFormSchema = z.object({
+  name: z.string().min(1, 'Account name is required.'),
+  type: z.enum(accountTypeValues, { required_error: 'Account type is required.' }),
+  institution: z.string().optional(),
+  lastFour: z.string().max(4).optional(),
+  eachPersonPaysOwn: z.boolean().default(false),
+  ownership: z.enum(['personal', 'shared']),
+  memberIds: z.array(z.string().uuid()).default([]),
+})
+export type AccountForm = z.infer<typeof AccountFormSchema>
+
+// CategoryFormSchema — API schema minus sortOrder (not a form field)
+export const CategoryFormSchema = createCategorySchema.omit({ sortOrder: true })
+export type CategoryForm = z.infer<typeof CategoryFormSchema>
+
+// RuleFormSchema — API schema minus assigneeId and priority (set server-side)
+// categoryId is z.string().uuid().nullable().optional() — null means no category (D-06)
+export const RuleFormSchema = createMerchantRuleSchema
+  .omit({ assigneeId: true, priority: true })
+  .extend({
+    pattern: z.string().min(1, 'Pattern is required.'),
+  })
+export type RuleForm = z.infer<typeof RuleFormSchema>
+
+// HouseholdSettingsFormSchema — dollar string in, cents computed in onSubmit
+export const HouseholdSettingsFormSchema = z.object({
+  thresholdDollars: z
+    .string()
+    .refine((v) => !isNaN(parseFloat(v)) && parseFloat(v) >= 0, {
+      message: 'Must be a positive number.',
+    })
+    .optional(),
+})
+export type HouseholdSettingsForm = z.infer<typeof HouseholdSettingsFormSchema>

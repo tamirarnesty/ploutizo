@@ -3,6 +3,10 @@ import {
   createAccountSchema,
   updateAccountSchema,
   updateHouseholdSettingsSchema,
+  AccountFormSchema,
+  CategoryFormSchema,
+  RuleFormSchema,
+  HouseholdSettingsFormSchema,
 } from './index.js'
 
 describe('createAccountSchema', () => {
@@ -129,5 +133,151 @@ describe('updateHouseholdSettingsSchema', () => {
   it('rejects missing settlementThreshold', () => {
     const result = updateHouseholdSettingsSchema.safeParse({})
     expect(result.success).toBe(false)
+  })
+})
+
+describe('AccountFormSchema', () => {
+  it('accepts valid full account form payload', () => {
+    const result = AccountFormSchema.safeParse({
+      name: 'TD Chequing',
+      type: 'chequing',
+      ownership: 'personal',
+      memberIds: [],
+      eachPersonPaysOwn: false,
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects empty name with correct message', () => {
+    const result = AccountFormSchema.safeParse({
+      name: '',
+      type: 'chequing',
+      ownership: 'personal',
+      memberIds: [],
+    })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      const nameErrors = result.error.issues.filter((i) => i.path.includes('name'))
+      expect(nameErrors[0]?.message).toBe('Account name is required.')
+    }
+  })
+
+  it('rejects invalid type with invalid_enum_value error', () => {
+    const result = AccountFormSchema.safeParse({
+      name: 'x',
+      type: 'invalid_type',
+      ownership: 'personal',
+      memberIds: [],
+    })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      const typeErrors = result.error.issues.filter((i) => i.path.includes('type'))
+      expect(typeErrors[0]?.code).toBe('invalid_enum_value')
+    }
+  })
+
+  it('rejects non-uuid memberIds', () => {
+    const result = AccountFormSchema.safeParse({
+      name: 'x',
+      type: 'chequing',
+      ownership: 'shared',
+      memberIds: ['not-a-uuid'],
+    })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      const memberErrors = result.error.issues.filter((i) =>
+        i.path.some((p) => p === 'memberIds' || typeof p === 'number')
+      )
+      expect(memberErrors.length).toBeGreaterThan(0)
+    }
+  })
+})
+
+describe('CategoryFormSchema', () => {
+  it('accepts name-only payload', () => {
+    const result = CategoryFormSchema.safeParse({ name: 'Food' })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects empty name with correct message', () => {
+    const result = CategoryFormSchema.safeParse({ name: '' })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      const nameErrors = result.error.issues.filter((i) => i.path.includes('name'))
+      expect(nameErrors[0]?.message).toBe('Category name is required.')
+    }
+  })
+
+  it('accepts optional icon and colour fields', () => {
+    const result = CategoryFormSchema.safeParse({
+      name: 'Food',
+      icon: 'Utensils',
+      colour: '#f00',
+    })
+    expect(result.success).toBe(true)
+  })
+})
+
+describe('RuleFormSchema', () => {
+  it('accepts valid rule with null categoryId', () => {
+    const result = RuleFormSchema.safeParse({
+      pattern: 'AMAZON',
+      matchType: 'contains',
+      renameTo: '',
+      categoryId: null,
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects empty pattern with correct message', () => {
+    const result = RuleFormSchema.safeParse({
+      pattern: '',
+      matchType: 'contains',
+      categoryId: null,
+    })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      const patternErrors = result.error.issues.filter((i) => i.path.includes('pattern'))
+      expect(patternErrors[0]?.message).toBe('Pattern is required.')
+    }
+  })
+
+  it('accepts valid UUID categoryId', () => {
+    const result = RuleFormSchema.safeParse({
+      pattern: 'x',
+      matchType: 'contains',
+      categoryId: '550e8400-e29b-41d4-a716-446655440000',
+    })
+    expect(result.success).toBe(true)
+  })
+})
+
+describe('HouseholdSettingsFormSchema', () => {
+  it('accepts valid positive dollar string', () => {
+    const result = HouseholdSettingsFormSchema.safeParse({ thresholdDollars: '50' })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects negative dollar string with correct message', () => {
+    const result = HouseholdSettingsFormSchema.safeParse({ thresholdDollars: '-5' })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      const errors = result.error.issues.filter((i) => i.path.includes('thresholdDollars'))
+      expect(errors[0]?.message).toBe('Must be a positive number.')
+    }
+  })
+
+  it('rejects non-numeric string with correct message', () => {
+    const result = HouseholdSettingsFormSchema.safeParse({ thresholdDollars: 'abc' })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      const errors = result.error.issues.filter((i) => i.path.includes('thresholdDollars'))
+      expect(errors[0]?.message).toBe('Must be a positive number.')
+    }
+  })
+
+  it('accepts empty object (thresholdDollars is optional)', () => {
+    const result = HouseholdSettingsFormSchema.safeParse({})
+    expect(result.success).toBe(true)
   })
 })
