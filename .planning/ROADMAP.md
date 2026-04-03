@@ -32,9 +32,9 @@ Plans:
 - [x] 01-01-PLAN.md — Package namespace rename: @workspace/ui -> @ploutizo/ui, create @ploutizo/validators + @ploutizo/types skeletons, vitest workspace, turbo.json tasks
 - [x] 01-02-PLAN.md — @ploutizo/db package: postgres.js Drizzle client at module scope, drizzle.config.ts, schema stubs, DB client unit tests
 - [x] 01-03-PLAN.md — apps/api scaffold: Hono app with CORS -> Clerk -> tenantGuard middleware order, health endpoint, vitest configured
-- [ ] 01-04-PLAN.md — Clerk + tenantGuard: complete tenantGuard with 5 unit tests, Clerk in apps/web, React Query with token injection
+- [x] 01-04-PLAN.md — Clerk + tenantGuard: complete tenantGuard with 5 unit tests, Clerk in apps/web, React Query with token injection
 - [x] 01-05-PLAN.md — Seed scripts: seedOrgCategories + seedOrgMerchantRules + seedOrg wrapper, Clerk org.created webhook handler
-- [ ] 01-06-PLAN.md — Railway deploy + smoke test: railway.toml with pre-deploy migration, Tailwind v4 audit, live deployment verified
+- [x] 01-06-PLAN.md — Railway deploy + smoke test: railway.toml with pre-deploy migration, Tailwind v4 audit, live deployment verified
 
 **Requirements covered:**
 - §1 Households & Users (infrastructure portion: subdomain auth, org creation hooks, seed scripts)
