@@ -1,6 +1,6 @@
-import { drizzle } from 'drizzle-orm/postgres-js'
-import postgres from 'postgres'
-import * as schema from './schema/index.js'
+import { drizzle } from "drizzle-orm/postgres-js"
+import postgres from "postgres"
+import * as schema from "./schema/index.js"
 
 // postgres.js client initialized at module scope — NOT per-request.
 // Using direct Neon URL (not pooler) — postgres.js manages its own pool.

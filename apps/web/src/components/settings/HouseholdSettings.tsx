@@ -3,7 +3,7 @@ import { Label } from "@ploutizo/ui/components/label"
 import { HouseholdSettingsForm } from "./HouseholdSettingsForm"
 
 export const HouseholdSettings = () => (
-  <div className="max-w-2xl flex flex-col gap-8">
+  <div className="flex max-w-2xl flex-col gap-8">
     <h1 className="font-heading text-xl font-semibold">Household</h1>
 
     <section className="flex flex-col gap-3">

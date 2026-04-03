@@ -1,12 +1,14 @@
 import { useState } from "react"
-import {
-  Sortable,
-} from "@ploutizo/ui/components/reui/sortable"
+import { Sortable } from "@ploutizo/ui/components/reui/sortable"
 import { Button } from "@ploutizo/ui/components/button"
 import { RuleDialog } from "./RuleDialog"
 import { MerchantRuleRow } from "./MerchantRuleRow"
 import type { MerchantRule } from "@/lib/data-access/merchant-rules"
-import { useDeleteMerchantRule, useGetMerchantRules, useReorderMerchantRules } from "@/lib/data-access/merchant-rules"
+import {
+  useDeleteMerchantRule,
+  useGetMerchantRules,
+  useReorderMerchantRules,
+} from "@/lib/data-access/merchant-rules"
 
 export const MerchantRulesSettings = () => {
   const { data: rules = [], isLoading } = useGetMerchantRules()
@@ -27,9 +29,7 @@ export const MerchantRulesSettings = () => {
   return (
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="font-[--font-heading] text-xl font-semibold">
-          Merchant Rules
-        </h1>
+        <h1 className="font-heading text-xl font-semibold">Merchant Rules</h1>
         <Button type="button" onClick={() => setDialogRule(null)}>
           Add rule
         </Button>
