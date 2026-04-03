@@ -51,9 +51,6 @@ importers:
       '@ploutizo/validators':
         specifier: workspace:*
         version: link:../../packages/validators
-      dotenv:
-        specifier: ^17.4.0
-        version: 17.4.0
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(postgres@3.4.8)
