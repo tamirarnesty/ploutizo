@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: MVP
-status: "Phase 02.1 shipped — PR #19"
-last_updated: "2026-04-03T19:11:23.105Z"
+status: executing
+last_updated: "2026-04-03T19:53:22.375Z"
 progress:
   total_phases: 12
   completed_phases: 3
-  total_plans: 16
+  total_plans: 17
   completed_plans: 16
 ---
 
@@ -15,23 +15,27 @@ progress:
 
 ## Current Position
 
-Phase: 02.1 (code-style-form-patterns-refactor) — EXECUTING
-Plan: 4 of 4 complete
+Phase: 02.1.1 (audit-and-migrate-to-neon-serverless-per-neon-best-practices) — EXECUTING
+Plan: 1 of 1
 **Milestone:** v0.1 MVP
-**Active Phase:** Phase 02.1 — Code Style & Form Patterns Refactor — EXECUTING
-**Status:** Phase 02.1 shipped — PR #19
+**Active Phase:** Phase 02.1.1 — Audit and migrate to neon-serverless per Neon best practices
+**Status:** Executing Phase 02.1.1
 **Last session:** 2026-04-03T19:11:23.100Z
 
 ## Next Action
 
-Begin Phase 03 (Transactions)
+Execute Phase 02.1.1 (neon-serverless driver swap)
 
 ## Phase Status
 
 | Phase | Name | Status |
 |-------|------|--------|
-| 1 | Foundation & Auth Infrastructure | pending |
-| 2 | Households, Accounts & Classification | pending |
+| 1 | Foundation & Auth Infrastructure | complete |
+| 2 | Households, Accounts & Classification | complete |
+| 02.1 | Code Style & Form Patterns Refactor | complete |
+| 02.1.1 | Audit and migrate to neon-serverless per Neon best practices | active |
+| 02.2 | Add light/dark/system theme toggle | pending |
+| 02.3 | Vercel skills audit and guidelines | pending |
 | 3 | Transactions | pending |
 | 4 | Settlement & Budgets | pending |
 | 5 | CSV Import | pending |
