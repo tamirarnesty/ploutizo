@@ -66,7 +66,7 @@ export const CategoriesSettings = () => {
 
   return (
     <div className="max-w-2xl space-y-8">
-      <h1 className="font-[--font-heading] text-xl font-semibold">
+      <h1 className="font-heading text-xl font-semibold">
         Categories &amp; Tags
       </h1>
 

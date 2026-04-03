@@ -4,7 +4,7 @@ import { HouseholdSettingsForm } from "./HouseholdSettingsForm"
 
 export const HouseholdSettings = () => (
   <div className="max-w-2xl flex flex-col gap-8">
-    <h1 className="font-[--font-heading] text-xl font-semibold">Household</h1>
+    <h1 className="font-heading text-xl font-semibold">Household</h1>
 
     <section className="flex flex-col gap-3">
       <div className="flex flex-col gap-1">

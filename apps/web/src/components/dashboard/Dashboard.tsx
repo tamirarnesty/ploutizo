@@ -1,7 +1,7 @@
 export const Dashboard = () => {
   return (
     <div>
-      <h1 className="mb-4 font-[--font-heading] text-xl font-semibold">
+      <h1 className="mb-4 font-heading text-xl font-semibold">
         Dashboard
       </h1>
       <p className="text-sm text-muted-foreground">
