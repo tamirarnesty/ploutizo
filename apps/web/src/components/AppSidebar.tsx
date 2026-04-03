@@ -1,17 +1,17 @@
 import { Link, useRouterState } from "@tanstack/react-router"
 import { OrganizationSwitcher, UserButton } from "@clerk/tanstack-react-start"
-import { LayoutDashboard, CreditCard, Tag, Store, Home } from "lucide-react"
+import { CreditCard, Home, LayoutDashboard, Store, Tag } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
 } from "@ploutizo/ui/components/sidebar"
 
 const navItems = [
@@ -26,7 +26,7 @@ const settingsItems = [
   { label: "Household", to: "/settings/household", icon: Home },
 ] as const
 
-export function AppSidebar() {
+export const AppSidebar = () => {
   const { location } = useRouterState()
 
   return (

@@ -1,16 +1,12 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router"
+import { Outlet } from "@tanstack/react-router"
 import {
-  SidebarProvider,
   SidebarInset,
+  SidebarProvider,
   SidebarTrigger,
 } from "@ploutizo/ui/components/sidebar"
-import { AppSidebar } from "../components/AppSidebar"
+import { AppSidebar } from "@/components/AppSidebar"
 
-export const Route = createFileRoute("/_layout")({
-  component: LayoutShell,
-})
-
-function LayoutShell() {
+export const LayoutShell = () => {
   return (
     <SidebarProvider>
       <AppSidebar />
