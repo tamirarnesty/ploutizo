@@ -2,25 +2,25 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: MVP
-status: "Phase 02.1.1 shipped — PR #21"
-last_updated: "2026-04-03T20:12:08.336Z"
+status: planning
+last_updated: "2026-04-04T00:10:19.706Z"
 progress:
-  total_phases: 12
-  completed_phases: 4
-  total_plans: 17
-  completed_plans: 17
+  total_phases: 26
+  completed_phases: 5
+  total_plans: 18
+  completed_plans: 18
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 02.2
+Phase: 02.3
 Plan: Not started
 **Milestone:** v0.1 MVP
 **Active Phase:** Phase 02.1.1 — Audit and Migrate to Neon Serverless — COMPLETE
-**Status:** Phase 02.1.1 shipped — PR #21
-**Last session:** 2026-04-03T19:58:11.793Z
+**Status:** Ready to plan
+**Last session:** 2026-04-03T21:42:04.159Z
 
 ## Next Action
 
@@ -36,11 +36,24 @@ Begin Phase 02.2 (light/dark/system theme toggle)
 | 02.1.1 | Audit and migrate to neon-serverless per Neon best practices | complete |
 | 02.2 | Add light/dark/system theme toggle | pending |
 | 02.3 | Vercel skills audit and guidelines | pending |
-| 3 | Transactions | pending |
-| 4 | Settlement & Budgets | pending |
-| 5 | CSV Import | pending |
-| 6 | Savings, Investments & Net Worth | pending |
-| 7 | Notifications | pending |
+| 3.1 | Transaction Schema & Migrations | pending |
+| 3.2 | Transaction API | pending |
+| 3.3 | Transaction List UI | pending |
+| 3.4 | Transaction Forms UI | pending |
+| 4.1 | Settlement API | pending |
+| 4.2 | Settlement UI | pending |
+| 4.3 | Budgets API | pending |
+| 4.4 | Budget Dashboard UI | pending |
+| 5.1 | Bank Normalizers | pending |
+| 5.2 | Import Batch API | pending |
+| 5.3 | Import UI | pending |
+| 5.4 | Import Bulk Actions & Duplicate Handling | pending |
+| 6.1 | Investment Schema & Contribution Room API | pending |
+| 6.2 | Savings Contributions UI | pending |
+| 6.3 | Net Worth API | pending |
+| 6.4 | Net Worth UI | pending |
+| 7.1 | Notifications Table & Write Triggers | pending |
+| 7.2 | Notification Feed UI | pending |
 
 ## Initialization Summary
 
