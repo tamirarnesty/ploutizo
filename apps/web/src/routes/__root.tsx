@@ -12,6 +12,7 @@ import { useEffect } from "react"
 import { createServerFn } from "@tanstack/react-start"
 import appCss from "@ploutizo/ui/globals.css?url"
 import { ThemeProvider } from "@ploutizo/ui/components/theme-provider"
+import { TooltipProvider } from "@ploutizo/ui/components/tooltip"
 import { queryClient, setTokenGetter } from "../lib/queryClient"
 
 const authGuard = createServerFn().handler(async () => {
@@ -52,12 +53,14 @@ const RootDocument = ({ children }: { children: React.ReactNode }) => (
         disableTransitionOnChange
         storageKey="theme"
       >
-        <QueryClientProvider client={queryClient}>
-          <ClerkProvider appearance={{ theme: shadcn }}>
-            <TokenInitializer />
-            {children}
-          </ClerkProvider>
-        </QueryClientProvider>
+        <TooltipProvider delayDuration={500}>
+          <QueryClientProvider client={queryClient}>
+            <ClerkProvider appearance={{ theme: shadcn }}>
+              <TokenInitializer />
+              {children}
+            </ClerkProvider>
+          </QueryClientProvider>
+        </TooltipProvider>
       </ThemeProvider>
       <Scripts />
     </body>
