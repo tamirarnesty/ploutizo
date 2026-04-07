@@ -29,7 +29,7 @@ import {
 } from "@ploutizo/ui/components/field"
 import { AccountFormSchema } from "@ploutizo/validators"
 import { useAppForm } from "@ploutizo/ui/components/form"
-import type { Account, AccountMember, OrgMember } from "@ploutizo/types"
+import type { Account, AccountMember } from "@ploutizo/types"
 import type { AccountForm as AccountFormType } from "@ploutizo/validators"
 import {
   useCreateAccount,
@@ -56,17 +56,13 @@ interface AccountFormProps {
 interface AccountFormInnerProps {
   account: Account | null
   existingMembers: Array<AccountMember>
-  orgMembers: Array<OrgMember>
   onClose: () => void
 }
 
 export const AccountForm = ({ account, onClose }: AccountFormProps) => {
-  // Both queries fire simultaneously — no sequential waterfall (async-parallel rule)
-  const { data: existingMembers, isLoading: membersLoading } =
-    useGetAccountMembers(account?.id ?? null)
-  const { data: orgMembers = [], isLoading: orgLoading } = useGetOrgMembers()
+  const { data: existingMembers, isLoading } = useGetAccountMembers(account?.id ?? null)
 
-  if (membersLoading || orgLoading) {
+  if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <Spinner />
@@ -74,19 +70,12 @@ export const AccountForm = ({ account, onClose }: AccountFormProps) => {
     )
   }
 
-  return (
-    <AccountFormInner
-      account={account}
-      existingMembers={existingMembers ?? []}
-      orgMembers={orgMembers}
-      onClose={onClose}
-    />
-  )
+  return <AccountFormInner account={account} existingMembers={existingMembers ?? []} onClose={onClose} />
 }
 
-const AccountFormInner = ({ account, existingMembers, orgMembers, onClose }: AccountFormInnerProps) => {
+const AccountFormInner = ({ account, existingMembers, onClose }: AccountFormInnerProps) => {
   const isEditing = account !== null
-  const members = orgMembers
+  const { data: members = [] } = useGetOrgMembers()
   const createAccount = useCreateAccount()
   const updateAccount = useUpdateAccount(account?.id ?? "")
   const [advancedOpen, setAdvancedOpen] = useState(false)
@@ -161,17 +150,15 @@ const AccountFormInner = ({ account, existingMembers, orgMembers, onClose }: Acc
                 <FieldLabel htmlFor="account-name">Name</FieldLabel>
                 <Input
                   id="account-name"
-                  name="account-name"
-                  autoComplete="off"
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value)}
                   onBlur={field.handleBlur}
                   placeholder="e.g. Joint Chequing"
                   aria-invalid={field.state.meta.errors.length > 0}
                 />
-                {field.state.meta.errors.length > 0 && (
+                {field.state.meta.errors.length > 0 ? (
                   <FieldError>{String(field.state.meta.errors[0])}</FieldError>
-                )}
+                ) : null}
               </Field>
             )}
           </form.AppField>
@@ -210,8 +197,6 @@ const AccountFormInner = ({ account, existingMembers, orgMembers, onClose }: Acc
                 </FieldLabel>
                 <Input
                   id="account-institution"
-                  name="account-institution"
-                  autoComplete="organization"
                   value={field.state.value ?? ""}
                   onChange={(e) => field.handleChange(e.target.value)}
                   onBlur={field.handleBlur}
@@ -231,8 +216,6 @@ const AccountFormInner = ({ account, existingMembers, orgMembers, onClose }: Acc
                 </FieldLabel>
                 <Input
                   id="account-last-four"
-                  name="account-last-four"
-                  autoComplete="off"
                   value={field.state.value ?? ""}
                   onChange={(e) => field.handleChange(e.target.value.replace(/\D/g, "").slice(0, 4))}
                   onBlur={field.handleBlur}
@@ -341,7 +324,7 @@ const AccountFormInner = ({ account, existingMembers, orgMembers, onClose }: Acc
         <form.Subscribe selector={(s: { isSubmitting: boolean }) => s.isSubmitting}>
           {(isSubmitting) => (
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Spinner className="mr-1" />}
+              {isSubmitting ? <Spinner className="mr-1" /> : null}
               {isEditing ? "Save changes" : "Add account"}
             </Button>
           )}
