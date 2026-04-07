@@ -1,7 +1,11 @@
 "use client"
 
 import { useTheme } from "next-themes"
-import { Moon as MoonIcon, Sun as SunIcon, SunMoon as SunMoonIcon } from "lucide-react"
+import {
+  Moon as MoonIcon,
+  Sun as SunIcon,
+  SunMoon as SunMoonIcon,
+} from "lucide-react"
 import { Button } from "@ploutizo/ui/components/button"
 import {
   Tooltip,

@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: MVP
 status: planning
-last_updated: "2026-04-04T00:10:19.706Z"
+last_updated: "2026-04-04T02:40:24.406Z"
 progress:
-  total_phases: 26
+  total_phases: 27
   completed_phases: 5
-  total_plans: 18
+  total_plans: 22
   completed_plans: 18
 ---
 
@@ -20,7 +20,7 @@ Plan: Not started
 **Milestone:** v0.1 MVP
 **Active Phase:** Phase 02.1.1 — Audit and Migrate to Neon Serverless — COMPLETE
 **Status:** Ready to plan
-**Last session:** 2026-04-03T21:42:04.159Z
+**Last session:** 2026-04-04T02:40:24.401Z
 
 ## Next Action
 
@@ -96,6 +96,7 @@ Begin Phase 02.2 (light/dark/system theme toggle)
 - Phase 02.1.1 inserted after Phase 02.1: Audit and migrate to neon-serverless per Neon best practices (URGENT)
 - Phase 02.2 inserted after Phase 2: add light/dark/system theme toggle with default 'system' theme being set (URGENT)
 - Phase 02.3 inserted after Phase 02: vercel skills audit and guidelines (URGENT)
+- Phase 02.4 inserted after Phase 02: app shell and sidebar redesign (URGENT)
 
 ## Blockers / Open Items
 

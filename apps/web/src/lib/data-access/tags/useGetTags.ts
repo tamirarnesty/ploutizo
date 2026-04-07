@@ -1,5 +1,5 @@
-import {  useQuery } from "@tanstack/react-query"
-import type {UseQueryResult} from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query"
+import type { UseQueryResult } from "@tanstack/react-query"
 import { apiFetch } from "@/lib/queryClient"
 
 export interface Tag {
