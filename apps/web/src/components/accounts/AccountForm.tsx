@@ -150,6 +150,8 @@ const AccountFormInner = ({ account, existingMembers, onClose }: AccountFormInne
                 <FieldLabel htmlFor="account-name">Name</FieldLabel>
                 <Input
                   id="account-name"
+                  name="account-name"
+                  autoComplete="off"
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value)}
                   onBlur={field.handleBlur}
@@ -197,6 +199,8 @@ const AccountFormInner = ({ account, existingMembers, onClose }: AccountFormInne
                 </FieldLabel>
                 <Input
                   id="account-institution"
+                  name="account-institution"
+                  autoComplete="organization"
                   value={field.state.value ?? ""}
                   onChange={(e) => field.handleChange(e.target.value)}
                   onBlur={field.handleBlur}
@@ -216,6 +220,8 @@ const AccountFormInner = ({ account, existingMembers, onClose }: AccountFormInne
                 </FieldLabel>
                 <Input
                   id="account-last-four"
+                  name="account-last-four"
+                  autoComplete="off"
                   value={field.state.value ?? ""}
                   onChange={(e) => field.handleChange(e.target.value.replace(/\D/g, "").slice(0, 4))}
                   onBlur={field.handleBlur}

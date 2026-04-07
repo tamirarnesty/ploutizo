@@ -73,7 +73,7 @@ export const CategoryForm = ({ category, onClose }: CategoryFormProps) => {
               <FieldLabel htmlFor="category-name">Name</FieldLabel>
               <Input
                 id="category-name"
-                autoFocus
+                autoFocus // Primary input in a dialog opened by user action — autoFocus is intentional
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
