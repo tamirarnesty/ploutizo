@@ -221,15 +221,20 @@ function ComboboxChips({
   ...props
 }: React.ComponentProps<"div">) {
   const { setOpen } = React.useContext(ComboboxContext)
+  const containerRef = React.useRef<HTMLDivElement>(null)
   return (
     <PopoverPrimitive.Anchor asChild>
       <div
+        ref={containerRef}
         data-slot="combobox-chips"
         className={cn(
           "flex min-h-9 w-full cursor-text flex-wrap items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
           className,
         )}
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setOpen(true)
+          containerRef.current?.querySelector<HTMLInputElement>("input")?.focus()
+        }}
         {...props}
       >
         {children}
