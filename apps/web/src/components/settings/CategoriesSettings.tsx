@@ -10,7 +10,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@ploutizo/ui/components/alert-dialog"
-import { GripVertical } from "lucide-react"
+import { Badge } from "@ploutizo/ui/components/badge"
+import { GripVertical, X } from "lucide-react"
 import {
   Sortable,
   SortableItem,
@@ -202,26 +203,37 @@ export const CategoriesSettings = () => {
               onValueChange={setTagInputValue}
             />
             <ComboboxList>
-              {tags
-                .filter((t) =>
+              {(() => {
+                const filtered = tags.filter((t) =>
                   tagInputValue
                     ? t.name.toLowerCase().includes(tagInputValue.toLowerCase())
                     : true
                 )
-                .map((tag) => (
-                  <ComboboxItem key={tag.id} value={tag.id}>
-                    {tag.name}
-                  </ComboboxItem>
-                ))}
-              {tagInputValue &&
-              !tags.some(
-                (t) => t.name.toLowerCase() === tagInputValue.toLowerCase()
-              ) ? (
-                <ComboboxItem value={`__create__${tagInputValue}`}>
-                  Create &ldquo;{tagInputValue}&rdquo;
-                </ComboboxItem>
-              ) : null}
-              <ComboboxEmpty>No tags found</ComboboxEmpty>
+                const showCreate =
+                  tagInputValue.length > 0 &&
+                  !tags.some(
+                    (t) =>
+                      t.name.toLowerCase() === tagInputValue.toLowerCase()
+                  )
+                const showEmpty = filtered.length === 0 && !showCreate
+                return (
+                  <>
+                    {filtered.map((tag) => (
+                      <ComboboxItem key={tag.id} value={tag.id}>
+                        {tag.name}
+                      </ComboboxItem>
+                    ))}
+                    {showCreate ? (
+                      <ComboboxItem value={`__create__${tagInputValue}`}>
+                        Create &ldquo;{tagInputValue}&rdquo;
+                      </ComboboxItem>
+                    ) : null}
+                    {showEmpty ? (
+                      <ComboboxEmpty>No tags found</ComboboxEmpty>
+                    ) : null}
+                  </>
+                )
+              })()}
             </ComboboxList>
           </ComboboxContent>
         </Combobox>
@@ -244,22 +256,21 @@ export const CategoriesSettings = () => {
         ) : (
           <div className="flex flex-wrap gap-2">
             {tags.map((tag) => (
-              <div
+              <Badge
                 key={tag.id}
-                className="flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-sm"
+                variant="secondary"
+                className="h-auto gap-1 px-2 py-1 text-sm font-normal"
               >
                 <span>{tag.name}</span>
-                <Button
+                <button
                   type="button"
-                  variant="ghost"
-                  size="icon-xs"
                   onClick={() => archiveTag.mutate(tag.id)}
-                  className="ml-1 text-muted-foreground hover:text-destructive"
+                  className="ml-0.5 rounded-sm opacity-70 hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   aria-label={`Archive tag ${tag.name}`}
                 >
-                  &times;
-                </Button>
-              </div>
+                  <X size={12} aria-hidden="true" />
+                </button>
+              </Badge>
             ))}
           </div>
         )}
