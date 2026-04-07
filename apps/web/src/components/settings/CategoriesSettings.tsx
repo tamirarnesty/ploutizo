@@ -10,8 +10,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@ploutizo/ui/components/alert-dialog"
-import { Badge } from "@ploutizo/ui/components/badge"
-import { GripVertical, X } from "lucide-react"
+import { GripVertical } from "lucide-react"
 import {
   Sortable,
   SortableItem,
@@ -19,12 +18,13 @@ import {
 } from "@ploutizo/ui/components/reui/sortable"
 import {
   Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
   ComboboxContent,
   ComboboxEmpty,
-  ComboboxInput,
   ComboboxItem,
   ComboboxList,
-  ComboboxTrigger,
 } from "@ploutizo/ui/components/reui/combobox"
 import { Button } from "@ploutizo/ui/components/button"
 import { CategoryDialog } from "./CategoryDialog"
@@ -178,101 +178,72 @@ export const CategoriesSettings = () => {
           <h2 className="text-sm font-semibold">Tags</h2>
         </div>
 
-        {/* Tag inline creation via Combobox — D-20 */}
-        <Combobox
-          value=""
-          onValueChange={(selectedValue) => {
-            if (selectedValue.startsWith("__create__")) {
-              const name = selectedValue.replace("__create__", "")
-              createTag.mutate(
-                { name },
-                { onSuccess: () => setTagInputValue("") }
-              )
-            }
-            // Selecting an existing tag: tag already exists — no action needed on this page
-            // (the combobox is for creating tags; existing tags are shown in the pill list below)
-          }}
-        >
-          <ComboboxTrigger className="h-9 w-full max-w-sm px-3 text-left text-sm">
-            {tagInputValue || "Search or create a tag…"}
-          </ComboboxTrigger>
-          <ComboboxContent>
-            <ComboboxInput
-              placeholder="Search tags…"
-              value={tagInputValue}
-              onValueChange={setTagInputValue}
-            />
-            <ComboboxList>
-              {(() => {
-                const filtered = tags.filter((t) =>
-                  tagInputValue
-                    ? t.name.toLowerCase().includes(tagInputValue.toLowerCase())
-                    : true
-                )
-                const showCreate =
-                  tagInputValue.length > 0 &&
-                  !tags.some(
-                    (t) =>
-                      t.name.toLowerCase() === tagInputValue.toLowerCase()
-                  )
-                const showEmpty = filtered.length === 0 && !showCreate
-                return (
-                  <>
-                    {filtered.map((tag) => (
-                      <ComboboxItem key={tag.id} value={tag.id}>
-                        {tag.name}
-                      </ComboboxItem>
-                    ))}
-                    {showCreate ? (
-                      <ComboboxItem value={`__create__${tagInputValue}`}>
-                        Create &ldquo;{tagInputValue}&rdquo;
-                      </ComboboxItem>
-                    ) : null}
-                    {showEmpty ? (
-                      <ComboboxEmpty>No tags found</ComboboxEmpty>
-                    ) : null}
-                  </>
-                )
-              })()}
-            </ComboboxList>
-          </ComboboxContent>
-        </Combobox>
-
         {tagLoading ? (
-          <div className="space-y-2">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-8 motion-safe:animate-pulse rounded bg-muted" />
-            ))}
-          </div>
-        ) : tags.length === 0 ? (
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-muted-foreground">
-              No tags yet
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Tags appear here when you create them during a transaction.
-            </p>
-          </div>
+          <div className="h-9 motion-safe:animate-pulse rounded-md bg-muted" />
         ) : (
-          <div className="flex flex-wrap gap-2">
-            {tags.map((tag) => (
-              <Badge
-                key={tag.id}
-                variant="secondary"
-                className="h-auto gap-1 px-2 py-1 text-sm font-normal"
-              >
-                <span>{tag.name}</span>
-                <button
-                  type="button"
-                  onClick={() => archiveTag.mutate(tag.id)}
-                  className="ml-0.5 rounded-sm opacity-70 hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  aria-label={`Archive tag ${tag.name}`}
+          <Combobox
+            value=""
+            onValueChange={(selectedValue) => {
+              if (selectedValue.startsWith("__create__")) {
+                const name = selectedValue.replace("__create__", "")
+                createTag.mutate(
+                  { name },
+                  { onSuccess: () => setTagInputValue("") }
+                )
+              }
+            }}
+          >
+            <ComboboxChips>
+              {tags.map((tag) => (
+                <ComboboxChip
+                  key={tag.id}
+                  onRemove={() => archiveTag.mutate(tag.id)}
                 >
-                  <X size={12} aria-hidden="true" />
-                </button>
-              </Badge>
-            ))}
-          </div>
+                  {tag.name}
+                </ComboboxChip>
+              ))}
+              <ComboboxChipsInput
+                placeholder={tags.length === 0 ? "Add a tag…" : ""}
+                value={tagInputValue}
+                onValueChange={setTagInputValue}
+                aria-label="Search or create a tag"
+              />
+            </ComboboxChips>
+            <ComboboxContent>
+              <ComboboxList>
+                {(() => {
+                  const filtered = tags.filter((t) =>
+                    tagInputValue
+                      ? t.name.toLowerCase().includes(tagInputValue.toLowerCase())
+                      : true
+                  )
+                  const showCreate =
+                    tagInputValue.length > 0 &&
+                    !tags.some(
+                      (t) => t.name.toLowerCase() === tagInputValue.toLowerCase()
+                    )
+                  const showEmpty = filtered.length === 0 && !showCreate
+                  return (
+                    <>
+                      {filtered.map((tag) => (
+                        <ComboboxItem key={tag.id} value={tag.id}>
+                          {tag.name}
+                        </ComboboxItem>
+                      ))}
+                      {showCreate ? (
+                        <ComboboxItem value={`__create__${tagInputValue}`}>
+                          Create &ldquo;{tagInputValue}&rdquo;
+                        </ComboboxItem>
+                      ) : null}
+                      {showEmpty ? (
+                        <ComboboxEmpty>No tags found</ComboboxEmpty>
+                      ) : null}
+                    </>
+                  )
+                })()}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
         )}
       </section>
 

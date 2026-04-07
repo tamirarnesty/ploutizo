@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { Popover as PopoverPrimitive } from "radix-ui"
+import { X as XIcon } from "lucide-react"
 import { cn } from "@ploutizo/ui/lib/utils"
 
 // ---------------------------------------------------------------------------
@@ -210,8 +211,104 @@ function ComboboxEmpty({
   )
 }
 
+// ---------------------------------------------------------------------------
+// ComboboxChips — flex-wrap anchor container; opens popover on click/focus
+// ---------------------------------------------------------------------------
+
+function ComboboxChips({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<"div">) {
+  const { setOpen } = React.useContext(ComboboxContext)
+  return (
+    <PopoverPrimitive.Anchor asChild>
+      <div
+        data-slot="combobox-chips"
+        className={cn(
+          "flex min-h-9 w-full cursor-text flex-wrap items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
+          className,
+        )}
+        onClick={() => setOpen(true)}
+        {...props}
+      >
+        {children}
+      </div>
+    </PopoverPrimitive.Anchor>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// ComboboxChip — individual chip inside ComboboxChips
+// ---------------------------------------------------------------------------
+
+interface ComboboxChipProps {
+  children: React.ReactNode
+  onRemove?: () => void
+  className?: string
+}
+
+function ComboboxChip({ children, onRemove, className }: ComboboxChipProps) {
+  return (
+    <span
+      data-slot="combobox-chip"
+      className={cn(
+        "inline-flex items-center gap-1 rounded-md bg-secondary px-1.5 py-0.5 text-xs font-medium text-secondary-foreground",
+        className,
+      )}
+    >
+      {children}
+      {onRemove ? (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            onRemove()
+          }}
+          className="rounded-sm opacity-70 hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          aria-label="Remove"
+        >
+          <XIcon size={10} aria-hidden="true" />
+        </button>
+      ) : null}
+    </span>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// ComboboxChipsInput — inline text input inside ComboboxChips
+// ---------------------------------------------------------------------------
+
+interface ComboboxChipsInputProps
+  extends Omit<React.ComponentProps<"input">, "onChange"> {
+  onValueChange?: (value: string) => void
+}
+
+function ComboboxChipsInput({
+  className,
+  onValueChange,
+  ...props
+}: ComboboxChipsInputProps) {
+  const { setOpen } = React.useContext(ComboboxContext)
+  return (
+    <input
+      data-slot="combobox-chips-input"
+      className={cn(
+        "min-w-[6rem] flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed",
+        className,
+      )}
+      onChange={(e) => onValueChange?.(e.target.value)}
+      onFocus={() => setOpen(true)}
+      {...props}
+    />
+  )
+}
+
 export {
   Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
   ComboboxContent,
   ComboboxEmpty,
   ComboboxInput,
