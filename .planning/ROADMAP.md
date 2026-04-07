@@ -108,14 +108,14 @@ Plans:
 **Goal:** Prune Next.js/RSC rules from the vercel-react-best-practices skill, fix all SPA violations in apps/web (waterfall fetches, setState-during-render), audit and fix composition patterns and web design guideline violations, and write CLAUDE.md with explicit Vercel skill trigger conditions so future agents apply these skills automatically.
 **Requirements**: TBD (no formal requirements — all tasks derive from CONTEXT.md decisions D-01 through D-06)
 **Depends on:** Phase 02
-**Plans:** 5 plans (4 complete, 1 gap closure pending)
+**Plans:** 5/5 plans complete
 
 Plans:
 - [x] 02.3-01-PLAN.md — Prune RSC-only rules from vercel-react-best-practices SKILL.md (delete 7 rule files, update bundle-dynamic-imports to React.lazy())
 - [x] 02.3-02-PLAN.md — Fix confirmed violations: AccountForm waterfall (async-parallel), CategoriesSettings setState-during-render (rerender-derived-state-no-effect), QueryClient staleTime documentation
 - [x] 02.3-03-PLAN.md — Composition patterns audit + web-design-guidelines audit: fix all remaining violations across apps/web
 - [x] 02.3-04-PLAN.md — Create CLAUDE.md with explicit Vercel skills trigger conditions (D-05, D-06) + human verification checkpoint
-- [ ] 02.3-05-PLAN.md — Gap closure: autoComplete on 4 text inputs, motion-safe:animate-pulse on 2 skeleton loaders, && -> ternary across 5 files
+- [x] 02.3-05-PLAN.md — Gap closure: autoComplete on 4 text inputs, motion-safe:animate-pulse on 2 skeleton loaders, && -> ternary across 5 files
 
 ### Phase 02.2: add light/dark/system theme toggle with default 'system' theme being set (INSERTED)
 
