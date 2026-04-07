@@ -29,7 +29,7 @@ import {
 } from "@ploutizo/ui/components/field"
 import { AccountFormSchema } from "@ploutizo/validators"
 import { useAppForm } from "@ploutizo/ui/components/form"
-import type { Account, AccountMember } from "@ploutizo/types"
+import type { Account, AccountMember, OrgMember } from "@ploutizo/types"
 import type { AccountForm as AccountFormType } from "@ploutizo/validators"
 import {
   useCreateAccount,
@@ -56,13 +56,17 @@ interface AccountFormProps {
 interface AccountFormInnerProps {
   account: Account | null
   existingMembers: Array<AccountMember>
+  orgMembers: Array<OrgMember>
   onClose: () => void
 }
 
 export const AccountForm = ({ account, onClose }: AccountFormProps) => {
-  const { data: existingMembers, isLoading } = useGetAccountMembers(account?.id ?? null)
+  // Both queries fire simultaneously — no sequential waterfall (async-parallel rule)
+  const { data: existingMembers, isLoading: membersLoading } =
+    useGetAccountMembers(account?.id ?? null)
+  const { data: orgMembers = [], isLoading: orgLoading } = useGetOrgMembers()
 
-  if (isLoading) {
+  if (membersLoading || orgLoading) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <Spinner />
@@ -70,12 +74,19 @@ export const AccountForm = ({ account, onClose }: AccountFormProps) => {
     )
   }
 
-  return <AccountFormInner account={account} existingMembers={existingMembers ?? []} onClose={onClose} />
+  return (
+    <AccountFormInner
+      account={account}
+      existingMembers={existingMembers ?? []}
+      orgMembers={orgMembers}
+      onClose={onClose}
+    />
+  )
 }
 
-const AccountFormInner = ({ account, existingMembers, onClose }: AccountFormInnerProps) => {
+const AccountFormInner = ({ account, existingMembers, orgMembers, onClose }: AccountFormInnerProps) => {
   const isEditing = account !== null
-  const { data: members = [] } = useGetOrgMembers()
+  const members = orgMembers
   const createAccount = useCreateAccount()
   const updateAccount = useUpdateAccount(account?.id ?? "")
   const [advancedOpen, setAdvancedOpen] = useState(false)
@@ -83,7 +94,7 @@ const AccountFormInner = ({ account, existingMembers, onClose }: AccountFormInne
   const loadedMemberIds = existingMembers.map((m) => m.memberId)
 
   const form = useAppForm({
-     
+
     defaultValues: ({
       name: account?.name ?? "",
       type: account?.type ?? "chequing",
@@ -150,6 +161,8 @@ const AccountFormInner = ({ account, existingMembers, onClose }: AccountFormInne
                 <FieldLabel htmlFor="account-name">Name</FieldLabel>
                 <Input
                   id="account-name"
+                  name="account-name"
+                  autoComplete="off"
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value)}
                   onBlur={field.handleBlur}
@@ -197,6 +210,8 @@ const AccountFormInner = ({ account, existingMembers, onClose }: AccountFormInne
                 </FieldLabel>
                 <Input
                   id="account-institution"
+                  name="account-institution"
+                  autoComplete="organization"
                   value={field.state.value ?? ""}
                   onChange={(e) => field.handleChange(e.target.value)}
                   onBlur={field.handleBlur}
@@ -216,6 +231,8 @@ const AccountFormInner = ({ account, existingMembers, onClose }: AccountFormInne
                 </FieldLabel>
                 <Input
                   id="account-last-four"
+                  name="account-last-four"
+                  autoComplete="off"
                   value={field.state.value ?? ""}
                   onChange={(e) => field.handleChange(e.target.value.replace(/\D/g, "").slice(0, 4))}
                   onBlur={field.handleBlur}
