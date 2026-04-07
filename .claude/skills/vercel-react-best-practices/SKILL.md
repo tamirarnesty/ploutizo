@@ -47,7 +47,7 @@ Reference these guidelines when:
 ### 2. Bundle Size Optimization (CRITICAL)
 
 - `bundle-barrel-imports` - Import directly, avoid barrel files
-- `bundle-dynamic-imports` - Use next/dynamic for heavy components
+- `bundle-dynamic-imports` - Use React.lazy() + Suspense for heavy components
 - `bundle-defer-third-party` - Load analytics/logging after hydration
 - `bundle-conditional` - Load modules only when feature is activated
 - `bundle-preload` - Preload on hover/focus for perceived speed
