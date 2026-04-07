@@ -59,7 +59,7 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
       const payload = {
         pattern: value.pattern.trim(),
         matchType: value.matchType,
-        renameTo: value.renameTo.trim() || undefined,
+        renameTo: value.renameTo?.trim() || undefined,
         categoryId: value.categoryId, // already null — no conversion needed
       }
       const mutation = isEditing ? updateRule : createRule
@@ -136,7 +136,6 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
             <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
               <FieldLabel>Pattern</FieldLabel>
               <Input
-                autoComplete="off"
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
@@ -147,9 +146,9 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
                 }
                 aria-invalid={field.state.meta.errors.length > 0}
               />
-              {field.state.meta.errors.length > 0 ? (
+              {field.state.meta.errors.length > 0 && (
                 <FieldError>{field.state.meta.errors[0]?.toString()}</FieldError>
-              ) : null}
+              )}
             </Field>
           )}
         </form.AppField>
@@ -163,8 +162,7 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
                 <span className="text-muted-foreground">(optional)</span>
               </FieldLabel>
               <Input
-                autoComplete="off"
-                value={field.state.value}
+                value={field.state.value ?? ""}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
               />

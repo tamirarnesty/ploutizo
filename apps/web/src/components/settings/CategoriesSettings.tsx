@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,9 +52,13 @@ export const CategoriesSettings = () => {
 
   // Locally manage category order for optimistic reorder UX
   const [localCategories, setLocalCategories] = useState<Array<Category>>([])
-  if (!catLoading && localCategories.length === 0 && categories.length > 0) {
-    setLocalCategories(categories)
-  }
+  const initialized = useRef<boolean>(false)
+  useEffect(() => {
+    if (!initialized.current && !catLoading && categories.length > 0) {
+      initialized.current = true
+      setLocalCategories(categories)
+    }
+  }, [categories, catLoading])
 
   const handleReorder = (newOrder: Array<Category>) => {
     setLocalCategories(newOrder)
@@ -86,7 +90,7 @@ export const CategoriesSettings = () => {
         {catLoading ? (
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-10 motion-safe:animate-pulse rounded bg-muted" />
+              <div key={i} className="h-10 animate-pulse rounded bg-muted" />
             ))}
           </div>
         ) : displayCategories.length === 0 ? (
@@ -114,12 +118,12 @@ export const CategoriesSettings = () => {
                     <span className="text-muted-foreground">
                       {renderLucideIcon(cat.icon, 16)}
                     </span>
-                    {cat.colour ? (
+                    {cat.colour && (
                       <span
                         className={`size-3 rounded-full bg-${cat.colour} shrink-0`}
                       />
-                    ) : null}
-                    <span className="flex-1 text-sm">{cat.name}</span>
+                    )}
+                    <span className="min-w-0 flex-1 truncate text-sm">{cat.name}</span>
                     <Button
                       type="button"
                       variant="ghost"
@@ -210,13 +214,13 @@ export const CategoriesSettings = () => {
                   </ComboboxItem>
                 ))}
               {tagInputValue &&
-              !tags.some(
-                (t) => t.name.toLowerCase() === tagInputValue.toLowerCase()
-              ) ? (
-                <ComboboxItem value={`__create__${tagInputValue}`}>
-                  Create &ldquo;{tagInputValue}&rdquo;
-                </ComboboxItem>
-              ) : null}
+                !tags.some(
+                  (t) => t.name.toLowerCase() === tagInputValue.toLowerCase()
+                ) && (
+                  <ComboboxItem value={`__create__${tagInputValue}`}>
+                    Create &ldquo;{tagInputValue}&rdquo;
+                  </ComboboxItem>
+                )}
               <ComboboxEmpty>No tags found</ComboboxEmpty>
             </ComboboxList>
           </ComboboxContent>
@@ -225,7 +229,7 @@ export const CategoriesSettings = () => {
         {tagLoading ? (
           <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-8 motion-safe:animate-pulse rounded bg-muted" />
+              <div key={i} className="h-8 animate-pulse rounded bg-muted" />
             ))}
           </div>
         ) : tags.length === 0 ? (
@@ -262,12 +266,12 @@ export const CategoriesSettings = () => {
       </section>
 
       {/* Category dialog */}
-      {dialogCategory !== false ? (
+      {dialogCategory !== false && (
         <CategoryDialog
           category={dialogCategory}
           onClose={() => setDialogCategory(false)}
         />
-      ) : null}
+      )}
     </div>
   )
 }

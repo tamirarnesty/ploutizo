@@ -13,11 +13,7 @@ export const setTokenGetter = (getter: () => Promise<string | null>) => {
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // staleTime: 60s — stale-while-revalidate semantics (client-swr-dedup rule).
-      // TanStack Query deduplicates requests with the same queryKey across all
-      // component instances. Queries are served from cache for 60s before
-      // background refetch. Increase per-query if data changes infrequently.
-      staleTime: 1000 * 60,
+      staleTime: 1000 * 60, // 1 minute
       retry: 1,
     },
   },
