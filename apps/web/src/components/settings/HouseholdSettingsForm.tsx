@@ -25,7 +25,7 @@ export const HouseholdSettingsForm = () => {
       },
     },
     onSubmit: ({ value }) => {
-      const dollars = parseFloat(value.thresholdDollars ?? "")
+      const dollars = parseFloat(value.thresholdDollars)
       const cents = isNaN(dollars) ? null : Math.round(dollars * 100)
       mutation.mutate({ settlementThreshold: cents }, {
         onError: () => form.setErrorMap({ onSubmit: "Couldn't save changes. Check your connection and try again." }),
@@ -52,7 +52,7 @@ export const HouseholdSettingsForm = () => {
                 type="number"
                 min="0"
                 step="0.01"
-                value={field.state.value ?? ""}
+                value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
                 className="w-32"
