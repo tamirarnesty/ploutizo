@@ -25,7 +25,7 @@ export const HouseholdSettingsForm = () => {
       },
     },
     onSubmit: ({ value }) => {
-      const dollars = parseFloat(value.thresholdDollars)
+      const dollars = parseFloat(value.thresholdDollars ?? "")
       const cents = isNaN(dollars) ? null : Math.round(dollars * 100)
       mutation.mutate({ settlementThreshold: cents }, {
         onError: () => form.setErrorMap({ onSubmit: "Couldn't save changes. Check your connection and try again." }),
@@ -48,25 +48,26 @@ export const HouseholdSettingsForm = () => {
             <>
               <Input
                 id="settlement-threshold"
+                autoComplete="off"
                 type="number"
                 min="0"
                 step="0.01"
-                value={field.state.value}
+                value={field.state.value ?? ""}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
                 className="w-32"
                 aria-invalid={field.state.meta.errors.length > 0}
               />
-              {field.state.meta.errors.length > 0 && (
+              {field.state.meta.errors.length > 0 ? (
                 <p className="text-xs text-destructive">{field.state.meta.errors[0]}</p>
-              )}
+              ) : null}
             </>
           )}
         </form.AppField>
         <form.Subscribe selector={(s) => s.isSubmitting}>
           {(isSubmitting) => (
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Spinner className="mr-1" />}
+              {isSubmitting ? <Spinner className="mr-1" /> : null}
               Save changes
             </Button>
           )}
