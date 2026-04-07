@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,9 +52,17 @@ export const CategoriesSettings = () => {
 
   // Locally manage category order for optimistic reorder UX
   const [localCategories, setLocalCategories] = useState<Array<Category>>([])
-  if (!catLoading && localCategories.length === 0 && categories.length > 0) {
-    setLocalCategories(categories)
-  }
+  const categoriesInitialized = useRef(false)
+
+  // Initialize from server data exactly once on first successful load.
+  // useRef flag prevents re-initialization on subsequent server invalidations,
+  // which would wipe in-flight optimistic drag order.
+  useEffect(() => {
+    if (!categoriesInitialized.current && !catLoading && categories.length > 0) {
+      categoriesInitialized.current = true
+      setLocalCategories(categories)
+    }
+  }, [catLoading, categories])
 
   const handleReorder = (newOrder: Array<Category>) => {
     setLocalCategories(newOrder)
