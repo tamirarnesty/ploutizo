@@ -6,6 +6,7 @@ import { DialogFooter } from "@ploutizo/ui/components/dialog"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -105,11 +106,13 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(MATCH_TYPE_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
+                  <SelectGroup>
+                    {Object.entries(MATCH_TYPE_LABELS).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 </SelectContent>
               </Select>
             </Field>
@@ -188,12 +191,14 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
                   <SelectValue placeholder="No category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {/* NO SelectItem with value="" — Radix throws at runtime */}
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
+                  <SelectGroup>
+                    {/* NO SelectItem with value="" — Radix throws at runtime */}
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 </SelectContent>
               </Select>
             </Field>
@@ -209,7 +214,7 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
         }
       </form.Subscribe>
 
-      <DialogFooter>
+      <DialogFooter className="mt-4">
         <Button variant="outline" type="button" onClick={onClose}>
           Cancel
         </Button>

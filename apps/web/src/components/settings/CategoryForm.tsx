@@ -120,7 +120,7 @@ export const CategoryForm = ({ category, onClose }: CategoryFormProps) => {
         }
       </form.Subscribe>
 
-      <DialogFooter>
+      <DialogFooter className="mt-4">
         <Button variant="outline" type="button" onClick={onClose}>
           Cancel
         </Button>
