@@ -160,10 +160,10 @@ export const LucideIconPicker = ({ value, onChange }: LucideIconPickerProps) => 
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72 space-y-2 p-3">
         <Input
-          autoFocus
+          autoFocus // Picker opened by user action — autoFocus on search is intentional and expected
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search icons..."
+          placeholder="Search icons…"
         />
         {filtered.length === 0 ? (
           <p className="py-2 text-center text-xs text-muted-foreground">
