@@ -35,9 +35,9 @@ Three skills are installed in `.claude/skills/`. Apply them as follows:
 
 **Action:** Read `.claude/skills/vercel-react-best-practices/SKILL.md` before beginning. Apply all applicable rule categories listed below.
 
-**SPA-applicable rule categories (Next.js/RSC rules permanently removed):**
+**SPA-applicable rule categories:**
 - **Eliminating Waterfalls (`async-*`):** Use `useQueries` for parallel fetches. Avoid `isLoading` early returns that gate other query hooks from mounting. For SPA loading states, fire all queries at the top level and show a combined skeleton.
-- **Bundle Size (`bundle-*`):** Avoid external library barrel imports where tree-shaking is uncertain. Internal `data-access/*/index.ts` barrels are fine (Vite bundles them). Use `React.lazy()` + `<Suspense>` (not `next/dynamic`) for heavy components. Add external heavy libraries to `optimizeDeps.include` in `vite.config.ts`.
+- **Bundle Size (`bundle-*`):** Avoid external library barrel imports where tree-shaking is uncertain. Internal `data-access/*/index.ts` barrels are fine (Vite bundles them). Use `React.lazy()` + `<Suspense>` for heavy components. Add external heavy libraries to `optimizeDeps.include` in `vite.config.ts`.
 - **Server-Side Performance — SPA subset (`server-*`):** Applies to Hono API handlers in `apps/api`. In React components: hoist static data to module scope (`server-hoist-static-io`), avoid module-level mutable state shared across requests (`server-no-shared-module-state`).
 - **Client-Side Data Fetching (`client-*`):** TanStack Query already satisfies `client-swr-dedup` — same queryKey deduplicates across all component instances. Keep global `staleTime` non-zero on `QueryClient` (currently 60s). Deduplicate event listeners (`client-event-listeners`).
 - **Re-render Optimization (`rerender-*`):** No `setState` during render body — use `useEffect` + `useRef` guard for one-time state initialization. No inline component definitions inside render functions. Use primitive values as effect dependencies. Use `useCallback`/`useMemo` for stable references passed to memoized children.
