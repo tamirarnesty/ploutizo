@@ -1,17 +1,19 @@
 "use client"
 
-import { type ReactNode, createContext, useContext, useMemo } from "react"
-import {
-  type Column,
-  type ColumnFiltersState,
-  type RowData,
-  type SortingState,
-  type Table,
+import { createContext, useContext, useMemo } from "react"
+import type { ReactNode} from "react";
+import type {
+  Column,
+  ColumnFiltersState,
+  RowData,
+  SortingState,
+  Table,
 } from "@tanstack/react-table"
 
-import { cn } from "@ploutizo/ui/lib/utils"
+import { cn } from "@/lib/utils"
 
 declare module "@tanstack/react-table" {
+   
   interface ColumnMeta<TData extends RowData, TValue> {
     headerTitle?: string
     headerClassName?: string
@@ -106,9 +108,10 @@ export interface DataGridProps<TData extends object> {
   }
 }
 
-const DataGridContext = createContext<DataGridContextProps<any> | undefined>(
-  undefined
-)
+const DataGridContext = createContext<
+   
+  DataGridContextProps<any> | undefined
+>(undefined)
 
 function useDataGrid() {
   const context = useContext(DataGridContext)
@@ -252,7 +255,8 @@ function DataGridContainer({
       data-slot="data-grid"
       className={cn(
         "w-full overflow-hidden",
-        border && "rounded-lg border border-border",
+        border &&
+          "border-border rounded-lg border",
         className
       )}
     >

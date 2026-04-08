@@ -52,14 +52,18 @@ export const CategoriesSettings = () => {
     false
   )
   const [tagInputValue, setTagInputValue] = useState("")
-  const [optimisticallyRemovedIds, setOptimisticallyRemovedIds] = useState<Set<string>>(new Set())
+  const [optimisticallyRemovedIds, setOptimisticallyRemovedIds] = useState<
+    Set<string>
+  >(new Set())
   const anchor = useComboboxAnchor()
 
-  const visibleTags = tags.filter(t => !optimisticallyRemovedIds.has(t.id))
-  const visibleTagNames = visibleTags.map(t => t.name)
+  const visibleTags = tags.filter((t) => !optimisticallyRemovedIds.has(t.id))
+  const visibleTagNames = visibleTags.map((t) => t.name)
   const createOption =
     tagInputValue.length > 0 &&
-    !visibleTags.some(t => t.name.toLowerCase() === tagInputValue.toLowerCase())
+    !visibleTags.some(
+      (t) => t.name.toLowerCase() === tagInputValue.toLowerCase()
+    )
       ? `__create__${tagInputValue}`
       : null
 
@@ -103,7 +107,10 @@ export const CategoriesSettings = () => {
         {catLoading ? (
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-10 motion-safe:animate-pulse rounded bg-muted" />
+              <div
+                key={i}
+                className="h-10 rounded bg-muted motion-safe:animate-pulse"
+              />
             ))}
           </div>
         ) : displayCategories.length === 0 ? (
@@ -136,7 +143,9 @@ export const CategoriesSettings = () => {
                         className={`size-3 rounded-full bg-${cat.colour} shrink-0`}
                       />
                     ) : null}
-                    <span className="min-w-0 flex-1 truncate text-sm">{cat.name}</span>
+                    <span className="min-w-0 flex-1 truncate text-sm">
+                      {cat.name}
+                    </span>
                     <Button
                       type="button"
                       variant="ghost"
@@ -147,15 +156,17 @@ export const CategoriesSettings = () => {
                       Edit
                     </Button>
                     <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="text-muted-foreground hover:text-destructive"
-                        >
-                          Archive
-                        </Button>
+                      <AlertDialogTrigger
+                        render={
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="text-muted-foreground hover:text-destructive"
+                          />
+                        }
+                      >
+                        Archive
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
@@ -191,7 +202,7 @@ export const CategoriesSettings = () => {
         </div>
 
         {tagLoading ? (
-          <div className="h-9 motion-safe:animate-pulse rounded-md bg-muted" />
+          <div className="h-9 rounded-md bg-muted motion-safe:animate-pulse" />
         ) : (
           <Combobox
             multiple
@@ -199,20 +210,25 @@ export const CategoriesSettings = () => {
             filteredItems={createOption ? [createOption] : []}
             value={visibleTagNames}
             onValueChange={(newValues) => {
-              const removed = visibleTagNames.filter(n => !newValues.includes(n))
+              const removed = visibleTagNames.filter(
+                (n) => !newValues.includes(n)
+              )
               for (const name of removed) {
-                const tag = visibleTags.find(t => t.name === name)
+                const tag = visibleTags.find((t) => t.name === name)
                 if (!tag) continue
-                setOptimisticallyRemovedIds(prev => new Set([...prev, tag.id]))
+                setOptimisticallyRemovedIds(
+                  (prev) => new Set([...prev, tag.id])
+                )
                 archiveTag.mutate(tag.id, {
-                  onError: () => setOptimisticallyRemovedIds(prev => {
-                    const next = new Set(prev)
-                    next.delete(tag.id)
-                    return next
-                  }),
+                  onError: () =>
+                    setOptimisticallyRemovedIds((prev) => {
+                      const next = new Set(prev)
+                      next.delete(tag.id)
+                      return next
+                    }),
                 })
               }
-              const created = newValues.find(v => v.startsWith("__create__"))
+              const created = newValues.find((v) => v.startsWith("__create__"))
               if (created) {
                 createTag.mutate(
                   { name: created.replace("__create__", "") },
@@ -226,11 +242,13 @@ export const CategoriesSettings = () => {
               <ComboboxValue>
                 {(selectedValue: Array<string> | null) => (
                   <>
-                    {(selectedValue ?? []).map(name => (
+                    {(selectedValue ?? []).map((name) => (
                       <ComboboxChip key={name}>{name}</ComboboxChip>
                     ))}
                     <ComboboxChipsInput
-                      placeholder={visibleTagNames.length === 0 ? "Add a tag…" : ""}
+                      placeholder={
+                        visibleTagNames.length === 0 ? "Add a tag…" : ""
+                      }
                     />
                   </>
                 )}
@@ -247,7 +265,9 @@ export const CategoriesSettings = () => {
                 )}
               </ComboboxList>
               <ComboboxEmpty>
-                {tagInputValue.length === 0 ? "Type to create a tag" : "Tag already exists"}
+                {tagInputValue.length === 0
+                  ? "Type to create a tag"
+                  : "Tag already exists"}
               </ComboboxEmpty>
             </ComboboxContent>
           </Combobox>

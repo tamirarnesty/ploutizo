@@ -10,7 +10,10 @@ import {
   AlertDialogTrigger,
 } from "@ploutizo/ui/components/alert-dialog"
 import { GripVertical } from "lucide-react"
-import { SortableItem, SortableItemHandle } from "@ploutizo/ui/components/reui/sortable"
+import {
+  SortableItem,
+  SortableItemHandle,
+} from "@ploutizo/ui/components/reui/sortable"
 import { Button } from "@ploutizo/ui/components/button"
 import type { MerchantRule } from "@/lib/data-access/merchant-rules"
 
@@ -28,20 +31,37 @@ interface MerchantRuleRowProps {
   onDelete: () => void
 }
 
-export const MerchantRuleRow = ({ rule, onEdit, onDelete }: MerchantRuleRowProps) => (
+export const MerchantRuleRow = ({
+  rule,
+  onEdit,
+  onDelete,
+}: MerchantRuleRowProps) => (
   <SortableItem value={rule.id}>
     <div className="flex items-center gap-3 rounded-md border border-border bg-card px-3 py-3">
-      <SortableItemHandle aria-label="Drag to reorder" className="cursor-grab text-muted-foreground">
+      <SortableItemHandle
+        aria-label="Drag to reorder"
+        className="cursor-grab text-muted-foreground"
+      >
         <GripVertical size={16} />
       </SortableItemHandle>
       <div className="min-w-0 flex-1">
-        <span className="text-xs text-muted-foreground">{MATCH_TYPE_LABELS[rule.matchType]}</span>
+        <span className="text-xs text-muted-foreground">
+          {MATCH_TYPE_LABELS[rule.matchType]}
+        </span>
         <p className="truncate font-mono text-sm">{rule.pattern}</p>
         {rule.renameTo && (
-          <p className="text-xs text-muted-foreground">&rarr; {rule.renameTo}</p>
+          <p className="text-xs text-muted-foreground">
+            &rarr; {rule.renameTo}
+          </p>
         )}
       </div>
-      <Button type="button" variant="ghost" size="sm" onClick={onEdit} className="text-muted-foreground">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={onEdit}
+        className="text-muted-foreground"
+      >
         Edit
       </Button>
       <DeleteRuleButton onDelete={onDelete} />
@@ -52,10 +72,17 @@ export const MerchantRuleRow = ({ rule, onEdit, onDelete }: MerchantRuleRowProps
 // Private helper — not exported, only used by MerchantRuleRow above in this file
 const DeleteRuleButton = ({ onDelete }: { onDelete: () => void }) => (
   <AlertDialog>
-    <AlertDialogTrigger asChild>
-      <Button type="button" variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive">
-        Delete
-      </Button>
+    <AlertDialogTrigger
+      render={
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground hover:text-destructive"
+        />
+      }
+    >
+      Delete
     </AlertDialogTrigger>
     <AlertDialogContent>
       <AlertDialogHeader>

@@ -52,11 +52,12 @@ export const AppSidebar = () => {
                   location.pathname.startsWith(to + "/")
                 return (
                   <SidebarMenuItem key={to}>
-                    <SidebarMenuButton asChild isActive={active}>
-                      <Link to={to}>
-                        <Icon />
-                        {label}
-                      </Link>
+                    <SidebarMenuButton
+                      isActive={active}
+                      render={<Link to={to} />}
+                    >
+                      <Icon />
+                      {label}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )
@@ -74,11 +75,12 @@ export const AppSidebar = () => {
                 const active = location.pathname === to
                 return (
                   <SidebarMenuItem key={to}>
-                    <SidebarMenuButton asChild isActive={active}>
-                      <Link to={to}>
-                        <Icon />
-                        {label}
-                      </Link>
+                    <SidebarMenuButton
+                      isActive={active}
+                      render={<Link to={to} />}
+                    >
+                      <Icon />
+                      {label}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )

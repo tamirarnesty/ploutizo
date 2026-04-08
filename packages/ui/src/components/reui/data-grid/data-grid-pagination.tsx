@@ -1,22 +1,23 @@
 "use client"
 
-import React, { ReactNode } from "react"
-import { useDataGrid } from "@ploutizo/components/reui/data-grid/data-grid"
+import React from "react"
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
+import type { ReactNode } from "react";
+import { useDataGrid } from "@/components/reui/data-grid/data-grid"
 
-import { cn } from "@ploutizo/ui/lib/utils"
-import { Button } from "@ploutizo/components/button"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/button"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@ploutizo/components/select"
-import { Skeleton } from "@ploutizo/components/skeleton"
-import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
+} from "@/components/select"
+import { Skeleton } from "@/components/skeleton"
 
 interface DataGridPaginationProps {
-  sizes?: number[]
+  sizes?: Array<number>
   sizesInfo?: string
   sizesLabel?: string
   sizesDescription?: string

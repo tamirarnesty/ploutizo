@@ -2,13 +2,23 @@
 
 import {
   memo,
-  ReactNode,
   useCallback,
   useEffect,
   useMemo,
   useState,
 } from "react"
-import { useDataGrid } from "@ploutizo/components/reui/data-grid/data-grid"
+import { flexRender } from "@tanstack/react-table"
+import {
+  useVirtualizer,
+} from "@tanstack/react-virtual"
+import type { HeaderGroup, Row, Table} from "@tanstack/react-table";
+import type {
+  ReactNode} from "react";
+import type {
+  VirtualItem,
+  Virtualizer,
+  VirtualizerOptions} from "@tanstack/react-virtual";
+import { useDataGrid } from "@/components/reui/data-grid/data-grid"
 import {
   DataGridTableBase,
   DataGridTableBody,
@@ -22,17 +32,10 @@ import {
   DataGridTableRowSpacer,
   DataGridTableViewport,
   getDataGridTableRowSections,
-} from "@ploutizo/components/reui/data-grid/data-grid-table"
-import { flexRender, HeaderGroup, Row, Table } from "@tanstack/react-table"
-import {
-  useVirtualizer,
-  VirtualItem,
-  Virtualizer,
-  VirtualizerOptions,
-} from "@tanstack/react-virtual"
+} from "@/components/reui/data-grid/data-grid-table"
 
-import { cn } from "@ploutizo/ui/lib/utils"
-import { Spinner } from "@ploutizo/components/ui/spinner"
+import { cn } from "@/lib/utils"
+import { Spinner } from "@/components/spinner"
 
 type DataGridTableVirtualScrollElements = {
   containerElement: HTMLDivElement | null
@@ -71,10 +74,10 @@ interface DataGridTableVirtualProps<TData> {
 interface VirtualBodyProps<TData> {
   table: Table<TData>
   columnCount: number
-  topRows: Row<TData>[]
-  centerRows: Row<TData>[]
-  bottomRows: Row<TData>[]
-  virtualItems: VirtualItem[]
+  topRows: Array<Row<TData>>
+  centerRows: Array<Row<TData>>
+  bottomRows: Array<Row<TData>>
+  virtualItems: Array<VirtualItem>
   totalSize: number
   isVirtualizationEnabled: boolean
   isInfiniteMode: boolean
@@ -161,7 +164,7 @@ function DataGridTableVirtualBody<TData>({
         )
       : 0
 
-  const renderedRows: ReactNode[] = []
+  const renderedRows: Array<ReactNode> = []
 
   topRows.forEach((row, index) => {
     renderedRows.push(

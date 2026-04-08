@@ -126,7 +126,10 @@ interface LucideIconPickerProps {
   onChange: (iconName: string) => void
 }
 
-export const LucideIconPicker = ({ value, onChange }: LucideIconPickerProps) => {
+export const LucideIconPicker = ({
+  value,
+  onChange,
+}: LucideIconPickerProps) => {
   const [search, setSearch] = useState("")
   const [open, setOpen] = useState(false)
 
@@ -140,23 +143,25 @@ export const LucideIconPicker = ({ value, onChange }: LucideIconPickerProps) => 
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          className="flex items-center gap-2"
-          aria-haspopup="listbox"
-          aria-expanded={open}
-        >
-          {SelectedIcon ? (
-            <SelectedIcon size={16} aria-hidden="true" />
-          ) : (
-            <span className="text-muted-foreground">Select icon</span>
-          )}
-          {value && (
-            <span className="text-xs text-muted-foreground">{value}</span>
-          )}
-        </Button>
+      <PopoverTrigger
+        render={
+          <Button
+            type="button"
+            variant="outline"
+            className="flex items-center gap-2"
+            aria-haspopup="listbox"
+            aria-expanded={open}
+          />
+        }
+      >
+        {SelectedIcon ? (
+          <SelectedIcon size={16} aria-hidden="true" />
+        ) : (
+          <span className="text-muted-foreground">Select icon</span>
+        )}
+        {value && (
+          <span className="text-xs text-muted-foreground">{value}</span>
+        )}
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72 space-y-2 p-3">
         <Input
