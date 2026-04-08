@@ -45,6 +45,14 @@ Resolved debug sessions. Used by `gsd-debugger` to surface known-pattern hypothe
 - **Files changed:** apps/web/package.json, packages/ui/package.json, .claude/hooks/gsd-lint-fix.js, .claude/settings.local.json, AccountSheet.tsx, AccountForm.tsx, CategoryDialog.tsx, CategoryForm.tsx, RuleDialog.tsx, RuleForm.tsx, HouseholdSettingsForm.tsx, vite.config.ts
 ---
 
+## lint-format-errors-and-missing-module — Missing ui/ shim files cause TypeScript module-not-found errors in reui vendor components
+- **Date:** 2026-04-08
+- **Error patterns:** module not found, @ploutizo/components/ui/popover, @ploutizo/components/ui/button, reui, data-grid, react-hooks/exhaustive-deps, no-unnecessary-condition, import/no-duplicates
+- **Root cause:** packages/ui/src/components/ui/ was missing re-export shim files for button, input, popover, scroll-area, separator, skeleton, dropdown-menu, and select. The @ploutizo/components/ui/* tsconfig path alias resolves to src/components/ui/*, but only checkbox.ts and spinner.ts existed. Additionally, ESLint v10 errors on inline react-hooks/exhaustive-deps disable comments in reui vendor files because the plugin wasn't registered, and strict @typescript-eslint rules were applied to third-party vendor code.
+- **Fix:** Created 8 missing shim files in packages/ui/src/components/ui/. Added a reui-specific ESLint overrides block in eslint.config.ts disabling strict rules for src/components/reui/**. Removed inline react-hooks/exhaustive-deps disable comments from 3 reui files. Fixed minor lint errors in field.tsx, AccountForm.tsx, and route.tsx.
+- **Files changed:** packages/ui/src/components/ui/button.ts, packages/ui/src/components/ui/input.ts, packages/ui/src/components/ui/popover.ts, packages/ui/src/components/ui/scroll-area.ts, packages/ui/src/components/ui/separator.ts, packages/ui/src/components/ui/skeleton.ts, packages/ui/src/components/ui/dropdown-menu.ts, packages/ui/src/components/ui/select.ts, packages/ui/eslint.config.ts, packages/ui/src/components/reui/data-grid/data-grid.tsx, packages/ui/src/components/reui/data-grid/data-grid-table.tsx, packages/ui/src/components/reui/data-grid/data-grid-column-header.tsx, packages/ui/src/components/field.tsx, apps/web/src/components/accounts/AccountForm.tsx, apps/web/src/routes/_layout.settings/route.tsx
+---
+
 ## create-account-fk-violation — accounts insert fails with FK violation because orgs row was never seeded by webhook
 - **Date:** 2026-04-03
 - **Error patterns:** DrizzleQueryError, foreign key constraint, accounts_org_id_orgs_id_fk, insert into accounts, org_id, orgs, FK violation, webhook, organization.created
