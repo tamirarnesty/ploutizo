@@ -1,45 +1,35 @@
-import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router"
-import { Home, Store, Tag } from "lucide-react"
-import { cn } from "@ploutizo/ui/lib/utils"
+import { Outlet, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router"
+import { Tabs, TabsList, TabsTrigger } from "@ploutizo/ui/components/tabs"
 
 export const Route = createFileRoute("/_layout/settings")({
   component: SettingsLayout,
 })
 
-const settingsNavItems = [
-  { label: "Categories & Tags", to: "/settings/categories", icon: Tag },
-  { label: "Merchant Rules", to: "/settings/merchant-rules", icon: Store },
-  { label: "Household", to: "/settings/household", icon: Home },
+const settingsTabs = [
+  { label: "Categories & Tags", value: "/settings/categories" },
+  { label: "Merchant Rules", value: "/settings/merchant-rules" },
+  { label: "Household", value: "/settings/household" },
 ] as const
 
 function SettingsLayout() {
   const { location } = useRouterState()
+  const navigate = useNavigate()
 
   return (
-    <div className="flex gap-8">
-      <nav className="w-48 shrink-0 flex flex-col gap-1" aria-label="Settings navigation">
-        {settingsNavItems.map(({ label, to, icon: Icon }) => {
-          const active = location.pathname === to
-          return (
-            <Link
-              key={to}
-              to={to}
-              className={cn(
-                "flex items-center gap-2 rounded-md px-3 py-2 text-sm min-w-0",
-                active
-                  ? "bg-accent font-medium text-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
-              )}
-            >
-              <Icon className="size-4 shrink-0" />
-              <span className="truncate">{label}</span>
-            </Link>
-          )
-        })}
-      </nav>
-      <div className="min-w-0 flex-1">
-        <Outlet />
-      </div>
+    <div className="flex flex-col gap-6">
+      <Tabs
+        value={location.pathname}
+        onValueChange={(value) => navigate({ to: value as string })}
+      >
+        <TabsList>
+          {settingsTabs.map(({ label, value }) => (
+            <TabsTrigger key={value} value={value}>
+              {label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+      <Outlet />
     </div>
   )
 }
