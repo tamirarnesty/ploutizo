@@ -1,5 +1,4 @@
 import { Link, useRouterState } from "@tanstack/react-router"
-import { OrganizationSwitcher } from "@clerk/tanstack-react-start"
 import { CreditCard, LayoutDashboard, Settings } from "lucide-react"
 import {
   Sidebar,
@@ -7,7 +6,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -23,24 +21,11 @@ const navItems = [
 
 export const AppSidebar = () => {
   const { location } = useRouterState()
-
   const isSettingsActive = location.pathname.startsWith("/settings")
 
   return (
-    <Sidebar collapsible="icon">
-      {/* Ploutizo wordmark + OrganizationSwitcher — collapses to nothing in icon-only mode (D-08, D-09) */}
-      <SidebarHeader>
-        <div className="flex items-center justify-between px-3 h-12 group-data-[collapsible=icon]:hidden">
-          <span className="font-sans text-base font-medium text-sidebar-foreground">Ploutizo</span>
-          <OrganizationSwitcher
-            hidePersonal={true}
-            afterCreateOrganizationUrl="/dashboard"
-            afterSelectOrganizationUrl="/dashboard"
-          />
-        </div>
-      </SidebarHeader>
-
-      {/* Primary nav — flat list, no group label (D-10: settings group removed) */}
+    <Sidebar collapsible="icon" variant="inset">
+      {/* Primary nav */}
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
@@ -65,13 +50,10 @@ export const AppSidebar = () => {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-      </SidebarContent>
 
-      {/* Footer: left cluster (ThemeToggle + Settings link) + right (collapse toggle) (D-02, D-11) */}
-      <SidebarFooter>
-        <div className="flex items-center justify-between px-2 py-2">
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
+        {/* Settings — pushed to bottom of content via mt-auto */}
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
@@ -84,7 +66,14 @@ export const AppSidebar = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
-          </div>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      {/* Footer: ThemeToggle (left) + collapse toggle (right) only */}
+      <SidebarFooter>
+        <div className="flex items-center justify-between px-2 py-2">
+          <ThemeToggle />
           <SidebarTrigger />
         </div>
       </SidebarFooter>
