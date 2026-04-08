@@ -94,6 +94,7 @@ export const AccountForm = ({
 
   return (
     <AccountFormInner
+      key={account?.id ?? "new"}
       account={account}
       existingMembers={existingMembers ?? []}
       orgMembers={orgMembers}
