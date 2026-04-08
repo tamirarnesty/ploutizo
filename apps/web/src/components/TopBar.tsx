@@ -14,8 +14,7 @@ export function TopBar() {
         afterCreateOrganizationUrl="/dashboard"
         afterSelectOrganizationUrl="/dashboard"
       />
-      <div className="flex-1" />
-      <div className="flex items-center gap-1">
+      <div className="ml-auto flex items-center gap-1">
         <ThemeToggle />
         <UserButton showName />
       </div>
