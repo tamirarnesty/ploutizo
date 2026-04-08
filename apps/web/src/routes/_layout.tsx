@@ -12,17 +12,15 @@ export const Route = createFileRoute("/_layout")({
 
 function LayoutShell() {
   return (
-    <SidebarProvider>
-      <div className="flex h-screen w-full flex-col">
-        <TopBar />
-        <div className="flex flex-1 min-h-0">
-          <AppSidebar />
-          <SidebarInset>
-            <main className="flex-1 overflow-auto p-6">
-              <Outlet />
-            </main>
-          </SidebarInset>
-        </div>
+    <SidebarProvider className="flex-col">
+      <TopBar />
+      <div className="flex flex-1 min-h-0">
+        <AppSidebar />
+        <SidebarInset>
+          <main className="flex-1 overflow-auto p-6">
+            <Outlet />
+          </main>
+        </SidebarInset>
       </div>
     </SidebarProvider>
   )
