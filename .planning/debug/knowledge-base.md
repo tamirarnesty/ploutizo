@@ -69,3 +69,11 @@ Resolved debug sessions. Used by `gsd-debugger` to surface known-pattern hypothe
 - **Files changed:** apps/api/src/middleware/tenantGuard.ts, apps/api/src/__tests__/tenantGuard.test.ts
 ---
 
+## select-selected-value-lowercase — Base UI SelectValue shows raw lowercase value slug instead of item label
+- **Date:** 2026-04-08
+- **Error patterns:** Select, SelectValue, lowercase, capitalization, trigger, chequing, contains, display label, Base UI, shadcn
+- **Root cause:** Base UI's SelectValue does not clone the selected SelectItem's DOM children into the trigger (unlike Radix UI). When no items prop is passed to SelectRoot, resolveSelectedLabel falls back to serializeValue(rawValue), showing the raw lowercase slug. This diverged when select.tsx was migrated from radix-ui to @base-ui/react/select in commit cd7eb5a — the API surface is identical but the internal rendering model for SelectValue is fundamentally different.
+- **Fix:** Pass a children render function to each SelectValue that maps the stored value to its display label. For static option arrays: `{(v) => OPTIONS.find(o => o.value === v)?.label ?? v}`. For record maps: `{(v) => LABEL_MAP[v] ?? v}`. For dynamic data (e.g. categories by ID): `{(v) => v ? data.find(d => d.id === v)?.name ?? v : <span className="text-muted-foreground">Placeholder</span>}`.
+- **Files changed:** apps/web/src/components/accounts/AccountForm.tsx, apps/web/src/components/settings/RuleForm.tsx
+---
+
