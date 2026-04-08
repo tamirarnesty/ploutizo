@@ -95,13 +95,14 @@ Plans:
 
 ### Phase 02.4: app shell and sidebar redesign (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
+**Goal:** Rebuild the app shell and sidebar into their final form: collapsible icon rail, slim full-width top bar with UserButton, sidebar header with Ploutizo wordmark and OrganizationSwitcher, Settings moved to a footer link, and a dedicated /settings page with vertical sub-nav.
+**Requirements**: D-01 through D-14 (see 02.4-CONTEXT.md)
 **Depends on:** Phase 02
-**Plans:** 0 plans
+**Plans:** 2 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 02.4 to break down)
+- [ ] 02.4-01-PLAN.md — Shell restructure + sidebar rebuild: TopBar component, collapsible icon rail, wordmark header, footer Settings link + collapse toggle
+- [ ] 02.4-02-PLAN.md — Settings vertical sub-nav layout: two-column SettingsLayout with left nav (Categories & Tags, Merchant Rules, Household) + Outlet
 
 ### Phase 02.3: vercel skills audit and guidelines (INSERTED) ✅ COMPLETE
 
