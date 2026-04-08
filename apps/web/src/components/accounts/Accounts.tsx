@@ -42,7 +42,6 @@ export const Accounts = () => {
       />
 
       <AccountSheet
-        key={editingAccount?.id ?? "new"}
         open={sheetOpen}
         account={editingAccount}
         onClose={handleSheetClose}

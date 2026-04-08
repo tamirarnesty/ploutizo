@@ -7,9 +7,7 @@
       "Read(**/*.pem)",
       "Read(**/*.key)"
     ],
-    "ask": [
-      "Read(.env.*)"
-    ],
+    "ask": ["Read(.env.*)"],
     "allow": [
       "Read(.env.example)",
       "Bash(date:*)",
@@ -28,7 +26,13 @@
       "Bash(git status:*)",
       "Bash(git log:*)",
       "Bash(git diff:*)",
-      "Bash(git tag:*)"
+      "Bash(git tag:*)",
+      "Bash(git -C * add:*)",
+      "Bash(git -C * commit:*)",
+      "Bash(git -C * status:*)",
+      "Bash(git -C * log:*)",
+      "Bash(git -C * diff:*)",
+      "Bash(git -C * tag:*)"
     ]
   },
   "env": {

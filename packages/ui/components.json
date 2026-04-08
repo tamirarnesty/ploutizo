@@ -1,6 +1,6 @@
 {
   "$schema": "https://ui.shadcn.com/schema.json",
-  "style": "radix-nova",
+  "style": "base-nova",
   "rsc": false,
   "tsx": true,
   "tailwind": {
@@ -14,11 +14,11 @@
   "menuColor": "default-translucent",
   "menuAccent": "subtle",
   "aliases": {
-    "components": "@ploutizo/ui/components",
-    "utils": "@ploutizo/ui/lib/utils",
-    "ui": "@ploutizo/ui/components",
-    "lib": "@ploutizo/ui/lib",
-    "hooks": "@ploutizo/ui/hooks"
+    "components": "@/components",
+    "utils": "@/lib/utils",
+    "ui": "@/components",
+    "lib": "@/lib",
+    "hooks": "@/hooks"
   },
   "registries": {
     "@reui": "https://reui.io/r/{style}/{name}.json"

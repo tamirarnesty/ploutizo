@@ -53,7 +53,7 @@ const RootDocument = ({ children }: { children: React.ReactNode }) => (
         disableTransitionOnChange
         storageKey="theme"
       >
-        <TooltipProvider delayDuration={500}>
+        <TooltipProvider delay={500}>
           <QueryClientProvider client={queryClient}>
             <ClerkProvider appearance={{ theme: shadcn }}>
               <TokenInitializer />

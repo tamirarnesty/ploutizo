@@ -2,8 +2,6 @@
 
 import {
   createContext,
-  CSSProperties,
-  ReactNode,
   useContext,
   useEffect,
   useId,
@@ -11,7 +9,35 @@ import {
   useRef,
   useState,
 } from "react"
-import { useDataGrid } from "@ploutizo/components/reui/data-grid/data-grid"
+import {
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  type Modifier,
+  MouseSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core"
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers"
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
+import { flexRender } from "@tanstack/react-table"
+
+import { GripHorizontalIcon } from "lucide-react"
+import type { Cell, HeaderGroup, Row } from "@tanstack/react-table";
+import type {
+  UniqueIdentifier} from "@dnd-kit/core";
+import type {
+  CSSProperties,
+  ReactNode} from "react";
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/button"
 import {
   DataGridTableBase,
   DataGridTableBody,
@@ -27,31 +53,8 @@ import {
   DataGridTableHeadRowCellResize,
   DataGridTableRowSpacer,
   DataGridTableViewport,
-} from "@ploutizo/components/reui/data-grid/data-grid-table"
-import {
-  closestCenter,
-  DndContext,
-  KeyboardSensor,
-  MouseSensor,
-  TouchSensor,
-  UniqueIdentifier,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type Modifier,
-} from "@dnd-kit/core"
-import { restrictToVerticalAxis } from "@dnd-kit/modifiers"
-import {
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable"
-import { CSS } from "@dnd-kit/utilities"
-import { Cell, flexRender, HeaderGroup, Row } from "@tanstack/react-table"
-
-import { cn } from "@ploutizo/ui/lib/utils"
-import { Button } from "@ploutizo/components/button"
-import { GripHorizontalIcon } from "lucide-react"
+} from "@/components/reui/data-grid/data-grid-table"
+import { useDataGrid } from "@/components/reui/data-grid/data-grid"
 
 // Context to share sortable listeners from row to handle
 type SortableContextValue = ReturnType<typeof useSortable>
@@ -145,7 +148,7 @@ function DataGridTableDndRows<TData>({
   footerContent,
 }: {
   handleDragEnd: (event: DragEndEvent) => void
-  dataIds: UniqueIdentifier[]
+  dataIds: Array<UniqueIdentifier>
   footerContent?: ReactNode
 }) {
   const { table, isLoading, props } = useDataGrid()

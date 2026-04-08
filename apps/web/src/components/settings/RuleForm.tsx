@@ -103,7 +103,9 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
                 }
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue />
+                  <SelectValue>
+                    {(v: string) => MATCH_TYPE_LABELS[v] ?? v}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
@@ -188,7 +190,17 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
                 onValueChange={(v) => field.handleChange(v === "" ? null : v)}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="No category" />
+                  <SelectValue>
+                    {(v: string) =>
+                      v ? (
+                        categories.find((c) => c.id === v)?.name ?? v
+                      ) : (
+                        <span className="text-muted-foreground">
+                          No category
+                        </span>
+                      )
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>

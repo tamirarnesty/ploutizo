@@ -1,13 +1,42 @@
 import {
-  CSSProperties,
   Fragment,
-  ReactNode,
   useEffect,
   useId,
   useRef,
   useState,
 } from "react"
-import { useDataGrid } from "@ploutizo/components/reui/data-grid/data-grid"
+import {
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core"
+import {
+  SortableContext,
+  horizontalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
+import {
+  flexRender
+} from "@tanstack/react-table"
+
+import { GripVerticalIcon } from "lucide-react"
+import type {
+  Cell,
+  Header,
+  HeaderGroup,
+  Row} from "@tanstack/react-table";
+import type {
+  Modifier} from "@dnd-kit/core";
+import type {
+  CSSProperties,
+  ReactNode} from "react";
+import { Button } from "@/components/button"
 import {
   DataGridTableBase,
   DataGridTableBody,
@@ -24,34 +53,8 @@ import {
   DataGridTableHeadRowCellResize,
   DataGridTableRowSpacer,
   DataGridTableViewport,
-} from "@ploutizo/components/reui/data-grid/data-grid-table"
-import {
-  closestCenter,
-  DndContext,
-  KeyboardSensor,
-  Modifier,
-  MouseSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core"
-import {
-  horizontalListSortingStrategy,
-  SortableContext,
-  useSortable,
-} from "@dnd-kit/sortable"
-import { CSS } from "@dnd-kit/utilities"
-import {
-  Cell,
-  flexRender,
-  Header,
-  HeaderGroup,
-  Row,
-} from "@tanstack/react-table"
-
-import { Button } from "@ploutizo/components/button"
-import { GripVerticalIcon } from "lucide-react"
+} from "@/components/reui/data-grid/data-grid-table"
+import { useDataGrid } from "@/components/reui/data-grid/data-grid"
 
 function DataGridTableDndHeader<TData>({
   header,

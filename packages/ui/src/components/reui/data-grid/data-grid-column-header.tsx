@@ -1,14 +1,16 @@
 "use client"
 
-import { HTMLAttributes, memo, ReactNode, useMemo } from "react"
+import { memo, useMemo } from "react"
+import { ArrowDownIcon, ArrowLeftIcon, ArrowLeftToLineIcon, ArrowRightIcon, ArrowRightToLineIcon, ArrowUpIcon, CheckIcon, ChevronsUpDownIcon, PinOffIcon, Settings2Icon } from "lucide-react"
+import type { HTMLAttributes, ReactNode} from "react";
+import type { Column } from "@tanstack/react-table"
 import {
   getColumnHeaderLabel,
   useDataGrid,
-} from "@ploutizo/components/reui/data-grid/data-grid"
-import { Column } from "@tanstack/react-table"
+} from "@/components/reui/data-grid/data-grid"
 
-import { cn } from "@ploutizo/ui/lib/utils"
-import { Button } from "@ploutizo/components/button"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/button"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -21,8 +23,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "@ploutizo/components/dropdown-menu"
-import { ArrowDownIcon, ArrowUpIcon, ChevronsUpDownIcon, CheckIcon, ArrowLeftToLineIcon, ArrowRightToLineIcon, ArrowLeftIcon, ArrowRightIcon, Settings2Icon, PinOffIcon } from "lucide-react"
+} from "@/components/dropdown-menu"
 
 interface DataGridColumnHeaderProps<
   TData,
@@ -97,7 +98,7 @@ function DataGridColumnHeaderInner<TData, TValue>({
     filter
 
   const menuItems = useMemo(() => {
-    const items: ReactNode[] = []
+    const items: Array<ReactNode> = []
     let hasPreviousSection = false
 
     // Filter section
@@ -235,7 +236,7 @@ function DataGridColumnHeaderInner<TData, TValue>({
             <Settings2Icon className="size-3.5!" />
             <span>Columns</span>
           </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent>
+          <DropdownMenuSubContent side="right">
             {table
               .getAllColumns()
               .filter((col) => col.getCanHide())
@@ -256,7 +257,6 @@ function DataGridColumnHeaderInner<TData, TValue>({
     }
 
     return items
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     filter,
     canSort,
@@ -280,17 +280,19 @@ function DataGridColumnHeaderInner<TData, TValue>({
     return (
       <div className="flex h-full items-center justify-between gap-1.5">
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              className={headerButtonClassName}
-              disabled={isLoading || recordCount === 0}
-            >
-              {icon && icon}
-              {resolvedTitle}
-              {sortIcon}
-            </Button>
-          </DropdownMenuTrigger>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="ghost"
+                className={headerButtonClassName}
+                disabled={isLoading || recordCount === 0}
+              >
+                {icon && icon}
+                {resolvedTitle}
+                {sortIcon}
+              </Button>
+            }
+          />
           <DropdownMenuContent className="w-40" align="start">
             {menuItems}
           </DropdownMenuContent>

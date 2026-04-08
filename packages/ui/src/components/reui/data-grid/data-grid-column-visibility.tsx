@@ -1,6 +1,6 @@
-import { ReactElement } from "react"
-import { getColumnHeaderLabel } from "@ploutizo/components/reui/data-grid/data-grid"
-import { Table } from "@tanstack/react-table"
+import type { Table } from "@tanstack/react-table"
+import type { ReactElement } from "react"
+import { getColumnHeaderLabel } from "@/components/reui/data-grid/data-grid"
 
 import {
   DropdownMenu,
@@ -9,7 +9,7 @@ import {
   DropdownMenuGroup,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-} from "@ploutizo/components/dropdown-menu"
+} from "@/components/dropdown-menu"
 
 function DataGridColumnVisibility<TData>({
   table,
@@ -20,7 +20,7 @@ function DataGridColumnVisibility<TData>({
 }) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+      <DropdownMenuTrigger render={trigger} />
       <DropdownMenuContent align="end" className="min-w-[150px]">
         <DropdownMenuGroup>
           <DropdownMenuLabel className="font-medium">

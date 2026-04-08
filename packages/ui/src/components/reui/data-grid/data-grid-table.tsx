@@ -1,10 +1,3 @@
-import type {
-  CSSProperties,
-  MouseEvent as ReactMouseEvent,
-  ReactNode,
-  TouchEvent as ReactTouchEvent,
-  Ref,
-} from "react"
 import {
   Fragment,
   memo,
@@ -13,21 +6,28 @@ import {
   useMemo,
   useState,
 } from "react"
-import { useDataGrid } from "@ploutizo/components/reui/data-grid/data-grid"
+import {
+  flexRender
+} from "@tanstack/react-table"
+import { cva } from "class-variance-authority"
 import type {
   Cell,
   Column,
   Header,
   HeaderGroup,
   Row,
-  Table,
-} from "@tanstack/react-table"
-import { flexRender } from "@tanstack/react-table"
-import { cva } from "class-variance-authority"
+  Table} from "@tanstack/react-table";
+import type {
+  CSSProperties,
+  MouseEvent as ReactMouseEvent,
+  ReactNode,
+  TouchEvent as ReactTouchEvent,
+  Ref} from "react";
+import { useDataGrid } from "@/components/reui/data-grid/data-grid"
 
-import { cn } from "@ploutizo/ui/lib/utils"
-import { Checkbox } from "@ploutizo/components/ui/checkbox"
-import { Spinner } from "@ploutizo/components/ui/spinner"
+import { cn } from "@/lib/utils"
+import { Checkbox } from "@/components/checkbox"
+import { Spinner } from "@/components/spinner"
 
 const headerCellSpacingVariants = cva("", {
   variants: {
@@ -166,7 +166,7 @@ function startDataGridColumnResizeOnEnd<TData>(
   const updateOffset = (clientXPos?: number, commit = false) => {
     if (typeof clientXPos !== "number") return
 
-    let nextColumnSizing: Record<string, number> = {}
+    const nextColumnSizing: Record<string, number> = {}
     const deltaOffset = (clientXPos - dragStartClientX) * directionMultiplier
     const deltaPercentage = Math.max(deltaOffset / startSize, -0.999999)
 
@@ -283,16 +283,16 @@ function getDataGridTableRowSections<TData>(
 ) {
   if (!rowsPinnable) {
     return {
-      topRows: [] as Row<TData>[],
-      centerRows: table.getRowModel().rows as Row<TData>[],
-      bottomRows: [] as Row<TData>[],
+      topRows: [] as Array<Row<TData>>,
+      centerRows: table.getRowModel().rows,
+      bottomRows: [] as Array<Row<TData>>,
     }
   }
 
   return {
-    topRows: table.getTopRows() as Row<TData>[],
-    centerRows: table.getCenterRows() as Row<TData>[],
-    bottomRows: table.getBottomRows() as Row<TData>[],
+    topRows: table.getTopRows(),
+    centerRows: table.getCenterRows(),
+    bottomRows: table.getBottomRows(),
   }
 }
 
@@ -410,17 +410,13 @@ function DataGridTableBase({ children }: { children: ReactNode }) {
     const headers = table.getFlatHeaders()
     const colSizes: Record<string, number> = {}
     for (let i = 0; i < headers.length; i++) {
-      const header = headers[i]!
+      const header = headers[i]
       colSizes[`--header-${header.id}-size`] = header.getSize()
       colSizes[`--col-${header.column.id}-size`] = header.column.getSize()
     }
     return colSizes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     props.tableLayout?.columnsResizable,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    table.getState().columnSizingInfo,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     table.getState().columnSizing,
   ])
 
@@ -502,7 +498,7 @@ function DataGridTableViewport({
     const scrollViewport =
       (viewportElement.closest(
         '[data-slot="scroll-area-viewport"]'
-      ) as HTMLElement | null) ?? viewportElement.parentElement
+      )) ?? viewportElement.parentElement
     const measurementTarget = scrollViewport ?? viewportElement
 
     const syncContainerWidth = () => {
@@ -592,7 +588,7 @@ function DataGridTableHeadRowCell<TData>({
 }: {
   children: ReactNode
   header: Header<TData, unknown>
-  dndRef?: Ref<HTMLTableCellElement>
+  dndRef?: React.Ref<HTMLTableCellElement>
   dndStyle?: CSSProperties
 }) {
   const { props } = useDataGrid()
@@ -928,8 +924,8 @@ function DataGridTableBodyRow<TData>({
   children: ReactNode
   row: Row<TData>
   pinnedBoundary?: DataGridTablePinnedBoundary
-  rowRef?: Ref<HTMLTableRowElement>
-  dndRef?: Ref<HTMLTableRowElement>
+  rowRef?: React.Ref<HTMLTableRowElement>
+  dndRef?: React.Ref<HTMLTableRowElement>
   dndStyle?: CSSProperties
 }) {
   const { props, table } = useDataGrid()
@@ -1007,7 +1003,7 @@ function DataGridTableBodyRowCell<TData>({
 }: {
   children: ReactNode
   cell: Cell<TData, unknown>
-  dndRef?: Ref<HTMLTableCellElement>
+  dndRef?: React.Ref<HTMLTableCellElement>
   dndStyle?: CSSProperties
 }) {
   const { props } = useDataGrid()
@@ -1068,7 +1064,7 @@ function DataGridTableRenderedRow<TData>({
 }: {
   row: Row<TData>
   pinnedBoundary?: DataGridTablePinnedBoundary
-  rowRef?: Ref<HTMLTableRowElement>
+  rowRef?: React.Ref<HTMLTableRowElement>
 }) {
   return (
     <Fragment>
@@ -1196,9 +1192,8 @@ function DataGridTableRowSelectAll() {
 
   return (
     <Checkbox
-      checked={
-        isSomeSelected && !isAllSelected ? "indeterminate" : isAllSelected
-      }
+      checked={isAllSelected}
+      indeterminate={isSomeSelected && !isAllSelected}
       disabled={isLoading || recordCount === 0}
       onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
       aria-label="Select all"

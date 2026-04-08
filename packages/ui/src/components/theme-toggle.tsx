@@ -23,18 +23,20 @@ export function ThemeToggle() {
 
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-8"
-          onClick={() => setTheme(cycleMap[current])}
-        >
-          {current === "system" && <SunMoonIcon />}
-          {current === "light" && <SunIcon />}
-          {current === "dark" && <MoonIcon />}
-          <span className="sr-only">{label}</span>
-        </Button>
+      <TooltipTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8"
+            onClick={() => setTheme(cycleMap[current])}
+          />
+        }
+      >
+        {current === "system" && <SunMoonIcon />}
+        {current === "light" && <SunIcon />}
+        {current === "dark" && <MoonIcon />}
+        <span className="sr-only">{label}</span>
       </TooltipTrigger>
       <TooltipContent>{label}</TooltipContent>
     </Tooltip>

@@ -45,11 +45,35 @@ Resolved debug sessions. Used by `gsd-debugger` to surface known-pattern hypothe
 - **Files changed:** apps/web/package.json, packages/ui/package.json, .claude/hooks/gsd-lint-fix.js, .claude/settings.local.json, AccountSheet.tsx, AccountForm.tsx, CategoryDialog.tsx, CategoryForm.tsx, RuleDialog.tsx, RuleForm.tsx, HouseholdSettingsForm.tsx, vite.config.ts
 ---
 
+## lint-format-errors-and-missing-module — Missing ui/ shim files cause TypeScript module-not-found errors in reui vendor components
+- **Date:** 2026-04-08
+- **Error patterns:** module not found, @ploutizo/components/ui/popover, @ploutizo/components/ui/button, reui, data-grid, react-hooks/exhaustive-deps, no-unnecessary-condition, import/no-duplicates
+- **Root cause:** packages/ui/src/components/ui/ was missing re-export shim files for button, input, popover, scroll-area, separator, skeleton, dropdown-menu, and select. The @ploutizo/components/ui/* tsconfig path alias resolves to src/components/ui/*, but only checkbox.ts and spinner.ts existed. Additionally, ESLint v10 errors on inline react-hooks/exhaustive-deps disable comments in reui vendor files because the plugin wasn't registered, and strict @typescript-eslint rules were applied to third-party vendor code.
+- **Fix:** Created 8 missing shim files in packages/ui/src/components/ui/. Added a reui-specific ESLint overrides block in eslint.config.ts disabling strict rules for src/components/reui/**. Removed inline react-hooks/exhaustive-deps disable comments from 3 reui files. Fixed minor lint errors in field.tsx, AccountForm.tsx, and route.tsx.
+- **Files changed:** packages/ui/src/components/ui/button.ts, packages/ui/src/components/ui/input.ts, packages/ui/src/components/ui/popover.ts, packages/ui/src/components/ui/scroll-area.ts, packages/ui/src/components/ui/separator.ts, packages/ui/src/components/ui/skeleton.ts, packages/ui/src/components/ui/dropdown-menu.ts, packages/ui/src/components/ui/select.ts, packages/ui/eslint.config.ts, packages/ui/src/components/reui/data-grid/data-grid.tsx, packages/ui/src/components/reui/data-grid/data-grid-table.tsx, packages/ui/src/components/reui/data-grid/data-grid-column-header.tsx, packages/ui/src/components/field.tsx, apps/web/src/components/accounts/AccountForm.tsx, apps/web/src/routes/_layout.settings/route.tsx
+---
+
+## edit-account-sheet-no-animation — Sheet animation skipped on edit open because key prop caused remount with open=true
+- **Date:** 2026-04-08
+- **Error patterns:** sheet, animation, no animation, slide, open, close, key, remount, AccountSheet, edit account, data-starting-style
+- **Root cause:** key={editingAccount?.id ?? "new"} was placed on AccountSheet in Accounts.tsx. When clicking an account row, the key changed from "new" to the account's id, causing React to unmount and remount the Sheet with open=true already set. Base UI's Dialog animation system (data-starting-style / data-ending-style) requires a closed→open lifecycle transition on a persistent instance — a freshly-mounted-open component skips the entrance animation entirely.
+- **Fix:** Removed key from AccountSheet so the Sheet wrapper persists across open/close cycles. Moved key={account?.id ?? "new"} down to AccountFormInner inside AccountForm.tsx so only the form subtree remounts when switching accounts, resetting defaultValues while preserving the Sheet's animation lifecycle.
+- **Files changed:** apps/web/src/components/accounts/Accounts.tsx, apps/web/src/components/accounts/AccountForm.tsx
+---
+
 ## create-account-fk-violation — accounts insert fails with FK violation because orgs row was never seeded by webhook
 - **Date:** 2026-04-03
 - **Error patterns:** DrizzleQueryError, foreign key constraint, accounts_org_id_orgs_id_fk, insert into accounts, org_id, orgs, FK violation, webhook, organization.created
 - **Root cause:** The orgs row for the active Clerk org was never inserted into the local database. The only path that creates an orgs row is the organization.created Clerk webhook (webhooks.ts). If that webhook fails to deliver — misconfigured CLERK_WEBHOOK_SECRET, network failure, or org created before the app was deployed — no orgs row exists, and every subsequent insert into accounts (or any table with FK to orgs.id) throws the FK constraint violation.
 - **Fix:** Added an upsert guard in tenantGuard.ts: before calling next(), runs db.insert(orgs).values({ id: orgId }).onConflictDoNothing() guarded by a process-lifetime seenOrgs Set to skip the DB round-trip after the first successful upsert per org. The webhook remains the authoritative creation path; this is an idempotent safety net.
 - **Files changed:** apps/api/src/middleware/tenantGuard.ts, apps/api/src/__tests__/tenantGuard.test.ts
+---
+
+## select-selected-value-lowercase — Base UI SelectValue shows raw lowercase value slug instead of item label
+- **Date:** 2026-04-08
+- **Error patterns:** Select, SelectValue, lowercase, capitalization, trigger, chequing, contains, display label, Base UI, shadcn
+- **Root cause:** Base UI's SelectValue does not clone the selected SelectItem's DOM children into the trigger (unlike Radix UI). When no items prop is passed to SelectRoot, resolveSelectedLabel falls back to serializeValue(rawValue), showing the raw lowercase slug. This diverged when select.tsx was migrated from radix-ui to @base-ui/react/select in commit cd7eb5a — the API surface is identical but the internal rendering model for SelectValue is fundamentally different.
+- **Fix:** Pass a children render function to each SelectValue that maps the stored value to its display label. For static option arrays: `{(v) => OPTIONS.find(o => o.value === v)?.label ?? v}`. For record maps: `{(v) => LABEL_MAP[v] ?? v}`. For dynamic data (e.g. categories by ID): `{(v) => v ? data.find(d => d.id === v)?.name ?? v : <span className="text-muted-foreground">Placeholder</span>}`.
+- **Files changed:** apps/web/src/components/accounts/AccountForm.tsx, apps/web/src/components/settings/RuleForm.tsx
 ---
 
