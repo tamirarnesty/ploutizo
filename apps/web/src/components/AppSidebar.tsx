@@ -1,19 +1,17 @@
 import { Link, useRouterState } from "@tanstack/react-router"
-import { OrganizationSwitcher, UserButton } from "@clerk/tanstack-react-start"
-import { CreditCard, Home, LayoutDashboard, Store, Tag } from "lucide-react"
+import { CreditCard, LayoutDashboard, Settings } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarTrigger,
 } from "@ploutizo/ui/components/sidebar"
-import { ThemeToggle } from "@ploutizo/ui/components/theme-toggle"
+
 
 const navItems = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
@@ -21,28 +19,14 @@ const navItems = [
   { label: "Accounts", to: "/accounts", icon: CreditCard },
 ] as const
 
-const settingsItems = [
-  { label: "Categories & Tags", to: "/settings/categories", icon: Tag },
-  { label: "Merchant Rules", to: "/settings/merchant-rules", icon: Store },
-  { label: "Household", to: "/settings/household", icon: Home },
-] as const
-
 export const AppSidebar = () => {
   const { location } = useRouterState()
+  const isSettingsActive = location.pathname.startsWith("/settings")
 
   return (
-    <Sidebar>
-      {/* OrganizationSwitcher pinned at top (D-02) */}
-      <SidebarHeader>
-        <OrganizationSwitcher
-          hidePersonal={true}
-          afterCreateOrganizationUrl="/dashboard"
-          afterSelectOrganizationUrl="/dashboard"
-        />
-      </SidebarHeader>
-
+    <Sidebar collapsible="icon" variant="inset" className="top-10">
+      {/* Primary nav */}
       <SidebarContent>
-        {/* Primary nav items */}
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu className="gap-1">
@@ -54,10 +38,11 @@ export const AppSidebar = () => {
                   <SidebarMenuItem key={to}>
                     <SidebarMenuButton
                       isActive={active}
+                      tooltip={label}
                       render={<Link to={to} />}
                     >
                       <Icon />
-                      {label}
+                      <span>{label}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )
@@ -66,36 +51,28 @@ export const AppSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Settings group (D-01) */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Settings</SidebarGroupLabel>
+        {/* Settings — pushed to bottom of content via mt-auto */}
+        <SidebarGroup className="mt-auto">
           <SidebarGroupContent>
-            <SidebarMenu className="gap-1">
-              {settingsItems.map(({ label, to, icon: Icon }) => {
-                const active = location.pathname === to
-                return (
-                  <SidebarMenuItem key={to}>
-                    <SidebarMenuButton
-                      isActive={active}
-                      render={<Link to={to} />}
-                    >
-                      <Icon />
-                      {label}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={isSettingsActive}
+                  tooltip="Settings"
+                  render={<Link to="/settings" />}
+                >
+                  <Settings />
+                  <span>Settings</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
-      {/* ThemeToggle + UserButton pinned at bottom (D-02, D-04) */}
+      {/* Footer: collapse toggle only — ThemeToggle moved to TopBar */}
       <SidebarFooter>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <UserButton />
-        </div>
+        <SidebarTrigger />
       </SidebarFooter>
     </Sidebar>
   )
