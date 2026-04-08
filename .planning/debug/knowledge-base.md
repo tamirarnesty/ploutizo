@@ -53,6 +53,14 @@ Resolved debug sessions. Used by `gsd-debugger` to surface known-pattern hypothe
 - **Files changed:** packages/ui/src/components/ui/button.ts, packages/ui/src/components/ui/input.ts, packages/ui/src/components/ui/popover.ts, packages/ui/src/components/ui/scroll-area.ts, packages/ui/src/components/ui/separator.ts, packages/ui/src/components/ui/skeleton.ts, packages/ui/src/components/ui/dropdown-menu.ts, packages/ui/src/components/ui/select.ts, packages/ui/eslint.config.ts, packages/ui/src/components/reui/data-grid/data-grid.tsx, packages/ui/src/components/reui/data-grid/data-grid-table.tsx, packages/ui/src/components/reui/data-grid/data-grid-column-header.tsx, packages/ui/src/components/field.tsx, apps/web/src/components/accounts/AccountForm.tsx, apps/web/src/routes/_layout.settings/route.tsx
 ---
 
+## edit-account-sheet-no-animation — Sheet animation skipped on edit open because key prop caused remount with open=true
+- **Date:** 2026-04-08
+- **Error patterns:** sheet, animation, no animation, slide, open, close, key, remount, AccountSheet, edit account, data-starting-style
+- **Root cause:** key={editingAccount?.id ?? "new"} was placed on AccountSheet in Accounts.tsx. When clicking an account row, the key changed from "new" to the account's id, causing React to unmount and remount the Sheet with open=true already set. Base UI's Dialog animation system (data-starting-style / data-ending-style) requires a closed→open lifecycle transition on a persistent instance — a freshly-mounted-open component skips the entrance animation entirely.
+- **Fix:** Removed key from AccountSheet so the Sheet wrapper persists across open/close cycles. Moved key={account?.id ?? "new"} down to AccountFormInner inside AccountForm.tsx so only the form subtree remounts when switching accounts, resetting defaultValues while preserving the Sheet's animation lifecycle.
+- **Files changed:** apps/web/src/components/accounts/Accounts.tsx, apps/web/src/components/accounts/AccountForm.tsx
+---
+
 ## create-account-fk-violation — accounts insert fails with FK violation because orgs row was never seeded by webhook
 - **Date:** 2026-04-03
 - **Error patterns:** DrizzleQueryError, foreign key constraint, accounts_org_id_orgs_id_fk, insert into accounts, org_id, orgs, FK violation, webhook, organization.created
