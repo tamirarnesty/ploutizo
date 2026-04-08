@@ -1,14 +1,12 @@
 "use client"
 
-import { HTMLAttributes, memo, ReactNode, useMemo } from "react"
+import { memo, useMemo } from "react"
 import {
   getColumnHeaderLabel,
   useDataGrid,
 } from "@ploutizo/components/reui/data-grid/data-grid"
-import { Column } from "@tanstack/react-table"
 
-import { cn } from "@ploutizo/ui/lib/utils"
-import { Button } from "@ploutizo/components/button"
+import { Button } from "@ploutizo/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -21,8 +19,22 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "@ploutizo/components/dropdown-menu"
-import { ArrowDownIcon, ArrowUpIcon, ChevronsUpDownIcon, CheckIcon, ArrowLeftToLineIcon, ArrowRightToLineIcon, ArrowLeftIcon, ArrowRightIcon, Settings2Icon, PinOffIcon } from "lucide-react"
+} from "@ploutizo/components/ui/dropdown-menu"
+import {
+  ArrowDownIcon,
+  ArrowLeftIcon,
+  ArrowLeftToLineIcon,
+  ArrowRightIcon,
+  ArrowRightToLineIcon,
+  ArrowUpIcon,
+  CheckIcon,
+  ChevronsUpDownIcon,
+  PinOffIcon,
+  Settings2Icon,
+} from "lucide-react"
+import { type HTMLAttributes, type ReactNode } from "react"
+import { type Column } from "@tanstack/react-table"
+import { cn } from "@ploutizo/ui/lib/utils"
 
 interface DataGridColumnHeaderProps<
   TData,
@@ -71,12 +83,12 @@ function DataGridColumnHeaderInner<TData, TValue>({
   }
 
   const headerLabelClassName = cn(
-    "text-secondary-foreground/80 inline-flex h-full items-center gap-1.5 font-normal [&_svg]:opacity-60 text-[0.8125rem] leading-[calc(1.125/0.8125)] [&_svg]:size-3.5",
+    "inline-flex h-full items-center gap-1.5 text-[0.8125rem] leading-[calc(1.125/0.8125)] font-normal text-secondary-foreground/80 [&_svg]:size-3.5 [&_svg]:opacity-60",
     className
   )
 
   const headerButtonClassName = cn(
-    "text-secondary-foreground/80 hover:bg-secondary data-[state=open]:bg-secondary hover:text-foreground data-[state=open]:text-foreground -ms-2 px-2 font-normal h-6 rounded-lg",
+    "-ms-2 h-6 rounded-lg px-2 font-normal text-secondary-foreground/80 hover:bg-secondary hover:text-foreground data-[state=open]:bg-secondary data-[state=open]:text-foreground",
     className
   )
 
@@ -97,7 +109,7 @@ function DataGridColumnHeaderInner<TData, TValue>({
     filter
 
   const menuItems = useMemo(() => {
-    const items: ReactNode[] = []
+    const items: Array<ReactNode> = []
     let hasPreviousSection = false
 
     // Filter section
@@ -130,7 +142,7 @@ function DataGridColumnHeaderInner<TData, TValue>({
           <ArrowUpIcon className="size-3.5!" />
           <span className="grow">Asc</span>
           {isSorted === "asc" && (
-            <CheckIcon className="text-primary size-4 opacity-100!" />
+            <CheckIcon className="size-4 text-primary opacity-100!" />
           )}
         </DropdownMenuItem>,
         <DropdownMenuItem
@@ -147,7 +159,7 @@ function DataGridColumnHeaderInner<TData, TValue>({
           <ArrowDownIcon className="size-3.5!" />
           <span className="grow">Desc</span>
           {isSorted === "desc" && (
-            <CheckIcon className="text-primary size-4 opacity-100!" />
+            <CheckIcon className="size-4 text-primary opacity-100!" />
           )}
         </DropdownMenuItem>
       )
@@ -167,7 +179,7 @@ function DataGridColumnHeaderInner<TData, TValue>({
           <ArrowLeftToLineIcon className="size-3.5!" aria-hidden="true" />
           <span className="grow">Pin to left</span>
           {isPinned === "left" && (
-            <CheckIcon className="text-primary size-4 opacity-100!" />
+            <CheckIcon className="size-4 text-primary opacity-100!" />
           )}
         </DropdownMenuItem>,
         <DropdownMenuItem
@@ -177,7 +189,7 @@ function DataGridColumnHeaderInner<TData, TValue>({
           <ArrowRightToLineIcon className="size-3.5!" aria-hidden="true" />
           <span className="grow">Pin to right</span>
           {isPinned === "right" && (
-            <CheckIcon className="text-primary size-4 opacity-100!" />
+            <CheckIcon className="size-4 text-primary opacity-100!" />
           )}
         </DropdownMenuItem>
       )
@@ -235,7 +247,7 @@ function DataGridColumnHeaderInner<TData, TValue>({
             <Settings2Icon className="size-3.5!" />
             <span>Columns</span>
           </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent>
+          <DropdownMenuSubContent side="right">
             {table
               .getAllColumns()
               .filter((col) => col.getCanHide())
@@ -256,7 +268,6 @@ function DataGridColumnHeaderInner<TData, TValue>({
     }
 
     return items
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     filter,
     canSort,
@@ -280,17 +291,19 @@ function DataGridColumnHeaderInner<TData, TValue>({
     return (
       <div className="flex h-full items-center justify-between gap-1.5">
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              className={headerButtonClassName}
-              disabled={isLoading || recordCount === 0}
-            >
-              {icon && icon}
-              {resolvedTitle}
-              {sortIcon}
-            </Button>
-          </DropdownMenuTrigger>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="ghost"
+                className={headerButtonClassName}
+                disabled={isLoading || recordCount === 0}
+              >
+                {icon && icon}
+                {resolvedTitle}
+                {sortIcon}
+              </Button>
+            }
+          />
           <DropdownMenuContent className="w-40" align="start">
             {menuItems}
           </DropdownMenuContent>

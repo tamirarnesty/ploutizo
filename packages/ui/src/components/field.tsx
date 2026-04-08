@@ -1,5 +1,5 @@
 import { useMemo } from "react"
-import { cva, type VariantProps } from "class-variance-authority"
+import { type VariantProps, cva } from "class-variance-authority"
 
 import { cn } from "@ploutizo/ui/lib/utils"
 import { Label } from "@ploutizo/ui/components/label"
@@ -192,7 +192,7 @@ function FieldError({
       ...new Map(errors.map((error) => [error?.message, error])).values(),
     ]
 
-    if (uniqueErrors?.length == 1) {
+    if (uniqueErrors.length == 1) {
       return uniqueErrors[0]?.message
     }
 

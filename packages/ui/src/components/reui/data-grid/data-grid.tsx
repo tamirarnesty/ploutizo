@@ -1,19 +1,17 @@
 "use client"
 
-import type { ReactNode } from "react"
-import { createContext, useContext, useMemo } from "react"
-import type {
-  Column,
-  ColumnFiltersState,
-  RowData,
-  SortingState,
-  Table,
+import { type ReactNode, createContext, useContext, useMemo } from "react"
+import {
+  type Column,
+  type ColumnFiltersState,
+  type RowData,
+  type SortingState,
+  type Table,
 } from "@tanstack/react-table"
 
 import { cn } from "@ploutizo/ui/lib/utils"
 
 declare module "@tanstack/react-table" {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData extends RowData, TValue> {
     headerTitle?: string
     headerClassName?: string
@@ -43,7 +41,7 @@ export type DataGridApiFetchParams = {
 }
 
 export type DataGridApiResponse<T> = {
-  data: T[]
+  data: Array<T>
   empty: boolean
   pagination: {
     total: number
@@ -108,10 +106,9 @@ export interface DataGridProps<TData extends object> {
   }
 }
 
-const DataGridContext = createContext<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  DataGridContextProps<any> | undefined
->(undefined)
+const DataGridContext = createContext<DataGridContextProps<any> | undefined>(
+  undefined
+)
 
 function useDataGrid() {
   const context = useContext(DataGridContext)
@@ -146,7 +143,6 @@ function DataGridProvider<TData extends object>({
       recordCount: props.recordCount,
       isLoading: props.isLoading || false,
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       table,
       props.recordCount,
@@ -158,9 +154,7 @@ function DataGridProvider<TData extends object>({
       props.emptyMessage,
       props.onRowClick,
       props.className,
-      // eslint-disable-next-line react-hooks/exhaustive-deps
       JSON.stringify(props.tableLayout),
-      // eslint-disable-next-line react-hooks/exhaustive-deps
       JSON.stringify(props.tableClassNames),
       tableState.sorting,
       tableState.pagination,
@@ -258,8 +252,7 @@ function DataGridContainer({
       data-slot="data-grid"
       className={cn(
         "w-full overflow-hidden",
-        border &&
-          "border-border rounded-lg border",
+        border && "rounded-lg border border-border",
         className
       )}
     >

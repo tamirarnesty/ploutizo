@@ -74,7 +74,11 @@ interface AccountFormInnerProps {
   onArchive?: () => void
 }
 
-export const AccountForm = ({ account, onClose, onArchive }: AccountFormProps) => {
+export const AccountForm = ({
+  account,
+  onClose,
+  onArchive,
+}: AccountFormProps) => {
   // Both queries fire simultaneously — no sequential waterfall (async-parallel rule)
   const { data: existingMembers, isLoading: membersLoading } =
     useGetAccountMembers(account?.id ?? null)
@@ -172,10 +176,10 @@ const AccountFormInner = ({
             <form.AppField name="ownership">
               {(field) => (
                 <ToggleGroup
-                  type="single"
-                  value={field.state.value}
+                  value={[field.state.value]}
                   onValueChange={(v) => {
-                    if (v) field.handleChange(v as "personal" | "shared")
+                    const last = v[v.length - 1]
+                    if (last) field.handleChange(last as "personal" | "shared")
                   }}
                   variant="outline"
                 >
@@ -408,15 +412,17 @@ const AccountFormInner = ({
       <div className="flex items-center justify-between gap-2 border-t border-border px-6 py-4">
         {onArchive ? (
           <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="ghost"
-                type="button"
-                className="text-destructive hover:text-destructive"
-              >
-                <Archive size={16} className="mr-1" aria-hidden="true" />
-                Archive
-              </Button>
+            <AlertDialogTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  type="button"
+                  className="text-destructive hover:text-destructive"
+                />
+              }
+            >
+              <Archive size={16} className="mr-1" aria-hidden="true" />
+              Archive
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
@@ -436,7 +442,9 @@ const AccountFormInner = ({
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-        ) : <span />}
+        ) : (
+          <span />
+        )}
         <div className="flex gap-2">
           <Button variant="outline" type="button" onClick={onClose}>
             Discard
