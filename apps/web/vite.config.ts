@@ -12,6 +12,9 @@ const config = defineConfig({
     tanstackStart(),
     viteReact(),
   ],
+  optimizeDeps: {
+    exclude: ["@clerk/ui"],
+  },
   resolve: {
     tsconfigPaths: true,
     alias: {
