@@ -1,8 +1,13 @@
-import { Outlet, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router"
+import { Outlet, createFileRoute, redirect, useNavigate, useRouterState } from "@tanstack/react-router"
 import { Tabs, TabsList, TabsTrigger } from "@ploutizo/ui/components/tabs"
 
 export const Route = createFileRoute("/_layout/settings")({
   component: SettingsLayout,
+  beforeLoad: ({ location }) => {
+    if (location.pathname === "/settings" || location.pathname === "/settings/") {
+      throw redirect({ to: "/settings/categories" })
+    }
+  },
 })
 
 const settingsTabs = [
@@ -17,6 +22,7 @@ function SettingsLayout() {
 
   return (
     <div className="flex flex-col gap-6">
+      <h1 className="text-2xl font-semibold">Settings</h1>
       <Tabs
         value={location.pathname}
         onValueChange={(value) => navigate({ to: value as string })}

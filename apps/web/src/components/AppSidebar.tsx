@@ -11,7 +11,7 @@ import {
   SidebarMenuItem,
   SidebarTrigger,
 } from "@ploutizo/ui/components/sidebar"
-import { ThemeToggle } from "@ploutizo/ui/components/theme-toggle"
+
 
 const navItems = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
@@ -24,7 +24,7 @@ export const AppSidebar = () => {
   const isSettingsActive = location.pathname.startsWith("/settings")
 
   return (
-    <Sidebar collapsible="icon" variant="inset">
+    <Sidebar collapsible="icon" variant="inset" className="top-10">
       {/* Primary nav */}
       <SidebarContent>
         <SidebarGroup>
@@ -70,12 +70,9 @@ export const AppSidebar = () => {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* Footer: ThemeToggle (left) + collapse toggle (right) only */}
+      {/* Footer: collapse toggle only — ThemeToggle moved to TopBar */}
       <SidebarFooter>
-        <div className="flex items-center justify-between px-2 py-2">
-          <ThemeToggle />
-          <SidebarTrigger />
-        </div>
+        <SidebarTrigger />
       </SidebarFooter>
     </Sidebar>
   )
