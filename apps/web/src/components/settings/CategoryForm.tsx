@@ -73,15 +73,16 @@ export const CategoryForm = ({ category, onClose }: CategoryFormProps) => {
               <FieldLabel htmlFor="category-name">Name</FieldLabel>
               <Input
                 id="category-name"
-                autoFocus
+                autoComplete="off"
+                autoFocus // Primary input in a dialog opened by user action — autoFocus is intentional
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
                 aria-invalid={field.state.meta.errors.length > 0}
               />
-              {field.state.meta.errors.length > 0 && (
+              {field.state.meta.errors.length > 0 ? (
                 <FieldError>{field.state.meta.errors[0]?.toString()}</FieldError>
-              )}
+              ) : null}
             </Field>
           )}
         </form.AppField>
@@ -119,7 +120,7 @@ export const CategoryForm = ({ category, onClose }: CategoryFormProps) => {
         }
       </form.Subscribe>
 
-      <DialogFooter>
+      <DialogFooter className="mt-4">
         <Button variant="outline" type="button" onClick={onClose}>
           Cancel
         </Button>

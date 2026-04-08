@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,13 +18,16 @@ import {
 } from "@ploutizo/ui/components/reui/sortable"
 import {
   Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
   ComboboxContent,
   ComboboxEmpty,
-  ComboboxInput,
   ComboboxItem,
   ComboboxList,
-  ComboboxTrigger,
-} from "@ploutizo/ui/components/reui/combobox"
+  ComboboxValue,
+  useComboboxAnchor,
+} from "@ploutizo/ui/components/combobox"
 import { Button } from "@ploutizo/ui/components/button"
 import { CategoryDialog } from "./CategoryDialog"
 import type { Category } from "@/lib/data-access/categories"
@@ -49,12 +52,26 @@ export const CategoriesSettings = () => {
     false
   )
   const [tagInputValue, setTagInputValue] = useState("")
+  const [optimisticallyRemovedIds, setOptimisticallyRemovedIds] = useState<Set<string>>(new Set())
+  const anchor = useComboboxAnchor()
+
+  const visibleTags = tags.filter(t => !optimisticallyRemovedIds.has(t.id))
+  const visibleTagNames = visibleTags.map(t => t.name)
+  const createOption =
+    tagInputValue.length > 0 &&
+    !visibleTags.some(t => t.name.toLowerCase() === tagInputValue.toLowerCase())
+      ? `__create__${tagInputValue}`
+      : null
 
   // Locally manage category order for optimistic reorder UX
   const [localCategories, setLocalCategories] = useState<Array<Category>>([])
-  if (!catLoading && localCategories.length === 0 && categories.length > 0) {
-    setLocalCategories(categories)
-  }
+  const initialized = useRef<boolean>(false)
+  useEffect(() => {
+    if (!initialized.current && !catLoading && categories.length > 0) {
+      initialized.current = true
+      setLocalCategories(categories)
+    }
+  }, [categories, catLoading])
 
   const handleReorder = (newOrder: Array<Category>) => {
     setLocalCategories(newOrder)
@@ -86,7 +103,7 @@ export const CategoriesSettings = () => {
         {catLoading ? (
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-10 animate-pulse rounded bg-muted" />
+              <div key={i} className="h-10 motion-safe:animate-pulse rounded bg-muted" />
             ))}
           </div>
         ) : displayCategories.length === 0 ? (
@@ -114,12 +131,12 @@ export const CategoriesSettings = () => {
                     <span className="text-muted-foreground">
                       {renderLucideIcon(cat.icon, 16)}
                     </span>
-                    {cat.colour && (
+                    {cat.colour ? (
                       <span
                         className={`size-3 rounded-full bg-${cat.colour} shrink-0`}
                       />
-                    )}
-                    <span className="flex-1 text-sm">{cat.name}</span>
+                    ) : null}
+                    <span className="min-w-0 flex-1 truncate text-sm">{cat.name}</span>
                     <Button
                       type="button"
                       variant="ghost"
@@ -173,101 +190,77 @@ export const CategoriesSettings = () => {
           <h2 className="text-sm font-semibold">Tags</h2>
         </div>
 
-        {/* Tag inline creation via Combobox — D-20 */}
-        <Combobox
-          value=""
-          onValueChange={(selectedValue) => {
-            if (selectedValue.startsWith("__create__")) {
-              const name = selectedValue.replace("__create__", "")
-              createTag.mutate(
-                { name },
-                { onSuccess: () => setTagInputValue("") }
-              )
-            }
-            // Selecting an existing tag: tag already exists — no action needed on this page
-            // (the combobox is for creating tags; existing tags are shown in the pill list below)
-          }}
-        >
-          <ComboboxTrigger className="h-9 w-full max-w-sm px-3 text-left text-sm">
-            {tagInputValue || "Search or create a tag…"}
-          </ComboboxTrigger>
-          <ComboboxContent>
-            <ComboboxInput
-              placeholder="Search tags…"
-              value={tagInputValue}
-              onValueChange={setTagInputValue}
-            />
-            <ComboboxList>
-              {tags
-                .filter((t) =>
-                  tagInputValue
-                    ? t.name.toLowerCase().includes(tagInputValue.toLowerCase())
-                    : true
+        {tagLoading ? (
+          <div className="h-9 motion-safe:animate-pulse rounded-md bg-muted" />
+        ) : (
+          <Combobox
+            multiple
+            items={visibleTagNames}
+            filteredItems={createOption ? [createOption] : []}
+            value={visibleTagNames}
+            onValueChange={(newValues) => {
+              const removed = visibleTagNames.filter(n => !newValues.includes(n))
+              for (const name of removed) {
+                const tag = visibleTags.find(t => t.name === name)
+                if (!tag) continue
+                setOptimisticallyRemovedIds(prev => new Set([...prev, tag.id]))
+                archiveTag.mutate(tag.id, {
+                  onError: () => setOptimisticallyRemovedIds(prev => {
+                    const next = new Set(prev)
+                    next.delete(tag.id)
+                    return next
+                  }),
+                })
+              }
+              const created = newValues.find(v => v.startsWith("__create__"))
+              if (created) {
+                createTag.mutate(
+                  { name: created.replace("__create__", "") },
+                  { onSuccess: () => setTagInputValue("") }
                 )
-                .map((tag) => (
-                  <ComboboxItem key={tag.id} value={tag.id}>
-                    {tag.name}
-                  </ComboboxItem>
-                ))}
-              {tagInputValue &&
-                !tags.some(
-                  (t) => t.name.toLowerCase() === tagInputValue.toLowerCase()
-                ) && (
-                  <ComboboxItem value={`__create__${tagInputValue}`}>
-                    Create &ldquo;{tagInputValue}&rdquo;
+              }
+            }}
+            onInputValueChange={setTagInputValue}
+          >
+            <ComboboxChips ref={anchor}>
+              <ComboboxValue>
+                {(selectedValue: Array<string> | null) => (
+                  <>
+                    {(selectedValue ?? []).map(name => (
+                      <ComboboxChip key={name}>{name}</ComboboxChip>
+                    ))}
+                    <ComboboxChipsInput
+                      placeholder={visibleTagNames.length === 0 ? "Add a tag…" : ""}
+                    />
+                  </>
+                )}
+              </ComboboxValue>
+            </ComboboxChips>
+            <ComboboxContent anchor={anchor}>
+              <ComboboxList>
+                {(item: string) => (
+                  <ComboboxItem key={item} value={item}>
+                    {item.startsWith("__create__")
+                      ? `Create "${item.replace("__create__", "")}"`
+                      : item}
                   </ComboboxItem>
                 )}
-              <ComboboxEmpty>No tags found</ComboboxEmpty>
-            </ComboboxList>
-          </ComboboxContent>
-        </Combobox>
-
-        {tagLoading ? (
-          <div className="space-y-2">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-8 animate-pulse rounded bg-muted" />
-            ))}
-          </div>
-        ) : tags.length === 0 ? (
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-muted-foreground">
-              No tags yet
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Tags appear here when you create them during a transaction.
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {tags.map((tag) => (
-              <div
-                key={tag.id}
-                className="flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-sm"
-              >
-                <span>{tag.name}</span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-xs"
-                  onClick={() => archiveTag.mutate(tag.id)}
-                  className="ml-1 text-muted-foreground hover:text-destructive"
-                  aria-label={`Archive tag ${tag.name}`}
-                >
-                  &times;
-                </Button>
-              </div>
-            ))}
-          </div>
+              </ComboboxList>
+              <ComboboxEmpty>
+                {tagInputValue.length === 0 ? "Type to create a tag" : "Tag already exists"}
+              </ComboboxEmpty>
+            </ComboboxContent>
+          </Combobox>
         )}
       </section>
 
       {/* Category dialog */}
-      {dialogCategory !== false && (
+      {dialogCategory !== false ? (
         <CategoryDialog
           category={dialogCategory}
           onClose={() => setDialogCategory(false)}
         />
-      )}
+      ) : null}
     </div>
   )
 }

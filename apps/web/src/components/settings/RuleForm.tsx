@@ -6,6 +6,7 @@ import { DialogFooter } from "@ploutizo/ui/components/dialog"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -59,7 +60,7 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
       const payload = {
         pattern: value.pattern.trim(),
         matchType: value.matchType,
-        renameTo: value.renameTo?.trim() || undefined,
+        renameTo: value.renameTo.trim() || undefined,
         categoryId: value.categoryId, // already null — no conversion needed
       }
       const mutation = isEditing ? updateRule : createRule
@@ -105,11 +106,13 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(MATCH_TYPE_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
+                  <SelectGroup>
+                    {Object.entries(MATCH_TYPE_LABELS).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 </SelectContent>
               </Select>
             </Field>
@@ -136,6 +139,7 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
             <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
               <FieldLabel>Pattern</FieldLabel>
               <Input
+                autoComplete="off"
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
@@ -146,9 +150,9 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
                 }
                 aria-invalid={field.state.meta.errors.length > 0}
               />
-              {field.state.meta.errors.length > 0 && (
+              {field.state.meta.errors.length > 0 ? (
                 <FieldError>{field.state.meta.errors[0]?.toString()}</FieldError>
-              )}
+              ) : null}
             </Field>
           )}
         </form.AppField>
@@ -162,7 +166,8 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
                 <span className="text-muted-foreground">(optional)</span>
               </FieldLabel>
               <Input
-                value={field.state.value ?? ""}
+                autoComplete="off"
+                value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
               />
@@ -186,12 +191,14 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
                   <SelectValue placeholder="No category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {/* NO SelectItem with value="" — Radix throws at runtime */}
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
+                  <SelectGroup>
+                    {/* NO SelectItem with value="" — Radix throws at runtime */}
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 </SelectContent>
               </Select>
             </Field>
@@ -207,7 +214,7 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
         }
       </form.Subscribe>
 
-      <DialogFooter>
+      <DialogFooter className="mt-4">
         <Button variant="outline" type="button" onClick={onClose}>
           Cancel
         </Button>

@@ -114,6 +114,7 @@ export const AccountsTable = ({
   }
 
   return (
+    <div className="overflow-x-auto">
     <DataGridContainer>
       <DataGrid
         table={table}
@@ -125,5 +126,6 @@ export const AccountsTable = ({
         <DataGridTable />
       </DataGrid>
     </DataGridContainer>
+    </div>
   )
 }

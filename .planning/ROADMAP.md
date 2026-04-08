@@ -103,18 +103,27 @@ Plans:
 Plans:
 - [ ] TBD (run /gsd:plan-phase 02.4 to break down)
 
-### Phase 02.3: vercel skills audit and guidelines (INSERTED)
+### Phase 02.3: vercel skills audit and guidelines (INSERTED) ✅ COMPLETE
 
 **Goal:** Prune Next.js/RSC rules from the vercel-react-best-practices skill, fix all SPA violations in apps/web (waterfall fetches, setState-during-render), audit and fix composition patterns and web design guideline violations, and write CLAUDE.md with explicit Vercel skill trigger conditions so future agents apply these skills automatically.
 **Requirements**: TBD (no formal requirements — all tasks derive from CONTEXT.md decisions D-01 through D-06)
 **Depends on:** Phase 02
-**Plans:** 4 plans
+**Plans:** 6/6 plans complete
 
 Plans:
-- [ ] 02.3-01-PLAN.md — Prune RSC-only rules from vercel-react-best-practices SKILL.md (delete 7 rule files, update bundle-dynamic-imports to React.lazy())
-- [ ] 02.3-02-PLAN.md — Fix confirmed violations: AccountForm waterfall (async-parallel), CategoriesSettings setState-during-render (rerender-derived-state-no-effect), QueryClient staleTime documentation
-- [ ] 02.3-03-PLAN.md — Composition patterns audit + web-design-guidelines audit: fix all remaining violations across apps/web
-- [ ] 02.3-04-PLAN.md — Create CLAUDE.md with explicit Vercel skills trigger conditions (D-05, D-06) + human verification checkpoint
+- [x] 02.3-01-PLAN.md — Prune RSC-only rules from vercel-react-best-practices SKILL.md (delete 7 rule files, update bundle-dynamic-imports to React.lazy())
+- [x] 02.3-02-PLAN.md — Fix confirmed violations: AccountForm waterfall (async-parallel), CategoriesSettings setState-during-render (rerender-derived-state-no-effect), QueryClient staleTime documentation
+- [x] 02.3-03-PLAN.md — Composition patterns audit + web-design-guidelines audit: fix all remaining violations across apps/web
+- [x] 02.3-04-PLAN.md — Create CLAUDE.md with explicit Vercel skills trigger conditions (D-05, D-06) + human verification checkpoint
+- [x] 02.3-05-PLAN.md — Gap closure: autoComplete on 4 text inputs, motion-safe:animate-pulse on 2 skeleton loaders, && -> ternary across 5 files
+
+UAT fixes (post-verification):
+- SelectGroup wrappers in RuleForm
+- Unified account footer (Archive merged into form footer)
+- AccountsTable horizontal scroll on small screens
+- Dialog spacing (CategoryForm, RuleForm)
+- Tags UI: replaced reui combobox with Base UI (@base-ui/react) multiple combobox — chips live inside the input box with native focus handling
+- Sidebar item spacing (gap-1)
 
 ### Phase 02.2: add light/dark/system theme toggle with default 'system' theme being set (INSERTED)
 

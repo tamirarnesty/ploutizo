@@ -4,7 +4,18 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@ploutizo/ui/components/collapsible"
-import { ChevronDown } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@ploutizo/ui/components/alert-dialog"
+import { Archive, ChevronDown } from "lucide-react"
 import { Button } from "@ploutizo/ui/components/button"
 import { Checkbox } from "@ploutizo/ui/components/checkbox"
 import { Input } from "@ploutizo/ui/components/input"
@@ -12,6 +23,7 @@ import { Label } from "@ploutizo/ui/components/label"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -29,7 +41,7 @@ import {
 } from "@ploutizo/ui/components/field"
 import { AccountFormSchema } from "@ploutizo/validators"
 import { useAppForm } from "@ploutizo/ui/components/form"
-import type { Account, AccountMember } from "@ploutizo/types"
+import type { Account, AccountMember, OrgMember } from "@ploutizo/types"
 import type { AccountForm as AccountFormType } from "@ploutizo/validators"
 import {
   useCreateAccount,
@@ -51,18 +63,24 @@ const ACCOUNT_TYPES = [
 interface AccountFormProps {
   account: Account | null
   onClose: () => void
+  onArchive?: () => void
 }
 
 interface AccountFormInnerProps {
   account: Account | null
   existingMembers: Array<AccountMember>
+  orgMembers: Array<OrgMember>
   onClose: () => void
+  onArchive?: () => void
 }
 
-export const AccountForm = ({ account, onClose }: AccountFormProps) => {
-  const { data: existingMembers, isLoading } = useGetAccountMembers(account?.id ?? null)
+export const AccountForm = ({ account, onClose, onArchive }: AccountFormProps) => {
+  // Both queries fire simultaneously — no sequential waterfall (async-parallel rule)
+  const { data: existingMembers, isLoading: membersLoading } =
+    useGetAccountMembers(account?.id ?? null)
+  const { data: orgMembers = [], isLoading: orgLoading } = useGetOrgMembers()
 
-  if (isLoading) {
+  if (membersLoading || orgLoading) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <Spinner />
@@ -70,12 +88,26 @@ export const AccountForm = ({ account, onClose }: AccountFormProps) => {
     )
   }
 
-  return <AccountFormInner account={account} existingMembers={existingMembers ?? []} onClose={onClose} />
+  return (
+    <AccountFormInner
+      account={account}
+      existingMembers={existingMembers ?? []}
+      orgMembers={orgMembers}
+      onClose={onClose}
+      onArchive={onArchive}
+    />
+  )
 }
 
-const AccountFormInner = ({ account, existingMembers, onClose }: AccountFormInnerProps) => {
+const AccountFormInner = ({
+  account,
+  existingMembers,
+  orgMembers,
+  onClose,
+  onArchive,
+}: AccountFormInnerProps) => {
   const isEditing = account !== null
-  const { data: members = [] } = useGetOrgMembers()
+  const members = orgMembers
   const createAccount = useCreateAccount()
   const updateAccount = useUpdateAccount(account?.id ?? "")
   const [advancedOpen, setAdvancedOpen] = useState(false)
@@ -83,16 +115,18 @@ const AccountFormInner = ({ account, existingMembers, onClose }: AccountFormInne
   const loadedMemberIds = existingMembers.map((m) => m.memberId)
 
   const form = useAppForm({
-     
-    defaultValues: ({
+    defaultValues: {
       name: account?.name ?? "",
       type: account?.type ?? "chequing",
       institution: account?.institution ?? "",
       lastFour: account?.lastFour ?? "",
       eachPersonPaysOwn: account?.eachPersonPaysOwn ?? false,
-      ownership: loadedMemberIds.length > 0 ? ("shared" as const) : ("personal" as const),
+      ownership:
+        loadedMemberIds.length > 0
+          ? ("shared" as const)
+          : ("personal" as const),
       memberIds: loadedMemberIds,
-    }) as AccountFormType,
+    } as AccountFormType,
     validators: {
       onSubmit: ({ value }: { value: AccountFormType }) => {
         const result = AccountFormSchema.safeParse(value)
@@ -113,7 +147,11 @@ const AccountFormInner = ({ account, existingMembers, onClose }: AccountFormInne
       const mutation = isEditing ? updateAccount : createAccount
       mutation.mutate(payload, {
         onSuccess: onClose,
-        onError: () => form.setErrorMap({ onSubmit: "Couldn't save changes. Check your connection and try again." }),
+        onError: () =>
+          form.setErrorMap({
+            onSubmit:
+              "Couldn't save changes. Check your connection and try again.",
+          }),
       })
     },
   })
@@ -121,7 +159,10 @@ const AccountFormInner = ({ account, existingMembers, onClose }: AccountFormInne
   return (
     <form
       className="flex flex-1 flex-col overflow-hidden"
-      onSubmit={(e) => { e.preventDefault(); form.handleSubmit() }}
+      onSubmit={(e) => {
+        e.preventDefault()
+        form.handleSubmit()
+      }}
     >
       <div className="flex-1 overflow-y-auto px-6 py-4">
         <FieldGroup>
@@ -133,32 +174,45 @@ const AccountFormInner = ({ account, existingMembers, onClose }: AccountFormInne
                 <ToggleGroup
                   type="single"
                   value={field.state.value}
-                  onValueChange={(v) => { if (v) field.handleChange(v as "personal" | "shared") }}
-                  className="w-full"
+                  onValueChange={(v) => {
+                    if (v) field.handleChange(v as "personal" | "shared")
+                  }}
+                  variant="outline"
                 >
-                  <ToggleGroupItem value="personal" className="flex-1">Personal</ToggleGroupItem>
-                  <ToggleGroupItem value="shared" className="flex-1">Shared</ToggleGroupItem>
+                  <ToggleGroupItem value="personal" className="flex-1">
+                    Personal
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="shared" className="flex-1">
+                    Shared
+                  </ToggleGroupItem>
                 </ToggleGroup>
               )}
             </form.AppField>
           </Field>
 
           {/* Field 2: name */}
-          <form.AppField name="name" validators={{ onChange: AccountFormSchema.shape.name }}>
+          <form.AppField
+            name="name"
+            validators={{ onChange: AccountFormSchema.shape.name }}
+          >
             {(field) => (
-              <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
+              <Field
+                data-invalid={field.state.meta.errors.length > 0 || undefined}
+              >
                 <FieldLabel htmlFor="account-name">Name</FieldLabel>
                 <Input
                   id="account-name"
+                  name="account-name"
+                  autoComplete="off"
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value)}
                   onBlur={field.handleBlur}
                   placeholder="e.g. Joint Chequing"
                   aria-invalid={field.state.meta.errors.length > 0}
                 />
-                {field.state.meta.errors.length > 0 && (
+                {field.state.meta.errors.length > 0 ? (
                   <FieldError>{String(field.state.meta.errors[0])}</FieldError>
-                )}
+                ) : null}
               </Field>
             )}
           </form.AppField>
@@ -170,17 +224,21 @@ const AccountFormInner = ({ account, existingMembers, onClose }: AccountFormInne
                 <FieldLabel htmlFor="account-type">Account type</FieldLabel>
                 <Select
                   value={field.state.value}
-                  onValueChange={(v) => field.handleChange(v as AccountFormType["type"])}
+                  onValueChange={(v) =>
+                    field.handleChange(v as AccountFormType["type"])
+                  }
                 >
-                  <SelectTrigger id="account-type" className="w-full">
+                  <SelectTrigger id="account-type">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {ACCOUNT_TYPES.map(({ value, label }) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
+                    <SelectGroup>
+                      {ACCOUNT_TYPES.map(({ value, label }) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </Field>
@@ -193,10 +251,14 @@ const AccountFormInner = ({ account, existingMembers, onClose }: AccountFormInne
               <Field>
                 <FieldLabel htmlFor="account-institution">
                   Institution{" "}
-                  <span className="font-normal text-muted-foreground">(optional)</span>
+                  <span className="font-normal text-muted-foreground">
+                    (optional)
+                  </span>
                 </FieldLabel>
                 <Input
                   id="account-institution"
+                  name="account-institution"
+                  autoComplete="organization"
                   value={field.state.value ?? ""}
                   onChange={(e) => field.handleChange(e.target.value)}
                   onBlur={field.handleBlur}
@@ -212,12 +274,20 @@ const AccountFormInner = ({ account, existingMembers, onClose }: AccountFormInne
               <Field>
                 <FieldLabel htmlFor="account-last-four">
                   Last 4 digits{" "}
-                  <span className="font-normal text-muted-foreground">(optional)</span>
+                  <span className="font-normal text-muted-foreground">
+                    (optional)
+                  </span>
                 </FieldLabel>
                 <Input
                   id="account-last-four"
+                  name="account-last-four"
+                  autoComplete="off"
                   value={field.state.value ?? ""}
-                  onChange={(e) => field.handleChange(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  onChange={(e) =>
+                    field.handleChange(
+                      e.target.value.replace(/\D/g, "").slice(0, 4)
+                    )
+                  }
                   onBlur={field.handleBlur}
                   placeholder="1234"
                   maxLength={4}
@@ -228,7 +298,9 @@ const AccountFormInner = ({ account, existingMembers, onClose }: AccountFormInne
           </form.AppField>
 
           {/* Field 6: memberIds (conditional on ownership === "shared") */}
-          <form.Subscribe selector={(s: { values: AccountFormType }) => s.values.ownership}>
+          <form.Subscribe
+            selector={(s: { values: AccountFormType }) => s.values.ownership}
+          >
             {(ownership) =>
               ownership === "shared" ? (
                 <form.AppField name="memberIds">
@@ -242,7 +314,10 @@ const AccountFormInner = ({ account, existingMembers, onClose }: AccountFormInne
                       ) : (
                         <div className="flex flex-col gap-2">
                           {members.map((member) => (
-                            <div key={member.id} className="flex items-center gap-2">
+                            <div
+                              key={member.id}
+                              className="flex items-center gap-2"
+                            >
                               <Checkbox
                                 id={`member-${member.id}`}
                                 checked={field.state.value.includes(member.id)}
@@ -250,7 +325,9 @@ const AccountFormInner = ({ account, existingMembers, onClose }: AccountFormInne
                                   field.handleChange(
                                     checked
                                       ? [...field.state.value, member.id]
-                                      : field.state.value.filter((id: string) => id !== member.id)
+                                      : field.state.value.filter(
+                                          (id: string) => id !== member.id
+                                        )
                                   )
                                 }}
                               />
@@ -288,7 +365,9 @@ const AccountFormInner = ({ account, existingMembers, onClose }: AccountFormInne
                     <Checkbox
                       id="each-person-pays-own"
                       checked={field.state.value}
-                      onCheckedChange={(checked) => field.handleChange(Boolean(checked))}
+                      onCheckedChange={(checked) =>
+                        field.handleChange(Boolean(checked))
+                      }
                       className="mt-0.5"
                     />
                     <div className="flex flex-col gap-0.5">
@@ -299,7 +378,8 @@ const AccountFormInner = ({ account, existingMembers, onClose }: AccountFormInne
                         Each person pays their own
                       </Label>
                       <p className="text-xs text-muted-foreground">
-                        Excludes this account from shared settlement calculations.
+                        Excludes this account from shared settlement
+                        calculations.
                       </p>
                     </div>
                   </div>
@@ -309,26 +389,69 @@ const AccountFormInner = ({ account, existingMembers, onClose }: AccountFormInne
           </form.AppField>
 
           {/* Form-level mutation error */}
-          <form.Subscribe selector={(s: { errorMap: { onSubmit?: unknown } }) => s.errorMap.onSubmit}>
+          <form.Subscribe
+            selector={(s: { errorMap: { onSubmit?: unknown } }) =>
+              s.errorMap.onSubmit
+            }
+          >
             {(submitError) =>
               submitError ? (
-                <p className="text-sm text-destructive">{String(submitError)}</p>
+                <p className="text-sm text-destructive">
+                  {String(submitError)}
+                </p>
               ) : null
             }
           </form.Subscribe>
         </FieldGroup>
       </div>
 
-      <div className="flex justify-end gap-2 border-t border-border px-6 py-4">
-        <Button variant="outline" type="button" onClick={onClose}>Discard</Button>
-        <form.Subscribe selector={(s: { isSubmitting: boolean }) => s.isSubmitting}>
-          {(isSubmitting) => (
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Spinner className="mr-1" />}
-              {isEditing ? "Save changes" : "Add account"}
-            </Button>
-          )}
-        </form.Subscribe>
+      <div className="flex items-center justify-between gap-2 border-t border-border px-6 py-4">
+        {onArchive ? (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                type="button"
+                className="text-destructive hover:text-destructive"
+              >
+                <Archive size={16} className="mr-1" aria-hidden="true" />
+                Archive
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Archive account?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Transactions linked to this account will not be affected.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={onArchive}
+                >
+                  Archive account
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        ) : <span />}
+        <div className="flex gap-2">
+          <Button variant="outline" type="button" onClick={onClose}>
+            Discard
+          </Button>
+          <form.Subscribe
+            selector={(s: { isSubmitting: boolean }) => s.isSubmitting}
+          >
+            {(isSubmitting) => (
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? <Spinner className="mr-1" /> : null}
+                {isEditing ? "Save changes" : "Add account"}
+              </Button>
+            )}
+          </form.Subscribe>
+        </div>
       </div>
     </form>
   )

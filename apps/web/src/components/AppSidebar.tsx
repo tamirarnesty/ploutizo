@@ -45,7 +45,7 @@ export const AppSidebar = () => {
         {/* Primary nav items */}
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1">
               {navItems.map(({ label, to, icon: Icon }) => {
                 const active =
                   location.pathname === to ||
@@ -69,7 +69,7 @@ export const AppSidebar = () => {
         <SidebarGroup>
           <SidebarGroupLabel>Settings</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1">
               {settingsItems.map(({ label, to, icon: Icon }) => {
                 const active = location.pathname === to
                 return (
