@@ -1,14 +1,22 @@
+import { OrganizationSwitcher, UserButton } from "@clerk/tanstack-react-start"
 import { SidebarTrigger } from "@ploutizo/ui/components/sidebar"
-import { UserButton } from "@clerk/tanstack-react-start"
 
 export function TopBar() {
   return (
-    <header className="flex h-10 shrink-0 items-center justify-between border-b border-border bg-background px-4">
-      {/* Mobile-only hamburger — SidebarTrigger uses useSidebar() from parent SidebarProvider */}
+    <header className="flex h-10 shrink-0 items-center gap-3 bg-sidebar px-4 relative z-20">
+      {/* Mobile-only sidebar trigger — left of wordmark */}
       <SidebarTrigger className="md:hidden" />
-      {/* Spacer ensures UserButton pins right on desktop (no trigger present on desktop) */}
+      {/* Ploutizo wordmark */}
+      <span className="font-medium text-sm text-sidebar-foreground">Ploutizo</span>
+      {/* Org switcher */}
+      <OrganizationSwitcher
+        hidePersonal={true}
+        afterCreateOrganizationUrl="/dashboard"
+        afterSelectOrganizationUrl="/dashboard"
+      />
       <div className="flex-1" />
-      <UserButton />
+      {/* UserButton with full name */}
+      <UserButton showName />
     </header>
   )
 }
