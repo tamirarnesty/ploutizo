@@ -234,7 +234,11 @@ const AccountFormInner = ({
                   }
                 >
                   <SelectTrigger id="account-type">
-                    <SelectValue />
+                    <SelectValue>
+                      {(v: string) =>
+                        ACCOUNT_TYPES.find((t) => t.value === v)?.label ?? v
+                      }
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
