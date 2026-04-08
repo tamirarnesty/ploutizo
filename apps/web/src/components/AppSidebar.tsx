@@ -1,17 +1,17 @@
 import { Link, useRouterState } from "@tanstack/react-router"
-import { OrganizationSwitcher, UserButton } from "@clerk/tanstack-react-start"
-import { CreditCard, Home, LayoutDashboard, Store, Tag } from "lucide-react"
+import { OrganizationSwitcher } from "@clerk/tanstack-react-start"
+import { CreditCard, LayoutDashboard, Settings } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarTrigger,
 } from "@ploutizo/ui/components/sidebar"
 import { ThemeToggle } from "@ploutizo/ui/components/theme-toggle"
 
@@ -21,28 +21,27 @@ const navItems = [
   { label: "Accounts", to: "/accounts", icon: CreditCard },
 ] as const
 
-const settingsItems = [
-  { label: "Categories & Tags", to: "/settings/categories", icon: Tag },
-  { label: "Merchant Rules", to: "/settings/merchant-rules", icon: Store },
-  { label: "Household", to: "/settings/household", icon: Home },
-] as const
-
 export const AppSidebar = () => {
   const { location } = useRouterState()
 
+  const isSettingsActive = location.pathname.startsWith("/settings")
+
   return (
-    <Sidebar>
-      {/* OrganizationSwitcher pinned at top (D-02) */}
+    <Sidebar collapsible="icon">
+      {/* Ploutizo wordmark + OrganizationSwitcher — collapses to nothing in icon-only mode (D-08, D-09) */}
       <SidebarHeader>
-        <OrganizationSwitcher
-          hidePersonal={true}
-          afterCreateOrganizationUrl="/dashboard"
-          afterSelectOrganizationUrl="/dashboard"
-        />
+        <div className="flex items-center justify-between px-3 h-12 group-data-[collapsible=icon]:hidden">
+          <span className="font-sans text-base font-medium text-sidebar-foreground">Ploutizo</span>
+          <OrganizationSwitcher
+            hidePersonal={true}
+            afterCreateOrganizationUrl="/dashboard"
+            afterSelectOrganizationUrl="/dashboard"
+          />
+        </div>
       </SidebarHeader>
 
+      {/* Primary nav — flat list, no group label (D-10: settings group removed) */}
       <SidebarContent>
-        {/* Primary nav items */}
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu className="gap-1">
@@ -54,33 +53,11 @@ export const AppSidebar = () => {
                   <SidebarMenuItem key={to}>
                     <SidebarMenuButton
                       isActive={active}
+                      tooltip={label}
                       render={<Link to={to} />}
                     >
                       <Icon />
-                      {label}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Settings group (D-01) */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Settings</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="gap-1">
-              {settingsItems.map(({ label, to, icon: Icon }) => {
-                const active = location.pathname === to
-                return (
-                  <SidebarMenuItem key={to}>
-                    <SidebarMenuButton
-                      isActive={active}
-                      render={<Link to={to} />}
-                    >
-                      <Icon />
-                      {label}
+                      <span>{label}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )
@@ -90,11 +67,25 @@ export const AppSidebar = () => {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* ThemeToggle + UserButton pinned at bottom (D-02, D-04) */}
+      {/* Footer: left cluster (ThemeToggle + Settings link) + right (collapse toggle) (D-02, D-11) */}
       <SidebarFooter>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <UserButton />
+        <div className="flex items-center justify-between px-2 py-2">
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={isSettingsActive}
+                  tooltip="Settings"
+                  render={<Link to="/settings" />}
+                >
+                  <Settings />
+                  <span>Settings</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </div>
+          <SidebarTrigger />
         </div>
       </SidebarFooter>
     </Sidebar>
