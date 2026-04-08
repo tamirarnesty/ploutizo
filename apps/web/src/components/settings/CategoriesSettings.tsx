@@ -25,7 +25,9 @@ import {
   ComboboxEmpty,
   ComboboxItem,
   ComboboxList,
-} from "@ploutizo/ui/components/reui/combobox"
+  ComboboxValue,
+  useComboboxAnchor,
+} from "@ploutizo/ui/components/combobox"
 import { Button } from "@ploutizo/ui/components/button"
 import { CategoryDialog } from "./CategoryDialog"
 import type { Category } from "@/lib/data-access/categories"
@@ -50,6 +52,16 @@ export const CategoriesSettings = () => {
     false
   )
   const [tagInputValue, setTagInputValue] = useState("")
+  const [optimisticallyRemovedIds, setOptimisticallyRemovedIds] = useState<Set<string>>(new Set())
+  const anchor = useComboboxAnchor()
+
+  const visibleTags = tags.filter(t => !optimisticallyRemovedIds.has(t.id))
+  const visibleTagNames = visibleTags.map(t => t.name)
+  const createOption =
+    tagInputValue.length > 0 &&
+    !visibleTags.some(t => t.name.toLowerCase() === tagInputValue.toLowerCase())
+      ? `__create__${tagInputValue}`
+      : null
 
   // Locally manage category order for optimistic reorder UX
   const [localCategories, setLocalCategories] = useState<Array<Category>>([])
@@ -182,66 +194,61 @@ export const CategoriesSettings = () => {
           <div className="h-9 motion-safe:animate-pulse rounded-md bg-muted" />
         ) : (
           <Combobox
-            value=""
-            onValueChange={(selectedValue) => {
-              if (selectedValue.startsWith("__create__")) {
-                const name = selectedValue.replace("__create__", "")
+            multiple
+            items={visibleTagNames}
+            filteredItems={createOption ? [createOption] : []}
+            value={visibleTagNames}
+            onValueChange={(newValues) => {
+              const removed = visibleTagNames.filter(n => !newValues.includes(n))
+              for (const name of removed) {
+                const tag = visibleTags.find(t => t.name === name)
+                if (!tag) continue
+                setOptimisticallyRemovedIds(prev => new Set([...prev, tag.id]))
+                archiveTag.mutate(tag.id, {
+                  onError: () => setOptimisticallyRemovedIds(prev => {
+                    const next = new Set(prev)
+                    next.delete(tag.id)
+                    return next
+                  }),
+                })
+              }
+              const created = newValues.find(v => v.startsWith("__create__"))
+              if (created) {
                 createTag.mutate(
-                  { name },
+                  { name: created.replace("__create__", "") },
                   { onSuccess: () => setTagInputValue("") }
                 )
               }
             }}
+            onInputValueChange={setTagInputValue}
           >
-            <ComboboxChips>
-              {tags.map((tag) => (
-                <ComboboxChip
-                  key={tag.id}
-                  onRemove={() => archiveTag.mutate(tag.id)}
-                >
-                  {tag.name}
-                </ComboboxChip>
-              ))}
-              <ComboboxChipsInput
-                placeholder={tags.length === 0 ? "Add a tag…" : ""}
-                value={tagInputValue}
-                onValueChange={setTagInputValue}
-                aria-label="Search or create a tag"
-              />
+            <ComboboxChips ref={anchor}>
+              <ComboboxValue>
+                {(selectedValue: Array<string> | null) => (
+                  <>
+                    {(selectedValue ?? []).map(name => (
+                      <ComboboxChip key={name}>{name}</ComboboxChip>
+                    ))}
+                    <ComboboxChipsInput
+                      placeholder={visibleTagNames.length === 0 ? "Add a tag…" : ""}
+                    />
+                  </>
+                )}
+              </ComboboxValue>
             </ComboboxChips>
-            <ComboboxContent>
+            <ComboboxContent anchor={anchor}>
               <ComboboxList>
-                {(() => {
-                  const filtered = tags.filter((t) =>
-                    tagInputValue
-                      ? t.name.toLowerCase().includes(tagInputValue.toLowerCase())
-                      : true
-                  )
-                  const showCreate =
-                    tagInputValue.length > 0 &&
-                    !tags.some(
-                      (t) => t.name.toLowerCase() === tagInputValue.toLowerCase()
-                    )
-                  const showEmpty = filtered.length === 0 && !showCreate
-                  return (
-                    <>
-                      {filtered.map((tag) => (
-                        <ComboboxItem key={tag.id} value={tag.id}>
-                          {tag.name}
-                        </ComboboxItem>
-                      ))}
-                      {showCreate ? (
-                        <ComboboxItem value={`__create__${tagInputValue}`}>
-                          Create &ldquo;{tagInputValue}&rdquo;
-                        </ComboboxItem>
-                      ) : null}
-                      {showEmpty ? (
-                        <ComboboxEmpty>No tags found</ComboboxEmpty>
-                      ) : null}
-                    </>
-                  )
-                })()}
+                {(item: string) => (
+                  <ComboboxItem key={item} value={item}>
+                    {item.startsWith("__create__")
+                      ? `Create "${item.replace("__create__", "")}"`
+                      : item}
+                  </ComboboxItem>
+                )}
               </ComboboxList>
+              <ComboboxEmpty>
+                {tagInputValue.length === 0 ? "Type to create a tag" : "Tag already exists"}
+              </ComboboxEmpty>
             </ComboboxContent>
           </Combobox>
         )}
