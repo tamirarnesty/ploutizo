@@ -9,6 +9,7 @@
     "strict": true,
     "noEmit": true,
     "paths": {
+      "@/*": ["./src/*"],
       "@ploutizo/ui/*": ["./src/*"],
       "@ploutizo/components/*": ["./src/components/*"]
     }
