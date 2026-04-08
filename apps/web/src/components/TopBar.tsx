@@ -15,8 +15,10 @@ export function TopBar() {
         afterSelectOrganizationUrl="/dashboard"
       />
       <div className="flex-1" />
-      <ThemeToggle />
-      <UserButton showName />
+      <div className="flex items-center gap-1">
+        <ThemeToggle />
+        <UserButton showName />
+      </div>
     </header>
   )
 }
