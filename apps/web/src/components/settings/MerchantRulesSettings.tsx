@@ -58,7 +58,6 @@ export const MerchantRulesSettings = () => {
             onValueChange={handleReorder}
             getItemValue={(r) => r.id}
             strategy="vertical"
-            className="space-y-2"
           >
             {displayRules.map((rule) => (
               <MerchantRuleRow

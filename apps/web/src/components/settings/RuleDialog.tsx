@@ -9,7 +9,7 @@ interface RuleDialogProps {
 
 export const RuleDialog = ({ rule, onClose }: RuleDialogProps) => (
   <Dialog open={true} onOpenChange={(open) => { if (!open) onClose() }}>
-    <DialogContent className="w-[calc(100%-2rem)] max-w-md">
+    <DialogContent className="max-w-md">
       <DialogHeader>
         <DialogTitle>{rule !== null ? "Edit rule" : "Add rule"}</DialogTitle>
       </DialogHeader>

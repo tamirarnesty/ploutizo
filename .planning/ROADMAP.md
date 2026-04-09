@@ -104,18 +104,6 @@ Plans:
 - [x] 02.4-01-PLAN.md — Shell restructure + sidebar rebuild: TopBar component, collapsible icon rail, wordmark header, footer Settings link + collapse toggle
 - [x] 02.4-02-PLAN.md — Settings vertical sub-nav layout: two-column SettingsLayout with left nav (Categories & Tags, Merchant Rules, Household) + Outlet
 
-### Phase 02.4.1: mobile UI/UX fixes and foundation re-establishment (INSERTED)
-
-**Goal:** Fix six UI/UX issues discovered during Phase 02.4 review: viewport height containment (TopBar scrolling), sidebar height overflow (collapse button clipped), sortable list item spacing, TopBar redesign (OrgSwitcher placement, remove name label), ThemeToggle relocation to sidebar footer with hide-on-collapse, and a keyboard shortcut to cycle themes.
-**Requirements**: D-01 through D-07 (see 02.4.1-CONTEXT.md)
-**Depends on:** Phase 02.4
-**Plans:** 3 plans
-
-Plans:
-- [ ] 02.4.1-01-PLAN.md — Layout height fix (_layout.tsx h-dvh) + sidebar height fix (AppSidebar h-[calc(100svh-2.5rem)]) + ThemeToggle in SidebarFooter
-- [ ] 02.4.1-02-PLAN.md — Sortable space-y-2 (Categories + MerchantRules) + TopBar redesign (OrgSwitcher to ml-auto, remove ThemeToggle + showName)
-- [ ] 02.4.1-03-PLAN.md — useThemeKeyboardShortcut hook + wire into LayoutShell
-
 ### Phase 02.3: vercel skills audit and guidelines (INSERTED) ✅ COMPLETE
 
 **Goal:** Prune Next.js/RSC rules from the vercel-react-best-practices skill, fix all SPA violations in apps/web (waterfall fetches, setState-during-render), audit and fix composition patterns and web design guideline violations, and write CLAUDE.md with explicit Vercel skill trigger conditions so future agents apply these skills automatically.
