@@ -176,11 +176,10 @@ this phase is the schema gate that 3.2–3.4 depend on.
 - `recurring_template_id` column reserved (generation logic deferred to v2)
 - Zod discriminated unions for all 6 transaction types added to `@ploutizo/validators`
 
-**Plans:** 2 plans
+**Plans:** 0 plans
 
 Plans:
-- [ ] 03.1-01-PLAN.md — Schema files: import-batches, transactions, transaction_assignees, transaction_tags + database migration
-- [ ] 03.1-02-PLAN.md — Zod discriminated unions for all 6 transaction types in @ploutizo/validators
+- [ ] TBD (run /gsd:plan-phase 3.1 to break down)
 
 **Requirements covered:**
 - §4 Transactions (schema foundation)
