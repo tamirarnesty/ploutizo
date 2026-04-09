@@ -9,7 +9,7 @@ interface CategoryDialogProps {
 
 export const CategoryDialog = ({ category, onClose }: CategoryDialogProps) => (
   <Dialog open={true} onOpenChange={(open) => { if (!open) onClose() }}>
-    <DialogContent className="max-w-sm">
+    <DialogContent className="w-[calc(100%-2rem)] max-w-md">
       <DialogHeader>
         <DialogTitle>{category !== null ? "Edit category" : "Add category"}</DialogTitle>
       </DialogHeader>

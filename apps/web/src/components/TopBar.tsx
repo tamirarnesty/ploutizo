@@ -1,6 +1,5 @@
 import { OrganizationSwitcher, UserButton } from "@clerk/tanstack-react-start"
 import { SidebarTrigger } from "@ploutizo/ui/components/sidebar"
-import { ThemeToggle } from "@ploutizo/ui/components/theme-toggle"
 import { AppLogo } from "./AppLogo"
 
 export function TopBar() {
@@ -9,14 +8,15 @@ export function TopBar() {
       {/* Mobile-only sidebar trigger — left of logo */}
       <SidebarTrigger className="md:hidden" />
       <AppLogo />
-      <OrganizationSwitcher
-        hidePersonal={true}
-        afterCreateOrganizationUrl="/dashboard"
-        afterSelectOrganizationUrl="/dashboard"
-      />
-      <div className="ml-auto flex items-center gap-1">
-        <ThemeToggle />
-        <UserButton showName />
+      <div className="ml-auto flex items-center gap-2">
+        <OrganizationSwitcher
+          hidePersonal={true}
+          afterCreateOrganizationUrl="/dashboard"
+          afterSelectOrganizationUrl="/dashboard"
+        />
+        <div className="hidden md:block">
+          <UserButton />
+        </div>
       </div>
     </header>
   )
