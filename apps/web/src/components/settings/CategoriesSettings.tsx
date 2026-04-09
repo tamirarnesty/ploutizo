@@ -125,6 +125,7 @@ export const CategoriesSettings = () => {
               onValueChange={handleReorder}
               getItemValue={(c) => c.id}
               strategy="vertical"
+              className="space-y-2"
             >
               {displayCategories.map((cat) => (
                 <SortableItem key={cat.id} value={cat.id}>

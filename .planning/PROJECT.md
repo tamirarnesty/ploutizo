@@ -168,4 +168,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-24 after initialization*
+*Last updated: 2026-04-09 — Phase 02.4.1 complete (mobile UX fixes: viewport containment, sidebar height, TopBar redesign, settings spacing, theme keyboard shortcut)*

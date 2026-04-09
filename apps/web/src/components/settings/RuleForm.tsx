@@ -1,4 +1,3 @@
-import { RuleFormSchema } from "@ploutizo/validators"
 import { useAppForm } from "@ploutizo/ui/components/form"
 import { Button } from "@ploutizo/ui/components/button"
 import { Input } from "@ploutizo/ui/components/input"
@@ -48,14 +47,6 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
       renameTo: rule?.renameTo ?? "",
       categoryId: rule?.categoryId ?? null, // null — NOT "__none__" (D-06)
     } satisfies RuleFormType,
-    validators: {
-      onSubmit: ({ value }: { value: RuleFormType }) => {
-        const result = RuleFormSchema.safeParse(value)
-        if (!result.success) {
-          return result.error.issues.map((i) => i.message).join(", ")
-        }
-      },
-    },
     onSubmit: ({ value }) => {
       const payload = {
         pattern: value.pattern.trim(),
@@ -121,10 +112,14 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
           )}
         </form.AppField>
 
-        {/* Field 2: pattern — with cross-field regex validator on blur */}
+        {/* Field 2: pattern — required + cross-field regex validator on blur */}
         <form.AppField
           name="pattern"
           validators={{
+            onChange: ({ value }) =>
+              !value.trim() ? "Pattern is required." : undefined,
+            onSubmit: ({ value }) =>
+              !value.trim() ? "Pattern is required." : undefined,
             onBlur: ({ value, fieldApi }) => {
               const matchType = fieldApi.form.getFieldValue("matchType")
               if (matchType !== "regex") return undefined
