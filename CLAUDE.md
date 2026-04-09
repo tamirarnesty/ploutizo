@@ -19,6 +19,10 @@
 - `packages/db` uses `@neondatabase/serverless` WebSocket Pool (not postgres.js). Set `neonConfig.webSocketConstructor` before constructing the Pool.
 - All API requests from `apps/web` go through `apiFetch` in `apps/web/src/lib/queryClient.ts` — never raw `fetch()`.
 
+## Base Components
+
+- Never modify components in `packages/ui/src/components/reui/` or shadcn-generated files. Override behavior at the usage site via `className` props (Tailwind arbitrary variants), wrapper elements, or exposed component props. Leave a comment explaining any non-obvious override.
+
 ## Testing
 
 - Never invoke test runners directly (e.g. `npx jest`, `npx vitest`). Always use the project's test script: `pnpm test` or `pnpm --filter <package> test`.
