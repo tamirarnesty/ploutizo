@@ -15,6 +15,13 @@
       "when": 1775065356946,
       "tag": "0001_remarkable_callisto",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775765601221,
+      "tag": "0002_easy_stellaris",
+      "breakpoints": true
     }
   ]
 }
