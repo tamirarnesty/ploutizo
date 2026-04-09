@@ -25,11 +25,9 @@ export const Accounts = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="font-heading text-xl font-semibold">
-          Accounts
-        </h1>
-        <Button type="button" onClick={handleAddClick}>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="min-w-0 truncate font-heading text-xl font-semibold">Accounts</h1>
+        <Button type="button" onClick={handleAddClick} className="shrink-0">
           Add account
         </Button>
       </div>

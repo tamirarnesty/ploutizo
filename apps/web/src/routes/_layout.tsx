@@ -19,7 +19,7 @@ function LayoutShell() {
         <TopBar />
         <div className="flex min-h-0 flex-1">
           <AppSidebar />
-          <SidebarInset>
+          <SidebarInset className="min-w-0">
             <main className="flex-1 overflow-auto p-6">
               <Outlet />
             </main>

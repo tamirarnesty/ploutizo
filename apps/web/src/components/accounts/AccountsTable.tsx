@@ -1,30 +1,37 @@
-import { useMemo } from "react"
-import { getCoreRowModel, useReactTable } from "@tanstack/react-table"
+import { useMemo } from 'react';
+import {
+  getCoreRowModel,
+  getPaginationRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
 import {
   DataGrid,
   DataGridContainer,
-} from "@ploutizo/ui/components/reui/data-grid/data-grid"
-import { DataGridTable } from "@ploutizo/ui/components/reui/data-grid/data-grid-table"
-import { Badge } from "@ploutizo/ui/components/badge"
-import { Button } from "@ploutizo/ui/components/button"
-import type { ColumnDef } from "@tanstack/react-table"
-import type { Account } from "@ploutizo/types"
+} from '@ploutizo/ui/components/reui/data-grid/data-grid';
+import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-table';
+import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-grid-scroll-area';
+import { DataGridPagination } from '@ploutizo/ui/components/reui/data-grid/data-grid-pagination';
+import { Badge } from '@ploutizo/ui/components/badge';
+import { Button } from '@ploutizo/ui/components/button';
+import { Skeleton } from '@ploutizo/ui/components/skeleton';
+import type { ColumnDef } from '@tanstack/react-table';
+import type { Account } from '@ploutizo/types';
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
-  chequing: "Chequing",
-  savings: "Savings",
-  credit_card: "Credit Card",
-  prepaid_cash: "Prepaid / Cash",
-  e_transfer: "e-Transfer",
-  investment: "Investment",
-  other: "Other",
-}
+  chequing: 'Chequing',
+  savings: 'Savings',
+  credit_card: 'Credit Card',
+  prepaid_cash: 'Prepaid / Cash',
+  e_transfer: 'e-Transfer',
+  investment: 'Investment',
+  other: 'Other',
+};
 
 interface AccountsTableProps {
-  accounts: Array<Account>
-  isLoading: boolean
-  onRowClick: (account: Account) => void
-  onAddClick: () => void
+  accounts: Array<Account>;
+  isLoading: boolean;
+  onRowClick: (account: Account) => void;
+  onAddClick: () => void;
 }
 
 export const AccountsTable = ({
@@ -36,15 +43,27 @@ export const AccountsTable = ({
   const columns = useMemo<Array<ColumnDef<Account>>>(
     () => [
       {
-        accessorKey: "name",
-        header: "Name",
+        accessorKey: 'name',
+        header: 'Name',
+        size: 200,
+        meta: {
+          headerClassName: 'min-w-[160px]',
+          cellClassName: 'min-w-[160px]',
+          skeleton: <Skeleton className="h-4 w-32" />,
+        },
         cell: ({ row }) => (
           <span className="text-sm font-semibold">{row.original.name}</span>
         ),
       },
       {
-        accessorKey: "type",
-        header: "Type",
+        accessorKey: 'type',
+        header: 'Type',
+        size: 140,
+        meta: {
+          headerClassName: 'min-w-[120px]',
+          cellClassName: 'min-w-[120px]',
+          skeleton: <Skeleton className="h-4 w-24" />,
+        },
         cell: ({ row }) => (
           <span className="text-sm text-muted-foreground">
             {ACCOUNT_TYPE_LABELS[row.original.type] ?? row.original.type}
@@ -52,31 +71,55 @@ export const AccountsTable = ({
         ),
       },
       {
-        accessorKey: "institution",
-        header: "Institution",
+        accessorKey: 'institution',
+        header: 'Institution',
+        size: 160,
+        meta: {
+          headerClassName: 'min-w-[130px]',
+          cellClassName: 'min-w-[130px]',
+          skeleton: <Skeleton className="h-4 w-28" />,
+        },
         cell: ({ row }) => (
           <span className="text-sm text-muted-foreground">
-            {row.original.institution ?? "—"}
+            {row.original.institution ?? '—'}
           </span>
         ),
       },
       {
-        accessorKey: "lastFour",
-        header: "Last 4",
+        accessorKey: 'lastFour',
+        header: 'Last 4',
+        size: 100,
+        meta: {
+          headerClassName: 'min-w-[80px] whitespace-nowrap',
+          cellClassName: 'min-w-[80px]',
+          skeleton: <Skeleton className="h-4 w-12" />,
+        },
         cell: ({ row }) => (
           <span className="font-mono text-sm text-muted-foreground">
-            {row.original.lastFour ?? "—"}
+            {row.original.lastFour ?? '—'}
           </span>
         ),
       },
       {
-        id: "owners",
-        header: "Owners",
+        id: 'owners',
+        header: 'Owners',
+        size: 120,
+        meta: {
+          headerClassName: 'min-w-[90px]',
+          cellClassName: 'min-w-[90px]',
+          skeleton: <Skeleton className="h-4 w-20" />,
+        },
         cell: () => <span className="text-sm text-muted-foreground">—</span>,
       },
       {
-        accessorKey: "archivedAt",
-        header: "Status",
+        accessorKey: 'archivedAt',
+        header: 'Status',
+        size: 100,
+        meta: {
+          headerClassName: 'min-w-[80px]',
+          cellClassName: 'min-w-[80px]',
+          skeleton: <Skeleton className="h-5 w-16 rounded-full" />,
+        },
         cell: ({ row }) =>
           row.original.archivedAt ? (
             <Badge variant="secondary">Archived</Badge>
@@ -90,14 +133,15 @@ export const AccountsTable = ({
           ),
       },
     ],
-    []
-  )
+    [],
+  );
 
   const table = useReactTable({
     data: accounts,
     columns,
     getCoreRowModel: getCoreRowModel(),
-  })
+    getPaginationRowModel: getPaginationRowModel(),
+  });
 
   if (!isLoading && accounts.length === 0) {
     return (
@@ -110,22 +154,26 @@ export const AccountsTable = ({
           Add account
         </Button>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="overflow-x-auto">
-    <DataGridContainer>
-      <DataGrid
-        table={table}
-        recordCount={accounts.length}
-        isLoading={isLoading}
-        onRowClick={onRowClick}
-        emptyMessage="No accounts yet"
-      >
-        <DataGridTable />
-      </DataGrid>
-    </DataGridContainer>
-    </div>
-  )
-}
+    <DataGrid
+      table={table}
+      recordCount={accounts.length}
+      isLoading={isLoading}
+      onRowClick={onRowClick}
+      emptyMessage="No accounts yet"
+      tableLayout={{ width: 'auto' }}
+    >
+      <div className="w-full space-y-2.5">
+        <DataGridContainer>
+          <DataGridScrollArea>
+            <DataGridTable />
+          </DataGridScrollArea>
+        </DataGridContainer>
+        <DataGridPagination />
+      </div>
+    </DataGrid>
+  );
+};
