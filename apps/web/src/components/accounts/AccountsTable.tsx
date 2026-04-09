@@ -172,7 +172,17 @@ export const AccountsTable = ({
             <DataGridTable />
           </DataGridScrollArea>
         </DataGridContainer>
-        <DataGridPagination className="flex-row [&>div:first-child]:order-1 [&>div:first-child]:pb-0 [&>div:last-child]:order-2 [&>div:last-child]:flex-row [&>div:last-child]:pt-0" />
+        {/*
+         * DataGridPagination base styles stack to flex-col on mobile, swapping
+         * the two sections' visual order via `order-1`/`order-2`. These
+         * overrides force a single-row layout at all sizes:
+         *   - `flex-row`                    always row (overrides base flex-col)
+         *   - `[&>div:first-child]:order-1` lock rows-per-page to left
+         *   - `[&>div:last-child]:order-2`  lock info/nav to right
+         *   - `pb-0` / `pt-0`               remove mobile-only stack spacing
+         *   - `[&_[role='combobox']]:w-16`  widen dropdown for 2-digit page sizes
+         */}
+        <DataGridPagination className="flex-row [&>div:first-child]:order-1 [&>div:first-child]:pb-0 [&>div:last-child]:order-2 [&>div:last-child]:flex-row [&>div:last-child]:pt-0 [&_[role='combobox']]:w-16" />
       </div>
     </DataGrid>
   );
