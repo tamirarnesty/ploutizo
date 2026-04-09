@@ -1,5 +1,5 @@
 ---
-status: awaiting_human_verify
+status: resolved
 trigger: "The error message in the categories dialog does not correctly show the error message"
 created: 2026-04-09T00:00:00Z
 updated: 2026-04-09T00:00:00Z
