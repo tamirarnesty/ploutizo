@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react"
-import { useTheme } from "next-themes"
+import { useTheme } from "@ploutizo/ui/hooks/use-theme"
 
 const cycleMap = { system: "light", light: "dark", dark: "system" } as const
 type Theme = keyof typeof cycleMap
@@ -9,7 +9,7 @@ export function useThemeKeyboardShortcut() {
 
   // Store handler in ref so the effect registers once but always reads latest theme
   // (advanced-event-handler-refs pattern — avoids re-registering on every theme change)
-  const handlerRef = useRef<(e: KeyboardEvent) => void>()
+  const handlerRef = useRef<(e: KeyboardEvent) => void>(undefined)
   handlerRef.current = (e: KeyboardEvent) => {
     if (e.key !== "d") return
     if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return
