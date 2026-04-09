@@ -172,7 +172,7 @@ export const AccountsTable = ({
             <DataGridTable />
           </DataGridScrollArea>
         </DataGridContainer>
-        <DataGridPagination />
+        <DataGridPagination className="flex-row [&>div:first-child]:pb-0 [&>div:last-child]:flex-row [&>div:last-child]:pt-0" />
       </div>
     </DataGrid>
   );
