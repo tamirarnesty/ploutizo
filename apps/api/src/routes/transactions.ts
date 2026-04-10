@@ -29,8 +29,8 @@ transactionsRouter.post('/', async (c) => {
   const splitError = validateSplitSum(data.amount, data.assignees)
   if (splitError) return badRequest(c, splitError)
 
-  // D-13: validate refundOf org ownership if provided
-  if (data.type === 'refund' && data.refundOf) {
+  // D-13: validate refundOf org ownership if provided — gate on field presence, not type
+  if (data.refundOf) {
     const owned = await checkRefundOfOwnership(data.refundOf, orgId!)
     if (!owned) return badRequest(c, 'refundOf transaction not found in this org')
   }
