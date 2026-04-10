@@ -1,20 +1,21 @@
 import { db } from '@ploutizo/db'
-import { transactions, transactionAssignees, transactionTags } from '@ploutizo/db/schema'
-import { createTransactionSchema, updateTransactionSchema } from '@ploutizo/validators'
-import type { z } from 'zod'
+import { transactionAssignees, transactionTags, transactions } from '@ploutizo/db/schema'
 import {
-  enrichTransactions,
+  
+  
   buildListQuery,
   countQuery,
+  enrichTransactions,
   fetchTransactionById,
   refundOfExists,
-  softDeleteTransactionQuery,
-  updateTransactionScalarsQuery,
   replaceAssignees,
   replaceTags,
-  type ListQueryParams,
-  type DrizzleTransaction,
+  softDeleteTransactionQuery,
+  updateTransactionScalarsQuery
 } from '../lib/queries/transactions'
+import type {DrizzleTransaction, ListQueryParams} from '../lib/queries/transactions';
+import type { createTransactionSchema, updateTransactionSchema } from '@ploutizo/validators'
+import type { z } from 'zod'
 
 export type { ListQueryParams }
 
@@ -103,10 +104,14 @@ export async function updateTransaction(
   orgId: string,
   data: z.infer<typeof updateTransactionSchema>,
 ) {
-  // D-11: re-validate split sum if both assignees and amount are present in patch
-  if (data.assignees && data.assignees.length > 0 && data.amount !== undefined) {
-    const splitError = validateSplitSum(data.amount, data.assignees)
-    if (splitError) throw new Error(splitError)
+  // D-11: re-validate split sum if assignees are being replaced.
+  // When amount is absent, fetch the stored amount to validate against.
+  if (data.assignees && data.assignees.length > 0) {
+    const amountToCheck = data.amount ?? (await fetchTransactionById(id, orgId))?.amount
+    if (amountToCheck !== undefined) {
+      const splitError = validateSplitSum(amountToCheck, data.assignees)
+      if (splitError) throw new Error(splitError)
+    }
   }
 
   const { assignees, tagIds, ...updateData } = data
