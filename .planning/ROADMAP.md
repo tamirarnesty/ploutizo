@@ -162,11 +162,11 @@ Plans:
 Plans:
 - [x] 02.1.1-01-PLAN.md — Driver swap: package.json deps, client.ts rewrite, client.test.ts mock update, route audit
 
-### Phase 3.1: Transaction Schema & Migrations
+### Phase 03.1: Transaction Schema & Migrations
 
 **Goal:** The transactions data model is fully defined in the database with all
 type-specific columns, join tables, and indexes in place. No API or UI work —
-this phase is the schema gate that 3.2–3.4 depend on.
+this phase is the schema gate that 03.2–03.4 depend on.
 
 **Delivers:**
 - `transactions` table with all nullable type-specific columns and `deleted_at` soft-delete timestamp
@@ -176,10 +176,11 @@ this phase is the schema gate that 3.2–3.4 depend on.
 - `recurring_template_id` column reserved (generation logic deferred to v2)
 - Zod discriminated unions for all 6 transaction types added to `@ploutizo/validators`
 
-**Plans:** 0 plans
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 3.1 to break down)
+- [x] 03.1-01-PLAN.md — Drizzle schema: transactions + transaction_assignees tables, indexes, migrations
+- [x] 03.1-02-PLAN.md — Zod discriminated unions for all 6 transaction types in @ploutizo/validators
 
 **Requirements covered:**
 - §4 Transactions (schema foundation)
@@ -191,7 +192,7 @@ Plans:
 
 ---
 
-### Phase 3.2: Transaction API
+### Phase 03.2: Transaction API
 
 **Goal:** All six transaction types can be created, read, updated, and soft-deleted
 via the API with correct field enforcement, split math, and validation errors.
@@ -224,7 +225,7 @@ Plans:
 
 ---
 
-### Phase 3.3: Transaction List UI
+### Phase 03.3: Transaction List UI
 
 **Goal:** Users can view all transactions in a paginated, filterable list and
 soft-delete individual entries.
@@ -251,7 +252,7 @@ Plans:
 
 ---
 
-### Phase 3.4: Transaction Forms UI
+### Phase 03.4: Transaction Forms UI
 
 **Goal:** Users can create and edit any of the six transaction types through a
 single form that conditionally renders the correct fields per type.
@@ -648,7 +649,7 @@ Plans:
 | §1 Households & Users | Phase 1 (infra/seeds) + Phase 2 (full feature) | Clerk native org config in Phase 1; creation/switching UI and Clerk-managed invitation flow in Phase 2 |
 | §2 Accounts | Phase 2 | Full CRUD including "each person pays their own" flag |
 | §3 Categories & Tags | Phase 2 | Full CRUD; default seed list present after Phase 1 org creation |
-| §4 Transactions | Phases 3.1–3.4 | Schema (3.1), API (3.2), list UI (3.3), create/edit forms (3.4) |
+| §4 Transactions | Phases 03.1–03.4 | Schema (03.1), API (03.2), list UI (03.3), create/edit forms (03.4) |
 | §5 Settlement | Phases 4.1–4.2 | API (4.1), UI (4.2) |
 | §6 Budgets | Phases 4.3–4.4 | API (4.3), dashboard UI (4.4) |
 | §7 Savings & Investments | Phases 6.1–6.2 | Schema + contribution room API (6.1), contributions UI (6.2) |
