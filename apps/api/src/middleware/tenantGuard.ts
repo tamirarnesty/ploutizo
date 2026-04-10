@@ -1,7 +1,7 @@
-import { createMiddleware } from 'hono/factory'
-import { getAuth } from '@hono/clerk-auth'
-import { db } from '@ploutizo/db'
-import { orgs } from '@ploutizo/db/schema'
+import { createMiddleware } from 'hono/factory';
+import { getAuth } from '@hono/clerk-auth';
+import { db } from '@ploutizo/db';
+import { orgs } from '@ploutizo/db/schema';
 
 // tenantGuard: rejects requests with no active Clerk org.
 // CRITICAL: checks !orgId (falsy) — Clerk returns undefined (not null) when no active org.
@@ -13,20 +13,25 @@ import { orgs } from '@ploutizo/db/schema'
 // secret, network failure, or org created before the app was deployed).
 // seenOrgs caches org IDs that have been upserted this process lifetime — avoids a DB
 // round-trip on every request after the first. Resets on cold start (safe: DB row persists).
-const seenOrgs = new Set<string>()
+const seenOrgs = new Set<string>();
 
 export const tenantGuard = () =>
   createMiddleware(async (c, next) => {
-    const { orgId } = getAuth(c)
+    const { orgId } = getAuth(c);
     if (!orgId) {
       return c.json(
-        { error: { code: 'TENANT_REQUIRED', message: 'No active organisation.' } },
+        {
+          error: {
+            code: 'TENANT_REQUIRED',
+            message: 'No active organisation.',
+          },
+        },
         401
-      )
+      );
     }
     if (!seenOrgs.has(orgId)) {
-      await db.insert(orgs).values({ id: orgId }).onConflictDoNothing()
-      seenOrgs.add(orgId)
+      await db.insert(orgs).values({ id: orgId }).onConflictDoNothing();
+      seenOrgs.add(orgId);
     }
-    await next()
-  })
+    await next();
+  });
