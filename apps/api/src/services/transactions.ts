@@ -1,6 +1,6 @@
 import { db } from '@ploutizo/db'
 import { transactions, transactionAssignees, transactionTags } from '@ploutizo/db/schema'
-import { createTransactionSchema } from '@ploutizo/validators'
+import { createTransactionSchema, updateTransactionSchema } from '@ploutizo/validators'
 import type { z } from 'zod'
 import {
   enrichTransactions,
@@ -8,7 +8,12 @@ import {
   countQuery,
   fetchTransactionById,
   refundOfExists,
+  softDeleteTransactionQuery,
+  updateTransactionScalarsQuery,
+  replaceAssignees,
+  replaceTags,
   type ListQueryParams,
+  type DrizzleTransaction,
 } from '../lib/queries/transactions'
 
 export type { ListQueryParams }
@@ -89,4 +94,53 @@ export async function getTransaction(id: string, orgId: string) {
     assignees: assigneeMap[row.id] ?? [],
     tags: tagMap[row.id] ?? [],
   }
+}
+
+// PATCH: update scalar fields + replace-all assignees/tags in a single DB transaction
+// Returns updated row or null (not found / wrong org / already deleted — Pitfall 7)
+export async function updateTransaction(
+  id: string,
+  orgId: string,
+  data: z.infer<typeof updateTransactionSchema>,
+) {
+  // D-11: re-validate split sum if both assignees and amount are present in patch
+  if (data.assignees && data.assignees.length > 0 && data.amount !== undefined) {
+    const splitError = validateSplitSum(data.amount, data.assignees)
+    if (splitError) throw new Error(splitError)
+  }
+
+  const { assignees, tagIds, ...updateData } = data
+
+  return db.transaction(async (tx) => {
+    // Delegate scalar UPDATE to query layer (Pitfall 7: three-condition WHERE)
+    const updated = await updateTransactionScalarsQuery(
+      tx as unknown as DrizzleTransaction,
+      id,
+      orgId,
+      updateData as Record<string, unknown>,
+    )
+
+    if (!updated) return null
+
+    // D-03: replace-all assignees if provided in payload — delegated to query layer
+    if (assignees !== undefined) {
+      await replaceAssignees(tx as unknown as DrizzleTransaction, id, assignees)
+    }
+
+    // Replace-all tags if provided — delegated to query layer
+    if (tagIds !== undefined) {
+      await replaceTags(tx as unknown as DrizzleTransaction, id, tagIds)
+    }
+
+    return updated
+  })
+}
+
+// DELETE: soft-delete — delegates to query layer (D-15)
+// Returns {id} on success or null if not found/wrong org/already deleted
+export async function deleteTransaction(
+  id: string,
+  orgId: string,
+): Promise<{ id: string } | null> {
+  return softDeleteTransactionQuery(id, orgId)
 }
