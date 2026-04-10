@@ -3,15 +3,16 @@ import { getAuth } from '@hono/clerk-auth'
 import { createTransactionSchema, updateTransactionSchema } from '@ploutizo/validators'
 import { badRequest } from '../lib/helpers'
 import {
-  createTransaction,
-  validateSplitSum,
+  
   checkRefundOfOwnership,
-  listTransactions,
-  getTransaction,
-  updateTransaction,
+  createTransaction,
   deleteTransaction,
-  type ListQueryParams,
+  getTransaction,
+  listTransactions,
+  updateTransaction,
+  validateSplitSum
 } from '../services/transactions'
+import type {ListQueryParams} from '../services/transactions';
 
 const transactionsRouter = new Hono()
 
@@ -42,10 +43,12 @@ transactionsRouter.post('/', async (c) => {
 transactionsRouter.get('/', async (c) => {
   const { orgId } = getAuth(c)
 
-  const page = Math.max(1, Number(c.req.query('page') ?? 1))
-  const limit = Math.min(200, Math.max(1, Number(c.req.query('limit') ?? 50)))
-  const sort = (c.req.query('sort') === 'amount' ? 'amount' : 'date') as 'date' | 'amount'
-  const order = (c.req.query('order') === 'asc' ? 'asc' : 'desc') as 'asc' | 'desc'
+  const rawPage = Number(c.req.query('page'))
+  const rawLimit = Number(c.req.query('limit'))
+  const page = Number.isFinite(rawPage) && rawPage >= 1 ? Math.floor(rawPage) : 1
+  const limit = Number.isFinite(rawLimit) ? Math.min(200, Math.max(1, Math.floor(rawLimit))) : 50
+  const sort = (c.req.query('sort') === 'amount' ? 'amount' : 'date')
+  const order = (c.req.query('order') === 'asc' ? 'asc' : 'desc')
 
   // tagIds: support ?tagIds[]=x&tagIds[]=y AND ?tagIds=x,y (Pitfall 5)
   const tagIdsArr = c.req.queries('tagIds[]') ?? []
