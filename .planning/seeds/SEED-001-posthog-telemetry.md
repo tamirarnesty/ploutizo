@@ -7,7 +7,7 @@ trigger_when: Phase 5 (Bank Import) or any event-heavy phase is being planned
 scope: Medium
 ---
 
-# SEED-001: PostHog telemetry for analytics, logging, and error reporting across web, API, and DB
+# SEED-001: PostHog telemetry — traces, logs, and wide events across web, API, and DB
 
 ## Why This Matters
 
@@ -50,8 +50,22 @@ Relevant integration points to examine when this surfaces:
 - `packages/db/src/index.ts` — Neon Pool construction; hook for query logging
 - `apps/api/src/middleware/` — existing tenantGuard pattern to follow for new middleware
 
+## Observability Strategy
+
+Goal: capture **traces, logs, and wide events** to build a complete picture of what's happening
+across every layer. Wide events — a single richly-attributed record per operation rather than
+many narrow log lines — make correlation trivial and dashboards cheap.
+
+Library: **PostHog** (analytics + event capture on web and server).
+
+## References
+
+- **Skill to load when implementing:** https://skills.sh/boristane/agent-skills/logging-best-practices
+- **Why logging as-is sucks / wide events primer:** https://loggingsucks.com/
+- **Wide events deep dive:** https://boristane.com/blog/observability-wide-events-101/
+
 ## Notes
 
 - PostHog self-hosted vs. PostHog Cloud: Cloud is zero-ops for MVP; revisit self-host post-v1
 - PostHog feature flags could replace any ad-hoc env var gates added during MVP phases
-- Consider pairing with Sentry for structured error reporting if PostHog's error tooling feels thin
+- Drop the Sentry consideration — PostHog error tooling + wide events should be sufficient
