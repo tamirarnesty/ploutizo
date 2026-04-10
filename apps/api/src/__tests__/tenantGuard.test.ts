@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { Hono } from 'hono'
-import { tenantGuard } from '../middleware/tenantGuard.js'
+import { tenantGuard } from '../middleware/tenantGuard'
 
 // Mock @hono/clerk-auth to control what getAuth() returns per test
 vi.mock('@hono/clerk-auth', () => ({

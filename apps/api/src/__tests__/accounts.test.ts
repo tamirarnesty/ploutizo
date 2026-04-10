@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { Hono } from 'hono'
-import { accountsRouter } from '../routes/accounts.js'
+import { accountsRouter } from '../routes/accounts'
 
 // Mock @hono/clerk-auth so getAuth returns a known orgId
 vi.mock('@hono/clerk-auth', () => ({
