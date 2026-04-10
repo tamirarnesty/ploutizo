@@ -200,25 +200,27 @@ via the API with correct field enforcement, split math, and validation errors.
 **Delivers:**
 - CRUD endpoints for all 6 types: expense, refund, income, transfer, settlement, contribution
 - Per-type field validation via Zod discriminated unions; missing required fields return 400 with structured error
-- Split calculation logic: even default distribution, Largest Remainder Method for odd-cent remainder
+- Split sum validation: API validates that submitted assignee amounts sum to transaction amount (calculation is client-side per D-01)
 - Refund: optional `refund_of` FK; reduces net category spend, not income
 - Transfer: excluded from budget/expense/income calculations
 - Soft delete via `deleted_at` timestamp; all queries filter via partial index
 - `badRequest()` helper
 - All SUM aggregates cast to `bigint`
 
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 3.2 to break down)
+- [ ] 03.2-01-PLAN.md — Test scaffold: 12 TXN-* Vitest stubs for all transaction route behaviors
+- [ ] 03.2-02-PLAN.md — badRequest() helper + POST + GET list + GET single (joined response, pagination, filtering, sort)
+- [ ] 03.2-03-PLAN.md — PATCH + DELETE (soft delete) + route registration in apps/api/src/index.ts
 
 **Requirements covered:**
 - §4 Transactions (API layer)
 
 **Success criteria:**
 - [ ] All 6 transaction types can be created; missing required fields return 400 with structured error (e.g. expense without category, income without income type)
-- [ ] A 3-assignee split on a $100.01 transaction distributes as $33.34 + $33.34 + $33.33 (Largest Remainder Method — first assignees get extra cent)
-- [ ] Adding a second assignee to an existing 1-assignee transaction resets split to 50/50; removing one assignee from a 3-way split resets to 50/50
+- [ ] A transaction with assignees whose amountCents do not sum to transaction amount returns 400 BAD_REQUEST
+- [ ] A transaction with assignees whose amountCents sum to transaction amount is created successfully (LRM calculation is client-side per D-01; Phase 03.4)
 - [ ] Soft-deleted transactions are excluded from all balance, budget, and category spend calculations
 - [ ] A refund linked to an original expense reduces net category spend (not income); unlinked refund also reduces category spend
 - [ ] Transfer transactions are excluded from budget spend and income summary totals
