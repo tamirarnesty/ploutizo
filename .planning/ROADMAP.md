@@ -207,12 +207,12 @@ via the API with correct field enforcement, split math, and validation errors.
 - `badRequest()` helper
 - All SUM aggregates cast to `bigint`
 
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 
 Plans:
-- [ ] 03.2-01-PLAN.md — Test scaffold: 12 TXN-* Vitest stubs for all transaction route behaviors
-- [ ] 03.2-02-PLAN.md — badRequest() helper + POST + GET list + GET single (joined response, pagination, filtering, sort)
-- [ ] 03.2-03-PLAN.md — PATCH + DELETE (soft delete) + route registration in apps/api/src/index.ts
+- [x] 03.2-01-PLAN.md — Test scaffold: 12 TXN-* Vitest stubs for all transaction route behaviors
+- [x] 03.2-02-PLAN.md — badRequest() helper + POST + GET list + GET single (joined response, pagination, filtering, sort)
+- [x] 03.2-03-PLAN.md — PATCH + DELETE (soft delete) + route registration in apps/api/src/index.ts
 
 **Requirements covered:**
 - §4 Transactions (API layer)
