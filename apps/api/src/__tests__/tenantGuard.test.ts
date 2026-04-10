@@ -79,7 +79,8 @@ describe('tenantGuard()', () => {
 
   it('upserts the org row before calling next() when orgId is valid', async () => {
     mockOnConflictDoNothing.mockClear();
-    vi.mocked(getAuth).mockReturnValue({ orgId: 'org_abc123' } as ReturnType<
+    // Use a unique orgId not seen by prior tests to bypass the seenOrgs cache
+    vi.mocked(getAuth).mockReturnValue({ orgId: 'org_upsert_test' } as ReturnType<
       typeof getAuth
     >);
     const res = await buildApp().request('/');
