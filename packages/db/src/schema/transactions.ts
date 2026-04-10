@@ -20,11 +20,11 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 
-import { transactionTypeEnum, incomeTypeEnum, investmentTypeEnum } from './enums.js'
-import { orgs, orgMembers } from './auth.js'
-import { accounts } from './accounts.js'
-import { categories, tags } from './classification.js'
-import { importBatches } from './import-batches.js'
+import { transactionTypeEnum, incomeTypeEnum, investmentTypeEnum } from './enums'
+import { orgs, orgMembers } from './auth'
+import { accounts } from './accounts'
+import { categories, tags } from './classification'
+import { importBatches } from './import-batches'
 
 /**
  * transactions

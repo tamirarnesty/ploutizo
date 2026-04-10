@@ -17,7 +17,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 
-import { memberRoleEnum } from './enums.js'
+import { memberRoleEnum } from './enums'
 
 // ---------------------------------------------------------------------------
 // Shared helpers (local to this file — imported from client.ts in real usage)

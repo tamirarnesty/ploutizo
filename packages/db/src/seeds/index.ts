@@ -1,5 +1,5 @@
-import { seedOrgCategories } from './categories.js'
-import { seedOrgMerchantRules } from './merchantRules.js'
+import { seedOrgCategories } from './categories'
+import { seedOrgMerchantRules } from './merchantRules'
 
 // seedOrg: called at org creation to populate default tenant data.
 // Both functions are called — do not call them individually unless testing.

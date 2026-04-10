@@ -1,7 +1,7 @@
 // Schema barrel — Phase 1 exports only. Additional tables added per phase.
-export * from './enums.js'
-export * from './auth.js'
-export * from './classification.js'
-export * from './accounts.js'
-export * from './import-batches.js'
-export * from './transactions.js'
+export * from './enums'
+export * from './auth'
+export * from './classification'
+export * from './accounts'
+export * from './import-batches'
+export * from './transactions'

@@ -9,7 +9,7 @@ import {
   HouseholdSettingsFormSchema,
   createTransactionSchema,
   updateTransactionSchema,
-} from './index.js'
+} from './index'
 
 describe('createAccountSchema', () => {
   it('accepts valid account payload', () => {

@@ -7,7 +7,7 @@
  */
 import { sql } from 'drizzle-orm'
 import { index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
-import { orgs } from './auth.js'
+import { orgs } from './auth'
 
 export const importBatches = pgTable(
   'import_batches',

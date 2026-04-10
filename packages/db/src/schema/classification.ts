@@ -17,8 +17,8 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 
-import { merchantMatchTypeEnum } from './enums.js'
-import { orgs, orgMembers } from './auth.js'
+import { merchantMatchTypeEnum } from './enums'
+import { orgs, orgMembers } from './auth'
 
 /**
  * categories

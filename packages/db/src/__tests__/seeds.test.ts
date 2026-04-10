@@ -9,7 +9,7 @@ vi.mock('../client.js', () => ({
   },
 }))
 
-import { db } from '../client.js'
+import { db } from '../client'
 
 // Helper to create a mock insert return value (cast via unknown to satisfy Drizzle's strict types)
 const mockInsertReturn = (mockValues: ReturnType<typeof vi.fn>) =>

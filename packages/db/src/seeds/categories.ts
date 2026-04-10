@@ -1,5 +1,5 @@
-import { db } from '../client.js'
-import { categories } from '../schema/index.js'
+import { db } from '../client'
+import { categories } from '../schema/index'
 
 // Default categories seeded at org creation.
 // INVARIANT: Every row has orgId set — no global category rows.
