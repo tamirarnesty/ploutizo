@@ -1,4 +1,4 @@
-import { db } from '@ploutizo/db'
+import { db } from '@ploutizo/db';
 import {
   accounts,
   categories,
@@ -7,12 +7,25 @@ import {
   transactionAssignees,
   transactionTags,
   transactions,
-} from '@ploutizo/db/schema'
-import {  and, asc, desc, eq, exists, gte, inArray, isNull, lte, sql } from 'drizzle-orm'
-import type {SQL} from 'drizzle-orm';
+} from '@ploutizo/db/schema';
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  exists,
+  gte,
+  inArray,
+  isNull,
+  lte,
+  sql,
+} from 'drizzle-orm';
+import type { SQL } from 'drizzle-orm';
 // Drizzle transaction type for functions that participate in an outer db.transaction().
 // Derived from db's own inference so it stays correct across schema changes.
-export type DrizzleTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
+export type DrizzleTransaction = Parameters<
+  Parameters<typeof db.transaction>[0]
+>[0];
 
 // D-04: full column projection for joined transaction rows
 const TX_COLUMNS = {
@@ -40,36 +53,40 @@ const TX_COLUMNS = {
   deletedAt: transactions.deletedAt,
   createdAt: transactions.createdAt,
   updatedAt: transactions.updatedAt,
-} as const
+} as const;
 
 export type ListQueryParams = {
-  orgId: string
-  page: number
-  limit: number
-  sort: 'date' | 'amount'
-  order: 'asc' | 'desc'
-  type?: string
-  accountId?: string
-  dateFrom?: string
-  dateTo?: string
-  categoryId?: string
-  assigneeId?: string
-  tagIds?: Array<string>
-}
+  orgId: string;
+  page: number;
+  limit: number;
+  sort: 'date' | 'amount';
+  order: 'asc' | 'desc';
+  type?: string;
+  accountId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  categoryId?: string;
+  assigneeId?: string;
+  tagIds?: Array<string>;
+};
 
 // Build the WHERE conditions array for list + count queries
 export function buildConditions(params: ListQueryParams): Array<SQL> {
   const conditions: Array<SQL> = [
     eq(transactions.orgId, params.orgId),
     isNull(transactions.deletedAt), // D-15
-  ]
+  ];
   if (params.type) {
-    conditions.push(eq(transactions.type, params.type as typeof transactions.type._.data))
+    conditions.push(
+      eq(transactions.type, params.type as typeof transactions.type._.data)
+    );
   }
-  if (params.accountId) conditions.push(eq(transactions.accountId, params.accountId))
-  if (params.dateFrom) conditions.push(gte(transactions.date, params.dateFrom))
-  if (params.dateTo) conditions.push(lte(transactions.date, params.dateTo))
-  if (params.categoryId) conditions.push(eq(transactions.categoryId, params.categoryId))
+  if (params.accountId)
+    conditions.push(eq(transactions.accountId, params.accountId));
+  if (params.dateFrom) conditions.push(gte(transactions.date, params.dateFrom));
+  if (params.dateTo) conditions.push(lte(transactions.date, params.dateTo));
+  if (params.categoryId)
+    conditions.push(eq(transactions.categoryId, params.categoryId));
   if (params.assigneeId) {
     conditions.push(
       exists(
@@ -79,11 +96,11 @@ export function buildConditions(params: ListQueryParams): Array<SQL> {
           .where(
             and(
               eq(transactionAssignees.transactionId, transactions.id),
-              eq(transactionAssignees.memberId, params.assigneeId),
-            ),
-          ),
-      ),
-    )
+              eq(transactionAssignees.memberId, params.assigneeId)
+            )
+          )
+      )
+    );
   }
   if (params.tagIds && params.tagIds.length > 0) {
     conditions.push(
@@ -94,21 +111,22 @@ export function buildConditions(params: ListQueryParams): Array<SQL> {
           .where(
             and(
               eq(transactionTags.transactionId, transactions.id),
-              inArray(transactionTags.tagId, params.tagIds),
-            ),
-          ),
-      ),
-    )
+              inArray(transactionTags.tagId, params.tagIds)
+            )
+          )
+      )
+    );
   }
-  return conditions
+  return conditions;
 }
 
 // Paginated base rows query with joins to categories + accounts
 export async function buildListQuery(params: ListQueryParams) {
-  const conditions = buildConditions(params)
-  const orderCol = params.sort === 'amount' ? transactions.amount : transactions.date
-  const orderFn = params.order === 'asc' ? asc : desc
-  const offset = (params.page - 1) * params.limit
+  const conditions = buildConditions(params);
+  const orderCol =
+    params.sort === 'amount' ? transactions.amount : transactions.date;
+  const orderFn = params.order === 'asc' ? asc : desc;
+  const offset = (params.page - 1) * params.limit;
 
   return db
     .select(TX_COLUMNS)
@@ -118,22 +136,22 @@ export async function buildListQuery(params: ListQueryParams) {
     .where(and(...conditions))
     .orderBy(orderFn(orderCol))
     .limit(params.limit)
-    .offset(offset)
+    .offset(offset);
 }
 
 // Count query — returns total matching rows for pagination envelope (D-07)
 export async function countQuery(params: ListQueryParams): Promise<number> {
-  const conditions = buildConditions(params)
+  const conditions = buildConditions(params);
   const [{ total }] = await db
     .select({ total: sql<number>`count(*)::int` })
     .from(transactions)
-    .where(and(...conditions))
-  return total
+    .where(and(...conditions));
+  return total;
 }
 
 // Single transaction by id — same column projection as list (D-05)
 export async function fetchTransactionById(id: string, orgId: string) {
-  const [row] = await db
+  const rows = await db
     .select(TX_COLUMNS)
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
@@ -142,22 +160,22 @@ export async function fetchTransactionById(id: string, orgId: string) {
       and(
         eq(transactions.id, id),
         eq(transactions.orgId, orgId),
-        isNull(transactions.deletedAt), // D-15
-      ),
+        isNull(transactions.deletedAt) // D-15
+      )
     )
-    .limit(1)
-  return row ?? null
+    .limit(1);
+  return rows.at(0) ?? null;
 }
 
 // Enrich a page of base rows with assignees and tags via parallel sub-queries.
 // Avoids cartesian product from multi-level left joins (RESEARCH.md Pitfall 1).
 export async function enrichTransactions(baseRows: Array<{ id: string }>) {
-  const txIds = baseRows.map((r) => r.id)
+  const txIds = baseRows.map((r) => r.id);
   if (txIds.length === 0) {
     return {
       assigneeMap: {} as Record<string, Array<unknown>>,
       tagMap: {} as Record<string, Array<unknown>>,
-    }
+    };
   }
 
   // Pitfall 6: guard against inArray([]) which generates invalid SQL
@@ -184,27 +202,30 @@ export async function enrichTransactions(baseRows: Array<{ id: string }>) {
       .from(transactionTags)
       .innerJoin(tags, eq(transactionTags.tagId, tags.id))
       .where(inArray(transactionTags.transactionId, txIds)),
-  ])
+  ]);
 
-  const assigneeMap: Record<string, typeof assigneeRows> = {}
+  const assigneeMap: Record<string, typeof assigneeRows> = {};
   for (const a of assigneeRows) {
-    ;(assigneeMap[a.transactionId] ??= []).push(a)
+    (assigneeMap[a.transactionId] ??= []).push(a);
   }
-  const tagMap: Record<string, typeof tagRows> = {}
+  const tagMap: Record<string, typeof tagRows> = {};
   for (const t of tagRows) {
-    ;(tagMap[t.transactionId] ??= []).push(t)
+    (tagMap[t.transactionId] ??= []).push(t);
   }
-  return { assigneeMap, tagMap }
+  return { assigneeMap, tagMap };
 }
 
 // Validate that a refundOf transaction ID exists in the same org (D-13)
-export async function refundOfExists(refundOfId: string, orgId: string): Promise<boolean> {
+export async function refundOfExists(
+  refundOfId: string,
+  orgId: string
+): Promise<boolean> {
   const [row] = await db
     .select({ id: transactions.id })
     .from(transactions)
     .where(and(eq(transactions.id, refundOfId), eq(transactions.orgId, orgId)))
-    .limit(1)
-  return !!row
+    .limit(1);
+  return !!row;
 }
 
 // Soft-delete a transaction by setting deletedAt = now() (D-15).
@@ -212,14 +233,20 @@ export async function refundOfExists(refundOfId: string, orgId: string): Promise
 // Returns {id} on success or null if not found / wrong org / already deleted.
 export async function softDeleteTransactionQuery(
   id: string,
-  orgId: string,
+  orgId: string
 ): Promise<{ id: string } | null> {
-  const [updated] = await db
+  const rows = await db
     .update(transactions)
     .set({ deletedAt: new Date(), updatedAt: new Date() })
-    .where(and(eq(transactions.id, id), eq(transactions.orgId, orgId), isNull(transactions.deletedAt)))
-    .returning({ id: transactions.id })
-  return updated ?? null
+    .where(
+      and(
+        eq(transactions.id, id),
+        eq(transactions.orgId, orgId),
+        isNull(transactions.deletedAt)
+      )
+    )
+    .returning({ id: transactions.id });
+  return rows.at(0) ?? null;
 }
 
 // Update scalar columns for a transaction inside an outer db.transaction() (tx is passed in).
@@ -229,14 +256,20 @@ export async function updateTransactionScalarsQuery(
   tx: DrizzleTransaction,
   id: string,
   orgId: string,
-  data: Record<string, unknown>,
+  data: Record<string, unknown>
 ) {
   const rows = await tx
     .update(transactions)
     .set({ ...data, updatedAt: new Date() })
-    .where(and(eq(transactions.id, id), eq(transactions.orgId, orgId), isNull(transactions.deletedAt)))
-    .returning()
-  return rows[0] ?? null
+    .where(
+      and(
+        eq(transactions.id, id),
+        eq(transactions.orgId, orgId),
+        isNull(transactions.deletedAt)
+      )
+    )
+    .returning();
+  return rows.at(0) ?? null;
 }
 
 // Replace-all assignees for a transaction inside an outer db.transaction().
@@ -245,9 +278,15 @@ export async function updateTransactionScalarsQuery(
 export async function replaceAssignees(
   tx: DrizzleTransaction,
   transactionId: string,
-  assignees: Array<{ memberId: string; amountCents: number; percentage?: number | null }>,
+  assignees: Array<{
+    memberId: string;
+    amountCents: number;
+    percentage?: number | null;
+  }>
 ): Promise<void> {
-  await tx.delete(transactionAssignees).where(eq(transactionAssignees.transactionId, transactionId))
+  await tx
+    .delete(transactionAssignees)
+    .where(eq(transactionAssignees.transactionId, transactionId));
   if (assignees.length > 0) {
     await tx.insert(transactionAssignees).values(
       assignees.map((a) => ({
@@ -255,8 +294,8 @@ export async function replaceAssignees(
         memberId: a.memberId,
         amountCents: a.amountCents,
         percentage: a.percentage != null ? a.percentage.toString() : null,
-      })),
-    )
+      }))
+    );
   }
 }
 
@@ -265,12 +304,14 @@ export async function replaceAssignees(
 export async function replaceTags(
   tx: DrizzleTransaction,
   transactionId: string,
-  tagIds: Array<string>,
+  tagIds: Array<string>
 ): Promise<void> {
-  await tx.delete(transactionTags).where(eq(transactionTags.transactionId, transactionId))
+  await tx
+    .delete(transactionTags)
+    .where(eq(transactionTags.transactionId, transactionId));
   if (tagIds.length > 0) {
     await tx
       .insert(transactionTags)
-      .values(tagIds.map((tagId) => ({ transactionId, tagId })))
+      .values(tagIds.map((tagId) => ({ transactionId, tagId })));
   }
 }
