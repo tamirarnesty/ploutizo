@@ -16,16 +16,16 @@ progress:
 
 ## Current Position
 
-Phase: 999.1
-Plan: Not started
+Phase: 03.1
+Plan: Complete
 **Milestone:** v0.1 MVP
-**Active Phase:** Phase 02.1.1 — Audit and Migrate to Neon Serverless — COMPLETE
+**Active Phase:** Phase 03.1 — Transaction Schema & Migrations — COMPLETE
 **Status:** Ready to plan
-**Last session:** 2026-04-04T02:40:24.401Z
+**Last session:** 2026-04-09T00:00:00.000Z
 
 ## Next Action
 
-Begin Phase 02.2 (light/dark/system theme toggle)
+Begin Phase 03.2 (Transaction API)
 
 ## Phase Status
 
@@ -35,26 +35,28 @@ Begin Phase 02.2 (light/dark/system theme toggle)
 | 2 | Households, Accounts & Classification | complete |
 | 02.1 | Code Style & Form Patterns Refactor | complete |
 | 02.1.1 | Audit and migrate to neon-serverless per Neon best practices | complete |
-| 02.2 | Add light/dark/system theme toggle | pending |
-| 02.3 | Vercel skills audit and guidelines | pending |
-| 3.1 | Transaction Schema & Migrations | pending |
-| 3.2 | Transaction API | pending |
-| 3.3 | Transaction List UI | pending |
-| 3.4 | Transaction Forms UI | pending |
-| 4.1 | Settlement API | pending |
-| 4.2 | Settlement UI | pending |
-| 4.3 | Budgets API | pending |
-| 4.4 | Budget Dashboard UI | pending |
-| 5.1 | Bank Normalizers | pending |
-| 5.2 | Import Batch API | pending |
-| 5.3 | Import UI | pending |
-| 5.4 | Import Bulk Actions & Duplicate Handling | pending |
-| 6.1 | Investment Schema & Contribution Room API | pending |
-| 6.2 | Savings Contributions UI | pending |
-| 6.3 | Net Worth API | pending |
-| 6.4 | Net Worth UI | pending |
-| 7.1 | Notifications Table & Write Triggers | pending |
-| 7.2 | Notification Feed UI | pending |
+| 02.2 | Add light/dark/system theme toggle | complete |
+| 02.3 | Vercel skills audit and guidelines | complete |
+| 02.4 | App Shell and Sidebar Redesign | complete |
+| 02.4.1 | Mobile UI/UX Fixes and Foundation Re-Establishment | complete |
+| 03.1 | Transaction Schema & Migrations | complete |
+| 03.2 | Transaction API | pending |
+| 03.3 | Transaction List UI | pending |
+| 03.4 | Transaction Forms UI | pending |
+| 04.1 | Settlement API | pending |
+| 04.2 | Settlement UI | pending |
+| 04.3 | Budgets API | pending |
+| 04.4 | Budget Dashboard UI | pending |
+| 05.1 | Bank Normalizers | pending |
+| 05.2 | Import Batch API | pending |
+| 05.3 | Import UI | pending |
+| 05.4 | Import Bulk Actions & Duplicate Handling | pending |
+| 06.1 | Investment Schema & Contribution Room API | pending |
+| 06.2 | Savings Contributions UI | pending |
+| 06.3 | Net Worth API | pending |
+| 06.4 | Net Worth UI | pending |
+| 07.1 | Notifications Table & Write Triggers | pending |
+| 07.2 | Notification Feed UI | pending |
 
 ## Initialization Summary
 
