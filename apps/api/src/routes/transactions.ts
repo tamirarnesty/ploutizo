@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { getAuth } from '@hono/clerk-auth'
-import { createTransactionSchema } from '@ploutizo/validators'
+import { createTransactionSchema, updateTransactionSchema } from '@ploutizo/validators'
 import { badRequest } from '../lib/helpers'
 import {
   createTransaction,
@@ -8,6 +8,8 @@ import {
   checkRefundOfOwnership,
   listTransactions,
   getTransaction,
+  updateTransaction,
+  deleteTransaction,
   type ListQueryParams,
 } from '../services/transactions'
 
@@ -81,6 +83,41 @@ transactionsRouter.get('/:id', async (c) => {
     return c.json({ error: { code: 'NOT_FOUND', message: 'Transaction not found.' } }, 404)
   }
   return c.json({ data: row })
+})
+
+// PATCH /:id — update fields + replace-all assignees/tags (D-03, D-10, D-11)
+transactionsRouter.patch('/:id', async (c) => {
+  const { orgId } = getAuth(c)
+  const id = c.req.param('id')
+  const result = updateTransactionSchema.safeParse(await c.req.json())
+  if (!result.success) {
+    return c.json({ error: { code: 'VALIDATION_ERROR', errors: result.error.issues } }, 400)
+  }
+
+  let updated
+  try {
+    updated = await updateTransaction(id, orgId!, result.data)
+  } catch (err) {
+    // updateTransaction throws on split sum mismatch (D-11)
+    const message = err instanceof Error ? err.message : 'Invalid request'
+    return badRequest(c, message)
+  }
+
+  if (!updated) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'Transaction not found.' } }, 404)
+  }
+  return c.json({ data: updated })
+})
+
+// DELETE /:id — soft delete (D-15)
+transactionsRouter.delete('/:id', async (c) => {
+  const { orgId } = getAuth(c)
+  const id = c.req.param('id')
+  const result = await deleteTransaction(id, orgId!)
+  if (!result) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'Transaction not found.' } }, 404)
+  }
+  return c.json({ data: result })
 })
 
 export { transactionsRouter }

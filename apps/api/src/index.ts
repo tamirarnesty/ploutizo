@@ -10,6 +10,7 @@ import { householdsRouter } from './routes/households'
 import { categoriesRouter } from './routes/categories'
 import { tagsRouter } from './routes/tags'
 import { merchantRulesRouter } from './routes/merchant-rules'
+import { transactionsRouter } from './routes/transactions'
 
 const app = new Hono()
 
@@ -67,5 +68,6 @@ app.route('/api/households', householdsRouter)
 app.route('/api/categories', categoriesRouter)
 app.route('/api/tags', tagsRouter)
 app.route('/api/merchant-rules', merchantRulesRouter)
+app.route('/api/transactions', transactionsRouter)
 
 serve({ fetch: app.fetch, port: Number(process.env.PORT ?? 8080) })

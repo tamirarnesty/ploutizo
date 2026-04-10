@@ -166,6 +166,16 @@ vi.mock('../services/transactions', () => ({
     assignees: [],
     tags: [],
   }),
+  updateTransaction: vi.fn().mockResolvedValue({
+    id: 'txn_1', orgId: 'org_test123', type: 'expense',
+    amount: 5000, date: '2026-01-15', accountId: 'acct_1',
+    description: 'Updated', merchant: null, categoryId: null,
+    refundOf: null, incomeType: null, incomeSource: null,
+    toAccountId: null, settledAccountId: null, investmentType: null,
+    importBatchId: null, recurringTemplateId: null,
+    deletedAt: null, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+  }),
+  deleteTransaction: vi.fn().mockResolvedValue({ id: 'txn_1' }),
 }))
 
 // Re-import mocked service functions so per-test overrides work
@@ -175,6 +185,8 @@ import {
   checkRefundOfOwnership,
   listTransactions,
   getTransaction,
+  updateTransaction,
+  deleteTransaction,
 } from '../services/transactions'
 
 const app = new Hono()
@@ -310,11 +322,43 @@ describe('GET /api/transactions/:id', () => {
 })
 
 describe('PATCH /api/transactions/:id', () => {
-  it.todo('TXN-PATCH-01: PATCH updates fields; assignees replace-all (delete+insert)')
-  it.todo('TXN-PATCH-02: PATCH wrong orgId → 404')
+  it('TXN-PATCH-01: updates fields; assignees replace-all', async () => {
+    const res = await app.request('/txn_1', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: 'Updated' }),
+    })
+    expect(res.status).toBe(200)
+    const body = await res.json() as { data: { description: string } }
+    expect(body.data.description).toBe('Updated')
+  })
+
+  it('TXN-PATCH-02: wrong orgId → 404', async () => {
+    vi.mocked(updateTransaction).mockResolvedValueOnce(null)
+    const res = await app.request('/txn_missing', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: 'X' }),
+    })
+    expect(res.status).toBe(404)
+    const body = await res.json() as { error: { code: string } }
+    expect(body.error.code).toBe('NOT_FOUND')
+  })
 })
 
 describe('DELETE /api/transactions/:id', () => {
-  it.todo('TXN-DELETE-01: DELETE /:id sets deletedAt → 200 {data: {id}}')
-  it.todo('TXN-DELETE-02: DELETE already-deleted → 404')
+  it('TXN-DELETE-01: sets deletedAt → 200 {data: {id}}', async () => {
+    const res = await app.request('/txn_1', { method: 'DELETE' })
+    expect(res.status).toBe(200)
+    const body = await res.json() as { data: { id: string } }
+    expect(body.data.id).toBe('txn_1')
+  })
+
+  it('TXN-DELETE-02: already-deleted → 404', async () => {
+    vi.mocked(deleteTransaction).mockResolvedValueOnce(null)
+    const res = await app.request('/txn_1', { method: 'DELETE' })
+    expect(res.status).toBe(404)
+    const body = await res.json() as { error: { code: string } }
+    expect(body.error.code).toBe('NOT_FOUND')
+  })
 })
