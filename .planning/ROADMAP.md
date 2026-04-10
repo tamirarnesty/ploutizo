@@ -200,7 +200,7 @@ via the API with correct field enforcement, split math, and validation errors.
 **Delivers:**
 - CRUD endpoints for all 6 types: expense, refund, income, transfer, settlement, contribution
 - Per-type field validation via Zod discriminated unions; missing required fields return 400 with structured error
-- Split calculation logic: even default distribution, Largest Remainder Method for odd-cent remainder
+- Split sum validation: API validates that submitted assignee amounts sum to transaction amount (calculation is client-side per D-01)
 - Refund: optional `refund_of` FK; reduces net category spend, not income
 - Transfer: excluded from budget/expense/income calculations
 - Soft delete via `deleted_at` timestamp; all queries filter via partial index
@@ -219,8 +219,8 @@ Plans:
 
 **Success criteria:**
 - [ ] All 6 transaction types can be created; missing required fields return 400 with structured error (e.g. expense without category, income without income type)
-- [ ] A 3-assignee split on a $100.01 transaction distributes as $33.34 + $33.34 + $33.33 (Largest Remainder Method — first assignees get extra cent)
-- [ ] Adding a second assignee to an existing 1-assignee transaction resets split to 50/50; removing one assignee from a 3-way split resets to 50/50
+- [ ] A transaction with assignees whose amountCents do not sum to transaction amount returns 400 BAD_REQUEST
+- [ ] A transaction with assignees whose amountCents sum to transaction amount is created successfully (LRM calculation is client-side per D-01; Phase 03.4)
 - [ ] Soft-deleted transactions are excluded from all balance, budget, and category spend calculations
 - [ ] A refund linked to an original expense reduces net category spend (not income); unlinked refund also reduces category spend
 - [ ] Transfer transactions are excluded from budget spend and income summary totals
