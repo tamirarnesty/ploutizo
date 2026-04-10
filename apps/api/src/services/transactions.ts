@@ -13,7 +13,7 @@ import {
   softDeleteTransactionQuery,
   updateTransactionScalarsQuery
 } from '../lib/queries/transactions'
-import type {DrizzleTransaction, ListQueryParams} from '../lib/queries/transactions';
+import type { ListQueryParams } from '../lib/queries/transactions'
 import type { createTransactionSchema, updateTransactionSchema } from '@ploutizo/validators'
 import type { z } from 'zod'
 
@@ -119,7 +119,7 @@ export async function updateTransaction(
   return db.transaction(async (tx) => {
     // Delegate scalar UPDATE to query layer (Pitfall 7: three-condition WHERE)
     const updated = await updateTransactionScalarsQuery(
-      tx as unknown as DrizzleTransaction,
+      tx,
       id,
       orgId,
       updateData as Record<string, unknown>,
@@ -129,12 +129,12 @@ export async function updateTransaction(
 
     // D-03: replace-all assignees if provided in payload — delegated to query layer
     if (assignees !== undefined) {
-      await replaceAssignees(tx as unknown as DrizzleTransaction, id, assignees)
+      await replaceAssignees(tx, id, assignees)
     }
 
     // Replace-all tags if provided — delegated to query layer
     if (tagIds !== undefined) {
-      await replaceTags(tx as unknown as DrizzleTransaction, id, tagIds)
+      await replaceTags(tx, id, tagIds)
     }
 
     return updated

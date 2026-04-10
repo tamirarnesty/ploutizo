@@ -1,24 +1,18 @@
 import { db } from '@ploutizo/db'
 import {
-  transactions,
+  accounts,
+  categories,
+  orgMembers,
+  tags,
   transactionAssignees,
   transactionTags,
-  categories,
-  accounts,
-  tags,
-  orgMembers,
+  transactions,
 } from '@ploutizo/db/schema'
-import { eq, and, isNull, inArray, exists, sql, asc, desc, gte, lte, type SQL } from 'drizzle-orm'
-import type { PgTransaction } from 'drizzle-orm/pg-core'
-import type { NeonQueryResultHKT } from 'drizzle-orm/neon-serverless'
-import type { ExtractTablesWithRelations } from 'drizzle-orm'
-
-// Drizzle transaction type for functions that participate in an outer db.transaction()
-export type DrizzleTransaction = PgTransaction<
-  NeonQueryResultHKT,
-  Record<string, never>,
-  ExtractTablesWithRelations<Record<string, never>>
->
+import {  and, asc, desc, eq, exists, gte, inArray, isNull, lte, sql } from 'drizzle-orm'
+import type {SQL} from 'drizzle-orm';
+// Drizzle transaction type for functions that participate in an outer db.transaction().
+// Derived from db's own inference so it stays correct across schema changes.
+export type DrizzleTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 // D-04: full column projection for joined transaction rows
 const TX_COLUMNS = {
@@ -60,12 +54,12 @@ export type ListQueryParams = {
   dateTo?: string
   categoryId?: string
   assigneeId?: string
-  tagIds?: string[]
+  tagIds?: Array<string>
 }
 
 // Build the WHERE conditions array for list + count queries
-export function buildConditions(params: ListQueryParams): SQL[] {
-  const conditions: SQL[] = [
+export function buildConditions(params: ListQueryParams): Array<SQL> {
+  const conditions: Array<SQL> = [
     eq(transactions.orgId, params.orgId),
     isNull(transactions.deletedAt), // D-15
   ]
@@ -161,8 +155,8 @@ export async function enrichTransactions(baseRows: Array<{ id: string }>) {
   const txIds = baseRows.map((r) => r.id)
   if (txIds.length === 0) {
     return {
-      assigneeMap: {} as Record<string, unknown[]>,
-      tagMap: {} as Record<string, unknown[]>,
+      assigneeMap: {} as Record<string, Array<unknown>>,
+      tagMap: {} as Record<string, Array<unknown>>,
     }
   }
 
@@ -271,7 +265,7 @@ export async function replaceAssignees(
 export async function replaceTags(
   tx: DrizzleTransaction,
   transactionId: string,
-  tagIds: string[],
+  tagIds: Array<string>,
 ): Promise<void> {
   await tx.delete(transactionTags).where(eq(transactionTags.transactionId, transactionId))
   if (tagIds.length > 0) {
