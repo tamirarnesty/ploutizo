@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { Hono } from 'hono'
-import { categoriesRouter } from '../routes/categories.js'
+import { categoriesRouter } from '../routes/categories'
 
 vi.mock('@hono/clerk-auth', () => ({ getAuth: vi.fn(() => ({ orgId: 'org_test123' })) }))
 vi.mock('@ploutizo/db', () => ({

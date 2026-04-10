@@ -17,8 +17,8 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 
-import { accountTypeEnum } from './enums.js'
-import { orgs, orgMembers } from './auth.js'
+import { accountTypeEnum } from './enums'
+import { orgs, orgMembers } from './auth'
 
 /**
  * accounts

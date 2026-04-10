@@ -6,7 +6,7 @@
  * All other tables reference orgs via org_id.
  */
 
-import { sql } from "drizzle-orm"
+import { sql } from 'drizzle-orm'
 import {
   index,
   integer,
@@ -15,9 +15,9 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
-} from "drizzle-orm/pg-core"
+} from 'drizzle-orm/pg-core'
 
-import { memberRoleEnum } from "./enums.js"
+import { memberRoleEnum } from './enums'
 
 // ---------------------------------------------------------------------------
 // Shared helpers (local to this file — imported from client.ts in real usage)
@@ -36,16 +36,16 @@ const cents = () => integer()
  * externalId is the auth provider's user ID — intentionally provider-agnostic.
  * If the auth provider changes, this field remains semantically correct.
  */
-export const users = pgTable("users", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+export const users = pgTable('users', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
   /**
    * The auth provider's user ID (e.g. Clerk user ID "user_2abc...").
    * Named externalId rather than clerkId to remain auth-provider-agnostic.
    */
-  externalId: text("external_id").notNull().unique(),
-  email: text("email").notNull().unique(),
-  fullName: text("full_name"),
-  createdAt: timestamp("created_at", { withTimezone: true })
+  externalId: text('external_id').notNull().unique(),
+  email: text('email').notNull().unique(),
+  fullName: text('full_name'),
+  createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()
     .defaultNow(),
 })
@@ -59,13 +59,13 @@ export const users = pgTable("users", {
  * settlementThreshold is the household-level override in cents.
  * Precedence: org_member.settlementThreshold > orgs.settlementThreshold > 5000 (global default)
  */
-export const orgs = pgTable("orgs", {
-  id: text("id").primaryKey(),
+export const orgs = pgTable('orgs', {
+  id: text('id').primaryKey(),
   settlementThreshold: cents(),
-  createdAt: timestamp("created_at", { withTimezone: true })
+  createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()
     .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
+  updatedAt: timestamp('updated_at', { withTimezone: true })
     .notNull()
     .defaultNow(),
 })
@@ -78,31 +78,30 @@ export const orgs = pgTable("orgs", {
  * settlementThreshold overrides the org-level threshold for this member.
  */
 export const orgMembers = pgTable(
-  "org_members",
+  'org_members',
   {
-    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-    orgId: text("org_id")
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    orgId: text('org_id')
       .notNull()
-      .references(() => orgs.id, { onDelete: "cascade" }),
-    userId: uuid("user_id")
+      .references(() => orgs.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
       .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    role: memberRoleEnum("role").notNull().default("admin"),
-    displayName: text("display_name").notNull(),
+      .references(() => users.id, { onDelete: 'cascade' }),
+    role: memberRoleEnum('role').notNull().default('admin'),
+    displayName: text('display_name').notNull(),
     /** Private — used only for TFSA contribution room calculation. */
-    birthYear: integer("birth_year"),
+    birthYear: integer('birth_year'),
     /**
      * Per-member settlement reminder threshold in cents.
      * Null = fall through to org-level threshold.
      */
     settlementThreshold: cents(),
-    joinedAt: timestamp("joined_at", { withTimezone: true })
+    joinedAt: timestamp('joined_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
   (t) => [
-    uniqueIndex("org_members_org_user_idx").on(t.orgId, t.userId),
-    index("org_members_org_idx").on(t.orgId),
+    uniqueIndex('org_members_org_user_idx').on(t.orgId, t.userId),
+    index('org_members_org_idx').on(t.orgId),
   ]
 )
-

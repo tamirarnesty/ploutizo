@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { Hono } from 'hono'
-import { householdsRouter } from '../routes/households.js'
+import { householdsRouter } from '../routes/households'
 
 vi.mock('@hono/clerk-auth', () => ({
   getAuth: vi.fn(() => ({ orgId: 'org_test123' })),

@@ -7,7 +7,9 @@ import {
   CategoryFormSchema,
   RuleFormSchema,
   HouseholdSettingsFormSchema,
-} from './index.js'
+  createTransactionSchema,
+  updateTransactionSchema,
+} from './index'
 
 describe('createAccountSchema', () => {
   it('accepts valid account payload', () => {
@@ -279,5 +281,108 @@ describe('HouseholdSettingsFormSchema', () => {
   it('accepts empty object (thresholdDollars is optional)', () => {
     const result = HouseholdSettingsFormSchema.safeParse({})
     expect(result.success).toBe(true)
+  })
+})
+
+describe('createTransactionSchema — common fields', () => {
+  const validExpense = {
+    type: 'expense' as const,
+    accountId: '550e8400-e29b-41d4-a716-446655440000',
+    amount: 1000,
+    date: '2024-01-15',
+  }
+
+  it('accepts valid expense payload', () => {
+    expect(createTransactionSchema.safeParse(validExpense).success).toBe(true)
+  })
+
+  it('rejects amount=0 (must be positive)', () => {
+    expect(createTransactionSchema.safeParse({ ...validExpense, amount: 0 }).success).toBe(false)
+  })
+
+  it('rejects negative amount', () => {
+    expect(createTransactionSchema.safeParse({ ...validExpense, amount: -100 }).success).toBe(false)
+  })
+
+  it('rejects non-integer amount', () => {
+    expect(createTransactionSchema.safeParse({ ...validExpense, amount: 1.5 }).success).toBe(false)
+  })
+
+  it('rejects ISO datetime as date (must be YYYY-MM-DD only)', () => {
+    expect(createTransactionSchema.safeParse({ ...validExpense, date: '2024-01-01T00:00:00Z' }).success).toBe(false)
+  })
+
+  it('rejects US-format date MM/DD/YYYY', () => {
+    expect(createTransactionSchema.safeParse({ ...validExpense, date: '01/15/2024' }).success).toBe(false)
+  })
+
+  it('rejects unknown transaction type', () => {
+    expect(createTransactionSchema.safeParse({ ...validExpense, type: 'unknown_type' }).success).toBe(false)
+  })
+})
+
+describe('createTransactionSchema — per-type branches', () => {
+  const baseFields = {
+    accountId: '550e8400-e29b-41d4-a716-446655440000',
+    amount: 5000,
+    date: '2024-03-01',
+  }
+
+  it('accepts valid refund payload', () => {
+    expect(createTransactionSchema.safeParse({ ...baseFields, type: 'refund' }).success).toBe(true)
+  })
+
+  it('accepts refund with optional refundOf uuid', () => {
+    expect(createTransactionSchema.safeParse({
+      ...baseFields,
+      type: 'refund',
+      refundOf: '550e8400-e29b-41d4-a716-446655440001',
+    }).success).toBe(true)
+  })
+
+  it('accepts valid income payload with required incomeType', () => {
+    expect(createTransactionSchema.safeParse({
+      ...baseFields,
+      type: 'income',
+      incomeType: 'direct_deposit',
+    }).success).toBe(true)
+  })
+
+  it('rejects income payload missing incomeType', () => {
+    expect(createTransactionSchema.safeParse({ ...baseFields, type: 'income' }).success).toBe(false)
+  })
+
+  it('accepts valid transfer payload with required toAccountId', () => {
+    expect(createTransactionSchema.safeParse({
+      ...baseFields,
+      type: 'transfer',
+      toAccountId: '550e8400-e29b-41d4-a716-446655440002',
+    }).success).toBe(true)
+  })
+
+  it('rejects transfer payload missing toAccountId', () => {
+    expect(createTransactionSchema.safeParse({ ...baseFields, type: 'transfer' }).success).toBe(false)
+  })
+
+  it('accepts valid settlement payload', () => {
+    expect(createTransactionSchema.safeParse({ ...baseFields, type: 'settlement' }).success).toBe(true)
+  })
+
+  it('accepts valid contribution payload', () => {
+    expect(createTransactionSchema.safeParse({ ...baseFields, type: 'contribution' }).success).toBe(true)
+  })
+})
+
+describe('updateTransactionSchema', () => {
+  it('accepts empty object (all fields optional)', () => {
+    expect(updateTransactionSchema.safeParse({}).success).toBe(true)
+  })
+
+  it('accepts partial update with just amount', () => {
+    expect(updateTransactionSchema.safeParse({ amount: 2000 }).success).toBe(true)
+  })
+
+  it('rejects amount=0 even in partial update', () => {
+    expect(updateTransactionSchema.safeParse({ amount: 0 }).success).toBe(false)
   })
 })

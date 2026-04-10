@@ -1,5 +1,5 @@
-import { db } from '../client.js'
-import { merchantRules } from '../schema/index.js'
+import { db } from '../client'
+import { merchantRules } from '../schema/index'
 
 // Default merchant rules seeded at org creation.
 // INVARIANT: Every row has orgId set — no global merchant rule rows.

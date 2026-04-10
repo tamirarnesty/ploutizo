@@ -1,6 +1,6 @@
 import { Pool, neonConfig } from '@neondatabase/serverless'
 import { drizzle } from 'drizzle-orm/neon-serverless'
-import * as schema from './schema/index.js'
+import * as schema from './schema/index'
 
 // WebSocket mode: full transaction support + allows Neon compute to scale-to-zero.
 // Node 22 provides native WebSocket globally — no 'ws' package needed.

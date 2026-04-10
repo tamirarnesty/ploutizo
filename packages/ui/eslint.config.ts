@@ -5,6 +5,8 @@ export default [
   {
     rules: {
       "import/consistent-type-specifier-style": ["error", "prefer-inline"],
+      // Forbid file extensions on relative imports — use bare specifiers (e.g. './foo', not './foo.js')
+      "import/extensions": ["error", "never"],
     },
   },
   {
