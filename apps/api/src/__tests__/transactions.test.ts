@@ -1,7 +1,7 @@
-import { describe, it, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { Hono } from 'hono'
-// Wave 1: uncomment when file exists
-// import { transactionsRouter } from '../routes/transactions'
+import { transactionsRouter } from '../routes/transactions'
+import type { ListQueryParams } from '../services/transactions'
 
 // Mock transaction row — exported so Wave 1/Wave 2 plans can import when filling in stubs
 export const mockTxRow = {
@@ -106,24 +106,207 @@ vi.mock('@ploutizo/db/schema', () => ({
   orgMembers: {},
 }))
 
+// Mock the service layer — routes are thin HTTP handlers; all business logic tested via services
+vi.mock('../services/transactions', () => ({
+  createTransaction: vi.fn().mockResolvedValue({
+    id: 'txn_1',
+    orgId: 'org_test123',
+    type: 'expense',
+    amount: 5000,
+    date: '2026-01-15',
+    accountId: 'acct_1',
+    description: null,
+    merchant: null,
+    categoryId: null,
+    refundOf: null,
+    incomeType: null,
+    incomeSource: null,
+    toAccountId: null,
+    settledAccountId: null,
+    investmentType: null,
+    importBatchId: null,
+    recurringTemplateId: null,
+    deletedAt: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }),
+  validateSplitSum: vi.fn().mockReturnValue(null), // default: valid
+  checkRefundOfOwnership: vi.fn().mockResolvedValue(true),
+  listTransactions: vi.fn().mockResolvedValue({
+    data: [],
+    total: 0,
+    page: 1,
+    limit: 50,
+  }),
+  getTransaction: vi.fn().mockResolvedValue({
+    id: 'txn_1',
+    orgId: 'org_test123',
+    type: 'expense',
+    amount: 5000,
+    date: '2026-01-15',
+    accountId: 'acct_1',
+    accountName: 'Chequing',
+    accountType: 'chequing',
+    description: null,
+    merchant: null,
+    categoryId: null,
+    categoryName: null,
+    categoryIcon: null,
+    refundOf: null,
+    incomeType: null,
+    incomeSource: null,
+    toAccountId: null,
+    settledAccountId: null,
+    investmentType: null,
+    importBatchId: null,
+    recurringTemplateId: null,
+    deletedAt: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    assignees: [],
+    tags: [],
+  }),
+}))
+
+// Re-import mocked service functions so per-test overrides work
+import {
+  createTransaction,
+  validateSplitSum,
+  checkRefundOfOwnership,
+  listTransactions,
+  getTransaction,
+} from '../services/transactions'
+
 const app = new Hono()
-// Wave 1: app.route('/', transactionsRouter)
+app.route('/', transactionsRouter)
+
+// Valid UUIDs for test payloads — Zod v4 requires proper version bits ([1-8] in position 15, [89abAB] in position 20)
+const VALID_ACCOUNT_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'
+const VALID_MEMBER_ID_1 = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12'
+const VALID_MEMBER_ID_2 = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13'
 
 describe('POST /api/transactions', () => {
-  it.todo('TXN-POST-01: creates expense with valid payload → 201')
-  it.todo('TXN-POST-02: income without incomeType → 400 VALIDATION_ERROR')
-  it.todo('TXN-POST-03: transfer without toAccountId → 400 VALIDATION_ERROR')
-  it.todo('TXN-POST-04: assignees sum mismatch → 400 BAD_REQUEST')
-  it.todo('TXN-POST-05: assignees omitted → 201, no assignee insert')
+  it('TXN-POST-01: creates expense with valid payload → 201', async () => {
+    const res = await app.request('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'expense',
+        accountId: VALID_ACCOUNT_ID,
+        amount: 5000,
+        date: '2026-01-15',
+      }),
+    })
+    expect(res.status).toBe(201)
+    const body = await res.json()
+    expect(body.data.id).toBe('txn_1')
+    expect(body.data.orgId).toBe('org_test123')
+  })
+
+  it('TXN-POST-02: income without incomeType → 400 VALIDATION_ERROR', async () => {
+    const res = await app.request('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'income',
+        accountId: VALID_ACCOUNT_ID,
+        amount: 5000,
+        date: '2026-01-15',
+        // incomeType intentionally omitted
+      }),
+    })
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error.code).toBe('VALIDATION_ERROR')
+  })
+
+  it('TXN-POST-03: transfer without toAccountId → 400 VALIDATION_ERROR', async () => {
+    const res = await app.request('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'transfer',
+        accountId: VALID_ACCOUNT_ID,
+        amount: 5000,
+        date: '2026-01-15',
+        // toAccountId intentionally omitted
+      }),
+    })
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error.code).toBe('VALIDATION_ERROR')
+  })
+
+  it('TXN-POST-04: assignees sum mismatch → 400 BAD_REQUEST', async () => {
+    vi.mocked(validateSplitSum).mockReturnValueOnce('Assignee amounts must sum to transaction amount')
+    const res = await app.request('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'expense',
+        accountId: VALID_ACCOUNT_ID,
+        amount: 5000,
+        date: '2026-01-15',
+        assignees: [
+          { memberId: VALID_MEMBER_ID_1, amountCents: 3000 },
+          { memberId: VALID_MEMBER_ID_2, amountCents: 3000 },
+        ],
+      }),
+    })
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error.code).toBe('BAD_REQUEST')
+    expect(body.error.message).toBe('Assignee amounts must sum to transaction amount')
+  })
+
+  it('TXN-POST-05: assignees omitted → 201, no assignee insert', async () => {
+    const res = await app.request('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'expense',
+        accountId: VALID_ACCOUNT_ID,
+        amount: 5000,
+        date: '2026-01-15',
+      }),
+    })
+    expect(res.status).toBe(201)
+    const body = await res.json()
+    expect(body.data.id).toBeDefined()
+  })
 })
 
 describe('GET /api/transactions', () => {
-  it.todo('TXN-GET-01: GET / returns {data, total, page, limit} envelope')
+  it('TXN-GET-01: GET / returns {data, total, page, limit} envelope', async () => {
+    const res = await app.request('/')
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(Array.isArray(body.data)).toBe(true)
+    expect(typeof body.total).toBe('number')
+    expect(typeof body.page).toBe('number')
+    expect(typeof body.limit).toBe('number')
+    expect(body.total).toBe(0)
+    expect(body.page).toBe(1)
+    expect(body.limit).toBe(50)
+  })
 })
 
 describe('GET /api/transactions/:id', () => {
-  it.todo('TXN-GET-02: GET /:id returns joined shape with assignees[] and tags[]')
-  it.todo('TXN-GET-03: GET /:id on soft-deleted transaction → 404')
+  it('TXN-GET-02: GET /:id returns joined shape with assignees[] and tags[]', async () => {
+    const res = await app.request('/txn_1')
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(Array.isArray(body.data.assignees)).toBe(true)
+    expect(Array.isArray(body.data.tags)).toBe(true)
+  })
+
+  it('TXN-GET-03: GET /:id on soft-deleted transaction → 404', async () => {
+    vi.mocked(getTransaction).mockResolvedValueOnce(null)
+    const res = await app.request('/txn_missing')
+    expect(res.status).toBe(404)
+    const body = await res.json()
+    expect(body.error.code).toBe('NOT_FOUND')
+  })
 })
 
 describe('PATCH /api/transactions/:id', () => {
