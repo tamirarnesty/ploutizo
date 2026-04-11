@@ -1,4 +1,3 @@
-import { OrganizationProfile } from "@clerk/tanstack-react-start"
 import { Label } from "@ploutizo/ui/components/label"
 import { HouseholdSettingsForm } from "./HouseholdSettingsForm"
 
@@ -16,10 +15,6 @@ export const HouseholdSettings = () => (
         </p>
       </div>
       <HouseholdSettingsForm />
-    </section>
-
-    <section className="flex flex-col gap-3">
-      <OrganizationProfile />
     </section>
   </div>
 )
