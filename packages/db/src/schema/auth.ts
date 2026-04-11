@@ -45,6 +45,9 @@ export const users = pgTable('users', {
   externalId: text('external_id').notNull().unique(),
   email: text('email').notNull().unique(),
   fullName: text('full_name'),
+  imageUrl: text('image_url'),
+  firstName: text('first_name'),
+  lastName: text('last_name'),
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -61,6 +64,8 @@ export const users = pgTable('users', {
  */
 export const orgs = pgTable('orgs', {
   id: text('id').primaryKey(),
+  name: text('name'),
+  imageUrl: text('image_url'),
   settlementThreshold: cents(),
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()
