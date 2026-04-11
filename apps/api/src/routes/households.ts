@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { getAuth } from '@hono/clerk-auth';
 import { db } from '@ploutizo/db';
-import { orgMembers, orgs } from '@ploutizo/db/schema';
+import { orgMembers, orgs, users } from '@ploutizo/db/schema';
 import { eq } from 'drizzle-orm';
 import { updateHouseholdSettingsSchema } from '@ploutizo/validators';
 
@@ -54,8 +54,10 @@ householdsRouter.get('/members', async (c) => {
       displayName: orgMembers.displayName,
       role: orgMembers.role,
       joinedAt: orgMembers.joinedAt,
+      externalId: users.externalId,
     })
     .from(orgMembers)
+    .innerJoin(users, eq(users.id, orgMembers.userId))
     .where(eq(orgMembers.orgId, orgId!))
     .orderBy(orgMembers.displayName);
   return c.json({ data: rows });
