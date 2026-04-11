@@ -38,4 +38,8 @@ export interface OrgMember {
   displayName: string
   role: 'admin'
   joinedAt: string
+  externalId: string
+  imageUrl: string | null
+  firstName: string | null
+  lastName: string | null
 }
