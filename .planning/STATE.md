@@ -21,7 +21,7 @@ Plan: Not started
 **Milestone:** v0.1 MVP
 **Active Phase:** Phase 03.1 — Transaction Schema & Migrations — COMPLETE
 **Status:** Ready to plan
-**Last session:** 2026-04-10T03:10:29.866Z
+**Last session:** 2026-04-11T23:31:56.842Z
 
 ## Next Action
 
@@ -117,6 +117,7 @@ Begin Phase 03.2 (Transaction API)
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260329-ivf | Update Phase 1 plans to reference old-artifacts schema files | 2026-03-29 | b39a815 | [260329-ivf-analyze-impact-of-old-artifacts-schemas-](./quick/260329-ivf-analyze-impact-of-old-artifacts-schemas-/) |
+| 260411-r4m | add additional valuable user/member and org attributes from clerk | 2026-04-11 | 38ade1e | [260411-r4m-add-additional-valuable-user-member-and-](./quick/260411-r4m-add-additional-valuable-user-member-and-/) |
 
 ## Git Note
 
