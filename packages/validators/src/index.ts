@@ -94,6 +94,12 @@ export const RuleFormSchema = createMerchantRuleSchema
   })
 export type RuleForm = z.infer<typeof RuleFormSchema>
 
+// InviteMemberFormSchema — email field for household member invite
+export const InviteMemberFormSchema = z.object({
+  email: z.string().email('Enter a valid email address'),
+})
+export type InviteMemberForm = z.infer<typeof InviteMemberFormSchema>
+
 // HouseholdSettingsFormSchema — dollar string in, cents computed in onSubmit
 export const HouseholdSettingsFormSchema = z.object({
   thresholdDollars: z

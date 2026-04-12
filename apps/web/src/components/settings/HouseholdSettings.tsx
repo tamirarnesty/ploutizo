@@ -1,6 +1,7 @@
 import { useUser } from "@clerk/tanstack-react-start"
 import { Trash2 } from "lucide-react"
 import { toast } from "@ploutizo/ui/components/sonner"
+import { InviteMemberFormSchema } from "@ploutizo/validators"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,7 +34,8 @@ export const HouseholdSettings = () => {
     defaultValues: { email: "" },
     validators: {
       onSubmit: ({ value }: { value: { email: string } }) => {
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.email)) return "Enter a valid email address"
+        const r = InviteMemberFormSchema.safeParse(value)
+        if (!r.success) return r.error.issues.map((i: { message: string }) => i.message).join(", ")
       },
     },
     onSubmit: ({ value }) => {
@@ -116,14 +118,11 @@ export const HouseholdSettings = () => {
                     <span className="text-xs capitalize text-muted-foreground">{member.role}</span>
                     {!isCurrentUser ? (
                       <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label={`Remove ${member.displayName}`}
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
+                        <AlertDialogTrigger
+                          className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          aria-label={`Remove ${member.displayName}`}
+                        >
+                          <Trash2 className="size-4" />
                         </AlertDialogTrigger>
                         <AlertDialogContent className="w-[calc(100%-2rem)] max-w-md">
                           <AlertDialogTitle>
@@ -164,7 +163,9 @@ export const HouseholdSettings = () => {
               name="email"
               validators={{
                 onChange: ({ value }: { value: string }) => {
-                  if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "Enter a valid email address"
+                  if (!value) return undefined
+                  const r = InviteMemberFormSchema.shape.email.safeParse(value)
+                  if (!r.success) return r.error.issues.map((i: { message: string }) => i.message).join(", ")
                 },
               }}
             >
