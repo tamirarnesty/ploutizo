@@ -712,6 +712,16 @@ Plans:
 | FHSA "used for home purchase" status | Deferred — account freeze on home purchase not in v1 scope |
 | Recurring transaction reminders | v2 |
 
+### Phase 8.1: Household Settings Consolidation
+
+**Goal:** Merge the Members tab into Household tab, add member invitation form via Clerk inviteMember, and add org overview section (name, image).
+**Requirements**: TBD
+**Depends on:** Phase 2
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 8.1 to break down)
+
 ---
 
 ## Open Items (must resolve before affected phase)

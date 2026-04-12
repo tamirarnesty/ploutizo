@@ -57,6 +57,7 @@ Begin Phase 03.2 (Transaction API)
 | 06.4 | Net Worth UI | pending |
 | 07.1 | Notifications Table & Write Triggers | pending |
 | 07.2 | Notification Feed UI | pending |
+| 08.1 | Household Settings Consolidation | pending |
 
 ## Initialization Summary
 
@@ -100,6 +101,7 @@ Begin Phase 03.2 (Transaction API)
 - Phase 02.2 inserted after Phase 2: add light/dark/system theme toggle with default 'system' theme being set (URGENT)
 - Phase 02.3 inserted after Phase 02: vercel skills audit and guidelines (URGENT)
 - Phase 02.4 inserted after Phase 02: app shell and sidebar redesign (URGENT)
+- Phase 8.1 added: Household Settings Consolidation — merge Members tab, add invite form, add org overview
 
 ## Blockers / Open Items
 
