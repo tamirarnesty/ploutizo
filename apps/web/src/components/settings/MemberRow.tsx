@@ -1,5 +1,4 @@
 import { Trash2 } from "lucide-react"
-import type { OrgMember } from "@ploutizo/types"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,6 +11,7 @@ import {
 } from "@ploutizo/ui/components/alert-dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@ploutizo/ui/components/avatar"
 import { Badge } from "@ploutizo/ui/components/badge"
+import type { OrgMember } from "@ploutizo/types"
 
 interface MemberRowProps {
   member: OrgMember
@@ -36,7 +36,7 @@ export const MemberRow = ({ member, isCurrentUser, onRemove }: MemberRowProps) =
       {!isCurrentUser ? (
         <AlertDialog>
           <AlertDialogTrigger
-            className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label={`Remove ${member.displayName}`}
           >
             <Trash2 className="size-4" />
@@ -51,7 +51,7 @@ export const MemberRow = ({ member, isCurrentUser, onRemove }: MemberRowProps) =
             <AlertDialogFooter>
               <AlertDialogCancel>Keep member</AlertDialogCancel>
               <AlertDialogAction
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                variant="destructive"
                 onClick={() => onRemove(member.id)}
               >
                 Remove

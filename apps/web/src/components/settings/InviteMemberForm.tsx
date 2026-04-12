@@ -29,6 +29,8 @@ export const InviteMemberForm = () => {
             toast.error("Already a member of this household.")
           } else if (code === "INVITATION_PENDING") {
             toast.error("An invitation is already pending for this email.")
+          } else if (code === "QUOTA_EXCEEDED") {
+            toast.error("Member limit reached for this household.")
           } else {
             toast.error("Failed to send invite. Try again.")
           }
@@ -49,7 +51,7 @@ export const InviteMemberForm = () => {
         <form.AppField
           name="email"
           validators={{
-            onChange: ({ value }: { value: string }) => {
+            onBlur: ({ value }: { value: string }) => {
               if (!value) return undefined
               const r = InviteMemberFormSchema.shape.email.safeParse(value)
               if (!r.success) return r.error.issues.map((i: { message: string }) => i.message).join(", ")

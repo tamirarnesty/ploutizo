@@ -24,7 +24,7 @@ export const HouseholdSettings = () => (
           Settlement reminder threshold
         </Label>
         <p className="text-xs text-muted-foreground">
-          You&apos;ll be reminded when the shared balance exceeds this amount.
+          You'll be reminded when the shared balance exceeds this amount.
         </p>
       </div>
       <HouseholdSettingsForm />

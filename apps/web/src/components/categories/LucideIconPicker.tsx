@@ -172,7 +172,7 @@ export const LucideIconPicker = ({
         />
         {filtered.length === 0 ? (
           <p className="py-2 text-center text-xs text-muted-foreground">
-            No icons match &ldquo;{search}&rdquo;.
+            No icons match "{search}".
           </p>
         ) : (
           <div
