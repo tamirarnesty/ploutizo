@@ -229,13 +229,15 @@ Plans:
 
 ### Phase 03.2.1: household improvement (new UI with settings consolidation and invitation flow) (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
+**Goal:** Consolidate the separate Household and Members settings tabs into a single unified page. Add member invitation (POST /api/households/invitations via Clerk REST API) and member removal (DELETE /api/households/members/:memberId). Household overview with org avatar, member list with avatars and remove confirmations, inline invite form.
+**Requirements**: D-01 through D-20 (see 03.2.1-CONTEXT.md)
 **Depends on:** Phase 03.2
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 03.2.1 to break down)
+- [ ] 03.2.1-01-PLAN.md — Wave 0: Install Avatar and Sonner shadcn components into packages/ui
+- [ ] 03.2.1-02-PLAN.md — Wave 1: API routes (GET /, POST /invitations, DELETE /members/:memberId) + members query bug fix + data-access hooks
+- [ ] 03.2.1-03-PLAN.md — Wave 2: Rewrite HouseholdSettings.tsx (3 sections) + remove Members tab + delete dead files
 
 ### Phase 03.3: Transaction List UI
 
