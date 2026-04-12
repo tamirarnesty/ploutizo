@@ -227,6 +227,16 @@ Plans:
 
 ---
 
+### Phase 03.2.1: household improvement (new UI with settings consolidation and invitation flow) (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 03.2
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 03.2.1 to break down)
+
 ### Phase 03.3: Transaction List UI
 
 **Goal:** Users can view all transactions in a paginated, filterable list and
@@ -711,18 +721,6 @@ Plans:
 | TFSA withdrawal manual adjustment | Disclaimer only in v1 |
 | FHSA "used for home purchase" status | Deferred — account freeze on home purchase not in v1 scope |
 | Recurring transaction reminders | v2 |
-
-### Phase 8.1: Household Settings Consolidation
-
-**Goal:** Merge the Members tab into Household tab, add member invitation form via Clerk inviteMember, and add org overview section (name, image).
-**Requirements**: TBD
-**Depends on:** Phase 2
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd-plan-phase 8.1 to break down)
-
----
 
 ## Open Items (must resolve before affected phase)
 
