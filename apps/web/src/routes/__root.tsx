@@ -12,6 +12,7 @@ import { useEffect } from "react"
 import { createServerFn } from "@tanstack/react-start"
 import appCss from "@ploutizo/ui/globals.css?url"
 import { ThemeProvider } from "@ploutizo/ui/components/theme-provider"
+import { Toaster } from "@ploutizo/ui/components/sonner"
 import { TooltipProvider } from "@ploutizo/ui/components/tooltip"
 import { queryClient, setTokenGetter } from "../lib/queryClient"
 
@@ -58,6 +59,7 @@ const RootDocument = ({ children }: { children: React.ReactNode }) => (
             <ClerkProvider appearance={{ theme: shadcn }}>
               <TokenInitializer />
               {children}
+              <Toaster />
             </ClerkProvider>
           </QueryClientProvider>
         </TooltipProvider>
