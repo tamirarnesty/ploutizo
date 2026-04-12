@@ -23,7 +23,6 @@ const settingsTabs = [
   { label: "Categories & Tags", value: "/settings/categories" },
   { label: "Merchant Rules", value: "/settings/merchant-rules" },
   { label: "Household", value: "/settings/household" },
-  { label: "Members", value: "/settings/organization-members" },
 ] as const
 
 function SettingsLayout() {
