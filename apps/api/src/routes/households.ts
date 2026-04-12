@@ -3,7 +3,7 @@ import { getAuth } from '@hono/clerk-auth';
 import { db } from '@ploutizo/db';
 import { orgMembers, orgs, users } from '@ploutizo/db/schema';
 import { and, eq } from 'drizzle-orm';
-import { updateHouseholdSettingsSchema } from '@ploutizo/validators';
+import { InviteMemberFormSchema, updateHouseholdSettingsSchema } from '@ploutizo/validators';
 
 const householdsRouter = new Hono();
 
@@ -80,7 +80,12 @@ householdsRouter.get('/members', async (c) => {
 // POST /invitations — invite a user to the org via Clerk API
 householdsRouter.post('/invitations', async (c) => {
   const { orgId } = getAuth(c);
-  const { email } = await c.req.json();
+  const body = await c.req.json();
+  const parsed = InviteMemberFormSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: { code: 'INVALID_EMAIL' } }, 400);
+  }
+  const { email } = parsed.data;
 
   const clerkRes = await fetch(
     `https://api.clerk.com/v1/organizations/${orgId}/invitations`,
@@ -97,13 +102,19 @@ householdsRouter.post('/invitations', async (c) => {
   if (!clerkRes.ok) {
     const clerkBody = await clerkRes.json() as { errors?: Array<{ code: string }> };
     const code = clerkBody.errors?.[0]?.code;
-    if (code === 'already_a_member_of_this_org') {
+    if (code === 'already_a_member_of_this_org' || code === 'already_a_member_in_organization') {
       return c.json({ error: { code: 'ALREADY_MEMBER' } }, 409);
     }
     if (code === 'invitation_already_pending') {
       return c.json({ error: { code: 'INVITATION_PENDING' } }, 409);
     }
-    return c.json({ error: { code: 'INVALID_EMAIL' } }, 400);
+    if (code === 'form_param_format_invalid') {
+      return c.json({ error: { code: 'INVALID_EMAIL' } }, 400);
+    }
+    if (code === 'quota_exceeded') {
+      return c.json({ error: { code: 'QUOTA_EXCEEDED' } }, 402);
+    }
+    return c.json({ error: { code: 'UNKNOWN' } }, 500);
   }
 
   return c.json({ data: { sent: true } });
@@ -131,14 +142,18 @@ householdsRouter.delete('/members/:memberId', async (c) => {
     return c.json({ error: { code: 'SELF_REMOVAL_FORBIDDEN' } }, 403);
   }
 
-  // Remove from Clerk org
-  await fetch(
+  // Remove from Clerk org — must succeed before touching local DB to avoid split-brain
+  const clerkRes = await fetch(
     `https://api.clerk.com/v1/organizations/${orgId}/memberships/${member.externalId}`,
     {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}` },
     }
   );
+
+  if (!clerkRes.ok && clerkRes.status !== 404) {
+    return c.json({ error: { code: 'UNKNOWN' } }, 500);
+  }
 
   // Remove local org_members row
   await db.delete(orgMembers).where(eq(orgMembers.id, memberId));
