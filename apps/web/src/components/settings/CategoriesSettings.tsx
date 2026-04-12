@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import { Skeleton } from "@ploutizo/ui/components/skeleton"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -88,7 +89,7 @@ export const CategoriesSettings = () => {
   return (
     <div className="max-w-2xl space-y-8">
       <h1 className="font-heading text-xl font-semibold">
-        Categories &amp; Tags
+        Categories & Tags
       </h1>
 
       {/* Categories section */}
@@ -107,10 +108,7 @@ export const CategoriesSettings = () => {
         {catLoading ? (
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-10 rounded bg-muted motion-safe:animate-pulse"
-              />
+              <Skeleton key={i} className="h-10" />
             ))}
           </div>
         ) : displayCategories.length === 0 ? (
@@ -180,7 +178,7 @@ export const CategoriesSettings = () => {
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            variant="destructive"
                             onClick={() => archiveCategory.mutate(cat.id)}
                           >
                             Archive category
@@ -203,7 +201,7 @@ export const CategoriesSettings = () => {
         </div>
 
         {tagLoading ? (
-          <div className="h-9 rounded-md bg-muted motion-safe:animate-pulse" />
+          <Skeleton className="h-9" />
         ) : (
           <Combobox
             multiple

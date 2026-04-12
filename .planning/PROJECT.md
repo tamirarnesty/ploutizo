@@ -12,7 +12,12 @@ Shared expense tracking across household members with real-time settlement balan
 
 ### Validated
 
-(None yet — ship to validate)
+**Phase 03.2.1 — Household Settings UI (2026-04-12)**
+- [x] Household settings consolidated into single page (overview, members, settlement threshold)
+- [x] Members list with avatars, You badge, role labels, remove flow with confirmation dialog
+- [x] Invite member via email with toast feedback (success, already-member, pending, quota exceeded)
+- [x] Self-removal guard enforced server-side
+- [x] Members tab removed from settings nav; /settings/organization-members route deleted
 
 ### Active
 

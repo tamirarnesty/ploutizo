@@ -5,7 +5,7 @@ export const Dashboard = () => {
         Dashboard
       </h1>
       <p className="text-sm text-muted-foreground">
-        Your financial overview will appear here once you&apos;ve added accounts
+        Your financial overview will appear here once you've added accounts
         and transactions.
       </p>
     </div>

@@ -8,10 +8,11 @@ import { ClerkProvider, useAuth } from "@clerk/tanstack-react-start"
 import { auth } from "@clerk/tanstack-react-start/server"
 import { shadcn } from "@clerk/ui/themes"
 import { QueryClientProvider } from "@tanstack/react-query"
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { createServerFn } from "@tanstack/react-start"
 import appCss from "@ploutizo/ui/globals.css?url"
 import { ThemeProvider } from "@ploutizo/ui/components/theme-provider"
+import { Toaster } from "@ploutizo/ui/components/sonner"
 import { TooltipProvider } from "@ploutizo/ui/components/tooltip"
 import { queryClient, setTokenGetter } from "../lib/queryClient"
 
@@ -31,12 +32,15 @@ const orgGuard = createServerFn().handler(async () => {
 
 // TokenInitializer: wires Clerk's getToken into the React Query apiFetch helper.
 // Must run inside ClerkProvider so useAuth() has access to the Clerk session.
-// setTokenGetter must be called before any query fires — this component renders at app root.
+// getToken stored in a ref so setTokenGetter is called once — in-flight queries
+// always read the latest token via the ref without re-registering the getter.
 const TokenInitializer = () => {
   const { getToken } = useAuth()
+  const getTokenRef = useRef(getToken)
+  getTokenRef.current = getToken
   useEffect(() => {
-    setTokenGetter(() => getToken())
-  }, [getToken])
+    setTokenGetter(() => getTokenRef.current())
+  }, [])
   return null
 }
 
@@ -58,6 +62,7 @@ const RootDocument = ({ children }: { children: React.ReactNode }) => (
             <ClerkProvider appearance={{ theme: shadcn }}>
               <TokenInitializer />
               {children}
+              <Toaster />
             </ClerkProvider>
           </QueryClientProvider>
         </TooltipProvider>

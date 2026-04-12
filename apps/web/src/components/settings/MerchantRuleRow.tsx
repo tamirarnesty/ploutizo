@@ -51,7 +51,7 @@ export const MerchantRuleRow = ({
         <p className="truncate font-mono text-sm">{rule.pattern}</p>
         {rule.renameTo && (
           <p className="text-xs text-muted-foreground">
-            &rarr; {rule.renameTo}
+            → {rule.renameTo}
           </p>
         )}
       </div>
@@ -94,7 +94,7 @@ const DeleteRuleButton = ({ onDelete }: { onDelete: () => void }) => (
       <AlertDialogFooter>
         <AlertDialogCancel>Cancel</AlertDialogCancel>
         <AlertDialogAction
-          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          variant="destructive"
           onClick={onDelete}
         >
           Delete rule

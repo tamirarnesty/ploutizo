@@ -439,7 +439,7 @@ const AccountFormInner = ({
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  variant="destructive"
                   onClick={onArchive}
                 >
                   Archive account

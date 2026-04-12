@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Sortable } from "@ploutizo/ui/components/reui/sortable"
 import { Button } from "@ploutizo/ui/components/button"
+import { Skeleton } from "@ploutizo/ui/components/skeleton"
 import { RuleDialog } from "./RuleDialog"
 import { MerchantRuleRow } from "./MerchantRuleRow"
 import type { MerchantRule } from "@/lib/data-access/merchant-rules"
@@ -38,7 +39,7 @@ export const MerchantRulesSettings = () => {
       {isLoading ? (
         <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-12 animate-pulse rounded bg-muted" />
+            <Skeleton key={i} className="h-12" />
           ))}
         </div>
       ) : displayRules.length === 0 ? (

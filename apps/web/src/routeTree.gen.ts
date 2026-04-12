@@ -17,7 +17,6 @@ import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
 import { Route as LayoutDashboardRouteImport } from './routes/_layout.dashboard'
 import { Route as LayoutAccountsRouteImport } from './routes/_layout.accounts'
 import { Route as LayoutSettingsRouteRouteImport } from './routes/_layout.settings/route'
-import { Route as LayoutSettingsOrganizationMembersRouteImport } from './routes/_layout.settings/organization-members'
 import { Route as LayoutSettingsMerchantRulesRouteImport } from './routes/_layout.settings/merchant-rules'
 import { Route as LayoutSettingsHouseholdRouteImport } from './routes/_layout.settings/household'
 import { Route as LayoutSettingsCategoriesRouteImport } from './routes/_layout.settings/categories'
@@ -61,12 +60,6 @@ const LayoutSettingsRouteRoute = LayoutSettingsRouteRouteImport.update({
   path: '/settings',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutSettingsOrganizationMembersRoute =
-  LayoutSettingsOrganizationMembersRouteImport.update({
-    id: '/organization-members',
-    path: '/organization-members',
-    getParentRoute: () => LayoutSettingsRouteRoute,
-  } as any)
 const LayoutSettingsMerchantRulesRoute =
   LayoutSettingsMerchantRulesRouteImport.update({
     id: '/merchant-rules',
@@ -96,7 +89,6 @@ export interface FileRoutesByFullPath {
   '/settings/categories': typeof LayoutSettingsCategoriesRoute
   '/settings/household': typeof LayoutSettingsHouseholdRoute
   '/settings/merchant-rules': typeof LayoutSettingsMerchantRulesRoute
-  '/settings/organization-members': typeof LayoutSettingsOrganizationMembersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -109,7 +101,6 @@ export interface FileRoutesByTo {
   '/settings/categories': typeof LayoutSettingsCategoriesRoute
   '/settings/household': typeof LayoutSettingsHouseholdRoute
   '/settings/merchant-rules': typeof LayoutSettingsMerchantRulesRoute
-  '/settings/organization-members': typeof LayoutSettingsOrganizationMembersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -124,7 +115,6 @@ export interface FileRoutesById {
   '/_layout/settings/categories': typeof LayoutSettingsCategoriesRoute
   '/_layout/settings/household': typeof LayoutSettingsHouseholdRoute
   '/_layout/settings/merchant-rules': typeof LayoutSettingsMerchantRulesRoute
-  '/_layout/settings/organization-members': typeof LayoutSettingsOrganizationMembersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -139,7 +129,6 @@ export interface FileRouteTypes {
     | '/settings/categories'
     | '/settings/household'
     | '/settings/merchant-rules'
-    | '/settings/organization-members'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -152,7 +141,6 @@ export interface FileRouteTypes {
     | '/settings/categories'
     | '/settings/household'
     | '/settings/merchant-rules'
-    | '/settings/organization-members'
   id:
     | '__root__'
     | '/'
@@ -166,7 +154,6 @@ export interface FileRouteTypes {
     | '/_layout/settings/categories'
     | '/_layout/settings/household'
     | '/_layout/settings/merchant-rules'
-    | '/_layout/settings/organization-members'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -235,13 +222,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsRouteRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/settings/organization-members': {
-      id: '/_layout/settings/organization-members'
-      path: '/organization-members'
-      fullPath: '/settings/organization-members'
-      preLoaderRoute: typeof LayoutSettingsOrganizationMembersRouteImport
-      parentRoute: typeof LayoutSettingsRouteRoute
-    }
     '/_layout/settings/merchant-rules': {
       id: '/_layout/settings/merchant-rules'
       path: '/merchant-rules'
@@ -270,15 +250,12 @@ interface LayoutSettingsRouteRouteChildren {
   LayoutSettingsCategoriesRoute: typeof LayoutSettingsCategoriesRoute
   LayoutSettingsHouseholdRoute: typeof LayoutSettingsHouseholdRoute
   LayoutSettingsMerchantRulesRoute: typeof LayoutSettingsMerchantRulesRoute
-  LayoutSettingsOrganizationMembersRoute: typeof LayoutSettingsOrganizationMembersRoute
 }
 
 const LayoutSettingsRouteRouteChildren: LayoutSettingsRouteRouteChildren = {
   LayoutSettingsCategoriesRoute: LayoutSettingsCategoriesRoute,
   LayoutSettingsHouseholdRoute: LayoutSettingsHouseholdRoute,
   LayoutSettingsMerchantRulesRoute: LayoutSettingsMerchantRulesRoute,
-  LayoutSettingsOrganizationMembersRoute:
-    LayoutSettingsOrganizationMembersRoute,
 }
 
 const LayoutSettingsRouteRouteWithChildren =
