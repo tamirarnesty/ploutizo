@@ -83,8 +83,8 @@ const searchToFilters = (search: TransactionSearch): Array<Filter<string>> => {
 }
 
 export const Transactions = () => {
-  const search = useSearch({ from: '/_layout/transactions' })
-  const navigate = useNavigate({ from: '/_layout/transactions' })
+  const search = useSearch({ from: '/transactions' })
+  const navigate = useNavigate({ from: '/transactions' })
 
   // Fire ALL queries at top level — no waterfalls (vercel-react-best-practices)
   const { data: txData, isLoading } = useGetTransactions({
