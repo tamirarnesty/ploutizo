@@ -1,15 +1,16 @@
 import { useCallback, useMemo } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
+import { ListFilterIcon } from 'lucide-react'
 import { Button } from '@ploutizo/ui/components/button'
 import { Filters } from '@ploutizo/ui/components/reui/filters'
+import { TransactionsTable } from './TransactionsTable'
 import type { Filter, FilterFieldConfig } from '@ploutizo/ui/components/reui/filters'
+import type { TransactionSearch } from '../../routes/_layout.transactions'
 import { useGetTransactions } from '@/lib/data-access/transactions'
 import { useGetAccounts } from '@/lib/data-access/accounts'
 import { useGetCategories } from '@/lib/data-access/categories'
 import { useGetOrgMembers } from '@/lib/data-access/org'
 import { useGetTags } from '@/lib/data-access/tags'
-import { TransactionsTable } from './TransactionsTable'
-import type { TransactionSearch } from '../../routes/_layout.transactions'
 
 // Strips URL params that match their defaults to keep the URL clean (D-04)
 export const buildCleanSearch = (
@@ -31,7 +32,7 @@ export const buildCleanSearch = (
 }
 
 // Maps Filter[] state back to URL search params
-const filtersToSearch = (filters: Filter<string>[]): Partial<TransactionSearch> => {
+const filtersToSearch = (filters: Array<Filter<string>>): Partial<TransactionSearch> => {
   const result: Partial<TransactionSearch> = {}
   for (const f of filters) {
     if (f.field === 'type' && f.values[0]) {
@@ -53,8 +54,8 @@ const filtersToSearch = (filters: Filter<string>[]): Partial<TransactionSearch> 
 }
 
 // Maps URL search params back to Filter[] for initial filter bar state
-const searchToFilters = (search: TransactionSearch): Filter<string>[] => {
-  const filters: Filter<string>[] = []
+const searchToFilters = (search: TransactionSearch): Array<Filter<string>> => {
+  const filters: Array<Filter<string>> = []
   if (search.type) {
     filters.push({ id: `type-${Date.now()}`, field: 'type', operator: 'is', values: [search.type] })
   }
@@ -125,7 +126,7 @@ export const Transactions = () => {
     Boolean(search.tagIds)
 
   // Build FilterFieldConfig for the Filters component (6 fields per D-28)
-  const filterFields = useMemo<FilterFieldConfig<string>[]>(
+  const filterFields = useMemo<Array<FilterFieldConfig<string>>>(
     () => [
       {
         key: 'type',
@@ -199,7 +200,7 @@ export const Transactions = () => {
   )
 
   const handleFiltersChange = useCallback(
-    (filters: Filter<string>[]) => {
+    (filters: Array<Filter<string>>) => {
       const mapped = filtersToSearch(filters)
       void navigate({
         search: (prev) => buildCleanSearch({ ...prev, ...mapped, page: 1 }),
@@ -252,10 +253,17 @@ export const Transactions = () => {
       </div>
 
       {/* Filter bar — full-width, no sticky */}
+      {/* trigger prop required: useRender renders an empty invisible button without it */}
       <Filters<string>
         filters={activeFilters}
         fields={filterFields}
         onChange={handleFiltersChange}
+        trigger={
+          <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs">
+            <ListFilterIcon className="size-3.5" />
+            Filters
+          </Button>
+        }
       />
 
       <TransactionsTable
