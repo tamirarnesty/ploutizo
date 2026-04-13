@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { ListFilterIcon } from 'lucide-react'
 import { Button } from '@ploutizo/ui/components/button'
@@ -113,8 +113,38 @@ export const Transactions = () => {
   const sort = search.sort ?? 'date'
   const order = search.order ?? 'desc'
 
-  // Derive active filters from URL params for the Filters bar
-  const activeFilters = useMemo(() => searchToFilters(search), [search])
+  // Local filter bar state — initialized from URL once, then owned locally.
+  // Operators are transient UI state: they don't round-trip through the URL
+  // because the API has no operator params. Value changes push to URL via
+  // handleFiltersChange; operator changes stay local so they don't snap back.
+  const [activeFilters, setActiveFilters] = useState<Array<Filter<string>>>(
+    () => searchToFilters(search)
+  )
+
+  // When URL-encoded filter values change externally (e.g. browser back/forward,
+  // or programmatic navigation) sync the local filter state. We detect changes by
+  // comparing the serialized filter values from the URL against what we have locally,
+  // rather than replacing the whole array (which would lose operators).
+  const prevSearchRef = useRef(search)
+  useEffect(() => {
+    const prev = prevSearchRef.current
+    prevSearchRef.current = search
+
+    // Check whether any filter-value params actually changed
+    const filterKeys = ['type', 'dateFrom', 'dateTo', 'accountId', 'categoryId', 'assigneeId', 'tagIds'] as const
+    const changed = filterKeys.some((k) => prev[k] !== search[k])
+    if (!changed) return
+
+    // Re-derive from URL, but preserve operators for fields that still exist
+    const fromUrl = searchToFilters(search)
+    setActiveFilters((local) => {
+      return fromUrl.map((urlFilter) => {
+        const existing = local.find((lf) => lf.field === urlFilter.field)
+        // Keep the locally-set operator if the field is still active
+        return existing ? { ...urlFilter, operator: existing.operator } : urlFilter
+      })
+    })
+  }, [search])
 
   const hasActiveFilters =
     Boolean(search.type) ||
@@ -201,6 +231,10 @@ export const Transactions = () => {
 
   const handleFiltersChange = useCallback(
     (filters: Array<Filter<string>>) => {
+      // Update local state immediately so operators aren't snapped back by
+      // the URL-sync effect. The effect only overwrites values, not operators,
+      // but updating local state first prevents any intermediate flicker.
+      setActiveFilters(filters)
       const mapped = filtersToSearch(filters)
       void navigate({
         to: '/transactions',
@@ -237,6 +271,7 @@ export const Transactions = () => {
   )
 
   const handleClearFilters = useCallback(() => {
+    setActiveFilters([])
     void navigate({
       to: '/transactions',
       search: () => buildCleanSearch({}),
