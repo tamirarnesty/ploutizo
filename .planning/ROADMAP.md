@@ -252,10 +252,13 @@ soft-delete individual entries.
 - `formatCurrency(cents)` utility used at display layer only
 - React Query `QueryClient` with Clerk bearer token injection; `onSettled` invalidation pattern established
 
-**Plans:** 0 plans
+**Plans:** 4 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 3.3 to break down)
+- [ ] 03.3-01-PLAN.md — Wave 0: Add failing tests for restore route and sort=type/category/account
+- [ ] 03.3-02-PLAN.md — Wave 2: API patch (restore endpoint, expand sort axes, fix formatCurrency)
+- [ ] 03.3-03-PLAN.md — Wave 1: Install ReUI Filters + create data-access hooks (get/delete/restore)
+- [ ] 03.3-04-PLAN.md — Wave 3: Route + Transactions page shell + TransactionsTable + sidebar nav
 
 **Requirements covered:**
 - §4 Transactions (list view)
