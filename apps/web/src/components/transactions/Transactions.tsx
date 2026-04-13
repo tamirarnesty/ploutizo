@@ -203,7 +203,7 @@ export const Transactions = () => {
     (filters: Array<Filter<string>>) => {
       const mapped = filtersToSearch(filters)
       void navigate({
-        to: '.',
+        to: '/transactions',
         search: (prev) => buildCleanSearch({ ...prev, ...mapped, page: 1 }),
         replace: true,
       })
@@ -214,7 +214,7 @@ export const Transactions = () => {
   const handlePageChange = useCallback(
     (newPage: number) => {
       void navigate({
-        to: '.',
+        to: '/transactions',
         search: (prev) => buildCleanSearch({ ...prev, page: newPage }),
         replace: true,
       })
@@ -225,7 +225,7 @@ export const Transactions = () => {
   const handleSortChange = useCallback(
     (col: TransactionSearch['sort'], dir: 'asc' | 'desc') => {
       void navigate({
-        to: '.',
+        to: '/transactions',
         search: (prev) => buildCleanSearch({ ...prev, sort: col, order: dir, page: 1 }),
         replace: true,
       })
