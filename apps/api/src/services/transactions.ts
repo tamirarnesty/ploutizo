@@ -12,6 +12,7 @@ import {
   refundOfExists,
   replaceAssignees,
   replaceTags,
+  restoreTransactionQuery,
   softDeleteTransactionQuery,
   updateTransactionScalarsQuery,
 } from '../lib/queries/transactions';
@@ -159,4 +160,13 @@ export async function deleteTransaction(
   orgId: string
 ): Promise<{ id: string } | null> {
   return softDeleteTransactionQuery(id, orgId);
+}
+
+// PATCH /:id/restore: undo soft-delete — delegates to query layer (D-15)
+// Returns {id} on success or null if not found/wrong org/already active (T-03.3-05)
+export async function restoreTransaction(
+  id: string,
+  orgId: string
+): Promise<{ id: string } | null> {
+  return restoreTransactionQuery(id, orgId);
 }
