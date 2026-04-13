@@ -16,6 +16,7 @@ import {
   exists,
   gte,
   inArray,
+  isNotNull,
   isNull,
   lte,
   sql,
@@ -59,7 +60,7 @@ export type ListQueryParams = {
   orgId: string;
   page: number;
   limit: number;
-  sort: 'date' | 'amount';
+  sort: 'date' | 'amount' | 'type' | 'category' | 'account';
   order: 'asc' | 'desc';
   type?: string;
   accountId?: string;
@@ -124,7 +125,11 @@ export function buildConditions(params: ListQueryParams): Array<SQL> {
 export async function buildListQuery(params: ListQueryParams) {
   const conditions = buildConditions(params);
   const orderCol =
-    params.sort === 'amount' ? transactions.amount : transactions.date;
+    params.sort === 'amount'    ? transactions.amount
+    : params.sort === 'type'    ? transactions.type
+    : params.sort === 'category' ? categories.name
+    : params.sort === 'account'  ? accounts.name
+    : transactions.date;
   const orderFn = params.order === 'asc' ? asc : desc;
   const offset = (params.page - 1) * params.limit;
 
@@ -243,6 +248,27 @@ export async function softDeleteTransactionQuery(
         eq(transactions.id, id),
         eq(transactions.orgId, orgId),
         isNull(transactions.deletedAt)
+      )
+    )
+    .returning({ id: transactions.id });
+  return rows.at(0) ?? null;
+}
+
+// Restore a soft-deleted transaction by setting deletedAt = null (D-15).
+// WHERE: eq(id) + eq(orgId) + isNotNull(deletedAt) — only restores actually-deleted rows (T-03.3-05).
+// Returns {id} on success or null if not found / wrong org / already active.
+export async function restoreTransactionQuery(
+  id: string,
+  orgId: string
+): Promise<{ id: string } | null> {
+  const rows = await db
+    .update(transactions)
+    .set({ deletedAt: null, updatedAt: new Date() })
+    .where(
+      and(
+        eq(transactions.id, id),
+        eq(transactions.orgId, orgId),
+        isNotNull(transactions.deletedAt) // only restore actually-deleted rows
       )
     )
     .returning({ id: transactions.id });
