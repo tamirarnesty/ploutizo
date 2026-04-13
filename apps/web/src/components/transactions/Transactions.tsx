@@ -235,7 +235,7 @@ export const Transactions = () => {
 
   const handleClearFilters = useCallback(() => {
     void navigate({
-      to: '.',
+      to: '/transactions',
       search: () => buildCleanSearch({}),
     })
   }, [navigate])
