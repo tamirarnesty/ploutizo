@@ -204,7 +204,10 @@ export const Transactions = () => {
       const mapped = filtersToSearch(filters)
       void navigate({
         to: '/transactions',
-        search: (prev) => buildCleanSearch({ ...prev, ...mapped, page: 1 }),
+        // Rebuild from scratch — only keep sort/pagination from prev.
+        // Spreading prev would leave stale filter params when a filter is removed.
+        search: (prev) =>
+          buildCleanSearch({ page: 1, limit: prev.limit, sort: prev.sort, order: prev.order, ...mapped }),
         replace: true,
       })
     },
