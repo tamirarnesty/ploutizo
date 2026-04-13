@@ -83,8 +83,12 @@ const searchToFilters = (search: TransactionSearch): Array<Filter<string>> => {
 }
 
 export const Transactions = () => {
-  const search = useSearch({ from: '/transactions' })
-  const navigate = useNavigate({ from: '/transactions' })
+  // from: '/_layout/transactions' is the route ID (not fullPath) — useMatch looks up
+  // the match store by route ID, so fullPath '/transactions' would miss the store and
+  // throw the invariant regardless of strict mode (strict is not wired to shouldThrow
+  // in useMatch v1.168). Route ID confirmed in routeTree.gen.ts FileRoutesById.
+  const search = useSearch({ from: '/_layout/transactions' })
+  const navigate = useNavigate()
 
   // Fire ALL queries at top level — no waterfalls (vercel-react-best-practices)
   const { data: txData, isLoading } = useGetTransactions({
