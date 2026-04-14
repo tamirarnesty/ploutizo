@@ -298,14 +298,14 @@ Plans:
 
 **Depends on:** Phase 03.3
 
-**Plans:** 3/7 plans executed
+**Plans:** 5/7 plans executed
 
 Plans:
 - [x] 03.3.1-01-PLAN.md — TDD scaffold: validator, errors, webhookAuth, tenantGuard test stubs
 - [x] 03.3.1-02-PLAN.md — Infrastructure: AppEnv types.ts, appValidator factory, DomainError/NotFoundError, install @hono/zod-validator
 - [x] 03.3.1-03-PLAN.md — Queries layer: lib/queries/ files for accounts, categories, tags, merchant-rules, households
-- [ ] 03.3.1-04-PLAN.md — Services layer: services/ files for accounts, categories, tags, merchant-rules, households
-- [ ] 03.3.1-05-PLAN.md — webhookAuth middleware + tenantGuard c.set patch + services/webhooks.ts
+- [x] 03.3.1-04-PLAN.md — Services layer: services/ files for accounts, categories, tags, merchant-rules, households
+- [x] 03.3.1-05-PLAN.md — webhookAuth middleware + tenantGuard c.set patch + services/webhooks.ts
 - [ ] 03.3.1-06-PLAN.md — Route refactor: accounts, categories, tags, merchant-rules thin handlers
 - [ ] 03.3.1-07-PLAN.md — Route refactor: households, webhooks, transactions + index.ts onError + delete helpers.ts
 
