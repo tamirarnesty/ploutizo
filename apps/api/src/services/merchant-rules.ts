@@ -43,8 +43,10 @@ export async function updateMerchantRule(
   orgId: string,
   data: z.infer<typeof updateMerchantRuleSchema>
 ) {
-  if (data.matchType && data.pattern) {
-    validateRegex(data.matchType, data.pattern)
+  if (data.pattern !== undefined) {
+    try { new RegExp(data.pattern) } catch {
+      throw new DomainError(400, 'Invalid regular expression.', 'INVALID_REGEX')
+    }
   }
   const updated = await updateMerchantRuleQuery(id, orgId, data)
   if (!updated) throw new NotFoundError('Rule not found.')
