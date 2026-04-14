@@ -269,6 +269,28 @@ Plans:
 
 ---
 
+### Phase 03.3.1: API layering and structural refactor (INSERTED)
+
+**Goal:** Establish consistent routes → services → queries separation across all API routes. Adopt Hono's built-in primitives to eliminate repeated boilerplate. Ensure the API has a clean, scalable pattern before Phase 03.4+ adds more routes and complexity.
+
+**Delivers:**
+- `zValidator('json', schema)` and `zValidator('query', schema)` adopted on all routes — replaces manual `safeParse` + error response blocks
+- `app.onError()` centralized error handler — typed domain errors (`NotFoundError`, `DomainError`) thrown from services, mapped to HTTP responses in one place; per-route try/catch and `badRequest` helper removed
+- `tenantGuard` sets `orgId` on context (`c.set`) — all handlers read `c.get('orgId')` instead of calling `getAuth(c)`
+- Service layer extracted for all routes currently missing one: `accounts`, `categories`, `tags`, `merchant-rules`, `households`
+- `webhookAuth` middleware extracts Svix signature verification from the route handler
+- `services/webhooks.ts` with one handler function per Clerk event type (`handleOrgCreated`, `handleUserCreated`, etc.)
+- Clerk `WebhookEvent` discriminated union from `@clerk/backend` replaces all manual `event.data as { ... }` casts
+
+**Depends on:** Phase 03.3
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 03.3.1 to break down)
+
+---
+
 ### Phase 03.4: Transaction Forms UI
 
 **Goal:** Users can create and edit any of the six transaction types through a
