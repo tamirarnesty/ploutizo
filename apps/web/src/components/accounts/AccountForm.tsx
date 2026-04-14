@@ -115,7 +115,7 @@ const AccountFormInner = ({
   const members = orgMembers
   const createAccount = useCreateAccount()
   const updateAccount = useUpdateAccount(account?.id ?? "")
-  const [advancedOpen, setAdvancedOpen] = useState(false)
+  const [advancedOpen, setAdvancedOpen] = useState(account?.eachPersonPaysOwn ?? false)
 
   const loadedMemberIds = existingMembers.map((m) => m.memberId)
 
