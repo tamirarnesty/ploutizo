@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { getAuth } from '@hono/clerk-auth';
+import { InviteMemberFormSchema, updateHouseholdSettingsSchema } from '@ploutizo/validators';
 import { appValidator } from '../lib/validator';
 import { DomainError } from '../lib/errors';
 import {
@@ -10,7 +11,6 @@ import {
   removeMember,
   updateHouseholdSettings,
 } from '../services/households';
-import { InviteMemberFormSchema, updateHouseholdSettingsSchema } from '@ploutizo/validators';
 import type { AppEnv } from '../types';
 import type { StatusCode } from 'hono/utils/http-status';
 
@@ -46,7 +46,6 @@ householdsRouter.get('/members', async (c) => {
 });
 
 // POST /invitations — invite a user to the org via Clerk API
-// Targeted try/catch: DomainError message IS the error code (preserved for frontend compatibility)
 householdsRouter.post('/invitations', appValidator('json', InviteMemberFormSchema), async (c) => {
   const orgId = c.get('orgId');
   const data = c.req.valid('json');
@@ -55,7 +54,7 @@ householdsRouter.post('/invitations', appValidator('json', InviteMemberFormSchem
     return c.json({ data: result });
   } catch (err) {
     if (err instanceof DomainError) {
-      return c.json({ error: { code: err.message } }, err.statusCode as StatusCode);
+      return c.json({ error: { code: err.code ?? 'DOMAIN_ERROR' } }, err.statusCode as StatusCode);
     }
     throw err;
   }
@@ -72,7 +71,7 @@ householdsRouter.delete('/members/:memberId', async (c) => {
     return c.json({ data: result });
   } catch (err) {
     if (err instanceof DomainError) {
-      return c.json({ error: { code: err.message } }, err.statusCode as StatusCode);
+      return c.json({ error: { code: err.code ?? 'DOMAIN_ERROR' } }, err.statusCode as StatusCode);
     }
     throw err;
   }

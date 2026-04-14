@@ -1,4 +1,4 @@
-import { NotFoundError, DomainError } from '../lib/errors'
+import { DomainError, NotFoundError } from '../lib/errors'
 import {
   deleteOrgMember,
   fetchOrg,
@@ -52,18 +52,18 @@ export async function inviteMember(
     const clerkBody = await clerkRes.json() as { errors?: { code: string }[] }
     const code = clerkBody.errors?.[0]?.code
     if (code === 'already_a_member_of_this_org' || code === 'already_a_member_in_organization') {
-      throw new DomainError(409, 'ALREADY_MEMBER')
+      throw new DomainError(409, 'Already a member of this organisation.', 'ALREADY_MEMBER')
     }
     if (code === 'invitation_already_pending') {
-      throw new DomainError(409, 'INVITATION_PENDING')
+      throw new DomainError(409, 'Invitation already pending.', 'INVITATION_PENDING')
     }
     if (code === 'form_param_format_invalid') {
-      throw new DomainError(400, 'INVALID_EMAIL')
+      throw new DomainError(400, 'Invalid email address.', 'INVALID_EMAIL')
     }
     if (code === 'quota_exceeded') {
-      throw new DomainError(402, 'QUOTA_EXCEEDED')
+      throw new DomainError(402, 'Member quota exceeded.', 'QUOTA_EXCEEDED')
     }
-    throw new DomainError(500, 'UNKNOWN')
+    throw new DomainError(500, 'An unexpected error occurred.', 'UNKNOWN')
   }
   return { sent: true }
 }
@@ -79,7 +79,7 @@ export async function removeMember(
 
   // Server-side self-removal guard (T-03.2.1-02-01) — preserve existing behavior
   if (member.externalId === callerClerkId) {
-    throw new DomainError(403, 'SELF_REMOVAL_FORBIDDEN')
+    throw new DomainError(403, 'Cannot remove yourself from the organisation.', 'SELF_REMOVAL_FORBIDDEN')
   }
 
   // Remove from Clerk org before local DB to avoid split-brain
@@ -91,7 +91,7 @@ export async function removeMember(
     }
   )
   if (!clerkRes.ok && clerkRes.status !== 404) {
-    throw new DomainError(500, 'UNKNOWN')
+    throw new DomainError(500, 'An unexpected error occurred.', 'UNKNOWN')
   }
 
   await deleteOrgMember(memberId)
