@@ -4,7 +4,8 @@ import { ListFilterIcon } from 'lucide-react'
 import { Button } from '@ploutizo/ui/components/button'
 import { Filters } from '@ploutizo/ui/components/reui/filters'
 import { TransactionsTable } from './TransactionsTable'
-import type { Filter, FilterFieldConfig } from '@ploutizo/ui/components/reui/filters'
+import { buildFilterFields } from './transactions-filter-fields'
+import type { Filter } from '@ploutizo/ui/components/reui/filters'
 import type { TransactionSearch } from '../../routes/_layout.transactions'
 import { useGetTransactions } from '@/lib/data-access/transactions'
 import { useGetAccounts } from '@/lib/data-access/accounts'
@@ -160,76 +161,8 @@ export const Transactions = () => {
     Boolean(search.tagIds)
 
   // Build FilterFieldConfig for the Filters component (6 fields per D-28)
-  const filterFields = useMemo<FilterFieldConfig<string>[]>(
-    () => [
-      {
-        key: 'type',
-        label: 'Type',
-        type: 'select',
-        options: [
-          { value: 'expense', label: 'Expense' },
-          { value: 'income', label: 'Income' },
-          { value: 'transfer', label: 'Transfer' },
-          { value: 'settlement', label: 'Settlement' },
-          { value: 'refund', label: 'Refund' },
-          { value: 'contribution', label: 'Contribution' },
-        ],
-      },
-      {
-        key: 'dateRange',
-        label: 'Date Range',
-        type: 'custom',
-        defaultOperator: 'between',
-        // Date range uses between operator: values are [from, to] strings
-        customRenderer: ({ values, onChange }) => {
-          const [from = '', to = ''] = values
-          return (
-            <div className="flex items-center gap-1.5 px-2 py-1">
-              <input
-                type="date"
-                value={from}
-                aria-label="Date from"
-                className="h-7 rounded border border-input bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
-                onChange={(e) => onChange([e.target.value, to])}
-              />
-              <span className="text-xs text-muted-foreground">to</span>
-              <input
-                type="date"
-                value={to}
-                aria-label="Date to"
-                className="h-7 rounded border border-input bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
-                onChange={(e) => onChange([from, e.target.value])}
-              />
-            </div>
-          )
-        },
-      },
-      {
-        key: 'accountId',
-        label: 'Account',
-        type: 'select',
-        options: accounts.map((a) => ({ value: a.id, label: a.name })),
-      },
-      {
-        key: 'categoryId',
-        label: 'Category',
-        type: 'select',
-        options: categories.map((c) => ({ value: c.id, label: c.name })),
-      },
-      {
-        key: 'assigneeId',
-        label: 'Assignee',
-        type: 'select',
-        options: members.map((m) => ({ value: m.id, label: m.displayName })),
-      },
-      {
-        key: 'tagIds',
-        label: 'Tags',
-        type: 'multiselect',
-        defaultOperator: 'is_any_of',
-        options: tags.map((t) => ({ value: t.id, label: t.name })),
-      },
-    ],
+  const filterFields = useMemo(
+    () => buildFilterFields(accounts, categories, members, tags),
     [accounts, categories, members, tags]
   )
 
