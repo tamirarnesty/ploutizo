@@ -1,8 +1,3 @@
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@ploutizo/ui/components/popover';
 import { Calendar } from '@ploutizo/ui/components/calendar';
 import { format, isValid, parseISO } from 'date-fns';
 import type { FilterFieldConfig } from '@ploutizo/ui/components/reui/filters';
@@ -12,6 +7,9 @@ interface DateRangeFilterRendererProps {
   onChange: (values: string[]) => void;
 }
 
+// Renders inline within the Filters panel — no nested Popover needed.
+// A nested portal would cause the outer Filters dropdown to treat calendar
+// clicks as "outside" and dismiss before both dates are selected.
 const DateRangeFilterRenderer = ({
   values,
   onChange,
@@ -20,31 +18,17 @@ const DateRangeFilterRenderer = ({
   const fromDate = from && isValid(parseISO(from)) ? parseISO(from) : undefined;
   const toDate = to && isValid(parseISO(to)) ? parseISO(to) : undefined;
 
-  const label =
-    fromDate && toDate
-      ? `${format(fromDate, 'MMM d, yyyy')} \u2013 ${format(toDate, 'MMM d, yyyy')}`
-      : fromDate
-        ? `From ${format(fromDate, 'MMM d, yyyy')}`
-        : 'Pick date range';
-
   return (
-    <Popover>
-      <PopoverTrigger>{label}</PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
-        <Calendar
-          mode="range"
-          selected={
-            (fromDate ?? toDate) ? { from: fromDate, to: toDate } : undefined
-          }
-          onSelect={(range) => {
-            const newFrom = range?.from ? format(range.from, 'yyyy-MM-dd') : '';
-            const newTo = range?.to ? format(range.to, 'yyyy-MM-dd') : '';
-            onChange([newFrom, newTo]);
-          }}
-          numberOfMonths={2}
-        />
-      </PopoverContent>
-    </Popover>
+    <Calendar
+      mode="range"
+      selected={(fromDate ?? toDate) ? { from: fromDate, to: toDate } : undefined}
+      onSelect={(range) => {
+        const newFrom = range?.from ? format(range.from, 'yyyy-MM-dd') : '';
+        const newTo = range?.to ? format(range.to, 'yyyy-MM-dd') : '';
+        onChange([newFrom, newTo]);
+      }}
+      numberOfMonths={2}
+    />
   );
 };
 
