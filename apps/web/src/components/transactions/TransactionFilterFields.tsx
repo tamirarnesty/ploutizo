@@ -1,57 +1,58 @@
-import { Popover, PopoverContent, PopoverTrigger } from '@ploutizo/ui/components/popover'
-import { Calendar } from '@ploutizo/ui/components/calendar'
-import { Button } from '@ploutizo/ui/components/button'
-import { CalendarIcon } from 'lucide-react'
-import { format, parseISO, isValid } from 'date-fns'
-import type { FilterFieldConfig } from '@ploutizo/ui/components/reui/filters'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@ploutizo/ui/components/popover';
+import { Calendar } from '@ploutizo/ui/components/calendar';
+import { format, isValid, parseISO } from 'date-fns';
+import type { FilterFieldConfig } from '@ploutizo/ui/components/reui/filters';
 
 interface DateRangeFilterRendererProps {
-  values: string[]
-  onChange: (values: string[]) => void
+  values: string[];
+  onChange: (values: string[]) => void;
 }
 
-const DateRangeFilterRenderer = ({ values, onChange }: DateRangeFilterRendererProps) => {
-  const [from = '', to = ''] = values
-  const fromDate = from && isValid(parseISO(from)) ? parseISO(from) : undefined
-  const toDate = to && isValid(parseISO(to)) ? parseISO(to) : undefined
+const DateRangeFilterRenderer = ({
+  values,
+  onChange,
+}: DateRangeFilterRendererProps) => {
+  const [from = '', to = ''] = values;
+  const fromDate = from && isValid(parseISO(from)) ? parseISO(from) : undefined;
+  const toDate = to && isValid(parseISO(to)) ? parseISO(to) : undefined;
 
-  const label = fromDate && toDate
-    ? `${format(fromDate, 'MMM d, yyyy')} \u2013 ${format(toDate, 'MMM d, yyyy')}`
-    : fromDate
-      ? `From ${format(fromDate, 'MMM d, yyyy')}`
-      : 'Pick date range'
+  const label =
+    fromDate && toDate
+      ? `${format(fromDate, 'MMM d, yyyy')} \u2013 ${format(toDate, 'MMM d, yyyy')}`
+      : fromDate
+        ? `From ${format(fromDate, 'MMM d, yyyy')}`
+        : 'Pick date range';
 
   return (
     <Popover>
-      <PopoverTrigger
-        render={
-          <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs font-normal">
-            <CalendarIcon className="size-3.5" />
-            {label}
-          </Button>
-        }
-      />
+      <PopoverTrigger>{label}</PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar
           mode="range"
-          selected={fromDate ?? toDate ? { from: fromDate, to: toDate } : undefined}
+          selected={
+            (fromDate ?? toDate) ? { from: fromDate, to: toDate } : undefined
+          }
           onSelect={(range) => {
-            const newFrom = range?.from ? format(range.from, 'yyyy-MM-dd') : ''
-            const newTo = range?.to ? format(range.to, 'yyyy-MM-dd') : ''
-            onChange([newFrom, newTo])
+            const newFrom = range?.from ? format(range.from, 'yyyy-MM-dd') : '';
+            const newTo = range?.to ? format(range.to, 'yyyy-MM-dd') : '';
+            onChange([newFrom, newTo]);
           }}
           numberOfMonths={2}
         />
       </PopoverContent>
     </Popover>
-  )
-}
+  );
+};
 
 export function buildFilterFields(
   accounts: { id: string; name: string }[],
   categories: { id: string; name: string }[],
   members: { id: string; displayName: string }[],
-  tags: { id: string; name: string }[],
+  tags: { id: string; name: string }[]
 ): FilterFieldConfig<string>[] {
   return [
     {
@@ -102,5 +103,5 @@ export function buildFilterFields(
       defaultOperator: 'is_any_of',
       options: tags.map((t) => ({ value: t.id, label: t.name })),
     },
-  ]
+  ];
 }

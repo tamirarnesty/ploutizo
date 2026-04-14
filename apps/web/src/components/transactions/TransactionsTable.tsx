@@ -20,12 +20,12 @@ import {
   DialogTitle,
 } from '@ploutizo/ui/components/dialog'
 import { toast } from '@ploutizo/ui/components/sonner'
+import { buildColumns } from './TransactionColumns'
+import { TransactionsTableEmpty } from './TransactionTableEmpty'
+import { TransactionsTableEmptyFiltered } from './TransactionTableEmptyFiltered'
 import type { TransactionRow } from '@/lib/data-access/transactions'
 import type { TransactionSearch } from '../../routes/_layout.transactions'
 import { useDeleteTransaction, useRestoreTransaction } from '@/lib/data-access/transactions'
-import { buildColumns } from './transactions-columns'
-import { TransactionsTableEmpty } from './transactions-table-empty'
-import { TransactionsTableEmptyFiltered } from './transactions-table-empty-filtered'
 
 interface TransactionsTableProps {
   transactions: TransactionRow[]
