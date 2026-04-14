@@ -284,10 +284,55 @@ Plans:
 
 **Depends on:** Phase 03.3
 
+**Plans:** 7 plans
+
+Plans:
+- [ ] 03.3.1-01-PLAN.md — TDD scaffold: validator, errors, webhookAuth, tenantGuard test stubs
+- [ ] 03.3.1-02-PLAN.md — Infrastructure: AppEnv types.ts, appValidator factory, DomainError/NotFoundError, install @hono/zod-validator
+- [ ] 03.3.1-03-PLAN.md — Queries layer: lib/queries/ files for accounts, categories, tags, merchant-rules, households
+- [ ] 03.3.1-04-PLAN.md — Services layer: services/ files for accounts, categories, tags, merchant-rules, households
+- [ ] 03.3.1-05-PLAN.md — webhookAuth middleware + tenantGuard c.set patch + services/webhooks.ts
+- [ ] 03.3.1-06-PLAN.md — Route refactor: accounts, categories, tags, merchant-rules thin handlers
+- [ ] 03.3.1-07-PLAN.md — Route refactor: households, webhooks, transactions + index.ts onError + delete helpers.ts
+
+---
+
+### Phase 03.3.2: Implement Text typography component in packages/ui (INSERTED)
+
+**Goal:** Build a `<Text>` component as the single typography primitive for the app, with decoupled `as` (DOM element) and `variant` (visual preset) props.
+
+**Delivers:**
+- `<Text as variant className>` component in `packages/ui/src/components/text.tsx`
+- `as` prop: controls DOM element (`h1`–`h6`, `p`, `span`, `div`, `label`), defaults to `p`
+- `variant` prop: controls visual preset (`h1`, `h2`, `h3`, `body`, `body-sm`, `caption`, `label`), defaults to `body`
+- `className` merged last via `cn` — for color, weight, italic, one-off overrides
+- Exported from `packages/ui` index alongside shadcn components
+
+**Depends on:** Phase 03.3.1
+
 **Plans:** 0 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 03.3.1 to break down)
+- [ ] TBD (run /gsd-plan-phase 03.3.2 to break down)
+
+---
+
+### Phase 03.3.3: UI primitive refactor sweep (INSERTED)
+
+**Goal:** Replace all raw HTML primitives across `apps/web` with their shadcn or `<Text>` equivalents, establishing a clean foundation before further UI phases.
+
+**Delivers:**
+- All `<button>` → shadcn `<Button>`
+- All `<input>`, `<label>`, `<select>`, `<textarea>` → shadcn equivalents
+- All `<h1>`–`<h6>`, `<p>`, `<span>` user-visible text → `<Text variant="...">`
+- No raw HTML primitives in `apps/web` where a shadcn or `<Text>` equivalent exists
+
+**Depends on:** Phase 03.3.2
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 03.3.3 to break down)
 
 ---
 
@@ -736,7 +781,6 @@ Plans:
 | §11 Notifications & Alerts | Phases 7.1–7.2 | Write triggers (7.1), feed UI (7.2) |
 | Infrastructure requirements | Phase 1 | Clerk satellites, postgres.js, tenantGuard, Tailwind v4 audit |
 
----
 
 ## Deferred (Post-Milestone)
 
