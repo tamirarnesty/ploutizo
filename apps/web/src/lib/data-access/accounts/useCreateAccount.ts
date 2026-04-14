@@ -8,7 +8,7 @@ interface CreateAccountBody {
   institution?: string
   lastFour?: string
   eachPersonPaysOwn?: boolean
-  memberIds?: Array<string>
+  memberIds?: string[]
 }
 
 export const createAccount = async (body: CreateAccountBody): Promise<Account> => {

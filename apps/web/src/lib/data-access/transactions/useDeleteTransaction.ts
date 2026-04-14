@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiFetch } from '@/lib/queryClient'
 import type { TransactionListResponse } from './useGetTransactions'
+import { apiFetch } from '@/lib/queryClient'
 
-type Snapshot = Array<[unknown[], TransactionListResponse | undefined]>
+type Snapshot = [unknown[], TransactionListResponse | undefined][]
 
 export const useDeleteTransaction = () => {
   const qc = useQueryClient()

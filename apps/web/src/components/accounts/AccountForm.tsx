@@ -68,8 +68,8 @@ interface AccountFormProps {
 
 interface AccountFormInnerProps {
   account: Account | null
-  existingMembers: Array<AccountMember>
-  orgMembers: Array<OrgMember>
+  existingMembers: AccountMember[]
+  orgMembers: OrgMember[]
   onClose: () => void
   onArchive?: () => void
 }

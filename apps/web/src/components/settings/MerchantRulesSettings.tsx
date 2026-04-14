@@ -18,11 +18,11 @@ export const MerchantRulesSettings = () => {
   const [dialogRule, setDialogRule] = useState<MerchantRule | null | false>(
     false
   )
-  const [localRules, setLocalRules] = useState<Array<MerchantRule>>([])
+  const [localRules, setLocalRules] = useState<MerchantRule[]>([])
 
   const displayRules = localRules.length > 0 ? localRules : rules
 
-  const handleReorder = (newOrder: Array<MerchantRule>) => {
+  const handleReorder = (newOrder: MerchantRule[]) => {
     setLocalRules(newOrder)
     reorderRules.mutate(newOrder.map((r) => r.id))
   }

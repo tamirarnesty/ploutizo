@@ -7,6 +7,8 @@ export default [
       "import/consistent-type-specifier-style": ["error", "prefer-inline"],
       // Forbid file extensions on relative imports — use bare specifiers (e.g. './foo', not './foo.js')
       "import/extensions": ["error", "never"],
+      // Enforce T[] over Array<T>
+      "@typescript-eslint/array-type": ["error", { default: "array" }],
     },
   },
   {
@@ -16,6 +18,7 @@ export default [
     rules: {
       "@typescript-eslint/no-unnecessary-condition": "off",
       "@typescript-eslint/prefer-for-of": "off",
+      "@typescript-eslint/array-type": "off",
       "import/no-duplicates": "off",
       "import/consistent-type-specifier-style": "off",
       "no-shadow": "off",

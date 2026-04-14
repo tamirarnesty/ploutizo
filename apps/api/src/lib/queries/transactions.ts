@@ -68,12 +68,12 @@ export type ListQueryParams = {
   dateTo?: string;
   categoryId?: string;
   assigneeId?: string;
-  tagIds?: Array<string>;
+  tagIds?: string[];
 };
 
 // Build the WHERE conditions array for list + count queries
-export function buildConditions(params: ListQueryParams): Array<SQL> {
-  const conditions: Array<SQL> = [
+export function buildConditions(params: ListQueryParams): SQL[] {
+  const conditions: SQL[] = [
     eq(transactions.orgId, params.orgId),
     isNull(transactions.deletedAt), // D-15
   ];
@@ -174,12 +174,12 @@ export async function fetchTransactionById(id: string, orgId: string) {
 
 // Enrich a page of base rows with assignees and tags via parallel sub-queries.
 // Avoids cartesian product from multi-level left joins (RESEARCH.md Pitfall 1).
-export async function enrichTransactions(baseRows: Array<{ id: string }>) {
+export async function enrichTransactions(baseRows: { id: string }[]) {
   const txIds = baseRows.map((r) => r.id);
   if (txIds.length === 0) {
     return {
-      assigneeMap: {} as Record<string, Array<unknown>>,
-      tagMap: {} as Record<string, Array<unknown>>,
+      assigneeMap: {} as Record<string, unknown[]>,
+      tagMap: {} as Record<string, unknown[]>,
     };
   }
 
@@ -304,11 +304,11 @@ export async function updateTransactionScalarsQuery(
 export async function replaceAssignees(
   tx: DrizzleTransaction,
   transactionId: string,
-  assignees: Array<{
+  assignees: {
     memberId: string;
     amountCents: number;
     percentage?: number | null;
-  }>
+  }[]
 ): Promise<void> {
   await tx
     .delete(transactionAssignees)
@@ -330,7 +330,7 @@ export async function replaceAssignees(
 export async function replaceTags(
   tx: DrizzleTransaction,
   transactionId: string,
-  tagIds: Array<string>
+  tagIds: string[]
 ): Promise<void> {
   await tx
     .delete(transactionTags)

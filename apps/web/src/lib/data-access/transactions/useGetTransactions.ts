@@ -42,8 +42,8 @@ export interface TransactionRow {
   deletedAt: string | null
   createdAt: string
   updatedAt: string
-  assignees: Array<TransactionAssignee>
-  tags: Array<TransactionTag>
+  assignees: TransactionAssignee[]
+  tags: TransactionTag[]
 }
 
 export interface TransactionQueryParams {
@@ -61,7 +61,7 @@ export interface TransactionQueryParams {
 }
 
 export interface TransactionListResponse {
-  data: Array<TransactionRow>
+  data: TransactionRow[]
   total: number
   page: number
   limit: number

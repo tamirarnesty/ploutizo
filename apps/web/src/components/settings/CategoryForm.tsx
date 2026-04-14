@@ -82,7 +82,7 @@ export const CategoryForm = ({ category, onClose }: CategoryFormProps) => {
               />
               {field.state.meta.errors.length > 0 ? (
                 <FieldError
-                  errors={field.state.meta.errors as Array<{ message?: string }>}
+                  errors={field.state.meta.errors as { message?: string }[]}
                 />
               ) : null}
             </Field>

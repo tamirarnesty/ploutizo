@@ -61,7 +61,7 @@ webhooksRouter.post('/clerk', async (c) => {
   if (event.type === 'user.created') {
     const data = event.data as {
       id: string;
-      email_addresses: Array<{ email_address: string; id: string }>;
+      email_addresses: { email_address: string; id: string }[];
       primary_email_address_id: string;
       first_name: string | null;
       last_name: string | null;
@@ -91,7 +91,7 @@ webhooksRouter.post('/clerk', async (c) => {
   if (event.type === 'user.updated') {
     const data = event.data as {
       id: string;
-      email_addresses: Array<{ email_address: string; id: string }>;
+      email_addresses: { email_address: string; id: string }[];
       primary_email_address_id: string;
       first_name: string | null;
       last_name: string | null;

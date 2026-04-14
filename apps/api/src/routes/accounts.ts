@@ -63,7 +63,7 @@ accountsRouter.patch('/:id', async (c) => {
   }
    
   const { memberIds, ...updateData } = result.data as {
-    memberIds?: Array<string>;
+    memberIds?: string[];
     [key: string]: unknown;
   };
   const updated = await db.transaction(async (tx) => {

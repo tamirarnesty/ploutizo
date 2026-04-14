@@ -3,7 +3,6 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import type { ColumnDef } from '@tanstack/react-table'
 import * as LucideIcons from 'lucide-react'
 import { MoreHorizontal, Tag } from 'lucide-react'
 import {
@@ -34,10 +33,11 @@ import {
 import { Skeleton } from '@ploutizo/ui/components/skeleton'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@ploutizo/ui/components/tooltip'
 import { toast } from '@ploutizo/ui/components/sonner'
-import { useDeleteTransaction, useRestoreTransaction } from '@/lib/data-access/transactions'
+import type { ColumnDef } from '@tanstack/react-table'
 import type { TransactionRow } from '@/lib/data-access/transactions'
-import { formatCurrency } from '@/lib/formatCurrency'
 import type { TransactionSearch } from '../../routes/_layout.transactions'
+import { useDeleteTransaction, useRestoreTransaction } from '@/lib/data-access/transactions'
+import { formatCurrency } from '@/lib/formatCurrency'
 
 // Resolves a Lucide icon by name — defined outside useMemo to be stable
 const DynamicLucideIcon = ({ name, size = 16 }: { name: string | null; size?: number }) => {
@@ -68,7 +68,7 @@ const typeBadgeVariant: Record<string, 'destructive' | 'secondary' | 'default' |
 }
 
 interface TransactionsTableProps {
-  transactions: Array<TransactionRow>
+  transactions: TransactionRow[]
   total: number
   isLoading: boolean
   page: number
@@ -116,7 +116,7 @@ export const TransactionsTable = ({
     })
   }
 
-  const columns = useMemo<Array<ColumnDef<TransactionRow>>>(
+  const columns = useMemo<ColumnDef<TransactionRow>[]>(
     () => [
       // 1. Date
       {

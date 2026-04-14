@@ -3,7 +3,7 @@ import { categories } from '../schema/index'
 
 // Default categories seeded at org creation.
 // INVARIANT: Every row has orgId set — no global category rows.
-const DEFAULT_CATEGORIES: Array<{ name: string; icon: string; sortOrder: number }> = [
+const DEFAULT_CATEGORIES: { name: string; icon: string; sortOrder: number }[] = [
   { name: 'Groceries', icon: 'ShoppingCart', sortOrder: 0 },
   { name: 'Dining & Restaurants', icon: 'UtensilsCrossed', sortOrder: 1 },
   { name: 'Transportation', icon: 'Car', sortOrder: 2 },

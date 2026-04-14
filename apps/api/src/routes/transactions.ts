@@ -63,7 +63,7 @@ transactionsRouter.get('/', async (c) => {
     rawSort === 'amount' || rawSort === 'type' ||
     rawSort === 'category' || rawSort === 'account'
       ? rawSort : 'date'
-  ) as ListQueryParams['sort'];
+  );
   const order = c.req.query('order') === 'asc' ? 'asc' : 'desc';
 
   // tagIds: support ?tagIds[]=x&tagIds[]=y AND ?tagIds=x,y (Pitfall 5)

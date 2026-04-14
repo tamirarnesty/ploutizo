@@ -32,7 +32,7 @@ export const buildCleanSearch = (
 }
 
 // Maps Filter[] state back to URL search params
-const filtersToSearch = (filters: Array<Filter<string>>): Partial<TransactionSearch> => {
+const filtersToSearch = (filters: Filter<string>[]): Partial<TransactionSearch> => {
   const result: Partial<TransactionSearch> = {}
   for (const f of filters) {
     if (f.field === 'type' && f.values[0]) {
@@ -54,8 +54,8 @@ const filtersToSearch = (filters: Array<Filter<string>>): Partial<TransactionSea
 }
 
 // Maps URL search params back to Filter[] for initial filter bar state
-const searchToFilters = (search: TransactionSearch): Array<Filter<string>> => {
-  const filters: Array<Filter<string>> = []
+const searchToFilters = (search: TransactionSearch): Filter<string>[] => {
+  const filters: Filter<string>[] = []
   if (search.type) {
     filters.push({ id: `type-${Date.now()}`, field: 'type', operator: 'is', values: [search.type] })
   }
@@ -121,7 +121,7 @@ export const Transactions = () => {
   // Operators are transient UI state: they don't round-trip through the URL
   // because the API has no operator params. Value changes push to URL via
   // handleFiltersChange; operator changes stay local so they don't snap back.
-  const [activeFilters, setActiveFilters] = useState<Array<Filter<string>>>(
+  const [activeFilters, setActiveFilters] = useState<Filter<string>[]>(
     () => searchToFilters(search)
   )
 
@@ -160,7 +160,7 @@ export const Transactions = () => {
     Boolean(search.tagIds)
 
   // Build FilterFieldConfig for the Filters component (6 fields per D-28)
-  const filterFields = useMemo<Array<FilterFieldConfig<string>>>(
+  const filterFields = useMemo<FilterFieldConfig<string>[]>(
     () => [
       {
         key: 'type',
@@ -234,7 +234,7 @@ export const Transactions = () => {
   )
 
   const handleFiltersChange = useCallback(
-    (filters: Array<Filter<string>>) => {
+    (filters: Filter<string>[]) => {
       // Update local state immediately so operators aren't snapped back by
       // the URL-sync effect. The effect only overwrites values, not operators,
       // but updating local state first prevents any intermediate flicker.

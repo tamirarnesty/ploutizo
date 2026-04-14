@@ -28,7 +28,7 @@ export type { ListQueryParams };
 // D-11: validate that sum of assignee amountCents equals transaction amount
 export function validateSplitSum(
   amount: number,
-  assignees?: Array<{ amountCents: number }>
+  assignees?: { amountCents: number }[]
 ): string | null {
   if (!assignees || assignees.length === 0) return null;
   const sum = assignees.reduce((acc, a) => acc + a.amountCents, 0);

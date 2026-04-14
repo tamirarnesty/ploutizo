@@ -11,12 +11,12 @@ export interface Tag {
   createdAt: string
 }
 
-export const fetchTags = async (): Promise<Array<Tag>> => {
-  const r = await apiFetch<{ data: Array<Tag> }>("/api/tags")
+export const fetchTags = async (): Promise<Tag[]> => {
+  const r = await apiFetch<{ data: Tag[] }>("/api/tags")
   return r.data
 }
 
-export const useGetTags = (): UseQueryResult<Array<Tag>> => {
+export const useGetTags = (): UseQueryResult<Tag[]> => {
   return useQuery({
     queryKey: ["tags"],
     queryFn: fetchTags,
