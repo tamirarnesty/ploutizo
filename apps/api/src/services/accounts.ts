@@ -34,9 +34,9 @@ export async function updateAccount(
   orgId: string,
   data: z.infer<typeof updateAccountSchema>
 ) {
-  const { memberIds, ...updateData } = data as { memberIds?: string[]; [key: string]: unknown }
+  const { memberIds, archivedAt, ...updateData } = data
   const updated = await db.transaction(async (tx) => {
-    const row = await updateAccountQuery(tx, id, orgId, updateData as Record<string, unknown>)
+    const row = await updateAccountQuery(tx, id, orgId, updateData)
     if (!row) return null
     if (memberIds !== undefined) {
       await replaceAccountMembers(tx, id, memberIds)
