@@ -20,7 +20,8 @@
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.10",
     "neverthrow": "^8.2.0",
-    "svix": "^1.90.0"
+    "svix": "^1.90.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tanstack/eslint-config": "^0.4.0",
