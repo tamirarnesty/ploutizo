@@ -54,31 +54,33 @@ const filtersToSearch = (filters: Filter<string>[]): Partial<TransactionSearch> 
   return result
 }
 
-// Maps URL search params back to Filter[] for initial filter bar state
+// Maps URL search params back to Filter[] for initial filter bar state.
+// IDs are stable per field (not Date.now()) so filter chips keep their React
+// identity across URL-sync re-renders — prevents open popovers from unmounting.
 const searchToFilters = (search: TransactionSearch): Filter<string>[] => {
   const filters: Filter<string>[] = []
   if (search.type) {
-    filters.push({ id: `type-${Date.now()}`, field: 'type', operator: 'is', values: [search.type] })
+    filters.push({ id: 'filter-type', field: 'type', operator: 'is', values: [search.type] })
   }
   if (search.dateFrom || search.dateTo) {
     filters.push({
-      id: `dateRange-${Date.now()}`,
+      id: 'filter-dateRange',
       field: 'dateRange',
       operator: 'between',
       values: [search.dateFrom ?? '', search.dateTo ?? ''],
     })
   }
   if (search.accountId) {
-    filters.push({ id: `account-${Date.now()}`, field: 'accountId', operator: 'is', values: [search.accountId] })
+    filters.push({ id: 'filter-accountId', field: 'accountId', operator: 'is', values: [search.accountId] })
   }
   if (search.categoryId) {
-    filters.push({ id: `category-${Date.now()}`, field: 'categoryId', operator: 'is', values: [search.categoryId] })
+    filters.push({ id: 'filter-categoryId', field: 'categoryId', operator: 'is', values: [search.categoryId] })
   }
   if (search.assigneeId) {
-    filters.push({ id: `assignee-${Date.now()}`, field: 'assigneeId', operator: 'is', values: [search.assigneeId] })
+    filters.push({ id: 'filter-assigneeId', field: 'assigneeId', operator: 'is', values: [search.assigneeId] })
   }
   if (search.tagIds) {
-    filters.push({ id: `tags-${Date.now()}`, field: 'tagIds', operator: 'is_any_of', values: search.tagIds.split(',') })
+    filters.push({ id: 'filter-tagIds', field: 'tagIds', operator: 'is_any_of', values: search.tagIds.split(',') })
   }
   return filters
 }
