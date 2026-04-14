@@ -48,7 +48,7 @@ export async function updateCategory(
 ) {
   const rows = await db
     .update(categories)
-    .set(data)
+    .set({ ...data, updatedAt: new Date() })
     .where(and(eq(categories.id, id), eq(categories.orgId, orgId)))
     .returning();
   return rows.at(0) ?? null;
@@ -58,7 +58,7 @@ export async function updateCategory(
 export async function archiveCategory(id: string, orgId: string) {
   const rows = await db
     .update(categories)
-    .set({ archivedAt: new Date() })
+    .set({ archivedAt: new Date(), updatedAt: new Date() })
     .where(and(eq(categories.id, id), eq(categories.orgId, orgId)))
     .returning();
   return rows.at(0) ?? null;
