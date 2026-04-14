@@ -90,7 +90,7 @@ export async function handleOrgMembershipCreated(
     .values({
       orgId: data.organization.id,
       userId: user.id,
-      role: data.role === 'org:admin' ? 'admin' : 'admin',
+      role: data.role === 'org:admin' ? 'admin' : 'member',
       displayName,
     })
     .onConflictDoNothing();
