@@ -173,4 +173,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-09 — Phase 02.4.1 complete (mobile UX fixes: viewport containment, sidebar height, TopBar redesign, settings spacing, theme keyboard shortcut)*
+*Last updated: 2026-04-14 — Phase 03.3.1 complete (API layering: AppEnv typed context, appValidator, DomainError/NotFoundError, query layer, service layer, webhookAuth middleware, thin route handlers)*
