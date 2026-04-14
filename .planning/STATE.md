@@ -111,6 +111,7 @@ Begin Phase 03.2 (Transaction API)
 |---|-------|------|
 | 1 | Implement <Text> typography component in packages/ui | general |
 | 2 | Tag combobox Enter key should create tag without explicit click | ui |
+| 3 | Form validation audit — all forms must show correct error messages | ui |
 
 ## Blockers / Open Items
 
