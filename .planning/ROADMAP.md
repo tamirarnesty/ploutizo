@@ -1,13 +1,23 @@
 # ploutizo — Roadmap
 
-> **Milestone:** v0.1 MVP
 > **Granularity:** Standard
 > **Coverage:** 11/11 requirement sections mapped
-> **Last updated:** 2026-03-24
+> **Last updated:** 2026-04-14
+
+| Milestone | Name | Status |
+|-----------|------|--------|
+| v0.1 | Foundation | complete |
+| v0.2 | Transactions & Settlement | **current** |
+| v0.3 | Import | pending |
+| v0.4 | Budgets | pending |
+| v0.5 | Investments & Net Worth | pending |
+| v1.0 | Notifications + Launch | pending |
+
+> **Execution order note:** v0.3 Import executes before v0.4 Budgets. Phase numbers (05.x vs 04.3/04.4) reflect original ordering — milestone labels determine execution sequence.
 
 ---
 
-## Milestone 1: v0.1 MVP
+## Milestone v0.1 — Foundation (COMPLETE)
 
 ### Phase 1: Foundation & Auth Infrastructure
 
@@ -161,6 +171,10 @@ Plans:
 
 Plans:
 - [x] 02.1.1-01-PLAN.md — Driver swap: package.json deps, client.ts rewrite, client.test.ts mock update, route audit
+
+---
+
+## Milestone v0.2 — Transactions & Settlement (CURRENT)
 
 ### Phase 03.1: Transaction Schema & Migrations
 
@@ -423,6 +437,10 @@ Plans:
 
 ---
 
+---
+
+## Milestone v0.4 — Budgets
+
 ### Phase 4.3: Budgets API
 
 **Goal:** Budgets can be created and managed per category; the API computes spend
@@ -471,6 +489,10 @@ Plans:
 - [ ] Historical period navigation loads spend data for the selected period without a full page reload
 
 ---
+
+---
+
+## Milestone v0.3 — Import
 
 ### Phase 5.1: Bank Normalizers
 
@@ -578,6 +600,10 @@ Plans:
 
 ---
 
+---
+
+## Milestone v0.5 — Investments & Net Worth
+
 ### Phase 6.1: Investment Schema & Contribution Room API
 
 **Goal:** The API can track TFSA, RRSP, and FHSA contribution room per member
@@ -680,6 +706,10 @@ Plans:
 - [ ] Per-member breakdown assigns net worth to the member(s) who own each account
 
 ---
+
+---
+
+## Milestone v1.0 — Notifications + Launch
 
 ### Phase 7.1: Notifications Table & Write Triggers
 
