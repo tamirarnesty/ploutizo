@@ -16,6 +16,7 @@ import {
   exists,
   gte,
   inArray,
+  isNotNull,
   isNull,
   lte,
   sql,
@@ -59,7 +60,7 @@ export type ListQueryParams = {
   orgId: string;
   page: number;
   limit: number;
-  sort: 'date' | 'amount';
+  sort: 'date' | 'amount' | 'type' | 'category' | 'account';
   order: 'asc' | 'desc';
   type?: string;
   accountId?: string;
@@ -67,12 +68,12 @@ export type ListQueryParams = {
   dateTo?: string;
   categoryId?: string;
   assigneeId?: string;
-  tagIds?: Array<string>;
+  tagIds?: string[];
 };
 
 // Build the WHERE conditions array for list + count queries
-export function buildConditions(params: ListQueryParams): Array<SQL> {
-  const conditions: Array<SQL> = [
+export function buildConditions(params: ListQueryParams): SQL[] {
+  const conditions: SQL[] = [
     eq(transactions.orgId, params.orgId),
     isNull(transactions.deletedAt), // D-15
   ];
@@ -124,7 +125,11 @@ export function buildConditions(params: ListQueryParams): Array<SQL> {
 export async function buildListQuery(params: ListQueryParams) {
   const conditions = buildConditions(params);
   const orderCol =
-    params.sort === 'amount' ? transactions.amount : transactions.date;
+    params.sort === 'amount'    ? transactions.amount
+    : params.sort === 'type'    ? transactions.type
+    : params.sort === 'category' ? categories.name
+    : params.sort === 'account'  ? accounts.name
+    : transactions.date;
   const orderFn = params.order === 'asc' ? asc : desc;
   const offset = (params.page - 1) * params.limit;
 
@@ -169,12 +174,12 @@ export async function fetchTransactionById(id: string, orgId: string) {
 
 // Enrich a page of base rows with assignees and tags via parallel sub-queries.
 // Avoids cartesian product from multi-level left joins (RESEARCH.md Pitfall 1).
-export async function enrichTransactions(baseRows: Array<{ id: string }>) {
+export async function enrichTransactions(baseRows: { id: string }[]) {
   const txIds = baseRows.map((r) => r.id);
   if (txIds.length === 0) {
     return {
-      assigneeMap: {} as Record<string, Array<unknown>>,
-      tagMap: {} as Record<string, Array<unknown>>,
+      assigneeMap: {} as Record<string, unknown[]>,
+      tagMap: {} as Record<string, unknown[]>,
     };
   }
 
@@ -249,6 +254,27 @@ export async function softDeleteTransactionQuery(
   return rows.at(0) ?? null;
 }
 
+// Restore a soft-deleted transaction by setting deletedAt = null (D-15).
+// WHERE: eq(id) + eq(orgId) + isNotNull(deletedAt) — only restores actually-deleted rows (T-03.3-05).
+// Returns {id} on success or null if not found / wrong org / already active.
+export async function restoreTransactionQuery(
+  id: string,
+  orgId: string
+): Promise<{ id: string } | null> {
+  const rows = await db
+    .update(transactions)
+    .set({ deletedAt: null, updatedAt: new Date() })
+    .where(
+      and(
+        eq(transactions.id, id),
+        eq(transactions.orgId, orgId),
+        isNotNull(transactions.deletedAt) // only restore actually-deleted rows
+      )
+    )
+    .returning({ id: transactions.id });
+  return rows.at(0) ?? null;
+}
+
 // Update scalar columns for a transaction inside an outer db.transaction() (tx is passed in).
 // WHERE: eq(id) + eq(orgId) + isNull(deletedAt) — Pitfall 7: 0 rows → returns null → caller sends 404.
 // Returns the updated row or null if not found / wrong org / already deleted.
@@ -278,11 +304,11 @@ export async function updateTransactionScalarsQuery(
 export async function replaceAssignees(
   tx: DrizzleTransaction,
   transactionId: string,
-  assignees: Array<{
+  assignees: {
     memberId: string;
     amountCents: number;
     percentage?: number | null;
-  }>
+  }[]
 ): Promise<void> {
   await tx
     .delete(transactionAssignees)
@@ -304,7 +330,7 @@ export async function replaceAssignees(
 export async function replaceTags(
   tx: DrizzleTransaction,
   transactionId: string,
-  tagIds: Array<string>
+  tagIds: string[]
 ): Promise<void> {
   await tx
     .delete(transactionTags)

@@ -34,7 +34,7 @@ describe('seedOrgCategories', () => {
     const { seedOrgCategories } = await import('../seeds/categories.js')
     await seedOrgCategories('org_test123')
 
-    const insertedRows = (mockValues.mock.calls[0] as unknown as [Array<{ orgId: string }>])[0]
+    const insertedRows = (mockValues.mock.calls[0] as unknown as [{ orgId: string }[]])[0]
     expect(insertedRows.every((row) => row.orgId === 'org_test123')).toBe(true)
     expect(insertedRows.every((row) => row.orgId !== null && row.orgId !== undefined)).toBe(true)
   })
@@ -53,7 +53,7 @@ describe('seedOrgMerchantRules', () => {
     const { seedOrgMerchantRules } = await import('../seeds/merchantRules.js')
     await seedOrgMerchantRules('org_test123')
 
-    const insertedRows = (mockValues.mock.calls[0] as unknown as [Array<{ orgId: string }>])[0]
+    const insertedRows = (mockValues.mock.calls[0] as unknown as [{ orgId: string }[]])[0]
     expect(insertedRows.every((row) => row.orgId === 'org_test123')).toBe(true)
   })
 })

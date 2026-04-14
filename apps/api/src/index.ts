@@ -40,7 +40,7 @@ export const isAllowedParty = (azp: string): boolean =>
 
 // Build authorized parties list from known static origins.
 // Dynamic subdomain validation (isAllowedParty) is applied at the app layer in Phase 2+.
-const authorizedParties: Array<string> = [
+const authorizedParties: string[] = [
   'https://ploutizo.app',
   'http://localhost:3000',
 ];

@@ -7,6 +7,7 @@ import {
   deleteTransaction,
   getTransaction,
   listTransactions,
+  restoreTransaction,
   updateTransaction,
   validateSplitSum,
 } from '../services/transactions';
@@ -204,6 +205,7 @@ vi.mock('../services/transactions', () => ({
     updatedAt: new Date().toISOString(),
   }),
   deleteTransaction: vi.fn().mockResolvedValue({ id: 'txn_1' }),
+  restoreTransaction: vi.fn().mockResolvedValue({ id: 'txn_1' }),
 }));
 
 const app = new Hono();
@@ -322,6 +324,30 @@ describe('GET /api/transactions', () => {
     expect(body.page).toBe(1);
     expect(body.limit).toBe(50);
   });
+
+  it('TXN-LIST-SORT-01: GET /?sort=type — passes sort=type to listTransactions', async () => {
+    vi.mocked(listTransactions).mockClear();
+    const res = await app.request('/?sort=type');
+    expect(res.status).toBe(200);
+    const callArgs = vi.mocked(listTransactions).mock.calls[0]?.[0];
+    expect(callArgs?.sort).toBe('type');
+  });
+
+  it('TXN-LIST-SORT-02: GET /?sort=category — passes sort=category to listTransactions', async () => {
+    vi.mocked(listTransactions).mockClear();
+    const res = await app.request('/?sort=category');
+    expect(res.status).toBe(200);
+    const callArgs = vi.mocked(listTransactions).mock.calls[0]?.[0];
+    expect(callArgs?.sort).toBe('category');
+  });
+
+  it('TXN-LIST-SORT-03: GET /?sort=account — passes sort=account to listTransactions', async () => {
+    vi.mocked(listTransactions).mockClear();
+    const res = await app.request('/?sort=account');
+    expect(res.status).toBe(200);
+    const callArgs = vi.mocked(listTransactions).mock.calls[0]?.[0];
+    expect(callArgs?.sort).toBe('account');
+  });
 });
 
 describe('GET /api/transactions/:id', () => {
@@ -378,6 +404,23 @@ describe('DELETE /api/transactions/:id', () => {
   it('TXN-DELETE-02: already-deleted → 404', async () => {
     vi.mocked(deleteTransaction).mockResolvedValueOnce(null);
     const res = await app.request('/txn_1', { method: 'DELETE' });
+    expect(res.status).toBe(404);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe('NOT_FOUND');
+  });
+});
+
+describe('PATCH /:id/restore', () => {
+  it('TXN-RESTORE-01: PATCH /:id/restore — 200 with matching orgId', async () => {
+    const res = await app.request('/txn_1/restore', { method: 'PATCH' });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { data: { id: string } };
+    expect(body.data.id).toBe('txn_1');
+  });
+
+  it('TXN-RESTORE-02: PATCH /:id/restore — 404 when not found (wrong org or already active)', async () => {
+    vi.mocked(restoreTransaction).mockResolvedValueOnce(null);
+    const res = await app.request('/txn_1/restore', { method: 'PATCH' });
     expect(res.status).toBe(404);
     const body = (await res.json()) as { error: { code: string } };
     expect(body.error.code).toBe('NOT_FOUND');

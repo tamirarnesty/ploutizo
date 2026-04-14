@@ -100,7 +100,7 @@ householdsRouter.post('/invitations', async (c) => {
   );
 
   if (!clerkRes.ok) {
-    const clerkBody = await clerkRes.json() as { errors?: Array<{ code: string }> };
+    const clerkBody = await clerkRes.json() as { errors?: { code: string }[] };
     const code = clerkBody.errors?.[0]?.code;
     if (code === 'already_a_member_of_this_org' || code === 'already_a_member_in_organization') {
       return c.json({ error: { code: 'ALREADY_MEMBER' } }, 409);

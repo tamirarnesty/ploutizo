@@ -13,12 +13,12 @@ export interface Category {
   createdAt: string
 }
 
-export const fetchCategories = async (): Promise<Array<Category>> => {
-  const r = await apiFetch<{ data: Array<Category> }>("/api/categories")
+export const fetchCategories = async (): Promise<Category[]> => {
+  const r = await apiFetch<{ data: Category[] }>("/api/categories")
   return r.data
 }
 
-export const useGetCategories = (): UseQueryResult<Array<Category>> => {
+export const useGetCategories = (): UseQueryResult<Category[]> => {
   return useQuery({
     queryKey: ["categories"],
     queryFn: fetchCategories,

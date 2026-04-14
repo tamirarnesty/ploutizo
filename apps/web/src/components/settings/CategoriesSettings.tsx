@@ -69,7 +69,7 @@ export const CategoriesSettings = () => {
       : null
 
   // Locally manage category order for optimistic reorder UX
-  const [localCategories, setLocalCategories] = useState<Array<Category>>([])
+  const [localCategories, setLocalCategories] = useState<Category[]>([])
   const initialized = useRef<boolean>(false)
   useEffect(() => {
     if (!initialized.current && !catLoading && categories.length > 0) {
@@ -78,7 +78,7 @@ export const CategoriesSettings = () => {
     }
   }, [categories, catLoading])
 
-  const handleReorder = (newOrder: Array<Category>) => {
+  const handleReorder = (newOrder: Category[]) => {
     setLocalCategories(newOrder)
     reorderCategories.mutate(newOrder.map((c) => c.id))
   }
@@ -239,7 +239,7 @@ export const CategoriesSettings = () => {
           >
             <ComboboxChips ref={anchor}>
               <ComboboxValue>
-                {(selectedValue: Array<string> | null) => (
+                {(selectedValue: string[] | null) => (
                   <>
                     {(selectedValue ?? []).map((name) => (
                       <ComboboxChip key={name}>{name}</ComboboxChip>

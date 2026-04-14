@@ -11,6 +11,7 @@ import {
   deleteTransaction,
   getTransaction,
   listTransactions,
+  restoreTransaction,
   updateTransaction,
   validateSplitSum,
 } from '../services/transactions';
@@ -57,7 +58,12 @@ transactionsRouter.get('/', async (c) => {
   const limit = Number.isFinite(rawLimit)
     ? Math.min(200, Math.max(1, Math.floor(rawLimit)))
     : 50;
-  const sort = c.req.query('sort') === 'amount' ? 'amount' : 'date';
+  const rawSort = c.req.query('sort');
+  const sort = (
+    rawSort === 'amount' || rawSort === 'type' ||
+    rawSort === 'category' || rawSort === 'account'
+      ? rawSort : 'date'
+  );
   const order = c.req.query('order') === 'asc' ? 'asc' : 'desc';
 
   // tagIds: support ?tagIds[]=x&tagIds[]=y AND ?tagIds=x,y (Pitfall 5)
@@ -99,6 +105,21 @@ transactionsRouter.get('/:id', async (c) => {
     );
   }
   return c.json({ data: row });
+});
+
+// PATCH /:id/restore — undo soft delete (D-15)
+// IMPORTANT: declared before PATCH /:id so Hono matches '/restore' path segment correctly (T-03.3-02, T-03.3-03)
+transactionsRouter.patch('/:id/restore', async (c) => {
+  const { orgId } = getAuth(c);
+  const id = c.req.param('id');
+  const result = await restoreTransaction(id, orgId!);
+  if (!result) {
+    return c.json(
+      { error: { code: 'NOT_FOUND', message: 'Transaction not found.' } },
+      404
+    );
+  }
+  return c.json({ data: result });
 });
 
 // PATCH /:id — update fields + replace-all assignees/tags (D-03, D-10, D-11)

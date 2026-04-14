@@ -1,6 +1,6 @@
 import { useCallback, useRef } from "react"
 import { Link, useRouterState } from "@tanstack/react-router"
-import { CreditCard, LayoutDashboard, Settings } from "lucide-react"
+import { CreditCard, LayoutDashboard, Receipt, Settings } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -18,6 +18,7 @@ import { ThemeToggle } from "@ploutizo/ui/components/theme-toggle"
 
 const navItems = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
+  { label: "Transactions", to: "/transactions", icon: Receipt },
   // /accounts 404s until Plan 03 creates the route — expected during Plan 02 execution
   { label: "Accounts", to: "/accounts", icon: CreditCard },
 ] as const

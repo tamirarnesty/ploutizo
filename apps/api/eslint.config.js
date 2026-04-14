@@ -9,6 +9,8 @@ export default [
     rules: {
       // Forbid file extensions on relative imports — use bare specifiers (e.g. './foo', not './foo.js')
       'import/extensions': ['error', 'never'],
+      // Enforce T[] over Array<T>
+      '@typescript-eslint/array-type': ['error', { default: 'array' }],
     },
   },
 ]

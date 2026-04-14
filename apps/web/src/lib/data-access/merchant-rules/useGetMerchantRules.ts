@@ -14,12 +14,12 @@ export interface MerchantRule {
   createdAt: string
 }
 
-export const fetchMerchantRules = async (): Promise<Array<MerchantRule>> => {
-  const r = await apiFetch<{ data: Array<MerchantRule> }>("/api/merchant-rules")
+export const fetchMerchantRules = async (): Promise<MerchantRule[]> => {
+  const r = await apiFetch<{ data: MerchantRule[] }>("/api/merchant-rules")
   return r.data
 }
 
-export const useGetMerchantRules = (): UseQueryResult<Array<MerchantRule>> => {
+export const useGetMerchantRules = (): UseQueryResult<MerchantRule[]> => {
   return useQuery({
     queryKey: ["merchant-rules"],
     queryFn: fetchMerchantRules,

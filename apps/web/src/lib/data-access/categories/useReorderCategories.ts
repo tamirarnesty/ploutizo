@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { apiFetch } from "@/lib/queryClient"
 
-export const reorderCategories = async (orderedIds: Array<string>): Promise<{ ok: boolean }> => {
+export const reorderCategories = async (orderedIds: string[]): Promise<{ ok: boolean }> => {
   const r = await apiFetch<{ data: { ok: boolean } }>("/api/categories/reorder", {
     method: "PATCH",
     body: JSON.stringify({ orderedIds }),

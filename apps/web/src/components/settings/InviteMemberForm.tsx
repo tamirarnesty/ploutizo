@@ -24,7 +24,7 @@ export const InviteMemberForm = () => {
           toast.success(`Invite sent to ${value.email}.`)
         },
         onError: (err) => {
-          const code = (err as { error?: { code?: string } })?.error?.code
+          const code = (err as { error?: { code?: string } }).error?.code
           if (code === "ALREADY_MEMBER") {
             toast.error("Already a member of this household.")
           } else if (code === "INVITATION_PENDING") {

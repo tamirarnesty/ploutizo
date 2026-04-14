@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Hono } from 'hono';
 import { householdsRouter } from '../routes/households';
 
@@ -120,7 +120,7 @@ describe('GET /api/households/members', () => {
     });
     const res = await app.request('/members');
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { data: Array<Record<string, unknown>> };
+    const body = (await res.json()) as { data: Record<string, unknown>[] };
     expect(body.data).toHaveLength(1);
     expect(body.data[0]).toHaveProperty('imageUrl');
     expect(body.data[0]).toHaveProperty('firstName');

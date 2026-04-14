@@ -8,7 +8,7 @@ interface UpdateAccountBody {
   institution?: string | null
   lastFour?: string | null
   eachPersonPaysOwn?: boolean
-  memberIds?: Array<string>
+  memberIds?: string[]
 }
 
 export const updateAccount = async (id: string, body: UpdateAccountBody): Promise<Account> => {

@@ -28,7 +28,7 @@ const ACCOUNT_TYPE_LABELS: Record<string, string> = {
 };
 
 interface AccountsTableProps {
-  accounts: Array<Account>;
+  accounts: Account[];
   isLoading: boolean;
   onRowClick: (account: Account) => void;
   onAddClick: () => void;
@@ -40,7 +40,7 @@ export const AccountsTable = ({
   onRowClick,
   onAddClick,
 }: AccountsTableProps) => {
-  const columns = useMemo<Array<ColumnDef<Account>>>(
+  const columns = useMemo<ColumnDef<Account>[]>(
     () => [
       {
         accessorKey: 'name',

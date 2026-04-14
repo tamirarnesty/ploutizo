@@ -14,6 +14,7 @@ import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SignUpSplatRouteImport } from './routes/sign-up.$'
 import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
+import { Route as LayoutTransactionsRouteImport } from './routes/_layout.transactions'
 import { Route as LayoutDashboardRouteImport } from './routes/_layout.dashboard'
 import { Route as LayoutAccountsRouteImport } from './routes/_layout.accounts'
 import { Route as LayoutSettingsRouteRouteImport } from './routes/_layout.settings/route'
@@ -44,6 +45,11 @@ const SignInSplatRoute = SignInSplatRouteImport.update({
   id: '/sign-in/$',
   path: '/sign-in/$',
   getParentRoute: () => rootRouteImport,
+} as any)
+const LayoutTransactionsRoute = LayoutTransactionsRouteImport.update({
+  id: '/transactions',
+  path: '/transactions',
+  getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutDashboardRoute = LayoutDashboardRouteImport.update({
   id: '/dashboard',
@@ -84,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof LayoutSettingsRouteRouteWithChildren
   '/accounts': typeof LayoutAccountsRoute
   '/dashboard': typeof LayoutDashboardRoute
+  '/transactions': typeof LayoutTransactionsRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
   '/settings/categories': typeof LayoutSettingsCategoriesRoute
@@ -96,6 +103,7 @@ export interface FileRoutesByTo {
   '/settings': typeof LayoutSettingsRouteRouteWithChildren
   '/accounts': typeof LayoutAccountsRoute
   '/dashboard': typeof LayoutDashboardRoute
+  '/transactions': typeof LayoutTransactionsRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
   '/settings/categories': typeof LayoutSettingsCategoriesRoute
@@ -110,6 +118,7 @@ export interface FileRoutesById {
   '/_layout/settings': typeof LayoutSettingsRouteRouteWithChildren
   '/_layout/accounts': typeof LayoutAccountsRoute
   '/_layout/dashboard': typeof LayoutDashboardRoute
+  '/_layout/transactions': typeof LayoutTransactionsRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
   '/_layout/settings/categories': typeof LayoutSettingsCategoriesRoute
@@ -124,6 +133,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/accounts'
     | '/dashboard'
+    | '/transactions'
     | '/sign-in/$'
     | '/sign-up/$'
     | '/settings/categories'
@@ -136,6 +146,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/accounts'
     | '/dashboard'
+    | '/transactions'
     | '/sign-in/$'
     | '/sign-up/$'
     | '/settings/categories'
@@ -149,6 +160,7 @@ export interface FileRouteTypes {
     | '/_layout/settings'
     | '/_layout/accounts'
     | '/_layout/dashboard'
+    | '/_layout/transactions'
     | '/sign-in/$'
     | '/sign-up/$'
     | '/_layout/settings/categories'
@@ -200,6 +212,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/sign-in/$'
       preLoaderRoute: typeof SignInSplatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_layout/transactions': {
+      id: '/_layout/transactions'
+      path: '/transactions'
+      fullPath: '/transactions'
+      preLoaderRoute: typeof LayoutTransactionsRouteImport
+      parentRoute: typeof LayoutRoute
     }
     '/_layout/dashboard': {
       id: '/_layout/dashboard'
@@ -265,12 +284,14 @@ interface LayoutRouteChildren {
   LayoutSettingsRouteRoute: typeof LayoutSettingsRouteRouteWithChildren
   LayoutAccountsRoute: typeof LayoutAccountsRoute
   LayoutDashboardRoute: typeof LayoutDashboardRoute
+  LayoutTransactionsRoute: typeof LayoutTransactionsRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutSettingsRouteRoute: LayoutSettingsRouteRouteWithChildren,
   LayoutAccountsRoute: LayoutAccountsRoute,
   LayoutDashboardRoute: LayoutDashboardRoute,
+  LayoutTransactionsRoute: LayoutTransactionsRoute,
 }
 
 const LayoutRouteWithChildren =

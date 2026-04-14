@@ -121,7 +121,7 @@ describe('GET /api/accounts', () => {
   it('returns 200 with data array', async () => {
     const res = await app.request('/');
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { data: Array<unknown> };
+    const body = (await res.json()) as { data: unknown[] };
     expect(body).toHaveProperty('data');
     expect(Array.isArray(body.data)).toBe(true);
   });
