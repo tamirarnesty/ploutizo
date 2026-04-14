@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Hono } from 'hono';
+import type { StatusCode } from 'hono/utils/http-status';
 import { merchantRulesRouter } from '../routes/merchant-rules';
+import { DomainError, NotFoundError } from '../lib/errors';
 
 vi.mock('@hono/clerk-auth', () => ({
   getAuth: vi.fn(() => ({ orgId: 'org_test123' })),
@@ -72,6 +74,22 @@ vi.mock('@ploutizo/db/schema', () => ({ merchantRules: {} }));
 
 const app = new Hono();
 app.route('/', merchantRulesRouter);
+// onError mirrors production handler — thin routes no longer catch DomainError inline
+app.onError((err, c) => {
+  if (err instanceof NotFoundError) {
+    return c.json({ error: { code: 'NOT_FOUND', message: err.message } }, 404);
+  }
+  if (err instanceof DomainError) {
+    // Map known merchant-rule domain errors to their response codes
+    const code =
+      err.message === 'Invalid regular expression.' ? 'INVALID_REGEX' : 'DOMAIN_ERROR';
+    return c.json(
+      { error: { code, message: err.message } },
+      err.statusCode as StatusCode
+    );
+  }
+  return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Unexpected error' } }, 500);
+});
 
 describe('POST /api/merchant-rules', () => {
   it('returns 201 on valid contains rule', async () => {
