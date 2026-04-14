@@ -2,6 +2,7 @@ import { createMiddleware } from 'hono/factory';
 import { getAuth } from '@hono/clerk-auth';
 import { db } from '@ploutizo/db';
 import { orgs } from '@ploutizo/db/schema';
+import type { AppEnv } from '../types';
 
 // tenantGuard: rejects requests with no active Clerk org.
 // CRITICAL: checks !orgId (falsy) — Clerk returns undefined (not null) when no active org.
@@ -16,7 +17,7 @@ import { orgs } from '@ploutizo/db/schema';
 const seenOrgs = new Set<string>();
 
 export const tenantGuard = () =>
-  createMiddleware(async (c, next) => {
+  createMiddleware<AppEnv>(async (c, next) => {
     const { orgId } = getAuth(c);
     if (!orgId) {
       return c.json(
@@ -33,5 +34,6 @@ export const tenantGuard = () =>
       await db.insert(orgs).values({ id: orgId }).onConflictDoNothing();
       seenOrgs.add(orgId);
     }
+    c.set('orgId', orgId);
     await next();
   });

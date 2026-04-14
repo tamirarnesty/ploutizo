@@ -1,103 +1,54 @@
 import { Hono } from 'hono';
-import { getAuth } from '@hono/clerk-auth';
-import { db } from '@ploutizo/db';
-import { categories } from '@ploutizo/db/schema';
-import { and, eq, isNull } from 'drizzle-orm';
+import { appValidator } from '../lib/validator';
+import {
+  archiveCategoryById,
+  createCategory,
+  listCategories,
+  reorderCategories,
+  updateCategory,
+} from '../services/categories';
 import {
   createCategorySchema,
   reorderSchema,
   updateCategorySchema,
 } from '@ploutizo/validators';
+import type { AppEnv } from '../types';
 
-const categoriesRouter = new Hono();
+const categoriesRouter = new Hono<AppEnv>();
 
 // IMPORTANT: /reorder must be registered BEFORE /:id to prevent ':id' capturing 'reorder'
-categoriesRouter.patch('/reorder', async (c) => {
-  const { orgId } = getAuth(c);
-  const result = reorderSchema.safeParse(await c.req.json());
-  if (!result.success)
-    return c.json(
-      { error: { code: 'VALIDATION_ERROR', errors: result.error.issues } },
-      400
-    );
-  await db.transaction(async (tx) => {
-    for (let i = 0; i < result.data.orderedIds.length; i++) {
-      await tx
-        .update(categories)
-        .set({ sortOrder: i })
-        .where(
-          and(
-            eq(categories.id, result.data.orderedIds[i]),
-            eq(categories.orgId, orgId!)
-          )
-        );
-    }
-  });
+categoriesRouter.patch('/reorder', appValidator('json', reorderSchema), async (c) => {
+  const orgId = c.get('orgId');
+  const { orderedIds } = c.req.valid('json');
+  await reorderCategories(orgId, orderedIds);
   return c.json({ data: { ok: true } });
 });
 
 categoriesRouter.get('/', async (c) => {
-  const { orgId } = getAuth(c);
-  const rows = await db
-    .select()
-    .from(categories)
-    .where(and(eq(categories.orgId, orgId!), isNull(categories.archivedAt)))
-    .orderBy(categories.sortOrder);
+  const orgId = c.get('orgId');
+  const rows = await listCategories(orgId);
   return c.json({ data: rows });
 });
 
-categoriesRouter.post('/', async (c) => {
-  const { orgId } = getAuth(c);
-  const result = createCategorySchema.safeParse(await c.req.json());
-  if (!result.success)
-    return c.json(
-      { error: { code: 'VALIDATION_ERROR', errors: result.error.issues } },
-      400
-    );
-  const [row] = await db
-    .insert(categories)
-    .values({ orgId: orgId!, ...result.data })
-    .returning();
+categoriesRouter.post('/', appValidator('json', createCategorySchema), async (c) => {
+  const orgId = c.get('orgId');
+  const data = c.req.valid('json');
+  const row = await createCategory(orgId, data);
   return c.json({ data: row }, 201);
 });
 
-categoriesRouter.patch('/:id', async (c) => {
-  const { orgId } = getAuth(c);
+categoriesRouter.patch('/:id', appValidator('json', updateCategorySchema), async (c) => {
+  const orgId = c.get('orgId');
   const id = c.req.param('id');
-  const result = updateCategorySchema.safeParse(await c.req.json());
-  if (!result.success)
-    return c.json(
-      { error: { code: 'VALIDATION_ERROR', errors: result.error.issues } },
-      400
-    );
-  const updated = await db
-    .update(categories)
-    .set(result.data)
-    .where(and(eq(categories.id, id), eq(categories.orgId, orgId!)))
-    .returning()
-    .then((rows) => rows.at(0));
-  if (!updated)
-    return c.json(
-      { error: { code: 'NOT_FOUND', message: 'Category not found.' } },
-      404
-    );
+  const data = c.req.valid('json');
+  const updated = await updateCategory(id, orgId, data);
   return c.json({ data: updated });
 });
 
 categoriesRouter.delete('/:id/archive', async (c) => {
-  const { orgId } = getAuth(c);
+  const orgId = c.get('orgId');
   const id = c.req.param('id');
-  const updated = await db
-    .update(categories)
-    .set({ archivedAt: new Date() })
-    .where(and(eq(categories.id, id), eq(categories.orgId, orgId!)))
-    .returning()
-    .then((rows) => rows.at(0));
-  if (!updated)
-    return c.json(
-      { error: { code: 'NOT_FOUND', message: 'Category not found.' } },
-      404
-    );
+  const updated = await archiveCategoryById(id, orgId);
   return c.json({ data: updated });
 });
 

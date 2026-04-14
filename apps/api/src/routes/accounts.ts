@@ -1,137 +1,58 @@
 import { Hono } from 'hono';
-import { getAuth } from '@hono/clerk-auth';
-import { db } from '@ploutizo/db';
-import { accountMembers, accounts } from '@ploutizo/db/schema';
-import { and, eq, isNull } from 'drizzle-orm';
-import { createAccountSchema, updateAccountSchema } from '@ploutizo/validators';
+import { appValidator } from '../lib/validator';
+import {
+  archiveAccountById,
+  createAccount,
+  getAccountMembers,
+  listAccounts,
+  updateAccount,
+} from '../services/accounts';
+import {
+  createAccountSchema,
+  updateAccountSchema,
+} from '@ploutizo/validators';
+import type { AppEnv } from '../types';
 
-const accountsRouter = new Hono();
+const accountsRouter = new Hono<AppEnv>();
 
 // GET / — returns accounts for the org, active only unless ?include=archived
 accountsRouter.get('/', async (c) => {
-  const { orgId } = getAuth(c);
+  const orgId = c.get('orgId');
   const includeArchived = c.req.query('include') === 'archived';
-  const condition = includeArchived
-    ? eq(accounts.orgId, orgId!)
-    : and(eq(accounts.orgId, orgId!), isNull(accounts.archivedAt));
-  const rows = await db
-    .select()
-    .from(accounts)
-    .where(condition)
-    .orderBy(accounts.createdAt);
+  const rows = await listAccounts(orgId, includeArchived);
   return c.json({ data: rows });
 });
 
-// POST / — create account; optionally assign members in a transaction
-accountsRouter.post('/', async (c) => {
-  const { orgId } = getAuth(c);
-  const result = createAccountSchema.safeParse(await c.req.json());
-  if (!result.success) {
-    return c.json(
-      { error: { code: 'VALIDATION_ERROR', errors: result.error.issues } },
-      400
-    );
-  }
-  const { memberIds = [], ...accountData } = result.data;
-  const row = await db.transaction(async (tx) => {
-    const [inserted] = await tx
-      .insert(accounts)
-      .values({ orgId: orgId!, ...accountData })
-      .returning();
-    if (memberIds.length > 0) {
-      await tx
-        .insert(accountMembers)
-        .values(
-          memberIds.map((memberId) => ({ accountId: inserted.id, memberId }))
-        );
-    }
-    return inserted;
-  });
+// POST / — create account; optionally assign members
+accountsRouter.post('/', appValidator('json', createAccountSchema), async (c) => {
+  const orgId = c.get('orgId');
+  const data = c.req.valid('json');
+  const row = await createAccount(orgId, data);
   return c.json({ data: row }, 201);
 });
 
 // PATCH /:id — update account fields; replace members if memberIds provided
-accountsRouter.patch('/:id', async (c) => {
-  const { orgId } = getAuth(c);
+accountsRouter.patch('/:id', appValidator('json', updateAccountSchema), async (c) => {
+  const orgId = c.get('orgId');
   const id = c.req.param('id');
-  const result = updateAccountSchema.safeParse(await c.req.json());
-  if (!result.success) {
-    return c.json(
-      { error: { code: 'VALIDATION_ERROR', errors: result.error.issues } },
-      400
-    );
-  }
-   
-  const { memberIds, ...updateData } = result.data as {
-    memberIds?: string[];
-    [key: string]: unknown;
-  };
-  const updated = await db.transaction(async (tx) => {
-    const rows = await tx
-      .update(accounts)
-       
-      .set({ ...(updateData as any), updatedAt: new Date() })
-      .where(and(eq(accounts.id, id), eq(accounts.orgId, orgId!)))
-      .returning();
-    if (!rows.length) return null;
-    if (memberIds !== undefined) {
-      await tx.delete(accountMembers).where(eq(accountMembers.accountId, id));
-      if (memberIds.length > 0) {
-        await tx
-          .insert(accountMembers)
-          .values(memberIds.map((memberId) => ({ accountId: id, memberId })));
-      }
-    }
-    return rows[0];
-  });
-  if (!updated) {
-    return c.json(
-      { error: { code: 'NOT_FOUND', message: 'Account not found.' } },
-      404
-    );
-  }
+  const data = c.req.valid('json');
+  const updated = await updateAccount(id, orgId, data);
   return c.json({ data: updated });
 });
 
-// GET /:id/members — return current member rows for one account (for edit-mode pre-population)
+// GET /:id/members — return current member rows for one account
 accountsRouter.get('/:id/members', async (c) => {
-  const { orgId } = getAuth(c);
+  const orgId = c.get('orgId');
   const id = c.req.param('id');
-  // Scope through accounts to enforce org isolation
-  const account = await db
-    .select({ id: accounts.id })
-    .from(accounts)
-    .where(and(eq(accounts.id, id), eq(accounts.orgId, orgId!)))
-    .limit(1);
-  if (!account.length) {
-    return c.json(
-      { error: { code: 'NOT_FOUND', message: 'Account not found.' } },
-      404
-    );
-  }
-  const rows = await db
-    .select()
-    .from(accountMembers)
-    .where(eq(accountMembers.accountId, id));
+  const rows = await getAccountMembers(id, orgId);
   return c.json({ data: rows });
 });
 
 // DELETE /:id/archive — soft-archive the account by setting archivedAt
 accountsRouter.delete('/:id/archive', async (c) => {
-  const { orgId } = getAuth(c);
+  const orgId = c.get('orgId');
   const id = c.req.param('id');
-  const updated = await db
-    .update(accounts)
-    .set({ archivedAt: new Date(), updatedAt: new Date() })
-    .where(and(eq(accounts.id, id), eq(accounts.orgId, orgId!)))
-    .returning()
-    .then((rows) => rows.at(0));
-  if (!updated) {
-    return c.json(
-      { error: { code: 'NOT_FOUND', message: 'Account not found.' } },
-      404
-    );
-  }
+  const updated = await archiveAccountById(id, orgId);
   return c.json({ data: updated });
 });
 

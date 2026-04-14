@@ -14,15 +14,18 @@
   "dependencies": {
     "@hono/clerk-auth": "^3.1.0",
     "@hono/node-server": "^1.19.11",
+    "@hono/zod-validator": "^0.7.6",
     "@ploutizo/db": "workspace:*",
     "@ploutizo/types": "workspace:*",
     "@ploutizo/validators": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.10",
     "neverthrow": "^8.2.0",
-    "svix": "^1.90.0"
+    "svix": "^1.90.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@clerk/backend": "^3.2.9",
     "@tanstack/eslint-config": "^0.4.0",
     "@types/node": "^25.5.2",
     "eslint": "^10.1.0",

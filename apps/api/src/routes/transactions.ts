@@ -1,10 +1,10 @@
 import { Hono } from 'hono';
-import { getAuth } from '@hono/clerk-auth';
+import { appValidator } from '../lib/validator';
+import { DomainError } from '../lib/errors';
 import {
   createTransactionSchema,
   updateTransactionSchema,
 } from '@ploutizo/validators';
-import { badRequest } from '../lib/helpers';
 import {
   checkRefundOfOwnership,
   createTransaction,
@@ -16,40 +16,35 @@ import {
   validateSplitSum,
 } from '../services/transactions';
 import type { ListQueryParams } from '../services/transactions';
+import type { AppEnv } from '../types';
 
-const transactionsRouter = new Hono();
+const transactionsRouter = new Hono<AppEnv>();
 
 // POST / — create transaction (D-01, D-02, D-09, D-10, D-11, D-13)
-transactionsRouter.post('/', async (c) => {
-  const { orgId } = getAuth(c);
-  const result = createTransactionSchema.safeParse(await c.req.json());
-  if (!result.success) {
-    return c.json(
-      { error: { code: 'VALIDATION_ERROR', errors: result.error.issues } },
-      400
-    );
-  }
-  const data = result.data;
+transactionsRouter.post('/', appValidator('json', createTransactionSchema), async (c) => {
+  const orgId = c.get('orgId');
+  const data = c.req.valid('json');
 
   // D-11: validate split sum before hitting DB
   const splitError = validateSplitSum(data.amount, data.assignees);
-  if (splitError) return badRequest(c, splitError);
+  if (splitError) {
+    return c.json({ error: { code: 'BAD_REQUEST', message: splitError } }, 400);
+  }
 
   // D-13: validate refundOf org ownership if provided — gate on field presence, not type.
   // Use 'in' narrowing because refundOf only exists on the 'refund' variant of the discriminated union.
   if ('refundOf' in data && data.refundOf) {
-    const owned = await checkRefundOfOwnership(data.refundOf, orgId!);
-    if (!owned)
-      return badRequest(c, 'refundOf transaction not found in this org');
+    const owned = await checkRefundOfOwnership(data.refundOf, orgId);
+    if (!owned) throw new DomainError(400, 'refundOf transaction not found in this org');
   }
 
-  const row = await createTransaction(orgId!, data);
+  const row = await createTransaction(orgId, data);
   return c.json({ data: row }, 201);
 });
 
 // GET / — paginated list with filtering and sort (D-06, D-07, D-08)
 transactionsRouter.get('/', async (c) => {
-  const { orgId } = getAuth(c);
+  const orgId = c.get('orgId');
 
   const rawPage = Number(c.req.query('page'));
   const rawLimit = Number(c.req.query('limit'));
@@ -75,7 +70,7 @@ transactionsRouter.get('/', async (c) => {
   ];
 
   const params: ListQueryParams = {
-    orgId: orgId!,
+    orgId,
     page,
     limit,
     sort,
@@ -95,9 +90,9 @@ transactionsRouter.get('/', async (c) => {
 
 // GET /:id — single transaction with joined response (D-04, D-05)
 transactionsRouter.get('/:id', async (c) => {
-  const { orgId } = getAuth(c);
+  const orgId = c.get('orgId');
   const id = c.req.param('id');
-  const row = await getTransaction(id, orgId!);
+  const row = await getTransaction(id, orgId);
   if (!row) {
     return c.json(
       { error: { code: 'NOT_FOUND', message: 'Transaction not found.' } },
@@ -110,9 +105,9 @@ transactionsRouter.get('/:id', async (c) => {
 // PATCH /:id/restore — undo soft delete (D-15)
 // IMPORTANT: declared before PATCH /:id so Hono matches '/restore' path segment correctly (T-03.3-02, T-03.3-03)
 transactionsRouter.patch('/:id/restore', async (c) => {
-  const { orgId } = getAuth(c);
+  const orgId = c.get('orgId');
   const id = c.req.param('id');
-  const result = await restoreTransaction(id, orgId!);
+  const result = await restoreTransaction(id, orgId);
   if (!result) {
     return c.json(
       { error: { code: 'NOT_FOUND', message: 'Transaction not found.' } },
@@ -123,24 +118,18 @@ transactionsRouter.patch('/:id/restore', async (c) => {
 });
 
 // PATCH /:id — update fields + replace-all assignees/tags (D-03, D-10, D-11)
-transactionsRouter.patch('/:id', async (c) => {
-  const { orgId } = getAuth(c);
+transactionsRouter.patch('/:id', appValidator('json', updateTransactionSchema), async (c) => {
+  const orgId = c.get('orgId');
   const id = c.req.param('id');
-  const result = updateTransactionSchema.safeParse(await c.req.json());
-  if (!result.success) {
-    return c.json(
-      { error: { code: 'VALIDATION_ERROR', errors: result.error.issues } },
-      400
-    );
-  }
+  const data = c.req.valid('json');
 
   let updated;
   try {
-    updated = await updateTransaction(id, orgId!, result.data);
+    updated = await updateTransaction(id, orgId, data);
   } catch (err) {
     // updateTransaction throws on split sum mismatch (D-11)
     const message = err instanceof Error ? err.message : 'Invalid request';
-    return badRequest(c, message);
+    return c.json({ error: { code: 'BAD_REQUEST', message } }, 400);
   }
 
   if (!updated) {
@@ -154,9 +143,9 @@ transactionsRouter.patch('/:id', async (c) => {
 
 // DELETE /:id — soft delete (D-15)
 transactionsRouter.delete('/:id', async (c) => {
-  const { orgId } = getAuth(c);
+  const orgId = c.get('orgId');
   const id = c.req.param('id');
-  const result = await deleteTransaction(id, orgId!);
+  const result = await deleteTransaction(id, orgId);
   if (!result) {
     return c.json(
       { error: { code: 'NOT_FOUND', message: 'Transaction not found.' } },

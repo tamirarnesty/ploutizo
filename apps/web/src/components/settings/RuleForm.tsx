@@ -226,9 +226,9 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
         <Button variant="outline" type="button" onClick={onClose}>
           Cancel
         </Button>
-        <form.Subscribe selector={(s) => s.isSubmitting}>
-          {(isSubmitting) => (
-            <Button type="submit" disabled={isSubmitting}>
+        <form.Subscribe selector={(s) => [s.isSubmitting, s.canSubmit] as const}>
+          {([isSubmitting, canSubmit]) => (
+            <Button type="submit" disabled={isSubmitting || !canSubmit}>
               Save rule
             </Button>
           )}

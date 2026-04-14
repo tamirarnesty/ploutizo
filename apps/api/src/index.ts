@@ -11,8 +11,10 @@ import { categoriesRouter } from './routes/categories';
 import { tagsRouter } from './routes/tags';
 import { merchantRulesRouter } from './routes/merchant-rules';
 import { transactionsRouter } from './routes/transactions';
+import { DomainError, NotFoundError } from './lib/errors';
+import type { AppEnv } from './types';
 
-const app = new Hono();
+const app = new Hono<AppEnv>();
 
 // Invariant middleware order (CLAUDE.md): CORS → Clerk → tenant guard
 // 1. CORS — handles preflight before Clerk so OPTIONS requests are not rejected
@@ -69,5 +71,25 @@ app.route('/api/categories', categoriesRouter);
 app.route('/api/tags', tagsRouter);
 app.route('/api/merchant-rules', merchantRulesRouter);
 app.route('/api/transactions', transactionsRouter);
+
+// Unmatched routes — returns JSON shape consistent with onError handler
+app.notFound((c) => c.json({ error: { code: 'NOT_FOUND', message: 'Not found' } }, 404));
+
+// Centralized error handler (D-04) — registered AFTER routes, BEFORE serve()
+// NotFoundError → 404 NOT_FOUND
+// DomainError → statusCode DOMAIN_ERROR
+// Generic Error → 500 INTERNAL_ERROR
+app.onError((err, c) => {
+  if (err instanceof NotFoundError) {
+    return c.json({ error: { code: 'NOT_FOUND', message: err.message } }, 404);
+  }
+  if (err instanceof DomainError) {
+    return c.json(
+      { error: { code: err.code ?? 'DOMAIN_ERROR', message: err.message } },
+      err.statusCode as import('hono/utils/http-status').StatusCode
+    );
+  }
+  return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Unexpected error' } }, 500);
+});
 
 serve({ fetch: app.fetch, port: Number(process.env.PORT ?? 8080) });
