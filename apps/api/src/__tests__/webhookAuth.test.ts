@@ -1,11 +1,12 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Hono } from 'hono'
 import { webhookAuth } from '../middleware/webhookAuth'
 
 // Mock svix Webhook class
 const mockVerify = vi.fn()
 vi.mock('svix', () => ({
-  Webhook: vi.fn().mockImplementation(() => ({ verify: mockVerify })),
+   
+  Webhook: vi.fn().mockImplementation(function () { return { verify: mockVerify } }),
 }))
 
 // Mock @clerk/backend WebhookEvent type (no runtime mock needed — it's a type-only import)
