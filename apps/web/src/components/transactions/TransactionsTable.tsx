@@ -24,7 +24,7 @@ import { buildColumns } from './TransactionColumns'
 import { TransactionsTableEmpty } from './TransactionTableEmpty'
 import { TransactionsTableEmptyFiltered } from './TransactionTableEmptyFiltered'
 import type { TransactionRow } from '@/lib/data-access/transactions'
-import type { TransactionSearch } from '../../routes/_layout.transactions'
+import type { TransactionSearch } from './transactionSearch'
 import { useDeleteTransaction, useRestoreTransaction } from '@/lib/data-access/transactions'
 
 interface TransactionsTableProps {
