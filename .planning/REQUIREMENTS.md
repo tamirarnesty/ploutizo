@@ -287,4 +287,21 @@
 - [ ] **Neon connection limits** — verify current plan tier limits before launching to avoid connection exhaustion on Railway
 
 ---
+
+## UI Component Constraints
+
+### Primitive Component Policy
+- **Never use raw HTML primitives when a shadcn equivalent exists.** This includes `<button>`, `<input>`, `<label>`, `<select>`, `<textarea>`, `<card>`, and all other elements shadcn covers.
+- Before writing any UI element, check whether a shadcn component exists: `pnpm dlx shadcn@latest docs <component>`
+- The shadcn docs include correct composition patterns — always follow them
+- Raw `<div>` and `<span>` are acceptable where no shadcn structural equivalent exists
+
+### Typography
+- All text rendering must use the `<Text>` component from `packages/ui` (once implemented)
+- `<Text>` has two independent props: `as` (DOM element, default `p`) and `variant` (visual preset)
+- Visual presets: `h1`, `h2`, `h3`, `body`, `body-sm`, `caption`, `label`
+- `className` is merged last via `cn` — use it for color, weight, and other one-off overrides
+- Never use raw `<h1>`–`<h6>`, `<p>`, `<span>` for user-visible text once `<Text>` is available
+
+---
 *Last updated: 2026-03-24 — initialized from REQUIREMENTS.md + research synthesis*

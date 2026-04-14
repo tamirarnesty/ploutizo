@@ -1,13 +1,23 @@
 # ploutizo — Roadmap
 
-> **Milestone:** v0.1 MVP
 > **Granularity:** Standard
 > **Coverage:** 11/11 requirement sections mapped
-> **Last updated:** 2026-03-24
+> **Last updated:** 2026-04-14
+
+| Milestone | Name | Status |
+|-----------|------|--------|
+| v0.1 | Foundation | complete |
+| v0.2 | Transactions & Settlement | **current** |
+| v0.3 | Import | pending |
+| v0.4 | Budgets | pending |
+| v0.5 | Investments & Net Worth | pending |
+| v1.0 | Notifications + Launch | pending |
+
+> **Execution order note:** v0.3 Import executes before v0.4 Budgets. Phase numbers (05.x vs 04.3/04.4) reflect original ordering — milestone labels determine execution sequence.
 
 ---
 
-## Milestone 1: v0.1 MVP
+## Milestone v0.1 — Foundation (COMPLETE)
 
 ### Phase 1: Foundation & Auth Infrastructure
 
@@ -162,6 +172,10 @@ Plans:
 Plans:
 - [x] 02.1.1-01-PLAN.md — Driver swap: package.json deps, client.ts rewrite, client.test.ts mock update, route audit
 
+---
+
+## Milestone v0.2 — Transactions & Settlement (CURRENT)
+
 ### Phase 03.1: Transaction Schema & Migrations
 
 **Goal:** The transactions data model is fully defined in the database with all
@@ -269,6 +283,73 @@ Plans:
 
 ---
 
+### Phase 03.3.1: API layering and structural refactor (INSERTED)
+
+**Goal:** Establish consistent routes → services → queries separation across all API routes. Adopt Hono's built-in primitives to eliminate repeated boilerplate. Ensure the API has a clean, scalable pattern before Phase 03.4+ adds more routes and complexity.
+
+**Delivers:**
+- `zValidator('json', schema)` and `zValidator('query', schema)` adopted on all routes — replaces manual `safeParse` + error response blocks
+- `app.onError()` centralized error handler — typed domain errors (`NotFoundError`, `DomainError`) thrown from services, mapped to HTTP responses in one place; per-route try/catch and `badRequest` helper removed
+- `tenantGuard` sets `orgId` on context (`c.set`) — all handlers read `c.get('orgId')` instead of calling `getAuth(c)`
+- Service layer extracted for all routes currently missing one: `accounts`, `categories`, `tags`, `merchant-rules`, `households`
+- `webhookAuth` middleware extracts Svix signature verification from the route handler
+- `services/webhooks.ts` with one handler function per Clerk event type (`handleOrgCreated`, `handleUserCreated`, etc.)
+- Clerk `WebhookEvent` discriminated union from `@clerk/backend` replaces all manual `event.data as { ... }` casts
+
+**Depends on:** Phase 03.3
+
+**Plans:** 7 plans
+
+Plans:
+- [ ] 03.3.1-01-PLAN.md — TDD scaffold: validator, errors, webhookAuth, tenantGuard test stubs
+- [ ] 03.3.1-02-PLAN.md — Infrastructure: AppEnv types.ts, appValidator factory, DomainError/NotFoundError, install @hono/zod-validator
+- [ ] 03.3.1-03-PLAN.md — Queries layer: lib/queries/ files for accounts, categories, tags, merchant-rules, households
+- [ ] 03.3.1-04-PLAN.md — Services layer: services/ files for accounts, categories, tags, merchant-rules, households
+- [ ] 03.3.1-05-PLAN.md — webhookAuth middleware + tenantGuard c.set patch + services/webhooks.ts
+- [ ] 03.3.1-06-PLAN.md — Route refactor: accounts, categories, tags, merchant-rules thin handlers
+- [ ] 03.3.1-07-PLAN.md — Route refactor: households, webhooks, transactions + index.ts onError + delete helpers.ts
+
+---
+
+### Phase 03.3.2: Implement Text typography component in packages/ui (INSERTED)
+
+**Goal:** Build a `<Text>` component as the single typography primitive for the app, with decoupled `as` (DOM element) and `variant` (visual preset) props.
+
+**Delivers:**
+- `<Text as variant className>` component in `packages/ui/src/components/text.tsx`
+- `as` prop: controls DOM element (`h1`–`h6`, `p`, `span`, `div`, `label`), defaults to `p`
+- `variant` prop: controls visual preset (`h1`, `h2`, `h3`, `body`, `body-sm`, `caption`, `label`), defaults to `body`
+- `className` merged last via `cn` — for color, weight, italic, one-off overrides
+- Exported from `packages/ui` index alongside shadcn components
+
+**Depends on:** Phase 03.3.1
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 03.3.2 to break down)
+
+---
+
+### Phase 03.3.3: UI primitive refactor sweep (INSERTED)
+
+**Goal:** Replace all raw HTML primitives across `apps/web` with their shadcn or `<Text>` equivalents, establishing a clean foundation before further UI phases.
+
+**Delivers:**
+- All `<button>` → shadcn `<Button>`
+- All `<input>`, `<label>`, `<select>`, `<textarea>` → shadcn equivalents
+- All `<h1>`–`<h6>`, `<p>`, `<span>` user-visible text → `<Text variant="...">`
+- No raw HTML primitives in `apps/web` where a shadcn or `<Text>` equivalent exists
+
+**Depends on:** Phase 03.3.2
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 03.3.3 to break down)
+
+---
+
 ### Phase 03.4: Transaction Forms UI
 
 **Goal:** Users can create and edit any of the six transaction types through a
@@ -294,6 +375,16 @@ Plans:
 - [ ] Any field on a posted transaction can be edited; original description from import is preserved and visible in edit view
 
 ---
+
+### Phase 03.5: CI testing, linting, and formatting checks (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 03.4
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 03.5 to break down)
 
 ### Phase 4.1: Settlement API
 
@@ -346,6 +437,10 @@ Plans:
 
 ---
 
+---
+
+## Milestone v0.4 — Budgets
+
 ### Phase 4.3: Budgets API
 
 **Goal:** Budgets can be created and managed per category; the API computes spend
@@ -394,6 +489,10 @@ Plans:
 - [ ] Historical period navigation loads spend data for the selected period without a full page reload
 
 ---
+
+---
+
+## Milestone v0.3 — Import
 
 ### Phase 5.1: Bank Normalizers
 
@@ -501,6 +600,10 @@ Plans:
 
 ---
 
+---
+
+## Milestone v0.5 — Investments & Net Worth
+
 ### Phase 6.1: Investment Schema & Contribution Room API
 
 **Goal:** The API can track TFSA, RRSP, and FHSA contribution room per member
@@ -604,6 +707,10 @@ Plans:
 
 ---
 
+---
+
+## Milestone v1.0 — Notifications + Launch
+
 ### Phase 7.1: Notifications Table & Write Triggers
 
 **Goal:** Notification rows are written to the database whenever a budget
@@ -659,6 +766,34 @@ Plans:
 
 ---
 
+### Phase 8.1: Replace in-memory seenOrgs Set in tenantGuard
+
+**Goal:** Replace the process-lifetime `seenOrgs` Set cache in `tenantGuard` with a durable solution that works across multiple processes/instances and doesn't rely on a safety-net upsert on every cold start.
+
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 8.1 to break down)
+
+**Context:** The `seenOrgs` Set was added as a cheap fix to avoid a DB round-trip on every request (the upsert safety net for when the Clerk `organization.created` webhook fails to deliver). Options: (1) configure reliable webhook delivery in all environments — ngrok/Clerk tunnel for local, verified secret + endpoint for prod — making the upsert unnecessary; (2) if multi-process, use a shared cache (Redis/Upstash) instead of the in-process Set. Current approach resets on cold start, which is safe but not ideal long-term.
+
+---
+
+### Phase 8.2: Adopt react-i18next and wrap all user-visible string literals
+
+**Goal:** Eliminate all hardcoded string literals in JSX. Route all user-visible text through `react-i18next`'s `useTranslation` hook with feature-namespaced locale JSON files.
+
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 8.2 to break down)
+
+**Context:** Library already chosen (`react-i18next`). Strings go in locale JSON files keyed by feature namespace (e.g. `public/locales/en/accounts.json`). Deferred from STANDARDS.md planned refactors — applies to all features once the translation layer is established.
+
+---
+
 ## Coverage Map
 
 | REQUIREMENTS.md Section | Phase | Notes |
@@ -676,37 +811,6 @@ Plans:
 | §11 Notifications & Alerts | Phases 7.1–7.2 | Write triggers (7.1), feed UI (7.2) |
 | Infrastructure requirements | Phase 1 | Clerk satellites, postgres.js, tenantGuard, Tailwind v4 audit |
 
----
-
-## Backlog
-
-### Phase 999.2: Replace in-memory seenOrgs Set in tenantGuard with proper long-term org seeding solution (BACKLOG)
-
-**Goal:** Replace the process-lifetime `seenOrgs` Set cache in `tenantGuard` with a durable solution that works across multiple processes/instances and doesn't rely on a safety-net upsert on every cold start.
-
-**Requirements:** TBD
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (promote with /gsd:review-backlog when ready)
-
-**Context:** The `seenOrgs` Set was added as a cheap fix to avoid a DB round-trip on every request (the upsert safety net for when the Clerk `organization.created` webhook fails to deliver). Options: (1) configure reliable webhook delivery in all environments — ngrok/Clerk tunnel for local, verified secret + endpoint for prod — making the upsert unnecessary; (2) if multi-process, use a shared cache (Redis/Upstash) instead of the in-process Set. Current approach resets on cold start, which is safe but not ideal long-term.
-
----
-
-### Phase 999.1: Adopt react-i18next and wrap all user-visible string literals (BACKLOG)
-
-**Goal:** Eliminate all hardcoded string literals in JSX. Route all user-visible text through `react-i18next`'s `useTranslation` hook with feature-namespaced locale JSON files.
-
-**Requirements:** TBD
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (promote with /gsd:review-backlog when ready)
-
-**Context:** Library already chosen (`react-i18next`). Strings go in locale JSON files keyed by feature namespace (e.g. `public/locales/en/accounts.json`). Deferred from STANDARDS.md planned refactors — applies to all features once the translation layer is established.
-
----
 
 ## Deferred (Post-Milestone)
 
