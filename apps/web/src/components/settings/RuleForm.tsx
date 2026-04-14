@@ -215,6 +215,7 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
 
       <form.Subscribe selector={(s) => s.errorMap.onSubmit}>
         {(err) =>
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           err ? (
             <p className="text-xs text-destructive">{String(err)}</p>
           ) : null

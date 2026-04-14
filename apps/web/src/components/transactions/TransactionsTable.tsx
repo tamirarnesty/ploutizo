@@ -102,7 +102,6 @@ export const TransactionsTable = ({
           ? updater([{ id: sort ?? 'date', desc: order === 'desc' }])
           : updater
       const col = next[0]
-      if (!col) return
       onSortChange(col.id as TransactionSearch['sort'], col.desc ? 'desc' : 'asc')
     },
   })
