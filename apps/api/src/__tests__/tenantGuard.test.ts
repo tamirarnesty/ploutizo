@@ -108,4 +108,19 @@ describe('tenantGuard()', () => {
     expect(body).toHaveProperty('error.message');
     expect(body).not.toHaveProperty('data');
   });
+
+  it('sets orgId on context via c.set before calling next()', async () => {
+    vi.mocked(getAuth).mockReturnValue({ orgId: 'org_context_test' } as ReturnType<typeof getAuth>)
+    // Build a special app that reads c.get('orgId') from a downstream handler
+    const app = new Hono()
+    app.use('*', tenantGuard())
+    app.get('/', (c) => {
+      const orgId = c.get('orgId' as never) as string | undefined
+      return c.json({ orgId })
+    })
+    const res = await app.request('/')
+    expect(res.status).toBe(200)
+    const body = await res.json() as { orgId: string }
+    expect(body.orgId).toBe('org_context_test')
+  });
 });
