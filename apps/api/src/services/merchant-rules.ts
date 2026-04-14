@@ -16,7 +16,7 @@ function validateRegex(matchType: string, pattern: string): void {
   try {
     new RegExp(pattern)
   } catch {
-    throw new DomainError(400, 'Invalid regular expression.')
+    throw new DomainError(400, 'Invalid regular expression.', 'INVALID_REGEX')
   }
 }
 

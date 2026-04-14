@@ -77,14 +77,11 @@ app.route('/', merchantRulesRouter);
 // onError mirrors production handler — thin routes no longer catch DomainError inline
 app.onError((err, c) => {
   if (err instanceof NotFoundError) {
-    return c.json({ error: { code: 'NOT_FOUND', message: err.message } }, 404);
+    return c.json({ error: { code: err.code ?? 'NOT_FOUND', message: err.message } }, 404);
   }
   if (err instanceof DomainError) {
-    // Map known merchant-rule domain errors to their response codes
-    const code =
-      err.message === 'Invalid regular expression.' ? 'INVALID_REGEX' : 'DOMAIN_ERROR';
     return c.json(
-      { error: { code, message: err.message } },
+      { error: { code: err.code ?? 'DOMAIN_ERROR', message: err.message } },
       err.statusCode as StatusCode
     );
   }
