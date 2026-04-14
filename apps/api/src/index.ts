@@ -11,8 +11,8 @@ import { categoriesRouter } from './routes/categories';
 import { tagsRouter } from './routes/tags';
 import { merchantRulesRouter } from './routes/merchant-rules';
 import { transactionsRouter } from './routes/transactions';
-import type { AppEnv } from './types';
 import { DomainError, NotFoundError } from './lib/errors';
+import type { AppEnv } from './types';
 
 const app = new Hono<AppEnv>();
 
@@ -71,6 +71,9 @@ app.route('/api/categories', categoriesRouter);
 app.route('/api/tags', tagsRouter);
 app.route('/api/merchant-rules', merchantRulesRouter);
 app.route('/api/transactions', transactionsRouter);
+
+// Unmatched routes — returns JSON shape consistent with onError handler
+app.notFound((c) => c.json({ error: { code: 'NOT_FOUND', message: 'Not found' } }, 404));
 
 // Centralized error handler (D-04) — registered AFTER routes, BEFORE serve()
 // NotFoundError → 404 NOT_FOUND
