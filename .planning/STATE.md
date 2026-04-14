@@ -105,6 +105,13 @@ Begin Phase 03.2 (Transaction API)
 - Phase 03.3.2 inserted after Phase 03.3.1: implement Text typography component in packages/ui (URGENT)
 - Phase 03.3.3 inserted after Phase 03.3.2: UI primitive refactor sweep across apps/web (URGENT)
 
+### Pending Todos
+
+| # | Title | Area |
+|---|-------|------|
+| 1 | Implement <Text> typography component in packages/ui | general |
+| 2 | Tag combobox Enter key should create tag without explicit click | ui |
+
 ## Blockers / Open Items
 
 - TFSA 2026 annual limit — verify against CRA before Phase 6
