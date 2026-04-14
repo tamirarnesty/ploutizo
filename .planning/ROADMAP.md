@@ -298,10 +298,10 @@ Plans:
 
 **Depends on:** Phase 03.3
 
-**Plans:** 7 plans
+**Plans:** 1/7 plans executed
 
 Plans:
-- [ ] 03.3.1-01-PLAN.md — TDD scaffold: validator, errors, webhookAuth, tenantGuard test stubs
+- [x] 03.3.1-01-PLAN.md — TDD scaffold: validator, errors, webhookAuth, tenantGuard test stubs
 - [ ] 03.3.1-02-PLAN.md — Infrastructure: AppEnv types.ts, appValidator factory, DomainError/NotFoundError, install @hono/zod-validator
 - [ ] 03.3.1-03-PLAN.md — Queries layer: lib/queries/ files for accounts, categories, tags, merchant-rules, households
 - [ ] 03.3.1-04-PLAN.md — Services layer: services/ files for accounts, categories, tags, merchant-rules, households
