@@ -348,6 +348,24 @@ describe('GET /api/transactions', () => {
     const callArgs = vi.mocked(listTransactions).mock.calls[0]?.[0];
     expect(callArgs?.sort).toBe('account');
   });
+
+  it('TXN-LIST-DESC-01: GET /?description=coffee — passes description param to listTransactions', async () => {
+    // D-18: description filter passed through to service layer for ILIKE matching
+    vi.mocked(listTransactions).mockClear();
+    const res = await app.request('/?description=coffee');
+    expect(res.status).toBe(200);
+    const callArgs = vi.mocked(listTransactions).mock.calls[0]?.[0] as ListQueryParams | undefined;
+    expect(callArgs?.description).toBe('coffee');
+  });
+
+  it('TXN-LIST-DESC-02: GET / without description param — description is undefined in params', async () => {
+    // When absent, listTransactions should not receive a description filter
+    vi.mocked(listTransactions).mockClear();
+    const res = await app.request('/');
+    expect(res.status).toBe(200);
+    const callArgs = vi.mocked(listTransactions).mock.calls[0]?.[0] as ListQueryParams | undefined;
+    expect(callArgs?.description).toBeUndefined();
+  });
 });
 
 describe('GET /api/transactions/:id', () => {
@@ -403,6 +421,60 @@ describe('PATCH /api/transactions/:id', () => {
     expect(res.status).toBe(404);
     const body = (await res.json()) as { error: { code: string } };
     expect(body.error.code).toBe('NOT_FOUND');
+  });
+});
+
+describe('PATCH /api/transactions/:id — discriminated union enforcement (D-08)', () => {
+  it('TXN-PATCH-03: income type without incomeType → 400 VALIDATION_ERROR', async () => {
+    // D-08/T-03.4-03: createTransactionSchema enforces incomeType required for income type
+    const res = await app.request('/txn_1', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'income',
+        accountId: VALID_ACCOUNT_ID,
+        amount: 5000,
+        date: '2026-01-15',
+        // incomeType intentionally omitted — should fail discriminated union validation
+      }),
+    });
+    expect(res.status).toBe(400);
+    const body = await res.json() as { error: { code: string } };
+    expect(body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('TXN-PATCH-04: income type with full required fields → 200', async () => {
+    // D-08: valid income payload passes discriminated union validation
+    const res = await app.request('/txn_1', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'income',
+        incomeType: 'direct_deposit',
+        accountId: VALID_ACCOUNT_ID,
+        amount: 5000,
+        date: '2026-01-15',
+      }),
+    });
+    expect(res.status).toBe(200);
+  });
+
+  it('TXN-PATCH-05: transfer without toAccountId → 400 VALIDATION_ERROR', async () => {
+    // D-08: createTransactionSchema enforces toAccountId required for transfer type
+    const res = await app.request('/txn_1', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'transfer',
+        accountId: VALID_ACCOUNT_ID,
+        amount: 5000,
+        date: '2026-01-15',
+        // toAccountId intentionally omitted
+      }),
+    });
+    expect(res.status).toBe(400);
+    const body = await res.json() as { error: { code: string } };
+    expect(body.error.code).toBe('VALIDATION_ERROR');
   });
 });
 
