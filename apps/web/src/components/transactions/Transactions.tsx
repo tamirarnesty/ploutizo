@@ -3,6 +3,7 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { ListFilterIcon } from 'lucide-react'
 import { Button } from '@ploutizo/ui/components/button'
 import { Filters } from '@ploutizo/ui/components/reui/filters'
+import { Text } from '@ploutizo/ui/components/text'
 import { TransactionsTable } from './TransactionsTable'
 import { buildFilterFields } from './TransactionFilterFields'
 import type { Filter } from '@ploutizo/ui/components/reui/filters'
@@ -220,7 +221,7 @@ export const Transactions = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="min-w-0 truncate font-heading text-xl font-semibold">Transactions</h1>
+        <Text as="h1" variant="h3" className="min-w-0 truncate">Transactions</Text>
         {/* Disabled until create transaction flow is built */}
         <Button
           type="button"
