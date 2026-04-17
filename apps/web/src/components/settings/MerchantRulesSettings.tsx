@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Sortable } from "@ploutizo/ui/components/reui/sortable"
 import { Button } from "@ploutizo/ui/components/button"
 import { Skeleton } from "@ploutizo/ui/components/skeleton"
@@ -20,6 +20,14 @@ export const MerchantRulesSettings = () => {
     false
   )
   const [localRules, setLocalRules] = useState<MerchantRule[]>([])
+  const initialized = useRef(false)
+
+  useEffect(() => {
+    if (!initialized.current && !isLoading && rules.length > 0) {
+      initialized.current = true
+      setLocalRules(rules)
+    }
+  }, [rules, isLoading])
 
   const displayRules = localRules.length > 0 ? localRules : rules
 
