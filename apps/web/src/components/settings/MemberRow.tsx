@@ -6,6 +6,7 @@ import {
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
+  AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@ploutizo/ui/components/alert-dialog"
@@ -43,12 +44,14 @@ export const MemberRow = ({ member, isCurrentUser, onRemove }: MemberRowProps) =
             <Trash2 className="size-4" />
           </AlertDialogTrigger>
           <AlertDialogContent className="w-[calc(100%-2rem)] max-w-md">
-            <AlertDialogTitle>
-              Remove {member.firstName ?? member.displayName}?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Remove {member.displayName} from this household? They will lose access immediately.
-            </AlertDialogDescription>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Remove {member.firstName ?? member.displayName}?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Remove {member.displayName} from this household? They will lose access immediately.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Keep member</AlertDialogCancel>
               <AlertDialogAction
