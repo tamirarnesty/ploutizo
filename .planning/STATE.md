@@ -42,7 +42,7 @@ Plan/execute Phase 03.2 (Transaction API) — or Phase 03.3 (Transaction List UI
 | 03.1 | Transaction Schema & Migrations | complete |
 | 03.2 | Transaction API | pending |
 | 03.3 | Transaction List UI | pending |
-| 03.4 | Transaction Forms UI | pending |
+| 03.4 | Transaction Forms UI | ready to execute (5 plans) |
 | 04.1 | Settlement API | pending |
 | 04.2 | Settlement UI | pending |
 | 04.3 | Budgets API | pending |
