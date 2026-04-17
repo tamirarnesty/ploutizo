@@ -261,9 +261,9 @@ const AccountFormInner = ({
               <Field>
                 <FieldLabel htmlFor="account-institution">
                   Institution{" "}
-                  <span className="font-normal text-muted-foreground">
+                  <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
                     (optional)
-                  </span>
+                  </Text>
                 </FieldLabel>
                 <Input
                   id="account-institution"
@@ -284,9 +284,9 @@ const AccountFormInner = ({
               <Field>
                 <FieldLabel htmlFor="account-last-four">
                   Last 4 digits{" "}
-                  <span className="font-normal text-muted-foreground">
+                  <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
                     (optional)
-                  </span>
+                  </Text>
                 </FieldLabel>
                 <Input
                   id="account-last-four"

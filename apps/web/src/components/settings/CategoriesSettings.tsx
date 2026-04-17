@@ -133,11 +133,11 @@ export const CategoriesSettings = () => {
                     >
                       <GripVertical size={16} />
                     </SortableItemHandle>
-                    <span className="text-muted-foreground">
+                    <div className="text-muted-foreground">
                       {renderLucideIcon(cat.icon, 16)}
-                    </span>
+                    </div>
                     {cat.colour ? (
-                      <span
+                      <div
                         className={`size-3 rounded-full bg-${cat.colour} shrink-0`}
                       />
                     ) : null}

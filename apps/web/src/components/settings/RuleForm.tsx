@@ -161,7 +161,7 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
             <Field>
               <FieldLabel>
                 Rename to{" "}
-                <span className="text-muted-foreground">(optional)</span>
+                <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">(optional)</Text>
               </FieldLabel>
               <Input
                 autoComplete="off"
@@ -179,7 +179,7 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
             <Field>
               <FieldLabel>
                 Category{" "}
-                <span className="text-muted-foreground">(optional)</span>
+                <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">(optional)</Text>
               </FieldLabel>
               <Select
                 value={field.state.value ?? ""}
@@ -191,9 +191,9 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
                       v ? (
                         categories.find((c) => c.id === v)?.name ?? v
                       ) : (
-                        <span className="text-muted-foreground">
+                        <Text as="span" variant="body-sm" className="text-muted-foreground">
                           No category
-                        </span>
+                        </Text>
                       )
                     }
                   </SelectValue>

@@ -107,7 +107,7 @@ export function buildColumns(
       cell: ({ row }) => (
         <div className="min-w-0">
           <Text as="span" variant="body-sm" className="min-w-0 truncate font-semibold">
-            {row.original.description ?? row.original.merchant ?? '\u2014'}
+            {row.original.description ?? row.original.merchant ?? '—'}
           </Text>
         </div>
       ),
@@ -133,7 +133,7 @@ export function buildColumns(
             <Text as="span" variant="body-sm" className="min-w-0 truncate text-muted-foreground">{categoryName}</Text>
           </div>
         ) : (
-          <span className="text-muted-foreground">{'\u2014'}</span>
+          <Text as="span" variant="caption">—</Text>
         )
       },
     },
@@ -150,7 +150,7 @@ export function buildColumns(
       },
       cell: ({ row }) => (
         <Text as="span" variant="body-sm" className="text-muted-foreground">
-          {row.original.accountName ?? '\u2014'}
+          {row.original.accountName ?? '—'}
         </Text>
       ),
     },
@@ -205,7 +205,7 @@ export function buildColumns(
       cell: ({ row }) => {
         const tags = row.original.tags
         if (tags.length === 0) {
-          return <span className="text-muted-foreground">{'\u2014'}</span>
+          return <Text as="span" variant="caption">—</Text>
         }
         const visible = tags.slice(0, 2)
         const overflow = tags.length - 2
