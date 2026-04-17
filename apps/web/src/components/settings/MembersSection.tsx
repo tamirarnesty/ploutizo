@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useUser } from '@clerk/tanstack-react-start';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
+import { Text } from '@ploutizo/ui/components/text';
 import { InviteMemberForm } from './InviteMemberForm';
 import { MemberRow } from './MemberRow';
 import { useGetOrgMembers, useRemoveMember } from '@/lib/data-access/org';
@@ -13,7 +14,7 @@ export const MembersSection = () => {
 
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="font-heading text-xl font-semibold">Members</h2>
+      <Text as="h2" variant="h3">Members</Text>
 
       {isLoading ? (
         <div className="space-y-2">

@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Sortable } from "@ploutizo/ui/components/reui/sortable"
 import { Button } from "@ploutizo/ui/components/button"
 import { Skeleton } from "@ploutizo/ui/components/skeleton"
+import { Text } from "@ploutizo/ui/components/text"
 import { RuleDialog } from "./RuleDialog"
 import { MerchantRuleRow } from "./MerchantRuleRow"
 import type { MerchantRule } from "@/lib/data-access/merchant-rules"
@@ -30,7 +31,7 @@ export const MerchantRulesSettings = () => {
   return (
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="font-heading text-xl font-semibold">Merchant Rules</h1>
+        <Text as="h1" variant="h3">Merchant Rules</Text>
         <Button type="button" onClick={() => setDialogRule(null)}>
           Add rule
         </Button>

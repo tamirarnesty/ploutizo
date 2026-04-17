@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Skeleton } from "@ploutizo/ui/components/skeleton"
+import { Text } from "@ploutizo/ui/components/text"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -88,14 +89,12 @@ export const CategoriesSettings = () => {
 
   return (
     <div className="max-w-2xl space-y-8">
-      <h1 className="font-heading text-xl font-semibold">
-        Categories & Tags
-      </h1>
+      <Text as="h1" variant="h3">Categories &amp; Tags</Text>
 
       {/* Categories section */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Categories</h2>
+          <Text as="h2" variant="label" className="font-semibold">Categories</Text>
           <Button
             type="button"
             size="sm"
@@ -197,7 +196,7 @@ export const CategoriesSettings = () => {
       {/* Tags section */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Tags</h2>
+          <Text as="h2" variant="label" className="font-semibold">Tags</Text>
         </div>
 
         {tagLoading ? (

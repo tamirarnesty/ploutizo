@@ -1,5 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@ploutizo/ui/components/avatar"
 import { Skeleton } from "@ploutizo/ui/components/skeleton"
+import { Text } from "@ploutizo/ui/components/text"
 import { useGetHouseholdOverview } from "@/lib/data-access/household"
 
 export const HouseholdOverviewSection = () => {
@@ -7,7 +8,7 @@ export const HouseholdOverviewSection = () => {
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="font-heading text-xl font-semibold">Household</h2>
+      <Text as="h2" variant="h3">Household</Text>
       {isLoading ? (
         <Skeleton className="h-10 w-48" />
       ) : (
