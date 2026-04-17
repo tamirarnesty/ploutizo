@@ -64,7 +64,7 @@ import { Input } from "@ploutizo/ui/components/input"
 import { Text } from "@ploutizo/ui/components/text"
 import type { LucideIcon } from "lucide-react"
 
-const ICON_MAP: Record<string, LucideIcon> = {
+export const ICON_MAP: Record<string, LucideIcon> = {
   ShoppingCart,
   UtensilsCrossed,
   Car,

@@ -1,4 +1,3 @@
-import * as LucideIcons from 'lucide-react'
 import { MoreHorizontal, Tag } from 'lucide-react'
 import { DataGridColumnHeader } from '@ploutizo/ui/components/reui/data-grid/data-grid-column-header'
 import { Avatar, AvatarFallback, AvatarGroup, AvatarGroupCount } from '@ploutizo/ui/components/avatar'
@@ -15,15 +14,14 @@ import { Text } from '@ploutizo/ui/components/text'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@ploutizo/ui/components/tooltip'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { TransactionRow } from '@/lib/data-access/transactions'
+import { ICON_MAP } from '@/components/categories/LucideIconPicker'
 import { formatCurrency } from '@/lib/formatCurrency'
 
 // Resolves a Lucide icon by name — defined outside useMemo to be stable
 export const DynamicLucideIcon = ({ name, size = 16 }: { name: string | null; size?: number }) => {
   if (!name) return <Tag size={size} />
-  const Icon = (LucideIcons as Record<string, unknown>)[name] as
-    | React.ComponentType<{ size?: number }>
-    | undefined
-  return Icon ? <Icon size={size} /> : <Tag size={size} />
+  const Icon = ICON_MAP[name]
+  return Icon ? <Icon size={size} aria-hidden="true" /> : <Tag size={size} />
 }
 
 // Extracts up to 2 initials from a display name
