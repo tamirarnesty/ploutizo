@@ -1,3 +1,5 @@
+import { SwatchButton } from "./SwatchButton"
+
 const SWATCHES = [
   { name: "Slate", value: "slate-500", tw: "bg-slate-500" },
   { name: "Red", value: "red-500", tw: "bg-red-500" },
@@ -26,19 +28,12 @@ export const ColourPicker = ({ value, onChange }: ColourPickerProps) => {
       aria-label="Category colour"
     >
       {SWATCHES.map(({ name, value: swatchValue, tw }) => (
-        <button
+        <SwatchButton
           key={swatchValue}
-          type="button"
-          role="radio"
-          aria-checked={value === swatchValue}
-          aria-label={name}
+          colour={tw}
+          name={name}
+          checked={value === swatchValue}
           onClick={() => onChange(swatchValue)}
-          className={[
-            `size-6 rounded ${tw} transition-all`,
-            value === swatchValue
-              ? "ring-2 ring-primary ring-offset-2"
-              : "hover:scale-110",
-          ].join(" ")}
         />
       ))}
     </div>
