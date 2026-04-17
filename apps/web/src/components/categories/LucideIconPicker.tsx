@@ -61,6 +61,7 @@ import {
 } from "@ploutizo/ui/components/popover"
 import { Button } from "@ploutizo/ui/components/button"
 import { Input } from "@ploutizo/ui/components/input"
+import { Text } from "@ploutizo/ui/components/text"
 import type { LucideIcon } from "lucide-react"
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -171,9 +172,9 @@ export const LucideIconPicker = ({
           placeholder="Search icons…"
         />
         {filtered.length === 0 ? (
-          <p className="py-2 text-center text-xs text-muted-foreground">
+          <Text variant="caption" className="py-2 text-center">
             No icons match "{search}".
-          </p>
+          </Text>
         ) : (
           <div
             className="grid max-h-48 grid-cols-6 gap-1 overflow-y-auto"

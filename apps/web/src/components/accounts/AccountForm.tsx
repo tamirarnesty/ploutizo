@@ -39,6 +39,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@ploutizo/ui/components/field"
+import { Text } from "@ploutizo/ui/components/text"
 import { AccountFormSchema } from "@ploutizo/validators"
 import { useAppForm } from "@ploutizo/ui/components/form"
 import type { Account, AccountMember, OrgMember } from "@ploutizo/types"
@@ -317,9 +318,9 @@ const AccountFormInner = ({
                     <Field>
                       <FieldLabel>Co-owners</FieldLabel>
                       {members.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
+                        <Text variant="body-sm" className="text-muted-foreground">
                           No other members in this household yet.
-                        </p>
+                        </Text>
                       ) : (
                         <div className="flex flex-col gap-2">
                           {members.map((member) => (
@@ -386,10 +387,10 @@ const AccountFormInner = ({
                       >
                         Each person pays their own
                       </Label>
-                      <p className="text-xs text-muted-foreground">
+                      <Text variant="caption">
                         Excludes this account from shared settlement
                         calculations.
-                      </p>
+                      </Text>
                     </div>
                   </div>
                 </CollapsibleContent>
@@ -405,9 +406,9 @@ const AccountFormInner = ({
           >
             {(submitError) =>
               submitError ? (
-                <p className="text-sm text-destructive">
+                <Text variant="body-sm" className="text-destructive">
                   {String(submitError)}
-                </p>
+                </Text>
               ) : null
             }
           </form.Subscribe>

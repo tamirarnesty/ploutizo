@@ -1,4 +1,5 @@
 import { Button } from '@ploutizo/ui/components/button'
+import { Text } from '@ploutizo/ui/components/text'
 
 interface TransactionsTableEmptyFilteredProps {
   onClearFilters: () => void
@@ -6,7 +7,7 @@ interface TransactionsTableEmptyFilteredProps {
 
 export const TransactionsTableEmptyFiltered = ({ onClearFilters }: TransactionsTableEmptyFilteredProps) => (
   <div className="flex flex-col items-center gap-3 rounded-lg border border-border py-16 text-center">
-    <p className="text-sm font-medium">No transactions match your filters</p>
+    <Text variant="body-sm" className="font-medium">No transactions match your filters</Text>
     <Button variant="link" size="sm" onClick={onClearFilters}>
       Clear filters
     </Button>

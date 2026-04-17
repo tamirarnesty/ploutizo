@@ -7,9 +7,9 @@ export const Onboarding = () => {
       <div className="mx-auto w-full max-w-md space-y-4 px-6">
         <div className="space-y-2">
           <Text as="h1" variant="h1">Create your household</Text>
-          <p className="text-sm text-muted-foreground">
+          <Text variant="body-sm" className="text-muted-foreground">
             A household groups your accounts and members together.
-          </p>
+          </Text>
         </div>
         <CreateOrganization afterCreateOrganizationUrl="/dashboard" />
       </div>
