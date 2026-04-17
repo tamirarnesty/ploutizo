@@ -58,6 +58,7 @@ export interface TransactionQueryParams {
   categoryId?: string
   assigneeId?: string
   tagIds?: string // comma-separated UUIDs
+  description?: string
 }
 
 export interface TransactionListResponse {
@@ -82,6 +83,7 @@ export const fetchTransactions = async (
   if (params.categoryId) qs.set('categoryId', params.categoryId)
   if (params.assigneeId) qs.set('assigneeId', params.assigneeId)
   if (params.tagIds) qs.set('tagIds', params.tagIds) // comma-separated; API splits on comma
+  if (params.description) qs.set('description', params.description)
   return apiFetch<TransactionListResponse>(`/api/transactions?${qs.toString()}`)
 }
 
