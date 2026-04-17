@@ -158,10 +158,10 @@ export const LucideIconPicker = ({
         {SelectedIcon ? (
           <SelectedIcon size={16} aria-hidden="true" />
         ) : (
-          <span className="text-muted-foreground">Select icon</span>
+          <Text as="span" variant="body-sm" className="text-muted-foreground">Select icon</Text>
         )}
         {value && (
-          <span className="text-xs text-muted-foreground">{value}</span>
+          <Text as="span" variant="caption">{value}</Text>
         )}
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72 space-y-2 p-3">

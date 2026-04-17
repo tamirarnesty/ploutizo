@@ -53,7 +53,7 @@ export const AccountsTable = ({
           skeleton: <Skeleton className="h-4 w-32" />,
         },
         cell: ({ row }) => (
-          <span className="text-sm font-semibold">{row.original.name}</span>
+          <Text as="span" variant="body-sm" className="font-semibold">{row.original.name}</Text>
         ),
       },
       {
@@ -66,9 +66,9 @@ export const AccountsTable = ({
           skeleton: <Skeleton className="h-4 w-24" />,
         },
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">
+          <Text as="span" variant="body-sm" className="text-muted-foreground">
             {ACCOUNT_TYPE_LABELS[row.original.type] ?? row.original.type}
-          </span>
+          </Text>
         ),
       },
       {
@@ -81,9 +81,9 @@ export const AccountsTable = ({
           skeleton: <Skeleton className="h-4 w-28" />,
         },
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">
+          <Text as="span" variant="body-sm" className="text-muted-foreground">
             {row.original.institution ?? '—'}
-          </span>
+          </Text>
         ),
       },
       {
@@ -96,9 +96,9 @@ export const AccountsTable = ({
           skeleton: <Skeleton className="h-4 w-12" />,
         },
         cell: ({ row }) => (
-          <span className="font-mono text-sm text-muted-foreground">
+          <Text as="span" variant="body-sm" className="font-mono text-muted-foreground">
             {row.original.lastFour ?? '—'}
-          </span>
+          </Text>
         ),
       },
       {
@@ -110,7 +110,7 @@ export const AccountsTable = ({
           cellClassName: 'min-w-[90px]',
           skeleton: <Skeleton className="h-4 w-20" />,
         },
-        cell: () => <span className="text-sm text-muted-foreground">—</span>,
+        cell: () => <Text as="span" variant="body-sm" className="text-muted-foreground">—</Text>,
       },
       {
         accessorKey: 'archivedAt',

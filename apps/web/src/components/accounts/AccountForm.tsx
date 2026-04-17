@@ -449,7 +449,7 @@ const AccountFormInner = ({
             </AlertDialogContent>
           </AlertDialog>
         ) : (
-          <span />
+          <div />
         )}
         <div className="flex gap-2">
           <Button variant="outline" type="button" onClick={onClose}>
