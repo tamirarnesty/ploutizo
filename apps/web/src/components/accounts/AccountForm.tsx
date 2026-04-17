@@ -406,9 +406,7 @@ const AccountFormInner = ({
           >
             {(submitError) =>
               submitError ? (
-                <Text variant="body-sm" className="text-destructive">
-                  {String(submitError)}
-                </Text>
+                <Text variant="error">{String(submitError)}</Text>
               ) : null
             }
           </form.Subscribe>
