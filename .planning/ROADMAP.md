@@ -365,10 +365,14 @@ single form that conditionally renders the correct fields per type.
 - Tag picker with inline create
 - Transaction edit: any field editable post-creation; original imported values preserved and visible in edit view
 
-**Plans:** 0 plans
+**Plans:** 5 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 3.4 to break down)
+- [ ] 03.4-01-PLAN.md — Foundation: vitest + lrmSplit pure function + API patches (PATCH schema swap, GET description filter)
+- [ ] 03.4-02-PLAN.md — Data-access layer: TransactionFormValues/AssigneeFormRow types + 4 new hooks
+- [ ] 03.4-03-PLAN.md — SplitSection tree: AssigneeRow + SplitSection (% | $ toggle, LRM, add-assignee, totals)
+- [ ] 03.4-04-PLAN.md — Form layer: useTransactionForm hook + TransactionTypeFields (6 types + RefundLinker) + TransactionForm + TransactionSheet (560px)
+- [ ] 03.4-05-PLAN.md — Table wiring: buildColumns onEdit param + Transactions.tsx Sheet state + human verification checkpoint
 
 **Requirements covered:**
 - §4 Transactions (create/edit forms)
