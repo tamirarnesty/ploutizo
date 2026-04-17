@@ -15,13 +15,18 @@ const variantClasses: Record<TextVariant, string> = {
   label: "text-sm font-medium leading-none",
 }
 
-type TextProps<T extends TextAs = "p"> = {
-  as?: T
-  variant?: TextVariant
-  className?: string
-  ref?: React.Ref<HTMLElement>
-  children?: React.ReactNode
-} & Omit<React.ComponentPropsWithoutRef<T>, "as" | "variant" | "className" | "ref" | "children">
+// Distributive conditional ensures ComponentPropsWithoutRef<T> resolves per-element
+// (not collapsed to an intersection of all union members), preserving element-specific
+// props like htmlFor on as="label".
+type TextProps<T extends TextAs = "p"> = T extends TextAs
+  ? {
+      as?: T
+      variant?: TextVariant
+      className?: string
+      ref?: React.Ref<React.ComponentRef<T>>
+      children?: React.ReactNode
+    } & Omit<React.ComponentPropsWithoutRef<T>, "as" | "variant" | "className" | "ref" | "children">
+  : never
 
 function Text<T extends TextAs = "p">({
   as,
