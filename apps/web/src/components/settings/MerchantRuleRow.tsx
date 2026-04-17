@@ -50,11 +50,11 @@ export const MerchantRuleRow = ({
           {MATCH_TYPE_LABELS[rule.matchType]}
         </Text>
         <Text variant="body-sm" className="truncate font-mono">{rule.pattern}</Text>
-        {rule.renameTo && (
+        {rule.renameTo ? (
           <Text variant="caption">
             → {rule.renameTo}
           </Text>
-        )}
+        ) : null}
       </div>
       <Button
         type="button"
