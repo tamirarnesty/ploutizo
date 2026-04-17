@@ -1,5 +1,5 @@
 ---
-status: fixing
+status: resolved
 trigger: "add-transaction-button-always-disabled"
 created: 2026-04-13T00:00:00Z
 updated: 2026-04-13T00:00:00Z

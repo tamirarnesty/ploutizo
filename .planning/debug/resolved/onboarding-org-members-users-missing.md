@@ -77,7 +77,7 @@ fix: |
   7. (Config) User must set CLERK_WEBHOOK_SECRET in apps/api env.
   8. Changed tab active detection to startsWith prefix matching in route.tsx.
 
-verification: tsc --noEmit passes; startsWith matching verified by code inspection
+verification: tsc --noEmit passes; startsWith matching verified by code inspection; CLERK_WEBHOOK_SECRET confirmed set in apps/api env — human verified 2026-04-17
 files_changed:
   - apps/api/src/routes/webhooks.ts
   - apps/web/src/routes/_layout.settings/organization-members.tsx
