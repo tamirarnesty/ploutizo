@@ -3,7 +3,7 @@ import * as React from "react"
 import { cn } from "@ploutizo/ui/lib/utils"
 
 export type TextAs = "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "p" | "span" | "div" | "label"
-export type TextVariant = "h1" | "h2" | "h3" | "body" | "body-sm" | "caption" | "label"
+export type TextVariant = "h1" | "h2" | "h3" | "body" | "body-sm" | "caption" | "label" | "error"
 
 const variantClasses: Record<TextVariant, string> = {
   h1: "font-heading text-3xl font-semibold tracking-tight leading-tight",
@@ -13,6 +13,7 @@ const variantClasses: Record<TextVariant, string> = {
   "body-sm": "text-sm leading-relaxed",
   caption: "text-xs text-muted-foreground leading-normal",
   label: "text-sm font-medium leading-none",
+  error: "text-xs text-destructive leading-normal",
 }
 
 // Distributive conditional ensures ComponentPropsWithoutRef<T> resolves per-element
