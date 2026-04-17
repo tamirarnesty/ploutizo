@@ -18,8 +18,8 @@ import {
 } from '../lib/queries/transactions';
 import type { ListQueryParams } from '../lib/queries/transactions';
 import type {
+  CreateTransactionInput,
   createTransactionSchema,
-  updateTransactionSchema,
 } from '@ploutizo/validators';
 import type { z } from 'zod';
 
@@ -109,11 +109,12 @@ export async function getTransaction(id: string, orgId: string) {
 }
 
 // PATCH: update scalar fields + replace-all assignees/tags in a single DB transaction
+// Accepts createTransactionSchema (discriminated union) — D-08 requires full type enforcement on PATCH.
 // Returns updated row or null (not found / wrong org / already deleted — Pitfall 7)
 export async function updateTransaction(
   id: string,
   orgId: string,
-  data: z.infer<typeof updateTransactionSchema>
+  data: CreateTransactionInput
 ) {
   // D-11: re-validate split sum if assignees are being replaced.
   // When amount is absent, fetch the stored amount to validate against.

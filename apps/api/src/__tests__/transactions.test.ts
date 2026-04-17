@@ -369,11 +369,18 @@ describe('GET /api/transactions/:id', () => {
 });
 
 describe('PATCH /api/transactions/:id', () => {
-  it('TXN-PATCH-01: updates fields; assignees replace-all', async () => {
+  // PATCH now requires createTransactionSchema (discriminated union, D-08) — full payload required
+  it('TXN-PATCH-01: updates fields with full expense payload; assignees replace-all', async () => {
     const res = await app.request('/txn_1', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description: 'Updated' }),
+      body: JSON.stringify({
+        type: 'expense',
+        accountId: VALID_ACCOUNT_ID,
+        amount: 5000,
+        date: '2026-01-15',
+        description: 'Updated',
+      }),
     });
     expect(res.status).toBe(200);
     const body = (await res.json()) as { data: { description: string } };
@@ -385,7 +392,13 @@ describe('PATCH /api/transactions/:id', () => {
     const res = await app.request('/txn_missing', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description: 'X' }),
+      body: JSON.stringify({
+        type: 'expense',
+        accountId: VALID_ACCOUNT_ID,
+        amount: 5000,
+        date: '2026-01-15',
+        description: 'X',
+      }),
     });
     expect(res.status).toBe(404);
     const body = (await res.json()) as { error: { code: string } };
