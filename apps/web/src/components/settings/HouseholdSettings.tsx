@@ -1,5 +1,6 @@
 import { Label } from "@ploutizo/ui/components/label"
 import { Separator } from "@ploutizo/ui/components/separator"
+import { Text } from "@ploutizo/ui/components/text"
 import { HouseholdSettingsForm } from "./HouseholdSettingsForm"
 import { HouseholdOverviewSection } from "./HouseholdOverviewSection"
 import { MembersSection } from "./MembersSection"
@@ -23,9 +24,9 @@ export const HouseholdSettings = () => (
         <Label htmlFor="settlement-threshold" className="text-sm font-medium">
           Settlement reminder threshold
         </Label>
-        <p className="text-xs text-muted-foreground">
+        <Text variant="caption">
           You'll be reminded when the shared balance exceeds this amount.
-        </p>
+        </Text>
       </div>
       <HouseholdSettingsForm />
     </section>

@@ -23,9 +23,9 @@ export const MembersSection = () => {
           ))}
         </div>
       ) : members.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
+        <Text variant="body-sm" className="text-muted-foreground">
           This household has no other members.
-        </p>
+        </Text>
       ) : (
         <ul className="space-y-2">
           {members.map((member) => (

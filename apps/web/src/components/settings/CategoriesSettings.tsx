@@ -111,12 +111,12 @@ export const CategoriesSettings = () => {
             ))}
           </div>
         ) : displayCategories.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No categories found.</p>
+          <Text variant="body-sm" className="text-muted-foreground">No categories found.</Text>
         ) : (
           <>
-            <p className="text-xs text-muted-foreground">
+            <Text variant="caption">
               Drag to reorder categories.
-            </p>
+            </Text>
             <Sortable
               value={displayCategories}
               onValueChange={handleReorder}

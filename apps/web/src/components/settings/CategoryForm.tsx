@@ -9,6 +9,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@ploutizo/ui/components/field"
+import { Text } from "@ploutizo/ui/components/text"
 import type { CategoryForm as CategoryFormType } from "@ploutizo/validators"
 import type { Category } from "@/lib/data-access/categories"
 import { useCreateCategory, useUpdateCategory } from "@/lib/data-access/categories"
@@ -117,7 +118,7 @@ export const CategoryForm = ({ category, onClose }: CategoryFormProps) => {
       <form.Subscribe selector={(s) => s.errorMap.onSubmit}>
         {(err) =>
           err ? (
-            <p className="text-xs text-destructive">{String(err)}</p>
+            <Text variant="error">{String(err)}</Text>
           ) : null
         }
       </form.Subscribe>

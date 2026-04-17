@@ -16,6 +16,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@ploutizo/ui/components/field"
+import { Text } from "@ploutizo/ui/components/text"
 import type { RuleForm as RuleFormType } from "@ploutizo/validators"
 import type { MerchantRule } from "@/lib/data-access/merchant-rules"
 import { useCreateMerchantRule, useUpdateMerchantRule } from "@/lib/data-access/merchant-rules"
@@ -217,7 +218,7 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
         {(err) =>
           // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           err ? (
-            <p className="text-xs text-destructive">{String(err)}</p>
+            <Text variant="error">{String(err)}</Text>
           ) : null
         }
       </form.Subscribe>

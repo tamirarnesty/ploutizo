@@ -44,16 +44,16 @@ export const MerchantRulesSettings = () => {
           ))}
         </div>
       ) : displayRules.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No merchant rules</p>
+        <Text variant="body-sm" className="text-muted-foreground">No merchant rules</Text>
       ) : (
         <>
           <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground">
+            <Text variant="caption" className="font-medium">
               Priority order
-            </p>
-            <p className="text-xs text-muted-foreground">
+            </Text>
+            <Text variant="caption">
               Rules are applied in order. First match wins. Drag to reorder.
-            </p>
+            </Text>
           </div>
           <Sortable
             value={displayRules}
