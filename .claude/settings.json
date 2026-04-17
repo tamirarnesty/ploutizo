@@ -7,7 +7,9 @@
       "Read(**/*.pem)",
       "Read(**/*.key)"
     ],
-    "ask": ["Read(.env.*)"],
+    "ask": [
+      "Read(.env.*)"
+    ],
     "allow": [
       "Read(.env.example)",
       "Bash(date:*)",
