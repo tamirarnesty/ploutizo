@@ -141,9 +141,9 @@ export const CategoriesSettings = () => {
                         className={`size-3 rounded-full bg-${cat.colour} shrink-0`}
                       />
                     ) : null}
-                    <span className="min-w-0 flex-1 truncate text-sm">
+                    <Text as="span" variant="body-sm" className="min-w-0 flex-1 truncate">
                       {cat.name}
-                    </span>
+                    </Text>
                     <Button
                       type="button"
                       variant="ghost"

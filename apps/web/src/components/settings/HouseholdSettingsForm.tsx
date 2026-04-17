@@ -37,7 +37,7 @@ export const HouseholdSettingsForm = () => {
   return (
     <form onSubmit={(e) => { e.preventDefault(); form.handleSubmit() }}>
       <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">$</span>
+        <Text as="span" variant="body-sm" className="text-muted-foreground">$</Text>
         <form.AppField
           name="thresholdDollars"
           validators={{ onChange: ({ value }: { value: string }) => {

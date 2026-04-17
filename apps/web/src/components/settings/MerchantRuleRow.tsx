@@ -46,9 +46,9 @@ export const MerchantRuleRow = ({
         <GripVertical size={16} />
       </SortableItemHandle>
       <div className="min-w-0 flex-1">
-        <span className="text-xs text-muted-foreground">
+        <Text as="span" variant="caption">
           {MATCH_TYPE_LABELS[rule.matchType]}
-        </span>
+        </Text>
         <Text variant="body-sm" className="truncate font-mono">{rule.pattern}</Text>
         {rule.renameTo && (
           <Text variant="caption">

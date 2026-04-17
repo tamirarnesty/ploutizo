@@ -19,7 +19,7 @@ export const HouseholdOverviewSection = () => {
               {overview?.name?.charAt(0).toUpperCase() ?? "H"}
             </AvatarFallback>
           </Avatar>
-          <span className="text-sm font-semibold">{overview?.name ?? "—"}</span>
+          <Text as="span" variant="body-sm" className="font-semibold">{overview?.name ?? "—"}</Text>
         </div>
       )}
     </section>

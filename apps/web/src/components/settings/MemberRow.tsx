@@ -11,6 +11,7 @@ import {
 } from "@ploutizo/ui/components/alert-dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@ploutizo/ui/components/avatar"
 import { Badge } from "@ploutizo/ui/components/badge"
+import { Text } from "@ploutizo/ui/components/text"
 import type { OrgMember } from "@ploutizo/types"
 
 interface MemberRowProps {
@@ -21,18 +22,18 @@ interface MemberRowProps {
 
 export const MemberRow = ({ member, isCurrentUser, onRemove }: MemberRowProps) => (
   <li className="flex items-center justify-between rounded-md border border-border px-4 py-3 text-sm">
-    <span className="flex min-w-0 items-center gap-2">
+    <div className="flex min-w-0 items-center gap-2">
       <Avatar className="size-8 shrink-0">
         <AvatarImage src={member.imageUrl ?? undefined} />
         <AvatarFallback>
           {(member.firstName ?? member.displayName).charAt(0).toUpperCase()}
         </AvatarFallback>
       </Avatar>
-      <span className="min-w-0 truncate font-semibold">{member.displayName}</span>
+      <Text as="span" variant="body-sm" className="min-w-0 truncate font-semibold">{member.displayName}</Text>
       {isCurrentUser ? <Badge variant="secondary">You</Badge> : null}
-    </span>
-    <span className="ml-4 flex shrink-0 items-center gap-2">
-      <span className="text-xs capitalize text-muted-foreground">{member.role}</span>
+    </div>
+    <div className="ml-4 flex shrink-0 items-center gap-2">
+      <Text as="span" variant="caption" className="capitalize">{member.role}</Text>
       {!isCurrentUser ? (
         <AlertDialog>
           <AlertDialogTrigger
@@ -60,6 +61,6 @@ export const MemberRow = ({ member, isCurrentUser, onRemove }: MemberRowProps) =
           </AlertDialogContent>
         </AlertDialog>
       ) : null}
-    </span>
+    </div>
   </li>
 )
