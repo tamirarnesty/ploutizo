@@ -343,10 +343,13 @@ Plans:
 
 **Depends on:** Phase 03.3.2
 
-**Plans:** 0 plans
+**Plans:** 4 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 03.3.3 to break down)
+- [ ] 03.3.3-01-PLAN.md — Add error variant to text.tsx + create SwatchButton + update ColourPicker (Wave 1 foundation)
+- [ ] 03.3.3-02-PLAN.md — Heading migrations: replace all h1-h6 raw elements with Text across 9 files
+- [ ] 03.3.3-03-PLAN.md — Paragraph migrations: replace all p raw elements with Text across 16 files
+- [ ] 03.3.3-04-PLAN.md — Span migrations: text-content spans to Text as=span, structural spans to div, AppLogo brand mark
 
 ---
 
