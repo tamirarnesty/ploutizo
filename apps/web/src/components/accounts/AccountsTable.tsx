@@ -14,6 +14,7 @@ import { DataGridPagination } from '@ploutizo/ui/components/reui/data-grid/data-
 import { Badge } from '@ploutizo/ui/components/badge';
 import { Button } from '@ploutizo/ui/components/button';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
+import { Text } from '@ploutizo/ui/components/text';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { Account } from '@ploutizo/types';
 
@@ -52,7 +53,7 @@ export const AccountsTable = ({
           skeleton: <Skeleton className="h-4 w-32" />,
         },
         cell: ({ row }) => (
-          <span className="text-sm font-semibold">{row.original.name}</span>
+          <Text as="span" variant="body-sm" className="font-semibold">{row.original.name}</Text>
         ),
       },
       {
@@ -65,9 +66,9 @@ export const AccountsTable = ({
           skeleton: <Skeleton className="h-4 w-24" />,
         },
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">
+          <Text as="span" variant="body-sm" className="text-muted-foreground">
             {ACCOUNT_TYPE_LABELS[row.original.type] ?? row.original.type}
-          </span>
+          </Text>
         ),
       },
       {
@@ -80,9 +81,9 @@ export const AccountsTable = ({
           skeleton: <Skeleton className="h-4 w-28" />,
         },
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">
+          <Text as="span" variant="body-sm" className="text-muted-foreground">
             {row.original.institution ?? '—'}
-          </span>
+          </Text>
         ),
       },
       {
@@ -95,9 +96,9 @@ export const AccountsTable = ({
           skeleton: <Skeleton className="h-4 w-12" />,
         },
         cell: ({ row }) => (
-          <span className="font-mono text-sm text-muted-foreground">
+          <Text as="span" variant="body-sm" className="font-mono text-muted-foreground">
             {row.original.lastFour ?? '—'}
-          </span>
+          </Text>
         ),
       },
       {
@@ -109,7 +110,7 @@ export const AccountsTable = ({
           cellClassName: 'min-w-[90px]',
           skeleton: <Skeleton className="h-4 w-20" />,
         },
-        cell: () => <span className="text-sm text-muted-foreground">—</span>,
+        cell: () => <Text as="span" variant="body-sm" className="text-muted-foreground">—</Text>,
       },
       {
         accessorKey: 'archivedAt',
@@ -146,10 +147,10 @@ export const AccountsTable = ({
   if (!isLoading && accounts.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 rounded-lg border border-border py-16 text-center">
-        <p className="text-sm font-medium">No accounts yet</p>
-        <p className="max-w-xs text-sm text-muted-foreground">
+        <Text variant="body-sm" className="font-medium">No accounts yet</Text>
+        <Text variant="body-sm" className="max-w-xs text-muted-foreground">
           Add your first account to start tracking transactions.
-        </p>
+        </Text>
         <Button type="button" onClick={onAddClick} className="mt-2">
           Add account
         </Button>

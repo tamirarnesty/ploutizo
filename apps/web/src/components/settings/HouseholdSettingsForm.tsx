@@ -3,6 +3,7 @@ import { useAppForm } from "@ploutizo/ui/components/form"
 import { Button } from "@ploutizo/ui/components/button"
 import { Input } from "@ploutizo/ui/components/input"
 import { Spinner } from "@ploutizo/ui/components/spinner"
+import { Text } from "@ploutizo/ui/components/text"
 import type { HouseholdSettingsForm as HouseholdSettingsFormType } from "@ploutizo/validators"
 import { useGetHouseholdSettings, useUpdateHouseholdSettings } from "@/lib/data-access/household"
 
@@ -36,7 +37,7 @@ export const HouseholdSettingsForm = () => {
   return (
     <form onSubmit={(e) => { e.preventDefault(); form.handleSubmit() }}>
       <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">$</span>
+        <Text as="span" variant="body-sm" className="text-muted-foreground">$</Text>
         <form.AppField
           name="thresholdDollars"
           validators={{ onChange: ({ value }: { value: string }) => {
@@ -59,7 +60,7 @@ export const HouseholdSettingsForm = () => {
                 aria-invalid={field.state.meta.errors.length > 0}
               />
               {field.state.meta.errors.length > 0 ? (
-                <p className="text-xs text-destructive">{field.state.meta.errors[0]}</p>
+                <Text variant="error">{field.state.meta.errors[0]}</Text>
               ) : null}
             </>
           )}
@@ -74,7 +75,7 @@ export const HouseholdSettingsForm = () => {
         </form.Subscribe>
       </div>
       <form.Subscribe selector={(s) => s.errorMap.onSubmit}>
-        {(err) => err ? <p className="text-xs text-destructive mt-2">{String(err)}</p> : null}
+        {(err) => err ? <Text variant="error" className="mt-2">{String(err)}</Text> : null}
       </form.Subscribe>
     </form>
   )

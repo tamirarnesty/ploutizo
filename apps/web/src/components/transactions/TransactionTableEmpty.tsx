@@ -1,11 +1,12 @@
 import { Button } from '@ploutizo/ui/components/button'
+import { Text } from '@ploutizo/ui/components/text'
 
 export const TransactionsTableEmpty = () => (
   <div className="flex flex-col items-center gap-3 rounded-lg border border-border py-16 text-center">
-    <p className="text-sm font-medium">No transactions yet</p>
-    <p className="max-w-xs text-sm text-muted-foreground">
+    <Text variant="body-sm" className="font-medium">No transactions yet</Text>
+    <Text variant="body-sm" className="max-w-xs text-muted-foreground">
       Add your first transaction to start tracking your spending.
-    </p>
+    </Text>
     <Button
       type="button"
       disabled

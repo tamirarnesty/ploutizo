@@ -1,4 +1,3 @@
-import * as LucideIcons from 'lucide-react'
 import { MoreHorizontal, Tag } from 'lucide-react'
 import { DataGridColumnHeader } from '@ploutizo/ui/components/reui/data-grid/data-grid-column-header'
 import { Avatar, AvatarFallback, AvatarGroup, AvatarGroupCount } from '@ploutizo/ui/components/avatar'
@@ -11,18 +10,18 @@ import {
   DropdownMenuTrigger,
 } from '@ploutizo/ui/components/dropdown-menu'
 import { Skeleton } from '@ploutizo/ui/components/skeleton'
+import { Text } from '@ploutizo/ui/components/text'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@ploutizo/ui/components/tooltip'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { TransactionRow } from '@/lib/data-access/transactions'
+import { ICON_MAP } from '@/components/categories/LucideIconPicker'
 import { formatCurrency } from '@/lib/formatCurrency'
 
 // Resolves a Lucide icon by name — defined outside useMemo to be stable
 export const DynamicLucideIcon = ({ name, size = 16 }: { name: string | null; size?: number }) => {
   if (!name) return <Tag size={size} />
-  const Icon = (LucideIcons as Record<string, unknown>)[name] as
-    | React.ComponentType<{ size?: number }>
-    | undefined
-  return Icon ? <Icon size={size} /> : <Tag size={size} />
+  const Icon = ICON_MAP[name]
+  return Icon ? <Icon size={size} aria-hidden="true" /> : <Tag size={size} />
 }
 
 // Extracts up to 2 initials from a display name
@@ -61,13 +60,13 @@ export function buildColumns(
         skeleton: <Skeleton className="h-4 w-20 motion-safe:animate-pulse" />,
       },
       cell: ({ row }) => (
-        <span className="text-sm text-muted-foreground">
+        <Text as="span" variant="body-sm" className="text-muted-foreground">
           {new Date(row.original.date + 'T00:00:00').toLocaleDateString('en-CA', {
             month: 'short',
             day: 'numeric',
             year: 'numeric',
           })}
-        </span>
+        </Text>
       ),
     },
     // 2. Type
@@ -107,9 +106,9 @@ export function buildColumns(
       },
       cell: ({ row }) => (
         <div className="min-w-0">
-          <span className="min-w-0 truncate text-sm font-semibold">
-            {row.original.description ?? row.original.merchant ?? '\u2014'}
-          </span>
+          <Text as="span" variant="body-sm" className="min-w-0 truncate font-semibold">
+            {row.original.description ?? row.original.merchant ?? '—'}
+          </Text>
         </div>
       ),
     },
@@ -129,12 +128,12 @@ export function buildColumns(
         const showCategory =
           categoryName && (type === 'expense' || type === 'refund')
         return showCategory ? (
-          <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <div className="flex items-center gap-1.5">
             <DynamicLucideIcon name={categoryIcon} size={16} />
-            <span className="min-w-0 truncate">{categoryName}</span>
-          </span>
+            <Text as="span" variant="body-sm" className="min-w-0 truncate text-muted-foreground">{categoryName}</Text>
+          </div>
         ) : (
-          <span className="text-muted-foreground">{'\u2014'}</span>
+          <Text as="span" variant="caption">—</Text>
         )
       },
     },
@@ -150,9 +149,9 @@ export function buildColumns(
         skeleton: <Skeleton className="h-4 w-24 motion-safe:animate-pulse" />,
       },
       cell: ({ row }) => (
-        <span className="text-sm text-muted-foreground">
-          {row.original.accountName ?? '\u2014'}
-        </span>
+        <Text as="span" variant="body-sm" className="text-muted-foreground">
+          {row.original.accountName ?? '—'}
+        </Text>
       ),
     },
     // 6. Assignees
@@ -206,7 +205,7 @@ export function buildColumns(
       cell: ({ row }) => {
         const tags = row.original.tags
         if (tags.length === 0) {
-          return <span className="text-muted-foreground">{'\u2014'}</span>
+          return <Text as="span" variant="caption">—</Text>
         }
         const visible = tags.slice(0, 2)
         const overflow = tags.length - 2
@@ -231,7 +230,7 @@ export function buildColumns(
               </Badge>
             ))}
             {overflow > 0 && (
-              <span className="text-xs text-muted-foreground">+{overflow}</span>
+              <Text as="span" variant="caption">+{overflow}</Text>
             )}
           </div>
         )
@@ -256,9 +255,9 @@ export function buildColumns(
             ? 'text-emerald-600 dark:text-emerald-400'
             : 'text-muted-foreground' // transfer
         return (
-          <span className={`block text-right text-sm font-medium ${amountClass}`}>
+          <Text as="span" variant="body-sm" className={`block text-right font-medium ${amountClass}`}>
             {formatCurrency(row.original.amount)}
-          </span>
+          </Text>
         )
       },
     },

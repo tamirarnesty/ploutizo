@@ -16,6 +16,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@ploutizo/ui/components/field"
+import { Text } from "@ploutizo/ui/components/text"
 import type { RuleForm as RuleFormType } from "@ploutizo/validators"
 import type { MerchantRule } from "@/lib/data-access/merchant-rules"
 import { useCreateMerchantRule, useUpdateMerchantRule } from "@/lib/data-access/merchant-rules"
@@ -160,7 +161,7 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
             <Field>
               <FieldLabel>
                 Rename to{" "}
-                <span className="text-muted-foreground">(optional)</span>
+                <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">(optional)</Text>
               </FieldLabel>
               <Input
                 autoComplete="off"
@@ -178,7 +179,7 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
             <Field>
               <FieldLabel>
                 Category{" "}
-                <span className="text-muted-foreground">(optional)</span>
+                <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">(optional)</Text>
               </FieldLabel>
               <Select
                 value={field.state.value ?? ""}
@@ -190,9 +191,9 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
                       v ? (
                         categories.find((c) => c.id === v)?.name ?? v
                       ) : (
-                        <span className="text-muted-foreground">
+                        <Text as="span" variant="body-sm" className="text-muted-foreground">
                           No category
-                        </span>
+                        </Text>
                       )
                     }
                   </SelectValue>
@@ -217,7 +218,7 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
         {(err) =>
           // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           err ? (
-            <p className="text-xs text-destructive">{String(err)}</p>
+            <Text variant="error">{String(err)}</Text>
           ) : null
         }
       </form.Subscribe>

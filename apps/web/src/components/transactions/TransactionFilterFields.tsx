@@ -33,7 +33,7 @@ const DateRangeFilterRenderer = ({
 
   const label =
     fromDate && toDate
-      ? `${format(fromDate, 'MMM d, yyyy')} \u2013 ${format(toDate, 'MMM d, yyyy')}`
+      ? `${format(fromDate, 'MMM d, yyyy')} – ${format(toDate, 'MMM d, yyyy')}`
       : fromDate
         ? `From ${format(fromDate, 'MMM d, yyyy')}`
         : 'Pick a date range';

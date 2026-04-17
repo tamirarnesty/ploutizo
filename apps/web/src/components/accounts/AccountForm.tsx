@@ -39,6 +39,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@ploutizo/ui/components/field"
+import { Text } from "@ploutizo/ui/components/text"
 import { AccountFormSchema } from "@ploutizo/validators"
 import { useAppForm } from "@ploutizo/ui/components/form"
 import type { Account, AccountMember, OrgMember } from "@ploutizo/types"
@@ -260,9 +261,9 @@ const AccountFormInner = ({
               <Field>
                 <FieldLabel htmlFor="account-institution">
                   Institution{" "}
-                  <span className="font-normal text-muted-foreground">
+                  <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
                     (optional)
-                  </span>
+                  </Text>
                 </FieldLabel>
                 <Input
                   id="account-institution"
@@ -283,9 +284,9 @@ const AccountFormInner = ({
               <Field>
                 <FieldLabel htmlFor="account-last-four">
                   Last 4 digits{" "}
-                  <span className="font-normal text-muted-foreground">
+                  <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
                     (optional)
-                  </span>
+                  </Text>
                 </FieldLabel>
                 <Input
                   id="account-last-four"
@@ -317,9 +318,9 @@ const AccountFormInner = ({
                     <Field>
                       <FieldLabel>Co-owners</FieldLabel>
                       {members.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
+                        <Text variant="body-sm" className="text-muted-foreground">
                           No other members in this household yet.
-                        </p>
+                        </Text>
                       ) : (
                         <div className="flex flex-col gap-2">
                           {members.map((member) => (
@@ -386,10 +387,10 @@ const AccountFormInner = ({
                       >
                         Each person pays their own
                       </Label>
-                      <p className="text-xs text-muted-foreground">
+                      <Text variant="caption">
                         Excludes this account from shared settlement
                         calculations.
-                      </p>
+                      </Text>
                     </div>
                   </div>
                 </CollapsibleContent>
@@ -405,9 +406,7 @@ const AccountFormInner = ({
           >
             {(submitError) =>
               submitError ? (
-                <p className="text-sm text-destructive">
-                  {String(submitError)}
-                </p>
+                <Text variant="error">{String(submitError)}</Text>
               ) : null
             }
           </form.Subscribe>
@@ -448,7 +447,7 @@ const AccountFormInner = ({
             </AlertDialogContent>
           </AlertDialog>
         ) : (
-          <span />
+          <div />
         )}
         <div className="flex gap-2">
           <Button variant="outline" type="button" onClick={onClose}>

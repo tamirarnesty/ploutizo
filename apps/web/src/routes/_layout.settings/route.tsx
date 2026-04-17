@@ -6,6 +6,7 @@ import {
   useRouterState,
 } from "@tanstack/react-router"
 import { Tabs, TabsList, TabsTrigger } from "@ploutizo/ui/components/tabs"
+import { Text } from "@ploutizo/ui/components/text"
 
 export const Route = createFileRoute("/_layout/settings")({
   component: SettingsLayout,
@@ -37,7 +38,7 @@ function SettingsLayout() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-semibold">Settings</h1>
+      <Text as="h1" variant="h3">Settings</Text>
       <Tabs
         value={activeTabValue}
         onValueChange={(value) => navigate({ to: value as string })}

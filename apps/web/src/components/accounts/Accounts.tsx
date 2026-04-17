@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Button } from "@ploutizo/ui/components/button"
+import { Text } from "@ploutizo/ui/components/text"
 import { AccountsTable } from "./AccountsTable"
 import { AccountSheet } from "./AccountSheet"
 import type { Account } from "@ploutizo/types"
@@ -26,7 +27,7 @@ export const Accounts = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="min-w-0 truncate font-heading text-xl font-semibold">Accounts</h1>
+        <Text as="h1" variant="h3" className="min-w-0 truncate">Accounts</Text>
         <Button type="button" onClick={handleAddClick} className="shrink-0">
           Add account
         </Button>

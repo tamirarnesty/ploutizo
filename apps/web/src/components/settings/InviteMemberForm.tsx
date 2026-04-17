@@ -4,6 +4,7 @@ import { Button } from "@ploutizo/ui/components/button"
 import { useAppForm } from "@ploutizo/ui/components/form"
 import { Input } from "@ploutizo/ui/components/input"
 import { Label } from "@ploutizo/ui/components/label"
+import { Text } from "@ploutizo/ui/components/text"
 import { useInviteMember } from "@/lib/data-access/org"
 
 export const InviteMemberForm = () => {
@@ -72,7 +73,7 @@ export const InviteMemberForm = () => {
                 className="flex-1"
               />
               {field.state.meta.errors.length > 0 ? (
-                <p className="text-xs text-destructive">{field.state.meta.errors[0]}</p>
+                <Text variant="error">{field.state.meta.errors[0]}</Text>
               ) : null}
             </div>
           )}

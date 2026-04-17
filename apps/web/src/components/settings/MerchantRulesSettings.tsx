@@ -1,7 +1,8 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Sortable } from "@ploutizo/ui/components/reui/sortable"
 import { Button } from "@ploutizo/ui/components/button"
 import { Skeleton } from "@ploutizo/ui/components/skeleton"
+import { Text } from "@ploutizo/ui/components/text"
 import { RuleDialog } from "./RuleDialog"
 import { MerchantRuleRow } from "./MerchantRuleRow"
 import type { MerchantRule } from "@/lib/data-access/merchant-rules"
@@ -19,6 +20,14 @@ export const MerchantRulesSettings = () => {
     false
   )
   const [localRules, setLocalRules] = useState<MerchantRule[]>([])
+  const initialized = useRef(false)
+
+  useEffect(() => {
+    if (!initialized.current && !isLoading && rules.length > 0) {
+      initialized.current = true
+      setLocalRules(rules)
+    }
+  }, [rules, isLoading])
 
   const displayRules = localRules.length > 0 ? localRules : rules
 
@@ -30,7 +39,7 @@ export const MerchantRulesSettings = () => {
   return (
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="font-heading text-xl font-semibold">Merchant Rules</h1>
+        <Text as="h1" variant="h3">Merchant Rules</Text>
         <Button type="button" onClick={() => setDialogRule(null)}>
           Add rule
         </Button>
@@ -43,16 +52,16 @@ export const MerchantRulesSettings = () => {
           ))}
         </div>
       ) : displayRules.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No merchant rules</p>
+        <Text variant="body-sm" className="text-muted-foreground">No merchant rules</Text>
       ) : (
         <>
           <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground">
+            <Text variant="caption" className="font-medium">
               Priority order
-            </p>
-            <p className="text-xs text-muted-foreground">
+            </Text>
+            <Text variant="caption">
               Rules are applied in order. First match wins. Drag to reorder.
-            </p>
+            </Text>
           </div>
           <Sortable
             value={displayRules}

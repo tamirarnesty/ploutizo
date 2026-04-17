@@ -61,9 +61,10 @@ import {
 } from "@ploutizo/ui/components/popover"
 import { Button } from "@ploutizo/ui/components/button"
 import { Input } from "@ploutizo/ui/components/input"
+import { Text } from "@ploutizo/ui/components/text"
 import type { LucideIcon } from "lucide-react"
 
-const ICON_MAP: Record<string, LucideIcon> = {
+export const ICON_MAP: Record<string, LucideIcon> = {
   ShoppingCart,
   UtensilsCrossed,
   Car,
@@ -157,10 +158,10 @@ export const LucideIconPicker = ({
         {SelectedIcon ? (
           <SelectedIcon size={16} aria-hidden="true" />
         ) : (
-          <span className="text-muted-foreground">Select icon</span>
+          <Text as="span" variant="body-sm" className="text-muted-foreground">Select icon</Text>
         )}
         {value && (
-          <span className="text-xs text-muted-foreground">{value}</span>
+          <Text as="span" variant="caption">{value}</Text>
         )}
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72 space-y-2 p-3">
@@ -171,9 +172,9 @@ export const LucideIconPicker = ({
           placeholder="Search icons…"
         />
         {filtered.length === 0 ? (
-          <p className="py-2 text-center text-xs text-muted-foreground">
+          <Text variant="caption" className="py-2 text-center">
             No icons match "{search}".
-          </p>
+          </Text>
         ) : (
           <div
             className="grid max-h-48 grid-cols-6 gap-1 overflow-y-auto"

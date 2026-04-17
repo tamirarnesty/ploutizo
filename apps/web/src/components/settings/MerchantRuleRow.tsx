@@ -15,6 +15,7 @@ import {
   SortableItemHandle,
 } from "@ploutizo/ui/components/reui/sortable"
 import { Button } from "@ploutizo/ui/components/button"
+import { Text } from "@ploutizo/ui/components/text"
 import type { MerchantRule } from "@/lib/data-access/merchant-rules"
 
 const MATCH_TYPE_LABELS: Record<string, string> = {
@@ -45,15 +46,15 @@ export const MerchantRuleRow = ({
         <GripVertical size={16} />
       </SortableItemHandle>
       <div className="min-w-0 flex-1">
-        <span className="text-xs text-muted-foreground">
+        <Text as="span" variant="caption">
           {MATCH_TYPE_LABELS[rule.matchType]}
-        </span>
-        <p className="truncate font-mono text-sm">{rule.pattern}</p>
-        {rule.renameTo && (
-          <p className="text-xs text-muted-foreground">
+        </Text>
+        <Text variant="body-sm" className="truncate font-mono">{rule.pattern}</Text>
+        {rule.renameTo ? (
+          <Text variant="caption">
             → {rule.renameTo}
-          </p>
-        )}
+          </Text>
+        ) : null}
       </div>
       <Button
         type="button"

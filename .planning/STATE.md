@@ -16,16 +16,16 @@ progress:
 
 ## Current Position
 
-Phase: 03.3.2
-Plan: Complete
+Phase: 03.2 (next)
+Plan: —
 **Milestone:** v0.2 Transactions & Settlement
-**Active Phase:** Phase 03.3.2 — Implement Text typography component in packages/ui — COMPLETE
-**Status:** Phase 03.3.2 shipped — PR #36
+**Active Phase:** Phase 03.3.3 — UI Primitive Refactor Sweep — COMPLETE ✓
+**Status:** Phase 03.3.3 complete — 4/4 plans, verified 2026-04-17
 **Last session:** 2026-04-17
 
 ## Next Action
 
-Begin Phase 03.3.3 (UI primitive refactor sweep)
+Plan/execute Phase 03.2 (Transaction API) — or Phase 03.3 (Transaction List UI) if 03.2 is already done
 
 ## Phase Status
 

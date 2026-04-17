@@ -331,7 +331,7 @@ Plans:
 
 ---
 
-### Phase 03.3.3: UI primitive refactor sweep (INSERTED)
+### Phase 03.3.3: UI primitive refactor sweep (INSERTED) — COMPLETE 2026-04-17
 
 **Goal:** Replace all raw HTML primitives across `apps/web` with their shadcn or `<Text>` equivalents, establishing a clean foundation before further UI phases.
 
@@ -343,10 +343,13 @@ Plans:
 
 **Depends on:** Phase 03.3.2
 
-**Plans:** 0 plans
+**Plans:** 4/4 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 03.3.3 to break down)
+- [x] 03.3.3-01-PLAN.md — Add error variant to text.tsx + create SwatchButton + update ColourPicker (Wave 1 foundation) (complete 2026-04-17)
+- [x] 03.3.3-02-PLAN.md — Heading migrations: replace all h1-h6 raw elements with Text across 9 files (complete 2026-04-17)
+- [x] 03.3.3-03-PLAN.md — Paragraph migrations: replace all p raw elements with Text across 16 files (complete 2026-04-17)
+- [x] 03.3.3-04-PLAN.md — Span migrations: text-content spans to Text as=span, structural spans to div, AppLogo brand mark (complete 2026-04-17)
 
 ---
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Skeleton } from "@ploutizo/ui/components/skeleton"
+import { Text } from "@ploutizo/ui/components/text"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -88,14 +89,12 @@ export const CategoriesSettings = () => {
 
   return (
     <div className="max-w-2xl space-y-8">
-      <h1 className="font-heading text-xl font-semibold">
-        Categories & Tags
-      </h1>
+      <Text as="h1" variant="h3">Categories &amp; Tags</Text>
 
       {/* Categories section */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Categories</h2>
+          <Text as="h2" variant="label" className="font-semibold">Categories</Text>
           <Button
             type="button"
             size="sm"
@@ -112,12 +111,12 @@ export const CategoriesSettings = () => {
             ))}
           </div>
         ) : displayCategories.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No categories found.</p>
+          <Text variant="body-sm" className="text-muted-foreground">No categories found.</Text>
         ) : (
           <>
-            <p className="text-xs text-muted-foreground">
+            <Text variant="caption">
               Drag to reorder categories.
-            </p>
+            </Text>
             <Sortable
               value={displayCategories}
               onValueChange={handleReorder}
@@ -134,17 +133,17 @@ export const CategoriesSettings = () => {
                     >
                       <GripVertical size={16} />
                     </SortableItemHandle>
-                    <span className="text-muted-foreground">
+                    <div className="text-muted-foreground">
                       {renderLucideIcon(cat.icon, 16)}
-                    </span>
+                    </div>
                     {cat.colour ? (
-                      <span
+                      <div
                         className={`size-3 rounded-full bg-${cat.colour} shrink-0`}
                       />
                     ) : null}
-                    <span className="min-w-0 flex-1 truncate text-sm">
+                    <Text as="span" variant="body-sm" className="min-w-0 flex-1 truncate">
                       {cat.name}
-                    </span>
+                    </Text>
                     <Button
                       type="button"
                       variant="ghost"
@@ -197,7 +196,7 @@ export const CategoriesSettings = () => {
       {/* Tags section */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Tags</h2>
+          <Text as="h2" variant="label" className="font-semibold">Tags</Text>
         </div>
 
         {tagLoading ? (
