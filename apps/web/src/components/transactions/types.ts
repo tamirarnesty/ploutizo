@@ -12,7 +12,7 @@ export interface TransactionFormValues {
   // Shared base fields (preserved across type changes — D-07)
   type: 'expense' | 'income' | 'transfer' | 'settlement' | 'refund' | 'contribution'
   accountId: string
-  amount: number         // dollars (form); API/DB stores cents — see toApiPayload
+  amount: number | undefined  // dollars (form); undefined = not yet entered; API/DB stores cents — see toApiPayload
   date: string           // ISO date string 'YYYY-MM-DD'
   description: string
   merchant: string

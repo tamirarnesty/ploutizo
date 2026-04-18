@@ -12,7 +12,7 @@ export const buildDefaultValues = (
     return {
       type: 'expense',
       accountId: '',
-      amount: 0,
+      amount: undefined,
       date: new Date().toISOString().slice(0, 10),
       description: '',
       merchant: '',
@@ -56,7 +56,7 @@ export const toApiPayload = (value: TransactionFormValues): Record<string, unkno
   const base = {
     type: value.type,
     accountId: value.accountId,
-    amount: Math.round(value.amount * 100),
+    amount: Math.round((value.amount ?? 0) * 100),
     date: value.date,
     description: value.description.trim() || undefined,
     merchant: value.merchant.trim() || undefined,
