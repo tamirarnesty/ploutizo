@@ -277,7 +277,6 @@ export const Transactions = () => {
       />
 
       <TransactionSheet
-        key={selectedTx?.id ?? 'new'}
         open={sheetOpen}
         transaction={selectedTx}
         onClose={handleSheetClose}

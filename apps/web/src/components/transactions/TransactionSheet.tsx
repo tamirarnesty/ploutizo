@@ -39,7 +39,9 @@ export const TransactionSheet = ({
           </SheetTitle>
         </SheetHeader>
 
+        {/* key resets form state when switching between transactions (D-09) */}
         <TransactionForm
+          key={transaction?.id ?? 'new'}
           transaction={transaction}
           onClose={onClose}
         />
