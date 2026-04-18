@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { CalendarIcon, Trash2 } from 'lucide-react'
+import { toast } from '@ploutizo/ui/components/sonner'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,12 +16,6 @@ import {
 import { Button } from '@ploutizo/ui/components/button'
 import { Calendar } from '@ploutizo/ui/components/calendar'
 import { Input } from '@ploutizo/ui/components/input'
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupText,
-  InputGroupInput,
-} from '@ploutizo/ui/components/input-group'
 import { Popover, PopoverContent, PopoverTrigger } from '@ploutizo/ui/components/popover'
 import { Spinner } from '@ploutizo/ui/components/spinner'
 import { cn } from '@ploutizo/ui/lib/utils'
@@ -50,6 +46,7 @@ import { useGetAccounts } from '@/lib/data-access/accounts'
 import { useGetCategories } from '@/lib/data-access/categories'
 import { useGetOrgMembers } from '@/lib/data-access/org'
 import { useTransactionForm } from './hooks/useTransactionForm'
+import { FormattedAmountInput } from './FormattedAmountInput'
 import { TransactionTypeFields } from './TransactionTypeFields'
 import { TransactionTagPicker } from './TransactionTagPicker'
 import { SplitSection } from './SplitSection'
@@ -126,6 +123,9 @@ const TransactionFormInner = ({
   const updateMutation = useUpdateTransaction(transaction?.id ?? '')
   const deleteMutation = useDeleteTransaction()
 
+  const [dateOpen, setDateOpen] = useState(false)
+  const [alertOpen, setAlertOpen] = useState(false)
+
   const { form } = useTransactionForm({
     transaction,
     onClose,
@@ -199,25 +199,11 @@ const TransactionFormInner = ({
             {(field) => (
               <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
                 <FieldLabel htmlFor="tx-amount">Amount</FieldLabel>
-                <InputGroup>
-                  <InputGroupAddon align="inline-start">
-                    <InputGroupText>$</InputGroupText>
-                  </InputGroupAddon>
-                  <InputGroupInput
-                    id="tx-amount"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    autoComplete="off"
-                    value={field.state.value ?? ''}
-                    onChange={(e) =>
-                      field.handleChange(
-                        e.target.value === '' ? undefined : parseFloat(e.target.value),
-                      )
-                    }
-                    onBlur={field.handleBlur}
-                  />
-                </InputGroup>
+                <FormattedAmountInput
+                  value={field.state.value}
+                  onChange={(v) => field.handleChange(v)}
+                  onBlur={field.handleBlur}
+                />
                 {field.state.meta.errors.length > 0 ? (
                   <FieldError>{String(field.state.meta.errors[0])}</FieldError>
                 ) : null}
@@ -239,7 +225,7 @@ const TransactionFormInner = ({
                 {(() => {
                   const selectedDate = field.state.value ? parseISO(field.state.value) : undefined
                   return (
-                    <Popover>
+                    <Popover open={dateOpen} onOpenChange={setDateOpen}>
                       <PopoverTrigger
                         render={
                           <Button
@@ -261,9 +247,10 @@ const TransactionFormInner = ({
                         <Calendar
                           mode="single"
                           selected={selectedDate}
-                          onSelect={(date) =>
+                          onSelect={(date) => {
                             field.handleChange(date ? format(date, 'yyyy-MM-dd') : '')
-                          }
+                            setDateOpen(false)
+                          }}
                           initialFocus
                         />
                       </PopoverContent>
@@ -371,7 +358,7 @@ const TransactionFormInner = ({
       {/* Footer — matches AccountForm layout exactly */}
       <div className="flex items-center justify-between gap-2 border-t border-border px-6 py-4">
         {isEditing ? (
-          <AlertDialog>
+          <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
             <AlertDialogTrigger
               render={
                 <Button
@@ -398,7 +385,16 @@ const TransactionFormInner = ({
                   variant="destructive"
                   onClick={() => {
                     if (!transaction) return
-                    deleteMutation.mutate(transaction.id, { onSuccess: onClose })
+                    deleteMutation.mutate(transaction.id, {
+                      onSuccess: () => {
+                        setAlertOpen(false)
+                        onClose()
+                        toast.success('Transaction deleted.')
+                      },
+                      onError: () => {
+                        toast.error('Failed to delete transaction.')
+                      },
+                    })
                   }}
                 >
                   Delete transaction
