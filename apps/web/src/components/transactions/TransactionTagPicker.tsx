@@ -22,8 +22,11 @@ interface TransactionTagPickerProps {
  * Multi-select tag combobox with inline create.
  *
  * Design notes:
- * - items are tag names (not UUIDs) so base-ui's built-in filter matches on readable text
- * - filteredItems holds the __create__ option (bypasses base-ui filtering)
+ * - ComboboxList children must be static JSX (not a render function) — Base UI
+ *   ComboboxPrimitive.List is a plain <ul> wrapper that does not invoke children as a function.
+ * - Base UI filters items automatically by matching typed input against each item's `value` prop.
+ * - The __create__ option value is `__create__${tagInputValue}`, which contains the user's input
+ *   as a substring, so Base UI's default filter keeps it visible when there is input.
  * - form field value (tagIds) always contains only real UUIDs — translation in handleValueChange
  * - T-03.4-11: __create__ strings never reach toApiPayload
  */
@@ -49,10 +52,6 @@ export const TransactionTagPicker = ({ value, onChange }: TransactionTagPickerPr
     tagInputValue.length > 0 && !alreadyExists
       ? `__create__${tagInputValue}`
       : null
-
-  // items = active tag names (base-ui filters these on typing)
-  // filteredItems = __create__ option (bypasses filtering so it always appears)
-  const items = activeTags.map((t) => t.name)
 
   const handleValueChange = (newValues: string[]) => {
     // Separate real names from __create__ items
@@ -85,8 +84,6 @@ export const TransactionTagPicker = ({ value, onChange }: TransactionTagPickerPr
   return (
     <Combobox
       multiple
-      items={items}
-      filteredItems={createOption ? [createOption] : []}
       value={selectedNames}
       onValueChange={handleValueChange}
       onInputValueChange={setTagInputValue}
@@ -108,13 +105,16 @@ export const TransactionTagPicker = ({ value, onChange }: TransactionTagPickerPr
       </ComboboxChips>
       <ComboboxContent anchor={anchor}>
         <ComboboxList>
-          {(item: string) => (
-            <ComboboxItem key={item} value={item}>
-              {item.startsWith('__create__')
-                ? `Create "${item.replace('__create__', '')}"`
-                : item}
+          {activeTags.map((tag) => (
+            <ComboboxItem key={tag.id} value={tag.name}>
+              {tag.name}
             </ComboboxItem>
-          )}
+          ))}
+          {createOption !== null ? (
+            <ComboboxItem key="__create__" value={createOption}>
+              {`Create "${tagInputValue}"`}
+            </ComboboxItem>
+          ) : null}
         </ComboboxList>
         <ComboboxEmpty>
           {tagInputValue.length === 0 ? 'Type to search or create a tag' : 'Tag already exists'}
