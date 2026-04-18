@@ -376,13 +376,14 @@ const TransactionFormInner = ({
               render={
                 <Button
                   variant="ghost"
+                  size="icon"
                   type="button"
-                  className="text-destructive hover:text-destructive"
+                  aria-label="Delete transaction"
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                 />
               }
             >
-              <Trash2 size={16} className="mr-1" aria-hidden="true" />
-              Delete transaction
+              <Trash2 size={16} aria-hidden="true" />
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
