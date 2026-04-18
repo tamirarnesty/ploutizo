@@ -2,17 +2,6 @@ import { useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { CalendarIcon, Trash2 } from 'lucide-react'
 import { toast } from '@ploutizo/ui/components/sonner'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@ploutizo/ui/components/alert-dialog'
 import { Button } from '@ploutizo/ui/components/button'
 import { Calendar } from '@ploutizo/ui/components/calendar'
 import { Input } from '@ploutizo/ui/components/input'
@@ -33,23 +22,24 @@ import {
   SelectValue,
 } from '@ploutizo/ui/components/select'
 import { Text } from '@ploutizo/ui/components/text'
-import type { Account, OrgMember } from '@ploutizo/types'
-import type { Category } from '@/lib/data-access/categories'
-import {
-  useGetTransaction,
-  useCreateTransaction,
-  useUpdateTransaction,
-  useDeleteTransaction,
-} from '@/lib/data-access/transactions'
-import type { TransactionRow } from '@/lib/data-access/transactions'
-import { useGetAccounts } from '@/lib/data-access/accounts'
-import { useGetCategories } from '@/lib/data-access/categories'
-import { useGetOrgMembers } from '@/lib/data-access/org'
+import { DeleteTransactionDialog } from './DeleteTransactionDialog'
 import { useTransactionForm } from './hooks/useTransactionForm'
 import { FormattedAmountInput } from './FormattedAmountInput'
 import { TransactionTypeFields } from './TransactionTypeFields'
 import { TransactionTagPicker } from './TransactionTagPicker'
 import { SplitSection } from './SplitSection'
+import type { TransactionRow } from '@/lib/data-access/transactions'
+import type { Account, OrgMember } from '@ploutizo/types'
+import type { Category } from '@/lib/data-access/categories'
+import { useGetOrgMembers } from '@/lib/data-access/org'
+import { useGetCategories } from '@/lib/data-access/categories'
+import { useGetAccounts } from '@/lib/data-access/accounts'
+import {
+  useCreateTransaction,
+  useDeleteTransaction,
+  useGetTransaction,
+  useUpdateTransaction,
+} from '@/lib/data-access/transactions'
 
 interface TransactionFormProps {
   transaction: TransactionRow | null  // null = create mode
@@ -358,50 +348,35 @@ const TransactionFormInner = ({
       {/* Footer — matches AccountForm layout exactly */}
       <div className="flex items-center justify-between gap-2 border-t border-border px-6 py-4">
         {isEditing ? (
-          <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
-            <AlertDialogTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  type="button"
-                  aria-label="Delete transaction"
-                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                />
-              }
+          <>
+            <Button
+              variant="ghost"
+              size="icon"
+              type="button"
+              aria-label="Delete transaction"
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => setAlertOpen(true)}
             >
               <Trash2 size={16} aria-hidden="true" />
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete transaction?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will permanently remove this transaction. This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  variant="destructive"
-                  onClick={() => {
-                    if (!transaction) return
-                    deleteMutation.mutate(transaction.id, {
-                      onSuccess: () => {
-                        setAlertOpen(false)
-                        onClose()
-                        toast.success('Transaction deleted.')
-                      },
-                      onError: () => {
-                        toast.error('Failed to delete transaction.')
-                      },
-                    })
-                  }}
-                >
-                  Delete transaction
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+            </Button>
+            <DeleteTransactionDialog
+              open={alertOpen}
+              onOpenChange={setAlertOpen}
+              isPending={deleteMutation.isPending}
+              onConfirm={() => {
+                if (!transaction) return
+                deleteMutation.mutate(transaction.id, {
+                  onSuccess: () => {
+                    onClose()
+                    toast.success('Transaction deleted.')
+                  },
+                  onError: () => {
+                    toast.error('Failed to delete transaction.')
+                  },
+                })
+              }}
+            />
+          </>
         ) : (
           <div />
         )}

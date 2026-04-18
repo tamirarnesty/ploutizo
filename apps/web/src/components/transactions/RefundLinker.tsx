@@ -4,7 +4,6 @@ import { Field, FieldLabel } from '@ploutizo/ui/components/field'
 import {
   Combobox,
   ComboboxContent,
-  ComboboxEmpty,
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
@@ -12,7 +11,8 @@ import {
 import { Spinner } from '@ploutizo/ui/components/spinner'
 import type { AssigneeFormRow } from './types'
 import type { useTransactionForm } from './hooks/useTransactionForm'
-import { useSearchTransactions, useGetTransactions } from '@/lib/data-access/transactions'
+import type { TransactionRow } from '@/lib/data-access/transactions'
+import { useGetTransactions, useSearchTransactions } from '@/lib/data-access/transactions'
 import { formatCurrency } from '@/lib/formatCurrency'
 
 export interface RefundLinkerProps {
@@ -20,11 +20,15 @@ export interface RefundLinkerProps {
   onAssigneesChange: (assignees: AssigneeFormRow[]) => void
 }
 
+const txLabel = (tx: TransactionRow) =>
+  `${tx.description ?? tx.merchant ?? '—'} \u2022 ${new Date(tx.date + 'T00:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })} \u2022 ${formatCurrency(tx.amount)}`
+
 export const RefundLinker = ({ form, onAssigneesChange }: RefundLinkerProps) => {
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const debounceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Persists the selected transaction so its label stays visible after displayedResults changes
+  const [selectedTx, setSelectedTx] = useState<TransactionRow | null>(null)
 
-  // Pre-load recent expense transactions for the dropdown before the user types
   const { data: recentExpensesResponse } = useGetTransactions({
     page: 1,
     limit: 10,
@@ -36,12 +40,11 @@ export const RefundLinker = ({ form, onAssigneesChange }: RefundLinkerProps) => 
 
   const { data: searchResults = [], isLoading: searching } = useSearchTransactions(debouncedQuery)
 
-  // Show search results when query is active, recent expenses otherwise
   const displayedResults = debouncedQuery.length >= 2 ? searchResults : recentExpenses
 
-  // Build id→tx map from displayedResults for O(1) lookup in onValueChange
-  const resultsById = React.useMemo(
-    () => new Map(displayedResults.map((tx) => [tx.id, tx])),
+  // label → tx map for O(1) lookup in onValueChange
+  const resultsByLabel = React.useMemo(
+    () => new Map(displayedResults.map((tx) => [txLabel(tx), tx])),
     [displayedResults],
   )
 
@@ -56,22 +59,26 @@ export const RefundLinker = ({ form, onAssigneesChange }: RefundLinkerProps) => 
             </Text>
           </FieldLabel>
           <Combobox
-            value={field.state.value || null}
-            onValueChange={(v: string | null) => {
-              field.handleChange(v ?? '')
-              if (v) {
-                const original = resultsById.get(v)
-                if (original) {
+            value={selectedTx ? txLabel(selectedTx) : null}
+            onValueChange={(label: string | null) => {
+              if (label) {
+                const tx = resultsByLabel.get(label)
+                if (tx) {
+                  setSelectedTx(tx)
+                  field.handleChange(tx.id)
                   onAssigneesChange(
-                    original.assignees.map((a) => ({
+                    tx.assignees.map((a) => ({
                       memberId: a.memberId,
                       amountCents: a.amountCents,
                       percentage: a.percentage !== null ? parseFloat(a.percentage) : 0,
                     })),
                   )
                 }
+              } else {
+                setSelectedTx(null)
+                field.handleChange('')
+                // D-17: clearing refundOf does NOT reset split
               }
-              // D-17: clearing refundOf does NOT reset split — no else branch
             }}
             onInputValueChange={(q: string) => {
               if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
@@ -87,20 +94,18 @@ export const RefundLinker = ({ form, onAssigneesChange }: RefundLinkerProps) => 
               ) : null}
               <ComboboxList>
                 {displayedResults.map((tx) => (
-                  <ComboboxItem key={tx.id} value={tx.id}>
-                    <span className="min-w-0 truncate">
-                      {tx.description ?? tx.merchant ?? '—'} &bull;{' '}
-                      {new Date(tx.date + 'T00:00:00').toLocaleDateString('en-CA', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}{' '}
-                      &bull; {formatCurrency(tx.amount)}
-                    </span>
+                  <ComboboxItem key={tx.id} value={txLabel(tx)}>
+                    <span className="min-w-0 truncate">{txLabel(tx)}</span>
                   </ComboboxItem>
                 ))}
+                {displayedResults.length === 0 ? (
+                  <div className="py-2 text-center text-sm text-muted-foreground">
+                    {debouncedQuery.length >= 2
+                      ? 'No matching transactions found.'
+                      : 'No recent expense transactions found.'}
+                  </div>
+                ) : null}
               </ComboboxList>
-              <ComboboxEmpty>No matching transactions found.</ComboboxEmpty>
             </ComboboxContent>
           </Combobox>
         </Field>
