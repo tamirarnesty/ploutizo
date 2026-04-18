@@ -32,7 +32,9 @@ export const ExpenseFields = ({ form, categories }: ExpenseFieldsProps) => (
           }}
         >
           <SelectTrigger id="tx-categoryId">
-            <SelectValue placeholder="Select category" />
+            <SelectValue>
+              {categories.find((c) => c.id === field.state.value)?.name ?? 'Select category'}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {categories.map((c) => (

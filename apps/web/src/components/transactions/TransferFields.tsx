@@ -32,7 +32,9 @@ export const TransferFields = ({ form, accounts }: TransferFieldsProps) => (
           }}
         >
           <SelectTrigger id="tx-toAccountId">
-            <SelectValue placeholder="Select account" />
+            <SelectValue>
+              {accounts.find((a) => a.id === field.state.value)?.name ?? 'Select account'}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {accounts.map((a) => (

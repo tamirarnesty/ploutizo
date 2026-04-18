@@ -36,7 +36,9 @@ export const RefundFields = ({ form, categories, onAssigneesChange }: RefundFiel
             }}
           >
             <SelectTrigger id="tx-refund-categoryId">
-              <SelectValue placeholder="Select category" />
+              <SelectValue>
+                {categories.find((c) => c.id === field.state.value)?.name ?? 'Select category'}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {categories.map((c) => (
