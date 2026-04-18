@@ -159,7 +159,9 @@ const TransactionFormInner = ({
                   onValueChange={(v) => { if (v !== null) field.handleChange(v) }}
                 >
                   <SelectTrigger id="tx-accountId">
-                    <SelectValue placeholder="Select account" />
+                    <SelectValue>
+                      {accounts.find((a) => a.id === field.state.value)?.name ?? 'Select account'}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {accounts.map((a) => (

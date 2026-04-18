@@ -10,6 +10,14 @@ import {
 } from '@ploutizo/ui/components/select'
 import type { useTransactionForm } from './hooks/useTransactionForm'
 
+const INCOME_TYPE_LABELS: Record<string, string> = {
+  direct_deposit: 'Direct deposit',
+  e_transfer: 'e-Transfer',
+  cash: 'Cash',
+  cheque: 'Cheque',
+  other: 'Other',
+}
+
 export interface IncomeFieldsProps {
   form: ReturnType<typeof useTransactionForm>['form']
 }
@@ -33,7 +41,7 @@ export const IncomeFields = ({ form }: IncomeFieldsProps) => (
             }}
           >
             <SelectTrigger id="tx-incomeType">
-              <SelectValue placeholder="Select type" />
+              <SelectValue>{INCOME_TYPE_LABELS[field.state.value] ?? 'Select type'}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="direct_deposit">Direct deposit</SelectItem>

@@ -32,7 +32,9 @@ export const SettlementFields = ({ form, accounts }: SettlementFieldsProps) => (
           }}
         >
           <SelectTrigger id="tx-settledAccountId">
-            <SelectValue placeholder="Select account (optional)" />
+            <SelectValue>
+              {accounts.find((a) => a.id === field.state.value)?.name ?? 'Select account (optional)'}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {accounts.map((a) => (
