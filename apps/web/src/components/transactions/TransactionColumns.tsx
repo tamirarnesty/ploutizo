@@ -279,7 +279,7 @@ export function buildColumns(
                 variant="ghost"
                 size="icon"
                 aria-label="Transaction actions"
-                className="text-muted-foreground hover:text-foreground"
+                className="opacity-0 [tr:hover_&]:opacity-100 data-[state=open]:opacity-100 focus-visible:opacity-100"
               >
                 <MoreHorizontal className="size-4" />
               </Button>
