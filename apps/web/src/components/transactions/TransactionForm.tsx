@@ -1,4 +1,5 @@
-import { Trash2 } from 'lucide-react'
+import { format, parseISO } from 'date-fns'
+import { CalendarIcon, Trash2 } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,8 +12,17 @@ import {
   AlertDialogTrigger,
 } from '@ploutizo/ui/components/alert-dialog'
 import { Button } from '@ploutizo/ui/components/button'
+import { Calendar } from '@ploutizo/ui/components/calendar'
 import { Input } from '@ploutizo/ui/components/input'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupText,
+  InputGroupInput,
+} from '@ploutizo/ui/components/input-group'
+import { Popover, PopoverContent, PopoverTrigger } from '@ploutizo/ui/components/popover'
 import { Spinner } from '@ploutizo/ui/components/spinner'
+import { cn } from '@ploutizo/ui/lib/utils'
 import {
   Field,
   FieldError,
@@ -182,25 +192,32 @@ const TransactionFormInner = ({
           <form.AppField
             name="amount"
             validators={{
-              onChange: ({ value }: { value: number }) =>
-                value <= 0 ? 'Amount must be greater than zero.' : undefined,
+              onChange: ({ value }: { value: number | undefined }) =>
+                !value || value <= 0 ? 'Amount must be greater than zero.' : undefined,
             }}
           >
             {(field) => (
               <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
                 <FieldLabel htmlFor="tx-amount">Amount</FieldLabel>
-                <Input
-                  id="tx-amount"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  autoComplete="off"
-                  value={field.state.value}
-                  onChange={(e) =>
-                    field.handleChange(parseFloat(e.target.value) || 0)
-                  }
-                  onBlur={field.handleBlur}
-                />
+                <InputGroup>
+                  <InputGroupAddon align="inline-start">
+                    <InputGroupText>$</InputGroupText>
+                  </InputGroupAddon>
+                  <InputGroupInput
+                    id="tx-amount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    autoComplete="off"
+                    value={field.state.value ?? ''}
+                    onChange={(e) =>
+                      field.handleChange(
+                        e.target.value === '' ? undefined : parseFloat(e.target.value),
+                      )
+                    }
+                    onBlur={field.handleBlur}
+                  />
+                </InputGroup>
                 {field.state.meta.errors.length > 0 ? (
                   <FieldError>{String(field.state.meta.errors[0])}</FieldError>
                 ) : null}
@@ -218,15 +235,41 @@ const TransactionFormInner = ({
           >
             {(field) => (
               <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
-                <FieldLabel htmlFor="tx-date">Date</FieldLabel>
-                <Input
-                  id="tx-date"
-                  type="date"
-                  autoComplete="off"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                />
+                <FieldLabel>Date</FieldLabel>
+                {(() => {
+                  const selectedDate = field.state.value ? parseISO(field.state.value) : undefined
+                  return (
+                    <Popover>
+                      <PopoverTrigger
+                        render={
+                          <Button
+                            variant="outline"
+                            type="button"
+                            className={cn(
+                              'w-full justify-start text-left font-normal',
+                              !field.state.value && 'text-muted-foreground',
+                            )}
+                          />
+                        }
+                      >
+                        <CalendarIcon className="mr-2 size-4" aria-hidden="true" />
+                        {field.state.value
+                          ? format(selectedDate!, 'MMM d, yyyy')
+                          : 'Pick a date'}
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={selectedDate}
+                          onSelect={(date) =>
+                            field.handleChange(date ? format(date, 'yyyy-MM-dd') : '')
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  )
+                })()}
                 {field.state.meta.errors.length > 0 ? (
                   <FieldError>{String(field.state.meta.errors[0])}</FieldError>
                 ) : null}
@@ -333,13 +376,14 @@ const TransactionFormInner = ({
               render={
                 <Button
                   variant="ghost"
+                  size="icon"
                   type="button"
-                  className="text-destructive hover:text-destructive"
+                  aria-label="Delete transaction"
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                 />
               }
             >
-              <Trash2 size={16} className="mr-1" aria-hidden="true" />
-              Delete transaction
+              <Trash2 size={16} aria-hidden="true" />
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
