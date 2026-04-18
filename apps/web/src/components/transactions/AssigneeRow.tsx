@@ -3,9 +3,8 @@ import { Avatar, AvatarFallback } from '@ploutizo/ui/components/avatar'
 import { Button } from '@ploutizo/ui/components/button'
 import { Input } from '@ploutizo/ui/components/input'
 import { Text } from '@ploutizo/ui/components/text'
-import { formatCurrency } from '@/lib/formatCurrency'
-import { getInitials } from './TransactionColumns'
 import type { AssigneeFormRow } from './types'
+import { formatCurrency } from '@/lib/formatCurrency'
 
 interface AssigneeRowProps {
   memberId: string
@@ -18,7 +17,10 @@ interface AssigneeRowProps {
   onRemove: (memberId: string) => void
 }
 
-export function AssigneeRow({
+const getInitials = (name: string | null): string =>
+  name ? name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2) : '?'
+
+export const AssigneeRow = ({
   memberId,
   memberName,
   amountCents,
@@ -27,7 +29,7 @@ export function AssigneeRow({
   totalCents,
   onChange,
   onRemove,
-}: AssigneeRowProps) {
+}: AssigneeRowProps) => {
   return (
     <div className="flex items-center gap-2">
       <Avatar size="sm" aria-label={memberName ?? 'Unknown member'}>
@@ -74,9 +76,7 @@ export function AssigneeRow({
       )}
 
       <Text as="span" variant="body-sm" className="w-20 text-right text-muted-foreground">
-        {mode === 'percent'
-          ? formatCurrency(amountCents)
-          : `${percentage.toFixed(1)}%`}
+        {mode === 'percent' ? formatCurrency(amountCents) : `${percentage.toFixed(1)}%`}
       </Text>
 
       <Button

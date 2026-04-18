@@ -1,29 +1,19 @@
 import { useAppForm } from '@ploutizo/ui/components/form'
 import { createTransactionSchema } from '@ploutizo/validators'
-import type { TransactionFormValues } from '../types'
-import type { TransactionRow } from '@/lib/data-access/transactions'
-import {
+import type { TransactionRow,
   useCreateTransaction,
-  useUpdateTransaction,
-} from '@/lib/data-access/transactions'
+  useUpdateTransaction } from '@/lib/data-access/transactions'
+import type { TransactionFormValues } from '../types'
 
-/**
- * Converts a TransactionRow (API/DB shape) into TransactionFormValues (form shape).
- *
- * Key conversions:
- * - amount: API stores cents → form stores dollars (divide by 100)
- * - tagIds: extract UUIDs from TransactionTag[] objects
- * - assignee.percentage: Drizzle numeric columns return strings → parseFloat
- */
-export function buildDefaultValues(
-  transaction: TransactionRow | null
-): TransactionFormValues {
+export const buildDefaultValues = (
+  transaction: TransactionRow | null,
+): TransactionFormValues => {
   if (transaction === null) {
     return {
       type: 'expense',
       accountId: '',
       amount: 0,
-      date: new Date().toISOString().slice(0, 10), // YYYY-MM-DD
+      date: new Date().toISOString().slice(0, 10),
       description: '',
       merchant: '',
       tagIds: [],
@@ -41,11 +31,10 @@ export function buildDefaultValues(
   return {
     type: transaction.type,
     accountId: transaction.accountId,
-    amount: transaction.amount / 100, // API stores cents; form stores dollars
+    amount: transaction.amount / 100,
     date: transaction.date,
     description: transaction.description ?? '',
     merchant: transaction.merchant ?? '',
-    // TransactionRow.tags is TransactionTag[] — extract IDs only
     tagIds: transaction.tags.map((t) => t.id),
     categoryId: transaction.categoryId ?? '',
     refundOf: transaction.refundOf ?? '',
@@ -63,21 +52,11 @@ export function buildDefaultValues(
   }
 }
 
-/**
- * Transforms form values into the createTransactionSchema-compatible API body.
- *
- * Key conversions:
- * - amount: dollars → cents via Math.round (T-03.4-08: prevents floating-point drift)
- * - tagIds: included in base payload for all types
- * - type-specific fields: only include relevant ones per type
- */
-export function toApiPayload(
-  value: TransactionFormValues
-): Record<string, unknown> {
+export const toApiPayload = (value: TransactionFormValues): Record<string, unknown> => {
   const base = {
     type: value.type,
     accountId: value.accountId,
-    amount: Math.round(value.amount * 100), // dollars → cents (integer)
+    amount: Math.round(value.amount * 100),
     date: value.date,
     description: value.description.trim() || undefined,
     merchant: value.merchant.trim() || undefined,
@@ -92,7 +71,6 @@ export function toApiPayload(
         : undefined,
   }
 
-  // Type-specific fields — only include relevant ones per type
   switch (value.type) {
     case 'expense':
       return { ...base, categoryId: value.categoryId || undefined }
@@ -126,12 +104,12 @@ interface UseTransactionFormOptions {
   updateMutation: ReturnType<typeof useUpdateTransaction>
 }
 
-export function useTransactionForm({
+export const useTransactionForm = ({
   transaction,
   onClose,
   createMutation,
   updateMutation,
-}: UseTransactionFormOptions) {
+}: UseTransactionFormOptions) => {
   const isEditing = transaction !== null
 
   const form = useAppForm({

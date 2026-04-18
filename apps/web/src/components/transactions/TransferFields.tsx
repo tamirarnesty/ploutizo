@@ -1,0 +1,51 @@
+import { Field, FieldError, FieldLabel } from '@ploutizo/ui/components/field'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@ploutizo/ui/components/select'
+import type { Account } from '@ploutizo/types'
+import type { useTransactionForm } from './hooks/useTransactionForm'
+
+export interface TransferFieldsProps {
+  form: ReturnType<typeof useTransactionForm>['form']
+  accounts: Account[]
+}
+
+export const TransferFields = ({ form, accounts }: TransferFieldsProps) => (
+  <form.AppField
+    name="toAccountId"
+    validators={{
+      onChange: ({ value }: { value: string }) =>
+        !value ? 'Destination account is required.' : undefined,
+    }}
+  >
+    {(field) => (
+      <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
+        <FieldLabel htmlFor="tx-toAccountId">To account</FieldLabel>
+        <Select
+          value={field.state.value}
+          onValueChange={(v) => {
+            if (v !== null) field.handleChange(v)
+          }}
+        >
+          <SelectTrigger id="tx-toAccountId">
+            <SelectValue placeholder="Select account" />
+          </SelectTrigger>
+          <SelectContent>
+            {accounts.map((a) => (
+              <SelectItem key={a.id} value={a.id}>
+                {a.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {field.state.meta.errors.length > 0 ? (
+          <FieldError>{String(field.state.meta.errors[0])}</FieldError>
+        ) : null}
+      </Field>
+    )}
+  </form.AppField>
+)

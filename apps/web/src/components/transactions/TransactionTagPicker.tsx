@@ -11,8 +11,7 @@ import {
   ComboboxValue,
   useComboboxAnchor,
 } from '@ploutizo/ui/components/combobox'
-import { useGetTags } from '@/lib/data-access/tags'
-import { useCreateTag } from '@/lib/data-access/tags'
+import { useCreateTag, useGetTags  } from '@/lib/data-access/tags'
 
 interface TransactionTagPickerProps {
   value: string[]           // current tagIds array from form field state
@@ -28,7 +27,7 @@ interface TransactionTagPickerProps {
  * - form field value (tagIds) always contains only real UUIDs — translation in handleValueChange
  * - T-03.4-11: __create__ strings never reach toApiPayload
  */
-export function TransactionTagPicker({ value, onChange }: TransactionTagPickerProps) {
+export const TransactionTagPicker = ({ value, onChange }: TransactionTagPickerProps) => {
   const { data: tags = [] } = useGetTags()
   const createTagMutation = useCreateTag()
   const [tagInputValue, setTagInputValue] = useState('')

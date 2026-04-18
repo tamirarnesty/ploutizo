@@ -8,11 +8,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@ploutizo/ui/components/select'
+import { AssigneeRow } from './AssigneeRow'
+import type { OrgMember } from '@ploutizo/types'
+import type { AssigneeFormRow } from './types'
 import { formatCurrency } from '@/lib/formatCurrency'
 import { lrmSplit } from '@/lib/lrm'
-import type { OrgMember } from '@ploutizo/types'
-import { AssigneeRow } from './AssigneeRow'
-import type { AssigneeFormRow } from './types'
 
 interface SplitSectionProps {
   value: AssigneeFormRow[]
@@ -21,7 +21,7 @@ interface SplitSectionProps {
   orgMembers: OrgMember[]
 }
 
-export function SplitSection({ value, onChange, amountCents, orgMembers }: SplitSectionProps) {
+export const SplitSection = ({ value, onChange, amountCents, orgMembers }: SplitSectionProps) => {
   const [mode, setMode] = useState<'percent' | 'dollar'>('percent')
 
   const handleAddAssignee = useCallback(
