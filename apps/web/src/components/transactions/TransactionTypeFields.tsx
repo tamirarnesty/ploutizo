@@ -21,6 +21,15 @@ import type { Account } from '@ploutizo/types'
 // D-19: import caption (└ Original: ...) is deferred because originalDescription
 // and originalMerchant columns are absent from the current DB schema.
 
+const TYPE_LABELS: Record<string, string> = {
+  expense: 'Expense',
+  income: 'Income',
+  transfer: 'Transfer',
+  settlement: 'Settlement',
+  refund: 'Refund',
+  contribution: 'Contribution',
+}
+
 interface TransactionTypeFieldsProps {
   form: ReturnType<typeof useTransactionForm>['form']
   accounts: Account[]
@@ -59,7 +68,7 @@ export const TransactionTypeFields = ({
           >
             <SelectTrigger id="tx-type" autoFocus>
               {/* autoFocus: type is the primary purpose of opening the sheet (per web-design-guidelines) */}
-              <SelectValue />
+              <SelectValue>{TYPE_LABELS[field.state.value] ?? 'Select type'}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="expense">Expense</SelectItem>
