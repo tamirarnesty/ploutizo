@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import type { UseQueryResult } from '@tanstack/react-query'
-import { apiFetch } from '@/lib/queryClient'
 import type { TransactionRow } from './useGetTransactions'
+import { apiFetch } from '@/lib/queryClient'
 
 export const fetchTransaction = async (id: string): Promise<TransactionRow> => {
   const r = await apiFetch<{ data: TransactionRow }>(`/api/transactions/${id}`)
@@ -10,7 +10,7 @@ export const fetchTransaction = async (id: string): Promise<TransactionRow> => {
 
 export const useGetTransaction = (id: string | null): UseQueryResult<TransactionRow> => {
   return useQuery({
-    queryKey: ['transactions', id],
+    queryKey: ['transaction', id],
     queryFn: () => fetchTransaction(id!),
     enabled: id !== null,
   })

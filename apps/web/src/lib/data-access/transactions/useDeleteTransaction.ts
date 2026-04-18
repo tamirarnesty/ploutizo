@@ -23,7 +23,8 @@ export const useDeleteTransaction = () => {
       qc.setQueriesData<TransactionListResponse>(
         { queryKey: ['transactions'] },
         (old) => {
-          if (!old) return old
+          // Skip detail queries (TransactionRow shape) — only update list responses
+          if (!old || !Array.isArray(old.data)) return old
           return {
             ...old,
             data: old.data.filter((t) => t.id !== id),

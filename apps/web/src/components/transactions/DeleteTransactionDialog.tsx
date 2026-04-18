@@ -32,7 +32,16 @@ export const DeleteTransactionDialog = ({
       </AlertDialogHeader>
       <AlertDialogFooter>
         <AlertDialogCancel>Cancel</AlertDialogCancel>
-        <AlertDialogAction variant="destructive" onClick={onConfirm} disabled={isPending}>
+        {/* AlertDialogAction is a plain Button (not a Close primitive) — call onOpenChange(false)
+            explicitly so the dialog dismisses after confirming. */}
+        <AlertDialogAction
+          variant="destructive"
+          onClick={() => {
+            onConfirm()
+            onOpenChange(false)
+          }}
+          disabled={isPending}
+        >
           Delete transaction
         </AlertDialogAction>
       </AlertDialogFooter>
