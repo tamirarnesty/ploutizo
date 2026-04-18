@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from '@ploutizo/ui/components/sonner'
 import { apiFetch } from '@/lib/queryClient'
 import type { TransactionRow } from './useGetTransactions'
 
@@ -13,6 +14,12 @@ export const useCreateTransaction = () => {
         method: 'POST',
         body: JSON.stringify(body),
       }).then((r: { data: TransactionRow }) => r.data),
-    onSettled: () => qc.invalidateQueries({ queryKey: ['transactions'] }),
+    onSuccess: () => {
+      toast.success('Transaction created.')
+      qc.invalidateQueries({ queryKey: ['transactions'] })
+    },
+    onError: () => {
+      toast.error('Failed to create transaction.')
+    },
   })
 }

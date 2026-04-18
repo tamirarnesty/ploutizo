@@ -12,7 +12,7 @@ import {
 import { Spinner } from '@ploutizo/ui/components/spinner'
 import type { AssigneeFormRow } from './types'
 import type { useTransactionForm } from './hooks/useTransactionForm'
-import { useSearchTransactions } from '@/lib/data-access/transactions'
+import { useSearchTransactions, useGetTransactions } from '@/lib/data-access/transactions'
 import { formatCurrency } from '@/lib/formatCurrency'
 
 export interface RefundLinkerProps {
@@ -24,11 +24,25 @@ export const RefundLinker = ({ form, onAssigneesChange }: RefundLinkerProps) => 
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const debounceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Pre-load recent expense transactions for the dropdown before the user types
+  const { data: recentExpensesResponse } = useGetTransactions({
+    page: 1,
+    limit: 10,
+    sort: 'date',
+    order: 'desc',
+    type: 'expense',
+  })
+  const recentExpenses = recentExpensesResponse?.data ?? []
+
   const { data: searchResults = [], isLoading: searching } = useSearchTransactions(debouncedQuery)
 
-  const searchResultsById = React.useMemo(
-    () => new Map(searchResults.map((tx) => [tx.id, tx])),
-    [searchResults],
+  // Show search results when query is active, recent expenses otherwise
+  const displayedResults = debouncedQuery.length >= 2 ? searchResults : recentExpenses
+
+  // Build id→tx map from displayedResults for O(1) lookup in onValueChange
+  const resultsById = React.useMemo(
+    () => new Map(displayedResults.map((tx) => [tx.id, tx])),
+    [displayedResults],
   )
 
   return (
@@ -46,7 +60,7 @@ export const RefundLinker = ({ form, onAssigneesChange }: RefundLinkerProps) => 
             onValueChange={(v: string | null) => {
               field.handleChange(v ?? '')
               if (v) {
-                const original = searchResultsById.get(v)
+                const original = resultsById.get(v)
                 if (original) {
                   onAssigneesChange(
                     original.assignees.map((a) => ({
@@ -63,7 +77,6 @@ export const RefundLinker = ({ form, onAssigneesChange }: RefundLinkerProps) => 
               if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
               debounceTimerRef.current = setTimeout(() => setDebouncedQuery(q), 300)
             }}
-            items={searchResults.map((tx) => tx.id)}
           >
             <ComboboxInput placeholder="Search transactions…" showClear autoComplete="off" />
             <ComboboxContent>
@@ -73,23 +86,19 @@ export const RefundLinker = ({ form, onAssigneesChange }: RefundLinkerProps) => 
                 </div>
               ) : null}
               <ComboboxList>
-                {(id: string) => {
-                  const tx = searchResultsById.get(id)
-                  if (!tx) return null
-                  return (
-                    <ComboboxItem key={id} value={id}>
-                      <span className="min-w-0 truncate">
-                        {tx.description ?? tx.merchant ?? '—'} &bull;{' '}
-                        {new Date(tx.date + 'T00:00:00').toLocaleDateString('en-CA', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}{' '}
-                        &bull; {formatCurrency(tx.amount)}
-                      </span>
-                    </ComboboxItem>
-                  )
-                }}
+                {displayedResults.map((tx) => (
+                  <ComboboxItem key={tx.id} value={tx.id}>
+                    <span className="min-w-0 truncate">
+                      {tx.description ?? tx.merchant ?? '—'} &bull;{' '}
+                      {new Date(tx.date + 'T00:00:00').toLocaleDateString('en-CA', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}{' '}
+                      &bull; {formatCurrency(tx.amount)}
+                    </span>
+                  </ComboboxItem>
+                ))}
               </ComboboxList>
               <ComboboxEmpty>No matching transactions found.</ComboboxEmpty>
             </ComboboxContent>
