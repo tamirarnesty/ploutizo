@@ -365,7 +365,7 @@ single form that conditionally renders the correct fields per type.
 - Tag picker with inline create
 - Transaction edit: any field editable post-creation; original imported values preserved and visible in edit view
 
-**Plans:** 5 plans
+**Plans:** 11 plans (5 feature + 6 gap closure)
 
 Plans:
 - [ ] 03.4-01-PLAN.md — Foundation: vitest + lrmSplit pure function + API patches (PATCH schema swap, GET description filter)
@@ -373,6 +373,12 @@ Plans:
 - [ ] 03.4-03-PLAN.md — SplitSection tree: AssigneeRow + SplitSection (% | $ toggle, LRM, add-assignee, totals)
 - [ ] 03.4-04-PLAN.md — Form layer: useTransactionForm hook + TransactionTypeFields (6 types + RefundLinker) + TransactionForm + TransactionSheet (560px)
 - [ ] 03.4-05-PLAN.md — Table wiring: buildColumns onEdit param + Transactions.tsx Sheet state + human verification checkpoint
+- [ ] 03.4-06-PLAN.md — Gap closure: Select label display fix (all 8 SelectValue calls)
+- [ ] 03.4-07-PLAN.md — Gap closure: Amount field InputGroup $ prefix + empty default + undefined type
+- [ ] 03.4-08-PLAN.md — Gap closure: Tag picker Base UI Combobox fix (static JSX items)
+- [ ] 03.4-09-PLAN.md — Gap closure: Row action button always-visible (remove opacity-0 group-hover)
+- [ ] 03.4-10-PLAN.md — Gap closure: Date picker Popover + Calendar (replace native input type=date)
+- [ ] 03.4-11-PLAN.md — Gap closure: Edit footer icon-only Delete button
 
 **Requirements covered:**
 - §4 Transactions (create/edit forms)
