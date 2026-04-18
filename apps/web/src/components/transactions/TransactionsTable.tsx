@@ -39,6 +39,7 @@ interface TransactionsTableProps {
   onSortChange: (col: TransactionSearch['sort'], dir: 'asc' | 'desc') => void
   onFilteredEmpty: boolean // true when filters active and no results
   onClearFilters: () => void
+  onEdit: (transaction: TransactionRow) => void
 }
 
 export const TransactionsTable = ({
@@ -53,6 +54,7 @@ export const TransactionsTable = ({
   onSortChange,
   onFilteredEmpty,
   onClearFilters,
+  onEdit,
 }: TransactionsTableProps) => {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const deleteMutation = useDeleteTransaction()
@@ -76,7 +78,7 @@ export const TransactionsTable = ({
     })
   }
 
-  const columns = useMemo(() => buildColumns(setDeleteId), [setDeleteId])
+  const columns = useMemo(() => buildColumns(setDeleteId, onEdit), [setDeleteId, onEdit])
 
   const table = useReactTable({
     data: transactions,

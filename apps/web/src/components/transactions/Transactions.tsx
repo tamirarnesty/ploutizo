@@ -5,9 +5,11 @@ import { Button } from '@ploutizo/ui/components/button'
 import { Filters } from '@ploutizo/ui/components/reui/filters'
 import { Text } from '@ploutizo/ui/components/text'
 import { TransactionsTable } from './TransactionsTable'
+import { TransactionSheet } from './TransactionSheet'
 import { buildFilterFields } from './TransactionFilterFields'
 import type { Filter } from '@ploutizo/ui/components/reui/filters'
 import type { TransactionSearch } from './transactionSearch'
+import type { TransactionRow } from '@/lib/data-access/transactions'
 import { useGetTransactions } from '@/lib/data-access/transactions'
 import { useGetAccounts } from '@/lib/data-access/accounts'
 import { useGetCategories } from '@/lib/data-access/categories'
@@ -125,6 +127,9 @@ export const Transactions = () => {
   // Operators are transient UI state: they don't round-trip through the URL
   // because the API has no operator params. Value changes push to URL via
   // handleFiltersChange; operator changes stay local so they don't snap back.
+  const [sheetOpen, setSheetOpen] = useState<boolean>(false)
+  const [selectedTx, setSelectedTx] = useState<TransactionRow | null>(null)
+
   const [activeFilters, setActiveFilters] = useState<Filter<string>[]>(
     () => searchToFilters(search)
   )
@@ -218,18 +223,26 @@ export const Transactions = () => {
     })
   }, [navigate])
 
+  const handleAddClick = useCallback(() => {
+    setSelectedTx(null)
+    setSheetOpen(true)
+  }, [])
+
+  const handleEdit = useCallback((transaction: TransactionRow) => {
+    setSelectedTx(transaction)
+    setSheetOpen(true)
+  }, [])
+
+  const handleSheetClose = useCallback(() => {
+    setSheetOpen(false)
+    setSelectedTx(null)
+  }, [])
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <Text as="h1" variant="h3" className="min-w-0 truncate">Transactions</Text>
-        {/* Disabled until create transaction flow is built */}
-        <Button
-          type="button"
-          disabled
-          aria-disabled="true"
-          title="Create transactions coming soon"
-          className="shrink-0"
-        >
+        <Button type="button" onClick={handleAddClick} className="shrink-0">
           Add transaction
         </Button>
       </div>
@@ -260,6 +273,14 @@ export const Transactions = () => {
         onSortChange={handleSortChange}
         onFilteredEmpty={hasActiveFilters}
         onClearFilters={handleClearFilters}
+        onEdit={handleEdit}
+      />
+
+      <TransactionSheet
+        key={selectedTx?.id ?? 'new'}
+        open={sheetOpen}
+        transaction={selectedTx}
+        onClose={handleSheetClose}
       />
     </div>
   )

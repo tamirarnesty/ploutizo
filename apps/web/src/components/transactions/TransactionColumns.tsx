@@ -11,7 +11,6 @@ import {
 } from '@ploutizo/ui/components/dropdown-menu'
 import { Skeleton } from '@ploutizo/ui/components/skeleton'
 import { Text } from '@ploutizo/ui/components/text'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@ploutizo/ui/components/tooltip'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { TransactionRow } from '@/lib/data-access/transactions'
 import { ICON_MAP } from '@/components/categories/LucideIconPicker'
@@ -45,6 +44,7 @@ export const typeBadgeVariant: Record<string, 'destructive' | 'secondary' | 'def
 
 export function buildColumns(
   setDeleteId: (id: string) => void,
+  onEdit: (transaction: TransactionRow) => void,
 ): ColumnDef<TransactionRow>[] {
   return [
     // 1. Date
@@ -286,20 +286,9 @@ export function buildColumns(
             }
           />
           <DropdownMenuContent align="end">
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <DropdownMenuItem
-                    disabled
-                    aria-disabled="true"
-                    className="cursor-not-allowed opacity-50"
-                  >
-                    Edit
-                  </DropdownMenuItem>
-                }
-              />
-              <TooltipContent>Available in next update</TooltipContent>
-            </Tooltip>
+            <DropdownMenuItem onClick={() => onEdit(row.original)}>
+              Edit
+            </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive focus:text-destructive"
               onClick={() => setDeleteId(row.original.id)}
