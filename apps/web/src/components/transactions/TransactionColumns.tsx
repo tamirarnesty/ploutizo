@@ -249,9 +249,9 @@ export function buildColumns(
         skeleton: <Skeleton className="ml-auto h-4 w-16 motion-safe:animate-pulse" />,
       },
       cell: ({ row }) => {
-        const amountClass = ['expense', 'refund', 'settlement'].includes(row.original.type)
+        const amountClass = ['expense', 'settlement'].includes(row.original.type)
           ? 'text-destructive'
-          : ['income', 'contribution'].includes(row.original.type)
+          : ['income', 'contribution', 'refund'].includes(row.original.type)
             ? 'text-emerald-600 dark:text-emerald-400'
             : 'text-muted-foreground' // transfer
         return (

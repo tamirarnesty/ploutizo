@@ -19,7 +19,7 @@ const baseTransactionSchema = z.object({
   accountId: z.string().uuid(),
   amount: z.number().int().positive(),
   date: z.string().date(),
-  description: z.string().optional(),
+  description: z.string().min(1, 'Description is required.'),
   merchant: z.string().optional(),
   assignees: z.array(assigneeSchema).optional(),
   tagIds: z.array(z.string().uuid()).optional(),
