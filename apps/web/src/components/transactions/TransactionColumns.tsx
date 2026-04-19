@@ -11,7 +11,6 @@ import {
 } from '@ploutizo/ui/components/dropdown-menu'
 import { Skeleton } from '@ploutizo/ui/components/skeleton'
 import { Text } from '@ploutizo/ui/components/text'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@ploutizo/ui/components/tooltip'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { TransactionRow } from '@/lib/data-access/transactions'
 import { ICON_MAP } from '@/components/categories/LucideIconPicker'
@@ -45,6 +44,7 @@ export const typeBadgeVariant: Record<string, 'destructive' | 'secondary' | 'def
 
 export function buildColumns(
   setDeleteId: (id: string) => void,
+  onEdit: (transaction: TransactionRow) => void,
 ): ColumnDef<TransactionRow>[] {
   return [
     // 1. Date
@@ -249,9 +249,9 @@ export function buildColumns(
         skeleton: <Skeleton className="ml-auto h-4 w-16 motion-safe:animate-pulse" />,
       },
       cell: ({ row }) => {
-        const amountClass = ['expense', 'refund', 'settlement'].includes(row.original.type)
+        const amountClass = ['expense', 'settlement'].includes(row.original.type)
           ? 'text-destructive'
-          : ['income', 'contribution'].includes(row.original.type)
+          : ['income', 'contribution', 'refund'].includes(row.original.type)
             ? 'text-emerald-600 dark:text-emerald-400'
             : 'text-muted-foreground' // transfer
         return (
@@ -279,27 +279,16 @@ export function buildColumns(
                 variant="ghost"
                 size="icon"
                 aria-label="Transaction actions"
-                className="opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 focus-visible:opacity-100 @media_(hover:_none):opacity-100"
+                className="opacity-0 [tr:hover_&]:opacity-100 data-[state=open]:opacity-100 focus-visible:opacity-100"
               >
                 <MoreHorizontal className="size-4" />
               </Button>
             }
           />
           <DropdownMenuContent align="end">
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <DropdownMenuItem
-                    disabled
-                    aria-disabled="true"
-                    className="cursor-not-allowed opacity-50"
-                  >
-                    Edit
-                  </DropdownMenuItem>
-                }
-              />
-              <TooltipContent>Available in next update</TooltipContent>
-            </Tooltip>
+            <DropdownMenuItem onClick={() => onEdit(row.original)}>
+              Edit
+            </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive focus:text-destructive"
               onClick={() => setDeleteId(row.original.id)}

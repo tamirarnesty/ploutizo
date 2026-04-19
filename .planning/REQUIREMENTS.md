@@ -118,6 +118,47 @@
 
 ---
 
+### 4.1 Transactions — Schema v2
+
+**Context:** Schema revision decided 2026-04-19. Supersedes the original 03.1 schema for columns listed below.
+
+**Schema changes:**
+- Drop `merchant`, `income_source`, `to_account_id`, `settled_account_id`, `investment_type`
+- Add `counterpart_account_id` FK nullable — Transfer: destination; Settlement: funding source ("Paid from")
+- Add `raw_description` text nullable — bank/import memo; null for manually created rows
+- Add `notes` text nullable — free-form, separate from description
+- `description` is now required on all 6 transaction types (previously nullable/optional on some)
+- Deferred (CSV Import phase): `import_batch_id`, `external_id`, `is_duplicate`
+
+**Form requirements:**
+- Auto-filled locked descriptions for transfer, settlement, contribution, linked refund — generated from account names; UI-only lock (no schema flag); unlockable inline
+- Assignee section uses shadcn Toggle buttons per member; equal split auto-calculated on toggle; "Customize split" expander for manual overrides
+- Settlement "Paid from" field includes tracked accounts + untracked options (Cash, E-Transfer, Cheque, Other) with visual separator
+- Contribution account picker shows member name alongside account type (e.g. "TFSA — Emily")
+- Notes + tags always at the bottom, side by side, always optional
+
+**Table requirements:**
+- Rows grouped by date with section label; date not repeated per row
+- Single Account column rendering `A → B` for transfer/settlement when counterpart is set
+- Amount column: signed + color-coded (expense red negative, income/refund green positive, transfer/settlement/contribution unsigned neutral)
+- Type badge on every row; internal types (transfer, settlement, contribution) rendered at reduced opacity
+- Category column shows em dash for non-expense/refund types
+- Refund rows show original-transaction sub-line (↩ date · amount); clicking opens original in drawer
+- Filter bar includes "Internal" shortcut that selects transfer + settlement + contribution together
+
+**Verification:**
+- [ ] Migration removes dropped columns and adds new columns without data loss on existing rows
+- [ ] All 6 Zod schemas updated: `merchant`/`income_source`/`to_account_id`/`settled_account_id` removed, `counterpart_account_id`/`notes`/`raw_description` added
+- [ ] `description` required validation fires on all 6 types
+- [ ] Transfer/settlement auto-filled descriptions generated correctly from account names
+- [ ] Unlock affordance allows description override; override persists after save
+- [ ] Toggle assignees: 1 member = 100%, 2 = 50% each, 3 = 33% each (LRM)
+- [ ] Table account column renders single name or `A → B` correctly per type
+- [ ] Amount sign/color correct for all 6 types
+- [ ] "Internal" filter tab selects transfer + settlement + contribution rows
+
+---
+
 ### 5. Settlement
 
 **Requirements:** See `REQUIREMENTS.md §5`.

@@ -69,6 +69,8 @@ export type ListQueryParams = {
   categoryId?: string;
   assigneeId?: string;
   tagIds?: string[];
+  /** D-18: case-insensitive substring match on description OR merchant — T-03.4-01 */
+  description?: string;
 };
 
 // Build the WHERE conditions array for list + count queries
@@ -116,6 +118,13 @@ export function buildConditions(params: ListQueryParams): SQL[] {
             )
           )
       )
+    );
+  }
+  // T-03.4-01: D-18 description filter — parameterized ILIKE (NOT string interpolation) — safe from SQL injection
+  // '%' + value + '%' is passed as a Drizzle bound parameter to the DB driver, not concatenated into SQL text.
+  if (params.description) {
+    conditions.push(
+      sql`(${transactions.description} ILIKE ${'%' + params.description + '%'} OR ${transactions.merchant} ILIKE ${'%' + params.description + '%'})`
     );
   }
   return conditions;

@@ -10,17 +10,9 @@ import {
 import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-table'
 import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-grid-scroll-area'
 import { DataGridPagination } from '@ploutizo/ui/components/reui/data-grid/data-grid-pagination'
-import { Button } from '@ploutizo/ui/components/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@ploutizo/ui/components/dialog'
 import { toast } from '@ploutizo/ui/components/sonner'
 import { buildColumns } from './TransactionColumns'
+import { DeleteTransactionDialog } from './DeleteTransactionDialog'
 import { TransactionsTableEmpty } from './TransactionTableEmpty'
 import { TransactionsTableEmptyFiltered } from './TransactionTableEmptyFiltered'
 import type { TransactionRow } from '@/lib/data-access/transactions'
@@ -39,6 +31,7 @@ interface TransactionsTableProps {
   onSortChange: (col: TransactionSearch['sort'], dir: 'asc' | 'desc') => void
   onFilteredEmpty: boolean // true when filters active and no results
   onClearFilters: () => void
+  onEdit: (transaction: TransactionRow) => void
 }
 
 export const TransactionsTable = ({
@@ -53,6 +46,7 @@ export const TransactionsTable = ({
   onSortChange,
   onFilteredEmpty,
   onClearFilters,
+  onEdit,
 }: TransactionsTableProps) => {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const deleteMutation = useDeleteTransaction()
@@ -61,12 +55,9 @@ export const TransactionsTable = ({
   const handleConfirmDelete = () => {
     if (!deleteId) return
     const id = deleteId
-    setDeleteId(null) // Close dialog
-
-    // Fire mutation — onMutate in the hook removes the row optimistically before API call
+    // AlertDialogAction fires onClick BEFORE closing the dialog, so deleteId is still
+    // valid here. The dialog closes via onOpenChange(false) after this returns.
     deleteMutation.mutate(id)
-
-    // Show Undo toast immediately (row is already gone optimistically)
     toast('Transaction deleted', {
       duration: 5000,
       action: {
@@ -76,7 +67,7 @@ export const TransactionsTable = ({
     })
   }
 
-  const columns = useMemo(() => buildColumns(setDeleteId), [setDeleteId])
+  const columns = useMemo(() => buildColumns(setDeleteId, onEdit), [setDeleteId, onEdit])
 
   const table = useReactTable({
     data: transactions,
@@ -116,23 +107,12 @@ export const TransactionsTable = ({
 
   return (
     <>
-      {/* Delete confirm dialog */}
-      <Dialog open={deleteId !== null} onOpenChange={(open) => { if (!open) setDeleteId(null) }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete transaction?</DialogTitle>
-            <DialogDescription>This action cannot be undone.</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteId(null)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleConfirmDelete}>
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeleteTransactionDialog
+        open={deleteId !== null}
+        onOpenChange={(open) => { if (!open) setDeleteId(null) }}
+        onConfirm={handleConfirmDelete}
+        isPending={deleteMutation.isPending}
+      />
 
       <DataGrid
         table={table}

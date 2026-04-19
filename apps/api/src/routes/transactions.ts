@@ -3,7 +3,6 @@ import { appValidator } from '../lib/validator';
 import { DomainError } from '../lib/errors';
 import {
   createTransactionSchema,
-  updateTransactionSchema,
 } from '@ploutizo/validators';
 import {
   checkRefundOfOwnership,
@@ -82,6 +81,7 @@ transactionsRouter.get('/', async (c) => {
     categoryId: c.req.query('categoryId'),
     assigneeId: c.req.query('assigneeId'),
     tagIds: tagIds.length > 0 ? tagIds : undefined,
+    description: c.req.query('description'),
   };
 
   const result = await listTransactions(params);
@@ -117,11 +117,19 @@ transactionsRouter.patch('/:id/restore', async (c) => {
   return c.json({ data: result });
 });
 
-// PATCH /:id — update fields + replace-all assignees/tags (D-03, D-10, D-11)
-transactionsRouter.patch('/:id', appValidator('json', updateTransactionSchema), async (c) => {
+// PATCH /:id — update fields + replace-all assignees/tags (D-03, D-08, D-10, D-11)
+// D-08: uses createTransactionSchema (discriminated union) to enforce type-specific required fields on type change
+transactionsRouter.patch('/:id', appValidator('json', createTransactionSchema), async (c) => {
   const orgId = c.get('orgId');
   const id = c.req.param('id');
   const data = c.req.valid('json');
+
+  // T-03.4-02: validate refundOf org ownership if provided — mirrors POST guard
+  // Use 'in' narrowing because refundOf only exists on the 'refund' variant of the discriminated union.
+  if ('refundOf' in data && data.refundOf) {
+    const owned = await checkRefundOfOwnership(data.refundOf, orgId);
+    if (!owned) throw new DomainError(400, 'refundOf transaction not found in this org');
+  }
 
   let updated;
   try {

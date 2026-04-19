@@ -19,11 +19,17 @@ export const useDeleteTransaction = () => {
         queryKey: ['transactions'],
       }) as Snapshot
 
-      // Optimistically remove the row from all caches
+      return { snapshots }
+      // NOTE: setQueriesData moved to onSuccess so row disappears after toast/close
+    },
+
+    onSuccess: (_data, id) => {
+      // Remove the deleted row from all list caches after toast and sheet close have fired
       qc.setQueriesData<TransactionListResponse>(
         { queryKey: ['transactions'] },
         (old) => {
-          if (!old) return old
+          // Skip detail queries (TransactionRow shape) — only update list responses
+          if (!old || !Array.isArray(old.data)) return old
           return {
             ...old,
             data: old.data.filter((t) => t.id !== id),
@@ -31,8 +37,6 @@ export const useDeleteTransaction = () => {
           }
         }
       )
-
-      return { snapshots }
     },
 
     onError: (_err, _id, context) => {

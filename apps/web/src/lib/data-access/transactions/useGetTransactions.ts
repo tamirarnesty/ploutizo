@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import type { UseQueryResult } from '@tanstack/react-query'
-import { apiFetch } from '@/lib/queryClient'
+import { fetchTransactions } from './queries'
 
 export interface TransactionAssignee {
   transactionId: string
@@ -58,6 +58,7 @@ export interface TransactionQueryParams {
   categoryId?: string
   assigneeId?: string
   tagIds?: string // comma-separated UUIDs
+  description?: string
 }
 
 export interface TransactionListResponse {
@@ -65,24 +66,6 @@ export interface TransactionListResponse {
   total: number
   page: number
   limit: number
-}
-
-export const fetchTransactions = async (
-  params: TransactionQueryParams
-): Promise<TransactionListResponse> => {
-  const qs = new URLSearchParams()
-  qs.set('page', String(params.page))
-  qs.set('limit', String(params.limit))
-  qs.set('sort', params.sort)
-  qs.set('order', params.order)
-  if (params.type) qs.set('type', params.type)
-  if (params.dateFrom) qs.set('dateFrom', params.dateFrom)
-  if (params.dateTo) qs.set('dateTo', params.dateTo)
-  if (params.accountId) qs.set('accountId', params.accountId)
-  if (params.categoryId) qs.set('categoryId', params.categoryId)
-  if (params.assigneeId) qs.set('assigneeId', params.assigneeId)
-  if (params.tagIds) qs.set('tagIds', params.tagIds) // comma-separated; API splits on comma
-  return apiFetch<TransactionListResponse>(`/api/transactions?${qs.toString()}`)
 }
 
 export const useGetTransactions = (
