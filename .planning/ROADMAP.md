@@ -353,7 +353,7 @@ Plans:
 
 ---
 
-### Phase 03.4: Transaction Forms UI
+### Phase 03.4: Transaction Forms UI ✓ COMPLETE (2026-04-19)
 
 **Goal:** Users can create and edit any of the six transaction types through a
 single form that conditionally renders the correct fields per type.
@@ -365,40 +365,45 @@ single form that conditionally renders the correct fields per type.
 - Tag picker with inline create
 - Transaction edit: any field editable post-creation; original imported values preserved and visible in edit view
 
-**Plans:** 11 plans (5 feature + 6 gap closure)
+**Plans:** 21/21 complete
 
 Plans:
-- [ ] 03.4-01-PLAN.md — Foundation: vitest + lrmSplit pure function + API patches (PATCH schema swap, GET description filter)
-- [ ] 03.4-02-PLAN.md — Data-access layer: TransactionFormValues/AssigneeFormRow types + 4 new hooks
-- [ ] 03.4-03-PLAN.md — SplitSection tree: AssigneeRow + SplitSection (% | $ toggle, LRM, add-assignee, totals)
-- [ ] 03.4-04-PLAN.md — Form layer: useTransactionForm hook + TransactionTypeFields (6 types + RefundLinker) + TransactionForm + TransactionSheet (560px)
-- [ ] 03.4-05-PLAN.md — Table wiring: buildColumns onEdit param + Transactions.tsx Sheet state + human verification checkpoint
-- [ ] 03.4-06-PLAN.md — Gap closure: Select label display fix (all 8 SelectValue calls)
-- [ ] 03.4-07-PLAN.md — Gap closure: Amount field InputGroup $ prefix + empty default + undefined type
-- [ ] 03.4-08-PLAN.md — Gap closure: Tag picker Base UI Combobox fix (static JSX items)
-- [ ] 03.4-09-PLAN.md — Gap closure: Row action button always-visible (remove opacity-0 group-hover)
-- [ ] 03.4-10-PLAN.md — Gap closure: Date picker Popover + Calendar (replace native input type=date)
-- [ ] 03.4-11-PLAN.md — Gap closure: Edit footer icon-only Delete button
+- [x] 03.4-01-PLAN.md — Foundation: vitest + lrmSplit pure function + API patches (PATCH schema swap, GET description filter)
+- [x] 03.4-02-PLAN.md — Data-access layer: TransactionFormValues/AssigneeFormRow types + 4 new hooks
+- [x] 03.4-03-PLAN.md — SplitSection tree: AssigneeRow + SplitSection (% | $ toggle, LRM, add-assignee, totals)
+- [x] 03.4-04-PLAN.md — Form layer: useTransactionForm hook + TransactionTypeFields (6 types + RefundLinker) + TransactionForm + TransactionSheet (560px)
+- [x] 03.4-05-PLAN.md — Table wiring: buildColumns onEdit param + Transactions.tsx Sheet state + human verification checkpoint
+- [x] 03.4-06-PLAN.md — Gap closure: Select label display fix (all 8 SelectValue calls)
+- [x] 03.4-07-PLAN.md — Gap closure: Amount field InputGroup $ prefix + empty default + undefined type
+- [x] 03.4-08-PLAN.md — Gap closure: Tag picker Base UI Combobox fix (static JSX items)
+- [x] 03.4-09-PLAN.md — Gap closure: Row action button always-visible (remove opacity-0 group-hover)
+- [x] 03.4-10-PLAN.md — Gap closure: Date picker Popover + Calendar (replace native input type=date)
+- [x] 03.4-11-PLAN.md — Gap closure: Edit footer icon-only Delete button
+- [x] 03.4-12 through 03.4-21 — UAT-diagnosed gap closures (RefundLinker auto-fill, amount sign, ReturnType aliases, linting, data-access split, etc.)
 
 **Requirements covered:**
 - §4 Transactions (create/edit forms)
 
 **Success criteria:**
-- [ ] Switching transaction type in the form clears type-specific fields from the previous type and shows the correct fields for the new type
-- [ ] Any field on a posted transaction can be edited; original description from import is preserved and visible in edit view
+- [x] Switching transaction type in the form clears type-specific fields from the previous type and shows the correct fields for the new type
+- [x] Any field on a posted transaction can be edited; original description from import is preserved and visible in edit view
 
 ---
 
-### Phase 03.4.1: Transaction Table Layout Redesign (INSERTED)
+### Phase 03.4.1: Transaction v2 — Schema Migration, Form & Table Redesign (INSERTED)
 
-**Goal:** Redesign the transactions table to represent all six transaction types clearly — income, refund, transfer, settlement, and contribution are currently underrepresented. Introduce type-specific columns, smart column visibility, and a layout that communicates the full meaning of each transaction type at a glance.
+**Goal:** Simplify the transaction schema and deliver a redesigned form and table that work correctly for all 6 transaction types. The current schema has redundant nullable columns and the form/table are expense-focused; this phase fixes both.
 
 **Delivers:**
-- Type-aware column display (e.g. "To account" column for transfers, "Linked transaction" for refunds)
-- Visual treatment per type (icons, badges, or color indicators in the Type column)
-- Column visibility strategy: show/hide columns based on active transaction types in the dataset, or use expandable rows
+- DB migration: drop `merchant`, `income_source`, `to_account_id`, `settled_account_id`, `investment_type`; add `counterpart_account_id`, `raw_description`, `notes`
+- Updated Zod validators and API routes to match new schema
+- 6 form variants per design spec (expense, income, refund, transfer, settlement, contribution) in a single Sheet
+- Auto-filled locked descriptions for transfer/settlement/contribution/linked-refund with inline unlock affordance
+- Toggle-based assignee section (shadcn Toggle per member, equal split auto-calculated, "Customize split" expander)
+- Redesigned transactions table: date grouping, type badges, signed+color-coded amounts, single `A → B` account column, reduced opacity for internal types, refund sub-line linking to original transaction
+- Filter bar "Internal" shortcut (transfer + settlement + contribution)
 
-**Requirements**: TBD
+**Requirements**: See `REQUIREMENTS.md §4.1`
 **Depends on:** Phase 03.4
 **Plans:** 0 plans
 

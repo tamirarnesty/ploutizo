@@ -1,9 +1,9 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.1
-milestone_name: — Foundation
-status: verifying
-last_updated: "2026-04-19T02:16:46.359Z"
+milestone: v0.2
+milestone_name: Transactions & Settlement
+status: active
+last_updated: "2026-04-19T22:30:00.000Z"
 progress:
   total_phases: 7
   completed_phases: 7
@@ -16,16 +16,16 @@ progress:
 
 ## Current Position
 
-Phase: 03.2 (next)
+Phase: 03.4.1 (active)
 Plan: —
 **Milestone:** v0.2 Transactions & Settlement
-**Active Phase:** Phase 03.3.3 — UI Primitive Refactor Sweep — COMPLETE ✓
-**Status:** Phase 03.3.3 complete — 4/4 plans, verified 2026-04-17
-**Last session:** 2026-04-19T02:16:46.355Z
+**Active Phase:** Phase 03.4.1 — Transaction v2: Schema Migration, Form & Table Redesign
+**Status:** Phase 03.4 complete (21/21 plans) — ready to discuss/plan 03.4.1
+**Last session:** 2026-04-19T22:30:00.000Z
 
 ## Next Action
 
-Plan/execute Phase 03.2 (Transaction API) — or Phase 03.3 (Transaction List UI) if 03.2 is already done
+Discuss and plan Phase 03.4.1 — Transaction v2 schema migration, form redesign, table redesign
 
 ## Phase Status
 
@@ -40,9 +40,10 @@ Plan/execute Phase 03.2 (Transaction API) — or Phase 03.3 (Transaction List UI
 | 02.4 | App Shell and Sidebar Redesign | complete |
 | 02.4.1 | Mobile UI/UX Fixes and Foundation Re-Establishment | complete |
 | 03.1 | Transaction Schema & Migrations | complete |
-| 03.2 | Transaction API | pending |
-| 03.3 | Transaction List UI | pending |
-| 03.4 | Transaction Forms UI | ready to execute (5 plans) |
+| 03.2 | Transaction API | complete |
+| 03.3 | Transaction List UI | complete |
+| 03.4 | Transaction Forms UI | complete (21/21 plans, verified 2026-04-19) |
+| 03.4.1 | Transaction v2: Schema Migration, Form & Table Redesign | pending |
 | 04.1 | Settlement API | pending |
 | 04.2 | Settlement UI | pending |
 | 04.3 | Budgets API | pending |

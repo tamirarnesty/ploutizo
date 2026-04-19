@@ -19,6 +19,13 @@ Shared expense tracking across household members with real-time settlement balan
 - [x] Self-removal guard enforced server-side
 - [x] Members tab removed from settings nav; /settings/organization-members route deleted
 
+**Phase 03.4 — Transaction Forms UI (2026-04-19)**
+- [x] User can create and edit all 6 transaction types through a single Sheet form
+- [x] Transactions support splits across multiple assignees (LRM, % or $ toggle, even-split default)
+- [x] Refunds optionally link to original transaction (auto-fills description + amount + split)
+- [x] Transactions support optional tags (select-or-create-inline)
+- [x] Any field on a transaction is editable after creation
+
 ### Active
 
 **Households & Users**
@@ -147,7 +154,7 @@ The Linear workspace has 31 issues across 4 projects (Phase 1–4) already creat
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | Separate Hono REST API instead of Server Actions | API is stable core (frontend stays replaceable); multi-tenancy enforcement centralised; independently testable | — Pending |
-| Single flexible transactions table with nullable type-specific columns | Keeps queries and import flow simple; type enforcement at Zod/API layer | — Pending |
+| Single flexible transactions table with nullable type-specific columns | Keeps queries and import flow simple; type enforcement at Zod/API layer | — Being revised in 03.4.1: counterpart_account_id unifies to_account_id + settled_account_id; merchant/income_source folded into description |
 | Money stored as unsigned integer cents | Eliminates floating-point errors; direction implied by type, never by sign | — Pending |
 | Clerk for auth + multi-tenancy (orgs = households) | Best-in-class multi-tenancy with RBAC, pre-built UI, official Hono middleware | — Pending |
 | `users.external_id` not `clerkId` | Provider-agnostic naming — auth provider can change without schema rename | — Pending |
@@ -173,4 +180,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-14 — Phase 03.3.1 complete (API layering: AppEnv typed context, appValidator, DomainError/NotFoundError, query layer, service layer, webhookAuth middleware, thin route handlers)*
+*Last updated: 2026-04-19 — Phase 03.4 complete (21 plans: transaction forms for all 6 types, split/LRM UI, RefundLinker, tag picker, edit flow). Transaction schema v2 designed for 03.4.1 — see .planning/notes/transaction-v2-design-decisions.md*
