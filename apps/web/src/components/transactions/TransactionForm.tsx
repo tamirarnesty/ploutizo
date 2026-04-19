@@ -258,15 +258,16 @@ const TransactionFormInner = ({
           </div>
 
           {/* Base field: description */}
-          <form.AppField name="description">
+          <form.AppField
+            name="description"
+            validators={{
+              onChange: ({ value }: { value: string }) =>
+                !value?.trim() ? 'Description is required.' : undefined,
+            }}
+          >
             {(field) => (
-              <Field>
-                <FieldLabel htmlFor="tx-description">
-                  Description{' '}
-                  <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
-                    (optional)
-                  </Text>
-                </FieldLabel>
+              <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
+                <FieldLabel htmlFor="tx-description">Description</FieldLabel>
                 <Input
                   id="tx-description"
                   autoComplete="off"
@@ -274,6 +275,9 @@ const TransactionFormInner = ({
                   onChange={(e) => field.handleChange(e.target.value)}
                   onBlur={field.handleBlur}
                 />
+                {field.state.meta.errors.length > 0 ? (
+                  <FieldError>{String(field.state.meta.errors[0])}</FieldError>
+                ) : null}
                 {/* TODO(03.4-deferred): originalDescription column — add when schema patch lands */}
                 {/* D-19: import caption (└ Original: ...) is deferred because originalDescription */}
                 {/* and originalMerchant columns are absent from the current DB schema. */}
@@ -286,8 +290,8 @@ const TransactionFormInner = ({
             {(field) => (
               <Field>
                 <FieldLabel htmlFor="tx-merchant">
-                  Merchant{' '}
-                  <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
+                  Merchant
+                  <Text as="span" variant="body-sm" className="ml-1 font-normal text-muted-foreground">
                     (optional)
                   </Text>
                 </FieldLabel>
@@ -307,8 +311,8 @@ const TransactionFormInner = ({
             {(field) => (
               <Field>
                 <FieldLabel>
-                  Tags{' '}
-                  <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
+                  Tags
+                  <Text as="span" variant="body-sm" className="ml-1 font-normal text-muted-foreground">
                     (optional)
                   </Text>
                 </FieldLabel>

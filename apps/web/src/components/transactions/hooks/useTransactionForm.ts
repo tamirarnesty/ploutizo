@@ -62,7 +62,7 @@ export const toApiPayload = (value: TransactionFormValues): Record<string, unkno
     accountId: value.accountId,
     amount: Math.round((value.amount ?? 0) * 100),
     date: value.date,
-    description: value.description.trim() || undefined,
+    description: value.description.trim(),
     merchant: value.merchant.trim() || undefined,
     tagIds: value.tagIds.length > 0 ? value.tagIds : undefined,
     assignees:
