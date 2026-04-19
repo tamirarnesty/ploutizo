@@ -1,12 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import type { UseQueryResult } from '@tanstack/react-query'
 import type { TransactionRow } from './useGetTransactions'
-import { apiFetch } from '@/lib/queryClient'
-
-export const fetchTransaction = async (id: string): Promise<TransactionRow> => {
-  const r = await apiFetch<{ data: TransactionRow }>(`/api/transactions/${id}`)
-  return r.data
-}
+import { fetchTransaction } from './queries'
 
 export const useGetTransaction = (
   id: string | null,

@@ -1,3 +1,4 @@
+export * from './queries'
 export * from './useGetTransactions'
 export * from './useGetTransaction'
 export * from './useSearchTransactions'

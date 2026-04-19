@@ -30,6 +30,12 @@ export const AssigneeRow = ({
   onChange,
   onRemove,
 }: AssigneeRowProps) => {
+  const sharedInputProps = {
+    type: 'number' as const,
+    autoComplete: 'off' as const,
+    className: 'w-20 text-right',
+  } as const
+
   return (
     <div className="flex items-center gap-2">
       <Avatar size="sm" aria-label={memberName ?? 'Unknown member'}>
@@ -42,8 +48,7 @@ export const AssigneeRow = ({
 
       {mode === 'percent' ? (
         <Input
-          type="number"
-          autoComplete="off"
+          {...sharedInputProps}
           value={percentage.toFixed(1)}
           onChange={(e) => {
             const p = parseFloat(e.target.value)
@@ -54,12 +59,10 @@ export const AssigneeRow = ({
               })
             }
           }}
-          className="w-20 text-right"
         />
       ) : (
         <Input
-          type="number"
-          autoComplete="off"
+          {...sharedInputProps}
           value={(amountCents / 100).toFixed(2)}
           onChange={(e) => {
             const dollars = parseFloat(e.target.value)
@@ -71,7 +74,6 @@ export const AssigneeRow = ({
               })
             }
           }}
-          className="w-20 text-right"
         />
       )}
 
