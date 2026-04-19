@@ -12,7 +12,7 @@ import { IncomeFields } from './IncomeFields'
 import { TransferFields } from './TransferFields'
 import { SettlementFields } from './SettlementFields'
 import { ContributionFields } from './ContributionFields'
-import type { useTransactionForm } from './hooks/useTransactionForm'
+import type { TransactionFormInstance } from './hooks/useTransactionForm'
 import type { AssigneeFormRow, TransactionFormValues } from './types'
 import type { Category } from '@/lib/data-access/categories'
 import type { Account } from '@ploutizo/types'
@@ -31,7 +31,7 @@ const TYPE_LABELS: Record<string, string> = {
 }
 
 interface TransactionTypeFieldsProps {
-  form: ReturnType<typeof useTransactionForm>['form']
+  form: TransactionFormInstance
   accounts: Account[]
   categories: Category[]
   onAssigneesChange: (assignees: AssigneeFormRow[]) => void

@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@ploutizo/ui/components/select'
-import type { useTransactionForm } from './hooks/useTransactionForm'
+import type { TransactionFormInstance } from './hooks/useTransactionForm'
 
 const INCOME_TYPE_LABELS: Record<string, string> = {
   direct_deposit: 'Direct deposit',
@@ -19,7 +19,7 @@ const INCOME_TYPE_LABELS: Record<string, string> = {
 }
 
 export interface IncomeFieldsProps {
-  form: ReturnType<typeof useTransactionForm>['form']
+  form: TransactionFormInstance
 }
 
 export const IncomeFields = ({ form }: IncomeFieldsProps) => (
@@ -61,8 +61,8 @@ export const IncomeFields = ({ form }: IncomeFieldsProps) => (
       {(field) => (
         <Field>
           <FieldLabel htmlFor="tx-incomeSource">
-            Income source{' '}
-            <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
+            Income source
+            <Text as="span" variant="body-sm" className="ml-1 font-normal text-muted-foreground">
               (optional)
             </Text>
           </FieldLabel>

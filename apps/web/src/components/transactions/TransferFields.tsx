@@ -7,10 +7,10 @@ import {
   SelectValue,
 } from '@ploutizo/ui/components/select'
 import type { Account } from '@ploutizo/types'
-import type { useTransactionForm } from './hooks/useTransactionForm'
+import type { TransactionFormInstance } from './hooks/useTransactionForm'
 
 export interface TransferFieldsProps {
-  form: ReturnType<typeof useTransactionForm>['form']
+  form: TransactionFormInstance
   accounts: Account[]
 }
 

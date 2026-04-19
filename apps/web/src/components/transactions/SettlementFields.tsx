@@ -8,10 +8,10 @@ import {
   SelectValue,
 } from '@ploutizo/ui/components/select'
 import type { Account } from '@ploutizo/types'
-import type { useTransactionForm } from './hooks/useTransactionForm'
+import type { TransactionFormInstance } from './hooks/useTransactionForm'
 
 export interface SettlementFieldsProps {
-  form: ReturnType<typeof useTransactionForm>['form']
+  form: TransactionFormInstance
   accounts: Account[]
 }
 
@@ -20,8 +20,8 @@ export const SettlementFields = ({ form, accounts }: SettlementFieldsProps) => (
     {(field) => (
       <Field>
         <FieldLabel htmlFor="tx-settledAccountId">
-          Settlement account{' '}
-          <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
+          Settlement account
+          <Text as="span" variant="body-sm" className="ml-1 font-normal text-muted-foreground">
             (optional)
           </Text>
         </FieldLabel>

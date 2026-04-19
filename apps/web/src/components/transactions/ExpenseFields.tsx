@@ -7,10 +7,10 @@ import {
   SelectValue,
 } from '@ploutizo/ui/components/select'
 import type { Category } from '@/lib/data-access/categories'
-import type { useTransactionForm } from './hooks/useTransactionForm'
+import type { TransactionFormInstance } from './hooks/useTransactionForm'
 
 export interface ExpenseFieldsProps {
-  form: ReturnType<typeof useTransactionForm>['form']
+  form: TransactionFormInstance
   categories: Category[]
 }
 

@@ -10,10 +10,10 @@ import {
 import { RefundLinker } from './RefundLinker'
 import type { Category } from '@/lib/data-access/categories'
 import type { AssigneeFormRow } from './types'
-import type { useTransactionForm } from './hooks/useTransactionForm'
+import type { TransactionFormInstance } from './hooks/useTransactionForm'
 
 export interface RefundFieldsProps {
-  form: ReturnType<typeof useTransactionForm>['form']
+  form: TransactionFormInstance
   categories: Category[]
   onAssigneesChange: (assignees: AssigneeFormRow[]) => void
 }
@@ -24,8 +24,8 @@ export const RefundFields = ({ form, categories, onAssigneesChange }: RefundFiel
       {(field) => (
         <Field>
           <FieldLabel htmlFor="tx-refund-categoryId">
-            Category{' '}
-            <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
+            Category
+            <Text as="span" variant="body-sm" className="ml-1 font-normal text-muted-foreground">
               (optional)
             </Text>
           </FieldLabel>

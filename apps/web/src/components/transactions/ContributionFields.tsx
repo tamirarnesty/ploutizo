@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@ploutizo/ui/components/select'
-import type { useTransactionForm } from './hooks/useTransactionForm'
+import type { TransactionFormInstance } from './hooks/useTransactionForm'
 
 const INVESTMENT_TYPE_LABELS: Record<string, string> = {
   tfsa: 'TFSA',
@@ -19,7 +19,7 @@ const INVESTMENT_TYPE_LABELS: Record<string, string> = {
 }
 
 export interface ContributionFieldsProps {
-  form: ReturnType<typeof useTransactionForm>['form']
+  form: TransactionFormInstance
 }
 
 export const ContributionFields = ({ form }: ContributionFieldsProps) => (
@@ -27,8 +27,8 @@ export const ContributionFields = ({ form }: ContributionFieldsProps) => (
     {(field) => (
       <Field>
         <FieldLabel htmlFor="tx-investmentType">
-          Investment type{' '}
-          <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
+          Investment type
+          <Text as="span" variant="body-sm" className="ml-1 font-normal text-muted-foreground">
             (optional)
           </Text>
         </FieldLabel>
