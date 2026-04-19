@@ -5,6 +5,10 @@ import type { TransactionRow,
   useUpdateTransaction } from '@/lib/data-access/transactions'
 import type { TransactionFormValues } from '../types'
 
+export type CreateMutation = ReturnType<typeof useCreateTransaction>
+export type UpdateMutation = ReturnType<typeof useUpdateTransaction>
+export type TransactionFormInstance = ReturnType<typeof useAppForm<TransactionFormValues>>
+
 export const buildDefaultValues = (
   transaction: TransactionRow | null,
 ): TransactionFormValues => {
@@ -100,8 +104,8 @@ export const toApiPayload = (value: TransactionFormValues): Record<string, unkno
 interface UseTransactionFormOptions {
   transaction: TransactionRow | null
   onClose: () => void
-  createMutation: ReturnType<typeof useCreateTransaction>
-  updateMutation: ReturnType<typeof useUpdateTransaction>
+  createMutation: CreateMutation
+  updateMutation: UpdateMutation
 }
 
 export const useTransactionForm = ({
