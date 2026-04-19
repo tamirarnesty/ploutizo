@@ -226,6 +226,7 @@ describe('POST /api/transactions', () => {
         accountId: VALID_ACCOUNT_ID,
         amount: 5000,
         date: '2026-01-15',
+        description: 'Test expense',
       }),
     });
     expect(res.status).toBe(201);
@@ -280,6 +281,7 @@ describe('POST /api/transactions', () => {
         accountId: VALID_ACCOUNT_ID,
         amount: 5000,
         date: '2026-01-15',
+        description: 'Test expense',
         assignees: [
           { memberId: VALID_MEMBER_ID_1, amountCents: 3000 },
           { memberId: VALID_MEMBER_ID_2, amountCents: 3000 },
@@ -303,6 +305,7 @@ describe('POST /api/transactions', () => {
         accountId: VALID_ACCOUNT_ID,
         amount: 5000,
         date: '2026-01-15',
+        description: 'Test expense',
       }),
     });
     expect(res.status).toBe(201);
@@ -454,6 +457,7 @@ describe('PATCH /api/transactions/:id — discriminated union enforcement (D-08)
         accountId: VALID_ACCOUNT_ID,
         amount: 5000,
         date: '2026-01-15',
+        description: 'Test income',
       }),
     });
     expect(res.status).toBe(200);

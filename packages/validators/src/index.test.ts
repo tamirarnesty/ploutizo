@@ -290,6 +290,7 @@ describe('createTransactionSchema — common fields', () => {
     accountId: '550e8400-e29b-41d4-a716-446655440000',
     amount: 1000,
     date: '2024-01-15',
+    description: 'Test expense',
   }
 
   it('accepts valid expense payload', () => {
@@ -326,6 +327,7 @@ describe('createTransactionSchema — per-type branches', () => {
     accountId: '550e8400-e29b-41d4-a716-446655440000',
     amount: 5000,
     date: '2024-03-01',
+    description: 'Test transaction',
   }
 
   it('accepts valid refund payload', () => {
