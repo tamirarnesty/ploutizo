@@ -179,81 +179,83 @@ const TransactionFormInner = ({
             )}
           </form.AppField>
 
-          {/* Base field: amount */}
-          <form.AppField
-            name="amount"
-            validators={{
-              onChange: ({ value }: { value: number | undefined }) =>
-                !value || value <= 0 ? 'Amount must be greater than zero.' : undefined,
-            }}
-          >
-            {(field) => (
-              <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
-                <FieldLabel htmlFor="tx-amount">Amount</FieldLabel>
-                <FormattedAmountInput
-                  value={field.state.value}
-                  onChange={(v) => field.handleChange(v)}
-                  onBlur={field.handleBlur}
-                />
-                {field.state.meta.errors.length > 0 ? (
-                  <FieldError>{String(field.state.meta.errors[0])}</FieldError>
-                ) : null}
-              </Field>
-            )}
-          </form.AppField>
+          <div className="grid grid-cols-2 gap-4">
+            {/* Base field: amount */}
+            <form.AppField
+              name="amount"
+              validators={{
+                onChange: ({ value }: { value: number | undefined }) =>
+                  !value || value <= 0 ? 'Amount must be greater than zero.' : undefined,
+              }}
+            >
+              {(field) => (
+                <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
+                  <FieldLabel htmlFor="tx-amount">Amount</FieldLabel>
+                  <FormattedAmountInput
+                    value={field.state.value}
+                    onChange={(v) => field.handleChange(v)}
+                    onBlur={field.handleBlur}
+                  />
+                  {field.state.meta.errors.length > 0 ? (
+                    <FieldError>{String(field.state.meta.errors[0])}</FieldError>
+                  ) : null}
+                </Field>
+              )}
+            </form.AppField>
 
-          {/* Base field: date */}
-          <form.AppField
-            name="date"
-            validators={{
-              onChange: ({ value }: { value: string }) =>
-                !value ? 'Date is required.' : undefined,
-            }}
-          >
-            {(field) => (
-              <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
-                <FieldLabel>Date</FieldLabel>
-                {(() => {
-                  const selectedDate = field.state.value ? parseISO(field.state.value) : undefined
-                  return (
-                    <Popover open={dateOpen} onOpenChange={setDateOpen}>
-                      <PopoverTrigger
-                        render={
-                          <Button
-                            variant="outline"
-                            type="button"
-                            className={cn(
-                              'w-full justify-start text-left font-normal',
-                              !field.state.value && 'text-muted-foreground',
-                            )}
+            {/* Base field: date */}
+            <form.AppField
+              name="date"
+              validators={{
+                onChange: ({ value }: { value: string }) =>
+                  !value ? 'Date is required.' : undefined,
+              }}
+            >
+              {(field) => (
+                <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
+                  <FieldLabel>Date</FieldLabel>
+                  {(() => {
+                    const selectedDate = field.state.value ? parseISO(field.state.value) : undefined
+                    return (
+                      <Popover open={dateOpen} onOpenChange={setDateOpen}>
+                        <PopoverTrigger
+                          render={
+                            <Button
+                              variant="outline"
+                              type="button"
+                              className={cn(
+                                'w-full justify-start text-left font-normal',
+                                !field.state.value && 'text-muted-foreground',
+                              )}
+                            />
+                          }
+                        >
+                          <CalendarIcon className="mr-2 size-4" aria-hidden="true" />
+                          {field.state.value
+                            ? format(selectedDate!, 'MMM d, yyyy')
+                            : 'Pick a date'}
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={selectedDate}
+                            onSelect={(date) => {
+                              field.handleChange(date ? format(date, 'yyyy-MM-dd') : '')
+                              setDateOpen(false)
+                            }}
+                            initialFocus
                           />
-                        }
-                      >
-                        <CalendarIcon className="mr-2 size-4" aria-hidden="true" />
-                        {field.state.value
-                          ? format(selectedDate!, 'MMM d, yyyy')
-                          : 'Pick a date'}
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={selectedDate}
-                          onSelect={(date) => {
-                            field.handleChange(date ? format(date, 'yyyy-MM-dd') : '')
-                            setDateOpen(false)
-                          }}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  )
-                })()}
-                {field.state.meta.errors.length > 0 ? (
-                  <FieldError>{String(field.state.meta.errors[0])}</FieldError>
-                ) : null}
-              </Field>
-            )}
-          </form.AppField>
+                        </PopoverContent>
+                      </Popover>
+                    )
+                  })()}
+                  {field.state.meta.errors.length > 0 ? (
+                    <FieldError>{String(field.state.meta.errors[0])}</FieldError>
+                  ) : null}
+                </Field>
+              )}
+            </form.AppField>
+          </div>
 
           {/* Base field: description */}
           <form.AppField name="description">
