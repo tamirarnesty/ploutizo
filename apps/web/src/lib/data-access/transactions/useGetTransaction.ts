@@ -8,10 +8,14 @@ export const fetchTransaction = async (id: string): Promise<TransactionRow> => {
   return r.data
 }
 
-export const useGetTransaction = (id: string | null): UseQueryResult<TransactionRow> => {
+export const useGetTransaction = (
+  id: string | null,
+  options?: { initialData?: TransactionRow }
+): UseQueryResult<TransactionRow> => {
   return useQuery({
     queryKey: ['transaction', id],
     queryFn: () => fetchTransaction(id!),
     enabled: id !== null,
+    initialData: options?.initialData,
   })
 }

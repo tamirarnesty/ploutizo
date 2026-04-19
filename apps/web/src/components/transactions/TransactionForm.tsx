@@ -64,7 +64,8 @@ export const TransactionForm = ({ transaction, onClose }: TransactionFormProps) 
 
   // Fire ALL queries at top level simultaneously — no sequential waterfall
   const { data: txData, isLoading: txLoading } = useGetTransaction(
-    isEditing ? transaction.id : null
+    isEditing ? transaction.id : null,
+    { initialData: transaction ?? undefined }
   )
   const { data: accounts = [], isLoading: accountsLoading } = useGetAccounts()
   const { data: categories = [], isLoading: categoriesLoading } = useGetCategories()
