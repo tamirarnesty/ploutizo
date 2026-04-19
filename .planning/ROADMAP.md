@@ -389,6 +389,24 @@ Plans:
 
 ---
 
+### Phase 03.4.1: Transaction Table Layout Redesign (INSERTED)
+
+**Goal:** Redesign the transactions table to represent all six transaction types clearly — income, refund, transfer, settlement, and contribution are currently underrepresented. Introduce type-specific columns, smart column visibility, and a layout that communicates the full meaning of each transaction type at a glance.
+
+**Delivers:**
+- Type-aware column display (e.g. "To account" column for transfers, "Linked transaction" for refunds)
+- Visual treatment per type (icons, badges, or color indicators in the Type column)
+- Column visibility strategy: show/hide columns based on active transaction types in the dataset, or use expandable rows
+
+**Requirements**: TBD
+**Depends on:** Phase 03.4
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 03.4.1 to break down)
+
+---
+
 ### Phase 03.5: CI testing, linting, and formatting checks (INSERTED)
 
 **Goal:** [Urgent work - to be planned]

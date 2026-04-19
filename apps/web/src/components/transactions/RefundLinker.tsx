@@ -154,11 +154,14 @@ export const RefundLinker = ({
                       </span>
                       <span className="flex justify-between text-xs text-muted-foreground">
                         <span>
-                          {new Date(tx.date + 'T00:00:00').toLocaleDateString('en-CA', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
+                          {new Date(tx.date + 'T00:00:00').toLocaleDateString(
+                            'en-CA',
+                            {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            }
+                          )}
                         </span>
                         <span>{formatCurrency(tx.amount)}</span>
                       </span>
