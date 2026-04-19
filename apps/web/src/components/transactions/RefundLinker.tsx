@@ -24,19 +24,23 @@ export interface RefundLinkerProps {
   onAssigneesChange: (assignees: AssigneeFormRow[]) => void;
 }
 
-/** Stable label string used as Combobox value and Map key */
+/** Stable unique key used as Combobox value for selection matching */
 const buildLabel = (tx: TransactionRow) =>
   `${tx.description ?? tx.merchant ?? '—'} \u2022 ${new Date(tx.date + 'T00:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })} \u2022 ${formatCurrency(tx.amount)}`;
+
+/** Human-readable display name shown in the input after selection */
+const buildDisplayName = (tx: TransactionRow) =>
+  tx.description ?? tx.merchant ?? '—';
 
 export const RefundLinker = ({
   form,
   onAssigneesChange,
 }: RefundLinkerProps) => {
   const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [inputValue, setInputValue] = useState('');
   const debounceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
-  // Persists the selected transaction so its label stays visible after displayedResults changes
   const [selectedTx, setSelectedTx] = useState<TransactionRow | null>(null);
 
   const { data: recentExpensesResponse } = useGetTransactions({
@@ -76,19 +80,33 @@ export const RefundLinker = ({
           </FieldLabel>
           <Combobox
             value={selectedTx ? buildLabel(selectedTx) : null}
+            inputValue={inputValue}
             onValueChange={(label: string | null) => {
               if (label) {
                 const tx = resultsByLabel.get(label);
                 if (tx) {
                   setSelectedTx(tx);
+                  // Show only name in input — not the full "name • date • amount" key
+                  setInputValue(buildDisplayName(tx));
+                  // Reset query so re-opening shows recent expenses, not a stale bad search
+                  if (debounceTimerRef.current)
+                    clearTimeout(debounceTimerRef.current);
+                  setDebouncedQuery('');
                   field.handleChange(tx.id);
-                  // Gap 1: auto-fill description and amount from the linked transaction
-                  form.setFieldValue(
-                    'description',
-                    'Refund of ' + (tx.description ?? tx.merchant ?? '')
-                  );
-                  // tx.amount is in cents; form stores dollars
-                  form.setFieldValue('amount', tx.amount / 100);
+                  // Auto-fill only empty fields — never overwrite user input or edit-mode values
+                  const values = form.state.values;
+                  if (!values.description?.trim()) {
+                    form.setFieldValue(
+                      'description',
+                      'Refund of ' + (tx.description ?? tx.merchant ?? '')
+                    );
+                  }
+                  if (!values.amount) {
+                    form.setFieldValue('amount', tx.amount / 100);
+                  }
+                  if (!values.accountId) {
+                    form.setFieldValue('accountId', tx.accountId);
+                  }
                   onAssigneesChange(
                     tx.assignees.map((a) => ({
                       memberId: a.memberId,
@@ -100,11 +118,14 @@ export const RefundLinker = ({
                 }
               } else {
                 setSelectedTx(null);
+                setInputValue('');
+                setDebouncedQuery('');
                 field.handleChange('');
                 // D-17: clearing refundOf does NOT reset split
               }
             }}
             onInputValueChange={(q: string) => {
+              setInputValue(q);
               if (debounceTimerRef.current)
                 clearTimeout(debounceTimerRef.current);
               debounceTimerRef.current = setTimeout(
@@ -144,7 +165,8 @@ export const RefundLinker = ({
                     </div>
                   </ComboboxItem>
                 ))}
-                {displayedResults.length === 0 ? (
+                {/* Only show empty state when not loading — never show spinner + empty together */}
+                {displayedResults.length === 0 && !searching ? (
                   <ComboboxEmpty>
                     {debouncedQuery.length >= 2
                       ? 'No matching transactions found.'
