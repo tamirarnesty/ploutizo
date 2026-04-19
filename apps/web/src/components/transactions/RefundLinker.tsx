@@ -73,7 +73,7 @@ export const RefundLinker = ({
             <Text
               as="span"
               variant="body-sm"
-              className="ml-1 font-normal text-muted-foreground"
+              className="font-normal text-muted-foreground"
             >
               (optional)
             </Text>

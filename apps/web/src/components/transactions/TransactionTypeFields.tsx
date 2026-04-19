@@ -31,6 +31,14 @@ const TYPE_LABELS: Record<string, string> = {
   contribution: 'Contribution',
 }
 
+const INCOME_TYPE_LABELS: Record<string, string> = {
+  direct_deposit: 'Direct deposit',
+  e_transfer: 'e-Transfer',
+  cash: 'Cash',
+  cheque: 'Cheque',
+  other: 'Other',
+}
+
 interface TransactionTypeFieldsProps {
   form: TransactionFormInstance
   accounts: Account[]
@@ -95,7 +103,7 @@ const RefundCategoryField = ({
       <Field>
         <FieldLabel htmlFor="tx-refund-categoryId">
           Category
-          <Text as="span" variant="body-sm" className="ml-1 font-normal text-muted-foreground">
+          <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
             (optional)
           </Text>
         </FieldLabel>
@@ -121,6 +129,38 @@ const RefundCategoryField = ({
   </form.AppField>
 )
 
+/** Income type Select — col 2 in the 2-column grid for income transactions */
+const IncomeTypeField = ({ form }: { form: TransactionFormInstance }) => (
+  <form.AppField
+    name="incomeType"
+    validators={{
+      onChange: ({ value }: { value: string }) =>
+        !value ? 'Income type is required.' : undefined,
+    }}
+  >
+    {(field) => (
+      <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
+        <FieldLabel htmlFor="tx-incomeType">Income type</FieldLabel>
+        <Select
+          value={field.state.value}
+          onValueChange={(v) => { if (v !== null) field.handleChange(v) }}
+        >
+          <SelectTrigger id="tx-incomeType">
+            <SelectValue>{INCOME_TYPE_LABELS[field.state.value] ?? 'Select type'}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="direct_deposit">Direct deposit</SelectItem>
+            <SelectItem value="e_transfer">e-Transfer</SelectItem>
+            <SelectItem value="cash">Cash</SelectItem>
+            <SelectItem value="cheque">Cheque</SelectItem>
+            <SelectItem value="other">Other</SelectItem>
+          </SelectContent>
+        </Select>
+      </Field>
+    )}
+  </form.AppField>
+)
+
 export const TransactionTypeFields = ({
   form,
   accounts,
@@ -128,37 +168,32 @@ export const TransactionTypeFields = ({
   onAssigneesChange,
 }: TransactionTypeFieldsProps) => (
   <form.Subscribe selector={(s) => s.values.type}>
-    {(type) => {
-      const showGrid = type === 'expense' || type === 'refund'
-
-      return (
-        <>
-          {showGrid ? (
-            <div className="grid grid-cols-2 gap-4">
-              {/* Type Select — col 1 */}
-              <TypeSelectField form={form} />
-              {/* Category — col 2 */}
-              {type === 'expense' ? (
-                <ExpenseFields form={form} categories={categories} />
-              ) : (
-                <RefundCategoryField form={form} categories={categories} />
-              )}
-            </div>
-          ) : (
-            /* Full-width type Select for non-expense/refund */
-            <TypeSelectField form={form} />
-          )}
-
-          {/* Type-specific fields below the type row */}
-          {type === 'refund' ? (
-            <RefundLinker form={form} onAssigneesChange={onAssigneesChange} />
+    {(type) => (
+      <>
+        {/* All types: Type | SubType in 2-column grid */}
+        <div className="grid grid-cols-2 gap-4">
+          <TypeSelectField form={form} />
+          {type === 'expense' ? (
+            <ExpenseFields form={form} categories={categories} />
+          ) : type === 'refund' ? (
+            <RefundCategoryField form={form} categories={categories} />
+          ) : type === 'income' ? (
+            <IncomeTypeField form={form} />
+          ) : type === 'transfer' ? (
+            <TransferFields form={form} accounts={accounts} />
+          ) : type === 'settlement' ? (
+            <SettlementFields form={form} accounts={accounts} />
+          ) : type === 'contribution' ? (
+            <ContributionFields form={form} />
           ) : null}
-          {type === 'income' ? <IncomeFields form={form} /> : null}
-          {type === 'transfer' ? <TransferFields form={form} accounts={accounts} /> : null}
-          {type === 'settlement' ? <SettlementFields form={form} accounts={accounts} /> : null}
-          {type === 'contribution' ? <ContributionFields form={form} /> : null}
-        </>
-      )
-    }}
+        </div>
+
+        {/* Type-specific fields below the type row */}
+        {type === 'refund' ? (
+          <RefundLinker form={form} onAssigneesChange={onAssigneesChange} />
+        ) : null}
+        {type === 'income' ? <IncomeFields form={form} /> : null}
+      </>
+    )}
   </form.Subscribe>
 )

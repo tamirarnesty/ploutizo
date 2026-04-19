@@ -21,7 +21,7 @@ export const SettlementFields = ({ form, accounts }: SettlementFieldsProps) => (
       <Field>
         <FieldLabel htmlFor="tx-settledAccountId">
           Settlement account
-          <Text as="span" variant="body-sm" className="ml-1 font-normal text-muted-foreground">
+          <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
             (optional)
           </Text>
         </FieldLabel>

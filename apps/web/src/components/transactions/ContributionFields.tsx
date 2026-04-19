@@ -28,7 +28,7 @@ export const ContributionFields = ({ form }: ContributionFieldsProps) => (
       <Field>
         <FieldLabel htmlFor="tx-investmentType">
           Investment type
-          <Text as="span" variant="body-sm" className="ml-1 font-normal text-muted-foreground">
+          <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
             (optional)
           </Text>
         </FieldLabel>

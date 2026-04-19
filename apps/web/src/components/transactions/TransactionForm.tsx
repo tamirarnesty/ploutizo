@@ -291,7 +291,7 @@ const TransactionFormInner = ({
               <Field>
                 <FieldLabel htmlFor="tx-merchant">
                   Merchant
-                  <Text as="span" variant="body-sm" className="ml-1 font-normal text-muted-foreground">
+                  <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
                     (optional)
                   </Text>
                 </FieldLabel>
@@ -312,7 +312,7 @@ const TransactionFormInner = ({
               <Field>
                 <FieldLabel>
                   Tags
-                  <Text as="span" variant="body-sm" className="ml-1 font-normal text-muted-foreground">
+                  <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
                     (optional)
                   </Text>
                 </FieldLabel>
