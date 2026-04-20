@@ -405,10 +405,16 @@ Plans:
 
 **Requirements**: See `REQUIREMENTS.md §4.1`
 **Depends on:** Phase 03.4
-**Plans:** 0 plans
+**Plans:** 7 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 03.4.1 to break down)
+- [ ] 03.4.1-01-PLAN.md — Schema migration: drop 5 columns, add 3, backfill, NOT NULL
+- [ ] 03.4.1-02-PLAN.md — Validators TDD: update discriminated union schemas (D-06, D-07, D-08)
+- [ ] 03.4.1-03-PLAN.md — API query layer: alias joins, multi-type filter, org-scoping (T1/T2)
+- [ ] 03.4.1-04-PLAN.md — Frontend type cascade: TransactionRow, TransactionFormValues, useTransactionForm
+- [ ] 03.4.1-05-PLAN.md — Form field renames: TransferFields, SettlementFields, IncomeFields, ContributionFields, TransactionTypeFields
+- [ ] 03.4.1-06-PLAN.md — Form UI: AssigneeSection, locked descriptions, notes field, merchant removed
+- [ ] 03.4.1-07-PLAN.md — Table redesign: signed amounts, A→B account column, refund sub-line, Internal filter
 
 ---
 
