@@ -8,8 +8,8 @@ import {
   transactionTags,
   transactions,
 } from '@ploutizo/db/schema';
+import { alias } from 'drizzle-orm/pg-core';
 import {
-  alias,
   and,
   asc,
   desc,
