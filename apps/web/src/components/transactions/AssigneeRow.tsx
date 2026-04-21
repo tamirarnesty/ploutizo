@@ -1,7 +1,11 @@
 import { X } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@ploutizo/ui/components/avatar'
 import { Button } from '@ploutizo/ui/components/button'
-import { Input } from '@ploutizo/ui/components/input'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from '@ploutizo/ui/components/input-group'
 import { Text } from '@ploutizo/ui/components/text'
 import type { AssigneeFormRow } from './types'
 import { formatCurrency } from '@/lib/formatCurrency'
@@ -30,12 +34,6 @@ export const AssigneeRow = ({
   onChange,
   onRemove,
 }: AssigneeRowProps) => {
-  const sharedInputProps = {
-    type: 'number' as const,
-    autoComplete: 'off' as const,
-    className: 'w-20 text-right',
-  } as const
-
   return (
     <div className="flex items-center gap-2">
       <Avatar size="sm" aria-label={memberName ?? 'Unknown member'}>
@@ -47,34 +45,44 @@ export const AssigneeRow = ({
       </Text>
 
       {mode === 'percent' ? (
-        <Input
-          {...sharedInputProps}
-          value={percentage.toFixed(1)}
-          onChange={(e) => {
-            const p = parseFloat(e.target.value)
-            if (!isNaN(p)) {
-              onChange(memberId, {
-                percentage: p,
-                amountCents: Math.round((p / 100) * totalCents),
-              })
-            }
-          }}
-        />
+        <InputGroup className="w-24 shrink-0">
+          <InputGroupInput
+            type="number"
+            autoComplete="off"
+            className="text-right"
+            value={percentage.toFixed(1)}
+            onChange={(e) => {
+              const p = parseFloat(e.target.value)
+              if (!isNaN(p)) {
+                onChange(memberId, {
+                  percentage: p,
+                  amountCents: Math.round((p / 100) * totalCents),
+                })
+              }
+            }}
+          />
+          <InputGroupAddon align="inline-end">%</InputGroupAddon>
+        </InputGroup>
       ) : (
-        <Input
-          {...sharedInputProps}
-          value={(amountCents / 100).toFixed(2)}
-          onChange={(e) => {
-            const dollars = parseFloat(e.target.value)
-            if (!isNaN(dollars)) {
-              const cents = Math.round(dollars * 100)
-              onChange(memberId, {
-                amountCents: cents,
-                percentage: totalCents > 0 ? Math.round((cents / totalCents) * 1000) / 10 : 0,
-              })
-            }
-          }}
-        />
+        <InputGroup className="w-24 shrink-0">
+          <InputGroupAddon align="inline-start">$</InputGroupAddon>
+          <InputGroupInput
+            type="number"
+            autoComplete="off"
+            className="text-right"
+            value={(amountCents / 100).toFixed(2)}
+            onChange={(e) => {
+              const dollars = parseFloat(e.target.value)
+              if (!isNaN(dollars)) {
+                const cents = Math.round(dollars * 100)
+                onChange(memberId, {
+                  amountCents: cents,
+                  percentage: totalCents > 0 ? Math.round((cents / totalCents) * 1000) / 10 : 0,
+                })
+              }
+            }}
+          />
+        </InputGroup>
       )}
 
       <Text as="span" variant="body-sm" className="w-20 text-right text-muted-foreground">
