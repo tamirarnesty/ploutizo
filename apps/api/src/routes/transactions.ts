@@ -5,6 +5,7 @@ import {
   createTransactionSchema,
 } from '@ploutizo/validators';
 import {
+  checkCounterpartAccountOwnership,
   checkRefundOfOwnership,
   createTransaction,
   deleteTransaction,
@@ -28,6 +29,13 @@ transactionsRouter.post('/', appValidator('json', createTransactionSchema), asyn
   const splitError = validateSplitSum(data.amount, data.assignees);
   if (splitError) {
     return c.json({ error: { code: 'BAD_REQUEST', message: splitError } }, 400);
+  }
+
+  // T1: validate counterpartAccountId belongs to this org — T-03.4.1-T1
+  // gate on field presence; counterpartAccountId only exists on transfer/settlement variants
+  if ('counterpartAccountId' in data && data.counterpartAccountId) {
+    const valid = await checkCounterpartAccountOwnership(data.counterpartAccountId, orgId);
+    if (!valid) throw new DomainError(400, 'counterpartAccountId references an account not in this org');
   }
 
   // D-13: validate refundOf org ownership if provided — gate on field presence, not type.
@@ -123,6 +131,13 @@ transactionsRouter.patch('/:id', appValidator('json', createTransactionSchema), 
   const orgId = c.get('orgId');
   const id = c.req.param('id');
   const data = c.req.valid('json');
+
+  // T1: validate counterpartAccountId belongs to this org — T-03.4.1-T1
+  // gate on field presence; counterpartAccountId only exists on transfer/settlement variants
+  if ('counterpartAccountId' in data && data.counterpartAccountId) {
+    const valid = await checkCounterpartAccountOwnership(data.counterpartAccountId, orgId);
+    if (!valid) throw new DomainError(400, 'counterpartAccountId references an account not in this org');
+  }
 
   // T-03.4-02: validate refundOf org ownership if provided — mirrors POST guard
   // Use 'in' narrowing because refundOf only exists on the 'refund' variant of the discriminated union.

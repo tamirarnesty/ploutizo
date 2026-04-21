@@ -6,6 +6,7 @@ import {
 } from '@ploutizo/db/schema';
 import {
   buildListQuery,
+  counterpartAccountBelongsToOrg,
   countQuery,
   enrichTransactions,
   fetchTransactionById,
@@ -43,6 +44,14 @@ export async function checkRefundOfOwnership(
   orgId: string
 ): Promise<boolean> {
   return refundOfExists(refundOfId, orgId);
+}
+
+// T-03.4.1-T1: check that counterpartAccountId belongs to the same org
+export async function checkCounterpartAccountOwnership(
+  accountId: string,
+  orgId: string
+): Promise<boolean> {
+  return counterpartAccountBelongsToOrg(accountId, orgId);
 }
 
 // POST: create a transaction with optional assignees and tags in a single DB transaction

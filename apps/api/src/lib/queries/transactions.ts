@@ -246,6 +246,19 @@ export async function enrichTransactions(baseRows: { id: string }[]) {
   return { assigneeMap, tagMap };
 }
 
+// Validate counterpartAccountId belongs to the same org — T1 security mitigation (T-03.4.1-T1)
+export async function counterpartAccountBelongsToOrg(
+  accountId: string,
+  orgId: string
+): Promise<boolean> {
+  const [row] = await db
+    .select({ id: accounts.id })
+    .from(accounts)
+    .where(and(eq(accounts.id, accountId), eq(accounts.orgId, orgId)))
+    .limit(1);
+  return !!row;
+}
+
 // Validate that a refundOf transaction ID exists in the same org (D-13)
 export async function refundOfExists(
   refundOfId: string,
