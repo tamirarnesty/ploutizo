@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { Toggle } from '@ploutizo/ui/components/toggle'
 import {
@@ -53,6 +53,17 @@ export const AssigneeSection = ({
       : []
 
   const [pressedMemberIds, setPressedMemberIds] = useState<string[]>(initialPressedIds)
+
+  // WR-03: sync UI auto-press to form state on mount for single-member create mode.
+  // initialPressedIds is [orgMembers[0].id] in that case, but onChange is never called
+  // on mount, leaving form state with assignees: []. Run once on mount only — re-running
+  // would overwrite user edits in edit mode.
+  useEffect(() => {
+    if (!transaction && initialPressedIds.length > 0) {
+      onChange(lrmSplit(amountCents, initialPressedIds))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Determine initial Collapsible state: open in edit mode if distribution is non-even
   const isNonEven = (assignees: AssigneeFormRow[]): boolean => {
