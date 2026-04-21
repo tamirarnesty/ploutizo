@@ -54,16 +54,17 @@ export const AssigneeSection = ({
 
   const [pressedMemberIds, setPressedMemberIds] = useState<string[]>(initialPressedIds)
 
-  // WR-03: sync UI auto-press to form state on mount for single-member create mode.
-  // initialPressedIds is [orgMembers[0].id] in that case, but onChange is never called
-  // on mount, leaving form state with assignees: []. Run once on mount only — re-running
-  // would overwrite user edits in edit mode.
+  // WR-03: sync auto-pressed members to form state whenever amountCents changes in
+  // create mode. The empty-deps variant fired at mount when amountCents was still 0,
+  // writing amountCents:0 into form state and causing "Too small: expected number >0"
+  // on submit. Reacting to amountCents means the sync runs once the user enters an
+  // amount (which is required for submission anyway), producing correct cent values.
   useEffect(() => {
-    if (!transaction && initialPressedIds.length > 0) {
-      onChange(lrmSplit(amountCents, initialPressedIds))
+    if (!transaction && amountCents > 0 && pressedMemberIds.length > 0) {
+      onChange(lrmSplit(amountCents, pressedMemberIds))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [amountCents])
 
   // Determine initial Collapsible state: open in edit mode if distribution is non-even
   const isNonEven = (assignees: AssigneeFormRow[]): boolean => {
