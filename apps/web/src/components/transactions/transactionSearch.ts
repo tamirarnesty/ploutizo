@@ -25,7 +25,7 @@ export const transactionSearchSchema = z.object({
   categoryId_op: z.string().optional(), // 'is' | 'is_not' | 'empty' | 'not_empty'
   assigneeId_op: z.string().optional(), // 'is' | 'is_not' | 'empty' | 'not_empty'
   tagIds_op: z.string().optional(),     // 'is_any_of' | 'is_not_any_of' | 'includes_all' | 'excludes_all' | 'empty' | 'not_empty'
-  dateRange_op: z.string().optional(),  // 'between' | 'after' | 'before'
+  dateRange_op: z.string().optional(),  // 'between' | 'after' | 'before' | 'is' | 'is_not' | 'not_between'
 })
 
 export type TransactionSearch = z.infer<typeof transactionSearchSchema>

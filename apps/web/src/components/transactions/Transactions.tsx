@@ -58,9 +58,21 @@ const filtersToSearch = (filters: Filter<string>[]): Partial<TransactionSearch> 
       } else if (op === 'before' && f.values[0]) {
         result.dateTo = f.values[0]
         result.dateRange_op = 'before'
-      } else if (f.values.length === 2) {
+      } else if (op === 'is' && f.values[0]) {
+        // 'is X' — send as dateFrom; API uses eq on dateFrom when op=is
         result.dateFrom = f.values[0]
-        result.dateTo = f.values[1]
+        result.dateRange_op = 'is'
+      } else if (op === 'is_not' && f.values[0]) {
+        result.dateFrom = f.values[0]
+        result.dateRange_op = 'is_not'
+      } else if (op === 'not_between') {
+        result.dateFrom = f.values[0] ?? ''
+        result.dateTo = f.values[1] ?? ''
+        result.dateRange_op = 'not_between'
+      } else if (f.values.length >= 1) {
+        // 'between' (default)
+        result.dateFrom = f.values[0]
+        result.dateTo = f.values[1] ?? ''
         // dateRange_op 'between' is the default — omit from URL
       }
     } else if (f.field === 'accountId' && f.values[0]) {
@@ -128,6 +140,12 @@ const searchToFilters = (search: TransactionSearch): Filter<string>[] => {
     filters.push({ id: 'filter-dateRange', field: 'dateRange', operator: 'after', values: [search.dateFrom] })
   } else if (dateOp === 'before' && search.dateTo) {
     filters.push({ id: 'filter-dateRange', field: 'dateRange', operator: 'before', values: [search.dateTo] })
+  } else if (dateOp === 'is' && search.dateFrom) {
+    filters.push({ id: 'filter-dateRange', field: 'dateRange', operator: 'is', values: [search.dateFrom] })
+  } else if (dateOp === 'is_not' && search.dateFrom) {
+    filters.push({ id: 'filter-dateRange', field: 'dateRange', operator: 'is_not', values: [search.dateFrom] })
+  } else if (dateOp === 'not_between' && (search.dateFrom || search.dateTo)) {
+    filters.push({ id: 'filter-dateRange', field: 'dateRange', operator: 'not_between', values: [search.dateFrom ?? '', search.dateTo ?? ''] })
   } else if (search.dateFrom || search.dateTo) {
     filters.push({ id: 'filter-dateRange', field: 'dateRange', operator: 'between', values: [search.dateFrom ?? '', search.dateTo ?? ''] })
   }

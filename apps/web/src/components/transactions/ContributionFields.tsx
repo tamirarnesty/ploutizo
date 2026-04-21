@@ -43,11 +43,8 @@ export const ContributionFields = ({ form, accounts }: ContributionFieldsProps) 
               <SelectValue>
                 {(() => {
                   const a = accountMap.get(field.state.value)
-                  // Format: "INVESTMENT — Account Name"
-                  // Full "TYPE — MemberName" format deferred: Account type has no ownerMemberId;
-                  // GET /api/accounts does not join account_members or org_members.
-                  // Using "TYPE — AccountName" as substitute (account names typically include owner).
-                  return a ? `${a.type.toUpperCase()} \u2014 ${a.name}` : 'Select account'
+                  // Trigger shows account name only — prefix belongs in dropdown options only.
+                  return a ? a.name : 'Select account'
                 })()}
               </SelectValue>
             </SelectTrigger>
@@ -55,7 +52,7 @@ export const ContributionFields = ({ form, accounts }: ContributionFieldsProps) 
               {investmentAccounts.map((a) => (
                 <SelectItem key={a.id} value={a.id}>
                   {/* U+2014 em dash — TYPE — AccountName format */}
-                  {`${a.type.toUpperCase()} \u2014 ${a.name}`}
+                  {`${a.type.toUpperCase()} — ${a.name}`}
                 </SelectItem>
               ))}
             </SelectContent>

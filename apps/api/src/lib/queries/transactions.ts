@@ -89,7 +89,7 @@ export type ListQueryParams = {
   categoryId_op?: string; // 'is' | 'is_not' | 'empty' | 'not_empty'
   assigneeId_op?: string; // 'is' | 'is_not' | 'empty' | 'not_empty'
   tagIds_op?: string;     // 'is_any_of' | 'is_not_any_of' | 'includes_all' | 'excludes_all' | 'empty' | 'not_empty'
-  dateRange_op?: string;  // 'between' | 'after' | 'before'
+  dateRange_op?: string;  // 'between' | 'after' | 'before' | 'is' | 'is_not' | 'not_between'
 };
 
 // Build the WHERE conditions array for list + count queries
@@ -129,16 +129,27 @@ export function buildConditions(params: ListQueryParams): SQL[] {
     );
   }
 
-  // dateRange — operator changes which bound is applied
+  // dateRange — operator determines which Drizzle condition is applied
   const dateOp = params.dateRange_op ?? 'between';
   if (dateOp === 'after' && params.dateFrom) {
     conditions.push(gte(transactions.date, params.dateFrom));
-    // dateTo ignored for 'after'
   } else if (dateOp === 'before' && params.dateTo) {
     conditions.push(lte(transactions.date, params.dateTo));
-    // dateFrom ignored for 'before'
+  } else if (dateOp === 'is' && params.dateFrom) {
+    // 'is X' = exact date match: dateFrom === dateTo === X sent by client
+    conditions.push(eq(transactions.date, params.dateFrom));
+  } else if (dateOp === 'is_not' && params.dateFrom) {
+    // 'is not X' = exclude that exact date
+    conditions.push(ne(transactions.date, params.dateFrom));
+  } else if (dateOp === 'not_between' && (params.dateFrom || params.dateTo)) {
+    // 'not between A and B' = exclude the range [A, B]
+    // not(A <= date <= B)  ≡  date < A OR date > B
+    const clauses: SQL[] = [];
+    if (params.dateFrom) clauses.push(gte(transactions.date, params.dateFrom));
+    if (params.dateTo) clauses.push(lte(transactions.date, params.dateTo));
+    if (clauses.length > 0) conditions.push(not(and(...clauses)!));
   } else {
-    // 'between' — existing behaviour
+    // 'between' (default) — existing behaviour
     if (params.dateFrom) conditions.push(gte(transactions.date, params.dateFrom));
     if (params.dateTo) conditions.push(lte(transactions.date, params.dateTo));
   }
