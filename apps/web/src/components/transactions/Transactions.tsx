@@ -233,9 +233,18 @@ export const Transactions = () => {
     setSheetOpen(true)
   }, [])
 
+  // Opens the original transaction in edit mode when a refund sub-line is clicked.
+  // Does a client-side lookup in the already-fetched page — no-op if not found (T-03.4.1-TB3).
+  const handleOpenOriginal = useCallback((id: string) => {
+    const tx = transactions.find((t) => t.id === id)
+    if (tx) handleEdit(tx)
+  }, [transactions, handleEdit])
+
   const handleSheetClose = useCallback(() => {
     setSheetOpen(false)
-    setSelectedTx(null)
+    // selectedTx intentionally not cleared here — clearing it changes the key
+    // on TransactionForm mid-animation, causing a visible flash. handleEdit and
+    // handleAddClick always set selectedTx before opening, so stale state here is harmless.
   }, [])
 
   return (
@@ -274,6 +283,7 @@ export const Transactions = () => {
         onFilteredEmpty={hasActiveFilters}
         onClearFilters={handleClearFilters}
         onEdit={handleEdit}
+        onOpenOriginal={handleOpenOriginal}
       />
 
       <TransactionSheet
