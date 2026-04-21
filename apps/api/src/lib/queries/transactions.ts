@@ -23,6 +23,7 @@ import {
   ne,
   not,
   notInArray,
+  or,
   sql,
 } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
@@ -106,8 +107,8 @@ export function buildConditions(params: ListQueryParams): SQL[] {
     if (types.length > 1) {
       conditions.push(
         op === 'is_not'
-          ? notInArray(transactions.type, types as Array<typeof transactions.type._.data>)
-          : inArray(transactions.type, types as Array<typeof transactions.type._.data>)
+          ? notInArray(transactions.type, types as typeof transactions.type._.data[])
+          : inArray(transactions.type, types as typeof transactions.type._.data[])
       );
     } else {
       conditions.push(
@@ -151,7 +152,7 @@ export function buildConditions(params: ListQueryParams): SQL[] {
   } else if (params.categoryId) {
     conditions.push(
       catOp === 'is_not'
-        ? ne(transactions.categoryId, params.categoryId)
+        ? or(ne(transactions.categoryId, params.categoryId), isNull(transactions.categoryId))!
         : eq(transactions.categoryId, params.categoryId)
     );
   }
