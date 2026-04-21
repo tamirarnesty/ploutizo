@@ -119,7 +119,7 @@ export const AssigneeSection = ({
               pressed={isPressed}
               onPressedChange={(pressed) => handleToggle(member.id, pressed)}
               className={cn(
-                'min-w-[120px] px-3',
+                'px-3',
                 // Override default data-[state=on]:bg-muted with primary tint
                 // (CLAUDE.md: override at usage site, never in toggle.tsx)
                 'data-[state=on]:bg-primary/10 data-[state=on]:text-primary data-[state=on]:border-primary/30',
@@ -132,7 +132,7 @@ export const AssigneeSection = ({
                 ) : null}
                 <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
-              <span className="ml-1.5 text-sm">{member.displayName}</span>
+              <span className="ml-1.5 text-sm">{member.displayName.split(' ')[0]}</span>
             </Toggle>
           )
         })}
