@@ -116,6 +116,7 @@ Execute Phase 03.4.1 — run all 7 plans
 | 4 | Category edit should reflect changes in list without reload | ui |
 | 5 | Show invited member card in Household view | ui |
 | 6 | Clear query cache on logout to prevent cross-account stale data | auth |
+| 7 | Redesign transaction form Notes + Tags section layout | ui |
 
 ## Blockers / Open Items
 
