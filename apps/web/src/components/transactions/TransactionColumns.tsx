@@ -11,6 +11,7 @@ import {
 } from '@ploutizo/ui/components/dropdown-menu'
 import { Skeleton } from '@ploutizo/ui/components/skeleton'
 import { Text } from '@ploutizo/ui/components/text'
+import { cn } from '@ploutizo/ui/lib/utils'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { TransactionRow } from '@/lib/data-access/transactions'
 import { ICON_MAP } from '@/components/categories/LucideIconPicker'
@@ -42,9 +43,14 @@ export const typeBadgeVariant: Record<string, 'destructive' | 'secondary' | 'def
   transfer: 'secondary',
 }
 
+// Internal transaction types rendered at reduced opacity in type badges
+const isInternalType = (t: string) =>
+  ['transfer', 'settlement', 'contribution'].includes(t)
+
 export function buildColumns(
   setDeleteId: (id: string) => void,
   onEdit: (transaction: TransactionRow) => void,
+  onOpenOriginal: (id: string) => void,
 ): ColumnDef<TransactionRow>[] {
   return [
     // 1. Date
@@ -87,13 +93,20 @@ export function buildColumns(
         const className = typeBadgeClassName[type]
         const label = type.charAt(0).toUpperCase() + type.slice(1)
         return variant ? (
-          <Badge variant={variant}>{label}</Badge>
+          <Badge
+            variant={variant}
+            className={cn(isInternalType(type) && 'opacity-60')}
+          >
+            {label}
+          </Badge>
         ) : (
-          <Badge className={className}>{label}</Badge>
+          <Badge className={cn(className, isInternalType(type) && 'opacity-60')}>
+            {label}
+          </Badge>
         )
       },
     },
-    // 3. Description
+    // 3. Description — includes refund sub-line (D-24) for refund rows with a linked original
     {
       id: 'description',
       enableSorting: false,
@@ -104,13 +117,40 @@ export function buildColumns(
         cellClassName: 'min-w-[200px]',
         skeleton: <Skeleton className="h-4 w-40 motion-safe:animate-pulse" />,
       },
-      cell: ({ row }) => (
-        <div className="min-w-0">
-          <Text as="span" variant="body-sm" className="min-w-0 truncate font-semibold">
-            {row.original.description ?? row.original.merchant ?? '—'}
-          </Text>
-        </div>
-      ),
+      cell: ({ row }) => {
+        const { description, type, refundOfId, refundOfDate, refundOfAmountCents } = row.original
+        const hasRefundLink = type === 'refund' && refundOfId !== null
+
+        // Format refund original date as "MMM D, YYYY" (e.g. "Apr 3, 2025")
+        const formattedRefundDate = hasRefundLink && refundOfDate
+          ? new Date(refundOfDate + 'T00:00:00').toLocaleDateString('en-CA', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            })
+          : null
+
+        return (
+          <div className="min-w-0">
+            <Text as="span" variant="body-sm" className="min-w-0 truncate font-semibold">
+              {description}
+            </Text>
+            {hasRefundLink ? (
+              <button
+                type="button"
+                className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                onClick={() => onOpenOriginal(refundOfId!)}
+                aria-label={`View original transaction from ${formattedRefundDate}`}
+              >
+                {/* ↩ U+21A9 LEFTWARDS ARROW WITH HOOK */}
+                <span aria-hidden="true">↩</span>
+                {/* · U+00B7 MIDDLE DOT */}
+                <span>{formattedRefundDate} · {formatCurrency(refundOfAmountCents ?? 0)}</span>
+              </button>
+            ) : null}
+          </div>
+        )
+      },
     },
     // 4. Category
     {
@@ -137,22 +177,31 @@ export function buildColumns(
         )
       },
     },
-    // 5. Account
+    // 5. Account — shows "A → B" (U+2192) when counterpart present (D-23)
     {
       id: 'account',
       enableSorting: true,
       header: ({ column }) => <DataGridColumnHeader column={column} title="Account" />,
-      size: 160,
+      size: 220,
       meta: {
-        headerClassName: 'min-w-[140px]',
-        cellClassName: 'min-w-[140px]',
+        headerClassName: 'min-w-[180px]',
+        cellClassName: 'min-w-[180px]',
         skeleton: <Skeleton className="h-4 w-24 motion-safe:animate-pulse" />,
       },
-      cell: ({ row }) => (
-        <Text as="span" variant="body-sm" className="text-muted-foreground">
-          {row.original.accountName ?? '—'}
-        </Text>
-      ),
+      cell: ({ row }) => {
+        const { accountName, counterpartAccountName } = row.original
+        // → U+2192 RIGHTWARDS ARROW
+        const displayText = counterpartAccountName
+          ? `${accountName} \u2192 ${counterpartAccountName}`
+          : accountName ?? ''
+        return (
+          <div className="min-w-0">
+            <Text variant="body-sm" className="truncate min-w-0 text-muted-foreground">
+              {displayText}
+            </Text>
+          </div>
+        )
+      },
     },
     // 6. Assignees
     {
@@ -236,7 +285,7 @@ export function buildColumns(
         )
       },
     },
-    // 8. Amount
+    // 8. Amount — signed and color-coded per type (D-22)
     {
       id: 'amount',
       accessorKey: 'amount',
@@ -249,14 +298,27 @@ export function buildColumns(
         skeleton: <Skeleton className="ml-auto h-4 w-16 motion-safe:animate-pulse" />,
       },
       cell: ({ row }) => {
-        const amountClass = ['expense', 'settlement'].includes(row.original.type)
+        const { type, amount } = row.original
+        const isExpense = type === 'expense'
+        const isPositive = type === 'income' || type === 'refund'
+
+        const formatted = formatCurrency(amount)
+        // U+2212 MINUS SIGN for expense (not hyphen-minus)
+        const displayValue = isExpense
+          ? `\u2212${formatted}`
+          : isPositive
+            ? `+${formatted}`
+            : formatted
+
+        const colorClass = isExpense
           ? 'text-destructive'
-          : ['income', 'contribution', 'refund'].includes(row.original.type)
+          : isPositive
             ? 'text-emerald-600 dark:text-emerald-400'
-            : 'text-muted-foreground' // transfer
+            : 'text-muted-foreground'
+
         return (
-          <Text as="span" variant="body-sm" className={`block text-right font-medium ${amountClass}`}>
-            {formatCurrency(row.original.amount)}
+          <Text variant="body-sm" className={cn('block text-right font-medium', colorClass)}>
+            {displayValue}
           </Text>
         )
       },

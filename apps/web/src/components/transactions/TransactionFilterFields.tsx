@@ -92,6 +92,8 @@ export function buildFilterFields(
         { value: 'settlement', label: 'Settlement' },
         { value: 'refund', label: 'Refund' },
         { value: 'contribution', label: 'Contribution' },
+        // D-25: Internal shortcut — sets type to comma-separated internal types
+        { value: 'transfer,settlement,contribution', label: 'Internal' },
       ],
     },
     {
