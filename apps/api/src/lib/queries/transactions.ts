@@ -9,6 +9,7 @@ import {
   transactions,
 } from '@ploutizo/db/schema';
 import {
+  alias,
   and,
   asc,
   desc,
@@ -28,6 +29,11 @@ export type DrizzleTransaction = Parameters<
   Parameters<typeof db.transaction>[0]
 >[0];
 
+// Alias for counterpart account join (D-23) — left join to accounts using counterpartAccountId FK
+const counterpartAccounts = alias(accounts, 'counterpart_accounts');
+// Alias for refund self-join (D-24) — flat fields, no nested object
+const refundSource = alias(transactions, 'refund_source');
+
 // D-04: full column projection for joined transaction rows
 const TX_COLUMNS = {
   id: transactions.id,
@@ -36,7 +42,6 @@ const TX_COLUMNS = {
   amount: transactions.amount,
   date: transactions.date,
   description: transactions.description,
-  merchant: transactions.merchant,
   categoryId: transactions.categoryId,
   categoryName: categories.name,
   categoryIcon: categories.icon,
@@ -45,10 +50,13 @@ const TX_COLUMNS = {
   accountType: accounts.type,
   refundOf: transactions.refundOf,
   incomeType: transactions.incomeType,
-  incomeSource: transactions.incomeSource,
-  toAccountId: transactions.toAccountId,
-  settledAccountId: transactions.settledAccountId,
-  investmentType: transactions.investmentType,
+  counterpartAccountId: transactions.counterpartAccountId,
+  counterpartAccountName: counterpartAccounts.name,
+  rawDescription: transactions.rawDescription,
+  notes: transactions.notes,
+  refundOfId: refundSource.id,
+  refundOfDate: refundSource.date,
+  refundOfAmountCents: refundSource.amount,
   importBatchId: transactions.importBatchId,
   recurringTemplateId: transactions.recurringTemplateId,
   deletedAt: transactions.deletedAt,
@@ -69,7 +77,7 @@ export type ListQueryParams = {
   categoryId?: string;
   assigneeId?: string;
   tagIds?: string[];
-  /** D-18: case-insensitive substring match on description OR merchant — T-03.4-01 */
+  /** D-18: case-insensitive substring match on description OR rawDescription — T-03.4-01 */
   description?: string;
 };
 
@@ -80,9 +88,13 @@ export function buildConditions(params: ListQueryParams): SQL[] {
     isNull(transactions.deletedAt), // D-15
   ];
   if (params.type) {
-    conditions.push(
-      eq(transactions.type, params.type as typeof transactions.type._.data)
-    );
+    // D-25: support comma-separated type values for "Internal" shortcut (transfer,settlement,contribution)
+    const types = params.type.split(',').map((t) => t.trim());
+    if (types.length === 1) {
+      conditions.push(eq(transactions.type, types[0] as typeof transactions.type._.data));
+    } else {
+      conditions.push(inArray(transactions.type, types as Array<typeof transactions.type._.data>));
+    }
   }
   if (params.accountId)
     conditions.push(eq(transactions.accountId, params.accountId));
@@ -122,9 +134,10 @@ export function buildConditions(params: ListQueryParams): SQL[] {
   }
   // T-03.4-01: D-18 description filter — parameterized ILIKE (NOT string interpolation) — safe from SQL injection
   // '%' + value + '%' is passed as a Drizzle bound parameter to the DB driver, not concatenated into SQL text.
+  // Searches both description (user-visible) and rawDescription (original bank/import memo).
   if (params.description) {
     conditions.push(
-      sql`(${transactions.description} ILIKE ${'%' + params.description + '%'} OR ${transactions.merchant} ILIKE ${'%' + params.description + '%'})`
+      sql`(${transactions.description} ILIKE ${'%' + params.description + '%'} OR ${transactions.rawDescription} ILIKE ${'%' + params.description + '%'})`
     );
   }
   return conditions;
@@ -147,6 +160,8 @@ export async function buildListQuery(params: ListQueryParams) {
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
     .leftJoin(accounts, eq(transactions.accountId, accounts.id))
+    .leftJoin(counterpartAccounts, eq(transactions.counterpartAccountId, counterpartAccounts.id))
+    .leftJoin(refundSource, eq(transactions.refundOf, refundSource.id))
     .where(and(...conditions))
     .orderBy(orderFn(orderCol))
     .limit(params.limit)
@@ -170,6 +185,8 @@ export async function fetchTransactionById(id: string, orgId: string) {
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
     .leftJoin(accounts, eq(transactions.accountId, accounts.id))
+    .leftJoin(counterpartAccounts, eq(transactions.counterpartAccountId, counterpartAccounts.id))
+    .leftJoin(refundSource, eq(transactions.refundOf, refundSource.id))
     .where(
       and(
         eq(transactions.id, id),
@@ -227,6 +244,19 @@ export async function enrichTransactions(baseRows: { id: string }[]) {
     (tagMap[t.transactionId] ??= []).push(t);
   }
   return { assigneeMap, tagMap };
+}
+
+// Validate counterpartAccountId belongs to the same org — T1 security mitigation (T-03.4.1-T1)
+export async function counterpartAccountBelongsToOrg(
+  accountId: string,
+  orgId: string
+): Promise<boolean> {
+  const [row] = await db
+    .select({ id: accounts.id })
+    .from(accounts)
+    .where(and(eq(accounts.id, accountId), eq(accounts.orgId, orgId)))
+    .limit(1);
+  return !!row;
 }
 
 // Validate that a refundOf transaction ID exists in the same org (D-13)
