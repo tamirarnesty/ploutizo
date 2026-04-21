@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.2
-milestone_name: Transactions & Settlement
-status: active
-last_updated: "2026-04-19T23:00:00.000Z"
+milestone: v0.1
+milestone_name: — Foundation
+status: executing
+last_updated: "2026-04-21T01:45:50.550Z"
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 36
-  completed_plans: 28
-  percent: 78
+  total_phases: 19
+  completed_phases: 15
+  total_plans: 79
+  completed_plans: 81
+  percent: 100
 ---
 
 # Project State
@@ -20,8 +20,8 @@ Phase: 03.4.1 (active)
 Plan: —
 **Milestone:** v0.2 Transactions & Settlement
 **Active Phase:** Phase 03.4.1 — Transaction v2: Schema Migration, Form & Table Redesign
-**Status:** Phase 03.4.1 planned (7/7 plans) — ready to execute
-**Last session:** 2026-04-19T23:00:00.000Z
+**Status:** Phase 03.4.1 planned (9/9 plans) — ready to execute (gap-closure plan 09 added 2026-04-20)
+**Last session:** 2026-04-20T00:00:00.000Z
 
 ## Next Action
 
@@ -114,6 +114,7 @@ Execute Phase 03.4.1 — run all 7 plans
 | 2 | Tag combobox Enter key should create tag without explicit click | ui |
 | 3 | Form validation audit — all forms must show correct error messages | ui |
 | 4 | Category edit should reflect changes in list without reload | ui |
+| 5 | Show invited member card in Household view | ui |
 
 ## Blockers / Open Items
 
