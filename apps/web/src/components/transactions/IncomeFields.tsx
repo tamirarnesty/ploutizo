@@ -1,31 +1,8 @@
-import { Text } from '@ploutizo/ui/components/text'
-import { Field, FieldLabel } from '@ploutizo/ui/components/field'
-import { Input } from '@ploutizo/ui/components/input'
-import type { TransactionFormInstance } from './hooks/useTransactionForm'
+/**
+ * IncomeFields — incomeSource text input removed in Plan 05 (D-09).
+ * incomeType Select remains in TransactionTypeFields (IncomeTypeField subcomponent).
+ * This component is intentionally empty; its call site is removed from TransactionTypeFields.
+ */
+export type IncomeFieldsProps = Record<string, never>
 
-export interface IncomeFieldsProps {
-  form: TransactionFormInstance
-}
-
-/** Income source field — rendered below the Type+IncomeType grid row */
-export const IncomeFields = ({ form }: IncomeFieldsProps) => (
-  <form.AppField name="incomeSource">
-    {(field) => (
-      <Field>
-        <FieldLabel htmlFor="tx-incomeSource">
-          Income source
-          <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
-            (optional)
-          </Text>
-        </FieldLabel>
-        <Input
-          id="tx-incomeSource"
-          autoComplete="off"
-          value={field.state.value}
-          onChange={(e) => field.handleChange(e.target.value)}
-          onBlur={field.handleBlur}
-        />
-      </Field>
-    )}
-  </form.AppField>
-)
+export const IncomeFields = (_props: IncomeFieldsProps): null => null

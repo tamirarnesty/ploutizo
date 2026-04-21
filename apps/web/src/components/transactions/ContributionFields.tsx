@@ -1,4 +1,4 @@
-import { Text } from '@ploutizo/ui/components/text'
+import { useMemo } from 'react'
 import { Field, FieldLabel } from '@ploutizo/ui/components/field'
 import {
   Select,
@@ -7,50 +7,61 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@ploutizo/ui/components/select'
+import type { Account } from '@ploutizo/types'
 import type { TransactionFormInstance } from './hooks/useTransactionForm'
-
-const INVESTMENT_TYPE_LABELS: Record<string, string> = {
-  tfsa: 'TFSA',
-  rrsp: 'RRSP',
-  fhsa: 'FHSA',
-  resp: 'RESP',
-  non_registered: 'Non-registered',
-  other: 'Other',
-}
 
 export interface ContributionFieldsProps {
   form: TransactionFormInstance
+  accounts: Account[]
 }
 
-export const ContributionFields = ({ form }: ContributionFieldsProps) => (
-  <form.AppField name="investmentType">
-    {(field) => (
-      <Field>
-        <FieldLabel htmlFor="tx-investmentType">
-          Investment type
-          <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
-            (optional)
-          </Text>
-        </FieldLabel>
-        <Select
-          value={field.state.value}
-          onValueChange={(v) => {
-            if (v !== null) field.handleChange(v)
-          }}
-        >
-          <SelectTrigger id="tx-investmentType">
-            <SelectValue>{INVESTMENT_TYPE_LABELS[field.state.value] ?? 'Select type'}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="tfsa">TFSA</SelectItem>
-            <SelectItem value="rrsp">RRSP</SelectItem>
-            <SelectItem value="fhsa">FHSA</SelectItem>
-            <SelectItem value="resp">RESP</SelectItem>
-            <SelectItem value="non_registered">Non-registered</SelectItem>
-            <SelectItem value="other">Other</SelectItem>
-          </SelectContent>
-        </Select>
-      </Field>
-    )}
-  </form.AppField>
-)
+export const ContributionFields = ({ form, accounts }: ContributionFieldsProps) => {
+  // Filter to investment accounts only (js-map-set: build once, lookup by id below)
+  const investmentAccounts = useMemo(
+    () => accounts.filter((a) => a.type === 'investment'),
+    [accounts],
+  )
+
+  // Build O(1) id→account map for the SelectValue display lookup (js-map-set)
+  const accountMap = useMemo(
+    () => new Map(investmentAccounts.map((a) => [a.id, a])),
+    [investmentAccounts],
+  )
+
+  return (
+    <form.AppField name="counterpartAccountId">
+      {(field) => (
+        <Field>
+          <FieldLabel htmlFor="tx-contribution-counterpartAccountId">Account</FieldLabel>
+          <Select
+            value={field.state.value}
+            onValueChange={(v) => {
+              if (v !== null) field.handleChange(v)
+            }}
+          >
+            <SelectTrigger id="tx-contribution-counterpartAccountId">
+              <SelectValue>
+                {(() => {
+                  const a = accountMap.get(field.state.value)
+                  // Format: "INVESTMENT — Account Name"
+                  // Full "TYPE — MemberName" format deferred: Account type has no ownerMemberId;
+                  // GET /api/accounts does not join account_members or org_members.
+                  // Using "TYPE — AccountName" as substitute (account names typically include owner).
+                  return a ? `${a.type.toUpperCase()} \u2014 ${a.name}` : 'Select account'
+                })()}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {investmentAccounts.map((a) => (
+                <SelectItem key={a.id} value={a.id}>
+                  {/* U+2014 em dash — TYPE — AccountName format */}
+                  {`${a.type.toUpperCase()} \u2014 ${a.name}`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+      )}
+    </form.AppField>
+  )
+}
