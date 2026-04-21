@@ -77,7 +77,7 @@ export type ListQueryParams = {
   categoryId?: string;
   assigneeId?: string;
   tagIds?: string[];
-  /** D-18: case-insensitive substring match on description OR merchant — T-03.4-01 */
+  /** D-18: case-insensitive substring match on description OR rawDescription — T-03.4-01 */
   description?: string;
 };
 
