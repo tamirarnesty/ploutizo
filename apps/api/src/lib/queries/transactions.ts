@@ -20,6 +20,9 @@ import {
   isNotNull,
   isNull,
   lte,
+  ne,
+  not,
+  notInArray,
   sql,
 } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
@@ -79,6 +82,13 @@ export type ListQueryParams = {
   tagIds?: string[];
   /** D-18: case-insensitive substring match on description OR rawDescription — T-03.4-01 */
   description?: string;
+  // Operator params — T-03.4.1-OP1: unrecognised values fall through to default (eq/is) behaviour
+  type_op?: string;       // 'is' | 'is_not'
+  accountId_op?: string;  // 'is' | 'is_not'
+  categoryId_op?: string; // 'is' | 'is_not' | 'empty' | 'not_empty'
+  assigneeId_op?: string; // 'is' | 'is_not' | 'empty' | 'not_empty'
+  tagIds_op?: string;     // 'is_any_of' | 'is_not_any_of' | 'includes_all' | 'excludes_all' | 'empty' | 'not_empty'
+  dateRange_op?: string;  // 'between' | 'after' | 'before'
 };
 
 // Build the WHERE conditions array for list + count queries
@@ -87,51 +97,165 @@ export function buildConditions(params: ListQueryParams): SQL[] {
     eq(transactions.orgId, params.orgId),
     isNull(transactions.deletedAt), // D-15
   ];
+
+  // type — D-25: supports comma-separated values for "Internal" shortcut
+  // T-03.4.1-OP1: unrecognised operator falls through to default 'is' (eq/inArray) behaviour
   if (params.type) {
-    // D-25: support comma-separated type values for "Internal" shortcut (transfer,settlement,contribution)
     const types = params.type.split(',').map((t) => t.trim());
-    if (types.length === 1) {
-      conditions.push(eq(transactions.type, types[0] as typeof transactions.type._.data));
+    const op = params.type_op ?? 'is';
+    if (types.length > 1) {
+      conditions.push(
+        op === 'is_not'
+          ? notInArray(transactions.type, types as Array<typeof transactions.type._.data>)
+          : inArray(transactions.type, types as Array<typeof transactions.type._.data>)
+      );
     } else {
-      conditions.push(inArray(transactions.type, types as Array<typeof transactions.type._.data>));
+      conditions.push(
+        op === 'is_not'
+          ? ne(transactions.type, types[0] as typeof transactions.type._.data)
+          : eq(transactions.type, types[0] as typeof transactions.type._.data)
+      );
     }
   }
-  if (params.accountId)
-    conditions.push(eq(transactions.accountId, params.accountId));
-  if (params.dateFrom) conditions.push(gte(transactions.date, params.dateFrom));
-  if (params.dateTo) conditions.push(lte(transactions.date, params.dateTo));
-  if (params.categoryId)
-    conditions.push(eq(transactions.categoryId, params.categoryId));
-  if (params.assigneeId) {
+
+  // accountId
+  if (params.accountId) {
+    const op = params.accountId_op ?? 'is';
     conditions.push(
-      exists(
-        db
-          .select({ one: sql`1` })
-          .from(transactionAssignees)
-          .where(
-            and(
-              eq(transactionAssignees.transactionId, transactions.id),
-              eq(transactionAssignees.memberId, params.assigneeId)
-            )
-          )
-      )
+      op === 'is_not'
+        ? ne(transactions.accountId, params.accountId)
+        : eq(transactions.accountId, params.accountId)
     );
   }
-  if (params.tagIds && params.tagIds.length > 0) {
+
+  // dateRange — operator changes which bound is applied
+  const dateOp = params.dateRange_op ?? 'between';
+  if (dateOp === 'after' && params.dateFrom) {
+    conditions.push(gte(transactions.date, params.dateFrom));
+    // dateTo ignored for 'after'
+  } else if (dateOp === 'before' && params.dateTo) {
+    conditions.push(lte(transactions.date, params.dateTo));
+    // dateFrom ignored for 'before'
+  } else {
+    // 'between' — existing behaviour
+    if (params.dateFrom) conditions.push(gte(transactions.date, params.dateFrom));
+    if (params.dateTo) conditions.push(lte(transactions.date, params.dateTo));
+  }
+
+  // categoryId — nullable column; supports empty/not_empty
+  const catOp = params.categoryId_op ?? 'is';
+  if (catOp === 'empty') {
+    conditions.push(isNull(transactions.categoryId));
+  } else if (catOp === 'not_empty') {
+    conditions.push(isNotNull(transactions.categoryId));
+  } else if (params.categoryId) {
+    conditions.push(
+      catOp === 'is_not'
+        ? ne(transactions.categoryId, params.categoryId)
+        : eq(transactions.categoryId, params.categoryId)
+    );
+  }
+
+  // assigneeId — EXISTS subquery; supports empty/not_empty/is_not (T-03.4.1-OP2)
+  const assigneeOp = params.assigneeId_op ?? 'is';
+  const assigneeSubquery = db
+    .select({ one: sql`1` })
+    .from(transactionAssignees)
+    .where(
+      and(
+        eq(transactionAssignees.transactionId, transactions.id),
+        ...(params.assigneeId
+          ? [eq(transactionAssignees.memberId, params.assigneeId)]
+          : [])
+      )
+    );
+
+  if (assigneeOp === 'empty') {
+    conditions.push(not(exists(assigneeSubquery)));
+  } else if (assigneeOp === 'not_empty') {
+    conditions.push(exists(assigneeSubquery));
+  } else if (params.assigneeId) {
+    conditions.push(
+      assigneeOp === 'is_not'
+        ? not(exists(assigneeSubquery))
+        : exists(assigneeSubquery)
+    );
+  }
+
+  // tagIds — supports all 6 operators (T-03.4.1-OP3: includes_all bounded by practical UI)
+  const tagOp = params.tagIds_op ?? 'is_any_of';
+  if (tagOp === 'empty') {
+    conditions.push(
+      not(
+        exists(
+          db
+            .select({ one: sql`1` })
+            .from(transactionTags)
+            .where(eq(transactionTags.transactionId, transactions.id))
+        )
+      )
+    );
+  } else if (tagOp === 'not_empty') {
     conditions.push(
       exists(
         db
           .select({ one: sql`1` })
           .from(transactionTags)
-          .where(
-            and(
-              eq(transactionTags.transactionId, transactions.id),
-              inArray(transactionTags.tagId, params.tagIds)
-            )
-          )
+          .where(eq(transactionTags.transactionId, transactions.id))
       )
     );
+  } else if (params.tagIds && params.tagIds.length > 0) {
+    if (tagOp === 'includes_all') {
+      // One EXISTS subquery per tag ID — all must be present
+      for (const tagId of params.tagIds) {
+        conditions.push(
+          exists(
+            db
+              .select({ one: sql`1` })
+              .from(transactionTags)
+              .where(
+                and(
+                  eq(transactionTags.transactionId, transactions.id),
+                  eq(transactionTags.tagId, tagId)
+                )
+              )
+          )
+        );
+      }
+    } else if (tagOp === 'is_not_any_of' || tagOp === 'excludes_all') {
+      conditions.push(
+        not(
+          exists(
+            db
+              .select({ one: sql`1` })
+              .from(transactionTags)
+              .where(
+                and(
+                  eq(transactionTags.transactionId, transactions.id),
+                  inArray(transactionTags.tagId, params.tagIds)
+                )
+              )
+          )
+        )
+      );
+    } else {
+      // is_any_of (default) — existing behaviour
+      conditions.push(
+        exists(
+          db
+            .select({ one: sql`1` })
+            .from(transactionTags)
+            .where(
+              and(
+                eq(transactionTags.transactionId, transactions.id),
+                inArray(transactionTags.tagId, params.tagIds)
+              )
+            )
+        )
+      );
+    }
   }
+
   // T-03.4-01: D-18 description filter — parameterized ILIKE (NOT string interpolation) — safe from SQL injection
   // '%' + value + '%' is passed as a Drizzle bound parameter to the DB driver, not concatenated into SQL text.
   // Searches both description (user-visible) and rawDescription (original bank/import memo).
