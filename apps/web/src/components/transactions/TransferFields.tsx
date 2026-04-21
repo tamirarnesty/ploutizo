@@ -16,7 +16,7 @@ export interface TransferFieldsProps {
 
 export const TransferFields = ({ form, accounts }: TransferFieldsProps) => (
   <form.AppField
-    name="toAccountId"
+    name="counterpartAccountId"
     validators={{
       onChange: ({ value }: { value: string }) =>
         !value ? 'Destination account is required.' : undefined,
@@ -24,14 +24,14 @@ export const TransferFields = ({ form, accounts }: TransferFieldsProps) => (
   >
     {(field) => (
       <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
-        <FieldLabel htmlFor="tx-toAccountId">To account</FieldLabel>
+        <FieldLabel htmlFor="tx-counterpartAccountId">To account</FieldLabel>
         <Select
           value={field.state.value}
           onValueChange={(v) => {
             if (v !== null) field.handleChange(v)
           }}
         >
-          <SelectTrigger id="tx-toAccountId">
+          <SelectTrigger id="tx-counterpartAccountId">
             <SelectValue>
               {accounts.find((a) => a.id === field.state.value)?.name ?? 'Select account'}
             </SelectValue>

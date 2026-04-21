@@ -16,11 +16,11 @@ export interface SettlementFieldsProps {
 }
 
 export const SettlementFields = ({ form, accounts }: SettlementFieldsProps) => (
-  <form.AppField name="settledAccountId">
+  <form.AppField name="counterpartAccountId">
     {(field) => (
       <Field>
-        <FieldLabel htmlFor="tx-settledAccountId">
-          Settlement account
+        <FieldLabel htmlFor="tx-counterpartAccountId">
+          Paid from
           <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
             (optional)
           </Text>
@@ -31,7 +31,7 @@ export const SettlementFields = ({ form, accounts }: SettlementFieldsProps) => (
             if (v !== null) field.handleChange(v)
           }}
         >
-          <SelectTrigger id="tx-settledAccountId">
+          <SelectTrigger id="tx-counterpartAccountId">
             <SelectValue>
               {accounts.find((a) => a.id === field.state.value)?.name ?? 'Select account (optional)'}
             </SelectValue>
