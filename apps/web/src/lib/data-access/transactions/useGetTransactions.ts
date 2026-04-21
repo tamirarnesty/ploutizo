@@ -23,8 +23,7 @@ export interface TransactionRow {
   type: 'expense' | 'income' | 'transfer' | 'settlement' | 'refund' | 'contribution'
   amount: number
   date: string
-  description: string | null
-  merchant: string | null
+  description: string
   categoryId: string | null
   categoryName: string | null
   categoryIcon: string | null
@@ -33,10 +32,13 @@ export interface TransactionRow {
   accountType: string | null
   refundOf: string | null
   incomeType: string | null
-  incomeSource: string | null
-  toAccountId: string | null
-  settledAccountId: string | null
-  investmentType: string | null
+  counterpartAccountId: string | null
+  counterpartAccountName: string | null
+  rawDescription: string | null
+  notes: string | null
+  refundOfId: string | null
+  refundOfDate: string | null
+  refundOfAmountCents: number | null
   importBatchId: string | null
   recurringTemplateId: string | null
   deletedAt: string | null

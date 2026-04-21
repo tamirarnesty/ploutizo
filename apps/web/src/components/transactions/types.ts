@@ -15,27 +15,22 @@ export interface TransactionFormValues {
   amount: number | undefined  // dollars (form); undefined = not yet entered; API/DB stores cents — see toApiPayload
   date: string           // ISO date string 'YYYY-MM-DD'
   description: string
-  merchant: string
   tagIds: string[]       // UUIDs of selected tags; names resolved via useGetTags for display
 
   // expense + refund (optional for refund)
   categoryId: string
 
-  // refund
-  refundOf: string       // UUID of the original transaction; empty string = none
+  // refund (UUID of the original transaction; empty string = none)
+  refundOf: string
 
   // income
   incomeType: string     // 'direct_deposit' | 'e_transfer' | 'cash' | 'cheque' | 'other'
-  incomeSource: string
 
-  // transfer
-  toAccountId: string
+  // transfer + settlement (D-03: single counterpart FK)
+  counterpartAccountId: string
 
-  // settlement
-  settledAccountId: string
-
-  // contribution
-  investmentType: string // 'tfsa' | 'rrsp' | 'fhsa' | 'resp' | 'non_registered' | 'other'
+  // notes (D-21: optional, always rendered)
+  notes: string
 
   // Split section
   assignees: AssigneeFormRow[]
