@@ -32,6 +32,7 @@ interface TransactionsTableProps {
   onFilteredEmpty: boolean // true when filters active and no results
   onClearFilters: () => void
   onEdit: (transaction: TransactionRow) => void
+  onOpenOriginal: (id: string) => void
 }
 
 export const TransactionsTable = ({
@@ -47,6 +48,7 @@ export const TransactionsTable = ({
   onFilteredEmpty,
   onClearFilters,
   onEdit,
+  onOpenOriginal,
 }: TransactionsTableProps) => {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const deleteMutation = useDeleteTransaction()
@@ -67,7 +69,10 @@ export const TransactionsTable = ({
     })
   }
 
-  const columns = useMemo(() => buildColumns(setDeleteId, onEdit), [setDeleteId, onEdit])
+  const columns = useMemo(
+    () => buildColumns(setDeleteId, onEdit, onOpenOriginal),
+    [setDeleteId, onEdit, onOpenOriginal],
+  )
 
   const table = useReactTable({
     data: transactions,
