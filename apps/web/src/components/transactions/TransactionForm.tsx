@@ -115,6 +115,24 @@ export const TransactionForm = ({ transaction, onClose }: TransactionFormProps) 
   )
 }
 
+// CR-01: syncs the locked description template to form state on change.
+// The (field) => (...) render prop cannot call hooks directly, so this helper
+// component uses useEffect to write lockedValue into field state.
+interface DescriptionSyncerProps {
+  isLocked: boolean
+  lockedValue: string
+  onSync: (value: string) => void
+}
+
+function DescriptionSyncer({ isLocked, lockedValue, onSync }: DescriptionSyncerProps) {
+  useEffect(() => {
+    if (isLocked && lockedValue) {
+      onSync(lockedValue)
+    }
+  }, [isLocked, lockedValue, onSync])
+  return null
+}
+
 /** Types whose description is always locked (D-11, D-12) */
 const LOCKED_TYPES = ['transfer', 'settlement', 'contribution'] as const
 type LockedType = (typeof LOCKED_TYPES)[number]
@@ -326,6 +344,11 @@ const TransactionFormInner = ({
                 >
                   {(field) => (
                     <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
+                      <DescriptionSyncer
+                        isLocked={isLocked}
+                        lockedValue={lockedValue}
+                        onSync={field.handleChange}
+                      />
                       <FieldLabel htmlFor="tx-description">Description</FieldLabel>
                       {isLocked ? (
                         <InputGroup>
