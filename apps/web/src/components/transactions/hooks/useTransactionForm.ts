@@ -35,13 +35,13 @@ export const buildDefaultValues = (
     amount: transaction.amount / 100,
     date: transaction.date,
     description: transaction.description,
-    tagIds: transaction.tags.map((t) => t.id),
+    tagIds: (transaction.tags ?? []).map((t) => t.id),
     categoryId: transaction.categoryId ?? '',
     refundOf: transaction.refundOf ?? '',
     incomeType: transaction.incomeType ?? '',
     counterpartAccountId: transaction.counterpartAccountId ?? '',
     notes: transaction.notes ?? '',
-    assignees: transaction.assignees.map((a) => ({
+    assignees: (transaction.assignees ?? []).map((a) => ({
       memberId: a.memberId,
       amountCents: a.amountCents,
       // Drizzle numeric column returns string — always parseFloat before use

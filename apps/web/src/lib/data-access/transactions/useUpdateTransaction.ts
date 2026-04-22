@@ -14,10 +14,14 @@ export const useUpdateTransaction = (id: string) => {
         body: JSON.stringify(body),
       }).then((r: { data: TransactionRow }) => r.data),
     onSuccess: (updatedRow) => {
-      // Update the per-record cache immediately with the server response.
-      // This prevents the stale-note bug: reopening the sheet reads from
-      // ['transaction', id] which now has the fresh data without a refetch.
-      qc.setQueryData(['transaction', id], updatedRow)
+      // Merge with existing cache entry to preserve joined arrays (tags, assignees)
+      // that the PATCH endpoint does not return (it returns scalar row only).
+      qc.setQueryData(['transaction', id], (prev: TransactionRow | undefined) => ({
+        ...(prev ?? {}),
+        ...updatedRow,
+        tags: updatedRow.tags ?? prev?.tags ?? [],
+        assignees: updatedRow.assignees ?? prev?.assignees ?? [],
+      }))
     },
     onSettled: () => qc.invalidateQueries({ queryKey: ['transactions'] }),
   })
