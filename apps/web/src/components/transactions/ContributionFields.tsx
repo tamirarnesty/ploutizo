@@ -30,7 +30,7 @@ export const ContributionFields = ({ form, accounts }: ContributionFieldsProps) 
     <form.AppField name="counterpartAccountId">
       {(field) => (
         <Field>
-          <FieldLabel htmlFor="tx-contribution-counterpartAccountId">To</FieldLabel>
+          <FieldLabel htmlFor="tx-contribution-counterpartAccountId">Destination</FieldLabel>
           <Select
             value={field.state.value}
             onValueChange={(v) => {

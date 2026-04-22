@@ -32,7 +32,7 @@ transactionsRouter.post('/', appValidator('json', createTransactionSchema), asyn
   }
 
   // T1: validate counterpartAccountId belongs to this org — T-03.4.1-T1
-  // gate on field presence; counterpartAccountId only exists on transfer/settlement variants
+  // gate on field presence; counterpartAccountId exists on transfer/settlement/contribution variants
   if ('counterpartAccountId' in data && data.counterpartAccountId) {
     const valid = await checkCounterpartAccountOwnership(data.counterpartAccountId, orgId);
     if (!valid) throw new DomainError(400, 'counterpartAccountId references an account not in this org');
@@ -139,7 +139,7 @@ transactionsRouter.patch('/:id', appValidator('json', createTransactionSchema), 
   const data = c.req.valid('json');
 
   // T1: validate counterpartAccountId belongs to this org — T-03.4.1-T1
-  // gate on field presence; counterpartAccountId only exists on transfer/settlement variants
+  // gate on field presence; counterpartAccountId exists on transfer/settlement/contribution variants
   if ('counterpartAccountId' in data && data.counterpartAccountId) {
     const valid = await checkCounterpartAccountOwnership(data.counterpartAccountId, orgId);
     if (!valid) throw new DomainError(400, 'counterpartAccountId references an account not in this org');

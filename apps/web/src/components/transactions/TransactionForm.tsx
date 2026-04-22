@@ -39,6 +39,9 @@ import { DeleteTransactionDialog } from './DeleteTransactionDialog'
 import { useTransactionForm } from './hooks/useTransactionForm'
 import { FormattedAmountInput } from './FormattedAmountInput'
 import { TransactionTypeFields } from './TransactionTypeFields'
+import { TransferFields } from './TransferFields'
+import { SettlementFields } from './SettlementFields'
+import { ContributionFields } from './ContributionFields'
 import { TransactionTagPicker } from './TransactionTagPicker'
 import { AssigneeSection } from './AssigneeSection'
 import type { AssigneeFormRow } from './types'
@@ -238,50 +241,70 @@ const TransactionFormInner = ({
           {/* TransactionTypeFields: type Select + listeners + conditional type-specific fields */}
           <TransactionTypeFields
             form={form}
-            accounts={accounts}
             categories={categories}
             onAssigneesChange={(assignees) =>
               form.setFieldValue('assignees', assignees)
             }
           />
 
-          {/* Base field: accountId */}
+          {/* accountId — full-width "Account" for single-account types;
+              2-col [Source | Destination] for multi-account types */}
           <form.Subscribe selector={(s) => s.values.type}>
-            {(type) => (
-          <form.AppField
-            name="accountId"
-            validators={{
-              onChange: ({ value }: { value: string }) =>
-                !value ? 'Account is required.' : undefined,
-            }}
-          >
-            {(field) => (
-              <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
-                <FieldLabel htmlFor="tx-accountId">{type === 'contribution' ? 'From' : 'Account'}</FieldLabel>
-                <Select
-                  value={field.state.value}
-                  onValueChange={(v) => { if (v !== null) field.handleChange(v) }}
+            {(type) => {
+              const isMultiAccount = ['transfer', 'settlement', 'contribution'].includes(type)
+
+              const sourceField = (
+                <form.AppField
+                  name="accountId"
+                  validators={{
+                    onChange: ({ value }: { value: string }) =>
+                      !value ? 'Account is required.' : undefined,
+                  }}
                 >
-                  <SelectTrigger id="tx-accountId">
-                    <SelectValue>
-                      {accounts.find((a) => a.id === field.state.value)?.name ?? 'Select account'}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {accounts.map((a) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {field.state.meta.errors.length > 0 ? (
-                  <FieldError>{String(field.state.meta.errors[0])}</FieldError>
-                ) : null}
-              </Field>
-            )}
-          </form.AppField>
-            )}
+                  {(field) => (
+                    <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
+                      <FieldLabel htmlFor="tx-accountId">{isMultiAccount ? 'Source' : 'Account'}</FieldLabel>
+                      <Select
+                        value={field.state.value}
+                        onValueChange={(v) => { if (v !== null) field.handleChange(v) }}
+                      >
+                        <SelectTrigger id="tx-accountId">
+                          <SelectValue>
+                            {accounts.find((a) => a.id === field.state.value)?.name ?? 'Select account'}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {accounts.map((a) => (
+                            <SelectItem key={a.id} value={a.id}>
+                              {a.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {field.state.meta.errors.length > 0 ? (
+                        <FieldError>{String(field.state.meta.errors[0])}</FieldError>
+                      ) : null}
+                    </Field>
+                  )}
+                </form.AppField>
+              )
+
+              if (!isMultiAccount) return sourceField
+
+              // Settlement owns its own 2-col layout (Source=counterpartAccountId, Destination=accountId)
+              if (type === 'settlement') return <SettlementFields form={form} accounts={accounts} />
+
+              return (
+                <div className="grid grid-cols-2 gap-4">
+                  {sourceField}
+                  {type === 'transfer' ? (
+                    <TransferFields form={form} accounts={accounts} />
+                  ) : type === 'contribution' ? (
+                    <ContributionFields form={form} accounts={accounts} />
+                  ) : null}
+                </div>
+              )
+            }}
           </form.Subscribe>
 
           <div className="grid grid-cols-2 gap-4">
@@ -386,9 +409,10 @@ const TransactionFormInner = ({
                 const to = counterpartAccount?.name ?? '…'
                 lockedValue = `Transfer from ${from} to ${to}`
               } else if (type === 'settlement') {
-                lockedValue = counterpartAccount
-                  ? `Settlement \u2014 paid from ${counterpartAccount.name}`
-                  : 'Settlement'
+                // counterpartAccountId = source (bank), accountId = destination (credit card)
+                const from = counterpartAccount?.name ?? '…'
+                const to = primaryAccount?.name ?? '…'
+                lockedValue = `Settlement from ${from} to ${to}`
               } else if (type === 'contribution') {
                 const from = primaryAccount?.name ?? '…'
                 const to = counterpartAccount?.name ?? '…'

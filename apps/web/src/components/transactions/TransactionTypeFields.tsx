@@ -8,14 +8,10 @@ import {
 } from '@ploutizo/ui/components/select'
 import { Text } from '@ploutizo/ui/components/text'
 import { ExpenseFields } from './ExpenseFields'
-import { TransferFields } from './TransferFields'
-import { SettlementFields } from './SettlementFields'
-import { ContributionFields } from './ContributionFields'
 import { RefundLinker } from './RefundLinker'
 import type { TransactionFormInstance } from './hooks/useTransactionForm'
 import type { AssigneeFormRow, TransactionFormValues } from './types'
 import type { Category } from '@/lib/data-access/categories'
-import type { Account } from '@ploutizo/types'
 
 // TODO(03.4-deferred): originalDescription column — add when schema patch lands
 // D-19: import caption (└ Original: ...) is deferred because originalDescription
@@ -40,7 +36,6 @@ const INCOME_TYPE_LABELS: Record<string, string> = {
 
 interface TransactionTypeFieldsProps {
   form: TransactionFormInstance
-  accounts: Account[]
   categories: Category[]
   onAssigneesChange: (assignees: AssigneeFormRow[]) => void
   /** Called after any type-switch, before field clears. Plan 06 passes () => setIsDescriptionUnlocked(false). */
@@ -167,9 +162,10 @@ const IncomeTypeField = ({ form }: { form: TransactionFormInstance }) => (
   </form.AppField>
 )
 
+const MULTI_ACCOUNT_TYPES = ['transfer', 'settlement', 'contribution']
+
 export const TransactionTypeFields = ({
   form,
-  accounts,
   categories,
   onAssigneesChange,
   onTypeChange,
@@ -177,23 +173,22 @@ export const TransactionTypeFields = ({
   <form.Subscribe selector={(s) => s.values.type}>
     {(type) => (
       <>
-        {/* All types: Type | SubType in 2-column grid */}
-        <div className="grid grid-cols-2 gap-4">
+        {MULTI_ACCOUNT_TYPES.includes(type) ? (
+          // Multi-account: Type is full-width; Source + Destination rendered below in TransactionForm
           <TypeSelectField form={form} onTypeChange={onTypeChange} />
-          {type === 'expense' ? (
-            <ExpenseFields form={form} categories={categories} />
-          ) : type === 'refund' ? (
-            <RefundCategoryField form={form} categories={categories} />
-          ) : type === 'income' ? (
-            <IncomeTypeField form={form} />
-          ) : type === 'transfer' ? (
-            <TransferFields form={form} accounts={accounts} />
-          ) : type === 'settlement' ? (
-            <SettlementFields form={form} accounts={accounts} />
-          ) : type === 'contribution' ? (
-            <ContributionFields form={form} accounts={accounts} />
-          ) : null}
-        </div>
+        ) : (
+          // Single-account: [Type | Subtype] 2-col
+          <div className="grid grid-cols-2 gap-4">
+            <TypeSelectField form={form} onTypeChange={onTypeChange} />
+            {type === 'expense' ? (
+              <ExpenseFields form={form} categories={categories} />
+            ) : type === 'refund' ? (
+              <RefundCategoryField form={form} categories={categories} />
+            ) : type === 'income' ? (
+              <IncomeTypeField form={form} />
+            ) : null}
+          </div>
+        )}
 
         {/* Type-specific fields below the type row */}
         {type === 'refund' ? (

@@ -143,7 +143,7 @@ export async function updateTransaction(
   // and the table renders "A → B" for what is now an expense row.
   if (data.type) {
     const typeSpecificNulls: Record<string, null> = {}
-    if (!['transfer', 'settlement'].includes(data.type)) {
+    if (!['transfer', 'settlement', 'contribution'].includes(data.type)) {
       typeSpecificNulls.counterpartAccountId = null
     }
     if (data.type !== 'refund') {

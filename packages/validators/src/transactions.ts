@@ -57,6 +57,8 @@ const settlementTransactionSchema = baseTransactionSchema.extend({
 const contributionTransactionSchema = baseTransactionSchema.extend({
   type: z.literal('contribution'),
   // investmentType removed (D-10) — identified via account type instead
+  // counterpartAccountId: the destination investment account (e.g. FHSA, RRSP)
+  counterpartAccountId: z.string().uuid().optional(),
 })
 
 export const createTransactionSchema = z.discriminatedUnion('type', [

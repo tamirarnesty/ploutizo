@@ -88,7 +88,7 @@ export const toApiPayload = (value: TransactionFormValues): Record<string, unkno
     case 'settlement':
       return { ...base, counterpartAccountId: value.counterpartAccountId || undefined }
     case 'contribution':
-      return base
+      return { ...base, counterpartAccountId: value.counterpartAccountId || undefined }
     default:
       return base
   }

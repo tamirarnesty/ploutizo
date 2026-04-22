@@ -201,11 +201,19 @@ export function buildColumns(
         skeleton: <Skeleton className="h-4 w-24 motion-safe:animate-pulse" />,
       },
       cell: ({ row }) => {
-        const { accountName, counterpartAccountName } = row.original
-        // → U+2192 RIGHTWARDS ARROW
-        const displayText = counterpartAccountName
-          ? `${accountName} \u2192 ${counterpartAccountName}`
-          : accountName ?? ''
+        const { type, accountName, counterpartAccountName } = row.original
+        // Account column always shows the destination account:
+        //   contribution → counterpartAccountId (investment acct)
+        //   settlement   → accountId (credit card)
+        //   transfer     → A → B
+        //   others       → accountId
+        const displayText = type === 'contribution'
+          ? (counterpartAccountName ?? accountName ?? '')
+          : type === 'settlement'
+            ? accountName ?? ''
+            : counterpartAccountName
+              ? `${accountName} \u2192 ${counterpartAccountName}`
+              : accountName ?? ''
         return (
           <div className="min-w-0">
             <Text variant="body-sm" className="truncate min-w-0 text-muted-foreground">

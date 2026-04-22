@@ -60,7 +60,7 @@ const TransferDestinationField = ({
 
   return (
     <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
-      <FieldLabel htmlFor="tx-counterpartAccountId">To account</FieldLabel>
+      <FieldLabel htmlFor="tx-counterpartAccountId">Destination</FieldLabel>
       <Select
         value={field.state.value}
         onValueChange={(v) => {
