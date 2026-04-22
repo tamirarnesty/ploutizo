@@ -354,15 +354,15 @@ describe('createTransactionSchema — per-type branches', () => {
     expect(createTransactionSchema.safeParse({ ...baseFields, type: 'income' }).success).toBe(false)
   })
 
-  it('accepts valid transfer payload with required toAccountId', () => {
+  it('accepts valid transfer payload with required counterpartAccountId', () => {
     expect(createTransactionSchema.safeParse({
       ...baseFields,
       type: 'transfer',
-      toAccountId: '550e8400-e29b-41d4-a716-446655440002',
+      counterpartAccountId: '550e8400-e29b-41d4-a716-446655440002',
     }).success).toBe(true)
   })
 
-  it('rejects transfer payload missing toAccountId', () => {
+  it('rejects transfer payload missing counterpartAccountId', () => {
     expect(createTransactionSchema.safeParse({ ...baseFields, type: 'transfer' }).success).toBe(false)
   })
 

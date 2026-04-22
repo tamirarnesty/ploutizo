@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiFetch } from '@/lib/queryClient'
 import type { TransactionRow } from './useGetTransactions'
+import { apiFetch } from '@/lib/queryClient'
 
 // body: unknown is intentional — payload is produced by toApiPayload in useTransactionForm,
 // which validates via createTransactionSchema.safeParse before calling mutate.
@@ -13,6 +13,16 @@ export const useUpdateTransaction = (id: string) => {
         method: 'PATCH',
         body: JSON.stringify(body),
       }).then((r: { data: TransactionRow }) => r.data),
+    onSuccess: (updatedRow) => {
+      // Merge with existing cache entry to preserve joined arrays (tags, assignees)
+      // that the PATCH endpoint does not return (it returns scalar row only).
+      qc.setQueryData(['transaction', id], (prev: TransactionRow | undefined) => ({
+        ...(prev ?? {}),
+        ...updatedRow,
+        tags: updatedRow.tags ?? prev?.tags ?? [],
+        assignees: updatedRow.assignees ?? prev?.assignees ?? [],
+      }))
+    },
     onSettled: () => qc.invalidateQueries({ queryKey: ['transactions'] }),
   })
 }

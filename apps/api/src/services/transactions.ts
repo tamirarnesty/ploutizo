@@ -7,6 +7,7 @@ import {
 import {
   buildListQuery,
   countQuery,
+  counterpartAccountBelongsToOrg,
   enrichTransactions,
   fetchTransactionById,
   refundOfExists,
@@ -43,6 +44,14 @@ export async function checkRefundOfOwnership(
   orgId: string
 ): Promise<boolean> {
   return refundOfExists(refundOfId, orgId);
+}
+
+// T-03.4.1-T1: check that counterpartAccountId belongs to the same org
+export async function checkCounterpartAccountOwnership(
+  accountId: string,
+  orgId: string
+): Promise<boolean> {
+  return counterpartAccountBelongsToOrg(accountId, orgId);
 }
 
 // POST: create a transaction with optional assignees and tags in a single DB transaction
@@ -128,6 +137,26 @@ export async function updateTransaction(
   }
 
   const { assignees, tagIds, ...updateData } = data;
+
+  // WR-01: when type changes, explicitly null FK columns that do not apply to the new type.
+  // Without this, switching from transfer → expense leaves counterpartAccountId in the DB
+  // and the table renders "A → B" for what is now an expense row.
+  if (data.type) {
+    const typeSpecificNulls: Record<string, null> = {}
+    if (!['transfer', 'settlement', 'contribution'].includes(data.type)) {
+      typeSpecificNulls.counterpartAccountId = null
+    }
+    if (data.type !== 'refund') {
+      typeSpecificNulls.refundOf = null
+    }
+    if (data.type !== 'income') {
+      typeSpecificNulls.incomeType = null
+    }
+    if (!['expense', 'refund'].includes(data.type)) {
+      typeSpecificNulls.categoryId = null
+    }
+    Object.assign(updateData, typeSpecificNulls)
+  }
 
   return db.transaction(async (tx) => {
     // Delegate scalar UPDATE to query layer (Pitfall 7: three-condition WHERE)

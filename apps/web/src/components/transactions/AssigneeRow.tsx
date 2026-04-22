@@ -1,7 +1,12 @@
+import { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@ploutizo/ui/components/avatar'
 import { Button } from '@ploutizo/ui/components/button'
-import { Input } from '@ploutizo/ui/components/input'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from '@ploutizo/ui/components/input-group'
 import { Text } from '@ploutizo/ui/components/text'
 import type { AssigneeFormRow } from './types'
 import { formatCurrency } from '@/lib/formatCurrency'
@@ -20,6 +25,9 @@ interface AssigneeRowProps {
 const getInitials = (name: string | null): string =>
   name ? name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2) : '?'
 
+const toDisplay = (mode: 'percent' | 'dollar', percentage: number, amountCents: number) =>
+  mode === 'percent' ? percentage.toFixed(1) : (amountCents / 100).toFixed(2)
+
 export const AssigneeRow = ({
   memberId,
   memberName,
@@ -30,11 +38,18 @@ export const AssigneeRow = ({
   onChange,
   onRemove,
 }: AssigneeRowProps) => {
-  const sharedInputProps = {
-    type: 'number' as const,
-    autoComplete: 'off' as const,
-    className: 'w-20 text-right',
-  } as const
+  const [displayValue, setDisplayValue] = useState(toDisplay(mode, percentage, amountCents))
+  const isFocusedRef = useRef(false)
+  const prevModeRef = useRef(mode)
+
+  useEffect(() => {
+    const modeChanged = prevModeRef.current !== mode
+    prevModeRef.current = mode
+    // Always sync on mode switch; sync on value change only when not typing
+    if (modeChanged || !isFocusedRef.current) {
+      setDisplayValue(toDisplay(mode, percentage, amountCents))
+    }
+  }, [mode, percentage, amountCents])
 
   return (
     <div className="flex items-center gap-2">
@@ -46,36 +61,45 @@ export const AssigneeRow = ({
         {memberName ?? 'Unknown'}
       </Text>
 
-      {mode === 'percent' ? (
-        <Input
-          {...sharedInputProps}
-          value={percentage.toFixed(1)}
+      <InputGroup className="w-24 shrink-0">
+        <InputGroupAddon align="inline-start">
+          {mode === 'percent' ? '%' : '$'}
+        </InputGroupAddon>
+        <InputGroupInput
+          type="text"
+          inputMode="decimal"
+          autoComplete="off"
+          className="text-right"
+          value={displayValue}
+          onFocus={() => { isFocusedRef.current = true }}
+          onBlur={() => {
+            isFocusedRef.current = false
+            setDisplayValue(toDisplay(mode, percentage, amountCents))
+          }}
           onChange={(e) => {
-            const p = parseFloat(e.target.value)
-            if (!isNaN(p)) {
-              onChange(memberId, {
-                percentage: p,
-                amountCents: Math.round((p / 100) * totalCents),
-              })
+            const raw = e.target.value
+            setDisplayValue(raw)
+            if (mode === 'percent') {
+              const p = parseFloat(raw)
+              if (!isNaN(p)) {
+                onChange(memberId, {
+                  percentage: p,
+                  amountCents: Math.round((p / 100) * totalCents),
+                })
+              }
+            } else {
+              const dollars = parseFloat(raw)
+              if (!isNaN(dollars)) {
+                const cents = Math.round(dollars * 100)
+                onChange(memberId, {
+                  amountCents: cents,
+                  percentage: totalCents > 0 ? Math.round((cents / totalCents) * 1000) / 10 : 0,
+                })
+              }
             }
           }}
         />
-      ) : (
-        <Input
-          {...sharedInputProps}
-          value={(amountCents / 100).toFixed(2)}
-          onChange={(e) => {
-            const dollars = parseFloat(e.target.value)
-            if (!isNaN(dollars)) {
-              const cents = Math.round(dollars * 100)
-              onChange(memberId, {
-                amountCents: cents,
-                percentage: totalCents > 0 ? Math.round((cents / totalCents) * 1000) / 10 : 0,
-              })
-            }
-          }}
-        />
-      )}
+      </InputGroup>
 
       <Text as="span" variant="body-sm" className="w-20 text-right text-muted-foreground">
         {mode === 'percent' ? formatCurrency(amountCents) : `${percentage.toFixed(1)}%`}

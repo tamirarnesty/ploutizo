@@ -20,7 +20,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 
-import { transactionTypeEnum, incomeTypeEnum, investmentTypeEnum } from './enums'
+import { transactionTypeEnum, incomeTypeEnum } from './enums'
 import { orgs, orgMembers } from './auth'
 import { accounts } from './accounts'
 import { categories, tags } from './classification'
@@ -47,8 +47,7 @@ export const transactions = pgTable(
     amount: integer('amount').notNull(),
     /** ISO date string YYYY-MM-DD. Stored as Postgres date column for native comparisons. */
     date: date('date').notNull(),
-    description: text('description'),
-    merchant: text('merchant'),
+    description: text('description').notNull(),
 
     // --- expense / refund columns ---
     categoryId: uuid('category_id').references(() => categories.id, { onDelete: 'set null' }),
@@ -62,19 +61,18 @@ export const transactions = pgTable(
 
     // --- income columns ---
     incomeType: incomeTypeEnum('income_type'),
-    incomeSource: text('income_source'),
 
-    // --- transfer columns ---
-    toAccountId: uuid('to_account_id').references(() => accounts.id, { onDelete: 'restrict' }),
-
-    // --- settlement columns ---
-    /** Source account for CSV deduplication across paired household exports (§5 Settlement). */
-    settledAccountId: uuid('settled_account_id').references(() => accounts.id, {
-      onDelete: 'restrict',
+    // --- shared counterpart (transfer destination, settlement source) ---
+    /** Single FK replacing to_account_id (transfer) and settled_account_id (settlement). D-03 */
+    counterpartAccountId: uuid('counterpart_account_id').references(() => accounts.id, {
+      onDelete: 'set null',
     }),
 
-    // --- contribution columns ---
-    investmentType: investmentTypeEnum('investment_type'),
+    /** Original bank/import memo. Copied from former merchant column for imported rows. D-05 */
+    rawDescription: text('raw_description'),
+
+    /** Free-text notes field. Optional on all types. D-21 */
+    notes: text('notes'),
 
     // --- import linkage (D-06, D-13) ---
     /** Nullable FK to import batch. NULL for manually-created transactions (D-06, D-13). */

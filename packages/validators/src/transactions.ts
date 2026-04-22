@@ -1,7 +1,6 @@
 import { z } from 'zod'
 
 const incomeTypeValues = ['direct_deposit', 'e_transfer', 'cash', 'cheque', 'other'] as const
-const investmentTypeValues = ['tfsa', 'rrsp', 'fhsa', 'resp', 'non_registered', 'other'] as const
 
 /** Common assignee object used in split payloads (Phase 3.2 writes these). */
 const assigneeSchema = z.object({
@@ -14,13 +13,14 @@ const assigneeSchema = z.object({
  * Base fields shared by all 6 transaction types.
  * amount: unsigned integer cents (D-18, D-02) — must be positive, no sign encoding
  * date: ISO date string YYYY-MM-DD (D-18) — z.string().date() validates format only (not datetime)
+ * notes: optional free-text field (D-21) — replaces merchant/incomeSource free-text
  */
 const baseTransactionSchema = z.object({
   accountId: z.string().uuid(),
   amount: z.number().int().positive(),
   date: z.string().date(),
   description: z.string().min(1, 'Description is required.'),
-  merchant: z.string().optional(),
+  notes: z.string().optional(),
   assignees: z.array(assigneeSchema).optional(),
   tagIds: z.array(z.string().uuid()).optional(),
 })
@@ -39,22 +39,26 @@ const refundTransactionSchema = baseTransactionSchema.extend({
 const incomeTransactionSchema = baseTransactionSchema.extend({
   type: z.literal('income'),
   incomeType: z.enum(incomeTypeValues),
-  incomeSource: z.string().optional(),
+  // incomeSource removed (D-09) — free-text context goes in notes if needed
 })
 
 const transferTransactionSchema = baseTransactionSchema.extend({
   type: z.literal('transfer'),
-  toAccountId: z.string().uuid(),
+  // toAccountId renamed to counterpartAccountId (D-07, D-03)
+  counterpartAccountId: z.string().uuid(),
 })
 
 const settlementTransactionSchema = baseTransactionSchema.extend({
   type: z.literal('settlement'),
-  settledAccountId: z.string().uuid().optional(),
+  // settledAccountId renamed to counterpartAccountId (D-07, D-14)
+  counterpartAccountId: z.string().uuid().optional(),
 })
 
 const contributionTransactionSchema = baseTransactionSchema.extend({
   type: z.literal('contribution'),
-  investmentType: z.enum(investmentTypeValues).optional(),
+  // investmentType removed (D-10) — identified via account type instead
+  // counterpartAccountId: the destination investment account (e.g. FHSA, RRSP)
+  counterpartAccountId: z.string().uuid().optional(),
 })
 
 export const createTransactionSchema = z.discriminatedUnion('type', [
@@ -74,10 +78,8 @@ export const updateTransactionSchema = baseTransactionSchema
     categoryId: z.string().uuid().optional(),
     refundOf: z.string().uuid().optional(),
     incomeType: z.enum(incomeTypeValues).optional(),
-    incomeSource: z.string().optional(),
-    toAccountId: z.string().uuid().optional(),
-    settledAccountId: z.string().uuid().optional(),
-    investmentType: z.enum(investmentTypeValues).optional(),
+    // counterpartAccountId replaces toAccountId + settledAccountId (D-08)
+    counterpartAccountId: z.string().uuid().optional(),
   })
 export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>
 

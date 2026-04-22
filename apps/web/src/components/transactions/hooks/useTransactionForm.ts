@@ -19,15 +19,12 @@ export const buildDefaultValues = (
       amount: undefined,
       date: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })(),
       description: '',
-      merchant: '',
       tagIds: [],
       categoryId: '',
       refundOf: '',
       incomeType: '',
-      incomeSource: '',
-      toAccountId: '',
-      settledAccountId: '',
-      investmentType: '',
+      counterpartAccountId: '',
+      notes: '',
       assignees: [],
     }
   }
@@ -37,17 +34,14 @@ export const buildDefaultValues = (
     accountId: transaction.accountId,
     amount: transaction.amount / 100,
     date: transaction.date,
-    description: transaction.description ?? '',
-    merchant: transaction.merchant ?? '',
-    tagIds: transaction.tags.map((t) => t.id),
+    description: transaction.description,
+    tagIds: (transaction.tags ?? []).map((t) => t.id),
     categoryId: transaction.categoryId ?? '',
     refundOf: transaction.refundOf ?? '',
     incomeType: transaction.incomeType ?? '',
-    incomeSource: transaction.incomeSource ?? '',
-    toAccountId: transaction.toAccountId ?? '',
-    settledAccountId: transaction.settledAccountId ?? '',
-    investmentType: transaction.investmentType ?? '',
-    assignees: transaction.assignees.map((a) => ({
+    counterpartAccountId: transaction.counterpartAccountId ?? '',
+    notes: transaction.notes ?? '',
+    assignees: (transaction.assignees ?? []).map((a) => ({
       memberId: a.memberId,
       amountCents: a.amountCents,
       // Drizzle numeric column returns string — always parseFloat before use
@@ -63,7 +57,7 @@ export const toApiPayload = (value: TransactionFormValues): Record<string, unkno
     amount: Math.round((value.amount ?? 0) * 100),
     date: value.date,
     description: value.description.trim(),
-    merchant: value.merchant.trim() || undefined,
+    notes: value.notes.trim() || undefined,
     tagIds: value.tagIds.length > 0 ? value.tagIds : undefined,
     assignees:
       value.assignees.length > 0
@@ -88,14 +82,13 @@ export const toApiPayload = (value: TransactionFormValues): Record<string, unkno
       return {
         ...base,
         incomeType: value.incomeType || undefined,
-        incomeSource: value.incomeSource.trim() || undefined,
       }
     case 'transfer':
-      return { ...base, toAccountId: value.toAccountId || undefined }
+      return { ...base, counterpartAccountId: value.counterpartAccountId || undefined }
     case 'settlement':
-      return { ...base, settledAccountId: value.settledAccountId || undefined }
+      return { ...base, counterpartAccountId: value.counterpartAccountId || undefined }
     case 'contribution':
-      return { ...base, investmentType: value.investmentType || undefined }
+      return { ...base, counterpartAccountId: value.counterpartAccountId || undefined }
     default:
       return base
   }

@@ -1,13 +1,6 @@
 import { useCallback, useState } from 'react'
 import { Text } from '@ploutizo/ui/components/text'
 import { ToggleGroup, ToggleGroupItem } from '@ploutizo/ui/components/toggle-group'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@ploutizo/ui/components/select'
 import { AssigneeRow } from './AssigneeRow'
 import type { OrgMember } from '@ploutizo/types'
 import type { AssigneeFormRow } from './types'
@@ -24,15 +17,6 @@ interface SplitSectionProps {
 export const SplitSection = ({ value, onChange, amountCents, orgMembers }: SplitSectionProps) => {
   const [mode, setMode] = useState<'percent' | 'dollar'>('percent')
 
-  const handleAddAssignee = useCallback(
-    (memberId: string) => {
-      if (!memberId) return
-      const newMemberIds = [...value.map((r) => r.memberId), memberId]
-      onChange(lrmSplit(amountCents, newMemberIds))
-    },
-    [value, amountCents, onChange],
-  )
-
   const handleRemove = useCallback(
     (memberId: string) => {
       const newMemberIds = value.map((r) => r.memberId).filter((id) => id !== memberId)
@@ -43,14 +27,57 @@ export const SplitSection = ({ value, onChange, amountCents, orgMembers }: Split
 
   const handleRowChange = useCallback(
     (memberId: string, patch: Partial<Pick<AssigneeFormRow, 'amountCents' | 'percentage'>>) => {
-      onChange(value.map((r) => (r.memberId === memberId ? { ...r, ...patch } : r)))
+      const editedRow = { ...value.find((r) => r.memberId === memberId)!, ...patch }
+      const otherRows = value.filter((r) => r.memberId !== memberId)
+
+      if (otherRows.length === 0) {
+        onChange(value.map((r) => (r.memberId === memberId ? editedRow : r)))
+        return
+      }
+
+      if ('percentage' in patch) {
+        const remainingPct = Math.max(0, 100 - editedRow.percentage)
+        const remainingCents = Math.max(0, amountCents - editedRow.amountCents)
+        const perPct = parseFloat((remainingPct / otherRows.length).toFixed(3))
+        const perCents = Math.floor(remainingCents / otherRows.length)
+        const centsRemainder = remainingCents - perCents * otherRows.length
+        const newOtherRows = otherRows.map((r, i) => ({
+          ...r,
+          percentage: perPct,
+          amountCents: i < centsRemainder ? perCents + 1 : perCents,
+        }))
+        onChange(
+          value.map((r) =>
+            r.memberId === memberId ? editedRow : newOtherRows.find((nr) => nr.memberId === r.memberId)!,
+          ),
+        )
+      } else if ('amountCents' in patch) {
+        const remainingCents = Math.max(0, amountCents - editedRow.amountCents)
+        const perCents = Math.floor(remainingCents / otherRows.length)
+        const centsRemainder = remainingCents - perCents * otherRows.length
+        const newOtherRows = otherRows.map((r, i) => {
+          const cents = i < centsRemainder ? perCents + 1 : perCents
+          return {
+            ...r,
+            amountCents: cents,
+            percentage:
+              amountCents > 0 ? parseFloat(((cents / amountCents) * 100).toFixed(3)) : 0,
+          }
+        })
+        onChange(
+          value.map((r) =>
+            r.memberId === memberId ? editedRow : newOtherRows.find((nr) => nr.memberId === r.memberId)!,
+          ),
+        )
+      } else {
+        onChange(value.map((r) => (r.memberId === memberId ? editedRow : r)))
+      }
     },
-    [value, onChange],
+    [value, onChange, amountCents],
   )
 
   const totalPct = value.reduce((sum, r) => sum + r.percentage, 0)
   const totalAmountCents = value.reduce((sum, r) => sum + r.amountCents, 0)
-  const availableMembers = orgMembers.filter((m) => !value.some((a) => a.memberId === m.id))
 
   return (
     <div className="flex flex-col gap-4">
@@ -97,32 +124,12 @@ export const SplitSection = ({ value, onChange, amountCents, orgMembers }: Split
         </div>
       )}
 
-      {/* Add assignee picker — filtered to exclude already-assigned members */}
-      <Select
-        value={null}
-        onValueChange={(v) => {
-          if (v) handleAddAssignee(v)
-        }}
-        disabled={availableMembers.length === 0}
-      >
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Add assignee…" />
-        </SelectTrigger>
-        <SelectContent>
-          {availableMembers.map((m) => (
-            <SelectItem key={m.id} value={m.id}>
-              {m.displayName}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
       {/* Totals row */}
       <div className="flex items-center justify-between gap-2">
         <Text variant="caption" className="text-muted-foreground">
           Total: {totalPct.toFixed(1)}% · {formatCurrency(totalAmountCents)}
         </Text>
-        {value.length > 0 && Math.round(totalPct * 10) !== 1000 ? (
+        {value.length > 0 && Math.abs(totalPct - 100) > 0.5 ? (
           <Text variant="caption" className="text-destructive">
             Percentages must add up to 100%.
           </Text>

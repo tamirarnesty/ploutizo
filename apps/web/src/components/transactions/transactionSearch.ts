@@ -18,6 +18,14 @@ export const transactionSearchSchema = z.object({
   categoryId: z.string().optional(),
   assigneeId: z.string().optional(),
   tagIds: z.string().optional(), // comma-separated UUIDs per RESEARCH.md Pitfall 4
+  // Operator fields — only non-default values appear in the URL (see buildCleanSearch).
+  // Defaults: type/accountId/categoryId/assigneeId → 'is'; tagIds → 'is_any_of'; dateRange → 'between'
+  type_op: z.string().optional(),       // 'is' | 'is_not'
+  accountId_op: z.string().optional(),  // 'is' | 'is_not'
+  categoryId_op: z.string().optional(), // 'is' | 'is_not' | 'empty' | 'not_empty'
+  assigneeId_op: z.string().optional(), // 'is' | 'is_not' | 'empty' | 'not_empty'
+  tagIds_op: z.string().optional(),     // 'is_any_of' | 'is_not_any_of' | 'includes_all' | 'excludes_all' | 'empty' | 'not_empty'
+  dateRange_op: z.string().optional(),  // 'between' | 'after' | 'before' | 'is' | 'is_not' | 'not_between'
 })
 
 export type TransactionSearch = z.infer<typeof transactionSearchSchema>

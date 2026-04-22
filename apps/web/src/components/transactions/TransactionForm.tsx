@@ -1,12 +1,20 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { format, parseISO } from 'date-fns'
-import { CalendarIcon, Trash2 } from 'lucide-react'
+import { CalendarIcon, Lock, SquarePen, Trash2 } from 'lucide-react'
 import { toast } from '@ploutizo/ui/components/sonner'
 import { Button } from '@ploutizo/ui/components/button'
 import { Calendar } from '@ploutizo/ui/components/calendar'
 import { Input } from '@ploutizo/ui/components/input'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+  InputGroupText,
+} from '@ploutizo/ui/components/input-group'
 import { Popover, PopoverContent, PopoverTrigger } from '@ploutizo/ui/components/popover'
 import { Spinner } from '@ploutizo/ui/components/spinner'
+import { Textarea } from '@ploutizo/ui/components/textarea'
 import { cn } from '@ploutizo/ui/lib/utils'
 import {
   Field,
@@ -22,12 +30,21 @@ import {
   SelectValue,
 } from '@ploutizo/ui/components/select'
 import { Text } from '@ploutizo/ui/components/text'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@ploutizo/ui/components/tooltip'
 import { DeleteTransactionDialog } from './DeleteTransactionDialog'
 import { useTransactionForm } from './hooks/useTransactionForm'
 import { FormattedAmountInput } from './FormattedAmountInput'
 import { TransactionTypeFields } from './TransactionTypeFields'
+import { TransferFields } from './TransferFields'
+import { SettlementFields } from './SettlementFields'
+import { ContributionFields } from './ContributionFields'
 import { TransactionTagPicker } from './TransactionTagPicker'
-import { SplitSection } from './SplitSection'
+import { AssigneeSection } from './AssigneeSection'
+import type { AssigneeFormRow } from './types'
 import type { TransactionRow } from '@/lib/data-access/transactions'
 import type { Account, OrgMember } from '@ploutizo/types'
 import type { Category } from '@/lib/data-access/categories'
@@ -44,6 +61,7 @@ import {
 interface TransactionFormProps {
   transaction: TransactionRow | null  // null = create mode
   onClose: () => void
+  onDirtyChange?: (dirty: boolean) => void
 }
 
 interface TransactionFormInnerProps {
@@ -52,6 +70,7 @@ interface TransactionFormInnerProps {
   categories: Category[]
   orgMembers: OrgMember[]
   onClose: () => void
+  onDirtyChange?: (dirty: boolean) => void
 }
 
 /**
@@ -59,7 +78,7 @@ interface TransactionFormInnerProps {
  * Shows Spinner until all required data is resolved, then mounts the inner form.
  * Form mounts only with complete defaultValues — no useEffect/form.reset anti-pattern.
  */
-export const TransactionForm = ({ transaction, onClose }: TransactionFormProps) => {
+export const TransactionForm = ({ transaction, onClose, onDirtyChange }: TransactionFormProps) => {
   const isEditing = transaction !== null
 
   // Fire ALL queries at top level simultaneously — no sequential waterfall
@@ -98,8 +117,71 @@ export const TransactionForm = ({ transaction, onClose }: TransactionFormProps) 
       categories={categories}
       orgMembers={orgMembers}
       onClose={onClose}
+      onDirtyChange={onDirtyChange}
     />
   )
+}
+
+// CR-01: syncs the locked description template to form state on change.
+// The (field) => (...) render prop cannot call hooks directly, so this helper
+// component uses useEffect to write lockedValue into field state.
+interface DescriptionSyncerProps {
+  isLocked: boolean
+  lockedValue: string
+  currentValue: string
+  onSync: (value: string) => void
+}
+
+function DescriptionSyncer({ isLocked, lockedValue, currentValue, onSync }: DescriptionSyncerProps) {
+  // Only sync when lockedValue changes (account selection changes the template).
+  // Skip if the field already holds the correct value — setFieldValue unconditionally
+  // sets isDirty:true in TanStack Form, so calling it with an unchanged value would
+  // falsely mark the form dirty when opening an existing transaction in edit mode.
+  const currentValueRef = useRef(currentValue)
+  currentValueRef.current = currentValue
+  useEffect(() => {
+    if (isLocked && lockedValue && lockedValue !== currentValueRef.current) {
+      onSync(lockedValue)
+    }
+  }, [isLocked, lockedValue, onSync])
+  return null
+}
+
+interface RefundDataLoaderProps {
+  refundOfId: string | null
+  onDescChanged: (desc: string) => void
+  onAssigneesChanged: (ids: string[]) => void
+}
+
+function RefundDataLoader({ refundOfId, onDescChanged, onAssigneesChanged }: RefundDataLoaderProps) {
+  const { data } = useGetTransaction(refundOfId)
+  useEffect(() => {
+    if (!refundOfId) {
+      onDescChanged('')
+      onAssigneesChanged([])
+      return
+    }
+    if (data) {
+      onDescChanged(data.description)
+      onAssigneesChanged((data.assignees ?? []).map((a) => a.memberId))
+    }
+  }, [refundOfId, data, onDescChanged, onAssigneesChanged])
+  return null
+}
+
+function DirtyNotifier({ isDirty, onChange }: { isDirty: boolean; onChange: (d: boolean) => void }) {
+  useEffect(() => {
+    onChange(isDirty)
+  }, [isDirty, onChange])
+  return null
+}
+
+/** Types whose description is always locked (D-11, D-12) */
+const LOCKED_TYPES = ['transfer', 'settlement', 'contribution'] as const
+type LockedType = (typeof LOCKED_TYPES)[number]
+
+function isLockedType(type: string): type is LockedType {
+  return (LOCKED_TYPES as readonly string[]).includes(type)
 }
 
 const TransactionFormInner = ({
@@ -108,6 +190,7 @@ const TransactionFormInner = ({
   categories,
   orgMembers,
   onClose,
+  onDirtyChange,
 }: TransactionFormInnerProps) => {
   const isEditing = transaction !== null
   const createMutation = useCreateTransaction()
@@ -116,6 +199,9 @@ const TransactionFormInner = ({
 
   const [dateOpen, setDateOpen] = useState(false)
   const [alertOpen, setAlertOpen] = useState(false)
+  const [isDescriptionUnlocked, setIsDescriptionUnlocked] = useState(false)
+  const [refundOriginalDesc, setRefundOriginalDesc] = useState('')
+  const [refundOriginalAssigneeIds, setRefundOriginalAssigneeIds] = useState<string[]>([])
 
   const { form } = useTransactionForm({
     transaction,
@@ -132,52 +218,94 @@ const TransactionFormInner = ({
         form.handleSubmit()
       }}
     >
+      {/* Fetch original transaction data when refundOf is set */}
+      <form.Subscribe selector={(s) => s.values.refundOf}>
+        {(refundOf) => (
+          <RefundDataLoader
+            refundOfId={refundOf || null}
+            onDescChanged={setRefundOriginalDesc}
+            onAssigneesChanged={setRefundOriginalAssigneeIds}
+          />
+        )}
+      </form.Subscribe>
+
+      {/* Notify parent of dirty state for sheet-level discard guard */}
+      {onDirtyChange ? (
+        <form.Subscribe selector={(s) => s.isDirty}>
+          {(isDirty) => <DirtyNotifier isDirty={isDirty} onChange={onDirtyChange} />}
+        </form.Subscribe>
+      ) : null}
+
       <div className="flex-1 overflow-y-auto px-6 py-4">
         <FieldGroup>
           {/* TransactionTypeFields: type Select + listeners + conditional type-specific fields */}
           <TransactionTypeFields
             form={form}
-            accounts={accounts}
             categories={categories}
             onAssigneesChange={(assignees) =>
               form.setFieldValue('assignees', assignees)
             }
           />
 
-          {/* Base field: accountId */}
-          <form.AppField
-            name="accountId"
-            validators={{
-              onChange: ({ value }: { value: string }) =>
-                !value ? 'Account is required.' : undefined,
-            }}
-          >
-            {(field) => (
-              <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
-                <FieldLabel htmlFor="tx-accountId">Account</FieldLabel>
-                <Select
-                  value={field.state.value}
-                  onValueChange={(v) => { if (v !== null) field.handleChange(v) }}
+          {/* accountId — full-width "Account" for single-account types;
+              2-col [Source | Destination] for multi-account types */}
+          <form.Subscribe selector={(s) => s.values.type}>
+            {(type) => {
+              const isMultiAccount = ['transfer', 'settlement', 'contribution'].includes(type)
+
+              const sourceField = (
+                <form.AppField
+                  name="accountId"
+                  validators={{
+                    onChange: ({ value }: { value: string }) =>
+                      !value ? 'Account is required.' : undefined,
+                  }}
                 >
-                  <SelectTrigger id="tx-accountId">
-                    <SelectValue>
-                      {accounts.find((a) => a.id === field.state.value)?.name ?? 'Select account'}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {accounts.map((a) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {field.state.meta.errors.length > 0 ? (
-                  <FieldError>{String(field.state.meta.errors[0])}</FieldError>
-                ) : null}
-              </Field>
-            )}
-          </form.AppField>
+                  {(field) => (
+                    <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
+                      <FieldLabel htmlFor="tx-accountId">{isMultiAccount ? 'Source' : 'Account'}</FieldLabel>
+                      <Select
+                        value={field.state.value}
+                        onValueChange={(v) => { if (v !== null) field.handleChange(v) }}
+                      >
+                        <SelectTrigger id="tx-accountId">
+                          <SelectValue>
+                            {accounts.find((a) => a.id === field.state.value)?.name ?? 'Select account'}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {accounts.map((a) => (
+                            <SelectItem key={a.id} value={a.id}>
+                              {a.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {field.state.meta.errors.length > 0 ? (
+                        <FieldError>{String(field.state.meta.errors[0])}</FieldError>
+                      ) : null}
+                    </Field>
+                  )}
+                </form.AppField>
+              )
+
+              if (!isMultiAccount) return sourceField
+
+              // Settlement owns its own 2-col layout (Source=counterpartAccountId, Destination=accountId)
+              if (type === 'settlement') return <SettlementFields form={form} accounts={accounts} />
+
+              return (
+                <div className="grid grid-cols-2 gap-4">
+                  {sourceField}
+                  {type === 'transfer' ? (
+                    <TransferFields form={form} accounts={accounts} />
+                  ) : type === 'contribution' ? (
+                    <ContributionFields form={form} accounts={accounts} />
+                  ) : null}
+                </div>
+              )
+            }}
+          </form.Subscribe>
 
           <div className="grid grid-cols-2 gap-4">
             {/* Base field: amount */}
@@ -257,85 +385,185 @@ const TransactionFormInner = ({
             </form.AppField>
           </div>
 
-          {/* Base field: description */}
-          <form.AppField
-            name="description"
-            validators={{
-              onChange: ({ value }: { value: string }) =>
-                !value?.trim() ? 'Description is required.' : undefined,
-            }}
+          {/* Base field: description — locked for transfer/settlement/contribution/linked-refund (D-11, D-12) */}
+          <form.Subscribe
+            selector={(s) => ({
+              type: s.values.type,
+              accountId: s.values.accountId,
+              counterpartAccountId: s.values.counterpartAccountId,
+              refundOf: s.values.refundOf,
+            })}
           >
-            {(field) => (
-              <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
-                <FieldLabel htmlFor="tx-description">Description</FieldLabel>
-                <Input
-                  id="tx-description"
-                  autoComplete="off"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                />
-                {field.state.meta.errors.length > 0 ? (
-                  <FieldError>{String(field.state.meta.errors[0])}</FieldError>
-                ) : null}
-                {/* TODO(03.4-deferred): originalDescription column — add when schema patch lands */}
-                {/* D-19: import caption (└ Original: ...) is deferred because originalDescription */}
-                {/* and originalMerchant columns are absent from the current DB schema. */}
-              </Field>
-            )}
-          </form.AppField>
+            {({ type, accountId, counterpartAccountId, refundOf }) => {
+              const shouldLock =
+                isLockedType(type) || (type === 'refund' && !!refundOf)
+              const isLocked = !isDescriptionUnlocked && shouldLock
 
-          {/* Base field: merchant */}
-          <form.AppField name="merchant">
-            {(field) => (
-              <Field>
-                <FieldLabel htmlFor="tx-merchant">
-                  Merchant
-                  <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
-                    (optional)
-                  </Text>
-                </FieldLabel>
-                <Input
-                  id="tx-merchant"
-                  autoComplete="off"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                />
-              </Field>
-            )}
-          </form.AppField>
+              // Compute locked description template from reactive account values
+              const primaryAccount = accounts.find((a) => a.id === accountId)
+              const counterpartAccount = accounts.find((a) => a.id === counterpartAccountId)
 
-          {/* Tag picker — after merchant, before assignees (D-07: tags is a shared base field) */}
-          <form.AppField name="tagIds">
-            {(field) => (
-              <Field>
-                <FieldLabel>
-                  Tags
-                  <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
-                    (optional)
-                  </Text>
-                </FieldLabel>
-                <TransactionTagPicker
-                  value={field.state.value}
-                  onChange={(tagIds) => field.handleChange(tagIds)}
-                />
-              </Field>
-            )}
-          </form.AppField>
+              let lockedValue = ''
+              if (type === 'transfer') {
+                const from = primaryAccount?.name ?? '…'
+                const to = counterpartAccount?.name ?? '…'
+                lockedValue = `Transfer from ${from} to ${to}`
+              } else if (type === 'settlement') {
+                // counterpartAccountId = source (bank), accountId = destination (credit card)
+                const from = counterpartAccount?.name ?? '…'
+                const to = primaryAccount?.name ?? '…'
+                lockedValue = `Settlement from ${from} to ${to}`
+              } else if (type === 'contribution') {
+                const from = primaryAccount?.name ?? '…'
+                const to = counterpartAccount?.name ?? '…'
+                lockedValue = `Contribution from ${from} to ${to}`
+              } else if (type === 'refund' && refundOf) {
+                lockedValue = refundOriginalDesc ? `Refund of ${refundOriginalDesc}` : ''
+              }
 
-          {/* SplitSection — always visible (D-09) */}
+              return (
+                <form.AppField
+                  name="description"
+                  validators={{
+                    onChange: ({ value }: { value: string }) =>
+                      !isLocked && !value?.trim() ? 'Description is required.' : undefined,
+                  }}
+                >
+                  {(field) => (
+                    <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
+                      <DescriptionSyncer
+                        isLocked={isLocked}
+                        lockedValue={lockedValue}
+                        currentValue={field.state.value}
+                        onSync={field.handleChange}
+                      />
+                      <FieldLabel htmlFor="tx-description">Description</FieldLabel>
+                      {isLocked ? (
+                        <InputGroup>
+                          <InputGroupAddon align="inline-start">
+                            <InputGroupText>
+                              <Lock className="size-3.5 text-muted-foreground" aria-hidden="true" />
+                            </InputGroupText>
+                          </InputGroupAddon>
+                          <InputGroupInput
+                            readOnly
+                            value={lockedValue}
+                            className="bg-muted text-muted-foreground cursor-default"
+                            aria-label="Description (auto-generated)"
+                            autoComplete="off"
+                          />
+                          <InputGroupAddon align="inline-end">
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <InputGroupButton
+                                  type="button"
+                                  aria-label="Edit description"
+                                  onClick={() => setIsDescriptionUnlocked(true)}
+                                >
+                                  <SquarePen className="size-3.5" aria-hidden="true" />
+                                </InputGroupButton>
+                              </TooltipTrigger>
+                              <TooltipContent>Edit description</TooltipContent>
+                            </Tooltip>
+                          </InputGroupAddon>
+                        </InputGroup>
+                      ) : (
+                        <Input
+                          id="tx-description"
+                          autoComplete="off"
+                          value={field.state.value}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          onBlur={field.handleBlur}
+                        />
+                      )}
+                      {field.state.meta.errors.length > 0 ? (
+                        <FieldError>{String(field.state.meta.errors[0])}</FieldError>
+                      ) : null}
+                      {/* TODO(03.4-deferred): originalDescription column — add when schema patch lands */}
+                      {/* D-19: import caption (└ Original: ...) is deferred because originalDescription */}
+                      {/* and originalMerchant columns are absent from the current DB schema. */}
+                    </Field>
+                  )}
+                </form.AppField>
+              )
+            }}
+          </form.Subscribe>
+
+          {/* Reset unlock state when type changes away from a locked type (D-12) */}
+          <form.Subscribe selector={(s) => s.values.type}>
+            {(type) => (
+              <UnlockResetter
+                type={type}
+                onReset={() => setIsDescriptionUnlocked(false)}
+              />
+            )}
+          </form.Subscribe>
+
+          {/* Notes + Tag picker — side-by-side flex row (D-21, UI-SPEC Notes section) */}
+          <div className="flex gap-4">
+            {/* Notes field */}
+            <form.AppField name="notes">
+              {(field) => (
+                <Field className="flex-1">
+                  <FieldLabel htmlFor="tx-notes">Notes</FieldLabel>
+                  <Textarea
+                    id="tx-notes"
+                    rows={2}
+                    className="resize-none"
+                    autoComplete="off"
+                    placeholder="Add a note…"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                  />
+                </Field>
+              )}
+            </form.AppField>
+
+            {/* Tag picker — same row as notes, equal width */}
+            <form.AppField name="tagIds">
+              {(field) => (
+                <Field className="flex-1">
+                  <FieldLabel>
+                    Tags
+                    <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
+                      (optional)
+                    </Text>
+                  </FieldLabel>
+                  <TransactionTagPicker
+                    value={field.state.value}
+                    onChange={(tagIds) => field.handleChange(tagIds)}
+                  />
+                </Field>
+              )}
+            </form.AppField>
+          </div>
+
+          {/* AssigneeSection — replaces SplitSection at top level (D-16, D-17, D-18) */}
           {/* form.Subscribe wraps AppField so amountCents is reactive on amount change */}
           <form.Subscribe selector={(s) => s.values.amount}>
             {(amount) => (
-              <form.AppField name="assignees">
+              <form.AppField
+                name="assignees"
+                validators={{
+                  onChange: ({ value }: { value: AssigneeFormRow[] }) =>
+                    value.length === 0 ? 'At least one assignee is required.' : undefined,
+                }}
+              >
                 {(field) => (
-                  <SplitSection
-                    value={field.state.value}
-                    onChange={(assignees) => field.handleChange(assignees)}
-                    amountCents={Math.round((amount ?? 0) * 100)}
-                    orgMembers={orgMembers}
-                  />
+                  <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
+                    <AssigneeSection
+                      value={field.state.value}
+                      onChange={(assignees) => field.handleChange(assignees)}
+                      amountCents={Math.round((amount ?? 0) * 100)}
+                      orgMembers={orgMembers}
+                      transaction={transaction}
+                      refundAssigneeIds={!isEditing && refundOriginalAssigneeIds.length > 0 ? refundOriginalAssigneeIds : undefined}
+                    />
+                    {field.state.meta.errors.length > 0 ? (
+                      <FieldError>{String(field.state.meta.errors[0])}</FieldError>
+                    ) : null}
+                  </Field>
                 )}
               </form.AppField>
             )}
@@ -388,9 +616,6 @@ const TransactionFormInner = ({
           <div />
         )}
         <div className="flex gap-2">
-          <Button variant="outline" type="button" onClick={onClose}>
-            Discard changes
-          </Button>
           <form.Subscribe selector={(s) => s.isSubmitting}>
             {(isSubmitting) => (
               <Button type="submit" disabled={isSubmitting}>
@@ -403,4 +628,41 @@ const TransactionFormInner = ({
       </div>
     </form>
   )
+}
+
+/**
+ * Helper component that resets the description unlock state when the type
+ * transitions away from a locked type (D-12: unlock persists until type changes).
+ *
+ * Rendered as an invisible node inside form.Subscribe — useEffect tracks type
+ * transitions without violating React rules of hooks.
+ */
+const UnlockResetter = ({
+  type,
+  onReset,
+}: {
+  type: string
+  onReset: () => void
+}) => {
+  const prevTypeRef = useRef(type)
+
+  useEffect(() => {
+    const prev = prevTypeRef.current
+    prevTypeRef.current = type
+
+    // If the previous type was locked and the new type is not locked (or was locked but
+    // is a different type), reset the unlock state so next time user visits a locked type
+    // it starts locked again.
+    const prevWasLocked = isLockedType(prev) || prev === 'refund'
+    const nowIsLocked = isLockedType(type) || type === 'refund'
+
+    if (prevWasLocked && !nowIsLocked) {
+      onReset()
+    } else if (prevWasLocked && nowIsLocked && prev !== type) {
+      // Type changed between locked types (e.g. transfer → contribution) — reset too
+      onReset()
+    }
+  }, [type, onReset])
+
+  return null
 }
