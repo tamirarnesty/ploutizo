@@ -21,6 +21,7 @@ interface AssigneeSectionProps {
   amountCents: number
   orgMembers: OrgMember[]
   transaction?: TransactionRow | null
+  refundAssigneeIds?: string[]
 }
 
 /**
@@ -44,6 +45,7 @@ export const AssigneeSection = ({
   amountCents,
   orgMembers,
   transaction,
+  refundAssigneeIds,
 }: AssigneeSectionProps) => {
   // Initialize pressed member IDs
   const initialPressedIds = transaction
@@ -65,6 +67,18 @@ export const AssigneeSection = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [amountCents])
+
+  // Issue 6: pre-fill assignees from the original transaction when creating a refund
+  useEffect(() => {
+    if (!transaction && refundAssigneeIds && refundAssigneeIds.length > 0) {
+      setPressedMemberIds(refundAssigneeIds)
+      if (amountCents > 0) {
+        onChange(lrmSplit(amountCents, refundAssigneeIds))
+      }
+    }
+    // Only re-run when refundAssigneeIds changes (new refundOf selected)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refundAssigneeIds])
 
   // Determine initial Collapsible state: open in edit mode if distribution is non-even
   const isNonEven = (assignees: AssigneeFormRow[]): boolean => {
@@ -138,8 +152,8 @@ export const AssigneeSection = ({
         })}
       </div>
 
-      {/* "Customize split" Collapsible — only shown when at least one member is pressed */}
-      {pressedMemberIds.length > 0 ? (
+      {/* "Customize split" Collapsible — only shown when 2+ members are pressed */}
+      {pressedMemberIds.length > 1 ? (
         <Collapsible open={customizeOpen} onOpenChange={setCustomizeOpen}>
           <CollapsibleTrigger className="w-fit">
             <Text
