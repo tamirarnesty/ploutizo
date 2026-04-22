@@ -87,10 +87,7 @@ export const TransactionSheet = ({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep editing</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={handleDiscard}
-            >
+            <AlertDialogAction variant="destructive" onClick={handleDiscard}>
               Discard
             </AlertDialogAction>
           </AlertDialogFooter>
