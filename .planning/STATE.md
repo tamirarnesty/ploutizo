@@ -118,6 +118,7 @@ Execute Phase 03.4.1 — run all 7 plans
 | 6 | Clear query cache on logout to prevent cross-account stale data | auth |
 | 7 | Redesign transaction form Notes + Tags section layout | ui |
 | 8 | Fix shared account owners not saved or displayed | ui |
+| 9 | Add error boundary/errorComponent to handle page crashes | ui |
 
 ## Blockers / Open Items
 
