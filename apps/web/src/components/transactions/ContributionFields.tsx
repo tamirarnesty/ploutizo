@@ -21,6 +21,11 @@ export const ContributionFields = ({ form, accounts }: ContributionFieldsProps) 
     [accounts],
   )
 
+  const accountMap = useMemo(
+    () => new Map(investmentAccounts.map((a) => [a.id, a])),
+    [investmentAccounts],
+  )
+
   return (
     <form.AppField name="counterpartAccountId">
       {(field) => (
@@ -33,7 +38,9 @@ export const ContributionFields = ({ form, accounts }: ContributionFieldsProps) 
             }}
           >
             <SelectTrigger id="tx-contribution-counterpartAccountId">
-              <SelectValue placeholder="Select account" />
+              <SelectValue>
+                {accountMap.get(field.state.value)?.name ?? 'Select account'}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {investmentAccounts.map((a) => (
