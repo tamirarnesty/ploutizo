@@ -274,6 +274,17 @@ export const Transactions = () => {
     [navigate]
   )
 
+  const handleLimitChange = useCallback(
+    (newLimit: number) => {
+      void navigate({
+        to: '/transactions',
+        search: (prev) => buildCleanSearch({ ...prev, limit: newLimit, page: 1 }),
+        replace: true,
+      })
+    },
+    [navigate]
+  )
+
   const handleSortChange = useCallback(
     (col: TransactionSearch['sort'], dir: 'asc' | 'desc') => {
       void navigate({
@@ -349,6 +360,7 @@ export const Transactions = () => {
         sort={sort}
         order={order}
         onPageChange={handlePageChange}
+        onLimitChange={handleLimitChange}
         onSortChange={handleSortChange}
         onFilteredEmpty={hasActiveFilters}
         onClearFilters={handleClearFilters}

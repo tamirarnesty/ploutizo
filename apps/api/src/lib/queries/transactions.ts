@@ -49,6 +49,7 @@ const TX_COLUMNS = {
   categoryId: transactions.categoryId,
   categoryName: categories.name,
   categoryIcon: categories.icon,
+  categoryColour: categories.colour,
   accountId: transactions.accountId,
   accountName: accounts.name,
   accountType: accounts.type,

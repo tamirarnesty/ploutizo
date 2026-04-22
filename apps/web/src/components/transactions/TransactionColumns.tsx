@@ -66,7 +66,7 @@ export function buildColumns(
         skeleton: <Skeleton className="h-4 w-20 motion-safe:animate-pulse" />,
       },
       cell: ({ row }) => (
-        <Text as="span" variant="body-sm" className="text-muted-foreground">
+        <Text as="span" variant="body-sm" className="whitespace-nowrap text-muted-foreground">
           {new Date(row.original.date + 'T00:00:00').toLocaleDateString('en-CA', {
             month: 'short',
             day: 'numeric',
@@ -139,7 +139,7 @@ export function buildColumns(
               <button
                 type="button"
                 className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                onClick={() => onOpenOriginal(refundOfId!)}
+                onClick={() => onOpenOriginal(refundOfId)}
                 aria-label={`View original transaction from ${formattedRefundDate}`}
               >
                 {/* ↩ U+21A9 LEFTWARDS ARROW WITH HOOK */}
@@ -164,14 +164,26 @@ export function buildColumns(
         skeleton: <Skeleton className="h-4 w-24 motion-safe:animate-pulse" />,
       },
       cell: ({ row }) => {
-        const { categoryName, categoryIcon, type } = row.original
+        const { categoryName, categoryIcon, categoryColour, type } = row.original
         const showCategory =
           categoryName && (type === 'expense' || type === 'refund')
         return showCategory ? (
-          <div className="flex items-center gap-1.5">
-            <DynamicLucideIcon name={categoryIcon} size={16} />
-            <Text as="span" variant="body-sm" className="min-w-0 truncate text-muted-foreground">{categoryName}</Text>
-          </div>
+          <Badge
+            variant="outline"
+            className="gap-1 px-1.5 py-0.5 text-xs font-normal"
+            style={
+              categoryColour
+                ? {
+                    backgroundColor: categoryColour + '20',
+                    color: categoryColour,
+                    borderColor: categoryColour + '40',
+                  }
+                : undefined
+            }
+          >
+            <DynamicLucideIcon name={categoryIcon} size={12} />
+            <span className="min-w-0 truncate">{categoryName}</span>
+          </Badge>
         ) : (
           <Text as="span" variant="caption">—</Text>
         )
@@ -317,7 +329,7 @@ export function buildColumns(
             : 'text-muted-foreground'
 
         return (
-          <Text variant="body-sm" className={cn('block text-right font-medium', colorClass)}>
+          <Text variant="body-sm" className={cn('block whitespace-nowrap text-right font-medium', colorClass)}>
             {displayValue}
           </Text>
         )

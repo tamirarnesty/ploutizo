@@ -58,6 +58,7 @@ import {
 interface TransactionFormProps {
   transaction: TransactionRow | null  // null = create mode
   onClose: () => void
+  onDirtyChange?: (dirty: boolean) => void
 }
 
 interface TransactionFormInnerProps {
@@ -66,6 +67,7 @@ interface TransactionFormInnerProps {
   categories: Category[]
   orgMembers: OrgMember[]
   onClose: () => void
+  onDirtyChange?: (dirty: boolean) => void
 }
 
 /**
@@ -112,6 +114,7 @@ export const TransactionForm = ({ transaction, onClose }: TransactionFormProps) 
       categories={categories}
       orgMembers={orgMembers}
       onClose={onClose}
+      onDirtyChange={onDirtyChange}
     />
   )
 }
@@ -156,6 +159,13 @@ function RefundDataLoader({ refundOfId, onDescChanged, onAssigneesChanged }: Ref
   return null
 }
 
+function DirtyNotifier({ isDirty, onChange }: { isDirty: boolean; onChange: (d: boolean) => void }) {
+  useEffect(() => {
+    onChange(isDirty)
+  }, [isDirty, onChange])
+  return null
+}
+
 /** Types whose description is always locked (D-11, D-12) */
 const LOCKED_TYPES = ['transfer', 'settlement', 'contribution'] as const
 type LockedType = (typeof LOCKED_TYPES)[number]
@@ -170,6 +180,7 @@ const TransactionFormInner = ({
   categories,
   orgMembers,
   onClose,
+  onDirtyChange,
 }: TransactionFormInnerProps) => {
   const isEditing = transaction !== null
   const createMutation = useCreateTransaction()
@@ -208,6 +219,13 @@ const TransactionFormInner = ({
         )}
       </form.Subscribe>
 
+      {/* Notify parent of dirty state for sheet-level discard guard */}
+      {onDirtyChange ? (
+        <form.Subscribe selector={(s) => s.isDirty}>
+          {(isDirty) => <DirtyNotifier isDirty={isDirty} onChange={onDirtyChange} />}
+        </form.Subscribe>
+      ) : null}
+
       <div className="flex-1 overflow-y-auto px-6 py-4">
         <FieldGroup>
           {/* TransactionTypeFields: type Select + listeners + conditional type-specific fields */}
@@ -221,6 +239,8 @@ const TransactionFormInner = ({
           />
 
           {/* Base field: accountId */}
+          <form.Subscribe selector={(s) => s.values.type}>
+            {(type) => (
           <form.AppField
             name="accountId"
             validators={{
@@ -230,7 +250,7 @@ const TransactionFormInner = ({
           >
             {(field) => (
               <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
-                <FieldLabel htmlFor="tx-accountId">Account</FieldLabel>
+                <FieldLabel htmlFor="tx-accountId">{type === 'contribution' ? 'From' : 'Account'}</FieldLabel>
                 <Select
                   value={field.state.value}
                   onValueChange={(v) => { if (v !== null) field.handleChange(v) }}
@@ -254,6 +274,8 @@ const TransactionFormInner = ({
               </Field>
             )}
           </form.AppField>
+            )}
+          </form.Subscribe>
 
           <div className="grid grid-cols-2 gap-4">
             {/* Base field: amount */}
@@ -361,9 +383,9 @@ const TransactionFormInner = ({
                   ? `Settlement \u2014 paid from ${counterpartAccount.name}`
                   : 'Settlement'
               } else if (type === 'contribution') {
-                lockedValue = primaryAccount
-                  ? `${primaryAccount.name} contribution`
-                  : 'Contribution'
+                const from = primaryAccount?.name ?? '…'
+                const to = counterpartAccount?.name ?? '…'
+                lockedValue = `Contribution from ${from} to ${to}`
               } else if (type === 'refund' && refundOf) {
                 lockedValue = refundOriginalDesc ? `Refund of ${refundOriginalDesc}` : ''
               }
@@ -562,9 +584,6 @@ const TransactionFormInner = ({
           <div />
         )}
         <div className="flex gap-2">
-          <Button variant="outline" type="button" onClick={onClose}>
-            Discard changes
-          </Button>
           <form.Subscribe selector={(s) => s.isSubmitting}>
             {(isSubmitting) => (
               <Button type="submit" disabled={isSubmitting}>

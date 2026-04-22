@@ -28,6 +28,7 @@ interface TransactionsTableProps {
   sort: TransactionSearch['sort']
   order: TransactionSearch['order']
   onPageChange: (page: number) => void
+  onLimitChange: (limit: number) => void
   onSortChange: (col: TransactionSearch['sort'], dir: 'asc' | 'desc') => void
   onFilteredEmpty: boolean // true when filters active and no results
   onClearFilters: () => void
@@ -44,6 +45,7 @@ export const TransactionsTable = ({
   sort,
   order,
   onPageChange,
+  onLimitChange,
   onSortChange,
   onFilteredEmpty,
   onClearFilters,
@@ -90,7 +92,11 @@ export const TransactionsTable = ({
         typeof updater === 'function'
           ? updater({ pageIndex: page - 1, pageSize: limit })
           : updater
-      onPageChange(next.pageIndex + 1)
+      if (next.pageSize !== limit) {
+        onLimitChange(next.pageSize)
+      } else {
+        onPageChange(next.pageIndex + 1)
+      }
     },
     onSortingChange: (updater) => {
       const next =
@@ -128,7 +134,7 @@ export const TransactionsTable = ({
       >
         <div className="w-full space-y-2.5">
           <DataGridContainer>
-            <DataGridScrollArea>
+            <DataGridScrollArea className="[&_[data-slot='scroll-area-viewport']]:overscroll-contain">
               <DataGridTable />
             </DataGridScrollArea>
           </DataGridContainer>

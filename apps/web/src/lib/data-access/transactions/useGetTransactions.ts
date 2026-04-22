@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import type { UseQueryResult } from '@tanstack/react-query'
 import { fetchTransactions } from './queries'
+import type { UseQueryResult } from '@tanstack/react-query'
 
 export interface TransactionAssignee {
   transactionId: string
@@ -27,6 +27,7 @@ export interface TransactionRow {
   categoryId: string | null
   categoryName: string | null
   categoryIcon: string | null
+  categoryColour: string | null
   accountId: string
   accountName: string | null
   accountType: string | null
