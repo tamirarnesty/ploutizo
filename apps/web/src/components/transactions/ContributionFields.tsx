@@ -16,16 +16,9 @@ export interface ContributionFieldsProps {
 }
 
 export const ContributionFields = ({ form, accounts }: ContributionFieldsProps) => {
-  // Filter to investment accounts only (js-map-set: build once, lookup by id below)
   const investmentAccounts = useMemo(
     () => accounts.filter((a) => a.type === 'investment'),
     [accounts],
-  )
-
-  // Build O(1) id→account map for the SelectValue display lookup (js-map-set)
-  const accountMap = useMemo(
-    () => new Map(investmentAccounts.map((a) => [a.id, a])),
-    [investmentAccounts],
   )
 
   return (
@@ -40,19 +33,12 @@ export const ContributionFields = ({ form, accounts }: ContributionFieldsProps) 
             }}
           >
             <SelectTrigger id="tx-contribution-counterpartAccountId">
-              <SelectValue>
-                {(() => {
-                  const a = accountMap.get(field.state.value)
-                  // Trigger shows account name only — prefix belongs in dropdown options only.
-                  return a ? a.name : 'Select account'
-                })()}
-              </SelectValue>
+              <SelectValue placeholder="Select account" />
             </SelectTrigger>
             <SelectContent>
               {investmentAccounts.map((a) => (
                 <SelectItem key={a.id} value={a.id}>
-                  {/* U+2014 em dash — TYPE — AccountName format */}
-                  {`${a.type.toUpperCase()} — ${a.name}`}
+                  {a.name}
                 </SelectItem>
               ))}
             </SelectContent>
