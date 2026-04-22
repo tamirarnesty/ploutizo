@@ -41,6 +41,7 @@ import { FormattedAmountInput } from './FormattedAmountInput'
 import { TransactionTypeFields } from './TransactionTypeFields'
 import { TransactionTagPicker } from './TransactionTagPicker'
 import { AssigneeSection } from './AssigneeSection'
+import type { AssigneeFormRow } from './types'
 import type { TransactionRow } from '@/lib/data-access/transactions'
 import type { Account, OrgMember } from '@ploutizo/types'
 import type { Category } from '@/lib/data-access/categories'
@@ -133,6 +134,28 @@ function DescriptionSyncer({ isLocked, lockedValue, onSync }: DescriptionSyncerP
   return null
 }
 
+interface RefundDataLoaderProps {
+  refundOfId: string | null
+  onDescChanged: (desc: string) => void
+  onAssigneesChanged: (ids: string[]) => void
+}
+
+function RefundDataLoader({ refundOfId, onDescChanged, onAssigneesChanged }: RefundDataLoaderProps) {
+  const { data } = useGetTransaction(refundOfId)
+  useEffect(() => {
+    if (!refundOfId) {
+      onDescChanged('')
+      onAssigneesChanged([])
+      return
+    }
+    if (data) {
+      onDescChanged(data.description)
+      onAssigneesChanged((data.assignees ?? []).map((a) => a.memberId))
+    }
+  }, [refundOfId, data, onDescChanged, onAssigneesChanged])
+  return null
+}
+
 /** Types whose description is always locked (D-11, D-12) */
 const LOCKED_TYPES = ['transfer', 'settlement', 'contribution'] as const
 type LockedType = (typeof LOCKED_TYPES)[number]
@@ -156,6 +179,8 @@ const TransactionFormInner = ({
   const [dateOpen, setDateOpen] = useState(false)
   const [alertOpen, setAlertOpen] = useState(false)
   const [isDescriptionUnlocked, setIsDescriptionUnlocked] = useState(false)
+  const [refundOriginalDesc, setRefundOriginalDesc] = useState('')
+  const [refundOriginalAssigneeIds, setRefundOriginalAssigneeIds] = useState<string[]>([])
 
   const { form } = useTransactionForm({
     transaction,
@@ -172,6 +197,17 @@ const TransactionFormInner = ({
         form.handleSubmit()
       }}
     >
+      {/* Fetch original transaction data when refundOf is set */}
+      <form.Subscribe selector={(s) => s.values.refundOf}>
+        {(refundOf) => (
+          <RefundDataLoader
+            refundOfId={refundOf || null}
+            onDescChanged={setRefundOriginalDesc}
+            onAssigneesChanged={setRefundOriginalAssigneeIds}
+          />
+        )}
+      </form.Subscribe>
+
       <div className="flex-1 overflow-y-auto px-6 py-4">
         <FieldGroup>
           {/* TransactionTypeFields: type Select + listeners + conditional type-specific fields */}
@@ -329,9 +365,7 @@ const TransactionFormInner = ({
                   ? `${primaryAccount.name} contribution`
                   : 'Contribution'
               } else if (type === 'refund' && refundOf) {
-                // Placeholder — the original description is not available at this point
-                // without an additional query. Show a static label until loaded.
-                lockedValue = 'Refund of [original transaction]'
+                lockedValue = refundOriginalDesc ? `Refund of ${refundOriginalDesc}` : ''
               }
 
               return (
@@ -455,15 +489,27 @@ const TransactionFormInner = ({
           {/* form.Subscribe wraps AppField so amountCents is reactive on amount change */}
           <form.Subscribe selector={(s) => s.values.amount}>
             {(amount) => (
-              <form.AppField name="assignees">
+              <form.AppField
+                name="assignees"
+                validators={{
+                  onChange: ({ value }: { value: AssigneeFormRow[] }) =>
+                    value.length === 0 ? 'At least one assignee is required.' : undefined,
+                }}
+              >
                 {(field) => (
-                  <AssigneeSection
-                    value={field.state.value}
-                    onChange={(assignees) => field.handleChange(assignees)}
-                    amountCents={Math.round((amount ?? 0) * 100)}
-                    orgMembers={orgMembers}
-                    transaction={transaction}
-                  />
+                  <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
+                    <AssigneeSection
+                      value={field.state.value}
+                      onChange={(assignees) => field.handleChange(assignees)}
+                      amountCents={Math.round((amount ?? 0) * 100)}
+                      orgMembers={orgMembers}
+                      transaction={transaction}
+                      refundAssigneeIds={!isEditing && refundOriginalAssigneeIds.length > 0 ? refundOriginalAssigneeIds : undefined}
+                    />
+                    {field.state.meta.errors.length > 0 ? (
+                      <FieldError>{String(field.state.meta.errors[0])}</FieldError>
+                    ) : null}
+                  </Field>
                 )}
               </form.AppField>
             )}
