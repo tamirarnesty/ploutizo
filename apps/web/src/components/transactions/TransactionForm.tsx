@@ -125,12 +125,19 @@ export const TransactionForm = ({ transaction, onClose, onDirtyChange }: Transac
 interface DescriptionSyncerProps {
   isLocked: boolean
   lockedValue: string
+  currentValue: string
   onSync: (value: string) => void
 }
 
-function DescriptionSyncer({ isLocked, lockedValue, onSync }: DescriptionSyncerProps) {
+function DescriptionSyncer({ isLocked, lockedValue, currentValue, onSync }: DescriptionSyncerProps) {
+  // Only sync when lockedValue changes (account selection changes the template).
+  // Skip if the field already holds the correct value — setFieldValue unconditionally
+  // sets isDirty:true in TanStack Form, so calling it with an unchanged value would
+  // falsely mark the form dirty when opening an existing transaction in edit mode.
+  const currentValueRef = useRef(currentValue)
+  currentValueRef.current = currentValue
   useEffect(() => {
-    if (isLocked && lockedValue) {
+    if (isLocked && lockedValue && lockedValue !== currentValueRef.current) {
       onSync(lockedValue)
     }
   }, [isLocked, lockedValue, onSync])
@@ -403,6 +410,7 @@ const TransactionFormInner = ({
                       <DescriptionSyncer
                         isLocked={isLocked}
                         lockedValue={lockedValue}
+                        currentValue={field.state.value}
                         onSync={field.handleChange}
                       />
                       <FieldLabel htmlFor="tx-description">Description</FieldLabel>
