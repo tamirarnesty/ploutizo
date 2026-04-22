@@ -174,9 +174,9 @@ export function buildColumns(
             style={
               categoryColour
                 ? {
-                    backgroundColor: categoryColour + '20',
-                    color: categoryColour,
-                    borderColor: categoryColour + '40',
+                    backgroundColor: `oklch(from var(--color-${categoryColour}) l c h / 0.12)`,
+                    color: `var(--color-${categoryColour})`,
+                    borderColor: `oklch(from var(--color-${categoryColour}) l c h / 0.25)`,
                   }
                 : undefined
             }
