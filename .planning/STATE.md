@@ -120,6 +120,7 @@ Execute Phase 03.4.1 — run all 7 plans
 | 8 | Fix shared account owners not saved or displayed | ui |
 | 9 | Add error boundary/errorComponent to handle page crashes | ui |
 | 10 | Add 404 page for unmatched routes | ui |
+| 11 | Fix edit mode amount not recalculating assignee splits | ui |
 
 ## Blockers / Open Items
 
