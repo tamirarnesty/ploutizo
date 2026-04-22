@@ -75,7 +75,7 @@ interface TransactionFormInnerProps {
  * Shows Spinner until all required data is resolved, then mounts the inner form.
  * Form mounts only with complete defaultValues — no useEffect/form.reset anti-pattern.
  */
-export const TransactionForm = ({ transaction, onClose }: TransactionFormProps) => {
+export const TransactionForm = ({ transaction, onClose, onDirtyChange }: TransactionFormProps) => {
   const isEditing = transaction !== null
 
   // Fire ALL queries at top level simultaneously — no sequential waterfall
