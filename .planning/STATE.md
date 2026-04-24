@@ -20,7 +20,7 @@ Phase: 03.5 (next)
 Plan: —
 **Milestone:** v0.2 Transactions & Settlement
 **Active Phase:** Phase 03.5 — CI testing, linting, and formatting checks
-**Status:** Phase 03.4.1 complete (12/12 plans, UAT verified 2026-04-24) — 03.5 pending planning
+**Status:** Phase 03.4.2 complete (1/1 plans, UAT verified 2026-04-24) — 03.5 pending planning
 **Last session:** 2026-04-24T00:00:00.000Z
 
 ## Next Action
@@ -44,6 +44,7 @@ Plan Phase 03.5 — run /gsd:plan-phase 03.5
 | 03.3 | Transaction List UI | complete |
 | 03.4 | Transaction Forms UI | complete (21/21 plans, verified 2026-04-19) |
 | 03.4.1 | Transaction v2: Schema Migration, Form & Table Redesign | complete (12/12 plans, verified 2026-04-24) |
+| 03.4.2 | Transaction Form Polish & UI Bug Fixes | complete (1/1 plans, verified 2026-04-24) |
 | 04.1 | Settlement API | pending |
 | 04.2 | Settlement UI | pending |
 | 04.3 | Budgets API | pending |

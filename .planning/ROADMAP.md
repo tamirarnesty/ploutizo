@@ -427,7 +427,7 @@ UAT fixes (post-verification 2026-04-24):
 
 ---
 
-### Phase 03.4.2: Transaction form polish & UI bug fixes (INSERTED)
+### Phase 03.4.2: Transaction form polish & UI bug fixes (INSERTED) ✓ COMPLETE 2026-04-24
 
 **Goal:** Fix the remaining transaction form and list bugs surfaced after 03.4.1, and clean up the Notes/Tags layout and tag combobox UX.
 
@@ -444,10 +444,10 @@ UAT fixes (post-verification 2026-04-24):
 - `.planning/todos/pending/2026-04-14-category-edit-should-invalidate-query-cache-and-reload-list.md`
 
 **Depends on:** Phase 03.4.1
-**Plans:** 0 plans
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 03.4.2 to break down)
+- [x] 03.4.2-01-PLAN.md — Transaction form polish: amount recalc, notes layout, tag Enter key, category refresh
 
 ---
 
