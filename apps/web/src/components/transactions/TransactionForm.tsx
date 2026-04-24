@@ -257,7 +257,7 @@ const TransactionFormInner = ({
                 <form.AppField
                   name="accountId"
                   validators={{
-                    onChange: ({ value }: { value: string }) =>
+                    onSubmit: ({ value }: { value: string }) =>
                       !value ? 'Account is required.' : undefined,
                   }}
                 >
@@ -312,7 +312,7 @@ const TransactionFormInner = ({
             <form.AppField
               name="amount"
               validators={{
-                onChange: ({ value }: { value: number | undefined }) =>
+                onSubmit: ({ value }: { value: number | undefined }) =>
                   !value || value <= 0 ? 'Amount must be greater than zero.' : undefined,
               }}
             >
@@ -335,7 +335,7 @@ const TransactionFormInner = ({
             <form.AppField
               name="date"
               validators={{
-                onChange: ({ value }: { value: string }) =>
+                onSubmit: ({ value }: { value: string }) =>
                   !value ? 'Date is required.' : undefined,
               }}
             >
@@ -425,7 +425,7 @@ const TransactionFormInner = ({
                 <form.AppField
                   name="description"
                   validators={{
-                    onChange: ({ value }: { value: string }) =>
+                    onSubmit: ({ value }: { value: string }) =>
                       !isLocked && !value?.trim() ? 'Description is required.' : undefined,
                   }}
                 >
@@ -548,7 +548,7 @@ const TransactionFormInner = ({
               <form.AppField
                 name="assignees"
                 validators={{
-                  onChange: ({ value }: { value: AssigneeFormRow[] }) =>
+                  onSubmit: ({ value }: { value: AssigneeFormRow[] }) =>
                     value.length === 0 ? 'At least one assignee is required.' : undefined,
                 }}
               >

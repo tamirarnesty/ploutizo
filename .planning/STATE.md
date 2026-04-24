@@ -16,16 +16,16 @@ progress:
 
 ## Current Position
 
-Phase: 03.4.1 (active)
+Phase: 03.5 (next)
 Plan: —
 **Milestone:** v0.2 Transactions & Settlement
-**Active Phase:** Phase 03.4.1 — Transaction v2: Schema Migration, Form & Table Redesign
-**Status:** Phase 03.4.1 planned (9/9 plans) — ready to execute (gap-closure plan 09 added 2026-04-20)
-**Last session:** 2026-04-24T15:59:43.049Z
+**Active Phase:** Phase 03.5 — CI testing, linting, and formatting checks
+**Status:** Phase 03.4.1 complete (12/12 plans, UAT verified 2026-04-24) — 03.5 pending planning
+**Last session:** 2026-04-24T00:00:00.000Z
 
 ## Next Action
 
-Execute Phase 03.4.1 — run all 7 plans
+Plan Phase 03.5 — run /gsd:plan-phase 03.5
 
 ## Phase Status
 
@@ -43,7 +43,7 @@ Execute Phase 03.4.1 — run all 7 plans
 | 03.2 | Transaction API | complete |
 | 03.3 | Transaction List UI | complete |
 | 03.4 | Transaction Forms UI | complete (21/21 plans, verified 2026-04-19) |
-| 03.4.1 | Transaction v2: Schema Migration, Form & Table Redesign | planned (7/7 plans) |
+| 03.4.1 | Transaction v2: Schema Migration, Form & Table Redesign | complete (12/12 plans, verified 2026-04-24) |
 | 04.1 | Settlement API | pending |
 | 04.2 | Settlement UI | pending |
 | 04.3 | Budgets API | pending |
@@ -105,6 +105,7 @@ Execute Phase 03.4.1 — run all 7 plans
 - Phase 03.5 inserted after Phase 03.4: CI testing, linting, and formatting checks (URGENT)
 - Phase 03.3.2 inserted after Phase 03.3.1: implement Text typography component in packages/ui (URGENT)
 - Phase 03.3.3 inserted after Phase 03.3.2: UI primitive refactor sweep across apps/web (URGENT)
+- Phase 03.6 inserted after Phase 03.5: Migrate @hono/clerk-auth to @clerk/hono — swap deprecated package for @clerk/hono across apps/api (INSERTED)
 
 ### Pending Todos
 

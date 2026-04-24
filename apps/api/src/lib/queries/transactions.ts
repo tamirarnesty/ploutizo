@@ -15,10 +15,12 @@ import {
   desc,
   eq,
   exists,
+  gt,
   gte,
   inArray,
   isNotNull,
   isNull,
+  lt,
   lte,
   ne,
   not,
@@ -133,9 +135,9 @@ export function buildConditions(params: ListQueryParams): SQL[] {
   // dateRange — operator determines which Drizzle condition is applied
   const dateOp = params.dateRange_op ?? 'between';
   if (dateOp === 'after' && params.dateFrom) {
-    conditions.push(gte(transactions.date, params.dateFrom));
+    conditions.push(gt(transactions.date, params.dateFrom));
   } else if (dateOp === 'before' && params.dateTo) {
-    conditions.push(lte(transactions.date, params.dateTo));
+    conditions.push(lt(transactions.date, params.dateTo));
   } else if (dateOp === 'is' && params.dateFrom) {
     // 'is X' = exact date match: dateFrom === dateTo === X sent by client
     conditions.push(eq(transactions.date, params.dateFrom));
