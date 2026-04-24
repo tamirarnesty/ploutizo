@@ -1,3 +1,4 @@
+import { Layers2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import {
   Popover,
@@ -176,7 +177,7 @@ export function buildFilterFields(
         { value: 'refund', label: 'Refund' },
         { value: 'contribution', label: 'Contribution' },
         // D-25: Internal shortcut — sets type to comma-separated internal types
-        { value: 'transfer,settlement,contribution', label: 'Internal' },
+        { value: 'transfer,settlement,contribution', label: 'Internal', icon: <Layers2 className="size-3.5" /> },
       ],
     },
     {

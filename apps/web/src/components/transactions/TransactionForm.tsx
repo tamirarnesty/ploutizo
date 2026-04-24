@@ -454,14 +454,16 @@ const TransactionFormInner = ({
                           />
                           <InputGroupAddon align="inline-end">
                             <Tooltip>
-                              <TooltipTrigger>
-                                <InputGroupButton
-                                  type="button"
-                                  aria-label="Edit description"
-                                  onClick={() => setIsDescriptionUnlocked(true)}
-                                >
-                                  <SquarePen className="size-3.5" aria-hidden="true" />
-                                </InputGroupButton>
+                              <TooltipTrigger
+                                render={
+                                  <InputGroupButton
+                                    type="button"
+                                    aria-label="Edit description"
+                                    onClick={() => setIsDescriptionUnlocked(true)}
+                                  />
+                                }
+                              >
+                                <SquarePen className="size-3.5" aria-hidden="true" />
                               </TooltipTrigger>
                               <TooltipContent>Edit description</TooltipContent>
                             </Tooltip>

@@ -1,5 +1,5 @@
+import type { TransactionListResponse, TransactionQueryParams, TransactionRow } from './useGetTransactions'
 import { apiFetch } from '@/lib/queryClient'
-import type { TransactionRow, TransactionListResponse, TransactionQueryParams } from './useGetTransactions'
 
 export const fetchTransaction = async (id: string): Promise<TransactionRow> => {
   const r = await apiFetch<{ data: TransactionRow }>(`/api/transactions/${id}`)
@@ -32,10 +32,11 @@ export const fetchTransactions = async (
   return apiFetch<TransactionListResponse>(`/api/transactions?${qs.toString()}`)
 }
 
-export const fetchSearchTransactions = async (description: string): Promise<TransactionRow[]> => {
+export const fetchSearchTransactions = async (description: string, type?: string): Promise<TransactionRow[]> => {
   const qs = new URLSearchParams()
   qs.set('description', description)
   qs.set('limit', '20')
+  if (type) qs.set('type', type)
   const r = await apiFetch<TransactionListResponse>(`/api/transactions?${qs.toString()}`)
   return r.data
 }

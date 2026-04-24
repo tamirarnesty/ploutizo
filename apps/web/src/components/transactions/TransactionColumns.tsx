@@ -1,4 +1,4 @@
-import { MoreHorizontal, Tag } from 'lucide-react'
+import { MoreHorizontal, StickyNote, Tag } from 'lucide-react'
 import { DataGridColumnHeader } from '@ploutizo/ui/components/reui/data-grid/data-grid-column-header'
 import { Avatar, AvatarFallback, AvatarGroup, AvatarGroupCount } from '@ploutizo/ui/components/avatar'
 import { Badge } from '@ploutizo/ui/components/badge'
@@ -11,6 +11,7 @@ import {
 } from '@ploutizo/ui/components/dropdown-menu'
 import { Skeleton } from '@ploutizo/ui/components/skeleton'
 import { Text } from '@ploutizo/ui/components/text'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@ploutizo/ui/components/tooltip'
 import { cn } from '@ploutizo/ui/lib/utils'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { TransactionRow } from '@/lib/data-access/transactions'
@@ -118,7 +119,7 @@ export function buildColumns(
         skeleton: <Skeleton className="h-4 w-40 motion-safe:animate-pulse" />,
       },
       cell: ({ row }) => {
-        const { description, type, refundOfId, refundOfDate, refundOfAmountCents } = row.original
+        const { description, notes, type, refundOfId, refundOfDate, refundOfAmountCents } = row.original
         const hasRefundLink = type === 'refund' && refundOfId !== null
 
         // Format refund original date as "MMM D, YYYY" (e.g. "Apr 3, 2025")
@@ -130,11 +131,28 @@ export function buildColumns(
             })
           : null
 
+        const notePreview = notes
+          ? notes.length > 80 ? notes.slice(0, 80) + '…' : notes
+          : null
+
         return (
           <div className="min-w-0">
-            <Text as="span" variant="body-sm" className="min-w-0 truncate font-semibold">
-              {description}
-            </Text>
+            <div className="flex min-w-0 items-center gap-1.5">
+              <Text as="span" variant="body-sm" className="min-w-0 truncate font-semibold">
+                {description}
+              </Text>
+              {notePreview ? (
+                <Tooltip>
+                  <TooltipTrigger
+                    render={<span className="shrink-0 cursor-default text-muted-foreground hover:text-foreground" />}
+                    aria-label="Has note"
+                  >
+                    <StickyNote className="size-3.5" aria-hidden="true" />
+                  </TooltipTrigger>
+                  <TooltipContent>{notePreview}</TooltipContent>
+                </Tooltip>
+              ) : null}
+            </div>
             {hasRefundLink ? (
               <button
                 type="button"

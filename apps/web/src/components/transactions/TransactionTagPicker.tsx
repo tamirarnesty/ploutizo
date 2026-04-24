@@ -8,6 +8,7 @@ import {
   ComboboxEmpty,
   ComboboxItem,
   ComboboxList,
+  ComboboxSeparator,
   ComboboxValue,
   useComboboxAnchor,
 } from '@ploutizo/ui/components/combobox'
@@ -21,14 +22,13 @@ interface TransactionTagPickerProps {
 /**
  * Multi-select tag combobox with inline create.
  *
- * Design notes:
- * - ComboboxList children must be static JSX (not a render function) — Base UI
- *   ComboboxPrimitive.List is a plain <ul> wrapper that does not invoke children as a function.
- * - Base UI filters items automatically by matching typed input against each item's `value` prop.
- * - The __create__ option value is `__create__${tagInputValue}`, which contains the user's input
- *   as a substring, so Base UI's default filter keeps it visible when there is input.
- * - form field value (tagIds) always contains only real UUIDs — translation in handleValueChange
- * - T-03.4-11: __create__ strings never reach toApiPayload
+ * Filtering: Base UI's ComboboxEmpty requires `items` on Combobox.Root to set data-empty.
+ * We pass `items` (all tags) and `filteredItems` (search-filtered tags, real tags only —
+ * create option excluded so data-empty fires when there are no matching real tags).
+ * Static JSX in ComboboxList renders the filtered tags + create option.
+ *
+ * form field value (tagIds) always contains only real UUIDs — translation in handleValueChange.
+ * T-03.4-11: __create__ strings never reach toApiPayload.
  */
 export const TransactionTagPicker = ({ value, onChange }: TransactionTagPickerProps) => {
   const { data: tags = [] } = useGetTags()
@@ -44,7 +44,14 @@ export const TransactionTagPicker = ({ value, onChange }: TransactionTagPickerPr
     .map((id) => activeTags.find((t) => t.id === id)?.name)
     .filter((name): name is string => name !== undefined)
 
-  // Build the __create__ option if input doesn't match any existing tag name
+  // Filter tags by input for manual filtering (Base UI Combobox doesn't auto-filter in multi mode)
+  const filteredTags = tagInputValue
+    ? activeTags.filter((t) =>
+        t.name.toLowerCase().includes(tagInputValue.toLowerCase())
+      )
+    : activeTags
+
+  // Build the __create__ option if input doesn't exactly match any existing tag name
   const alreadyExists = activeTags.some(
     (t) => t.name.toLowerCase() === tagInputValue.toLowerCase()
   )
@@ -81,12 +88,17 @@ export const TransactionTagPicker = ({ value, onChange }: TransactionTagPickerPr
     }
   }
 
+  const allTagNames = activeTags.map((t) => t.name)
+  const filteredTagNames = filteredTags.map((t) => t.name)
+
   return (
     <Combobox
       multiple
       value={selectedNames}
       onValueChange={handleValueChange}
       onInputValueChange={setTagInputValue}
+      items={allTagNames}
+      filteredItems={filteredTagNames}
     >
       <ComboboxChips ref={anchor}>
         <ComboboxValue>
@@ -105,7 +117,7 @@ export const TransactionTagPicker = ({ value, onChange }: TransactionTagPickerPr
       </ComboboxChips>
       <ComboboxContent anchor={anchor}>
         <ComboboxList>
-          {activeTags.map((tag) => (
+          {filteredTags.map((tag) => (
             <ComboboxItem key={tag.id} value={tag.name}>
               {tag.name}
             </ComboboxItem>
@@ -117,8 +129,16 @@ export const TransactionTagPicker = ({ value, onChange }: TransactionTagPickerPr
           ) : null}
         </ComboboxList>
         <ComboboxEmpty>
-          {tagInputValue.length === 0 ? 'Type to search or create a tag' : 'Tag already exists'}
+          {tagInputValue.length === 0 ? 'Type to search or create a tag' : 'No matching tags'}
         </ComboboxEmpty>
+        {tagInputValue.length === 0 && activeTags.length > 0 ? (
+          <>
+            <ComboboxSeparator />
+            <p className="px-2 py-2 text-center text-xs text-muted-foreground">
+              Type to search or create a tag
+            </p>
+          </>
+        ) : null}
       </ComboboxContent>
     </Combobox>
   )
