@@ -427,6 +427,109 @@ UAT fixes (post-verification 2026-04-24):
 
 ---
 
+### Phase 03.4.2: Transaction form polish & UI bug fixes (INSERTED)
+
+**Goal:** Fix the remaining transaction form and list bugs surfaced after 03.4.1, and clean up the Notes/Tags layout and tag combobox UX.
+
+**Delivers:**
+- Edit mode amount change recalculates assignee split amounts (amountCents per assignee)
+- Notes + Tags section layout redesigned: Notes full-width on top, Tags below (or 2/3 + 1/3 grid); Notes textarea min 3 rows
+- Tag combobox Enter key triggers create when the "Create" option is highlighted (cmdk `onSelect` wired correctly)
+- Category edit changes reflect in list without reload — fix stale `localCategories` in `CategoriesSettings.tsx` (remove `!initialized.current` guard on sync effect)
+
+**Todos:**
+- `.planning/todos/pending/2026-04-22-fix-edit-amount-not-recalculating-assignee-splits.md`
+- `.planning/todos/pending/2026-04-21-redesign-transaction-form-notes-tags-layout.md`
+- `.planning/todos/pending/2026-04-14-tag-combobox-enter-key-creates-tag-without-explicit-click.md`
+- `.planning/todos/pending/2026-04-14-category-edit-should-invalidate-query-cache-and-reload-list.md`
+
+**Depends on:** Phase 03.4.1
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 03.4.2 to break down)
+
+---
+
+### Phase 03.4.3: Fix shared account owners not saved or displayed (INSERTED)
+
+**Goal:** Shared account co-owners are correctly persisted on create/edit and displayed in the Accounts table.
+
+**Delivers:**
+- `AccountForm.tsx` `memberIds` field saves co-owners on submit (API + form wiring fix)
+- API response returns owner data; `AccountsTable.tsx` Owners column renders member names instead of "—"
+
+**Todos:**
+- `.planning/todos/pending/2026-04-21-fix-shared-account-owners-not-saved-or-displayed.md`
+
+**Depends on:** Phase 03.4.2
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 03.4.3 to break down)
+
+---
+
+### Phase 03.4.4: App shell resilience — 404 page & error boundary (INSERTED)
+
+**Goal:** Users never see a blank screen. Unknown routes show a friendly 404 page; unhandled render errors show a recoverable error state.
+
+**Delivers:**
+- `notFoundComponent` on root route — friendly "Page not found" with link back to dashboard
+- `errorComponent` on root route — user-friendly crash screen with retry/reload; error detail in dev mode only
+
+**Todos:**
+- `.planning/todos/pending/2026-04-22-add-404-page.md`
+- `.planning/todos/pending/2026-04-22-add-error-boundary-errorcomponent-for-page-crashes.md`
+
+**Depends on:** Phase 03.4.3
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 03.4.4 to break down)
+
+---
+
+### Phase 03.4.5: Form validation audit — all forms show correct error messages (INSERTED)
+
+**Goal:** All forms across the app display validation error text correctly. No form shows `[Object object]` or swallows error messages.
+
+**Delivers:**
+- Audit all `field.state.meta.errors` render sites across `apps/web/src/components/`
+- Replace bare `String(errors[0])` with `.message` extraction (or TanStack Form `FieldError` component)
+- Verified in: AccountForm, CategoryForm, TagForm, MerchantRuleForm, HouseholdSettingsForm, TransactionForm
+
+**Todos:**
+- `.planning/todos/pending/2026-04-14-form-validation-audit-all-forms-show-correct-error-messages.md`
+
+**Depends on:** Phase 03.4.4
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 03.4.5 to break down)
+
+---
+
+### Phase 03.4.6: Show invited member card in Household view (INSERTED)
+
+**Goal:** After sending an invite, admins see a pending member card in the Members list immediately — no blank gap until the invite is accepted.
+
+**Delivers:**
+- API returns pending Clerk invitations alongside active members
+- Members list renders an "Invited" card per pending invite (dimmed avatar, email as display name, "Invited" status pill)
+- Invited cards are visually distinct from active members
+
+**Todos:**
+- `.planning/todos/pending/2026-04-21-show-invited-member-card-in-household-view.md`
+
+**Depends on:** Phase 03.4.5
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 03.4.6 to break down)
+
+---
+
 ### Phase 03.5: CI testing, linting, and formatting checks (INSERTED)
 
 **Goal:** [Urgent work - to be planned]
@@ -446,6 +549,8 @@ Plans:
 
 Plans:
 - [ ] TBD (run /gsd-plan-phase 03.6 to break down)
+
+**Post-phase todo:** After 03.6 ships, address `.planning/todos/pending/2026-04-21-clear-query-cache-on-logout-prevent-stale-data-cross-account.md` — clear TanStack Query cache on logout/user-switch to prevent cross-account stale data.
 
 ### Phase 4.1: Settlement API
 
