@@ -390,7 +390,7 @@ Plans:
 
 ---
 
-### Phase 03.4.1: Transaction v2 — Schema Migration, Form & Table Redesign (INSERTED)
+### Phase 03.4.1: Transaction v2 — Schema Migration, Form & Table Redesign (INSERTED) ✓ COMPLETE 2026-04-24
 
 **Goal:** Simplify the transaction schema and deliver a redesigned form and table that work correctly for all 6 transaction types. The current schema has redundant nullable columns and the form/table are expense-focused; this phase fixes both.
 
@@ -405,7 +405,7 @@ Plans:
 
 **Requirements**: See `REQUIREMENTS.md §4.1`
 **Depends on:** Phase 03.4
-**Plans:** 10 plans
+**Plans:** 12 plans
 
 Plans:
 - [x] 03.4.1-01-PLAN.md — Schema migration: drop 5 columns, add 3, backfill, NOT NULL
@@ -417,7 +417,13 @@ Plans:
 - [x] 03.4.1-07-PLAN.md — Table redesign: signed amounts, A→B account column, refund sub-line, Internal filter
 - [x] 03.4.1-08-PLAN.md — Filter operator URL persistence and API enforcement (D-25)
 - [x] 03.4.1-09-PLAN.md — Gap closure: WR-01–WR-04 filter and form fixes
-- [ ] 03.4.1-10-PLAN.md — Gap closure: contribution picker, stale cache, transfer guard, date filter overhaul
+- [x] 03.4.1-10-PLAN.md — Gap closure: contribution picker, stale cache, transfer guard, date filter overhaul
+- [x] 03.4.1-11-PLAN.md — Gap closure: UAT fixes (notes preview, tag filtering, refund search, tooltip fixes)
+- [x] 03.4.1-12-PLAN.md — Gap closure: UAT re-test fixes
+
+UAT fixes (post-verification 2026-04-24):
+- Form validators switched from `onChange` → `onSubmit` (no eager validation errors)
+- Date filter `before`/`after` operators changed to exclusive (`lt`/`gt`)
 
 ---
 
