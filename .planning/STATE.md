@@ -105,6 +105,7 @@ Plan Phase 03.5 — run /gsd:plan-phase 03.5
 - Phase 03.5 inserted after Phase 03.4: CI testing, linting, and formatting checks (URGENT)
 - Phase 03.3.2 inserted after Phase 03.3.1: implement Text typography component in packages/ui (URGENT)
 - Phase 03.3.3 inserted after Phase 03.3.2: UI primitive refactor sweep across apps/web (URGENT)
+- Phase 03.6 inserted after Phase 03.5: Migrate @hono/clerk-auth to @clerk/hono — swap deprecated package for @clerk/hono across apps/api (INSERTED)
 
 ### Pending Todos
 

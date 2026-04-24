@@ -437,6 +437,16 @@ UAT fixes (post-verification 2026-04-24):
 Plans:
 - [ ] TBD (run /gsd-plan-phase 03.5 to break down)
 
+### Phase 03.6: Migrate @hono/clerk-auth to @clerk/hono — swap deprecated package for @clerk/hono across apps/api (10 files, same API surface) (INSERTED)
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 03.5
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 03.6 to break down)
+
 ### Phase 4.1: Settlement API
 
 **Goal:** The API can compute settlement balances at query time for any household
