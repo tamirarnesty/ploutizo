@@ -98,7 +98,7 @@ export const TransactionTagPicker = ({ value, onChange }: TransactionTagPickerPr
       onValueChange={handleValueChange}
       onInputValueChange={setTagInputValue}
       items={allTagNames}
-      filteredItems={filteredTagNames}
+      filteredItems={createOption ? [...filteredTagNames, createOption] : filteredTagNames}
     >
       <ComboboxChips ref={anchor}>
         <ComboboxValue>
