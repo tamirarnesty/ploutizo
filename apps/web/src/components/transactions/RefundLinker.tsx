@@ -53,7 +53,7 @@ export const RefundLinker = ({
   const recentExpenses = recentExpensesResponse?.data ?? [];
 
   const { data: searchResults = [], isLoading: searching } =
-    useSearchTransactions(debouncedQuery);
+    useSearchTransactions(debouncedQuery, 'expense');
 
   const displayedResults =
     debouncedQuery.length >= 2 ? searchResults : recentExpenses;
