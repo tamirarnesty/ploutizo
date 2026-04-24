@@ -18,7 +18,7 @@ export const ExpenseFields = ({ form, categories }: ExpenseFieldsProps) => (
   <form.AppField
     name="categoryId"
     validators={{
-      onChange: ({ value }: { value: string }) =>
+      onSubmit: ({ value }: { value: string }) =>
         !value ? 'Category is required for expense transactions.' : undefined,
     }}
   >

@@ -135,7 +135,7 @@ const IncomeTypeField = ({ form }: { form: TransactionFormInstance }) => (
   <form.AppField
     name="incomeType"
     validators={{
-      onChange: ({ value }: { value: string }) =>
+      onSubmit: ({ value }: { value: string }) =>
         !value ? 'Income type is required.' : undefined,
     }}
   >
