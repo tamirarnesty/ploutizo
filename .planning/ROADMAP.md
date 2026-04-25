@@ -463,10 +463,10 @@ Plans:
 - `.planning/todos/pending/2026-04-21-fix-shared-account-owners-not-saved-or-displayed.md`
 
 **Depends on:** Phase 03.4.2
-**Plans:** 0 plans
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 03.4.3 to break down)
+- [ ] 03.4.3-01-PLAN.md — Extend Account type, enrich listAccounts with owner join, wire AccountsTable Owners cell
 
 ---
 
