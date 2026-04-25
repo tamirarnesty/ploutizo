@@ -23,9 +23,12 @@
 
 - Never modify components in `packages/ui/src/components/reui/` or shadcn-generated files. Override behavior at the usage site via `className` props (Tailwind arbitrary variants), wrapper elements, or exposed component props. Leave a comment explaining any non-obvious override.
 
-## Testing
+## Build & Type Checking
 
-- Never invoke test runners directly (e.g. `npx jest`, `npx vitest`). Always use the project's test script: `pnpm test` or `pnpm --filter <package> test`.
+- Never invoke tools directly via `npx` (e.g. `npx tsc`, `npx vitest`, `npx jest`). Always go through the package scripts so the correct flags and config are used.
+- Type checking: `pnpm turbo typecheck` (runs `tsc --noEmit` in all packages in dependency order). Never run `npx tsc` from the repo root — it emits JS files.
+- Tests: `pnpm test` or `pnpm --filter <package> test`.
+- Build: `pnpm turbo build`.
 
 ---
 

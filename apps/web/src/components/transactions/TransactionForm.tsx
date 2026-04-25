@@ -501,16 +501,16 @@ const TransactionFormInner = ({
             )}
           </form.Subscribe>
 
-          {/* Notes + Tag picker — side-by-side flex row (D-21, UI-SPEC Notes section) */}
-          <div className="flex gap-4">
+          {/* Notes + Tag picker — stacked column: Notes full-width, Tags below */}
+          <div className="flex flex-col gap-4">
             {/* Notes field */}
             <form.AppField name="notes">
               {(field) => (
-                <Field className="flex-1">
+                <Field>
                   <FieldLabel htmlFor="tx-notes">Notes</FieldLabel>
                   <Textarea
                     id="tx-notes"
-                    rows={2}
+                    rows={3}
                     className="resize-none"
                     autoComplete="off"
                     placeholder="Add a note…"
@@ -522,10 +522,10 @@ const TransactionFormInner = ({
               )}
             </form.AppField>
 
-            {/* Tag picker — same row as notes, equal width */}
+            {/* Tag picker — stacked below notes */}
             <form.AppField name="tagIds">
               {(field) => (
-                <Field className="flex-1">
+                <Field>
                   <FieldLabel>
                     Tags
                     <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import { Skeleton } from "@ploutizo/ui/components/skeleton"
 import { Text } from "@ploutizo/ui/components/text"
 import {
@@ -71,10 +71,8 @@ export const CategoriesSettings = () => {
 
   // Locally manage category order for optimistic reorder UX
   const [localCategories, setLocalCategories] = useState<Category[]>([])
-  const initialized = useRef<boolean>(false)
   useEffect(() => {
-    if (!initialized.current && !catLoading && categories.length > 0) {
-      initialized.current = true
+    if (!catLoading && categories.length > 0) {
       setLocalCategories(categories)
     }
   }, [categories, catLoading])

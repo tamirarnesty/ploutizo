@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { Toggle } from '@ploutizo/ui/components/toggle'
 import {
@@ -56,13 +56,15 @@ export const AssigneeSection = ({
 
   const [pressedMemberIds, setPressedMemberIds] = useState<string[]>(initialPressedIds)
 
-  // WR-03: sync auto-pressed members to form state whenever amountCents changes in
-  // create mode. The empty-deps variant fired at mount when amountCents was still 0,
-  // writing amountCents:0 into form state and causing "Too small: expected number >0"
-  // on submit. Reacting to amountCents means the sync runs once the user enters an
-  // amount (which is required for submission anyway), producing correct cent values.
+  // Skips initial render to preserve saved edit-mode splits on mount, then fires on
+  // every subsequent amountCents change in both create and edit mode.
+  const isInitialRender = useRef(true)
   useEffect(() => {
-    if (!transaction && amountCents > 0 && pressedMemberIds.length > 0) {
+    if (isInitialRender.current) {
+      isInitialRender.current = false
+      return
+    }
+    if (amountCents > 0 && pressedMemberIds.length > 0) {
       onChange(lrmSplit(amountCents, pressedMemberIds))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
