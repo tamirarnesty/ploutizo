@@ -23,9 +23,8 @@ interface TransactionTagPickerProps {
  * Multi-select tag combobox with inline create.
  *
  * Filtering: Base UI's ComboboxEmpty requires `items` on Combobox.Root to set data-empty.
- * We pass `items` (all tags) and `filteredItems` (search-filtered tags, real tags only —
- * create option excluded so data-empty fires when there are no matching real tags).
- * Static JSX in ComboboxList renders the filtered tags + create option.
+ * We pass `items` (all tags) and `filteredItems` (search-filtered tags + create option when
+ * present — create option included so it is keyboard-selectable via Enter).
  *
  * form field value (tagIds) always contains only real UUIDs — translation in handleValueChange.
  * T-03.4-11: __create__ strings never reach toApiPayload.
@@ -94,6 +93,7 @@ export const TransactionTagPicker = ({ value, onChange }: TransactionTagPickerPr
   return (
     <Combobox
       multiple
+      autoHighlight
       value={selectedNames}
       onValueChange={handleValueChange}
       onInputValueChange={setTagInputValue}
