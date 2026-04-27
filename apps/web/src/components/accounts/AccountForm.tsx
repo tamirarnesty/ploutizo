@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useUser } from "@clerk/tanstack-react-start"
 import {
   Collapsible,
   CollapsibleContent,
@@ -117,6 +118,8 @@ const AccountFormInner = ({
   const createAccount = useCreateAccount()
   const updateAccount = useUpdateAccount(account?.id ?? "")
   const [advancedOpen, setAdvancedOpen] = useState(account?.eachPersonPaysOwn ?? false)
+  const { user } = useUser()
+  const currentMemberId = orgMembers.find((m) => m.externalId === user?.id)?.id ?? null
 
   const loadedMemberIds = existingMembers.map((m) => m.memberId)
 
@@ -127,8 +130,9 @@ const AccountFormInner = ({
       institution: account?.institution ?? "",
       lastFour: account?.lastFour ?? "",
       eachPersonPaysOwn: account?.eachPersonPaysOwn ?? false,
+      // personal = 1 owner (just me), shared = 2+ owners
       ownership:
-        loadedMemberIds.length > 0
+        loadedMemberIds.length > 1
           ? ("shared" as const)
           : ("personal" as const),
       memberIds: loadedMemberIds,
@@ -148,7 +152,7 @@ const AccountFormInner = ({
         institution: value.institution?.trim() || undefined,
         lastFour: value.lastFour?.trim() || undefined,
         eachPersonPaysOwn: value.eachPersonPaysOwn,
-        memberIds: value.ownership === "shared" ? value.memberIds : [],
+        memberIds: value.ownership === "shared" ? value.memberIds : (currentMemberId ? [currentMemberId] : []),
       }
       const mutation = isEditing ? updateAccount : createAccount
       mutation.mutate(payload, {

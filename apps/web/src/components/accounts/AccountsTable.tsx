@@ -11,12 +11,23 @@ import {
 import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-table';
 import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-grid-scroll-area';
 import { DataGridPagination } from '@ploutizo/ui/components/reui/data-grid/data-grid-pagination';
+import { Avatar, AvatarFallback, AvatarGroup, AvatarGroupCount } from '@ploutizo/ui/components/avatar';
 import { Badge } from '@ploutizo/ui/components/badge';
 import { Button } from '@ploutizo/ui/components/button';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@ploutizo/ui/components/tooltip';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { Account } from '@ploutizo/types';
+
+const getInitials = (name: string): string =>
+  name
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   chequing: 'Chequing',
@@ -111,11 +122,28 @@ export const AccountsTable = ({
           skeleton: <Skeleton className="h-4 w-20" />,
         },
         cell: ({ row }) => {
-          const names = row.original.owners.map((o) => o.displayName).join(', ');
+          const owners = row.original.owners;
+          if (owners.length === 0) return <span className="text-muted-foreground text-sm">—</span>;
+          const visible = owners.slice(0, 3);
+          const overflow = owners.length - 3;
           return (
-            <Text as="span" variant="body-sm" className="text-muted-foreground min-w-0 truncate">
-              {names || '—'}
-            </Text>
+            <AvatarGroup>
+              {visible.map((o) => (
+                <Tooltip key={o.id}>
+                  <TooltipTrigger asChild>
+                    <Avatar size="sm" aria-label={o.displayName}>
+                      <AvatarFallback>{getInitials(o.displayName)}</AvatarFallback>
+                    </Avatar>
+                  </TooltipTrigger>
+                  <TooltipContent>{o.displayName}</TooltipContent>
+                </Tooltip>
+              ))}
+              {overflow > 0 && (
+                <AvatarGroupCount aria-label={`and ${overflow} more`}>
+                  +{overflow}
+                </AvatarGroupCount>
+              )}
+            </AvatarGroup>
           );
         },
       },
