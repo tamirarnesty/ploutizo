@@ -17,6 +17,7 @@ import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { Account } from '@ploutizo/types';
+import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   chequing: 'Chequing',
@@ -110,7 +111,12 @@ export const AccountsTable = ({
           cellClassName: 'min-w-[90px]',
           skeleton: <Skeleton className="h-4 w-20" />,
         },
-        cell: () => <Text as="span" variant="body-sm" className="text-muted-foreground">—</Text>,
+        cell: ({ row }) => (
+          <MemberAvatarGroup
+            members={row.original.owners.map((o) => ({ id: o.id, name: o.displayName, imageUrl: o.imageUrl }))}
+            withTooltips
+          />
+        ),
       },
       {
         accessorKey: 'archivedAt',

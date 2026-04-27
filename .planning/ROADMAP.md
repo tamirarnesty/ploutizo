@@ -456,17 +456,19 @@ Plans:
 **Goal:** Shared account co-owners are correctly persisted on create/edit and displayed in the Accounts table.
 
 **Delivers:**
-- `AccountForm.tsx` `memberIds` field saves co-owners on submit (API + form wiring fix)
-- API response returns owner data; `AccountsTable.tsx` Owners column renders member names instead of "—"
+- API query enrichment: `listAccounts` returns `owners: AccountOwner[]` per account (two-query merge in service layer)
+- `Account` type extended with `owners` field; typecheck confirms no consumer breakage
+- `AccountsTable.tsx` Owners column wired to `row.original.owners` — renders comma-joined names instead of "—"
+- Note: write path (form → API → DB) verified working by code trace; no changes needed there
 
 **Todos:**
 - `.planning/todos/pending/2026-04-21-fix-shared-account-owners-not-saved-or-displayed.md`
 
 **Depends on:** Phase 03.4.2
-**Plans:** 0 plans
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 03.4.3 to break down)
+- [ ] 03.4.3-01-PLAN.md — Extend Account type, enrich listAccounts with owner join, wire AccountsTable Owners cell
 
 ---
 

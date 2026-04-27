@@ -7,6 +7,7 @@ import {
   transactionAssignees,
   transactionTags,
   transactions,
+  users,
 } from '@ploutizo/db/schema';
 import { alias } from 'drizzle-orm/pg-core';
 import {
@@ -357,9 +358,11 @@ export async function enrichTransactions(baseRows: { id: string }[]) {
         amountCents: transactionAssignees.amountCents,
         percentage: transactionAssignees.percentage, // string — display only
         memberName: orgMembers.displayName,
+        imageUrl: users.imageUrl,
       })
       .from(transactionAssignees)
       .innerJoin(orgMembers, eq(transactionAssignees.memberId, orgMembers.id))
+      .innerJoin(users, eq(users.id, orgMembers.userId))
       .where(inArray(transactionAssignees.transactionId, txIds)),
 
     db

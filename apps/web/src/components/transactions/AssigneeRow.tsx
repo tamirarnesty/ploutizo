@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
-import { Avatar, AvatarFallback } from '@ploutizo/ui/components/avatar'
 import { Button } from '@ploutizo/ui/components/button'
 import {
   InputGroup,
@@ -10,10 +9,12 @@ import {
 import { Text } from '@ploutizo/ui/components/text'
 import type { AssigneeFormRow } from './types'
 import { formatCurrency } from '@/lib/formatCurrency'
+import { UserAvatar } from '@/components/members/UserAvatar'
 
 interface AssigneeRowProps {
   memberId: string
   memberName: string | null
+  imageUrl?: string | null
   amountCents: number
   percentage: number
   mode: 'percent' | 'dollar'
@@ -22,15 +23,13 @@ interface AssigneeRowProps {
   onRemove: (memberId: string) => void
 }
 
-const getInitials = (name: string | null): string =>
-  name ? name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2) : '?'
-
 const toDisplay = (mode: 'percent' | 'dollar', percentage: number, amountCents: number) =>
   mode === 'percent' ? percentage.toFixed(1) : (amountCents / 100).toFixed(2)
 
 export const AssigneeRow = ({
   memberId,
   memberName,
+  imageUrl,
   amountCents,
   percentage,
   mode,
@@ -53,9 +52,7 @@ export const AssigneeRow = ({
 
   return (
     <div className="flex items-center gap-2">
-      <Avatar size="sm" aria-label={memberName ?? 'Unknown member'}>
-        <AvatarFallback>{getInitials(memberName)}</AvatarFallback>
-      </Avatar>
+      <UserAvatar size="sm" name={memberName ?? 'Unknown member'} imageUrl={imageUrl} />
 
       <Text as="span" variant="body-sm" className="min-w-0 flex-1 truncate">
         {memberName ?? 'Unknown'}

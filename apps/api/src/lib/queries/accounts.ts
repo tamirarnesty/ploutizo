@@ -1,6 +1,6 @@
 import { db } from '@ploutizo/db';
-import { accountMembers, accounts } from '@ploutizo/db/schema';
-import { and, eq, isNull } from 'drizzle-orm';
+import { accountMembers, accounts, orgMembers, users } from '@ploutizo/db/schema';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 
 // Drizzle transaction type for functions that participate in an outer db.transaction().
 export type DrizzleTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -87,6 +87,23 @@ export async function listAccountMembers(accountId: string) {
     .select()
     .from(accountMembers)
     .where(eq(accountMembers.accountId, accountId));
+}
+
+// GET / enrichment — fetch member display names for a set of account IDs.
+// Guard: inArray([]) generates invalid SQL in some Drizzle/PG versions (Pitfall 4).
+export async function listAccountMemberDetails(accountIds: string[]) {
+  if (accountIds.length === 0) return [];
+  return db
+    .select({
+      accountId: accountMembers.accountId,
+      memberId: orgMembers.id,
+      displayName: orgMembers.displayName,
+      imageUrl: users.imageUrl,
+    })
+    .from(accountMembers)
+    .innerJoin(orgMembers, eq(orgMembers.id, accountMembers.memberId))
+    .innerJoin(users, eq(users.id, orgMembers.userId))
+    .where(inArray(accountMembers.accountId, accountIds));
 }
 
 // DELETE /:id/archive — soft-archive account; returns updated row or null

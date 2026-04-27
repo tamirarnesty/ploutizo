@@ -89,6 +89,7 @@ app.onError((err, c) => {
       err.statusCode as import('hono/utils/http-status').StatusCode
     );
   }
+  console.error('[API] Unhandled error:', err);
   return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Unexpected error' } }, 500);
 });
 

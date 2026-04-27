@@ -1,18 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
-import { Toggle } from '@ploutizo/ui/components/toggle'
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@ploutizo/ui/components/collapsible'
-import { Avatar, AvatarFallback, AvatarImage } from '@ploutizo/ui/components/avatar'
 import { Text } from '@ploutizo/ui/components/text'
 import { cn } from '@ploutizo/ui/lib/utils'
 import { SplitSection } from './SplitSection'
 import type { OrgMember } from '@ploutizo/types'
 import type { AssigneeFormRow } from './types'
 import type { TransactionRow } from '@/lib/data-access/transactions'
+import { MemberToggleGroup } from '@/components/members/MemberToggleGroup'
 import { lrmSplit } from '@/lib/lrm'
 
 interface AssigneeSectionProps {
@@ -82,32 +81,17 @@ export const AssigneeSection = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refundAssigneeIds])
 
-  // Determine initial Collapsible state: open in edit mode if distribution is non-even
-  const isNonEven = (assignees: AssigneeFormRow[]): boolean => {
+  // percentage from TransactionAssignee is string|null; from AssigneeFormRow is number
+  const isNonEven = (assignees: { percentage: number | string | null }[]): boolean => {
     if (assignees.length <= 1) return false
     const expectedPct = parseFloat((100 / assignees.length).toFixed(3))
     return assignees.some(
-      (a) => Math.abs(a.percentage - expectedPct) > 0.1,
+      (a) => Math.abs(Number(a.percentage) - expectedPct) > 0.1,
     )
   }
 
   const [customizeOpen, setCustomizeOpen] = useState(() =>
     transaction ? isNonEven(transaction.assignees ?? []) : false,
-  )
-
-  const handleToggle = useCallback(
-    (memberId: string, pressed: boolean) => {
-      if (pressed) {
-        const newMemberIds = [...pressedMemberIds, memberId]
-        setPressedMemberIds(newMemberIds)
-        onChange(lrmSplit(amountCents, newMemberIds))
-      } else {
-        const newMemberIds = pressedMemberIds.filter((id) => id !== memberId)
-        setPressedMemberIds(newMemberIds)
-        onChange(newMemberIds.length === 0 ? [] : lrmSplit(amountCents, newMemberIds))
-      }
-    },
-    [pressedMemberIds, amountCents, onChange],
   )
 
   // Only the pressed members are passed to SplitSection
@@ -117,42 +101,14 @@ export const AssigneeSection = ({
     <div className="flex flex-col gap-3">
       <Text variant="label">Assignees</Text>
 
-      {/* Toggle row — one per org member */}
-      <div className="flex flex-wrap gap-2">
-        {orgMembers.map((member) => {
-          const isPressed = pressedMemberIds.includes(member.id)
-          const initials = member.displayName
-            .split(' ')
-            .map((n) => n[0])
-            .join('')
-            .toUpperCase()
-            .slice(0, 2)
-          return (
-            <Toggle
-              key={member.id}
-              variant="outline"
-              size="lg"
-              pressed={isPressed}
-              onPressedChange={(pressed) => handleToggle(member.id, pressed)}
-              className={cn(
-                'px-3',
-                // Override default data-[state=on]:bg-muted with primary tint
-                // (CLAUDE.md: override at usage site, never in toggle.tsx)
-                'data-[state=on]:bg-primary/10 data-[state=on]:text-primary data-[state=on]:border-primary/30',
-              )}
-              aria-label={`${isPressed ? 'Remove' : 'Add'} ${member.displayName}`}
-            >
-              <Avatar size="sm">
-                {member.imageUrl ? (
-                  <AvatarImage src={member.imageUrl} alt={member.displayName} />
-                ) : null}
-                <AvatarFallback>{initials}</AvatarFallback>
-              </Avatar>
-              <span className="ml-1.5 text-sm">{member.displayName.split(' ')[0]}</span>
-            </Toggle>
-          )
-        })}
-      </div>
+      <MemberToggleGroup
+        members={orgMembers}
+        value={pressedMemberIds}
+        onChange={(newIds) => {
+          setPressedMemberIds(newIds)
+          onChange(newIds.length === 0 ? [] : lrmSplit(amountCents, newIds))
+        }}
+      />
 
       {/* "Customize split" Collapsible — only shown when 2+ members are pressed */}
       {pressedMemberIds.length > 1 ? (

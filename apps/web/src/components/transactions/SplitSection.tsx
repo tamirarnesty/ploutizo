@@ -113,6 +113,7 @@ export const SplitSection = ({ value, onChange, amountCents, orgMembers }: Split
               key={row.memberId}
               memberId={row.memberId}
               memberName={orgMembers.find((m) => m.id === row.memberId)?.displayName ?? null}
+              imageUrl={orgMembers.find((m) => m.id === row.memberId)?.imageUrl}
               amountCents={row.amountCents}
               percentage={row.percentage}
               mode={mode}

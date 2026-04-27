@@ -1,6 +1,5 @@
 import { MoreHorizontal, StickyNote, Tag } from 'lucide-react'
 import { DataGridColumnHeader } from '@ploutizo/ui/components/reui/data-grid/data-grid-column-header'
-import { Avatar, AvatarFallback, AvatarGroup, AvatarGroupCount } from '@ploutizo/ui/components/avatar'
 import { Badge } from '@ploutizo/ui/components/badge'
 import { Button } from '@ploutizo/ui/components/button'
 import {
@@ -17,6 +16,9 @@ import type { ColumnDef } from '@tanstack/react-table'
 import type { TransactionRow } from '@/lib/data-access/transactions'
 import { ICON_MAP } from '@/components/categories/LucideIconPicker'
 import { formatCurrency } from '@/lib/formatCurrency'
+import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup'
+
+export { getInitials } from '@/lib/getInitials'
 
 // Resolves a Lucide icon by name — defined outside useMemo to be stable
 export const DynamicLucideIcon = ({ name, size = 16 }: { name: string | null; size?: number }) => {
@@ -24,10 +26,6 @@ export const DynamicLucideIcon = ({ name, size = 16 }: { name: string | null; si
   const Icon = ICON_MAP[name]
   return Icon ? <Icon size={size} aria-hidden="true" /> : <Tag size={size} />
 }
-
-// Extracts up to 2 initials from a display name
-export const getInitials = (name: string | null): string =>
-  name ? name.trim().slice(0, 2).toUpperCase() : '?'
 
 // Per-type badge className map (per UI-SPEC.md)
 export const typeBadgeClassName: Record<string, string> = {
@@ -230,7 +228,7 @@ export function buildColumns(
           : type === 'settlement'
             ? accountName ?? ''
             : counterpartAccountName
-              ? `${accountName} \u2192 ${counterpartAccountName}`
+              ? `${accountName} → ${counterpartAccountName}`
               : accountName ?? ''
         return (
           <div className="min-w-0">
@@ -257,26 +255,13 @@ export function buildColumns(
           </div>
         ),
       },
-      cell: ({ row }) => {
-        const assignees = row.original.assignees
-        if (assignees.length === 0) return null
-        const visible = assignees.slice(0, 3)
-        const overflow = assignees.length - 3
-        return (
-          <AvatarGroup>
-            {visible.map((a) => (
-              <Avatar key={a.memberId} size="sm" aria-label={a.memberName ?? ''}>
-                <AvatarFallback>{getInitials(a.memberName)}</AvatarFallback>
-              </Avatar>
-            ))}
-            {overflow > 0 && (
-              <AvatarGroupCount aria-label={`and ${overflow} more`}>
-                +{overflow}
-              </AvatarGroupCount>
-            )}
-          </AvatarGroup>
-        )
-      },
+      cell: ({ row }) => (
+        <MemberAvatarGroup
+          members={row.original.assignees.map((a) => ({ id: a.memberId, name: a.memberName ?? '', imageUrl: a.imageUrl }))}
+          withTooltips
+          emptyFallback={null}
+        />
+      ),
     },
     // 7. Tags
     {
@@ -343,7 +328,7 @@ export function buildColumns(
         const formatted = formatCurrency(amount)
         // U+2212 MINUS SIGN for expense (not hyphen-minus)
         const displayValue = isExpense
-          ? `\u2212${formatted}`
+          ? `−${formatted}`
           : isPositive
             ? `+${formatted}`
             : formatted
