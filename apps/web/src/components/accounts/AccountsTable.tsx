@@ -110,7 +110,14 @@ export const AccountsTable = ({
           cellClassName: 'min-w-[90px]',
           skeleton: <Skeleton className="h-4 w-20" />,
         },
-        cell: () => <Text as="span" variant="body-sm" className="text-muted-foreground">—</Text>,
+        cell: ({ row }) => {
+          const names = row.original.owners.map((o) => o.displayName).join(', ');
+          return (
+            <Text as="span" variant="body-sm" className="text-muted-foreground min-w-0 truncate">
+              {names || '—'}
+            </Text>
+          );
+        },
       },
       {
         accessorKey: 'archivedAt',
