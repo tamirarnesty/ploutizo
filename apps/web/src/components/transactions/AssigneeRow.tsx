@@ -10,6 +10,7 @@ import {
 import { Text } from '@ploutizo/ui/components/text'
 import type { AssigneeFormRow } from './types'
 import { formatCurrency } from '@/lib/formatCurrency'
+import { getInitials } from '@/lib/getInitials'
 
 interface AssigneeRowProps {
   memberId: string
@@ -21,9 +22,6 @@ interface AssigneeRowProps {
   onChange: (memberId: string, patch: Partial<Pick<AssigneeFormRow, 'amountCents' | 'percentage'>>) => void
   onRemove: (memberId: string) => void
 }
-
-const getInitials = (name: string | null): string =>
-  name ? name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2) : '?'
 
 const toDisplay = (mode: 'percent' | 'dollar', percentage: number, amountCents: number) =>
   mode === 'percent' ? percentage.toFixed(1) : (amountCents / 100).toFixed(2)

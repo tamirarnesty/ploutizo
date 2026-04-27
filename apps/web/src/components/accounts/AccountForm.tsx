@@ -51,6 +51,7 @@ import {
   useUpdateAccount,
 } from "@/lib/data-access/accounts"
 import { useGetOrgMembers } from "@/lib/data-access/org"
+import { MemberToggleGroup } from "@/components/members/MemberToggleGroup"
 
 const ACCOUNT_TYPES = [
   { value: "chequing", label: "Chequing" },
@@ -114,7 +115,6 @@ const AccountFormInner = ({
   onArchive,
 }: AccountFormInnerProps) => {
   const isEditing = account !== null
-  const members = orgMembers
   const createAccount = useCreateAccount()
   const updateAccount = useUpdateAccount(account?.id ?? "")
   const [advancedOpen, setAdvancedOpen] = useState(account?.eachPersonPaysOwn ?? false)
@@ -135,7 +135,8 @@ const AccountFormInner = ({
         loadedMemberIds.length > 1
           ? ("shared" as const)
           : ("personal" as const),
-      memberIds: loadedMemberIds,
+      // Edit: restore saved members. Create: pre-select current user.
+      memberIds: isEditing ? loadedMemberIds : (currentMemberId ? [currentMemberId] : []),
     } as AccountFormType,
     validators: {
       onSubmit: ({ value }: { value: AccountFormType }) => {
@@ -152,7 +153,7 @@ const AccountFormInner = ({
         institution: value.institution?.trim() || undefined,
         lastFour: value.lastFour?.trim() || undefined,
         eachPersonPaysOwn: value.eachPersonPaysOwn,
-        memberIds: value.ownership === "shared" ? value.memberIds : (currentMemberId ? [currentMemberId] : []),
+        memberIds: value.memberIds,
       }
       const mutation = isEditing ? updateAccount : createAccount
       mutation.mutate(payload, {
@@ -185,7 +186,14 @@ const AccountFormInner = ({
                   value={[field.state.value]}
                   onValueChange={(v) => {
                     const last = v[v.length - 1]
-                    if (last) field.handleChange(last as "personal" | "shared")
+                    if (!last) return
+                    field.handleChange(last as "personal" | "shared")
+                    if (last === "personal") {
+                      const memberIds = form.getFieldValue("memberIds")
+                      if (memberIds.length > 1) {
+                        form.setFieldValue("memberIds", [memberIds[0]])
+                      }
+                    }
                   }}
                   variant="outline"
                 >
@@ -311,55 +319,27 @@ const AccountFormInner = ({
             )}
           </form.AppField>
 
-          {/* Field 6: memberIds (conditional on ownership === "shared") */}
+          {/* Field 6: owner/co-owner selection — personal = single-select, shared = multi-select */}
           <form.Subscribe
             selector={(s: { values: AccountFormType }) => s.values.ownership}
           >
-            {(ownership) =>
-              ownership === "shared" ? (
-                <form.AppField name="memberIds">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel>Co-owners</FieldLabel>
-                      {members.length === 0 ? (
-                        <Text variant="body-sm" className="text-muted-foreground">
-                          No other members in this household yet.
-                        </Text>
-                      ) : (
-                        <div className="flex flex-col gap-2">
-                          {members.map((member) => (
-                            <div
-                              key={member.id}
-                              className="flex items-center gap-2"
-                            >
-                              <Checkbox
-                                id={`member-${member.id}`}
-                                checked={field.state.value.includes(member.id)}
-                                onCheckedChange={(checked) => {
-                                  field.handleChange(
-                                    checked
-                                      ? [...field.state.value, member.id]
-                                      : field.state.value.filter(
-                                          (id: string) => id !== member.id
-                                        )
-                                  )
-                                }}
-                              />
-                              <Label
-                                htmlFor={`member-${member.id}`}
-                                className="cursor-pointer text-sm"
-                              >
-                                {member.displayName}
-                              </Label>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </Field>
-                  )}
-                </form.AppField>
-              ) : null
-            }
+            {(ownership) => (
+              <form.AppField name="memberIds">
+                {(field) => (
+                  <Field>
+                    <FieldLabel>
+                      {ownership === "shared" ? "Co-owners" : "Owner"}
+                    </FieldLabel>
+                    <MemberToggleGroup
+                      members={orgMembers}
+                      value={field.state.value}
+                      onChange={(ids) => field.handleChange(ids)}
+                      multiple={ownership === "shared"}
+                    />
+                  </Field>
+                )}
+              </form.AppField>
+            )}
           </form.Subscribe>
 
           {/* Field 7: eachPersonPaysOwn (inside Collapsible — advancedOpen is local useState, UI-only) */}
