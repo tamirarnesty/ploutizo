@@ -11,7 +11,7 @@ import {
 import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-table';
 import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-grid-scroll-area';
 import { DataGridPagination } from '@ploutizo/ui/components/reui/data-grid/data-grid-pagination';
-import { Avatar, AvatarFallback, AvatarGroup, AvatarGroupCount } from '@ploutizo/ui/components/avatar';
+import { Avatar, AvatarFallback, AvatarGroup, AvatarGroupCount, AvatarImage } from '@ploutizo/ui/components/avatar';
 import { Badge } from '@ploutizo/ui/components/badge';
 import { Button } from '@ploutizo/ui/components/button';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
@@ -132,6 +132,7 @@ export const AccountsTable = ({
                 <Tooltip key={o.id}>
                   <TooltipTrigger asChild>
                     <Avatar size="sm" aria-label={o.displayName}>
+                      {o.imageUrl && <AvatarImage src={o.imageUrl} />}
                       <AvatarFallback>{getInitials(o.displayName)}</AvatarFallback>
                     </Avatar>
                   </TooltipTrigger>

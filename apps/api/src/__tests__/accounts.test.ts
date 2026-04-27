@@ -155,7 +155,7 @@ describe('GET /api/accounts', () => {
         from: vi.fn().mockReturnValue({
           innerJoin: vi.fn().mockReturnValue({
             where: vi.fn().mockResolvedValue([
-              { accountId: 'acct_1', memberId: 'mem_1', displayName: 'Alice' },
+              { accountId: 'acct_1', memberId: 'mem_1', displayName: 'Alice', imageUrl: 'https://img.clerk.com/alice.jpg' },
             ]),
           }),
         }),
@@ -163,8 +163,8 @@ describe('GET /api/accounts', () => {
 
     const res = await app.request('/');
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { data: { owners: { id: string; displayName: string }[] }[] };
-    expect(body.data[0].owners).toEqual([{ id: 'mem_1', displayName: 'Alice' }]);
+    const body = (await res.json()) as { data: { owners: { id: string; displayName: string; imageUrl: string | null }[] }[] };
+    expect(body.data[0].owners).toEqual([{ id: 'mem_1', displayName: 'Alice', imageUrl: 'https://img.clerk.com/alice.jpg' }]);
   });
 
   it('returns owners as [] when account has no members', async () => {

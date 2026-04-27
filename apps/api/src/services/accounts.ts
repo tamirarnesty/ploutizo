@@ -22,7 +22,7 @@ export async function listAccounts(orgId: string, includeArchived: boolean) {
   const byAccount = new Map<string, { id: string; displayName: string }[]>();
   for (const m of memberRows) {
     const list = byAccount.get(m.accountId) ?? [];
-    list.push({ id: m.memberId, displayName: m.displayName });
+    list.push({ id: m.memberId, displayName: m.displayName, imageUrl: m.imageUrl ?? null });
     byAccount.set(m.accountId, list);
   }
   return rows.map((r) => ({ ...r, owners: byAccount.get(r.id) ?? [] }));

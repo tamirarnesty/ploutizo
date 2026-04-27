@@ -12,6 +12,7 @@ export type AccountType =
 export interface AccountOwner {
   id: string          // orgMembers.id (the member UUID)
   displayName: string
+  imageUrl: string | null
 }
 
 export interface Account {

@@ -98,6 +98,7 @@ export async function listAccountMemberDetails(accountIds: string[]) {
       accountId: accountMembers.accountId,
       memberId: orgMembers.id,
       displayName: orgMembers.displayName,
+      imageUrl: orgMembers.imageUrl,
     })
     .from(accountMembers)
     .innerJoin(orgMembers, eq(orgMembers.id, accountMembers.memberId))
