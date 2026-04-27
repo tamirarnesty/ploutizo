@@ -5,6 +5,7 @@ import {
   fetchAccountById,
   insertAccount,
   insertAccountMembers,
+  listAccountMemberDetails,
   listAccountMembers,
   listAccounts as listAccountsQuery,
   replaceAccountMembers,
@@ -14,7 +15,17 @@ import type { createAccountSchema, updateAccountSchema } from '@ploutizo/validat
 import type { z } from 'zod'
 
 export async function listAccounts(orgId: string, includeArchived: boolean) {
-  return listAccountsQuery(orgId, includeArchived)
+  const rows = await listAccountsQuery(orgId, includeArchived);
+  if (rows.length === 0) return [];
+  const memberRows = await listAccountMemberDetails(rows.map((r) => r.id));
+  // Map for O(1) grouping (js-perf skill rule — Map preferred over Record for repeated lookups)
+  const byAccount = new Map<string, { id: string; displayName: string }[]>();
+  for (const m of memberRows) {
+    const list = byAccount.get(m.accountId) ?? [];
+    list.push({ id: m.memberId, displayName: m.displayName });
+    byAccount.set(m.accountId, list);
+  }
+  return rows.map((r) => ({ ...r, owners: byAccount.get(r.id) ?? [] }));
 }
 
 export async function createAccount(
