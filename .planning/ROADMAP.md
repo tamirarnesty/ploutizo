@@ -639,10 +639,17 @@ Plans:
 **Goal:** Users can view all category budgets with spend progress, status
 indicators, and historical period navigation from a single dashboard.
 
+**Design reference:** `.planning/mockups/budgets.png`
+
 **Delivers:**
-- Budget dashboard: summary row + per-category DataGrid with progress bars
-- On Track (blue) / Caution (amber) / Over (red) status badges
-- Historical view by period
+- Header: "Budget", "March 2026 · N categories", "Edit Budget" button top-right (opens budget editing flow)
+- Sidebar Members section: each member with avatar, name, and their share of total budget (e.g. "Tamir · $2,890 / budget"), subtext "Share of total budget"
+- 4 KPI stat cards: Total Budget (amount, "across N categories"), Spent So Far (amount, global progress bar showing %), Remaining (amount in green, "N days left in month"), Over Budget (count in red + category name + overage amount; red card background when any category is over)
+- Per-category DataGrid: Category icon + name, Progress (segmented bar + "N% used" label), Budget, Spent, Left (green when positive, red when negative), Status badge
+- Status badge thresholds: On Track = blue (< 80%), Caution = amber (80–99%), Over = red (≥ 100%)
+- Over-budget row treatment: category name in red, bar fills full width in red, label shows "N% — $X over limit", Left column shows negative amount in red
+- Caution row treatment: amber bar
+- **Chart components:** All progress bars (global + per-category) use shadcn `Progress` — no Recharts needed. `Radar` was evaluated as a category budget-vs-actual overlay but has no fit here; the table layout from the mockup is the right choice.
 
 **Plans:** 0 plans
 
@@ -654,6 +661,7 @@ Plans:
 
 **Success criteria:**
 - [ ] Budget dashboard shows On Track / Caution / Over status with correct colour coding at exact 80% and 100% thresholds
+- [ ] Over Budget KPI card turns red and names the over-budget category and overage amount when any category exceeds 100%
 - [ ] Historical period navigation loads spend data for the selected period without a full page reload
 
 ---
@@ -722,6 +730,8 @@ Plans:
 
 **Goal:** Users can upload a CSV, step through a review table with inline editing,
 and resolve unmatched accounts before confirming the import.
+
+**Design reference:** `.planning/mockups/import.png`
 
 **Delivers:**
 - Stepper component: upload → review → confirm
@@ -806,9 +816,22 @@ Plans:
 **Goal:** Members can record contributions, track remaining room with a progress
 indicator, and see over-contribution warnings inline.
 
+**Design reference:** `.planning/mockups/savings.png`
+
 **Delivers:**
+- Header: "Savings", "Month · N members", single month selector
+- Sidebar Members section: each member with avatar, name, and savings this month (e.g. "Tamir · $850 / mo"), subtext "Saved this month"
+- 3 KPI stat cards: This Month (total contributions, MoM delta with direction arrow), YTD (year-to-date total, "Jan–Month YYYY" label), Annual Room (combined remaining room across all accounts, "Across all accounts")
+- Contributions table: Account/Owner (account type badge + name + member avatar), Monthly (contribution amount), Annual Limit, Progress (bar + "N% used" + "X of Y used" sublabel)
+  - Account type color coding: RRSP blue, TFSA green, FHSA amber/orange
+  - Employer match sub-row (indented under parent account, label e.g. "Acme Corp match", amount in green "+$250")
+- Right panel — Source Breakdown (Pre-tax vs Post-tax):
+  - Pre-tax: Payroll deductions, dollar amount, % of total, progress bar
+  - Post-tax: Manual transfers, dollar amount, % of total, progress bar
+  - TOTAL row
+- Right panel — By Account (month totals): account type badge + name + amount per type
+- **Chart components:** Contribution room bars in the table and Source Breakdown bars both use shadcn `Progress` (not Recharts) — colored by account type. Recharts `Radial` chart was evaluated for circular room-usage display per account but the mockup's inline table-row bars fit `Progress` better. `Radial` could be revisited for a future account detail card.
 - Contribution create form (pre-typed as `contribution` transaction)
-- Remaining room progress indicator per account type
 - Over-contribution warning display on the contribution form
 - TFSA disclaimer: "Your CRA room may differ due to withdrawals made in prior years or years of non-residency"
 - Birth year prompt (stored as private profile field)
@@ -824,6 +847,8 @@ Plans:
 **Success criteria:**
 - [ ] TFSA over-contribution warning fires immediately on the contribution form when entered amount would exceed remaining room; same behavior for FHSA
 - [ ] TFSA disclaimer is visible on the TFSA account view; no manual withdrawal adjustment field exists
+- [ ] Employer match sub-row appears indented under the parent account row when a match is recorded
+- [ ] Source Breakdown panel correctly splits contributions into pre-tax (payroll) and post-tax (manual) buckets
 
 ---
 
@@ -856,9 +881,20 @@ Plans:
 **Goal:** Members can view their household's net worth, per-member breakdown, and
 monthly historical trend in a single page.
 
+**Design reference:** `.planning/mockups/net-worth.png`
+
 **Delivers:**
-- Net worth page: total, account breakdown, per-member section
-- Historical trend chart
+- Header: "Net Worth", "Month · Combined/member name", member filter tabs (Combined | per-member avatar tabs)
+- Sidebar Members section: each member with avatar, name, and their individual net worth (e.g. "Tamir · $184,200"), subtext "Net worth this month"
+- Total Net Worth: large headline number, MoM delta with direction arrow ("+ $X this month vs $Y in PrevMonth"), assets − liabilities breakdown line top-right (green assets, red liabilities)
+- Two-column layout: Assets (left, green total) + Liabilities (right, red total)
+  - Assets rows: account type badge + name + owner names + value (Chequing, Savings Accounts, RRSP, TFSA, FHSA)
+  - Liabilities rows: bank logo + card name + owner + due date + balance in red (one row per credit card)
+- Monthly Delta Reconciliation section (bottom): "How net worth changed this month · Income − Expenses = Net Change"
+  - 4 boxes in a row: Income (+amount, "Salaries + other"), − Expenses (−amount, "Spending + bills"), = Expected (+amount, "Cash flow"), VS Actual (+amount, "Net worth delta")
+  - Alert callout when gap exists between expected and actual: "X gap — expected +$Y but net worth only grew +$Z. Check for untracked spending or transfers."
+- Historical net worth trend → Recharts `Area` chart in `ChartContainer` (filled area emphasizes cumulative growth; month on x-axis, net worth on y-axis)
+- **Chart components:** `Area` (historical trend). Assets/Liabilities breakdown and Monthly Delta Reconciliation are stat rows — no Recharts needed there. `Radar` has no fit on this page.
 - Investment value disclaimer ("contribution totals — not market value")
 
 **Plans:** 0 plans
@@ -872,6 +908,8 @@ Plans:
 **Success criteria:**
 - [ ] Investment section is clearly labeled "contribution totals — not market value"
 - [ ] Per-member breakdown assigns net worth to the member(s) who own each account
+- [ ] Monthly Delta Reconciliation gap alert appears when expected cash flow and actual net worth delta differ; no alert when they match
+- [ ] Switching member filter tab (Combined → Tamir → Emily) re-scopes assets and liabilities to accounts owned by that member; combined shows all accounts
 
 ---
 
@@ -931,6 +969,50 @@ Plans:
 **Success criteria:**
 - [ ] Dismissing a notification removes it from the feed; "Dismiss all" clears the entire feed
 - [ ] On January 1, a contribution room refresh reminder appears for members who have tracked TFSA or FHSA accounts
+
+---
+
+### Phase 7.3: Overview Dashboard UI
+
+**Goal:** Members can open the app and immediately see a household financial snapshot for any month — KPIs, spend trends, credit card balances, and settlement — without navigating to individual feature pages.
+
+**Design reference:** `.planning/mockups/dashboard-overview.png`
+
+**Delivers:**
+- Period selector: display month + comparison month (defaults to current vs prior month); URL-synced via TanStack Router search params
+- 4 KPI stat cards: Net Balance (income − expenses, with MoM delta + direction arrow), Total Income (with MoM delta), Total Expenses (with MoM delta), Credit Card Owed (sum of credit card balances, card count)
+- Monthly Spend stacked bar chart: 6-month rolling window, one bar per month stacked by member; x-axis months, y-axis dollars → Recharts `Bar` (stacked via `stackId`, one `Bar` component per member)
+- Income by Person donut chart: selected month, per-member slice + legend with dollar amounts → Recharts `Pie` with `innerRadius` for donut variant, center text overlay showing household total
+- Spend by Category horizontal bars: selected month, per-category bars with dollar totals; categories over budget highlighted in red with an alert callout below → shadcn `Progress` (not Recharts — simpler, matches mockup row layout)
+- **Chart components:** `Bar` (Monthly Spend), `Pie`/donut (Income by Person), shadcn `Progress` (Spend by Category). `Radar` was evaluated for category spend comparison but has no fit — the stacked bar and donut already cover the multi-member breakdown need.
+- Credit Card Balances table: card logo/name, owner avatar, balance, per-member breakdown progress bar, due date, status badge (Due Soon / On Track); "View all" links to accounts page
+- Settlement panel: per-pair owed amounts with line-item card breakdown, net settlement after netting both directions, footnote for shared cards excluded from settlement
+- Sidebar members section: each member with avatar, name, and income this month
+
+**API surface needed (new endpoints or query params):**
+- `GET /api/dashboard/summary?month=YYYY-MM&compareMonth=YYYY-MM` — KPI card data (net balance, income, expenses, credit card total) for both periods
+- `GET /api/dashboard/monthly-spend?months=6` — 6-month stacked spend by member
+- `GET /api/dashboard/income-by-person?month=YYYY-MM` — per-member income for donut
+- `GET /api/dashboard/spend-by-category?month=YYYY-MM` — per-category spend with budget comparison flag
+- Reuse existing `/api/accounts` (credit card balances + due dates) and `/api/settlement` (settlement pairs)
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 7.3 to break down)
+
+**Requirements covered:**
+- §4 Transactions (aggregated spend/income views)
+- §5 Settlement (settlement panel reuse)
+- §6 Budgets (over-budget category highlight)
+- §2 Accounts (credit card balance table)
+
+**Success criteria:**
+- [ ] Switching the month selector updates all widgets simultaneously with no waterfall; all queries fire in parallel via `useQueries`
+- [ ] A category that exceeds its budget is highlighted red in the Spend by Category chart with the alert callout
+- [ ] Credit Card Balances table shows correct per-member breakdown bars and due-date status for all 4 card ownership types (personal Tamir, personal Emily, shared, each-pays-own)
+- [ ] Settlement panel net settlement matches the value computed by the existing settlement API
+- [ ] A household with no budget data still renders (category chart shows spend without budget comparison, no alert callouts)
 
 ---
 
