@@ -257,7 +257,8 @@ export function buildColumns(
       },
       cell: ({ row }) => (
         <MemberAvatarGroup
-          members={row.original.assignees.map((a) => ({ id: a.memberId, name: a.memberName ?? '' }))}
+          members={row.original.assignees.map((a) => ({ id: a.memberId, name: a.memberName ?? '', imageUrl: a.imageUrl }))}
+          withTooltips
           emptyFallback={null}
         />
       ),

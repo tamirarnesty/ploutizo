@@ -1,16 +1,10 @@
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarGroup,
-  AvatarGroupCount,
-  AvatarImage,
-} from '@ploutizo/ui/components/avatar'
+import { AvatarGroup, AvatarGroupCount } from '@ploutizo/ui/components/avatar'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip'
-import { getInitials } from '@/lib/getInitials'
+import { UserAvatar } from './UserAvatar'
 
 export interface MemberAvatarItem {
   id: string
@@ -41,23 +35,13 @@ export const MemberAvatarGroup = ({
       {visible.map((member) =>
         withTooltips ? (
           <Tooltip key={member.id}>
-            {/* render={<Avatar />} is base-ui's equivalent of Radix asChild:
-                Avatar becomes the trigger element directly, preserving AvatarGroup stacking */}
-            <TooltipTrigger render={<Avatar size="sm" aria-label={member.name} />}>
-              {member.imageUrl ? (
-                <AvatarImage src={member.imageUrl} alt={member.name} />
-              ) : null}
-              <AvatarFallback>{getInitials(member.name)}</AvatarFallback>
-            </TooltipTrigger>
+            {/* UserAvatar spreads ...props to Avatar → AvatarPrimitive.Root, so
+                base-ui's render prop can inject trigger event handlers through the chain */}
+            <TooltipTrigger render={<UserAvatar name={member.name} imageUrl={member.imageUrl} size="sm" />} />
             <TooltipContent>{member.name}</TooltipContent>
           </Tooltip>
         ) : (
-          <Avatar key={member.id} size="sm" aria-label={member.name}>
-            {member.imageUrl ? (
-              <AvatarImage src={member.imageUrl} alt={member.name} />
-            ) : null}
-            <AvatarFallback>{getInitials(member.name)}</AvatarFallback>
-          </Avatar>
+          <UserAvatar key={member.id} name={member.name} imageUrl={member.imageUrl} size="sm" />
         )
       )}
       {overflow > 0 && (
