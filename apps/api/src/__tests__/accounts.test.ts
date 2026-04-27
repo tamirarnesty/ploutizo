@@ -113,7 +113,7 @@ vi.mock('@ploutizo/db', () => ({
   },
 }));
 
-vi.mock('@ploutizo/db/schema', () => ({ accounts: {}, accountMembers: {}, orgMembers: {} }));
+vi.mock('@ploutizo/db/schema', () => ({ accounts: {}, accountMembers: {}, orgMembers: {}, users: {} }));
 
 const app = new Hono();
 app.route('/', accountsRouter);
@@ -154,9 +154,11 @@ describe('GET /api/accounts', () => {
       .mockReturnValueOnce({
         from: vi.fn().mockReturnValue({
           innerJoin: vi.fn().mockReturnValue({
-            where: vi.fn().mockResolvedValue([
-              { accountId: 'acct_1', memberId: 'mem_1', displayName: 'Alice', imageUrl: 'https://img.clerk.com/alice.jpg' },
-            ]),
+            innerJoin: vi.fn().mockReturnValue({
+              where: vi.fn().mockResolvedValue([
+                { accountId: 'acct_1', memberId: 'mem_1', displayName: 'Alice', imageUrl: 'https://img.clerk.com/alice.jpg' },
+              ]),
+            }),
           }),
         }),
       } as unknown as ReturnType<typeof db.select>);
@@ -194,7 +196,9 @@ describe('GET /api/accounts', () => {
       .mockReturnValueOnce({
         from: vi.fn().mockReturnValue({
           innerJoin: vi.fn().mockReturnValue({
-            where: vi.fn().mockResolvedValue([]),
+            innerJoin: vi.fn().mockReturnValue({
+              where: vi.fn().mockResolvedValue([]),
+            }),
           }),
         }),
       } as unknown as ReturnType<typeof db.select>);

@@ -1,5 +1,5 @@
 import { db } from '@ploutizo/db';
-import { accountMembers, accounts, orgMembers } from '@ploutizo/db/schema';
+import { accountMembers, accounts, orgMembers, users } from '@ploutizo/db/schema';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 
 // Drizzle transaction type for functions that participate in an outer db.transaction().
@@ -98,10 +98,11 @@ export async function listAccountMemberDetails(accountIds: string[]) {
       accountId: accountMembers.accountId,
       memberId: orgMembers.id,
       displayName: orgMembers.displayName,
-      imageUrl: orgMembers.imageUrl,
+      imageUrl: users.imageUrl,
     })
     .from(accountMembers)
     .innerJoin(orgMembers, eq(orgMembers.id, accountMembers.memberId))
+    .innerJoin(users, eq(users.id, orgMembers.userId))
     .where(inArray(accountMembers.accountId, accountIds));
 }
 
