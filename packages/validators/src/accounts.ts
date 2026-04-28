@@ -34,6 +34,6 @@ export const AccountFormSchema = z.object({
   lastFour: z.string().max(4).optional(),
   eachPersonPaysOwn: z.boolean().default(false),
   ownership: z.enum(['personal', 'shared']),
-  memberIds: z.array(z.string().uuid()).min(1, 'At least one owner is required.').default([]),
+  memberIds: z.array(z.string().uuid()).default([]),
 })
 export type AccountForm = z.infer<typeof AccountFormSchema>
