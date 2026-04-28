@@ -1,4 +1,8 @@
 import { Hono } from 'hono';
+import {
+  createAccountSchema,
+  updateAccountSchema,
+} from '@ploutizo/validators';
 import { appValidator } from '../lib/validator';
 import {
   archiveAccountById,
@@ -7,10 +11,6 @@ import {
   listAccounts,
   updateAccount,
 } from '../services/accounts';
-import {
-  createAccountSchema,
-  updateAccountSchema,
-} from '@ploutizo/validators';
 import type { AppEnv } from '../types';
 
 const accountsRouter = new Hono<AppEnv>();

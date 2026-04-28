@@ -1,42 +1,45 @@
-import { CategoryFormSchema } from "@ploutizo/validators"
-import { useAppForm } from "@ploutizo/ui/components/form"
-import { Button } from "@ploutizo/ui/components/button"
-import { Input } from "@ploutizo/ui/components/input"
-import { DialogFooter } from "@ploutizo/ui/components/dialog"
+import { CategoryFormSchema } from '@ploutizo/validators';
+import { useAppForm } from '@ploutizo/ui/components/form';
+import { Button } from '@ploutizo/ui/components/button';
+import { Input } from '@ploutizo/ui/components/input';
+import { DialogFooter } from '@ploutizo/ui/components/dialog';
 import {
   Field,
   FieldError,
   FieldGroup,
   FieldLabel,
-} from "@ploutizo/ui/components/field"
-import { Text } from "@ploutizo/ui/components/text"
-import type { CategoryForm as CategoryFormType } from "@ploutizo/validators"
-import type { Category } from "@/lib/data-access/categories"
-import { useCreateCategory, useUpdateCategory } from "@/lib/data-access/categories"
-import { ColourPicker } from "@/components/categories/ColourPicker"
-import { LucideIconPicker } from "@/components/categories/LucideIconPicker"
+} from '@ploutizo/ui/components/field';
+import { Text } from '@ploutizo/ui/components/text';
+import type { CategoryForm as CategoryFormType } from '@ploutizo/validators';
+import type { Category } from '@/lib/data-access/categories';
+import {
+  useCreateCategory,
+  useUpdateCategory,
+} from '@/lib/data-access/categories';
+import { ColourPicker } from '@/components/categories/ColourPicker';
+import { LucideIconPicker } from '@/components/categories/LucideIconPicker';
 
 interface CategoryFormProps {
-  category: Category | null
-  onClose: () => void
+  category: Category | null;
+  onClose: () => void;
 }
 
 export const CategoryForm = ({ category, onClose }: CategoryFormProps) => {
-  const isEditing = category !== null
-  const createCategory = useCreateCategory()
-  const updateCategory = useUpdateCategory(category?.id ?? "")
+  const isEditing = category !== null;
+  const createCategory = useCreateCategory();
+  const updateCategory = useUpdateCategory(category?.id ?? '');
 
   const form = useAppForm({
     defaultValues: {
-      name: category?.name ?? "",
+      name: category?.name ?? '',
       icon: category?.icon ?? undefined,
       colour: category?.colour ?? undefined,
     } satisfies CategoryFormType,
     validators: {
       onSubmit: ({ value }: { value: CategoryFormType }) => {
-        const result = CategoryFormSchema.safeParse(value)
+        const result = CategoryFormSchema.safeParse(value);
         if (!result.success) {
-          return result.error.issues.map((i) => i.message).join(", ")
+          return result.error.issues.map((i) => i.message).join(', ');
         }
       },
     },
@@ -45,23 +48,24 @@ export const CategoryForm = ({ category, onClose }: CategoryFormProps) => {
         name: value.name.trim(),
         icon: value.icon ?? undefined,
         colour: value.colour ?? undefined,
-      }
-      const mutation = isEditing ? updateCategory : createCategory
+      };
+      const mutation = isEditing ? updateCategory : createCategory;
       mutation.mutate(payload, {
         onSuccess: onClose,
         onError: () =>
           form.setErrorMap({
-            onSubmit: "Couldn't save changes. Check your connection and try again.",
+            onSubmit:
+              "Couldn't save changes. Check your connection and try again.",
           }),
-      })
+      });
     },
-  })
+  });
 
   return (
     <form
       onSubmit={(e) => {
-        e.preventDefault()
-        form.handleSubmit()
+        e.preventDefault();
+        form.handleSubmit();
       }}
     >
       <FieldGroup>
@@ -70,7 +74,9 @@ export const CategoryForm = ({ category, onClose }: CategoryFormProps) => {
           validators={{ onChange: CategoryFormSchema.shape.name }}
         >
           {(field) => (
-            <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
+            <Field
+              data-invalid={field.state.meta.errors.length > 0 || undefined}
+            >
               <FieldLabel htmlFor="category-name">Name</FieldLabel>
               <Input
                 id="category-name"
@@ -116,11 +122,7 @@ export const CategoryForm = ({ category, onClose }: CategoryFormProps) => {
       </FieldGroup>
 
       <form.Subscribe selector={(s) => s.errorMap.onSubmit}>
-        {(err) =>
-          err ? (
-            <Text variant="error">{String(err)}</Text>
-          ) : null
-        }
+        {(err) => (err ? <Text variant="error">{String(err)}</Text> : null)}
       </form.Subscribe>
 
       <DialogFooter className="mt-4">
@@ -136,5 +138,5 @@ export const CategoryForm = ({ category, onClose }: CategoryFormProps) => {
         </form.Subscribe>
       </DialogFooter>
     </form>
-  )
-}
+  );
+};

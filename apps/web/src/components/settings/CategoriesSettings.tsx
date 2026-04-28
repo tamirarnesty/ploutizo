@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react"
-import { Skeleton } from "@ploutizo/ui/components/skeleton"
-import { Text } from "@ploutizo/ui/components/text"
+import { useEffect, useState } from 'react';
+import { Skeleton } from '@ploutizo/ui/components/skeleton';
+import { Text } from '@ploutizo/ui/components/text';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,13 +11,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@ploutizo/ui/components/alert-dialog"
-import { GripVertical } from "lucide-react"
+} from '@ploutizo/ui/components/alert-dialog';
+import { GripVertical } from 'lucide-react';
 import {
   Sortable,
   SortableItem,
   SortableItemHandle,
-} from "@ploutizo/ui/components/reui/sortable"
+} from '@ploutizo/ui/components/reui/sortable';
 import {
   Combobox,
   ComboboxChip,
@@ -29,70 +29,78 @@ import {
   ComboboxList,
   ComboboxValue,
   useComboboxAnchor,
-} from "@ploutizo/ui/components/combobox"
-import { Button } from "@ploutizo/ui/components/button"
-import { CategoryDialog } from "./CategoryDialog"
-import type { Category } from "@/lib/data-access/categories"
-import { renderLucideIcon } from "@/components/categories/LucideIconPicker"
-import { useArchiveTag, useCreateTag, useGetTags } from "@/lib/data-access/tags"
+} from '@ploutizo/ui/components/combobox';
+import { Button } from '@ploutizo/ui/components/button';
+import { CategoryDialog } from './CategoryDialog';
+import type { Category } from '@/lib/data-access/categories';
+import { renderLucideIcon } from '@/components/categories/LucideIconPicker';
+import {
+  useArchiveTag,
+  useCreateTag,
+  useGetTags,
+} from '@/lib/data-access/tags';
 import {
   useArchiveCategory,
   useGetCategories,
   useReorderCategories,
-} from "@/lib/data-access/categories"
+} from '@/lib/data-access/categories';
 
 export const CategoriesSettings = () => {
-  const { data: categories = [], isLoading: catLoading } = useGetCategories()
-  const { data: tags = [], isLoading: tagLoading } = useGetTags()
-  const archiveCategory = useArchiveCategory()
-  const reorderCategories = useReorderCategories()
-  const createTag = useCreateTag()
-  const archiveTag = useArchiveTag()
+  const { data: categories = [], isLoading: catLoading } = useGetCategories();
+  const { data: tags = [], isLoading: tagLoading } = useGetTags();
+  const archiveCategory = useArchiveCategory();
+  const reorderCategories = useReorderCategories();
+  const createTag = useCreateTag();
+  const archiveTag = useArchiveTag();
 
   // false = dialog closed, null = create mode, Category = edit mode
   const [dialogCategory, setDialogCategory] = useState<Category | null | false>(
     false
-  )
-  const [tagInputValue, setTagInputValue] = useState("")
+  );
+  const [tagInputValue, setTagInputValue] = useState('');
   const [optimisticallyRemovedIds, setOptimisticallyRemovedIds] = useState<
     Set<string>
-  >(new Set())
-  const anchor = useComboboxAnchor()
+  >(new Set());
+  const anchor = useComboboxAnchor();
 
-  const visibleTags = tags.filter((t) => !optimisticallyRemovedIds.has(t.id))
-  const visibleTagNames = visibleTags.map((t) => t.name)
+  const visibleTags = tags.filter((t) => !optimisticallyRemovedIds.has(t.id));
+  const visibleTagNames = visibleTags.map((t) => t.name);
   const createOption =
     tagInputValue.length > 0 &&
     !visibleTags.some(
       (t) => t.name.toLowerCase() === tagInputValue.toLowerCase()
     )
       ? `__create__${tagInputValue}`
-      : null
+      : null;
 
   // Locally manage category order for optimistic reorder UX
-  const [localCategories, setLocalCategories] = useState<Category[]>([])
+  const [localCategories, setLocalCategories] = useState<Category[]>([]);
   useEffect(() => {
     if (!catLoading && categories.length > 0) {
-      setLocalCategories(categories)
+      setLocalCategories(categories);
     }
-  }, [categories, catLoading])
+  }, [categories, catLoading]);
 
   const handleReorder = (newOrder: Category[]) => {
-    setLocalCategories(newOrder)
-    reorderCategories.mutate(newOrder.map((c) => c.id))
-  }
+    setLocalCategories(newOrder);
+    reorderCategories.mutate(newOrder.map((c) => c.id));
+  };
 
   const displayCategories =
-    localCategories.length > 0 ? localCategories : categories
+    localCategories.length > 0 ? localCategories : categories;
 
   return (
     <div className="max-w-2xl space-y-8">
-      <Text as="h1" variant="h3">Categories &amp; Tags</Text>
+      <Text as="h1" variant="h3">
+        Categories &amp; Tags
+      </Text>
 
       {/* Categories section */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <Text as="h2" variant="label" className="font-semibold">Categories</Text>
+          <Text as="h2" variant="label" className="font-semibold">
+            Categories
+          </Text>
           <Button
             type="button"
             size="sm"
@@ -109,12 +117,12 @@ export const CategoriesSettings = () => {
             ))}
           </div>
         ) : displayCategories.length === 0 ? (
-          <Text variant="body-sm" className="text-muted-foreground">No categories found.</Text>
+          <Text variant="body-sm" className="text-muted-foreground">
+            No categories found.
+          </Text>
         ) : (
           <>
-            <Text variant="caption">
-              Drag to reorder categories.
-            </Text>
+            <Text variant="caption">Drag to reorder categories.</Text>
             <Sortable
               value={displayCategories}
               onValueChange={handleReorder}
@@ -139,7 +147,11 @@ export const CategoriesSettings = () => {
                         className={`size-3 rounded-full bg-${cat.colour} shrink-0`}
                       />
                     ) : null}
-                    <Text as="span" variant="body-sm" className="min-w-0 flex-1 truncate">
+                    <Text
+                      as="span"
+                      variant="body-sm"
+                      className="min-w-0 flex-1 truncate"
+                    >
                       {cat.name}
                     </Text>
                     <Button
@@ -194,7 +206,9 @@ export const CategoriesSettings = () => {
       {/* Tags section */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <Text as="h2" variant="label" className="font-semibold">Tags</Text>
+          <Text as="h2" variant="label" className="font-semibold">
+            Tags
+          </Text>
         </div>
 
         {tagLoading ? (
@@ -208,28 +222,28 @@ export const CategoriesSettings = () => {
             onValueChange={(newValues) => {
               const removed = visibleTagNames.filter(
                 (n) => !newValues.includes(n)
-              )
+              );
               for (const name of removed) {
-                const tag = visibleTags.find((t) => t.name === name)
-                if (!tag) continue
+                const tag = visibleTags.find((t) => t.name === name);
+                if (!tag) continue;
                 setOptimisticallyRemovedIds(
                   (prev) => new Set([...prev, tag.id])
-                )
+                );
                 archiveTag.mutate(tag.id, {
                   onError: () =>
                     setOptimisticallyRemovedIds((prev) => {
-                      const next = new Set(prev)
-                      next.delete(tag.id)
-                      return next
+                      const next = new Set(prev);
+                      next.delete(tag.id);
+                      return next;
                     }),
-                })
+                });
               }
-              const created = newValues.find((v) => v.startsWith("__create__"))
+              const created = newValues.find((v) => v.startsWith('__create__'));
               if (created) {
                 createTag.mutate(
-                  { name: created.replace("__create__", "") },
-                  { onSuccess: () => setTagInputValue("") }
-                )
+                  { name: created.replace('__create__', '') },
+                  { onSuccess: () => setTagInputValue('') }
+                );
               }
             }}
             onInputValueChange={setTagInputValue}
@@ -243,7 +257,7 @@ export const CategoriesSettings = () => {
                     ))}
                     <ComboboxChipsInput
                       placeholder={
-                        visibleTagNames.length === 0 ? "Add a tag…" : ""
+                        visibleTagNames.length === 0 ? 'Add a tag…' : ''
                       }
                     />
                   </>
@@ -254,16 +268,16 @@ export const CategoriesSettings = () => {
               <ComboboxList>
                 {(item: string) => (
                   <ComboboxItem key={item} value={item}>
-                    {item.startsWith("__create__")
-                      ? `Create "${item.replace("__create__", "")}"`
+                    {item.startsWith('__create__')
+                      ? `Create "${item.replace('__create__', '')}"`
                       : item}
                   </ComboboxItem>
                 )}
               </ComboboxList>
               <ComboboxEmpty>
                 {tagInputValue.length === 0
-                  ? "Type to create a tag"
-                  : "Tag already exists"}
+                  ? 'Type to create a tag'
+                  : 'Tag already exists'}
               </ComboboxEmpty>
             </ComboboxContent>
           </Combobox>
@@ -278,5 +292,5 @@ export const CategoriesSettings = () => {
         />
       ) : null}
     </div>
-  )
-}
+  );
+};

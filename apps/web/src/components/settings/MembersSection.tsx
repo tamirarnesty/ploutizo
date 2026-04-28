@@ -10,11 +10,16 @@ export const MembersSection = () => {
   const { data: members = [], isLoading } = useGetOrgMembers();
   const { user } = useUser();
   const removeMutation = useRemoveMember();
-  const handleRemove = useCallback((memberId: string) => removeMutation.mutate(memberId), [removeMutation]);
+  const handleRemove = useCallback(
+    (memberId: string) => removeMutation.mutate(memberId),
+    [removeMutation]
+  );
 
   return (
     <section className="flex flex-col gap-4">
-      <Text as="h2" variant="h3">Members</Text>
+      <Text as="h2" variant="h3">
+        Members
+      </Text>
 
       {isLoading ? (
         <div className="space-y-2">

@@ -54,7 +54,9 @@ export const AccountsTable = ({
           skeleton: <Skeleton className="h-4 w-32" />,
         },
         cell: ({ row }) => (
-          <Text as="span" variant="body-sm" className="font-semibold">{row.original.name}</Text>
+          <Text as="span" variant="body-sm" className="font-semibold">
+            {row.original.name}
+          </Text>
         ),
       },
       {
@@ -97,7 +99,11 @@ export const AccountsTable = ({
           skeleton: <Skeleton className="h-4 w-12" />,
         },
         cell: ({ row }) => (
-          <Text as="span" variant="body-sm" className="font-mono text-muted-foreground">
+          <Text
+            as="span"
+            variant="body-sm"
+            className="font-mono text-muted-foreground"
+          >
             {row.original.lastFour ?? '—'}
           </Text>
         ),
@@ -113,7 +119,11 @@ export const AccountsTable = ({
         },
         cell: ({ row }) => (
           <MemberAvatarGroup
-            members={row.original.owners.map((o) => ({ id: o.id, name: o.displayName, imageUrl: o.imageUrl }))}
+            members={row.original.owners.map((o) => ({
+              id: o.id,
+              name: o.displayName,
+              imageUrl: o.imageUrl,
+            }))}
             withTooltips
           />
         ),
@@ -140,7 +150,7 @@ export const AccountsTable = ({
           ),
       },
     ],
-    [],
+    []
   );
 
   const table = useReactTable({
@@ -153,7 +163,9 @@ export const AccountsTable = ({
   if (!isLoading && accounts.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 rounded-lg border border-border py-16 text-center">
-        <Text variant="body-sm" className="font-medium">No accounts yet</Text>
+        <Text variant="body-sm" className="font-medium">
+          No accounts yet
+        </Text>
         <Text variant="body-sm" className="max-w-xs text-muted-foreground">
           Add your first account to start tracking transactions.
         </Text>
@@ -189,7 +201,7 @@ export const AccountsTable = ({
          *   - `pb-0` / `pt-0`               remove mobile-only stack spacing
          *   - `[&_[role='combobox']]:w-16`  widen dropdown for 2-digit page sizes
          */}
-        <DataGridPagination className="flex-row [&>div:first-child]:order-1 [&>div:first-child]:pb-0 [&>div:last-child]:order-2 [&>div:last-child]:flex-row [&>div:last-child]:pt-0 [&_[role='combobox']]:w-16" />
+        <DataGridPagination className="flex-row [&_[role='combobox']]:w-16 [&>div:first-child]:order-1 [&>div:first-child]:pb-0 [&>div:last-child]:order-2 [&>div:last-child]:flex-row [&>div:last-child]:pt-0" />
       </div>
     </DataGrid>
   );

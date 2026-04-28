@@ -1,4 +1,4 @@
-import { Trash2 } from "lucide-react"
+import { Trash2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -9,31 +9,47 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@ploutizo/ui/components/alert-dialog"
-import { Badge } from "@ploutizo/ui/components/badge"
-import { Text } from "@ploutizo/ui/components/text"
-import type { OrgMember } from "@ploutizo/types"
-import { UserAvatar } from "@/components/members/UserAvatar"
+} from '@ploutizo/ui/components/alert-dialog';
+import { Badge } from '@ploutizo/ui/components/badge';
+import { Text } from '@ploutizo/ui/components/text';
+import type { OrgMember } from '@ploutizo/types';
+import { UserAvatar } from '@/components/members/UserAvatar';
 
 interface MemberRowProps {
-  member: OrgMember
-  isCurrentUser: boolean
-  onRemove: (memberId: string) => void
+  member: OrgMember;
+  isCurrentUser: boolean;
+  onRemove: (memberId: string) => void;
 }
 
-export const MemberRow = ({ member, isCurrentUser, onRemove }: MemberRowProps) => (
+export const MemberRow = ({
+  member,
+  isCurrentUser,
+  onRemove,
+}: MemberRowProps) => (
   <li className="flex items-center justify-between rounded-md border border-border px-4 py-3 text-sm">
     <div className="flex min-w-0 items-center gap-2">
-      <UserAvatar name={member.displayName} imageUrl={member.imageUrl} className="shrink-0" />
-      <Text as="span" variant="body-sm" className="min-w-0 truncate font-semibold">{member.displayName}</Text>
+      <UserAvatar
+        name={member.displayName}
+        imageUrl={member.imageUrl}
+        className="shrink-0"
+      />
+      <Text
+        as="span"
+        variant="body-sm"
+        className="min-w-0 truncate font-semibold"
+      >
+        {member.displayName}
+      </Text>
       {isCurrentUser ? <Badge variant="secondary">You</Badge> : null}
     </div>
     <div className="ml-4 flex shrink-0 items-center gap-2">
-      <Text as="span" variant="caption" className="capitalize">{member.role}</Text>
+      <Text as="span" variant="caption" className="capitalize">
+        {member.role}
+      </Text>
       {!isCurrentUser ? (
         <AlertDialog>
           <AlertDialogTrigger
-            className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             aria-label={`Remove ${member.displayName}`}
           >
             <Trash2 className="size-4" />
@@ -44,7 +60,8 @@ export const MemberRow = ({ member, isCurrentUser, onRemove }: MemberRowProps) =
                 Remove {member.firstName ?? member.displayName}?
               </AlertDialogTitle>
               <AlertDialogDescription>
-                Remove {member.displayName} from this household? They will lose access immediately.
+                Remove {member.displayName} from this household? They will lose
+                access immediately.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -61,4 +78,4 @@ export const MemberRow = ({ member, isCurrentUser, onRemove }: MemberRowProps) =
       ) : null}
     </div>
   </li>
-)
+);

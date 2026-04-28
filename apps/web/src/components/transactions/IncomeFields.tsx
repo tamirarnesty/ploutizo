@@ -3,6 +3,6 @@
  * incomeType Select remains in TransactionTypeFields (IncomeTypeField subcomponent).
  * This component is intentionally empty; its call site is removed from TransactionTypeFields.
  */
-export type IncomeFieldsProps = Record<string, never>
+export type IncomeFieldsProps = Record<string, never>;
 
-export const IncomeFields = (_props: IncomeFieldsProps): null => null
+export const IncomeFields = (_props: IncomeFieldsProps): null => null;

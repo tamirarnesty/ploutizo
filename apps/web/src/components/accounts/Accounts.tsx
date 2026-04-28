@@ -1,33 +1,35 @@
-import { useState } from "react"
-import { Button } from "@ploutizo/ui/components/button"
-import { Text } from "@ploutizo/ui/components/text"
-import { AccountsTable } from "./AccountsTable"
-import { AccountSheet } from "./AccountSheet"
-import type { Account } from "@ploutizo/types"
-import { useGetAccounts } from "@/lib/data-access/accounts"
+import { useState } from 'react';
+import { Button } from '@ploutizo/ui/components/button';
+import { Text } from '@ploutizo/ui/components/text';
+import { AccountsTable } from './AccountsTable';
+import { AccountSheet } from './AccountSheet';
+import type { Account } from '@ploutizo/types';
+import { useGetAccounts } from '@/lib/data-access/accounts';
 
 export const Accounts = () => {
-  const { data: accounts = [], isLoading } = useGetAccounts()
-  const [sheetOpen, setSheetOpen] = useState(false)
-  const [editingAccount, setEditingAccount] = useState<Account | null>(null)
+  const { data: accounts = [], isLoading } = useGetAccounts();
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
 
   const handleAddClick = () => {
-    setEditingAccount(null)
-    setSheetOpen(true)
-  }
+    setEditingAccount(null);
+    setSheetOpen(true);
+  };
   const handleRowClick = (account: Account) => {
-    setEditingAccount(account)
-    setSheetOpen(true)
-  }
+    setEditingAccount(account);
+    setSheetOpen(true);
+  };
   const handleSheetClose = () => {
-    setSheetOpen(false)
-    setEditingAccount(null)
-  }
+    setSheetOpen(false);
+    setEditingAccount(null);
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
-        <Text as="h1" variant="h3" className="min-w-0 truncate">Accounts</Text>
+        <Text as="h1" variant="h3" className="min-w-0 truncate">
+          Accounts
+        </Text>
         <Button type="button" onClick={handleAddClick} className="shrink-0">
           Add account
         </Button>
@@ -46,5 +48,5 @@ export const Accounts = () => {
         onClose={handleSheetClose}
       />
     </div>
-  )
-}
+  );
+};

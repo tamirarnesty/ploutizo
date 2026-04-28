@@ -1,17 +1,17 @@
-import { Field, FieldError, FieldLabel } from '@ploutizo/ui/components/field'
+import { Field, FieldError, FieldLabel } from '@ploutizo/ui/components/field';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@ploutizo/ui/components/select'
-import type { Category } from '@/lib/data-access/categories'
-import type { TransactionFormInstance } from './hooks/useTransactionForm'
+} from '@ploutizo/ui/components/select';
+import type { Category } from '@/lib/data-access/categories';
+import type { TransactionFormInstance } from './hooks/useTransactionForm';
 
 export interface ExpenseFieldsProps {
-  form: TransactionFormInstance
-  categories: Category[]
+  form: TransactionFormInstance;
+  categories: Category[];
 }
 
 export const ExpenseFields = ({ form, categories }: ExpenseFieldsProps) => (
@@ -28,12 +28,13 @@ export const ExpenseFields = ({ form, categories }: ExpenseFieldsProps) => (
         <Select
           value={field.state.value}
           onValueChange={(v) => {
-            if (v !== null) field.handleChange(v)
+            if (v !== null) field.handleChange(v);
           }}
         >
           <SelectTrigger id="tx-categoryId">
             <SelectValue>
-              {categories.find((c) => c.id === field.state.value)?.name ?? 'Select category'}
+              {categories.find((c) => c.id === field.state.value)?.name ??
+                'Select category'}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -50,4 +51,4 @@ export const ExpenseFields = ({ form, categories }: ExpenseFieldsProps) => (
       </Field>
     )}
   </form.AppField>
-)
+);

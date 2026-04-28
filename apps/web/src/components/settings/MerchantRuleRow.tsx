@@ -8,28 +8,28 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@ploutizo/ui/components/alert-dialog"
-import { GripVertical } from "lucide-react"
+} from '@ploutizo/ui/components/alert-dialog';
+import { GripVertical } from 'lucide-react';
 import {
   SortableItem,
   SortableItemHandle,
-} from "@ploutizo/ui/components/reui/sortable"
-import { Button } from "@ploutizo/ui/components/button"
-import { Text } from "@ploutizo/ui/components/text"
-import type { MerchantRule } from "@/lib/data-access/merchant-rules"
+} from '@ploutizo/ui/components/reui/sortable';
+import { Button } from '@ploutizo/ui/components/button';
+import { Text } from '@ploutizo/ui/components/text';
+import type { MerchantRule } from '@/lib/data-access/merchant-rules';
 
 const MATCH_TYPE_LABELS: Record<string, string> = {
-  exact: "Exact",
-  contains: "Contains",
-  starts_with: "Starts with",
-  ends_with: "Ends with",
-  regex: "Regex",
-}
+  exact: 'Exact',
+  contains: 'Contains',
+  starts_with: 'Starts with',
+  ends_with: 'Ends with',
+  regex: 'Regex',
+};
 
 interface MerchantRuleRowProps {
-  rule: MerchantRule
-  onEdit: () => void
-  onDelete: () => void
+  rule: MerchantRule;
+  onEdit: () => void;
+  onDelete: () => void;
 }
 
 export const MerchantRuleRow = ({
@@ -49,11 +49,11 @@ export const MerchantRuleRow = ({
         <Text as="span" variant="caption">
           {MATCH_TYPE_LABELS[rule.matchType]}
         </Text>
-        <Text variant="body-sm" className="truncate font-mono">{rule.pattern}</Text>
+        <Text variant="body-sm" className="truncate font-mono">
+          {rule.pattern}
+        </Text>
         {rule.renameTo ? (
-          <Text variant="caption">
-            → {rule.renameTo}
-          </Text>
+          <Text variant="caption">→ {rule.renameTo}</Text>
         ) : null}
       </div>
       <Button
@@ -68,7 +68,7 @@ export const MerchantRuleRow = ({
       <DeleteRuleButton onDelete={onDelete} />
     </div>
   </SortableItem>
-)
+);
 
 // Private helper — not exported, only used by MerchantRuleRow above in this file
 const DeleteRuleButton = ({ onDelete }: { onDelete: () => void }) => (
@@ -94,13 +94,10 @@ const DeleteRuleButton = ({ onDelete }: { onDelete: () => void }) => (
       </AlertDialogHeader>
       <AlertDialogFooter>
         <AlertDialogCancel>Cancel</AlertDialogCancel>
-        <AlertDialogAction
-          variant="destructive"
-          onClick={onDelete}
-        >
+        <AlertDialogAction variant="destructive" onClick={onDelete}>
           Delete rule
         </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>
   </AlertDialog>
-)
+);

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState } from 'react';
 import {
   Combobox,
   ComboboxChip,
@@ -11,12 +11,12 @@ import {
   ComboboxSeparator,
   ComboboxValue,
   useComboboxAnchor,
-} from '@ploutizo/ui/components/combobox'
-import { useCreateTag, useGetTags  } from '@/lib/data-access/tags'
+} from '@ploutizo/ui/components/combobox';
+import { useCreateTag, useGetTags } from '@/lib/data-access/tags';
 
 interface TransactionTagPickerProps {
-  value: string[]           // current tagIds array from form field state
-  onChange: (tagIds: string[]) => void  // form field handleChange
+  value: string[]; // current tagIds array from form field state
+  onChange: (tagIds: string[]) => void; // form field handleChange
 }
 
 /**
@@ -29,66 +29,69 @@ interface TransactionTagPickerProps {
  * form field value (tagIds) always contains only real UUIDs — translation in handleValueChange.
  * T-03.4-11: __create__ strings never reach toApiPayload.
  */
-export const TransactionTagPicker = ({ value, onChange }: TransactionTagPickerProps) => {
-  const { data: tags = [] } = useGetTags()
-  const createTagMutation = useCreateTag()
-  const [tagInputValue, setTagInputValue] = useState('')
-  const anchor = useComboboxAnchor()
+export const TransactionTagPicker = ({
+  value,
+  onChange,
+}: TransactionTagPickerProps) => {
+  const { data: tags = [] } = useGetTags();
+  const createTagMutation = useCreateTag();
+  const [tagInputValue, setTagInputValue] = useState('');
+  const anchor = useComboboxAnchor();
 
   // Filter out archived tags for combobox options
-  const activeTags = tags.filter((t) => t.archivedAt === null)
+  const activeTags = tags.filter((t) => t.archivedAt === null);
 
   // Resolve selected tag names from current tagIds for the Combobox value
   const selectedNames = value
     .map((id) => activeTags.find((t) => t.id === id)?.name)
-    .filter((name): name is string => name !== undefined)
+    .filter((name): name is string => name !== undefined);
 
   // Filter tags by input for manual filtering (Base UI Combobox doesn't auto-filter in multi mode)
   const filteredTags = tagInputValue
     ? activeTags.filter((t) =>
         t.name.toLowerCase().includes(tagInputValue.toLowerCase())
       )
-    : activeTags
+    : activeTags;
 
   // Build the __create__ option if input doesn't exactly match any existing tag name
   const alreadyExists = activeTags.some(
     (t) => t.name.toLowerCase() === tagInputValue.toLowerCase()
-  )
+  );
   const createOption =
     tagInputValue.length > 0 && !alreadyExists
       ? `__create__${tagInputValue}`
-      : null
+      : null;
 
   const handleValueChange = (newValues: string[]) => {
     // Separate real names from __create__ items
-    const realNames = newValues.filter((v) => !v.startsWith('__create__'))
-    const toCreate = newValues.find((v) => v.startsWith('__create__'))
+    const realNames = newValues.filter((v) => !v.startsWith('__create__'));
+    const toCreate = newValues.find((v) => v.startsWith('__create__'));
 
     // Translate selected names back to UUIDs — form field must only contain real UUIDs
     const realIds = realNames
       .map((name) => activeTags.find((t) => t.name === name)?.id)
-      .filter((id): id is string => id !== undefined)
+      .filter((id): id is string => id !== undefined);
 
     // Immediately update form field with real IDs
-    onChange(realIds)
+    onChange(realIds);
 
     if (toCreate) {
-      const name = toCreate.replace('__create__', '')
+      const name = toCreate.replace('__create__', '');
       createTagMutation.mutate(
         { name },
         {
           onSuccess: (newTag) => {
             // Push the newly created tag's real UUID into the form field
-            onChange([...realIds, newTag.id])
-            setTagInputValue('')
+            onChange([...realIds, newTag.id]);
+            setTagInputValue('');
           },
         }
-      )
+      );
     }
-  }
+  };
 
-  const allTagNames = activeTags.map((t) => t.name)
-  const filteredTagNames = filteredTags.map((t) => t.name)
+  const allTagNames = activeTags.map((t) => t.name);
+  const filteredTagNames = filteredTags.map((t) => t.name);
 
   return (
     <Combobox
@@ -98,7 +101,9 @@ export const TransactionTagPicker = ({ value, onChange }: TransactionTagPickerPr
       onValueChange={handleValueChange}
       onInputValueChange={setTagInputValue}
       items={allTagNames}
-      filteredItems={createOption ? [...filteredTagNames, createOption] : filteredTagNames}
+      filteredItems={
+        createOption ? [...filteredTagNames, createOption] : filteredTagNames
+      }
     >
       <ComboboxChips ref={anchor}>
         <ComboboxValue>
@@ -129,7 +134,9 @@ export const TransactionTagPicker = ({ value, onChange }: TransactionTagPickerPr
           ) : null}
         </ComboboxList>
         <ComboboxEmpty>
-          {tagInputValue.length === 0 ? 'Type to search or create a tag' : 'No matching tags'}
+          {tagInputValue.length === 0
+            ? 'Type to search or create a tag'
+            : 'No matching tags'}
         </ComboboxEmpty>
         {tagInputValue.length === 0 && activeTags.length > 0 ? (
           <>
@@ -141,5 +148,5 @@ export const TransactionTagPicker = ({ value, onChange }: TransactionTagPickerPr
         ) : null}
       </ComboboxContent>
     </Combobox>
-  )
-}
+  );
+};

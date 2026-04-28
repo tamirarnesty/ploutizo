@@ -5,6 +5,7 @@ import importPlugin from "eslint-plugin-import-x"
 import tseslint from "typescript-eslint"
 
 export default [
+  { ignores: ['.output/**', 'dist/**', '.vinxi/**'] },
   ...tanstackConfig,
   {
     plugins: {

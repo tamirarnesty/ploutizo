@@ -9,15 +9,15 @@
  */
 export function lrmSplit(
   totalCents: number,
-  memberIds: string[],
+  memberIds: string[]
 ): { memberId: string; amountCents: number; percentage: number }[] {
-  if (memberIds.length === 0) return []
-  const base = Math.floor(totalCents / memberIds.length)
-  const remainder = totalCents - base * memberIds.length
-  const exactPct = 100 / memberIds.length
+  if (memberIds.length === 0) return [];
+  const base = Math.floor(totalCents / memberIds.length);
+  const remainder = totalCents - base * memberIds.length;
+  const exactPct = 100 / memberIds.length;
   return memberIds.map((memberId, i) => ({
     memberId,
     amountCents: i < remainder ? base + 1 : base,
     percentage: parseFloat(exactPct.toFixed(3)),
-  }))
+  }));
 }

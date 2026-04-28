@@ -1,13 +1,12 @@
-import { Label } from "@ploutizo/ui/components/label"
-import { Separator } from "@ploutizo/ui/components/separator"
-import { Text } from "@ploutizo/ui/components/text"
-import { HouseholdSettingsForm } from "./HouseholdSettingsForm"
-import { HouseholdOverviewSection } from "./HouseholdOverviewSection"
-import { MembersSection } from "./MembersSection"
+import { Label } from '@ploutizo/ui/components/label';
+import { Separator } from '@ploutizo/ui/components/separator';
+import { Text } from '@ploutizo/ui/components/text';
+import { HouseholdSettingsForm } from './HouseholdSettingsForm';
+import { HouseholdOverviewSection } from './HouseholdOverviewSection';
+import { MembersSection } from './MembersSection';
 
 export const HouseholdSettings = () => (
   <div className="flex max-w-2xl flex-col gap-8">
-
     {/* Section 1: Household Overview (D-04, D-05) */}
     <HouseholdOverviewSection />
 
@@ -30,6 +29,5 @@ export const HouseholdSettings = () => (
       </div>
       <HouseholdSettingsForm />
     </section>
-
   </div>
-)
+);

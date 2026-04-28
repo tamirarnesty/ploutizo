@@ -1,109 +1,109 @@
-"use client"
+'use client';
 
-import React from "react"
-import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
-import type { ReactNode } from "react";
-import { useDataGrid } from "@/components/reui/data-grid/data-grid"
+import React from 'react';
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { useDataGrid } from '@/components/reui/data-grid/data-grid';
 
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/button"
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/button';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/select"
-import { Skeleton } from "@/components/skeleton"
+} from '@/components/select';
+import { Skeleton } from '@/components/skeleton';
 
 interface DataGridPaginationProps {
-  sizes?: Array<number>
-  sizesInfo?: string
-  sizesLabel?: string
-  sizesDescription?: string
-  sizesSkeleton?: ReactNode
-  more?: boolean
-  moreLimit?: number
-  info?: string
-  infoSkeleton?: ReactNode
-  className?: string
-  rowsPerPageLabel?: string
-  previousPageLabel?: string
-  nextPageLabel?: string
-  ellipsisText?: string
+  sizes?: Array<number>;
+  sizesInfo?: string;
+  sizesLabel?: string;
+  sizesDescription?: string;
+  sizesSkeleton?: ReactNode;
+  more?: boolean;
+  moreLimit?: number;
+  info?: string;
+  infoSkeleton?: ReactNode;
+  className?: string;
+  rowsPerPageLabel?: string;
+  previousPageLabel?: string;
+  nextPageLabel?: string;
+  ellipsisText?: string;
 }
 
 function DataGridPagination(props: DataGridPaginationProps): React.JSX.Element {
-  const { table, recordCount, isLoading } = useDataGrid()
+  const { table, recordCount, isLoading } = useDataGrid();
 
   const defaultProps: Partial<DataGridPaginationProps> = {
     sizes: [5, 10, 25, 50, 100],
-    sizesLabel: "Show",
-    sizesDescription: "per page",
+    sizesLabel: 'Show',
+    sizesDescription: 'per page',
     sizesSkeleton: <Skeleton className="h-8 w-44" />,
     moreLimit: 5,
     more: false,
-    info: "{from} - {to} of {count}",
+    info: '{from} - {to} of {count}',
     infoSkeleton: <Skeleton className="h-8 w-60" />,
-    rowsPerPageLabel: "Rows per page",
-    previousPageLabel: "Go to previous page",
-    nextPageLabel: "Go to next page",
-    ellipsisText: "...",
-  }
+    rowsPerPageLabel: 'Rows per page',
+    previousPageLabel: 'Go to previous page',
+    nextPageLabel: 'Go to next page',
+    ellipsisText: '...',
+  };
 
-  const mergedProps: DataGridPaginationProps = { ...defaultProps, ...props }
+  const mergedProps: DataGridPaginationProps = { ...defaultProps, ...props };
 
-  const btnBaseClasses = "size-7 p-0 text-sm"
-  const btnArrowClasses = btnBaseClasses + " rtl:transform rtl:rotate-180"
-  const pageIndex = table.getState().pagination.pageIndex
-  const pageSize = table.getState().pagination.pageSize
-  const from = pageIndex * pageSize + 1
-  const to = Math.min((pageIndex + 1) * pageSize, recordCount)
-  const pageCount = table.getPageCount()
+  const btnBaseClasses = 'size-7 p-0 text-sm';
+  const btnArrowClasses = btnBaseClasses + ' rtl:transform rtl:rotate-180';
+  const pageIndex = table.getState().pagination.pageIndex;
+  const pageSize = table.getState().pagination.pageSize;
+  const from = pageIndex * pageSize + 1;
+  const to = Math.min((pageIndex + 1) * pageSize, recordCount);
+  const pageCount = table.getPageCount();
 
   // Replace placeholders in paginationInfo
   const paginationInfo = mergedProps?.info
     ? mergedProps.info
-        .replace("{from}", from.toString())
-        .replace("{to}", to.toString())
-        .replace("{count}", recordCount.toString())
-    : `${from} - ${to} of ${recordCount}`
+        .replace('{from}', from.toString())
+        .replace('{to}', to.toString())
+        .replace('{count}', recordCount.toString())
+    : `${from} - ${to} of ${recordCount}`;
 
   // Pagination limit logic
-  const paginationMoreLimit = mergedProps?.moreLimit || 5
+  const paginationMoreLimit = mergedProps?.moreLimit || 5;
 
   // Determine the start and end of the pagination group
   const currentGroupStart =
-    Math.floor(pageIndex / paginationMoreLimit) * paginationMoreLimit
+    Math.floor(pageIndex / paginationMoreLimit) * paginationMoreLimit;
   const currentGroupEnd = Math.min(
     currentGroupStart + paginationMoreLimit,
     pageCount
-  )
+  );
 
   // Render page buttons based on the current group
   const renderPageButtons = () => {
-    const buttons = []
+    const buttons = [];
     for (let i = currentGroupStart; i < currentGroupEnd; i++) {
       buttons.push(
         <Button
           key={i}
           size="icon-sm"
           variant="ghost"
-          className={cn(btnBaseClasses, "text-muted-foreground", {
-            "bg-accent text-accent-foreground": pageIndex === i,
+          className={cn(btnBaseClasses, 'text-muted-foreground', {
+            'bg-accent text-accent-foreground': pageIndex === i,
           })}
           onClick={() => {
             if (pageIndex !== i) {
-              table.setPageIndex(i)
+              table.setPageIndex(i);
             }
           }}
         >
           {i + 1}
         </Button>
-      )
+      );
     }
-    return buttons
-  }
+    return buttons;
+  };
 
   // Render a "previous" ellipsis button if there are previous pages to show
   const renderEllipsisPrevButton = () => {
@@ -117,10 +117,10 @@ function DataGridPagination(props: DataGridPaginationProps): React.JSX.Element {
         >
           {mergedProps.ellipsisText}
         </Button>
-      )
+      );
     }
-    return null
-  }
+    return null;
+  };
 
   // Render a "next" ellipsis button if there are more pages to show after the current group
   const renderEllipsisNextButton = () => {
@@ -134,16 +134,16 @@ function DataGridPagination(props: DataGridPaginationProps): React.JSX.Element {
         >
           {mergedProps.ellipsisText}
         </Button>
-      )
+      );
     }
-    return null
-  }
+    return null;
+  };
 
   return (
     <div
       data-slot="data-grid-pagination"
       className={cn(
-        "flex grow flex-col flex-wrap items-center justify-between gap-2.5 py-2.5 sm:flex-row sm:py-0",
+        'flex grow flex-col flex-wrap items-center justify-between gap-2.5 py-2.5 sm:flex-row sm:py-0',
         mergedProps?.className
       )}
     >
@@ -152,14 +152,14 @@ function DataGridPagination(props: DataGridPaginationProps): React.JSX.Element {
           mergedProps?.sizesSkeleton
         ) : (
           <>
-            <div className="text-muted-foreground text-sm">
+            <div className="text-sm text-muted-foreground">
               {mergedProps.rowsPerPageLabel}
             </div>
             <Select
               value={`${pageSize}`}
               onValueChange={(value) => {
-                const newPageSize = Number(value)
-                table.setPageSize(newPageSize)
+                const newPageSize = Number(value);
+                table.setPageSize(newPageSize);
               }}
             >
               <SelectTrigger className="w-14" size="sm">
@@ -181,7 +181,7 @@ function DataGridPagination(props: DataGridPaginationProps): React.JSX.Element {
           mergedProps?.infoSkeleton
         ) : (
           <>
-            <div className="text-muted-foreground text-sm order-2 text-nowrap sm:order-1">
+            <div className="order-2 text-sm text-nowrap text-muted-foreground sm:order-1">
               {paginationInfo}
             </div>
             {pageCount > 1 && (
@@ -221,7 +221,7 @@ function DataGridPagination(props: DataGridPaginationProps): React.JSX.Element {
         )}
       </div>
     </div>
-  )
+  );
 }
 
-export { DataGridPagination, type DataGridPaginationProps }
+export { DataGridPagination, type DataGridPaginationProps };

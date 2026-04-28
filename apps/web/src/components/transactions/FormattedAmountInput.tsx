@@ -1,23 +1,23 @@
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react';
 import {
   InputGroup,
   InputGroupAddon,
-  InputGroupText,
   InputGroupInput,
-} from '@ploutizo/ui/components/input-group'
+  InputGroupText,
+} from '@ploutizo/ui/components/input-group';
 
 interface FormattedAmountInputProps {
-  value: number | undefined
-  onChange: (v: number | undefined) => void
-  onBlur: () => void
-  id?: string
+  value: number | undefined;
+  onChange: (v: number | undefined) => void;
+  onBlur: () => void;
+  id?: string;
 }
 
 const format = (n: number) =>
   new Intl.NumberFormat('en-CA', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(n)
+  }).format(n);
 
 export const FormattedAmountInput = ({
   value,
@@ -25,16 +25,16 @@ export const FormattedAmountInput = ({
   onBlur,
   id = 'tx-amount',
 }: FormattedAmountInputProps) => {
-  const focused = useRef(false)
+  const focused = useRef(false);
   const [displayValue, setDisplayValue] = useState(
-    value !== undefined ? format(value) : '',
-  )
+    value !== undefined ? format(value) : ''
+  );
 
   useEffect(() => {
     if (!focused.current) {
-      setDisplayValue(value !== undefined ? format(value) : '')
+      setDisplayValue(value !== undefined ? format(value) : '');
     }
-  }, [value])
+  }, [value]);
 
   return (
     <InputGroup>
@@ -48,22 +48,22 @@ export const FormattedAmountInput = ({
         autoComplete="off"
         value={displayValue}
         onChange={(e) => {
-          const raw = e.target.value.replace(/[^0-9.]/g, '')
-          setDisplayValue(raw)
-          onChange(raw === '' ? undefined : parseFloat(raw))
+          const raw = e.target.value.replace(/[^0-9.]/g, '');
+          setDisplayValue(raw);
+          onChange(raw === '' ? undefined : parseFloat(raw));
         }}
         onFocus={() => {
-          focused.current = true
-          setDisplayValue(value !== undefined ? value.toString() : '')
+          focused.current = true;
+          setDisplayValue(value !== undefined ? value.toString() : '');
         }}
         onBlur={() => {
-          focused.current = false
-          onBlur()
+          focused.current = false;
+          onBlur();
           if (value !== undefined) {
-            setDisplayValue(format(value))
+            setDisplayValue(format(value));
           }
         }}
       />
     </InputGroup>
-  )
-}
+  );
+};

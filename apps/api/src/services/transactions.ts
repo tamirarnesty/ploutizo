@@ -126,14 +126,9 @@ export async function updateTransaction(
   data: CreateTransactionInput
 ) {
   // D-11: re-validate split sum if assignees are being replaced.
-  // When amount is absent, fetch the stored amount to validate against.
   if (data.assignees && data.assignees.length > 0) {
-    const amountToCheck =
-      data.amount ?? (await fetchTransactionById(id, orgId))?.amount;
-    if (amountToCheck !== undefined) {
-      const splitError = validateSplitSum(amountToCheck, data.assignees);
-      if (splitError) throw new Error(splitError);
-    }
+    const splitError = validateSplitSum(data.amount, data.assignees);
+    if (splitError) throw new Error(splitError);
   }
 
   const { assignees, tagIds, ...updateData } = data;
@@ -141,22 +136,20 @@ export async function updateTransaction(
   // WR-01: when type changes, explicitly null FK columns that do not apply to the new type.
   // Without this, switching from transfer → expense leaves counterpartAccountId in the DB
   // and the table renders "A → B" for what is now an expense row.
-  if (data.type) {
-    const typeSpecificNulls: Record<string, null> = {}
-    if (!['transfer', 'settlement', 'contribution'].includes(data.type)) {
-      typeSpecificNulls.counterpartAccountId = null
-    }
-    if (data.type !== 'refund') {
-      typeSpecificNulls.refundOf = null
-    }
-    if (data.type !== 'income') {
-      typeSpecificNulls.incomeType = null
-    }
-    if (!['expense', 'refund'].includes(data.type)) {
-      typeSpecificNulls.categoryId = null
-    }
-    Object.assign(updateData, typeSpecificNulls)
+  const typeSpecificNulls: Record<string, null> = {};
+  if (!['transfer', 'settlement', 'contribution'].includes(data.type)) {
+    typeSpecificNulls.counterpartAccountId = null;
   }
+  if (data.type !== 'refund') {
+    typeSpecificNulls.refundOf = null;
+  }
+  if (data.type !== 'income') {
+    typeSpecificNulls.incomeType = null;
+  }
+  if (!['expense', 'refund'].includes(data.type)) {
+    typeSpecificNulls.categoryId = null;
+  }
+  Object.assign(updateData, typeSpecificNulls);
 
   return db.transaction(async (tx) => {
     // Delegate scalar UPDATE to query layer (Pitfall 7: three-condition WHERE)

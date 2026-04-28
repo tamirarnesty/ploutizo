@@ -1,3 +1,3 @@
-export * from "./useGetTags"
-export * from "./useCreateTag"
-export * from "./useArchiveTag"
+export * from './useGetTags';
+export * from './useCreateTag';
+export * from './useArchiveTag';

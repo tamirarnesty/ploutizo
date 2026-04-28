@@ -7,13 +7,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@ploutizo/ui/components/alert-dialog'
+} from '@ploutizo/ui/components/alert-dialog';
 
 interface DeleteTransactionDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onConfirm: () => void
-  isPending?: boolean
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+  isPending?: boolean;
 }
 
 export const DeleteTransactionDialog = ({
@@ -27,7 +27,8 @@ export const DeleteTransactionDialog = ({
       <AlertDialogHeader>
         <AlertDialogTitle>Delete transaction?</AlertDialogTitle>
         <AlertDialogDescription>
-          This will permanently remove this transaction. This action cannot be undone.
+          This will permanently remove this transaction. This action cannot be
+          undone.
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>
@@ -37,8 +38,8 @@ export const DeleteTransactionDialog = ({
         <AlertDialogAction
           variant="destructive"
           onClick={() => {
-            onConfirm()
-            onOpenChange(false)
+            onConfirm();
+            onOpenChange(false);
           }}
           disabled={isPending}
         >
@@ -47,4 +48,4 @@ export const DeleteTransactionDialog = ({
       </AlertDialogFooter>
     </AlertDialogContent>
   </AlertDialog>
-)
+);

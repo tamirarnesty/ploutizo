@@ -332,24 +332,24 @@ describe('GET /api/transactions', () => {
     vi.mocked(listTransactions).mockClear();
     const res = await app.request('/?sort=type');
     expect(res.status).toBe(200);
-    const callArgs = vi.mocked(listTransactions).mock.calls[0]?.[0];
-    expect(callArgs?.sort).toBe('type');
+    const callArgs = vi.mocked(listTransactions).mock.calls[0][0];
+    expect(callArgs.sort).toBe('type');
   });
 
   it('TXN-LIST-SORT-02: GET /?sort=category — passes sort=category to listTransactions', async () => {
     vi.mocked(listTransactions).mockClear();
     const res = await app.request('/?sort=category');
     expect(res.status).toBe(200);
-    const callArgs = vi.mocked(listTransactions).mock.calls[0]?.[0];
-    expect(callArgs?.sort).toBe('category');
+    const callArgs = vi.mocked(listTransactions).mock.calls[0][0];
+    expect(callArgs.sort).toBe('category');
   });
 
   it('TXN-LIST-SORT-03: GET /?sort=account — passes sort=account to listTransactions', async () => {
     vi.mocked(listTransactions).mockClear();
     const res = await app.request('/?sort=account');
     expect(res.status).toBe(200);
-    const callArgs = vi.mocked(listTransactions).mock.calls[0]?.[0];
-    expect(callArgs?.sort).toBe('account');
+    const callArgs = vi.mocked(listTransactions).mock.calls[0][0];
+    expect(callArgs.sort).toBe('account');
   });
 
   it('TXN-LIST-DESC-01: GET /?description=coffee — passes description param to listTransactions', async () => {

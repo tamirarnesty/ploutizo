@@ -1,45 +1,45 @@
-import { Field, FieldLabel } from '@ploutizo/ui/components/field'
+import { Field, FieldLabel } from '@ploutizo/ui/components/field';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@ploutizo/ui/components/select'
-import { Text } from '@ploutizo/ui/components/text'
-import { ExpenseFields } from './ExpenseFields'
-import { RefundLinker } from './RefundLinker'
-import type { TransactionFormInstance } from './hooks/useTransactionForm'
-import type { AssigneeFormRow, TransactionFormValues } from './types'
-import type { Category } from '@/lib/data-access/categories'
+} from '@ploutizo/ui/components/select';
+import { Text } from '@ploutizo/ui/components/text';
+import { ExpenseFields } from './ExpenseFields';
+import { RefundLinker } from './RefundLinker';
+import type { TransactionFormInstance } from './hooks/useTransactionForm';
+import type { AssigneeFormRow, TransactionFormValues } from './types';
+import type { Category } from '@/lib/data-access/categories';
 
 // TODO(03.4-deferred): originalDescription column — add when schema patch lands
 // D-19: import caption (└ Original: ...) is deferred because originalDescription
 // and originalMerchant columns are absent from the current DB schema.
 
-const TYPE_LABELS: Record<string, string> = {
+const TYPE_LABELS: Record<string, string | undefined> = {
   expense: 'Expense',
   income: 'Income',
   transfer: 'Transfer',
   settlement: 'Settlement',
   refund: 'Refund',
   contribution: 'Contribution',
-}
+};
 
-const INCOME_TYPE_LABELS: Record<string, string> = {
+const INCOME_TYPE_LABELS: Record<string, string | undefined> = {
   direct_deposit: 'Direct deposit',
   e_transfer: 'e-Transfer',
   cash: 'Cash',
   cheque: 'Cheque',
   other: 'Other',
-}
+};
 
 interface TransactionTypeFieldsProps {
-  form: TransactionFormInstance
-  categories: Category[]
-  onAssigneesChange: (assignees: AssigneeFormRow[]) => void
+  form: TransactionFormInstance;
+  categories: Category[];
+  onAssigneesChange: (assignees: AssigneeFormRow[]) => void;
   /** Called after any type-switch, before field clears. Plan 06 passes () => setIsDescriptionUnlocked(false). */
-  onTypeChange?: () => void
+  onTypeChange?: () => void;
 }
 
 /**
@@ -49,20 +49,20 @@ const TypeSelectField = ({
   form,
   onTypeChange,
 }: {
-  form: TransactionFormInstance
-  onTypeChange?: () => void
+  form: TransactionFormInstance;
+  onTypeChange?: () => void;
 }) => (
   <form.AppField
     name="type"
     listeners={{
       onChange: () => {
         // Notify parent before field clears (e.g. Plan 06 resets description lock)
-        onTypeChange?.()
+        onTypeChange?.();
         // Clear ALL type-specific fields unconditionally — no if-guard (D-07)
-        form.setFieldValue('categoryId', '')
-        form.setFieldValue('refundOf', '')
-        form.setFieldValue('incomeType', '')
-        form.setFieldValue('counterpartAccountId', '')
+        form.setFieldValue('categoryId', '');
+        form.setFieldValue('refundOf', '');
+        form.setFieldValue('incomeType', '');
+        form.setFieldValue('counterpartAccountId', '');
       },
     }}
   >
@@ -71,11 +71,15 @@ const TypeSelectField = ({
         <FieldLabel htmlFor="tx-type">Type</FieldLabel>
         <Select
           value={field.state.value}
-          onValueChange={(v) => field.handleChange(v as TransactionFormValues['type'])}
+          onValueChange={(v) =>
+            field.handleChange(v as TransactionFormValues['type'])
+          }
         >
           <SelectTrigger id="tx-type" autoFocus>
             {/* autoFocus: type is the primary purpose of opening the sheet (per web-design-guidelines) */}
-            <SelectValue>{TYPE_LABELS[field.state.value] ?? 'Select type'}</SelectValue>
+            <SelectValue>
+              {TYPE_LABELS[field.state.value] ?? 'Select type'}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="expense">Expense</SelectItem>
@@ -89,32 +93,39 @@ const TypeSelectField = ({
       </Field>
     )}
   </form.AppField>
-)
+);
 
 /** Category Select for refund type — col 2 in the 2-column grid */
 const RefundCategoryField = ({
   form,
   categories,
 }: {
-  form: TransactionFormInstance
-  categories: Category[]
+  form: TransactionFormInstance;
+  categories: Category[];
 }) => (
   <form.AppField name="categoryId">
     {(field) => (
       <Field>
         <FieldLabel htmlFor="tx-refund-categoryId">
           Category
-          <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
+          <Text
+            as="span"
+            variant="body-sm"
+            className="font-normal text-muted-foreground"
+          >
             (optional)
           </Text>
         </FieldLabel>
         <Select
           value={field.state.value}
-          onValueChange={(v) => { if (v !== null) field.handleChange(v) }}
+          onValueChange={(v) => {
+            if (v !== null) field.handleChange(v);
+          }}
         >
           <SelectTrigger id="tx-refund-categoryId">
             <SelectValue>
-              {categories.find((c) => c.id === field.state.value)?.name ?? 'Select category'}
+              {categories.find((c) => c.id === field.state.value)?.name ??
+                'Select category'}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -128,7 +139,7 @@ const RefundCategoryField = ({
       </Field>
     )}
   </form.AppField>
-)
+);
 
 /** Income type Select — col 2 in the 2-column grid for income transactions */
 const IncomeTypeField = ({ form }: { form: TransactionFormInstance }) => (
@@ -144,10 +155,14 @@ const IncomeTypeField = ({ form }: { form: TransactionFormInstance }) => (
         <FieldLabel htmlFor="tx-incomeType">Income type</FieldLabel>
         <Select
           value={field.state.value}
-          onValueChange={(v) => { if (v !== null) field.handleChange(v) }}
+          onValueChange={(v) => {
+            if (v !== null) field.handleChange(v);
+          }}
         >
           <SelectTrigger id="tx-incomeType">
-            <SelectValue>{INCOME_TYPE_LABELS[field.state.value] ?? 'Select type'}</SelectValue>
+            <SelectValue>
+              {INCOME_TYPE_LABELS[field.state.value] ?? 'Select type'}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="direct_deposit">Direct deposit</SelectItem>
@@ -160,9 +175,9 @@ const IncomeTypeField = ({ form }: { form: TransactionFormInstance }) => (
       </Field>
     )}
   </form.AppField>
-)
+);
 
-const MULTI_ACCOUNT_TYPES = ['transfer', 'settlement', 'contribution']
+const MULTI_ACCOUNT_TYPES = ['transfer', 'settlement', 'contribution'];
 
 export const TransactionTypeFields = ({
   form,
@@ -197,4 +212,4 @@ export const TransactionTypeFields = ({
       </>
     )}
   </form.Subscribe>
-)
+);

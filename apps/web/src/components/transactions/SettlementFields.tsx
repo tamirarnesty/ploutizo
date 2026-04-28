@@ -1,17 +1,17 @@
-import { Field, FieldError, FieldLabel } from '@ploutizo/ui/components/field'
+import { Field, FieldError, FieldLabel } from '@ploutizo/ui/components/field';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@ploutizo/ui/components/select'
-import type { Account } from '@ploutizo/types'
-import type { TransactionFormInstance } from './hooks/useTransactionForm'
+} from '@ploutizo/ui/components/select';
+import type { Account } from '@ploutizo/types';
+import type { TransactionFormInstance } from './hooks/useTransactionForm';
 
 export interface SettlementFieldsProps {
-  form: TransactionFormInstance
-  accounts: Account[]
+  form: TransactionFormInstance;
+  accounts: Account[];
 }
 
 // Settlement inverts the generic Source/Destination mapping:
@@ -32,11 +32,14 @@ export const SettlementFields = ({ form, accounts }: SettlementFieldsProps) => (
           <FieldLabel htmlFor="tx-settlement-source">Source</FieldLabel>
           <Select
             value={field.state.value}
-            onValueChange={(v) => { if (v !== null) field.handleChange(v) }}
+            onValueChange={(v) => {
+              if (v !== null) field.handleChange(v);
+            }}
           >
             <SelectTrigger id="tx-settlement-source">
               <SelectValue>
-                {accounts.find((a) => a.id === field.state.value)?.name ?? 'Select account'}
+                {accounts.find((a) => a.id === field.state.value)?.name ??
+                  'Select account'}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -63,14 +66,19 @@ export const SettlementFields = ({ form, accounts }: SettlementFieldsProps) => (
     >
       {(field) => (
         <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
-          <FieldLabel htmlFor="tx-settlement-destination">Destination</FieldLabel>
+          <FieldLabel htmlFor="tx-settlement-destination">
+            Destination
+          </FieldLabel>
           <Select
             value={field.state.value}
-            onValueChange={(v) => { if (v !== null) field.handleChange(v) }}
+            onValueChange={(v) => {
+              if (v !== null) field.handleChange(v);
+            }}
           >
             <SelectTrigger id="tx-settlement-destination">
               <SelectValue>
-                {accounts.find((a) => a.id === field.state.value)?.name ?? 'Select account'}
+                {accounts.find((a) => a.id === field.state.value)?.name ??
+                  'Select account'}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -88,4 +96,4 @@ export const SettlementFields = ({ form, accounts }: SettlementFieldsProps) => (
       )}
     </form.AppField>
   </div>
-)
+);
