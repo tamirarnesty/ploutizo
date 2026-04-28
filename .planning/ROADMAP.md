@@ -534,13 +534,14 @@ Plans:
 
 ### Phase 03.5: CI testing, linting, and formatting checks (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
+**Goal:** Create GitHub Actions CI workflow from scratch. CI runs on PRs and pushes to main, covering format check, lint, typecheck, tests, and build as four concurrent parallel jobs.
+**Requirements**: n/a
 **Depends on:** Phase 03.4
-**Plans:** 0 plans
+**Plans:** 2 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 03.5 to break down)
+- [ ] 03.5-01-PLAN.md — Add format:check turbo task and prettier --check scripts to apps/web and packages/ui
+- [ ] 03.5-02-PLAN.md — Create .github/workflows/ci.yml with four parallel jobs (lint+typecheck, tests, format-check, build)
 
 ### Phase 03.6: Migrate @hono/clerk-auth to @clerk/hono — swap deprecated package for @clerk/hono across apps/api (10 files, same API surface) (INSERTED)
 
