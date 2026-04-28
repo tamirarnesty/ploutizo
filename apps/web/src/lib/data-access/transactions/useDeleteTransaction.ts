@@ -12,7 +12,7 @@ export const useDeleteTransaction = () => {
         method: 'DELETE',
       }),
 
-    onMutate: async (id: string): Promise<{ snapshots: Snapshot }> => {
+    onMutate: async (_id: string): Promise<{ snapshots: Snapshot }> => {
       // Cancel any in-flight refetches so they don't overwrite the optimistic update
       await qc.cancelQueries({ queryKey: ['transactions'] });
 

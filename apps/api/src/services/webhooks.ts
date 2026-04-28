@@ -44,7 +44,7 @@ export async function handleUserCreated(
       fullName,
       firstName: data.first_name ?? null,
       lastName: data.last_name ?? null,
-      imageUrl: data.image_url ?? null,
+      imageUrl: data.image_url,
     })
     .onConflictDoNothing();
 }
@@ -65,7 +65,7 @@ export async function handleUserUpdated(
       fullName,
       firstName: data.first_name ?? null,
       lastName: data.last_name ?? null,
-      imageUrl: data.image_url ?? null,
+      imageUrl: data.image_url,
     })
     .where(eq(users.externalId, data.id));
 }

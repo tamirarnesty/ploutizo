@@ -94,7 +94,7 @@ export const RefundLinker = ({
                   field.handleChange(tx.id);
                   // Auto-fill only empty fields — never overwrite user input or edit-mode values
                   const values = form.state.values;
-                  if (!values.description?.trim()) {
+                  if (!values.description.trim()) {
                     form.setFieldValue(
                       'description',
                       'Refund of ' + tx.description

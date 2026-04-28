@@ -8,6 +8,7 @@ export interface TransactionAssignee {
   amountCents: number;
   percentage: string | null;
   memberName: string | null;
+  imageUrl: string | null;
 }
 
 export interface TransactionTag {

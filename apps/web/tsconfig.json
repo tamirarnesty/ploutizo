@@ -16,12 +16,12 @@
     /* Linting */
     "skipLibCheck": true,
     "strict": true,
-    "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "allowJs": true,
     "paths": {
+      "@/components/*": ["./src/components/*", "../../packages/ui/src/components/*"],
       "@/*": ["./src/*"],
       "@ploutizo/ui/*": ["../../packages/ui/src/*"],
       "@ploutizo/types": ["../../packages/types/src/index.ts"],

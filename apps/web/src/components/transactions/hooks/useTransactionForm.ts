@@ -9,9 +9,6 @@ import type { TransactionFormValues } from '../types';
 
 export type CreateMutation = ReturnType<typeof useCreateTransaction>;
 export type UpdateMutation = ReturnType<typeof useUpdateTransaction>;
-export type TransactionFormInstance = ReturnType<
-  typeof useAppForm<TransactionFormValues>
->;
 
 export const buildDefaultValues = (
   transaction: TransactionRow | null
@@ -154,3 +151,7 @@ export const useTransactionForm = ({
 
   return { form, isEditing };
 };
+
+export type TransactionFormInstance = ReturnType<
+  typeof useTransactionForm
+>['form'];

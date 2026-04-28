@@ -51,6 +51,9 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
       renameTo: rule?.renameTo ?? '',
       categoryId: rule?.categoryId ?? null, // null — NOT "__none__" (D-06)
     } satisfies RuleFormType,
+    validators: {
+      onSubmit: (): string | undefined => undefined,
+    },
     onSubmit: ({ value }) => {
       const payload = {
         pattern: value.pattern.trim(),
@@ -239,10 +242,7 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
       </FieldGroup>
 
       <form.Subscribe selector={(s) => s.errorMap.onSubmit}>
-        {(err) =>
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-          err ? <Text variant="error">{String(err)}</Text> : null
-        }
+        {(err) => (err ? <Text variant="error">{String(err)}</Text> : null)}
       </form.Subscribe>
 
       <DialogFooter className="mt-4">
