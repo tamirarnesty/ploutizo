@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { Hono } from 'hono'
 import { DomainError, NotFoundError } from '../lib/errors'
-import type { StatusCode } from 'hono/utils/http-status'
+import type { ContentfulStatusCode } from 'hono/utils/http-status'
 
 describe('DomainError', () => {
   it('stores statusCode and message', () => {
@@ -31,7 +31,7 @@ describe('app.onError() handler', () => {
         return c.json({ error: { code: 'NOT_FOUND', message: err.message } }, 404)
       }
       if (err instanceof DomainError) {
-        return c.json({ error: { code: 'DOMAIN_ERROR', message: err.message } }, err.statusCode as StatusCode)
+        return c.json({ error: { code: 'DOMAIN_ERROR', message: err.message } }, err.statusCode as ContentfulStatusCode)
       }
       return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Unexpected error' } }, 500)
     })

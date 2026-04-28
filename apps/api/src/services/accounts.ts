@@ -19,7 +19,7 @@ export async function listAccounts(orgId: string, includeArchived: boolean) {
   if (rows.length === 0) return [];
   const memberRows = await listAccountMemberDetails(rows.map((r) => r.id));
   // Map for O(1) grouping (js-perf skill rule — Map preferred over Record for repeated lookups)
-  const byAccount = new Map<string, { id: string; displayName: string }[]>();
+  const byAccount = new Map<string, { id: string; displayName: string; imageUrl: string | null }[]>();
   for (const m of memberRows) {
     const list = byAccount.get(m.accountId) ?? [];
     list.push({ id: m.memberId, displayName: m.displayName, imageUrl: m.imageUrl ?? null });

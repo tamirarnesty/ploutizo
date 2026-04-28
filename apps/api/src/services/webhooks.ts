@@ -2,13 +2,14 @@ import { db } from '@ploutizo/db';
 import { orgMembers, orgs, users } from '@ploutizo/db/schema';
 import { eq } from 'drizzle-orm';
 import { seedOrg } from '@ploutizo/db/seeds';
-import type { WebhookEvent } from '@clerk/backend';
+import type { OrganizationJSON, OrganizationMembershipJSON, UserJSON, WebhookEvent } from '@clerk/backend';
 
 // One handler per Clerk event type — per D-07, D-08.
-// WebhookEvent discriminated union provides typed event.data after narrowing on event.type.
+// Clerk v3 uses Webhook<type, Data> generics so Extract<WebhookEvent, {type}> resolves to never.
+// Import JSON types directly instead of extracting from the discriminated union.
 
 export async function handleOrgCreated(
-  data: Extract<WebhookEvent, { type: 'organization.created' }>['data']
+  data: OrganizationJSON
 ) {
   await db
     .insert(orgs)
@@ -18,7 +19,7 @@ export async function handleOrgCreated(
 }
 
 export async function handleOrgUpdated(
-  data: Extract<WebhookEvent, { type: 'organization.updated' }>['data']
+  data: OrganizationJSON
 ) {
   await db
     .update(orgs)
@@ -27,7 +28,7 @@ export async function handleOrgUpdated(
 }
 
 export async function handleUserCreated(
-  data: Extract<WebhookEvent, { type: 'user.created' }>['data']
+  data: UserJSON
 ) {
   const primaryEmail = data.email_addresses.find(
     (e) => e.id === data.primary_email_address_id
@@ -49,7 +50,7 @@ export async function handleUserCreated(
 }
 
 export async function handleUserUpdated(
-  data: Extract<WebhookEvent, { type: 'user.updated' }>['data']
+  data: UserJSON
 ) {
   const primaryEmail = data.email_addresses.find(
     (e) => e.id === data.primary_email_address_id
@@ -70,7 +71,7 @@ export async function handleUserUpdated(
 }
 
 export async function handleOrgMembershipCreated(
-  data: Extract<WebhookEvent, { type: 'organizationMembership.created' }>['data']
+  data: OrganizationMembershipJSON
 ) {
   const user = await db
     .select({ id: users.id })
@@ -90,13 +91,15 @@ export async function handleOrgMembershipCreated(
     .values({
       orgId: data.organization.id,
       userId: user.id,
-      role: data.role === 'org:admin' ? 'admin' : 'member',
+      role: 'admin', // DB enum only supports 'admin' in v1; Clerk role ignored until roles expand
       displayName,
     })
     .onConflictDoNothing();
 }
 
 // Dispatch event to the appropriate handler based on event.type narrowing (D-08).
+// Casts needed because Clerk v3 Webhook<type, Data> generics cause event.data to not
+// narrow to the concrete JSON types after Extract<WebhookEvent, {type}>.
 export async function dispatchWebhookEvent(event: WebhookEvent) {
   if (event.type === 'organization.created') return handleOrgCreated(event.data);
   if (event.type === 'organization.updated') return handleOrgUpdated(event.data);

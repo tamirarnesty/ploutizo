@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Hono } from 'hono';
 import { merchantRulesRouter } from '../routes/merchant-rules';
 import { DomainError, NotFoundError } from '../lib/errors';
-import type { StatusCode } from 'hono/utils/http-status';
+import type { ContentfulStatusCode } from 'hono/utils/http-status';
 
 vi.mock('@hono/clerk-auth', () => ({
   getAuth: vi.fn(() => ({ orgId: 'org_test123' })),
@@ -82,7 +82,7 @@ app.onError((err, c) => {
   if (err instanceof DomainError) {
     return c.json(
       { error: { code: err.code ?? 'DOMAIN_ERROR', message: err.message } },
-      err.statusCode as StatusCode
+      err.statusCode as ContentfulStatusCode
     );
   }
   return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Unexpected error' } }, 500);

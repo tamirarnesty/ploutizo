@@ -13,7 +13,7 @@ import { merchantRulesRouter } from './routes/merchant-rules';
 import { transactionsRouter } from './routes/transactions';
 import { DomainError, NotFoundError } from './lib/errors';
 import type { AppEnv } from './types';
-import type { StatusCode } from 'hono/utils/http-status';
+import type { ContentfulStatusCode } from 'hono/utils/http-status';
 
 const app = new Hono<AppEnv>();
 
@@ -87,7 +87,7 @@ app.onError((err, c) => {
   if (err instanceof DomainError) {
     return c.json(
       { error: { code: err.code ?? 'DOMAIN_ERROR', message: err.message } },
-      err.statusCode as StatusCode
+      err.statusCode as ContentfulStatusCode
     );
   }
   console.error('[API] Unhandled error:', err);
