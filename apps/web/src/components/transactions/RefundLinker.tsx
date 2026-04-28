@@ -26,11 +26,10 @@ export interface RefundLinkerProps {
 
 /** Stable unique key used as Combobox value for selection matching */
 const buildLabel = (tx: TransactionRow) =>
-  `${tx.description ?? tx.merchant ?? '—'} \u2022 ${new Date(tx.date + 'T00:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })} \u2022 ${formatCurrency(tx.amount)}`;
+  `${tx.description || '—'} \u2022 ${new Date(tx.date + 'T00:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })} \u2022 ${formatCurrency(tx.amount)}`;
 
 /** Human-readable display name shown in the input after selection */
-const buildDisplayName = (tx: TransactionRow) =>
-  tx.description ?? tx.merchant ?? '—';
+const buildDisplayName = (tx: TransactionRow) => tx.description || '—';
 
 export const RefundLinker = ({
   form,
@@ -95,10 +94,10 @@ export const RefundLinker = ({
                   field.handleChange(tx.id);
                   // Auto-fill only empty fields — never overwrite user input or edit-mode values
                   const values = form.state.values;
-                  if (!values.description?.trim()) {
+                  if (!values.description.trim()) {
                     form.setFieldValue(
                       'description',
-                      'Refund of ' + (tx.description ?? tx.merchant ?? '')
+                      'Refund of ' + tx.description
                     );
                   }
                   if (!values.amount) {
@@ -150,7 +149,7 @@ export const RefundLinker = ({
                   <ComboboxItem key={tx.id} value={buildLabel(tx)}>
                     <div className="flex w-full min-w-0 flex-col gap-0.5 py-0.5">
                       <span className="truncate font-medium">
-                        {tx.description ?? tx.merchant ?? '—'}
+                        {tx.description || '—'}
                       </span>
                       <span className="flex justify-between text-xs text-muted-foreground">
                         <span>

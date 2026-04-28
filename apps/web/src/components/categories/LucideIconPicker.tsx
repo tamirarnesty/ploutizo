@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState } from 'react';
 import {
   Baby,
   Bike,
@@ -53,16 +53,16 @@ import {
   Wallet,
   Wrench,
   Zap,
-} from "lucide-react"
+} from 'lucide-react';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@ploutizo/ui/components/popover"
-import { Button } from "@ploutizo/ui/components/button"
-import { Input } from "@ploutizo/ui/components/input"
-import { Text } from "@ploutizo/ui/components/text"
-import type { LucideIcon } from "lucide-react"
+} from '@ploutizo/ui/components/popover';
+import { Button } from '@ploutizo/ui/components/button';
+import { Input } from '@ploutizo/ui/components/input';
+import { Text } from '@ploutizo/ui/components/text';
+import type { LucideIcon } from 'lucide-react';
 
 export const ICON_MAP: Record<string, LucideIcon> = {
   ShoppingCart,
@@ -118,29 +118,29 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   HeartPulse,
   Sparkles,
   MoreHorizontal,
-}
+};
 
-const ICON_NAMES = Object.keys(ICON_MAP)
+const ICON_NAMES = Object.keys(ICON_MAP);
 
 interface LucideIconPickerProps {
-  value: string | null
-  onChange: (iconName: string) => void
+  value: string | null;
+  onChange: (iconName: string) => void;
 }
 
 export const LucideIconPicker = ({
   value,
   onChange,
 }: LucideIconPickerProps) => {
-  const [search, setSearch] = useState("")
-  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('');
+  const [open, setOpen] = useState(false);
 
   const filtered = search.trim()
     ? ICON_NAMES.filter((name) =>
         name.toLowerCase().includes(search.toLowerCase())
       )
-    : ICON_NAMES
+    : ICON_NAMES;
 
-  const SelectedIcon = value ? ICON_MAP[value] : null
+  const SelectedIcon = value ? ICON_MAP[value] : null;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -158,10 +158,14 @@ export const LucideIconPicker = ({
         {SelectedIcon ? (
           <SelectedIcon size={16} aria-hidden="true" />
         ) : (
-          <Text as="span" variant="body-sm" className="text-muted-foreground">Select icon</Text>
+          <Text as="span" variant="body-sm" className="text-muted-foreground">
+            Select icon
+          </Text>
         )}
         {value && (
-          <Text as="span" variant="caption">{value}</Text>
+          <Text as="span" variant="caption">
+            {value}
+          </Text>
         )}
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72 space-y-2 p-3">
@@ -181,7 +185,7 @@ export const LucideIconPicker = ({
             role="listbox"
           >
             {filtered.map((name) => {
-              const Icon = ICON_MAP[name]
+              const Icon = ICON_MAP[name];
               return (
                 <Button
                   key={name}
@@ -191,28 +195,28 @@ export const LucideIconPicker = ({
                   role="option"
                   aria-selected={value === name}
                   onClick={() => {
-                    onChange(name)
-                    setOpen(false)
-                    setSearch("")
+                    onChange(name);
+                    setOpen(false);
+                    setSearch('');
                   }}
                   title={name}
                   className={
-                    value === name ? "bg-primary/10 ring-2 ring-primary" : ""
+                    value === name ? 'bg-primary/10 ring-2 ring-primary' : ''
                   }
                 >
                   <Icon size={18} aria-hidden="true" />
                 </Button>
-              )
+              );
             })}
           </div>
         )}
       </PopoverContent>
     </Popover>
-  )
-}
+  );
+};
 
 export const renderLucideIcon = (iconName: string | null, size = 16) => {
-  if (!iconName || !(iconName in ICON_MAP)) return null
-  const Icon = ICON_MAP[iconName]
-  return <Icon size={size} aria-hidden="true" />
-}
+  if (!iconName || !(iconName in ICON_MAP)) return null;
+  const Icon = ICON_MAP[iconName];
+  return <Icon size={size} aria-hidden="true" />;
+};

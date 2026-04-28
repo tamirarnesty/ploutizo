@@ -1,13 +1,13 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { apiFetch } from "@/lib/queryClient"
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiFetch } from '@/lib/queryClient';
 
 export const useRemoveMember = () => {
-  const qc = useQueryClient()
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (memberId: string) =>
       apiFetch(`/api/households/members/${memberId}`, {
-        method: "DELETE",
+        method: 'DELETE',
       }),
-    onSettled: () => void qc.invalidateQueries({ queryKey: ["org-members"] }),
-  })
-}
+    onSettled: () => void qc.invalidateQueries({ queryKey: ['org-members'] }),
+  });
+};

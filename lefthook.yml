@@ -1,0 +1,11 @@
+pre-commit:
+  parallel: true
+  commands:
+    lint:
+      run: pnpm turbo lint
+
+    typecheck:
+      run: pnpm turbo typecheck
+
+    format-check:
+      run: pnpm turbo format:check

@@ -1,4 +1,9 @@
 import { Hono } from 'hono';
+import {
+  createMerchantRuleSchema,
+  reorderSchema,
+  updateMerchantRuleSchema,
+} from '@ploutizo/validators';
 import { appValidator } from '../lib/validator';
 import {
   createMerchantRule,
@@ -7,11 +12,6 @@ import {
   reorderMerchantRules,
   updateMerchantRule,
 } from '../services/merchant-rules';
-import {
-  createMerchantRuleSchema,
-  reorderSchema,
-  updateMerchantRuleSchema,
-} from '@ploutizo/validators';
 import type { AppEnv } from '../types';
 
 const merchantRulesRouter = new Hono<AppEnv>();

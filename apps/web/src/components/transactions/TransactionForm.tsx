@@ -1,76 +1,80 @@
-import { useEffect, useRef, useState } from 'react'
-import { format, parseISO } from 'date-fns'
-import { CalendarIcon, Lock, SquarePen, Trash2 } from 'lucide-react'
-import { toast } from '@ploutizo/ui/components/sonner'
-import { Button } from '@ploutizo/ui/components/button'
-import { Calendar } from '@ploutizo/ui/components/calendar'
-import { Input } from '@ploutizo/ui/components/input'
+import { useEffect, useRef, useState } from 'react';
+import { format, parseISO } from 'date-fns';
+import { CalendarIcon, Lock, SquarePen, Trash2 } from 'lucide-react';
+import { toast } from '@ploutizo/ui/components/sonner';
+import { Button } from '@ploutizo/ui/components/button';
+import { Calendar } from '@ploutizo/ui/components/calendar';
+import { Input } from '@ploutizo/ui/components/input';
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
   InputGroupText,
-} from '@ploutizo/ui/components/input-group'
-import { Popover, PopoverContent, PopoverTrigger } from '@ploutizo/ui/components/popover'
-import { Spinner } from '@ploutizo/ui/components/spinner'
-import { Textarea } from '@ploutizo/ui/components/textarea'
-import { cn } from '@ploutizo/ui/lib/utils'
+} from '@ploutizo/ui/components/input-group';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@ploutizo/ui/components/popover';
+import { Spinner } from '@ploutizo/ui/components/spinner';
+import { Textarea } from '@ploutizo/ui/components/textarea';
+import { cn } from '@ploutizo/ui/lib/utils';
 import {
   Field,
   FieldError,
   FieldGroup,
   FieldLabel,
-} from '@ploutizo/ui/components/field'
+} from '@ploutizo/ui/components/field';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@ploutizo/ui/components/select'
-import { Text } from '@ploutizo/ui/components/text'
+} from '@ploutizo/ui/components/select';
+import { Text } from '@ploutizo/ui/components/text';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@ploutizo/ui/components/tooltip'
-import { DeleteTransactionDialog } from './DeleteTransactionDialog'
-import { useTransactionForm } from './hooks/useTransactionForm'
-import { FormattedAmountInput } from './FormattedAmountInput'
-import { TransactionTypeFields } from './TransactionTypeFields'
-import { TransferFields } from './TransferFields'
-import { SettlementFields } from './SettlementFields'
-import { ContributionFields } from './ContributionFields'
-import { TransactionTagPicker } from './TransactionTagPicker'
-import { AssigneeSection } from './AssigneeSection'
-import type { AssigneeFormRow } from './types'
-import type { TransactionRow } from '@/lib/data-access/transactions'
-import type { Account, OrgMember } from '@ploutizo/types'
-import type { Category } from '@/lib/data-access/categories'
-import { useGetOrgMembers } from '@/lib/data-access/org'
-import { useGetCategories } from '@/lib/data-access/categories'
-import { useGetAccounts } from '@/lib/data-access/accounts'
+} from '@ploutizo/ui/components/tooltip';
+import { DeleteTransactionDialog } from './DeleteTransactionDialog';
+import { useTransactionForm } from './hooks/useTransactionForm';
+import { FormattedAmountInput } from './FormattedAmountInput';
+import { TransactionTypeFields } from './TransactionTypeFields';
+import { TransferFields } from './TransferFields';
+import { SettlementFields } from './SettlementFields';
+import { ContributionFields } from './ContributionFields';
+import { TransactionTagPicker } from './TransactionTagPicker';
+import { AssigneeSection } from './AssigneeSection';
+import type { AssigneeFormRow } from './types';
+import type { TransactionRow } from '@/lib/data-access/transactions';
+import type { Account, OrgMember } from '@ploutizo/types';
+import type { Category } from '@/lib/data-access/categories';
+import { useGetOrgMembers } from '@/lib/data-access/org';
+import { useGetCategories } from '@/lib/data-access/categories';
+import { useGetAccounts } from '@/lib/data-access/accounts';
 import {
   useCreateTransaction,
   useDeleteTransaction,
   useGetTransaction,
   useUpdateTransaction,
-} from '@/lib/data-access/transactions'
+} from '@/lib/data-access/transactions';
 
 interface TransactionFormProps {
-  transaction: TransactionRow | null  // null = create mode
-  onClose: () => void
-  onDirtyChange?: (dirty: boolean) => void
+  transaction: TransactionRow | null; // null = create mode
+  onClose: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 interface TransactionFormInnerProps {
-  transaction: TransactionRow | null
-  accounts: Account[]
-  categories: Category[]
-  orgMembers: OrgMember[]
-  onClose: () => void
-  onDirtyChange?: (dirty: boolean) => void
+  transaction: TransactionRow | null;
+  accounts: Account[];
+  categories: Category[];
+  orgMembers: OrgMember[];
+  onClose: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 /**
@@ -78,36 +82,42 @@ interface TransactionFormInnerProps {
  * Shows Spinner until all required data is resolved, then mounts the inner form.
  * Form mounts only with complete defaultValues — no useEffect/form.reset anti-pattern.
  */
-export const TransactionForm = ({ transaction, onClose, onDirtyChange }: TransactionFormProps) => {
-  const isEditing = transaction !== null
+export const TransactionForm = ({
+  transaction,
+  onClose,
+  onDirtyChange,
+}: TransactionFormProps) => {
+  const isEditing = transaction !== null;
 
   // Fire ALL queries at top level simultaneously — no sequential waterfall
   const { data: txData, isLoading: txLoading } = useGetTransaction(
     isEditing ? transaction.id : null,
     { initialData: transaction ?? undefined }
-  )
-  const { data: accounts = [], isLoading: accountsLoading } = useGetAccounts()
-  const { data: categories = [], isLoading: categoriesLoading } = useGetCategories()
-  const { data: orgMembers = [], isLoading: membersLoading } = useGetOrgMembers()
+  );
+  const { data: accounts = [], isLoading: accountsLoading } = useGetAccounts();
+  const { data: categories = [], isLoading: categoriesLoading } =
+    useGetCategories();
+  const { data: orgMembers = [], isLoading: membersLoading } =
+    useGetOrgMembers();
 
   // Loading gate: render Spinner until ALL required data is ready
   const isLoading =
     accountsLoading ||
     categoriesLoading ||
     membersLoading ||
-    (isEditing && txLoading)
+    (isEditing && txLoading);
 
   if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <Spinner />
       </div>
-    )
+    );
   }
 
   // In edit mode, use fresh GET data if available (includes all joined fields);
   // fall back to the row data passed in (same shape).
-  const resolvedTransaction = isEditing ? (txData ?? transaction) : null
+  const resolvedTransaction = isEditing ? (txData ?? transaction) : null;
 
   return (
     <TransactionFormInner
@@ -119,69 +129,84 @@ export const TransactionForm = ({ transaction, onClose, onDirtyChange }: Transac
       onClose={onClose}
       onDirtyChange={onDirtyChange}
     />
-  )
-}
+  );
+};
 
 // CR-01: syncs the locked description template to form state on change.
 // The (field) => (...) render prop cannot call hooks directly, so this helper
 // component uses useEffect to write lockedValue into field state.
 interface DescriptionSyncerProps {
-  isLocked: boolean
-  lockedValue: string
-  currentValue: string
-  onSync: (value: string) => void
+  isLocked: boolean;
+  lockedValue: string;
+  currentValue: string;
+  onSync: (value: string) => void;
 }
 
-function DescriptionSyncer({ isLocked, lockedValue, currentValue, onSync }: DescriptionSyncerProps) {
+function DescriptionSyncer({
+  isLocked,
+  lockedValue,
+  currentValue,
+  onSync,
+}: DescriptionSyncerProps) {
   // Only sync when lockedValue changes (account selection changes the template).
   // Skip if the field already holds the correct value — setFieldValue unconditionally
   // sets isDirty:true in TanStack Form, so calling it with an unchanged value would
   // falsely mark the form dirty when opening an existing transaction in edit mode.
-  const currentValueRef = useRef(currentValue)
-  currentValueRef.current = currentValue
+  const currentValueRef = useRef(currentValue);
+  currentValueRef.current = currentValue;
   useEffect(() => {
     if (isLocked && lockedValue && lockedValue !== currentValueRef.current) {
-      onSync(lockedValue)
+      onSync(lockedValue);
     }
-  }, [isLocked, lockedValue, onSync])
-  return null
+  }, [isLocked, lockedValue, onSync]);
+  return null;
 }
 
 interface RefundDataLoaderProps {
-  refundOfId: string | null
-  onDescChanged: (desc: string) => void
-  onAssigneesChanged: (ids: string[]) => void
+  refundOfId: string | null;
+  onDescChanged: (desc: string) => void;
+  onAssigneesChanged: (ids: string[]) => void;
 }
 
-function RefundDataLoader({ refundOfId, onDescChanged, onAssigneesChanged }: RefundDataLoaderProps) {
-  const { data } = useGetTransaction(refundOfId)
+function RefundDataLoader({
+  refundOfId,
+  onDescChanged,
+  onAssigneesChanged,
+}: RefundDataLoaderProps) {
+  const { data } = useGetTransaction(refundOfId);
   useEffect(() => {
     if (!refundOfId) {
-      onDescChanged('')
-      onAssigneesChanged([])
-      return
+      onDescChanged('');
+      onAssigneesChanged([]);
+      return;
     }
     if (data) {
-      onDescChanged(data.description)
-      onAssigneesChanged((data.assignees ?? []).map((a) => a.memberId))
+      onDescChanged(data.description);
+      onAssigneesChanged(data.assignees.map((a) => a.memberId));
     }
-  }, [refundOfId, data, onDescChanged, onAssigneesChanged])
-  return null
+  }, [refundOfId, data, onDescChanged, onAssigneesChanged]);
+  return null;
 }
 
-function DirtyNotifier({ isDirty, onChange }: { isDirty: boolean; onChange: (d: boolean) => void }) {
+function DirtyNotifier({
+  isDirty,
+  onChange,
+}: {
+  isDirty: boolean;
+  onChange: (d: boolean) => void;
+}) {
   useEffect(() => {
-    onChange(isDirty)
-  }, [isDirty, onChange])
-  return null
+    onChange(isDirty);
+  }, [isDirty, onChange]);
+  return null;
 }
 
 /** Types whose description is always locked (D-11, D-12) */
-const LOCKED_TYPES = ['transfer', 'settlement', 'contribution'] as const
-type LockedType = (typeof LOCKED_TYPES)[number]
+const LOCKED_TYPES = ['transfer', 'settlement', 'contribution'] as const;
+type LockedType = (typeof LOCKED_TYPES)[number];
 
 function isLockedType(type: string): type is LockedType {
-  return (LOCKED_TYPES as readonly string[]).includes(type)
+  return (LOCKED_TYPES as readonly string[]).includes(type);
 }
 
 const TransactionFormInner = ({
@@ -192,30 +217,32 @@ const TransactionFormInner = ({
   onClose,
   onDirtyChange,
 }: TransactionFormInnerProps) => {
-  const isEditing = transaction !== null
-  const createMutation = useCreateTransaction()
-  const updateMutation = useUpdateTransaction(transaction?.id ?? '')
-  const deleteMutation = useDeleteTransaction()
+  const isEditing = transaction !== null;
+  const createMutation = useCreateTransaction();
+  const updateMutation = useUpdateTransaction(transaction?.id ?? '');
+  const deleteMutation = useDeleteTransaction();
 
-  const [dateOpen, setDateOpen] = useState(false)
-  const [alertOpen, setAlertOpen] = useState(false)
-  const [isDescriptionUnlocked, setIsDescriptionUnlocked] = useState(false)
-  const [refundOriginalDesc, setRefundOriginalDesc] = useState('')
-  const [refundOriginalAssigneeIds, setRefundOriginalAssigneeIds] = useState<string[]>([])
+  const [dateOpen, setDateOpen] = useState(false);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [isDescriptionUnlocked, setIsDescriptionUnlocked] = useState(false);
+  const [refundOriginalDesc, setRefundOriginalDesc] = useState('');
+  const [refundOriginalAssigneeIds, setRefundOriginalAssigneeIds] = useState<
+    string[]
+  >([]);
 
   const { form } = useTransactionForm({
     transaction,
     onClose,
     createMutation,
     updateMutation,
-  })
+  });
 
   return (
     <form
       className="flex flex-1 flex-col overflow-hidden"
       onSubmit={(e) => {
-        e.preventDefault()
-        form.handleSubmit()
+        e.preventDefault();
+        form.handleSubmit();
       }}
     >
       {/* Fetch original transaction data when refundOf is set */}
@@ -232,7 +259,9 @@ const TransactionFormInner = ({
       {/* Notify parent of dirty state for sheet-level discard guard */}
       {onDirtyChange ? (
         <form.Subscribe selector={(s) => s.isDirty}>
-          {(isDirty) => <DirtyNotifier isDirty={isDirty} onChange={onDirtyChange} />}
+          {(isDirty) => (
+            <DirtyNotifier isDirty={isDirty} onChange={onDirtyChange} />
+          )}
         </form.Subscribe>
       ) : null}
 
@@ -251,7 +280,11 @@ const TransactionFormInner = ({
               2-col [Source | Destination] for multi-account types */}
           <form.Subscribe selector={(s) => s.values.type}>
             {(type) => {
-              const isMultiAccount = ['transfer', 'settlement', 'contribution'].includes(type)
+              const isMultiAccount = [
+                'transfer',
+                'settlement',
+                'contribution',
+              ].includes(type);
 
               const sourceField = (
                 <form.AppField
@@ -262,15 +295,24 @@ const TransactionFormInner = ({
                   }}
                 >
                   {(field) => (
-                    <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
-                      <FieldLabel htmlFor="tx-accountId">{isMultiAccount ? 'Source' : 'Account'}</FieldLabel>
+                    <Field
+                      data-invalid={
+                        field.state.meta.errors.length > 0 || undefined
+                      }
+                    >
+                      <FieldLabel htmlFor="tx-accountId">
+                        {isMultiAccount ? 'Source' : 'Account'}
+                      </FieldLabel>
                       <Select
                         value={field.state.value}
-                        onValueChange={(v) => { if (v !== null) field.handleChange(v) }}
+                        onValueChange={(v) => {
+                          if (v !== null) field.handleChange(v);
+                        }}
                       >
                         <SelectTrigger id="tx-accountId">
                           <SelectValue>
-                            {accounts.find((a) => a.id === field.state.value)?.name ?? 'Select account'}
+                            {accounts.find((a) => a.id === field.state.value)
+                              ?.name ?? 'Select account'}
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
@@ -282,17 +324,20 @@ const TransactionFormInner = ({
                         </SelectContent>
                       </Select>
                       {field.state.meta.errors.length > 0 ? (
-                        <FieldError>{String(field.state.meta.errors[0])}</FieldError>
+                        <FieldError>
+                          {String(field.state.meta.errors[0])}
+                        </FieldError>
                       ) : null}
                     </Field>
                   )}
                 </form.AppField>
-              )
+              );
 
-              if (!isMultiAccount) return sourceField
+              if (!isMultiAccount) return sourceField;
 
               // Settlement owns its own 2-col layout (Source=counterpartAccountId, Destination=accountId)
-              if (type === 'settlement') return <SettlementFields form={form} accounts={accounts} />
+              if (type === 'settlement')
+                return <SettlementFields form={form} accounts={accounts} />;
 
               return (
                 <div className="grid grid-cols-2 gap-4">
@@ -303,7 +348,7 @@ const TransactionFormInner = ({
                     <ContributionFields form={form} accounts={accounts} />
                   ) : null}
                 </div>
-              )
+              );
             }}
           </form.Subscribe>
 
@@ -313,11 +358,15 @@ const TransactionFormInner = ({
               name="amount"
               validators={{
                 onSubmit: ({ value }: { value: number | undefined }) =>
-                  !value || value <= 0 ? 'Amount must be greater than zero.' : undefined,
+                  !value || value <= 0
+                    ? 'Amount must be greater than zero.'
+                    : undefined,
               }}
             >
               {(field) => (
-                <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
+                <Field
+                  data-invalid={field.state.meta.errors.length > 0 || undefined}
+                >
                   <FieldLabel htmlFor="tx-amount">Amount</FieldLabel>
                   <FormattedAmountInput
                     value={field.state.value}
@@ -325,7 +374,9 @@ const TransactionFormInner = ({
                     onBlur={field.handleBlur}
                   />
                   {field.state.meta.errors.length > 0 ? (
-                    <FieldError>{String(field.state.meta.errors[0])}</FieldError>
+                    <FieldError>
+                      {String(field.state.meta.errors[0])}
+                    </FieldError>
                   ) : null}
                 </Field>
               )}
@@ -340,10 +391,14 @@ const TransactionFormInner = ({
               }}
             >
               {(field) => (
-                <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
+                <Field
+                  data-invalid={field.state.meta.errors.length > 0 || undefined}
+                >
                   <FieldLabel>Date</FieldLabel>
                   {(() => {
-                    const selectedDate = field.state.value ? parseISO(field.state.value) : undefined
+                    const selectedDate = field.state.value
+                      ? parseISO(field.state.value)
+                      : undefined;
                     return (
                       <Popover open={dateOpen} onOpenChange={setDateOpen}>
                         <PopoverTrigger
@@ -353,12 +408,15 @@ const TransactionFormInner = ({
                               type="button"
                               className={cn(
                                 'w-full justify-start text-left font-normal',
-                                !field.state.value && 'text-muted-foreground',
+                                !field.state.value && 'text-muted-foreground'
                               )}
                             />
                           }
                         >
-                          <CalendarIcon className="mr-2 size-4" aria-hidden="true" />
+                          <CalendarIcon
+                            className="mr-2 size-4"
+                            aria-hidden="true"
+                          />
                           {field.state.value
                             ? format(selectedDate!, 'MMM d, yyyy')
                             : 'Pick a date'}
@@ -368,17 +426,21 @@ const TransactionFormInner = ({
                             mode="single"
                             selected={selectedDate}
                             onSelect={(date) => {
-                              field.handleChange(date ? format(date, 'yyyy-MM-dd') : '')
-                              setDateOpen(false)
+                              field.handleChange(
+                                date ? format(date, 'yyyy-MM-dd') : ''
+                              );
+                              setDateOpen(false);
                             }}
                             initialFocus
                           />
                         </PopoverContent>
                       </Popover>
-                    )
+                    );
                   })()}
                   {field.state.meta.errors.length > 0 ? (
-                    <FieldError>{String(field.state.meta.errors[0])}</FieldError>
+                    <FieldError>
+                      {String(field.state.meta.errors[0])}
+                    </FieldError>
                   ) : null}
                 </Field>
               )}
@@ -396,29 +458,33 @@ const TransactionFormInner = ({
           >
             {({ type, accountId, counterpartAccountId, refundOf }) => {
               const shouldLock =
-                isLockedType(type) || (type === 'refund' && !!refundOf)
-              const isLocked = !isDescriptionUnlocked && shouldLock
+                isLockedType(type) || (type === 'refund' && !!refundOf);
+              const isLocked = !isDescriptionUnlocked && shouldLock;
 
               // Compute locked description template from reactive account values
-              const primaryAccount = accounts.find((a) => a.id === accountId)
-              const counterpartAccount = accounts.find((a) => a.id === counterpartAccountId)
+              const primaryAccount = accounts.find((a) => a.id === accountId);
+              const counterpartAccount = accounts.find(
+                (a) => a.id === counterpartAccountId
+              );
 
-              let lockedValue = ''
+              let lockedValue = '';
               if (type === 'transfer') {
-                const from = primaryAccount?.name ?? '…'
-                const to = counterpartAccount?.name ?? '…'
-                lockedValue = `Transfer from ${from} to ${to}`
+                const from = primaryAccount?.name ?? '…';
+                const to = counterpartAccount?.name ?? '…';
+                lockedValue = `Transfer from ${from} to ${to}`;
               } else if (type === 'settlement') {
                 // counterpartAccountId = source (bank), accountId = destination (credit card)
-                const from = counterpartAccount?.name ?? '…'
-                const to = primaryAccount?.name ?? '…'
-                lockedValue = `Settlement from ${from} to ${to}`
+                const from = counterpartAccount?.name ?? '…';
+                const to = primaryAccount?.name ?? '…';
+                lockedValue = `Settlement from ${from} to ${to}`;
               } else if (type === 'contribution') {
-                const from = primaryAccount?.name ?? '…'
-                const to = counterpartAccount?.name ?? '…'
-                lockedValue = `Contribution from ${from} to ${to}`
+                const from = primaryAccount?.name ?? '…';
+                const to = counterpartAccount?.name ?? '…';
+                lockedValue = `Contribution from ${from} to ${to}`;
               } else if (type === 'refund' && refundOf) {
-                lockedValue = refundOriginalDesc ? `Refund of ${refundOriginalDesc}` : ''
+                lockedValue = refundOriginalDesc
+                  ? `Refund of ${refundOriginalDesc}`
+                  : '';
               }
 
               return (
@@ -426,29 +492,40 @@ const TransactionFormInner = ({
                   name="description"
                   validators={{
                     onSubmit: ({ value }: { value: string }) =>
-                      !isLocked && !value?.trim() ? 'Description is required.' : undefined,
+                      !isLocked && !value.trim()
+                        ? 'Description is required.'
+                        : undefined,
                   }}
                 >
                   {(field) => (
-                    <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
+                    <Field
+                      data-invalid={
+                        field.state.meta.errors.length > 0 || undefined
+                      }
+                    >
                       <DescriptionSyncer
                         isLocked={isLocked}
                         lockedValue={lockedValue}
                         currentValue={field.state.value}
                         onSync={field.handleChange}
                       />
-                      <FieldLabel htmlFor="tx-description">Description</FieldLabel>
+                      <FieldLabel htmlFor="tx-description">
+                        Description
+                      </FieldLabel>
                       {isLocked ? (
                         <InputGroup>
                           <InputGroupAddon align="inline-start">
                             <InputGroupText>
-                              <Lock className="size-3.5 text-muted-foreground" aria-hidden="true" />
+                              <Lock
+                                className="size-3.5 text-muted-foreground"
+                                aria-hidden="true"
+                              />
                             </InputGroupText>
                           </InputGroupAddon>
                           <InputGroupInput
                             readOnly
                             value={lockedValue}
-                            className="bg-muted text-muted-foreground cursor-default"
+                            className="cursor-default bg-muted text-muted-foreground"
                             aria-label="Description (auto-generated)"
                             autoComplete="off"
                           />
@@ -459,11 +536,16 @@ const TransactionFormInner = ({
                                   <InputGroupButton
                                     type="button"
                                     aria-label="Edit description"
-                                    onClick={() => setIsDescriptionUnlocked(true)}
+                                    onClick={() =>
+                                      setIsDescriptionUnlocked(true)
+                                    }
                                   />
                                 }
                               >
-                                <SquarePen className="size-3.5" aria-hidden="true" />
+                                <SquarePen
+                                  className="size-3.5"
+                                  aria-hidden="true"
+                                />
                               </TooltipTrigger>
                               <TooltipContent>Edit description</TooltipContent>
                             </Tooltip>
@@ -479,7 +561,9 @@ const TransactionFormInner = ({
                         />
                       )}
                       {field.state.meta.errors.length > 0 ? (
-                        <FieldError>{String(field.state.meta.errors[0])}</FieldError>
+                        <FieldError>
+                          {String(field.state.meta.errors[0])}
+                        </FieldError>
                       ) : null}
                       {/* TODO(03.4-deferred): originalDescription column — add when schema patch lands */}
                       {/* D-19: import caption (└ Original: ...) is deferred because originalDescription */}
@@ -487,7 +571,7 @@ const TransactionFormInner = ({
                     </Field>
                   )}
                 </form.AppField>
-              )
+              );
             }}
           </form.Subscribe>
 
@@ -528,7 +612,11 @@ const TransactionFormInner = ({
                 <Field>
                   <FieldLabel>
                     Tags
-                    <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
+                    <Text
+                      as="span"
+                      variant="body-sm"
+                      className="font-normal text-muted-foreground"
+                    >
                       (optional)
                     </Text>
                   </FieldLabel>
@@ -549,21 +637,33 @@ const TransactionFormInner = ({
                 name="assignees"
                 validators={{
                   onSubmit: ({ value }: { value: AssigneeFormRow[] }) =>
-                    value.length === 0 ? 'At least one assignee is required.' : undefined,
+                    value.length === 0
+                      ? 'At least one assignee is required.'
+                      : undefined,
                 }}
               >
                 {(field) => (
-                  <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
+                  <Field
+                    data-invalid={
+                      field.state.meta.errors.length > 0 || undefined
+                    }
+                  >
                     <AssigneeSection
                       value={field.state.value}
                       onChange={(assignees) => field.handleChange(assignees)}
                       amountCents={Math.round((amount ?? 0) * 100)}
                       orgMembers={orgMembers}
                       transaction={transaction}
-                      refundAssigneeIds={!isEditing && refundOriginalAssigneeIds.length > 0 ? refundOriginalAssigneeIds : undefined}
+                      refundAssigneeIds={
+                        !isEditing && refundOriginalAssigneeIds.length > 0
+                          ? refundOriginalAssigneeIds
+                          : undefined
+                      }
                     />
                     {field.state.meta.errors.length > 0 ? (
-                      <FieldError>{String(field.state.meta.errors[0])}</FieldError>
+                      <FieldError>
+                        {String(field.state.meta.errors[0])}
+                      </FieldError>
                     ) : null}
                   </Field>
                 )}
@@ -601,16 +701,15 @@ const TransactionFormInner = ({
               onOpenChange={setAlertOpen}
               isPending={deleteMutation.isPending}
               onConfirm={() => {
-                if (!transaction) return
                 deleteMutation.mutate(transaction.id, {
                   onSuccess: () => {
-                    onClose()
-                    toast.success('Transaction deleted.')
+                    onClose();
+                    toast.success('Transaction deleted.');
                   },
                   onError: () => {
-                    toast.error('Failed to delete transaction.')
+                    toast.error('Failed to delete transaction.');
                   },
-                })
+                });
               }}
             />
           </>
@@ -629,8 +728,8 @@ const TransactionFormInner = ({
         </div>
       </div>
     </form>
-  )
-}
+  );
+};
 
 /**
  * Helper component that resets the description unlock state when the type
@@ -643,28 +742,28 @@ const UnlockResetter = ({
   type,
   onReset,
 }: {
-  type: string
-  onReset: () => void
+  type: string;
+  onReset: () => void;
 }) => {
-  const prevTypeRef = useRef(type)
+  const prevTypeRef = useRef(type);
 
   useEffect(() => {
-    const prev = prevTypeRef.current
-    prevTypeRef.current = type
+    const prev = prevTypeRef.current;
+    prevTypeRef.current = type;
 
     // If the previous type was locked and the new type is not locked (or was locked but
     // is a different type), reset the unlock state so next time user visits a locked type
     // it starts locked again.
-    const prevWasLocked = isLockedType(prev) || prev === 'refund'
-    const nowIsLocked = isLockedType(type) || type === 'refund'
+    const prevWasLocked = isLockedType(prev) || prev === 'refund';
+    const nowIsLocked = isLockedType(type) || type === 'refund';
 
     if (prevWasLocked && !nowIsLocked) {
-      onReset()
+      onReset();
     } else if (prevWasLocked && nowIsLocked && prev !== type) {
       // Type changed between locked types (e.g. transfer → contribution) — reset too
-      onReset()
+      onReset();
     }
-  }, [type, onReset])
+  }, [type, onReset]);
 
-  return null
-}
+  return null;
+};

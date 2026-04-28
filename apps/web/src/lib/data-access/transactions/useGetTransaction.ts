@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
-import type { UseQueryResult } from '@tanstack/react-query'
-import type { TransactionRow } from './useGetTransactions'
-import { fetchTransaction } from './queries'
+import { useQuery } from '@tanstack/react-query';
+import { fetchTransaction } from './queries';
+import type { UseQueryResult } from '@tanstack/react-query';
+import type { TransactionRow } from './useGetTransactions';
 
 export const useGetTransaction = (
   id: string | null,
@@ -12,5 +12,5 @@ export const useGetTransaction = (
     queryFn: () => fetchTransaction(id!),
     enabled: id !== null,
     initialData: options?.initialData,
-  })
-}
+  });
+};

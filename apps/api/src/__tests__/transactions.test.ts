@@ -2,8 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { Hono } from 'hono';
 import { transactionsRouter } from '../routes/transactions';
 import {
-  checkRefundOfOwnership,
-  createTransaction,
   deleteTransaction,
   getTransaction,
   listTransactions,
@@ -230,7 +228,7 @@ describe('POST /api/transactions', () => {
       }),
     });
     expect(res.status).toBe(201);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.data.id).toBe('txn_1');
     expect(body.data.orgId).toBe('org_test123');
   });
@@ -248,7 +246,7 @@ describe('POST /api/transactions', () => {
       }),
     });
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.error.code).toBe('VALIDATION_ERROR');
   });
 
@@ -265,7 +263,7 @@ describe('POST /api/transactions', () => {
       }),
     });
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.error.code).toBe('VALIDATION_ERROR');
   });
 
@@ -289,7 +287,7 @@ describe('POST /api/transactions', () => {
       }),
     });
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.error.code).toBe('BAD_REQUEST');
     expect(body.error.message).toBe(
       'Assignee amounts must sum to transaction amount'
@@ -309,7 +307,7 @@ describe('POST /api/transactions', () => {
       }),
     });
     expect(res.status).toBe(201);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.data.id).toBeDefined();
   });
 });
@@ -318,7 +316,7 @@ describe('GET /api/transactions', () => {
   it('TXN-GET-01: GET / returns {data, total, page, limit} envelope', async () => {
     const res = await app.request('/');
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(Array.isArray(body.data)).toBe(true);
     expect(typeof body.total).toBe('number');
     expect(typeof body.page).toBe('number');
@@ -332,24 +330,24 @@ describe('GET /api/transactions', () => {
     vi.mocked(listTransactions).mockClear();
     const res = await app.request('/?sort=type');
     expect(res.status).toBe(200);
-    const callArgs = vi.mocked(listTransactions).mock.calls[0]?.[0];
-    expect(callArgs?.sort).toBe('type');
+    const callArgs = vi.mocked(listTransactions).mock.calls[0][0];
+    expect(callArgs.sort).toBe('type');
   });
 
   it('TXN-LIST-SORT-02: GET /?sort=category — passes sort=category to listTransactions', async () => {
     vi.mocked(listTransactions).mockClear();
     const res = await app.request('/?sort=category');
     expect(res.status).toBe(200);
-    const callArgs = vi.mocked(listTransactions).mock.calls[0]?.[0];
-    expect(callArgs?.sort).toBe('category');
+    const callArgs = vi.mocked(listTransactions).mock.calls[0][0];
+    expect(callArgs.sort).toBe('category');
   });
 
   it('TXN-LIST-SORT-03: GET /?sort=account — passes sort=account to listTransactions', async () => {
     vi.mocked(listTransactions).mockClear();
     const res = await app.request('/?sort=account');
     expect(res.status).toBe(200);
-    const callArgs = vi.mocked(listTransactions).mock.calls[0]?.[0];
-    expect(callArgs?.sort).toBe('account');
+    const callArgs = vi.mocked(listTransactions).mock.calls[0][0];
+    expect(callArgs.sort).toBe('account');
   });
 
   it('TXN-LIST-DESC-01: GET /?description=coffee — passes description param to listTransactions', async () => {
@@ -375,7 +373,7 @@ describe('GET /api/transactions/:id', () => {
   it('TXN-GET-02: GET /:id returns joined shape with assignees[] and tags[]', async () => {
     const res = await app.request('/txn_1');
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(Array.isArray(body.data.assignees)).toBe(true);
     expect(Array.isArray(body.data.tags)).toBe(true);
   });
@@ -384,7 +382,7 @@ describe('GET /api/transactions/:id', () => {
     vi.mocked(getTransaction).mockResolvedValueOnce(null);
     const res = await app.request('/txn_missing');
     expect(res.status).toBe(404);
-    const body = await res.json();
+    const body = await res.json() as any;
     expect(body.error.code).toBe('NOT_FOUND');
   });
 });

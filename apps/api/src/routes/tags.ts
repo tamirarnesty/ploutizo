@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
+import { createTagSchema } from '@ploutizo/validators';
 import { appValidator } from '../lib/validator';
 import { archiveTagById, createTag, listTags } from '../services/tags';
-import { createTagSchema } from '@ploutizo/validators';
 import type { AppEnv } from '../types';
 
 const tagsRouter = new Hono<AppEnv>();

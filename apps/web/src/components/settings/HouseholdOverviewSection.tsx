@@ -1,14 +1,20 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@ploutizo/ui/components/avatar"
-import { Skeleton } from "@ploutizo/ui/components/skeleton"
-import { Text } from "@ploutizo/ui/components/text"
-import { useGetHouseholdOverview } from "@/lib/data-access/household"
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from '@ploutizo/ui/components/avatar';
+import { Skeleton } from '@ploutizo/ui/components/skeleton';
+import { Text } from '@ploutizo/ui/components/text';
+import { useGetHouseholdOverview } from '@/lib/data-access/household';
 
 export const HouseholdOverviewSection = () => {
-  const { data: overview, isLoading } = useGetHouseholdOverview()
+  const { data: overview, isLoading } = useGetHouseholdOverview();
 
   return (
     <section className="flex flex-col gap-3">
-      <Text as="h2" variant="h3">Household</Text>
+      <Text as="h2" variant="h3">
+        Household
+      </Text>
       {isLoading ? (
         <Skeleton className="h-10 w-48" />
       ) : (
@@ -16,12 +22,14 @@ export const HouseholdOverviewSection = () => {
           <Avatar className="size-10">
             <AvatarImage src={overview?.imageUrl ?? undefined} />
             <AvatarFallback>
-              {overview?.name?.charAt(0).toUpperCase() ?? "H"}
+              {overview?.name?.charAt(0).toUpperCase() ?? 'H'}
             </AvatarFallback>
           </Avatar>
-          <Text as="span" variant="body-sm" className="font-semibold">{overview?.name ?? "—"}</Text>
+          <Text as="span" variant="body-sm" className="font-semibold">
+            {overview?.name ?? '—'}
+          </Text>
         </div>
       )}
     </section>
-  )
-}
+  );
+};

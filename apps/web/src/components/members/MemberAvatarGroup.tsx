@@ -1,22 +1,22 @@
-import { AvatarGroup, AvatarGroupCount } from '@ploutizo/ui/components/avatar'
+import { AvatarGroup, AvatarGroupCount } from '@ploutizo/ui/components/avatar';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@ploutizo/ui/components/tooltip'
-import { UserAvatar } from './UserAvatar'
+} from '@ploutizo/ui/components/tooltip';
+import { UserAvatar } from './UserAvatar';
 
 export interface MemberAvatarItem {
-  id: string
-  name: string
-  imageUrl?: string | null
+  id: string;
+  name: string;
+  imageUrl?: string | null;
 }
 
 interface MemberAvatarGroupProps {
-  members: MemberAvatarItem[]
-  max?: number
-  withTooltips?: boolean
-  emptyFallback?: React.ReactNode
+  members: MemberAvatarItem[];
+  max?: number;
+  withTooltips?: boolean;
+  emptyFallback?: React.ReactNode;
 }
 
 export const MemberAvatarGroup = ({
@@ -25,10 +25,10 @@ export const MemberAvatarGroup = ({
   withTooltips = false,
   emptyFallback = <span className="text-sm text-muted-foreground">—</span>,
 }: MemberAvatarGroupProps) => {
-  if (members.length === 0) return <>{emptyFallback}</>
+  if (members.length === 0) return <>{emptyFallback}</>;
 
-  const visible = members.slice(0, max)
-  const overflow = members.length - max
+  const visible = members.slice(0, max);
+  const overflow = members.length - max;
 
   return (
     <AvatarGroup>
@@ -37,11 +37,24 @@ export const MemberAvatarGroup = ({
           <Tooltip key={member.id}>
             {/* UserAvatar spreads ...props to Avatar → AvatarPrimitive.Root, so
                 base-ui's render prop can inject trigger event handlers through the chain */}
-            <TooltipTrigger render={<UserAvatar name={member.name} imageUrl={member.imageUrl} size="sm" />} />
+            <TooltipTrigger
+              render={
+                <UserAvatar
+                  name={member.name}
+                  imageUrl={member.imageUrl}
+                  size="sm"
+                />
+              }
+            />
             <TooltipContent>{member.name}</TooltipContent>
           </Tooltip>
         ) : (
-          <UserAvatar key={member.id} name={member.name} imageUrl={member.imageUrl} size="sm" />
+          <UserAvatar
+            key={member.id}
+            name={member.name}
+            imageUrl={member.imageUrl}
+            size="sm"
+          />
         )
       )}
       {overflow > 0 && (
@@ -50,5 +63,5 @@ export const MemberAvatarGroup = ({
         </AvatarGroupCount>
       )}
     </AvatarGroup>
-  )
-}
+  );
+};

@@ -1,7 +1,7 @@
-import { useAppForm } from "@ploutizo/ui/components/form"
-import { Button } from "@ploutizo/ui/components/button"
-import { Input } from "@ploutizo/ui/components/input"
-import { DialogFooter } from "@ploutizo/ui/components/dialog"
+import { useAppForm } from '@ploutizo/ui/components/form';
+import { Button } from '@ploutizo/ui/components/button';
+import { Input } from '@ploutizo/ui/components/input';
+import { DialogFooter } from '@ploutizo/ui/components/dialog';
 import {
   Select,
   SelectContent,
@@ -9,77 +9,84 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@ploutizo/ui/components/select"
+} from '@ploutizo/ui/components/select';
 import {
   Field,
   FieldError,
   FieldGroup,
   FieldLabel,
-} from "@ploutizo/ui/components/field"
-import { Text } from "@ploutizo/ui/components/text"
-import type { RuleForm as RuleFormType } from "@ploutizo/validators"
-import type { MerchantRule } from "@/lib/data-access/merchant-rules"
-import { useCreateMerchantRule, useUpdateMerchantRule } from "@/lib/data-access/merchant-rules"
-import { useGetCategories } from "@/lib/data-access/categories"
+} from '@ploutizo/ui/components/field';
+import { Text } from '@ploutizo/ui/components/text';
+import type { RuleForm as RuleFormType } from '@ploutizo/validators';
+import type { MerchantRule } from '@/lib/data-access/merchant-rules';
+import {
+  useCreateMerchantRule,
+  useUpdateMerchantRule,
+} from '@/lib/data-access/merchant-rules';
+import { useGetCategories } from '@/lib/data-access/categories';
 
 const MATCH_TYPE_LABELS: Record<string, string> = {
-  exact: "Exact",
-  contains: "Contains",
-  starts_with: "Starts with",
-  ends_with: "Ends with",
-  regex: "Regex",
-}
+  exact: 'Exact',
+  contains: 'Contains',
+  starts_with: 'Starts with',
+  ends_with: 'Ends with',
+  regex: 'Regex',
+};
 
 interface RuleFormProps {
-  rule: MerchantRule | null
-  onClose: () => void
+  rule: MerchantRule | null;
+  onClose: () => void;
 }
 
 export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
-  const isEditing = rule !== null
-  const { data: categories = [] } = useGetCategories()
-  const createRule = useCreateMerchantRule()
-  const updateRule = useUpdateMerchantRule(rule?.id ?? "")
+  const isEditing = rule !== null;
+  const { data: categories = [] } = useGetCategories();
+  const createRule = useCreateMerchantRule();
+  const updateRule = useUpdateMerchantRule(rule?.id ?? '');
 
   const form = useAppForm({
     defaultValues: {
-      pattern: rule?.pattern ?? "",
-      matchType: rule?.matchType ?? "contains",
-      renameTo: rule?.renameTo ?? "",
+      pattern: rule?.pattern ?? '',
+      matchType: rule?.matchType ?? 'contains',
+      renameTo: rule?.renameTo ?? '',
       categoryId: rule?.categoryId ?? null, // null — NOT "__none__" (D-06)
     } satisfies RuleFormType,
+    validators: {
+      onSubmit: (): string | undefined => undefined,
+    },
     onSubmit: ({ value }) => {
       const payload = {
         pattern: value.pattern.trim(),
         matchType: value.matchType,
         renameTo: value.renameTo.trim() || undefined,
         categoryId: value.categoryId, // already null — no conversion needed
-      }
-      const mutation = isEditing ? updateRule : createRule
+      };
+      const mutation = isEditing ? updateRule : createRule;
       mutation.mutate(payload, {
         onSuccess: onClose,
         onError: (err: unknown) => {
-          const e = err as { error?: { code: string } }
-          if (e.error?.code === "INVALID_REGEX") {
-            form.setFieldMeta("pattern", (prev) => ({
+          const e = err as { error?: { code: string } };
+          if (e.error?.code === 'INVALID_REGEX') {
+            form.setFieldMeta('pattern', (prev) => ({
               ...prev,
-              errors: ["Invalid regular expression."],
-            }))
+              errors: ['Invalid regular expression.'],
+            }));
           } else {
             form.setErrorMap({
-              onSubmit: "Couldn't save changes. Check your connection and try again.",
-            })
+              onSubmit:
+                "Couldn't save changes. Check your connection and try again.",
+            });
           }
         },
-      })
+      });
     },
-  })
+  });
 
   return (
     <form
       onSubmit={(e) => {
-        e.preventDefault()
-        form.handleSubmit()
+        e.preventDefault();
+        form.handleSubmit();
       }}
     >
       <FieldGroup>
@@ -91,7 +98,7 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
               <Select
                 value={field.state.value}
                 onValueChange={(v) =>
-                  field.handleChange(v as MerchantRule["matchType"])
+                  field.handleChange(v as MerchantRule['matchType'])
                 }
               >
                 <SelectTrigger className="w-full">
@@ -118,23 +125,25 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
           name="pattern"
           validators={{
             onChange: ({ value }) =>
-              !value.trim() ? "Pattern is required." : undefined,
+              !value.trim() ? 'Pattern is required.' : undefined,
             onSubmit: ({ value }) =>
-              !value.trim() ? "Pattern is required." : undefined,
+              !value.trim() ? 'Pattern is required.' : undefined,
             onBlur: ({ value, fieldApi }) => {
-              const matchType = fieldApi.form.getFieldValue("matchType")
-              if (matchType !== "regex") return undefined
+              const matchType = fieldApi.form.getFieldValue('matchType');
+              if (matchType !== 'regex') return undefined;
               try {
-                new RegExp(value)
-                return undefined
+                new RegExp(value);
+                return undefined;
               } catch {
-                return "Invalid regular expression."
+                return 'Invalid regular expression.';
               }
             },
           }}
         >
           {(field) => (
-            <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
+            <Field
+              data-invalid={field.state.meta.errors.length > 0 || undefined}
+            >
               <FieldLabel>Pattern</FieldLabel>
               <Input
                 autoComplete="off"
@@ -142,14 +151,16 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
                 placeholder={
-                  form.getFieldValue("matchType") === "regex"
-                    ? "^AMAZON.*"
-                    : "AMAZON"
+                  form.getFieldValue('matchType') === 'regex'
+                    ? '^AMAZON.*'
+                    : 'AMAZON'
                 }
                 aria-invalid={field.state.meta.errors.length > 0}
               />
               {field.state.meta.errors.length > 0 ? (
-                <FieldError>{field.state.meta.errors[0]?.toString()}</FieldError>
+                <FieldError>
+                  {field.state.meta.errors[0]?.toString()}
+                </FieldError>
               ) : null}
             </Field>
           )}
@@ -160,8 +171,14 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
           {(field) => (
             <Field>
               <FieldLabel>
-                Rename to{" "}
-                <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">(optional)</Text>
+                Rename to{' '}
+                <Text
+                  as="span"
+                  variant="body-sm"
+                  className="font-normal text-muted-foreground"
+                >
+                  (optional)
+                </Text>
               </FieldLabel>
               <Input
                 autoComplete="off"
@@ -178,20 +195,30 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
           {(field) => (
             <Field>
               <FieldLabel>
-                Category{" "}
-                <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">(optional)</Text>
+                Category{' '}
+                <Text
+                  as="span"
+                  variant="body-sm"
+                  className="font-normal text-muted-foreground"
+                >
+                  (optional)
+                </Text>
               </FieldLabel>
               <Select
-                value={field.state.value ?? ""}
-                onValueChange={(v) => field.handleChange(v === "" ? null : v)}
+                value={field.state.value ?? ''}
+                onValueChange={(v) => field.handleChange(v === '' ? null : v)}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue>
                     {(v: string) =>
                       v ? (
-                        categories.find((c) => c.id === v)?.name ?? v
+                        (categories.find((c) => c.id === v)?.name ?? v)
                       ) : (
-                        <Text as="span" variant="body-sm" className="text-muted-foreground">
+                        <Text
+                          as="span"
+                          variant="body-sm"
+                          className="text-muted-foreground"
+                        >
                           No category
                         </Text>
                       )
@@ -215,19 +242,16 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
       </FieldGroup>
 
       <form.Subscribe selector={(s) => s.errorMap.onSubmit}>
-        {(err) =>
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-          err ? (
-            <Text variant="error">{String(err)}</Text>
-          ) : null
-        }
+        {(err) => (err ? <Text variant="error">{String(err)}</Text> : null)}
       </form.Subscribe>
 
       <DialogFooter className="mt-4">
         <Button variant="outline" type="button" onClick={onClose}>
           Cancel
         </Button>
-        <form.Subscribe selector={(s) => [s.isSubmitting, s.canSubmit] as const}>
+        <form.Subscribe
+          selector={(s) => [s.isSubmitting, s.canSubmit] as const}
+        >
           {([isSubmitting, canSubmit]) => (
             <Button type="submit" disabled={isSubmitting || !canSubmit}>
               Save rule
@@ -236,5 +260,5 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
         </form.Subscribe>
       </DialogFooter>
     </form>
-  )
-}
+  );
+};

@@ -3,10 +3,10 @@ import {
   SignInButton,
   SignUpButton,
   UserButton,
-} from "@clerk/tanstack-react-start"
-import { createFileRoute } from "@tanstack/react-router"
+} from '@clerk/tanstack-react-start';
+import { createFileRoute } from '@tanstack/react-router';
 
-export const Route = createFileRoute("/")({ component: App })
+export const Route = createFileRoute('/')({ component: App });
 
 function App() {
   return (
@@ -20,5 +20,5 @@ function App() {
         <SignUpButton />
       </Show>
     </div>
-  )
+  );
 }

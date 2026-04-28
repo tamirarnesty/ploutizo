@@ -25,7 +25,11 @@ function isRangeOp(op: string): boolean {
 // single→range:      [A]    → [A, '']
 // range→single:      [A, B] → [A]
 // same family (e.g. is↔is_not, between↔not_between): values unchanged
-function migrateValues(prevOp: string, nextOp: string, values: string[]): string[] {
+function migrateValues(
+  prevOp: string,
+  nextOp: string,
+  values: string[]
+): string[] {
   const prevIsRange = isRangeOp(prevOp);
   const nextIsRange = isRangeOp(nextOp);
   if (prevIsRange === nextIsRange) return values; // same family — keep values
@@ -56,14 +60,16 @@ const DateRangeFilterRenderer = ({
 
   // pending tracks in-popover selection before Apply is clicked.
   const [pending, setPending] = useState<DateRange | undefined>(
-    (fromDate ?? toDate) ? { from: fromDate, to: toDate } : undefined,
+    (fromDate ?? toDate) ? { from: fromDate, to: toDate } : undefined
   );
 
   // Reset pending to committed values when popover opens (prevents stale pending after cancel).
   const prevOpen = useRef(false);
   useEffect(() => {
     if (open && !prevOpen.current) {
-      setPending((fromDate ?? toDate) ? { from: fromDate, to: toDate } : undefined);
+      setPending(
+        (fromDate ?? toDate) ? { from: fromDate, to: toDate } : undefined
+      );
     }
     prevOpen.current = open;
   }, [open, fromDate, toDate]);
@@ -89,8 +95,8 @@ const DateRangeFilterRenderer = ({
     ) {
       onChange(migrated);
     }
-  }, [operator]); // eslint-disable-line react-hooks/exhaustive-deps
-  // onChange intentionally omitted — we only react to operator changes.
+    // onChange intentionally omitted — we only react to operator changes.
+  }, [operator]);
   // valuesRef.current is the correct way to read the current values snapshot here.
 
   // Compute trigger label from pending (real-time) or committed values when closed.
@@ -99,7 +105,9 @@ const DateRangeFilterRenderer = ({
 
   let label: string;
   if (isSingleDateOp(operator)) {
-    label = effectiveFrom ? format(effectiveFrom, 'MMM d, yyyy') : 'Pick a date';
+    label = effectiveFrom
+      ? format(effectiveFrom, 'MMM d, yyyy')
+      : 'Pick a date';
   } else {
     if (effectiveFrom && effectiveTo) {
       label = `${format(effectiveFrom, 'MMM d, yyyy')} – ${format(effectiveTo, 'MMM d, yyyy')}`;
@@ -123,7 +131,9 @@ const DateRangeFilterRenderer = ({
   };
 
   const handleCancel = () => {
-    setPending((fromDate ?? toDate) ? { from: fromDate, to: toDate } : undefined);
+    setPending(
+      (fromDate ?? toDate) ? { from: fromDate, to: toDate } : undefined
+    );
     setOpen(false);
   };
 
@@ -135,7 +145,9 @@ const DateRangeFilterRenderer = ({
           <Calendar
             mode="single"
             selected={pending?.from}
-            onSelect={(date) => setPending(date ? { from: date, to: date } : undefined)}
+            onSelect={(date) =>
+              setPending(date ? { from: date, to: date } : undefined)
+            }
           />
         ) : (
           <Calendar
@@ -162,7 +174,7 @@ export function buildFilterFields(
   accounts: { id: string; name: string }[],
   categories: { id: string; name: string }[],
   members: { id: string; displayName: string }[],
-  tags: { id: string; name: string }[],
+  tags: { id: string; name: string }[]
 ): FilterFieldConfig<string>[] {
   return [
     {
@@ -177,7 +189,11 @@ export function buildFilterFields(
         { value: 'refund', label: 'Refund' },
         { value: 'contribution', label: 'Contribution' },
         // D-25: Internal shortcut — sets type to comma-separated internal types
-        { value: 'transfer,settlement,contribution', label: 'Internal', icon: <Layers2 className="size-3.5" /> },
+        {
+          value: 'transfer,settlement,contribution',
+          label: 'Internal',
+          icon: <Layers2 className="size-3.5" />,
+        },
       ],
     },
     {
@@ -199,7 +215,7 @@ export function buildFilterFields(
         <DateRangeFilterRenderer
           values={values}
           onChange={onChange}
-          operator={operator ?? 'between'}
+          operator={operator}
         />
       ),
     },

@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "prepare": "test -d .git && lefthook install || true",
     "build": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
@@ -16,6 +17,7 @@
   "devDependencies": {
     "dotenv": "^17.4.0",
     "drizzle-kit": "^0.31.10",
+    "lefthook": "^2.1.6",
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "shadcn": "^4.1.2",

@@ -12,7 +12,7 @@ import {
   updateHouseholdSettings,
 } from '../services/households';
 import type { AppEnv } from '../types';
-import type { StatusCode } from 'hono/utils/http-status';
+import type { ContentfulStatusCode } from 'hono/utils/http-status';
 
 const householdsRouter = new Hono<AppEnv>();
 
@@ -54,7 +54,7 @@ householdsRouter.post('/invitations', appValidator('json', InviteMemberFormSchem
     return c.json({ data: result });
   } catch (err) {
     if (err instanceof DomainError) {
-      return c.json({ error: { code: err.code ?? 'DOMAIN_ERROR' } }, err.statusCode as StatusCode);
+      return c.json({ error: { code: err.code ?? 'DOMAIN_ERROR' } }, err.statusCode as ContentfulStatusCode);
     }
     throw err;
   }
@@ -71,7 +71,7 @@ householdsRouter.delete('/members/:memberId', async (c) => {
     return c.json({ data: result });
   } catch (err) {
     if (err instanceof DomainError) {
-      return c.json({ error: { code: err.code ?? 'DOMAIN_ERROR' } }, err.statusCode as StatusCode);
+      return c.json({ error: { code: err.code ?? 'DOMAIN_ERROR' } }, err.statusCode as ContentfulStatusCode);
     }
     throw err;
   }

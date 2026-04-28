@@ -1,26 +1,26 @@
-import { useEffect, useRef, useState } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@ploutizo/ui/components/collapsible'
-import { Text } from '@ploutizo/ui/components/text'
-import { cn } from '@ploutizo/ui/lib/utils'
-import { SplitSection } from './SplitSection'
-import type { OrgMember } from '@ploutizo/types'
-import type { AssigneeFormRow } from './types'
-import type { TransactionRow } from '@/lib/data-access/transactions'
-import { MemberToggleGroup } from '@/components/members/MemberToggleGroup'
-import { lrmSplit } from '@/lib/lrm'
+} from '@ploutizo/ui/components/collapsible';
+import { Text } from '@ploutizo/ui/components/text';
+import { cn } from '@ploutizo/ui/lib/utils';
+import { SplitSection } from './SplitSection';
+import type { OrgMember } from '@ploutizo/types';
+import type { AssigneeFormRow } from './types';
+import type { TransactionRow } from '@/lib/data-access/transactions';
+import { MemberToggleGroup } from '@/components/members/MemberToggleGroup';
+import { lrmSplit } from '@/lib/lrm';
 
 interface AssigneeSectionProps {
-  value: AssigneeFormRow[]
-  onChange: (assignees: AssigneeFormRow[]) => void
-  amountCents: number
-  orgMembers: OrgMember[]
-  transaction?: TransactionRow | null
-  refundAssigneeIds?: string[]
+  value: AssigneeFormRow[];
+  onChange: (assignees: AssigneeFormRow[]) => void;
+  amountCents: number;
+  orgMembers: OrgMember[];
+  transaction?: TransactionRow | null;
+  refundAssigneeIds?: string[];
 }
 
 /**
@@ -48,54 +48,57 @@ export const AssigneeSection = ({
 }: AssigneeSectionProps) => {
   // Initialize pressed member IDs
   const initialPressedIds = transaction
-    ? (transaction.assignees?.map((a) => a.memberId) ?? [])
+    ? transaction.assignees.map((a) => a.memberId)
     : orgMembers.length === 1
       ? [orgMembers[0].id]
-      : []
+      : [];
 
-  const [pressedMemberIds, setPressedMemberIds] = useState<string[]>(initialPressedIds)
+  const [pressedMemberIds, setPressedMemberIds] =
+    useState<string[]>(initialPressedIds);
 
   // Skips initial render to preserve saved edit-mode splits on mount, then fires on
   // every subsequent amountCents change in both create and edit mode.
-  const isInitialRender = useRef(true)
+  const isInitialRender = useRef(true);
   useEffect(() => {
     if (isInitialRender.current) {
-      isInitialRender.current = false
-      return
+      isInitialRender.current = false;
+      return;
     }
     if (amountCents > 0 && pressedMemberIds.length > 0) {
-      onChange(lrmSplit(amountCents, pressedMemberIds))
+      onChange(lrmSplit(amountCents, pressedMemberIds));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [amountCents])
+  }, [amountCents]);
 
   // Issue 6: pre-fill assignees from the original transaction when creating a refund
   useEffect(() => {
     if (!transaction && refundAssigneeIds && refundAssigneeIds.length > 0) {
-      setPressedMemberIds(refundAssigneeIds)
+      setPressedMemberIds(refundAssigneeIds);
       if (amountCents > 0) {
-        onChange(lrmSplit(amountCents, refundAssigneeIds))
+        onChange(lrmSplit(amountCents, refundAssigneeIds));
       }
     }
     // Only re-run when refundAssigneeIds changes (new refundOf selected)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refundAssigneeIds])
+  }, [refundAssigneeIds]);
 
   // percentage from TransactionAssignee is string|null; from AssigneeFormRow is number
-  const isNonEven = (assignees: { percentage: number | string | null }[]): boolean => {
-    if (assignees.length <= 1) return false
-    const expectedPct = parseFloat((100 / assignees.length).toFixed(3))
+  const isNonEven = (
+    assignees: { percentage: number | string | null }[]
+  ): boolean => {
+    if (assignees.length <= 1) return false;
+    const expectedPct = parseFloat((100 / assignees.length).toFixed(3));
     return assignees.some(
-      (a) => Math.abs(Number(a.percentage) - expectedPct) > 0.1,
-    )
-  }
+      (a) => Math.abs(Number(a.percentage) - expectedPct) > 0.1
+    );
+  };
 
   const [customizeOpen, setCustomizeOpen] = useState(() =>
-    transaction ? isNonEven(transaction.assignees ?? []) : false,
-  )
+    transaction ? isNonEven(transaction.assignees) : false
+  );
 
   // Only the pressed members are passed to SplitSection
-  const pressedMembers = orgMembers.filter((m) => pressedMemberIds.includes(m.id))
+  const pressedMembers = orgMembers.filter((m) =>
+    pressedMemberIds.includes(m.id)
+  );
 
   return (
     <div className="flex flex-col gap-3">
@@ -105,8 +108,8 @@ export const AssigneeSection = ({
         members={orgMembers}
         value={pressedMemberIds}
         onChange={(newIds) => {
-          setPressedMemberIds(newIds)
-          onChange(newIds.length === 0 ? [] : lrmSplit(amountCents, newIds))
+          setPressedMemberIds(newIds);
+          onChange(newIds.length === 0 ? [] : lrmSplit(amountCents, newIds));
         }}
       />
 
@@ -123,7 +126,7 @@ export const AssigneeSection = ({
               <ChevronDown
                 className={cn(
                   'size-4 transition-transform',
-                  customizeOpen && 'rotate-180',
+                  customizeOpen && 'rotate-180'
                 )}
                 aria-hidden="true"
               />
@@ -140,5 +143,5 @@ export const AssigneeSection = ({
         </Collapsible>
       ) : null}
     </div>
-  )
-}
+  );
+};

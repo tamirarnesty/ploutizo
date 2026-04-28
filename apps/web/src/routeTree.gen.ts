@@ -8,125 +8,125 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as OnboardingRouteImport } from './routes/onboarding'
-import { Route as LayoutRouteImport } from './routes/_layout'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as SignUpSplatRouteImport } from './routes/sign-up.$'
-import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
-import { Route as LayoutTransactionsRouteImport } from './routes/_layout.transactions'
-import { Route as LayoutDashboardRouteImport } from './routes/_layout.dashboard'
-import { Route as LayoutAccountsRouteImport } from './routes/_layout.accounts'
-import { Route as LayoutSettingsRouteRouteImport } from './routes/_layout.settings/route'
-import { Route as LayoutSettingsMerchantRulesRouteImport } from './routes/_layout.settings/merchant-rules'
-import { Route as LayoutSettingsHouseholdRouteImport } from './routes/_layout.settings/household'
-import { Route as LayoutSettingsCategoriesRouteImport } from './routes/_layout.settings/categories'
+import { Route as rootRouteImport } from './routes/__root';
+import { Route as OnboardingRouteImport } from './routes/onboarding';
+import { Route as LayoutRouteImport } from './routes/_layout';
+import { Route as IndexRouteImport } from './routes/index';
+import { Route as SignUpSplatRouteImport } from './routes/sign-up.$';
+import { Route as SignInSplatRouteImport } from './routes/sign-in.$';
+import { Route as LayoutTransactionsRouteImport } from './routes/_layout.transactions';
+import { Route as LayoutDashboardRouteImport } from './routes/_layout.dashboard';
+import { Route as LayoutAccountsRouteImport } from './routes/_layout.accounts';
+import { Route as LayoutSettingsRouteRouteImport } from './routes/_layout.settings/route';
+import { Route as LayoutSettingsMerchantRulesRouteImport } from './routes/_layout.settings/merchant-rules';
+import { Route as LayoutSettingsHouseholdRouteImport } from './routes/_layout.settings/household';
+import { Route as LayoutSettingsCategoriesRouteImport } from './routes/_layout.settings/categories';
 
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const LayoutRoute = LayoutRouteImport.update({
   id: '/_layout',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const SignUpSplatRoute = SignUpSplatRouteImport.update({
   id: '/sign-up/$',
   path: '/sign-up/$',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const SignInSplatRoute = SignInSplatRouteImport.update({
   id: '/sign-in/$',
   path: '/sign-in/$',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const LayoutTransactionsRoute = LayoutTransactionsRouteImport.update({
   id: '/transactions',
   path: '/transactions',
   getParentRoute: () => LayoutRoute,
-} as any)
+} as any);
 const LayoutDashboardRoute = LayoutDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => LayoutRoute,
-} as any)
+} as any);
 const LayoutAccountsRoute = LayoutAccountsRouteImport.update({
   id: '/accounts',
   path: '/accounts',
   getParentRoute: () => LayoutRoute,
-} as any)
+} as any);
 const LayoutSettingsRouteRoute = LayoutSettingsRouteRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => LayoutRoute,
-} as any)
+} as any);
 const LayoutSettingsMerchantRulesRoute =
   LayoutSettingsMerchantRulesRouteImport.update({
     id: '/merchant-rules',
     path: '/merchant-rules',
     getParentRoute: () => LayoutSettingsRouteRoute,
-  } as any)
+  } as any);
 const LayoutSettingsHouseholdRoute = LayoutSettingsHouseholdRouteImport.update({
   id: '/household',
   path: '/household',
   getParentRoute: () => LayoutSettingsRouteRoute,
-} as any)
+} as any);
 const LayoutSettingsCategoriesRoute =
   LayoutSettingsCategoriesRouteImport.update({
     id: '/categories',
     path: '/categories',
     getParentRoute: () => LayoutSettingsRouteRoute,
-  } as any)
+  } as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/onboarding': typeof OnboardingRoute
-  '/settings': typeof LayoutSettingsRouteRouteWithChildren
-  '/accounts': typeof LayoutAccountsRoute
-  '/dashboard': typeof LayoutDashboardRoute
-  '/transactions': typeof LayoutTransactionsRoute
-  '/sign-in/$': typeof SignInSplatRoute
-  '/sign-up/$': typeof SignUpSplatRoute
-  '/settings/categories': typeof LayoutSettingsCategoriesRoute
-  '/settings/household': typeof LayoutSettingsHouseholdRoute
-  '/settings/merchant-rules': typeof LayoutSettingsMerchantRulesRoute
+  '/': typeof IndexRoute;
+  '/onboarding': typeof OnboardingRoute;
+  '/settings': typeof LayoutSettingsRouteRouteWithChildren;
+  '/accounts': typeof LayoutAccountsRoute;
+  '/dashboard': typeof LayoutDashboardRoute;
+  '/transactions': typeof LayoutTransactionsRoute;
+  '/sign-in/$': typeof SignInSplatRoute;
+  '/sign-up/$': typeof SignUpSplatRoute;
+  '/settings/categories': typeof LayoutSettingsCategoriesRoute;
+  '/settings/household': typeof LayoutSettingsHouseholdRoute;
+  '/settings/merchant-rules': typeof LayoutSettingsMerchantRulesRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/onboarding': typeof OnboardingRoute
-  '/settings': typeof LayoutSettingsRouteRouteWithChildren
-  '/accounts': typeof LayoutAccountsRoute
-  '/dashboard': typeof LayoutDashboardRoute
-  '/transactions': typeof LayoutTransactionsRoute
-  '/sign-in/$': typeof SignInSplatRoute
-  '/sign-up/$': typeof SignUpSplatRoute
-  '/settings/categories': typeof LayoutSettingsCategoriesRoute
-  '/settings/household': typeof LayoutSettingsHouseholdRoute
-  '/settings/merchant-rules': typeof LayoutSettingsMerchantRulesRoute
+  '/': typeof IndexRoute;
+  '/onboarding': typeof OnboardingRoute;
+  '/settings': typeof LayoutSettingsRouteRouteWithChildren;
+  '/accounts': typeof LayoutAccountsRoute;
+  '/dashboard': typeof LayoutDashboardRoute;
+  '/transactions': typeof LayoutTransactionsRoute;
+  '/sign-in/$': typeof SignInSplatRoute;
+  '/sign-up/$': typeof SignUpSplatRoute;
+  '/settings/categories': typeof LayoutSettingsCategoriesRoute;
+  '/settings/household': typeof LayoutSettingsHouseholdRoute;
+  '/settings/merchant-rules': typeof LayoutSettingsMerchantRulesRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/_layout': typeof LayoutRouteWithChildren
-  '/onboarding': typeof OnboardingRoute
-  '/_layout/settings': typeof LayoutSettingsRouteRouteWithChildren
-  '/_layout/accounts': typeof LayoutAccountsRoute
-  '/_layout/dashboard': typeof LayoutDashboardRoute
-  '/_layout/transactions': typeof LayoutTransactionsRoute
-  '/sign-in/$': typeof SignInSplatRoute
-  '/sign-up/$': typeof SignUpSplatRoute
-  '/_layout/settings/categories': typeof LayoutSettingsCategoriesRoute
-  '/_layout/settings/household': typeof LayoutSettingsHouseholdRoute
-  '/_layout/settings/merchant-rules': typeof LayoutSettingsMerchantRulesRoute
+  __root__: typeof rootRouteImport;
+  '/': typeof IndexRoute;
+  '/_layout': typeof LayoutRouteWithChildren;
+  '/onboarding': typeof OnboardingRoute;
+  '/_layout/settings': typeof LayoutSettingsRouteRouteWithChildren;
+  '/_layout/accounts': typeof LayoutAccountsRoute;
+  '/_layout/dashboard': typeof LayoutDashboardRoute;
+  '/_layout/transactions': typeof LayoutTransactionsRoute;
+  '/sign-in/$': typeof SignInSplatRoute;
+  '/sign-up/$': typeof SignUpSplatRoute;
+  '/_layout/settings/categories': typeof LayoutSettingsCategoriesRoute;
+  '/_layout/settings/household': typeof LayoutSettingsHouseholdRoute;
+  '/_layout/settings/merchant-rules': typeof LayoutSettingsMerchantRulesRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
+  fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
     | '/'
     | '/onboarding'
@@ -138,8 +138,8 @@ export interface FileRouteTypes {
     | '/sign-up/$'
     | '/settings/categories'
     | '/settings/household'
-    | '/settings/merchant-rules'
-  fileRoutesByTo: FileRoutesByTo
+    | '/settings/merchant-rules';
+  fileRoutesByTo: FileRoutesByTo;
   to:
     | '/'
     | '/onboarding'
@@ -151,7 +151,7 @@ export interface FileRouteTypes {
     | '/sign-up/$'
     | '/settings/categories'
     | '/settings/household'
-    | '/settings/merchant-rules'
+    | '/settings/merchant-rules';
   id:
     | '__root__'
     | '/'
@@ -165,126 +165,126 @@ export interface FileRouteTypes {
     | '/sign-up/$'
     | '/_layout/settings/categories'
     | '/_layout/settings/household'
-    | '/_layout/settings/merchant-rules'
-  fileRoutesById: FileRoutesById
+    | '/_layout/settings/merchant-rules';
+  fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  LayoutRoute: typeof LayoutRouteWithChildren
-  OnboardingRoute: typeof OnboardingRoute
-  SignInSplatRoute: typeof SignInSplatRoute
-  SignUpSplatRoute: typeof SignUpSplatRoute
+  IndexRoute: typeof IndexRoute;
+  LayoutRoute: typeof LayoutRouteWithChildren;
+  OnboardingRoute: typeof OnboardingRoute;
+  SignInSplatRoute: typeof SignInSplatRoute;
+  SignUpSplatRoute: typeof SignUpSplatRoute;
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/onboarding': {
-      id: '/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof OnboardingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/onboarding';
+      path: '/onboarding';
+      fullPath: '/onboarding';
+      preLoaderRoute: typeof OnboardingRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/_layout': {
-      id: '/_layout'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof LayoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/_layout';
+      path: '';
+      fullPath: '/';
+      preLoaderRoute: typeof LayoutRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/';
+      path: '/';
+      fullPath: '/';
+      preLoaderRoute: typeof IndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/sign-up/$': {
-      id: '/sign-up/$'
-      path: '/sign-up/$'
-      fullPath: '/sign-up/$'
-      preLoaderRoute: typeof SignUpSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/sign-up/$';
+      path: '/sign-up/$';
+      fullPath: '/sign-up/$';
+      preLoaderRoute: typeof SignUpSplatRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/sign-in/$': {
-      id: '/sign-in/$'
-      path: '/sign-in/$'
-      fullPath: '/sign-in/$'
-      preLoaderRoute: typeof SignInSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/sign-in/$';
+      path: '/sign-in/$';
+      fullPath: '/sign-in/$';
+      preLoaderRoute: typeof SignInSplatRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/_layout/transactions': {
-      id: '/_layout/transactions'
-      path: '/transactions'
-      fullPath: '/transactions'
-      preLoaderRoute: typeof LayoutTransactionsRouteImport
-      parentRoute: typeof LayoutRoute
-    }
+      id: '/_layout/transactions';
+      path: '/transactions';
+      fullPath: '/transactions';
+      preLoaderRoute: typeof LayoutTransactionsRouteImport;
+      parentRoute: typeof LayoutRoute;
+    };
     '/_layout/dashboard': {
-      id: '/_layout/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof LayoutDashboardRouteImport
-      parentRoute: typeof LayoutRoute
-    }
+      id: '/_layout/dashboard';
+      path: '/dashboard';
+      fullPath: '/dashboard';
+      preLoaderRoute: typeof LayoutDashboardRouteImport;
+      parentRoute: typeof LayoutRoute;
+    };
     '/_layout/accounts': {
-      id: '/_layout/accounts'
-      path: '/accounts'
-      fullPath: '/accounts'
-      preLoaderRoute: typeof LayoutAccountsRouteImport
-      parentRoute: typeof LayoutRoute
-    }
+      id: '/_layout/accounts';
+      path: '/accounts';
+      fullPath: '/accounts';
+      preLoaderRoute: typeof LayoutAccountsRouteImport;
+      parentRoute: typeof LayoutRoute;
+    };
     '/_layout/settings': {
-      id: '/_layout/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof LayoutSettingsRouteRouteImport
-      parentRoute: typeof LayoutRoute
-    }
+      id: '/_layout/settings';
+      path: '/settings';
+      fullPath: '/settings';
+      preLoaderRoute: typeof LayoutSettingsRouteRouteImport;
+      parentRoute: typeof LayoutRoute;
+    };
     '/_layout/settings/merchant-rules': {
-      id: '/_layout/settings/merchant-rules'
-      path: '/merchant-rules'
-      fullPath: '/settings/merchant-rules'
-      preLoaderRoute: typeof LayoutSettingsMerchantRulesRouteImport
-      parentRoute: typeof LayoutSettingsRouteRoute
-    }
+      id: '/_layout/settings/merchant-rules';
+      path: '/merchant-rules';
+      fullPath: '/settings/merchant-rules';
+      preLoaderRoute: typeof LayoutSettingsMerchantRulesRouteImport;
+      parentRoute: typeof LayoutSettingsRouteRoute;
+    };
     '/_layout/settings/household': {
-      id: '/_layout/settings/household'
-      path: '/household'
-      fullPath: '/settings/household'
-      preLoaderRoute: typeof LayoutSettingsHouseholdRouteImport
-      parentRoute: typeof LayoutSettingsRouteRoute
-    }
+      id: '/_layout/settings/household';
+      path: '/household';
+      fullPath: '/settings/household';
+      preLoaderRoute: typeof LayoutSettingsHouseholdRouteImport;
+      parentRoute: typeof LayoutSettingsRouteRoute;
+    };
     '/_layout/settings/categories': {
-      id: '/_layout/settings/categories'
-      path: '/categories'
-      fullPath: '/settings/categories'
-      preLoaderRoute: typeof LayoutSettingsCategoriesRouteImport
-      parentRoute: typeof LayoutSettingsRouteRoute
-    }
+      id: '/_layout/settings/categories';
+      path: '/categories';
+      fullPath: '/settings/categories';
+      preLoaderRoute: typeof LayoutSettingsCategoriesRouteImport;
+      parentRoute: typeof LayoutSettingsRouteRoute;
+    };
   }
 }
 
 interface LayoutSettingsRouteRouteChildren {
-  LayoutSettingsCategoriesRoute: typeof LayoutSettingsCategoriesRoute
-  LayoutSettingsHouseholdRoute: typeof LayoutSettingsHouseholdRoute
-  LayoutSettingsMerchantRulesRoute: typeof LayoutSettingsMerchantRulesRoute
+  LayoutSettingsCategoriesRoute: typeof LayoutSettingsCategoriesRoute;
+  LayoutSettingsHouseholdRoute: typeof LayoutSettingsHouseholdRoute;
+  LayoutSettingsMerchantRulesRoute: typeof LayoutSettingsMerchantRulesRoute;
 }
 
 const LayoutSettingsRouteRouteChildren: LayoutSettingsRouteRouteChildren = {
   LayoutSettingsCategoriesRoute: LayoutSettingsCategoriesRoute,
   LayoutSettingsHouseholdRoute: LayoutSettingsHouseholdRoute,
   LayoutSettingsMerchantRulesRoute: LayoutSettingsMerchantRulesRoute,
-}
+};
 
 const LayoutSettingsRouteRouteWithChildren =
-  LayoutSettingsRouteRoute._addFileChildren(LayoutSettingsRouteRouteChildren)
+  LayoutSettingsRouteRoute._addFileChildren(LayoutSettingsRouteRouteChildren);
 
 interface LayoutRouteChildren {
-  LayoutSettingsRouteRoute: typeof LayoutSettingsRouteRouteWithChildren
-  LayoutAccountsRoute: typeof LayoutAccountsRoute
-  LayoutDashboardRoute: typeof LayoutDashboardRoute
-  LayoutTransactionsRoute: typeof LayoutTransactionsRoute
+  LayoutSettingsRouteRoute: typeof LayoutSettingsRouteRouteWithChildren;
+  LayoutAccountsRoute: typeof LayoutAccountsRoute;
+  LayoutDashboardRoute: typeof LayoutDashboardRoute;
+  LayoutTransactionsRoute: typeof LayoutTransactionsRoute;
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
@@ -292,10 +292,10 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAccountsRoute: LayoutAccountsRoute,
   LayoutDashboardRoute: LayoutDashboardRoute,
   LayoutTransactionsRoute: LayoutTransactionsRoute,
-}
+};
 
 const LayoutRouteWithChildren =
-  LayoutRoute._addFileChildren(LayoutRouteChildren)
+  LayoutRoute._addFileChildren(LayoutRouteChildren);
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -303,17 +303,17 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingRoute: OnboardingRoute,
   SignInSplatRoute: SignInSplatRoute,
   SignUpSplatRoute: SignUpSplatRoute,
-}
+};
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+  ._addFileTypes<FileRouteTypes>();
 
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
+import type { getRouter } from './router.tsx';
+import type { startInstance } from './start.ts';
 declare module '@tanstack/react-start' {
   interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+    ssr: true;
+    router: Awaited<ReturnType<typeof getRouter>>;
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>;
   }
 }

@@ -1,27 +1,29 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import type { MerchantRule } from "./useGetMerchantRules"
-import { apiFetch } from "@/lib/queryClient"
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { MerchantRule } from './useGetMerchantRules';
+import { apiFetch } from '@/lib/queryClient';
 
 interface CreateMerchantRuleBody {
-  pattern: string
-  matchType: string
-  renameTo?: string
-  categoryId?: string | null
-  priority?: number
+  pattern: string;
+  matchType: string;
+  renameTo?: string;
+  categoryId?: string | null;
+  priority?: number;
 }
 
-export const createMerchantRule = async (body: CreateMerchantRuleBody): Promise<MerchantRule> => {
-  const r = await apiFetch<{ data: MerchantRule }>("/api/merchant-rules", {
-    method: "POST",
+export const createMerchantRule = async (
+  body: CreateMerchantRuleBody
+): Promise<MerchantRule> => {
+  const r = await apiFetch<{ data: MerchantRule }>('/api/merchant-rules', {
+    method: 'POST',
     body: JSON.stringify(body),
-  })
-  return r.data
-}
+  });
+  return r.data;
+};
 
 export const useCreateMerchantRule = () => {
-  const qc = useQueryClient()
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: createMerchantRule,
-    onSettled: () => qc.invalidateQueries({ queryKey: ["merchant-rules"] }),
-  })
-}
+    onSettled: () => qc.invalidateQueries({ queryKey: ['merchant-rules'] }),
+  });
+};

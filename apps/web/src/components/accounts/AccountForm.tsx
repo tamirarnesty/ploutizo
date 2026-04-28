@@ -1,10 +1,10 @@
-import { useState } from "react"
-import { useUser } from "@clerk/tanstack-react-start"
+import { useState } from 'react';
+import { useUser } from '@clerk/tanstack-react-start';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@ploutizo/ui/components/collapsible"
+} from '@ploutizo/ui/components/collapsible';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,12 +15,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@ploutizo/ui/components/alert-dialog"
-import { Archive, ChevronDown } from "lucide-react"
-import { Button } from "@ploutizo/ui/components/button"
-import { Checkbox } from "@ploutizo/ui/components/checkbox"
-import { Input } from "@ploutizo/ui/components/input"
-import { Label } from "@ploutizo/ui/components/label"
+} from '@ploutizo/ui/components/alert-dialog';
+import { Archive, ChevronDown } from 'lucide-react';
+import { Button } from '@ploutizo/ui/components/button';
+import { Checkbox } from '@ploutizo/ui/components/checkbox';
+import { Input } from '@ploutizo/ui/components/input';
+import { Label } from '@ploutizo/ui/components/label';
 import {
   Select,
   SelectContent,
@@ -28,53 +28,53 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@ploutizo/ui/components/select"
-import { Spinner } from "@ploutizo/ui/components/spinner"
+} from '@ploutizo/ui/components/select';
+import { Spinner } from '@ploutizo/ui/components/spinner';
 import {
   ToggleGroup,
   ToggleGroupItem,
-} from "@ploutizo/ui/components/toggle-group"
+} from '@ploutizo/ui/components/toggle-group';
 import {
   Field,
   FieldError,
   FieldGroup,
   FieldLabel,
-} from "@ploutizo/ui/components/field"
-import { Text } from "@ploutizo/ui/components/text"
-import { AccountFormSchema } from "@ploutizo/validators"
-import { useAppForm } from "@ploutizo/ui/components/form"
-import type { Account, AccountMember, OrgMember } from "@ploutizo/types"
-import type { AccountForm as AccountFormType } from "@ploutizo/validators"
+} from '@ploutizo/ui/components/field';
+import { Text } from '@ploutizo/ui/components/text';
+import { AccountFormSchema } from '@ploutizo/validators';
+import { useAppForm } from '@ploutizo/ui/components/form';
+import type { Account, AccountMember, OrgMember } from '@ploutizo/types';
+import type { AccountForm as AccountFormType } from '@ploutizo/validators';
 import {
   useCreateAccount,
   useGetAccountMembers,
   useUpdateAccount,
-} from "@/lib/data-access/accounts"
-import { useGetOrgMembers } from "@/lib/data-access/org"
-import { MemberToggleGroup } from "@/components/members/MemberToggleGroup"
+} from '@/lib/data-access/accounts';
+import { useGetOrgMembers } from '@/lib/data-access/org';
+import { MemberToggleGroup } from '@/components/members/MemberToggleGroup';
 
 const ACCOUNT_TYPES = [
-  { value: "chequing", label: "Chequing" },
-  { value: "savings", label: "Savings" },
-  { value: "credit_card", label: "Credit Card" },
-  { value: "prepaid_cash", label: "Prepaid / Cash" },
-  { value: "e_transfer", label: "e-Transfer" },
-  { value: "investment", label: "Investment" },
-  { value: "other", label: "Other" },
-] as const
+  { value: 'chequing', label: 'Chequing' },
+  { value: 'savings', label: 'Savings' },
+  { value: 'credit_card', label: 'Credit Card' },
+  { value: 'prepaid_cash', label: 'Prepaid / Cash' },
+  { value: 'e_transfer', label: 'e-Transfer' },
+  { value: 'investment', label: 'Investment' },
+  { value: 'other', label: 'Other' },
+] as const;
 
 interface AccountFormProps {
-  account: Account | null
-  onClose: () => void
-  onArchive?: () => void
+  account: Account | null;
+  onClose: () => void;
+  onArchive?: () => void;
 }
 
 interface AccountFormInnerProps {
-  account: Account | null
-  existingMembers: AccountMember[]
-  orgMembers: OrgMember[]
-  onClose: () => void
-  onArchive?: () => void
+  account: Account | null;
+  existingMembers: AccountMember[];
+  orgMembers: OrgMember[];
+  onClose: () => void;
+  onArchive?: () => void;
 }
 
 export const AccountForm = ({
@@ -84,28 +84,28 @@ export const AccountForm = ({
 }: AccountFormProps) => {
   // Both queries fire simultaneously — no sequential waterfall (async-parallel rule)
   const { data: existingMembers, isLoading: membersLoading } =
-    useGetAccountMembers(account?.id ?? null)
-  const { data: orgMembers = [], isLoading: orgLoading } = useGetOrgMembers()
+    useGetAccountMembers(account?.id ?? null);
+  const { data: orgMembers = [], isLoading: orgLoading } = useGetOrgMembers();
 
   if (membersLoading || orgLoading) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <Spinner />
       </div>
-    )
+    );
   }
 
   return (
     <AccountFormInner
-      key={account?.id ?? "new"}
+      key={account?.id ?? 'new'}
       account={account}
       existingMembers={existingMembers ?? []}
       orgMembers={orgMembers}
       onClose={onClose}
       onArchive={onArchive}
     />
-  )
-}
+  );
+};
 
 const AccountFormInner = ({
   account,
@@ -114,35 +114,42 @@ const AccountFormInner = ({
   onClose,
   onArchive,
 }: AccountFormInnerProps) => {
-  const isEditing = account !== null
-  const createAccount = useCreateAccount()
-  const updateAccount = useUpdateAccount(account?.id ?? "")
-  const [advancedOpen, setAdvancedOpen] = useState(account?.eachPersonPaysOwn ?? false)
-  const { user } = useUser()
-  const currentMemberId = orgMembers.find((m) => m.externalId === user?.id)?.id ?? null
+  const isEditing = account !== null;
+  const createAccount = useCreateAccount();
+  const updateAccount = useUpdateAccount(account?.id ?? '');
+  const [advancedOpen, setAdvancedOpen] = useState(
+    account?.eachPersonPaysOwn ?? false
+  );
+  const { user } = useUser();
+  const currentMemberId =
+    orgMembers.find((m) => m.externalId === user?.id)?.id ?? null;
 
-  const loadedMemberIds = existingMembers.map((m) => m.memberId)
+  const loadedMemberIds = existingMembers.map((m) => m.memberId);
 
   const form = useAppForm({
     defaultValues: {
-      name: account?.name ?? "",
-      type: account?.type ?? "chequing",
-      institution: account?.institution ?? "",
-      lastFour: account?.lastFour ?? "",
+      name: account?.name ?? '',
+      type: account?.type ?? 'chequing',
+      institution: account?.institution ?? '',
+      lastFour: account?.lastFour ?? '',
       eachPersonPaysOwn: account?.eachPersonPaysOwn ?? false,
       // personal = 1 owner (just me), shared = 2+ owners
       ownership:
         loadedMemberIds.length > 1
-          ? ("shared" as const)
-          : ("personal" as const),
+          ? ('shared' as const)
+          : ('personal' as const),
       // Edit: restore saved members. Create: pre-select current user.
-      memberIds: isEditing ? loadedMemberIds : (currentMemberId ? [currentMemberId] : []),
+      memberIds: isEditing
+        ? loadedMemberIds
+        : currentMemberId
+          ? [currentMemberId]
+          : [],
     } as AccountFormType,
     validators: {
       onSubmit: ({ value }: { value: AccountFormType }) => {
-        const result = AccountFormSchema.safeParse(value)
+        const result = AccountFormSchema.safeParse(value);
         if (!result.success) {
-          return result.error.issues.map((i) => i.message).join(", ")
+          return result.error.issues.map((i) => i.message).join(', ');
         }
       },
     },
@@ -154,8 +161,8 @@ const AccountFormInner = ({
         lastFour: value.lastFour?.trim() || undefined,
         eachPersonPaysOwn: value.eachPersonPaysOwn,
         memberIds: value.memberIds,
-      }
-      const mutation = isEditing ? updateAccount : createAccount
+      };
+      const mutation = isEditing ? updateAccount : createAccount;
       mutation.mutate(payload, {
         onSuccess: onClose,
         onError: () =>
@@ -163,16 +170,16 @@ const AccountFormInner = ({
             onSubmit:
               "Couldn't save changes. Check your connection and try again.",
           }),
-      })
+      });
     },
-  })
+  });
 
   return (
     <form
       className="flex flex-1 flex-col overflow-hidden"
       onSubmit={(e) => {
-        e.preventDefault()
-        form.handleSubmit()
+        e.preventDefault();
+        form.handleSubmit();
       }}
     >
       <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -185,13 +192,13 @@ const AccountFormInner = ({
                 <ToggleGroup
                   value={[field.state.value]}
                   onValueChange={(v) => {
-                    const last = v[v.length - 1]
-                    if (!last) return
-                    field.handleChange(last as "personal" | "shared")
-                    if (last === "personal") {
-                      const memberIds = form.getFieldValue("memberIds")
+                    const last = v[v.length - 1];
+                    if (!last) return;
+                    field.handleChange(last as 'personal' | 'shared');
+                    if (last === 'personal') {
+                      const memberIds = form.getFieldValue('memberIds');
                       if (memberIds.length > 1) {
-                        form.setFieldValue("memberIds", [memberIds[0]])
+                        form.setFieldValue('memberIds', [memberIds[0]]);
                       }
                     }
                   }}
@@ -243,7 +250,7 @@ const AccountFormInner = ({
                 <Select
                   value={field.state.value}
                   onValueChange={(v) =>
-                    field.handleChange(v as AccountFormType["type"])
+                    field.handleChange(v as AccountFormType['type'])
                   }
                 >
                   <SelectTrigger id="account-type">
@@ -272,8 +279,12 @@ const AccountFormInner = ({
             {(field) => (
               <Field>
                 <FieldLabel htmlFor="account-institution">
-                  Institution{" "}
-                  <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
+                  Institution{' '}
+                  <Text
+                    as="span"
+                    variant="body-sm"
+                    className="font-normal text-muted-foreground"
+                  >
                     (optional)
                   </Text>
                 </FieldLabel>
@@ -281,7 +292,7 @@ const AccountFormInner = ({
                   id="account-institution"
                   name="account-institution"
                   autoComplete="organization"
-                  value={field.state.value ?? ""}
+                  value={field.state.value ?? ''}
                   onChange={(e) => field.handleChange(e.target.value)}
                   onBlur={field.handleBlur}
                   placeholder="e.g. TD Bank"
@@ -295,8 +306,12 @@ const AccountFormInner = ({
             {(field) => (
               <Field>
                 <FieldLabel htmlFor="account-last-four">
-                  Last 4 digits{" "}
-                  <Text as="span" variant="body-sm" className="font-normal text-muted-foreground">
+                  Last 4 digits{' '}
+                  <Text
+                    as="span"
+                    variant="body-sm"
+                    className="font-normal text-muted-foreground"
+                  >
                     (optional)
                   </Text>
                 </FieldLabel>
@@ -304,10 +319,10 @@ const AccountFormInner = ({
                   id="account-last-four"
                   name="account-last-four"
                   autoComplete="off"
-                  value={field.state.value ?? ""}
+                  value={field.state.value ?? ''}
                   onChange={(e) =>
                     field.handleChange(
-                      e.target.value.replace(/\D/g, "").slice(0, 4)
+                      e.target.value.replace(/\D/g, '').slice(0, 4)
                     )
                   }
                   onBlur={field.handleBlur}
@@ -328,13 +343,13 @@ const AccountFormInner = ({
                 {(field) => (
                   <Field>
                     <FieldLabel>
-                      {ownership === "shared" ? "Co-owners" : "Owner"}
+                      {ownership === 'shared' ? 'Co-owners' : 'Owner'}
                     </FieldLabel>
                     <MemberToggleGroup
                       members={orgMembers}
                       value={field.state.value}
                       onChange={(ids) => field.handleChange(ids)}
-                      multiple={ownership === "shared"}
+                      multiple={ownership === 'shared'}
                     />
                   </Field>
                 )}
@@ -349,7 +364,7 @@ const AccountFormInner = ({
                 <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground">
                   <ChevronDown
                     size={14}
-                    className={`transition-transform duration-200 ${advancedOpen ? "rotate-180" : ""}`}
+                    className={`transition-transform duration-200 ${advancedOpen ? 'rotate-180' : ''}`}
                     aria-hidden="true"
                   />
                   Advanced
@@ -421,10 +436,7 @@ const AccountFormInner = ({
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  variant="destructive"
-                  onClick={onArchive}
-                >
+                <AlertDialogAction variant="destructive" onClick={onArchive}>
                   Archive account
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -443,12 +455,12 @@ const AccountFormInner = ({
             {(isSubmitting) => (
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? <Spinner className="mr-1" /> : null}
-                {isEditing ? "Save changes" : "Add account"}
+                {isEditing ? 'Save changes' : 'Add account'}
               </Button>
             )}
           </form.Subscribe>
         </div>
       </div>
     </form>
-  )
-}
+  );
+};

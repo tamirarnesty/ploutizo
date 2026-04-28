@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -8,20 +8,20 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@ploutizo/ui/components/alert-dialog'
+} from '@ploutizo/ui/components/alert-dialog';
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
-} from '@ploutizo/ui/components/sheet'
-import { TransactionForm } from './TransactionForm'
-import type { TransactionRow } from '@/lib/data-access/transactions'
+} from '@ploutizo/ui/components/sheet';
+import { TransactionForm } from './TransactionForm';
+import type { TransactionRow } from '@/lib/data-access/transactions';
 
 interface TransactionSheetProps {
-  open: boolean
-  transaction: TransactionRow | null  // null = create mode
-  onClose: () => void
+  open: boolean;
+  transaction: TransactionRow | null; // null = create mode
+  onClose: () => void;
 }
 
 export const TransactionSheet = ({
@@ -29,30 +29,30 @@ export const TransactionSheet = ({
   transaction,
   onClose,
 }: TransactionSheetProps) => {
-  const isEditing = transaction !== null
-  const [isDirty, setIsDirty] = useState(false)
-  const [discardOpen, setDiscardOpen] = useState(false)
+  const isEditing = transaction !== null;
+  const [isDirty, setIsDirty] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
 
   const handleClose = () => {
     if (isDirty) {
-      setDiscardOpen(true)
+      setDiscardOpen(true);
     } else {
-      onClose()
+      onClose();
     }
-  }
+  };
 
   const handleDiscard = () => {
-    setDiscardOpen(false)
-    setIsDirty(false)
-    onClose()
-  }
+    setDiscardOpen(false);
+    setIsDirty(false);
+    onClose();
+  };
 
   return (
     <>
       <Sheet
         open={open}
         onOpenChange={(o) => {
-          if (!o) handleClose()
+          if (!o) handleClose();
         }}
       >
         {/* 560px width per D-01: wider than AccountSheet (440px) to accommodate
@@ -82,7 +82,8 @@ export const TransactionSheet = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Discard changes?</AlertDialogTitle>
             <AlertDialogDescription>
-              You have unsaved changes. They will be lost if you close without saving.
+              You have unsaved changes. They will be lost if you close without
+              saving.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -94,5 +95,5 @@ export const TransactionSheet = ({
         </AlertDialogContent>
       </AlertDialog>
     </>
-  )
-}
+  );
+};

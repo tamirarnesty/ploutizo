@@ -1,45 +1,47 @@
-import { useEffect, useRef, useState } from "react"
-import { Sortable } from "@ploutizo/ui/components/reui/sortable"
-import { Button } from "@ploutizo/ui/components/button"
-import { Skeleton } from "@ploutizo/ui/components/skeleton"
-import { Text } from "@ploutizo/ui/components/text"
-import { RuleDialog } from "./RuleDialog"
-import { MerchantRuleRow } from "./MerchantRuleRow"
-import type { MerchantRule } from "@/lib/data-access/merchant-rules"
+import { useEffect, useRef, useState } from 'react';
+import { Sortable } from '@ploutizo/ui/components/reui/sortable';
+import { Button } from '@ploutizo/ui/components/button';
+import { Skeleton } from '@ploutizo/ui/components/skeleton';
+import { Text } from '@ploutizo/ui/components/text';
+import { RuleDialog } from './RuleDialog';
+import { MerchantRuleRow } from './MerchantRuleRow';
+import type { MerchantRule } from '@/lib/data-access/merchant-rules';
 import {
   useDeleteMerchantRule,
   useGetMerchantRules,
   useReorderMerchantRules,
-} from "@/lib/data-access/merchant-rules"
+} from '@/lib/data-access/merchant-rules';
 
 export const MerchantRulesSettings = () => {
-  const { data: rules = [], isLoading } = useGetMerchantRules()
-  const deleteRule = useDeleteMerchantRule()
-  const reorderRules = useReorderMerchantRules()
+  const { data: rules = [], isLoading } = useGetMerchantRules();
+  const deleteRule = useDeleteMerchantRule();
+  const reorderRules = useReorderMerchantRules();
   const [dialogRule, setDialogRule] = useState<MerchantRule | null | false>(
     false
-  )
-  const [localRules, setLocalRules] = useState<MerchantRule[]>([])
-  const initialized = useRef(false)
+  );
+  const [localRules, setLocalRules] = useState<MerchantRule[]>([]);
+  const initialized = useRef(false);
 
   useEffect(() => {
     if (!initialized.current && !isLoading && rules.length > 0) {
-      initialized.current = true
-      setLocalRules(rules)
+      initialized.current = true;
+      setLocalRules(rules);
     }
-  }, [rules, isLoading])
+  }, [rules, isLoading]);
 
-  const displayRules = localRules.length > 0 ? localRules : rules
+  const displayRules = localRules.length > 0 ? localRules : rules;
 
   const handleReorder = (newOrder: MerchantRule[]) => {
-    setLocalRules(newOrder)
-    reorderRules.mutate(newOrder.map((r) => r.id))
-  }
+    setLocalRules(newOrder);
+    reorderRules.mutate(newOrder.map((r) => r.id));
+  };
 
   return (
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
-        <Text as="h1" variant="h3">Merchant Rules</Text>
+        <Text as="h1" variant="h3">
+          Merchant Rules
+        </Text>
         <Button type="button" onClick={() => setDialogRule(null)}>
           Add rule
         </Button>
@@ -52,7 +54,9 @@ export const MerchantRulesSettings = () => {
           ))}
         </div>
       ) : displayRules.length === 0 ? (
-        <Text variant="body-sm" className="text-muted-foreground">No merchant rules</Text>
+        <Text variant="body-sm" className="text-muted-foreground">
+          No merchant rules
+        </Text>
       ) : (
         <>
           <div className="space-y-1">
@@ -86,5 +90,5 @@ export const MerchantRulesSettings = () => {
         <RuleDialog rule={dialogRule} onClose={() => setDialogRule(false)} />
       )}
     </div>
-  )
-}
+  );
+};

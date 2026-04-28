@@ -1,4 +1,9 @@
 import { Hono } from 'hono';
+import {
+  createCategorySchema,
+  reorderSchema,
+  updateCategorySchema,
+} from '@ploutizo/validators';
 import { appValidator } from '../lib/validator';
 import {
   archiveCategoryById,
@@ -7,11 +12,6 @@ import {
   reorderCategories,
   updateCategory,
 } from '../services/categories';
-import {
-  createCategorySchema,
-  reorderSchema,
-  updateCategorySchema,
-} from '@ploutizo/validators';
 import type { AppEnv } from '../types';
 
 const categoriesRouter = new Hono<AppEnv>();
