@@ -12,9 +12,9 @@ const ART_404 = ` ██╗  ██╗  ██████╗  ██╗  ██
 export const NotFound = () => {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6">
-      <div className="w-full max-w-lg">
+      <div className="flex w-full max-w-lg flex-col items-center">
         {/* Status bar */}
-        <div className="mb-8 flex items-center justify-between border-b border-border pb-3">
+        <div className="mb-8 flex w-full items-center justify-between border-b border-border pb-3">
           <span className="font-mono text-xs tracking-widest text-muted-foreground">
             ● STATUS — 404
           </span>
@@ -34,7 +34,7 @@ export const NotFound = () => {
         </p>
 
         {/* Heading + subtext */}
-        <div className="mb-8 space-y-2">
+        <div className="mb-8 space-y-2 text-center">
           <Text as="h1" variant="h1">
             Page not found
           </Text>
@@ -44,7 +44,7 @@ export const NotFound = () => {
         </div>
 
         {/* Action buttons */}
-        <div className="flex gap-2">
+        <div className="flex justify-center gap-2">
           <Button render={<Link to="/dashboard" />}>Go to Dashboard</Button>
         </div>
       </div>
