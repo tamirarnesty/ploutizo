@@ -480,15 +480,13 @@ Plans:
 - `notFoundComponent` on root route — friendly "Page not found" with link back to dashboard
 - `errorComponent` on root route — user-friendly crash screen with retry/reload; error detail in dev mode only
 
-**Todos:**
-- `.planning/todos/pending/2026-04-22-add-404-page.md`
-- `.planning/todos/pending/2026-04-22-add-error-boundary-errorcomponent-for-page-crashes.md`
-
 **Depends on:** Phase 03.4.3
-**Plans:** 0 plans
+**Plans:** 1/1 plans
+
+**Status:** Complete (verified 2026-04-30)
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 03.4.4 to break down)
+- [x] 03.4.4-01-PLAN.md — Add NotFound + ErrorBoundary components and wire into createRootRoute
 
 ---
 

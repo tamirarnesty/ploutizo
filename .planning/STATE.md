@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: — Foundation
 status: planning
-last_updated: "2026-05-01T02:42:17.530Z"
+last_updated: "2026-05-01T02:52:41.984Z"
 progress:
   total_phases: 7
   completed_phases: 7
@@ -16,11 +16,11 @@ progress:
 
 ## Current Position
 
-Phase: 03.6 (next)
+Phase: 03.4.5 (next)
 Plan: —
-**Milestone:** v0.1 — Foundation
+**Milestone:** v0.2 — Transactions & Settlement
 **Active Phase:** —
-**Status:** Phase 03.5 complete (2/2 plans, UAT verified 2026-04-30) — 03.6 pending planning
+**Status:** Phase 03.4.4 complete (1/1 plans, verified 2026-04-30) — 03.4.5 pending planning
 **Last session:** --stopped-at
 
 ## Next Action
@@ -50,7 +50,7 @@ Plan Phase 03.6 — run /gsd:plan-phase 03.6
 | 03.4.1 | Transaction v2 — Schema Migration, Form & Table Redesign | complete (12/12 plans, verified 2026-04-24) |
 | 03.4.2 | Transaction Form Polish & UI Bug Fixes | complete (1/1 plans, verified 2026-04-24) |
 | 03.4.3 | Fix shared account owners not saved or displayed | complete (verified 2026-04-27) |
-| 03.4.4 | App shell resilience — 404 page & error boundary | pending |
+| 03.4.4 | App shell resilience — 404 page & error boundary | complete (verified 2026-04-30) |
 | 03.4.5 | Form validation audit — all forms show correct error messages | pending |
 | 03.4.6 | Show invited member card in Household view | pending |
 | 03.5 | CI testing, linting, and formatting checks | complete (verified 2026-04-30) |
