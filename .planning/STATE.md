@@ -16,23 +16,23 @@ progress:
 
 ## Current Position
 
-Phase: 03.5 (next)
+Phase: 03.6 (next)
 Plan: —
-**Milestone:** v0.2 Transactions & Settlement
-**Active Phase:** Phase 03.5 — CI testing, linting, and formatting checks
-**Status:** Phase 03.4.3 complete (1/1 plans, UAT verified 2026-04-27) — 03.5 pending planning
+**Milestone:** v0.1 — Foundation
+**Active Phase:** —
+**Status:** Phase 03.5 complete (2/2 plans, UAT verified 2026-04-30) — 03.6 pending planning
 **Last session:** --stopped-at
 
 ## Next Action
 
-Plan Phase 03.5 — run /gsd:plan-phase 03.5
+Plan Phase 03.6 — run /gsd:plan-phase 03.6
 
 ## Phase Status
 
 | Phase | Name | Status |
 |-------|------|--------|
-| 1 | Foundation & Auth Infrastructure | complete |
-| 2 | Households, Accounts & Classification | complete |
+| 01 | Foundation & Auth Infrastructure | complete |
+| 02 | Households, Accounts & Classification | complete |
 | 02.1 | Code Style & Form Patterns Refactor | complete |
 | 02.1.1 | Audit and migrate to neon-serverless per Neon best practices | complete |
 | 02.2 | Add light/dark/system theme toggle | complete |
@@ -41,24 +41,37 @@ Plan Phase 03.5 — run /gsd:plan-phase 03.5
 | 02.4.1 | Mobile UI/UX Fixes and Foundation Re-Establishment | complete |
 | 03.1 | Transaction Schema & Migrations | complete |
 | 03.2 | Transaction API | complete |
+| 03.2.1 | Household improvement — settings consolidation & invitation flow | complete |
 | 03.3 | Transaction List UI | complete |
+| 03.3.1 | API layering and structural refactor | complete |
+| 03.3.2 | Implement Text typography component in packages/ui | complete |
+| 03.3.3 | UI primitive refactor sweep | complete |
 | 03.4 | Transaction Forms UI | complete (21/21 plans, verified 2026-04-19) |
-| 03.4.1 | Transaction v2: Schema Migration, Form & Table Redesign | complete (12/12 plans, verified 2026-04-24) |
+| 03.4.1 | Transaction v2 — Schema Migration, Form & Table Redesign | complete (12/12 plans, verified 2026-04-24) |
 | 03.4.2 | Transaction Form Polish & UI Bug Fixes | complete (1/1 plans, verified 2026-04-24) |
-| 04.1 | Settlement API | pending |
-| 04.2 | Settlement UI | pending |
-| 04.3 | Budgets API | pending |
-| 04.4 | Budget Dashboard UI | pending |
-| 05.1 | Bank Normalizers | pending |
-| 05.2 | Import Batch API | pending |
-| 05.3 | Import UI | pending |
-| 05.4 | Import Bulk Actions & Duplicate Handling | pending |
-| 06.1 | Investment Schema & Contribution Room API | pending |
-| 06.2 | Savings Contributions UI | pending |
-| 06.3 | Net Worth API | pending |
-| 06.4 | Net Worth UI | pending |
-| 07.1 | Notifications Table & Write Triggers | pending |
-| 07.2 | Notification Feed UI | pending |
+| 03.4.3 | Fix shared account owners not saved or displayed | complete (verified 2026-04-27) |
+| 03.4.4 | App shell resilience — 404 page & error boundary | pending |
+| 03.4.5 | Form validation audit — all forms show correct error messages | pending |
+| 03.4.6 | Show invited member card in Household view | pending |
+| 03.5 | CI testing, linting, and formatting checks | complete (verified 2026-04-30) |
+| 03.6 | Migrate @hono/clerk-auth to @clerk/hono | pending |
+| 4.1 | Settlement API | pending |
+| 4.2 | Settlement UI | pending |
+| 4.3 | Budgets API | pending |
+| 4.4 | Budget Dashboard UI | pending |
+| 5.1 | Bank Normalizers | pending |
+| 5.2 | Import Batch API | pending |
+| 5.3 | Import UI | pending |
+| 5.4 | Import Bulk Actions & Duplicate Handling | pending |
+| 6.1 | Investment Schema & Contribution Room API | pending |
+| 6.2 | Savings Contributions UI | pending |
+| 6.3 | Net Worth API | pending |
+| 6.4 | Net Worth UI | pending |
+| 7.1 | Notifications Table & Write Triggers | pending |
+| 7.2 | Notification Feed UI | pending |
+| 7.3 | Overview Dashboard UI | pending |
+| 08.1 | Replace in-memory seenOrgs Set in tenantGuard | pending |
+| 08.2 | Adopt react-i18next and wrap all user-visible string literals | pending |
 
 ## Initialization Summary
 
@@ -126,9 +139,9 @@ Plan Phase 03.5 — run /gsd:plan-phase 03.5
 
 ## Blockers / Open Items
 
-- TFSA 2026 annual limit — verify against CRA before Phase 6
-- RRSP 2026 dollar cap — verify against CRA before Phase 6
-- Bank CSV real exports — collect before Phase 5 (LOW confidence on column names)
+- TFSA 2026 annual limit — verify against CRA before Phase 6.1
+- RRSP 2026 dollar cap — verify against CRA before Phase 6.1
+- Bank CSV real exports — collect before Phase 5.1 (LOW confidence on column names)
 - Neon connection limit on chosen plan — verify before Phase 1 goes live
 - reorderSchema uses z.string().uuid() — test orderedIds must be valid UUIDs (non-UUID strings correctly rejected) — 02-04
 - ReUI Sortable component uses strategy='vertical' prop (not layout prop) — confirm before using in future plans — 02-04

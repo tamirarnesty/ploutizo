@@ -1017,7 +1017,7 @@ Plans:
 
 ---
 
-### Phase 8.1: Replace in-memory seenOrgs Set in tenantGuard
+### Phase 08.1: Replace in-memory seenOrgs Set in tenantGuard
 
 **Goal:** Replace the process-lifetime `seenOrgs` Set cache in `tenantGuard` with a durable solution that works across multiple processes/instances and doesn't rely on a safety-net upsert on every cold start.
 
@@ -1025,13 +1025,13 @@ Plans:
 **Plans:** 0 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 8.1 to break down)
+- [ ] TBD (run /gsd:plan-phase 08.1 to break down)
 
 **Context:** The `seenOrgs` Set was added as a cheap fix to avoid a DB round-trip on every request (the upsert safety net for when the Clerk `organization.created` webhook fails to deliver). Options: (1) configure reliable webhook delivery in all environments — ngrok/Clerk tunnel for local, verified secret + endpoint for prod — making the upsert unnecessary; (2) if multi-process, use a shared cache (Redis/Upstash) instead of the in-process Set. Current approach resets on cold start, which is safe but not ideal long-term.
 
 ---
 
-### Phase 8.2: Adopt react-i18next and wrap all user-visible string literals
+### Phase 08.2: Adopt react-i18next and wrap all user-visible string literals
 
 **Goal:** Eliminate all hardcoded string literals in JSX. Route all user-visible text through `react-i18next`'s `useTranslation` hook with feature-namespaced locale JSON files.
 
@@ -1039,7 +1039,7 @@ Plans:
 **Plans:** 0 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 8.2 to break down)
+- [ ] TBD (run /gsd:plan-phase 08.2 to break down)
 
 **Context:** Library already chosen (`react-i18next`). Strings go in locale JSON files keyed by feature namespace (e.g. `public/locales/en/accounts.json`). Deferred from STANDARDS.md planned refactors — applies to all features once the translation layer is established.
 
