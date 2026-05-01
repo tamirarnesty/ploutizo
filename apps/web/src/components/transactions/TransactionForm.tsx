@@ -324,9 +324,7 @@ const TransactionFormInner = ({
                         </SelectContent>
                       </Select>
                       {field.state.meta.errors.length > 0 ? (
-                        <FieldError>
-                          {String(field.state.meta.errors[0])}
-                        </FieldError>
+                        <FieldError errors={field.state.meta.errors as { message?: string }[]} />
                       ) : null}
                     </Field>
                   )}
@@ -374,9 +372,7 @@ const TransactionFormInner = ({
                     onBlur={field.handleBlur}
                   />
                   {field.state.meta.errors.length > 0 ? (
-                    <FieldError>
-                      {String(field.state.meta.errors[0])}
-                    </FieldError>
+                    <FieldError errors={field.state.meta.errors as { message?: string }[]} />
                   ) : null}
                 </Field>
               )}
@@ -438,9 +434,7 @@ const TransactionFormInner = ({
                     );
                   })()}
                   {field.state.meta.errors.length > 0 ? (
-                    <FieldError>
-                      {String(field.state.meta.errors[0])}
-                    </FieldError>
+                    <FieldError errors={field.state.meta.errors as { message?: string }[]} />
                   ) : null}
                 </Field>
               )}
@@ -561,9 +555,7 @@ const TransactionFormInner = ({
                         />
                       )}
                       {field.state.meta.errors.length > 0 ? (
-                        <FieldError>
-                          {String(field.state.meta.errors[0])}
-                        </FieldError>
+                        <FieldError errors={field.state.meta.errors as { message?: string }[]} />
                       ) : null}
                       {/* TODO(03.4-deferred): originalDescription column — add when schema patch lands */}
                       {/* D-19: import caption (└ Original: ...) is deferred because originalDescription */}
@@ -661,9 +653,7 @@ const TransactionFormInner = ({
                       }
                     />
                     {field.state.meta.errors.length > 0 ? (
-                      <FieldError>
-                        {String(field.state.meta.errors[0])}
-                      </FieldError>
+                      <FieldError errors={field.state.meta.errors as { message?: string }[]} />
                     ) : null}
                   </Field>
                 )}

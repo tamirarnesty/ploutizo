@@ -51,7 +51,7 @@ export const SettlementFields = ({ form, accounts }: SettlementFieldsProps) => (
             </SelectContent>
           </Select>
           {field.state.meta.errors.length > 0 ? (
-            <FieldError>{String(field.state.meta.errors[0])}</FieldError>
+            <FieldError errors={field.state.meta.errors as { message?: string }[]} />
           ) : null}
         </Field>
       )}
@@ -90,7 +90,7 @@ export const SettlementFields = ({ form, accounts }: SettlementFieldsProps) => (
             </SelectContent>
           </Select>
           {field.state.meta.errors.length > 0 ? (
-            <FieldError>{String(field.state.meta.errors[0])}</FieldError>
+            <FieldError errors={field.state.meta.errors as { message?: string }[]} />
           ) : null}
         </Field>
       )}
