@@ -82,7 +82,9 @@ export const InviteMemberForm = () => {
                 className="flex-1"
               />
               {field.state.meta.errors.length > 0 ? (
-                <FieldError errors={field.state.meta.errors as { message?: string }[]} />
+                <FieldError
+                  errors={field.state.meta.errors as { message?: string }[]}
+                />
               ) : null}
             </div>
           )}

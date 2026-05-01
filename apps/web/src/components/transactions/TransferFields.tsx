@@ -82,7 +82,9 @@ const TransferDestinationField = ({
         </SelectContent>
       </Select>
       {field.state.meta.errors.length > 0 ? (
-        <FieldError errors={field.state.meta.errors as { message?: string }[]} />
+        <FieldError
+          errors={field.state.meta.errors as { message?: string }[]}
+        />
       ) : null}
     </Field>
   );
