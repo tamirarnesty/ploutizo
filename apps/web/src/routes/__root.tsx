@@ -15,6 +15,8 @@ import { ThemeProvider } from '@ploutizo/ui/components/theme-provider';
 import { Toaster } from '@ploutizo/ui/components/sonner';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { queryClient, setTokenGetter } from '../lib/queryClient';
+import { NotFound } from '../components/not-found/NotFound';
+import { ErrorBoundary } from '../components/error-boundary/ErrorBoundary';
 
 const authGuard = createServerFn().handler(async () => {
   const { isAuthenticated } = await auth();
@@ -106,4 +108,6 @@ export const Route = createRootRoute({
     ],
   }),
   shellComponent: RootDocument,
+  notFoundComponent: NotFound,
+  errorComponent: ErrorBoundary,
 });
