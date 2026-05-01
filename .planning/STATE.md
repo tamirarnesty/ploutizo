@@ -126,9 +126,9 @@ Plan Phase 03.5 — run /gsd:plan-phase 03.5
 
 ## Blockers / Open Items
 
-- TFSA 2026 annual limit — verify against CRA before Phase 6
-- RRSP 2026 dollar cap — verify against CRA before Phase 6
-- Bank CSV real exports — collect before Phase 5 (LOW confidence on column names)
+- TFSA 2026 annual limit — verify against CRA before Phase 6.1
+- RRSP 2026 dollar cap — verify against CRA before Phase 6.1
+- Bank CSV real exports — collect before Phase 5.1 (LOW confidence on column names)
 - Neon connection limit on chosen plan — verify before Phase 1 goes live
 - reorderSchema uses z.string().uuid() — test orderedIds must be valid UUIDs (non-UUID strings correctly rejected) — 02-04
 - ReUI Sortable component uses strategy='vertical' prop (not layout prop) — confirm before using in future plans — 02-04
