@@ -158,7 +158,7 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
                 aria-invalid={field.state.meta.errors.length > 0}
               />
               {field.state.meta.errors.length > 0 ? (
-                <FieldError errors={field.state.meta.errors as { message?: string }[]} />
+                <FieldError errors={field.state.meta.errors as unknown as { message?: string }[]} />
               ) : null}
             </Field>
           )}
