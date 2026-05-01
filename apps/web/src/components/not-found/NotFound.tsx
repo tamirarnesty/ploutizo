@@ -45,9 +45,7 @@ export const NotFound = () => {
 
         {/* Action buttons */}
         <div className="flex gap-2">
-          <Link to="/dashboard">
-            <Button>Go to Dashboard</Button>
-          </Link>
+          <Button render={<Link to="/dashboard" />}>Go to Dashboard</Button>
         </div>
       </div>
     </div>

@@ -51,9 +51,9 @@ export const ErrorBoundary = ({ error, reset }: ErrorComponentProps) => {
         {/* Action buttons */}
         <div className="flex gap-2">
           <Button onClick={reset}>Try again</Button>
-          <Link to="/dashboard">
-            <Button variant="outline">Go to Dashboard</Button>
-          </Link>
+          <Button render={<Link to="/dashboard" />} variant="outline">
+            Go to Dashboard
+          </Button>
         </div>
 
         {/* Dev-mode error detail — not rendered in production */}
