@@ -8,11 +8,19 @@ export const Route = createFileRoute('/_layout')({
   component: LayoutShell,
 });
 
+function getSidebarDefaultOpen() {
+  const match = document.cookie.match(/(?:^|; )sidebar_state=([^;]*)/);
+  return match ? match[1] !== 'false' : true;
+}
+
 function LayoutShell() {
   useThemeKeyboardShortcut();
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
-      <SidebarProvider className="min-h-0 flex-1 flex-col">
+      <SidebarProvider
+        defaultOpen={getSidebarDefaultOpen()}
+        className="min-h-0 flex-1 flex-col"
+      >
         <TopBar />
         <div className="flex min-h-0 flex-1">
           <AppSidebar />
