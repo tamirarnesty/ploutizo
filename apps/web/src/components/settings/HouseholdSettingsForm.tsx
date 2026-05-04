@@ -1,6 +1,7 @@
 import { HouseholdSettingsFormSchema } from '@ploutizo/validators';
 import { useAppForm } from '@ploutizo/ui/components/form';
 import { Button } from '@ploutizo/ui/components/button';
+import { FieldError } from '@ploutizo/ui/components/field';
 import { Input } from '@ploutizo/ui/components/input';
 import { Spinner } from '@ploutizo/ui/components/spinner';
 import { Text } from '@ploutizo/ui/components/text';
@@ -84,7 +85,9 @@ export const HouseholdSettingsForm = () => {
                 aria-invalid={field.state.meta.errors.length > 0}
               />
               {field.state.meta.errors.length > 0 ? (
-                <Text variant="error">{field.state.meta.errors[0]}</Text>
+                <FieldError
+                  errors={field.state.meta.errors as { message?: string }[]}
+                />
               ) : null}
             </>
           )}

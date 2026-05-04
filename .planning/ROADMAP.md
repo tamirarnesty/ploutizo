@@ -503,10 +503,10 @@ Plans:
 - `.planning/todos/pending/2026-04-14-form-validation-audit-all-forms-show-correct-error-messages.md`
 
 **Depends on:** Phase 03.4.4
-**Plans:** 0 plans
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 03.4.5 to break down)
+- [ ] 03.4.5-01-PLAN.md — Fix all 14 broken field.state.meta.errors render sites + 1 missing site; replace with canonical FieldError errors prop pattern across 9 form components
 
 ---
 

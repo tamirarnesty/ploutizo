@@ -1,4 +1,4 @@
-import { Field, FieldLabel } from '@ploutizo/ui/components/field';
+import { Field, FieldError, FieldLabel } from '@ploutizo/ui/components/field';
 import {
   Select,
   SelectContent,
@@ -172,6 +172,13 @@ const IncomeTypeField = ({ form }: { form: TransactionFormInstance }) => (
             <SelectItem value="other">Other</SelectItem>
           </SelectContent>
         </Select>
+        {field.state.meta.errors.length > 0 ? (
+          <FieldError
+            errors={
+              field.state.meta.errors as unknown as { message?: string }[]
+            }
+          />
+        ) : null}
       </Field>
     )}
   </form.AppField>
