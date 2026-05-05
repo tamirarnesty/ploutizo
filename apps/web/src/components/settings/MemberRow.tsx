@@ -1,17 +1,7 @@
-import { Trash2 } from 'lucide-react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@ploutizo/ui/components/alert-dialog';
 import { Badge } from '@ploutizo/ui/components/badge';
+import { Item, ItemActions } from '@ploutizo/ui/components/item';
 import { Text } from '@ploutizo/ui/components/text';
+import { ConfirmDialog } from './ConfirmDialog';
 import type { OrgMember } from '@ploutizo/types';
 import { UserAvatar } from '@/components/members/UserAvatar';
 
@@ -26,7 +16,7 @@ export const MemberRow = ({
   isCurrentUser,
   onRemove,
 }: MemberRowProps) => (
-  <li className="flex items-center justify-between rounded-md border border-border px-4 py-3 text-sm">
+  <Item variant="outline" className="rounded-md px-4 py-3">
     <div className="flex min-w-0 items-center gap-2">
       <UserAvatar
         name={member.displayName}
@@ -42,40 +32,20 @@ export const MemberRow = ({
       </Text>
       {isCurrentUser ? <Badge variant="secondary">You</Badge> : null}
     </div>
-    <div className="ml-4 flex shrink-0 items-center gap-2">
+    <ItemActions>
       <Text as="span" variant="caption" className="capitalize">
         {member.role}
       </Text>
       {!isCurrentUser ? (
-        <AlertDialog>
-          <AlertDialogTrigger
-            className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-            aria-label={`Remove ${member.displayName}`}
-          >
-            <Trash2 className="size-4" />
-          </AlertDialogTrigger>
-          <AlertDialogContent className="w-[calc(100%-2rem)] max-w-md">
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                Remove {member.firstName ?? member.displayName}?
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                Remove {member.displayName} from this household? They will lose
-                access immediately.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Keep member</AlertDialogCancel>
-              <AlertDialogAction
-                variant="destructive"
-                onClick={() => onRemove(member.id)}
-              >
-                Remove
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <ConfirmDialog
+          triggerAriaLabel={`Remove ${member.displayName}`}
+          title={`Remove ${member.firstName ?? member.displayName}?`}
+          description={`Remove ${member.displayName} from this household? They will lose access immediately.`}
+          cancelLabel="Keep member"
+          confirmLabel="Remove"
+          onConfirm={() => onRemove(member.id)}
+        />
       ) : null}
-    </div>
-  </li>
+    </ItemActions>
+  </Item>
 );
