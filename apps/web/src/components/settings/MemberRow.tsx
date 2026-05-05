@@ -17,7 +17,7 @@ export const MemberRow = ({
   onRemove,
 }: MemberRowProps) => (
   <Item variant="outline" className="rounded-md px-4 py-3">
-    <div className="flex min-w-0 items-center gap-2">
+    <div className="flex min-w-0 flex-1 items-center gap-2">
       <UserAvatar
         name={member.displayName}
         imageUrl={member.imageUrl}
@@ -32,13 +32,19 @@ export const MemberRow = ({
       </Text>
       {isCurrentUser ? <Badge variant="secondary">You</Badge> : null}
     </div>
-    <ItemActions>
-      <Text as="span" variant="caption" className="capitalize">
+    <ItemActions className="ml-auto">
+      <Text
+        as="span"
+        variant="caption"
+        className="text-muted-foreground capitalize"
+      >
         {member.role}
       </Text>
       {!isCurrentUser ? (
         <ConfirmDialog
           triggerAriaLabel={`Remove ${member.displayName}`}
+          triggerClassName="opacity-0 group-hover/item:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
+          tooltip="Remove member"
           title={`Remove ${member.firstName ?? member.displayName}?`}
           description={`Remove ${member.displayName} from this household? They will lose access immediately.`}
           cancelLabel="Keep member"
