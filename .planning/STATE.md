@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: — Foundation
 status: executing
-last_updated: "2026-05-05T02:04:12.569Z"
+last_updated: "2026-05-05T02:16:03.216Z"
 progress:
   total_phases: 7
   completed_phases: 7
@@ -20,12 +20,12 @@ Phase: --phase (03.4.5) — EXECUTING
 Plan: 1 of --name
 **Milestone:** v0.2 — Transactions & Settlement
 **Active Phase:** —
-**Status:** Executing Phase --phase
+**Status:** Ready to execute
 **Last session:** 2026-05-05T02:04:12.558Z
 
 ## Next Action
 
-Plan Phase 03.6 — run /gsd:plan-phase 03.6
+Execute Phase **03.6** — `/gsd-execute-phase 03.6` (after dependency on 03.5 is satisfied).
 
 ## Phase Status
 
@@ -54,7 +54,7 @@ Plan Phase 03.6 — run /gsd:plan-phase 03.6
 | 03.4.5 | Form validation audit — all forms show correct error messages | complete (verified 2026-05-01) |
 | 03.4.6 | Show invited member card in Household view | pending |
 | 03.5 | CI testing, linting, and formatting checks | complete (verified 2026-04-30) |
-| 03.6 | Migrate @hono/clerk-auth to @clerk/hono | pending |
+| 03.6 | Migrate @hono/clerk-auth to @clerk/hono | ready to execute — 1 plan |
 | 4.1 | Settlement API | pending |
 | 4.2 | Settlement UI | pending |
 | 4.3 | Budgets API | pending |
