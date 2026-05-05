@@ -33,13 +33,6 @@ export const MemberRow = ({
       {isCurrentUser ? <Badge variant="secondary">You</Badge> : null}
     </div>
     <ItemActions className="ml-auto">
-      <Text
-        as="span"
-        variant="caption"
-        className="text-muted-foreground capitalize"
-      >
-        {member.role}
-      </Text>
       {!isCurrentUser ? (
         <ConfirmDialog
           triggerAriaLabel={`Remove ${member.displayName}`}
@@ -51,7 +44,12 @@ export const MemberRow = ({
           confirmLabel="Remove"
           onConfirm={() => onRemove(member.id)}
         />
-      ) : null}
+      ) : (
+        <div className="size-9 shrink-0" />
+      )}
+      <Badge variant="outline" className="capitalize">
+        {member.role}
+      </Badge>
     </ItemActions>
   </Item>
 );

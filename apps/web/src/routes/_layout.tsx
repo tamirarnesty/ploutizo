@@ -1,24 +1,29 @@
 import { Outlet, createFileRoute } from '@tanstack/react-router';
+import { createServerFn } from '@tanstack/react-start';
+import { getCookie } from '@tanstack/react-start/server';
 import { SidebarInset, SidebarProvider } from '@ploutizo/ui/components/sidebar';
 import { AppSidebar } from '../components/AppSidebar';
 import { TopBar } from '../components/TopBar';
 import { useThemeKeyboardShortcut } from '../hooks/useThemeKeyboardShortcut';
 
 export const Route = createFileRoute('/_layout')({
+  loader: () => getSidebarState(),
   component: LayoutShell,
 });
 
-function getSidebarDefaultOpen() {
-  const match = document.cookie.match(/(?:^|; )sidebar_state=([^;]*)/);
-  return match ? match[1] !== 'false' : true;
-}
+const getSidebarState = createServerFn().handler(() => {
+  const value = getCookie('sidebar_state');
+  return value !== 'false';
+});
 
 function LayoutShell() {
   useThemeKeyboardShortcut();
+  const defaultOpen = Route.useLoaderData();
+
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
       <SidebarProvider
-        defaultOpen={getSidebarDefaultOpen()}
+        defaultOpen={defaultOpen}
         className="min-h-0 flex-1 flex-col"
       >
         <TopBar />
