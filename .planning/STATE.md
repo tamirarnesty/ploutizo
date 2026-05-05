@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: — Foundation
 status: executing
-last_updated: "2026-05-05T02:16:03.216Z"
+last_updated: "2026-05-05T03:30:00.000Z"
 progress:
   total_phases: 7
   completed_phases: 7
@@ -16,16 +16,14 @@ progress:
 
 ## Current Position
 
-Phase: --phase (03.4.5) — EXECUTING
-Plan: 1 of --name
 **Milestone:** v0.2 — Transactions & Settlement
-**Active Phase:** —
-**Status:** Ready to execute
-**Last session:** 2026-05-05T02:04:12.558Z
+**Active Phase:** 03.6 shipped — [PR #52](https://github.com/tamirarnesty/ploutizo/pull/52) (`feat/03.6-clerk-hono-migration` → `main`)
+**Status:** Awaiting review / CI
+**Last session:** 2026-05-05T03:30:00.000Z
 
 ## Next Action
 
-Execute Phase **03.6** — `/gsd-execute-phase 03.6` (after dependency on 03.5 is satisfied).
+Merge **PR #52** when CI is green; run staging smoke from `03.6-01-PLAN.md` (`manual_uat_smoke`). Then continue roadmap (e.g. **03.4.6** or **4.1** per priorities).
 
 ## Phase Status
 
