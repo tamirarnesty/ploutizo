@@ -20,8 +20,8 @@ Phase: 03.5
 Plan: Not started
 **Milestone:** v0.2 — Transactions & Settlement
 **Active Phase:** —
-**Status:** Ready to plan
-**Last session:** 2026-05-05T20:25:15.658Z
+**Status:** Phase 03.4.6 shipped — PR #53
+**Last Activity:** 2026-05-05
 
 ## Next Action
 
@@ -52,7 +52,7 @@ Plan Phase 03.6 — run /gsd:plan-phase 03.6
 | 03.4.3 | Fix shared account owners not saved or displayed | complete (verified 2026-04-27) |
 | 03.4.4 | App shell resilience — 404 page & error boundary | complete (verified 2026-04-30) |
 | 03.4.5 | Form validation audit — all forms show correct error messages | complete (verified 2026-05-01) |
-| 03.4.6 | Show invited member card in Household view | pending |
+| 03.4.6 | Show invited member card in Household view | shipped — PR #53 |
 | 03.5 | CI testing, linting, and formatting checks | complete (verified 2026-04-30) |
 | 03.6 | Migrate @hono/clerk-auth to @clerk/hono | pending |
 | 4.1 | Settlement API | pending |
