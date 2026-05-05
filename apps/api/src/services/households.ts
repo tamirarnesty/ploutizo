@@ -110,7 +110,7 @@ export async function listInvitations(orgId: string): Promise<PendingInvitation[
     throw new DomainError(500, 'Failed to list invitations.', 'UNKNOWN')
   }
   // Clerk REST returns snake_case — map to camelCase here.
-  // Timestamps are 10-digit Unix SECONDS — multiply by 1000 before new Date().
+  // Timestamps are Unix MILLISECONDS — pass directly to new Date().
   const body = (await clerkRes.json()) as {
     data: {
       id: string
@@ -124,8 +124,8 @@ export async function listInvitations(orgId: string): Promise<PendingInvitation[
     id: inv.id,
     email: inv.email_address,
     status: inv.status as PendingInvitation['status'],
-    createdAt: new Date(inv.created_at * 1000).toISOString(),
-    expiresAt: inv.expires_at ? new Date(inv.expires_at * 1000).toISOString() : null,
+    createdAt: new Date(inv.created_at).toISOString(),
+    expiresAt: inv.expires_at ? new Date(inv.expires_at).toISOString() : null,
   }))
 }
 
