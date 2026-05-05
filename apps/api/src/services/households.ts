@@ -8,6 +8,7 @@ import {
   updateOrgSettings as updateOrgSettingsQuery,
 } from '../lib/queries/households'
 import type { InviteMemberFormSchema, updateHouseholdSettingsSchema } from '@ploutizo/validators'
+import type { PendingInvitation } from '@ploutizo/types'
 import type { z } from 'zod'
 
 export async function getHousehold(orgId: string) {
@@ -96,4 +97,58 @@ export async function removeMember(
 
   await deleteOrgMember(memberId)
   return { removed: true }
+}
+
+export async function listInvitations(orgId: string): Promise<PendingInvitation[]> {
+  // Status filter MUST include both 'pending' and 'expired' so expired-state branch is reachable.
+  // Clerk REST accepts repeated `status` query params: ?status=pending&status=expired
+  const url = `https://api.clerk.com/v1/organizations/${orgId}/invitations?status=pending&status=expired&limit=100`
+  const clerkRes = await fetch(url, {
+    headers: { Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}` },
+  })
+  if (!clerkRes.ok) {
+    throw new DomainError(500, 'Failed to list invitations.', 'UNKNOWN')
+  }
+  // Clerk REST returns snake_case — map to camelCase here.
+  // Timestamps are 10-digit Unix SECONDS — multiply by 1000 before new Date().
+  const body = (await clerkRes.json()) as {
+    data: {
+      id: string
+      email_address: string
+      status: string
+      created_at: number
+      expires_at: number | null
+    }[]
+  }
+  return body.data.map((inv) => ({
+    id: inv.id,
+    email: inv.email_address,
+    status: inv.status as PendingInvitation['status'],
+    createdAt: new Date(inv.created_at * 1000).toISOString(),
+    expiresAt: inv.expires_at ? new Date(inv.expires_at * 1000).toISOString() : null,
+  }))
+}
+
+// Clerk revoke endpoint is POST .../revoke (NOT DELETE) — requires requesting_user_id (otherwise 422).
+// The internal ploutizo API exposes this as DELETE /api/households/invitations/:id (REST convention).
+export async function revokeInvitation(
+  orgId: string,
+  invitationId: string,
+  requestingUserId: string
+) {
+  const clerkRes = await fetch(
+    `https://api.clerk.com/v1/organizations/${orgId}/invitations/${invitationId}/revoke`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ requesting_user_id: requestingUserId }),
+    }
+  )
+  if (!clerkRes.ok && clerkRes.status !== 404) {
+    throw new DomainError(500, 'An unexpected error occurred.', 'UNKNOWN')
+  }
+  return { revoked: true }
 }
