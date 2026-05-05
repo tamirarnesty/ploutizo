@@ -24,7 +24,7 @@ export const MembersSection = () => {
 
   const members = membersQuery.data ?? [];
   const invitations = invitationsQuery.data ?? [];
-  const isLoading = membersQuery.isLoading || invitationsQuery.isLoading;
+  const isLoading = !membersQuery.data && !invitationsQuery.data;
 
   const handleRemove = useCallback(
     (memberId: string) => removeMutation.mutate(memberId),
