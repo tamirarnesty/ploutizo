@@ -63,7 +63,7 @@ The two highest-risk areas requiring early attention are: (1) Clerk satellite do
 
 - **TFSA room calculation does NOT include 2026 limit.** The research table runs through 2025 ($7,000, cumulative $102,000). The 2026 limit is not yet in the research data. The constant file must be updated once CRA confirms the 2026 amount (see Needs Verification).
 
-- **Clerk JWT claim names changed in v2 (deprecated April 2025).** Raw JWT claims use compact names (`o.id` not `org_id`). Always use `getAuth(c).orgId` — never read `sessionClaims.org_id` directly. The `@hono/clerk-auth` middleware normalizes this.
+- **Clerk JWT claim names changed in v2 (deprecated April 2025).** Raw JWT claims use compact names (`o.id` not `org_id`). Always use `getAuth(c).orgId` — never read `sessionClaims.org_id` directly. The `@clerk/hono` middleware normalizes this.
 
 - **CORS must precede Clerk middleware.** If Clerk runs before CORS, OPTIONS preflight requests are rejected with 401 (no `orgId` triggers tenant guard). Correct order: CORS → `clerkMiddleware()` → `tenantGuard()`.
 
@@ -91,7 +91,7 @@ The two highest-risk areas requiring early attention are: (1) Clerk satellite do
 
 **Research changes this phase significantly.** Clerk satellite domain configuration is not in REQUIREMENTS.md but is a hard dependency for the entire subdomain-per-household model. This must happen in Phase 1, not as an afterthought.
 
-- Configure `@hono/clerk-auth` with correct middleware order (CORS → Clerk → `tenantGuard()`), `authorizedParties`, and `clockSkewInMs: 10000`
+- Configure `@clerk/hono` with correct middleware order (CORS → Clerk → `tenantGuard()`), `authorizedParties`, and `clockSkewInMs: 10000`
 - Configure Clerk satellite domains with `satelliteAutoSync: true` on `apps/web`
 - Set `allowedRedirectOrigins` on `ClerkProvider` for `*.ploutizo.app`
 - Add DNS CNAME records for `clerk.{subdomain}.ploutizo.app` (production only; document this in deployment runbook)
@@ -211,7 +211,7 @@ The two highest-risk areas requiring early attention are: (1) Clerk satellite do
 - React Query docs — optimistic updates, query invalidation, `onSettled` pattern
 - CRA TFSA publications — annual limits 2009–2025, eligibility rules
 - CRA FHSA publications — carry-forward mechanics, lifetime cap, account open requirement
-- `@hono/clerk-auth` README — middleware order, `getAuth()` usage
+- `@clerk/hono` (npm) — middleware order, `getAuth()` usage
 
 ### Secondary (MEDIUM confidence)
 - TanStack Start Railway deployment patterns — no Start-specific Railway docs; inferred from Vinxi/Node.js output behavior

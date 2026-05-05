@@ -41,8 +41,8 @@ export const mockTxRow = {
   updatedAt: new Date().toISOString(),
 };
 
-// Mock @hono/clerk-auth so getAuth returns a known orgId — identical to accounts.test.ts
-vi.mock('@hono/clerk-auth', () => ({
+// Mock @clerk/hono so getAuth returns a known orgId — identical to accounts.test.ts
+vi.mock('@clerk/hono', () => ({
   getAuth: vi.fn(() => ({ orgId: 'org_test123' })),
 }));
 

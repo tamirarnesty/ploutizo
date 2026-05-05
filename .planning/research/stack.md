@@ -45,10 +45,10 @@ TanStack Start's SSR works by rendering routes on the server and streaming HTML 
 
 ### Package
 
-Use `@hono/clerk-auth` (official Hono middleware package, hosted in the `honojs/middleware` monorepo).
+Use **`@clerk/hono`** (Clerk first-party Hono integration). Package: [npm `@clerk/hono`](https://www.npmjs.com/package/@clerk/hono).
 
 ```bash
-pnpm add @hono/clerk-auth
+pnpm add @clerk/hono --filter api
 ```
 
 Environment variables required in `apps/api`:
@@ -63,7 +63,7 @@ The required global middleware order for `apps/api` is:
 
 ```typescript
 import { cors } from 'hono/cors'
-import { clerkMiddleware, getAuth } from '@hono/clerk-auth'
+import { clerkMiddleware, getAuth } from '@clerk/hono'
 
 // 1. CORS — must come first so preflight requests are handled before auth
 app.use('*', cors({
@@ -122,9 +122,9 @@ Clerk deprecated **JWT token Version 1** on April 14, 2025. All new instances us
 | Org Role | `org_role` | `o.rol` |
 | Org Slug | `org_slug` | `o.slg` |
 
-The `@hono/clerk-auth` middleware handles JWT verification and exposes the normalized `Auth` object via `getAuth()` — you never read raw JWT claims directly. This means the v1/v2 difference is abstracted away as long as you use `getAuth(c)` rather than manually parsing `sessionClaims`.
+The `@clerk/hono` middleware handles JWT verification and exposes the normalized `Auth` object via `getAuth()` — you never read raw JWT claims directly. This means the v1/v2 difference is abstracted away as long as you use `getAuth(c)` rather than manually parsing `sessionClaims`.
 
-**Confidence:** HIGH (Clerk Auth object docs + Hono clerk-auth README + Clerk JWT docs, all verified)
+**Confidence:** HIGH (Clerk Auth object docs + `@clerk/hono` + Clerk JWT docs, all verified)
 
 ### CORS + Clerk Cookie Leakage
 

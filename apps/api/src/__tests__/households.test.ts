@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Hono } from 'hono';
 import { householdsRouter } from '../routes/households';
 
-vi.mock('@hono/clerk-auth', () => ({
+vi.mock('@clerk/hono', () => ({
   getAuth: vi.fn(() => ({ orgId: 'org_test123', userId: 'user_clerk_abc' })),
 }));
 
