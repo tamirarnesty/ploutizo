@@ -23,7 +23,7 @@ export const InvitedMemberRow = ({
 
   return (
     <Item variant="outline" className="rounded-md px-4 py-3 opacity-60">
-      <div className="flex min-w-0 items-center gap-2">
+      <div className="flex min-w-0 flex-1 items-center gap-2">
         <UserAvatar name={invitation.email} className="shrink-0" />
         <div className="flex min-w-0 flex-col">
           <Text
@@ -50,9 +50,11 @@ export const InvitedMemberRow = ({
         </div>
         <Badge variant="secondary">Invited</Badge>
       </div>
-      <ItemActions>
+      <ItemActions className="ml-auto">
         <ConfirmDialog
           triggerAriaLabel={`Revoke invite to ${invitation.email}`}
+          triggerClassName="opacity-0 group-hover/item:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
+          tooltip="Cancel invite"
           title={`Revoke invite to ${invitation.email}?`}
           description={`${invitation.email} will no longer be able to join this household using this invite.`}
           cancelLabel="Keep invite"
