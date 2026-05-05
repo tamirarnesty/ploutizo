@@ -7,8 +7,10 @@ import {
   getHousehold,
   getHouseholdSettings,
   inviteMember,
+  listInvitations,
   listMembers,
   removeMember,
+  revokeInvitation,
   updateHouseholdSettings,
 } from '../services/households';
 import type { AppEnv } from '../types';
@@ -72,6 +74,44 @@ householdsRouter.delete('/members/:memberId', async (c) => {
   } catch (err) {
     if (err instanceof DomainError) {
       return c.json({ error: { code: err.code ?? 'DOMAIN_ERROR' } }, err.statusCode as ContentfulStatusCode);
+    }
+    throw err;
+  }
+});
+
+// GET /invitations — list pending and expired invitations for the current org
+// SECURITY: orgId comes from c.get('orgId') (set by tenantGuard from JWT) — never from client
+householdsRouter.get('/invitations', async (c) => {
+  const orgId = c.get('orgId');
+  try {
+    const rows = await listInvitations(orgId);
+    return c.json({ data: rows });
+  } catch (err) {
+    if (err instanceof DomainError) {
+      return c.json(
+        { error: { code: err.code ?? 'DOMAIN_ERROR' } },
+        err.statusCode as ContentfulStatusCode
+      );
+    }
+    throw err;
+  }
+});
+
+// DELETE /invitations/:invitationId — revoke an invitation (calls Clerk POST .../revoke under the hood)
+// SECURITY: orgId from JWT scope, userId from JWT — both server-set, never client-controllable
+householdsRouter.delete('/invitations/:invitationId', async (c) => {
+  const orgId = c.get('orgId');
+  const { userId: requestingUserId } = getAuth(c);
+  const { invitationId } = c.req.param();
+  try {
+    const result = await revokeInvitation(orgId, invitationId, requestingUserId ?? '');
+    return c.json({ data: result });
+  } catch (err) {
+    if (err instanceof DomainError) {
+      return c.json(
+        { error: { code: err.code ?? 'DOMAIN_ERROR' } },
+        err.statusCode as ContentfulStatusCode
+      );
     }
     throw err;
   }

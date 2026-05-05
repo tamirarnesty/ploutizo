@@ -31,7 +31,7 @@
   "hooks": {
     "context_warnings": true
   },
-  "resolve_model_ids": "omit",
+  "resolve_model_ids": "true",
   "mode": "interactive",
   "granularity": "standard"
 }

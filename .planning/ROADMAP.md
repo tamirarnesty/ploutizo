@@ -578,11 +578,12 @@ Plans:
 - `.planning/todos/pending/2026-04-21-show-invited-member-card-in-household-view.md`
 
 **Depends on:** Phase 03.4.5
-**Plans:** 0 plans
+**Plans:** 3/3 plans complete
 
 Plans:
-
-- TBD (run /gsd-plan-phase 03.4.6 to break down)
+- [x] 03.4.6-01-PLAN.md — API: PendingInvitation type + listInvitations/revokeInvitation services + GET/DELETE invitations routes + tests
+- [x] 03.4.6-02-PLAN.md — Frontend data access: useGetOrgInvitations + useRevokeInvitation hooks + useInviteMember invalidation update
+- [x] 03.4.6-03-PLAN.md — UI: InvitedMemberRow component + MembersSection parallel queries + revoke flow
 
 ---
 
