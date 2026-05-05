@@ -229,8 +229,8 @@ describe('GET /api/households/invitations', () => {
               id: 'inv_abc',
               email_address: 'user@example.com',
               status: 'pending',
-              created_at: 1678886400,   // Unix seconds = 2023-03-15T12:00:00Z
-              expires_at: 1681564800,   // Unix seconds = 2023-04-15T12:00:00Z
+              created_at: 1678886400000,   // Unix ms = 2023-03-15T12:00:00Z
+              expires_at: 1681564800000,   // Unix ms = 2023-04-15T12:00:00Z
             },
           ],
         }),
@@ -249,9 +249,9 @@ describe('GET /api/households/invitations', () => {
     expect(row).not.toHaveProperty('email_address');
     expect(row).not.toHaveProperty('created_at');
     expect(row).not.toHaveProperty('expires_at');
-    // Timestamps converted from Unix seconds → ISO strings (year 2023, not 1970)
-    expect(row['createdAt']).toBe(new Date(1678886400 * 1000).toISOString());
-    expect(row['expiresAt']).toBe(new Date(1681564800 * 1000).toISOString());
+    // Timestamps are Unix ms — passed directly to new Date() (year 2023, not 1970)
+    expect(row['createdAt']).toBe(new Date(1678886400000).toISOString());
+    expect(row['expiresAt']).toBe(new Date(1681564800000).toISOString());
   });
 
   it('passes ?status=pending&status=expired to Clerk', async () => {
@@ -273,7 +273,7 @@ describe('GET /api/households/invitations', () => {
               id: 'inv_abc',
               email_address: 'user@example.com',
               status: 'pending',
-              created_at: 1678886400,
+              created_at: 1678886400000,
               expires_at: null,
             },
           ],
