@@ -215,6 +215,122 @@ describe('POST /api/households/invitations', () => {
   });
 });
 
+describe('GET /api/households/invitations', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn());
+  });
+
+  it('returns 200 with mapped camelCase invitations array', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: [
+            {
+              id: 'inv_abc',
+              email_address: 'user@example.com',
+              status: 'pending',
+              created_at: 1678886400000,   // Unix ms = 2023-03-15T12:00:00Z
+              expires_at: 1681564800000,   // Unix ms = 2023-04-15T12:00:00Z
+            },
+          ],
+        }),
+        { status: 200 }
+      )
+    );
+    const res = await app.request('/invitations');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { data: Record<string, unknown>[] };
+    expect(body.data).toHaveLength(1);
+    const row = body.data[0];
+    expect(row).toHaveProperty('id', 'inv_abc');
+    expect(row).toHaveProperty('email', 'user@example.com');
+    expect(row).toHaveProperty('status', 'pending');
+    // snake_case must NOT leak through to consumers
+    expect(row).not.toHaveProperty('email_address');
+    expect(row).not.toHaveProperty('created_at');
+    expect(row).not.toHaveProperty('expires_at');
+    // Timestamps are Unix ms — passed directly to new Date() (year 2023, not 1970)
+    expect(row['createdAt']).toBe(new Date(1678886400000).toISOString());
+    expect(row['expiresAt']).toBe(new Date(1681564800000).toISOString());
+  });
+
+  it('passes ?status=pending&status=expired to Clerk', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ data: [] }), { status: 200 })
+    );
+    await app.request('/invitations');
+    const calledUrl = vi.mocked(fetch).mock.calls[0]?.[0] as string;
+    expect(calledUrl).toContain('status=pending');
+    expect(calledUrl).toContain('status=expired');
+  });
+
+  it('returns null expiresAt when Clerk omits expires_at', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: [
+            {
+              id: 'inv_abc',
+              email_address: 'user@example.com',
+              status: 'pending',
+              created_at: 1678886400000,
+              expires_at: null,
+            },
+          ],
+        }),
+        { status: 200 }
+      )
+    );
+    const res = await app.request('/invitations');
+    const body = (await res.json()) as { data: Record<string, unknown>[] };
+    expect(body.data[0]?.expiresAt).toBeNull();
+  });
+
+  it('returns 500 when Clerk responds non-OK', async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 500 }));
+    const res = await app.request('/invitations');
+    expect(res.status).toBe(500);
+  });
+});
+
+describe('DELETE /api/households/invitations/:invitationId', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn());
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
+  });
+
+  it('returns 200 { data: { revoked: true } } on Clerk success', async () => {
+    const res = await app.request('/invitations/inv_abc', { method: 'DELETE' });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { data: { revoked: boolean } };
+    expect(body.data.revoked).toBe(true);
+  });
+
+  it('calls Clerk with POST .../revoke and includes requesting_user_id in body', async () => {
+    await app.request('/invitations/inv_abc', { method: 'DELETE' });
+    const [calledUrl, calledInit] = vi.mocked(fetch).mock.calls[0] ?? [];
+    expect(String(calledUrl)).toContain('/invitations/inv_abc/revoke');
+    expect(calledInit?.method).toBe('POST');
+    const bodyStr = typeof calledInit?.body === 'string' ? calledInit.body : '{}';
+    const parsedBody = JSON.parse(bodyStr) as { requesting_user_id?: string };
+    expect(parsedBody).toHaveProperty('requesting_user_id');
+    // requesting_user_id is non-empty (set by tenantGuard test harness)
+    expect(typeof parsedBody.requesting_user_id).toBe('string');
+  });
+
+  it('treats Clerk 404 as success (idempotent revoke)', async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 404 }));
+    const res = await app.request('/invitations/inv_gone', { method: 'DELETE' });
+    expect(res.status).toBe(200);
+  });
+
+  it('returns 500 when Clerk responds with non-404 error', async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 500 }));
+    const res = await app.request('/invitations/inv_abc', { method: 'DELETE' });
+    expect(res.status).toBe(500);
+  });
+});
+
 describe('DELETE /api/households/members/:memberId', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn());
