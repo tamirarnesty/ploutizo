@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Hono } from 'hono';
-import { getAuth } from '@hono/clerk-auth';
+import { getAuth } from '@clerk/hono';
 import { tenantGuard } from '../middleware/tenantGuard';
 
 
-// Mock @hono/clerk-auth to control what getAuth() returns per test
-vi.mock('@hono/clerk-auth', () => ({
+// Mock @clerk/hono to control what getAuth() returns per test
+vi.mock('@clerk/hono', () => ({
   getAuth: vi.fn(),
   clerkMiddleware: vi.fn(
     () => async (_c: unknown, next: () => Promise<void>) => next()

@@ -54,7 +54,7 @@ Execute Phase **03.6** — `/gsd-execute-phase 03.6` (after dependency on 03.5 i
 | 03.4.5 | Form validation audit — all forms show correct error messages | complete (verified 2026-05-01) |
 | 03.4.6 | Show invited member card in Household view | pending |
 | 03.5 | CI testing, linting, and formatting checks | complete (verified 2026-04-30) |
-| 03.6 | Migrate @hono/clerk-auth to @clerk/hono | ready to execute — 1 plan |
+| 03.6 | Migrate @hono/clerk-auth to @clerk/hono | complete (1/1 plans, verified 2026-05-04) |
 | 4.1 | Settlement API | pending |
 | 4.2 | Settlement UI | pending |
 | 4.3 | Budgets API | pending |
@@ -91,7 +91,7 @@ Execute Phase **03.6** — `/gsd-execute-phase 03.6` (after dependency on 03.5 i
 - Budget rollover capped at 1× base limit
 - TFSA withdrawals: disclaimer only in v1
 - Negative settlement: display as green credit
-- `authorizedParties` in `@hono/clerk-auth` is `string[]` only — function type not supported; `isAllowedParty` exported as utility, static array used for `clerkMiddleware` (01-03)
+- `authorizedParties` in `@clerk/hono` is `string[]` only — function type not supported; `isAllowedParty` exported as utility, static array used for `clerkMiddleware` (01-03)
 - Seed data uses schema field names: `pattern` and `renameTo` (not plan aliases `matchValue`/`renameDescription`) — 01-05
 - Test mocks for Drizzle insert use `unknown` intermediate cast to satisfy `PgInsertBuilder` strict types — 01-05
 - HouseholdSettings type defined inline in household.tsx until @ploutizo/types is populated by plan 02-01 — 02-02

@@ -4,7 +4,7 @@ import { merchantRulesRouter } from '../routes/merchant-rules';
 import { DomainError, NotFoundError } from '../lib/errors';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 
-vi.mock('@hono/clerk-auth', () => ({
+vi.mock('@clerk/hono', () => ({
   getAuth: vi.fn(() => ({ orgId: 'org_test123' })),
 }));
 vi.mock('@ploutizo/db', () => ({

@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { getAuth } from '@hono/clerk-auth';
+import { getAuth } from '@clerk/hono';
 import { InviteMemberFormSchema, updateHouseholdSettingsSchema } from '@ploutizo/validators';
 import { appValidator } from '../lib/validator';
 import { DomainError } from '../lib/errors';

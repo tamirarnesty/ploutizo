@@ -3,8 +3,8 @@ import { Hono } from 'hono';
 import { db } from '@ploutizo/db';
 import { accountsRouter } from '../routes/accounts';
 
-// Mock @hono/clerk-auth so getAuth returns a known orgId
-vi.mock('@hono/clerk-auth', () => ({
+// Mock @clerk/hono so getAuth returns a known orgId
+vi.mock('@clerk/hono', () => ({
   getAuth: vi.fn(() => ({ orgId: 'org_test123' })),
 }));
 

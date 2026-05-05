@@ -1,5 +1,5 @@
 import { createMiddleware } from 'hono/factory';
-import { getAuth } from '@hono/clerk-auth';
+import { getAuth } from '@clerk/hono';
 import { db } from '@ploutizo/db';
 import { orgs } from '@ploutizo/db/schema';
 import type { AppEnv } from '../types';

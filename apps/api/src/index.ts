@@ -1,7 +1,7 @@
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { clerkMiddleware } from '@hono/clerk-auth';
+import { clerkMiddleware } from '@clerk/hono';
 import { tenantGuard } from './middleware/tenantGuard';
 import { healthRouter } from './routes/health';
 import { webhooksRouter } from './routes/webhooks';
@@ -33,7 +33,7 @@ app.use(
 );
 
 // 2. Clerk JWT verification — clockSkewInMs handles Railway container clock drift (D-04)
-// authorizedParties: @hono/clerk-auth accepts string[] only (function type not supported).
+// authorizedParties: @clerk/hono accepts string[] only (function type not supported).
 // Resolution (D-04): isAllowedParty validates azp values via regex for subdomain support.
 // Known parties are enumerated explicitly — Clerk wildcard glob syntax is unsupported (RESEARCH.md LOW confidence).
 export const isAllowedParty = (azp: string): boolean =>
