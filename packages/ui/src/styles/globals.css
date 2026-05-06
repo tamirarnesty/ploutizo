@@ -19,6 +19,10 @@
 @import '@fontsource-variable/geist';
 @import '@fontsource-variable/noto-sans';
 @import '@fontsource-variable/noto-serif';
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
 
 @custom-variant dark (&:is(.dark *));
 @source '../../../apps/**/*.{ts,tsx}';
@@ -152,7 +156,7 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --font-sans: 'Geist Variable', sans-serif;
-  --font-heading: var(--font-serif);
+  --font-heading: 'Geist Mono Variable', monospace;
   --color-invert-foreground: var(--invert-foreground);
   --color-invert: var(--invert);
   --color-warning-foreground: var(--warning-foreground);
@@ -173,7 +177,7 @@
     @apply bg-background text-foreground;
   }
   html {
-    @apply font-serif;
+    @apply font-sans;
   }
   button:not(:disabled),
   [role='button']:not(:disabled) {
