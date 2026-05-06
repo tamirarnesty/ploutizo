@@ -34,6 +34,25 @@ pnpm test                # vitest run in all packages (162 tests, all mocked —
 pnpm turbo format:check  # Prettier check
 ```
 
+### Clerk webhook tunnel (svix)
+
+For Clerk webhooks to reach the local API during development, run svix in a separate terminal **after** the API is started:
+
+```
+svix listen http://localhost:8080/webhooks/clerk
+```
+
+The Clerk dashboard webhook endpoint is set to `https://play.svix.com/in/c_DXiiPoSOVJFMDsOp1h5EKOWjg6z/`. The svix CLI must be installed first (`curl -sL https://github.com/svix/svix-webhooks/releases/download/v1.92.2/svix-cli-installer.sh | bash`, then add `$HOME/.svix/bin` to `PATH`).
+
+Webhooks are only needed when testing flows that trigger Clerk events: sign-up, login/logout, org (household) creation/update, member invite/join. See `apps/api/src/services/webhooks.ts` for the full event list.
+
+### Test credentials
+
+Use Clerk test email mode ([docs](https://clerk.com/docs/guides/development/testing/test-emails-and-phones.md)):
+
+- **Email**: `cursor+clerk_test@example.com`
+- **Verification code**: `424242` (persistent, no real email sent)
+
 ### Gotchas
 
 - **Node version**: Must be `>=22` (`.node-version` specifies 22.14.0). The API dev script uses `node --env-file=.env` which requires Node >=20.6.
