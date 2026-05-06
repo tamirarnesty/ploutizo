@@ -118,7 +118,7 @@ function FieldTitle({ className, ...props }: React.ComponentProps<'div'>) {
     <div
       data-slot="field-label"
       className={cn(
-        'flex w-fit items-center gap-2 text-sm leading-snug font-medium group-data-[disabled=true]/field:opacity-50',
+        'flex w-fit items-center gap-2 text-sm font-medium group-data-[disabled=true]/field:opacity-50',
         className
       )}
       {...props}
@@ -177,7 +177,7 @@ function FieldError({
   errors,
   ...props
 }: React.ComponentProps<'div'> & {
-  errors?: (string | { message?: string } | undefined)[];
+  errors?: ({ message?: string } | undefined)[];
 }) {
   const content = useMemo(() => {
     if (children) {
@@ -188,23 +188,20 @@ function FieldError({
       return null;
     }
 
-    const getMsg = (e: string | { message?: string } | undefined) =>
-      typeof e === 'string' ? e : e?.message;
-
     const uniqueErrors = [
-      ...new Map(errors.map((error) => [getMsg(error), error])).values(),
+      ...new Map(errors.map((error) => [error?.message, error])).values(),
     ];
 
     if (uniqueErrors.length == 1) {
-      return getMsg(uniqueErrors[0]);
+      return uniqueErrors[0]?.message;
     }
 
     return (
       <ul className="ml-4 flex list-disc flex-col gap-1">
-        {uniqueErrors.map((error, index) => {
-          const msg = getMsg(error);
-          return msg && <li key={index}>{msg}</li>;
-        })}
+        {uniqueErrors.map(
+          (error, index) =>
+            error?.message && <li key={index}>{error.message}</li>
+        )}
       </ul>
     );
   }, [children, errors]);
