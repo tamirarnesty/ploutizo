@@ -425,8 +425,8 @@ const TransactionFormInner = ({
                             className="mr-2 size-4"
                             aria-hidden="true"
                           />
-                          {field.state.value
-                            ? format(selectedDate!, 'MMM d, yyyy')
+                          {selectedDate
+                            ? format(selectedDate, 'MMM d, yyyy')
                             : 'Pick a date'}
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">

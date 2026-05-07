@@ -7,6 +7,7 @@ import {
   OctagonXIcon,
   TriangleAlertIcon,
 } from 'lucide-react';
+import { type CSSProperties } from 'react';
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = 'system' } = useTheme();
@@ -28,7 +29,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           '--normal-text': 'var(--popover-foreground)',
           '--normal-border': 'var(--border)',
           '--border-radius': 'var(--radius)',
-        } as React.CSSProperties
+        } as CSSProperties
       }
       toastOptions={{
         classNames: {
@@ -40,5 +41,5 @@ const Toaster = ({ ...props }: ToasterProps) => {
   );
 };
 
-export { toast } from 'sonner';
 export { Toaster };
+export { toast } from 'sonner';

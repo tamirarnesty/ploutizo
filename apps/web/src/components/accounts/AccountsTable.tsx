@@ -70,7 +70,7 @@ export const AccountsTable = ({
         },
         cell: ({ row }) => (
           <Text as="span" variant="body-sm" className="text-muted-foreground">
-            {ACCOUNT_TYPE_LABELS[row.original.type] ?? row.original.type}
+            {ACCOUNT_TYPE_LABELS[row.original.type]}
           </Text>
         ),
       },
