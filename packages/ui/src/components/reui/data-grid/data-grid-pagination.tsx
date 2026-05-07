@@ -1,5 +1,3 @@
-'use client';
-
 import React from 'react';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
