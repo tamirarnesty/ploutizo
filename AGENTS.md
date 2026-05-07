@@ -61,3 +61,4 @@ Use Clerk test email mode ([docs](https://clerk.com/docs/guides/development/test
 - **Never run `npx tsc` at repo root** — it emits JS files. Always use `pnpm turbo typecheck`.
 - **Lefthook pre-commit hooks** run lint, typecheck, and format:check in parallel. These are installed via the `prepare` script.
 - **Tests are fully mocked** — `pnpm test` runs all 162 tests without requiring any secrets or external services.
+- **shadcn preset**: Current preset code is `b3xP0yYMeA`. Apply with `pnpm dlx shadcn@latest apply --preset <code> -c apps/web`. After applying a new preset, run `pnpm --filter @ploutizo/ui format` and `pnpm --filter web format` to fix import ordering and formatting. Check that `sonner.tsx` still re-exports `toast` from `"sonner"` — presets tend to drop it.
