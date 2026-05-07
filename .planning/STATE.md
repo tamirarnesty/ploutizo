@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: — Foundation
-status: planning
+status: ready_to_plan
 last_updated: "2026-05-05T20:25:15.663Z"
 progress:
   total_phases: 7
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 28
   completed_plans: 28
-  percent: 100
+  percent: 114
 ---
 
 # Project State
@@ -18,7 +18,7 @@ progress:
 
 **Milestone:** v0.2 — Transactions & Settlement
 **Active Phase:** 03.6 shipped — [PR #52](https://github.com/tamirarnesty/ploutizo/pull/52) (`feat/03.6-clerk-hono-migration` → `main`)
-**Status:** Awaiting review / CI
+**Status:** Ready to plan
 **Last session:** 2026-05-05T03:30:00.000Z
 
 ## Next Action

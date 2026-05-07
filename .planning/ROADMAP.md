@@ -604,7 +604,7 @@ Plans:
 **Goal:** Apps/api depends on Clerk first-party `@clerk/hono`; `clerkMiddleware` + `getAuth` preserve options and middleware order from `apps/api/src/index.ts`; Vitest mocks and rolling research docs updated; deprecation noise from `@hono/clerk-auth` eliminated.
 **Requirements**: TBD
 **Depends on:** Phase 03.5
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 
