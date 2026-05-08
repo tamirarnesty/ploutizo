@@ -103,3 +103,40 @@ export async function fetchSettlementBalances(orgId: string): Promise<Settlement
     balanceCents: typeof r.balanceCents === 'string' ? Number(r.balanceCents) : r.balanceCents,
   }))
 }
+
+/**
+ * Fetch account row for settlement validation (D-18).
+ * Returns null if not found or wrong org.
+ * Caller checks archivedAt to enforce "Cannot settle an archived account".
+ */
+export async function fetchAccountForSettlement(
+  accountId: string,
+  orgId: string
+): Promise<{ id: string; name: string; archivedAt: Date | null } | null> {
+  const rows = await db
+    .select({
+      id: accounts.id,
+      name: accounts.name,
+      archivedAt: accounts.archivedAt,
+    })
+    .from(accounts)
+    .where(and(eq(accounts.id, accountId), eq(accounts.orgId, orgId)))
+    .limit(1)
+  return rows.at(0) ?? null
+}
+
+/**
+ * Verify a member belongs to this org (D-18).
+ * Returns true if (memberId, orgId) is a valid orgMembers row.
+ */
+export async function memberBelongsToOrg(
+  memberId: string,
+  orgId: string
+): Promise<boolean> {
+  const rows = await db
+    .select({ id: orgMembers.id })
+    .from(orgMembers)
+    .where(and(eq(orgMembers.id, memberId), eq(orgMembers.orgId, orgId)))
+    .limit(1)
+  return rows.length > 0
+}

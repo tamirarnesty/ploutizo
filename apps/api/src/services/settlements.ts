@@ -1,6 +1,9 @@
-import { fetchSettlementBalances } from '../lib/queries/settlements'
+import { DomainError, NotFoundError } from '../lib/errors'
+import { fetchAccountForSettlement, fetchSettlementBalances, memberBelongsToOrg } from '../lib/queries/settlements'
 import { computeNextDueDate } from '../lib/settlement-due-date'
+import { createTransaction } from './transactions'
 import type { SettlementBalanceRow } from '../lib/queries/settlements'
+import type { CreateSettlementInput } from '@ploutizo/validators'
 
 export interface SettlementMemberRow {
   member: { id: string; name: string; avatarUrl: string | null }
@@ -98,4 +101,50 @@ export async function getSettlementBalances(
   }
 
   return { accounts }
+}
+
+/**
+ * POST /api/settlements — createSettlement records a settlement payment (D-03).
+ *
+ * Validates accountId + payerMemberId belong to this org and account is not archived.
+ * Then delegates to the existing createTransaction service so the underlying transaction
+ * row, transaction_assignees row, and any tx-level invariants (split sum, FK checks) are
+ * exercised through the same code path as direct transaction creation.
+ *
+ * The auto-filled fields (D-03):
+ *   - type: 'settlement'
+ *   - description: `Settlement: <account.name>`
+ *   - assignees: [{ memberId: payerMemberId, amountCents }]  (single assignee, sum = amount)
+ */
+export async function createSettlement(
+  orgId: string,
+  data: CreateSettlementInput
+) {
+  // D-18: account scope + archive check
+  const account = await fetchAccountForSettlement(data.accountId, orgId)
+  if (!account) throw new NotFoundError('Account not found')
+  if (account.archivedAt !== null) {
+    throw new DomainError(400, 'Cannot settle an archived account')
+  }
+
+  // D-18: member scope check
+  const memberOk = await memberBelongsToOrg(data.payerMemberId, orgId)
+  if (!memberOk) throw new NotFoundError('Member not found in this household')
+
+  // Delegate to the existing service so split sum validation, FK checks, and the
+  // transactions+assignees write happen via one consistent code path.
+  return createTransaction(orgId, {
+    type: 'settlement',
+    accountId: data.accountId,
+    amount: data.amountCents,
+    date: data.date,
+    description: `Settlement: ${account.name}`,
+    assignees: [
+      {
+        memberId: data.payerMemberId,
+        amountCents: data.amountCents,
+        // percentage is display cache; for a single-assignee 100% settlement, omit (will be null in DB)
+      },
+    ],
+  })
 }
