@@ -21,7 +21,6 @@ describe('createSettlementSchema — notes field (Phase 4.2 extension)', () => {
     })
     expect(result.success).toBe(true)
     if (result.success) {
-      // @ts-expect-error — notes not yet in schema (RED phase: will be added in GREEN)
       expect(result.data.notes).toBe('paid via Interac transfer')
     }
   })
