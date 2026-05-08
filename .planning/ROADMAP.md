@@ -655,13 +655,17 @@ partial settlements from the UI.
 - Per-account settlement cards: header with total balance, per-member rows, "Settle" CTA
 - Negative balance displayed as green credit ("Emily is owed $X")
 - "Settle" form: defaults to outstanding balance, overridable for partial settlement; records `settlement` transaction type
-- Settlement reminder threshold settings: member setting > household setting > $50 default (stored; notifications triggered in Phase 7.1)
 
-**Plans:** 0 plans
+**Plans:** 6 plans
 
 Plans:
 
-- TBD (run /gsd:plan-phase 4.2 to break down)
+- [ ] 04.2-01-PLAN.md — Foundation: install shadcn card+progress, memberColors utility, settlements data-access hooks
+- [ ] 04.2-02-PLAN.md — Routes: /expenses, /income (filtered transactions), /settlements (placeholder)
+- [ ] 04.2-03-PLAN.md — Sidebar: Expenses/Income nav, soon placeholders, MEMBERS section with route-driven values
+- [ ] 04.2-04-PLAN.md — Dashboard shell: header, period range picker (URL-sync), stat cards, settlement summary pane
+- [ ] 04.2-05-PLAN.md — Card Balances DataGrid + Settle Dialog (member picker + form -> POST /api/settlements)
+- [ ] 04.2-06-PLAN.md — API extension: add optional notes field to POST /api/settlements (Wave 1, runs alongside 04.2-01)
 
 **Requirements covered:**
 
