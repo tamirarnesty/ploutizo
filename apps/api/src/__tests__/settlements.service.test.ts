@@ -166,3 +166,56 @@ describe('createSettlement service', () => {
     expect(result).toEqual(mockInserted);
   });
 });
+
+describe('createSettlement — notes forwarding (Phase 4.2 extension)', () => {
+  beforeEach(() => {
+    vi.mocked(fetchAccountForSettlement).mockReset();
+    vi.mocked(memberBelongsToOrg).mockReset();
+    vi.mocked(createTransaction).mockReset();
+  });
+
+  const accountFixture = {
+    id: '550e8400-e29b-41d4-a716-446655440002',
+    name: 'Amex',
+    archivedAt: null,
+  };
+
+  it('forwards notes onto createTransaction payload when provided', async () => {
+    vi.mocked(fetchAccountForSettlement).mockResolvedValueOnce(
+      accountFixture as never
+    );
+    vi.mocked(memberBelongsToOrg).mockResolvedValueOnce(true);
+    vi.mocked(createTransaction).mockResolvedValueOnce({ id: 'tx1' } as never);
+
+    await createSettlement('org_test123', {
+      payerMemberId: '550e8400-e29b-41d4-a716-446655440001',
+      accountId: '550e8400-e29b-41d4-a716-446655440002',
+      amountCents: 5000,
+      date: '2026-05-08',
+      notes: 'paid via e-transfer',
+    });
+
+    const callArg = vi.mocked(createTransaction).mock.calls[0]?.[1];
+    expect(callArg).toBeDefined();
+    expect((callArg as { notes?: string }).notes).toBe('paid via e-transfer');
+  });
+
+  it('omits notes from createTransaction payload when not provided', async () => {
+    vi.mocked(fetchAccountForSettlement).mockResolvedValueOnce(
+      accountFixture as never
+    );
+    vi.mocked(memberBelongsToOrg).mockResolvedValueOnce(true);
+    vi.mocked(createTransaction).mockResolvedValueOnce({ id: 'tx1' } as never);
+
+    await createSettlement('org_test123', {
+      payerMemberId: '550e8400-e29b-41d4-a716-446655440001',
+      accountId: '550e8400-e29b-41d4-a716-446655440002',
+      amountCents: 5000,
+      date: '2026-05-08',
+    });
+
+    const callArg = vi.mocked(createTransaction).mock.calls[0]?.[1];
+    expect(callArg).toBeDefined();
+    expect('notes' in (callArg as object)).toBe(false);
+  });
+});
