@@ -108,10 +108,10 @@ export interface FileRoutesByFullPath {
   '/settings': typeof LayoutSettingsRouteRouteWithChildren
   '/accounts': typeof LayoutAccountsRoute
   '/dashboard': typeof LayoutDashboardRoute
-  '/transactions': typeof LayoutTransactionsRoute
   '/expenses': typeof LayoutExpensesRoute
   '/income': typeof LayoutIncomeRoute
   '/settlements': typeof LayoutSettlementsRoute
+  '/transactions': typeof LayoutTransactionsRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
   '/settings/categories': typeof LayoutSettingsCategoriesRoute
@@ -124,10 +124,10 @@ export interface FileRoutesByTo {
   '/settings': typeof LayoutSettingsRouteRouteWithChildren
   '/accounts': typeof LayoutAccountsRoute
   '/dashboard': typeof LayoutDashboardRoute
-  '/transactions': typeof LayoutTransactionsRoute
   '/expenses': typeof LayoutExpensesRoute
   '/income': typeof LayoutIncomeRoute
   '/settlements': typeof LayoutSettlementsRoute
+  '/transactions': typeof LayoutTransactionsRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
   '/settings/categories': typeof LayoutSettingsCategoriesRoute
@@ -142,10 +142,10 @@ export interface FileRoutesById {
   '/_layout/settings': typeof LayoutSettingsRouteRouteWithChildren
   '/_layout/accounts': typeof LayoutAccountsRoute
   '/_layout/dashboard': typeof LayoutDashboardRoute
-  '/_layout/transactions': typeof LayoutTransactionsRoute
   '/_layout/expenses': typeof LayoutExpensesRoute
   '/_layout/income': typeof LayoutIncomeRoute
   '/_layout/settlements': typeof LayoutSettlementsRoute
+  '/_layout/transactions': typeof LayoutTransactionsRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
   '/_layout/settings/categories': typeof LayoutSettingsCategoriesRoute
@@ -160,10 +160,10 @@ export interface FileRouteTypes {
     | '/settings'
     | '/accounts'
     | '/dashboard'
-    | '/transactions'
     | '/expenses'
     | '/income'
     | '/settlements'
+    | '/transactions'
     | '/sign-in/$'
     | '/sign-up/$'
     | '/settings/categories'
@@ -176,10 +176,10 @@ export interface FileRouteTypes {
     | '/settings'
     | '/accounts'
     | '/dashboard'
-    | '/transactions'
     | '/expenses'
     | '/income'
     | '/settlements'
+    | '/transactions'
     | '/sign-in/$'
     | '/sign-up/$'
     | '/settings/categories'
@@ -193,10 +193,10 @@ export interface FileRouteTypes {
     | '/_layout/settings'
     | '/_layout/accounts'
     | '/_layout/dashboard'
-    | '/_layout/transactions'
     | '/_layout/expenses'
     | '/_layout/income'
     | '/_layout/settlements'
+    | '/_layout/transactions'
     | '/sign-in/$'
     | '/sign-up/$'
     | '/_layout/settings/categories'
@@ -256,11 +256,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutTransactionsRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/expenses': {
-      id: '/_layout/expenses'
-      path: '/expenses'
-      fullPath: '/expenses'
-      preLoaderRoute: typeof LayoutExpensesRouteImport
+    '/_layout/settlements': {
+      id: '/_layout/settlements'
+      path: '/settlements'
+      fullPath: '/settlements'
+      preLoaderRoute: typeof LayoutSettlementsRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/income': {
@@ -270,11 +270,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutIncomeRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/settlements': {
-      id: '/_layout/settlements'
-      path: '/settlements'
-      fullPath: '/settlements'
-      preLoaderRoute: typeof LayoutSettlementsRouteImport
+    '/_layout/expenses': {
+      id: '/_layout/expenses'
+      path: '/expenses'
+      fullPath: '/expenses'
+      preLoaderRoute: typeof LayoutExpensesRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/dashboard': {
@@ -341,20 +341,20 @@ interface LayoutRouteChildren {
   LayoutSettingsRouteRoute: typeof LayoutSettingsRouteRouteWithChildren
   LayoutAccountsRoute: typeof LayoutAccountsRoute
   LayoutDashboardRoute: typeof LayoutDashboardRoute
-  LayoutTransactionsRoute: typeof LayoutTransactionsRoute
   LayoutExpensesRoute: typeof LayoutExpensesRoute
   LayoutIncomeRoute: typeof LayoutIncomeRoute
   LayoutSettlementsRoute: typeof LayoutSettlementsRoute
+  LayoutTransactionsRoute: typeof LayoutTransactionsRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutSettingsRouteRoute: LayoutSettingsRouteRouteWithChildren,
   LayoutAccountsRoute: LayoutAccountsRoute,
   LayoutDashboardRoute: LayoutDashboardRoute,
-  LayoutTransactionsRoute: LayoutTransactionsRoute,
   LayoutExpensesRoute: LayoutExpensesRoute,
   LayoutIncomeRoute: LayoutIncomeRoute,
   LayoutSettlementsRoute: LayoutSettlementsRoute,
+  LayoutTransactionsRoute: LayoutTransactionsRoute,
 }
 
 const LayoutRouteWithChildren =
