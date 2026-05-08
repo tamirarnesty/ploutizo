@@ -53,7 +53,10 @@ export const accounts = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [index('accounts_org_idx').on(t.orgId)]
+  (t) => [
+    index('accounts_org_idx').on(t.orgId),
+    index('accounts_org_statement_due_day_idx').on(t.orgId, t.statementDueDay),
+  ]
 )
 
 /**

@@ -18,7 +18,9 @@ export interface SettlementBalanceRow {
   memberId: string
   memberName: string
   memberAvatarUrl: string | null
-  // signed cents: positive = member owes the card; negative = member overpaid (credit)
+  // signed cents: positive = member owes the card; negative = member overpaid (credit).
+  // Negative balances are intentional — settlements are not capped by the current balance,
+  // so overpayments roll into a credit that offsets future expenses.
   balanceCents: number
 }
 

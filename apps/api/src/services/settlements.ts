@@ -92,6 +92,10 @@ export async function getSettlementBalances(
  *   - type: 'settlement'
  *   - description: `Settlement: <account.name>`
  *   - assignees: [{ memberId: payerMemberId, amountCents }]  (single assignee, sum = amount)
+ *
+ * Intentional: settlements are NOT capped by the member's current balance. Overpayments
+ * are allowed and roll the balance negative (credit). The UI displays negative balances as
+ * credits. This matches how credit card issuers handle overpayments.
  */
 export async function createSettlement(
   orgId: string,

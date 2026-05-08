@@ -16,7 +16,7 @@ import { z } from 'zod'
 export const createSettlementSchema = z.object({
   payerMemberId: z.string().uuid(),
   accountId: z.string().uuid(),
-  amountCents: z.number().int().positive(),
+  amountCents: z.number().int().positive().max(999_999_999), // max $9,999,999.99
   date: z.string().date(),
 })
 
