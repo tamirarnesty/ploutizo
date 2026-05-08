@@ -23,12 +23,14 @@ const app = new Hono<AppEnv>();
 app.use(
   '*',
   cors({
-    origin: (origin) =>
-      origin === 'https://ploutizo.app' ||
-      origin.endsWith('.ploutizo.app') ||
-      origin === 'http://localhost:3000'
+    origin: (origin) => {
+      if (!origin) return 'https://ploutizo.app';
+      return origin === 'https://ploutizo.app' ||
+        origin.endsWith('.ploutizo.app') ||
+        origin === 'http://localhost:3000'
         ? origin
-        : 'https://ploutizo.app',
+        : 'https://ploutizo.app';
+    },
     credentials: true,
   })
 );
