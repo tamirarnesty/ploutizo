@@ -1,7 +1,9 @@
 import { createMiddleware } from 'hono/factory';
 import { getAuth } from '@clerk/hono';
 import { db } from '@ploutizo/db';
+import { ensureOrgSeeded } from '@ploutizo/db/seeds';
 import { orgs } from '@ploutizo/db/schema';
+import { ensureCallerSyncedToOrg } from '../services/clerkMembershipSync';
 import type { AppEnv } from '../types';
 
 // tenantGuard: rejects requests with no active Clerk org.
@@ -12,6 +14,8 @@ import type { AppEnv } from '../types';
 // The authoritative creation path is the organization.created Clerk webhook; this upsert
 // is a safety net for cases where that webhook failed to deliver (e.g., misconfigured
 // secret, network failure, or org created before the app was deployed).
+// ensureOrgSeeded() backfills default categories and merchant rules when the webhook
+// never ran (typical in local dev) — idempotent if data already exists.
 // seenOrgs caches org IDs that have been upserted this process lifetime — avoids a DB
 // round-trip on every request after the first. Resets on cold start (safe: DB row persists).
 const seenOrgs = new Set<string>();
@@ -32,6 +36,14 @@ export const tenantGuard = () =>
     }
     if (!seenOrgs.has(orgId)) {
       await db.insert(orgs).values({ id: orgId }).onConflictDoNothing();
+      await ensureOrgSeeded(orgId);
+      const { userId } = getAuth(c);
+      try {
+        await ensureCallerSyncedToOrg(orgId, userId);
+      } catch {
+        // Clerk outage or misconfiguration — do not block the request; downstream
+        // routes may still fail if org_members is required.
+      }
       seenOrgs.add(orgId);
     }
     c.set('orgId', orgId);
