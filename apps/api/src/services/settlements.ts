@@ -134,6 +134,11 @@ export const createSettlement = async (
     amount: data.amountCents,
     date: data.date,
     description: `Settlement: ${account.name}`,
+    // Phase 4.2 extension: forward optional notes onto the transaction record.
+    // baseTransactionSchema.notes is z.string().optional() (packages/validators/src/transactions.ts:23),
+    // and the underlying column is `text('notes')` (packages/db/src/schema/transactions.ts:75).
+    // When data.notes is undefined, the spread evaluates to nothing — backward compatible.
+    ...(data.notes !== undefined ? { notes: data.notes } : {}),
     assignees: [
       {
         memberId: data.payerMemberId,
