@@ -631,7 +631,7 @@ Plans:
 - [x] 04.1-01-PLAN.md — [BLOCKING] Drizzle schema migration: add statementDueDay column, drop eachPersonPaysOwn, add (memberId) indexes on transaction_assignees + account_members
 - [x] 04.1-02-PLAN.md — Remove eachPersonPaysOwn from validators, types, mutation interfaces, API test fixtures, and AccountForm.tsx (Advanced collapsible)
 - [x] 04.1-03-PLAN.md — GET /api/settlements: dueDate helper + tests, query layer (single GROUP BY join), service (D-08 zero-balance omission, D-13/D-14 dueDate/status), router GET handler + tests
-- [ ] 04.1-04-PLAN.md — POST /api/settlements: createSettlementSchema validator, createSettlement service (delegates to createTransaction, D-18 validation), POST handler, mount router in apps/api/src/index.ts
+- [x] 04.1-04-PLAN.md — POST /api/settlements: createSettlementSchema validator, createSettlement service (delegates to createTransaction, D-18 validation), POST handler, mount router in apps/api/src/index.ts
 
 **Requirements covered:**
 
