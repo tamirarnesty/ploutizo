@@ -30,6 +30,14 @@ vi.mock('@ploutizo/db', () => ({
 
 vi.mock('@ploutizo/db/schema', () => ({ orgs: {} }));
 
+vi.mock('@ploutizo/db/seeds', () => ({
+  ensureOrgSeeded: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../services/clerkMembershipSync', () => ({
+  ensureCallerSyncedToOrg: vi.fn().mockResolvedValue(undefined),
+}));
+
 const buildApp = () => {
   const app = new Hono();
   app.use('*', tenantGuard());
