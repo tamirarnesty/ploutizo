@@ -8,8 +8,8 @@
 
 import { sql } from 'drizzle-orm'
 import {
-  boolean,
   index,
+  integer,
   pgTable,
   text,
   timestamp,
@@ -24,7 +24,8 @@ import { orgs, orgMembers } from './auth'
  * accounts
  * A financial account belonging to an org (household).
  * Accounts can have multiple owners (via account_members).
- * eachPersonPaysOwn excludes the account from settlement calculations.
+ * statementDueDay (1–31, nullable) is used by GET /api/settlements to compute
+ * the next upcoming due date and status badge for this account (D-12, D-13).
  */
 export const accounts = pgTable(
   'accounts',
@@ -38,10 +39,11 @@ export const accounts = pgTable(
     institution: text('institution'),
     lastFour: text('last_four'),
     /**
-     * When true, each account owner is responsible for their own portion.
-     * Excludes the account from household settlement calculations.
+     * Day of the month (1–31) when a credit-card or similar account's statement is due.
+     * Nullable — not all account types have a statement due date.
+     * Used by GET /api/settlements to compute the next dueDate and status (D-12, D-13, D-14).
      */
-    eachPersonPaysOwn: boolean('each_person_pays_own').notNull().default(false),
+    statementDueDay: integer('statement_due_day'),
     /** Soft-delete: set to archive the account without losing history. */
     archivedAt: timestamp('archived_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true })
@@ -51,7 +53,10 @@ export const accounts = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [index('accounts_org_idx').on(t.orgId)]
+  (t) => [
+    index('accounts_org_idx').on(t.orgId),
+    index('accounts_org_statement_due_day_idx').on(t.orgId, t.statementDueDay),
+  ]
 )
 
 /**
@@ -73,5 +78,6 @@ export const accountMembers = pgTable(
   (t) => [
     uniqueIndex('account_members_account_member_idx').on(t.accountId, t.memberId),
     index('account_members_account_idx').on(t.accountId),
+    index('account_members_member_idx').on(t.memberId),
   ]
 )

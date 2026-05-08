@@ -22,7 +22,6 @@ export interface Account {
   type: AccountType
   institution: string | null
   lastFour: string | null
-  eachPersonPaysOwn: boolean
   archivedAt: string | null
   createdAt: string
   updatedAt: string
@@ -60,3 +59,33 @@ export interface PendingInvitation {
   createdAt: string;        // ISO 8601 string
   expiresAt: string | null; // ISO 8601 string or null when Clerk does not provide expires_at
 }
+
+export type SettlementStatus = 'due_soon' | 'on_track'
+
+export interface SettlementMemberRow {
+  member: { id: string; name: string; avatarUrl: string | null }
+  balanceCents: number
+}
+
+export interface SettlementAccountRow {
+  account: {
+    id: string
+    name: string
+    type: string
+    institution: string | null
+    lastFour: string | null
+    statementDueDay: number | null
+  }
+  totalBalanceCents: number
+  members: SettlementMemberRow[]
+  dueDate: string | null
+  status: SettlementStatus | null
+}
+
+export interface GetSettlementBalancesResponse {
+  accounts: SettlementAccountRow[]
+}
+
+export type TransactionSortField = 'date' | 'amount' | 'type' | 'category' | 'account'
+
+export type SortOrder = 'asc' | 'desc'

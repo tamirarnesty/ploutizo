@@ -11,6 +11,7 @@ import { categoriesRouter } from './routes/categories';
 import { tagsRouter } from './routes/tags';
 import { merchantRulesRouter } from './routes/merchant-rules';
 import { transactionsRouter } from './routes/transactions';
+import { settlementsRouter } from './routes/settlements';
 import { DomainError, NotFoundError } from './lib/errors';
 import type { AppEnv } from './types';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
@@ -19,15 +20,16 @@ const app = new Hono<AppEnv>();
 
 // Invariant middleware order (CLAUDE.md): CORS → Clerk → tenant guard
 // 1. CORS — handles preflight before Clerk so OPTIONS requests are not rejected
+const ALLOWED_ORIGINS = new Set([
+  'https://ploutizo.app',
+  'https://www.ploutizo.app',
+  'http://localhost:3000',
+]);
+
 app.use(
   '*',
   cors({
-    origin: (origin) =>
-      origin === 'https://ploutizo.app' ||
-      origin.endsWith('.ploutizo.app') ||
-      origin === 'http://localhost:3000'
-        ? origin
-        : 'https://ploutizo.app',
+    origin: (origin) => (origin && ALLOWED_ORIGINS.has(origin) ? origin : null),
     credentials: true,
   })
 );
@@ -72,6 +74,7 @@ app.route('/api/categories', categoriesRouter);
 app.route('/api/tags', tagsRouter);
 app.route('/api/merchant-rules', merchantRulesRouter);
 app.route('/api/transactions', transactionsRouter);
+app.route('/api/settlements', settlementsRouter);
 
 // Unmatched routes — returns JSON shape consistent with onError handler
 app.notFound((c) => c.json({ error: { code: 'NOT_FOUND', message: 'Not found' } }, 404));

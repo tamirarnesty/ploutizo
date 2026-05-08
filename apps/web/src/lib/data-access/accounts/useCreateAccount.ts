@@ -7,7 +7,6 @@ interface CreateAccountBody {
   type: string;
   institution?: string;
   lastFour?: string;
-  eachPersonPaysOwn?: boolean;
   memberIds?: string[];
 }
 
