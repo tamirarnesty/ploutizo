@@ -2,7 +2,7 @@
 gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Transactions & Settlement
-status: 'Phase 04.2 — next up'
+status: 'Phase 04.2 — executing'
 last_updated: '2026-05-11T00:00:00.000Z'
 progress:
   total_phases: 4
@@ -16,11 +16,11 @@ progress:
 
 ## Current Position
 
-Phase: 4.2
-Plan: Not started
+Phase: 04.2 (settlement-ui) — EXECUTING
+Plan: 1 of 6
 **Milestone:** v0.2 — Transactions & Settlement
 **Active Phase:** 04.1 shipped — [PR #62](https://github.com/tamirarnesty/ploutizo/pull/62)
-**Status:** Phase 04.2 (Settlement UI) — ready to plan
+**Status:** Phase 04.2 (Settlement UI) — executing
 **Last session:** 2026-05-11
 
 ## Next Action
