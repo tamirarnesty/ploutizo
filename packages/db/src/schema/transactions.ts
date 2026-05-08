@@ -127,6 +127,7 @@ export const transactionAssignees = pgTable(
   (t) => [
     uniqueIndex('transaction_assignees_tx_member_idx').on(t.transactionId, t.memberId), // D-10
     index('transaction_assignees_tx_idx').on(t.transactionId),
+    index('transaction_assignees_member_idx').on(t.memberId), // D-15: speeds up "all expense splits for member X" balance queries
   ]
 )
 
