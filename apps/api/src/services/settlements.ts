@@ -4,30 +4,7 @@ import { computeNextDueDate } from '../lib/settlement-due-date'
 import { createTransaction } from './transactions'
 import type { SettlementBalanceRow } from '../lib/queries/settlements'
 import type { CreateSettlementInput } from '@ploutizo/validators'
-
-export interface SettlementMemberRow {
-  member: { id: string; name: string; avatarUrl: string | null }
-  balanceCents: number
-}
-
-export interface SettlementAccountRow {
-  account: {
-    id: string
-    name: string
-    type: string
-    institution: string | null
-    lastFour: string | null
-    statementDueDay: number | null
-  }
-  totalBalanceCents: number
-  members: SettlementMemberRow[]
-  dueDate: string | null
-  status: 'due_soon' | 'on_track' | null
-}
-
-export interface GetSettlementBalancesResponse {
-  accounts: SettlementAccountRow[]
-}
+import type { GetSettlementBalancesResponse, SettlementAccountRow, SettlementMemberRow } from '@ploutizo/types'
 
 /**
  * Service layer: shapes the raw query rows into the GET /api/settlements response (D-02).

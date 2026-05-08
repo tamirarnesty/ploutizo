@@ -15,10 +15,12 @@
  * @param statementDueDay - integer 1-31 or null
  * @param today - reference Date (UTC date is used for day-arithmetic)
  */
+import type { SettlementStatus } from '@ploutizo/types'
+
 export function computeNextDueDate(
   statementDueDay: number | null,
   today: Date
-): { dueDate: string | null; status: 'due_soon' | 'on_track' | null } {
+): { dueDate: string | null; status: SettlementStatus | null } {
   if (statementDueDay === null) return { dueDate: null, status: null }
 
   if (!Number.isInteger(statementDueDay) || statementDueDay < 1 || statementDueDay > 31) {
@@ -67,7 +69,7 @@ export function computeNextDueDate(
   const todayMidnight = new Date(Date.UTC(todayYear, todayMonth, todayDay))
 
   const diffDays = Math.floor((dueDate.getTime() - todayMidnight.getTime()) / 86_400_000)
-  const status: 'due_soon' | 'on_track' = diffDays <= 7 ? 'due_soon' : 'on_track'
+  const status: SettlementStatus = diffDays <= 7 ? 'due_soon' : 'on_track'
 
   const dueDateStr = `${dueYear}-${String(dueMonth + 1).padStart(2, '0')}-${String(dueDay).padStart(2, '0')}`
 
