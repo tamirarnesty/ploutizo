@@ -1,6 +1,15 @@
 import { useCallback, useRef } from 'react';
 import { Link, useRouterState } from '@tanstack/react-router';
-import { CreditCard, LayoutDashboard, Receipt, Settings } from 'lucide-react';
+import {
+  BarChart3,
+  Coins,
+  CreditCard,
+  LayoutDashboard,
+  PiggyBank,
+  Receipt,
+  Settings,
+  TrendingUp,
+} from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -13,13 +22,23 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@ploutizo/ui/components/sidebar';
+import { Badge } from '@ploutizo/ui/components/badge';
 import { ThemeToggle } from '@ploutizo/ui/components/theme-toggle';
+import { SidebarMembersSection } from '@/components/SidebarMembersSection';
 
 const navItems = [
   { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
+  { label: 'Expenses', to: '/expenses', icon: Receipt },
+  { label: 'Income', to: '/income', icon: TrendingUp },
   { label: 'Transactions', to: '/transactions', icon: Receipt },
   // /accounts 404s until Plan 03 creates the route — expected during Plan 02 execution
   { label: 'Accounts', to: '/accounts', icon: CreditCard },
+] as const;
+
+const placeholderNavItems = [
+  { label: 'Budget', icon: PiggyBank },
+  { label: 'Net Worth', icon: BarChart3 },
+  { label: 'Savings', icon: Coins },
 ] as const;
 
 export const AppSidebar = () => {
@@ -64,9 +83,33 @@ export const AppSidebar = () => {
                   </SidebarMenuItem>
                 );
               })}
+              {/* Disabled placeholder nav items — D-04 */}
+              {placeholderNavItems.map(({ label, icon: Icon }) => (
+                <SidebarMenuItem key={label}>
+                  <SidebarMenuButton
+                    tooltip={label}
+                    className="cursor-not-allowed opacity-60"
+                    aria-disabled="true"
+                    tabIndex={-1}
+                    render={<div />}
+                  >
+                    <Icon />
+                    <span>{label}</span>
+                    <Badge
+                      variant="outline"
+                      className="ml-auto text-xs text-muted-foreground"
+                    >
+                      soon
+                    </Badge>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* MEMBERS section — D-03, D-15. Hidden in icon-collapsed mode. */}
+        <SidebarMembersSection />
 
         {/* Settings — pushed to bottom of content via mt-auto */}
         <SidebarGroup className="mt-auto">
