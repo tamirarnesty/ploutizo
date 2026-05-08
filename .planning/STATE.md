@@ -2,30 +2,30 @@
 gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Transactions & Settlement
-status: 'Phase 04.2 — executing'
+status: 'Phase 04.3 — next up'
 last_updated: '2026-05-11T00:00:00.000Z'
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 0
   completed_plans: 0
-  percent: 25
+  percent: 50
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 04.2 (settlement-ui) — EXECUTING
-Plan: 1 of 6
+Phase: 4.3
+Plan: Not started
 **Milestone:** v0.2 — Transactions & Settlement
-**Active Phase:** 04.1 shipped — [PR #62](https://github.com/tamirarnesty/ploutizo/pull/62)
-**Status:** Phase 04.2 (Settlement UI) — executing
+**Active Phase:** 04.2 (Settlement UI) shipped
+**Status:** Ready to plan **Phase 04.3 — Budgets API**
 **Last session:** 2026-05-11
 
 ## Next Action
 
-Plan and execute **Phase 04.2 — Settlement UI**. PR #63 (codebase map + ESLint enforcement) pending merge.
+Plan and execute **Phase 04.3 — Budgets API**.
 
 ## Phase Status
 
@@ -56,7 +56,7 @@ Plan and execute **Phase 04.2 — Settlement UI**. PR #63 (codebase map + ESLint
 | 03.5   | CI testing, linting, and formatting checks                       | complete (verified 2026-04-30)              |
 | 03.6   | Migrate @hono/clerk-auth to @clerk/hono                          | complete (1/1 plans, verified 2026-05-04)   |
 | 04.1   | Settlement API                                                   | shipped — PR #62                            |
-| 04.2   | Settlement UI                                                    | pending                                     |
+| 04.2   | Settlement UI                                                    | shipped                                     |
 | 04.3   | Budgets API                                                      | pending                                     |
 | 04.4   | Budget Dashboard UI                                              | pending                                     |
 | 05.1   | Bank Normalizers                                                 | pending                                     |
