@@ -20,17 +20,16 @@ const app = new Hono<AppEnv>();
 
 // Invariant middleware order (CLAUDE.md): CORS → Clerk → tenant guard
 // 1. CORS — handles preflight before Clerk so OPTIONS requests are not rejected
+const ALLOWED_ORIGINS = new Set([
+  'https://ploutizo.app',
+  'https://www.ploutizo.app',
+  'http://localhost:3000',
+]);
+
 app.use(
   '*',
   cors({
-    origin: (origin) => {
-      if (!origin) return 'https://ploutizo.app';
-      return origin === 'https://ploutizo.app' ||
-        origin.endsWith('.ploutizo.app') ||
-        origin === 'http://localhost:3000'
-        ? origin
-        : 'https://ploutizo.app';
-    },
+    origin: (origin) => (origin && ALLOWED_ORIGINS.has(origin) ? origin : null),
     credentials: true,
   })
 );
