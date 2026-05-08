@@ -15,7 +15,6 @@ export const createAccountSchema = z.object({
   type: z.enum(accountTypeValues, { error: 'Account type is required.' }),
   institution: z.string().optional(),
   lastFour: z.string().max(4).optional(),
-  eachPersonPaysOwn: z.boolean().optional().default(false),
   memberIds: z.array(z.string().uuid()).optional().default([]),
 })
 
@@ -32,7 +31,6 @@ export const AccountFormSchema = z.object({
   type: z.enum(accountTypeValues, { error: 'Account type is required.' }),
   institution: z.string().optional(),
   lastFour: z.string().max(4).optional(),
-  eachPersonPaysOwn: z.boolean().default(false),
   ownership: z.enum(['personal', 'shared']),
   memberIds: z.array(z.string().uuid()).default([]),
 })

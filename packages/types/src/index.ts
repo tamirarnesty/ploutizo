@@ -22,7 +22,6 @@ export interface Account {
   type: AccountType
   institution: string | null
   lastFour: string | null
-  eachPersonPaysOwn: boolean
   archivedAt: string | null
   createdAt: string
   updatedAt: string

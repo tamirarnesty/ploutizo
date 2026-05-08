@@ -1,10 +1,4 @@
-import { useState } from 'react';
 import { useUser } from '@clerk/tanstack-react-start';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@ploutizo/ui/components/collapsible';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,11 +10,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@ploutizo/ui/components/alert-dialog';
-import { Archive, ChevronDown } from 'lucide-react';
+import { Archive } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
-import { Checkbox } from '@ploutizo/ui/components/checkbox';
 import { Input } from '@ploutizo/ui/components/input';
-import { Label } from '@ploutizo/ui/components/label';
 import {
   Select,
   SelectContent,
@@ -117,9 +109,6 @@ const AccountFormInner = ({
   const isEditing = account !== null;
   const createAccount = useCreateAccount();
   const updateAccount = useUpdateAccount(account?.id ?? '');
-  const [advancedOpen, setAdvancedOpen] = useState(
-    account?.eachPersonPaysOwn ?? false
-  );
   const { user } = useUser();
   const currentMemberId =
     orgMembers.find((m) => m.externalId === user?.id)?.id ?? null;
@@ -132,7 +121,6 @@ const AccountFormInner = ({
       type: account?.type ?? 'chequing',
       institution: account?.institution ?? '',
       lastFour: account?.lastFour ?? '',
-      eachPersonPaysOwn: account?.eachPersonPaysOwn ?? false,
       // personal = 1 owner (just me), shared = 2+ owners
       ownership:
         loadedMemberIds.length > 1
@@ -159,7 +147,6 @@ const AccountFormInner = ({
         type: value.type,
         institution: value.institution?.trim() || undefined,
         lastFour: value.lastFour?.trim() || undefined,
-        eachPersonPaysOwn: value.eachPersonPaysOwn,
         memberIds: value.memberIds,
       };
       const mutation = isEditing ? updateAccount : createAccount;
@@ -358,46 +345,6 @@ const AccountFormInner = ({
               </form.AppField>
             )}
           </form.Subscribe>
-
-          {/* Field 7: eachPersonPaysOwn (inside Collapsible — advancedOpen is local useState, UI-only) */}
-          <form.AppField name="eachPersonPaysOwn">
-            {(field) => (
-              <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
-                <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground">
-                  <ChevronDown
-                    size={14}
-                    className={`transition-transform duration-200 ${advancedOpen ? 'rotate-180' : ''}`}
-                    aria-hidden="true"
-                  />
-                  Advanced
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pt-3">
-                  <div className="flex items-start gap-2">
-                    <Checkbox
-                      id="each-person-pays-own"
-                      checked={field.state.value}
-                      onCheckedChange={(checked) =>
-                        field.handleChange(Boolean(checked))
-                      }
-                      className="mt-0.5"
-                    />
-                    <div className="flex flex-col gap-0.5">
-                      <Label
-                        htmlFor="each-person-pays-own"
-                        className="cursor-pointer text-sm"
-                      >
-                        Each person pays their own
-                      </Label>
-                      <Text variant="caption">
-                        Excludes this account from shared settlement
-                        calculations.
-                      </Text>
-                    </div>
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            )}
-          </form.AppField>
 
           {/* Form-level mutation error */}
           <form.Subscribe

@@ -51,7 +51,6 @@ describe('createAccountSchema', () => {
       type: 'credit_card',
       institution: 'TD Bank',
       lastFour: '1234',
-      eachPersonPaysOwn: true,
       memberIds: ['123e4567-e89b-12d3-a456-426614174000'],
     })
     expect(result.success).toBe(true)
@@ -60,14 +59,6 @@ describe('createAccountSchema', () => {
   it('rejects lastFour longer than 4 chars', () => {
     const result = createAccountSchema.safeParse({ name: 'Test', type: 'chequing', lastFour: '12345' })
     expect(result.success).toBe(false)
-  })
-
-  it('defaults eachPersonPaysOwn to false', () => {
-    const result = createAccountSchema.safeParse({ name: 'Test', type: 'chequing' })
-    expect(result.success).toBe(true)
-    if (result.success) {
-      expect(result.data.eachPersonPaysOwn).toBe(false)
-    }
   })
 
   it('defaults memberIds to empty array', () => {
@@ -145,7 +136,6 @@ describe('AccountFormSchema', () => {
       type: 'chequing',
       ownership: 'personal',
       memberIds: [],
-      eachPersonPaysOwn: false,
     })
     expect(result.success).toBe(true)
   })

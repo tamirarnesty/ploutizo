@@ -7,7 +7,6 @@ interface UpdateAccountBody {
   type?: string;
   institution?: string | null;
   lastFour?: string | null;
-  eachPersonPaysOwn?: boolean;
   memberIds?: string[];
 }
 
