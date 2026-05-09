@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   endOfDay,
   endOfMonth,
@@ -17,8 +17,15 @@ import {
   PopoverTrigger,
 } from '@ploutizo/ui/components/popover';
 import type { DateRange } from 'react-day-picker';
+import {
+  buildDashboardSearchFromCalendarSelection,
+  buildDashboardSearchFromClosedRange,
+  urlSearchMatchesDefaultDashboardPeriod,
+} from '@/components/dashboard/dashboardPeriod';
+import { useDashboardEffectivePeriod } from '@/components/dashboard/useDashboardEffectivePeriod';
 
-// Period range picker — D-02 + D-19. Writes ?from / ?to to URL on selection.
+// Period range picker — D-02 + D-19. Writes ?from / ?to to URL on non-default selection.
+// Default is month-to-date with a clean URL (no query params), like /transactions.
 // Presets panel (D-19 "Presets feature") appears to the left of the calendar.
 // Does NOT re-fetch dashboard data — that's Phase 7.3.
 const formatRangeLabel = (range: DateRange | undefined): string => {
@@ -35,8 +42,6 @@ const formatRangeLabel = (range: DateRange | undefined): string => {
   return `${fmt(range.from)}, ${range.from.getFullYear()}`;
 };
 
-const isoDate = (d: Date): string => d.toLocaleDateString('en-CA');
-
 // Preset definitions — evaluated at call time so "today" is always current.
 const getPresets = () => {
   const now = new Date();
@@ -45,7 +50,7 @@ const getPresets = () => {
       label: 'This month',
       range: {
         from: startOfDay(startOfMonth(now)),
-        to: endOfDay(endOfMonth(now)),
+        to: startOfDay(now),
       },
     },
     {
@@ -67,30 +72,31 @@ const getPresets = () => {
 };
 
 export const PeriodRangePicker = () => {
-  // Search params source: dashboard route only.
   const search = useSearch({ from: '/_layout/dashboard' });
-  // useNavigate without `from` constraint avoids TanStack Router search reducer type narrowing issue.
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
   const calendarDayKey = new Date().toLocaleDateString('en-CA');
   const presets = useMemo(() => getPresets(), [calendarDayKey]);
+  const effective = useDashboardEffectivePeriod();
+  const range: DateRange = { from: effective.from, to: effective.to };
 
-  const range: DateRange | undefined =
-    search.from || search.to
-      ? {
-          from: search.from ? new Date(search.from + 'T00:00:00') : undefined,
-          to: search.to ? new Date(search.to + 'T00:00:00') : undefined,
-        }
-      : undefined;
+  useEffect(() => {
+    if (
+      urlSearchMatchesDefaultDashboardPeriod(search.from, search.to, new Date())
+    ) {
+      void navigate({
+        to: '/dashboard',
+        search: { from: undefined, to: undefined },
+        replace: true,
+      });
+    }
+  }, [search.from, search.to, calendarDayKey, navigate]);
 
   const handleSelect = (next: DateRange | undefined) => {
     void navigate({
       to: '/dashboard',
-      search: {
-        from: next?.from ? isoDate(next.from) : undefined,
-        to: next?.to ? isoDate(next.to) : undefined,
-      },
+      search: buildDashboardSearchFromCalendarSelection(next, new Date()),
       replace: true,
     });
   };
@@ -98,10 +104,11 @@ export const PeriodRangePicker = () => {
   const handlePreset = (presetRange: { from: Date; to: Date }) => {
     void navigate({
       to: '/dashboard',
-      search: {
-        from: isoDate(presetRange.from),
-        to: isoDate(presetRange.to),
-      },
+      search: buildDashboardSearchFromClosedRange(
+        presetRange.from,
+        presetRange.to,
+        new Date()
+      ),
       replace: true,
     });
     setOpen(false);

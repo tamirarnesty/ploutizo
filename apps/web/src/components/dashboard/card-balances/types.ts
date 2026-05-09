@@ -3,11 +3,13 @@ import type {
   SettlementMemberRow,
 } from '@ploutizo/types';
 
+export type CardBalancesSettleClickHandler = (
+  account: SettlementAccountRow,
+  member: SettlementMemberRow
+) => void;
+
 export interface CardBalancesGridProps {
   accounts: SettlementAccountRow[];
   isLoading: boolean;
-  onSettleClick: (
-    account: SettlementAccountRow,
-    member: SettlementMemberRow
-  ) => void;
+  onSettleClick: CardBalancesSettleClickHandler;
 }

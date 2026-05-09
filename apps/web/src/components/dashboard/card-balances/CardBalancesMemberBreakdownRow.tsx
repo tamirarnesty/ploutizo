@@ -6,6 +6,7 @@ import type {
   SettlementAccountRow,
   SettlementMemberRow,
 } from '@ploutizo/types';
+import type { CardBalancesSettleClickHandler } from '@/components/dashboard/card-balances/types';
 import type { MemberColorSlot } from '@/lib/memberColors';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { UserAvatar } from '@/components/members/UserAvatar';
@@ -16,10 +17,7 @@ type CardBalancesMemberBreakdownRowProps = {
   /** Sum of |balanceCents| across members; used for Progress share. */
   absTotalCents: number;
   memberColorSlot: MemberColorSlot;
-  onSettleClick: (
-    account: SettlementAccountRow,
-    member: SettlementMemberRow
-  ) => void;
+  onSettleClick: CardBalancesSettleClickHandler;
 };
 
 export const CardBalancesMemberBreakdownRow = ({

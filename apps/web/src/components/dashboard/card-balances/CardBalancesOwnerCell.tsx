@@ -21,7 +21,7 @@ export const CardBalancesOwnerCell = ({
   if (nonZero.length === 1) {
     return (
       <Text as="span" variant="body-sm" className="min-w-0 truncate">
-        {nonZero[0]?.member.name ?? '—'}
+        {nonZero[0].member.name}
       </Text>
     );
   }

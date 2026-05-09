@@ -1,7 +1,7 @@
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { SettlementAccountRow } from '@ploutizo/types';
-import type { CardBalancesGridProps } from '@/components/dashboard/card-balances/types';
+import type { CardBalancesSettleClickHandler } from '@/components/dashboard/card-balances/types';
 import { CardBalancesBalanceCell } from '@/components/dashboard/card-balances/CardBalancesBalanceCell';
 import { CardBalancesBreakdownCell } from '@/components/dashboard/card-balances/CardBalancesBreakdownCell';
 import { CardBalancesCardCell } from '@/components/dashboard/card-balances/CardBalancesCardCell';
@@ -10,7 +10,7 @@ import { CardBalancesOwnerCell } from '@/components/dashboard/card-balances/Card
 import { SettlementStatusBadge } from '@/components/dashboard/card-balances/SettlementStatusBadge';
 
 export const buildCardBalancesColumns = (
-  onSettleClick: CardBalancesGridProps['onSettleClick']
+  onSettleClick: CardBalancesSettleClickHandler
 ): ColumnDef<SettlementAccountRow>[] => [
   {
     id: 'card',

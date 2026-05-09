@@ -1,17 +1,12 @@
 import { useMemo } from 'react';
-import type {
-  SettlementAccountRow,
-  SettlementMemberRow,
-} from '@ploutizo/types';
+import type { SettlementAccountRow } from '@ploutizo/types';
+import type { CardBalancesSettleClickHandler } from '@/components/dashboard/card-balances/types';
 import { CardBalancesMemberBreakdownRow } from '@/components/dashboard/card-balances/CardBalancesMemberBreakdownRow';
 import { MEMBER_COLORS, buildMemberColorSlotMap } from '@/lib/memberColors';
 
 type CardBalancesBreakdownCellProps = {
   account: SettlementAccountRow;
-  onSettleClick: (
-    account: SettlementAccountRow,
-    member: SettlementMemberRow
-  ) => void;
+  onSettleClick: CardBalancesSettleClickHandler;
 };
 
 export const CardBalancesBreakdownCell = ({
