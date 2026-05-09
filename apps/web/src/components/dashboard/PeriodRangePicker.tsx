@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   endOfDay,
   endOfMonth,
@@ -73,6 +73,9 @@ export const PeriodRangePicker = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
+  const calendarDayKey = new Date().toLocaleDateString('en-CA');
+  const presets = useMemo(() => getPresets(), [calendarDayKey]);
+
   const range: DateRange | undefined =
     search.from || search.to
       ? {
@@ -119,7 +122,7 @@ export const PeriodRangePicker = () => {
         {/* D-19 Presets feature: vertical preset panel left of calendar */}
         <div className="flex">
           <div className="flex flex-col gap-1 border-r border-border p-2">
-            {getPresets().map((preset) => (
+            {presets.map((preset) => (
               <Button
                 key={preset.label}
                 variant="ghost"

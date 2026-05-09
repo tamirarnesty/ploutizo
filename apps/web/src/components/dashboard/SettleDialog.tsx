@@ -50,12 +50,12 @@ export interface SettleDialogProps {
   onClose: () => void;
 }
 
-// Derive stable initial values from the account — called once per open event.
-function getInitialValues(
+// Derive stable initial values from the account — used on mount reset and effect re-seeds.
+const getInitialValues = (
   account: SettlementAccountRow,
   firstSourceId: string,
   todayIso: string
-): SettleFormValues {
+): SettleFormValues => {
   const seedMember = account.members.find((m) => m.balanceCents > 0) ?? null;
   // Array.at(0) returns T | undefined (unlike [0] which returns T when strict mode sees a non-empty array type)
   const fallbackMember = account.members.at(0) ?? null;
@@ -74,7 +74,7 @@ function getInitialValues(
     date: todayIso,
     notes: '',
   };
-}
+};
 
 export const SettleDialog = ({ open, account, onClose }: SettleDialogProps) => {
   const createSettlement = useCreateSettlement();
@@ -141,15 +141,12 @@ export const SettleDialog = ({ open, account, onClose }: SettleDialogProps) => {
     },
   });
 
-  // When the dialog opens with a different account, reset the form to that account's defaults.
+  // Re-seed when dialog is open and account context changes: account id, first source
+  // UUID, or local calendar date (todayIso updates after midnight).
   useEffect(() => {
     if (!open || !account) return;
     form.reset(getInitialValues(account, firstSourceId, todayIso));
-    // form is a stable ref (stable TanStack Form ref); firstSourceId and todayIso
-    // are derived from sourceAccountOptions and new Date() — those are intentionally
-    // excluded to avoid re-running the effect on every render. The open flag and
-    // account.account.id are the only meaningful change signals (re-seed on new account).
-  }, [open, account?.account.id, firstSourceId, todayIso, form]);
+  }, [open, account, firstSourceId, todayIso, form]);
 
   if (!account) return null;
 

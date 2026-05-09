@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -20,7 +21,7 @@ export const SettlementSummaryPane = () => {
   const { data: members = [] } = useGetOrgMembers();
 
   // Aggregate balanceCents and per-member card count from accounts response.
-  const memberRollup = (() => {
+  const memberRollup = useMemo(() => {
     const totals = new Map<string, { cents: number; cardCount: number }>();
     for (const acc of data?.accounts ?? []) {
       for (const row of acc.members) {
@@ -32,7 +33,7 @@ export const SettlementSummaryPane = () => {
       }
     }
     return totals;
-  })();
+  }, [data?.accounts]);
 
   return (
     <Card className="w-full">

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Text } from '@ploutizo/ui/components/text';
 import { StatCardPlaceholder } from './StatCardPlaceholder';
 import { SettlementSummaryPane } from './SettlementSummaryPane';
@@ -36,21 +36,24 @@ export const Dashboard = () => {
     0
   );
 
-  const handleSettleClick = (
-    account: SettlementAccountRow,
-    // _member is passed by CardBalancesGrid but D-11 specifies the dialog handles
-    // member pre-selection internally (first member with balance > 0). We ignore
-    // the clicked member to keep dialog behaviour consistent with D-11.
-    _member: SettlementMemberRow
-  ) => {
-    setActiveAccount(account);
-    setDialogOpen(true);
-  };
+  const handleSettleClick = useCallback(
+    (
+      account: SettlementAccountRow,
+      // _member is passed by CardBalancesGrid but D-11 specifies the dialog handles
+      // member pre-selection internally (first member with balance > 0). We ignore
+      // the clicked member to keep dialog behaviour consistent with D-11.
+      _member: SettlementMemberRow
+    ) => {
+      setActiveAccount(account);
+      setDialogOpen(true);
+    },
+    []
+  );
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setDialogOpen(false);
     setActiveAccount(null);
-  };
+  }, []);
 
   const now = new Date();
   const monthLabel = now.toLocaleDateString('en-CA', {

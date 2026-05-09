@@ -12,13 +12,21 @@ export const MEMBER_COLORS = [
 
 export type MemberColorSlot = (typeof MEMBER_COLORS)[number];
 
+/** One sorted pass — use from list parents instead of repeated `getMemberColorSlot` per row. */
+export const buildMemberColorSlotMap = (
+  members: { id: string }[]
+): Map<string, MemberColorSlot> => {
+  const sorted = [...members].sort((a, b) => a.id.localeCompare(b.id));
+  const map = new Map<string, MemberColorSlot>();
+  for (let i = 0; i < sorted.length; i += 1) {
+    const id = sorted[i].id;
+    map.set(id, MEMBER_COLORS[i % MEMBER_COLORS.length]);
+  }
+  return map;
+};
+
 export const getMemberColorSlot = (
   members: { id: string }[],
   memberId: string
-): MemberColorSlot => {
-  const sorted = [...members].sort((a, b) => a.id.localeCompare(b.id));
-  const idx = sorted.findIndex((m) => m.id === memberId);
-  // Wrap if more members than colors; -1 (not found) also wraps to slot 0 via abs(idx) — guard explicitly:
-  const safeIdx = idx < 0 ? 0 : idx;
-  return MEMBER_COLORS[safeIdx % MEMBER_COLORS.length];
-};
+): MemberColorSlot =>
+  buildMemberColorSlotMap(members).get(memberId) ?? MEMBER_COLORS[0];
