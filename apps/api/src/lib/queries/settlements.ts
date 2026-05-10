@@ -25,35 +25,14 @@ export interface SettlementBalanceRow {
 }
 
 /**
- * Settlement balance query (D-05).
+ * Per-(account, member) settlement balances from **transactions only** (D-05).
+ * Credit-card accounts with no qualifying activity produce no rows here; the exported
+ * `fetchSettlementBalances` merges those accounts with every household member at 0 cents.
  *
- * Per-member, per-account balance is computed in a single GROUP BY query:
- *   (sum of expense + refund splits assigned to this member on this account)
- *   minus (sum of settlement transaction.amount on this account where the settlement
- *   has an assignee row pointing at this member).
- *
- * Refunds reduce the balance: a refund's split is subtracted (treated as money returning).
- * Implementation note: we include refund splits with a NEGATIVE sign in the running aggregate.
- *
- * Settlements DO NOT have assignee splits in the v1 model in the same way expenses do —
- * a settlement transaction has exactly ONE assignee row for payerMemberId and the row's
- * amountCents equals the transaction.amount. So we can sum settlement assignee rows directly.
- *
- * Final formula (per (accountId, memberId)):
- *   balanceCents =
- *     SUM(CASE
- *       WHEN tx.type = 'expense' THEN ta.amount_cents
- *       WHEN tx.type = 'refund' THEN -ta.amount_cents
- *       WHEN tx.type = 'settlement' THEN -ta.amount_cents
- *       ELSE 0
- *     END)::bigint
- *
- * income/transfer/contribution types are filtered out by the WHERE clause so no CASE branch is needed.
- *
- * The query joins to orgMembers + users so each row carries displayName + imageUrl
- * for the response (D-04 — avoid a second /members fetch).
+ * Formula per (accountId, memberId):
+ *   SUM(CASE … expense / refund / settlement … END) — see CASE in select below.
  */
-export const fetchSettlementBalances = async (
+const fetchSettlementAggregateRows = async (
   orgId: string
 ): Promise<SettlementBalanceRow[]> => {
   const rows = await db
@@ -116,6 +95,82 @@ export const fetchSettlementBalances = async (
         ? Number(r.balanceCents)
         : r.balanceCents,
   }));
+};
+
+/**
+ * Settlement balance rows for GET /api/settlements.
+ *
+ * For **credit_card** accounts: returns every (account × household member) pair with
+ * balances from aggregates (0 when there are no expense/refund/settlement splits yet).
+ * Without this, cards that exist in `accounts` but have no qualifying transactions
+ * were invisible to the dashboard (inner join to `transactions` produced no rows).
+ *
+ * Non-credit accounts keep the previous behavior: only (account, member) pairs that
+ * appear on qualifying transactions.
+ */
+export const fetchSettlementBalances = async (
+  orgId: string
+): Promise<SettlementBalanceRow[]> => {
+  const aggregateRows = await fetchSettlementAggregateRows(orgId);
+
+  const creditCardAccounts = await db
+    .select({
+      id: accounts.id,
+      name: accounts.name,
+      institution: accounts.institution,
+      lastFour: accounts.lastFour,
+      statementDueDay: accounts.statementDueDay,
+    })
+    .from(accounts)
+    .where(
+      and(
+        eq(accounts.orgId, orgId),
+        isNull(accounts.archivedAt),
+        eq(accounts.type, 'credit_card' as typeof accounts.type._.data)
+      )
+    );
+
+  const householdMembers = await db
+    .select({
+      memberId: orgMembers.id,
+      memberName: orgMembers.displayName,
+      memberAvatarUrl: users.imageUrl,
+    })
+    .from(orgMembers)
+    .innerJoin(users, eq(users.id, orgMembers.userId))
+    .where(eq(orgMembers.orgId, orgId));
+
+  const ccBalanceByPair = new Map<string, number>();
+  for (const r of aggregateRows) {
+    if (r.accountType === 'credit_card') {
+      ccBalanceByPair.set(`${r.accountId}:${r.memberId}`, r.balanceCents);
+    }
+  }
+
+  const creditCardRows: SettlementBalanceRow[] = [];
+  for (const cc of creditCardAccounts) {
+    for (const m of householdMembers) {
+      const key = `${cc.id}:${m.memberId}`;
+      creditCardRows.push({
+        accountId: cc.id,
+        accountName: cc.name,
+        accountType: 'credit_card',
+        institution: cc.institution,
+        lastFour: cc.lastFour,
+        statementDueDay: cc.statementDueDay,
+        memberId: m.memberId,
+        memberName: m.memberName,
+        memberAvatarUrl: m.memberAvatarUrl,
+        balanceCents: ccBalanceByPair.get(key) ?? 0,
+      });
+    }
+  }
+
+  const nonCreditAggregateRows = aggregateRows.filter(
+    (r) => r.accountType !== 'credit_card'
+  );
+
+  return [...creditCardRows, ...nonCreditAggregateRows];
 };
 
 /**

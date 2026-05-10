@@ -44,13 +44,48 @@ describe('getSettlementBalances service', () => {
     vi.mocked(fetchSettlementBalances).mockReset();
   });
 
-  it('GET-SETTLE-04: omits accounts where all member balances are zero (D-08)', async () => {
+  it('GET-SETTLE-04: omits non-credit accounts where all member balances are zero (D-08)', async () => {
     vi.mocked(fetchSettlementBalances).mockResolvedValueOnce([
-      { ...baseRow, memberId: 'm1', memberName: 'Alice', balanceCents: 0 },
-      { ...baseRow, memberId: 'm2', memberName: 'Bob', balanceCents: 0 },
+      {
+        ...baseRow,
+        accountType: 'chequing',
+        memberId: 'm1',
+        memberName: 'Alice',
+        balanceCents: 0,
+      },
+      {
+        ...baseRow,
+        accountType: 'chequing',
+        memberId: 'm2',
+        memberName: 'Bob',
+        balanceCents: 0,
+      },
     ]);
     const r = await getSettlementBalances('org_test123');
     expect(r.accounts).toHaveLength(0);
+  });
+
+  it('GET-SETTLE-04b: includes credit_card when all member balances are zero', async () => {
+    vi.mocked(fetchSettlementBalances).mockResolvedValueOnce([
+      {
+        ...baseRow,
+        accountType: 'credit_card',
+        memberId: 'm1',
+        memberName: 'Alice',
+        balanceCents: 0,
+      },
+      {
+        ...baseRow,
+        accountType: 'credit_card',
+        memberId: 'm2',
+        memberName: 'Bob',
+        balanceCents: 0,
+      },
+    ]);
+    const r = await getSettlementBalances('org_test123');
+    expect(r.accounts).toHaveLength(1);
+    expect(r.accounts[0]?.account.type).toBe('credit_card');
+    expect(r.accounts[0]?.totalBalanceCents).toBe(0);
   });
 
   it('GET-SETTLE-05: statementDueDay null => dueDate: null, status: null', async () => {

@@ -10,15 +10,15 @@ import {
   fetchSettlementBalances,
   memberBelongsToOrg,
 } from '../lib/queries/settlements';
+import type { SettlementBalanceRow } from '../lib/queries/settlements';
 import { computeNextDueDate } from '../lib/settlement-due-date';
 import { createTransaction } from './transactions';
-import type { SettlementBalanceRow } from '../lib/queries/settlements';
 
 /**
  * Service layer: shapes the raw query rows into the GET /api/settlements response (D-02).
  *   - Groups raw rows by accountId (using a Map for O(1) lookup, per js-perf skill)
  *   - Computes totalBalanceCents per account
- *   - Filters out accounts where every member balance is zero (D-08)
+ *   - Filters out zero-balance non-credit accounts (D-08); credit cards always included
  *   - Computes dueDate + status from statementDueDay (D-13, D-14)
  *
  * @param orgId - tenant scope (from tenantGuard via c.get('orgId'))
@@ -73,9 +73,9 @@ export const getSettlementBalances = async (
       0
     );
 
-    // D-08: omit accounts where every member balance is 0.
+    // D-08: omit accounts where every member balance is 0 (non-credit only).
     const allZero = bucket.members.every((m) => m.balanceCents === 0);
-    if (allZero) continue;
+    if (allZero && bucket.account.type !== 'credit_card') continue;
 
     const { dueDate, status } = computeNextDueDate(
       bucket.account.statementDueDay,
