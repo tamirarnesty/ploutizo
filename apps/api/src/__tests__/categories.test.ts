@@ -7,74 +7,54 @@ vi.mock('@clerk/hono', () => ({
 }));
 vi.mock('@ploutizo/db', () => ({
   db: {
-    select: vi
-      .fn()
-      .mockReturnValue({
-        from: vi
+    select: vi.fn().mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi
           .fn()
-          .mockReturnValue({
-            where: vi
-              .fn()
-              .mockReturnValue({ orderBy: vi.fn().mockResolvedValue([]) }),
-          }),
+          .mockReturnValue({ orderBy: vi.fn().mockResolvedValue([]) }),
       }),
-    insert: vi
-      .fn()
-      .mockReturnValue({
-        values: vi
-          .fn()
-          .mockReturnValue({
-            returning: vi
-              .fn()
-              .mockResolvedValue([
-                {
-                  id: 'cat_1',
-                  orgId: 'org_test123',
-                  name: 'Food',
-                  icon: 'UtensilsCrossed',
-                  colour: 'green-500',
-                  sortOrder: 0,
-                  archivedAt: null,
-                  createdAt: new Date().toISOString(),
-                },
-              ]),
-          }),
+    }),
+    insert: vi.fn().mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([
+          {
+            id: 'cat_1',
+            orgId: 'org_test123',
+            name: 'Food',
+            icon: 'UtensilsCrossed',
+            colour: 'green-500',
+            sortOrder: 0,
+            archivedAt: null,
+            createdAt: new Date().toISOString(),
+          },
+        ]),
       }),
-    update: vi
-      .fn()
-      .mockReturnValue({
-        set: vi
-          .fn()
-          .mockReturnValue({
-            where: vi
-              .fn()
-              .mockReturnValue({
-                returning: vi
-                  .fn()
-                  .mockResolvedValue([
-                    {
-                      id: 'cat_1',
-                      orgId: 'org_test123',
-                      name: 'Food Updated',
-                      icon: null,
-                      colour: null,
-                      sortOrder: 0,
-                      archivedAt: null,
-                      createdAt: new Date().toISOString(),
-                    },
-                  ]),
-              }),
-          }),
+    }),
+    update: vi.fn().mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([
+            {
+              id: 'cat_1',
+              orgId: 'org_test123',
+              name: 'Food Updated',
+              icon: null,
+              colour: null,
+              sortOrder: 0,
+              archivedAt: null,
+              createdAt: new Date().toISOString(),
+            },
+          ]),
+        }),
       }),
+    }),
     transaction: vi.fn((fn) =>
       fn({
-        update: vi
-          .fn()
-          .mockReturnValue({
-            set: vi
-              .fn()
-              .mockReturnValue({ where: vi.fn().mockResolvedValue(undefined) }),
-          }),
+        update: vi.fn().mockReturnValue({
+          set: vi
+            .fn()
+            .mockReturnValue({ where: vi.fn().mockResolvedValue(undefined) }),
+        }),
       })
     ),
   },

@@ -35,8 +35,6 @@ import {
 import { Text } from '@ploutizo/ui/components/text';
 import { AccountFormSchema } from '@ploutizo/validators';
 import { useAppForm } from '@ploutizo/ui/components/form';
-import type { Account, AccountMember, OrgMember } from '@ploutizo/types';
-import type { AccountForm as AccountFormType } from '@ploutizo/validators';
 import {
   useCreateAccount,
   useGetAccountMembers,
@@ -44,6 +42,8 @@ import {
 } from '@/lib/data-access/accounts';
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import { MemberToggleGroup } from '@/components/members/MemberToggleGroup';
+import type { AccountForm as AccountFormType } from '@ploutizo/validators';
+import type { Account, AccountMember, OrgMember } from '@ploutizo/types';
 
 const ACCOUNT_TYPES = [
   { value: 'chequing', label: 'Chequing' },

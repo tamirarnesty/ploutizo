@@ -39,6 +39,15 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
+import { useGetOrgMembers } from '@/lib/data-access/org';
+import { useGetCategories } from '@/lib/data-access/categories';
+import { useGetAccounts } from '@/lib/data-access/accounts';
+import {
+  useCreateTransaction,
+  useDeleteTransaction,
+  useGetTransaction,
+  useUpdateTransaction,
+} from '@/lib/data-access/transactions';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import { useTransactionForm } from './hooks/useTransactionForm';
 import { FormattedAmountInput } from './FormattedAmountInput';
@@ -52,15 +61,6 @@ import type { AssigneeFormRow } from './types';
 import type { TransactionRow } from '@/lib/data-access/transactions';
 import type { Account, OrgMember } from '@ploutizo/types';
 import type { Category } from '@/lib/data-access/categories';
-import { useGetOrgMembers } from '@/lib/data-access/org';
-import { useGetCategories } from '@/lib/data-access/categories';
-import { useGetAccounts } from '@/lib/data-access/accounts';
-import {
-  useCreateTransaction,
-  useDeleteTransaction,
-  useGetTransaction,
-  useUpdateTransaction,
-} from '@/lib/data-access/transactions';
 
 interface TransactionFormProps {
   transaction: TransactionRow | null; // null = create mode
@@ -142,12 +142,12 @@ interface DescriptionSyncerProps {
   onSync: (value: string) => void;
 }
 
-function DescriptionSyncer({
+const DescriptionSyncer = ({
   isLocked,
   lockedValue,
   currentValue,
   onSync,
-}: DescriptionSyncerProps) {
+}: DescriptionSyncerProps) => {
   // Only sync when lockedValue changes (account selection changes the template).
   // Skip if the field already holds the correct value — setFieldValue unconditionally
   // sets isDirty:true in TanStack Form, so calling it with an unchanged value would
@@ -160,7 +160,7 @@ function DescriptionSyncer({
     }
   }, [isLocked, lockedValue, onSync]);
   return null;
-}
+};
 
 interface RefundDataLoaderProps {
   refundOfId: string | null;
@@ -168,11 +168,11 @@ interface RefundDataLoaderProps {
   onAssigneesChanged: (ids: string[]) => void;
 }
 
-function RefundDataLoader({
+const RefundDataLoader = ({
   refundOfId,
   onDescChanged,
   onAssigneesChanged,
-}: RefundDataLoaderProps) {
+}: RefundDataLoaderProps) => {
   const { data } = useGetTransaction(refundOfId);
   useEffect(() => {
     if (!refundOfId) {
@@ -186,28 +186,28 @@ function RefundDataLoader({
     }
   }, [refundOfId, data, onDescChanged, onAssigneesChanged]);
   return null;
-}
+};
 
-function DirtyNotifier({
+const DirtyNotifier = ({
   isDirty,
   onChange,
 }: {
   isDirty: boolean;
   onChange: (d: boolean) => void;
-}) {
+}) => {
   useEffect(() => {
     onChange(isDirty);
   }, [isDirty, onChange]);
   return null;
-}
+};
 
 /** Types whose description is always locked (D-11, D-12) */
 const LOCKED_TYPES = ['transfer', 'settlement', 'contribution'] as const;
 type LockedType = (typeof LOCKED_TYPES)[number];
 
-function isLockedType(type: string): type is LockedType {
+const isLockedType = (type: string): type is LockedType => {
   return (LOCKED_TYPES as readonly string[]).includes(type);
-}
+};
 
 const TransactionFormInner = ({
   transaction,

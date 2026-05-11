@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Account } from '@ploutizo/types';
 import { apiFetch } from '@/lib/queryClient';
+import type { Account } from '@ploutizo/types';
 
 interface UpdateAccountBody {
   name?: string;

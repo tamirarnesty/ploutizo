@@ -13,9 +13,15 @@ const mockDelete = vi.fn();
 
 vi.mock('@ploutizo/db', () => ({
   db: {
-    get select() { return mockSelect; },
-    get update() { return mockUpdate; },
-    get delete() { return mockDelete; },
+    get select() {
+      return mockSelect;
+    },
+    get update() {
+      return mockUpdate;
+    },
+    get delete() {
+      return mockDelete;
+    },
   },
 }));
 
@@ -34,7 +40,8 @@ beforeEach(() => {
   mockSelect.mockReturnValue({
     from: vi.fn().mockReturnValue({
       where: vi.fn().mockImplementation(() => ({
-        then: (fn: (rows: unknown[]) => unknown) => Promise.resolve(fn([{ settlementThreshold: 5000 }])),
+        then: (fn: (rows: unknown[]) => unknown) =>
+          Promise.resolve(fn([{ settlementThreshold: 5000 }])),
         orderBy: vi.fn().mockResolvedValue([]),
       })),
       innerJoin: vi.fn().mockReturnValue({
@@ -62,7 +69,8 @@ describe('GET /api/households/settings', () => {
     mockSelect.mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockReturnValue({
-          then: (fn: (rows: unknown[]) => unknown) => Promise.resolve(fn([{ settlementThreshold: 5000 }])),
+          then: (fn: (rows: unknown[]) => unknown) =>
+            Promise.resolve(fn([{ settlementThreshold: 5000 }])),
         }),
       }),
     });
@@ -134,13 +142,22 @@ describe('GET /api/households (overview)', () => {
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockReturnValue({
           then: (fn: (rows: unknown[]) => unknown) =>
-            Promise.resolve(fn([{ name: 'Smith Family', imageUrl: 'https://example.com/img.png' }])),
+            Promise.resolve(
+              fn([
+                {
+                  name: 'Smith Family',
+                  imageUrl: 'https://example.com/img.png',
+                },
+              ])
+            ),
         }),
       }),
     });
     const res = await app.request('/');
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { data: { name: string | null; imageUrl: string | null } };
+    const body = (await res.json()) as {
+      data: { name: string | null; imageUrl: string | null };
+    };
     expect(body.data.name).toBe('Smith Family');
     expect(body.data.imageUrl).toBe('https://example.com/img.png');
   });
@@ -155,7 +172,9 @@ describe('GET /api/households (overview)', () => {
     });
     const res = await app.request('/');
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { data: { name: string | null; imageUrl: string | null } };
+    const body = (await res.json()) as {
+      data: { name: string | null; imageUrl: string | null };
+    };
     expect(body.data.name).toBeNull();
     expect(body.data.imageUrl).toBeNull();
   });
@@ -229,8 +248,8 @@ describe('GET /api/households/invitations', () => {
               id: 'inv_abc',
               email_address: 'user@example.com',
               status: 'pending',
-              created_at: 1678886400000,   // Unix ms = 2023-03-15T12:00:00Z
-              expires_at: 1681564800000,   // Unix ms = 2023-04-15T12:00:00Z
+              created_at: 1678886400000, // Unix ms = 2023-03-15T12:00:00Z
+              expires_at: 1681564800000, // Unix ms = 2023-04-15T12:00:00Z
             },
           ],
         }),
@@ -296,7 +315,9 @@ describe('GET /api/households/invitations', () => {
 describe('DELETE /api/households/invitations/:invitationId', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn());
-    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({}), { status: 200 })
+    );
   });
 
   it('returns 200 { data: { revoked: true } } on Clerk success', async () => {
@@ -311,7 +332,8 @@ describe('DELETE /api/households/invitations/:invitationId', () => {
     const [calledUrl, calledInit] = vi.mocked(fetch).mock.calls[0] ?? [];
     expect(String(calledUrl)).toContain('/invitations/inv_abc/revoke');
     expect(calledInit?.method).toBe('POST');
-    const bodyStr = typeof calledInit?.body === 'string' ? calledInit.body : '{}';
+    const bodyStr =
+      typeof calledInit?.body === 'string' ? calledInit.body : '{}';
     const parsedBody = JSON.parse(bodyStr) as { requesting_user_id?: string };
     expect(parsedBody).toHaveProperty('requesting_user_id');
     // requesting_user_id is non-empty (set by tenantGuard test harness)
@@ -320,7 +342,9 @@ describe('DELETE /api/households/invitations/:invitationId', () => {
 
   it('treats Clerk 404 as success (idempotent revoke)', async () => {
     vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 404 }));
-    const res = await app.request('/invitations/inv_gone', { method: 'DELETE' });
+    const res = await app.request('/invitations/inv_gone', {
+      method: 'DELETE',
+    });
     expect(res.status).toBe(200);
   });
 
@@ -384,7 +408,9 @@ describe('DELETE /api/households/members/:memberId', () => {
         }),
       }),
     });
-    const res = await app.request('/members/mem_nonexistent', { method: 'DELETE' });
+    const res = await app.request('/members/mem_nonexistent', {
+      method: 'DELETE',
+    });
     expect(res.status).toBe(404);
   });
 });

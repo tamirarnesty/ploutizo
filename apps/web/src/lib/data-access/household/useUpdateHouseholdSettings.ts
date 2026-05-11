@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { HouseholdSettings } from './useGetHouseholdSettings';
 import { apiFetch } from '@/lib/queryClient';
+import type { HouseholdSettings } from './useGetHouseholdSettings';
 
 interface UpdateHouseholdSettingsBody {
   settlementThreshold: number | null;

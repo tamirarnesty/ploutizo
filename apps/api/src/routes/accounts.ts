@@ -1,8 +1,5 @@
 import { Hono } from 'hono';
-import {
-  createAccountSchema,
-  updateAccountSchema,
-} from '@ploutizo/validators';
+import { createAccountSchema, updateAccountSchema } from '@ploutizo/validators';
 import { appValidator } from '../lib/validator';
 import {
   archiveAccountById,
@@ -24,21 +21,29 @@ accountsRouter.get('/', async (c) => {
 });
 
 // POST / — create account; optionally assign members
-accountsRouter.post('/', appValidator('json', createAccountSchema), async (c) => {
-  const orgId = c.get('orgId');
-  const data = c.req.valid('json');
-  const row = await createAccount(orgId, data);
-  return c.json({ data: row }, 201);
-});
+accountsRouter.post(
+  '/',
+  appValidator('json', createAccountSchema),
+  async (c) => {
+    const orgId = c.get('orgId');
+    const data = c.req.valid('json');
+    const row = await createAccount(orgId, data);
+    return c.json({ data: row }, 201);
+  }
+);
 
 // PATCH /:id — update account fields; replace members if memberIds provided
-accountsRouter.patch('/:id', appValidator('json', updateAccountSchema), async (c) => {
-  const orgId = c.get('orgId');
-  const id = c.req.param('id');
-  const data = c.req.valid('json');
-  const updated = await updateAccount(id, orgId, data);
-  return c.json({ data: updated });
-});
+accountsRouter.patch(
+  '/:id',
+  appValidator('json', updateAccountSchema),
+  async (c) => {
+    const orgId = c.get('orgId');
+    const id = c.req.param('id');
+    const data = c.req.valid('json');
+    const updated = await updateAccount(id, orgId, data);
+    return c.json({ data: updated });
+  }
+);
 
 // GET /:id/members — return current member rows for one account
 accountsRouter.get('/:id/members', async (c) => {

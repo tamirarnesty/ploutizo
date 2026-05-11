@@ -4,7 +4,7 @@ import { useTheme } from '@ploutizo/ui/hooks/use-theme';
 const cycleMap = { system: 'light', light: 'dark', dark: 'system' } as const;
 type Theme = keyof typeof cycleMap;
 
-export function useThemeKeyboardShortcut() {
+export const useThemeKeyboardShortcut = () => {
   const { theme, setTheme } = useTheme();
 
   // Store handler in ref so the effect registers once but always reads latest theme
@@ -29,4 +29,4 @@ export function useThemeKeyboardShortcut() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, []); // empty deps — registers once; latest theme always available via ref
-}
+};

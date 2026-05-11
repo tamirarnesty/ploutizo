@@ -7,9 +7,9 @@ import {
   InputGroupInput,
 } from '@ploutizo/ui/components/input-group';
 import { Text } from '@ploutizo/ui/components/text';
-import type { AssigneeFormRow } from './types';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { UserAvatar } from '@/components/members/UserAvatar';
+import type { AssigneeFormRow } from './types';
 
 interface AssigneeRowProps {
   memberId: string;

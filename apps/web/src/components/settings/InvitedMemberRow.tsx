@@ -2,10 +2,10 @@ import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '@ploutizo/ui/components/badge';
 import { Item, ItemActions } from '@ploutizo/ui/components/item';
 import { Text } from '@ploutizo/ui/components/text';
+import { UserAvatar } from '@/components/members/UserAvatar';
 import { ConfirmDialog } from './ConfirmDialog';
 import { getExpiryInfo } from './invitationUtils';
 import type { PendingInvitation } from '@ploutizo/types';
-import { UserAvatar } from '@/components/members/UserAvatar';
 
 interface InvitedMemberRowProps {
   invitation: PendingInvitation;

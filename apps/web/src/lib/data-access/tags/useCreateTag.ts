@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Tag } from './useGetTags';
 import { apiFetch } from '@/lib/queryClient';
+import type { Tag } from './useGetTags';
 
 interface CreateTagBody {
   name: string;

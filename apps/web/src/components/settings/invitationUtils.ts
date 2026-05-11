@@ -7,10 +7,10 @@ export interface ExpiryInfo {
 
 // Per D-11: Clerk's `status` field is authoritative for the 'Expired' state.
 // Days remaining is computed from expiresAt for label text only — never to detect expiry.
-export function getExpiryInfo(
+export const getExpiryInfo = (
   expiresAt: string | null,
   status: PendingInvitationStatus
-): ExpiryInfo | null {
+): ExpiryInfo | null => {
   if (status === 'expired') {
     return { label: 'Expired', className: 'text-destructive' };
   }
@@ -23,4 +23,4 @@ export function getExpiryInfo(
     className:
       daysLeft <= 2 ? 'text-warning-foreground' : 'text-muted-foreground',
   };
-}
+};

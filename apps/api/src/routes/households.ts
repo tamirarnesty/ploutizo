@@ -1,6 +1,9 @@
 import { Hono } from 'hono';
 import { getAuth } from '@clerk/hono';
-import { InviteMemberFormSchema, updateHouseholdSettingsSchema } from '@ploutizo/validators';
+import {
+  InviteMemberFormSchema,
+  updateHouseholdSettingsSchema,
+} from '@ploutizo/validators';
 import { appValidator } from '../lib/validator';
 import { DomainError } from '../lib/errors';
 import {
@@ -33,12 +36,16 @@ householdsRouter.get('/settings', async (c) => {
 });
 
 // PATCH /settings — update the org's settlementThreshold
-householdsRouter.patch('/settings', appValidator('json', updateHouseholdSettingsSchema), async (c) => {
-  const orgId = c.get('orgId');
-  const data = c.req.valid('json');
-  const result = await updateHouseholdSettings(orgId, data);
-  return c.json({ data: result });
-});
+householdsRouter.patch(
+  '/settings',
+  appValidator('json', updateHouseholdSettingsSchema),
+  async (c) => {
+    const orgId = c.get('orgId');
+    const data = c.req.valid('json');
+    const result = await updateHouseholdSettings(orgId, data);
+    return c.json({ data: result });
+  }
+);
 
 // GET /members — list active members in current org
 householdsRouter.get('/members', async (c) => {
@@ -48,19 +55,26 @@ householdsRouter.get('/members', async (c) => {
 });
 
 // POST /invitations — invite a user to the org via Clerk API
-householdsRouter.post('/invitations', appValidator('json', InviteMemberFormSchema), async (c) => {
-  const orgId = c.get('orgId');
-  const data = c.req.valid('json');
-  try {
-    const result = await inviteMember(orgId, data);
-    return c.json({ data: result });
-  } catch (err) {
-    if (err instanceof DomainError) {
-      return c.json({ error: { code: err.code ?? 'DOMAIN_ERROR' } }, err.statusCode as ContentfulStatusCode);
+householdsRouter.post(
+  '/invitations',
+  appValidator('json', InviteMemberFormSchema),
+  async (c) => {
+    const orgId = c.get('orgId');
+    const data = c.req.valid('json');
+    try {
+      const result = await inviteMember(orgId, data);
+      return c.json({ data: result });
+    } catch (err) {
+      if (err instanceof DomainError) {
+        return c.json(
+          { error: { code: err.code ?? 'DOMAIN_ERROR' } },
+          err.statusCode as ContentfulStatusCode
+        );
+      }
+      throw err;
     }
-    throw err;
   }
-});
+);
 
 // DELETE /members/:memberId — remove a member from the org
 // getAuth(c).userId is still valid here — tenantGuard only sets orgId, not userId (RESEARCH.md Pitfall 6)
@@ -73,7 +87,10 @@ householdsRouter.delete('/members/:memberId', async (c) => {
     return c.json({ data: result });
   } catch (err) {
     if (err instanceof DomainError) {
-      return c.json({ error: { code: err.code ?? 'DOMAIN_ERROR' } }, err.statusCode as ContentfulStatusCode);
+      return c.json(
+        { error: { code: err.code ?? 'DOMAIN_ERROR' } },
+        err.statusCode as ContentfulStatusCode
+      );
     }
     throw err;
   }
@@ -104,7 +121,11 @@ householdsRouter.delete('/invitations/:invitationId', async (c) => {
   const { userId: requestingUserId } = getAuth(c);
   const { invitationId } = c.req.param();
   try {
-    const result = await revokeInvitation(orgId, invitationId, requestingUserId ?? '');
+    const result = await revokeInvitation(
+      orgId,
+      invitationId,
+      requestingUserId ?? ''
+    );
     return c.json({ data: result });
   } catch (err) {
     if (err instanceof DomainError) {

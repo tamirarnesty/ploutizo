@@ -6,17 +6,12 @@ import { AppSidebar } from '../components/AppSidebar';
 import { TopBar } from '../components/TopBar';
 import { useThemeKeyboardShortcut } from '../hooks/useThemeKeyboardShortcut';
 
-export const Route = createFileRoute('/_layout')({
-  loader: () => getSidebarState(),
-  component: LayoutShell,
-});
-
 const getSidebarState = createServerFn().handler(() => {
   const value = getCookie('sidebar_state');
   return value !== 'false';
 });
 
-function LayoutShell() {
+const LayoutShell = () => {
   useThemeKeyboardShortcut();
   const defaultOpen = Route.useLoaderData();
 
@@ -38,4 +33,9 @@ function LayoutShell() {
       </SidebarProvider>
     </div>
   );
-}
+};
+
+export const Route = createFileRoute('/_layout')({
+  loader: () => getSidebarState(),
+  component: LayoutShell,
+});

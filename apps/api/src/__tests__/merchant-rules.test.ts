@@ -9,63 +9,47 @@ vi.mock('@clerk/hono', () => ({
 }));
 vi.mock('@ploutizo/db', () => ({
   db: {
-    select: vi
-      .fn()
-      .mockReturnValue({
-        from: vi
+    select: vi.fn().mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi
           .fn()
-          .mockReturnValue({
-            where: vi
-              .fn()
-              .mockReturnValue({ orderBy: vi.fn().mockResolvedValue([]) }),
-          }),
+          .mockReturnValue({ orderBy: vi.fn().mockResolvedValue([]) }),
       }),
-    insert: vi
-      .fn()
-      .mockReturnValue({
-        values: vi
+    }),
+    insert: vi.fn().mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([
+          {
+            id: 'rule_1',
+            orgId: 'org_test123',
+            pattern: 'AMAZON',
+            matchType: 'contains',
+            renameTo: 'Amazon',
+            categoryId: null,
+            assigneeId: null,
+            priority: 0,
+            createdAt: new Date().toISOString(),
+          },
+        ]),
+      }),
+    }),
+    update: vi.fn().mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi
           .fn()
-          .mockReturnValue({
-            returning: vi
-              .fn()
-              .mockResolvedValue([
-                {
-                  id: 'rule_1',
-                  orgId: 'org_test123',
-                  pattern: 'AMAZON',
-                  matchType: 'contains',
-                  renameTo: 'Amazon',
-                  categoryId: null,
-                  assigneeId: null,
-                  priority: 0,
-                  createdAt: new Date().toISOString(),
-                },
-              ]),
-          }),
+          .mockReturnValue({ returning: vi.fn().mockResolvedValue([{}]) }),
       }),
-    update: vi
-      .fn()
-      .mockReturnValue({
-        set: vi
-          .fn()
-          .mockReturnValue({
-            where: vi
-              .fn()
-              .mockReturnValue({ returning: vi.fn().mockResolvedValue([{}]) }),
-          }),
-      }),
+    }),
     delete: vi
       .fn()
       .mockReturnValue({ where: vi.fn().mockResolvedValue(undefined) }),
     transaction: vi.fn((fn) =>
       fn({
-        update: vi
-          .fn()
-          .mockReturnValue({
-            set: vi
-              .fn()
-              .mockReturnValue({ where: vi.fn().mockResolvedValue(undefined) }),
-          }),
+        update: vi.fn().mockReturnValue({
+          set: vi
+            .fn()
+            .mockReturnValue({ where: vi.fn().mockResolvedValue(undefined) }),
+        }),
       })
     ),
   },
@@ -77,7 +61,10 @@ app.route('/', merchantRulesRouter);
 // onError mirrors production handler — thin routes no longer catch DomainError inline
 app.onError((err, c) => {
   if (err instanceof NotFoundError) {
-    return c.json({ error: { code: err.code ?? 'NOT_FOUND', message: err.message } }, 404);
+    return c.json(
+      { error: { code: err.code ?? 'NOT_FOUND', message: err.message } },
+      404
+    );
   }
   if (err instanceof DomainError) {
     return c.json(
@@ -85,7 +72,10 @@ app.onError((err, c) => {
       err.statusCode as ContentfulStatusCode
     );
   }
-  return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Unexpected error' } }, 500);
+  return c.json(
+    { error: { code: 'INTERNAL_ERROR', message: 'Unexpected error' } },
+    500
+  );
 });
 
 describe('POST /api/merchant-rules', () => {

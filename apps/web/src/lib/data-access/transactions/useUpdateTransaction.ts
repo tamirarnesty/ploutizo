@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { TransactionRow } from './useGetTransactions';
 import { apiFetch } from '@/lib/queryClient';
+import type { TransactionRow } from './useGetTransactions';
 
 type PatchTransactionResponse = Omit<TransactionRow, 'tags' | 'assignees'>;
 

@@ -7,12 +7,12 @@ import {
 } from '@ploutizo/ui/components/collapsible';
 import { Text } from '@ploutizo/ui/components/text';
 import { cn } from '@ploutizo/ui/lib/utils';
+import { MemberToggleGroup } from '@/components/members/MemberToggleGroup';
+import { lrmSplit } from '@/lib/lrm';
 import { SplitSection } from './SplitSection';
 import type { OrgMember } from '@ploutizo/types';
 import type { AssigneeFormRow } from './types';
 import type { TransactionRow } from '@/lib/data-access/transactions';
-import { MemberToggleGroup } from '@/components/members/MemberToggleGroup';
-import { lrmSplit } from '@/lib/lrm';
 
 interface AssigneeSectionProps {
   value: AssigneeFormRow[];

@@ -14,28 +14,28 @@ import type { FilterFieldConfig } from '@ploutizo/ui/components/reui/filters';
 const SINGLE_DATE_OPS = new Set(['is', 'is_not', 'before', 'after']);
 const RANGE_OPS = new Set(['between', 'not_between']);
 
-function isSingleDateOp(op: string): boolean {
+const isSingleDateOp = (op: string): boolean => {
   return SINGLE_DATE_OPS.has(op);
-}
-function isRangeOp(op: string): boolean {
+};
+const isRangeOp = (op: string): boolean => {
   return RANGE_OPS.has(op);
-}
+};
 
 // State migration rules when switching operators:
 // single→range:      [A]    → [A, '']
 // range→single:      [A, B] → [A]
 // same family (e.g. is↔is_not, between↔not_between): values unchanged
-function migrateValues(
+const migrateValues = (
   prevOp: string,
   nextOp: string,
   values: string[]
-): string[] {
+): string[] => {
   const prevIsRange = isRangeOp(prevOp);
   const nextIsRange = isRangeOp(nextOp);
   if (prevIsRange === nextIsRange) return values; // same family — keep values
   if (!prevIsRange && nextIsRange) return [values[0] ?? '', '']; // single → range
   return [values[0] ?? '']; // range → single
-}
+};
 
 interface DateRangeFilterRendererProps {
   values: string[];
@@ -170,12 +170,12 @@ const DateRangeFilterRenderer = ({
   );
 };
 
-export function buildFilterFields(
+export const buildFilterFields = (
   accounts: { id: string; name: string }[],
   categories: { id: string; name: string }[],
   members: { id: string; displayName: string }[],
   tags: { id: string; name: string }[]
-): FilterFieldConfig<string>[] {
+): FilterFieldConfig<string>[] => {
   return [
     {
       key: 'type',
@@ -245,4 +245,4 @@ export function buildFilterFields(
       options: tags.map((t) => ({ value: t.id, label: t.name })),
     },
   ];
-}
+};

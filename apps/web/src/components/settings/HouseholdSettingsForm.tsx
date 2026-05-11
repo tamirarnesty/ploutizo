@@ -5,11 +5,11 @@ import { FieldError } from '@ploutizo/ui/components/field';
 import { Input } from '@ploutizo/ui/components/input';
 import { Spinner } from '@ploutizo/ui/components/spinner';
 import { Text } from '@ploutizo/ui/components/text';
-import type { HouseholdSettingsForm as HouseholdSettingsFormType } from '@ploutizo/validators';
 import {
   useGetHouseholdSettings,
   useUpdateHouseholdSettings,
 } from '@/lib/data-access/household';
+import type { HouseholdSettingsForm as HouseholdSettingsFormType } from '@ploutizo/validators';
 
 export const HouseholdSettingsForm = () => {
   const { data } = useGetHouseholdSettings();

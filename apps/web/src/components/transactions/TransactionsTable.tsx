@@ -8,16 +8,16 @@ import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-
 import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-grid-scroll-area';
 import { DataGridPagination } from '@ploutizo/ui/components/reui/data-grid/data-grid-pagination';
 import { toast } from '@ploutizo/ui/components/sonner';
+import {
+  useDeleteTransaction,
+  useRestoreTransaction,
+} from '@/lib/data-access/transactions';
 import { buildColumns } from './TransactionColumns';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import { TransactionsTableEmpty } from './TransactionTableEmpty';
 import { TransactionsTableEmptyFiltered } from './TransactionTableEmptyFiltered';
 import type { TransactionRow } from '@/lib/data-access/transactions';
 import type { TransactionSearch } from './transactionSearch';
-import {
-  useDeleteTransaction,
-  useRestoreTransaction,
-} from '@/lib/data-access/transactions';
 
 interface TransactionsTableProps {
   transactions: TransactionRow[];

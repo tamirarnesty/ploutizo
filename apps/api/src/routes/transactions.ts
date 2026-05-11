@@ -1,7 +1,5 @@
 import { Hono } from 'hono';
-import {
-  createTransactionSchema,
-} from '@ploutizo/validators';
+import { createTransactionSchema } from '@ploutizo/validators';
 import { appValidator } from '../lib/validator';
 import { DomainError } from '../lib/errors';
 import {
@@ -21,33 +19,51 @@ import type { AppEnv } from '../types';
 const transactionsRouter = new Hono<AppEnv>();
 
 // POST / — create transaction (D-01, D-02, D-09, D-10, D-11, D-13)
-transactionsRouter.post('/', appValidator('json', createTransactionSchema), async (c) => {
-  const orgId = c.get('orgId');
-  const data = c.req.valid('json');
+transactionsRouter.post(
+  '/',
+  appValidator('json', createTransactionSchema),
+  async (c) => {
+    const orgId = c.get('orgId');
+    const data = c.req.valid('json');
 
-  // D-11: validate split sum before hitting DB
-  const splitError = validateSplitSum(data.amount, data.assignees);
-  if (splitError) {
-    return c.json({ error: { code: 'BAD_REQUEST', message: splitError } }, 400);
+    // D-11: validate split sum before hitting DB
+    const splitError = validateSplitSum(data.amount, data.assignees);
+    if (splitError) {
+      return c.json(
+        { error: { code: 'BAD_REQUEST', message: splitError } },
+        400
+      );
+    }
+
+    // T1: validate counterpartAccountId belongs to this org — T-03.4.1-T1
+    // gate on field presence; counterpartAccountId exists on transfer/settlement/contribution variants
+    if ('counterpartAccountId' in data && data.counterpartAccountId) {
+      const valid = await checkCounterpartAccountOwnership(
+        data.counterpartAccountId,
+        orgId
+      );
+      if (!valid)
+        throw new DomainError(
+          400,
+          'counterpartAccountId references an account not in this org'
+        );
+    }
+
+    // D-13: validate refundOf org ownership if provided — gate on field presence, not type.
+    // Use 'in' narrowing because refundOf only exists on the 'refund' variant of the discriminated union.
+    if ('refundOf' in data && data.refundOf) {
+      const owned = await checkRefundOfOwnership(data.refundOf, orgId);
+      if (!owned)
+        throw new DomainError(
+          400,
+          'refundOf transaction not found in this org'
+        );
+    }
+
+    const row = await createTransaction(orgId, data);
+    return c.json({ data: row }, 201);
   }
-
-  // T1: validate counterpartAccountId belongs to this org — T-03.4.1-T1
-  // gate on field presence; counterpartAccountId exists on transfer/settlement/contribution variants
-  if ('counterpartAccountId' in data && data.counterpartAccountId) {
-    const valid = await checkCounterpartAccountOwnership(data.counterpartAccountId, orgId);
-    if (!valid) throw new DomainError(400, 'counterpartAccountId references an account not in this org');
-  }
-
-  // D-13: validate refundOf org ownership if provided — gate on field presence, not type.
-  // Use 'in' narrowing because refundOf only exists on the 'refund' variant of the discriminated union.
-  if ('refundOf' in data && data.refundOf) {
-    const owned = await checkRefundOfOwnership(data.refundOf, orgId);
-    if (!owned) throw new DomainError(400, 'refundOf transaction not found in this org');
-  }
-
-  const row = await createTransaction(orgId, data);
-  return c.json({ data: row }, 201);
-});
+);
 
 // GET / — paginated list with filtering and sort (D-06, D-07, D-08)
 transactionsRouter.get('/', async (c) => {
@@ -61,11 +77,13 @@ transactionsRouter.get('/', async (c) => {
     ? Math.min(200, Math.max(1, Math.floor(rawLimit)))
     : 50;
   const rawSort = c.req.query('sort');
-  const sort = (
-    rawSort === 'amount' || rawSort === 'type' ||
-    rawSort === 'category' || rawSort === 'account'
-      ? rawSort : 'date'
-  );
+  const sort =
+    rawSort === 'amount' ||
+    rawSort === 'type' ||
+    rawSort === 'category' ||
+    rawSort === 'account'
+      ? rawSort
+      : 'date';
   const order = c.req.query('order') === 'asc' ? 'asc' : 'desc';
 
   // tagIds: support ?tagIds[]=x&tagIds[]=y AND ?tagIds=x,y (Pitfall 5)
@@ -133,42 +151,57 @@ transactionsRouter.patch('/:id/restore', async (c) => {
 
 // PATCH /:id — update fields + replace-all assignees/tags (D-03, D-08, D-10, D-11)
 // D-08: uses createTransactionSchema (discriminated union) to enforce type-specific required fields on type change
-transactionsRouter.patch('/:id', appValidator('json', createTransactionSchema), async (c) => {
-  const orgId = c.get('orgId');
-  const id = c.req.param('id');
-  const data = c.req.valid('json');
+transactionsRouter.patch(
+  '/:id',
+  appValidator('json', createTransactionSchema),
+  async (c) => {
+    const orgId = c.get('orgId');
+    const id = c.req.param('id');
+    const data = c.req.valid('json');
 
-  // T1: validate counterpartAccountId belongs to this org — T-03.4.1-T1
-  // gate on field presence; counterpartAccountId exists on transfer/settlement/contribution variants
-  if ('counterpartAccountId' in data && data.counterpartAccountId) {
-    const valid = await checkCounterpartAccountOwnership(data.counterpartAccountId, orgId);
-    if (!valid) throw new DomainError(400, 'counterpartAccountId references an account not in this org');
-  }
+    // T1: validate counterpartAccountId belongs to this org — T-03.4.1-T1
+    // gate on field presence; counterpartAccountId exists on transfer/settlement/contribution variants
+    if ('counterpartAccountId' in data && data.counterpartAccountId) {
+      const valid = await checkCounterpartAccountOwnership(
+        data.counterpartAccountId,
+        orgId
+      );
+      if (!valid)
+        throw new DomainError(
+          400,
+          'counterpartAccountId references an account not in this org'
+        );
+    }
 
-  // T-03.4-02: validate refundOf org ownership if provided — mirrors POST guard
-  // Use 'in' narrowing because refundOf only exists on the 'refund' variant of the discriminated union.
-  if ('refundOf' in data && data.refundOf) {
-    const owned = await checkRefundOfOwnership(data.refundOf, orgId);
-    if (!owned) throw new DomainError(400, 'refundOf transaction not found in this org');
-  }
+    // T-03.4-02: validate refundOf org ownership if provided — mirrors POST guard
+    // Use 'in' narrowing because refundOf only exists on the 'refund' variant of the discriminated union.
+    if ('refundOf' in data && data.refundOf) {
+      const owned = await checkRefundOfOwnership(data.refundOf, orgId);
+      if (!owned)
+        throw new DomainError(
+          400,
+          'refundOf transaction not found in this org'
+        );
+    }
 
-  let updated;
-  try {
-    updated = await updateTransaction(id, orgId, data);
-  } catch (err) {
-    // updateTransaction throws on split sum mismatch (D-11)
-    const message = err instanceof Error ? err.message : 'Invalid request';
-    return c.json({ error: { code: 'BAD_REQUEST', message } }, 400);
-  }
+    let updated;
+    try {
+      updated = await updateTransaction(id, orgId, data);
+    } catch (err) {
+      // updateTransaction throws on split sum mismatch (D-11)
+      const message = err instanceof Error ? err.message : 'Invalid request';
+      return c.json({ error: { code: 'BAD_REQUEST', message } }, 400);
+    }
 
-  if (!updated) {
-    return c.json(
-      { error: { code: 'NOT_FOUND', message: 'Transaction not found.' } },
-      404
-    );
+    if (!updated) {
+      return c.json(
+        { error: { code: 'NOT_FOUND', message: 'Transaction not found.' } },
+        404
+      );
+    }
+    return c.json({ data: updated });
   }
-  return c.json({ data: updated });
-});
+);
 
 // DELETE /:id — soft delete (D-15)
 transactionsRouter.delete('/:id', async (c) => {
