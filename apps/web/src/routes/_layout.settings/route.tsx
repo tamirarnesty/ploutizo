@@ -8,25 +8,13 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@ploutizo/ui/components/tabs';
 import { Text } from '@ploutizo/ui/components/text';
 
-export const Route = createFileRoute('/_layout/settings')({
-  component: SettingsLayout,
-  beforeLoad: ({ location }) => {
-    if (
-      location.pathname === '/settings' ||
-      location.pathname === '/settings/'
-    ) {
-      throw redirect({ to: '/settings/categories' });
-    }
-  },
-});
-
 const settingsTabs = [
   { label: 'Categories & Tags', value: '/settings/categories' },
   { label: 'Merchant Rules', value: '/settings/merchant-rules' },
   { label: 'Household', value: '/settings/household' },
 ] as const;
 
-function SettingsLayout() {
+const SettingsLayout = () => {
   const { location } = useRouterState();
   const navigate = useNavigate();
 
@@ -56,4 +44,16 @@ function SettingsLayout() {
       <Outlet />
     </div>
   );
-}
+};
+
+export const Route = createFileRoute('/_layout/settings')({
+  component: SettingsLayout,
+  beforeLoad: ({ location }) => {
+    if (
+      location.pathname === '/settings' ||
+      location.pathname === '/settings/'
+    ) {
+      throw redirect({ to: '/settings/categories' });
+    }
+  },
+});

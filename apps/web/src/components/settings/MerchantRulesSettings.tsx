@@ -3,14 +3,14 @@ import { Sortable } from '@ploutizo/ui/components/reui/sortable';
 import { Button } from '@ploutizo/ui/components/button';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
-import { RuleDialog } from './RuleDialog';
-import { MerchantRuleRow } from './MerchantRuleRow';
-import type { MerchantRule } from '@/lib/data-access/merchant-rules';
 import {
   useDeleteMerchantRule,
   useGetMerchantRules,
   useReorderMerchantRules,
 } from '@/lib/data-access/merchant-rules';
+import type { MerchantRule } from '@/lib/data-access/merchant-rules';
+import { RuleDialog } from './RuleDialog';
+import { MerchantRuleRow } from './MerchantRuleRow';
 
 export const MerchantRulesSettings = () => {
   const { data: rules = [], isLoading } = useGetMerchantRules();

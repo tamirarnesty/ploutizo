@@ -1,10 +1,18 @@
-import { DomainError, NotFoundError } from '../lib/errors'
-import { fetchAccountForSettlement, fetchSettlementBalances, memberBelongsToOrg } from '../lib/queries/settlements'
-import { computeNextDueDate } from '../lib/settlement-due-date'
-import { createTransaction } from './transactions'
-import type { SettlementBalanceRow } from '../lib/queries/settlements'
-import type { CreateSettlementInput } from '@ploutizo/validators'
-import type { GetSettlementBalancesResponse, SettlementAccountRow, SettlementMemberRow } from '@ploutizo/types'
+import type { CreateSettlementInput } from '@ploutizo/validators';
+import type {
+  GetSettlementBalancesResponse,
+  SettlementAccountRow,
+  SettlementMemberRow,
+} from '@ploutizo/types';
+import { DomainError, NotFoundError } from '../lib/errors';
+import {
+  fetchAccountForSettlement,
+  fetchSettlementBalances,
+  memberBelongsToOrg,
+} from '../lib/queries/settlements';
+import { computeNextDueDate } from '../lib/settlement-due-date';
+import { createTransaction } from './transactions';
+import type { SettlementBalanceRow } from '../lib/queries/settlements';
 
 /**
  * Service layer: shapes the raw query rows into the GET /api/settlements response (D-02).
@@ -16,23 +24,23 @@ import type { GetSettlementBalancesResponse, SettlementAccountRow, SettlementMem
  * @param orgId - tenant scope (from tenantGuard via c.get('orgId'))
  * @param now - injectable clock for testability; defaults to new Date()
  */
-export async function getSettlementBalances(
+export const getSettlementBalances = async (
   orgId: string,
   now: Date = new Date()
-): Promise<GetSettlementBalancesResponse> {
-  const rows: SettlementBalanceRow[] = await fetchSettlementBalances(orgId)
+): Promise<GetSettlementBalancesResponse> => {
+  const rows: SettlementBalanceRow[] = await fetchSettlementBalances(orgId);
 
   // Group by account (Map for O(1) lookup — vercel js-perf skill).
   const byAccount = new Map<
     string,
     {
-      account: SettlementAccountRow['account']
-      members: SettlementMemberRow[]
+      account: SettlementAccountRow['account'];
+      members: SettlementMemberRow[];
     }
-  >()
+  >();
 
   for (const row of rows) {
-    let bucket = byAccount.get(row.accountId)
+    let bucket = byAccount.get(row.accountId);
     if (!bucket) {
       bucket = {
         account: {
@@ -44,8 +52,8 @@ export async function getSettlementBalances(
           statementDueDay: row.statementDueDay,
         },
         members: [],
-      }
-      byAccount.set(row.accountId, bucket)
+      };
+      byAccount.set(row.accountId, bucket);
     }
     bucket.members.push({
       member: {
@@ -54,19 +62,25 @@ export async function getSettlementBalances(
         avatarUrl: row.memberAvatarUrl,
       },
       balanceCents: row.balanceCents,
-    })
+    });
   }
 
   // Shape final response.
-  const accounts: SettlementAccountRow[] = []
+  const accounts: SettlementAccountRow[] = [];
   for (const bucket of byAccount.values()) {
-    const totalBalanceCents = bucket.members.reduce((acc, m) => acc + m.balanceCents, 0)
+    const totalBalanceCents = bucket.members.reduce(
+      (acc, m) => acc + m.balanceCents,
+      0
+    );
 
     // D-08: omit accounts where every member balance is 0.
-    const allZero = bucket.members.every((m) => m.balanceCents === 0)
-    if (allZero) continue
+    const allZero = bucket.members.every((m) => m.balanceCents === 0);
+    if (allZero) continue;
 
-    const { dueDate, status } = computeNextDueDate(bucket.account.statementDueDay, now)
+    const { dueDate, status } = computeNextDueDate(
+      bucket.account.statementDueDay,
+      now
+    );
 
     accounts.push({
       account: bucket.account,
@@ -74,11 +88,11 @@ export async function getSettlementBalances(
       members: bucket.members,
       dueDate,
       status,
-    })
+    });
   }
 
-  return { accounts }
-}
+  return { accounts };
+};
 
 /**
  * POST /api/settlements — createSettlement records a settlement payment (D-03).
@@ -97,20 +111,20 @@ export async function getSettlementBalances(
  * are allowed and roll the balance negative (credit). The UI displays negative balances as
  * credits. This matches how credit card issuers handle overpayments.
  */
-export async function createSettlement(
+export const createSettlement = async (
   orgId: string,
   data: CreateSettlementInput
-) {
+) => {
   // D-18: account scope + archive check
-  const account = await fetchAccountForSettlement(data.accountId, orgId)
-  if (!account) throw new NotFoundError('Account not found')
+  const account = await fetchAccountForSettlement(data.accountId, orgId);
+  if (!account) throw new NotFoundError('Account not found');
   if (account.archivedAt !== null) {
-    throw new DomainError(400, 'Cannot settle an archived account')
+    throw new DomainError(400, 'Cannot settle an archived account');
   }
 
   // D-18: member scope check
-  const memberOk = await memberBelongsToOrg(data.payerMemberId, orgId)
-  if (!memberOk) throw new NotFoundError('Member not found in this household')
+  const memberOk = await memberBelongsToOrg(data.payerMemberId, orgId);
+  if (!memberOk) throw new NotFoundError('Member not found in this household');
 
   // Delegate to the existing service so split sum validation, FK checks, and the
   // transactions+assignees write happen via one consistent code path.
@@ -127,5 +141,5 @@ export async function createSettlement(
         // percentage is display cache; for a single-assignee 100% settlement, omit (will be null in DB)
       },
     ],
-  })
-}
+  });
+};

@@ -3,7 +3,7 @@ import { SidebarTrigger } from '@ploutizo/ui/components/sidebar';
 import { Separator } from '@ploutizo/ui/components/separator';
 import { AppLogo } from './AppLogo';
 
-export function TopBar() {
+export const TopBar = () => {
   return (
     <header className="z-20 flex min-h-12 shrink-0 items-center gap-3 bg-sidebar px-4 pt-2">
       {/* Mobile-only sidebar trigger — left of logo */}
@@ -22,4 +22,4 @@ export function TopBar() {
       </div>
     </header>
   );
-}
+};

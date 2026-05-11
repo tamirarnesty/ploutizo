@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { TransactionListResponse } from './useGetTransactions';
 import { apiFetch } from '@/lib/queryClient';
+import type { TransactionListResponse } from './useGetTransactions';
 
 type Snapshot = [unknown[], TransactionListResponse | undefined][];
 

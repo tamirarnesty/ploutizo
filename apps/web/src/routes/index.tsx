@@ -6,9 +6,7 @@ import {
 } from '@clerk/tanstack-react-start';
 import { createFileRoute } from '@tanstack/react-router';
 
-export const Route = createFileRoute('/')({ component: App });
-
-function App() {
+const App = () => {
   return (
     <div>
       <h1>Index Route</h1>
@@ -21,4 +19,6 @@ function App() {
       </Show>
     </div>
   );
-}
+};
+
+export const Route = createFileRoute('/')({ component: App });

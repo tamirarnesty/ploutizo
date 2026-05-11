@@ -228,7 +228,7 @@ describe('POST /api/transactions', () => {
       }),
     });
     expect(res.status).toBe(201);
-    const body = await res.json() as any;
+    const body = (await res.json()) as any;
     expect(body.data.id).toBe('txn_1');
     expect(body.data.orgId).toBe('org_test123');
   });
@@ -246,7 +246,7 @@ describe('POST /api/transactions', () => {
       }),
     });
     expect(res.status).toBe(400);
-    const body = await res.json() as any;
+    const body = (await res.json()) as any;
     expect(body.error.code).toBe('VALIDATION_ERROR');
   });
 
@@ -263,7 +263,7 @@ describe('POST /api/transactions', () => {
       }),
     });
     expect(res.status).toBe(400);
-    const body = await res.json() as any;
+    const body = (await res.json()) as any;
     expect(body.error.code).toBe('VALIDATION_ERROR');
   });
 
@@ -287,7 +287,7 @@ describe('POST /api/transactions', () => {
       }),
     });
     expect(res.status).toBe(400);
-    const body = await res.json() as any;
+    const body = (await res.json()) as any;
     expect(body.error.code).toBe('BAD_REQUEST');
     expect(body.error.message).toBe(
       'Assignee amounts must sum to transaction amount'
@@ -307,7 +307,7 @@ describe('POST /api/transactions', () => {
       }),
     });
     expect(res.status).toBe(201);
-    const body = await res.json() as any;
+    const body = (await res.json()) as any;
     expect(body.data.id).toBeDefined();
   });
 });
@@ -316,7 +316,7 @@ describe('GET /api/transactions', () => {
   it('TXN-GET-01: GET / returns {data, total, page, limit} envelope', async () => {
     const res = await app.request('/');
     expect(res.status).toBe(200);
-    const body = await res.json() as any;
+    const body = (await res.json()) as any;
     expect(Array.isArray(body.data)).toBe(true);
     expect(typeof body.total).toBe('number');
     expect(typeof body.page).toBe('number');
@@ -355,7 +355,9 @@ describe('GET /api/transactions', () => {
     vi.mocked(listTransactions).mockClear();
     const res = await app.request('/?description=coffee');
     expect(res.status).toBe(200);
-    const callArgs = vi.mocked(listTransactions).mock.calls[0]?.[0] as ListQueryParams | undefined;
+    const callArgs = vi.mocked(listTransactions).mock.calls[0]?.[0] as
+      | ListQueryParams
+      | undefined;
     expect(callArgs?.description).toBe('coffee');
   });
 
@@ -364,7 +366,9 @@ describe('GET /api/transactions', () => {
     vi.mocked(listTransactions).mockClear();
     const res = await app.request('/');
     expect(res.status).toBe(200);
-    const callArgs = vi.mocked(listTransactions).mock.calls[0]?.[0] as ListQueryParams | undefined;
+    const callArgs = vi.mocked(listTransactions).mock.calls[0]?.[0] as
+      | ListQueryParams
+      | undefined;
     expect(callArgs?.description).toBeUndefined();
   });
 });
@@ -373,7 +377,7 @@ describe('GET /api/transactions/:id', () => {
   it('TXN-GET-02: GET /:id returns joined shape with assignees[] and tags[]', async () => {
     const res = await app.request('/txn_1');
     expect(res.status).toBe(200);
-    const body = await res.json() as any;
+    const body = (await res.json()) as any;
     expect(Array.isArray(body.data.assignees)).toBe(true);
     expect(Array.isArray(body.data.tags)).toBe(true);
   });
@@ -382,7 +386,7 @@ describe('GET /api/transactions/:id', () => {
     vi.mocked(getTransaction).mockResolvedValueOnce(null);
     const res = await app.request('/txn_missing');
     expect(res.status).toBe(404);
-    const body = await res.json() as any;
+    const body = (await res.json()) as any;
     expect(body.error.code).toBe('NOT_FOUND');
   });
 });
@@ -440,7 +444,7 @@ describe('PATCH /api/transactions/:id — discriminated union enforcement (D-08)
       }),
     });
     expect(res.status).toBe(400);
-    const body = await res.json() as { error: { code: string } };
+    const body = (await res.json()) as { error: { code: string } };
     expect(body.error.code).toBe('VALIDATION_ERROR');
   });
 
@@ -475,7 +479,7 @@ describe('PATCH /api/transactions/:id — discriminated union enforcement (D-08)
       }),
     });
     expect(res.status).toBe(400);
-    const body = await res.json() as { error: { code: string } };
+    const body = (await res.json()) as { error: { code: string } };
     expect(body.error.code).toBe('VALIDATION_ERROR');
   });
 });

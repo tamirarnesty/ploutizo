@@ -16,12 +16,12 @@ import {
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
 import { cn } from '@ploutizo/ui/lib/utils';
-import type { LucideIcon } from 'lucide-react';
-import type { ColumnDef } from '@tanstack/react-table';
-import type { TransactionRow } from '@/lib/data-access/transactions';
 import { ICON_MAP } from '@/components/categories/LucideIconPicker';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
+import type { TransactionRow } from '@/lib/data-access/transactions';
+import type { LucideIcon } from 'lucide-react';
+import type { ColumnDef } from '@tanstack/react-table';
 
 export { getInitials } from '@/lib/getInitials';
 
@@ -64,11 +64,11 @@ export const typeBadgeVariant: Record<
 const isInternalType = (t: string) =>
   ['transfer', 'settlement', 'contribution'].includes(t);
 
-export function buildColumns(
+export const buildColumns = (
   setDeleteId: (id: string) => void,
   onEdit: (transaction: TransactionRow) => void,
   onOpenOriginal: (id: string) => void
-): ColumnDef<TransactionRow>[] {
+): ColumnDef<TransactionRow>[] => {
   return [
     // 1. Date
     {
@@ -468,4 +468,4 @@ export function buildColumns(
       ),
     },
   ];
-}
+};

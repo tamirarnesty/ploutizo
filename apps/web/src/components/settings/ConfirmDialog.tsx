@@ -31,7 +31,7 @@ interface ConfirmDialogProps {
 const BASE_TRIGGER_CLASS =
   'inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none';
 
-export function ConfirmDialog({
+export const ConfirmDialog = ({
   triggerAriaLabel,
   triggerClassName,
   tooltip,
@@ -40,7 +40,7 @@ export function ConfirmDialog({
   cancelLabel = 'Cancel',
   confirmLabel,
   onConfirm,
-}: ConfirmDialogProps) {
+}: ConfirmDialogProps) => {
   const [open, setOpen] = useState(false);
 
   const triggerButton = (
@@ -81,4 +81,4 @@ export function ConfirmDialog({
       </AlertDialog>
     </>
   );
-}
+};

@@ -1,9 +1,9 @@
 import { Badge } from '@ploutizo/ui/components/badge';
 import { Item, ItemActions } from '@ploutizo/ui/components/item';
 import { Text } from '@ploutizo/ui/components/text';
-import { ConfirmDialog } from './ConfirmDialog';
 import type { OrgMember } from '@ploutizo/types';
 import { UserAvatar } from '@/components/members/UserAvatar';
+import { ConfirmDialog } from './ConfirmDialog';
 
 interface MemberRowProps {
   member: OrgMember;

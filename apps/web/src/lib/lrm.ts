@@ -7,10 +7,10 @@
  * The stored `transactionAssignees.percentage` Drizzle column returns a string —
  * always parseFloat() before any arithmetic on stored values.
  */
-export function lrmSplit(
+export const lrmSplit = (
   totalCents: number,
   memberIds: string[]
-): { memberId: string; amountCents: number; percentage: number }[] {
+): { memberId: string; amountCents: number; percentage: number }[] => {
   if (memberIds.length === 0) return [];
   const base = Math.floor(totalCents / memberIds.length);
   const remainder = totalCents - base * memberIds.length;
@@ -20,4 +20,4 @@ export function lrmSplit(
     amountCents: i < remainder ? base + 1 : base,
     percentage: parseFloat(exactPct.toFixed(3)),
   }));
-}
+};

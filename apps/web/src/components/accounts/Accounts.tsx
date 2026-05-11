@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Button } from '@ploutizo/ui/components/button';
 import { Text } from '@ploutizo/ui/components/text';
-import { AccountsTable } from './AccountsTable';
-import { AccountSheet } from './AccountSheet';
 import type { Account } from '@ploutizo/types';
 import { useGetAccounts } from '@/lib/data-access/accounts';
+import { AccountsTable } from './AccountsTable';
+import { AccountSheet } from './AccountSheet';
 
 export const Accounts = () => {
   const { data: accounts = [], isLoading } = useGetAccounts();

@@ -13,7 +13,9 @@ interface MembersEmptyStateProps {
   onInviteClick: () => void;
 }
 
-export function MembersEmptyState({ onInviteClick }: MembersEmptyStateProps) {
+export const MembersEmptyState = ({
+  onInviteClick,
+}: MembersEmptyStateProps) => {
   return (
     <Empty>
       <EmptyHeader>
@@ -32,4 +34,4 @@ export function MembersEmptyState({ onInviteClick }: MembersEmptyStateProps) {
       </EmptyContent>
     </Empty>
   );
-}
+};

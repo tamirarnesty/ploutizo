@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Category } from './useGetCategories';
 import { apiFetch } from '@/lib/queryClient';
+import type { Category } from './useGetCategories';
 
 export const archiveCategory = async (id: string): Promise<Category> => {
   const r = await apiFetch<{ data: Category }>(

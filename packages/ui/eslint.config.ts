@@ -9,6 +9,28 @@ export default [
       'import/extensions': ['error', 'never'],
       // Enforce T[] over Array<T>
       '@typescript-eslint/array-type': ['error', { default: 'array' }],
+      // Enforce import order: 1) third-party 2) @ploutizo/* workspace 3) relative
+      'import/order': [
+        'error',
+        {
+          groups: [
+            'builtin',
+            'external',
+            'internal',
+            'parent',
+            'sibling',
+            'index',
+            'object',
+            'type',
+          ],
+          pathGroups: [
+            { pattern: '@ploutizo/**', group: 'internal', position: 'before' },
+          ],
+          pathGroupsExcludedImportTypes: ['builtin', 'external', 'object'],
+        },
+      ],
+      // Prefer const arrow functions over function declarations
+      'func-style': ['error', 'expression'],
     },
   },
   {
@@ -23,6 +45,14 @@ export default [
       'import/consistent-type-specifier-style': 'off',
       'no-shadow': 'off',
       'react-hooks/exhaustive-deps': 'off',
+      'func-style': 'off',
+    },
+  },
+  {
+    // shadcn-generated components — do not modify, suppress func-style.
+    files: ['src/components/*.tsx'],
+    rules: {
+      'func-style': 'off',
     },
   },
 ];

@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Category } from './useGetCategories';
 import { apiFetch } from '@/lib/queryClient';
+import type { Category } from './useGetCategories';
 
 interface UpdateCategoryBody {
   name?: string;

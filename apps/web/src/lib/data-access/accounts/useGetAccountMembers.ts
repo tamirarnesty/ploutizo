@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import type { UseQueryResult } from '@tanstack/react-query';
 import type { AccountMember } from '@ploutizo/types';
 import { apiFetch } from '@/lib/queryClient';
+import type { UseQueryResult } from '@tanstack/react-query';
 
 export const fetchAccountMembers = async (
   accountId: string

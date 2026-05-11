@@ -7,48 +7,34 @@ vi.mock('@clerk/hono', () => ({
 }));
 vi.mock('@ploutizo/db', () => ({
   db: {
-    select: vi
-      .fn()
-      .mockReturnValue({
-        from: vi
+    select: vi.fn().mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi
           .fn()
-          .mockReturnValue({
-            where: vi
-              .fn()
-              .mockReturnValue({ orderBy: vi.fn().mockResolvedValue([]) }),
-          }),
+          .mockReturnValue({ orderBy: vi.fn().mockResolvedValue([]) }),
       }),
-    insert: vi
-      .fn()
-      .mockReturnValue({
-        values: vi
+    }),
+    insert: vi.fn().mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([
+          {
+            id: 'tag_1',
+            orgId: 'org_test123',
+            name: 'vacation',
+            colour: null,
+            archivedAt: null,
+            createdAt: new Date().toISOString(),
+          },
+        ]),
+      }),
+    }),
+    update: vi.fn().mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi
           .fn()
-          .mockReturnValue({
-            returning: vi
-              .fn()
-              .mockResolvedValue([
-                {
-                  id: 'tag_1',
-                  orgId: 'org_test123',
-                  name: 'vacation',
-                  colour: null,
-                  archivedAt: null,
-                  createdAt: new Date().toISOString(),
-                },
-              ]),
-          }),
+          .mockReturnValue({ returning: vi.fn().mockResolvedValue([{}]) }),
       }),
-    update: vi
-      .fn()
-      .mockReturnValue({
-        set: vi
-          .fn()
-          .mockReturnValue({
-            where: vi
-              .fn()
-              .mockReturnValue({ returning: vi.fn().mockResolvedValue([{}]) }),
-          }),
-      }),
+    }),
   },
 }));
 vi.mock('@ploutizo/db/schema', () => ({ tags: {} }));

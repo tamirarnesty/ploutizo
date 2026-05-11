@@ -3,7 +3,6 @@ import { Hono } from 'hono';
 import { getAuth } from '@clerk/hono';
 import { tenantGuard } from '../middleware/tenantGuard';
 
-
 // Mock @clerk/hono to control what getAuth() returns per test
 vi.mock('@clerk/hono', () => ({
   getAuth: vi.fn(),
@@ -80,9 +79,9 @@ describe('tenantGuard()', () => {
   it('upserts the org row before calling next() when orgId is valid', async () => {
     mockOnConflictDoNothing.mockClear();
     // Use a unique orgId not seen by prior tests to bypass the seenOrgs cache
-    vi.mocked(getAuth).mockReturnValue({ orgId: 'org_upsert_test' } as ReturnType<
-      typeof getAuth
-    >);
+    vi.mocked(getAuth).mockReturnValue({
+      orgId: 'org_upsert_test',
+    } as ReturnType<typeof getAuth>);
     const res = await buildApp().request('/');
     expect(res.status).toBe(200);
     expect(mockOnConflictDoNothing).toHaveBeenCalledOnce();
@@ -110,17 +109,19 @@ describe('tenantGuard()', () => {
   });
 
   it('sets orgId on context via c.set before calling next()', async () => {
-    vi.mocked(getAuth).mockReturnValue({ orgId: 'org_context_test' } as ReturnType<typeof getAuth>)
+    vi.mocked(getAuth).mockReturnValue({
+      orgId: 'org_context_test',
+    } as ReturnType<typeof getAuth>);
     // Build a special app that reads c.get('orgId') from a downstream handler
-    const app = new Hono()
-    app.use('*', tenantGuard())
+    const app = new Hono();
+    app.use('*', tenantGuard());
     app.get('/', (c) => {
-      const orgId = c.get('orgId' as never) as string | undefined
-      return c.json({ orgId })
-    })
-    const res = await app.request('/')
-    expect(res.status).toBe(200)
-    const body = await res.json() as { orgId: string }
-    expect(body.orgId).toBe('org_context_test')
+      const orgId = c.get('orgId' as never) as string | undefined;
+      return c.json({ orgId });
+    });
+    const res = await app.request('/');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { orgId: string };
+    expect(body.orgId).toBe('org_context_test');
   });
 });

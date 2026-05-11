@@ -17,12 +17,16 @@ import type { AppEnv } from '../types';
 const categoriesRouter = new Hono<AppEnv>();
 
 // IMPORTANT: /reorder must be registered BEFORE /:id to prevent ':id' capturing 'reorder'
-categoriesRouter.patch('/reorder', appValidator('json', reorderSchema), async (c) => {
-  const orgId = c.get('orgId');
-  const { orderedIds } = c.req.valid('json');
-  await reorderCategories(orgId, orderedIds);
-  return c.json({ data: { ok: true } });
-});
+categoriesRouter.patch(
+  '/reorder',
+  appValidator('json', reorderSchema),
+  async (c) => {
+    const orgId = c.get('orgId');
+    const { orderedIds } = c.req.valid('json');
+    await reorderCategories(orgId, orderedIds);
+    return c.json({ data: { ok: true } });
+  }
+);
 
 categoriesRouter.get('/', async (c) => {
   const orgId = c.get('orgId');
@@ -30,20 +34,28 @@ categoriesRouter.get('/', async (c) => {
   return c.json({ data: rows });
 });
 
-categoriesRouter.post('/', appValidator('json', createCategorySchema), async (c) => {
-  const orgId = c.get('orgId');
-  const data = c.req.valid('json');
-  const row = await createCategory(orgId, data);
-  return c.json({ data: row }, 201);
-});
+categoriesRouter.post(
+  '/',
+  appValidator('json', createCategorySchema),
+  async (c) => {
+    const orgId = c.get('orgId');
+    const data = c.req.valid('json');
+    const row = await createCategory(orgId, data);
+    return c.json({ data: row }, 201);
+  }
+);
 
-categoriesRouter.patch('/:id', appValidator('json', updateCategorySchema), async (c) => {
-  const orgId = c.get('orgId');
-  const id = c.req.param('id');
-  const data = c.req.valid('json');
-  const updated = await updateCategory(id, orgId, data);
-  return c.json({ data: updated });
-});
+categoriesRouter.patch(
+  '/:id',
+  appValidator('json', updateCategorySchema),
+  async (c) => {
+    const orgId = c.get('orgId');
+    const id = c.req.param('id');
+    const data = c.req.valid('json');
+    const updated = await updateCategory(id, orgId, data);
+    return c.json({ data: updated });
+  }
+);
 
 categoriesRouter.delete('/:id/archive', async (c) => {
   const orgId = c.get('orgId');

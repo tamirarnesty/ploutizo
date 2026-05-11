@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.1
-milestone_name: — Foundation
-status: "Phase 04.1 shipped — PR #62"
-last_updated: "2026-05-08T13:52:30.430Z"
+milestone: v0.2
+milestone_name: Transactions & Settlement
+status: 'Phase 04.2 — next up'
+last_updated: '2026-05-11T00:00:00.000Z'
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 28
-  completed_plans: 28
-  percent: 100
+  total_phases: 4
+  completed_phases: 1
+  total_plans: 0
+  completed_plans: 0
+  percent: 25
 ---
 
 # Project State
@@ -19,59 +19,59 @@ progress:
 Phase: 4.2
 Plan: Not started
 **Milestone:** v0.2 — Transactions & Settlement
-**Active Phase:** 03.6 shipped — [PR #52](https://github.com/tamirarnesty/ploutizo/pull/52) (`feat/03.6-clerk-hono-migration` → `main`)
-**Status:** Phase 04.1 shipped — PR #62
-**Last session:** 2026-05-07T21:54:28.069Z
+**Active Phase:** 04.1 shipped — [PR #62](https://github.com/tamirarnesty/ploutizo/pull/62)
+**Status:** Phase 04.2 (Settlement UI) — ready to plan
+**Last session:** 2026-05-11
 
 ## Next Action
 
-Merge **PR #52** when CI is green; run staging smoke from `03.6-01-PLAN.md` (`manual_uat_smoke`). Then continue roadmap (e.g. **03.4.6** or **4.1** per priorities).
+Plan and execute **Phase 04.2 — Settlement UI**. PR #63 (codebase map + ESLint enforcement) pending merge.
 
 ## Phase Status
 
-| Phase | Name | Status |
-|-------|------|--------|
-| 01 | Foundation & Auth Infrastructure | complete |
-| 02 | Households, Accounts & Classification | complete |
-| 02.1 | Code Style & Form Patterns Refactor | complete |
-| 02.1.1 | Audit and migrate to neon-serverless per Neon best practices | complete |
-| 02.2 | Add light/dark/system theme toggle | complete |
-| 02.3 | Vercel skills audit and guidelines | complete |
-| 02.4 | App Shell and Sidebar Redesign | complete |
-| 02.4.1 | Mobile UI/UX Fixes and Foundation Re-Establishment | complete |
-| 03.1 | Transaction Schema & Migrations | complete |
-| 03.2 | Transaction API | complete |
-| 03.2.1 | Household improvement — settings consolidation & invitation flow | complete |
-| 03.3 | Transaction List UI | complete |
-| 03.3.1 | API layering and structural refactor | complete |
-| 03.3.2 | Implement Text typography component in packages/ui | complete |
-| 03.3.3 | UI primitive refactor sweep | complete |
-| 03.4 | Transaction Forms UI | complete (21/21 plans, verified 2026-04-19) |
-| 03.4.1 | Transaction v2 — Schema Migration, Form & Table Redesign | complete (12/12 plans, verified 2026-04-24) |
-| 03.4.2 | Transaction Form Polish & UI Bug Fixes | complete (1/1 plans, verified 2026-04-24) |
-| 03.4.3 | Fix shared account owners not saved or displayed | complete (verified 2026-04-27) |
-| 03.4.4 | App shell resilience — 404 page & error boundary | complete (verified 2026-04-30) |
-| 03.4.5 | Form validation audit — all forms show correct error messages | complete (verified 2026-05-01) |
-| 03.4.6 | Show invited member card in Household view | shipped — PR #53 |
-| 03.5 | CI testing, linting, and formatting checks | complete (verified 2026-04-30) |
-| 03.6 | Migrate @hono/clerk-auth to @clerk/hono | complete (1/1 plans, verified 2026-05-04) |
-| 4.1 | Settlement API | pending |
-| 4.2 | Settlement UI | pending |
-| 4.3 | Budgets API | pending |
-| 4.4 | Budget Dashboard UI | pending |
-| 5.1 | Bank Normalizers | pending |
-| 5.2 | Import Batch API | pending |
-| 5.3 | Import UI | pending |
-| 5.4 | Import Bulk Actions & Duplicate Handling | pending |
-| 6.1 | Investment Schema & Contribution Room API | pending |
-| 6.2 | Savings Contributions UI | pending |
-| 6.3 | Net Worth API | pending |
-| 6.4 | Net Worth UI | pending |
-| 7.1 | Notifications Table & Write Triggers | pending |
-| 7.2 | Notification Feed UI | pending |
-| 7.3 | Overview Dashboard UI | pending |
-| 08.1 | Replace in-memory seenOrgs Set in tenantGuard | pending |
-| 08.2 | Adopt react-i18next and wrap all user-visible string literals | pending |
+| Phase  | Name                                                             | Status                                      |
+| ------ | ---------------------------------------------------------------- | ------------------------------------------- |
+| 01     | Foundation & Auth Infrastructure                                 | complete                                    |
+| 02     | Households, Accounts & Classification                            | complete                                    |
+| 02.1   | Code Style & Form Patterns Refactor                              | complete                                    |
+| 02.1.1 | Audit and migrate to neon-serverless per Neon best practices     | complete                                    |
+| 02.2   | Add light/dark/system theme toggle                               | complete                                    |
+| 02.3   | Vercel skills audit and guidelines                               | complete                                    |
+| 02.4   | App Shell and Sidebar Redesign                                   | complete                                    |
+| 02.4.1 | Mobile UI/UX Fixes and Foundation Re-Establishment               | complete                                    |
+| 03.1   | Transaction Schema & Migrations                                  | complete                                    |
+| 03.2   | Transaction API                                                  | complete                                    |
+| 03.2.1 | Household improvement — settings consolidation & invitation flow | complete                                    |
+| 03.3   | Transaction List UI                                              | complete                                    |
+| 03.3.1 | API layering and structural refactor                             | complete                                    |
+| 03.3.2 | Implement Text typography component in packages/ui               | complete                                    |
+| 03.3.3 | UI primitive refactor sweep                                      | complete                                    |
+| 03.4   | Transaction Forms UI                                             | complete (21/21 plans, verified 2026-04-19) |
+| 03.4.1 | Transaction v2 — Schema Migration, Form & Table Redesign         | complete (12/12 plans, verified 2026-04-24) |
+| 03.4.2 | Transaction Form Polish & UI Bug Fixes                           | complete (1/1 plans, verified 2026-04-24)   |
+| 03.4.3 | Fix shared account owners not saved or displayed                 | complete (verified 2026-04-27)              |
+| 03.4.4 | App shell resilience — 404 page & error boundary                 | complete (verified 2026-04-30)              |
+| 03.4.5 | Form validation audit — all forms show correct error messages    | complete (verified 2026-05-01)              |
+| 03.4.6 | Show invited member card in Household view                       | shipped — PR #53                            |
+| 03.5   | CI testing, linting, and formatting checks                       | complete (verified 2026-04-30)              |
+| 03.6   | Migrate @hono/clerk-auth to @clerk/hono                          | complete (1/1 plans, verified 2026-05-04)   |
+| 04.1   | Settlement API                                                   | shipped — PR #62                            |
+| 04.2   | Settlement UI                                                    | pending                                     |
+| 04.3   | Budgets API                                                      | pending                                     |
+| 04.4   | Budget Dashboard UI                                              | pending                                     |
+| 05.1   | Bank Normalizers                                                 | pending                                     |
+| 05.2   | Import Batch API                                                 | pending                                     |
+| 05.3   | Import UI                                                        | pending                                     |
+| 05.4   | Import Bulk Actions & Duplicate Handling                         | pending                                     |
+| 06.1   | Investment Schema & Contribution Room API                        | pending                                     |
+| 06.2   | Savings Contributions UI                                         | pending                                     |
+| 06.3   | Net Worth API                                                    | pending                                     |
+| 06.4   | Net Worth UI                                                     | pending                                     |
+| 07.1   | Notifications Table & Write Triggers                             | pending                                     |
+| 07.2   | Notification Feed UI                                             | pending                                     |
+| 07.3   | Overview Dashboard UI                                            | pending                                     |
+| 08.1   | Replace in-memory seenOrgs Set in tenantGuard                    | pending                                     |
+| 08.2   | Adopt react-i18next and wrap all user-visible string literals    | pending                                     |
 
 ## Initialization Summary
 
@@ -101,12 +101,20 @@ Merge **PR #52** when CI is green; run staging smoke from `03.6-01-PLAN.md` (`ma
 - ReUI combobox not in radix-nova registry — built manually from Popover primitives; exports same API surface as plan specified — 02-05
 - onConflictDoNothing() used on orgs insert in webhook handler so Svix retries are safe — 02-05
 - Dialog open={true} with parent-gated rendering for CategoryDialog/RuleDialog — simpler than prop threading, correct because parent mounts/unmounts conditionally — 02-06
-- __none__ sentinel for optional Radix Select fields (categoryId) — Radix Select doesn't support value="" reliably; payload converts back to null before API call — 02-06
+- **none** sentinel for optional Radix Select fields (categoryId) — Radix Select doesn't support value="" reliably; payload converts back to null before API call — 02-06
 - Checkbox + Label sibling pattern (not wrapping label) — shadcn Checkbox is a Radix button primitive, must use htmlFor+id association — 02-06
-- packages/ui exports map uses glob ./components/* — no manual package.json entries needed for form.tsx or field.tsx — 02.1-01
+- packages/ui exports map uses glob ./components/\* — no manual package.json entries needed for form.tsx or field.tsx — 02.1-01
 - createFormHookContexts + createFormHook composition pattern used for project-wide useAppForm; shadcn tanstack-form block not in radix-nova registry so form.tsx is hand-written — 02.1-01
 
 ## Accumulated Context
+
+### Session 2026-05-11
+
+- Codebase mapped — 7 documents in `.planning/codebase/` (STACK, INTEGRATIONS, ARCHITECTURE, STRUCTURE, CONVENTIONS, TESTING, CONCERNS)
+- ESLint: `import/order` enforced with `@ploutizo/*` as internal group (including `import type`); `func-style: expression` enforced
+- 84 function declarations migrated to const arrow functions across `apps/api` and `apps/web`
+- Key constraint: TanStack Router route files must define component const ABOVE `Route` (const is not hoisted unlike function declarations)
+- PR #63 shipped: codebase map + ESLint enforcement
 
 ### Roadmap Evolution
 
@@ -123,19 +131,15 @@ Merge **PR #52** when CI is green; run staging smoke from `03.6-01-PLAN.md` (`ma
 
 ### Pending Todos
 
-| # | Title | Area |
-|---|-------|------|
-| 1 | Implement <Text> typography component in packages/ui | general |
-| 2 | Tag combobox Enter key should create tag without explicit click | ui |
-| 3 | Form validation audit — all forms must show correct error messages | ui |
-| 4 | Category edit should reflect changes in list without reload | ui |
-| 5 | Show invited member card in Household view | ui |
-| 6 | Clear query cache on logout to prevent cross-account stale data | auth |
-| 7 | Redesign transaction form Notes + Tags section layout | ui |
-| 8 | Fix shared account owners not saved or displayed | ui |
-| 9 | Add error boundary/errorComponent to handle page crashes | ui |
-| 10 | Add 404 page for unmatched routes | ui |
-| 11 | Fix edit mode amount not recalculating assignee splits | ui |
+| #   | Title                                                           | Area |
+| --- | --------------------------------------------------------------- | ---- |
+| 2   | Tag combobox Enter key should create tag without explicit click | ui   |
+| 4   | Category edit should reflect changes in list without reload     | ui   |
+| 6   | Clear query cache on logout to prevent cross-account stale data | auth |
+| 7   | Redesign transaction form Notes + Tags section layout           | ui   |
+| 11  | Fix edit mode amount not recalculating assignee splits          | ui   |
+
+_(#1 done: 03.3.2, #3 done: 03.4.5, #5 done: 03.4.6, #8 done: 03.4.3, #9/#10 done: 03.4.4)_
 
 ## Blockers / Open Items
 
@@ -150,15 +154,8 @@ Merge **PR #52** when CI is green; run staging smoke from `03.6-01-PLAN.md` (`ma
 
 ### Quick Tasks Completed
 
-| # | Description | Date | Commit | Directory |
-|---|-------------|------|--------|-----------|
-| 260329-ivf | Update Phase 1 plans to reference old-artifacts schema files | 2026-03-29 | b39a815 | [260329-ivf-analyze-impact-of-old-artifacts-schemas-](./quick/260329-ivf-analyze-impact-of-old-artifacts-schemas-/) |
+| #          | Description                                                       | Date       | Commit  | Directory                                                                                                           |
+| ---------- | ----------------------------------------------------------------- | ---------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
+| 260329-ivf | Update Phase 1 plans to reference old-artifacts schema files      | 2026-03-29 | b39a815 | [260329-ivf-analyze-impact-of-old-artifacts-schemas-](./quick/260329-ivf-analyze-impact-of-old-artifacts-schemas-/) |
 | 260411-r4m | add additional valuable user/member and org attributes from clerk | 2026-04-11 | 38ade1e | [260411-r4m-add-additional-valuable-user-member-and-](./quick/260411-r4m-add-additional-valuable-user-member-and-/) |
 
-## Git Note
-
-Commits blocked: `commit.gpgsign=true` configured but `~/.ssh/id_rsa.pub` does not exist.
-All planning files are staged. Run `git commit` once SSH signing is resolved, or:
-`git config commit.gpgsign false` to disable signing temporarily.
-
-**Planned Phase:** 03.4.5 (Form validation audit — all forms show correct error messages (INSERTED)) — 1 plans — 2026-05-01T22:56:38.935Z

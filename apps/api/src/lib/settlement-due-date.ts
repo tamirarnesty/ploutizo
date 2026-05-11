@@ -15,63 +15,69 @@
  * @param statementDueDay - integer 1-31 or null
  * @param today - reference Date (UTC date is used for day-arithmetic)
  */
-import type { SettlementStatus } from '@ploutizo/types'
+import type { SettlementStatus } from '@ploutizo/types';
 
-export function computeNextDueDate(
+export const computeNextDueDate = (
   statementDueDay: number | null,
   today: Date
-): { dueDate: string | null; status: SettlementStatus | null } {
-  if (statementDueDay === null) return { dueDate: null, status: null }
+): { dueDate: string | null; status: SettlementStatus | null } => {
+  if (statementDueDay === null) return { dueDate: null, status: null };
 
-  if (!Number.isInteger(statementDueDay) || statementDueDay < 1 || statementDueDay > 31) {
-    throw new TypeError('statementDueDay must be 1-31 or null')
+  if (
+    !Number.isInteger(statementDueDay) ||
+    statementDueDay < 1 ||
+    statementDueDay > 31
+  ) {
+    throw new TypeError('statementDueDay must be 1-31 or null');
   }
 
-  const todayYear = today.getUTCFullYear()
-  const todayMonth = today.getUTCMonth() // 0-indexed
-  const todayDay = today.getUTCDate()
+  const todayYear = today.getUTCFullYear();
+  const todayMonth = today.getUTCMonth(); // 0-indexed
+  const todayDay = today.getUTCDate();
 
   /**
    * Returns the number of days in a given UTC month.
    * Uses day-0 of the next month trick: new Date(Date.UTC(year, month+1, 0)).getUTCDate()
    */
-  function daysInMonth(year: number, month: number): number {
-    return new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
-  }
+  const daysInMonth = (year: number, month: number): number => {
+    return new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  };
 
   // Clamp the requested day to the number of days in the candidate month.
   // If the clamped day >= today's day, the due date is in the current month.
   // Otherwise advance to next month.
-  const currentMonthDays = daysInMonth(todayYear, todayMonth)
-  const clampedCurrentMonth = Math.min(statementDueDay, currentMonthDays)
+  const currentMonthDays = daysInMonth(todayYear, todayMonth);
+  const clampedCurrentMonth = Math.min(statementDueDay, currentMonthDays);
 
-  let dueYear: number
-  let dueMonth: number
-  let dueDay: number
+  let dueYear: number;
+  let dueMonth: number;
+  let dueDay: number;
 
   if (clampedCurrentMonth >= todayDay) {
     // Due date is in the current month
-    dueYear = todayYear
-    dueMonth = todayMonth
-    dueDay = clampedCurrentMonth
+    dueYear = todayYear;
+    dueMonth = todayMonth;
+    dueDay = clampedCurrentMonth;
   } else {
     // Due date has already passed this month; advance to next month
-    const nextMonth = todayMonth + 1
-    const nextYear = nextMonth > 11 ? todayYear + 1 : todayYear
-    const normalizedMonth = nextMonth % 12
-    const nextMonthDays = daysInMonth(nextYear, normalizedMonth)
-    dueYear = nextYear
-    dueMonth = normalizedMonth
-    dueDay = Math.min(statementDueDay, nextMonthDays)
+    const nextMonth = todayMonth + 1;
+    const nextYear = nextMonth > 11 ? todayYear + 1 : todayYear;
+    const normalizedMonth = nextMonth % 12;
+    const nextMonthDays = daysInMonth(nextYear, normalizedMonth);
+    dueYear = nextYear;
+    dueMonth = normalizedMonth;
+    dueDay = Math.min(statementDueDay, nextMonthDays);
   }
 
-  const dueDate = new Date(Date.UTC(dueYear, dueMonth, dueDay))
-  const todayMidnight = new Date(Date.UTC(todayYear, todayMonth, todayDay))
+  const dueDate = new Date(Date.UTC(dueYear, dueMonth, dueDay));
+  const todayMidnight = new Date(Date.UTC(todayYear, todayMonth, todayDay));
 
-  const diffDays = Math.floor((dueDate.getTime() - todayMidnight.getTime()) / 86_400_000)
-  const status: SettlementStatus = diffDays <= 7 ? 'due_soon' : 'on_track'
+  const diffDays = Math.floor(
+    (dueDate.getTime() - todayMidnight.getTime()) / 86_400_000
+  );
+  const status: SettlementStatus = diffDays <= 7 ? 'due_soon' : 'on_track';
 
-  const dueDateStr = `${dueYear}-${String(dueMonth + 1).padStart(2, '0')}-${String(dueDay).padStart(2, '0')}`
+  const dueDateStr = `${dueYear}-${String(dueMonth + 1).padStart(2, '0')}-${String(dueDay).padStart(2, '0')}`;
 
-  return { dueDate: dueDateStr, status }
-}
+  return { dueDate: dueDateStr, status };
+};

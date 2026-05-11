@@ -3,9 +3,9 @@
 // Access validated data in handlers: c.req.valid('json') — fully typed.
 // Per D-02.
 
-import { zValidator } from '@hono/zod-validator'
-import type { ZodSchema } from 'zod'
-import type { ValidationTargets } from 'hono'
+import { zValidator } from '@hono/zod-validator';
+import type { ZodSchema } from 'zod';
+import type { ValidationTargets } from 'hono';
 
 export const appValidator = <T extends ZodSchema>(
   target: keyof ValidationTargets,
@@ -16,6 +16,6 @@ export const appValidator = <T extends ZodSchema>(
       return c.json(
         { error: { code: 'VALIDATION_ERROR', errors: result.error.issues } },
         400
-      )
+      );
     }
-  })
+  });

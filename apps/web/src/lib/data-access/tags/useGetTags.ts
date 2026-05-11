@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import type { UseQueryResult } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/queryClient';
+import type { UseQueryResult } from '@tanstack/react-query';
 
 export interface Tag {
   id: string;

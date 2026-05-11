@@ -77,7 +77,9 @@ app.route('/api/transactions', transactionsRouter);
 app.route('/api/settlements', settlementsRouter);
 
 // Unmatched routes — returns JSON shape consistent with onError handler
-app.notFound((c) => c.json({ error: { code: 'NOT_FOUND', message: 'Not found' } }, 404));
+app.notFound((c) =>
+  c.json({ error: { code: 'NOT_FOUND', message: 'Not found' } }, 404)
+);
 
 // Centralized error handler (D-04) — registered AFTER routes, BEFORE serve()
 // NotFoundError → 404 NOT_FOUND
@@ -94,7 +96,10 @@ app.onError((err, c) => {
     );
   }
   console.error('[API] Unhandled error:', err);
-  return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Unexpected error' } }, 500);
+  return c.json(
+    { error: { code: 'INTERNAL_ERROR', message: 'Unexpected error' } },
+    500
+  );
 });
 
 serve({ fetch: app.fetch, port: Number(process.env.PORT ?? 8080) });

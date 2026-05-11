@@ -4,6 +4,10 @@ import {
   transactionTags,
   transactions,
 } from '@ploutizo/db/schema';
+import type {
+  CreateTransactionInput,
+  createTransactionSchema,
+} from '@ploutizo/validators';
 import {
   buildListQuery,
   countQuery,
@@ -18,47 +22,43 @@ import {
   updateTransactionScalarsQuery,
 } from '../lib/queries/transactions';
 import type { ListQueryParams } from '../lib/queries/transactions';
-import type {
-  CreateTransactionInput,
-  createTransactionSchema,
-} from '@ploutizo/validators';
 import type { z } from 'zod';
 
 export type { ListQueryParams };
 
 // D-11: validate that sum of assignee amountCents equals transaction amount
-export function validateSplitSum(
+export const validateSplitSum = (
   amount: number,
   assignees?: { amountCents: number }[]
-): string | null {
+): string | null => {
   if (!assignees || assignees.length === 0) return null;
   const sum = assignees.reduce((acc, a) => acc + a.amountCents, 0);
   return sum === amount
     ? null
     : 'Assignee amounts must sum to transaction amount';
-}
+};
 
 // D-13: check that the refundOf transaction belongs to the same org
-export async function checkRefundOfOwnership(
+export const checkRefundOfOwnership = async (
   refundOfId: string,
   orgId: string
-): Promise<boolean> {
+): Promise<boolean> => {
   return refundOfExists(refundOfId, orgId);
-}
+};
 
 // T-03.4.1-T1: check that counterpartAccountId belongs to the same org
-export async function checkCounterpartAccountOwnership(
+export const checkCounterpartAccountOwnership = async (
   accountId: string,
   orgId: string
-): Promise<boolean> {
+): Promise<boolean> => {
   return counterpartAccountBelongsToOrg(accountId, orgId);
-}
+};
 
 // POST: create a transaction with optional assignees and tags in a single DB transaction
-export async function createTransaction(
+export const createTransaction = async (
   orgId: string,
   data: z.infer<typeof createTransactionSchema>
-) {
+) => {
   const { assignees, tagIds, ...transactionData } = data;
 
   return db.transaction(async (tx) => {
@@ -88,10 +88,10 @@ export async function createTransaction(
 
     return inserted;
   });
-}
+};
 
 // GET /: paginated list with filtering, sort, joined response
-export async function listTransactions(params: ListQueryParams) {
+export const listTransactions = async (params: ListQueryParams) => {
   const [baseRows, total] = await Promise.all([
     buildListQuery(params),
     countQuery(params),
@@ -103,10 +103,10 @@ export async function listTransactions(params: ListQueryParams) {
     tags: tagMap[row.id] ?? [],
   }));
   return { data, total, page: params.page, limit: params.limit };
-}
+};
 
 // GET /:id: single transaction with joined response or null if not found
-export async function getTransaction(id: string, orgId: string) {
+export const getTransaction = async (id: string, orgId: string) => {
   const row = await fetchTransactionById(id, orgId);
   if (!row) return null;
   const { assigneeMap, tagMap } = await enrichTransactions([row]);
@@ -115,16 +115,16 @@ export async function getTransaction(id: string, orgId: string) {
     assignees: assigneeMap[row.id] ?? [],
     tags: tagMap[row.id] ?? [],
   };
-}
+};
 
 // PATCH: update scalar fields + replace-all assignees/tags in a single DB transaction
 // Accepts createTransactionSchema (discriminated union) — D-08 requires full type enforcement on PATCH.
 // Returns updated row or null (not found / wrong org / already deleted — Pitfall 7)
-export async function updateTransaction(
+export const updateTransaction = async (
   id: string,
   orgId: string,
   data: CreateTransactionInput
-) {
+) => {
   // D-11: re-validate split sum if assignees are being replaced.
   if (data.assignees && data.assignees.length > 0) {
     const splitError = validateSplitSum(data.amount, data.assignees);
@@ -174,22 +174,22 @@ export async function updateTransaction(
 
     return updated;
   });
-}
+};
 
 // DELETE: soft-delete — delegates to query layer (D-15)
 // Returns {id} on success or null if not found/wrong org/already deleted
-export async function deleteTransaction(
+export const deleteTransaction = async (
   id: string,
   orgId: string
-): Promise<{ id: string } | null> {
+): Promise<{ id: string } | null> => {
   return softDeleteTransactionQuery(id, orgId);
-}
+};
 
 // PATCH /:id/restore: undo soft-delete — delegates to query layer (D-15)
 // Returns {id} on success or null if not found/wrong org/already active (T-03.3-05)
-export async function restoreTransaction(
+export const restoreTransaction = async (
   id: string,
   orgId: string
-): Promise<{ id: string } | null> {
+): Promise<{ id: string } | null> => {
   return restoreTransactionQuery(id, orgId);
-}
+};

@@ -31,8 +31,6 @@ import {
   useComboboxAnchor,
 } from '@ploutizo/ui/components/combobox';
 import { Button } from '@ploutizo/ui/components/button';
-import { CategoryDialog } from './CategoryDialog';
-import type { Category } from '@/lib/data-access/categories';
 import { renderLucideIcon } from '@/components/categories/LucideIconPicker';
 import {
   useArchiveTag,
@@ -44,6 +42,8 @@ import {
   useGetCategories,
   useReorderCategories,
 } from '@/lib/data-access/categories';
+import type { Category } from '@/lib/data-access/categories';
+import { CategoryDialog } from './CategoryDialog';
 
 export const CategoriesSettings = () => {
   const { data: categories = [], isLoading: catLoading } = useGetCategories();

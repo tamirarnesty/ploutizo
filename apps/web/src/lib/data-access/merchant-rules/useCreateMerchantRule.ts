@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { MerchantRule } from './useGetMerchantRules';
 import { apiFetch } from '@/lib/queryClient';
+import type { MerchantRule } from './useGetMerchantRules';
 
 interface CreateMerchantRuleBody {
   pattern: string;

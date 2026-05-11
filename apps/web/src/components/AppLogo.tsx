@@ -1,6 +1,6 @@
 import { Text } from '@ploutizo/ui/components/text';
 
-export function AppLogo() {
+export const AppLogo = () => {
   // body variant = text-base; override with text-lg for brand mark size
   return (
     <Text
@@ -11,4 +11,4 @@ export function AppLogo() {
       Ploutizo
     </Text>
   );
-}
+};

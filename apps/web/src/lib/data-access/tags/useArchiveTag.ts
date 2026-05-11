@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Tag } from './useGetTags';
 import { apiFetch } from '@/lib/queryClient';
+import type { Tag } from './useGetTags';
 
 export const archiveTag = async (id: string): Promise<Tag> => {
   const r = await apiFetch<{ data: Tag }>(`/api/tags/${id}/archive`, {

@@ -1,9 +1,9 @@
+import { apiFetch } from '@/lib/queryClient';
 import type {
   TransactionListResponse,
   TransactionQueryParams,
   TransactionRow,
 } from './useGetTransactions';
-import { apiFetch } from '@/lib/queryClient';
 
 export const fetchTransaction = async (id: string): Promise<TransactionRow> => {
   const r = await apiFetch<{ data: TransactionRow }>(`/api/transactions/${id}`);

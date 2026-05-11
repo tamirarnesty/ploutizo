@@ -26,6 +26,45 @@ Shared expense tracking across household members with real-time settlement balan
 - [x] Transactions support optional tags (select-or-create-inline)
 - [x] Any field on a transaction is editable after creation
 
+**Phase 03.4.1 — Transaction v2 Schema & Redesign (2026-04-24)**
+- [x] Transaction schema v2: amount stored as integer cents, assignee splits, tags relation
+- [x] Transaction table redesigned with Amount, Type, Assignees, Tags, and Date columns
+- [x] Form redesigned to match v2 schema; all 6 types updated
+
+**Phase 03.4.2 — Transaction Form Polish (2026-04-24)**
+- [x] Amount recalculates assignee splits on change
+- [x] Notes + Tags section layout redesigned
+- [x] Tag combobox Enter key creates tag without explicit click
+
+**Phase 03.4.3 — Shared Account Owners (2026-04-27)**
+- [x] Account owners saved and displayed in AccountsTable
+- [x] listAccounts enriched with owner join; Account type extended
+
+**Phase 03.4.4 — App Shell Resilience (2026-04-30)**
+- [x] 404 page for unmatched routes
+- [x] Error boundary on root route for page crash recovery
+
+**Phase 03.4.5 — Form Validation Audit (2026-05-01)**
+- [x] All forms show correct field-level error messages
+- [x] Canonical FieldError pattern applied across 9 form components
+
+**Phase 03.4.6 — Invited Member Card (2026-05-04)**
+- [x] Pending invitations listed in Household members section with revoke action
+- [x] API: listInvitations + revokeInvitation endpoints with tests
+
+**Phase 03.5 — CI: Testing, Lint, Format (2026-04-30)**
+- [x] Vitest + ESLint + Prettier run in CI via Turbo
+- [x] pre-commit hook blocks direct commits to main
+
+**Phase 03.6 — Migrate @hono/clerk-auth → @clerk/hono (2026-05-04)**
+- [x] @clerk/hono replaces deprecated @hono/clerk-auth across apps/api
+
+**Phase 04.1 — Settlement API (2026-05-08)**
+- [x] GET /api/settlements returns per-account balances grouped by member
+- [x] POST /api/settlements records a settlement payment via the transaction service
+- [x] Accounts with all-zero balances filtered from response (D-08)
+- [x] Statement due date and status computed per account (D-13, D-14)
+
 ### Active
 
 **Households & Users**

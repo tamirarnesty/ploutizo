@@ -1,27 +1,27 @@
-import { db } from '@ploutizo/db'
+import { db } from '@ploutizo/db';
 import {
   accounts,
   orgMembers,
   transactionAssignees,
   transactions,
   users,
-} from '@ploutizo/db/schema'
-import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
+} from '@ploutizo/db/schema';
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 
 export interface SettlementBalanceRow {
-  accountId: string
-  accountName: string
-  accountType: string
-  institution: string | null
-  lastFour: string | null
-  statementDueDay: number | null
-  memberId: string
-  memberName: string
-  memberAvatarUrl: string | null
+  accountId: string;
+  accountName: string;
+  accountType: string;
+  institution: string | null;
+  lastFour: string | null;
+  statementDueDay: number | null;
+  memberId: string;
+  memberName: string;
+  memberAvatarUrl: string | null;
   // signed cents: positive = member owes the card; negative = member overpaid (credit).
   // Negative balances are intentional — settlements are not capped by the current balance,
   // so overpayments roll into a credit that offsets future expenses.
-  balanceCents: number
+  balanceCents: number;
 }
 
 /**
@@ -53,7 +53,9 @@ export interface SettlementBalanceRow {
  * The query joins to orgMembers + users so each row carries displayName + imageUrl
  * for the response (D-04 — avoid a second /members fetch).
  */
-export async function fetchSettlementBalances(orgId: string): Promise<SettlementBalanceRow[]> {
+export const fetchSettlementBalances = async (
+  orgId: string
+): Promise<SettlementBalanceRow[]> => {
   const rows = await db
     .select({
       accountId: accounts.id,
@@ -74,7 +76,10 @@ export async function fetchSettlementBalances(orgId: string): Promise<Settlement
     })
     .from(accounts)
     .innerJoin(transactions, eq(transactions.accountId, accounts.id))
-    .innerJoin(transactionAssignees, eq(transactionAssignees.transactionId, transactions.id))
+    .innerJoin(
+      transactionAssignees,
+      eq(transactionAssignees.transactionId, transactions.id)
+    )
     .innerJoin(orgMembers, eq(orgMembers.id, transactionAssignees.memberId))
     .innerJoin(users, eq(users.id, orgMembers.userId))
     .where(
@@ -84,7 +89,11 @@ export async function fetchSettlementBalances(orgId: string): Promise<Settlement
         isNull(transactions.deletedAt), // soft-delete partial index
         // D-05: only these types create/reduce balance. Cast follows the project pattern at
         // apps/api/src/lib/queries/transactions.ts:113-115 — Drizzle pgEnum requires this cast.
-        inArray(transactions.type, ['expense', 'refund', 'settlement'] as typeof transactions.type._.data[])
+        inArray(transactions.type, [
+          'expense',
+          'refund',
+          'settlement',
+        ] as (typeof transactions.type._.data)[])
       )
     )
     .groupBy(
@@ -97,24 +106,27 @@ export async function fetchSettlementBalances(orgId: string): Promise<Settlement
       orgMembers.id,
       orgMembers.displayName,
       users.imageUrl
-    )
+    );
 
   // Drizzle returns ::bigint as string in some configs — coerce defensively.
   return rows.map((r) => ({
     ...r,
-    balanceCents: typeof r.balanceCents === 'string' ? Number(r.balanceCents) : r.balanceCents,
-  }))
-}
+    balanceCents:
+      typeof r.balanceCents === 'string'
+        ? Number(r.balanceCents)
+        : r.balanceCents,
+  }));
+};
 
 /**
  * Fetch account row for settlement validation (D-18).
  * Returns null if not found or wrong org.
  * Caller checks archivedAt to enforce "Cannot settle an archived account".
  */
-export async function fetchAccountForSettlement(
+export const fetchAccountForSettlement = async (
   accountId: string,
   orgId: string
-): Promise<{ id: string; name: string; archivedAt: Date | null } | null> {
+): Promise<{ id: string; name: string; archivedAt: Date | null } | null> => {
   const rows = await db
     .select({
       id: accounts.id,
@@ -123,22 +135,22 @@ export async function fetchAccountForSettlement(
     })
     .from(accounts)
     .where(and(eq(accounts.id, accountId), eq(accounts.orgId, orgId)))
-    .limit(1)
-  return rows.at(0) ?? null
-}
+    .limit(1);
+  return rows.at(0) ?? null;
+};
 
 /**
  * Verify a member belongs to this org (D-18).
  * Returns true if (memberId, orgId) is a valid orgMembers row.
  */
-export async function memberBelongsToOrg(
+export const memberBelongsToOrg = async (
   memberId: string,
   orgId: string
-): Promise<boolean> {
+): Promise<boolean> => {
   const rows = await db
     .select({ id: orgMembers.id })
     .from(orgMembers)
     .where(and(eq(orgMembers.id, memberId), eq(orgMembers.orgId, orgId)))
-    .limit(1)
-  return rows.length > 0
-}
+    .limit(1);
+  return rows.length > 0;
+};
