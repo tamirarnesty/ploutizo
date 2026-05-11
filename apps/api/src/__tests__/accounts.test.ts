@@ -155,16 +155,14 @@ describe('GET /api/accounts', () => {
         from: vi.fn().mockReturnValue({
           innerJoin: vi.fn().mockReturnValue({
             innerJoin: vi.fn().mockReturnValue({
-              where: vi
-                .fn()
-                .mockResolvedValue([
-                  {
-                    accountId: 'acct_1',
-                    memberId: 'mem_1',
-                    displayName: 'Alice',
-                    imageUrl: 'https://img.clerk.com/alice.jpg',
-                  },
-                ]),
+              where: vi.fn().mockResolvedValue([
+                {
+                  accountId: 'acct_1',
+                  memberId: 'mem_1',
+                  displayName: 'Alice',
+                  imageUrl: 'https://img.clerk.com/alice.jpg',
+                },
+              ]),
             }),
           }),
         }),

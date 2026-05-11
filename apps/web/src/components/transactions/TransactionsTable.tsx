@@ -12,11 +12,11 @@ import {
   useDeleteTransaction,
   useRestoreTransaction,
 } from '@/lib/data-access/transactions';
+import type { TransactionRow } from '@/lib/data-access/transactions';
 import { buildColumns } from './TransactionColumns';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import { TransactionsTableEmpty } from './TransactionTableEmpty';
 import { TransactionsTableEmptyFiltered } from './TransactionTableEmptyFiltered';
-import type { TransactionRow } from '@/lib/data-access/transactions';
 import type { TransactionSearch } from './transactionSearch';
 
 interface TransactionsTableProps {

@@ -15,9 +15,9 @@ import {
   useSearchTransactions,
 } from '@/lib/data-access/transactions';
 import { formatCurrency } from '@/lib/formatCurrency';
+import type { TransactionRow } from '@/lib/data-access/transactions';
 import type { AssigneeFormRow } from './types';
 import type { TransactionFormInstance } from './hooks/useTransactionForm';
-import type { TransactionRow } from '@/lib/data-access/transactions';
 
 export interface RefundLinkerProps {
   form: TransactionFormInstance;

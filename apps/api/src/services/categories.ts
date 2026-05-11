@@ -1,4 +1,8 @@
 import { db } from '@ploutizo/db';
+import type {
+  createCategorySchema,
+  updateCategorySchema,
+} from '@ploutizo/validators';
 import { NotFoundError } from '../lib/errors';
 import {
   archiveCategory,
@@ -7,10 +11,6 @@ import {
   reorderCategories as reorderCategoriesQuery,
   updateCategory as updateCategoryQuery,
 } from '../lib/queries/categories';
-import type {
-  createCategorySchema,
-  updateCategorySchema,
-} from '@ploutizo/validators';
 import type { z } from 'zod';
 
 export const reorderCategories = async (

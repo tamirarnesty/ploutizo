@@ -1,4 +1,8 @@
 import { db } from '@ploutizo/db';
+import type {
+  createMerchantRuleSchema,
+  updateMerchantRuleSchema,
+} from '@ploutizo/validators';
 import { DomainError, NotFoundError } from '../lib/errors';
 import {
   deleteMerchantRule as deleteMerchantRuleQuery,
@@ -7,10 +11,6 @@ import {
   reorderMerchantRules as reorderMerchantRulesQuery,
   updateMerchantRule as updateMerchantRuleQuery,
 } from '../lib/queries/merchant-rules';
-import type {
-  createMerchantRuleSchema,
-  updateMerchantRuleSchema,
-} from '@ploutizo/validators';
 import type { z } from 'zod';
 
 // Moved from routes/merchant-rules.ts per D-06 — business logic belongs in service

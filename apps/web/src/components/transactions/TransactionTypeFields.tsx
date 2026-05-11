@@ -7,11 +7,11 @@ import {
   SelectValue,
 } from '@ploutizo/ui/components/select';
 import { Text } from '@ploutizo/ui/components/text';
+import type { Category } from '@/lib/data-access/categories';
 import { ExpenseFields } from './ExpenseFields';
 import { RefundLinker } from './RefundLinker';
 import type { TransactionFormInstance } from './hooks/useTransactionForm';
 import type { AssigneeFormRow, TransactionFormValues } from './types';
-import type { Category } from '@/lib/data-access/categories';
 
 // TODO(03.4-deferred): originalDescription column — add when schema patch lands
 // D-19: import caption (└ Original: ...) is deferred because originalDescription

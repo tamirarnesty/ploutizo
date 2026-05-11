@@ -1,10 +1,10 @@
+import type { createTagSchema } from '@ploutizo/validators';
 import { NotFoundError } from '../lib/errors';
 import {
   archiveTag,
   insertTag,
   listTags as listTagsQuery,
 } from '../lib/queries/tags';
-import type { createTagSchema } from '@ploutizo/validators';
 import type { z } from 'zod';
 
 export const listTags = async (orgId: string) => {

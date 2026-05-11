@@ -26,12 +26,7 @@ export default [
           pathGroups: [
             { pattern: '@ploutizo/**', group: 'internal', position: 'before' },
           ],
-          pathGroupsExcludedImportTypes: [
-            'builtin',
-            'external',
-            'object',
-            'type',
-          ],
+          pathGroupsExcludedImportTypes: ['builtin', 'external', 'object'],
         },
       ],
       // Prefer const arrow functions over function declarations

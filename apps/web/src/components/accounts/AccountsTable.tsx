@@ -15,9 +15,9 @@ import { Badge } from '@ploutizo/ui/components/badge';
 import { Button } from '@ploutizo/ui/components/button';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
+import type { Account } from '@ploutizo/types';
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { Account } from '@ploutizo/types';
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   chequing: 'Chequing',

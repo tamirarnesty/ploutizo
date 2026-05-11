@@ -4,17 +4,17 @@ import { ListFilterIcon } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import { Filters } from '@ploutizo/ui/components/reui/filters';
 import { Text } from '@ploutizo/ui/components/text';
+import type { Filter } from '@ploutizo/ui/components/reui/filters';
 import { useGetTransactions } from '@/lib/data-access/transactions';
 import { useGetAccounts } from '@/lib/data-access/accounts';
 import { useGetCategories } from '@/lib/data-access/categories';
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import { useGetTags } from '@/lib/data-access/tags';
+import type { TransactionRow } from '@/lib/data-access/transactions';
 import { TransactionsTable } from './TransactionsTable';
 import { TransactionSheet } from './TransactionSheet';
 import { buildFilterFields } from './TransactionFilterFields';
-import type { Filter } from '@ploutizo/ui/components/reui/filters';
 import type { TransactionSearch } from './transactionSearch';
-import type { TransactionRow } from '@/lib/data-access/transactions';
 
 // Strips URL params that match their defaults to keep the URL clean (D-04)
 export const buildCleanSearch = (

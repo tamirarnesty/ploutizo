@@ -3,8 +3,8 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from '@ploutizo/ui/components/toggle-group';
-import { UserAvatar } from './UserAvatar';
 import type { OrgMember } from '@ploutizo/types';
+import { UserAvatar } from './UserAvatar';
 
 interface MemberToggleGroupProps {
   members: OrgMember[];

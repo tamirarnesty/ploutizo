@@ -4,6 +4,10 @@ import {
   transactionTags,
   transactions,
 } from '@ploutizo/db/schema';
+import type {
+  CreateTransactionInput,
+  createTransactionSchema,
+} from '@ploutizo/validators';
 import {
   buildListQuery,
   countQuery,
@@ -18,10 +22,6 @@ import {
   updateTransactionScalarsQuery,
 } from '../lib/queries/transactions';
 import type { ListQueryParams } from '../lib/queries/transactions';
-import type {
-  CreateTransactionInput,
-  createTransactionSchema,
-} from '@ploutizo/validators';
 import type { z } from 'zod';
 
 export type { ListQueryParams };

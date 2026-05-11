@@ -39,6 +39,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
+import type { Account, OrgMember } from '@ploutizo/types';
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import { useGetCategories } from '@/lib/data-access/categories';
 import { useGetAccounts } from '@/lib/data-access/accounts';
@@ -48,6 +49,8 @@ import {
   useGetTransaction,
   useUpdateTransaction,
 } from '@/lib/data-access/transactions';
+import type { TransactionRow } from '@/lib/data-access/transactions';
+import type { Category } from '@/lib/data-access/categories';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import { useTransactionForm } from './hooks/useTransactionForm';
 import { FormattedAmountInput } from './FormattedAmountInput';
@@ -58,9 +61,6 @@ import { ContributionFields } from './ContributionFields';
 import { TransactionTagPicker } from './TransactionTagPicker';
 import { AssigneeSection } from './AssigneeSection';
 import type { AssigneeFormRow } from './types';
-import type { TransactionRow } from '@/lib/data-access/transactions';
-import type { Account, OrgMember } from '@ploutizo/types';
-import type { Category } from '@/lib/data-access/categories';
 
 interface TransactionFormProps {
   transaction: TransactionRow | null; // null = create mode

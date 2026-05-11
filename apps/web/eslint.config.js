@@ -25,7 +25,7 @@ export default [
           { pattern: '@ploutizo/**', group: 'internal', position: 'before' },
           { pattern: '@/**', group: 'internal', position: 'after' },
         ],
-        pathGroupsExcludedImportTypes: ['builtin', 'external', 'object', 'type'],
+        pathGroupsExcludedImportTypes: ['builtin', 'external', 'object'],
       }],
       // Prefer const arrow functions over function declarations
       'func-style': ['error', 'expression'],

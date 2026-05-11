@@ -19,9 +19,9 @@ import { cn } from '@ploutizo/ui/lib/utils';
 import { ICON_MAP } from '@/components/categories/LucideIconPicker';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
+import type { TransactionRow } from '@/lib/data-access/transactions';
 import type { LucideIcon } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { TransactionRow } from '@/lib/data-access/transactions';
 
 export { getInitials } from '@/lib/getInitials';
 

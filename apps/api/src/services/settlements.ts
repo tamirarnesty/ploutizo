@@ -1,3 +1,9 @@
+import type { CreateSettlementInput } from '@ploutizo/validators';
+import type {
+  GetSettlementBalancesResponse,
+  SettlementAccountRow,
+  SettlementMemberRow,
+} from '@ploutizo/types';
 import { DomainError, NotFoundError } from '../lib/errors';
 import {
   fetchAccountForSettlement,
@@ -7,12 +13,6 @@ import {
 import { computeNextDueDate } from '../lib/settlement-due-date';
 import { createTransaction } from './transactions';
 import type { SettlementBalanceRow } from '../lib/queries/settlements';
-import type { CreateSettlementInput } from '@ploutizo/validators';
-import type {
-  GetSettlementBalancesResponse,
-  SettlementAccountRow,
-  SettlementMemberRow,
-} from '@ploutizo/types';
 
 /**
  * Service layer: shapes the raw query rows into the GET /api/settlements response (D-02).

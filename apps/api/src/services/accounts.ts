@@ -1,4 +1,8 @@
 import { db } from '@ploutizo/db';
+import type {
+  createAccountSchema,
+  updateAccountSchema,
+} from '@ploutizo/validators';
 import { NotFoundError } from '../lib/errors';
 import {
   archiveAccount,
@@ -11,10 +15,6 @@ import {
   replaceAccountMembers,
   updateAccount as updateAccountQuery,
 } from '../lib/queries/accounts';
-import type {
-  createAccountSchema,
-  updateAccountSchema,
-} from '@ploutizo/validators';
 import type { z } from 'zod';
 
 export const listAccounts = async (orgId: string, includeArchived: boolean) => {

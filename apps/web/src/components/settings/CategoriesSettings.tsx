@@ -42,8 +42,8 @@ import {
   useGetCategories,
   useReorderCategories,
 } from '@/lib/data-access/categories';
-import { CategoryDialog } from './CategoryDialog';
 import type { Category } from '@/lib/data-access/categories';
+import { CategoryDialog } from './CategoryDialog';
 
 export const CategoriesSettings = () => {
   const { data: categories = [], isLoading: catLoading } = useGetCategories();

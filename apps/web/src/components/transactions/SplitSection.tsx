@@ -4,10 +4,10 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from '@ploutizo/ui/components/toggle-group';
+import type { OrgMember } from '@ploutizo/types';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { lrmSplit } from '@/lib/lrm';
 import { AssigneeRow } from './AssigneeRow';
-import type { OrgMember } from '@ploutizo/types';
 import type { AssigneeFormRow } from './types';
 
 interface SplitSectionProps {

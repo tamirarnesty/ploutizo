@@ -29,8 +29,8 @@ import {
   or,
   sql,
 } from 'drizzle-orm';
-import type { SQL } from 'drizzle-orm';
 import type { SortOrder, TransactionSortField } from '@ploutizo/types';
+import type { SQL } from 'drizzle-orm';
 // Drizzle transaction type for functions that participate in an outer db.transaction().
 // Derived from db's own inference so it stays correct across schema changes.
 export type DrizzleTransaction = Parameters<

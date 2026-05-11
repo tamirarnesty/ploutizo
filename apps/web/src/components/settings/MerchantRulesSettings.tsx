@@ -8,9 +8,9 @@ import {
   useGetMerchantRules,
   useReorderMerchantRules,
 } from '@/lib/data-access/merchant-rules';
+import type { MerchantRule } from '@/lib/data-access/merchant-rules';
 import { RuleDialog } from './RuleDialog';
 import { MerchantRuleRow } from './MerchantRuleRow';
-import type { MerchantRule } from '@/lib/data-access/merchant-rules';
 
 export const MerchantRulesSettings = () => {
   const { data: rules = [], isLoading } = useGetMerchantRules();

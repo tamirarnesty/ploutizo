@@ -8,8 +8,8 @@ import {
 import { Calendar } from '@ploutizo/ui/components/calendar';
 import { Button } from '@ploutizo/ui/components/button';
 import { format, isValid, parseISO } from 'date-fns';
-import type { DateRange } from 'react-day-picker';
 import type { FilterFieldConfig } from '@ploutizo/ui/components/reui/filters';
+import type { DateRange } from 'react-day-picker';
 
 const SINGLE_DATE_OPS = new Set(['is', 'is_not', 'before', 'after']);
 const RANGE_OPS = new Set(['between', 'not_between']);
