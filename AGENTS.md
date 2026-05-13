@@ -30,7 +30,7 @@ All commands run via Turborepo from the workspace root:
 ```
 pnpm turbo lint          # ESLint across all packages
 pnpm turbo typecheck     # tsc --noEmit in dependency order
-pnpm test                # vitest run in all packages (162 tests, all mocked — no secrets needed)
+pnpm test                # vitest run in all packages (188 tests, all mocked — no secrets needed)
 pnpm turbo format:check  # Prettier check
 ```
 
@@ -60,4 +60,5 @@ Use Clerk test email mode ([docs](https://clerk.com/docs/guides/development/test
 - **No Docker required**: All external services (Neon DB, Clerk auth) are cloud-hosted. No local containers needed.
 - **Never run `npx tsc` at repo root** — it emits JS files. Always use `pnpm turbo typecheck`.
 - **Lefthook pre-commit hooks** run lint, typecheck, and format:check in parallel. These are installed via the `prepare` script.
-- **Tests are fully mocked** — `pnpm test` runs all 162 tests without requiring any secrets or external services.
+- **Tests are fully mocked** — `pnpm test` runs all 188 tests without requiring any secrets or external services.
+- **Cloud agent .env creation**: Secrets are injected as environment variables. Create `apps/web/.env` and `apps/api/.env` from those env vars before starting dev servers (see `.env.example` files for the required keys).
