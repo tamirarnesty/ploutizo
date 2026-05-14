@@ -2,12 +2,6 @@ import { db } from '@ploutizo/db';
 import { orgs, users } from '@ploutizo/db/schema';
 import { eq } from 'drizzle-orm';
 import { seedOrg } from '@ploutizo/db/seeds';
-import type {
-  OrganizationJSON,
-  OrganizationMembershipJSON,
-  UserJSON,
-  WebhookEvent,
-} from '@clerk/backend';
 import {
   buildOrgMemberDisplayName,
   insertLocalUserIfAbsent,
@@ -15,6 +9,12 @@ import {
   updateLocalUserFromUserJson,
   userJsonToLocalUserRow,
 } from './clerkDbMirror';
+import type {
+  OrganizationJSON,
+  OrganizationMembershipJSON,
+  UserJSON,
+  WebhookEvent,
+} from '@clerk/backend';
 
 // One handler per Clerk event type — per D-07, D-08.
 // Clerk v3 uses Webhook<type, Data> generics so Extract<WebhookEvent, {type}> resolves to never.

@@ -1,7 +1,7 @@
-import type { User, UserJSON } from '@clerk/backend';
 import { db } from '@ploutizo/db';
 import { orgMembers, users } from '@ploutizo/db/schema';
 import { eq } from 'drizzle-orm';
+import type { User, UserJSON } from '@clerk/backend';
 
 /**
  * Normalized user row for `users` inserts — shared by Clerk webhooks and
@@ -30,7 +30,7 @@ export const userJsonToLocalUserRow = (data: UserJSON): LocalUserRowInput | null
     fullName,
     firstName: data.first_name ?? null,
     lastName: data.last_name ?? null,
-    imageUrl: data.image_url ?? null,
+    imageUrl: data.image_url,
   };
 };
 
@@ -48,7 +48,7 @@ export const clerkBackendUserToLocalUserRow = (user: User): LocalUserRowInput | 
     fullName,
     firstName: user.firstName ?? null,
     lastName: user.lastName ?? null,
-    imageUrl: user.imageUrl ?? null,
+    imageUrl: user.imageUrl,
   };
 };
 
