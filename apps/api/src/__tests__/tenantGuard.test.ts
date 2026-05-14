@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Hono } from 'hono';
 import { getAuth } from '@clerk/hono';
 import { tenantGuard } from '../middleware/tenantGuard';
+import { ensureCallerSyncedToOrg } from '../services/clerkMembershipSync';
 
 
 // Mock @clerk/hono to control what getAuth() returns per test
@@ -87,7 +88,7 @@ describe('tenantGuard()', () => {
 
   it('upserts the org row before calling next() when orgId is valid', async () => {
     mockOnConflictDoNothing.mockClear();
-    // Use a unique orgId not seen by prior tests to bypass the seenOrgs cache
+    // Use a unique orgId not seen by prior tests to bypass the seenOrgBootstrap cache
     vi.mocked(getAuth).mockReturnValue({ orgId: 'org_upsert_test' } as ReturnType<
       typeof getAuth
     >);
@@ -130,5 +131,57 @@ describe('tenantGuard()', () => {
     expect(res.status).toBe(200)
     const body = await res.json() as { orgId: string }
     expect(body.orgId).toBe('org_context_test')
+  });
+
+  it('runs ensureCallerSyncedToOrg for each distinct user in the same org', async () => {
+    vi.mocked(ensureCallerSyncedToOrg).mockClear();
+    mockOnConflictDoNothing.mockClear();
+    const orgId = 'org_multi_member_sync';
+    const app = buildApp();
+
+    vi.mocked(getAuth).mockReturnValue({
+      orgId,
+      userId: 'user_clerk_a',
+    } as ReturnType<typeof getAuth>);
+    await app.request('/');
+    vi.mocked(getAuth).mockReturnValue({
+      orgId,
+      userId: 'user_clerk_b',
+    } as ReturnType<typeof getAuth>);
+    await app.request('/');
+
+    expect(ensureCallerSyncedToOrg).toHaveBeenCalledTimes(2);
+    expect(ensureCallerSyncedToOrg).toHaveBeenNthCalledWith(1, orgId, 'user_clerk_a');
+    expect(ensureCallerSyncedToOrg).toHaveBeenNthCalledWith(2, orgId, 'user_clerk_b');
+    expect(mockOnConflictDoNothing).toHaveBeenCalledOnce();
+  });
+
+  it('does not re-run ensureCallerSyncedToOrg for the same org+user pair', async () => {
+    vi.mocked(ensureCallerSyncedToOrg).mockClear();
+    const orgId = 'org_same_user_twice';
+    const app = buildApp();
+    vi.mocked(getAuth).mockReturnValue({
+      orgId,
+      userId: 'user_clerk_x',
+    } as ReturnType<typeof getAuth>);
+    await app.request('/');
+    await app.request('/');
+    expect(ensureCallerSyncedToOrg).toHaveBeenCalledOnce();
+  });
+
+  it('retries ensureCallerSyncedToOrg on a later request after a transient failure', async () => {
+    vi.mocked(ensureCallerSyncedToOrg).mockClear();
+    vi.mocked(ensureCallerSyncedToOrg)
+      .mockRejectedValueOnce(new Error('clerk unavailable'))
+      .mockResolvedValueOnce(undefined);
+    const orgId = 'org_sync_retry';
+    const app = buildApp();
+    vi.mocked(getAuth).mockReturnValue({
+      orgId,
+      userId: 'user_retry',
+    } as ReturnType<typeof getAuth>);
+    expect((await app.request('/')).status).toBe(200);
+    expect((await app.request('/')).status).toBe(200);
+    expect(ensureCallerSyncedToOrg).toHaveBeenCalledTimes(2);
   });
 });
