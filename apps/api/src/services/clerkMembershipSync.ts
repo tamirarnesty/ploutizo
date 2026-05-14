@@ -1,13 +1,19 @@
 import { createClerkClient } from '@clerk/backend';
 import { db } from '@ploutizo/db';
-import { orgMembers, orgs, users } from '@ploutizo/db/schema';
+import { users } from '@ploutizo/db/schema';
 import { eq } from 'drizzle-orm';
+import {
+  buildOrgMemberDisplayName,
+  clerkBackendUserToLocalUserRow,
+  insertLocalUserIfAbsent,
+  insertOrgMemberIfAbsent,
+} from './clerkDbMirror';
 
 /**
  * When Clerk webhooks never reached this environment, `users` and `org_members`
  * rows are missing even though the session has a valid org + user. That breaks
- * household member pickers (e.g. transaction assignees). This sync pulls the
- * current user from Clerk and ensures local mirror rows exist for the active org.
+ * household member pickers (e.g. transaction assignees). Uses the same DB
+ * mirror helpers as webhook handlers (`user.created`, `organizationMembership.created`).
  */
 export const ensureCallerSyncedToOrg = async (
   orgId: string,
@@ -18,33 +24,18 @@ export const ensureCallerSyncedToOrg = async (
   if (!secret) return;
 
   const clerk = createClerkClient({ secretKey: secret });
-
   const clerkUser = await clerk.users.getUser(clerkUserId);
-  const primaryEmail = clerkUser.emailAddresses.find(
-    (e) => e.id === clerkUser.primaryEmailAddressId
-  )?.emailAddress;
-  if (!primaryEmail) return;
 
-  const fullName =
-    [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || null;
-
-  await db
-    .insert(users)
-    .values({
-      externalId: clerkUser.id,
-      email: primaryEmail,
-      fullName,
-      firstName: clerkUser.firstName ?? null,
-      lastName: clerkUser.lastName ?? null,
-      imageUrl: clerkUser.imageUrl,
-    })
-    .onConflictDoNothing({ target: users.externalId });
+  const localUser = clerkBackendUserToLocalUserRow(clerkUser);
+  if (!localUser) return;
+  await insertLocalUserIfAbsent(localUser);
 
   const [dbUser] = await db
     .select({ id: users.id })
     .from(users)
     .where(eq(users.externalId, clerkUser.id))
     .limit(1);
+  if (!dbUser) return;
 
   const { data: memberships } = await clerk.users.getOrganizationMembershipList({
     userId: clerkUserId,
@@ -54,23 +45,16 @@ export const ensureCallerSyncedToOrg = async (
   if (!match) return;
 
   const pud = match.publicUserData;
-  const displayName =
-    [pud?.firstName, pud?.lastName].filter(Boolean).join(' ') ||
-    pud?.identifier ||
-    clerkUser.id;
+  const fallbackUserId = pud?.userId ?? clerkUser.id;
+  const displayName = buildOrgMemberDisplayName({
+    firstName: pud?.firstName,
+    lastName: pud?.lastName,
+    fallbackUserId,
+  });
 
-  await db.insert(orgMembers).values({
+  await insertOrgMemberIfAbsent({
     orgId,
-    userId: dbUser.id,
-    role: 'admin',
+    appUserId: dbUser.id,
     displayName,
-  }).onConflictDoNothing({ target: [orgMembers.orgId, orgMembers.userId] });
-
-  const orgName = match.organization.name;
-  if (orgName) {
-    await db
-      .update(orgs)
-      .set({ name: orgName, updatedAt: new Date() })
-      .where(eq(orgs.id, orgId));
-  }
+  });
 };
