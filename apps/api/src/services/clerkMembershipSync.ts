@@ -30,6 +30,8 @@ export const ensureCallerSyncedToOrg = async (
   if (!localUser) return;
   await insertLocalUserIfAbsent(localUser);
 
+  // Drizzle always resolves to a plain array (possibly empty). Index access does not
+  // throw — `.at(0)` is `undefined` when no row matched, which we handle below.
   const rows = await db
     .select({ id: users.id })
     .from(users)

@@ -48,10 +48,16 @@ export const tenantGuard = () =>
         try {
           await ensureCallerSyncedToOrg(orgId, userId);
           seenCallerOrgSync.add(syncKey);
-        } catch {
+        } catch (err) {
           // Clerk outage or misconfiguration — do not block the request; downstream
           // routes may still fail if org_members is required. Omit syncKey so the next
           // request retries.
+          // TODO(phase logging): replace with structured logger.
+          console.error('[tenantGuard] ensureCallerSyncedToOrg failed', {
+            orgId,
+            userId,
+            message: err instanceof Error ? err.message : String(err),
+          });
         }
       }
     }
