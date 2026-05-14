@@ -4,7 +4,6 @@
 > **Coverage:** 11/11 requirement sections mapped
 > **Last updated:** 2026-04-14
 
-
 | Milestone | Name                      | Status      |
 | --------- | ------------------------- | ----------- |
 | v0.1      | Foundation                | complete    |
@@ -13,7 +12,6 @@
 | v0.4      | Budgets                   | pending     |
 | v0.5      | Investments & Net Worth   | pending     |
 | v1.0      | Notifications + Launch    | pending     |
-
 
 > **Execution order note:** v0.3 Import executes before v0.4 Budgets. Phase numbers (05.x vs 04.3/04.4) reflect original ordering — milestone labels determine execution sequence.
 
@@ -158,7 +156,7 @@ UAT fixes (post-verification):
 
 Plans:
 
-- 02.2-01-PLAN.md — Install next-themes, create ThemeToggle component in packages/ui, wire ThemeProvider into __root.tsx, add ThemeToggle to AppSidebar footer
+- 02.2-01-PLAN.md — Install next-themes, create ThemeToggle component in packages/ui, wire ThemeProvider into \_\_root.tsx, add ThemeToggle to AppSidebar footer
 
 ### Phase 02.1: Code Style & Form Patterns Refactor (INSERTED)
 
@@ -246,7 +244,7 @@ via the API with correct field enforcement, split math, and validation errors.
 
 Plans:
 
-- 03.2-01-PLAN.md — Test scaffold: 12 TXN-* Vitest stubs for all transaction route behaviors
+- 03.2-01-PLAN.md — Test scaffold: 12 TXN-\* Vitest stubs for all transaction route behaviors
 - 03.2-02-PLAN.md — badRequest() helper + POST + GET list + GET single (joined response, pagination, filtering, sort)
 - 03.2-03-PLAN.md — PATCH + DELETE (soft delete) + route registration in apps/api/src/index.ts
 
@@ -581,6 +579,7 @@ Plans:
 **Plans:** 3/3 plans complete
 
 Plans:
+
 - [x] 03.4.6-01-PLAN.md — API: PendingInvitation type + listInvitations/revokeInvitation services + GET/DELETE invitations routes + tests
 - [x] 03.4.6-02-PLAN.md — Frontend data access: useGetOrgInvitations + useRevokeInvitation hooks + useInviteMember invalidation update
 - [x] 03.4.6-03-PLAN.md — UI: InvitedMemberRow component + MembersSection parallel queries + revoke flow
@@ -612,7 +611,7 @@ Plans:
 
 **Post-phase todo:** After 03.6 ships, address `.planning/todos/pending/2026-04-21-clear-query-cache-on-logout-prevent-stale-data-cross-account.md` — clear TanStack Query cache on logout/user-switch to prevent cross-account stale data.
 
-### Phase 4.1: Settlement API
+### Phase 04.1: Settlement API
 
 **Goal:** The API can compute settlement balances at query time for any household
 and return per-account, per-member breakdown including net settlement lines.
@@ -645,7 +644,7 @@ Plans:
 
 ---
 
-### Phase 4.2: Settlement UI
+### Phase 04.2: Settlement UI
 
 **Goal:** Household members can see what they owe each other and record full or
 partial settlements from the UI.
@@ -678,11 +677,34 @@ Plans:
 
 ---
 
+### Phase 04.2.1: Clerk in-app auth route coverage and hosted URL elimination (INSERTED)
+
+**Goal:** Keep all Clerk flows inside the app's route system so users do not land on Clerk-hosted pages/domains during normal usage (dev or prod), while preserving the existing custom household/member UX.
+
+**Delivers:**
+
+- In-app route coverage for Clerk auth surfaces used by the app: sign in, sign up, unauthorized sign-in state, account profile, organization profile/management entrypoint, create organization
+- Clerk component URL wiring aligned to app routes (`UserButton`, `OrganizationSwitcher`, onboarding/create-organization entrypoints) so navigation stays inside SPA paths
+- Clerk dashboard path/redirect settings aligned for local + production app URLs to avoid fallback redirects to hosted Clerk URLs
+- Invite redirect hardening included and tracked in this phase: `CLERK_INVITE_REDIRECT_URL` support in API invitation payload (`redirect_url`) with env docs and tests
+- Verification pass that invitation accept + auth/profile/org flows return to app routes and do not strand users on `*.accounts.dev`
+
+**Depends on:** Phase 04.2
+**Plans:** 0 plans
+
+Plans:
+
+- TBD (run /gsd:plan-phase 4.2.1 to break down)
+
+**Status:** In progress (invite redirect hardening completed; remaining route/profile coverage pending)
+
+---
+
 ---
 
 ## Milestone v0.4 — Budgets
 
-### Phase 4.3: Budgets API
+### Phase 04.3: Budgets API
 
 **Goal:** Budgets can be created and managed per category; the API computes spend
 against each budget and handles rollover.
@@ -711,7 +733,7 @@ Plans:
 
 ---
 
-### Phase 4.4: Budget Dashboard UI
+### Phase 04.4: Budget Dashboard UI
 
 **Goal:** Users can view all category budgets with spend progress, status
 indicators, and historical period navigation from a single dashboard.
@@ -751,7 +773,7 @@ Plans:
 
 ## Milestone v0.3 — Import
 
-### Phase 5.1: Bank Normalizers
+### Phase 05.1: Bank Normalizers
 
 **Goal:** Pure-function normalizers exist for all supported bank CSV formats with
 full fixture-based test coverage. No DB or UI dependencies — this phase can be
@@ -783,7 +805,7 @@ Plans:
 
 ---
 
-### Phase 5.2: Import Batch API
+### Phase 05.2: Import Batch API
 
 **Goal:** The API can receive a parsed import batch, apply merchant rules, detect
 duplicates, and write only confirmed rows to the database.
@@ -815,7 +837,7 @@ Plans:
 
 ---
 
-### Phase 5.3: Import UI
+### Phase 05.3: Import UI
 
 **Goal:** Users can upload a CSV, step through a review table with inline editing,
 and resolve unmatched accounts before confirming the import.
@@ -846,7 +868,7 @@ Plans:
 
 ---
 
-### Phase 5.4: Import Bulk Actions & Duplicate Handling
+### Phase 05.4: Import Bulk Actions & Duplicate Handling
 
 **Goal:** Users can efficiently process large import batches via bulk actions and
 have duplicate rows surfaced and skippable before confirming.
@@ -879,7 +901,7 @@ Plans:
 
 ## Milestone v0.5 — Investments & Net Worth
 
-### Phase 6.1: Investment Schema & Contribution Room API
+### Phase 06.1: Investment Schema & Contribution Room API
 
 **Goal:** The API can track TFSA, RRSP, and FHSA contribution room per member
 and fire over-contribution warnings on contribution entry.
@@ -912,7 +934,7 @@ Plans:
 
 ---
 
-### Phase 6.2: Savings Contributions UI
+### Phase 06.2: Savings Contributions UI
 
 **Goal:** Members can record contributions, track remaining room with a progress
 indicator, and see over-contribution warnings inline.
@@ -957,7 +979,7 @@ Plans:
 
 ---
 
-### Phase 6.3: Net Worth API
+### Phase 06.3: Net Worth API
 
 **Goal:** The API can compute a household's real-time net worth snapshot and store
 monthly historical data points.
@@ -985,7 +1007,7 @@ Plans:
 
 ---
 
-### Phase 6.4: Net Worth UI
+### Phase 06.4: Net Worth UI
 
 **Goal:** Members can view their household's net worth, per-member breakdown, and
 monthly historical trend in a single page.
@@ -1030,7 +1052,7 @@ Plans:
 
 ## Milestone v1.0 — Notifications + Launch
 
-### Phase 7.1: Notifications Table & Write Triggers
+### Phase 07.1: Notifications Table & Write Triggers
 
 **Goal:** Notification rows are written to the database whenever a budget
 threshold is crossed, a contribution exceeds room, or a settlement balance
@@ -1063,7 +1085,7 @@ Plans:
 
 ---
 
-### Phase 7.2: Notification Feed UI
+### Phase 07.2: Notification Feed UI
 
 **Goal:** Users can view all pending notifications in an in-app feed and dismiss
 them individually or all at once.
@@ -1093,7 +1115,7 @@ Plans:
 
 ---
 
-### Phase 7.3: Overview Dashboard UI
+### Phase 07.3: Overview Dashboard UI
 
 **Goal:** Members can open the app and immediately see a household financial snapshot for any month — KPIs, spend trends, credit card balances, and settlement — without navigating to individual feature pages.
 
@@ -1174,25 +1196,22 @@ Plans:
 
 ## Coverage Map
 
-
-| REQUIREMENTS.md Section     | Phase                                                  | Notes                                                                                                  |
-| --------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| §1 Households & Users       | Phase 1 (infra/seeds) + Phase 2 (full feature)         | Clerk native org config in Phase 1; creation/switching UI and Clerk-managed invitation flow in Phase 2 |
-| §2 Accounts                 | Phase 2                                                | Full CRUD including "each person pays their own" flag                                                  |
-| §3 Categories & Tags        | Phase 2                                                | Full CRUD; default seed list present after Phase 1 org creation                                        |
-| §4 Transactions             | Phases 03.1–03.4                                       | Schema (03.1), API (03.2), list UI (03.3), create/edit forms (03.4)                                    |
-| §5 Settlement               | Phases 4.1–4.2                                         | API (4.1), UI (4.2)                                                                                    |
-| §6 Budgets                  | Phases 4.3–4.4                                         | API (4.3), dashboard UI (4.4)                                                                          |
-| §7 Savings & Investments    | Phases 6.1–6.2                                         | Schema + contribution room API (6.1), contributions UI (6.2)                                           |
-| §8 CSV Import               | Phases 5.1–5.4                                         | Normalizers (5.1), batch API (5.2), review UI (5.3), bulk actions (5.4)                                |
-| §9 Merchant Rules           | Phase 2 (CRUD) + Phase 5.2 (application during import) | Seed scripts in Phase 1                                                                                |
-| §10 Net Worth               | Phases 6.3–6.4                                         | API (6.3), UI (6.4)                                                                                    |
-| §11 Notifications & Alerts  | Phases 7.1–7.2                                         | Write triggers (7.1), feed UI (7.2)                                                                    |
-| Infrastructure requirements | Phase 1                                                | Clerk satellites, postgres.js, tenantGuard, Tailwind v4 audit                                          |
-
+| REQUIREMENTS.md Section     | Phase                                                   | Notes                                                                                                  |
+| --------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| §1 Households & Users       | Phase 1 (infra/seeds) + Phase 2 (full feature)          | Clerk native org config in Phase 1; creation/switching UI and Clerk-managed invitation flow in Phase 2 |
+| §2 Accounts                 | Phase 2                                                 | Full CRUD including "each person pays their own" flag                                                  |
+| §3 Categories & Tags        | Phase 2                                                 | Full CRUD; default seed list present after Phase 1 org creation                                        |
+| §4 Transactions             | Phases 03.1–03.4                                        | Schema (03.1), API (03.2), list UI (03.3), create/edit forms (03.4)                                    |
+| §5 Settlement               | Phases 04.1–04.2                                        | API (04.1), UI (04.2)                                                                                  |
+| §6 Budgets                  | Phases 04.3–04.4                                        | API (04.3), dashboard UI (04.4)                                                                        |
+| §7 Savings & Investments    | Phases 06.1–06.2                                        | Schema + contribution room API (06.1), contributions UI (06.2)                                         |
+| §8 CSV Import               | Phases 05.1–05.4                                        | Normalizers (05.1), batch API (05.2), review UI (05.3), bulk actions (05.4)                            |
+| §9 Merchant Rules           | Phase 2 (CRUD) + Phase 05.2 (application during import) | Seed scripts in Phase 1                                                                                |
+| §10 Net Worth               | Phases 06.3–06.4                                        | API (06.3), UI (06.4)                                                                                  |
+| §11 Notifications & Alerts  | Phases 07.1–07.2                                        | Write triggers (07.1), feed UI (07.2)                                                                  |
+| Infrastructure requirements | Phase 1                                                 | Clerk satellites, postgres.js, tenantGuard, Tailwind v4 audit                                          |
 
 ## Deferred (Post-Milestone)
-
 
 | Item                                         | Reason                                                                                         |
 | -------------------------------------------- | ---------------------------------------------------------------------------------------------- |
@@ -1211,15 +1230,13 @@ Plans:
 | FHSA "used for home purchase" status         | Deferred — account freeze on home purchase not in v1 scope                                     |
 | Recurring transaction reminders              | v2                                                                                             |
 
-
 ## Open Items (must resolve before affected phase)
 
-
-| Item                                                                             | Blocks    | Action                                                                                                                         |
-| -------------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| TFSA 2026 annual limit                                                           | Phase 6.1 | Verify at CRA website before implementing `TFSA_ANNUAL_LIMITS` constant                                                        |
-| RRSP 2025/2026 dollar cap                                                        | Phase 6.1 | Verify exact cap at CRA website                                                                                                |
-| Bank CSV column names (TD, RBC, CIBC, Scotiabank, BMO, Amex, Tangerine, EQ Bank) | Phase 5.1 | Collect real bank export files; treat SUMMARY.md signatures as starting point only                                             |
-| Cloudflare proxy setting for `clerk.ploutizo.app`                                | Phase 1   | Must be "DNS only" (grey cloud) — document in deployment runbook                                                               |
-| ReUI Tailwind v4 compatibility                                                   | Phase 3.3 | Verify `DataGrid` and `Filters` compatibility at [https://reui.io/docs](https://reui.io/docs) before building transaction list |
-| Neon connection limits on chosen plan tier                                       | Phase 1   | Verify plan limit vs postgres.js pool `max` before production launch                                                           |
+| Item                                                                             | Blocks     | Action                                                                                                                         |
+| -------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| TFSA 2026 annual limit                                                           | Phase 06.1 | Verify at CRA website before implementing `TFSA_ANNUAL_LIMITS` constant                                                        |
+| RRSP 2025/2026 dollar cap                                                        | Phase 06.1 | Verify exact cap at CRA website                                                                                                |
+| Bank CSV column names (TD, RBC, CIBC, Scotiabank, BMO, Amex, Tangerine, EQ Bank) | Phase 05.1 | Collect real bank export files; treat SUMMARY.md signatures as starting point only                                             |
+| Cloudflare proxy setting for `clerk.ploutizo.app`                                | Phase 1    | Must be "DNS only" (grey cloud) — document in deployment runbook                                                               |
+| ReUI Tailwind v4 compatibility                                                   | Phase 3.3  | Verify `DataGrid` and `Filters` compatibility at [https://reui.io/docs](https://reui.io/docs) before building transaction list |
+| Neon connection limits on chosen plan tier                                       | Phase 1    | Verify plan limit vs postgres.js pool `max` before production launch                                                           |
