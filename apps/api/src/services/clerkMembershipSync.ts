@@ -30,12 +30,13 @@ export const ensureCallerSyncedToOrg = async (
   if (!localUser) return;
   await insertLocalUserIfAbsent(localUser);
 
-  const [dbUser] = await db
+  const rows = await db
     .select({ id: users.id })
     .from(users)
     .where(eq(users.externalId, clerkUser.id))
     .limit(1);
-  if (!dbUser) return;
+  const dbUser = rows.at(0);
+  if (dbUser === undefined) return;
 
   const { data: memberships } = await clerk.users.getOrganizationMembershipList({
     userId: clerkUserId,

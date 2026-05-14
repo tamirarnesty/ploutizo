@@ -16,13 +16,16 @@ import type { AppEnv } from '../types';
 // secret, network failure, or org created before the app was deployed).
 // ensureOrgSeeded() backfills default categories and merchant rules when the webhook
 // never ran (typical in local dev) — idempotent if data already exists.
-// seenOrgs caches org IDs that have been upserted this process lifetime — avoids a DB
-// round-trip on every request after the first. Resets on cold start (safe: DB row persists).
-const seenOrgs = new Set<string>();
+// seenOrgBootstrap: org row + seed once per org per process (shared by all members).
+// seenCallerOrgSync: `${orgId}:${userId}` after a successful ensureCallerSyncedToOrg —
+// must be per-user so other household members are not skipped; only add on success so
+// transient Clerk failures retry on the next request.
+const seenOrgBootstrap = new Set<string>();
+const seenCallerOrgSync = new Set<string>();
 
 export const tenantGuard = () =>
   createMiddleware<AppEnv>(async (c, next) => {
-    const { orgId } = getAuth(c);
+    const { orgId, userId } = getAuth(c);
     if (!orgId) {
       return c.json(
         {
@@ -34,17 +37,29 @@ export const tenantGuard = () =>
         401
       );
     }
-    if (!seenOrgs.has(orgId)) {
+    if (!seenOrgBootstrap.has(orgId)) {
       await db.insert(orgs).values({ id: orgId }).onConflictDoNothing();
       await ensureOrgSeeded(orgId);
-      const { userId } = getAuth(c);
-      try {
-        await ensureCallerSyncedToOrg(orgId, userId);
-      } catch {
-        // Clerk outage or misconfiguration — do not block the request; downstream
-        // routes may still fail if org_members is required.
+      seenOrgBootstrap.add(orgId);
+    }
+    if (userId) {
+      const syncKey = `${orgId}:${userId}`;
+      if (!seenCallerOrgSync.has(syncKey)) {
+        try {
+          await ensureCallerSyncedToOrg(orgId, userId);
+          seenCallerOrgSync.add(syncKey);
+        } catch (err) {
+          // Clerk outage or misconfiguration — do not block the request; downstream
+          // routes may still fail if org_members is required. Omit syncKey so the next
+          // request retries.
+          // TODO(phase logging): replace with structured logger.
+          console.error('[tenantGuard] ensureCallerSyncedToOrg failed', {
+            orgId,
+            userId,
+            message: err instanceof Error ? err.message : String(err),
+          });
+        }
       }
-      seenOrgs.add(orgId);
     }
     c.set('orgId', orgId);
     await next();
