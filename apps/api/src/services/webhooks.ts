@@ -1,5 +1,5 @@
 import { db } from '@ploutizo/db';
-import { orgMembers, orgs, users } from '@ploutizo/db/schema';
+import { orgs, users } from '@ploutizo/db/schema';
 import { eq } from 'drizzle-orm';
 import { seedOrg } from '@ploutizo/db/seeds';
 import type {
@@ -8,6 +8,13 @@ import type {
   UserJSON,
   WebhookEvent,
 } from '@clerk/backend';
+import {
+  buildOrgMemberDisplayName,
+  insertLocalUserIfAbsent,
+  insertOrgMemberIfAbsent,
+  updateLocalUserFromUserJson,
+  userJsonToLocalUserRow,
+} from './clerkDbMirror';
 
 // One handler per Clerk event type — per D-07, D-08.
 // Clerk v3 uses Webhook<type, Data> generics so Extract<WebhookEvent, {type}> resolves to never.
@@ -33,42 +40,13 @@ export const handleOrgUpdated = async (data: OrganizationJSON) => {
 };
 
 export const handleUserCreated = async (data: UserJSON) => {
-  const primaryEmail = data.email_addresses.find(
-    (e) => e.id === data.primary_email_address_id
-  )?.email_address;
-  if (!primaryEmail) return;
-  const fullName =
-    [data.first_name, data.last_name].filter(Boolean).join(' ') || null;
-  await db
-    .insert(users)
-    .values({
-      externalId: data.id,
-      email: primaryEmail,
-      fullName,
-      firstName: data.first_name ?? null,
-      lastName: data.last_name ?? null,
-      imageUrl: data.image_url,
-    })
-    .onConflictDoNothing();
+  const row = userJsonToLocalUserRow(data);
+  if (!row) return;
+  await insertLocalUserIfAbsent(row);
 };
 
 export const handleUserUpdated = async (data: UserJSON) => {
-  const primaryEmail = data.email_addresses.find(
-    (e) => e.id === data.primary_email_address_id
-  )?.email_address;
-  const fullName =
-    [data.first_name, data.last_name].filter(Boolean).join(' ') || null;
-  if (!primaryEmail) return;
-  await db
-    .update(users)
-    .set({
-      email: primaryEmail,
-      fullName,
-      firstName: data.first_name ?? null,
-      lastName: data.last_name ?? null,
-      imageUrl: data.image_url,
-    })
-    .where(eq(users.externalId, data.id));
+  await updateLocalUserFromUserJson(data);
 };
 
 export const handleOrgMembershipCreated = async (
@@ -82,33 +60,41 @@ export const handleOrgMembershipCreated = async (
 
   if (!user) return;
 
-  const displayName =
-    [data.public_user_data.first_name, data.public_user_data.last_name]
-      .filter(Boolean)
-      .join(' ') || data.public_user_data.user_id;
+  const displayName = buildOrgMemberDisplayName({
+    firstName: data.public_user_data.first_name,
+    lastName: data.public_user_data.last_name,
+    fallbackUserId: data.public_user_data.user_id,
+  });
 
-  await db
-    .insert(orgMembers)
-    .values({
-      orgId: data.organization.id,
-      userId: user.id,
-      role: 'admin', // DB enum only supports 'admin' in v1; Clerk role ignored until roles expand
-      displayName,
-    })
-    .onConflictDoNothing();
+  await insertOrgMemberIfAbsent({
+    orgId: data.organization.id,
+    appUserId: user.id,
+    displayName,
+  });
 };
 
 // Dispatch event to the appropriate handler based on event.type narrowing (D-08).
 // Casts needed because Clerk v3 Webhook<type, Data> generics cause event.data to not
 // narrow to the concrete JSON types after Extract<WebhookEvent, {type}>.
 export const dispatchWebhookEvent = async (event: WebhookEvent) => {
-  if (event.type === 'organization.created')
-    return handleOrgCreated(event.data);
-  if (event.type === 'organization.updated')
-    return handleOrgUpdated(event.data);
-  if (event.type === 'user.created') return handleUserCreated(event.data);
-  if (event.type === 'user.updated') return handleUserUpdated(event.data);
-  if (event.type === 'organizationMembership.created')
-    return handleOrgMembershipCreated(event.data);
-  // Unknown event types are silently ignored
+  switch (event.type) {
+    case 'organization.created':
+      return handleOrgCreated(event.data);
+    case 'organization.updated':
+      return handleOrgUpdated(event.data);
+    case 'user.created':
+      return handleUserCreated(event.data);
+    case 'user.updated':
+      return handleUserUpdated(event.data);
+    case 'organizationMembership.created':
+      return handleOrgMembershipCreated(event.data);
+    default: {
+      const unhandled = event as { type?: string };
+      console.warn(
+        '[webhooks] skipping unhandled Clerk webhook event type:',
+        unhandled.type ?? '(missing type)'
+      );
+      return;
+    }
+  }
 };
