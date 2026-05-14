@@ -1,6 +1,8 @@
 import { db } from '../client'
 import { categories } from '../schema/index'
 
+type InsertExecutor = { insert: typeof db.insert }
+
 // Default categories seeded at org creation.
 // INVARIANT: Every row has orgId set — no global category rows.
 const DEFAULT_CATEGORIES: { name: string; icon: string; sortOrder: number }[] = [
@@ -17,8 +19,12 @@ const DEFAULT_CATEGORIES: { name: string; icon: string; sortOrder: number }[] = 
   { name: 'Other', icon: 'MoreHorizontal', sortOrder: 10 },
 ]
 
-export const seedOrgCategories = async (orgId: string): Promise<void> => {
-  await db.insert(categories).values(
+/** Insert default categories — use `db` from tests; `seedOrg` passes a transaction client. */
+export const insertSeedCategoriesForOrg = async (
+  executor: InsertExecutor,
+  orgId: string
+): Promise<void> => {
+  await executor.insert(categories).values(
     DEFAULT_CATEGORIES.map((cat) => ({
       orgId, // non-nullable — always set to the passed orgId
       name: cat.name,
@@ -26,4 +32,8 @@ export const seedOrgCategories = async (orgId: string): Promise<void> => {
       sortOrder: cat.sortOrder,
     }))
   )
+}
+
+export const seedOrgCategories = async (orgId: string): Promise<void> => {
+  await insertSeedCategoriesForOrg(db, orgId)
 }
