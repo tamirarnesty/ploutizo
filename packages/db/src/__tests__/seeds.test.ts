@@ -1,13 +1,28 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock db client — we test behavior not actual DB inserts
-vi.mock('../client.js', () => ({
-  db: {
-    insert: vi.fn(() => ({
-      values: vi.fn(() => Promise.resolve()),
+vi.mock('../client.js', () => {
+  const mockInsert = vi.fn(() => ({
+    values: vi.fn(() => Promise.resolve()),
+  }))
+  const mockTx = {
+    execute: vi.fn(() => Promise.resolve()),
+    select: vi.fn(() => ({
+      from: vi.fn(() => ({
+        where: vi.fn(() => Promise.resolve([{ n: 0 }])),
+      })),
     })),
-  },
-}))
+    insert: mockInsert,
+  }
+  return {
+    db: {
+      insert: mockInsert,
+      transaction: vi.fn(async (fn: (tx: typeof mockTx) => Promise<void>) => {
+        await fn(mockTx)
+      }),
+    },
+  }
+})
 
 import { db } from '../client'
 
@@ -59,7 +74,7 @@ describe('seedOrgMerchantRules', () => {
 })
 
 describe('seedOrg', () => {
-  it('calls both seedOrgCategories and seedOrgMerchantRules', async () => {
+  it('runs in a transaction, takes an advisory lock, and inserts categories then merchant rules when count is zero', async () => {
     vi.clearAllMocks()
     const mockValues = vi.fn(() => Promise.resolve())
     vi.mocked(db.insert).mockReturnValue(mockInsertReturn(mockValues))
@@ -67,7 +82,29 @@ describe('seedOrg', () => {
     const { seedOrg } = await import('../seeds/index.js')
     await seedOrg('org_test123')
 
-    // Should have been called twice — once for categories, once for merchant rules
+    expect(db.transaction).toHaveBeenCalledOnce()
     expect(db.insert).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not insert when the org already has categories (count under lock)', async () => {
+    vi.clearAllMocks()
+    const mockInsert = vi.mocked(db.insert)
+    const mockTx = {
+      execute: vi.fn(() => Promise.resolve()),
+      select: vi.fn(() => ({
+        from: vi.fn(() => ({
+          where: vi.fn(() => Promise.resolve([{ n: 11 }])),
+        })),
+      })),
+      insert: mockInsert,
+    }
+    vi.mocked(db.transaction).mockImplementationOnce(async (fn) => {
+      await fn(mockTx as never)
+    })
+
+    const { seedOrg } = await import('../seeds/index.js')
+    await seedOrg('org_seeded')
+
+    expect(mockInsert).not.toHaveBeenCalled()
   })
 })

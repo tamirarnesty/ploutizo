@@ -1,21 +1,35 @@
-import { count, eq } from 'drizzle-orm'
+import { count, eq, sql } from 'drizzle-orm'
 import { db } from '../client'
 import { categories } from '../schema'
-import { seedOrgCategories } from './categories'
-import { seedOrgMerchantRules } from './merchantRules'
+import { insertSeedCategoriesForOrg } from './categories'
+import { insertSeedMerchantRulesForOrg } from './merchantRules'
 
-// seedOrg: called at org creation to populate default tenant data.
-// Both functions are called — do not call them individually unless testing.
+/**
+ * Populate default categories and merchant rules for `orgId`.
+ * Runs inside a DB transaction with `pg_advisory_xact_lock` so concurrent callers
+ * (webhook + tenant guard, or parallel API requests) serialize per org and
+ * re-check after locking — no duplicate inserts and no reliance on catching
+ * unique-violation errors.
+ */
 export const seedOrg = async (orgId: string): Promise<void> => {
-  await seedOrgCategories(orgId)
-  await seedOrgMerchantRules(orgId)
+  await db.transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(abs(hashtext(${orgId}))::bigint)`
+    )
+    const [row] = await tx
+      .select({ n: count() })
+      .from(categories)
+      .where(eq(categories.orgId, orgId))
+    if (Number(row?.n ?? 0) > 0) return
+
+    await insertSeedCategoriesForOrg(tx, orgId)
+    await insertSeedMerchantRulesForOrg(tx, orgId)
+  })
 }
 
 /**
- * Idempotent guard when the Clerk organization.created webhook did not run
- * (common in local dev). Safe to call on every cold-start first request: skips
- * if categories already exist. Races between parallel first requests may throw
- * a unique constraint from seedOrg; those are ignored.
+ * Fast path when the org is already seeded (avoids opening a transaction).
+ * `seedOrg` remains the single idempotent implementation under the advisory lock.
  */
 export const ensureOrgSeeded = async (orgId: string): Promise<void> => {
   const [row] = await db
@@ -23,12 +37,14 @@ export const ensureOrgSeeded = async (orgId: string): Promise<void> => {
     .from(categories)
     .where(eq(categories.orgId, orgId))
   if (Number(row?.n ?? 0) > 0) return
-  try {
-    await seedOrg(orgId)
-  } catch (e: unknown) {
-    const code = typeof e === 'object' && e !== null && 'code' in e ? (e as { code?: string }).code : undefined
-    if (code !== '23505') throw e
-  }
+  await seedOrg(orgId)
 }
 
-export { seedOrgCategories, seedOrgMerchantRules }
+export {
+  insertSeedCategoriesForOrg,
+  seedOrgCategories,
+} from './categories'
+export {
+  insertSeedMerchantRulesForOrg,
+  seedOrgMerchantRules,
+} from './merchantRules'
