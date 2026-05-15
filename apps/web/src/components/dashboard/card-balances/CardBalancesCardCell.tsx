@@ -1,26 +1,36 @@
-import { Text } from '@ploutizo/ui/components/text';
+import { Avatar, AvatarFallback } from '@ploutizo/ui/components/avatar';
+import {
+  Item,
+  ItemContent,
+  ItemMedia,
+  ItemTitle,
+} from '@ploutizo/ui/components/item';
 import type { SettlementAccountRow } from '@ploutizo/types';
 
 type CardBalancesCardCellProps = {
   account: SettlementAccountRow['account'];
 };
 
+/** Item composes avatar + title; neutral hover in grid cells (row hover is primary). */
 export const CardBalancesCardCell = ({
   account,
 }: CardBalancesCardCellProps) => (
-  <div className="flex min-w-0 items-center gap-2">
-    <div
-      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-sm bg-muted text-xs font-semibold uppercase"
-      aria-hidden="true"
-    >
-      {account.name.slice(0, 2)}
-    </div>
-    <Text
-      as="span"
-      variant="body-sm"
-      className="min-w-0 truncate font-semibold"
-    >
-      {account.name}
-    </Text>
-  </div>
+  <Item
+    variant="default"
+    size="xs"
+    className="min-w-0 flex-nowrap border-0 bg-transparent p-0 shadow-none hover:bg-transparent"
+  >
+    <ItemMedia variant="default" className="shrink-0">
+      <Avatar className="size-7 rounded-sm after:rounded-sm" aria-hidden>
+        <AvatarFallback className="rounded-sm bg-muted text-xs font-semibold uppercase">
+          {account.name.slice(0, 2)}
+        </AvatarFallback>
+      </Avatar>
+    </ItemMedia>
+    <ItemContent className="min-w-0">
+      <ItemTitle className="truncate text-sm font-semibold">
+        {account.name}
+      </ItemTitle>
+    </ItemContent>
+  </Item>
 );

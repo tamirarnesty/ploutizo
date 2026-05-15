@@ -35,9 +35,9 @@ export const Dashboard = () => {
     [settlements?.accounts]
   );
 
-  const totalCreditCardOwedCents = creditCardAccounts.reduce(
-    (sum, a) => sum + a.totalBalanceCents,
-    0
+  const totalCreditCardOwedCents = useMemo(
+    () => creditCardAccounts.reduce((sum, a) => sum + a.totalBalanceCents, 0),
+    [creditCardAccounts]
   );
 
   // D-11: dialog pre-selects the first member with balance > 0; row click still passes `(account, member)`.

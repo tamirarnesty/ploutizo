@@ -2,10 +2,7 @@ import { useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
-  DialogHeader,
-  DialogTitle,
 } from '@ploutizo/ui/components/dialog';
 import { Button } from '@ploutizo/ui/components/button';
 import { Input } from '@ploutizo/ui/components/input';
@@ -17,10 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@ploutizo/ui/components/select';
-import {
-  RadioGroup,
-  RadioGroupItem,
-} from '@ploutizo/ui/components/radio-group';
 import {
   InputGroup,
   InputGroupAddon,
@@ -35,57 +28,37 @@ import {
 } from '@ploutizo/ui/components/field';
 import { Text } from '@ploutizo/ui/components/text';
 import { useAppForm } from '@ploutizo/ui/components/form';
-import { cn } from '@ploutizo/ui/lib/utils';
 import { settleFormSchema } from './settleFormSchema';
 import type { SettlementAccountRow } from '@ploutizo/types';
 import type { SettleFormValues } from './settleFormSchema';
 import { useCreateSettlement } from '@/lib/data-access/settlements';
 import { useGetAccounts } from '@/lib/data-access/accounts';
-import { UserAvatar } from '@/components/members/UserAvatar';
-import { formatCurrency } from '@/lib/formatCurrency';
+import { getSettleInitialValues } from '@/components/dashboard/settle-dialog/getSettleInitialValues';
+import { SettleDialogSummary } from '@/components/dashboard/settle-dialog/SettleDialogSummary';
+import { SettleMemberRadioList } from '@/components/dashboard/settle-dialog/SettleMemberRadioList';
 
 export interface SettleDialogProps {
   open: boolean;
-  account: SettlementAccountRow | null; // null when dialog closed
+  account: SettlementAccountRow | null;
   onClose: () => void;
 }
 
-// Derive stable initial values from the account — used on mount reset and effect re-seeds.
-const getInitialValues = (
-  account: SettlementAccountRow,
-  firstSourceId: string,
-  todayIso: string
-): SettleFormValues => {
-  const seedMember = account.members.find((m) => m.balanceCents > 0) ?? null;
-  // Array.at(0) returns T | undefined (unlike [0] which returns T when strict mode sees a non-empty array type)
-  const fallbackMember = account.members.at(0) ?? null;
-  return {
-    payerMemberId: seedMember
-      ? seedMember.member.id
-      : fallbackMember
-        ? fallbackMember.member.id
-        : '',
-    amountDollars: seedMember
-      ? Math.abs(seedMember.balanceCents) / 100
-      : fallbackMember
-        ? Math.abs(fallbackMember.balanceCents) / 100
-        : 0,
-    sourceAccountId: firstSourceId,
-    date: todayIso,
-    notes: '',
-  };
+const EMPTY_VALUES: SettleFormValues = {
+  payerMemberId: '',
+  amountDollars: 0,
+  sourceAccountId: '',
+  date: '',
+  notes: '',
 };
 
 export const SettleDialog = ({ open, account, onClose }: SettleDialogProps) => {
   const createSettlement = useCreateSettlement();
   const { data: accounts = [] } = useGetAccounts();
 
-  // PAID FROM list: tracked bank-style accounts ONLY — must be a UUID the API recognizes.
-  // Untracked options ("Cash", "E-Transfer", "Cheque", "Other") were intentionally dropped:
-  // the POST /api/settlements API requires a real account UUID (Phase 4.1 D-03), so an
-  // untracked string would be unsubmittable. If a user genuinely needs to record a
-  // cash/e-transfer payment, they create a tracked Cash account first and select it here.
-  // 'prepaid_cash' is the AccountType enum value for cash accounts (packages/db/src/schema/enums.ts).
+  const todayIso = new Date().toLocaleDateString('en-CA');
+
+  // Tracked bank-style accounts for "Paid from". Selection is validated in-form;
+  // POST /api/settlements does not yet accept this field — no-op until follow-up.
   const sourceAccountOptions = useMemo(() => {
     const allowed = new Set<string>(['chequing', 'savings', 'prepaid_cash']);
     return accounts.filter(
@@ -94,19 +67,12 @@ export const SettleDialog = ({ open, account, onClose }: SettleDialogProps) => {
     );
   }, [accounts, account?.account.id]);
 
-  const todayIso = new Date().toLocaleDateString('en-CA');
   const firstSourceId = sourceAccountOptions[0]?.id ?? '';
 
   const form = useAppForm({
     defaultValues: account
-      ? getInitialValues(account, firstSourceId, todayIso)
-      : ({
-          payerMemberId: '',
-          amountDollars: 0,
-          sourceAccountId: '',
-          date: todayIso,
-          notes: '',
-        } satisfies SettleFormValues),
+      ? getSettleInitialValues(account, firstSourceId, todayIso)
+      : { ...EMPTY_VALUES, date: todayIso },
     validators: {
       onSubmit: ({ value }: { value: SettleFormValues }) => {
         const result = settleFormSchema.safeParse(value);
@@ -118,9 +84,9 @@ export const SettleDialog = ({ open, account, onClose }: SettleDialogProps) => {
     onSubmit: ({ value }) => {
       if (!account) return;
       const amountCents = Math.round(value.amountDollars * 100);
-      // Strip empty notes so we don't send "" — the validator accepts it, but undefined
-      // keeps DB rows clean. Plan 06's API persists notes onto the underlying transaction.
       const trimmedNotes = value.notes?.trim() ?? '';
+      // Follow-up: include `value.sourceAccountId` when createSettlement supports it.
+      void value.sourceAccountId;
       createSettlement.mutate(
         {
           payerMemberId: value.payerMemberId,
@@ -141,22 +107,14 @@ export const SettleDialog = ({ open, account, onClose }: SettleDialogProps) => {
     },
   });
 
-  // Re-seed when dialog is open and account context changes: account id, first source
-  // UUID, or local calendar date (todayIso updates after midnight).
+  const { reset } = form;
+
   useEffect(() => {
     if (!open || !account) return;
-    form.reset(getInitialValues(account, firstSourceId, todayIso));
-  }, [open, account, firstSourceId, todayIso, form]);
+    reset(getSettleInitialValues(account, firstSourceId, todayIso));
+  }, [open, account, firstSourceId, todayIso, reset]);
 
   if (!account) return null;
-
-  const totalLabel = formatCurrency(account.totalBalanceCents);
-  const dueLabel = account.dueDate
-    ? new Date(account.dueDate + 'T00:00:00').toLocaleDateString('en-CA', {
-        month: 'short',
-        day: 'numeric',
-      })
-    : null;
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
@@ -167,26 +125,9 @@ export const SettleDialog = ({ open, account, onClose }: SettleDialogProps) => {
             form.handleSubmit();
           }}
         >
-          <DialogHeader>
-            <DialogTitle>
-              <Text
-                as="span"
-                variant="h3"
-              >{`Settle ${account.account.name}`}</Text>
-            </DialogTitle>
-            <DialogDescription>
-              <Text
-                as="span"
-                variant="caption"
-                className="text-muted-foreground"
-              >
-                {`Total balance: ${totalLabel}${dueLabel ? ` · Due ${dueLabel}` : ''}`}
-              </Text>
-            </DialogDescription>
-          </DialogHeader>
+          <SettleDialogSummary account={account} />
 
           <FieldGroup className="mt-4 space-y-5">
-            {/* SETTLING FOR — radio cards */}
             <form.AppField
               name="payerMemberId"
               validators={{ onChange: settleFormSchema.shape.payerMemberId }}
@@ -198,11 +139,11 @@ export const SettleDialog = ({ open, account, onClose }: SettleDialogProps) => {
                   <FieldLabel className="text-xs tracking-wider text-muted-foreground uppercase">
                     Settling for
                   </FieldLabel>
-                  <RadioGroup
+                  <SettleMemberRadioList
+                    members={account.members}
                     value={field.state.value}
                     onValueChange={(next) => {
                       field.handleChange(next);
-                      // Auto-update amount field to the picked member's outstanding balance
                       const picked = account.members.find(
                         (m) => m.member.id === next
                       );
@@ -213,75 +154,14 @@ export const SettleDialog = ({ open, account, onClose }: SettleDialogProps) => {
                         );
                       }
                     }}
-                    className="space-y-2"
-                  >
-                    {[...account.members]
-                      .sort((a, b) => b.balanceCents - a.balanceCents)
-                      .map((m) => {
-                        const isCredit = m.balanceCents < 0;
-                        const isSelected = field.state.value === m.member.id;
-                        return (
-                          <label
-                            key={m.member.id}
-                            htmlFor={`settle-member-${m.member.id}`}
-                            className={cn(
-                              'flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors',
-                              isSelected
-                                ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                                : 'border-border'
-                            )}
-                          >
-                            <RadioGroupItem
-                              value={m.member.id}
-                              id={`settle-member-${m.member.id}`}
-                            />
-                            <UserAvatar
-                              name={m.member.name}
-                              imageUrl={m.member.avatarUrl}
-                              size="sm"
-                            />
-                            <div className="min-w-0 flex-1">
-                              <Text
-                                variant="body"
-                                className="min-w-0 truncate font-semibold"
-                              >
-                                {m.member.name}
-                              </Text>
-                              <Text
-                                variant="caption"
-                                className={cn(
-                                  isCredit
-                                    ? 'text-success'
-                                    : 'text-muted-foreground'
-                                )}
-                              >
-                                {`${formatCurrency(Math.abs(m.balanceCents))} ${isCredit ? 'credit' : 'outstanding'}`}
-                              </Text>
-                            </div>
-                            <Text
-                              as="span"
-                              variant="body"
-                              className={cn(
-                                'shrink-0 font-sans font-semibold tabular-nums',
-                                isCredit ? 'text-success' : 'text-foreground'
-                              )}
-                            >
-                              {formatCurrency(Math.abs(m.balanceCents))}
-                            </Text>
-                          </label>
-                        );
-                      })}
-                  </RadioGroup>
+                  />
                   {field.state.meta.errors.length > 0 ? (
-                    <FieldError
-                      errors={field.state.meta.errors as { message?: string }[]}
-                    />
+                    <FieldError errors={field.state.meta.errors} />
                   ) : null}
                 </Field>
               )}
             </form.AppField>
 
-            {/* AMOUNT */}
             <form.AppField
               name="amountDollars"
               validators={{ onChange: settleFormSchema.shape.amountDollars }}
@@ -329,15 +209,12 @@ export const SettleDialog = ({ open, account, onClose }: SettleDialogProps) => {
                     />
                   </InputGroup>
                   {field.state.meta.errors.length > 0 ? (
-                    <FieldError
-                      errors={field.state.meta.errors as { message?: string }[]}
-                    />
+                    <FieldError errors={field.state.meta.errors} />
                   ) : null}
                 </Field>
               )}
             </form.AppField>
 
-            {/* PAID FROM + DATE side-by-side */}
             <div className="grid grid-cols-2 gap-4">
               <form.AppField
                 name="sourceAccountId"
@@ -369,9 +246,6 @@ export const SettleDialog = ({ open, account, onClose }: SettleDialogProps) => {
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
-                        {/* Tracked bank-style accounts only. Untracked string options
-                            (Cash/E-Transfer/Cheque/Other) are intentionally NOT surfaced
-                            because the API requires a UUID accountId (Phase 4.1 D-03). */}
                         {sourceAccountOptions.map((a) => (
                           <SelectItem key={a.id} value={a.id}>
                             {a.name}
@@ -380,11 +254,7 @@ export const SettleDialog = ({ open, account, onClose }: SettleDialogProps) => {
                       </SelectContent>
                     </Select>
                     {field.state.meta.errors.length > 0 ? (
-                      <FieldError
-                        errors={
-                          field.state.meta.errors as { message?: string }[]
-                        }
-                      />
+                      <FieldError errors={field.state.meta.errors} />
                     ) : null}
                   </Field>
                 )}
@@ -416,24 +286,16 @@ export const SettleDialog = ({ open, account, onClose }: SettleDialogProps) => {
                       aria-invalid={field.state.meta.errors.length > 0}
                     />
                     {field.state.meta.errors.length > 0 ? (
-                      <FieldError
-                        errors={
-                          field.state.meta.errors as { message?: string }[]
-                        }
-                      />
+                      <FieldError errors={field.state.meta.errors} />
                     ) : null}
                   </Field>
                 )}
               </form.AppField>
             </div>
 
-            {/* NOTES OPTIONAL */}
             <form.AppField
               name="notes"
               validators={{
-                // Use the inner ZodString validator (.unwrap()) so TanStack Form
-                // resolves the field type as `string` not `string | undefined`.
-                // The optional wrapping is only meaningful at the onSubmit level.
                 onChange: settleFormSchema.shape.notes.unwrap(),
               }}
             >
@@ -459,9 +321,7 @@ export const SettleDialog = ({ open, account, onClose }: SettleDialogProps) => {
                     aria-invalid={field.state.meta.errors.length > 0}
                   />
                   {field.state.meta.errors.length > 0 ? (
-                    <FieldError
-                      errors={field.state.meta.errors as { message?: string }[]}
-                    />
+                    <FieldError errors={field.state.meta.errors} />
                   ) : null}
                 </Field>
               )}

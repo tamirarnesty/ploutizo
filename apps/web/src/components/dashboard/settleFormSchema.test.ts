@@ -5,7 +5,7 @@ const VALID_UUID = '123e4567-e89b-12d3-a456-426614174000';
 const VALID_BASE = {
   payerMemberId: VALID_UUID,
   amountDollars: 42.5,
-  sourceAccountId: 'acc-001',
+  sourceAccountId: '123e4567-e89b-12d3-a456-426614174001',
   date: '2026-05-01',
   notes: undefined,
 };

@@ -1,11 +1,14 @@
-import { Card, CardContent } from '@ploutizo/ui/components/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@ploutizo/ui/components/card';
 import { Text } from '@ploutizo/ui/components/text';
 import { cn } from '@ploutizo/ui/lib/utils';
 
 export interface StatCardPlaceholderProps {
   label: string;
-  // When provided, this is a "live" stat card (e.g. CREDIT CARD OWED).
-  // When undefined/null, renders the ghost/deferred placeholder per UI-SPEC.
   value?: string;
   caption?: string;
 }
@@ -21,13 +24,12 @@ export const StatCardPlaceholder = ({
   const isPlaceholder = value === undefined;
   return (
     <Card className="p-4">
-      <CardContent className="space-y-1 p-0">
-        <Text
-          variant="caption"
-          className="tracking-wider text-muted-foreground uppercase"
-        >
+      <CardHeader className="p-0">
+        <CardTitle className="text-xs leading-none font-normal tracking-wider text-muted-foreground uppercase">
           {label}
-        </Text>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-1 p-0">
         <Text
           as="p"
           variant="h3"
