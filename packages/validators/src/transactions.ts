@@ -52,6 +52,11 @@ const settlementTransactionSchema = baseTransactionSchema.extend({
   type: z.literal('settlement'),
   // settledAccountId renamed to counterpartAccountId (D-07, D-14)
   counterpartAccountId: z.string().uuid().optional(),
+  // Settlement balances (GET /api/settlements) attribute payments via assignee rows only.
+  // Without assignees, the row is invisible to balance math — require at least one payer.
+  assignees: z
+    .array(assigneeSchema)
+    .min(1, 'Settlement requires at least one assignee (payer).'),
 })
 
 const contributionTransactionSchema = baseTransactionSchema.extend({

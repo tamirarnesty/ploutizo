@@ -356,8 +356,25 @@ describe('createTransactionSchema — per-type branches', () => {
     expect(createTransactionSchema.safeParse({ ...baseFields, type: 'transfer' }).success).toBe(false)
   })
 
-  it('accepts valid settlement payload', () => {
-    expect(createTransactionSchema.safeParse({ ...baseFields, type: 'settlement' }).success).toBe(true)
+  it('accepts valid settlement payload with assignees summing to amount', () => {
+    expect(
+      createTransactionSchema.safeParse({
+        ...baseFields,
+        type: 'settlement',
+        assignees: [
+          {
+            memberId: '550e8400-e29b-41d4-a716-446655440003',
+            amountCents: 5000,
+          },
+        ],
+      }).success
+    ).toBe(true)
+  })
+
+  it('rejects settlement without assignees', () => {
+    expect(createTransactionSchema.safeParse({ ...baseFields, type: 'settlement' }).success).toBe(
+      false
+    )
   })
 
   it('accepts valid contribution payload', () => {
