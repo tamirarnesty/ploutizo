@@ -6,10 +6,15 @@ import { insertSeedMerchantRulesForOrg } from './merchantRules'
 
 /**
  * Populate default categories and merchant rules for `orgId`.
- * Runs inside a DB transaction with `pg_advisory_xact_lock` so concurrent callers
- * (webhook + tenant guard, or parallel API requests) serialize per org and
- * re-check after locking — no duplicate inserts and no reliance on catching
- * unique-violation errors.
+ *
+ * Concurrency: Drizzle does not expose Postgres advisory locks as a first-class
+ * API. Alternatives considered: (1) `onConflictDoNothing` on every seed row —
+ * works for categories (unique on org+name) but merchant rules lack a matching
+ * unique key, so duplicate rows could still appear under parallel inserts;
+ * (2) `SERIALIZABLE` — heavier and still relies on retry semantics; (3) a
+ * dedicated lock row + `SELECT … FOR UPDATE` — extra schema. We use a short
+ * transaction + `pg_advisory_xact_lock` keyed by `orgId` so all seed paths
+ * serialize per org, re-count categories after locking, then insert once.
  */
 export const seedOrg = async (orgId: string): Promise<void> => {
   await db.transaction(async (tx) => {

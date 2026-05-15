@@ -1,7 +1,7 @@
-import { createClerkClient } from '@clerk/backend';
 import { db } from '@ploutizo/db';
 import { users } from '@ploutizo/db/schema';
 import { eq } from 'drizzle-orm';
+import { getClerkServerClient } from '../lib/clerkServerClient';
 import {
   buildOrgMemberDisplayName,
   clerkBackendUserToLocalUserRow,
@@ -20,10 +20,10 @@ export const ensureCallerSyncedToOrg = async (
   clerkUserId: string | null | undefined
 ): Promise<void> => {
   if (!clerkUserId) return;
-  const secret = process.env.CLERK_SECRET_KEY;
-  if (!secret) return;
 
-  const clerk = createClerkClient({ secretKey: secret });
+  const clerk = getClerkServerClient();
+  if (!clerk) return;
+
   const clerkUser = await clerk.users.getUser(clerkUserId);
 
   const localUser = clerkBackendUserToLocalUserRow(clerkUser);
@@ -57,5 +57,6 @@ export const ensureCallerSyncedToOrg = async (
     orgId,
     appUserId: dbUser.id,
     displayName,
+    clerkOrgRole: match.role,
   });
 };
