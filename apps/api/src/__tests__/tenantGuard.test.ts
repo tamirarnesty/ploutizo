@@ -104,9 +104,7 @@ describe('tenantGuard()', () => {
   });
 
   it('sets orgId on context via c.set before calling next()', async () => {
-    vi.mocked(getAuth).mockReturnValue({
-      orgId: 'org_context_test',
-    } as never);
+    vi.mocked(getAuth).mockReturnValue({ orgId: 'org_context_test' } as never);
     // Build a special app that reads c.get('orgId') from a downstream handler
     const app = new Hono();
     app.use('*', tenantGuard());

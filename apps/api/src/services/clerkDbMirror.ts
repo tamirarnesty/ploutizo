@@ -60,7 +60,7 @@ export const clerkBackendUserToLocalUserRow = (user: User): LocalUserRowInput | 
     fullName,
     firstName: user.firstName ?? null,
     lastName: user.lastName ?? null,
-    imageUrl: user.imageUrl ?? null,
+    imageUrl: user.imageUrl,
   };
 };
 

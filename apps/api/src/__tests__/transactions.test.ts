@@ -10,6 +10,13 @@ import {
   validateSplitSum,
 } from '../services/transactions';
 import type { ListQueryParams } from '../services/transactions';
+import type { Mock } from 'vitest';
+
+type MockDbTransactionClient = {
+  insert: Mock;
+  delete: Mock;
+  update: Mock;
+};
 
 // Re-import mocked service functions so per-test overrides work
 
@@ -79,13 +86,7 @@ vi.mock('@ploutizo/db', () => ({
       }),
     }),
     transaction: vi.fn(
-      async (
-        fn: (tx: {
-          insert: ReturnType<typeof vi.fn>;
-          delete: ReturnType<typeof vi.fn>;
-          update: ReturnType<typeof vi.fn>;
-        }) => Promise<unknown>
-      ) => {
+      async (fn: (tx: MockDbTransactionClient) => Promise<unknown>) => {
         const result = await fn({
           insert: vi.fn().mockReturnValue({
             values: vi.fn().mockReturnValue({
