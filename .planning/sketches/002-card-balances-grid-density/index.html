@@ -1,0 +1,1228 @@
+<!doctype html>
+<html lang="en" class="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sketch 002 — Card balances data grid density</title>
+    <link rel="stylesheet" href="../themes/default.css" />
+    <style>
+      :root {
+        --grid-line: rgba(28, 25, 23, 0.1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 84px 18px 96px;
+        font-family: var(--font-sans);
+        color: var(--color-text);
+      }
+
+      #variant-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 9998;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--color-border);
+        background: rgba(250, 250, 249, 0.96);
+        backdrop-filter: blur(8px);
+      }
+
+      .dark #variant-nav {
+        background: rgba(28, 25, 23, 0.92);
+      }
+
+      .variant-tab {
+        border: 1px solid var(--grid-line);
+        border-radius: var(--radius-full);
+        background: transparent;
+        color: var(--color-text-muted);
+        padding: 7px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+
+      .variant-tab:hover {
+        color: var(--color-text);
+      }
+
+      .variant-tab.active {
+        color: var(--color-text);
+        border-color: var(--color-primary);
+        background: rgba(59, 130, 246, 0.09);
+      }
+
+      .sketch-note {
+        max-width: 1200px;
+        margin: 0 auto 14px;
+        color: var(--color-text-muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .frame {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .grid-card {
+        border: 1px solid var(--grid-line);
+        border-radius: 14px;
+        overflow: hidden;
+        background: var(--color-surface);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .grid-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 14px 10px;
+      }
+
+      .grid-title {
+        margin: 0;
+        font-size: 38px;
+        line-height: 1;
+      }
+
+      .header-meta {
+        margin: 0;
+        font-size: 11px;
+        color: var(--color-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .title-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .export-btn {
+        border: 1px solid var(--grid-line);
+        border-radius: 12px;
+        background: transparent;
+        padding: 7px 12px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+
+      .export-btn:hover {
+        background: rgba(59, 130, 246, 0.08);
+        border-color: var(--color-primary);
+      }
+
+      .table-wrap {
+        overflow: auto;
+        border-top: 1px solid var(--grid-line);
+        border-bottom: 1px solid var(--grid-line);
+      }
+
+      table {
+        width: 100%;
+        min-width: 1060px;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        padding: 9px 10px;
+        border-bottom: 1px solid var(--grid-line);
+        vertical-align: middle;
+      }
+
+      th {
+        text-align: left;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--color-text-muted);
+        background: rgba(120, 113, 108, 0.04);
+        white-space: nowrap;
+      }
+
+      tbody tr:hover {
+        background: rgba(59, 130, 246, 0.04);
+      }
+
+      .card-cell {
+        min-width: 210px;
+      }
+
+      .owner-cell {
+        min-width: 180px;
+      }
+
+      .balance-cell {
+        min-width: 180px;
+      }
+
+      .split-cell {
+        min-width: 270px;
+      }
+
+      .action-cell {
+        min-width: 120px;
+      }
+
+      .card-name {
+        font-weight: 700;
+        font-size: 15px;
+      }
+
+      .card-meta {
+        margin-top: 2px;
+        font-size: 12px;
+        color: var(--color-text-muted);
+      }
+
+      .owner {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .owner-name {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 130px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .avatar,
+      .avatar-stack span {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 999px;
+        color: #fff;
+        font-size: 10px;
+        font-weight: 700;
+        background: linear-gradient(135deg, #7c3aed, #2563eb);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+      }
+
+      .avatar-stack {
+        display: inline-flex;
+      }
+
+      .avatar-stack span + span {
+        margin-left: -7px;
+      }
+
+      .money {
+        font-size: 17px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .money-muted {
+        color: var(--color-text-muted);
+        font-size: 12px;
+        margin-top: 1px;
+      }
+
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        padding: 2px 9px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: capitalize;
+      }
+
+      .status-on_track {
+        color: #047857;
+        border-color: rgba(5, 150, 105, 0.35);
+        background: rgba(16, 185, 129, 0.1);
+      }
+
+      .status-due_soon {
+        color: #b45309;
+        border-color: rgba(245, 158, 11, 0.35);
+        background: rgba(251, 191, 36, 0.12);
+      }
+
+      .status-overdue {
+        color: #b91c1c;
+        border-color: rgba(239, 68, 68, 0.35);
+        background: rgba(248, 113, 113, 0.12);
+      }
+
+      .status-scheduled {
+        color: #334155;
+        border-color: rgba(100, 116, 139, 0.35);
+        background: rgba(148, 163, 184, 0.12);
+      }
+
+      .split-bar {
+        display: flex;
+        height: 8px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: rgba(120, 113, 108, 0.16);
+      }
+
+      .split-segment {
+        height: 100%;
+      }
+
+      .member-line {
+        margin-top: 6px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .member-chip {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 7px;
+        border-radius: 999px;
+        background: rgba(120, 113, 108, 0.12);
+        font-size: 11px;
+        white-space: nowrap;
+      }
+
+      .member-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+      }
+
+      .chip-action {
+        opacity: 0;
+        pointer-events: none;
+        border: 0;
+        border-radius: 999px;
+        padding: 2px 6px;
+        background: #111827;
+        color: #f9fafb;
+        font-size: 10px;
+        cursor: pointer;
+        transition: opacity 0.15s ease;
+      }
+
+      .member-chip:hover .chip-action,
+      .member-chip:focus-within .chip-action {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .btn-outline {
+        border: 1px solid var(--grid-line);
+        border-radius: 8px;
+        background: transparent;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 5px 9px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+
+      .btn-outline:hover {
+        border-color: var(--color-primary);
+        background: rgba(59, 130, 246, 0.08);
+      }
+
+      .btn-solid {
+        border: 1px solid #111827;
+        border-radius: 8px;
+        background: #111827;
+        color: #f9fafb;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 5px 10px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+
+      .btn-solid:hover {
+        background: #1f2937;
+      }
+
+      .btn-solid:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .details-row {
+        display: none;
+        background: rgba(120, 113, 108, 0.04);
+      }
+
+      .details-row.open {
+        display: table-row;
+      }
+
+      .details-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 10px 0;
+      }
+
+      .details-item {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 10px;
+        align-items: center;
+        padding: 8px 10px;
+        border: 1px solid var(--grid-line);
+        border-radius: 8px;
+        background: #fff;
+      }
+
+      .dark .details-item {
+        background: #201e1d;
+      }
+
+      .details-member {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .details-money {
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .credit-label {
+        color: #047857;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .menu-wrap {
+        position: relative;
+      }
+
+      .settle-menu {
+        position: absolute;
+        right: 0;
+        top: calc(100% + 6px);
+        z-index: 20;
+        display: none;
+        width: 210px;
+        border: 1px solid var(--grid-line);
+        border-radius: 10px;
+        background: var(--color-surface);
+        box-shadow: var(--shadow-md);
+        padding: 6px;
+      }
+
+      .settle-menu.open {
+        display: block;
+      }
+
+      .menu-item {
+        width: 100%;
+        border: 0;
+        border-radius: 7px;
+        text-align: left;
+        background: transparent;
+        cursor: pointer;
+        padding: 6px 8px;
+        font-size: 12px;
+        display: flex;
+        justify-content: space-between;
+        transition: all 0.15s ease;
+      }
+
+      .menu-item:hover {
+        background: rgba(59, 130, 246, 0.08);
+      }
+
+      .menu-empty {
+        padding: 8px;
+        font-size: 11px;
+        color: var(--color-text-muted);
+      }
+
+      tfoot td {
+        font-size: 12px;
+        font-weight: 700;
+        background: rgba(120, 113, 108, 0.04);
+      }
+
+      .footer-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        padding: 11px 14px;
+        font-size: 12px;
+      }
+
+      .footer-controls {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .pager-btn {
+        border: 1px solid var(--grid-line);
+        border-radius: 8px;
+        background: transparent;
+        min-width: 30px;
+        height: 30px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .pager-btn.active {
+        border-color: var(--color-primary);
+        color: var(--color-primary);
+      }
+
+      .variant {
+        transition: all 0.15s ease;
+      }
+
+      #sketch-tools {
+        position: fixed;
+        right: 12px;
+        bottom: 12px;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.72);
+        color: #fff;
+        font-size: 12px;
+        opacity: 0.44;
+        transition: opacity 0.2s ease;
+      }
+
+      #sketch-tools:hover {
+        opacity: 1;
+      }
+
+      #sketch-tools select,
+      #sketch-tools button {
+        border: 0;
+        border-radius: 7px;
+        background: rgba(255, 255, 255, 0.14);
+        color: inherit;
+        font-size: 12px;
+        padding: 6px 8px;
+        cursor: pointer;
+      }
+
+      #viewport-wrap {
+        margin: 0 auto;
+        transition: max-width 0.2s ease;
+      }
+
+      #toast {
+        position: fixed;
+        left: 50%;
+        bottom: 74px;
+        transform: translateX(-50%);
+        background: #111827;
+        color: #f9fafb;
+        border-radius: 999px;
+        padding: 8px 12px;
+        font-size: 12px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.15s ease;
+      }
+
+      #toast.show {
+        opacity: 1;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body class="light">
+    <div id="variant-nav" aria-label="Sketch variants">
+      <button class="variant-tab active" type="button" data-variant="a">
+        A: Inline member actions
+      </button>
+      <button class="variant-tab" type="button" data-variant="b">
+        B: Expand-on-demand details
+      </button>
+      <button class="variant-tab" type="button" data-variant="c">
+        C: Action menu by member ★ Selected
+      </button>
+    </div>
+
+    <div id="viewport-wrap" class="frame">
+      <p class="sketch-note" id="note">
+        Compact grid exploration using ReUI-style header, table footer totals, and pagination
+        shell. Focus: owner/status always visible, due blank when missing, and settle targeting
+        only on members with positive balances.
+      </p>
+      <div id="variant-a" class="variant"></div>
+      <div id="variant-b" class="variant" hidden></div>
+      <div id="variant-c" class="variant" hidden></div>
+    </div>
+
+    <div id="sketch-tools">
+      <select id="theme-switcher" aria-label="Theme">
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+      </select>
+      <button type="button" data-viewport="phone">Phone</button>
+      <button type="button" data-viewport="tablet">Tablet</button>
+      <button type="button" data-viewport="desktop">Desktop</button>
+      <button type="button" id="cycle-state">Cycle density</button>
+    </div>
+    <div id="toast"></div>
+
+    <script>
+      const memberColor = {
+        Alex: '#3b82f6',
+        Jordan: '#93c5fd',
+        Priya: '#ec4899',
+        Marcus: '#f97316',
+        Sora: '#6366f1',
+        Shared: '#334155',
+        Taylor: '#0ea5e9',
+      };
+
+      const scenarios = [
+        {
+          label: '5 cards · 6 members',
+          cards: [
+            {
+              id: 'c1',
+              name: 'Amex Platinum',
+              lastFour: '1004',
+              owner: { type: 'single', names: ['Alex'] },
+              totalBalanceCents: 428492,
+              due: 'Nov 14',
+              status: 'due_soon',
+              members: [
+                { name: 'Alex', pct: 50, balanceCents: 214246 },
+                { name: 'Jordan', pct: 30, balanceCents: 128547 },
+                { name: 'Shared', pct: 20, balanceCents: 85699 },
+              ],
+            },
+            {
+              id: 'c2',
+              name: 'Chase Sapphire',
+              lastFour: '2287',
+              owner: { type: 'single', names: ['Priya'] },
+              totalBalanceCents: 1842018,
+              due: 'Nov 28',
+              status: 'on_track',
+              members: [
+                { name: 'Priya', pct: 42, balanceCents: 773647 },
+                { name: 'Marcus', pct: 29, balanceCents: 534185 },
+                { name: 'Alex', pct: 17, balanceCents: 313143 },
+                { name: 'Shared', pct: 12, balanceCents: 221043 },
+              ],
+            },
+            {
+              id: 'c3',
+              name: 'Apple Card',
+              lastFour: '8842',
+              owner: { type: 'single', names: ['Jordan'] },
+              totalBalanceCents: 31240,
+              due: 'Nov 09',
+              status: 'overdue',
+              members: [
+                { name: 'Jordan', pct: 68, balanceCents: 21243 },
+                { name: 'Sora', pct: 32, balanceCents: 9997 },
+              ],
+            },
+            {
+              id: 'c4',
+              name: 'Capital One Venture',
+              lastFour: '5510',
+              owner: { type: 'shared', names: ['Marcus', 'Priya'] },
+              totalBalanceCents: 987655,
+              due: null,
+              status: 'scheduled',
+              members: [
+                { name: 'Marcus', pct: 43, balanceCents: 424691 },
+                { name: 'Priya', pct: 29, balanceCents: 286420 },
+                { name: 'Alex', pct: 15, balanceCents: 148148 },
+                { name: 'Sora', pct: 8, balanceCents: 79012 },
+                { name: 'Shared', pct: 5, balanceCents: 49384 },
+              ],
+            },
+            {
+              id: 'c5',
+              name: 'Citi Double Cash',
+              lastFour: '3320',
+              owner: { type: 'single', names: ['Sora'] },
+              totalBalanceCents: 64218,
+              due: 'Nov 21',
+              status: 'on_track',
+              members: [
+                { name: 'Sora', pct: 69, balanceCents: 44310 },
+                { name: 'Jordan', pct: 31, balanceCents: 19908 },
+              ],
+            },
+          ],
+        },
+        {
+          label: '8 cards · 6 members (crowded)',
+          cards: [
+            {
+              id: 'c6',
+              name: 'TD Visa',
+              lastFour: '1120',
+              owner: { type: 'shared', names: ['Alex', 'Jordan'] },
+              totalBalanceCents: 210450,
+              due: 'Dec 03',
+              status: 'on_track',
+              members: [
+                { name: 'Alex', pct: 39, balanceCents: 82076 },
+                { name: 'Jordan', pct: 31, balanceCents: 65240 },
+                { name: 'Priya', pct: 17, balanceCents: 35776 },
+                { name: 'Shared', pct: 13, balanceCents: 27358 },
+              ],
+            },
+            {
+              id: 'c7',
+              name: 'BMO Cashback',
+              lastFour: '7711',
+              owner: { type: 'single', names: ['Marcus'] },
+              totalBalanceCents: 452190,
+              due: null,
+              status: 'scheduled',
+              members: [
+                { name: 'Marcus', pct: 46, balanceCents: 208007 },
+                { name: 'Sora', pct: 28, balanceCents: 126613 },
+                { name: 'Taylor', pct: 26, balanceCents: 117570 },
+              ],
+            },
+            {
+              id: 'c8',
+              name: 'RBC Avion',
+              lastFour: '4458',
+              owner: { type: 'single', names: ['Taylor'] },
+              totalBalanceCents: 90500,
+              due: 'Nov 19',
+              status: 'due_soon',
+              members: [
+                { name: 'Taylor', pct: 56, balanceCents: 50680 },
+                { name: 'Priya', pct: 24, balanceCents: 21720 },
+                { name: 'Alex', pct: 20, balanceCents: 18100 },
+              ],
+            },
+            {
+              id: 'c9',
+              name: 'Scotia Scene+',
+              lastFour: '9912',
+              owner: { type: 'single', names: ['Priya'] },
+              totalBalanceCents: 0,
+              due: 'Nov 27',
+              status: 'on_track',
+              members: [
+                { name: 'Priya', pct: 100, balanceCents: 0 },
+                { name: 'Shared', pct: 0, balanceCents: -1400 },
+              ],
+            },
+            {
+              id: 'c10',
+              name: 'Neo Financial',
+              lastFour: '2244',
+              owner: { type: 'shared', names: ['Sora', 'Jordan'] },
+              totalBalanceCents: 139950,
+              due: 'Dec 01',
+              status: 'on_track',
+              members: [
+                { name: 'Sora', pct: 47, balanceCents: 65777 },
+                { name: 'Jordan', pct: 34, balanceCents: 47583 },
+                { name: 'Shared', pct: 19, balanceCents: 26590 },
+              ],
+            },
+            {
+              id: 'c11',
+              name: 'PC Mastercard',
+              lastFour: '5008',
+              owner: { type: 'single', names: ['Alex'] },
+              totalBalanceCents: 76440,
+              due: 'Nov 12',
+              status: 'overdue',
+              members: [
+                { name: 'Alex', pct: 71, balanceCents: 54272 },
+                { name: 'Marcus', pct: 29, balanceCents: 22168 },
+              ],
+            },
+            {
+              id: 'c12',
+              name: 'KOHO',
+              lastFour: '6601',
+              owner: { type: 'single', names: ['Jordan'] },
+              totalBalanceCents: 55260,
+              due: null,
+              status: 'scheduled',
+              members: [
+                { name: 'Jordan', pct: 59, balanceCents: 32603 },
+                { name: 'Taylor', pct: 41, balanceCents: 22657 },
+              ],
+            },
+            {
+              id: 'c13',
+              name: 'Amex Cobalt',
+              lastFour: '7099',
+              owner: { type: 'shared', names: ['Alex', 'Priya'] },
+              totalBalanceCents: 14000,
+              due: 'Nov 30',
+              status: 'on_track',
+              members: [
+                { name: 'Alex', pct: 60, balanceCents: 8400 },
+                { name: 'Priya', pct: 40, balanceCents: 5600 },
+              ],
+            },
+          ],
+        },
+        {
+          label: '2 cards · 3 members (sparse)',
+          cards: [
+            {
+              id: 'c14',
+              name: 'Amex Cobalt',
+              lastFour: '3322',
+              owner: { type: 'shared', names: ['Alex', 'Sora'] },
+              totalBalanceCents: 14000,
+              due: 'Nov 26',
+              status: 'on_track',
+              members: [
+                { name: 'Alex', pct: 94, balanceCents: 13160 },
+                { name: 'Sora', pct: 6, balanceCents: 840 },
+              ],
+            },
+            {
+              id: 'c15',
+              name: 'TD Visa',
+              lastFour: '5503',
+              owner: { type: 'single', names: ['Jordan'] },
+              totalBalanceCents: 0,
+              due: null,
+              status: 'scheduled',
+              members: [
+                { name: 'Jordan', pct: 100, balanceCents: 0 },
+                { name: 'Shared', pct: 0, balanceCents: -2100 },
+              ],
+            },
+          ],
+        },
+      ];
+
+      let stateIndex = 0;
+      let currentVariant = 'a';
+
+      const formatMoney = (cents) =>
+        new Intl.NumberFormat('en-CA', {
+          style: 'currency',
+          currency: 'CAD',
+        }).format((cents || 0) / 100);
+
+      const initials = (name) =>
+        name
+          .split(/\s+/)
+          .map((n) => n[0])
+          .join('')
+          .slice(0, 2)
+          .toUpperCase();
+
+      const ownerCell = (owner) => {
+        if (owner.type === 'single') {
+          return `
+            <span class="owner">
+              <span class="avatar">${initials(owner.names[0])}</span>
+              <span class="owner-name">${owner.names[0]}</span>
+            </span>
+          `;
+        }
+        const stack = owner.names
+          .slice(0, 2)
+          .map((name) => `<span>${initials(name)}</span>`)
+          .join('');
+        return `
+          <span class="owner">
+            <span class="avatar-stack">${stack}</span>
+            <span class="owner-name">Shared</span>
+          </span>
+        `;
+      };
+
+      const splitBar = (members) =>
+        `<div class="split-bar">${members
+          .map(
+            (member) =>
+              `<span class="split-segment" style="width:${Math.max(member.pct, 0)}%;background:${memberColor[member.name] || '#64748b'}"></span>`
+          )
+          .join('')}</div>`;
+
+      const settleCandidates = (members) => members.filter((member) => member.balanceCents > 0);
+
+      const statusLabel = (status) =>
+        status.replace('_', ' ').replace(/\b\w/g, (m) => m.toUpperCase());
+
+      const tableHead = `
+        <thead>
+          <tr>
+            <th class="card-cell">Card</th>
+            <th class="owner-cell">Owner</th>
+            <th class="balance-cell">Balance · Due</th>
+            <th>Status</th>
+            <th class="split-cell">Split by member</th>
+            <th class="action-cell">Action</th>
+          </tr>
+        </thead>
+      `;
+
+      const footerTotal = (cards) =>
+        cards.reduce((sum, card) => sum + Math.max(card.totalBalanceCents, 0), 0);
+
+      const tableFooter = (cards) => `
+        <tfoot>
+          <tr>
+            <td colspan="4">Total outstanding</td>
+            <td>${formatMoney(footerTotal(cards))}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      `;
+
+      const shell = (rowsHtml, cards) => `
+        <section class="grid-card">
+          <header class="grid-header">
+            <div class="title-wrap">
+              <p class="header-meta">Card Balances</p>
+              <h2 class="grid-title">${
+                cards.length
+              } cards</h2>
+            </div>
+            <button class="export-btn" type="button">Export</button>
+          </header>
+          <div class="table-wrap">
+            <table>
+              ${tableHead}
+              <tbody>${rowsHtml}</tbody>
+              ${tableFooter(cards)}
+            </table>
+          </div>
+          <div class="footer-row">
+            <div class="footer-controls">
+              <span>Rows per page</span>
+              <button class="pager-btn" type="button">5</button>
+            </div>
+            <div class="footer-controls">
+              <span>1–${Math.min(cards.length, 5)} of ${cards.length}</span>
+              <button class="pager-btn active" type="button">1</button>
+              <button class="pager-btn" type="button">2</button>
+            </div>
+          </div>
+        </section>
+      `;
+
+      const renderVariantA = (cards) => {
+        const rows = cards
+          .map((card) => {
+            const chips = card.members
+              .map((member) => {
+                const canSettle = member.balanceCents > 0;
+                return `
+                  <span class="member-chip">
+                    <span class="member-dot" style="background:${memberColor[member.name] || '#64748b'}"></span>
+                    ${member.name} ${Math.max(member.pct, 0)}%
+                    ${
+                      canSettle
+                        ? `<button class="chip-action" data-settle="${card.id}" data-member="${member.name}" type="button">Settle</button>`
+                        : ''
+                    }
+                  </span>
+                `;
+              })
+              .join('');
+            return `
+              <tr>
+                <td class="card-cell">
+                  <div class="card-name">${card.name}</div>
+                  <div class="card-meta">•••• ${card.lastFour}</div>
+                </td>
+                <td class="owner-cell">${ownerCell(card.owner)}</td>
+                <td class="balance-cell">
+                  <div class="money">${formatMoney(card.totalBalanceCents)}</div>
+                  <div class="money-muted">${card.due ?? ''}</div>
+                </td>
+                <td><span class="status-badge status-${card.status}">${statusLabel(card.status)}</span></td>
+                <td class="split-cell">
+                  ${splitBar(card.members)}
+                  <div class="member-line">${chips}</div>
+                </td>
+                <td class="action-cell">
+                  <span style="font-size:11px;color:var(--color-text-muted);">Per-chip settle</span>
+                </td>
+              </tr>
+            `;
+          })
+          .join('');
+        return shell(rows, cards);
+      };
+
+      const renderVariantB = (cards) => {
+        const rows = cards
+          .map((card) => {
+            const dueCount = settleCandidates(card.members).length;
+            const detailRows = card.members
+              .map((member) => {
+                const due = member.balanceCents > 0;
+                const credit = member.balanceCents < 0;
+                return `
+                  <div class="details-item">
+                    <div class="details-member">
+                      <span class="avatar">${initials(member.name)}</span>
+                      ${member.name}
+                    </div>
+                    <span class="details-money">${formatMoney(Math.abs(member.balanceCents))}</span>
+                    ${
+                      due
+                        ? `<button class="btn-solid" data-settle="${card.id}" data-member="${member.name}" type="button">Settle</button>`
+                        : credit
+                          ? '<span class="credit-label">Credit</span>'
+                          : '<span class="money-muted">Clear</span>'
+                    }
+                  </div>
+                `;
+              })
+              .join('');
+
+            return `
+              <tr>
+                <td class="card-cell">
+                  <div class="card-name">${card.name}</div>
+                  <div class="card-meta">•••• ${card.lastFour}</div>
+                </td>
+                <td class="owner-cell">${ownerCell(card.owner)}</td>
+                <td class="balance-cell">
+                  <div class="money">${formatMoney(card.totalBalanceCents)}</div>
+                  <div class="money-muted">${card.due ?? ''}</div>
+                </td>
+                <td><span class="status-badge status-${card.status}">${statusLabel(card.status)}</span></td>
+                <td class="split-cell">
+                  ${splitBar(card.members)}
+                  <div class="money-muted">${card.members.length} members · ${dueCount} with balance</div>
+                </td>
+                <td class="action-cell">
+                  <button class="btn-outline" data-toggle-details="${card.id}" type="button">Details</button>
+                </td>
+              </tr>
+              <tr class="details-row" id="details-${card.id}">
+                <td colspan="6">
+                  <div class="details-wrap">${detailRows}</div>
+                </td>
+              </tr>
+            `;
+          })
+          .join('');
+        return shell(rows, cards);
+      };
+
+      const renderVariantC = (cards) => {
+        const rows = cards
+          .map((card) => {
+            const candidates = settleCandidates(card.members);
+            const chips = card.members
+              .slice(0, 3)
+              .map(
+                (member) => `
+                  <span class="member-chip">
+                    <span class="member-dot" style="background:${memberColor[member.name] || '#64748b'}"></span>
+                    ${member.name}
+                  </span>
+                `
+              )
+              .join('');
+
+            const menuItems = candidates.length
+              ? candidates
+                  .map(
+                    (member) => `
+                  <button class="menu-item" type="button" data-settle="${card.id}" data-member="${member.name}">
+                    <span>${member.name}</span>
+                    <span>${formatMoney(member.balanceCents)}</span>
+                  </button>
+                `
+                  )
+                  .join('')
+              : '<div class="menu-empty">No member with outstanding balance</div>';
+
+            return `
+              <tr>
+                <td class="card-cell">
+                  <div class="card-name">${card.name}</div>
+                  <div class="card-meta">•••• ${card.lastFour}</div>
+                </td>
+                <td class="owner-cell">${ownerCell(card.owner)}</td>
+                <td class="balance-cell">
+                  <div class="money">${formatMoney(card.totalBalanceCents)}</div>
+                  <div class="money-muted">${card.due ?? ''}</div>
+                </td>
+                <td><span class="status-badge status-${card.status}">${statusLabel(card.status)}</span></td>
+                <td class="split-cell">
+                  ${splitBar(card.members)}
+                  <div class="member-line">
+                    ${chips}
+                    ${
+                      card.members.length > 3
+                        ? `<span class="member-chip">+${card.members.length - 3} more</span>`
+                        : ''
+                    }
+                  </div>
+                </td>
+                <td class="action-cell">
+                  <div class="menu-wrap">
+                    <button class="btn-solid" type="button" data-menu-trigger="${card.id}" ${
+                      candidates.length ? '' : 'disabled'
+                    }>
+                      ${candidates.length ? 'Settle' : 'No balance'}
+                    </button>
+                    <div class="settle-menu" id="menu-${card.id}">
+                      ${menuItems}
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            `;
+          })
+          .join('');
+        return shell(rows, cards);
+      };
+
+      const renderAll = () => {
+        const cards = scenarios[stateIndex].cards;
+        document.getElementById('variant-a').innerHTML = renderVariantA(cards);
+        document.getElementById('variant-b').innerHTML = renderVariantB(cards);
+        document.getElementById('variant-c').innerHTML = renderVariantC(cards);
+        document.getElementById('note').textContent =
+          `Dataset: ${scenarios[stateIndex].label}. Compare density tradeoffs and settle-targeting behavior across variants.`;
+        bindInteractions();
+      };
+
+      const bindInteractions = () => {
+        document.querySelectorAll('[data-settle]').forEach((button) => {
+          button.addEventListener('click', () => {
+            const member = button.getAttribute('data-member');
+            const card = button.getAttribute('data-settle');
+            showToast(`Settle ${member} on ${card.toUpperCase()}`);
+          });
+        });
+
+        document.querySelectorAll('[data-toggle-details]').forEach((button) => {
+          button.addEventListener('click', () => {
+            const id = button.getAttribute('data-toggle-details');
+            const row = document.getElementById(`details-${id}`);
+            const open = row.classList.toggle('open');
+            button.textContent = open ? 'Hide' : 'Details';
+          });
+        });
+
+        document.querySelectorAll('[data-menu-trigger]').forEach((button) => {
+          button.addEventListener('click', (event) => {
+            const id = button.getAttribute('data-menu-trigger');
+            const menu = document.getElementById(`menu-${id}`);
+            const isOpen = menu.classList.contains('open');
+            document.querySelectorAll('.settle-menu').forEach((node) => node.classList.remove('open'));
+            if (!isOpen) menu.classList.add('open');
+            event.stopPropagation();
+          });
+        });
+
+        document.querySelectorAll('.menu-item').forEach((item) => {
+          item.addEventListener('click', () => {
+            const member = item.getAttribute('data-member');
+            const card = item.getAttribute('data-settle');
+            showToast(`Settle ${member} on ${card.toUpperCase()}`);
+            item.closest('.settle-menu').classList.remove('open');
+          });
+        });
+      };
+
+      const showToast = (message) => {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.classList.add('show');
+        window.setTimeout(() => toast.classList.remove('show'), 1300);
+      };
+
+      const showVariant = (variant) => {
+        currentVariant = variant;
+        document.querySelectorAll('.variant').forEach((node) => {
+          node.hidden = node.id !== `variant-${variant}`;
+        });
+        document.querySelectorAll('.variant-tab').forEach((tab) => {
+          tab.classList.toggle('active', tab.getAttribute('data-variant') === variant);
+        });
+      };
+
+      document.querySelectorAll('.variant-tab').forEach((tab) => {
+        tab.addEventListener('click', () => showVariant(tab.getAttribute('data-variant')));
+      });
+
+      document.getElementById('cycle-state').addEventListener('click', () => {
+        stateIndex = (stateIndex + 1) % scenarios.length;
+        renderAll();
+        showVariant(currentVariant);
+      });
+
+      document.getElementById('theme-switcher').addEventListener('change', (event) => {
+        const light = event.target.value === 'light';
+        document.documentElement.classList.toggle('light', light);
+        document.documentElement.classList.toggle('dark', !light);
+        document.body.classList.toggle('light', light);
+      });
+
+      document.querySelectorAll('[data-viewport]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const viewport = button.getAttribute('data-viewport');
+          const wrap = document.getElementById('viewport-wrap');
+          if (viewport === 'phone') wrap.style.maxWidth = '390px';
+          else if (viewport === 'tablet') wrap.style.maxWidth = '860px';
+          else wrap.style.maxWidth = '1200px';
+        });
+      });
+
+      document.addEventListener('click', () => {
+        document.querySelectorAll('.settle-menu').forEach((node) => node.classList.remove('open'));
+      });
+
+      renderAll();
+      showVariant('a');
+    </script>
+  </body>
+</html>

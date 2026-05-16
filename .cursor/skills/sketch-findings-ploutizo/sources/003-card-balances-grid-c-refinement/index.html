@@ -1,0 +1,907 @@
+<!doctype html>
+<html lang="en" class="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sketch 003 — Card balances C refinement</title>
+    <link rel="stylesheet" href="../themes/default.css" />
+    <style>
+      :root {
+        --line: rgba(28, 25, 23, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 86px 16px 94px;
+        font-family: var(--font-sans);
+        color: var(--color-text);
+      }
+
+      #variant-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 9998;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(250, 250, 249, 0.96);
+        backdrop-filter: blur(8px);
+      }
+
+      .dark #variant-nav {
+        background: rgba(28, 25, 23, 0.94);
+      }
+
+      .variant-tab {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--color-text-muted);
+        padding: 7px 11px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+
+      .variant-tab:hover,
+      .variant-tab.active {
+        color: var(--color-text);
+      }
+
+      .variant-tab.active {
+        border-color: var(--color-primary);
+        background: rgba(59, 130, 246, 0.09);
+      }
+
+      #viewport-wrap {
+        max-width: 1180px;
+        margin: 0 auto;
+        transition: max-width 0.2s ease;
+      }
+
+      .sketch-note {
+        margin: 0 auto 14px;
+        color: var(--color-text-muted);
+        font-size: 13px;
+      }
+
+      .grid-card {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        overflow: hidden;
+        background: var(--color-surface);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .title {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 700;
+      }
+
+      .subtitle {
+        margin: 3px 0 0;
+        font-size: 12px;
+        color: var(--color-text-muted);
+      }
+
+      .head-meta {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+      }
+
+      .metric {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 3px 8px;
+        font-weight: 600;
+      }
+
+      .export-btn {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: transparent;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .export-btn:hover {
+        border-color: var(--color-primary);
+        background: rgba(59, 130, 246, 0.08);
+      }
+
+      .table-wrap {
+        overflow: auto;
+      }
+
+      table {
+        width: 100%;
+        min-width: 1080px;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        padding: 10px 10px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: middle;
+      }
+
+      th {
+        background: rgba(120, 113, 108, 0.04);
+        text-align: left;
+      }
+
+      .sort-btn {
+        width: 100%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        border: 0;
+        background: transparent;
+        text-align: left;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--color-text-muted);
+        cursor: pointer;
+      }
+
+      .sort-btn:hover,
+      .sort-btn.active {
+        color: var(--color-text);
+      }
+
+      .card-name {
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .card-meta {
+        margin-top: 1px;
+        font-size: 12px;
+        color: var(--color-text-muted);
+      }
+
+      .owner {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .avatar {
+        width: 22px;
+        height: 22px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 10px;
+        font-weight: 700;
+        background: linear-gradient(135deg, #7c3aed, #2563eb);
+      }
+
+      .avatar-stack {
+        display: inline-flex;
+      }
+
+      .avatar-stack .avatar + .avatar {
+        margin-left: -8px;
+      }
+
+      .money {
+        font-size: 16px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .due {
+        font-size: 13px;
+        color: var(--color-text-muted);
+        min-height: 18px;
+      }
+
+      .status {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .status-on_track {
+        color: #047857;
+        border-color: rgba(5, 150, 105, 0.35);
+        background: rgba(16, 185, 129, 0.12);
+      }
+
+      .status-due_soon {
+        color: #b45309;
+        border-color: rgba(245, 158, 11, 0.35);
+        background: rgba(251, 191, 36, 0.13);
+      }
+
+      .status-overdue {
+        color: #b91c1c;
+        border-color: rgba(239, 68, 68, 0.35);
+        background: rgba(248, 113, 113, 0.12);
+      }
+
+      .status-scheduled {
+        color: #334155;
+        border-color: rgba(100, 116, 139, 0.35);
+        background: rgba(148, 163, 184, 0.14);
+      }
+
+      .split-bar {
+        display: flex;
+        height: 8px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: rgba(120, 113, 108, 0.16);
+      }
+
+      .split-segment {
+        height: 100%;
+      }
+
+      .split-meta {
+        margin-top: 5px;
+        font-size: 11px;
+        color: var(--color-text-muted);
+      }
+
+      .action-wrap {
+        position: relative;
+      }
+
+      .action-btn {
+        border: 1px solid #111827;
+        border-radius: 8px;
+        background: #111827;
+        color: #f9fafb;
+        padding: 5px 10px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .action-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .action-menu {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        z-index: 30;
+        width: 230px;
+        display: none;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--color-surface);
+        box-shadow: var(--shadow-md);
+        padding: 6px;
+      }
+
+      .action-menu.open {
+        display: block;
+      }
+
+      .menu-title {
+        padding: 4px 8px 6px;
+        font-size: 10px;
+        color: var(--color-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .menu-item {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
+        padding: 7px 8px;
+        text-align: left;
+        cursor: pointer;
+        font-size: 12px;
+      }
+
+      .menu-item:hover,
+      .menu-item:focus-visible {
+        background: rgba(59, 130, 246, 0.08);
+        outline: none;
+      }
+
+      tfoot td {
+        background: rgba(120, 113, 108, 0.04);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 14px;
+        border-top: 1px solid var(--line);
+        font-size: 12px;
+      }
+
+      .pager {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .pager-btn {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        min-width: 30px;
+        height: 30px;
+        background: transparent;
+        font-weight: 700;
+      }
+
+      .pager-btn.active {
+        border-color: var(--color-primary);
+        color: var(--color-primary);
+      }
+
+      #sketch-tools {
+        position: fixed;
+        right: 12px;
+        bottom: 12px;
+        z-index: 9999;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        padding: 8px 12px;
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.72);
+        color: #fff;
+        font-size: 12px;
+        opacity: 0.44;
+        transition: opacity 0.2s ease;
+      }
+
+      #sketch-tools:hover {
+        opacity: 1;
+      }
+
+      #sketch-tools select,
+      #sketch-tools button {
+        border: 0;
+        border-radius: 7px;
+        background: rgba(255, 255, 255, 0.14);
+        color: inherit;
+        font-size: 12px;
+        padding: 6px 8px;
+        cursor: pointer;
+      }
+
+      #toast {
+        position: fixed;
+        left: 50%;
+        bottom: 74px;
+        transform: translateX(-50%);
+        border-radius: 999px;
+        background: #111827;
+        color: #f9fafb;
+        padding: 8px 12px;
+        font-size: 12px;
+        opacity: 0;
+        transition: opacity 0.15s ease;
+      }
+
+      #toast.show {
+        opacity: 1;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body class="light">
+    <div id="variant-nav" aria-label="Sketch variants">
+      <button class="variant-tab active" type="button" data-variant="a">
+        A: “Card Balances” + utility chips ★ Selected
+      </button>
+      <button class="variant-tab" type="button" data-variant="b">
+        B: “Outstanding by card” + total-first
+      </button>
+      <button class="variant-tab" type="button" data-variant="c">
+        C: “Settlement queue” + minimal
+      </button>
+    </div>
+
+    <div id="viewport-wrap">
+      <p class="sketch-note" id="note">
+        C refinement: sortable columns (including separate Balance and Due), footer total aligned
+        under Balance, and click-trigger member menu for accessible settle actions.
+      </p>
+      <div id="variant-a" class="variant"></div>
+      <div id="variant-b" class="variant" hidden></div>
+      <div id="variant-c" class="variant" hidden></div>
+    </div>
+
+    <div id="sketch-tools">
+      <select id="theme-switcher" aria-label="Theme">
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+      </select>
+      <button type="button" data-viewport="phone">Phone</button>
+      <button type="button" data-viewport="tablet">Tablet</button>
+      <button type="button" data-viewport="desktop">Desktop</button>
+      <button type="button" id="shuffle">Shuffle balances</button>
+    </div>
+    <div id="toast"></div>
+
+    <script>
+      const colors = {
+        Alex: '#3b82f6',
+        Jordan: '#93c5fd',
+        Priya: '#ec4899',
+        Marcus: '#f97316',
+        Sora: '#6366f1',
+        Shared: '#334155',
+      };
+
+      const rows = [
+        {
+          id: 'amex',
+          card: 'Amex Platinum',
+          lastFour: '1004',
+          owner: { type: 'single', names: ['Alex'] },
+          balanceCents: 428492,
+          dueISO: '2026-11-14',
+          dueText: 'Nov 14',
+          status: 'due_soon',
+          members: [
+            { name: 'Alex', pct: 50, balanceCents: 214246 },
+            { name: 'Jordan', pct: 30, balanceCents: 128548 },
+            { name: 'Shared', pct: 20, balanceCents: 85698 },
+          ],
+        },
+        {
+          id: 'chase',
+          card: 'Chase Sapphire',
+          lastFour: '2287',
+          owner: { type: 'single', names: ['Priya'] },
+          balanceCents: 1842018,
+          dueISO: '2026-11-28',
+          dueText: 'Nov 28',
+          status: 'on_track',
+          members: [
+            { name: 'Priya', pct: 42, balanceCents: 773648 },
+            { name: 'Marcus', pct: 29, balanceCents: 534185 },
+            { name: 'Alex', pct: 17, balanceCents: 313143 },
+            { name: 'Shared', pct: 12, balanceCents: 221042 },
+          ],
+        },
+        {
+          id: 'apple',
+          card: 'Apple Card',
+          lastFour: '8842',
+          owner: { type: 'single', names: ['Jordan'] },
+          balanceCents: 31240,
+          dueISO: '2026-11-09',
+          dueText: 'Nov 9',
+          status: 'overdue',
+          members: [
+            { name: 'Jordan', pct: 68, balanceCents: 21243 },
+            { name: 'Sora', pct: 32, balanceCents: 9997 },
+          ],
+        },
+        {
+          id: 'venture',
+          card: 'Capital One Venture',
+          lastFour: '5510',
+          owner: { type: 'shared', names: ['Marcus', 'Priya'] },
+          balanceCents: 987655,
+          dueISO: null,
+          dueText: '',
+          status: 'scheduled',
+          members: [
+            { name: 'Marcus', pct: 43, balanceCents: 424691 },
+            { name: 'Priya', pct: 29, balanceCents: 286420 },
+            { name: 'Alex', pct: 15, balanceCents: 148148 },
+            { name: 'Sora', pct: 8, balanceCents: 79012 },
+            { name: 'Shared', pct: 5, balanceCents: 49384 },
+          ],
+        },
+        {
+          id: 'citi',
+          card: 'Citi Double Cash',
+          lastFour: '3320',
+          owner: { type: 'single', names: ['Sora'] },
+          balanceCents: 64218,
+          dueISO: '2026-11-21',
+          dueText: 'Nov 21',
+          status: 'on_track',
+          members: [
+            { name: 'Sora', pct: 69, balanceCents: 44310 },
+            { name: 'Jordan', pct: 31, balanceCents: 19908 },
+          ],
+        },
+      ];
+
+      const statusRank = { overdue: 0, due_soon: 1, on_track: 2, scheduled: 3 };
+      let sortState = { key: 'balance', dir: 'desc' };
+      let currentVariant = 'a';
+
+      const money = (cents) =>
+        new Intl.NumberFormat('en-CA', {
+          style: 'currency',
+          currency: 'CAD',
+        }).format(cents / 100);
+
+      const initials = (name) =>
+        name
+          .split(/\s+/)
+          .map((n) => n[0])
+          .join('')
+          .slice(0, 2)
+          .toUpperCase();
+
+      const ownerLabel = (owner) => (owner.type === 'single' ? owner.names[0] : 'Shared');
+      const actionableCount = (row) => row.members.filter((m) => m.balanceCents > 0).length;
+
+      const valueFor = (row, key) => {
+        if (key === 'card') return row.card.toLowerCase();
+        if (key === 'owner') return ownerLabel(row.owner).toLowerCase();
+        if (key === 'balance') return row.balanceCents;
+        if (key === 'due') return row.dueISO ? Date.parse(row.dueISO) : Number.MAX_SAFE_INTEGER;
+        if (key === 'status') return statusRank[row.status] ?? 99;
+        if (key === 'split') return row.members.length;
+        if (key === 'action') return actionableCount(row);
+        return '';
+      };
+
+      const sortedRows = () => {
+        const copy = [...rows];
+        copy.sort((a, b) => {
+          const av = valueFor(a, sortState.key);
+          const bv = valueFor(b, sortState.key);
+          if (av < bv) return sortState.dir === 'asc' ? -1 : 1;
+          if (av > bv) return sortState.dir === 'asc' ? 1 : -1;
+          return 0;
+        });
+        return copy;
+      };
+
+      const toggleSort = (key) => {
+        if (sortState.key === key) {
+          sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+          sortState.key = key;
+          sortState.dir = key === 'balance' ? 'desc' : 'asc';
+        }
+        renderAll();
+        showVariant(currentVariant);
+      };
+
+      const indicator = (key) => {
+        if (sortState.key !== key) return '↕';
+        return sortState.dir === 'asc' ? '↑' : '↓';
+      };
+
+      const ownerCell = (owner) => {
+        if (owner.type === 'single') {
+          return `
+            <span class="owner">
+              <span class="avatar">${initials(owner.names[0])}</span>
+              <span>${owner.names[0]}</span>
+            </span>
+          `;
+        }
+        return `
+          <span class="owner">
+            <span class="avatar-stack">
+              <span class="avatar">${initials(owner.names[0])}</span>
+              <span class="avatar">${initials(owner.names[1])}</span>
+            </span>
+            <span>Shared</span>
+          </span>
+        `;
+      };
+
+      const splitBar = (members) =>
+        `<div class="split-bar">${members
+          .map(
+            (m) =>
+              `<span class="split-segment" style="width:${Math.max(m.pct, 0)}%;background:${colors[m.name] || '#64748b'}"></span>`
+          )
+          .join('')}</div>`;
+
+      const tableHead = `
+        <thead>
+          <tr>
+            <th><button class="sort-btn ${sortState.key === 'card' ? 'active' : ''}" data-sort="card" type="button"><span>Card</span><span>${indicator('card')}</span></button></th>
+            <th><button class="sort-btn ${sortState.key === 'owner' ? 'active' : ''}" data-sort="owner" type="button"><span>Owner</span><span>${indicator('owner')}</span></button></th>
+            <th><button class="sort-btn ${sortState.key === 'balance' ? 'active' : ''}" data-sort="balance" type="button"><span>Balance</span><span>${indicator('balance')}</span></button></th>
+            <th><button class="sort-btn ${sortState.key === 'due' ? 'active' : ''}" data-sort="due" type="button"><span>Due</span><span>${indicator('due')}</span></button></th>
+            <th><button class="sort-btn ${sortState.key === 'status' ? 'active' : ''}" data-sort="status" type="button"><span>Status</span><span>${indicator('status')}</span></button></th>
+            <th><button class="sort-btn ${sortState.key === 'split' ? 'active' : ''}" data-sort="split" type="button"><span>Split by member</span><span>${indicator('split')}</span></button></th>
+            <th><button class="sort-btn ${sortState.key === 'action' ? 'active' : ''}" data-sort="action" type="button"><span>Action</span><span>${indicator('action')}</span></button></th>
+          </tr>
+        </thead>
+      `;
+
+      const tableRows = (list) =>
+        list
+          .map((row) => {
+            const dueMembers = row.members.filter((m) => m.balanceCents > 0);
+            return `
+              <tr>
+                <td>
+                  <div class="card-name">${row.card}</div>
+                  <div class="card-meta">•••• ${row.lastFour}</div>
+                </td>
+                <td>${ownerCell(row.owner)}</td>
+                <td><span class="money">${money(row.balanceCents)}</span></td>
+                <td><span class="due">${row.dueText}</span></td>
+                <td><span class="status status-${row.status}">${row.status.replace('_', ' ')}</span></td>
+                <td>
+                  ${splitBar(row.members)}
+                  <div class="split-meta">${row.members.length} members · ${dueMembers.length} actionable</div>
+                </td>
+                <td>
+                  <div class="action-wrap">
+                    <button
+                      class="action-btn"
+                      type="button"
+                      aria-haspopup="menu"
+                      aria-expanded="false"
+                      data-trigger="${row.id}"
+                      ${dueMembers.length ? '' : 'disabled'}
+                    >
+                      ${dueMembers.length ? 'Settle' : 'No balance'}
+                    </button>
+                    <div class="action-menu" role="menu" id="menu-${row.id}">
+                      <div class="menu-title">Settle member</div>
+                      ${dueMembers
+                        .map(
+                          (m) => `
+                            <button class="menu-item" role="menuitem" type="button" data-settle="${row.id}" data-member="${m.name}">
+                              <span>${m.name}</span>
+                              <span>${money(m.balanceCents)}</span>
+                            </button>
+                          `
+                        )
+                        .join('')}
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            `;
+          })
+          .join('');
+
+      const footerTotal = (list) => list.reduce((sum, row) => sum + row.balanceCents, 0);
+
+      const tableFoot = (list) => `
+        <tfoot>
+          <tr>
+            <td colspan="2">Total outstanding</td>
+            <td>${money(footerTotal(list))}</td>
+            <td colspan="4"></td>
+          </tr>
+        </tfoot>
+      `;
+
+      const cardShell = (headerHtml, list) => `
+        <section class="grid-card">
+          ${headerHtml}
+          <div class="table-wrap">
+            <table>
+              ${tableHead}
+              <tbody>${tableRows(list)}</tbody>
+              ${tableFoot(list)}
+            </table>
+          </div>
+          <div class="footer">
+            <div class="pager">
+              <span>Rows per page</span>
+              <button class="pager-btn" type="button">5</button>
+            </div>
+            <div class="pager">
+              <span>1–5 of ${list.length}</span>
+              <button class="pager-btn active" type="button">1</button>
+              <button class="pager-btn" type="button">2</button>
+            </div>
+          </div>
+        </section>
+      `;
+
+      const renderVariantA = (list) =>
+        cardShell(
+          `
+            <header class="head">
+              <div>
+                <h2 class="title">Card Balances</h2>
+                <p class="subtitle">Utility header: concise label + quick context chips</p>
+              </div>
+              <div class="head-meta">
+                <span class="metric">Sorting on all columns</span>
+                <span class="metric">Menu trigger: click</span>
+                <button class="export-btn" type="button">Export</button>
+              </div>
+            </header>
+          `,
+          list
+        );
+
+      const renderVariantB = (list) =>
+        cardShell(
+          `
+            <header class="head">
+              <div>
+                <h2 class="title">Outstanding by card</h2>
+                <p class="subtitle">Total-first framing instead of card-count title</p>
+              </div>
+              <div class="head-meta">
+                <span class="metric">${money(footerTotal(list))} total</span>
+                <button class="export-btn" type="button">Export</button>
+              </div>
+            </header>
+          `,
+          list
+        );
+
+      const renderVariantC = (list) =>
+        cardShell(
+          `
+            <header class="head">
+              <div>
+                <h2 class="title">Settlement queue</h2>
+                <p class="subtitle">Minimal title + rely on table headers for context</p>
+              </div>
+              <div class="head-meta">
+                <button class="export-btn" type="button">Export</button>
+              </div>
+            </header>
+          `,
+          list
+        );
+
+      const bindInteractions = () => {
+        document.querySelectorAll('[data-sort]').forEach((button) => {
+          button.addEventListener('click', () => toggleSort(button.getAttribute('data-sort')));
+        });
+
+        document.querySelectorAll('[data-trigger]').forEach((button) => {
+          button.addEventListener('click', (event) => {
+            const id = button.getAttribute('data-trigger');
+            const menu = document.getElementById(`menu-${id}`);
+            const open = menu.classList.contains('open');
+            closeMenus();
+            if (!open) {
+              menu.classList.add('open');
+              button.setAttribute('aria-expanded', 'true');
+            }
+            event.stopPropagation();
+          });
+        });
+
+        document.querySelectorAll('[data-settle]').forEach((button) => {
+          button.addEventListener('click', () => {
+            showToast(
+              `Settle ${button.getAttribute('data-member')} on ${button.getAttribute('data-settle').toUpperCase()}`
+            );
+            closeMenus();
+          });
+        });
+      };
+
+      const closeMenus = () => {
+        document.querySelectorAll('.action-menu').forEach((menu) => menu.classList.remove('open'));
+        document
+          .querySelectorAll('[data-trigger]')
+          .forEach((button) => button.setAttribute('aria-expanded', 'false'));
+      };
+
+      const showVariant = (id) => {
+        currentVariant = id;
+        document.querySelectorAll('.variant').forEach((node) => {
+          node.hidden = node.id !== `variant-${id}`;
+        });
+        document.querySelectorAll('.variant-tab').forEach((tab) => {
+          tab.classList.toggle('active', tab.getAttribute('data-variant') === id);
+        });
+      };
+
+      const showToast = (text) => {
+        const toast = document.getElementById('toast');
+        toast.textContent = text;
+        toast.classList.add('show');
+        window.setTimeout(() => toast.classList.remove('show'), 1300);
+      };
+
+      const renderAll = () => {
+        const list = sortedRows();
+        document.getElementById('variant-a').innerHTML = renderVariantA(list);
+        document.getElementById('variant-b').innerHTML = renderVariantB(list);
+        document.getElementById('variant-c').innerHTML = renderVariantC(list);
+        bindInteractions();
+      };
+
+      document.querySelectorAll('.variant-tab').forEach((tab) => {
+        tab.addEventListener('click', () => showVariant(tab.getAttribute('data-variant')));
+      });
+
+      document.getElementById('theme-switcher').addEventListener('change', (event) => {
+        const light = event.target.value === 'light';
+        document.documentElement.classList.toggle('light', light);
+        document.documentElement.classList.toggle('dark', !light);
+        document.body.classList.toggle('light', light);
+      });
+
+      document.querySelectorAll('[data-viewport]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const viewport = button.getAttribute('data-viewport');
+          const wrap = document.getElementById('viewport-wrap');
+          if (viewport === 'phone') wrap.style.maxWidth = '390px';
+          else if (viewport === 'tablet') wrap.style.maxWidth = '860px';
+          else wrap.style.maxWidth = '1180px';
+        });
+      });
+
+      document.getElementById('shuffle').addEventListener('click', () => {
+        rows.forEach((row) => {
+          const delta = Math.round((Math.random() - 0.5) * 12000);
+          row.balanceCents = Math.max(0, row.balanceCents + delta);
+        });
+        renderAll();
+        showVariant(currentVariant);
+      });
+
+      document.addEventListener('click', () => closeMenus());
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeMenus();
+      });
+
+      renderAll();
+      showVariant('a');
+    </script>
+  </body>
+</html>
