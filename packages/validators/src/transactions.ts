@@ -30,10 +30,15 @@ const expenseTransactionSchema = baseTransactionSchema.extend({
   categoryId: z.string().uuid().optional(),
 })
 
-const refundTransactionSchema = baseTransactionSchema.extend({
+// Refunds participate in per-member card balances via assignee splits (see settlement query).
+// Omitting assignees would record a refund that never moves any member balance — reject at validation.
+const refundTransactionSchema = baseTransactionSchema.omit({ assignees: true }).extend({
   type: z.literal('refund'),
   categoryId: z.string().uuid().optional(),
   refundOf: z.string().uuid().optional(),
+  assignees: z
+    .array(assigneeSchema)
+    .min(1, 'Refund requires at least one assignee so card balances reconcile.'),
 })
 
 const incomeTransactionSchema = baseTransactionSchema.extend({
@@ -48,10 +53,14 @@ const transferTransactionSchema = baseTransactionSchema.extend({
   counterpartAccountId: z.string().uuid(),
 })
 
-const settlementTransactionSchema = baseTransactionSchema.extend({
+// Settlements reduce a payer's balance only through assignee rows; without them the payment is invisible to balances.
+const settlementTransactionSchema = baseTransactionSchema.omit({ assignees: true }).extend({
   type: z.literal('settlement'),
   // settledAccountId renamed to counterpartAccountId (D-07, D-14)
   counterpartAccountId: z.string().uuid().optional(),
+  assignees: z
+    .array(assigneeSchema)
+    .min(1, 'Settlement requires at least one assignee (who paid).'),
 })
 
 const contributionTransactionSchema = baseTransactionSchema.extend({
