@@ -5,6 +5,7 @@ import {
   fetchSettlementBalances,
   memberBelongsToOrg,
 } from '../lib/queries/settlements';
+import { listAccountMemberDetails } from '../lib/queries/accounts';
 import {
   createSettlement,
   getSettlementBalances,
@@ -18,6 +19,10 @@ vi.mock('../lib/queries/settlements', () => ({
   fetchSettlementBalances: vi.fn(),
   fetchAccountForSettlement: vi.fn(),
   memberBelongsToOrg: vi.fn(),
+}));
+
+vi.mock('../lib/queries/accounts', () => ({
+  listAccountMemberDetails: vi.fn(),
 }));
 
 // Mock createTransaction so createSettlement runs its real logic
@@ -42,6 +47,8 @@ const baseRow: SettlementBalanceRow = {
 describe('getSettlementBalances service', () => {
   beforeEach(() => {
     vi.mocked(fetchSettlementBalances).mockReset();
+    vi.mocked(listAccountMemberDetails).mockReset();
+    vi.mocked(listAccountMemberDetails).mockResolvedValue([]);
   });
 
   it('GET-SETTLE-04: omits non-credit accounts where all member balances are zero (D-08)', async () => {
@@ -119,6 +126,32 @@ describe('getSettlementBalances service', () => {
     expect(r.accounts).toHaveLength(1);
     expect(r.accounts[0].totalBalanceCents).toBe(4000);
     expect(r.accounts[0].members).toHaveLength(2);
+  });
+
+  it('GET-SETTLE-08: attaches account owners from listAccountMemberDetails', async () => {
+    vi.mocked(fetchSettlementBalances).mockResolvedValueOnce([
+      { ...baseRow, balanceCents: 100 },
+    ]);
+    vi.mocked(listAccountMemberDetails).mockResolvedValueOnce([
+      {
+        accountId: 'a1',
+        memberId: 'm1',
+        displayName: 'Alice',
+        imageUrl: 'https://example.com/a.jpg',
+      },
+      {
+        accountId: 'a1',
+        memberId: 'm2',
+        displayName: 'Bob',
+        imageUrl: null,
+      },
+    ]);
+    const r = await getSettlementBalances('org_test123');
+    expect(listAccountMemberDetails).toHaveBeenCalledWith(['a1']);
+    expect(r.accounts[0]?.account.owners).toEqual([
+      { id: 'm1', displayName: 'Alice', imageUrl: 'https://example.com/a.jpg' },
+      { id: 'm2', displayName: 'Bob', imageUrl: null },
+    ]);
   });
 });
 

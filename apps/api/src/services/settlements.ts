@@ -1,10 +1,12 @@
 import type { CreateSettlementInput } from '@ploutizo/validators';
 import type {
+  AccountOwner,
   GetSettlementBalancesResponse,
   SettlementAccountRow,
   SettlementMemberRow,
 } from '@ploutizo/types';
 import { DomainError, NotFoundError } from '../lib/errors';
+import { listAccountMemberDetails } from '../lib/queries/accounts';
 import {
   fetchAccountForSettlement,
   fetchSettlementBalances,
@@ -20,6 +22,7 @@ import { createTransaction } from './transactions';
  *   - Computes totalBalanceCents per account
  *   - Filters out zero-balance non-credit accounts (D-08); credit cards always included
  *   - Computes dueDate + status from statementDueDay (D-13, D-14)
+ *   - Attaches `account.owners` from `account_members` (not inferred from balances)
  *
  * @param orgId - tenant scope (from tenantGuard via c.get('orgId'))
  * @param now - injectable clock for testability; defaults to new Date()
@@ -50,6 +53,7 @@ export const getSettlementBalances = async (
           institution: row.institution,
           lastFour: row.lastFour,
           statementDueDay: row.statementDueDay,
+          owners: [],
         },
         members: [],
       };
@@ -91,7 +95,29 @@ export const getSettlementBalances = async (
     });
   }
 
-  return { accounts };
+  const ownerRows = await listAccountMemberDetails(
+    accounts.map((a) => a.account.id)
+  );
+  const ownersByAccountId = new Map<string, AccountOwner[]>();
+  for (const row of ownerRows) {
+    const list = ownersByAccountId.get(row.accountId) ?? [];
+    list.push({
+      id: row.memberId,
+      displayName: row.displayName,
+      imageUrl: row.imageUrl ?? null,
+    });
+    ownersByAccountId.set(row.accountId, list);
+  }
+
+  return {
+    accounts: accounts.map((a) => ({
+      ...a,
+      account: {
+        ...a.account,
+        owners: ownersByAccountId.get(a.account.id) ?? [],
+      },
+    })),
+  };
 };
 
 /**

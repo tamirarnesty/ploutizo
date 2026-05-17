@@ -38,7 +38,9 @@ export const buildCardBalancesColumns = (
       cellClassName: 'min-w-[100px]',
       skeleton: <Skeleton className="h-4 w-16 motion-safe:animate-pulse" />,
     },
-    cell: ({ row }) => <CardBalancesOwnerCell members={row.original.members} />,
+    cell: ({ row }) => (
+      <CardBalancesOwnerCell owners={row.original.account.owners} />
+    ),
   },
   {
     id: 'balance',

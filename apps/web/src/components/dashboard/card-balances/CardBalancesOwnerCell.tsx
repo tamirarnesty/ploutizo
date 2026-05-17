@@ -1,29 +1,24 @@
 import { Text } from '@ploutizo/ui/components/text';
-import type { SettlementMemberRow } from '@ploutizo/types';
+import type { AccountOwner } from '@ploutizo/types';
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
 
 type CardBalancesOwnerCellProps = {
-  members: SettlementMemberRow[];
+  owners: AccountOwner[];
 };
 
 /**
- * Sketch 006: primary owner avatar + single name OR stacked avatars + “Shared”.
- * Heuristic: split across multiple obligated members ⇒ shared household card vibe.
+ * Owner column follows `account_members` (GET /accounts owners), not settlement splits.
+ * Multiple linked owners ⇒ stacked avatars + “Shared”.
  */
 export const CardBalancesOwnerCell = ({
-  members,
+  owners,
 }: CardBalancesOwnerCellProps) => {
-  const nonZero = members.filter((m) => m.balanceCents !== 0);
-  const forDisplay =
-    nonZero.length > 0
-      ? [...nonZero].sort(
-          (a, b) =>
-            Math.abs(b.balanceCents) - Math.abs(a.balanceCents) ||
-            a.member.id.localeCompare(b.member.id)
-        )
-      : [...members];
+  const sorted = [...owners].sort(
+    (a, b) =>
+      a.displayName.localeCompare(b.displayName) || a.id.localeCompare(b.id)
+  );
 
-  if (forDisplay.length === 0) {
+  if (sorted.length === 0) {
     return (
       <Text variant="caption" className="text-muted-foreground">
         —
@@ -31,17 +26,16 @@ export const CardBalancesOwnerCell = ({
     );
   }
 
-  const avatarMembers = forDisplay.map((m) => ({
-    id: m.member.id,
-    name: m.member.name,
-    imageUrl: m.member.avatarUrl,
+  const avatarMembers = sorted.map((o) => ({
+    id: o.id,
+    name: o.displayName,
+    imageUrl: o.imageUrl,
   }));
 
-  const isSharedHouseholdSplit = forDisplay.length > 1;
+  const isShared = sorted.length > 1;
+  const label = isShared ? 'Shared' : sorted[0].displayName;
 
-  const label = isSharedHouseholdSplit ? 'Shared' : forDisplay[0].member.name;
-
-  const avatarsForSketch = isSharedHouseholdSplit
+  const avatarsForSketch = isShared
     ? avatarMembers.slice(0, 2)
     : avatarMembers.slice(0, 1);
 

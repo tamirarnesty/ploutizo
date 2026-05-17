@@ -41,6 +41,13 @@ describe('GET /api/settlements route', () => {
         institution: 'American Express',
         lastFour: '1234',
         statementDueDay: 15,
+        owners: [
+          {
+            id: 'mem_1',
+            displayName: 'Alice',
+            imageUrl: null,
+          },
+        ],
       },
       totalBalanceCents: 5000,
       members: [

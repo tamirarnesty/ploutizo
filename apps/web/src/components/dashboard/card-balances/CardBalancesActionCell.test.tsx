@@ -14,6 +14,10 @@ const makeAccount = (): SettlementAccountRow => ({
     institution: 'Coast',
     lastFour: '4242',
     statementDueDay: 15,
+    owners: [
+      { id: 'mAda', displayName: 'Ada Lovelace', imageUrl: null },
+      { id: 'mAlan', displayName: 'Alan Turing', imageUrl: null },
+    ],
   },
   totalBalanceCents: 5000,
   members: [

@@ -4,6 +4,7 @@
 - Use a single account row per card in the main grid; never render full per-member sub-rows by default.
 - Keep `Balance` and `Due` as separate sortable columns for faster scan and sort intent.
 - Require explicit `Owner` and `Status` values in every row; `Due` is blank when missing (no placeholder dash).
+- **Owner column (app decision 2026-05-16):** Production uses **`account.owners`** from GET `/api/settlements` (same as `account_members`). **“Shared”** means multiple **account** owners, not “multiple members owe on this card.” Early sketches inferred Shared from split balances — **obsolete** for the Owner column.
 - Align footer totals under the `Balance` column using table foot colspans, not a detached summary line.
 - Use ReUI data-grid shell patterns (header, table, footer totals, pagination) instead of custom grid chrome.
 
@@ -20,7 +21,7 @@
 ## What to Avoid
 - Expand-all per-member detail rows as default (causes immediate density collapse at 6+ members).
 - Combined `Balance · Due` column (slower sorting/scan and less predictable alignment).
-- Empty owner/status placeholders when data can be derived or computed.
+- Empty owner/status placeholders when data can be derived or computed — except **Owner** may legitimately show an em dash when the account has **no** linked owners (`account.owners` empty).
 
 ## Origin
 Synthesized from sketches: 002, 003

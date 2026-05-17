@@ -10,6 +10,7 @@ const fixture = (): SettlementAccountRow => ({
     institution: null,
     lastFour: null,
     statementDueDay: null,
+    owners: [{ id: 'alice', displayName: 'Alice', imageUrl: null }],
   },
   totalBalanceCents: 400,
   members: [
