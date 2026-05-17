@@ -10,7 +10,7 @@ import {
 import { Button } from '@ploutizo/ui/components/button';
 import { Text } from '@ploutizo/ui/components/text';
 import { cn } from '@ploutizo/ui/lib/utils';
-import { HandCoins } from 'lucide-react';
+import { WalletCards } from 'lucide-react';
 import type {
   SettlementAccountRow,
   SettlementMemberRow,
@@ -62,11 +62,10 @@ export const CardBalancesActionCell = ({
             // Sketch 006: solid contrasting trigger (readable icon + label).
             <Button
               size="sm"
-              className="gap-1.5 border-foreground bg-foreground text-background hover:bg-foreground/90 hover:text-background"
               aria-label={`Open settle actions for ${account.account.name}`}
               aria-haspopup="menu"
             >
-              <HandCoins className="size-4 shrink-0" aria-hidden />
+              <WalletCards className="size-4 shrink-0" aria-hidden />
               Settle
             </Button>
           }

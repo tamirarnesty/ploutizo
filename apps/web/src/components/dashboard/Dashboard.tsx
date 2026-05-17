@@ -1,17 +1,17 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Text } from '@ploutizo/ui/components/text';
-import { StatCardPlaceholder } from './StatCardPlaceholder';
-import { SettlementSummaryPane } from './SettlementSummaryPane';
-import { PeriodRangePicker } from './PeriodRangePicker';
-import { CardBalancesGrid } from './CardBalancesGrid';
-import { SettleDialog } from './SettleDialog';
-import type { CardBalancesSettleClickHandler } from '@/components/dashboard/card-balances/types';
 import type { SettlementAccountRow } from '@ploutizo/types';
+import type { CardBalancesSettleClickHandler } from '@/components/dashboard/card-balances/types';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import { useGetSettlements } from '@/lib/data-access/settlements';
 import { formatDashboardTitle } from '@/components/dashboard/dashboardPeriod';
 import { useDashboardEffectivePeriod } from '@/components/dashboard/useDashboardEffectivePeriod';
+import { SettleDialog } from './SettleDialog';
+import { CardBalancesGrid } from './CardBalancesGrid';
+import { PeriodRangePicker } from './PeriodRangePicker';
+import { SettlementSummaryPane } from './SettlementSummaryPane';
+import { StatCardPlaceholder } from './StatCardPlaceholder';
 
 // Phase 4.2 Dashboard — D-01 (3 ghost stat cards + 1 live CREDIT CARD OWED),
 // D-08/D-09/D-10/D-11/D-12/D-18/D-20 (CardBalancesGrid + SettleDialog).

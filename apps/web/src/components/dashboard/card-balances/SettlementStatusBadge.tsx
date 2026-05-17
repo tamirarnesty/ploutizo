@@ -1,8 +1,8 @@
 import { Badge } from '@ploutizo/ui/components/badge';
 import { cn } from '@ploutizo/ui/lib/utils';
 import { AlertCircle, CircleCheck } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 import type { SettlementStatus } from '@ploutizo/types';
+import type { LucideIcon } from 'lucide-react';
 
 /** Add a key here when extending `SettlementStatus` — TypeScript will enforce exhaustiveness. */
 const SETTLEMENT_STATUS_BADGE = {

@@ -12,9 +12,9 @@ import {
   fetchSettlementBalances,
   memberBelongsToOrg,
 } from '../lib/queries/settlements';
-import type { SettlementBalanceRow } from '../lib/queries/settlements';
 import { computeNextDueDate } from '../lib/settlement-due-date';
 import { createTransaction } from './transactions';
+import type { SettlementBalanceRow } from '../lib/queries/settlements';
 
 /**
  * Service layer: shapes the raw query rows into the GET /api/settlements response (D-02).

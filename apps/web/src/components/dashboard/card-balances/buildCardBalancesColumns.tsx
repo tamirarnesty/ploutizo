@@ -1,6 +1,5 @@
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { DataGridColumnHeader } from '@ploutizo/ui/components/reui/data-grid/data-grid-column-header';
-import type { ColumnDef } from '@tanstack/react-table';
 import type { SettlementAccountRow } from '@ploutizo/types';
 import type { CardBalancesSettleClickHandler } from '@/components/dashboard/card-balances/types';
 import { CardBalancesActionCell } from '@/components/dashboard/card-balances/CardBalancesActionCell';
@@ -10,6 +9,7 @@ import { CardBalancesCardCell } from '@/components/dashboard/card-balances/CardB
 import { CardBalancesDueCell } from '@/components/dashboard/card-balances/CardBalancesDueCell';
 import { CardBalancesOwnerCell } from '@/components/dashboard/card-balances/CardBalancesOwnerCell';
 import { SettlementStatusBadge } from '@/components/dashboard/card-balances/SettlementStatusBadge';
+import type { ColumnDef } from '@tanstack/react-table';
 
 /** Sketch 006 / grid-structure-and-density.md column order */
 export const buildCardBalancesColumns = (

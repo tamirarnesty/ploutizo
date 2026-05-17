@@ -17,12 +17,12 @@ import {
 } from '@ploutizo/ui/components/reui/data-grid/data-grid';
 import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-grid-scroll-area';
 import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-table';
-import type { SortingState } from '@tanstack/react-table';
 import type { CardBalancesGridProps } from '@/components/dashboard/card-balances/types';
 import { buildCardBalancesColumns } from '@/components/dashboard/card-balances/buildCardBalancesColumns';
 import { CardBalancesEmpty } from '@/components/dashboard/card-balances/CardBalancesEmpty';
 import { CardBalancesGridFooter } from '@/components/dashboard/card-balances/CardBalancesGridFooter';
 import { CardBalancesHeaderLegend } from '@/components/dashboard/card-balances/CardBalancesHeaderLegend';
+import type { SortingState } from '@tanstack/react-table';
 
 export type { CardBalancesGridProps } from '@/components/dashboard/card-balances/types';
 

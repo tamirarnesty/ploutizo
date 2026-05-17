@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import type { UseQueryResult } from '@tanstack/react-query';
 import type { GetSettlementBalancesResponse } from '@ploutizo/types';
 import { apiFetch } from '@/lib/queryClient';
+import type { UseQueryResult } from '@tanstack/react-query';
 
 // GET /api/settlements returns GetSettlementBalancesResponse directly (no { data } envelope)
 // per apps/api/src/routes/settlements.ts line 13.

@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
-import type { CardBalancesSettleClickHandler } from '@/components/dashboard/card-balances/types';
 import type { SettlementAccountRow, SettlementStatus } from '@ploutizo/types';
+import type { CardBalancesSettleClickHandler } from '@/components/dashboard/card-balances/types';
 import { CardBalancesActionCell } from '@/components/dashboard/card-balances/CardBalancesActionCell';
 
 const makeAccount = (): SettlementAccountRow => ({

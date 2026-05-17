@@ -2,9 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { Dialog, DialogContent } from '@ploutizo/ui/components/dialog';
 import { FieldGroup } from '@ploutizo/ui/components/field';
 import { useAppForm } from '@ploutizo/ui/components/form';
-import { settleFormSchema } from './settleFormSchema';
 import type { SettlementAccountRow } from '@ploutizo/types';
-import type { SettleFormValues } from './settleFormSchema';
 import type { SettleFormSubmitValidatorArgs } from '@/components/dashboard/settle-dialog/settleDialogSubmitValidation';
 import { getSettleInitialValues } from '@/components/dashboard/settle-dialog/getSettleInitialValues';
 import { SettleAmountField } from '@/components/dashboard/settle-dialog/SettleAmountField';
@@ -17,6 +15,8 @@ import { SettleDialogSummary } from '@/components/dashboard/settle-dialog/Settle
 import { getSettleFormSubmitValidationError } from '@/components/dashboard/settle-dialog/settleDialogSubmitValidation';
 import { useGetAccounts } from '@/lib/data-access/accounts';
 import { useCreateSettlement } from '@/lib/data-access/settlements';
+import { settleFormSchema } from './settleFormSchema';
+import type { SettleFormValues } from './settleFormSchema';
 
 export interface SettleDialogProps {
   open: boolean;

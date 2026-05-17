@@ -1,6 +1,6 @@
 import { isSameMonth, isSameYear, startOfDay, startOfMonth } from 'date-fns';
-import type { DateRange } from 'react-day-picker';
 import type { DashboardSearch } from '@/components/dashboard/dashboardSearch';
+import type { DateRange } from 'react-day-picker';
 
 /** Local calendar date string (YYYY-MM-DD) — matches existing dashboard URL encoding. */
 export const isoDate = (d: Date): string => d.toLocaleDateString('en-CA');

@@ -16,13 +16,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@ploutizo/ui/components/popover';
-import type { DateRange } from 'react-day-picker';
 import {
   buildDashboardSearchFromCalendarSelection,
   buildDashboardSearchFromClosedRange,
   urlSearchMatchesDefaultDashboardPeriod,
 } from '@/components/dashboard/dashboardPeriod';
 import { useDashboardEffectivePeriod } from '@/components/dashboard/useDashboardEffectivePeriod';
+import type { DateRange } from 'react-day-picker';
 
 // Period range picker — D-02 + D-19. Writes ?from / ?to to URL on non-default selection.
 // Default is month-to-date with a clean URL (no query params), like /transactions.
