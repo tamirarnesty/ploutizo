@@ -320,8 +320,22 @@ describe('createTransactionSchema — per-type branches', () => {
     description: 'Test transaction',
   }
 
-  it('accepts valid refund payload', () => {
-    expect(createTransactionSchema.safeParse({ ...baseFields, type: 'refund' }).success).toBe(true)
+  const refundAssignees = [
+    { memberId: '550e8400-e29b-41d4-a716-446655440003', amountCents: 5000 },
+  ]
+
+  it('accepts valid refund payload with assignees', () => {
+    expect(
+      createTransactionSchema.safeParse({
+        ...baseFields,
+        type: 'refund',
+        assignees: refundAssignees,
+      }).success
+    ).toBe(true)
+  })
+
+  it('rejects refund payload without assignees', () => {
+    expect(createTransactionSchema.safeParse({ ...baseFields, type: 'refund' }).success).toBe(false)
   })
 
   it('accepts refund with optional refundOf uuid', () => {
@@ -329,6 +343,7 @@ describe('createTransactionSchema — per-type branches', () => {
       ...baseFields,
       type: 'refund',
       refundOf: '550e8400-e29b-41d4-a716-446655440001',
+      assignees: refundAssignees,
     }).success).toBe(true)
   })
 
@@ -356,8 +371,24 @@ describe('createTransactionSchema — per-type branches', () => {
     expect(createTransactionSchema.safeParse({ ...baseFields, type: 'transfer' }).success).toBe(false)
   })
 
-  it('accepts valid settlement payload', () => {
-    expect(createTransactionSchema.safeParse({ ...baseFields, type: 'settlement' }).success).toBe(true)
+  const settlementAssignees = [
+    { memberId: '550e8400-e29b-41d4-a716-446655440003', amountCents: 5000 },
+  ]
+
+  it('accepts valid settlement payload with assignees', () => {
+    expect(
+      createTransactionSchema.safeParse({
+        ...baseFields,
+        type: 'settlement',
+        assignees: settlementAssignees,
+      }).success
+    ).toBe(true)
+  })
+
+  it('rejects settlement payload without assignees', () => {
+    expect(
+      createTransactionSchema.safeParse({ ...baseFields, type: 'settlement' }).success
+    ).toBe(false)
   })
 
   it('accepts valid contribution payload', () => {

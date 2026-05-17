@@ -99,6 +99,65 @@ describe('VAL-02 — transferTransactionSchema field rename', () => {
 })
 
 // ---------------------------------------------------------------------------
+// VAL-04 — settlement/refund require assignees (card balance query joins assignees)
+// ---------------------------------------------------------------------------
+describe('VAL-04 — settlement and refund require assignees', () => {
+  const memberId = '550e8400-e29b-41d4-a716-446655440003'
+
+  it('rejects settlement without assignees', () => {
+    const result = createTransactionSchema.safeParse({
+      ...baseFields,
+      type: 'settlement',
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('accepts settlement with one assignee matching amount', () => {
+    const result = createTransactionSchema.safeParse({
+      ...baseFields,
+      type: 'settlement',
+      assignees: [{ memberId, amountCents: baseFields.amount }],
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects settlement with assignees: []', () => {
+    const result = createTransactionSchema.safeParse({
+      ...baseFields,
+      type: 'settlement',
+      assignees: [],
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects refund without assignees', () => {
+    const result = createTransactionSchema.safeParse({
+      ...baseFields,
+      type: 'refund',
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('accepts refund with one assignee matching amount', () => {
+    const result = createTransactionSchema.safeParse({
+      ...baseFields,
+      type: 'refund',
+      assignees: [{ memberId, amountCents: baseFields.amount }],
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects refund with assignees: []', () => {
+    const result = createTransactionSchema.safeParse({
+      ...baseFields,
+      type: 'refund',
+      assignees: [],
+    })
+    expect(result.success).toBe(false)
+  })
+})
+
+// ---------------------------------------------------------------------------
 // VAL-03 — updateTransactionSchema: counterpartAccountId replaces old FK fields
 // ---------------------------------------------------------------------------
 describe('VAL-03 — updateTransactionSchema field changes', () => {
@@ -134,5 +193,10 @@ describe('VAL-03 — updateTransactionSchema field changes', () => {
 
   it('schema does not declare incomeSource on updateTransactionSchema', () => {
     expect('incomeSource' in (updateTransactionSchema.shape as Record<string, unknown>)).toBe(false)
+  })
+
+  it('rejects assignees: [] (cannot clear splits with empty array via flat update schema)', () => {
+    const result = updateTransactionSchema.safeParse({ assignees: [] })
+    expect(result.success).toBe(false)
   })
 })
