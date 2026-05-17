@@ -41,7 +41,7 @@ export const ensureCallerSyncedToOrg = async (
   if (dbUser === undefined) return;
 
   let match = null;
-  let offset: number = 0;
+  let offset = 0;
   while (match === null) {
     const { data: memberships, totalCount } =
       await clerk.users.getOrganizationMembershipList({

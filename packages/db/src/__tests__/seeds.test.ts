@@ -5,6 +5,11 @@ vi.mock('../client.js', () => {
   const mockInsert = vi.fn(() => ({
     values: vi.fn(() => Promise.resolve()),
   }))
+  const mockSelect = vi.fn(() => ({
+    from: vi.fn(() => ({
+      where: vi.fn(() => Promise.resolve([{ n: 0 }])),
+    })),
+  }))
   const mockTx = {
     execute: vi.fn(() => Promise.resolve()),
     select: vi.fn(() => ({
@@ -17,6 +22,7 @@ vi.mock('../client.js', () => {
   return {
     db: {
       insert: mockInsert,
+      select: mockSelect,
       transaction: vi.fn(async (fn: (tx: typeof mockTx) => Promise<void>) => {
         await fn(mockTx)
       }),
@@ -123,5 +129,54 @@ describe('seedOrg', () => {
     await seedOrg('org_seeded')
 
     expect(mockInsert).not.toHaveBeenCalled()
+  })
+
+  it('backfills only the missing table when one table is present and the other is empty', async () => {
+    vi.clearAllMocks()
+    const mockValues = vi.fn(() => Promise.resolve())
+    const mockInsert = vi.mocked(db.insert)
+    let callCount = 0
+    const mockTx = {
+      execute: vi.fn(() => Promise.resolve()),
+      select: vi.fn(() => ({
+        from: vi.fn(() => ({
+          // First call returns count 5 (categories present), second call returns count 0 (merchant rules missing)
+          where: vi.fn(() => Promise.resolve([{ n: callCount++ === 0 ? 5 : 0 }])),
+        })),
+      })),
+      insert: mockInsert,
+    }
+    vi.mocked(db.transaction).mockImplementationOnce(async (fn) => {
+      await fn(mockTx as never)
+    })
+    vi.mocked(db.insert).mockReturnValue(mockInsertReturn(mockValues))
+
+    const { seedOrg } = await import('../seeds/index.js')
+    await seedOrg('org_partial')
+
+    // Should insert only once (for merchant rules, not categories)
+    expect(mockInsert).toHaveBeenCalledOnce()
+  })
+})
+
+describe('ensureOrgSeeded', () => {
+  it('does not open a transaction when both table counts are already non-zero', async () => {
+    vi.clearAllMocks()
+    let callCount = 0
+    // Return non-zero counts for both categories and merchant rules
+    vi.mocked(db.select).mockImplementation(
+      () =>
+        ({
+          from: vi.fn(() => ({
+            where: vi.fn(() => Promise.resolve([{ n: callCount++ === 0 ? 5 : 3 }])),
+          })),
+        }) as never
+    )
+
+    const { ensureOrgSeeded } = await import('../seeds/index.js')
+    await ensureOrgSeeded('org_already_seeded')
+
+    // Transaction should NOT be called (fast path — both counts non-zero)
+    expect(db.transaction).not.toHaveBeenCalled()
   })
 })
