@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Transactions & Settlement
-status: 'Phase 04.3 — next up'
-last_updated: '2026-05-14T01:25:09.512Z'
+status: 'Phase 04.2.1 — next up'
+last_updated: '2026-05-16T19:51:02.732Z'
 progress:
   total_phases: 4
   completed_phases: 2
@@ -16,16 +16,16 @@ progress:
 
 ## Current Position
 
-Phase: 04.3
+Phase: 04.2.1
 Plan: Not started
 **Milestone:** v0.2 — Transactions & Settlement
 **Active Phase:** 04.2 (Settlement UI) shipped
-**Status:** Ready to plan **Phase 04.3 — Budgets API**
-**Last session:** 2026-05-11
+**Status:** Ready to plan **Phase 04.2.1 — Clerk in-app auth route coverage**
+**Last session:** 2026-05-16
 
 ## Next Action
 
-Plan and execute **Phase 04.3 — Budgets API**.
+Plan and execute **Phase 04.2.1 — Clerk in-app auth route coverage and hosted URL elimination**.
 
 ## Phase Status
 
