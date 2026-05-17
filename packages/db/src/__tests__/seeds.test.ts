@@ -98,10 +98,7 @@ describe('seedOrg', () => {
     expect(db.transaction).toHaveBeenCalledOnce()
     expect(mockExecute).toHaveBeenCalledOnce()
     const executedSql = mockExecute.mock.calls[0][0] as Record<string, unknown>
-    // SQL object from drizzle-orm has queryChunks property
-    const sqlString = Array.isArray(executedSql.queryChunks)
-      ? (executedSql.queryChunks as unknown[]).join('')
-      : JSON.stringify(executedSql)
+    const sqlString = JSON.stringify(executedSql)
     expect(sqlString).toContain('pg_advisory_xact_lock')
     expect(db.insert).toHaveBeenCalledTimes(2)
   })

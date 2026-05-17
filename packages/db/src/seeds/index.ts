@@ -19,7 +19,7 @@ import { insertSeedMerchantRulesForOrg } from './merchantRules'
 export const seedOrg = async (orgId: string): Promise<void> => {
   await db.transaction(async (tx) => {
     await tx.execute(
-      sql`select pg_advisory_xact_lock(abs(hashtext(${orgId}))::bigint)`
+      sql`select pg_advisory_xact_lock(abs(hashtext(${orgId})::bigint))`
     )
     const [categoriesRow] = await tx
       .select({ n: count() })

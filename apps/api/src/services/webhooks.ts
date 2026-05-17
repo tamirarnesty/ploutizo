@@ -74,17 +74,6 @@ export const handleOrgMembershipCreated = async (
   });
 };
 
-// Session lifecycle handlers — reserved for future login/logout state sync.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const handleSessionCreated = async (_data: unknown) => {
-  // TODO: track session creation for audit log or active session management
-};
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const handleSessionEnded = async (_data: unknown) => {
-  // TODO: track session end for audit log or active session management
-};
-
 // Dispatch event to the appropriate handler based on event.type narrowing (D-08).
 // Casts needed because Clerk v3 Webhook<type, Data> generics cause event.data to not
 // narrow to the concrete JSON types after Extract<WebhookEvent, {type}>.
@@ -100,10 +89,6 @@ export const dispatchWebhookEvent = async (event: WebhookEvent) => {
       return handleUserUpdated(event.data);
     case 'organizationMembership.created':
       return handleOrgMembershipCreated(event.data);
-    case 'session.created':
-      return handleSessionCreated(event.data);
-    case 'session.ended':
-      return handleSessionEnded(event.data);
     default: {
       const unhandled = event as { type?: string };
       console.warn(

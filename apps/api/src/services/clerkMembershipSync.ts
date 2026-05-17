@@ -9,6 +9,8 @@ import {
   insertOrgMemberIfAbsent,
 } from './clerkDbMirror';
 
+const PAGE_LIMIT = 100;
+
 /**
  * When Clerk webhooks never reached this environment, `users` and `org_members`
  * rows are missing even though the session has a valid org + user. That breaks
@@ -38,19 +40,21 @@ export const ensureCallerSyncedToOrg = async (
   const dbUser = rows.at(0);
   if (dbUser === undefined) return;
 
-  let match;
-  let offset = 0;
-  const limit = 100;
-  while (!match) {
+  let match = null;
+  let offset: number = 0;
+  while (match === null) {
     const { data: memberships, totalCount } =
       await clerk.users.getOrganizationMembershipList({
         userId: clerkUserId,
-        limit,
+        limit: PAGE_LIMIT,
         offset,
       });
-    match = memberships.find((m) => m.organization.id === orgId);
-    if (match || offset + limit >= totalCount) break;
-    offset += limit;
+    const foundMembership = memberships.find((m) => m.organization.id === orgId);
+    if (foundMembership) {
+      match = foundMembership;
+    }
+    if (match || offset + PAGE_LIMIT >= totalCount) break;
+    offset += PAGE_LIMIT;
   }
   if (!match) return;
 
