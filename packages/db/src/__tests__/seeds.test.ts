@@ -77,12 +77,32 @@ describe('seedOrg', () => {
   it('runs in a transaction, takes an advisory lock, and inserts categories then merchant rules when count is zero', async () => {
     vi.clearAllMocks()
     const mockValues = vi.fn(() => Promise.resolve())
+    const mockExecute = vi.fn((_sqlQuery: unknown) => Promise.resolve())
+    const mockTx = {
+      execute: mockExecute,
+      select: vi.fn(() => ({
+        from: vi.fn(() => ({
+          where: vi.fn(() => Promise.resolve([{ n: 0 }])),
+        })),
+      })),
+      insert: vi.mocked(db.insert),
+    }
+    vi.mocked(db.transaction).mockImplementationOnce(async (fn) => {
+      await fn(mockTx as never)
+    })
     vi.mocked(db.insert).mockReturnValue(mockInsertReturn(mockValues))
 
     const { seedOrg } = await import('../seeds/index.js')
     await seedOrg('org_test123')
 
     expect(db.transaction).toHaveBeenCalledOnce()
+    expect(mockExecute).toHaveBeenCalledOnce()
+    const executedSql = mockExecute.mock.calls[0][0] as Record<string, unknown>
+    // SQL object from drizzle-orm has queryChunks property
+    const sqlString = Array.isArray(executedSql.queryChunks)
+      ? (executedSql.queryChunks as unknown[]).join('')
+      : JSON.stringify(executedSql)
+    expect(sqlString).toContain('pg_advisory_xact_lock')
     expect(db.insert).toHaveBeenCalledTimes(2)
   })
 

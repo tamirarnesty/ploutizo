@@ -38,11 +38,20 @@ export const ensureCallerSyncedToOrg = async (
   const dbUser = rows.at(0);
   if (dbUser === undefined) return;
 
-  const { data: memberships } = await clerk.users.getOrganizationMembershipList({
-    userId: clerkUserId,
-    limit: 100,
-  });
-  const match = memberships.find((m) => m.organization.id === orgId);
+  let match;
+  let offset = 0;
+  const limit = 100;
+  while (!match) {
+    const { data: memberships, totalCount } =
+      await clerk.users.getOrganizationMembershipList({
+        userId: clerkUserId,
+        limit,
+        offset,
+      });
+    match = memberships.find((m) => m.organization.id === orgId);
+    if (match || offset + limit >= totalCount) break;
+    offset += limit;
+  }
   if (!match) return;
 
   const pud = match.publicUserData;

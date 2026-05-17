@@ -3,15 +3,10 @@ import { Hono } from 'hono';
 import { db } from '@ploutizo/db';
 import { accountsRouter } from '../routes/accounts';
 import type { Mock } from 'vitest';
+import type { MockDbTransactionClient } from './testUtils';
 
 /** `db.select` after `vi.mock('@ploutizo/db')` — use for `mockReturnValueOnce` chains. */
 type MockedAccountsDbSelect = Mock;
-
-type MockDbTransactionClient = {
-  insert: Mock;
-  delete: Mock;
-  update: Mock;
-};
 
 // Mock @clerk/hono so getAuth returns a known orgId
 vi.mock('@clerk/hono', () => ({

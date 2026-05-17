@@ -10,13 +10,7 @@ import {
   validateSplitSum,
 } from '../services/transactions';
 import type { ListQueryParams } from '../services/transactions';
-import type { Mock } from 'vitest';
-
-type MockDbTransactionClient = {
-  insert: Mock;
-  delete: Mock;
-  update: Mock;
-};
+import type { MockDbTransactionClient } from './testUtils';
 
 // Re-import mocked service functions so per-test overrides work
 
