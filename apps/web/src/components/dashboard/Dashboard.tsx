@@ -24,6 +24,9 @@ export const Dashboard = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [activeAccount, setActiveAccount] =
     useState<SettlementAccountRow | null>(null);
+  const [dialogPayerMemberId, setDialogPayerMemberId] = useState<string | null>(
+    null
+  );
 
   // account.type === 'credit_card' — confirmed per packages/db/src/schema/enums.ts.
   // Filter to credit-card accounts for the Card Balances grid (UI-SPEC + Phase 4.1 D-09).
@@ -40,10 +43,10 @@ export const Dashboard = () => {
     [creditCardAccounts]
   );
 
-  // D-11: dialog pre-selects the first member with balance > 0; row click still passes `(account, member)`.
   const handleSettleClick = useCallback<CardBalancesSettleClickHandler>(
-    (account) => {
+    (account, member) => {
       setActiveAccount(account);
+      setDialogPayerMemberId(member.member.id);
       setDialogOpen(true);
     },
     []
@@ -52,6 +55,7 @@ export const Dashboard = () => {
   const handleClose = useCallback(() => {
     setDialogOpen(false);
     setActiveAccount(null);
+    setDialogPayerMemberId(null);
   }, []);
 
   const period = useDashboardEffectivePeriod();
@@ -103,6 +107,7 @@ export const Dashboard = () => {
       <SettleDialog
         open={dialogOpen}
         account={activeAccount}
+        initialPayerMemberId={dialogPayerMemberId}
         onClose={handleClose}
       />
     </div>

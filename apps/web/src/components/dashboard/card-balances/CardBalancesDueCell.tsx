@@ -5,8 +5,21 @@ type CardBalancesDueCellProps = {
   dueDate: string | null;
 };
 
-export const CardBalancesDueCell = ({ dueDate }: CardBalancesDueCellProps) => (
-  <Text variant="body-sm" className="text-muted-foreground">
-    {formatDueShort(dueDate)}
-  </Text>
-);
+export const CardBalancesDueCell = ({ dueDate }: CardBalancesDueCellProps) => {
+  if (!dueDate) {
+    return (
+      <span className="block min-h-[18px]" aria-hidden>
+        {/* Intentionally empty — sketch: no dash when statement due is absent */}
+      </span>
+    );
+  }
+
+  return (
+    <Text
+      variant="body-sm"
+      className="min-h-[18px] text-[13px] whitespace-nowrap text-muted-foreground tabular-nums"
+    >
+      {formatDueShort(dueDate)}
+    </Text>
+  );
+};

@@ -6,6 +6,7 @@ type CardBalancesBalanceCellProps = {
   totalBalanceCents: number;
 };
 
+/** Sketch `.money`: 16px / 700 tabular monetary column. */
 export const CardBalancesBalanceCell = ({
   totalBalanceCents,
 }: CardBalancesBalanceCellProps) => {
@@ -16,7 +17,7 @@ export const CardBalancesBalanceCell = ({
       as="span"
       variant="body-sm"
       className={cn(
-        'block text-right font-medium whitespace-nowrap tabular-nums',
+        'block text-right text-base font-bold whitespace-nowrap tabular-nums',
         isCredit ? 'text-success' : 'text-foreground'
       )}
     >

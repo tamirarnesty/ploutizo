@@ -1,36 +1,41 @@
-import { Avatar, AvatarFallback } from '@ploutizo/ui/components/avatar';
-import {
-  Item,
-  ItemContent,
-  ItemMedia,
-  ItemTitle,
-} from '@ploutizo/ui/components/item';
+import { Text } from '@ploutizo/ui/components/text';
 import type { SettlementAccountRow } from '@ploutizo/types';
 
 type CardBalancesCardCellProps = {
   account: SettlementAccountRow['account'];
 };
 
-/** Item composes avatar + title; neutral hover in grid cells (row hover is primary). */
+/** Sketch 006 card column: bold name line + muted institution •••• last4 subtitle (no brand avatar tile). */
 export const CardBalancesCardCell = ({
   account,
-}: CardBalancesCardCellProps) => (
-  <Item
-    variant="default"
-    size="xs"
-    className="min-w-0 flex-nowrap border-0 bg-transparent p-0 shadow-none hover:bg-transparent"
-  >
-    <ItemMedia variant="default" className="shrink-0">
-      <Avatar className="size-7 rounded-sm after:rounded-sm" aria-hidden>
-        <AvatarFallback className="rounded-sm bg-muted text-xs font-semibold uppercase">
-          {account.name.slice(0, 2)}
-        </AvatarFallback>
-      </Avatar>
-    </ItemMedia>
-    <ItemContent className="min-w-0">
-      <ItemTitle className="truncate text-sm font-semibold">
+}: CardBalancesCardCellProps) => {
+  const institution = account.institution?.trim();
+  const last = account.lastFour?.trim();
+
+  const metaParts: string[] = [];
+  if (institution) metaParts.push(institution);
+  if (last) metaParts.push(`•••• ${last}`);
+
+  const metaLine = metaParts.length > 0 ? metaParts.join(' ') : null;
+
+  return (
+    <div className="min-w-0">
+      <Text
+        as="span"
+        variant="body-sm"
+        className="block truncate text-sm leading-tight font-bold"
+      >
         {account.name}
-      </ItemTitle>
-    </ItemContent>
-  </Item>
-);
+      </Text>
+      {metaLine !== null ? (
+        <Text
+          as="span"
+          variant="body-sm"
+          className="mt-0.5 block truncate text-xs leading-tight text-muted-foreground"
+        >
+          {metaLine}
+        </Text>
+      ) : null}
+    </div>
+  );
+};
