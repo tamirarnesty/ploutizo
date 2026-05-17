@@ -33,17 +33,21 @@
     "react": "^19.2.4",
     "react-day-picker": "9.14.0",
     "react-dom": "^19.2.4",
-    "tailwindcss": "^4.1.18",
     "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^4.1.18",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tanstack/eslint-config": "^0.4.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^25.5.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^10.1.0",
+    "jsdom": "^29.1.1",
     "typescript": "^6.0.2",
     "vite": "^8.0.3",
     "vitest": "^4.1.2"
