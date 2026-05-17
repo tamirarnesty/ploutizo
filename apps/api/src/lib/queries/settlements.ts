@@ -7,11 +7,12 @@ import {
   users,
 } from '@ploutizo/db/schema';
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
+import type { AccountType } from '@ploutizo/types';
 
 export interface SettlementBalanceRow {
   accountId: string;
   accountName: string;
-  accountType: string;
+  accountType: AccountType;
   institution: string | null;
   lastFour: string | null;
   statementDueDay: number | null;
