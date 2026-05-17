@@ -121,6 +121,15 @@ describe('VAL-04 — settlement and refund require assignees', () => {
     expect(result.success).toBe(true)
   })
 
+  it('rejects settlement with assignees: []', () => {
+    const result = createTransactionSchema.safeParse({
+      ...baseFields,
+      type: 'settlement',
+      assignees: [],
+    })
+    expect(result.success).toBe(false)
+  })
+
   it('rejects refund without assignees', () => {
     const result = createTransactionSchema.safeParse({
       ...baseFields,
@@ -136,6 +145,15 @@ describe('VAL-04 — settlement and refund require assignees', () => {
       assignees: [{ memberId, amountCents: baseFields.amount }],
     })
     expect(result.success).toBe(true)
+  })
+
+  it('rejects refund with assignees: []', () => {
+    const result = createTransactionSchema.safeParse({
+      ...baseFields,
+      type: 'refund',
+      assignees: [],
+    })
+    expect(result.success).toBe(false)
   })
 })
 
@@ -175,5 +193,10 @@ describe('VAL-03 — updateTransactionSchema field changes', () => {
 
   it('schema does not declare incomeSource on updateTransactionSchema', () => {
     expect('incomeSource' in (updateTransactionSchema.shape as Record<string, unknown>)).toBe(false)
+  })
+
+  it('rejects assignees: [] (cannot clear splits with empty array via flat update schema)', () => {
+    const result = updateTransactionSchema.safeParse({ assignees: [] })
+    expect(result.success).toBe(false)
   })
 })

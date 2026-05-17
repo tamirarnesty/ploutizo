@@ -89,6 +89,11 @@ export const updateTransactionSchema = baseTransactionSchema
     incomeType: z.enum(incomeTypeValues).optional(),
     // counterpartAccountId replaces toAccountId + settledAccountId (D-08)
     counterpartAccountId: z.string().uuid().optional(),
+    // Override partial assignees: [] would otherwise clear splits while bypassing .min(1) on create variants.
+    assignees: z
+      .array(assigneeSchema)
+      .min(1, 'When assignees are included, at least one row is required.')
+      .optional(),
   })
 export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>
 
