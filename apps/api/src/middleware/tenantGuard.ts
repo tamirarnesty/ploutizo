@@ -17,12 +17,28 @@ import type { AppEnv } from '../types';
 // secret, network failure, or org created before the app was deployed).
 // ensureOrgSeeded() backfills default categories and merchant rules when the webhook
 // never ran (typical in local dev) — idempotent if data already exists.
-// seenOrgBootstrap: org row + seed once per org per process (shared by all members).
-// seenCallerOrgSync: `${orgId}:${userId}` after a successful ensureCallerSyncedToOrg —
-// must be per-user so other household members are not skipped; only add on success so
-// transient Clerk failures retry on the next request.
-const seenOrgBootstrap = new Set<string>();
-const seenCallerOrgSync = new Set<string>();
+// Bounded in-process skips for idempotent bootstrap/sync (FIFO eviction when full).
+// Unbounded Sets were replaced to avoid unlimited memory when many distinct org/users
+// hit this process over long uptimes; if a key is evicted, the next request re-runs
+// idempotent inserts/API calls safely.
+const MAX_TOUCHED_BOOTSTRAP_ORGS = 1024;
+const MAX_TOUCHED_CALLER_SYNCS = 4096;
+
+const touchedOrgBootstrap = new Map<string, true>();
+const touchedCallerOrgSync = new Map<string, true>();
+
+const rememberBounded = (
+  cache: Map<string, true>,
+  key: string,
+  maxEntries: number
+) => {
+  if (cache.has(key)) return;
+  cache.set(key, true);
+  if (cache.size > maxEntries) {
+    const oldest = cache.keys().next().value;
+    if (oldest !== undefined) cache.delete(oldest);
+  }
+};
 
 export const tenantGuard = () =>
   createMiddleware<AppEnv>(async (c, next) => {
@@ -38,17 +54,21 @@ export const tenantGuard = () =>
         401
       );
     }
-    if (!seenOrgBootstrap.has(orgId)) {
+    if (!touchedOrgBootstrap.has(orgId)) {
       await db.insert(orgs).values({ id: orgId }).onConflictDoNothing();
       await ensureOrgSeeded(orgId);
-      seenOrgBootstrap.add(orgId);
+      rememberBounded(touchedOrgBootstrap, orgId, MAX_TOUCHED_BOOTSTRAP_ORGS);
     }
     if (userId) {
       const syncKey = `${orgId}:${userId}`;
-      if (!seenCallerOrgSync.has(syncKey)) {
+      if (!touchedCallerOrgSync.has(syncKey)) {
         try {
           await ensureCallerSyncedToOrg(orgId, userId);
-          seenCallerOrgSync.add(syncKey);
+          rememberBounded(
+            touchedCallerOrgSync,
+            syncKey,
+            MAX_TOUCHED_CALLER_SYNCS
+          );
         } catch (err) {
           // Clerk outage or misconfiguration — do not block the request; downstream
           // routes may still fail if org_members is required. Omit syncKey so the next
