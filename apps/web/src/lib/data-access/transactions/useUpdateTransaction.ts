@@ -15,19 +15,13 @@ export const useUpdateTransaction = (id: string) => {
         method: 'PATCH',
         body: JSON.stringify(body),
       }).then((r: { data: PatchTransactionResponse }) => r.data),
-    onSuccess: (updatedRow) => {
-      // Merge with existing cache entry to preserve joined arrays (tags, assignees)
-      // that the PATCH endpoint does not return (it returns scalar row only).
-      qc.setQueryData(
-        ['transaction', id],
-        (prev: TransactionRow | undefined) => ({
-          ...(prev ?? {}),
-          ...updatedRow,
-          tags: prev?.tags ?? [],
-          assignees: prev?.assignees ?? [],
-        })
-      );
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['transactions'] });
+      // PATCH returns scalar row only; merging prev assignees/tags would keep stale splits
+      // after the user edits them (detail query key is singular — not covered by list invalidation).
+      if (id.length > 0) {
+        await qc.invalidateQueries({ queryKey: ['transaction', id] });
+      }
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: ['transactions'] }),
   });
 };
