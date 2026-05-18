@@ -38,6 +38,27 @@ export const validateSplitSum = (
     : 'Assignee amounts must sum to transaction amount';
 };
 
+/**
+ * For PATCH, the client may omit `assignees` to mean "leave rows unchanged". Settlement balances
+ * still use assignee cents for expense/refund/settlement — validate `amount` against whichever
+ * assignee rows will apply after the update (payload rows, or existing DB rows).
+ * Exported for unit tests.
+ */
+export const assigneeRowsForPatchSplitSum = (
+  type: CreateTransactionInput['type'],
+  payloadAssignees: CreateTransactionInput['assignees'],
+  existingAssignees: readonly { amountCents: number }[]
+): { amountCents: number }[] | null => {
+  if (type !== 'expense' && type !== 'refund' && type !== 'settlement') {
+    return null;
+  }
+  const rows =
+    payloadAssignees !== undefined
+      ? payloadAssignees.map((a) => ({ amountCents: a.amountCents }))
+      : existingAssignees.map((a) => ({ amountCents: a.amountCents }));
+  return rows.length > 0 ? rows : null;
+};
+
 // D-13: check that the refundOf transaction belongs to the same org
 export const checkRefundOfOwnership = async (
   refundOfId: string,
@@ -125,9 +146,18 @@ export const updateTransaction = async (
   orgId: string,
   data: CreateTransactionInput
 ) => {
-  // D-11: re-validate split sum if assignees are being replaced.
-  if (data.assignees && data.assignees.length > 0) {
-    const splitError = validateSplitSum(data.amount, data.assignees);
+  const existing = await getTransaction(id, orgId);
+  if (!existing) return null;
+
+  // One read before the write tx: PATCH may omit `assignees` while changing `amount`; balances
+  // use assignee cents, so we must validate against rows that will remain on disk.
+  const rowsForSplitCheck = assigneeRowsForPatchSplitSum(
+    data.type,
+    data.assignees,
+    existing.assignees as readonly { amountCents: number }[]
+  );
+  if (rowsForSplitCheck) {
+    const splitError = validateSplitSum(data.amount, rowsForSplitCheck);
     if (splitError) throw new Error(splitError);
   }
 
