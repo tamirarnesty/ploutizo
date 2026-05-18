@@ -146,21 +146,6 @@ export const updateTransaction = async (
   orgId: string,
   data: CreateTransactionInput
 ) => {
-  const existing = await getTransaction(id, orgId);
-  if (!existing) return null;
-
-  // One read before the write tx: PATCH may omit `assignees` while changing `amount`; balances
-  // use assignee cents, so we must validate against rows that will remain on disk.
-  const rowsForSplitCheck = assigneeRowsForPatchSplitSum(
-    data.type,
-    data.assignees,
-    existing.assignees as readonly { amountCents: number }[]
-  );
-  if (rowsForSplitCheck) {
-    const splitError = validateSplitSum(data.amount, rowsForSplitCheck);
-    if (splitError) throw new Error(splitError);
-  }
-
   const { assignees, tagIds, ...updateData } = data;
 
   // WR-01: when type changes, explicitly null FK columns that do not apply to the new type.
@@ -182,6 +167,24 @@ export const updateTransaction = async (
   Object.assign(updateData, typeSpecificNulls);
 
   return db.transaction(async (tx) => {
+    const row = await fetchTransactionById(id, orgId, tx);
+    if (!row) return null;
+
+    const { assigneeMap } = await enrichTransactions([row], tx);
+    const existingAssignees = assigneeMap[row.id] ?? [];
+
+    // Split-sum validation reads assignees inside this tx (same scope as UPDATE/replaceAssignees),
+    // so we do not validate against a standalone snapshot taken before `db.transaction` opens.
+    const rowsForSplitCheck = assigneeRowsForPatchSplitSum(
+      data.type,
+      data.assignees,
+      existingAssignees as readonly { amountCents: number }[]
+    );
+    if (rowsForSplitCheck) {
+      const splitError = validateSplitSum(data.amount, rowsForSplitCheck);
+      if (splitError) throw new Error(splitError);
+    }
+
     // Delegate scalar UPDATE to query layer (Pitfall 7: three-condition WHERE)
     const updated = await updateTransactionScalarsQuery(
       tx,
