@@ -8,6 +8,7 @@ import {
   insertLocalUserIfAbsent,
   insertOrgMemberIfAbsent,
 } from './clerkDbMirror';
+import type { OrganizationMembership } from '@clerk/backend';
 
 const PAGE_LIMIT = 100;
 
@@ -40,9 +41,9 @@ export const ensureCallerSyncedToOrg = async (
   const dbUser = rows.at(0);
   if (dbUser === undefined) return;
 
-  let match = null;
+  let match: OrganizationMembership | undefined;
   let offset = 0;
-  while (match === null) {
+  for (;;) {
     const { data: memberships, totalCount } =
       await clerk.users.getOrganizationMembershipList({
         userId: clerkUserId,
@@ -50,10 +51,11 @@ export const ensureCallerSyncedToOrg = async (
         offset,
       });
     const foundMembership = memberships.find((m) => m.organization.id === orgId);
-    if (foundMembership) {
+    if (foundMembership !== undefined) {
       match = foundMembership;
+      break;
     }
-    if (match || offset + PAGE_LIMIT >= totalCount) break;
+    if (offset + PAGE_LIMIT >= totalCount) break;
     offset += PAGE_LIMIT;
   }
   if (!match) return;
