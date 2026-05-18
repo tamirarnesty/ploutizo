@@ -27,7 +27,7 @@ import type { DateRange } from 'react-day-picker';
 // Period range picker — D-02 + D-19. Writes ?from / ?to to URL on non-default selection.
 // Default is month-to-date with a clean URL (no query params), like /transactions.
 // Presets panel (D-19 "Presets feature") appears to the left of the calendar.
-// Does NOT re-fetch dashboard data — that's Phase 7.3.
+// Does NOT re-fetch dashboard data — that's Phase 6.3.
 const formatRangeLabel = (range: DateRange | undefined): string => {
   if (!range?.from) return 'Select period';
   const fmt = (d: Date) =>

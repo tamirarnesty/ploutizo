@@ -24,7 +24,7 @@ import { formatCurrency } from '@/lib/formatCurrency';
 //   other      → no subline
 // The sidebar query for /expenses and /income is INTENTIONALLY separate from the page's
 // paged query (different limit → different queryKey → no dedup). Accuracy capped at 1000
-// per RESEARCH Assumption A1 — Phase 7.3 replaces with GET /api/dashboard/income-by-person.
+// per RESEARCH Assumption A1 — Phase 6.3 replaces with GET /api/dashboard/income-by-person.
 export const SidebarMembersSection = () => {
   const { location } = useRouterState();
   const path = location.pathname;

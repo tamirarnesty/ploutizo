@@ -14,7 +14,7 @@ export interface StatCardPlaceholderProps {
 }
 
 // Per UI-SPEC.md StatCardPlaceholder Specification + Copywriting Contract:
-//   Deferred: $— + "Available in Phase 7.3"
+//   Deferred KPIs show $— + "Coming soon" until Overview (Phase 6.3) lands.
 //   Live:     formatted value + caption (e.g. "N cards total")
 export const StatCardPlaceholder = ({
   label,
@@ -44,7 +44,7 @@ export const StatCardPlaceholder = ({
             isPlaceholder ? 'text-muted-foreground/40' : 'text-muted-foreground'
           )}
         >
-          {isPlaceholder ? 'Available in Phase 7.3' : (caption ?? '')}
+          {isPlaceholder ? 'Coming soon' : (caption ?? '')}
         </Text>
       </CardContent>
     </Card>

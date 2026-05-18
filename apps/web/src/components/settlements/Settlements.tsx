@@ -1,6 +1,6 @@
 import { Text } from '@ploutizo/ui/components/text';
 
-// Phase 4.2 placeholder per D-07 — Phase 7.3 fleshes this out.
+// Phase 4.2 placeholder per D-07 — Phase 6.3 fleshes this out.
 // Copy strings are exact-match per UI-SPEC.md Copywriting Contract.
 export const Settlements = () => {
   return (
