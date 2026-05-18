@@ -58,7 +58,7 @@ export const ensureCallerSyncedToOrg = async (
     if (offset + PAGE_LIMIT >= totalCount) break;
     offset += PAGE_LIMIT;
   }
-  if (!match) return;
+  if (match === undefined) return;
 
   const pud = match.publicUserData;
   const fallbackUserId = pud?.userId ?? clerkUser.id;
