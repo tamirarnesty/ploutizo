@@ -65,14 +65,13 @@ export const toApiPayload = (
     description: value.description.trim(),
     notes: value.notes.trim() || undefined,
     tagIds: value.tagIds.length > 0 ? value.tagIds : undefined,
-    assignees:
-      value.assignees.length > 0
-        ? value.assignees.map((a) => ({
-            memberId: a.memberId,
-            amountCents: a.amountCents,
-            percentage: a.percentage,
-          }))
-        : undefined,
+    // Always send an array so PATCH replace-all can clear splits (empty []).
+    // Omitting the key made `assignees: undefined` indistinguishable from "clear all".
+    assignees: value.assignees.map((a) => ({
+      memberId: a.memberId,
+      amountCents: a.amountCents,
+      percentage: a.percentage,
+    })),
   };
 
   switch (value.type) {
