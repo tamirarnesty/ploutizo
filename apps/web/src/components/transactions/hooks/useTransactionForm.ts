@@ -57,6 +57,10 @@ export const buildDefaultValues = (
 export const toApiPayload = (
   value: TransactionFormValues
 ): Record<string, unknown> => {
+  // Always send `assignees` / `tagIds` as arrays (possibly empty). The API PATCH
+  // path uses `undefined` to mean "leave existing rows unchanged"; `[]` means
+  // replace-all with nothing (clear splits / tags). Sending `undefined` for an
+  // empty form array made "remove all assignees/tags" a silent no-op.
   const base = {
     type: value.type,
     accountId: value.accountId,
@@ -64,9 +68,7 @@ export const toApiPayload = (
     date: value.date,
     description: value.description.trim(),
     notes: value.notes.trim() || undefined,
-    tagIds: value.tagIds.length > 0 ? value.tagIds : undefined,
-    // Always send an array so PATCH replace-all can clear splits (empty []).
-    // Omitting the key made `assignees: undefined` indistinguishable from "clear all".
+    tagIds: value.tagIds,
     assignees: value.assignees.map((a) => ({
       memberId: a.memberId,
       amountCents: a.amountCents,
