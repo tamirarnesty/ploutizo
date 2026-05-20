@@ -17,8 +17,6 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 @import '@fontsource-variable/geist';
-@import '@fontsource-variable/noto-sans';
-@import '@fontsource-variable/noto-serif';
 
 @custom-variant dark (&:is(.dark *));
 @source '../../../apps/**/*.{ts,tsx}';
@@ -58,15 +56,6 @@
   --sidebar-accent-foreground: oklch(0.216 0.006 56.043);
   --sidebar-border: oklch(0.923 0.003 48.717);
   --sidebar-ring: oklch(0.709 0.01 56.259);
-  --destructive-foreground: var(--color-red-800);
-  --success: var(--color-emerald-500);
-  --success-foreground: var(--color-emerald-900);
-  --info: var(--color-violet-500);
-  --info-foreground: var(--color-violet-900);
-  --warning: var(--color-yellow-500);
-  --warning-foreground: var(--color-yellow-900);
-  --invert: var(--color-zinc-900);
-  --invert-foreground: var(--color-zinc-50);
 }
 
 .dark {
@@ -101,15 +90,6 @@
   --sidebar-accent-foreground: oklch(0.985 0.001 106.423);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.553 0.013 58.071);
-  --destructive-foreground: var(--color-red-600);
-  --success: var(--color-emerald-500);
-  --success-foreground: var(--color-emerald-600);
-  --info: var(--color-violet-500);
-  --info-foreground: var(--color-violet-600);
-  --warning: var(--color-yellow-500);
-  --warning-foreground: var(--color-yellow-600);
-  --invert: var(--color-zinc-700);
-  --invert-foreground: var(--color-zinc-50);
 }
 
 @theme inline {
@@ -152,7 +132,7 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --font-sans: 'Geist Variable', sans-serif;
-  --font-heading: var(--font-serif);
+  --font-heading: var(--font-sans);
   --color-invert-foreground: var(--invert-foreground);
   --color-invert: var(--invert);
   --color-warning-foreground: var(--warning-foreground);
@@ -173,7 +153,7 @@
     @apply bg-background text-foreground;
   }
   html {
-    @apply font-serif;
+    @apply font-sans;
   }
   button:not(:disabled),
   [role='button']:not(:disabled) {
