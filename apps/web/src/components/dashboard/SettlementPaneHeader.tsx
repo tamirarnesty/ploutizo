@@ -2,6 +2,7 @@ import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
 import type { HouseholdSettlementSummary } from '@/components/dashboard/useCreditCardMemberRollup';
 import { formatCurrency } from '@/lib/formatCurrency';
+import type { ReactNode } from 'react';
 
 type SettlementPaneHeaderProps = {
   isLoading: boolean;
@@ -13,14 +14,18 @@ export const SettlementPaneHeader = ({
   isLoading,
   hasHouseholdCreditCards,
   householdSummary,
-}: SettlementPaneHeaderProps) => (
-  <div className="space-y-0.5">
-    {isLoading ? (
+}: SettlementPaneHeaderProps) => {
+  let body: ReactNode;
+
+  if (isLoading) {
+    body = (
       <>
         <Skeleton className="h-5 w-36 motion-safe:animate-pulse" />
         <Skeleton className="h-3.5 w-[13.5rem] max-w-full motion-safe:animate-pulse" />
       </>
-    ) : hasHouseholdCreditCards ? (
+    );
+  } else if (hasHouseholdCreditCards) {
+    body = (
       <>
         <Text
           as="p"
@@ -45,10 +50,14 @@ export const SettlementPaneHeader = ({
           ) : null}
         </Text>
       </>
-    ) : (
+    );
+  } else {
+    body = (
       <Text variant="caption" className="leading-snug text-muted-foreground">
         Add a credit card to track exposure.
       </Text>
-    )}
-  </div>
-);
+    );
+  }
+
+  return <div className="space-y-0.5">{body}</div>;
+};

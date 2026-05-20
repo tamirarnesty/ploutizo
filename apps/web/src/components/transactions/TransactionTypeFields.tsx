@@ -178,6 +178,23 @@ const IncomeTypeField = ({ form }: { form: TransactionFormInstance }) => (
 
 const MULTI_ACCOUNT_TYPES = ['transfer', 'settlement', 'contribution'];
 
+const renderSubtypeField = (
+  type: TransactionFormValues['type'],
+  form: TransactionFormInstance,
+  categories: Category[]
+) => {
+  switch (type) {
+    case 'expense':
+      return <ExpenseFields form={form} categories={categories} />;
+    case 'refund':
+      return <RefundCategoryField form={form} categories={categories} />;
+    case 'income':
+      return <IncomeTypeField form={form} />;
+    default:
+      return null;
+  }
+};
+
 export const TransactionTypeFields = ({
   form,
   categories,
@@ -194,13 +211,7 @@ export const TransactionTypeFields = ({
           // Single-account: [Type | Subtype] 2-col
           <div className="grid grid-cols-2 gap-4">
             <TypeSelectField form={form} onTypeChange={onTypeChange} />
-            {type === 'expense' ? (
-              <ExpenseFields form={form} categories={categories} />
-            ) : type === 'refund' ? (
-              <RefundCategoryField form={form} categories={categories} />
-            ) : type === 'income' ? (
-              <IncomeTypeField form={form} />
-            ) : null}
+            {renderSubtypeField(type, form, categories)}
           </div>
         )}
 
