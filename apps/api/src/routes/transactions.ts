@@ -1,5 +1,8 @@
 import { Hono } from 'hono';
-import { createTransactionSchema } from '@ploutizo/validators';
+import {
+  createTransactionSchema,
+  patchTransactionSchema,
+} from '@ploutizo/validators';
 import { appValidator } from '../lib/validator';
 import { DomainError } from '../lib/errors';
 import {
@@ -150,10 +153,10 @@ transactionsRouter.patch('/:id/restore', async (c) => {
 });
 
 // PATCH /:id — update fields + replace-all assignees/tags (D-03, D-08, D-10, D-11)
-// D-08: uses createTransactionSchema (discriminated union) to enforce type-specific required fields on type change
+// D-08: patchTransactionSchema = discriminated union + rejects assignees: [] (cannot clear splits via empty array)
 transactionsRouter.patch(
   '/:id',
-  appValidator('json', createTransactionSchema),
+  appValidator('json', patchTransactionSchema),
   async (c) => {
     const orgId = c.get('orgId');
     const id = c.req.param('id');

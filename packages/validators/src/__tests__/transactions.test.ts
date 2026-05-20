@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import { z } from 'zod'
-import { createTransactionSchema, updateTransactionSchema } from '../transactions'
+import {
+  createTransactionSchema,
+  patchTransactionSchema,
+  updateTransactionSchema,
+} from '../transactions'
 
 // Shared base payload for all type variants
 const baseFields = {
@@ -154,6 +158,47 @@ describe('VAL-04 — settlement and refund require assignees', () => {
       assignees: [],
     })
     expect(result.success).toBe(false)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// VAL-05 — patchTransactionSchema: discriminated union + empty assignees guard
+// ---------------------------------------------------------------------------
+describe('VAL-05 — patchTransactionSchema', () => {
+  it('accepts expense PATCH without assignees field (omit = leave unchanged)', () => {
+    const result = patchTransactionSchema.safeParse({
+      ...baseFields,
+      type: 'expense',
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects expense PATCH with assignees: []', () => {
+    const result = patchTransactionSchema.safeParse({
+      ...baseFields,
+      type: 'expense',
+      assignees: [],
+    })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.issues.some((i) => i.path.includes('assignees'))).toBe(
+        true
+      )
+    }
+  })
+
+  it('accepts expense PATCH with at least one assignee', () => {
+    const result = patchTransactionSchema.safeParse({
+      ...baseFields,
+      type: 'expense',
+      assignees: [
+        {
+          memberId: '550e8400-e29b-41d4-a716-446655440003',
+          amountCents: baseFields.amount,
+        },
+      ],
+    })
+    expect(result.success).toBe(true)
   })
 })
 

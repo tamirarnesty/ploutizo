@@ -405,6 +405,24 @@ describe('PATCH /api/transactions/:id', () => {
     expect(body.data.description).toBe('Updated');
   });
 
+  it('TXN-PATCH-06: expense with assignees: [] → 400 VALIDATION_ERROR', async () => {
+    const res = await app.request('/txn_1', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'expense',
+        accountId: VALID_ACCOUNT_ID,
+        amount: 5000,
+        date: '2026-01-15',
+        description: 'Updated',
+        assignees: [],
+      }),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe('VALIDATION_ERROR');
+  });
+
   it('TXN-PATCH-02: wrong orgId → 404', async () => {
     vi.mocked(updateTransaction).mockResolvedValueOnce(null);
     const res = await app.request('/txn_missing', {

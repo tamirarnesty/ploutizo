@@ -80,6 +80,25 @@ export const createTransactionSchema = z.discriminatedUnion('type', [
 ])
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>
 
+/** Reject explicit `assignees: []` — same rule as updateTransactionSchema (cannot clear splits via empty array). */
+const rejectEmptyAssigneesArray = (
+  data: { assignees?: unknown[] },
+  ctx: z.RefinementCtx
+) => {
+  if (data.assignees !== undefined && data.assignees.length === 0) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'When assignees are included, at least one row is required.',
+      path: ['assignees'],
+    })
+  }
+}
+
+/** PATCH body: full discriminated union (D-08) plus empty-assignee guard. */
+export const patchTransactionSchema = createTransactionSchema.superRefine(
+  rejectEmptyAssigneesArray
+)
+
 export const updateTransactionSchema = baseTransactionSchema
   .partial()
   .extend({
