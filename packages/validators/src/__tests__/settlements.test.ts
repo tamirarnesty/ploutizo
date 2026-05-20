@@ -4,6 +4,7 @@ import { createSettlementSchema } from '../settlements'
 const validPayload = {
   payerMemberId: '550e8400-e29b-41d4-a716-446655440001',
   accountId: '550e8400-e29b-41d4-a716-446655440002',
+  counterpartAccountId: '550e8400-e29b-41d4-a716-446655440003',
   amountCents: 12_500,
   date: '2026-05-08',
 }

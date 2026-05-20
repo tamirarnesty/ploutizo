@@ -1,5 +1,5 @@
+import { DatePicker } from '@ploutizo/ui/components/date-picker';
 import { Field, FieldError, FieldLabel } from '@ploutizo/ui/components/field';
-import { Input } from '@ploutizo/ui/components/input';
 import type { SettleFieldErrors } from '@/components/dashboard/settle-dialog/settleDialogFieldTypes';
 
 export type SettleDateFieldProps = {
@@ -16,20 +16,12 @@ export const SettleDateField = ({
   onBlur,
 }: SettleDateFieldProps) => (
   <Field data-invalid={errors.length > 0 || undefined}>
-    <FieldLabel
-      htmlFor="settle-date"
-      className="text-xs tracking-wider text-muted-foreground uppercase"
-    >
-      Date
-    </FieldLabel>
-    <Input
+    <FieldLabel>Date</FieldLabel>
+    <DatePicker
       id="settle-date"
-      type="date"
-      autoComplete="off"
       value={value}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={onChange}
       onBlur={onBlur}
-      aria-invalid={errors.length > 0}
     />
     {errors.length > 0 ? <FieldError errors={errors} /> : null}
   </Field>

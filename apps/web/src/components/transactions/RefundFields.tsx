@@ -1,4 +1,3 @@
-import { Text } from '@ploutizo/ui/components/text';
 import { Field, FieldLabel } from '@ploutizo/ui/components/field';
 import {
   Select,
@@ -28,14 +27,7 @@ export const RefundFields = ({
       {(field) => (
         <Field>
           <FieldLabel htmlFor="tx-refund-categoryId">
-            Category
-            <Text
-              as="span"
-              variant="body-sm"
-              className="ml-1 font-normal text-muted-foreground"
-            >
-              (optional)
-            </Text>
+            Category (optional)
           </FieldLabel>
           <Select
             value={field.state.value}

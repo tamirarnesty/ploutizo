@@ -23,14 +23,14 @@ export const SettlePaidFromField = ({
   onValueChange,
 }: SettlePaidFromFieldProps) => (
   <Field data-invalid={errors.length > 0 || undefined}>
-    <FieldLabel
-      htmlFor="settle-source"
-      className="text-xs tracking-wider text-muted-foreground uppercase"
+    <FieldLabel htmlFor="settle-source">Paid from</FieldLabel>
+    <Select
+      value={value}
+      onValueChange={(v) => {
+        if (v !== null) onValueChange(v);
+      }}
     >
-      Paid from
-    </FieldLabel>
-    <Select value={value} onValueChange={(v) => v && onValueChange(v)}>
-      <SelectTrigger id="settle-source">
+      <SelectTrigger id="settle-source" className="w-full">
         <SelectValue>
           {sourceAccountOptions.find((a) => a.id === value)?.name ??
             'Select account'}

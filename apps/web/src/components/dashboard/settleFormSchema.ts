@@ -9,9 +9,7 @@ import { z } from 'zod';
 // the underlying transaction's `notes` column. Mirror the 1000-char cap here so
 // the form errors before a network round-trip.
 //
-// `sourceAccountId` — “Paid from” in the UI. **Not** sent on `POST /api/settlements`
-// yet (`createSettlementSchema` has no field). Kept so product/API follow-up can wire
-// transfers without reshaping the form.
+// `sourceAccountId` — “Paid from” in the UI; submitted as `counterpartAccountId`.
 export const settleFormSchema = z.object({
   payerMemberId: z.string().uuid({ message: 'Select a member.' }),
   amountDollars: z

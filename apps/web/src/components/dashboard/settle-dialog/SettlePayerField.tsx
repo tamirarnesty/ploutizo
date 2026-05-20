@@ -1,4 +1,9 @@
-import { Field, FieldError, FieldLabel } from '@ploutizo/ui/components/field';
+import {
+  Field,
+  FieldError,
+  FieldLegend,
+  FieldSet,
+} from '@ploutizo/ui/components/field';
 import type { SettlementAccountRow } from '@ploutizo/types';
 import type { SettleFieldErrors } from '@/components/dashboard/settle-dialog/settleDialogFieldTypes';
 import { SettleMemberRadioList } from '@/components/dashboard/settle-dialog/SettleMemberRadioList';
@@ -17,14 +22,14 @@ export const SettlePayerField = ({
   onPayerMemberChange,
 }: SettlePayerFieldProps) => (
   <Field data-invalid={errors.length > 0 || undefined}>
-    <FieldLabel className="text-xs tracking-wider text-muted-foreground uppercase">
-      Settling for
-    </FieldLabel>
-    <SettleMemberRadioList
-      members={account.members}
-      value={value}
-      onValueChange={onPayerMemberChange}
-    />
+    <FieldSet>
+      <FieldLegend variant="label">Settling for</FieldLegend>
+      <SettleMemberRadioList
+        members={account.members}
+        value={value}
+        onValueChange={onPayerMemberChange}
+      />
+    </FieldSet>
     {errors.length > 0 ? <FieldError errors={errors} /> : null}
   </Field>
 );

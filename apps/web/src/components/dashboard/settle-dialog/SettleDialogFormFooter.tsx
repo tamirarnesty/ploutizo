@@ -1,32 +1,43 @@
 import { Button } from '@ploutizo/ui/components/button';
-import { Text } from '@ploutizo/ui/components/text';
 import { DialogFooter } from '@ploutizo/ui/components/dialog';
+import { LoadingButton } from '@ploutizo/ui/components/loading-button';
+import { Text } from '@ploutizo/ui/components/text';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 export type SettleDialogFormFooterProps = {
   onClose: () => void;
   submitError: unknown;
   isSubmitting: boolean;
+  amountDollars: number;
 };
 
 export const SettleDialogFormFooter = ({
   onClose,
   submitError,
   isSubmitting,
-}: SettleDialogFormFooterProps) => (
-  <>
-    {submitError ? (
-      <Text variant="error" className="mt-3">
-        {String(submitError)}
-      </Text>
-    ) : null}
+  amountDollars,
+}: SettleDialogFormFooterProps) => {
+  const settleLabel = `Settle ${formatCurrency(Math.round(Math.max(0, amountDollars) * 100))}`;
 
-    <DialogFooter className="mt-6">
-      <Button variant="outline" type="button" onClick={onClose}>
-        Discard changes
-      </Button>
-      <Button type="submit" disabled={isSubmitting}>
-        Record settlement
-      </Button>
+  return (
+    <DialogFooter className="mt-6 sm:justify-between">
+      <div aria-live="polite" className="min-w-0 flex-1">
+        {submitError ? (
+          <Text variant="error">{String(submitError)}</Text>
+        ) : null}
+      </div>
+      <div className="flex shrink-0 gap-2">
+        <Button variant="outline" type="button" onClick={onClose}>
+          Discard
+        </Button>
+        <LoadingButton
+          type="submit"
+          loading={isSubmitting}
+          loadingText="Settling…"
+        >
+          {settleLabel}
+        </LoadingButton>
+      </div>
     </DialogFooter>
-  </>
-);
+  );
+};

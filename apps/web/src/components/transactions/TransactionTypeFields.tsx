@@ -6,7 +6,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@ploutizo/ui/components/select';
-import { Text } from '@ploutizo/ui/components/text';
 import type { Category } from '@/lib/data-access/categories';
 import { ExpenseFields } from './ExpenseFields';
 import { RefundLinker } from './RefundLinker';
@@ -107,14 +106,7 @@ const RefundCategoryField = ({
     {(field) => (
       <Field>
         <FieldLabel htmlFor="tx-refund-categoryId">
-          Category
-          <Text
-            as="span"
-            variant="body-sm"
-            className="font-normal text-muted-foreground"
-          >
-            (optional)
-          </Text>
+          Category (optional)
         </FieldLabel>
         <Select
           value={field.state.value}

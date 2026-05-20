@@ -45,8 +45,6 @@ export const SettleDialog = ({
 
   const todayIso = new Date().toLocaleDateString('en-CA');
 
-  // Tracked bank-style accounts for "Paid from". Selection is validated in-form;
-  // POST /api/settlements does not yet accept this field — no-op until follow-up.
   const sourceAccountOptions = useMemo(() => {
     const allowed = new Set<string>(['chequing', 'savings', 'prepaid_cash']);
     return accounts.filter(
@@ -74,12 +72,11 @@ export const SettleDialog = ({
       if (!account) return;
       const amountCents = Math.round(value.amountDollars * 100);
       const trimmedNotes = value.notes?.trim() ?? '';
-      // Follow-up: include `value.sourceAccountId` when createSettlement supports it.
-      void value.sourceAccountId;
       createSettlement.mutate(
         {
           payerMemberId: value.payerMemberId,
           accountId: account.account.id,
+          counterpartAccountId: value.sourceAccountId,
           amountCents,
           date: value.date,
           ...(trimmedNotes.length > 0 ? { notes: trimmedNotes } : {}),
@@ -114,7 +111,7 @@ export const SettleDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -123,7 +120,7 @@ export const SettleDialog = ({
         >
           <SettleDialogSummary account={account} />
 
-          <FieldGroup className="mt-4 space-y-5">
+          <FieldGroup className="mt-4">
             <form.AppField
               name="payerMemberId"
               validators={{ onChange: settleFormSchema.shape.payerMemberId }}
@@ -216,13 +213,15 @@ export const SettleDialog = ({
             selector={(s) => ({
               submitError: s.errorMap.onSubmit,
               isSubmitting: s.isSubmitting,
+              amountDollars: s.values.amountDollars,
             })}
           >
-            {({ submitError, isSubmitting }) => (
+            {({ submitError, isSubmitting, amountDollars }) => (
               <SettleDialogFormFooter
                 onClose={onClose}
                 submitError={submitError}
                 isSubmitting={isSubmitting}
+                amountDollars={amountDollars}
               />
             )}
           </form.Subscribe>

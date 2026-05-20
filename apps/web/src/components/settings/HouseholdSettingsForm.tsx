@@ -1,9 +1,8 @@
 import { HouseholdSettingsFormSchema } from '@ploutizo/validators';
 import { useAppForm } from '@ploutizo/ui/components/form';
-import { Button } from '@ploutizo/ui/components/button';
 import { FieldError } from '@ploutizo/ui/components/field';
 import { Input } from '@ploutizo/ui/components/input';
-import { Spinner } from '@ploutizo/ui/components/spinner';
+import { LoadingButton } from '@ploutizo/ui/components/loading-button';
 import { Text } from '@ploutizo/ui/components/text';
 import type { HouseholdSettingsForm as HouseholdSettingsFormType } from '@ploutizo/validators';
 import {
@@ -94,10 +93,9 @@ export const HouseholdSettingsForm = () => {
         </form.AppField>
         <form.Subscribe selector={(s) => s.isSubmitting}>
           {(isSubmitting) => (
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? <Spinner className="mr-1" /> : null}
+            <LoadingButton type="submit" loading={isSubmitting}>
               Save changes
-            </Button>
+            </LoadingButton>
           )}
         </form.Subscribe>
       </div>

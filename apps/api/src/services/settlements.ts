@@ -13,7 +13,10 @@ import {
   memberBelongsToOrg,
 } from '../lib/queries/settlements';
 import { computeNextDueDate } from '../lib/settlement-due-date';
-import { createTransaction } from './transactions';
+import {
+  checkCounterpartAccountOwnership,
+  createTransaction,
+} from './transactions';
 import type { SettlementBalanceRow } from '../lib/queries/settlements';
 
 /**
@@ -152,11 +155,27 @@ export const createSettlement = async (
   const memberOk = await memberBelongsToOrg(data.payerMemberId, orgId);
   if (!memberOk) throw new NotFoundError('Member not found in this household');
 
+  if (data.counterpartAccountId === data.accountId) {
+    throw new DomainError(
+      400,
+      'Paid-from account must differ from the card being settled'
+    );
+  }
+
+  const counterpartOk = await checkCounterpartAccountOwnership(
+    data.counterpartAccountId,
+    orgId
+  );
+  if (!counterpartOk) {
+    throw new NotFoundError('Paid-from account not found');
+  }
+
   // Delegate to the existing service so split sum validation, FK checks, and the
   // transactions+assignees write happen via one consistent code path.
   return createTransaction(orgId, {
     type: 'settlement',
     accountId: data.accountId,
+    counterpartAccountId: data.counterpartAccountId,
     amount: data.amountCents,
     date: data.date,
     description: `Settlement: ${account.name}`,

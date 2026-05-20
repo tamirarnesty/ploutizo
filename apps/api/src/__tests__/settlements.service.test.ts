@@ -10,7 +10,10 @@ import {
   createSettlement,
   getSettlementBalances,
 } from '../services/settlements';
-import { createTransaction } from '../services/transactions';
+import {
+  checkCounterpartAccountOwnership,
+  createTransaction,
+} from '../services/transactions';
 import type { SettlementBalanceRow } from '../lib/queries/settlements';
 
 // Mock the QUERY layer only. The service module is NOT mocked here —
@@ -29,6 +32,7 @@ vi.mock('../lib/queries/accounts', () => ({
 // but the downstream DB write is replaced by a fixture.
 vi.mock('../services/transactions', () => ({
   createTransaction: vi.fn(),
+  checkCounterpartAccountOwnership: vi.fn(),
 }));
 
 const baseRow: SettlementBalanceRow = {
@@ -159,6 +163,7 @@ describe('createSettlement service', () => {
   const validInput = {
     payerMemberId: '550e8400-e29b-41d4-a716-446655440001',
     accountId: '550e8400-e29b-41d4-a716-446655440002',
+    counterpartAccountId: '550e8400-e29b-41d4-a716-446655440003',
     amountCents: 5000,
     date: '2026-05-08',
   };
@@ -167,6 +172,8 @@ describe('createSettlement service', () => {
     vi.mocked(fetchAccountForSettlement).mockReset();
     vi.mocked(memberBelongsToOrg).mockReset();
     vi.mocked(createTransaction).mockReset();
+    vi.mocked(checkCounterpartAccountOwnership).mockReset();
+    vi.mocked(checkCounterpartAccountOwnership).mockResolvedValue(true);
   });
 
   it('POST-SETTLE-06: account not found => throws NotFoundError("Account not found")', async () => {
@@ -228,10 +235,29 @@ describe('createSettlement service', () => {
     expect(createTransaction).toHaveBeenCalledOnce();
     const callArg = vi.mocked(createTransaction).mock.calls[0][1];
     expect(callArg.type).toBe('settlement');
+    expect(
+      (callArg as { counterpartAccountId?: string }).counterpartAccountId
+    ).toBe(validInput.counterpartAccountId);
     expect(callArg.description).toMatch(/^Settlement: /);
     expect(callArg.assignees).toHaveLength(1);
     expect(callArg.assignees![0].amountCents).toBe(validInput.amountCents);
     expect(result).toEqual(mockInserted);
+  });
+
+  it('POST-SETTLE-10: counterpart account not in org => throws NotFoundError', async () => {
+    vi.mocked(fetchAccountForSettlement).mockResolvedValue({
+      id: validInput.accountId,
+      name: 'Amex Gold',
+      archivedAt: null,
+    });
+    vi.mocked(memberBelongsToOrg).mockResolvedValue(true);
+    vi.mocked(checkCounterpartAccountOwnership).mockResolvedValue(false);
+
+    const err = await createSettlement('org_1', validInput).catch(
+      (e: unknown) => e
+    );
+    expect(err).toBeInstanceOf(NotFoundError);
+    expect((err as NotFoundError).message).toBe('Paid-from account not found');
   });
 });
 
@@ -240,6 +266,8 @@ describe('createSettlement — notes forwarding (Phase 4.2 extension)', () => {
     vi.mocked(fetchAccountForSettlement).mockReset();
     vi.mocked(memberBelongsToOrg).mockReset();
     vi.mocked(createTransaction).mockReset();
+    vi.mocked(checkCounterpartAccountOwnership).mockReset();
+    vi.mocked(checkCounterpartAccountOwnership).mockResolvedValue(true);
   });
 
   const accountFixture = {
@@ -258,6 +286,7 @@ describe('createSettlement — notes forwarding (Phase 4.2 extension)', () => {
     await createSettlement('org_test123', {
       payerMemberId: '550e8400-e29b-41d4-a716-446655440001',
       accountId: '550e8400-e29b-41d4-a716-446655440002',
+      counterpartAccountId: '550e8400-e29b-41d4-a716-446655440003',
       amountCents: 5000,
       date: '2026-05-08',
       notes: 'paid via e-transfer',
@@ -278,6 +307,7 @@ describe('createSettlement — notes forwarding (Phase 4.2 extension)', () => {
     await createSettlement('org_test123', {
       payerMemberId: '550e8400-e29b-41d4-a716-446655440001',
       accountId: '550e8400-e29b-41d4-a716-446655440002',
+      counterpartAccountId: '550e8400-e29b-41d4-a716-446655440003',
       amountCents: 5000,
       date: '2026-05-08',
     });

@@ -12,6 +12,7 @@ import {
 } from '@ploutizo/ui/components/alert-dialog';
 import { Archive } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
+import { LoadingButton } from '@ploutizo/ui/components/loading-button';
 import { Input } from '@ploutizo/ui/components/input';
 import {
   Select,
@@ -268,14 +269,7 @@ const AccountFormInner = ({
             {(field) => (
               <Field>
                 <FieldLabel htmlFor="account-institution">
-                  Institution{' '}
-                  <Text
-                    as="span"
-                    variant="body-sm"
-                    className="font-normal text-muted-foreground"
-                  >
-                    (optional)
-                  </Text>
+                  Institution (optional)
                 </FieldLabel>
                 <Input
                   id="account-institution"
@@ -295,14 +289,7 @@ const AccountFormInner = ({
             {(field) => (
               <Field>
                 <FieldLabel htmlFor="account-last-four">
-                  Last 4 digits{' '}
-                  <Text
-                    as="span"
-                    variant="body-sm"
-                    className="font-normal text-muted-foreground"
-                  >
-                    (optional)
-                  </Text>
+                  Last 4 digits (optional)
                 </FieldLabel>
                 <Input
                   id="account-last-four"
@@ -402,10 +389,9 @@ const AccountFormInner = ({
             selector={(s: { isSubmitting: boolean }) => s.isSubmitting}
           >
             {(isSubmitting) => (
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? <Spinner className="mr-1" /> : null}
+              <LoadingButton type="submit" loading={isSubmitting}>
                 {isEditing ? 'Save changes' : 'Add account'}
-              </Button>
+              </LoadingButton>
             )}
           </form.Subscribe>
         </div>
