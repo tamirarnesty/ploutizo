@@ -337,8 +337,14 @@ export const countQuery = async (params: ListQueryParams): Promise<number> => {
 };
 
 // Single transaction by id — same column projection as list (D-05)
-export const fetchTransactionById = async (id: string, orgId: string) => {
-  const rows = await db
+// Optional `tx`: when provided, read participates in the caller's transaction (e.g. PATCH split validation + write).
+export const fetchTransactionById = async (
+  id: string,
+  orgId: string,
+  tx?: DrizzleTransaction
+) => {
+  const ex = tx ?? db;
+  const rows = await ex
     .select(TX_COLUMNS)
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
@@ -361,7 +367,12 @@ export const fetchTransactionById = async (id: string, orgId: string) => {
 
 // Enrich a page of base rows with assignees and tags via parallel sub-queries.
 // Avoids cartesian product from multi-level left joins (RESEARCH.md Pitfall 1).
-export const enrichTransactions = async (baseRows: { id: string }[]) => {
+// Optional `tx`: when provided, reads use the caller's transaction executor.
+export const enrichTransactions = async (
+  baseRows: { id: string }[],
+  tx?: DrizzleTransaction
+) => {
+  const ex = tx ?? db;
   const txIds = baseRows.map((r) => r.id);
   if (txIds.length === 0) {
     return {
@@ -372,7 +383,7 @@ export const enrichTransactions = async (baseRows: { id: string }[]) => {
 
   // Pitfall 6: guard against inArray([]) which generates invalid SQL
   const [assigneeRows, tagRows] = await Promise.all([
-    db
+    ex
       .select({
         transactionId: transactionAssignees.transactionId,
         memberId: transactionAssignees.memberId,
@@ -386,7 +397,7 @@ export const enrichTransactions = async (baseRows: { id: string }[]) => {
       .innerJoin(users, eq(users.id, orgMembers.userId))
       .where(inArray(transactionAssignees.transactionId, txIds)),
 
-    db
+    ex
       .select({
         transactionId: transactionTags.transactionId,
         id: tags.id,

@@ -38,6 +38,27 @@ export const validateSplitSum = (
     : 'Assignee amounts must sum to transaction amount';
 };
 
+/**
+ * For PATCH, the client may omit `assignees` to mean "leave rows unchanged". Settlement balances
+ * still use assignee cents for expense/refund/settlement — validate `amount` against whichever
+ * assignee rows will apply after the update (payload rows, or existing DB rows).
+ * Exported for unit tests.
+ */
+export const assigneeRowsForPatchSplitSum = (
+  type: CreateTransactionInput['type'],
+  payloadAssignees: CreateTransactionInput['assignees'],
+  existingAssignees: readonly { amountCents: number }[]
+): { amountCents: number }[] | null => {
+  if (type !== 'expense' && type !== 'refund' && type !== 'settlement') {
+    return null;
+  }
+  const rows =
+    payloadAssignees !== undefined
+      ? payloadAssignees.map((a) => ({ amountCents: a.amountCents }))
+      : existingAssignees.map((a) => ({ amountCents: a.amountCents }));
+  return rows.length > 0 ? rows : null;
+};
+
 // D-13: check that the refundOf transaction belongs to the same org
 export const checkRefundOfOwnership = async (
   refundOfId: string,
@@ -125,12 +146,6 @@ export const updateTransaction = async (
   orgId: string,
   data: CreateTransactionInput
 ) => {
-  // D-11: re-validate split sum if assignees are being replaced.
-  if (data.assignees && data.assignees.length > 0) {
-    const splitError = validateSplitSum(data.amount, data.assignees);
-    if (splitError) throw new Error(splitError);
-  }
-
   const { assignees, tagIds, ...updateData } = data;
 
   // WR-01: when type changes, explicitly null FK columns that do not apply to the new type.
@@ -152,6 +167,35 @@ export const updateTransaction = async (
   Object.assign(updateData, typeSpecificNulls);
 
   return db.transaction(async (tx) => {
+    const row = await fetchTransactionById(id, orgId, tx);
+    if (!row) return null;
+
+    const typeUsesSplitAssignees =
+      data.type === 'expense' ||
+      data.type === 'refund' ||
+      data.type === 'settlement';
+    const needsPersistedAssignees =
+      typeUsesSplitAssignees && data.assignees === undefined;
+
+    let existingAssignees: readonly { amountCents: number }[] = [];
+    if (needsPersistedAssignees) {
+      const { assigneeMap } = await enrichTransactions([row], tx);
+      existingAssignees = (assigneeMap[row.id] ??
+        []) as readonly { amountCents: number }[];
+    }
+
+    // Split-sum validation reads assignees inside this tx (same scope as UPDATE/replaceAssignees),
+    // so we do not validate against a standalone snapshot taken before `db.transaction` opens.
+    const rowsForSplitCheck = assigneeRowsForPatchSplitSum(
+      data.type,
+      data.assignees,
+      existingAssignees
+    );
+    if (rowsForSplitCheck) {
+      const splitError = validateSplitSum(data.amount, rowsForSplitCheck);
+      if (splitError) throw new Error(splitError);
+    }
+
     // Delegate scalar UPDATE to query layer (Pitfall 7: three-condition WHERE)
     const updated = await updateTransactionScalarsQuery(
       tx,
