@@ -170,15 +170,26 @@ export const updateTransaction = async (
     const row = await fetchTransactionById(id, orgId, tx);
     if (!row) return null;
 
-    const { assigneeMap } = await enrichTransactions([row], tx);
-    const existingAssignees = assigneeMap[row.id] ?? [];
+    const typeUsesSplitAssignees =
+      data.type === 'expense' ||
+      data.type === 'refund' ||
+      data.type === 'settlement';
+    const needsPersistedAssignees =
+      typeUsesSplitAssignees && data.assignees === undefined;
+
+    let existingAssignees: readonly { amountCents: number }[] = [];
+    if (needsPersistedAssignees) {
+      const { assigneeMap } = await enrichTransactions([row], tx);
+      existingAssignees = (assigneeMap[row.id] ??
+        []) as readonly { amountCents: number }[];
+    }
 
     // Split-sum validation reads assignees inside this tx (same scope as UPDATE/replaceAssignees),
     // so we do not validate against a standalone snapshot taken before `db.transaction` opens.
     const rowsForSplitCheck = assigneeRowsForPatchSplitSum(
       data.type,
       data.assignees,
-      existingAssignees as readonly { amountCents: number }[]
+      existingAssignees
     );
     if (rowsForSplitCheck) {
       const splitError = validateSplitSum(data.amount, rowsForSplitCheck);

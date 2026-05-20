@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { db } from '@ploutizo/db';
 import { updateTransaction } from '../services/transactions';
 import {
   enrichTransactions,
@@ -13,6 +14,8 @@ const ORG_ID = 'org_test123';
 const ACCOUNT_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 const MEMBER_A = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12';
 const MEMBER_B = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13';
+
+const mockTx = { __mockTx: true as const };
 
 const baseTxRow = {
   id: TXN_ID,
@@ -35,8 +38,7 @@ const expensePayload = {
 vi.mock('@ploutizo/db', () => ({
   db: {
     transaction: vi.fn(
-      async (fn: (tx: Record<string, unknown>) => Promise<unknown>) =>
-        fn({})
+      async (fn: (tx: typeof mockTx) => Promise<unknown>) => fn(mockTx)
     ),
   },
 }));
@@ -49,8 +51,14 @@ vi.mock('../lib/queries/transactions', () => ({
   replaceTags: vi.fn(),
 }));
 
+const expectTxConsistentReads = () => {
+  expect(fetchTransactionById).toHaveBeenCalledWith(TXN_ID, ORG_ID, mockTx);
+  expect(enrichTransactions).toHaveBeenCalledWith([baseTxRow], mockTx);
+};
+
 describe('updateTransaction — PATCH split-sum validation', () => {
   beforeEach(() => {
+    vi.mocked(db.transaction).mockClear();
     vi.mocked(fetchTransactionById).mockReset();
     vi.mocked(enrichTransactions).mockReset();
     vi.mocked(updateTransactionScalarsQuery).mockReset();
@@ -84,6 +92,7 @@ describe('updateTransaction — PATCH split-sum validation', () => {
 
     expect(updateTransactionScalarsQuery).not.toHaveBeenCalled();
     expect(replaceAssignees).not.toHaveBeenCalled();
+    expectTxConsistentReads();
   });
 
   it('allows amount-only PATCH when persisted assignees sum to new amount', async () => {
@@ -105,16 +114,10 @@ describe('updateTransaction — PATCH split-sum validation', () => {
     expect(result).toMatchObject({ amount: 6000 });
     expect(updateTransactionScalarsQuery).toHaveBeenCalled();
     expect(replaceAssignees).not.toHaveBeenCalled();
+    expectTxConsistentReads();
   });
 
-  it('validates payload assignees when provided on PATCH', async () => {
-    vi.mocked(enrichTransactions).mockResolvedValue({
-      assigneeMap: {
-        [TXN_ID]: [{ memberId: MEMBER_A, amountCents: 5000 }],
-      },
-      tagMap: { [TXN_ID]: [] },
-    });
-
+  it('validates payload assignees when provided on PATCH without loading persisted rows', async () => {
     await expect(
       updateTransaction(TXN_ID, ORG_ID, {
         ...expensePayload,
@@ -127,16 +130,11 @@ describe('updateTransaction — PATCH split-sum validation', () => {
     ).rejects.toThrow('Assignee amounts must sum to transaction amount');
 
     expect(updateTransactionScalarsQuery).not.toHaveBeenCalled();
+    expect(fetchTransactionById).toHaveBeenCalledWith(TXN_ID, ORG_ID, mockTx);
+    expect(enrichTransactions).not.toHaveBeenCalled();
   });
 
-  it('replaces assignees after successful split validation', async () => {
-    vi.mocked(enrichTransactions).mockResolvedValue({
-      assigneeMap: {
-        [TXN_ID]: [{ memberId: MEMBER_A, amountCents: 5000 }],
-      },
-      tagMap: { [TXN_ID]: [] },
-    });
-
+  it('replaces assignees after successful split validation without loading persisted rows', async () => {
     const newAssignees = [
       { memberId: MEMBER_A, amountCents: 3000 },
       { memberId: MEMBER_B, amountCents: 2000 },
@@ -148,11 +146,9 @@ describe('updateTransaction — PATCH split-sum validation', () => {
     });
 
     expect(updateTransactionScalarsQuery).toHaveBeenCalled();
-    expect(replaceAssignees).toHaveBeenCalledWith(
-      expect.anything(),
-      TXN_ID,
-      newAssignees
-    );
+    expect(replaceAssignees).toHaveBeenCalledWith(mockTx, TXN_ID, newAssignees);
+    expect(fetchTransactionById).toHaveBeenCalledWith(TXN_ID, ORG_ID, mockTx);
+    expect(enrichTransactions).not.toHaveBeenCalled();
   });
 
   it('returns null when transaction is not found before validation', async () => {
