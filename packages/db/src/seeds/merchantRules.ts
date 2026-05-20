@@ -1,6 +1,8 @@
 import { db } from '../client'
 import { merchantRules } from '../schema/index'
 
+type InsertExecutor = { insert: typeof db.insert }
+
 // Default merchant rules seeded at org creation.
 // INVARIANT: Every row has orgId set — no global merchant rule rows.
 // Schema uses `pattern` (not matchValue) and `renameTo` (not renameDescription).
@@ -18,8 +20,11 @@ const DEFAULT_MERCHANT_RULES: {
   { name: 'Spotify', matchType: 'exact', pattern: 'SPOTIFY', renameTo: 'Spotify', priority: 4 },
 ]
 
-export const seedOrgMerchantRules = async (orgId: string): Promise<void> => {
-  await db.insert(merchantRules).values(
+export const insertSeedMerchantRulesForOrg = async (
+  executor: InsertExecutor,
+  orgId: string
+): Promise<void> => {
+  await executor.insert(merchantRules).values(
     DEFAULT_MERCHANT_RULES.map((rule) => ({
       orgId, // non-nullable — always set to the passed orgId
       pattern: rule.pattern,
@@ -28,4 +33,8 @@ export const seedOrgMerchantRules = async (orgId: string): Promise<void> => {
       priority: rule.priority,
     }))
   )
+}
+
+export const seedOrgMerchantRules = async (orgId: string): Promise<void> => {
+  await insertSeedMerchantRulesForOrg(db, orgId)
 }

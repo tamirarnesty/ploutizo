@@ -2,6 +2,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { Hono } from 'hono';
 import { db } from '@ploutizo/db';
 import { accountsRouter } from '../routes/accounts';
+import type { Mock } from 'vitest';
+import type { MockDbTransactionClient } from './testUtils';
+
+/** `db.select` after `vi.mock('@ploutizo/db')` — use for `mockReturnValueOnce` chains. */
+type MockedAccountsDbSelect = Mock;
 
 // Mock @clerk/hono so getAuth returns a known orgId
 vi.mock('@clerk/hono', () => ({
@@ -55,13 +60,7 @@ vi.mock('@ploutizo/db', () => ({
       }),
     }),
     transaction: vi.fn(
-      async (
-        fn: (tx: {
-          insert: ReturnType<typeof vi.fn>;
-          delete: ReturnType<typeof vi.fn>;
-          update: ReturnType<typeof vi.fn>;
-        }) => Promise<unknown>
-      ) => {
+      async (fn: (tx: MockDbTransactionClient) => Promise<unknown>) => {
         const result = await fn({
           insert: vi.fn().mockReturnValue({
             values: vi.fn().mockReturnValue({
@@ -130,8 +129,8 @@ describe('GET /api/accounts', () => {
 
   it('returns 200 with owners populated on shared account', async () => {
     // Call 1: listAccountsQuery — returns one account row
-    vi.mocked(db)
-      .select.mockReturnValueOnce({
+    (vi.mocked(db.select) as MockedAccountsDbSelect)
+      .mockReturnValueOnce({
         from: vi.fn().mockReturnValue({
           where: vi.fn().mockReturnValue({
             orderBy: vi.fn().mockResolvedValue([
@@ -149,7 +148,7 @@ describe('GET /api/accounts', () => {
             ]),
           }),
         }),
-      } as unknown as ReturnType<typeof db.select>)
+      })
       // Call 2: listAccountMemberDetails — returns member row for acct_1
       .mockReturnValueOnce({
         from: vi.fn().mockReturnValue({
@@ -166,7 +165,7 @@ describe('GET /api/accounts', () => {
             }),
           }),
         }),
-      } as unknown as ReturnType<typeof db.select>);
+      });
 
     const res = await app.request('/');
     expect(res.status).toBe(200);
@@ -186,8 +185,8 @@ describe('GET /api/accounts', () => {
 
   it('returns owners as [] when account has no members', async () => {
     // Call 1: listAccountsQuery — returns personal account
-    vi.mocked(db)
-      .select.mockReturnValueOnce({
+    (vi.mocked(db.select) as MockedAccountsDbSelect)
+      .mockReturnValueOnce({
         from: vi.fn().mockReturnValue({
           where: vi.fn().mockReturnValue({
             orderBy: vi.fn().mockResolvedValue([
@@ -205,7 +204,7 @@ describe('GET /api/accounts', () => {
             ]),
           }),
         }),
-      } as unknown as ReturnType<typeof db.select>)
+      })
       // Call 2: listAccountMemberDetails — returns empty (no members)
       .mockReturnValueOnce({
         from: vi.fn().mockReturnValue({
@@ -215,7 +214,7 @@ describe('GET /api/accounts', () => {
             }),
           }),
         }),
-      } as unknown as ReturnType<typeof db.select>);
+      });
 
     const res = await app.request('/');
     const body = (await res.json()) as { data: { owners: unknown[] }[] };
