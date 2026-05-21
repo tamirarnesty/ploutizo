@@ -80,23 +80,32 @@ export const createTransactionSchema = z.discriminatedUnion('type', [
 ])
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>
 
-/** Reject explicit `assignees: []` — same rule as updateTransactionSchema (cannot clear splits via empty array). */
-const rejectEmptyAssigneesArray = (
-  data: { assignees?: unknown[] },
+/**
+ * PATCH: `assignees: []` means replace-all with no rows (clears splits). That is valid only for
+ * types where persisted transactions may have zero assignee rows. Refund/settlement always require
+ * at least one assignee for card-balance reconciliation — reject empty replace for those types.
+ * (Flat `updateTransactionSchema` still rejects `assignees: []` — see .min(1) on that field.)
+ */
+const rejectPatchEmptyAssigneesWhenRequired = (
+  data: CreateTransactionInput,
   ctx: z.RefinementCtx
 ) => {
-  if (data.assignees !== undefined && data.assignees.length === 0) {
+  if (data.assignees === undefined || data.assignees.length > 0) {
+    return
+  }
+  if (data.type === 'refund' || data.type === 'settlement') {
     ctx.addIssue({
       code: 'custom',
-      message: 'When assignees are included, at least one row is required.',
+      message:
+        'Refund and settlement require at least one assignee; cannot clear assignee rows.',
       path: ['assignees'],
     })
   }
 }
 
-/** PATCH body: full discriminated union (D-08) plus empty-assignee guard. */
+/** PATCH body: full discriminated union (D-08) plus type-aware empty-assignee guard. */
 export const patchTransactionSchema = createTransactionSchema.superRefine(
-  rejectEmptyAssigneesArray
+  rejectPatchEmptyAssigneesWhenRequired
 )
 
 export const updateTransactionSchema = baseTransactionSchema

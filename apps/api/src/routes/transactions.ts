@@ -153,7 +153,7 @@ transactionsRouter.patch('/:id/restore', async (c) => {
 });
 
 // PATCH /:id — update fields + replace-all assignees/tags (D-03, D-08, D-10, D-11)
-// D-08: patchTransactionSchema = discriminated union + rejects assignees: [] (cannot clear splits via empty array)
+// D-08: patchTransactionSchema — discriminated union; assignees: [] clears splits except refund/settlement (validators)
 transactionsRouter.patch(
   '/:id',
   appValidator('json', patchTransactionSchema),
