@@ -34,6 +34,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
+import { formatSettlementDescription } from '@ploutizo/utils';
 import type { Account, OrgMember } from '@ploutizo/types';
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import { useGetCategories } from '@/lib/data-access/categories';
@@ -449,10 +450,14 @@ const TransactionFormInner = ({
                 const to = counterpartAccount?.name ?? '…';
                 lockedValue = `Transfer from ${from} to ${to}`;
               } else if (type === 'settlement') {
-                // counterpartAccountId = source (bank), accountId = destination (credit card)
-                const from = counterpartAccount?.name ?? '…';
-                const to = primaryAccount?.name ?? '…';
-                lockedValue = `Settlement from ${from} to ${to}`;
+                const cardName = primaryAccount?.name ?? '…';
+                const paidFromName = counterpartAccountId
+                  ? (counterpartAccount?.name ?? '…')
+                  : undefined;
+                lockedValue = formatSettlementDescription(
+                  cardName,
+                  paidFromName
+                );
               } else if (type === 'contribution') {
                 const from = primaryAccount?.name ?? '…';
                 const to = counterpartAccount?.name ?? '…';
