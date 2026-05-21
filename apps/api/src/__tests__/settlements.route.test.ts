@@ -50,10 +50,12 @@ describe('GET /api/settlements route', () => {
         ],
       },
       totalBalanceCents: 5000,
+      sharedBalanceCents: 0,
+      sharedParticipantIds: [],
       members: [
         {
           member: { id: 'mem_1', name: 'Alice', avatarUrl: null },
-          balanceCents: 5000,
+          personalBalanceCents: 5000,
         },
       ],
       dueDate: '2026-05-15',
@@ -97,7 +99,7 @@ describe('GET /api/settlements route', () => {
 
 describe('POST /api/settlements route', () => {
   const validPayload = {
-    payerMemberId: '550e8400-e29b-41d4-a716-446655440001',
+    assignees: [{ memberId: '550e8400-e29b-41d4-a716-446655440001' }],
     accountId: '550e8400-e29b-41d4-a716-446655440002',
     counterpartAccountId: '550e8400-e29b-41d4-a716-446655440003',
     amountCents: 5000,

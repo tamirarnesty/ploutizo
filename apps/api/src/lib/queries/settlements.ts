@@ -9,6 +9,46 @@ import {
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { AccountType } from '@ploutizo/types';
 
+const QUALIFYING_TX_TYPES = [
+  'expense',
+  'refund',
+  'settlement',
+] as (typeof transactions.type._.data)[];
+
+const signedAssigneeAmountSql = sql<number>`CASE
+  WHEN ${transactions.type} = 'expense' THEN ${transactionAssignees.amountCents}
+  WHEN ${transactions.type} = 'refund' THEN -${transactionAssignees.amountCents}
+  WHEN ${transactions.type} = 'settlement' THEN -${transactionAssignees.amountCents}
+  ELSE 0
+END`;
+
+const signedTransactionAmountSql = sql<number>`CASE
+  WHEN ${transactions.type} = 'expense' THEN ${transactions.amount}
+  WHEN ${transactions.type} = 'refund' THEN -${transactions.amount}
+  WHEN ${transactions.type} = 'settlement' THEN -${transactions.amount}
+  ELSE 0
+END`;
+
+const assigneeCountSubquery = db
+  .select({
+    transactionId: transactionAssignees.transactionId,
+    assigneeCount: sql<number>`COUNT(*)::int`.as('assignee_count'),
+  })
+  .from(transactionAssignees)
+  .groupBy(transactionAssignees.transactionId)
+  .as('assignee_counts');
+
+const settlementScopeWhere = (orgId: string) =>
+  and(
+    eq(accounts.orgId, orgId),
+    isNull(accounts.archivedAt),
+    isNull(transactions.deletedAt),
+    inArray(transactions.type, QUALIFYING_TX_TYPES)
+  );
+
+const coerceBigInt = (value: number | string): number =>
+  typeof value === 'string' ? Number(value) : value;
+
 export interface SettlementBalanceRow {
   accountId: string;
   accountName: string;
@@ -19,23 +59,13 @@ export interface SettlementBalanceRow {
   memberId: string;
   memberName: string;
   memberAvatarUrl: string | null;
-  // signed cents: positive = member owes the card; negative = member overpaid (credit).
-  // Negative balances are intentional — settlements are not capped by the current balance,
-  // so overpayments roll into a credit that offsets future expenses.
-  balanceCents: number;
+  personalBalanceCents: number;
+  sharedBalanceCents: number;
+  sharedParticipantIds: string[];
 }
 
-/**
- * Per-(account, member) settlement balances from **transactions only** (D-05).
- * Credit-card accounts with no qualifying activity produce no rows here; the exported
- * `fetchSettlementBalances` merges those accounts with every household member at 0 cents.
- *
- * Formula per (accountId, memberId):
- *   SUM(CASE … expense / refund / settlement … END) — see CASE in select below.
- */
-const fetchSettlementAggregateRows = async (
-  orgId: string
-): Promise<SettlementBalanceRow[]> => {
+/** Personal bucket: qualifying txs with exactly one assignee. */
+const fetchPersonalAggregateRows = async (orgId: string) => {
   const rows = await db
     .select({
       accountId: accounts.id,
@@ -47,12 +77,9 @@ const fetchSettlementAggregateRows = async (
       memberId: orgMembers.id,
       memberName: orgMembers.displayName,
       memberAvatarUrl: users.imageUrl,
-      balanceCents: sql<number>`COALESCE(SUM(CASE
-          WHEN ${transactions.type} = 'expense' THEN ${transactionAssignees.amountCents}
-          WHEN ${transactions.type} = 'refund' THEN -${transactionAssignees.amountCents}
-          WHEN ${transactions.type} = 'settlement' THEN -${transactionAssignees.amountCents}
-          ELSE 0
-        END), 0)::bigint`.as('balance_cents'),
+      personalBalanceCents: sql<number>`COALESCE(SUM(${signedAssigneeAmountSql}), 0)::bigint`.as(
+        'personal_balance_cents'
+      ),
     })
     .from(accounts)
     .innerJoin(transactions, eq(transactions.accountId, accounts.id))
@@ -60,22 +87,13 @@ const fetchSettlementAggregateRows = async (
       transactionAssignees,
       eq(transactionAssignees.transactionId, transactions.id)
     )
+    .innerJoin(
+      assigneeCountSubquery,
+      sql`${assigneeCountSubquery.transactionId} = ${transactions.id} AND ${assigneeCountSubquery.assigneeCount} = 1`
+    )
     .innerJoin(orgMembers, eq(orgMembers.id, transactionAssignees.memberId))
     .innerJoin(users, eq(users.id, orgMembers.userId))
-    .where(
-      and(
-        eq(accounts.orgId, orgId),
-        isNull(accounts.archivedAt), // D-09: non-archived only
-        isNull(transactions.deletedAt), // soft-delete partial index
-        // D-05: only these types create/reduce balance. Cast follows the project pattern at
-        // apps/api/src/lib/queries/transactions.ts:113-115 — Drizzle pgEnum requires this cast.
-        inArray(transactions.type, [
-          'expense',
-          'refund',
-          'settlement',
-        ] as (typeof transactions.type._.data)[])
-      )
-    )
+    .where(settlementScopeWhere(orgId))
     .groupBy(
       accounts.id,
       accounts.name,
@@ -88,31 +106,128 @@ const fetchSettlementAggregateRows = async (
       users.imageUrl
     );
 
-  // Drizzle returns ::bigint as string in some configs — coerce defensively.
   return rows.map((r) => ({
     ...r,
-    balanceCents:
-      typeof r.balanceCents === 'string'
-        ? Number(r.balanceCents)
-        : r.balanceCents,
+    personalBalanceCents: coerceBigInt(r.personalBalanceCents),
   }));
+};
+
+/** Shared bucket: qualifying txs with two or more assignees (once per tx). */
+const fetchSharedBalanceByAccount = async (
+  orgId: string
+): Promise<Map<string, number>> => {
+  const rows = await db
+    .select({
+      accountId: accounts.id,
+      sharedBalanceCents: sql<number>`COALESCE(SUM(${signedTransactionAmountSql}), 0)::bigint`.as(
+        'shared_balance_cents'
+      ),
+    })
+    .from(accounts)
+    .innerJoin(transactions, eq(transactions.accountId, accounts.id))
+    .innerJoin(
+      assigneeCountSubquery,
+      sql`${assigneeCountSubquery.transactionId} = ${transactions.id} AND ${assigneeCountSubquery.assigneeCount} >= 2`
+    )
+    .where(settlementScopeWhere(orgId))
+    .groupBy(accounts.id);
+
+  const map = new Map<string, number>();
+  for (const row of rows) {
+    map.set(row.accountId, coerceBigInt(row.sharedBalanceCents));
+  }
+  return map;
+};
+
+/** Union of assignee ids on shared qualifying txs per card (current org members only). */
+export const fetchSharedParticipantIdsByOrg = async (
+  orgId: string
+): Promise<Map<string, string[]>> => {
+  const rows = await db
+    .selectDistinct({
+      accountId: accounts.id,
+      memberId: orgMembers.id,
+    })
+    .from(accounts)
+    .innerJoin(transactions, eq(transactions.accountId, accounts.id))
+    .innerJoin(
+      assigneeCountSubquery,
+      sql`${assigneeCountSubquery.transactionId} = ${transactions.id} AND ${assigneeCountSubquery.assigneeCount} >= 2`
+    )
+    .innerJoin(
+      transactionAssignees,
+      eq(transactionAssignees.transactionId, transactions.id)
+    )
+    .innerJoin(orgMembers, eq(orgMembers.id, transactionAssignees.memberId))
+    .where(and(settlementScopeWhere(orgId), eq(orgMembers.orgId, orgId)));
+
+  const byAccount = new Map<string, Set<string>>();
+  for (const row of rows) {
+    const set = byAccount.get(row.accountId) ?? new Set<string>();
+    set.add(row.memberId);
+    byAccount.set(row.accountId, set);
+  }
+
+  const result = new Map<string, string[]>();
+  for (const [accountId, ids] of byAccount) {
+    result.set(accountId, [...ids].sort((a, b) => a.localeCompare(b)));
+  }
+  return result;
+};
+
+/** Shared participants for one card — used by POST validation. */
+export const fetchSharedParticipantIds = async (
+  accountId: string,
+  orgId: string
+): Promise<string[]> => {
+  const rows = await db
+    .selectDistinct({
+      memberId: orgMembers.id,
+    })
+    .from(transactions)
+    .innerJoin(accounts, eq(accounts.id, transactions.accountId))
+    .innerJoin(
+      assigneeCountSubquery,
+      sql`${assigneeCountSubquery.transactionId} = ${transactions.id} AND ${assigneeCountSubquery.assigneeCount} >= 2`
+    )
+    .innerJoin(
+      transactionAssignees,
+      eq(transactionAssignees.transactionId, transactions.id)
+    )
+    .innerJoin(orgMembers, eq(orgMembers.id, transactionAssignees.memberId))
+    .where(
+      and(
+        eq(transactions.accountId, accountId),
+        eq(accounts.orgId, orgId),
+        isNull(accounts.archivedAt),
+        isNull(transactions.deletedAt),
+        inArray(transactions.type, QUALIFYING_TX_TYPES),
+        eq(orgMembers.orgId, orgId)
+      )
+    );
+
+  return rows.map((r) => r.memberId).sort((a, b) => a.localeCompare(b));
 };
 
 /**
  * Settlement balance rows for GET /api/settlements.
  *
  * For **credit_card** accounts: returns every (account × household member) pair with
- * balances from aggregates (0 when there are no expense/refund/settlement splits yet).
- * Without this, cards that exist in `accounts` but have no qualifying transactions
- * were invisible to the dashboard (inner join to `transactions` produced no rows).
+ * personal balances from aggregates (0 when no personal activity). Shared bucket and
+ * participant ids are duplicated on each member row for the same account.
  *
  * Non-credit accounts keep the previous behavior: only (account, member) pairs that
- * appear on qualifying transactions.
+ * appear on qualifying personal transactions.
  */
 export const fetchSettlementBalances = async (
   orgId: string
 ): Promise<SettlementBalanceRow[]> => {
-  const aggregateRows = await fetchSettlementAggregateRows(orgId);
+  const [personalRows, sharedByAccount, participantsByAccount] =
+    await Promise.all([
+      fetchPersonalAggregateRows(orgId),
+      fetchSharedBalanceByAccount(orgId),
+      fetchSharedParticipantIdsByOrg(orgId),
+    ]);
 
   const creditCardAccounts = await db
     .select({
@@ -141,17 +256,20 @@ export const fetchSettlementBalances = async (
     .innerJoin(users, eq(users.id, orgMembers.userId))
     .where(eq(orgMembers.orgId, orgId));
 
-  const ccBalanceByPair = new Map<string, number>();
-  for (const r of aggregateRows) {
+  const personalByPair = new Map<string, (typeof personalRows)[number]>();
+  for (const r of personalRows) {
     if (r.accountType === 'credit_card') {
-      ccBalanceByPair.set(`${r.accountId}:${r.memberId}`, r.balanceCents);
+      personalByPair.set(`${r.accountId}:${r.memberId}`, r);
     }
   }
 
   const creditCardRows: SettlementBalanceRow[] = [];
   for (const cc of creditCardAccounts) {
+    const sharedBalanceCents = sharedByAccount.get(cc.id) ?? 0;
+    const sharedParticipantIds = participantsByAccount.get(cc.id) ?? [];
     for (const m of householdMembers) {
       const key = `${cc.id}:${m.memberId}`;
+      const agg = personalByPair.get(key);
       creditCardRows.push({
         accountId: cc.id,
         accountName: cc.name,
@@ -162,16 +280,31 @@ export const fetchSettlementBalances = async (
         memberId: m.memberId,
         memberName: m.memberName,
         memberAvatarUrl: m.memberAvatarUrl,
-        balanceCents: ccBalanceByPair.get(key) ?? 0,
+        personalBalanceCents: agg?.personalBalanceCents ?? 0,
+        sharedBalanceCents,
+        sharedParticipantIds,
       });
     }
   }
 
-  const nonCreditAggregateRows = aggregateRows.filter(
-    (r) => r.accountType !== 'credit_card'
-  );
+  const nonCreditRows: SettlementBalanceRow[] = personalRows
+    .filter((r) => r.accountType !== 'credit_card')
+    .map((r) => ({
+      accountId: r.accountId,
+      accountName: r.accountName,
+      accountType: r.accountType,
+      institution: r.institution,
+      lastFour: r.lastFour,
+      statementDueDay: r.statementDueDay,
+      memberId: r.memberId,
+      memberName: r.memberName,
+      memberAvatarUrl: r.memberAvatarUrl,
+      personalBalanceCents: r.personalBalanceCents,
+      sharedBalanceCents: sharedByAccount.get(r.accountId) ?? 0,
+      sharedParticipantIds: participantsByAccount.get(r.accountId) ?? [],
+    }));
 
-  return [...creditCardRows, ...nonCreditAggregateRows];
+  return [...creditCardRows, ...nonCreditRows];
 };
 
 /**
