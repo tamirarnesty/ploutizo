@@ -16,7 +16,12 @@ import { Button } from '@ploutizo/ui/components/button';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
 import type { Account } from '@ploutizo/types';
+import {
+  DATA_GRID_PAGINATION_ROW_CLASSNAME,
+  PAGINATED_DATA_GRID_SCROLL_ORIENTATION,
+} from '@/components/data-grid/dataGridSharedLayout';
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
+import { usePersistedPageSize } from '@/hooks/persistedPageSize';
 import type { ColumnDef } from '@tanstack/react-table';
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
@@ -42,6 +47,8 @@ export const AccountsTable = ({
   onRowClick,
   onAddClick,
 }: AccountsTableProps) => {
+  const { pagination, setPagination } = usePersistedPageSize('accounts');
+
   const columns = useMemo<ColumnDef<Account>[]>(
     () => [
       {
@@ -156,6 +163,8 @@ export const AccountsTable = ({
   const table = useReactTable({
     data: accounts,
     columns,
+    state: { pagination },
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
   });
@@ -187,21 +196,13 @@ export const AccountsTable = ({
     >
       <div className="w-full space-y-2.5">
         <DataGridContainer>
-          <DataGridScrollArea>
+          <DataGridScrollArea
+            orientation={PAGINATED_DATA_GRID_SCROLL_ORIENTATION}
+          >
             <DataGridTable />
           </DataGridScrollArea>
         </DataGridContainer>
-        {/*
-         * DataGridPagination base styles stack to flex-col on mobile, swapping
-         * the two sections' visual order via `order-1`/`order-2`. These
-         * overrides force a single-row layout at all sizes:
-         *   - `flex-row`                    always row (overrides base flex-col)
-         *   - `[&>div:first-child]:order-1` lock rows-per-page to left
-         *   - `[&>div:last-child]:order-2`  lock info/nav to right
-         *   - `pb-0` / `pt-0`               remove mobile-only stack spacing
-         *   - `[&_[role='combobox']]:w-16`  widen dropdown for 2-digit page sizes
-         */}
-        <DataGridPagination className="flex-row [&_[role='combobox']]:w-16 [&>div:first-child]:order-1 [&>div:first-child]:pb-0 [&>div:last-child]:order-2 [&>div:last-child]:flex-row [&>div:last-child]:pt-0" />
+        <DataGridPagination className={DATA_GRID_PAGINATION_ROW_CLASSNAME} />
       </div>
     </DataGrid>
   );

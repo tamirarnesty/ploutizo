@@ -25,6 +25,10 @@ import {
   CARD_BALANCES_PAGE_SIZE_OPTIONS,
   useCardBalancesPageSize,
 } from '@/components/dashboard/card-balances/useCardBalancesPageSize';
+import {
+  DATA_GRID_PAGINATION_ROW_CLASSNAME,
+  PAGINATED_DATA_GRID_SCROLL_ORIENTATION,
+} from '@/components/data-grid/dataGridSharedLayout';
 import type { SortingState } from '@tanstack/react-table';
 
 export type { CardBalancesGridProps } from '@/components/dashboard/card-balances/types';
@@ -95,12 +99,17 @@ export const CardBalancesGrid = ({
       <Card className="w-full gap-0 py-0">
         <CardBalancesGridHeader />
         <CardContent className="border-b px-0">
-          <DataGridScrollArea>
+          <DataGridScrollArea
+            orientation={PAGINATED_DATA_GRID_SCROLL_ORIENTATION}
+          >
             <DataGridTable footerContent={footer} />
           </DataGridScrollArea>
         </CardContent>
         <CardFooter className="border-none bg-transparent px-3.5 py-2">
-          <DataGridPagination sizes={[...CARD_BALANCES_PAGE_SIZE_OPTIONS]} />
+          <DataGridPagination
+            sizes={[...CARD_BALANCES_PAGE_SIZE_OPTIONS]}
+            className={DATA_GRID_PAGINATION_ROW_CLASSNAME}
+          />
         </CardFooter>
       </Card>
     </DataGrid>

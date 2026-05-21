@@ -4,6 +4,7 @@ import type { TransactionRow } from '@/lib/data-access/transactions';
 import { useGetTransactions } from '@/lib/data-access/transactions';
 import { TransactionsTable } from '@/components/transactions/TransactionsTable';
 import { TransactionSheet } from '@/components/transactions/TransactionSheet';
+import { useTablePageSize } from '@/hooks/persistedPageSize';
 
 type SortCol = 'date' | 'amount' | 'type' | 'category' | 'account';
 
@@ -11,7 +12,7 @@ export const Expenses = () => {
   // Hard-coded type filter — D-05 says these are dedicated filtered pages, not
   // full filter UIs. No filter bar, no URL param sync, no filter operators.
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(25);
+  const { pageSize: limit, setPageSize } = useTablePageSize('expenses');
   const [sort, setSort] = useState<SortCol>('date');
   const [order, setOrder] = useState<'asc' | 'desc'>('desc');
 
@@ -57,7 +58,7 @@ export const Expenses = () => {
         sort={sort}
         order={order}
         onPageChange={setPage}
-        onLimitChange={setLimit}
+        onLimitChange={setPageSize}
         onSortChange={(nextSort, nextOrder) => {
           // TransactionsTable always passes a valid sort column; undefined is safe to ignore
           if (nextSort) setSort(nextSort);
