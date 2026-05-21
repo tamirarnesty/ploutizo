@@ -1,29 +1,40 @@
 import { useMemo, useState } from 'react';
 import {
   getCoreRowModel,
+  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
 import {
   Card,
   CardContent,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@ploutizo/ui/components/card';
 import { Text } from '@ploutizo/ui/components/text';
-import {
-  DataGrid,
-  DataGridContainer,
-} from '@ploutizo/ui/components/reui/data-grid/data-grid';
+import { DataGrid } from '@ploutizo/ui/components/reui/data-grid/data-grid';
 import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-grid-scroll-area';
 import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-table';
+import { DataGridPagination } from '@ploutizo/ui/components/reui/data-grid/data-grid-pagination';
 import type { CardBalancesGridProps } from '@/components/dashboard/card-balances/types';
 import { buildCardBalancesColumns } from '@/components/dashboard/card-balances/buildCardBalancesColumns';
 import { CardBalancesGridFooter } from '@/components/dashboard/card-balances/CardBalancesGridFooter';
 import { CardBalancesEmpty } from '@/components/dashboard/card-balances/CardBalancesEmpty';
+import {
+  CARD_BALANCES_PAGE_SIZE_OPTIONS,
+  useCardBalancesPageSize,
+} from '@/components/dashboard/card-balances/useCardBalancesPageSize';
 import type { SortingState } from '@tanstack/react-table';
 
 export type { CardBalancesGridProps } from '@/components/dashboard/card-balances/types';
+
+const CardBalancesGridHeader = () => (
+  <CardHeader className="border-b px-3.5 pt-3 [.border-b]:pb-3">
+    <CardTitle className="text-lg leading-tight">Card Balances</CardTitle>
+    <Text variant="caption">All time</Text>
+  </CardHeader>
+);
 
 export const CardBalancesGrid = ({
   accounts,
@@ -31,6 +42,7 @@ export const CardBalancesGrid = ({
   onSettleClick,
 }: CardBalancesGridProps) => {
   const [sorting, setSorting] = useState<SortingState>([]);
+  const { pagination, setPagination } = useCardBalancesPageSize();
 
   const columns = useMemo(
     () => buildCardBalancesColumns(onSettleClick),
@@ -40,10 +52,12 @@ export const CardBalancesGrid = ({
   const table = useReactTable({
     data: accounts,
     columns,
-    state: { sorting },
+    state: { sorting, pagination },
     onSortingChange: setSorting,
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
   });
 
   const balanceTotalCents = useMemo(
@@ -56,41 +70,39 @@ export const CardBalancesGrid = ({
       <CardBalancesGridFooter balanceTotalCents={balanceTotalCents} />
     );
 
-  return (
-    <Card className="gap-0 py-0">
-      {/*
-       CardHeader is grid+gap; `space-y-*` on peers stacks with gap. Override base [.border-b]:pb-4.
-      */}
-      <CardHeader className="gap-0 border-b border-border px-3.5 pt-3 [&.border-b]:pb-3">
-        <div className="flex w-full min-w-0 flex-col gap-1">
-          <CardTitle className="text-lg leading-tight">Card Balances</CardTitle>
-          <Text variant="caption">All time</Text>
-        </div>
-      </CardHeader>
-      {accounts.length === 0 && !isLoading ? (
+  if (accounts.length === 0 && !isLoading) {
+    return (
+      <Card className="w-full gap-0 py-0">
+        <CardBalancesGridHeader />
         <CardBalancesEmpty />
-      ) : (
-        <CardContent className="p-0">
-          <DataGrid
-            table={table}
-            recordCount={accounts.length}
-            isLoading={isLoading}
-            tableLayout={{
-              width: 'auto',
-              dense: true,
-            }}
-            tableClassNames={{
-              bodyRow: 'group/row',
-            }}
-          >
-            <DataGridContainer border={false} className="min-w-0">
-              <DataGridScrollArea className="**:data-[slot='scroll-area-viewport']:overscroll-contain">
-                <DataGridTable footerContent={footer} />
-              </DataGridScrollArea>
-            </DataGridContainer>
-          </DataGrid>
+      </Card>
+    );
+  }
+
+  return (
+    <DataGrid
+      table={table}
+      recordCount={accounts.length}
+      isLoading={isLoading}
+      tableLayout={{
+        width: 'auto',
+        dense: true,
+      }}
+      tableClassNames={{
+        bodyRow: 'group/row',
+      }}
+    >
+      <Card className="w-full gap-0 py-0">
+        <CardBalancesGridHeader />
+        <CardContent className="border-b px-0">
+          <DataGridScrollArea>
+            <DataGridTable footerContent={footer} />
+          </DataGridScrollArea>
         </CardContent>
-      )}
-    </Card>
+        <CardFooter className="border-none bg-transparent px-3.5 py-2">
+          <DataGridPagination sizes={[...CARD_BALANCES_PAGE_SIZE_OPTIONS]} />
+        </CardFooter>
+      </Card>
+    </DataGrid>
   );
 };

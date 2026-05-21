@@ -24,7 +24,7 @@ export const SettlementSummaryPane = () => {
 
   return (
     <Card className="w-full gap-0 py-0">
-      <CardHeader className="gap-0 border-b border-border px-3.5 pt-3 [&.border-b]:pb-3">
+      <CardHeader className="gap-0 border-b border-border px-3.5 pt-3 [.border-b]:pb-3">
         <div className="flex w-full min-w-0 items-end justify-between gap-3">
           <div className="flex min-w-0 flex-col gap-1">
             <CardTitle className="text-lg leading-tight">Settlement</CardTitle>

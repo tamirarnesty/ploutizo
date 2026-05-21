@@ -42,11 +42,11 @@ export const buildCardBalancesColumns = (
         icon={columnHeaderIcon(CreditCard)}
       />
     ),
-    size: 140,
+    size: 166,
     meta: {
-      headerClassName: 'min-w-[140px]',
-      cellClassName: 'min-w-[140px]',
-      skeleton: <Skeleton className="h-4 w-24 motion-safe:animate-pulse" />,
+      headerClassName: 'min-w-[160px]',
+      cellClassName: 'min-w-[160px]',
+      skeleton: <Skeleton className="h-4 w-28 motion-safe:animate-pulse" />,
     },
     cell: ({ row }) => <CardBalancesCardCell account={row.original.account} />,
   },
@@ -60,10 +60,10 @@ export const buildCardBalancesColumns = (
         icon={columnHeaderIcon(Users)}
       />
     ),
-    size: 88,
+    size: 92,
     meta: {
-      headerClassName: 'min-w-[88px]',
-      cellClassName: 'min-w-[88px]',
+      headerClassName: 'min-w-[92px]',
+      cellClassName: 'min-w-[92px]',
       skeleton: <Skeleton className="h-4 w-16 motion-safe:animate-pulse" />,
     },
     cell: ({ row }) => (
@@ -81,12 +81,12 @@ export const buildCardBalancesColumns = (
         icon={columnHeaderIcon(DollarSign)}
       />
     ),
-    size: 108,
+    size: 112,
     meta: {
-      headerClassName: 'min-w-[108px]',
-      cellClassName: 'min-w-[108px]',
+      headerClassName: 'min-w-[112px]',
+      cellClassName: 'min-w-[112px]',
       skeleton: (
-        <Skeleton className="ms-auto h-4 w-19 motion-safe:animate-pulse" />
+        <Skeleton className="ms-auto h-4 w-16 motion-safe:animate-pulse" />
       ),
     },
     cell: ({ row }) => (
@@ -116,10 +116,10 @@ export const buildCardBalancesColumns = (
         icon={columnHeaderIcon(CalendarClock)}
       />
     ),
-    size: 88,
+    size: 92,
     meta: {
-      headerClassName: 'min-w-[88px]',
-      cellClassName: 'min-w-[88px]',
+      headerClassName: 'min-w-[92px]',
+      cellClassName: 'min-w-[92px]',
       skeleton: (
         <Skeleton className="ms-auto h-4 w-12 motion-safe:animate-pulse" />
       ),
@@ -140,10 +140,10 @@ export const buildCardBalancesColumns = (
         icon={columnHeaderIcon(Activity)}
       />
     ),
-    size: 100,
+    size: 104,
     meta: {
-      headerClassName: 'min-w-[100px]',
-      cellClassName: 'min-w-[100px]',
+      headerClassName: 'min-w-[104px]',
+      cellClassName: 'min-w-[104px]',
       skeleton: (
         <Skeleton className="h-5 w-16 rounded-full motion-safe:animate-pulse" />
       ),
@@ -160,10 +160,10 @@ export const buildCardBalancesColumns = (
         icon={columnHeaderIcon(ChartPie)}
       />
     ),
-    size: 320,
+    size: 374,
     meta: {
-      headerClassName: 'min-w-[280px]',
-      cellClassName: 'min-w-[280px]',
+      headerClassName: 'min-w-[360px]',
+      cellClassName: 'min-w-[360px]',
       skeleton: <Skeleton className="h-10 w-full motion-safe:animate-pulse" />,
     },
     cell: ({ row }) => <CardBalancesBreakdownCell account={row.original} />,
@@ -176,9 +176,6 @@ export const buildCardBalancesColumns = (
     meta: {
       headerClassName: 'w-12 max-w-12',
       cellClassName: 'w-12 max-w-12 pe-1',
-      skeleton: (
-        <Skeleton className="ms-auto size-7 motion-safe:animate-pulse" />
-      ),
     },
     cell: ({ row }) => (
       <CardBalancesActionCell
