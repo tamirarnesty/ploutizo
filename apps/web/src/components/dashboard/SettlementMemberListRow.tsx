@@ -25,10 +25,6 @@ const memberFirstName = (member: OrgMember) => {
   return displayFirstName || member.displayName;
 };
 
-/** Dense sidebar row: Item gives hover + focus-visible affordances (group/item). */
-const settlementMemberItemClass =
-  'w-full flex-nowrap border-0 bg-transparent px-0 py-1 shadow-none transition-colors hover:bg-muted/40';
-
 type SettlementMemberListRowProps = {
   member: OrgMember;
   rollup: MemberSettlementRollup;
@@ -46,7 +42,11 @@ export const SettlementMemberListRow = ({
 
   if (!hasHouseholdCreditCards) {
     return (
-      <Item variant="default" size="xs" className={settlementMemberItemClass}>
+      <Item
+        variant="default"
+        size="xs"
+        className="w-full flex-nowrap border-0 bg-transparent px-0 py-1 shadow-none transition-colors hover:bg-muted/40"
+      >
         <ItemMedia variant="default" className="shrink-0">
           <UserAvatar
             name={member.displayName}
@@ -55,9 +55,7 @@ export const SettlementMemberListRow = ({
           />
         </ItemMedia>
         <ItemContent className="min-w-0">
-          <ItemTitle className="text-sm leading-tight font-medium">
-            {firstName}
-          </ItemTitle>
+          <ItemTitle className="leading-tight">{firstName}</ItemTitle>
           <ItemDescription className="text-xs leading-tight">
             Add a card
           </ItemDescription>
@@ -65,8 +63,7 @@ export const SettlementMemberListRow = ({
         <ItemActions className="shrink-0">
           <Text
             as="p"
-            variant="body-sm"
-            className="text-right font-sans font-semibold text-muted-foreground tabular-nums"
+            className="text-right text-base leading-none font-bold whitespace-nowrap text-muted-foreground tabular-nums"
           >
             —
           </Text>
@@ -78,17 +75,12 @@ export const SettlementMemberListRow = ({
   const isCredit = cents < 0;
   const isZero = cents === 0;
 
-  const amountClass = cn(
-    'text-right font-sans text-sm leading-none font-semibold tabular-nums',
-    isCredit
-      ? 'text-success'
-      : isZero
-        ? 'text-muted-foreground'
-        : 'text-warning'
-  );
-
   return (
-    <Item variant="default" size="xs" className={settlementMemberItemClass}>
+    <Item
+      variant="default"
+      size="xs"
+      className="w-full flex-nowrap border-0 bg-transparent p-1 shadow-none transition-colors hover:bg-muted/40"
+    >
       <ItemMedia variant="default" className="shrink-0">
         <UserAvatar
           name={member.displayName}
@@ -97,9 +89,7 @@ export const SettlementMemberListRow = ({
         />
       </ItemMedia>
       <ItemContent className="min-w-0">
-        <ItemTitle className="text-sm leading-tight font-medium">
-          {firstName}
-        </ItemTitle>
+        <ItemTitle className="leading-tight">{firstName}</ItemTitle>
         {scopeCaption ? (
           <ItemDescription className="text-xs leading-tight">
             {scopeCaption}
@@ -107,7 +97,15 @@ export const SettlementMemberListRow = ({
         ) : null}
       </ItemContent>
       <ItemActions className="shrink-0">
-        <Text as="p" variant="body-sm" className={amountClass}>
+        <Text
+          as="p"
+          className={cn(
+            'text-right text-base leading-none font-bold whitespace-nowrap tabular-nums',
+            isCredit && 'text-success',
+            isZero && 'text-muted-foreground',
+            !isCredit && !isZero && 'text-foreground'
+          )}
+        >
           {isZero ? '—' : formatCurrency(Math.abs(cents))}
         </Text>
       </ItemActions>

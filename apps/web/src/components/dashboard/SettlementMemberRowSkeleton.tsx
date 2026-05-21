@@ -21,7 +21,7 @@ export const SettlementMemberRowSkeleton = () => (
       <Skeleton className="h-3 w-20 motion-safe:animate-pulse" />
     </ItemContent>
     <ItemActions className="shrink-0">
-      <Skeleton className="h-4 w-16 motion-safe:animate-pulse" />
+      <Skeleton className="h-5 w-16 motion-safe:animate-pulse" />
     </ItemActions>
   </Item>
 );

@@ -1,63 +1,43 @@
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
+import { cn } from '@ploutizo/ui/lib/utils';
 import type { HouseholdSettlementSummary } from '@/components/dashboard/useCreditCardMemberRollup';
-import { formatCurrency } from '@/lib/formatCurrency';
-import type { ReactNode } from 'react';
+import { formatSignedBalanceCents } from '@/lib/formatCurrency';
 
 type SettlementPaneHeaderProps = {
   isLoading: boolean;
-  hasHouseholdCreditCards: boolean;
   householdSummary: HouseholdSettlementSummary;
 };
 
+/** Hero card total aligned with member/shared row amounts. */
 export const SettlementPaneHeader = ({
   isLoading,
-  hasHouseholdCreditCards,
   householdSummary,
 }: SettlementPaneHeaderProps) => {
-  let body: ReactNode;
-
   if (isLoading) {
-    body = (
-      <>
-        <Skeleton className="h-5 w-36 motion-safe:animate-pulse" />
-        <Skeleton className="h-3.5 w-[13.5rem] max-w-full motion-safe:animate-pulse" />
-      </>
-    );
-  } else if (hasHouseholdCreditCards) {
-    body = (
-      <>
-        <Text
-          as="p"
-          variant="body-sm"
-          className="font-sans font-semibold text-foreground tabular-nums"
-        >
-          {`${formatCurrency(householdSummary.netOwedCents)} net owed`}
-        </Text>
-        <Text
-          as="p"
-          variant="caption"
-          className="leading-snug text-muted-foreground tabular-nums"
-        >
-          {formatCurrency(householdSummary.totalOwedCents)}
-          {householdSummary.totalCreditCents > 0 ? (
-            <>
-              {' · '}
-              <span className="text-success">
-                {formatCurrency(householdSummary.totalCreditCents)} credit
-              </span>
-            </>
-          ) : null}
-        </Text>
-      </>
-    );
-  } else {
-    body = (
-      <Text variant="caption" className="leading-snug text-muted-foreground">
-        Add a credit card to track exposure.
-      </Text>
+    return (
+      <Skeleton
+        className="h-6 w-20 shrink-0 motion-safe:animate-pulse"
+        aria-hidden="true"
+      />
     );
   }
 
-  return <div className="space-y-0.5">{body}</div>;
+  const cardTotalDisplay = formatSignedBalanceCents(
+    householdSummary.cardTotalCents
+  );
+
+  return (
+    <Text
+      as="p"
+      className={cn(
+        'shrink-0 text-right text-base leading-none font-bold whitespace-nowrap tabular-nums',
+        cardTotalDisplay.tone === 'credit' && 'text-success',
+        cardTotalDisplay.tone === 'zero' && 'text-muted-foreground',
+        cardTotalDisplay.tone === 'owed' && 'text-foreground'
+      )}
+    >
+      {cardTotalDisplay.text}
+    </Text>
+  );
 };

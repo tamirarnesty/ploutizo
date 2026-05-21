@@ -7,50 +7,46 @@ export type MemberSettlementRollup = {
 };
 
 export type HouseholdSettlementSummary = {
-  totalOwedCents: number;
-  totalCreditCents: number;
-  netOwedCents: number;
+  sharedRollupCents: number;
+  cardTotalCents: number;
 };
 
 export const useCreditCardMemberRollup = (
   accounts: SettlementAccountRow[] | undefined
 ) => {
-  const hasHouseholdCreditCards = useMemo(
+  const creditCardAccounts = useMemo(
     () =>
-      (accounts ?? []).some(
+      (accounts ?? []).filter(
         (accountRow) => accountRow.account.type === 'credit_card'
       ),
     [accounts]
   );
 
+  const hasHouseholdCreditCards = creditCardAccounts.length > 0;
+
   const memberRollup = useMemo(() => {
     const totals = new Map<string, MemberSettlementRollup>();
-    for (const acc of accounts ?? []) {
-      if (acc.account.type !== 'credit_card') continue;
+    for (const acc of creditCardAccounts) {
       for (const row of acc.members) {
         const prev = totals.get(row.member.id) ?? { cents: 0, cardCount: 0 };
         totals.set(row.member.id, {
-          cents: prev.cents + row.balanceCents,
-          cardCount: prev.cardCount + (row.balanceCents !== 0 ? 1 : 0),
+          cents: prev.cents + row.personalBalanceCents,
+          cardCount: prev.cardCount + (row.personalBalanceCents !== 0 ? 1 : 0),
         });
       }
     }
     return totals;
-  }, [accounts]);
+  }, [creditCardAccounts]);
 
   const householdSummary = useMemo((): HouseholdSettlementSummary => {
-    let totalOwedCents = 0;
-    let totalCreditCents = 0;
-    for (const rollup of memberRollup.values()) {
-      if (rollup.cents > 0) totalOwedCents += rollup.cents;
-      else if (rollup.cents < 0) totalCreditCents += Math.abs(rollup.cents);
+    let sharedRollupCents = 0;
+    let cardTotalCents = 0;
+    for (const acc of creditCardAccounts) {
+      sharedRollupCents += acc.sharedBalanceCents;
+      cardTotalCents += acc.totalBalanceCents;
     }
-    return {
-      totalOwedCents,
-      totalCreditCents,
-      netOwedCents: totalOwedCents - totalCreditCents,
-    };
-  }, [memberRollup]);
+    return { sharedRollupCents, cardTotalCents };
+  }, [creditCardAccounts]);
 
   return { hasHouseholdCreditCards, memberRollup, householdSummary };
 };

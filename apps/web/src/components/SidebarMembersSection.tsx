@@ -73,13 +73,14 @@ export const SidebarMembersSection = () => {
   // Compute per-member subline text + tone from the active route's data.
   const memberValues = useMemo(() => {
     if (isDashboard) {
-      // Aggregate balanceCents across all accounts per member (keyed by member.id from SettlementMemberRow).
+      // Aggregate personal balances across credit cards only (exclude shared bucket).
       const totals = new Map<string, number>();
       for (const acc of settlementsQuery.data?.accounts ?? []) {
+        if (acc.account.type !== 'credit_card') continue;
         for (const row of acc.members) {
           totals.set(
             row.member.id,
-            (totals.get(row.member.id) ?? 0) + row.balanceCents
+            (totals.get(row.member.id) ?? 0) + row.personalBalanceCents
           );
         }
       }
