@@ -151,6 +151,17 @@ describe('updateTransaction — PATCH split-sum validation', () => {
     expect(enrichTransactions).not.toHaveBeenCalled();
   });
 
+  it('replaces assignees with empty array after validation (clear splits)', async () => {
+    await updateTransaction(TXN_ID, ORG_ID, {
+      ...expensePayload,
+      assignees: [],
+    });
+
+    expect(updateTransactionScalarsQuery).toHaveBeenCalled();
+    expect(replaceAssignees).toHaveBeenCalledWith(mockTx, TXN_ID, []);
+    expect(enrichTransactions).not.toHaveBeenCalled();
+  });
+
   it('returns null when transaction is not found before validation', async () => {
     vi.mocked(fetchTransactionById).mockResolvedValueOnce(null as never);
 
