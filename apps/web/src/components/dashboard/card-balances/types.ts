@@ -1,11 +1,12 @@
-import type {
-  SettlementAccountRow,
-  SettlementMemberRow,
-} from '@ploutizo/types';
+import type { SettlementAccountRow } from '@ploutizo/types';
+
+export type PayTowardTarget =
+  | { kind: 'member'; memberId: string }
+  | { kind: 'shared' };
 
 export type CardBalancesSettleClickHandler = (
   account: SettlementAccountRow,
-  member: SettlementMemberRow
+  target: PayTowardTarget
 ) => void;
 
 export interface CardBalancesGridProps {

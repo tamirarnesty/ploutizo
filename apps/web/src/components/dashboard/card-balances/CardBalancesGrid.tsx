@@ -19,9 +19,8 @@ import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-
 import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-table';
 import type { CardBalancesGridProps } from '@/components/dashboard/card-balances/types';
 import { buildCardBalancesColumns } from '@/components/dashboard/card-balances/buildCardBalancesColumns';
-import { CardBalancesEmpty } from '@/components/dashboard/card-balances/CardBalancesEmpty';
 import { CardBalancesGridFooter } from '@/components/dashboard/card-balances/CardBalancesGridFooter';
-import { CardBalancesHeaderLegend } from '@/components/dashboard/card-balances/CardBalancesHeaderLegend';
+import { CardBalancesEmpty } from '@/components/dashboard/card-balances/CardBalancesEmpty';
 import type { SortingState } from '@tanstack/react-table';
 
 export type { CardBalancesGridProps } from '@/components/dashboard/card-balances/types';
@@ -64,10 +63,8 @@ export const CardBalancesGrid = ({
       */}
       <CardHeader className="gap-0 border-b border-border px-3.5 pt-3 [&.border-b]:pb-3">
         <div className="flex w-full min-w-0 flex-col gap-1">
-          <CardTitle className="text-[0.938rem] leading-tight">
-            Card Balances
-          </CardTitle>
-          <CardBalancesHeaderLegend accounts={accounts} />
+          <CardTitle className="text-lg leading-tight">Card Balances</CardTitle>
+          <Text variant="caption">All time</Text>
         </div>
       </CardHeader>
       {accounts.length === 0 && !isLoading ? (
@@ -87,7 +84,7 @@ export const CardBalancesGrid = ({
             }}
           >
             <DataGridContainer border={false} className="min-w-0">
-              <DataGridScrollArea className="[&_[data-slot='scroll-area-viewport']]:overscroll-contain">
+              <DataGridScrollArea className="**:data-[slot='scroll-area-viewport']:overscroll-contain">
                 <DataGridTable footerContent={footer} />
               </DataGridScrollArea>
             </DataGridContainer>

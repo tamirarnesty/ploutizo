@@ -5,7 +5,7 @@ export const CardBalancesEmpty = () => (
     <Text variant="body" className="font-semibold">
       No credit card accounts
     </Text>
-    <Text variant="caption" className="mt-1 text-muted-foreground">
+    <Text variant="caption" className="mt-1">
       Add a credit card account to see balance breakdowns.
     </Text>
   </div>

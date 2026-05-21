@@ -1,3 +1,11 @@
+import {
+  Activity,
+  CalendarClock,
+  ChartPie,
+  CreditCard,
+  DollarSign,
+  Users,
+} from 'lucide-react';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { DataGridColumnHeader } from '@ploutizo/ui/components/reui/data-grid/data-grid-column-header';
 import type { SettlementAccountRow } from '@ploutizo/types';
@@ -9,7 +17,15 @@ import { CardBalancesCardCell } from '@/components/dashboard/card-balances/CardB
 import { CardBalancesDueCell } from '@/components/dashboard/card-balances/CardBalancesDueCell';
 import { CardBalancesOwnerCell } from '@/components/dashboard/card-balances/CardBalancesOwnerCell';
 import { SettlementStatusBadge } from '@/components/dashboard/card-balances/SettlementStatusBadge';
+import {
+  RightAlignedCell,
+  RightAlignedColumnHeader,
+} from '@/components/dashboard/card-balances/RightAlignedColumnHeader';
 import type { ColumnDef } from '@tanstack/react-table';
+
+const columnHeaderIcon = (Icon: typeof CreditCard) => (
+  <Icon aria-hidden="true" />
+);
 
 /** Sketch 006 / grid-structure-and-density.md column order */
 export const buildCardBalancesColumns = (
@@ -19,7 +35,13 @@ export const buildCardBalancesColumns = (
     id: 'card',
     accessorFn: (row) => row.account.name,
     enableSorting: false,
-    header: 'Card',
+    header: ({ column }) => (
+      <DataGridColumnHeader
+        column={column}
+        title="Card"
+        icon={columnHeaderIcon(CreditCard)}
+      />
+    ),
     size: 140,
     meta: {
       headerClassName: 'min-w-[140px]',
@@ -31,11 +53,17 @@ export const buildCardBalancesColumns = (
   {
     id: 'owner',
     enableSorting: false,
-    header: 'Owner',
-    size: 100,
+    header: ({ column }) => (
+      <DataGridColumnHeader
+        column={column}
+        title="Owner"
+        icon={columnHeaderIcon(Users)}
+      />
+    ),
+    size: 88,
     meta: {
-      headerClassName: 'min-w-[100px]',
-      cellClassName: 'min-w-[100px]',
+      headerClassName: 'min-w-[88px]',
+      cellClassName: 'min-w-[88px]',
       skeleton: <Skeleton className="h-4 w-16 motion-safe:animate-pulse" />,
     },
     cell: ({ row }) => (
@@ -47,22 +75,26 @@ export const buildCardBalancesColumns = (
     accessorFn: (row) => row.totalBalanceCents,
     enableSorting: true,
     header: ({ column }) => (
-      <div className="flex w-full justify-end">
-        <DataGridColumnHeader column={column} title="Balance" />
-      </div>
+      <RightAlignedColumnHeader
+        column={column}
+        title="Balance"
+        icon={columnHeaderIcon(DollarSign)}
+      />
     ),
-    size: 102,
+    size: 108,
     meta: {
-      headerClassName: 'min-w-[102px] text-right',
-      cellClassName: 'min-w-[102px] text-right',
+      headerClassName: 'min-w-[108px]',
+      cellClassName: 'min-w-[108px]',
       skeleton: (
-        <Skeleton className="ms-auto h-4 w-[4.75rem] motion-safe:animate-pulse" />
+        <Skeleton className="ms-auto h-4 w-19 motion-safe:animate-pulse" />
       ),
     },
     cell: ({ row }) => (
-      <CardBalancesBalanceCell
-        totalBalanceCents={row.original.totalBalanceCents}
-      />
+      <RightAlignedCell>
+        <CardBalancesBalanceCell
+          totalBalanceCents={row.original.totalBalanceCents}
+        />
+      </RightAlignedCell>
     ),
   },
   {
@@ -78,20 +110,36 @@ export const buildCardBalancesColumns = (
       return av.localeCompare(bv);
     },
     header: ({ column }) => (
-      <DataGridColumnHeader column={column} title="Due" />
+      <RightAlignedColumnHeader
+        column={column}
+        title="Due"
+        icon={columnHeaderIcon(CalendarClock)}
+      />
     ),
-    size: 74,
+    size: 88,
     meta: {
-      headerClassName: 'min-w-[74px]',
-      cellClassName: 'min-w-[74px]',
-      skeleton: <Skeleton className="h-4 w-12 motion-safe:animate-pulse" />,
+      headerClassName: 'min-w-[88px]',
+      cellClassName: 'min-w-[88px]',
+      skeleton: (
+        <Skeleton className="ms-auto h-4 w-12 motion-safe:animate-pulse" />
+      ),
     },
-    cell: ({ row }) => <CardBalancesDueCell dueDate={row.original.dueDate} />,
+    cell: ({ row }) => (
+      <RightAlignedCell>
+        <CardBalancesDueCell dueDate={row.original.dueDate} />
+      </RightAlignedCell>
+    ),
   },
   {
     id: 'status',
     enableSorting: false,
-    header: 'Status',
+    header: ({ column }) => (
+      <DataGridColumnHeader
+        column={column}
+        title="Status"
+        icon={columnHeaderIcon(Activity)}
+      />
+    ),
     size: 100,
     meta: {
       headerClassName: 'min-w-[100px]',
@@ -105,7 +153,13 @@ export const buildCardBalancesColumns = (
   {
     id: 'breakdown',
     enableSorting: false,
-    header: 'Split by member',
+    header: ({ column }) => (
+      <DataGridColumnHeader
+        column={column}
+        title="Attribution"
+        icon={columnHeaderIcon(ChartPie)}
+      />
+    ),
     size: 320,
     meta: {
       headerClassName: 'min-w-[280px]',
@@ -117,13 +171,13 @@ export const buildCardBalancesColumns = (
   {
     id: 'action',
     enableSorting: false,
-    header: 'Action',
-    size: 124,
+    header: () => <span className="sr-only">Settle</span>,
+    size: 48,
     meta: {
-      headerClassName: 'w-[124px]',
-      cellClassName: 'w-[124px]',
+      headerClassName: 'w-12 max-w-12',
+      cellClassName: 'w-12 max-w-12 pe-1',
       skeleton: (
-        <Skeleton className="h-8 w-[7.5rem] motion-safe:animate-pulse" />
+        <Skeleton className="ms-auto size-7 motion-safe:animate-pulse" />
       ),
     },
     cell: ({ row }) => (

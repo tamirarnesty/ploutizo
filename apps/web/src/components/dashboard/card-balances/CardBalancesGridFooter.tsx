@@ -4,7 +4,8 @@ import {
   DataGridTableFootRow,
   DataGridTableFootRowCell,
 } from '@ploutizo/ui/components/reui/data-grid/data-grid-table';
-import { formatCurrency } from '@/lib/formatCurrency';
+import { RightAlignedCell } from '@/components/dashboard/card-balances/RightAlignedColumnHeader';
+import { formatCurrency, formatSignedBalanceCents } from '@/lib/formatCurrency';
 
 export type CardBalancesGridFooterProps = {
   balanceTotalCents: number;
@@ -12,25 +13,30 @@ export type CardBalancesGridFooterProps = {
 
 export const CardBalancesGridFooter = ({
   balanceTotalCents,
-}: CardBalancesGridFooterProps) => (
-  <DataGridTableFootRow>
-    <DataGridTableFootRowCell colSpan={2}>
-      <Text variant="caption" className="text-muted-foreground">
-        Total outstanding
-      </Text>
-    </DataGridTableFootRowCell>
-    <DataGridTableFootRowCell className="text-end">
-      <Text
-        as="span"
-        variant="caption"
-        className={cn(
-          'font-semibold tabular-nums',
-          balanceTotalCents < 0 ? 'text-success' : 'text-foreground'
-        )}
-      >
-        {formatCurrency(Math.abs(balanceTotalCents))}
-      </Text>
-    </DataGridTableFootRowCell>
-    <DataGridTableFootRowCell colSpan={4} />
-  </DataGridTableFootRow>
-);
+}: CardBalancesGridFooterProps) => {
+  const display = formatSignedBalanceCents(balanceTotalCents);
+
+  return (
+    <DataGridTableFootRow>
+      <DataGridTableFootRowCell colSpan={2}>
+        <Text variant="caption">Total outstanding</Text>
+      </DataGridTableFootRowCell>
+      <DataGridTableFootRowCell>
+        <RightAlignedCell>
+          <Text
+            as="span"
+            className={cn(
+              'text-sm font-semibold whitespace-nowrap tabular-nums',
+              display.tone === 'credit' && 'text-success',
+              display.tone === 'zero' && 'text-muted-foreground',
+              display.tone === 'owed' && 'text-foreground'
+            )}
+          >
+            {formatCurrency(Math.abs(balanceTotalCents))}
+          </Text>
+        </RightAlignedCell>
+      </DataGridTableFootRowCell>
+      <DataGridTableFootRowCell colSpan={4} />
+    </DataGridTableFootRow>
+  );
+};

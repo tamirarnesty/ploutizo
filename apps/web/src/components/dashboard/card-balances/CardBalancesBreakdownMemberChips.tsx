@@ -1,32 +1,42 @@
 import { Badge } from '@ploutizo/ui/components/badge';
 import { Text } from '@ploutizo/ui/components/text';
 import { cn } from '@ploutizo/ui/lib/utils';
-import type { SettlementMemberRow } from '@ploutizo/types';
+import type { AttributionSlice } from '@/components/dashboard/card-balances/CardBalancesBreakdownCell';
 import type { MemberChartSlotClassMap } from '@/components/dashboard/card-balances/cardBalancesMemberDisplay';
 import {
   MEMBER_CHART_DOT_CLASSES,
+  SHARED_CHART_DOT_CLASS,
   getMemberDisplayFirstName,
 } from '@/components/dashboard/card-balances/cardBalancesMemberDisplay';
-import { formatCurrency } from '@/lib/formatCurrency';
+import { formatSignedBalanceCents } from '@/lib/formatCurrency';
 
 export type CardBalancesBreakdownMemberChipsProps = {
-  members: readonly SettlementMemberRow[];
+  slices: readonly AttributionSlice[];
   memberChartClassMap: MemberChartSlotClassMap;
 };
 
 export const CardBalancesBreakdownMemberChips = ({
-  members,
+  slices,
   memberChartClassMap,
 }: CardBalancesBreakdownMemberChipsProps) => (
   <div className="flex flex-wrap gap-1.5">
-    {members.map((m) => {
+    {slices.map((slice) => {
+      const display = formatSignedBalanceCents(slice.balanceCents);
+      const label =
+        slice.kind === 'shared'
+          ? 'Shared'
+          : getMemberDisplayFirstName(slice.name);
       const fillClass =
-        memberChartClassMap.get(m.member.id) ?? MEMBER_CHART_DOT_CLASSES[0];
-      const firstName = getMemberDisplayFirstName(m.member.name);
+        slice.kind === 'shared'
+          ? SHARED_CHART_DOT_CLASS
+          : (memberChartClassMap.get(slice.memberId) ??
+            MEMBER_CHART_DOT_CLASSES[0]);
+      const key =
+        slice.kind === 'shared' ? 'shared-chip' : `chip-${slice.memberId}`;
 
       return (
         <Badge
-          key={m.member.id}
+          key={key}
           variant="outline"
           className={cn(
             'h-auto max-w-full min-w-0 gap-1.5 border-border bg-muted py-0.5 pr-2 pl-2 font-normal hover:bg-accent'
@@ -41,14 +51,17 @@ export const CardBalancesBreakdownMemberChips = ({
             variant="caption"
             className="min-w-0 truncate leading-tight"
           >
-            {firstName}
+            {label}
           </Text>
           <Text
             as="span"
             variant="caption"
-            className="shrink-0 leading-tight tabular-nums"
+            className={cn(
+              'shrink-0 leading-tight tabular-nums',
+              display.tone === 'credit' ? 'text-success' : 'text-foreground'
+            )}
           >
-            {formatCurrency(Math.abs(m.balanceCents))}
+            {display.text}
           </Text>
         </Badge>
       );

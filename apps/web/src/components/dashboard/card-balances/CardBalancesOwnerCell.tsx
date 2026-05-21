@@ -1,6 +1,7 @@
 import { Text } from '@ploutizo/ui/components/text';
 import type { AccountOwner } from '@ploutizo/types';
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
+import { toFirstName } from '@/components/dashboard/card-balances/cardBalancesDisplayHelpers';
 
 type CardBalancesOwnerCellProps = {
   owners: AccountOwner[];
@@ -19,11 +20,7 @@ export const CardBalancesOwnerCell = ({
   );
 
   if (sorted.length === 0) {
-    return (
-      <Text variant="caption" className="text-muted-foreground">
-        —
-      </Text>
-    );
+    return <Text variant="caption">—</Text>;
   }
 
   const avatarMembers = sorted.map((o) => ({
@@ -33,7 +30,7 @@ export const CardBalancesOwnerCell = ({
   }));
 
   const isShared = sorted.length > 1;
-  const label = isShared ? 'Shared' : sorted[0].displayName;
+  const label = isShared ? 'Shared' : toFirstName(sorted[0].displayName);
 
   const avatarsForSketch = isShared
     ? avatarMembers.slice(0, 2)

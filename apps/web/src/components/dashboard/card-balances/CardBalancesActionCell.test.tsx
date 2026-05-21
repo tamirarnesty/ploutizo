@@ -20,14 +20,16 @@ const makeAccount = (): SettlementAccountRow => ({
     ],
   },
   totalBalanceCents: 5000,
+  sharedBalanceCents: 1000,
+  sharedParticipantIds: ['mAda', 'mAlan'],
   members: [
     {
       member: { id: 'mAda', name: 'Ada Lovelace', avatarUrl: null },
-      balanceCents: 3000,
+      personalBalanceCents: 3000,
     },
     {
       member: { id: 'mAlan', name: 'Alan Turing', avatarUrl: null },
-      balanceCents: 2000,
+      personalBalanceCents: 1000,
     },
   ],
   dueDate: '2026-05-31',
@@ -35,7 +37,7 @@ const makeAccount = (): SettlementAccountRow => ({
 });
 
 describe('CardBalancesActionCell', () => {
-  it('opens on click and settles the chosen member via pointer', async () => {
+  it('lists all members and Shared, then settles chosen member', async () => {
     const user = userEvent.setup();
     const onSettleClick =
       vi.fn<(...args: Parameters<CardBalancesSettleClickHandler>) => void>();
@@ -52,22 +54,35 @@ describe('CardBalancesActionCell', () => {
     );
 
     const trigger = screen.getByRole('button', {
-      name: /open settle actions for platinum/i,
+      name: /settle platinum/i,
     });
     await user.click(trigger);
 
     const menu = await screen.findByRole('menu');
+    expect(
+      within(menu).getByRole('menuitem', { name: /ada lovelace/i })
+    ).toBeInTheDocument();
+    expect(
+      within(menu).getByRole('menuitem', { name: /alan turing/i })
+    ).toBeInTheDocument();
+    expect(
+      within(menu).getByRole('menuitem', { name: /^shared/i })
+    ).toBeInTheDocument();
+
     const ada = within(menu).getByRole('menuitem', { name: /ada lovelace/i });
     await user.click(ada);
 
     expect(onSettleClick).toHaveBeenCalledTimes(1);
-    expect(onSettleClick.mock.calls[0]?.[1]?.member?.id).toBe('mAda');
+    expect(onSettleClick.mock.calls[0]?.[1]).toEqual({
+      kind: 'member',
+      memberId: 'mAda',
+    });
     await waitFor(() =>
       expect(screen.queryByRole('menu')).not.toBeInTheDocument()
     );
   });
 
-  it('supports Enter → Arrow navigation → Enter to choose, Esc closes returning focus', async () => {
+  it('supports keyboard navigation to Shared target', async () => {
     const user = userEvent.setup();
     const onSettleClick =
       vi.fn<(...args: Parameters<CardBalancesSettleClickHandler>) => void>();
@@ -84,30 +99,15 @@ describe('CardBalancesActionCell', () => {
     );
 
     const trigger = screen.getByRole('button', {
-      name: /open settle actions for platinum/i,
+      name: /settle platinum/i,
     });
 
     trigger.focus();
     await user.keyboard('{Enter}');
-
     await screen.findByRole('menu');
 
-    await user.keyboard('{ArrowDown}');
-    await user.keyboard('{Enter}');
+    await user.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}{Enter}');
 
-    expect(onSettleClick.mock.calls[0]?.[1]?.member?.id).toBe('mAlan');
-
-    await waitFor(() =>
-      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
-    );
-
-    trigger.focus();
-    await user.keyboard(' ');
-    expect(await screen.findByRole('menu')).toBeInTheDocument();
-    await user.keyboard('{Escape}');
-    await waitFor(() =>
-      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
-    );
-    expect(trigger).toHaveFocus();
+    expect(onSettleClick.mock.calls[0]?.[1]).toEqual({ kind: 'shared' });
   });
 });

@@ -20,6 +20,11 @@ export const MEMBER_CHART_SEGMENT_CLASSES = [
   'bg-chart-5/[0.36] dark:bg-chart-5/[0.42]',
 ] as const;
 
+/** Fixed shared bucket styling — not part of member index rotation. */
+export const SHARED_CHART_DOT_CLASS = 'bg-shared-attribution' as const;
+export const SHARED_CHART_SEGMENT_CLASS =
+  'bg-shared-attribution/[0.36] dark:bg-shared-attribution/[0.42]' as const;
+
 export type MemberChartDotClass = (typeof MEMBER_CHART_DOT_CLASSES)[number];
 export type MemberChartSegmentClass =
   (typeof MEMBER_CHART_SEGMENT_CLASSES)[number];

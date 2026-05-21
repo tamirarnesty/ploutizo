@@ -22,7 +22,6 @@ export const CardBalancesCardCell = ({
     <div className="min-w-0">
       <Text
         as="span"
-        variant="body-sm"
         className="block truncate text-sm leading-tight font-bold"
       >
         {account.name}
@@ -30,8 +29,8 @@ export const CardBalancesCardCell = ({
       {metaLine !== null ? (
         <Text
           as="span"
-          variant="body-sm"
-          className="mt-0.5 block truncate text-xs leading-tight text-muted-foreground"
+          variant="caption"
+          className="mt-0.5 block truncate leading-tight"
         >
           {metaLine}
         </Text>

@@ -4,17 +4,60 @@ import { buildMemberChartVisualSlots } from '@/components/dashboard/card-balance
 import { CardBalancesBreakdownMemberChips } from '@/components/dashboard/card-balances/CardBalancesBreakdownMemberChips';
 import { CardBalancesBreakdownSegmentBar } from '@/components/dashboard/card-balances/CardBalancesBreakdownSegmentBar';
 
+export type AttributionSlice =
+  | {
+      kind: 'member';
+      memberId: string;
+      name: string;
+      balanceCents: number;
+    }
+  | {
+      kind: 'shared';
+      balanceCents: number;
+    };
+
+export const buildAttributionSlices = (
+  account: SettlementAccountRow
+): AttributionSlice[] => {
+  const memberSlices: AttributionSlice[] = [...account.members]
+    .sort((a, b) => a.member.id.localeCompare(b.member.id))
+    .filter((m) => m.personalBalanceCents !== 0)
+    .map((m) => ({
+      kind: 'member' as const,
+      memberId: m.member.id,
+      name: m.member.name,
+      balanceCents: m.personalBalanceCents,
+    }));
+
+  if (account.sharedBalanceCents !== 0) {
+    memberSlices.push({
+      kind: 'shared',
+      balanceCents: account.sharedBalanceCents,
+    });
+  }
+
+  return memberSlices;
+};
+
 type CardBalancesBreakdownCellProps = {
   account: SettlementAccountRow;
 };
 
-/** Segmented balance bar + themed member badges with first-name + dollar amount. */
+/** Segmented balance bar + themed member badges with first-name + signed dollar amount. */
 export const CardBalancesBreakdownCell = ({
   account,
 }: CardBalancesBreakdownCellProps) => {
+  const slices = useMemo(() => buildAttributionSlices(account), [account]);
+
   const memberIds = useMemo(
-    () => account.members.map((m) => m.member.id),
-    [account.members]
+    () =>
+      slices
+        .filter(
+          (s): s is Extract<AttributionSlice, { kind: 'member' }> =>
+            s.kind === 'member'
+        )
+        .map((s) => s.memberId),
+    [slices]
   );
 
   const { dotClasses, segmentClasses } = useMemo(
@@ -25,11 +68,11 @@ export const CardBalancesBreakdownCell = ({
   return (
     <div className="min-w-0 space-y-2.5 p-1">
       <CardBalancesBreakdownSegmentBar
-        members={account.members}
+        slices={slices}
         memberSegmentClassMap={segmentClasses}
       />
       <CardBalancesBreakdownMemberChips
-        members={account.members}
+        slices={slices}
         memberChartClassMap={dotClasses}
       />
     </div>
