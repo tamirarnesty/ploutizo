@@ -1,7 +1,10 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Text } from '@ploutizo/ui/components/text';
 import type { SettlementAccountRow } from '@ploutizo/types';
-import type { CardBalancesSettleClickHandler } from '@/components/dashboard/card-balances/types';
+import type {
+  CardBalancesSettleClickHandler,
+  PayTowardTarget,
+} from '@/components/dashboard/card-balances/types';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import { useGetSettlements } from '@/lib/data-access/settlements';
@@ -24,9 +27,8 @@ export const Dashboard = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [activeAccount, setActiveAccount] =
     useState<SettlementAccountRow | null>(null);
-  const [dialogPayerMemberId, setDialogPayerMemberId] = useState<string | null>(
-    null
-  );
+  const [dialogPayToward, setDialogPayToward] =
+    useState<PayTowardTarget | null>(null);
 
   // account.type === 'credit_card' — confirmed per packages/db/src/schema/enums.ts.
   // Filter to credit-card accounts for the Card Balances grid (UI-SPEC + Phase 4.1 D-09).
@@ -44,9 +46,9 @@ export const Dashboard = () => {
   );
 
   const handleSettleClick = useCallback<CardBalancesSettleClickHandler>(
-    (account, member) => {
+    (account, target) => {
       setActiveAccount(account);
-      setDialogPayerMemberId(member.member.id);
+      setDialogPayToward(target);
       setDialogOpen(true);
     },
     []
@@ -55,7 +57,7 @@ export const Dashboard = () => {
   const handleClose = useCallback(() => {
     setDialogOpen(false);
     setActiveAccount(null);
-    setDialogPayerMemberId(null);
+    setDialogPayToward(null);
   }, []);
 
   const period = useDashboardEffectivePeriod();
@@ -107,7 +109,7 @@ export const Dashboard = () => {
       <SettleDialog
         open={dialogOpen}
         account={activeAccount}
-        initialPayerMemberId={dialogPayerMemberId}
+        initialPayToward={dialogPayToward}
         onClose={handleClose}
       />
     </div>

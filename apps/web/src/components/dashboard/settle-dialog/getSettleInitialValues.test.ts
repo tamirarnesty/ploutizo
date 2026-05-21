@@ -13,39 +13,82 @@ const fixture = (): SettlementAccountRow => ({
     owners: [{ id: 'alice', displayName: 'Alice', imageUrl: null }],
   },
   totalBalanceCents: 400,
+  sharedBalanceCents: 200,
+  sharedParticipantIds: ['alice', 'betty'],
   members: [
     {
       member: { id: 'alice', name: 'Alice', avatarUrl: null },
-      balanceCents: -100,
+      personalBalanceCents: -100,
     },
     {
       member: { id: 'betty', name: 'Betty', avatarUrl: null },
-      balanceCents: 500,
+      personalBalanceCents: 500,
     },
     {
       member: { id: 'cas', name: 'Cas', avatarUrl: null },
-      balanceCents: 0,
+      personalBalanceCents: 0,
     },
   ],
   dueDate: null,
   status: null as SettlementStatus | null,
 });
 
+const sourceAccounts = [
+  {
+    id: 'bank-alice',
+    orgId: 'org',
+    name: 'Alice Chequing',
+    type: 'chequing' as const,
+    institution: null,
+    lastFour: null,
+    archivedAt: null,
+    createdAt: '',
+    updatedAt: '',
+    owners: [{ id: 'alice', displayName: 'Alice', imageUrl: null }],
+  },
+  {
+    id: 'bank-joint',
+    orgId: 'org',
+    name: 'Joint',
+    type: 'chequing' as const,
+    institution: null,
+    lastFour: null,
+    archivedAt: null,
+    createdAt: '',
+    updatedAt: '',
+    owners: [
+      { id: 'alice', displayName: 'Alice', imageUrl: null },
+      { id: 'betty', displayName: 'Betty', imageUrl: null },
+    ],
+  },
+];
+
 describe('getSettleInitialValues', () => {
-  it('prioritizes initialPayerMemberId over balance>0 heuristic', () => {
-    const v = getSettleInitialValues(
-      fixture(),
-      'bank-1',
-      '2026-01-05',
-      'alice'
-    );
-    expect(v.payerMemberId).toBe('alice');
-    expect(v.amountDollars).toBe(1); // |-100| cents → 1.00
+  it('uses explicit member pay-toward target and prefill from personal balance', () => {
+    const v = getSettleInitialValues(fixture(), sourceAccounts, '2026-01-05', {
+      kind: 'member',
+      memberId: 'alice',
+    });
+    expect(v.payToward).toBe('alice');
+    expect(v.amountDollars).toBe(0);
+    expect(v.sourceAccountId).toBe('bank-alice');
   });
 
-  it('falls back to first positive balance when no explicit id', () => {
-    const v = getSettleInitialValues(fixture(), 'bank-1', '2026-01-05', '');
-    expect(v.payerMemberId).toBe('betty');
+  it('prefills positive personal balance for selected member', () => {
+    const v = getSettleInitialValues(fixture(), sourceAccounts, '2026-01-05', {
+      kind: 'member',
+      memberId: 'betty',
+    });
+    expect(v.payToward).toBe('betty');
     expect(v.amountDollars).toBe(5);
+  });
+
+  it('shared target prefill uses shared balance and joint paid-from default', () => {
+    const v = getSettleInitialValues(fixture(), sourceAccounts, '2026-01-05', {
+      kind: 'shared',
+    });
+    expect(v.payToward).toBe('shared');
+    expect(v.amountDollars).toBe(2);
+    expect(v.sourceAccountId).toBe('bank-joint');
   });
 });

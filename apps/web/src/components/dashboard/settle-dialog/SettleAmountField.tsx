@@ -1,9 +1,4 @@
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldLabel,
-} from '@ploutizo/ui/components/field';
+import { Field, FieldError, FieldLabel } from '@ploutizo/ui/components/field';
 import type { SettleFieldErrors } from '@/components/dashboard/settle-dialog/settleDialogFieldTypes';
 import { FormattedAmountInput } from '@/components/transactions/FormattedAmountInput';
 
@@ -22,11 +17,10 @@ export const SettleAmountField = ({
 }: SettleAmountFieldProps) => (
   <Field data-invalid={errors.length > 0 || undefined}>
     <FieldLabel htmlFor="settle-amount">Amount</FieldLabel>
-    <FieldDescription>Partial OK</FieldDescription>
     <FormattedAmountInput
       id="settle-amount"
       value={value > 0 ? value : undefined}
-      onChange={(v) => onChange(v ?? 0)}
+      onChange={(v) => onChange(Math.max(0, v ?? 0))}
       onBlur={onBlur}
     />
     {errors.length > 0 ? <FieldError errors={errors} /> : null}

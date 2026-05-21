@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { settleFormSchema } from './settleFormSchema';
+import {
+  settleAmountDollarsFieldSchema,
+  settleFormSchema,
+} from './settleFormSchema';
 
 const VALID_UUID = '123e4567-e89b-12d3-a456-426614174000';
 const VALID_BASE = {
-  payerMemberId: VALID_UUID,
+  payToward: VALID_UUID,
   amountDollars: 42.5,
   sourceAccountId: '123e4567-e89b-12d3-a456-426614174001',
   date: '2026-05-01',
@@ -16,7 +19,7 @@ describe('settleFormSchema', () => {
     expect(settleFormSchema.safeParse(VALID_BASE).success).toBe(true);
   });
 
-  it('rejects amount = 0 (z.number().positive() excludes 0)', () => {
+  it('rejects amount = 0 on submit schema', () => {
     const result = settleFormSchema.safeParse({
       ...VALID_BASE,
       amountDollars: 0,
@@ -24,12 +27,15 @@ describe('settleFormSchema', () => {
     expect(result.success).toBe(false);
   });
 
+  it('allows amount = 0 on field schema', () => {
+    expect(settleAmountDollarsFieldSchema.safeParse(0).success).toBe(true);
+  });
+
   it('rejects negative amount', () => {
-    const result = settleFormSchema.safeParse({
-      ...VALID_BASE,
-      amountDollars: -1,
-    });
-    expect(result.success).toBe(false);
+    expect(settleAmountDollarsFieldSchema.safeParse(-1).success).toBe(false);
+    expect(
+      settleFormSchema.safeParse({ ...VALID_BASE, amountDollars: -1 }).success
+    ).toBe(false);
   });
 
   // notes

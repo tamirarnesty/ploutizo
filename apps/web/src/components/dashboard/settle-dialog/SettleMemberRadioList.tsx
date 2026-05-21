@@ -1,7 +1,6 @@
 import {
   Field,
   FieldContent,
-  FieldDescription,
   FieldLabel,
   FieldTitle,
 } from '@ploutizo/ui/components/field';
@@ -11,28 +10,32 @@ import {
 } from '@ploutizo/ui/components/radio-group';
 import { Text } from '@ploutizo/ui/components/text';
 import { cn } from '@ploutizo/ui/lib/utils';
-import type { SettlementMemberRow } from '@ploutizo/types';
+import { Users } from 'lucide-react';
+import type { SettlementAccountRow } from '@ploutizo/types';
 import { UserAvatar } from '@/components/members/UserAvatar';
-import { formatCurrency } from '@/lib/formatCurrency';
+import { formatSignedBalanceCents } from '@/lib/formatCurrency';
 
 type SettleMemberRadioListProps = {
-  members: SettlementMemberRow[];
+  account: SettlementAccountRow;
   value: string;
-  onValueChange: (memberId: string) => void;
+  onValueChange: (payToward: string) => void;
 };
 
 export const SettleMemberRadioList = ({
-  members,
+  account,
   value,
   onValueChange,
-}: SettleMemberRadioListProps) => (
-  <RadioGroup value={value} onValueChange={onValueChange} className="gap-2">
-    {[...members]
-      .sort((a, b) => b.balanceCents - a.balanceCents)
-      .map((m) => {
-        const isCredit = m.balanceCents < 0;
+}: SettleMemberRadioListProps) => {
+  const sortedMembers = [...account.members].sort((a, b) =>
+    a.member.id.localeCompare(b.member.id)
+  );
+  const sharedDisplay = formatSignedBalanceCents(account.sharedBalanceCents);
+
+  return (
+    <RadioGroup value={value} onValueChange={onValueChange} className="gap-2">
+      {sortedMembers.map((m) => {
+        const display = formatSignedBalanceCents(m.personalBalanceCents);
         const id = `settle-member-${m.member.id}`;
-        const amountLabel = formatCurrency(Math.abs(m.balanceCents));
 
         return (
           <FieldLabel key={m.member.id} htmlFor={id}>
@@ -44,14 +47,9 @@ export const SettleMemberRadioList = ({
                     imageUrl={m.member.avatarUrl}
                     size="sm"
                   />
-                  <div className="min-w-0">
-                    <FieldTitle>{m.member.name}</FieldTitle>
-                    <FieldDescription
-                      className={cn(isCredit ? 'text-success' : undefined)}
-                    >
-                      {`${amountLabel} ${isCredit ? 'credit' : 'outstanding'}`}
-                    </FieldDescription>
-                  </div>
+                  <FieldTitle className="min-w-0 truncate">
+                    {m.member.name}
+                  </FieldTitle>
                 </div>
               </FieldContent>
               <Text
@@ -59,10 +57,10 @@ export const SettleMemberRadioList = ({
                 variant="body"
                 className={cn(
                   'shrink-0 font-semibold tabular-nums',
-                  isCredit ? 'text-success' : 'text-foreground'
+                  display.tone === 'credit' ? 'text-success' : 'text-foreground'
                 )}
               >
-                {amountLabel}
+                {display.text}
               </Text>
               <RadioGroupItem
                 value={m.member.id}
@@ -73,5 +71,38 @@ export const SettleMemberRadioList = ({
           </FieldLabel>
         );
       })}
-  </RadioGroup>
-);
+      <FieldLabel htmlFor="settle-shared">
+        <Field orientation="horizontal">
+          <FieldContent className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-center gap-2">
+              <div
+                className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
+                aria-hidden="true"
+              >
+                <Users className="size-3.5" strokeWidth={2} />
+              </div>
+              <FieldTitle className="min-w-0 truncate">Shared</FieldTitle>
+            </div>
+          </FieldContent>
+          <Text
+            as="span"
+            variant="body"
+            className={cn(
+              'shrink-0 font-semibold tabular-nums',
+              sharedDisplay.tone === 'credit'
+                ? 'text-success'
+                : 'text-foreground'
+            )}
+          >
+            {sharedDisplay.text}
+          </Text>
+          <RadioGroupItem
+            value="shared"
+            id="settle-shared"
+            className="shrink-0"
+          />
+        </Field>
+      </FieldLabel>
+    </RadioGroup>
+  );
+};

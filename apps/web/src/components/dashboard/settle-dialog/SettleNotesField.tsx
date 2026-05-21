@@ -16,13 +16,13 @@ export const SettleNotesField = ({
   onBlur,
 }: SettleNotesFieldProps) => (
   <Field data-invalid={errors.length > 0 || undefined}>
-    <FieldLabel htmlFor="settle-notes">Notes (optional)</FieldLabel>
+    <FieldLabel htmlFor="settle-notes">Notes</FieldLabel>
     <Textarea
       id="settle-notes"
       rows={3}
       className="resize-none"
       autoComplete="off"
-      placeholder="Add a note…"
+      placeholder="Add a note (optional)…"
       maxLength={1000}
       value={value}
       onChange={(e) => onChange(e.target.value)}

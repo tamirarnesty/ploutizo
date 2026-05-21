@@ -12,22 +12,22 @@ export type SettlePayerFieldProps = {
   account: SettlementAccountRow;
   value: string;
   errors: SettleFieldErrors;
-  onPayerMemberChange: (memberId: string) => void;
+  onPayTowardChange: (payToward: string) => void;
 };
 
 export const SettlePayerField = ({
   account,
   value,
   errors,
-  onPayerMemberChange,
+  onPayTowardChange,
 }: SettlePayerFieldProps) => (
   <Field data-invalid={errors.length > 0 || undefined}>
     <FieldSet>
-      <FieldLegend variant="label">Settling for</FieldLegend>
+      <FieldLegend variant="label">Pay toward</FieldLegend>
       <SettleMemberRadioList
-        members={account.members}
+        account={account}
         value={value}
-        onValueChange={onPayerMemberChange}
+        onValueChange={onPayTowardChange}
       />
     </FieldSet>
     {errors.length > 0 ? <FieldError errors={errors} /> : null}

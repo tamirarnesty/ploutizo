@@ -29,15 +29,13 @@ export const SettleDialogSummary = ({ account }: SettleDialogSummaryProps) => {
         day: 'numeric',
       })
     : null;
-  const balanceLine = `Total balance ${totalLabel}${dueLabel ? ` · Due ${dueLabel}` : ''}`;
 
   return (
     <DialogHeader>
       <DialogTitle>
         <Text
           as="span"
-          variant="body-sm"
-          className="block truncate text-sm leading-tight font-bold"
+          className="block truncate font-sans text-[1.35rem] leading-tight font-semibold text-foreground"
         >
           {card.name}
         </Text>
@@ -53,9 +51,26 @@ export const SettleDialogSummary = ({ account }: SettleDialogSummaryProps) => {
               {metaLine}
             </Text>
           ) : null}
-          <Text as="span" variant="caption" className="text-muted-foreground">
-            {balanceLine}
-          </Text>
+          <div className="flex flex-wrap items-baseline gap-x-1.5">
+            <Text as="span" variant="caption" className="text-muted-foreground">
+              Total balance
+            </Text>
+            <Text
+              as="span"
+              className="font-sans text-sm leading-tight font-semibold text-foreground tabular-nums"
+            >
+              {totalLabel}
+            </Text>
+            {dueLabel !== null ? (
+              <Text
+                as="span"
+                variant="caption"
+                className="text-muted-foreground"
+              >
+                · Due {dueLabel}
+              </Text>
+            ) : null}
+          </div>
         </div>
       </DialogDescription>
     </DialogHeader>

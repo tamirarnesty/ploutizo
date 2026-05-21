@@ -3,8 +3,12 @@ import { Dialog, DialogContent } from '@ploutizo/ui/components/dialog';
 import { FieldGroup } from '@ploutizo/ui/components/field';
 import { useAppForm } from '@ploutizo/ui/components/form';
 import type { SettlementAccountRow } from '@ploutizo/types';
+import type { PayTowardTarget } from '@/components/dashboard/card-balances/types';
 import type { SettleFormSubmitValidatorArgs } from '@/components/dashboard/settle-dialog/settleDialogSubmitValidation';
-import { getSettleInitialValues } from '@/components/dashboard/settle-dialog/getSettleInitialValues';
+import {
+  getSettleAmountForPayToward,
+  getSettleInitialValues,
+} from '@/components/dashboard/settle-dialog/getSettleInitialValues';
 import { SettleAmountField } from '@/components/dashboard/settle-dialog/SettleAmountField';
 import { SettleDateField } from '@/components/dashboard/settle-dialog/SettleDateField';
 import { SettleDialogFormFooter } from '@/components/dashboard/settle-dialog/SettleDialogFormFooter';
@@ -15,19 +19,22 @@ import { SettleDialogSummary } from '@/components/dashboard/settle-dialog/Settle
 import { getSettleFormSubmitValidationError } from '@/components/dashboard/settle-dialog/settleDialogSubmitValidation';
 import { useGetAccounts } from '@/lib/data-access/accounts';
 import { useCreateSettlement } from '@/lib/data-access/settlements';
-import { settleFormSchema } from './settleFormSchema';
+import {
+  settleAmountDollarsFieldSchema,
+  settleFormSchema,
+} from './settleFormSchema';
 import type { SettleFormValues } from './settleFormSchema';
 
 export interface SettleDialogProps {
   open: boolean;
   account: SettlementAccountRow | null;
   onClose: () => void;
-  /** Optional seed for `payerMemberId` — e.g. selected from Card Balances Action menu. */
-  initialPayerMemberId?: string | null;
+  /** Pay-toward target from Card Balances action menu. */
+  initialPayToward?: PayTowardTarget | null;
 }
 
 const EMPTY_VALUES: SettleFormValues = {
-  payerMemberId: '',
+  payToward: 'shared',
   amountDollars: 0,
   sourceAccountId: '',
   date: '',
@@ -38,7 +45,7 @@ export const SettleDialog = ({
   open,
   account,
   onClose,
-  initialPayerMemberId,
+  initialPayToward,
 }: SettleDialogProps) => {
   const createSettlement = useCreateSettlement();
   const { data: accounts = [] } = useGetAccounts();
@@ -53,16 +60,18 @@ export const SettleDialog = ({
     );
   }, [accounts, account?.account.id]);
 
-  const firstSourceId = sourceAccountOptions[0]?.id ?? '';
+  const defaultPayToward = useMemo((): PayTowardTarget => {
+    if (initialPayToward) return initialPayToward;
+    const firstMember = account?.members.at(0);
+    if (firstMember) {
+      return { kind: 'member', memberId: firstMember.member.id };
+    }
+    return { kind: 'shared' };
+  }, [initialPayToward, account]);
 
   const form = useAppForm({
     defaultValues: account
-      ? getSettleInitialValues(
-          account,
-          firstSourceId,
-          todayIso,
-          initialPayerMemberId
-        )
+      ? getSettleInitialValues(account, accounts, todayIso, defaultPayToward)
       : { ...EMPTY_VALUES, date: todayIso },
     validators: {
       onSubmit: ({ value }: SettleFormSubmitValidatorArgs) =>
@@ -72,9 +81,14 @@ export const SettleDialog = ({
       if (!account) return;
       const amountCents = Math.round(value.amountDollars * 100);
       const trimmedNotes = value.notes?.trim() ?? '';
+      const assignees =
+        value.payToward === 'shared'
+          ? account.sharedParticipantIds.map((memberId) => ({ memberId }))
+          : [{ memberId: value.payToward }];
+
       createSettlement.mutate(
         {
-          payerMemberId: value.payerMemberId,
+          assignees,
           accountId: account.account.id,
           counterpartAccountId: value.sourceAccountId,
           amountCents,
@@ -98,14 +112,9 @@ export const SettleDialog = ({
   useEffect(() => {
     if (!open || !account) return;
     reset(
-      getSettleInitialValues(
-        account,
-        firstSourceId,
-        todayIso,
-        initialPayerMemberId
-      )
+      getSettleInitialValues(account, accounts, todayIso, defaultPayToward)
     );
-  }, [open, account, firstSourceId, todayIso, initialPayerMemberId, reset]);
+  }, [open, account, accounts, todayIso, defaultPayToward, reset]);
 
   if (!account) return null;
 
@@ -122,25 +131,20 @@ export const SettleDialog = ({
 
           <FieldGroup className="mt-4">
             <form.AppField
-              name="payerMemberId"
-              validators={{ onChange: settleFormSchema.shape.payerMemberId }}
+              name="payToward"
+              validators={{ onChange: settleFormSchema.shape.payToward }}
             >
               {(field) => (
                 <SettlePayerField
                   account={account}
                   value={field.state.value}
                   errors={field.state.meta.errors}
-                  onPayerMemberChange={(memberId) => {
-                    field.handleChange(memberId);
-                    const picked = account.members.find(
-                      (m) => m.member.id === memberId
+                  onPayTowardChange={(payToward) => {
+                    field.handleChange(payToward);
+                    form.setFieldValue(
+                      'amountDollars',
+                      getSettleAmountForPayToward(account, payToward)
                     );
-                    if (picked) {
-                      form.setFieldValue(
-                        'amountDollars',
-                        Math.abs(picked.balanceCents) / 100
-                      );
-                    }
                   }}
                 />
               )}
@@ -148,7 +152,7 @@ export const SettleDialog = ({
 
             <form.AppField
               name="amountDollars"
-              validators={{ onChange: settleFormSchema.shape.amountDollars }}
+              validators={{ onChange: settleAmountDollarsFieldSchema }}
             >
               {(field) => (
                 <SettleAmountField

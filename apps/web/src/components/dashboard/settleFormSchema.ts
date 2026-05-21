@@ -3,19 +3,22 @@ import { z } from 'zod';
 // Form-level schema (dollar input). Server payload schema (createSettlementSchema)
 // uses cents — convert in onSubmit.
 //
-// `notes` is OPTIONAL but, when present, is forwarded to the server. Plan 06
-// extended `createSettlementSchema` (packages/validators/src/settlements.ts) to
-// accept `notes: z.string().max(1000).optional()`, which the API persists onto
-// the underlying transaction's `notes` column. Mirror the 1000-char cap here so
-// the form errors before a network round-trip.
-//
+// `notes` is OPTIONAL but, when present, is forwarded to the server.
 // `sourceAccountId` — “Paid from” in the UI; submitted as `counterpartAccountId`.
+/** Field-level amount validation — allows $0 (e.g. zero balance prefill) without inline errors. */
+export const settleAmountDollarsFieldSchema = z
+  .number()
+  .min(0, 'Amount cannot be negative.')
+  .max(9_999_999.99, 'Amount is too large.');
+
 export const settleFormSchema = z.object({
-  payerMemberId: z.string().uuid({ message: 'Select a member.' }),
-  amountDollars: z
-    .number()
-    .positive('Amount must be greater than $0.')
-    .max(9_999_999.99, 'Amount is too large.'),
+  payToward: z.union([
+    z.string().uuid({ message: 'Select a member.' }),
+    z.literal('shared'),
+  ]),
+  amountDollars: settleAmountDollarsFieldSchema.refine((v) => v > 0, {
+    message: 'Amount must be greater than $0.',
+  }),
   sourceAccountId: z.string().min(1, 'Select a source account.'),
   date: z.string().min(1, 'Date is required.'),
   notes: z

@@ -17,7 +17,9 @@ export const SettleDialogFormFooter = ({
   isSubmitting,
   amountDollars,
 }: SettleDialogFormFooterProps) => {
-  const settleLabel = `Settle ${formatCurrency(Math.round(Math.max(0, amountDollars) * 100))}`;
+  const amountCents = Math.round(Math.max(0, amountDollars) * 100);
+  const settleLabel = `Settle ${formatCurrency(amountCents)}`;
+  const isAmountInvalid = !Number.isFinite(amountDollars) || amountDollars <= 0;
 
   return (
     <DialogFooter className="mt-6 sm:justify-between">
@@ -34,6 +36,7 @@ export const SettleDialogFormFooter = ({
           type="submit"
           loading={isSubmitting}
           loadingText="Settling…"
+          disabled={isAmountInvalid}
         >
           {settleLabel}
         </LoadingButton>
