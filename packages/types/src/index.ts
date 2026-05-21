@@ -74,7 +74,7 @@ export type SettlementMemberRowMember = Pick<OrgMember, 'id'> & {
 
 export interface SettlementMemberRow {
   member: SettlementMemberRowMember
-  balanceCents: number
+  personalBalanceCents: number
 }
 
 /**
@@ -92,6 +92,8 @@ export type SettlementAccountRowAccount = Pick<
 export interface SettlementAccountRow {
   account: SettlementAccountRowAccount
   totalBalanceCents: number
+  sharedBalanceCents: number
+  sharedParticipantIds: string[]
   members: SettlementMemberRow[]
   dueDate: string | null
   status: SettlementStatus | null

@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { createSettlementSchema } from '../settlements'
 
+const memberA = '550e8400-e29b-41d4-a716-446655440001'
+const memberB = '550e8400-e29b-41d4-a716-446655440004'
+
 const validPayload = {
-  payerMemberId: '550e8400-e29b-41d4-a716-446655440001',
+  assignees: [{ memberId: memberA }],
   accountId: '550e8400-e29b-41d4-a716-446655440002',
   counterpartAccountId: '550e8400-e29b-41d4-a716-446655440003',
   amountCents: 12_500,
@@ -59,14 +62,43 @@ describe('createSettlementSchema — notes field (Phase 4.2 extension)', () => {
   })
 })
 
+describe('createSettlementSchema — assignees', () => {
+  it('accepts multiple unique assignees', () => {
+    const result = createSettlementSchema.safeParse({
+      ...validPayload,
+      assignees: [{ memberId: memberA }, { memberId: memberB }],
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects empty assignees array', () => {
+    expect(
+      createSettlementSchema.safeParse({ ...validPayload, assignees: [] }).success
+    ).toBe(false)
+  })
+
+  it('rejects duplicate memberId in assignees', () => {
+    const result = createSettlementSchema.safeParse({
+      ...validPayload,
+      assignees: [{ memberId: memberA }, { memberId: memberA }],
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects non-UUID memberId', () => {
+    expect(
+      createSettlementSchema.safeParse({
+        ...validPayload,
+        assignees: [{ memberId: 'not-a-uuid' }],
+      }).success
+    ).toBe(false)
+  })
+})
+
 describe('createSettlementSchema — pre-existing fields (regression)', () => {
   it('still rejects amountCents <= 0', () => {
     expect(createSettlementSchema.safeParse({ ...validPayload, amountCents: 0 }).success).toBe(false)
     expect(createSettlementSchema.safeParse({ ...validPayload, amountCents: -1 }).success).toBe(false)
-  })
-
-  it('still rejects non-UUID payerMemberId', () => {
-    expect(createSettlementSchema.safeParse({ ...validPayload, payerMemberId: 'not-a-uuid' }).success).toBe(false)
   })
 
   it('still rejects malformed date', () => {
