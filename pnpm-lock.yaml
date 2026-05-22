@@ -109,6 +109,9 @@ importers:
       '@ploutizo/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@ploutizo/utils':
+        specifier: workspace:*
+        version: link:../../packages/utils
       '@ploutizo/validators':
         specifier: workspace:^
         version: link:../../packages/validators
@@ -355,6 +358,18 @@ importers:
       typescript:
         specifier: ^6.0.2
         version: 6.0.2
+
+  packages/utils:
+    devDependencies:
+      '@types/node':
+        specifier: ^25.5.2
+        version: 25.6.0
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.2
+      vitest:
+        specifier: ^4.1.2
+        version: 4.1.4(@types/node@25.6.0)(msw@2.13.3(@types/node@25.6.0)(typescript@6.0.2))(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))
 
   packages/validators:
     dependencies:
