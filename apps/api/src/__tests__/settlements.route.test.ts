@@ -37,16 +37,25 @@ describe('GET /api/settlements route', () => {
       account: {
         id: 'acct_1',
         name: 'Amex Gold',
-        type: 'credit_card',
+        type: 'credit_card' as const,
         institution: 'American Express',
         lastFour: '1234',
         statementDueDay: 15,
+        owners: [
+          {
+            id: 'mem_1',
+            displayName: 'Alice',
+            imageUrl: null,
+          },
+        ],
       },
       totalBalanceCents: 5000,
+      sharedBalanceCents: 0,
+      sharedParticipantIds: [],
       members: [
         {
           member: { id: 'mem_1', name: 'Alice', avatarUrl: null },
-          balanceCents: 5000,
+          personalBalanceCents: 5000,
         },
       ],
       dueDate: '2026-05-15',
@@ -90,8 +99,9 @@ describe('GET /api/settlements route', () => {
 
 describe('POST /api/settlements route', () => {
   const validPayload = {
-    payerMemberId: '550e8400-e29b-41d4-a716-446655440001',
+    assignees: [{ memberId: '550e8400-e29b-41d4-a716-446655440001' }],
     accountId: '550e8400-e29b-41d4-a716-446655440002',
+    counterpartAccountId: '550e8400-e29b-41d4-a716-446655440003',
     amountCents: 5000,
     date: '2026-05-08',
   };

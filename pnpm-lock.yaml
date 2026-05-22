@@ -54,6 +54,9 @@ importers:
       '@ploutizo/types':
         specifier: workspace:*
         version: link:../../packages/types
+      '@ploutizo/utils':
+        specifier: workspace:*
+        version: link:../../packages/utils
       '@ploutizo/validators':
         specifier: workspace:*
         version: link:../../packages/validators
