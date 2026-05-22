@@ -1,0 +1,68 @@
+:root {
+  --color-bg: #1c1917;
+  --color-surface: #292524;
+  --color-surface-elevated: #32302e;
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-text: #fafaf9;
+  --color-text-muted: #a8a29e;
+  --color-primary: #3b82f6;
+  --color-accent: #f59e0b;
+  --color-danger: #f87171;
+  --color-success: #34d399;
+  --color-success-muted: rgba(52, 211, 153, 0.14);
+  --color-warning-muted: rgba(251, 191, 36, 0.14);
+  --color-clear-muted: rgba(168, 162, 158, 0.12);
+
+  --font-serif: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+  --font-sans: 'Geist', system-ui, sans-serif;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.light {
+  --color-bg: #fafaf9;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #f5f5f4;
+  --color-border: rgba(28, 25, 23, 0.12);
+  --color-text: #1c1917;
+  --color-text-muted: #78716c;
+  --color-success-muted: rgba(16, 185, 129, 0.12);
+  --color-warning-muted: rgba(245, 158, 11, 0.14);
+  --color-clear-muted: rgba(120, 113, 108, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #3f3a37 0%, var(--color-bg) 42%);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}
+
+.light body,
+body.light {
+  background: radial-gradient(circle at top, #e7e5e4 0%, var(--color-bg) 45%);
+}

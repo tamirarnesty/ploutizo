@@ -4,9 +4,9 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from '@ploutizo/ui/components/toggle-group';
+import { lrmSplit } from '@ploutizo/utils';
 import type { OrgMember } from '@ploutizo/types';
 import { formatCurrency } from '@/lib/formatCurrency';
-import { lrmSplit } from '@/lib/lrm';
 import { AssigneeRow } from './AssigneeRow';
 import type { AssigneeFormRow } from './types';
 

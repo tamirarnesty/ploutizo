@@ -17,6 +17,7 @@
     "@hono/zod-validator": "^0.7.6",
     "@ploutizo/db": "workspace:*",
     "@ploutizo/types": "workspace:*",
+    "@ploutizo/utils": "workspace:*",
     "@ploutizo/validators": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.10",

@@ -13,6 +13,11 @@ import {
   useRestoreTransaction,
 } from '@/lib/data-access/transactions';
 import type { TransactionRow } from '@/lib/data-access/transactions';
+import {
+  DATA_GRID_PAGINATION_ROW_CLASSNAME,
+  PAGINATED_DATA_GRID_SCROLL_ORIENTATION,
+} from '@/components/data-grid/dataGridSharedLayout';
+import { useEffectiveTablePageSize } from '@/hooks/useEffectiveTablePageSize';
 import { buildColumns } from './TransactionColumns';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import { TransactionsTableEmpty } from './TransactionTableEmpty';
@@ -76,6 +81,13 @@ export const TransactionsTable = ({
     [setDeleteId, onEdit, onOpenOriginal]
   );
 
+  const effectivePageSize = useEffectiveTablePageSize(
+    'transactions',
+    limit,
+    isLoading ? 0 : transactions.length,
+    isLoading
+  );
+
   const table = useReactTable({
     data: transactions,
     columns,
@@ -84,7 +96,7 @@ export const TransactionsTable = ({
     manualSorting: true, // server-side sort (RESEARCH Pitfall 8)
     rowCount: total, // TanStack Table server-side total for page math (RESEARCH Pitfall 3)
     state: {
-      pagination: { pageIndex: page - 1, pageSize: limit },
+      pagination: { pageIndex: page - 1, pageSize: effectivePageSize },
       sorting: [{ id: sort ?? 'date', desc: order === 'desc' }],
     },
     onPaginationChange: (updater) => {
@@ -139,16 +151,13 @@ export const TransactionsTable = ({
       >
         <div className="w-full space-y-2.5">
           <DataGridContainer>
-            <DataGridScrollArea className="[&_[data-slot='scroll-area-viewport']]:overscroll-contain">
+            <DataGridScrollArea
+              orientation={PAGINATED_DATA_GRID_SCROLL_ORIENTATION}
+            >
               <DataGridTable />
             </DataGridScrollArea>
           </DataGridContainer>
-          {/*
-           * DataGridPagination base styles stack to flex-col on mobile, swapping
-           * the two sections' visual order via order-1/order-2. These overrides
-           * force a single-row layout at all sizes.
-           */}
-          <DataGridPagination className="flex-row [&_[role='combobox']]:w-16 [&>div:first-child]:order-1 [&>div:first-child]:pb-0 [&>div:last-child]:order-2 [&>div:last-child]:flex-row [&>div:last-child]:pt-0" />
+          <DataGridPagination className={DATA_GRID_PAGINATION_ROW_CLASSNAME} />
         </div>
       </DataGrid>
     </>

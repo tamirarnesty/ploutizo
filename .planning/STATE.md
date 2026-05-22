@@ -2,30 +2,30 @@
 gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Transactions & Settlement
-status: 'Phase 04.2 — next up'
-last_updated: '2026-05-11T00:00:00.000Z'
+status: planning
+last_updated: "2026-05-18T14:43:56.721Z"
 progress:
-  total_phases: 4
-  completed_phases: 1
-  total_plans: 0
-  completed_plans: 0
-  percent: 25
+  total_phases: 21
+  completed_phases: 17
+  total_plans: 78
+  completed_plans: 77
+  percent: 85
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 4.2
+Phase: 04.2.2
 Plan: Not started
 **Milestone:** v0.2 — Transactions & Settlement
-**Active Phase:** 04.1 shipped — [PR #62](https://github.com/tamirarnesty/ploutizo/pull/62)
-**Status:** Phase 04.2 (Settlement UI) — ready to plan
-**Last session:** 2026-05-11
+**Active Phase:** 04.2.2 inserted after Settlement UI (URGENT)
+**Status:** Ready to plan **Phase 04.2.2 — create unified drawer with consistent UI and UX**
+**Last session:** 2026-05-16
 
 ## Next Action
 
-Plan and execute **Phase 04.2 — Settlement UI**. PR #63 (codebase map + ESLint enforcement) pending merge.
+Plan and execute **Phase 04.2.2 — create unified drawer with consistent UI and UX** (URGENT insertion — **04.2.1** Clerk auth routes remain pending afterward).
 
 ## Phase Status
 
@@ -56,22 +56,24 @@ Plan and execute **Phase 04.2 — Settlement UI**. PR #63 (codebase map + ESLint
 | 03.5   | CI testing, linting, and formatting checks                       | complete (verified 2026-04-30)              |
 | 03.6   | Migrate @hono/clerk-auth to @clerk/hono                          | complete (1/1 plans, verified 2026-05-04)   |
 | 04.1   | Settlement API                                                   | shipped — PR #62                            |
-| 04.2   | Settlement UI                                                    | pending                                     |
-| 04.3   | Budgets API                                                      | pending                                     |
-| 04.4   | Budget Dashboard UI                                              | pending                                     |
+| 04.2   | Settlement UI                                                    | shipped                                     |
+| 04.2.1 | Clerk in-app auth route coverage and hosted URL elimination     | pending                                     |
+| 04.2.2 | Create unified drawer with consistent UI and UX                | pending                                     |
 | 05.1   | Bank Normalizers                                                 | pending                                     |
 | 05.2   | Import Batch API                                                 | pending                                     |
 | 05.3   | Import UI                                                        | pending                                     |
 | 05.4   | Import Bulk Actions & Duplicate Handling                         | pending                                     |
-| 06.1   | Investment Schema & Contribution Room API                        | pending                                     |
-| 06.2   | Savings Contributions UI                                         | pending                                     |
-| 06.3   | Net Worth API                                                    | pending                                     |
-| 06.4   | Net Worth UI                                                     | pending                                     |
-| 07.1   | Notifications Table & Write Triggers                             | pending                                     |
-| 07.2   | Notification Feed UI                                             | pending                                     |
-| 07.3   | Overview Dashboard UI                                            | pending                                     |
-| 08.1   | Replace in-memory seenOrgs Set in tenantGuard                    | pending                                     |
-| 08.2   | Adopt react-i18next and wrap all user-visible string literals    | pending                                     |
+| 06.1   | Budgets API                                                      | pending                                     |
+| 06.2   | Budget Dashboard UI                                              | pending                                     |
+| 06.3   | Overview Dashboard UI                                            | pending                                     |
+| 07.1   | Investment Schema & Contribution Room API                        | pending                                     |
+| 07.2   | Savings Contributions UI                                         | pending                                     |
+| 07.3   | Notifications Table & Write Triggers                             | pending                                     |
+| 07.4   | Notification Feed UI                                             | pending                                     |
+| 08.1   | Net Worth API                                                    | pending                                     |
+| 08.2   | Net Worth UI                                                     | pending                                     |
+| 09.1   | Replace in-memory seenOrgs Set in tenantGuard                    | pending                                     |
+| 09.2   | Adopt react-i18next and wrap all user-visible string literals    | pending                                     |
 
 ## Initialization Summary
 
@@ -128,6 +130,8 @@ Plan and execute **Phase 04.2 — Settlement UI**. PR #63 (codebase map + ESLint
 - Phase 03.3.2 inserted after Phase 03.3.1: implement Text typography component in packages/ui (URGENT)
 - Phase 03.3.3 inserted after Phase 03.3.2: UI primitive refactor sweep across apps/web (URGENT)
 - Phase 03.6 inserted after Phase 03.5: Migrate @hono/clerk-auth to @clerk/hono — swap deprecated package for @clerk/hono across apps/api (INSERTED)
+- Phase 04.2.1 inserted after Phase 04.2: Clerk in-app route coverage and invite redirect hardening (URGENT)
+- Phase 04.2.2 inserted after Phase 04.2: create unified drawer with consistent UI and UX (URGENT)
 
 ### Pending Todos
 
@@ -143,9 +147,9 @@ _(#1 done: 03.3.2, #3 done: 03.4.5, #5 done: 03.4.6, #8 done: 03.4.3, #9/#10 don
 
 ## Blockers / Open Items
 
-- TFSA 2026 annual limit — verify against CRA before Phase 6.1
-- RRSP 2026 dollar cap — verify against CRA before Phase 6.1
-- Bank CSV real exports — collect before Phase 5.1 (LOW confidence on column names)
+- TFSA 2026 annual limit — verify against CRA before Phase 07.1
+- RRSP 2026 dollar cap — verify against CRA before Phase 07.1
+- Bank CSV real exports — collect before Phase 05.1 (LOW confidence on column names)
 - Neon connection limit on chosen plan — verify before Phase 1 goes live
 - reorderSchema uses z.string().uuid() — test orderedIds must be valid UUIDs (non-UUID strings correctly rejected) — 02-04
 - ReUI Sortable component uses strategy='vertical' prop (not layout prop) — confirm before using in future plans — 02-04
@@ -158,4 +162,3 @@ _(#1 done: 03.3.2, #3 done: 03.4.5, #5 done: 03.4.6, #8 done: 03.4.3, #9/#10 don
 | ---------- | ----------------------------------------------------------------- | ---------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
 | 260329-ivf | Update Phase 1 plans to reference old-artifacts schema files      | 2026-03-29 | b39a815 | [260329-ivf-analyze-impact-of-old-artifacts-schemas-](./quick/260329-ivf-analyze-impact-of-old-artifacts-schemas-/) |
 | 260411-r4m | add additional valuable user/member and org attributes from clerk | 2026-04-11 | 38ade1e | [260411-r4m-add-additional-valuable-user-member-and-](./quick/260411-r4m-add-additional-valuable-user-member-and-/) |
-

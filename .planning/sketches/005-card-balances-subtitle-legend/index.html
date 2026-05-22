@@ -1,0 +1,1130 @@
+<!doctype html>
+<html lang="en" class="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sketch 005 — Card balances subtitle legend refinement</title>
+    <link rel="stylesheet" href="../themes/default.css" />
+    <style>
+      :root {
+        --line: rgba(28, 25, 23, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 84px 16px 96px;
+        font-family: var(--font-sans);
+        color: var(--color-text);
+      }
+
+      #variant-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 9998;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(250, 250, 249, 0.96);
+        backdrop-filter: blur(8px);
+      }
+
+      .dark #variant-nav {
+        background: rgba(28, 25, 23, 0.94);
+      }
+
+      .variant-tab {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--color-text-muted);
+        padding: 7px 12px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+
+      .variant-tab:hover,
+      .variant-tab.active {
+        color: var(--color-text);
+      }
+
+      .variant-tab.active {
+        border-color: var(--color-primary);
+        background: rgba(59, 130, 246, 0.09);
+      }
+
+      #viewport-wrap {
+        max-width: 1220px;
+        margin: 0 auto;
+        transition: max-width 0.2s ease;
+      }
+
+      .sketch-note {
+        margin: 0 auto 14px;
+        color: var(--color-text-muted);
+        font-size: 13px;
+      }
+
+      .grid-card {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        overflow: hidden;
+        background: var(--color-surface);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .head {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        gap: 10px;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .title {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 700;
+      }
+
+      .subtitle {
+        margin-top: 5px;
+        font-size: 12px;
+        color: var(--color-text-muted);
+      }
+
+      .legend-plain {
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 7px;
+      }
+
+      .legend-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        display: inline-block;
+        margin-right: 4px;
+      }
+
+      .legend-divider {
+        opacity: 0.5;
+      }
+
+      .legend-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .legend-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(120, 113, 108, 0.08);
+        padding: 2px 8px;
+        font-size: 11px;
+        color: var(--color-text);
+      }
+
+      .legend-compact {
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .legend-token {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+      }
+
+      .head-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .chip {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 3px 8px;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .export-btn {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: transparent;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .table-wrap {
+        overflow: auto;
+      }
+
+      table {
+        width: 100%;
+        min-width: 1140px;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        padding: 10px 10px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: middle;
+      }
+
+      th {
+        background: rgba(120, 113, 108, 0.04);
+      }
+
+      .sort-btn {
+        width: 100%;
+        display: inline-flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        border: 0;
+        background: transparent;
+        color: var(--color-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .sort-btn:hover,
+      .sort-btn.active {
+        color: var(--color-text);
+      }
+
+      .card-cell {
+        min-width: 220px;
+      }
+
+      .card-name {
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .card-meta {
+        margin-top: 2px;
+        font-size: 12px;
+        color: var(--color-text-muted);
+      }
+
+      .brand-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 42px;
+        height: 20px;
+        border-radius: 6px;
+        font-size: 10px;
+        font-weight: 800;
+        color: #fff;
+        margin-right: 7px;
+        padding: 0 6px;
+      }
+
+      .brand-icon {
+        width: 18px;
+        height: 18px;
+        border-radius: 5px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 10px;
+        font-weight: 800;
+        margin-right: 6px;
+      }
+
+      .owner {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .avatar {
+        width: 22px;
+        height: 22px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 10px;
+        font-weight: 700;
+        background: linear-gradient(135deg, #7c3aed, #2563eb);
+      }
+
+      .avatar-stack {
+        display: inline-flex;
+      }
+
+      .avatar-stack .avatar + .avatar {
+        margin-left: -8px;
+      }
+
+      .money {
+        font-size: 16px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .due {
+        font-size: 13px;
+        color: var(--color-text-muted);
+        min-height: 18px;
+      }
+
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .status.status-on_track {
+        color: #047857;
+        border-color: rgba(5, 150, 105, 0.35);
+        background: rgba(16, 185, 129, 0.12);
+      }
+
+      .status.status-due_soon {
+        color: #b45309;
+        border-color: rgba(245, 158, 11, 0.35);
+        background: rgba(251, 191, 36, 0.13);
+      }
+
+      .status.status-overdue {
+        color: #b91c1c;
+        border-color: rgba(239, 68, 68, 0.35);
+        background: rgba(248, 113, 113, 0.12);
+      }
+
+      .status.status-scheduled {
+        color: #334155;
+        border-color: rgba(100, 116, 139, 0.35);
+        background: rgba(148, 163, 184, 0.14);
+      }
+
+      .status-icon-only {
+        width: 28px;
+        justify-content: center;
+        padding-inline: 0;
+      }
+
+      .icon {
+        width: 13px;
+        height: 13px;
+        display: inline-block;
+      }
+
+      .split-bar {
+        display: flex;
+        height: 8px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: rgba(120, 113, 108, 0.16);
+      }
+
+      .split-segment {
+        height: 100%;
+      }
+
+      .member-row {
+        margin-top: 6px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .member-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        border-radius: 999px;
+        background: rgba(120, 113, 108, 0.14);
+        padding: 2px 7px;
+        font-size: 11px;
+        white-space: nowrap;
+      }
+
+      .member-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+      }
+
+      .action-wrap {
+        position: relative;
+      }
+
+      .action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid #111827;
+        border-radius: 8px;
+        background: #111827;
+        color: #f9fafb;
+        padding: 5px 10px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .action-btn.icon-only {
+        width: 32px;
+        justify-content: center;
+        padding-inline: 0;
+      }
+
+      .action-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .action-menu {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        z-index: 30;
+        width: 230px;
+        display: none;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--color-surface);
+        box-shadow: var(--shadow-md);
+        padding: 6px;
+      }
+
+      .action-menu.open {
+        display: block;
+      }
+
+      .menu-title {
+        padding: 4px 8px 6px;
+        font-size: 10px;
+        color: var(--color-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .menu-item {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
+        padding: 7px 8px;
+        text-align: left;
+        cursor: pointer;
+        font-size: 12px;
+      }
+
+      .menu-item:hover,
+      .menu-item:focus-visible {
+        background: rgba(59, 130, 246, 0.08);
+        outline: none;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        border: 0;
+        white-space: nowrap;
+      }
+
+      tfoot td {
+        background: rgba(120, 113, 108, 0.04);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 14px;
+        border-top: 1px solid var(--line);
+        font-size: 12px;
+      }
+
+      .pager {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .pager-btn {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        min-width: 30px;
+        height: 30px;
+        background: transparent;
+        font-weight: 700;
+      }
+
+      .pager-btn.active {
+        border-color: var(--color-primary);
+        color: var(--color-primary);
+      }
+
+      #sketch-tools {
+        position: fixed;
+        right: 12px;
+        bottom: 12px;
+        z-index: 9999;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        padding: 8px 12px;
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.72);
+        color: #fff;
+        font-size: 12px;
+        opacity: 0.44;
+        transition: opacity 0.2s ease;
+      }
+
+      #sketch-tools:hover {
+        opacity: 1;
+      }
+
+      #sketch-tools select,
+      #sketch-tools button {
+        border: 0;
+        border-radius: 7px;
+        background: rgba(255, 255, 255, 0.14);
+        color: inherit;
+        font-size: 12px;
+        padding: 6px 8px;
+        cursor: pointer;
+      }
+
+      #toast {
+        position: fixed;
+        left: 50%;
+        bottom: 74px;
+        transform: translateX(-50%);
+        border-radius: 999px;
+        background: #111827;
+        color: #f9fafb;
+        padding: 8px 12px;
+        font-size: 12px;
+        opacity: 0;
+        transition: opacity 0.15s ease;
+      }
+
+      #toast.show {
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body class="light">
+    <div id="variant-nav" aria-label="Sketch variants">
+      <button class="variant-tab active" type="button" data-variant="a">
+        A: Plain subtitle text
+      </button>
+      <button class="variant-tab" type="button" data-variant="b">
+        B: Badge subtitle row
+      </button>
+      <button class="variant-tab" type="button" data-variant="c">
+        C: Compact token subtitle
+      </button>
+    </div>
+
+    <div id="viewport-wrap">
+      <p class="sketch-note">
+        Refine C baseline: subtitle limited to top 3 + overflow, color-matched to split badges,
+        with clearer icon-style differences for brand/status/settle.
+      </p>
+      <div id="variant-a" class="variant"></div>
+      <div id="variant-b" class="variant" hidden></div>
+      <div id="variant-c" class="variant" hidden></div>
+    </div>
+
+    <div id="sketch-tools">
+      <select id="theme-switcher" aria-label="Theme">
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+      </select>
+      <button type="button" data-viewport="phone">Phone</button>
+      <button type="button" data-viewport="tablet">Tablet</button>
+      <button type="button" data-viewport="desktop">Desktop</button>
+      <button type="button" id="shuffle">Shuffle balances</button>
+    </div>
+    <div id="toast"></div>
+
+    <script>
+      const memberColors = {
+        Alex: '#3b82f6',
+        Jordan: '#93c5fd',
+        Priya: '#ec4899',
+        Marcus: '#f97316',
+        Sora: '#6366f1',
+        Shared: '#334155',
+      };
+
+      const brandColors = {
+        AMEX: '#1f6f8b',
+        VISA: '#1e3a8a',
+        MASTERCARD: '#ea580c',
+        TD: '#15803d',
+        CIBC: '#b91c1c',
+      };
+
+      const rows = [
+        {
+          id: 'amex',
+          card: 'Amex Platinum',
+          brand: 'AMEX',
+          lastFour: '1004',
+          owner: { type: 'single', names: ['Alex'] },
+          balanceCents: 428492,
+          dueISO: '2026-11-14',
+          dueText: 'Nov 14',
+          status: 'due_soon',
+          members: [
+            { name: 'Alex', pct: 50, balanceCents: 214246 },
+            { name: 'Jordan', pct: 30, balanceCents: 128548 },
+            { name: 'Shared', pct: 20, balanceCents: 85698 },
+          ],
+        },
+        {
+          id: 'chase',
+          card: 'Chase Sapphire',
+          brand: 'VISA',
+          lastFour: '2287',
+          owner: { type: 'single', names: ['Priya'] },
+          balanceCents: 1842018,
+          dueISO: '2026-11-28',
+          dueText: 'Nov 28',
+          status: 'on_track',
+          members: [
+            { name: 'Priya', pct: 42, balanceCents: 773648 },
+            { name: 'Marcus', pct: 29, balanceCents: 534185 },
+            { name: 'Alex', pct: 17, balanceCents: 313143 },
+            { name: 'Shared', pct: 12, balanceCents: 221042 },
+          ],
+        },
+        {
+          id: 'apple',
+          card: 'Apple Card',
+          brand: 'MASTERCARD',
+          lastFour: '8842',
+          owner: { type: 'single', names: ['Jordan'] },
+          balanceCents: 31240,
+          dueISO: '2026-11-09',
+          dueText: 'Nov 9',
+          status: 'overdue',
+          members: [
+            { name: 'Jordan', pct: 68, balanceCents: 21243 },
+            { name: 'Sora', pct: 32, balanceCents: 9997 },
+          ],
+        },
+        {
+          id: 'venture',
+          card: 'TD Aeroplan',
+          brand: 'TD',
+          lastFour: '5510',
+          owner: { type: 'shared', names: ['Marcus', 'Priya'] },
+          balanceCents: 987655,
+          dueISO: null,
+          dueText: '',
+          status: 'scheduled',
+          members: [
+            { name: 'Marcus', pct: 43, balanceCents: 424691 },
+            { name: 'Priya', pct: 29, balanceCents: 286420 },
+            { name: 'Alex', pct: 15, balanceCents: 148148 },
+            { name: 'Sora', pct: 8, balanceCents: 79012 },
+            { name: 'Shared', pct: 5, balanceCents: 49384 },
+          ],
+        },
+        {
+          id: 'citi',
+          card: 'CIBC Dividend',
+          brand: 'CIBC',
+          lastFour: '3320',
+          owner: { type: 'single', names: ['Sora'] },
+          balanceCents: 64218,
+          dueISO: '2026-11-21',
+          dueText: 'Nov 21',
+          status: 'on_track',
+          members: [
+            { name: 'Sora', pct: 69, balanceCents: 44310 },
+            { name: 'Jordan', pct: 31, balanceCents: 19908 },
+          ],
+        },
+      ];
+
+      const statusRank = { overdue: 0, due_soon: 1, on_track: 2, scheduled: 3 };
+      let sortState = { key: 'balance', dir: 'desc' };
+      let currentVariant = 'a';
+
+      const icon = {
+        check:
+          '<svg class="icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.4 8.4 6.7 11.7 12.6 5.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        clock:
+          '<svg class="icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.8v3.4l2.4 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        alert:
+          '<svg class="icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2.7 13.7 12.6H2.3L8 2.7Z" stroke="currentColor" stroke-width="1.4"/><path d="M8 6.3v2.8M8 11v.1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+        calendar:
+          '<svg class="icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2.2" y="3.3" width="11.6" height="10" rx="1.8" stroke="currentColor" stroke-width="1.4"/><path d="M5.1 2.4v2M10.9 2.4v2M2.3 6h11.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+        settle:
+          '<svg class="icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.4 8h7.4M7.7 5.4 10.6 8l-2.9 2.6M11.5 4.2h2.1v7.6h-2.1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      };
+
+      const statusIcon = (status) => {
+        if (status === 'on_track') return icon.check;
+        if (status === 'due_soon') return icon.clock;
+        if (status === 'overdue') return icon.alert;
+        return icon.calendar;
+      };
+
+      const money = (cents) =>
+        new Intl.NumberFormat('en-CA', {
+          style: 'currency',
+          currency: 'CAD',
+        }).format(cents / 100);
+
+      const initials = (name) =>
+        name
+          .split(/\s+/)
+          .map((n) => n[0])
+          .join('')
+          .slice(0, 2)
+          .toUpperCase();
+
+      const ownerLabel = (owner) => (owner.type === 'single' ? owner.names[0] : 'Shared');
+      const actionableCount = (row) => row.members.filter((m) => m.balanceCents > 0).length;
+
+      const valueFor = (row, key) => {
+        if (key === 'card') return row.card.toLowerCase();
+        if (key === 'owner') return ownerLabel(row.owner).toLowerCase();
+        if (key === 'balance') return row.balanceCents;
+        if (key === 'due') return row.dueISO ? Date.parse(row.dueISO) : Number.MAX_SAFE_INTEGER;
+        if (key === 'status') return statusRank[row.status] ?? 99;
+        if (key === 'split') return row.members.length;
+        if (key === 'action') return actionableCount(row);
+        return '';
+      };
+
+      const sortedRows = () => {
+        const copy = [...rows];
+        copy.sort((a, b) => {
+          const av = valueFor(a, sortState.key);
+          const bv = valueFor(b, sortState.key);
+          if (av < bv) return sortState.dir === 'asc' ? -1 : 1;
+          if (av > bv) return sortState.dir === 'asc' ? 1 : -1;
+          return 0;
+        });
+        return copy;
+      };
+
+      const toggleSort = (key) => {
+        if (sortState.key === key) {
+          sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+          sortState.key = key;
+          sortState.dir = key === 'balance' ? 'desc' : 'asc';
+        }
+        renderAll();
+        showVariant(currentVariant);
+      };
+
+      const indicator = (key) => {
+        if (sortState.key !== key) return '↕';
+        return sortState.dir === 'asc' ? '↑' : '↓';
+      };
+
+      const topLegend = () => {
+        const totals = new Map();
+        rows.forEach((row) => {
+          row.members.forEach((m) => {
+            if (m.balanceCents <= 0) return;
+            totals.set(m.name, (totals.get(m.name) ?? 0) + m.balanceCents);
+          });
+        });
+        const sorted = [...totals.entries()].sort((a, b) => b[1] - a[1]);
+        return {
+          top: sorted.slice(0, 3),
+          overflow: Math.max(sorted.length - 3, 0),
+        };
+      };
+
+      const subtitleMarkup = (style) => {
+        const { top, overflow } = topLegend();
+        if (style === 'a') {
+          return `
+            <div class="subtitle legend-plain">
+              ${top
+                .map(
+                  ([name, cents], index) => `
+                    ${index ? '<span class="legend-divider">·</span>' : ''}
+                    <span><span class="legend-dot" style="background:${memberColors[name] || '#64748b'}"></span>${money(cents)} ${name}</span>
+                  `
+                )
+                .join('')}
+              ${overflow ? `<span class="legend-divider">·</span><span>+${overflow} more</span>` : ''}
+            </div>
+          `;
+        }
+        if (style === 'b') {
+          return `
+            <div class="subtitle legend-badges">
+              ${top
+                .map(
+                  ([name, cents]) => `
+                    <span class="legend-badge">
+                      <span class="legend-dot" style="background:${memberColors[name] || '#64748b'}"></span>
+                      ${money(cents)} ${name}
+                    </span>
+                  `
+                )
+                .join('')}
+              ${overflow ? `<span class="legend-badge">+${overflow} more</span>` : ''}
+            </div>
+          `;
+        }
+        return `
+          <div class="subtitle legend-compact">
+            ${top
+              .map(
+                ([name, cents]) => `
+                  <span class="legend-token">
+                    <span class="legend-dot" style="background:${memberColors[name] || '#64748b'}"></span>
+                    <span>${money(cents)} ${name}</span>
+                  </span>
+                `
+              )
+              .join('<span class="legend-divider">|</span>')}
+            ${overflow ? `<span class="legend-divider">|</span><span class="legend-token">+${overflow} more</span>` : ''}
+          </div>
+        `;
+      };
+
+      const ownerCell = (owner) => {
+        if (owner.type === 'single') {
+          return `
+            <span class="owner">
+              <span class="avatar">${initials(owner.names[0])}</span>
+              <span>${owner.names[0]}</span>
+            </span>
+          `;
+        }
+        return `
+          <span class="owner">
+            <span class="avatar-stack">
+              <span class="avatar">${initials(owner.names[0])}</span>
+              <span class="avatar">${initials(owner.names[1])}</span>
+            </span>
+            <span>Shared</span>
+          </span>
+        `;
+      };
+
+      const brandCell = (row, style) => {
+        const color = brandColors[row.brand] || '#475569';
+        if (style === 'a') {
+          return `
+            <div class="card-name">${row.card}</div>
+            <div class="card-meta">${row.brand} •••• ${row.lastFour}</div>
+          `;
+        }
+        if (style === 'b') {
+          return `
+            <div class="card-name">${row.card}</div>
+            <div class="card-meta"><span class="brand-icon" style="background:${color}">${row.brand[0]}</span>${row.brand} •••• ${row.lastFour}</div>
+          `;
+        }
+        return `
+          <div class="card-name">${row.card}</div>
+          <div class="card-meta"><span class="brand-pill" style="background:${color}">${row.brand}</span><span>•••• ${row.lastFour}</span></div>
+        `;
+      };
+
+      const statusCell = (row, style) => {
+        const label = row.status.replace('_', ' ');
+        if (style === 'b') {
+          return `<span class="status status-${row.status} status-icon-only" title="${label}" aria-label="${label}">${statusIcon(row.status)}</span>`;
+        }
+        if (style === 'a') {
+          return `<span class="status status-${row.status}"><span>${label}</span></span>`;
+        }
+        return `<span class="status status-${row.status}">${statusIcon(row.status)}<span>${label}</span></span>`;
+      };
+
+      const splitCell = (row) => `
+        <div class="split-bar">
+          ${row.members
+            .map(
+              (m) =>
+                `<span class="split-segment" style="width:${Math.max(m.pct, 0)}%;background:${memberColors[m.name] || '#64748b'}"></span>`
+            )
+            .join('')}
+        </div>
+        <div class="member-row">
+          ${row.members
+            .map(
+              (m) => `
+                <span class="member-chip">
+                  <span class="member-dot" style="background:${memberColors[m.name] || '#64748b'}"></span>
+                  ${m.name} ${Math.max(m.pct, 0)}%
+                </span>
+              `
+            )
+            .join('')}
+        </div>
+      `;
+
+      const actionCell = (row, style, scope) => {
+        const dueMembers = row.members.filter((m) => m.balanceCents > 0);
+        const triggerId = `${scope}-${row.id}`;
+        const btnClass = style === 'b' ? 'action-btn icon-only' : 'action-btn';
+        const content =
+          style === 'b'
+            ? `${icon.settle}<span class="sr-only">Settle</span>`
+            : style === 'a'
+              ? `<span>Settle</span>`
+              : `${icon.settle}<span>Settle</span>`;
+        return `
+          <div class="action-wrap">
+            <button class="${btnClass}" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Settle member for ${row.card}" data-trigger="${triggerId}" ${dueMembers.length ? '' : 'disabled'}>
+              ${content}
+            </button>
+            <div class="action-menu" role="menu" id="menu-${triggerId}">
+              <div class="menu-title">Settle member</div>
+              ${dueMembers
+                .map(
+                  (m) => `
+                    <button class="menu-item" role="menuitem" type="button" data-settle="${row.id}" data-member="${m.name}">
+                      <span>${m.name}</span>
+                      <span>${money(m.balanceCents)}</span>
+                    </button>
+                  `
+                )
+                .join('')}
+            </div>
+          </div>
+        `;
+      };
+
+      const tableHead = `
+        <thead>
+          <tr>
+            <th><button class="sort-btn ${sortState.key === 'card' ? 'active' : ''}" data-sort="card" type="button"><span>Card</span><span>${indicator('card')}</span></button></th>
+            <th><button class="sort-btn ${sortState.key === 'owner' ? 'active' : ''}" data-sort="owner" type="button"><span>Owner</span><span>${indicator('owner')}</span></button></th>
+            <th><button class="sort-btn ${sortState.key === 'balance' ? 'active' : ''}" data-sort="balance" type="button"><span>Balance</span><span>${indicator('balance')}</span></button></th>
+            <th><button class="sort-btn ${sortState.key === 'due' ? 'active' : ''}" data-sort="due" type="button"><span>Due</span><span>${indicator('due')}</span></button></th>
+            <th><button class="sort-btn ${sortState.key === 'status' ? 'active' : ''}" data-sort="status" type="button"><span>Status</span><span>${indicator('status')}</span></button></th>
+            <th><button class="sort-btn ${sortState.key === 'split' ? 'active' : ''}" data-sort="split" type="button"><span>Split by member</span><span>${indicator('split')}</span></button></th>
+            <th><button class="sort-btn ${sortState.key === 'action' ? 'active' : ''}" data-sort="action" type="button"><span>Action</span><span>${indicator('action')}</span></button></th>
+          </tr>
+        </thead>
+      `;
+
+      const tableRows = (list, style, scope) =>
+        list
+          .map(
+            (row) => `
+              <tr>
+                <td class="card-cell">${brandCell(row, style)}</td>
+                <td>${ownerCell(row.owner)}</td>
+                <td><span class="money">${money(row.balanceCents)}</span></td>
+                <td><span class="due">${row.dueText}</span></td>
+                <td>${statusCell(row, style)}</td>
+                <td>${splitCell(row)}</td>
+                <td>${actionCell(row, style, scope)}</td>
+              </tr>
+            `
+          )
+          .join('');
+
+      const footerTotal = (list) => list.reduce((sum, row) => sum + row.balanceCents, 0);
+
+      const tableFoot = (list) => `
+        <tfoot>
+          <tr>
+            <td colspan="2">Total outstanding</td>
+            <td>${money(footerTotal(list))}</td>
+            <td colspan="4"></td>
+          </tr>
+        </tfoot>
+      `;
+
+      const renderGrid = (style, scope) => {
+        const list = sortedRows();
+        return `
+          <section class="grid-card">
+            <header class="head">
+              <div>
+                <h2 class="title">Card Balances</h2>
+                ${subtitleMarkup(style)}
+              </div>
+              <div class="head-actions">
+                <span class="chip">Top 3 + overflow</span>
+                <button class="export-btn" type="button">Export</button>
+              </div>
+            </header>
+            <div class="table-wrap">
+              <table>
+                ${tableHead}
+                <tbody>${tableRows(list, style, scope)}</tbody>
+                ${tableFoot(list)}
+              </table>
+            </div>
+            <div class="footer">
+              <div class="pager">
+                <span>Rows per page</span>
+                <button class="pager-btn" type="button">5</button>
+              </div>
+              <div class="pager">
+                <span>1–5 of ${list.length}</span>
+                <button class="pager-btn active" type="button">1</button>
+                <button class="pager-btn" type="button">2</button>
+              </div>
+            </div>
+          </section>
+        `;
+      };
+
+      const closeMenus = () => {
+        document.querySelectorAll('.action-menu').forEach((menu) => menu.classList.remove('open'));
+        document
+          .querySelectorAll('[data-trigger]')
+          .forEach((button) => button.setAttribute('aria-expanded', 'false'));
+      };
+
+      const bindInteractions = () => {
+        document.querySelectorAll('[data-sort]').forEach((button) => {
+          button.addEventListener('click', () => toggleSort(button.getAttribute('data-sort')));
+        });
+
+        document.querySelectorAll('[data-trigger]').forEach((button) => {
+          button.addEventListener('click', (event) => {
+            const triggerId = button.getAttribute('data-trigger');
+            const menu = document.getElementById(`menu-${triggerId}`);
+            const open = menu.classList.contains('open');
+            closeMenus();
+            if (!open) {
+              menu.classList.add('open');
+              button.setAttribute('aria-expanded', 'true');
+            }
+            event.stopPropagation();
+          });
+        });
+
+        document.querySelectorAll('[data-settle]').forEach((button) => {
+          button.addEventListener('click', () => {
+            const member = button.getAttribute('data-member');
+            const card = button.getAttribute('data-settle').toUpperCase();
+            showToast(`Settle ${member} on ${card}`);
+            closeMenus();
+          });
+        });
+      };
+
+      const showToast = (text) => {
+        const toast = document.getElementById('toast');
+        toast.textContent = text;
+        toast.classList.add('show');
+        window.setTimeout(() => toast.classList.remove('show'), 1300);
+      };
+
+      const showVariant = (id) => {
+        currentVariant = id;
+        document.querySelectorAll('.variant').forEach((node) => {
+          node.hidden = node.id !== `variant-${id}`;
+        });
+        document.querySelectorAll('.variant-tab').forEach((tab) => {
+          tab.classList.toggle('active', tab.getAttribute('data-variant') === id);
+        });
+      };
+
+      const renderAll = () => {
+        document.getElementById('variant-a').innerHTML = renderGrid('a', 'a');
+        document.getElementById('variant-b').innerHTML = renderGrid('b', 'b');
+        document.getElementById('variant-c').innerHTML = renderGrid('c', 'c');
+        bindInteractions();
+      };
+
+      document.querySelectorAll('.variant-tab').forEach((tab) => {
+        tab.addEventListener('click', () => showVariant(tab.getAttribute('data-variant')));
+      });
+
+      document.getElementById('theme-switcher').addEventListener('change', (event) => {
+        const light = event.target.value === 'light';
+        document.documentElement.classList.toggle('light', light);
+        document.documentElement.classList.toggle('dark', !light);
+        document.body.classList.toggle('light', light);
+      });
+
+      document.querySelectorAll('[data-viewport]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const viewport = button.getAttribute('data-viewport');
+          const wrap = document.getElementById('viewport-wrap');
+          if (viewport === 'phone') wrap.style.maxWidth = '390px';
+          else if (viewport === 'tablet') wrap.style.maxWidth = '860px';
+          else wrap.style.maxWidth = '1220px';
+        });
+      });
+
+      document.getElementById('shuffle').addEventListener('click', () => {
+        rows.forEach((row) => {
+          const delta = Math.round((Math.random() - 0.5) * 12000);
+          row.balanceCents = Math.max(0, row.balanceCents + delta);
+        });
+        renderAll();
+        showVariant(currentVariant);
+      });
+
+      document.addEventListener('click', () => closeMenus());
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeMenus();
+      });
+
+      renderAll();
+      showVariant('a');
+    </script>
+  </body>
+</html>

@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sketch 001 — Settlement summary pane</title>
+    <link rel="stylesheet" href="../themes/default.css" />
+    <style>
+      body {
+        padding: 72px 24px 96px;
+      }
+
+      .variant-tab {
+        border: 1px solid var(--color-border);
+        background: transparent;
+        color: var(--color-text-muted);
+        border-radius: var(--radius-full);
+        padding: 8px 14px;
+        font: 500 13px/1 var(--font-sans);
+        cursor: pointer;
+        transition:
+          background-color 0.15s ease,
+          color 0.15s ease,
+          border-color 0.15s ease;
+      }
+
+      .variant-tab:hover {
+        color: var(--color-text);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .variant-tab.active {
+        background: var(--color-surface-elevated);
+        color: var(--color-text);
+        border-color: rgba(255, 255, 255, 0.22);
+      }
+
+      #variant-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 9998;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 12px 16px;
+        background: rgba(28, 25, 23, 0.92);
+        border-bottom: 1px solid var(--color-border);
+        backdrop-filter: blur(10px);
+      }
+
+      .light #variant-nav {
+        background: rgba(250, 250, 249, 0.92);
+      }
+
+      .sketch-frame {
+        max-width: 360px;
+        margin: 0 auto;
+      }
+
+      .sketch-note {
+        max-width: 360px;
+        margin: 0 auto 16px;
+        color: var(--color-text-muted);
+        font-size: var(--text-sm);
+        line-height: 1.5;
+      }
+
+      .pane {
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        background: var(--color-surface);
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+      }
+
+      .pane-header {
+        padding: 18px 18px 10px;
+      }
+
+      .pane-title {
+        margin: 0;
+        font: 600 1.35rem/1.2 var(--font-serif);
+      }
+
+      .pane-subtitle {
+        margin: 6px 0 0;
+        color: var(--color-text-muted);
+        font-size: var(--text-sm);
+      }
+
+      .pane-body {
+        padding: 8px 12px 14px;
+        display: grid;
+        gap: 8px;
+      }
+
+      .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-full);
+        display: grid;
+        place-items: center;
+        font: 600 11px/1 var(--font-sans);
+        color: #fff;
+        background: linear-gradient(135deg, #7c3aed, #2563eb);
+        flex: 0 0 auto;
+      }
+
+      .member-name {
+        margin: 0;
+        font: 600 0.95rem/1.3 var(--font-serif);
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .amount {
+        font: 600 1rem/1.2 var(--font-sans);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+
+      .amount.debit {
+        color: var(--color-text);
+      }
+
+      .amount.credit {
+        color: var(--color-success);
+      }
+
+      .amount.clear {
+        color: var(--color-text-muted);
+      }
+
+      .meta {
+        color: var(--color-text-muted);
+        font-size: var(--text-xs);
+      }
+
+      .row-a {
+        display: grid;
+        grid-template-columns: 4px 1fr auto;
+        gap: 10px;
+        align-items: center;
+        padding: 10px 8px;
+        border-radius: var(--radius-md);
+        transition: background-color 0.15s ease;
+      }
+
+      .row-a:hover {
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .row-a .rail {
+        align-self: stretch;
+        border-radius: var(--radius-full);
+        background: var(--color-clear-muted);
+      }
+
+      .row-a .rail.debit {
+        background: var(--color-warning-muted);
+        box-shadow: inset 0 0 0 1px rgba(251, 191, 36, 0.35);
+      }
+
+      .row-a .rail.credit {
+        background: var(--color-success-muted);
+        box-shadow: inset 0 0 0 1px rgba(52, 211, 153, 0.35);
+      }
+
+      .row-a .identity {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        min-width: 0;
+      }
+
+      .row-b {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        padding: 10px 10px;
+        border-radius: var(--radius-md);
+        border: 1px solid transparent;
+        transition:
+          background-color 0.15s ease,
+          border-color 0.15s ease;
+      }
+
+      .row-b:hover {
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .row-b.debit {
+        border-color: rgba(251, 191, 36, 0.22);
+        background: var(--color-warning-muted);
+      }
+
+      .row-b.credit {
+        border-color: rgba(52, 211, 153, 0.22);
+        background: var(--color-success-muted);
+      }
+
+      .row-b.clear {
+        border-color: transparent;
+      }
+
+      .row-b .left {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        min-width: 0;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: var(--radius-full);
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+
+      .chip.debit {
+        color: #fbbf24;
+        background: rgba(251, 191, 36, 0.16);
+      }
+
+      .chip.credit {
+        color: var(--color-success);
+        background: rgba(52, 211, 153, 0.16);
+      }
+
+      .chip.clear {
+        color: var(--color-text-muted);
+        background: var(--color-clear-muted);
+      }
+
+      .row-c {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        align-items: center;
+        padding: 10px 10px;
+        border-radius: var(--radius-md);
+        transition: background-color 0.15s ease;
+      }
+
+      .row-c:hover {
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .row-c .left {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        min-width: 0;
+      }
+
+      .segments {
+        display: flex;
+        gap: 4px;
+        margin-top: 6px;
+      }
+
+      .segment {
+        height: 6px;
+        border-radius: var(--radius-full);
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .segment.active.debit {
+        background: #fbbf24;
+      }
+
+      .segment.active.credit {
+        background: var(--color-success);
+      }
+
+      .segment.ghost {
+        width: 18px;
+        opacity: 0.35;
+      }
+
+      .segment.active {
+        width: 28px;
+      }
+
+      .legend {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+        font-size: 11px;
+        color: var(--color-text-muted);
+      }
+
+      .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .legend i {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        display: inline-block;
+      }
+
+      .empty-hint {
+        color: var(--color-text-muted);
+        font-size: var(--text-xs);
+      }
+
+      #sketch-tools {
+        position: fixed;
+        bottom: 12px;
+        right: 12px;
+        z-index: 9999;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        padding: 8px 12px;
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.72);
+        color: #fff;
+        font: 12px/1.2 system-ui;
+        opacity: 0.45;
+        transition: opacity 0.2s ease;
+      }
+
+      #sketch-tools:hover {
+        opacity: 1;
+      }
+
+      #sketch-tools button,
+      #sketch-tools select {
+        border: 0;
+        border-radius: 6px;
+        padding: 6px 8px;
+        background: rgba(255, 255, 255, 0.12);
+        color: inherit;
+        cursor: pointer;
+      }
+
+      #viewport-wrap {
+        margin: 0 auto;
+        transition: max-width 0.2s ease;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="variant-nav" aria-label="Sketch variants">
+      <button class="variant-tab active" type="button" data-variant="a">
+        A: Status rail
+      </button>
+      <button class="variant-tab" type="button" data-variant="b">
+        B: Signal chips
+      </button>
+      <button class="variant-tab" type="button" data-variant="c">
+        C: Card segments
+      </button>
+    </div>
+    <div id="viewport-wrap" class="sketch-frame">
+      <p class="sketch-note" id="sketch-note">
+        Compare how each variant keeps one primary number, uses color for direction, and
+        treats card scope as secondary metadata.
+      </p>
+      <div id="variant-a" class="variant"></div>
+      <div id="variant-b" class="variant" hidden></div>
+      <div id="variant-c" class="variant" hidden></div>
+    </div>
+
+    <div id="sketch-tools">
+      <select id="theme-switcher" aria-label="Theme">
+        <option value="dark">Dark</option>
+        <option value="light">Light</option>
+      </select>
+      <button type="button" data-viewport="phone">Phone</button>
+      <button type="button" data-viewport="desktop">Desktop</button>
+      <button type="button" id="cycle-state">Cycle state</button>
+    </div>
+
+    <script>
+      const members = [
+        {
+          id: 'emily',
+          initials: 'EG',
+          name: 'Emily Gauvreau',
+          cents: 0,
+          cardCount: 0,
+        },
+        {
+          id: 'tamir',
+          initials: 'TA',
+          name: 'Tamir Arnesty',
+          cents: 15000,
+          cardCount: 1,
+        },
+      ];
+
+      const states = [
+        {
+          key: 'mixed',
+          label: 'Mixed household',
+          hasCards: true,
+          members,
+        },
+        {
+          key: 'multi',
+          label: 'Multi-card member',
+          hasCards: true,
+          members: [
+            {
+              id: 'emily',
+              initials: 'EG',
+              name: 'Emily Gauvreau',
+              cents: 4200,
+              cardCount: 2,
+            },
+            {
+              id: 'tamir',
+              initials: 'TA',
+              name: 'Tamir Arnesty',
+              cents: -8500,
+              cardCount: 1,
+            },
+          ],
+        },
+        {
+          key: 'empty',
+          label: 'No cards yet',
+          hasCards: false,
+          members: members.map((member) => ({ ...member, cents: 0, cardCount: 0 })),
+        },
+      ];
+
+      let stateIndex = 0;
+
+      const formatCurrency = (cents) =>
+        new Intl.NumberFormat('en-CA', {
+          style: 'currency',
+          currency: 'CAD',
+        }).format(Math.abs(cents) / 100);
+
+      const toneFor = (cents) => {
+        if (cents > 0) return 'debit';
+        if (cents < 0) return 'credit';
+        return 'clear';
+      };
+
+      const cardMeta = (cardCount) => {
+        if (cardCount === 0) return '';
+        if (cardCount === 1) return '1 card';
+        return `${cardCount} cards`;
+      };
+
+      const renderPane = (bodyHtml, state) => `
+        <article class="pane" aria-label="Settlement summary">
+          <header class="pane-header">
+            <h1 class="pane-title">Settlement</h1>
+            <p class="pane-subtitle">Outstanding balances</p>
+            <p class="meta" style="margin-top:8px;">State: ${state.label}</p>
+          </header>
+          <div class="pane-body">${bodyHtml}</div>
+        </article>
+      `;
+
+      const renderVariantA = (state) => {
+        const rows = state.members
+          .map((member) => {
+            if (!state.hasCards) {
+              return `
+                <div class="row-a">
+                  <span class="rail clear" aria-hidden="true"></span>
+                  <div class="identity">
+                    <span class="avatar">${member.initials}</span>
+                    <div style="min-width:0">
+                      <p class="member-name">${member.name}</p>
+                      <p class="empty-hint">Add a card</p>
+                    </div>
+                  </div>
+                  <span class="amount clear">—</span>
+                </div>
+              `;
+            }
+
+            const tone = toneFor(member.cents);
+            const amount =
+              member.cents === 0 ? '—' : formatCurrency(member.cents);
+            const meta = cardMeta(member.cardCount);
+
+            return `
+              <div class="row-a">
+                <span class="rail ${tone}" aria-hidden="true"></span>
+                <div class="identity">
+                  <span class="avatar">${member.initials}</span>
+                  <div style="min-width:0">
+                    <p class="member-name">${member.name}</p>
+                    ${meta ? `<p class="meta">${meta}</p>` : ''}
+                  </div>
+                </div>
+                <span class="amount ${tone}">${amount}</span>
+              </div>
+            `;
+          })
+          .join('');
+
+        return renderPane(rows, state);
+      };
+
+      const renderVariantB = (state) => {
+        const rows = state.members
+          .map((member) => {
+            if (!state.hasCards) {
+              return `
+                <div class="row-b clear">
+                  <div class="left">
+                    <span class="avatar">${member.initials}</span>
+                    <div style="min-width:0">
+                      <p class="member-name">${member.name}</p>
+                      <p class="empty-hint">Add a card</p>
+                    </div>
+                  </div>
+                  <span class="amount clear">—</span>
+                </div>
+              `;
+            }
+
+            const tone = toneFor(member.cents);
+            const chipLabel =
+              tone === 'credit' ? 'Credit' : tone === 'debit' ? 'Due' : 'Clear';
+            const amount =
+              member.cents === 0 ? '—' : formatCurrency(member.cents);
+            const meta = cardMeta(member.cardCount);
+
+            return `
+              <div class="row-b ${tone}">
+                <div class="left">
+                  <span class="avatar">${member.initials}</span>
+                  <div style="min-width:0">
+                    <p class="member-name">${member.name}</p>
+                    <span class="chip ${tone}">${chipLabel}</span>
+                    ${meta ? `<span class="meta" style="margin-left:8px;">${meta}</span>` : ''}
+                  </div>
+                </div>
+                <span class="amount ${tone}">${amount}</span>
+              </div>
+            `;
+          })
+          .join('');
+
+        return renderPane(rows, state);
+      };
+
+      const renderVariantC = (state) => {
+        const rows = state.members
+          .map((member) => {
+            if (!state.hasCards) {
+              return `
+                <div class="row-c">
+                  <div class="left">
+                    <span class="avatar">${member.initials}</span>
+                    <div style="min-width:0">
+                      <p class="member-name">${member.name}</p>
+                      <p class="empty-hint">Add a card</p>
+                    </div>
+                  </div>
+                  <span class="amount clear">—</span>
+                </div>
+              `;
+            }
+
+            const tone = toneFor(member.cents);
+            const amount =
+              member.cents === 0 ? '—' : formatCurrency(member.cents);
+            const activeSegments = Math.max(member.cardCount, 0);
+            const ghostSegments = Math.max(2 - activeSegments, 0);
+            const segments = [
+              ...Array.from({ length: activeSegments }, () => {
+                return `<span class="segment active ${tone}" aria-hidden="true"></span>`;
+              }),
+              ...Array.from({ length: ghostSegments }, () => {
+                return `<span class="segment ghost" aria-hidden="true"></span>`;
+              }),
+            ].join('');
+
+            return `
+              <div class="row-c">
+                <div class="left">
+                  <span class="avatar">${member.initials}</span>
+                  <div style="min-width:0">
+                    <p class="member-name">${member.name}</p>
+                    <div class="segments" aria-label="${cardMeta(member.cardCount) || 'No active cards'}">
+                      ${segments}
+                    </div>
+                  </div>
+                </div>
+                <span class="amount ${tone}">${amount}</span>
+              </div>
+            `;
+          })
+          .join('');
+
+        const legend = state.hasCards
+          ? `
+            <div class="legend">
+              <span><i style="background:#fbbf24"></i>Due</span>
+              <span><i style="background:var(--color-success)"></i>Credit</span>
+              <span><i style="background:rgba(255,255,255,0.2)"></i>Inactive card</span>
+            </div>
+          `
+          : '';
+
+        return renderPane(rows + legend, state);
+      };
+
+      const renderAll = () => {
+        const state = states[stateIndex];
+        document.getElementById('variant-a').innerHTML = renderVariantA(state);
+        document.getElementById('variant-b').innerHTML = renderVariantB(state);
+        document.getElementById('variant-c').innerHTML = renderVariantC(state);
+      };
+
+      const showVariant = (id) => {
+        document.querySelectorAll('.variant').forEach((node) => {
+          node.hidden = node.id !== `variant-${id}`;
+        });
+        document.querySelectorAll('.variant-tab').forEach((tab) => {
+          tab.classList.toggle('active', tab.dataset.variant === id);
+        });
+      };
+
+      document.querySelectorAll('.variant-tab').forEach((tab) => {
+        tab.addEventListener('click', () => showVariant(tab.dataset.variant));
+      });
+
+      document.getElementById('cycle-state').addEventListener('click', () => {
+        stateIndex = (stateIndex + 1) % states.length;
+        renderAll();
+      });
+
+      document.getElementById('theme-switcher').addEventListener('change', (event) => {
+        const isLight = event.target.value === 'light';
+        document.documentElement.classList.toggle('dark', !isLight);
+        document.documentElement.classList.toggle('light', isLight);
+        document.body.classList.toggle('light', isLight);
+      });
+
+      document.querySelectorAll('[data-viewport]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const wrap = document.getElementById('viewport-wrap');
+          wrap.style.maxWidth = button.dataset.viewport === 'phone' ? '375px' : '360px';
+        });
+      });
+
+      renderAll();
+    </script>
+  </body>
+</html>

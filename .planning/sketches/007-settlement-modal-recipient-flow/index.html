@@ -1,0 +1,1349 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sketch 007 - Settlement modal recipient flow</title>
+    <link rel="stylesheet" href="../themes/default.css" />
+    <style>
+      :root {
+        --modal-max: 760px;
+        --anim-fast: 0.15s ease;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 72px 20px 96px;
+        color: var(--color-text);
+        font-family: var(--font-sans);
+      }
+
+      #variant-nav {
+        position: fixed;
+        top: 0;
+        right: 0;
+        left: 0;
+        z-index: 9998;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--color-border);
+        background: rgba(28, 25, 23, 0.92);
+        backdrop-filter: blur(10px);
+      }
+
+      .variant-tab {
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-full);
+        padding: 8px 14px;
+        background: transparent;
+        color: var(--color-text-muted);
+        font: 500 13px/1 var(--font-sans);
+        cursor: pointer;
+        transition:
+          color var(--anim-fast),
+          border-color var(--anim-fast),
+          background-color var(--anim-fast);
+      }
+
+      .variant-tab:hover,
+      .variant-tab:focus-visible {
+        color: var(--color-text);
+        border-color: rgba(255, 255, 255, 0.24);
+        outline: none;
+      }
+
+      .variant-tab.active {
+        color: var(--color-text);
+        border-color: rgba(59, 130, 246, 0.42);
+        background: rgba(59, 130, 246, 0.2);
+      }
+
+      #viewport-wrap {
+        max-width: 1280px;
+        margin: 0 auto;
+        transition: max-width 0.2s ease;
+      }
+
+      .sketch-note {
+        max-width: var(--modal-max);
+        margin: 0 auto 14px;
+        color: var(--color-text-muted);
+        font-size: var(--text-sm);
+        line-height: 1.4;
+      }
+
+      .variant {
+        min-height: 760px;
+      }
+
+      .demo-shell {
+        position: relative;
+        min-height: 760px;
+        border: 1px solid var(--color-border);
+        border-radius: 20px;
+        padding: 24px;
+        background: rgba(0, 0, 0, 0.24);
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+      }
+
+      .launch-row {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 10px;
+      }
+
+      .ghost-button {
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-full);
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--color-text);
+        font: 500 12px/1 var(--font-sans);
+        cursor: pointer;
+        transition: all var(--anim-fast);
+      }
+
+      .ghost-button:hover,
+      .ghost-button:focus-visible {
+        border-color: rgba(255, 255, 255, 0.24);
+        background: rgba(255, 255, 255, 0.11);
+        outline: none;
+      }
+
+      .scenario-badge {
+        margin: 0 auto;
+        width: fit-content;
+        color: var(--color-text-muted);
+        font-size: 12px;
+      }
+
+      .overlay {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        background: rgba(8, 8, 11, 0.68);
+        opacity: 1;
+        pointer-events: auto;
+        transition: opacity var(--anim-fast);
+      }
+
+      .overlay.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .modal {
+        width: min(var(--modal-max), calc(100% - 28px));
+        border-radius: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: linear-gradient(
+          160deg,
+          rgba(35, 33, 32, 0.98) 0%,
+          rgba(24, 23, 22, 0.98) 64%,
+          rgba(18, 18, 18, 0.98) 100%
+        );
+        box-shadow:
+          0 28px 70px rgba(0, 0, 0, 0.55),
+          inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        padding: 18px;
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .card-title {
+        margin: 0;
+        font: 700 44px/1.04 var(--font-sans);
+        letter-spacing: -0.01em;
+      }
+
+      .card-meta {
+        margin: 6px 0 0;
+        color: var(--color-text-muted);
+        font: 600 20px/1.1 var(--font-serif);
+      }
+
+      .modal-subtitle {
+        margin: 8px 0 0;
+        color: var(--color-text-muted);
+        font-size: 14px;
+      }
+
+      .close {
+        border: 0;
+        background: transparent;
+        color: var(--color-text-muted);
+        font-size: 28px;
+        line-height: 1;
+        cursor: pointer;
+        transition: color var(--anim-fast);
+      }
+
+      .close:hover,
+      .close:focus-visible {
+        color: var(--color-text);
+        outline: none;
+      }
+
+      .section-row {
+        margin-top: 14px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .section-label {
+        margin: 0;
+        color: var(--color-text);
+        font: 700 14px/1.2 var(--font-sans);
+        letter-spacing: 0;
+        text-transform: none;
+      }
+
+      .recipient-stack {
+        margin-top: 8px;
+        display: grid;
+        gap: 8px;
+      }
+
+      .recipient-card {
+        width: 100%;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.04);
+        padding: 10px;
+        cursor: pointer;
+        transition: all var(--anim-fast);
+      }
+
+      .recipient-card:hover,
+      .recipient-card:focus-visible {
+        border-color: rgba(255, 255, 255, 0.24);
+        outline: none;
+      }
+
+      .recipient-card.selected {
+        border-color: rgba(59, 130, 246, 0.42);
+        background: rgba(37, 99, 235, 0.18);
+      }
+
+      .recipient-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .recipient-id {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        flex: 0 0 auto;
+        box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.24);
+      }
+
+      .avatar.blue {
+        background: radial-gradient(circle at 65% 28%, #3b82f6 0%, #1d4ed8 62%, #111827 100%);
+      }
+
+      .avatar.magenta {
+        background: radial-gradient(circle at 64% 28%, #ec4899 0%, #be185d 62%, #111827 100%);
+      }
+
+      .avatar.teal {
+        background: radial-gradient(circle at 66% 28%, #34d399 0%, #0f766e 65%, #111827 100%);
+      }
+
+      .name {
+        margin: 0;
+        font: 600 17px/1.1 var(--font-sans);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .subtext {
+        margin: 2px 0 0;
+        color: var(--color-text-muted);
+        font-size: 12px;
+      }
+
+      .amount {
+        font: 700 24px/1 var(--font-serif);
+        white-space: nowrap;
+      }
+
+      .mini-remove {
+        border: 0;
+        border-radius: 999px;
+        width: 24px;
+        height: 24px;
+        background: rgba(255, 255, 255, 0.12);
+        color: var(--color-text-muted);
+        cursor: pointer;
+        transition: all var(--anim-fast);
+      }
+
+      .mini-remove:hover,
+      .mini-remove:focus-visible {
+        color: var(--color-text);
+        background: rgba(248, 113, 113, 0.24);
+        outline: none;
+      }
+
+      .split {
+        margin-top: 8px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .panel {
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.03);
+        padding: 8px;
+      }
+
+      .preview-card {
+        border-radius: 12px;
+        border: 1px solid rgba(59, 130, 246, 0.36);
+        background: rgba(37, 99, 235, 0.14);
+        padding: 12px;
+      }
+
+      .queue {
+        margin-top: 8px;
+        display: grid;
+        gap: 8px;
+      }
+
+      .queue-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        align-items: center;
+        gap: 8px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.03);
+        padding: 8px;
+      }
+
+      .queue-row.selected {
+        border-color: rgba(59, 130, 246, 0.42);
+        background: rgba(37, 99, 235, 0.16);
+      }
+
+      .use-due {
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        border-radius: 999px;
+        background: rgba(59, 130, 246, 0.16);
+        color: #dbeafe;
+        padding: 5px 8px;
+        font: 600 11px/1 var(--font-sans);
+        cursor: pointer;
+      }
+
+      .radio-group {
+        margin-top: 8px;
+        display: grid;
+        gap: 8px;
+      }
+
+      .choice-card {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        padding: 9px 10px;
+        cursor: pointer;
+        transition: all var(--anim-fast);
+      }
+
+      .choice-card:hover,
+      .choice-card:focus-visible {
+        border-color: rgba(255, 255, 255, 0.25);
+        outline: none;
+      }
+
+      .choice-card.selected {
+        border-color: rgba(59, 130, 246, 0.42);
+        background: rgba(37, 99, 235, 0.15);
+      }
+
+      .choice-main {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .radio-indicator {
+        width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        border: 2px solid rgba(255, 255, 255, 0.46);
+        display: inline-grid;
+        place-items: center;
+      }
+
+      .radio-indicator::after {
+        content: '';
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(37, 99, 235, 0.96);
+        transform: scale(0);
+        transition: transform var(--anim-fast);
+      }
+
+      .choice-card.selected .radio-indicator {
+        border-color: rgba(37, 99, 235, 0.96);
+      }
+
+      .choice-card.selected .radio-indicator::after {
+        transform: scale(1);
+      }
+
+      .choice-card input[type='radio'] {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .empty {
+        border: 1px dashed rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        padding: 14px;
+        color: var(--color-text-muted);
+        text-align: center;
+      }
+
+      .field-grid {
+        margin-top: 12px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .field-grid.two {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .field label {
+        display: block;
+        margin-bottom: 6px;
+        font: 700 14px/1.2 var(--font-sans);
+        letter-spacing: 0;
+        text-transform: none;
+        color: var(--color-text);
+      }
+
+      .input,
+      .textarea,
+      .select-trigger,
+      .date-trigger {
+        width: 100%;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--color-text);
+        padding: 11px 12px;
+        font: 600 16px/1.2 var(--font-sans);
+        transition:
+          border-color var(--anim-fast),
+          background-color var(--anim-fast);
+      }
+
+      .input:hover,
+      .textarea:hover,
+      .select-trigger:hover,
+      .date-trigger:hover {
+        border-color: rgba(255, 255, 255, 0.26);
+      }
+
+      .input:focus-visible,
+      .textarea:focus-visible,
+      .select-trigger:focus-visible,
+      .date-trigger:focus-visible {
+        outline: none;
+        border-color: rgba(59, 130, 246, 0.45);
+      }
+
+      .textarea {
+        min-height: 84px;
+        resize: vertical;
+      }
+
+      .amount-group {
+        position: relative;
+      }
+
+      .amount-addon {
+        position: absolute;
+        inset-inline-start: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--color-text-muted);
+        font-weight: 700;
+      }
+
+      .amount-group .input {
+        padding-inline-start: 28px;
+      }
+
+      .error {
+        margin-top: 5px;
+        color: #fca5a5;
+        font-size: 12px;
+      }
+
+      .select-root,
+      .date-root {
+        position: relative;
+      }
+
+      .select-trigger,
+      .date-trigger {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        cursor: pointer;
+      }
+
+      .select-menu,
+      .date-menu {
+        position: absolute;
+        right: 0;
+        left: 0;
+        top: calc(100% + 6px);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: #1f1f21;
+        padding: 6px;
+        box-shadow: 0 16px 30px rgba(0, 0, 0, 0.44);
+        display: none;
+        z-index: 30;
+      }
+
+      .select-root.open .select-menu,
+      .date-root.open .date-menu {
+        display: block;
+      }
+
+      .menu-item {
+        width: 100%;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--color-text);
+        text-align: left;
+        padding: 8px;
+        font: 500 14px/1.2 var(--font-sans);
+        cursor: pointer;
+      }
+
+      .menu-item:hover,
+      .menu-item:focus-visible {
+        outline: none;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 4px;
+      }
+
+      .date-pill {
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        background: transparent;
+        color: var(--color-text);
+        padding: 6px 0;
+        font: 500 12px/1 var(--font-sans);
+        cursor: pointer;
+      }
+
+      .date-pill.active {
+        border-color: rgba(59, 130, 246, 0.42);
+        background: rgba(59, 130, 246, 0.24);
+      }
+
+      .footer {
+        margin-top: 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .feedback {
+        margin: 0;
+        font-size: 12px;
+        color: #86efac;
+      }
+
+      .feedback.warn {
+        color: #fca5a5;
+      }
+
+      .footer-actions {
+        margin-left: auto;
+        display: flex;
+        gap: 10px;
+      }
+
+      .button {
+        border: 1px solid transparent;
+        border-radius: 12px;
+        padding: 10px 14px;
+        font: 600 13px/1 var(--font-sans);
+        cursor: pointer;
+        transition: all var(--anim-fast);
+      }
+
+      .button.secondary {
+        border-color: var(--color-border);
+        background: transparent;
+        color: var(--color-text-muted);
+      }
+
+      .button.secondary:hover,
+      .button.secondary:focus-visible {
+        color: var(--color-text);
+        border-color: rgba(255, 255, 255, 0.24);
+        outline: none;
+      }
+
+      .button.primary {
+        background: #1d4ed8;
+        color: #eff6ff;
+      }
+
+      .button.primary:hover,
+      .button.primary:focus-visible {
+        background: #2563eb;
+        outline: none;
+      }
+
+      .button[disabled] {
+        opacity: 0.58;
+        cursor: not-allowed;
+      }
+
+      #sketch-tools {
+        position: fixed;
+        right: 12px;
+        bottom: 12px;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.72);
+        color: #fff;
+        padding: 8px 12px;
+        opacity: 0.42;
+        font: 12px/1.2 system-ui;
+        transition: opacity 0.2s ease;
+      }
+
+      #sketch-tools:hover {
+        opacity: 1;
+      }
+
+      #sketch-tools button,
+      #sketch-tools select {
+        border: 0;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.12);
+        color: inherit;
+        padding: 6px 8px;
+        cursor: pointer;
+      }
+
+      body.annotations-on [data-annotate] {
+        position: relative;
+      }
+
+      body.annotations-on [data-annotate]::after {
+        content: attr(data-annotate);
+        position: absolute;
+        top: -18px;
+        left: 0;
+        border-radius: 6px;
+        background: rgba(15, 23, 42, 0.9);
+        color: #cbd5e1;
+        padding: 2px 5px;
+        font: 11px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+        white-space: nowrap;
+        pointer-events: none;
+      }
+
+      @media (max-width: 900px) {
+        .split,
+        .field-grid.two {
+          grid-template-columns: 1fr;
+        }
+
+        .card-title {
+          font-size: 30px;
+        }
+
+        .card-meta {
+          font-size: 17px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="variant-nav" aria-label="Sketch variants">
+      <button class="variant-tab" type="button" data-variant="a">A: Stacked cards</button>
+      <button class="variant-tab" type="button" data-variant="b">B: Split choose + preview</button>
+      <button class="variant-tab" type="button" data-variant="c">C: Compact queue</button>
+      <button class="variant-tab active" type="button" data-variant="d">
+        Synthesis: C + app primitives ★ Selected
+      </button>
+    </div>
+
+    <div id="viewport-wrap">
+      <p class="sketch-note">
+        Synthesis variant uses compact queue density with app-aligned form primitives: choice-card
+        radio selection, amount addon, account select, and popover calendar datepicker.
+      </p>
+      <div id="variant-a" class="variant" hidden></div>
+      <div id="variant-b" class="variant" hidden></div>
+      <div id="variant-c" class="variant" hidden></div>
+      <div id="variant-d" class="variant"></div>
+    </div>
+
+    <div id="sketch-tools">
+      <select
+        id="theme-switcher"
+        aria-label="Theme"
+        onchange="document.querySelector('link[href*=themes]').href='../themes/'+this.value+'.css'"
+      >
+        <option value="default">Default</option>
+      </select>
+      <button type="button" data-viewport="phone">Phone</button>
+      <button type="button" data-viewport="tablet">Tablet</button>
+      <button type="button" data-viewport="desktop">Desktop</button>
+      <button type="button" id="cycle-scenario">Scenario</button>
+      <button type="button" id="annotate-toggle">Annotations</button>
+    </div>
+
+    <script>
+      const recipientsCatalog = [
+        { id: 'alex', name: 'Alex Morgan', owesCents: 24850, avatarClass: 'blue' },
+        { id: 'jordan', name: 'Jordan Reyes', owesCents: 11230, avatarClass: 'magenta' },
+        { id: 'casey', name: 'Casey Patel', owesCents: 9640, avatarClass: 'teal' },
+      ];
+
+      const accountOptions = [
+        { id: 'checking', label: 'Chase Checking ..4821' },
+        { id: 'savings', label: 'Sapphire Reserve Savings ..0914' },
+        { id: 'cash', label: 'Household Cash Wallet' },
+      ];
+
+      const scenarios = [
+        {
+          id: 'largest',
+          label: 'Largest due selected',
+          selectedRecipientId: 'alex',
+          amount: '248.50',
+          date: '2025-03-14',
+        },
+        {
+          id: 'second',
+          label: 'Second due selected',
+          selectedRecipientId: 'jordan',
+          amount: '112.30',
+          date: '2025-03-14',
+        },
+        {
+          id: 'manual',
+          label: 'Manual override mode',
+          selectedRecipientId: '',
+          amount: '',
+          date: '2025-03-14',
+        },
+      ];
+
+      const state = {
+        activeVariant: 'd',
+        open: true,
+        scenarioIndex: 0,
+        recipients: [recipientsCatalog[0], recipientsCatalog[1]],
+        selectedRecipientId: scenarios[0].selectedRecipientId,
+        amount: scenarios[0].amount,
+        amountError: '',
+        sourceAccountId: 'checking',
+        accountOpen: false,
+        datePickerOpen: false,
+        date: scenarios[0].date,
+        notes: '',
+        submitting: false,
+        feedback: '',
+        feedbackType: 'success',
+      };
+
+      const formatCurrency = (cents) =>
+        new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
+          Math.abs(cents) / 100
+        );
+
+      const dateLabel = (value) => {
+        if (!value) return 'Pick a date';
+        const [year, month, day] = value.split('-').map(Number);
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return `${monthNames[month - 1]} ${day}, ${year}`;
+      };
+
+      const selectedAccountLabel = () =>
+        accountOptions.find((option) => option.id === state.sourceAccountId)?.label ?? 'Choose account';
+
+      const currentScenario = () => scenarios[state.scenarioIndex];
+
+      const currentRecipient = () =>
+        state.recipients.find((recipient) => recipient.id === state.selectedRecipientId) ?? null;
+
+      const nextAddableRecipient = () =>
+        recipientsCatalog.find(
+          (candidate) => !state.recipients.some((recipient) => recipient.id === candidate.id)
+        );
+
+      const loadScenario = (index) => {
+        state.scenarioIndex = index;
+        const scenario = currentScenario();
+        state.selectedRecipientId = scenario.selectedRecipientId;
+        state.amount = scenario.amount;
+        state.date = scenario.date;
+        state.amountError = '';
+        state.feedback = '';
+      };
+
+      const selectRecipient = (recipientId, syncAmount = true) => {
+        state.selectedRecipientId = recipientId;
+        if (!syncAmount) return;
+        const recipient = currentRecipient();
+        if (recipient) {
+          state.amount = (Math.abs(recipient.owesCents) / 100).toFixed(2);
+        }
+      };
+
+      const removeRecipient = (recipientId) => {
+        state.recipients = state.recipients.filter((recipient) => recipient.id !== recipientId);
+        if (state.selectedRecipientId === recipientId) {
+          state.selectedRecipientId = state.recipients[0]?.id ?? '';
+          if (state.recipients[0]) {
+            state.amount = (Math.abs(state.recipients[0].owesCents) / 100).toFixed(2);
+          }
+        }
+      };
+
+      const addRecipient = () => {
+        const candidate = nextAddableRecipient();
+        if (!candidate) {
+          state.feedback = 'No additional suggestions available.';
+          state.feedbackType = 'warn';
+          return;
+        }
+        state.recipients = [...state.recipients, candidate];
+        state.feedback = `Added suggested recipient: ${candidate.name}.`;
+        state.feedbackType = 'success';
+      };
+
+      const resetRecipients = () => {
+        state.recipients = [recipientsCatalog[0], recipientsCatalog[1]];
+        if (!state.recipients.some((recipient) => recipient.id === state.selectedRecipientId)) {
+          state.selectedRecipientId = recipientsCatalog[0].id;
+        }
+      };
+
+      const validateAmount = () => {
+        const parsed = Number(state.amount);
+        if (!Number.isFinite(parsed) || parsed <= 0) {
+          state.amountError = 'Amount must be greater than $0.00.';
+          return false;
+        }
+        state.amountError = '';
+        return true;
+      };
+
+      const renderStackRecipients = () => {
+        if (state.recipients.length === 0) {
+          return `
+            <div class="empty">
+              No suggested recipients.
+              <div style="margin-top:8px;"><button class="ghost-button" type="button" data-action="reset-recipients">Reload from balances</button></div>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="recipient-stack">
+            ${state.recipients
+              .map(
+                (recipient) => `
+                  <button class="recipient-card ${recipient.id === state.selectedRecipientId ? 'selected' : ''}" type="button" data-action="select-recipient" data-recipient-id="${recipient.id}">
+                    <div class="recipient-row">
+                      <div class="recipient-id">
+                        <div class="avatar ${recipient.avatarClass}"></div>
+                        <div style="min-width:0;">
+                          <p class="name">${recipient.name}</p>
+                          <p class="subtext">Owes ${formatCurrency(recipient.owesCents)}</p>
+                        </div>
+                      </div>
+                      <span class="amount">${formatCurrency(recipient.owesCents)}</span>
+                      <button class="mini-remove" type="button" data-action="remove-recipient" data-recipient-id="${recipient.id}" aria-label="Remove ${recipient.name}">x</button>
+                    </div>
+                  </button>
+                `
+              )
+              .join('')}
+          </div>
+        `;
+      };
+
+      const renderSplitRecipients = () => {
+        const selected = currentRecipient();
+        return `
+          <div class="split">
+            <div class="panel">
+              ${state.recipients
+                .map(
+                  (recipient) => `
+                    <button class="recipient-card ${recipient.id === state.selectedRecipientId ? 'selected' : ''}" type="button" data-action="select-recipient" data-recipient-id="${recipient.id}" style="margin-bottom:8px;">
+                      <div class="recipient-row" style="grid-template-columns:minmax(0,1fr) auto;">
+                        <div class="recipient-id">
+                          <div class="avatar ${recipient.avatarClass}"></div>
+                          <div style="min-width:0;">
+                            <p class="name">${recipient.name}</p>
+                            <p class="subtext">${formatCurrency(recipient.owesCents)} due</p>
+                          </div>
+                        </div>
+                        <button class="mini-remove" type="button" data-action="remove-recipient" data-recipient-id="${recipient.id}" aria-label="Remove ${recipient.name}">x</button>
+                      </div>
+                    </button>
+                  `
+                )
+                .join('')}
+              ${
+                state.recipients.length === 0
+                  ? '<div class="empty">No suggested members.</div>'
+                  : ''
+              }
+            </div>
+            <div class="panel">
+              ${
+                selected
+                  ? `
+                    <div class="preview-card">
+                      <div class="recipient-id">
+                        <div class="avatar ${selected.avatarClass}" style="width:40px;height:40px;"></div>
+                        <div>
+                          <p class="name">${selected.name}</p>
+                          <p class="subtext">Selected settlement target</p>
+                        </div>
+                      </div>
+                      <p class="section-label" style="margin-top:12px;">Suggested amount</p>
+                      <p class="amount">${formatCurrency(selected.owesCents)}</p>
+                    </div>
+                  `
+                  : '<div class="empty">Choose a member to preview.</div>'
+              }
+            </div>
+          </div>
+        `;
+      };
+
+      const renderQueueRecipients = () => {
+        if (state.recipients.length === 0) {
+          return `
+            <div class="empty">
+              Recipient queue is empty.
+              <div style="margin-top:8px;"><button class="ghost-button" type="button" data-action="reset-recipients">Rebuild queue</button></div>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="queue">
+            ${state.recipients
+              .map(
+                (recipient) => `
+                  <div class="queue-row ${recipient.id === state.selectedRecipientId ? 'selected' : ''}">
+                    <button class="ghost-button" type="button" data-action="select-recipient" data-recipient-id="${recipient.id}" style="display:flex;justify-content:flex-start;background:transparent;border:0;padding:0;">
+                      <div class="recipient-id">
+                        <div class="avatar ${recipient.avatarClass}"></div>
+                        <div style="min-width:0;">
+                          <p class="name">${recipient.name}</p>
+                          <p class="subtext">${formatCurrency(recipient.owesCents)} due</p>
+                        </div>
+                      </div>
+                    </button>
+                    <button class="use-due" type="button" data-action="use-due" data-recipient-id="${recipient.id}">Use due</button>
+                    <button class="mini-remove" type="button" data-action="remove-recipient" data-recipient-id="${recipient.id}" aria-label="Remove ${recipient.name}">x</button>
+                  </div>
+                `
+              )
+              .join('')}
+          </div>
+        `;
+      };
+
+      const renderChoiceCardRecipients = () => {
+        if (state.recipients.length === 0) {
+          return `
+            <div class="empty">
+              Recipient list is empty.
+              <div style="margin-top:8px;"><button class="ghost-button" type="button" data-action="reset-recipients">Reload recipients</button></div>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="radio-group" role="radiogroup" aria-label="Settlement recipient">
+            ${state.recipients
+              .map(
+                (recipient) => `
+                  <label class="choice-card ${recipient.id === state.selectedRecipientId ? 'selected' : ''}">
+                    <input type="radio" name="recipient-choice" value="${recipient.id}" ${recipient.id === state.selectedRecipientId ? 'checked' : ''} />
+                    <div class="choice-main">
+                      <div class="avatar ${recipient.avatarClass}"></div>
+                      <div style="min-width:0;">
+                        <p class="name">${recipient.name}</p>
+                        <p class="subtext">${formatCurrency(recipient.owesCents)} from Card Balances</p>
+                      </div>
+                    </div>
+                    <span class="amount">${formatCurrency(recipient.owesCents)}</span>
+                    <span class="radio-indicator" aria-hidden="true"></span>
+                  </label>
+                `
+              )
+              .join('')}
+          </div>
+        `;
+      };
+
+      const renderFields = () => {
+        const calendarDays = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+        return `
+          <div class="field-grid">
+            <div class="field" data-annotate="amount-inputgroup-addon">
+              <label for="amount-input">Amount</label>
+              <div class="amount-group">
+                <span class="amount-addon">$</span>
+                <input id="amount-input" class="input" autocomplete="off" inputmode="decimal" value="${state.amount}" placeholder="0.00" />
+              </div>
+              ${state.amountError ? `<p class="error">${state.amountError}</p>` : ''}
+            </div>
+
+            <div class="field-grid two">
+              <div class="field" data-annotate="account-select">
+                <label>Paid from</label>
+                <div class="select-root ${state.accountOpen ? 'open' : ''}">
+                  <button class="select-trigger" type="button" data-action="toggle-account">
+                    <span>${selectedAccountLabel()}</span>
+                    <span aria-hidden="true">v</span>
+                  </button>
+                  <div class="select-menu">
+                    ${accountOptions
+                      .map(
+                        (option) => `
+                          <button class="menu-item" type="button" data-action="pick-account" data-account-id="${option.id}">
+                            ${option.label}
+                          </button>
+                        `
+                      )
+                      .join('')}
+                  </div>
+                </div>
+              </div>
+
+              <div class="field" data-annotate="popover-calendar-datepicker">
+                <label>Date</label>
+                <div class="date-root ${state.datePickerOpen ? 'open' : ''}">
+                  <button class="date-trigger" type="button" data-action="toggle-date">
+                    <span>${dateLabel(state.date)}</span>
+                    <span aria-hidden="true">[cal]</span>
+                  </button>
+                  <div class="date-menu">
+                    <p style="margin:6px 6px 8px;color:var(--color-text-muted);font-size:12px;">March 2025</p>
+                    <div class="calendar-grid">
+                      ${calendarDays
+                        .map((day) => {
+                          const value = `2025-03-${String(day).padStart(2, '0')}`;
+                          return `<button class="date-pill ${state.date === value ? 'active' : ''}" type="button" data-action="pick-date" data-date="${value}">${day}</button>`;
+                        })
+                        .join('')}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="notes-input">Notes (optional)</label>
+              <textarea id="notes-input" class="textarea" autocomplete="off" placeholder="Add a note...">${state.notes}</textarea>
+            </div>
+          </div>
+        `;
+      };
+
+      const renderRecipientRegion = () => {
+        if (state.activeVariant === 'a') return renderStackRecipients();
+        if (state.activeVariant === 'b') return renderSplitRecipients();
+        if (state.activeVariant === 'c') return renderQueueRecipients();
+        return renderChoiceCardRecipients();
+      };
+
+      const renderModal = () => {
+        const settleLabel = state.submitting
+          ? 'Settling...'
+          : `Settle $${state.amount && Number(state.amount) > 0 ? Number(state.amount).toFixed(2) : '0.00'}`;
+
+        return `
+          <div class="demo-shell">
+            <div class="launch-row">
+              <button class="ghost-button" type="button" data-action="open-modal">Open settlement modal</button>
+            </div>
+            <p class="scenario-badge">Simulation state: ${currentScenario().label}</p>
+            <div class="overlay ${state.open ? '' : 'hidden'}">
+              <div class="modal">
+                <header class="modal-header" data-annotate="header-hierarchy">
+                  <div>
+                    <h1 class="card-title">TD Visa</h1>
+                    <p class="card-meta">TD Bank •••• 1976</p>
+                    <p class="modal-subtitle">Total balance $1,284.90</p>
+                  </div>
+                  <button class="close" type="button" data-action="close-modal" aria-label="Close">x</button>
+                </header>
+
+                <div class="section-row">
+                  <p class="section-label">Settling for</p>
+                  <div style="display:flex;gap:8px;">
+                    <button class="ghost-button" type="button" data-action="add-recipient">Add suggestion</button>
+                    <button class="ghost-button" type="button" data-action="clear-selection">Clear</button>
+                  </div>
+                </div>
+
+                ${renderRecipientRegion()}
+                ${renderFields()}
+
+                <footer class="footer">
+                  <p class="feedback ${state.feedbackType === 'warn' ? 'warn' : ''}" aria-live="polite">${state.feedback}</p>
+                  <div class="footer-actions">
+                    <button class="button secondary" type="button" data-action="close-modal">Discard</button>
+                    <button class="button primary" type="button" data-action="submit" ${state.submitting ? 'disabled' : ''}>${settleLabel}</button>
+                  </div>
+                </footer>
+              </div>
+            </div>
+          </div>
+        `;
+      };
+
+      const renderAll = () => {
+        const variants = ['a', 'b', 'c', 'd'];
+        variants.forEach((variantId) => {
+          const node = document.getElementById(`variant-${variantId}`);
+          if (!node) return;
+          node.hidden = state.activeVariant !== variantId;
+          node.innerHTML = state.activeVariant === variantId ? renderModal() : '';
+        });
+      };
+
+      const showVariant = (variantId) => {
+        state.activeVariant = variantId;
+        document.querySelectorAll('.variant-tab').forEach((tab) => {
+          tab.classList.toggle('active', tab.getAttribute('data-variant') === variantId);
+        });
+        state.accountOpen = false;
+        state.datePickerOpen = false;
+        renderAll();
+      };
+
+      const submitSettlement = () => {
+        if (!state.selectedRecipientId) {
+          state.feedback = 'Choose a recipient before settling.';
+          state.feedbackType = 'warn';
+          renderAll();
+          return;
+        }
+        if (!validateAmount()) {
+          state.feedback = 'Fix amount validation to continue.';
+          state.feedbackType = 'warn';
+          renderAll();
+          return;
+        }
+        state.submitting = true;
+        state.feedback = '';
+        state.feedbackType = 'success';
+        renderAll();
+        setTimeout(() => {
+          state.submitting = false;
+          const recipient = currentRecipient();
+          state.feedback = recipient
+            ? `Settlement ready: ${recipient.name} for $${Number(state.amount).toFixed(2)} from ${selectedAccountLabel()}.`
+            : 'Settlement ready.';
+          renderAll();
+        }, 700);
+      };
+
+      document.querySelectorAll('.variant-tab').forEach((tab) => {
+        tab.addEventListener('click', () => {
+          const variantId = tab.getAttribute('data-variant');
+          if (!variantId) return;
+          showVariant(variantId);
+        });
+      });
+
+      document.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+
+        const actionNode = target.closest('[data-action]');
+        if (!actionNode) {
+          state.accountOpen = false;
+          state.datePickerOpen = false;
+          renderAll();
+          return;
+        }
+
+        const action = actionNode.getAttribute('data-action');
+
+        if (action === 'open-modal') state.open = true;
+        if (action === 'close-modal') state.open = false;
+        if (action === 'clear-selection') state.selectedRecipientId = '';
+        if (action === 'select-recipient') {
+          const recipientId = actionNode.getAttribute('data-recipient-id');
+          if (recipientId) selectRecipient(recipientId, true);
+        }
+        if (action === 'remove-recipient') {
+          event.preventDefault();
+          event.stopPropagation();
+          const recipientId = actionNode.getAttribute('data-recipient-id');
+          if (recipientId) removeRecipient(recipientId);
+        }
+        if (action === 'add-recipient') addRecipient();
+        if (action === 'reset-recipients') resetRecipients();
+        if (action === 'use-due') {
+          const recipientId = actionNode.getAttribute('data-recipient-id');
+          if (recipientId) {
+            selectRecipient(recipientId, false);
+            const recipient = currentRecipient();
+            if (recipient) state.amount = (Math.abs(recipient.owesCents) / 100).toFixed(2);
+          }
+        }
+        if (action === 'toggle-account') {
+          state.accountOpen = !state.accountOpen;
+          state.datePickerOpen = false;
+        }
+        if (action === 'pick-account') {
+          const accountId = actionNode.getAttribute('data-account-id');
+          if (accountId) state.sourceAccountId = accountId;
+          state.accountOpen = false;
+        }
+        if (action === 'toggle-date') {
+          state.datePickerOpen = !state.datePickerOpen;
+          state.accountOpen = false;
+        }
+        if (action === 'pick-date') {
+          const value = actionNode.getAttribute('data-date');
+          if (value) state.date = value;
+          state.datePickerOpen = false;
+        }
+        if (action === 'submit') submitSettlement();
+
+        renderAll();
+      });
+
+      document.addEventListener('change', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+        if (target.matches('input[name="recipient-choice"]') && target instanceof HTMLInputElement) {
+          selectRecipient(target.value, true);
+          renderAll();
+        }
+      });
+
+      document.addEventListener('input', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+        if (target.id === 'amount-input' && target instanceof HTMLInputElement) {
+          state.amount = target.value;
+        }
+        if (target.id === 'notes-input' && target instanceof HTMLTextAreaElement) {
+          state.notes = target.value;
+        }
+      });
+
+      document.addEventListener(
+        'blur',
+        (event) => {
+          const target = event.target;
+          if (!(target instanceof HTMLElement)) return;
+          if (target.id === 'amount-input') {
+            validateAmount();
+            renderAll();
+          }
+        },
+        true
+      );
+
+      document.getElementById('cycle-scenario')?.addEventListener('click', () => {
+        loadScenario((state.scenarioIndex + 1) % scenarios.length);
+        renderAll();
+      });
+
+      document.querySelectorAll('[data-viewport]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const mode = button.getAttribute('data-viewport');
+          const wrap = document.getElementById('viewport-wrap');
+          if (!wrap) return;
+          if (mode === 'phone') wrap.style.maxWidth = '390px';
+          if (mode === 'tablet') wrap.style.maxWidth = '860px';
+          if (mode === 'desktop') wrap.style.maxWidth = '1280px';
+        });
+      });
+
+      document.getElementById('annotate-toggle')?.addEventListener('click', () => {
+        document.body.classList.toggle('annotations-on');
+      });
+
+      renderAll();
+    </script>
+  </body>
+</html>

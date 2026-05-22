@@ -2,8 +2,7 @@
 
 > **Granularity:** Standard
 > **Coverage:** 11/11 requirement sections mapped
-> **Last updated:** 2026-04-14
-
+> **Last updated:** 2026-05-18
 
 | Milestone | Name                      | Status      |
 | --------- | ------------------------- | ----------- |
@@ -11,11 +10,13 @@
 | v0.2      | Transactions & Settlement | **current** |
 | v0.3      | Import                    | pending     |
 | v0.4      | Budgets                   | pending     |
-| v0.5      | Investments & Net Worth   | pending     |
-| v1.0      | Notifications + Launch    | pending     |
+| v0.5      | Command center            | pending     |
+| v0.6      | Investments               | pending     |
+| v0.7      | Notifications             | pending     |
+| v0.8      | Net worth                 | pending     |
+| v1.0      | Launch                    | pending     |
 
-
-> **Execution order note:** v0.3 Import executes before v0.4 Budgets. Phase numbers (05.x vs 04.3/04.4) reflect original ordering — milestone labels determine execution sequence.
+> **Phase numbering:** From **05.1** onward, phase IDs follow delivery order (aligned with milestone sequence in this file).
 
 ---
 
@@ -158,7 +159,7 @@ UAT fixes (post-verification):
 
 Plans:
 
-- 02.2-01-PLAN.md — Install next-themes, create ThemeToggle component in packages/ui, wire ThemeProvider into __root.tsx, add ThemeToggle to AppSidebar footer
+- 02.2-01-PLAN.md — Install next-themes, create ThemeToggle component in packages/ui, wire ThemeProvider into \_\_root.tsx, add ThemeToggle to AppSidebar footer
 
 ### Phase 02.1: Code Style & Form Patterns Refactor (INSERTED)
 
@@ -246,7 +247,7 @@ via the API with correct field enforcement, split math, and validation errors.
 
 Plans:
 
-- 03.2-01-PLAN.md — Test scaffold: 12 TXN-* Vitest stubs for all transaction route behaviors
+- 03.2-01-PLAN.md — Test scaffold: 12 TXN-\* Vitest stubs for all transaction route behaviors
 - 03.2-02-PLAN.md — badRequest() helper + POST + GET list + GET single (joined response, pagination, filtering, sort)
 - 03.2-03-PLAN.md — PATCH + DELETE (soft delete) + route registration in apps/api/src/index.ts
 
@@ -581,6 +582,7 @@ Plans:
 **Plans:** 3/3 plans complete
 
 Plans:
+
 - [x] 03.4.6-01-PLAN.md — API: PendingInvitation type + listInvitations/revokeInvitation services + GET/DELETE invitations routes + tests
 - [x] 03.4.6-02-PLAN.md — Frontend data access: useGetOrgInvitations + useRevokeInvitation hooks + useInviteMember invalidation update
 - [x] 03.4.6-03-PLAN.md — UI: InvitedMemberRow component + MembersSection parallel queries + revoke flow
@@ -612,7 +614,7 @@ Plans:
 
 **Post-phase todo:** After 03.6 ships, address `.planning/todos/pending/2026-04-21-clear-query-cache-on-logout-prevent-stale-data-cross-account.md` — clear TanStack Query cache on logout/user-switch to prevent cross-account stale data.
 
-### Phase 4.1: Settlement API
+### Phase 04.1: Settlement API
 
 **Goal:** The API can compute settlement balances at query time for any household
 and return per-account, per-member breakdown including net settlement lines.
@@ -645,7 +647,7 @@ Plans:
 
 ---
 
-### Phase 4.2: Settlement UI
+### Phase 04.2: Settlement UI
 
 **Goal:** Household members can see what they owe each other and record full or
 partial settlements from the UI.
@@ -655,13 +657,17 @@ partial settlements from the UI.
 - Per-account settlement cards: header with total balance, per-member rows, "Settle" CTA
 - Negative balance displayed as green credit ("Emily is owed $X")
 - "Settle" form: defaults to outstanding balance, overridable for partial settlement; records `settlement` transaction type
-- Settlement reminder threshold settings: member setting > household setting > $50 default (stored; notifications triggered in Phase 7.1)
 
-**Plans:** 0 plans
+**Plans:** 6 plans
 
 Plans:
 
-- TBD (run /gsd:plan-phase 4.2 to break down)
+- [x] 04.2-01-PLAN.md — Foundation: install shadcn card+progress, memberColors utility, settlements data-access hooks
+- [x] 04.2-02-PLAN.md — Routes: /expenses, /income (filtered transactions), /settlements (placeholder)
+- [x] 04.2-03-PLAN.md — Sidebar: Expenses/Income nav, soon placeholders, MEMBERS section with route-driven values
+- [x] 04.2-04-PLAN.md — Dashboard shell: header, period range picker (URL-sync), stat cards, settlement summary pane
+- [x] 04.2-05-PLAN.md — Card Balances DataGrid + Settle Dialog (member picker + form -> POST /api/settlements)
+- [x] 04.2-06-PLAN.md — API extension: add optional notes field to POST /api/settlements (Wave 1, runs alongside 04.2-01)
 
 **Requirements covered:**
 
@@ -674,80 +680,42 @@ Plans:
 
 ---
 
----
+### Phase 04.2.2: create unified drawer with consistent UI and UX (INSERTED)
 
-## Milestone v0.4 — Budgets
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 04.2
+**Plans:** 0 plans
 
-### Phase 4.3: Budgets API
+Plans:
+- [ ] TBD (run /gsd-plan-phase 04.2.2 to break down)
 
-**Goal:** Budgets can be created and managed per category; the API computes spend
-against each budget and handles rollover.
+### Phase 04.2.1: Clerk in-app auth route coverage and hosted URL elimination (INSERTED)
+
+**Goal:** Keep all Clerk flows inside the app's route system so users do not land on Clerk-hosted pages/domains during normal usage (dev or prod), while preserving the existing custom household/member UX.
 
 **Delivers:**
 
-- Budget CRUD endpoints: household-wide budgets per category, monthly default, weekly/bi-weekly/yearly/custom date range
-- Spend calculation: SUM of expenses in category per period, cast to `bigint`
-- Budget status thresholds: On Track < 80%, Caution 80–99%, Over ≥ 100%
-- Budget rollover: surplus only, capped at 1× base limit; `effective_limit_cents` stored per period
+- In-app route coverage for Clerk auth surfaces used by the app: sign in, sign up, unauthorized sign-in state, account profile, organization profile/management entrypoint, create organization
+- Clerk component URL wiring aligned to app routes (`UserButton`, `OrganizationSwitcher`, onboarding/create-organization entrypoints) so navigation stays inside SPA paths
+- Clerk dashboard path/redirect settings aligned for local + production app URLs to avoid fallback redirects to hosted Clerk URLs
+- Invite redirect hardening included and tracked in this phase: `CLERK_INVITE_REDIRECT_URL` support in API invitation payload (`redirect_url`) with env docs and tests
+- Verification pass that invitation accept + auth/profile/org flows return to app routes and do not strand users on `*.accounts.dev`
 
+**Depends on:** Phase 04.2
 **Plans:** 0 plans
 
 Plans:
 
-- TBD (run /gsd:plan-phase 4.3 to break down)
+- TBD (run /gsd:plan-phase 4.2.1 to break down)
 
-**Requirements covered:**
-
-- §6 Budgets (API layer)
-
-**Success criteria:**
-
-- Budget spend correctly sums only expense transactions in that category within the period; transfers, income, and settlements are excluded
-- Budget with rollover enabled carries forward surplus (not overspend) to the next period; accumulated surplus never exceeds 1× the base limit
-
----
-
-### Phase 4.4: Budget Dashboard UI
-
-**Goal:** Users can view all category budgets with spend progress, status
-indicators, and historical period navigation from a single dashboard.
-
-**Design reference:** `.planning/mockups/budgets.png`
-
-**Delivers:**
-
-- Header: "Budget", "March 2026 · N categories", "Edit Budget" button top-right (opens budget editing flow)
-- Sidebar Members section: each member with avatar, name, and their share of total budget (e.g. "Tamir · $2,890 / budget"), subtext "Share of total budget"
-- 4 KPI stat cards: Total Budget (amount, "across N categories"), Spent So Far (amount, global progress bar showing %), Remaining (amount in green, "N days left in month"), Over Budget (count in red + category name + overage amount; red card background when any category is over)
-- Per-category DataGrid: Category icon + name, Progress (segmented bar + "N% used" label), Budget, Spent, Left (green when positive, red when negative), Status badge
-- Status badge thresholds: On Track = blue (< 80%), Caution = amber (80–99%), Over = red (≥ 100%)
-- Over-budget row treatment: category name in red, bar fills full width in red, label shows "N% — $X over limit", Left column shows negative amount in red
-- Caution row treatment: amber bar
-- **Chart components:** All progress bars (global + per-category) use shadcn `Progress` — no Recharts needed. `Radar` was evaluated as a category budget-vs-actual overlay but has no fit here; the table layout from the mockup is the right choice.
-
-**Plans:** 0 plans
-
-Plans:
-
-- TBD (run /gsd:plan-phase 4.4 to break down)
-
-**Requirements covered:**
-
-- §6 Budgets (UI layer)
-
-**Success criteria:**
-
-- Budget dashboard shows On Track / Caution / Over status with correct colour coding at exact 80% and 100% thresholds
-- Over Budget KPI card turns red and names the over-budget category and overage amount when any category exceeds 100%
-- Historical period navigation loads spend data for the selected period without a full page reload
-
----
+**Status:** In progress (invite redirect hardening completed; remaining route/profile coverage pending)
 
 ---
 
 ## Milestone v0.3 — Import
 
-### Phase 5.1: Bank Normalizers
+### Phase 05.1: Bank Normalizers
 
 **Goal:** Pure-function normalizers exist for all supported bank CSV formats with
 full fixture-based test coverage. No DB or UI dependencies — this phase can be
@@ -779,7 +747,7 @@ Plans:
 
 ---
 
-### Phase 5.2: Import Batch API
+### Phase 05.2: Import Batch API
 
 **Goal:** The API can receive a parsed import batch, apply merchant rules, detect
 duplicates, and write only confirmed rows to the database.
@@ -811,7 +779,7 @@ Plans:
 
 ---
 
-### Phase 5.3: Import UI
+### Phase 05.3: Import UI
 
 **Goal:** Users can upload a CSV, step through a review table with inline editing,
 and resolve unmatched accounts before confirming the import.
@@ -842,7 +810,7 @@ Plans:
 
 ---
 
-### Phase 5.4: Import Bulk Actions & Duplicate Handling
+### Phase 05.4: Import Bulk Actions & Duplicate Handling
 
 **Goal:** Users can efficiently process large import batches via bulk actions and
 have duplicate rows surfaced and skippable before confirming.
@@ -871,24 +839,19 @@ Plans:
 
 ---
 
----
+## Milestone v0.4 — Budgets
 
-## Milestone v0.5 — Investments & Net Worth
+### Phase 06.1: Budgets API
 
-### Phase 6.1: Investment Schema & Contribution Room API
-
-**Goal:** The API can track TFSA, RRSP, and FHSA contribution room per member
-and fire over-contribution warnings on contribution entry.
+**Goal:** Budgets can be created and managed per category; the API computes spend
+against each budget and handles rollover.
 
 **Delivers:**
 
-- `investment_accounts` table: types TFSA, RRSP, FHSA, RESP, non-registered, other
-- `contribution_room_settings` table
-- TFSA room calculation from `TFSA_ANNUAL_LIMITS` constant in `packages/types` (verify 2026 limit against CRA before shipping)
-- RRSP: manual room entry ("from your NOA or CRA My Account"); app tracks contributions against it
-- FHSA: $8,000/year from account open year; carry-forward from prior year only (capped at $8,000, does not compound); $40,000 lifetime cap
-- Over-contribution warnings for TFSA and FHSA on contribution entry (same request/mutation response)
-- Member `birth_year` stored as private profile field; never visible to other household members
+- Budget CRUD endpoints: household-wide budgets per category, monthly default, weekly/bi-weekly/yearly/custom date range
+- Spend calculation: SUM of expenses in category per period, cast to `bigint`
+- Budget status thresholds: On Track < 80%, Caution 80–99%, Over ≥ 100%
+- Budget rollover: surplus only, capped at 1× base limit; `effective_limit_cents` stored per period
 
 **Plans:** 0 plans
 
@@ -898,41 +861,32 @@ Plans:
 
 **Requirements covered:**
 
-- §7 Savings & Investments (schema and API layer)
+- §6 Budgets (API layer)
 
 **Success criteria:**
 
-- Member born in 1991 who has made $20,000 in contributions sees the correct remaining TFSA room (cumulative limit 1991→2026 minus $20,000); member born in 2000 sees room starting from 2018 (age 18)
-- FHSA carry-forward: if member contributed $4,000 in year 1, carry-forward to year 2 is $4,000 (capped at $8,000); carry-forward does not compound into year 3
-- `birth_year` is absent from any API response accessible to other household members
+- Budget spend correctly sums only expense transactions in that category within the period; transfers, income, and settlements are excluded
+- Budget with rollover enabled carries forward surplus (not overspend) to the next period; accumulated surplus never exceeds 1× the base limit
 
 ---
 
-### Phase 6.2: Savings Contributions UI
+### Phase 06.2: Budget Dashboard UI
 
-**Goal:** Members can record contributions, track remaining room with a progress
-indicator, and see over-contribution warnings inline.
+**Goal:** Users can view all category budgets with spend progress, status
+indicators, and historical period navigation from a single dashboard.
 
-**Design reference:** `.planning/mockups/savings.png`
+**Design reference:** `.planning/mockups/budgets.png`
 
 **Delivers:**
 
-- Header: "Savings", "Month · N members", single month selector
-- Sidebar Members section: each member with avatar, name, and savings this month (e.g. "Tamir · $850 / mo"), subtext "Saved this month"
-- 3 KPI stat cards: This Month (total contributions, MoM delta with direction arrow), YTD (year-to-date total, "Jan–Month YYYY" label), Annual Room (combined remaining room across all accounts, "Across all accounts")
-- Contributions table: Account/Owner (account type badge + name + member avatar), Monthly (contribution amount), Annual Limit, Progress (bar + "N% used" + "X of Y used" sublabel)
-  - Account type color coding: RRSP blue, TFSA green, FHSA amber/orange
-  - Employer match sub-row (indented under parent account, label e.g. "Acme Corp match", amount in green "+$250")
-- Right panel — Source Breakdown (Pre-tax vs Post-tax):
-  - Pre-tax: Payroll deductions, dollar amount, % of total, progress bar
-  - Post-tax: Manual transfers, dollar amount, % of total, progress bar
-  - TOTAL row
-- Right panel — By Account (month totals): account type badge + name + amount per type
-- **Chart components:** Contribution room bars in the table and Source Breakdown bars both use shadcn `Progress` (not Recharts) — colored by account type. Recharts `Radial` chart was evaluated for circular room-usage display per account but the mockup's inline table-row bars fit `Progress` better. `Radial` could be revisited for a future account detail card.
-- Contribution create form (pre-typed as `contribution` transaction)
-- Over-contribution warning display on the contribution form
-- TFSA disclaimer: "Your CRA room may differ due to withdrawals made in prior years or years of non-residency"
-- Birth year prompt (stored as private profile field)
+- Header: "Budget", "March 2026 · N categories", "Edit Budget" button top-right (opens budget editing flow)
+- Sidebar Members section: each member with avatar, name, and their share of total budget (e.g. "Tamir · $2,890 / budget"), subtext "Share of total budget"
+- 4 KPI stat cards: Total Budget (amount, "across N categories"), Spent So Far (amount, global progress bar showing %), Remaining (amount in green, "N days left in month"), Over Budget (count in red + category name + overage amount; red card background when any category is over)
+- Per-category DataGrid: Category icon + name, Progress (segmented bar + "N% used" label), Budget, Spent, Left (green when positive, red when negative), Status badge
+- Status badge thresholds: On Track = blue (< 80%), Caution = amber (80–99%), Over = red (≥ 100%)
+- Over-budget row treatment: category name in red, bar fills full width in red, label shows "N% — $X over limit", Left column shows negative amount in red
+- Caution row treatment: amber bar
+- **Chart components:** All progress bars (global + per-category) use shadcn `Progress` — no Recharts needed. `Radar` was evaluated as a category budget-vs-actual overlay but has no fit here; the table layout from the mockup is the right choice.
 
 **Plans:** 0 plans
 
@@ -942,154 +896,19 @@ Plans:
 
 **Requirements covered:**
 
-- §7 Savings & Investments (contributions UI)
+- §6 Budgets (UI layer)
 
 **Success criteria:**
 
-- TFSA over-contribution warning fires immediately on the contribution form when entered amount would exceed remaining room; same behavior for FHSA
-- TFSA disclaimer is visible on the TFSA account view; no manual withdrawal adjustment field exists
-- Employer match sub-row appears indented under the parent account row when a match is recorded
-- Source Breakdown panel correctly splits contributions into pre-tax (payroll) and post-tax (manual) buckets
+- Budget dashboard shows On Track / Caution / Over status with correct colour coding at exact 80% and 100% thresholds
+- Over Budget KPI card turns red and names the over-budget category and overage amount when any category exceeds 100%
+- Historical period navigation loads spend data for the selected period without a full page reload
 
 ---
 
-### Phase 6.3: Net Worth API
+## Milestone v0.5 — Command center
 
-**Goal:** The API can compute a household's real-time net worth snapshot and store
-monthly historical data points.
-
-**Delivers:**
-
-- Net worth real-time snapshot: assets (chequing + savings + cash + investments as contributions) minus liabilities (credit cards)
-- Per-member and household-level breakdowns
-- Monthly historical snapshots (computed on first view of historical period, stored for subsequent loads)
-
-**Plans:** 0 plans
-
-Plans:
-
-- TBD (run /gsd:plan-phase 6.3 to break down)
-
-**Requirements covered:**
-
-- §10 Net Worth (API layer)
-
-**Success criteria:**
-
-- Net worth total = sum of chequing + savings + cash + investment contribution totals − credit card balances
-- Per-member breakdown correctly assigns accounts to their owner(s)
-
----
-
-### Phase 6.4: Net Worth UI
-
-**Goal:** Members can view their household's net worth, per-member breakdown, and
-monthly historical trend in a single page.
-
-**Design reference:** `.planning/mockups/net-worth.png`
-
-**Delivers:**
-
-- Header: "Net Worth", "Month · Combined/member name", member filter tabs (Combined | per-member avatar tabs)
-- Sidebar Members section: each member with avatar, name, and their individual net worth (e.g. "Tamir · $184,200"), subtext "Net worth this month"
-- Total Net Worth: large headline number, MoM delta with direction arrow ("+ $X this month vs $Y in PrevMonth"), assets − liabilities breakdown line top-right (green assets, red liabilities)
-- Two-column layout: Assets (left, green total) + Liabilities (right, red total)
-  - Assets rows: account type badge + name + owner names + value (Chequing, Savings Accounts, RRSP, TFSA, FHSA)
-  - Liabilities rows: bank logo + card name + owner + due date + balance in red (one row per credit card)
-- Monthly Delta Reconciliation section (bottom): "How net worth changed this month · Income − Expenses = Net Change"
-  - 4 boxes in a row: Income (+amount, "Salaries + other"), − Expenses (−amount, "Spending + bills"), = Expected (+amount, "Cash flow"), VS Actual (+amount, "Net worth delta")
-  - Alert callout when gap exists between expected and actual: "X gap — expected +$Y but net worth only grew +$Z. Check for untracked spending or transfers."
-- Historical net worth trend → Recharts `Area` chart in `ChartContainer` (filled area emphasizes cumulative growth; month on x-axis, net worth on y-axis)
-- **Chart components:** `Area` (historical trend). Assets/Liabilities breakdown and Monthly Delta Reconciliation are stat rows — no Recharts needed there. `Radar` has no fit on this page.
-- Investment value disclaimer ("contribution totals — not market value")
-
-**Plans:** 0 plans
-
-Plans:
-
-- TBD (run /gsd:plan-phase 6.4 to break down)
-
-**Requirements covered:**
-
-- §10 Net Worth (UI layer)
-
-**Success criteria:**
-
-- Investment section is clearly labeled "contribution totals — not market value"
-- Per-member breakdown assigns net worth to the member(s) who own each account
-- Monthly Delta Reconciliation gap alert appears when expected cash flow and actual net worth delta differ; no alert when they match
-- Switching member filter tab (Combined → Tamir → Emily) re-scopes assets and liabilities to accounts owned by that member; combined shows all accounts
-
----
-
----
-
-## Milestone v1.0 — Notifications + Launch
-
-### Phase 7.1: Notifications Table & Write Triggers
-
-**Goal:** Notification rows are written to the database whenever a budget
-threshold is crossed, a contribution exceeds room, or a settlement balance
-exceeds a member's threshold.
-
-**Delivers:**
-
-- `notifications` table schema
-- Write logic called from budget mutation (80% caution + 100% over; neither re-fires until budget resets)
-- Write logic called from contribution mutation (TFSA + FHSA over-contribution)
-- Write logic called from settlement balance check (persists until balance drops below threshold)
-- Threshold precedence: member setting > household setting > $50 default
-- January contribution room refresh reminder logic
-
-**Plans:** 0 plans
-
-Plans:
-
-- TBD (run /gsd:plan-phase 7.1 to break down)
-
-**Requirements covered:**
-
-- §11 Notifications & Alerts (data layer)
-
-**Success criteria:**
-
-- Adding a transaction that pushes a budget from 79% to 81% creates a budget caution notification; pushing it to 100% creates an over-budget notification; neither fires again until the budget resets
-- Recording a contribution that exceeds TFSA room creates an over-contribution notification immediately on the same request
-- A member with a settlement balance of $60 on a household with $50 threshold (no member-level override) sees a settlement reminder; a member who sets their own threshold to $100 does not see the reminder at $60
-
----
-
-### Phase 7.2: Notification Feed UI
-
-**Goal:** Users can view all pending notifications in an in-app feed and dismiss
-them individually or all at once.
-
-**Delivers:**
-
-- Bell icon in header with unread count badge; fetch-based on page load — no websockets
-- Notification feed panel with type icons per notification
-- Dismiss individual notification
-- "Dismiss all" clears entire feed
-- January contribution room refresh reminder displayed in feed
-
-**Plans:** 0 plans
-
-Plans:
-
-- TBD (run /gsd:plan-phase 7.2 to break down)
-
-**Requirements covered:**
-
-- §11 Notifications & Alerts (UI layer)
-
-**Success criteria:**
-
-- Dismissing a notification removes it from the feed; "Dismiss all" clears the entire feed
-- On January 1, a contribution room refresh reminder appears for members who have tracked TFSA or FHSA accounts
-
----
-
-### Phase 7.3: Overview Dashboard UI
+### Phase 06.3: Overview Dashboard UI
 
 **Goal:** Members can open the app and immediately see a household financial snapshot for any month — KPIs, spend trends, credit card balances, and settlement — without navigating to individual feature pages.
 
@@ -1119,7 +938,7 @@ Plans:
 
 Plans:
 
-- TBD (run /gsd:plan-phase 7.3 to break down)
+- TBD (run /gsd:plan-phase 6.3 to break down)
 
 **Requirements covered:**
 
@@ -1138,7 +957,225 @@ Plans:
 
 ---
 
-### Phase 08.1: Replace in-memory seenOrgs Set in tenantGuard
+## Milestone v0.6 — Investments
+
+### Phase 07.1: Investment Schema & Contribution Room API
+
+**Goal:** The API can track TFSA, RRSP, and FHSA contribution room per member
+and fire over-contribution warnings on contribution entry.
+
+**Delivers:**
+
+- `investment_accounts` table: types TFSA, RRSP, FHSA, RESP, non-registered, other
+- `contribution_room_settings` table
+- TFSA room calculation from `TFSA_ANNUAL_LIMITS` constant in `packages/types` (verify 2026 limit against CRA before shipping)
+- RRSP: manual room entry ("from your NOA or CRA My Account"); app tracks contributions against it
+- FHSA: $8,000/year from account open year; carry-forward from prior year only (capped at $8,000, does not compound); $40,000 lifetime cap
+- Over-contribution warnings for TFSA and FHSA on contribution entry (same request/mutation response)
+- Member `birth_year` stored as private profile field; never visible to other household members
+
+**Plans:** 0 plans
+
+Plans:
+
+- TBD (run /gsd:plan-phase 7.1 to break down)
+
+**Requirements covered:**
+
+- §7 Savings & Investments (schema and API layer)
+
+**Success criteria:**
+
+- Member born in 1991 who has made $20,000 in contributions sees the correct remaining TFSA room (cumulative limit 1991→2026 minus $20,000); member born in 2000 sees room starting from 2018 (age 18)
+- FHSA carry-forward: if member contributed $4,000 in year 1, carry-forward to year 2 is $4,000 (capped at $8,000); carry-forward does not compound into year 3
+- `birth_year` is absent from any API response accessible to other household members
+
+---
+
+### Phase 07.2: Savings Contributions UI
+
+**Goal:** Members can record contributions, track remaining room with a progress
+indicator, and see over-contribution warnings inline.
+
+**Design reference:** `.planning/mockups/savings.png`
+
+**Delivers:**
+
+- Header: "Savings", "Month · N members", single month selector
+- Sidebar Members section: each member with avatar, name, and savings this month (e.g. "Tamir · $850 / mo"), subtext "Saved this month"
+- 3 KPI stat cards: This Month (total contributions, MoM delta with direction arrow), YTD (year-to-date total, "Jan–Month YYYY" label), Annual Room (combined remaining room across all accounts, "Across all accounts")
+- Contributions table: Account/Owner (account type badge + name + member avatar), Monthly (contribution amount), Annual Limit, Progress (bar + "N% used" + "X of Y used" sublabel)
+  - Account type color coding: RRSP blue, TFSA green, FHSA amber/orange
+  - Employer match sub-row (indented under parent account, label e.g. "Acme Corp match", amount in green "+$250")
+- Right panel — Source Breakdown (Pre-tax vs Post-tax):
+  - Pre-tax: Payroll deductions, dollar amount, % of total, progress bar
+  - Post-tax: Manual transfers, dollar amount, % of total, progress bar
+  - TOTAL row
+- Right panel — By Account (month totals): account type badge + name + amount per type
+- **Chart components:** Contribution room bars in the table and Source Breakdown bars both use shadcn `Progress` (not Recharts) — colored by account type. Recharts `Radial` chart was evaluated for circular room-usage display per account but the mockup's inline table-row bars fit `Progress` better. `Radial` could be revisited for a future account detail card.
+- Contribution create form (pre-typed as `contribution` transaction)
+- Over-contribution warning display on the contribution form
+- TFSA disclaimer: "Your CRA room may differ due to withdrawals made in prior years or years of non-residency"
+- Birth year prompt (stored as private profile field)
+
+**Plans:** 0 plans
+
+Plans:
+
+- TBD (run /gsd:plan-phase 7.2 to break down)
+
+**Requirements covered:**
+
+- §7 Savings & Investments (contributions UI)
+
+**Success criteria:**
+
+- TFSA over-contribution warning fires immediately on the contribution form when entered amount would exceed remaining room; same behavior for FHSA
+- TFSA disclaimer is visible on the TFSA account view; no manual withdrawal adjustment field exists
+- Employer match sub-row appears indented under the parent account row when a match is recorded
+- Source Breakdown panel correctly splits contributions into pre-tax (payroll) and post-tax (manual) buckets
+
+---
+
+## Milestone v0.7 — Notifications
+
+### Phase 07.3: Notifications Table & Write Triggers
+
+**Goal:** Notification rows are written to the database whenever a budget
+threshold is crossed, a contribution exceeds room, or a settlement balance
+exceeds a member's threshold.
+
+**Delivers:**
+
+- `notifications` table schema
+- Write logic called from budget mutation (80% caution + 100% over; neither re-fires until budget resets)
+- Write logic called from contribution mutation (TFSA + FHSA over-contribution)
+- Write logic called from settlement balance check (persists until balance drops below threshold)
+- Threshold precedence: member setting > household setting > $50 default
+- January contribution room refresh reminder logic
+
+**Plans:** 0 plans
+
+Plans:
+
+- TBD (run /gsd:plan-phase 7.3 to break down)
+
+**Requirements covered:**
+
+- §11 Notifications & Alerts (data layer)
+
+**Success criteria:**
+
+- Adding a transaction that pushes a budget from 79% to 81% creates a budget caution notification; pushing it to 100% creates an over-budget notification; neither fires again until the budget resets
+- Recording a contribution that exceeds TFSA room creates an over-contribution notification immediately on the same request
+- A member with a settlement balance of $60 on a household with $50 threshold (no member-level override) sees a settlement reminder; a member who sets their own threshold to $100 does not see the reminder at $60
+
+---
+
+### Phase 07.4: Notification Feed UI
+
+**Goal:** Users can view all pending notifications in an in-app feed and dismiss
+them individually or all at once.
+
+**Delivers:**
+
+- Bell icon in header with unread count badge; fetch-based on page load — no websockets
+- Notification feed panel with type icons per notification
+- Dismiss individual notification
+- "Dismiss all" clears entire feed
+- January contribution room refresh reminder displayed in feed
+
+**Plans:** 0 plans
+
+Plans:
+
+- TBD (run /gsd:plan-phase 7.4 to break down)
+
+**Requirements covered:**
+
+- §11 Notifications & Alerts (UI layer)
+
+**Success criteria:**
+
+- Dismissing a notification removes it from the feed; "Dismiss all" clears the entire feed
+- On January 1, a contribution room refresh reminder appears for members who have tracked TFSA or FHSA accounts
+
+---
+
+## Milestone v0.8 — Net worth
+
+### Phase 08.1: Net Worth API
+
+**Goal:** The API can compute a household's real-time net worth snapshot and store
+monthly historical data points.
+
+**Delivers:**
+
+- Net worth real-time snapshot: assets (chequing + savings + cash + investments as contributions) minus liabilities (credit cards)
+- Per-member and household-level breakdowns
+- Monthly historical snapshots (computed on first view of historical period, stored for subsequent loads)
+
+**Plans:** 0 plans
+
+Plans:
+
+- TBD (run /gsd:plan-phase 8.1 to break down)
+
+**Requirements covered:**
+
+- §10 Net Worth (API layer)
+
+**Success criteria:**
+
+- Net worth total = sum of chequing + savings + cash + investment contribution totals − credit card balances
+- Per-member breakdown correctly assigns accounts to their owner(s)
+
+---
+
+### Phase 08.2: Net Worth UI
+
+**Goal:** Members can view their household's net worth, per-member breakdown, and
+monthly historical trend in a single page.
+
+**Design reference:** `.planning/mockups/net-worth.png`
+
+**Delivers:**
+
+- Header: "Net Worth", "Month · Combined/member name", member filter tabs (Combined | per-member avatar tabs)
+- Sidebar Members section: each member with avatar, name, and their individual net worth (e.g. "Tamir · $184,200"), subtext "Net worth this month"
+- Total Net Worth: large headline number, MoM delta with direction arrow ("+ $X this month vs $Y in PrevMonth"), assets − liabilities breakdown line top-right (green assets, red liabilities)
+- Two-column layout: Assets (left, green total) + Liabilities (right, red total)
+  - Assets rows: account type badge + name + owner names + value (Chequing, Savings Accounts, RRSP, TFSA, FHSA)
+  - Liabilities rows: bank logo + card name + owner + due date + balance in red (one row per credit card)
+- Monthly Delta Reconciliation section (bottom): "How net worth changed this month · Income − Expenses = Net Change"
+  - 4 boxes in a row: Income (+amount, "Salaries + other"), − Expenses (−amount, "Spending + bills"), = Expected (+amount, "Cash flow"), VS Actual (+amount, "Net worth delta")
+  - Alert callout when gap exists between expected and actual: "X gap — expected +$Y but net worth only grew +$Z. Check for untracked spending or transfers."
+- Historical net worth trend → Recharts `Area` chart in `ChartContainer` (filled area emphasizes cumulative growth; month on x-axis, net worth on y-axis)
+- **Chart components:** `Area` (historical trend). Assets/Liabilities breakdown and Monthly Delta Reconciliation are stat rows — no Recharts needed there. `Radar` has no fit on this page.
+- Investment value disclaimer ("contribution totals — not market value")
+
+**Plans:** 0 plans
+
+Plans:
+
+- TBD (run /gsd:plan-phase 8.2 to break down)
+
+**Requirements covered:**
+
+- §10 Net Worth (UI layer)
+
+**Success criteria:**
+
+- Investment section is clearly labeled "contribution totals — not market value"
+- Per-member breakdown assigns net worth to the member(s) who own each account
+- Monthly Delta Reconciliation gap alert appears when expected cash flow and actual net worth delta differ; no alert when they match
+- Switching member filter tab (Combined → Tamir → Emily) re-scopes assets and liabilities to accounts owned by that member; combined shows all accounts
+
+---
+
+## Milestone v1.0 — Launch
+
+### Phase 09.1: Replace in-memory seenOrgs Set in tenantGuard
 
 **Goal:** Replace the process-lifetime `seenOrgs` Set cache in `tenantGuard` with a durable solution that works across multiple processes/instances and doesn't rely on a safety-net upsert on every cold start.
 
@@ -1147,13 +1184,13 @@ Plans:
 
 Plans:
 
-- TBD (run /gsd:plan-phase 08.1 to break down)
+- TBD (run /gsd:plan-phase 09.1 to break down)
 
 **Context:** The `seenOrgs` Set was added as a cheap fix to avoid a DB round-trip on every request (the upsert safety net for when the Clerk `organization.created` webhook fails to deliver). Options: (1) configure reliable webhook delivery in all environments — ngrok/Clerk tunnel for local, verified secret + endpoint for prod — making the upsert unnecessary; (2) if multi-process, use a shared cache (Redis/Upstash) instead of the in-process Set. Current approach resets on cold start, which is safe but not ideal long-term.
 
 ---
 
-### Phase 08.2: Adopt react-i18next and wrap all user-visible string literals
+### Phase 09.2: Adopt react-i18next and wrap all user-visible string literals
 
 **Goal:** Eliminate all hardcoded string literals in JSX. Route all user-visible text through `react-i18next`'s `useTranslation` hook with feature-namespaced locale JSON files.
 
@@ -1162,7 +1199,7 @@ Plans:
 
 Plans:
 
-- TBD (run /gsd:plan-phase 08.2 to break down)
+- TBD (run /gsd:plan-phase 09.2 to break down)
 
 **Context:** Library already chosen (`react-i18next`). Strings go in locale JSON files keyed by feature namespace (e.g. `public/locales/en/accounts.json`). Deferred from STANDARDS.md planned refactors — applies to all features once the translation layer is established.
 
@@ -1170,25 +1207,22 @@ Plans:
 
 ## Coverage Map
 
-
-| REQUIREMENTS.md Section     | Phase                                                  | Notes                                                                                                  |
-| --------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| §1 Households & Users       | Phase 1 (infra/seeds) + Phase 2 (full feature)         | Clerk native org config in Phase 1; creation/switching UI and Clerk-managed invitation flow in Phase 2 |
-| §2 Accounts                 | Phase 2                                                | Full CRUD including "each person pays their own" flag                                                  |
-| §3 Categories & Tags        | Phase 2                                                | Full CRUD; default seed list present after Phase 1 org creation                                        |
-| §4 Transactions             | Phases 03.1–03.4                                       | Schema (03.1), API (03.2), list UI (03.3), create/edit forms (03.4)                                    |
-| §5 Settlement               | Phases 4.1–4.2                                         | API (4.1), UI (4.2)                                                                                    |
-| §6 Budgets                  | Phases 4.3–4.4                                         | API (4.3), dashboard UI (4.4)                                                                          |
-| §7 Savings & Investments    | Phases 6.1–6.2                                         | Schema + contribution room API (6.1), contributions UI (6.2)                                           |
-| §8 CSV Import               | Phases 5.1–5.4                                         | Normalizers (5.1), batch API (5.2), review UI (5.3), bulk actions (5.4)                                |
-| §9 Merchant Rules           | Phase 2 (CRUD) + Phase 5.2 (application during import) | Seed scripts in Phase 1                                                                                |
-| §10 Net Worth               | Phases 6.3–6.4                                         | API (6.3), UI (6.4)                                                                                    |
-| §11 Notifications & Alerts  | Phases 7.1–7.2                                         | Write triggers (7.1), feed UI (7.2)                                                                    |
-| Infrastructure requirements | Phase 1                                                | Clerk satellites, postgres.js, tenantGuard, Tailwind v4 audit                                          |
-
+| REQUIREMENTS.md Section     | Phase                                                   | Notes                                                                                                  |
+| --------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| §1 Households & Users       | Phase 1 (infra/seeds) + Phase 2 (full feature)          | Clerk native org config in Phase 1; creation/switching UI and Clerk-managed invitation flow in Phase 2 |
+| §2 Accounts                 | Phase 2                                                 | Full CRUD including "each person pays their own" flag                                                  |
+| §3 Categories & Tags        | Phase 2                                                 | Full CRUD; default seed list present after Phase 1 org creation                                        |
+| §4 Transactions             | Phases 03.1–03.4 (+ 06.3)                               | Core flow: schema (03.1), API (03.2), list UI (03.3), forms (03.4); overview aggregates (06.3)          |
+| §5 Settlement               | Phases 04.1–04.2                                        | API (04.1), UI (04.2)                                                                                  |
+| §6 Budgets                  | Phases 06.1–06.2                                        | API (06.1), dashboard UI (06.2)                                                                        |
+| §7 Savings & Investments    | Phases 07.1–07.2                                        | Schema + contribution room API (07.1), contributions UI (07.2)                                         |
+| §8 CSV Import               | Phases 05.1–05.4                                        | Normalizers (05.1), batch API (05.2), review UI (05.3), bulk actions (05.4)                            |
+| §9 Merchant Rules           | Phase 2 (CRUD) + Phase 05.2 (application during import) | Seed scripts in Phase 1                                                                                |
+| §10 Net Worth               | Phases 08.1–08.2                                        | API (08.1), UI (08.2)                                                                                  |
+| §11 Notifications & Alerts  | Phases 07.3–07.4                                        | Write triggers (07.3), feed UI (07.4)                                                                  |
+| Infrastructure requirements | Phase 1                                                 | Clerk satellites, postgres.js, tenantGuard, Tailwind v4 audit                                          |
 
 ## Deferred (Post-Milestone)
-
 
 | Item                                         | Reason                                                                                         |
 | -------------------------------------------- | ---------------------------------------------------------------------------------------------- |
@@ -1207,15 +1241,13 @@ Plans:
 | FHSA "used for home purchase" status         | Deferred — account freeze on home purchase not in v1 scope                                     |
 | Recurring transaction reminders              | v2                                                                                             |
 
-
 ## Open Items (must resolve before affected phase)
 
-
-| Item                                                                             | Blocks    | Action                                                                                                                         |
-| -------------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| TFSA 2026 annual limit                                                           | Phase 6.1 | Verify at CRA website before implementing `TFSA_ANNUAL_LIMITS` constant                                                        |
-| RRSP 2025/2026 dollar cap                                                        | Phase 6.1 | Verify exact cap at CRA website                                                                                                |
-| Bank CSV column names (TD, RBC, CIBC, Scotiabank, BMO, Amex, Tangerine, EQ Bank) | Phase 5.1 | Collect real bank export files; treat SUMMARY.md signatures as starting point only                                             |
-| Cloudflare proxy setting for `clerk.ploutizo.app`                                | Phase 1   | Must be "DNS only" (grey cloud) — document in deployment runbook                                                               |
-| ReUI Tailwind v4 compatibility                                                   | Phase 3.3 | Verify `DataGrid` and `Filters` compatibility at [https://reui.io/docs](https://reui.io/docs) before building transaction list |
-| Neon connection limits on chosen plan tier                                       | Phase 1   | Verify plan limit vs postgres.js pool `max` before production launch                                                           |
+| Item                                                                             | Blocks     | Action                                                                                                                         |
+| -------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| TFSA 2026 annual limit                                                           | Phase 07.1 | Verify at CRA website before implementing `TFSA_ANNUAL_LIMITS` constant                                                        |
+| RRSP 2025/2026 dollar cap                                                        | Phase 07.1 | Verify exact cap at CRA website                                                                                                |
+| Bank CSV column names (TD, RBC, CIBC, Scotiabank, BMO, Amex, Tangerine, EQ Bank) | Phase 05.1 | Collect real bank export files; treat SUMMARY.md signatures as starting point only                                             |
+| Cloudflare proxy setting for `clerk.ploutizo.app`                                | Phase 1    | Must be "DNS only" (grey cloud) — document in deployment runbook                                                               |
+| ReUI Tailwind v4 compatibility                                                   | Phase 3.3  | Verify `DataGrid` and `Filters` compatibility at [https://reui.io/docs](https://reui.io/docs) before building transaction list |
+| Neon connection limits on chosen plan tier                                       | Phase 1    | Verify plan limit vs postgres.js pool `max` before production launch                                                           |
