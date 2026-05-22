@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Text } from '@ploutizo/ui/components/text';
 import { Field, FieldLabel } from '@ploutizo/ui/components/field';
 import {
   Combobox,
@@ -67,16 +66,7 @@ export const RefundLinker = ({
     <form.AppField name="refundOf">
       {(field) => (
         <Field>
-          <FieldLabel>
-            Refund of
-            <Text
-              as="span"
-              variant="body-sm"
-              className="font-normal text-muted-foreground"
-            >
-              (optional)
-            </Text>
-          </FieldLabel>
+          <FieldLabel>Refund of (optional)</FieldLabel>
           <Combobox
             value={selectedTx ? buildLabel(selectedTx) : null}
             inputValue={inputValue}

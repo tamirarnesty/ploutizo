@@ -23,8 +23,6 @@ import type { TransactionRow } from '@/lib/data-access/transactions';
 import type { LucideIcon } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 
-export { getInitials } from '@/lib/getInitials';
-
 // Resolves a Lucide icon by name — defined outside useMemo to be stable
 export const DynamicLucideIcon = ({
   name,

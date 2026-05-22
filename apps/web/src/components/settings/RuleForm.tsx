@@ -172,16 +172,7 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
         <form.AppField name="renameTo">
           {(field) => (
             <Field>
-              <FieldLabel>
-                Rename to{' '}
-                <Text
-                  as="span"
-                  variant="body-sm"
-                  className="font-normal text-muted-foreground"
-                >
-                  (optional)
-                </Text>
-              </FieldLabel>
+              <FieldLabel>Rename to (optional)</FieldLabel>
               <Input
                 autoComplete="off"
                 value={field.state.value}
@@ -196,16 +187,7 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
         <form.AppField name="categoryId">
           {(field) => (
             <Field>
-              <FieldLabel>
-                Category{' '}
-                <Text
-                  as="span"
-                  variant="body-sm"
-                  className="font-normal text-muted-foreground"
-                >
-                  (optional)
-                </Text>
-              </FieldLabel>
+              <FieldLabel>Category (optional)</FieldLabel>
               <Select
                 value={field.state.value ?? ''}
                 onValueChange={(v) => field.handleChange(v === '' ? null : v)}
