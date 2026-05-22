@@ -9,11 +9,14 @@ const workspaceRoot = path.resolve(__dirname, '../..');
 const uiSrc = path.resolve(workspaceRoot, 'packages/ui/src');
 const webSrc = path.resolve(__dirname, 'src');
 
+// Resolve a path stem to an existing file: direct .tsx/.ts, bare file, or index barrel.
 const resolveWithTsExtensions = (resolvedBase: string): string | undefined => {
   const candidates = [
     `${resolvedBase}.tsx`,
     `${resolvedBase}.ts`,
     resolvedBase,
+    `${resolvedBase}/index.tsx`,
+    `${resolvedBase}/index.ts`,
   ];
   for (const candidate of candidates) {
     try {
@@ -38,6 +41,8 @@ const resolveAliasesFromAtSlash = (id: string): string | undefined => {
 export default defineConfig({
   plugins: [
     viteReact(),
+    // vitest-alias-at-slash-dual-root: for `@/…` imports that include a file path,
+    // resolveId → resolveAliasesFromAtSlash tries uiSrc first, then webSrc (dual-root).
     {
       name: 'vitest-alias-at-slash-dual-root',
       enforce: 'pre',
@@ -46,6 +51,10 @@ export default defineConfig({
       },
     },
   ],
+  // Static aliases are a fallback for specifiers the plugin does not handle (e.g.
+  // directory imports without a resolvable index, bare package-like paths). `@` maps
+  // only to webSrc here — UI-package directory imports via `@/` still resolve
+  // single-root until the plugin gains directory-index dual-root support.
   resolve: {
     alias: {
       '@': webSrc,
