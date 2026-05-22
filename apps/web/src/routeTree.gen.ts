@@ -15,6 +15,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SignUpSplatRouteImport } from './routes/sign-up.$'
 import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
 import { Route as LayoutTransactionsRouteImport } from './routes/_layout.transactions'
+import { Route as LayoutSettlementsRouteImport } from './routes/_layout.settlements'
+import { Route as LayoutIncomeRouteImport } from './routes/_layout.income'
+import { Route as LayoutExpensesRouteImport } from './routes/_layout.expenses'
 import { Route as LayoutDashboardRouteImport } from './routes/_layout.dashboard'
 import { Route as LayoutAccountsRouteImport } from './routes/_layout.accounts'
 import { Route as LayoutSettingsRouteRouteImport } from './routes/_layout.settings/route'
@@ -49,6 +52,21 @@ const SignInSplatRoute = SignInSplatRouteImport.update({
 const LayoutTransactionsRoute = LayoutTransactionsRouteImport.update({
   id: '/transactions',
   path: '/transactions',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutSettlementsRoute = LayoutSettlementsRouteImport.update({
+  id: '/settlements',
+  path: '/settlements',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutIncomeRoute = LayoutIncomeRouteImport.update({
+  id: '/income',
+  path: '/income',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutExpensesRoute = LayoutExpensesRouteImport.update({
+  id: '/expenses',
+  path: '/expenses',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutDashboardRoute = LayoutDashboardRouteImport.update({
@@ -90,6 +108,9 @@ export interface FileRoutesByFullPath {
   '/settings': typeof LayoutSettingsRouteRouteWithChildren
   '/accounts': typeof LayoutAccountsRoute
   '/dashboard': typeof LayoutDashboardRoute
+  '/expenses': typeof LayoutExpensesRoute
+  '/income': typeof LayoutIncomeRoute
+  '/settlements': typeof LayoutSettlementsRoute
   '/transactions': typeof LayoutTransactionsRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
@@ -103,6 +124,9 @@ export interface FileRoutesByTo {
   '/settings': typeof LayoutSettingsRouteRouteWithChildren
   '/accounts': typeof LayoutAccountsRoute
   '/dashboard': typeof LayoutDashboardRoute
+  '/expenses': typeof LayoutExpensesRoute
+  '/income': typeof LayoutIncomeRoute
+  '/settlements': typeof LayoutSettlementsRoute
   '/transactions': typeof LayoutTransactionsRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
@@ -118,6 +142,9 @@ export interface FileRoutesById {
   '/_layout/settings': typeof LayoutSettingsRouteRouteWithChildren
   '/_layout/accounts': typeof LayoutAccountsRoute
   '/_layout/dashboard': typeof LayoutDashboardRoute
+  '/_layout/expenses': typeof LayoutExpensesRoute
+  '/_layout/income': typeof LayoutIncomeRoute
+  '/_layout/settlements': typeof LayoutSettlementsRoute
   '/_layout/transactions': typeof LayoutTransactionsRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
@@ -133,6 +160,9 @@ export interface FileRouteTypes {
     | '/settings'
     | '/accounts'
     | '/dashboard'
+    | '/expenses'
+    | '/income'
+    | '/settlements'
     | '/transactions'
     | '/sign-in/$'
     | '/sign-up/$'
@@ -146,6 +176,9 @@ export interface FileRouteTypes {
     | '/settings'
     | '/accounts'
     | '/dashboard'
+    | '/expenses'
+    | '/income'
+    | '/settlements'
     | '/transactions'
     | '/sign-in/$'
     | '/sign-up/$'
@@ -160,6 +193,9 @@ export interface FileRouteTypes {
     | '/_layout/settings'
     | '/_layout/accounts'
     | '/_layout/dashboard'
+    | '/_layout/expenses'
+    | '/_layout/income'
+    | '/_layout/settlements'
     | '/_layout/transactions'
     | '/sign-in/$'
     | '/sign-up/$'
@@ -218,6 +254,27 @@ declare module '@tanstack/react-router' {
       path: '/transactions'
       fullPath: '/transactions'
       preLoaderRoute: typeof LayoutTransactionsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/settlements': {
+      id: '/_layout/settlements'
+      path: '/settlements'
+      fullPath: '/settlements'
+      preLoaderRoute: typeof LayoutSettlementsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/income': {
+      id: '/_layout/income'
+      path: '/income'
+      fullPath: '/income'
+      preLoaderRoute: typeof LayoutIncomeRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/expenses': {
+      id: '/_layout/expenses'
+      path: '/expenses'
+      fullPath: '/expenses'
+      preLoaderRoute: typeof LayoutExpensesRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/dashboard': {
@@ -284,6 +341,9 @@ interface LayoutRouteChildren {
   LayoutSettingsRouteRoute: typeof LayoutSettingsRouteRouteWithChildren
   LayoutAccountsRoute: typeof LayoutAccountsRoute
   LayoutDashboardRoute: typeof LayoutDashboardRoute
+  LayoutExpensesRoute: typeof LayoutExpensesRoute
+  LayoutIncomeRoute: typeof LayoutIncomeRoute
+  LayoutSettlementsRoute: typeof LayoutSettlementsRoute
   LayoutTransactionsRoute: typeof LayoutTransactionsRoute
 }
 
@@ -291,6 +351,9 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutSettingsRouteRoute: LayoutSettingsRouteRouteWithChildren,
   LayoutAccountsRoute: LayoutAccountsRoute,
   LayoutDashboardRoute: LayoutDashboardRoute,
+  LayoutExpensesRoute: LayoutExpensesRoute,
+  LayoutIncomeRoute: LayoutIncomeRoute,
+  LayoutSettlementsRoute: LayoutSettlementsRoute,
   LayoutTransactionsRoute: LayoutTransactionsRoute,
 }
 
