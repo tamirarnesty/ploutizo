@@ -21,17 +21,13 @@ import type { CardBalancesGridProps } from '@/components/dashboard/card-balances
 import { buildCardBalancesColumns } from '@/components/dashboard/card-balances/buildCardBalancesColumns';
 import { CardBalancesGridFooter } from '@/components/dashboard/card-balances/CardBalancesGridFooter';
 import { CardBalancesEmpty } from '@/components/dashboard/card-balances/CardBalancesEmpty';
-import {
-  CARD_BALANCES_PAGE_SIZE_OPTIONS,
-  useCardBalancesPageSize,
-} from '@/components/dashboard/card-balances/useCardBalancesPageSize';
+import { usePersistedPageSize } from '@/hooks/persistedPageSize';
+import { CARD_BALANCES_PAGE_SIZE_OPTIONS } from '@/lib/prefs/pageSizeConfig';
 import {
   DATA_GRID_PAGINATION_ROW_CLASSNAME,
   PAGINATED_DATA_GRID_SCROLL_ORIENTATION,
 } from '@/components/data-grid/dataGridSharedLayout';
 import type { SortingState } from '@tanstack/react-table';
-
-export type { CardBalancesGridProps } from '@/components/dashboard/card-balances/types';
 
 const CardBalancesGridHeader = () => (
   <CardHeader className="border-b px-3.5 pt-3 [.border-b]:pb-3">
@@ -46,7 +42,7 @@ export const CardBalancesGrid = ({
   onSettleClick,
 }: CardBalancesGridProps) => {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const { pagination, setPagination } = useCardBalancesPageSize();
+  const { pagination, setPagination } = usePersistedPageSize('card-balances');
 
   const columns = useMemo(
     () => buildCardBalancesColumns(onSettleClick),
