@@ -24,7 +24,14 @@ export const handleOrgCreated = async (data: OrganizationJSON) => {
   await db
     .insert(orgs)
     .values({ id: data.id, name: data.name, imageUrl: data.image_url ?? null })
-    .onConflictDoNothing();
+    .onConflictDoUpdate({
+      target: orgs.id,
+      set: {
+        name: data.name,
+        imageUrl: data.image_url ?? null,
+        updatedAt: new Date(),
+      },
+    });
   await seedOrg(data.id);
 };
 
@@ -99,3 +106,4 @@ export const dispatchWebhookEvent = async (event: WebhookEvent) => {
     }
   }
 };
+
