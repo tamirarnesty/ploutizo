@@ -50,6 +50,9 @@ export const useDeleteTransaction = () => {
       }
     },
 
-    onSettled: () => qc.invalidateQueries({ queryKey: ['transactions'] }),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ['transactions'] });
+      void qc.invalidateQueries({ queryKey: ['settlements'] });
+    },
   });
 };
