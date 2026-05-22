@@ -51,3 +51,4 @@ Thumbs.db
 .cursor/skills/gsd*
 .cursor/get-shit-done/
 .cursor/gsd-file-manifest.json
+.cursor/settings.json
