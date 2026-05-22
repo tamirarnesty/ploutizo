@@ -22,6 +22,7 @@ import {
 } from '@/components/data-grid/dataGridSharedLayout';
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
 import { usePersistedPageSize } from '@/hooks/persistedPageSize';
+import { useEffectiveTablePageSize } from '@/hooks/useEffectiveTablePageSize';
 import type { ColumnDef } from '@tanstack/react-table';
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
@@ -32,6 +33,16 @@ const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   e_transfer: 'e-Transfer',
   investment: 'Investment',
   other: 'Other',
+};
+
+const countClientPageRows = (
+  totalRows: number,
+  pageIndex: number,
+  pageSize: number
+): number => {
+  if (totalRows === 0) return 0;
+  const remaining = totalRows - pageIndex * pageSize;
+  return Math.min(pageSize, Math.max(0, remaining));
 };
 
 interface AccountsTableProps {
@@ -48,6 +59,29 @@ export const AccountsTable = ({
   onAddClick,
 }: AccountsTableProps) => {
   const { pagination, setPagination } = usePersistedPageSize('accounts');
+
+  const loadedVisibleRowCount = isLoading
+    ? 0
+    : countClientPageRows(
+        accounts.length,
+        pagination.pageIndex,
+        pagination.pageSize
+      );
+
+  const effectivePageSize = useEffectiveTablePageSize(
+    'accounts',
+    pagination.pageSize,
+    loadedVisibleRowCount,
+    isLoading
+  );
+
+  const tablePagination = useMemo(
+    () =>
+      effectivePageSize === pagination.pageSize
+        ? pagination
+        : { ...pagination, pageSize: effectivePageSize },
+    [pagination, effectivePageSize]
+  );
 
   const columns = useMemo<ColumnDef<Account>[]>(
     () => [
@@ -163,7 +197,7 @@ export const AccountsTable = ({
   const table = useReactTable({
     data: accounts,
     columns,
-    state: { pagination },
+    state: { pagination: tablePagination },
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),

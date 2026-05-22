@@ -17,6 +17,7 @@ import {
   DATA_GRID_PAGINATION_ROW_CLASSNAME,
   PAGINATED_DATA_GRID_SCROLL_ORIENTATION,
 } from '@/components/data-grid/dataGridSharedLayout';
+import { useEffectiveTablePageSize } from '@/hooks/useEffectiveTablePageSize';
 import { buildColumns } from './TransactionColumns';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import { TransactionsTableEmpty } from './TransactionTableEmpty';
@@ -80,6 +81,13 @@ export const TransactionsTable = ({
     [setDeleteId, onEdit, onOpenOriginal]
   );
 
+  const effectivePageSize = useEffectiveTablePageSize(
+    'transactions',
+    limit,
+    isLoading ? 0 : transactions.length,
+    isLoading
+  );
+
   const table = useReactTable({
     data: transactions,
     columns,
@@ -88,7 +96,7 @@ export const TransactionsTable = ({
     manualSorting: true, // server-side sort (RESEARCH Pitfall 8)
     rowCount: total, // TanStack Table server-side total for page math (RESEARCH Pitfall 3)
     state: {
-      pagination: { pageIndex: page - 1, pageSize: limit },
+      pagination: { pageIndex: page - 1, pageSize: effectivePageSize },
       sorting: [{ id: sort ?? 'date', desc: order === 'desc' }],
     },
     onPaginationChange: (updater) => {
