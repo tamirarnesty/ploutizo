@@ -16,7 +16,8 @@ export const useCreateTransaction = () => {
       }).then((r: { data: TransactionRow }) => r.data),
     onSuccess: () => {
       toast.success('Transaction created.');
-      qc.invalidateQueries({ queryKey: ['transactions'] });
+      void qc.invalidateQueries({ queryKey: ['transactions'] });
+      void qc.invalidateQueries({ queryKey: ['settlements'] });
     },
     onError: () => {
       toast.error('Failed to create transaction.');
