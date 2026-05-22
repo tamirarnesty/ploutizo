@@ -11,6 +11,7 @@ import { useGetCategories } from '@/lib/data-access/categories';
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import { useGetTags } from '@/lib/data-access/tags';
 import type { TransactionRow } from '@/lib/data-access/transactions';
+import { useTablePageSize } from '@/hooks/persistedPageSize';
 import { TransactionsTable } from './TransactionsTable';
 import { TransactionSheet } from './TransactionSheet';
 import { buildFilterFields } from './TransactionFilterFields';
@@ -22,7 +23,6 @@ export const buildCleanSearch = (
 ): Partial<TransactionSearch> => {
   const result: Partial<TransactionSearch> = { ...params };
   if (result.page === 1) delete result.page;
-  if (result.limit === 25) delete result.limit;
   if (result.sort === 'date') delete result.sort;
   if (result.order === 'desc') delete result.order;
   if (!result.type) delete result.type;
@@ -240,11 +240,12 @@ export const Transactions = () => {
   // in useMatch v1.168). Route ID confirmed in routeTree.gen.ts FileRoutesById.
   const search = useSearch({ from: '/_layout/transactions' });
   const navigate = useNavigate();
+  const { pageSize: limit, setPageSize } = useTablePageSize('transactions');
 
   // Fire ALL queries at top level — no waterfalls (vercel-react-best-practices)
   const { data: txData, isLoading } = useGetTransactions({
     page: search.page ?? 1,
-    limit: search.limit ?? 25,
+    limit,
     sort: search.sort ?? 'date',
     order: search.order ?? 'desc',
     type: search.type,
@@ -270,7 +271,6 @@ export const Transactions = () => {
   const transactions = txData?.data ?? [];
   const total = txData?.total ?? 0;
   const page = search.page ?? 1;
-  const limit = search.limit ?? 25;
   const sort = search.sort ?? 'date';
   const order = search.order ?? 'desc';
 
@@ -353,7 +353,6 @@ export const Transactions = () => {
         search: (prev) =>
           buildCleanSearch({
             page: 1,
-            limit: prev.limit,
             sort: prev.sort,
             order: prev.order,
             ...mapped,
@@ -377,14 +376,14 @@ export const Transactions = () => {
 
   const handleLimitChange = useCallback(
     (newLimit: number) => {
+      setPageSize(newLimit);
       void navigate({
         to: '/transactions',
-        search: (prev) =>
-          buildCleanSearch({ ...prev, limit: newLimit, page: 1 }),
+        search: (prev) => buildCleanSearch({ ...prev, page: 1 }),
         replace: true,
       });
     },
-    [navigate]
+    [navigate, setPageSize]
   );
 
   const handleSortChange = useCallback(

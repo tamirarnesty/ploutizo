@@ -3,12 +3,12 @@ import { z } from 'zod';
 // Pagination/sort params are optional — absent means "use component default".
 // Using .optional().catch(undefined) prevents validateSearch from injecting
 // default values into the URL (which would pollute every /transactions URL
-// with ?page=1&limit=25&sort=date&order=desc). buildCleanSearch in
-// Transactions.tsx strips these before writing to the URL; defaults are
-// applied in the component when reading search params.
+// with ?page=1&sort=date&order=desc). buildCleanSearch in Transactions.tsx
+// strips these before writing to the URL; defaults are applied in the
+// component when reading search params. Page size is persisted in
+// localStorage (see useTablePageSize), not the URL.
 export const transactionSearchSchema = z.object({
   page: z.number().int().min(1).optional().catch(undefined),
-  limit: z.number().int().min(1).max(200).optional().catch(undefined),
   sort: z
     .enum(['date', 'amount', 'type', 'category', 'account'])
     .optional()
