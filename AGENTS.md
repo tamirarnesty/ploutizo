@@ -62,3 +62,5 @@ Use Clerk test email mode ([docs](https://clerk.com/docs/guides/development/test
 - **Lefthook pre-commit hooks** run lint, typecheck, and format:check in parallel. These are installed via the `prepare` script.
 - **Tests are fully mocked** — `pnpm test` runs without requiring any secrets or external services.
 - **Cloud agent .env creation**: Secrets are injected as environment variables. Create `apps/web/.env` and `apps/api/.env` from those env vars before starting dev servers (see `.env.example` files for the required keys).
+- **`drizzle-kit push` requires TTY**: Run `pnpm db:push` inside a tmux session (not piped) — it uses interactive prompts for column conflict resolution. Cannot be run non-interactively.
+- **Turbo `dev` uses TUI mode**: `pnpm turbo dev` opens a terminal UI. To verify servers started, use `curl` against `localhost:3000` and `localhost:8080/health` rather than parsing turbo output.
