@@ -206,9 +206,16 @@ export const updateTransaction = async (
 
     if (!updated) return null;
 
+    // WR-02: changing `type` without sending `assignees` would skip replaceAssignees and leave
+    // old split rows on the row (e.g. settlement → expense). Card-balance SQL treats assignee
+    // cents by transaction.type — stale rows corrupt per-member balances.
+    const typeChanged = row.type !== data.type;
+
     // D-03: replace-all assignees if provided in payload — delegated to query layer
     if (assignees !== undefined) {
       await replaceAssignees(tx, id, assignees);
+    } else if (typeChanged) {
+      await replaceAssignees(tx, id, []);
     }
 
     // Replace-all tags if provided — delegated to query layer

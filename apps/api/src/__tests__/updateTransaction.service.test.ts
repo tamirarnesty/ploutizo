@@ -151,6 +151,35 @@ describe('updateTransaction — PATCH split-sum validation', () => {
     expect(enrichTransactions).not.toHaveBeenCalled();
   });
 
+  it('clears persisted assignees when type changes and payload omits assignees (WR-02)', async () => {
+    vi.mocked(fetchTransactionById).mockResolvedValue({
+      ...baseTxRow,
+      type: 'settlement',
+    } as never);
+    vi.mocked(enrichTransactions).mockResolvedValue({
+      assigneeMap: {
+        [TXN_ID]: [
+          { memberId: MEMBER_A, amountCents: 5000 },
+          { memberId: MEMBER_B, amountCents: 0 },
+        ],
+      },
+      tagMap: { [TXN_ID]: [] },
+    });
+
+    await updateTransaction(TXN_ID, ORG_ID, {
+      ...expensePayload,
+      type: 'expense',
+    });
+
+    expect(updateTransactionScalarsQuery).toHaveBeenCalled();
+    expect(replaceAssignees).toHaveBeenCalledWith(mockTx, TXN_ID, []);
+    expect(fetchTransactionById).toHaveBeenCalledWith(TXN_ID, ORG_ID, mockTx);
+    expect(enrichTransactions).toHaveBeenCalledWith(
+      [{ ...baseTxRow, type: 'settlement' as const }],
+      mockTx
+    );
+  });
+
   it('returns null when transaction is not found before validation', async () => {
     vi.mocked(fetchTransactionById).mockResolvedValueOnce(null as never);
 
