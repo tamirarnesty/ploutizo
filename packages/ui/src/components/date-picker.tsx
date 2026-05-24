@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { format, parseISO } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/button';
 import { Calendar } from '@/components/calendar';
@@ -33,7 +33,9 @@ export const DatePicker = ({
   className,
 }: DatePickerProps) => {
   const [open, setOpen] = useState(false);
-  const selectedDate = value ? parseISO(value) : undefined;
+  const parsedDate = value ? parseISO(value) : undefined;
+  const selectedDate =
+    parsedDate && isValid(parsedDate) ? parsedDate : undefined;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -47,7 +49,7 @@ export const DatePicker = ({
             disabled={disabled}
             className={cn(
               'w-full justify-start text-left font-normal',
-              !value && 'text-muted-foreground',
+              !selectedDate && 'text-muted-foreground',
               className
             )}
             onBlur={onBlur}
@@ -55,7 +57,7 @@ export const DatePicker = ({
         }
       >
         <CalendarIcon className="mr-2 size-4" aria-hidden="true" />
-        {value ? format(selectedDate!, 'MMM d, yyyy') : placeholder}
+        {selectedDate ? format(selectedDate, 'MMM d, yyyy') : placeholder}
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar

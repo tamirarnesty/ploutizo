@@ -50,6 +50,25 @@ describe('sessionPref', () => {
     expect(readSessionPref('ploutizo:transactions:last-visible-rows')).toBe(7);
   });
 
+  it('writeSessionPref ignores invalid values and preserves existing prefs', () => {
+    const key = 'ploutizo:transactions:last-visible-rows';
+
+    writeSessionPref(key, 7);
+    writeSessionPref(key, 0);
+    writeSessionPref(key, -1);
+    writeSessionPref(key, Number.NaN);
+    expect(readSessionPref(key)).toBe(7);
+  });
+
+  it('writeSessionPref does not persist invalid values when no prior value exists', () => {
+    const key = 'ploutizo:transactions:last-visible-rows';
+
+    writeSessionPref(key, 0);
+    writeSessionPref(key, -1);
+    writeSessionPref(key, Number.NaN);
+    expect(readSessionPref(key)).toBe(null);
+  });
+
   it('subscribeSessionPref notifies on same-tab writes', () => {
     const listener = vi.fn();
     const key = 'ploutizo:accounts:last-visible-rows';

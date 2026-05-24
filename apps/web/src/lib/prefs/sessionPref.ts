@@ -25,6 +25,8 @@ export const readSessionPref = (key: string): number | null => {
 
 export const writeSessionPref = (key: string, value: number): void => {
   if (typeof window === 'undefined') return;
+  if (!Number.isFinite(value) || value <= 0) return;
+
   const serialized = String(value);
   if (sessionStorage.getItem(key) === serialized) return;
   sessionStorage.setItem(key, serialized);
