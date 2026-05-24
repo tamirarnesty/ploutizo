@@ -31,7 +31,9 @@ export const webhookAuth = () =>
         event = svix.verify(payload, headers) as WebhookEvent;
       } catch (err) {
         const detail = err instanceof Error ? err.message : String(err);
-        console.warn('[webhooks/clerk] Svix verify failed:', detail);
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('[webhooks/clerk] Svix verify failed:', detail);
+        }
         return c.json(
           {
             error: {

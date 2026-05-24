@@ -336,6 +336,22 @@ describe('createSettlement service', () => {
     expect(err).toBeInstanceOf(NotFoundError);
     expect((err as NotFoundError).message).toBe('Paid-from account not found');
   });
+
+  it('POST-SETTLE-11: identical account and counterpart => throws DomainError(400)', async () => {
+    mockSettlementAccountLookups({ card: { name: 'Amex Gold' } });
+    vi.mocked(memberBelongsToOrg).mockResolvedValue(true);
+
+    const err = await createSettlement('org_1', {
+      ...validInput,
+      counterpartAccountId: validInput.accountId,
+    }).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(DomainError);
+    expect((err as DomainError).statusCode).toBe(400);
+    expect((err as DomainError).message).toBe(
+      'Paid-from account must differ from the card being settled'
+    );
+  });
 });
 
 describe('createSettlement — notes forwarding (Phase 4.2 extension)', () => {

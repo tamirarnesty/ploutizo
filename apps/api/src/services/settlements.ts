@@ -31,7 +31,8 @@ const sameMemberIdSet = (a: string[], b: string[]): boolean => {
  * Service layer: shapes the raw query rows into the GET /api/settlements response (D-02).
  *   - Groups raw rows by accountId (using a Map for O(1) lookup, per js-perf skill)
  *   - Computes totalBalanceCents per account (Σ personal + shared)
- *   - Filters out zero-balance non-credit accounts (D-08); credit cards always included
+ *   - Filters out zero-balance non-credit accounts (D-08); credit cards always included.
+ *     Query layer returns credit cards only, so D-08 is defensive.
  *   - Computes dueDate + status from statementDueDay (D-13, D-14)
  *   - Attaches `account.owners` from `account_members` (not inferred from balances)
  *

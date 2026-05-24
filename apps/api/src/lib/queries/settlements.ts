@@ -212,12 +212,9 @@ export const fetchSharedParticipantIds = async (
 /**
  * Settlement balance rows for GET /api/settlements.
  *
- * For **credit_card** accounts: returns every (account × household member) pair with
- * personal balances from aggregates (0 when no personal activity). Shared bucket and
- * participant ids are duplicated on each member row for the same account.
- *
- * Non-credit accounts keep the previous behavior: only (account, member) pairs that
- * appear on qualifying personal transactions.
+ * Credit cards only — settlement is card-centric (see CONTEXT.md). Returns every
+ * (account × household member) pair with personal balances from aggregates (0 when no
+ * personal activity). Shared bucket and participant ids are duplicated on each member row.
  */
 export const fetchSettlementBalances = async (
   orgId: string
@@ -287,24 +284,7 @@ export const fetchSettlementBalances = async (
     }
   }
 
-  const nonCreditRows: SettlementBalanceRow[] = personalRows
-    .filter((r) => r.accountType !== 'credit_card')
-    .map((r) => ({
-      accountId: r.accountId,
-      accountName: r.accountName,
-      accountType: r.accountType,
-      institution: r.institution,
-      lastFour: r.lastFour,
-      statementDueDay: r.statementDueDay,
-      memberId: r.memberId,
-      memberName: r.memberName,
-      memberAvatarUrl: r.memberAvatarUrl,
-      personalBalanceCents: r.personalBalanceCents,
-      sharedBalanceCents: sharedByAccount.get(r.accountId) ?? 0,
-      sharedParticipantIds: participantsByAccount.get(r.accountId) ?? [],
-    }));
-
-  return [...creditCardRows, ...nonCreditRows];
+  return creditCardRows;
 };
 
 /**
