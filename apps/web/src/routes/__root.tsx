@@ -15,6 +15,7 @@ import { ThemeProvider } from '@ploutizo/ui/components/theme-provider';
 import { Toaster } from '@ploutizo/ui/components/sonner';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { queryClient, setTokenGetter } from '../lib/queryClient';
+import { AppDevtools } from '../components/devtools/AppDevtools';
 import { NotFound } from '../components/not-found/NotFound';
 import { ErrorBoundary } from '../components/error-boundary/ErrorBoundary';
 
@@ -65,6 +66,7 @@ const RootDocument = ({ children }: { children: React.ReactNode }) => (
               <TokenInitializer />
               {children}
               <Toaster />
+              <AppDevtools />
             </ClerkProvider>
           </QueryClientProvider>
         </TooltipProvider>
