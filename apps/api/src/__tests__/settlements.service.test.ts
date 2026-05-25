@@ -1,31 +1,31 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { DomainError, NotFoundError } from '../lib/errors';
+import type { SettlementBalanceRow } from '@/lib/queries/settlements';
+import { DomainError, NotFoundError } from '@/lib/errors';
 import {
   fetchAccountForSettlement,
   fetchSettlementBalances,
   fetchSharedParticipantIds,
   memberBelongsToOrg,
-} from '../lib/queries/settlements';
-import { listAccountMemberDetails } from '../lib/queries/accounts';
+} from '@/lib/queries/settlements';
+import { listAccountMemberDetails } from '@/lib/queries/accounts';
 import {
   createSettlement,
   getSettlementBalances,
-} from '../services/settlements';
-import { createTransaction } from '../services/transactions';
-import type { SettlementBalanceRow } from '../lib/queries/settlements';
+} from '@/services/settlements';
+import { createTransaction } from '@/services/transactions';
 
-vi.mock('../lib/queries/settlements', () => ({
+vi.mock('@/lib/queries/settlements', () => ({
   fetchSettlementBalances: vi.fn(),
   fetchAccountForSettlement: vi.fn(),
   fetchSharedParticipantIds: vi.fn(),
   memberBelongsToOrg: vi.fn(),
 }));
 
-vi.mock('../lib/queries/accounts', () => ({
+vi.mock('@/lib/queries/accounts', () => ({
   listAccountMemberDetails: vi.fn(),
 }));
 
-vi.mock('../services/transactions', () => ({
+vi.mock('@/services/transactions', () => ({
   createTransaction: vi.fn(),
 }));
 
@@ -33,15 +33,16 @@ const cardAccountId = '550e8400-e29b-41d4-a716-446655440002';
 const counterpartAccountId = '550e8400-e29b-41d4-a716-446655440003';
 
 const mockSettlementAccountLookups = (options: {
-  card?: { name: string; archivedAt?: Date | null } | null;
+  card?: { name: string; archivedAt?: Date | null; type?: 'credit_card' | 'chequing' } | null;
   counterpart?: { name: string } | null;
 }) => {
-  vi.mocked(fetchAccountForSettlement).mockImplementation((accountId) => {
+  vi.mocked(fetchAccountForSettlement).mockImplementation((_orgId, accountId) => {
     if (accountId === cardAccountId) {
       if (options.card === null) return Promise.resolve(null);
       return Promise.resolve({
         id: cardAccountId,
         name: options.card?.name ?? 'Amex Gold',
+        type: options.card?.type ?? 'credit_card',
         archivedAt: options.card?.archivedAt ?? null,
       });
     }
@@ -50,6 +51,7 @@ const mockSettlementAccountLookups = (options: {
       return Promise.resolve({
         id: counterpartAccountId,
         name: options.counterpart?.name ?? 'RBC Chequing',
+        type: 'chequing' as const,
         archivedAt: null,
       });
     }
@@ -222,6 +224,23 @@ describe('createSettlement service', () => {
     vi.mocked(createTransaction).mockReset();
   });
 
+  it('POST-SETTLE-05b: non-credit-card target => DomainError 400', async () => {
+    mockSettlementAccountLookups({
+      card: { name: 'Chequing', type: 'chequing' },
+      counterpart: { name: 'RBC Chequing' },
+    });
+    vi.mocked(memberBelongsToOrg).mockResolvedValue(true);
+
+    const err = await createSettlement('org_1', validInput).catch(
+      (e: unknown) => e
+    );
+    expect(err).toBeInstanceOf(DomainError);
+    expect((err as DomainError).statusCode).toBe(400);
+    expect((err as DomainError).message).toBe(
+      'Settlement can only be recorded against a credit card account'
+    );
+  });
+
   it('POST-SETTLE-06: account not found => throws NotFoundError("Account not found")', async () => {
     mockSettlementAccountLookups({ card: null });
 
@@ -364,6 +383,7 @@ describe('createSettlement — notes forwarding (Phase 4.2 extension)', () => {
   const accountFixture = {
     id: cardAccountId,
     name: 'Amex',
+    type: 'credit_card' as const,
     archivedAt: null,
   };
 
