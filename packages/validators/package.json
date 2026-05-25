@@ -8,6 +8,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@ploutizo/types": "workspace:*",
     "zod": "^4.3.6"
   },
   "devDependencies": {

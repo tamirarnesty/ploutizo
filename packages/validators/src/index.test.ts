@@ -1,3 +1,4 @@
+import { ACCOUNT_TYPE_VALUES } from '@ploutizo/types'
 import { describe, it, expect } from 'vitest'
 import {
   createAccountSchema,
@@ -38,8 +39,7 @@ describe('createAccountSchema', () => {
   })
 
   it('accepts all valid account types', () => {
-    const types = ['chequing', 'savings', 'credit_card', 'prepaid_cash', 'e_transfer', 'investment', 'other'] as const
-    for (const type of types) {
+    for (const type of ACCOUNT_TYPE_VALUES) {
       const result = createAccountSchema.safeParse({ name: 'Test', type })
       expect(result.success).toBe(true)
     }
