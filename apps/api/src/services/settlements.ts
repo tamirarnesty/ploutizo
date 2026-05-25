@@ -117,6 +117,7 @@ export const getSettlementBalances = async (
   }
 
   const ownerRows = await listAccountMemberDetails(
+    orgId,
     accounts.map((a) => a.account.id)
   );
   const ownersByAccountId = new Map<string, AccountOwner[]>();

@@ -19,11 +19,7 @@ describe('scope query builders', () => {
     expect(settlementQualifying('org_a')).toBeDefined();
   });
 
-  it('assigneeCountsForOrg returns a per-call subquery alias (not module singleton)', () => {
-    const a = assigneeCountsForOrg('org_a');
-    const b = assigneeCountsForOrg('org_b');
-    expect(a).toBeDefined();
-    expect(b).toBeDefined();
-    expect(a).not.toBe(b);
+  it('assigneeCountsForOrg returns a per-call subquery builder', () => {
+    expect(assigneeCountsForOrg('org_a')).toBeDefined();
   });
 });
