@@ -13,6 +13,12 @@ export const appValidator = <T extends ZodSchema>(
 ) =>
   zValidator(target, schema, (result, c) => {
     if (!result.success) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(
+          `[API] ${c.req.method} ${c.req.path} validation failed:`,
+          result.error.issues
+        );
+      }
       return c.json(
         { error: { code: 'VALIDATION_ERROR', errors: result.error.issues } },
         400

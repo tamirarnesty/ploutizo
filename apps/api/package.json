@@ -22,7 +22,8 @@
     "hono": "^4.12.10",
     "neverthrow": "^8.2.0",
     "svix": "^1.90.0",
-    "zod": "^4.3.6"
+    "zod": "^4.3.6",
+    "@ploutizo/utils": "workspace:*"
   },
   "devDependencies": {
     "@clerk/backend": "^3.2.9",

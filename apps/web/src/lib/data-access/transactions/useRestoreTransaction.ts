@@ -8,6 +8,9 @@ export const useRestoreTransaction = () => {
       apiFetch<{ data: { id: string } }>(`/api/transactions/${id}/restore`, {
         method: 'PATCH',
       }),
-    onSettled: () => qc.invalidateQueries({ queryKey: ['transactions'] }),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ['transactions'] });
+      void qc.invalidateQueries({ queryKey: ['settlements'] });
+    },
   });
 };
