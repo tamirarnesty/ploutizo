@@ -8,6 +8,16 @@ import type {
   CreateTransactionInput,
   createTransactionSchema,
 } from '@ploutizo/validators';
+import type { ListQueryParams } from '@/lib/queries/transactions';
+import type { z } from 'zod';
+import { NotFoundError } from '@/lib/errors';
+import {
+  accountExistsInOrg,
+  allMembersInOrg,
+  allTagsInOrg,
+  categoryExistsInOrg,
+  transactionExistsInOrg,
+} from '@/lib/queries/scope';
 import {
   buildListQuery,
   countQuery,
@@ -20,13 +30,10 @@ import {
   restoreTransactionQuery,
   softDeleteTransactionQuery,
   updateTransactionScalarsQuery,
-} from '../lib/queries/transactions';
-import type { ListQueryParams } from '../lib/queries/transactions';
-import type { z } from 'zod';
+} from '@/lib/queries/transactions';
 
 export type { ListQueryParams };
 
-// D-11: validate that sum of assignee amountCents equals transaction amount
 export const validateSplitSum = (
   amount: number,
   assignees?: { amountCents: number }[]
@@ -38,12 +45,6 @@ export const validateSplitSum = (
     : 'Assignee amounts must sum to transaction amount';
 };
 
-/**
- * For PATCH, the client may omit `assignees` to mean "leave rows unchanged". Settlement balances
- * still use assignee cents for expense/refund/settlement — validate `amount` against whichever
- * assignee rows will apply after the update (payload rows, or existing DB rows).
- * Exported for unit tests.
- */
 export const assigneeRowsForPatchSplitSum = (
   type: CreateTransactionInput['type'],
   payloadAssignees: CreateTransactionInput['assignees'],
@@ -59,28 +60,84 @@ export const assigneeRowsForPatchSplitSum = (
   return rows.length > 0 ? rows : null;
 };
 
-// D-13: check that the refundOf transaction belongs to the same org
 export const checkRefundOfOwnership = async (
-  refundOfId: string,
-  orgId: string
-): Promise<boolean> => {
-  return refundOfExists(refundOfId, orgId);
-};
+  orgId: string,
+  refundOfId: string
+): Promise<boolean> => refundOfExists(orgId, refundOfId);
 
-// T-03.4.1-T1: check that counterpartAccountId belongs to the same org
 export const checkCounterpartAccountOwnership = async (
-  accountId: string,
-  orgId: string
-): Promise<boolean> => {
-  return counterpartAccountBelongsToOrg(accountId, orgId);
+  orgId: string,
+  accountId: string
+): Promise<boolean> => counterpartAccountBelongsToOrg(orgId, accountId);
+
+const assertTransactionWriteReferences = async (
+  orgId: string,
+  data: {
+    accountId: string;
+    counterpartAccountId?: string | null;
+    refundOf?: string | null;
+    categoryId?: string | null;
+    tagIds?: string[];
+    assignees?: { memberId: string }[];
+  }
+) => {
+  if (!(await accountExistsInOrg(orgId, data.accountId))) {
+    throw new NotFoundError('Account not found');
+  }
+
+  if (data.counterpartAccountId) {
+    if (!(await accountExistsInOrg(orgId, data.counterpartAccountId))) {
+      throw new NotFoundError('Account not found');
+    }
+  }
+
+  if (data.refundOf) {
+    if (!(await transactionExistsInOrg(orgId, data.refundOf))) {
+      throw new NotFoundError('Transaction not found');
+    }
+  }
+
+  if (data.categoryId) {
+    if (!(await categoryExistsInOrg(orgId, data.categoryId))) {
+      throw new NotFoundError('Category not found');
+    }
+  }
+
+  if (data.tagIds && data.tagIds.length > 0) {
+    if (!(await allTagsInOrg(orgId, data.tagIds))) {
+      throw new NotFoundError('Tag not found');
+    }
+  }
+
+  if (data.assignees && data.assignees.length > 0) {
+    const memberIds = data.assignees.map((a) => a.memberId);
+    if (!(await allMembersInOrg(orgId, memberIds))) {
+      throw new NotFoundError('Member not found in this household');
+    }
+  }
 };
 
-// POST: create a transaction with optional assignees and tags in a single DB transaction
 export const createTransaction = async (
   orgId: string,
   data: z.infer<typeof createTransactionSchema>
 ) => {
   const { assignees, tagIds, ...transactionData } = data;
+
+  await assertTransactionWriteReferences(orgId, {
+    accountId: transactionData.accountId,
+    counterpartAccountId:
+      'counterpartAccountId' in transactionData
+        ? transactionData.counterpartAccountId
+        : undefined,
+    refundOf:
+      'refundOf' in transactionData ? transactionData.refundOf : undefined,
+    categoryId:
+      'categoryId' in transactionData
+        ? transactionData.categoryId
+        : undefined,
+    tagIds,
+    assignees,
+  });
 
   return db.transaction(async (tx) => {
     const [inserted] = await tx
@@ -88,14 +145,12 @@ export const createTransaction = async (
       .values({ orgId, ...transactionData })
       .returning();
 
-    // D-02: assignees optional — if omitted, no rows written
     if (assignees && assignees.length > 0) {
       await tx.insert(transactionAssignees).values(
         assignees.map((a) => ({
           transactionId: inserted.id,
           memberId: a.memberId,
           amountCents: a.amountCents,
-          // percentage column is numeric — Drizzle expects string
           percentage: a.percentage != null ? a.percentage.toString() : null,
         }))
       );
@@ -111,13 +166,15 @@ export const createTransaction = async (
   });
 };
 
-// GET /: paginated list with filtering, sort, joined response
 export const listTransactions = async (params: ListQueryParams) => {
   const [baseRows, total] = await Promise.all([
     buildListQuery(params),
     countQuery(params),
   ]);
-  const { assigneeMap, tagMap } = await enrichTransactions(baseRows);
+  const { assigneeMap, tagMap } = await enrichTransactions(
+    params.orgId,
+    baseRows
+  );
   const data = baseRows.map((row) => ({
     ...row,
     assignees: assigneeMap[row.id] ?? [],
@@ -126,11 +183,10 @@ export const listTransactions = async (params: ListQueryParams) => {
   return { data, total, page: params.page, limit: params.limit };
 };
 
-// GET /:id: single transaction with joined response or null if not found
-export const getTransaction = async (id: string, orgId: string) => {
-  const row = await fetchTransactionById(id, orgId);
+export const getTransaction = async (orgId: string, id: string) => {
+  const row = await fetchTransactionById(orgId, id);
   if (!row) return null;
-  const { assigneeMap, tagMap } = await enrichTransactions([row]);
+  const { assigneeMap, tagMap } = await enrichTransactions(orgId, [row]);
   return {
     ...row,
     assignees: assigneeMap[row.id] ?? [],
@@ -138,19 +194,13 @@ export const getTransaction = async (id: string, orgId: string) => {
   };
 };
 
-// PATCH: update scalar fields + replace-all assignees/tags in a single DB transaction
-// Accepts createTransactionSchema (discriminated union) — D-08 requires full type enforcement on PATCH.
-// Returns updated row or null (not found / wrong org / already deleted — Pitfall 7)
 export const updateTransaction = async (
-  id: string,
   orgId: string,
+  id: string,
   data: CreateTransactionInput
 ) => {
   const { assignees, tagIds, ...updateData } = data;
 
-  // WR-01: when type changes, explicitly null FK columns that do not apply to the new type.
-  // Without this, switching from transfer → expense leaves counterpartAccountId in the DB
-  // and the table renders "A → B" for what is now an expense row.
   const typeSpecificNulls: Record<string, null> = {};
   if (!['transfer', 'settlement', 'contribution'].includes(data.type)) {
     typeSpecificNulls.counterpartAccountId = null;
@@ -167,8 +217,18 @@ export const updateTransaction = async (
   Object.assign(updateData, typeSpecificNulls);
 
   return db.transaction(async (tx) => {
-    const row = await fetchTransactionById(id, orgId, tx);
+    const row = await fetchTransactionById(orgId, id, tx);
     if (!row) return null;
+
+    await assertTransactionWriteReferences(orgId, {
+      accountId: data.accountId,
+      counterpartAccountId:
+        'counterpartAccountId' in data ? data.counterpartAccountId : undefined,
+      refundOf: 'refundOf' in data ? data.refundOf : undefined,
+      categoryId: 'categoryId' in data ? data.categoryId : undefined,
+      tagIds,
+      assignees,
+    });
 
     const typeUsesSplitAssignees =
       data.type === 'expense' ||
@@ -179,13 +239,11 @@ export const updateTransaction = async (
 
     let existingAssignees: readonly { amountCents: number }[] = [];
     if (needsPersistedAssignees) {
-      const { assigneeMap } = await enrichTransactions([row], tx);
+      const { assigneeMap } = await enrichTransactions(orgId, [row], tx);
       existingAssignees = (assigneeMap[row.id] ??
         []) as readonly { amountCents: number }[];
     }
 
-    // Split-sum validation reads assignees inside this tx (same scope as UPDATE/replaceAssignees),
-    // so we do not validate against a standalone snapshot taken before `db.transaction` opens.
     const rowsForSplitCheck = assigneeRowsForPatchSplitSum(
       data.type,
       data.assignees,
@@ -196,22 +254,19 @@ export const updateTransaction = async (
       if (splitError) throw new Error(splitError);
     }
 
-    // Delegate scalar UPDATE to query layer (Pitfall 7: three-condition WHERE)
     const updated = await updateTransactionScalarsQuery(
       tx,
-      id,
       orgId,
+      id,
       updateData as Record<string, unknown>
     );
 
     if (!updated) return null;
 
-    // D-03: replace-all assignees if provided in payload — delegated to query layer
     if (assignees !== undefined) {
       await replaceAssignees(tx, id, assignees);
     }
 
-    // Replace-all tags if provided — delegated to query layer
     if (tagIds !== undefined) {
       await replaceTags(tx, id, tagIds);
     }
@@ -220,20 +275,12 @@ export const updateTransaction = async (
   });
 };
 
-// DELETE: soft-delete — delegates to query layer (D-15)
-// Returns {id} on success or null if not found/wrong org/already deleted
 export const deleteTransaction = async (
-  id: string,
-  orgId: string
-): Promise<{ id: string } | null> => {
-  return softDeleteTransactionQuery(id, orgId);
-};
+  orgId: string,
+  id: string
+): Promise<{ id: string } | null> => softDeleteTransactionQuery(orgId, id);
 
-// PATCH /:id/restore: undo soft-delete — delegates to query layer (D-15)
-// Returns {id} on success or null if not found/wrong org/already active (T-03.3-05)
 export const restoreTransaction = async (
-  id: string,
-  orgId: string
-): Promise<{ id: string } | null> => {
-  return restoreTransactionQuery(id, orgId);
-};
+  orgId: string,
+  id: string
+): Promise<{ id: string } | null> => restoreTransactionQuery(orgId, id);

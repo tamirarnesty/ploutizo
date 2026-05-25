@@ -29,8 +29,17 @@ import {
   or,
   sql,
 } from 'drizzle-orm';
-import type { SortOrder, TransactionSortField } from '@ploutizo/types';
+import type {
+  SortOrder,
+  TransactionSortField,
+  TransactionType,
+} from '@ploutizo/types';
 import type { SQL } from 'drizzle-orm';
+import {
+  accountExistsInOrg,
+  activeTransactions,
+  transactionExistsInOrg,
+} from '@/lib/queries/scope';
 // Drizzle transaction type for functions that participate in an outer db.transaction().
 // Derived from db's own inference so it stays correct across schema changes.
 export type DrizzleTransaction = Parameters<
@@ -99,10 +108,7 @@ export type ListQueryParams = {
 
 // Build the WHERE conditions array for list + count queries
 export const buildConditions = (params: ListQueryParams): SQL[] => {
-  const conditions: SQL[] = [
-    eq(transactions.orgId, params.orgId),
-    isNull(transactions.deletedAt), // D-15
-  ];
+  const conditions: SQL[] = [...activeTransactions(params.orgId)];
 
   // type — D-25: supports comma-separated values for "Internal" shortcut
   // T-03.4.1-OP1: unrecognised operator falls through to default 'is' (eq/inArray) behaviour
@@ -114,18 +120,15 @@ export const buildConditions = (params: ListQueryParams): SQL[] => {
         op === 'is_not'
           ? notInArray(
               transactions.type,
-              types as (typeof transactions.type._.data)[]
+              types as TransactionType[]
             )
-          : inArray(
-              transactions.type,
-              types as (typeof transactions.type._.data)[]
-            )
+          : inArray(transactions.type, types as TransactionType[])
       );
     } else {
       conditions.push(
         op === 'is_not'
-          ? ne(transactions.type, types[0] as typeof transactions.type._.data)
-          : eq(transactions.type, types[0] as typeof transactions.type._.data)
+          ? ne(transactions.type, types[0] as TransactionType)
+          : eq(transactions.type, types[0] as TransactionType)
       );
     }
   }
@@ -339,8 +342,8 @@ export const countQuery = async (params: ListQueryParams): Promise<number> => {
 // Single transaction by id — same column projection as list (D-05)
 // Optional `tx`: when provided, read participates in the caller's transaction (e.g. PATCH split validation + write).
 export const fetchTransactionById = async (
-  id: string,
   orgId: string,
+  id: string,
   tx?: DrizzleTransaction
 ) => {
   const ex = tx ?? db;
@@ -354,13 +357,7 @@ export const fetchTransactionById = async (
       eq(transactions.counterpartAccountId, counterpartAccounts.id)
     )
     .leftJoin(refundSource, eq(transactions.refundOf, refundSource.id))
-    .where(
-      and(
-        eq(transactions.id, id),
-        eq(transactions.orgId, orgId),
-        isNull(transactions.deletedAt) // D-15
-      )
-    )
+    .where(and(eq(transactions.id, id), ...activeTransactions(orgId)))
     .limit(1);
   return rows.at(0) ?? null;
 };
@@ -369,6 +366,7 @@ export const fetchTransactionById = async (
 // Avoids cartesian product from multi-level left joins (RESEARCH.md Pitfall 1).
 // Optional `tx`: when provided, reads use the caller's transaction executor.
 export const enrichTransactions = async (
+  orgId: string,
   baseRows: { id: string }[],
   tx?: DrizzleTransaction
 ) => {
@@ -393,9 +391,19 @@ export const enrichTransactions = async (
         imageUrl: users.imageUrl,
       })
       .from(transactionAssignees)
+      .innerJoin(
+        transactions,
+        eq(transactions.id, transactionAssignees.transactionId)
+      )
       .innerJoin(orgMembers, eq(transactionAssignees.memberId, orgMembers.id))
       .innerJoin(users, eq(users.id, orgMembers.userId))
-      .where(inArray(transactionAssignees.transactionId, txIds)),
+      .where(
+        and(
+          eq(transactions.orgId, orgId),
+          eq(orgMembers.orgId, orgId),
+          inArray(transactionAssignees.transactionId, txIds)
+        )
+      ),
 
     ex
       .select({
@@ -405,8 +413,18 @@ export const enrichTransactions = async (
         colour: tags.colour,
       })
       .from(transactionTags)
+      .innerJoin(
+        transactions,
+        eq(transactions.id, transactionTags.transactionId)
+      )
       .innerJoin(tags, eq(transactionTags.tagId, tags.id))
-      .where(inArray(transactionTags.transactionId, txIds)),
+      .where(
+        and(
+          eq(transactions.orgId, orgId),
+          eq(tags.orgId, orgId),
+          inArray(transactionTags.transactionId, txIds)
+        )
+      ),
   ]);
 
   const assigneeMap: Record<string, typeof assigneeRows> = {};
@@ -422,46 +440,28 @@ export const enrichTransactions = async (
 
 // Validate counterpartAccountId belongs to the same org — T1 security mitigation (T-03.4.1-T1)
 export const counterpartAccountBelongsToOrg = async (
-  accountId: string,
-  orgId: string
-): Promise<boolean> => {
-  const [row] = await db
-    .select({ id: accounts.id })
-    .from(accounts)
-    .where(and(eq(accounts.id, accountId), eq(accounts.orgId, orgId)))
-    .limit(1);
-  return !!row;
-};
+  orgId: string,
+  accountId: string
+): Promise<boolean> => accountExistsInOrg(orgId, accountId);
 
 // Validate that a refundOf transaction ID exists in the same org (D-13)
 export const refundOfExists = async (
-  refundOfId: string,
-  orgId: string
-): Promise<boolean> => {
-  const [row] = await db
-    .select({ id: transactions.id })
-    .from(transactions)
-    .where(and(eq(transactions.id, refundOfId), eq(transactions.orgId, orgId)))
-    .limit(1);
-  return !!row;
-};
+  orgId: string,
+  refundOfId: string
+): Promise<boolean> => transactionExistsInOrg(orgId, refundOfId);
 
 // Soft-delete a transaction by setting deletedAt = now() (D-15).
 // WHERE: eq(id) + eq(orgId) + isNull(deletedAt) — prevents cross-org and double-delete.
 // Returns {id} on success or null if not found / wrong org / already deleted.
 export const softDeleteTransactionQuery = async (
-  id: string,
-  orgId: string
+  orgId: string,
+  id: string
 ): Promise<{ id: string } | null> => {
   const rows = await db
     .update(transactions)
     .set({ deletedAt: new Date(), updatedAt: new Date() })
     .where(
-      and(
-        eq(transactions.id, id),
-        eq(transactions.orgId, orgId),
-        isNull(transactions.deletedAt)
-      )
+      and(eq(transactions.id, id), ...activeTransactions(orgId))
     )
     .returning({ id: transactions.id });
   return rows.at(0) ?? null;
@@ -471,8 +471,8 @@ export const softDeleteTransactionQuery = async (
 // WHERE: eq(id) + eq(orgId) + isNotNull(deletedAt) — only restores actually-deleted rows (T-03.3-05).
 // Returns {id} on success or null if not found / wrong org / already active.
 export const restoreTransactionQuery = async (
-  id: string,
-  orgId: string
+  orgId: string,
+  id: string
 ): Promise<{ id: string } | null> => {
   const rows = await db
     .update(transactions)
@@ -493,20 +493,14 @@ export const restoreTransactionQuery = async (
 // Returns the updated row or null if not found / wrong org / already deleted.
 export const updateTransactionScalarsQuery = async (
   tx: DrizzleTransaction,
-  id: string,
   orgId: string,
+  id: string,
   data: Record<string, unknown>
 ) => {
   const rows = await tx
     .update(transactions)
     .set({ ...data, updatedAt: new Date() })
-    .where(
-      and(
-        eq(transactions.id, id),
-        eq(transactions.orgId, orgId),
-        isNull(transactions.deletedAt)
-      )
-    )
+    .where(and(eq(transactions.id, id), ...activeTransactions(orgId)))
     .returning();
   return rows.at(0) ?? null;
 };
