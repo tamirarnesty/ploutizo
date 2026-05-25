@@ -1,14 +1,14 @@
 import { Hono } from 'hono';
 import { createAccountSchema, updateAccountSchema } from '@ploutizo/validators';
-import { appValidator } from '../lib/validator';
+import type { AppEnv } from '@/types';
+import { appValidator } from '@/lib/validator';
 import {
   archiveAccountById,
   createAccount,
   getAccountMembers,
   listAccounts,
   updateAccount,
-} from '../services/accounts';
-import type { AppEnv } from '../types';
+} from '@/services/accounts';
 
 const accountsRouter = new Hono<AppEnv>();
 
@@ -40,7 +40,7 @@ accountsRouter.patch(
     const orgId = c.get('orgId');
     const id = c.req.param('id');
     const data = c.req.valid('json');
-    const updated = await updateAccount(id, orgId, data);
+    const updated = await updateAccount(orgId, id, data);
     return c.json({ data: updated });
   }
 );
@@ -49,7 +49,7 @@ accountsRouter.patch(
 accountsRouter.get('/:id/members', async (c) => {
   const orgId = c.get('orgId');
   const id = c.req.param('id');
-  const rows = await getAccountMembers(id, orgId);
+  const rows = await getAccountMembers(orgId, id);
   return c.json({ data: rows });
 });
 
@@ -57,7 +57,7 @@ accountsRouter.get('/:id/members', async (c) => {
 accountsRouter.delete('/:id/archive', async (c) => {
   const orgId = c.get('orgId');
   const id = c.req.param('id');
-  const updated = await archiveAccountById(id, orgId);
+  const updated = await archiveAccountById(orgId, id);
   return c.json({ data: updated });
 });
 
