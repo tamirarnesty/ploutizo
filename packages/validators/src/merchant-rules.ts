@@ -1,8 +1,9 @@
+import { MERCHANT_MATCH_TYPE_VALUES } from '@ploutizo/types'
 import { z } from 'zod'
 
 export const createMerchantRuleSchema = z.object({
   pattern: z.string().min(1, 'Pattern is required.'),
-  matchType: z.enum(['exact', 'contains', 'starts_with', 'ends_with', 'regex']),
+  matchType: z.enum(MERCHANT_MATCH_TYPE_VALUES),
   renameTo: z.string().optional(),
   categoryId: z.string().uuid().nullable().optional(),
   assigneeId: z.string().uuid().nullable().optional(),

@@ -1,18 +1,9 @@
+import { ACCOUNT_TYPE_VALUES } from '@ploutizo/types'
 import { z } from 'zod'
-
-export const accountTypeValues = [
-  'chequing',
-  'savings',
-  'credit_card',
-  'prepaid_cash',
-  'e_transfer',
-  'investment',
-  'other',
-] as const
 
 export const createAccountSchema = z.object({
   name: z.string().min(1, 'Account name is required.'),
-  type: z.enum(accountTypeValues, { error: 'Account type is required.' }),
+  type: z.enum(ACCOUNT_TYPE_VALUES, { error: 'Account type is required.' }),
   institution: z.string().optional(),
   lastFour: z.string().max(4).optional(),
   memberIds: z.array(z.string().uuid()).optional().default([]),
@@ -28,7 +19,7 @@ export type UpdateAccountInput = z.infer<typeof updateAccountSchema>
 // AccountFormSchema — extends API schema with UI-only ownership field
 export const AccountFormSchema = z.object({
   name: z.string().min(1, 'Account name is required.'),
-  type: z.enum(accountTypeValues, { error: 'Account type is required.' }),
+  type: z.enum(ACCOUNT_TYPE_VALUES, { error: 'Account type is required.' }),
   institution: z.string().optional(),
   lastFour: z.string().max(4).optional(),
   ownership: z.enum(['personal', 'shared']),

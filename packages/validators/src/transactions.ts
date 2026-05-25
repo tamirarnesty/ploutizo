@@ -1,6 +1,5 @@
+import { INCOME_TYPE_VALUES } from '@ploutizo/types'
 import { z } from 'zod'
-
-const incomeTypeValues = ['direct_deposit', 'e_transfer', 'cash', 'cheque', 'other'] as const
 
 /** Common assignee object used in split payloads (Phase 3.2 writes these). */
 const assigneeSchema = z.object({
@@ -43,7 +42,7 @@ const refundTransactionSchema = baseTransactionSchema.omit({ assignees: true }).
 
 const incomeTransactionSchema = baseTransactionSchema.extend({
   type: z.literal('income'),
-  incomeType: z.enum(incomeTypeValues),
+  incomeType: z.enum(INCOME_TYPE_VALUES),
   // incomeSource removed (D-09) — free-text context goes in notes if needed
 })
 
@@ -105,7 +104,7 @@ export const updateTransactionSchema = baseTransactionSchema
     // type is immutable after creation — not included in update schema
     categoryId: z.string().uuid().optional(),
     refundOf: z.string().uuid().optional(),
-    incomeType: z.enum(incomeTypeValues).optional(),
+    incomeType: z.enum(INCOME_TYPE_VALUES).optional(),
     // counterpartAccountId replaces toAccountId + settledAccountId (D-08)
     counterpartAccountId: z.string().uuid().optional(),
     // Override partial assignees: [] would otherwise clear splits while bypassing .min(1) on create variants.
