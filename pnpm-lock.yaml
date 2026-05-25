@@ -233,6 +233,9 @@ importers:
       '@neondatabase/serverless':
         specifier: ^1.0.2
         version: 1.0.2
+      '@ploutizo/types':
+        specifier: workspace:*
+        version: link:../types
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(@neondatabase/serverless@1.0.2)(@types/pg@8.20.0)

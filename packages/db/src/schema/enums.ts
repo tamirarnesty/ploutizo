@@ -1,122 +1,51 @@
 /**
- * packages/db/schema/enums.ts
- *
- * Postgres enums shared across multiple domain schema files.
- * Enums used only within a single domain file are defined there instead.
+ * Postgres enums — values from `@ploutizo/types` `*_VALUES` tuples.
  */
 
+import {
+  ACCOUNT_TYPE_VALUES,
+  BUDGET_PERIOD_TYPE_VALUES,
+  INCOME_TYPE_VALUES,
+  INVESTMENT_TYPE_VALUES,
+  MEMBER_ROLE_VALUES,
+  MERCHANT_MATCH_TYPE_VALUES,
+  NOTIFICATION_TYPE_VALUES,
+  RECURRING_FREQUENCY_VALUES,
+  RECURRING_STATUS_VALUES,
+  TRANSACTION_TYPE_VALUES,
+} from '@ploutizo/types'
 import { pgEnum } from 'drizzle-orm/pg-core'
 
-// ---------------------------------------------------------------------------
-// Shared across auth + other domains
-// ---------------------------------------------------------------------------
-
-export const memberRoleEnum = pgEnum('member_role', [
-  'admin', // All members are admin in v1 — field reserved for future use
-])
-
-// ---------------------------------------------------------------------------
-// Shared across transactions + recurring
-// ---------------------------------------------------------------------------
+export const memberRoleEnum = pgEnum('member_role', [...MEMBER_ROLE_VALUES])
 
 export const transactionTypeEnum = pgEnum('transaction_type', [
-  'expense',
-  'refund',
-  'income',
-  'transfer',
-  'settlement',
-  'contribution',
+  ...TRANSACTION_TYPE_VALUES,
 ])
 
-// ---------------------------------------------------------------------------
-// Transactions only
-// ---------------------------------------------------------------------------
+export const incomeTypeEnum = pgEnum('income_type', [...INCOME_TYPE_VALUES])
 
-export const incomeTypeEnum = pgEnum('income_type', [
-  'direct_deposit',
-  'e_transfer',
-  'cash',
-  'cheque',
-  'other',
-])
-
-// ---------------------------------------------------------------------------
-// Accounts only
-// ---------------------------------------------------------------------------
-
-export const accountTypeEnum = pgEnum('account_type', [
-  'chequing',
-  'savings',
-  'credit_card',
-  'prepaid_cash',
-  'e_transfer',
-  'investment',
-  'other',
-])
-
-// ---------------------------------------------------------------------------
-// Recurring only
-// ---------------------------------------------------------------------------
+export const accountTypeEnum = pgEnum('account_type', [...ACCOUNT_TYPE_VALUES])
 
 export const recurringFrequencyEnum = pgEnum('recurring_frequency', [
-  'daily',
-  'weekly',
-  'bi_weekly',
-  'monthly',
-  'yearly',
+  ...RECURRING_FREQUENCY_VALUES,
 ])
 
 export const recurringStatusEnum = pgEnum('recurring_status', [
-  'active',
-  'stopped',
+  ...RECURRING_STATUS_VALUES,
 ])
-
-// ---------------------------------------------------------------------------
-// Classification only
-// ---------------------------------------------------------------------------
 
 export const merchantMatchTypeEnum = pgEnum('merchant_match_type', [
-  'exact',
-  'contains',
-  'starts_with',
-  'ends_with',
-  'regex',
+  ...MERCHANT_MATCH_TYPE_VALUES,
 ])
-
-// ---------------------------------------------------------------------------
-// Budgets only
-// ---------------------------------------------------------------------------
 
 export const budgetPeriodTypeEnum = pgEnum('budget_period_type', [
-  'monthly',
-  'weekly',
-  'bi_weekly',
-  'yearly',
-  'custom',
+  ...BUDGET_PERIOD_TYPE_VALUES,
 ])
-
-// ---------------------------------------------------------------------------
-// Investments only
-// ---------------------------------------------------------------------------
 
 export const investmentTypeEnum = pgEnum('investment_type', [
-  'tfsa',
-  'rrsp',
-  'fhsa',
-  'resp',
-  'non_registered',
-  'other',
+  ...INVESTMENT_TYPE_VALUES,
 ])
 
-// ---------------------------------------------------------------------------
-// Notifications only
-// ---------------------------------------------------------------------------
-
 export const notificationTypeEnum = pgEnum('notification_type', [
-  'budget_caution',
-  'budget_over',
-  'settlement_reminder',
-  'contribution_over',
-  'contribution_room_refresh',
-  'invitation_received',
+  ...NOTIFICATION_TYPE_VALUES,
 ])
