@@ -136,11 +136,12 @@ export const allTagsInOrg = async (
   tagIds: string[]
 ): Promise<boolean> => {
   if (tagIds.length === 0) return true;
+  const unique = [...new Set(tagIds)];
   const rows = await db
     .select({ id: tags.id })
     .from(tags)
-    .where(and(eq(tags.orgId, orgId), inArray(tags.id, tagIds)));
-  return rows.length === tagIds.length;
+    .where(and(eq(tags.orgId, orgId), inArray(tags.id, unique)));
+  return rows.length === unique.length;
 };
 
 /** True when every member id exists under orgId. Empty list is vacuously true. */

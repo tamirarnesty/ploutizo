@@ -6,7 +6,7 @@ import {
 import type { ListQueryParams } from '@/services/transactions';
 import type { AppEnv } from '@/types';
 import { appValidator } from '@/lib/validator';
-import { DomainError } from '@/lib/errors';
+import { DomainError, NotFoundError } from '@/lib/errors';
 import {
   checkCounterpartAccountOwnership,
   checkRefundOfOwnership,
@@ -191,6 +191,9 @@ transactionsRouter.patch(
     try {
       updated = await updateTransaction(orgId, id, data);
     } catch (err) {
+      if (err instanceof NotFoundError || err instanceof DomainError) {
+        throw err;
+      }
       // updateTransaction throws on split sum mismatch (D-11)
       const message = err instanceof Error ? err.message : 'Invalid request';
       return c.json({ error: { code: 'BAD_REQUEST', message } }, 400);

@@ -103,7 +103,14 @@ export const listAccountMembers = async (orgId: string, accountId: string) => {
     })
     .from(accountMembers)
     .innerJoin(accounts, eq(accounts.id, accountMembers.accountId))
-    .where(and(eq(accountMembers.accountId, accountId), eq(accounts.orgId, orgId)));
+    .innerJoin(orgMembers, eq(orgMembers.id, accountMembers.memberId))
+    .where(
+      and(
+        eq(accountMembers.accountId, accountId),
+        eq(accounts.orgId, orgId),
+        eq(orgMembers.orgId, orgId)
+      )
+    );
 };
 
 // GET / enrichment — fetch member display names for account IDs in this org.
@@ -125,7 +132,11 @@ export const listAccountMemberDetails = async (
     .innerJoin(orgMembers, eq(orgMembers.id, accountMembers.memberId))
     .innerJoin(users, eq(users.id, orgMembers.userId))
     .where(
-      and(eq(accounts.orgId, orgId), inArray(accountMembers.accountId, accountIds))
+      and(
+        eq(accounts.orgId, orgId),
+        eq(orgMembers.orgId, orgId),
+        inArray(accountMembers.accountId, accountIds)
+      )
     );
 };
 
