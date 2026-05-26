@@ -196,7 +196,7 @@ describe('getSettlementBalances service', () => {
       },
     ]);
     const r = await getSettlementBalances('org_test123');
-    expect(listAccountMemberDetails).toHaveBeenCalledWith(['a1']);
+    expect(listAccountMemberDetails).toHaveBeenCalledWith('org_test123', ['a1']);
     expect(r.accounts[0]?.account.owners).toEqual([
       { id: 'm1', displayName: 'Alice', imageUrl: 'https://example.com/a.jpg' },
       { id: 'm2', displayName: 'Bob', imageUrl: null },

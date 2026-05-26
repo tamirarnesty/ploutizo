@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '@ploutizo/db';
-import { updateTransaction } from '../services/transactions';
+import { updateTransaction } from '@/services/transactions';
 import {
   enrichTransactions,
   fetchTransactionById,
   replaceAssignees,
   replaceTags,
   updateTransactionScalarsQuery,
-} from '../lib/queries/transactions';
+} from '@/lib/queries/transactions';
 
 const TXN_ID = '550e8400-e29b-41d4-a716-446655440010';
 const ORG_ID = 'org_test123';
@@ -43,7 +43,7 @@ vi.mock('@ploutizo/db', () => ({
   },
 }));
 
-vi.mock('../lib/queries/transactions', () => ({
+vi.mock('@/lib/queries/transactions', () => ({
   fetchTransactionById: vi.fn(),
   enrichTransactions: vi.fn(),
   updateTransactionScalarsQuery: vi.fn(),
@@ -51,9 +51,17 @@ vi.mock('../lib/queries/transactions', () => ({
   replaceTags: vi.fn(),
 }));
 
+vi.mock('@/lib/queries/scope', () => ({
+  accountExistsInOrg: vi.fn().mockResolvedValue(true),
+  allMembersInOrg: vi.fn().mockResolvedValue(true),
+  allTagsInOrg: vi.fn().mockResolvedValue(true),
+  categoryExistsInOrg: vi.fn().mockResolvedValue(true),
+  transactionExistsInOrg: vi.fn().mockResolvedValue(true),
+}));
+
 const expectTxConsistentReads = () => {
-  expect(fetchTransactionById).toHaveBeenCalledWith(TXN_ID, ORG_ID, mockTx);
-  expect(enrichTransactions).toHaveBeenCalledWith([baseTxRow], mockTx);
+  expect(fetchTransactionById).toHaveBeenCalledWith(ORG_ID, TXN_ID, mockTx);
+  expect(enrichTransactions).toHaveBeenCalledWith(ORG_ID, [baseTxRow], mockTx);
 };
 
 describe('updateTransaction — PATCH split-sum validation', () => {
@@ -84,7 +92,7 @@ describe('updateTransaction — PATCH split-sum validation', () => {
     });
 
     await expect(
-      updateTransaction(TXN_ID, ORG_ID, {
+      updateTransaction(ORG_ID, TXN_ID, {
         ...expensePayload,
         amount: 6000,
       })
@@ -106,7 +114,7 @@ describe('updateTransaction — PATCH split-sum validation', () => {
       tagMap: { [TXN_ID]: [] },
     });
 
-    const result = await updateTransaction(TXN_ID, ORG_ID, {
+    const result = await updateTransaction(ORG_ID, TXN_ID, {
       ...expensePayload,
       amount: 6000,
     });
@@ -119,7 +127,7 @@ describe('updateTransaction — PATCH split-sum validation', () => {
 
   it('validates payload assignees when provided on PATCH without loading persisted rows', async () => {
     await expect(
-      updateTransaction(TXN_ID, ORG_ID, {
+      updateTransaction(ORG_ID, TXN_ID, {
         ...expensePayload,
         amount: 5000,
         assignees: [
@@ -130,7 +138,7 @@ describe('updateTransaction — PATCH split-sum validation', () => {
     ).rejects.toThrow('Assignee amounts must sum to transaction amount');
 
     expect(updateTransactionScalarsQuery).not.toHaveBeenCalled();
-    expect(fetchTransactionById).toHaveBeenCalledWith(TXN_ID, ORG_ID, mockTx);
+    expect(fetchTransactionById).toHaveBeenCalledWith(ORG_ID, TXN_ID, mockTx);
     expect(enrichTransactions).not.toHaveBeenCalled();
   });
 
@@ -140,21 +148,21 @@ describe('updateTransaction — PATCH split-sum validation', () => {
       { memberId: MEMBER_B, amountCents: 2000 },
     ];
 
-    await updateTransaction(TXN_ID, ORG_ID, {
+    await updateTransaction(ORG_ID, TXN_ID, {
       ...expensePayload,
       assignees: newAssignees,
     });
 
     expect(updateTransactionScalarsQuery).toHaveBeenCalled();
     expect(replaceAssignees).toHaveBeenCalledWith(mockTx, TXN_ID, newAssignees);
-    expect(fetchTransactionById).toHaveBeenCalledWith(TXN_ID, ORG_ID, mockTx);
+    expect(fetchTransactionById).toHaveBeenCalledWith(ORG_ID, TXN_ID, mockTx);
     expect(enrichTransactions).not.toHaveBeenCalled();
   });
 
   it('returns null when transaction is not found before validation', async () => {
     vi.mocked(fetchTransactionById).mockResolvedValueOnce(null as never);
 
-    const result = await updateTransaction(TXN_ID, ORG_ID, expensePayload);
+    const result = await updateTransaction(ORG_ID, TXN_ID, expensePayload);
 
     expect(result).toBeNull();
     expect(enrichTransactions).not.toHaveBeenCalled();

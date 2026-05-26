@@ -55,8 +55,8 @@ export const insertAccountMembers = async (
 // PATCH /:id — update account scalar fields; returns updated row or null
 export const updateAccount = async (
   tx: DrizzleTransaction,
-  id: string,
   orgId: string,
+  id: string,
   data: Partial<typeof accounts.$inferInsert>
 ) => {
   const rows = await tx
@@ -84,7 +84,7 @@ export const replaceAccountMembers = async (
 };
 
 // GET /:id/members — verify account belongs to org (for member endpoint scope check)
-export const fetchAccountById = async (id: string, orgId: string) => {
+export const fetchAccountById = async (orgId: string, id: string) => {
   const rows = await db
     .select({ id: accounts.id })
     .from(accounts)
@@ -93,17 +93,32 @@ export const fetchAccountById = async (id: string, orgId: string) => {
   return rows.at(0) ?? null;
 };
 
-// GET /:id/members — list members of an account
-export const listAccountMembers = async (accountId: string) => {
+// GET /:id/members — list members of an account scoped via accounts anchor
+export const listAccountMembers = async (orgId: string, accountId: string) => {
   return db
-    .select()
+    .select({
+      id: accountMembers.id,
+      accountId: accountMembers.accountId,
+      memberId: accountMembers.memberId,
+    })
     .from(accountMembers)
-    .where(eq(accountMembers.accountId, accountId));
+    .innerJoin(accounts, eq(accounts.id, accountMembers.accountId))
+    .innerJoin(orgMembers, eq(orgMembers.id, accountMembers.memberId))
+    .where(
+      and(
+        eq(accountMembers.accountId, accountId),
+        eq(accounts.orgId, orgId),
+        eq(orgMembers.orgId, orgId)
+      )
+    );
 };
 
-// GET / enrichment — fetch member display names for a set of account IDs.
+// GET / enrichment — fetch member display names for account IDs in this org.
 // Guard: inArray([]) generates invalid SQL in some Drizzle/PG versions (Pitfall 4).
-export const listAccountMemberDetails = async (accountIds: string[]) => {
+export const listAccountMemberDetails = async (
+  orgId: string,
+  accountIds: string[]
+) => {
   if (accountIds.length === 0) return [];
   return db
     .select({
@@ -113,13 +128,20 @@ export const listAccountMemberDetails = async (accountIds: string[]) => {
       imageUrl: users.imageUrl,
     })
     .from(accountMembers)
+    .innerJoin(accounts, eq(accounts.id, accountMembers.accountId))
     .innerJoin(orgMembers, eq(orgMembers.id, accountMembers.memberId))
     .innerJoin(users, eq(users.id, orgMembers.userId))
-    .where(inArray(accountMembers.accountId, accountIds));
+    .where(
+      and(
+        eq(accounts.orgId, orgId),
+        eq(orgMembers.orgId, orgId),
+        inArray(accountMembers.accountId, accountIds)
+      )
+    );
 };
 
 // DELETE /:id/archive — soft-archive account; returns updated row or null
-export const archiveAccount = async (id: string, orgId: string) => {
+export const archiveAccount = async (orgId: string, id: string) => {
   const rows = await db
     .update(accounts)
     .set({ archivedAt: new Date(), updatedAt: new Date() })

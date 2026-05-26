@@ -3,8 +3,10 @@ import {
   createTransactionSchema,
   patchTransactionSchema,
 } from '@ploutizo/validators';
-import { appValidator } from '../lib/validator';
-import { DomainError } from '../lib/errors';
+import type { ListQueryParams } from '@/services/transactions';
+import type { AppEnv } from '@/types';
+import { appValidator } from '@/lib/validator';
+import { DomainError, NotFoundError } from '@/lib/errors';
 import {
   checkCounterpartAccountOwnership,
   checkRefundOfOwnership,
@@ -15,9 +17,7 @@ import {
   restoreTransaction,
   updateTransaction,
   validateSplitSum,
-} from '../services/transactions';
-import type { ListQueryParams } from '../services/transactions';
-import type { AppEnv } from '../types';
+} from '@/services/transactions';
 
 const transactionsRouter = new Hono<AppEnv>();
 
@@ -42,8 +42,8 @@ transactionsRouter.post(
     // gate on field presence; counterpartAccountId exists on transfer/settlement/contribution variants
     if ('counterpartAccountId' in data && data.counterpartAccountId) {
       const valid = await checkCounterpartAccountOwnership(
-        data.counterpartAccountId,
-        orgId
+        orgId,
+        data.counterpartAccountId
       );
       if (!valid)
         throw new DomainError(
@@ -55,7 +55,7 @@ transactionsRouter.post(
     // D-13: validate refundOf org ownership if provided — gate on field presence, not type.
     // Use 'in' narrowing because refundOf only exists on the 'refund' variant of the discriminated union.
     if ('refundOf' in data && data.refundOf) {
-      const owned = await checkRefundOfOwnership(data.refundOf, orgId);
+      const owned = await checkRefundOfOwnership(orgId, data.refundOf);
       if (!owned)
         throw new DomainError(
           400,
@@ -127,7 +127,7 @@ transactionsRouter.get('/', async (c) => {
 transactionsRouter.get('/:id', async (c) => {
   const orgId = c.get('orgId');
   const id = c.req.param('id');
-  const row = await getTransaction(id, orgId);
+  const row = await getTransaction(orgId, id);
   if (!row) {
     return c.json(
       { error: { code: 'NOT_FOUND', message: 'Transaction not found.' } },
@@ -142,7 +142,7 @@ transactionsRouter.get('/:id', async (c) => {
 transactionsRouter.patch('/:id/restore', async (c) => {
   const orgId = c.get('orgId');
   const id = c.req.param('id');
-  const result = await restoreTransaction(id, orgId);
+  const result = await restoreTransaction(orgId, id);
   if (!result) {
     return c.json(
       { error: { code: 'NOT_FOUND', message: 'Transaction not found.' } },
@@ -166,8 +166,8 @@ transactionsRouter.patch(
     // gate on field presence; counterpartAccountId exists on transfer/settlement/contribution variants
     if ('counterpartAccountId' in data && data.counterpartAccountId) {
       const valid = await checkCounterpartAccountOwnership(
-        data.counterpartAccountId,
-        orgId
+        orgId,
+        data.counterpartAccountId
       );
       if (!valid)
         throw new DomainError(
@@ -179,7 +179,7 @@ transactionsRouter.patch(
     // T-03.4-02: validate refundOf org ownership if provided — mirrors POST guard
     // Use 'in' narrowing because refundOf only exists on the 'refund' variant of the discriminated union.
     if ('refundOf' in data && data.refundOf) {
-      const owned = await checkRefundOfOwnership(data.refundOf, orgId);
+      const owned = await checkRefundOfOwnership(orgId, data.refundOf);
       if (!owned)
         throw new DomainError(
           400,
@@ -189,8 +189,11 @@ transactionsRouter.patch(
 
     let updated;
     try {
-      updated = await updateTransaction(id, orgId, data);
+      updated = await updateTransaction(orgId, id, data);
     } catch (err) {
+      if (err instanceof NotFoundError || err instanceof DomainError) {
+        throw err;
+      }
       // updateTransaction throws on split sum mismatch (D-11)
       const message = err instanceof Error ? err.message : 'Invalid request';
       return c.json({ error: { code: 'BAD_REQUEST', message } }, 400);
@@ -210,7 +213,7 @@ transactionsRouter.patch(
 transactionsRouter.delete('/:id', async (c) => {
   const orgId = c.get('orgId');
   const id = c.req.param('id');
-  const result = await deleteTransaction(id, orgId);
+  const result = await deleteTransaction(orgId, id);
   if (!result) {
     return c.json(
       { error: { code: 'NOT_FOUND', message: 'Transaction not found.' } },

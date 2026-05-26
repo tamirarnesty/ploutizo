@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Hono } from 'hono';
 import { db } from '@ploutizo/db';
-import { accountsRouter } from '../routes/accounts';
 import type { Mock } from 'vitest';
 import type { MockDbTransactionClient } from './testUtils';
+import { accountsRouter } from '@/routes/accounts';
 
 /** `db.select` after `vi.mock('@ploutizo/db')` — use for `mockReturnValueOnce` chains. */
 type MockedAccountsDbSelect = Mock;
@@ -154,14 +154,16 @@ describe('GET /api/accounts', () => {
         from: vi.fn().mockReturnValue({
           innerJoin: vi.fn().mockReturnValue({
             innerJoin: vi.fn().mockReturnValue({
-              where: vi.fn().mockResolvedValue([
-                {
-                  accountId: 'acct_1',
-                  memberId: 'mem_1',
-                  displayName: 'Alice',
-                  imageUrl: 'https://img.clerk.com/alice.jpg',
-                },
-              ]),
+              innerJoin: vi.fn().mockReturnValue({
+                where: vi.fn().mockResolvedValue([
+                  {
+                    accountId: 'acct_1',
+                    memberId: 'mem_1',
+                    displayName: 'Alice',
+                    imageUrl: 'https://img.clerk.com/alice.jpg',
+                  },
+                ]),
+              }),
             }),
           }),
         }),
@@ -210,7 +212,9 @@ describe('GET /api/accounts', () => {
         from: vi.fn().mockReturnValue({
           innerJoin: vi.fn().mockReturnValue({
             innerJoin: vi.fn().mockReturnValue({
-              where: vi.fn().mockResolvedValue([]),
+              innerJoin: vi.fn().mockReturnValue({
+                where: vi.fn().mockResolvedValue([]),
+              }),
             }),
           }),
         }),
