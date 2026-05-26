@@ -90,13 +90,13 @@ export const CategoriesSettings = () => {
     localCategories.length > 0 ? localCategories : categories;
 
   return (
-    <div className="max-w-2xl space-y-8">
+    <div className="flex max-w-2xl flex-col gap-8">
       <Text as="h1" variant="h3">
         Categories &amp; Tags
       </Text>
 
       {/* Categories section */}
-      <section className="space-y-4">
+      <section className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <Text as="h2" variant="label" className="font-semibold">
             Categories
@@ -111,7 +111,7 @@ export const CategoriesSettings = () => {
         </div>
 
         {catLoading ? (
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             {Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-10" />
             ))}
@@ -128,7 +128,7 @@ export const CategoriesSettings = () => {
               onValueChange={handleReorder}
               getItemValue={(c) => c.id}
               strategy="vertical"
-              className="space-y-2"
+              className="flex flex-col gap-2"
             >
               {displayCategories.map((cat) => (
                 <SortableItem key={cat.id} value={cat.id}>
@@ -204,7 +204,7 @@ export const CategoriesSettings = () => {
       </section>
 
       {/* Tags section */}
-      <section className="space-y-4">
+      <section className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <Text as="h2" variant="label" className="font-semibold">
             Tags

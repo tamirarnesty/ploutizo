@@ -1,7 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { Sortable } from '@ploutizo/ui/components/reui/sortable';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@ploutizo/ui/components/button';
-import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
 import {
   useDeleteMerchantRule,
@@ -9,17 +7,15 @@ import {
   useReorderMerchantRules,
 } from '@/lib/data-access/merchant-rules';
 import type { MerchantRule } from '@/lib/data-access/merchant-rules';
+import { MerchantRulesList } from './MerchantRulesList';
 import { RuleDialog } from './RuleDialog';
-import { MerchantRuleRow } from './MerchantRuleRow';
-import type { ReactNode } from 'react';
 
 export const MerchantRulesSettings = () => {
   const { data: rules = [], isLoading } = useGetMerchantRules();
   const deleteRule = useDeleteMerchantRule();
   const reorderRules = useReorderMerchantRules();
-  const [dialogRule, setDialogRule] = useState<MerchantRule | null | false>(
-    false
-  );
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingRule, setEditingRule] = useState<MerchantRule | null>(null);
   const [localRules, setLocalRules] = useState<MerchantRule[]>([]);
   const initialized = useRef(false);
 
@@ -37,68 +33,47 @@ export const MerchantRulesSettings = () => {
     reorderRules.mutate(newOrder.map((r) => r.id));
   };
 
-  let rulesBody: ReactNode;
-  if (isLoading) {
-    rulesBody = (
-      <div className="space-y-2">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-12" />
-        ))}
-      </div>
-    );
-  } else if (displayRules.length === 0) {
-    rulesBody = (
-      <Text variant="body-sm" className="text-muted-foreground">
-        No merchant rules
-      </Text>
-    );
-  } else {
-    rulesBody = (
-      <>
-        <div className="space-y-1">
-          <Text variant="caption" className="font-medium">
-            Priority order
-          </Text>
-          <Text variant="caption">
-            Rules are applied in order. First match wins. Drag to reorder.
-          </Text>
-        </div>
-        <Sortable
-          value={displayRules}
-          onValueChange={handleReorder}
-          getItemValue={(r) => r.id}
-          strategy="vertical"
-          className="space-y-2"
-        >
-          {displayRules.map((rule) => (
-            <MerchantRuleRow
-              key={rule.id}
-              rule={rule}
-              onEdit={() => setDialogRule(rule)}
-              onDelete={() => deleteRule.mutate(rule.id)}
-            />
-          ))}
-        </Sortable>
-      </>
-    );
-  }
+  const openCreateDialog = useCallback(() => {
+    setEditingRule(null);
+    setDialogOpen(true);
+  }, []);
+
+  const openEditDialog = useCallback((rule: MerchantRule) => {
+    setEditingRule(rule);
+    setDialogOpen(true);
+  }, []);
+
+  const handleDialogOpenChange = useCallback((open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      setEditingRule(null);
+    }
+  }, []);
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="flex max-w-2xl flex-col gap-6">
       <div className="flex items-center justify-between">
         <Text as="h1" variant="h3">
           Merchant Rules
         </Text>
-        <Button type="button" onClick={() => setDialogRule(null)}>
+        <Button type="button" onClick={openCreateDialog}>
           Add rule
         </Button>
       </div>
 
-      {rulesBody}
+      <MerchantRulesList
+        isLoading={isLoading}
+        rules={displayRules}
+        onReorder={handleReorder}
+        onEdit={openEditDialog}
+        onDelete={(id) => deleteRule.mutate(id)}
+      />
 
-      {dialogRule !== false ? (
-        <RuleDialog rule={dialogRule} onClose={() => setDialogRule(false)} />
-      ) : null}
+      <RuleDialog
+        open={dialogOpen}
+        onOpenChange={handleDialogOpenChange}
+        rule={editingRule}
+      />
     </div>
   );
 };
