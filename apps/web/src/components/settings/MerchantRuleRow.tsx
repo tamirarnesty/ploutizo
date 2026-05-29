@@ -1,14 +1,3 @@
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@ploutizo/ui/components/alert-dialog';
 import { GripVertical } from 'lucide-react';
 import {
   SortableItem,
@@ -17,14 +6,8 @@ import {
 import { Button } from '@ploutizo/ui/components/button';
 import { Text } from '@ploutizo/ui/components/text';
 import type { MerchantRule } from '@/lib/data-access/merchant-rules';
-
-const MATCH_TYPE_LABELS: Record<string, string> = {
-  exact: 'Exact',
-  contains: 'Contains',
-  starts_with: 'Starts with',
-  ends_with: 'Ends with',
-  regex: 'Regex',
-};
+import { MATCH_TYPE_LABELS } from './merchant-rule-labels';
+import { SettingsRowAlertDialog } from './SettingsRowAlertDialog';
 
 interface MerchantRuleRowProps {
   rule: MerchantRule;
@@ -65,39 +48,13 @@ export const MerchantRuleRow = ({
       >
         Edit
       </Button>
-      <DeleteRuleButton onDelete={onDelete} />
+      <SettingsRowAlertDialog
+        triggerLabel="Delete"
+        title="Delete rule?"
+        description="This rule will no longer be applied during import."
+        confirmLabel="Delete rule"
+        onConfirm={onDelete}
+      />
     </div>
   </SortableItem>
-);
-
-// Private helper — not exported, only used by MerchantRuleRow above in this file
-const DeleteRuleButton = ({ onDelete }: { onDelete: () => void }) => (
-  <AlertDialog>
-    <AlertDialogTrigger
-      render={
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground hover:text-destructive"
-        />
-      }
-    >
-      Delete
-    </AlertDialogTrigger>
-    <AlertDialogContent>
-      <AlertDialogHeader>
-        <AlertDialogTitle>Delete rule?</AlertDialogTitle>
-        <AlertDialogDescription>
-          This rule will no longer be applied during import.
-        </AlertDialogDescription>
-      </AlertDialogHeader>
-      <AlertDialogFooter>
-        <AlertDialogCancel>Cancel</AlertDialogCancel>
-        <AlertDialogAction variant="destructive" onClick={onDelete}>
-          Delete rule
-        </AlertDialogAction>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
 );

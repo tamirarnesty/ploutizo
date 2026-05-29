@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Button } from '@ploutizo/ui/components/button';
 import { Text } from '@ploutizo/ui/components/text';
 import {
@@ -16,20 +16,8 @@ export const MerchantRulesSettings = () => {
   const reorderRules = useReorderMerchantRules();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<MerchantRule | null>(null);
-  const [localRules, setLocalRules] = useState<MerchantRule[]>([]);
-  const initialized = useRef(false);
-
-  useEffect(() => {
-    if (!initialized.current && !isLoading && rules.length > 0) {
-      initialized.current = true;
-      setLocalRules(rules);
-    }
-  }, [rules, isLoading]);
-
-  const displayRules = localRules.length > 0 ? localRules : rules;
 
   const handleReorder = (newOrder: MerchantRule[]) => {
-    setLocalRules(newOrder);
     reorderRules.mutate(newOrder.map((r) => r.id));
   };
 
@@ -63,7 +51,7 @@ export const MerchantRulesSettings = () => {
 
       <MerchantRulesList
         isLoading={isLoading}
-        rules={displayRules}
+        rules={rules}
         onReorder={handleReorder}
         onEdit={openEditDialog}
         onDelete={(id) => deleteRule.mutate(id)}
