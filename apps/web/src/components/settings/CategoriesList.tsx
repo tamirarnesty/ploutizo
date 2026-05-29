@@ -1,5 +1,5 @@
-import type { Category } from '@/lib/data-access/categories';
 import { Text } from '@ploutizo/ui/components/text';
+import type { Category } from '@/lib/data-access/categories';
 import { CategoryRow } from './CategoryRow';
 import { SortableSettingsList } from './SortableSettingsList';
 
@@ -22,9 +22,7 @@ export const CategoriesList = ({
     isLoading={isLoading}
     items={categories}
     emptyMessage="No categories found."
-    caption={
-      <Text variant="caption">Drag to reorder categories.</Text>
-    }
+    caption={<Text variant="caption">Drag to reorder categories.</Text>}
     onReorder={onReorder}
     renderRow={(cat) => (
       <CategoryRow

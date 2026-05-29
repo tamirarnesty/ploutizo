@@ -1,10 +1,10 @@
-import type { ReactNode } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@ploutizo/ui/components/dialog';
+import type { ReactNode } from 'react';
 
 interface SettingsFormDialogProps {
   open: boolean;

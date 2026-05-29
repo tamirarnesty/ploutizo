@@ -19,9 +19,6 @@ export const CategoryDialog = ({
     title={category !== null ? 'Edit category' : 'Add category'}
     formKey={category?.id ?? 'new'}
   >
-    <CategoryForm
-      category={category}
-      onClose={() => onOpenChange(false)}
-    />
+    <CategoryForm category={category} onClose={() => onOpenChange(false)} />
   </SettingsFormDialog>
 );

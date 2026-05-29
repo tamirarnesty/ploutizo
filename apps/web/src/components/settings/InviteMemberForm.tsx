@@ -73,6 +73,7 @@ export const InviteMemberForm = () => {
           {(field) => (
             <div className="flex flex-1 flex-col gap-1">
               <Input
+                ref={inviteEmailInputRef}
                 id="invite-email"
                 type="email"
                 autoComplete="email"

@@ -73,6 +73,7 @@ export const TagsSettingsSection = () => {
                       <ComboboxChip key={name}>{name}</ComboboxChip>
                     ))}
                     <ComboboxChipsInput
+                      autoComplete="off"
                       placeholder={tagNames.length === 0 ? 'Add a tag…' : ''}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && canCreate) {

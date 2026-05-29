@@ -8,6 +8,9 @@ interface CreateTagBody {
   colour?: string;
 }
 
+const optimisticTagId = (name: string) =>
+  `optimistic-${name.trim().toLowerCase()}`;
+
 export const createTag = async (body: CreateTagBody): Promise<Tag> => {
   const r = await apiFetch<{ data: Tag }>('/api/tags', {
     method: 'POST',
@@ -27,7 +30,7 @@ export const useCreateTag = () => {
         return items;
       }
       const optimistic: Tag = {
-        id: `optimistic-${trimmed}`,
+        id: optimisticTagId(trimmed),
         orgId: '',
         name: trimmed,
         colour: null,
@@ -36,13 +39,11 @@ export const useCreateTag = () => {
       };
       return [...items, optimistic];
     },
-    onSuccess: (created) => {
+    onSuccess: (created, { name }) => {
+      const placeholderId = optimisticTagId(name);
       qc.setQueryData<Tag[]>(['tags'], (items = []) => {
         const withoutPlaceholder = items.filter(
-          (t) =>
-            t.id !== created.id &&
-            !t.id.startsWith('optimistic-') &&
-            t.name.toLowerCase() !== created.name.toLowerCase()
+          (t) => t.id !== created.id && t.id !== placeholderId
         );
         return [...withoutPlaceholder, created];
       });

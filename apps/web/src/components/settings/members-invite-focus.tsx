@@ -1,11 +1,5 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useRef,
-  type ReactNode,
-  type RefObject,
-} from 'react';
+import { createContext, useCallback, useContext, useRef } from 'react';
+import type { ReactNode, RefObject } from 'react';
 
 const MembersInviteFocusContext =
   createContext<RefObject<HTMLInputElement | null> | null>(null);

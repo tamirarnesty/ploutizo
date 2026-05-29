@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react';
 import { Sortable } from '@ploutizo/ui/components/reui/sortable';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
+import type { ReactNode } from 'react';
 
 interface SortableSettingsListProps<T extends { id: string }> {
   isLoading: boolean;

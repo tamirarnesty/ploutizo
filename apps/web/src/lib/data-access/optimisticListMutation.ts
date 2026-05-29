@@ -1,9 +1,5 @@
-import {
-  useMutation,
-  useQueryClient,
-  type QueryKey,
-  type UseMutationOptions,
-} from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { QueryKey, UseMutationOptions } from '@tanstack/react-query';
 
 type OptimisticListContext<TItem> = {
   previous: TItem[] | undefined;
