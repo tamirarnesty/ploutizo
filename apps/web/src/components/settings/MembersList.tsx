@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useUser } from '@clerk/tanstack-react-start';
 import { ItemGroup } from '@ploutizo/ui/components/item';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
+import { Text } from '@ploutizo/ui/components/text';
 import {
   useGetOrgInvitations,
   useGetOrgMembers,
@@ -23,6 +24,7 @@ export const MembersList = () => {
   const members = membersQuery.data ?? [];
   const invitations = invitationsQuery.data ?? [];
   const isLoading = membersQuery.isLoading || invitationsQuery.isLoading;
+  const isError = membersQuery.isError || invitationsQuery.isError;
 
   const handleRemove = useCallback(
     (memberId: string) => removeMutation.mutate(memberId),
@@ -43,6 +45,14 @@ export const MembersList = () => {
           <Skeleton key={i} className="h-12 rounded-md" />
         ))}
       </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Text variant="error">
+        Couldn&apos;t load members. Check your connection and try again.
+      </Text>
     );
   }
 

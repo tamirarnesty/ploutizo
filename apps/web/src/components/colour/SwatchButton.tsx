@@ -2,14 +2,14 @@
 // Preserves swatch-specific accessibility: role="radio", aria-checked, aria-label (D-15/D-16).
 
 interface SwatchButtonProps {
-  colour: string; // Tailwind bg-* class, e.g. "bg-slate-500"
+  bgClass: string; // Complete literal Tailwind bg-* class, e.g. "bg-slate-500"
   name: string; // aria-label value
   checked: boolean; // aria-checked value
   onClick: () => void;
 }
 
 export const SwatchButton = ({
-  colour,
+  bgClass,
   name,
   checked,
   onClick,
@@ -21,7 +21,7 @@ export const SwatchButton = ({
     aria-label={name}
     onClick={onClick}
     className={[
-      `size-6 rounded ${colour} transition-all`,
+      `size-6 shrink-0 rounded ${bgClass} transition-all`,
       checked ? 'ring-2 ring-primary ring-offset-2' : 'hover:scale-110',
     ].join(' ')}
   />

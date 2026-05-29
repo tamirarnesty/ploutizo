@@ -5,6 +5,7 @@ import {
 } from '@ploutizo/ui/components/reui/sortable';
 import { Button } from '@ploutizo/ui/components/button';
 import { Text } from '@ploutizo/ui/components/text';
+import { ColourTokenDot } from '@/components/colour/ColourTokenDot';
 import { renderLucideIcon } from '@/components/categories/LucideIconPicker';
 import type { Category } from '@/lib/data-access/categories';
 import { SettingsRowAlertDialog } from './SettingsRowAlertDialog';
@@ -31,9 +32,7 @@ export const CategoryRow = ({
       <div className="text-muted-foreground">
         {renderLucideIcon(category.icon, 16)}
       </div>
-      {category.colour ? (
-        <div className={`size-3 shrink-0 rounded-full bg-${category.colour}`} />
-      ) : null}
+      <ColourTokenDot token={category.colour} />
       <Text as="span" variant="body-sm" className="min-w-0 flex-1 truncate">
         {category.name}
       </Text>

@@ -98,7 +98,9 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
                 <SelectTrigger className="w-full">
                   <SelectValue>
                     {(v: string) =>
-                      MATCH_TYPE_LABELS[v as MerchantRuleMatchType]
+                      v in MATCH_TYPE_LABELS
+                        ? MATCH_TYPE_LABELS[v as MerchantRuleMatchType]
+                        : v
                     }
                   </SelectValue>
                 </SelectTrigger>

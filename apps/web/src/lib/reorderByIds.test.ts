@@ -35,4 +35,12 @@ describe('reorderByIds', () => {
   it('returns empty array when items is empty', () => {
     expect(reorderByIds([], ['a'])).toEqual([]);
   });
+
+  it('dedupes duplicate ids in orderedIds', () => {
+    expect(reorderByIds(items, ['a', 'a', 'b'])).toEqual([
+      { id: 'a', name: 'A' },
+      { id: 'b', name: 'B' },
+      { id: 'c', name: 'C' },
+    ]);
+  });
 });

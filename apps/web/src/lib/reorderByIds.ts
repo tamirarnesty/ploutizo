@@ -8,6 +8,7 @@ export const reorderByIds = <T extends { id: string }>(
   const seen = new Set<string>();
 
   for (const id of orderedIds) {
+    if (seen.has(id)) continue;
     const item = byId.get(id);
     if (item) {
       reordered.push(item);
