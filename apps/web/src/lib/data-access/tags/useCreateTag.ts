@@ -1,5 +1,6 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/queryClient';
+import { useOptimisticListMutation } from '../optimisticListMutation';
 import type { Tag } from './useGetTags';
 
 interface CreateTagBody {
@@ -17,8 +18,34 @@ export const createTag = async (body: CreateTagBody): Promise<Tag> => {
 
 export const useCreateTag = () => {
   const qc = useQueryClient();
-  return useMutation({
+  return useOptimisticListMutation<Tag, CreateTagBody, Tag>({
+    queryKey: ['tags'],
     mutationFn: createTag,
-    onSettled: () => qc.invalidateQueries({ queryKey: ['tags'] }),
+    updateCache: (items, { name }) => {
+      const trimmed = name.trim();
+      if (items.some((t) => t.name.toLowerCase() === trimmed.toLowerCase())) {
+        return items;
+      }
+      const optimistic: Tag = {
+        id: `optimistic-${trimmed}`,
+        orgId: '',
+        name: trimmed,
+        colour: null,
+        archivedAt: null,
+        createdAt: new Date().toISOString(),
+      };
+      return [...items, optimistic];
+    },
+    onSuccess: (created) => {
+      qc.setQueryData<Tag[]>(['tags'], (items = []) => {
+        const withoutPlaceholder = items.filter(
+          (t) =>
+            t.id !== created.id &&
+            !t.id.startsWith('optimistic-') &&
+            t.name.toLowerCase() !== created.name.toLowerCase()
+        );
+        return [...withoutPlaceholder, created];
+      });
+    },
   });
 };

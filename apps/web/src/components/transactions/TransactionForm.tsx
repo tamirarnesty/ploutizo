@@ -338,21 +338,14 @@ const TransactionFormInner = ({
               if (type === 'settlement')
                 return <SettlementFields form={form} accounts={accounts} />;
 
-              let destinationField = null;
-              if (type === 'transfer') {
-                destinationField = (
-                  <TransferFields form={form} accounts={accounts} />
-                );
-              } else if (type === 'contribution') {
-                destinationField = (
-                  <ContributionFields form={form} accounts={accounts} />
-                );
-              }
-
               return (
                 <div className="grid grid-cols-2 gap-4">
                   {sourceField}
-                  {destinationField}
+                  {type === 'transfer' ? (
+                    <TransferFields form={form} accounts={accounts} />
+                  ) : type === 'contribution' ? (
+                    <ContributionFields form={form} accounts={accounts} />
+                  ) : null}
                 </div>
               );
             }}

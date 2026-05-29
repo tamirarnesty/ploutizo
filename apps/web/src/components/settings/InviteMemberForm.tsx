@@ -6,8 +6,10 @@ import { useAppForm } from '@ploutizo/ui/components/form';
 import { Input } from '@ploutizo/ui/components/input';
 import { Label } from '@ploutizo/ui/components/label';
 import { useInviteMember } from '@/lib/data-access/org';
+import { useMembersInviteEmailInputRef } from './members-invite-focus';
 
 export const InviteMemberForm = () => {
+  const inviteEmailInputRef = useMembersInviteEmailInputRef();
   const inviteMutation = useInviteMember();
 
   const form = useAppForm({

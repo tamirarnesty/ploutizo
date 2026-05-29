@@ -1,8 +1,7 @@
-import { Sortable } from '@ploutizo/ui/components/reui/sortable';
-import { Skeleton } from '@ploutizo/ui/components/skeleton';
-import { Text } from '@ploutizo/ui/components/text';
 import type { Category } from '@/lib/data-access/categories';
+import { Text } from '@ploutizo/ui/components/text';
 import { CategoryRow } from './CategoryRow';
+import { SortableSettingsList } from './SortableSettingsList';
 
 interface CategoriesListProps {
   isLoading: boolean;
@@ -18,44 +17,22 @@ export const CategoriesList = ({
   onReorder,
   onEdit,
   onArchive,
-}: CategoriesListProps) => {
-  if (isLoading) {
-    return (
-      <div className="flex flex-col gap-2">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-10" />
-        ))}
-      </div>
-    );
-  }
-
-  if (categories.length === 0) {
-    return (
-      <Text variant="body-sm" className="text-muted-foreground">
-        No categories found.
-      </Text>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-4">
+}: CategoriesListProps) => (
+  <SortableSettingsList
+    isLoading={isLoading}
+    items={categories}
+    emptyMessage="No categories found."
+    caption={
       <Text variant="caption">Drag to reorder categories.</Text>
-      <Sortable
-        value={categories}
-        onValueChange={onReorder}
-        getItemValue={(c) => c.id}
-        strategy="vertical"
-        className="flex flex-col gap-2"
-      >
-        {categories.map((cat) => (
-          <CategoryRow
-            key={cat.id}
-            category={cat}
-            onEdit={() => onEdit(cat)}
-            onArchive={() => onArchive(cat.id)}
-          />
-        ))}
-      </Sortable>
-    </div>
-  );
-};
+    }
+    onReorder={onReorder}
+    renderRow={(cat) => (
+      <CategoryRow
+        key={cat.id}
+        category={cat}
+        onEdit={() => onEdit(cat)}
+        onArchive={() => onArchive(cat.id)}
+      />
+    )}
+  />
+);

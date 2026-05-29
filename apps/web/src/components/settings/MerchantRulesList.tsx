@@ -1,8 +1,7 @@
-import { Sortable } from '@ploutizo/ui/components/reui/sortable';
-import { Skeleton } from '@ploutizo/ui/components/skeleton';
-import { Text } from '@ploutizo/ui/components/text';
 import type { MerchantRule } from '@/lib/data-access/merchant-rules';
+import { Text } from '@ploutizo/ui/components/text';
 import { MerchantRuleRow } from './MerchantRuleRow';
+import { SortableSettingsList } from './SortableSettingsList';
 
 interface MerchantRulesListProps {
   isLoading: boolean;
@@ -18,27 +17,13 @@ export const MerchantRulesList = ({
   onReorder,
   onEdit,
   onDelete,
-}: MerchantRulesListProps) => {
-  if (isLoading) {
-    return (
-      <div className="flex flex-col gap-2">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-12" />
-        ))}
-      </div>
-    );
-  }
-
-  if (rules.length === 0) {
-    return (
-      <Text variant="body-sm" className="text-muted-foreground">
-        No merchant rules
-      </Text>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-4">
+}: MerchantRulesListProps) => (
+  <SortableSettingsList
+    isLoading={isLoading}
+    items={rules}
+    emptyMessage="No merchant rules"
+    loadingSkeletonClassName="h-12"
+    header={
       <div className="flex flex-col gap-1">
         <Text variant="caption" className="font-medium">
           Priority order
@@ -47,22 +32,16 @@ export const MerchantRulesList = ({
           Rules are applied in order. First match wins. Drag to reorder.
         </Text>
       </div>
-      <Sortable
-        value={rules}
-        onValueChange={onReorder}
-        getItemValue={(r) => r.id}
-        strategy="vertical"
-        className="flex flex-col gap-2"
-      >
-        {rules.map((rule) => (
-          <MerchantRuleRow
-            key={rule.id}
-            rule={rule}
-            onEdit={() => onEdit(rule)}
-            onDelete={() => onDelete(rule.id)}
-          />
-        ))}
-      </Sortable>
-    </div>
-  );
-};
+    }
+    sortableClassName="flex flex-col gap-2"
+    onReorder={onReorder}
+    renderRow={(rule) => (
+      <MerchantRuleRow
+        key={rule.id}
+        rule={rule}
+        onEdit={() => onEdit(rule)}
+        onDelete={() => onDelete(rule.id)}
+      />
+    )}
+  />
+);
