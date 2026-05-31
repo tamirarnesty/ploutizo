@@ -6,9 +6,9 @@ import type { MemberChartSlotClassMap } from '@/components/dashboard/card-balanc
 import {
   MEMBER_CHART_DOT_CLASSES,
   SHARED_CHART_DOT_CLASS,
-  getMemberDisplayFirstName,
 } from '@/components/dashboard/card-balances/cardBalancesMemberDisplay';
-import { formatSignedBalanceCents } from '@/lib/formatCurrency';
+import { SignedBalanceText } from '@/components/dashboard/SignedBalanceText';
+import { getFirstNameFromDisplayName } from '@/lib/memberDisplayName';
 
 export type CardBalancesBreakdownMemberChipsProps = {
   slices: readonly AttributionSlice[];
@@ -21,11 +21,10 @@ export const CardBalancesBreakdownMemberChips = ({
 }: CardBalancesBreakdownMemberChipsProps) => (
   <div className="flex flex-wrap gap-1.5">
     {slices.map((slice) => {
-      const display = formatSignedBalanceCents(slice.balanceCents);
       const label =
         slice.kind === 'shared'
           ? 'Shared'
-          : getMemberDisplayFirstName(slice.name);
+          : getFirstNameFromDisplayName(slice.name);
       const fillClass =
         slice.kind === 'shared'
           ? SHARED_CHART_DOT_CLASS
@@ -53,16 +52,11 @@ export const CardBalancesBreakdownMemberChips = ({
           >
             {label}
           </Text>
-          <Text
-            as="span"
+          <SignedBalanceText
+            cents={slice.balanceCents}
             variant="caption"
-            className={cn(
-              'shrink-0 leading-tight tabular-nums',
-              display.tone === 'credit' ? 'text-success' : 'text-foreground'
-            )}
-          >
-            {display.text}
-          </Text>
+            className="shrink-0 leading-tight font-normal"
+          />
         </Badge>
       );
     })}

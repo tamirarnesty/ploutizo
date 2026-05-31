@@ -59,10 +59,3 @@ export const buildMemberChartVisualSlots = (
   }
   return { dotClasses, segmentClasses };
 };
-
-/** First whitespace-delimited segment of roster name (settlements expose `member.name`). */
-export const getMemberDisplayFirstName = (fullName: string): string => {
-  const trimmed = fullName.trim();
-  if (!trimmed) return '—';
-  return trimmed.split(/\s+/)[0];
-};

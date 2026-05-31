@@ -2,8 +2,8 @@ import {
   Activity,
   CalendarClock,
   ChartPie,
+  Coins,
   CreditCard,
-  DollarSign,
   Users,
 } from 'lucide-react';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
@@ -11,16 +11,15 @@ import { DataGridColumnHeader } from '@ploutizo/ui/components/reui/data-grid/dat
 import type { SettlementAccountRow } from '@ploutizo/types';
 import type { CardBalancesSettleClickHandler } from '@/components/dashboard/card-balances/types';
 import { CardBalancesActionCell } from '@/components/dashboard/card-balances/CardBalancesActionCell';
-import { CardBalancesBalanceCell } from '@/components/dashboard/card-balances/CardBalancesBalanceCell';
 import { CardBalancesBreakdownCell } from '@/components/dashboard/card-balances/CardBalancesBreakdownCell';
-import { CardBalancesCardCell } from '@/components/dashboard/card-balances/CardBalancesCardCell';
-import { CardBalancesDueCell } from '@/components/dashboard/card-balances/CardBalancesDueCell';
-import { CardBalancesOwnerCell } from '@/components/dashboard/card-balances/CardBalancesOwnerCell';
-import { SettlementStatusBadge } from '@/components/dashboard/card-balances/SettlementStatusBadge';
 import {
-  RightAlignedCell,
-  RightAlignedColumnHeader,
-} from '@/components/dashboard/card-balances/RightAlignedColumnHeader';
+  renderCardBalancesBalanceCell,
+  renderCardBalancesCardCell,
+  renderCardBalancesDueCell,
+  renderCardBalancesOwnerCell,
+} from '@/components/dashboard/card-balances/cardBalancesColumnCells';
+import { SettlementStatusBadge } from '@/components/dashboard/card-balances/SettlementStatusBadge';
+import { RightAlignedColumnHeader } from '@/components/dashboard/card-balances/RightAlignedColumnHeader';
 import type { ColumnDef } from '@tanstack/react-table';
 
 const columnHeaderIcon = (Icon: typeof CreditCard) => (
@@ -48,7 +47,7 @@ export const buildCardBalancesColumns = (
       cellClassName: 'min-w-[160px]',
       skeleton: <Skeleton className="h-4 w-28 motion-safe:animate-pulse" />,
     },
-    cell: ({ row }) => <CardBalancesCardCell account={row.original.account} />,
+    cell: ({ row }) => renderCardBalancesCardCell(row.original.account),
   },
   {
     id: 'owner',
@@ -66,9 +65,7 @@ export const buildCardBalancesColumns = (
       cellClassName: 'min-w-[92px]',
       skeleton: <Skeleton className="h-4 w-16 motion-safe:animate-pulse" />,
     },
-    cell: ({ row }) => (
-      <CardBalancesOwnerCell owners={row.original.account.owners} />
-    ),
+    cell: ({ row }) => renderCardBalancesOwnerCell(row.original.account.owners),
   },
   {
     id: 'balance',
@@ -78,7 +75,7 @@ export const buildCardBalancesColumns = (
       <RightAlignedColumnHeader
         column={column}
         title="Balance"
-        icon={columnHeaderIcon(DollarSign)}
+        icon={columnHeaderIcon(Coins)}
       />
     ),
     size: 112,
@@ -89,13 +86,8 @@ export const buildCardBalancesColumns = (
         <Skeleton className="ms-auto h-4 w-16 motion-safe:animate-pulse" />
       ),
     },
-    cell: ({ row }) => (
-      <RightAlignedCell>
-        <CardBalancesBalanceCell
-          totalBalanceCents={row.original.totalBalanceCents}
-        />
-      </RightAlignedCell>
-    ),
+    cell: ({ row }) =>
+      renderCardBalancesBalanceCell(row.original.totalBalanceCents),
   },
   {
     id: 'due',
@@ -124,11 +116,7 @@ export const buildCardBalancesColumns = (
         <Skeleton className="ms-auto h-4 w-12 motion-safe:animate-pulse" />
       ),
     },
-    cell: ({ row }) => (
-      <RightAlignedCell>
-        <CardBalancesDueCell dueDate={row.original.dueDate} />
-      </RightAlignedCell>
-    ),
+    cell: ({ row }) => renderCardBalancesDueCell(row.original.dueDate),
   },
   {
     id: 'status',

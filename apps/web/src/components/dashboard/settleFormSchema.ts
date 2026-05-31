@@ -28,3 +28,4 @@ export const settleFormSchema = z.object({
 });
 
 export type SettleFormValues = z.infer<typeof settleFormSchema>;
+export type PayToward = SettleFormValues['payToward'];

@@ -1,12 +1,9 @@
 import type { SettlementAccountRow } from '@ploutizo/types';
-
-export type PayTowardTarget =
-  | { kind: 'member'; memberId: string }
-  | { kind: 'shared' };
+import type { PayToward } from '@/components/dashboard/settleFormSchema';
 
 export type CardBalancesSettleClickHandler = (
   account: SettlementAccountRow,
-  target: PayTowardTarget
+  payToward: PayToward
 ) => void;
 
 export interface CardBalancesGridProps {

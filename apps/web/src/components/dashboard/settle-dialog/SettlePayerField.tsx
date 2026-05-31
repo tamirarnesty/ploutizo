@@ -7,12 +7,13 @@ import {
 import type { SettlementAccountRow } from '@ploutizo/types';
 import type { SettleFieldErrors } from '@/components/dashboard/settle-dialog/settleDialogFieldTypes';
 import { SettleMemberRadioList } from '@/components/dashboard/settle-dialog/SettleMemberRadioList';
+import type { PayToward } from '@/components/dashboard/settleFormSchema';
 
 export type SettlePayerFieldProps = {
   account: SettlementAccountRow;
-  value: string;
+  value: PayToward;
   errors: SettleFieldErrors;
-  onPayTowardChange: (payToward: string) => void;
+  onPayTowardChange: (payToward: PayToward) => void;
 };
 
 export const SettlePayerField = ({

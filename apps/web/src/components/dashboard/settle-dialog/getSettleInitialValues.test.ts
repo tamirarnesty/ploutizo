@@ -64,29 +64,36 @@ const sourceAccounts = [
 ];
 
 describe('getSettleInitialValues', () => {
-  it('uses explicit member pay-toward target and prefill from personal balance', () => {
-    const v = getSettleInitialValues(fixture(), sourceAccounts, '2026-01-05', {
-      kind: 'member',
-      memberId: 'alice',
-    });
+  it('uses explicit member pay-toward and prefill from personal balance', () => {
+    const v = getSettleInitialValues(
+      fixture(),
+      sourceAccounts,
+      '2026-01-05',
+      'alice'
+    );
     expect(v.payToward).toBe('alice');
     expect(v.amountDollars).toBe(0);
     expect(v.sourceAccountId).toBe('bank-alice');
   });
 
   it('prefills positive personal balance for selected member', () => {
-    const v = getSettleInitialValues(fixture(), sourceAccounts, '2026-01-05', {
-      kind: 'member',
-      memberId: 'betty',
-    });
+    const v = getSettleInitialValues(
+      fixture(),
+      sourceAccounts,
+      '2026-01-05',
+      'betty'
+    );
     expect(v.payToward).toBe('betty');
     expect(v.amountDollars).toBe(5);
   });
 
-  it('shared target prefill uses shared balance and joint paid-from default', () => {
-    const v = getSettleInitialValues(fixture(), sourceAccounts, '2026-01-05', {
-      kind: 'shared',
-    });
+  it('shared pay-toward prefill uses shared balance and joint paid-from default', () => {
+    const v = getSettleInitialValues(
+      fixture(),
+      sourceAccounts,
+      '2026-01-05',
+      'shared'
+    );
     expect(v.payToward).toBe('shared');
     expect(v.amountDollars).toBe(2);
     expect(v.sourceAccountId).toBe('bank-joint');

@@ -2,21 +2,16 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@ploutizo/ui/components/dropdown-menu';
 import { Button } from '@ploutizo/ui/components/button';
-import { Text } from '@ploutizo/ui/components/text';
 import { cn } from '@ploutizo/ui/lib/utils';
 import { WalletCards } from 'lucide-react';
 import type { SettlementAccountRow } from '@ploutizo/types';
-import type {
-  CardBalancesSettleClickHandler,
-  PayTowardTarget,
-} from '@/components/dashboard/card-balances/types';
-import { formatSignedBalanceCents } from '@/lib/formatCurrency';
+import type { CardBalancesSettleClickHandler } from '@/components/dashboard/card-balances/types';
+import { SettlePayTowardMenuItem } from '@/components/dashboard/card-balances/SettlePayTowardMenuItem';
 
 type CardBalancesActionCellProps = {
   account: SettlementAccountRow;
@@ -31,10 +26,6 @@ export const CardBalancesActionCell = ({
   onSettleClick,
 }: CardBalancesActionCellProps) => {
   const menuMembers = sortMembersForMenu(account);
-
-  const handleSelect = (target: PayTowardTarget) => {
-    onSettleClick(account, target);
-  };
 
   return (
     <div
@@ -66,67 +57,19 @@ export const CardBalancesActionCell = ({
               Pay toward
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {menuMembers.map((m) => {
-              const display = formatSignedBalanceCents(m.personalBalanceCents);
-              return (
-                <DropdownMenuItem
-                  key={m.member.id}
-                  className="flex w-full min-w-0 cursor-pointer items-center gap-3"
-                  onClick={() =>
-                    handleSelect({ kind: 'member', memberId: m.member.id })
-                  }
-                >
-                  <Text
-                    variant="body-sm"
-                    className="min-w-0 flex-1 truncate leading-tight font-medium"
-                  >
-                    {m.member.name}
-                  </Text>
-                  <Text
-                    as="span"
-                    variant="body-sm"
-                    className={cn(
-                      'shrink-0 whitespace-nowrap tabular-nums',
-                      display.tone === 'credit' && 'text-success',
-                      display.tone === 'zero' && 'text-muted-foreground',
-                      display.tone === 'owed' && 'text-foreground'
-                    )}
-                  >
-                    {display.text}
-                  </Text>
-                </DropdownMenuItem>
-              );
-            })}
-            {(() => {
-              const display = formatSignedBalanceCents(
-                account.sharedBalanceCents
-              );
-              return (
-                <DropdownMenuItem
-                  className="flex w-full min-w-0 cursor-pointer items-center gap-3"
-                  onClick={() => handleSelect({ kind: 'shared' })}
-                >
-                  <Text
-                    variant="body-sm"
-                    className="min-w-0 flex-1 truncate leading-tight font-medium"
-                  >
-                    Shared
-                  </Text>
-                  <Text
-                    as="span"
-                    variant="body-sm"
-                    className={cn(
-                      'shrink-0 whitespace-nowrap tabular-nums',
-                      display.tone === 'credit' && 'text-success',
-                      display.tone === 'zero' && 'text-muted-foreground',
-                      display.tone === 'owed' && 'text-foreground'
-                    )}
-                  >
-                    {display.text}
-                  </Text>
-                </DropdownMenuItem>
-              );
-            })()}
+            {menuMembers.map((m) => (
+              <SettlePayTowardMenuItem
+                key={m.member.id}
+                label={m.member.name}
+                balanceCents={m.personalBalanceCents}
+                onSelect={() => onSettleClick(account, m.member.id)}
+              />
+            ))}
+            <SettlePayTowardMenuItem
+              label="Shared"
+              balanceCents={account.sharedBalanceCents}
+              onSelect={() => onSettleClick(account, 'shared')}
+            />
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>

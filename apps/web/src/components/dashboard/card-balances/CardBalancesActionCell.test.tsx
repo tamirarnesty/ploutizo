@@ -73,10 +73,7 @@ describe('CardBalancesActionCell', () => {
     await user.click(ada);
 
     expect(onSettleClick).toHaveBeenCalledTimes(1);
-    expect(onSettleClick.mock.calls[0]?.[1]).toEqual({
-      kind: 'member',
-      memberId: 'mAda',
-    });
+    expect(onSettleClick.mock.calls[0]?.[1]).toBe('mAda');
     await waitFor(() =>
       expect(screen.queryByRole('menu')).not.toBeInTheDocument()
     );
@@ -108,6 +105,6 @@ describe('CardBalancesActionCell', () => {
 
     await user.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}{Enter}');
 
-    expect(onSettleClick.mock.calls[0]?.[1]).toEqual({ kind: 'shared' });
+    expect(onSettleClick.mock.calls[0]?.[1]).toBe('shared');
   });
 });

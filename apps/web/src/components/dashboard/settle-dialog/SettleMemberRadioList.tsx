@@ -8,17 +8,16 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from '@ploutizo/ui/components/radio-group';
-import { Text } from '@ploutizo/ui/components/text';
-import { cn } from '@ploutizo/ui/lib/utils';
 import { Users } from 'lucide-react';
 import type { SettlementAccountRow } from '@ploutizo/types';
+import { SignedBalanceText } from '@/components/dashboard/SignedBalanceText';
+import type { PayToward } from '@/components/dashboard/settleFormSchema';
 import { UserAvatar } from '@/components/members/UserAvatar';
-import { formatSignedBalanceCents } from '@/lib/formatCurrency';
 
 type SettleMemberRadioListProps = {
   account: SettlementAccountRow;
-  value: string;
-  onValueChange: (payToward: string) => void;
+  value: PayToward;
+  onValueChange: (payToward: PayToward) => void;
 };
 
 export const SettleMemberRadioList = ({
@@ -29,12 +28,16 @@ export const SettleMemberRadioList = ({
   const sortedMembers = [...account.members].sort((a, b) =>
     a.member.id.localeCompare(b.member.id)
   );
-  const sharedDisplay = formatSignedBalanceCents(account.sharedBalanceCents);
 
   return (
-    <RadioGroup value={value} onValueChange={onValueChange} className="gap-2">
+    <RadioGroup
+      value={value}
+      onValueChange={(next) => {
+        if (next !== null) onValueChange(next as PayToward);
+      }}
+      className="gap-2"
+    >
       {sortedMembers.map((m) => {
-        const display = formatSignedBalanceCents(m.personalBalanceCents);
         const id = `settle-member-${m.member.id}`;
 
         return (
@@ -52,16 +55,10 @@ export const SettleMemberRadioList = ({
                   </FieldTitle>
                 </div>
               </FieldContent>
-              <Text
-                as="span"
-                variant="body"
-                className={cn(
-                  'shrink-0 font-semibold tabular-nums',
-                  display.tone === 'credit' ? 'text-success' : 'text-foreground'
-                )}
-              >
-                {display.text}
-              </Text>
+              <SignedBalanceText
+                cents={m.personalBalanceCents}
+                className="shrink-0 font-semibold"
+              />
               <RadioGroupItem
                 value={m.member.id}
                 id={id}
@@ -84,18 +81,10 @@ export const SettleMemberRadioList = ({
               <FieldTitle className="min-w-0 truncate">Shared</FieldTitle>
             </div>
           </FieldContent>
-          <Text
-            as="span"
-            variant="body"
-            className={cn(
-              'shrink-0 font-semibold tabular-nums',
-              sharedDisplay.tone === 'credit'
-                ? 'text-success'
-                : 'text-foreground'
-            )}
-          >
-            {sharedDisplay.text}
-          </Text>
+          <SignedBalanceText
+            cents={account.sharedBalanceCents}
+            className="shrink-0 font-semibold"
+          />
           <RadioGroupItem
             value="shared"
             id="settle-shared"

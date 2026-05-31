@@ -1,4 +1,4 @@
-import { MoreHorizontal, StickyNote, Tag } from 'lucide-react';
+import { MoreHorizontal, NotepadText, Tag } from 'lucide-react';
 import { DataGridColumnHeader } from '@ploutizo/ui/components/reui/data-grid/data-grid-column-header';
 import { Badge } from '@ploutizo/ui/components/badge';
 import { Button } from '@ploutizo/ui/components/button';
@@ -193,7 +193,7 @@ export const buildColumns = (
                     }
                     aria-label="Has note"
                   >
-                    <StickyNote className="size-3.5" aria-hidden="true" />
+                    <NotepadText className="size-3.5" aria-hidden="true" />
                   </TooltipTrigger>
                   <TooltipContent>{notePreview}</TooltipContent>
                 </Tooltip>

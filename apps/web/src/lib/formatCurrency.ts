@@ -23,3 +23,9 @@ export const formatSignedBalanceCents = (
   }
   return { text: formatCurrency(cents), tone: 'owed' };
 };
+
+export const signedBalanceToneClassName = (tone: SignedBalanceTone): string => {
+  if (tone === 'credit') return 'text-success';
+  if (tone === 'zero') return 'text-muted-foreground';
+  return 'text-foreground';
+};

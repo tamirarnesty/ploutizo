@@ -6,21 +6,27 @@ import {
 } from '@ploutizo/ui/components/card';
 import { Separator } from '@ploutizo/ui/components/separator';
 import { Text } from '@ploutizo/ui/components/text';
-import { useGetSettlements } from '@/lib/data-access/settlements';
-import { useGetOrgMembers } from '@/lib/data-access/org';
+import type { OrgMember, SettlementAccountRow } from '@ploutizo/types';
 import { SettlementPaneHeader } from '@/components/dashboard/SettlementPaneHeader';
-import { SettlementMemberListRow } from '@/components/dashboard/SettlementMemberListRow';
+import { SettlementMemberListRowBalance } from '@/components/dashboard/SettlementMemberListRowBalance';
+import { SettlementMemberListRowEmpty } from '@/components/dashboard/SettlementMemberListRowEmpty';
 import { SettlementMemberRowSkeleton } from '@/components/dashboard/SettlementMemberRowSkeleton';
 import { SettlementSharedRow } from '@/components/dashboard/SettlementSharedRow';
 import { useCreditCardMemberRollup } from '@/components/dashboard/useCreditCardMemberRollup';
 
-// Canvas: settlement summary — hero total, Personal members, shared footer.
-export const SettlementSummaryPane = () => {
-  const { data, isLoading } = useGetSettlements();
-  const { data: members = [] } = useGetOrgMembers();
+type SettlementSummaryPaneProps = {
+  accounts: SettlementAccountRow[] | undefined;
+  isLoading: boolean;
+  members: OrgMember[];
+};
 
+export const SettlementSummaryPane = ({
+  accounts,
+  isLoading,
+  members,
+}: SettlementSummaryPaneProps) => {
   const { hasHouseholdCreditCards, memberRollup, householdSummary } =
-    useCreditCardMemberRollup(data?.accounts);
+    useCreditCardMemberRollup(accounts);
 
   return (
     <Card className="w-full gap-0 py-0">
@@ -66,12 +72,14 @@ export const SettlementSummaryPane = () => {
                 cents: 0,
                 cardCount: 0,
               };
+              if (!hasHouseholdCreditCards) {
+                return <SettlementMemberListRowEmpty key={m.id} member={m} />;
+              }
               return (
-                <SettlementMemberListRow
+                <SettlementMemberListRowBalance
                   key={m.id}
                   member={m}
                   rollup={rollup}
-                  hasHouseholdCreditCards={hasHouseholdCreditCards}
                 />
               );
             })

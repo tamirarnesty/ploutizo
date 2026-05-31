@@ -1,8 +1,6 @@
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
-import { Text } from '@ploutizo/ui/components/text';
-import { cn } from '@ploutizo/ui/lib/utils';
-import type { HouseholdSettlementSummary } from '@/components/dashboard/useCreditCardMemberRollup';
-import { formatSignedBalanceCents } from '@/lib/formatCurrency';
+import { SignedBalanceText } from '@/components/dashboard/SignedBalanceText';
+import type { HouseholdSettlementSummary } from '@/lib/settlements';
 
 type SettlementPaneHeaderProps = {
   isLoading: boolean;
@@ -23,21 +21,11 @@ export const SettlementPaneHeader = ({
     );
   }
 
-  const cardTotalDisplay = formatSignedBalanceCents(
-    householdSummary.cardTotalCents
-  );
-
   return (
-    <Text
+    <SignedBalanceText
       as="p"
-      className={cn(
-        'shrink-0 text-right text-base leading-none font-bold whitespace-nowrap tabular-nums',
-        cardTotalDisplay.tone === 'credit' && 'text-success',
-        cardTotalDisplay.tone === 'zero' && 'text-muted-foreground',
-        cardTotalDisplay.tone === 'owed' && 'text-foreground'
-      )}
-    >
-      {cardTotalDisplay.text}
-    </Text>
+      cents={householdSummary.cardTotalCents}
+      className="shrink-0 text-right text-base leading-none font-bold"
+    />
   );
 };
