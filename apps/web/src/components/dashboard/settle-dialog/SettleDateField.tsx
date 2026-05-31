@@ -16,7 +16,7 @@ export const SettleDateField = ({
   onBlur,
 }: SettleDateFieldProps) => (
   <Field data-invalid={errors.length > 0 || undefined}>
-    <FieldLabel>Date</FieldLabel>
+    <FieldLabel htmlFor="settle-date">Date</FieldLabel>
     <DatePicker
       id="settle-date"
       value={value}

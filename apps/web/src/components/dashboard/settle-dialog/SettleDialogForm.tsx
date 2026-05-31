@@ -60,7 +60,7 @@ export const SettleDialogForm = ({
         }
       },
     },
-    onSubmit: ({ value }) => {
+    onSubmit: async ({ value }) => {
       const amountCents = Math.round(value.amountDollars * 100);
       const trimmedNotes = value.notes?.trim() ?? '';
       const assignees =
@@ -68,24 +68,22 @@ export const SettleDialogForm = ({
           ? account.sharedParticipantIds.map((memberId) => ({ memberId }))
           : [{ memberId: value.payToward }];
 
-      createSettlement.mutate(
-        {
+      try {
+        await createSettlement.mutateAsync({
           assignees,
           accountId: account.account.id,
           counterpartAccountId: value.sourceAccountId,
           amountCents,
           date: value.date,
           ...(trimmedNotes.length > 0 ? { notes: trimmedNotes } : {}),
-        },
-        {
-          onSuccess: onClose,
-          onError: () =>
-            form.setErrorMap({
-              onSubmit:
-                'Could not record settlement. Check your connection and try again.',
-            }),
-        }
-      );
+        });
+        onClose();
+      } catch {
+        form.setErrorMap({
+          onSubmit:
+            'Could not record settlement. Check your connection and try again.',
+        });
+      }
     },
   });
 

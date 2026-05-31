@@ -11,6 +11,5 @@ export const getFirstNameFromDisplayName = (displayName: string): string => {
 export const getOrgMemberFirstName = (member: OrgMember): string => {
   const firstName = member.firstName?.trim();
   if (firstName) return firstName;
-  const [fromDisplay] = member.displayName.trim().split(/\s+/);
-  return fromDisplay || member.displayName;
+  return getFirstNameFromDisplayName(member.displayName);
 };

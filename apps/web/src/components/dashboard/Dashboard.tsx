@@ -14,7 +14,8 @@ import { SettlementSummaryPane } from './SettlementSummaryPane';
 export const Dashboard = () => {
   const { data: settlements, isLoading: settlementsLoading } =
     useGetSettlements();
-  const { data: members = [] } = useGetOrgMembers();
+  const { data: members = [], isLoading: membersLoading } = useGetOrgMembers();
+  const summaryPaneLoading = settlementsLoading || membersLoading;
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [activeAccount, setActiveAccount] =
@@ -65,7 +66,7 @@ export const Dashboard = () => {
         <div className="min-w-0 md:col-span-1">
           <SettlementSummaryPane
             accounts={settlements?.accounts}
-            isLoading={settlementsLoading}
+            isLoading={summaryPaneLoading}
             members={members}
           />
         </div>

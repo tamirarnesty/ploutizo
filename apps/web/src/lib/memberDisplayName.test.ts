@@ -24,5 +24,15 @@ describe('memberDisplayName', () => {
       } as OrgMember;
       expect(getOrgMemberFirstName(member)).toBe('Tam');
     });
+
+    it('falls back to displayName token or em dash when displayName is whitespace', () => {
+      const member = {
+        id: '1',
+        firstName: null,
+        displayName: '   ',
+        imageUrl: null,
+      } as OrgMember;
+      expect(getOrgMemberFirstName(member)).toBe('—');
+    });
   });
 });
