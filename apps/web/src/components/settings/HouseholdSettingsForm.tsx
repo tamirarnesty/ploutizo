@@ -1,9 +1,9 @@
 import { HouseholdSettingsFormSchema } from '@ploutizo/validators';
 import { useAppForm } from '@ploutizo/ui/components/form';
-import { Button } from '@ploutizo/ui/components/button';
 import { FieldError } from '@ploutizo/ui/components/field';
 import { Input } from '@ploutizo/ui/components/input';
-import { Spinner } from '@ploutizo/ui/components/spinner';
+import { LoadingButton } from '@ploutizo/ui/components/loading-button';
+import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
 import type { HouseholdSettingsForm as HouseholdSettingsFormType } from '@ploutizo/validators';
 import {
@@ -11,16 +11,19 @@ import {
   useUpdateHouseholdSettings,
 } from '@/lib/data-access/household';
 
-export const HouseholdSettingsForm = () => {
-  const { data } = useGetHouseholdSettings();
+interface HouseholdSettingsFormFieldsProps {
+  settlementThreshold: number | null;
+}
+
+const HouseholdSettingsFormFields = ({
+  settlementThreshold,
+}: HouseholdSettingsFormFieldsProps) => {
   const mutation = useUpdateHouseholdSettings();
 
   const form = useAppForm({
     defaultValues: {
       thresholdDollars:
-        data?.settlementThreshold != null
-          ? String(data.settlementThreshold / 100)
-          : '',
+        settlementThreshold != null ? String(settlementThreshold / 100) : '',
     } satisfies HouseholdSettingsFormType,
     validators: {
       onSubmit: ({ value }: { value: HouseholdSettingsFormType }) => {
@@ -94,10 +97,9 @@ export const HouseholdSettingsForm = () => {
         </form.AppField>
         <form.Subscribe selector={(s) => s.isSubmitting}>
           {(isSubmitting) => (
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? <Spinner className="mr-1" /> : null}
+            <LoadingButton type="submit" loading={isSubmitting}>
               Save changes
-            </Button>
+            </LoadingButton>
           )}
         </form.Subscribe>
       </div>
@@ -111,5 +113,20 @@ export const HouseholdSettingsForm = () => {
         }
       </form.Subscribe>
     </form>
+  );
+};
+
+export const HouseholdSettingsForm = () => {
+  const { data, isLoading } = useGetHouseholdSettings();
+
+  if (isLoading) {
+    return <Skeleton className="h-9 w-48" />;
+  }
+
+  return (
+    <HouseholdSettingsFormFields
+      key={String(data?.settlementThreshold ?? 'unset')}
+      settlementThreshold={data?.settlementThreshold ?? null}
+    />
   );
 };

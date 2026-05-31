@@ -1,31 +1,24 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@ploutizo/ui/components/dialog';
 import type { Category } from '@/lib/data-access/categories';
 import { CategoryForm } from './CategoryForm';
+import { SettingsFormDialog } from './SettingsFormDialog';
 
 interface CategoryDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   category: Category | null;
-  onClose: () => void;
 }
 
-export const CategoryDialog = ({ category, onClose }: CategoryDialogProps) => (
-  <Dialog
-    open={true}
-    onOpenChange={(open) => {
-      if (!open) onClose();
-    }}
+export const CategoryDialog = ({
+  open,
+  onOpenChange,
+  category,
+}: CategoryDialogProps) => (
+  <SettingsFormDialog
+    open={open}
+    onOpenChange={onOpenChange}
+    title={category !== null ? 'Edit category' : 'Add category'}
+    formKey={category?.id ?? 'new'}
   >
-    <DialogContent className="w-[calc(100%-2rem)] max-w-md">
-      <DialogHeader>
-        <DialogTitle>
-          {category !== null ? 'Edit category' : 'Add category'}
-        </DialogTitle>
-      </DialogHeader>
-      <CategoryForm category={category} onClose={onClose} />
-    </DialogContent>
-  </Dialog>
+    <CategoryForm category={category} onClose={() => onOpenChange(false)} />
+  </SettingsFormDialog>
 );

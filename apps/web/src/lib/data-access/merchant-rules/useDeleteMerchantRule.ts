@@ -1,15 +1,14 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/queryClient';
+import { useOptimisticListMutation } from '../optimisticListMutation';
+import type { MerchantRule } from './useGetMerchantRules';
 
 export const deleteMerchantRule = async (id: string): Promise<undefined> => {
   return apiFetch<undefined>(`/api/merchant-rules/${id}`, { method: 'DELETE' });
 };
 
-export const useDeleteMerchantRule = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    // Use apiFetch (not raw fetch) so Clerk bearer token is injected automatically
+export const useDeleteMerchantRule = () =>
+  useOptimisticListMutation<MerchantRule, string, undefined>({
+    queryKey: ['merchant-rules'],
     mutationFn: deleteMerchantRule,
-    onSettled: () => qc.invalidateQueries({ queryKey: ['merchant-rules'] }),
+    updateCache: (items, id) => items.filter((r) => r.id !== id),
   });
-};

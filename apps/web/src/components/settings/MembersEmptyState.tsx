@@ -8,14 +8,11 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@ploutizo/ui/components/empty';
+import { useFocusMembersInviteEmail } from './members-invite-focus';
 
-interface MembersEmptyStateProps {
-  onInviteClick: () => void;
-}
+export const MembersEmptyState = () => {
+  const focusInviteEmail = useFocusMembersInviteEmail();
 
-export const MembersEmptyState = ({
-  onInviteClick,
-}: MembersEmptyStateProps) => {
   return (
     <Empty>
       <EmptyHeader>
@@ -28,7 +25,7 @@ export const MembersEmptyState = ({
         </EmptyDescription>
       </EmptyHeader>
       <EmptyContent>
-        <Button variant="outline" size="sm" onClick={onInviteClick}>
+        <Button variant="outline" size="sm" onClick={focusInviteEmail}>
           Send an invite
         </Button>
       </EmptyContent>

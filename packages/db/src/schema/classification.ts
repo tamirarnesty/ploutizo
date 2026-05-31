@@ -38,7 +38,7 @@ export const categories = pgTable(
     name: text('name').notNull(),
     /** Lucide icon name (e.g. "ShoppingCart") or emoji character. */
     icon: text('icon'),
-    /** Hex colour string (e.g. "#22c55e") for charts and progress bars. */
+    /** Tailwind palette token id (e.g. "green-500") for category swatches and badges. */
     colour: text('colour'),
     sortOrder: integer('sort_order').notNull().default(0),
     archivedAt: timestamp('archived_at', { withTimezone: true }),

@@ -17,13 +17,12 @@ import {
 } from '@ploutizo/ui/components/tooltip';
 import { cn } from '@ploutizo/ui/lib/utils';
 import { ICON_MAP } from '@/components/categories/LucideIconPicker';
+import { getColourBadgeClassFromRaw } from '@/components/colour/colour-token-classes';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
 import type { TransactionRow } from '@/lib/data-access/transactions';
 import type { LucideIcon } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
-
-export { getInitials } from '@/lib/getInitials';
 
 // Resolves a Lucide icon by name — defined outside useMemo to be stable
 export const DynamicLucideIcon = ({
@@ -241,16 +240,10 @@ export const buildColumns = (
         return showCategory ? (
           <Badge
             variant="outline"
-            className="gap-1 px-1.5 py-0.5 text-xs font-normal"
-            style={
-              categoryColour
-                ? {
-                    backgroundColor: `oklch(from var(--color-${categoryColour}) l c h / 0.12)`,
-                    color: `var(--color-${categoryColour})`,
-                    borderColor: `oklch(from var(--color-${categoryColour}) l c h / 0.25)`,
-                  }
-                : undefined
-            }
+            className={cn(
+              'gap-1 px-1.5 py-0.5 text-xs font-normal',
+              getColourBadgeClassFromRaw(categoryColour)
+            )}
           >
             <DynamicLucideIcon name={categoryIcon} size={12} />
             <span className="min-w-0 truncate">{categoryName}</span>

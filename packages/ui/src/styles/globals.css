@@ -23,6 +23,8 @@
 @source '../../../components/**/*.{ts,tsx}';
 @source '../**/*.{ts,tsx}';
 
+/* Category preset palette (D-18): literals live in apps/web/src/components/colour/colour-token-classes.ts */
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { format, parseISO } from 'date-fns';
-import { CalendarIcon, Lock, SquarePen, Trash2 } from 'lucide-react';
+import { Lock, SquarePen, Trash2 } from 'lucide-react';
 import { toast } from '@ploutizo/ui/components/sonner';
 import { Button } from '@ploutizo/ui/components/button';
-import { Calendar } from '@ploutizo/ui/components/calendar';
+import { LoadingButton } from '@ploutizo/ui/components/loading-button';
+import { DatePicker } from '@ploutizo/ui/components/date-picker';
 import { Input } from '@ploutizo/ui/components/input';
 import {
   InputGroup,
@@ -12,11 +12,6 @@ import {
   InputGroupInput,
   InputGroupText,
 } from '@ploutizo/ui/components/input-group';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@ploutizo/ui/components/popover';
 import { Spinner } from '@ploutizo/ui/components/spinner';
 import { Textarea } from '@ploutizo/ui/components/textarea';
 import { cn } from '@ploutizo/ui/lib/utils';
@@ -39,6 +34,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
+import { formatSettlementDescription } from '@ploutizo/utils';
 import type { Account, OrgMember } from '@ploutizo/types';
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import { useGetCategories } from '@/lib/data-access/categories';
@@ -222,7 +218,6 @@ const TransactionFormInner = ({
   const updateMutation = useUpdateTransaction(transaction?.id ?? '');
   const deleteMutation = useDeleteTransaction();
 
-  const [dateOpen, setDateOpen] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
   const [isDescriptionUnlocked, setIsDescriptionUnlocked] = useState(false);
   const [refundOriginalDesc, setRefundOriginalDesc] = useState('');
@@ -403,48 +398,11 @@ const TransactionFormInner = ({
                   data-invalid={field.state.meta.errors.length > 0 || undefined}
                 >
                   <FieldLabel>Date</FieldLabel>
-                  {(() => {
-                    const selectedDate = field.state.value
-                      ? parseISO(field.state.value)
-                      : undefined;
-                    return (
-                      <Popover open={dateOpen} onOpenChange={setDateOpen}>
-                        <PopoverTrigger
-                          render={
-                            <Button
-                              variant="outline"
-                              type="button"
-                              className={cn(
-                                'w-full justify-start text-left font-normal',
-                                !field.state.value && 'text-muted-foreground'
-                              )}
-                            />
-                          }
-                        >
-                          <CalendarIcon
-                            className="mr-2 size-4"
-                            aria-hidden="true"
-                          />
-                          {field.state.value
-                            ? format(selectedDate!, 'MMM d, yyyy')
-                            : 'Pick a date'}
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={selectedDate}
-                            onSelect={(date) => {
-                              field.handleChange(
-                                date ? format(date, 'yyyy-MM-dd') : ''
-                              );
-                              setDateOpen(false);
-                            }}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    );
-                  })()}
+                  <DatePicker
+                    id="tx-date"
+                    value={field.state.value}
+                    onChange={field.handleChange}
+                  />
                   {field.state.meta.errors.length > 0 ? (
                     <FieldError
                       errors={
@@ -485,10 +443,14 @@ const TransactionFormInner = ({
                 const to = counterpartAccount?.name ?? '…';
                 lockedValue = `Transfer from ${from} to ${to}`;
               } else if (type === 'settlement') {
-                // counterpartAccountId = source (bank), accountId = destination (credit card)
-                const from = counterpartAccount?.name ?? '…';
-                const to = primaryAccount?.name ?? '…';
-                lockedValue = `Settlement from ${from} to ${to}`;
+                const cardName = primaryAccount?.name ?? '…';
+                const paidFromName = counterpartAccountId
+                  ? (counterpartAccount?.name ?? '…')
+                  : undefined;
+                lockedValue = formatSettlementDescription(
+                  cardName,
+                  paidFromName
+                );
               } else if (type === 'contribution') {
                 const from = primaryAccount?.name ?? '…';
                 const to = counterpartAccount?.name ?? '…';
@@ -626,16 +588,7 @@ const TransactionFormInner = ({
             <form.AppField name="tagIds">
               {(field) => (
                 <Field>
-                  <FieldLabel>
-                    Tags
-                    <Text
-                      as="span"
-                      variant="body-sm"
-                      className="font-normal text-muted-foreground"
-                    >
-                      (optional)
-                    </Text>
-                  </FieldLabel>
+                  <FieldLabel>Tags (optional)</FieldLabel>
                   <TransactionTagPicker
                     value={field.state.value}
                     onChange={(tagIds) => field.handleChange(tagIds)}
@@ -739,10 +692,9 @@ const TransactionFormInner = ({
         <div className="flex gap-2">
           <form.Subscribe selector={(s) => s.isSubmitting}>
             {(isSubmitting) => (
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? <Spinner className="mr-1" /> : null}
+              <LoadingButton type="submit" loading={isSubmitting}>
                 {isEditing ? 'Save changes' : 'Add transaction'}
-              </Button>
+              </LoadingButton>
             )}
           </form.Subscribe>
         </div>

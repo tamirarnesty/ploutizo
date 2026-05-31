@@ -1,29 +1,20 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@ploutizo/ui/components/dialog';
 import type { MerchantRule } from '@/lib/data-access/merchant-rules';
 import { RuleForm } from './RuleForm';
+import { SettingsFormDialog } from './SettingsFormDialog';
 
 interface RuleDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   rule: MerchantRule | null;
-  onClose: () => void;
 }
 
-export const RuleDialog = ({ rule, onClose }: RuleDialogProps) => (
-  <Dialog
-    open={true}
-    onOpenChange={(open) => {
-      if (!open) onClose();
-    }}
+export const RuleDialog = ({ open, onOpenChange, rule }: RuleDialogProps) => (
+  <SettingsFormDialog
+    open={open}
+    onOpenChange={onOpenChange}
+    title={rule !== null ? 'Edit rule' : 'Add rule'}
+    formKey={rule?.id ?? 'new'}
   >
-    <DialogContent className="w-[calc(100%-2rem)] max-w-md">
-      <DialogHeader>
-        <DialogTitle>{rule !== null ? 'Edit rule' : 'Add rule'}</DialogTitle>
-      </DialogHeader>
-      <RuleForm rule={rule} onClose={onClose} />
-    </DialogContent>
-  </Dialog>
+    <RuleForm rule={rule} onClose={() => onOpenChange(false)} />
+  </SettingsFormDialog>
 );

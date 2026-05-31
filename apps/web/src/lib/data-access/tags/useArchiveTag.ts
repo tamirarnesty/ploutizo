@@ -1,5 +1,5 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/queryClient';
+import { useOptimisticListMutation } from '../optimisticListMutation';
 import type { Tag } from './useGetTags';
 
 export const archiveTag = async (id: string): Promise<Tag> => {
@@ -9,10 +9,9 @@ export const archiveTag = async (id: string): Promise<Tag> => {
   return r.data;
 };
 
-export const useArchiveTag = () => {
-  const qc = useQueryClient();
-  return useMutation({
+export const useArchiveTag = () =>
+  useOptimisticListMutation<Tag, string, Tag>({
+    queryKey: ['tags'],
     mutationFn: archiveTag,
-    onSettled: () => qc.invalidateQueries({ queryKey: ['tags'] }),
+    updateCache: (items, id) => items.filter((t) => t.id !== id),
   });
-};

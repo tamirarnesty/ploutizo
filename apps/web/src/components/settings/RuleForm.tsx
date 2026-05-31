@@ -24,14 +24,8 @@ import {
 } from '@/lib/data-access/merchant-rules';
 import { useGetCategories } from '@/lib/data-access/categories';
 import type { MerchantRule } from '@/lib/data-access/merchant-rules';
-
-const MATCH_TYPE_LABELS: Record<string, string> = {
-  exact: 'Exact',
-  contains: 'Contains',
-  starts_with: 'Starts with',
-  ends_with: 'Ends with',
-  regex: 'Regex',
-};
+import { MATCH_TYPE_LABELS } from './merchant-rule-labels';
+import type { MerchantRuleMatchType } from './merchant-rule-labels';
 
 interface RuleFormProps {
   rule: MerchantRule | null;
@@ -103,7 +97,11 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
               >
                 <SelectTrigger className="w-full">
                   <SelectValue>
-                    {(v: string) => MATCH_TYPE_LABELS[v] ?? v}
+                    {(v: string) =>
+                      v in MATCH_TYPE_LABELS
+                        ? MATCH_TYPE_LABELS[v as MerchantRuleMatchType]
+                        : v
+                    }
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
@@ -172,16 +170,7 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
         <form.AppField name="renameTo">
           {(field) => (
             <Field>
-              <FieldLabel>
-                Rename to{' '}
-                <Text
-                  as="span"
-                  variant="body-sm"
-                  className="font-normal text-muted-foreground"
-                >
-                  (optional)
-                </Text>
-              </FieldLabel>
+              <FieldLabel>Rename to (optional)</FieldLabel>
               <Input
                 autoComplete="off"
                 value={field.state.value}
@@ -196,16 +185,7 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
         <form.AppField name="categoryId">
           {(field) => (
             <Field>
-              <FieldLabel>
-                Category{' '}
-                <Text
-                  as="span"
-                  variant="body-sm"
-                  className="font-normal text-muted-foreground"
-                >
-                  (optional)
-                </Text>
-              </FieldLabel>
+              <FieldLabel>Category (optional)</FieldLabel>
               <Select
                 value={field.state.value ?? ''}
                 onValueChange={(v) => field.handleChange(v === '' ? null : v)}

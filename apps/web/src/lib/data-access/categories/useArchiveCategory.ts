@@ -1,5 +1,5 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/queryClient';
+import { useOptimisticListMutation } from '../optimisticListMutation';
 import type { Category } from './useGetCategories';
 
 export const archiveCategory = async (id: string): Promise<Category> => {
@@ -12,10 +12,9 @@ export const archiveCategory = async (id: string): Promise<Category> => {
   return r.data;
 };
 
-export const useArchiveCategory = () => {
-  const qc = useQueryClient();
-  return useMutation({
+export const useArchiveCategory = () =>
+  useOptimisticListMutation<Category, string, Category>({
+    queryKey: ['categories'],
     mutationFn: archiveCategory,
-    onSettled: () => qc.invalidateQueries({ queryKey: ['categories'] }),
+    updateCache: (items, id) => items.filter((c) => c.id !== id),
   });
-};

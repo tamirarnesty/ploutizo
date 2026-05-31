@@ -1,4 +1,5 @@
 // @ploutizo/validators — Zod schemas shared between apps/web and apps/api
+export * from './colour-tokens'
 export * from './accounts'
 export * from './categories'
 export * from './tags'

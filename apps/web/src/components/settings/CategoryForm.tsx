@@ -15,7 +15,7 @@ import {
   useCreateCategory,
   useUpdateCategory,
 } from '@/lib/data-access/categories';
-import { ColourPicker } from '@/components/categories/ColourPicker';
+import { ColourTokenPicker } from '@/components/colour/ColourTokenPicker';
 import { LucideIconPicker } from '@/components/categories/LucideIconPicker';
 import type { Category } from '@/lib/data-access/categories';
 
@@ -112,7 +112,7 @@ export const CategoryForm = ({ category, onClose }: CategoryFormProps) => {
           {(field) => (
             <Field>
               <FieldLabel>Colour</FieldLabel>
-              <ColourPicker
+              <ColourTokenPicker
                 value={field.state.value ?? null}
                 onChange={(v) => field.handleChange(v)}
               />

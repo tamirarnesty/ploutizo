@@ -1,5 +1,7 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { reorderByIds } from '@/lib/reorderByIds';
 import { apiFetch } from '@/lib/queryClient';
+import { useOptimisticListMutation } from '../optimisticListMutation';
+import type { Category } from './useGetCategories';
 
 export const reorderCategories = async (
   orderedIds: string[]
@@ -14,10 +16,9 @@ export const reorderCategories = async (
   return r.data;
 };
 
-export const useReorderCategories = () => {
-  const qc = useQueryClient();
-  return useMutation({
+export const useReorderCategories = () =>
+  useOptimisticListMutation<Category, string[], { ok: boolean }>({
+    queryKey: ['categories'],
     mutationFn: reorderCategories,
-    onSettled: () => qc.invalidateQueries({ queryKey: ['categories'] }),
+    updateCache: (items, orderedIds) => reorderByIds(items, orderedIds),
   });
-};

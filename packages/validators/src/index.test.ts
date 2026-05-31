@@ -204,7 +204,7 @@ describe('CategoryFormSchema', () => {
     const result = CategoryFormSchema.safeParse({
       name: 'Food',
       icon: 'Utensils',
-      colour: '#f00',
+      colour: 'red-500',
     })
     expect(result.success).toBe(true)
   })
