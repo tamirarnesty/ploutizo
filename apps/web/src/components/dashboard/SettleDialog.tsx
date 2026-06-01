@@ -20,7 +20,11 @@ export const SettleDialog = ({
   const resolvedPayToward = useMemo((): PayToward | null => {
     if (!account) return null;
     if (initialPayToward) return initialPayToward;
-    return account.members.at(0)?.member.id ?? 'shared';
+    return (
+      [...account.members]
+        .sort((a, b) => a.member.id.localeCompare(b.member.id))
+        .at(0)?.member.id ?? 'shared'
+    );
   }, [account, initialPayToward]);
 
   if (!account || !resolvedPayToward) return null;

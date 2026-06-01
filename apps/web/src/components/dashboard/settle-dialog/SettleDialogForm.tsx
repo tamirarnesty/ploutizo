@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { FieldGroup } from '@ploutizo/ui/components/field';
 import { useAppForm } from '@ploutizo/ui/components/form';
 import type { SettlementAccountRow } from '@ploutizo/types';
@@ -86,6 +86,15 @@ export const SettleDialogForm = ({
       }
     },
   });
+
+  useEffect(() => {
+    const currentSourceAccountId = form.getFieldValue('sourceAccountId');
+    if (currentSourceAccountId) return;
+    const firstSourceAccountId = sourceAccountOptions[0]?.id;
+    if (firstSourceAccountId) {
+      form.setFieldValue('sourceAccountId', firstSourceAccountId);
+    }
+  }, [form, sourceAccountOptions]);
 
   return (
     <form

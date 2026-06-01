@@ -12,8 +12,11 @@ import { SettlementSummaryPane } from './SettlementSummaryPane';
 
 // All queries fire at top level — no waterfalls (vercel-react-best-practices).
 export const Dashboard = () => {
-  const { data: settlements, isLoading: settlementsLoading } =
-    useGetSettlements();
+  const {
+    data: settlements,
+    isLoading: settlementsLoading,
+    isError: settlementsError,
+  } = useGetSettlements();
   const { data: members = [], isLoading: membersLoading } = useGetOrgMembers();
   const summaryPaneLoading = settlementsLoading || membersLoading;
 
@@ -57,11 +60,18 @@ export const Dashboard = () => {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <div className="min-w-0 md:col-span-3">
-          <CardBalancesGrid
-            accounts={creditCardAccounts}
-            isLoading={settlementsLoading}
-            onSettleClick={handleSettleClick}
-          />
+          {settlementsError ? (
+            <Text variant="error">
+              Couldn&apos;t load card balances. Check your connection and try
+              again.
+            </Text>
+          ) : (
+            <CardBalancesGrid
+              accounts={creditCardAccounts}
+              isLoading={settlementsLoading}
+              onSettleClick={handleSettleClick}
+            />
+          )}
         </div>
         <div className="min-w-0 md:col-span-1">
           <SettlementSummaryPane
