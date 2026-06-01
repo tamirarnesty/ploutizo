@@ -19,7 +19,11 @@ type CardBalancesActionCellProps = {
 };
 
 const sortMembersForMenu = (account: SettlementAccountRow) =>
-  [...account.members].sort((a, b) => a.member.id.localeCompare(b.member.id));
+  [...account.members].sort((a, b) =>
+    a.member.name.localeCompare(b.member.name, undefined, {
+      sensitivity: 'base',
+    })
+  );
 
 export const CardBalancesActionCell = ({
   account,

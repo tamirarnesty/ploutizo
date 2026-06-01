@@ -38,7 +38,8 @@ export const SettlementStatusBadge = ({
   if (!status) {
     return (
       <Text variant="caption" className="leading-none font-medium">
-        —
+        <span aria-hidden="true">—</span>
+        <span className="sr-only">No status</span>
       </Text>
     );
   }

@@ -26,5 +26,6 @@ describe('SettlementStatusBadge', () => {
   it('renders caption dash for null status', () => {
     render(<SettlementStatusBadge status={null} />);
     expect(screen.getByText('—')).toBeInTheDocument();
+    expect(screen.getByText('No status')).toBeInTheDocument();
   });
 });

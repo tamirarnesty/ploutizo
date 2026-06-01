@@ -76,4 +76,13 @@ describe('settleFormSchema', () => {
       settleFormSchema.safeParse({ ...VALID_BASE, date: '2026-01-15' }).success
     ).toBe(true);
   });
+
+  it('rejects invalid date strings', () => {
+    expect(
+      settleFormSchema.safeParse({ ...VALID_BASE, date: 'not-a-date' }).success
+    ).toBe(false);
+    expect(
+      settleFormSchema.safeParse({ ...VALID_BASE, date: '2026-02-30' }).success
+    ).toBe(false);
+  });
 });
