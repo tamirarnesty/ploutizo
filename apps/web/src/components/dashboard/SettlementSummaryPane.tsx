@@ -16,12 +16,14 @@ import { useCreditCardMemberRollup } from '@/components/dashboard/useCreditCardM
 
 type SettlementSummaryPaneProps = {
   accounts: SettlementAccountRow[] | undefined;
+  error?: boolean;
   isLoading: boolean;
   members: OrgMember[];
 };
 
 export const SettlementSummaryPane = ({
   accounts,
+  error = false,
   isLoading,
   members,
 }: SettlementSummaryPaneProps) => {
@@ -60,7 +62,12 @@ export const SettlementSummaryPane = ({
           </Text>
         ) : null}
         <div className="space-y-0">
-          {isLoading ? (
+          {error ? (
+            <Text variant="error">
+              Couldn’t load settlement summary. Check your connection and try
+              again.
+            </Text>
+          ) : isLoading ? (
             <>
               {[0, 1].map((i) => (
                 <SettlementMemberRowSkeleton key={i} />

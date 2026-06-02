@@ -62,8 +62,7 @@ export const Dashboard = () => {
         <div className="min-w-0 md:col-span-3">
           {settlementsError ? (
             <Text variant="error">
-              Couldn&apos;t load card balances. Check your connection and try
-              again.
+              Couldn’t load card balances. Check your connection and try again.
             </Text>
           ) : (
             <CardBalancesGrid
@@ -76,6 +75,7 @@ export const Dashboard = () => {
         <div className="min-w-0 md:col-span-1">
           <SettlementSummaryPane
             accounts={settlements?.accounts}
+            error={settlementsError}
             isLoading={summaryPaneLoading}
             members={members}
           />

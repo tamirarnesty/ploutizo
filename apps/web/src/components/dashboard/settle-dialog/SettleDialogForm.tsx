@@ -87,14 +87,15 @@ export const SettleDialogForm = ({
     },
   });
 
+  const firstSourceAccountId = sourceAccountOptions[0]?.id;
+
   useEffect(() => {
     const currentSourceAccountId = form.getFieldValue('sourceAccountId');
     if (currentSourceAccountId) return;
-    const firstSourceAccountId = sourceAccountOptions[0]?.id;
     if (firstSourceAccountId) {
       form.setFieldValue('sourceAccountId', firstSourceAccountId);
     }
-  }, [form, sourceAccountOptions]);
+  }, [form, firstSourceAccountId]);
 
   return (
     <form
