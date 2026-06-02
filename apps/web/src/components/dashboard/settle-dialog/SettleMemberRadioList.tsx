@@ -13,11 +13,53 @@ import type { SettlementAccountRow } from '@ploutizo/types';
 import { SignedBalanceText } from '@/components/dashboard/SignedBalanceText';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';
 import { UserAvatar } from '@/components/members/UserAvatar';
+import type { ReactNode } from 'react';
 
 type SettleMemberRadioListProps = {
   account: SettlementAccountRow;
   value: PayToward;
   onValueChange: (payToward: PayToward) => void;
+};
+
+type SettleMemberRadioRowProps = {
+  value: PayToward;
+  title: string;
+  balanceCents: number;
+  leading: ReactNode;
+};
+
+const settleRowInputId = (payToward: PayToward) =>
+  payToward === 'shared' ? 'settle-shared' : `settle-member-${payToward}`;
+
+const SettleMemberRadioRow = ({
+  value,
+  title,
+  balanceCents,
+  leading,
+}: SettleMemberRadioRowProps) => {
+  const id = settleRowInputId(value);
+
+  return (
+    <FieldLabel htmlFor={id}>
+      {/* Override Field horizontal defaults (items-start + radio mt-px). */}
+      <Field
+        orientation="horizontal"
+        className="items-center has-[>[data-slot=field-content]]:items-center [&>[role=radio]]:mt-0"
+      >
+        <RadioGroupItem value={value} id={id} className="shrink-0" />
+        <FieldContent className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-center gap-2">
+            {leading}
+            <FieldTitle className="min-w-0 truncate">{title}</FieldTitle>
+          </div>
+        </FieldContent>
+        <SignedBalanceText
+          cents={balanceCents}
+          className="shrink-0 font-semibold"
+        />
+      </Field>
+    </FieldLabel>
+  );
 };
 
 export const SettleMemberRadioList = ({
@@ -37,61 +79,34 @@ export const SettleMemberRadioList = ({
       }}
       className="gap-2"
     >
-      {sortedMembers.map((m) => {
-        const id = `settle-member-${m.member.id}`;
-
-        return (
-          <FieldLabel key={m.member.id} htmlFor={id}>
-            <Field orientation="horizontal">
-              <FieldContent className="min-w-0 flex-1">
-                <div className="flex min-w-0 items-center gap-2">
-                  <UserAvatar
-                    name={m.member.name}
-                    imageUrl={m.member.avatarUrl}
-                    size="sm"
-                  />
-                  <FieldTitle className="min-w-0 truncate">
-                    {m.member.name}
-                  </FieldTitle>
-                </div>
-              </FieldContent>
-              <SignedBalanceText
-                cents={m.personalBalanceCents}
-                className="shrink-0 font-semibold"
-              />
-              <RadioGroupItem
-                value={m.member.id}
-                id={id}
-                className="shrink-0"
-              />
-            </Field>
-          </FieldLabel>
-        );
-      })}
-      <FieldLabel htmlFor="settle-shared">
-        <Field orientation="horizontal">
-          <FieldContent className="min-w-0 flex-1">
-            <div className="flex min-w-0 items-center gap-2">
-              <div
-                className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
-                aria-hidden="true"
-              >
-                <Users className="size-3.5" strokeWidth={2} />
-              </div>
-              <FieldTitle className="min-w-0 truncate">Shared</FieldTitle>
-            </div>
-          </FieldContent>
-          <SignedBalanceText
-            cents={account.sharedBalanceCents}
-            className="shrink-0 font-semibold"
-          />
-          <RadioGroupItem
-            value="shared"
-            id="settle-shared"
-            className="shrink-0"
-          />
-        </Field>
-      </FieldLabel>
+      {sortedMembers.map((m) => (
+        <SettleMemberRadioRow
+          key={m.member.id}
+          value={m.member.id}
+          title={m.member.name}
+          balanceCents={m.personalBalanceCents}
+          leading={
+            <UserAvatar
+              name={m.member.name}
+              imageUrl={m.member.avatarUrl}
+              size="sm"
+            />
+          }
+        />
+      ))}
+      <SettleMemberRadioRow
+        value="shared"
+        title="Shared"
+        balanceCents={account.sharedBalanceCents}
+        leading={
+          <div
+            className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
+            aria-hidden="true"
+          >
+            <Users className="size-3.5" strokeWidth={2} />
+          </div>
+        }
+      />
     </RadioGroup>
   );
 };
