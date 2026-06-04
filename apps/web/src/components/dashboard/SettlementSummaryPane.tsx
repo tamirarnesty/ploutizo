@@ -37,7 +37,7 @@ export const SettlementSummaryPane = ({
           <div className="flex min-w-0 flex-col gap-1">
             <CardTitle className="text-lg leading-tight">Settlement</CardTitle>
             <Text variant="caption">On credit cards</Text>
-            {!isLoading && !hasHouseholdCreditCards ? (
+            {!error && !isLoading && !hasHouseholdCreditCards ? (
               <Text variant="caption" className="mt-1 leading-snug">
                 Add a credit card to track exposure.
               </Text>
