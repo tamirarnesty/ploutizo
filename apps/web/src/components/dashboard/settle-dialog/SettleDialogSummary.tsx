@@ -11,7 +11,6 @@ type SettleDialogSummaryProps = {
   account: SettlementAccountRow;
 };
 
-/** Card-cell header: name, institution •••• last4, total balance + due. */
 export const SettleDialogSummary = ({ account }: SettleDialogSummaryProps) => {
   const card = account.account;
   const institution = card.institution?.trim();
@@ -31,7 +30,7 @@ export const SettleDialogSummary = ({ account }: SettleDialogSummaryProps) => {
     : null;
 
   return (
-    <DialogHeader>
+    <DialogHeader className="gap-1">
       <DialogTitle>
         <Text
           as="span"
@@ -40,39 +39,27 @@ export const SettleDialogSummary = ({ account }: SettleDialogSummaryProps) => {
           {card.name}
         </Text>
       </DialogTitle>
-      <DialogDescription>
-        <div className="flex flex-col gap-0.5">
-          {metaLine !== null ? (
-            <Text
-              as="span"
-              variant="body-sm"
-              className="block truncate text-xs leading-tight text-muted-foreground"
-            >
-              {metaLine}
-            </Text>
-          ) : null}
-          <div className="flex flex-wrap items-baseline gap-x-1.5">
-            <Text as="span" variant="caption" className="text-muted-foreground">
-              Total balance
-            </Text>
-            <Text
-              as="span"
-              className="font-sans text-sm leading-tight font-semibold text-foreground tabular-nums"
-            >
-              {totalLabel}
-            </Text>
-            {dueLabel !== null ? (
-              <Text
-                as="span"
-                variant="caption"
-                className="text-muted-foreground"
-              >
-                · Due {dueLabel}
-              </Text>
-            ) : null}
-          </div>
-        </div>
-      </DialogDescription>
+      {metaLine !== null ? (
+        <DialogDescription className="truncate text-xs leading-tight">
+          {metaLine}
+        </DialogDescription>
+      ) : null}
+      <div className="flex flex-wrap items-baseline gap-x-1.5">
+        <Text as="span" variant="caption" className="text-muted-foreground">
+          Total balance
+        </Text>
+        <Text
+          as="span"
+          className="font-sans text-sm leading-tight font-semibold text-foreground tabular-nums"
+        >
+          {totalLabel}
+        </Text>
+        {dueLabel !== null ? (
+          <Text as="span" variant="caption" className="text-muted-foreground">
+            · Due {dueLabel}
+          </Text>
+        ) : null}
+      </div>
     </DialogHeader>
   );
 };
