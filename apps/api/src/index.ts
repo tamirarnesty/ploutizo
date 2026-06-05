@@ -18,7 +18,7 @@ import type { ContentfulStatusCode } from 'hono/utils/http-status';
 
 const app = new Hono<AppEnv>();
 
-// Invariant middleware order (CLAUDE.md): CORS → Clerk → tenant guard
+// Invariant middleware order (docs/stack-and-conventions.md): CORS → Clerk → tenant guard
 // 1. CORS — handles preflight before Clerk so OPTIONS requests are not rejected
 const ALLOWED_ORIGINS = new Set([
   'https://ploutizo.app',
