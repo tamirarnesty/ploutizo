@@ -21,7 +21,6 @@ export const Accounts = () => {
   };
   const handleSheetClose = () => {
     setSheetOpen(false);
-    setEditingAccount(null);
   };
 
   return (

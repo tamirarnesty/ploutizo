@@ -27,17 +27,19 @@ export const SettleDialog = ({
     );
   }, [account, initialPayToward]);
 
-  if (!account || !resolvedPayToward) return null;
+  if (!open && !account) return null;
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent>
-        <SettleDialogForm
-          key={`${account.account.id}:${resolvedPayToward}`}
-          account={account}
-          initialPayToward={resolvedPayToward}
-          onClose={onClose}
-        />
+        {account && resolvedPayToward ? (
+          <SettleDialogForm
+            key={`${account.account.id}:${resolvedPayToward}`}
+            account={account}
+            initialPayToward={resolvedPayToward}
+            onClose={onClose}
+          />
+        ) : null}
       </DialogContent>
     </Dialog>
   );

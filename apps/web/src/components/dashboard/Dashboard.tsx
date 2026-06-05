@@ -43,8 +43,6 @@ export const Dashboard = () => {
 
   const handleClose = useCallback(() => {
     setDialogOpen(false);
-    setActiveAccount(null);
-    setDialogPayToward(null);
   }, []);
 
   return (
