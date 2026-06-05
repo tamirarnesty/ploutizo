@@ -33,6 +33,18 @@ const expensePayload = {
   amount: 5000,
   date: '2026-01-15',
   description: 'Groceries',
+  assignees: [
+    { memberId: MEMBER_A, amountCents: 3000, percentage: 60 },
+    { memberId: MEMBER_B, amountCents: 2000, percentage: 40 },
+  ],
+};
+
+const amountOnlyPayload = {
+  type: 'expense' as const,
+  accountId: ACCOUNT_ID,
+  amount: 5000,
+  date: '2026-01-15',
+  description: 'Groceries',
 };
 
 vi.mock('@ploutizo/db', () => ({
@@ -93,7 +105,7 @@ describe('updateTransaction — PATCH split-sum validation', () => {
 
     await expect(
       updateTransaction(ORG_ID, TXN_ID, {
-        ...expensePayload,
+        ...amountOnlyPayload,
         amount: 6000,
       })
     ).rejects.toThrow('Assignee amounts must sum to transaction amount');
@@ -115,7 +127,7 @@ describe('updateTransaction — PATCH split-sum validation', () => {
     });
 
     const result = await updateTransaction(ORG_ID, TXN_ID, {
-      ...expensePayload,
+      ...amountOnlyPayload,
       amount: 6000,
     });
 
@@ -131,8 +143,8 @@ describe('updateTransaction — PATCH split-sum validation', () => {
         ...expensePayload,
         amount: 5000,
         assignees: [
-          { memberId: MEMBER_A, amountCents: 3000 },
-          { memberId: MEMBER_B, amountCents: 3000 },
+          { memberId: MEMBER_A, amountCents: 3000, percentage: 50 },
+          { memberId: MEMBER_B, amountCents: 3000, percentage: 50 },
         ],
       })
     ).rejects.toThrow('Assignee amounts must sum to transaction amount');
@@ -144,8 +156,8 @@ describe('updateTransaction — PATCH split-sum validation', () => {
 
   it('replaces assignees after successful split validation without loading persisted rows', async () => {
     const newAssignees = [
-      { memberId: MEMBER_A, amountCents: 3000 },
-      { memberId: MEMBER_B, amountCents: 2000 },
+      { memberId: MEMBER_A, amountCents: 3000, percentage: 60 },
+      { memberId: MEMBER_B, amountCents: 2000, percentage: 40 },
     ];
 
     await updateTransaction(ORG_ID, TXN_ID, {

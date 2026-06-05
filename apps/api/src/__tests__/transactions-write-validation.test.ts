@@ -52,6 +52,9 @@ describe('createTransaction — cross-org reference rejection', () => {
       amount: 1000,
       date: '2026-05-01',
       description: 'Test',
+      assignees: [
+        { memberId: 'mem_org_b', amountCents: 1000, percentage: 100 },
+      ],
     }).catch((e: unknown) => e);
 
     expect(err).toBeInstanceOf(NotFoundError);
@@ -68,7 +71,9 @@ describe('createTransaction — cross-org reference rejection', () => {
       amount: 1000,
       date: '2026-05-01',
       description: 'Test',
-      assignees: [{ memberId: 'mem_org_b', amountCents: 1000 }],
+      assignees: [
+        { memberId: 'mem_org_b', amountCents: 1000, percentage: 100 },
+      ],
     }).catch((e: unknown) => e);
 
     expect(err).toBeInstanceOf(NotFoundError);

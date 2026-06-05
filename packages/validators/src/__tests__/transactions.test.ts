@@ -6,12 +6,21 @@ import {
   updateTransactionSchema,
 } from '../transactions'
 
+const memberId = '550e8400-e29b-41d4-a716-446655440003'
+
+const assignee = (amountCents = 1000, percentage = 100) => ({
+  memberId,
+  amountCents,
+  percentage,
+})
+
 // Shared base payload for all type variants
 const baseFields = {
   accountId: '550e8400-e29b-41d4-a716-446655440000',
   amount: 1000,
   date: '2024-01-15',
   description: 'Test transaction',
+  assignees: [assignee()],
 }
 
 // Helper: find a variant schema by its discriminant value from the discriminated union.
@@ -30,6 +39,24 @@ function getVariantShape(discriminantValue: string): Record<string, unknown> {
 // VAL-01 — baseTransactionSchema: merchant removed, notes added
 // ---------------------------------------------------------------------------
 describe('VAL-01 — baseTransactionSchema field changes', () => {
+  it('rejects expense without assignees', () => {
+    const { assignees: _omit, ...withoutAssignees } = baseFields
+    const result = createTransactionSchema.safeParse({
+      ...withoutAssignees,
+      type: 'expense',
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects assignee row without percentage', () => {
+    const result = createTransactionSchema.safeParse({
+      ...baseFields,
+      type: 'expense',
+      assignees: [{ memberId, amountCents: baseFields.amount }],
+    })
+    expect(result.success).toBe(false)
+  })
+
   it('accepts payload without notes (notes is optional)', () => {
     const result = createTransactionSchema.safeParse({ ...baseFields, type: 'expense' })
     expect(result.success).toBe(true)
@@ -105,12 +132,11 @@ describe('VAL-02 — transferTransactionSchema field rename', () => {
 // ---------------------------------------------------------------------------
 // VAL-04 — settlement/refund require assignees (card balance query joins assignees)
 // ---------------------------------------------------------------------------
-describe('VAL-04 — settlement and refund require assignees', () => {
-  const memberId = '550e8400-e29b-41d4-a716-446655440003'
-
+describe('VAL-04 — all types require assignees', () => {
   it('rejects settlement without assignees', () => {
+    const { assignees: _omit, ...withoutAssignees } = baseFields
     const result = createTransactionSchema.safeParse({
-      ...baseFields,
+      ...withoutAssignees,
       type: 'settlement',
     })
     expect(result.success).toBe(false)
@@ -120,7 +146,6 @@ describe('VAL-04 — settlement and refund require assignees', () => {
     const result = createTransactionSchema.safeParse({
       ...baseFields,
       type: 'settlement',
-      assignees: [{ memberId, amountCents: baseFields.amount }],
     })
     expect(result.success).toBe(true)
   })
@@ -135,8 +160,9 @@ describe('VAL-04 — settlement and refund require assignees', () => {
   })
 
   it('rejects refund without assignees', () => {
+    const { assignees: _omit, ...withoutAssignees } = baseFields
     const result = createTransactionSchema.safeParse({
-      ...baseFields,
+      ...withoutAssignees,
       type: 'refund',
     })
     expect(result.success).toBe(false)
@@ -146,9 +172,29 @@ describe('VAL-04 — settlement and refund require assignees', () => {
     const result = createTransactionSchema.safeParse({
       ...baseFields,
       type: 'refund',
-      assignees: [{ memberId, amountCents: baseFields.amount }],
     })
     expect(result.success).toBe(true)
+  })
+
+  it('rejects income without assignees', () => {
+    const { assignees: _omit, ...withoutAssignees } = baseFields
+    expect(
+      createTransactionSchema.safeParse({
+        ...withoutAssignees,
+        type: 'income',
+        incomeType: 'direct_deposit',
+      }).success
+    ).toBe(false)
+  })
+
+  it('rejects contribution without assignees', () => {
+    const { assignees: _omit, ...withoutAssignees } = baseFields
+    expect(
+      createTransactionSchema.safeParse({
+        ...withoutAssignees,
+        type: 'contribution',
+      }).success
+    ).toBe(false)
   })
 
   it('rejects refund with assignees: []', () => {
@@ -165,12 +211,13 @@ describe('VAL-04 — settlement and refund require assignees', () => {
 // VAL-05 — patchTransactionSchema: discriminated union + empty assignees guard
 // ---------------------------------------------------------------------------
 describe('VAL-05 — patchTransactionSchema', () => {
-  it('accepts expense PATCH without assignees field (omit = leave unchanged)', () => {
+  it('rejects expense PATCH without assignees', () => {
+    const { assignees: _omit, ...withoutAssignees } = baseFields
     const result = patchTransactionSchema.safeParse({
-      ...baseFields,
+      ...withoutAssignees,
       type: 'expense',
     })
-    expect(result.success).toBe(true)
+    expect(result.success).toBe(false)
   })
 
   it('rejects expense PATCH with assignees: []', () => {
@@ -191,12 +238,6 @@ describe('VAL-05 — patchTransactionSchema', () => {
     const result = patchTransactionSchema.safeParse({
       ...baseFields,
       type: 'expense',
-      assignees: [
-        {
-          memberId: '550e8400-e29b-41d4-a716-446655440003',
-          amountCents: baseFields.amount,
-        },
-      ],
     })
     expect(result.success).toBe(true)
   })

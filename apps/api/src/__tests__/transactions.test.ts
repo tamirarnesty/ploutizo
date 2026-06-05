@@ -209,6 +209,10 @@ const VALID_ACCOUNT_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 const VALID_MEMBER_ID_1 = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12';
 const VALID_MEMBER_ID_2 = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13';
 
+const defaultAssignees = [
+  { memberId: VALID_MEMBER_ID_1, amountCents: 5000, percentage: 100 },
+];
+
 describe('POST /api/transactions', () => {
   it('TXN-POST-01: creates expense with valid payload → 201', async () => {
     const res = await app.request('/', {
@@ -220,6 +224,7 @@ describe('POST /api/transactions', () => {
         amount: 5000,
         date: '2026-01-15',
         description: 'Test expense',
+        assignees: defaultAssignees,
       }),
     });
     expect(res.status).toBe(201);
@@ -237,6 +242,7 @@ describe('POST /api/transactions', () => {
         accountId: VALID_ACCOUNT_ID,
         amount: 5000,
         date: '2026-01-15',
+        assignees: defaultAssignees,
         // incomeType intentionally omitted
       }),
     });
@@ -254,6 +260,8 @@ describe('POST /api/transactions', () => {
         accountId: VALID_ACCOUNT_ID,
         amount: 5000,
         date: '2026-01-15',
+        description: 'Test transfer',
+        assignees: defaultAssignees,
         // toAccountId intentionally omitted
       }),
     });
@@ -276,8 +284,8 @@ describe('POST /api/transactions', () => {
         date: '2026-01-15',
         description: 'Test expense',
         assignees: [
-          { memberId: VALID_MEMBER_ID_1, amountCents: 3000 },
-          { memberId: VALID_MEMBER_ID_2, amountCents: 3000 },
+          { memberId: VALID_MEMBER_ID_1, amountCents: 3000, percentage: 50 },
+          { memberId: VALID_MEMBER_ID_2, amountCents: 3000, percentage: 50 },
         ],
       }),
     });
@@ -289,7 +297,7 @@ describe('POST /api/transactions', () => {
     );
   });
 
-  it('TXN-POST-05: assignees omitted → 201, no assignee insert', async () => {
+  it('TXN-POST-05: assignees omitted → 400 VALIDATION_ERROR', async () => {
     const res = await app.request('/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -301,9 +309,9 @@ describe('POST /api/transactions', () => {
         description: 'Test expense',
       }),
     });
-    expect(res.status).toBe(201);
+    expect(res.status).toBe(400);
     const body = (await res.json()) as any;
-    expect(body.data.id).toBeDefined();
+    expect(body.error.code).toBe('VALIDATION_ERROR');
   });
 });
 
@@ -398,6 +406,7 @@ describe('PATCH /api/transactions/:id', () => {
         amount: 5000,
         date: '2026-01-15',
         description: 'Updated',
+        assignees: defaultAssignees,
       }),
     });
     expect(res.status).toBe(200);
@@ -434,6 +443,7 @@ describe('PATCH /api/transactions/:id', () => {
         amount: 5000,
         date: '2026-01-15',
         description: 'X',
+        assignees: defaultAssignees,
       }),
     });
     expect(res.status).toBe(404);
@@ -453,6 +463,8 @@ describe('PATCH /api/transactions/:id — discriminated union enforcement (D-08)
         accountId: VALID_ACCOUNT_ID,
         amount: 5000,
         date: '2026-01-15',
+        description: 'Pay',
+        assignees: defaultAssignees,
         // incomeType intentionally omitted — should fail discriminated union validation
       }),
     });
@@ -473,6 +485,7 @@ describe('PATCH /api/transactions/:id — discriminated union enforcement (D-08)
         amount: 5000,
         date: '2026-01-15',
         description: 'Test income',
+        assignees: defaultAssignees,
       }),
     });
     expect(res.status).toBe(200);
@@ -488,7 +501,9 @@ describe('PATCH /api/transactions/:id — discriminated union enforcement (D-08)
         accountId: VALID_ACCOUNT_ID,
         amount: 5000,
         date: '2026-01-15',
-        // toAccountId intentionally omitted
+        description: 'Transfer',
+        assignees: defaultAssignees,
+        // counterpartAccountId intentionally omitted
       }),
     });
     expect(res.status).toBe(400);

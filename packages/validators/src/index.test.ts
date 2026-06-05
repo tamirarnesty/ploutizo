@@ -281,6 +281,13 @@ describe('createTransactionSchema — common fields', () => {
     amount: 1000,
     date: '2024-01-15',
     description: 'Test expense',
+    assignees: [
+      {
+        memberId: '550e8400-e29b-41d4-a716-446655440003',
+        amountCents: 1000,
+        percentage: 100,
+      },
+    ],
   }
 
   it('accepts valid expense payload', () => {
@@ -318,11 +325,16 @@ describe('createTransactionSchema — per-type branches', () => {
     amount: 5000,
     date: '2024-03-01',
     description: 'Test transaction',
+    assignees: [
+      {
+        memberId: '550e8400-e29b-41d4-a716-446655440003',
+        amountCents: 5000,
+        percentage: 100,
+      },
+    ],
   }
 
-  const refundAssignees = [
-    { memberId: '550e8400-e29b-41d4-a716-446655440003', amountCents: 5000 },
-  ]
+  const refundAssignees = baseFields.assignees
 
   it('accepts valid refund payload with assignees', () => {
     expect(
@@ -335,7 +347,11 @@ describe('createTransactionSchema — per-type branches', () => {
   })
 
   it('rejects refund payload without assignees', () => {
-    expect(createTransactionSchema.safeParse({ ...baseFields, type: 'refund' }).success).toBe(false)
+    const { assignees: _omit, ...withoutAssignees } = baseFields
+    expect(
+      createTransactionSchema.safeParse({ ...withoutAssignees, type: 'refund' })
+        .success
+    ).toBe(false)
   })
 
   it('accepts refund with optional refundOf uuid', () => {
@@ -356,7 +372,12 @@ describe('createTransactionSchema — per-type branches', () => {
   })
 
   it('rejects income payload missing incomeType', () => {
-    expect(createTransactionSchema.safeParse({ ...baseFields, type: 'income' }).success).toBe(false)
+    expect(
+      createTransactionSchema.safeParse({
+        ...baseFields,
+        type: 'income',
+      }).success
+    ).toBe(false)
   })
 
   it('accepts valid transfer payload with required counterpartAccountId', () => {
@@ -371,23 +392,22 @@ describe('createTransactionSchema — per-type branches', () => {
     expect(createTransactionSchema.safeParse({ ...baseFields, type: 'transfer' }).success).toBe(false)
   })
 
-  const settlementAssignees = [
-    { memberId: '550e8400-e29b-41d4-a716-446655440003', amountCents: 5000 },
-  ]
-
   it('accepts valid settlement payload with assignees', () => {
     expect(
       createTransactionSchema.safeParse({
         ...baseFields,
         type: 'settlement',
-        assignees: settlementAssignees,
       }).success
     ).toBe(true)
   })
 
   it('rejects settlement payload without assignees', () => {
+    const { assignees: _omit, ...withoutAssignees } = baseFields
     expect(
-      createTransactionSchema.safeParse({ ...baseFields, type: 'settlement' }).success
+      createTransactionSchema.safeParse({
+        ...withoutAssignees,
+        type: 'settlement',
+      }).success
     ).toBe(false)
   })
 

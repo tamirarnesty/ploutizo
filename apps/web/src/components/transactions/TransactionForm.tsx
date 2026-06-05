@@ -34,7 +34,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
-import { formatSettlementDescription } from '@ploutizo/utils';
 import type { Account, OrgMember } from '@ploutizo/types';
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import { useGetCategories } from '@/lib/data-access/categories';
@@ -48,7 +47,11 @@ import {
 import type { TransactionRow } from '@/lib/data-access/transactions';
 import type { Category } from '@/lib/data-access/categories';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
-import { useTransactionForm } from './hooks/useTransactionForm';
+import {
+  computeLockedDescription,
+  isLockedDescriptionType,
+  useTransactionForm,
+} from './hooks/useTransactionForm';
 import { FormattedAmountInput } from './FormattedAmountInput';
 import { TransactionTypeFields } from './TransactionTypeFields';
 import { TransferFields } from './TransferFields';
@@ -194,7 +197,13 @@ const DirtyNotifier = ({
   useEffect(() => {
     onChange(isDirty);
   }, [isDirty, onChange]);
-  return null;
+  return (
+    <span
+      data-testid="transaction-form-unsaved"
+      data-unsaved={isDirty ? 'true' : 'false'}
+      hidden
+    />
+  );
 };
 
 /** Types whose description is always locked (D-11, D-12) */
@@ -219,7 +228,27 @@ const TransactionFormInner = ({
   const deleteMutation = useDeleteTransaction();
 
   const [alertOpen, setAlertOpen] = useState(false);
-  const [isDescriptionUnlocked, setIsDescriptionUnlocked] = useState(false);
+  const [isDescriptionUnlocked, setIsDescriptionUnlocked] = useState(() => {
+    if (transaction === null) return false;
+    if (
+      !isLockedDescriptionType(transaction.type, transaction.refundOf ?? '')
+    ) {
+      return false;
+    }
+    const locked = computeLockedDescription(
+      {
+        type: transaction.type,
+        accountId: transaction.accountId,
+        counterpartAccountId: transaction.counterpartAccountId ?? '',
+        refundOf: transaction.refundOf ?? '',
+        accountName: transaction.accountName,
+        counterpartAccountName: transaction.counterpartAccountName,
+      },
+      accounts
+    );
+    const stored = transaction.description.trim();
+    return locked !== '' && stored !== '' && stored !== locked;
+  });
   const [refundOriginalDesc, setRefundOriginalDesc] = useState('');
   const [refundOriginalAssigneeIds, setRefundOriginalAssigneeIds] = useState<
     string[]
@@ -227,6 +256,7 @@ const TransactionFormInner = ({
 
   const { form } = useTransactionForm({
     transaction,
+    accounts,
     onClose,
     createMutation,
     updateMutation,
@@ -235,6 +265,7 @@ const TransactionFormInner = ({
   return (
     <form
       className="flex flex-1 flex-col overflow-hidden"
+      data-testid="transaction-form"
       onSubmit={(e) => {
         e.preventDefault();
         form.handleSubmit();
@@ -251,11 +282,15 @@ const TransactionFormInner = ({
         )}
       </form.Subscribe>
 
-      {/* Notify parent of dirty state for sheet-level discard guard */}
+      {/* Compare to default values, not isDirty — programmatic sync (e.g. locked
+          description) can set isDirty while values still match defaults. */}
       {onDirtyChange ? (
-        <form.Subscribe selector={(s) => s.isDirty}>
-          {(isDirty) => (
-            <DirtyNotifier isDirty={isDirty} onChange={onDirtyChange} />
+        <form.Subscribe selector={(s) => !s.isDefaultValue}>
+          {(hasUnsavedChanges) => (
+            <DirtyNotifier
+              isDirty={hasUnsavedChanges}
+              onChange={onDirtyChange}
+            />
           )}
         </form.Subscribe>
       ) : null}
@@ -431,35 +466,18 @@ const TransactionFormInner = ({
                 isLockedType(type) || (type === 'refund' && !!refundOf);
               const isLocked = !isDescriptionUnlocked && shouldLock;
 
-              // Compute locked description template from reactive account values
-              const primaryAccount = accounts.find((a) => a.id === accountId);
-              const counterpartAccount = accounts.find(
-                (a) => a.id === counterpartAccountId
+              const lockedValue = computeLockedDescription(
+                {
+                  type,
+                  accountId,
+                  counterpartAccountId,
+                  refundOf,
+                  accountName: transaction?.accountName,
+                  counterpartAccountName: transaction?.counterpartAccountName,
+                },
+                accounts,
+                refundOriginalDesc
               );
-
-              let lockedValue = '';
-              if (type === 'transfer') {
-                const from = primaryAccount?.name ?? '…';
-                const to = counterpartAccount?.name ?? '…';
-                lockedValue = `Transfer from ${from} to ${to}`;
-              } else if (type === 'settlement') {
-                const cardName = primaryAccount?.name ?? '…';
-                const paidFromName = counterpartAccountId
-                  ? (counterpartAccount?.name ?? '…')
-                  : undefined;
-                lockedValue = formatSettlementDescription(
-                  cardName,
-                  paidFromName
-                );
-              } else if (type === 'contribution') {
-                const from = primaryAccount?.name ?? '…';
-                const to = counterpartAccount?.name ?? '…';
-                lockedValue = `Contribution from ${from} to ${to}`;
-              } else if (type === 'refund' && refundOf) {
-                lockedValue = refundOriginalDesc
-                  ? `Refund of ${refundOriginalDesc}`
-                  : '';
-              }
 
               return (
                 <form.AppField
