@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { ReactNode } from 'react';
+import type { MouseEventHandler, ReactNode } from 'react';
 
 type OpenChangeHandler = (open: boolean, ...rest: unknown[]) => void;
 
@@ -122,14 +122,14 @@ export const alertDialogMock = {
     onClick,
   }: {
     children: ReactNode;
-    onClick?: () => void;
+    onClick?: MouseEventHandler<HTMLButtonElement>;
   }) => {
     const onOpenChange = useContext(AlertDialogOpenChangeContext);
     return (
       <button
         type="button"
-        onClick={() => {
-          onClick?.();
+        onClick={(event) => {
+          onClick?.(event);
           onOpenChange?.(false);
         }}
       >

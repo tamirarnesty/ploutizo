@@ -25,7 +25,7 @@ Without real Clerk keys both servers start but return 500 on all routes (Clerk m
 
 All commands run via Turborepo from the workspace root:
 
-```
+```bash
 pnpm turbo lint          # ESLint across all packages
 pnpm turbo typecheck     # tsc --noEmit in dependency order
 pnpm test                # vitest run in all packages (all mocked — no secrets needed)
@@ -36,7 +36,7 @@ pnpm turbo format:check  # Prettier check
 
 For Clerk webhooks to reach the local API during development, run svix in a separate terminal **after** the API is started:
 
-```
+```bash
 svix listen http://localhost:8080/webhooks/clerk
 ```
 

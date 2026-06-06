@@ -112,8 +112,12 @@ export const AssigneeSection = ({
         value={pressedMemberIds}
         onChange={(newIds) => {
           setPressedMemberIds(newIds);
+          if (newIds.length === 0) {
+            onChange([]);
+            return;
+          }
           if (amountCents <= 0) return;
-          const next = newIds.length === 0 ? [] : lrmSplit(amountCents, newIds);
+          const next = lrmSplit(amountCents, newIds);
           // ToggleGroup can emit on mount; skip when the split already matches
           // form state so opening edit mode does not mark the sheet dirty.
           if (JSON.stringify(next) !== JSON.stringify(value)) {

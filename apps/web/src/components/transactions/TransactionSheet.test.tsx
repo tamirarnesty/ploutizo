@@ -50,9 +50,7 @@ describe('TransactionSheet overlay contract', () => {
       />
     );
 
-    await user.click(
-      screen.getByRole('button', { name: /close transaction form/i })
-    );
+    await user.click(screen.getByRole('button', { name: /close sheet/i }));
 
     expect(onClose).toHaveBeenCalledTimes(1);
   });
