@@ -225,24 +225,24 @@
 
 ---
 
-### 8. CSV Import
+### 8. Credit Card CSV Import
 
 **Requirements:** See `REQUIREMENTS.md §8`.
 
 **Implementation notes (research-derived — HIGH ATTENTION REQUIRED):**
-- **Bank CSV formats are LOW confidence** — column names derived from training data. Real export files must be collected and used as test fixtures before writing normalizers.
+- **Credit card CSV formats are LOW confidence** — column names derived from training data. Real credit card export files must be collected and used as test fixtures before writing normalizers.
 - **Amex CA sign is INVERTED**: positive value = expense, negative value = refund. Every other bank: negative = expense. This must be documented in the Amex normalizer code.
-- **Date formats differ by bank**:
-  - CIBC, EQ Bank: `YYYY-MM-DD` (ISO)
-  - All other Canadian banks: `MM/DD/YYYY`
-  - Normalizers must use bank-specific date parsers, not a shared date parser
+- **Date formats differ by credit card export format**:
+  - CIBC: `YYYY-MM-DD` (ISO)
+  - All other supported Canadian credit card formats: `MM/DD/YYYY`
+  - Normalizers must use format-specific date parsers, not a shared date parser
 - Duplicate detection algorithm: `external_id` exact match (primary); then `date + amount` exact match + Levenshtein distance < 0.2 on pre-normalized description (pre-filter by date+amount before Levenshtein for performance)
-- Normalizer functions are pure functions — each bank gets its own normalizer; fixture-based unit tests per bank
+- Normalizer functions are pure functions — each supported credit card format gets its own normalizer; fixture-based unit tests per format
 - Account resolution: unmatched account → dropdown; "Create new account" inline; propagates to all unresolved rows in session without page refresh
 
 **Verification:**
 - [ ] Amex CA: positive amount correctly parsed as expense (inverted sign)
-- [ ] CIBC/EQ Bank: ISO date parsed correctly; all others MM/DD/YYYY
+- [ ] CIBC credit card: ISO date parsed correctly; all others MM/DD/YYYY
 - [ ] Duplicate detection: exact `external_id` match flagged; fuzzy date+amount+description match flagged
 - [ ] Duplicate rows unchecked by default; "Skip all duplicates" toggle works
 - [ ] Account resolution: unmatched account → dropdown; inline create; propagates to other unresolved rows
@@ -324,7 +324,7 @@
 
 - [ ] **TFSA 2026 annual limit** — CRA announces ~Oct/Nov 2025. Hardcode once confirmed. The `TFSA_ANNUAL_LIMITS` constant lives in `packages/types`.
 - [ ] **RRSP 2026 dollar cap** — confirm against CRA before shipping §7
-- [ ] **Bank CSV column names** — LOW confidence on exact column names for TD, RBC credit card exports. Collect real export files per bank before writing normalizers.
+- [ ] **Credit card CSV column names** — LOW confidence on exact column names for supported credit card exports. Collect real credit card export files before writing normalizers.
 - [ ] **Neon connection limits** — verify current plan tier limits before launching to avoid connection exhaustion on Railway
 
 ---

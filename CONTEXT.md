@@ -24,6 +24,72 @@ _Avoid_: Card payment, chequing-to-card transfer (for paydown)
 Money into an investment account only. Funding source is chequing or savings — not a credit card. The `other` account type may act as source or destination per user choice until account types are consolidated.
 _Avoid_: Card-funded contribution, contribution to a chequing account
 
+### Import language
+
+**Bill payment row**:
+A credit card statement import row that represents paying down the card issuer. In Ploutizo this is a **Settlement**, not a refund, income, or transfer. It reduces obligation on the card and may match an existing manually entered **Settlement** even when statement dates do not align exactly. The statement row proves the destination card was credited; the funding source is loose during import because card CSVs usually do not identify the paid-from account. A new bill payment row that does not match an existing settlement needs **Pay toward** before confirm.
+_Avoid_: Treating a card bill payment as a merchant refund, income, or transfer
+
+**Auto-resolved import match**:
+An imported row that Ploutizo can align to exactly one existing same-kind transaction with high confidence. It is still surfaced for review before submit; auto-resolved means the app has a recommended match, not that the row bypasses user confirmation.
+_Avoid_: Silent duplicate removal, hidden match
+
+**Needs review import row**:
+An imported row whose classification or match is uncertain enough that the user should inspect it before submit. Examples include non-exact date matches, multiple possible matches, near-amount matches, or ambiguous expense/refund/settlement classification.
+_Avoid_: Import error (unless the row is invalid)
+
+**Resolved import row**:
+An imported row that is safe to include in confirm: classification is complete and any uncertainty has been accepted or corrected by the user, or the row is confidently matched to an existing transaction and will be skipped. Confirm is blocked while any selected row is unresolved.
+_Avoid_: Confirmed row, imported row
+
+**Invalid import row**:
+A CSV line the app cannot parse into a candidate transaction. It does not fail the whole file; it appears in review/history as invalid with a reason, is excluded from selection by default, and never becomes a transaction.
+_Avoid_: Failed import, rejected file
+
+**Import file failure**:
+The upload is rejected when the file cannot be processed at all: corrupt/unreadable CSV, unrecognized credit card format, over size/row limits, or no importable data rows. Row-level problems do not fail the file.
+_Avoid_: Partial file rejection
+
+**Temporary source file**:
+The original uploaded credit card statement file retained briefly after import so the system can audit and validate the import. It is not long-term financial history; durable import history comes from row-level provenance and resulting transactions.
+_Avoid_: Permanent statement archive, source of truth
+
+**Bill Payment category**:
+A normal seeded category used for **Settlement** transactions created or matched from imported **Bill payment rows**. It makes card paydown rows readable in transaction lists without making them spend; dashboard and budget spend remain governed by transaction type, not by category alone. Bill payment rows may receive this category through import processing or a default merchant rule rather than from the uploaded file.
+_Avoid_: Treating bill payment category as expense spend
+
+**Classified import row**:
+An imported row that has enough domain meaning to become a Ploutizo transaction using the same transaction model as manual entry. Classification includes the required transaction kind and attribution choices; tags, notes, and user-polished description details are refinements that may be changed during review or later.
+_Avoid_: Partially classified ledger entry
+
+**Import assignee default**:
+For imported expense and refund rows, assignees default from the target credit card’s account ownership: one owner → personal transaction; multiple owners → shared transaction with equal split. A merchant rule assignee overrides this default when it matches.
+_Avoid_: Defaulting to the uploading member, defaulting to all household members
+
+**Single-account import**:
+An import file assigned to exactly one target credit card account before or during upload. Credit card statement exports are expected to represent one account; assigning the whole file to one card keeps duplicate detection, statement matching, and row classification coherent.
+_Avoid_: Multi-account import, chequing/savings statement import
+
+**Ploutizo normalized import format**:
+A household-facing CSV template for credit card imports when a bank-specific export is unavailable. Required columns: date, amount, description, type (`expense` | `refund` | `settlement`). Optional columns include external id, category, assignee hint, refund link hints, notes, and tags. The Import page is the primary place to download the example file and format guide in v1.
+_Avoid_: General-purpose ledger migration format
+
+**Import history**:
+The user-visible record of draft, completed, undone, expired, and discarded imports. It explains what happened to an uploaded statement without treating the original file as permanent history.
+_Avoid_: File archive, statement archive
+
+**Import access** (v1):
+Any household member may upload, review, and confirm credit card imports for any household credit card account. No role or account-ownership restriction.
+_Avoid_: Admin-only import, per-member import permission
+
+**External id** (import):
+A bank-provided reference from a credit card statement row, stored on imported transactions when the format supplies one. Used as the primary duplicate key on re-import and as a durable link back to the original statement transaction for auditing. Duplicate matching is scoped to the target credit card account only.
+_Avoid_: Ploutizo transaction id, Clerk external id, household-wide bank reference matching
+
+**Completed import**:
+An import draft that has been fully processed once. Selected processable rows may create transactions; skipped, invalid, or unprocessed rows remain as import history outcomes and may help prefill later manual transaction entry, but they cannot be batch-processed again from the completed import.
+_Avoid_: Partial draft, resumable leftover rows
+
 ### Settlement balances (credit cards)
 
 **Card balance**:
@@ -65,8 +131,8 @@ A qualifying transaction that decreases obligation on the card (opposite sign fr
 _Avoid_: Reversal (use when speaking generically)
 
 **Linked refund**:
-A refund tied to an existing transaction. On create, fields default from the original (especially assignees) so personal vs shared classification matches the expense unless the user overrides. On edit, assignees can be changed; balance math always uses the refund row’s assignees (count 1 → personal, 2+ → shared). Unlinked refunds require at least one assignee at create time.
-_Avoid_: Orphan refund
+A refund tied to an existing transaction. On create, fields default from the original (especially category and assignees) so spend classification and personal vs shared classification match the expense unless the user overrides. On edit, assignees can be changed; balance math always uses the refund row’s assignees (count 1 → personal, 2+ → shared). Unlinked refunds require at least one assignee and their own category at create time. During import, a refund may be auto-suggested as linked to an original expense on the same card; the user confirms or overrides before submit.
+_Avoid_: Orphan refund, silent auto-link
 
 **Personal transaction**:
 A qualifying transaction with exactly one assignee. Its full signed amount applies to that member’s personal balance only.
