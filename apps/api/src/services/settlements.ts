@@ -184,13 +184,14 @@ export const createSettlement = async (
     throw new NotFoundError('Paid-from account not found');
   }
 
-  let assigneeRows: { memberId: string; amountCents: number; percentage?: number }[];
+  let assigneeRows: { memberId: string; amountCents: number; percentage: number }[];
 
   if (data.assignees.length === 1) {
     assigneeRows = [
       {
         memberId: data.assignees[0].memberId,
         amountCents: data.amountCents,
+        percentage: 100,
       },
     ];
   } else {

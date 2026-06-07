@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 import {
   Moon as MoonIcon,
@@ -16,10 +17,19 @@ import {
 const cycleMap = { system: 'light', light: 'dark', dark: 'system' } as const;
 type Theme = keyof typeof cycleMap;
 
+// SSR and the first client render cannot read localStorage, so theme-dependent UI
+// must defer until mount. See: https://github.com/pacocoursey/next-themes#avoid-hydration-mismatch
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const current = (theme ?? 'system') as Theme;
-  const label = current.charAt(0).toUpperCase() + current.slice(1);
+  const displayTheme = mounted ? current : 'system';
+  const label = displayTheme.charAt(0).toUpperCase() + displayTheme.slice(1);
 
   return (
     <Tooltip>
@@ -33,9 +43,9 @@ export function ThemeToggle() {
           />
         }
       >
-        {current === 'system' && <SunMoonIcon />}
-        {current === 'light' && <SunIcon />}
-        {current === 'dark' && <MoonIcon />}
+        {displayTheme === 'system' && <SunMoonIcon />}
+        {displayTheme === 'light' && <SunIcon />}
+        {displayTheme === 'dark' && <MoonIcon />}
         <span className="sr-only">{label}</span>
       </TooltipTrigger>
       <TooltipContent>{label}</TooltipContent>

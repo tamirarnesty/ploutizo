@@ -300,7 +300,7 @@ describe('createSettlement service', () => {
       'Settlement from RBC Chequing to Amex Gold'
     );
     expect(callArg.assignees).toHaveLength(1);
-    expect(callArg.assignees![0].amountCents).toBe(validInput.amountCents);
+    expect(callArg.assignees[0].amountCents).toBe(validInput.amountCents);
     expect(result).toEqual(mockInserted);
   });
 
@@ -318,7 +318,7 @@ describe('createSettlement service', () => {
 
     const callArg = vi.mocked(createTransaction).mock.calls[0][1];
     expect(callArg.assignees).toHaveLength(2);
-    const sum = callArg.assignees!.reduce(
+    const sum = callArg.assignees.reduce(
       (acc, row) => acc + row.amountCents,
       0
     );

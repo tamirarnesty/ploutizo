@@ -2,11 +2,16 @@ import { INCOME_TYPE_VALUES } from '@ploutizo/types'
 import { z } from 'zod'
 
 /** Common assignee object used in split payloads (Phase 3.2 writes these). */
-const assigneeSchema = z.object({
+export const assigneeSchema = z.object({
   memberId: z.string().uuid(),
   amountCents: z.number().int().positive(),
-  percentage: z.number().optional(),
+  /** Display cache (D-09); required on write — server normalizes to canonical values. */
+  percentage: z.number(),
 })
+
+const requiredAssigneesSchema = z
+  .array(assigneeSchema)
+  .min(1, 'At least one assignee is required.')
 
 /**
  * Base fields shared by all 6 transaction types.
@@ -20,7 +25,7 @@ const baseTransactionSchema = z.object({
   date: z.string().date(),
   description: z.string().min(1, 'Description is required.'),
   notes: z.string().optional(),
-  assignees: z.array(assigneeSchema).optional(),
+  assignees: requiredAssigneesSchema,
   tagIds: z.array(z.string().uuid()).optional(),
 })
 
@@ -29,15 +34,10 @@ const expenseTransactionSchema = baseTransactionSchema.extend({
   categoryId: z.string().uuid().optional(),
 })
 
-// Refunds participate in per-member card balances via assignee splits (see settlement query).
-// Omitting assignees would record a refund that never moves any member balance — reject at validation.
-const refundTransactionSchema = baseTransactionSchema.omit({ assignees: true }).extend({
+const refundTransactionSchema = baseTransactionSchema.extend({
   type: z.literal('refund'),
   categoryId: z.string().uuid().optional(),
   refundOf: z.string().uuid().optional(),
-  assignees: z
-    .array(assigneeSchema)
-    .min(1, 'Refund requires at least one assignee so card balances reconcile.'),
 })
 
 const incomeTransactionSchema = baseTransactionSchema.extend({
@@ -52,14 +52,10 @@ const transferTransactionSchema = baseTransactionSchema.extend({
   counterpartAccountId: z.string().uuid(),
 })
 
-// Settlements reduce a payer's balance only through assignee rows; without them the payment is invisible to balances.
-const settlementTransactionSchema = baseTransactionSchema.omit({ assignees: true }).extend({
+const settlementTransactionSchema = baseTransactionSchema.extend({
   type: z.literal('settlement'),
   // settledAccountId renamed to counterpartAccountId (D-07, D-14)
   counterpartAccountId: z.string().uuid().optional(),
-  assignees: z
-    .array(assigneeSchema)
-    .min(1, 'Settlement requires at least one assignee (who paid).'),
 })
 
 const contributionTransactionSchema = baseTransactionSchema.extend({
@@ -78,6 +74,14 @@ export const createTransactionSchema = z.discriminatedUnion('type', [
   contributionTransactionSchema,
 ])
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>
+export type TransactionAssigneeInput = z.infer<typeof assigneeSchema>
+
+/** Service-layer PATCH: full create shape with assignees optional (amount-only updates). */
+export type UpdateTransactionServiceInput = CreateTransactionInput extends infer U
+  ? U extends { assignees: infer A }
+    ? Omit<U, 'assignees'> & { assignees?: A }
+    : U
+  : never
 
 /** Reject explicit `assignees: []` — same rule as updateTransactionSchema (cannot clear splits via empty array). */
 const rejectEmptyAssigneesArray = (
@@ -108,10 +112,7 @@ export const updateTransactionSchema = baseTransactionSchema
     // counterpartAccountId replaces toAccountId + settledAccountId (D-08)
     counterpartAccountId: z.string().uuid().optional(),
     // Override partial assignees: [] would otherwise clear splits while bypassing .min(1) on create variants.
-    assignees: z
-      .array(assigneeSchema)
-      .min(1, 'When assignees are included, at least one row is required.')
-      .optional(),
+    assignees: requiredAssigneesSchema.optional(),
   })
 export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>
 

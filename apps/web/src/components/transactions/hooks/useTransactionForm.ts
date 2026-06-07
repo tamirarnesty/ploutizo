@@ -1,5 +1,10 @@
 import { useAppForm } from '@ploutizo/ui/components/form';
 import { createTransactionSchema } from '@ploutizo/validators';
+import {
+  formatSettlementDescription,
+  normalizeTransactionAssignees,
+} from '@ploutizo/utils';
+import type { Account } from '@ploutizo/types';
 import type {
   TransactionRow,
   useCreateTransaction,
@@ -7,11 +12,83 @@ import type {
 } from '@/lib/data-access/transactions';
 import type { TransactionFormValues } from '../types';
 
+const LOCKED_DESCRIPTION_TYPES = [
+  'transfer',
+  'settlement',
+  'contribution',
+] as const;
+
+export const isLockedDescriptionType = (
+  type: string,
+  refundOf: string
+): boolean =>
+  (LOCKED_DESCRIPTION_TYPES as readonly string[]).includes(type) ||
+  (type === 'refund' && !!refundOf);
+
+type LockedDescriptionInput = Pick<
+  TransactionFormValues,
+  'type' | 'accountId' | 'counterpartAccountId' | 'refundOf'
+> & {
+  accountName?: string | null;
+  counterpartAccountName?: string | null;
+};
+
+/** Canonical auto-generated description for locked transaction types (D-11, D-12). */
+export const computeLockedDescription = (
+  values: LockedDescriptionInput,
+  accounts: Account[],
+  refundOriginalDesc?: string
+): string => {
+  const primaryAccount = accounts.find((a) => a.id === values.accountId);
+  const counterpartAccount = accounts.find(
+    (a) => a.id === values.counterpartAccountId
+  );
+  const primaryName = primaryAccount?.name ?? values.accountName ?? '…';
+  const counterpartName =
+    counterpartAccount?.name ?? values.counterpartAccountName ?? '…';
+
+  switch (values.type) {
+    case 'transfer':
+      return `Transfer from ${primaryName} to ${counterpartName}`;
+    case 'settlement': {
+      const paidFromName = values.counterpartAccountId
+        ? counterpartName
+        : undefined;
+      return formatSettlementDescription(primaryName, paidFromName);
+    }
+    case 'contribution':
+      return `Contribution from ${primaryName} to ${counterpartName}`;
+    case 'refund':
+      return values.refundOf && refundOriginalDesc
+        ? `Refund of ${refundOriginalDesc}`
+        : '';
+    default:
+      return '';
+  }
+};
+
 export type CreateMutation = ReturnType<typeof useCreateTransaction>;
 export type UpdateMutation = ReturnType<typeof useUpdateTransaction>;
 
+/** Test/dev helper: field keys whose values differ from form defaults. */
+const buildAssigneeDefaults = (
+  transaction: TransactionRow
+): TransactionFormValues['assignees'] => {
+  if (transaction.assignees.length === 0) return [];
+
+  return normalizeTransactionAssignees(
+    Math.abs(transaction.amount),
+    transaction.assignees.map((a) => ({
+      memberId: a.memberId,
+      amountCents: a.amountCents,
+      percentage: a.percentage !== null ? parseFloat(a.percentage) : 0,
+    }))
+  );
+};
+
 export const buildDefaultValues = (
-  transaction: TransactionRow | null
+  transaction: TransactionRow | null,
+  accounts: Account[] = []
 ): TransactionFormValues => {
   if (transaction === null) {
     return {
@@ -33,7 +110,7 @@ export const buildDefaultValues = (
     };
   }
 
-  return {
+  const values: TransactionFormValues = {
     type: transaction.type,
     accountId: transaction.accountId,
     amount: transaction.amount / 100,
@@ -45,13 +122,31 @@ export const buildDefaultValues = (
     incomeType: transaction.incomeType ?? '',
     counterpartAccountId: transaction.counterpartAccountId ?? '',
     notes: transaction.notes ?? '',
-    assignees: transaction.assignees.map((a) => ({
-      memberId: a.memberId,
-      amountCents: a.amountCents,
-      // Drizzle numeric column returns string — always parseFloat before use
-      percentage: a.percentage !== null ? parseFloat(a.percentage) : 0,
-    })),
+    assignees: buildAssigneeDefaults(transaction),
   };
+
+  if (isLockedDescriptionType(values.type, values.refundOf)) {
+    const locked = computeLockedDescription(
+      {
+        type: values.type,
+        accountId: values.accountId,
+        counterpartAccountId: values.counterpartAccountId,
+        refundOf: values.refundOf,
+        accountName: transaction.accountName,
+        counterpartAccountName: transaction.counterpartAccountName,
+      },
+      accounts
+    );
+    const stored = transaction.description.trim();
+    // Align defaults with the locked template so DescriptionSyncer does not
+    // call handleChange on mount (which marks the form dirty). Preserve custom
+    // descriptions the user saved after unlocking the field.
+    if (locked && (!stored || stored === locked)) {
+      values.description = locked;
+    }
+  }
+
+  return values;
 };
 
 export const toApiPayload = (
@@ -112,6 +207,7 @@ export const toApiPayload = (
 
 interface UseTransactionFormOptions {
   transaction: TransactionRow | null;
+  accounts: Account[];
   onClose: () => void;
   createMutation: CreateMutation;
   updateMutation: UpdateMutation;
@@ -119,6 +215,7 @@ interface UseTransactionFormOptions {
 
 export const useTransactionForm = ({
   transaction,
+  accounts,
   onClose,
   createMutation,
   updateMutation,
@@ -126,7 +223,7 @@ export const useTransactionForm = ({
   const isEditing = transaction !== null;
 
   const form = useAppForm({
-    defaultValues: buildDefaultValues(transaction),
+    defaultValues: buildDefaultValues(transaction, accounts),
     validators: {
       onSubmit: ({ value }: { value: TransactionFormValues }) => {
         const payload = toApiPayload(value);

@@ -17,9 +17,6 @@ export const useSettingsEntityDialog = <T>() => {
 
   const onOpenChange = useCallback((next: boolean) => {
     setOpen(next);
-    if (!next) {
-      setEntity(null);
-    }
   }, []);
 
   return { open, entity, openCreate, openEdit, onOpenChange };

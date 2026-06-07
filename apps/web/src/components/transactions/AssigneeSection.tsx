@@ -65,9 +65,12 @@ export const AssigneeSection = ({
       return;
     }
     if (amountCents > 0 && pressedMemberIds.length > 0) {
-      onChange(lrmSplit(amountCents, pressedMemberIds));
+      const next = lrmSplit(amountCents, pressedMemberIds);
+      if (JSON.stringify(next) !== JSON.stringify(value)) {
+        onChange(next);
+      }
     }
-  }, [amountCents]);
+  }, [amountCents, pressedMemberIds, value, onChange]);
 
   // Issue 6: pre-fill assignees from the original transaction when creating a refund
   useEffect(() => {
@@ -109,7 +112,17 @@ export const AssigneeSection = ({
         value={pressedMemberIds}
         onChange={(newIds) => {
           setPressedMemberIds(newIds);
-          onChange(newIds.length === 0 ? [] : lrmSplit(amountCents, newIds));
+          if (newIds.length === 0) {
+            onChange([]);
+            return;
+          }
+          if (amountCents <= 0) return;
+          const next = lrmSplit(amountCents, newIds);
+          // ToggleGroup can emit on mount; skip when the split already matches
+          // form state so opening edit mode does not mark the sheet dirty.
+          if (JSON.stringify(next) !== JSON.stringify(value)) {
+            onChange(next);
+          }
         }}
       />
 

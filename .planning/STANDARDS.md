@@ -1,6 +1,6 @@
 # Code Standards & Patterns
 
-Working reference for code conventions. Will be promoted to `CLAUDE.md` once settled.
+Working reference for code conventions. Canonical agent guidance lives in `AGENTS.md` and `docs/`.
 
 ---
 

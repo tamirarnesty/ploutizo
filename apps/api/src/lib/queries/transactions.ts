@@ -514,7 +514,7 @@ export const replaceAssignees = async (
   assignees: {
     memberId: string;
     amountCents: number;
-    percentage?: number | null;
+    percentage: number;
   }[]
 ): Promise<void> => {
   await tx
@@ -526,7 +526,7 @@ export const replaceAssignees = async (
         transactionId,
         memberId: a.memberId,
         amountCents: a.amountCents,
-        percentage: a.percentage != null ? a.percentage.toString() : null,
+        percentage: a.percentage.toString(),
       }))
     );
   }

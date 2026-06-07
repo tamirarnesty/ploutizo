@@ -174,7 +174,7 @@ Shared expense tracking across household members with real-time settlement balan
 
 Planning is complete. Development is starting at Phase 1. The project uses a pnpm Turborepo monorepo scaffolded via `pnpm dlx shadcn@latest init -t start --monorepo --preset b5cRMQsEM`, then extended with `apps/api` (Hono) and `packages/db`, `packages/validators`, `packages/types`. Package import boundaries are enforced via pnpm workspace dependencies: `@ploutizo/ui` is web-only, `@ploutizo/db` is api-only, validators and types are shared.
 
-Detailed feature requirements live in `REQUIREMENTS.md`. Full agent context in `CLAUDE.md`.
+Detailed feature requirements live in `REQUIREMENTS.md`. Full agent context in `AGENTS.md` and `docs/`.
 
 The Linear workspace has 31 issues across 4 projects (Phase 1–4) already created at linear.app/ploutizo.
 

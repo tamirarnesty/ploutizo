@@ -4,8 +4,10 @@ import {
   transactionTags,
   transactions,
 } from '@ploutizo/db/schema';
+import { normalizeTransactionAssignees } from '@ploutizo/utils';
 import type {
   CreateTransactionInput,
+  UpdateTransactionServiceInput,
   createTransactionSchema,
 } from '@ploutizo/validators';
 import type { ListQueryParams } from '@/lib/queries/transactions';
@@ -46,13 +48,9 @@ export const validateSplitSum = (
 };
 
 export const assigneeRowsForPatchSplitSum = (
-  type: CreateTransactionInput['type'],
-  payloadAssignees: CreateTransactionInput['assignees'],
+  payloadAssignees: CreateTransactionInput['assignees'] | undefined,
   existingAssignees: readonly { amountCents: number }[]
 ): { amountCents: number }[] | null => {
-  if (type !== 'expense' && type !== 'refund' && type !== 'settlement') {
-    return null;
-  }
   const rows =
     payloadAssignees !== undefined
       ? payloadAssignees.map((a) => ({ amountCents: a.amountCents }))
@@ -123,6 +121,14 @@ export const createTransaction = async (
 ) => {
   const { assignees, tagIds, ...transactionData } = data;
 
+  const splitError = validateSplitSum(transactionData.amount, assignees);
+  if (splitError) throw new Error(splitError);
+
+  const normalizedAssignees = normalizeTransactionAssignees(
+    transactionData.amount,
+    assignees
+  );
+
   await assertTransactionWriteReferences(orgId, {
     accountId: transactionData.accountId,
     counterpartAccountId:
@@ -136,7 +142,7 @@ export const createTransaction = async (
         ? transactionData.categoryId
         : undefined,
     tagIds,
-    assignees,
+    assignees: normalizedAssignees,
   });
 
   return db.transaction(async (tx) => {
@@ -145,16 +151,14 @@ export const createTransaction = async (
       .values({ orgId, ...transactionData })
       .returning();
 
-    if (assignees && assignees.length > 0) {
-      await tx.insert(transactionAssignees).values(
-        assignees.map((a) => ({
-          transactionId: inserted.id,
-          memberId: a.memberId,
-          amountCents: a.amountCents,
-          percentage: a.percentage != null ? a.percentage.toString() : null,
-        }))
-      );
-    }
+    await tx.insert(transactionAssignees).values(
+      normalizedAssignees.map((a) => ({
+        transactionId: inserted.id,
+        memberId: a.memberId,
+        amountCents: a.amountCents,
+        percentage: a.percentage.toString(),
+      }))
+    );
 
     if (tagIds && tagIds.length > 0) {
       await tx
@@ -197,7 +201,7 @@ export const getTransaction = async (orgId: string, id: string) => {
 export const updateTransaction = async (
   orgId: string,
   id: string,
-  data: CreateTransactionInput
+  data: UpdateTransactionServiceInput
 ) => {
   const { assignees, tagIds, ...updateData } = data;
 
@@ -230,12 +234,7 @@ export const updateTransaction = async (
       assignees,
     });
 
-    const typeUsesSplitAssignees =
-      data.type === 'expense' ||
-      data.type === 'refund' ||
-      data.type === 'settlement';
-    const needsPersistedAssignees =
-      typeUsesSplitAssignees && data.assignees === undefined;
+    const needsPersistedAssignees = data.assignees === undefined;
 
     let existingAssignees: readonly { amountCents: number }[] = [];
     if (needsPersistedAssignees) {
@@ -245,7 +244,6 @@ export const updateTransaction = async (
     }
 
     const rowsForSplitCheck = assigneeRowsForPatchSplitSum(
-      data.type,
       data.assignees,
       existingAssignees
     );
@@ -264,7 +262,11 @@ export const updateTransaction = async (
     if (!updated) return null;
 
     if (assignees !== undefined) {
-      await replaceAssignees(tx, id, assignees);
+      const normalizedAssignees = normalizeTransactionAssignees(
+        data.amount,
+        assignees
+      );
+      await replaceAssignees(tx, id, normalizedAssignees);
     }
 
     if (tagIds !== undefined) {

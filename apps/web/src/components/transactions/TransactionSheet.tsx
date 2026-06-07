@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +32,13 @@ export const TransactionSheet = ({
   const isEditing = transaction !== null;
   const [isDirty, setIsDirty] = useState(false);
   const [discardOpen, setDiscardOpen] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setIsDirty(false);
+      setDiscardOpen(false);
+    }
+  }, [open, transaction?.id]);
 
   const handleClose = () => {
     if (isDirty) {
