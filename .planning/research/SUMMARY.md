@@ -13,7 +13,7 @@ ploutizo is a multi-tenant household finance tracker — a category with well-es
 
 The architecture decisions are largely validated. Application-level tenant isolation (WHERE clause + `tenantGuard()` middleware) is the correct choice over Postgres RLS for this architecture. Single-table transaction design, integer cents storage, soft-delete with `deleted_at`, and query-time settlement balance computation are all confirmed as appropriate patterns for the scale and use case. The Canadian-specific finance features (TFSA room calculation, FHSA carry-forward mechanics, budget rollover behavior) have well-documented rules — but the 2026 annual limits for TFSA and RRSP require verification against CRA before hardcoding.
 
-The two highest-risk areas requiring early attention are: (1) Clerk satellite domain configuration for the `{subdomain}.ploutizo.app` multi-tenant routing, which is a Phase 1 infrastructure prerequisite not originally called out in REQUIREMENTS.md; and (2) Canadian bank CSV format validation — the normalizer research is LOW confidence and must be tested against real bank exports before the import feature ships. React Query stale-balance behavior after mutations is a guaranteed UX bug if not addressed explicitly during transaction and settlement implementation.
+The two highest-risk areas requiring early attention are: (1) Clerk satellite domain configuration for the `{subdomain}.ploutizo.app` multi-tenant routing, which is a Phase 1 infrastructure prerequisite not originally called out in REQUIREMENTS.md; and (2) Canadian credit card CSV format validation — the normalizer research is LOW confidence and must be tested against real credit card exports before the import feature ships. React Query stale-balance behavior after mutations is a guaranteed UX bug if not addressed explicitly during transaction and settlement implementation.
 
 ---
 
@@ -126,7 +126,7 @@ The two highest-risk areas requiring early attention are: (1) Clerk satellite do
 - Implement two-signal deduplication: `external_id` exact match first; Levenshtein fallback with pre-normalization
 - Add bank-format detection with null fallback that surfaces a user-visible error for unrecognized formats
 
-**Research flags: HIGH — bank CSV formats are LOW confidence.** Obtain real exports from at least TD, RBC, CIBC, and Amex before writing normalizers. Column names and file structures change; the detection signatures in FEATURES.md are training-data derived. Fixture-based unit tests are essential and must use real exported files.
+**Research flags: HIGH — credit card CSV formats are LOW confidence.** Obtain real credit card exports from supported issuers before writing normalizers. Column names and file structures change; the detection signatures in FEATURES.md are training-data derived. Fixture-based unit tests are essential and must use real exported files.
 
 ### Phase 4 — Settlement
 
@@ -170,7 +170,7 @@ The two highest-risk areas requiring early attention are: (1) Clerk satellite do
 
 - **RRSP 2025/2026 dollar caps** — Research reports $32,490 for 2025 as "widely reported" but notes MEDIUM confidence. Verify the exact 2025 cap and the 2026 cap (if announced) at https://www.canada.ca/en/revenue-agency/services/tax/individuals/topics/rrsps-related-plans/contributing-a-rrsp-prpp/contributions-affect-your-rrsp-prpp-deduction-limit.html.
 
-- **Canadian bank CSV column names and formats** — Research confidence is LOW for exact column headers. TD, RBC, CIBC, Scotiabank, BMO, Amex, Tangerine, and EQ Bank format tables are based on training data (pre-August 2025 cutoff). Banks change their export formats without notice. Validate each bank's detection signature and normalizer function against real exports before shipping the import feature. Treat the `BANK_SIGNATURES` table in FEATURES.md as a starting point, not a specification.
+- **Canadian credit card CSV column names and formats** — Research confidence is LOW for exact column headers. Supported credit card export format tables are based on training data (pre-August 2025 cutoff). Issuers change their export formats without notice. Validate each detection signature and normalizer function against real credit card exports before shipping the import feature. Treat any signature table as a starting point, not a specification.
 
 - **Neon connection limits by plan tier** — The specific connection limit numbers for Neon Free vs Launch vs Scale tiers were not directly confirmed during research (access restricted). Validate the connection limit on the chosen Neon plan against `postgres.js` pool `max` default (10) before production. Add a `/health/ready` endpoint that pings the DB to surface connection exhaustion early.
 
@@ -185,7 +185,7 @@ The two highest-risk areas requiring early attention are: (1) Clerk satellite do
 | Area | Confidence | Notes |
 |------|------------|-------|
 | Stack | HIGH | Core choices (postgres.js, Clerk, Drizzle, Railway) verified against official docs. Driver correction (postgres.js over neon-http) is well-sourced. |
-| Features | MEDIUM | CRA rules (TFSA, FHSA, RRSP) are HIGH confidence from official sources. Bank CSV formats are LOW confidence — need real exports. Settlement and budget logic is MEDIUM from industry pattern analysis. |
+| Features | MEDIUM | CRA rules (TFSA, FHSA, RRSP) are HIGH confidence from official sources. Credit card CSV formats are LOW confidence — need real exports. Settlement and budget logic is MEDIUM from industry pattern analysis. |
 | Architecture | HIGH | Multi-tenancy strategy, money storage, soft delete, split math, and query-time balances all verified against official Drizzle/Postgres docs. |
 | Pitfalls | MEDIUM-HIGH | Clerk auth gotchas, Tailwind v4 breaks, and React Query stale state are HIGH confidence. Railway-specific behaviors (pnpm cache, health check timing) are MEDIUM — partial official coverage. |
 
@@ -193,7 +193,7 @@ The two highest-risk areas requiring early attention are: (1) Clerk satellite do
 
 ### Gaps to Address
 
-- **Bank CSV real exports:** Low-confidence area that cannot be resolved by further research. Must be validated during Phase 3 implementation with actual bank downloads.
+- **Credit card CSV real exports:** Low-confidence area that cannot be resolved by further research. Must be validated during import implementation with actual credit card downloads.
 - **CRA 2026 annual limits:** Quick external validation (CRA website) before savings/investments phase begins. Not blocking earlier phases.
 - **Budget rollover cap:** Product decision, not a research gap. Needs owner decision before Phase 5.
 - **TFSA withdrawal UX:** Product decision on whether to add a manual adjustment field or show a disclaimer only. Needs owner decision before Phase 6.
@@ -221,7 +221,7 @@ The two highest-risk areas requiring early attention are: (1) Clerk satellite do
 - Neon connection limit specifics — plan page not directly accessible during research
 
 ### Tertiary (LOW confidence)
-- Canadian bank CSV column names and formats — training data (pre-August 2025 cutoff). All 8 bank format tables require real-export validation before use.
+- Canadian credit card CSV column names and formats — training data (pre-August 2025 cutoff). Supported credit card format tables require real-export validation before use.
 - Scotiabank Windows-1252 encoding — community reports; needs empirical testing
 - ReUI Tailwind v4 compatibility — not directly verified at time of research
 

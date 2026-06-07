@@ -747,17 +747,17 @@ Plans:
 
 ## Milestone v0.3 — Import
 
-### Phase 5.1: Bank Normalizers
+### Phase 5.1: Credit Card CSV Normalizers
 
-**Goal:** Pure-function normalizers exist for all supported bank CSV formats with
+**Goal:** Pure-function normalizers exist for all supported credit card CSV formats with
 full fixture-based test coverage. No DB or UI dependencies — this phase can be
 merged and tested in isolation.
 
 **Delivers:**
 
-- Pure-function normalizers for: TD, RBC, CIBC, Scotiabank, BMO, Amex, Tangerine, EQ Bank, and ploutizo normalized format
+- Pure-function normalizers for supported credit card exports: TD, RBC, CIBC, Scotiabank, BMO, Amex, Tangerine, and Ploutizo normalized credit card format
 - Amex CA sign inversion (positive = expense)
-- Bank-specific date parsers (CIBC/EQ Bank: `YYYY-MM-DD`; all others: `MM/DD/YYYY`)
+- Format-specific date parsers (CIBC: `YYYY-MM-DD`; all others: `MM/DD/YYYY`)
 - BOM stripping on all CSV inputs
 - Format auto-detection with unrecognized-format error
 
@@ -774,7 +774,7 @@ Plans:
 **Success criteria:**
 
 - Amex CA CSV: a row with positive amount `234.80` is parsed as a $234.80 expense (not income)
-- CIBC CSV: a date formatted `2026-01-15` is parsed correctly; a TD CSV with date `01/15/2026` is parsed correctly
+- CIBC credit card CSV: a date formatted `2026-01-15` is parsed correctly; a TD credit card CSV with date `01/15/2026` is parsed correctly
 - Uploading a CSV from an unrecognized bank format returns the unrecognized-format error
 
 ---
@@ -1215,7 +1215,7 @@ Plans:
 | -------------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | TFSA 2026 annual limit                                                           | Phase 6.1 | Verify at CRA website before implementing `TFSA_ANNUAL_LIMITS` constant                                                        |
 | RRSP 2025/2026 dollar cap                                                        | Phase 6.1 | Verify exact cap at CRA website                                                                                                |
-| Bank CSV column names (TD, RBC, CIBC, Scotiabank, BMO, Amex, Tangerine, EQ Bank) | Phase 5.1 | Collect real bank export files; treat SUMMARY.md signatures as starting point only                                             |
+| Credit card CSV column names (TD, RBC, CIBC, Scotiabank, BMO, Amex, Tangerine)  | Phase 5.1 | Collect real credit card export files; treat SUMMARY.md signatures as starting point only                                      |
 | Cloudflare proxy setting for `clerk.ploutizo.app`                                | Phase 1   | Must be "DNS only" (grey cloud) — document in deployment runbook                                                               |
 | ReUI Tailwind v4 compatibility                                                   | Phase 3.3 | Verify `DataGrid` and `Filters` compatibility at [https://reui.io/docs](https://reui.io/docs) before building transaction list |
 | Neon connection limits on chosen plan tier                                       | Phase 1   | Verify plan limit vs postgres.js pool `max` before production launch                                                           |
