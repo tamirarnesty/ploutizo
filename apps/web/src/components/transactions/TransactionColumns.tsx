@@ -16,9 +16,9 @@ import {
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
 import { cn } from '@ploutizo/ui/lib/utils';
+import { formatCurrency } from '@ploutizo/utils/currency';
 import { ICON_MAP } from '@/components/categories/LucideIconPicker';
 import { getColourBadgeClassFromRaw } from '@/components/colour/colour-token-classes';
-import { formatCurrency } from '@/lib/formatCurrency';
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
 import type { TransactionRow } from '@/lib/data-access/transactions';
 import type { LucideIcon } from 'lucide-react';

@@ -4,6 +4,7 @@ import {
   formatSettlementDescription,
   normalizeTransactionAssignees,
 } from '@ploutizo/utils';
+import { parseCurrencyInput } from '@ploutizo/utils/currency';
 import type { Account } from '@ploutizo/types';
 import type {
   TransactionRow,
@@ -159,7 +160,10 @@ export const toApiPayload = (
   const base = {
     type: value.type,
     accountId: value.accountId,
-    amount: Math.round((value.amount ?? 0) * 100),
+    amount:
+      value.amount === undefined || !Number.isFinite(value.amount)
+        ? 0
+        : parseCurrencyInput(String(value.amount)),
     date: value.date,
     description: value.description.trim(),
     notes: value.notes.trim() || undefined,

@@ -5,6 +5,7 @@ import {
   InputGroupInput,
   InputGroupText,
 } from '@ploutizo/ui/components/input-group';
+import { formatCurrency, parseCurrencyInput } from '@ploutizo/utils/currency';
 
 interface FormattedAmountInputProps {
   value: number | undefined;
@@ -13,11 +14,8 @@ interface FormattedAmountInputProps {
   id?: string;
 }
 
-const format = (n: number) =>
-  new Intl.NumberFormat('en-CA', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(n);
+const format = (dollars: number): string =>
+  formatCurrency(parseCurrencyInput(String(dollars))).replace(/[^\d.,+-]/g, '');
 
 export const FormattedAmountInput = ({
   value,
@@ -27,12 +25,14 @@ export const FormattedAmountInput = ({
 }: FormattedAmountInputProps) => {
   const focused = useRef(false);
   const [displayValue, setDisplayValue] = useState(
-    value !== undefined ? format(value) : ''
+    value !== undefined && Number.isFinite(value) ? format(value) : ''
   );
 
   useEffect(() => {
     if (!focused.current) {
-      setDisplayValue(value !== undefined ? format(value) : '');
+      setDisplayValue(
+        value !== undefined && Number.isFinite(value) ? format(value) : ''
+      );
     }
   }, [value]);
 
@@ -48,20 +48,32 @@ export const FormattedAmountInput = ({
         autoComplete="off"
         value={displayValue}
         onChange={(e) => {
-          const raw = e.target.value.replace(/[^0-9.]/g, '');
+          const raw = e.target.value;
           setDisplayValue(raw);
-          onChange(raw === '' ? undefined : parseFloat(raw));
+          if (raw.trim() === '') {
+            onChange(undefined);
+            return;
+          }
+          try {
+            onChange(parseCurrencyInput(raw) / 100);
+          } catch {
+            return;
+          }
         }}
         onFocus={() => {
           focused.current = true;
-          setDisplayValue(value !== undefined ? value.toString() : '');
+          setDisplayValue(
+            value !== undefined && Number.isFinite(value)
+              ? value.toString()
+              : ''
+          );
         }}
         onBlur={() => {
           focused.current = false;
           onBlur();
-          if (value !== undefined) {
-            setDisplayValue(format(value));
-          }
+          setDisplayValue(
+            value !== undefined && Number.isFinite(value) ? format(value) : ''
+          );
         }}
       />
     </InputGroup>

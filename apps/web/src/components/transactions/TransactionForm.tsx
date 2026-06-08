@@ -34,6 +34,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
+import { parseCurrencyInput } from '@ploutizo/utils/currency';
 import type { Account, OrgMember } from '@ploutizo/types';
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import { useGetCategories } from '@/lib/data-access/categories';
@@ -638,7 +639,11 @@ const TransactionFormInner = ({
                     <AssigneeSection
                       value={field.state.value}
                       onChange={(assignees) => field.handleChange(assignees)}
-                      amountCents={Math.round((amount ?? 0) * 100)}
+                      amountCents={
+                        amount === undefined || !Number.isFinite(amount)
+                          ? 0
+                          : parseCurrencyInput(String(amount))
+                      }
                       orgMembers={orgMembers}
                       transaction={transaction}
                       refundAssigneeIds={

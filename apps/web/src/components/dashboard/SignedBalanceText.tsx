@@ -3,7 +3,7 @@ import { cn } from '@ploutizo/ui/lib/utils';
 import {
   formatSignedBalanceCents,
   signedBalanceToneClassName,
-} from '@/lib/formatCurrency';
+} from '@/lib/settlements/signedBalanceDisplay';
 import type { ComponentProps } from 'react';
 
 type SignedBalanceTextProps = {

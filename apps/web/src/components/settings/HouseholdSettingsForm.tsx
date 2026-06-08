@@ -5,6 +5,7 @@ import { Input } from '@ploutizo/ui/components/input';
 import { LoadingButton } from '@ploutizo/ui/components/loading-button';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
+import { parseCurrencyInput } from '@ploutizo/utils/currency';
 import type { HouseholdSettingsForm as HouseholdSettingsFormType } from '@ploutizo/validators';
 import {
   useGetHouseholdSettings,
@@ -34,8 +35,14 @@ const HouseholdSettingsFormFields = ({
       },
     },
     onSubmit: ({ value }) => {
-      const dollars = parseFloat(value.thresholdDollars);
-      const cents = isNaN(dollars) ? null : Math.round(dollars * 100);
+      const threshold = value.thresholdDollars.trim();
+      let cents: number | null = null;
+      try {
+        cents = threshold === '' ? null : parseCurrencyInput(threshold);
+      } catch {
+        form.setErrorMap({ onSubmit: 'Must be a positive number.' });
+        return;
+      }
       mutation.mutate(
         { settlementThreshold: cents },
         {

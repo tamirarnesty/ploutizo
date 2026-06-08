@@ -28,6 +28,13 @@ describe('toApiPayload', () => {
     expect(payload.tagIds).toEqual([]);
   });
 
+  it('rounds dollar amounts to integer cents', () => {
+    const value = expenseBase();
+    value.amount = 12.345;
+    const payload = toApiPayload(value);
+    expect(payload.amount).toBe(1235);
+  });
+
   it('maps non-empty assignees to API rows', () => {
     const value = expenseBase();
     value.assignees = [

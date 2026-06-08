@@ -7,7 +7,7 @@ import {
   InputGroupInput,
 } from '@ploutizo/ui/components/input-group';
 import { Text } from '@ploutizo/ui/components/text';
-import { formatCurrency } from '@/lib/formatCurrency';
+import { formatCurrency, parseCurrencyInput } from '@ploutizo/utils/currency';
 import { UserAvatar } from '@/components/members/UserAvatar';
 import type { AssigneeFormRow } from './types';
 
@@ -31,7 +31,9 @@ const toDisplay = (
   percentage: number,
   amountCents: number
 ) =>
-  mode === 'percent' ? percentage.toFixed(1) : (amountCents / 100).toFixed(2);
+  mode === 'percent'
+    ? percentage.toFixed(1)
+    : formatCurrency(amountCents).replace(/[^\d.,+-]/g, '');
 
 export const AssigneeRow = ({
   memberId,
@@ -100,9 +102,8 @@ export const AssigneeRow = ({
                 });
               }
             } else {
-              const dollars = parseFloat(raw);
-              if (!isNaN(dollars)) {
-                const cents = Math.round(dollars * 100);
+              try {
+                const cents = parseCurrencyInput(raw);
                 onChange(memberId, {
                   amountCents: cents,
                   percentage:
@@ -110,6 +111,8 @@ export const AssigneeRow = ({
                       ? Math.round((cents / totalCents) * 1000) / 10
                       : 0,
                 });
+              } catch {
+                return;
               }
             }
           }}
