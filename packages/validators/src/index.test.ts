@@ -297,8 +297,22 @@ describe('HouseholdSettingsFormSchema', () => {
       const errors = result.error.issues.filter((i) =>
         i.path.includes('thresholdDollars')
       );
-      expect(errors[0]?.message).toBe('Must be a positive number.');
+      expect(errors[0]?.message).toBe('Cannot be negative.');
     }
+  });
+
+  it('accepts zero as threshold', () => {
+    const result = HouseholdSettingsFormSchema.safeParse({
+      thresholdDollars: 0,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts fractional dollar amount', () => {
+    const result = HouseholdSettingsFormSchema.safeParse({
+      thresholdDollars: 50.75,
+    });
+    expect(result.success).toBe(true);
   });
 
   it('accepts undefined as an unset threshold', () => {

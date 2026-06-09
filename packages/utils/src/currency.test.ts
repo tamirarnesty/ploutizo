@@ -22,6 +22,11 @@ describe('formatCurrency', () => {
   it('formats large values with grouping', () => {
     expect(formatCurrency(123_456_789)).toBe('$1,234,567.89');
   });
+
+  it('returns em dash for non-finite cents', () => {
+    expect(formatCurrency(Number.NaN)).toBe('—');
+    expect(formatCurrency(Number.POSITIVE_INFINITY)).toBe('—');
+  });
 });
 
 describe('formatCurrencyInput', () => {
@@ -29,6 +34,11 @@ describe('formatCurrencyInput', () => {
     expect(formatCurrencyInput(0)).toBe('0.00');
     expect(formatCurrencyInput(123_456)).toBe('1,234.56');
     expect(formatCurrencyInput(-123_456)).toBe('-1,234.56');
+  });
+
+  it('returns empty string for non-finite cents', () => {
+    expect(formatCurrencyInput(Number.NaN)).toBe('');
+    expect(formatCurrencyInput(Number.POSITIVE_INFINITY)).toBe('');
   });
 });
 

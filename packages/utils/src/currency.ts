@@ -38,8 +38,15 @@ export const formatCurrency = (
   cents: number,
   currency = 'CAD',
   locale = 'en-CA'
-): string =>
-  getCurrencyFormatter(currency, locale).format(centsToDollars(cents));
+): string => {
+  if (!Number.isFinite(cents)) return '—';
+  return getCurrencyFormatter(currency, locale).format(centsToDollars(cents));
+};
 
-export const formatCurrencyInput = (cents: number, locale = 'en-CA'): string =>
-  getDecimalFormatter(locale).format(centsToDollars(cents));
+export const formatCurrencyInput = (
+  cents: number,
+  locale = 'en-CA'
+): string => {
+  if (!Number.isFinite(cents)) return '';
+  return getDecimalFormatter(locale).format(centsToDollars(cents));
+};

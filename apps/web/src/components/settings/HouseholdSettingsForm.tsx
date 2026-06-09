@@ -79,7 +79,7 @@ const HouseholdSettingsFormFields = ({
             <>
               <CurrencyInput
                 id="settlement-threshold"
-                className="w-32"
+                className="w-auto min-w-32"
                 value={field.state.value}
                 onChange={(v) => field.handleChange(v)}
                 onBlur={field.handleBlur}

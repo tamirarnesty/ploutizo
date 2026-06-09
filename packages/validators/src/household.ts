@@ -9,10 +9,7 @@ export type UpdateHouseholdSettingsInput = z.infer<
 
 // HouseholdSettingsFormSchema — dollars in form state, cents computed in onSubmit
 export const HouseholdSettingsFormSchema = z.object({
-  thresholdDollars: z
-    .number()
-    .nonnegative('Must be a positive number.')
-    .optional(),
+  thresholdDollars: z.number().nonnegative('Cannot be negative.').optional(),
 });
 export type HouseholdSettingsForm = z.infer<typeof HouseholdSettingsFormSchema>;
 
