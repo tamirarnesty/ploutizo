@@ -2,8 +2,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/queryClient';
 import {
   activeImportDraftsQueryKey,
+  importDraftQueryKey,
   importHistoryQueryKey,
-} from './useGetImportDrafts';
+} from './queryKeys';
 
 export const useDiscardImportDraft = () => {
   const qc = useQueryClient();
@@ -12,10 +13,10 @@ export const useDiscardImportDraft = () => {
       apiFetch<{ data: { id: string } }>(`/api/imports/drafts/${id}`, {
         method: 'DELETE',
       }),
-    onSuccess: () => {
+    onSuccess: (_response, draftId) => {
       void qc.invalidateQueries({ queryKey: activeImportDraftsQueryKey });
       void qc.invalidateQueries({ queryKey: importHistoryQueryKey });
-      void qc.invalidateQueries({ queryKey: ['imports', 'draft'] });
+      qc.removeQueries({ queryKey: importDraftQueryKey(draftId) });
     },
   });
 };

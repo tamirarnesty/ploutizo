@@ -35,7 +35,6 @@ describe('imports router', () => {
         name: 'Visa',
         institution: 'TD',
         lastFour: '1234',
-        owners: [],
       },
     ]);
 

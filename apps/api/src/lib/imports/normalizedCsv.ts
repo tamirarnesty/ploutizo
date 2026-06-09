@@ -1,9 +1,13 @@
+import {
+  MAX_NORMALIZED_IMPORT_BYTES,
+  MAX_NORMALIZED_IMPORT_ROWS,
+  NORMALIZED_IMPORT_REQUIRED_COLUMNS,
+  NORMALIZED_IMPORT_SOURCE,
+} from '@ploutizo/types';
+import { parseImportTags } from '@ploutizo/utils';
 import type { ImportDraftRow, TransactionType } from '@ploutizo/types';
+import { computeImportRowStatus } from './rowStatus';
 import { DomainError } from '@/lib/errors';
-
-export const NORMALIZED_IMPORT_SOURCE = 'ploutizo_normalized';
-export const MAX_NORMALIZED_IMPORT_BYTES = 512 * 1024;
-export const MAX_NORMALIZED_IMPORT_ROWS = 1_000;
 
 type CsvRecord = {
   cells: string[];
@@ -56,7 +60,7 @@ export interface ParsedNormalizedImport {
   rows: ParsedImportRow[];
 }
 
-const REQUIRED_HEADERS: HeaderKey[] = ['date', 'amount', 'description', 'type'];
+const REQUIRED_HEADERS: HeaderKey[] = [...NORMALIZED_IMPORT_REQUIRED_COLUMNS];
 
 const HEADER_ALIASES: Partial<Record<string, HeaderKey>> = {
   date: 'date',
@@ -202,14 +206,6 @@ const parseType = (value: string | null): TransactionType | null => {
     : null;
 };
 
-const splitTags = (value: string | null): string[] => {
-  if (!value) return [];
-  return value
-    .split(/[;,]/)
-    .map((tag) => tag.trim())
-    .filter(Boolean);
-};
-
 const readCell = (
   record: CsvRecord,
   headerMap: Map<HeaderKey, number>,
@@ -242,7 +238,7 @@ const parseRow = (
   const reviewAssigneeHint = readCell(record, headerMap, 'assigneeHint');
   const reviewRefundLinkHint = readCell(record, headerMap, 'refundLinkHint');
   const reviewNotes = readCell(record, headerMap, 'notes');
-  const reviewTags = splitTags(readCell(record, headerMap, 'tags'));
+  const reviewTags = parseImportTags(readCell(record, headerMap, 'tags') ?? '');
 
   const parsedDate = parseIsoDate(sourceDate);
   const parsedAmount = parseAmountCents(sourceAmount);
@@ -258,14 +254,18 @@ const parseRow = (
   }
 
   const isInvalid = invalidReasons.length > 0;
-  const requiresReview =
-    parsedType === 'settlement' ||
-    ((parsedType === 'expense' || parsedType === 'refund') &&
-      !reviewCategoryName);
+  const status = isInvalid
+    ? ('invalid' as const)
+    : computeImportRowStatus({
+        status: 'ready',
+        reviewType: parsedType,
+        parsedType,
+        reviewCategoryName,
+      });
 
   return {
     rowNumber: record.rowNumber,
-    status: isInvalid ? 'invalid' : requiresReview ? 'needs_review' : 'ready',
+    status,
     invalidReason: invalidReasons.length > 0 ? invalidReasons.join(' ') : null,
     rawData: buildRawData(record, headers),
     externalId,
@@ -357,9 +357,4 @@ export const parsePloutizoNormalizedCsv = (
   };
 };
 
-export const NORMALIZED_IMPORT_EXAMPLE_CSV = [
-  'date,amount,description,type,external id,category,assignee hint,refund link hints,notes,tags',
-  '2026-05-02,42.18,Neighborhood Grocery,expense,visa-1001,Groceries,Ada,,Weekly shop,food; errands',
-  '2026-05-08,14.99,Returned Charger,refund,visa-1002,Household,Ada,visa-0911,Returned item,',
-  '2026-05-15,250.00,Payment Thank You,settlement,visa-1003,,,chequing payment,Statement payment,',
-].join('\n');
+export { computeImportRowStatus } from './rowStatus';

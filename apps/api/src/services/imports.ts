@@ -1,4 +1,5 @@
 import { db } from '@ploutizo/db';
+import { NORMALIZED_IMPORT_EXAMPLE_CSV } from '@ploutizo/types';
 import type {
   ImportDraft,
   ImportDraftRow,
@@ -10,12 +11,12 @@ import type {
   UpdateImportDraftRowInput,
 } from '@ploutizo/validators';
 import { DomainError, NotFoundError } from '@/lib/errors';
-import { listAccountMemberDetails } from '@/lib/queries/accounts';
+import { computeImportRowStatus } from '@/lib/imports/rowStatus';
 import {
   discardImportDraftQuery,
   fetchActiveCreditCardAccount,
   fetchActiveDraftByAccount,
-  fetchDraftRowForUpdate,
+  fetchDraftRowById,
   fetchDraftSummaryById,
   insertImportBatch,
   insertImportBatchRows,
@@ -26,10 +27,7 @@ import {
   touchImportDraft,
   updateImportDraftRowQuery,
 } from '@/lib/queries/imports';
-import {
-  NORMALIZED_IMPORT_EXAMPLE_CSV,
-  parsePloutizoNormalizedCsv,
-} from '@/lib/imports/normalizedCsv';
+import { parsePloutizoNormalizedCsv } from '@/lib/imports/normalizedCsv';
 
 const toImportDraftSummary = (
   row: Awaited<ReturnType<typeof listActiveImportDraftSummaries>>[number]
@@ -58,37 +56,9 @@ const toImportDraftRow = (
   updatedAt: row.updatedAt.toISOString(),
 });
 
-const buildTargetOwners = async (
-  orgId: string,
-  targets: Awaited<ReturnType<typeof listImportTargetAccounts>>
-) => {
-  const memberRows = await listAccountMemberDetails(
-    orgId,
-    targets.map((target) => target.id)
-  );
-  const byAccount = new Map<ImportTargetAccount['id'], ImportTargetAccount['owners']>();
-  for (const member of memberRows) {
-    const owners = byAccount.get(member.accountId) ?? [];
-    owners.push({
-      id: member.memberId,
-      displayName: member.displayName,
-      imageUrl: member.imageUrl ?? null,
-    });
-    byAccount.set(member.accountId, owners);
-  }
-  return byAccount;
-};
-
 export const listImportTargets = async (
   orgId: string
-): Promise<ImportTargetAccount[]> => {
-  const targets = await listImportTargetAccounts(orgId);
-  const ownersByAccount = await buildTargetOwners(orgId, targets);
-  return targets.map((target) => ({
-    ...target,
-    owners: ownersByAccount.get(target.id) ?? [],
-  }));
-};
+): Promise<ImportTargetAccount[]> => listImportTargetAccounts(orgId);
 
 export const listActiveImportDrafts = async (
   orgId: string
@@ -174,12 +144,23 @@ export const updateImportDraftRow = async (
   rowId: string,
   input: UpdateImportDraftRowInput
 ): Promise<ImportDraftRow> => {
-  const row = await fetchDraftRowForUpdate(orgId, rowId);
-  if (!row) throw new NotFoundError('Import draft row not found.');
+  const existing = await fetchDraftRowById(orgId, rowId);
+  if (!existing) throw new NotFoundError('Import draft row not found.');
 
-  const updated = await updateImportDraftRowQuery(orgId, rowId, input);
+  const merged = { ...existing, ...input };
+  const status = computeImportRowStatus({
+    status: existing.status,
+    reviewType: merged.reviewType ?? null,
+    parsedType: merged.parsedType ?? null,
+    reviewCategoryName: merged.reviewCategoryName ?? null,
+  });
+
+  const updated = await updateImportDraftRowQuery(orgId, rowId, {
+    ...input,
+    status,
+  });
   if (!updated) throw new NotFoundError('Import draft row not found.');
-  await touchImportDraft(row.batchId);
+  await touchImportDraft(existing.batchId);
   return toImportDraftRow(updated);
 };
 

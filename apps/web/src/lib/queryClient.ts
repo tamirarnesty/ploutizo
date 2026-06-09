@@ -45,3 +45,23 @@ export const apiFetch = async <T>(
   }
   return res.json() as Promise<T>;
 };
+
+export interface ApiErrorBody {
+  error?: {
+    code?: string;
+    message?: string;
+    errors?: { message?: string }[];
+  };
+}
+
+export const getApiErrorMessage = (
+  error: unknown,
+  fallback = "Couldn't process that request."
+): string => {
+  const maybeError = error as ApiErrorBody;
+  return (
+    maybeError.error?.message ??
+    maybeError.error?.errors?.[0]?.message ??
+    fallback
+  );
+};

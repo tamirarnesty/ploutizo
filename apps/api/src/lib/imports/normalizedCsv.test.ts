@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import {
-  MAX_NORMALIZED_IMPORT_BYTES,
-  parsePloutizoNormalizedCsv,
-} from './normalizedCsv';
+import { MAX_NORMALIZED_IMPORT_BYTES } from '@ploutizo/types';
+import { parsePloutizoNormalizedCsv } from './normalizedCsv';
 import { DomainError } from '@/lib/errors';
 
 const expectImportError = (fn: () => unknown, code: string) => {

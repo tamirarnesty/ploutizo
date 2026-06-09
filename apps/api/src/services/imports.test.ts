@@ -3,16 +3,18 @@ import { db } from '@ploutizo/db';
 import {
   createNormalizedImportDraft,
   listImportTargets,
+  updateImportDraftRow,
 } from '@/services/imports';
-import { listAccountMemberDetails } from '@/lib/queries/accounts';
 import {
   fetchActiveCreditCardAccount,
   fetchActiveDraftByAccount,
+  fetchDraftRowById,
   fetchDraftSummaryById,
   insertImportBatch,
   insertImportBatchRows,
   listDraftRows,
   listImportTargetAccounts,
+  updateImportDraftRowQuery,
 } from '@/lib/queries/imports';
 
 vi.mock('@ploutizo/db', () => ({
@@ -21,18 +23,17 @@ vi.mock('@ploutizo/db', () => ({
   },
 }));
 
-vi.mock('@/lib/queries/accounts', () => ({
-  listAccountMemberDetails: vi.fn(),
-}));
-
 vi.mock('@/lib/queries/imports', () => ({
   fetchActiveCreditCardAccount: vi.fn(),
   fetchActiveDraftByAccount: vi.fn(),
+  fetchDraftRowById: vi.fn(),
   fetchDraftSummaryById: vi.fn(),
   insertImportBatch: vi.fn(),
   insertImportBatchRows: vi.fn(),
   listDraftRows: vi.fn(),
   listImportTargetAccounts: vi.fn(),
+  touchImportDraft: vi.fn(),
+  updateImportDraftRowQuery: vi.fn(),
 }));
 
 const summaryRow = {
@@ -98,21 +99,13 @@ describe('import service', () => {
     vi.mocked(insertImportBatchRows).mockResolvedValue([]);
   });
 
-  it('returns only target rows supplied by the credit-card target query with owners attached', async () => {
+  it('returns credit-card target accounts without owner enrichment', async () => {
     vi.mocked(listImportTargetAccounts).mockResolvedValue([
       {
         id: summaryRow.accountId,
         name: 'Visa',
         institution: 'TD',
         lastFour: '1234',
-      },
-    ]);
-    vi.mocked(listAccountMemberDetails).mockResolvedValue([
-      {
-        accountId: summaryRow.accountId,
-        memberId: 'member_1',
-        displayName: 'Ada Lovelace',
-        imageUrl: null,
       },
     ]);
 
@@ -122,13 +115,6 @@ describe('import service', () => {
         name: 'Visa',
         institution: 'TD',
         lastFour: '1234',
-        owners: [
-          {
-            id: 'member_1',
-            displayName: 'Ada Lovelace',
-            imageUrl: null,
-          },
-        ],
       },
     ]);
   });
@@ -190,5 +176,36 @@ describe('import service', () => {
     expect(result.reusedExisting).toBe(true);
     expect(insertImportBatch).not.toHaveBeenCalled();
     expect(insertImportBatchRows).not.toHaveBeenCalled();
+  });
+
+  it('recomputes row status to ready when category is patched onto a needs_review row', async () => {
+    const needsReviewRow = {
+      ...draftRow,
+      status: 'needs_review' as const,
+      reviewCategoryName: null,
+    };
+    const updatedRow = {
+      ...needsReviewRow,
+      reviewCategoryName: 'Dining',
+      status: 'ready' as const,
+      updatedAt: new Date('2026-05-20T13:00:00Z'),
+    };
+
+    vi.mocked(fetchDraftRowById).mockResolvedValue(needsReviewRow);
+    vi.mocked(updateImportDraftRowQuery).mockResolvedValue(updatedRow);
+
+    const result = await updateImportDraftRow('org_1', draftRow.id, {
+      reviewCategoryName: 'Dining',
+    });
+
+    expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
+      'org_1',
+      draftRow.id,
+      {
+        reviewCategoryName: 'Dining',
+        status: 'ready',
+      }
+    );
+    expect(result.status).toBe('ready');
   });
 });
