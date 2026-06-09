@@ -71,10 +71,15 @@ vi.mock('@ploutizo/ui/components/field', () => ({
 vi.mock('@ploutizo/ui/components/loading-button', () => ({
   LoadingButton: ({
     children,
+    icon,
     loading,
     ...props
-  }: React.ComponentProps<'button'> & { loading?: boolean }) => (
+  }: React.ComponentProps<'button'> & {
+    icon?: React.ReactNode;
+    loading?: boolean;
+  }) => (
     <button disabled={loading || props.disabled} {...props}>
+      {loading ? 'Loading ' : icon}
       {children}
     </button>
   ),
@@ -264,6 +269,84 @@ describe('Import', () => {
     expect(
       screen.getByRole('link', { name: /add credit card/i })
     ).toHaveAttribute('href', '/accounts');
+  });
+
+  it('keeps static import controls available while page data loads', async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(useGetImportTargets).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    } as never);
+    vi.mocked(useGetImportDrafts).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    } as never);
+    vi.mocked(useGetImportHistory).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    } as never);
+    vi.mocked(useGetImportDraft).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    } as never);
+    vi.mocked(useDiscardImportDraft).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    } as never);
+    vi.mocked(useUpdateImportDraftRow).mockReturnValue({
+      mutate: vi.fn(),
+    } as never);
+
+    render(<Import />);
+
+    expect(screen.getByRole('heading', { name: 'Import' })).toBeInTheDocument();
+    expect(screen.getByText('Credit card')).toBeInTheDocument();
+    expect(screen.getByText('CSV file')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Upload' })).toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: 'Guide' }));
+
+    expect(screen.getByText('Required columns')).toBeInTheDocument();
+  });
+
+  it('blocks upload only while active draft status is loading', () => {
+    vi.mocked(useGetImportTargets).mockReturnValue({
+      data: [
+        {
+          id: 'acct_1',
+          name: 'Visa',
+          institution: 'TD',
+          lastFour: '1234',
+        },
+      ],
+      isLoading: false,
+    } as never);
+    vi.mocked(useGetImportDrafts).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    } as never);
+    vi.mocked(useGetImportHistory).mockReturnValue({
+      data: [],
+      isLoading: false,
+    } as never);
+    vi.mocked(useGetImportDraft).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    } as never);
+    vi.mocked(useDiscardImportDraft).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    } as never);
+    vi.mocked(useUpdateImportDraftRow).mockReturnValue({
+      mutate: vi.fn(),
+    } as never);
+
+    render(<Import />);
+
+    expect(screen.getByLabelText('CSV file')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Upload' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Guide' })).toBeEnabled();
   });
 
   it('opens the CSV guide in app', async () => {
