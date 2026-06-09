@@ -36,17 +36,64 @@ const CSV_ACCEPT = '.csv,text/csv';
 interface ImportUploadFormProps {
   targets: ImportTargetAccount[];
   activeDrafts: ImportDraftSummary[];
+  activeDraftsLoading?: boolean;
   onDraftSelected: (draftId: string) => void;
 }
+
+export const ImportHelpActions = () => {
+  const [guideOpen, setGuideOpen] = useState(false);
+
+  return (
+    <>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                downloadText(
+                  'ploutizo-normalized-import-example.csv',
+                  NORMALIZED_IMPORT_EXAMPLE_CSV,
+                  'text/csv'
+                )
+              }
+            />
+          }
+        >
+          <Download />
+          Example
+        </TooltipTrigger>
+        <TooltipContent>Download a sample normalized CSV.</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setGuideOpen(true)}
+            />
+          }
+        >
+          <FileText />
+          Guide
+        </TooltipTrigger>
+        <TooltipContent>View the normalized CSV column guide.</TooltipContent>
+      </Tooltip>
+      <ImportGuideDialog open={guideOpen} onOpenChange={setGuideOpen} />
+    </>
+  );
+};
 
 export const ImportUploadForm = ({
   targets,
   activeDrafts,
+  activeDraftsLoading = false,
   onDraftSelected,
 }: ImportUploadFormProps) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [guideOpen, setGuideOpen] = useState(false);
   const createDraft = useCreateImportDraft();
 
   const activeDraftByAccount = useMemo(() => {
@@ -136,7 +183,7 @@ export const ImportUploadForm = ({
                   label="CSV file"
                   accept={CSV_ACCEPT}
                   maxSize={MAX_NORMALIZED_IMPORT_BYTES}
-                  disabled={activeDraft !== undefined}
+                  disabled={activeDraftsLoading || activeDraft !== undefined}
                   invalid={uploadError !== null}
                   value={selectedFile}
                   onChange={(file) => {
@@ -159,53 +206,14 @@ export const ImportUploadForm = ({
                   ) : (
                     <LoadingButton
                       type="submit"
+                      icon={<Upload />}
                       loading={createDraft.isPending}
-                      disabled={!accountId}
+                      disabled={activeDraftsLoading || !accountId}
                     >
-                      <Upload />
                       Upload
                     </LoadingButton>
                   )}
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() =>
-                            downloadText(
-                              'ploutizo-normalized-import-example.csv',
-                              NORMALIZED_IMPORT_EXAMPLE_CSV,
-                              'text/csv'
-                            )
-                          }
-                        />
-                      }
-                    >
-                      <Download />
-                      Example
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Download a sample normalized CSV.
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setGuideOpen(true)}
-                        />
-                      }
-                    >
-                      <FileText />
-                      Guide
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      View the normalized CSV column guide.
-                    </TooltipContent>
-                  </Tooltip>
+                  <ImportHelpActions />
                 </div>
               </>
             );
@@ -218,7 +226,6 @@ export const ImportUploadForm = ({
           {uploadError}
         </Text>
       ) : null}
-      <ImportGuideDialog open={guideOpen} onOpenChange={setGuideOpen} />
     </form>
   );
 };
