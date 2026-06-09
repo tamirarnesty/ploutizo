@@ -1,12 +1,12 @@
 import { HouseholdSettingsFormSchema } from '@ploutizo/validators';
 import { useAppForm } from '@ploutizo/ui/components/form';
 import { FieldError } from '@ploutizo/ui/components/field';
-import { Input } from '@ploutizo/ui/components/input';
 import { LoadingButton } from '@ploutizo/ui/components/loading-button';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
-import { parseCurrencyInput } from '@ploutizo/utils/currency';
+import { centsToDollars, dollarsToCents } from '@ploutizo/utils/currency';
 import type { HouseholdSettingsForm as HouseholdSettingsFormType } from '@ploutizo/validators';
+import { CurrencyInput } from '@/components/currency/CurrencyInput';
 import {
   useGetHouseholdSettings,
   useUpdateHouseholdSettings,
@@ -24,7 +24,9 @@ const HouseholdSettingsFormFields = ({
   const form = useAppForm({
     defaultValues: {
       thresholdDollars:
-        settlementThreshold != null ? String(settlementThreshold / 100) : '',
+        settlementThreshold != null
+          ? centsToDollars(settlementThreshold)
+          : undefined,
     } satisfies HouseholdSettingsFormType,
     validators: {
       onSubmit: ({ value }: { value: HouseholdSettingsFormType }) => {
@@ -35,14 +37,10 @@ const HouseholdSettingsFormFields = ({
       },
     },
     onSubmit: ({ value }) => {
-      const threshold = value.thresholdDollars.trim();
-      let cents: number | null = null;
-      try {
-        cents = threshold === '' ? null : parseCurrencyInput(threshold);
-      } catch {
-        form.setErrorMap({ onSubmit: 'Must be a positive number.' });
-        return;
-      }
+      const cents =
+        value.thresholdDollars === undefined
+          ? null
+          : dollarsToCents(value.thresholdDollars);
       mutation.mutate(
         { settlementThreshold: cents },
         {
@@ -64,13 +62,10 @@ const HouseholdSettingsFormFields = ({
       }}
     >
       <div className="flex items-center gap-2">
-        <Text as="span" variant="body-sm" className="text-muted-foreground">
-          $
-        </Text>
         <form.AppField
           name="thresholdDollars"
           validators={{
-            onChange: ({ value }: { value: string }) => {
+            onChange: ({ value }: { value: number | undefined }) => {
               const r =
                 HouseholdSettingsFormSchema.shape.thresholdDollars.safeParse(
                   value
@@ -82,17 +77,12 @@ const HouseholdSettingsFormFields = ({
         >
           {(field) => (
             <>
-              <Input
+              <CurrencyInput
                 id="settlement-threshold"
-                autoComplete="off"
-                type="number"
-                min="0"
-                step="0.01"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
                 className="w-32"
-                aria-invalid={field.state.meta.errors.length > 0}
+                value={field.state.value}
+                onChange={(v) => field.handleChange(v)}
+                onBlur={field.handleBlur}
               />
               {field.state.meta.errors.length > 0 ? (
                 <FieldError

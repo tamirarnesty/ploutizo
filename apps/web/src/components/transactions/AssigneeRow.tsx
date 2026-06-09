@@ -7,7 +7,12 @@ import {
   InputGroupInput,
 } from '@ploutizo/ui/components/input-group';
 import { Text } from '@ploutizo/ui/components/text';
-import { formatCurrency, parseCurrencyInput } from '@ploutizo/utils/currency';
+import {
+  centsToDollars,
+  dollarsToCents,
+  formatCurrency,
+} from '@ploutizo/utils/currency';
+import { CurrencyInput } from '@/components/currency/CurrencyInput';
 import { UserAvatar } from '@/components/members/UserAvatar';
 import type { AssigneeFormRow } from './types';
 
@@ -26,15 +31,6 @@ interface AssigneeRowProps {
   onRemove: (memberId: string) => void;
 }
 
-const toDisplay = (
-  mode: 'percent' | 'dollar',
-  percentage: number,
-  amountCents: number
-) =>
-  mode === 'percent'
-    ? percentage.toFixed(1)
-    : formatCurrency(amountCents).replace(/[^\d.,+-]/g, '');
-
 export const AssigneeRow = ({
   memberId,
   memberName,
@@ -46,20 +42,17 @@ export const AssigneeRow = ({
   onChange,
   onRemove,
 }: AssigneeRowProps) => {
-  const [displayValue, setDisplayValue] = useState(
-    toDisplay(mode, percentage, amountCents)
-  );
-  const isFocusedRef = useRef(false);
+  const [percentDisplay, setPercentDisplay] = useState(percentage.toFixed(1));
+  const isPercentFocusedRef = useRef(false);
   const prevModeRef = useRef(mode);
 
   useEffect(() => {
     const modeChanged = prevModeRef.current !== mode;
     prevModeRef.current = mode;
-    // Always sync on mode switch; sync on value change only when not typing
-    if (modeChanged || !isFocusedRef.current) {
-      setDisplayValue(toDisplay(mode, percentage, amountCents));
+    if (mode === 'percent' && (modeChanged || !isPercentFocusedRef.current)) {
+      setPercentDisplay(percentage.toFixed(1));
     }
-  }, [mode, percentage, amountCents]);
+  }, [mode, percentage]);
 
   return (
     <div className="flex items-center gap-2">
@@ -73,27 +66,41 @@ export const AssigneeRow = ({
         {memberName ?? 'Unknown'}
       </Text>
 
-      <InputGroup className="w-24 shrink-0">
-        <InputGroupAddon align="inline-start">
-          {mode === 'percent' ? '%' : '$'}
-        </InputGroupAddon>
-        <InputGroupInput
-          type="text"
-          inputMode="decimal"
-          autoComplete="off"
-          className="text-right"
-          value={displayValue}
-          onFocus={() => {
-            isFocusedRef.current = true;
+      {mode === 'dollar' ? (
+        <CurrencyInput
+          className="w-24 shrink-0"
+          inputClassName="text-right"
+          value={centsToDollars(amountCents)}
+          onChange={(dollars) => {
+            const cents = dollars === undefined ? 0 : dollarsToCents(dollars);
+            onChange(memberId, {
+              amountCents: cents,
+              percentage:
+                totalCents > 0
+                  ? Math.round((cents / totalCents) * 1000) / 10
+                  : 0,
+            });
           }}
-          onBlur={() => {
-            isFocusedRef.current = false;
-            setDisplayValue(toDisplay(mode, percentage, amountCents));
-          }}
-          onChange={(e) => {
-            const raw = e.target.value;
-            setDisplayValue(raw);
-            if (mode === 'percent') {
+        />
+      ) : (
+        <InputGroup className="w-24 shrink-0">
+          <InputGroupAddon align="inline-start">%</InputGroupAddon>
+          <InputGroupInput
+            type="text"
+            inputMode="decimal"
+            autoComplete="off"
+            className="text-right"
+            value={percentDisplay}
+            onFocus={() => {
+              isPercentFocusedRef.current = true;
+            }}
+            onBlur={() => {
+              isPercentFocusedRef.current = false;
+              setPercentDisplay(percentage.toFixed(1));
+            }}
+            onChange={(e) => {
+              const raw = e.target.value;
+              setPercentDisplay(raw);
               const p = parseFloat(raw);
               if (!isNaN(p)) {
                 onChange(memberId, {
@@ -101,23 +108,10 @@ export const AssigneeRow = ({
                   amountCents: Math.round((p / 100) * totalCents),
                 });
               }
-            } else {
-              try {
-                const cents = parseCurrencyInput(raw);
-                onChange(memberId, {
-                  amountCents: cents,
-                  percentage:
-                    totalCents > 0
-                      ? Math.round((cents / totalCents) * 1000) / 10
-                      : 0,
-                });
-              } catch {
-                return;
-              }
-            }
-          }}
-        />
-      </InputGroup>
+            }}
+          />
+        </InputGroup>
+      )}
 
       <Text
         as="span"

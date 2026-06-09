@@ -4,7 +4,7 @@ import {
   formatSettlementDescription,
   normalizeTransactionAssignees,
 } from '@ploutizo/utils';
-import { parseCurrencyInput } from '@ploutizo/utils/currency';
+import { centsToDollars, dollarsToCents } from '@ploutizo/utils/currency';
 import type { Account } from '@ploutizo/types';
 import type {
   TransactionRow,
@@ -114,7 +114,7 @@ export const buildDefaultValues = (
   const values: TransactionFormValues = {
     type: transaction.type,
     accountId: transaction.accountId,
-    amount: transaction.amount / 100,
+    amount: centsToDollars(transaction.amount),
     date: transaction.date,
     description: transaction.description,
     tagIds: transaction.tags.map((t) => t.id),
@@ -163,7 +163,7 @@ export const toApiPayload = (
     amount:
       value.amount === undefined || !Number.isFinite(value.amount)
         ? 0
-        : parseCurrencyInput(String(value.amount)),
+        : dollarsToCents(value.amount),
     date: value.date,
     description: value.description.trim(),
     notes: value.notes.trim() || undefined,

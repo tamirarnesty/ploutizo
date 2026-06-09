@@ -2,7 +2,7 @@ import { Button } from '@ploutizo/ui/components/button';
 import { DialogFooter } from '@ploutizo/ui/components/dialog';
 import { LoadingButton } from '@ploutizo/ui/components/loading-button';
 import { Text } from '@ploutizo/ui/components/text';
-import { formatCurrency, parseCurrencyInput } from '@ploutizo/utils/currency';
+import { dollarsToCents, formatCurrency } from '@ploutizo/utils/currency';
 
 export type SettleDialogFormFooterProps = {
   onClose: () => void;
@@ -18,9 +18,7 @@ export const SettleDialogFormFooter = ({
   amountDollars,
 }: SettleDialogFormFooterProps) => {
   const isAmountInvalid = !Number.isFinite(amountDollars) || amountDollars <= 0;
-  const amountCents = isAmountInvalid
-    ? 0
-    : parseCurrencyInput(String(amountDollars));
+  const amountCents = isAmountInvalid ? 0 : dollarsToCents(amountDollars);
   const settleLabel = isAmountInvalid
     ? 'Settle'
     : `Settle ${formatCurrency(amountCents)}`;

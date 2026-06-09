@@ -34,7 +34,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
-import { parseCurrencyInput } from '@ploutizo/utils/currency';
+import { dollarsToCents } from '@ploutizo/utils/currency';
 import type { Account, OrgMember } from '@ploutizo/types';
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import { useGetCategories } from '@/lib/data-access/categories';
@@ -47,13 +47,13 @@ import {
 } from '@/lib/data-access/transactions';
 import type { TransactionRow } from '@/lib/data-access/transactions';
 import type { Category } from '@/lib/data-access/categories';
+import { CurrencyInput } from '@/components/currency/CurrencyInput';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import {
   computeLockedDescription,
   isLockedDescriptionType,
   useTransactionForm,
 } from './hooks/useTransactionForm';
-import { FormattedAmountInput } from './FormattedAmountInput';
 import { TransactionTypeFields } from './TransactionTypeFields';
 import { TransferFields } from './TransferFields';
 import { SettlementFields } from './SettlementFields';
@@ -403,7 +403,7 @@ const TransactionFormInner = ({
                   data-invalid={field.state.meta.errors.length > 0 || undefined}
                 >
                   <FieldLabel htmlFor="tx-amount">Amount</FieldLabel>
-                  <FormattedAmountInput
+                  <CurrencyInput
                     value={field.state.value}
                     onChange={(v) => field.handleChange(v)}
                     onBlur={field.handleBlur}
@@ -642,7 +642,7 @@ const TransactionFormInner = ({
                       amountCents={
                         amount === undefined || !Number.isFinite(amount)
                           ? 0
-                          : parseCurrencyInput(String(amount))
+                          : dollarsToCents(amount)
                       }
                       orgMembers={orgMembers}
                       transaction={transaction}

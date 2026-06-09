@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { FieldGroup } from '@ploutizo/ui/components/field';
 import { useAppForm } from '@ploutizo/ui/components/form';
-import { parseCurrencyInput } from '@ploutizo/utils/currency';
+import { dollarsToCents } from '@ploutizo/utils/currency';
 import type { SettlementAccountRow } from '@ploutizo/types';
 import {
   getSettleAmountForPayToward,
@@ -62,7 +62,7 @@ export const SettleDialogForm = ({
       },
     },
     onSubmit: async ({ value }) => {
-      const amountCents = parseCurrencyInput(String(value.amountDollars));
+      const amountCents = dollarsToCents(value.amountDollars);
       const trimmedNotes = value.notes?.trim() ?? '';
       const assignees =
         value.payToward === 'shared'
