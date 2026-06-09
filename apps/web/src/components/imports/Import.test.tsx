@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   useDiscardImportDraft,
   useGetImportDraft,
@@ -10,6 +10,10 @@ import {
   useUpdateImportDraftRow,
 } from '@/lib/data-access/imports';
 import { Import } from './Import';
+
+const importMocks = vi.hoisted(() => ({
+  createImportDraftMutate: vi.fn(),
+}));
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
@@ -41,7 +45,10 @@ vi.mock('@ploutizo/ui/components/loading-button', () => ({
 }));
 
 vi.mock('@/lib/data-access/imports', () => ({
-  useCreateImportDraft: () => ({ mutate: vi.fn(), isPending: false }),
+  useCreateImportDraft: () => ({
+    mutate: importMocks.createImportDraftMutate,
+    isPending: false,
+  }),
   useDiscardImportDraft: vi.fn(),
   useGetImportDraft: vi.fn(),
   useGetImportDrafts: vi.fn(),
@@ -131,7 +138,59 @@ const draft = {
   ],
 };
 
+const setImportPageData = ({
+  activeDrafts = [],
+  selectedDraft,
+}: {
+  activeDrafts?: (typeof draftSummary)[];
+  selectedDraft?: typeof draft;
+} = {}) => {
+  vi.mocked(useGetImportTargets).mockReturnValue({
+    data: [
+      {
+        id: 'acct_1',
+        name: 'Visa',
+        institution: 'TD',
+        lastFour: '1234',
+        owners: [],
+      },
+    ],
+    isLoading: false,
+  } as never);
+  vi.mocked(useGetImportDrafts).mockReturnValue({
+    data: activeDrafts,
+    isLoading: false,
+  } as never);
+  vi.mocked(useGetImportHistory).mockReturnValue({
+    data: [],
+    isLoading: false,
+  } as never);
+  vi.mocked(useGetImportDraft).mockReturnValue({
+    data: selectedDraft,
+    isLoading: false,
+  } as never);
+  vi.mocked(useDiscardImportDraft).mockReturnValue({
+    mutate: vi.fn(),
+    isPending: false,
+  } as never);
+  vi.mocked(useUpdateImportDraftRow).mockReturnValue({
+    mutate: vi.fn(),
+  } as never);
+};
+
 describe('Import', () => {
+  beforeEach(() => {
+    importMocks.createImportDraftMutate.mockReset();
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: vi.fn(() => 'blob:csv'),
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      value: vi.fn(),
+    });
+  });
+
   it('shows the no-credit-card empty state', () => {
     vi.mocked(useGetImportTargets).mockReturnValue({
       data: [],
@@ -163,6 +222,50 @@ describe('Import', () => {
     expect(
       screen.getByRole('link', { name: /add credit card/i })
     ).toHaveAttribute('href', '/accounts');
+  });
+
+  it('opens the CSV guide in app', async () => {
+    const user = userEvent.setup();
+    setImportPageData();
+
+    render(<Import />);
+
+    const dialog = screen
+      .getByText('CSV import guide')
+      .closest('[data-slot="dialog"]');
+    expect(dialog).toHaveAttribute('data-open', 'false');
+
+    await user.click(screen.getByRole('button', { name: 'Guide' }));
+
+    expect(dialog).toHaveAttribute('data-open', 'true');
+    expect(screen.getByText('Required columns')).toBeInTheDocument();
+    expect(screen.getByText('Optional columns')).toBeInTheDocument();
+  });
+
+  it('submits the selected CSV file from the compact upload field', async () => {
+    const user = userEvent.setup();
+    setImportPageData();
+
+    render(<Import />);
+
+    const content =
+      'date,amount,description,type\n2026-05-02,42.18,Coffee,expense';
+    const file = new File([content], 'statement.csv', { type: 'text/csv' });
+
+    await user.upload(screen.getByLabelText('CSV file'), file);
+
+    expect(
+      screen.getByRole('button', { name: /statement.csv/i })
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Upload' }));
+
+    await waitFor(() =>
+      expect(importMocks.createImportDraftMutate).toHaveBeenCalledWith(
+        { accountId: 'acct_1', fileName: 'statement.csv', content },
+        expect.any(Object)
+      )
+    );
   });
 
   it('reviews invalid rows and persists edited review fields', async () => {
