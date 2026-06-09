@@ -1,6 +1,12 @@
 import { useCallback, useRef } from 'react';
 import { Link, useRouterState } from '@tanstack/react-router';
-import { CreditCard, LayoutDashboard, Settings, Wallet } from 'lucide-react';
+import {
+  CreditCard,
+  FileUp,
+  LayoutDashboard,
+  Settings,
+  Wallet,
+} from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -10,6 +16,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarTrigger,
   useSidebar,
 } from '@ploutizo/ui/components/sidebar';
@@ -50,7 +59,8 @@ export const AppSidebar = () => {
               {navItems.map(({ label, to, icon: Icon }) => {
                 const active =
                   location.pathname === to ||
-                  location.pathname.startsWith(to + '/');
+                  (to !== '/transactions' &&
+                    location.pathname.startsWith(to + '/'));
                 return (
                   <SidebarMenuItem key={to}>
                     <SidebarMenuButton
@@ -61,6 +71,26 @@ export const AppSidebar = () => {
                       <Icon />
                       <span>{label}</span>
                     </SidebarMenuButton>
+                    {to === '/transactions' ? (
+                      <SidebarMenuSub>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            isActive={
+                              location.pathname === '/transactions/import'
+                            }
+                            render={
+                              <Link
+                                to="/transactions/import"
+                                onClick={closeMobile}
+                              />
+                            }
+                          >
+                            <FileUp />
+                            <span>Import</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      </SidebarMenuSub>
+                    ) : null}
                   </SidebarMenuItem>
                 );
               })}

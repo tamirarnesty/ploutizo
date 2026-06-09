@@ -1,0 +1,221 @@
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  useDiscardImportDraft,
+  useGetImportDraft,
+  useGetImportDrafts,
+  useGetImportHistory,
+  useGetImportTargets,
+  useUpdateImportDraftRow,
+} from '@/lib/data-access/imports';
+import { Import } from './Import';
+
+vi.mock('@tanstack/react-router', () => ({
+  Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
+    <a href={to}>{children}</a>
+  ),
+}));
+
+vi.mock('@ploutizo/ui/components/field', () => ({
+  Field: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  FieldLabel: ({
+    children,
+    htmlFor,
+  }: {
+    children: React.ReactNode;
+    htmlFor?: string;
+  }) => <label htmlFor={htmlFor}>{children}</label>,
+}));
+
+vi.mock('@ploutizo/ui/components/loading-button', () => ({
+  LoadingButton: ({
+    children,
+    loading,
+    ...props
+  }: React.ComponentProps<'button'> & { loading?: boolean }) => (
+    <button disabled={loading || props.disabled} {...props}>
+      {children}
+    </button>
+  ),
+}));
+
+vi.mock('@/lib/data-access/imports', () => ({
+  useCreateImportDraft: () => ({ mutate: vi.fn(), isPending: false }),
+  useDiscardImportDraft: vi.fn(),
+  useGetImportDraft: vi.fn(),
+  useGetImportDrafts: vi.fn(),
+  useGetImportHistory: vi.fn(),
+  useGetImportTargets: vi.fn(),
+  useUpdateImportDraftRow: vi.fn(),
+}));
+
+const draftSummary = {
+  id: 'draft_1',
+  accountId: 'acct_1',
+  accountName: 'Visa',
+  accountInstitution: 'TD',
+  accountLastFour: '1234',
+  source: 'ploutizo_normalized',
+  status: 'draft' as const,
+  fileName: 'statement.csv',
+  rowCount: 2,
+  validRowCount: 1,
+  invalidRowCount: 1,
+  importedAt: '2026-05-20T12:00:00.000Z',
+  completedAt: null,
+  discardedAt: null,
+  createdAt: '2026-05-20T12:00:00.000Z',
+  updatedAt: '2026-05-20T12:00:00.000Z',
+};
+
+const draft = {
+  ...draftSummary,
+  rows: [
+    {
+      id: 'row_1',
+      batchId: 'draft_1',
+      rowNumber: 2,
+      status: 'ready' as const,
+      invalidReason: null,
+      rawData: { date: '2026-05-02', description: 'Coffee' },
+      externalId: 'visa-1001',
+      sourceDate: '2026-05-02',
+      sourceAmount: '42.18',
+      sourceDescription: 'Coffee',
+      sourceType: 'expense',
+      parsedDate: '2026-05-02',
+      parsedAmount: 4218,
+      parsedType: 'expense' as const,
+      parsedDescription: 'Coffee',
+      reviewDate: '2026-05-02',
+      reviewAmount: 4218,
+      reviewType: 'expense' as const,
+      reviewDescription: 'Coffee',
+      reviewCategoryName: 'Dining',
+      reviewAssigneeHint: null,
+      reviewRefundLinkHint: null,
+      reviewNotes: null,
+      reviewTags: [],
+      createdAt: '2026-05-20T12:00:00.000Z',
+      updatedAt: '2026-05-20T12:00:00.000Z',
+    },
+    {
+      id: 'row_2',
+      batchId: 'draft_1',
+      rowNumber: 3,
+      status: 'invalid' as const,
+      invalidReason: 'Date must be a valid YYYY-MM-DD value.',
+      rawData: { date: 'bad', amount: 'nope' },
+      externalId: null,
+      sourceDate: 'bad',
+      sourceAmount: 'nope',
+      sourceDescription: null,
+      sourceType: 'wat',
+      parsedDate: null,
+      parsedAmount: null,
+      parsedType: null,
+      parsedDescription: null,
+      reviewDate: null,
+      reviewAmount: null,
+      reviewType: null,
+      reviewDescription: null,
+      reviewCategoryName: null,
+      reviewAssigneeHint: null,
+      reviewRefundLinkHint: null,
+      reviewNotes: null,
+      reviewTags: [],
+      createdAt: '2026-05-20T12:00:00.000Z',
+      updatedAt: '2026-05-20T12:00:00.000Z',
+    },
+  ],
+};
+
+describe('Import', () => {
+  it('shows the no-credit-card empty state', () => {
+    vi.mocked(useGetImportTargets).mockReturnValue({
+      data: [],
+      isLoading: false,
+    } as never);
+    vi.mocked(useGetImportDrafts).mockReturnValue({
+      data: [],
+      isLoading: false,
+    } as never);
+    vi.mocked(useGetImportHistory).mockReturnValue({
+      data: [],
+      isLoading: false,
+    } as never);
+    vi.mocked(useGetImportDraft).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    } as never);
+    vi.mocked(useDiscardImportDraft).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    } as never);
+    vi.mocked(useUpdateImportDraftRow).mockReturnValue({
+      mutate: vi.fn(),
+    } as never);
+
+    render(<Import />);
+
+    expect(screen.getByText('No credit cards')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /add credit card/i })
+    ).toHaveAttribute('href', '/accounts');
+  });
+
+  it('reviews invalid rows and persists edited review fields', async () => {
+    const user = userEvent.setup();
+    const updateRow = vi.fn();
+    vi.mocked(useGetImportTargets).mockReturnValue({
+      data: [
+        {
+          id: 'acct_1',
+          name: 'Visa',
+          institution: 'TD',
+          lastFour: '1234',
+          owners: [],
+        },
+      ],
+      isLoading: false,
+    } as never);
+    vi.mocked(useGetImportDrafts).mockReturnValue({
+      data: [draftSummary],
+      isLoading: false,
+    } as never);
+    vi.mocked(useGetImportHistory).mockReturnValue({
+      data: [],
+      isLoading: false,
+    } as never);
+    vi.mocked(useGetImportDraft).mockReturnValue({
+      data: draft,
+      isLoading: false,
+    } as never);
+    vi.mocked(useDiscardImportDraft).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    } as never);
+    vi.mocked(useUpdateImportDraftRow).mockReturnValue({
+      mutate: updateRow,
+    } as never);
+
+    render(<Import />);
+
+    await user.click(screen.getAllByRole('button', { name: /continue/i })[0]);
+
+    expect(
+      screen.getByText('Date must be a valid YYYY-MM-DD value.')
+    ).toBeInTheDocument();
+
+    const descriptionInput = screen.getByDisplayValue('Coffee');
+    await user.clear(descriptionInput);
+    await user.type(descriptionInput, 'Coffee shop');
+    await user.tab();
+
+    expect(updateRow).toHaveBeenCalledWith({
+      rowId: 'row_1',
+      body: { reviewDescription: 'Coffee shop' },
+    });
+  });
+});

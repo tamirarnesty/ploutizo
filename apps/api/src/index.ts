@@ -12,6 +12,7 @@ import { tagsRouter } from './routes/tags';
 import { merchantRulesRouter } from './routes/merchant-rules';
 import { transactionsRouter } from './routes/transactions';
 import { settlementsRouter } from './routes/settlements';
+import { importsRouter } from './routes/imports';
 import { DomainError, NotFoundError } from './lib/errors';
 import type { AppEnv } from './types';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
@@ -75,6 +76,7 @@ app.route('/api/tags', tagsRouter);
 app.route('/api/merchant-rules', merchantRulesRouter);
 app.route('/api/transactions', transactionsRouter);
 app.route('/api/settlements', settlementsRouter);
+app.route('/api/imports', importsRouter);
 
 // Unmatched routes — returns JSON shape consistent with onError handler
 app.notFound((c) =>
