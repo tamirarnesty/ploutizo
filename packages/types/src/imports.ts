@@ -5,11 +5,6 @@ export interface ImportTargetAccount {
   name: string
   institution: string | null
   lastFour: string | null
-  owners: {
-    id: string
-    displayName: string
-    imageUrl: string | null
-  }[]
 }
 
 export interface ImportDraftSummary {

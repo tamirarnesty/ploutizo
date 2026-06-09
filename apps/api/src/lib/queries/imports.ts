@@ -182,6 +182,17 @@ export const fetchDraftRowForUpdate = async (orgId: string, rowId: string) => {
   return rows.at(0) ?? null;
 };
 
+export const fetchDraftRowById = async (orgId: string, rowId: string) => {
+  const access = await fetchDraftRowForUpdate(orgId, rowId);
+  if (!access) return null;
+  const rows = await db
+    .select()
+    .from(importBatchRows)
+    .where(and(eq(importBatchRows.id, rowId), eq(importBatchRows.orgId, orgId)))
+    .limit(1);
+  return rows.at(0) ?? null;
+};
+
 export const updateImportDraftRowQuery = async (
   orgId: string,
   rowId: string,

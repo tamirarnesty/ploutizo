@@ -13,11 +13,47 @@ import { Import } from './Import';
 
 const importMocks = vi.hoisted(() => ({
   createImportDraftMutate: vi.fn(),
+  toastInfo: vi.fn(),
+  toastSuccess: vi.fn(),
 }));
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
     <a href={to}>{children}</a>
+  ),
+}));
+
+vi.mock('@ploutizo/ui/components/sonner', () => ({
+  toast: {
+    info: importMocks.toastInfo,
+    success: importMocks.toastSuccess,
+  },
+}));
+
+vi.mock('@ploutizo/ui/components/file-field', () => ({
+  FileField: ({
+    id,
+    label,
+    value,
+    onChange,
+    disabled,
+  }: {
+    id?: string;
+    label?: string;
+    value: File | null;
+    onChange: (file: File | null) => void;
+    disabled?: boolean;
+  }) => (
+    <div>
+      <label htmlFor={id}>{label}</label>
+      <input
+        id={id}
+        type="file"
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.files?.item(0) ?? null)}
+      />
+      {value ? <button type="button">{value.name}</button> : null}
+    </div>
   ),
 }));
 
@@ -141,9 +177,13 @@ const draft = {
 const setImportPageData = ({
   activeDrafts = [],
   selectedDraft,
+  discardPending = false,
+  discardingDraftId,
 }: {
   activeDrafts?: (typeof draftSummary)[];
   selectedDraft?: typeof draft;
+  discardPending?: boolean;
+  discardingDraftId?: string;
 } = {}) => {
   vi.mocked(useGetImportTargets).mockReturnValue({
     data: [
@@ -152,7 +192,6 @@ const setImportPageData = ({
         name: 'Visa',
         institution: 'TD',
         lastFour: '1234',
-        owners: [],
       },
     ],
     isLoading: false,
@@ -171,7 +210,8 @@ const setImportPageData = ({
   } as never);
   vi.mocked(useDiscardImportDraft).mockReturnValue({
     mutate: vi.fn(),
-    isPending: false,
+    isPending: discardPending,
+    variables: discardingDraftId,
   } as never);
   vi.mocked(useUpdateImportDraftRow).mockReturnValue({
     mutate: vi.fn(),
@@ -181,6 +221,8 @@ const setImportPageData = ({
 describe('Import', () => {
   beforeEach(() => {
     importMocks.createImportDraftMutate.mockReset();
+    importMocks.toastInfo.mockReset();
+    importMocks.toastSuccess.mockReset();
     Object.defineProperty(URL, 'createObjectURL', {
       configurable: true,
       value: vi.fn(() => 'blob:csv'),
@@ -278,7 +320,6 @@ describe('Import', () => {
           name: 'Visa',
           institution: 'TD',
           lastFour: '1234',
-          owners: [],
         },
       ],
       isLoading: false,
@@ -317,8 +358,26 @@ describe('Import', () => {
     await user.tab();
 
     expect(updateRow).toHaveBeenCalledWith({
+      draftId: 'draft_1',
       rowId: 'row_1',
       body: { reviewDescription: 'Coffee shop' },
     });
+  });
+
+  it('shows loading only on the draft being discarded', () => {
+    setImportPageData({
+      activeDrafts: [
+        draftSummary,
+        { ...draftSummary, id: 'draft_2', fileName: 'other.csv' },
+      ],
+      discardPending: true,
+      discardingDraftId: 'draft_1',
+    });
+
+    render(<Import />);
+
+    const discardButtons = screen.getAllByRole('button', { name: /discard/i });
+    expect(discardButtons[0]).toBeDisabled();
+    expect(discardButtons[1]).not.toBeDisabled();
   });
 });
