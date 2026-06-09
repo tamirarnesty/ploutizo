@@ -234,11 +234,8 @@ const searchToFilters = (search: TransactionSearch): Filter<string>[] => {
 };
 
 export const Transactions = () => {
-  // from: '/_layout/transactions' is the route ID (not fullPath) — useMatch looks up
-  // the match store by route ID, so fullPath '/transactions' would miss the store and
-  // throw the invariant regardless of strict mode (strict is not wired to shouldThrow
-  // in useMatch v1.168). Route ID confirmed in routeTree.gen.ts FileRoutesById.
-  const search = useSearch({ from: '/_layout/transactions' });
+  // from is the exact /transactions index route ID, not the shared parent layout.
+  const search = useSearch({ from: '/_layout/transactions/' });
   const navigate = useNavigate();
   const { pageSize: limit, setPageSize } = useTablePageSize('transactions');
 

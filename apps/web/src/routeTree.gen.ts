@@ -14,10 +14,12 @@ import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SignUpSplatRouteImport } from './routes/sign-up.$'
 import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
-import { Route as LayoutTransactionsRouteImport } from './routes/_layout.transactions'
 import { Route as LayoutDashboardRouteImport } from './routes/_layout.dashboard'
 import { Route as LayoutAccountsRouteImport } from './routes/_layout.accounts'
+import { Route as LayoutTransactionsRouteRouteImport } from './routes/_layout.transactions/route'
 import { Route as LayoutSettingsRouteRouteImport } from './routes/_layout.settings/route'
+import { Route as LayoutTransactionsIndexRouteImport } from './routes/_layout.transactions/index'
+import { Route as LayoutTransactionsImportRouteImport } from './routes/_layout.transactions/import'
 import { Route as LayoutSettingsMerchantRulesRouteImport } from './routes/_layout.settings/merchant-rules'
 import { Route as LayoutSettingsHouseholdRouteImport } from './routes/_layout.settings/household'
 import { Route as LayoutSettingsCategoriesRouteImport } from './routes/_layout.settings/categories'
@@ -46,11 +48,6 @@ const SignInSplatRoute = SignInSplatRouteImport.update({
   path: '/sign-in/$',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LayoutTransactionsRoute = LayoutTransactionsRouteImport.update({
-  id: '/transactions',
-  path: '/transactions',
-  getParentRoute: () => LayoutRoute,
-} as any)
 const LayoutDashboardRoute = LayoutDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -61,11 +58,27 @@ const LayoutAccountsRoute = LayoutAccountsRouteImport.update({
   path: '/accounts',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutTransactionsRouteRoute = LayoutTransactionsRouteRouteImport.update({
+  id: '/transactions',
+  path: '/transactions',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutSettingsRouteRoute = LayoutSettingsRouteRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutTransactionsIndexRoute = LayoutTransactionsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LayoutTransactionsRouteRoute,
+} as any)
+const LayoutTransactionsImportRoute =
+  LayoutTransactionsImportRouteImport.update({
+    id: '/import',
+    path: '/import',
+    getParentRoute: () => LayoutTransactionsRouteRoute,
+  } as any)
 const LayoutSettingsMerchantRulesRoute =
   LayoutSettingsMerchantRulesRouteImport.update({
     id: '/merchant-rules',
@@ -88,14 +101,16 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/onboarding': typeof OnboardingRoute
   '/settings': typeof LayoutSettingsRouteRouteWithChildren
+  '/transactions': typeof LayoutTransactionsRouteRouteWithChildren
   '/accounts': typeof LayoutAccountsRoute
   '/dashboard': typeof LayoutDashboardRoute
-  '/transactions': typeof LayoutTransactionsRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
   '/settings/categories': typeof LayoutSettingsCategoriesRoute
   '/settings/household': typeof LayoutSettingsHouseholdRoute
   '/settings/merchant-rules': typeof LayoutSettingsMerchantRulesRoute
+  '/transactions/import': typeof LayoutTransactionsImportRoute
+  '/transactions/': typeof LayoutTransactionsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -103,12 +118,13 @@ export interface FileRoutesByTo {
   '/settings': typeof LayoutSettingsRouteRouteWithChildren
   '/accounts': typeof LayoutAccountsRoute
   '/dashboard': typeof LayoutDashboardRoute
-  '/transactions': typeof LayoutTransactionsRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
   '/settings/categories': typeof LayoutSettingsCategoriesRoute
   '/settings/household': typeof LayoutSettingsHouseholdRoute
   '/settings/merchant-rules': typeof LayoutSettingsMerchantRulesRoute
+  '/transactions/import': typeof LayoutTransactionsImportRoute
+  '/transactions': typeof LayoutTransactionsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -116,14 +132,16 @@ export interface FileRoutesById {
   '/_layout': typeof LayoutRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/_layout/settings': typeof LayoutSettingsRouteRouteWithChildren
+  '/_layout/transactions': typeof LayoutTransactionsRouteRouteWithChildren
   '/_layout/accounts': typeof LayoutAccountsRoute
   '/_layout/dashboard': typeof LayoutDashboardRoute
-  '/_layout/transactions': typeof LayoutTransactionsRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
   '/_layout/settings/categories': typeof LayoutSettingsCategoriesRoute
   '/_layout/settings/household': typeof LayoutSettingsHouseholdRoute
   '/_layout/settings/merchant-rules': typeof LayoutSettingsMerchantRulesRoute
+  '/_layout/transactions/import': typeof LayoutTransactionsImportRoute
+  '/_layout/transactions/': typeof LayoutTransactionsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -131,14 +149,16 @@ export interface FileRouteTypes {
     | '/'
     | '/onboarding'
     | '/settings'
+    | '/transactions'
     | '/accounts'
     | '/dashboard'
-    | '/transactions'
     | '/sign-in/$'
     | '/sign-up/$'
     | '/settings/categories'
     | '/settings/household'
     | '/settings/merchant-rules'
+    | '/transactions/import'
+    | '/transactions/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -146,26 +166,29 @@ export interface FileRouteTypes {
     | '/settings'
     | '/accounts'
     | '/dashboard'
-    | '/transactions'
     | '/sign-in/$'
     | '/sign-up/$'
     | '/settings/categories'
     | '/settings/household'
     | '/settings/merchant-rules'
+    | '/transactions/import'
+    | '/transactions'
   id:
     | '__root__'
     | '/'
     | '/_layout'
     | '/onboarding'
     | '/_layout/settings'
+    | '/_layout/transactions'
     | '/_layout/accounts'
     | '/_layout/dashboard'
-    | '/_layout/transactions'
     | '/sign-in/$'
     | '/sign-up/$'
     | '/_layout/settings/categories'
     | '/_layout/settings/household'
     | '/_layout/settings/merchant-rules'
+    | '/_layout/transactions/import'
+    | '/_layout/transactions/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -213,13 +236,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignInSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_layout/transactions': {
-      id: '/_layout/transactions'
-      path: '/transactions'
-      fullPath: '/transactions'
-      preLoaderRoute: typeof LayoutTransactionsRouteImport
-      parentRoute: typeof LayoutRoute
-    }
     '/_layout/dashboard': {
       id: '/_layout/dashboard'
       path: '/dashboard'
@@ -234,12 +250,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAccountsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/transactions': {
+      id: '/_layout/transactions'
+      path: '/transactions'
+      fullPath: '/transactions'
+      preLoaderRoute: typeof LayoutTransactionsRouteRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/settings': {
       id: '/_layout/settings'
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof LayoutSettingsRouteRouteImport
       parentRoute: typeof LayoutRoute
+    }
+    '/_layout/transactions/': {
+      id: '/_layout/transactions/'
+      path: '/'
+      fullPath: '/transactions/'
+      preLoaderRoute: typeof LayoutTransactionsIndexRouteImport
+      parentRoute: typeof LayoutTransactionsRouteRoute
+    }
+    '/_layout/transactions/import': {
+      id: '/_layout/transactions/import'
+      path: '/import'
+      fullPath: '/transactions/import'
+      preLoaderRoute: typeof LayoutTransactionsImportRouteImport
+      parentRoute: typeof LayoutTransactionsRouteRoute
     }
     '/_layout/settings/merchant-rules': {
       id: '/_layout/settings/merchant-rules'
@@ -280,18 +317,34 @@ const LayoutSettingsRouteRouteChildren: LayoutSettingsRouteRouteChildren = {
 const LayoutSettingsRouteRouteWithChildren =
   LayoutSettingsRouteRoute._addFileChildren(LayoutSettingsRouteRouteChildren)
 
+interface LayoutTransactionsRouteRouteChildren {
+  LayoutTransactionsImportRoute: typeof LayoutTransactionsImportRoute
+  LayoutTransactionsIndexRoute: typeof LayoutTransactionsIndexRoute
+}
+
+const LayoutTransactionsRouteRouteChildren: LayoutTransactionsRouteRouteChildren =
+  {
+    LayoutTransactionsImportRoute: LayoutTransactionsImportRoute,
+    LayoutTransactionsIndexRoute: LayoutTransactionsIndexRoute,
+  }
+
+const LayoutTransactionsRouteRouteWithChildren =
+  LayoutTransactionsRouteRoute._addFileChildren(
+    LayoutTransactionsRouteRouteChildren,
+  )
+
 interface LayoutRouteChildren {
   LayoutSettingsRouteRoute: typeof LayoutSettingsRouteRouteWithChildren
+  LayoutTransactionsRouteRoute: typeof LayoutTransactionsRouteRouteWithChildren
   LayoutAccountsRoute: typeof LayoutAccountsRoute
   LayoutDashboardRoute: typeof LayoutDashboardRoute
-  LayoutTransactionsRoute: typeof LayoutTransactionsRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutSettingsRouteRoute: LayoutSettingsRouteRouteWithChildren,
+  LayoutTransactionsRouteRoute: LayoutTransactionsRouteRouteWithChildren,
   LayoutAccountsRoute: LayoutAccountsRoute,
   LayoutDashboardRoute: LayoutDashboardRoute,
-  LayoutTransactionsRoute: LayoutTransactionsRoute,
 }
 
 const LayoutRouteWithChildren =
