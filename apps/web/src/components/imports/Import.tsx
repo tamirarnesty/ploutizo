@@ -9,9 +9,17 @@ import {
   RotateCcw,
   Trash2,
   Upload,
+  X,
 } from 'lucide-react';
 import { Badge } from '@ploutizo/ui/components/badge';
 import { Button } from '@ploutizo/ui/components/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@ploutizo/ui/components/dialog';
 import {
   Empty,
   EmptyContent,
@@ -34,13 +42,21 @@ import {
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
 import { Textarea } from '@ploutizo/ui/components/textarea';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@ploutizo/ui/components/tooltip';
 import { useAppForm } from '@ploutizo/ui/components/form';
+import { cn } from '@ploutizo/ui/lib/utils';
 import type {
   ImportDraft,
   ImportDraftRow,
   ImportDraftSummary,
   ImportTargetAccount,
 } from '@ploutizo/types';
+import type { FileUploadActions } from '@/hooks/use-file-upload';
+import { formatBytes, useFileUpload } from '@/hooks/use-file-upload';
 import {
   useCreateImportDraft,
   useDiscardImportDraft,
@@ -59,15 +75,24 @@ const EXAMPLE_CSV = [
   '2026-05-15,250.00,Payment Thank You,settlement,visa-1003,,,chequing payment,Statement payment,',
 ].join('\n');
 
-const FORMAT_GUIDE = [
-  '# Ploutizo normalized credit card import',
-  '',
-  'Required columns: date, amount, description, type.',
-  'Optional columns: external id, category, assignee hint, refund link hints, notes, tags.',
-  '',
-  'Dates use YYYY-MM-DD. Amounts are positive dollar values. Type is expense, refund, or settlement.',
-  'Separate tags with semicolons.',
-].join('\n');
+const CSV_ACCEPT = '.csv,text/csv';
+const CSV_MAX_BYTES = 512 * 1024;
+const REQUIRED_COLUMNS = ['date', 'amount', 'description', 'type'];
+const OPTIONAL_COLUMNS = [
+  'external id',
+  'category',
+  'assignee hint',
+  'refund link hints',
+  'notes',
+  'tags',
+];
+const FORMAT_RULES = [
+  ['date', 'Use YYYY-MM-DD.'],
+  ['amount', 'Use a positive dollar value, such as 42.18.'],
+  ['description', 'Use the merchant or statement description.'],
+  ['type', 'Use expense, refund, or settlement.'],
+  ['tags', 'Separate multiple tags with semicolons.'],
+];
 
 const downloadText = (filename: string, content: string, type: string) => {
   const blob = new Blob([content], { type });
@@ -114,6 +139,164 @@ const statusVariant = (status: ImportDraftRow['status']) => {
   return 'secondary' as const;
 };
 
+const getNativeFile = (file: unknown): File | null =>
+  typeof File !== 'undefined' && file instanceof File ? file : null;
+
+const ImportGuideDialog = ({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) => (
+  <Dialog open={open} onOpenChange={onOpenChange}>
+    <DialogContent className="max-w-lg sm:max-w-lg">
+      <DialogHeader>
+        <DialogTitle>CSV import guide</DialogTitle>
+        <DialogDescription>
+          Format statement rows as a normalized Ploutizo CSV before uploading.
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="grid gap-4 text-sm">
+        <section className="space-y-2">
+          <Text variant="body-sm" className="font-medium">
+            Required columns
+          </Text>
+          <div className="flex flex-wrap gap-2">
+            {REQUIRED_COLUMNS.map((column) => (
+              <Badge key={column} variant="outline">
+                {column}
+              </Badge>
+            ))}
+          </div>
+        </section>
+
+        <section className="space-y-2">
+          <Text variant="body-sm" className="font-medium">
+            Optional columns
+          </Text>
+          <div className="flex flex-wrap gap-2">
+            {OPTIONAL_COLUMNS.map((column) => (
+              <Badge key={column} variant="secondary">
+                {column}
+              </Badge>
+            ))}
+          </div>
+        </section>
+
+        <div className="overflow-hidden rounded-md border border-border">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-border bg-muted/40">
+              <tr>
+                <th className="w-32 px-3 py-2 font-medium">Field</th>
+                <th className="px-3 py-2 font-medium">Rule</th>
+              </tr>
+            </thead>
+            <tbody>
+              {FORMAT_RULES.map(([field, rule]) => (
+                <tr
+                  key={field}
+                  className="border-b border-border last:border-0"
+                >
+                  <td className="px-3 py-2 font-mono text-xs text-muted-foreground">
+                    {field}
+                  </td>
+                  <td className="px-3 py-2">{rule}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </DialogContent>
+  </Dialog>
+);
+
+interface CsvFileUploadFieldProps {
+  selectedFile: File | null;
+  disabled: boolean;
+  isDragging: boolean;
+  invalid: boolean;
+  clearFiles: FileUploadActions['clearFiles'];
+  getInputProps: FileUploadActions['getInputProps'];
+  handleDragEnter: FileUploadActions['handleDragEnter'];
+  handleDragLeave: FileUploadActions['handleDragLeave'];
+  handleDragOver: FileUploadActions['handleDragOver'];
+  handleDrop: FileUploadActions['handleDrop'];
+  openFileDialog: FileUploadActions['openFileDialog'];
+}
+
+const CsvFileUploadField = ({
+  selectedFile,
+  disabled,
+  isDragging,
+  invalid,
+  clearFiles,
+  getInputProps,
+  handleDragEnter,
+  handleDragLeave,
+  handleDragOver,
+  handleDrop,
+  openFileDialog,
+}: CsvFileUploadFieldProps) => (
+  <Field>
+    <FieldLabel htmlFor="import-file">CSV file</FieldLabel>
+    <div
+      className={cn(
+        'flex h-8 min-w-0 items-center rounded-lg border border-input bg-background transition-colors',
+        isDragging && 'border-ring ring-3 ring-ring/50',
+        disabled && 'cursor-not-allowed bg-input/50 opacity-50',
+        invalid && 'border-destructive ring-3 ring-destructive/20'
+      )}
+      onDragEnter={disabled ? undefined : handleDragEnter}
+      onDragLeave={disabled ? undefined : handleDragLeave}
+      onDragOver={disabled ? undefined : handleDragOver}
+      onDrop={disabled ? undefined : handleDrop}
+    >
+      <input
+        {...getInputProps({
+          id: 'import-file',
+          accept: CSV_ACCEPT,
+          disabled,
+          'aria-invalid': invalid || undefined,
+        })}
+        className="sr-only"
+      />
+      <button
+        type="button"
+        className="flex h-full min-w-0 flex-1 items-center gap-2 px-2.5 text-left text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed"
+        disabled={disabled}
+        onClick={openFileDialog}
+      >
+        <FileText className="size-4 shrink-0 text-muted-foreground" />
+        <span className="min-w-0 flex-1 truncate">
+          {selectedFile ? selectedFile.name : 'Drop CSV here or browse'}
+        </span>
+        {selectedFile ? (
+          <span className="shrink-0 text-xs text-muted-foreground">
+            {formatBytes(selectedFile.size)}
+          </span>
+        ) : null}
+      </button>
+      {selectedFile && !disabled ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          className="mr-1"
+          onClick={clearFiles}
+        >
+          <X />
+          <span className="sr-only">Remove CSV file</span>
+        </Button>
+      ) : (
+        <Upload className="mr-2 size-4 shrink-0 text-muted-foreground" />
+      )}
+    </div>
+  </Field>
+);
+
 interface UploadFormProps {
   targets: ImportTargetAccount[];
   activeDrafts: ImportDraftSummary[];
@@ -125,30 +308,51 @@ const UploadForm = ({
   activeDrafts,
   onDraftSelected,
 }: UploadFormProps) => {
-  const [file, setFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [
+    { errors: fileErrors, files, isDragging },
+    {
+      clearFiles,
+      getInputProps,
+      handleDragEnter,
+      handleDragLeave,
+      handleDragOver,
+      handleDrop,
+      openFileDialog,
+    },
+  ] = useFileUpload({
+    accept: CSV_ACCEPT,
+    maxFiles: 1,
+    maxSize: CSV_MAX_BYTES,
+    multiple: false,
+    onFilesChange: () => setUploadError(null),
+    onError: (errors) => setUploadError(errors.at(0) ?? null),
+  });
   const createDraft = useCreateImportDraft();
   const activeDraftByAccount = useMemo(() => {
     const map = new Map<string, ImportDraftSummary>();
     for (const draft of activeDrafts) map.set(draft.accountId, draft);
     return map;
   }, [activeDrafts]);
+  const selectedFile = getNativeFile(files[0]?.file);
+  const uploadMessage = uploadError ?? fileErrors.at(0) ?? null;
 
   const form = useAppForm({
     defaultValues: {
       accountId: targets[0]?.id ?? '',
     },
     onSubmit: async ({ value }) => {
-      if (!file) {
+      if (!selectedFile) {
         setUploadError('Choose a CSV file first.');
         return;
       }
-      const content = await file.text();
+      const content = await selectedFile.text();
       createDraft.mutate(
-        { accountId: value.accountId, fileName: file.name, content },
+        { accountId: value.accountId, fileName: selectedFile.name, content },
         {
           onSuccess: (response) => {
-            setFile(null);
+            clearFiles();
             setUploadError(null);
             onDraftSelected(response.data.id);
           },
@@ -204,18 +408,19 @@ const UploadForm = ({
                   </Select>
                 </Field>
 
-                <Field>
-                  <FieldLabel htmlFor="import-file">CSV file</FieldLabel>
-                  <Input
-                    id="import-file"
-                    type="file"
-                    accept=".csv,text/csv"
-                    disabled={activeDraft !== undefined}
-                    onChange={(event) =>
-                      setFile(event.currentTarget.files?.[0] ?? null)
-                    }
-                  />
-                </Field>
+                <CsvFileUploadField
+                  selectedFile={selectedFile}
+                  disabled={activeDraft !== undefined}
+                  isDragging={isDragging}
+                  invalid={uploadMessage !== null}
+                  clearFiles={clearFiles}
+                  getInputProps={getInputProps}
+                  handleDragEnter={handleDragEnter}
+                  handleDragLeave={handleDragLeave}
+                  handleDragOver={handleDragOver}
+                  handleDrop={handleDrop}
+                  openFileDialog={openFileDialog}
+                />
 
                 <div className="flex flex-wrap gap-2">
                   {activeDraft ? (
@@ -237,34 +442,46 @@ const UploadForm = ({
                       Upload
                     </LoadingButton>
                   )}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() =>
-                      downloadText(
-                        'ploutizo-normalized-import-example.csv',
-                        EXAMPLE_CSV,
-                        'text/csv'
-                      )
-                    }
-                  >
-                    <Download />
-                    Example
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() =>
-                      downloadText(
-                        'ploutizo-normalized-import-guide.md',
-                        FORMAT_GUIDE,
-                        'text/markdown'
-                      )
-                    }
-                  >
-                    <FileText />
-                    Guide
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() =>
+                            downloadText(
+                              'ploutizo-normalized-import-example.csv',
+                              EXAMPLE_CSV,
+                              'text/csv'
+                            )
+                          }
+                        />
+                      }
+                    >
+                      <Download />
+                      Example
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Download a sample normalized CSV.
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setGuideOpen(true)}
+                        />
+                      }
+                    >
+                      <FileText />
+                      Guide
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      View the normalized CSV column guide.
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </>
             );
@@ -272,11 +489,12 @@ const UploadForm = ({
         </form.AppField>
       </div>
 
-      {uploadError ? (
+      {uploadMessage ? (
         <Text variant="body-sm" className="mt-3 text-destructive">
-          {uploadError}
+          {uploadMessage}
         </Text>
       ) : null}
+      <ImportGuideDialog open={guideOpen} onOpenChange={setGuideOpen} />
     </form>
   );
 };
