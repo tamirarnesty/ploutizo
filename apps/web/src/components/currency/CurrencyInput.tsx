@@ -9,6 +9,7 @@ import {
   centsToDollars,
   dollarsToCents,
   formatCurrencyInput,
+  parseCurrencyInput,
 } from '@ploutizo/utils/currency';
 import type { ChangeEvent, ClipboardEvent, FocusEvent } from 'react';
 
@@ -38,14 +39,13 @@ const filterEditString = (input: string): string => {
 const sanitizePaste = (text: string): string =>
   filterEditString(text.replace(/[\s$,]/g, ''));
 
-const parseEditStringToDollars = (edit: string): number | undefined => {
-  if (edit === '' || edit === '.') return undefined;
-  const [whole = '0', fraction = ''] = edit.split('.');
-  return Number(`${whole || '0'}.${fraction}`);
+const tryParseEditStringToDollars = (edit: string): number | undefined => {
+  try {
+    return centsToDollars(parseCurrencyInput(edit));
+  } catch {
+    return undefined;
+  }
 };
-
-const roundDollars = (dollars: number): number =>
-  centsToDollars(dollarsToCents(dollars));
 
 const toFormattedDisplay = (dollars: number | undefined): string => {
   if (dollars === undefined || !Number.isFinite(dollars)) return '';
@@ -62,7 +62,7 @@ const applyEditString = (
   onChange: (value: number | undefined) => void
 ): string => {
   const next = filterEditString(edit);
-  onChange(parseEditStringToDollars(next));
+  onChange(tryParseEditStringToDollars(next));
   return next;
 };
 
@@ -86,8 +86,7 @@ const finalizeEditOnBlur = (
   formatted: string;
   changed: boolean;
 } => {
-  const parsed = parseEditStringToDollars(displayValue);
-  const rounded = parsed === undefined ? undefined : roundDollars(parsed);
+  const rounded = tryParseEditStringToDollars(displayValue);
   return {
     rounded,
     formatted: toFormattedDisplay(rounded),

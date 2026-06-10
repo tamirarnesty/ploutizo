@@ -50,3 +50,41 @@ export const formatCurrencyInput = (
   if (!Number.isFinite(cents)) return '';
   return getDecimalFormatter(locale).format(centsToDollars(cents));
 };
+
+const getLocaleDecimalSeparators = (locale: string) => {
+  const parts = getDecimalFormatter(locale).formatToParts(1234.5);
+  return {
+    group: parts.find((part) => part.type === 'group')?.value,
+    decimal: parts.find((part) => part.type === 'decimal')?.value ?? '.',
+  };
+};
+
+export const parseCurrencyInput = (value: string, locale = 'en-CA'): number => {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    throw new Error('Currency input is empty');
+  }
+
+  const { group, decimal } = getLocaleDecimalSeparators(locale);
+  let normalized = trimmed;
+
+  if (group) {
+    normalized = normalized.split(group).join('');
+  }
+  if (decimal !== '.') {
+    normalized = normalized.replaceAll(decimal, '.');
+  }
+
+  normalized = normalized.replace(/[^\d.-]/g, '');
+
+  if (!/\d/.test(normalized)) {
+    throw new Error('Currency input is not a finite number');
+  }
+
+  const dollars = Number(normalized);
+  if (!Number.isFinite(dollars)) {
+    throw new Error('Currency input is not a finite number');
+  }
+
+  return dollarsToCents(dollars);
+};

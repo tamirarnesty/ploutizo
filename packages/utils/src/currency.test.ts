@@ -4,6 +4,7 @@ import {
   dollarsToCents,
   formatCurrency,
   formatCurrencyInput,
+  parseCurrencyInput,
 } from './currency';
 
 describe('formatCurrency', () => {
@@ -47,5 +48,21 @@ describe('dollarsToCents', () => {
     expect(dollarsToCents(12)).toBe(1200);
     expect(dollarsToCents(12.345)).toBe(1235);
     expect(centsToDollars(1235)).toBe(12.35);
+  });
+});
+
+describe('parseCurrencyInput', () => {
+  it('parses localized decimal strings to rounded cents', () => {
+    expect(parseCurrencyInput('12.34')).toBe(1234);
+    expect(parseCurrencyInput('1,234.56')).toBe(123_456);
+    expect(parseCurrencyInput('12.345')).toBe(1235);
+  });
+
+  it('throws on empty or non-finite input', () => {
+    expect(() => parseCurrencyInput('')).toThrow('Currency input is empty');
+    expect(() => parseCurrencyInput('   ')).toThrow('Currency input is empty');
+    expect(() => parseCurrencyInput('abc')).toThrow(
+      'Currency input is not a finite number'
+    );
   });
 });

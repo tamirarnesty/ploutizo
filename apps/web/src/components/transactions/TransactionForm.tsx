@@ -393,8 +393,10 @@ const TransactionFormInner = ({
               name="amount"
               validators={{
                 onSubmit: ({ value }: { value: number | undefined }) =>
-                  !value || !Number.isFinite(value) || value <= 0
-                    ? 'Amount must be a finite number greater than zero.'
+                  value === undefined ||
+                  !Number.isFinite(value) ||
+                  dollarsToCents(value) < 1
+                    ? 'Amount must be a finite number greater than zero and at least 1 cent.'
                     : undefined,
               }}
             >
