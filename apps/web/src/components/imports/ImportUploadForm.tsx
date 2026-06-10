@@ -11,6 +11,7 @@ import {
   SelectGroup,
   SelectItem,
   SelectTrigger,
+  SelectTriggerSkeleton,
   SelectValue,
 } from '@ploutizo/ui/components/select';
 import { Text } from '@ploutizo/ui/components/text';
@@ -35,6 +36,7 @@ const CSV_ACCEPT = '.csv,text/csv';
 
 interface ImportUploadFormProps {
   targets: ImportTargetAccount[];
+  targetsLoading?: boolean;
   activeDrafts: ImportDraftSummary[];
   activeDraftsLoading?: boolean;
   onDraftSelected: (draftId: string) => void;
@@ -88,6 +90,7 @@ export const ImportHelpActions = () => {
 
 export const ImportUploadForm = ({
   targets,
+  targetsLoading = false,
   activeDrafts,
   activeDraftsLoading = false,
   onDraftSelected,
@@ -95,6 +98,7 @@ export const ImportUploadForm = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const createDraft = useCreateImportDraft();
+  const firstTargetId = targets[0]?.id ?? '';
 
   const activeDraftByAccount = useMemo(() => {
     const map = new Map<string, ImportDraftSummary>();
@@ -104,7 +108,7 @@ export const ImportUploadForm = ({
 
   const form = useAppForm({
     defaultValues: {
-      accountId: targets[0]?.id ?? '',
+      accountId: firstTargetId,
     },
     onSubmit: async ({ value }) => {
       if (!selectedFile) {
@@ -139,39 +143,46 @@ export const ImportUploadForm = ({
       }}
     >
       <div className="grid gap-4 lg:grid-cols-[minmax(220px,1fr)_minmax(220px,1fr)_auto] lg:items-end">
-        <form.AppField name="accountId">
-          {(field) => (
-            <Field>
-              <FieldLabel htmlFor="import-account">Credit card</FieldLabel>
-              <Select
-                value={field.state.value}
-                onValueChange={(value) => {
-                  if (value) field.handleChange(value);
-                }}
-              >
-                <SelectTrigger id="import-account">
-                  <SelectValue>
-                    {(value: string) =>
-                      formatAccountLabel(
-                        targets.find((target) => target.id === value) ??
-                          targets[0]
-                      )
-                    }
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {targets.map((target) => (
-                      <SelectItem key={target.id} value={target.id}>
-                        {formatAccountLabel(target)}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </Field>
-          )}
-        </form.AppField>
+        {targetsLoading ? (
+          <Field>
+            <FieldLabel>Credit card</FieldLabel>
+            <SelectTriggerSkeleton />
+          </Field>
+        ) : (
+          <form.AppField name="accountId">
+            {(field) => (
+              <Field>
+                <FieldLabel htmlFor="import-account">Credit card</FieldLabel>
+                <Select
+                  value={field.state.value}
+                  onValueChange={(value) => {
+                    if (value) field.handleChange(value);
+                  }}
+                >
+                  <SelectTrigger id="import-account">
+                    <SelectValue>
+                      {(value: string) =>
+                        formatAccountLabel(
+                          targets.find((target) => target.id === value) ??
+                            targets[0]
+                        )
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {targets.map((target) => (
+                        <SelectItem key={target.id} value={target.id}>
+                          {formatAccountLabel(target)}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
+            )}
+          </form.AppField>
+        )}
 
         <form.Subscribe selector={(state) => state.values.accountId}>
           {(accountId) => {
@@ -183,7 +194,11 @@ export const ImportUploadForm = ({
                   label="CSV file"
                   accept={CSV_ACCEPT}
                   maxSize={MAX_NORMALIZED_IMPORT_BYTES}
-                  disabled={activeDraftsLoading || activeDraft !== undefined}
+                  disabled={
+                    targetsLoading ||
+                    activeDraftsLoading ||
+                    activeDraft !== undefined
+                  }
                   invalid={uploadError !== null}
                   value={selectedFile}
                   onChange={(file) => {
@@ -208,7 +223,9 @@ export const ImportUploadForm = ({
                       type="submit"
                       icon={<Upload />}
                       loading={createDraft.isPending}
-                      disabled={activeDraftsLoading || !accountId}
+                      disabled={
+                        targetsLoading || activeDraftsLoading || !accountId
+                      }
                     >
                       Upload
                     </LoadingButton>
