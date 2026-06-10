@@ -2,6 +2,7 @@ import { RotateCcw, Trash2 } from 'lucide-react';
 import { Badge } from '@ploutizo/ui/components/badge';
 import { Button } from '@ploutizo/ui/components/button';
 import { LoadingButton } from '@ploutizo/ui/components/loading-button';
+import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
 import type { ImportDraftSummary } from '@ploutizo/types';
 import { formatDraftAccountLabel } from './importPresentation';
@@ -11,18 +12,47 @@ interface ImportDraftListProps {
   selectedDraftId: string | null;
   discardingDraftId: string | undefined;
   isDiscarding: boolean;
+  isLoading?: boolean;
   onSelect: (draftId: string) => void;
   onDiscard: (draftId: string) => void;
 }
+
+const ImportDraftListSkeleton = () => (
+  <div className="grid gap-3 lg:grid-cols-2">
+    {Array.from({ length: 2 }, (_, i) => (
+      <div key={i} className="rounded-md border border-border p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-44" />
+          </div>
+          <Skeleton className="h-6 w-14 rounded-full" />
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Skeleton className="h-4 w-12" />
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-16" />
+        </div>
+        <div className="mt-4 flex gap-2">
+          <Skeleton className="h-8 w-24" />
+          <Skeleton className="h-8 w-24" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
 
 export const ImportDraftList = ({
   drafts,
   selectedDraftId,
   discardingDraftId,
   isDiscarding,
+  isLoading = false,
   onSelect,
   onDiscard,
 }: ImportDraftListProps) => {
+  if (isLoading) return <ImportDraftListSkeleton />;
+
   if (drafts.length === 0) {
     return (
       <div className="rounded-md border border-dashed border-border p-6">
