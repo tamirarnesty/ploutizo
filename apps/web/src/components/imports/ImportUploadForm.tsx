@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Download, FileText, RotateCcw, Upload } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import { Field, FieldLabel } from '@ploutizo/ui/components/field';
@@ -11,7 +11,6 @@ import {
   SelectGroup,
   SelectItem,
   SelectTrigger,
-  SelectTriggerSkeleton,
   SelectValue,
 } from '@ploutizo/ui/components/select';
 import { Text } from '@ploutizo/ui/components/text';
@@ -99,6 +98,10 @@ export const ImportUploadForm = ({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const createDraft = useCreateImportDraft();
   const firstTargetId = targets[0]?.id ?? '';
+  const targetIds = useMemo(
+    () => new Set(targets.map((target) => target.id)),
+    [targets]
+  );
 
   const activeDraftByAccount = useMemo(() => {
     const map = new Map<string, ImportDraftSummary>();
@@ -134,6 +137,13 @@ export const ImportUploadForm = ({
     },
   });
 
+  useEffect(() => {
+    if (!firstTargetId) return;
+    const currentAccountId = form.getFieldValue('accountId');
+    if (currentAccountId && targetIds.has(currentAccountId)) return;
+    form.setFieldValue('accountId', firstTargetId);
+  }, [firstTargetId, form, targetIds]);
+
   return (
     <form
       className="rounded-md border border-border p-4"
@@ -143,46 +153,50 @@ export const ImportUploadForm = ({
       }}
     >
       <div className="grid gap-4 lg:grid-cols-[minmax(220px,1fr)_minmax(220px,1fr)_auto] lg:items-end">
-        {targetsLoading ? (
-          <Field>
-            <FieldLabel>Credit card</FieldLabel>
-            <SelectTriggerSkeleton />
-          </Field>
-        ) : (
-          <form.AppField name="accountId">
-            {(field) => (
-              <Field>
-                <FieldLabel htmlFor="import-account">Credit card</FieldLabel>
-                <Select
-                  value={field.state.value}
-                  onValueChange={(value) => {
-                    if (value) field.handleChange(value);
-                  }}
+        <form.AppField name="accountId">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor="import-account">Credit card</FieldLabel>
+              <Select
+                value={field.state.value}
+                onValueChange={(value) => {
+                  if (value) field.handleChange(value);
+                }}
+              >
+                <SelectTrigger
+                  id="import-account"
+                  disabled={targetsLoading || targets.length === 0}
                 >
-                  <SelectTrigger id="import-account">
-                    <SelectValue>
-                      {(value: string) =>
-                        formatAccountLabel(
-                          targets.find((target) => target.id === value) ??
-                            targets[0]
-                        )
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {targets.map((target) => (
-                        <SelectItem key={target.id} value={target.id}>
-                          {formatAccountLabel(target)}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </Field>
-            )}
-          </form.AppField>
-        )}
+                  <SelectValue
+                    placeholder={
+                      targetsLoading
+                        ? 'Loading credit cards...'
+                        : 'Select a credit card'
+                    }
+                  >
+                    {(value: string) => {
+                      const target = targets.find(
+                        (option) => option.id === value
+                      );
+                      return target
+                        ? formatAccountLabel(target)
+                        : 'Select a credit card';
+                    }}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {targets.map((target) => (
+                      <SelectItem key={target.id} value={target.id}>
+                        {formatAccountLabel(target)}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
+        </form.AppField>
 
         <form.Subscribe selector={(state) => state.values.accountId}>
           {(accountId) => {

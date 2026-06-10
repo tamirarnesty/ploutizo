@@ -11,7 +11,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@ploutizo/ui/components/empty';
-import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
 import {
   useDiscardImportDraft,
@@ -30,47 +29,48 @@ interface ImportStatusBadgeProps {
   isLoading: boolean;
 }
 
+const importStatusBadgeClassName =
+  'border-primary/30 bg-primary/10 text-primary shadow-xs dark:bg-primary/15';
+
 const ImportStatusBadge = ({
   activeDraftCount,
   isLoading,
 }: ImportStatusBadgeProps) => {
-  if (isLoading) return <Skeleton className="h-6 w-20 rounded-full" />;
+  const badge = (() => {
+    if (isLoading) {
+      return (
+        <Badge variant="outline" className={importStatusBadgeClassName}>
+          Checking drafts
+        </Badge>
+      );
+    }
 
-  if (activeDraftCount > 0) {
+    if (activeDraftCount > 0) {
+      return (
+        <Badge variant="outline" className={importStatusBadgeClassName}>
+          <AlertCircle />
+          {activeDraftCount} active
+        </Badge>
+      );
+    }
+
     return (
-      <Badge variant="secondary">
-        <AlertCircle />
-        {activeDraftCount} active
+      <Badge variant="outline" className={importStatusBadgeClassName}>
+        <CheckCircle2 />
+        Ready
       </Badge>
     );
-  }
+  })();
 
   return (
-    <Badge variant="outline">
-      <CheckCircle2 />
-      Ready
-    </Badge>
+    <div className="flex flex-col items-end gap-1">
+      <span className="text-xs font-medium text-muted-foreground">
+        Import status
+      </span>
+      {badge}
+    </div>
   );
 };
-
-const ImportDraftListLoadingState = () => (
-  <div className="grid gap-3 lg:grid-cols-2">
-    {Array.from({ length: 2 }, (_, i) => (
-      <Skeleton key={i} className="h-32 w-full rounded-md" />
-    ))}
-  </div>
-);
-
-const ImportHistoryLoadingState = () => (
-  <div className="divide-y divide-border rounded-md border border-border">
-    {Array.from({ length: 3 }, (_, i) => (
-      <div key={i} className="space-y-2 p-3">
-        <Skeleton className="h-4 w-40" />
-        <Skeleton className="h-4 w-56" />
-      </div>
-    ))}
-  </div>
-);
 
 const NoImportTargetsEmptyState = () => (
   <Empty className="min-h-[460px] border border-dashed">
@@ -105,6 +105,8 @@ export const Import = () => {
   const activeDrafts = activeDraftsData ?? [];
   const history = historyData ?? [];
   const showImportWorkspace = targetsLoading || targets.length > 0;
+  const selectedDraftSummary =
+    activeDrafts.find((draft) => draft.id === selectedDraftId) ?? null;
 
   const handleDiscard = (draftId: string) => {
     discardDraft.mutate(draftId, {
@@ -131,7 +133,6 @@ export const Import = () => {
       {showImportWorkspace ? (
         <>
           <ImportUploadForm
-            key={targetsLoading ? 'loading' : (targets[0]?.id ?? 'ready')}
             targets={targets}
             targetsLoading={targetsLoading}
             activeDrafts={activeDrafts}
@@ -143,37 +144,30 @@ export const Import = () => {
             <Text as="h2" variant="h3">
               Active drafts
             </Text>
-            {draftsLoading ? (
-              <ImportDraftListLoadingState />
-            ) : (
-              <ImportDraftList
-                drafts={activeDrafts}
-                selectedDraftId={selectedDraftId}
-                discardingDraftId={discardDraft.variables}
-                isDiscarding={discardDraft.isPending}
-                onSelect={setSelectedDraftId}
-                onDiscard={handleDiscard}
-              />
-            )}
+            <ImportDraftList
+              drafts={activeDrafts}
+              selectedDraftId={selectedDraftId}
+              discardingDraftId={discardDraft.variables}
+              isDiscarding={discardDraft.isPending}
+              isLoading={draftsLoading}
+              onSelect={setSelectedDraftId}
+              onDiscard={handleDiscard}
+            />
           </section>
 
           {selectedDraftId ? (
-            draftLoading || !selectedDraft ? (
-              <Skeleton className="h-64 w-full rounded-md" />
-            ) : (
-              <ImportDraftReview draft={selectedDraft} />
-            )
+            <ImportDraftReview
+              draft={selectedDraft}
+              summary={selectedDraftSummary}
+              isLoading={draftLoading || !selectedDraft}
+            />
           ) : null}
 
           <section className="space-y-3">
             <Text as="h2" variant="h3">
               Recent history
             </Text>
-            {historyLoading ? (
-              <ImportHistoryLoadingState />
-            ) : (
-              <ImportHistoryList history={history} />
-            )}
+            <ImportHistoryList history={history} isLoading={historyLoading} />
           </section>
         </>
       ) : (

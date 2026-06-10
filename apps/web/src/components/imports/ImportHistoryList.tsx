@@ -1,13 +1,40 @@
 import { Badge } from '@ploutizo/ui/components/badge';
+import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
 import type { ImportDraftSummary } from '@ploutizo/types';
 import { formatDraftAccountLabel } from './importPresentation';
 
 interface ImportHistoryListProps {
   history: ImportDraftSummary[];
+  isLoading?: boolean;
 }
 
-export const ImportHistoryList = ({ history }: ImportHistoryListProps) => {
+const ImportHistoryListSkeleton = () => (
+  <div className="divide-y divide-border rounded-md border border-border">
+    {Array.from({ length: 3 }, (_, i) => (
+      <div
+        key={i}
+        className="flex flex-wrap items-center justify-between gap-3 p-3"
+      >
+        <div className="min-w-0 space-y-2">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-4 w-56" />
+        </div>
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-6 w-20 rounded-full" />
+          <Skeleton className="h-4 w-14" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+export const ImportHistoryList = ({
+  history,
+  isLoading = false,
+}: ImportHistoryListProps) => {
+  if (isLoading) return <ImportHistoryListSkeleton />;
+
   if (history.length === 0) {
     return (
       <Text variant="body-sm" className="text-muted-foreground">
