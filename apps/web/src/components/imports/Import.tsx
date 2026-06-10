@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { AlertCircle, CheckCircle2, CreditCard, Upload } from 'lucide-react';
+import { AlertCircle, CheckCircle2, CreditCard } from 'lucide-react';
 import { Badge } from '@ploutizo/ui/components/badge';
 import { Button } from '@ploutizo/ui/components/button';
 import {
@@ -11,7 +11,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@ploutizo/ui/components/empty';
-import { LoadingButton } from '@ploutizo/ui/components/loading-button';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
 import {
@@ -24,7 +23,7 @@ import {
 import { ImportDraftList } from './ImportDraftList';
 import { ImportDraftReview } from './ImportDraftReview';
 import { ImportHistoryList } from './ImportHistoryList';
-import { ImportHelpActions, ImportUploadForm } from './ImportUploadForm';
+import { ImportUploadForm } from './ImportUploadForm';
 
 interface ImportStatusBadgeProps {
   activeDraftCount: number;
@@ -53,33 +52,6 @@ const ImportStatusBadge = ({
     </Badge>
   );
 };
-
-const ImportUploadLoadingState = () => (
-  <div className="rounded-md border border-border p-4">
-    <div className="grid gap-4 lg:grid-cols-[minmax(220px,1fr)_minmax(220px,1fr)_auto] lg:items-end">
-      <div className="space-y-2">
-        <Text variant="body-sm" className="font-medium">
-          Credit card
-        </Text>
-        <Skeleton className="h-10 w-full rounded-md" />
-      </div>
-
-      <div className="space-y-2">
-        <Text variant="body-sm" className="font-medium">
-          CSV file
-        </Text>
-        <Skeleton className="h-10 w-full rounded-md" />
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        <LoadingButton type="button" icon={<Upload />} disabled>
-          Upload
-        </LoadingButton>
-        <ImportHelpActions />
-      </div>
-    </div>
-  </div>
-);
 
 const ImportDraftListLoadingState = () => (
   <div className="grid gap-3 lg:grid-cols-2">
@@ -158,16 +130,14 @@ export const Import = () => {
 
       {showImportWorkspace ? (
         <>
-          {targetsLoading ? (
-            <ImportUploadLoadingState />
-          ) : (
-            <ImportUploadForm
-              targets={targets}
-              activeDrafts={activeDrafts}
-              activeDraftsLoading={draftsLoading}
-              onDraftSelected={setSelectedDraftId}
-            />
-          )}
+          <ImportUploadForm
+            key={targetsLoading ? 'loading' : (targets[0]?.id ?? 'ready')}
+            targets={targets}
+            targetsLoading={targetsLoading}
+            activeDrafts={activeDrafts}
+            activeDraftsLoading={draftsLoading}
+            onDraftSelected={setSelectedDraftId}
+          />
 
           <section className="space-y-3">
             <Text as="h2" variant="h3">
