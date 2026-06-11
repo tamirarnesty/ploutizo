@@ -5,8 +5,10 @@ import {
   InputGroupInput,
 } from '@ploutizo/ui/components/input-group';
 import {
-  mergePercentEditPaste,
+  isIncompleteDecimalEdit,
+  mergeDecimalEditPaste,
   sanitizeDecimalEditString,
+  sanitizePercentPaste,
 } from '@ploutizo/utils/currency';
 import { useDecimalDisplayInput } from '@/components/currency/useDecimalDisplayInput';
 import type { ComponentProps } from 'react';
@@ -38,11 +40,6 @@ export const PercentInput = ({
   inputClassName,
   ...inputProps
 }: PercentInputProps) => {
-  const formatBlur = useCallback(
-    (percentage: number) => toBlurDisplay(percentage),
-    []
-  );
-
   const onMidEdit = useCallback(
     (sanitized: string) => {
       const parsed = parseFloat(sanitized);
@@ -56,7 +53,7 @@ export const PercentInput = ({
   const commitOnBlur = useCallback(
     (display: string, currentValue: number): number => {
       const sanitized = sanitizeDecimalEditString(display);
-      if (!sanitized || sanitized === '.') {
+      if (isIncompleteDecimalEdit(sanitized)) {
         return currentValue;
       }
       const parsed = parseFloat(sanitized);
@@ -71,14 +68,21 @@ export const PercentInput = ({
   const { displayValue, handleChange, handlePaste, handleFocus, handleBlur } =
     useDecimalDisplayInput({
       value,
-      formatBlur,
+      formatBlur: toBlurDisplay,
       formatEdit: toEditDisplay,
       sanitize: sanitizeDecimalEditString,
       onMidEdit,
       commitOnBlur,
       onChange,
       onBlur,
-      mergePaste: mergePercentEditPaste,
+      mergePaste: (display, start, end, pasted) =>
+        mergeDecimalEditPaste(
+          display,
+          start,
+          end,
+          pasted,
+          sanitizePercentPaste
+        ),
     });
 
   return (

@@ -8,8 +8,10 @@ import {
 import {
   centsToDollars,
   formatDollarsBlurDisplay,
-  mergeCurrencyEditPaste,
+  isIncompleteDecimalEdit,
+  mergeDecimalEditPaste,
   parseCurrencyInputToCents,
+  sanitizeCurrencyPaste,
   sanitizeDecimalEditString,
   tryParseDollarsFromEdit,
 } from '@ploutizo/utils/currency';
@@ -49,11 +51,6 @@ export const CurrencyInput = ({
   commitEmptyOnChange,
   ...inputProps
 }: CurrencyInputProps) => {
-  const formatBlur = useCallback(
-    (dollars: number | undefined) => formatDollarsBlurDisplay(dollars),
-    []
-  );
-
   const onMidEdit = useCallback(
     (sanitized: string) => {
       const parsed = tryParseDollarsFromEdit(sanitized);
@@ -63,7 +60,7 @@ export const CurrencyInput = ({
       }
       if (
         commitEmptyOnChange !== undefined &&
-        (!sanitized || sanitized === '.')
+        isIncompleteDecimalEdit(sanitized)
       ) {
         onChange(commitEmptyOnChange);
         return;
@@ -79,10 +76,10 @@ export const CurrencyInput = ({
       _currentValue: number | undefined
     ): number | undefined => {
       const sanitized = sanitizeDecimalEditString(display);
-      if (!sanitized || sanitized === '.') {
+      if (isIncompleteDecimalEdit(sanitized)) {
         return commitEmptyAs;
       }
-      return centsToDollars(parseCurrencyInputToCents(display));
+      return centsToDollars(parseCurrencyInputToCents(sanitized));
     },
     [commitEmptyAs]
   );
@@ -90,14 +87,21 @@ export const CurrencyInput = ({
   const { displayValue, handleChange, handlePaste, handleFocus, handleBlur } =
     useDecimalDisplayInput({
       value,
-      formatBlur,
+      formatBlur: formatDollarsBlurDisplay,
       formatEdit: toEditDisplay,
       sanitize: sanitizeDecimalEditString,
       onMidEdit,
       commitOnBlur,
       onChange,
       onBlur,
-      mergePaste: mergeCurrencyEditPaste,
+      mergePaste: (display, start, end, pasted) =>
+        mergeDecimalEditPaste(
+          display,
+          start,
+          end,
+          pasted,
+          sanitizeCurrencyPaste
+        ),
     });
 
   return (

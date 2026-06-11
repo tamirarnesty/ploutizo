@@ -5,8 +5,7 @@ import {
   formatCurrency,
   formatDollarsBlurDisplay,
   formatCurrencyInput,
-  mergeCurrencyEditPaste,
-  mergePercentEditPaste,
+  mergeDecimalEditPaste,
   parseCurrencyInputToCents,
   sanitizeDecimalEditString,
   sanitizeCurrencyPaste,
@@ -128,16 +127,22 @@ describe('formatDollarsBlurDisplay', () => {
   });
 });
 
-describe('mergeCurrencyEditPaste', () => {
-  it('merges paste into edit display at selection', () => {
-    expect(mergeCurrencyEditPaste('12', 2, 2, '.34')).toBe('12.34');
-    expect(mergeCurrencyEditPaste('100', 0, 3, '$ 50.00')).toBe('50.00');
+describe('mergeDecimalEditPaste', () => {
+  it('merges currency paste into edit display at selection', () => {
+    expect(
+      mergeDecimalEditPaste('12', 2, 2, '.34', sanitizeCurrencyPaste)
+    ).toBe('12.34');
+    expect(
+      mergeDecimalEditPaste('100', 0, 3, '$ 50.00', sanitizeCurrencyPaste)
+    ).toBe('50.00');
   });
-});
 
-describe('mergePercentEditPaste', () => {
   it('merges percent paste into edit display', () => {
-    expect(mergePercentEditPaste('12', 2, 2, '.5%')).toBe('12.5');
-    expect(mergePercentEditPaste('', 0, 0, ' 40% ')).toBe('40');
+    expect(mergeDecimalEditPaste('12', 2, 2, '.5%', sanitizePercentPaste)).toBe(
+      '12.5'
+    );
+    expect(mergeDecimalEditPaste('', 0, 0, ' 40% ', sanitizePercentPaste)).toBe(
+      '40'
+    );
   });
 });

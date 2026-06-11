@@ -1,67 +1,69 @@
-import '@/components/currency/__test__/inputGroupMock';
+import '@/test/mockInputGroup';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { CurrencyInput } from '@/components/currency/CurrencyInput';
-
-const ControlledCurrencyInput = ({
-  initialValue,
-  commitEmptyAs,
-  commitEmptyOnChange,
-}: {
-  initialValue?: number;
-  commitEmptyAs?: number;
-  commitEmptyOnChange?: number;
-}) => {
-  const [value, setValue] = useState<number | undefined>(initialValue);
-  return (
-    <>
-      <CurrencyInput
-        id="test-currency"
-        value={value}
-        onChange={setValue}
-        onBlur={vi.fn()}
-        commitEmptyAs={commitEmptyAs}
-        commitEmptyOnChange={commitEmptyOnChange}
-      />
-      <output data-testid="value">{value ?? 'empty'}</output>
-    </>
-  );
-};
+import {
+  ControlledDecimalInput,
+  expectAriaInvalidForwarded,
+  expectBlurredThenFocusedDisplay,
+  expectFiltersInvalidCharacters,
+} from '@/components/currency/__test__/decimalInputTestUtils';
 
 describe('CurrencyInput', () => {
   it('renders formatted value when blurred', () => {
-    render(<ControlledCurrencyInput initialValue={1234.56} />);
+    render(
+      <ControlledDecimalInput
+        Input={CurrencyInput}
+        initialValue={1234.56}
+        formatOutput={(value) =>
+          value === undefined ? 'empty' : String(value)
+        }
+      />
+    );
 
     expect(screen.getByRole('textbox')).toHaveValue('1,234.56');
   });
 
   it('shows unformatted value on focus', async () => {
-    const user = userEvent.setup();
-    render(<ControlledCurrencyInput initialValue={1234.56} />);
+    render(
+      <ControlledDecimalInput
+        Input={CurrencyInput}
+        initialValue={1234.56}
+        formatOutput={(value) =>
+          value === undefined ? 'empty' : String(value)
+        }
+      />
+    );
 
-    const input = screen.getByRole('textbox');
-    await user.click(input);
-
-    expect(input).toHaveValue('1234.56');
+    await expectBlurredThenFocusedDisplay('1,234.56', '1234.56');
   });
 
   it('filters invalid characters on type', async () => {
-    const user = userEvent.setup();
-    render(<ControlledCurrencyInput />);
+    render(
+      <ControlledDecimalInput
+        Input={CurrencyInput}
+        initialValue={undefined}
+        formatOutput={(value) =>
+          value === undefined ? 'empty' : String(value)
+        }
+      />
+    );
 
-    const input = screen.getByRole('textbox');
-    await user.click(input);
-    await user.type(input, '12abc34');
-
-    expect(input).toHaveValue('1234');
-    expect(screen.getByTestId('value')).toHaveTextContent('1234');
+    await expectFiltersInvalidCharacters();
   });
 
   it('allows one decimal point and partial states', async () => {
     const user = userEvent.setup();
-    render(<ControlledCurrencyInput />);
+    render(
+      <ControlledDecimalInput
+        Input={CurrencyInput}
+        initialValue={undefined}
+        formatOutput={(value) =>
+          value === undefined ? 'empty' : String(value)
+        }
+      />
+    );
 
     const input = screen.getByRole('textbox');
     await user.click(input);
@@ -94,7 +96,15 @@ describe('CurrencyInput', () => {
 
   it('emits undefined on empty input', async () => {
     const user = userEvent.setup();
-    render(<ControlledCurrencyInput initialValue={12} />);
+    render(
+      <ControlledDecimalInput
+        Input={CurrencyInput}
+        initialValue={12}
+        formatOutput={(value) =>
+          value === undefined ? 'empty' : String(value)
+        }
+      />
+    );
 
     const input = screen.getByRole('textbox');
     await user.click(input);
@@ -105,7 +115,15 @@ describe('CurrencyInput', () => {
 
   it('keeps unrounded parent value mid-type until blur', async () => {
     const user = userEvent.setup();
-    render(<ControlledCurrencyInput />);
+    render(
+      <ControlledDecimalInput
+        Input={CurrencyInput}
+        initialValue={undefined}
+        formatOutput={(value) =>
+          value === undefined ? 'empty' : String(value)
+        }
+      />
+    );
 
     const input = screen.getByRole('textbox');
     await user.click(input);
@@ -119,16 +137,7 @@ describe('CurrencyInput', () => {
   });
 
   it('forwards aria-invalid to the input', () => {
-    render(
-      <CurrencyInput
-        id="test-currency"
-        value={10}
-        onChange={vi.fn()}
-        aria-invalid
-      />
-    );
-
-    expect(screen.getByRole('textbox')).toHaveAttribute('aria-invalid', 'true');
+    expectAriaInvalidForwarded(CurrencyInput, 10);
   });
 
   it('commits empty blur to commitEmptyAs', async () => {
@@ -172,5 +181,19 @@ describe('CurrencyInput', () => {
 
     expect(onChange).toHaveBeenLastCalledWith(0);
     expect(input).toHaveValue('');
+  });
+
+  it('syncs display when parent value changes while unfocused', () => {
+    const { rerender } = render(
+      <CurrencyInput id="test-currency" value={25} onChange={vi.fn()} />
+    );
+
+    expect(screen.getByRole('textbox')).toHaveValue('25.00');
+
+    rerender(
+      <CurrencyInput id="test-currency" value={33.3} onChange={vi.fn()} />
+    );
+
+    expect(screen.getByRole('textbox')).toHaveValue('33.30');
   });
 });

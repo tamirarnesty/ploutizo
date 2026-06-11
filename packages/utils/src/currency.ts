@@ -1,5 +1,9 @@
 const currencyFormatters = new Map<string, Intl.NumberFormat>();
 const decimalFormatters = new Map<string, Intl.NumberFormat>();
+const localeDecimalSeparators = new Map<
+  string,
+  { group?: string; decimal: string }
+>();
 
 const getCurrencyFormatter = (
   currency: string,
@@ -55,11 +59,16 @@ export const formatCurrencyInput = (
 };
 
 const getLocaleDecimalSeparators = (locale: string) => {
+  const cached = localeDecimalSeparators.get(locale);
+  if (cached) return cached;
+
   const parts = getDecimalFormatter(locale).formatToParts(1234.5);
-  return {
+  const separators = {
     group: parts.find((part) => part.type === 'group')?.value,
     decimal: parts.find((part) => part.type === 'decimal')?.value ?? '.',
   };
+  localeDecimalSeparators.set(locale, separators);
+  return separators;
 };
 
 const parseDollarsFromLocalizedString = (
@@ -132,8 +141,8 @@ export const sanitizeDecimalEditString = (
   return result;
 };
 
-/** @deprecated Use `sanitizeDecimalEditString`. */
-export const sanitizeCurrencyEditString = sanitizeDecimalEditString;
+export const isIncompleteDecimalEdit = (sanitized: string): boolean =>
+  sanitized.length === 0 || sanitized === '.';
 
 export const sanitizeCurrencyPaste = (
   text: string,
@@ -160,7 +169,7 @@ export const tryParseDollarsFromEdit = (
   locale = 'en-CA'
 ): number | undefined => {
   const sanitized = sanitizeDecimalEditString(edit, locale);
-  if (!sanitized || sanitized === '.' || !/\d/.test(sanitized)) {
+  if (isIncompleteDecimalEdit(sanitized) || !/\d/.test(sanitized)) {
     return undefined;
   }
   return parseDollarsFromLocalizedString(sanitized, locale);
@@ -175,9 +184,6 @@ export const formatDollarsBlurDisplay = (
   return formatCurrencyInput(dollarsToCents(dollars), locale);
 };
 
-/** @deprecated Use `formatDollarsBlurDisplay`. */
-export const formatCurrencyBlurDisplay = formatDollarsBlurDisplay;
-
 export const mergeDecimalEditPaste = (
   display: string,
   start: number,
@@ -190,37 +196,5 @@ export const mergeDecimalEditPaste = (
     display.slice(0, start) +
       sanitizePaste(pasted, locale) +
       display.slice(end),
-    locale
-  );
-
-export const mergeCurrencyEditPaste = (
-  display: string,
-  start: number,
-  end: number,
-  pasted: string,
-  locale = 'en-CA'
-): string =>
-  mergeDecimalEditPaste(
-    display,
-    start,
-    end,
-    pasted,
-    sanitizeCurrencyPaste,
-    locale
-  );
-
-export const mergePercentEditPaste = (
-  display: string,
-  start: number,
-  end: number,
-  pasted: string,
-  locale = 'en-CA'
-): string =>
-  mergeDecimalEditPaste(
-    display,
-    start,
-    end,
-    pasted,
-    sanitizePercentPaste,
     locale
   );

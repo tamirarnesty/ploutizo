@@ -1,7 +1,7 @@
 import { vi } from 'vitest';
 import type { ComponentProps } from 'react';
 
-vi.mock('@ploutizo/ui/components/input-group', () => ({
+export const inputGroupMock = {
   InputGroup: ({
     children,
     className,
@@ -15,4 +15,6 @@ vi.mock('@ploutizo/ui/components/input-group', () => ({
     <span>{children}</span>
   ),
   InputGroupInput: (props: ComponentProps<'input'>) => <input {...props} />,
-}));
+};
+
+vi.mock('@ploutizo/ui/components/input-group', () => inputGroupMock);

@@ -1,53 +1,34 @@
-import '@/components/currency/__test__/inputGroupMock';
+import '@/test/mockInputGroup';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { PercentInput } from '@/components/currency/PercentInput';
-
-const ControlledPercentInput = ({ initialValue }: { initialValue: number }) => {
-  const [value, setValue] = useState(initialValue);
-  return (
-    <>
-      <PercentInput
-        id="test-percent"
-        value={value}
-        onChange={setValue}
-        onBlur={vi.fn()}
-      />
-      <output data-testid="value">{value}</output>
-    </>
-  );
-};
+import {
+  ControlledDecimalInput,
+  expectAriaInvalidForwarded,
+  expectBlurredThenFocusedDisplay,
+  expectFiltersInvalidCharacters,
+} from '@/components/currency/__test__/decimalInputTestUtils';
 
 describe('PercentInput', () => {
   it('renders formatted value when blurred', () => {
-    render(<ControlledPercentInput initialValue={50} />);
+    render(<ControlledDecimalInput Input={PercentInput} initialValue={50} />);
 
     expect(screen.getByRole('textbox')).toHaveValue('50.0');
   });
 
   it('shows unformatted value on focus', async () => {
-    const user = userEvent.setup();
-    render(<ControlledPercentInput initialValue={50.5} />);
+    render(
+      <ControlledDecimalInput Input={PercentInput} initialValue={33.33} />
+    );
 
-    const input = screen.getByRole('textbox');
-    await user.click(input);
-
-    expect(input).toHaveValue('50.5');
+    await expectBlurredThenFocusedDisplay('33.3', '33.33');
   });
 
   it('filters invalid characters on type', async () => {
-    const user = userEvent.setup();
-    render(<ControlledPercentInput initialValue={0} />);
+    render(<ControlledDecimalInput Input={PercentInput} initialValue={0} />);
 
-    const input = screen.getByRole('textbox');
-    await user.click(input);
-    await user.clear(input);
-    await user.type(input, '12abc34');
-
-    expect(input).toHaveValue('1234');
-    expect(screen.getByTestId('value')).toHaveTextContent('1234');
+    await expectFiltersInvalidCharacters({ clearFirst: true });
   });
 
   it('defers empty and partial decimal parent updates', async () => {
@@ -67,7 +48,9 @@ describe('PercentInput', () => {
 
   it('resets display to one decimal place on blur', async () => {
     const user = userEvent.setup();
-    render(<ControlledPercentInput initialValue={33.33} />);
+    render(
+      <ControlledDecimalInput Input={PercentInput} initialValue={33.33} />
+    );
 
     const input = screen.getByRole('textbox');
     await user.click(input);
@@ -81,7 +64,7 @@ describe('PercentInput', () => {
 
   it('rounds parent value to one decimal on blur', async () => {
     const user = userEvent.setup();
-    render(<ControlledPercentInput initialValue={10} />);
+    render(<ControlledDecimalInput Input={PercentInput} initialValue={10} />);
 
     const input = screen.getByRole('textbox');
     await user.click(input);
@@ -109,16 +92,7 @@ describe('PercentInput', () => {
   });
 
   it('forwards aria-invalid to the input', () => {
-    render(
-      <PercentInput
-        id="test-percent"
-        value={10}
-        onChange={vi.fn()}
-        aria-invalid
-      />
-    );
-
-    expect(screen.getByRole('textbox')).toHaveAttribute('aria-invalid', 'true');
+    expectAriaInvalidForwarded(PercentInput, 10);
   });
 
   it('syncs display when parent value changes while unfocused', () => {
