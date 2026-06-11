@@ -14,6 +14,7 @@ import {
   insertImportBatchRows,
   listDraftRows,
   listImportTargetAccounts,
+  touchImportDraft,
   updateImportDraftRowQuery,
 } from '@/lib/queries/imports';
 
@@ -206,6 +207,7 @@ describe('import service', () => {
         status: 'ready',
       }
     );
+    expect(touchImportDraft).toHaveBeenCalledWith('org_1', summaryRow.id);
     expect(result.status).toBe('ready');
   });
 });

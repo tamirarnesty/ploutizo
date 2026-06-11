@@ -58,8 +58,17 @@ export const getApiErrorMessage = (
   error: unknown,
   fallback = "Couldn't process that request."
 ): string => {
+  const nativeMessage =
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof (error as { message?: unknown }).message === 'string'
+      ? (error as { message: string }).message
+      : undefined;
+
   const maybeError = error as ApiErrorBody;
   return (
+    nativeMessage ??
     maybeError.error?.message ??
     maybeError.error?.errors?.[0]?.message ??
     fallback

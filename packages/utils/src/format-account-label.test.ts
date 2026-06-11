@@ -21,4 +21,14 @@ describe('formatAccountLabel', () => {
       })
     ).toBe('Visa');
   });
+
+  it('uses a fallback for blank names', () => {
+    expect(
+      formatAccountLabel({
+        name: '  ',
+        institution: 'TD',
+        lastFour: '1234',
+      })
+    ).toBe('Unnamed Account · TD · ••1234');
+  });
 });

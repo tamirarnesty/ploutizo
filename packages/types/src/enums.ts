@@ -46,6 +46,15 @@ export const TRANSACTION_TYPE_VALUES = [
 
 export type TransactionType = (typeof TRANSACTION_TYPE_VALUES)[number]
 
+export const IMPORT_TRANSACTION_TYPE_VALUES = [
+  'expense',
+  'refund',
+  'settlement',
+] as const satisfies readonly TransactionType[]
+
+export type ImportTransactionType =
+  (typeof IMPORT_TRANSACTION_TYPE_VALUES)[number]
+
 export const IMPORT_BATCH_STATUS_VALUES = [
   'draft',
   'completed',

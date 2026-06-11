@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { AlertCircle, CheckCircle2, CreditCard } from 'lucide-react';
 import { Badge } from '@ploutizo/ui/components/badge';
@@ -107,6 +107,12 @@ export const Import = () => {
   const showImportWorkspace = targetsLoading || targets.length > 0;
   const selectedDraftSummary =
     activeDrafts.find((draft) => draft.id === selectedDraftId) ?? null;
+
+  useEffect(() => {
+    if (selectedDraftId && !draftLoading && !selectedDraft) {
+      setSelectedDraftId(null);
+    }
+  }, [selectedDraftId, draftLoading, selectedDraft]);
 
   const handleDiscard = (draftId: string) => {
     discardDraft.mutate(draftId, {

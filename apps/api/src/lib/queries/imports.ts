@@ -4,7 +4,7 @@ import {
   importBatchRows,
   importBatches,
 } from '@ploutizo/db/schema';
-import { and, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, exists, isNull, ne, sql } from 'drizzle-orm';
 
 export type DrizzleTransaction = Parameters<
   Parameters<typeof db.transaction>[0]
@@ -82,7 +82,7 @@ export const listRecentImportHistory = async (orgId: string, limit = 10) =>
     .where(
       and(
         eq(importBatches.orgId, orgId),
-        sql`${importBatches.status} <> 'draft'`
+        ne(importBatches.status, 'draft')
       )
     )
     .orderBy(desc(importBatches.updatedAt))
@@ -201,14 +201,31 @@ export const updateImportDraftRowQuery = async (
   const rows = await db
     .update(importBatchRows)
     .set({ ...values, updatedAt: new Date() })
-    .where(and(eq(importBatchRows.id, rowId), eq(importBatchRows.orgId, orgId)))
+    .where(
+      and(
+        eq(importBatchRows.id, rowId),
+        eq(importBatchRows.orgId, orgId),
+        exists(
+          db
+            .select({ one: sql`1` })
+            .from(importBatches)
+            .where(
+              and(
+                eq(importBatches.id, importBatchRows.batchId),
+                eq(importBatches.orgId, orgId),
+                eq(importBatches.status, 'draft')
+              )
+            )
+        )
+      )
+    )
     .returning();
   return rows.at(0) ?? null;
 };
 
-export const touchImportDraft = async (draftId: string) => {
+export const touchImportDraft = async (orgId: string, draftId: string) => {
   await db
     .update(importBatches)
     .set({ updatedAt: new Date() })
-    .where(eq(importBatches.id, draftId));
+    .where(and(eq(importBatches.id, draftId), eq(importBatches.orgId, orgId)));
 };

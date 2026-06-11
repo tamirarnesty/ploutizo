@@ -1,4 +1,5 @@
 import {
+  IMPORT_TRANSACTION_TYPE_VALUES,
   MAX_NORMALIZED_IMPORT_BYTES,
   MAX_NORMALIZED_IMPORT_ROWS,
   NORMALIZED_IMPORT_REQUIRED_COLUMNS,
@@ -82,7 +83,7 @@ const HEADER_ALIASES: Partial<Record<string, HeaderKey>> = {
   tags: 'tags',
 };
 
-const IMPORT_TRANSACTION_TYPES = new Set(['expense', 'refund', 'settlement']);
+const IMPORT_TRANSACTION_TYPES = new Set<string>(IMPORT_TRANSACTION_TYPE_VALUES);
 
 const normalizeHeader = (value: string) =>
   value

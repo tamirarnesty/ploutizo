@@ -40,7 +40,7 @@ export const ImportDraftReviewRow = ({
     setAssignee(row.reviewAssigneeHint ?? '');
     setNotes(row.reviewNotes ?? '');
     setTags(row.reviewTags.join('; '));
-  }, [rowKey, row]);
+  }, [rowKey]);
 
   const saveStringField = (field: StringReviewField, value: string) => {
     const next = value.trim() || null;
