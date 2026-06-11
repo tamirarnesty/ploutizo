@@ -58,6 +58,12 @@ describe('parseCurrencyInput', () => {
     expect(parseCurrencyInput('12.345')).toBe(1235);
   });
 
+  it('preserves and rounds negative values', () => {
+    expect(parseCurrencyInput('-12.34')).toBe(-1234);
+    expect(parseCurrencyInput('-1,234.56')).toBe(-123_456);
+    expect(parseCurrencyInput('-12.345')).toBe(-1235);
+  });
+
   it('throws on empty or non-finite input', () => {
     expect(() => parseCurrencyInput('')).toThrow('Currency input is empty');
     expect(() => parseCurrencyInput('   ')).toThrow('Currency input is empty');

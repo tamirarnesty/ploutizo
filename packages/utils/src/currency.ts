@@ -30,7 +30,7 @@ const getDecimalFormatter = (locale: string): Intl.NumberFormat => {
 };
 
 export const dollarsToCents = (dollars: number): number =>
-  Math.round(dollars * 100);
+  Math.sign(dollars) * Math.round(Math.abs(dollars) * 100);
 
 export const centsToDollars = (cents: number): number => cents / 100;
 

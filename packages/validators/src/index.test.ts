@@ -411,6 +411,16 @@ describe('createTransactionSchema — per-type branches', () => {
 
   const refundAssignees = baseFields.assignees;
 
+  it('rejects expense with empty assignees array', () => {
+    expect(
+      createTransactionSchema.safeParse({
+        ...baseFields,
+        type: 'expense',
+        assignees: [],
+      }).success
+    ).toBe(false);
+  });
+
   it('accepts valid refund payload with assignees', () => {
     expect(
       createTransactionSchema.safeParse({
