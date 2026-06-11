@@ -406,6 +406,8 @@ const TransactionFormInner = ({
                 >
                   <FieldLabel htmlFor="tx-amount">Amount</FieldLabel>
                   <CurrencyInput
+                    id="tx-amount"
+                    aria-invalid={field.state.meta.errors.length > 0}
                     value={field.state.value}
                     onChange={(v) => field.handleChange(v)}
                     onBlur={field.handleBlur}

@@ -88,3 +88,85 @@ export const parseCurrencyInput = (value: string, locale = 'en-CA'): number => {
 
   return dollarsToCents(dollars);
 };
+
+/**
+ * Currency edit helpers for focused money-entry fields.
+ *
+ * Scoped to `en-CA` / CAD: typing uses the locale decimal separator (`.`).
+ * Negatives may parse but are not intended for money-entry UIs.
+ */
+
+export const sanitizeCurrencyEditString = (
+  input: string,
+  locale = 'en-CA'
+): string => {
+  const { decimal } = getLocaleDecimalSeparators(locale);
+  let result = '';
+  let hasDecimal = false;
+  for (const char of input) {
+    if (char >= '0' && char <= '9') {
+      result += char;
+    } else if (char === decimal && !hasDecimal) {
+      hasDecimal = true;
+      result += char;
+    }
+  }
+  return result;
+};
+
+export const sanitizeCurrencyPaste = (
+  text: string,
+  locale = 'en-CA'
+): string => {
+  const { group } = getLocaleDecimalSeparators(locale);
+  let cleaned = text.replace(/[\s$]/g, '');
+  if (group) {
+    cleaned = cleaned.split(group).join('');
+  }
+  return sanitizeCurrencyEditString(cleaned, locale);
+};
+
+export const tryParseDollarsFromEdit = (
+  edit: string,
+  locale = 'en-CA'
+): number | undefined => {
+  const sanitized = sanitizeCurrencyEditString(edit, locale);
+  if (!sanitized || sanitized === '.' || !/\d/.test(sanitized)) {
+    return undefined;
+  }
+
+  const { decimal } = getLocaleDecimalSeparators(locale);
+  let normalized = sanitized;
+  if (decimal !== '.') {
+    normalized = normalized.replaceAll(decimal, '.');
+  }
+  normalized = normalized.replace(/[^\d.-]/g, '');
+
+  const dollars = Number(normalized);
+  if (!Number.isFinite(dollars)) {
+    return undefined;
+  }
+  return dollars;
+};
+
+export const formatCurrencyBlurDisplay = (
+  dollars: number | undefined,
+  locale = 'en-CA'
+): string => {
+  if (dollars === undefined || !Number.isFinite(dollars)) return '';
+  return formatCurrencyInput(dollarsToCents(dollars), locale);
+};
+
+export const mergeCurrencyEditPaste = (
+  display: string,
+  start: number,
+  end: number,
+  pasted: string,
+  locale = 'en-CA'
+): string =>
+  sanitizeCurrencyEditString(
+    display.slice(0, start) +
+      sanitizeCurrencyPaste(pasted, locale) +
+      display.slice(end),
+    locale
+  );

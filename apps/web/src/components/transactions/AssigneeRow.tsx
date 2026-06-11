@@ -1,11 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from '@ploutizo/ui/components/input-group';
 import { Text } from '@ploutizo/ui/components/text';
 import {
   centsToDollars,
@@ -13,6 +7,7 @@ import {
   formatCurrency,
 } from '@ploutizo/utils/currency';
 import { CurrencyInput } from '@/components/currency/CurrencyInput';
+import { PercentInput } from '@/components/currency/PercentInput';
 import { UserAvatar } from '@/components/members/UserAvatar';
 import type { AssigneeFormRow } from './types';
 
@@ -42,18 +37,6 @@ export const AssigneeRow = ({
   onChange,
   onRemove,
 }: AssigneeRowProps) => {
-  const [percentDisplay, setPercentDisplay] = useState(percentage.toFixed(1));
-  const isPercentFocusedRef = useRef(false);
-  const prevModeRef = useRef(mode);
-
-  useEffect(() => {
-    const modeChanged = prevModeRef.current !== mode;
-    prevModeRef.current = mode;
-    if (mode === 'percent' && (modeChanged || !isPercentFocusedRef.current)) {
-      setPercentDisplay(percentage.toFixed(1));
-    }
-  }, [mode, percentage]);
-
   return (
     <div className="flex items-center gap-2">
       <UserAvatar
@@ -68,11 +51,13 @@ export const AssigneeRow = ({
 
       {mode === 'dollar' ? (
         <CurrencyInput
+          id={`assignee-amount-${memberId}`}
           className="w-24 shrink-0"
           inputClassName="text-right"
           value={centsToDollars(amountCents)}
           onChange={(dollars) => {
-            const cents = dollars === undefined ? 0 : dollarsToCents(dollars);
+            if (dollars === undefined) return;
+            const cents = dollarsToCents(dollars);
             onChange(memberId, {
               amountCents: cents,
               percentage:
@@ -83,34 +68,18 @@ export const AssigneeRow = ({
           }}
         />
       ) : (
-        <InputGroup className="w-24 shrink-0">
-          <InputGroupAddon align="inline-start">%</InputGroupAddon>
-          <InputGroupInput
-            type="text"
-            inputMode="decimal"
-            autoComplete="off"
-            className="text-right"
-            value={percentDisplay}
-            onFocus={() => {
-              isPercentFocusedRef.current = true;
-            }}
-            onBlur={() => {
-              isPercentFocusedRef.current = false;
-              setPercentDisplay(percentage.toFixed(1));
-            }}
-            onChange={(e) => {
-              const raw = e.target.value;
-              setPercentDisplay(raw);
-              const p = parseFloat(raw);
-              if (!isNaN(p)) {
-                onChange(memberId, {
-                  percentage: p,
-                  amountCents: Math.round((p / 100) * totalCents),
-                });
-              }
-            }}
-          />
-        </InputGroup>
+        <PercentInput
+          id={`assignee-percent-${memberId}`}
+          className="w-24 shrink-0"
+          inputClassName="text-right"
+          value={percentage}
+          onChange={(p) => {
+            onChange(memberId, {
+              percentage: p,
+              amountCents: Math.round((p / 100) * totalCents),
+            });
+          }}
+        />
       )}
 
       <Text

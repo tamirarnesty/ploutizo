@@ -1,6 +1,6 @@
 import { HouseholdSettingsFormSchema } from '@ploutizo/validators';
 import { useAppForm } from '@ploutizo/ui/components/form';
-import { FieldError } from '@ploutizo/ui/components/field';
+import { Field, FieldError } from '@ploutizo/ui/components/field';
 import { LoadingButton } from '@ploutizo/ui/components/loading-button';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
@@ -76,10 +76,13 @@ const HouseholdSettingsFormFields = ({
           }}
         >
           {(field) => (
-            <>
+            <Field
+              data-invalid={field.state.meta.errors.length > 0 || undefined}
+            >
               <CurrencyInput
                 id="settlement-threshold"
                 className="w-auto min-w-32"
+                aria-invalid={field.state.meta.errors.length > 0}
                 value={field.state.value}
                 onChange={(v) => field.handleChange(v)}
                 onBlur={field.handleBlur}
@@ -89,7 +92,7 @@ const HouseholdSettingsFormFields = ({
                   errors={field.state.meta.errors as { message?: string }[]}
                 />
               ) : null}
-            </>
+            </Field>
           )}
         </form.AppField>
         <form.Subscribe selector={(s) => s.isSubmitting}>

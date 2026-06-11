@@ -19,8 +19,12 @@ export const SettleAmountField = ({
     <FieldLabel htmlFor="settle-amount">Amount</FieldLabel>
     <CurrencyInput
       id="settle-amount"
-      value={value > 0 ? value : undefined}
-      onChange={(v) => onChange(Math.max(0, v ?? 0))}
+      commitEmptyAs={0}
+      aria-invalid={errors.length > 0}
+      value={value}
+      onChange={(v) => {
+        if (v !== undefined) onChange(v);
+      }}
       onBlur={onBlur}
     />
     {errors.length > 0 ? <FieldError errors={errors} /> : null}

@@ -3,8 +3,13 @@ import {
   centsToDollars,
   dollarsToCents,
   formatCurrency,
+  formatCurrencyBlurDisplay,
   formatCurrencyInput,
+  mergeCurrencyEditPaste,
   parseCurrencyInput,
+  sanitizeCurrencyEditString,
+  sanitizeCurrencyPaste,
+  tryParseDollarsFromEdit,
 } from './currency';
 
 describe('formatCurrency', () => {
@@ -70,5 +75,45 @@ describe('parseCurrencyInput', () => {
     expect(() => parseCurrencyInput('abc')).toThrow(
       'Currency input is not a finite number'
     );
+  });
+});
+
+describe('sanitizeCurrencyEditString', () => {
+  it('keeps digits and one decimal separator', () => {
+    expect(sanitizeCurrencyEditString('12abc34.56.7')).toBe('1234.567');
+    expect(sanitizeCurrencyEditString('.')).toBe('.');
+  });
+});
+
+describe('sanitizeCurrencyPaste', () => {
+  it('strips currency symbols, whitespace, and grouping', () => {
+    expect(sanitizeCurrencyPaste('$ 1,234.56')).toBe('1234.56');
+  });
+});
+
+describe('tryParseDollarsFromEdit', () => {
+  it('returns undefined for partial edit states', () => {
+    expect(tryParseDollarsFromEdit('')).toBeUndefined();
+    expect(tryParseDollarsFromEdit('.')).toBeUndefined();
+    expect(tryParseDollarsFromEdit('abc')).toBeUndefined();
+  });
+
+  it('parses without rounding mid-edit', () => {
+    expect(tryParseDollarsFromEdit('12.345')).toBe(12.345);
+    expect(tryParseDollarsFromEdit('.12')).toBe(0.12);
+  });
+});
+
+describe('formatCurrencyBlurDisplay', () => {
+  it('formats finite dollars and empty for undefined', () => {
+    expect(formatCurrencyBlurDisplay(undefined)).toBe('');
+    expect(formatCurrencyBlurDisplay(1234.56)).toBe('1,234.56');
+  });
+});
+
+describe('mergeCurrencyEditPaste', () => {
+  it('merges paste into edit display at selection', () => {
+    expect(mergeCurrencyEditPaste('12', 2, 2, '.34')).toBe('12.34');
+    expect(mergeCurrencyEditPaste('100', 0, 3, '$ 50.00')).toBe('50.00');
   });
 });
