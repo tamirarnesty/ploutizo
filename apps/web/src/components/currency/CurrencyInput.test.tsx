@@ -1,32 +1,18 @@
+import '@/components/currency/__test__/inputGroupMock';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { CurrencyInput } from '@/components/currency/CurrencyInput';
-import type { ComponentProps } from 'react';
-
-vi.mock('@ploutizo/ui/components/input-group', () => ({
-  InputGroup: ({
-    children,
-    className,
-  }: ComponentProps<'div'> & { className?: string }) => (
-    <div className={className}>{children}</div>
-  ),
-  InputGroupAddon: ({ children }: ComponentProps<'div'>) => (
-    <div>{children}</div>
-  ),
-  InputGroupText: ({ children }: ComponentProps<'span'>) => (
-    <span>{children}</span>
-  ),
-  InputGroupInput: (props: ComponentProps<'input'>) => <input {...props} />,
-}));
 
 const ControlledCurrencyInput = ({
   initialValue,
   commitEmptyAs,
+  commitEmptyOnChange,
 }: {
   initialValue?: number;
   commitEmptyAs?: number;
+  commitEmptyOnChange?: number;
 }) => {
   const [value, setValue] = useState<number | undefined>(initialValue);
   return (
@@ -37,6 +23,7 @@ const ControlledCurrencyInput = ({
         onChange={setValue}
         onBlur={vi.fn()}
         commitEmptyAs={commitEmptyAs}
+        commitEmptyOnChange={commitEmptyOnChange}
       />
       <output data-testid="value">{value ?? 'empty'}</output>
     </>
@@ -164,5 +151,26 @@ describe('CurrencyInput', () => {
 
     expect(onChange).toHaveBeenLastCalledWith(0);
     expect(input).toHaveValue('0.00');
+  });
+
+  it('commits empty mid-edit when commitEmptyOnChange is set', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+
+    render(
+      <CurrencyInput
+        id="test-currency"
+        value={5}
+        onChange={onChange}
+        commitEmptyOnChange={0}
+      />
+    );
+
+    const input = screen.getByRole('textbox');
+    await user.click(input);
+    await user.clear(input);
+
+    expect(onChange).toHaveBeenLastCalledWith(0);
+    expect(input).toHaveValue('');
   });
 });

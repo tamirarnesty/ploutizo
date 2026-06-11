@@ -2,13 +2,8 @@ export {
   centsToDollars,
   dollarsToCents,
   formatCurrency,
-  formatCurrencyBlurDisplay,
   formatCurrencyInput,
-  mergeCurrencyEditPaste,
-  parseCurrencyInput,
-  sanitizeCurrencyEditString,
-  sanitizeCurrencyPaste,
-  tryParseDollarsFromEdit,
+  parseCurrencyInputToCents,
 } from './currency';
 export { lrmSplit } from './lrm';
 export { formatSettlementDescription } from './settlement-description';

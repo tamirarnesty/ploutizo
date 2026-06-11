@@ -1,22 +1,9 @@
+import '@/components/currency/__test__/inputGroupMock';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { PercentInput } from '@/components/currency/PercentInput';
-import type { ComponentProps } from 'react';
-
-vi.mock('@ploutizo/ui/components/input-group', () => ({
-  InputGroup: ({
-    children,
-    className,
-  }: ComponentProps<'div'> & { className?: string }) => (
-    <div className={className}>{children}</div>
-  ),
-  InputGroupAddon: ({ children }: ComponentProps<'div'>) => (
-    <div>{children}</div>
-  ),
-  InputGroupInput: (props: ComponentProps<'input'>) => <input {...props} />,
-}));
 
 const ControlledPercentInput = ({ initialValue }: { initialValue: number }) => {
   const [value, setValue] = useState(initialValue);
@@ -90,5 +77,61 @@ describe('PercentInput', () => {
 
     expect(input).toHaveValue('40.0');
     expect(screen.getByTestId('value')).toHaveTextContent('40');
+  });
+
+  it('rounds parent value to one decimal on blur', async () => {
+    const user = userEvent.setup();
+    render(<ControlledPercentInput initialValue={10} />);
+
+    const input = screen.getByRole('textbox');
+    await user.click(input);
+    await user.clear(input);
+    await user.type(input, '40.55');
+    await user.tab();
+
+    expect(input).toHaveValue('40.6');
+    expect(screen.getByTestId('value')).toHaveTextContent('40.6');
+  });
+
+  it('sanitizes percent paste', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+
+    render(<PercentInput id="test-percent" value={0} onChange={onChange} />);
+
+    const input = screen.getByRole('textbox');
+    await user.click(input);
+    await user.keyboard('{Control>}a{/Control}');
+    await user.paste('50.5%');
+
+    expect(input).toHaveValue('50.5');
+    expect(onChange).toHaveBeenLastCalledWith(50.5);
+  });
+
+  it('forwards aria-invalid to the input', () => {
+    render(
+      <PercentInput
+        id="test-percent"
+        value={10}
+        onChange={vi.fn()}
+        aria-invalid
+      />
+    );
+
+    expect(screen.getByRole('textbox')).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('syncs display when parent value changes while unfocused', () => {
+    const { rerender } = render(
+      <PercentInput id="test-percent" value={25} onChange={vi.fn()} />
+    );
+
+    expect(screen.getByRole('textbox')).toHaveValue('25.0');
+
+    rerender(
+      <PercentInput id="test-percent" value={33.3} onChange={vi.fn()} />
+    );
+
+    expect(screen.getByRole('textbox')).toHaveValue('33.3');
   });
 });

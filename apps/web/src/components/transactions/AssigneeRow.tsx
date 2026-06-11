@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import { Text } from '@ploutizo/ui/components/text';
@@ -26,6 +27,11 @@ interface AssigneeRowProps {
   onRemove: (memberId: string) => void;
 }
 
+const percentageFromDollars = (dollars: number, totalCents: number): number =>
+  totalCents > 0
+    ? Math.round((dollars / centsToDollars(totalCents)) * 1000) / 10
+    : 0;
+
 export const AssigneeRow = ({
   memberId,
   memberName,
@@ -37,6 +43,13 @@ export const AssigneeRow = ({
   onChange,
   onRemove,
 }: AssigneeRowProps) => {
+  const [draftDollars, setDraftDollars] = useState<number | undefined>();
+
+  const previewPercentage =
+    draftDollars !== undefined
+      ? percentageFromDollars(draftDollars, totalCents)
+      : percentage;
+
   return (
     <div className="flex items-center gap-2">
       <UserAvatar
@@ -56,15 +69,19 @@ export const AssigneeRow = ({
           inputClassName="text-right"
           value={centsToDollars(amountCents)}
           onChange={(dollars) => {
-            if (dollars === undefined) return;
-            const cents = dollarsToCents(dollars);
+            setDraftDollars(dollars);
+          }}
+          onBlur={() => {
+            if (draftDollars === undefined) return;
+            const cents = dollarsToCents(draftDollars);
             onChange(memberId, {
               amountCents: cents,
-              percentage:
-                totalCents > 0
-                  ? Math.round((cents / totalCents) * 1000) / 10
-                  : 0,
+              percentage: percentageFromDollars(
+                centsToDollars(cents),
+                totalCents
+              ),
             });
+            setDraftDollars(undefined);
           }}
         />
       ) : (
@@ -89,7 +106,7 @@ export const AssigneeRow = ({
       >
         {mode === 'percent'
           ? formatCurrency(amountCents)
-          : `${percentage.toFixed(1)}%`}
+          : `${previewPercentage.toFixed(1)}%`}
       </Text>
 
       <Button

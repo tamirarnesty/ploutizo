@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback } from 'react';
 import {
   InputGroup,
   InputGroupAddon,
@@ -7,18 +7,14 @@ import {
 } from '@ploutizo/ui/components/input-group';
 import {
   centsToDollars,
-  formatCurrencyBlurDisplay,
+  formatDollarsBlurDisplay,
   mergeCurrencyEditPaste,
-  parseCurrencyInput,
-  sanitizeCurrencyEditString,
+  parseCurrencyInputToCents,
+  sanitizeDecimalEditString,
   tryParseDollarsFromEdit,
 } from '@ploutizo/utils/currency';
-import type {
-  ChangeEvent,
-  ClipboardEvent,
-  ComponentProps,
-  FocusEvent,
-} from 'react';
+import { useDecimalDisplayInput } from '@/components/currency/useDecimalDisplayInput';
+import type { ComponentProps } from 'react';
 
 export type CurrencyInputProps = Omit<
   ComponentProps<'input'>,
@@ -31,6 +27,11 @@ export type CurrencyInputProps = Omit<
   inputClassName?: string;
   /** Map empty blur to a number (e.g. settle form uses 0). Default: undefined */
   commitEmptyAs?: number;
+  /**
+   * When set, mid-edit empty input emits this value instead of undefined.
+   * Useful with settle forms where submit may occur before blur.
+   */
+  commitEmptyOnChange?: number;
 };
 
 const toEditDisplay = (dollars: number | undefined): string => {
@@ -45,85 +46,59 @@ export const CurrencyInput = ({
   className,
   inputClassName,
   commitEmptyAs,
+  commitEmptyOnChange,
   ...inputProps
 }: CurrencyInputProps) => {
-  const focused = useRef(false);
-  const [displayValue, setDisplayValue] = useState(() =>
-    formatCurrencyBlurDisplay(value)
+  const formatBlur = useCallback(
+    (dollars: number | undefined) => formatDollarsBlurDisplay(dollars),
+    []
   );
 
-  useEffect(() => {
-    if (!focused.current) {
-      setDisplayValue(formatCurrencyBlurDisplay(value));
-    }
-  }, [value]);
-
-  const applyEditString = useCallback(
-    (edit: string): string => {
-      const next = sanitizeCurrencyEditString(edit);
-      onChange(tryParseDollarsFromEdit(next));
-      return next;
+  const onMidEdit = useCallback(
+    (sanitized: string) => {
+      const parsed = tryParseDollarsFromEdit(sanitized);
+      if (parsed !== undefined) {
+        onChange(parsed);
+        return;
+      }
+      if (
+        commitEmptyOnChange !== undefined &&
+        (!sanitized || sanitized === '.')
+      ) {
+        onChange(commitEmptyOnChange);
+        return;
+      }
+      onChange(undefined);
     },
-    [onChange]
+    [commitEmptyOnChange, onChange]
   );
 
-  const handleChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      setDisplayValue(applyEditString(e.target.value));
-    },
-    [applyEditString]
-  );
-
-  const handlePaste = useCallback(
-    (e: ClipboardEvent<HTMLInputElement>) => {
-      e.preventDefault();
-      const input = e.currentTarget;
-      const start = input.selectionStart ?? 0;
-      const end = input.selectionEnd ?? 0;
-      const next = mergeCurrencyEditPaste(
-        displayValue,
-        start,
-        end,
-        e.clipboardData.getData('text')
-      );
-      setDisplayValue(applyEditString(next));
-    },
-    [applyEditString, displayValue]
-  );
-
-  const handleFocus = useCallback(
-    (_e: FocusEvent<HTMLInputElement>) => {
-      focused.current = true;
-      setDisplayValue(toEditDisplay(value));
-    },
-    [value]
-  );
-
-  const handleBlur = useCallback(
-    (_e: FocusEvent<HTMLInputElement>) => {
-      focused.current = false;
-
-      const sanitized = sanitizeCurrencyEditString(displayValue);
-      let rounded: number | undefined;
+  const commitOnBlur = useCallback(
+    (
+      display: string,
+      _currentValue: number | undefined
+    ): number | undefined => {
+      const sanitized = sanitizeDecimalEditString(display);
       if (!sanitized || sanitized === '.') {
-        rounded = commitEmptyAs;
-      } else {
-        try {
-          rounded = centsToDollars(parseCurrencyInput(displayValue));
-        } catch {
-          rounded = value;
-        }
+        return commitEmptyAs;
       }
-
-      const formatted = formatCurrencyBlurDisplay(rounded);
-      if (rounded !== value) {
-        onChange(rounded);
-      }
-      setDisplayValue(formatted);
-      onBlur?.();
+      return centsToDollars(parseCurrencyInputToCents(display));
     },
-    [commitEmptyAs, displayValue, onBlur, onChange, value]
+    [commitEmptyAs]
   );
+
+  const { displayValue, handleChange, handlePaste, handleFocus, handleBlur } =
+    useDecimalDisplayInput({
+      value,
+      formatBlur,
+      formatEdit: toEditDisplay,
+      sanitize: sanitizeDecimalEditString,
+      onMidEdit,
+      commitOnBlur,
+      onChange,
+      onBlur,
+      mergePaste: mergeCurrencyEditPaste,
+    });
 
   return (
     <InputGroup className={className}>

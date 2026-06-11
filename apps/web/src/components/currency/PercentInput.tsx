@@ -1,10 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback } from 'react';
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
 } from '@ploutizo/ui/components/input-group';
-import type { ChangeEvent, ComponentProps, FocusEvent } from 'react';
+import {
+  mergePercentEditPaste,
+  sanitizeDecimalEditString,
+} from '@ploutizo/utils/currency';
+import { useDecimalDisplayInput } from '@/components/currency/useDecimalDisplayInput';
+import type { ComponentProps } from 'react';
 
 export type PercentInputProps = Omit<
   ComponentProps<'input'>,
@@ -17,21 +22,11 @@ export type PercentInputProps = Omit<
   inputClassName?: string;
 };
 
-const sanitizePercentEditString = (input: string): string => {
-  let result = '';
-  let hasDot = false;
-  for (const char of input) {
-    if (char >= '0' && char <= '9') {
-      result += char;
-    } else if (char === '.' && !hasDot) {
-      hasDot = true;
-      result += char;
-    }
-  }
-  return result;
-};
+const roundToOneDecimal = (value: number): number =>
+  Math.round(value * 10) / 10;
 
-const toBlurDisplay = (percentage: number): string => percentage.toFixed(1);
+const toBlurDisplay = (percentage: number): string =>
+  roundToOneDecimal(percentage).toFixed(1);
 
 const toEditDisplay = (percentage: number): string => percentage.toString();
 
@@ -43,20 +38,14 @@ export const PercentInput = ({
   inputClassName,
   ...inputProps
 }: PercentInputProps) => {
-  const focused = useRef(false);
-  const [displayValue, setDisplayValue] = useState(() => toBlurDisplay(value));
+  const formatBlur = useCallback(
+    (percentage: number) => toBlurDisplay(percentage),
+    []
+  );
 
-  useEffect(() => {
-    if (!focused.current) {
-      setDisplayValue(toBlurDisplay(value));
-    }
-  }, [value]);
-
-  const handleChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const next = sanitizePercentEditString(e.target.value);
-      setDisplayValue(next);
-      const parsed = parseFloat(next);
+  const onMidEdit = useCallback(
+    (sanitized: string) => {
+      const parsed = parseFloat(sanitized);
       if (Number.isFinite(parsed)) {
         onChange(parsed);
       }
@@ -64,22 +53,33 @@ export const PercentInput = ({
     [onChange]
   );
 
-  const handleFocus = useCallback(
-    (_e: FocusEvent<HTMLInputElement>) => {
-      focused.current = true;
-      setDisplayValue(toEditDisplay(value));
+  const commitOnBlur = useCallback(
+    (display: string, currentValue: number): number => {
+      const sanitized = sanitizeDecimalEditString(display);
+      if (!sanitized || sanitized === '.') {
+        return currentValue;
+      }
+      const parsed = parseFloat(sanitized);
+      if (!Number.isFinite(parsed)) {
+        return currentValue;
+      }
+      return roundToOneDecimal(parsed);
     },
-    [value]
+    []
   );
 
-  const handleBlur = useCallback(
-    (_e: FocusEvent<HTMLInputElement>) => {
-      focused.current = false;
-      setDisplayValue(toBlurDisplay(value));
-      onBlur?.();
-    },
-    [onBlur, value]
-  );
+  const { displayValue, handleChange, handlePaste, handleFocus, handleBlur } =
+    useDecimalDisplayInput({
+      value,
+      formatBlur,
+      formatEdit: toEditDisplay,
+      sanitize: sanitizeDecimalEditString,
+      onMidEdit,
+      commitOnBlur,
+      onChange,
+      onBlur,
+      mergePaste: mergePercentEditPaste,
+    });
 
   return (
     <InputGroup className={className}>
@@ -92,6 +92,7 @@ export const PercentInput = ({
         className={inputClassName}
         value={displayValue}
         onChange={handleChange}
+        onPaste={handlePaste}
         onFocus={handleFocus}
         onBlur={handleBlur}
       />

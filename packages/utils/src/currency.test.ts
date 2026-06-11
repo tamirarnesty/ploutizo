@@ -3,12 +3,14 @@ import {
   centsToDollars,
   dollarsToCents,
   formatCurrency,
-  formatCurrencyBlurDisplay,
+  formatDollarsBlurDisplay,
   formatCurrencyInput,
   mergeCurrencyEditPaste,
-  parseCurrencyInput,
-  sanitizeCurrencyEditString,
+  mergePercentEditPaste,
+  parseCurrencyInputToCents,
+  sanitizeDecimalEditString,
   sanitizeCurrencyPaste,
+  sanitizePercentPaste,
   tryParseDollarsFromEdit,
 } from './currency';
 
@@ -54,40 +56,55 @@ describe('dollarsToCents', () => {
     expect(dollarsToCents(12.345)).toBe(1235);
     expect(centsToDollars(1235)).toBe(12.35);
   });
+
+  it('documents JS floating-point half-cent limitation', () => {
+    expect(dollarsToCents(1.005)).toBe(100);
+  });
 });
 
-describe('parseCurrencyInput', () => {
+describe('parseCurrencyInputToCents', () => {
   it('parses localized decimal strings to rounded cents', () => {
-    expect(parseCurrencyInput('12.34')).toBe(1234);
-    expect(parseCurrencyInput('1,234.56')).toBe(123_456);
-    expect(parseCurrencyInput('12.345')).toBe(1235);
+    expect(parseCurrencyInputToCents('12.34')).toBe(1234);
+    expect(parseCurrencyInputToCents('1,234.56')).toBe(123_456);
+    expect(parseCurrencyInputToCents('12.345')).toBe(1235);
   });
 
   it('preserves and rounds negative values', () => {
-    expect(parseCurrencyInput('-12.34')).toBe(-1234);
-    expect(parseCurrencyInput('-1,234.56')).toBe(-123_456);
-    expect(parseCurrencyInput('-12.345')).toBe(-1235);
+    expect(parseCurrencyInputToCents('-12.34')).toBe(-1234);
+    expect(parseCurrencyInputToCents('-1,234.56')).toBe(-123_456);
+    expect(parseCurrencyInputToCents('-12.345')).toBe(-1235);
   });
 
   it('throws on empty or non-finite input', () => {
-    expect(() => parseCurrencyInput('')).toThrow('Currency input is empty');
-    expect(() => parseCurrencyInput('   ')).toThrow('Currency input is empty');
-    expect(() => parseCurrencyInput('abc')).toThrow(
+    expect(() => parseCurrencyInputToCents('')).toThrow(
+      'Currency input is empty'
+    );
+    expect(() => parseCurrencyInputToCents('   ')).toThrow(
+      'Currency input is empty'
+    );
+    expect(() => parseCurrencyInputToCents('abc')).toThrow(
       'Currency input is not a finite number'
     );
   });
 });
 
-describe('sanitizeCurrencyEditString', () => {
+describe('sanitizeDecimalEditString', () => {
   it('keeps digits and one decimal separator', () => {
-    expect(sanitizeCurrencyEditString('12abc34.56.7')).toBe('1234.567');
-    expect(sanitizeCurrencyEditString('.')).toBe('.');
+    expect(sanitizeDecimalEditString('12abc34.56.7')).toBe('1234.567');
+    expect(sanitizeDecimalEditString('.')).toBe('.');
   });
 });
 
 describe('sanitizeCurrencyPaste', () => {
   it('strips currency symbols, whitespace, and grouping', () => {
     expect(sanitizeCurrencyPaste('$ 1,234.56')).toBe('1234.56');
+  });
+});
+
+describe('sanitizePercentPaste', () => {
+  it('strips percent signs and whitespace', () => {
+    expect(sanitizePercentPaste(' 50% ')).toBe('50');
+    expect(sanitizePercentPaste('33.3%')).toBe('33.3');
   });
 });
 
@@ -104,10 +121,10 @@ describe('tryParseDollarsFromEdit', () => {
   });
 });
 
-describe('formatCurrencyBlurDisplay', () => {
+describe('formatDollarsBlurDisplay', () => {
   it('formats finite dollars and empty for undefined', () => {
-    expect(formatCurrencyBlurDisplay(undefined)).toBe('');
-    expect(formatCurrencyBlurDisplay(1234.56)).toBe('1,234.56');
+    expect(formatDollarsBlurDisplay(undefined)).toBe('');
+    expect(formatDollarsBlurDisplay(1234.56)).toBe('1,234.56');
   });
 });
 
@@ -115,5 +132,12 @@ describe('mergeCurrencyEditPaste', () => {
   it('merges paste into edit display at selection', () => {
     expect(mergeCurrencyEditPaste('12', 2, 2, '.34')).toBe('12.34');
     expect(mergeCurrencyEditPaste('100', 0, 3, '$ 50.00')).toBe('50.00');
+  });
+});
+
+describe('mergePercentEditPaste', () => {
+  it('merges percent paste into edit display', () => {
+    expect(mergePercentEditPaste('12', 2, 2, '.5%')).toBe('12.5');
+    expect(mergePercentEditPaste('', 0, 0, ' 40% ')).toBe('40');
   });
 });

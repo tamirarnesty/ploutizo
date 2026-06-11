@@ -29,11 +29,13 @@ const getDecimalFormatter = (locale: string): Intl.NumberFormat => {
   return formatter;
 };
 
+/** Rounds dollar amounts to integer cents (sign-aware). */
 export const dollarsToCents = (dollars: number): number =>
   Math.sign(dollars) * Math.round(Math.abs(dollars) * 100);
 
 export const centsToDollars = (cents: number): number => cents / 100;
 
+/** Formats integer cents as a localized currency string (e.g. `$1,234.56`). */
 export const formatCurrency = (
   cents: number,
   currency = 'CAD',
@@ -43,6 +45,7 @@ export const formatCurrency = (
   return getCurrencyFormatter(currency, locale).format(centsToDollars(cents));
 };
 
+/** Formats integer cents for editable fields (no currency symbol). */
 export const formatCurrencyInput = (
   cents: number,
   locale = 'en-CA'
@@ -59,11 +62,12 @@ const getLocaleDecimalSeparators = (locale: string) => {
   };
 };
 
-export const parseCurrencyInput = (value: string, locale = 'en-CA'): number => {
+const parseDollarsFromLocalizedString = (
+  value: string,
+  locale = 'en-CA'
+): number | undefined => {
   const trimmed = value.trim();
-  if (!trimmed) {
-    throw new Error('Currency input is empty');
-  }
+  if (!trimmed) return undefined;
 
   const { group, decimal } = getLocaleDecimalSeparators(locale);
   let normalized = trimmed;
@@ -77,26 +81,40 @@ export const parseCurrencyInput = (value: string, locale = 'en-CA'): number => {
 
   normalized = normalized.replace(/[^\d.-]/g, '');
 
-  if (!/\d/.test(normalized)) {
-    throw new Error('Currency input is not a finite number');
-  }
+  if (!/\d/.test(normalized)) return undefined;
 
   const dollars = Number(normalized);
-  if (!Number.isFinite(dollars)) {
+  if (!Number.isFinite(dollars)) return undefined;
+
+  return dollars;
+};
+
+/**
+ * Parses a localized currency string and returns **integer cents**.
+ * Throws when the input is empty or not a finite number.
+ */
+export const parseCurrencyInputToCents = (
+  value: string,
+  locale = 'en-CA'
+): number => {
+  const dollars = parseDollarsFromLocalizedString(value, locale);
+  if (dollars === undefined) {
+    if (!value.trim()) {
+      throw new Error('Currency input is empty');
+    }
     throw new Error('Currency input is not a finite number');
   }
-
   return dollarsToCents(dollars);
 };
 
 /**
- * Currency edit helpers for focused money-entry fields.
+ * Decimal edit helpers for focused numeric entry fields.
  *
- * Scoped to `en-CA` / CAD: typing uses the locale decimal separator (`.`).
+ * Scoped to `en-CA`: typing uses the locale decimal separator (`.`).
  * Negatives may parse but are not intended for money-entry UIs.
  */
 
-export const sanitizeCurrencyEditString = (
+export const sanitizeDecimalEditString = (
   input: string,
   locale = 'en-CA'
 ): string => {
@@ -114,6 +132,9 @@ export const sanitizeCurrencyEditString = (
   return result;
 };
 
+/** @deprecated Use `sanitizeDecimalEditString`. */
+export const sanitizeCurrencyEditString = sanitizeDecimalEditString;
+
 export const sanitizeCurrencyPaste = (
   text: string,
   locale = 'en-CA'
@@ -123,39 +144,54 @@ export const sanitizeCurrencyPaste = (
   if (group) {
     cleaned = cleaned.split(group).join('');
   }
-  return sanitizeCurrencyEditString(cleaned, locale);
+  return sanitizeDecimalEditString(cleaned, locale);
+};
+
+export const sanitizePercentPaste = (
+  text: string,
+  locale = 'en-CA'
+): string => {
+  const cleaned = text.replace(/[\s%]/g, '');
+  return sanitizeDecimalEditString(cleaned, locale);
 };
 
 export const tryParseDollarsFromEdit = (
   edit: string,
   locale = 'en-CA'
 ): number | undefined => {
-  const sanitized = sanitizeCurrencyEditString(edit, locale);
+  const sanitized = sanitizeDecimalEditString(edit, locale);
   if (!sanitized || sanitized === '.' || !/\d/.test(sanitized)) {
     return undefined;
   }
-
-  const { decimal } = getLocaleDecimalSeparators(locale);
-  let normalized = sanitized;
-  if (decimal !== '.') {
-    normalized = normalized.replaceAll(decimal, '.');
-  }
-  normalized = normalized.replace(/[^\d.-]/g, '');
-
-  const dollars = Number(normalized);
-  if (!Number.isFinite(dollars)) {
-    return undefined;
-  }
-  return dollars;
+  return parseDollarsFromLocalizedString(sanitized, locale);
 };
 
-export const formatCurrencyBlurDisplay = (
+/** Formats a dollar amount for blurred currency inputs (no symbol). */
+export const formatDollarsBlurDisplay = (
   dollars: number | undefined,
   locale = 'en-CA'
 ): string => {
   if (dollars === undefined || !Number.isFinite(dollars)) return '';
   return formatCurrencyInput(dollarsToCents(dollars), locale);
 };
+
+/** @deprecated Use `formatDollarsBlurDisplay`. */
+export const formatCurrencyBlurDisplay = formatDollarsBlurDisplay;
+
+export const mergeDecimalEditPaste = (
+  display: string,
+  start: number,
+  end: number,
+  pasted: string,
+  sanitizePaste: (text: string, locale?: string) => string,
+  locale = 'en-CA'
+): string =>
+  sanitizeDecimalEditString(
+    display.slice(0, start) +
+      sanitizePaste(pasted, locale) +
+      display.slice(end),
+    locale
+  );
 
 export const mergeCurrencyEditPaste = (
   display: string,
@@ -164,9 +200,27 @@ export const mergeCurrencyEditPaste = (
   pasted: string,
   locale = 'en-CA'
 ): string =>
-  sanitizeCurrencyEditString(
-    display.slice(0, start) +
-      sanitizeCurrencyPaste(pasted, locale) +
-      display.slice(end),
+  mergeDecimalEditPaste(
+    display,
+    start,
+    end,
+    pasted,
+    sanitizeCurrencyPaste,
+    locale
+  );
+
+export const mergePercentEditPaste = (
+  display: string,
+  start: number,
+  end: number,
+  pasted: string,
+  locale = 'en-CA'
+): string =>
+  mergeDecimalEditPaste(
+    display,
+    start,
+    end,
+    pasted,
+    sanitizePercentPaste,
     locale
   );
