@@ -78,6 +78,13 @@ describe('imports router', () => {
     });
     expect(bad.status).toBe(400);
 
+    const badDate = await app.request('/rows/row_1', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reviewDate: '2026-02-30' }),
+    });
+    expect(badDate.status).toBe(400);
+
     const good = await app.request('/rows/row_1', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },

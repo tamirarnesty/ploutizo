@@ -160,7 +160,7 @@ export const updateImportDraftRow = async (
     status,
   });
   if (!updated) throw new NotFoundError('Import draft row not found.');
-  await touchImportDraft(existing.batchId);
+  await touchImportDraft(orgId, existing.batchId);
   return toImportDraftRow(updated);
 };
 

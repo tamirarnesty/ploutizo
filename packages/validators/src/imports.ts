@@ -1,7 +1,10 @@
-import { IMPORT_ROW_STATUS_VALUES } from '@ploutizo/types'
+import {
+  IMPORT_ROW_STATUS_VALUES,
+  IMPORT_TRANSACTION_TYPE_VALUES,
+} from '@ploutizo/types'
 import { z } from 'zod'
 
-const importTransactionTypeSchema = z.enum(['expense', 'refund', 'settlement'])
+const importTransactionTypeSchema = z.enum(IMPORT_TRANSACTION_TYPE_VALUES)
 
 export const createImportDraftSchema = z.object({
   accountId: z.string().uuid(),
@@ -12,11 +15,7 @@ export const createImportDraftSchema = z.object({
 export const updateImportDraftRowSchema = z
   .object({
     status: z.enum(IMPORT_ROW_STATUS_VALUES).optional(),
-    reviewDate: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD.')
-      .nullable()
-      .optional(),
+    reviewDate: z.iso.date().nullable().optional(),
     reviewAmount: z.number().int().positive().nullable().optional(),
     reviewType: importTransactionTypeSchema.nullable().optional(),
     reviewDescription: z.string().trim().min(1).nullable().optional(),

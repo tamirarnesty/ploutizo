@@ -9,6 +9,10 @@ export const formatAccountLabel = ({
   institution,
   lastFour,
 }: AccountLabelInput): string =>
-  [name, institution, lastFour ? `••${lastFour}` : null]
+  [
+    name.trim() || 'Unnamed Account',
+    institution,
+    lastFour ? `••${lastFour}` : null,
+  ]
     .filter(Boolean)
     .join(' · ');
