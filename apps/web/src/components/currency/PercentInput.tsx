@@ -11,7 +11,7 @@ import {
   sanitizePercentPaste,
 } from '@ploutizo/utils/currency';
 import { useDecimalDisplayInput } from '@/components/currency/useDecimalDisplayInput';
-import type { ComponentProps } from 'react';
+import type { ClipboardEvent, ComponentProps, FocusEvent } from 'react';
 
 export type PercentInputProps = Omit<
   ComponentProps<'input'>,
@@ -38,6 +38,8 @@ export const PercentInput = ({
   onBlur,
   className,
   inputClassName,
+  onFocus,
+  onPaste,
   ...inputProps
 }: PercentInputProps) => {
   const onMidEdit = useCallback(
@@ -85,6 +87,24 @@ export const PercentInput = ({
         ),
     });
 
+  const handleInputFocus = useCallback(
+    (event: FocusEvent<HTMLInputElement>) => {
+      handleFocus(event);
+      onFocus?.(event);
+    },
+    [handleFocus, onFocus]
+  );
+
+  const handleInputPaste = useCallback(
+    (event: ClipboardEvent<HTMLInputElement>) => {
+      onPaste?.(event);
+      if (!event.defaultPrevented) {
+        handlePaste?.(event);
+      }
+    },
+    [handlePaste, onPaste]
+  );
+
   return (
     <InputGroup className={className}>
       <InputGroupAddon align="inline-start">%</InputGroupAddon>
@@ -96,8 +116,8 @@ export const PercentInput = ({
         className={inputClassName}
         value={displayValue}
         onChange={handleChange}
-        onPaste={handlePaste}
-        onFocus={handleFocus}
+        onPaste={handleInputPaste}
+        onFocus={handleInputFocus}
         onBlur={handleBlur}
       />
     </InputGroup>

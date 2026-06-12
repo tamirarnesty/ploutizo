@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import { Text } from '@ploutizo/ui/components/text';
@@ -45,6 +45,29 @@ export const AssigneeRow = ({
 }: AssigneeRowProps) => {
   const [draftDollars, setDraftDollars] = useState<number | undefined>();
 
+  const applyDollarsAsCanonical = useCallback(
+    (dollars: number) => {
+      const cents = dollarsToCents(dollars);
+      const nextPercentage = percentageFromDollars(
+        centsToDollars(cents),
+        totalCents
+      );
+      if (cents === amountCents && nextPercentage === percentage) return;
+
+      onChange(memberId, {
+        amountCents: cents,
+        percentage: nextPercentage,
+      });
+    },
+    [amountCents, memberId, onChange, percentage, totalCents]
+  );
+
+  const applyDraftAsCanonical = useCallback(() => {
+    if (draftDollars === undefined) return;
+    applyDollarsAsCanonical(draftDollars);
+    setDraftDollars(undefined);
+  }, [applyDollarsAsCanonical, draftDollars]);
+
   const previewPercentage =
     draftDollars !== undefined
       ? percentageFromDollars(draftDollars, totalCents)
@@ -70,19 +93,13 @@ export const AssigneeRow = ({
           value={centsToDollars(amountCents)}
           onChange={(dollars) => {
             setDraftDollars(dollars);
+            if (dollars !== undefined) {
+              applyDollarsAsCanonical(dollars);
+            }
           }}
-          onBlur={() => {
-            if (draftDollars === undefined) return;
-            const cents = dollarsToCents(draftDollars);
-            onChange(memberId, {
-              amountCents: cents,
-              percentage: percentageFromDollars(
-                centsToDollars(cents),
-                totalCents
-              ),
-            });
-            setDraftDollars(undefined);
-          }}
+          onBlur={applyDraftAsCanonical}
+          commitEmptyAs={0}
+          commitEmptyOnChange={0}
         />
       ) : (
         <PercentInput

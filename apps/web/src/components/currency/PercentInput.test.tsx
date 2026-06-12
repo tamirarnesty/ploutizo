@@ -91,6 +91,33 @@ describe('PercentInput', () => {
     expect(onChange).toHaveBeenLastCalledWith(50.5);
   });
 
+  it('calls caller focus and paste handlers', async () => {
+    const user = userEvent.setup();
+    const onFocus = vi.fn();
+    const onPaste = vi.fn();
+    const onChange = vi.fn();
+
+    render(
+      <PercentInput
+        id="test-percent"
+        value={0}
+        onChange={onChange}
+        onFocus={onFocus}
+        onPaste={onPaste}
+      />
+    );
+
+    const input = screen.getByRole('textbox');
+    await user.click(input);
+    await user.keyboard('{Control>}a{/Control}');
+    await user.paste('50.5%');
+
+    expect(onFocus).toHaveBeenCalledTimes(1);
+    expect(onPaste).toHaveBeenCalledTimes(1);
+    expect(input).toHaveValue('50.5');
+    expect(onChange).toHaveBeenLastCalledWith(50.5);
+  });
+
   it('forwards aria-invalid to the input', () => {
     expectAriaInvalidForwarded(PercentInput, 10);
   });
