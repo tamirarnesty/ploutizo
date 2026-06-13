@@ -220,18 +220,45 @@ describe('VAL-05 — patchTransactionSchema', () => {
     expect(result.success).toBe(false)
   })
 
-  it('rejects expense PATCH with assignees: []', () => {
+  it('accepts expense PATCH with assignees: [] (replace-all clear)', () => {
     const result = patchTransactionSchema.safeParse({
       ...baseFields,
       type: 'expense',
       assignees: [],
     })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects settlement PATCH with assignees: []', () => {
+    const result = patchTransactionSchema.safeParse({
+      ...baseFields,
+      type: 'settlement',
+      counterpartAccountId: '550e8400-e29b-41d4-a716-446655440002',
+      assignees: [
+        {
+          memberId: '550e8400-e29b-41d4-a716-446655440003',
+          amountCents: baseFields.amount,
+        },
+      ],
+    })
+    expect(result.success).toBe(true)
+
+    const cleared = patchTransactionSchema.safeParse({
+      ...baseFields,
+      type: 'settlement',
+      counterpartAccountId: '550e8400-e29b-41d4-a716-446655440002',
+      assignees: [],
+    })
+    expect(cleared.success).toBe(false)
+  })
+
+  it('rejects refund PATCH with assignees: []', () => {
+    const result = patchTransactionSchema.safeParse({
+      ...baseFields,
+      type: 'refund',
+      assignees: [],
+    })
     expect(result.success).toBe(false)
-    if (!result.success) {
-      expect(result.error.issues.some((i) => i.path.includes('assignees'))).toBe(
-        true
-      )
-    }
   })
 
   it('accepts expense PATCH with at least one assignee', () => {
