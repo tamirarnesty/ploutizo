@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { AssigneeRow } from './AssigneeRow';
 
 describe('AssigneeRow', () => {
-  it('updates canonical cents while a dollar edit is still focused', async () => {
+  it('commits assignee dollars on blur', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
 
@@ -27,7 +27,10 @@ describe('AssigneeRow', () => {
     await user.clear(input);
     await user.type(input, '12.34');
 
-    expect(input).toHaveFocus();
+    expect(onChange).not.toHaveBeenCalled();
+
+    await user.tab();
+
     expect(onChange).toHaveBeenLastCalledWith('member-1', {
       amountCents: 1234,
       percentage: 61.7,

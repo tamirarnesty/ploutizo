@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import {
   Collapsible,
@@ -7,7 +7,7 @@ import {
 } from '@ploutizo/ui/components/collapsible';
 import { Text } from '@ploutizo/ui/components/text';
 import { cn } from '@ploutizo/ui/lib/utils';
-import { lrmSplit } from '@ploutizo/utils';
+import { lrmSplit, scaleAssigneeSplitProportionally } from '@ploutizo/utils';
 import type { OrgMember } from '@ploutizo/types';
 import { MemberToggleGroup } from '@/components/members/MemberToggleGroup';
 import type { TransactionRow } from '@/lib/data-access/transactions';
@@ -22,6 +22,18 @@ interface AssigneeSectionProps {
   transaction?: TransactionRow | null;
   refundAssigneeIds?: string[];
 }
+
+const matchesLrmSplit = (
+  assignees: AssigneeFormRow[],
+  totalCents: number,
+  memberIds: string[]
+): boolean => {
+  if (memberIds.length === 0) {
+    return assignees.length === 0;
+  }
+  const expected = lrmSplit(totalCents, memberIds);
+  return JSON.stringify(expected) === JSON.stringify(assignees);
+};
 
 /**
  * Toggle-based assignee section that replaces SplitSection at the top level.
@@ -46,7 +58,6 @@ export const AssigneeSection = ({
   transaction,
   refundAssigneeIds,
 }: AssigneeSectionProps) => {
-  // Initialize pressed member IDs
   const initialPressedIds = transaction
     ? transaction.assignees.map((a) => a.memberId)
     : orgMembers.length === 1
@@ -56,34 +67,56 @@ export const AssigneeSection = ({
   const [pressedMemberIds, setPressedMemberIds] =
     useState<string[]>(initialPressedIds);
 
-  // Skips initial render to preserve saved edit-mode splits on mount, then fires on
-  // every subsequent amountCents change in both create and edit mode.
+  const splitCustomized = useRef(
+    transaction
+      ? !matchesLrmSplit(value, amountCents, initialPressedIds)
+      : false
+  );
+
+  const valueRef = useRef(value);
+  valueRef.current = value;
+
   const isInitialRender = useRef(true);
   useEffect(() => {
     if (isInitialRender.current) {
       isInitialRender.current = false;
       return;
     }
-    if (amountCents > 0 && pressedMemberIds.length > 0) {
-      const next = lrmSplit(amountCents, pressedMemberIds);
-      if (JSON.stringify(next) !== JSON.stringify(value)) {
+    if (pressedMemberIds.length === 0) return;
+
+    const current = valueRef.current;
+
+    if (amountCents === 0) {
+      const next = current.map((row) => ({
+        ...row,
+        amountCents: 0,
+        percentage: 0,
+      }));
+      if (JSON.stringify(next) !== JSON.stringify(current)) {
         onChange(next);
       }
+      return;
     }
-  }, [amountCents, pressedMemberIds, value, onChange]);
 
-  // Issue 6: pre-fill assignees from the original transaction when creating a refund
+    const next = splitCustomized.current
+      ? scaleAssigneeSplitProportionally(current, amountCents)
+      : lrmSplit(amountCents, pressedMemberIds);
+
+    if (JSON.stringify(next) !== JSON.stringify(current)) {
+      onChange(next);
+    }
+  }, [amountCents, pressedMemberIds, onChange]);
+
   useEffect(() => {
     if (!transaction && refundAssigneeIds && refundAssigneeIds.length > 0) {
       setPressedMemberIds(refundAssigneeIds);
+      splitCustomized.current = false;
       if (amountCents > 0) {
         onChange(lrmSplit(amountCents, refundAssigneeIds));
       }
     }
-    // Only re-run when refundAssigneeIds changes (new refundOf selected)
   }, [refundAssigneeIds]);
 
-  // percentage from TransactionAssignee is string|null; from AssigneeFormRow is number
   const isNonEven = (
     assignees: { percentage: number | string | null }[]
   ): boolean => {
@@ -98,9 +131,20 @@ export const AssigneeSection = ({
     transaction ? isNonEven(transaction.assignees) : false
   );
 
-  // Only the pressed members are passed to SplitSection
   const pressedMembers = orgMembers.filter((m) =>
     pressedMemberIds.includes(m.id)
+  );
+
+  const handleSplitChange = useCallback(
+    (next: AssigneeFormRow[]) => {
+      splitCustomized.current = !matchesLrmSplit(
+        next,
+        amountCents,
+        pressedMemberIds
+      );
+      onChange(next);
+    },
+    [amountCents, onChange, pressedMemberIds]
   );
 
   return (
@@ -112,21 +156,19 @@ export const AssigneeSection = ({
         value={pressedMemberIds}
         onChange={(newIds) => {
           setPressedMemberIds(newIds);
+          splitCustomized.current = false;
           if (newIds.length === 0) {
             onChange([]);
             return;
           }
           if (amountCents <= 0) return;
           const next = lrmSplit(amountCents, newIds);
-          // ToggleGroup can emit on mount; skip when the split already matches
-          // form state so opening edit mode does not mark the sheet dirty.
           if (JSON.stringify(next) !== JSON.stringify(value)) {
             onChange(next);
           }
         }}
       />
 
-      {/* "Customize split" Collapsible — only shown when 2+ members are pressed */}
       {pressedMemberIds.length > 1 ? (
         <Collapsible open={customizeOpen} onOpenChange={setCustomizeOpen}>
           <CollapsibleTrigger className="w-fit">
@@ -148,7 +190,7 @@ export const AssigneeSection = ({
           <CollapsibleContent className="pt-3">
             <SplitSection
               value={value}
-              onChange={onChange}
+              onChange={handleSplitChange}
               amountCents={amountCents}
               orgMembers={pressedMembers}
             />

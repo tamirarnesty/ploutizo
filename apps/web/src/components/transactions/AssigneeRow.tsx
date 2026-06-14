@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import { Text } from '@ploutizo/ui/components/text';
@@ -43,8 +43,6 @@ export const AssigneeRow = ({
   onChange,
   onRemove,
 }: AssigneeRowProps) => {
-  const [draftDollars, setDraftDollars] = useState<number | undefined>();
-
   const applyDollarsAsCanonical = useCallback(
     (dollars: number) => {
       const cents = dollarsToCents(dollars);
@@ -61,17 +59,6 @@ export const AssigneeRow = ({
     },
     [amountCents, memberId, onChange, percentage, totalCents]
   );
-
-  const applyDraftAsCanonical = useCallback(() => {
-    if (draftDollars === undefined) return;
-    applyDollarsAsCanonical(draftDollars);
-    setDraftDollars(undefined);
-  }, [applyDollarsAsCanonical, draftDollars]);
-
-  const previewPercentage =
-    draftDollars !== undefined
-      ? percentageFromDollars(draftDollars, totalCents)
-      : percentage;
 
   return (
     <div className="flex items-center gap-2">
@@ -92,12 +79,10 @@ export const AssigneeRow = ({
           inputClassName="text-right"
           value={centsToDollars(amountCents)}
           onChange={(dollars) => {
-            setDraftDollars(dollars);
             if (dollars !== undefined) {
               applyDollarsAsCanonical(dollars);
             }
           }}
-          onBlur={applyDraftAsCanonical}
           commitEmptyAs={0}
         />
       ) : (
@@ -122,7 +107,7 @@ export const AssigneeRow = ({
       >
         {mode === 'percent'
           ? formatCurrency(amountCents)
-          : `${previewPercentage.toFixed(1)}%`}
+          : `${percentage.toFixed(1)}%`}
       </Text>
 
       <Button
