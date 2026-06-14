@@ -1,15 +1,11 @@
+import type { SettlementThresholdMode } from '@ploutizo/types';
+import { SETTLEMENT_THRESHOLD_MODE_VALUES } from '@ploutizo/types';
 import { dollarsToCents, centsToDollars } from './currency';
 
 export const DEFAULT_SETTLEMENT_THRESHOLD_CENTS = 5000;
 
-export const SETTLEMENT_THRESHOLD_MODES = [
-  'app_default',
-  'immediate',
-  'custom',
-] as const;
-
-export type SettlementThresholdMode =
-  (typeof SETTLEMENT_THRESHOLD_MODES)[number];
+export { SETTLEMENT_THRESHOLD_MODE_VALUES };
+export type { SettlementThresholdMode };
 
 export const settlementThresholdModeFromCents = (
   settlementThreshold: number | null | undefined

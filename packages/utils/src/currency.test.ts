@@ -5,13 +5,17 @@ import {
   formatCurrency,
   formatDollarsBlurDisplay,
   formatCurrencyInput,
+  formatPercentBlurDisplay,
+  getCurrencySymbol,
   isIncompleteDecimalEdit,
   mergeDecimalEditPaste,
   parseCurrencyInputToCents,
+  roundPercentToOneDecimal,
   sanitizeDecimalEditString,
   sanitizeCurrencyPaste,
   sanitizePercentPaste,
   tryParseDollarsFromEdit,
+  tryParsePercentFromEdit,
 } from './currency';
 
 describe('formatCurrency', () => {
@@ -34,6 +38,15 @@ describe('formatCurrency', () => {
   it('returns em dash for non-finite cents', () => {
     expect(formatCurrency(Number.NaN)).toBe('—');
     expect(formatCurrency(Number.POSITIVE_INFINITY)).toBe('—');
+  });
+
+  it('formats whole dollars when fraction digits are zero', () => {
+    expect(
+      formatCurrency(5000, 'CAD', 'en-CA', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      })
+    ).toBe('$50');
   });
 });
 
@@ -159,5 +172,36 @@ describe('mergeDecimalEditPaste', () => {
     expect(mergeDecimalEditPaste('', 0, 0, ' 40% ', sanitizePercentPaste)).toBe(
       '40'
     );
+  });
+});
+
+describe('getCurrencySymbol', () => {
+  it('returns the currency symbol for en-CA CAD', () => {
+    expect(getCurrencySymbol('en-CA', 'CAD')).toBe('$');
+  });
+});
+
+describe('tryParsePercentFromEdit', () => {
+  it('parses locale-aware percent edits', () => {
+    expect(tryParsePercentFromEdit('60.5')).toBe(60.5);
+    expect(tryParsePercentFromEdit('60,5', 'fr-CA')).toBe(60.5);
+  });
+
+  it('returns undefined for incomplete edits', () => {
+    expect(tryParsePercentFromEdit('')).toBeUndefined();
+    expect(tryParsePercentFromEdit(',', 'fr-CA')).toBeUndefined();
+  });
+});
+
+describe('formatPercentBlurDisplay', () => {
+  it('formats percent with one decimal using locale', () => {
+    expect(formatPercentBlurDisplay(60.5)).toBe('60.5');
+    expect(formatPercentBlurDisplay(60.5, 'fr-CA')).toBe('60,5');
+  });
+});
+
+describe('roundPercentToOneDecimal', () => {
+  it('rounds to one decimal place', () => {
+    expect(roundPercentToOneDecimal(33.333)).toBe(33.3);
   });
 });

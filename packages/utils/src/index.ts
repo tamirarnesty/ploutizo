@@ -1,4 +1,5 @@
 export { lrmSplit } from './lrm';
+export { scaleAssigneeSplitProportionally, type AssigneeSplitRow } from './scale-assignee-split';
 export { formatSettlementDescription } from './settlement-description';
 export {
   normalizeTransactionAssignees,
@@ -7,7 +8,7 @@ export {
 } from './normalize-transaction-assignees';
 export {
   DEFAULT_SETTLEMENT_THRESHOLD_CENTS,
-  SETTLEMENT_THRESHOLD_MODES,
+  SETTLEMENT_THRESHOLD_MODE_VALUES,
   customSettlementThresholdCentsFromDollars,
   isPositiveSettlementThresholdDollars,
   resolveSettlementThresholdCents,
