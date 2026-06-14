@@ -94,6 +94,32 @@ describe('CurrencyInput', () => {
     expect(onChange).toHaveBeenLastCalledWith(1234.56);
   });
 
+  it('calls caller focus and paste handlers', async () => {
+    const user = userEvent.setup();
+    const onFocus = vi.fn();
+    const onPaste = vi.fn();
+    const onChange = vi.fn();
+
+    render(
+      <CurrencyInput
+        id="test-currency"
+        value={undefined}
+        onChange={onChange}
+        onFocus={onFocus}
+        onPaste={onPaste}
+      />
+    );
+
+    const input = screen.getByRole('textbox');
+    await user.click(input);
+    await user.paste('$ 1,234.56');
+
+    expect(onFocus).toHaveBeenCalledTimes(1);
+    expect(onPaste).toHaveBeenCalledTimes(1);
+    expect(input).toHaveValue('1234.56');
+    expect(onChange).toHaveBeenLastCalledWith(1234.56);
+  });
+
   it('emits undefined on empty input', async () => {
     const user = userEvent.setup();
     render(

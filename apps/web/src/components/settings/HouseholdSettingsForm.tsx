@@ -38,7 +38,7 @@ const HouseholdSettingsFormFields = ({
     },
     onSubmit: ({ value }) => {
       const cents =
-        value.thresholdDollars === undefined
+        value.thresholdDollars === undefined || value.thresholdDollars === 0
           ? null
           : dollarsToCents(value.thresholdDollars);
       mutation.mutate(

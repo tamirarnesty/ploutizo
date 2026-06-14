@@ -119,7 +119,7 @@ export const parseCurrencyInputToCents = (
 /**
  * Decimal edit helpers for focused numeric entry fields.
  *
- * Scoped to `en-CA`: typing uses the locale decimal separator (`.`).
+ * Defaults to `en-CA`: typing uses the locale decimal separator (`.`).
  * Negatives may parse but are not intended for money-entry UIs.
  */
 
@@ -141,8 +141,13 @@ export const sanitizeDecimalEditString = (
   return result;
 };
 
-export const isIncompleteDecimalEdit = (sanitized: string): boolean =>
-  sanitized.length === 0 || sanitized === '.';
+export const isIncompleteDecimalEdit = (
+  sanitized: string,
+  locale = 'en-CA'
+): boolean => {
+  const { decimal } = getLocaleDecimalSeparators(locale);
+  return sanitized.length === 0 || sanitized === decimal;
+};
 
 export const sanitizeCurrencyPaste = (
   text: string,
@@ -169,7 +174,7 @@ export const tryParseDollarsFromEdit = (
   locale = 'en-CA'
 ): number | undefined => {
   const sanitized = sanitizeDecimalEditString(edit, locale);
-  if (isIncompleteDecimalEdit(sanitized) || !/\d/.test(sanitized)) {
+  if (isIncompleteDecimalEdit(sanitized, locale) || !/\d/.test(sanitized)) {
     return undefined;
   }
   return parseDollarsFromLocalizedString(sanitized, locale);

@@ -5,6 +5,7 @@ import {
   formatCurrency,
   formatDollarsBlurDisplay,
   formatCurrencyInput,
+  isIncompleteDecimalEdit,
   mergeDecimalEditPaste,
   parseCurrencyInputToCents,
   sanitizeDecimalEditString,
@@ -92,6 +93,19 @@ describe('sanitizeDecimalEditString', () => {
     expect(sanitizeDecimalEditString('12abc34.56.7')).toBe('1234.567');
     expect(sanitizeDecimalEditString('.')).toBe('.');
   });
+
+  it('keeps the locale decimal separator', () => {
+    expect(sanitizeDecimalEditString(',', 'fr-CA')).toBe(',');
+  });
+});
+
+describe('isIncompleteDecimalEdit', () => {
+  it('recognizes empty and locale decimal separator edits', () => {
+    expect(isIncompleteDecimalEdit('')).toBe(true);
+    expect(isIncompleteDecimalEdit('.')).toBe(true);
+    expect(isIncompleteDecimalEdit(',', 'fr-CA')).toBe(true);
+    expect(isIncompleteDecimalEdit('1', 'fr-CA')).toBe(false);
+  });
 });
 
 describe('sanitizeCurrencyPaste', () => {
@@ -111,6 +125,7 @@ describe('tryParseDollarsFromEdit', () => {
   it('returns undefined for partial edit states', () => {
     expect(tryParseDollarsFromEdit('')).toBeUndefined();
     expect(tryParseDollarsFromEdit('.')).toBeUndefined();
+    expect(tryParseDollarsFromEdit(',', 'fr-CA')).toBeUndefined();
     expect(tryParseDollarsFromEdit('abc')).toBeUndefined();
   });
 

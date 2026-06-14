@@ -16,7 +16,7 @@ import {
   tryParseDollarsFromEdit,
 } from '@ploutizo/utils/currency';
 import { useDecimalDisplayInput } from '@/components/currency/useDecimalDisplayInput';
-import type { ComponentProps } from 'react';
+import type { ClipboardEvent, ComponentProps, FocusEvent } from 'react';
 
 export type CurrencyInputProps = Omit<
   ComponentProps<'input'>,
@@ -49,6 +49,8 @@ export const CurrencyInput = ({
   inputClassName,
   commitEmptyAs,
   commitEmptyOnChange,
+  onFocus,
+  onPaste,
   ...inputProps
 }: CurrencyInputProps) => {
   const onMidEdit = useCallback(
@@ -104,6 +106,24 @@ export const CurrencyInput = ({
         ),
     });
 
+  const handleInputFocus = useCallback(
+    (event: FocusEvent<HTMLInputElement>) => {
+      handleFocus(event);
+      onFocus?.(event);
+    },
+    [handleFocus, onFocus]
+  );
+
+  const handleInputPaste = useCallback(
+    (event: ClipboardEvent<HTMLInputElement>) => {
+      onPaste?.(event);
+      if (!event.defaultPrevented) {
+        handlePaste?.(event);
+      }
+    },
+    [handlePaste, onPaste]
+  );
+
   return (
     <InputGroup className={className}>
       <InputGroupAddon align="inline-start">
@@ -117,8 +137,8 @@ export const CurrencyInput = ({
         className={inputClassName}
         value={displayValue}
         onChange={handleChange}
-        onPaste={handlePaste}
-        onFocus={handleFocus}
+        onPaste={handleInputPaste}
+        onFocus={handleInputFocus}
         onBlur={handleBlur}
       />
     </InputGroup>
