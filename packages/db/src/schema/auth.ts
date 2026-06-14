@@ -59,7 +59,8 @@ export const users = pgTable('users', {
  * this table stores only app-specific org-level data.
  * `id` is the Clerk org ID (e.g. "org_2abc...") — not a generated UUID.
  *
- * settlementThreshold is the household-level override in cents.
+ * settlementThreshold is the household-level override in cents:
+ * null = use app default, 0 = notify immediately, >0 = custom threshold.
  * Precedence: org_member.settlementThreshold > orgs.settlementThreshold > 5000 (global default)
  */
 export const orgs = pgTable('orgs', {

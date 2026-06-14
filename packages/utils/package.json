@@ -7,12 +7,17 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@ploutizo/types": "workspace:*"
+  },
   "devDependencies": {
     "@types/node": "^25.5.2",
     "typescript": "^6.0.2",
     "vitest": "^4.1.2"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./currency": "./src/currency.ts",
+    "./settlement-threshold": "./src/settlement-threshold.ts"
   }
 }

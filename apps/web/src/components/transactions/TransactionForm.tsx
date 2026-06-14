@@ -34,6 +34,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
+import { dollarsToCents } from '@ploutizo/utils/currency';
 import type { Account, OrgMember } from '@ploutizo/types';
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import { useGetCategories } from '@/lib/data-access/categories';
@@ -46,13 +47,17 @@ import {
 } from '@/lib/data-access/transactions';
 import type { TransactionRow } from '@/lib/data-access/transactions';
 import type { Category } from '@/lib/data-access/categories';
+import { CurrencyInput } from '@/components/currency/CurrencyInput';
+import {
+  PendingInputFlushProvider,
+  useFlushPendingInputs,
+} from '@/lib/money/pending-input-flush';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import {
   computeLockedDescription,
   isLockedDescriptionType,
   useTransactionForm,
 } from './hooks/useTransactionForm';
-import { FormattedAmountInput } from './FormattedAmountInput';
 import { TransactionTypeFields } from './TransactionTypeFields';
 import { TransferFields } from './TransferFields';
 import { SettlementFields } from './SettlementFields';
@@ -119,15 +124,17 @@ export const TransactionForm = ({
   const resolvedTransaction = isEditing ? (txData ?? transaction) : null;
 
   return (
-    <TransactionFormInner
-      key={resolvedTransaction?.id ?? 'new'}
-      transaction={resolvedTransaction}
-      accounts={accounts}
-      categories={categories}
-      orgMembers={orgMembers}
-      onClose={onClose}
-      onDirtyChange={onDirtyChange}
-    />
+    <PendingInputFlushProvider>
+      <TransactionFormInner
+        key={resolvedTransaction?.id ?? 'new'}
+        transaction={resolvedTransaction}
+        accounts={accounts}
+        categories={categories}
+        orgMembers={orgMembers}
+        onClose={onClose}
+        onDirtyChange={onDirtyChange}
+      />
+    </PendingInputFlushProvider>
   );
 };
 
@@ -254,6 +261,8 @@ const TransactionFormInner = ({
     string[]
   >([]);
 
+  const flushPendingInputs = useFlushPendingInputs();
+
   const { form } = useTransactionForm({
     transaction,
     accounts,
@@ -268,6 +277,7 @@ const TransactionFormInner = ({
       data-testid="transaction-form"
       onSubmit={(e) => {
         e.preventDefault();
+        flushPendingInputs();
         form.handleSubmit();
       }}
     >
@@ -392,8 +402,10 @@ const TransactionFormInner = ({
               name="amount"
               validators={{
                 onSubmit: ({ value }: { value: number | undefined }) =>
-                  !value || value <= 0
-                    ? 'Amount must be greater than zero.'
+                  value === undefined ||
+                  !Number.isFinite(value) ||
+                  dollarsToCents(value) < 1
+                    ? 'Amount must be a finite number greater than zero and at least 1 cent.'
                     : undefined,
               }}
             >
@@ -402,7 +414,9 @@ const TransactionFormInner = ({
                   data-invalid={field.state.meta.errors.length > 0 || undefined}
                 >
                   <FieldLabel htmlFor="tx-amount">Amount</FieldLabel>
-                  <FormattedAmountInput
+                  <CurrencyInput
+                    id="tx-amount"
+                    aria-invalid={field.state.meta.errors.length > 0}
                     value={field.state.value}
                     onChange={(v) => field.handleChange(v)}
                     onBlur={field.handleBlur}
@@ -638,7 +652,11 @@ const TransactionFormInner = ({
                     <AssigneeSection
                       value={field.state.value}
                       onChange={(assignees) => field.handleChange(assignees)}
-                      amountCents={Math.round((amount ?? 0) * 100)}
+                      amountCents={
+                        amount === undefined || !Number.isFinite(amount)
+                          ? 0
+                          : dollarsToCents(amount)
+                      }
                       orgMembers={orgMembers}
                       transaction={transaction}
                       refundAssigneeIds={

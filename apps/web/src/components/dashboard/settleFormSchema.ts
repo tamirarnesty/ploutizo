@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { dollarsToCents } from '@ploutizo/utils/currency';
 
 const ISO_DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -29,9 +30,12 @@ export const settleFormSchema = z.object({
     z.string().uuid({ message: 'Select a member.' }),
     z.literal('shared'),
   ]),
-  amountDollars: settleAmountDollarsFieldSchema.refine((v) => v > 0, {
-    message: 'Amount must be greater than $0.',
-  }),
+  amountDollars: settleAmountDollarsFieldSchema.refine(
+    (v) => dollarsToCents(v) >= 1,
+    {
+      message: 'Amount must be at least $0.01.',
+    }
+  ),
   sourceAccountId: z.string().min(1, 'Select a source account.'),
   date: z
     .string()

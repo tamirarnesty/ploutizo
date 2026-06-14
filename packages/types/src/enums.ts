@@ -141,3 +141,16 @@ export const NOTIFICATION_TYPE_VALUES = [
 ] as const
 
 export type NotificationType = (typeof NOTIFICATION_TYPE_VALUES)[number]
+
+// ---------------------------------------------------------------------------
+// Household
+// ---------------------------------------------------------------------------
+
+export const SETTLEMENT_THRESHOLD_MODE_VALUES = [
+  'app_default',
+  'immediate',
+  'custom',
+] as const
+
+export type SettlementThresholdMode =
+  (typeof SETTLEMENT_THRESHOLD_MODE_VALUES)[number]

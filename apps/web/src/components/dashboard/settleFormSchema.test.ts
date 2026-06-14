@@ -27,6 +27,14 @@ describe('settleFormSchema', () => {
     expect(result.success).toBe(false);
   });
 
+  it('rejects sub-cent positive amounts on submit schema', () => {
+    const result = settleFormSchema.safeParse({
+      ...VALID_BASE,
+      amountDollars: 0.004,
+    });
+    expect(result.success).toBe(false);
+  });
+
   it('allows amount = 0 on field schema', () => {
     expect(settleAmountDollarsFieldSchema.safeParse(0).success).toBe(true);
   });

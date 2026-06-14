@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { FieldGroup } from '@ploutizo/ui/components/field';
 import { useAppForm } from '@ploutizo/ui/components/form';
+import { dollarsToCents } from '@ploutizo/utils/currency';
 import type { SettlementAccountRow } from '@ploutizo/types';
 import {
   getSettleAmountForPayToward,
@@ -24,6 +25,10 @@ import {
 import { useGetAccounts } from '@/lib/data-access/accounts';
 import { useCreateSettlement } from '@/lib/data-access/settlements';
 import { getSettlementSourceAccounts } from '@/lib/settlements';
+import {
+  PendingInputFlushProvider,
+  useFlushPendingInputs,
+} from '@/lib/money/pending-input-flush';
 
 export type SettleDialogFormProps = {
   account: SettlementAccountRow;
@@ -31,7 +36,13 @@ export type SettleDialogFormProps = {
   onClose: () => void;
 };
 
-export const SettleDialogForm = ({
+export const SettleDialogForm = (props: SettleDialogFormProps) => (
+  <PendingInputFlushProvider>
+    <SettleDialogFormContent {...props} />
+  </PendingInputFlushProvider>
+);
+
+const SettleDialogFormContent = ({
   account,
   initialPayToward,
   onClose,
@@ -61,7 +72,7 @@ export const SettleDialogForm = ({
       },
     },
     onSubmit: async ({ value }) => {
-      const amountCents = Math.round(value.amountDollars * 100);
+      const amountCents = dollarsToCents(value.amountDollars);
       const trimmedNotes = value.notes?.trim() ?? '';
       const assignees =
         value.payToward === 'shared'
@@ -97,10 +108,13 @@ export const SettleDialogForm = ({
     }
   }, [form, firstSourceAccountId]);
 
+  const flushPendingInputs = useFlushPendingInputs();
+
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
+        flushPendingInputs();
         form.handleSubmit();
       }}
     >

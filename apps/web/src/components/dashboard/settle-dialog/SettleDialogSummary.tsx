@@ -4,8 +4,8 @@ import {
   DialogTitle,
 } from '@ploutizo/ui/components/dialog';
 import { Text } from '@ploutizo/ui/components/text';
+import { formatCurrency } from '@ploutizo/utils/currency';
 import type { SettlementAccountRow } from '@ploutizo/types';
-import { formatCurrency } from '@/lib/formatCurrency';
 
 type SettleDialogSummaryProps = {
   account: SettlementAccountRow;

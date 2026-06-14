@@ -245,32 +245,60 @@ describe('RuleFormSchema', () => {
 })
 
 describe('HouseholdSettingsFormSchema', () => {
-  it('accepts valid positive dollar string', () => {
-    const result = HouseholdSettingsFormSchema.safeParse({ thresholdDollars: '50' })
+  it('accepts app default without a dollar amount', () => {
+    const result = HouseholdSettingsFormSchema.safeParse({
+      thresholdMode: 'app_default',
+    })
     expect(result.success).toBe(true)
   })
 
-  it('rejects negative dollar string with correct message', () => {
-    const result = HouseholdSettingsFormSchema.safeParse({ thresholdDollars: '-5' })
+  it('accepts immediate notification without a dollar amount', () => {
+    const result = HouseholdSettingsFormSchema.safeParse({
+      thresholdMode: 'immediate',
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts custom positive dollar amount', () => {
+    const result = HouseholdSettingsFormSchema.safeParse({
+      thresholdMode: 'custom',
+      thresholdDollars: 50.75,
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects custom zero with correct message', () => {
+    const result = HouseholdSettingsFormSchema.safeParse({
+      thresholdMode: 'custom',
+      thresholdDollars: 0,
+    })
     expect(result.success).toBe(false)
     if (!result.success) {
-      const errors = result.error.issues.filter((i) => i.path.includes('thresholdDollars'))
-      expect(errors[0]?.message).toBe('Must be a positive number.')
+      const errors = result.error.issues.filter((i) =>
+        i.path.includes('thresholdDollars')
+      )
+      expect(errors[0]?.message).toBe('Enter an amount of at least $0.01.')
     }
   })
 
-  it('rejects non-numeric string with correct message', () => {
-    const result = HouseholdSettingsFormSchema.safeParse({ thresholdDollars: 'abc' })
+  it('rejects custom amounts that round below one cent', () => {
+    const result = HouseholdSettingsFormSchema.safeParse({
+      thresholdMode: 'custom',
+      thresholdDollars: 0.004,
+    })
     expect(result.success).toBe(false)
-    if (!result.success) {
-      const errors = result.error.issues.filter((i) => i.path.includes('thresholdDollars'))
-      expect(errors[0]?.message).toBe('Must be a positive number.')
-    }
   })
 
-  it('accepts empty object (thresholdDollars is optional)', () => {
+  it('rejects custom threshold without a dollar amount', () => {
+    const result = HouseholdSettingsFormSchema.safeParse({
+      thresholdMode: 'custom',
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects empty object because thresholdMode is required', () => {
     const result = HouseholdSettingsFormSchema.safeParse({})
-    expect(result.success).toBe(true)
+    expect(result.success).toBe(false)
   })
 })
 
