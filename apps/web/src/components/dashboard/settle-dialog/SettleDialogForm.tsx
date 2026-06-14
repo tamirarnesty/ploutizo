@@ -25,6 +25,10 @@ import {
 import { useGetAccounts } from '@/lib/data-access/accounts';
 import { useCreateSettlement } from '@/lib/data-access/settlements';
 import { getSettlementSourceAccounts } from '@/lib/settlements';
+import {
+  PendingInputFlushProvider,
+  useFlushPendingInputs,
+} from '@/lib/money/pending-input-flush';
 
 export type SettleDialogFormProps = {
   account: SettlementAccountRow;
@@ -32,7 +36,13 @@ export type SettleDialogFormProps = {
   onClose: () => void;
 };
 
-export const SettleDialogForm = ({
+export const SettleDialogForm = (props: SettleDialogFormProps) => (
+  <PendingInputFlushProvider>
+    <SettleDialogFormContent {...props} />
+  </PendingInputFlushProvider>
+);
+
+const SettleDialogFormContent = ({
   account,
   initialPayToward,
   onClose,
@@ -98,10 +108,13 @@ export const SettleDialogForm = ({
     }
   }, [form, firstSourceAccountId]);
 
+  const flushPendingInputs = useFlushPendingInputs();
+
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
+        flushPendingInputs();
         form.handleSubmit();
       }}
     >

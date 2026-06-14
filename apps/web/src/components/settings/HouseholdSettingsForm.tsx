@@ -14,6 +14,7 @@ import {
 } from '@ploutizo/ui/components/radio-group';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
+import { formatCurrency } from '@ploutizo/utils/currency';
 import {
   DEFAULT_SETTLEMENT_THRESHOLD_CENTS,
   settlementThresholdCentsFromMode,
@@ -23,6 +24,7 @@ import {
 import type { SettlementThresholdMode } from '@ploutizo/utils/settlement-threshold';
 import type { HouseholdSettingsForm as HouseholdSettingsFormType } from '@ploutizo/validators';
 import { CurrencyInput } from '@/components/currency/CurrencyInput';
+import { useMoneyLocale } from '@/lib/money/money-locale';
 import {
   useGetHouseholdSettings,
   useUpdateHouseholdSettings,
@@ -32,26 +34,12 @@ interface HouseholdSettingsFormFieldsProps {
   settlementThreshold: number | null;
 }
 
-const wholeCurrencyFormatter = new Intl.NumberFormat('en-CA', {
-  style: 'currency',
-  currency: 'CAD',
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 0,
-});
-
-const formatWholeCurrency = (cents: number): string =>
-  wholeCurrencyFormatter.format(cents / 100);
-
 const toHouseholdSettingsFormDefaults = (
   settlementThreshold: number | null
 ): HouseholdSettingsFormType => {
   const thresholdMode = settlementThresholdModeFromCents(settlementThreshold);
 
-  if (thresholdMode === 'app_default') {
-    return { thresholdMode };
-  }
-
-  if (thresholdMode === 'immediate') {
+  if (thresholdMode === 'app_default' || thresholdMode === 'immediate') {
     return { thresholdMode };
   }
 
@@ -98,6 +86,13 @@ const HouseholdSettingsFormFields = ({
   settlementThreshold,
 }: HouseholdSettingsFormFieldsProps) => {
   const mutation = useUpdateHouseholdSettings();
+  const { locale, currency } = useMoneyLocale();
+  const defaultThresholdLabel = formatCurrency(
+    DEFAULT_SETTLEMENT_THRESHOLD_CENTS,
+    currency,
+    locale,
+    { minimumFractionDigits: 0, maximumFractionDigits: 0 }
+  );
 
   const form = useAppForm({
     defaultValues: toHouseholdSettingsFormDefaults(settlementThreshold),
@@ -150,7 +145,7 @@ const HouseholdSettingsFormFields = ({
               <ThresholdModeOption
                 mode="app_default"
                 title="Default"
-                description={`Use ${formatWholeCurrency(DEFAULT_SETTLEMENT_THRESHOLD_CENTS)}`}
+                description={`Use ${defaultThresholdLabel}`}
               />
               <ThresholdModeOption
                 mode="immediate"

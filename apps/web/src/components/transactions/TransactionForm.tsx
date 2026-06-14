@@ -48,6 +48,10 @@ import {
 import type { TransactionRow } from '@/lib/data-access/transactions';
 import type { Category } from '@/lib/data-access/categories';
 import { CurrencyInput } from '@/components/currency/CurrencyInput';
+import {
+  PendingInputFlushProvider,
+  useFlushPendingInputs,
+} from '@/lib/money/pending-input-flush';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import {
   computeLockedDescription,
@@ -120,15 +124,17 @@ export const TransactionForm = ({
   const resolvedTransaction = isEditing ? (txData ?? transaction) : null;
 
   return (
-    <TransactionFormInner
-      key={resolvedTransaction?.id ?? 'new'}
-      transaction={resolvedTransaction}
-      accounts={accounts}
-      categories={categories}
-      orgMembers={orgMembers}
-      onClose={onClose}
-      onDirtyChange={onDirtyChange}
-    />
+    <PendingInputFlushProvider>
+      <TransactionFormInner
+        key={resolvedTransaction?.id ?? 'new'}
+        transaction={resolvedTransaction}
+        accounts={accounts}
+        categories={categories}
+        orgMembers={orgMembers}
+        onClose={onClose}
+        onDirtyChange={onDirtyChange}
+      />
+    </PendingInputFlushProvider>
   );
 };
 
@@ -255,6 +261,8 @@ const TransactionFormInner = ({
     string[]
   >([]);
 
+  const flushPendingInputs = useFlushPendingInputs();
+
   const { form } = useTransactionForm({
     transaction,
     accounts,
@@ -269,6 +277,7 @@ const TransactionFormInner = ({
       data-testid="transaction-form"
       onSubmit={(e) => {
         e.preventDefault();
+        flushPendingInputs();
         form.handleSubmit();
       }}
     >
