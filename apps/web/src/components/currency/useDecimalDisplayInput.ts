@@ -8,7 +8,7 @@ export type DecimalDisplayInputConfig<T> = {
   sanitize: (input: string) => string;
   commitOnBlur: (displayValue: string, currentValue: T) => T;
   onChange: (value: T) => void;
-  onBlur?: () => void;
+  onBlur?: (event: FocusEvent<HTMLInputElement>) => void;
   onFocus?: (event: FocusEvent<HTMLInputElement>) => void;
   onPaste?: (event: ClipboardEvent<HTMLInputElement>) => void;
   mergePaste?: (
@@ -101,11 +101,14 @@ export const useDecimalDisplayInput = <T>({
     [formatEdit, onFocus, value]
   );
 
-  const handleBlur = useCallback(() => {
-    focused.current = false;
-    commitDisplay(displayValueRef.current);
-    onBlur?.();
-  }, [commitDisplay, onBlur]);
+  const handleBlur = useCallback(
+    (e: FocusEvent<HTMLInputElement>) => {
+      focused.current = false;
+      commitDisplay(displayValueRef.current);
+      onBlur?.(e);
+    },
+    [commitDisplay, onBlur]
+  );
 
   return {
     displayValue,

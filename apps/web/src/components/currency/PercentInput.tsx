@@ -16,7 +16,7 @@ import {
 import { useDecimalDisplayInput } from '@/components/currency/useDecimalDisplayInput';
 import { useMoneyLocale } from '@/lib/money/money-locale';
 import { useRegisterInputFlush } from '@/lib/money/pending-input-flush';
-import type { ComponentProps } from 'react';
+import type { ComponentProps, FocusEvent } from 'react';
 
 export type PercentInputProps = Omit<
   ComponentProps<'input'>,
@@ -24,7 +24,7 @@ export type PercentInputProps = Omit<
 > & {
   value: number;
   onChange: (value: number) => void;
-  onBlur?: () => void;
+  onBlur?: (event: FocusEvent<HTMLInputElement>) => void;
   className?: string;
   inputClassName?: string;
 };

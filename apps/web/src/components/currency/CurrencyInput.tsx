@@ -18,7 +18,7 @@ import {
 import { useDecimalDisplayInput } from '@/components/currency/useDecimalDisplayInput';
 import { useMoneyLocale } from '@/lib/money/money-locale';
 import { useRegisterInputFlush } from '@/lib/money/pending-input-flush';
-import type { ComponentProps } from 'react';
+import type { ComponentProps, FocusEvent } from 'react';
 
 export type CurrencyInputProps = Omit<
   ComponentProps<'input'>,
@@ -26,7 +26,7 @@ export type CurrencyInputProps = Omit<
 > & {
   value: number | undefined;
   onChange: (value: number | undefined) => void;
-  onBlur?: () => void;
+  onBlur?: (event: FocusEvent<HTMLInputElement>) => void;
   className?: string;
   inputClassName?: string;
   /** Map empty blur to a number (e.g. settle form uses 0). Default: undefined */
