@@ -99,7 +99,6 @@ export const AssigneeRow = ({
           }}
           onBlur={applyDraftAsCanonical}
           commitEmptyAs={0}
-          commitEmptyOnChange={0}
         />
       ) : (
         <PercentInput

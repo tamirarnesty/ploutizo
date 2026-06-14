@@ -5,13 +5,18 @@ import {
   InputGroupInput,
 } from '@ploutizo/ui/components/input-group';
 import {
+  formatPercentBlurDisplay,
   isIncompleteDecimalEdit,
   mergeDecimalEditPaste,
+  roundPercentToOneDecimal,
   sanitizeDecimalEditString,
   sanitizePercentPaste,
+  tryParsePercentFromEdit,
 } from '@ploutizo/utils/currency';
 import { useDecimalDisplayInput } from '@/components/currency/useDecimalDisplayInput';
-import type { ClipboardEvent, ComponentProps, FocusEvent } from 'react';
+import { useMoneyLocale } from '@/lib/money/money-locale';
+import { useRegisterInputFlush } from '@/lib/money/pending-input-flush';
+import type { ComponentProps } from 'react';
 
 export type PercentInputProps = Omit<
   ComponentProps<'input'>,
@@ -23,12 +28,6 @@ export type PercentInputProps = Omit<
   className?: string;
   inputClassName?: string;
 };
-
-const roundToOneDecimal = (value: number): number =>
-  Math.round(value * 10) / 10;
-
-const toBlurDisplay = (percentage: number): string =>
-  roundToOneDecimal(percentage).toFixed(1);
 
 const toEditDisplay = (percentage: number): string => percentage.toString();
 
@@ -42,68 +41,67 @@ export const PercentInput = ({
   onPaste,
   ...inputProps
 }: PercentInputProps) => {
-  const onMidEdit = useCallback(
-    (sanitized: string) => {
-      const parsed = parseFloat(sanitized);
-      if (Number.isFinite(parsed)) {
-        onChange(parsed);
-      }
-    },
-    [onChange]
-  );
+  const { locale } = useMoneyLocale();
 
   const commitOnBlur = useCallback(
     (display: string, currentValue: number): number => {
-      const sanitized = sanitizeDecimalEditString(display);
-      if (isIncompleteDecimalEdit(sanitized)) {
+      const sanitized = sanitizeDecimalEditString(display, locale);
+      if (isIncompleteDecimalEdit(sanitized, locale)) {
         return currentValue;
       }
-      const parsed = parseFloat(sanitized);
-      if (!Number.isFinite(parsed)) {
+      const parsed = tryParsePercentFromEdit(sanitized, locale);
+      if (parsed === undefined) {
         return currentValue;
       }
-      return roundToOneDecimal(parsed);
+      return roundPercentToOneDecimal(parsed);
     },
-    []
+    [locale]
   );
 
-  const { displayValue, handleChange, handlePaste, handleFocus, handleBlur } =
-    useDecimalDisplayInput({
-      value,
-      formatBlur: toBlurDisplay,
-      formatEdit: toEditDisplay,
-      sanitize: sanitizeDecimalEditString,
-      onMidEdit,
-      commitOnBlur,
-      onChange,
-      onBlur,
-      mergePaste: (display, start, end, pasted) =>
-        mergeDecimalEditPaste(
-          display,
-          start,
-          end,
-          pasted,
-          sanitizePercentPaste
-        ),
-    });
-
-  const handleInputFocus = useCallback(
-    (event: FocusEvent<HTMLInputElement>) => {
-      handleFocus(event);
-      onFocus?.(event);
-    },
-    [handleFocus, onFocus]
+  const formatBlur = useCallback(
+    (percent: number) => formatPercentBlurDisplay(percent, locale),
+    [locale]
   );
 
-  const handleInputPaste = useCallback(
-    (event: ClipboardEvent<HTMLInputElement>) => {
-      onPaste?.(event);
-      if (!event.defaultPrevented) {
-        handlePaste?.(event);
-      }
-    },
-    [handlePaste, onPaste]
+  const sanitize = useCallback(
+    (input: string) => sanitizeDecimalEditString(input, locale),
+    [locale]
   );
+
+  const mergePaste = useCallback(
+    (display: string, start: number, end: number, pasted: string) =>
+      mergeDecimalEditPaste(
+        display,
+        start,
+        end,
+        pasted,
+        sanitizePercentPaste,
+        locale
+      ),
+    [locale]
+  );
+
+  const {
+    displayValue,
+    handleChange,
+    handlePaste,
+    handleFocus,
+    handleBlur,
+    flushPending,
+  } = useDecimalDisplayInput({
+    value,
+    formatBlur,
+    formatEdit: toEditDisplay,
+    sanitize,
+    commitOnBlur,
+    onChange,
+    onBlur,
+    onFocus,
+    onPaste,
+    mergePaste,
+  });
+
+  useRegisterInputFlush(flushPending);
 
   return (
     <InputGroup className={className}>
@@ -116,8 +114,8 @@ export const PercentInput = ({
         className={inputClassName}
         value={displayValue}
         onChange={handleChange}
-        onPaste={handleInputPaste}
-        onFocus={handleInputFocus}
+        onPaste={handlePaste}
+        onFocus={handleFocus}
         onBlur={handleBlur}
       />
     </InputGroup>

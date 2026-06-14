@@ -9,6 +9,10 @@ import {
   expectBlurredThenFocusedDisplay,
   expectFiltersInvalidCharacters,
 } from '@/components/currency/__test__/decimalInputTestUtils';
+import {
+  PendingInputFlushProvider,
+  useFlushPendingInputs,
+} from '@/lib/money/pending-input-flush';
 
 describe('CurrencyInput', () => {
   it('renders formatted value when blurred', () => {
@@ -53,7 +57,7 @@ describe('CurrencyInput', () => {
     await expectFiltersInvalidCharacters();
   });
 
-  it('allows one decimal point and partial states', async () => {
+  it('allows partial decimal states without parent updates until blur', async () => {
     const user = userEvent.setup();
     render(
       <ControlledDecimalInput
@@ -67,18 +71,16 @@ describe('CurrencyInput', () => {
 
     const input = screen.getByRole('textbox');
     await user.click(input);
-    await user.type(input, '.');
-
-    expect(input).toHaveValue('.');
-    expect(screen.getByTestId('value')).toHaveTextContent('empty');
-
-    await user.type(input, '12');
+    await user.type(input, '.12');
 
     expect(input).toHaveValue('.12');
+    expect(screen.getByTestId('value')).toHaveTextContent('empty');
+
+    await user.tab();
     expect(screen.getByTestId('value')).toHaveTextContent('0.12');
   });
 
-  it('sanitizes paste and emits dollars', async () => {
+  it('sanitizes paste and commits on blur', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
 
@@ -89,8 +91,9 @@ describe('CurrencyInput', () => {
     const input = screen.getByRole('textbox');
     await user.click(input);
     await user.paste('$ 1,234.56');
+    await user.tab();
 
-    expect(input).toHaveValue('1234.56');
+    expect(input).toHaveValue('1,234.56');
     expect(onChange).toHaveBeenLastCalledWith(1234.56);
   });
 
@@ -117,10 +120,10 @@ describe('CurrencyInput', () => {
     expect(onFocus).toHaveBeenCalledTimes(1);
     expect(onPaste).toHaveBeenCalledTimes(1);
     expect(input).toHaveValue('1234.56');
-    expect(onChange).toHaveBeenLastCalledWith(1234.56);
+    expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('emits undefined on empty input', async () => {
+  it('commits undefined on empty blur', async () => {
     const user = userEvent.setup();
     render(
       <ControlledDecimalInput
@@ -135,11 +138,12 @@ describe('CurrencyInput', () => {
     const input = screen.getByRole('textbox');
     await user.click(input);
     await user.clear(input);
+    await user.tab();
 
     expect(screen.getByTestId('value')).toHaveTextContent('empty');
   });
 
-  it('keeps unrounded parent value mid-type until blur', async () => {
+  it('keeps unrounded value mid-type until blur', async () => {
     const user = userEvent.setup();
     render(
       <ControlledDecimalInput
@@ -155,7 +159,7 @@ describe('CurrencyInput', () => {
     await user.click(input);
     await user.type(input, '12.345');
 
-    expect(screen.getByTestId('value')).toHaveTextContent('12.345');
+    expect(screen.getByTestId('value')).toHaveTextContent('empty');
     await user.tab();
 
     expect(input).toHaveValue('12.35');
@@ -188,27 +192,6 @@ describe('CurrencyInput', () => {
     expect(input).toHaveValue('0.00');
   });
 
-  it('commits empty mid-edit when commitEmptyOnChange is set', async () => {
-    const user = userEvent.setup();
-    const onChange = vi.fn();
-
-    render(
-      <CurrencyInput
-        id="test-currency"
-        value={5}
-        onChange={onChange}
-        commitEmptyOnChange={0}
-      />
-    );
-
-    const input = screen.getByRole('textbox');
-    await user.click(input);
-    await user.clear(input);
-
-    expect(onChange).toHaveBeenLastCalledWith(0);
-    expect(input).toHaveValue('');
-  });
-
   it('syncs display when parent value changes while unfocused', () => {
     const { rerender } = render(
       <CurrencyInput id="test-currency" value={25} onChange={vi.fn()} />
@@ -221,5 +204,37 @@ describe('CurrencyInput', () => {
     );
 
     expect(screen.getByRole('textbox')).toHaveValue('33.30');
+  });
+
+  it('flushes pending edit on submit flush', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+
+    const FlushHarness = () => {
+      const flushPendingInputs = useFlushPendingInputs();
+      return (
+        <>
+          <CurrencyInput id="test-currency" value={10} onChange={onChange} />
+          <button type="button" onClick={() => flushPendingInputs()}>
+            Flush
+          </button>
+        </>
+      );
+    };
+
+    render(
+      <PendingInputFlushProvider>
+        <FlushHarness />
+      </PendingInputFlushProvider>
+    );
+
+    const input = screen.getByRole('textbox');
+    await user.click(input);
+    await user.clear(input);
+    await user.type(input, '25.50');
+    await user.click(screen.getByRole('button', { name: 'Flush' }));
+
+    expect(onChange).toHaveBeenLastCalledWith(25.5);
+    expect(input).toHaveValue('25.50');
   });
 });

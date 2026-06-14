@@ -79,5 +79,4 @@ export const expectFiltersInvalidCharacters = async ({
   await user.type(input, '12abc34');
 
   expect(input).toHaveValue('1234');
-  expect(screen.getByTestId('value')).toHaveTextContent('1234');
 };

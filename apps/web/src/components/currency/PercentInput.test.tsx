@@ -76,7 +76,7 @@ describe('PercentInput', () => {
     expect(screen.getByTestId('value')).toHaveTextContent('40.6');
   });
 
-  it('sanitizes percent paste', async () => {
+  it('sanitizes percent paste and commits on blur', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
 
@@ -86,6 +86,7 @@ describe('PercentInput', () => {
     await user.click(input);
     await user.keyboard('{Control>}a{/Control}');
     await user.paste('50.5%');
+    await user.tab();
 
     expect(input).toHaveValue('50.5');
     expect(onChange).toHaveBeenLastCalledWith(50.5);
@@ -115,7 +116,7 @@ describe('PercentInput', () => {
     expect(onFocus).toHaveBeenCalledTimes(1);
     expect(onPaste).toHaveBeenCalledTimes(1);
     expect(input).toHaveValue('50.5');
-    expect(onChange).toHaveBeenLastCalledWith(50.5);
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it('forwards aria-invalid to the input', () => {

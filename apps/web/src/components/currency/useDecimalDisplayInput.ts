@@ -6,10 +6,11 @@ export type DecimalDisplayInputConfig<T> = {
   formatBlur: (value: T) => string;
   formatEdit: (value: T) => string;
   sanitize: (input: string) => string;
-  onMidEdit: (sanitized: string) => void;
   commitOnBlur: (displayValue: string, currentValue: T) => T;
   onChange: (value: T) => void;
   onBlur?: () => void;
+  onFocus?: (event: FocusEvent<HTMLInputElement>) => void;
+  onPaste?: (event: ClipboardEvent<HTMLInputElement>) => void;
   mergePaste?: (
     display: string,
     start: number,
@@ -23,14 +24,18 @@ export const useDecimalDisplayInput = <T>({
   formatBlur,
   formatEdit,
   sanitize,
-  onMidEdit,
   commitOnBlur,
   onChange,
   onBlur,
+  onFocus,
+  onPaste,
   mergePaste,
 }: DecimalDisplayInputConfig<T>) => {
   const focused = useRef(false);
+  const displayValueRef = useRef('');
   const [displayValue, setDisplayValue] = useState(() => formatBlur(value));
+
+  displayValueRef.current = displayValue;
 
   useEffect(() => {
     if (!focused.current) {
@@ -38,60 +43,69 @@ export const useDecimalDisplayInput = <T>({
     }
   }, [value, formatBlur]);
 
-  const applyEditString = useCallback(
-    (edit: string): string => {
-      const next = sanitize(edit);
-      onMidEdit(next);
-      return next;
-    },
-    [sanitize, onMidEdit]
-  );
-
-  const handleChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      setDisplayValue(applyEditString(e.target.value));
-    },
-    [applyEditString]
-  );
-
-  const handlePaste = useCallback(
-    (e: ClipboardEvent<HTMLInputElement>) => {
-      if (!mergePaste) return;
-
-      e.preventDefault();
-      const input = e.currentTarget;
-      const start = input.selectionStart ?? 0;
-      const end = input.selectionEnd ?? 0;
-      setDisplayValue(
-        applyEditString(
-          mergePaste(displayValue, start, end, e.clipboardData.getData('text'))
-        )
-      );
-    },
-    [applyEditString, displayValue, mergePaste]
-  );
-
-  const handleFocus = useCallback(
-    (_e: FocusEvent<HTMLInputElement>) => {
-      focused.current = true;
-      setDisplayValue(formatEdit(value));
-    },
-    [formatEdit, value]
-  );
-
-  const handleBlur = useCallback(
-    (_e: FocusEvent<HTMLInputElement>) => {
-      focused.current = false;
-      const committed = commitOnBlur(displayValue, value);
+  const commitDisplay = useCallback(
+    (display: string) => {
+      const committed = commitOnBlur(display, value);
       const formatted = formatBlur(committed);
       if (committed !== value) {
         onChange(committed);
       }
       setDisplayValue(formatted);
-      onBlur?.();
+      return committed;
     },
-    [commitOnBlur, displayValue, formatBlur, onBlur, onChange, value]
+    [commitOnBlur, formatBlur, onChange, value]
   );
+
+  const flushPending = useCallback(() => {
+    if (!focused.current) return;
+    commitDisplay(displayValueRef.current);
+  }, [commitDisplay]);
+
+  const handleChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      setDisplayValue(sanitize(e.target.value));
+    },
+    [sanitize]
+  );
+
+  const handlePaste = useCallback(
+    (e: ClipboardEvent<HTMLInputElement>) => {
+      onPaste?.(e);
+      if (e.defaultPrevented || !mergePaste) return;
+
+      e.preventDefault();
+      const input = e.currentTarget;
+      const start = input.selectionStart ?? 0;
+      const end = input.selectionEnd ?? 0;
+      const currentDisplay = input.value;
+      setDisplayValue(
+        sanitize(
+          mergePaste(
+            currentDisplay,
+            start,
+            end,
+            e.clipboardData.getData('text')
+          )
+        )
+      );
+    },
+    [mergePaste, onPaste, sanitize]
+  );
+
+  const handleFocus = useCallback(
+    (e: FocusEvent<HTMLInputElement>) => {
+      focused.current = true;
+      setDisplayValue(formatEdit(value));
+      onFocus?.(e);
+    },
+    [formatEdit, onFocus, value]
+  );
+
+  const handleBlur = useCallback(() => {
+    focused.current = false;
+    commitDisplay(displayValueRef.current);
+    onBlur?.();
+  }, [commitDisplay, onBlur]);
 
   return {
     displayValue,
@@ -99,5 +113,6 @@ export const useDecimalDisplayInput = <T>({
     handlePaste: mergePaste ? handlePaste : undefined,
     handleFocus,
     handleBlur,
+    flushPending,
   };
 };

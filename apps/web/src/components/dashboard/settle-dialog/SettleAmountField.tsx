@@ -20,7 +20,6 @@ export const SettleAmountField = ({
     <CurrencyInput
       id="settle-amount"
       commitEmptyAs={0}
-      commitEmptyOnChange={0}
       aria-invalid={errors.length > 0}
       value={value > 0 ? value : undefined}
       onChange={(v) => onChange(v ?? 0)}

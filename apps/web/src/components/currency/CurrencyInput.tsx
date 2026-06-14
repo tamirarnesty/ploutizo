@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   InputGroup,
   InputGroupAddon,
@@ -8,15 +8,17 @@ import {
 import {
   centsToDollars,
   formatDollarsBlurDisplay,
+  getCurrencySymbol,
   isIncompleteDecimalEdit,
   mergeDecimalEditPaste,
   parseCurrencyInputToCents,
   sanitizeCurrencyPaste,
   sanitizeDecimalEditString,
-  tryParseDollarsFromEdit,
 } from '@ploutizo/utils/currency';
 import { useDecimalDisplayInput } from '@/components/currency/useDecimalDisplayInput';
-import type { ClipboardEvent, ComponentProps, FocusEvent } from 'react';
+import { useMoneyLocale } from '@/lib/money/money-locale';
+import { useRegisterInputFlush } from '@/lib/money/pending-input-flush';
+import type { ComponentProps } from 'react';
 
 export type CurrencyInputProps = Omit<
   ComponentProps<'input'>,
@@ -29,11 +31,6 @@ export type CurrencyInputProps = Omit<
   inputClassName?: string;
   /** Map empty blur to a number (e.g. settle form uses 0). Default: undefined */
   commitEmptyAs?: number;
-  /**
-   * When set, mid-edit empty input emits this value instead of undefined.
-   * Useful with settle forms where submit may occur before blur.
-   */
-  commitEmptyOnChange?: number;
 };
 
 const toEditDisplay = (dollars: number | undefined): string => {
@@ -48,28 +45,14 @@ export const CurrencyInput = ({
   className,
   inputClassName,
   commitEmptyAs,
-  commitEmptyOnChange,
   onFocus,
   onPaste,
   ...inputProps
 }: CurrencyInputProps) => {
-  const onMidEdit = useCallback(
-    (sanitized: string) => {
-      const parsed = tryParseDollarsFromEdit(sanitized);
-      if (parsed !== undefined) {
-        onChange(parsed);
-        return;
-      }
-      if (
-        commitEmptyOnChange !== undefined &&
-        isIncompleteDecimalEdit(sanitized)
-      ) {
-        onChange(commitEmptyOnChange);
-        return;
-      }
-      onChange(undefined);
-    },
-    [commitEmptyOnChange, onChange]
+  const { locale, currency } = useMoneyLocale();
+  const currencySymbol = useMemo(
+    () => getCurrencySymbol(locale, currency),
+    [currency, locale]
   );
 
   const commitOnBlur = useCallback(
@@ -77,57 +60,64 @@ export const CurrencyInput = ({
       display: string,
       _currentValue: number | undefined
     ): number | undefined => {
-      const sanitized = sanitizeDecimalEditString(display);
-      if (isIncompleteDecimalEdit(sanitized)) {
+      const sanitized = sanitizeDecimalEditString(display, locale);
+      if (isIncompleteDecimalEdit(sanitized, locale)) {
         return commitEmptyAs;
       }
-      return centsToDollars(parseCurrencyInputToCents(sanitized));
+      return centsToDollars(parseCurrencyInputToCents(sanitized, locale));
     },
-    [commitEmptyAs]
+    [commitEmptyAs, locale]
   );
 
-  const { displayValue, handleChange, handlePaste, handleFocus, handleBlur } =
-    useDecimalDisplayInput({
-      value,
-      formatBlur: formatDollarsBlurDisplay,
-      formatEdit: toEditDisplay,
-      sanitize: sanitizeDecimalEditString,
-      onMidEdit,
-      commitOnBlur,
-      onChange,
-      onBlur,
-      mergePaste: (display, start, end, pasted) =>
-        mergeDecimalEditPaste(
-          display,
-          start,
-          end,
-          pasted,
-          sanitizeCurrencyPaste
-        ),
-    });
-
-  const handleInputFocus = useCallback(
-    (event: FocusEvent<HTMLInputElement>) => {
-      handleFocus(event);
-      onFocus?.(event);
-    },
-    [handleFocus, onFocus]
+  const formatBlur = useCallback(
+    (dollars: number | undefined) => formatDollarsBlurDisplay(dollars, locale),
+    [locale]
   );
 
-  const handleInputPaste = useCallback(
-    (event: ClipboardEvent<HTMLInputElement>) => {
-      onPaste?.(event);
-      if (!event.defaultPrevented) {
-        handlePaste?.(event);
-      }
-    },
-    [handlePaste, onPaste]
+  const sanitize = useCallback(
+    (input: string) => sanitizeDecimalEditString(input, locale),
+    [locale]
   );
+
+  const mergePaste = useCallback(
+    (display: string, start: number, end: number, pasted: string) =>
+      mergeDecimalEditPaste(
+        display,
+        start,
+        end,
+        pasted,
+        sanitizeCurrencyPaste,
+        locale
+      ),
+    [locale]
+  );
+
+  const {
+    displayValue,
+    handleChange,
+    handlePaste,
+    handleFocus,
+    handleBlur,
+    flushPending,
+  } = useDecimalDisplayInput({
+    value,
+    formatBlur,
+    formatEdit: toEditDisplay,
+    sanitize,
+    commitOnBlur,
+    onChange,
+    onBlur,
+    onFocus,
+    onPaste,
+    mergePaste,
+  });
+
+  useRegisterInputFlush(flushPending);
 
   return (
     <InputGroup className={className}>
       <InputGroupAddon align="inline-start">
-        <InputGroupText>$</InputGroupText>
+        <InputGroupText>{currencySymbol}</InputGroupText>
       </InputGroupAddon>
       <InputGroupInput
         {...inputProps}
@@ -137,8 +127,8 @@ export const CurrencyInput = ({
         className={inputClassName}
         value={displayValue}
         onChange={handleChange}
-        onPaste={handleInputPaste}
-        onFocus={handleInputFocus}
+        onPaste={handlePaste}
+        onFocus={handleFocus}
         onBlur={handleBlur}
       />
     </InputGroup>
