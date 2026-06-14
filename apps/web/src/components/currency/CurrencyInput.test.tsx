@@ -232,6 +232,7 @@ describe('CurrencyInput', () => {
     await user.click(input);
     await user.clear(input);
     await user.type(input, '25.50');
+    expect(onChange).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Flush' }));
 
     expect(onChange).toHaveBeenLastCalledWith(25.5);

@@ -10,9 +10,48 @@ const percentageFromCents = (
   amountCents: number,
   totalCents: number
 ): number =>
-  totalCents > 0
+  totalCents !== 0
     ? parseFloat(((amountCents / totalCents) * 100).toFixed(3))
     : 0;
+
+const scaleByWeights = (
+  assignees: AssigneeSplitRow[],
+  weights: number[],
+  newTotalCents: number
+): AssigneeSplitRow[] => {
+  const weightTotal = weights.reduce((sum, weight) => sum + weight, 0);
+  if (weightTotal === 0) {
+    return lrmSplit(
+      newTotalCents,
+      assignees.map((row) => row.memberId)
+    );
+  }
+
+  const floors: number[] = [];
+  const remainders: { index: number; remainder: number }[] = [];
+
+  assignees.forEach((_row, index) => {
+    const ideal = (weights[index] / weightTotal) * newTotalCents;
+    const floor = Math.floor(ideal);
+    floors.push(floor);
+    remainders.push({ index, remainder: ideal - floor });
+  });
+
+  const allocated = floors.reduce((sum, cents) => sum + cents, 0);
+  const toDistribute = newTotalCents - allocated;
+  const cents = [...floors];
+
+  remainders.sort((a, b) => b.remainder - a.remainder);
+  for (let i = 0; i < toDistribute; i++) {
+    cents[remainders[i % remainders.length].index]++;
+  }
+
+  return assignees.map((row, index) => ({
+    memberId: row.memberId,
+    amountCents: cents[index],
+    percentage: percentageFromCents(cents[index], newTotalCents),
+  }));
+};
 
 /**
  * Scales assignee cent amounts proportionally when the transaction total changes.
@@ -34,34 +73,26 @@ export const scaleAssigneeSplitProportionally = (
 
   const oldTotal = assignees.reduce((sum, row) => sum + row.amountCents, 0);
   if (oldTotal === 0) {
+    const totalPercentage = assignees.reduce(
+      (sum, row) => sum + row.percentage,
+      0
+    );
+    if (totalPercentage > 0) {
+      return scaleByWeights(
+        assignees,
+        assignees.map((row) => row.percentage),
+        newTotalCents
+      );
+    }
     return lrmSplit(
       newTotalCents,
       assignees.map((row) => row.memberId)
     );
   }
 
-  const floors: number[] = [];
-  const remainders: { index: number; remainder: number }[] = [];
-
-  assignees.forEach((row, index) => {
-    const ideal = (row.amountCents / oldTotal) * newTotalCents;
-    const floor = Math.floor(ideal);
-    floors.push(floor);
-    remainders.push({ index, remainder: ideal - floor });
-  });
-
-  const allocated = floors.reduce((sum, cents) => sum + cents, 0);
-  const toDistribute = newTotalCents - allocated;
-  const cents = [...floors];
-
-  remainders.sort((a, b) => b.remainder - a.remainder);
-  for (let i = 0; i < toDistribute; i++) {
-    cents[remainders[i % remainders.length].index]++;
-  }
-
-  return assignees.map((row, index) => ({
-    memberId: row.memberId,
-    amountCents: cents[index],
-    percentage: percentageFromCents(cents[index], newTotalCents),
-  }));
+  return scaleByWeights(
+    assignees,
+    assignees.map((row) => row.amountCents),
+    newTotalCents
+  );
 };

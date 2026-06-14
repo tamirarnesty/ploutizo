@@ -64,4 +64,34 @@ describe('scaleAssigneeSplitProportionally', () => {
       { memberId: 'b', amountCents: 50, percentage: 50 },
     ]);
   });
+
+  it('uses preserved percentages when prior cent total was 0', () => {
+    const result = scaleAssigneeSplitProportionally(
+      [
+        { memberId: 'a', amountCents: 0, percentage: 60 },
+        { memberId: 'b', amountCents: 0, percentage: 40 },
+      ],
+      20000
+    );
+
+    expect(result).toEqual([
+      { memberId: 'a', amountCents: 12000, percentage: 60 },
+      { memberId: 'b', amountCents: 8000, percentage: 40 },
+    ]);
+  });
+
+  it('computes percentages for negative totals', () => {
+    const result = scaleAssigneeSplitProportionally(
+      [
+        { memberId: 'a', amountCents: -600, percentage: 0 },
+        { memberId: 'b', amountCents: -400, percentage: 0 },
+      ],
+      -1000
+    );
+
+    expect(result).toEqual([
+      { memberId: 'a', amountCents: -600, percentage: 60 },
+      { memberId: 'b', amountCents: -400, percentage: 40 },
+    ]);
+  });
 });

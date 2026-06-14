@@ -90,7 +90,6 @@ export const AssigneeSection = ({
       const next = current.map((row) => ({
         ...row,
         amountCents: 0,
-        percentage: 0,
       }));
       if (JSON.stringify(next) !== JSON.stringify(current)) {
         onChange(next);

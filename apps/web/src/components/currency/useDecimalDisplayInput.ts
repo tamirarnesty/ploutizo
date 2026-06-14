@@ -110,7 +110,7 @@ export const useDecimalDisplayInput = <T>({
   return {
     displayValue,
     handleChange,
-    handlePaste: mergePaste ? handlePaste : undefined,
+    handlePaste: onPaste || mergePaste ? handlePaste : undefined,
     handleFocus,
     handleBlur,
     flushPending,
