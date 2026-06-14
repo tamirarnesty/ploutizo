@@ -17,6 +17,7 @@ import { ThemeProvider } from '@ploutizo/ui/components/theme-provider';
 import { Toaster } from '@ploutizo/ui/components/sonner';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { queryClient, setTokenGetter } from '../lib/queryClient';
+import { MoneyLocaleProvider } from '../lib/money/money-locale';
 import { AppDevtools } from '../components/devtools/AppDevtools';
 import { NotFound } from '../components/not-found/NotFound';
 import { ErrorBoundary } from '../components/error-boundary/ErrorBoundary';
@@ -65,10 +66,12 @@ const RootDocument = ({ children }: { children: React.ReactNode }) => (
         <TooltipProvider delay={500}>
           <QueryClientProvider client={queryClient}>
             <ClerkProvider appearance={{ theme: shadcn }}>
-              <TokenInitializer />
-              {children}
-              <Toaster />
-              <AppDevtools />
+              <MoneyLocaleProvider>
+                <TokenInitializer />
+                {children}
+                <Toaster />
+                <AppDevtools />
+              </MoneyLocaleProvider>
             </ClerkProvider>
           </QueryClientProvider>
         </TooltipProvider>
