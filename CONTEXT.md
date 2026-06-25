@@ -11,17 +11,33 @@ The primary settlement model. A household member (or the shared bucket on a card
 _Avoid_: Member debt, pairwise balance, net settlement (as domain truth)
 
 **Settlement-scoped account**:
-A non-archived credit card account. Only these accounts participate in card balance, personal balance, shared balance, and settlement payments. Expenses and refunds on other account types (chequing, investment, etc.) are cash outflows or inflows in the ledger only — they do not create or change settlement balances. **Archived** credit cards are omitted from **card balances view** and cannot receive new settlements; historical transactions remain in the ledger.
+A non-archived credit card account. Only these accounts participate in card balance, personal balance, shared balance, and settlement payments. Expenses and refunds on non-credit-card cashflow account types are cash outflows or inflows in the ledger only — they do not create or change settlement balances. **Archived** credit cards are omitted from **card balances view** and cannot receive new settlements; historical transactions remain in the ledger.
 _Avoid_: Settleable account, balance account (too generic)
 
 ### Transaction routing (accounts)
+
+**Archived account**:
+An account that no longer accepts new activity after its archive date. Transactions dated on or before the archive date may remain valid history; transactions dated after the archive date must use an active account.
+_Avoid_: Treating archive as deleting historical account activity
+
+**Transaction account**:
+The account referenced by `accountId` on a transaction; it is the account the row is recorded against before any optional counterpart account. Its role depends on transaction type: for a **Settlement** it is the **settlement-scoped account** being paid down, while for **Transfer** and **Contribution** it is the source side.
+_Avoid_: Primary account, ledger activity account, account role
+
+**Counterpart account**:
+The account referenced by `counterpartAccountId` when a transaction has a second account. Its role depends on transaction type: for a **Transfer** it is the destination account, for a **Settlement** it is the funding account, and for a **Contribution** it is the investment destination.
+_Avoid_: Secondary account, to account, settled account, using source or destination as a universal term
+
+**Cashflow transaction account**:
+The **transaction account** for expenses, refunds, and income. Expense and refund cashflow may be recorded on chequing, savings, prepaid cash, e-transfer, and credit card accounts; income may be recorded only on non-credit-card cashflow accounts. Investment accounts do not record cashflow transactions — money into investments is a **Contribution**.
+_Avoid_: Investment expense, credit-card income, treating contribution as expense
 
 **Transfer**:
 An account-to-account move between non–credit-card accounts (e.g. chequing ↔ savings). Does not pay down a card and does not affect settlement balances. Card paydown is always **settlement**, not transfer.
 _Avoid_: Card payment, chequing-to-card transfer (for paydown)
 
 **Contribution**:
-Money into an investment account only. Funding source is chequing or savings — not a credit card. The `other` account type may act as source or destination per user choice until account types are consolidated.
+Money into an investment account only. Funding source is chequing or savings — not a credit card.
 _Avoid_: Card-funded contribution, contribution to a chequing account
 
 ### Import language
@@ -112,8 +128,8 @@ Every member of the organisation (`orgMembers`). All members are active for sett
 _Avoid_: Active member (implies a separate inactive set), former member
 
 **Settlement**:
-A transaction of type `settlement` that records paying down a credit card from a funding account (chequing, savings, investment, other, etc.). It is the explicit paydown type — not a generic `transfer`. Reduces obligation on the card (`accountId`); funding source is the counterpart account (`counterpartAccountId`). Distinct from the Settlement summary UI pane on the dashboard.
-_Avoid_: Payoff, payment (unless speaking generically), using `transfer` for card paydown
+A transaction of type `settlement` that records paying down a credit card from a chequing or savings funding account. It is the explicit paydown type — not a generic `transfer`. Reduces obligation on the card (`accountId`); funding source is the counterpart account (`counterpartAccountId`). Distinct from the Settlement summary UI pane on the dashboard.
+_Avoid_: Payoff, payment (unless speaking generically), using `transfer` for card paydown, funding settlement from cash/investment/credit card
 
 **Settlement assignees** (API):
 The list of household members on a settlement transaction — same attribution model as expenses and refunds. **One assignee** → **personal settlement** (reduces that member’s personal balance). **Two or more assignees** → **shared settlement** (reduces **shared balance**; server LRM split). A single-assignee settlement can never reduce shared. For shared settlements, assignees must match **shared participants** on that card (the members who appear on shared qualifying transactions there). Pay toward in the UI selects which settlement shape to create (which assignee set to send). `payerMemberId` is not used.
