@@ -50,6 +50,7 @@ export const importBatches = pgTable(
     index('import_batches_org_idx').on(t.orgId),
     index('import_batches_org_status_idx').on(t.orgId, t.status),
     index('import_batches_org_account_idx').on(t.orgId, t.accountId),
+    uniqueIndex('import_batches_id_org_id_idx').on(t.id, t.orgId),
     uniqueIndex('import_batches_one_active_draft_per_account_idx')
       .on(t.orgId, t.accountId)
       .where(sql`status = 'draft'`),

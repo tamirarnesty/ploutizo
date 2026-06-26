@@ -98,6 +98,23 @@ describe('parsePloutizoNormalizedCsv', () => {
     expect(parsed.rows[1].invalidReason).toContain('Amount must be');
   });
 
+  it('rejects amounts with misplaced dollar signs', () => {
+    const parsed = parsePloutizoNormalizedCsv(
+      [
+        'date,amount,description,type',
+        '2026-05-02,$42.18,Coffee,expense',
+        '2026-05-03,12$34.56,Tea,expense',
+        '2026-05-04,$$42.00,Water,expense',
+      ].join('\n')
+    );
+
+    expect(parsed.rows[0].parsedAmount).toBe(4218);
+    expect(parsed.rows[1].status).toBe('invalid');
+    expect(parsed.rows[1].invalidReason).toContain('Amount must be');
+    expect(parsed.rows[2].status).toBe('invalid');
+    expect(parsed.rows[2].invalidReason).toContain('Amount must be');
+  });
+
   it('rejects empty files and files with no importable rows', () => {
     expectImportError(() => parsePloutizoNormalizedCsv('  \n\n'), 'IMPORT_FILE_EMPTY');
     expectImportError(

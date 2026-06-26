@@ -178,7 +178,7 @@ export const Import = () => {
         targets={targets}
         targetsLoading={targetsLoading}
         activeDrafts={activeDrafts}
-        activeDraftsLoading={draftsLoading}
+        activeDraftsLoading={draftsLoading || draftsError}
         onDraftSelected={setSelectedDraftId}
       />
 

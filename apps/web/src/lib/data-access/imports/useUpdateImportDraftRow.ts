@@ -2,10 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ImportDraft, ImportDraftRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import { apiFetch } from '@/lib/queryClient';
-import {
-  patchImportDraftRow,
-  replaceImportDraftRow,
-} from './patchImportDraftCache';
+import { patchImportDraftRow } from './patchImportDraftCache';
 import { activeImportDraftsQueryKey, importDraftQueryKey } from './queryKeys';
 
 interface UpdateImportDraftRowVariables {
@@ -30,21 +27,13 @@ export const useUpdateImportDraftRow = () => {
       patchImportDraftRow(qc, draftId, rowId, body);
       return { previousDraft, draftId };
     },
-    onSuccess: (updatedRow, { draftId }) => {
-      replaceImportDraftRow(qc, draftId, updatedRow);
+    onSuccess: (_updatedRow, { draftId }) => {
+      void qc.invalidateQueries({ queryKey: importDraftQueryKey(draftId) });
       void qc.invalidateQueries({ queryKey: activeImportDraftsQueryKey });
     },
-    onError: (_error, { draftId, rowId }, context) => {
-      const previousRow = context?.previousDraft?.rows.find(
-        (row) => row.id === rowId
-      );
-      if (previousRow) {
-        replaceImportDraftRow(qc, draftId, previousRow);
-        return;
-      }
-      if (context?.previousDraft) {
-        qc.setQueryData(importDraftQueryKey(draftId), context.previousDraft);
-      }
+    onError: (_error, { draftId }) => {
+      void qc.invalidateQueries({ queryKey: importDraftQueryKey(draftId) });
+      void qc.invalidateQueries({ queryKey: activeImportDraftsQueryKey });
     },
   });
 };

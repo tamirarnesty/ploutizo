@@ -205,11 +205,9 @@ const parseIsoDate = (value: string | null): string | null => {
 
 const parseAmountCents = (value: string | null): number | null => {
   if (!value) return null;
-  const raw = value.trim().replace(/\$/g, '').trim();
-  const isPlain = /^\d+(\.\d{1,2})?$/.test(raw);
-  const isGrouped = /^\d{1,3}(,\d{3})+(\.\d{1,2})?$/.test(raw);
-  if (!isPlain && !isGrouped) return null;
-  const normalized = raw.replace(/,/g, '');
+  const raw = value.trim();
+  if (!/^\$?\s*(\d+|\d{1,3}(,\d{3})+)(\.\d{1,2})?$/.test(raw)) return null;
+  const normalized = raw.replace(/^\$\s*/, '').replace(/,/g, '');
   const [dollars, cents = ''] = normalized.split('.');
   const amount = Number(dollars) * 100 + Number(cents.padEnd(2, '0'));
   return Number.isSafeInteger(amount) && amount > 0 ? amount : null;

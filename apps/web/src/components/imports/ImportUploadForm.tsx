@@ -97,6 +97,7 @@ export const ImportUploadForm = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const createDraft = useCreateImportDraft();
+  const isCreatingDraft = createDraft.isPending;
   const firstTargetId = targets[0]?.id ?? '';
   const targetIds = useMemo(
     () => new Set(targets.map((target) => target.id)),
@@ -173,7 +174,9 @@ export const ImportUploadForm = ({
               >
                 <SelectTrigger
                   id="import-account"
-                  disabled={targetsLoading || targets.length === 0}
+                  disabled={
+                    isCreatingDraft || targetsLoading || targets.length === 0
+                  }
                 >
                   <SelectValue
                     placeholder={
@@ -217,6 +220,7 @@ export const ImportUploadForm = ({
                   accept={CSV_ACCEPT}
                   maxSize={MAX_NORMALIZED_IMPORT_BYTES}
                   disabled={
+                    isCreatingDraft ||
                     targetsLoading ||
                     activeDraftsLoading ||
                     activeDraft !== undefined
@@ -235,6 +239,7 @@ export const ImportUploadForm = ({
                     <Button
                       type="button"
                       variant="outline"
+                      disabled={isCreatingDraft}
                       onClick={() => onDraftSelected(activeDraft.id)}
                     >
                       <RotateCcw />
@@ -244,9 +249,12 @@ export const ImportUploadForm = ({
                     <LoadingButton
                       type="submit"
                       icon={<Upload />}
-                      loading={createDraft.isPending}
+                      loading={isCreatingDraft}
                       disabled={
-                        targetsLoading || activeDraftsLoading || !accountId
+                        isCreatingDraft ||
+                        targetsLoading ||
+                        activeDraftsLoading ||
+                        !accountId
                       }
                     >
                       Upload
