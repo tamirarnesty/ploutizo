@@ -1200,6 +1200,21 @@
           ],
           "onDelete": "cascade",
           "onUpdate": "no action"
+        },
+        "import_batch_rows_batch_org_fk": {
+          "name": "import_batch_rows_batch_org_fk",
+          "tableFrom": "import_batch_rows",
+          "tableTo": "import_batches",
+          "columnsFrom": [
+            "batch_id",
+            "org_id"
+          ],
+          "columnsTo": [
+            "id",
+            "org_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1380,6 +1395,27 @@
           ],
           "isUnique": true,
           "where": "status = 'draft'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "import_batches_id_org_id_idx": {
+          "name": "import_batches_id_org_id_idx",
+          "columns": [
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "org_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
           "concurrently": false,
           "method": "btree",
           "with": {}

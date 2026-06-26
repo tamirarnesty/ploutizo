@@ -53,6 +53,7 @@ WHERE ib."account_id" IS NULL
   );--> statement-breakpoint
 ALTER TABLE "import_batches" ALTER COLUMN "status" SET DEFAULT 'draft';--> statement-breakpoint
 ALTER TABLE "import_batch_rows" ADD CONSTRAINT "import_batch_rows_batch_id_import_batches_id_fk" FOREIGN KEY ("batch_id") REFERENCES "public"."import_batches"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "import_batches_id_org_id_idx" ON "import_batches" USING btree ("id","org_id");--> statement-breakpoint
 ALTER TABLE "import_batch_rows" ADD CONSTRAINT "import_batch_rows_batch_org_fk" FOREIGN KEY ("batch_id","org_id") REFERENCES "public"."import_batches"("id","org_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "import_batch_rows" ADD CONSTRAINT "import_batch_rows_org_id_orgs_id_fk" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "import_batch_rows_batch_idx" ON "import_batch_rows" USING btree ("batch_id");--> statement-breakpoint
