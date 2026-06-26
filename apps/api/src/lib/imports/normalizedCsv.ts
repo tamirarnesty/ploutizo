@@ -6,7 +6,7 @@ import {
   NORMALIZED_IMPORT_SOURCE,
 } from '@ploutizo/types';
 import { parseImportTags } from '@ploutizo/utils';
-import type { ImportDraftRow, TransactionType } from '@ploutizo/types';
+import type { ImportDraftRow, ImportTransactionType } from '@ploutizo/types';
 import { computeImportRowStatus } from './rowStatus';
 import { DomainError } from '@/lib/errors';
 
@@ -126,6 +126,18 @@ const parseCsvRecords = (content: string): CsvRecord[] => {
         i += 1;
       } else if (inQuotes) {
         inQuotes = false;
+        if (
+          next &&
+          next !== ',' &&
+          next !== '\n' &&
+          next !== '\r'
+        ) {
+          throw new DomainError(
+            400,
+            'The CSV file could not be read because a quoted field contains trailing characters.',
+            'IMPORT_FILE_CORRUPT'
+          );
+        }
       } else if (value.length === 0) {
         inQuotes = true;
       } else {
@@ -193,17 +205,20 @@ const parseIsoDate = (value: string | null): string | null => {
 
 const parseAmountCents = (value: string | null): number | null => {
   if (!value) return null;
-  const normalized = value.trim().replace(/[$,\s]/g, '');
-  if (!/^\d+(\.\d{1,2})?$/.test(normalized)) return null;
+  const raw = value.trim().replace(/\$/g, '').trim();
+  const isPlain = /^\d+(\.\d{1,2})?$/.test(raw);
+  const isGrouped = /^\d{1,3}(,\d{3})+(\.\d{1,2})?$/.test(raw);
+  if (!isPlain && !isGrouped) return null;
+  const normalized = raw.replace(/,/g, '');
   const [dollars, cents = ''] = normalized.split('.');
   const amount = Number(dollars) * 100 + Number(cents.padEnd(2, '0'));
   return Number.isSafeInteger(amount) && amount > 0 ? amount : null;
 };
 
-const parseType = (value: string | null): TransactionType | null => {
+const parseType = (value: string | null): ImportTransactionType | null => {
   const normalized = value?.trim().toLowerCase() ?? '';
   return IMPORT_TRANSACTION_TYPES.has(normalized)
-    ? (normalized as TransactionType)
+    ? (normalized as ImportTransactionType)
     : null;
 };
 

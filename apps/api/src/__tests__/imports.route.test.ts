@@ -68,6 +68,31 @@ describe('imports router', () => {
     );
   });
 
+  it('returns an existing draft when createNormalizedImportDraft reuses one', async () => {
+    vi.mocked(createNormalizedImportDraft).mockResolvedValue({
+      reusedExisting: true,
+      draft: { id: 'draft_1', rows: [] } as never,
+    });
+
+    const res = await app.request('/drafts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        accountId: '22222222-2222-4222-8222-222222222222',
+        fileName: 'statement.csv',
+        content: 'date,amount,description,type\n2026-05-02,42.18,Coffee,expense',
+      }),
+    });
+    const body = (await res.json()) as {
+      data: { id: string };
+      meta: { reusedExisting: boolean };
+    };
+
+    expect(res.status).toBe(200);
+    expect(body.meta.reusedExisting).toBe(true);
+    expect(body.data.id).toBe('draft_1');
+  });
+
   it('validates row patch payloads before updating a draft row', async () => {
     vi.mocked(updateImportDraftRow).mockResolvedValue({ id: 'row_1' } as never);
 

@@ -8,6 +8,7 @@
 import { sql } from 'drizzle-orm'
 import {
   date,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -94,5 +95,9 @@ export const importBatchRows = pgTable(
     index('import_batch_rows_batch_idx').on(t.batchId),
     index('import_batch_rows_org_idx').on(t.orgId),
     uniqueIndex('import_batch_rows_batch_row_number_idx').on(t.batchId, t.rowNumber),
+    foreignKey({
+      columns: [t.batchId, t.orgId],
+      foreignColumns: [importBatches.id, importBatches.orgId],
+    }).onDelete('cascade'),
   ]
 )

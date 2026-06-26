@@ -63,14 +63,19 @@ export const FileField = ({
         onChange(null);
         return;
       }
+      const rejectFile = (message: string) => {
+        onChange(null);
+        if (inputRef.current) inputRef.current.value = '';
+        onError?.(message);
+      };
       if (maxSize !== undefined && file.size > maxSize) {
-        onError?.(
+        rejectFile(
           `File "${file.name}" exceeds the maximum size of ${formatBytes(maxSize)}.`
         );
         return;
       }
       if (!isAcceptedFile(file, accept)) {
-        onError?.(`File "${file.name}" is not an accepted file type.`);
+        rejectFile(`File "${file.name}" is not an accepted file type.`);
         return;
       }
       onChange(file);

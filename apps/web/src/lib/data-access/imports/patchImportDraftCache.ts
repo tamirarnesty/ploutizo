@@ -57,7 +57,7 @@ export const replaceImportDraftRow = (
     (current) => {
       if (!current) return current;
       const rows = current.rows.map((row) =>
-        row.id === updatedRow.id ? updatedRow : row
+        row.id === updatedRow.id ? { ...row, ...updatedRow } : row
       );
       const counts = recomputeDraftCounts(rows);
       patchActiveDraftSummary(qc, draftId, counts);

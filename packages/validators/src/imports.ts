@@ -1,5 +1,4 @@
 import {
-  IMPORT_ROW_STATUS_VALUES,
   IMPORT_TRANSACTION_TYPE_VALUES,
 } from '@ploutizo/types'
 import { z } from 'zod'
@@ -14,7 +13,6 @@ export const createImportDraftSchema = z.object({
 
 export const updateImportDraftRowSchema = z
   .object({
-    status: z.enum(IMPORT_ROW_STATUS_VALUES).optional(),
     reviewDate: z.iso.date().nullable().optional(),
     reviewAmount: z.number().int().positive().nullable().optional(),
     reviewType: importTransactionTypeSchema.nullable().optional(),

@@ -73,12 +73,13 @@ vi.mock('@ploutizo/ui/components/loading-button', () => ({
     children,
     icon,
     loading,
+    disabled,
     ...props
   }: React.ComponentProps<'button'> & {
     icon?: React.ReactNode;
     loading?: boolean;
   }) => (
-    <button disabled={loading || props.disabled} {...props}>
+    <button {...props} disabled={loading || disabled}>
       {loading ? 'Loading ' : icon}
       {children}
     </button>

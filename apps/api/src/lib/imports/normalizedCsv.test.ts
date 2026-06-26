@@ -75,6 +75,29 @@ describe('parsePloutizoNormalizedCsv', () => {
     );
   });
 
+  it('rejects corrupt CSV with trailing characters after a quoted field', () => {
+    expectImportError(
+      () =>
+        parsePloutizoNormalizedCsv(
+          'date,amount,description,type\n2026-05-02,42.18,"Coffee"x,expense'
+        ),
+      'IMPORT_FILE_CORRUPT'
+    );
+  });
+
+  it('rejects malformed grouped amount tokens', () => {
+    const parsed = parsePloutizoNormalizedCsv(
+      [
+        'date,amount,description,type',
+        '2026-05-02,42.18,Coffee,expense',
+        '2026-05-03,"12,34.56",Tea,expense',
+      ].join('\n')
+    );
+
+    expect(parsed.rows[1].status).toBe('invalid');
+    expect(parsed.rows[1].invalidReason).toContain('Amount must be');
+  });
+
   it('rejects empty files and files with no importable rows', () => {
     expectImportError(() => parsePloutizoNormalizedCsv('  \n\n'), 'IMPORT_FILE_EMPTY');
     expectImportError(

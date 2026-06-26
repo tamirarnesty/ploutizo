@@ -59,8 +59,10 @@ export const AppSidebar = () => {
               {navItems.map(({ label, to, icon: Icon }) => {
                 const active =
                   location.pathname === to ||
+                  (to === '/transactions' &&
+                    location.pathname.startsWith('/transactions/')) ||
                   (to !== '/transactions' &&
-                    location.pathname.startsWith(to + '/'));
+                    location.pathname.startsWith(`${to}/`));
                 return (
                   <SidebarMenuItem key={to}>
                     <SidebarMenuButton

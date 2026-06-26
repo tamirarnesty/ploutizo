@@ -39,8 +39,21 @@ ALTER TABLE "import_batches" ADD COLUMN "completed_at" timestamp with time zone;
 ALTER TABLE "import_batches" ADD COLUMN "discarded_at" timestamp with time zone;--> statement-breakpoint
 ALTER TABLE "import_batches" ADD COLUMN "updated_at" timestamp with time zone DEFAULT now() NOT NULL;--> statement-breakpoint
 UPDATE "import_batches" SET "completed_at" = "imported_at", "valid_row_count" = "row_count" WHERE "account_id" IS NULL;--> statement-breakpoint
+UPDATE "import_batches" ib
+SET "account_id" = (
+  SELECT t."account_id"
+  FROM "transactions" t
+  WHERE t."import_batch_id" = ib."id"
+  ORDER BY t."created_at"
+  LIMIT 1
+)
+WHERE ib."account_id" IS NULL
+  AND EXISTS (
+    SELECT 1 FROM "transactions" t WHERE t."import_batch_id" = ib."id"
+  );--> statement-breakpoint
 ALTER TABLE "import_batches" ALTER COLUMN "status" SET DEFAULT 'draft';--> statement-breakpoint
 ALTER TABLE "import_batch_rows" ADD CONSTRAINT "import_batch_rows_batch_id_import_batches_id_fk" FOREIGN KEY ("batch_id") REFERENCES "public"."import_batches"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "import_batch_rows" ADD CONSTRAINT "import_batch_rows_batch_org_fk" FOREIGN KEY ("batch_id","org_id") REFERENCES "public"."import_batches"("id","org_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "import_batch_rows" ADD CONSTRAINT "import_batch_rows_org_id_orgs_id_fk" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "import_batch_rows_batch_idx" ON "import_batch_rows" USING btree ("batch_id");--> statement-breakpoint
 CREATE INDEX "import_batch_rows_org_idx" ON "import_batch_rows" USING btree ("org_id");--> statement-breakpoint

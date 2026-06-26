@@ -118,7 +118,15 @@ export const ImportUploadForm = ({
         setUploadError('Choose a CSV file first.');
         return;
       }
-      const content = await readCsvFile(selectedFile);
+      let content: string;
+      try {
+        content = await readCsvFile(selectedFile);
+      } catch (error) {
+        setUploadError(
+          getApiErrorMessage(error, "Couldn't read that CSV file.")
+        );
+        return;
+      }
       createDraft.mutate(
         { accountId: value.accountId, fileName: selectedFile.name, content },
         {

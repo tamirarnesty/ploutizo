@@ -1,10 +1,14 @@
 import { db } from '@ploutizo/db';
-import { NORMALIZED_IMPORT_EXAMPLE_CSV } from '@ploutizo/types';
+import {
+  IMPORT_TRANSACTION_TYPE_VALUES,
+  NORMALIZED_IMPORT_EXAMPLE_CSV,
+} from '@ploutizo/types';
 import type {
   ImportDraft,
   ImportDraftRow,
   ImportDraftSummary,
   ImportTargetAccount,
+  ImportTransactionType,
 } from '@ploutizo/types';
 import type {
   CreateImportDraftInput,
@@ -29,6 +33,17 @@ import {
 } from '@/lib/queries/imports';
 import { parsePloutizoNormalizedCsv } from '@/lib/imports/normalizedCsv';
 
+const isUniqueViolation = (error: unknown): boolean => {
+  let current: unknown = error;
+  while (current && typeof current === 'object') {
+    if ('code' in current && (current as { code: string }).code === '23505') {
+      return true;
+    }
+    current = 'cause' in current ? (current as { cause: unknown }).cause : null;
+  }
+  return false;
+};
+
 const toImportDraftSummary = (
   row: Awaited<ReturnType<typeof listActiveImportDraftSummaries>>[number]
 ): ImportDraftSummary => {
@@ -46,12 +61,23 @@ const toImportDraftSummary = (
   };
 };
 
+const toImportTransactionType = (
+  value: string | null | undefined
+): ImportTransactionType | null => {
+  if (!value) return null;
+  return (IMPORT_TRANSACTION_TYPE_VALUES as readonly string[]).includes(value)
+    ? (value as ImportTransactionType)
+    : null;
+};
+
 const toImportDraftRow = (
   row: Awaited<ReturnType<typeof listDraftRows>>[number]
 ): ImportDraftRow => ({
   ...row,
   parsedDate: row.parsedDate ?? null,
   reviewDate: row.reviewDate ?? null,
+  parsedType: toImportTransactionType(row.parsedType),
+  reviewType: toImportTransactionType(row.reviewType),
   createdAt: row.createdAt.toISOString(),
   updatedAt: row.updatedAt.toISOString(),
 });
@@ -105,32 +131,45 @@ export const createNormalizedImportDraft = async (
   }
 
   const parsed = parsePloutizoNormalizedCsv(input.content);
-  const draftId = await db.transaction(async (tx) => {
-    const batch = await insertImportBatch(tx, {
-      orgId,
-      accountId: input.accountId,
-      source: parsed.source,
-      status: 'draft',
-      fileName: input.fileName,
-      importedAt: new Date(),
-      rowCount: parsed.rowCount,
-      validRowCount: parsed.validRowCount,
-      invalidRowCount: parsed.invalidRowCount,
+
+  try {
+    const draftId = await db.transaction(async (tx) => {
+      const batch = await insertImportBatch(tx, {
+        orgId,
+        accountId: input.accountId,
+        source: parsed.source,
+        status: 'draft',
+        fileName: input.fileName,
+        importedAt: new Date(),
+        rowCount: parsed.rowCount,
+        validRowCount: parsed.validRowCount,
+        invalidRowCount: parsed.invalidRowCount,
+      });
+
+      await insertImportBatchRows(
+        tx,
+        parsed.rows.map((row) => ({
+          ...row,
+          orgId,
+          batchId: batch.id,
+        }))
+      );
+
+      return batch.id;
     });
 
-    await insertImportBatchRows(
-      tx,
-      parsed.rows.map((row) => ({
-        ...row,
-        orgId,
-        batchId: batch.id,
-      }))
-    );
+    return { draft: await getImportDraft(orgId, draftId), reusedExisting: false };
+  } catch (error) {
+    if (!isUniqueViolation(error)) throw error;
 
-    return batch.id;
-  });
+    const racedDraft = await fetchActiveDraftByAccount(orgId, input.accountId);
+    if (!racedDraft) throw error;
 
-  return { draft: await getImportDraft(orgId, draftId), reusedExisting: false };
+    return {
+      draft: await getImportDraft(orgId, racedDraft.id),
+      reusedExisting: true,
+    };
+  }
 };
 
 export const discardImportDraft = async (orgId: string, draftId: string) => {
@@ -150,8 +189,8 @@ export const updateImportDraftRow = async (
   const merged = { ...existing, ...input };
   const status = computeImportRowStatus({
     status: existing.status,
-    reviewType: merged.reviewType ?? null,
-    parsedType: merged.parsedType ?? null,
+    reviewType: toImportTransactionType(merged.reviewType),
+    parsedType: toImportTransactionType(merged.parsedType),
     reviewCategoryName: merged.reviewCategoryName ?? null,
   });
 
