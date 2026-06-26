@@ -1,4 +1,8 @@
-import type { ImportBatchStatus, ImportRowStatus, TransactionType } from './enums'
+import type {
+  ImportBatchStatus,
+  ImportRowStatus,
+  ImportTransactionType,
+} from './enums'
 
 export interface ImportTargetAccount {
   id: string
@@ -40,11 +44,11 @@ export interface ImportDraftRow {
   sourceType: string | null
   parsedDate: string | null
   parsedAmount: number | null
-  parsedType: TransactionType | null
+  parsedType: ImportTransactionType | null
   parsedDescription: string | null
   reviewDate: string | null
   reviewAmount: number | null
-  reviewType: TransactionType | null
+  reviewType: ImportTransactionType | null
   reviewDescription: string | null
   reviewCategoryName: string | null
   reviewAssigneeHint: string | null

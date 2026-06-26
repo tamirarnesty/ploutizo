@@ -132,6 +132,7 @@ describe('import service', () => {
     });
 
     expect(result.reusedExisting).toBe(false);
+    expect(db.transaction).toHaveBeenCalledTimes(1);
     expect(insertImportBatch).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
@@ -177,6 +178,21 @@ describe('import service', () => {
     expect(result.reusedExisting).toBe(true);
     expect(insertImportBatch).not.toHaveBeenCalled();
     expect(insertImportBatchRows).not.toHaveBeenCalled();
+  });
+
+  it('returns the raced draft when concurrent uploads hit the unique draft index', async () => {
+    vi.mocked(db.transaction).mockRejectedValueOnce({ code: '23505' });
+    vi.mocked(fetchActiveDraftByAccount).mockResolvedValueOnce(null);
+    vi.mocked(fetchActiveDraftByAccount).mockResolvedValueOnce(summaryRow);
+
+    const result = await createNormalizedImportDraft('org_1', {
+      accountId: summaryRow.accountId,
+      fileName: 'statement.csv',
+      content: 'date,amount,description,type\n2026-05-02,42.18,Coffee,expense',
+    });
+
+    expect(result.reusedExisting).toBe(true);
+    expect(result.draft.id).toBe(summaryRow.id);
   });
 
   it('recomputes row status to ready when category is patched onto a needs_review row', async () => {

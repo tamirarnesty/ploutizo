@@ -76,7 +76,7 @@ export const ImportDraftReviewRow = ({
         {row.reviewDate ?? row.sourceDate ?? '—'}
       </td>
       <td className="px-3 py-3 text-right align-top">
-        {row.reviewAmount
+        {row.reviewAmount != null
           ? formatCurrency(row.reviewAmount)
           : (row.sourceAmount ?? '—')}
       </td>

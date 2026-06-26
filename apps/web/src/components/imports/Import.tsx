@@ -90,12 +90,24 @@ const NoImportTargetsEmptyState = () => (
 );
 
 export const Import = () => {
-  const { data: targetsData, isLoading: targetsLoading } =
-    useGetImportTargets();
-  const { data: activeDraftsData, isLoading: draftsLoading } =
-    useGetImportDrafts();
-  const { data: historyData, isLoading: historyLoading } =
-    useGetImportHistory();
+  const targetsQuery = useGetImportTargets();
+  const draftsQuery = useGetImportDrafts();
+  const historyQuery = useGetImportHistory();
+  const {
+    data: targetsData,
+    isLoading: targetsLoading,
+    isError: targetsError,
+  } = targetsQuery;
+  const {
+    data: activeDraftsData,
+    isLoading: draftsLoading,
+    isError: draftsError,
+  } = draftsQuery;
+  const {
+    data: historyData,
+    isLoading: historyLoading,
+    isError: historyError,
+  } = historyQuery;
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
   const { data: selectedDraft, isLoading: draftLoading } =
     useGetImportDraft(selectedDraftId);
@@ -104,7 +116,6 @@ export const Import = () => {
   const targets = targetsData ?? [];
   const activeDrafts = activeDraftsData ?? [];
   const history = historyData ?? [];
-  const showImportWorkspace = targetsLoading || targets.length > 0;
   const selectedDraftSummary =
     activeDrafts.find((draft) => draft.id === selectedDraftId) ?? null;
 
@@ -117,10 +128,37 @@ export const Import = () => {
   const handleDiscard = (draftId: string) => {
     discardDraft.mutate(draftId, {
       onSuccess: () => {
-        if (selectedDraftId === draftId) setSelectedDraftId(null);
+        setSelectedDraftId((current) => (current === draftId ? null : current));
       },
     });
   };
+
+  if (targetsError) {
+    return (
+      <div className="space-y-8">
+        <Text as="h1" variant="h3">
+          Import
+        </Text>
+        <Text variant="error">
+          Couldn&apos;t load import targets. Check your connection and try
+          again.
+        </Text>
+      </div>
+    );
+  }
+
+  if (!targetsLoading && targets.length === 0) {
+    return (
+      <div className="space-y-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Text as="h1" variant="h3">
+            Import
+          </Text>
+        </div>
+        <NoImportTargetsEmptyState />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -136,49 +174,57 @@ export const Import = () => {
         </div>
       </div>
 
-      {showImportWorkspace ? (
-        <>
-          <ImportUploadForm
-            targets={targets}
-            targetsLoading={targetsLoading}
-            activeDrafts={activeDrafts}
-            activeDraftsLoading={draftsLoading}
-            onDraftSelected={setSelectedDraftId}
+      <ImportUploadForm
+        targets={targets}
+        targetsLoading={targetsLoading}
+        activeDrafts={activeDrafts}
+        activeDraftsLoading={draftsLoading}
+        onDraftSelected={setSelectedDraftId}
+      />
+
+      <section className="space-y-3">
+        <Text as="h2" variant="h3">
+          Active drafts
+        </Text>
+        {draftsError ? (
+          <Text variant="error">
+            Couldn&apos;t load active drafts. Check your connection and try
+            again.
+          </Text>
+        ) : (
+          <ImportDraftList
+            drafts={activeDrafts}
+            selectedDraftId={selectedDraftId}
+            discardingDraftId={discardDraft.variables}
+            isDiscarding={discardDraft.isPending}
+            isLoading={draftsLoading}
+            onSelect={setSelectedDraftId}
+            onDiscard={handleDiscard}
           />
+        )}
+      </section>
 
-          <section className="space-y-3">
-            <Text as="h2" variant="h3">
-              Active drafts
-            </Text>
-            <ImportDraftList
-              drafts={activeDrafts}
-              selectedDraftId={selectedDraftId}
-              discardingDraftId={discardDraft.variables}
-              isDiscarding={discardDraft.isPending}
-              isLoading={draftsLoading}
-              onSelect={setSelectedDraftId}
-              onDiscard={handleDiscard}
-            />
-          </section>
+      {selectedDraftId ? (
+        <ImportDraftReview
+          draft={selectedDraft}
+          summary={selectedDraftSummary}
+          isLoading={draftLoading || !selectedDraft}
+        />
+      ) : null}
 
-          {selectedDraftId ? (
-            <ImportDraftReview
-              draft={selectedDraft}
-              summary={selectedDraftSummary}
-              isLoading={draftLoading || !selectedDraft}
-            />
-          ) : null}
-
-          <section className="space-y-3">
-            <Text as="h2" variant="h3">
-              Recent history
-            </Text>
-            <ImportHistoryList history={history} isLoading={historyLoading} />
-          </section>
-        </>
-      ) : (
-        <NoImportTargetsEmptyState />
-      )}
+      <section className="space-y-3">
+        <Text as="h2" variant="h3">
+          Recent history
+        </Text>
+        {historyError ? (
+          <Text variant="error">
+            Couldn&apos;t load import history. Check your connection and try
+            again.
+          </Text>
+        ) : (
+          <ImportHistoryList history={history} isLoading={historyLoading} />
+        )}
+      </section>
     </div>
   );
 };

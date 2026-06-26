@@ -6,7 +6,7 @@ import {
   patchImportDraftRow,
   replaceImportDraftRow,
 } from './patchImportDraftCache';
-import { importDraftQueryKey } from './queryKeys';
+import { activeImportDraftsQueryKey, importDraftQueryKey } from './queryKeys';
 
 interface UpdateImportDraftRowVariables {
   draftId: string;
@@ -32,8 +32,16 @@ export const useUpdateImportDraftRow = () => {
     },
     onSuccess: (updatedRow, { draftId }) => {
       replaceImportDraftRow(qc, draftId, updatedRow);
+      void qc.invalidateQueries({ queryKey: activeImportDraftsQueryKey });
     },
-    onError: (_error, { draftId }, context) => {
+    onError: (_error, { draftId, rowId }, context) => {
+      const previousRow = context?.previousDraft?.rows.find(
+        (row) => row.id === rowId
+      );
+      if (previousRow) {
+        replaceImportDraftRow(qc, draftId, previousRow);
+        return;
+      }
       if (context?.previousDraft) {
         qc.setQueryData(importDraftQueryKey(draftId), context.previousDraft);
       }

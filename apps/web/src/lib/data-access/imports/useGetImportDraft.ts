@@ -14,6 +14,6 @@ export const useGetImportDraft = (
 ): UseQueryResult<ImportDraft> =>
   useQuery({
     queryKey: importDraftQueryKey(id),
-    queryFn: () => fetchImportDraft(id ?? ''),
-    enabled: id !== null,
+    queryFn: () => fetchImportDraft(id!),
+    enabled: Boolean(id),
   });
