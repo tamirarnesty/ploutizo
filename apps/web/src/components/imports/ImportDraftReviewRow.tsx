@@ -4,9 +4,9 @@ import { Input } from '@ploutizo/ui/components/input';
 import { Text } from '@ploutizo/ui/components/text';
 import { Textarea } from '@ploutizo/ui/components/textarea';
 import { parseImportTags } from '@ploutizo/utils';
+import { formatCurrency } from '@ploutizo/utils/currency';
 import type { ImportDraftRow } from '@ploutizo/types';
 import { useUpdateImportDraftRow } from '@/lib/data-access/imports';
-import { formatCurrency } from '@/lib/formatCurrency';
 import { importStatusVariant } from './importPresentation';
 
 interface ImportDraftReviewRowProps {

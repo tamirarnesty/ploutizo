@@ -106,7 +106,7 @@ describe('useTransactionForm pristine state on edit mount', () => {
       accounts
     );
 
-    await act(async () => {
+    act(() => {
       const field = result.current.form.getFieldInfo('description');
       if (locked && result.current.form.state.values.description !== locked) {
         result.current.form.setFieldValue('description', locked);
@@ -133,7 +133,7 @@ describe('useTransactionForm pristine state on edit mount', () => {
 
     const split = lrmSplit(1976, ['member-emily']);
 
-    await act(async () => {
+    act(() => {
       result.current.form.setFieldValue('assignees', split);
     });
 
