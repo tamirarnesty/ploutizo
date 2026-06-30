@@ -236,15 +236,25 @@ export const ImportUploadForm = ({
 
                 <div className="flex flex-wrap gap-2">
                   {activeDraft ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={isCreatingDraft}
-                      onClick={() => onDraftSelected(activeDraft.id)}
-                    >
-                      <RotateCcw />
-                      Continue
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <Button
+                            type="button"
+                            variant="outline"
+                            disabled={isCreatingDraft}
+                            onClick={() => onDraftSelected(activeDraft.id)}
+                          />
+                        }
+                      >
+                        <RotateCcw />
+                        Continue
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Continue reviewing the active draft for this credit
+                        card.
+                      </TooltipContent>
+                    </Tooltip>
                   ) : (
                     <LoadingButton
                       type="submit"

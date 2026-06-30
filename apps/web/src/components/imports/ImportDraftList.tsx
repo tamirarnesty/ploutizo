@@ -101,7 +101,7 @@ export const ImportDraftList = ({
             </Button>
             <LoadingButton
               type="button"
-              variant="outline"
+              variant="destructive"
               icon={<Trash2 />}
               loading={isDiscarding && discardingDraftId === draft.id}
               onClick={() => onDiscard(draft.id)}
