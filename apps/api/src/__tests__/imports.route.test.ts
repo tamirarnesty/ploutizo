@@ -57,7 +57,8 @@ describe('imports router', () => {
       body: JSON.stringify({
         accountId: '22222222-2222-4222-8222-222222222222',
         fileName: 'statement.csv',
-        content: 'date,amount,description,type\n2026-05-02,42.18,Coffee,expense',
+        content:
+          'date,amount,description,type\n2026-05-02,42.18,Coffee,expense',
       }),
     });
 
@@ -80,7 +81,8 @@ describe('imports router', () => {
       body: JSON.stringify({
         accountId: '22222222-2222-4222-8222-222222222222',
         fileName: 'statement.csv',
-        content: 'date,amount,description,type\n2026-05-02,42.18,Coffee,expense',
+        content:
+          'date,amount,description,type\n2026-05-02,42.18,Coffee,expense',
       }),
     });
     const body = (await res.json()) as {
@@ -118,6 +120,24 @@ describe('imports router', () => {
     expect(good.status).toBe(200);
     expect(updateImportDraftRow).toHaveBeenCalledWith('org_1', 'row_1', {
       reviewCategoryName: 'Groceries',
+    });
+  });
+
+  it('accepts row selection patch payloads', async () => {
+    vi.mocked(updateImportDraftRow).mockResolvedValue({
+      id: 'row_1',
+      selectedForImport: true,
+    } as never);
+
+    const res = await app.request('/rows/row_1', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ selectedForImport: true }),
+    });
+
+    expect(res.status).toBe(200);
+    expect(updateImportDraftRow).toHaveBeenCalledWith('org_1', 'row_1', {
+      selectedForImport: true,
     });
   });
 

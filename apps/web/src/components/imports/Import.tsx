@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { AlertCircle, CheckCircle2, CreditCard } from 'lucide-react';
 import { Badge } from '@ploutizo/ui/components/badge';
@@ -14,13 +13,11 @@ import {
 import { Text } from '@ploutizo/ui/components/text';
 import {
   useDiscardImportDraft,
-  useGetImportDraft,
   useGetImportDrafts,
   useGetImportHistory,
   useGetImportTargets,
 } from '@/lib/data-access/imports';
 import { ImportDraftList } from './ImportDraftList';
-import { ImportDraftReview } from './ImportDraftReview';
 import { ImportHistoryList } from './ImportHistoryList';
 import { ImportUploadForm } from './ImportUploadForm';
 
@@ -110,29 +107,14 @@ export const Import = () => {
     isLoading: historyLoading,
     isError: historyError,
   } = historyQuery;
-  const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
-  const { data: selectedDraft, isLoading: draftLoading } =
-    useGetImportDraft(selectedDraftId);
   const discardDraft = useDiscardImportDraft();
 
   const targets = targetsData ?? [];
   const activeDrafts = activeDraftsData ?? [];
   const history = historyData ?? [];
-  const selectedDraftSummary =
-    activeDrafts.find((draft) => draft.id === selectedDraftId) ?? null;
-
-  useEffect(() => {
-    if (selectedDraftId && !draftLoading && !selectedDraft) {
-      setSelectedDraftId(null);
-    }
-  }, [selectedDraftId, draftLoading, selectedDraft]);
 
   const handleDiscard = (draftId: string) => {
-    discardDraft.mutate(draftId, {
-      onSuccess: () => {
-        setSelectedDraftId((current) => (current === draftId ? null : current));
-      },
-    });
+    discardDraft.mutate(draftId);
   };
 
   if (targetsError) {
@@ -181,7 +163,6 @@ export const Import = () => {
         targetsLoading={targetsLoading}
         activeDrafts={activeDrafts}
         activeDraftsLoading={draftsLoading || draftsError}
-        onDraftSelected={setSelectedDraftId}
       />
 
       <section className="space-y-3">
@@ -196,23 +177,13 @@ export const Import = () => {
         ) : (
           <ImportDraftList
             drafts={activeDrafts}
-            selectedDraftId={selectedDraftId}
             discardingDraftId={discardDraft.variables}
             isDiscarding={discardDraft.isPending}
             isLoading={draftsLoading}
-            onSelect={setSelectedDraftId}
             onDiscard={handleDiscard}
           />
         )}
       </section>
-
-      {selectedDraftId ? (
-        <ImportDraftReview
-          draft={selectedDraft}
-          summary={selectedDraftSummary}
-          isLoading={draftLoading || !selectedDraft}
-        />
-      ) : null}
 
       <section className="space-y-3">
         <Text as="h2" variant="h3">

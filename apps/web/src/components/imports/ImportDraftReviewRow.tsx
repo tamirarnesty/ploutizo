@@ -1,63 +1,102 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { DatePicker } from '@ploutizo/ui/components/date-picker';
 import { Badge } from '@ploutizo/ui/components/badge';
+import { Checkbox } from '@ploutizo/ui/components/checkbox';
 import { Input } from '@ploutizo/ui/components/input';
 import { Text } from '@ploutizo/ui/components/text';
 import { Textarea } from '@ploutizo/ui/components/textarea';
-import { parseImportTags } from '@ploutizo/utils';
-import { formatCurrency } from '@ploutizo/utils/currency';
-import type { ImportDraftRow } from '@ploutizo/types';
+import { cn } from '@ploutizo/ui/lib/utils';
+import { centsToDollars, dollarsToCents } from '@ploutizo/utils/currency';
+import type { ImportDraftRow, OrgMember } from '@ploutizo/types';
+import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
+import { CategorySelect } from '@/components/categories/CategorySelect';
+import { CurrencyInput } from '@/components/currency/CurrencyInput';
+import type { Category } from '@/lib/data-access/categories';
 import { useUpdateImportDraftRow } from '@/lib/data-access/imports';
-import { importStatusVariant } from './importPresentation';
+import { ImportAssigneeField } from './ImportAssigneeField';
+import { ImportReviewTagPicker } from './ImportReviewTagPicker';
+import {
+  importStatusVariant,
+  renderImportTransactionTypeBadgeProps,
+  resolveCategoryIdByName,
+  resolveImportRowType,
+} from './importPresentation';
+
+const ImportTransactionTypeBadge = ({ row }: { row: ImportDraftRow }) => {
+  const type = resolveImportRowType(row);
+  if (!type) {
+    return row.sourceType ?? '—';
+  }
+
+  const { label, variant, className } =
+    renderImportTransactionTypeBadgeProps(type);
+
+  return variant ? (
+    <Badge variant={variant} className={className}>
+      {label}
+    </Badge>
+  ) : (
+    <Badge className={className}>{label}</Badge>
+  );
+};
 
 interface ImportDraftReviewRowProps {
   draftId: string;
   row: ImportDraftRow;
+  categories: Category[];
+  orgMembers: OrgMember[];
+  selectable: boolean;
+  onSelectionChange: (selectedForImport: boolean) => void;
 }
-
-type StringReviewField =
-  | 'reviewDescription'
-  | 'reviewCategoryName'
-  | 'reviewAssigneeHint'
-  | 'reviewNotes';
 
 export const ImportDraftReviewRow = ({
   draftId,
   row,
+  categories,
+  orgMembers,
+  selectable,
+  onSelectionChange,
 }: ImportDraftReviewRowProps) => {
   const updateRow = useUpdateImportDraftRow();
   const rowKey = `${row.id}:${row.updatedAt}`;
   const disabled = row.status === 'invalid';
 
   const [description, setDescription] = useState(row.reviewDescription ?? '');
-  const [category, setCategory] = useState(row.reviewCategoryName ?? '');
-  const [assignee, setAssignee] = useState(row.reviewAssigneeHint ?? '');
   const [notes, setNotes] = useState(row.reviewNotes ?? '');
-  const [tags, setTags] = useState(row.reviewTags.join('; '));
+  const [amount, setAmount] = useState<number | undefined>(() =>
+    row.reviewAmount != null ? centsToDollars(row.reviewAmount) : undefined
+  );
+
+  const categoryId = useMemo(
+    () => resolveCategoryIdByName(row.reviewCategoryName, categories),
+    [categories, row.reviewCategoryName]
+  );
 
   useEffect(() => {
     setDescription(row.reviewDescription ?? '');
-    setCategory(row.reviewCategoryName ?? '');
-    setAssignee(row.reviewAssigneeHint ?? '');
     setNotes(row.reviewNotes ?? '');
-    setTags(row.reviewTags.join('; '));
+    setAmount(
+      row.reviewAmount != null ? centsToDollars(row.reviewAmount) : undefined
+    );
   }, [rowKey]);
 
-  const saveStringField = (field: StringReviewField, value: string) => {
-    const next = value.trim() || null;
-    if (next === row[field]) return;
-    updateRow.mutate({ draftId, rowId: row.id, body: { [field]: next } });
+  const saveField = (body: UpdateImportDraftRowInput) => {
+    updateRow.mutate({ draftId, rowId: row.id, body });
   };
 
-  const saveTags = (value: string) => {
-    const next = parseImportTags(value);
-    if (next.join('|') === row.reviewTags.join('|')) return;
-    updateRow.mutate({ draftId, rowId: row.id, body: { reviewTags: next } });
-  };
+  const reviewDate = row.reviewDate ?? row.parsedDate ?? '';
 
   return (
     <tr className="border-b border-border last:border-0">
-      <td className="px-3 py-3 align-top font-mono text-xs text-muted-foreground">
-        {row.rowNumber}
+      <td className="px-3 py-3 align-top">
+        <Checkbox
+          aria-label={`Select ${row.reviewDescription ?? row.sourceDescription ?? 'import row'}`}
+          checked={row.selectedForImport}
+          disabled={!selectable}
+          onCheckedChange={(checked) => {
+            onSelectionChange(checked === true);
+          }}
+        />
       </td>
       <td className="px-3 py-3 align-top">
         <Badge variant={importStatusVariant(row.status)}>
@@ -73,24 +112,49 @@ export const ImportDraftReviewRow = ({
         ) : null}
       </td>
       <td className="px-3 py-3 align-top">
-        {row.reviewDate ?? row.sourceDate ?? '—'}
-      </td>
-      <td className="px-3 py-3 text-right align-top">
-        {row.reviewAmount != null
-          ? formatCurrency(row.reviewAmount)
-          : (row.sourceAmount ?? '—')}
+        <DatePicker
+          id={`import-row-date-${row.id}`}
+          value={reviewDate || undefined}
+          disabled={disabled}
+          onChange={(nextDate) => {
+            if (nextDate === row.reviewDate) return;
+            saveField({ reviewDate: nextDate });
+          }}
+        />
       </td>
       <td className="px-3 py-3 align-top">
-        {row.reviewType ?? row.sourceType ?? '—'}
+        <CurrencyInput
+          id={`import-row-amount-${row.id}`}
+          className="min-w-[120px]"
+          disabled={disabled}
+          value={amount}
+          onChange={setAmount}
+          onBlur={() => {
+            if (amount === undefined || !Number.isFinite(amount)) {
+              if (row.reviewAmount === null) return;
+              saveField({ reviewAmount: null });
+              return;
+            }
+            const nextAmount = dollarsToCents(amount);
+            if (nextAmount === row.reviewAmount) return;
+            saveField({ reviewAmount: nextAmount });
+          }}
+        />
+      </td>
+      <td className="px-3 py-3 align-top">
+        <ImportTransactionTypeBadge row={row} />
       </td>
       <td className="px-3 py-3 align-top">
         <Input
           value={description}
           disabled={disabled}
+          autoComplete="off"
           onChange={(event) => setDescription(event.currentTarget.value)}
-          onBlur={(event) =>
-            saveStringField('reviewDescription', event.currentTarget.value)
-          }
+          onBlur={(event) => {
+            const next = event.currentTarget.value.trim() || null;
+            if (next === row.reviewDescription) return;
+            saveField({ reviewDescription: next });
+          }}
         />
         <details className="mt-2 text-xs text-muted-foreground">
           <summary>Source</summary>
@@ -100,43 +164,58 @@ export const ImportDraftReviewRow = ({
         </details>
       </td>
       <td className="px-3 py-3 align-top">
-        <Input
-          value={category}
+        <CategorySelect
+          id={`import-row-category-${row.id}`}
+          categories={categories}
+          value={categoryId}
           disabled={disabled}
-          onChange={(event) => setCategory(event.currentTarget.value)}
-          onBlur={(event) =>
-            saveStringField('reviewCategoryName', event.currentTarget.value)
-          }
+          onValueChange={(nextCategoryId) => {
+            const category = categories.find(
+              (option) => option.id === nextCategoryId
+            );
+            const nextName = category?.name ?? null;
+            if (nextName === row.reviewCategoryName) return;
+            saveField({ reviewCategoryName: nextName });
+          }}
         />
       </td>
       <td className="px-3 py-3 align-top">
-        <Input
-          value={assignee}
+        <ImportAssigneeField
+          row={row}
+          orgMembers={orgMembers}
           disabled={disabled}
-          onChange={(event) => setAssignee(event.currentTarget.value)}
-          onBlur={(event) =>
-            saveStringField('reviewAssigneeHint', event.currentTarget.value)
-          }
+          onSave={(assigneeHint) => {
+            if (assigneeHint === row.reviewAssigneeHint) return;
+            saveField({ reviewAssigneeHint: assigneeHint });
+          }}
         />
       </td>
       <td className="px-3 py-3 align-top">
         <Textarea
           value={notes}
           disabled={disabled}
-          className="min-h-9"
+          rows={2}
+          className="min-h-9 resize-none"
+          autoComplete="off"
+          placeholder="Add a note…"
           onChange={(event) => setNotes(event.currentTarget.value)}
-          onBlur={(event) =>
-            saveStringField('reviewNotes', event.currentTarget.value)
-          }
+          onBlur={(event) => {
+            const next = event.currentTarget.value.trim() || null;
+            if (next === row.reviewNotes) return;
+            saveField({ reviewNotes: next });
+          }}
         />
       </td>
       <td className="px-3 py-3 align-top">
-        <Input
-          value={tags}
-          disabled={disabled}
-          onChange={(event) => setTags(event.currentTarget.value)}
-          onBlur={(event) => saveTags(event.currentTarget.value)}
-        />
+        <div className={cn(disabled && 'pointer-events-none opacity-50')}>
+          <ImportReviewTagPicker
+            value={row.reviewTags}
+            onChange={(nextTags) => {
+              if (nextTags.join('|') === row.reviewTags.join('|')) return;
+              saveField({ reviewTags: nextTags });
+            }}
+          />
+        </div>
       </td>
     </tr>
   );

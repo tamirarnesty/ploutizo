@@ -5,8 +5,9 @@
  * Transactions imported from a batch carry a non-null import_batch_id.
  * Manually-created transactions have import_batch_id = NULL.
  */
-import { sql } from 'drizzle-orm'
+import { sql } from 'drizzle-orm';
 import {
+  boolean,
   date,
   foreignKey,
   index,
@@ -17,16 +18,22 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
-} from 'drizzle-orm/pg-core'
+} from 'drizzle-orm/pg-core';
 
-import { accounts } from './accounts'
-import { orgs } from './auth'
-import { importBatchStatusEnum, importRowStatusEnum, transactionTypeEnum } from './enums'
+import { accounts } from './accounts';
+import { orgs } from './auth';
+import {
+  importBatchStatusEnum,
+  importRowStatusEnum,
+  transactionTypeEnum,
+} from './enums';
 
 export const importBatches = pgTable(
   'import_batches',
   {
-    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     orgId: text('org_id')
       .notNull()
       .references(() => orgs.id, { onDelete: 'cascade' }),
@@ -43,8 +50,12 @@ export const importBatches = pgTable(
     invalidRowCount: integer('invalid_row_count').notNull().default(0),
     completedAt: timestamp('completed_at', { withTimezone: true }),
     discardedAt: timestamp('discarded_at', { withTimezone: true }),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     index('import_batches_org_idx').on(t.orgId),
@@ -55,12 +66,14 @@ export const importBatches = pgTable(
       .on(t.orgId, t.accountId)
       .where(sql`status = 'draft'`),
   ]
-)
+);
 
 export const importBatchRows = pgTable(
   'import_batch_rows',
   {
-    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     batchId: uuid('batch_id')
       .notNull()
       .references(() => importBatches.id, { onDelete: 'cascade' }),
@@ -89,16 +102,24 @@ export const importBatchRows = pgTable(
     reviewRefundLinkHint: text('review_refund_link_hint'),
     reviewNotes: text('review_notes'),
     reviewTags: jsonb('review_tags').$type<string[]>().notNull().default([]),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    selectedForImport: boolean('selected_for_import').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     index('import_batch_rows_batch_idx').on(t.batchId),
     index('import_batch_rows_org_idx').on(t.orgId),
-    uniqueIndex('import_batch_rows_batch_row_number_idx').on(t.batchId, t.rowNumber),
+    uniqueIndex('import_batch_rows_batch_row_number_idx').on(
+      t.batchId,
+      t.rowNumber
+    ),
     foreignKey({
       columns: [t.batchId, t.orgId],
       foreignColumns: [importBatches.id, importBatches.orgId],
     }).onDelete('cascade'),
   ]
-)
+);

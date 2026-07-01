@@ -3,24 +3,34 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   useDiscardImportDraft,
-  useGetImportDraft,
   useGetImportDrafts,
   useGetImportHistory,
   useGetImportTargets,
-  useUpdateImportDraftRow,
 } from '@/lib/data-access/imports';
 import { Import } from './Import';
 
 const importMocks = vi.hoisted(() => ({
   createImportDraftMutate: vi.fn(),
+  navigate: vi.fn(),
   toastInfo: vi.fn(),
   toastSuccess: vi.fn(),
 }));
 
 vi.mock('@tanstack/react-router', () => ({
-  Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
-    <a href={to}>{children}</a>
+  Link: ({
+    children,
+    to,
+    params,
+  }: {
+    children: React.ReactNode;
+    to: string;
+    params?: { draftId?: string };
+  }) => (
+    <a href={params?.draftId ? to.replace('$draftId', params.draftId) : to}>
+      {children}
+    </a>
   ),
+  useNavigate: () => importMocks.navigate,
 }));
 
 vi.mock('@ploutizo/ui/components/sonner', () => ({
@@ -92,11 +102,9 @@ vi.mock('@/lib/data-access/imports', () => ({
     isPending: false,
   }),
   useDiscardImportDraft: vi.fn(),
-  useGetImportDraft: vi.fn(),
   useGetImportDrafts: vi.fn(),
   useGetImportHistory: vi.fn(),
   useGetImportTargets: vi.fn(),
-  useUpdateImportDraftRow: vi.fn(),
 }));
 
 const draftSummary = {
@@ -118,76 +126,12 @@ const draftSummary = {
   updatedAt: '2026-05-20T12:00:00.000Z',
 };
 
-const draft = {
-  ...draftSummary,
-  rows: [
-    {
-      id: 'row_1',
-      batchId: 'draft_1',
-      rowNumber: 2,
-      status: 'ready' as const,
-      invalidReason: null,
-      rawData: { date: '2026-05-02', description: 'Coffee' },
-      externalId: 'visa-1001',
-      sourceDate: '2026-05-02',
-      sourceAmount: '42.18',
-      sourceDescription: 'Coffee',
-      sourceType: 'expense',
-      parsedDate: '2026-05-02',
-      parsedAmount: 4218,
-      parsedType: 'expense' as const,
-      parsedDescription: 'Coffee',
-      reviewDate: '2026-05-02',
-      reviewAmount: 4218,
-      reviewType: 'expense' as const,
-      reviewDescription: 'Coffee',
-      reviewCategoryName: 'Dining',
-      reviewAssigneeHint: null,
-      reviewRefundLinkHint: null,
-      reviewNotes: null,
-      reviewTags: [],
-      createdAt: '2026-05-20T12:00:00.000Z',
-      updatedAt: '2026-05-20T12:00:00.000Z',
-    },
-    {
-      id: 'row_2',
-      batchId: 'draft_1',
-      rowNumber: 3,
-      status: 'invalid' as const,
-      invalidReason: 'Date must be a valid YYYY-MM-DD value.',
-      rawData: { date: 'bad', amount: 'nope' },
-      externalId: null,
-      sourceDate: 'bad',
-      sourceAmount: 'nope',
-      sourceDescription: null,
-      sourceType: 'wat',
-      parsedDate: null,
-      parsedAmount: null,
-      parsedType: null,
-      parsedDescription: null,
-      reviewDate: null,
-      reviewAmount: null,
-      reviewType: null,
-      reviewDescription: null,
-      reviewCategoryName: null,
-      reviewAssigneeHint: null,
-      reviewRefundLinkHint: null,
-      reviewNotes: null,
-      reviewTags: [],
-      createdAt: '2026-05-20T12:00:00.000Z',
-      updatedAt: '2026-05-20T12:00:00.000Z',
-    },
-  ],
-};
-
 const setImportPageData = ({
   activeDrafts = [],
-  selectedDraft,
   discardPending = false,
   discardingDraftId,
 }: {
   activeDrafts?: (typeof draftSummary)[];
-  selectedDraft?: typeof draft;
   discardPending?: boolean;
   discardingDraftId?: string;
 } = {}) => {
@@ -210,23 +154,17 @@ const setImportPageData = ({
     data: [],
     isLoading: false,
   } as never);
-  vi.mocked(useGetImportDraft).mockReturnValue({
-    data: selectedDraft,
-    isLoading: false,
-  } as never);
   vi.mocked(useDiscardImportDraft).mockReturnValue({
     mutate: vi.fn(),
     isPending: discardPending,
     variables: discardingDraftId,
-  } as never);
-  vi.mocked(useUpdateImportDraftRow).mockReturnValue({
-    mutate: vi.fn(),
   } as never);
 };
 
 describe('Import', () => {
   beforeEach(() => {
     importMocks.createImportDraftMutate.mockReset();
+    importMocks.navigate.mockReset();
     importMocks.toastInfo.mockReset();
     importMocks.toastSuccess.mockReset();
     Object.defineProperty(URL, 'createObjectURL', {
@@ -252,16 +190,9 @@ describe('Import', () => {
       data: [],
       isLoading: false,
     } as never);
-    vi.mocked(useGetImportDraft).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-    } as never);
     vi.mocked(useDiscardImportDraft).mockReturnValue({
       mutate: vi.fn(),
       isPending: false,
-    } as never);
-    vi.mocked(useUpdateImportDraftRow).mockReturnValue({
-      mutate: vi.fn(),
     } as never);
 
     render(<Import />);
@@ -287,16 +218,9 @@ describe('Import', () => {
       data: undefined,
       isLoading: true,
     } as never);
-    vi.mocked(useGetImportDraft).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-    } as never);
     vi.mocked(useDiscardImportDraft).mockReturnValue({
       mutate: vi.fn(),
       isPending: false,
-    } as never);
-    vi.mocked(useUpdateImportDraftRow).mockReturnValue({
-      mutate: vi.fn(),
     } as never);
 
     render(<Import />);
@@ -331,16 +255,9 @@ describe('Import', () => {
       data: [],
       isLoading: false,
     } as never);
-    vi.mocked(useGetImportDraft).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-    } as never);
     vi.mocked(useDiscardImportDraft).mockReturnValue({
       mutate: vi.fn(),
       isPending: false,
-    } as never);
-    vi.mocked(useUpdateImportDraftRow).mockReturnValue({
-      mutate: vi.fn(),
     } as never);
 
     render(<Import />);
@@ -394,58 +311,48 @@ describe('Import', () => {
     );
   });
 
-  it('reviews invalid rows and persists edited review fields', async () => {
+  it('navigates to the review route after upload success', async () => {
     const user = userEvent.setup();
-    const updateRow = vi.fn();
-    vi.mocked(useGetImportTargets).mockReturnValue({
-      data: [
-        {
-          id: 'acct_1',
-          name: 'Visa',
-          institution: 'TD',
-          lastFour: '1234',
-        },
-      ],
-      isLoading: false,
-    } as never);
-    vi.mocked(useGetImportDrafts).mockReturnValue({
-      data: [draftSummary],
-      isLoading: false,
-    } as never);
-    vi.mocked(useGetImportHistory).mockReturnValue({
-      data: [],
-      isLoading: false,
-    } as never);
-    vi.mocked(useGetImportDraft).mockReturnValue({
-      data: draft,
-      isLoading: false,
-    } as never);
-    vi.mocked(useDiscardImportDraft).mockReturnValue({
-      mutate: vi.fn(),
-      isPending: false,
-    } as never);
-    vi.mocked(useUpdateImportDraftRow).mockReturnValue({
-      mutate: updateRow,
-    } as never);
+    setImportPageData();
+
+    importMocks.createImportDraftMutate.mockImplementation(
+      (_payload, options) => {
+        options?.onSuccess?.({
+          data: { id: 'draft_1' },
+          meta: { reusedExisting: false },
+        });
+      }
+    );
 
     render(<Import />);
 
-    await user.click(screen.getAllByRole('button', { name: /continue/i })[0]);
+    const content =
+      'date,amount,description,type\n2026-05-02,42.18,Coffee,expense';
+    const file = new File([content], 'statement.csv', { type: 'text/csv' });
 
+    await user.upload(screen.getByLabelText('CSV file'), file);
+    await user.click(screen.getByRole('button', { name: 'Upload' }));
+
+    await waitFor(() =>
+      expect(importMocks.navigate).toHaveBeenCalledWith({
+        to: '/transactions/import/$draftId',
+        params: { draftId: 'draft_1' },
+      })
+    );
+  });
+
+  it('links active draft cards to the review route', () => {
+    setImportPageData({ activeDrafts: [draftSummary] });
+
+    render(<Import />);
+
+    expect(screen.getByRole('link', { name: /continue/i })).toHaveAttribute(
+      'href',
+      '/transactions/import/draft_1'
+    );
     expect(
-      screen.getByText('Date must be a valid YYYY-MM-DD value.')
-    ).toBeInTheDocument();
-
-    const descriptionInput = screen.getByDisplayValue('Coffee');
-    await user.clear(descriptionInput);
-    await user.type(descriptionInput, 'Coffee shop');
-    await user.tab();
-
-    expect(updateRow).toHaveBeenCalledWith({
-      draftId: 'draft_1',
-      rowId: 'row_1',
-      body: { reviewDescription: 'Coffee shop' },
-    });
+      screen.queryByText('Date must be a valid YYYY-MM-DD value.')
+    ).not.toBeInTheDocument();
   });
 
   it('shows loading only on the draft being discarded', () => {

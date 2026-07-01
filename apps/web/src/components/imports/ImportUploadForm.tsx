@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import { Download, FileText, RotateCcw, Upload } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import { Field, FieldLabel } from '@ploutizo/ui/components/field';
@@ -38,7 +39,6 @@ interface ImportUploadFormProps {
   targetsLoading?: boolean;
   activeDrafts: ImportDraftSummary[];
   activeDraftsLoading?: boolean;
-  onDraftSelected: (draftId: string) => void;
 }
 
 export const ImportHelpActions = () => {
@@ -92,8 +92,8 @@ export const ImportUploadForm = ({
   targetsLoading = false,
   activeDrafts,
   activeDraftsLoading = false,
-  onDraftSelected,
 }: ImportUploadFormProps) => {
+  const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const createDraft = useCreateImportDraft();
@@ -109,6 +109,13 @@ export const ImportUploadForm = ({
     for (const draft of activeDrafts) map.set(draft.accountId, draft);
     return map;
   }, [activeDrafts]);
+
+  const goToDraftReview = (draftId: string) => {
+    void navigate({
+      to: '/transactions/import/$draftId',
+      params: { draftId },
+    });
+  };
 
   const form = useAppForm({
     defaultValues: {
@@ -134,7 +141,7 @@ export const ImportUploadForm = ({
           onSuccess: (response) => {
             setSelectedFile(null);
             setUploadError(null);
-            onDraftSelected(response.data.id);
+            goToDraftReview(response.data.id);
           },
           onError: (error) => {
             setUploadError(
@@ -243,7 +250,7 @@ export const ImportUploadForm = ({
                             type="button"
                             variant="outline"
                             disabled={isCreatingDraft}
-                            onClick={() => onDraftSelected(activeDraft.id)}
+                            onClick={() => goToDraftReview(activeDraft.id)}
                           />
                         }
                       >

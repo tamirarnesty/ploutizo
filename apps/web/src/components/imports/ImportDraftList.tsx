@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router';
 import { RotateCcw, Trash2 } from 'lucide-react';
 import { Badge } from '@ploutizo/ui/components/badge';
 import { Button } from '@ploutizo/ui/components/button';
@@ -9,11 +10,9 @@ import { formatDraftAccountLabel } from './importPresentation';
 
 interface ImportDraftListProps {
   drafts: ImportDraftSummary[];
-  selectedDraftId: string | null;
   discardingDraftId: string | undefined;
   isDiscarding: boolean;
   isLoading?: boolean;
-  onSelect: (draftId: string) => void;
   onDiscard: (draftId: string) => void;
 }
 
@@ -44,11 +43,9 @@ const ImportDraftListSkeleton = () => (
 
 export const ImportDraftList = ({
   drafts,
-  selectedDraftId,
   discardingDraftId,
   isDiscarding,
   isLoading = false,
-  onSelect,
   onDiscard,
 }: ImportDraftListProps) => {
   if (isLoading) return <ImportDraftListSkeleton />;
@@ -66,11 +63,7 @@ export const ImportDraftList = ({
   return (
     <div className="grid gap-3 lg:grid-cols-2">
       {drafts.map((draft) => (
-        <div
-          key={draft.id}
-          className="rounded-md border border-border p-4"
-          data-selected={selectedDraftId === draft.id || undefined}
-        >
+        <div key={draft.id} className="rounded-md border border-border p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <Text variant="body-sm" className="truncate font-semibold">
@@ -93,8 +86,13 @@ export const ImportDraftList = ({
           <div className="mt-4 flex gap-2">
             <Button
               type="button"
-              variant={selectedDraftId === draft.id ? 'default' : 'outline'}
-              onClick={() => onSelect(draft.id)}
+              variant="outline"
+              render={
+                <Link
+                  to="/transactions/import/$draftId"
+                  params={{ draftId: draft.id }}
+                />
+              }
             >
               <RotateCcw />
               Continue

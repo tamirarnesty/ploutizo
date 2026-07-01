@@ -82,6 +82,7 @@ const draftRow = {
   reviewRefundLinkHint: null,
   reviewNotes: null,
   reviewTags: [],
+  selectedForImport: false,
   createdAt: new Date('2026-05-20T12:00:00Z'),
   updatedAt: new Date('2026-05-20T12:00:00Z'),
 };
@@ -96,7 +97,9 @@ describe('import service', () => {
     vi.mocked(fetchActiveDraftByAccount).mockResolvedValue(null);
     vi.mocked(fetchDraftSummaryById).mockResolvedValue(summaryRow);
     vi.mocked(listDraftRows).mockResolvedValue([draftRow]);
-    vi.mocked(insertImportBatch).mockResolvedValue({ id: summaryRow.id } as never);
+    vi.mocked(insertImportBatch).mockResolvedValue({
+      id: summaryRow.id,
+    } as never);
     vi.mocked(insertImportBatchRows).mockResolvedValue([]);
   });
 
@@ -225,5 +228,24 @@ describe('import service', () => {
     );
     expect(touchImportDraft).toHaveBeenCalledWith('org_1', summaryRow.id);
     expect(result.status).toBe('ready');
+  });
+
+  it('persists row selection updates', async () => {
+    vi.mocked(fetchDraftRowById).mockResolvedValue(draftRow);
+    vi.mocked(updateImportDraftRowQuery).mockResolvedValue({
+      ...draftRow,
+      selectedForImport: true,
+    });
+
+    const result = await updateImportDraftRow('org_1', draftRow.id, {
+      selectedForImport: true,
+    });
+
+    expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
+      'org_1',
+      draftRow.id,
+      expect.objectContaining({ selectedForImport: true })
+    );
+    expect(result.selectedForImport).toBe(true);
   });
 });

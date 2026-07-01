@@ -1,12 +1,6 @@
 import { Field, FieldError, FieldLabel } from '@ploutizo/ui/components/field';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@ploutizo/ui/components/select';
 import type { Category } from '@/lib/data-access/categories';
+import { CategorySelect } from '../categories/CategorySelect';
 import type { TransactionFormInstance } from './hooks/useTransactionForm';
 
 export interface ExpenseFieldsProps {
@@ -25,26 +19,12 @@ export const ExpenseFields = ({ form, categories }: ExpenseFieldsProps) => (
     {(field) => (
       <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
         <FieldLabel htmlFor="tx-categoryId">Category</FieldLabel>
-        <Select
+        <CategorySelect
+          id="tx-categoryId"
+          categories={categories}
           value={field.state.value}
-          onValueChange={(v) => {
-            if (v !== null) field.handleChange(v);
-          }}
-        >
-          <SelectTrigger id="tx-categoryId">
-            <SelectValue>
-              {categories.find((c) => c.id === field.state.value)?.name ??
-                'Select category'}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {categories.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          onValueChange={field.handleChange}
+        />
         {field.state.meta.errors.length > 0 ? (
           <FieldError
             errors={
