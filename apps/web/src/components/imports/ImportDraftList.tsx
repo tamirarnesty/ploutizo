@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router';
 import { RotateCcw, Trash2 } from 'lucide-react';
 import { Badge } from '@ploutizo/ui/components/badge';
 import { Button } from '@ploutizo/ui/components/button';
+import { Empty, EmptyDescription } from '@ploutizo/ui/components/empty';
 import { LoadingButton } from '@ploutizo/ui/components/loading-button';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
@@ -52,11 +53,9 @@ export const ImportDraftList = ({
 
   if (drafts.length === 0) {
     return (
-      <div className="rounded-md border border-dashed border-border p-6">
-        <Text variant="body-sm" className="text-muted-foreground">
-          No active drafts.
-        </Text>
-      </div>
+      <Empty className="border border-dashed p-6">
+        <EmptyDescription>No active drafts.</EmptyDescription>
+      </Empty>
     );
   }
 

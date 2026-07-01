@@ -1,4 +1,5 @@
 import { AlertCircle, CheckCircle2, CircleSlash, XCircle } from 'lucide-react';
+import { Button } from '@ploutizo/ui/components/button';
 import {
   Tooltip,
   TooltipContent,
@@ -43,9 +44,10 @@ export const ImportRowStatusIcon = ({ row }: ImportRowStatusIconProps) => {
     <Tooltip>
       <TooltipTrigger
         render={
-          <button
+          <Button
             type="button"
-            className="rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            variant="ghost"
+            size="icon-xs"
             aria-label={tooltip}
           />
         }

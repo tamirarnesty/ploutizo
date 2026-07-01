@@ -3,6 +3,10 @@ export {
   type ImportRowStatusInput,
 } from './import-row-status';
 export {
+  formatTransactionTypeLabel,
+  TRANSACTION_TYPE_LABELS,
+} from './transaction-type-labels';
+export {
   formatAccountLabel,
   type AccountLabelInput,
 } from './format-account-label';

@@ -146,9 +146,10 @@ export const FileField = ({
             validateAndSet(file);
           }}
         />
-        <button
+        <Button
           type="button"
-          className="flex h-full min-w-0 flex-1 items-center gap-2 px-2.5 text-left text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed"
+          variant="ghost"
+          className="h-full min-w-0 flex-1 justify-start gap-2 px-2.5 text-left text-sm font-normal"
           disabled={disabled}
           onClick={openFileDialog}
         >
@@ -161,7 +162,7 @@ export const FileField = ({
               {formatBytes(value.size)}
             </span>
           ) : null}
-        </button>
+        </Button>
         {value && !disabled ? (
           <Button
             type="button"

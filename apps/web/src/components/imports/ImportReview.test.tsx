@@ -160,9 +160,10 @@ describe('ImportReview', () => {
       screen.getByText('statement.csv · 1 transaction')
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
+    expect(screen.getByText('Import commit coming soon')).toBeInTheDocument();
     expect(
-      screen.getByText('Select at least one row to continue.')
-    ).toBeInTheDocument();
+      screen.queryByText('Select at least one row to continue.')
+    ).not.toBeInTheDocument();
   });
 
   it('shows an empty state when no rows are reviewable', () => {

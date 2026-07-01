@@ -101,9 +101,14 @@ export const useImportDraftReviewState = ({
     });
   }, [defaultExpandedRowIds, draft, rows]);
 
+  const selectedCount = currentPageSelectableRows.filter(
+    (row) => row.selectedForImport
+  ).length;
+  const totalSelectable = currentPageSelectableRows.length;
   const headerChecked =
-    currentPageSelectableRows.length > 0 &&
-    currentPageSelectableRows.every((row) => row.selectedForImport);
+    totalSelectable > 0 && selectedCount === totalSelectable;
+  const headerIndeterminate =
+    selectedCount > 0 && selectedCount < totalSelectable;
 
   const setRowSelection = useCallback(
     (row: ImportDraftRow, selectedForImport: boolean) => {
@@ -184,6 +189,7 @@ export const useImportDraftReviewState = ({
     rows,
     currentPageSelectableRows,
     headerChecked,
+    headerIndeterminate,
     setRowSelection,
     setAllSelection,
     setRowExpanded,

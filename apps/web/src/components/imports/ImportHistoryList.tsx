@@ -1,8 +1,13 @@
 import { Badge } from '@ploutizo/ui/components/badge';
+import { Empty, EmptyDescription } from '@ploutizo/ui/components/empty';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
 import type { ImportDraftSummary } from '@ploutizo/types';
-import { formatDraftAccountLabel } from './importPresentation';
+import {
+  formatDraftAccountLabel,
+  formatImportBatchStatusLabel,
+  importBatchStatusVariant,
+} from './importPresentation';
 
 interface ImportHistoryListProps {
   history: ImportDraftSummary[];
@@ -37,9 +42,9 @@ export const ImportHistoryList = ({
 
   if (history.length === 0) {
     return (
-      <Text variant="body-sm" className="text-muted-foreground">
-        No recent import history.
-      </Text>
+      <Empty className="border border-dashed p-6">
+        <EmptyDescription>No recent import history.</EmptyDescription>
+      </Empty>
     );
   }
 
@@ -59,7 +64,9 @@ export const ImportHistoryList = ({
             </Text>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary">{item.status}</Badge>
+            <Badge variant={importBatchStatusVariant(item.status)}>
+              {formatImportBatchStatusLabel(item.status)}
+            </Badge>
             <Text variant="body-sm" className="text-muted-foreground">
               {item.rowCount} rows
             </Text>

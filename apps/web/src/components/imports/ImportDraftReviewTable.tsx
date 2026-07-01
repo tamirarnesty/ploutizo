@@ -41,6 +41,7 @@ export const ImportDraftReviewTable = ({
     rows,
     currentPageSelectableRows,
     headerChecked,
+    headerIndeterminate,
     setRowSelection,
     setAllSelection,
     setRowExpanded,
@@ -72,6 +73,7 @@ export const ImportDraftReviewTable = ({
     () =>
       buildImportReviewColumns({
         headerChecked,
+        headerIndeterminate,
         onHeaderCheckedChange: setAllSelection,
         onToggleAllExpanded: toggleAllRowsExpanded,
         allRowsExpanded,
@@ -87,6 +89,7 @@ export const ImportDraftReviewTable = ({
       allRowsExpanded,
       currentPageSelectableRows.length,
       headerChecked,
+      headerIndeterminate,
       isLoading,
       isRowExpanded,
       setAllSelection,
@@ -126,7 +129,10 @@ export const ImportDraftReviewTable = ({
       }}
     >
       <div className="space-y-2">
-        <div className="max-h-[640px] overflow-hidden rounded-md border border-border">
+        <div
+          aria-label="Import draft review"
+          className="max-h-[640px] overflow-hidden rounded-md border border-border"
+        >
           <DataGridContainer>
             <DataGridScrollArea
               orientation={PAGINATED_DATA_GRID_SCROLL_ORIENTATION}

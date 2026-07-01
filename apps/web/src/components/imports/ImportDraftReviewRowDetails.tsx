@@ -21,6 +21,7 @@ export const ImportDraftReviewRowDetails = ({
   const { saveField, disabled } = useImportDraftReviewRowSave(row);
   const { notes, setNotes, markSaved } = useImportRowFieldState(row);
   const rowLabel = getImportRowLabel(row);
+  const tagsInputId = `import-row-tags-${row.id}`;
 
   const flushNotes = useCallback(() => {
     const next = notes.trim() || null;
@@ -56,12 +57,18 @@ export const ImportDraftReviewRowDetails = ({
           />
         </div>
         <div className="min-w-0">
-          <Text variant="body-sm" className="mb-1.5 block font-medium">
+          <Text
+            as="label"
+            htmlFor={tagsInputId}
+            variant="body-sm"
+            className="mb-1.5 block font-medium"
+          >
             Tags
           </Text>
           <div className={cn(disabled && 'pointer-events-none opacity-50')}>
             <ImportReviewTagPicker
               value={row.reviewTags}
+              inputId={tagsInputId}
               inputAriaLabel={`Tags for ${rowLabel}`}
               onChange={(nextTags) => {
                 if (nextTags.join('|') === row.reviewTags.join('|')) {

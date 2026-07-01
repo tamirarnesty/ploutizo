@@ -26,48 +26,28 @@ interface ImportStatusBadgeProps {
   isLoading: boolean;
 }
 
-const importStatusBadgeClassName =
-  'border-primary/30 bg-primary/10 text-primary shadow-xs dark:bg-primary/15';
-const activeImportStatusBadgeClassName =
-  'border-primary/30 bg-primary/10 text-primary shadow-xs dark:border-blue-400/60 dark:bg-blue-400/20 dark:text-blue-200 dark:ring-1 dark:ring-blue-300/20';
-
 const ImportStatusBadge = ({
   activeDraftCount,
   isLoading,
 }: ImportStatusBadgeProps) => {
-  const badge = (() => {
-    if (isLoading) {
-      return (
-        <Badge variant="outline" className={importStatusBadgeClassName}>
-          Checking drafts
-        </Badge>
-      );
-    }
+  if (isLoading) {
+    return <Badge variant="outline">Checking drafts</Badge>;
+  }
 
-    if (activeDraftCount > 0) {
-      return (
-        <Badge variant="outline" className={activeImportStatusBadgeClassName}>
-          <AlertCircle />
-          {activeDraftCount} active
-        </Badge>
-      );
-    }
-
+  if (activeDraftCount > 0) {
     return (
-      <Badge variant="outline" className={importStatusBadgeClassName}>
-        <CheckCircle2 />
-        Ready
+      <Badge variant="outline">
+        <AlertCircle />
+        {activeDraftCount} active
       </Badge>
     );
-  })();
+  }
 
   return (
-    <div className="flex flex-col items-end gap-1">
-      <span className="text-xs font-medium text-muted-foreground">
-        Import status
-      </span>
-      {badge}
-    </div>
+    <Badge variant="outline">
+      <CheckCircle2 />
+      Ready
+    </Badge>
   );
 };
 
@@ -151,10 +131,15 @@ export const Import = () => {
           Import
         </Text>
         <div className="flex gap-2">
-          <ImportStatusBadge
-            activeDraftCount={activeDrafts.length}
-            isLoading={draftsLoading}
-          />
+          <div className="flex flex-col items-end gap-1">
+            <span className="text-xs font-medium text-muted-foreground">
+              Import status
+            </span>
+            <ImportStatusBadge
+              activeDraftCount={activeDrafts.length}
+              isLoading={draftsLoading}
+            />
+          </div>
         </div>
       </div>
 

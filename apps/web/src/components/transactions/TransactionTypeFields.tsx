@@ -6,6 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@ploutizo/ui/components/select';
+import { formatTransactionTypeLabel } from '@ploutizo/utils';
 import type { Category } from '@/lib/data-access/categories';
 import { ExpenseFields } from './ExpenseFields';
 import { RefundLinker } from './RefundLinker';
@@ -15,15 +16,6 @@ import type { AssigneeFormRow, TransactionFormValues } from './types';
 // TODO(03.4-deferred): originalDescription column — add when schema patch lands
 // D-19: import caption (└ Original: ...) is deferred because originalDescription
 // and originalMerchant columns are absent from the current DB schema.
-
-const TYPE_LABELS: Record<string, string | undefined> = {
-  expense: 'Expense',
-  income: 'Income',
-  transfer: 'Transfer',
-  settlement: 'Settlement',
-  refund: 'Refund',
-  contribution: 'Contribution',
-};
 
 const INCOME_TYPE_LABELS: Record<string, string | undefined> = {
   direct_deposit: 'Direct deposit',
@@ -77,7 +69,7 @@ const TypeSelectField = ({
           <SelectTrigger id="tx-type" autoFocus>
             {/* autoFocus: type is the primary purpose of opening the sheet (per web-design-guidelines) */}
             <SelectValue>
-              {TYPE_LABELS[field.state.value] ?? 'Select type'}
+              {formatTransactionTypeLabel(field.state.value) || 'Select type'}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>

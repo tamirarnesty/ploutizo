@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { Download, FileText, RotateCcw, Upload } from 'lucide-react';
+import { RotateCcw, Upload } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import { Field, FieldLabel } from '@ploutizo/ui/components/field';
 import { FileField } from '@ploutizo/ui/components/file-field';
@@ -20,17 +20,13 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
-import {
-  MAX_NORMALIZED_IMPORT_BYTES,
-  NORMALIZED_IMPORT_EXAMPLE_CSV,
-} from '@ploutizo/types';
+import { MAX_NORMALIZED_IMPORT_BYTES } from '@ploutizo/types';
+import { formatAccountLabel } from '@ploutizo/utils';
 import type { ImportDraftSummary, ImportTargetAccount } from '@ploutizo/types';
 import { useCreateImportDraft } from '@/lib/data-access/imports';
-import { downloadText } from '@/lib/download';
 import { readCsvFile } from '@/lib/imports/readCsvFile';
 import { getApiErrorMessage } from '@/lib/queryClient';
-import { formatAccountLabel } from './importPresentation';
-import { ImportGuideDialog } from './ImportGuideDialog';
+import { ImportHelpActions } from './ImportHelpActions';
 
 const CSV_ACCEPT = '.csv,text/csv';
 
@@ -40,52 +36,6 @@ interface ImportUploadFormProps {
   activeDrafts: ImportDraftSummary[];
   activeDraftsLoading?: boolean;
 }
-
-export const ImportHelpActions = () => {
-  const [guideOpen, setGuideOpen] = useState(false);
-
-  return (
-    <>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() =>
-                downloadText(
-                  'ploutizo-normalized-import-example.csv',
-                  NORMALIZED_IMPORT_EXAMPLE_CSV,
-                  'text/csv'
-                )
-              }
-            />
-          }
-        >
-          <Download />
-          Example
-        </TooltipTrigger>
-        <TooltipContent>Download a sample normalized CSV.</TooltipContent>
-      </Tooltip>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setGuideOpen(true)}
-            />
-          }
-        >
-          <FileText />
-          Guide
-        </TooltipTrigger>
-        <TooltipContent>View the normalized CSV column guide.</TooltipContent>
-      </Tooltip>
-      <ImportGuideDialog open={guideOpen} onOpenChange={setGuideOpen} />
-    </>
-  );
-};
 
 export const ImportUploadForm = ({
   targets,

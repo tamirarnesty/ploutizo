@@ -12,6 +12,8 @@ import {
   formatImportDraftReviewSubtitle,
 } from './importPresentation';
 
+const IMPORT_COMMIT_PREVIEW_COPY = 'Import commit coming soon';
+
 interface ImportDraftReviewHeaderProps {
   draft?: ImportDraft;
   isLoading?: boolean;
@@ -22,10 +24,18 @@ interface ImportDraftReviewHeaderProps {
 export const ImportDraftReviewHeader = ({
   draft,
   isLoading = false,
-  canContinue,
+  canContinue: _canContinue,
   continueBlocker,
 }: ImportDraftReviewHeaderProps) => {
-  const continueButton = <Button disabled={!canContinue}>Continue</Button>;
+  const continueButton = (
+    <Button disabled type="button">
+      Continue
+    </Button>
+  );
+
+  const tooltipContent = continueBlocker
+    ? `${continueBlocker} ${IMPORT_COMMIT_PREVIEW_COPY}.`
+    : IMPORT_COMMIT_PREVIEW_COPY;
 
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -48,25 +58,21 @@ export const ImportDraftReviewHeader = ({
       </div>
       <div className="flex flex-col items-end gap-1.5">
         {draft ? (
-          continueBlocker ? (
-            <Tooltip>
-              <TooltipTrigger render={continueButton} />
-              <TooltipContent>{continueBlocker}</TooltipContent>
-            </Tooltip>
-          ) : (
-            continueButton
-          )
+          <Tooltip>
+            <TooltipTrigger render={continueButton} />
+            <TooltipContent>{tooltipContent}</TooltipContent>
+          </Tooltip>
         ) : isLoading ? (
           <Skeleton className="h-9 w-24" />
         ) : (
           continueButton
         )}
-        {draft && continueBlocker ? (
+        {draft ? (
           <Text
             variant="body-sm"
             className="max-w-sm text-right text-muted-foreground"
           >
-            {continueBlocker}
+            {IMPORT_COMMIT_PREVIEW_COPY}
           </Text>
         ) : null}
       </div>

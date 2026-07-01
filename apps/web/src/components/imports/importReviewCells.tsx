@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { ChevronDown } from 'lucide-react';
+import { Button } from '@ploutizo/ui/components/button';
 import { DatePicker } from '@ploutizo/ui/components/date-picker';
 import { Checkbox } from '@ploutizo/ui/components/checkbox';
 import { Input } from '@ploutizo/ui/components/input';
@@ -100,9 +101,10 @@ export const ImportReviewSelectionCell = ({
       />
       <div className="flex flex-col items-center gap-1">
         <ImportRowStatusIcon row={row} />
-        <button
+        <Button
           type="button"
-          className="rounded-sm p-0.5 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          variant="ghost"
+          size="icon-xs"
           aria-expanded={expanded}
           aria-label={expandLabel}
           onClick={() => onExpandedChange(!expanded)}
@@ -114,7 +116,7 @@ export const ImportReviewSelectionCell = ({
             )}
             aria-hidden="true"
           />
-        </button>
+        </Button>
       </div>
     </div>
   );

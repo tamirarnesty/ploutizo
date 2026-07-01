@@ -16,7 +16,7 @@
 - **React SPA** (TanStack Start/Router) — NOT Next.js. No RSC patterns, server actions, `React.cache()`, `next/dynamic`, `"use server"`.
 - React 19 project. Pass `ref` as a regular prop — no `forwardRef` in new/refactored components in `apps/web`. Shadcn components in `packages/ui` may retain it.
 - All data fetching in `apps/web` uses TanStack Query hooks from `apps/web/src/lib/data-access/`. Never add raw `fetch()` calls to components. All API requests call `apiFetch`, never raw `fetch()` directly.
-- Form state always uses `useAppForm` from `@ploutizo/ui/components/form` (TanStack Form + Zod). Never use `useState` for form field values.
+- Form state always uses `useAppForm` from `@ploutizo/ui/components/form` (TanStack Form + Zod). Never use `useState` for form field values. Exception: inline blur-save table editors (import draft review) may use local state + dirty tracking via `useImportRowFieldState` instead of `useAppForm`.
 - `packages/db` uses `@neondatabase/serverless` WebSocket Pool (not postgres.js). Set `neonConfig.webSocketConstructor` before constructing the Pool.
 - Client-side persistence in `apps/web` must use Zustand stores in `@/lib/prefs/` for localStorage-backed prefs and `@/lib/prefs/sessionPref` for ephemeral sessionStorage prefs. Never call `localStorage`/`sessionStorage` directly in components or hooks. Exception: theme via next-themes. Key naming: `ploutizo:{feature}:{preference}`.
 - API middleware order is invariant: **CORS → Clerk → tenant guard** (see `apps/api/src/index.ts`).

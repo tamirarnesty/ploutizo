@@ -5,12 +5,14 @@ import { useGetTags } from '@/lib/data-access/tags';
 interface ImportReviewTagPickerProps {
   value: string[];
   onChange: (tagNames: string[]) => void;
+  inputId?: string;
   inputAriaLabel?: string;
 }
 
 export const ImportReviewTagPicker = ({
   value,
   onChange,
+  inputId,
   inputAriaLabel,
 }: ImportReviewTagPickerProps) => {
   const { data: tags = [] } = useGetTags();
@@ -26,6 +28,7 @@ export const ImportReviewTagPicker = ({
   return (
     <TransactionTagPicker
       value={tagIds}
+      inputId={inputId}
       inputAriaLabel={inputAriaLabel}
       onChange={(nextTagIds) => {
         const nextNames = nextTagIds

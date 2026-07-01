@@ -22,6 +22,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 
 export interface BuildImportReviewColumnsOptions {
   headerChecked: boolean;
+  headerIndeterminate: boolean;
   onHeaderCheckedChange: (checked: boolean) => void;
   onToggleAllExpanded: () => void;
   allRowsExpanded: boolean;
@@ -35,6 +36,7 @@ export interface BuildImportReviewColumnsOptions {
 
 export const buildImportReviewColumns = ({
   headerChecked,
+  headerIndeterminate,
   onHeaderCheckedChange,
   onToggleAllExpanded,
   allRowsExpanded,
@@ -49,6 +51,12 @@ export const buildImportReviewColumns = ({
     ? 'Collapse all rows'
     : 'Expand all rows';
 
+  const headerCheckboxLabel = headerIndeterminate
+    ? 'Select all rows on this page'
+    : headerChecked
+      ? 'Deselect all rows on this page'
+      : 'Select all rows on this page';
+
   return [
     {
       id: 'selection',
@@ -57,12 +65,9 @@ export const buildImportReviewColumns = ({
       header: () => (
         <div className="flex items-center gap-1">
           <Checkbox
-            aria-label={
-              headerChecked
-                ? 'Deselect all rows on this page'
-                : 'Select all rows on this page'
-            }
+            aria-label={headerCheckboxLabel}
             checked={headerChecked}
+            indeterminate={headerIndeterminate}
             disabled={isLoading || !hasSelectableRowsOnPage}
             onCheckedChange={(checked) => {
               onHeaderCheckedChange(checked === true);
