@@ -7,3 +7,4 @@ export * from './useGetImportHistory';
 export * from './useCreateImportDraft';
 export * from './useDiscardImportDraft';
 export * from './useUpdateImportDraftRow';
+export * from './useUpdateImportDraftRowSelection';

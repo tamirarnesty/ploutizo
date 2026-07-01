@@ -4,6 +4,7 @@ import {
   createNormalizedImportDraft,
   listImportTargets,
   updateImportDraftRow,
+  updateImportDraftRowSelection,
 } from '@/services/imports';
 import {
   fetchActiveCreditCardAccount,
@@ -12,10 +13,12 @@ import {
   fetchDraftSummaryById,
   insertImportBatch,
   insertImportBatchRows,
+  listDraftRowIdsForDraft,
   listDraftRows,
   listImportTargetAccounts,
   touchImportDraft,
   updateImportDraftRowQuery,
+  updateImportDraftRowSelectionQuery,
 } from '@/lib/queries/imports';
 import { listOrgMembers } from '@/lib/queries/households';
 
@@ -33,9 +36,11 @@ vi.mock('@/lib/queries/imports', () => ({
   insertImportBatch: vi.fn(),
   insertImportBatchRows: vi.fn(),
   listDraftRows: vi.fn(),
+  listDraftRowIdsForDraft: vi.fn(),
   listImportTargetAccounts: vi.fn(),
   touchImportDraft: vi.fn(),
   updateImportDraftRowQuery: vi.fn(),
+  updateImportDraftRowSelectionQuery: vi.fn(),
 }));
 
 vi.mock('@/lib/queries/households', () => ({
@@ -267,5 +272,29 @@ describe('import service', () => {
       expect.objectContaining({ selectedForImport: true })
     );
     expect(result.selectedForImport).toBe(true);
+  });
+
+  it('updates row selection in batch for a draft', async () => {
+    vi.mocked(fetchDraftSummaryById).mockResolvedValue(summaryRow);
+    vi.mocked(listDraftRowIdsForDraft).mockResolvedValue([{ id: draftRow.id }]);
+    vi.mocked(updateImportDraftRowSelectionQuery).mockResolvedValue([
+      { ...draftRow, selectedForImport: true },
+    ]);
+    vi.mocked(db.transaction).mockImplementation(async (fn) => fn({} as never));
+
+    const result = await updateImportDraftRowSelection('org_1', summaryRow.id, {
+      rowIds: [draftRow.id],
+      selectedForImport: true,
+    });
+
+    expect(updateImportDraftRowSelectionQuery).toHaveBeenCalledWith(
+      'org_1',
+      summaryRow.id,
+      [draftRow.id],
+      true
+    );
+    expect(touchImportDraft).toHaveBeenCalledWith('org_1', summaryRow.id);
+    expect(result).toHaveLength(1);
+    expect(result[0]?.selectedForImport).toBe(true);
   });
 });

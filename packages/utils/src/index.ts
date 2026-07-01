@@ -1,7 +1,17 @@
-export { formatAccountLabel, type AccountLabelInput } from './format-account-label';
+export {
+  computeImportRowStatus,
+  type ImportRowStatusInput,
+} from './import-row-status';
+export {
+  formatAccountLabel,
+  type AccountLabelInput,
+} from './format-account-label';
 export { parseImportTags } from './parse-import-tags';
 export { lrmSplit } from './lrm';
-export { scaleAssigneeSplitProportionally, type AssigneeSplitRow } from './scale-assignee-split';
+export {
+  scaleAssigneeSplitProportionally,
+  type AssigneeSplitRow,
+} from './scale-assignee-split';
 export { formatSettlementDescription } from './settlement-description';
 export {
   normalizeTransactionAssignees,

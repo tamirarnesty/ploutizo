@@ -7,6 +7,7 @@ import {
   discardImportDraft,
   listImportTargets,
   updateImportDraftRow,
+  updateImportDraftRowSelection,
 } from '@/services/imports';
 
 vi.mock('@/services/imports', () => ({
@@ -18,6 +19,7 @@ vi.mock('@/services/imports', () => ({
   listImportHistory: vi.fn(() => []),
   listImportTargets: vi.fn(),
   updateImportDraftRow: vi.fn(),
+  updateImportDraftRowSelection: vi.fn(),
 }));
 
 const app = new Hono<AppEnv>();
@@ -143,6 +145,38 @@ describe('imports router', () => {
     expect(updateImportDraftRow).toHaveBeenCalledWith('org_1', 'row_1', {
       selectedForImport: true,
     });
+  });
+
+  it('accepts batch row selection patch payloads', async () => {
+    vi.mocked(updateImportDraftRowSelection).mockResolvedValue([
+      { id: 'row_1', selectedForImport: true },
+      { id: 'row_2', selectedForImport: true },
+    ] as never);
+
+    const res = await app.request('/drafts/draft_1/rows/selection', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        rowIds: [
+          '11111111-1111-4111-8111-111111111111',
+          '22222222-2222-4222-8222-222222222222',
+        ],
+        selectedForImport: true,
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    expect(updateImportDraftRowSelection).toHaveBeenCalledWith(
+      'org_1',
+      'draft_1',
+      {
+        rowIds: [
+          '11111111-1111-4111-8111-111111111111',
+          '22222222-2222-4222-8222-222222222222',
+        ],
+        selectedForImport: true,
+      }
+    );
   });
 
   it('discards an active draft', async () => {

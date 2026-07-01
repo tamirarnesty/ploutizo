@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import {
   createImportDraftSchema,
   updateImportDraftRowSchema,
+  updateImportDraftRowSelectionSchema,
 } from '@ploutizo/validators';
 import type { AppEnv } from '@/types';
 import { appValidator } from '@/lib/validator';
@@ -14,6 +15,7 @@ import {
   listImportHistory,
   listImportTargets,
   updateImportDraftRow,
+  updateImportDraftRowSelection,
 } from '@/services/imports';
 
 const importsRouter = new Hono<AppEnv>();
@@ -64,6 +66,21 @@ importsRouter.patch(
     const input = c.req.valid('json');
     const row = await updateImportDraftRow(orgId, c.req.param('id'), input);
     return c.json({ data: row });
+  }
+);
+
+importsRouter.patch(
+  '/drafts/:id/rows/selection',
+  appValidator('json', updateImportDraftRowSelectionSchema),
+  async (c) => {
+    const orgId = c.get('orgId');
+    const input = c.req.valid('json');
+    const rows = await updateImportDraftRowSelection(
+      orgId,
+      c.req.param('id'),
+      input
+    );
+    return c.json({ data: rows });
   }
 );
 

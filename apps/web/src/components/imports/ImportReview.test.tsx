@@ -34,6 +34,9 @@ vi.mock('@/lib/data-access/imports', () => ({
   useUpdateImportDraftRow: () => ({
     mutate: vi.fn(),
   }),
+  useUpdateImportDraftRowSelection: () => ({
+    mutate: vi.fn(),
+  }),
 }));
 
 vi.mock('@/lib/data-access/categories', () => ({

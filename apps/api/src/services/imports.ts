@@ -13,6 +13,7 @@ import type {
 import type {
   CreateImportDraftInput,
   UpdateImportDraftRowInput,
+  UpdateImportDraftRowSelectionInput,
 } from '@ploutizo/validators';
 import { DomainError, NotFoundError } from '@/lib/errors';
 import { computeImportRowStatus } from '@/lib/imports/rowStatus';
@@ -25,11 +26,13 @@ import {
   insertImportBatch,
   insertImportBatchRows,
   listActiveImportDraftSummaries,
+  listDraftRowIdsForDraft,
   listDraftRows,
   listImportTargetAccounts,
   listRecentImportHistory,
   touchImportDraft,
   updateImportDraftRowQuery,
+  updateImportDraftRowSelectionQuery,
 } from '@/lib/queries/imports';
 import { listOrgMembers } from '@/lib/queries/households';
 import { parsePloutizoNormalizedCsv } from '@/lib/imports/normalizedCsv';
@@ -244,6 +247,41 @@ export const updateImportDraftRow = async (
   if (!updated) throw new NotFoundError('Import draft row not found.');
   await touchImportDraft(orgId, existing.batchId);
   return toImportDraftRow(updated);
+};
+
+export const updateImportDraftRowSelection = async (
+  orgId: string,
+  draftId: string,
+  input: UpdateImportDraftRowSelectionInput
+): Promise<ImportDraftRow[]> => {
+  const draft = await fetchDraftSummaryById(orgId, draftId);
+  if (!draft) throw new NotFoundError('Import draft not found.');
+
+  const uniqueRowIds = [...new Set(input.rowIds)];
+  const matchingRows = await listDraftRowIdsForDraft(
+    orgId,
+    draftId,
+    uniqueRowIds
+  );
+  if (matchingRows.length !== uniqueRowIds.length) {
+    throw new NotFoundError('Import draft row not found.');
+  }
+
+  const updated = await db.transaction(async () => {
+    const rows = await updateImportDraftRowSelectionQuery(
+      orgId,
+      draftId,
+      uniqueRowIds,
+      input.selectedForImport
+    );
+    if (rows.length !== uniqueRowIds.length) {
+      throw new NotFoundError('Import draft row not found.');
+    }
+    await touchImportDraft(orgId, draftId);
+    return rows;
+  });
+
+  return updated.map(toImportDraftRow);
 };
 
 export const getNormalizedImportExampleCsv = () =>

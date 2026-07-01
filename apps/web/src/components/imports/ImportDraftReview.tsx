@@ -33,9 +33,15 @@ import type { ImportDraft, ImportDraftRow } from '@ploutizo/types';
 import { IMPORT_REVIEW_PAGE_SIZE_OPTIONS } from '@/lib/prefs';
 import { usePersistedPageSize } from '@/hooks/persistedPageSize';
 import { useGetCategories } from '@/lib/data-access/categories';
-import { useUpdateImportDraftRow } from '@/lib/data-access/imports';
+import {
+  useUpdateImportDraftRow,
+  useUpdateImportDraftRowSelection,
+} from '@/lib/data-access/imports';
 import { useGetOrgMembers } from '@/lib/data-access/org';
-import { PendingInputFlushProvider } from '@/lib/money/pending-input-flush';
+import {
+  PendingInputFlushProvider,
+  useFlushPendingInputs,
+} from '@/lib/money/pending-input-flush';
 import {
   formatDraftAccountLabel,
   formatImportDraftReviewSubtitle,
@@ -195,11 +201,19 @@ const ImportReviewPagination = ({
   );
 };
 
-export const ImportDraftReview = ({
+export const ImportDraftReview = (props: ImportDraftReviewProps) => (
+  <PendingInputFlushProvider>
+    <ImportDraftReviewContent {...props} />
+  </PendingInputFlushProvider>
+);
+
+const ImportDraftReviewContent = ({
   draft,
   isLoading = false,
 }: ImportDraftReviewProps) => {
+  const flushPendingInputs = useFlushPendingInputs();
   const updateRow = useUpdateImportDraftRow();
+  const updateRowSelection = useUpdateImportDraftRowSelection();
   const { pagination, setPagination } = usePersistedPageSize('import-review');
   const initializedExpansionDraftIdRef = useRef<string | null>(null);
   const [expandedRowIds, setExpandedRowIds] = useState<Set<string>>(
@@ -270,14 +284,15 @@ export const ImportDraftReview = ({
 
   const setAllSelection = (selectedForImport: boolean) => {
     if (!draft) return;
-    for (const row of currentPageSelectableRows) {
-      if (row.selectedForImport === selectedForImport) continue;
-      updateRow.mutate({
-        draftId: draft.id,
-        rowId: row.id,
-        body: { selectedForImport },
-      });
-    }
+    const rowIds = currentPageSelectableRows
+      .filter((row) => row.selectedForImport !== selectedForImport)
+      .map((row) => row.id);
+    if (rowIds.length === 0) return;
+    flushPendingInputs();
+    updateRowSelection.mutate({
+      draftId: draft.id,
+      body: { rowIds, selectedForImport },
+    });
   };
 
   const continueButton = <Button disabled={!canContinue}>Continue</Button>;
@@ -317,183 +332,179 @@ export const ImportDraftReview = ({
     : 'Expand all rows';
 
   return (
-    <PendingInputFlushProvider>
-      <section className="space-y-3">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            {draft ? (
-              <>
-                <Text as="h2" variant="h3" className="truncate">
-                  {formatDraftAccountLabel(draft)}
-                </Text>
-                <Text
-                  variant="body-sm"
-                  className="truncate text-muted-foreground"
-                >
-                  {formatImportDraftReviewSubtitle(draft)}
-                </Text>
-              </>
-            ) : (
-              <div className="space-y-2">
-                <Skeleton className="h-7 w-48" />
-                <Skeleton className="h-4 w-56" />
-              </div>
-            )}
-          </div>
-          <div className="flex flex-col items-end gap-1.5">
-            {draft ? (
-              continueBlocker ? (
-                <Tooltip>
-                  <TooltipTrigger render={continueButton} />
-                  <TooltipContent>{continueBlocker}</TooltipContent>
-                </Tooltip>
-              ) : (
-                continueButton
-              )
-            ) : (
-              <Skeleton className="h-9 w-24" />
-            )}
-            {draft && continueBlocker ? (
+    <section className="space-y-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          {draft ? (
+            <>
+              <Text as="h2" variant="h3" className="truncate">
+                {formatDraftAccountLabel(draft)}
+              </Text>
               <Text
                 variant="body-sm"
-                className="max-w-sm text-right text-muted-foreground"
+                className="truncate text-muted-foreground"
               >
-                {continueBlocker}
+                {formatImportDraftReviewSubtitle(draft)}
               </Text>
-            ) : null}
-          </div>
-        </div>
-
-        {!isLoading && draft && !hasReviewableRows ? (
-          <Empty className="min-h-[280px] border border-dashed">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <Inbox />
-              </EmptyMedia>
-              <EmptyTitle>No transactions to review</EmptyTitle>
-              <EmptyDescription>
-                {getEmptyDraftDescription(draft)}
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        ) : (
-          <div className="space-y-2">
-            <div className="overflow-hidden rounded-md border border-border">
-              <div className="max-h-[640px] overflow-auto">
-                <table className="w-full min-w-[1368px] text-left text-sm">
-                  <thead className="border-b border-border bg-muted">
-                    <tr>
-                      <th className={STICKY_HEADER_CELL_CLASSNAME}>
-                        <div className="flex items-center gap-1">
-                          <Checkbox
-                            aria-label={
-                              headerChecked
-                                ? 'Deselect all rows on this page'
-                                : 'Select all rows on this page'
-                            }
-                            checked={headerChecked}
-                            disabled={
-                              isLoading ||
-                              !draft ||
-                              currentPageSelectableRows.length === 0
-                            }
-                            onCheckedChange={(checked) => {
-                              setAllSelection(checked === true);
-                            }}
-                          />
-                          <Tooltip>
-                            <TooltipTrigger
-                              render={
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon-xs"
-                                  disabled={rows.length === 0}
-                                  aria-label={toggleAllRowsLabel}
-                                  onClick={() => {
-                                    if (allRowsExpanded) {
-                                      collapseAllRows();
-                                      return;
-                                    }
-                                    expandAllRows();
-                                  }}
-                                />
-                              }
-                            >
-                              {allRowsExpanded ? (
-                                <ChevronsUp
-                                  className="size-3.5"
-                                  aria-hidden="true"
-                                />
-                              ) : (
-                                <ChevronsDown
-                                  className="size-3.5"
-                                  aria-hidden="true"
-                                />
-                              )}
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              {toggleAllRowsLabel}
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </th>
-                      <th className={`${HEADER_CELL_CLASSNAME} w-[150px]`}>
-                        Date
-                      </th>
-                      <th className={`${HEADER_CELL_CLASSNAME} w-[150px]`}>
-                        Amount
-                      </th>
-                      <th className={`${HEADER_CELL_CLASSNAME} w-[160px]`}>
-                        Type
-                      </th>
-                      <th className={`${HEADER_CELL_CLASSNAME} w-[300px]`}>
-                        Description
-                      </th>
-                      <th className={`${HEADER_CELL_CLASSNAME} w-[220px]`}>
-                        Category
-                      </th>
-                      <th className={`${HEADER_CELL_CLASSNAME} w-[300px]`}>
-                        Assignee
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {isLoading || !draft ? (
-                      <ImportDraftReviewRowsSkeleton />
-                    ) : (
-                      currentPageRows.map((row) => (
-                        <ImportDraftReviewRow
-                          key={row.id}
-                          draftId={draft.id}
-                          row={row}
-                          categories={categories}
-                          orgMembers={orgMembers}
-                          selectable={isImportRowSelectable(row)}
-                          expanded={expandedRowIds.has(row.id)}
-                          onExpandedChange={(expanded) =>
-                            setRowExpanded(row.id, expanded)
-                          }
-                          onSelectionChange={(selectedForImport) =>
-                            setRowSelection(row, selectedForImport)
-                          }
-                        />
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+            </>
+          ) : (
+            <div className="space-y-2">
+              <Skeleton className="h-7 w-48" />
+              <Skeleton className="h-4 w-56" />
             </div>
-            <ImportReviewPagination
-              rowCount={rows.length}
-              pageIndex={pageIndex}
-              pageSize={pageSize}
-              onPageIndexChange={setPageIndex}
-              onPageSizeChange={setPageSize}
-            />
+          )}
+        </div>
+        <div className="flex flex-col items-end gap-1.5">
+          {draft ? (
+            continueBlocker ? (
+              <Tooltip>
+                <TooltipTrigger render={continueButton} />
+                <TooltipContent>{continueBlocker}</TooltipContent>
+              </Tooltip>
+            ) : (
+              continueButton
+            )
+          ) : (
+            <Skeleton className="h-9 w-24" />
+          )}
+          {draft && continueBlocker ? (
+            <Text
+              variant="body-sm"
+              className="max-w-sm text-right text-muted-foreground"
+            >
+              {continueBlocker}
+            </Text>
+          ) : null}
+        </div>
+      </div>
+
+      {!isLoading && draft && !hasReviewableRows ? (
+        <Empty className="min-h-[280px] border border-dashed">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <Inbox />
+            </EmptyMedia>
+            <EmptyTitle>No transactions to review</EmptyTitle>
+            <EmptyDescription>
+              {getEmptyDraftDescription(draft)}
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      ) : (
+        <div className="space-y-2">
+          <div className="overflow-hidden rounded-md border border-border">
+            <div className="max-h-[640px] overflow-auto">
+              <table className="w-full min-w-[1368px] text-left text-sm">
+                <thead className="border-b border-border bg-muted">
+                  <tr>
+                    <th className={STICKY_HEADER_CELL_CLASSNAME}>
+                      <div className="flex items-center gap-1">
+                        <Checkbox
+                          aria-label={
+                            headerChecked
+                              ? 'Deselect all rows on this page'
+                              : 'Select all rows on this page'
+                          }
+                          checked={headerChecked}
+                          disabled={
+                            isLoading ||
+                            !draft ||
+                            currentPageSelectableRows.length === 0
+                          }
+                          onCheckedChange={(checked) => {
+                            setAllSelection(checked === true);
+                          }}
+                        />
+                        <Tooltip>
+                          <TooltipTrigger
+                            render={
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-xs"
+                                disabled={rows.length === 0}
+                                aria-label={toggleAllRowsLabel}
+                                onClick={() => {
+                                  if (allRowsExpanded) {
+                                    collapseAllRows();
+                                    return;
+                                  }
+                                  expandAllRows();
+                                }}
+                              />
+                            }
+                          >
+                            {allRowsExpanded ? (
+                              <ChevronsUp
+                                className="size-3.5"
+                                aria-hidden="true"
+                              />
+                            ) : (
+                              <ChevronsDown
+                                className="size-3.5"
+                                aria-hidden="true"
+                              />
+                            )}
+                          </TooltipTrigger>
+                          <TooltipContent>{toggleAllRowsLabel}</TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </th>
+                    <th className={`${HEADER_CELL_CLASSNAME} w-[150px]`}>
+                      Date
+                    </th>
+                    <th className={`${HEADER_CELL_CLASSNAME} w-[150px]`}>
+                      Amount
+                    </th>
+                    <th className={`${HEADER_CELL_CLASSNAME} w-[160px]`}>
+                      Type
+                    </th>
+                    <th className={`${HEADER_CELL_CLASSNAME} w-[300px]`}>
+                      Description
+                    </th>
+                    <th className={`${HEADER_CELL_CLASSNAME} w-[220px]`}>
+                      Category
+                    </th>
+                    <th className={`${HEADER_CELL_CLASSNAME} w-[300px]`}>
+                      Assignee
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {isLoading || !draft ? (
+                    <ImportDraftReviewRowsSkeleton />
+                  ) : (
+                    currentPageRows.map((row) => (
+                      <ImportDraftReviewRow
+                        key={row.id}
+                        draftId={draft.id}
+                        row={row}
+                        categories={categories}
+                        orgMembers={orgMembers}
+                        selectable={isImportRowSelectable(row)}
+                        expanded={expandedRowIds.has(row.id)}
+                        onExpandedChange={(expanded) =>
+                          setRowExpanded(row.id, expanded)
+                        }
+                        onSelectionChange={(selectedForImport) =>
+                          setRowSelection(row, selectedForImport)
+                        }
+                      />
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        )}
-      </section>
-    </PendingInputFlushProvider>
+          <ImportReviewPagination
+            rowCount={rows.length}
+            pageIndex={pageIndex}
+            pageSize={pageSize}
+            onPageIndexChange={setPageIndex}
+            onPageSizeChange={setPageSize}
+          />
+        </div>
+      )}
+    </section>
   );
 };

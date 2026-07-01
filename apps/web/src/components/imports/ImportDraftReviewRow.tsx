@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useMemo } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { DatePicker } from '@ploutizo/ui/components/date-picker';
 import { Checkbox } from '@ploutizo/ui/components/checkbox';
@@ -13,7 +13,7 @@ import {
 import { Text } from '@ploutizo/ui/components/text';
 import { Textarea } from '@ploutizo/ui/components/textarea';
 import { cn } from '@ploutizo/ui/lib/utils';
-import { centsToDollars, dollarsToCents } from '@ploutizo/utils/currency';
+import { dollarsToCents } from '@ploutizo/utils/currency';
 import { IMPORT_TRANSACTION_TYPE_VALUES } from '@ploutizo/types';
 import type {
   ImportDraftRow,
@@ -25,6 +25,7 @@ import { CategorySelect } from '@/components/categories/CategorySelect';
 import { CurrencyInput } from '@/components/currency/CurrencyInput';
 import type { Category } from '@/lib/data-access/categories';
 import { useUpdateImportDraftRow } from '@/lib/data-access/imports';
+import { useRegisterInputFlush } from '@/lib/money/pending-input-flush';
 import { ImportAssigneeField } from './ImportAssigneeField';
 import { ImportReviewTagPicker } from './ImportReviewTagPicker';
 import { ImportRowStatusIcon } from './ImportRowStatusIcon';
@@ -34,6 +35,7 @@ import {
   resolveImportRowOriginalDescription,
   resolveImportRowType,
 } from './importPresentation';
+import { useImportRowFieldState } from './useImportRowFieldState';
 
 const DETAIL_ROW_COLUMN_COUNT = 7;
 const STICKY_SELECTION_CELL_CLASSNAME =
@@ -96,14 +98,17 @@ export const ImportDraftReviewRow = ({
   onSelectionChange,
 }: ImportDraftReviewRowProps) => {
   const updateRow = useUpdateImportDraftRow();
-  const rowKey = `${row.id}:${row.updatedAt}`;
   const disabled = row.status === 'invalid';
 
-  const [description, setDescription] = useState(row.reviewDescription ?? '');
-  const [notes, setNotes] = useState(row.reviewNotes ?? '');
-  const [amount, setAmount] = useState<number | undefined>(() =>
-    row.reviewAmount != null ? centsToDollars(row.reviewAmount) : undefined
-  );
+  const {
+    description,
+    notes,
+    amount,
+    setDescription,
+    setNotes,
+    setAmount,
+    markSaved,
+  } = useImportRowFieldState(row);
 
   const categoryId = useMemo(
     () => resolveCategoryIdByName(row.reviewCategoryName, categories),
@@ -114,17 +119,35 @@ export const ImportDraftReviewRow = ({
     originalDescription != null &&
     description.trim() !== originalDescription.trim();
 
-  useEffect(() => {
-    setDescription(row.reviewDescription ?? '');
-    setNotes(row.reviewNotes ?? '');
-    setAmount(
-      row.reviewAmount != null ? centsToDollars(row.reviewAmount) : undefined
-    );
-  }, [rowKey]);
+  const saveField = useCallback(
+    (
+      body: UpdateImportDraftRowInput,
+      options?: Parameters<typeof updateRow.mutate>[1]
+    ) => {
+      updateRow.mutate({ draftId, rowId: row.id, body }, options);
+    },
+    [draftId, row.id, updateRow]
+  );
 
-  const saveField = (body: UpdateImportDraftRowInput) => {
-    updateRow.mutate({ draftId, rowId: row.id, body });
-  };
+  const flushDescription = useCallback(() => {
+    const next = description.trim() || null;
+    if (next === row.reviewDescription) return;
+    saveField(
+      { reviewDescription: next },
+      {
+        onSuccess: () => markSaved('description'),
+      }
+    );
+  }, [description, markSaved, row.reviewDescription, saveField]);
+
+  const flushNotes = useCallback(() => {
+    const next = notes.trim() || null;
+    if (next === row.reviewNotes) return;
+    saveField({ reviewNotes: next }, { onSuccess: () => markSaved('notes') });
+  }, [markSaved, notes, row.reviewNotes, saveField]);
+
+  useRegisterInputFlush(flushDescription);
+  useRegisterInputFlush(flushNotes);
 
   const reviewDate = row.reviewDate ?? row.parsedDate ?? '';
   const rowLabel =
@@ -190,12 +213,18 @@ export const ImportDraftReviewRow = ({
             onBlur={() => {
               if (amount === undefined || !Number.isFinite(amount)) {
                 if (row.reviewAmount === null) return;
-                saveField({ reviewAmount: null });
+                saveField(
+                  { reviewAmount: null },
+                  { onSuccess: () => markSaved('amount') }
+                );
                 return;
               }
               const nextAmount = dollarsToCents(amount);
               if (nextAmount === row.reviewAmount) return;
-              saveField({ reviewAmount: nextAmount });
+              saveField(
+                { reviewAmount: nextAmount },
+                { onSuccess: () => markSaved('amount') }
+              );
             }}
           />
         </td>
@@ -219,11 +248,7 @@ export const ImportDraftReviewRow = ({
             disabled={disabled}
             autoComplete="off"
             onChange={(event) => setDescription(event.currentTarget.value)}
-            onBlur={(event) => {
-              const next = event.currentTarget.value.trim() || null;
-              if (next === row.reviewDescription) return;
-              saveField({ reviewDescription: next });
-            }}
+            onBlur={flushDescription}
           />
           {showOriginalDescription ? (
             <Text variant="body-sm" className="mt-1 text-muted-foreground">
@@ -289,11 +314,7 @@ export const ImportDraftReviewRow = ({
                   autoComplete="off"
                   placeholder="Add a note…"
                   onChange={(event) => setNotes(event.currentTarget.value)}
-                  onBlur={(event) => {
-                    const next = event.currentTarget.value.trim() || null;
-                    if (next === row.reviewNotes) return;
-                    saveField({ reviewNotes: next });
-                  }}
+                  onBlur={flushNotes}
                 />
               </div>
               <div className="min-w-0">

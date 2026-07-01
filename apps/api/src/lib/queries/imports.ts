@@ -1,10 +1,6 @@
 import { db } from '@ploutizo/db';
-import {
-  accounts,
-  importBatchRows,
-  importBatches,
-} from '@ploutizo/db/schema';
-import { and, desc, eq, exists, isNull, ne, sql } from 'drizzle-orm';
+import { accounts, importBatchRows, importBatches } from '@ploutizo/db/schema';
+import { and, desc, eq, exists, inArray, isNull, ne, sql } from 'drizzle-orm';
 
 export type DrizzleTransaction = Parameters<
   Parameters<typeof db.transaction>[0]
@@ -71,7 +67,9 @@ export const listActiveImportDraftSummaries = async (orgId: string) =>
     .select(IMPORT_SUMMARY_COLUMNS)
     .from(importBatches)
     .innerJoin(accounts, eq(accounts.id, importBatches.accountId))
-    .where(and(eq(importBatches.orgId, orgId), eq(importBatches.status, 'draft')))
+    .where(
+      and(eq(importBatches.orgId, orgId), eq(importBatches.status, 'draft'))
+    )
     .orderBy(desc(importBatches.updatedAt));
 
 export const listRecentImportHistory = async (orgId: string, limit = 10) =>
@@ -80,10 +78,7 @@ export const listRecentImportHistory = async (orgId: string, limit = 10) =>
     .from(importBatches)
     .innerJoin(accounts, eq(accounts.id, importBatches.accountId))
     .where(
-      and(
-        eq(importBatches.orgId, orgId),
-        ne(importBatches.status, 'draft')
-      )
+      and(eq(importBatches.orgId, orgId), ne(importBatches.status, 'draft'))
     )
     .orderBy(desc(importBatches.updatedAt))
     .limit(limit);
@@ -127,7 +122,12 @@ export const listDraftRows = async (orgId: string, draftId: string) =>
   db
     .select()
     .from(importBatchRows)
-    .where(and(eq(importBatchRows.orgId, orgId), eq(importBatchRows.batchId, draftId)))
+    .where(
+      and(
+        eq(importBatchRows.orgId, orgId),
+        eq(importBatchRows.batchId, draftId)
+      )
+    )
     .orderBy(importBatchRows.rowNumber);
 
 export const insertImportBatch = async (
@@ -146,7 +146,10 @@ export const insertImportBatchRows = async (
   return tx.insert(importBatchRows).values(values).returning();
 };
 
-export const discardImportDraftQuery = async (orgId: string, draftId: string) => {
+export const discardImportDraftQuery = async (
+  orgId: string,
+  draftId: string
+) => {
   const rows = await db
     .update(importBatches)
     .set({
@@ -228,4 +231,58 @@ export const touchImportDraft = async (orgId: string, draftId: string) => {
     .update(importBatches)
     .set({ updatedAt: new Date() })
     .where(and(eq(importBatches.id, draftId), eq(importBatches.orgId, orgId)));
+};
+
+const draftRowInActiveDraftCondition = (orgId: string) =>
+  exists(
+    db
+      .select({ one: sql`1` })
+      .from(importBatches)
+      .where(
+        and(
+          eq(importBatches.id, importBatchRows.batchId),
+          eq(importBatches.orgId, orgId),
+          eq(importBatches.status, 'draft')
+        )
+      )
+  );
+
+export const listDraftRowIdsForDraft = async (
+  orgId: string,
+  draftId: string,
+  rowIds: string[]
+) => {
+  if (rowIds.length === 0) return [];
+  return db
+    .select({ id: importBatchRows.id })
+    .from(importBatchRows)
+    .where(
+      and(
+        eq(importBatchRows.orgId, orgId),
+        eq(importBatchRows.batchId, draftId),
+        inArray(importBatchRows.id, rowIds),
+        draftRowInActiveDraftCondition(orgId)
+      )
+    );
+};
+
+export const updateImportDraftRowSelectionQuery = async (
+  orgId: string,
+  draftId: string,
+  rowIds: string[],
+  selectedForImport: boolean
+) => {
+  if (rowIds.length === 0) return [];
+  return db
+    .update(importBatchRows)
+    .set({ selectedForImport, updatedAt: new Date() })
+    .where(
+      and(
+        eq(importBatchRows.orgId, orgId),
+        eq(importBatchRows.batchId, draftId),
+        inArray(importBatchRows.id, rowIds),
+        draftRowInActiveDraftCondition(orgId)
+      )
+    )
+    .returning();
 };

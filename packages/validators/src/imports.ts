@@ -31,3 +31,12 @@ export type CreateImportDraftInput = z.infer<typeof createImportDraftSchema>;
 export type UpdateImportDraftRowInput = z.infer<
   typeof updateImportDraftRowSchema
 >;
+
+export const updateImportDraftRowSelectionSchema = z.object({
+  rowIds: z.array(z.string().uuid()).min(1),
+  selectedForImport: z.boolean(),
+});
+
+export type UpdateImportDraftRowSelectionInput = z.infer<
+  typeof updateImportDraftRowSelectionSchema
+>;
