@@ -4,7 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ImportDraftRow } from '@ploutizo/types';
 import type { Category } from '@/lib/data-access/categories';
 import { PendingInputFlushProvider } from '@/lib/money/pending-input-flush';
-import { ImportDraftReviewRow } from './ImportDraftReviewRow';
+import { ImportDraftReviewProvider } from './ImportDraftReviewContext';
+import { ImportDraftReviewRowDetails } from './ImportDraftReviewRowDetails';
+import { ImportReviewDescriptionCell } from './importReviewCells';
 
 const mockCategory: Category = {
   id: 'cat_1',
@@ -74,23 +76,17 @@ const baseRow = (): ImportDraftRow => ({
   updatedAt: '2026-05-20T12:00:00Z',
 });
 
-const renderRow = (row: ImportDraftRow) =>
+const renderRowFields = (row: ImportDraftRow) =>
   render(
     <PendingInputFlushProvider>
-      <table>
-        <tbody>
-          <ImportDraftReviewRow
-            draftId={row.batchId}
-            row={row}
-            categories={[mockCategory]}
-            orgMembers={[]}
-            selectable
-            expanded
-            onExpandedChange={vi.fn()}
-            onSelectionChange={vi.fn()}
-          />
-        </tbody>
-      </table>
+      <ImportDraftReviewProvider
+        draftId={row.batchId}
+        categories={[mockCategory]}
+        orgMembers={[]}
+      >
+        <ImportReviewDescriptionCell row={row} />
+        <ImportDraftReviewRowDetails row={row} />
+      </ImportDraftReviewProvider>
     </PendingInputFlushProvider>
   );
 
@@ -101,7 +97,7 @@ describe('ImportDraftReviewRow', () => {
 
   it('preserves unsaved notes when description blur-save updates the row', async () => {
     const user = userEvent.setup();
-    const { rerender } = renderRow(baseRow());
+    const { rerender } = renderRowFields(baseRow());
 
     const descriptionInput = screen.getByLabelText('Description for Coffee');
     const notesInput = screen.getByLabelText('Notes for Coffee');
@@ -120,24 +116,26 @@ describe('ImportDraftReviewRow', () => {
 
     rerender(
       <PendingInputFlushProvider>
-        <table>
-          <tbody>
-            <ImportDraftReviewRow
-              draftId={baseRow().batchId}
-              row={{
-                ...baseRow(),
-                reviewDescription: 'Updated coffee',
-                updatedAt: '2026-05-20T13:00:00Z',
-              }}
-              categories={[mockCategory]}
-              orgMembers={[]}
-              selectable
-              expanded
-              onExpandedChange={vi.fn()}
-              onSelectionChange={vi.fn()}
-            />
-          </tbody>
-        </table>
+        <ImportDraftReviewProvider
+          draftId={baseRow().batchId}
+          categories={[mockCategory]}
+          orgMembers={[]}
+        >
+          <ImportReviewDescriptionCell
+            row={{
+              ...baseRow(),
+              reviewDescription: 'Updated coffee',
+              updatedAt: '2026-05-20T13:00:00Z',
+            }}
+          />
+          <ImportDraftReviewRowDetails
+            row={{
+              ...baseRow(),
+              reviewDescription: 'Updated coffee',
+              updatedAt: '2026-05-20T13:00:00Z',
+            }}
+          />
+        </ImportDraftReviewProvider>
       </PendingInputFlushProvider>
     );
 

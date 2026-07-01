@@ -3,6 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useGetImportDraft } from '@/lib/data-access/imports';
 import { ImportReview } from './ImportReview';
 
+vi.mock('./ImportDraftReviewTable', () => ({
+  ImportDraftReviewTable: () => (
+    <div data-testid="import-draft-review-table">Review table</div>
+  ),
+}));
+
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
     <a href={to}>{children}</a>
