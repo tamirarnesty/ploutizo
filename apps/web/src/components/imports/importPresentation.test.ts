@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { ImportDraftRow, OrgMember } from '@ploutizo/types';
 import {
+  formatImportBatchStatusLabel,
   getImportRowReviewBlockers,
   getImportRowStatusTooltip,
+  importBatchStatusVariant,
   resolveImportRowAssigneeMemberIds,
   shouldDefaultExpandImportRow,
 } from './importPresentation';
@@ -132,5 +134,19 @@ describe('importPresentation review helpers', () => {
         reviewAssigneeMemberIds: [],
       })
     ).toEqual(['date', 'description', 'category', 'assignee']);
+  });
+});
+
+describe('importPresentation batch status presentation', () => {
+  it('formats batch status labels', () => {
+    expect(formatImportBatchStatusLabel('draft')).toBe('Draft');
+    expect(formatImportBatchStatusLabel('completed')).toBe('Completed');
+    expect(formatImportBatchStatusLabel('discarded')).toBe('Discarded');
+  });
+
+  it('maps batch status to badge variants', () => {
+    expect(importBatchStatusVariant('completed')).toBe('outline');
+    expect(importBatchStatusVariant('discarded')).toBe('secondary');
+    expect(importBatchStatusVariant('draft')).toBe('secondary');
   });
 });

@@ -1,5 +1,6 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ImportDraftReview } from './ImportDraftReview';
 import {
@@ -10,6 +11,11 @@ import {
 
 const updateRowMutate = vi.fn();
 const updateRowSelectionMutate = vi.fn();
+
+const paginationMocks = vi.hoisted(() => ({
+  pagination: { pageIndex: 0, pageSize: 25 },
+  setPagination: vi.fn(),
+}));
 
 vi.mock('@ploutizo/ui/components/date-picker', () => ({
   DatePicker: () => <div>Date picker</div>,
@@ -23,8 +29,24 @@ vi.mock('@/components/categories/CategorySelect', () => ({
   CategorySelect: () => <div>Category select</div>,
 }));
 
-vi.mock('./ImportAssigneeField', () => ({
-  ImportAssigneeField: () => <div>Assignee field</div>,
+vi.mock('@/components/members/MemberToggleGroup', () => ({
+  MemberToggleGroup: () => <div data-testid="member-toggle-group">Toggle</div>,
+}));
+
+vi.mock('@/components/members/MemberAvatarGroup', () => ({
+  MemberAvatarGroup: ({
+    members,
+  }: {
+    members: { id: string; name: string }[];
+  }) => (
+    <div data-testid="member-avatar-group">
+      {members.map((member) => (
+        <span key={member.id} data-testid="member-avatar">
+          {member.name}
+        </span>
+      ))}
+    </div>
+  ),
 }));
 
 vi.mock('./ImportReviewTagPicker', () => ({
@@ -59,13 +81,24 @@ vi.mock('@/lib/data-access/org', () => ({
 
 vi.mock('@/hooks/persistedPageSize', () => ({
   usePersistedPageSize: () => ({
-    pagination: { pageIndex: 0, pageSize: 25 },
-    setPagination: vi.fn(),
+    pagination: paginationMocks.pagination,
+    setPagination: paginationMocks.setPagination,
   }),
 }));
 
 const renderReview = (draft = makeImportDraft()) =>
-  render(<ImportDraftReview draft={draft} />);
+  render(
+    <TooltipProvider delay={0}>
+      <ImportDraftReview draft={draft} />
+    </TooltipProvider>
+  );
+
+const renderLoadingReview = () =>
+  render(
+    <TooltipProvider delay={0}>
+      <ImportDraftReview isLoading />
+    </TooltipProvider>
+  );
 
 const getRowExpandButtons = () =>
   screen.getAllByRole('button', { name: /details for/i });
@@ -73,6 +106,7 @@ const getRowExpandButtons = () =>
 describe('ImportDraftReview', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    paginationMocks.pagination = { pageIndex: 0, pageSize: 25 };
   });
 
   it('mounts the review grid', () => {
@@ -247,5 +281,137 @@ describe('ImportDraftReview', () => {
     });
     expect(expandButton).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByLabelText('Notes for Groceries')).toBeInTheDocument();
+  });
+
+  it('shows pagination controls when the draft has more rows than one page', () => {
+    const rows = Array.from({ length: 26 }, (_, index) =>
+      makeImportDraftRow({
+        id: `row_${index}`,
+        rowNumber: index + 1,
+        reviewDescription: `Transaction ${index}`,
+        selectedForImport: false,
+      })
+    );
+
+    renderReview(makeImportDraft({ rows }));
+
+    expect(screen.getByText('1 - 25 of 26')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Go to next page' })
+    ).toBeInTheDocument();
+  });
+
+  it('renders skeleton rows matching the page size while loading', () => {
+    renderLoadingReview();
+
+    const grid = screen.getByLabelText('Import draft review');
+    const bodyRows = within(grid).getAllByRole('row').slice(1);
+    expect(bodyRows).toHaveLength(25);
+  });
+
+  it('flushes description edits before batch select-all', async () => {
+    const user = userEvent.setup();
+    renderReview(
+      makeImportDraft({
+        rows: [
+          makeImportDraftRow({
+            id: 'row_a',
+            reviewDescription: 'Coffee',
+            selectedForImport: false,
+          }),
+          makeImportDraftRow({
+            id: 'row_b',
+            rowNumber: 3,
+            reviewDescription: 'Lunch',
+            selectedForImport: false,
+          }),
+        ],
+      })
+    );
+
+    const descriptionInput = screen.getByLabelText('Description for Coffee');
+    await user.clear(descriptionInput);
+    await user.type(descriptionInput, 'Updated coffee');
+
+    await user.click(
+      screen.getByRole('checkbox', { name: 'Select all rows on this page' })
+    );
+
+    expect(updateRowMutate).toHaveBeenCalledWith(
+      {
+        draftId: DRAFT_ID,
+        rowId: 'row_a',
+        body: { reviewDescription: 'Updated coffee' },
+      },
+      expect.anything()
+    );
+    expect(updateRowSelectionMutate).toHaveBeenCalledWith({
+      draftId: DRAFT_ID,
+      body: {
+        rowIds: ['row_a', 'row_b'],
+        selectedForImport: true,
+      },
+    });
+    expect(updateRowMutate.mock.invocationCallOrder[0]).toBeLessThan(
+      updateRowSelectionMutate.mock.invocationCallOrder[0]
+    );
+  });
+
+  it('shows the continue blocker in the tooltip when rows are selected but gating fails', async () => {
+    const user = userEvent.setup();
+    renderReview(
+      makeImportDraft({
+        rows: [
+          makeImportDraftRow({
+            id: 'row_needs_review',
+            status: 'needs_review',
+            reviewDescription: 'Groceries',
+            reviewCategoryName: null,
+            selectedForImport: true,
+          }),
+        ],
+      })
+    );
+
+    expect(
+      screen.queryByText('1 selected row still needs review.')
+    ).not.toBeInTheDocument();
+
+    await user.hover(screen.getByRole('button', { name: 'Continue' }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          '1 selected row still needs review. Import commit coming soon.'
+        )
+      ).toBeInTheDocument()
+    );
+  });
+
+  it('shows read-only assignee avatars for invalid rows in the grid', () => {
+    renderReview(
+      makeImportDraft({
+        rows: [
+          makeImportDraftRow({
+            id: 'row_ready',
+            status: 'ready',
+            reviewDescription: 'Coffee',
+            reviewAssigneeMemberIds: ['member_1'],
+          }),
+          makeImportDraftRow({
+            id: 'row_invalid',
+            rowNumber: 4,
+            status: 'invalid',
+            reviewDescription: 'Bad charge',
+            reviewAssigneeMemberIds: ['member_1'],
+            invalidReason: 'Amount must be a positive number.',
+          }),
+        ],
+      })
+    );
+
+    expect(screen.getAllByTestId('member-avatar-group')).toHaveLength(1);
+    expect(screen.getByText('Tamir Arnesty')).toBeInTheDocument();
+    expect(screen.getAllByTestId('member-toggle-group')).toHaveLength(1);
   });
 });
