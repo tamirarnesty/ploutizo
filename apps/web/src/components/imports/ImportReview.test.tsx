@@ -2,12 +2,10 @@ import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useGetImportDraft } from '@/lib/data-access/imports';
 import { ImportReview } from './ImportReview';
-
-vi.mock('./ImportDraftReviewTable', () => ({
-  ImportDraftReviewTable: () => (
-    <div data-testid="import-draft-review-table">Review table</div>
-  ),
-}));
+import {
+  makeImportDraft,
+  makeImportDraftRow,
+} from './test-fixtures/importDraft';
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
@@ -64,63 +62,19 @@ vi.mock('@/lib/data-access/org', () => ({
   }),
 }));
 
-vi.mock('@/lib/data-access/tags', () => ({
-  useGetTags: () => ({
-    data: [{ id: 'tag_1', name: 'amex', archivedAt: null }],
+vi.mock('@/hooks/persistedPageSize', () => ({
+  usePersistedPageSize: () => ({
+    pagination: { pageIndex: 0, pageSize: 25 },
+    setPagination: vi.fn(),
   }),
-  useCreateTag: () => ({ mutate: vi.fn() }),
 }));
 
-const draft = {
-  id: 'draft_1',
-  accountId: 'acct_1',
-  accountName: 'Visa',
-  accountInstitution: 'TD',
-  accountLastFour: '1234',
-  source: 'ploutizo_normalized',
-  status: 'draft' as const,
-  fileName: 'statement.csv',
+const draft = makeImportDraft({
   rowCount: 1,
   validRowCount: 1,
   invalidRowCount: 0,
-  importedAt: '2026-05-20T12:00:00.000Z',
-  completedAt: null,
-  discardedAt: null,
-  createdAt: '2026-05-20T12:00:00.000Z',
-  updatedAt: '2026-05-20T12:00:00.000Z',
-  rows: [
-    {
-      id: 'row_1',
-      batchId: 'draft_1',
-      rowNumber: 2,
-      status: 'ready' as const,
-      invalidReason: null,
-      rawData: { date: '2026-05-02', description: 'Coffee' },
-      externalId: 'visa-1001',
-      sourceDate: '2026-05-02',
-      sourceAmount: '42.18',
-      sourceDescription: 'Coffee',
-      sourceType: 'expense',
-      parsedDate: '2026-05-02',
-      parsedAmount: 4218,
-      parsedType: 'expense' as const,
-      parsedDescription: 'Coffee',
-      reviewDate: '2026-05-02',
-      reviewAmount: 4218,
-      reviewType: 'expense' as const,
-      reviewDescription: 'Coffee',
-      reviewCategoryName: 'Dining',
-      reviewAssigneeHint: 'Tamir Arnesty',
-      reviewAssigneeMemberIds: ['member_1'],
-      reviewRefundLinkHint: null,
-      reviewNotes: null,
-      reviewTags: [],
-      selectedForImport: false,
-      createdAt: '2026-05-20T12:00:00.000Z',
-      updatedAt: '2026-05-20T12:00:00.000Z',
-    },
-  ],
-};
+  rows: [makeImportDraftRow()],
+});
 
 describe('ImportReview', () => {
   beforeEach(() => {
@@ -159,6 +113,7 @@ describe('ImportReview', () => {
     expect(
       screen.getByText('statement.csv · 1 transaction')
     ).toBeInTheDocument();
+    expect(screen.getByLabelText('Import draft review')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
     expect(screen.getByText('Import commit coming soon')).toBeInTheDocument();
     expect(
@@ -168,18 +123,17 @@ describe('ImportReview', () => {
 
   it('shows an empty state when no rows are reviewable', () => {
     vi.mocked(useGetImportDraft).mockReturnValue({
-      data: {
-        ...draft,
+      data: makeImportDraft({
         validRowCount: 0,
         invalidRowCount: 1,
+        rowCount: 1,
         rows: [
-          {
-            ...draft.rows[0],
-            status: 'invalid' as const,
+          makeImportDraftRow({
+            status: 'invalid',
             invalidReason: 'Amount must be a positive number.',
-          },
+          }),
         ],
-      },
+      }),
       isLoading: false,
       isError: false,
     } as never);
