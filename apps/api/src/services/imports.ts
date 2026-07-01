@@ -31,6 +31,7 @@ import {
   touchImportDraft,
   updateImportDraftRowQuery,
 } from '@/lib/queries/imports';
+import { listOrgMembers } from '@/lib/queries/households';
 import { parsePloutizoNormalizedCsv } from '@/lib/imports/normalizedCsv';
 
 const isUniqueViolation = (error: unknown): boolean => {
@@ -68,6 +69,26 @@ const toImportTransactionType = (
   return (IMPORT_TRANSACTION_TYPE_VALUES as readonly string[]).includes(value)
     ? (value as ImportTransactionType)
     : null;
+};
+
+const matchOrgMemberIdsByHint = (
+  hint: string | null | undefined,
+  orgMembers: Awaited<ReturnType<typeof listOrgMembers>>
+): string[] => {
+  if (!hint) return [];
+  const normalized = hint.trim().toLowerCase();
+  if (!normalized) return [];
+
+  const exact = orgMembers.find(
+    (member) => member.displayName.trim().toLowerCase() === normalized
+  );
+  if (exact) return [exact.id];
+
+  const partial = orgMembers.find((member) => {
+    const displayName = member.displayName.trim().toLowerCase();
+    return displayName.includes(normalized) || normalized.includes(displayName);
+  });
+  return partial ? [partial.id] : [];
 };
 
 const toImportDraftRow = (
@@ -131,6 +152,7 @@ export const createNormalizedImportDraft = async (
   }
 
   const parsed = parsePloutizoNormalizedCsv(input.content);
+  const orgMembers = await listOrgMembers(orgId);
 
   try {
     const draftId = await db.transaction(async (tx) => {
@@ -148,17 +170,37 @@ export const createNormalizedImportDraft = async (
 
       await insertImportBatchRows(
         tx,
-        parsed.rows.map((row) => ({
-          ...row,
-          orgId,
-          batchId: batch.id,
-        }))
+        parsed.rows.map((row) => {
+          const reviewAssigneeMemberIds = matchOrgMemberIdsByHint(
+            row.reviewAssigneeHint,
+            orgMembers
+          );
+          return {
+            ...row,
+            status:
+              row.status === 'invalid'
+                ? row.status
+                : computeImportRowStatus({
+                    status: row.status,
+                    reviewType: toImportTransactionType(row.reviewType),
+                    parsedType: toImportTransactionType(row.parsedType),
+                    reviewCategoryName: row.reviewCategoryName,
+                    reviewAssigneeMemberIds,
+                  }),
+            reviewAssigneeMemberIds,
+            orgId,
+            batchId: batch.id,
+          };
+        })
       );
 
       return batch.id;
     });
 
-    return { draft: await getImportDraft(orgId, draftId), reusedExisting: false };
+    return {
+      draft: await getImportDraft(orgId, draftId),
+      reusedExisting: false,
+    };
   } catch (error) {
     if (!isUniqueViolation(error)) throw error;
 
@@ -192,6 +234,7 @@ export const updateImportDraftRow = async (
     reviewType: toImportTransactionType(merged.reviewType),
     parsedType: toImportTransactionType(merged.parsedType),
     reviewCategoryName: merged.reviewCategoryName ?? null,
+    reviewAssigneeMemberIds: merged.reviewAssigneeMemberIds,
   });
 
   const updated = await updateImportDraftRowQuery(orgId, rowId, {
@@ -203,4 +246,5 @@ export const updateImportDraftRow = async (
   return toImportDraftRow(updated);
 };
 
-export const getNormalizedImportExampleCsv = () => NORMALIZED_IMPORT_EXAMPLE_CSV;
+export const getNormalizedImportExampleCsv = () =>
+  NORMALIZED_IMPORT_EXAMPLE_CSV;

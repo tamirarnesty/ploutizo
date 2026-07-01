@@ -101,7 +101,8 @@ const draft = {
       reviewType: 'expense' as const,
       reviewDescription: 'Coffee',
       reviewCategoryName: 'Dining',
-      reviewAssigneeHint: null,
+      reviewAssigneeHint: 'Tamir Arnesty',
+      reviewAssigneeMemberIds: ['member_1'],
       reviewRefundLinkHint: null,
       reviewNotes: null,
       reviewTags: [],
@@ -146,9 +147,38 @@ describe('ImportReview', () => {
       screen.getByRole('navigation', { name: 'breadcrumb' })
     ).toBeInTheDocument();
     expect(screen.getByText('Review import')).toBeInTheDocument();
-    expect(screen.getByText('statement.csv')).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'Select rows to continue' })
-    ).toBeDisabled();
+      screen.getByText('statement.csv · 1 transaction')
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
+    expect(
+      screen.getByText('Select at least one row to continue.')
+    ).toBeInTheDocument();
+  });
+
+  it('shows an empty state when no rows are reviewable', () => {
+    vi.mocked(useGetImportDraft).mockReturnValue({
+      data: {
+        ...draft,
+        validRowCount: 0,
+        invalidRowCount: 1,
+        rows: [
+          {
+            ...draft.rows[0],
+            status: 'invalid' as const,
+            invalidReason: 'Amount must be a positive number.',
+          },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+    } as never);
+
+    render(<ImportReview draftId="draft_1" />);
+
+    expect(screen.getByText('No transactions to review')).toBeInTheDocument();
+    expect(
+      screen.getByText(/Every row in this draft is invalid or skipped/)
+    ).toBeInTheDocument();
   });
 });

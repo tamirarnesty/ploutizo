@@ -5,6 +5,7 @@ export interface ImportRowStatusInput {
   reviewType: ImportTransactionType | null;
   parsedType: ImportTransactionType | null;
   reviewCategoryName: string | null;
+  reviewAssigneeMemberIds: string[];
 }
 
 export const computeImportRowStatus = (
@@ -16,7 +17,10 @@ export const computeImportRowStatus = (
   const type = row.reviewType ?? row.parsedType;
   if (!type) return 'needs_review';
 
-  const requiresReview = type === 'settlement' || !row.reviewCategoryName;
+  const requiresReview =
+    type === 'settlement' ||
+    !row.reviewCategoryName ||
+    row.reviewAssigneeMemberIds.length === 0;
 
   return requiresReview ? 'needs_review' : 'ready';
 };

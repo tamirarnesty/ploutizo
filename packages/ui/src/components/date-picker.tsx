@@ -17,6 +17,7 @@ export type DatePickerProps = {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  'aria-label'?: string;
 };
 
 /**
@@ -31,6 +32,7 @@ export const DatePicker = ({
   placeholder = 'Pick a date',
   disabled,
   className,
+  'aria-label': ariaLabel,
 }: DatePickerProps) => {
   const [open, setOpen] = useState(false);
   const parsedDate = value ? parseISO(value) : undefined;
@@ -46,6 +48,7 @@ export const DatePicker = ({
             id={id}
             variant="outline"
             type="button"
+            aria-label={ariaLabel}
             disabled={disabled}
             className={cn(
               'w-full justify-start text-left font-normal',

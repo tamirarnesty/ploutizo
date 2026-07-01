@@ -1,9 +1,12 @@
 export const TABLE_PAGE_SIZE_OPTIONS = [5, 10, 25, 50, 100] as const;
 export const CARD_BALANCES_PAGE_SIZE_OPTIONS = [3, 5, 10] as const;
+export const IMPORT_REVIEW_PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 
 export type TablePageSize = (typeof TABLE_PAGE_SIZE_OPTIONS)[number];
 export type CardBalancesPageSize =
   (typeof CARD_BALANCES_PAGE_SIZE_OPTIONS)[number];
+export type ImportReviewPageSize =
+  (typeof IMPORT_REVIEW_PAGE_SIZE_OPTIONS)[number];
 
 export const PAGE_SIZE_SCOPES = {
   transactions: {
@@ -30,6 +33,11 @@ export const PAGE_SIZE_SCOPES = {
     storageKey: 'ploutizo:dashboard:card-balances-page-size',
     defaultSize: 3 as CardBalancesPageSize,
     allowedSizes: CARD_BALANCES_PAGE_SIZE_OPTIONS,
+  },
+  'import-review': {
+    storageKey: 'ploutizo:import-review:page-size',
+    defaultSize: 25 as ImportReviewPageSize,
+    allowedSizes: IMPORT_REVIEW_PAGE_SIZE_OPTIONS,
   },
 } as const;
 

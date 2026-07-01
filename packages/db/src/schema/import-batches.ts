@@ -99,6 +99,10 @@ export const importBatchRows = pgTable(
     reviewDescription: text('review_description'),
     reviewCategoryName: text('review_category_name'),
     reviewAssigneeHint: text('review_assignee_hint'),
+    reviewAssigneeMemberIds: jsonb('review_assignee_member_ids')
+      .$type<string[]>()
+      .notNull()
+      .default([]),
     reviewRefundLinkHint: text('review_refund_link_hint'),
     reviewNotes: text('review_notes'),
     reviewTags: jsonb('review_tags').$type<string[]>().notNull().default([]),

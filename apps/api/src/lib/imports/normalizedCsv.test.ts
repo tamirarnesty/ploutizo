@@ -27,9 +27,10 @@ describe('parsePloutizoNormalizedCsv', () => {
     expect(parsed.validRowCount).toBe(1);
     expect(parsed.invalidRowCount).toBe(1);
     expect(parsed.rows[0]).toMatchObject({
-      status: 'ready',
+      status: 'needs_review',
       parsedAmount: 4218,
       reviewCategoryName: 'Groceries',
+      reviewAssigneeMemberIds: [],
       reviewTags: ['food', 'errands'],
       rawData: {
         date: '2026-05-02',
@@ -60,7 +61,8 @@ describe('parsePloutizoNormalizedCsv', () => {
 
   it('rejects unrecognized files with missing required headers', () => {
     expectImportError(
-      () => parsePloutizoNormalizedCsv('posted,total,memo\n2026-05-02,42,Coffee'),
+      () =>
+        parsePloutizoNormalizedCsv('posted,total,memo\n2026-05-02,42,Coffee'),
       'IMPORT_FILE_UNRECOGNIZED'
     );
   });
@@ -116,7 +118,10 @@ describe('parsePloutizoNormalizedCsv', () => {
   });
 
   it('rejects empty files and files with no importable rows', () => {
-    expectImportError(() => parsePloutizoNormalizedCsv('  \n\n'), 'IMPORT_FILE_EMPTY');
+    expectImportError(
+      () => parsePloutizoNormalizedCsv('  \n\n'),
+      'IMPORT_FILE_EMPTY'
+    );
     expectImportError(
       () =>
         parsePloutizoNormalizedCsv(
@@ -128,7 +133,8 @@ describe('parsePloutizoNormalizedCsv', () => {
 
   it('rejects files over the normalized import size limit', () => {
     expectImportError(
-      () => parsePloutizoNormalizedCsv('a'.repeat(MAX_NORMALIZED_IMPORT_BYTES + 1)),
+      () =>
+        parsePloutizoNormalizedCsv('a'.repeat(MAX_NORMALIZED_IMPORT_BYTES + 1)),
       'IMPORT_FILE_TOO_LARGE'
     );
   });

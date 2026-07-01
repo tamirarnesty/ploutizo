@@ -48,6 +48,7 @@ export type ParsedImportRow = Pick<
   | 'reviewDescription'
   | 'reviewCategoryName'
   | 'reviewAssigneeHint'
+  | 'reviewAssigneeMemberIds'
   | 'reviewRefundLinkHint'
   | 'reviewNotes'
   | 'reviewTags'
@@ -83,14 +84,12 @@ const HEADER_ALIASES: Partial<Record<string, HeaderKey>> = {
   tags: 'tags',
 };
 
-const IMPORT_TRANSACTION_TYPES = new Set<string>(IMPORT_TRANSACTION_TYPE_VALUES);
+const IMPORT_TRANSACTION_TYPES = new Set<string>(
+  IMPORT_TRANSACTION_TYPE_VALUES
+);
 
 const normalizeHeader = (value: string) =>
-  value
-    .trim()
-    .toLowerCase()
-    .replace(/[_-]+/g, ' ')
-    .replace(/\s+/g, ' ');
+  value.trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ');
 
 const optionalTrim = (value: string | undefined): string | null => {
   const trimmed = value?.trim() ?? '';
@@ -126,12 +125,7 @@ const parseCsvRecords = (content: string): CsvRecord[] => {
         i += 1;
       } else if (inQuotes) {
         inQuotes = false;
-        if (
-          next &&
-          next !== ',' &&
-          next !== '\n' &&
-          next !== '\r'
-        ) {
+        if (next && next !== ',' && next !== '\n' && next !== '\r') {
           throw new DomainError(
             400,
             'The CSV file could not be read because a quoted field contains trailing characters.',
@@ -260,7 +254,8 @@ const parseRow = (
   const parsedDescription = sourceDescription;
   const invalidReasons: string[] = [];
 
-  if (!parsedDate) invalidReasons.push('Date must be a valid YYYY-MM-DD value.');
+  if (!parsedDate)
+    invalidReasons.push('Date must be a valid YYYY-MM-DD value.');
   if (!parsedAmount) invalidReasons.push('Amount must be a positive number.');
   if (!parsedDescription) invalidReasons.push('Description is required.');
   if (!parsedType) {
@@ -275,6 +270,7 @@ const parseRow = (
         reviewType: parsedType,
         parsedType,
         reviewCategoryName,
+        reviewAssigneeMemberIds: [],
       });
 
   return {
@@ -297,6 +293,7 @@ const parseRow = (
     reviewDescription: parsedDescription,
     reviewCategoryName,
     reviewAssigneeHint,
+    reviewAssigneeMemberIds: [],
     reviewRefundLinkHint,
     reviewNotes,
     reviewTags,
@@ -307,7 +304,9 @@ export const parsePloutizoNormalizedCsv = (
   content: string
 ): ParsedNormalizedImport => {
   const strippedContent = content.replace(/^\uFEFF/, '');
-  if (Buffer.byteLength(strippedContent, 'utf8') > MAX_NORMALIZED_IMPORT_BYTES) {
+  if (
+    Buffer.byteLength(strippedContent, 'utf8') > MAX_NORMALIZED_IMPORT_BYTES
+  ) {
     throw new DomainError(
       413,
       'The CSV file is too large. Upload a file smaller than 512 KB.',
@@ -324,7 +323,9 @@ export const parsePloutizoNormalizedCsv = (
   const headerRecord = records[headerIndex];
   const headers = headerRecord.cells.map((header) => header.trim());
   const headerMap = buildHeaderMap(headers);
-  const missingHeaders = REQUIRED_HEADERS.filter((header) => !headerMap.has(header));
+  const missingHeaders = REQUIRED_HEADERS.filter(
+    (header) => !headerMap.has(header)
+  );
   if (missingHeaders.length > 0) {
     throw new DomainError(
       400,
@@ -333,7 +334,9 @@ export const parsePloutizoNormalizedCsv = (
     );
   }
 
-  const dataRecords = records.slice(headerIndex + 1).filter((record) => !isBlankRecord(record));
+  const dataRecords = records
+    .slice(headerIndex + 1)
+    .filter((record) => !isBlankRecord(record));
   if (dataRecords.length === 0) {
     throw new DomainError(
       400,
@@ -350,7 +353,9 @@ export const parsePloutizoNormalizedCsv = (
     );
   }
 
-  const rows = dataRecords.map((record) => parseRow(record, headers, headerMap));
+  const rows = dataRecords.map((record) =>
+    parseRow(record, headers, headerMap)
+  );
   const validRowCount = rows.filter((row) => row.status !== 'invalid').length;
   const invalidRowCount = rows.length - validRowCount;
 

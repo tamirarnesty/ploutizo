@@ -17,6 +17,7 @@ import {
   touchImportDraft,
   updateImportDraftRowQuery,
 } from '@/lib/queries/imports';
+import { listOrgMembers } from '@/lib/queries/households';
 
 vi.mock('@ploutizo/db', () => ({
   db: {
@@ -35,6 +36,10 @@ vi.mock('@/lib/queries/imports', () => ({
   listImportTargetAccounts: vi.fn(),
   touchImportDraft: vi.fn(),
   updateImportDraftRowQuery: vi.fn(),
+}));
+
+vi.mock('@/lib/queries/households', () => ({
+  listOrgMembers: vi.fn(),
 }));
 
 const summaryRow = {
@@ -79,6 +84,7 @@ const draftRow = {
   reviewDescription: 'Coffee',
   reviewCategoryName: 'Dining',
   reviewAssigneeHint: null,
+  reviewAssigneeMemberIds: ['44444444-4444-4444-8444-444444444444'],
   reviewRefundLinkHint: null,
   reviewNotes: null,
   reviewTags: [],
@@ -97,6 +103,19 @@ describe('import service', () => {
     vi.mocked(fetchActiveDraftByAccount).mockResolvedValue(null);
     vi.mocked(fetchDraftSummaryById).mockResolvedValue(summaryRow);
     vi.mocked(listDraftRows).mockResolvedValue([draftRow]);
+    vi.mocked(listOrgMembers).mockResolvedValue([
+      {
+        id: '44444444-4444-4444-8444-444444444444',
+        orgId: 'org_1',
+        displayName: 'Tamir Arnesty',
+        role: 'admin',
+        joinedAt: new Date('2026-01-01T00:00:00Z'),
+        externalId: 'user_1',
+        imageUrl: null,
+        firstName: 'Tamir',
+        lastName: 'Arnesty',
+      },
+    ]);
     vi.mocked(insertImportBatch).mockResolvedValue({
       id: summaryRow.id,
     } as never);
@@ -128,8 +147,8 @@ describe('import service', () => {
       accountId: summaryRow.accountId,
       fileName: 'statement.csv',
       content: [
-        'date,amount,description,type,category',
-        '2026-05-02,42.18,Coffee,expense,Dining',
+        'date,amount,description,type,category,assignee hint',
+        '2026-05-02,42.18,Coffee,expense,Dining,Tamir Arnesty',
         'bad,nope,,wat,',
       ].join('\n'),
     });
@@ -157,6 +176,7 @@ describe('import service', () => {
           orgId: 'org_1',
           status: 'ready',
           reviewDescription: 'Coffee',
+          reviewAssigneeMemberIds: ['44444444-4444-4444-8444-444444444444'],
         }),
         expect.objectContaining({
           batchId: summaryRow.id,

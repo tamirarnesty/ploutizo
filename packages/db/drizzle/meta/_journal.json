@@ -57,6 +57,13 @@
       "when": 1781020000000,
       "tag": "0008_import_row_selection",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1782943800000,
+      "tag": "0009_import_row_assignees",
+      "breakpoints": true
     }
   ]
 }

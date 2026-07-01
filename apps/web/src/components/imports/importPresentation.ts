@@ -128,3 +128,85 @@ export const resolveCategoryIdByName = (
     )?.id ?? ''
   );
 };
+
+export const resolveImportRowOriginalDescription = (
+  row: ImportDraftRow
+): string | null => {
+  const original = row.sourceDescription ?? row.parsedDescription;
+  const trimmed = original?.trim();
+  return trimmed ? trimmed : null;
+};
+
+export const getImportRowReviewBlockers = (row: ImportDraftRow): string[] => {
+  const blockers: string[] = [];
+  const reviewDate = row.reviewDate ?? row.parsedDate;
+  if (!reviewDate) blockers.push('date');
+  if (row.reviewAmount == null && row.parsedAmount == null) {
+    blockers.push('amount');
+  }
+  if (!row.reviewDescription?.trim() && !row.parsedDescription?.trim()) {
+    blockers.push('description');
+  }
+  if (!row.reviewCategoryName?.trim()) blockers.push('category');
+  if (row.reviewAssigneeMemberIds.length === 0) blockers.push('assignee');
+
+  const type = resolveImportRowType(row);
+  if (type === 'settlement' && row.status === 'needs_review') {
+    blockers.push('settlement review');
+  }
+
+  return blockers;
+};
+
+export const getImportRowStatusTooltip = (row: ImportDraftRow): string => {
+  switch (row.status) {
+    case 'ready':
+      return 'Ready to import';
+    case 'needs_review': {
+      const blockers = getImportRowReviewBlockers(row);
+      if (blockers.length === 0) return 'Needs review';
+      return `Needs review: missing ${blockers.join(', ')}`;
+    }
+    case 'invalid':
+      return row.invalidReason ?? 'Invalid row';
+    case 'skipped':
+      return 'Skipped and will not import';
+    default:
+      return row.status;
+  }
+};
+
+export const shouldDefaultExpandImportRow = (row: ImportDraftRow): boolean => {
+  if (row.reviewNotes?.trim()) return true;
+  if (row.reviewTags.length > 0) return true;
+  if (row.invalidReason) return true;
+  if (row.status === 'needs_review' || row.status === 'invalid') return true;
+  return false;
+};
+
+export const resolveImportRowAssigneeMemberIds = (
+  row: ImportDraftRow,
+  orgMembers: OrgMember[]
+): string[] => {
+  const validMemberIds = new Set(orgMembers.map((member) => member.id));
+  return row.reviewAssigneeMemberIds.filter((id) => validMemberIds.has(id));
+};
+
+export const formatImportDraftReviewSubtitle = (
+  draft: ImportDraftSummary | ImportDraft
+): string => {
+  const parts = [draft.fileName?.trim() || 'Untitled CSV'];
+  const transactionLabel =
+    draft.rowCount === 1 ? '1 transaction' : `${draft.rowCount} transactions`;
+  parts.push(transactionLabel);
+
+  if (draft.invalidRowCount > 0) {
+    const invalidLabel =
+      draft.invalidRowCount === 1
+        ? '1 invalid'
+        : `${draft.invalidRowCount} invalid`;
+    parts.push(invalidLabel);
+  }
+
+  return parts.join(' · ');
+};

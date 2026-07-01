@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ImportDraftRow } from '@ploutizo/types';
 import {
   canContinueImportReview,
+  getImportReviewContinueBlocker,
   getSelectableImportRows,
   getSelectedImportRows,
   isImportRowResolved,
@@ -29,6 +30,7 @@ const baseRow = {
   reviewDescription: 'Coffee',
   reviewCategoryName: 'Dining',
   reviewAssigneeHint: null,
+  reviewAssigneeMemberIds: [],
   reviewRefundLinkHint: null,
   reviewNotes: null,
   reviewTags: [],
@@ -73,23 +75,48 @@ describe('importRowSelection', () => {
     expect(isImportRowResolved(rows[1])).toBe(false);
   });
 
-  it('allows continue when every selected row is ready', () => {
+  it('allows continue when every selected row is ready and has an assignee', () => {
     const rows = [
       {
         ...baseRow,
         id: 'row_1',
         status: 'ready' as const,
+        reviewAssigneeMemberIds: ['member_1'],
         selectedForImport: true,
       },
       {
         ...baseRow,
         id: 'row_2',
         status: 'ready' as const,
+        reviewAssigneeMemberIds: ['member_1'],
         selectedForImport: false,
       },
     ];
 
     expect(getSelectableImportRows(rows)).toHaveLength(2);
     expect(canContinueImportReview(rows)).toBe(true);
+  });
+
+  it('blocks continue when selected rows are missing assignees', () => {
+    const rows = [
+      {
+        ...baseRow,
+        id: 'row_1',
+        status: 'ready' as const,
+        reviewAssigneeMemberIds: [],
+        selectedForImport: true,
+      },
+    ];
+
+    expect(canContinueImportReview(rows)).toBe(false);
+    expect(getImportReviewContinueBlocker(rows)).toBe(
+      '1 selected row needs an assignee.'
+    );
+  });
+
+  it('explains when no rows are selected', () => {
+    expect(getImportReviewContinueBlocker([baseRow])).toBe(
+      'Select at least one row to continue.'
+    );
   });
 });

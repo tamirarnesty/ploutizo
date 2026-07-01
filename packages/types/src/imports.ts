@@ -52,6 +52,7 @@ export interface ImportDraftRow {
   reviewDescription: string | null;
   reviewCategoryName: string | null;
   reviewAssigneeHint: string | null;
+  reviewAssigneeMemberIds: string[];
   reviewRefundLinkHint: string | null;
   reviewNotes: string | null;
   reviewTags: string[];
