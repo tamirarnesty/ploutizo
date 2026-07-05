@@ -1,7 +1,13 @@
-import { Outlet, createFileRoute } from '@tanstack/react-router';
+import {
+  Outlet,
+  createFileRoute,
+  useRouterState,
+} from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/react-start';
 import { getCookie } from '@tanstack/react-start/server';
 import { SidebarInset, SidebarProvider } from '@ploutizo/ui/components/sidebar';
+import { cn } from '@ploutizo/ui/lib/utils';
+import { resolveMainContentLayout } from '@/lib/layout/main-content-layout';
 import { AppSidebar } from '../components/AppSidebar';
 import { TopBar } from '../components/TopBar';
 import { useThemeKeyboardShortcut } from '../hooks/useThemeKeyboardShortcut';
@@ -14,6 +20,9 @@ const getSidebarState = createServerFn().handler(() => {
 const LayoutShell = () => {
   useThemeKeyboardShortcut();
   const defaultOpen = Route.useLoaderData();
+  const mainContentLayout = useRouterState({
+    select: (state) => resolveMainContentLayout(state.matches),
+  });
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
@@ -25,7 +34,13 @@ const LayoutShell = () => {
         <div className="flex min-h-0 flex-1">
           <AppSidebar />
           <SidebarInset className="min-w-0">
-            <main className="flex-1 overflow-auto p-6">
+            <main
+              className={cn(
+                'flex min-h-0 flex-1 flex-col p-6',
+                mainContentLayout === 'scroll' && 'overflow-auto',
+                mainContentLayout === 'viewport' && 'overflow-hidden'
+              )}
+            >
               <Outlet />
             </main>
           </SidebarInset>
