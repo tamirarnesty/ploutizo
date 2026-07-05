@@ -91,7 +91,6 @@ export const TransactionsTable = ({
   const table = useReactTable({
     data: transactions,
     columns,
-    enableColumnResizing: false,
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true, // server-side pagination
     manualSorting: true, // server-side sort (RESEARCH Pitfall 8)
@@ -148,7 +147,11 @@ export const TransactionsTable = ({
         recordCount={total}
         isLoading={isLoading}
         emptyMessage="No transactions yet"
-        tableLayout={{ width: 'fixed', columnsFill: true }}
+        tableLayout={{
+          width: 'fixed',
+          columnsFill: true,
+          columnsResizable: true,
+        }}
       >
         <div className="w-full space-y-2.5">
           <DataGridContainer>
