@@ -17,6 +17,8 @@ declare module '@tanstack/react-table' {
     headerTitle?: string;
     headerClassName?: string;
     cellClassName?: string;
+    /** Absorbs leftover viewport width when `tableLayout.columnsFill` is enabled. */
+    grow?: boolean;
     skeleton?: ReactNode;
     expandedContent?: (row: TData) => ReactNode;
   }
@@ -80,6 +82,8 @@ export interface DataGridProps<TData extends object> {
     dense?: boolean;
     cellBorder?: boolean;
     rowBorder?: boolean;
+    /** Bottom border on the body row while expanded. Defaults to `rowBorder`. */
+    rowBorderWhenExpanded?: boolean;
     rowRounded?: boolean;
     stripped?: boolean;
     headerBackground?: boolean;
@@ -88,6 +92,8 @@ export interface DataGridProps<TData extends object> {
     width?: 'auto' | 'fixed';
     columnsVisibility?: boolean;
     columnsResizable?: boolean;
+    /** Measure viewport slack and give it to the column with `meta.grow`. */
+    columnsFill?: boolean;
     columnsResizeMode?: 'onChange' | 'onEnd';
     columnsPinnable?: boolean;
     columnsMovable?: boolean;
