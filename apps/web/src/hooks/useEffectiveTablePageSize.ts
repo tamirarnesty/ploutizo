@@ -12,6 +12,7 @@ const LAST_VISIBLE_ROWS_KEYS: Record<PageSizeScope, string> = {
   expenses: 'ploutizo:expenses:last-visible-rows',
   income: 'ploutizo:income:last-visible-rows',
   'card-balances': 'ploutizo:card-balances:last-visible-rows',
+  'import-review': 'ploutizo:import-review:last-visible-rows',
 };
 
 const noopSubscribe = (_onStoreChange: () => void) => () => {};

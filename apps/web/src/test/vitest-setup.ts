@@ -17,3 +17,8 @@ if (typeof ResizeObserver === 'undefined') {
     unobserve() {}
   } as unknown as typeof ResizeObserver;
 }
+
+/** Base UI ScrollArea reads animation state from the viewport in jsdom. */
+if (typeof Element.prototype.getAnimations === 'undefined') {
+  Element.prototype.getAnimations = () => [];
+}

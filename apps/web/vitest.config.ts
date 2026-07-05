@@ -51,13 +51,10 @@ export default defineConfig({
       },
     },
   ],
-  // Static aliases are a fallback for specifiers the plugin does not handle (e.g.
-  // directory imports without a resolvable index, bare package-like paths). `@` maps
-  // only to webSrc here — UI-package directory imports via `@/` still resolve
-  // single-root until the plugin gains directory-index dual-root support.
+  // `@/` is resolved only via vitest-alias-at-slash-dual-root (uiSrc, then webSrc).
+  // A static `@` → webSrc alias breaks DataGrid imports inside packages/ui.
   resolve: {
     alias: {
-      '@': webSrc,
       '@ploutizo/components': path.resolve(
         __dirname,
         '../../packages/ui/src/components'
