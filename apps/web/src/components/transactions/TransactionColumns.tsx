@@ -1,4 +1,14 @@
-import { MoreHorizontal, NotepadText, Tag } from 'lucide-react';
+import {
+  CalendarDays,
+  Coins,
+  CreditCard,
+  Layers2,
+  MoreHorizontal,
+  NotepadText,
+  Tag,
+  Tags,
+  Users,
+} from 'lucide-react';
 import { DataGridColumnHeader } from '@ploutizo/ui/components/reui/data-grid/data-grid-column-header';
 import { Badge } from '@ploutizo/ui/components/badge';
 import { Button } from '@ploutizo/ui/components/button';
@@ -20,6 +30,7 @@ import { formatCurrency } from '@ploutizo/utils/currency';
 import { ICON_MAP } from '@/components/categories/LucideIconPicker';
 import { getColourBadgeClassFromRaw } from '@/components/colour/colour-token-classes';
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
+import { RightAlignedColumnHeader } from '@/components/dashboard/card-balances/RightAlignedColumnHeader';
 import type { TransactionRow } from '@/lib/data-access/transactions';
 import type { LucideIcon } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -63,6 +74,10 @@ export const typeBadgeVariant: Record<
 const isInternalType = (t: string) =>
   ['transfer', 'settlement', 'contribution'].includes(t);
 
+const columnHeaderIcon = (Icon: typeof CalendarDays) => (
+  <Icon aria-hidden="true" />
+);
+
 export const buildColumns = (
   setDeleteId: (id: string) => void,
   onEdit: (transaction: TransactionRow) => void,
@@ -75,7 +90,11 @@ export const buildColumns = (
       accessorKey: 'date',
       enableSorting: true,
       header: ({ column }) => (
-        <DataGridColumnHeader column={column} title="Date" />
+        <DataGridColumnHeader
+          column={column}
+          title="Date"
+          icon={columnHeaderIcon(CalendarDays)}
+        />
       ),
       size: 120,
       meta: {
@@ -106,7 +125,11 @@ export const buildColumns = (
       accessorKey: 'type',
       enableSorting: true,
       header: ({ column }) => (
-        <DataGridColumnHeader column={column} title="Type" />
+        <DataGridColumnHeader
+          column={column}
+          title="Type"
+          icon={columnHeaderIcon(Layers2)}
+        />
       ),
       size: 140,
       meta: {
@@ -141,9 +164,16 @@ export const buildColumns = (
     {
       id: 'description',
       enableSorting: false,
-      header: 'Description',
-      size: 9999,
+      header: ({ column }) => (
+        <DataGridColumnHeader
+          column={column}
+          title="Description"
+          icon={columnHeaderIcon(NotepadText)}
+        />
+      ),
+      size: 200,
       meta: {
+        grow: true,
         headerClassName: 'min-w-[200px]',
         cellClassName: 'min-w-[200px]',
         skeleton: <Skeleton className="h-4 w-40 motion-safe:animate-pulse" />,
@@ -224,7 +254,11 @@ export const buildColumns = (
       id: 'category',
       enableSorting: true,
       header: ({ column }) => (
-        <DataGridColumnHeader column={column} title="Category" />
+        <DataGridColumnHeader
+          column={column}
+          title="Category"
+          icon={columnHeaderIcon(Tag)}
+        />
       ),
       size: 160,
       meta: {
@@ -260,7 +294,11 @@ export const buildColumns = (
       id: 'account',
       enableSorting: true,
       header: ({ column }) => (
-        <DataGridColumnHeader column={column} title="Account" />
+        <DataGridColumnHeader
+          column={column}
+          title="Account"
+          icon={columnHeaderIcon(CreditCard)}
+        />
       ),
       size: 220,
       meta: {
@@ -299,7 +337,13 @@ export const buildColumns = (
     {
       id: 'assignees',
       enableSorting: false,
-      header: 'Assignees',
+      header: ({ column }) => (
+        <DataGridColumnHeader
+          column={column}
+          title="Assignees"
+          icon={columnHeaderIcon(Users)}
+        />
+      ),
       size: 120,
       meta: {
         headerClassName: 'min-w-[100px]',
@@ -327,7 +371,13 @@ export const buildColumns = (
     {
       id: 'tags',
       enableSorting: false,
-      header: 'Tags',
+      header: ({ column }) => (
+        <DataGridColumnHeader
+          column={column}
+          title="Tags"
+          icon={columnHeaderIcon(Tags)}
+        />
+      ),
       size: 160,
       meta: {
         headerClassName: 'min-w-[140px]',
@@ -380,7 +430,11 @@ export const buildColumns = (
       accessorKey: 'amount',
       enableSorting: true,
       header: ({ column }) => (
-        <DataGridColumnHeader column={column} title="Amount" />
+        <RightAlignedColumnHeader
+          column={column}
+          title="Amount"
+          icon={columnHeaderIcon(Coins)}
+        />
       ),
       size: 120,
       meta: {

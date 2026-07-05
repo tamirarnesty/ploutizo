@@ -147,7 +147,11 @@ export const TransactionsTable = ({
         recordCount={total}
         isLoading={isLoading}
         emptyMessage="No transactions yet"
-        tableLayout={{ width: 'auto' }}
+        tableLayout={{
+          width: 'fixed',
+          columnsFill: true,
+          columnsResizable: true,
+        }}
       >
         <div className="w-full space-y-2.5">
           <DataGridContainer>
