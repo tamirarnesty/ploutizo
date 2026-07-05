@@ -1,6 +1,5 @@
 import { useCallback, useRef } from 'react';
 import { Link, useRouterState } from '@tanstack/react-router';
-import { CreditCard, LayoutDashboard, Settings, Wallet } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -10,21 +9,23 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarTrigger,
   useSidebar,
 } from '@ploutizo/ui/components/sidebar';
 import { ThemeToggle } from '@ploutizo/ui/components/theme-toggle';
-
-const navItems = [
-  { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
-  { label: 'Transactions', to: '/transactions', icon: Wallet },
-  // /accounts 404s until Plan 03 creates the route — expected during Plan 02 execution
-  { label: 'Accounts', to: '/accounts', icon: CreditCard },
-] as const;
+import {
+  sidebarPrimaryNav,
+  sidebarSettingsNav,
+  toRegisteredRoute,
+} from '@/lib/navigation';
 
 export const AppSidebar = () => {
   const { location } = useRouterState();
   const isSettingsActive = location.pathname.startsWith('/settings');
+  const SettingsIcon = sidebarSettingsNav.icon;
 
   // Store sidebar context in a ref so closeMobile has stable [] deps (advanced-event-handler-refs)
   const sidebarCtx = useSidebar();
@@ -47,20 +48,54 @@ export const AppSidebar = () => {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu className="gap-1">
-              {navItems.map(({ label, to, icon: Icon }) => {
+              {sidebarPrimaryNav.map(({ label, to, icon: Icon, children }) => {
                 const active =
                   location.pathname === to ||
-                  location.pathname.startsWith(to + '/');
+                  (to === '/transactions' &&
+                    location.pathname.startsWith('/transactions/')) ||
+                  (to !== '/transactions' &&
+                    location.pathname.startsWith(`${to}/`));
                 return (
                   <SidebarMenuItem key={to}>
                     <SidebarMenuButton
                       isActive={active}
                       tooltip={label}
-                      render={<Link to={to} onClick={closeMobile} />}
+                      render={
+                        <Link
+                          to={toRegisteredRoute(to)}
+                          onClick={closeMobile}
+                        />
+                      }
                     >
                       <Icon />
                       <span>{label}</span>
                     </SidebarMenuButton>
+                    {children ? (
+                      <SidebarMenuSub>
+                        {children.map(
+                          ({
+                            label: childLabel,
+                            to: childTo,
+                            icon: ChildIcon,
+                          }) => (
+                            <SidebarMenuSubItem key={childTo}>
+                              <SidebarMenuSubButton
+                                isActive={location.pathname === childTo}
+                                render={
+                                  <Link
+                                    to={toRegisteredRoute(childTo)}
+                                    onClick={closeMobile}
+                                  />
+                                }
+                              >
+                                <ChildIcon />
+                                <span>{childLabel}</span>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          )
+                        )}
+                      </SidebarMenuSub>
+                    ) : null}
                   </SidebarMenuItem>
                 );
               })}
@@ -75,11 +110,13 @@ export const AppSidebar = () => {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   isActive={isSettingsActive}
-                  tooltip="Settings"
-                  render={<Link to="/settings" onClick={closeMobile} />}
+                  tooltip={sidebarSettingsNav.label}
+                  render={
+                    <Link to={sidebarSettingsNav.to} onClick={closeMobile} />
+                  }
                 >
-                  <Settings />
-                  <span>Settings</span>
+                  <SettingsIcon />
+                  <span>{sidebarSettingsNav.label}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
