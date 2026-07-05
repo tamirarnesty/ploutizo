@@ -11,9 +11,9 @@
 
 export const MEMBER_ROLE_VALUES = [
   'admin', // All members are admin in v1 — field reserved for future use
-] as const
+] as const;
 
-export type MemberRole = (typeof MEMBER_ROLE_VALUES)[number]
+export type MemberRole = (typeof MEMBER_ROLE_VALUES)[number];
 
 // ---------------------------------------------------------------------------
 // Accounts
@@ -27,9 +27,9 @@ export const ACCOUNT_TYPE_VALUES = [
   'e_transfer',
   'investment',
   'other',
-] as const
+] as const;
 
-export type AccountType = (typeof ACCOUNT_TYPE_VALUES)[number]
+export type AccountType = (typeof ACCOUNT_TYPE_VALUES)[number];
 
 // ---------------------------------------------------------------------------
 // Transactions
@@ -42,9 +42,18 @@ export const TRANSACTION_TYPE_VALUES = [
   'transfer',
   'settlement',
   'contribution',
-] as const
+] as const;
 
-export type TransactionType = (typeof TRANSACTION_TYPE_VALUES)[number]
+export type TransactionType = (typeof TRANSACTION_TYPE_VALUES)[number];
+
+export const IMPORT_TRANSACTION_TYPE_VALUES = [
+  'expense',
+  'refund',
+  'settlement',
+] as const satisfies readonly TransactionType[];
+
+export type ImportTransactionType =
+  (typeof IMPORT_TRANSACTION_TYPE_VALUES)[number];
 
 export const INCOME_TYPE_VALUES = [
   'direct_deposit',
@@ -52,19 +61,19 @@ export const INCOME_TYPE_VALUES = [
   'cash',
   'cheque',
   'other',
-] as const
+] as const;
 
-export type IncomeType = (typeof INCOME_TYPE_VALUES)[number]
+export type IncomeType = (typeof INCOME_TYPE_VALUES)[number];
 
 /** Transaction types included in settlement balance aggregates (ADR 0003). */
 export const SETTLEMENT_QUALIFYING_TRANSACTION_TYPE_VALUES = [
   'expense',
   'refund',
   'settlement',
-] as const satisfies readonly TransactionType[]
+] as const satisfies readonly TransactionType[];
 
 export type SettlementQualifyingTransactionType =
-  (typeof SETTLEMENT_QUALIFYING_TRANSACTION_TYPE_VALUES)[number]
+  (typeof SETTLEMENT_QUALIFYING_TRANSACTION_TYPE_VALUES)[number];
 
 // ---------------------------------------------------------------------------
 // Recurring
@@ -76,13 +85,13 @@ export const RECURRING_FREQUENCY_VALUES = [
   'bi_weekly',
   'monthly',
   'yearly',
-] as const
+] as const;
 
-export type RecurringFrequency = (typeof RECURRING_FREQUENCY_VALUES)[number]
+export type RecurringFrequency = (typeof RECURRING_FREQUENCY_VALUES)[number];
 
-export const RECURRING_STATUS_VALUES = ['active', 'stopped'] as const
+export const RECURRING_STATUS_VALUES = ['active', 'stopped'] as const;
 
-export type RecurringStatus = (typeof RECURRING_STATUS_VALUES)[number]
+export type RecurringStatus = (typeof RECURRING_STATUS_VALUES)[number];
 
 // ---------------------------------------------------------------------------
 // Classification
@@ -94,9 +103,9 @@ export const MERCHANT_MATCH_TYPE_VALUES = [
   'starts_with',
   'ends_with',
   'regex',
-] as const
+] as const;
 
-export type MerchantMatchType = (typeof MERCHANT_MATCH_TYPE_VALUES)[number]
+export type MerchantMatchType = (typeof MERCHANT_MATCH_TYPE_VALUES)[number];
 
 // ---------------------------------------------------------------------------
 // Budgets
@@ -108,9 +117,9 @@ export const BUDGET_PERIOD_TYPE_VALUES = [
   'bi_weekly',
   'yearly',
   'custom',
-] as const
+] as const;
 
-export type BudgetPeriodType = (typeof BUDGET_PERIOD_TYPE_VALUES)[number]
+export type BudgetPeriodType = (typeof BUDGET_PERIOD_TYPE_VALUES)[number];
 
 // ---------------------------------------------------------------------------
 // Investments
@@ -123,9 +132,9 @@ export const INVESTMENT_TYPE_VALUES = [
   'resp',
   'non_registered',
   'other',
-] as const
+] as const;
 
-export type InvestmentType = (typeof INVESTMENT_TYPE_VALUES)[number]
+export type InvestmentType = (typeof INVESTMENT_TYPE_VALUES)[number];
 
 // ---------------------------------------------------------------------------
 // Notifications
@@ -138,9 +147,9 @@ export const NOTIFICATION_TYPE_VALUES = [
   'contribution_over',
   'contribution_room_refresh',
   'invitation_received',
-] as const
+] as const;
 
-export type NotificationType = (typeof NOTIFICATION_TYPE_VALUES)[number]
+export type NotificationType = (typeof NOTIFICATION_TYPE_VALUES)[number];
 
 // ---------------------------------------------------------------------------
 // Household
@@ -150,7 +159,7 @@ export const SETTLEMENT_THRESHOLD_MODE_VALUES = [
   'app_default',
   'immediate',
   'custom',
-] as const
+] as const;
 
 export type SettlementThresholdMode =
-  (typeof SETTLEMENT_THRESHOLD_MODE_VALUES)[number]
+  (typeof SETTLEMENT_THRESHOLD_MODE_VALUES)[number];
