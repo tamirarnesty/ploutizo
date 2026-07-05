@@ -13,8 +13,11 @@ import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-
 import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-table';
 import { DataGridPagination } from '@ploutizo/ui/components/reui/data-grid/data-grid-pagination';
 import {
-  DATA_GRID_PAGINATION_ROW_CLASSNAME,
-  PAGINATED_DATA_GRID_SCROLL_ORIENTATION,
+  VIEWPORT_FILLED_DATA_GRID_CONTAINER_CLASSNAME,
+  VIEWPORT_FILLED_DATA_GRID_PAGINATION_CLASSNAME,
+  VIEWPORT_FILLED_DATA_GRID_SCROLL_AREA_CLASSNAME,
+  VIEWPORT_FILLED_DATA_GRID_SCROLL_ORIENTATION,
+  VIEWPORT_FILLED_DATA_GRID_SHELL_CLASSNAME,
 } from '@/components/data-grid/dataGridSharedLayout';
 import { useEffectiveTablePageSize } from '@/hooks/useEffectiveTablePageSize';
 import { IMPORT_REVIEW_PAGE_SIZE_OPTIONS } from '@/lib/prefs';
@@ -102,6 +105,7 @@ export const ImportDraftReviewTable = ({
   const table = useReactTable({
     data: rows,
     columns,
+    enableColumnResizing: false,
     state: {
       pagination: tablePagination,
       expanded,
@@ -117,35 +121,37 @@ export const ImportDraftReviewTable = ({
   });
 
   return (
-    <DataGrid
-      table={table}
-      recordCount={rows.length}
-      isLoading={isLoading}
-      tableLayout={{
-        width: 'auto',
-        dense: true,
-        columnsPinnable: true,
-        headerSticky: true,
-      }}
-    >
-      <div className="space-y-2">
-        <div
-          aria-label="Import draft review"
-          className="max-h-[640px] overflow-hidden rounded-md border border-border"
-        >
-          <DataGridContainer>
+    <div className="flex max-h-full min-h-0 w-full min-w-0 flex-col">
+      <DataGrid
+        table={table}
+        recordCount={rows.length}
+        isLoading={isLoading}
+        tableLayout={{
+          width: 'fixed',
+          dense: true,
+          columnsFill: true,
+          columnsPinnable: true,
+          headerSticky: true,
+          rowBorderWhenExpanded: false,
+        }}
+      >
+        <div className={VIEWPORT_FILLED_DATA_GRID_SHELL_CLASSNAME}>
+          <DataGridContainer
+            className={VIEWPORT_FILLED_DATA_GRID_CONTAINER_CLASSNAME}
+          >
             <DataGridScrollArea
-              orientation={PAGINATED_DATA_GRID_SCROLL_ORIENTATION}
+              className={VIEWPORT_FILLED_DATA_GRID_SCROLL_AREA_CLASSNAME}
+              orientation={VIEWPORT_FILLED_DATA_GRID_SCROLL_ORIENTATION}
             >
               <DataGridTable />
             </DataGridScrollArea>
           </DataGridContainer>
+          <DataGridPagination
+            sizes={[...IMPORT_REVIEW_PAGE_SIZE_OPTIONS]}
+            className={VIEWPORT_FILLED_DATA_GRID_PAGINATION_CLASSNAME}
+          />
         </div>
-        <DataGridPagination
-          sizes={[...IMPORT_REVIEW_PAGE_SIZE_OPTIONS]}
-          className={DATA_GRID_PAGINATION_ROW_CLASSNAME}
-        />
-      </div>
-    </DataGrid>
+      </DataGrid>
+    </div>
   );
 };

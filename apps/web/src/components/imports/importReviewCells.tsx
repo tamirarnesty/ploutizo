@@ -90,7 +90,7 @@ export const ImportReviewSelectionCell = ({
     : `Expand details for ${rowLabel}`;
 
   return (
-    <div className="flex items-start gap-2">
+    <div className="flex items-center gap-1">
       <Checkbox
         aria-label={`Select ${rowLabel}`}
         checked={row.selectedForImport}
@@ -99,25 +99,23 @@ export const ImportReviewSelectionCell = ({
           onSelectionChange(checked === true);
         }}
       />
-      <div className="flex flex-col items-center gap-1">
-        <ImportRowStatusIcon row={row} />
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-xs"
-          aria-expanded={expanded}
-          aria-label={expandLabel}
-          onClick={() => onExpandedChange(!expanded)}
-        >
-          <ChevronDown
-            className={cn(
-              'size-4 transition-transform',
-              !expanded && '-rotate-90'
-            )}
-            aria-hidden="true"
-          />
-        </Button>
-      </div>
+      <ImportRowStatusIcon row={row} />
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-xs"
+        aria-expanded={expanded}
+        aria-label={expandLabel}
+        onClick={() => onExpandedChange(!expanded)}
+      >
+        <ChevronDown
+          className={cn(
+            'size-4 transition-transform',
+            !expanded && '-rotate-90'
+          )}
+          aria-hidden="true"
+        />
+      </Button>
     </div>
   );
 };
@@ -137,7 +135,6 @@ export const ImportReviewDateCell = ({ row }: ImportReviewDateCellProps) => {
       aria-label={`Date for ${rowLabel}`}
       value={reviewDate || undefined}
       disabled={disabled}
-      className="w-32"
       onChange={(nextDate) => {
         if (nextDate === row.reviewDate) return;
         saveField({ reviewDate: nextDate });
@@ -239,6 +236,7 @@ export const ImportReviewDescriptionCell = ({
       <Input
         id={`import-row-description-${row.id}`}
         aria-label={`Description for ${rowLabel}`}
+        className="w-full"
         value={description}
         disabled={disabled}
         autoComplete="off"

@@ -1,6 +1,16 @@
-import { ChevronsDown, ChevronsUp } from 'lucide-react';
+import {
+  CalendarDays,
+  ChevronsDown,
+  ChevronsUp,
+  Coins,
+  Layers2,
+  NotepadText,
+  Tag,
+  Users,
+} from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import { Checkbox } from '@ploutizo/ui/components/checkbox';
+import { DataGridColumnHeader } from '@ploutizo/ui/components/reui/data-grid/data-grid-column-header';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import {
   Tooltip,
@@ -19,6 +29,10 @@ import {
 } from './importReviewCells';
 import { ImportDraftReviewRowDetails } from './ImportDraftReviewRowDetails';
 import type { ColumnDef } from '@tanstack/react-table';
+
+const columnHeaderIcon = (Icon: typeof CalendarDays) => (
+  <Icon aria-hidden="true" />
+);
 
 export interface BuildImportReviewColumnsOptions {
   headerChecked: boolean;
@@ -98,8 +112,8 @@ export const buildImportReviewColumns = ({
       ),
       size: 88,
       meta: {
-        headerClassName: 'min-w-[88px]',
-        cellClassName: 'min-w-[88px]',
+        headerClassName: 'min-w-22',
+        cellClassName: 'min-w-22',
         skeleton: <Skeleton className="h-4 w-4" />,
         expandedContent: (row) => <ImportDraftReviewRowDetails row={row} />,
       },
@@ -120,25 +134,37 @@ export const buildImportReviewColumns = ({
     {
       id: 'date',
       accessorKey: 'reviewDate',
-      header: 'Date',
+      header: ({ column }) => (
+        <DataGridColumnHeader
+          column={column}
+          title="Date"
+          icon={columnHeaderIcon(CalendarDays)}
+        />
+      ),
       enableSorting: false,
-      size: 150,
+      size: 192,
       meta: {
-        headerClassName: 'min-w-[150px]',
-        cellClassName: 'min-w-[150px]',
-        skeleton: <Skeleton className="h-4 w-20" />,
+        headerClassName: 'min-w-48',
+        cellClassName: 'min-w-48',
+        skeleton: <Skeleton className="h-4 w-24" />,
       },
       cell: ({ row }) => <ImportReviewDateCell row={row.original} />,
     },
     {
       id: 'amount',
       accessorKey: 'reviewAmount',
-      header: 'Amount',
+      header: ({ column }) => (
+        <DataGridColumnHeader
+          column={column}
+          title="Amount"
+          icon={columnHeaderIcon(Coins)}
+        />
+      ),
       enableSorting: false,
-      size: 150,
+      size: 144,
       meta: {
-        headerClassName: 'min-w-[150px]',
-        cellClassName: 'min-w-[150px]',
+        headerClassName: 'min-w-36',
+        cellClassName: 'min-w-36',
         skeleton: <Skeleton className="ml-auto h-4 w-20" />,
       },
       cell: ({ row }) => <ImportReviewAmountCell row={row.original} />,
@@ -146,12 +172,18 @@ export const buildImportReviewColumns = ({
     {
       id: 'type',
       accessorKey: 'reviewType',
-      header: 'Type',
+      header: ({ column }) => (
+        <DataGridColumnHeader
+          column={column}
+          title="Type"
+          icon={columnHeaderIcon(Layers2)}
+        />
+      ),
       enableSorting: false,
       size: 160,
       meta: {
-        headerClassName: 'min-w-[160px]',
-        cellClassName: 'min-w-[160px]',
+        headerClassName: 'min-w-40',
+        cellClassName: 'min-w-40',
         skeleton: <Skeleton className="h-4 w-16" />,
       },
       cell: ({ row }) => <ImportReviewTypeCell row={row.original} />,
@@ -159,12 +191,19 @@ export const buildImportReviewColumns = ({
     {
       id: 'description',
       accessorKey: 'reviewDescription',
-      header: 'Description',
+      header: ({ column }) => (
+        <DataGridColumnHeader
+          column={column}
+          title="Description"
+          icon={columnHeaderIcon(NotepadText)}
+        />
+      ),
       enableSorting: false,
-      size: 300,
+      size: 272,
       meta: {
-        headerClassName: 'min-w-[300px]',
-        cellClassName: 'min-w-[300px]',
+        grow: true,
+        headerClassName: 'min-w-68',
+        cellClassName: 'min-w-68',
         skeleton: <Skeleton className="h-4 w-48" />,
       },
       cell: ({ row }) => <ImportReviewDescriptionCell row={row.original} />,
@@ -172,24 +211,36 @@ export const buildImportReviewColumns = ({
     {
       id: 'category',
       accessorKey: 'reviewCategoryName',
-      header: 'Category',
+      header: ({ column }) => (
+        <DataGridColumnHeader
+          column={column}
+          title="Category"
+          icon={columnHeaderIcon(Tag)}
+        />
+      ),
       enableSorting: false,
-      size: 220,
+      size: 192,
       meta: {
-        headerClassName: 'min-w-[220px]',
-        cellClassName: 'min-w-[220px]',
+        headerClassName: 'min-w-48',
+        cellClassName: 'min-w-48',
         skeleton: <Skeleton className="h-4 w-28" />,
       },
       cell: ({ row }) => <ImportReviewCategoryCell row={row.original} />,
     },
     {
       id: 'assignee',
-      header: 'Assignee',
+      header: ({ column }) => (
+        <DataGridColumnHeader
+          column={column}
+          title="Assignee"
+          icon={columnHeaderIcon(Users)}
+        />
+      ),
       enableSorting: false,
-      size: 300,
+      size: 224,
       meta: {
-        headerClassName: 'min-w-[300px]',
-        cellClassName: 'min-w-[300px]',
+        headerClassName: 'min-w-56',
+        cellClassName: 'min-w-56',
         skeleton: <Skeleton className="h-4 w-32" />,
       },
       cell: ({ row }) => <ImportReviewAssigneeCell row={row.original} />,

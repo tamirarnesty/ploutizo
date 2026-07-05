@@ -54,7 +54,7 @@ const ImportDraftReviewContent = ({
   const showEmptyState = !isLoading && draft && !hasReviewableRows;
 
   return (
-    <section className="space-y-3">
+    <section className="flex min-h-0 flex-1 flex-col gap-3">
       <ImportDraftReviewHeader
         draft={draft}
         isLoading={isLoading}
@@ -62,29 +62,31 @@ const ImportDraftReviewContent = ({
         continueBlocker={continueBlocker}
       />
 
-      {showEmptyState ? (
-        <Empty className="min-h-[280px] border border-dashed">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <Inbox />
-            </EmptyMedia>
-            <EmptyTitle>No transactions to review</EmptyTitle>
-            <EmptyDescription>
-              {getEmptyDraftDescription(draft)}
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      ) : draft ? (
-        <ImportDraftReviewProvider
-          draftId={draft.id}
-          categories={categories}
-          orgMembers={orgMembers}
-        >
+      <div className="flex min-h-0 flex-1 flex-col">
+        {showEmptyState ? (
+          <Empty className="min-h-[280px] border border-dashed">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <Inbox />
+              </EmptyMedia>
+              <EmptyTitle>No transactions to review</EmptyTitle>
+              <EmptyDescription>
+                {getEmptyDraftDescription(draft)}
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : draft ? (
+          <ImportDraftReviewProvider
+            draftId={draft.id}
+            categories={categories}
+            orgMembers={orgMembers}
+          >
+            <ImportDraftReviewTable reviewState={reviewState} />
+          </ImportDraftReviewProvider>
+        ) : (
           <ImportDraftReviewTable reviewState={reviewState} />
-        </ImportDraftReviewProvider>
-      ) : (
-        <ImportDraftReviewTable reviewState={reviewState} />
-      )}
+        )}
+      </div>
     </section>
   );
 };

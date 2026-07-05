@@ -40,12 +40,14 @@ const ImportReviewBreadcrumbs = () => (
   </Breadcrumb>
 );
 
+const importReviewPageClassName = 'flex min-h-0 flex-1 flex-col gap-8';
+
 export const ImportReview = ({ draftId }: ImportReviewProps) => {
   const { data: draft, isLoading, isError } = useGetImportDraft(draftId);
 
   if (isLoading) {
     return (
-      <div className="space-y-8">
+      <div className={importReviewPageClassName}>
         <ImportReviewBreadcrumbs />
         <ImportDraftReview isLoading />
       </div>
@@ -54,7 +56,7 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
 
   if (isError || !draft) {
     return (
-      <div className="space-y-8">
+      <div className={importReviewPageClassName}>
         <ImportReviewBreadcrumbs />
         <Empty className="min-h-[360px] border border-dashed">
           <EmptyHeader>
@@ -77,7 +79,7 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
   }
 
   return (
-    <div className="space-y-8">
+    <div className={importReviewPageClassName}>
       <ImportReviewBreadcrumbs />
       <ImportDraftReview draft={draft} />
     </div>

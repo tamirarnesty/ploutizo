@@ -113,7 +113,7 @@ describe('ImportReview', () => {
     expect(
       screen.getByText('statement.csv · 1 transaction')
     ).toBeInTheDocument();
-    expect(screen.getByLabelText('Import draft review')).toBeInTheDocument();
+    expect(screen.getByRole('table')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
     expect(screen.getByText('Import commit coming soon')).toBeInTheDocument();
     expect(

@@ -7,5 +7,8 @@ const ImportReviewRoute = () => {
 };
 
 export const Route = createFileRoute('/_layout/transactions/import/$draftId')({
+  staticData: {
+    mainContentLayout: 'viewport',
+  },
   component: ImportReviewRoute,
 });

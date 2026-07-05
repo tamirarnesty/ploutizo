@@ -29,7 +29,7 @@ export const ImportAssigneeField = ({
     }));
 
   return (
-    <div className="min-w-[220px]">
+    <div className="min-w-52">
       {disabled ? (
         <MemberAvatarGroup members={selectedMembers} withTooltips />
       ) : (

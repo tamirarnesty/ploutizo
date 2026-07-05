@@ -112,7 +112,7 @@ describe('ImportDraftReview', () => {
   it('mounts the review grid', () => {
     renderReview(makeImportDraft({ rows: [makeImportDraftRow()] }));
 
-    expect(screen.getByLabelText('Import draft review')).toBeInTheDocument();
+    expect(screen.getByRole('table')).toBeInTheDocument();
   });
 
   it('keeps Continue disabled with preview copy and tooltip-only blocker', () => {
@@ -257,9 +257,7 @@ describe('ImportDraftReview', () => {
     );
 
     expect(screen.getByText('No transactions to review')).toBeInTheDocument();
-    expect(
-      screen.queryByLabelText('Import draft review')
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 
   it('defaults needs_review rows to expanded on first render', () => {
@@ -304,7 +302,7 @@ describe('ImportDraftReview', () => {
   it('renders skeleton rows matching the page size while loading', () => {
     renderLoadingReview();
 
-    const grid = screen.getByLabelText('Import draft review');
+    const grid = screen.getByRole('table');
     const bodyRows = within(grid).getAllByRole('row').slice(1);
     expect(bodyRows).toHaveLength(25);
   });
