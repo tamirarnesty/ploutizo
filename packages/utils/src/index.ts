@@ -1,5 +1,9 @@
+export { parseImportTags } from './parse-import-tags';
 export { lrmSplit } from './lrm';
-export { scaleAssigneeSplitProportionally, type AssigneeSplitRow } from './scale-assignee-split';
+export {
+  scaleAssigneeSplitProportionally,
+  type AssigneeSplitRow,
+} from './scale-assignee-split';
 export { formatSettlementDescription } from './settlement-description';
 export {
   normalizeTransactionAssignees,

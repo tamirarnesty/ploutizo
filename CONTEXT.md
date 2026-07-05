@@ -42,6 +42,26 @@ _Avoid_: Card-funded contribution, contribution to a chequing account
 
 ### Import language
 
+**Import hub**:
+The starting point for credit card import work. It helps a household member start a new import, resume or discard active drafts, and see recent import outcomes; it is not the place where a draft is fully reviewed.
+_Avoid_: Import wizard, import review page
+
+**Import draft**:
+A durable in-progress import for one **settlement-scoped account**. A household member can resume or discard it before confirm; only one active import draft may exist for a credit card account at a time.
+_Avoid_: Temporary upload, local preview, partial import
+
+**Review import**:
+The focused work of inspecting one **import draft** before final confirmation. During review, the user chooses which rows to include, corrects editable transaction fields, and resolves blocking row states.
+_Avoid_: Processing import, inline draft preview
+
+**Selected import row**:
+An import draft row the user has explicitly chosen to include in the next confirm. Selected rows must be resolved before confirm; invalid or unresolved selected rows block the import from moving forward.
+_Avoid_: Automatically included row, checked transaction
+
+**Finalize import**:
+The last confirmation checkpoint for an import draft. It commits selected resolved rows into normal transactions, records skipped and unprocessed outcomes, and closes the draft completely.
+_Avoid_: Partial confirm, background import
+
 **Bill payment row**:
 A credit card statement import row that represents paying down the card issuer. In Ploutizo this is a **Settlement**, not a refund, income, or transfer. It reduces obligation on the card and may match an existing manually entered **Settlement** even when statement dates do not align exactly. The statement row proves the destination card was credited; the funding source is loose during import because card CSVs usually do not identify the paid-from account. A new bill payment row that does not match an existing settlement needs **Pay toward** before confirm.
 _Avoid_: Treating a card bill payment as a merchant refund, income, or transfer
