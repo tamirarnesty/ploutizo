@@ -16,7 +16,10 @@ import type {
   UpdateImportDraftRowSelectionInput,
 } from '@ploutizo/validators';
 import { DomainError, NotFoundError } from '@/lib/errors';
-import { computeImportRowStatus } from '@/lib/imports/rowStatus';
+import {
+  computeImportRowStatus,
+  isImportRowStructurallyInvalid,
+} from '@/lib/imports/rowStatus';
 import {
   discardImportDraftQuery,
   fetchActiveCreditCardAccount,
@@ -232,17 +235,37 @@ export const updateImportDraftRow = async (
   if (!existing) throw new NotFoundError('Import draft row not found.');
 
   const merged = { ...existing, ...input };
-  const status = computeImportRowStatus({
-    status: existing.status,
-    reviewType: toImportTransactionType(merged.reviewType),
-    parsedType: toImportTransactionType(merged.parsedType),
-    reviewCategoryName: merged.reviewCategoryName ?? null,
-    reviewAssigneeMemberIds: merged.reviewAssigneeMemberIds,
+  const reviewType = toImportTransactionType(merged.reviewType);
+  const parsedType = toImportTransactionType(merged.parsedType);
+  const structurallyInvalid = isImportRowStructurallyInvalid({
+    reviewDate: merged.reviewDate ?? null,
+    reviewAmount: merged.reviewAmount ?? null,
+    reviewType,
+    reviewDescription: merged.reviewDescription ?? null,
+    parsedDate: merged.parsedDate ?? null,
+    parsedAmount: merged.parsedAmount ?? null,
+    parsedType,
+    parsedDescription: merged.parsedDescription ?? null,
   });
+  const status =
+    existing.status === 'skipped'
+      ? 'skipped'
+      : structurallyInvalid
+        ? 'invalid'
+        : computeImportRowStatus({
+            status: 'needs_review',
+            reviewType,
+            parsedType,
+            reviewCategoryName: merged.reviewCategoryName ?? null,
+            reviewAssigneeMemberIds: merged.reviewAssigneeMemberIds,
+          });
 
   const updated = await updateImportDraftRowQuery(orgId, rowId, {
     ...input,
     status,
+    ...(existing.status === 'invalid' && !structurallyInvalid
+      ? { invalidReason: null }
+      : {}),
   });
   if (!updated) throw new NotFoundError('Import draft row not found.');
   await touchImportDraft(orgId, existing.batchId);
@@ -267,17 +290,18 @@ export const updateImportDraftRowSelection = async (
     throw new NotFoundError('Import draft row not found.');
   }
 
-  const updated = await db.transaction(async () => {
+  const updated = await db.transaction(async (tx) => {
     const rows = await updateImportDraftRowSelectionQuery(
       orgId,
       draftId,
       uniqueRowIds,
-      input.selectedForImport
+      input.selectedForImport,
+      tx
     );
     if (rows.length !== uniqueRowIds.length) {
       throw new NotFoundError('Import draft row not found.');
     }
-    await touchImportDraft(orgId, draftId);
+    await touchImportDraft(orgId, draftId, tx);
     return rows;
   });
 

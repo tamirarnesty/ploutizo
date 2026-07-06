@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { computeImportRowStatus } from './import-row-status';
+import {
+  computeImportRowStatus,
+  isImportRowStructurallyInvalid,
+} from './import-row-status';
 
 describe('computeImportRowStatus', () => {
   const readyRow = {
@@ -71,5 +74,43 @@ describe('computeImportRowStatus', () => {
         parsedType: 'expense',
       })
     ).toBe('ready');
+  });
+});
+
+describe('isImportRowStructurallyInvalid', () => {
+  const validFields = {
+    reviewDate: '2026-05-02',
+    reviewAmount: 4218,
+    reviewType: 'expense' as const,
+    reviewDescription: 'Coffee',
+    parsedDate: null,
+    parsedAmount: null,
+    parsedType: null,
+    parsedDescription: null,
+  };
+
+  it('returns false when review fields are complete', () => {
+    expect(isImportRowStructurallyInvalid(validFields)).toBe(false);
+  });
+
+  it('returns true when date is missing', () => {
+    expect(
+      isImportRowStructurallyInvalid({ ...validFields, reviewDate: null })
+    ).toBe(true);
+  });
+
+  it('falls back to parsed fields when review fields are null', () => {
+    expect(
+      isImportRowStructurallyInvalid({
+        reviewDate: null,
+        reviewAmount: null,
+        reviewType: null,
+        reviewDescription: null,
+        parsedDate: '2026-05-02',
+        parsedAmount: 4218,
+        parsedType: 'expense',
+        parsedDescription: 'Coffee',
+      })
+    ).toBe(false);
   });
 });

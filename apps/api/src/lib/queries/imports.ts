@@ -6,6 +6,8 @@ export type DrizzleTransaction = Parameters<
   Parameters<typeof db.transaction>[0]
 >[0];
 
+type DbClient = DrizzleTransaction | typeof db;
+
 const IMPORT_SUMMARY_COLUMNS = {
   id: importBatches.id,
   accountId: importBatches.accountId,
@@ -226,8 +228,12 @@ export const updateImportDraftRowQuery = async (
   return rows.at(0) ?? null;
 };
 
-export const touchImportDraft = async (orgId: string, draftId: string) => {
-  await db
+export const touchImportDraft = async (
+  orgId: string,
+  draftId: string,
+  client: DbClient = db
+) => {
+  await client
     .update(importBatches)
     .set({ updatedAt: new Date() })
     .where(and(eq(importBatches.id, draftId), eq(importBatches.orgId, orgId)));
@@ -270,10 +276,11 @@ export const updateImportDraftRowSelectionQuery = async (
   orgId: string,
   draftId: string,
   rowIds: string[],
-  selectedForImport: boolean
+  selectedForImport: boolean,
+  client: DbClient = db
 ) => {
   if (rowIds.length === 0) return [];
-  return db
+  return client
     .update(importBatchRows)
     .set({ selectedForImport, updatedAt: new Date() })
     .where(

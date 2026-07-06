@@ -255,6 +255,58 @@ describe('import service', () => {
     expect(result.status).toBe('ready');
   });
 
+  it('recomputes invalid row to needs_review when core review fields are patched', async () => {
+    const invalidRow = {
+      ...draftRow,
+      status: 'invalid' as const,
+      invalidReason: 'Date must be a valid YYYY-MM-DD value.',
+      parsedDate: null,
+      parsedAmount: null,
+      parsedType: null,
+      parsedDescription: null,
+      reviewDate: null,
+      reviewAmount: null,
+      reviewType: null,
+      reviewDescription: null,
+      reviewCategoryName: null,
+      reviewAssigneeMemberIds: [],
+    };
+    const updatedRow = {
+      ...invalidRow,
+      reviewDate: '2026-05-02',
+      reviewAmount: 4218,
+      reviewType: 'expense' as const,
+      reviewDescription: 'Coffee',
+      status: 'needs_review' as const,
+      invalidReason: null,
+      updatedAt: new Date('2026-05-20T13:00:00Z'),
+    };
+
+    vi.mocked(fetchDraftRowById).mockResolvedValue(invalidRow);
+    vi.mocked(updateImportDraftRowQuery).mockResolvedValue(updatedRow);
+
+    const result = await updateImportDraftRow('org_1', draftRow.id, {
+      reviewDate: '2026-05-02',
+      reviewAmount: 4218,
+      reviewType: 'expense',
+      reviewDescription: 'Coffee',
+    });
+
+    expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
+      'org_1',
+      draftRow.id,
+      {
+        reviewDate: '2026-05-02',
+        reviewAmount: 4218,
+        reviewType: 'expense',
+        reviewDescription: 'Coffee',
+        status: 'needs_review',
+        invalidReason: null,
+      }
+    );
+    expect(result.status).toBe('needs_review');
+  });
+
   it('persists row selection updates', async () => {
     vi.mocked(fetchDraftRowById).mockResolvedValue(draftRow);
     vi.mocked(updateImportDraftRowQuery).mockResolvedValue({
@@ -280,7 +332,8 @@ describe('import service', () => {
     vi.mocked(updateImportDraftRowSelectionQuery).mockResolvedValue([
       { ...draftRow, selectedForImport: true },
     ]);
-    vi.mocked(db.transaction).mockImplementation(async (fn) => fn({} as never));
+    const tx = {} as never;
+    vi.mocked(db.transaction).mockImplementation(async (fn) => fn(tx));
 
     const result = await updateImportDraftRowSelection('org_1', summaryRow.id, {
       rowIds: [draftRow.id],
@@ -291,9 +344,10 @@ describe('import service', () => {
       'org_1',
       summaryRow.id,
       [draftRow.id],
-      true
+      true,
+      tx
     );
-    expect(touchImportDraft).toHaveBeenCalledWith('org_1', summaryRow.id);
+    expect(touchImportDraft).toHaveBeenCalledWith('org_1', summaryRow.id, tx);
     expect(result).toHaveLength(1);
     expect(result[0]?.selectedForImport).toBe(true);
   });
