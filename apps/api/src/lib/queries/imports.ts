@@ -201,9 +201,10 @@ export const fetchDraftRowById = async (orgId: string, rowId: string) => {
 export const updateImportDraftRowQuery = async (
   orgId: string,
   rowId: string,
-  values: Partial<typeof importBatchRows.$inferInsert>
+  values: Partial<typeof importBatchRows.$inferInsert>,
+  client: DbClient = db
 ) => {
-  const rows = await db
+  const rows = await client
     .update(importBatchRows)
     .set({ ...values, updatedAt: new Date() })
     .where(
@@ -236,6 +237,27 @@ export const touchImportDraft = async (
   await client
     .update(importBatches)
     .set({ updatedAt: new Date() })
+    .where(and(eq(importBatches.id, draftId), eq(importBatches.orgId, orgId)));
+};
+
+export const adjustImportDraftRowCounts = async (
+  orgId: string,
+  draftId: string,
+  delta: { validRowCount: number; invalidRowCount: number },
+  client: DbClient = db
+) => {
+  if (delta.validRowCount === 0 && delta.invalidRowCount === 0) {
+    await touchImportDraft(orgId, draftId, client);
+    return;
+  }
+
+  await client
+    .update(importBatches)
+    .set({
+      validRowCount: sql`${importBatches.validRowCount} + ${delta.validRowCount}`,
+      invalidRowCount: sql`${importBatches.invalidRowCount} + ${delta.invalidRowCount}`,
+      updatedAt: new Date(),
+    })
     .where(and(eq(importBatches.id, draftId), eq(importBatches.orgId, orgId)));
 };
 

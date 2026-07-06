@@ -21,6 +21,7 @@ import {
   isImportRowStructurallyInvalid,
 } from '@/lib/imports/rowStatus';
 import {
+  adjustImportDraftRowCounts,
   discardImportDraftQuery,
   fetchActiveCreditCardAccount,
   fetchActiveDraftByAccount,
@@ -260,15 +261,33 @@ export const updateImportDraftRow = async (
             reviewAssigneeMemberIds: merged.reviewAssigneeMemberIds,
           });
 
-  const updated = await updateImportDraftRowQuery(orgId, rowId, {
-    ...input,
-    status,
-    ...(existing.status === 'invalid' && !structurallyInvalid
-      ? { invalidReason: null }
-      : {}),
+  const wasInvalid = existing.status === 'invalid';
+  const isInvalid = status === 'invalid';
+  const countDelta =
+    wasInvalid && !isInvalid
+      ? { validRowCount: 1, invalidRowCount: -1 }
+      : !wasInvalid && isInvalid
+        ? { validRowCount: -1, invalidRowCount: 1 }
+        : { validRowCount: 0, invalidRowCount: 0 };
+
+  const updated = await db.transaction(async (tx) => {
+    const row = await updateImportDraftRowQuery(
+      orgId,
+      rowId,
+      {
+        ...input,
+        status,
+        ...(existing.status === 'invalid' && !structurallyInvalid
+          ? { invalidReason: null }
+          : {}),
+      },
+      tx
+    );
+    if (!row) return null;
+    await adjustImportDraftRowCounts(orgId, existing.batchId, countDelta, tx);
+    return row;
   });
   if (!updated) throw new NotFoundError('Import draft row not found.');
-  await touchImportDraft(orgId, existing.batchId);
   return toImportDraftRow(updated);
 };
 
