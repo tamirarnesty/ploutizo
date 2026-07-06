@@ -9,7 +9,7 @@ describe('computeImportRowStatus', () => {
     status: 'ready' as const,
     reviewType: 'expense' as const,
     parsedType: 'expense' as const,
-    reviewCategoryName: 'Dining',
+    reviewCategoryId: 'cat-1',
     reviewAssigneeMemberIds: ['member_1'],
   };
 
@@ -48,7 +48,7 @@ describe('computeImportRowStatus', () => {
     expect(
       computeImportRowStatus({
         ...readyRow,
-        reviewCategoryName: null,
+        reviewCategoryId: null,
       })
     ).toBe('needs_review');
   });

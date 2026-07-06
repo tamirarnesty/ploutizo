@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import { DatePicker } from '@ploutizo/ui/components/date-picker';
@@ -24,7 +24,6 @@ import { ImportRowStatusIcon } from './ImportRowStatusIcon';
 import { useImportDraftReviewContext } from './ImportDraftReviewContext';
 import {
   formatImportTransactionTypeLabel,
-  resolveCategoryIdByName,
   resolveImportRowOriginalDescription,
   resolveImportRowType,
 } from './importPresentation';
@@ -262,10 +261,6 @@ export const ImportReviewCategoryCell = ({
   const { categories } = useImportDraftReviewContext();
   const { saveField, disabled } = useImportDraftReviewRowSave(row);
   const rowLabel = getImportRowLabel(row);
-  const categoryId = useMemo(
-    () => resolveCategoryIdByName(row.reviewCategoryName, categories),
-    [categories, row.reviewCategoryName]
-  );
 
   return (
     <CategorySelect
@@ -273,15 +268,12 @@ export const ImportReviewCategoryCell = ({
       ariaLabel={`Category for ${rowLabel}`}
       triggerClassName="w-44"
       categories={categories}
-      value={categoryId}
+      value={row.reviewCategoryId ?? ''}
       disabled={disabled}
       onValueChange={(nextCategoryId) => {
-        const category = categories.find(
-          (option) => option.id === nextCategoryId
-        );
-        const nextName = category?.name ?? null;
-        if (nextName === row.reviewCategoryName) return;
-        saveField({ reviewCategoryName: nextName });
+        const nextId = nextCategoryId || null;
+        if (nextId === row.reviewCategoryId) return;
+        saveField({ reviewCategoryId: nextId });
       }}
     />
   );

@@ -27,32 +27,30 @@ type HeaderKey =
   | 'notes'
   | 'tags';
 
-export type ParsedImportRow = Pick<
-  ImportDraftRow,
-  | 'rowNumber'
-  | 'status'
-  | 'invalidReason'
-  | 'rawData'
-  | 'externalId'
-  | 'sourceDate'
-  | 'sourceAmount'
-  | 'sourceDescription'
-  | 'sourceType'
-  | 'parsedDate'
-  | 'parsedAmount'
-  | 'parsedType'
-  | 'parsedDescription'
-  | 'reviewDate'
-  | 'reviewAmount'
-  | 'reviewType'
-  | 'reviewDescription'
-  | 'reviewCategoryName'
-  | 'reviewAssigneeHint'
-  | 'reviewAssigneeMemberIds'
-  | 'reviewRefundLinkHint'
-  | 'reviewNotes'
-  | 'reviewTags'
->;
+export type ParsedImportRow = {
+  rowNumber: number;
+  status: ImportDraftRow['status'];
+  invalidReason: string | null;
+  rawData: Record<string, string>;
+  externalId: string | null;
+  sourceDate: string | null;
+  sourceAmount: string | null;
+  sourceDescription: string | null;
+  sourceType: string | null;
+  parsedDate: string | null;
+  parsedAmount: number | null;
+  parsedType: ImportTransactionType | null;
+  parsedDescription: string | null;
+  reviewDate: string | null;
+  reviewAmount: number | null;
+  reviewType: ImportTransactionType | null;
+  reviewDescription: string | null;
+  csvCategoryName: string | null;
+  csvAssigneeName: string | null;
+  csvTagNames: string[];
+  reviewRefundLinkHint: string | null;
+  reviewNotes: string | null;
+};
 
 export interface ParsedNormalizedImport {
   source: typeof NORMALIZED_IMPORT_SOURCE;
@@ -242,11 +240,13 @@ const parseRow = (
   const sourceDescription = readCell(record, headerMap, 'description');
   const sourceType = readCell(record, headerMap, 'type');
   const externalId = readCell(record, headerMap, 'externalId');
-  const reviewCategoryName = readCell(record, headerMap, 'category');
-  const reviewAssigneeHint = readCell(record, headerMap, 'assigneeHint');
+  const csvCategoryName = readCell(record, headerMap, 'category');
+  const csvAssigneeName = readCell(record, headerMap, 'assigneeHint');
   const reviewRefundLinkHint = readCell(record, headerMap, 'refundLinkHint');
   const reviewNotes = readCell(record, headerMap, 'notes');
-  const reviewTags = parseImportTags(readCell(record, headerMap, 'tags') ?? '');
+  const csvTagNames = parseImportTags(
+    readCell(record, headerMap, 'tags') ?? ''
+  );
 
   const parsedDate = parseIsoDate(sourceDate);
   const parsedAmount = parseAmountCents(sourceAmount);
@@ -269,7 +269,7 @@ const parseRow = (
         status: 'ready',
         reviewType: parsedType,
         parsedType,
-        reviewCategoryName,
+        reviewCategoryId: null,
         reviewAssigneeMemberIds: [],
       });
 
@@ -291,12 +291,11 @@ const parseRow = (
     reviewAmount: parsedAmount,
     reviewType: parsedType,
     reviewDescription: parsedDescription,
-    reviewCategoryName,
-    reviewAssigneeHint,
-    reviewAssigneeMemberIds: [],
+    csvCategoryName,
+    csvAssigneeName,
+    csvTagNames,
     reviewRefundLinkHint,
     reviewNotes,
-    reviewTags,
   };
 };
 

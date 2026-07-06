@@ -29,8 +29,8 @@ vi.mock('./ImportAssigneeField', () => ({
   ImportAssigneeField: () => <div>Assignee field</div>,
 }));
 
-vi.mock('./ImportReviewTagPicker', () => ({
-  ImportReviewTagPicker: () => <div>Tag picker</div>,
+vi.mock('@/components/transactions/TransactionTagPicker', () => ({
+  TransactionTagPicker: () => <div>Tag picker</div>,
 }));
 
 vi.mock('@/lib/data-access/imports', () => ({

@@ -28,12 +28,11 @@ const baseRow = {
   reviewAmount: 4218,
   reviewType: 'expense' as const,
   reviewDescription: 'Coffee',
-  reviewCategoryName: 'Dining',
-  reviewAssigneeHint: 'Tamir Arnesty',
+  reviewCategoryId: 'cat_1',
   reviewAssigneeMemberIds: ['member_1'],
   reviewRefundLinkHint: null,
   reviewNotes: null,
-  reviewTags: [],
+  reviewTagIds: [],
   selectedForImport: false,
   status: 'ready' as const,
   createdAt: '2026-05-20T12:00:00.000Z',
@@ -75,7 +74,7 @@ describe('importPresentation review helpers', () => {
       getImportRowStatusTooltip({
         ...baseRow,
         status: 'needs_review',
-        reviewCategoryName: null,
+        reviewCategoryId: null,
         reviewAssigneeMemberIds: [],
       })
     ).toBe('Needs review: missing category, assignee');
@@ -130,7 +129,7 @@ describe('importPresentation review helpers', () => {
         parsedDate: null,
         reviewDescription: null,
         parsedDescription: null,
-        reviewCategoryName: null,
+        reviewCategoryId: null,
         reviewAssigneeMemberIds: [],
       })
     ).toEqual(['date', 'description', 'category', 'assignee']);

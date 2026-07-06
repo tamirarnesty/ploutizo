@@ -29,9 +29,8 @@ describe('parsePloutizoNormalizedCsv', () => {
     expect(parsed.rows[0]).toMatchObject({
       status: 'needs_review',
       parsedAmount: 4218,
-      reviewCategoryName: 'Groceries',
-      reviewAssigneeMemberIds: [],
-      reviewTags: ['food', 'errands'],
+      csvCategoryName: 'Groceries',
+      csvTagNames: ['food', 'errands'],
       rawData: {
         date: '2026-05-02',
         amount: '42.18',
@@ -55,7 +54,7 @@ describe('parsePloutizoNormalizedCsv', () => {
     expect(parsed.rows[0]).toMatchObject({
       status: 'needs_review',
       reviewDescription: 'Coffee',
-      reviewCategoryName: null,
+      csvCategoryName: null,
     });
   });
 

@@ -61,19 +61,6 @@ export const importStatusVariant = (status: ImportDraftRow['status']) => {
   return 'secondary' as const;
 };
 
-export const resolveCategoryIdByName = (
-  categoryName: string | null | undefined,
-  categories: { id: string; name: string }[]
-): string => {
-  if (!categoryName) return '';
-  const normalized = categoryName.trim().toLowerCase();
-  return (
-    categories.find(
-      (category) => category.name.trim().toLowerCase() === normalized
-    )?.id ?? ''
-  );
-};
-
 export const resolveImportRowOriginalDescription = (
   row: ImportDraftRow
 ): string | null => {
@@ -92,7 +79,7 @@ export const getImportRowReviewBlockers = (row: ImportDraftRow): string[] => {
   if (!row.reviewDescription?.trim() && !row.parsedDescription?.trim()) {
     blockers.push('description');
   }
-  if (!row.reviewCategoryName?.trim()) blockers.push('category');
+  if (!row.reviewCategoryId) blockers.push('category');
   if (row.reviewAssigneeMemberIds.length === 0) blockers.push('assignee');
 
   const type = resolveImportRowType(row);
@@ -123,7 +110,7 @@ export const getImportRowStatusTooltip = (row: ImportDraftRow): string => {
 
 export const shouldDefaultExpandImportRow = (row: ImportDraftRow): boolean => {
   if (row.reviewNotes?.trim()) return true;
-  if (row.reviewTags.length > 0) return true;
+  if (row.reviewTagIds.length > 0) return true;
   if (row.invalidReason) return true;
   if (row.status === 'needs_review' || row.status === 'invalid') return true;
   return false;

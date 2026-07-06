@@ -22,7 +22,7 @@ const withRecomputedStatus = (row: ImportDraftRow): ImportDraftRow => ({
     status: row.status,
     reviewType: row.reviewType,
     parsedType: row.parsedType,
-    reviewCategoryName: row.reviewCategoryName,
+    reviewCategoryId: row.reviewCategoryId,
     reviewAssigneeMemberIds: row.reviewAssigneeMemberIds,
   }),
 });

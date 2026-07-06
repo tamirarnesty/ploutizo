@@ -27,7 +27,7 @@ export interface ImportRowStatusInput {
   status: ImportRowStatus;
   reviewType: ImportTransactionType | null;
   parsedType: ImportTransactionType | null;
-  reviewCategoryName: string | null;
+  reviewCategoryId: string | null;
   reviewAssigneeMemberIds: string[];
 }
 
@@ -42,7 +42,7 @@ export const computeImportRowStatus = (
 
   const requiresReview =
     type === 'settlement' ||
-    !row.reviewCategoryName ||
+    !row.reviewCategoryId ||
     row.reviewAssigneeMemberIds.length === 0;
 
   return requiresReview ? 'needs_review' : 'ready';

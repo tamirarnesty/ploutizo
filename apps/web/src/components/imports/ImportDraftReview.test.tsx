@@ -49,8 +49,8 @@ vi.mock('@/components/members/MemberAvatarGroup', () => ({
   ),
 }));
 
-vi.mock('./ImportReviewTagPicker', () => ({
-  ImportReviewTagPicker: () => <div>Tag picker</div>,
+vi.mock('@/components/transactions/TransactionTagPicker', () => ({
+  TransactionTagPicker: () => <div>Tag picker</div>,
 }));
 
 vi.mock('@/lib/data-access/imports', () => ({
@@ -268,7 +268,7 @@ describe('ImportDraftReview', () => {
             id: 'row_needs_review',
             status: 'needs_review',
             reviewDescription: 'Groceries',
-            reviewCategoryName: null,
+            reviewCategoryId: null,
           }),
         ],
       })
@@ -364,7 +364,7 @@ describe('ImportDraftReview', () => {
             id: 'row_needs_review',
             status: 'needs_review',
             reviewDescription: 'Groceries',
-            reviewCategoryName: null,
+            reviewCategoryId: null,
             selectedForImport: true,
           }),
         ],

@@ -37,8 +37,8 @@ vi.mock('./ImportAssigneeField', () => ({
   ImportAssigneeField: () => <div>Assignee field</div>,
 }));
 
-vi.mock('./ImportReviewTagPicker', () => ({
-  ImportReviewTagPicker: () => <div>Tag picker</div>,
+vi.mock('@/components/transactions/TransactionTagPicker', () => ({
+  TransactionTagPicker: () => <div>Tag picker</div>,
 }));
 
 vi.mock('@/lib/data-access/imports', () => ({
@@ -65,12 +65,11 @@ const baseRow = (): ImportDraftRow => ({
   reviewAmount: 4218,
   reviewType: 'expense',
   reviewDescription: 'Coffee',
-  reviewCategoryName: 'Dining',
-  reviewAssigneeHint: null,
+  reviewCategoryId: 'cat_1',
   reviewAssigneeMemberIds: ['44444444-4444-4444-8444-444444444444'],
   reviewRefundLinkHint: null,
   reviewNotes: null,
-  reviewTags: [],
+  reviewTagIds: [],
   selectedForImport: false,
   createdAt: '2026-05-20T12:00:00Z',
   updatedAt: '2026-05-20T12:00:00Z',

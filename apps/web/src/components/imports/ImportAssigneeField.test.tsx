@@ -81,7 +81,6 @@ describe('ImportAssigneeField', () => {
         row={makeImportDraftRow({
           status: 'invalid',
           reviewAssigneeMemberIds: [],
-          reviewAssigneeHint: null,
         })}
         orgMembers={orgMembers}
         disabled

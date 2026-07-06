@@ -4,7 +4,7 @@ import { Textarea } from '@ploutizo/ui/components/textarea';
 import { cn } from '@ploutizo/ui/lib/utils';
 import type { ImportDraftRow } from '@ploutizo/types';
 import { useRegisterInputFlush } from '@/lib/money/pending-input-flush';
-import { ImportReviewTagPicker } from './ImportReviewTagPicker';
+import { TransactionTagPicker } from '@/components/transactions/TransactionTagPicker';
 import { useImportDraftReviewRowSave } from './useImportDraftReviewRowSave';
 import { useImportRowFieldState } from './useImportRowFieldState';
 
@@ -66,15 +66,16 @@ export const ImportDraftReviewRowDetails = ({
             Tags
           </Text>
           <div className={cn(disabled && 'pointer-events-none opacity-50')}>
-            <ImportReviewTagPicker
-              value={row.reviewTags}
+            <TransactionTagPicker
+              value={row.reviewTagIds}
+              allowCreate={false}
               inputId={tagsInputId}
               inputAriaLabel={`Tags for ${rowLabel}`}
-              onChange={(nextTags) => {
-                if (nextTags.join('|') === row.reviewTags.join('|')) {
+              onChange={(nextTagIds) => {
+                if (nextTagIds.join('|') === row.reviewTagIds.join('|')) {
                   return;
                 }
-                saveField({ reviewTags: nextTags });
+                saveField({ reviewTagIds: nextTagIds });
               }}
             />
           </div>

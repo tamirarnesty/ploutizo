@@ -210,7 +210,7 @@ export const buildImportReviewColumns = ({
     },
     {
       id: 'category',
-      accessorKey: 'reviewCategoryName',
+      accessorKey: 'reviewCategoryId',
       header: ({ column }) => (
         <DataGridColumnHeader
           column={column}

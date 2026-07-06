@@ -15,12 +15,11 @@ export const updateImportDraftRowSchema = z
     reviewAmount: z.number().int().positive().nullable().optional(),
     reviewType: importTransactionTypeSchema.nullable().optional(),
     reviewDescription: z.string().trim().min(1).nullable().optional(),
-    reviewCategoryName: z.string().trim().min(1).nullable().optional(),
-    reviewAssigneeHint: z.string().trim().min(1).nullable().optional(),
+    reviewCategoryId: z.string().uuid().nullable().optional(),
     reviewAssigneeMemberIds: z.array(z.string().uuid()).optional(),
     reviewRefundLinkHint: z.string().trim().min(1).nullable().optional(),
     reviewNotes: z.string().trim().nullable().optional(),
-    reviewTags: z.array(z.string().trim().min(1)).optional(),
+    reviewTagIds: z.array(z.string().uuid()).optional(),
     selectedForImport: z.boolean().optional(),
   })
   .refine((value) => Object.keys(value).length > 0, {

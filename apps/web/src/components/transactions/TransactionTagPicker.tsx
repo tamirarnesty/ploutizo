@@ -19,6 +19,7 @@ interface TransactionTagPickerProps {
   onChange: (tagIds: string[]) => void; // form field handleChange
   inputId?: string;
   inputAriaLabel?: string;
+  allowCreate?: boolean;
 }
 
 /**
@@ -36,6 +37,7 @@ export const TransactionTagPicker = ({
   onChange,
   inputId,
   inputAriaLabel,
+  allowCreate = true,
 }: TransactionTagPickerProps) => {
   const { data: tags = [] } = useGetTags();
   const createTagMutation = useCreateTag();
@@ -62,7 +64,7 @@ export const TransactionTagPicker = ({
     (t) => t.name.toLowerCase() === tagInputValue.toLowerCase()
   );
   const createOption =
-    tagInputValue.length > 0 && !alreadyExists
+    allowCreate && tagInputValue.length > 0 && !alreadyExists
       ? `__create__${tagInputValue}`
       : null;
 
