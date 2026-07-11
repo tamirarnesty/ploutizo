@@ -273,4 +273,25 @@ describe('validateTransactionAccountPolicy', () => {
     expect(valid.valid).toBe(true);
     expect(invalid.valid).toBe(false);
   });
+
+  it('rejects prepaid_cash as a settlement funding account', () => {
+    const result = validateTransactionAccountPolicy({
+      type: 'settlement',
+      account: { id: 'card-1', type: 'credit_card' },
+      counterpartAccount: { id: 'cash-1', type: 'prepaid_cash' },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.violations[0]?.code).toBe('disallowed_account_type');
+  });
+
+  it('requires counterpart account for saved settlement writes', () => {
+    const result = validateTransactionAccountPolicy({
+      type: 'settlement',
+      account: { id: 'card-1', type: 'credit_card' },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.violations[0]?.code).toBe('missing_account');
+  });
 });

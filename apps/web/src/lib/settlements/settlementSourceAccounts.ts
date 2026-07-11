@@ -1,10 +1,14 @@
+import {
+  getAccountOptionsForTransactionSlot,
+  getTransactionTypePolicy,
+} from '@ploutizo/utils/transaction-policy';
 import type { Account } from '@ploutizo/types';
 
-export const SETTLEMENT_SOURCE_ACCOUNT_TYPES = new Set<Account['type']>([
-  'chequing',
-  'savings',
-  'prepaid_cash',
-]);
+export const SETTLEMENT_SOURCE_ACCOUNT_TYPES = new Set(
+  getTransactionTypePolicy('settlement').accountSlots.find(
+    (slot) => slot.field === 'counterpartAccountId'
+  )?.allowedAccountTypes ?? []
+);
 
 export const isSettlementSourceAccount = (
   account: Account,
@@ -18,6 +22,9 @@ export const getSettlementSourceAccounts = (
   accounts: readonly Account[],
   cardAccountId: string
 ): Account[] =>
-  accounts.filter((account) =>
-    isSettlementSourceAccount(account, cardAccountId)
-  );
+  getAccountOptionsForTransactionSlot({
+    type: 'settlement',
+    slot: 'counterpartAccountId',
+    accounts,
+    otherSelectedAccountId: cardAccountId,
+  }) as Account[];
