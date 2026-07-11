@@ -484,18 +484,19 @@ const TransactionFormInner = ({
                 'generated';
               const isLocked = !isDescriptionUnlocked && shouldLock;
 
-              const lockedValue = formatGeneratedTransactionDescriptionFromAccounts(
-                {
-                  type,
-                  accountId,
-                  counterpartAccountId,
-                  refundOf,
-                  accountName: transaction?.accountName,
-                  counterpartAccountName: transaction?.counterpartAccountName,
-                  refundOriginalDescription: refundOriginalDesc,
-                },
-                accounts
-              );
+              const lockedValue =
+                formatGeneratedTransactionDescriptionFromAccounts(
+                  {
+                    type,
+                    accountId,
+                    counterpartAccountId,
+                    refundOf,
+                    accountName: transaction?.accountName,
+                    counterpartAccountName: transaction?.counterpartAccountName,
+                    refundOriginalDescription: refundOriginalDesc,
+                  },
+                  accounts
+                );
 
               return (
                 <form.AppField
