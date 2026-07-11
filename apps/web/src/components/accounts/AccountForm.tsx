@@ -53,7 +53,6 @@ const ACCOUNT_TYPES = [
   { value: 'prepaid_cash', label: 'Prepaid / Cash' },
   { value: 'e_transfer', label: 'e-Transfer' },
   { value: 'investment', label: 'Investment' },
-  { value: 'other', label: 'Other' },
 ] as const;
 
 interface AccountFormProps {

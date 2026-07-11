@@ -10,7 +10,6 @@ export {
   scaleAssigneeSplitProportionally,
   type AssigneeSplitRow,
 } from './scale-assignee-split';
-export { formatSettlementDescription } from './settlement-description';
 export {
   normalizeTransactionAssignees,
   type NormalizedTransactionAssignee,

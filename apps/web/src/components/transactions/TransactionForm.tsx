@@ -35,6 +35,10 @@ import {
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
 import { dollarsToCents } from '@ploutizo/utils/currency';
+import {
+  formatGeneratedTransactionDescriptionFromAccounts,
+  resolveTransactionDescriptionPolicy,
+} from '@ploutizo/utils/transaction-policy';
 import type { Account, OrgMember } from '@ploutizo/types';
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import { useGetCategories } from '@/lib/data-access/categories';
@@ -53,11 +57,7 @@ import {
   useFlushPendingInputs,
 } from '@/lib/money/pending-input-flush';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
-import {
-  computeLockedDescription,
-  isLockedDescriptionType,
-  useTransactionForm,
-} from './hooks/useTransactionForm';
+import { useTransactionForm } from './hooks/useTransactionForm';
 import { TransactionTypeFields } from './TransactionTypeFields';
 import { TransferFields } from './TransferFields';
 import { SettlementFields } from './SettlementFields';
@@ -238,11 +238,14 @@ const TransactionFormInner = ({
   const [isDescriptionUnlocked, setIsDescriptionUnlocked] = useState(() => {
     if (transaction === null) return false;
     if (
-      !isLockedDescriptionType(transaction.type, transaction.refundOf ?? '')
+      resolveTransactionDescriptionPolicy({
+        type: transaction.type,
+        refundOf: transaction.refundOf ?? '',
+      }).mode !== 'generated'
     ) {
       return false;
     }
-    const locked = computeLockedDescription(
+    const locked = formatGeneratedTransactionDescriptionFromAccounts(
       {
         type: transaction.type,
         accountId: transaction.accountId,
@@ -477,10 +480,11 @@ const TransactionFormInner = ({
           >
             {({ type, accountId, counterpartAccountId, refundOf }) => {
               const shouldLock =
-                isLockedType(type) || (type === 'refund' && !!refundOf);
+                resolveTransactionDescriptionPolicy({ type, refundOf }).mode ===
+                'generated';
               const isLocked = !isDescriptionUnlocked && shouldLock;
 
-              const lockedValue = computeLockedDescription(
+              const lockedValue = formatGeneratedTransactionDescriptionFromAccounts(
                 {
                   type,
                   accountId,
@@ -488,9 +492,9 @@ const TransactionFormInner = ({
                   refundOf,
                   accountName: transaction?.accountName,
                   counterpartAccountName: transaction?.counterpartAccountName,
+                  refundOriginalDescription: refundOriginalDesc,
                 },
-                accounts,
-                refundOriginalDesc
+                accounts
               );
 
               return (
