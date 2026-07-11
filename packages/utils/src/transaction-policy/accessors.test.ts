@@ -241,7 +241,7 @@ describe('validateTransactionAccountPolicy', () => {
     expect(result.violations[0]?.code).toBe('missing_account');
   });
 
-  it('rejects same-account transfer writes', () => {
+  it('rejects same-account transfer writes on the counterpart slot', () => {
     const result = validateTransactionAccountPolicy({
       type: 'transfer',
       account: { id: 'cheq-1', type: 'chequing' },
@@ -249,8 +249,13 @@ describe('validateTransactionAccountPolicy', () => {
     });
 
     expect(result.valid).toBe(false);
-    expect(result.violations.some((v) => v.code === 'same_account_not_allowed'))
-      .toBe(true);
+    expect(result.violations).toEqual([
+      {
+        field: 'counterpartAccountId',
+        code: 'same_account_not_allowed',
+        message: 'Transaction account and counterpart account must differ.',
+      },
+    ]);
   });
 
   it('validates settlement funding account types', () => {

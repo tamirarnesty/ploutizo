@@ -1,6 +1,7 @@
 import type { TransactionType } from '@ploutizo/types';
 import {
   ACCOUNT_ROLE_POLICIES,
+  type AccountSlotPolicy,
   TRANSACTION_ACCOUNT_FIELDS,
   TRANSACTION_SCALAR_FIELDS,
   TRANSACTION_TYPE_POLICIES,
@@ -11,14 +12,13 @@ import type {
   ResolvedTransactionDescriptionPolicy,
   TransactionAccountOption,
   TransactionAccountSlot,
+  TransactionFieldToClear,
   TransactionTypePolicyReadModel,
   ValidateTransactionAccountPolicyInput,
   ValidateTransactionAccountPolicyResult,
 } from './types';
 
-const expandAccountSlot = (
-  slot: (typeof TRANSACTION_TYPE_POLICIES)[TransactionType]['accountSlots'][number]
-) => ({
+const expandAccountSlot = (slot: AccountSlotPolicy) => ({
   field: slot.field,
   role: slot.role,
   required: slot.required,
@@ -60,7 +60,7 @@ export const resolveTransactionDescriptionPolicy = (
 
 export const getTransactionFieldsToClear = (
   type: TransactionType
-): readonly string[] => {
+): readonly TransactionFieldToClear[] => {
   const policy = TRANSACTION_TYPE_POLICIES[type];
   const relevantScalarFields = new Set(Object.keys(policy.scalarFields));
   const relevantAccountFields = new Set(
@@ -115,7 +115,7 @@ export const getAccountOptionsForTransactionSlot = (
     return true;
   });
 
-  return [...filtered].sort((left, right) => {
+  return filtered.sort((left, right) => {
     const leftTypeOrder = allowedTypeOrder.get(left.type) ?? Number.MAX_SAFE_INTEGER;
     const rightTypeOrder =
       allowedTypeOrder.get(right.type) ?? Number.MAX_SAFE_INTEGER;

@@ -39,7 +39,7 @@ import {
   formatGeneratedTransactionDescriptionFromAccounts,
   resolveTransactionDescriptionPolicy,
 } from '@ploutizo/utils/transaction-policy';
-import type { Account, OrgMember } from '@ploutizo/types';
+import type { Account, OrgMember, TransactionType } from '@ploutizo/types';
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import { useGetCategories } from '@/lib/data-access/categories';
 import { useGetAccounts } from '@/lib/data-access/accounts';
@@ -213,13 +213,11 @@ const DirtyNotifier = ({
   );
 };
 
-/** Types whose description is always locked (D-11, D-12) */
-const LOCKED_TYPES = ['transfer', 'settlement', 'contribution'] as const;
-type LockedType = (typeof LOCKED_TYPES)[number];
-
-const isLockedType = (type: string): type is LockedType => {
-  return (LOCKED_TYPES as readonly string[]).includes(type);
-};
+const isGeneratedDescriptionType = (
+  type: TransactionType,
+  refundOf?: string | null
+): boolean =>
+  resolveTransactionDescriptionPolicy({ type, refundOf }).mode === 'generated';
 
 const TransactionFormInner = ({
   transaction,
@@ -591,10 +589,16 @@ const TransactionFormInner = ({
           </form.Subscribe>
 
           {/* Reset unlock state when type changes away from a locked type (D-12) */}
-          <form.Subscribe selector={(s) => s.values.type}>
-            {(type) => (
+          <form.Subscribe
+            selector={(s) => ({
+              type: s.values.type,
+              refundOf: s.values.refundOf,
+            })}
+          >
+            {({ type, refundOf }) => (
               <UnlockResetter
                 type={type}
+                refundOf={refundOf}
                 onReset={() => setIsDescriptionUnlocked(false)}
               />
             )}
@@ -753,30 +757,32 @@ const TransactionFormInner = ({
  */
 const UnlockResetter = ({
   type,
+  refundOf,
   onReset,
 }: {
-  type: string;
+  type: TransactionType;
+  refundOf: string;
   onReset: () => void;
 }) => {
   const prevTypeRef = useRef(type);
+  const prevRefundOfRef = useRef(refundOf);
 
   useEffect(() => {
-    const prev = prevTypeRef.current;
+    const prevType = prevTypeRef.current;
+    const prevRefundOf = prevRefundOfRef.current;
     prevTypeRef.current = type;
+    prevRefundOfRef.current = refundOf;
 
-    // If the previous type was locked and the new type is not locked (or was locked but
-    // is a different type), reset the unlock state so next time user visits a locked type
-    // it starts locked again.
-    const prevWasLocked = isLockedType(prev) || prev === 'refund';
-    const nowIsLocked = isLockedType(type) || type === 'refund';
+    const prevWasLocked = isGeneratedDescriptionType(prevType, prevRefundOf);
+    const nowIsLocked = isGeneratedDescriptionType(type, refundOf);
 
     if (prevWasLocked && !nowIsLocked) {
       onReset();
-    } else if (prevWasLocked && nowIsLocked && prev !== type) {
+    } else if (prevWasLocked && nowIsLocked && prevType !== type) {
       // Type changed between locked types (e.g. transfer → contribution) — reset too
       onReset();
     }
-  }, [type, onReset]);
+  }, [type, refundOf, onReset]);
 
   return null;
 };

@@ -56,12 +56,30 @@ describe('formatGeneratedTransactionDescription', () => {
     ).toBe('Settlement from Emily WS to Amex Cobalt');
   });
 
+  it('uses card-only settlement copy when paid-from is absent', () => {
+    expect(
+      formatGeneratedTransactionDescription({
+        type: 'settlement',
+        accountName: 'Amex Cobalt',
+      })
+    ).toBe('Settlement: Amex Cobalt');
+  });
+
   it('returns empty refund text when no linked transaction is selected', () => {
     expect(
       formatGeneratedTransactionDescription({
         type: 'refund',
         accountName: 'Chequing',
         refundOf: '',
+      })
+    ).toBe('');
+  });
+
+  it('returns empty text for manual transaction types', () => {
+    expect(
+      formatGeneratedTransactionDescription({
+        type: 'expense',
+        accountName: 'Chequing',
       })
     ).toBe('');
   });
@@ -82,5 +100,18 @@ describe('formatGeneratedTransactionDescriptionFromAccounts', () => {
         ]
       )
     ).toBe('Transfer from Chequing to Savings');
+  });
+
+  it('uses card-only settlement copy when counterpart account is not selected', () => {
+    expect(
+      formatGeneratedTransactionDescriptionFromAccounts(
+        {
+          type: 'settlement',
+          accountId: 'card-1',
+          counterpartAccountId: '',
+        },
+        [{ id: 'card-1', name: 'Amex Cobalt' }]
+      )
+    ).toBe('Settlement: Amex Cobalt');
   });
 });

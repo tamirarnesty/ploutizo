@@ -33,6 +33,7 @@ export type {
   TransactionAccountPolicyViolation,
   TransactionAccountReference,
   TransactionAccountSlot,
+  TransactionFieldToClear,
   TransactionScalarField,
   TransactionTypePolicyReadModel,
   ValidateTransactionAccountPolicyInput,

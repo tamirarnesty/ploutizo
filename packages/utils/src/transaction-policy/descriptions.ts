@@ -1,5 +1,8 @@
 import type { TransactionType } from '@ploutizo/types';
 
+/** Shown while account names are still resolving in generated description previews. */
+export const PLACEHOLDER_ACCOUNT_NAME = '…';
+
 /** Auto-filled settlement transaction description (card = accountId, paidFrom = counterpartAccountId). */
 export const formatSettlementDescription = (
   cardAccountName: string,
@@ -25,10 +28,7 @@ export const formatLinkedRefundDescription = (
 ): string => `Refund of ${originalDescription}`;
 
 export interface GeneratedTransactionDescriptionInput {
-  type: Extract<
-    TransactionType,
-    'transfer' | 'settlement' | 'contribution' | 'refund'
-  >;
+  type: TransactionType;
   accountName: string;
   counterpartAccountName?: string | null;
   refundOriginalDescription?: string | null;
@@ -58,7 +58,7 @@ export const formatGeneratedTransactionDescription = (
     case 'transfer':
       return formatTransferDescription(
         input.accountName,
-        input.counterpartAccountName ?? '…'
+        input.counterpartAccountName ?? PLACEHOLDER_ACCOUNT_NAME
       );
     case 'settlement': {
       const paidFromName = input.counterpartAccountName ?? undefined;
@@ -67,7 +67,7 @@ export const formatGeneratedTransactionDescription = (
     case 'contribution':
       return formatContributionDescription(
         input.accountName,
-        input.counterpartAccountName ?? '…'
+        input.counterpartAccountName ?? PLACEHOLDER_ACCOUNT_NAME
       );
     case 'refund':
       return input.refundOf && input.refundOriginalDescription
@@ -78,6 +78,25 @@ export const formatGeneratedTransactionDescription = (
   }
 };
 
+const resolveCounterpartAccountName = (
+  input: GeneratedTransactionDescriptionFromAccountsInput,
+  counterpartAccount: TransactionDescriptionAccount | undefined
+): string | null | undefined => {
+  if (input.counterpartAccountId) {
+    return (
+      counterpartAccount?.name ??
+      input.counterpartAccountName ??
+      PLACEHOLDER_ACCOUNT_NAME
+    );
+  }
+
+  if (input.type === 'settlement') {
+    return undefined;
+  }
+
+  return PLACEHOLDER_ACCOUNT_NAME;
+};
+
 export const formatGeneratedTransactionDescriptionFromAccounts = (
   input: GeneratedTransactionDescriptionFromAccountsInput,
   accounts: readonly TransactionDescriptionAccount[]
@@ -86,12 +105,15 @@ export const formatGeneratedTransactionDescriptionFromAccounts = (
   const counterpartAccount = accounts.find(
     (account) => account.id === input.counterpartAccountId
   );
-  const accountName = primaryAccount?.name ?? input.accountName ?? '…';
-  const counterpartAccountName =
-    counterpartAccount?.name ?? input.counterpartAccountName ?? '…';
+  const accountName =
+    primaryAccount?.name ?? input.accountName ?? PLACEHOLDER_ACCOUNT_NAME;
+  const counterpartAccountName = resolveCounterpartAccountName(
+    input,
+    counterpartAccount
+  );
 
   return formatGeneratedTransactionDescription({
-    type: input.type as GeneratedTransactionDescriptionInput['type'],
+    type: input.type,
     accountName,
     counterpartAccountName,
     refundOf: input.refundOf,

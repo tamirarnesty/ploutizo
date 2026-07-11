@@ -21,6 +21,10 @@ export type TransactionScalarField =
   | 'incomeType'
   | 'notes';
 
+export type TransactionFieldToClear =
+  | TransactionScalarField
+  | TransactionAccountSlot;
+
 export type DescriptionMode = 'manual' | 'generated' | 'conditional_generated';
 
 export type DescriptionSource = 'account_pair' | 'linked_refund';
