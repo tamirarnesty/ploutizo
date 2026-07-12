@@ -87,6 +87,20 @@ export const replaceImportDraftRow = (
   );
 };
 
+export const restoreImportDraftCache = (
+  qc: QueryClient,
+  draftId: string,
+  previousDraft: ImportDraft | undefined
+) => {
+  if (!previousDraft) return;
+  qc.setQueryData(importDraftQueryKey(draftId), previousDraft);
+  patchActiveDraftSummary(qc, draftId, {
+    rowCount: previousDraft.rowCount,
+    validRowCount: previousDraft.validRowCount,
+    invalidRowCount: previousDraft.invalidRowCount,
+  });
+};
+
 export const patchImportDraftRowsSelection = (
   qc: QueryClient,
   draftId: string,

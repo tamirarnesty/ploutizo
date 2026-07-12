@@ -1,11 +1,12 @@
 import { QueryClient } from '@tanstack/react-query';
 import { describe, expect, it } from 'vitest';
-import type { ImportDraft, ImportDraftRow } from '@ploutizo/types';
+import type { ImportDraft, ImportDraftRow, ImportDraftSummary } from '@ploutizo/types';
 import {
   patchImportDraftRow,
   replaceImportDraftRow,
+  restoreImportDraftCache,
 } from './patchImportDraftCache';
-import { importDraftQueryKey } from './queryKeys';
+import { activeImportDraftsQueryKey, importDraftQueryKey } from './queryKeys';
 
 const draftId = '11111111-1111-4111-8111-111111111111';
 const rowId = '33333333-3333-4333-8333-333333333333';
@@ -88,5 +89,46 @@ describe('patchImportDraftCache', () => {
 
     const draft = qc.getQueryData<ImportDraft>(importDraftQueryKey(draftId));
     expect(draft?.rows[0]?.status).toBe('ready');
+  });
+
+  it('restores draft and active summary counts after optimistic patch', () => {
+    const qc = new QueryClient();
+    const previousDraft = seedDraft(baseRow());
+    qc.setQueryData(importDraftQueryKey(draftId), previousDraft);
+    qc.setQueryData<ImportDraftSummary[]>(activeImportDraftsQueryKey, [
+      {
+        id: previousDraft.id,
+        accountId: previousDraft.accountId,
+        accountName: previousDraft.accountName,
+        accountInstitution: previousDraft.accountInstitution,
+        accountLastFour: previousDraft.accountLastFour,
+        source: previousDraft.source,
+        status: previousDraft.status,
+        fileName: previousDraft.fileName,
+        rowCount: previousDraft.rowCount,
+        validRowCount: previousDraft.validRowCount,
+        invalidRowCount: previousDraft.invalidRowCount,
+        importedAt: previousDraft.importedAt,
+        completedAt: previousDraft.completedAt,
+        discardedAt: previousDraft.discardedAt,
+        createdAt: previousDraft.createdAt,
+        updatedAt: previousDraft.updatedAt,
+      },
+    ]);
+
+    patchImportDraftRow(qc, draftId, rowId, {
+      reviewCategoryName: 'Dining',
+    });
+
+    restoreImportDraftCache(qc, draftId, previousDraft);
+
+    const draft = qc.getQueryData<ImportDraft>(importDraftQueryKey(draftId));
+    const summaries = qc.getQueryData<ImportDraftSummary[]>(
+      activeImportDraftsQueryKey
+    );
+
+    expect(draft?.rows[0]?.reviewCategoryName).toBeNull();
+    expect(draft?.rows[0]?.status).toBe('needs_review');
+    expect(summaries?.[0]?.validRowCount).toBe(previousDraft.validRowCount);
   });
 });
