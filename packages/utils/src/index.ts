@@ -1,3 +1,9 @@
+export {
+  computeImportRowStatus,
+  isImportRowStructurallyInvalid,
+  type ImportRowStatusInput,
+  type ImportRowStructuralFields,
+} from './import-row-status';
 export { parseImportTags } from './parse-import-tags';
 export { lrmSplit } from './lrm';
 export {

@@ -18,6 +18,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./currency": "./src/currency.ts",
+    "./import-row-status": "./src/import-row-status.ts",
     "./settlement-threshold": "./src/settlement-threshold.ts"
   }
 }
