@@ -1,6 +1,10 @@
 import { QueryClient } from '@tanstack/react-query';
 import { describe, expect, it } from 'vitest';
-import type { ImportDraft, ImportDraftRow, ImportDraftSummary } from '@ploutizo/types';
+import type {
+  ImportDraft,
+  ImportDraftRow,
+  ImportDraftSummary,
+} from '@ploutizo/types';
 import {
   patchImportDraftRow,
   replaceImportDraftRow,
