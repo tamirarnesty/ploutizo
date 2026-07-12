@@ -5,6 +5,7 @@ import { apiFetch } from '@/lib/queryClient';
 import {
   patchImportDraftRow,
   replaceImportDraftRow,
+  restoreImportDraftCache,
 } from './patchImportDraftCache';
 import { activeImportDraftsQueryKey, importDraftQueryKey } from './queryKeys';
 
@@ -33,7 +34,8 @@ export const useUpdateImportDraftRow = () => {
     onSuccess: (updatedRow, { draftId }) => {
       replaceImportDraftRow(qc, draftId, updatedRow);
     },
-    onError: (_error, { draftId }) => {
+    onError: (_error, { draftId }, context) => {
+      restoreImportDraftCache(qc, draftId, context?.previousDraft);
       void qc.invalidateQueries({ queryKey: importDraftQueryKey(draftId) });
       void qc.invalidateQueries({ queryKey: activeImportDraftsQueryKey });
     },

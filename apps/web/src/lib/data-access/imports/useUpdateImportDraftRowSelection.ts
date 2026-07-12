@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ImportDraft, ImportDraftRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowSelectionInput } from '@ploutizo/validators';
 import { apiFetch } from '@/lib/queryClient';
-import { patchImportDraftRowsSelection } from './patchImportDraftCache';
+import { patchImportDraftRowsSelection, restoreImportDraftCache } from './patchImportDraftCache';
 import { activeImportDraftsQueryKey, importDraftQueryKey } from './queryKeys';
 
 interface UpdateImportDraftRowSelectionVariables {
@@ -48,7 +48,8 @@ export const useUpdateImportDraftRowSelection = () => {
         }
       );
     },
-    onError: (_error, { draftId }) => {
+    onError: (_error, { draftId }, context) => {
+      restoreImportDraftCache(qc, draftId, context?.previousDraft);
       void qc.invalidateQueries({ queryKey: importDraftQueryKey(draftId) });
       void qc.invalidateQueries({ queryKey: activeImportDraftsQueryKey });
     },
