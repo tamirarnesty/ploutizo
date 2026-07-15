@@ -1,4 +1,5 @@
-import { formatSettlementDescription, lrmSplit } from '@ploutizo/utils';
+import { lrmSplit } from '@ploutizo/utils';
+import { formatSettlementDescription } from '@ploutizo/utils/transaction-policy';
 import type { CreateSettlementInput } from '@ploutizo/validators';
 import type {
   AccountOwner,

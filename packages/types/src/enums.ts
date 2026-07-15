@@ -26,7 +26,6 @@ export const ACCOUNT_TYPE_VALUES = [
   'prepaid_cash',
   'e_transfer',
   'investment',
-  'other',
 ] as const;
 
 export type AccountType = (typeof ACCOUNT_TYPE_VALUES)[number];

@@ -57,6 +57,13 @@
       "when": 1783219108519,
       "tag": "0007_import_drafts",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1784158182460,
+      "tag": "0008_stormy_silver_sable",
+      "breakpoints": true
     }
   ]
 }

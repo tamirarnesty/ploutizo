@@ -32,7 +32,6 @@ const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   prepaid_cash: 'Prepaid / Cash',
   e_transfer: 'e-Transfer',
   investment: 'Investment',
-  other: 'Other',
 };
 
 const countClientPageRows = (

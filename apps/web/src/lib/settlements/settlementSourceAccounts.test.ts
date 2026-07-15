@@ -37,23 +37,33 @@ describe('settlementSourceAccounts', () => {
     expect(isSettlementSourceAccount(archived, cardId)).toBe(false);
   });
 
-  it('returns only allowed source types', () => {
+  it('returns only policy-allowed settlement funding account types', () => {
     const sources = getSettlementSourceAccounts(
       [
         account({
           id: '22222222-2222-2222-2222-222222222222',
           type: 'chequing',
         }),
-        account({ id: cardId, type: 'credit_card' }),
+        account({
+          id: '33333333-3333-3333-3333-333333333333',
+          type: 'savings',
+        }),
         account({
           id: '44444444-4444-4444-4444-444444444444',
+          type: 'prepaid_cash',
+        }),
+        account({ id: cardId, type: 'credit_card' }),
+        account({
+          id: '55555555-5555-5555-5555-555555555555',
           type: 'investment',
         }),
       ],
       cardId
     );
 
-    expect(sources).toHaveLength(1);
-    expect(sources[0]?.type).toBe('chequing');
+    expect(sources.map((source) => source.type)).toEqual([
+      'chequing',
+      'savings',
+    ]);
   });
 });

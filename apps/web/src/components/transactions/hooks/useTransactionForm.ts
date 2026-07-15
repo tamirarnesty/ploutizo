@@ -1,9 +1,10 @@
 import { useAppForm } from '@ploutizo/ui/components/form';
 import { createTransactionSchema } from '@ploutizo/validators';
+import { normalizeTransactionAssignees } from '@ploutizo/utils';
 import {
-  formatSettlementDescription,
-  normalizeTransactionAssignees,
-} from '@ploutizo/utils';
+  formatGeneratedTransactionDescriptionFromAccounts,
+  resolveTransactionDescriptionPolicy,
+} from '@ploutizo/utils/transaction-policy';
 import { centsToDollars, dollarsToCents } from '@ploutizo/utils/currency';
 import type { Account } from '@ploutizo/types';
 import type {
@@ -12,61 +13,6 @@ import type {
   useUpdateTransaction,
 } from '@/lib/data-access/transactions';
 import type { TransactionFormValues } from '../types';
-
-const LOCKED_DESCRIPTION_TYPES = [
-  'transfer',
-  'settlement',
-  'contribution',
-] as const;
-
-export const isLockedDescriptionType = (
-  type: string,
-  refundOf: string
-): boolean =>
-  (LOCKED_DESCRIPTION_TYPES as readonly string[]).includes(type) ||
-  (type === 'refund' && !!refundOf);
-
-type LockedDescriptionInput = Pick<
-  TransactionFormValues,
-  'type' | 'accountId' | 'counterpartAccountId' | 'refundOf'
-> & {
-  accountName?: string | null;
-  counterpartAccountName?: string | null;
-};
-
-/** Canonical auto-generated description for locked transaction types (D-11, D-12). */
-export const computeLockedDescription = (
-  values: LockedDescriptionInput,
-  accounts: Account[],
-  refundOriginalDesc?: string
-): string => {
-  const primaryAccount = accounts.find((a) => a.id === values.accountId);
-  const counterpartAccount = accounts.find(
-    (a) => a.id === values.counterpartAccountId
-  );
-  const primaryName = primaryAccount?.name ?? values.accountName ?? '…';
-  const counterpartName =
-    counterpartAccount?.name ?? values.counterpartAccountName ?? '…';
-
-  switch (values.type) {
-    case 'transfer':
-      return `Transfer from ${primaryName} to ${counterpartName}`;
-    case 'settlement': {
-      const paidFromName = values.counterpartAccountId
-        ? counterpartName
-        : undefined;
-      return formatSettlementDescription(primaryName, paidFromName);
-    }
-    case 'contribution':
-      return `Contribution from ${primaryName} to ${counterpartName}`;
-    case 'refund':
-      return values.refundOf && refundOriginalDesc
-        ? `Refund of ${refundOriginalDesc}`
-        : '';
-    default:
-      return '';
-  }
-};
 
 export type CreateMutation = ReturnType<typeof useCreateTransaction>;
 export type UpdateMutation = ReturnType<typeof useUpdateTransaction>;
@@ -126,8 +72,13 @@ export const buildDefaultValues = (
     assignees: buildAssigneeDefaults(transaction),
   };
 
-  if (isLockedDescriptionType(values.type, values.refundOf)) {
-    const locked = computeLockedDescription(
+  if (
+    resolveTransactionDescriptionPolicy({
+      type: values.type,
+      refundOf: values.refundOf,
+    }).mode === 'generated'
+  ) {
+    const locked = formatGeneratedTransactionDescriptionFromAccounts(
       {
         type: values.type,
         accountId: values.accountId,
