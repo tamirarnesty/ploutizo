@@ -17,6 +17,7 @@
   "dependencies": {
     "@clerk/tanstack-react-start": "^1.0.8",
     "@clerk/ui": "latest",
+    "@ploutizo/types": "workspace:*",
     "@ploutizo/ui": "workspace:*",
     "@ploutizo/validators": "workspace:^",
     "@tailwindcss/vite": "^4.1.18",
