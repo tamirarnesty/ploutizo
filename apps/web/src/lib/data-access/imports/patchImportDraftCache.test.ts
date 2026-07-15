@@ -6,16 +6,19 @@ import type {
   ImportDraftSummary,
 } from '@ploutizo/types';
 import {
+  applyServerRowIfNewer,
   patchImportDraftRow,
   replaceImportDraftRow,
-  restoreImportDraftCache,
+  revertImportDraftRowPatch,
+  revertImportDraftRowsSelection,
 } from './patchImportDraftCache';
 import { activeImportDraftsQueryKey, importDraftQueryKey } from './queryKeys';
 
 const draftId = '11111111-1111-4111-8111-111111111111';
 const rowId = '33333333-3333-4333-8333-333333333333';
+const rowIdB = '44444444-4444-4444-8444-444444444444';
 
-const baseRow = (): ImportDraftRow => ({
+const baseRow = (overrides: Partial<ImportDraftRow> = {}): ImportDraftRow => ({
   id: rowId,
   batchId: draftId,
   rowNumber: 1,
@@ -37,16 +40,26 @@ const baseRow = (): ImportDraftRow => ({
   reviewDescription: 'Coffee',
   reviewCategoryName: null,
   reviewAssigneeHint: null,
-  reviewAssigneeMemberIds: ['44444444-4444-4444-8444-444444444444'],
+  reviewAssigneeMemberIds: ['55555555-5555-4555-8555-555555555555'],
   reviewRefundLinkHint: null,
   reviewNotes: null,
   reviewTags: [],
   selectedForImport: false,
   createdAt: '2026-05-20T12:00:00Z',
   updatedAt: '2026-05-20T12:00:00Z',
+  ...overrides,
 });
 
-const seedDraft = (row: ImportDraftRow): ImportDraft => ({
+const baseRowB = (): ImportDraftRow =>
+  baseRow({
+    id: rowIdB,
+    rowNumber: 2,
+    sourceDescription: 'Lunch',
+    parsedDescription: 'Lunch',
+    reviewDescription: 'Lunch',
+  });
+
+const seedDraft = (rows: ImportDraftRow[]): ImportDraft => ({
   id: draftId,
   accountId: '22222222-2222-4222-8222-222222222222',
   accountName: 'Visa',
@@ -55,21 +68,43 @@ const seedDraft = (row: ImportDraftRow): ImportDraft => ({
   source: 'ploutizo_normalized',
   status: 'draft',
   fileName: 'statement.csv',
-  rowCount: 1,
-  validRowCount: 1,
+  rowCount: rows.length,
+  validRowCount: rows.length,
   invalidRowCount: 0,
   importedAt: '2026-05-20T12:00:00Z',
   completedAt: null,
   discardedAt: null,
   createdAt: '2026-05-20T12:00:00Z',
   updatedAt: '2026-05-20T12:00:00Z',
-  rows: [row],
+  rows,
 });
+
+const seedActiveSummary = (draft: ImportDraft) => {
+  const summary: ImportDraftSummary = {
+    id: draft.id,
+    accountId: draft.accountId,
+    accountName: draft.accountName,
+    accountInstitution: draft.accountInstitution,
+    accountLastFour: draft.accountLastFour,
+    source: draft.source,
+    status: draft.status,
+    fileName: draft.fileName,
+    rowCount: draft.rowCount,
+    validRowCount: draft.validRowCount,
+    invalidRowCount: draft.invalidRowCount,
+    importedAt: draft.importedAt,
+    completedAt: draft.completedAt,
+    discardedAt: draft.discardedAt,
+    createdAt: draft.createdAt,
+    updatedAt: draft.updatedAt,
+  };
+  return summary;
+};
 
 describe('patchImportDraftCache', () => {
   it('recomputes row status after optimistic category patch', () => {
     const qc = new QueryClient();
-    qc.setQueryData(importDraftQueryKey(draftId), seedDraft(baseRow()));
+    qc.setQueryData(importDraftQueryKey(draftId), seedDraft([baseRow()]));
 
     patchImportDraftRow(qc, draftId, rowId, {
       reviewCategoryName: 'Dining',
@@ -82,7 +117,7 @@ describe('patchImportDraftCache', () => {
 
   it('recomputes row status when replacing a row from the server', () => {
     const qc = new QueryClient();
-    qc.setQueryData(importDraftQueryKey(draftId), seedDraft(baseRow()));
+    qc.setQueryData(importDraftQueryKey(draftId), seedDraft([baseRow()]));
 
     replaceImportDraftRow(qc, draftId, {
       ...baseRow(),
@@ -95,44 +130,96 @@ describe('patchImportDraftCache', () => {
     expect(draft?.rows[0]?.status).toBe('ready');
   });
 
-  it('restores draft and active summary counts after optimistic patch', () => {
+  it('reverts only patched row fields after optimistic patch', () => {
     const qc = new QueryClient();
-    const previousDraft = seedDraft(baseRow());
-    qc.setQueryData(importDraftQueryKey(draftId), previousDraft);
+    const previousRow = baseRow();
+    const draft = seedDraft([previousRow]);
+    qc.setQueryData(importDraftQueryKey(draftId), draft);
     qc.setQueryData<ImportDraftSummary[]>(activeImportDraftsQueryKey, [
-      {
-        id: previousDraft.id,
-        accountId: previousDraft.accountId,
-        accountName: previousDraft.accountName,
-        accountInstitution: previousDraft.accountInstitution,
-        accountLastFour: previousDraft.accountLastFour,
-        source: previousDraft.source,
-        status: previousDraft.status,
-        fileName: previousDraft.fileName,
-        rowCount: previousDraft.rowCount,
-        validRowCount: previousDraft.validRowCount,
-        invalidRowCount: previousDraft.invalidRowCount,
-        importedAt: previousDraft.importedAt,
-        completedAt: previousDraft.completedAt,
-        discardedAt: previousDraft.discardedAt,
-        createdAt: previousDraft.createdAt,
-        updatedAt: previousDraft.updatedAt,
-      },
+      seedActiveSummary(draft),
     ]);
 
-    patchImportDraftRow(qc, draftId, rowId, {
-      reviewCategoryName: 'Dining',
-    });
+    const body = { reviewCategoryName: 'Dining' as const };
+    patchImportDraftRow(qc, draftId, rowId, body);
 
-    restoreImportDraftCache(qc, draftId, previousDraft);
+    revertImportDraftRowPatch(qc, draftId, rowId, previousRow, body);
 
-    const draft = qc.getQueryData<ImportDraft>(importDraftQueryKey(draftId));
+    const restored = qc.getQueryData<ImportDraft>(importDraftQueryKey(draftId));
     const summaries = qc.getQueryData<ImportDraftSummary[]>(
       activeImportDraftsQueryKey
     );
 
-    expect(draft?.rows[0]?.reviewCategoryName).toBeNull();
-    expect(draft?.rows[0]?.status).toBe('needs_review');
-    expect(summaries?.[0]?.validRowCount).toBe(previousDraft.validRowCount);
+    expect(restored?.rows[0]?.reviewCategoryName).toBeNull();
+    expect(restored?.rows[0]?.status).toBe('needs_review');
+    expect(summaries?.[0]?.validRowCount).toBe(draft.validRowCount);
+  });
+
+  it('does not clobber a successful row B edit when rolling back row A', () => {
+    const qc = new QueryClient();
+    const rowA = baseRow();
+    const rowB = baseRowB();
+    const draft = seedDraft([rowA, rowB]);
+    qc.setQueryData(importDraftQueryKey(draftId), draft);
+
+    const rowABody = { reviewCategoryName: 'Dining' as const };
+    patchImportDraftRow(qc, draftId, rowId, rowABody);
+
+    const rowBBody = { reviewCategoryName: 'Travel' as const };
+    patchImportDraftRow(qc, draftId, rowIdB, rowBBody);
+
+    revertImportDraftRowPatch(qc, draftId, rowId, rowA, rowABody);
+
+    const result = qc.getQueryData<ImportDraft>(importDraftQueryKey(draftId));
+    const restoredA = result?.rows.find((row) => row.id === rowId);
+    const successfulB = result?.rows.find((row) => row.id === rowIdB);
+
+    expect(restoredA?.reviewCategoryName).toBeNull();
+    expect(restoredA?.status).toBe('needs_review');
+    expect(successfulB?.reviewCategoryName).toBe('Travel');
+    expect(successfulB?.status).toBe('ready');
+  });
+
+  it('does not overwrite a newer cache row with a stale server response', () => {
+    const qc = new QueryClient();
+    const cachedRow = {
+      ...baseRow(),
+      reviewCategoryName: 'Dining',
+      status: 'ready' as const,
+      updatedAt: '2026-05-20T14:00:00Z',
+    };
+    qc.setQueryData(importDraftQueryKey(draftId), seedDraft([cachedRow]));
+
+    applyServerRowIfNewer(qc, draftId, {
+      ...baseRow(),
+      reviewCategoryName: 'Travel',
+      status: 'needs_review',
+      updatedAt: '2026-05-20T13:00:00Z',
+    });
+
+    const draft = qc.getQueryData<ImportDraft>(importDraftQueryKey(draftId));
+    expect(draft?.rows[0]?.reviewCategoryName).toBe('Dining');
+    expect(draft?.rows[0]?.status).toBe('ready');
+    expect(draft?.rows[0]?.updatedAt).toBe('2026-05-20T14:00:00Z');
+  });
+
+  it('reverts only affected row selections', () => {
+    const qc = new QueryClient();
+    const rowA = baseRow({ selectedForImport: false });
+    const rowB = baseRowB();
+    rowB.selectedForImport = true;
+    qc.setQueryData(importDraftQueryKey(draftId), seedDraft([rowA, rowB]));
+
+    patchImportDraftRow(qc, draftId, rowId, { selectedForImport: true });
+    patchImportDraftRow(qc, draftId, rowIdB, { reviewCategoryName: 'Travel' });
+
+    revertImportDraftRowsSelection(qc, draftId, new Map([[rowId, false]]));
+
+    const result = qc.getQueryData<ImportDraft>(importDraftQueryKey(draftId));
+    const restoredA = result?.rows.find((row) => row.id === rowId);
+    const untouchedB = result?.rows.find((row) => row.id === rowIdB);
+
+    expect(restoredA?.selectedForImport).toBe(false);
+    expect(untouchedB?.reviewCategoryName).toBe('Travel');
+    expect(untouchedB?.selectedForImport).toBe(true);
   });
 });

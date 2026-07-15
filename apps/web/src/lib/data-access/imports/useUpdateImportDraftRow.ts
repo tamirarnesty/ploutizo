@@ -3,9 +3,9 @@ import type { ImportDraft, ImportDraftRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import { apiFetch } from '@/lib/queryClient';
 import {
+  applyServerRowIfNewer,
   patchImportDraftRow,
-  replaceImportDraftRow,
-  restoreImportDraftCache,
+  revertImportDraftRowPatch,
 } from './patchImportDraftCache';
 import { activeImportDraftsQueryKey, importDraftQueryKey } from './queryKeys';
 
@@ -25,17 +25,16 @@ export const useUpdateImportDraftRow = () => {
       }).then((r) => r.data),
     onMutate: async ({ draftId, rowId, body }) => {
       await qc.cancelQueries({ queryKey: importDraftQueryKey(draftId) });
-      const previousDraft = qc.getQueryData<ImportDraft>(
-        importDraftQueryKey(draftId)
-      );
+      const draft = qc.getQueryData<ImportDraft>(importDraftQueryKey(draftId));
+      const previousRow = draft?.rows.find((row) => row.id === rowId);
       patchImportDraftRow(qc, draftId, rowId, body);
-      return { previousDraft, draftId };
+      return { previousRow, draftId, rowId, body };
     },
     onSuccess: (updatedRow, { draftId }) => {
-      replaceImportDraftRow(qc, draftId, updatedRow);
+      applyServerRowIfNewer(qc, draftId, updatedRow);
     },
-    onError: (_error, { draftId }, context) => {
-      restoreImportDraftCache(qc, draftId, context?.previousDraft);
+    onError: (_error, { draftId, rowId, body }, context) => {
+      revertImportDraftRowPatch(qc, draftId, rowId, context?.previousRow, body);
       void qc.invalidateQueries({ queryKey: importDraftQueryKey(draftId) });
       void qc.invalidateQueries({ queryKey: activeImportDraftsQueryKey });
     },

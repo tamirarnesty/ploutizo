@@ -47,19 +47,47 @@ The starting point for credit card import work. It helps a household member star
 _Avoid_: Import wizard, import review page
 
 **Import draft**:
-A durable in-progress import for one **settlement-scoped account**. A household member can resume or discard it before confirm; only one active import draft may exist for a credit card account at a time.
-_Avoid_: Temporary upload, local preview, partial import
+A durable in-progress import for one **settlement-scoped account**. A household member can resume or discard it before confirm; mid-review corrections and selection are saved on the draft so resume continues from the last persisted state. Only one active import draft may exist for a credit card account at a time.
+_Avoid_: Temporary upload, local preview, partial import, review-only buffer that is lost on leave
 
 **Review import**:
-The focused work of inspecting one **import draft** before final confirmation. During review, the user chooses which rows to include, corrects editable transaction fields, and resolves blocking row states.
-_Avoid_: Processing import, inline draft preview
+The focused work of inspecting one **import draft** before final confirmation. During review, the user chooses which rows to include, corrects editable transaction fields, and satisfies import row requirements. Corrections become **reviewed import values** on the draft as review progresses; they are not held only until **Finalize import**.
+_Avoid_: Processing import, inline draft preview, finalize-only save
+
+**Import lifecycle**:
+The credit card import flow is import/upload from the **Import hub**, review/edit in **Review import**, final confirmation in **Finalize import**, then bulk creation and recording of outcomes.
+_Avoid_: One-step import, background import
 
 **Selected import row**:
-An import draft row the user has explicitly chosen to include in the next confirm. Selected rows must be resolved before confirm; invalid or unresolved selected rows block the import from moving forward.
+An import draft row the user has explicitly chosen to include in the next confirm. Selected rows define the **import set**; they may still be unresolved during review, but must satisfy all **import row requirements** before confirm.
 _Avoid_: Automatically included row, checked transaction
 
+**Skipped import row**:
+An import draft row that will not move into the **prepared import set**. A row is skipped by remaining unselected during **Review import** and is recorded as skipped or unprocessed when the draft closes.
+_Avoid_: Selected no-op row, finalize outcome
+
+**Import set**:
+The selected import rows in one **import draft**. It is not the whole uploaded file; rows the user leaves unselected are outside the import set.
+_Avoid_: Whole import file, all draft rows
+
+**Import row requirement**:
+A named condition a selected import row must satisfy before **Finalize import**. Requirements include normal transaction write rules, as if the row were being entered manually, plus import-specific review rules.
+_Avoid_: Blocker, warning, UI status
+
+**Import set ready**:
+An import set whose selected rows all satisfy their **import row requirements**. Only an import set ready state can move into **Finalize import**.
+_Avoid_: File valid, draft complete
+
+**Prepared import set**:
+A stable set of selected-row finalize outcomes created after the **import set** passes requirement evaluation. The user reviews this prepared set during **Finalize import** before committing new transactions and matched/no-op outcomes.
+_Avoid_: Live draft rows, temporary UI selection
+
+**Import set verification**:
+The server-side requirement evaluation that confirms a selected **import set** can move from **Review import** to **Finalize import**. Verification uses the shared transaction requirements plus import-specific requirements and is repeated before bulk transaction creation.
+_Avoid_: Client-only status check, trusting cached readiness
+
 **Finalize import**:
-The last confirmation checkpoint for an import draft. It commits selected resolved rows into normal transactions, records skipped and unprocessed outcomes, and closes the draft completely.
+The last confirmation checkpoint for an import draft. It lets the user review the **prepared import set** before committing new transactions, recording matched/no-op rows, recording skipped and unprocessed outcomes, and closing the draft completely.
 _Avoid_: Partial confirm, background import
 
 **Bill payment row**:
@@ -70,13 +98,21 @@ _Avoid_: Treating a card bill payment as a merchant refund, income, or transfer
 An imported row that Ploutizo can align to exactly one existing same-kind transaction with high confidence. It is still surfaced for review before submit; auto-resolved means the app has a recommended match, not that the row bypasses user confirmation.
 _Avoid_: Silent duplicate removal, hidden match
 
+**Matched import row**:
+An imported row accepted as representing an existing transaction, either by external id or by matching criteria such as amount, date, description, and type. A matched import row is finalized as a no-op for transaction creation.
+_Avoid_: Duplicate to import, new transaction
+
 **Needs review import row**:
 An imported row whose classification or match is uncertain enough that the user should inspect it before submit. Examples include non-exact date matches, multiple possible matches, near-amount matches, or ambiguous expense/refund/settlement classification.
 _Avoid_: Import error (unless the row is invalid)
 
 **Resolved import row**:
-An imported row that is safe to include in confirm: classification is complete and any uncertainty has been accepted or corrected by the user, or the row is confidently matched to an existing transaction and will be skipped. Confirm is blocked while any selected row is unresolved.
+An imported row whose **import row requirements** are satisfied. Confirm is blocked while any selected row is unresolved.
 _Avoid_: Confirmed row, imported row
+
+**Import row status**:
+A derived review state used to present an import row during review. It summarizes requirement evaluation for the row but is not the authority for whether the **import set** can move to **Finalize import**.
+_Avoid_: Source of truth, eligibility flag
 
 **Invalid import row**:
 A CSV line the app cannot parse into a candidate transaction. It does not fail the whole file; it appears in review/history as invalid with a reason, is excluded from selection by default, and never becomes a transaction.
@@ -98,6 +134,14 @@ _Avoid_: Treating bill payment category as expense spend
 An imported row that has enough domain meaning to become a Ploutizo transaction using the same transaction model as manual entry. Classification includes the required transaction kind and attribution choices; tags, notes, and user-polished description details are refinements that may be changed during review or later.
 _Avoid_: Partially classified ledger entry
 
+**Reviewed import value**:
+The actual transaction value selected during **Review import**, either accepted from the parsed import row or edited by the user. Original import values remain provenance; reviewed values are what new transactions use. They persist on the **import draft** during review so a resumed draft shows the same corrections.
+_Avoid_: Temporary override, display-only value, unsaved local-only edit
+
+**Raw import description**:
+The original credit card statement description retained on a resulting transaction only when the user changes the description during **Review import**. The reviewed description is the transaction description shown across the app; raw description exists only as reference back to the imported account record.
+_Avoid_: Alternate display description, canonical merchant name
+
 **Import assignee default**:
 For imported expense and refund rows, assignees default from the target credit card’s account ownership: one owner → personal transaction; multiple owners → shared transaction with equal split. A merchant rule assignee overrides this default when it matches.
 _Avoid_: Defaulting to the uploading member, defaulting to all household members
@@ -105,6 +149,14 @@ _Avoid_: Defaulting to the uploading member, defaulting to all household members
 **Single-account import**:
 An import file assigned to exactly one target credit card account before or during upload. Credit card statement exports are expected to represent one account; assigning the whole file to one card keeps duplicate detection, statement matching, and row classification coherent.
 _Avoid_: Multi-account import, chequing/savings statement import
+
+**Credit card import transaction type**:
+An import output transaction kind valid for a credit card statement row: **expense**, **refund**, or **settlement**. Credit card imports do not produce income, transfer, or contribution transactions.
+_Avoid_: Generic ledger import type, any transaction type
+
+**Expense/refund category requirement**:
+Every expense and refund transaction must have a category. Settlements and other non-spend transaction kinds do not use expense/refund category classification.
+_Avoid_: Import-only category requirement, optional spend category
 
 **Ploutizo normalized import format**:
 A household-facing CSV template for credit card imports when a bank-specific export is unavailable. Required columns: date, amount, description, type (`expense` | `refund` | `settlement`). Optional columns include external id, category, assignee hint, refund link hints, notes, and tags. The Import page is the primary place to download the example file and format guide in v1.

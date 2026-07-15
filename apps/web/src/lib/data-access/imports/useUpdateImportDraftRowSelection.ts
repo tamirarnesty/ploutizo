@@ -3,8 +3,9 @@ import type { ImportDraft, ImportDraftRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowSelectionInput } from '@ploutizo/validators';
 import { apiFetch } from '@/lib/queryClient';
 import {
+  applyServerRowsIfNewer,
   patchImportDraftRowsSelection,
-  restoreImportDraftCache,
+  revertImportDraftRowsSelection,
 } from './patchImportDraftCache';
 import { activeImportDraftsQueryKey, importDraftQueryKey } from './queryKeys';
 
@@ -26,33 +27,27 @@ export const useUpdateImportDraftRowSelection = () => {
       ).then((r) => r.data),
     onMutate: async ({ draftId, body }) => {
       await qc.cancelQueries({ queryKey: importDraftQueryKey(draftId) });
-      const previousDraft = qc.getQueryData<ImportDraft>(
-        importDraftQueryKey(draftId)
-      );
+      const draft = qc.getQueryData<ImportDraft>(importDraftQueryKey(draftId));
+      const previousSelections = new Map<string, boolean>();
+      for (const id of body.rowIds) {
+        const row = draft?.rows.find((r) => r.id === id);
+        if (row) previousSelections.set(id, row.selectedForImport);
+      }
       patchImportDraftRowsSelection(
         qc,
         draftId,
         body.rowIds,
         body.selectedForImport
       );
-      return { previousDraft, draftId };
+      return { previousSelections, draftId };
     },
     onSuccess: (updatedRows, { draftId }) => {
-      const updatedById = new Map(updatedRows.map((row) => [row.id, row]));
-      qc.setQueryData<ImportDraft | undefined>(
-        importDraftQueryKey(draftId),
-        (current) => {
-          if (!current) return current;
-          const rows = current.rows.map((row) => {
-            const updated = updatedById.get(row.id);
-            return updated ? { ...row, ...updated } : row;
-          });
-          return { ...current, rows };
-        }
-      );
+      applyServerRowsIfNewer(qc, draftId, updatedRows);
     },
     onError: (_error, { draftId }, context) => {
-      restoreImportDraftCache(qc, draftId, context?.previousDraft);
+      if (context?.previousSelections) {
+        revertImportDraftRowsSelection(qc, draftId, context.previousSelections);
+      }
       void qc.invalidateQueries({ queryKey: importDraftQueryKey(draftId) });
       void qc.invalidateQueries({ queryKey: activeImportDraftsQueryKey });
     },

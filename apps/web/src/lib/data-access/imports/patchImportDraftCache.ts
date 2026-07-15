@@ -87,18 +87,86 @@ export const replaceImportDraftRow = (
   );
 };
 
-export const restoreImportDraftCache = (
+export const revertImportDraftRowPatch = (
   qc: QueryClient,
   draftId: string,
-  previousDraft: ImportDraft | undefined
+  rowId: string,
+  previousRow: ImportDraftRow | undefined,
+  body: Partial<ImportDraftRow>
 ) => {
-  if (!previousDraft) return;
-  qc.setQueryData(importDraftQueryKey(draftId), previousDraft);
-  patchActiveDraftSummary(qc, draftId, {
-    rowCount: previousDraft.rowCount,
-    validRowCount: previousDraft.validRowCount,
-    invalidRowCount: previousDraft.invalidRowCount,
-  });
+  if (!previousRow) return;
+  const patch = Object.fromEntries(
+    (Object.keys(body) as (keyof ImportDraftRow)[]).map((key) => [
+      key,
+      previousRow[key],
+    ])
+  ) as Partial<ImportDraftRow>;
+  patchImportDraftRow(qc, draftId, rowId, patch);
+};
+
+export const revertImportDraftRowsSelection = (
+  qc: QueryClient,
+  draftId: string,
+  previousSelections: Map<string, boolean>
+) => {
+  qc.setQueryData<ImportDraft | undefined>(
+    importDraftQueryKey(draftId),
+    (current) => {
+      if (!current) return current;
+      const rows = current.rows.map((row) => {
+        const previous = previousSelections.get(row.id);
+        return previous === undefined
+          ? row
+          : { ...row, selectedForImport: previous };
+      });
+      return { ...current, rows };
+    }
+  );
+};
+
+export const applyServerRowIfNewer = (
+  qc: QueryClient,
+  draftId: string,
+  updatedRow: ImportDraftRow
+) => {
+  qc.setQueryData<ImportDraft | undefined>(
+    importDraftQueryKey(draftId),
+    (current) => {
+      if (!current) return current;
+      const currentRow = current.rows.find((row) => row.id === updatedRow.id);
+      if (!currentRow || updatedRow.updatedAt < currentRow.updatedAt) {
+        return current;
+      }
+      const rows = current.rows.map((row) =>
+        row.id === updatedRow.id
+          ? withRecomputedStatus({ ...row, ...updatedRow })
+          : row
+      );
+      const counts = recomputeDraftCounts(rows);
+      patchActiveDraftSummary(qc, draftId, counts);
+      return { ...current, ...counts, rows };
+    }
+  );
+};
+
+export const applyServerRowsIfNewer = (
+  qc: QueryClient,
+  draftId: string,
+  updatedRows: ImportDraftRow[]
+) => {
+  const updatedById = new Map(updatedRows.map((row) => [row.id, row]));
+  qc.setQueryData<ImportDraft | undefined>(
+    importDraftQueryKey(draftId),
+    (current) => {
+      if (!current) return current;
+      const rows = current.rows.map((row) => {
+        const updated = updatedById.get(row.id);
+        if (!updated || updated.updatedAt < row.updatedAt) return row;
+        return { ...row, ...updated };
+      });
+      return { ...current, rows };
+    }
+  );
 };
 
 export const patchImportDraftRowsSelection = (
