@@ -8,6 +8,7 @@ import type {
 import {
   applyServerRowIfNewer,
   patchImportDraftRow,
+  patchImportDraftRowsSelection,
   replaceImportDraftRow,
   revertImportDraftRowPatch,
   revertImportDraftRowsSelection,
@@ -212,7 +213,12 @@ describe('patchImportDraftCache', () => {
     patchImportDraftRow(qc, draftId, rowId, { selectedForImport: true });
     patchImportDraftRow(qc, draftId, rowIdB, { reviewCategoryName: 'Travel' });
 
-    revertImportDraftRowsSelection(qc, draftId, new Map([[rowId, false]]));
+    revertImportDraftRowsSelection(
+      qc,
+      draftId,
+      new Map([[rowId, false]]),
+      true
+    );
 
     const result = qc.getQueryData<ImportDraft>(importDraftQueryKey(draftId));
     const restoredA = result?.rows.find((row) => row.id === rowId);
@@ -221,5 +227,52 @@ describe('patchImportDraftCache', () => {
     expect(restoredA?.selectedForImport).toBe(false);
     expect(untouchedB?.reviewCategoryName).toBe('Travel');
     expect(untouchedB?.selectedForImport).toBe(true);
+  });
+
+  it('does not clobber a newer same-field success when an older patch fails', () => {
+    const qc = new QueryClient();
+    const previousRow = baseRow();
+    qc.setQueryData(importDraftQueryKey(draftId), seedDraft([previousRow]));
+
+    const olderBody = { reviewCategoryName: 'Dining' as const };
+    patchImportDraftRow(qc, draftId, rowId, olderBody);
+
+    const newerBody = { reviewCategoryName: 'Travel' as const };
+    patchImportDraftRow(qc, draftId, rowId, newerBody);
+    applyServerRowIfNewer(qc, draftId, {
+      ...baseRow(),
+      reviewCategoryName: 'Travel',
+      status: 'ready',
+      updatedAt: '2026-05-20T14:00:00Z',
+    });
+
+    revertImportDraftRowPatch(qc, draftId, rowId, previousRow, olderBody);
+
+    const draft = qc.getQueryData<ImportDraft>(importDraftQueryKey(draftId));
+    expect(draft?.rows[0]?.reviewCategoryName).toBe('Travel');
+    expect(draft?.rows[0]?.updatedAt).toBe('2026-05-20T14:00:00Z');
+  });
+
+  it('does not revert selection when a newer selection already replaced it', () => {
+    const qc = new QueryClient();
+    qc.setQueryData(
+      importDraftQueryKey(draftId),
+      seedDraft([baseRow({ selectedForImport: false })])
+    );
+
+    // Older mutation optimistically selected the row.
+    patchImportDraftRowsSelection(qc, draftId, [rowId], true);
+    // Newer mutation deselects and succeeds in cache.
+    patchImportDraftRowsSelection(qc, draftId, [rowId], false);
+
+    revertImportDraftRowsSelection(
+      qc,
+      draftId,
+      new Map([[rowId, false]]),
+      true
+    );
+
+    const draft = qc.getQueryData<ImportDraft>(importDraftQueryKey(draftId));
+    expect(draft?.rows[0]?.selectedForImport).toBe(false);
   });
 });

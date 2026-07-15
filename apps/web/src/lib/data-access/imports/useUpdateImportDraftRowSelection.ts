@@ -44,9 +44,14 @@ export const useUpdateImportDraftRowSelection = () => {
     onSuccess: (updatedRows, { draftId }) => {
       applyServerRowsIfNewer(qc, draftId, updatedRows);
     },
-    onError: (_error, { draftId }, context) => {
+    onError: (_error, { draftId, body }, context) => {
       if (context?.previousSelections) {
-        revertImportDraftRowsSelection(qc, draftId, context.previousSelections);
+        revertImportDraftRowsSelection(
+          qc,
+          draftId,
+          context.previousSelections,
+          body.selectedForImport
+        );
       }
       void qc.invalidateQueries({ queryKey: importDraftQueryKey(draftId) });
       void qc.invalidateQueries({ queryKey: activeImportDraftsQueryKey });
