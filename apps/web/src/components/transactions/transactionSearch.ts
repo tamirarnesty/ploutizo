@@ -51,7 +51,7 @@ const TRANSACTION_SEARCH_STRING_FIELDS = [
   'assigneeId_op',
   'tagIds_op',
   'dateRange_op',
-] as const satisfies ReadonlyArray<keyof TransactionSearch>;
+] as const satisfies readonly (keyof TransactionSearch)[];
 
 const parseOptionalPage = (value: unknown): number | undefined => {
   if (typeof value !== 'number' || !Number.isInteger(value) || value < 1) {
