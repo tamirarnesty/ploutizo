@@ -99,7 +99,12 @@ describe('createTransaction — cross-org reference rejection', () => {
 
     expect(err).toBeInstanceOf(NotFoundError);
     expect((err as NotFoundError).message).toBe('Account not found');
-    expect(fetchAccountWriteReference).toHaveBeenCalledWith(ORG_A, ACCOUNT_A);
+    expect(fetchAccountWriteReference).toHaveBeenCalledWith(
+      ORG_A,
+      ACCOUNT_A,
+      { forUpdate: true },
+      mockTx
+    );
   });
 
   it('rejects assignee memberId not in org', async () => {
@@ -262,6 +267,18 @@ describe('createTransaction — transaction account policy', () => {
     });
 
     expect(result).toMatchObject({ id: expect.any(String) });
+    expect(fetchAccountWriteReference).toHaveBeenCalledWith(
+      ORG_A,
+      ACCOUNT_A,
+      { forUpdate: true },
+      mockTx
+    );
+    expect(fetchAccountWriteReference).toHaveBeenCalledWith(
+      ORG_A,
+      ACCOUNT_B,
+      { forUpdate: true },
+      mockTx
+    );
   });
 });
 
@@ -304,6 +321,12 @@ describe('updateTransaction — transaction account policy', () => {
     expect(err).toBeInstanceOf(DomainError);
     expect((err as DomainError).message).toContain('must differ');
     expect(updateTransactionScalarsQuery).not.toHaveBeenCalled();
+    expect(fetchAccountWriteReference).toHaveBeenCalledWith(
+      ORG_A,
+      ACCOUNT_A,
+      { forUpdate: true },
+      mockTx
+    );
   });
 
   it('rejects invalid contribution destination account type', async () => {
