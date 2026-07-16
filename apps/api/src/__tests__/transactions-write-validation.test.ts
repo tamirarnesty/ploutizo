@@ -69,7 +69,7 @@ const mockAccountLookups = (
   refs: Record<string, ReturnType<typeof accountRef> | null>
 ) => {
   vi.mocked(fetchAccountWriteReference).mockImplementation(
-    async (_orgId, accountId) => refs[accountId] ?? null
+    (_orgId, accountId) => Promise.resolve(refs[accountId] ?? null)
   );
 };
 

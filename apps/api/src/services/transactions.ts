@@ -12,6 +12,7 @@ import type {
   UpdateTransactionServiceInput,
   createTransactionSchema,
 } from '@ploutizo/validators';
+import type { AccountWriteReference } from '@/lib/queries/scope';
 import type { ListQueryParams } from '@/lib/queries/transactions';
 import type { z } from 'zod';
 import { DomainError, NotFoundError } from '@/lib/errors';
@@ -21,7 +22,6 @@ import {
   categoryExistsInOrg,
   fetchAccountWriteReference,
   transactionExistsInOrg,
-  type AccountWriteReference,
 } from '@/lib/queries/scope';
 import {
   buildListQuery,
