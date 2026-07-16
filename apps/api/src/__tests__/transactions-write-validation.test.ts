@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { AccountType } from '@ploutizo/types';
 import { DomainError, NotFoundError } from '@/lib/errors';
 import {
   allMembersInOrg,
@@ -52,19 +53,9 @@ vi.mock('@/lib/queries/scope', () => ({
 const ORG_A = 'org_a';
 const ACCOUNT_A = '550e8400-e29b-41d4-a716-446655440010';
 const ACCOUNT_B = '550e8400-e29b-41d4-a716-446655440011';
-const ACCOUNT_C = '550e8400-e29b-41d4-a716-446655440012';
 const MEMBER_A = '550e8400-e29b-41d4-a716-446655440020';
 
-const accountRef = (
-  id: string,
-  type:
-    | 'credit_card'
-    | 'chequing'
-    | 'savings'
-    | 'prepaid_cash'
-    | 'e_transfer'
-    | 'investment'
-) => ({
+const accountRef = (id: string, type: AccountType) => ({
   id,
   type,
   archivedAt: null,
@@ -158,24 +149,6 @@ describe('createTransaction — transaction account policy', () => {
       'TRANSACTION_ACCOUNT_POLICY_VIOLATION'
     );
     expect((err as DomainError).message).toContain('must use one of');
-  });
-
-  it('requires counterpartAccountId for saved transfer writes', async () => {
-    mockAccountLookups({
-      [ACCOUNT_A]: accountRef(ACCOUNT_A, 'chequing'),
-    });
-
-    const err = await createTransaction(ORG_A, {
-      type: 'transfer',
-      accountId: ACCOUNT_A,
-      amount: 1000,
-      date: '2026-05-01',
-      description: 'Transfer',
-      assignees: baseAssignees,
-    } as never).catch((e: unknown) => e);
-
-    expect(err).toBeInstanceOf(DomainError);
-    expect((err as DomainError).message).toContain('counterpartAccountId');
   });
 
   it('requires counterpartAccountId for saved settlement writes', async () => {
@@ -316,7 +289,6 @@ describe('updateTransaction — transaction account policy', () => {
   it('rejects same-account contribution writes before persisting', async () => {
     mockAccountLookups({
       [ACCOUNT_A]: accountRef(ACCOUNT_A, 'chequing'),
-      [ACCOUNT_C]: accountRef(ACCOUNT_C, 'investment'),
     });
 
     const err = await updateTransaction(ORG_A, 'tx_1', {

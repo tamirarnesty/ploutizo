@@ -71,7 +71,7 @@ export const checkCounterpartAccountOwnership = async (
   accountId: string
 ): Promise<boolean> => counterpartAccountBelongsToOrg(orgId, accountId);
 
-export type LoadedTransactionWriteReferences = {
+type LoadedTransactionWriteReferences = {
   account: AccountWriteReference;
   counterpartAccount: AccountWriteReference | null;
 };
@@ -137,13 +137,8 @@ const assertTransactionAccountPolicy = (
 ) => {
   const result = validateTransactionAccountPolicy({
     type,
-    account: { id: refs.account.id, type: refs.account.type },
-    counterpartAccount: refs.counterpartAccount
-      ? {
-          id: refs.counterpartAccount.id,
-          type: refs.counterpartAccount.type,
-        }
-      : null,
+    account: refs.account,
+    counterpartAccount: refs.counterpartAccount,
   });
 
   if (!result.valid) {
