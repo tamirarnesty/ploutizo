@@ -5,6 +5,8 @@ import {
   transactions,
 } from '@ploutizo/db/schema';
 import { normalizeTransactionAssignees } from '@ploutizo/utils';
+import { validateTransactionAccountPolicy } from '@ploutizo/utils/transaction-policy';
+import type { TransactionType } from '@ploutizo/types';
 import type {
   CreateTransactionInput,
   UpdateTransactionServiceInput,
@@ -12,13 +14,14 @@ import type {
 } from '@ploutizo/validators';
 import type { ListQueryParams } from '@/lib/queries/transactions';
 import type { z } from 'zod';
-import { NotFoundError } from '@/lib/errors';
+import { DomainError, NotFoundError } from '@/lib/errors';
 import {
-  accountExistsInOrg,
   allMembersInOrg,
   allTagsInOrg,
   categoryExistsInOrg,
+  fetchAccountWriteReference,
   transactionExistsInOrg,
+  type AccountWriteReference,
 } from '@/lib/queries/scope';
 import {
   buildListQuery,
@@ -68,7 +71,12 @@ export const checkCounterpartAccountOwnership = async (
   accountId: string
 ): Promise<boolean> => counterpartAccountBelongsToOrg(orgId, accountId);
 
-const assertTransactionWriteReferences = async (
+export type LoadedTransactionWriteReferences = {
+  account: AccountWriteReference;
+  counterpartAccount: AccountWriteReference | null;
+};
+
+const loadTransactionWriteReferences = async (
   orgId: string,
   data: {
     accountId: string;
@@ -78,13 +86,19 @@ const assertTransactionWriteReferences = async (
     tagIds?: string[];
     assignees?: { memberId: string }[];
   }
-) => {
-  if (!(await accountExistsInOrg(orgId, data.accountId))) {
+): Promise<LoadedTransactionWriteReferences> => {
+  const account = await fetchAccountWriteReference(orgId, data.accountId);
+  if (!account) {
     throw new NotFoundError('Account not found');
   }
 
+  let counterpartAccount: AccountWriteReference | null = null;
   if (data.counterpartAccountId) {
-    if (!(await accountExistsInOrg(orgId, data.counterpartAccountId))) {
+    counterpartAccount = await fetchAccountWriteReference(
+      orgId,
+      data.counterpartAccountId
+    );
+    if (!counterpartAccount) {
       throw new NotFoundError('Account not found');
     }
   }
@@ -113,6 +127,32 @@ const assertTransactionWriteReferences = async (
       throw new NotFoundError('Member not found in this household');
     }
   }
+
+  return { account, counterpartAccount };
+};
+
+const assertTransactionAccountPolicy = (
+  type: TransactionType,
+  refs: LoadedTransactionWriteReferences
+) => {
+  const result = validateTransactionAccountPolicy({
+    type,
+    account: { id: refs.account.id, type: refs.account.type },
+    counterpartAccount: refs.counterpartAccount
+      ? {
+          id: refs.counterpartAccount.id,
+          type: refs.counterpartAccount.type,
+        }
+      : null,
+  });
+
+  if (!result.valid) {
+    throw new DomainError(
+      400,
+      result.violations.map((violation) => violation.message).join(' '),
+      'TRANSACTION_ACCOUNT_POLICY_VIOLATION'
+    );
+  }
 };
 
 export const createTransaction = async (
@@ -129,7 +169,7 @@ export const createTransaction = async (
     assignees
   );
 
-  await assertTransactionWriteReferences(orgId, {
+  const writeReferences = await loadTransactionWriteReferences(orgId, {
     accountId: transactionData.accountId,
     counterpartAccountId:
       'counterpartAccountId' in transactionData
@@ -144,6 +184,7 @@ export const createTransaction = async (
     tagIds,
     assignees: normalizedAssignees,
   });
+  assertTransactionAccountPolicy(transactionData.type, writeReferences);
 
   return db.transaction(async (tx) => {
     const [inserted] = await tx
@@ -224,7 +265,7 @@ export const updateTransaction = async (
     const row = await fetchTransactionById(orgId, id, tx);
     if (!row) return null;
 
-    await assertTransactionWriteReferences(orgId, {
+    const writeReferences = await loadTransactionWriteReferences(orgId, {
       accountId: data.accountId,
       counterpartAccountId:
         'counterpartAccountId' in data ? data.counterpartAccountId : undefined,
@@ -233,6 +274,7 @@ export const updateTransaction = async (
       tagIds,
       assignees,
     });
+    assertTransactionAccountPolicy(data.type, writeReferences);
 
     const needsPersistedAssignees = data.assignees === undefined;
 

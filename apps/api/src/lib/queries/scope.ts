@@ -91,17 +91,36 @@ export const orgMemberExists = async (
   return rows.length > 0;
 };
 
+export type AccountWriteReference = {
+  id: string;
+  type: AccountType;
+  archivedAt: Date | null;
+};
+
+export const fetchAccountWriteReference = async (
+  orgId: string,
+  accountId: string,
+  options?: AccountInOrgOptions
+): Promise<AccountWriteReference | null> => {
+  const rows = await db
+    .select({
+      id: accounts.id,
+      type: accounts.type,
+      archivedAt: accounts.archivedAt,
+    })
+    .from(accounts)
+    .where(accountInOrg(orgId, accountId, options))
+    .limit(1);
+  return rows.at(0) ?? null;
+};
+
 export const accountExistsInOrg = async (
   orgId: string,
   accountId: string,
   options?: AccountInOrgOptions
 ): Promise<boolean> => {
-  const rows = await db
-    .select({ id: accounts.id })
-    .from(accounts)
-    .where(accountInOrg(orgId, accountId, options))
-    .limit(1);
-  return rows.length > 0;
+  const account = await fetchAccountWriteReference(orgId, accountId, options);
+  return account !== null;
 };
 
 export const categoryExistsInOrg = async (
