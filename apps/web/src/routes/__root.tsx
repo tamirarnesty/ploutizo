@@ -22,19 +22,17 @@ import { AppDevtools } from '../components/devtools/AppDevtools';
 import { NotFound } from '../components/not-found/NotFound';
 import { ErrorBoundary } from '../components/error-boundary/ErrorBoundary';
 
-const authGuard = createServerFn().handler(async () => {
-  const { isAuthenticated } = await auth();
-  if (!isAuthenticated) {
-    throw redirect({ to: '/sign-in/$' });
-  }
-});
-
-const orgGuard = createServerFn().handler(async () => {
-  const { orgId } = await auth();
-  if (!orgId) {
-    throw redirect({ to: '/onboarding' });
-  }
-});
+const requireAppAccess = createServerFn({ method: 'POST' })
+  .inputValidator((data: { requireOrg: boolean }) => data)
+  .handler(async ({ data }) => {
+    const { isAuthenticated, orgId } = await auth();
+    if (!isAuthenticated) {
+      throw redirect({ to: '/sign-in/$' });
+    }
+    if (data.requireOrg && !orgId) {
+      throw redirect({ to: '/onboarding' });
+    }
+  });
 
 // TokenInitializer: wires Clerk's getToken into the React Query apiFetch helper.
 // Must run inside ClerkProvider so useAuth() has access to the Clerk session.
@@ -88,10 +86,7 @@ export const Route = createRootRoute({
       location.pathname.startsWith('/sign-up');
     const isOnboarding = location.pathname === '/onboarding';
     if (!isAuthRoute) {
-      await authGuard();
-      if (!isOnboarding) {
-        await orgGuard();
-      }
+      await requireAppAccess({ data: { requireOrg: !isOnboarding } });
     }
   },
   head: () => ({
