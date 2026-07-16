@@ -23,13 +23,13 @@ import { NotFound } from '../components/not-found/NotFound';
 import { ErrorBoundary } from '../components/error-boundary/ErrorBoundary';
 
 const requireAppAccess = createServerFn({ method: 'GET' })
-  .inputValidator((data: { requireOrg?: boolean }) => data)
+  .inputValidator((data: { requireOrg: boolean }) => data)
   .handler(async ({ data }) => {
     const { isAuthenticated, orgId } = await auth();
     if (!isAuthenticated) {
       throw redirect({ to: '/sign-in/$' });
     }
-    if (data.requireOrg !== false && !orgId) {
+    if (data.requireOrg && !orgId) {
       throw redirect({ to: '/onboarding' });
     }
   });
