@@ -22,7 +22,7 @@ import { AppDevtools } from '../components/devtools/AppDevtools';
 import { NotFound } from '../components/not-found/NotFound';
 import { ErrorBoundary } from '../components/error-boundary/ErrorBoundary';
 
-const requireAppAccess = createServerFn({ method: 'GET' })
+const requireAppAccess = createServerFn({ method: 'POST' })
   .inputValidator((data: { requireOrg: boolean }) => data)
   .handler(async ({ data }) => {
     const { isAuthenticated, orgId } = await auth();
