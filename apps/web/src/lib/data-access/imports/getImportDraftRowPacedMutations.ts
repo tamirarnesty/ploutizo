@@ -174,17 +174,27 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
         return;
       }
 
-      const patch = toValidatorPatch(mutation.changes);
-      if (!patch) {
-        collection.utils.writeUpdate(
-          mutation.modified as unknown as ImportDraftRow
-        );
+      const attempted = mutation.modified as unknown as ImportDraftRow;
+      const original = mutation.original as unknown as ImportDraftRow;
+      const changedPatch = toValidatorPatch(mutation.changes);
+      // Further edits after Failed re-persist prior failed fields from live state (PRD story 11).
+      const failedKeys =
+        getImportReviewAutosaveSnapshot(draftId).failedFieldKeys.get(rowId) ??
+        [];
+      const live = collection.get(rowId) ?? attempted;
+      const retryFailedPatch = patchFromLiveKeys(live, failedKeys);
+      const patch = {
+        ...(retryFailedPatch ?? {}),
+        ...(changedPatch ?? {}),
+      } as UpdateImportDraftRowInput;
+
+      if (Object.keys(patch).length === 0) {
+        collection.utils.writeUpdate(attempted);
         markImportReviewPersistSuccess(draftId, rowId);
         return;
       }
 
-      const attempted = mutation.modified as unknown as ImportDraftRow;
-      const original = mutation.original as unknown as ImportDraftRow;
+      const persistedKeys = Object.keys(patch);
       try {
         const serverRow = await fetchUpdateImportDraftRow(rowId, patch);
         confirmPersistIntoCollection(
@@ -194,7 +204,7 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
           original,
           patch
         );
-        markImportReviewPersistSuccess(draftId, rowId);
+        markImportReviewPersistSuccess(draftId, rowId, persistedKeys);
       } catch {
         // Keep working-copy edits (ADR 0005) — do not throw (avoids optimistic rollback).
         confirmPersistIntoCollection(
@@ -204,7 +214,7 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
           original,
           patch
         );
-        markImportReviewPersistFailure(draftId, rowId, Object.keys(patch));
+        markImportReviewPersistFailure(draftId, rowId, persistedKeys);
       }
     },
     strategy,
@@ -279,14 +289,16 @@ export const retryFailedImportDraftRowPersists = async (draftId: string) => {
       if (!patch) return;
 
       markImportReviewPersistStart(draftId, rowId);
+      const persistedKeys = Object.keys(patch);
       try {
         const serverRow = await fetchUpdateImportDraftRow(rowId, patch);
         confirmPersistIntoCollection(collection, serverRow, live, live, patch);
+        // Explicit Retry: clear all tracked failures for the row.
         markImportReviewPersistSuccess(draftId, rowId);
       } catch {
         const current = collection.get(rowId);
         if (current) collection.utils.writeUpdate(current);
-        markImportReviewPersistFailure(draftId, rowId, Object.keys(patch));
+        markImportReviewPersistFailure(draftId, rowId, persistedKeys);
       }
     })
   );

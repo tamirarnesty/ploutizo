@@ -143,13 +143,32 @@ export const markImportReviewPersistStart = (
   emit(draftId);
 };
 
+/**
+ * Mark a row persist as successful. When `succeededKeys` is provided, only those
+ * failed keys clear — so a later edit of other fields cannot hide an earlier Failed field.
+ * Omit `succeededKeys` to clear all failed keys for the row (explicit Retry of known failures).
+ */
 export const markImportReviewPersistSuccess = (
   draftId: string,
-  rowId: string
+  rowId: string,
+  succeededKeys?: readonly string[]
 ) => {
   const state = getOrCreateState(draftId);
   state.inFlightCount = Math.max(0, state.inFlightCount - 1);
-  state.failedFieldKeys.delete(rowId);
+
+  if (succeededKeys === undefined) {
+    state.failedFieldKeys.delete(rowId);
+  } else {
+    const remaining = (state.failedFieldKeys.get(rowId) ?? []).filter(
+      (key) => !succeededKeys.includes(key)
+    );
+    if (remaining.length === 0) {
+      state.failedFieldKeys.delete(rowId);
+    } else {
+      state.failedFieldKeys.set(rowId, remaining);
+    }
+  }
+
   refreshFailedRowMembership(state, rowId);
   state.hasSaved = true;
   emit(draftId);
@@ -162,7 +181,8 @@ export const markImportReviewPersistFailure = (
 ) => {
   const state = getOrCreateState(draftId);
   state.inFlightCount = Math.max(0, state.inFlightCount - 1);
-  state.failedFieldKeys.set(rowId, fieldKeys);
+  const previous = state.failedFieldKeys.get(rowId) ?? [];
+  state.failedFieldKeys.set(rowId, [...new Set([...previous, ...fieldKeys])]);
   state.failedRowIds.add(rowId);
   emit(draftId);
 };

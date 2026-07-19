@@ -80,8 +80,10 @@ const ImportDraftReviewContent = ({
   });
   const { canContinue, continueBlocker, hasReviewableRows } = reviewState;
 
-  const handleContinue = useCallback(() => {
-    void flush();
+  const handleContinue = useCallback(async () => {
+    const ok = await flush();
+    if (!ok) return;
+    // Proceed to import-set verification / finalize lands with ADR 0004.
   }, [flush]);
 
   const showEmptyState = !isLoading && meta && !hasReviewableRows;

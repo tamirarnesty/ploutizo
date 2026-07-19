@@ -531,4 +531,71 @@ describe('useImportReviewSession', () => {
     expect(result.current.hasUnsavedWork).toBe(false);
     unmount();
   });
+
+  it('re-persists prior failed fields on the next edit and only then clears Failed', async () => {
+    vi.mocked(fetchUpdateImportDraftRow).mockRejectedValueOnce(
+      new Error('network')
+    );
+    const { result, unmount } = await hydrateSession();
+    vi.useFakeTimers();
+
+    act(() => {
+      result.current.updateRow('row_ready', {
+        reviewCategoryId: 'cat_failed',
+      });
+    });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
+    });
+
+    expect(result.current.autosaveStatus).toBe('failed');
+    expect(
+      result.current.rows.find((row) => row.id === 'row_ready')
+        ?.reviewCategoryId
+    ).toBe('cat_failed');
+
+    act(() => {
+      result.current.updateRow('row_ready', {
+        reviewDescription: 'After failure',
+      });
+    });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
+    });
+
+    expect(fetchUpdateImportDraftRow).toHaveBeenLastCalledWith('row_ready', {
+      reviewCategoryId: 'cat_failed',
+      reviewDescription: 'After failure',
+    });
+    expect(result.current.autosaveStatus).toBe('saved');
+    expect(result.current.failedRowIds).not.toContain('row_ready');
+    expect(
+      result.current.rows.find((row) => row.id === 'row_ready')
+    ).toMatchObject({
+      reviewCategoryId: 'cat_failed',
+      reviewDescription: 'After failure',
+    });
+    unmount();
+  });
+
+  it('derives import row status from the live collection during the session', async () => {
+    const { result, unmount } = await hydrateSession();
+
+    expect(result.current.rows.find((row) => row.id === 'row_b')?.status).toBe(
+      'needs_review'
+    );
+
+    act(() => {
+      result.current.updateRow('row_b', {
+        reviewCategoryId: 'cat_1',
+      });
+    });
+
+    expect(result.current.rows.find((row) => row.id === 'row_b')?.status).toBe(
+      'ready'
+    );
+    unmount();
+  });
 });

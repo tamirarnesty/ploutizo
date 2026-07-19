@@ -18,6 +18,10 @@ import {
 import { ImportReviewAutosaveStrip } from './ImportReviewAutosaveStrip';
 
 const IMPORT_COMMIT_PREVIEW_COPY = 'Import commit coming soon';
+/** Finalize / prepared import set is ADR 0004 work — keep Continue product-disabled until then. */
+const REVIEW_PRODUCT_FLAGS: { finalizeEnabled: boolean } = {
+  finalizeEnabled: false,
+};
 
 interface ImportDraftReviewHeaderProps {
   meta?: ImportDraftMeta;
@@ -27,7 +31,7 @@ interface ImportDraftReviewHeaderProps {
   continueBlocker: string | null;
   autosaveStatus: ImportReviewAutosaveStatus;
   onRetryAutosave: () => void;
-  onContinue: () => void;
+  onContinue: () => void | Promise<void>;
 }
 
 const toLiveSubtitleMeta = (
@@ -44,15 +48,21 @@ export const ImportDraftReviewHeader = ({
   meta,
   rows = [],
   isLoading = false,
-  canContinue: _canContinue,
+  canContinue,
   continueBlocker,
   autosaveStatus,
   onRetryAutosave,
   onContinue,
 }: ImportDraftReviewHeaderProps) => {
-  // Finalize remains product-disabled (ADR 0004); onContinue is the flush gate seam.
+  // Flush gate uses canContinue; finalize product enablement is ADR 0004.
   const continueButton = (
-    <Button disabled type="button" onClick={onContinue}>
+    <Button
+      disabled={!REVIEW_PRODUCT_FLAGS.finalizeEnabled || !canContinue}
+      type="button"
+      onClick={() => {
+        void onContinue();
+      }}
+    >
       Continue
     </Button>
   );
