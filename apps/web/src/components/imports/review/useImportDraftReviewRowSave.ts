@@ -1,22 +1,17 @@
 import { useCallback } from 'react';
 import type { ImportDraftRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
-import { useUpdateImportDraftRow } from '@/lib/data-access/imports';
 import { useImportDraftReviewContext } from './ImportDraftReviewContext';
 
 export const useImportDraftReviewRowSave = (row: ImportDraftRow) => {
-  const { draftId } = useImportDraftReviewContext();
-  const updateRow = useUpdateImportDraftRow();
+  const { updateRow } = useImportDraftReviewContext();
   const disabled = row.status === 'invalid';
 
   const saveField = useCallback(
-    (
-      body: UpdateImportDraftRowInput,
-      options?: Parameters<typeof updateRow.mutate>[1]
-    ) => {
-      updateRow.mutate({ draftId, rowId: row.id, body }, options);
+    (body: UpdateImportDraftRowInput) => {
+      updateRow(row.id, body);
     },
-    [draftId, row.id, updateRow]
+    [row.id, updateRow]
   );
 
   return { saveField, disabled };

@@ -83,6 +83,7 @@ const toSession = (value = draft) => {
     rows,
     isLoading: false,
     isError: false,
+    updateRow: vi.fn(),
   };
 };
 
@@ -97,6 +98,7 @@ describe('ImportReview', () => {
       rows: [],
       isLoading: false,
       isError: true,
+      updateRow: vi.fn(),
     });
 
     render(<ImportReview draftId="missing" />);

@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import { DatePicker } from '@ploutizo/ui/components/date-picker';
@@ -13,8 +13,8 @@ import {
 } from '@ploutizo/ui/components/select';
 import { Text } from '@ploutizo/ui/components/text';
 import { cn } from '@ploutizo/ui/lib/utils';
-import { dollarsToCents } from '@ploutizo/utils/currency';
 import { formatTransactionTypeLabel } from '@ploutizo/utils';
+import { centsToDollars, dollarsToCents } from '@ploutizo/utils/currency';
 import {
   resolveImportRowReviewAmount,
   resolveImportRowReviewDate,
@@ -25,15 +25,10 @@ import { IMPORT_TRANSACTION_TYPE_VALUES } from '@ploutizo/types';
 import type { ImportDraftRow, ImportTransactionType } from '@ploutizo/types';
 import { CategorySelect } from '@/components/categories/CategorySelect';
 import { CurrencyInput } from '@/components/currency/CurrencyInput';
-import { useRegisterInputFlush } from '@/lib/money/pending-input-flush';
 import {
   getImportRowLabel,
   resolveImportRowOriginalDescription,
 } from '../lib/importPresentation';
-import {
-  useImportRowAmountState,
-  useImportRowDescriptionState,
-} from '../lib/useImportRowFieldState';
 import { ImportAssigneeField } from './ImportAssigneeField';
 import { useImportDraftReviewContext } from './ImportDraftReviewContext';
 import { ImportRowStatusIcon } from './ImportRowStatusIcon';
@@ -157,8 +152,16 @@ export const ImportReviewAmountCell = ({
   row,
 }: ImportReviewAmountCellProps) => {
   const { saveField, disabled } = useImportDraftReviewRowSave(row);
-  const { amount, setAmount, markSaved } = useImportRowAmountState(row);
+  const [amountDraft, setAmountDraft] = useState<number | undefined>(() =>
+    row.reviewAmount != null ? centsToDollars(row.reviewAmount) : undefined
+  );
   const rowLabel = getImportRowLabel(row);
+
+  useEffect(() => {
+    setAmountDraft(
+      row.reviewAmount != null ? centsToDollars(row.reviewAmount) : undefined
+    );
+  }, [row.id, row.reviewAmount]);
 
   return (
     <CurrencyInput
@@ -166,26 +169,23 @@ export const ImportReviewAmountCell = ({
       aria-label={`Amount for ${rowLabel}`}
       className="w-32"
       disabled={disabled}
-      value={amount}
-      onChange={setAmount}
+      value={amountDraft}
+      onChange={(next) => {
+        setAmountDraft(next);
+        if (next === undefined || !Number.isFinite(next)) {
+          return;
+        }
+        const nextAmount = dollarsToCents(next);
+        if (nextAmount !== row.reviewAmount) {
+          saveField({ reviewAmount: nextAmount });
+        }
+      }}
       onBlur={() => {
-        if (amount === undefined || !Number.isFinite(amount)) {
-          if (row.reviewAmount === null) {
-            markSaved();
-            return;
+        if (amountDraft === undefined || !Number.isFinite(amountDraft)) {
+          if (row.reviewAmount !== null) {
+            saveField({ reviewAmount: null });
           }
-          saveField({ reviewAmount: null }, { onSuccess: () => markSaved() });
-          return;
         }
-        const nextAmount = dollarsToCents(amount);
-        if (nextAmount === resolveImportRowReviewAmount(row)) {
-          markSaved();
-          return;
-        }
-        saveField(
-          { reviewAmount: nextAmount },
-          { onSuccess: () => markSaved() }
-        );
       }}
     />
   );
@@ -221,34 +221,18 @@ export const ImportReviewDescriptionCell = ({
   row,
 }: ImportReviewDescriptionCellProps) => {
   const { saveField, disabled } = useImportDraftReviewRowSave(row);
-  const { description, setDescription, markSaved } =
-    useImportRowDescriptionState(row);
+  const [descriptionDraft, setDescriptionDraft] = useState(
+    () => row.reviewDescription ?? ''
+  );
   const rowLabel = getImportRowLabel(row);
   const originalDescription = resolveImportRowOriginalDescription(row);
   const showOriginalDescription =
     originalDescription != null &&
-    description.trim() !== originalDescription.trim();
+    descriptionDraft.trim() !== originalDescription.trim();
 
-  const flushDescription = useCallback(() => {
-    const next = description.trim() || null;
-    const effectiveDescription = resolveImportRowReviewDescription({
-      reviewDescription: row.reviewDescription,
-      parsedDescription: row.parsedDescription,
-    });
-    if (next === effectiveDescription) {
-      markSaved();
-      return;
-    }
-    saveField({ reviewDescription: next }, { onSuccess: () => markSaved() });
-  }, [
-    description,
-    markSaved,
-    row.parsedDescription,
-    row.reviewDescription,
-    saveField,
-  ]);
-
-  useRegisterInputFlush(flushDescription);
+  useEffect(() => {
+    setDescriptionDraft(row.reviewDescription ?? '');
+  }, [row.id, row.reviewDescription]);
 
   return (
     <>
@@ -256,11 +240,16 @@ export const ImportReviewDescriptionCell = ({
         id={`import-row-description-${row.id}`}
         aria-label={`Description for ${rowLabel}`}
         className="w-full"
-        value={description}
+        value={descriptionDraft}
         disabled={disabled}
         autoComplete="off"
-        onChange={(event) => setDescription(event.currentTarget.value)}
-        onBlur={flushDescription}
+        onChange={(event) => {
+          const raw = event.currentTarget.value;
+          setDescriptionDraft(raw);
+          const next = raw.trim() || null;
+          if (next === row.reviewDescription) return;
+          saveField({ reviewDescription: next });
+        }}
       />
       {showOriginalDescription ? (
         <Text variant="body-sm" className="mt-1 text-muted-foreground">

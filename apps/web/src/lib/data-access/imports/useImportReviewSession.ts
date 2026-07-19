@@ -1,7 +1,12 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLiveQuery } from '@tanstack/react-db';
 import type { ImportDraftRow } from '@ploutizo/types';
+import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
+import {
+  getImportDraftRowPacedMutations,
+  releaseImportDraftRowPacedMutations,
+} from './getImportDraftRowPacedMutations';
 import {
   getImportDraftRowsCollection,
   releaseImportDraftRowsCollection,
@@ -16,6 +21,8 @@ export interface ImportReviewSession {
   rows: ImportDraftRow[];
   isLoading: boolean;
   isError: boolean;
+  /** Single write surface for reviewed import values (ADR 0005). */
+  updateRow: (rowId: string, patch: UpdateImportDraftRowInput) => void;
 }
 
 /**
@@ -32,6 +39,7 @@ export const useImportReviewSession = (
 
   useEffect(() => {
     return () => {
+      releaseImportDraftRowPacedMutations(draftId);
       void releaseImportDraftRowsCollection(draftId);
     };
   }, [draftId]);
@@ -52,6 +60,13 @@ export const useImportReviewSession = (
 
   const rows = liveRows.data;
 
+  const updateRow = useCallback(
+    (rowId: string, patch: UpdateImportDraftRowInput) => {
+      getImportDraftRowPacedMutations(draftId, rowId)({ patch });
+    },
+    [draftId]
+  );
+
   // Draft GET failure is authoritative — collection sync may not surface the same error flag.
   return {
     meta: metaQuery.data,
@@ -60,5 +75,6 @@ export const useImportReviewSession = (
       metaQuery.isPending ||
       (metaQuery.isSuccess && liveRows.isLoading && rows.length === 0),
     isError: metaQuery.isError,
+    updateRow,
   };
 };

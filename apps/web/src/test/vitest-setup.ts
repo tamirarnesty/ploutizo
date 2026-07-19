@@ -9,6 +9,33 @@ vi.mock('@ploutizo/ui/components/alert-dialog', () => alertDialogMock);
 
 afterEach(() => cleanup());
 
+/**
+ * Node 25+ may expose a non-functional `localStorage` global (e.g. missing
+ * `--localstorage-file`). TanStack DB reads `localStorage.getItem('DEBUG')`
+ * during collection.update — stub a minimal in-memory store when needed.
+ */
+try {
+  globalThis.localStorage.getItem('__ploutizo_localStorage_probe__');
+} catch {
+  const store = new Map<string, string>();
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => store.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      store.set(key, String(value));
+    },
+    removeItem: (key: string) => {
+      store.delete(key);
+    },
+    clear: () => {
+      store.clear();
+    },
+    key: (index: number) => [...store.keys()][index] ?? null,
+    get length() {
+      return store.size;
+    },
+  } satisfies Storage);
+}
+
 /** Base UI portals / menus rely on layout observers in browsers. */
 if (typeof ResizeObserver === 'undefined') {
   globalThis.ResizeObserver = class {
