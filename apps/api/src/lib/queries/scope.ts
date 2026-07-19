@@ -19,6 +19,11 @@ import type { SQL } from 'drizzle-orm';
 const SETTLEMENT_QUALIFYING_TX_TYPES =
   SETTLEMENT_QUALIFYING_TRANSACTION_TYPE_VALUES;
 
+/** Drizzle transaction client for queries that join an outer `db.transaction()`. */
+export type DrizzleTransaction = Parameters<
+  Parameters<typeof db.transaction>[0]
+>[0];
+
 /** Active transactions for an org: org_id + not soft-deleted. */
 export const activeTransactions = (orgId: string): SQL[] => [
   eq(transactions.orgId, orgId),
@@ -91,24 +96,51 @@ export const orgMemberExists = async (
   return rows.length > 0;
 };
 
+/** Account fields needed for saved-write policy validation (`{ id, type }`). */
+export type AccountWriteReference = {
+  id: string;
+  type: AccountType;
+};
+
+/**
+ * Loads an org-scoped account reference for write validation.
+ * When `tx` is provided, locks the row with `FOR UPDATE` until that transaction commits.
+ */
+export const fetchAccountWriteReference = async (
+  orgId: string,
+  accountId: string,
+  options: AccountInOrgOptions = {},
+  tx?: DrizzleTransaction
+): Promise<AccountWriteReference | null> => {
+  const ex = tx ?? db;
+  const query = ex
+    .select({
+      id: accounts.id,
+      type: accounts.type,
+    })
+    .from(accounts)
+    .where(accountInOrg(orgId, accountId, options))
+    .limit(1);
+  const rows = await (tx ? query.for('update') : query);
+  return rows.at(0) ?? null;
+};
+
 export const accountExistsInOrg = async (
   orgId: string,
   accountId: string,
   options?: AccountInOrgOptions
 ): Promise<boolean> => {
-  const rows = await db
-    .select({ id: accounts.id })
-    .from(accounts)
-    .where(accountInOrg(orgId, accountId, options))
-    .limit(1);
-  return rows.length > 0;
+  const account = await fetchAccountWriteReference(orgId, accountId, options);
+  return account !== null;
 };
 
 export const categoryExistsInOrg = async (
   orgId: string,
-  categoryId: string
+  categoryId: string,
+  tx?: DrizzleTransaction
 ): Promise<boolean> => {
-  const rows = await db
+  const ex = tx ?? db;
+  const rows = await ex
     .select({ id: categories.id })
     .from(categories)
     .where(and(eq(categories.id, categoryId), eq(categories.orgId, orgId)))
@@ -118,9 +150,11 @@ export const categoryExistsInOrg = async (
 
 export const transactionExistsInOrg = async (
   orgId: string,
-  transactionId: string
+  transactionId: string,
+  tx?: DrizzleTransaction
 ): Promise<boolean> => {
-  const rows = await db
+  const ex = tx ?? db;
+  const rows = await ex
     .select({ id: transactions.id })
     .from(transactions)
     .where(
@@ -133,11 +167,13 @@ export const transactionExistsInOrg = async (
 /** True when every tag id exists under orgId. Empty list is vacuously true. */
 export const allTagsInOrg = async (
   orgId: string,
-  tagIds: string[]
+  tagIds: string[],
+  tx?: DrizzleTransaction
 ): Promise<boolean> => {
   if (tagIds.length === 0) return true;
   const unique = [...new Set(tagIds)];
-  const rows = await db
+  const ex = tx ?? db;
+  const rows = await ex
     .select({ id: tags.id })
     .from(tags)
     .where(and(eq(tags.orgId, orgId), inArray(tags.id, unique)));
@@ -147,11 +183,13 @@ export const allTagsInOrg = async (
 /** True when every member id exists under orgId. Empty list is vacuously true. */
 export const allMembersInOrg = async (
   orgId: string,
-  memberIds: string[]
+  memberIds: string[],
+  tx?: DrizzleTransaction
 ): Promise<boolean> => {
   if (memberIds.length === 0) return true;
   const unique = [...new Set(memberIds)];
-  const rows = await db
+  const ex = tx ?? db;
+  const rows = await ex
     .select({ id: orgMembers.id })
     .from(orgMembers)
     .where(and(eq(orgMembers.orgId, orgId), inArray(orgMembers.id, unique)));

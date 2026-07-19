@@ -5,19 +5,25 @@ import {
   transactions,
 } from '@ploutizo/db/schema';
 import { normalizeTransactionAssignees } from '@ploutizo/utils';
+import { validateTransactionAccountPolicy } from '@ploutizo/utils/transaction-policy';
+import type { TransactionType } from '@ploutizo/types';
 import type {
   CreateTransactionInput,
   UpdateTransactionServiceInput,
   createTransactionSchema,
 } from '@ploutizo/validators';
+import type {
+  AccountWriteReference,
+  DrizzleTransaction,
+} from '@/lib/queries/scope';
 import type { ListQueryParams } from '@/lib/queries/transactions';
 import type { z } from 'zod';
-import { NotFoundError } from '@/lib/errors';
+import { DomainError, NotFoundError } from '@/lib/errors';
 import {
-  accountExistsInOrg,
   allMembersInOrg,
   allTagsInOrg,
   categoryExistsInOrg,
+  fetchAccountWriteReference,
   transactionExistsInOrg,
 } from '@/lib/queries/scope';
 import {
@@ -68,7 +74,12 @@ export const checkCounterpartAccountOwnership = async (
   accountId: string
 ): Promise<boolean> => counterpartAccountBelongsToOrg(orgId, accountId);
 
-const assertTransactionWriteReferences = async (
+type LoadedTransactionWriteReferences = {
+  account: AccountWriteReference;
+  counterpartAccount: AccountWriteReference | null;
+};
+
+const loadTransactionWriteReferences = async (
   orgId: string,
   data: {
     accountId: string;
@@ -77,41 +88,89 @@ const assertTransactionWriteReferences = async (
     categoryId?: string | null;
     tagIds?: string[];
     assignees?: { memberId: string }[];
+  },
+  tx: DrizzleTransaction
+): Promise<LoadedTransactionWriteReferences> => {
+  const counterpartId = data.counterpartAccountId ?? null;
+  // Lock in stable id order so concurrent opposite-direction writes cannot deadlock.
+  const idsToLock =
+    counterpartId && counterpartId !== data.accountId
+      ? [data.accountId, counterpartId].sort()
+      : [data.accountId];
+
+  const refs = new Map<string, AccountWriteReference>();
+  for (const accountId of idsToLock) {
+    const loaded = await fetchAccountWriteReference(
+      orgId,
+      accountId,
+      {},
+      tx
+    );
+    if (!loaded) {
+      throw new NotFoundError('Account not found');
+    }
+    refs.set(accountId, loaded);
   }
-) => {
-  if (!(await accountExistsInOrg(orgId, data.accountId))) {
+
+  const account = refs.get(data.accountId);
+  if (!account) {
     throw new NotFoundError('Account not found');
   }
 
-  if (data.counterpartAccountId) {
-    if (!(await accountExistsInOrg(orgId, data.counterpartAccountId))) {
-      throw new NotFoundError('Account not found');
-    }
+  const counterpartAccount =
+    counterpartId === null
+      ? null
+      : counterpartId === data.accountId
+        ? account
+        : (refs.get(counterpartId) ?? null);
+  if (counterpartId !== null && !counterpartAccount) {
+    throw new NotFoundError('Account not found');
   }
 
   if (data.refundOf) {
-    if (!(await transactionExistsInOrg(orgId, data.refundOf))) {
+    if (!(await transactionExistsInOrg(orgId, data.refundOf, tx))) {
       throw new NotFoundError('Transaction not found');
     }
   }
 
   if (data.categoryId) {
-    if (!(await categoryExistsInOrg(orgId, data.categoryId))) {
+    if (!(await categoryExistsInOrg(orgId, data.categoryId, tx))) {
       throw new NotFoundError('Category not found');
     }
   }
 
   if (data.tagIds && data.tagIds.length > 0) {
-    if (!(await allTagsInOrg(orgId, data.tagIds))) {
+    if (!(await allTagsInOrg(orgId, data.tagIds, tx))) {
       throw new NotFoundError('Tag not found');
     }
   }
 
   if (data.assignees && data.assignees.length > 0) {
     const memberIds = data.assignees.map((a) => a.memberId);
-    if (!(await allMembersInOrg(orgId, memberIds))) {
+    if (!(await allMembersInOrg(orgId, memberIds, tx))) {
       throw new NotFoundError('Member not found in this household');
     }
+  }
+
+  return { account, counterpartAccount };
+};
+
+const assertTransactionAccountPolicy = (
+  type: TransactionType,
+  refs: LoadedTransactionWriteReferences
+) => {
+  const result = validateTransactionAccountPolicy({
+    type,
+    account: refs.account,
+    counterpartAccount: refs.counterpartAccount,
+  });
+
+  if (!result.valid) {
+    throw new DomainError(
+      400,
+      result.violations.map((violation) => violation.message).join(' '),
+      'TRANSACTION_ACCOUNT_POLICY_VIOLATION'
+    );
   }
 };
 
@@ -129,23 +188,28 @@ export const createTransaction = async (
     assignees
   );
 
-  await assertTransactionWriteReferences(orgId, {
-    accountId: transactionData.accountId,
-    counterpartAccountId:
-      'counterpartAccountId' in transactionData
-        ? transactionData.counterpartAccountId
-        : undefined,
-    refundOf:
-      'refundOf' in transactionData ? transactionData.refundOf : undefined,
-    categoryId:
-      'categoryId' in transactionData
-        ? transactionData.categoryId
-        : undefined,
-    tagIds,
-    assignees: normalizedAssignees,
-  });
-
   return db.transaction(async (tx) => {
+    const writeReferences = await loadTransactionWriteReferences(
+      orgId,
+      {
+        accountId: transactionData.accountId,
+        counterpartAccountId:
+          'counterpartAccountId' in transactionData
+            ? transactionData.counterpartAccountId
+            : undefined,
+        refundOf:
+          'refundOf' in transactionData ? transactionData.refundOf : undefined,
+        categoryId:
+          'categoryId' in transactionData
+            ? transactionData.categoryId
+            : undefined,
+        tagIds,
+        assignees: normalizedAssignees,
+      },
+      tx
+    );
+    assertTransactionAccountPolicy(transactionData.type, writeReferences);
+
     const [inserted] = await tx
       .insert(transactions)
       .values({ orgId, ...transactionData })
@@ -224,15 +288,20 @@ export const updateTransaction = async (
     const row = await fetchTransactionById(orgId, id, tx);
     if (!row) return null;
 
-    await assertTransactionWriteReferences(orgId, {
-      accountId: data.accountId,
-      counterpartAccountId:
-        'counterpartAccountId' in data ? data.counterpartAccountId : undefined,
-      refundOf: 'refundOf' in data ? data.refundOf : undefined,
-      categoryId: 'categoryId' in data ? data.categoryId : undefined,
-      tagIds,
-      assignees,
-    });
+    const writeReferences = await loadTransactionWriteReferences(
+      orgId,
+      {
+        accountId: data.accountId,
+        counterpartAccountId:
+          'counterpartAccountId' in data ? data.counterpartAccountId : undefined,
+        refundOf: 'refundOf' in data ? data.refundOf : undefined,
+        categoryId: 'categoryId' in data ? data.categoryId : undefined,
+        tagIds,
+        assignees,
+      },
+      tx
+    );
+    assertTransactionAccountPolicy(data.type, writeReferences);
 
     const needsPersistedAssignees = data.assignees === undefined;
 
