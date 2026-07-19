@@ -118,13 +118,13 @@ describe('imports router', () => {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        reviewCategoryName: 'Groceries',
+        reviewCategoryId: '55555555-5555-4555-8555-555555555555',
         reviewAssigneeMemberIds: ['44444444-4444-4444-8444-444444444444'],
       }),
     });
     expect(good.status).toBe(200);
     expect(updateImportDraftRow).toHaveBeenCalledWith('org_1', 'row_1', {
-      reviewCategoryName: 'Groceries',
+      reviewCategoryId: '55555555-5555-4555-8555-555555555555',
       reviewAssigneeMemberIds: ['44444444-4444-4444-8444-444444444444'],
     });
   });

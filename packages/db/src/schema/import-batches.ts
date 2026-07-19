@@ -22,6 +22,7 @@ import {
 
 import { accounts } from './accounts';
 import { orgs } from './auth';
+import { categories } from './classification';
 import {
   importBatchStatusEnum,
   importRowStatusEnum,
@@ -97,15 +98,19 @@ export const importBatchRows = pgTable(
     reviewAmount: integer('review_amount'),
     reviewType: transactionTypeEnum('review_type'),
     reviewDescription: text('review_description'),
-    reviewCategoryName: text('review_category_name'),
-    reviewAssigneeHint: text('review_assignee_hint'),
+    reviewCategoryId: uuid('review_category_id').references(
+      () => categories.id
+    ),
     reviewAssigneeMemberIds: jsonb('review_assignee_member_ids')
       .$type<string[]>()
       .notNull()
       .default([]),
     reviewRefundLinkHint: text('review_refund_link_hint'),
     reviewNotes: text('review_notes'),
-    reviewTags: jsonb('review_tags').$type<string[]>().notNull().default([]),
+    reviewTagIds: jsonb('review_tag_ids')
+      .$type<string[]>()
+      .notNull()
+      .default([]),
     selectedForImport: boolean('selected_for_import').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()

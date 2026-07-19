@@ -3,6 +3,11 @@ import {
   IMPORT_TRANSACTION_TYPE_VALUES,
   NORMALIZED_IMPORT_EXAMPLE_CSV,
 } from '@ploutizo/types';
+import {
+  matchCategoryIdByName,
+  matchOrgMemberIdsByName,
+  matchTagIdsByNames,
+} from '@ploutizo/utils';
 import type {
   ImportDraft,
   ImportDraftRow,
@@ -16,6 +21,7 @@ import type {
   UpdateImportDraftRowSelectionInput,
 } from '@ploutizo/validators';
 import { DomainError, NotFoundError } from '@/lib/errors';
+import { assertImportRowWriteReferences } from '@/lib/imports/assertRowReferences';
 import {
   computeImportRowStatus,
   isImportRowStructurallyInvalid,
@@ -38,7 +44,9 @@ import {
   updateImportDraftRowQuery,
   updateImportDraftRowSelectionQuery,
 } from '@/lib/queries/imports';
+import { listCategories } from '@/lib/queries/categories';
 import { listOrgMembers } from '@/lib/queries/households';
+import { listTags } from '@/lib/queries/tags';
 import { parsePloutizoNormalizedCsv } from '@/lib/imports/normalizedCsv';
 
 const isUniqueViolation = (error: unknown): boolean => {
@@ -76,26 +84,6 @@ const toImportTransactionType = (
   return (IMPORT_TRANSACTION_TYPE_VALUES as readonly string[]).includes(value)
     ? (value as ImportTransactionType)
     : null;
-};
-
-const matchOrgMemberIdsByHint = (
-  hint: string | null | undefined,
-  orgMembers: Awaited<ReturnType<typeof listOrgMembers>>
-): string[] => {
-  if (!hint) return [];
-  const normalized = hint.trim().toLowerCase();
-  if (!normalized) return [];
-
-  const exact = orgMembers.find(
-    (member) => member.displayName.trim().toLowerCase() === normalized
-  );
-  if (exact) return [exact.id];
-
-  const partial = orgMembers.find((member) => {
-    const displayName = member.displayName.trim().toLowerCase();
-    return displayName.includes(normalized) || normalized.includes(displayName);
-  });
-  return partial ? [partial.id] : [];
 };
 
 const toImportDraftRow = (
@@ -159,7 +147,11 @@ export const createNormalizedImportDraft = async (
   }
 
   const parsed = parsePloutizoNormalizedCsv(input.content);
-  const orgMembers = await listOrgMembers(orgId);
+  const [orgMembers, orgCategories, orgTags] = await Promise.all([
+    listOrgMembers(orgId),
+    listCategories(orgId),
+    listTags(orgId),
+  ]);
 
   try {
     const draftId = await db.transaction(async (tx) => {
@@ -178,12 +170,30 @@ export const createNormalizedImportDraft = async (
       await insertImportBatchRows(
         tx,
         parsed.rows.map((row) => {
-          const reviewAssigneeMemberIds = matchOrgMemberIdsByHint(
-            row.reviewAssigneeHint,
+          const {
+            csvCategoryName,
+            csvAssigneeName,
+            csvTagNames,
+            ...rowFields
+          } = row;
+          const reviewCategoryId = matchCategoryIdByName(
+            csvCategoryName,
+            orgCategories
+          );
+          const reviewTagIds = matchTagIdsByNames(csvTagNames, orgTags);
+          const reviewAssigneeMemberIds = matchOrgMemberIdsByName(
+            csvAssigneeName,
             orgMembers
           );
+          const resolvedRefs = {
+            reviewCategoryId,
+            reviewTagIds,
+            reviewAssigneeMemberIds,
+          };
+
           return {
-            ...row,
+            ...rowFields,
+            ...resolvedRefs,
             status:
               row.status === 'invalid'
                 ? row.status
@@ -191,10 +201,9 @@ export const createNormalizedImportDraft = async (
                     status: row.status,
                     reviewType: toImportTransactionType(row.reviewType),
                     parsedType: toImportTransactionType(row.parsedType),
-                    reviewCategoryName: row.reviewCategoryName,
+                    reviewCategoryId,
                     reviewAssigneeMemberIds,
                   }),
-            reviewAssigneeMemberIds,
             orgId,
             batchId: batch.id,
           };
@@ -236,6 +245,13 @@ export const updateImportDraftRow = async (
   if (!existing) throw new NotFoundError('Import draft row not found.');
 
   const merged = { ...existing, ...input };
+
+  await assertImportRowWriteReferences(orgId, {
+    reviewCategoryId: merged.reviewCategoryId ?? null,
+    reviewTagIds: merged.reviewTagIds,
+    reviewAssigneeMemberIds: merged.reviewAssigneeMemberIds,
+  });
+
   const reviewType = toImportTransactionType(merged.reviewType);
   const parsedType = toImportTransactionType(merged.parsedType);
   const structurallyInvalid = isImportRowStructurallyInvalid({
@@ -257,7 +273,7 @@ export const updateImportDraftRow = async (
             status: 'needs_review',
             reviewType,
             parsedType,
-            reviewCategoryName: merged.reviewCategoryName ?? null,
+            reviewCategoryId: merged.reviewCategoryId ?? null,
             reviewAssigneeMemberIds: merged.reviewAssigneeMemberIds,
           });
 

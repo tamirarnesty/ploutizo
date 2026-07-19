@@ -9,6 +9,11 @@ export {
   type AccountLabelInput,
 } from './format-account-label';
 export { parseImportTags } from './parse-import-tags';
+export {
+  matchCategoryIdByName,
+  matchOrgMemberIdsByName,
+  matchTagIdsByNames,
+} from './match-import-references';
 export { lrmSplit } from './lrm';
 export {
   scaleAssigneeSplitProportionally,
