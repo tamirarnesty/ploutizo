@@ -3,6 +3,8 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { clerkMiddleware } from '@clerk/hono';
 import { tenantGuard } from './middleware/tenantGuard';
+import { authorizedPartyGuard } from './middleware/authorizedPartyGuard';
+import { resolveAllowedOrigin } from './lib/allowedOrigins';
 import { healthRouter } from './routes/health';
 import { webhooksRouter } from './routes/webhooks';
 import { accountsRouter } from './routes/accounts';
@@ -19,47 +21,30 @@ import type { ContentfulStatusCode } from 'hono/utils/http-status';
 
 const app = new Hono<AppEnv>();
 
-// Invariant middleware order (docs/stack-and-conventions.md): CORS → Clerk → tenant guard
+// Invariant middleware order (docs/stack-and-conventions.md):
+// CORS → Clerk → authorized party guard → tenant guard
 // 1. CORS — handles preflight before Clerk so OPTIONS requests are not rejected
-const ALLOWED_ORIGINS = new Set([
-  'https://ploutizo.app',
-  'https://www.ploutizo.app',
-  'http://localhost:3000',
-]);
-
 app.use(
   '*',
   cors({
-    origin: (origin) => (origin && ALLOWED_ORIGINS.has(origin) ? origin : null),
+    origin: (origin) => resolveAllowedOrigin(origin),
     credentials: true,
   })
 );
 
 // 2. Clerk JWT verification — clockSkewInMs handles Railway container clock drift (D-04)
-// authorizedParties: @clerk/hono accepts string[] only (function type not supported).
-// Resolution (D-04): isAllowedParty validates azp values via regex for subdomain support.
-// Known parties are enumerated explicitly — Clerk wildcard glob syntax is unsupported (RESEARCH.md LOW confidence).
-export const isAllowedParty = (azp: string): boolean =>
-  azp === 'https://ploutizo.app' ||
-  /^https:\/\/[a-z0-9-]+\.ploutizo\.app$/.test(azp) ||
-  azp === 'http://localhost:3000';
-
-// Build authorized parties list from known static origins.
-// Dynamic subdomain validation (isAllowedParty) is applied at the app layer in Phase 2+.
-const authorizedParties: string[] = [
-  'https://ploutizo.app',
-  'http://localhost:3000',
-];
-
+// azp validation uses authorizedPartyGuard + isAllowedParty so Railway PR preview
+// origins and tenant subdomains can be allowlisted without a static string[].
 app.use(
   '*',
   clerkMiddleware({
     secretKey: process.env.CLERK_SECRET_KEY,
     publishableKey: process.env.CLERK_PUBLISHABLE_KEY,
     clockSkewInMs: 10000,
-    authorizedParties,
   })
 );
+
+app.use('*', authorizedPartyGuard());
 
 // 3. Tenant guard — scoped to /api/* ONLY (not /health, not /webhooks)
 app.use('/api/*', tenantGuard());
