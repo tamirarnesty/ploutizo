@@ -17,6 +17,9 @@ import { useCreateTag, useGetTags } from '@/lib/data-access/tags';
 interface TransactionTagPickerProps {
   value: string[]; // current tagIds array from form field state
   onChange: (tagIds: string[]) => void; // form field handleChange
+  inputId?: string;
+  inputAriaLabel?: string;
+  allowCreate?: boolean;
 }
 
 /**
@@ -32,6 +35,9 @@ interface TransactionTagPickerProps {
 export const TransactionTagPicker = ({
   value,
   onChange,
+  inputId,
+  inputAriaLabel,
+  allowCreate = true,
 }: TransactionTagPickerProps) => {
   const { data: tags = [] } = useGetTags();
   const createTagMutation = useCreateTag();
@@ -58,7 +64,7 @@ export const TransactionTagPicker = ({
     (t) => t.name.toLowerCase() === tagInputValue.toLowerCase()
   );
   const createOption =
-    tagInputValue.length > 0 && !alreadyExists
+    allowCreate && tagInputValue.length > 0 && !alreadyExists
       ? `__create__${tagInputValue}`
       : null;
 
@@ -113,8 +119,10 @@ export const TransactionTagPicker = ({
                 <ComboboxChip key={name}>{name}</ComboboxChip>
               ))}
               <ComboboxChipsInput
+                id={inputId}
                 placeholder={selectedNames.length === 0 ? 'Add tags…' : ''}
                 autoComplete="off"
+                aria-label={inputAriaLabel}
               />
             </>
           )}
