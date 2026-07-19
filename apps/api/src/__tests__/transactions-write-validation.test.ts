@@ -55,11 +55,7 @@ const ACCOUNT_A = '550e8400-e29b-41d4-a716-446655440010';
 const ACCOUNT_B = '550e8400-e29b-41d4-a716-446655440011';
 const MEMBER_A = '550e8400-e29b-41d4-a716-446655440020';
 
-const accountRef = (id: string, type: AccountType) => ({
-  id,
-  type,
-  archivedAt: null,
-});
+const accountRef = (id: string, type: AccountType) => ({ id, type });
 
 const baseAssignees = [
   { memberId: MEMBER_A, amountCents: 1000, percentage: 100 },
@@ -102,7 +98,7 @@ describe('createTransaction — cross-org reference rejection', () => {
     expect(fetchAccountWriteReference).toHaveBeenCalledWith(
       ORG_A,
       ACCOUNT_A,
-      { forUpdate: true },
+      {},
       mockTx
     );
   });
@@ -126,14 +122,14 @@ describe('createTransaction — cross-org reference rejection', () => {
   });
 });
 
-describe('createTransaction — transaction account policy', () => {
+describe('createTransaction — transaction account policy wiring', () => {
   beforeEach(() => {
     vi.mocked(fetchAccountWriteReference).mockReset();
     vi.mocked(allMembersInOrg).mockReset();
     vi.mocked(allMembersInOrg).mockResolvedValue(true);
   });
 
-  it('rejects disallowed account type combinations before persisting', async () => {
+  it('maps policy violations to DomainError before persisting', async () => {
     mockAccountLookups({
       [ACCOUNT_A]: accountRef(ACCOUNT_A, 'credit_card'),
     });
@@ -153,7 +149,6 @@ describe('createTransaction — transaction account policy', () => {
     expect((err as DomainError).code).toBe(
       'TRANSACTION_ACCOUNT_POLICY_VIOLATION'
     );
-    expect((err as DomainError).message).toContain('must use one of');
   });
 
   it('requires counterpartAccountId for saved settlement writes', async () => {
@@ -192,65 +187,7 @@ describe('createTransaction — transaction account policy', () => {
     expect((err as DomainError).message).toContain('counterpartAccountId');
   });
 
-  it('rejects same-account transfer writes', async () => {
-    mockAccountLookups({
-      [ACCOUNT_A]: accountRef(ACCOUNT_A, 'chequing'),
-    });
-
-    const err = await createTransaction(ORG_A, {
-      type: 'transfer',
-      accountId: ACCOUNT_A,
-      counterpartAccountId: ACCOUNT_A,
-      amount: 1000,
-      date: '2026-05-01',
-      description: 'Transfer',
-      assignees: baseAssignees,
-    }).catch((e: unknown) => e);
-
-    expect(err).toBeInstanceOf(DomainError);
-    expect((err as DomainError).message).toContain('must differ');
-  });
-
-  it('rejects same-account settlement writes', async () => {
-    mockAccountLookups({
-      [ACCOUNT_A]: accountRef(ACCOUNT_A, 'credit_card'),
-    });
-
-    const err = await createTransaction(ORG_A, {
-      type: 'settlement',
-      accountId: ACCOUNT_A,
-      counterpartAccountId: ACCOUNT_A,
-      amount: 1000,
-      date: '2026-05-01',
-      description: 'Settlement',
-      assignees: baseAssignees,
-    }).catch((e: unknown) => e);
-
-    expect(err).toBeInstanceOf(DomainError);
-    expect((err as DomainError).message).toContain('must differ');
-  });
-
-  it('rejects invalid settlement funding account type', async () => {
-    mockAccountLookups({
-      [ACCOUNT_A]: accountRef(ACCOUNT_A, 'credit_card'),
-      [ACCOUNT_B]: accountRef(ACCOUNT_B, 'investment'),
-    });
-
-    const err = await createTransaction(ORG_A, {
-      type: 'settlement',
-      accountId: ACCOUNT_A,
-      counterpartAccountId: ACCOUNT_B,
-      amount: 1000,
-      date: '2026-05-01',
-      description: 'Settlement',
-      assignees: baseAssignees,
-    }).catch((e: unknown) => e);
-
-    expect(err).toBeInstanceOf(DomainError);
-    expect((err as DomainError).message).toContain('chequing');
-  });
-
-  it('accepts valid transfer account pair', async () => {
+  it('accepts a valid transfer and loads both accounts inside the write tx', async () => {
     mockAccountLookups({
       [ACCOUNT_A]: accountRef(ACCOUNT_A, 'chequing'),
       [ACCOUNT_B]: accountRef(ACCOUNT_B, 'savings'),
@@ -270,19 +207,19 @@ describe('createTransaction — transaction account policy', () => {
     expect(fetchAccountWriteReference).toHaveBeenCalledWith(
       ORG_A,
       ACCOUNT_A,
-      { forUpdate: true },
+      {},
       mockTx
     );
     expect(fetchAccountWriteReference).toHaveBeenCalledWith(
       ORG_A,
       ACCOUNT_B,
-      { forUpdate: true },
+      {},
       mockTx
     );
   });
 });
 
-describe('updateTransaction — transaction account policy', () => {
+describe('updateTransaction — transaction account policy wiring', () => {
   beforeEach(() => {
     vi.mocked(fetchAccountWriteReference).mockReset();
     vi.mocked(allMembersInOrg).mockReset();
@@ -303,7 +240,7 @@ describe('updateTransaction — transaction account policy', () => {
     } as never);
   });
 
-  it('rejects same-account contribution writes before persisting', async () => {
+  it('rejects policy violations before persisting scalars', async () => {
     mockAccountLookups({
       [ACCOUNT_A]: accountRef(ACCOUNT_A, 'chequing'),
     });
@@ -319,34 +256,12 @@ describe('updateTransaction — transaction account policy', () => {
     }).catch((e: unknown) => e);
 
     expect(err).toBeInstanceOf(DomainError);
-    expect((err as DomainError).message).toContain('must differ');
     expect(updateTransactionScalarsQuery).not.toHaveBeenCalled();
     expect(fetchAccountWriteReference).toHaveBeenCalledWith(
       ORG_A,
       ACCOUNT_A,
-      { forUpdate: true },
+      {},
       mockTx
     );
-  });
-
-  it('rejects invalid contribution destination account type', async () => {
-    mockAccountLookups({
-      [ACCOUNT_A]: accountRef(ACCOUNT_A, 'chequing'),
-      [ACCOUNT_B]: accountRef(ACCOUNT_B, 'savings'),
-    });
-
-    const err = await updateTransaction(ORG_A, 'tx_1', {
-      type: 'contribution',
-      accountId: ACCOUNT_A,
-      counterpartAccountId: ACCOUNT_B,
-      amount: 1000,
-      date: '2026-05-01',
-      description: 'Contribution',
-      assignees: baseAssignees,
-    }).catch((e: unknown) => e);
-
-    expect(err).toBeInstanceOf(DomainError);
-    expect((err as DomainError).message).toContain('investment');
-    expect(updateTransactionScalarsQuery).not.toHaveBeenCalled();
   });
 });

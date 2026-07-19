@@ -91,27 +91,40 @@ const loadTransactionWriteReferences = async (
   },
   tx: DrizzleTransaction
 ): Promise<LoadedTransactionWriteReferences> => {
-  const account = await fetchAccountWriteReference(
-    orgId,
-    data.accountId,
-    { forUpdate: true },
-    tx
-  );
+  const counterpartId = data.counterpartAccountId ?? null;
+  // Lock in stable id order so concurrent opposite-direction writes cannot deadlock.
+  const idsToLock =
+    counterpartId && counterpartId !== data.accountId
+      ? [data.accountId, counterpartId].sort()
+      : [data.accountId];
+
+  const refs = new Map<string, AccountWriteReference>();
+  for (const accountId of idsToLock) {
+    const loaded = await fetchAccountWriteReference(
+      orgId,
+      accountId,
+      {},
+      tx
+    );
+    if (!loaded) {
+      throw new NotFoundError('Account not found');
+    }
+    refs.set(accountId, loaded);
+  }
+
+  const account = refs.get(data.accountId);
   if (!account) {
     throw new NotFoundError('Account not found');
   }
 
-  let counterpartAccount: AccountWriteReference | null = null;
-  if (data.counterpartAccountId) {
-    counterpartAccount = await fetchAccountWriteReference(
-      orgId,
-      data.counterpartAccountId,
-      { forUpdate: true },
-      tx
-    );
-    if (!counterpartAccount) {
-      throw new NotFoundError('Account not found');
-    }
+  const counterpartAccount =
+    counterpartId === null
+      ? null
+      : counterpartId === data.accountId
+        ? account
+        : (refs.get(counterpartId) ?? null);
+  if (counterpartId !== null && !counterpartAccount) {
+    throw new NotFoundError('Account not found');
   }
 
   if (data.refundOf) {

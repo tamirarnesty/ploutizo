@@ -96,35 +96,32 @@ export const orgMemberExists = async (
   return rows.length > 0;
 };
 
+/** Account fields needed for saved-write policy validation (`{ id, type }`). */
 export type AccountWriteReference = {
   id: string;
   type: AccountType;
-  archivedAt: Date | null;
 };
 
-export type FetchAccountWriteReferenceOptions = AccountInOrgOptions & {
-  /** Locks the matched account row until the surrounding transaction commits. */
-  forUpdate?: boolean;
-};
-
+/**
+ * Loads an org-scoped account reference for write validation.
+ * When `tx` is provided, locks the row with `FOR UPDATE` until that transaction commits.
+ */
 export const fetchAccountWriteReference = async (
   orgId: string,
   accountId: string,
-  options: FetchAccountWriteReferenceOptions = {},
+  options: AccountInOrgOptions = {},
   tx?: DrizzleTransaction
 ): Promise<AccountWriteReference | null> => {
-  const { forUpdate = false, ...accountOptions } = options;
   const ex = tx ?? db;
   const query = ex
     .select({
       id: accounts.id,
       type: accounts.type,
-      archivedAt: accounts.archivedAt,
     })
     .from(accounts)
-    .where(accountInOrg(orgId, accountId, accountOptions))
+    .where(accountInOrg(orgId, accountId, options))
     .limit(1);
-  const rows = await (forUpdate ? query.for('update') : query);
+  const rows = await (tx ? query.for('update') : query);
   return rows.at(0) ?? null;
 };
 

@@ -67,7 +67,6 @@ vi.mock('@/lib/queries/scope', () => ({
   fetchAccountWriteReference: vi.fn().mockResolvedValue({
     id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
     type: 'chequing',
-    archivedAt: null,
   }),
   allMembersInOrg: vi.fn().mockResolvedValue(true),
   allTagsInOrg: vi.fn().mockResolvedValue(true),
