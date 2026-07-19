@@ -137,10 +137,9 @@ describe('ImportDraftReview', () => {
 
     await user.click(screen.getByRole('checkbox', { name: 'Select Coffee' }));
 
-    expect(updateRow).toHaveBeenCalledTimes(1);
-    expect(updateRow).toHaveBeenCalledWith('row_1', {
-      selectedForImport: true,
-    });
+    expect(setSelection).toHaveBeenCalledTimes(1);
+    expect(setSelection).toHaveBeenCalledWith(['row_1'], true);
+    expect(updateRow).not.toHaveBeenCalled();
   });
 
   it('selects all rows on the page with a single batch mutation', async () => {

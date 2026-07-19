@@ -75,7 +75,6 @@ const ImportDraftReviewContent = ({
     meta,
     rows,
     isLoading,
-    updateRow,
     setSelection,
     hasUnsavedWork,
   });

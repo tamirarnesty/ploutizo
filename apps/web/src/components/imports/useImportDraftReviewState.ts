@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ImportDraftRow } from '@ploutizo/types';
-import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import type { ImportDraftMeta } from '@/lib/data-access/imports';
 import { usePersistedPageSize } from '@/hooks/persistedPageSize';
 import { useFlushPendingInputs } from '@/lib/money/pending-input-flush';
@@ -38,7 +37,6 @@ interface UseImportDraftReviewStateOptions {
   meta?: ImportDraftMeta;
   rows?: ImportDraftRow[];
   isLoading?: boolean;
-  updateRow: (rowId: string, patch: UpdateImportDraftRowInput) => void;
   setSelection: (rowIds: string[], selectedForImport: boolean) => void;
   hasUnsavedWork: boolean;
 }
@@ -47,7 +45,6 @@ export const useImportDraftReviewState = ({
   meta,
   rows: sessionRows = [],
   isLoading = false,
-  updateRow,
   setSelection,
   hasUnsavedWork,
 }: UseImportDraftReviewStateOptions) => {
@@ -119,25 +116,31 @@ export const useImportDraftReviewState = ({
   const headerIndeterminate =
     selectedCount > 0 && selectedCount < totalSelectable;
 
+  const applySelection = useCallback(
+    (rowIds: string[], selectedForImport: boolean) => {
+      if (!meta || rowIds.length === 0) return;
+      flushPendingInputs();
+      setSelection(rowIds, selectedForImport);
+    },
+    [meta, flushPendingInputs, setSelection]
+  );
+
   const setRowSelection = useCallback(
     (row: ImportDraftRow, selectedForImport: boolean) => {
-      if (!meta || row.selectedForImport === selectedForImport) return;
-      updateRow(row.id, { selectedForImport });
+      if (row.selectedForImport === selectedForImport) return;
+      applySelection([row.id], selectedForImport);
     },
-    [meta, updateRow]
+    [applySelection]
   );
 
   const setAllSelection = useCallback(
     (selectedForImport: boolean) => {
-      if (!meta) return;
       const rowIds = currentPageSelectableRows
         .filter((row) => row.selectedForImport !== selectedForImport)
         .map((row) => row.id);
-      if (rowIds.length === 0) return;
-      flushPendingInputs();
-      setSelection(rowIds, selectedForImport);
+      applySelection(rowIds, selectedForImport);
     },
-    [currentPageSelectableRows, meta, flushPendingInputs, setSelection]
+    [applySelection, currentPageSelectableRows]
   );
 
   const setRowExpanded = useCallback((rowId: string, nextExpanded: boolean) => {
