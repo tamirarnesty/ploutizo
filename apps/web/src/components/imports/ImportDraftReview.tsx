@@ -6,7 +6,8 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@ploutizo/ui/components/empty';
-import type { ImportDraft } from '@ploutizo/types';
+import type { ImportDraftRow } from '@ploutizo/types';
+import type { ImportDraftMeta } from '@/lib/data-access/imports';
 import { useGetCategories } from '@/lib/data-access/categories';
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import { PendingInputFlushProvider } from '@/lib/money/pending-input-flush';
@@ -16,21 +17,25 @@ import { ImportDraftReviewTable } from './ImportDraftReviewTable';
 import { useImportDraftReviewState } from './useImportDraftReviewState';
 
 interface ImportDraftReviewProps {
-  draft?: ImportDraft;
+  meta?: ImportDraftMeta;
+  rows?: ImportDraftRow[];
   isLoading?: boolean;
 }
 
-const getEmptyDraftDescription = (draft: ImportDraft): string => {
-  if (draft.rows.length === 0) {
+const getEmptyDraftDescription = (
+  meta: ImportDraftMeta,
+  rows: ImportDraftRow[]
+): string => {
+  if (rows.length === 0) {
     return 'This import draft has no transactions to review.';
   }
 
   const parts = ['Every row in this draft is invalid or skipped.'];
-  if (draft.invalidRowCount > 0) {
+  if (meta.invalidRowCount > 0) {
     parts.push(
-      draft.invalidRowCount === 1
+      meta.invalidRowCount === 1
         ? '1 row is invalid.'
-        : `${draft.invalidRowCount} rows are invalid.`
+        : `${meta.invalidRowCount} rows are invalid.`
     );
   }
   return parts.join(' ');
@@ -43,20 +48,21 @@ export const ImportDraftReview = (props: ImportDraftReviewProps) => (
 );
 
 const ImportDraftReviewContent = ({
-  draft,
+  meta,
+  rows = [],
   isLoading = false,
 }: ImportDraftReviewProps) => {
   const { data: categories = [] } = useGetCategories();
   const { data: orgMembers = [] } = useGetOrgMembers();
-  const reviewState = useImportDraftReviewState({ draft, isLoading });
+  const reviewState = useImportDraftReviewState({ meta, rows, isLoading });
   const { canContinue, continueBlocker, hasReviewableRows } = reviewState;
 
-  const showEmptyState = !isLoading && draft && !hasReviewableRows;
+  const showEmptyState = !isLoading && meta && !hasReviewableRows;
 
   return (
     <section className="flex min-h-0 flex-1 flex-col gap-3">
       <ImportDraftReviewHeader
-        draft={draft}
+        meta={meta}
         isLoading={isLoading}
         canContinue={canContinue}
         continueBlocker={continueBlocker}
@@ -71,13 +77,13 @@ const ImportDraftReviewContent = ({
               </EmptyMedia>
               <EmptyTitle>No transactions to review</EmptyTitle>
               <EmptyDescription>
-                {getEmptyDraftDescription(draft)}
+                {getEmptyDraftDescription(meta, rows)}
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
-        ) : draft ? (
+        ) : meta ? (
           <ImportDraftReviewProvider
-            draftId={draft.id}
+            draftId={meta.id}
             categories={categories}
             orgMembers={orgMembers}
           >

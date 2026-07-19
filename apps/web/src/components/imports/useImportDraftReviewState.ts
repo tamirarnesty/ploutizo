@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ImportDraft, ImportDraftRow } from '@ploutizo/types';
+import type { ImportDraftRow } from '@ploutizo/types';
+import type { ImportDraftMeta } from '@/lib/data-access/imports';
 import { usePersistedPageSize } from '@/hooks/persistedPageSize';
 import {
   useUpdateImportDraftRow,
@@ -37,12 +38,14 @@ const expandedStateToSet = (state: ExpandedState): Set<string> => {
 };
 
 interface UseImportDraftReviewStateOptions {
-  draft?: ImportDraft;
+  meta?: ImportDraftMeta;
+  rows?: ImportDraftRow[];
   isLoading?: boolean;
 }
 
 export const useImportDraftReviewState = ({
-  draft,
+  meta,
+  rows: sessionRows = [],
   isLoading = false,
 }: UseImportDraftReviewStateOptions) => {
   const flushPendingInputs = useFlushPendingInputs();
@@ -52,7 +55,7 @@ export const useImportDraftReviewState = ({
   const initializedExpansionDraftIdRef = useRef<string | null>(null);
   const [expanded, setExpanded] = useState<ExpandedState>({});
 
-  const rows = draft?.rows ?? [];
+  const rows = sessionRows;
   const selectableRows = useMemo(() => getSelectableImportRows(rows), [rows]);
   const defaultExpandedRowIds = useMemo(
     () =>
@@ -75,8 +78,8 @@ export const useImportDraftReviewState = ({
     [currentPageRows]
   );
 
-  const canContinue = draft ? canContinueImportReview(rows) : false;
-  const continueBlocker = draft ? getImportReviewContinueBlocker(rows) : null;
+  const canContinue = meta ? canContinueImportReview(rows) : false;
+  const continueBlocker = meta ? getImportReviewContinueBlocker(rows) : null;
   const hasReviewableRows = selectableRows.length > 0;
 
   useEffect(() => {
@@ -85,9 +88,9 @@ export const useImportDraftReviewState = ({
   }, [pageCount, pageIndex, pageSize, setPagination]);
 
   useEffect(() => {
-    if (!draft) return;
-    if (initializedExpansionDraftIdRef.current !== draft.id) {
-      initializedExpansionDraftIdRef.current = draft.id;
+    if (!meta) return;
+    if (initializedExpansionDraftIdRef.current !== meta.id) {
+      initializedExpansionDraftIdRef.current = meta.id;
       setExpanded(expandedSetToState(defaultExpandedRowIds));
       return;
     }
@@ -99,7 +102,7 @@ export const useImportDraftReviewState = ({
         new Set([...currentIds].filter((id) => rowIds.has(id)))
       );
     });
-  }, [defaultExpandedRowIds, draft, rows]);
+  }, [defaultExpandedRowIds, meta, rows]);
 
   const selectedCount = currentPageSelectableRows.filter(
     (row) => row.selectedForImport
@@ -112,30 +115,30 @@ export const useImportDraftReviewState = ({
 
   const setRowSelection = useCallback(
     (row: ImportDraftRow, selectedForImport: boolean) => {
-      if (!draft || row.selectedForImport === selectedForImport) return;
+      if (!meta || row.selectedForImport === selectedForImport) return;
       updateRow.mutate({
-        draftId: draft.id,
+        draftId: meta.id,
         rowId: row.id,
         body: { selectedForImport },
       });
     },
-    [draft, updateRow]
+    [meta, updateRow]
   );
 
   const setAllSelection = useCallback(
     (selectedForImport: boolean) => {
-      if (!draft) return;
+      if (!meta) return;
       const rowIds = currentPageSelectableRows
         .filter((row) => row.selectedForImport !== selectedForImport)
         .map((row) => row.id);
       if (rowIds.length === 0) return;
       flushPendingInputs();
       updateRowSelection.mutate({
-        draftId: draft.id,
+        draftId: meta.id,
         body: { rowIds, selectedForImport },
       });
     },
-    [currentPageSelectableRows, draft, flushPendingInputs, updateRowSelection]
+    [currentPageSelectableRows, meta, flushPendingInputs, updateRowSelection]
   );
 
   const setRowExpanded = useCallback((rowId: string, nextExpanded: boolean) => {

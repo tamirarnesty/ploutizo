@@ -1,5 +1,14 @@
 export * from './queryKeys';
 export * from './patchImportDraftCache';
+export { toImportDraftMeta, type ImportDraftMeta } from './toImportDraftMeta';
+export {
+  getImportDraftRowsCollection,
+  releaseImportDraftRowsCollection,
+} from './getImportDraftRowsCollection';
+export {
+  useImportReviewSession,
+  type ImportReviewSession,
+} from './useImportReviewSession';
 export * from './useGetImportTargets';
 export * from './useGetImportDrafts';
 export * from './useGetImportDraft';

@@ -86,12 +86,14 @@ vi.mock('@/hooks/persistedPageSize', () => ({
   }),
 }));
 
-const renderReview = (draft = makeImportDraft()) =>
-  render(
+const renderReview = (draft = makeImportDraft()) => {
+  const { rows, ...meta } = draft;
+  return render(
     <TooltipProvider delay={0}>
-      <ImportDraftReview draft={draft} />
+      <ImportDraftReview meta={meta} rows={rows} />
     </TooltipProvider>
   );
+};
 
 const renderLoadingReview = () =>
   render(

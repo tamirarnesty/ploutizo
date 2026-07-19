@@ -17,7 +17,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@ploutizo/ui/components/empty';
-import { useGetImportDraft } from '@/lib/data-access/imports';
+import { useImportReviewSession } from '@/lib/data-access/imports';
 import { ImportDraftReview } from './ImportDraftReview';
 
 interface ImportReviewProps {
@@ -43,7 +43,7 @@ const ImportReviewBreadcrumbs = () => (
 const importReviewPageClassName = 'flex min-h-0 flex-1 flex-col gap-8';
 
 export const ImportReview = ({ draftId }: ImportReviewProps) => {
-  const { data: draft, isLoading, isError } = useGetImportDraft(draftId);
+  const { meta, rows, isLoading, isError } = useImportReviewSession(draftId);
 
   if (isLoading) {
     return (
@@ -54,7 +54,7 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
     );
   }
 
-  if (isError || !draft) {
+  if (isError || !meta) {
     return (
       <div className={importReviewPageClassName}>
         <ImportReviewBreadcrumbs />
@@ -81,7 +81,7 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
   return (
     <div className={importReviewPageClassName}>
       <ImportReviewBreadcrumbs />
-      <ImportDraftReview draft={draft} />
+      <ImportDraftReview meta={meta} rows={rows} />
     </div>
   );
 };
