@@ -34,7 +34,7 @@ app.use(
 
 // 2. Clerk JWT verification — clockSkewInMs handles Railway container clock drift (D-04)
 // azp validation uses authorizedPartyGuard + isAllowedParty so Railway PR preview
-// origins and tenant subdomains can be allowlisted without a static string[].
+// origins can be allowlisted without a static string[].
 app.use(
   '*',
   clerkMiddleware({

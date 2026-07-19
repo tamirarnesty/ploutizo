@@ -30,10 +30,10 @@ describe('allowedOrigins', () => {
     ).toBe(true);
   });
 
-  it('allows tenant subdomains', async () => {
+  it('rejects tenant subdomains', async () => {
     const { isAllowedOrigin } = await loadAllowedOrigins();
 
-    expect(isAllowedOrigin('https://golden-newt.ploutizo.app')).toBe(true);
+    expect(isAllowedOrigin('https://golden-newt.ploutizo.app')).toBe(false);
   });
 
   it('rejects unknown origins', async () => {

@@ -8,9 +8,6 @@ const STATIC_ALLOWED_ORIGINS = [
 const RAILWAY_PR_PREVIEW_ORIGIN =
   /^https:\/\/web-ploutizo-pr-\d+\.up\.railway\.app$/;
 
-// Tenant subdomains, e.g. golden-newt.ploutizo.app
-const PLOUTIZO_SUBDOMAIN_ORIGIN = /^https:\/\/[a-z0-9-]+\.ploutizo\.app$/;
-
 const parseExtraOrigins = (value: string | undefined): string[] => {
   if (!value) return [];
   return value
@@ -28,10 +25,7 @@ export const isAllowedOrigin = (origin: string): boolean => {
   if (extraAllowedOrigins.includes(origin)) {
     return true;
   }
-  return (
-    RAILWAY_PR_PREVIEW_ORIGIN.test(origin) ||
-    PLOUTIZO_SUBDOMAIN_ORIGIN.test(origin)
-  );
+  return RAILWAY_PR_PREVIEW_ORIGIN.test(origin);
 };
 
 export const isAllowedParty = (azp: string): boolean => isAllowedOrigin(azp);
