@@ -16,6 +16,7 @@ import { formatImportDraftReviewSubtitle } from '../lib/importPresentation';
 import { ImportReviewAutosaveStrip } from './ImportReviewAutosaveStrip';
 
 const IMPORT_COMMIT_PREVIEW_COPY = 'Import commit coming soon';
+/** Finalize / prepared import set is ADR 0004 work — keep Continue product-disabled until then. */
 const REVIEW_PRODUCT_FLAGS: { finalizeEnabled: boolean } = {
   finalizeEnabled: false,
 };
@@ -51,6 +52,7 @@ export const ImportDraftReviewHeader = ({
   onRetryAutosave,
   onContinue,
 }: ImportDraftReviewHeaderProps) => {
+  // Flush gate uses canContinue; finalize product enablement is ADR 0004.
   const continueButton = (
     <Button
       disabled={!REVIEW_PRODUCT_FLAGS.finalizeEnabled || !canContinue}

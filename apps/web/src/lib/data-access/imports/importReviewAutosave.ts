@@ -143,6 +143,11 @@ export const markImportReviewPersistStart = (
   emit(draftId);
 };
 
+/**
+ * Mark a row persist as successful. When `succeededKeys` is provided, only those
+ * failed keys clear — so a later edit of other fields cannot hide an earlier Failed field.
+ * Omit `succeededKeys` to clear all failed keys for the row (explicit Retry of known failures).
+ */
 export const markImportReviewPersistSuccess = (
   draftId: string,
   rowId: string,
