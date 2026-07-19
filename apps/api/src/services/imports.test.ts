@@ -21,14 +21,10 @@ import {
   updateImportDraftRowQuery,
   updateImportDraftRowSelectionQuery,
 } from '@/lib/queries/imports';
+import { assertOrgWriteReferences } from '@/lib/assertOrgWriteReferences';
 import { listOrgMembers } from '@/lib/queries/households';
 import { listCategories } from '@/lib/queries/categories';
 import { listTags } from '@/lib/queries/tags';
-import {
-  allMembersInOrg,
-  allTagsInOrg,
-  categoryExistsInOrg,
-} from '@/lib/queries/scope';
 
 vi.mock('@ploutizo/db', () => ({
   db: {
@@ -64,10 +60,8 @@ vi.mock('@/lib/queries/tags', () => ({
   listTags: vi.fn(),
 }));
 
-vi.mock('@/lib/queries/scope', () => ({
-  categoryExistsInOrg: vi.fn(),
-  allTagsInOrg: vi.fn(),
-  allMembersInOrg: vi.fn(),
+vi.mock('@/lib/assertOrgWriteReferences', () => ({
+  assertOrgWriteReferences: vi.fn(),
 }));
 
 const summaryRow = {
@@ -156,9 +150,7 @@ describe('import service', () => {
       },
     ]);
     vi.mocked(listTags).mockResolvedValue([]);
-    vi.mocked(categoryExistsInOrg).mockResolvedValue(true);
-    vi.mocked(allTagsInOrg).mockResolvedValue(true);
-    vi.mocked(allMembersInOrg).mockResolvedValue(true);
+    vi.mocked(assertOrgWriteReferences).mockResolvedValue(undefined);
     vi.mocked(insertImportBatch).mockResolvedValue({
       id: summaryRow.id,
     } as never);
@@ -315,7 +307,7 @@ describe('import service', () => {
       reviewAmount: null,
       reviewType: null,
       reviewDescription: null,
-      reviewCategoryName: null,
+      reviewCategoryId: null,
       reviewAssigneeMemberIds: [],
     };
     const updatedRow = {
@@ -371,7 +363,7 @@ describe('import service', () => {
       parsedAmount: null,
       parsedType: null,
       parsedDescription: null,
-      reviewCategoryName: null,
+      reviewCategoryId: null,
       reviewAssigneeMemberIds: [],
     };
     const updatedRow = {

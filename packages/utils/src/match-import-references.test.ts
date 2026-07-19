@@ -1,63 +1,67 @@
 import { describe, expect, it } from 'vitest';
-import {
-  matchCategoryIdByName,
-  matchOrgMemberIdsByName,
-  matchTagIdsByNames,
-} from './match-import-references';
+import { createImportReferenceResolver } from './match-import-references';
 
-describe('matchCategoryIdByName', () => {
-  const categories = [
-    { id: 'cat-1', name: 'Dining' },
-    { id: 'cat-2', name: 'Groceries' },
-  ];
-
-  it('returns id for exact case-insensitive match', () => {
-    expect(matchCategoryIdByName('dining', categories)).toBe('cat-1');
-    expect(matchCategoryIdByName('  Groceries ', categories)).toBe('cat-2');
+describe('createImportReferenceResolver', () => {
+  const resolve = createImportReferenceResolver({
+    categories: [
+      { id: 'cat-1', name: 'Dining' },
+      { id: 'cat-2', name: 'Groceries' },
+    ],
+    tags: [
+      { id: 'tag-1', name: 'food' },
+      { id: 'tag-2', name: 'errands' },
+    ],
+    members: [
+      { id: 'member-1', displayName: 'Tamir Arnesty' },
+      { id: 'member-2', displayName: 'Alex Smith' },
+    ],
   });
 
-  it('returns null for unknown or empty names', () => {
-    expect(matchCategoryIdByName('Travel', categories)).toBeNull();
-    expect(matchCategoryIdByName(null, categories)).toBeNull();
-    expect(matchCategoryIdByName('   ', categories)).toBeNull();
-  });
-});
-
-describe('matchTagIdsByNames', () => {
-  const tags = [
-    { id: 'tag-1', name: 'food' },
-    { id: 'tag-2', name: 'errands' },
-  ];
-
-  it('maps known names to ids and drops unknown names', () => {
-    expect(matchTagIdsByNames(['food', 'missing', 'ERRANDS'], tags)).toEqual([
-      'tag-1',
-      'tag-2',
-    ]);
+  it('resolves category, tags, and assignee together', () => {
+    expect(
+      resolve({
+        csvCategoryName: ' dining ',
+        csvAssigneeName: 'tamir arnesty',
+        csvTagNames: ['food', 'missing', 'ERRANDS', 'Food'],
+      })
+    ).toEqual({
+      reviewCategoryId: 'cat-1',
+      reviewTagIds: ['tag-1', 'tag-2'],
+      reviewAssigneeMemberIds: ['member-1'],
+    });
   });
 
-  it('dedupes matched ids', () => {
-    expect(matchTagIdsByNames(['food', 'Food'], tags)).toEqual(['tag-1']);
+  it('returns empty refs when hints are missing or unknown', () => {
+    expect(
+      resolve({
+        csvCategoryName: null,
+        csvAssigneeName: 'Tamir',
+        csvTagNames: [],
+      })
+    ).toEqual({
+      reviewCategoryId: null,
+      reviewTagIds: [],
+      reviewAssigneeMemberIds: [],
+    });
   });
-});
 
-describe('matchOrgMemberIdsByName', () => {
-  const members = [
-    { id: 'member-1', displayName: 'Tamir Arnesty' },
-    { id: 'member-2', displayName: 'Alex Smith' },
-  ];
-
-  it('returns member id for exact displayName match', () => {
-    expect(matchOrgMemberIdsByName('tamir arnesty', members)).toEqual([
-      'member-1',
-    ]);
+  it('returns null category for unknown names', () => {
+    expect(
+      resolve({
+        csvCategoryName: 'Travel',
+        csvAssigneeName: null,
+        csvTagNames: [],
+      }).reviewCategoryId
+    ).toBeNull();
   });
 
   it('does not partial-match display names', () => {
-    expect(matchOrgMemberIdsByName('Tamir', members)).toEqual([]);
-  });
-
-  it('returns empty array for missing names', () => {
-    expect(matchOrgMemberIdsByName(null, members)).toEqual([]);
+    expect(
+      resolve({
+        csvCategoryName: null,
+        csvAssigneeName: 'Tamir',
+        csvTagNames: [],
+      }).reviewAssigneeMemberIds
+    ).toEqual([]);
   });
 });

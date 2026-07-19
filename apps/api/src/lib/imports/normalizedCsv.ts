@@ -7,7 +7,6 @@ import {
 } from '@ploutizo/types';
 import { parseImportTags } from '@ploutizo/utils';
 import type { ImportDraftRow, ImportTransactionType } from '@ploutizo/types';
-import { computeImportRowStatus } from './rowStatus';
 import { DomainError } from '@/lib/errors';
 
 type CsvRecord = {
@@ -27,29 +26,33 @@ type HeaderKey =
   | 'notes'
   | 'tags';
 
-export type ParsedImportRow = {
-  rowNumber: number;
-  status: ImportDraftRow['status'];
-  invalidReason: string | null;
-  rawData: Record<string, string>;
-  externalId: string | null;
-  sourceDate: string | null;
-  sourceAmount: string | null;
-  sourceDescription: string | null;
-  sourceType: string | null;
-  parsedDate: string | null;
-  parsedAmount: number | null;
-  parsedType: ImportTransactionType | null;
-  parsedDescription: string | null;
-  reviewDate: string | null;
-  reviewAmount: number | null;
-  reviewType: ImportTransactionType | null;
-  reviewDescription: string | null;
+type ParsedImportRowBase = Pick<
+  ImportDraftRow,
+  | 'rowNumber'
+  | 'status'
+  | 'invalidReason'
+  | 'rawData'
+  | 'externalId'
+  | 'sourceDate'
+  | 'sourceAmount'
+  | 'sourceDescription'
+  | 'sourceType'
+  | 'parsedDate'
+  | 'parsedAmount'
+  | 'parsedType'
+  | 'parsedDescription'
+  | 'reviewDate'
+  | 'reviewAmount'
+  | 'reviewType'
+  | 'reviewDescription'
+  | 'reviewRefundLinkHint'
+  | 'reviewNotes'
+>;
+
+export type ParsedImportRow = ParsedImportRowBase & {
   csvCategoryName: string | null;
   csvAssigneeName: string | null;
   csvTagNames: string[];
-  reviewRefundLinkHint: string | null;
-  reviewNotes: string | null;
 };
 
 export interface ParsedNormalizedImport {
@@ -263,15 +266,8 @@ const parseRow = (
   }
 
   const isInvalid = invalidReasons.length > 0;
-  const status = isInvalid
-    ? ('invalid' as const)
-    : computeImportRowStatus({
-        status: 'ready',
-        reviewType: parsedType,
-        parsedType,
-        reviewCategoryId: null,
-        reviewAssigneeMemberIds: [],
-      });
+  // Refs are resolved at ingest; parse cannot mark rows ready yet.
+  const status = isInvalid ? ('invalid' as const) : ('needs_review' as const);
 
   return {
     rowNumber: record.rowNumber,

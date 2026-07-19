@@ -3,11 +3,7 @@ import {
   IMPORT_TRANSACTION_TYPE_VALUES,
   NORMALIZED_IMPORT_EXAMPLE_CSV,
 } from '@ploutizo/types';
-import {
-  matchCategoryIdByName,
-  matchOrgMemberIdsByName,
-  matchTagIdsByNames,
-} from '@ploutizo/utils';
+import { createImportReferenceResolver } from '@ploutizo/utils';
 import type {
   ImportDraft,
   ImportDraftRow,
@@ -20,8 +16,8 @@ import type {
   UpdateImportDraftRowInput,
   UpdateImportDraftRowSelectionInput,
 } from '@ploutizo/validators';
+import { assertOrgWriteReferences } from '@/lib/assertOrgWriteReferences';
 import { DomainError, NotFoundError } from '@/lib/errors';
-import { assertImportRowWriteReferences } from '@/lib/imports/assertRowReferences';
 import {
   computeImportRowStatus,
   isImportRowStructurallyInvalid,
@@ -152,6 +148,11 @@ export const createNormalizedImportDraft = async (
     listCategories(orgId),
     listTags(orgId),
   ]);
+  const resolveImportReferences = createImportReferenceResolver({
+    categories: orgCategories,
+    tags: orgTags,
+    members: orgMembers,
+  });
 
   try {
     const draftId = await db.transaction(async (tx) => {
@@ -176,34 +177,22 @@ export const createNormalizedImportDraft = async (
             csvTagNames,
             ...rowFields
           } = row;
-          const reviewCategoryId = matchCategoryIdByName(
+          const resolvedRefs = resolveImportReferences({
             csvCategoryName,
-            orgCategories
-          );
-          const reviewTagIds = matchTagIdsByNames(csvTagNames, orgTags);
-          const reviewAssigneeMemberIds = matchOrgMemberIdsByName(
             csvAssigneeName,
-            orgMembers
-          );
-          const resolvedRefs = {
-            reviewCategoryId,
-            reviewTagIds,
-            reviewAssigneeMemberIds,
-          };
+            csvTagNames,
+          });
 
           return {
             ...rowFields,
             ...resolvedRefs,
-            status:
-              row.status === 'invalid'
-                ? row.status
-                : computeImportRowStatus({
-                    status: row.status,
-                    reviewType: toImportTransactionType(row.reviewType),
-                    parsedType: toImportTransactionType(row.parsedType),
-                    reviewCategoryId,
-                    reviewAssigneeMemberIds,
-                  }),
+            status: computeImportRowStatus({
+              status: row.status,
+              reviewType: toImportTransactionType(row.reviewType),
+              parsedType: toImportTransactionType(row.parsedType),
+              reviewCategoryId: resolvedRefs.reviewCategoryId,
+              reviewAssigneeMemberIds: resolvedRefs.reviewAssigneeMemberIds,
+            }),
             orgId,
             batchId: batch.id,
           };
@@ -246,10 +235,10 @@ export const updateImportDraftRow = async (
 
   const merged = { ...existing, ...input };
 
-  await assertImportRowWriteReferences(orgId, {
-    reviewCategoryId: merged.reviewCategoryId ?? null,
-    reviewTagIds: merged.reviewTagIds,
-    reviewAssigneeMemberIds: merged.reviewAssigneeMemberIds,
+  await assertOrgWriteReferences(orgId, {
+    categoryId: merged.reviewCategoryId ?? null,
+    tagIds: merged.reviewTagIds,
+    memberIds: merged.reviewAssigneeMemberIds,
   });
 
   const reviewType = toImportTransactionType(merged.reviewType);
