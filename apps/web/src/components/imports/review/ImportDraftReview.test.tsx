@@ -127,6 +127,7 @@ describe('ImportDraftReview', () => {
 
     expect(setSelection).toHaveBeenCalledTimes(1);
     expect(setSelection).toHaveBeenCalledWith(['row_1'], true);
+    expect(updateRow).not.toHaveBeenCalled();
   });
 
   it('selects all rows on the page with a single batch mutation', async () => {

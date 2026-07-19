@@ -18,6 +18,7 @@ import type { Transaction } from '@tanstack/db';
 
 export const IMPORT_ROW_PACE_WAIT_MS = 500;
 
+// Selection persists via bulk selection API (persistImportDraftSelection), not paced row PATCH.
 const REVIEW_PATCH_KEYS = [
   'reviewDate',
   'reviewAmount',
@@ -28,7 +29,6 @@ const REVIEW_PATCH_KEYS = [
   'reviewRefundLinkHint',
   'reviewNotes',
   'reviewTagIds',
-  'selectedForImport',
 ] as const satisfies readonly (keyof UpdateImportDraftRowInput)[];
 
 export interface ImportDraftRowPatchVariables {
