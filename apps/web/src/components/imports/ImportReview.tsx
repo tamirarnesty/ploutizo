@@ -43,13 +43,14 @@ const ImportReviewBreadcrumbs = () => (
 const importReviewPageClassName = 'flex min-h-0 flex-1 flex-col gap-8';
 
 export const ImportReview = ({ draftId }: ImportReviewProps) => {
-  const { meta, rows, isLoading, isError } = useImportReviewSession(draftId);
+  const { meta, rows, isLoading, isError, updateRow } =
+    useImportReviewSession(draftId);
 
   if (isLoading) {
     return (
       <div className={importReviewPageClassName}>
         <ImportReviewBreadcrumbs />
-        <ImportDraftReview isLoading />
+        <ImportDraftReview isLoading updateRow={updateRow} />
       </div>
     );
   }
@@ -81,7 +82,7 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
   return (
     <div className={importReviewPageClassName}>
       <ImportReviewBreadcrumbs />
-      <ImportDraftReview meta={meta} rows={rows} />
+      <ImportDraftReview meta={meta} rows={rows} updateRow={updateRow} />
     </div>
   );
 };

@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ImportDraftRow } from '@ploutizo/types';
+import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import type { ImportDraftMeta } from '@/lib/data-access/imports';
 import { usePersistedPageSize } from '@/hooks/persistedPageSize';
-import {
-  useUpdateImportDraftRow,
-  useUpdateImportDraftRowSelection,
-} from '@/lib/data-access/imports';
+import { useUpdateImportDraftRowSelection } from '@/lib/data-access/imports';
 import { useFlushPendingInputs } from '@/lib/money/pending-input-flush';
 import { shouldDefaultExpandImportRow } from './importPresentation';
 import {
@@ -41,15 +39,16 @@ interface UseImportDraftReviewStateOptions {
   meta?: ImportDraftMeta;
   rows?: ImportDraftRow[];
   isLoading?: boolean;
+  updateRow: (rowId: string, patch: UpdateImportDraftRowInput) => void;
 }
 
 export const useImportDraftReviewState = ({
   meta,
   rows: sessionRows = [],
   isLoading = false,
+  updateRow,
 }: UseImportDraftReviewStateOptions) => {
   const flushPendingInputs = useFlushPendingInputs();
-  const updateRow = useUpdateImportDraftRow();
   const updateRowSelection = useUpdateImportDraftRowSelection();
   const { pagination, setPagination } = usePersistedPageSize('import-review');
   const initializedExpansionDraftIdRef = useRef<string | null>(null);
@@ -116,11 +115,7 @@ export const useImportDraftReviewState = ({
   const setRowSelection = useCallback(
     (row: ImportDraftRow, selectedForImport: boolean) => {
       if (!meta || row.selectedForImport === selectedForImport) return;
-      updateRow.mutate({
-        draftId: meta.id,
-        rowId: row.id,
-        body: { selectedForImport },
-      });
+      updateRow(row.id, { selectedForImport });
     },
     [meta, updateRow]
   );

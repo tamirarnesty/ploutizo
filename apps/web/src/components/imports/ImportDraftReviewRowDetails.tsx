@@ -1,12 +1,10 @@
-import { useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { Text } from '@ploutizo/ui/components/text';
 import { Textarea } from '@ploutizo/ui/components/textarea';
 import { cn } from '@ploutizo/ui/lib/utils';
 import type { ImportDraftRow } from '@ploutizo/types';
-import { useRegisterInputFlush } from '@/lib/money/pending-input-flush';
 import { TransactionTagPicker } from '@/components/transactions/TransactionTagPicker';
 import { useImportDraftReviewRowSave } from './useImportDraftReviewRowSave';
-import { useImportRowFieldState } from './useImportRowFieldState';
 
 interface ImportDraftReviewRowDetailsProps {
   row: ImportDraftRow;
@@ -19,17 +17,14 @@ export const ImportDraftReviewRowDetails = ({
   row,
 }: ImportDraftReviewRowDetailsProps) => {
   const { saveField, disabled } = useImportDraftReviewRowSave(row);
-  const { notes, setNotes, markSaved } = useImportRowFieldState(row);
+  // Input chrome only — every change also writes the working copy.
+  const [notesDraft, setNotesDraft] = useState(() => row.reviewNotes ?? '');
   const rowLabel = getImportRowLabel(row);
   const tagsInputId = `import-row-tags-${row.id}`;
 
-  const flushNotes = useCallback(() => {
-    const next = notes.trim() || null;
-    if (next === row.reviewNotes) return;
-    saveField({ reviewNotes: next }, { onSuccess: () => markSaved('notes') });
-  }, [markSaved, notes, row.reviewNotes, saveField]);
-
-  useRegisterInputFlush(flushNotes);
+  useEffect(() => {
+    setNotesDraft(row.reviewNotes ?? '');
+  }, [row.id, row.reviewNotes]);
 
   return (
     <div className="bg-muted/10 px-3 py-2">
@@ -46,14 +41,19 @@ export const ImportDraftReviewRowDetails = ({
           <Textarea
             id={`import-row-notes-${row.id}`}
             aria-label={`Notes for ${rowLabel}`}
-            value={notes}
+            value={notesDraft}
             disabled={disabled}
             rows={1}
             className="h-10 min-h-10 w-full resize-y"
             autoComplete="off"
             placeholder="Add a note…"
-            onChange={(event) => setNotes(event.currentTarget.value)}
-            onBlur={flushNotes}
+            onChange={(event) => {
+              const raw = event.currentTarget.value;
+              setNotesDraft(raw);
+              const next = raw.trim() || null;
+              if (next === row.reviewNotes) return;
+              saveField({ reviewNotes: next });
+            }}
           />
         </div>
         <div className="min-w-0">

@@ -7,6 +7,7 @@ import {
   EmptyTitle,
 } from '@ploutizo/ui/components/empty';
 import type { ImportDraftRow } from '@ploutizo/types';
+import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import type { ImportDraftMeta } from '@/lib/data-access/imports';
 import { useGetCategories } from '@/lib/data-access/categories';
 import { useGetOrgMembers } from '@/lib/data-access/org';
@@ -20,6 +21,7 @@ interface ImportDraftReviewProps {
   meta?: ImportDraftMeta;
   rows?: ImportDraftRow[];
   isLoading?: boolean;
+  updateRow: (rowId: string, patch: UpdateImportDraftRowInput) => void;
 }
 
 const getEmptyDraftDescription = (
@@ -51,10 +53,16 @@ const ImportDraftReviewContent = ({
   meta,
   rows = [],
   isLoading = false,
+  updateRow,
 }: ImportDraftReviewProps) => {
   const { data: categories = [] } = useGetCategories();
   const { data: orgMembers = [] } = useGetOrgMembers();
-  const reviewState = useImportDraftReviewState({ meta, rows, isLoading });
+  const reviewState = useImportDraftReviewState({
+    meta,
+    rows,
+    isLoading,
+    updateRow,
+  });
   const { canContinue, continueBlocker, hasReviewableRows } = reviewState;
 
   const showEmptyState = !isLoading && meta && !hasReviewableRows;
@@ -86,6 +94,7 @@ const ImportDraftReviewContent = ({
             draftId={meta.id}
             categories={categories}
             orgMembers={orgMembers}
+            updateRow={updateRow}
           >
             <ImportDraftReviewTable reviewState={reviewState} />
           </ImportDraftReviewProvider>

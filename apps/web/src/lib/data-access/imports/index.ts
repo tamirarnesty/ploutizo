@@ -6,6 +6,11 @@ export {
   releaseImportDraftRowsCollection,
 } from './getImportDraftRowsCollection';
 export {
+  getImportDraftRowPacedMutations,
+  IMPORT_ROW_PACE_WAIT_MS,
+} from './getImportDraftRowPacedMutations';
+export { fetchUpdateImportDraftRow } from './fetchUpdateImportDraftRow';
+export {
   useImportReviewSession,
   type ImportReviewSession,
 } from './useImportReviewSession';

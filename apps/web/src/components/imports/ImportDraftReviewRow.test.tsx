@@ -3,7 +3,6 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ImportDraftRow } from '@ploutizo/types';
 import type { Category } from '@/lib/data-access/categories';
-import { PendingInputFlushProvider } from '@/lib/money/pending-input-flush';
 import { ImportDraftReviewProvider } from './ImportDraftReviewContext';
 import { ImportDraftReviewRowDetails } from './ImportDraftReviewRowDetails';
 import { ImportReviewDescriptionCell } from './importReviewCells';
@@ -19,7 +18,7 @@ const mockCategory: Category = {
   createdAt: '2026-05-20T12:00:00Z',
 };
 
-const mutate = vi.fn();
+const updateRow = vi.fn();
 
 vi.mock('@ploutizo/ui/components/date-picker', () => ({
   DatePicker: () => <div>Date picker</div>,
@@ -39,10 +38,6 @@ vi.mock('./ImportAssigneeField', () => ({
 
 vi.mock('@/components/transactions/TransactionTagPicker', () => ({
   TransactionTagPicker: () => <div>Tag picker</div>,
-}));
-
-vi.mock('@/lib/data-access/imports', () => ({
-  useUpdateImportDraftRow: () => ({ mutate }),
 }));
 
 const baseRow = (): ImportDraftRow => ({
@@ -77,16 +72,15 @@ const baseRow = (): ImportDraftRow => ({
 
 const renderRowFields = (row: ImportDraftRow) =>
   render(
-    <PendingInputFlushProvider>
-      <ImportDraftReviewProvider
-        draftId={row.batchId}
-        categories={[mockCategory]}
-        orgMembers={[]}
-      >
-        <ImportReviewDescriptionCell row={row} />
-        <ImportDraftReviewRowDetails row={row} />
-      </ImportDraftReviewProvider>
-    </PendingInputFlushProvider>
+    <ImportDraftReviewProvider
+      draftId={row.batchId}
+      categories={[mockCategory]}
+      orgMembers={[]}
+      updateRow={updateRow}
+    >
+      <ImportReviewDescriptionCell row={row} />
+      <ImportDraftReviewRowDetails row={row} />
+    </ImportDraftReviewProvider>
   );
 
 describe('ImportDraftReviewRow', () => {
@@ -94,52 +88,23 @@ describe('ImportDraftReviewRow', () => {
     vi.clearAllMocks();
   });
 
-  it('preserves unsaved notes when description blur-save updates the row', async () => {
+  it('writes description and notes through the working-copy write API', async () => {
     const user = userEvent.setup();
-    const { rerender } = renderRowFields(baseRow());
+    const row = baseRow();
+    renderRowFields(row);
 
     const descriptionInput = screen.getByLabelText('Description for Coffee');
     const notesInput = screen.getByLabelText('Notes for Coffee');
 
     await user.clear(descriptionInput);
     await user.type(descriptionInput, 'Updated coffee');
-    await user.click(notesInput);
     await user.type(notesInput, 'Still editing notes');
 
-    expect(mutate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        body: { reviewDescription: 'Updated coffee' },
-      }),
-      expect.any(Object)
-    );
-
-    rerender(
-      <PendingInputFlushProvider>
-        <ImportDraftReviewProvider
-          draftId={baseRow().batchId}
-          categories={[mockCategory]}
-          orgMembers={[]}
-        >
-          <ImportReviewDescriptionCell
-            row={{
-              ...baseRow(),
-              reviewDescription: 'Updated coffee',
-              updatedAt: '2026-05-20T13:00:00Z',
-            }}
-          />
-          <ImportDraftReviewRowDetails
-            row={{
-              ...baseRow(),
-              reviewDescription: 'Updated coffee',
-              updatedAt: '2026-05-20T13:00:00Z',
-            }}
-          />
-        </ImportDraftReviewProvider>
-      </PendingInputFlushProvider>
-    );
-
-    expect(screen.getByLabelText('Notes for Updated coffee')).toHaveValue(
-      'Still editing notes'
-    );
+    expect(updateRow).toHaveBeenCalledWith(row.id, {
+      reviewDescription: 'Updated coffee',
+    });
+    expect(updateRow).toHaveBeenCalledWith(row.id, {
+      reviewNotes: 'Still editing notes',
+    });
   });
 });
