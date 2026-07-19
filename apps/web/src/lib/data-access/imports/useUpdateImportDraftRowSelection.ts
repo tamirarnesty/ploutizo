@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { ImportDraft, ImportDraftRow } from '@ploutizo/types';
+import type { ImportDraft } from '@ploutizo/types';
 import type { UpdateImportDraftRowSelectionInput } from '@ploutizo/validators';
-import { apiFetch } from '@/lib/queryClient';
 import {
   applyServerRowsIfNewer,
   patchImportDraftRowsSelection,
   revertImportDraftRowsSelection,
 } from './patchImportDraftCache';
+import { fetchUpdateImportDraftRowSelection } from './fetchUpdateImportDraftRowSelection';
 import { activeImportDraftsQueryKey, importDraftQueryKey } from './queryKeys';
 
 interface UpdateImportDraftRowSelectionVariables {
@@ -18,13 +18,7 @@ export const useUpdateImportDraftRowSelection = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ draftId, body }: UpdateImportDraftRowSelectionVariables) =>
-      apiFetch<{ data: ImportDraftRow[] }>(
-        `/api/imports/drafts/${draftId}/rows/selection`,
-        {
-          method: 'PATCH',
-          body: JSON.stringify(body),
-        }
-      ).then((r) => r.data),
+      fetchUpdateImportDraftRowSelection(draftId, body),
     onMutate: async ({ draftId, body }) => {
       await qc.cancelQueries({ queryKey: importDraftQueryKey(draftId) });
       const draft = qc.getQueryData<ImportDraft>(importDraftQueryKey(draftId));

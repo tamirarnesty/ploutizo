@@ -19,6 +19,7 @@ import {
 } from '@ploutizo/ui/components/empty';
 import { useImportReviewSession } from '@/lib/data-access/imports';
 import { ImportDraftReview } from './ImportDraftReview';
+import { useImportReviewLeaveGuard } from './useImportReviewLeaveGuard';
 
 interface ImportReviewProps {
   draftId: string;
@@ -43,14 +44,37 @@ const ImportReviewBreadcrumbs = () => (
 const importReviewPageClassName = 'flex min-h-0 flex-1 flex-col gap-8';
 
 export const ImportReview = ({ draftId }: ImportReviewProps) => {
-  const { meta, rows, isLoading, isError, updateRow } =
-    useImportReviewSession(draftId);
+  const session = useImportReviewSession(draftId);
+  const {
+    meta,
+    rows,
+    isLoading,
+    isError,
+    updateRow,
+    setSelection,
+    autosaveStatus,
+    failedRowIds,
+    hasUnsavedWork,
+    retryAutosave,
+    flush,
+  } = session;
+
+  useImportReviewLeaveGuard({ hasUnsavedWork, flush });
 
   if (isLoading) {
     return (
       <div className={importReviewPageClassName}>
         <ImportReviewBreadcrumbs />
-        <ImportDraftReview isLoading updateRow={updateRow} />
+        <ImportDraftReview
+          isLoading
+          updateRow={updateRow}
+          setSelection={setSelection}
+          autosaveStatus={autosaveStatus}
+          failedRowIds={failedRowIds}
+          hasUnsavedWork={hasUnsavedWork}
+          retryAutosave={retryAutosave}
+          flush={flush}
+        />
       </div>
     );
   }
@@ -82,7 +106,17 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
   return (
     <div className={importReviewPageClassName}>
       <ImportReviewBreadcrumbs />
-      <ImportDraftReview meta={meta} rows={rows} updateRow={updateRow} />
+      <ImportDraftReview
+        meta={meta}
+        rows={rows}
+        updateRow={updateRow}
+        setSelection={setSelection}
+        autosaveStatus={autosaveStatus}
+        failedRowIds={failedRowIds}
+        hasUnsavedWork={hasUnsavedWork}
+        retryAutosave={retryAutosave}
+        flush={flush}
+      />
     </div>
   );
 };

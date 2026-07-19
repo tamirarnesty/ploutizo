@@ -4,13 +4,14 @@ import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ImportDraftReview } from './ImportDraftReview';
 import {
-  DRAFT_ID,
   makeImportDraft,
   makeImportDraftRow,
 } from './test-fixtures/importDraft';
 
 const updateRow = vi.fn();
-const updateRowSelectionMutate = vi.fn();
+const setSelection = vi.fn();
+const retryAutosave = vi.fn();
+const flush = vi.fn(() => Promise.resolve(true));
 
 const paginationMocks = vi.hoisted(() => ({
   pagination: { pageIndex: 0, pageSize: 25 },
@@ -53,12 +54,6 @@ vi.mock('@/components/transactions/TransactionTagPicker', () => ({
   TransactionTagPicker: () => <div>Tag picker</div>,
 }));
 
-vi.mock('@/lib/data-access/imports', () => ({
-  useUpdateImportDraftRowSelection: () => ({
-    mutate: updateRowSelectionMutate,
-  }),
-}));
-
 vi.mock('@/lib/data-access/categories', () => ({
   useGetCategories: () => ({
     data: [{ id: 'cat_1', name: 'Dining' }],
@@ -85,11 +80,21 @@ vi.mock('@/hooks/persistedPageSize', () => ({
   }),
 }));
 
+const reviewSessionProps = {
+  updateRow,
+  setSelection,
+  autosaveStatus: 'idle' as const,
+  failedRowIds: [] as string[],
+  hasUnsavedWork: false,
+  retryAutosave,
+  flush,
+};
+
 const renderReview = (draft = makeImportDraft()) => {
   const { rows, ...meta } = draft;
   return render(
     <TooltipProvider delay={0}>
-      <ImportDraftReview meta={meta} rows={rows} updateRow={updateRow} />
+      <ImportDraftReview meta={meta} rows={rows} {...reviewSessionProps} />
     </TooltipProvider>
   );
 };
@@ -97,7 +102,7 @@ const renderReview = (draft = makeImportDraft()) => {
 const renderLoadingReview = () =>
   render(
     <TooltipProvider delay={0}>
-      <ImportDraftReview isLoading updateRow={updateRow} />
+      <ImportDraftReview isLoading {...reviewSessionProps} />
     </TooltipProvider>
   );
 
@@ -162,14 +167,8 @@ describe('ImportDraftReview', () => {
       screen.getByRole('checkbox', { name: 'Select all rows on this page' })
     );
 
-    expect(updateRowSelectionMutate).toHaveBeenCalledTimes(1);
-    expect(updateRowSelectionMutate).toHaveBeenCalledWith({
-      draftId: DRAFT_ID,
-      body: {
-        rowIds: ['row_a', 'row_b'],
-        selectedForImport: true,
-      },
-    });
+    expect(setSelection).toHaveBeenCalledTimes(1);
+    expect(setSelection).toHaveBeenCalledWith(['row_a', 'row_b'], true);
     expect(updateRow).not.toHaveBeenCalled();
   });
 
@@ -337,15 +336,9 @@ describe('ImportDraftReview', () => {
     expect(updateRow).toHaveBeenCalledWith('row_a', {
       reviewDescription: 'Updated coffee',
     });
-    expect(updateRowSelectionMutate).toHaveBeenCalledWith({
-      draftId: DRAFT_ID,
-      body: {
-        rowIds: ['row_a', 'row_b'],
-        selectedForImport: true,
-      },
-    });
+    expect(setSelection).toHaveBeenCalledWith(['row_a', 'row_b'], true);
     expect(updateRow.mock.invocationCallOrder[0]).toBeLessThan(
-      updateRowSelectionMutate.mock.invocationCallOrder[0]
+      setSelection.mock.invocationCallOrder[0]
     );
   });
 

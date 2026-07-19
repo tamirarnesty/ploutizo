@@ -3,7 +3,6 @@ import type { ImportDraftRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import type { ImportDraftMeta } from '@/lib/data-access/imports';
 import { usePersistedPageSize } from '@/hooks/persistedPageSize';
-import { useUpdateImportDraftRowSelection } from '@/lib/data-access/imports';
 import { useFlushPendingInputs } from '@/lib/money/pending-input-flush';
 import { shouldDefaultExpandImportRow } from './importPresentation';
 import {
@@ -40,6 +39,8 @@ interface UseImportDraftReviewStateOptions {
   rows?: ImportDraftRow[];
   isLoading?: boolean;
   updateRow: (rowId: string, patch: UpdateImportDraftRowInput) => void;
+  setSelection: (rowIds: string[], selectedForImport: boolean) => void;
+  hasUnsavedWork: boolean;
 }
 
 export const useImportDraftReviewState = ({
@@ -47,9 +48,10 @@ export const useImportDraftReviewState = ({
   rows: sessionRows = [],
   isLoading = false,
   updateRow,
+  setSelection,
+  hasUnsavedWork,
 }: UseImportDraftReviewStateOptions) => {
   const flushPendingInputs = useFlushPendingInputs();
-  const updateRowSelection = useUpdateImportDraftRowSelection();
   const { pagination, setPagination } = usePersistedPageSize('import-review');
   const initializedExpansionDraftIdRef = useRef<string | null>(null);
   const [expanded, setExpanded] = useState<ExpandedState>({});
@@ -77,8 +79,13 @@ export const useImportDraftReviewState = ({
     [currentPageRows]
   );
 
-  const canContinue = meta ? canContinueImportReview(rows) : false;
-  const continueBlocker = meta ? getImportReviewContinueBlocker(rows) : null;
+  const rowContinueBlocker = meta ? getImportReviewContinueBlocker(rows) : null;
+  const continueBlocker = hasUnsavedWork
+    ? 'Save your changes before continuing.'
+    : rowContinueBlocker;
+  const canContinue = meta
+    ? canContinueImportReview(rows) && !hasUnsavedWork
+    : false;
   const hasReviewableRows = selectableRows.length > 0;
 
   useEffect(() => {
@@ -128,12 +135,9 @@ export const useImportDraftReviewState = ({
         .map((row) => row.id);
       if (rowIds.length === 0) return;
       flushPendingInputs();
-      updateRowSelection.mutate({
-        draftId: meta.id,
-        body: { rowIds, selectedForImport },
-      });
+      setSelection(rowIds, selectedForImport);
     },
-    [currentPageSelectableRows, meta, flushPendingInputs, updateRowSelection]
+    [currentPageSelectableRows, meta, flushPendingInputs, setSelection]
   );
 
   const setRowExpanded = useCallback((rowId: string, nextExpanded: boolean) => {

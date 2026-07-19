@@ -6,29 +6,53 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
-import type { ImportDraftMeta } from '@/lib/data-access/imports';
+import type { ImportDraftRow } from '@ploutizo/types';
+import type {
+  ImportDraftMeta,
+  ImportReviewAutosaveStatus,
+} from '@/lib/data-access/imports';
 import {
   formatDraftAccountLabel,
   formatImportDraftReviewSubtitle,
 } from './importPresentation';
+import { ImportReviewAutosaveStrip } from './ImportReviewAutosaveStrip';
 
 const IMPORT_COMMIT_PREVIEW_COPY = 'Import commit coming soon';
 
 interface ImportDraftReviewHeaderProps {
   meta?: ImportDraftMeta;
+  rows?: ImportDraftRow[];
   isLoading?: boolean;
   canContinue: boolean;
   continueBlocker: string | null;
+  autosaveStatus: ImportReviewAutosaveStatus;
+  onRetryAutosave: () => void;
+  onContinue: () => void;
 }
+
+const toLiveSubtitleMeta = (
+  meta: ImportDraftMeta,
+  rows: ImportDraftRow[]
+): ImportDraftMeta => ({
+  ...meta,
+  rowCount: rows.length,
+  invalidRowCount: rows.filter((row) => row.status === 'invalid').length,
+  validRowCount: rows.filter((row) => row.status !== 'invalid').length,
+});
 
 export const ImportDraftReviewHeader = ({
   meta,
+  rows = [],
   isLoading = false,
   canContinue: _canContinue,
   continueBlocker,
+  autosaveStatus,
+  onRetryAutosave,
+  onContinue,
 }: ImportDraftReviewHeaderProps) => {
+  // Finalize remains product-disabled (ADR 0004); onContinue is the flush gate seam.
   const continueButton = (
-    <Button disabled type="button">
+    <Button disabled type="button" onClick={onContinue}>
       Continue
     </Button>
   );
@@ -46,7 +70,7 @@ export const ImportDraftReviewHeader = ({
               {formatDraftAccountLabel(meta)}
             </Text>
             <Text variant="body-sm" className="truncate text-muted-foreground">
-              {formatImportDraftReviewSubtitle(meta)}
+              {formatImportDraftReviewSubtitle(toLiveSubtitleMeta(meta, rows))}
             </Text>
           </>
         ) : (
@@ -57,6 +81,10 @@ export const ImportDraftReviewHeader = ({
         )}
       </div>
       <div className="flex flex-col items-end gap-1.5">
+        <ImportReviewAutosaveStrip
+          status={autosaveStatus}
+          onRetry={onRetryAutosave}
+        />
         {meta ? (
           <Tooltip>
             <TooltipTrigger render={continueButton} />

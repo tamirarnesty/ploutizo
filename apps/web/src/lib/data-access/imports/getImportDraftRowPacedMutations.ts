@@ -2,8 +2,16 @@ import { createPacedMutations, debounceStrategy } from '@tanstack/db';
 import { computeImportRowStatus } from '@ploutizo/utils/import-row-status';
 import type { ImportDraftRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
+import {
+  getImportReviewAutosaveSnapshot,
+  markImportReviewPending,
+  markImportReviewPersistFailure,
+  markImportReviewPersistStart,
+  markImportReviewPersistSuccess,
+} from './importReviewAutosave';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
 import { fetchUpdateImportDraftRow } from './fetchUpdateImportDraftRow';
+import type { Transaction } from '@tanstack/db';
 
 export const IMPORT_ROW_PACE_WAIT_MS = 500;
 
@@ -121,11 +129,28 @@ const confirmPersistIntoCollection = (
   collection.utils.writeUpdate(next);
 };
 
+const patchFromLiveKeys = (
+  live: ImportDraftRow,
+  keys: string[]
+): UpdateImportDraftRowInput | null => {
+  const patch: Record<string, unknown> = {};
+  for (const key of keys) {
+    if ((REVIEW_PATCH_KEYS as readonly string[]).includes(key)) {
+      patch[key] = live[key as keyof ImportDraftRow];
+    }
+  }
+  return Object.keys(patch).length > 0
+    ? (patch as UpdateImportDraftRowInput)
+    : null;
+};
+
 const createRowPacedMutations = (draftId: string, rowId: string) => {
   const strategy = debounceStrategy({ wait: IMPORT_ROW_PACE_WAIT_MS });
+  let latestTx: Transaction | null = null;
 
   const mutate = createPacedMutations<ImportDraftRowPatchVariables>({
     onMutate: ({ patch }) => {
+      markImportReviewPending(draftId, rowId);
       const collection = getImportDraftRowsCollection(draftId);
       collection.update(rowId, (draft) => {
         Object.assign(draft, patch);
@@ -139,17 +164,22 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
       });
     },
     mutationFn: async ({ transaction }) => {
+      markImportReviewPersistStart(draftId, rowId);
       const collection = getImportDraftRowsCollection(draftId);
       const mutation = transaction.mutations.find(
         (entry) => entry.key === rowId
       );
-      if (!mutation || mutation.type !== 'update') return;
+      if (!mutation || mutation.type !== 'update') {
+        markImportReviewPersistSuccess(draftId, rowId);
+        return;
+      }
 
       const patch = toValidatorPatch(mutation.changes);
       if (!patch) {
         collection.utils.writeUpdate(
           mutation.modified as unknown as ImportDraftRow
         );
+        markImportReviewPersistSuccess(draftId, rowId);
         return;
       }
 
@@ -164,6 +194,7 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
           original,
           patch
         );
+        markImportReviewPersistSuccess(draftId, rowId);
       } catch {
         // Keep working-copy edits (ADR 0005) — do not throw (avoids optimistic rollback).
         confirmPersistIntoCollection(
@@ -173,13 +204,35 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
           original,
           patch
         );
+        markImportReviewPersistFailure(draftId, rowId, Object.keys(patch));
       }
     },
     strategy,
   });
 
+  const wrappedMutate = (variables: ImportDraftRowPatchVariables) => {
+    const tx = mutate(variables);
+    latestTx = tx;
+    return tx;
+  };
+
+  const flush = async () => {
+    // Cancel the debounce timer, then commit any still-pending transaction.
+    strategy.cleanup();
+    const tx = latestTx;
+    if (!tx) return;
+    if (tx.state === 'pending') {
+      await tx.commit().catch(() => undefined);
+      return;
+    }
+    if (tx.state === 'persisting') {
+      await tx.isPersisted.promise.catch(() => undefined);
+    }
+  };
+
   return {
-    mutate,
+    mutate: wrappedMutate,
+    flush,
     cleanup: () => strategy.cleanup(),
   };
 };
@@ -201,6 +254,42 @@ export const getImportDraftRowPacedMutations = (
   const entry = createRowPacedMutations(draftId, rowId);
   rowPacedMutations.set(key, entry);
   return entry.mutate;
+};
+
+export const flushImportDraftRowPacedMutations = async (draftId: string) => {
+  const prefix = `${draftId}:`;
+  await Promise.all(
+    [...rowPacedMutations.entries()]
+      .filter(([key]) => key.startsWith(prefix))
+      .map(([, entry]) => entry.flush())
+  );
+};
+
+/** Re-persist failed row fields from the live working copy (not via debounce). */
+export const retryFailedImportDraftRowPersists = async (draftId: string) => {
+  const snapshot = getImportReviewAutosaveSnapshot(draftId);
+  const collection = getImportDraftRowsCollection(draftId);
+  const failures = [...snapshot.failedFieldKeys.entries()];
+
+  await Promise.all(
+    failures.map(async ([rowId, keys]) => {
+      const live = collection.get(rowId);
+      if (!live) return;
+      const patch = patchFromLiveKeys(live, [...keys]);
+      if (!patch) return;
+
+      markImportReviewPersistStart(draftId, rowId);
+      try {
+        const serverRow = await fetchUpdateImportDraftRow(rowId, patch);
+        confirmPersistIntoCollection(collection, serverRow, live, live, patch);
+        markImportReviewPersistSuccess(draftId, rowId);
+      } catch {
+        const current = collection.get(rowId);
+        if (current) collection.utils.writeUpdate(current);
+        markImportReviewPersistFailure(draftId, rowId, Object.keys(patch));
+      }
+    })
+  );
 };
 
 export const releaseImportDraftRowPacedMutations = (draftId: string) => {

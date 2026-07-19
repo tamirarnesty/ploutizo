@@ -10,6 +10,8 @@ export {
   IMPORT_ROW_PACE_WAIT_MS,
 } from './getImportDraftRowPacedMutations';
 export { fetchUpdateImportDraftRow } from './fetchUpdateImportDraftRow';
+export { fetchUpdateImportDraftRowSelection } from './fetchUpdateImportDraftRowSelection';
+export type { ImportReviewAutosaveStatus } from './importReviewAutosave';
 export {
   useImportReviewSession,
   type ImportReviewSession,
