@@ -39,18 +39,12 @@ export const ImportDraftReviewTable = ({
   const {
     pagination,
     setPagination,
-    expanded,
-    setExpanded,
     rows,
     currentPageSelectableRows,
     headerChecked,
     headerIndeterminate,
     setRowSelection,
     setAllSelection,
-    setRowExpanded,
-    isRowExpanded,
-    toggleAllRowsExpanded,
-    allRowsExpanded,
     isLoading,
   } = reviewState;
 
@@ -78,27 +72,18 @@ export const ImportDraftReviewTable = ({
         headerChecked,
         headerIndeterminate,
         onHeaderCheckedChange: setAllSelection,
-        onToggleAllExpanded: toggleAllRowsExpanded,
-        allRowsExpanded,
         isLoading,
         hasSelectableRowsOnPage: currentPageSelectableRows.length > 0,
         onSelectionChange: setRowSelection,
-        onExpandedChange: (row, nextExpanded) =>
-          setRowExpanded(row.id, nextExpanded),
         isRowSelectable: isImportRowSelectable,
-        isRowExpanded,
       }),
     [
-      allRowsExpanded,
       currentPageSelectableRows.length,
       headerChecked,
       headerIndeterminate,
       isLoading,
-      isRowExpanded,
       setAllSelection,
-      setRowExpanded,
       setRowSelection,
-      toggleAllRowsExpanded,
     ]
   );
 
@@ -108,11 +93,9 @@ export const ImportDraftReviewTable = ({
     enableColumnResizing: false,
     state: {
       pagination: tablePagination,
-      expanded,
       columnPinning: { left: ['selection'] },
     },
     onPaginationChange: setPagination,
-    onExpandedChange: setExpanded,
     getRowId: (row) => row.id,
     getRowCanExpand: () => true,
     getCoreRowModel: getCoreRowModel(),

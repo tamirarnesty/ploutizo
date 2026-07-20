@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import type { ImportDraft } from '@ploutizo/types';
 import { apiFetch } from '@/lib/queryClient';
 import { importDraftQueryKey } from './queryKeys';
@@ -9,11 +9,16 @@ export const fetchImportDraft = async (id: string): Promise<ImportDraft> => {
   return r.data;
 };
 
+export const importDraftQueryOptions = (id: string) =>
+  queryOptions({
+    queryKey: importDraftQueryKey(id),
+    queryFn: () => fetchImportDraft(id),
+  });
+
 export const useGetImportDraft = (
   id: string | null
 ): UseQueryResult<ImportDraft> =>
   useQuery({
-    queryKey: importDraftQueryKey(id),
-    queryFn: () => fetchImportDraft(id!),
+    ...importDraftQueryOptions(id ?? ''),
     enabled: Boolean(id),
   });

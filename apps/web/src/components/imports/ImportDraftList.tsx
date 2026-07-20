@@ -84,8 +84,8 @@ export const ImportDraftList = ({
           </div>
           <div className="mt-4 flex gap-2">
             <Button
-              type="button"
               variant="outline"
+              nativeButton={false}
               render={
                 <Link
                   to="/transactions/import/$draftId"

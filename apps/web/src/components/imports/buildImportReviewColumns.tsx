@@ -38,33 +38,21 @@ export interface BuildImportReviewColumnsOptions {
   headerChecked: boolean;
   headerIndeterminate: boolean;
   onHeaderCheckedChange: (checked: boolean) => void;
-  onToggleAllExpanded: () => void;
-  allRowsExpanded: boolean;
   isLoading: boolean;
   hasSelectableRowsOnPage: boolean;
   onSelectionChange: (row: ImportDraftRow, selected: boolean) => void;
-  onExpandedChange: (row: ImportDraftRow, expanded: boolean) => void;
   isRowSelectable: (row: ImportDraftRow) => boolean;
-  isRowExpanded: (rowId: string) => boolean;
 }
 
 export const buildImportReviewColumns = ({
   headerChecked,
   headerIndeterminate,
   onHeaderCheckedChange,
-  onToggleAllExpanded,
-  allRowsExpanded,
   isLoading,
   hasSelectableRowsOnPage,
   onSelectionChange,
-  onExpandedChange,
   isRowSelectable,
-  isRowExpanded,
 }: BuildImportReviewColumnsOptions): ColumnDef<ImportDraftRow>[] => {
-  const toggleAllRowsLabel = allRowsExpanded
-    ? 'Collapse all rows'
-    : 'Expand all rows';
-
   const headerCheckboxLabel = headerIndeterminate
     ? 'Select all rows on this page'
     : headerChecked
@@ -76,40 +64,47 @@ export const buildImportReviewColumns = ({
       id: 'selection',
       enableSorting: false,
       enablePinning: true,
-      header: () => (
-        <div className="flex items-center gap-1">
-          <Checkbox
-            aria-label={headerCheckboxLabel}
-            checked={headerChecked}
-            indeterminate={headerIndeterminate}
-            disabled={isLoading || !hasSelectableRowsOnPage}
-            onCheckedChange={(checked) => {
-              onHeaderCheckedChange(checked === true);
-            }}
-          />
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-xs"
-                  disabled={isLoading}
-                  aria-label={toggleAllRowsLabel}
-                  onClick={onToggleAllExpanded}
-                />
-              }
-            >
-              {allRowsExpanded ? (
-                <ChevronsUp className="size-3.5" aria-hidden="true" />
-              ) : (
-                <ChevronsDown className="size-3.5" aria-hidden="true" />
-              )}
-            </TooltipTrigger>
-            <TooltipContent>{toggleAllRowsLabel}</TooltipContent>
-          </Tooltip>
-        </div>
-      ),
+      header: ({ table }) => {
+        const allRowsExpanded = table.getIsAllRowsExpanded();
+        const toggleAllRowsLabel = allRowsExpanded
+          ? 'Collapse all rows'
+          : 'Expand all rows';
+
+        return (
+          <div className="flex items-center gap-1">
+            <Checkbox
+              aria-label={headerCheckboxLabel}
+              checked={headerChecked}
+              indeterminate={headerIndeterminate}
+              disabled={isLoading || !hasSelectableRowsOnPage}
+              onCheckedChange={(checked) => {
+                onHeaderCheckedChange(checked === true);
+              }}
+            />
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    disabled={isLoading}
+                    aria-label={toggleAllRowsLabel}
+                    onClick={table.getToggleAllRowsExpandedHandler()}
+                  />
+                }
+              >
+                {allRowsExpanded ? (
+                  <ChevronsUp className="size-3.5" aria-hidden="true" />
+                ) : (
+                  <ChevronsDown className="size-3.5" aria-hidden="true" />
+                )}
+              </TooltipTrigger>
+              <TooltipContent>{toggleAllRowsLabel}</TooltipContent>
+            </Tooltip>
+          </div>
+        );
+      },
       size: 88,
       meta: {
         headerClassName: 'min-w-22',
@@ -120,11 +115,9 @@ export const buildImportReviewColumns = ({
       cell: ({ row }) => (
         <ImportReviewSelectionCell
           row={row.original}
-          expanded={isRowExpanded(row.original.id)}
+          expanded={row.getIsExpanded()}
           selectable={isRowSelectable(row.original)}
-          onExpandedChange={(expanded) =>
-            onExpandedChange(row.original, expanded)
-          }
+          onExpandedChange={(expanded) => row.toggleExpanded(expanded)}
           onSelectionChange={(selected) =>
             onSelectionChange(row.original, selected)
           }

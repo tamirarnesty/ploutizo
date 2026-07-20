@@ -63,7 +63,9 @@ const NoImportTargetsEmptyState = () => (
       </EmptyDescription>
     </EmptyHeader>
     <EmptyContent>
-      <Button render={<Link to="/accounts" />}>Add credit card</Button>
+      <Button nativeButton={false} render={<Link to="/accounts" />}>
+        Add credit card
+      </Button>
     </EmptyContent>
   </Empty>
 );

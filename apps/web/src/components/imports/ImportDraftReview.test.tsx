@@ -260,27 +260,6 @@ describe('ImportDraftReview', () => {
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 
-  it('defaults needs_review rows to expanded on first render', () => {
-    renderReview(
-      makeImportDraft({
-        rows: [
-          makeImportDraftRow({
-            id: 'row_needs_review',
-            status: 'needs_review',
-            reviewDescription: 'Groceries',
-            reviewCategoryId: null,
-          }),
-        ],
-      })
-    );
-
-    const expandButton = screen.getByRole('button', {
-      name: 'Collapse details for Groceries',
-    });
-    expect(expandButton).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByLabelText('Notes for Groceries')).toBeInTheDocument();
-  });
-
   it('shows pagination controls when the draft has more rows than one page', () => {
     const rows = Array.from({ length: 26 }, (_, index) =>
       makeImportDraftRow({

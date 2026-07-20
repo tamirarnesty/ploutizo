@@ -81,7 +81,8 @@ const ImportDraftReviewContent = ({
             categories={categories}
             orgMembers={orgMembers}
           >
-            <ImportDraftReviewTable reviewState={reviewState} />
+            {/* Remount so table-owned expansion resets per draft. */}
+            <ImportDraftReviewTable key={draft.id} reviewState={reviewState} />
           </ImportDraftReviewProvider>
         ) : (
           <ImportDraftReviewTable reviewState={reviewState} />
