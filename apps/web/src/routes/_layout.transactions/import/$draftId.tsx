@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { importDraftQueryOptions } from '../../../lib/data-access/imports';
-import { ImportReview } from '../../../components/imports/ImportReview';
+import { ImportReview } from '../../../components/imports/review/ImportReview';
 
 const ImportReviewRoute = () => {
   const { draftId } = Route.useParams();

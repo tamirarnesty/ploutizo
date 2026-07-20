@@ -7,7 +7,7 @@ import {
   formatDraftAccountLabel,
   formatImportBatchStatusLabel,
   importBatchStatusVariant,
-} from './importPresentation';
+} from '../lib/importPresentation';
 
 interface ImportHistoryListProps {
   history: ImportDraftSummary[];

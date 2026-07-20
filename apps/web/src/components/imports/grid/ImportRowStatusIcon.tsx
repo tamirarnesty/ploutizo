@@ -7,7 +7,7 @@ import {
 } from '@ploutizo/ui/components/tooltip';
 import { cn } from '@ploutizo/ui/lib/utils';
 import type { ImportDraftRow } from '@ploutizo/types';
-import { getImportRowStatusTooltip } from './importPresentation';
+import { getImportRowStatusTooltip } from '../lib/importPresentation';
 
 const statusIconClassName: Record<ImportDraftRow['status'], string> = {
   ready: 'text-emerald-600 dark:text-emerald-400',

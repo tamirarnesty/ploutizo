@@ -10,7 +10,7 @@ import type { ImportDraft } from '@ploutizo/types';
 import {
   formatDraftAccountLabel,
   formatImportDraftReviewSubtitle,
-} from './importPresentation';
+} from '../lib/importPresentation';
 
 const IMPORT_COMMIT_PREVIEW_COPY = 'Import commit coming soon';
 

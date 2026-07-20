@@ -18,6 +18,7 @@ import {
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
 import type { ImportDraftRow } from '@ploutizo/types';
+import { ImportDraftReviewRowDetails } from '../review/ImportDraftReviewRowDetails';
 import {
   ImportReviewAmountCell,
   ImportReviewAssigneeCell,
@@ -27,7 +28,6 @@ import {
   ImportReviewSelectionCell,
   ImportReviewTypeCell,
 } from './importReviewCells';
-import { ImportDraftReviewRowDetails } from './ImportDraftReviewRowDetails';
 import type { ColumnDef } from '@tanstack/react-table';
 
 const columnHeaderIcon = (Icon: typeof CalendarDays) => (

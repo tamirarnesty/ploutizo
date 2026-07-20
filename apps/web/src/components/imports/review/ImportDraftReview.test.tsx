@@ -2,12 +2,12 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ImportDraftReview } from './ImportDraftReview';
 import {
   DRAFT_ID,
   makeImportDraft,
   makeImportDraftRow,
-} from './test-fixtures/importDraft';
+} from '../test-fixtures/importDraft';
+import { ImportDraftReview } from './ImportDraftReview';
 
 const updateRowMutate = vi.fn();
 const updateRowSelectionMutate = vi.fn();

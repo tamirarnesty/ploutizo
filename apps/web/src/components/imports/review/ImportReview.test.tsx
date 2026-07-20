@@ -1,11 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useGetImportDraft } from '@/lib/data-access/imports';
-import { ImportReview } from './ImportReview';
 import {
   makeImportDraft,
   makeImportDraftRow,
-} from './test-fixtures/importDraft';
+} from '../test-fixtures/importDraft';
+import { ImportReview } from './ImportReview';
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
@@ -25,7 +25,7 @@ vi.mock('@/components/categories/CategorySelect', () => ({
   CategorySelect: () => <div>Category select</div>,
 }));
 
-vi.mock('./ImportAssigneeField', () => ({
+vi.mock('../grid/ImportAssigneeField', () => ({
   ImportAssigneeField: () => <div>Assignee field</div>,
 }));
 

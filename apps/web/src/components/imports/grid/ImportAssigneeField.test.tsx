@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { OrgMember } from '@ploutizo/types';
+import { makeImportDraftRow } from '../test-fixtures/importDraft';
 import { ImportAssigneeField } from './ImportAssigneeField';
-import { makeImportDraftRow } from './test-fixtures/importDraft';
 
 vi.mock('@/components/members/MemberToggleGroup', () => ({
   MemberToggleGroup: () => <div data-testid="member-toggle-group">Toggle</div>,

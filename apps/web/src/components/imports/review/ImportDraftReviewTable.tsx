@@ -21,13 +21,13 @@ import {
 } from '@/components/data-grid/dataGridSharedLayout';
 import { useEffectiveTablePageSize } from '@/hooks/useEffectiveTablePageSize';
 import { IMPORT_REVIEW_PAGE_SIZE_OPTIONS } from '@/lib/prefs';
-import { buildImportReviewColumns } from './buildImportReviewColumns';
-import { isImportRowSelectable } from './importRowSelection';
+import { buildImportReviewColumns } from '../grid/buildImportReviewColumns';
+import { isImportRowSelectable } from '../lib/importRowSelection';
 import {
   countImportReviewPageRows,
   resolveImportReviewTablePagination,
-} from './useImportDraftReviewState';
-import type { ImportDraftReviewState } from './useImportDraftReviewState';
+} from '../lib/useImportDraftReviewState';
+import type { ImportDraftReviewState } from '../lib/useImportDraftReviewState';
 
 interface ImportDraftReviewTableProps {
   reviewState: ImportDraftReviewState;

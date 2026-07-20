@@ -5,8 +5,8 @@ import { cn } from '@ploutizo/ui/lib/utils';
 import type { ImportDraftRow } from '@ploutizo/types';
 import { useRegisterInputFlush } from '@/lib/money/pending-input-flush';
 import { TransactionTagPicker } from '@/components/transactions/TransactionTagPicker';
-import { useImportDraftReviewRowSave } from './useImportDraftReviewRowSave';
-import { useImportRowFieldState } from './useImportRowFieldState';
+import { useImportDraftReviewRowSave } from '../lib/useImportDraftReviewRowSave';
+import { useImportRowFieldState } from '../lib/useImportRowFieldState';
 
 interface ImportDraftReviewRowDetailsProps {
   row: ImportDraftRow;

@@ -1,7 +1,7 @@
 import type { ImportDraftRow, OrgMember } from '@ploutizo/types';
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
 import { MemberToggleGroup } from '@/components/members/MemberToggleGroup';
-import { resolveImportRowAssigneeMemberIds } from './importPresentation';
+import { resolveImportRowAssigneeMemberIds } from '../lib/importPresentation';
 
 interface ImportAssigneeFieldProps {
   row: ImportDraftRow;
