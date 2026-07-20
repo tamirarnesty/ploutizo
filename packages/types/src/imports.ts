@@ -50,12 +50,11 @@ export interface ImportDraftRow {
   reviewAmount: number | null;
   reviewType: ImportTransactionType | null;
   reviewDescription: string | null;
-  reviewCategoryName: string | null;
-  reviewAssigneeHint: string | null;
+  reviewCategoryId: string | null;
   reviewAssigneeMemberIds: string[];
   reviewRefundLinkHint: string | null;
   reviewNotes: string | null;
-  reviewTags: string[];
+  reviewTagIds: string[];
   selectedForImport: boolean;
   createdAt: string;
   updatedAt: string;

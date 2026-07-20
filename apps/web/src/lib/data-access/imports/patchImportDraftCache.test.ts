@@ -39,12 +39,11 @@ const baseRow = (overrides: Partial<ImportDraftRow> = {}): ImportDraftRow => ({
   reviewAmount: 4218,
   reviewType: 'expense',
   reviewDescription: 'Coffee',
-  reviewCategoryName: null,
-  reviewAssigneeHint: null,
+  reviewCategoryId: null,
   reviewAssigneeMemberIds: ['55555555-5555-4555-8555-555555555555'],
   reviewRefundLinkHint: null,
   reviewNotes: null,
-  reviewTags: [],
+  reviewTagIds: [],
   selectedForImport: false,
   createdAt: '2026-05-20T12:00:00Z',
   updatedAt: '2026-05-20T12:00:00Z',
@@ -108,12 +107,12 @@ describe('patchImportDraftCache', () => {
     qc.setQueryData(importDraftQueryKey(draftId), seedDraft([baseRow()]));
 
     patchImportDraftRow(qc, draftId, rowId, {
-      reviewCategoryName: 'Dining',
+      reviewCategoryId: 'cat-dining',
     });
 
     const draft = qc.getQueryData<ImportDraft>(importDraftQueryKey(draftId));
     expect(draft?.rows[0]?.status).toBe('ready');
-    expect(draft?.rows[0]?.reviewCategoryName).toBe('Dining');
+    expect(draft?.rows[0]?.reviewCategoryId).toBe('cat-dining');
   });
 
   it('recomputes row status when replacing a row from the server', () => {
@@ -122,7 +121,7 @@ describe('patchImportDraftCache', () => {
 
     replaceImportDraftRow(qc, draftId, {
       ...baseRow(),
-      reviewCategoryName: 'Dining',
+      reviewCategoryId: 'cat-dining',
       status: 'needs_review',
       updatedAt: '2026-05-20T13:00:00Z',
     });
@@ -140,7 +139,7 @@ describe('patchImportDraftCache', () => {
       seedActiveSummary(draft),
     ]);
 
-    const body = { reviewCategoryName: 'Dining' as const };
+    const body = { reviewCategoryId: 'cat-dining' as const };
     patchImportDraftRow(qc, draftId, rowId, body);
 
     revertImportDraftRowPatch(qc, draftId, rowId, previousRow, body);
@@ -150,7 +149,7 @@ describe('patchImportDraftCache', () => {
       activeImportDraftsQueryKey
     );
 
-    expect(restored?.rows[0]?.reviewCategoryName).toBeNull();
+    expect(restored?.rows[0]?.reviewCategoryId).toBeNull();
     expect(restored?.rows[0]?.status).toBe('needs_review');
     expect(summaries?.[0]?.validRowCount).toBe(draft.validRowCount);
   });
@@ -162,10 +161,10 @@ describe('patchImportDraftCache', () => {
     const draft = seedDraft([rowA, rowB]);
     qc.setQueryData(importDraftQueryKey(draftId), draft);
 
-    const rowABody = { reviewCategoryName: 'Dining' as const };
+    const rowABody = { reviewCategoryId: 'cat-dining' as const };
     patchImportDraftRow(qc, draftId, rowId, rowABody);
 
-    const rowBBody = { reviewCategoryName: 'Travel' as const };
+    const rowBBody = { reviewCategoryId: 'cat-travel' as const };
     patchImportDraftRow(qc, draftId, rowIdB, rowBBody);
 
     revertImportDraftRowPatch(qc, draftId, rowId, rowA, rowABody);
@@ -174,9 +173,9 @@ describe('patchImportDraftCache', () => {
     const restoredA = result?.rows.find((row) => row.id === rowId);
     const successfulB = result?.rows.find((row) => row.id === rowIdB);
 
-    expect(restoredA?.reviewCategoryName).toBeNull();
+    expect(restoredA?.reviewCategoryId).toBeNull();
     expect(restoredA?.status).toBe('needs_review');
-    expect(successfulB?.reviewCategoryName).toBe('Travel');
+    expect(successfulB?.reviewCategoryId).toBe('cat-travel');
     expect(successfulB?.status).toBe('ready');
   });
 
@@ -184,7 +183,7 @@ describe('patchImportDraftCache', () => {
     const qc = new QueryClient();
     const cachedRow = {
       ...baseRow(),
-      reviewCategoryName: 'Dining',
+      reviewCategoryId: 'cat-dining',
       status: 'ready' as const,
       updatedAt: '2026-05-20T14:00:00Z',
     };
@@ -192,13 +191,13 @@ describe('patchImportDraftCache', () => {
 
     applyServerRowIfNewer(qc, draftId, {
       ...baseRow(),
-      reviewCategoryName: 'Travel',
+      reviewCategoryId: 'cat-travel',
       status: 'needs_review',
       updatedAt: '2026-05-20T13:00:00Z',
     });
 
     const draft = qc.getQueryData<ImportDraft>(importDraftQueryKey(draftId));
-    expect(draft?.rows[0]?.reviewCategoryName).toBe('Dining');
+    expect(draft?.rows[0]?.reviewCategoryId).toBe('cat-dining');
     expect(draft?.rows[0]?.status).toBe('ready');
     expect(draft?.rows[0]?.updatedAt).toBe('2026-05-20T14:00:00Z');
   });
@@ -211,7 +210,9 @@ describe('patchImportDraftCache', () => {
     qc.setQueryData(importDraftQueryKey(draftId), seedDraft([rowA, rowB]));
 
     patchImportDraftRow(qc, draftId, rowId, { selectedForImport: true });
-    patchImportDraftRow(qc, draftId, rowIdB, { reviewCategoryName: 'Travel' });
+    patchImportDraftRow(qc, draftId, rowIdB, {
+      reviewCategoryId: 'cat-travel',
+    });
 
     revertImportDraftRowsSelection(
       qc,
@@ -225,7 +226,7 @@ describe('patchImportDraftCache', () => {
     const untouchedB = result?.rows.find((row) => row.id === rowIdB);
 
     expect(restoredA?.selectedForImport).toBe(false);
-    expect(untouchedB?.reviewCategoryName).toBe('Travel');
+    expect(untouchedB?.reviewCategoryId).toBe('cat-travel');
     expect(untouchedB?.selectedForImport).toBe(true);
   });
 
@@ -234,14 +235,14 @@ describe('patchImportDraftCache', () => {
     const previousRow = baseRow();
     qc.setQueryData(importDraftQueryKey(draftId), seedDraft([previousRow]));
 
-    const olderBody = { reviewCategoryName: 'Dining' as const };
+    const olderBody = { reviewCategoryId: 'cat-dining' as const };
     patchImportDraftRow(qc, draftId, rowId, olderBody);
 
-    const newerBody = { reviewCategoryName: 'Travel' as const };
+    const newerBody = { reviewCategoryId: 'cat-travel' as const };
     patchImportDraftRow(qc, draftId, rowId, newerBody);
     applyServerRowIfNewer(qc, draftId, {
       ...baseRow(),
-      reviewCategoryName: 'Travel',
+      reviewCategoryId: 'cat-travel',
       status: 'ready',
       updatedAt: '2026-05-20T14:00:00Z',
     });
@@ -249,7 +250,7 @@ describe('patchImportDraftCache', () => {
     revertImportDraftRowPatch(qc, draftId, rowId, previousRow, olderBody);
 
     const draft = qc.getQueryData<ImportDraft>(importDraftQueryKey(draftId));
-    expect(draft?.rows[0]?.reviewCategoryName).toBe('Travel');
+    expect(draft?.rows[0]?.reviewCategoryId).toBe('cat-travel');
     expect(draft?.rows[0]?.updatedAt).toBe('2026-05-20T14:00:00Z');
   });
 

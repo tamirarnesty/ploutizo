@@ -7,7 +7,6 @@ import {
 } from '@ploutizo/types';
 import { parseImportTags } from '@ploutizo/utils';
 import type { ImportDraftRow, ImportTransactionType } from '@ploutizo/types';
-import { computeImportRowStatus } from './rowStatus';
 import { DomainError } from '@/lib/errors';
 
 type CsvRecord = {
@@ -27,7 +26,7 @@ type HeaderKey =
   | 'notes'
   | 'tags';
 
-export type ParsedImportRow = Pick<
+type ParsedImportRowBase = Pick<
   ImportDraftRow,
   | 'rowNumber'
   | 'status'
@@ -46,13 +45,15 @@ export type ParsedImportRow = Pick<
   | 'reviewAmount'
   | 'reviewType'
   | 'reviewDescription'
-  | 'reviewCategoryName'
-  | 'reviewAssigneeHint'
-  | 'reviewAssigneeMemberIds'
   | 'reviewRefundLinkHint'
   | 'reviewNotes'
-  | 'reviewTags'
 >;
+
+export type ParsedImportRow = ParsedImportRowBase & {
+  csvCategoryName: string | null;
+  csvAssigneeName: string | null;
+  csvTagNames: string[];
+};
 
 export interface ParsedNormalizedImport {
   source: typeof NORMALIZED_IMPORT_SOURCE;
@@ -242,11 +243,13 @@ const parseRow = (
   const sourceDescription = readCell(record, headerMap, 'description');
   const sourceType = readCell(record, headerMap, 'type');
   const externalId = readCell(record, headerMap, 'externalId');
-  const reviewCategoryName = readCell(record, headerMap, 'category');
-  const reviewAssigneeHint = readCell(record, headerMap, 'assigneeHint');
+  const csvCategoryName = readCell(record, headerMap, 'category');
+  const csvAssigneeName = readCell(record, headerMap, 'assigneeHint');
   const reviewRefundLinkHint = readCell(record, headerMap, 'refundLinkHint');
   const reviewNotes = readCell(record, headerMap, 'notes');
-  const reviewTags = parseImportTags(readCell(record, headerMap, 'tags') ?? '');
+  const csvTagNames = parseImportTags(
+    readCell(record, headerMap, 'tags') ?? ''
+  );
 
   const parsedDate = parseIsoDate(sourceDate);
   const parsedAmount = parseAmountCents(sourceAmount);
@@ -263,15 +266,8 @@ const parseRow = (
   }
 
   const isInvalid = invalidReasons.length > 0;
-  const status = isInvalid
-    ? ('invalid' as const)
-    : computeImportRowStatus({
-        status: 'ready',
-        reviewType: parsedType,
-        parsedType,
-        reviewCategoryName,
-        reviewAssigneeMemberIds: [],
-      });
+  // Refs are resolved at ingest; parse cannot mark rows ready yet.
+  const status = isInvalid ? ('invalid' as const) : ('needs_review' as const);
 
   return {
     rowNumber: record.rowNumber,
@@ -291,12 +287,11 @@ const parseRow = (
     reviewAmount: parsedAmount,
     reviewType: parsedType,
     reviewDescription: parsedDescription,
-    reviewCategoryName,
-    reviewAssigneeHint,
-    reviewAssigneeMemberIds: [],
+    csvCategoryName,
+    csvAssigneeName,
+    csvTagNames,
     reviewRefundLinkHint,
     reviewNotes,
-    reviewTags,
   };
 };
 

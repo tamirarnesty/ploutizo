@@ -21,7 +21,10 @@ import {
   updateImportDraftRowQuery,
   updateImportDraftRowSelectionQuery,
 } from '@/lib/queries/imports';
+import { assertOrgWriteReferences } from '@/lib/assertOrgWriteReferences';
 import { listOrgMembers } from '@/lib/queries/households';
+import { listCategories } from '@/lib/queries/categories';
+import { listTags } from '@/lib/queries/tags';
 
 vi.mock('@ploutizo/db', () => ({
   db: {
@@ -47,6 +50,18 @@ vi.mock('@/lib/queries/imports', () => ({
 
 vi.mock('@/lib/queries/households', () => ({
   listOrgMembers: vi.fn(),
+}));
+
+vi.mock('@/lib/queries/categories', () => ({
+  listCategories: vi.fn(),
+}));
+
+vi.mock('@/lib/queries/tags', () => ({
+  listTags: vi.fn(),
+}));
+
+vi.mock('@/lib/assertOrgWriteReferences', () => ({
+  assertOrgWriteReferences: vi.fn(),
 }));
 
 const summaryRow = {
@@ -89,12 +104,11 @@ const draftRow = {
   reviewAmount: 4218,
   reviewType: 'expense' as const,
   reviewDescription: 'Coffee',
-  reviewCategoryName: 'Dining',
-  reviewAssigneeHint: null,
+  reviewCategoryId: '55555555-5555-4555-8555-555555555555',
   reviewAssigneeMemberIds: ['44444444-4444-4444-8444-444444444444'],
   reviewRefundLinkHint: null,
   reviewNotes: null,
-  reviewTags: [],
+  reviewTagIds: [],
   selectedForImport: false,
   createdAt: new Date('2026-05-20T12:00:00Z'),
   updatedAt: new Date('2026-05-20T12:00:00Z'),
@@ -123,6 +137,20 @@ describe('import service', () => {
         lastName: 'Arnesty',
       },
     ]);
+    vi.mocked(listCategories).mockResolvedValue([
+      {
+        id: '55555555-5555-4555-8555-555555555555',
+        orgId: 'org_1',
+        name: 'Dining',
+        icon: null,
+        colour: null,
+        sortOrder: 0,
+        archivedAt: null,
+        createdAt: new Date('2026-01-01T00:00:00Z'),
+      },
+    ]);
+    vi.mocked(listTags).mockResolvedValue([]);
+    vi.mocked(assertOrgWriteReferences).mockResolvedValue(undefined);
     vi.mocked(insertImportBatch).mockResolvedValue({
       id: summaryRow.id,
     } as never);
@@ -183,6 +211,7 @@ describe('import service', () => {
           orgId: 'org_1',
           status: 'ready',
           reviewDescription: 'Coffee',
+          reviewCategoryId: '55555555-5555-4555-8555-555555555555',
           reviewAssigneeMemberIds: ['44444444-4444-4444-8444-444444444444'],
         }),
         expect.objectContaining({
@@ -229,11 +258,11 @@ describe('import service', () => {
     const needsReviewRow = {
       ...draftRow,
       status: 'needs_review' as const,
-      reviewCategoryName: null,
+      reviewCategoryId: null,
     };
     const updatedRow = {
       ...needsReviewRow,
-      reviewCategoryName: 'Dining',
+      reviewCategoryId: '55555555-5555-4555-8555-555555555555',
       status: 'ready' as const,
       updatedAt: new Date('2026-05-20T13:00:00Z'),
     };
@@ -244,14 +273,14 @@ describe('import service', () => {
     vi.mocked(db.transaction).mockImplementation(async (fn) => fn(tx));
 
     const result = await updateImportDraftRow('org_1', draftRow.id, {
-      reviewCategoryName: 'Dining',
+      reviewCategoryId: '55555555-5555-4555-8555-555555555555',
     });
 
     expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
       'org_1',
       draftRow.id,
       {
-        reviewCategoryName: 'Dining',
+        reviewCategoryId: '55555555-5555-4555-8555-555555555555',
         status: 'ready',
       },
       tx
@@ -278,7 +307,7 @@ describe('import service', () => {
       reviewAmount: null,
       reviewType: null,
       reviewDescription: null,
-      reviewCategoryName: null,
+      reviewCategoryId: null,
       reviewAssigneeMemberIds: [],
     };
     const updatedRow = {
@@ -334,7 +363,7 @@ describe('import service', () => {
       parsedAmount: null,
       parsedType: null,
       parsedDescription: null,
-      reviewCategoryName: null,
+      reviewCategoryId: null,
       reviewAssigneeMemberIds: [],
     };
     const updatedRow = {

@@ -9,6 +9,12 @@ export {
   type AccountLabelInput,
 } from './format-account-label';
 export { parseImportTags } from './parse-import-tags';
+export {
+  createImportReferenceResolver,
+  type ImportCsvHints,
+  type ImportReferenceCatalogs,
+  type ResolvedImportReferences,
+} from './match-import-references';
 export { lrmSplit } from './lrm';
 export {
   scaleAssigneeSplitProportionally,

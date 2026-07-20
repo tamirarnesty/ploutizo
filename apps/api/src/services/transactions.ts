@@ -18,11 +18,9 @@ import type {
 } from '@/lib/queries/scope';
 import type { ListQueryParams } from '@/lib/queries/transactions';
 import type { z } from 'zod';
+import { assertOrgWriteReferences } from '@/lib/assertOrgWriteReferences';
 import { DomainError, NotFoundError } from '@/lib/errors';
 import {
-  allMembersInOrg,
-  allTagsInOrg,
-  categoryExistsInOrg,
   fetchAccountWriteReference,
   transactionExistsInOrg,
 } from '@/lib/queries/scope';
@@ -133,24 +131,15 @@ const loadTransactionWriteReferences = async (
     }
   }
 
-  if (data.categoryId) {
-    if (!(await categoryExistsInOrg(orgId, data.categoryId, tx))) {
-      throw new NotFoundError('Category not found');
-    }
-  }
-
-  if (data.tagIds && data.tagIds.length > 0) {
-    if (!(await allTagsInOrg(orgId, data.tagIds, tx))) {
-      throw new NotFoundError('Tag not found');
-    }
-  }
-
-  if (data.assignees && data.assignees.length > 0) {
-    const memberIds = data.assignees.map((a) => a.memberId);
-    if (!(await allMembersInOrg(orgId, memberIds, tx))) {
-      throw new NotFoundError('Member not found in this household');
-    }
-  }
+  await assertOrgWriteReferences(
+    orgId,
+    {
+      categoryId: data.categoryId,
+      tagIds: data.tagIds,
+      memberIds: data.assignees?.map((assignee) => assignee.memberId),
+    },
+    tx
+  );
 
   return { account, counterpartAccount };
 };
