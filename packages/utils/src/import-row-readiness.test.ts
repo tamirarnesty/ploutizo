@@ -44,7 +44,7 @@ describe('import-row-readiness', () => {
     expect(isImportRowResolved(rows[1])).toBe(false);
   });
 
-  it('allows continue when every selected row is ready and has an assignee', () => {
+  it('allows continue when every selected row is ready', () => {
     const rows = [
       {
         ...baseRow,
@@ -65,7 +65,7 @@ describe('import-row-readiness', () => {
     expect(isImportRowReadyForImport(rows[0])).toBe(true);
   });
 
-  it('blocks continue when selected rows are missing assignees', () => {
+  it('trusts derived ready status without a separate empty-assignee defense', () => {
     const rows = [
       {
         ...baseRow,
@@ -75,14 +75,33 @@ describe('import-row-readiness', () => {
       },
     ];
 
-    expect(canContinueImportReview(rows)).toBe(false);
-    expect(getImportReviewContinueBlockerReason(rows)).toEqual({
+    expect(canContinueImportReview(rows)).toBe(true);
+    expect(getImportReviewContinueBlockerReason(rows)).toBeNull();
+  });
+
+  it('blocks continue when ready rows only reference departed org members', () => {
+    const rows = [
+      {
+        ...baseRow,
+        status: 'ready' as const,
+        reviewAssigneeMemberIds: ['departed_member'],
+        selectedForImport: true,
+      },
+    ];
+    const validAssigneeMemberIds = new Set(['member_1']);
+
+    expect(canContinueImportReview(rows, { validAssigneeMemberIds })).toBe(
+      false
+    );
+    expect(
+      getImportReviewContinueBlockerReason(rows, { validAssigneeMemberIds })
+    ).toEqual({
       kind: 'missing_assignee',
       count: 1,
     });
-    expect(getImportReviewContinueBlocker(rows)).toBe(
-      '1 selected row needs an assignee.'
-    );
+    expect(
+      getImportReviewContinueBlocker(rows, { validAssigneeMemberIds })
+    ).toBe('1 selected row needs an assignee.');
   });
 
   it('explains when no rows are selected', () => {

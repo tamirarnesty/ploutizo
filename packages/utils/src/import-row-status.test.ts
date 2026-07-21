@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   computeImportDraftRowCounts,
-  computeImportRowStatus,
   deriveImportRowStatus,
   getImportRowReviewBlockers,
   isImportRowStructurallyInvalid,
   isImportTransactionType,
+  resolveImportRowReviewAmount,
+  resolveImportRowReviewDate,
+  resolveImportRowReviewDescription,
+  resolveImportRowReviewType,
   toImportTransactionType,
   withDerivedImportRowStatus,
 } from './import-row-status';
@@ -23,76 +26,32 @@ describe('import transaction type coercion', () => {
   });
 });
 
-describe('computeImportRowStatus', () => {
-  const readyRow = {
-    status: 'ready' as const,
-    reviewType: 'expense' as const,
-    parsedType: 'expense' as const,
-    reviewCategoryId: 'cat-1',
-    reviewAssigneeMemberIds: ['member_1'],
-  };
-
-  it('preserves invalid status', () => {
-    expect(computeImportRowStatus({ ...readyRow, status: 'invalid' })).toBe(
-      'invalid'
-    );
-  });
-
-  it('preserves skipped status', () => {
-    expect(computeImportRowStatus({ ...readyRow, status: 'skipped' })).toBe(
-      'skipped'
-    );
-  });
-
-  it('returns needs_review when type is missing', () => {
+describe('effective review field resolvers', () => {
+  it('falls back from review to parsed fields', () => {
     expect(
-      computeImportRowStatus({
-        ...readyRow,
-        reviewType: null,
-        parsedType: null,
+      resolveImportRowReviewDate({
+        reviewDate: null,
+        parsedDate: '2026-05-02',
       })
-    ).toBe('needs_review');
-  });
-
-  it('returns needs_review for settlement type', () => {
+    ).toBe('2026-05-02');
     expect(
-      computeImportRowStatus({
-        ...readyRow,
-        reviewType: 'settlement',
+      resolveImportRowReviewAmount({
+        reviewAmount: null,
+        parsedAmount: 4218,
       })
-    ).toBe('needs_review');
-  });
-
-  it('returns needs_review when category is missing', () => {
+    ).toBe(4218);
     expect(
-      computeImportRowStatus({
-        ...readyRow,
-        reviewCategoryId: null,
-      })
-    ).toBe('needs_review');
-  });
-
-  it('returns needs_review when assignees are missing', () => {
-    expect(
-      computeImportRowStatus({
-        ...readyRow,
-        reviewAssigneeMemberIds: [],
-      })
-    ).toBe('needs_review');
-  });
-
-  it('returns ready when expense has category and assignee', () => {
-    expect(computeImportRowStatus(readyRow)).toBe('ready');
-  });
-
-  it('falls back to parsedType when reviewType is null', () => {
-    expect(
-      computeImportRowStatus({
-        ...readyRow,
+      resolveImportRowReviewType({
         reviewType: null,
         parsedType: 'expense',
       })
-    ).toBe('ready');
+    ).toBe('expense');
+    expect(
+      resolveImportRowReviewDescription({
+        reviewDescription: null,
+        parsedDescription: 'Coffee',
+      })
+    ).toBe('Coffee');
   });
 });
 
@@ -191,6 +150,44 @@ describe('deriveImportRowStatus', () => {
         reviewCategoryId: null,
       })
     ).toBe('needs_review');
+  });
+
+  it('marks rows without an effective type as structurally invalid', () => {
+    expect(
+      deriveImportRowStatus({
+        ...readyFields,
+        reviewType: null,
+        parsedType: null,
+      })
+    ).toBe('invalid');
+  });
+
+  it('returns needs_review for settlement type', () => {
+    expect(
+      deriveImportRowStatus({
+        ...readyFields,
+        reviewType: 'settlement',
+      })
+    ).toBe('needs_review');
+  });
+
+  it('returns needs_review when assignees are missing', () => {
+    expect(
+      deriveImportRowStatus({
+        ...readyFields,
+        reviewAssigneeMemberIds: [],
+      })
+    ).toBe('needs_review');
+  });
+
+  it('falls back to parsedType when reviewType is null', () => {
+    expect(
+      deriveImportRowStatus({
+        ...readyFields,
+        reviewType: null,
+        parsedType: 'expense',
+      })
+    ).toBe('ready');
   });
 
   it('withDerivedImportRowStatus writes derived status onto the row', () => {

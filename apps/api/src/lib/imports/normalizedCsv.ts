@@ -7,6 +7,7 @@ import {
 import { parseImportTags } from '@ploutizo/utils';
 import {
   computeImportDraftRowCounts,
+  isImportRowStructurallyInvalid,
   toImportTransactionType,
 } from '@ploutizo/utils/import-row-status';
 import type { ImportDraftRow, ImportTransactionType } from '@ploutizo/types';
@@ -260,8 +261,18 @@ const parseRow = (
     invalidReasons.push('Type must be expense, refund, or settlement.');
   }
 
-  const isInvalid = invalidReasons.length > 0;
+  // Classify with the shared structural helper; parse owns reason copy only.
   // Refs are resolved at ingest; parse cannot mark rows ready yet.
+  const isInvalid = isImportRowStructurallyInvalid({
+    reviewDate: parsedDate,
+    reviewAmount: parsedAmount,
+    reviewType: parsedType,
+    reviewDescription: parsedDescription,
+    parsedDate,
+    parsedAmount,
+    parsedType,
+    parsedDescription,
+  });
   const status = isInvalid ? ('invalid' as const) : ('needs_review' as const);
 
   return {

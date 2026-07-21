@@ -48,7 +48,11 @@ const ImportDraftReviewContent = ({
 }: ImportDraftReviewProps) => {
   const { data: categories = [] } = useGetCategories();
   const { data: orgMembers = [] } = useGetOrgMembers();
-  const reviewState = useImportDraftReviewState({ draft, isLoading });
+  const reviewState = useImportDraftReviewState({
+    draft,
+    orgMembers,
+    isLoading,
+  });
   const { canContinue, continueBlocker, hasReviewableRows } = reviewState;
 
   const showEmptyState = !isLoading && draft && !hasReviewableRows;

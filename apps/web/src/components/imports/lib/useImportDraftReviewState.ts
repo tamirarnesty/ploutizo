@@ -4,7 +4,7 @@ import {
   getImportReviewContinueBlocker,
   getSelectableImportRows,
 } from '@ploutizo/utils/import-row-readiness';
-import type { ImportDraft, ImportDraftRow } from '@ploutizo/types';
+import type { ImportDraft, ImportDraftRow, OrgMember } from '@ploutizo/types';
 import { usePersistedPageSize } from '@/hooks/persistedPageSize';
 import {
   useUpdateImportDraftRow,
@@ -18,11 +18,13 @@ const getImportReviewPageCount = (rowCount: number, pageSize: number) =>
 
 interface UseImportDraftReviewStateOptions {
   draft?: ImportDraft;
+  orgMembers?: OrgMember[];
   isLoading?: boolean;
 }
 
 export const useImportDraftReviewState = ({
   draft,
+  orgMembers = [],
   isLoading = false,
 }: UseImportDraftReviewStateOptions) => {
   const flushPendingInputs = useFlushPendingInputs();
@@ -32,6 +34,14 @@ export const useImportDraftReviewState = ({
 
   const rows = draft?.rows ?? [];
   const selectableRows = useMemo(() => getSelectableImportRows(rows), [rows]);
+  const validAssigneeMemberIds = useMemo(
+    () => new Set(orgMembers.map((member) => member.id)),
+    [orgMembers]
+  );
+  const continueOptions = useMemo(
+    () => (orgMembers.length > 0 ? { validAssigneeMemberIds } : undefined),
+    [orgMembers.length, validAssigneeMemberIds]
+  );
 
   const { pageIndex, pageSize } = pagination;
   const pageCount = getImportReviewPageCount(rows.length, pageSize);
@@ -44,8 +54,12 @@ export const useImportDraftReviewState = ({
     [currentPageRows]
   );
 
-  const canContinue = draft ? canContinueImportReview(rows) : false;
-  const continueBlocker = draft ? getImportReviewContinueBlocker(rows) : null;
+  const canContinue = draft
+    ? canContinueImportReview(rows, continueOptions)
+    : false;
+  const continueBlocker = draft
+    ? getImportReviewContinueBlocker(rows, continueOptions)
+    : null;
   const hasReviewableRows = selectableRows.length > 0;
 
   useEffect(() => {

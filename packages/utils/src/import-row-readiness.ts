@@ -6,6 +6,11 @@ export interface ImportRowSelectionFields {
   reviewAssigneeMemberIds: readonly string[];
 }
 
+export interface ImportReviewContinueOptions {
+  /** When set, assignees must resolve to at least one live org member. */
+  validAssigneeMemberIds?: ReadonlySet<string>;
+}
+
 export const isImportRowSelectable = (
   row: Pick<ImportRowSelectionFields, 'status'>
 ): boolean => row.status !== 'invalid' && row.status !== 'skipped';
@@ -14,14 +19,27 @@ export const isImportRowResolved = (
   row: Pick<ImportRowSelectionFields, 'status'>
 ): boolean => row.status === 'ready';
 
-export const rowHasAssignee = (
-  row: Pick<ImportRowSelectionFields, 'reviewAssigneeMemberIds'>
-): boolean => row.reviewAssigneeMemberIds.length > 0;
+export const rowHasLiveAssignee = (
+  row: Pick<ImportRowSelectionFields, 'reviewAssigneeMemberIds'>,
+  validAssigneeMemberIds?: ReadonlySet<string>
+): boolean => {
+  if (!validAssigneeMemberIds) {
+    return row.reviewAssigneeMemberIds.length > 0;
+  }
+  return row.reviewAssigneeMemberIds.some((id) =>
+    validAssigneeMemberIds.has(id)
+  );
+};
 
-/** Defense-in-depth: ready status should already imply assignee when derived. */
+/** Selected rows may continue when derived status is ready (and assignees live). */
 export const isImportRowReadyForImport = (
-  row: Pick<ImportRowSelectionFields, 'status' | 'reviewAssigneeMemberIds'>
-): boolean => isImportRowResolved(row) && rowHasAssignee(row);
+  row: Pick<ImportRowSelectionFields, 'status' | 'reviewAssigneeMemberIds'>,
+  options?: ImportReviewContinueOptions
+): boolean => {
+  if (!isImportRowResolved(row)) return false;
+  if (!options?.validAssigneeMemberIds) return true;
+  return rowHasLiveAssignee(row, options.validAssigneeMemberIds);
+};
 
 export const getSelectedImportRows = <T extends ImportRowSelectionFields>(
   rows: readonly T[]
@@ -32,11 +50,12 @@ export const getSelectableImportRows = <T extends ImportRowSelectionFields>(
 ): T[] => rows.filter(isImportRowSelectable);
 
 export const canContinueImportReview = (
-  rows: readonly ImportRowSelectionFields[]
+  rows: readonly ImportRowSelectionFields[],
+  options?: ImportReviewContinueOptions
 ): boolean => {
   const selectedRows = getSelectedImportRows(rows);
   if (selectedRows.length === 0) return false;
-  return selectedRows.every(isImportRowReadyForImport);
+  return selectedRows.every((row) => isImportRowReadyForImport(row, options));
 };
 
 export type ImportReviewContinueBlockerReason =
@@ -45,7 +64,8 @@ export type ImportReviewContinueBlockerReason =
   | { kind: 'missing_assignee'; count: number };
 
 export const getImportReviewContinueBlockerReason = (
-  rows: readonly ImportRowSelectionFields[]
+  rows: readonly ImportRowSelectionFields[],
+  options?: ImportReviewContinueOptions
 ): ImportReviewContinueBlockerReason | null => {
   const selectedRows = getSelectedImportRows(rows);
   if (selectedRows.length === 0) {
@@ -59,11 +79,14 @@ export const getImportReviewContinueBlockerReason = (
     return { kind: 'needs_review', count: needsReviewCount };
   }
 
-  const missingAssigneeCount = selectedRows.filter(
-    (row) => !rowHasAssignee(row)
-  ).length;
-  if (missingAssigneeCount > 0) {
-    return { kind: 'missing_assignee', count: missingAssigneeCount };
+  // Live-member filter only: derived `ready` already requires stored assignees.
+  if (options?.validAssigneeMemberIds) {
+    const missingAssigneeCount = selectedRows.filter(
+      (row) => !rowHasLiveAssignee(row, options.validAssigneeMemberIds)
+    ).length;
+    if (missingAssigneeCount > 0) {
+      return { kind: 'missing_assignee', count: missingAssigneeCount };
+    }
   }
 
   return null;
@@ -89,8 +112,9 @@ export const formatImportReviewContinueBlocker = (
 };
 
 export const getImportReviewContinueBlocker = (
-  rows: readonly ImportRowSelectionFields[]
+  rows: readonly ImportRowSelectionFields[],
+  options?: ImportReviewContinueOptions
 ): string | null => {
-  const reason = getImportReviewContinueBlockerReason(rows);
+  const reason = getImportReviewContinueBlockerReason(rows, options);
   return reason ? formatImportReviewContinueBlocker(reason) : null;
 };

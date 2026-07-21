@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   getCoreRowModel,
   getExpandedRowModel,
@@ -22,11 +22,12 @@ import {
 } from '@/components/data-grid/dataGridSharedLayout';
 import { useEffectiveTablePageSize } from '@/hooks/useEffectiveTablePageSize';
 import { IMPORT_REVIEW_PAGE_SIZE_OPTIONS } from '@/lib/prefs';
-import { buildImportReviewColumns } from '../grid/buildImportReviewColumns';
+import { shouldDefaultExpandImportRow } from '../lib/importPresentation';
 import {
   countImportReviewPageRows,
   resolveImportReviewTablePagination,
 } from '../lib/useImportDraftReviewState';
+import { buildImportReviewColumns } from './buildImportReviewColumns';
 import type { ImportDraftReviewState } from '../lib/useImportDraftReviewState';
 
 interface ImportDraftReviewTableProps {
@@ -87,10 +88,22 @@ export const ImportDraftReviewTable = ({
     ]
   );
 
+  // Parent remounts this table per draft (`key={draft.id}`).
+  const [initialExpanded] = useState(() =>
+    Object.fromEntries(
+      rows
+        .filter(shouldDefaultExpandImportRow)
+        .map((row) => [row.id, true] as const)
+    )
+  );
+
   const table = useReactTable({
     data: rows,
     columns,
     enableColumnResizing: false,
+    initialState: {
+      expanded: initialExpanded,
+    },
     state: {
       pagination: tablePagination,
       columnPinning: { left: ['selection'] },

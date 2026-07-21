@@ -25,7 +25,7 @@ vi.mock('@/components/categories/CategorySelect', () => ({
   CategorySelect: () => <div>Category select</div>,
 }));
 
-vi.mock('../grid/ImportAssigneeField', () => ({
+vi.mock('./ImportAssigneeField', () => ({
   ImportAssigneeField: () => <div>Assignee field</div>,
 }));
 

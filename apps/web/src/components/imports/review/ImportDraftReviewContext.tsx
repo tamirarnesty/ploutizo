@@ -28,9 +28,7 @@ export const ImportDraftReviewProvider = ({
   <ImportDraftReviewContext.Provider
     value={{ draftId, categories, orgMembers }}
   >
-    <div className="flex max-h-full min-h-0 w-full min-w-0 flex-col">
-      {children}
-    </div>
+    {children}
   </ImportDraftReviewContext.Provider>
 );
 

@@ -4,9 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ImportDraftRow } from '@ploutizo/types';
 import type { Category } from '@/lib/data-access/categories';
 import { PendingInputFlushProvider } from '@/lib/money/pending-input-flush';
-import { ImportReviewDescriptionCell } from '../grid/importReviewCells';
 import { ImportDraftReviewProvider } from './ImportDraftReviewContext';
 import { ImportDraftReviewRowDetails } from './ImportDraftReviewRowDetails';
+import { ImportReviewDescriptionCell } from './importReviewCells';
 
 const mockCategory: Category = {
   id: 'cat_1',
@@ -33,7 +33,7 @@ vi.mock('@/components/categories/CategorySelect', () => ({
   CategorySelect: () => <div>Category select</div>,
 }));
 
-vi.mock('../grid/ImportAssigneeField', () => ({
+vi.mock('./ImportAssigneeField', () => ({
   ImportAssigneeField: () => <div>Assignee field</div>,
 }));
 

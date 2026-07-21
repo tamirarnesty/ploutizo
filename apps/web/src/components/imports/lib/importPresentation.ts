@@ -1,7 +1,7 @@
 import { formatAccountLabel } from '@ploutizo/utils';
 import {
   getImportRowReviewBlockers,
-  isImportTransactionType,
+  resolveImportRowReviewDescription,
 } from '@ploutizo/utils/import-row-status';
 import type { ImportRowReviewBlocker } from '@ploutizo/utils/import-row-status';
 import type {
@@ -9,17 +9,13 @@ import type {
   ImportDraft,
   ImportDraftRow,
   ImportDraftSummary,
-  ImportTransactionType,
   OrgMember,
 } from '@ploutizo/types';
 
-/** UI type display may fall back to raw sourceType; status derivation does not. */
-export const resolveImportRowType = (
-  row: ImportDraftRow
-): ImportTransactionType | null =>
-  row.reviewType ??
-  row.parsedType ??
-  (isImportTransactionType(row.sourceType) ? row.sourceType : null);
+export const getImportRowLabel = (row: ImportDraftRow): string =>
+  resolveImportRowReviewDescription(row) ??
+  row.sourceDescription?.trim() ??
+  'import row';
 
 export const formatDraftAccountLabel = (
   draft: ImportDraftSummary | ImportDraft
@@ -46,12 +42,6 @@ export const importBatchStatusVariant = (
   if (status === 'completed') return 'outline';
   if (status === 'discarded') return 'secondary';
   return 'secondary';
-};
-
-export const importStatusVariant = (status: ImportDraftRow['status']) => {
-  if (status === 'invalid') return 'destructive' as const;
-  if (status === 'ready') return 'outline' as const;
-  return 'secondary' as const;
 };
 
 export const resolveImportRowOriginalDescription = (

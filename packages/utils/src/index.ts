@@ -1,16 +1,18 @@
 export {
   computeImportDraftRowCounts,
-  computeImportRowStatus,
   deriveImportRowStatus,
   getImportRowReviewBlockers,
   isImportRowStructurallyInvalid,
   isImportTransactionType,
+  resolveImportRowReviewAmount,
+  resolveImportRowReviewDate,
+  resolveImportRowReviewDescription,
   resolveImportRowReviewType,
   toImportTransactionType,
   withDerivedImportRowStatus,
   type ImportRowReviewBlocker,
+  type ImportRowReviewFields,
   type ImportRowStatusFields,
-  type ImportRowStatusInput,
   type ImportRowStructuralFields,
 } from './import-row-status';
 export {
@@ -23,8 +25,9 @@ export {
   isImportRowReadyForImport,
   isImportRowResolved,
   isImportRowSelectable,
-  rowHasAssignee,
+  rowHasLiveAssignee,
   type ImportReviewContinueBlockerReason,
+  type ImportReviewContinueOptions,
   type ImportRowSelectionFields,
 } from './import-row-readiness';
 export {

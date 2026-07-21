@@ -31,22 +31,38 @@ const mapDraftRows = (
     row.id === rowId ? withDerivedImportRowStatus({ ...row, ...patch }) : row
   );
 
+const writeDraftWithCounts = (
+  qc: QueryClient,
+  draftId: string,
+  nextDraft: ImportDraft
+) => {
+  const counts = computeImportDraftRowCounts(nextDraft.rows);
+  const draft = { ...nextDraft, ...counts };
+  qc.setQueryData<ImportDraft | undefined>(importDraftQueryKey(draftId), draft);
+  patchActiveDraftSummary(qc, draftId, counts);
+  return draft;
+};
+
+const applyRowMap = (
+  qc: QueryClient,
+  draftId: string,
+  mapRows: (rows: ImportDraftRow[]) => ImportDraftRow[]
+) => {
+  const current = qc.getQueryData<ImportDraft>(importDraftQueryKey(draftId));
+  if (!current) return;
+  writeDraftWithCounts(qc, draftId, {
+    ...current,
+    rows: mapRows(current.rows),
+  });
+};
+
 export const patchImportDraftRow = (
   qc: QueryClient,
   draftId: string,
   rowId: string,
   patch: Partial<ImportDraftRow>
 ) => {
-  qc.setQueryData<ImportDraft | undefined>(
-    importDraftQueryKey(draftId),
-    (current) => {
-      if (!current) return current;
-      const rows = mapDraftRows(current.rows, rowId, patch);
-      const counts = computeImportDraftRowCounts(rows);
-      patchActiveDraftSummary(qc, draftId, counts);
-      return { ...current, ...counts, rows };
-    }
-  );
+  applyRowMap(qc, draftId, (rows) => mapDraftRows(rows, rowId, patch));
 };
 
 export const replaceImportDraftRow = (
@@ -54,19 +70,12 @@ export const replaceImportDraftRow = (
   draftId: string,
   updatedRow: ImportDraftRow
 ) => {
-  qc.setQueryData<ImportDraft | undefined>(
-    importDraftQueryKey(draftId),
-    (current) => {
-      if (!current) return current;
-      const rows = current.rows.map((row) =>
-        row.id === updatedRow.id
-          ? withDerivedImportRowStatus({ ...row, ...updatedRow })
-          : row
-      );
-      const counts = computeImportDraftRowCounts(rows);
-      patchActiveDraftSummary(qc, draftId, counts);
-      return { ...current, ...counts, rows };
-    }
+  applyRowMap(qc, draftId, (rows) =>
+    rows.map((row) =>
+      row.id === updatedRow.id
+        ? withDerivedImportRowStatus({ ...row, ...updatedRow })
+        : row
+    )
   );
 };
 
@@ -135,24 +144,20 @@ export const applyServerRowIfNewer = (
   draftId: string,
   updatedRow: ImportDraftRow
 ) => {
-  qc.setQueryData<ImportDraft | undefined>(
-    importDraftQueryKey(draftId),
-    (current) => {
-      if (!current) return current;
-      const currentRow = current.rows.find((row) => row.id === updatedRow.id);
-      if (!currentRow || updatedRow.updatedAt < currentRow.updatedAt) {
-        return current;
-      }
-      const rows = current.rows.map((row) =>
-        row.id === updatedRow.id
-          ? withDerivedImportRowStatus({ ...row, ...updatedRow })
-          : row
-      );
-      const counts = computeImportDraftRowCounts(rows);
-      patchActiveDraftSummary(qc, draftId, counts);
-      return { ...current, ...counts, rows };
-    }
-  );
+  const current = qc.getQueryData<ImportDraft>(importDraftQueryKey(draftId));
+  if (!current) return;
+  const currentRow = current.rows.find((row) => row.id === updatedRow.id);
+  if (!currentRow || updatedRow.updatedAt < currentRow.updatedAt) {
+    return;
+  }
+  writeDraftWithCounts(qc, draftId, {
+    ...current,
+    rows: current.rows.map((row) =>
+      row.id === updatedRow.id
+        ? withDerivedImportRowStatus({ ...row, ...updatedRow })
+        : row
+    ),
+  });
 };
 
 export const applyServerRowsIfNewer = (
@@ -160,21 +165,17 @@ export const applyServerRowsIfNewer = (
   draftId: string,
   updatedRows: ImportDraftRow[]
 ) => {
+  const current = qc.getQueryData<ImportDraft>(importDraftQueryKey(draftId));
+  if (!current) return;
   const updatedById = new Map(updatedRows.map((row) => [row.id, row]));
-  qc.setQueryData<ImportDraft | undefined>(
-    importDraftQueryKey(draftId),
-    (current) => {
-      if (!current) return current;
-      const rows = current.rows.map((row) => {
-        const updated = updatedById.get(row.id);
-        if (!updated || updated.updatedAt < row.updatedAt) return row;
-        return withDerivedImportRowStatus({ ...row, ...updated });
-      });
-      const counts = computeImportDraftRowCounts(rows);
-      patchActiveDraftSummary(qc, draftId, counts);
-      return { ...current, ...counts, rows };
-    }
-  );
+  writeDraftWithCounts(qc, draftId, {
+    ...current,
+    rows: current.rows.map((row) => {
+      const updated = updatedById.get(row.id);
+      if (!updated || updated.updatedAt < row.updatedAt) return row;
+      return withDerivedImportRowStatus({ ...row, ...updated });
+    }),
+  });
 };
 
 export const patchImportDraftRowsSelection = (

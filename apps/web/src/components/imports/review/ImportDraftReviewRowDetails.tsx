@@ -5,28 +5,26 @@ import { cn } from '@ploutizo/ui/lib/utils';
 import type { ImportDraftRow } from '@ploutizo/types';
 import { useRegisterInputFlush } from '@/lib/money/pending-input-flush';
 import { TransactionTagPicker } from '@/components/transactions/TransactionTagPicker';
-import { useImportDraftReviewRowSave } from '../lib/useImportDraftReviewRowSave';
-import { useImportRowFieldState } from '../lib/useImportRowFieldState';
+import { getImportRowLabel } from '../lib/importPresentation';
+import { useImportRowNotesState } from '../lib/useImportRowFieldState';
+import { useImportDraftReviewRowSave } from './useImportDraftReviewRowSave';
 
 interface ImportDraftReviewRowDetailsProps {
   row: ImportDraftRow;
 }
 
-const getImportRowLabel = (row: ImportDraftRow) =>
-  row.reviewDescription ?? row.sourceDescription ?? 'import row';
-
 export const ImportDraftReviewRowDetails = ({
   row,
 }: ImportDraftReviewRowDetailsProps) => {
   const { saveField, disabled } = useImportDraftReviewRowSave(row);
-  const { notes, setNotes, markSaved } = useImportRowFieldState(row);
+  const { notes, setNotes, markSaved } = useImportRowNotesState(row);
   const rowLabel = getImportRowLabel(row);
   const tagsInputId = `import-row-tags-${row.id}`;
 
   const flushNotes = useCallback(() => {
     const next = notes.trim() || null;
     if (next === row.reviewNotes) return;
-    saveField({ reviewNotes: next }, { onSuccess: () => markSaved('notes') });
+    saveField({ reviewNotes: next }, { onSuccess: () => markSaved() });
   }, [markSaved, notes, row.reviewNotes, saveField]);
 
   useRegisterInputFlush(flushNotes);

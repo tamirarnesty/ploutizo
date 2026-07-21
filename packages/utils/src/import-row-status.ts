@@ -15,8 +15,7 @@ export interface ImportRowStructuralFields {
   parsedDescription: string | null;
 }
 
-export interface ImportRowStatusInput {
-  status: ImportRowStatus;
+export interface ImportRowReviewFields {
   reviewType: ImportTransactionType | null;
   parsedType: ImportTransactionType | null;
   reviewCategoryId: string | null;
@@ -25,7 +24,9 @@ export interface ImportRowStatusInput {
 
 /** Fields required to derive durable/optimistic import row status. */
 export type ImportRowStatusFields = ImportRowStructuralFields &
-  ImportRowStatusInput;
+  ImportRowReviewFields & {
+    status: ImportRowStatus;
+  };
 
 export type ImportRowReviewBlocker =
   | 'date'
@@ -46,33 +47,43 @@ export const toImportTransactionType = (
 ): ImportTransactionType | null =>
   isImportTransactionType(value) ? value : null;
 
+export const resolveImportRowReviewDate = (
+  row: Pick<ImportRowStructuralFields, 'reviewDate' | 'parsedDate'>
+): string | null => row.reviewDate ?? row.parsedDate;
+
+export const resolveImportRowReviewAmount = (
+  row: Pick<ImportRowStructuralFields, 'reviewAmount' | 'parsedAmount'>
+): number | null => row.reviewAmount ?? row.parsedAmount;
+
 export const resolveImportRowReviewType = (
-  row: Pick<ImportRowStatusInput, 'reviewType' | 'parsedType'>
+  row: Pick<ImportRowReviewFields, 'reviewType' | 'parsedType'>
 ): ImportTransactionType | null => row.reviewType ?? row.parsedType;
+
+export const resolveImportRowReviewDescription = (
+  row: Pick<
+    ImportRowStructuralFields,
+    'reviewDescription' | 'parsedDescription'
+  >
+): string | null => {
+  const description = row.reviewDescription ?? row.parsedDescription;
+  const trimmed = description?.trim();
+  return trimmed ? trimmed : null;
+};
 
 export const isImportRowStructurallyInvalid = (
   row: ImportRowStructuralFields
 ): boolean => {
-  const date = row.reviewDate ?? row.parsedDate;
-  const amount = row.reviewAmount ?? row.parsedAmount;
-  const type = row.reviewType ?? row.parsedType;
-  const description = row.reviewDescription ?? row.parsedDescription;
-  return (
-    !date || amount == null || amount <= 0 || !type || !description?.trim()
-  );
+  const date = resolveImportRowReviewDate(row);
+  const amount = resolveImportRowReviewAmount(row);
+  const type = resolveImportRowReviewType(row);
+  const description = resolveImportRowReviewDescription(row);
+  return !date || amount == null || amount <= 0 || !type || !description;
 };
 
-/**
- * Review-state helper: preserves sticky `invalid` / `skipped`, then evaluates
- * type / category / assignee readiness. Prefer {@link deriveImportRowStatus}
- * for full row recompute (API + optimistic cache).
- */
-export const computeImportRowStatus = (
-  row: ImportRowStatusInput
-): ImportRowStatus => {
-  if (row.status === 'invalid') return 'invalid';
-  if (row.status === 'skipped') return 'skipped';
-
+/** Review-phase readiness once structural fields are valid (not sticky). */
+const evaluateReviewReadiness = (
+  row: ImportRowReviewFields
+): Extract<ImportRowStatus, 'needs_review' | 'ready'> => {
   const type = resolveImportRowReviewType(row);
   if (!type) return 'needs_review';
 
@@ -85,21 +96,15 @@ export const computeImportRowStatus = (
 };
 
 /**
- * Authoritative status derivation for draft row updates.
- * Matches API `updateImportDraftRow` and must be used for optimistic cache patches.
+ * Authoritative status derivation for ingest, API updates, and optimistic cache.
+ * Sticky only for `skipped`; structural invalidity is always re-evaluated.
  */
 export const deriveImportRowStatus = (
   row: ImportRowStatusFields
 ): ImportRowStatus => {
   if (row.status === 'skipped') return 'skipped';
   if (isImportRowStructurallyInvalid(row)) return 'invalid';
-  return computeImportRowStatus({
-    status: 'needs_review',
-    reviewType: row.reviewType,
-    parsedType: row.parsedType,
-    reviewCategoryId: row.reviewCategoryId,
-    reviewAssigneeMemberIds: row.reviewAssigneeMemberIds,
-  });
+  return evaluateReviewReadiness(row);
 };
 
 export const withDerivedImportRowStatus = <T extends ImportRowStatusFields>(
@@ -120,19 +125,19 @@ export const computeImportDraftRowCounts = (
   };
 };
 
-/** Structured review blockers aligned with derive/compute status rules. */
+/** Structured review blockers aligned with {@link deriveImportRowStatus}. */
 export const getImportRowReviewBlockers = (
   row: ImportRowStatusFields
 ): ImportRowReviewBlocker[] => {
   const blockers: ImportRowReviewBlocker[] = [];
-  const date = row.reviewDate ?? row.parsedDate;
-  const amount = row.reviewAmount ?? row.parsedAmount;
+  const date = resolveImportRowReviewDate(row);
+  const amount = resolveImportRowReviewAmount(row);
   const type = resolveImportRowReviewType(row);
-  const description = row.reviewDescription ?? row.parsedDescription;
+  const description = resolveImportRowReviewDescription(row);
 
   if (!date) blockers.push('date');
   if (amount == null || amount <= 0) blockers.push('amount');
-  if (!description?.trim()) blockers.push('description');
+  if (!description) blockers.push('description');
   if (!type) blockers.push('type');
   if (type === 'settlement') blockers.push('settlement');
   if (!row.reviewCategoryId) blockers.push('category');
