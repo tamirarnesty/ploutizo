@@ -1,9 +1,32 @@
 export {
+  computeImportDraftRowCounts,
   computeImportRowStatus,
+  deriveImportRowStatus,
+  getImportRowReviewBlockers,
   isImportRowStructurallyInvalid,
+  isImportTransactionType,
+  resolveImportRowReviewType,
+  toImportTransactionType,
+  withDerivedImportRowStatus,
+  type ImportRowReviewBlocker,
+  type ImportRowStatusFields,
   type ImportRowStatusInput,
   type ImportRowStructuralFields,
 } from './import-row-status';
+export {
+  canContinueImportReview,
+  formatImportReviewContinueBlocker,
+  getImportReviewContinueBlocker,
+  getImportReviewContinueBlockerReason,
+  getSelectableImportRows,
+  getSelectedImportRows,
+  isImportRowReadyForImport,
+  isImportRowResolved,
+  isImportRowSelectable,
+  rowHasAssignee,
+  type ImportReviewContinueBlockerReason,
+  type ImportRowSelectionFields,
+} from './import-row-readiness';
 export {
   formatTransactionTypeLabel,
   TRANSACTION_TYPE_LABELS,

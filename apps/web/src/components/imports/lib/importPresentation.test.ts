@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { getImportRowReviewBlockers } from '@ploutizo/utils/import-row-status';
 import type { ImportDraftRow, OrgMember } from '@ploutizo/types';
 import {
   formatImportBatchStatusLabel,
-  getImportRowReviewBlockers,
   getImportRowStatusTooltip,
   importBatchStatusVariant,
   resolveImportRowAssigneeMemberIds,
@@ -133,6 +133,16 @@ describe('importPresentation review helpers', () => {
         reviewAssigneeMemberIds: [],
       })
     ).toEqual(['date', 'description', 'category', 'assignee']);
+  });
+
+  it('maps review blocker keys to tooltip labels', () => {
+    expect(
+      getImportRowStatusTooltip({
+        ...baseRow,
+        status: 'needs_review',
+        reviewType: 'settlement',
+      })
+    ).toBe('Needs review: missing settlement review');
   });
 });
 

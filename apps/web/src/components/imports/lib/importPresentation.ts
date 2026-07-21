@@ -1,8 +1,9 @@
+import { formatAccountLabel } from '@ploutizo/utils';
 import {
-  formatAccountLabel,
-  formatTransactionTypeLabel,
-} from '@ploutizo/utils';
-import { IMPORT_TRANSACTION_TYPE_VALUES } from '@ploutizo/types';
+  getImportRowReviewBlockers,
+  isImportTransactionType,
+} from '@ploutizo/utils/import-row-status';
+import type { ImportRowReviewBlocker } from '@ploutizo/utils/import-row-status';
 import type {
   ImportBatchStatus,
   ImportDraft,
@@ -12,21 +13,13 @@ import type {
   OrgMember,
 } from '@ploutizo/types';
 
+/** UI type display may fall back to raw sourceType; status derivation does not. */
 export const resolveImportRowType = (
   row: ImportDraftRow
 ): ImportTransactionType | null =>
   row.reviewType ??
   row.parsedType ??
   (isImportTransactionType(row.sourceType) ? row.sourceType : null);
-
-const isImportTransactionType = (
-  value: string | null | undefined
-): value is ImportTransactionType =>
-  IMPORT_TRANSACTION_TYPE_VALUES.includes(value as ImportTransactionType);
-
-export const formatImportTransactionTypeLabel = (
-  type: ImportTransactionType
-): string => formatTransactionTypeLabel(type);
 
 export const formatDraftAccountLabel = (
   draft: ImportDraftSummary | ImportDraft
@@ -69,33 +62,30 @@ export const resolveImportRowOriginalDescription = (
   return trimmed ? trimmed : null;
 };
 
-export const getImportRowReviewBlockers = (row: ImportDraftRow): string[] => {
-  const blockers: string[] = [];
-  const reviewDate = row.reviewDate ?? row.parsedDate;
-  if (!reviewDate) blockers.push('date');
-  if (row.reviewAmount == null && row.parsedAmount == null) {
-    blockers.push('amount');
-  }
-  if (!row.reviewDescription?.trim() && !row.parsedDescription?.trim()) {
-    blockers.push('description');
-  }
-  if (!row.reviewCategoryId) blockers.push('category');
-  if (row.reviewAssigneeMemberIds.length === 0) blockers.push('assignee');
+const IMPORT_ROW_REVIEW_BLOCKER_LABELS: Record<ImportRowReviewBlocker, string> =
+  {
+    date: 'date',
+    amount: 'amount',
+    description: 'description',
+    type: 'type',
+    category: 'category',
+    assignee: 'assignee',
+    settlement: 'settlement review',
+  };
 
-  const type = resolveImportRowType(row);
-  if (type === 'settlement' && row.status === 'needs_review') {
-    blockers.push('settlement review');
-  }
-
-  return blockers;
-};
+export const formatImportRowReviewBlockers = (
+  blockers: ImportRowReviewBlocker[]
+): string[] =>
+  blockers.map((blocker) => IMPORT_ROW_REVIEW_BLOCKER_LABELS[blocker]);
 
 export const getImportRowStatusTooltip = (row: ImportDraftRow): string => {
   switch (row.status) {
     case 'ready':
       return 'Ready to import';
     case 'needs_review': {
-      const blockers = getImportRowReviewBlockers(row);
+      const blockers = formatImportRowReviewBlockers(
+        getImportRowReviewBlockers(row)
+      );
       if (blockers.length === 0) return 'Needs review';
       return `Needs review: missing ${blockers.join(', ')}`;
     }

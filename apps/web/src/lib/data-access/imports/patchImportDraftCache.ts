@@ -1,4 +1,7 @@
-import { computeImportRowStatus } from '@ploutizo/utils/import-row-status';
+import {
+  computeImportDraftRowCounts,
+  withDerivedImportRowStatus,
+} from '@ploutizo/utils/import-row-status';
 import type {
   ImportDraft,
   ImportDraftRow,
@@ -7,30 +10,10 @@ import type {
 import { activeImportDraftsQueryKey, importDraftQueryKey } from './queryKeys';
 import type { QueryClient } from '@tanstack/react-query';
 
-const recomputeDraftCounts = (rows: ImportDraftRow[]) => {
-  const invalidRowCount = rows.filter((row) => row.status === 'invalid').length;
-  return {
-    rowCount: rows.length,
-    validRowCount: rows.length - invalidRowCount,
-    invalidRowCount,
-  };
-};
-
-const withRecomputedStatus = (row: ImportDraftRow): ImportDraftRow => ({
-  ...row,
-  status: computeImportRowStatus({
-    status: row.status,
-    reviewType: row.reviewType,
-    parsedType: row.parsedType,
-    reviewCategoryId: row.reviewCategoryId,
-    reviewAssigneeMemberIds: row.reviewAssigneeMemberIds,
-  }),
-});
-
 const patchActiveDraftSummary = (
   qc: QueryClient,
   draftId: string,
-  counts: ReturnType<typeof recomputeDraftCounts>
+  counts: ReturnType<typeof computeImportDraftRowCounts>
 ) => {
   qc.setQueryData<ImportDraftSummary[]>(activeImportDraftsQueryKey, (current) =>
     current?.map((draft) =>
@@ -45,7 +28,7 @@ const mapDraftRows = (
   patch: Partial<ImportDraftRow>
 ) =>
   rows.map((row) =>
-    row.id === rowId ? withRecomputedStatus({ ...row, ...patch }) : row
+    row.id === rowId ? withDerivedImportRowStatus({ ...row, ...patch }) : row
   );
 
 export const patchImportDraftRow = (
@@ -59,7 +42,7 @@ export const patchImportDraftRow = (
     (current) => {
       if (!current) return current;
       const rows = mapDraftRows(current.rows, rowId, patch);
-      const counts = recomputeDraftCounts(rows);
+      const counts = computeImportDraftRowCounts(rows);
       patchActiveDraftSummary(qc, draftId, counts);
       return { ...current, ...counts, rows };
     }
@@ -77,10 +60,10 @@ export const replaceImportDraftRow = (
       if (!current) return current;
       const rows = current.rows.map((row) =>
         row.id === updatedRow.id
-          ? withRecomputedStatus({ ...row, ...updatedRow })
+          ? withDerivedImportRowStatus({ ...row, ...updatedRow })
           : row
       );
-      const counts = recomputeDraftCounts(rows);
+      const counts = computeImportDraftRowCounts(rows);
       patchActiveDraftSummary(qc, draftId, counts);
       return { ...current, ...counts, rows };
     }
@@ -162,10 +145,10 @@ export const applyServerRowIfNewer = (
       }
       const rows = current.rows.map((row) =>
         row.id === updatedRow.id
-          ? withRecomputedStatus({ ...row, ...updatedRow })
+          ? withDerivedImportRowStatus({ ...row, ...updatedRow })
           : row
       );
-      const counts = recomputeDraftCounts(rows);
+      const counts = computeImportDraftRowCounts(rows);
       patchActiveDraftSummary(qc, draftId, counts);
       return { ...current, ...counts, rows };
     }
@@ -185,9 +168,11 @@ export const applyServerRowsIfNewer = (
       const rows = current.rows.map((row) => {
         const updated = updatedById.get(row.id);
         if (!updated || updated.updatedAt < row.updatedAt) return row;
-        return { ...row, ...updated };
+        return withDerivedImportRowStatus({ ...row, ...updated });
       });
-      return { ...current, rows };
+      const counts = computeImportDraftRowCounts(rows);
+      patchActiveDraftSummary(qc, draftId, counts);
+      return { ...current, ...counts, rows };
     }
   );
 };

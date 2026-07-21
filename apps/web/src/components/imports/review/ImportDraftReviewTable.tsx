@@ -12,6 +12,7 @@ import {
 import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-grid-scroll-area';
 import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-table';
 import { DataGridPagination } from '@ploutizo/ui/components/reui/data-grid/data-grid-pagination';
+import { isImportRowSelectable } from '@ploutizo/utils/import-row-readiness';
 import {
   VIEWPORT_FILLED_DATA_GRID_CONTAINER_CLASSNAME,
   VIEWPORT_FILLED_DATA_GRID_PAGINATION_CLASSNAME,
@@ -22,7 +23,6 @@ import {
 import { useEffectiveTablePageSize } from '@/hooks/useEffectiveTablePageSize';
 import { IMPORT_REVIEW_PAGE_SIZE_OPTIONS } from '@/lib/prefs';
 import { buildImportReviewColumns } from '../grid/buildImportReviewColumns';
-import { isImportRowSelectable } from '../lib/importRowSelection';
 import {
   countImportReviewPageRows,
   resolveImportReviewTablePagination,

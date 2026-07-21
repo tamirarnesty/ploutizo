@@ -1,11 +1,14 @@
 import {
-  IMPORT_TRANSACTION_TYPE_VALUES,
   MAX_NORMALIZED_IMPORT_BYTES,
   MAX_NORMALIZED_IMPORT_ROWS,
   NORMALIZED_IMPORT_REQUIRED_COLUMNS,
   NORMALIZED_IMPORT_SOURCE,
 } from '@ploutizo/types';
 import { parseImportTags } from '@ploutizo/utils';
+import {
+  computeImportDraftRowCounts,
+  toImportTransactionType,
+} from '@ploutizo/utils/import-row-status';
 import type { ImportDraftRow, ImportTransactionType } from '@ploutizo/types';
 import { DomainError } from '@/lib/errors';
 
@@ -84,10 +87,6 @@ const HEADER_ALIASES: Partial<Record<string, HeaderKey>> = {
   note: 'notes',
   tags: 'tags',
 };
-
-const IMPORT_TRANSACTION_TYPES = new Set<string>(
-  IMPORT_TRANSACTION_TYPE_VALUES
-);
 
 const normalizeHeader = (value: string) =>
   value.trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ');
@@ -208,12 +207,8 @@ const parseAmountCents = (value: string | null): number | null => {
   return Number.isSafeInteger(amount) && amount > 0 ? amount : null;
 };
 
-const parseType = (value: string | null): ImportTransactionType | null => {
-  const normalized = value?.trim().toLowerCase() ?? '';
-  return IMPORT_TRANSACTION_TYPES.has(normalized)
-    ? (normalized as ImportTransactionType)
-    : null;
-};
+const parseType = (value: string | null): ImportTransactionType | null =>
+  toImportTransactionType(value?.trim().toLowerCase());
 
 const readCell = (
   record: CsvRecord,
@@ -351,8 +346,7 @@ export const parsePloutizoNormalizedCsv = (
   const rows = dataRecords.map((record) =>
     parseRow(record, headers, headerMap)
   );
-  const validRowCount = rows.filter((row) => row.status !== 'invalid').length;
-  const invalidRowCount = rows.length - validRowCount;
+  const { validRowCount, invalidRowCount } = computeImportDraftRowCounts(rows);
 
   if (validRowCount === 0) {
     throw new DomainError(
@@ -370,5 +364,3 @@ export const parsePloutizoNormalizedCsv = (
     rows,
   };
 };
-
-export { computeImportRowStatus } from './rowStatus';

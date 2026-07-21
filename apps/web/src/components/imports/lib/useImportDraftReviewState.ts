@@ -1,4 +1,9 @@
 import { useCallback, useEffect, useMemo } from 'react';
+import {
+  canContinueImportReview,
+  getImportReviewContinueBlocker,
+  getSelectableImportRows,
+} from '@ploutizo/utils/import-row-readiness';
 import type { ImportDraft, ImportDraftRow } from '@ploutizo/types';
 import { usePersistedPageSize } from '@/hooks/persistedPageSize';
 import {
@@ -6,11 +11,6 @@ import {
   useUpdateImportDraftRowSelection,
 } from '@/lib/data-access/imports';
 import { useFlushPendingInputs } from '@/lib/money/pending-input-flush';
-import {
-  canContinueImportReview,
-  getImportReviewContinueBlocker,
-  getSelectableImportRows,
-} from './importRowSelection';
 import type { PaginationState } from '@tanstack/react-table';
 
 const getImportReviewPageCount = (rowCount: number, pageSize: number) =>

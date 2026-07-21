@@ -14,6 +14,7 @@ import {
 import { Text } from '@ploutizo/ui/components/text';
 import { cn } from '@ploutizo/ui/lib/utils';
 import { dollarsToCents } from '@ploutizo/utils/currency';
+import { formatTransactionTypeLabel } from '@ploutizo/utils';
 import { IMPORT_TRANSACTION_TYPE_VALUES } from '@ploutizo/types';
 import type { ImportDraftRow, ImportTransactionType } from '@ploutizo/types';
 import { CategorySelect } from '@/components/categories/CategorySelect';
@@ -21,7 +22,6 @@ import { CurrencyInput } from '@/components/currency/CurrencyInput';
 import { useRegisterInputFlush } from '@/lib/money/pending-input-flush';
 import { useImportDraftReviewContext } from '../review/ImportDraftReviewContext';
 import {
-  formatImportTransactionTypeLabel,
   resolveImportRowOriginalDescription,
   resolveImportRowType,
 } from '../lib/importPresentation';
@@ -55,13 +55,13 @@ const ImportTransactionTypeSelect = ({
   >
     <SelectTrigger id={id} className="w-36" aria-label={ariaLabel}>
       <SelectValue>
-        {value ? formatImportTransactionTypeLabel(value) : 'Select type'}
+        {value ? formatTransactionTypeLabel(value) : 'Select type'}
       </SelectValue>
     </SelectTrigger>
     <SelectContent>
       {IMPORT_TRANSACTION_TYPE_VALUES.map((type) => (
         <SelectItem key={type} value={type}>
-          {formatImportTransactionTypeLabel(type)}
+          {formatTransactionTypeLabel(type)}
         </SelectItem>
       ))}
     </SelectContent>

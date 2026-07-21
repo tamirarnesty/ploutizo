@@ -1,15 +1,15 @@
 import { db } from '@ploutizo/db';
-import {
-  IMPORT_TRANSACTION_TYPE_VALUES,
-  NORMALIZED_IMPORT_EXAMPLE_CSV,
-} from '@ploutizo/types';
+import { NORMALIZED_IMPORT_EXAMPLE_CSV } from '@ploutizo/types';
 import { createImportReferenceResolver } from '@ploutizo/utils';
+import {
+  deriveImportRowStatus,
+  toImportTransactionType,
+} from '@ploutizo/utils/import-row-status';
 import type {
   ImportDraft,
   ImportDraftRow,
   ImportDraftSummary,
   ImportTargetAccount,
-  ImportTransactionType,
 } from '@ploutizo/types';
 import type {
   CreateImportDraftInput,
@@ -18,10 +18,6 @@ import type {
 } from '@ploutizo/validators';
 import { assertOrgWriteReferences } from '@/lib/assertOrgWriteReferences';
 import { DomainError, NotFoundError } from '@/lib/errors';
-import {
-  computeImportRowStatus,
-  isImportRowStructurallyInvalid,
-} from '@/lib/imports/rowStatus';
 import {
   adjustImportDraftRowCounts,
   discardImportDraftQuery,
@@ -71,15 +67,6 @@ const toImportDraftSummary = (
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
-};
-
-const toImportTransactionType = (
-  value: string | null | undefined
-): ImportTransactionType | null => {
-  if (!value) return null;
-  return (IMPORT_TRANSACTION_TYPE_VALUES as readonly string[]).includes(value)
-    ? (value as ImportTransactionType)
-    : null;
 };
 
 const toImportDraftRow = (
@@ -186,10 +173,16 @@ export const createNormalizedImportDraft = async (
           return {
             ...rowFields,
             ...resolvedRefs,
-            status: computeImportRowStatus({
+            status: deriveImportRowStatus({
               status: row.status,
+              reviewDate: row.reviewDate ?? null,
+              reviewAmount: row.reviewAmount ?? null,
               reviewType: toImportTransactionType(row.reviewType),
+              reviewDescription: row.reviewDescription ?? null,
+              parsedDate: row.parsedDate ?? null,
+              parsedAmount: row.parsedAmount ?? null,
               parsedType: toImportTransactionType(row.parsedType),
+              parsedDescription: row.parsedDescription ?? null,
               reviewCategoryId: resolvedRefs.reviewCategoryId,
               reviewAssigneeMemberIds: resolvedRefs.reviewAssigneeMemberIds,
             }),
@@ -243,7 +236,8 @@ export const updateImportDraftRow = async (
 
   const reviewType = toImportTransactionType(merged.reviewType);
   const parsedType = toImportTransactionType(merged.parsedType);
-  const structurallyInvalid = isImportRowStructurallyInvalid({
+  const status = deriveImportRowStatus({
+    status: existing.status,
     reviewDate: merged.reviewDate ?? null,
     reviewAmount: merged.reviewAmount ?? null,
     reviewType,
@@ -252,19 +246,9 @@ export const updateImportDraftRow = async (
     parsedAmount: merged.parsedAmount ?? null,
     parsedType,
     parsedDescription: merged.parsedDescription ?? null,
+    reviewCategoryId: merged.reviewCategoryId ?? null,
+    reviewAssigneeMemberIds: merged.reviewAssigneeMemberIds,
   });
-  const status =
-    existing.status === 'skipped'
-      ? 'skipped'
-      : structurallyInvalid
-        ? 'invalid'
-        : computeImportRowStatus({
-            status: 'needs_review',
-            reviewType,
-            parsedType,
-            reviewCategoryId: merged.reviewCategoryId ?? null,
-            reviewAssigneeMemberIds: merged.reviewAssigneeMemberIds,
-          });
 
   const wasInvalid = existing.status === 'invalid';
   const isInvalid = status === 'invalid';
@@ -282,7 +266,7 @@ export const updateImportDraftRow = async (
       {
         ...input,
         status,
-        ...(existing.status === 'invalid' && !structurallyInvalid
+        ...(existing.status === 'invalid' && !isInvalid
           ? { invalidReason: null }
           : {}),
       },

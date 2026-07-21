@@ -1,69 +1,39 @@
 import { describe, expect, it } from 'vitest';
-import type { ImportDraftRow } from '@ploutizo/types';
 import {
   canContinueImportReview,
   getImportReviewContinueBlocker,
+  getImportReviewContinueBlockerReason,
   getSelectableImportRows,
   getSelectedImportRows,
+  isImportRowReadyForImport,
   isImportRowResolved,
   isImportRowSelectable,
-} from './importRowSelection';
+} from './import-row-readiness';
 
 const baseRow = {
-  id: 'row_1',
-  batchId: 'draft_1',
-  rowNumber: 2,
-  invalidReason: null,
-  rawData: {},
-  externalId: null,
-  sourceDate: '2026-05-02',
-  sourceAmount: '42.18',
-  sourceDescription: 'Coffee',
-  sourceType: 'expense',
-  parsedDate: '2026-05-02',
-  parsedAmount: 4218,
-  parsedType: 'expense' as const,
-  parsedDescription: 'Coffee',
-  reviewDate: '2026-05-02',
-  reviewAmount: 4218,
-  reviewType: 'expense' as const,
-  reviewDescription: 'Coffee',
-  reviewCategoryId: 'cat_1',
-  reviewAssigneeMemberIds: [],
-  reviewRefundLinkHint: null,
-  reviewNotes: null,
-  reviewTagIds: [],
-  selectedForImport: false,
   status: 'ready' as const,
-  createdAt: '2026-05-20T12:00:00.000Z',
-  updatedAt: '2026-05-20T12:00:00.000Z',
-} satisfies ImportDraftRow;
+  selectedForImport: false,
+  reviewAssigneeMemberIds: [] as string[],
+};
 
-describe('importRowSelection', () => {
+describe('import-row-readiness', () => {
   it('treats invalid and skipped rows as not selectable', () => {
-    expect(isImportRowSelectable({ ...baseRow, status: 'ready' })).toBe(true);
-    expect(isImportRowSelectable({ ...baseRow, status: 'needs_review' })).toBe(
-      true
-    );
-    expect(isImportRowSelectable({ ...baseRow, status: 'invalid' })).toBe(
-      false
-    );
-    expect(isImportRowSelectable({ ...baseRow, status: 'skipped' })).toBe(
-      false
-    );
+    expect(isImportRowSelectable({ status: 'ready' })).toBe(true);
+    expect(isImportRowSelectable({ status: 'needs_review' })).toBe(true);
+    expect(isImportRowSelectable({ status: 'invalid' })).toBe(false);
+    expect(isImportRowSelectable({ status: 'skipped' })).toBe(false);
   });
 
   it('requires selected rows to be ready before continue is allowed', () => {
     const rows = [
       {
         ...baseRow,
-        id: 'row_1',
         status: 'ready' as const,
+        reviewAssigneeMemberIds: ['member_1'],
         selectedForImport: true,
       },
       {
         ...baseRow,
-        id: 'row_2',
         status: 'needs_review' as const,
         selectedForImport: true,
       },
@@ -78,14 +48,12 @@ describe('importRowSelection', () => {
     const rows = [
       {
         ...baseRow,
-        id: 'row_1',
         status: 'ready' as const,
         reviewAssigneeMemberIds: ['member_1'],
         selectedForImport: true,
       },
       {
         ...baseRow,
-        id: 'row_2',
         status: 'ready' as const,
         reviewAssigneeMemberIds: ['member_1'],
         selectedForImport: false,
@@ -94,13 +62,13 @@ describe('importRowSelection', () => {
 
     expect(getSelectableImportRows(rows)).toHaveLength(2);
     expect(canContinueImportReview(rows)).toBe(true);
+    expect(isImportRowReadyForImport(rows[0])).toBe(true);
   });
 
   it('blocks continue when selected rows are missing assignees', () => {
     const rows = [
       {
         ...baseRow,
-        id: 'row_1',
         status: 'ready' as const,
         reviewAssigneeMemberIds: [],
         selectedForImport: true,
@@ -108,6 +76,10 @@ describe('importRowSelection', () => {
     ];
 
     expect(canContinueImportReview(rows)).toBe(false);
+    expect(getImportReviewContinueBlockerReason(rows)).toEqual({
+      kind: 'missing_assignee',
+      count: 1,
+    });
     expect(getImportReviewContinueBlocker(rows)).toBe(
       '1 selected row needs an assignee.'
     );

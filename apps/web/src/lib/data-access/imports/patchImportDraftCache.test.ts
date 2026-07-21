@@ -102,6 +102,56 @@ const seedActiveSummary = (draft: ImportDraft) => {
 };
 
 describe('patchImportDraftCache', () => {
+  it('recomputes row status when structural fields become invalid', () => {
+    const qc = new QueryClient();
+    qc.setQueryData(
+      importDraftQueryKey(draftId),
+      seedDraft([
+        baseRow({
+          status: 'ready',
+          reviewCategoryId: 'cat-dining',
+          selectedForImport: true,
+          parsedAmount: null,
+        }),
+      ])
+    );
+
+    patchImportDraftRow(qc, draftId, rowId, {
+      reviewAmount: null,
+    });
+
+    const draft = qc.getQueryData<ImportDraft>(importDraftQueryKey(draftId));
+    expect(draft?.rows[0]?.status).toBe('invalid');
+    expect(draft?.rows[0]?.reviewAmount).toBeNull();
+    expect(draft?.invalidRowCount).toBe(1);
+    expect(draft?.validRowCount).toBe(0);
+  });
+
+  it('recovers from invalid to ready when structural and review fields are complete', () => {
+    const qc = new QueryClient();
+    qc.setQueryData(
+      importDraftQueryKey(draftId),
+      seedDraft([
+        baseRow({
+          status: 'invalid',
+          reviewAmount: null,
+          parsedAmount: null,
+          reviewCategoryId: 'cat-dining',
+          invalidReason: 'Amount must be a positive number.',
+        }),
+      ])
+    );
+
+    patchImportDraftRow(qc, draftId, rowId, {
+      reviewAmount: 4218,
+    });
+
+    const draft = qc.getQueryData<ImportDraft>(importDraftQueryKey(draftId));
+    expect(draft?.rows[0]?.status).toBe('ready');
+    expect(draft?.invalidRowCount).toBe(0);
+    expect(draft?.validRowCount).toBe(1);
+  });
+
   it('recomputes row status after optimistic category patch', () => {
     const qc = new QueryClient();
     qc.setQueryData(importDraftQueryKey(draftId), seedDraft([baseRow()]));

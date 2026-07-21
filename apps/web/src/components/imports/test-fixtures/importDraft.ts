@@ -1,3 +1,4 @@
+import { computeImportDraftRowCounts } from '@ploutizo/utils/import-row-status';
 import type { ImportDraft, ImportDraftRow } from '@ploutizo/types';
 
 export const DRAFT_ID = 'draft_1';
@@ -63,6 +64,8 @@ export const makeImportDraft = (
     }),
   ];
 
+  const counts = computeImportDraftRowCounts(rows);
+
   return {
     id: DRAFT_ID,
     accountId: 'acct_1',
@@ -72,9 +75,7 @@ export const makeImportDraft = (
     source: 'ploutizo_normalized',
     status: 'draft',
     fileName: 'statement.csv',
-    rowCount: rows.length,
-    validRowCount: rows.filter((row) => row.status !== 'invalid').length,
-    invalidRowCount: rows.filter((row) => row.status === 'invalid').length,
+    ...counts,
     importedAt: '2026-05-20T12:00:00.000Z',
     completedAt: null,
     discardedAt: null,
