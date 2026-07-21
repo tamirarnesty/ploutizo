@@ -15,23 +15,28 @@ import { Text } from '@ploutizo/ui/components/text';
 import { cn } from '@ploutizo/ui/lib/utils';
 import { dollarsToCents } from '@ploutizo/utils/currency';
 import { formatTransactionTypeLabel } from '@ploutizo/utils';
+import {
+  resolveImportRowReviewAmount,
+  resolveImportRowReviewDate,
+  resolveImportRowReviewType,
+} from '@ploutizo/utils/import-row-status';
 import { IMPORT_TRANSACTION_TYPE_VALUES } from '@ploutizo/types';
 import type { ImportDraftRow, ImportTransactionType } from '@ploutizo/types';
 import { CategorySelect } from '@/components/categories/CategorySelect';
 import { CurrencyInput } from '@/components/currency/CurrencyInput';
 import { useRegisterInputFlush } from '@/lib/money/pending-input-flush';
-import { useImportDraftReviewContext } from '../review/ImportDraftReviewContext';
 import {
+  getImportRowLabel,
   resolveImportRowOriginalDescription,
-  resolveImportRowType,
 } from '../lib/importPresentation';
-import { useImportDraftReviewRowSave } from '../lib/useImportDraftReviewRowSave';
-import { useImportRowFieldState } from '../lib/useImportRowFieldState';
-import { ImportRowStatusIcon } from './ImportRowStatusIcon';
+import {
+  useImportRowAmountState,
+  useImportRowDescriptionState,
+} from '../lib/useImportRowFieldState';
 import { ImportAssigneeField } from './ImportAssigneeField';
-
-const getImportRowLabel = (row: ImportDraftRow) =>
-  row.reviewDescription ?? row.sourceDescription ?? 'import row';
+import { useImportDraftReviewContext } from './ImportDraftReviewContext';
+import { ImportRowStatusIcon } from './ImportRowStatusIcon';
+import { useImportDraftReviewRowSave } from './useImportDraftReviewRowSave';
 
 interface ImportTransactionTypeSelectProps {
   id: string;
@@ -126,7 +131,7 @@ interface ImportReviewDateCellProps {
 export const ImportReviewDateCell = ({ row }: ImportReviewDateCellProps) => {
   const { saveField, disabled } = useImportDraftReviewRowSave(row);
   const rowLabel = getImportRowLabel(row);
-  const reviewDate = row.reviewDate ?? row.parsedDate ?? '';
+  const reviewDate = resolveImportRowReviewDate(row) ?? '';
 
   return (
     <DatePicker
@@ -135,8 +140,9 @@ export const ImportReviewDateCell = ({ row }: ImportReviewDateCellProps) => {
       value={reviewDate || undefined}
       disabled={disabled}
       onChange={(nextDate) => {
-        if (nextDate === row.reviewDate) return;
-        saveField({ reviewDate: nextDate });
+        const next = nextDate || null;
+        if (next === row.reviewDate) return;
+        saveField({ reviewDate: next });
       }}
     />
   );
@@ -150,7 +156,7 @@ export const ImportReviewAmountCell = ({
   row,
 }: ImportReviewAmountCellProps) => {
   const { saveField, disabled } = useImportDraftReviewRowSave(row);
-  const { amount, setAmount, markSaved } = useImportRowFieldState(row);
+  const { amount, setAmount, markSaved } = useImportRowAmountState(row);
   const rowLabel = getImportRowLabel(row);
 
   return (
@@ -164,17 +170,14 @@ export const ImportReviewAmountCell = ({
       onBlur={() => {
         if (amount === undefined || !Number.isFinite(amount)) {
           if (row.reviewAmount === null) return;
-          saveField(
-            { reviewAmount: null },
-            { onSuccess: () => markSaved('amount') }
-          );
+          saveField({ reviewAmount: null }, { onSuccess: () => markSaved() });
           return;
         }
         const nextAmount = dollarsToCents(amount);
-        if (nextAmount === row.reviewAmount) return;
+        if (nextAmount === resolveImportRowReviewAmount(row)) return;
         saveField(
           { reviewAmount: nextAmount },
-          { onSuccess: () => markSaved('amount') }
+          { onSuccess: () => markSaved() }
         );
       }}
     />
@@ -192,7 +195,7 @@ export const ImportReviewTypeCell = ({ row }: ImportReviewTypeCellProps) => {
   return (
     <ImportTransactionTypeSelect
       id={`import-row-type-${row.id}`}
-      value={resolveImportRowType(row)}
+      value={resolveImportRowReviewType(row)}
       disabled={disabled}
       ariaLabel={`Type for ${rowLabel}`}
       onChange={(nextType) => {
@@ -212,7 +215,7 @@ export const ImportReviewDescriptionCell = ({
 }: ImportReviewDescriptionCellProps) => {
   const { saveField, disabled } = useImportDraftReviewRowSave(row);
   const { description, setDescription, markSaved } =
-    useImportRowFieldState(row);
+    useImportRowDescriptionState(row);
   const rowLabel = getImportRowLabel(row);
   const originalDescription = resolveImportRowOriginalDescription(row);
   const showOriginalDescription =
@@ -222,10 +225,7 @@ export const ImportReviewDescriptionCell = ({
   const flushDescription = useCallback(() => {
     const next = description.trim() || null;
     if (next === row.reviewDescription) return;
-    saveField(
-      { reviewDescription: next },
-      { onSuccess: () => markSaved('description') }
-    );
+    saveField({ reviewDescription: next }, { onSuccess: () => markSaved() });
   }, [description, markSaved, row.reviewDescription, saveField]);
 
   useRegisterInputFlush(flushDescription);

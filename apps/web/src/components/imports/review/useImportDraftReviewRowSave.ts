@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import type { ImportDraftRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import { useUpdateImportDraftRow } from '@/lib/data-access/imports';
-import { useImportDraftReviewContext } from '../review/ImportDraftReviewContext';
+import { useImportDraftReviewContext } from './ImportDraftReviewContext';
 
 export const useImportDraftReviewRowSave = (row: ImportDraftRow) => {
   const { draftId } = useImportDraftReviewContext();

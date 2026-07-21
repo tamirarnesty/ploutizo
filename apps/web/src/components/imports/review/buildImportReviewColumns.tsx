@@ -18,7 +18,7 @@ import {
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
 import type { ImportDraftRow } from '@ploutizo/types';
-import { ImportDraftReviewRowDetails } from '../review/ImportDraftReviewRowDetails';
+import { ImportDraftReviewRowDetails } from './ImportDraftReviewRowDetails';
 import {
   ImportReviewAmountCell,
   ImportReviewAssigneeCell,
