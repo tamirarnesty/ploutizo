@@ -94,10 +94,7 @@ const persistSelection = createOptimisticAction<SelectionVariables>({
       markImportReviewSelectionSuccess(draftId, rowIds);
     } catch {
       confirmSelectionIntoCollection(draftId, null, rowIds, selectedForImport);
-      markImportReviewSelectionFailure(draftId, {
-        rowIds,
-        selectedForImport,
-      });
+      markImportReviewSelectionFailure(draftId, rowIds);
     }
   },
 });
@@ -113,12 +110,12 @@ export const persistImportDraftSelection = (
 
 /** Re-persist failed selection from the live working copy (not the original intent). */
 export const retryFailedImportDraftSelection = (draftId: string) => {
-  const failed = getImportReviewAutosaveSnapshot(draftId).failedSelection;
-  if (!failed) return;
+  const { failedSelectionRowIds } = getImportReviewAutosaveSnapshot(draftId);
+  if (failedSelectionRowIds.length === 0) return;
 
   const collection = getImportDraftRowsCollection(draftId);
   const byValue = new Map<boolean, string[]>();
-  for (const rowId of failed.rowIds) {
+  for (const rowId of failedSelectionRowIds) {
     const live = collection.get(rowId);
     if (!live) continue;
     const group = byValue.get(live.selectedForImport) ?? [];

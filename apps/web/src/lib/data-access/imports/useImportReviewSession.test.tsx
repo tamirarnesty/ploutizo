@@ -370,6 +370,56 @@ describe('useImportReviewSession', () => {
     unmount();
   });
 
+  it('keeps every failed bulk selection retryable after consecutive failures', async () => {
+    const pendingSelectionFailures = new Set(['row_ready|true', 'row_b|true']);
+    vi.mocked(fetchUpdateImportDraftRowSelection).mockImplementation(
+      (_draftId, body) => {
+        const key = `${body.rowIds.slice().sort().join(',')}|${body.selectedForImport}`;
+        if (pendingSelectionFailures.has(key)) {
+          pendingSelectionFailures.delete(key);
+          return Promise.reject(new Error('network'));
+        }
+        return Promise.resolve(
+          draft.rows
+            .filter((row) => body.rowIds.includes(row.id))
+            .map((row) => ({
+              ...row,
+              selectedForImport: body.selectedForImport,
+              updatedAt: '2026-05-20T12:00:01.000Z',
+            }))
+        );
+      }
+    );
+
+    const { result, unmount } = await hydrateSession();
+
+    act(() => {
+      result.current.setSelection(['row_ready'], true);
+    });
+
+    await waitFor(() => {
+      expect(result.current.autosaveStatus).toBe('failed');
+    });
+
+    act(() => {
+      result.current.setSelection(['row_b'], true);
+    });
+
+    await waitFor(() => {
+      expect(result.current.failedRowIds).toEqual(
+        expect.arrayContaining(['row_ready', 'row_b'])
+      );
+    });
+
+    let flushOk = true;
+    await act(async () => {
+      flushOk = await result.current.flush();
+    });
+    expect(flushOk).toBe(false);
+    expect(result.current.hasUnsavedWork).toBe(true);
+    unmount();
+  });
+
   it('flushes pending field persists before bulk selection', async () => {
     const callOrder: string[] = [];
     vi.mocked(fetchUpdateImportDraftRow).mockImplementation((rowId, body) => {
