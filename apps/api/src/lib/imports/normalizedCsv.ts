@@ -1,11 +1,16 @@
 import {
-  IMPORT_TRANSACTION_TYPE_VALUES,
   MAX_NORMALIZED_IMPORT_BYTES,
   MAX_NORMALIZED_IMPORT_ROWS,
   NORMALIZED_IMPORT_REQUIRED_COLUMNS,
   NORMALIZED_IMPORT_SOURCE,
 } from '@ploutizo/types';
 import { parseImportTags } from '@ploutizo/utils';
+import {
+  computeImportDraftRowCounts,
+  formatImportRowStructuralInvalidReason,
+  isImportRowStructurallyInvalid,
+  toImportTransactionType,
+} from '@ploutizo/utils/import-row-status';
 import type { ImportDraftRow, ImportTransactionType } from '@ploutizo/types';
 import { DomainError } from '@/lib/errors';
 
@@ -84,10 +89,6 @@ const HEADER_ALIASES: Partial<Record<string, HeaderKey>> = {
   note: 'notes',
   tags: 'tags',
 };
-
-const IMPORT_TRANSACTION_TYPES = new Set<string>(
-  IMPORT_TRANSACTION_TYPE_VALUES
-);
 
 const normalizeHeader = (value: string) =>
   value.trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ');
@@ -208,12 +209,8 @@ const parseAmountCents = (value: string | null): number | null => {
   return Number.isSafeInteger(amount) && amount > 0 ? amount : null;
 };
 
-const parseType = (value: string | null): ImportTransactionType | null => {
-  const normalized = value?.trim().toLowerCase() ?? '';
-  return IMPORT_TRANSACTION_TYPES.has(normalized)
-    ? (normalized as ImportTransactionType)
-    : null;
-};
+const parseType = (value: string | null): ImportTransactionType | null =>
+  toImportTransactionType(value?.trim().toLowerCase());
 
 const readCell = (
   record: CsvRecord,
@@ -255,24 +252,24 @@ const parseRow = (
   const parsedAmount = parseAmountCents(sourceAmount);
   const parsedType = parseType(sourceType);
   const parsedDescription = sourceDescription;
-  const invalidReasons: string[] = [];
-
-  if (!parsedDate)
-    invalidReasons.push('Date must be a valid YYYY-MM-DD value.');
-  if (!parsedAmount) invalidReasons.push('Amount must be a positive number.');
-  if (!parsedDescription) invalidReasons.push('Description is required.');
-  if (!parsedType) {
-    invalidReasons.push('Type must be expense, refund, or settlement.');
-  }
-
-  const isInvalid = invalidReasons.length > 0;
-  // Refs are resolved at ingest; parse cannot mark rows ready yet.
+  const structuralFields = {
+    reviewDate: null,
+    reviewAmount: null,
+    reviewType: null,
+    reviewDescription: null,
+    parsedDate,
+    parsedAmount,
+    parsedType,
+    parsedDescription,
+  };
+  const isInvalid = isImportRowStructurallyInvalid(structuralFields);
   const status = isInvalid ? ('invalid' as const) : ('needs_review' as const);
+  const invalidReason = formatImportRowStructuralInvalidReason(structuralFields);
 
   return {
     rowNumber: record.rowNumber,
     status,
-    invalidReason: invalidReasons.length > 0 ? invalidReasons.join(' ') : null,
+    invalidReason,
     rawData: buildRawData(record, headers),
     externalId,
     sourceDate,
@@ -351,8 +348,7 @@ export const parsePloutizoNormalizedCsv = (
   const rows = dataRecords.map((record) =>
     parseRow(record, headers, headerMap)
   );
-  const validRowCount = rows.filter((row) => row.status !== 'invalid').length;
-  const invalidRowCount = rows.length - validRowCount;
+  const { validRowCount, invalidRowCount } = computeImportDraftRowCounts(rows);
 
   if (validRowCount === 0) {
     throw new DomainError(
@@ -370,5 +366,3 @@ export const parsePloutizoNormalizedCsv = (
     rows,
   };
 };
-
-export { computeImportRowStatus } from './rowStatus';

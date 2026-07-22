@@ -51,7 +51,11 @@ export const ErrorBoundary = ({ error, reset }: ErrorComponentProps) => {
         {/* Action buttons */}
         <div className="flex justify-center gap-2">
           <Button onClick={reset}>Try again</Button>
-          <Button render={<Link to="/dashboard" />} variant="outline">
+          <Button
+            nativeButton={false}
+            render={<Link to="/dashboard" />}
+            variant="outline"
+          >
             Go to Dashboard
           </Button>
         </div>

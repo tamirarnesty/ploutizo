@@ -13,10 +13,7 @@ export interface ImportTargetAccount {
 
 export interface ImportDraftSummary {
   id: string;
-  accountId: string;
-  accountName: string;
-  accountInstitution: string | null;
-  accountLastFour: string | null;
+  account: ImportTargetAccount;
   source: string;
   status: ImportBatchStatus;
   fileName: string | null;

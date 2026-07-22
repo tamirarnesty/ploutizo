@@ -1,79 +1,60 @@
 import { describe, expect, it } from 'vitest';
 import {
-  computeImportRowStatus,
+  computeImportDraftRowCounts,
+  deriveImportRowStatus,
+  evaluateImportRow,
+  formatImportRowStructuralInvalidReason,
+  getImportRowReviewBlockers,
   isImportRowStructurallyInvalid,
+  isImportTransactionType,
+  resolveImportRowReviewAmount,
+  resolveImportRowReviewDate,
+  resolveImportRowReviewDescription,
+  resolveImportRowReviewType,
+  toImportRowStatusFields,
+  toImportTransactionType,
+  withDerivedImportRowStatus,
 } from './import-row-status';
 
-describe('computeImportRowStatus', () => {
-  const readyRow = {
-    status: 'ready' as const,
-    reviewType: 'expense' as const,
-    parsedType: 'expense' as const,
-    reviewCategoryId: 'cat-1',
-    reviewAssigneeMemberIds: ['member_1'],
-  };
-
-  it('preserves invalid status', () => {
-    expect(computeImportRowStatus({ ...readyRow, status: 'invalid' })).toBe(
-      'invalid'
-    );
+describe('import transaction type coercion', () => {
+  it('accepts known import transaction types', () => {
+    expect(isImportTransactionType('expense')).toBe(true);
+    expect(toImportTransactionType('refund')).toBe('refund');
   });
 
-  it('preserves skipped status', () => {
-    expect(computeImportRowStatus({ ...readyRow, status: 'skipped' })).toBe(
-      'skipped'
-    );
+  it('rejects unknown or empty values', () => {
+    expect(isImportTransactionType('transfer')).toBe(false);
+    expect(toImportTransactionType(null)).toBeNull();
+    expect(toImportTransactionType('nope')).toBeNull();
   });
+});
 
-  it('returns needs_review when type is missing', () => {
+describe('effective review field resolvers', () => {
+  it('falls back from review to parsed fields', () => {
     expect(
-      computeImportRowStatus({
-        ...readyRow,
-        reviewType: null,
-        parsedType: null,
+      resolveImportRowReviewDate({
+        reviewDate: null,
+        parsedDate: '2026-05-02',
       })
-    ).toBe('needs_review');
-  });
-
-  it('returns needs_review for settlement type', () => {
+    ).toBe('2026-05-02');
     expect(
-      computeImportRowStatus({
-        ...readyRow,
-        reviewType: 'settlement',
+      resolveImportRowReviewAmount({
+        reviewAmount: null,
+        parsedAmount: 4218,
       })
-    ).toBe('needs_review');
-  });
-
-  it('returns needs_review when category is missing', () => {
+    ).toBe(4218);
     expect(
-      computeImportRowStatus({
-        ...readyRow,
-        reviewCategoryId: null,
-      })
-    ).toBe('needs_review');
-  });
-
-  it('returns needs_review when assignees are missing', () => {
-    expect(
-      computeImportRowStatus({
-        ...readyRow,
-        reviewAssigneeMemberIds: [],
-      })
-    ).toBe('needs_review');
-  });
-
-  it('returns ready when expense has category and assignee', () => {
-    expect(computeImportRowStatus(readyRow)).toBe('ready');
-  });
-
-  it('falls back to parsedType when reviewType is null', () => {
-    expect(
-      computeImportRowStatus({
-        ...readyRow,
+      resolveImportRowReviewType({
         reviewType: null,
         parsedType: 'expense',
       })
-    ).toBe('ready');
+    ).toBe('expense');
+    expect(
+      resolveImportRowReviewDescription({
+        reviewDescription: null,
+        parsedDescription: 'Coffee',
+      })
+    ).toBe('Coffee');
   });
 });
 
@@ -99,6 +80,12 @@ describe('isImportRowStructurallyInvalid', () => {
     ).toBe(true);
   });
 
+  it('returns true when amount is non-positive', () => {
+    expect(
+      isImportRowStructurallyInvalid({ ...validFields, reviewAmount: 0 })
+    ).toBe(true);
+  });
+
   it('falls back to parsed fields when review fields are null', () => {
     expect(
       isImportRowStructurallyInvalid({
@@ -112,5 +99,255 @@ describe('isImportRowStructurallyInvalid', () => {
         parsedDescription: 'Coffee',
       })
     ).toBe(false);
+  });
+});
+
+describe('deriveImportRowStatus', () => {
+  const readyFields = {
+    status: 'ready' as const,
+    reviewDate: '2026-05-02',
+    reviewAmount: 4218,
+    reviewType: 'expense' as const,
+    reviewDescription: 'Coffee',
+    parsedDate: null as string | null,
+    parsedAmount: null as number | null,
+    parsedType: null as 'expense' | null,
+    parsedDescription: null as string | null,
+    reviewCategoryId: 'cat-1',
+    reviewAssigneeMemberIds: ['member_1'],
+  };
+
+  it('marks structurally invalid rows as invalid even when previously ready', () => {
+    expect(
+      deriveImportRowStatus({
+        ...readyFields,
+        reviewAmount: null,
+        parsedAmount: null,
+      })
+    ).toBe('invalid');
+  });
+
+  it('recovers from invalid to ready when structural fields and review fields are complete', () => {
+    expect(
+      deriveImportRowStatus({
+        ...readyFields,
+        status: 'invalid',
+      })
+    ).toBe('ready');
+  });
+
+  it('preserves skipped', () => {
+    expect(
+      deriveImportRowStatus({
+        ...readyFields,
+        status: 'skipped',
+        reviewCategoryId: null,
+      })
+    ).toBe('skipped');
+  });
+
+  it('returns needs_review when category is cleared', () => {
+    expect(
+      deriveImportRowStatus({
+        ...readyFields,
+        reviewCategoryId: null,
+      })
+    ).toBe('needs_review');
+  });
+
+  it('marks rows without an effective type as structurally invalid', () => {
+    expect(
+      deriveImportRowStatus({
+        ...readyFields,
+        reviewType: null,
+        parsedType: null,
+      })
+    ).toBe('invalid');
+  });
+
+  it('returns needs_review for settlement type', () => {
+    expect(
+      deriveImportRowStatus({
+        ...readyFields,
+        reviewType: 'settlement',
+      })
+    ).toBe('needs_review');
+  });
+
+  it('returns needs_review when assignees are missing', () => {
+    expect(
+      deriveImportRowStatus({
+        ...readyFields,
+        reviewAssigneeMemberIds: [],
+      })
+    ).toBe('needs_review');
+  });
+
+  it('falls back to parsedType when reviewType is null', () => {
+    expect(
+      deriveImportRowStatus({
+        ...readyFields,
+        reviewType: null,
+        parsedType: 'expense',
+      })
+    ).toBe('ready');
+  });
+
+  it('withDerivedImportRowStatus writes derived status and invalid reason onto the row', () => {
+    const row = withDerivedImportRowStatus({
+      ...readyFields,
+      reviewAmount: null,
+      parsedAmount: null,
+      invalidReason: 'Amount must be a positive number.',
+    });
+    expect(row.status).toBe('invalid');
+    expect(row.invalidReason).toBe('Amount must be a positive number.');
+  });
+});
+
+describe('computeImportDraftRowCounts', () => {
+  it('counts invalid rows and derives valid count', () => {
+    expect(
+      computeImportDraftRowCounts([
+        { status: 'ready' },
+        { status: 'needs_review' },
+        { status: 'invalid' },
+        { status: 'skipped' },
+      ])
+    ).toEqual({
+      rowCount: 4,
+      validRowCount: 3,
+      invalidRowCount: 1,
+    });
+  });
+});
+
+describe('evaluateImportRow', () => {
+  const readyFields = {
+    status: 'ready' as const,
+    reviewDate: '2026-05-02',
+    reviewAmount: 4218,
+    reviewType: 'expense' as const,
+    reviewDescription: 'Coffee',
+    parsedDate: null as string | null,
+    parsedAmount: null as number | null,
+    parsedType: null as 'expense' | null,
+    parsedDescription: null as string | null,
+    reviewCategoryId: 'cat-1',
+    reviewAssigneeMemberIds: ['member_1'],
+  };
+
+  it('returns ready with no blockers for a complete expense row', () => {
+    expect(evaluateImportRow(readyFields)).toEqual({
+      status: 'ready',
+      blockers: [],
+    });
+  });
+
+  it('keeps status and blockers on one evaluation path', () => {
+    const incomplete = {
+      ...readyFields,
+      reviewDate: null,
+      reviewAmount: 0,
+      reviewDescription: null,
+      reviewType: null,
+      parsedType: null,
+      reviewCategoryId: null,
+      reviewAssigneeMemberIds: [],
+    };
+    const evaluation = evaluateImportRow(incomplete);
+
+    expect(evaluation).toEqual({
+      status: 'invalid',
+      blockers: [
+        'date',
+        'amount',
+        'description',
+        'type',
+        'category',
+        'assignee',
+      ],
+    });
+    expect(deriveImportRowStatus(incomplete)).toBe(evaluation.status);
+    expect(getImportRowReviewBlockers(incomplete)).toEqual(evaluation.blockers);
+  });
+
+  it('flags settlement as needs_review with a settlement blocker', () => {
+    const settlement = {
+      ...readyFields,
+      reviewType: 'settlement' as const,
+    };
+    const evaluation = evaluateImportRow(settlement);
+
+    expect(evaluation).toEqual({
+      status: 'needs_review',
+      blockers: ['settlement'],
+    });
+    expect(deriveImportRowStatus(settlement)).toBe(evaluation.status);
+    expect(getImportRowReviewBlockers(settlement)).toEqual(evaluation.blockers);
+  });
+
+  it('preserves skipped while still reporting blockers', () => {
+    expect(
+      evaluateImportRow({
+        ...readyFields,
+        status: 'skipped',
+        reviewCategoryId: null,
+      })
+    ).toEqual({
+      status: 'skipped',
+      blockers: ['category'],
+    });
+  });
+});
+
+describe('formatImportRowStructuralInvalidReason', () => {
+  it('builds invalid reason copy from structural blockers', () => {
+    expect(
+      formatImportRowStructuralInvalidReason({
+        reviewDate: null,
+        reviewAmount: null,
+        reviewType: null,
+        reviewDescription: null,
+        parsedDate: null,
+        parsedAmount: null,
+        parsedType: null,
+        parsedDescription: null,
+      })
+    ).toBe(
+      'Date must be a valid YYYY-MM-DD value. Amount must be a positive number. Description is required. Type must be expense, refund, or settlement.'
+    );
+  });
+});
+
+describe('toImportRowStatusFields', () => {
+  it('normalizes nullable review fields before status derivation', () => {
+    expect(
+      toImportRowStatusFields({
+        status: 'needs_review',
+        reviewDate: '2026-05-02',
+        reviewAmount: 4218,
+        reviewType: 'expense',
+        reviewDescription: 'Coffee',
+        parsedDate: null,
+        parsedAmount: null,
+        parsedType: null,
+        parsedDescription: null,
+        reviewCategoryId: 'cat_1',
+        reviewAssigneeMemberIds: ['member_1'],
+      })
+    ).toEqual({
+      status: 'needs_review',
+      reviewDate: '2026-05-02',
+      reviewAmount: 4218,
+      reviewType: 'expense',
+      reviewDescription: 'Coffee',
+      parsedDate: null,
+      parsedAmount: null,
+      parsedType: null,
+      parsedDescription: null,
+      reviewCategoryId: 'cat_1',
+      reviewAssigneeMemberIds: ['member_1'],
+    });
   });
 });

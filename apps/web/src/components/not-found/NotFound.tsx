@@ -45,7 +45,9 @@ export const NotFound = () => {
 
         {/* Action buttons */}
         <div className="flex justify-center gap-2">
-          <Button render={<Link to="/dashboard" />}>Go to Dashboard</Button>
+          <Button nativeButton={false} render={<Link to="/dashboard" />}>
+            Go to Dashboard
+          </Button>
         </div>
       </div>
     </div>

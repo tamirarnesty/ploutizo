@@ -3,7 +3,7 @@
 import {
   HeadContent,
   Scripts,
-  createRootRoute,
+  createRootRouteWithContext,
   redirect,
 } from '@tanstack/react-router';
 import { ClerkProvider, useAuth } from '@clerk/tanstack-react-start';
@@ -21,6 +21,7 @@ import { MoneyLocaleProvider } from '../lib/money/money-locale';
 import { AppDevtools } from '../components/devtools/AppDevtools';
 import { NotFound } from '../components/not-found/NotFound';
 import { ErrorBoundary } from '../components/error-boundary/ErrorBoundary';
+import type { RouterContext } from '../router';
 
 const requireAppAccess = createServerFn({ method: 'POST' })
   .inputValidator((data: { requireOrg: boolean }) => data)
@@ -79,7 +80,7 @@ const RootDocument = ({ children }: { children: React.ReactNode }) => (
   </html>
 );
 
-export const Route = createRootRoute({
+export const Route = createRootRouteWithContext<RouterContext>()({
   beforeLoad: async ({ location }) => {
     const isAuthRoute =
       location.pathname.startsWith('/sign-in') ||
