@@ -1,7 +1,6 @@
 import { useCallback } from 'react';
 import { Text } from '@ploutizo/ui/components/text';
 import { Textarea } from '@ploutizo/ui/components/textarea';
-import { cn } from '@ploutizo/ui/lib/utils';
 import type { ImportDraftRow } from '@ploutizo/types';
 import { useRegisterInputFlush } from '@/lib/money/pending-input-flush';
 import { TransactionTagPicker } from '@/components/transactions/TransactionTagPicker';
@@ -66,20 +65,19 @@ export const ImportDraftReviewRowDetails = ({
           >
             Tags
           </Text>
-          <div className={cn(disabled && 'pointer-events-none opacity-50')}>
-            <TransactionTagPicker
-              value={row.reviewTagIds}
-              allowCreate={false}
-              inputId={tagsInputId}
-              inputAriaLabel={`Tags for ${rowLabel}`}
-              onChange={(nextTagIds) => {
-                if (nextTagIds.join('|') === row.reviewTagIds.join('|')) {
-                  return;
-                }
-                saveField({ reviewTagIds: nextTagIds });
-              }}
-            />
-          </div>
+          <TransactionTagPicker
+            value={row.reviewTagIds}
+            allowCreate={false}
+            disabled={disabled}
+            inputId={tagsInputId}
+            inputAriaLabel={`Tags for ${rowLabel}`}
+            onChange={(nextTagIds) => {
+              if (nextTagIds.join('|') === row.reviewTagIds.join('|')) {
+                return;
+              }
+              saveField({ reviewTagIds: nextTagIds });
+            }}
+          />
         </div>
       </div>
     </div>

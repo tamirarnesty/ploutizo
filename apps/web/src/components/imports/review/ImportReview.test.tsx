@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useGetImportDraft } from '@/lib/data-access/imports';
+import { useImportReviewSession } from '@/lib/data-access/imports';
 import {
   makeImportDraft,
   makeImportDraftRow,
@@ -34,7 +34,7 @@ vi.mock('@/components/transactions/TransactionTagPicker', () => ({
 }));
 
 vi.mock('@/lib/data-access/imports', () => ({
-  useGetImportDraft: vi.fn(),
+  useImportReviewSession: vi.fn(),
   useUpdateImportDraftRow: () => ({
     mutate: vi.fn(),
   }),
@@ -76,17 +76,28 @@ const draft = makeImportDraft({
   rows: [makeImportDraftRow()],
 });
 
+const toSession = (value = draft) => {
+  const { rows, ...meta } = value;
+  return {
+    meta,
+    rows,
+    isLoading: false,
+    isError: false,
+  };
+};
+
 describe('ImportReview', () => {
   beforeEach(() => {
     vi.resetAllMocks();
   });
 
   it('shows a missing draft empty state', () => {
-    vi.mocked(useGetImportDraft).mockReturnValue({
-      data: undefined,
+    vi.mocked(useImportReviewSession).mockReturnValue({
+      meta: undefined,
+      rows: [],
       isLoading: false,
       isError: true,
-    } as never);
+    });
 
     render(<ImportReview draftId="missing" />);
 
@@ -97,15 +108,12 @@ describe('ImportReview', () => {
     );
   });
 
-  it('renders the review grid for an active draft', () => {
-    vi.mocked(useGetImportDraft).mockReturnValue({
-      data: draft,
-      isLoading: false,
-      isError: false,
-    } as never);
+  it('renders the review grid for an active draft from the working-copy session', () => {
+    vi.mocked(useImportReviewSession).mockReturnValue(toSession());
 
     render(<ImportReview draftId="draft_1" />);
 
+    expect(useImportReviewSession).toHaveBeenCalledWith('draft_1');
     expect(
       screen.getByRole('navigation', { name: 'breadcrumb' })
     ).toBeInTheDocument();
@@ -122,21 +130,18 @@ describe('ImportReview', () => {
   });
 
   it('shows an empty state when no rows are reviewable', () => {
-    vi.mocked(useGetImportDraft).mockReturnValue({
-      data: makeImportDraft({
-        validRowCount: 0,
-        invalidRowCount: 1,
-        rowCount: 1,
-        rows: [
-          makeImportDraftRow({
-            status: 'invalid',
-            invalidReason: 'Amount must be a positive number.',
-          }),
-        ],
-      }),
-      isLoading: false,
-      isError: false,
-    } as never);
+    const emptyDraft = makeImportDraft({
+      validRowCount: 0,
+      invalidRowCount: 1,
+      rowCount: 1,
+      rows: [
+        makeImportDraftRow({
+          status: 'invalid',
+          invalidReason: 'Amount must be a positive number.',
+        }),
+      ],
+    });
+    vi.mocked(useImportReviewSession).mockReturnValue(toSession(emptyDraft));
 
     render(<ImportReview draftId="draft_1" />);
 

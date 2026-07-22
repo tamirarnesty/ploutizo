@@ -7,20 +7,20 @@ import {
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
 import { formatAccountLabel } from '@ploutizo/utils';
-import type { ImportDraft } from '@ploutizo/types';
+import type { ImportDraftMeta } from '@/lib/data-access/imports';
 import { formatImportDraftReviewSubtitle } from '../lib/importPresentation';
 
 const IMPORT_COMMIT_PREVIEW_COPY = 'Import commit coming soon';
 
 interface ImportDraftReviewHeaderProps {
-  draft?: ImportDraft;
+  meta?: ImportDraftMeta;
   isLoading?: boolean;
   canContinue: boolean;
   continueBlocker: string | null;
 }
 
 export const ImportDraftReviewHeader = ({
-  draft,
+  meta,
   isLoading = false,
   canContinue: _canContinue,
   continueBlocker,
@@ -38,13 +38,13 @@ export const ImportDraftReviewHeader = ({
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div className="min-w-0 flex-1">
-        {draft ? (
+        {meta ? (
           <>
             <Text as="h2" variant="h3" className="truncate">
-              {formatAccountLabel(draft.account)}
+              {formatAccountLabel(meta.account)}
             </Text>
             <Text variant="body-sm" className="truncate text-muted-foreground">
-              {formatImportDraftReviewSubtitle(draft)}
+              {formatImportDraftReviewSubtitle(meta)}
             </Text>
           </>
         ) : (
@@ -55,17 +55,15 @@ export const ImportDraftReviewHeader = ({
         )}
       </div>
       <div className="flex flex-col items-end gap-1.5">
-        {draft ? (
+        {isLoading ? (
+          <Skeleton className="h-9 w-24" />
+        ) : (
           <Tooltip>
             <TooltipTrigger render={continueButton} />
             <TooltipContent>{tooltipContent}</TooltipContent>
           </Tooltip>
-        ) : isLoading ? (
-          <Skeleton className="h-9 w-24" />
-        ) : (
-          continueButton
         )}
-        {draft ? (
+        {meta ? (
           <Text
             variant="body-sm"
             className="max-w-sm text-right text-muted-foreground"

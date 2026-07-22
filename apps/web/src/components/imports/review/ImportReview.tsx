@@ -17,7 +17,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@ploutizo/ui/components/empty';
-import { useGetImportDraft } from '@/lib/data-access/imports';
+import { useImportReviewSession } from '@/lib/data-access/imports';
 import { ImportDraftReview } from './ImportDraftReview';
 
 interface ImportReviewProps {
@@ -43,21 +43,15 @@ const ImportReviewBreadcrumbs = () => (
 const importReviewPageClassName = 'flex min-h-0 flex-1 flex-col gap-8';
 
 export const ImportReview = ({ draftId }: ImportReviewProps) => {
-  const { data: draft, isLoading, isError } = useGetImportDraft(draftId);
+  const { meta, rows, isLoading, isError } = useImportReviewSession(draftId);
 
-  if (isLoading) {
-    return (
-      <div className={importReviewPageClassName}>
-        <ImportReviewBreadcrumbs />
-        <ImportDraftReview isLoading />
-      </div>
-    );
-  }
+  const body = (() => {
+    if (isLoading) {
+      return <ImportDraftReview isLoading />;
+    }
 
-  if (isError || !draft) {
-    return (
-      <div className={importReviewPageClassName}>
-        <ImportReviewBreadcrumbs />
+    if (isError || !meta) {
+      return (
         <Empty className="min-h-[360px] border border-dashed">
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -77,14 +71,16 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
             </Button>
           </EmptyContent>
         </Empty>
-      </div>
-    );
-  }
+      );
+    }
+
+    return <ImportDraftReview meta={meta} rows={rows} />;
+  })();
 
   return (
     <div className={importReviewPageClassName}>
       <ImportReviewBreadcrumbs />
-      <ImportDraftReview draft={draft} />
+      {body}
     </div>
   );
 };

@@ -193,15 +193,13 @@ describe('deriveImportRowStatus', () => {
     ).toBe('ready');
   });
 
-  it('withDerivedImportRowStatus writes derived status and invalid reason onto the row', () => {
+  it('withDerivedImportRowStatus writes derived status onto the row', () => {
     const row = withDerivedImportRowStatus({
       ...readyFields,
       reviewAmount: null,
       parsedAmount: null,
-      invalidReason: 'Amount must be a positive number.',
     });
     expect(row.status).toBe('invalid');
-    expect(row.invalidReason).toBe('Amount must be a positive number.');
   });
 });
 

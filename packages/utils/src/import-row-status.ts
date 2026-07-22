@@ -118,9 +118,7 @@ export const formatImportRowStructuralInvalidReason = (
 ): string | null => {
   const blockers = getImportRowStructuralBlockers(row);
   if (blockers.length === 0) return null;
-  return blockers
-    .map((blocker) => STRUCTURAL_BLOCKER_MESSAGES[blocker])
-    .join(' ');
+  return blockers.map((blocker) => STRUCTURAL_BLOCKER_MESSAGES[blocker]).join(' ');
 };
 
 export const toImportRowStatusFields = (
@@ -191,19 +189,12 @@ export const deriveImportRowStatus = (
   row: ImportRowStatusFields
 ): ImportRowStatus => evaluateImportRow(row).status;
 
-export const withDerivedImportRowStatus = <
-  T extends ImportRowStatusFields & { invalidReason?: string | null },
->(
+export const withDerivedImportRowStatus = <T extends ImportRowStatusFields>(
   row: T
-): T => {
-  const status = deriveImportRowStatus(row);
-  return {
-    ...row,
-    status,
-    invalidReason:
-      status === 'invalid' ? formatImportRowStructuralInvalidReason(row) : null,
-  };
-};
+): T => ({
+  ...row,
+  status: deriveImportRowStatus(row),
+});
 
 export const computeImportDraftRowCounts = (
   rows: ReadonlyArray<{ status: ImportRowStatus }>
