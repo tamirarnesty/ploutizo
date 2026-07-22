@@ -3,7 +3,6 @@ import { NORMALIZED_IMPORT_EXAMPLE_CSV } from '@ploutizo/types';
 import { createImportReferenceResolver } from '@ploutizo/utils';
 import {
   deriveImportRowStatus,
-  formatImportRowStructuralInvalidReason,
   toImportRowStatusFields,
   toImportTransactionType,
 } from '@ploutizo/utils/import-row-status';
@@ -255,21 +254,21 @@ export const updateImportDraftRow = async (
     memberIds: merged.reviewAssigneeMemberIds,
   });
 
-  const statusFields = toImportRowStatusFields({
-    status: existing.status,
-    reviewDate: merged.reviewDate ?? null,
-    reviewAmount: merged.reviewAmount ?? null,
-    reviewType: toImportTransactionType(merged.reviewType),
-    reviewDescription: merged.reviewDescription ?? null,
-    parsedDate: merged.parsedDate ?? null,
-    parsedAmount: merged.parsedAmount ?? null,
-    parsedType: toImportTransactionType(merged.parsedType),
-    parsedDescription: merged.parsedDescription ?? null,
-    reviewCategoryId: merged.reviewCategoryId ?? null,
-    reviewAssigneeMemberIds: merged.reviewAssigneeMemberIds,
-  });
-
-  const status = deriveImportRowStatus(statusFields);
+  const status = deriveImportRowStatus(
+    toImportRowStatusFields({
+      status: existing.status,
+      reviewDate: merged.reviewDate ?? null,
+      reviewAmount: merged.reviewAmount ?? null,
+      reviewType: toImportTransactionType(merged.reviewType),
+      reviewDescription: merged.reviewDescription ?? null,
+      parsedDate: merged.parsedDate ?? null,
+      parsedAmount: merged.parsedAmount ?? null,
+      parsedType: toImportTransactionType(merged.parsedType),
+      parsedDescription: merged.parsedDescription ?? null,
+      reviewCategoryId: merged.reviewCategoryId ?? null,
+      reviewAssigneeMemberIds: merged.reviewAssigneeMemberIds,
+    })
+  );
 
   const wasInvalid = existing.status === 'invalid';
   const isInvalid = status === 'invalid';
@@ -287,9 +286,9 @@ export const updateImportDraftRow = async (
       {
         ...input,
         status,
-        invalidReason: isInvalid
-          ? formatImportRowStructuralInvalidReason(statusFields)
-          : null,
+        ...(existing.status === 'invalid' && !isInvalid
+          ? { invalidReason: null }
+          : {}),
       },
       tx
     );
