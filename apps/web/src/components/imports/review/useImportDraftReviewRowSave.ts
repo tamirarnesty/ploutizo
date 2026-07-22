@@ -7,7 +7,7 @@ import { useImportDraftReviewContext } from './ImportDraftReviewContext';
 export const useImportDraftReviewRowSave = (row: ImportDraftRow) => {
   const { draftId } = useImportDraftReviewContext();
   const updateRow = useUpdateImportDraftRow();
-  const disabled = row.status === 'invalid';
+  const disabled = row.status === 'skipped';
 
   const saveField = useCallback(
     (

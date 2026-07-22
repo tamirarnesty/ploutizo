@@ -365,7 +365,7 @@ describe('ImportDraftReview', () => {
     );
   });
 
-  it('shows read-only assignee avatars for invalid rows in the grid', () => {
+  it('keeps assignee editing enabled for invalid rows and disabled for skipped rows', () => {
     renderReview(
       makeImportDraft({
         rows: [
@@ -383,12 +383,19 @@ describe('ImportDraftReview', () => {
             reviewAssigneeMemberIds: ['member_1'],
             invalidReason: 'Amount must be a positive number.',
           }),
+          makeImportDraftRow({
+            id: 'row_skipped',
+            rowNumber: 5,
+            status: 'skipped',
+            reviewDescription: 'Matched duplicate',
+            reviewAssigneeMemberIds: ['member_1'],
+          }),
         ],
       })
     );
 
+    expect(screen.getAllByTestId('member-toggle-group')).toHaveLength(2);
     expect(screen.getAllByTestId('member-avatar-group')).toHaveLength(1);
     expect(screen.getByText('Tamir Arnesty')).toBeInTheDocument();
-    expect(screen.getAllByTestId('member-toggle-group')).toHaveLength(1);
   });
 });
