@@ -121,6 +121,9 @@ describe('patchImportDraftCache', () => {
 
     const draft = qc.getQueryData<ImportDraft>(importDraftQueryKey(draftId));
     expect(draft?.rows[0]?.status).toBe('invalid');
+    expect(draft?.rows[0]?.invalidReason).toBe(
+      'Amount must be a positive number.'
+    );
     expect(draft?.rows[0]?.reviewAmount).toBeNull();
     expect(draft?.invalidRowCount).toBe(1);
     expect(draft?.validRowCount).toBe(0);
@@ -147,6 +150,7 @@ describe('patchImportDraftCache', () => {
 
     const draft = qc.getQueryData<ImportDraft>(importDraftQueryKey(draftId));
     expect(draft?.rows[0]?.status).toBe('ready');
+    expect(draft?.rows[0]?.invalidReason).toBeNull();
     expect(draft?.invalidRowCount).toBe(0);
     expect(draft?.validRowCount).toBe(1);
   });
