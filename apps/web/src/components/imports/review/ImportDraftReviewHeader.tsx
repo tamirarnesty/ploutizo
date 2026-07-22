@@ -6,11 +6,9 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
+import { formatAccountLabel } from '@ploutizo/utils';
 import type { ImportDraft } from '@ploutizo/types';
-import {
-  formatDraftAccountLabel,
-  formatImportDraftReviewSubtitle,
-} from '../lib/importPresentation';
+import { formatImportDraftReviewSubtitle } from '../lib/importPresentation';
 
 const IMPORT_COMMIT_PREVIEW_COPY = 'Import commit coming soon';
 
@@ -43,7 +41,7 @@ export const ImportDraftReviewHeader = ({
         {draft ? (
           <>
             <Text as="h2" variant="h3" className="truncate">
-              {formatDraftAccountLabel(draft)}
+              {formatAccountLabel(draft.account)}
             </Text>
             <Text variant="body-sm" className="truncate text-muted-foreground">
               {formatImportDraftReviewSubtitle(draft)}

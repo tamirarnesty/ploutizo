@@ -1,4 +1,3 @@
-import { formatAccountLabel } from '@ploutizo/utils';
 import { getLiveAssigneeMemberIds } from '@ploutizo/utils/import-row-readiness';
 import {
   getImportRowReviewBlockers,
@@ -13,19 +12,24 @@ import type {
   OrgMember,
 } from '@ploutizo/types';
 
+type ImportRowMissingBlocker = Exclude<ImportRowReviewBlocker, 'settlement'>;
+
+const IMPORT_ROW_MISSING_BLOCKER_LABELS: Record<
+  ImportRowMissingBlocker,
+  string
+> = {
+  date: 'date',
+  amount: 'amount',
+  description: 'description',
+  type: 'type',
+  category: 'category',
+  assignee: 'assignee',
+};
+
 export const getImportRowLabel = (row: ImportDraftRow): string =>
   resolveImportRowReviewDescription(row) ??
   row.sourceDescription?.trim() ??
   'import row';
-
-export const formatDraftAccountLabel = (
-  draft: ImportDraftSummary | ImportDraft
-): string =>
-  formatAccountLabel({
-    name: draft.accountName,
-    institution: draft.accountInstitution,
-    lastFour: draft.accountLastFour,
-  });
 
 const IMPORT_BATCH_STATUS_LABELS: Record<ImportBatchStatus, string> = {
   draft: 'Draft',
@@ -39,11 +43,8 @@ export const formatImportBatchStatusLabel = (
 
 export const importBatchStatusVariant = (
   status: ImportBatchStatus
-): 'destructive' | 'secondary' | 'default' | 'outline' | undefined => {
-  if (status === 'completed') return 'outline';
-  if (status === 'discarded') return 'secondary';
-  return 'secondary';
-};
+): 'destructive' | 'secondary' | 'default' | 'outline' | undefined =>
+  status === 'completed' ? 'outline' : 'secondary';
 
 export const resolveImportRowOriginalDescription = (
   row: ImportDraftRow
@@ -53,41 +54,32 @@ export const resolveImportRowOriginalDescription = (
   return trimmed ? trimmed : null;
 };
 
-const IMPORT_ROW_MISSING_BLOCKER_LABELS: Record<
-  Exclude<ImportRowReviewBlocker, 'settlement'>,
-  string
-> = {
-  date: 'date',
-  amount: 'amount',
-  description: 'description',
-  type: 'type',
-  category: 'category',
-  assignee: 'assignee',
+const formatNeedsReviewTooltip = (
+  blockers: ImportRowReviewBlocker[]
+): string => {
+  if (blockers.length === 0) return 'Needs review';
+
+  const requiresSettlement = blockers.includes('settlement');
+  const missingLabels = blockers
+    .filter(
+      (blocker): blocker is ImportRowMissingBlocker => blocker !== 'settlement'
+    )
+    .map((blocker) => IMPORT_ROW_MISSING_BLOCKER_LABELS[blocker]);
+
+  const parts: string[] = [];
+  if (requiresSettlement) parts.push('settlement requires review');
+  if (missingLabels.length > 0) {
+    parts.push(`missing ${missingLabels.join(', ')}`);
+  }
+  return `Needs review: ${parts.join('; ')}`;
 };
 
 export const getImportRowStatusTooltip = (row: ImportDraftRow): string => {
   switch (row.status) {
     case 'ready':
       return 'Ready to import';
-    case 'needs_review': {
-      const blockers = getImportRowReviewBlockers(row);
-      if (blockers.length === 0) return 'Needs review';
-
-      const requiresSettlement = blockers.includes('settlement');
-      const missingLabels = blockers
-        .filter(
-          (blocker): blocker is Exclude<ImportRowReviewBlocker, 'settlement'> =>
-            blocker !== 'settlement'
-        )
-        .map((blocker) => IMPORT_ROW_MISSING_BLOCKER_LABELS[blocker]);
-
-      const parts: string[] = [];
-      if (requiresSettlement) parts.push('settlement requires review');
-      if (missingLabels.length > 0) {
-        parts.push(`missing ${missingLabels.join(', ')}`);
-      }
-      return `Needs review: ${parts.join('; ')}`;
-    }
+    case 'needs_review':
+      return formatNeedsReviewTooltip(getImportRowReviewBlockers(row));
     case 'invalid':
       return row.invalidReason ?? 'Invalid row';
     case 'skipped':

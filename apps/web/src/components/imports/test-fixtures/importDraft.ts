@@ -68,10 +68,12 @@ export const makeImportDraft = (
 
   return {
     id: DRAFT_ID,
-    accountId: 'acct_1',
-    accountName: 'Visa',
-    accountInstitution: 'TD',
-    accountLastFour: '1234',
+    account: {
+      id: 'acct_1',
+      name: 'Visa',
+      institution: 'TD',
+      lastFour: '1234',
+    },
     source: 'ploutizo_normalized',
     status: 'draft',
     fileName: 'statement.csv',

@@ -109,10 +109,12 @@ vi.mock('@/lib/data-access/imports', () => ({
 
 const draftSummary = {
   id: 'draft_1',
-  accountId: 'acct_1',
-  accountName: 'Visa',
-  accountInstitution: 'TD',
-  accountLastFour: '1234',
+  account: {
+    id: 'acct_1',
+    name: 'Visa',
+    institution: 'TD',
+    lastFour: '1234',
+  },
   source: 'ploutizo_normalized',
   status: 'draft' as const,
   fileName: 'statement.csv',

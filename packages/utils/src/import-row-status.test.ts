@@ -3,6 +3,7 @@ import {
   computeImportDraftRowCounts,
   deriveImportRowStatus,
   evaluateImportRow,
+  formatImportRowStructuralInvalidReason,
   getImportRowReviewBlockers,
   isImportRowStructurallyInvalid,
   isImportTransactionType,
@@ -10,6 +11,7 @@ import {
   resolveImportRowReviewDate,
   resolveImportRowReviewDescription,
   resolveImportRowReviewType,
+  toImportRowStatusFields,
   toImportTransactionType,
   withDerivedImportRowStatus,
 } from './import-row-status';
@@ -293,6 +295,57 @@ describe('evaluateImportRow', () => {
     ).toEqual({
       status: 'skipped',
       blockers: ['category'],
+    });
+  });
+});
+
+describe('formatImportRowStructuralInvalidReason', () => {
+  it('builds invalid reason copy from structural blockers', () => {
+    expect(
+      formatImportRowStructuralInvalidReason({
+        reviewDate: null,
+        reviewAmount: null,
+        reviewType: null,
+        reviewDescription: null,
+        parsedDate: null,
+        parsedAmount: null,
+        parsedType: null,
+        parsedDescription: null,
+      })
+    ).toBe(
+      'Date must be a valid YYYY-MM-DD value. Amount must be a positive number. Description is required. Type must be expense, refund, or settlement.'
+    );
+  });
+});
+
+describe('toImportRowStatusFields', () => {
+  it('normalizes nullable review fields before status derivation', () => {
+    expect(
+      toImportRowStatusFields({
+        status: 'needs_review',
+        reviewDate: '2026-05-02',
+        reviewAmount: 4218,
+        reviewType: 'expense',
+        reviewDescription: 'Coffee',
+        parsedDate: null,
+        parsedAmount: null,
+        parsedType: null,
+        parsedDescription: null,
+        reviewCategoryId: 'cat_1',
+        reviewAssigneeMemberIds: ['member_1'],
+      })
+    ).toEqual({
+      status: 'needs_review',
+      reviewDate: '2026-05-02',
+      reviewAmount: 4218,
+      reviewType: 'expense',
+      reviewDescription: 'Coffee',
+      parsedDate: null,
+      parsedAmount: null,
+      parsedType: null,
+      parsedDescription: null,
+      reviewCategoryId: 'cat_1',
+      reviewAssigneeMemberIds: ['member_1'],
     });
   });
 });

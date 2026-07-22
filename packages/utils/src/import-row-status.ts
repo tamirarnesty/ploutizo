@@ -22,12 +22,6 @@ export interface ImportRowReviewFields {
   reviewAssigneeMemberIds: string[];
 }
 
-/** Fields required to derive durable/optimistic import row status. */
-export type ImportRowStatusFields = ImportRowStructuralFields &
-  ImportRowReviewFields & {
-    status: ImportRowStatus;
-  };
-
 export type ImportRowReviewBlocker =
   | 'date'
   | 'amount'
@@ -36,6 +30,27 @@ export type ImportRowReviewBlocker =
   | 'category'
   | 'assignee'
   | 'settlement';
+
+/** Fields required to derive durable/optimistic import row status. */
+export type ImportRowStatusInput = ImportRowStructuralFields &
+  ImportRowReviewFields;
+
+export type ImportRowStatusFields = ImportRowStatusInput & {
+  status: ImportRowStatus;
+};
+
+export type ImportRowStructuralBlocker = Extract<
+  ImportRowReviewBlocker,
+  'date' | 'amount' | 'description' | 'type'
+>;
+
+const STRUCTURAL_BLOCKER_MESSAGES: Record<ImportRowStructuralBlocker, string> =
+  {
+    date: 'Date must be a valid YYYY-MM-DD value.',
+    amount: 'Amount must be a positive number.',
+    description: 'Description is required.',
+    type: 'Type must be expense, refund, or settlement.',
+  };
 
 const STRUCTURAL_BLOCKERS = new Set<ImportRowReviewBlocker>([
   'date',
@@ -82,10 +97,10 @@ export const resolveImportRowReviewDescription = (
   return trimmed ? trimmed : null;
 };
 
-const getStructuralBlockers = (
+export const getImportRowStructuralBlockers = (
   row: ImportRowStructuralFields
-): ImportRowReviewBlocker[] => {
-  const blockers: ImportRowReviewBlocker[] = [];
+): ImportRowStructuralBlocker[] => {
+  const blockers: ImportRowStructuralBlocker[] = [];
   const date = resolveImportRowReviewDate(row);
   const amount = resolveImportRowReviewAmount(row);
   const type = resolveImportRowReviewType(row);
@@ -97,6 +112,30 @@ const getStructuralBlockers = (
   if (!type) blockers.push('type');
   return blockers;
 };
+
+export const formatImportRowStructuralInvalidReason = (
+  row: ImportRowStructuralFields
+): string | null => {
+  const blockers = getImportRowStructuralBlockers(row);
+  if (blockers.length === 0) return null;
+  return blockers.map((blocker) => STRUCTURAL_BLOCKER_MESSAGES[blocker]).join(' ');
+};
+
+export const toImportRowStatusFields = (
+  row: ImportRowStatusInput & { status: ImportRowStatus }
+): ImportRowStatusFields => ({
+  status: row.status,
+  reviewDate: row.reviewDate ?? null,
+  reviewAmount: row.reviewAmount ?? null,
+  reviewType: toImportTransactionType(row.reviewType),
+  reviewDescription: row.reviewDescription ?? null,
+  parsedDate: row.parsedDate ?? null,
+  parsedAmount: row.parsedAmount ?? null,
+  parsedType: toImportTransactionType(row.parsedType),
+  parsedDescription: row.parsedDescription ?? null,
+  reviewCategoryId: row.reviewCategoryId ?? null,
+  reviewAssigneeMemberIds: row.reviewAssigneeMemberIds ?? [],
+});
 
 const getReviewPhaseBlockers = (
   row: ImportRowReviewFields
@@ -114,13 +153,13 @@ const getReviewPhaseBlockers = (
 export const getImportRowReviewBlockers = (
   row: ImportRowStructuralFields & ImportRowReviewFields
 ): ImportRowReviewBlocker[] => [
-  ...getStructuralBlockers(row),
+  ...getImportRowStructuralBlockers(row),
   ...getReviewPhaseBlockers(row),
 ];
 
 export const isImportRowStructurallyInvalid = (
   row: ImportRowStructuralFields
-): boolean => getStructuralBlockers(row).length > 0;
+): boolean => getImportRowStructuralBlockers(row).length > 0;
 
 /**
  * Single evaluation of durable/optimistic import row status + blockers.

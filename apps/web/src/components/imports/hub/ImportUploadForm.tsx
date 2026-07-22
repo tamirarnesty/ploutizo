@@ -56,7 +56,7 @@ export const ImportUploadForm = ({
 
   const activeDraftByAccount = useMemo(() => {
     const map = new Map<string, ImportDraftSummary>();
-    for (const draft of activeDrafts) map.set(draft.accountId, draft);
+    for (const draft of activeDrafts) map.set(draft.account.id, draft);
     return map;
   }, [activeDrafts]);
 

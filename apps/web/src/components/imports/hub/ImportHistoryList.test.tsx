@@ -5,10 +5,12 @@ import { ImportHistoryList } from './ImportHistoryList';
 
 const historyItem: ImportDraftSummary = {
   id: 'batch_1',
-  accountId: 'acct_1',
-  accountName: 'Visa',
-  accountInstitution: 'TD',
-  accountLastFour: '1234',
+  account: {
+    id: 'acct_1',
+    name: 'Visa',
+    institution: 'TD',
+    lastFour: '1234',
+  },
   source: 'ploutizo_normalized',
   status: 'completed',
   fileName: 'statement.csv',

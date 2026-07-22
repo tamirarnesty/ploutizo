@@ -3,6 +3,7 @@ import { NORMALIZED_IMPORT_EXAMPLE_CSV } from '@ploutizo/types';
 import { createImportReferenceResolver } from '@ploutizo/utils';
 import {
   deriveImportRowStatus,
+  toImportRowStatusFields,
   toImportTransactionType,
 } from '@ploutizo/utils/import-row-status';
 import type {
@@ -58,14 +59,31 @@ const toImportDraftSummary = (
   if (!row.accountId) {
     throw new DomainError(500, 'Import draft is missing an account.');
   }
+  const {
+    accountId,
+    accountName,
+    accountInstitution,
+    accountLastFour,
+    importedAt,
+    completedAt,
+    discardedAt,
+    createdAt,
+    updatedAt,
+    ...summary
+  } = row;
   return {
-    ...row,
-    accountId: row.accountId,
-    importedAt: row.importedAt.toISOString(),
-    completedAt: row.completedAt?.toISOString() ?? null,
-    discardedAt: row.discardedAt?.toISOString() ?? null,
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
+    ...summary,
+    account: {
+      id: accountId,
+      name: accountName,
+      institution: accountInstitution,
+      lastFour: accountLastFour,
+    },
+    importedAt: importedAt.toISOString(),
+    completedAt: completedAt?.toISOString() ?? null,
+    discardedAt: discardedAt?.toISOString() ?? null,
+    createdAt: createdAt.toISOString(),
+    updatedAt: updatedAt.toISOString(),
   };
 };
 
@@ -173,19 +191,21 @@ export const createNormalizedImportDraft = async (
           return {
             ...rowFields,
             ...resolvedRefs,
-            status: deriveImportRowStatus({
-              status: row.status,
-              reviewDate: row.reviewDate ?? null,
-              reviewAmount: row.reviewAmount ?? null,
-              reviewType: toImportTransactionType(row.reviewType),
-              reviewDescription: row.reviewDescription ?? null,
-              parsedDate: row.parsedDate ?? null,
-              parsedAmount: row.parsedAmount ?? null,
-              parsedType: toImportTransactionType(row.parsedType),
-              parsedDescription: row.parsedDescription ?? null,
-              reviewCategoryId: resolvedRefs.reviewCategoryId,
-              reviewAssigneeMemberIds: resolvedRefs.reviewAssigneeMemberIds,
-            }),
+            status: deriveImportRowStatus(
+              toImportRowStatusFields({
+                status: row.status,
+                reviewDate: row.reviewDate ?? null,
+                reviewAmount: row.reviewAmount ?? null,
+                reviewType: toImportTransactionType(row.reviewType),
+                reviewDescription: row.reviewDescription ?? null,
+                parsedDate: row.parsedDate ?? null,
+                parsedAmount: row.parsedAmount ?? null,
+                parsedType: toImportTransactionType(row.parsedType),
+                parsedDescription: row.parsedDescription ?? null,
+                reviewCategoryId: resolvedRefs.reviewCategoryId,
+                reviewAssigneeMemberIds: resolvedRefs.reviewAssigneeMemberIds,
+              })
+            ),
             orgId,
             batchId: batch.id,
           };
@@ -234,21 +254,21 @@ export const updateImportDraftRow = async (
     memberIds: merged.reviewAssigneeMemberIds,
   });
 
-  const reviewType = toImportTransactionType(merged.reviewType);
-  const parsedType = toImportTransactionType(merged.parsedType);
-  const status = deriveImportRowStatus({
-    status: existing.status,
-    reviewDate: merged.reviewDate ?? null,
-    reviewAmount: merged.reviewAmount ?? null,
-    reviewType,
-    reviewDescription: merged.reviewDescription ?? null,
-    parsedDate: merged.parsedDate ?? null,
-    parsedAmount: merged.parsedAmount ?? null,
-    parsedType,
-    parsedDescription: merged.parsedDescription ?? null,
-    reviewCategoryId: merged.reviewCategoryId ?? null,
-    reviewAssigneeMemberIds: merged.reviewAssigneeMemberIds,
-  });
+  const status = deriveImportRowStatus(
+    toImportRowStatusFields({
+      status: existing.status,
+      reviewDate: merged.reviewDate ?? null,
+      reviewAmount: merged.reviewAmount ?? null,
+      reviewType: toImportTransactionType(merged.reviewType),
+      reviewDescription: merged.reviewDescription ?? null,
+      parsedDate: merged.parsedDate ?? null,
+      parsedAmount: merged.parsedAmount ?? null,
+      parsedType: toImportTransactionType(merged.parsedType),
+      parsedDescription: merged.parsedDescription ?? null,
+      reviewCategoryId: merged.reviewCategoryId ?? null,
+      reviewAssigneeMemberIds: merged.reviewAssigneeMemberIds,
+    })
+  );
 
   const wasInvalid = existing.status === 'invalid';
   const isInvalid = status === 'invalid';

@@ -4,8 +4,8 @@ import { Badge } from '@ploutizo/ui/components/badge';
 import { Button } from '@ploutizo/ui/components/button';
 import { LoadingButton } from '@ploutizo/ui/components/loading-button';
 import { Text } from '@ploutizo/ui/components/text';
+import { formatAccountLabel } from '@ploutizo/utils';
 import type { ImportDraftSummary } from '@ploutizo/types';
-import { formatDraftAccountLabel } from '../lib/importPresentation';
 
 interface ImportDraftCardProps {
   draft: ImportDraftSummary;
@@ -24,7 +24,7 @@ export const ImportDraftCard = ({
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0">
         <Text variant="body-sm" className="truncate font-semibold">
-          {formatDraftAccountLabel(draft)}
+          {formatAccountLabel(draft.account)}
         </Text>
         <Text variant="body-sm" className="truncate text-muted-foreground">
           {draft.fileName ?? 'Untitled CSV'}

@@ -61,10 +61,12 @@ const baseRowB = (): ImportDraftRow =>
 
 const seedDraft = (rows: ImportDraftRow[]): ImportDraft => ({
   id: draftId,
-  accountId: '22222222-2222-4222-8222-222222222222',
-  accountName: 'Visa',
-  accountInstitution: 'TD',
-  accountLastFour: '1234',
+  account: {
+    id: '22222222-2222-4222-8222-222222222222',
+    name: 'Visa',
+    institution: 'TD',
+    lastFour: '1234',
+  },
   source: 'ploutizo_normalized',
   status: 'draft',
   fileName: 'statement.csv',
@@ -82,10 +84,7 @@ const seedDraft = (rows: ImportDraftRow[]): ImportDraft => ({
 const seedActiveSummary = (draft: ImportDraft) => {
   const summary: ImportDraftSummary = {
     id: draft.id,
-    accountId: draft.accountId,
-    accountName: draft.accountName,
-    accountInstitution: draft.accountInstitution,
-    accountLastFour: draft.accountLastFour,
+    account: draft.account,
     source: draft.source,
     status: draft.status,
     fileName: draft.fileName,

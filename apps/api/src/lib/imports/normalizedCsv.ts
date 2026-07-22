@@ -7,6 +7,7 @@ import {
 import { parseImportTags } from '@ploutizo/utils';
 import {
   computeImportDraftRowCounts,
+  formatImportRowStructuralInvalidReason,
   isImportRowStructurallyInvalid,
   toImportTransactionType,
 } from '@ploutizo/utils/import-row-status';
@@ -251,19 +252,7 @@ const parseRow = (
   const parsedAmount = parseAmountCents(sourceAmount);
   const parsedType = parseType(sourceType);
   const parsedDescription = sourceDescription;
-  const invalidReasons: string[] = [];
-
-  if (!parsedDate)
-    invalidReasons.push('Date must be a valid YYYY-MM-DD value.');
-  if (!parsedAmount) invalidReasons.push('Amount must be a positive number.');
-  if (!parsedDescription) invalidReasons.push('Description is required.');
-  if (!parsedType) {
-    invalidReasons.push('Type must be expense, refund, or settlement.');
-  }
-
-  // Classify with the shared structural helper; parse owns reason copy only.
-  // Refs are resolved at ingest; parse cannot mark rows ready yet.
-  const isInvalid = isImportRowStructurallyInvalid({
+  const structuralFields = {
     reviewDate: null,
     reviewAmount: null,
     reviewType: null,
@@ -272,13 +261,15 @@ const parseRow = (
     parsedAmount,
     parsedType,
     parsedDescription,
-  });
+  };
+  const isInvalid = isImportRowStructurallyInvalid(structuralFields);
   const status = isInvalid ? ('invalid' as const) : ('needs_review' as const);
+  const invalidReason = formatImportRowStructuralInvalidReason(structuralFields);
 
   return {
     rowNumber: record.rowNumber,
     status,
-    invalidReason: invalidReasons.length > 0 ? invalidReasons.join(' ') : null,
+    invalidReason,
     rawData: buildRawData(record, headers),
     externalId,
     sourceDate,
