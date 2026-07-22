@@ -1,6 +1,7 @@
 export {
   computeImportDraftRowCounts,
   deriveImportRowStatus,
+  evaluateImportRow,
   getImportRowReviewBlockers,
   isImportRowStructurallyInvalid,
   isImportTransactionType,
@@ -10,6 +11,7 @@ export {
   resolveImportRowReviewType,
   toImportTransactionType,
   withDerivedImportRowStatus,
+  type ImportRowEvaluation,
   type ImportRowReviewBlocker,
   type ImportRowReviewFields,
   type ImportRowStatusFields,
@@ -20,6 +22,7 @@ export {
   formatImportReviewContinueBlocker,
   getImportReviewContinueBlocker,
   getImportReviewContinueBlockerReason,
+  getLiveAssigneeMemberIds,
   getSelectableImportRows,
   getSelectedImportRows,
   isImportRowReadyForImport,

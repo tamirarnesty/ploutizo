@@ -1,4 +1,5 @@
 import { formatAccountLabel } from '@ploutizo/utils';
+import { getLiveAssigneeMemberIds } from '@ploutizo/utils/import-row-readiness';
 import {
   getImportRowReviewBlockers,
   resolveImportRowReviewDescription,
@@ -52,32 +53,40 @@ export const resolveImportRowOriginalDescription = (
   return trimmed ? trimmed : null;
 };
 
-const IMPORT_ROW_REVIEW_BLOCKER_LABELS: Record<ImportRowReviewBlocker, string> =
-  {
-    date: 'date',
-    amount: 'amount',
-    description: 'description',
-    type: 'type',
-    category: 'category',
-    assignee: 'assignee',
-    settlement: 'settlement review',
-  };
-
-export const formatImportRowReviewBlockers = (
-  blockers: ImportRowReviewBlocker[]
-): string[] =>
-  blockers.map((blocker) => IMPORT_ROW_REVIEW_BLOCKER_LABELS[blocker]);
+const IMPORT_ROW_MISSING_BLOCKER_LABELS: Record<
+  Exclude<ImportRowReviewBlocker, 'settlement'>,
+  string
+> = {
+  date: 'date',
+  amount: 'amount',
+  description: 'description',
+  type: 'type',
+  category: 'category',
+  assignee: 'assignee',
+};
 
 export const getImportRowStatusTooltip = (row: ImportDraftRow): string => {
   switch (row.status) {
     case 'ready':
       return 'Ready to import';
     case 'needs_review': {
-      const blockers = formatImportRowReviewBlockers(
-        getImportRowReviewBlockers(row)
-      );
+      const blockers = getImportRowReviewBlockers(row);
       if (blockers.length === 0) return 'Needs review';
-      return `Needs review: missing ${blockers.join(', ')}`;
+
+      const requiresSettlement = blockers.includes('settlement');
+      const missingLabels = blockers
+        .filter(
+          (blocker): blocker is Exclude<ImportRowReviewBlocker, 'settlement'> =>
+            blocker !== 'settlement'
+        )
+        .map((blocker) => IMPORT_ROW_MISSING_BLOCKER_LABELS[blocker]);
+
+      const parts: string[] = [];
+      if (requiresSettlement) parts.push('settlement requires review');
+      if (missingLabels.length > 0) {
+        parts.push(`missing ${missingLabels.join(', ')}`);
+      }
+      return `Needs review: ${parts.join('; ')}`;
     }
     case 'invalid':
       return row.invalidReason ?? 'Invalid row';
@@ -99,10 +108,11 @@ export const shouldDefaultExpandImportRow = (row: ImportDraftRow): boolean => {
 export const resolveImportRowAssigneeMemberIds = (
   row: ImportDraftRow,
   orgMembers: OrgMember[]
-): string[] => {
-  const validMemberIds = new Set(orgMembers.map((member) => member.id));
-  return row.reviewAssigneeMemberIds.filter((id) => validMemberIds.has(id));
-};
+): string[] =>
+  getLiveAssigneeMemberIds(
+    row.reviewAssigneeMemberIds,
+    new Set(orgMembers.map((member) => member.id))
+  );
 
 export const formatImportDraftReviewSubtitle = (
   draft: ImportDraftSummary | ImportDraft

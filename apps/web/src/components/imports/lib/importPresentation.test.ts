@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { getImportRowReviewBlockers } from '@ploutizo/utils/import-row-status';
 import type { ImportDraftRow, OrgMember } from '@ploutizo/types';
 import {
   formatImportBatchStatusLabel,
@@ -121,28 +120,25 @@ describe('importPresentation review helpers', () => {
     ).toEqual([]);
   });
 
-  it('collects review blockers from row fields', () => {
-    expect(
-      getImportRowReviewBlockers({
-        ...baseRow,
-        reviewDate: null,
-        parsedDate: null,
-        reviewDescription: null,
-        parsedDescription: null,
-        reviewCategoryId: null,
-        reviewAssigneeMemberIds: [],
-      })
-    ).toEqual(['date', 'description', 'category', 'assignee']);
-  });
-
-  it('maps review blocker keys to tooltip labels', () => {
+  it('describes settlement review without calling it missing', () => {
     expect(
       getImportRowStatusTooltip({
         ...baseRow,
         status: 'needs_review',
         reviewType: 'settlement',
       })
-    ).toBe('Needs review: missing settlement review');
+    ).toBe('Needs review: settlement requires review');
+  });
+
+  it('combines settlement and missing-field blockers in the tooltip', () => {
+    expect(
+      getImportRowStatusTooltip({
+        ...baseRow,
+        status: 'needs_review',
+        reviewType: 'settlement',
+        reviewCategoryId: null,
+      })
+    ).toBe('Needs review: settlement requires review; missing category');
   });
 });
 

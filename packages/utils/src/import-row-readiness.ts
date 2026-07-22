@@ -19,6 +19,13 @@ export const isImportRowResolved = (
   row: Pick<ImportRowSelectionFields, 'status'>
 ): boolean => row.status === 'ready';
 
+/** Assignee ids that still exist in the live org member set. */
+export const getLiveAssigneeMemberIds = (
+  reviewAssigneeMemberIds: readonly string[],
+  validAssigneeMemberIds: ReadonlySet<string>
+): string[] =>
+  reviewAssigneeMemberIds.filter((id) => validAssigneeMemberIds.has(id));
+
 export const rowHasLiveAssignee = (
   row: Pick<ImportRowSelectionFields, 'reviewAssigneeMemberIds'>,
   validAssigneeMemberIds?: ReadonlySet<string>
@@ -26,8 +33,11 @@ export const rowHasLiveAssignee = (
   if (!validAssigneeMemberIds) {
     return row.reviewAssigneeMemberIds.length > 0;
   }
-  return row.reviewAssigneeMemberIds.some((id) =>
-    validAssigneeMemberIds.has(id)
+  return (
+    getLiveAssigneeMemberIds(
+      row.reviewAssigneeMemberIds,
+      validAssigneeMemberIds
+    ).length > 0
   );
 };
 

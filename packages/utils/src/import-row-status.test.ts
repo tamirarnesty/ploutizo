@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   computeImportDraftRowCounts,
   deriveImportRowStatus,
+  evaluateImportRow,
   getImportRowReviewBlockers,
   isImportRowStructurallyInvalid,
   isImportTransactionType,
@@ -217,7 +218,7 @@ describe('computeImportDraftRowCounts', () => {
   });
 });
 
-describe('getImportRowReviewBlockers', () => {
+describe('evaluateImportRow', () => {
   const readyFields = {
     status: 'ready' as const,
     reviewDate: '2026-05-02',
@@ -232,38 +233,66 @@ describe('getImportRowReviewBlockers', () => {
     reviewAssigneeMemberIds: ['member_1'],
   };
 
-  it('returns no blockers for a ready expense row', () => {
-    expect(getImportRowReviewBlockers(readyFields)).toEqual([]);
+  it('returns ready with no blockers for a complete expense row', () => {
+    expect(evaluateImportRow(readyFields)).toEqual({
+      status: 'ready',
+      blockers: [],
+    });
   });
 
-  it('lists structural and review blockers using the same rules as status', () => {
+  it('keeps status and blockers on one evaluation path', () => {
+    const incomplete = {
+      ...readyFields,
+      reviewDate: null,
+      reviewAmount: 0,
+      reviewDescription: null,
+      reviewType: null,
+      parsedType: null,
+      reviewCategoryId: null,
+      reviewAssigneeMemberIds: [],
+    };
+    const evaluation = evaluateImportRow(incomplete);
+
+    expect(evaluation).toEqual({
+      status: 'invalid',
+      blockers: [
+        'date',
+        'amount',
+        'description',
+        'type',
+        'category',
+        'assignee',
+      ],
+    });
+    expect(deriveImportRowStatus(incomplete)).toBe(evaluation.status);
+    expect(getImportRowReviewBlockers(incomplete)).toEqual(evaluation.blockers);
+  });
+
+  it('flags settlement as needs_review with a settlement blocker', () => {
+    const settlement = {
+      ...readyFields,
+      reviewType: 'settlement' as const,
+    };
+    const evaluation = evaluateImportRow(settlement);
+
+    expect(evaluation).toEqual({
+      status: 'needs_review',
+      blockers: ['settlement'],
+    });
+    expect(deriveImportRowStatus(settlement)).toBe(evaluation.status);
+    expect(getImportRowReviewBlockers(settlement)).toEqual(evaluation.blockers);
+  });
+
+  it('preserves skipped while still reporting blockers', () => {
     expect(
-      getImportRowReviewBlockers({
+      evaluateImportRow({
         ...readyFields,
-        reviewDate: null,
-        reviewAmount: 0,
-        reviewDescription: null,
-        reviewType: null,
-        parsedType: null,
+        status: 'skipped',
         reviewCategoryId: null,
-        reviewAssigneeMemberIds: [],
       })
-    ).toEqual([
-      'date',
-      'amount',
-      'description',
-      'type',
-      'category',
-      'assignee',
-    ]);
-  });
-
-  it('flags settlement review when type is settlement', () => {
-    expect(
-      getImportRowReviewBlockers({
-        ...readyFields,
-        reviewType: 'settlement',
-      })
-    ).toEqual(['settlement']);
+    ).toEqual({
+      status: 'skipped',
+      blockers: ['category'],
+    });
   });
 });

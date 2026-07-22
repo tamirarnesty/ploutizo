@@ -79,13 +79,14 @@ export const useImportDraftReviewState = ({
   const setRowSelection = useCallback(
     (row: ImportDraftRow, selectedForImport: boolean) => {
       if (!draft || row.selectedForImport === selectedForImport) return;
+      flushPendingInputs();
       updateRow.mutate({
         draftId: draft.id,
         rowId: row.id,
         body: { selectedForImport },
       });
     },
-    [draft, updateRow]
+    [draft, flushPendingInputs, updateRow]
   );
 
   const setAllSelection = useCallback(

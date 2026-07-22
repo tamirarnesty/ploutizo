@@ -37,6 +37,18 @@ export type ImportRowReviewBlocker =
   | 'assignee'
   | 'settlement';
 
+const STRUCTURAL_BLOCKERS = new Set<ImportRowReviewBlocker>([
+  'date',
+  'amount',
+  'description',
+  'type',
+]);
+
+export interface ImportRowEvaluation {
+  status: ImportRowStatus;
+  blockers: ImportRowReviewBlocker[];
+}
+
 export const isImportTransactionType = (
   value: string | null | undefined
 ): value is ImportTransactionType =>
@@ -70,42 +82,73 @@ export const resolveImportRowReviewDescription = (
   return trimmed ? trimmed : null;
 };
 
-export const isImportRowStructurallyInvalid = (
+const getStructuralBlockers = (
   row: ImportRowStructuralFields
-): boolean => {
+): ImportRowReviewBlocker[] => {
+  const blockers: ImportRowReviewBlocker[] = [];
   const date = resolveImportRowReviewDate(row);
   const amount = resolveImportRowReviewAmount(row);
   const type = resolveImportRowReviewType(row);
   const description = resolveImportRowReviewDescription(row);
-  return !date || amount == null || amount <= 0 || !type || !description;
+
+  if (!date) blockers.push('date');
+  if (amount == null || amount <= 0) blockers.push('amount');
+  if (!description) blockers.push('description');
+  if (!type) blockers.push('type');
+  return blockers;
 };
 
-/** Review-phase readiness once structural fields are valid (not sticky). */
-const evaluateReviewReadiness = (
+const getReviewPhaseBlockers = (
   row: ImportRowReviewFields
-): Extract<ImportRowStatus, 'needs_review' | 'ready'> => {
+): ImportRowReviewBlocker[] => {
+  const blockers: ImportRowReviewBlocker[] = [];
   const type = resolveImportRowReviewType(row);
-  if (!type) return 'needs_review';
 
-  const requiresReview =
-    type === 'settlement' ||
-    !row.reviewCategoryId ||
-    row.reviewAssigneeMemberIds.length === 0;
-
-  return requiresReview ? 'needs_review' : 'ready';
+  if (type === 'settlement') blockers.push('settlement');
+  if (!row.reviewCategoryId) blockers.push('category');
+  if (row.reviewAssigneeMemberIds.length === 0) blockers.push('assignee');
+  return blockers;
 };
+
+/** Structured review blockers — single rule list for status and tooltips. */
+export const getImportRowReviewBlockers = (
+  row: ImportRowStructuralFields & ImportRowReviewFields
+): ImportRowReviewBlocker[] => [
+  ...getStructuralBlockers(row),
+  ...getReviewPhaseBlockers(row),
+];
+
+export const isImportRowStructurallyInvalid = (
+  row: ImportRowStructuralFields
+): boolean => getStructuralBlockers(row).length > 0;
 
 /**
- * Authoritative status derivation for ingest, API updates, and optimistic cache.
+ * Single evaluation of durable/optimistic import row status + blockers.
  * Sticky only for `skipped`; structural invalidity is always re-evaluated.
  */
+export const evaluateImportRow = (
+  row: ImportRowStatusFields
+): ImportRowEvaluation => {
+  const blockers = getImportRowReviewBlockers(row);
+
+  if (row.status === 'skipped') {
+    return { status: 'skipped', blockers };
+  }
+
+  if (blockers.some((blocker) => STRUCTURAL_BLOCKERS.has(blocker))) {
+    return { status: 'invalid', blockers };
+  }
+
+  if (blockers.length > 0) {
+    return { status: 'needs_review', blockers };
+  }
+
+  return { status: 'ready', blockers: [] };
+};
+
 export const deriveImportRowStatus = (
   row: ImportRowStatusFields
-): ImportRowStatus => {
-  if (row.status === 'skipped') return 'skipped';
-  if (isImportRowStructurallyInvalid(row)) return 'invalid';
-  return evaluateReviewReadiness(row);
-};
+): ImportRowStatus => evaluateImportRow(row).status;
 
 export const withDerivedImportRowStatus = <T extends ImportRowStatusFields>(
   row: T
@@ -123,25 +166,4 @@ export const computeImportDraftRowCounts = (
     validRowCount: rows.length - invalidRowCount,
     invalidRowCount,
   };
-};
-
-/** Structured review blockers aligned with {@link deriveImportRowStatus}. */
-export const getImportRowReviewBlockers = (
-  row: ImportRowStatusFields
-): ImportRowReviewBlocker[] => {
-  const blockers: ImportRowReviewBlocker[] = [];
-  const date = resolveImportRowReviewDate(row);
-  const amount = resolveImportRowReviewAmount(row);
-  const type = resolveImportRowReviewType(row);
-  const description = resolveImportRowReviewDescription(row);
-
-  if (!date) blockers.push('date');
-  if (amount == null || amount <= 0) blockers.push('amount');
-  if (!description) blockers.push('description');
-  if (!type) blockers.push('type');
-  if (type === 'settlement') blockers.push('settlement');
-  if (!row.reviewCategoryId) blockers.push('category');
-  if (row.reviewAssigneeMemberIds.length === 0) blockers.push('assignee');
-
-  return blockers;
 };

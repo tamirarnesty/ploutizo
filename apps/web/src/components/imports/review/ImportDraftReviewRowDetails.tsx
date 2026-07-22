@@ -23,7 +23,10 @@ export const ImportDraftReviewRowDetails = ({
 
   const flushNotes = useCallback(() => {
     const next = notes.trim() || null;
-    if (next === row.reviewNotes) return;
+    if (next === row.reviewNotes) {
+      markSaved();
+      return;
+    }
     saveField({ reviewNotes: next }, { onSuccess: () => markSaved() });
   }, [markSaved, notes, row.reviewNotes, saveField]);
 

@@ -264,10 +264,10 @@ const parseRow = (
   // Classify with the shared structural helper; parse owns reason copy only.
   // Refs are resolved at ingest; parse cannot mark rows ready yet.
   const isInvalid = isImportRowStructurallyInvalid({
-    reviewDate: parsedDate,
-    reviewAmount: parsedAmount,
-    reviewType: parsedType,
-    reviewDescription: parsedDescription,
+    reviewDate: null,
+    reviewAmount: null,
+    reviewType: null,
+    reviewDescription: null,
     parsedDate,
     parsedAmount,
     parsedType,

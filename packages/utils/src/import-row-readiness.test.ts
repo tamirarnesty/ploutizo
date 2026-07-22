@@ -3,6 +3,7 @@ import {
   canContinueImportReview,
   getImportReviewContinueBlocker,
   getImportReviewContinueBlockerReason,
+  getLiveAssigneeMemberIds,
   getSelectableImportRows,
   getSelectedImportRows,
   isImportRowReadyForImport,
@@ -108,5 +109,12 @@ describe('import-row-readiness', () => {
     expect(getImportReviewContinueBlocker([baseRow])).toBe(
       'Select at least one row to continue.'
     );
+  });
+
+  it('filters assignee ids to live org members', () => {
+    expect(
+      getLiveAssigneeMemberIds(['member_1', 'gone'], new Set(['member_1']))
+    ).toEqual(['member_1']);
+    expect(getLiveAssigneeMemberIds([], new Set(['member_1']))).toEqual([]);
   });
 });

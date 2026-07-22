@@ -18,6 +18,7 @@ import { formatTransactionTypeLabel } from '@ploutizo/utils';
 import {
   resolveImportRowReviewAmount,
   resolveImportRowReviewDate,
+  resolveImportRowReviewDescription,
   resolveImportRowReviewType,
 } from '@ploutizo/utils/import-row-status';
 import { IMPORT_TRANSACTION_TYPE_VALUES } from '@ploutizo/types';
@@ -141,7 +142,7 @@ export const ImportReviewDateCell = ({ row }: ImportReviewDateCellProps) => {
       disabled={disabled}
       onChange={(nextDate) => {
         const next = nextDate || null;
-        if (next === row.reviewDate) return;
+        if (next === resolveImportRowReviewDate(row)) return;
         saveField({ reviewDate: next });
       }}
     />
@@ -169,12 +170,18 @@ export const ImportReviewAmountCell = ({
       onChange={setAmount}
       onBlur={() => {
         if (amount === undefined || !Number.isFinite(amount)) {
-          if (row.reviewAmount === null) return;
+          if (row.reviewAmount === null) {
+            markSaved();
+            return;
+          }
           saveField({ reviewAmount: null }, { onSuccess: () => markSaved() });
           return;
         }
         const nextAmount = dollarsToCents(amount);
-        if (nextAmount === resolveImportRowReviewAmount(row)) return;
+        if (nextAmount === resolveImportRowReviewAmount(row)) {
+          markSaved();
+          return;
+        }
         saveField(
           { reviewAmount: nextAmount },
           { onSuccess: () => markSaved() }
@@ -199,7 +206,7 @@ export const ImportReviewTypeCell = ({ row }: ImportReviewTypeCellProps) => {
       disabled={disabled}
       ariaLabel={`Type for ${rowLabel}`}
       onChange={(nextType) => {
-        if (nextType === row.reviewType) return;
+        if (nextType === resolveImportRowReviewType(row)) return;
         saveField({ reviewType: nextType });
       }}
     />
@@ -224,9 +231,22 @@ export const ImportReviewDescriptionCell = ({
 
   const flushDescription = useCallback(() => {
     const next = description.trim() || null;
-    if (next === row.reviewDescription) return;
+    const effectiveDescription = resolveImportRowReviewDescription({
+      reviewDescription: row.reviewDescription,
+      parsedDescription: row.parsedDescription,
+    });
+    if (next === effectiveDescription) {
+      markSaved();
+      return;
+    }
     saveField({ reviewDescription: next }, { onSuccess: () => markSaved() });
-  }, [description, markSaved, row.reviewDescription, saveField]);
+  }, [
+    description,
+    markSaved,
+    row.parsedDescription,
+    row.reviewDescription,
+    saveField,
+  ]);
 
   useRegisterInputFlush(flushDescription);
 
