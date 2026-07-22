@@ -4,35 +4,50 @@ import {
   getImportReviewContinueBlocker,
   getSelectableImportRows,
 } from '@ploutizo/utils/import-row-readiness';
-import type { ImportDraft, ImportDraftRow, OrgMember } from '@ploutizo/types';
+import type { ImportDraftRow, OrgMember } from '@ploutizo/types';
+import type { ImportDraftMeta } from '@/lib/data-access/imports';
 import { usePersistedPageSize } from '@/hooks/persistedPageSize';
 import {
   useUpdateImportDraftRow,
   useUpdateImportDraftRowSelection,
 } from '@/lib/data-access/imports';
 import { useFlushPendingInputs } from '@/lib/money/pending-input-flush';
-import type { PaginationState } from '@tanstack/react-table';
-
-const getImportReviewPageCount = (rowCount: number, pageSize: number) =>
-  rowCount === 0 ? 1 : Math.max(1, Math.ceil(rowCount / pageSize));
+import type { PaginationState, Updater } from '@tanstack/react-table';
 
 interface UseImportDraftReviewStateOptions {
-  draft?: ImportDraft;
+  meta?: ImportDraftMeta;
+  rows?: ImportDraftRow[];
   orgMembers?: OrgMember[];
   isLoading?: boolean;
 }
 
+export interface ImportDraftReviewState {
+  pagination: PaginationState;
+  setPagination: (updater: Updater<PaginationState>) => void;
+  rows: ImportDraftRow[];
+  currentPageSelectableRows: ImportDraftRow[];
+  headerChecked: boolean;
+  headerIndeterminate: boolean;
+  setRowSelection: (row: ImportDraftRow, selectedForImport: boolean) => void;
+  setAllSelection: (selectedForImport: boolean) => void;
+  canContinue: boolean;
+  continueBlocker: string | null;
+  hasReviewableRows: boolean;
+  isLoading: boolean;
+}
+
 export const useImportDraftReviewState = ({
-  draft,
+  meta,
+  rows: sessionRows = [],
   orgMembers = [],
   isLoading = false,
-}: UseImportDraftReviewStateOptions) => {
+}: UseImportDraftReviewStateOptions): ImportDraftReviewState => {
   const flushPendingInputs = useFlushPendingInputs();
   const updateRow = useUpdateImportDraftRow();
   const updateRowSelection = useUpdateImportDraftRowSelection();
   const { pagination, setPagination } = usePersistedPageSize('import-review');
 
-  const rows = draft?.rows ?? [];
+  const rows = sessionRows;
   const selectableRows = useMemo(() => getSelectableImportRows(rows), [rows]);
   const validAssigneeMemberIds = useMemo(
     () => new Set(orgMembers.map((member) => member.id)),
@@ -44,7 +59,7 @@ export const useImportDraftReviewState = ({
   );
 
   const { pageIndex, pageSize } = pagination;
-  const pageCount = getImportReviewPageCount(rows.length, pageSize);
+  const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
   const currentPageRows = useMemo(
     () => rows.slice(pageIndex * pageSize, pageIndex * pageSize + pageSize),
     [pageIndex, pageSize, rows]
@@ -54,10 +69,10 @@ export const useImportDraftReviewState = ({
     [currentPageRows]
   );
 
-  const canContinue = draft
+  const canContinue = meta
     ? canContinueImportReview(rows, continueOptions)
     : false;
-  const continueBlocker = draft
+  const continueBlocker = meta
     ? getImportReviewContinueBlocker(rows, continueOptions)
     : null;
   const hasReviewableRows = selectableRows.length > 0;
@@ -78,31 +93,31 @@ export const useImportDraftReviewState = ({
 
   const setRowSelection = useCallback(
     (row: ImportDraftRow, selectedForImport: boolean) => {
-      if (!draft || row.selectedForImport === selectedForImport) return;
+      if (!meta || row.selectedForImport === selectedForImport) return;
       flushPendingInputs();
       updateRow.mutate({
-        draftId: draft.id,
+        draftId: meta.id,
         rowId: row.id,
         body: { selectedForImport },
       });
     },
-    [draft, flushPendingInputs, updateRow]
+    [flushPendingInputs, meta, updateRow]
   );
 
   const setAllSelection = useCallback(
     (selectedForImport: boolean) => {
-      if (!draft) return;
+      if (!meta) return;
       const rowIds = currentPageSelectableRows
         .filter((row) => row.selectedForImport !== selectedForImport)
         .map((row) => row.id);
       if (rowIds.length === 0) return;
       flushPendingInputs();
       updateRowSelection.mutate({
-        draftId: draft.id,
+        draftId: meta.id,
         body: { rowIds, selectedForImport },
       });
     },
-    [currentPageSelectableRows, draft, flushPendingInputs, updateRowSelection]
+    [currentPageSelectableRows, flushPendingInputs, meta, updateRowSelection]
   );
 
   return {
@@ -120,10 +135,6 @@ export const useImportDraftReviewState = ({
     isLoading,
   };
 };
-
-export type ImportDraftReviewState = ReturnType<
-  typeof useImportDraftReviewState
->;
 
 export const countImportReviewPageRows = (
   totalRows: number,

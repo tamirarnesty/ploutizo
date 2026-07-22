@@ -5,28 +5,11 @@ import { makeImportDraftRow } from '../test-fixtures/importDraft';
 import { ImportAssigneeField } from './ImportAssigneeField';
 
 vi.mock('@/components/members/MemberToggleGroup', () => ({
-  MemberToggleGroup: () => <div data-testid="member-toggle-group">Toggle</div>,
-}));
-
-vi.mock('@/components/members/MemberAvatarGroup', () => ({
-  MemberAvatarGroup: ({
-    members,
-    emptyFallback = <span>—</span>,
-  }: {
-    members: { id: string; name: string }[];
-    emptyFallback?: React.ReactNode;
-  }) =>
-    members.length === 0 ? (
-      emptyFallback
-    ) : (
-      <div data-testid="member-avatar-group">
-        {members.map((member) => (
-          <span key={member.id} data-testid="member-avatar">
-            {member.name}
-          </span>
-        ))}
-      </div>
-    ),
+  MemberToggleGroup: ({ disabled }: { disabled?: boolean }) => (
+    <div data-testid="member-toggle-group" data-disabled={disabled}>
+      Toggle
+    </div>
+  ),
 }));
 
 const orgMembers: OrgMember[] = [
@@ -44,7 +27,7 @@ const orgMembers: OrgMember[] = [
 ];
 
 describe('ImportAssigneeField', () => {
-  it('renders read-only avatars when disabled', () => {
+  it('renders a disabled toggle group when disabled', () => {
     render(
       <ImportAssigneeField
         row={makeImportDraftRow({
@@ -57,9 +40,10 @@ describe('ImportAssigneeField', () => {
       />
     );
 
-    expect(screen.getByTestId('member-avatar-group')).toBeInTheDocument();
-    expect(screen.getByText('Tamir Arnesty')).toBeInTheDocument();
-    expect(screen.queryByTestId('member-toggle-group')).not.toBeInTheDocument();
+    expect(screen.getByTestId('member-toggle-group')).toHaveAttribute(
+      'data-disabled',
+      'true'
+    );
   });
 
   it('renders the editable toggle group when not disabled', () => {
@@ -71,24 +55,9 @@ describe('ImportAssigneeField', () => {
       />
     );
 
-    expect(screen.getByTestId('member-toggle-group')).toBeInTheDocument();
-    expect(screen.queryByTestId('member-avatar-group')).not.toBeInTheDocument();
-  });
-
-  it('shows the empty avatar fallback when disabled with no assignees', () => {
-    render(
-      <ImportAssigneeField
-        row={makeImportDraftRow({
-          status: 'invalid',
-          reviewAssigneeMemberIds: [],
-        })}
-        orgMembers={orgMembers}
-        disabled
-        onSave={vi.fn()}
-      />
+    expect(screen.getByTestId('member-toggle-group')).toHaveAttribute(
+      'data-disabled',
+      'false'
     );
-
-    expect(screen.getByText('—')).toBeInTheDocument();
-    expect(screen.queryByTestId('member-toggle-group')).not.toBeInTheDocument();
   });
 });

@@ -315,3 +315,11 @@ export const updateImportDraftRowSelectionQuery = async (
     )
     .returning();
 };
+
+export type ImportDraftSummaryRow = Awaited<
+  ReturnType<typeof listActiveImportDraftSummaries>
+>[number];
+
+export type ImportDraftRowRecord = Awaited<
+  ReturnType<typeof listDraftRows>
+>[number];

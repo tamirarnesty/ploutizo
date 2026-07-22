@@ -30,21 +30,9 @@ vi.mock('@/components/categories/CategorySelect', () => ({
 }));
 
 vi.mock('@/components/members/MemberToggleGroup', () => ({
-  MemberToggleGroup: () => <div data-testid="member-toggle-group">Toggle</div>,
-}));
-
-vi.mock('@/components/members/MemberAvatarGroup', () => ({
-  MemberAvatarGroup: ({
-    members,
-  }: {
-    members: { id: string; name: string }[];
-  }) => (
-    <div data-testid="member-avatar-group">
-      {members.map((member) => (
-        <span key={member.id} data-testid="member-avatar">
-          {member.name}
-        </span>
-      ))}
+  MemberToggleGroup: ({ disabled }: { disabled?: boolean }) => (
+    <div data-testid="member-toggle-group" data-disabled={disabled}>
+      Toggle
     </div>
   ),
 }));
@@ -86,12 +74,14 @@ vi.mock('@/hooks/persistedPageSize', () => ({
   }),
 }));
 
-const renderReview = (draft = makeImportDraft()) =>
-  render(
+const renderReview = (draft = makeImportDraft()) => {
+  const { rows, ...meta } = draft;
+  return render(
     <TooltipProvider delay={0}>
-      <ImportDraftReview draft={draft} />
+      <ImportDraftReview meta={meta} rows={rows} />
     </TooltipProvider>
   );
+};
 
 const renderLoadingReview = () =>
   render(
@@ -365,7 +355,7 @@ describe('ImportDraftReview', () => {
     );
   });
 
-  it('keeps assignee editing enabled for invalid rows and disabled for skipped rows', () => {
+  it('renders disabled assignee toggles for invalid rows in the grid', () => {
     renderReview(
       makeImportDraft({
         rows: [
@@ -383,19 +373,13 @@ describe('ImportDraftReview', () => {
             reviewAssigneeMemberIds: ['member_1'],
             invalidReason: 'Amount must be a positive number.',
           }),
-          makeImportDraftRow({
-            id: 'row_skipped',
-            rowNumber: 5,
-            status: 'skipped',
-            reviewDescription: 'Matched duplicate',
-            reviewAssigneeMemberIds: ['member_1'],
-          }),
         ],
       })
     );
 
-    expect(screen.getAllByTestId('member-toggle-group')).toHaveLength(2);
-    expect(screen.getAllByTestId('member-avatar-group')).toHaveLength(1);
-    expect(screen.getByText('Tamir Arnesty')).toBeInTheDocument();
+    const toggles = screen.getAllByTestId('member-toggle-group');
+    expect(toggles).toHaveLength(2);
+    expect(toggles[0]).toHaveAttribute('data-disabled', 'false');
+    expect(toggles[1]).toHaveAttribute('data-disabled', 'true');
   });
 });

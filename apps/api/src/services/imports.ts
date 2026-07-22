@@ -17,6 +17,10 @@ import type {
   UpdateImportDraftRowInput,
   UpdateImportDraftRowSelectionInput,
 } from '@ploutizo/validators';
+import type {
+  ImportDraftRowRecord,
+  ImportDraftSummaryRow,
+} from '@/lib/queries/imports';
 import { assertOrgWriteReferences } from '@/lib/assertOrgWriteReferences';
 import { DomainError, NotFoundError } from '@/lib/errors';
 import {
@@ -54,7 +58,7 @@ const isUniqueViolation = (error: unknown): boolean => {
 };
 
 const toImportDraftSummary = (
-  row: Awaited<ReturnType<typeof listActiveImportDraftSummaries>>[number]
+  row: ImportDraftSummaryRow
 ): ImportDraftSummary => {
   if (!row.accountId) {
     throw new DomainError(500, 'Import draft is missing an account.');
@@ -87,9 +91,7 @@ const toImportDraftSummary = (
   };
 };
 
-const toImportDraftRow = (
-  row: Awaited<ReturnType<typeof listDraftRows>>[number]
-): ImportDraftRow => ({
+const toImportDraftRow = (row: ImportDraftRowRecord): ImportDraftRow => ({
   ...row,
   parsedDate: row.parsedDate ?? null,
   reviewDate: row.reviewDate ?? null,

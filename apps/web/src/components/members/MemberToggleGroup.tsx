@@ -13,6 +13,7 @@ interface MemberToggleGroupProps {
   multiple?: boolean;
   className?: string;
   ariaLabel?: string;
+  disabled?: boolean;
 }
 
 export const MemberToggleGroup = ({
@@ -22,6 +23,7 @@ export const MemberToggleGroup = ({
   multiple = true,
   className,
   ariaLabel,
+  disabled = false,
 }: MemberToggleGroupProps) => {
   const handleChange = (newIds: string[]) => {
     // Prevent deselecting the only item in single-select mode
@@ -37,6 +39,7 @@ export const MemberToggleGroup = ({
       variant="outline"
       size="lg"
       spacing={2}
+      disabled={disabled}
       className={cn('w-full flex-wrap', className)}
       aria-label={ariaLabel}
     >
@@ -44,6 +47,7 @@ export const MemberToggleGroup = ({
         <ToggleGroupItem
           key={member.id}
           value={member.id}
+          disabled={disabled}
           className="px-3 data-[state=on]:border-primary/30 data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
           aria-label={member.displayName}
         >

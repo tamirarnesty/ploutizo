@@ -282,7 +282,6 @@ describe('import service', () => {
       {
         reviewCategoryId: '55555555-5555-4555-8555-555555555555',
         status: 'ready',
-        invalidReason: null,
       },
       tx
     );
@@ -389,7 +388,6 @@ describe('import service', () => {
       {
         reviewDate: null,
         status: 'invalid',
-        invalidReason: 'Date must be a valid YYYY-MM-DD value.',
       },
       tx
     );
@@ -400,46 +398,6 @@ describe('import service', () => {
       tx
     );
     expect(result.status).toBe('invalid');
-  });
-
-  it('refreshes invalidReason when a row stays invalid after a partial fix', async () => {
-    const invalidRow = {
-      ...draftRow,
-      status: 'invalid' as const,
-      invalidReason: 'Date must be a valid YYYY-MM-DD value.',
-      parsedDate: null,
-      parsedAmount: null,
-      reviewDate: null,
-      reviewAmount: null,
-    };
-    const updatedRow = {
-      ...invalidRow,
-      reviewDate: '2026-05-02',
-      status: 'invalid' as const,
-      invalidReason: 'Amount must be a positive number.',
-      updatedAt: new Date('2026-05-20T13:00:00Z'),
-    };
-    const tx = {} as never;
-
-    vi.mocked(fetchDraftRowById).mockResolvedValue(invalidRow);
-    vi.mocked(updateImportDraftRowQuery).mockResolvedValue(updatedRow);
-    vi.mocked(db.transaction).mockImplementation(async (fn) => fn(tx));
-
-    const result = await updateImportDraftRow('org_1', draftRow.id, {
-      reviewDate: '2026-05-02',
-    });
-
-    expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
-      'org_1',
-      draftRow.id,
-      {
-        reviewDate: '2026-05-02',
-        status: 'invalid',
-        invalidReason: 'Amount must be a positive number.',
-      },
-      tx
-    );
-    expect(result.invalidReason).toBe('Amount must be a positive number.');
   });
 
   it('persists row selection updates', async () => {

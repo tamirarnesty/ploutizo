@@ -20,6 +20,7 @@ interface TransactionTagPickerProps {
   inputId?: string;
   inputAriaLabel?: string;
   allowCreate?: boolean;
+  disabled?: boolean;
 }
 
 /**
@@ -38,6 +39,7 @@ export const TransactionTagPicker = ({
   inputId,
   inputAriaLabel,
   allowCreate = true,
+  disabled = false,
 }: TransactionTagPickerProps) => {
   const { data: tags = [] } = useGetTags();
   const createTagMutation = useCreateTag();
@@ -103,6 +105,7 @@ export const TransactionTagPicker = ({
     <Combobox
       multiple
       autoHighlight
+      disabled={disabled}
       value={selectedNames}
       onValueChange={handleValueChange}
       onInputValueChange={setTagInputValue}
