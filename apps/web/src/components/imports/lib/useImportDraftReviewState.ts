@@ -5,12 +5,10 @@ import {
   getSelectableImportRows,
 } from '@ploutizo/utils/import-row-readiness';
 import type { ImportDraftRow, OrgMember } from '@ploutizo/types';
+import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import type { ImportDraftMeta } from '@/lib/data-access/imports';
 import { usePersistedPageSize } from '@/hooks/persistedPageSize';
-import {
-  useUpdateImportDraftRow,
-  useUpdateImportDraftRowSelection,
-} from '@/lib/data-access/imports';
+import { useUpdateImportDraftRowSelection } from '@/lib/data-access/imports';
 import { useFlushPendingInputs } from '@/lib/money/pending-input-flush';
 import type { PaginationState, Updater } from '@tanstack/react-table';
 
@@ -19,6 +17,7 @@ interface UseImportDraftReviewStateOptions {
   rows?: ImportDraftRow[];
   orgMembers?: OrgMember[];
   isLoading?: boolean;
+  updateRow: (rowId: string, patch: UpdateImportDraftRowInput) => void;
 }
 
 export interface ImportDraftReviewState {
@@ -41,9 +40,9 @@ export const useImportDraftReviewState = ({
   rows: sessionRows = [],
   orgMembers = [],
   isLoading = false,
+  updateRow,
 }: UseImportDraftReviewStateOptions): ImportDraftReviewState => {
   const flushPendingInputs = useFlushPendingInputs();
-  const updateRow = useUpdateImportDraftRow();
   const updateRowSelection = useUpdateImportDraftRowSelection();
   const { pagination, setPagination } = usePersistedPageSize('import-review');
 
@@ -94,14 +93,9 @@ export const useImportDraftReviewState = ({
   const setRowSelection = useCallback(
     (row: ImportDraftRow, selectedForImport: boolean) => {
       if (!meta || row.selectedForImport === selectedForImport) return;
-      flushPendingInputs();
-      updateRow.mutate({
-        draftId: meta.id,
-        rowId: row.id,
-        body: { selectedForImport },
-      });
+      updateRow(row.id, { selectedForImport });
     },
-    [flushPendingInputs, meta, updateRow]
+    [meta, updateRow]
   );
 
   const setAllSelection = useCallback(

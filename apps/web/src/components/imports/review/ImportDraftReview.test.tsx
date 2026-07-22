@@ -9,7 +9,7 @@ import {
 } from '../test-fixtures/importDraft';
 import { ImportDraftReview } from './ImportDraftReview';
 
-const updateRowMutate = vi.fn();
+const updateRow = vi.fn();
 const updateRowSelectionMutate = vi.fn();
 
 const paginationMocks = vi.hoisted(() => ({
@@ -42,7 +42,6 @@ vi.mock('@/components/transactions/TransactionTagPicker', () => ({
 }));
 
 vi.mock('@/lib/data-access/imports', () => ({
-  useUpdateImportDraftRow: () => ({ mutate: updateRowMutate }),
   useUpdateImportDraftRowSelection: () => ({
     mutate: updateRowSelectionMutate,
   }),
@@ -78,7 +77,7 @@ const renderReview = (draft = makeImportDraft()) => {
   const { rows, ...meta } = draft;
   return render(
     <TooltipProvider delay={0}>
-      <ImportDraftReview meta={meta} rows={rows} />
+      <ImportDraftReview meta={meta} rows={rows} updateRow={updateRow} />
     </TooltipProvider>
   );
 };
@@ -86,7 +85,7 @@ const renderReview = (draft = makeImportDraft()) => {
 const renderLoadingReview = () =>
   render(
     <TooltipProvider delay={0}>
-      <ImportDraftReview isLoading />
+      <ImportDraftReview isLoading updateRow={updateRow} />
     </TooltipProvider>
   );
 
@@ -121,11 +120,9 @@ describe('ImportDraftReview', () => {
 
     await user.click(screen.getByRole('checkbox', { name: 'Select Coffee' }));
 
-    expect(updateRowMutate).toHaveBeenCalledTimes(1);
-    expect(updateRowMutate).toHaveBeenCalledWith({
-      draftId: DRAFT_ID,
-      rowId: 'row_1',
-      body: { selectedForImport: true },
+    expect(updateRow).toHaveBeenCalledTimes(1);
+    expect(updateRow).toHaveBeenCalledWith('row_1', {
+      selectedForImport: true,
     });
   });
 
@@ -161,7 +158,7 @@ describe('ImportDraftReview', () => {
         selectedForImport: true,
       },
     });
-    expect(updateRowMutate).not.toHaveBeenCalled();
+    expect(updateRow).not.toHaveBeenCalled();
   });
 
   it('expands a row to show the notes field', async () => {
@@ -304,14 +301,9 @@ describe('ImportDraftReview', () => {
       screen.getByRole('checkbox', { name: 'Select all rows on this page' })
     );
 
-    expect(updateRowMutate).toHaveBeenCalledWith(
-      {
-        draftId: DRAFT_ID,
-        rowId: 'row_a',
-        body: { reviewDescription: 'Updated coffee' },
-      },
-      expect.anything()
-    );
+    expect(updateRow).toHaveBeenCalledWith('row_a', {
+      reviewDescription: 'Updated coffee',
+    });
     expect(updateRowSelectionMutate).toHaveBeenCalledWith({
       draftId: DRAFT_ID,
       body: {
@@ -319,7 +311,7 @@ describe('ImportDraftReview', () => {
         selectedForImport: true,
       },
     });
-    expect(updateRowMutate.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(updateRow.mock.invocationCallOrder[0]).toBeLessThan(
       updateRowSelectionMutate.mock.invocationCallOrder[0]
     );
   });
