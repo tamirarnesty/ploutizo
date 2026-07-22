@@ -282,6 +282,7 @@ describe('import service', () => {
       {
         reviewCategoryId: '55555555-5555-4555-8555-555555555555',
         status: 'ready',
+        invalidReason: null,
       },
       tx
     );
@@ -355,6 +356,59 @@ describe('import service', () => {
     expect(result.status).toBe('needs_review');
   });
 
+  it('refreshes invalidReason when an invalid row stays invalid after partial correction', async () => {
+    const invalidRow = {
+      ...draftRow,
+      status: 'invalid' as const,
+      invalidReason:
+        'Date must be a valid YYYY-MM-DD value. Amount must be a positive number.',
+      parsedDate: null,
+      parsedAmount: null,
+      parsedType: 'expense' as const,
+      parsedDescription: 'Coffee',
+      reviewDate: null,
+      reviewAmount: null,
+      reviewType: 'expense' as const,
+      reviewDescription: 'Coffee',
+      reviewCategoryId: null,
+      reviewAssigneeMemberIds: [],
+    };
+    const updatedRow = {
+      ...invalidRow,
+      reviewDate: '2026-05-02',
+      status: 'invalid' as const,
+      invalidReason: 'Amount must be a positive number.',
+      updatedAt: new Date('2026-05-20T13:00:00Z'),
+    };
+    const tx = {} as never;
+
+    vi.mocked(fetchDraftRowById).mockResolvedValue(invalidRow);
+    vi.mocked(updateImportDraftRowQuery).mockResolvedValue(updatedRow);
+    vi.mocked(db.transaction).mockImplementation(async (fn) => fn(tx));
+
+    const result = await updateImportDraftRow('org_1', draftRow.id, {
+      reviewDate: '2026-05-02',
+    });
+
+    expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
+      'org_1',
+      draftRow.id,
+      {
+        reviewDate: '2026-05-02',
+        status: 'invalid',
+        invalidReason: 'Amount must be a positive number.',
+      },
+      tx
+    );
+    expect(adjustImportDraftRowCounts).toHaveBeenCalledWith(
+      'org_1',
+      summaryRow.id,
+      { validRowCount: 0, invalidRowCount: 0 },
+      tx
+    );
+    expect(result.invalidReason).toBe('Amount must be a positive number.');
+  });
+
   it('adjusts draft counts when a valid row becomes invalid', async () => {
     const reviewOnlyRow = {
       ...draftRow,
@@ -388,6 +442,7 @@ describe('import service', () => {
       {
         reviewDate: null,
         status: 'invalid',
+        invalidReason: 'Date must be a valid YYYY-MM-DD value.',
       },
       tx
     );
