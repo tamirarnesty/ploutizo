@@ -11,6 +11,7 @@ vi.mock('@tanstack/react-router', () => ({
   Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
     <a href={to}>{children}</a>
   ),
+  useBlocker: vi.fn(),
 }));
 
 vi.mock('@ploutizo/ui/components/date-picker', () => ({
@@ -35,12 +36,6 @@ vi.mock('@/components/transactions/TransactionTagPicker', () => ({
 
 vi.mock('@/lib/data-access/imports', () => ({
   useImportReviewSession: vi.fn(),
-  useUpdateImportDraftRow: () => ({
-    mutate: vi.fn(),
-  }),
-  useUpdateImportDraftRowSelection: () => ({
-    mutate: vi.fn(),
-  }),
 }));
 
 vi.mock('@/lib/data-access/categories', () => ({
@@ -84,6 +79,12 @@ const toSession = (value = draft) => {
     isLoading: false,
     isError: false,
     updateRow: vi.fn(),
+    setSelection: vi.fn(),
+    autosaveStatus: 'idle' as const,
+    failedRowIds: [] as string[],
+    hasUnsavedWork: false,
+    retryAutosave: vi.fn(),
+    flush: vi.fn(() => Promise.resolve(true)),
   };
 };
 
@@ -94,11 +95,11 @@ describe('ImportReview', () => {
 
   it('shows a missing draft empty state', () => {
     vi.mocked(useImportReviewSession).mockReturnValue({
+      ...toSession(),
       meta: undefined,
       rows: [],
       isLoading: false,
       isError: true,
-      updateRow: vi.fn(),
     });
 
     render(<ImportReview draftId="missing" />);

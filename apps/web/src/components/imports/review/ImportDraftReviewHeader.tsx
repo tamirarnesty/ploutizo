@@ -7,33 +7,67 @@ import {
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
 import { formatAccountLabel } from '@ploutizo/utils';
-import type { ImportDraftMeta } from '@/lib/data-access/imports';
+import type { ImportDraftRow } from '@ploutizo/types';
+import type {
+  ImportDraftMeta,
+  ImportReviewAutosaveStatus,
+} from '@/lib/data-access/imports';
 import { formatImportDraftReviewSubtitle } from '../lib/importPresentation';
+import { ImportReviewAutosaveStrip } from './ImportReviewAutosaveStrip';
 
 const IMPORT_COMMIT_PREVIEW_COPY = 'Import commit coming soon';
+/** Finalize / prepared import set is ADR 0004 work — keep Continue product-disabled until then. */
+const REVIEW_PRODUCT_FLAGS: { finalizeEnabled: boolean } = {
+  finalizeEnabled: false,
+};
 
 interface ImportDraftReviewHeaderProps {
   meta?: ImportDraftMeta;
+  rows?: ImportDraftRow[];
   isLoading?: boolean;
   canContinue: boolean;
   continueBlocker: string | null;
+  autosaveStatus: ImportReviewAutosaveStatus;
+  onRetryAutosave: () => void;
+  onContinue: () => void | Promise<void>;
 }
+
+const toLiveSubtitleMeta = (
+  meta: ImportDraftMeta,
+  rows: ImportDraftRow[]
+): ImportDraftMeta => ({
+  ...meta,
+  rowCount: rows.length,
+  invalidRowCount: rows.filter((row) => row.status === 'invalid').length,
+  validRowCount: rows.filter((row) => row.status !== 'invalid').length,
+});
 
 export const ImportDraftReviewHeader = ({
   meta,
+  rows = [],
   isLoading = false,
-  canContinue: _canContinue,
+  canContinue,
   continueBlocker,
+  autosaveStatus,
+  onRetryAutosave,
+  onContinue,
 }: ImportDraftReviewHeaderProps) => {
+  // Flush gate uses canContinue; finalize product enablement is ADR 0004.
   const continueButton = (
-    <Button disabled type="button">
+    <Button
+      disabled={!REVIEW_PRODUCT_FLAGS.finalizeEnabled || !canContinue}
+      type="button"
+      onClick={() => {
+        void onContinue();
+      }}
+    >
       Continue
     </Button>
   );
 
   const tooltipContent = continueBlocker
     ? `${continueBlocker} ${IMPORT_COMMIT_PREVIEW_COPY}.`
-    : IMPORT_COMMIT_PREVIEW_COPY;
+    : null;
 
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -44,7 +78,7 @@ export const ImportDraftReviewHeader = ({
               {formatAccountLabel(meta.account)}
             </Text>
             <Text variant="body-sm" className="truncate text-muted-foreground">
-              {formatImportDraftReviewSubtitle(meta)}
+              {formatImportDraftReviewSubtitle(toLiveSubtitleMeta(meta, rows))}
             </Text>
           </>
         ) : (
@@ -55,10 +89,14 @@ export const ImportDraftReviewHeader = ({
         )}
       </div>
       <div className="flex flex-col items-end gap-1.5">
+        <ImportReviewAutosaveStrip
+          status={autosaveStatus}
+          onRetry={onRetryAutosave}
+        />
         {isLoading ? (
           <Skeleton className="h-9 w-24" />
         ) : (
-          <Tooltip>
+          <Tooltip disabled={!tooltipContent}>
             <TooltipTrigger render={continueButton} />
             <TooltipContent>{tooltipContent}</TooltipContent>
           </Tooltip>

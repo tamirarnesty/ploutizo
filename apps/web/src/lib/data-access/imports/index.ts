@@ -1,5 +1,4 @@
 export * from './queryKeys';
-export * from './patchImportDraftCache';
 export { toImportDraftMeta, type ImportDraftMeta } from './toImportDraftMeta';
 export {
   getImportDraftRowsCollection,
@@ -10,6 +9,8 @@ export {
   IMPORT_ROW_PACE_WAIT_MS,
 } from './getImportDraftRowPacedMutations';
 export { fetchUpdateImportDraftRow } from './fetchUpdateImportDraftRow';
+export { fetchUpdateImportDraftRowSelection } from './fetchUpdateImportDraftRowSelection';
+export type { ImportReviewAutosaveStatus } from './importReviewAutosave';
 export {
   useImportReviewSession,
   type ImportReviewSession,
@@ -20,5 +21,3 @@ export * from './useGetImportDraft';
 export * from './useGetImportHistory';
 export * from './useCreateImportDraft';
 export * from './useDiscardImportDraft';
-export * from './useUpdateImportDraftRow';
-export * from './useUpdateImportDraftRowSelection';

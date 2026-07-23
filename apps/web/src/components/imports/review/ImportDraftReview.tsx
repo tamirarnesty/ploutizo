@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { Inbox } from 'lucide-react';
 import {
   Empty,
@@ -8,7 +9,10 @@ import {
 } from '@ploutizo/ui/components/empty';
 import type { ImportDraftRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
-import type { ImportDraftMeta } from '@/lib/data-access/imports';
+import type {
+  ImportDraftMeta,
+  ImportReviewAutosaveStatus,
+} from '@/lib/data-access/imports';
 import { useGetCategories } from '@/lib/data-access/categories';
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import { PendingInputFlushProvider } from '@/lib/money/pending-input-flush';
@@ -22,22 +26,26 @@ interface ImportDraftReviewProps {
   rows?: ImportDraftRow[];
   isLoading?: boolean;
   updateRow: (rowId: string, patch: UpdateImportDraftRowInput) => void;
+  setSelection: (rowIds: string[], selectedForImport: boolean) => void;
+  autosaveStatus: ImportReviewAutosaveStatus;
+  failedRowIds: string[];
+  hasUnsavedWork: boolean;
+  retryAutosave: () => void;
+  flush: () => Promise<boolean>;
 }
 
-const getEmptyDraftDescription = (
-  meta: ImportDraftMeta,
-  rows: ImportDraftRow[]
-): string => {
+const getEmptyDraftDescription = (rows: ImportDraftRow[]): string => {
   if (rows.length === 0) {
     return 'This import draft has no transactions to review.';
   }
 
+  const invalidRowCount = rows.filter((row) => row.status === 'invalid').length;
   const parts = ['Every row in this draft is invalid or skipped.'];
-  if (meta.invalidRowCount > 0) {
+  if (invalidRowCount > 0) {
     parts.push(
-      meta.invalidRowCount === 1
+      invalidRowCount === 1
         ? '1 row is invalid.'
-        : `${meta.invalidRowCount} rows are invalid.`
+        : `${invalidRowCount} rows are invalid.`
     );
   }
   return parts.join(' ');
@@ -54,6 +62,12 @@ const ImportDraftReviewContent = ({
   rows = [],
   isLoading = false,
   updateRow,
+  setSelection,
+  autosaveStatus,
+  failedRowIds,
+  hasUnsavedWork,
+  retryAutosave,
+  flush,
 }: ImportDraftReviewProps) => {
   const { data: categories = [] } = useGetCategories();
   const { data: orgMembers = [] } = useGetOrgMembers();
@@ -62,9 +76,16 @@ const ImportDraftReviewContent = ({
     rows,
     orgMembers,
     isLoading,
-    updateRow,
+    setSelection,
+    hasUnsavedWork,
   });
   const { canContinue, continueBlocker, hasReviewableRows } = reviewState;
+
+  const handleContinue = useCallback(async () => {
+    const ok = await flush();
+    if (!ok) return;
+    // Proceed to import-set verification / finalize lands with ADR 0004.
+  }, [flush]);
 
   const showEmptyState = !isLoading && meta && !hasReviewableRows;
 
@@ -72,9 +93,13 @@ const ImportDraftReviewContent = ({
     <section className="flex min-h-0 flex-1 flex-col gap-3">
       <ImportDraftReviewHeader
         meta={meta}
+        rows={rows}
         isLoading={isLoading}
         canContinue={canContinue}
         continueBlocker={continueBlocker}
+        autosaveStatus={autosaveStatus}
+        onRetryAutosave={retryAutosave}
+        onContinue={handleContinue}
       />
 
       <div className="flex min-h-0 flex-1 flex-col">
@@ -86,7 +111,7 @@ const ImportDraftReviewContent = ({
               </EmptyMedia>
               <EmptyTitle>No transactions to review</EmptyTitle>
               <EmptyDescription>
-                {getEmptyDraftDescription(meta, rows)}
+                {getEmptyDraftDescription(rows)}
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -96,6 +121,7 @@ const ImportDraftReviewContent = ({
             categories={categories}
             orgMembers={orgMembers}
             updateRow={updateRow}
+            failedRowIds={failedRowIds}
           >
             <ImportDraftReviewTable key={meta.id} reviewState={reviewState} />
           </ImportDraftReviewProvider>

@@ -19,6 +19,7 @@ import {
 } from '@ploutizo/ui/components/empty';
 import { useImportReviewSession } from '@/lib/data-access/imports';
 import { ImportDraftReview } from './ImportDraftReview';
+import { useImportReviewLeaveGuard } from './useImportReviewLeaveGuard';
 
 interface ImportReviewProps {
   draftId: string;
@@ -42,13 +43,28 @@ const ImportReviewBreadcrumbs = () => (
 
 const importReviewPageClassName = 'flex min-h-0 flex-1 flex-col gap-8';
 
+const sessionReviewProps = (
+  session: ReturnType<typeof useImportReviewSession>
+) => ({
+  updateRow: session.updateRow,
+  setSelection: session.setSelection,
+  autosaveStatus: session.autosaveStatus,
+  failedRowIds: session.failedRowIds,
+  hasUnsavedWork: session.hasUnsavedWork,
+  retryAutosave: session.retryAutosave,
+  flush: session.flush,
+});
+
 export const ImportReview = ({ draftId }: ImportReviewProps) => {
-  const { meta, rows, isLoading, isError, updateRow } =
-    useImportReviewSession(draftId);
+  const session = useImportReviewSession(draftId);
+  const { meta, rows, isLoading, isError, hasUnsavedWork, flush } = session;
+  const reviewProps = sessionReviewProps(session);
+
+  useImportReviewLeaveGuard({ hasUnsavedWork, flush });
 
   const body = (() => {
     if (isLoading) {
-      return <ImportDraftReview isLoading updateRow={updateRow} />;
+      return <ImportDraftReview isLoading {...reviewProps} />;
     }
 
     if (isError || !meta) {
@@ -75,7 +91,7 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
       );
     }
 
-    return <ImportDraftReview meta={meta} rows={rows} updateRow={updateRow} />;
+    return <ImportDraftReview meta={meta} rows={rows} {...reviewProps} />;
   })();
 
   return (

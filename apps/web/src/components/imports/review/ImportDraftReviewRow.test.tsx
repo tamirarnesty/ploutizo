@@ -77,6 +77,7 @@ const renderRowFields = (row: ImportDraftRow) =>
       categories={[mockCategory]}
       orgMembers={[]}
       updateRow={updateRow}
+      failedRowIds={[]}
     >
       <ImportReviewDescriptionCell row={row} />
       <ImportDraftReviewRowDetails row={row} />
