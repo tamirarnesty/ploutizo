@@ -5,4 +5,5 @@ export default defineWorkspace([
   'packages/db',
   'packages/validators',
   'packages/types',
+  'packages/telemetry',
 ])
