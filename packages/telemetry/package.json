@@ -1,0 +1,27 @@
+{
+  "name": "@ploutizo/telemetry",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "demo": "tsx scripts/demo.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.2",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./catalog": "./src/catalog.ts",
+    "./sanitize": "./src/sanitize.ts",
+    "./ids": "./src/ids.ts",
+    "./api-error": "./src/api-error.ts",
+    "./adapters/console": "./src/adapters/console.ts",
+    "./adapters/noop": "./src/adapters/noop.ts",
+    "./adapters/fake": "./src/adapters/fake.ts"
+  }
+}

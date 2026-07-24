@@ -10,6 +10,7 @@
 - **Database:** Neon serverless (`@neondatabase/serverless` WebSocket Pool) + Drizzle ORM
 - **Auth:** Clerk (org-based tenancy)
 - **API:** Hono (`apps/api`)
+- **Telemetry:** Vendor-neutral `@ploutizo/telemetry` contract (catalog, sanitization, correlation IDs, local adapters). Web and API adapters implement the contract separately — see [ADR 0006](adr/0006-cross-stack-telemetry.md).
 
 ## Critical constraints
 
