@@ -10,27 +10,37 @@ export interface ApiTelemetryEnv {
   posthogHost: string;
   /** True when OTLP exporters should be registered. */
   exportEnabled: boolean;
+  /** True only when APP_ENV is explicitly `local`. */
+  mirrorConsole: boolean;
 }
 
 const normalizeHost = (host: string): string => host.replace(/\/+$/, '');
 
 /**
  * Resolve deployment telemetry settings.
- * APP_ENV is authoritative — never infer from NODE_ENV.
+ * APP_ENV is authoritative when set — never infer the deployment label from NODE_ENV.
+ *
+ * Missing APP_ENV defaults:
+ * - with a PostHog token → `preview` (avoid labeling production incorrectly / console spam)
+ * - without a token → `local`
+ * Console mirroring requires an explicit `APP_ENV=local`.
  */
 export const resolveApiTelemetryEnv = (
   env: NodeJS.ProcessEnv = process.env
 ): ApiTelemetryEnv => {
   const rawAppEnv = env.APP_ENV?.trim().toLowerCase();
-  const appEnv: AppDeploymentEnv =
+  const explicitAppEnv =
     rawAppEnv && APP_ENVS.has(rawAppEnv as AppDeploymentEnv)
       ? (rawAppEnv as AppDeploymentEnv)
-      : 'local';
+      : undefined;
 
   const posthogToken =
     env.POSTHOG_PROJECT_TOKEN?.trim() ||
     env.POSTHOG_API_KEY?.trim() ||
     undefined;
+
+  const appEnv: AppDeploymentEnv =
+    explicitAppEnv ?? (posthogToken ? 'preview' : 'local');
 
   const posthogHost = normalizeHost(
     env.POSTHOG_HOST?.trim() || 'https://us.i.posthog.com'
@@ -50,5 +60,6 @@ export const resolveApiTelemetryEnv = (
     posthogToken,
     posthogHost,
     exportEnabled: Boolean(posthogToken),
+    mirrorConsole: explicitAppEnv === 'local',
   };
 };

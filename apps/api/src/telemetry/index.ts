@@ -17,6 +17,7 @@ export {
 export {
   initApiOtel,
   shutdownApiOtel,
+  forceFlushApiOtel,
   getApiTracer,
   getApiTelemetryEnv,
 } from './otel';

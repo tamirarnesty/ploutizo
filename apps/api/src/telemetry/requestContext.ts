@@ -14,7 +14,6 @@ export interface RequestTelemetryState {
   operationId?: string;
   client: TelemetryClient;
   span: RequestSpanHandle;
-  error?: TelemetryErrorContext;
   /** PostHog correlation — telemetry only. */
   posthogSessionId?: string;
   posthogDistinctId?: string;

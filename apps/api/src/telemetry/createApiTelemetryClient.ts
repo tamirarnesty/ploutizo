@@ -8,13 +8,14 @@ import {
   prepareTelemetryRecord
 } from '@ploutizo/telemetry';
 import type {SafeTelemetryRecord, TelemetryClient, TelemetryEventInput, TelemetryLevel} from '@ploutizo/telemetry';
+import { forceFlushApiOtel } from './otel';
 import type { ApiTelemetryEnv } from './env';
 import type { RequestSpanHandle } from './spanHandle';
 
 export interface CreateApiTelemetryClientOptions {
   env: ApiTelemetryEnv;
   span: RequestSpanHandle;
-  /** When true (default for local), also mirror records to console. */
+  /** When true, also mirror records to console. Defaults to env.mirrorConsole. */
   mirrorConsole?: boolean;
   consoleClient?: TelemetryClient;
 }
@@ -67,13 +68,12 @@ const toLogAttributes = (
 
 /**
  * Request-scoped TelemetryClient that emits OTel logs correlated to the root span.
- * Local environments also mirror to the console adapter.
+ * Explicit local environments may also mirror to the console adapter.
  */
 export const createApiTelemetryClient = (
   options: CreateApiTelemetryClientOptions
 ): TelemetryClient => {
-  const mirrorConsole =
-    options.mirrorConsole ?? options.env.appEnv === 'local';
+  const mirrorConsole = options.mirrorConsole ?? options.env.mirrorConsole;
   const consoleClient =
     options.consoleClient ??
     (mirrorConsole
@@ -90,19 +90,6 @@ export const createApiTelemetryClient = (
         options.env,
         options.span
       );
-
-      options.span.setAttributes({
-        'telemetry.operation': telemetryRecord.operation,
-        ...(telemetryRecord.outcome
-          ? { 'telemetry.outcome': telemetryRecord.outcome }
-          : {}),
-        ...(typeof telemetryRecord.attributes.status === 'number'
-          ? { 'http.status_code': telemetryRecord.attributes.status }
-          : {}),
-        ...(typeof telemetryRecord.attributes.route === 'string'
-          ? { 'http.route': telemetryRecord.attributes.route }
-          : {}),
-      });
 
       if (options.env.exportEnabled) {
         const severity = levelToSeverity(telemetryRecord.level);
@@ -124,7 +111,12 @@ export const createApiTelemetryClient = (
     record,
     flush: async () => {
       try {
-        await consoleClient?.flush();
+        await Promise.all([
+          consoleClient?.flush() ?? Promise.resolve(),
+          options.env.exportEnabled
+            ? forceFlushApiOtel()
+            : Promise.resolve(),
+        ]);
       } catch {
         // ignore
       }

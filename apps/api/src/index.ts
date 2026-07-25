@@ -20,12 +20,22 @@ import {
   TELEMETRY_EXPOSE_HEADERS,
   initApiOtel,
   requestTelemetry,
+  shutdownApiOtel,
 } from './telemetry';
 import type { AppEnv } from './types';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 
 // Boot OTel exporters before request handling (non-blocking; failures degrade).
 initApiOtel();
+
+const registerShutdownHooks = () => {
+  const shutdown = () => {
+    void shutdownApiOtel();
+  };
+  process.once('SIGTERM', shutdown);
+  process.once('SIGINT', shutdown);
+};
+registerShutdownHooks();
 
 const app = new Hono<AppEnv>();
 

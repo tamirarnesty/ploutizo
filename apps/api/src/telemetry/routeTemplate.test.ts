@@ -13,20 +13,33 @@ describe('scrubPathToTemplate', () => {
 });
 
 describe('resolveNormalizedRoute', () => {
-  it('returns the matched route template after the handler runs', async () => {
+  it('returns the exact matched route template for a nested mount', async () => {
     const app = new Hono();
+    const accounts = new Hono();
     let captured = '';
 
+    accounts.get('/:id', (c) => c.json({ ok: true }));
     app.use('*', async (c, next) => {
       await next();
       captured = resolveNormalizedRoute(c);
     });
-    app.get('/api/accounts/:id', (c) => c.json({ ok: true }));
+    app.route('/api/accounts', accounts);
 
     const res = await app.request('/api/accounts/acc_123');
     expect(res.status).toBe(200);
-    expect(captured).toContain('/api/accounts');
-    expect(captured).toContain(':id');
-    expect(captured).not.toContain('acc_123');
+    expect(captured).toBe('/api/accounts/:id');
+  });
+
+  it('returns /health for the health route', async () => {
+    const app = new Hono();
+    let captured = '';
+    app.use('*', async (c, next) => {
+      await next();
+      captured = resolveNormalizedRoute(c);
+    });
+    app.get('/health', (c) => c.json({ ok: true }));
+
+    await app.request('/health');
+    expect(captured).toBe('/health');
   });
 });

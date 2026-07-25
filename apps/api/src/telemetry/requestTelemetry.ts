@@ -21,7 +21,11 @@ import {
   REQUEST_ID_HEADER,
 } from './headers';
 import { getApiTelemetryEnv, getApiTracer } from './otel';
-import { resolveNormalizedRoute } from './routeTemplate';
+import {
+  readErrorContextFromResponse,
+  sanitizeCorrelationHeader,
+} from './readErrorContext';
+import { resolveNormalizedRoute, scrubPathToTemplate } from './routeTemplate';
 import { createNoopSpanHandle, startRootSpan } from './spanHandle';
 import type {
   RequestTelemetryState,
@@ -62,19 +66,13 @@ export interface RequestTelemetryMiddlewareOptions {
 const asHttpMethod = (method: string): HttpMethod | undefined =>
   HTTP_METHODS.has(method as HttpMethod) ? (method as HttpMethod) : undefined;
 
-const outcomeForStatus = (status: number): TelemetryOutcome => {
-  if (status >= 500) return 'failure';
-  if (status >= 400) return 'failure';
-  return 'success';
-};
-
-const levelForOutcome = (
-  outcome: TelemetryOutcome,
+const describeOutcome = (
+  status: number,
   reportable: boolean
-): TelemetryLevel => {
-  if (reportable) return 'error';
-  if (outcome === 'failure') return 'warn';
-  return 'info';
+): { outcome: TelemetryOutcome; level: TelemetryLevel } => {
+  if (reportable) return { outcome: 'failure', level: 'error' };
+  if (status >= 400) return { outcome: 'failure', level: 'warn' };
+  return { outcome: 'success', level: 'info' };
 };
 
 const fireAndForgetFlush = (client: TelemetryClient) => {
@@ -93,7 +91,7 @@ const defaultCreateClient: NonNullable<
     if (env.exportEnabled) {
       return createApiTelemetryClient({ env, span });
     }
-    if (env.appEnv === 'local') {
+    if (env.mirrorConsole) {
       return createConsoleTelemetryClient({ prefix: '[api-telemetry]' });
     }
     return createNoopTelemetryClient();
@@ -110,7 +108,8 @@ const defaultStartSpan: NonNullable<
       name: 'api.request',
       attributes: {
         'http.method': method,
-        'url.path': path,
+        // Scrub before attach — never export raw entity IDs on spans.
+        'http.route': scrubPathToTemplate(path),
         'request.id': requestId,
         'deployment.environment': env.appEnv,
         'service.name': env.serviceName,
@@ -140,10 +139,12 @@ export const requestTelemetry = (
     const requestId = resolveCorrelationId(c.req.header(REQUEST_ID_HEADER));
     const operationId =
       parseCorrelationId(c.req.header(OPERATION_ID_HEADER)) ?? undefined;
-    const posthogSessionId =
-      c.req.header(POSTHOG_SESSION_ID_HEADER)?.trim() || undefined;
-    const posthogDistinctId =
-      c.req.header(POSTHOG_DISTINCT_ID_HEADER)?.trim() || undefined;
+    const posthogSessionId = sanitizeCorrelationHeader(
+      c.req.header(POSTHOG_SESSION_ID_HEADER)
+    );
+    const posthogDistinctId = sanitizeCorrelationHeader(
+      c.req.header(POSTHOG_DISTINCT_ID_HEADER)
+    );
 
     c.header(REQUEST_ID_HEADER, requestId);
 
@@ -193,8 +194,9 @@ export const requestTelemetry = (
         const route = resolveNormalizedRoute(c);
         const method = asHttpMethod(c.req.method);
         const durationMs = Math.max(0, now() - startedAt);
+        const explicitError = c.get('telemetryError');
         const errorContext: TelemetryErrorContext | undefined =
-          c.get('telemetryError') ?? state.error;
+          explicitError ?? (await readErrorContextFromResponse(c));
 
         const classification = classifyApiOutcome({
           status,
@@ -202,25 +204,26 @@ export const requestTelemetry = (
           kind: errorContext?.kind ?? 'http',
           escalate: errorContext?.escalate,
         });
-
-        const outcome = outcomeForStatus(status);
-        const level = levelForOutcome(outcome, classification.reportable);
+        const { outcome, level } = describeOutcome(
+          status,
+          classification.reportable
+        );
 
         span.setAttributes({
           'http.status_code': status,
           'http.route': route,
           'telemetry.classification': classification.classification,
+          'telemetry.operation': 'api.request.complete',
+          'telemetry.outcome': outcome,
         });
 
         if (classification.reportable) {
           span.setStatus('error');
-          if (errorContext?.message) {
-            span.recordException(new Error(errorContext.message));
-          } else {
-            span.recordException(
-              new Error(`Unexpected API outcome ${status}`)
-            );
-          }
+          span.recordException(
+            new Error(
+              errorContext?.message ?? `Unexpected API outcome ${status}`
+            )
+          );
         } else {
           span.setStatus('ok');
         }

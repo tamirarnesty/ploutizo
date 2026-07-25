@@ -2,28 +2,41 @@ import { describe, expect, it } from 'vitest';
 import { resolveApiTelemetryEnv } from './env';
 
 describe('resolveApiTelemetryEnv', () => {
-  it('defaults to local when APP_ENV is missing or invalid', () => {
+  it('defaults to local without a token when APP_ENV is missing', () => {
     expect(resolveApiTelemetryEnv({}).appEnv).toBe('local');
-    expect(resolveApiTelemetryEnv({ APP_ENV: 'staging' }).appEnv).toBe('local');
+    expect(resolveApiTelemetryEnv({}).mirrorConsole).toBe(false);
   });
 
-  it('does not infer environment from NODE_ENV', () => {
+  it('defaults to preview (not local) when a PostHog token is present without APP_ENV', () => {
+    const resolved = resolveApiTelemetryEnv({
+      POSTHOG_PROJECT_TOKEN: 'phc_test',
+    });
+    expect(resolved.appEnv).toBe('preview');
+    expect(resolved.exportEnabled).toBe(true);
+    expect(resolved.mirrorConsole).toBe(false);
+  });
+
+  it('mirrors console only when APP_ENV is explicitly local', () => {
     expect(
-      resolveApiTelemetryEnv({ NODE_ENV: 'production', APP_ENV: 'preview' }).appEnv
-    ).toBe('preview');
-  });
-
-  it('enables export only when a PostHog token is present', () => {
+      resolveApiTelemetryEnv({ APP_ENV: 'local' }).mirrorConsole
+    ).toBe(true);
     expect(
       resolveApiTelemetryEnv({
         APP_ENV: 'production',
         POSTHOG_PROJECT_TOKEN: 'phc_test',
-      }).exportEnabled
-    ).toBe(true);
-
-    expect(
-      resolveApiTelemetryEnv({ APP_ENV: 'production' }).exportEnabled
+      }).mirrorConsole
     ).toBe(false);
+  });
+
+  it('does not infer environment from NODE_ENV', () => {
+    expect(
+      resolveApiTelemetryEnv({ NODE_ENV: 'production', APP_ENV: 'preview' })
+        .appEnv
+    ).toBe('preview');
+  });
+
+  it('treats invalid APP_ENV as unset', () => {
+    expect(resolveApiTelemetryEnv({ APP_ENV: 'staging' }).appEnv).toBe('local');
   });
 
   it('prefers APP_RELEASE over Railway commit SHA', () => {

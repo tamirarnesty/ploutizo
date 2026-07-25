@@ -21,6 +21,7 @@ const main = async () => {
         posthogToken: undefined,
         posthogHost: 'https://us.i.posthog.com',
         exportEnabled: false,
+        mirrorConsole: true,
       },
       createClient: () => fake,
       startSpan: () => createNoopSpanHandle(),

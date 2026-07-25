@@ -72,11 +72,21 @@ describe('classifyApiOutcome', () => {
     ).toEqual({ classification: 'unexpected', reportable: true });
   });
 
-  it('defaults 4xx http outcomes without a known code to expected', () => {
+  it('defaults status-only 4xx outcomes without a machine code to expected', () => {
     expect(classifyApiOutcome({ status: 400, kind: 'http' })).toEqual({
       classification: 'expected',
       reportable: false,
     });
+  });
+
+  it('treats unrecognized machine codes as unexpected/reportable', () => {
+    expect(
+      classifyApiOutcome({
+        status: 403,
+        code: 'SELF_REMOVAL_FORBIDDEN',
+        kind: 'http',
+      })
+    ).toEqual({ classification: 'unexpected', reportable: true });
   });
 
   it('treats successful HTTP statuses as expected and non-reportable', () => {

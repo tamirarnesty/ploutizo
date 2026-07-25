@@ -24,6 +24,7 @@ export interface ApiOtelRuntime {
   tracer: Tracer;
   loggerProvider: LoggerProvider | undefined;
   env: ApiTelemetryEnv;
+  forceFlush: () => Promise<void>;
   /** Bounded, non-blocking shutdown used on process exit. */
   shutdown: () => Promise<void>;
 }
@@ -134,10 +135,25 @@ export const initApiOtel = (
 
   const tracer = trace.getTracer(env.serviceName);
 
+  const forceFlush = async () => {
+    try {
+      await withTimeout(
+        Promise.all([
+          tracerProvider?.forceFlush() ?? Promise.resolve(),
+          loggerProvider?.forceFlush() ?? Promise.resolve(),
+        ]),
+        FLUSH_TIMEOUT_MS
+      );
+    } catch {
+      // ignore flush failures
+    }
+  };
+
   runtime = {
     tracer,
     loggerProvider,
     env,
+    forceFlush,
     shutdown: async () => {
       try {
         await withTimeout(
@@ -161,6 +177,11 @@ export const getApiTracer = (): Tracer =>
 
 export const getApiTelemetryEnv = (): ApiTelemetryEnv =>
   runtime?.env ?? resolveApiTelemetryEnv();
+
+export const forceFlushApiOtel = async (): Promise<void> => {
+  if (!runtime) return;
+  await runtime.forceFlush();
+};
 
 export const shutdownApiOtel = async (): Promise<void> => {
   if (!runtime) return;

@@ -24,6 +24,7 @@ const testEnv: ApiTelemetryEnv = {
   posthogToken: undefined,
   posthogHost: 'https://us.i.posthog.com',
   exportEnabled: false,
+  mirrorConsole: true,
 };
 
 const buildApp = (fake: FakeTelemetryClient) => {
@@ -54,6 +55,17 @@ const buildApp = (fake: FakeTelemetryClient) => {
     fake.failNextEmit(new Error('exporter down'));
     return c.json({ data: { ok: true } });
   });
+  app.get('/api/tenant-required', (c) =>
+    c.json(
+      {
+        error: {
+          code: 'TENANT_REQUIRED',
+          message: 'No active organisation.',
+        },
+      },
+      401
+    )
+  );
 
   app.notFound((c) => {
     c.set('telemetryError', { code: 'NOT_FOUND', kind: 'http' });
@@ -179,6 +191,18 @@ describe('requestTelemetry middleware', () => {
     expect(fake.records[0]?.attributes).toMatchObject({
       status: 409,
       code: 'CONFLICT',
+      classification: 'expected',
+    });
+  });
+
+  it('recovers machine codes from early-return JSON error bodies', async () => {
+    const fake = createFakeTelemetryClient();
+    const res = await buildApp(fake).request('/api/tenant-required');
+
+    expect(res.status).toBe(401);
+    expect(fake.records[0]?.attributes).toMatchObject({
+      status: 401,
+      code: 'TENANT_REQUIRED',
       classification: 'expected',
     });
   });

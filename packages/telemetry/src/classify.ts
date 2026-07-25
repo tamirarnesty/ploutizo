@@ -43,7 +43,7 @@ const EXPECTED_CODES = new Set([
 /** Codes that always escalate even on non-5xx statuses. */
 const UNEXPECTED_CODES = new Set(['INTERNAL_ERROR', 'UNKNOWN']);
 
-const isExpectedHttpStatus = (status: number): boolean =>
+const isClientHttpStatus = (status: number): boolean =>
   status >= 400 && status < 500;
 
 /**
@@ -51,6 +51,9 @@ const isExpectedHttpStatus = (status: number): boolean =>
  *
  * Expected: validation, not-found, authorization/tenant, known domain conflicts.
  * Unexpected/reportable: network, malformed, 5xx, unknown codes/kinds.
+ *
+ * When a machine `code` is present but not in the expected allowlist, the outcome
+ * is reportable (unknown API codes). Status-only 4xx without a code remains expected.
  */
 export const classifyApiOutcome = (
   input: ClassifyApiOutcomeInput
@@ -87,7 +90,13 @@ export const classifyApiOutcome = (
     return { classification: 'expected', reportable: false };
   }
 
-  if (status !== undefined && isExpectedHttpStatus(status)) {
+  // Present but unrecognized machine codes are actionable unknowns.
+  if (code) {
+    return { classification: 'unexpected', reportable: true };
+  }
+
+  // Status-only client errors (no machine code) stay expected UI/log states.
+  if (status !== undefined && isClientHttpStatus(status)) {
     return { classification: 'expected', reportable: false };
   }
 
@@ -99,23 +108,14 @@ export const isReportableApiOutcome = (
   input: ClassifyApiOutcomeInput
 ): boolean => classifyApiOutcome(input).reportable;
 
-type LooseApiRequestCompleteInput = {
-  status?: number;
-  method?: HttpMethod;
-  route?: string;
-  retryCount?: number;
-  attempt?: number;
-  classification?: ApiOutcomeClassification;
-  code?: string;
-  kind?: ApiOutcomeKind;
-};
-
 /**
  * Pick catalog-safe flat fields for `api.request.complete`.
  * Duration and correlation IDs stay on the event record, not in attributes.
  */
 export const toApiRequestCompleteAttributes = (
-  input: LooseApiRequestCompleteInput
+  input: ApiRequestCompleteAttributes & {
+    method?: HttpMethod;
+  }
 ): ApiRequestCompleteAttributes => {
   const attributes: ApiRequestCompleteAttributes = {};
 

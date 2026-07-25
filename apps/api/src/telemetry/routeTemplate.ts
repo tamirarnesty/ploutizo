@@ -1,4 +1,4 @@
-import { matchedRoutes } from 'hono/route';
+import { matchedRoutes, routePath } from 'hono/route';
 import type { Context } from 'hono';
 
 const UUID_SEGMENT =
@@ -9,52 +9,37 @@ const NUMERIC_ID = /^\d+$/;
 const isMiddlewarePath = (path: string): boolean =>
   path === '*' || path === '/*' || path.endsWith('/*');
 
-const joinRouteParts = (base: string, path: string): string => {
-  if (!base || base === '/') return path.startsWith('/') ? path : `/${path}`;
-  if (!path || path === '/') return base;
-  const normalizedBase = base.endsWith('/') ? base.slice(0, -1) : base;
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  return `${normalizedBase}${normalizedPath}`;
-};
-
 /**
  * Best-effort normalized route template for telemetry.
- * Prefers Hono matched route patterns; falls back to scrubbing raw path IDs.
+ * Prefers Hono's registered route patterns; falls back to scrubbing raw path IDs.
  */
 export const resolveNormalizedRoute = (c: Context): string => {
   try {
+    // After handlers run, prefer the last non-middleware matched pattern.
     const routes = matchedRoutes(c);
     for (let i = routes.length - 1; i >= 0; i -= 1) {
       const route = routes[i];
       if (isMiddlewarePath(route.path)) continue;
-
-      // Nested routers often register `/:id` while the mount base is `/api/...`.
-      // Reconstruct from successive non-middleware matched paths when possible.
-      const parts: string[] = [];
-      for (let j = 0; j <= i; j += 1) {
-        const candidate = routes[j];
-        if (isMiddlewarePath(candidate.path)) continue;
-        if (parts.length === 0) {
-          parts.push(candidate.path);
-          continue;
+      const path = route.path.startsWith('/') ? route.path : `/${route.path}`;
+      // Nested mounts often expose only `/:id`; compose with earlier mount bases.
+      if (path.includes(':') || path.startsWith('/api') || path === '/health') {
+        const mount = routes
+          .slice(0, i)
+          .map((entry) => entry.path)
+          .filter((candidate) => !isMiddlewarePath(candidate))
+          .at(-1);
+        if (mount && mount !== path && !path.startsWith(mount)) {
+          const base = mount.endsWith('/') ? mount.slice(0, -1) : mount;
+          const leaf = path.startsWith('/') ? path : `/${path}`;
+          return `${base}${leaf}`;
         }
-        const previous = parts[parts.length - 1] ?? '';
-        if (
-          candidate.path.startsWith(previous) &&
-          candidate.path.length > previous.length
-        ) {
-          parts[parts.length - 1] = candidate.path;
-        } else if (!previous.endsWith(candidate.path)) {
-          parts.push(candidate.path);
-        }
+        return path;
       }
+    }
 
-      const composed = parts.reduce(
-        (acc, part) => joinRouteParts(acc, part),
-        ''
-      );
-      if (composed) return composed;
-      return route.path.startsWith('/') ? route.path : `/${route.path}`;
+    const current = routePath(c, -1);
+    if (current && !isMiddlewarePath(current)) {
+      return current.startsWith('/') ? current : `/${current}`;
     }
   } catch {
     // Fall through to scrubbed path.
