@@ -1,10 +1,8 @@
-import type { TelemetryClient } from '../contract';
 import {
-  asRecordSink,
-  createSinkTelemetryClient,
-  emitMessage,
-  type TelemetryLevelSink,
-} from '../emit';
+  prepareTelemetryRecord,
+  type TelemetryClient,
+  type TelemetryEventInput,
+} from '../contract';
 
 export type ConsoleTelemetrySink = Pick<
   Console,
@@ -21,33 +19,28 @@ export interface ConsoleTelemetryClientOptions {
   prefix?: string;
 }
 
-export const createConsoleLevelSink = (
+export const createConsoleTelemetryClient = (
   options: ConsoleTelemetryClientOptions = {}
-): TelemetryLevelSink => {
+): TelemetryClient => {
   const prefix = options.prefix ?? '[telemetry]';
   const sink = options.sink ?? console;
 
-  const write = (
-    method: keyof ConsoleTelemetrySink,
-    message: string,
-    payload: unknown
-  ) => {
-    sink[method].call(sink, prefix, message, payload);
+  const record = (event: TelemetryEventInput) => {
+    try {
+      const telemetryRecord = prepareTelemetryRecord(event);
+      sink[telemetryRecord.level].call(
+        sink,
+        prefix,
+        telemetryRecord.message ?? telemetryRecord.operation,
+        telemetryRecord
+      );
+    } catch {
+      // Telemetry must never affect product behavior.
+    }
   };
 
   return {
-    debug: (record) => write('debug', emitMessage(record), record),
-    info: (record) => write('info', emitMessage(record), record),
-    warn: (record) => write('warn', emitMessage(record), record),
-    error: (record) => write('error', emitMessage(record), record),
+    record,
+    flush: async () => {},
   };
 };
-
-/**
- * Local development adapter: emits structured records to the console.
- * Uses the shared level-sink path that PostHog web adapter will mirror.
- */
-export const createConsoleTelemetryClient = (
-  options: ConsoleTelemetryClientOptions = {}
-): TelemetryClient =>
-  createSinkTelemetryClient(asRecordSink(createConsoleLevelSink(options)));

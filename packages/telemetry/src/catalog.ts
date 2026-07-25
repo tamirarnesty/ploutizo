@@ -1,102 +1,51 @@
 /**
- * Typed operation/event catalog for vendor-neutral telemetry.
- * Callers must pick a stable operation and surface — free-form names are rejected.
+ * The first telemetry consumers use this catalog directly. Add domain operations
+ * alongside their callers instead of pre-registering every product capability.
  */
-
-export const TELEMETRY_SURFACES = [
-  // Browser product surfaces
+const WEB_TELEMETRY_SURFACES = [
   'web.root',
-  'web.auth',
-  'web.onboarding',
   'web.dashboard',
   'web.accounts',
   'web.transactions',
   'web.import',
   'web.import.review',
-  'web.settings',
-  'web.settings.household',
-  'web.settings.categories',
-  'web.settings.merchant_rules',
-  // API product surfaces
-  'api.request',
-  'api.health',
-  'api.webhooks',
-  'api.accounts',
-  'api.households',
-  'api.categories',
-  'api.tags',
-  'api.merchant_rules',
-  'api.transactions',
-  'api.settlements',
-  'api.imports',
 ] as const;
 
-export type TelemetrySurface = (typeof TELEMETRY_SURFACES)[number];
+const API_TELEMETRY_SURFACES = ['api.request'] as const;
 
-export const TELEMETRY_OPERATIONS = [
-  // Generic operation lifecycle (wide events)
-  'operation.start',
-  'operation.complete',
-  'operation.fail',
-  // Browser ↔ API correlation
-  'browser.api_request',
-  'browser.api_request.retry',
-  'api.request.complete',
-  // Route preload / section recovery (consumed by later issues)
-  'route.preload',
-  'section.render',
-  'section.recover',
-  // Domain capability names (stable across pages and releases)
-  'accounts.list',
-  'accounts.create',
-  'accounts.update',
-  'accounts.archive',
-  'transactions.list',
-  'transactions.get',
-  'transactions.create',
-  'transactions.update',
-  'transactions.delete',
-  'transactions.restore',
-  'settlements.list',
-  'settlements.create',
-  'imports.list',
-  'imports.create',
-  'imports.get',
-  'imports.review',
-  'imports.finalize',
-  'households.members.list',
-  'households.invitations.list',
-  'households.invite',
-  'households.member.remove',
-  'households.invitation.revoke',
-  'categories.list',
-  'categories.create',
-  'categories.update',
-  'categories.archive',
-  'tags.list',
-  'tags.create',
-  'tags.archive',
-  'merchant_rules.list',
-  'merchant_rules.create',
-  'merchant_rules.update',
-  'merchant_rules.reorder',
-  'merchant_rules.archive',
+export const TELEMETRY_CATALOG = {
+  'browser.api_request': { surfaces: WEB_TELEMETRY_SURFACES },
+  'browser.api_request.retry': { surfaces: WEB_TELEMETRY_SURFACES },
+  'api.request.complete': { surfaces: API_TELEMETRY_SURFACES },
+  'route.preload': { surfaces: WEB_TELEMETRY_SURFACES },
+  'section.render': { surfaces: WEB_TELEMETRY_SURFACES },
+  'section.recover': { surfaces: WEB_TELEMETRY_SURFACES },
+} as const;
+
+export type TelemetryOperation = keyof typeof TELEMETRY_CATALOG;
+export type TelemetrySurface =
+  | (typeof WEB_TELEMETRY_SURFACES)[number]
+  | (typeof API_TELEMETRY_SURFACES)[number];
+export type TelemetrySurfaceForOperation<O extends TelemetryOperation> =
+  (typeof TELEMETRY_CATALOG)[O]['surfaces'][number];
+
+export const TELEMETRY_OPERATIONS = Object.keys(
+  TELEMETRY_CATALOG
+) as TelemetryOperation[];
+export const TELEMETRY_SURFACES = [
+  ...WEB_TELEMETRY_SURFACES,
+  ...API_TELEMETRY_SURFACES,
 ] as const;
-
-export type TelemetryOperation = (typeof TELEMETRY_OPERATIONS)[number];
 
 const surfaceSet: ReadonlySet<string> = new Set(TELEMETRY_SURFACES);
-const operationSet: ReadonlySet<string> = new Set(TELEMETRY_OPERATIONS);
 
-export const isTelemetrySurface = (
-  value: unknown
-): value is TelemetrySurface =>
+export const isTelemetrySurface = (value: unknown): value is TelemetrySurface =>
   typeof value === 'string' && surfaceSet.has(value);
 
 export const isTelemetryOperation = (
   value: unknown
 ): value is TelemetryOperation =>
-  typeof value === 'string' && operationSet.has(value);
+  typeof value === 'string' && value in TELEMETRY_CATALOG;
 
 export class TelemetryCatalogError extends Error {
   constructor(message: string) {
@@ -111,8 +60,8 @@ export interface TelemetryCatalogEntry {
 }
 
 /**
- * Validates that both operation and surface are catalog members.
- * Throws TelemetryCatalogError when either is unknown.
+ * Validates a complete operation/surface pair.
+ * Throws TelemetryCatalogError when either value is unknown or incompatible.
  */
 export const assertTelemetryCatalogEntry = (input: {
   operation: unknown;
@@ -126,6 +75,12 @@ export const assertTelemetryCatalogEntry = (input: {
   if (!isTelemetrySurface(input.surface)) {
     throw new TelemetryCatalogError(
       `Unknown telemetry surface: ${String(input.surface)}`
+    );
+  }
+  const allowedSurfaces = TELEMETRY_CATALOG[input.operation].surfaces;
+  if (!allowedSurfaces.includes(input.surface as never)) {
+    throw new TelemetryCatalogError(
+      `Telemetry surface ${input.surface} is not valid for ${input.operation}`
     );
   }
   return { operation: input.operation, surface: input.surface };

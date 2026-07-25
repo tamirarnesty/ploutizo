@@ -4,20 +4,20 @@ import { prepareTelemetryRecord, trimMessage } from '../contract';
 describe('prepareTelemetryRecord', () => {
   it('accepts operation-scoped typed attributes', () => {
     const record = prepareTelemetryRecord({
-      operation: 'transactions.list',
+      operation: 'browser.api_request',
       surface: 'web.transactions',
       attributes: {
         status: 200,
-        count: 12,
+        method: 'GET',
       },
     });
 
-    expect(record.attributes).toEqual({ status: 200, count: 12 });
+    expect(record.attributes).toEqual({ status: 200, method: 'GET' });
   });
 
   it('truncates long diagnostic messages', () => {
     const record = prepareTelemetryRecord({
-      operation: 'transactions.list',
+      operation: 'browser.api_request',
       surface: 'web.transactions',
       message: 'x'.repeat(250),
     });

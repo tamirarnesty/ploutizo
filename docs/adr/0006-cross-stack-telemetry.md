@@ -11,21 +11,19 @@ Ploutizo has no coherent logging, error reporting, or request tracing across web
 Introduce a shared, vendor-neutral package `@ploutizo/telemetry` that owns:
 
 - the public caller contract (`TelemetryClient`)
-- a typed operation/event catalog with operation-scoped attribute schemas (compile-time privacy contract)
+- a small typed operation/event catalog with operation-scoped attribute schemas (compile-time privacy contract)
 - flat primitive attributes only (single-level keys → string | number | boolean | null)
-- typed API-error representation and expected/unexpected classification
 - UUIDv4 correlation helpers via `createCorrelationId` / parse-resolve (telemetry-only — never authorization)
-- local console and no-op adapters, plus test fakes
-- a thin PostHog adapter surface (injected from apps/web; no vendor SDK dependency in this package)
+- local console/no-op adapters and test fakes
 
-Runtime adapters are **not** forced through a shared singleton:
+Runtime-specific delivery remains outside the package and is **not** forced through a shared singleton:
 
 | Runtime | Adapter responsibility                                                                                                    |
 | ------- | ------------------------------------------------------------------------------------------------------------------------- |
 | Web     | PostHog identity, product events, structured browser logs, exception steps/capture, session replay, and client operations |
 | API     | request-scoped OTel spans and logs, structured wide request outcomes, server exception capture, and response correlation  |
 
-Both implement the same contract. Callers never import PostHog or OpenTelemetry from product code. PostHog is the initial vendor adapter (web client + OTel exporter on API); wiring lands in follow-up issues.
+Web and API composition roots map prepared records to their respective SDKs. They use official SDK types directly; callers never import PostHog or OpenTelemetry. PostHog is the only planned vendor, but its adapter wiring lands with the web/API integrations rather than as a speculative bridge in the shared package.
 
 Callers choose a stable, typed `operation` and `surface`, then attach **only** attributes allowed for that operation's schema. Privacy is enforced by TypeScript schemas and by callers omitting sensitive fields — not by a runtime key-bag firewall in `@ploutizo/telemetry`.
 
@@ -37,7 +35,7 @@ Optional `attributes` objects are single-level only: keys map to `string | numbe
 
 The package trusts correctly typed callers. It does not maintain a runtime blocklist or recursive sanitizer for bypassed types. Diagnostic `message` values may be lightly trimmed for length; sensitive content must not be placed there by callers.
 
-PostHog ingest filters and privacy-first Session Replay masking remain product-level defenses at adapter wiring time — not substitutes for typed attributes and caller discipline.
+PostHog ingest filters and privacy-first Session Replay masking remain product-level defenses at application wiring time — not substitutes for typed attributes and caller discipline.
 
 Correlation IDs (`X-Request-Id`, `X-Operation-Id`, PostHog session/distinct headers) are observability-only and must never influence auth or tenancy. The API is authoritative for request IDs. IDs are created with `crypto.randomUUID()`.
 
@@ -58,7 +56,7 @@ Normal browser logs use PostHog's structured logger. Explicit log capture is res
 | `X-Request-Id`                     | API                | One validated or generated identifier per HTTP attempt; returned in the response |
 | OTel trace and span IDs            | API OTel adapter   | Links server spans and logs                                                      |
 
-The API accepts PostHog correlation headers and validated operation IDs for telemetry only. They never participate in authorization.
+The API integration accepts PostHog correlation headers and validated operation IDs for telemetry only. They never participate in authorization.
 
 ## Identity and privacy (follow-up wiring)
 
@@ -78,13 +76,13 @@ Session Replay is privacy-first: mask all text, inputs, and element attributes; 
 
 ## Adapter behavior
 
-Telemetry is non-blocking: initialization, emission, queues, and exporter failures cannot delay or alter user actions, route loading, API responses, or retry behavior. Adapters use bounded queues, timeouts, and local no-op/console fallback.
+Telemetry is non-blocking: initialization, emission, queues, and exporter failures cannot delay or alter user actions, route loading, API responses, or retry behavior. Application delivery adapters contain rejected asynchronous emission and use bounded queues/timeouts; the shared contract has no transport layer.
 
 ## Error escalation
 
 Every API failure emits a trace/log outcome. Expected validation, not-found, authorization/tenant, and known domain-conflict outcomes do not create Error Tracking issues. Network failures, malformed responses, 5xx responses, and unknown API codes do; callers may explicitly escalate an otherwise expected failure. Reporting deduplicates an API error that later reaches a recovery boundary.
 
-Safe API-error attribute helpers return flat typed fields suitable for catalog attributes (`kind`, `classification`, `status`, `code`, `route`, `method`). Duration and correlation IDs stay on the event record, not inside attribute bags.
+When `apiFetch` is wired, its existing request-error boundary carries the safe status, code, route, method, duration, and correlation metadata required for classification. Do not introduce a competing API-error class in the shared package. Duration and correlation IDs stay on the event record, not inside attribute bags.
 
 ## Database boundary
 
@@ -93,9 +91,9 @@ Do not enable Drizzle raw SQL logging or export bound query parameters. The init
 ## Consequences
 
 - The telemetry prerequisite must land before PLO-51's route preload and section-recovery adoption.
-- Later issues wire PostHog (browser) and OTel (API) behind this contract.
+- Later issues wire PostHog (browser) and OTel (API) at their application composition roots behind this contract.
 - Tests assert emitted records via `createFakeTelemetryClient`, never vendor payload shapes.
-- Catalog growth is intentional: new capabilities add named operations/surfaces rather than free-form event strings.
+- Catalog growth is intentional but demand-driven: add named operations/surfaces alongside real callers rather than pre-registering future capabilities.
 - All caller-visible operations and events become durable analytics contracts, not ad hoc strings.
 - PostHog Distributed Tracing is alpha, so the OTel exporter remains isolated behind the API adapter.
 - Initial production captures all API root spans and completion logs, with rate limits and future tail sampling; errors and warnings are always retained.

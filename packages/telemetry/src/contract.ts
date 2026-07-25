@@ -1,4 +1,8 @@
-import type { TelemetryOperation, TelemetrySurface } from './catalog';
+import type {
+  TelemetryOperation,
+  TelemetrySurface,
+  TelemetrySurfaceForOperation,
+} from './catalog';
 import { assertTelemetryCatalogEntry } from './catalog';
 import type { TelemetryAttributes } from './attributes';
 import { parseCorrelationId } from './ids';
@@ -35,7 +39,7 @@ export type TelemetryEventInput<
   /** Stable catalog operation name (required). */
   operation: O;
   /** Stable catalog surface (required). */
-  surface: TelemetrySurface;
+  surface: TelemetrySurfaceForOperation<O>;
   /** Log severity; defaults to adapter-specific behavior (usually info). */
   level?: TelemetryLevel;
   /** Optional outcome for completion-style wide events. */
@@ -76,7 +80,7 @@ export interface SafeTelemetryRecord {
  * in a way that changes product behavior — failures degrade to no-op.
  */
 export interface TelemetryClient {
-  record(event: TelemetryEventInput): void;
+  record<O extends TelemetryOperation>(event: TelemetryEventInput<O>): void;
   flush(): Promise<void>;
 }
 

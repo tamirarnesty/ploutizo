@@ -1,23 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-  createConsoleLevelSink,
-  createConsoleTelemetryClient,
-} from '../adapters/console';
+import { createConsoleTelemetryClient } from '../adapters/console';
 import { createFakeTelemetryClient } from '../adapters/fake';
 import { createNoopTelemetryClient } from '../adapters/noop';
-import {
-  createPostHogLevelSink,
-  createPostHogTelemetryClient,
-} from '../adapters/posthog';
 import { createCorrelationId } from '../ids';
-import {
-  asRecordSink,
-  composeRecordSinks,
-  createSinkTelemetryClient,
-} from '../emit';
 
 describe('telemetry adapters', () => {
-  it('console adapter emits structured records via the shared level sink', () => {
+  it('console adapter emits structured records', () => {
     const info = vi.fn();
     const client = createConsoleTelemetryClient({
       prefix: '[telemetry]',
@@ -34,7 +22,7 @@ describe('telemetry adapters', () => {
     const requestId = createCorrelationId();
 
     client.record({
-      operation: 'transactions.list',
+      operation: 'browser.api_request',
       surface: 'web.transactions',
       level: 'info',
       outcome: 'success',
@@ -43,99 +31,19 @@ describe('telemetry adapters', () => {
       durationMs: 18,
       attributes: {
         status: 200,
-        count: 4,
+        method: 'GET',
       },
     });
 
     expect(info).toHaveBeenCalledTimes(1);
     expect(info.mock.calls[0]?.[0]).toBe('[telemetry]');
-    expect(info.mock.calls[0]?.[1]).toBe('transactions.list');
+    expect(info.mock.calls[0]?.[1]).toBe('browser.api_request');
     expect(info.mock.calls[0]?.[2]).toMatchObject({
-      operation: 'transactions.list',
-      attributes: { status: 200, count: 4 },
+      operation: 'browser.api_request',
+      attributes: { status: 200, method: 'GET' },
       operationId,
       requestId,
     });
-  });
-
-  it('posthog adapter routes levels to logger and capture for wide events', () => {
-    const logger = {
-      debug: vi.fn(),
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-    };
-    const capture = vi.fn();
-    const flush = vi.fn(async () => undefined);
-    const client = createPostHogTelemetryClient({
-      logger,
-      capture,
-      flush,
-    });
-
-    client.record({
-      operation: 'api.request.complete',
-      surface: 'api.request',
-      level: 'info',
-      outcome: 'success',
-      message: 'Request completed',
-      attributes: { status: 200, route: '/api/accounts' },
-    });
-
-    expect(logger.info).toHaveBeenCalledWith(
-      'Request completed',
-      expect.objectContaining({
-        operation: 'api.request.complete',
-        attributes: { status: 200, route: '/api/accounts' },
-      })
-    );
-    expect(capture).toHaveBeenCalledWith(
-      'api.request.complete',
-      expect.objectContaining({
-        operation: 'api.request.complete',
-      })
-    );
-  });
-
-  it('composeRecordSinks fans out to console and posthog sinks', () => {
-    const info = vi.fn();
-    const logger = {
-      debug: vi.fn(),
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-    };
-
-    const client = createSinkTelemetryClient(
-      composeRecordSinks(
-        asRecordSink(
-          createConsoleLevelSink({
-            sink: {
-              debug: vi.fn(),
-              info,
-              warn: vi.fn(),
-              error: vi.fn(),
-              log: vi.fn(),
-            },
-          })
-        ),
-        asRecordSink(
-          createPostHogLevelSink({
-            logger,
-            capture: vi.fn(),
-          })
-        )
-      )
-    );
-
-    client.record({
-      operation: 'route.preload',
-      surface: 'web.dashboard',
-      attributes: { route: '/dashboard' },
-    });
-
-    expect(info).toHaveBeenCalledTimes(1);
-    expect(logger.info).toHaveBeenCalledTimes(1);
   });
 
   it('console and noop adapters preserve caller results when emission fails', async () => {
@@ -162,13 +70,13 @@ describe('telemetry adapters', () => {
 
     const work = async () => {
       consoleClient.record({
-        operation: 'accounts.list',
-        surface: 'api.accounts',
+        operation: 'browser.api_request',
+        surface: 'web.accounts',
         attributes: { status: 200 },
       });
       noop.record({
-        operation: 'accounts.list',
-        surface: 'api.accounts',
+        operation: 'browser.api_request',
+        surface: 'web.accounts',
       });
       await consoleClient.flush();
       await noop.flush();
@@ -178,7 +86,7 @@ describe('telemetry adapters', () => {
     await expect(work()).resolves.toEqual({ ok: true });
   });
 
-  it('console adapter ignores invalid catalog entries without throwing', () => {
+  it('console adapter ignores invalid catalog pairs without throwing', () => {
     const client = createConsoleTelemetryClient({
       sink: {
         debug: vi.fn(),
@@ -196,6 +104,27 @@ describe('telemetry adapters', () => {
         surface: 'web.dashboard',
       })
     ).not.toThrow();
+  });
+
+  it('console adapter ignores incompatible operation/surface pairs', () => {
+    const info = vi.fn();
+    const client = createConsoleTelemetryClient({
+      sink: {
+        debug: vi.fn(),
+        info,
+        warn: vi.fn(),
+        error: vi.fn(),
+        log: vi.fn(),
+      },
+    });
+
+    client.record({
+      operation: 'api.request.complete',
+      // @ts-expect-error API operations cannot be emitted from web surfaces.
+      surface: 'web.transactions',
+    });
+
+    expect(info).not.toHaveBeenCalled();
   });
 
   it('fake adapter records events and swallows emit failures without throwing', async () => {

@@ -14,7 +14,7 @@ describe('telemetry catalog', () => {
     expect(TELEMETRY_SURFACES.length).toBeGreaterThan(0);
     expect(TELEMETRY_OPERATIONS.length).toBeGreaterThan(0);
     expect(isTelemetrySurface('web.transactions')).toBe(true);
-    expect(isTelemetryOperation('transactions.list')).toBe(true);
+    expect(isTelemetryOperation('browser.api_request')).toBe(true);
   });
 
   it('rejects unknown surfaces and operations', () => {
@@ -25,11 +25,11 @@ describe('telemetry catalog', () => {
   it('assertTelemetryCatalogEntry accepts catalog members', () => {
     expect(
       assertTelemetryCatalogEntry({
-        operation: 'accounts.list',
+        operation: 'browser.api_request',
         surface: 'web.accounts',
       })
     ).toEqual({
-      operation: 'accounts.list',
+      operation: 'browser.api_request',
       surface: 'web.accounts',
     });
   });
@@ -37,7 +37,7 @@ describe('telemetry catalog', () => {
   it('assertTelemetryCatalogEntry throws for unknown entries', () => {
     expect(() =>
       assertTelemetryCatalogEntry({
-        operation: 'accounts.list',
+        operation: 'browser.api_request',
         surface: 'not-a-surface',
       })
     ).toThrow(TelemetryCatalogError);
@@ -46,6 +46,15 @@ describe('telemetry catalog', () => {
       assertTelemetryCatalogEntry({
         operation: 'not-an-operation',
         surface: 'api.accounts',
+      })
+    ).toThrow(TelemetryCatalogError);
+  });
+
+  it('rejects incompatible operation and surface pairs', () => {
+    expect(() =>
+      assertTelemetryCatalogEntry({
+        operation: 'api.request.complete',
+        surface: 'web.transactions',
       })
     ).toThrow(TelemetryCatalogError);
   });

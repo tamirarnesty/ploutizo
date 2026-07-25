@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest';
 import type { TelemetryAttributes } from '../attributes';
 
 describe('telemetry attribute schemas', () => {
-  it('types list operations with safe diagnostic fields only', () => {
-    const attrs: TelemetryAttributes<'transactions.list'> = {
+  it('types browser API operations with safe diagnostic fields only', () => {
+    const attrs: TelemetryAttributes<'browser.api_request'> = {
       status: 200,
-      count: 12,
+      method: 'GET',
+      route: '/api/transactions',
     };
 
     expect(attrs.status).toBe(200);
@@ -33,7 +34,7 @@ describe('telemetry attribute schemas', () => {
   });
 
   it('rejects attributes outside the operation schema at compile time', () => {
-    const attrs: TelemetryAttributes<'transactions.list'> = {
+    const attrs: TelemetryAttributes<'browser.api_request'> = {
       status: 200,
       // @ts-expect-error entity identifiers are not part of list telemetry
       accountId: '550e8400-e29b-41d4-a716-446655440000',

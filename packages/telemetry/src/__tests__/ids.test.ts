@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  TELEMETRY_CORRELATION_HEADERS,
   createCorrelationId,
   isValidCorrelationId,
   parseCorrelationId,
@@ -37,10 +36,5 @@ describe('correlation IDs', () => {
 
     const generated = resolveCorrelationId('bad-id', () => valid);
     expect(generated).toBe(valid);
-  });
-
-  it('exposes telemetry-only correlation header names', () => {
-    expect(TELEMETRY_CORRELATION_HEADERS.requestId).toBe('X-Request-Id');
-    expect(TELEMETRY_CORRELATION_HEADERS.operationId).toBe('X-Operation-Id');
   });
 });

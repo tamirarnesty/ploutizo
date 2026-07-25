@@ -8,24 +8,6 @@
 const UUID_V4_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-/**
- * HTTP header names used for telemetry correlation.
- * These are observability-only and must never influence authorization.
- */
-export const TELEMETRY_CORRELATION_HEADERS = {
-  /** API-owned per-HTTP-attempt request ID (returned to the browser). */
-  requestId: 'X-Request-Id',
-  /** Browser-owned logical operation ID (stable across Query retries). */
-  operationId: 'X-Operation-Id',
-  /** PostHog session correlation (telemetry only). */
-  posthogSessionId: 'X-POSTHOG-SESSION-ID',
-  /** PostHog distinct-id correlation (telemetry only). */
-  posthogDistinctId: 'X-POSTHOG-DISTINCT-ID',
-} as const;
-
-export type TelemetryCorrelationHeader =
-  (typeof TELEMETRY_CORRELATION_HEADERS)[keyof typeof TELEMETRY_CORRELATION_HEADERS];
-
 /** Create a UUIDv4 correlation ID (operation or request). */
 export const createCorrelationId = (): string => crypto.randomUUID();
 
@@ -36,7 +18,7 @@ export const isValidCorrelationId = (value: unknown): value is string =>
 /**
  * Parse a caller-supplied correlation ID.
  * Returns the trimmed UUIDv4 string, or null when invalid/missing.
- * Invalid IDs must be replaced by a newly generated one — never trusted for auth.
+ * Request middleware can use resolveCorrelationId() when it must replace invalid IDs.
  */
 export const parseCorrelationId = (value: unknown): string | null => {
   if (typeof value !== 'string') {

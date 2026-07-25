@@ -1,5 +1,8 @@
-import type { SafeTelemetryRecord, TelemetryClient } from '../contract';
-import { createSinkTelemetryClient } from '../emit';
+import {
+  prepareTelemetryRecord,
+  type SafeTelemetryRecord,
+  type TelemetryClient,
+} from '../contract';
 
 export interface FakeTelemetryClient extends TelemetryClient {
   /** Records successfully prepared for emission (in order). */
@@ -21,20 +24,23 @@ export const createFakeTelemetryClient = (): FakeTelemetryClient => {
   const records: SafeTelemetryRecord[] = [];
   let pendingEmitError: unknown | undefined;
 
-  const client = createSinkTelemetryClient({
-    emit: (record) => {
+  const record: TelemetryClient['record'] = (event) => {
+    try {
+      const telemetryRecord = prepareTelemetryRecord(event);
       if (pendingEmitError !== undefined) {
         const error = pendingEmitError;
         pendingEmitError = undefined;
         throw error;
       }
-      records.push(record);
-    },
-  });
+      records.push(telemetryRecord);
+    } catch {
+      // Telemetry must never affect product behavior.
+    }
+  };
 
   return {
-    record: client.record,
-    flush: client.flush,
+    record,
+    flush: async () => {},
     get records() {
       return records;
     },
