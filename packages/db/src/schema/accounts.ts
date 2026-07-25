@@ -6,7 +6,7 @@
  * accountMembers links accounts to org_members for ownership tracking.
  */
 
-import { sql } from 'drizzle-orm'
+import { sql } from 'drizzle-orm';
 import {
   index,
   integer,
@@ -15,10 +15,10 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
-} from 'drizzle-orm/pg-core'
+} from 'drizzle-orm/pg-core';
 
-import { accountTypeEnum } from './enums'
-import { orgs, orgMembers } from './auth'
+import { accountTypeEnum } from './enums';
+import { orgMembers, orgs } from './auth';
 
 /**
  * accounts
@@ -30,7 +30,9 @@ import { orgs, orgMembers } from './auth'
 export const accounts = pgTable(
   'accounts',
   {
-    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     orgId: text('org_id')
       .notNull()
       .references(() => orgs.id, { onDelete: 'cascade' }),
@@ -57,7 +59,7 @@ export const accounts = pgTable(
     index('accounts_org_idx').on(t.orgId),
     index('accounts_org_statement_due_day_idx').on(t.orgId, t.statementDueDay),
   ]
-)
+);
 
 /**
  * account_members
@@ -67,7 +69,9 @@ export const accounts = pgTable(
 export const accountMembers = pgTable(
   'account_members',
   {
-    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     accountId: uuid('account_id')
       .notNull()
       .references(() => accounts.id, { onDelete: 'cascade' }),
@@ -76,8 +80,11 @@ export const accountMembers = pgTable(
       .references(() => orgMembers.id, { onDelete: 'cascade' }),
   },
   (t) => [
-    uniqueIndex('account_members_account_member_idx').on(t.accountId, t.memberId),
+    uniqueIndex('account_members_account_member_idx').on(
+      t.accountId,
+      t.memberId
+    ),
     index('account_members_account_idx').on(t.accountId),
     index('account_members_member_idx').on(t.memberId),
   ]
-)
+);

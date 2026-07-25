@@ -1,18 +1,18 @@
-import { describe, it, expect } from 'vitest'
-import { z } from 'zod'
+import { describe, expect, it } from 'vitest';
 import {
   createTransactionSchema,
   patchTransactionSchema,
   updateTransactionSchema,
-} from '../transactions'
+} from '../transactions';
+import type { z } from 'zod';
 
-const memberId = '550e8400-e29b-41d4-a716-446655440003'
+const memberId = '550e8400-e29b-41d4-a716-446655440003';
 
 const assignee = (amountCents = 1000, percentage = 100) => ({
   memberId,
   amountCents,
   percentage,
-})
+});
 
 // Shared base payload for all type variants
 const baseFields = {
@@ -21,71 +21,81 @@ const baseFields = {
   date: '2024-01-15',
   description: 'Test transaction',
   assignees: [assignee()],
-}
+};
 
 // Helper: find a variant schema by its discriminant value from the discriminated union.
 // Zod v4 discriminated unions expose `.options` (array of ZodObject), not `.optionsMap`.
 // Each option's shape is accessible via `.shape` (which is an alias for `.def.shape`).
 // ZodLiteral.def.values is a plain array (not Set) in Zod v4.
-function getVariantShape(discriminantValue: string): Record<string, unknown> {
+const getVariantShape = (
+  discriminantValue: string
+): Record<string, unknown> => {
   const option = createTransactionSchema.options.find(
-    (o) => 'type' in o.shape && (o.shape.type as z.ZodLiteral<string>).def.values.includes(discriminantValue)
-  )
-  if (!option) throw new Error(`No variant found for type="${discriminantValue}"`)
-  return option.shape as Record<string, unknown>
-}
+    (o) =>
+      'type' in o.shape &&
+      (o.shape.type as z.ZodLiteral<string>).def.values.includes(
+        discriminantValue
+      )
+  );
+  if (!option)
+    throw new Error(`No variant found for type="${discriminantValue}"`);
+  return option.shape as Record<string, unknown>;
+};
 
 // ---------------------------------------------------------------------------
 // VAL-01 — baseTransactionSchema: merchant removed, notes added
 // ---------------------------------------------------------------------------
 describe('VAL-01 — baseTransactionSchema field changes', () => {
   it('rejects expense without assignees', () => {
-    const { assignees: _omit, ...withoutAssignees } = baseFields
+    const { assignees: _omit, ...withoutAssignees } = baseFields;
     const result = createTransactionSchema.safeParse({
       ...withoutAssignees,
       type: 'expense',
-    })
-    expect(result.success).toBe(false)
-  })
+    });
+    expect(result.success).toBe(false);
+  });
 
   it('rejects assignee row without percentage', () => {
     const result = createTransactionSchema.safeParse({
       ...baseFields,
       type: 'expense',
       assignees: [{ memberId, amountCents: baseFields.amount }],
-    })
-    expect(result.success).toBe(false)
-  })
+    });
+    expect(result.success).toBe(false);
+  });
 
   it('accepts payload without notes (notes is optional)', () => {
-    const result = createTransactionSchema.safeParse({ ...baseFields, type: 'expense' })
-    expect(result.success).toBe(true)
-  })
+    const result = createTransactionSchema.safeParse({
+      ...baseFields,
+      type: 'expense',
+    });
+    expect(result.success).toBe(true);
+  });
 
   it('accepts payload with notes as optional string', () => {
     const result = createTransactionSchema.safeParse({
       ...baseFields,
       type: 'expense',
       notes: 'coffee run',
-    })
-    expect(result.success).toBe(true)
-  })
+    });
+    expect(result.success).toBe(true);
+  });
 
   it('schema does not declare merchant field on expense variant', () => {
-    const shape = getVariantShape('expense')
-    expect('merchant' in shape).toBe(false)
-  })
+    const shape = getVariantShape('expense');
+    expect('merchant' in shape).toBe(false);
+  });
 
   it('schema does not declare merchant on refund variant', () => {
-    const shape = getVariantShape('refund')
-    expect('merchant' in shape).toBe(false)
-  })
+    const shape = getVariantShape('refund');
+    expect('merchant' in shape).toBe(false);
+  });
 
   it('schema declares notes on expense variant', () => {
-    const shape = getVariantShape('expense')
-    expect('notes' in shape).toBe(true)
-  })
-})
+    const shape = getVariantShape('expense');
+    expect('notes' in shape).toBe(true);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // VAL-02 — transferTransactionSchema: toAccountId → counterpartAccountId
@@ -97,192 +107,207 @@ describe('VAL-02 — transferTransactionSchema field rename', () => {
       ...baseFields,
       type: 'transfer',
       toAccountId: '550e8400-e29b-41d4-a716-446655440002',
-    })
-    expect(result.success).toBe(false)
-  })
+    });
+    expect(result.success).toBe(false);
+  });
 
   it('accepts transfer payload with counterpartAccountId', () => {
     const result = createTransactionSchema.safeParse({
       ...baseFields,
       type: 'transfer',
       counterpartAccountId: '550e8400-e29b-41d4-a716-446655440002',
-    })
-    expect(result.success).toBe(true)
-  })
+    });
+    expect(result.success).toBe(true);
+  });
 
   it('rejects transfer payload missing counterpartAccountId (it is required)', () => {
     const result = createTransactionSchema.safeParse({
       ...baseFields,
       type: 'transfer',
-    })
-    expect(result.success).toBe(false)
-  })
+    });
+    expect(result.success).toBe(false);
+  });
 
   it('schema declares counterpartAccountId on transfer variant', () => {
-    const shape = getVariantShape('transfer')
-    expect('counterpartAccountId' in shape).toBe(true)
-  })
+    const shape = getVariantShape('transfer');
+    expect('counterpartAccountId' in shape).toBe(true);
+  });
 
   it('schema does not declare toAccountId on transfer variant', () => {
-    const shape = getVariantShape('transfer')
-    expect('toAccountId' in shape).toBe(false)
-  })
-})
+    const shape = getVariantShape('transfer');
+    expect('toAccountId' in shape).toBe(false);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // VAL-04 — settlement/refund require assignees (card balance query joins assignees)
 // ---------------------------------------------------------------------------
 describe('VAL-04 — all types require assignees', () => {
   it('rejects settlement without assignees', () => {
-    const { assignees: _omit, ...withoutAssignees } = baseFields
+    const { assignees: _omit, ...withoutAssignees } = baseFields;
     const result = createTransactionSchema.safeParse({
       ...withoutAssignees,
       type: 'settlement',
-    })
-    expect(result.success).toBe(false)
-  })
+    });
+    expect(result.success).toBe(false);
+  });
 
   it('accepts settlement with one assignee matching amount', () => {
     const result = createTransactionSchema.safeParse({
       ...baseFields,
       type: 'settlement',
-    })
-    expect(result.success).toBe(true)
-  })
+    });
+    expect(result.success).toBe(true);
+  });
 
   it('rejects settlement with assignees: []', () => {
     const result = createTransactionSchema.safeParse({
       ...baseFields,
       type: 'settlement',
       assignees: [],
-    })
-    expect(result.success).toBe(false)
-  })
+    });
+    expect(result.success).toBe(false);
+  });
 
   it('rejects refund without assignees', () => {
-    const { assignees: _omit, ...withoutAssignees } = baseFields
+    const { assignees: _omit, ...withoutAssignees } = baseFields;
     const result = createTransactionSchema.safeParse({
       ...withoutAssignees,
       type: 'refund',
-    })
-    expect(result.success).toBe(false)
-  })
+    });
+    expect(result.success).toBe(false);
+  });
 
   it('accepts refund with one assignee matching amount', () => {
     const result = createTransactionSchema.safeParse({
       ...baseFields,
       type: 'refund',
-    })
-    expect(result.success).toBe(true)
-  })
+    });
+    expect(result.success).toBe(true);
+  });
 
   it('rejects income without assignees', () => {
-    const { assignees: _omit, ...withoutAssignees } = baseFields
+    const { assignees: _omit, ...withoutAssignees } = baseFields;
     expect(
       createTransactionSchema.safeParse({
         ...withoutAssignees,
         type: 'income',
         incomeType: 'direct_deposit',
       }).success
-    ).toBe(false)
-  })
+    ).toBe(false);
+  });
 
   it('rejects contribution without assignees', () => {
-    const { assignees: _omit, ...withoutAssignees } = baseFields
+    const { assignees: _omit, ...withoutAssignees } = baseFields;
     expect(
       createTransactionSchema.safeParse({
         ...withoutAssignees,
         type: 'contribution',
       }).success
-    ).toBe(false)
-  })
+    ).toBe(false);
+  });
 
   it('rejects refund with assignees: []', () => {
     const result = createTransactionSchema.safeParse({
       ...baseFields,
       type: 'refund',
       assignees: [],
-    })
-    expect(result.success).toBe(false)
-  })
-})
+    });
+    expect(result.success).toBe(false);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // VAL-05 — patchTransactionSchema: discriminated union + empty assignees guard
 // ---------------------------------------------------------------------------
 describe('VAL-05 — patchTransactionSchema', () => {
   it('rejects expense PATCH without assignees', () => {
-    const { assignees: _omit, ...withoutAssignees } = baseFields
+    const { assignees: _omit, ...withoutAssignees } = baseFields;
     const result = patchTransactionSchema.safeParse({
       ...withoutAssignees,
       type: 'expense',
-    })
-    expect(result.success).toBe(false)
-  })
+    });
+    expect(result.success).toBe(false);
+  });
 
   it('rejects expense PATCH with assignees: []', () => {
     const result = patchTransactionSchema.safeParse({
       ...baseFields,
       type: 'expense',
       assignees: [],
-    })
-    expect(result.success).toBe(false)
+    });
+    expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues.some((i) => i.path.includes('assignees'))).toBe(
-        true
-      )
+      expect(
+        result.error.issues.some((i) => i.path.includes('assignees'))
+      ).toBe(true);
     }
-  })
+  });
 
   it('accepts expense PATCH with at least one assignee', () => {
     const result = patchTransactionSchema.safeParse({
       ...baseFields,
       type: 'expense',
-    })
-    expect(result.success).toBe(true)
-  })
-})
+    });
+    expect(result.success).toBe(true);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // VAL-03 — updateTransactionSchema: counterpartAccountId replaces old FK fields
 // ---------------------------------------------------------------------------
 describe('VAL-03 — updateTransactionSchema field changes', () => {
   it('schema does not declare settledAccountId (old field)', () => {
-    expect('settledAccountId' in (updateTransactionSchema.shape as Record<string, unknown>)).toBe(false)
-  })
+    expect(
+      'settledAccountId' in
+        (updateTransactionSchema.shape as Record<string, unknown>)
+    ).toBe(false);
+  });
 
   it('schema does not declare toAccountId (old field)', () => {
-    expect('toAccountId' in (updateTransactionSchema.shape as Record<string, unknown>)).toBe(false)
-  })
+    expect(
+      'toAccountId' in
+        (updateTransactionSchema.shape as Record<string, unknown>)
+    ).toBe(false);
+  });
 
   it('accepts payload with counterpartAccountId as valid UUID', () => {
     const result = updateTransactionSchema.safeParse({
       counterpartAccountId: '550e8400-e29b-41d4-a716-446655440002',
-    })
-    expect(result.success).toBe(true)
-  })
+    });
+    expect(result.success).toBe(true);
+  });
 
   it('accepts payload with counterpartAccountId absent (optional)', () => {
     const result = updateTransactionSchema.safeParse({
       amount: 2000,
-    })
-    expect(result.success).toBe(true)
-  })
+    });
+    expect(result.success).toBe(true);
+  });
 
   it('schema declares counterpartAccountId on updateTransactionSchema', () => {
-    expect('counterpartAccountId' in (updateTransactionSchema.shape as Record<string, unknown>)).toBe(true)
-  })
+    expect(
+      'counterpartAccountId' in
+        (updateTransactionSchema.shape as Record<string, unknown>)
+    ).toBe(true);
+  });
 
   it('schema does not declare investmentType on updateTransactionSchema', () => {
-    expect('investmentType' in (updateTransactionSchema.shape as Record<string, unknown>)).toBe(false)
-  })
+    expect(
+      'investmentType' in
+        (updateTransactionSchema.shape as Record<string, unknown>)
+    ).toBe(false);
+  });
 
   it('schema does not declare incomeSource on updateTransactionSchema', () => {
-    expect('incomeSource' in (updateTransactionSchema.shape as Record<string, unknown>)).toBe(false)
-  })
+    expect(
+      'incomeSource' in
+        (updateTransactionSchema.shape as Record<string, unknown>)
+    ).toBe(false);
+  });
 
   it('rejects assignees: [] (cannot clear splits with empty array via flat update schema)', () => {
-    const result = updateTransactionSchema.safeParse({ assignees: [] })
-    expect(result.success).toBe(false)
-  })
-})
+    const result = updateTransactionSchema.safeParse({ assignees: [] });
+    expect(result.success).toBe(false);
+  });
+});

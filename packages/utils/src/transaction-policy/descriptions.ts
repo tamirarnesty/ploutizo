@@ -101,7 +101,9 @@ export const formatGeneratedTransactionDescriptionFromAccounts = (
   input: GeneratedTransactionDescriptionFromAccountsInput,
   accounts: readonly TransactionDescriptionAccount[]
 ): string => {
-  const primaryAccount = accounts.find((account) => account.id === input.accountId);
+  const primaryAccount = accounts.find(
+    (account) => account.id === input.accountId
+  );
   const counterpartAccount = accounts.find(
     (account) => account.id === input.counterpartAccountId
   );

@@ -6,7 +6,7 @@
  * All other tables reference orgs via org_id.
  */
 
-import { sql } from 'drizzle-orm'
+import { sql } from 'drizzle-orm';
 import {
   index,
   integer,
@@ -15,16 +15,16 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
-} from 'drizzle-orm/pg-core'
+} from 'drizzle-orm/pg-core';
 
-import { memberRoleEnum } from './enums'
+import { memberRoleEnum } from './enums';
 
 // ---------------------------------------------------------------------------
 // Shared helpers (local to this file — imported from client.ts in real usage)
 // ---------------------------------------------------------------------------
 
 /** Unsigned integer cents. */
-const cents = () => integer()
+const cents = () => integer();
 
 // ---------------------------------------------------------------------------
 // Tables
@@ -37,7 +37,9 @@ const cents = () => integer()
  * If the auth provider changes, this field remains semantically correct.
  */
 export const users = pgTable('users', {
-  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  id: uuid('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   /**
    * The auth provider's user ID (e.g. Clerk user ID "user_2abc...").
    * Named externalId rather than clerkId to remain auth-provider-agnostic.
@@ -51,7 +53,7 @@ export const users = pgTable('users', {
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()
     .defaultNow(),
-})
+});
 
 /**
  * orgs
@@ -74,7 +76,7 @@ export const orgs = pgTable('orgs', {
   updatedAt: timestamp('updated_at', { withTimezone: true })
     .notNull()
     .defaultNow(),
-})
+});
 
 /**
  * org_members
@@ -86,7 +88,9 @@ export const orgs = pgTable('orgs', {
 export const orgMembers = pgTable(
   'org_members',
   {
-    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     orgId: text('org_id')
       .notNull()
       .references(() => orgs.id, { onDelete: 'cascade' }),
@@ -110,4 +114,4 @@ export const orgMembers = pgTable(
     uniqueIndex('org_members_org_user_idx').on(t.orgId, t.userId),
     index('org_members_org_idx').on(t.orgId),
   ]
-)
+);

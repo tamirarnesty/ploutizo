@@ -53,12 +53,7 @@ export const ACCOUNT_ROLE_POLICIES: Readonly<
     ],
   },
   income_account: {
-    allowedAccountTypes: [
-      'chequing',
-      'savings',
-      'prepaid_cash',
-      'e_transfer',
-    ],
+    allowedAccountTypes: ['chequing', 'savings', 'prepaid_cash', 'e_transfer'],
   },
   transfer_source_account: {
     allowedAccountTypes: [

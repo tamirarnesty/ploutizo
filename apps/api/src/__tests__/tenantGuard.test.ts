@@ -136,8 +136,16 @@ describe('tenantGuard()', () => {
     await app.request('/');
 
     expect(ensureCallerSyncedToOrg).toHaveBeenCalledTimes(2);
-    expect(ensureCallerSyncedToOrg).toHaveBeenNthCalledWith(1, orgId, 'user_clerk_a');
-    expect(ensureCallerSyncedToOrg).toHaveBeenNthCalledWith(2, orgId, 'user_clerk_b');
+    expect(ensureCallerSyncedToOrg).toHaveBeenNthCalledWith(
+      1,
+      orgId,
+      'user_clerk_a'
+    );
+    expect(ensureCallerSyncedToOrg).toHaveBeenNthCalledWith(
+      2,
+      orgId,
+      'user_clerk_b'
+    );
     expect(mockOnConflictDoNothing).toHaveBeenCalledOnce();
   });
 

@@ -106,4 +106,3 @@ export const dispatchWebhookEvent = async (event: WebhookEvent) => {
     }
   }
 };
-

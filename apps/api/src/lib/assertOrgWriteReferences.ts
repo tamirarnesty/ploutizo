@@ -30,7 +30,8 @@ export const assertOrgWriteReferences = async (
       : Promise.resolve(),
     refs.memberIds && refs.memberIds.length > 0
       ? allMembersInOrg(orgId, refs.memberIds, tx).then((ok) => {
-          if (!ok) throw new NotFoundError('Member not found in this household');
+          if (!ok)
+            throw new NotFoundError('Member not found in this household');
         })
       : Promise.resolve(),
   ]);

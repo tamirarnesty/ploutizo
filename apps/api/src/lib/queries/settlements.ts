@@ -133,7 +133,11 @@ const fetchSettlementAggregateParts = async (orgId: string) => {
     );
   }
 
-  return { personalByPair, sharedByAccount, participantsByAccount: participantsByAccountSorted };
+  return {
+    personalByPair,
+    sharedByAccount,
+    participantsByAccount: participantsByAccountSorted,
+  };
 };
 
 /** Shared participants for one card — used by POST validation. */

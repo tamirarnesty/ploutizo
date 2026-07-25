@@ -95,7 +95,11 @@ export const getSettlementBalances = async (
       (m) => m.personalBalanceCents === 0
     );
     const sharedZero = bucket.sharedBalanceCents === 0;
-    if (allPersonalZero && sharedZero && bucket.account.type !== 'credit_card') {
+    if (
+      allPersonalZero &&
+      sharedZero &&
+      bucket.account.type !== 'credit_card'
+    ) {
       continue;
     }
 
@@ -185,7 +189,11 @@ export const createSettlement = async (
     throw new NotFoundError('Paid-from account not found');
   }
 
-  let assigneeRows: { memberId: string; amountCents: number; percentage: number }[];
+  let assigneeRows: {
+    memberId: string;
+    amountCents: number;
+    percentage: number;
+  }[];
 
   if (data.assignees.length === 1) {
     assigneeRows = [

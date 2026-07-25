@@ -33,30 +33,36 @@ const cardAccountId = '550e8400-e29b-41d4-a716-446655440002';
 const counterpartAccountId = '550e8400-e29b-41d4-a716-446655440003';
 
 const mockSettlementAccountLookups = (options: {
-  card?: { name: string; archivedAt?: Date | null; type?: 'credit_card' | 'chequing' } | null;
+  card?: {
+    name: string;
+    archivedAt?: Date | null;
+    type?: 'credit_card' | 'chequing';
+  } | null;
   counterpart?: { name: string } | null;
 }) => {
-  vi.mocked(fetchAccountForSettlement).mockImplementation((_orgId, accountId) => {
-    if (accountId === cardAccountId) {
-      if (options.card === null) return Promise.resolve(null);
-      return Promise.resolve({
-        id: cardAccountId,
-        name: options.card?.name ?? 'Amex Gold',
-        type: options.card?.type ?? 'credit_card',
-        archivedAt: options.card?.archivedAt ?? null,
-      });
+  vi.mocked(fetchAccountForSettlement).mockImplementation(
+    (_orgId, accountId) => {
+      if (accountId === cardAccountId) {
+        if (options.card === null) return Promise.resolve(null);
+        return Promise.resolve({
+          id: cardAccountId,
+          name: options.card?.name ?? 'Amex Gold',
+          type: options.card?.type ?? 'credit_card',
+          archivedAt: options.card?.archivedAt ?? null,
+        });
+      }
+      if (accountId === counterpartAccountId) {
+        if (options.counterpart === null) return Promise.resolve(null);
+        return Promise.resolve({
+          id: counterpartAccountId,
+          name: options.counterpart?.name ?? 'RBC Chequing',
+          type: 'chequing' as const,
+          archivedAt: null,
+        });
+      }
+      return Promise.resolve(null);
     }
-    if (accountId === counterpartAccountId) {
-      if (options.counterpart === null) return Promise.resolve(null);
-      return Promise.resolve({
-        id: counterpartAccountId,
-        name: options.counterpart?.name ?? 'RBC Chequing',
-        type: 'chequing' as const,
-        archivedAt: null,
-      });
-    }
-    return Promise.resolve(null);
-  });
+  );
 };
 
 const baseRow: SettlementBalanceRow = {
@@ -198,7 +204,9 @@ describe('getSettlementBalances service', () => {
       },
     ]);
     const r = await getSettlementBalances('org_test123');
-    expect(listAccountMemberDetails).toHaveBeenCalledWith('org_test123', ['a1']);
+    expect(listAccountMemberDetails).toHaveBeenCalledWith('org_test123', [
+      'a1',
+    ]);
     expect(r.accounts[0]?.account.owners).toEqual([
       { id: 'm1', displayName: 'Alice', imageUrl: 'https://example.com/a.jpg' },
       { id: 'm2', displayName: 'Bob', imageUrl: null },

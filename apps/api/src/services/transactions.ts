@@ -98,12 +98,7 @@ const loadTransactionWriteReferences = async (
 
   const refs = new Map<string, AccountWriteReference>();
   for (const accountId of idsToLock) {
-    const loaded = await fetchAccountWriteReference(
-      orgId,
-      accountId,
-      {},
-      tx
-    );
+    const loaded = await fetchAccountWriteReference(orgId, accountId, {}, tx);
     if (!loaded) {
       throw new NotFoundError('Account not found');
     }
@@ -282,7 +277,9 @@ export const updateTransaction = async (
       {
         accountId: data.accountId,
         counterpartAccountId:
-          'counterpartAccountId' in data ? data.counterpartAccountId : undefined,
+          'counterpartAccountId' in data
+            ? data.counterpartAccountId
+            : undefined,
         refundOf: 'refundOf' in data ? data.refundOf : undefined,
         categoryId: 'categoryId' in data ? data.categoryId : undefined,
         tagIds,
@@ -297,8 +294,9 @@ export const updateTransaction = async (
     let existingAssignees: readonly { amountCents: number }[] = [];
     if (needsPersistedAssignees) {
       const { assigneeMap } = await enrichTransactions(orgId, [row], tx);
-      existingAssignees = (assigneeMap[row.id] ??
-        []) as readonly { amountCents: number }[];
+      existingAssignees = (assigneeMap[row.id] ?? []) as readonly {
+        amountCents: number;
+      }[];
     }
 
     const rowsForSplitCheck = assigneeRowsForPatchSplitSum(

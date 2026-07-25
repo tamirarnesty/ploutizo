@@ -1,5 +1,5 @@
-import { MERCHANT_MATCH_TYPE_VALUES } from '@ploutizo/types'
-import { z } from 'zod'
+import { MERCHANT_MATCH_TYPE_VALUES } from '@ploutizo/types';
+import { z } from 'zod';
 
 export const createMerchantRuleSchema = z.object({
   pattern: z.string().min(1, 'Pattern is required.'),
@@ -8,11 +8,11 @@ export const createMerchantRuleSchema = z.object({
   categoryId: z.string().uuid().nullable().optional(),
   assigneeId: z.string().uuid().nullable().optional(),
   priority: z.number().int().optional().default(100),
-})
-export const updateMerchantRuleSchema = createMerchantRuleSchema.partial()
+});
+export const updateMerchantRuleSchema = createMerchantRuleSchema.partial();
 
-export type CreateMerchantRuleInput = z.infer<typeof createMerchantRuleSchema>
-export type UpdateMerchantRuleInput = z.infer<typeof updateMerchantRuleSchema>
+export type CreateMerchantRuleInput = z.infer<typeof createMerchantRuleSchema>;
+export type UpdateMerchantRuleInput = z.infer<typeof updateMerchantRuleSchema>;
 
 // RuleFormSchema — API schema minus assigneeId and priority (set server-side)
 // categoryId is z.string().uuid().nullable().optional() — null means no category (D-06)
@@ -20,5 +20,5 @@ export const RuleFormSchema = createMerchantRuleSchema
   .omit({ assigneeId: true, priority: true })
   .extend({
     pattern: z.string().min(1, 'Pattern is required.'),
-  })
-export type RuleForm = z.infer<typeof RuleFormSchema>
+  });
+export type RuleForm = z.infer<typeof RuleFormSchema>;

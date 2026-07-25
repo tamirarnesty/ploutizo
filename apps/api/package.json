@@ -9,7 +9,10 @@
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "lint": "eslint"
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js}\" && eslint --fix",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js}\""
   },
   "dependencies": {
     "@clerk/hono": "^0.1.22",

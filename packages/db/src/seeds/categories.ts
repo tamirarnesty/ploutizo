@@ -1,23 +1,24 @@
-import { db } from '../client'
-import { categories } from '../schema/index'
+import { db } from '../client';
+import { categories } from '../schema/index';
 
-type InsertExecutor = { insert: typeof db.insert }
+type InsertExecutor = { insert: typeof db.insert };
 
 // Default categories seeded at org creation.
 // INVARIANT: Every row has orgId set — no global category rows.
-const DEFAULT_CATEGORIES: { name: string; icon: string; sortOrder: number }[] = [
-  { name: 'Groceries', icon: 'ShoppingCart', sortOrder: 0 },
-  { name: 'Dining & Restaurants', icon: 'UtensilsCrossed', sortOrder: 1 },
-  { name: 'Transportation', icon: 'Car', sortOrder: 2 },
-  { name: 'Housing & Rent', icon: 'Home', sortOrder: 3 },
-  { name: 'Utilities', icon: 'Zap', sortOrder: 4 },
-  { name: 'Healthcare', icon: 'HeartPulse', sortOrder: 5 },
-  { name: 'Entertainment', icon: 'Tv', sortOrder: 6 },
-  { name: 'Shopping', icon: 'ShoppingBag', sortOrder: 7 },
-  { name: 'Travel', icon: 'Plane', sortOrder: 8 },
-  { name: 'Personal Care', icon: 'Sparkles', sortOrder: 9 },
-  { name: 'Other', icon: 'MoreHorizontal', sortOrder: 10 },
-]
+const DEFAULT_CATEGORIES: { name: string; icon: string; sortOrder: number }[] =
+  [
+    { name: 'Groceries', icon: 'ShoppingCart', sortOrder: 0 },
+    { name: 'Dining & Restaurants', icon: 'UtensilsCrossed', sortOrder: 1 },
+    { name: 'Transportation', icon: 'Car', sortOrder: 2 },
+    { name: 'Housing & Rent', icon: 'Home', sortOrder: 3 },
+    { name: 'Utilities', icon: 'Zap', sortOrder: 4 },
+    { name: 'Healthcare', icon: 'HeartPulse', sortOrder: 5 },
+    { name: 'Entertainment', icon: 'Tv', sortOrder: 6 },
+    { name: 'Shopping', icon: 'ShoppingBag', sortOrder: 7 },
+    { name: 'Travel', icon: 'Plane', sortOrder: 8 },
+    { name: 'Personal Care', icon: 'Sparkles', sortOrder: 9 },
+    { name: 'Other', icon: 'MoreHorizontal', sortOrder: 10 },
+  ];
 
 /** Insert default categories — use `db` from tests; `seedOrg` passes a transaction client. */
 export const insertSeedCategoriesForOrg = async (
@@ -31,9 +32,9 @@ export const insertSeedCategoriesForOrg = async (
       icon: cat.icon,
       sortOrder: cat.sortOrder,
     }))
-  )
-}
+  );
+};
 
 export const seedOrgCategories = async (orgId: string): Promise<void> => {
-  await insertSeedCategoriesForOrg(db, orgId)
-}
+  await insertSeedCategoriesForOrg(db, orgId);
+};

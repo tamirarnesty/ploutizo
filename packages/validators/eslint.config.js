@@ -3,7 +3,9 @@
 import { tanstackConfig } from '@tanstack/eslint-config';
 
 export default [
-  { ignores: ['eslint.config.js', 'tsup.config.ts', 'vitest.config.ts'] },
+  {
+    ignores: ['eslint.config.js', 'vitest.config.ts'],
+  },
   ...tanstackConfig,
   {
     rules: {
