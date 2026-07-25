@@ -221,7 +221,9 @@ export const requestTelemetry = (
           span.setStatus('error');
           span.recordException(
             new Error(
-              errorContext?.message ?? `Unexpected API outcome ${status}`
+              errorContext?.code
+                ? `Unexpected API outcome ${status} (${errorContext.code})`
+                : `Unexpected API outcome ${status}`
             )
           );
         } else {
@@ -236,7 +238,6 @@ export const requestTelemetry = (
           requestId,
           operationId,
           durationMs,
-          message: errorContext?.message,
           attributes: toApiRequestCompleteAttributes({
             status,
             method,
@@ -244,6 +245,11 @@ export const requestTelemetry = (
             code: errorContext?.code,
             kind: errorContext?.kind ?? 'http',
             classification: classification.classification,
+            environment: env.appEnv,
+            service: env.serviceName,
+            release: env.release,
+            traceId: span.traceId,
+            spanId: span.spanId,
           }),
         });
       } catch {

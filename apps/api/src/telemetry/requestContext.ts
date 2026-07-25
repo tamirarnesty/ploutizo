@@ -6,7 +6,6 @@ export interface TelemetryErrorContext {
   code?: string;
   kind?: 'http' | 'network' | 'malformed' | 'unknown';
   escalate?: boolean;
-  message?: string;
 }
 
 export interface RequestTelemetryState {

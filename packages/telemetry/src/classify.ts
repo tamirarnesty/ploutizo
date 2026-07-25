@@ -143,6 +143,21 @@ export const toApiRequestCompleteAttributes = (
   if (input.kind !== undefined) {
     attributes.kind = input.kind;
   }
+  if (typeof input.environment === 'string') {
+    attributes.environment = input.environment;
+  }
+  if (typeof input.service === 'string') {
+    attributes.service = input.service;
+  }
+  if (typeof input.release === 'string') {
+    attributes.release = input.release;
+  }
+  if (typeof input.traceId === 'string') {
+    attributes.traceId = input.traceId;
+  }
+  if (typeof input.spanId === 'string') {
+    attributes.spanId = input.spanId;
+  }
 
   return attributes;
 };

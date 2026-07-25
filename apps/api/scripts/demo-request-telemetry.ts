@@ -32,11 +32,7 @@ const main = async () => {
     throw new Error('boom');
   });
   app.onError((_err, c) => {
-    c.set('telemetryError', {
-      code: 'INTERNAL_ERROR',
-      kind: 'http',
-      message: 'Unexpected error',
-    });
+    c.set('telemetryError', { code: 'INTERNAL_ERROR', kind: 'http' });
     return c.json(
       { error: { code: 'INTERNAL_ERROR', message: 'Unexpected error' } },
       500

@@ -21,6 +21,7 @@ export const sanitizeCorrelationHeader = (
 /**
  * Recover a machine error code from JSON error responses when handlers did not
  * explicitly set `telemetryError` (tenant guard, validators, route-level c.json).
+ * Copies only the machine `code` — never response message text.
  */
 export const readErrorContextFromResponse = async (
   c: Context
@@ -32,18 +33,14 @@ export const readErrorContextFromResponse = async (
     if (!contentType.includes('application/json')) return undefined;
 
     const body = (await c.res.clone().json()) as {
-      error?: { code?: unknown; message?: unknown };
+      error?: { code?: unknown };
     };
     const code = body.error?.code;
     if (typeof code !== 'string' || !code.trim()) return undefined;
 
-    const message =
-      typeof body.error?.message === 'string' ? body.error.message : undefined;
-
     return {
       code: code.trim(),
       kind: 'http',
-      message,
     };
   } catch {
     return undefined;

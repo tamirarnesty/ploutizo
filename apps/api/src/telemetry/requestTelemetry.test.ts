@@ -74,11 +74,7 @@ const buildApp = (fake: FakeTelemetryClient) => {
 
   app.onError((err, c) => {
     if (err instanceof NotFoundError) {
-      c.set('telemetryError', {
-        code: 'NOT_FOUND',
-        kind: 'http',
-        message: err.message,
-      });
+      c.set('telemetryError', { code: 'NOT_FOUND', kind: 'http' });
       return c.json(
         { error: { code: 'NOT_FOUND', message: err.message } },
         404
@@ -86,21 +82,13 @@ const buildApp = (fake: FakeTelemetryClient) => {
     }
     if (err instanceof DomainError) {
       const code = err.code ?? 'DOMAIN_ERROR';
-      c.set('telemetryError', {
-        code,
-        kind: 'http',
-        message: err.message,
-      });
+      c.set('telemetryError', { code, kind: 'http' });
       return c.json(
         { error: { code, message: err.message } },
         err.statusCode as ContentfulStatusCode
       );
     }
-    c.set('telemetryError', {
-      code: 'INTERNAL_ERROR',
-      kind: 'http',
-      message: 'Unexpected error',
-    });
+    c.set('telemetryError', { code: 'INTERNAL_ERROR', kind: 'http' });
     return c.json(
       { error: { code: 'INTERNAL_ERROR', message: 'Unexpected error' } },
       500
@@ -165,12 +153,16 @@ describe('requestTelemetry middleware', () => {
         method: 'GET',
         classification: 'expected',
         kind: 'http',
+        environment: 'local',
+        service: 'ploutizo-api-test',
+        release: 'test-release',
       },
     });
     expect(record.attributes.route).toContain('/api/accounts');
     expect(typeof record.durationMs).toBe('number');
     expect(record.attributes).not.toHaveProperty('orgId');
     expect(record.attributes).not.toHaveProperty('body');
+    expect(record.message).toBeUndefined();
   });
 
   it('classifies expected domain/not-found outcomes without escalating', async () => {
@@ -220,8 +212,11 @@ describe('requestTelemetry middleware', () => {
         status: 500,
         code: 'INTERNAL_ERROR',
         classification: 'unexpected',
+        environment: 'local',
+        service: 'ploutizo-api-test',
       },
     });
+    expect(fake.records[0]?.message).toBeUndefined();
   });
 
   it('does not alter API responses when telemetry emission fails', async () => {

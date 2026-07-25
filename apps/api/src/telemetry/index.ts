@@ -42,8 +42,9 @@ export type {
 } from './requestContext';
 
 /**
- * Enrich the active request with a high-level service span.
- * Omit SQL, bound params, bodies, credentials, and domain identifiers.
+ * Enrich the active request with a high-level service span (OTel child span).
+ * This is not a catalog `TelemetryClient.record` path — pass only safe flat
+ * diagnostic primitives and omit SQL, params, bodies, credentials, and entity IDs.
  */
 export const startServiceSpan = (
   name: string,

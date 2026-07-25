@@ -20,9 +20,15 @@ describe('telemetry attribute schemas', () => {
       classification: 'unexpected',
       code: 'INTERNAL_ERROR',
       kind: 'http',
+      environment: 'local',
+      service: 'ploutizo-api',
+      release: 'abc123',
+      traceId: 'trace',
+      spanId: 'span',
     };
 
     expect(attrs.classification).toBe('unexpected');
+    expect(attrs.environment).toBe('local');
   });
 
   it('types route preload with route template metadata', () => {
