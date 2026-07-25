@@ -1,7 +1,7 @@
-import type { Account } from './accounts'
-import type { OrgMember } from './org'
+import type { Account } from './accounts';
+import type { OrgMember } from './org';
 
-export type SettlementStatus = 'due_soon' | 'on_track'
+export type SettlementStatus = 'due_soon' | 'on_track';
 
 /**
  * Member projection in GET settlements — same semantics as OrgMember subsets:
@@ -9,13 +9,13 @@ export type SettlementStatus = 'due_soon' | 'on_track'
  * Names differ from `OrgMember` to match settlements JSON (`name`/`avatarUrl` on wire).
  */
 export type SettlementMemberRowMember = Pick<OrgMember, 'id'> & {
-  name: OrgMember['displayName']
-  avatarUrl: OrgMember['imageUrl']
-}
+  name: OrgMember['displayName'];
+  avatarUrl: OrgMember['imageUrl'];
+};
 
 export interface SettlementMemberRow {
-  member: SettlementMemberRowMember
-  personalBalanceCents: number
+  member: SettlementMemberRowMember;
+  personalBalanceCents: number;
 }
 
 /**
@@ -27,19 +27,19 @@ export type SettlementAccountRowAccount = Pick<
   Account,
   'id' | 'name' | 'type' | 'institution' | 'lastFour' | 'owners'
 > & {
-  statementDueDay: number | null
-}
+  statementDueDay: number | null;
+};
 
 export interface SettlementAccountRow {
-  account: SettlementAccountRowAccount
-  totalBalanceCents: number
-  sharedBalanceCents: number
-  sharedParticipantIds: string[]
-  members: SettlementMemberRow[]
-  dueDate: string | null
-  status: SettlementStatus | null
+  account: SettlementAccountRowAccount;
+  totalBalanceCents: number;
+  sharedBalanceCents: number;
+  sharedParticipantIds: string[];
+  members: SettlementMemberRow[];
+  dueDate: string | null;
+  status: SettlementStatus | null;
 }
 
 export interface GetSettlementBalancesResponse {
-  accounts: SettlementAccountRow[]
+  accounts: SettlementAccountRow[];
 }

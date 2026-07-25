@@ -1,11 +1,11 @@
 import type { TransactionType } from '@ploutizo/types';
 import {
   ACCOUNT_ROLE_POLICIES,
-  type AccountSlotPolicy,
   TRANSACTION_ACCOUNT_FIELDS,
   TRANSACTION_SCALAR_FIELDS,
   TRANSACTION_TYPE_POLICIES,
 } from './policies';
+import type { AccountSlotPolicy } from './policies';
 import type {
   GetAccountOptionsForTransactionSlotInput,
   ResolveTransactionDescriptionPolicyInput,
@@ -77,10 +77,7 @@ export const getTransactionFieldsToClear = (
   return [...scalarFieldsToClear, ...accountFieldsToClear];
 };
 
-const getSlotPolicy = (
-  type: TransactionType,
-  slot: TransactionAccountSlot
-) => {
+const getSlotPolicy = (type: TransactionType, slot: TransactionAccountSlot) => {
   const policy = TRANSACTION_TYPE_POLICIES[type];
   return policy.accountSlots.find((accountSlot) => accountSlot.field === slot);
 };
@@ -94,7 +91,8 @@ export const getAccountOptionsForTransactionSlot = (
   const slotPolicy = getSlotPolicy(input.type, input.slot);
   if (!slotPolicy) return [];
 
-  const allowedTypes = ACCOUNT_ROLE_POLICIES[slotPolicy.role].allowedAccountTypes;
+  const allowedTypes =
+    ACCOUNT_ROLE_POLICIES[slotPolicy.role].allowedAccountTypes;
   const allowedTypeOrder = new Map(
     allowedTypes.map((accountType, index) => [accountType, index])
   );
@@ -116,7 +114,8 @@ export const getAccountOptionsForTransactionSlot = (
   });
 
   return filtered.sort((left, right) => {
-    const leftTypeOrder = allowedTypeOrder.get(left.type) ?? Number.MAX_SAFE_INTEGER;
+    const leftTypeOrder =
+      allowedTypeOrder.get(left.type) ?? Number.MAX_SAFE_INTEGER;
     const rightTypeOrder =
       allowedTypeOrder.get(right.type) ?? Number.MAX_SAFE_INTEGER;
 
@@ -138,7 +137,7 @@ export const validateTransactionAccountPolicy = (
     const account =
       slot.field === 'accountId'
         ? input.account
-        : input.counterpartAccount ?? null;
+        : (input.counterpartAccount ?? null);
     const allowedTypes = ACCOUNT_ROLE_POLICIES[slot.role].allowedAccountTypes;
 
     if (!account) {

@@ -118,10 +118,7 @@ export const buildConditions = (params: ListQueryParams): SQL[] => {
     if (types.length > 1) {
       conditions.push(
         op === 'is_not'
-          ? notInArray(
-              transactions.type,
-              types as TransactionType[]
-            )
+          ? notInArray(transactions.type, types as TransactionType[])
           : inArray(transactions.type, types as TransactionType[])
       );
     } else {
@@ -460,9 +457,7 @@ export const softDeleteTransactionQuery = async (
   const rows = await db
     .update(transactions)
     .set({ deletedAt: new Date(), updatedAt: new Date() })
-    .where(
-      and(eq(transactions.id, id), ...activeTransactions(orgId))
-    )
+    .where(and(eq(transactions.id, id), ...activeTransactions(orgId)))
     .returning({ id: transactions.id });
   return rows.at(0) ?? null;
 };

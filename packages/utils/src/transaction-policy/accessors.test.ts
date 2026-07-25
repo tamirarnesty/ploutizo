@@ -97,9 +97,11 @@ describe('resolveTransactionDescriptionPolicy', () => {
     expect(resolveTransactionDescriptionPolicy({ type: 'transfer' })).toEqual({
       mode: 'generated',
     });
-    expect(resolveTransactionDescriptionPolicy({ type: 'settlement' })).toEqual({
-      mode: 'generated',
-    });
+    expect(resolveTransactionDescriptionPolicy({ type: 'settlement' })).toEqual(
+      {
+        mode: 'generated',
+      }
+    );
     expect(
       resolveTransactionDescriptionPolicy({ type: 'contribution' })
     ).toEqual({

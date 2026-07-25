@@ -50,7 +50,9 @@ export const ensureCallerSyncedToOrg = async (
         limit: PAGE_LIMIT,
         offset,
       });
-    const foundMembership = memberships.find((m) => m.organization.id === orgId);
+    const foundMembership = memberships.find(
+      (m) => m.organization.id === orgId
+    );
     if (foundMembership !== undefined) {
       match = foundMembership;
       break;

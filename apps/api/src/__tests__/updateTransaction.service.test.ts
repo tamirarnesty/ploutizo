@@ -49,8 +49,8 @@ const amountOnlyPayload = {
 
 vi.mock('@ploutizo/db', () => ({
   db: {
-    transaction: vi.fn(
-      async (fn: (tx: typeof mockTx) => Promise<unknown>) => fn(mockTx)
+    transaction: vi.fn(async (fn: (tx: typeof mockTx) => Promise<unknown>) =>
+      fn(mockTx)
     ),
   },
 }));

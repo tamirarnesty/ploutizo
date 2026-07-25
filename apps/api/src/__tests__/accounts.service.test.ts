@@ -6,7 +6,9 @@ import { createAccount, updateAccount } from '@/services/accounts';
 vi.mock('@ploutizo/db', () => ({
   db: {
     transaction: vi.fn(
-      async (fn: (tx: { insert: ReturnType<typeof vi.fn> }) => Promise<unknown>) =>
+      async (
+        fn: (tx: { insert: ReturnType<typeof vi.fn> }) => Promise<unknown>
+      ) =>
         fn({
           insert: vi.fn().mockReturnValue({
             values: vi.fn().mockReturnValue({

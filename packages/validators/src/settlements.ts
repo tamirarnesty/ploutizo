@@ -1,8 +1,8 @@
-import { z } from 'zod'
+import { z } from 'zod';
 
 const settlementAssigneeSchema = z.object({
   memberId: z.string().uuid(),
-})
+});
 
 /**
  * POST /api/settlements payload (D-03 from Phase 4.1, extended in Phase 4.2 to include notes).
@@ -29,17 +29,17 @@ export const createSettlementSchema = z
     notes: z.string().max(1000).optional(),
   })
   .superRefine((data, ctx) => {
-    const seen = new Set<string>()
+    const seen = new Set<string>();
     for (const [index, assignee] of data.assignees.entries()) {
       if (seen.has(assignee.memberId)) {
         ctx.addIssue({
           code: 'custom',
           message: 'Duplicate memberId in assignees',
           path: ['assignees', index, 'memberId'],
-        })
+        });
       }
-      seen.add(assignee.memberId)
+      seen.add(assignee.memberId);
     }
-  })
+  });
 
-export type CreateSettlementInput = z.infer<typeof createSettlementSchema>
+export type CreateSettlementInput = z.infer<typeof createSettlementSchema>;

@@ -26,10 +26,11 @@ Without real Clerk keys both servers start but return 500 on all routes (Clerk m
 All commands run via Turborepo from the workspace root:
 
 ```bash
-pnpm turbo lint          # ESLint across all packages
+pnpm turbo lint          # ESLint across all apps/packages
 pnpm turbo typecheck     # tsc --noEmit in dependency order
-pnpm test                # vitest run in all packages (all mocked — no secrets needed)
-pnpm turbo format:check  # Prettier check
+pnpm test                # vitest run in all apps/packages (all mocked — no secrets needed)
+pnpm turbo format:check  # Prettier check across all apps/packages
+pnpm turbo format        # Prettier write + eslint --fix across all apps/packages
 ```
 
 ## Clerk webhook tunnel (svix)

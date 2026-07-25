@@ -10,9 +10,9 @@ import {
 
 describe('formatSettlementDescription', () => {
   it('includes paid-from and card when source account is set', () => {
-    expect(
-      formatSettlementDescription('TD Visa', 'Tamir WS')
-    ).toBe('Settlement from Tamir WS to TD Visa');
+    expect(formatSettlementDescription('TD Visa', 'Tamir WS')).toBe(
+      'Settlement from Tamir WS to TD Visa'
+    );
   });
 
   it('falls back to card-only when paid-from is absent', () => {

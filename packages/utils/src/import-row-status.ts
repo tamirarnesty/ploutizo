@@ -1,8 +1,5 @@
-import {
-  IMPORT_TRANSACTION_TYPE_VALUES,
-  type ImportRowStatus,
-  type ImportTransactionType,
-} from '@ploutizo/types';
+import { IMPORT_TRANSACTION_TYPE_VALUES } from '@ploutizo/types';
+import type { ImportRowStatus, ImportTransactionType } from '@ploutizo/types';
 
 export interface ImportRowStructuralFields {
   reviewDate: string | null;
@@ -118,7 +115,9 @@ export const formatImportRowStructuralInvalidReason = (
 ): string | null => {
   const blockers = getImportRowStructuralBlockers(row);
   if (blockers.length === 0) return null;
-  return blockers.map((blocker) => STRUCTURAL_BLOCKER_MESSAGES[blocker]).join(' ');
+  return blockers
+    .map((blocker) => STRUCTURAL_BLOCKER_MESSAGES[blocker])
+    .join(' ');
 };
 
 export const toImportRowStatusFields = (
@@ -134,7 +133,7 @@ export const toImportRowStatusFields = (
   parsedType: toImportTransactionType(row.parsedType),
   parsedDescription: row.parsedDescription ?? null,
   reviewCategoryId: row.reviewCategoryId ?? null,
-  reviewAssigneeMemberIds: row.reviewAssigneeMemberIds ?? [],
+  reviewAssigneeMemberIds: row.reviewAssigneeMemberIds,
 });
 
 const getReviewPhaseBlockers = (
@@ -197,7 +196,7 @@ export const withDerivedImportRowStatus = <T extends ImportRowStatusFields>(
 });
 
 export const computeImportDraftRowCounts = (
-  rows: ReadonlyArray<{ status: ImportRowStatus }>
+  rows: readonly { status: ImportRowStatus }[]
 ) => {
   const invalidRowCount = rows.filter((row) => row.status === 'invalid').length;
   return {

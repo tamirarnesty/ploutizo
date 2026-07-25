@@ -264,7 +264,8 @@ const parseRow = (
   };
   const isInvalid = isImportRowStructurallyInvalid(structuralFields);
   const status = isInvalid ? ('invalid' as const) : ('needs_review' as const);
-  const invalidReason = formatImportRowStructuralInvalidReason(structuralFields);
+  const invalidReason =
+    formatImportRowStructuralInvalidReason(structuralFields);
 
   return {
     rowNumber: record.rowNumber,

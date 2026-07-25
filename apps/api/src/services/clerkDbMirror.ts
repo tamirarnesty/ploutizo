@@ -31,7 +31,9 @@ export const joinClerkFirstLast = (
 };
 
 /** Map Clerk webhook `user.*` JSON (`UserJSON`) to the local `users` row shape. */
-export const userJsonToLocalUserRow = (data: UserJSON): LocalUserRowInput | null => {
+export const userJsonToLocalUserRow = (
+  data: UserJSON
+): LocalUserRowInput | null => {
   const primaryEmail = data.email_addresses.find(
     (e) => e.id === data.primary_email_address_id
   )?.email_address;
@@ -48,7 +50,9 @@ export const userJsonToLocalUserRow = (data: UserJSON): LocalUserRowInput | null
 };
 
 /** Map Clerk Backend API `User` to the same local row shape as `userJsonToLocalUserRow`. */
-export const clerkBackendUserToLocalUserRow = (user: User): LocalUserRowInput | null => {
+export const clerkBackendUserToLocalUserRow = (
+  user: User
+): LocalUserRowInput | null => {
   const primaryEmail = user.emailAddresses.find(
     (e) => e.id === user.primaryEmailAddressId
   )?.emailAddress;
@@ -68,7 +72,9 @@ export const clerkBackendUserToLocalUserRow = (user: User): LocalUserRowInput | 
  * Insert local `users` row if absent — same semantics as `user.created` webhook
  * (`onConflictDoNothing` on `external_id`).
  */
-export const insertLocalUserIfAbsent = async (row: LocalUserRowInput): Promise<void> => {
+export const insertLocalUserIfAbsent = async (
+  row: LocalUserRowInput
+): Promise<void> => {
   await db
     .insert(users)
     .values({
@@ -91,7 +97,8 @@ export const buildOrgMemberDisplayName = (params: {
   lastName: string | null | undefined;
   fallbackUserId: string;
 }): string =>
-  joinClerkFirstLast(params.firstName, params.lastName) ?? params.fallbackUserId;
+  joinClerkFirstLast(params.firstName, params.lastName) ??
+  params.fallbackUserId;
 
 /**
  * Insert local `org_members` row if absent — same semantics as
@@ -120,7 +127,9 @@ export const insertOrgMemberIfAbsent = async (params: {
 };
 
 /** Applies `user.updated` webhook fields — mirrors previous `handleUserUpdated` logic. */
-export const updateLocalUserFromUserJson = async (data: UserJSON): Promise<void> => {
+export const updateLocalUserFromUserJson = async (
+  data: UserJSON
+): Promise<void> => {
   const row = userJsonToLocalUserRow(data);
   if (!row) return;
   await db

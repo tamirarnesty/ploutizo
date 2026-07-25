@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  colourTokenSchema,
-  parseColourToken,
-} from './colour-tokens';
+import { colourTokenSchema, parseColourToken } from './colour-tokens';
 
 describe('parseColourToken', () => {
   it('returns token for valid value', () => {

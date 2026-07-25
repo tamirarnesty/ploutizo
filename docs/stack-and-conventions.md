@@ -28,5 +28,6 @@
 ## Build and type checking
 
 - Never invoke tools directly via `npx` (e.g. `npx tsc`, `npx vitest`, `npx jest`). Always go through package scripts so the correct flags and config are used.
+- Every app/package exposes the shared quality scripts (`lint`, `lint:fix`, `format`, `format:check`, `typecheck`, `test`) so root `pnpm turbo …` tasks propagate across the workspace.
 - Type checking: `pnpm turbo typecheck` (runs `tsc --noEmit` in all packages in dependency order). Never run `npx tsc` from the repo root — it emits JS files.
 - Tests: `pnpm test` or `pnpm --filter <package> test`.

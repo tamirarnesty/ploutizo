@@ -5,8 +5,7 @@
  * Single flexible table with nullable type-specific columns (D-01).
  * Soft-delete via deleted_at — all active-data queries use partial index (D-04, D-16).
  */
-import { sql } from 'drizzle-orm'
-import type { AnyPgColumn } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm';
 import {
   date,
   index,
@@ -18,13 +17,14 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
-} from 'drizzle-orm/pg-core'
+} from 'drizzle-orm/pg-core';
 
-import { transactionTypeEnum, incomeTypeEnum } from './enums'
-import { orgs, orgMembers } from './auth'
-import { accounts } from './accounts'
-import { categories, tags } from './classification'
-import { importBatches } from './import-batches'
+import { incomeTypeEnum, transactionTypeEnum } from './enums';
+import { orgMembers, orgs } from './auth';
+import { accounts } from './accounts';
+import { categories, tags } from './classification';
+import { importBatches } from './import-batches';
+import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 
 /**
  * transactions
@@ -35,7 +35,9 @@ import { importBatches } from './import-batches'
 export const transactions = pgTable(
   'transactions',
   {
-    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     orgId: text('org_id')
       .notNull()
       .references(() => orgs.id, { onDelete: 'cascade' }),
@@ -50,7 +52,9 @@ export const transactions = pgTable(
     description: text('description').notNull(),
 
     // --- expense / refund columns ---
-    categoryId: uuid('category_id').references(() => categories.id, { onDelete: 'set null' }),
+    categoryId: uuid('category_id').references(() => categories.id, {
+      onDelete: 'set null',
+    }),
     /**
      * Self-referential FK for refund linkage. Optional — unlinked refunds are valid.
      * Uses lazy arrow function to break Drizzle's circular type reference (D-05).
@@ -64,9 +68,12 @@ export const transactions = pgTable(
 
     // --- shared counterpart (transfer destination, settlement source) ---
     /** Single FK replacing to_account_id (transfer) and settled_account_id (settlement). D-03 */
-    counterpartAccountId: uuid('counterpart_account_id').references(() => accounts.id, {
-      onDelete: 'set null',
-    }),
+    counterpartAccountId: uuid('counterpart_account_id').references(
+      () => accounts.id,
+      {
+        onDelete: 'set null',
+      }
+    ),
 
     /** Original bank/import memo. Copied from former merchant column for imported rows. D-05 */
     rawDescription: text('raw_description'),
@@ -88,16 +95,22 @@ export const transactions = pgTable(
     // --- soft-delete (D-04) ---
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
 
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     index('transactions_org_account_idx').on(t.orgId, t.accountId), // D-14: balance/settlement queries
     index('transactions_org_date_idx').on(t.orgId, t.date), // D-15: date-range filters
-    index('transactions_active_idx').on(t.deletedAt).where(sql`deleted_at IS NULL`), // D-16: partial index for all active-data queries
+    index('transactions_active_idx')
+      .on(t.deletedAt)
+      .where(sql`deleted_at IS NULL`), // D-16: partial index for all active-data queries
     index('transactions_org_idx').on(t.orgId),
   ]
-)
+);
 
 /**
  * transaction_assignees
@@ -108,7 +121,9 @@ export const transactions = pgTable(
 export const transactionAssignees = pgTable(
   'transaction_assignees',
   {
-    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     transactionId: uuid('transaction_id')
       .notNull()
       .references(() => transactions.id, { onDelete: 'cascade' }),
@@ -125,11 +140,14 @@ export const transactionAssignees = pgTable(
     percentage: numeric('percentage', { precision: 6, scale: 3 }),
   },
   (t) => [
-    uniqueIndex('transaction_assignees_tx_member_idx').on(t.transactionId, t.memberId), // D-10
+    uniqueIndex('transaction_assignees_tx_member_idx').on(
+      t.transactionId,
+      t.memberId
+    ), // D-10
     index('transaction_assignees_tx_idx').on(t.transactionId),
     index('transaction_assignees_member_idx').on(t.memberId), // D-15: speeds up "all expense splits for member X" balance queries
   ]
-)
+);
 
 /**
  * transaction_tags
@@ -147,4 +165,4 @@ export const transactionTags = pgTable(
       .references(() => tags.id, { onDelete: 'cascade' }),
   },
   (t) => [primaryKey({ columns: [t.transactionId, t.tagId] })]
-)
+);

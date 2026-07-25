@@ -22,12 +22,12 @@ describe('allowedOrigins', () => {
   it('allows Railway PR preview web origins', async () => {
     const { isAllowedOrigin, isAllowedParty } = await loadAllowedOrigins();
 
-    expect(
-      isAllowedOrigin('https://web-ploutizo-pr-105.up.railway.app')
-    ).toBe(true);
-    expect(
-      isAllowedParty('https://web-ploutizo-pr-105.up.railway.app')
-    ).toBe(true);
+    expect(isAllowedOrigin('https://web-ploutizo-pr-105.up.railway.app')).toBe(
+      true
+    );
+    expect(isAllowedParty('https://web-ploutizo-pr-105.up.railway.app')).toBe(
+      true
+    );
   });
 
   it('rejects tenant subdomains', async () => {

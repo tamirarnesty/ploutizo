@@ -6,7 +6,7 @@
  * org_id is non-nullable on all tables — no global seed rows exist in the DB.
  */
 
-import { sql } from 'drizzle-orm'
+import { sql } from 'drizzle-orm';
 import {
   index,
   integer,
@@ -15,10 +15,10 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
-} from 'drizzle-orm/pg-core'
+} from 'drizzle-orm/pg-core';
 
-import { merchantMatchTypeEnum } from './enums'
-import { orgs, orgMembers } from './auth'
+import { merchantMatchTypeEnum } from './enums';
+import { orgMembers, orgs } from './auth';
 
 /**
  * categories
@@ -31,7 +31,9 @@ import { orgs, orgMembers } from './auth'
 export const categories = pgTable(
   'categories',
   {
-    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     orgId: text('org_id')
       .notNull()
       .references(() => orgs.id, { onDelete: 'cascade' }),
@@ -50,7 +52,7 @@ export const categories = pgTable(
     uniqueIndex('categories_org_name_idx').on(t.orgId, t.name),
     index('categories_org_idx').on(t.orgId),
   ]
-)
+);
 
 /**
  * tags
@@ -61,7 +63,9 @@ export const categories = pgTable(
 export const tags = pgTable(
   'tags',
   {
-    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     orgId: text('org_id')
       .notNull()
       .references(() => orgs.id, { onDelete: 'cascade' }),
@@ -76,7 +80,7 @@ export const tags = pgTable(
     uniqueIndex('tags_org_name_idx').on(t.orgId, t.name),
     index('tags_org_idx').on(t.orgId),
   ]
-)
+);
 
 /**
  * merchant_rules
@@ -89,7 +93,9 @@ export const tags = pgTable(
 export const merchantRules = pgTable(
   'merchant_rules',
   {
-    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     orgId: text('org_id')
       .notNull()
       .references(() => orgs.id, { onDelete: 'cascade' }),
@@ -118,7 +124,7 @@ export const merchantRules = pgTable(
     index('merchant_rules_org_idx').on(t.orgId),
     index('merchant_rules_org_priority_idx').on(t.orgId, t.priority),
   ]
-)
+);
 
 /**
  * merchant_rule_tags
@@ -127,7 +133,9 @@ export const merchantRules = pgTable(
 export const merchantRuleTags = pgTable(
   'merchant_rule_tags',
   {
-    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     ruleId: uuid('rule_id')
       .notNull()
       .references(() => merchantRules.id, { onDelete: 'cascade' }),
@@ -135,7 +143,5 @@ export const merchantRuleTags = pgTable(
       .notNull()
       .references(() => tags.id, { onDelete: 'cascade' }),
   },
-  (t) => [
-    uniqueIndex('merchant_rule_tags_rule_tag_idx').on(t.ruleId, t.tagId),
-  ]
-)
+  (t) => [uniqueIndex('merchant_rule_tags_rule_tag_idx').on(t.ruleId, t.tagId)]
+);
