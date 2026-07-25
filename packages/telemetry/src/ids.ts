@@ -1,8 +1,8 @@
 /**
  * Correlation identifiers for browser operations and API HTTP attempts.
  *
- * Operation IDs and request IDs are telemetry-only. They must never be used
- * for authorization, tenancy, or access control.
+ * These IDs are telemetry-only. They must never be used for authorization,
+ * tenancy, or access control.
  */
 
 const UUID_V4_PATTERN =
@@ -26,31 +26,8 @@ export const TELEMETRY_CORRELATION_HEADERS = {
 export type TelemetryCorrelationHeader =
   (typeof TELEMETRY_CORRELATION_HEADERS)[keyof typeof TELEMETRY_CORRELATION_HEADERS];
 
-const createUuidV4 = (): string => {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-
-  // Fallback for environments without crypto.randomUUID (should be rare on Node 22+).
-  const bytes = new Uint8Array(16);
-  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
-    crypto.getRandomValues(bytes);
-  } else {
-    for (let i = 0; i < bytes.length; i += 1) {
-      bytes[i] = Math.floor(Math.random() * 256);
-    }
-  }
-  bytes[6] = (bytes[6]! & 0x0f) | 0x40;
-  bytes[8] = (bytes[8]! & 0x3f) | 0x80;
-  const hex = [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-};
-
-/** Create a UUIDv4 operation ID for one logical browser/API capability. */
-export const createOperationId = (): string => createUuidV4();
-
-/** Create a UUIDv4 request ID for one API HTTP attempt. */
-export const createRequestId = (): string => createUuidV4();
+/** Create a UUIDv4 correlation ID (operation or request). */
+export const createCorrelationId = (): string => crypto.randomUUID();
 
 /** True when value is a canonical UUIDv4 string (case-insensitive). */
 export const isValidCorrelationId = (value: unknown): value is string =>
@@ -76,5 +53,5 @@ export const parseCorrelationId = (value: unknown): string | null => {
  */
 export const resolveCorrelationId = (
   value: unknown,
-  create: () => string = createRequestId
+  create: () => string = createCorrelationId
 ): string => parseCorrelationId(value) ?? create();

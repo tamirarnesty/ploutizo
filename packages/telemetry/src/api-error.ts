@@ -3,6 +3,10 @@
  * Preserves user-facing messages while exposing only safe diagnostic fields.
  */
 
+import type { ApiRequestCompleteAttributes, HttpMethod } from './attributes';
+
+const HTTP_METHODS = new Set<string>(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
+
 export type TelemetryErrorClassification = 'expected' | 'unexpected';
 
 export type TelemetryApiErrorKind =
@@ -20,7 +24,7 @@ export interface TelemetryApiErrorInit {
   code?: string;
   /** Normalized route template (e.g. `/api/transactions/:id`), never raw IDs. */
   route?: string;
-  /** HTTP method uppercased when known. */
+  /** HTTP method when known (case-insensitive; stored uppercased). */
   method?: string;
   /** Request duration in milliseconds when measured. */
   durationMs?: number;
@@ -58,7 +62,7 @@ export class TelemetryApiError extends Error {
   readonly status: number | undefined;
   readonly code: string | undefined;
   readonly route: string | undefined;
-  readonly method: string | undefined;
+  readonly method: HttpMethod | undefined;
   readonly durationMs: number | undefined;
   readonly requestId: string | undefined;
   readonly operationId: string | undefined;
@@ -71,7 +75,11 @@ export class TelemetryApiError extends Error {
     this.status = init.status;
     this.code = init.code;
     this.route = init.route;
-    this.method = init.method?.toUpperCase();
+    const method = init.method?.toUpperCase();
+    this.method =
+      method !== undefined && HTTP_METHODS.has(method)
+        ? (method as HttpMethod)
+        : undefined;
     this.durationMs = init.durationMs;
     this.requestId = init.requestId;
     this.operationId = init.operationId;
@@ -131,14 +139,21 @@ export const isTelemetryApiError = (
   value: unknown
 ): value is TelemetryApiError => value instanceof TelemetryApiError;
 
+/** Flat attributes suitable for `api.request.complete` (and similar) events. */
+export type SafeApiErrorAttributes = Pick<
+  ApiRequestCompleteAttributes,
+  'kind' | 'classification' | 'status' | 'code' | 'route' | 'method'
+>;
+
 /**
- * Safe diagnostic fields suitable for typed telemetry attributes.
- * Excludes user-facing message text and raw causes.
+ * Safe diagnostic fields for typed telemetry attributes.
+ * Excludes user-facing message text, raw causes, and top-level event fields
+ * (`durationMs`, correlation IDs) — attach those on the event itself.
  */
 export const toSafeApiErrorAttributes = (
   error: TelemetryApiError
-): Record<string, string | number | boolean> => {
-  const attributes: Record<string, string | number | boolean> = {
+): SafeApiErrorAttributes => {
+  const attributes: SafeApiErrorAttributes = {
     kind: error.kind,
     classification: classifyApiError({
       status: error.status,
@@ -156,11 +171,8 @@ export const toSafeApiErrorAttributes = (
   if (typeof error.route === 'string') {
     attributes.route = error.route;
   }
-  if (typeof error.method === 'string') {
+  if (error.method !== undefined) {
     attributes.method = error.method;
-  }
-  if (typeof error.durationMs === 'number') {
-    attributes.durationMs = error.durationMs;
   }
 
   return attributes;

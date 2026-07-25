@@ -2,6 +2,11 @@ import type { TelemetryOperation } from './catalog';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
+/**
+ * Operation-scoped attribute schemas — flat optional primitives only.
+ * Nested objects/arrays are intentionally unsupported; omit sensitive fields at the caller.
+ */
+
 /** HTTP outcome fields — route must be a template (`/api/items/:id`), never raw IDs. */
 export interface HttpOutcomeAttributes {
   status?: number;

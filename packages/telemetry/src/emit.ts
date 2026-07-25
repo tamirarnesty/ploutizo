@@ -2,7 +2,6 @@ import type {
   SafeTelemetryRecord,
   TelemetryClient,
   TelemetryEventInput,
-  TelemetryLevel,
 } from './contract';
 import { prepareTelemetryRecord } from './contract';
 
@@ -16,7 +15,7 @@ export interface TelemetryRecordSink {
 
 /**
  * Level-scoped sink aligned with PostHog's structured browser logger and console.*.
- * Future web/API adapters map each level to their vendor's native log method.
+ * Adapters supply the four handlers directly.
  */
 export interface TelemetryLevelSink {
   debug: (record: SafeTelemetryRecord) => void;
@@ -25,28 +24,16 @@ export interface TelemetryLevelSink {
   error: (record: SafeTelemetryRecord) => void;
 }
 
-/** Wire payload shared by console output, PostHog logger properties, and OTel attributes. */
-export type TelemetryEmitPayload = SafeTelemetryRecord;
-
-export const toEmitPayload = (
-  record: SafeTelemetryRecord
-): TelemetryEmitPayload => record;
-
 /** Default log message when callers omit `message` — stable operation name for search. */
 export const emitMessage = (record: SafeTelemetryRecord): string =>
   record.message ?? record.operation;
 
-export const emitToLevelSink = (
-  sink: TelemetryLevelSink,
-  record: SafeTelemetryRecord
-): void => {
-  sink[record.level](record);
-};
-
 export const asRecordSink = (
   sink: TelemetryLevelSink
 ): TelemetryRecordSink => ({
-  emit: (record) => emitToLevelSink(sink, record),
+  emit: (record) => {
+    sink[record.level](record);
+  },
 });
 
 export const safeEmitRecord = (
@@ -88,7 +75,7 @@ export const createSinkTelemetryClient = (
       const record = prepareTelemetryRecord(event);
       safeEmitRecord(sink, record);
     } catch {
-      // Catalog/shape failures degrade to no-op.
+      // Catalog validation failures degrade to no-op.
     }
   },
   flush: async () => {
@@ -98,16 +85,4 @@ export const createSinkTelemetryClient = (
       // Flush must never affect product behavior.
     }
   },
-});
-
-export type TelemetryLevelHandler = (record: SafeTelemetryRecord) => void;
-
-/** Build a level sink from per-level handlers — used by console and PostHog adapters. */
-export const createLevelSink = (
-  handlers: Record<TelemetryLevel, TelemetryLevelHandler>
-): TelemetryLevelSink => ({
-  debug: (record) => handlers.debug(record),
-  info: (record) => handlers.info(record),
-  warn: (record) => handlers.warn(record),
-  error: (record) => handlers.error(record),
 });

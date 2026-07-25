@@ -1,7 +1,6 @@
 import type { TelemetryClient } from '../contract';
 import {
   asRecordSink,
-  createLevelSink,
   createSinkTelemetryClient,
   emitMessage,
   type TelemetryLevelSink,
@@ -36,12 +35,12 @@ export const createConsoleLevelSink = (
     sink[method].call(sink, prefix, message, payload);
   };
 
-  return createLevelSink({
+  return {
     debug: (record) => write('debug', emitMessage(record), record),
     info: (record) => write('info', emitMessage(record), record),
     warn: (record) => write('warn', emitMessage(record), record),
     error: (record) => write('error', emitMessage(record), record),
-  });
+  };
 };
 
 /**

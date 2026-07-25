@@ -12,10 +12,11 @@ Introduce a shared, vendor-neutral package `@ploutizo/telemetry` that owns:
 
 - the public caller contract (`TelemetryClient`)
 - a typed operation/event catalog with operation-scoped attribute schemas (compile-time privacy contract)
-- runtime payload shaping (depth/size bounds and a small blocklist backstop)
+- flat primitive attributes only (single-level keys → string | number | boolean | null)
 - typed API-error representation and expected/unexpected classification
-- UUIDv4 operation/request correlation helpers (telemetry-only — never authorization)
+- UUIDv4 correlation helpers via `createCorrelationId` / parse-resolve (telemetry-only — never authorization)
 - local console and no-op adapters, plus test fakes
+- a thin PostHog adapter surface (injected from apps/web; no vendor SDK dependency in this package)
 
 Runtime adapters are **not** forced through a shared singleton:
 
@@ -26,20 +27,19 @@ Runtime adapters are **not** forced through a shared singleton:
 
 Both implement the same contract. Callers never import PostHog or OpenTelemetry from product code. PostHog is the initial vendor adapter (web client + OTel exporter on API); wiring lands in follow-up issues.
 
-Callers choose a stable, typed `operation` and `surface`, then attach **only** attributes allowed for that operation's schema. Privacy is enforced primarily by TypeScript — not by inferring intent from arbitrary key bags at runtime.
+Callers choose a stable, typed `operation` and `surface`, then attach **only** attributes allowed for that operation's schema. Privacy is enforced by TypeScript schemas and by callers omitting sensitive fields — not by a runtime key-bag firewall in `@ploutizo/telemetry`.
 
 ## Safety rules
 
-Attribute schemas permit safe diagnostic primitives only (HTTP status, route templates, retry counts, machine error codes, etc.). Callers must never add financial values, entity identifiers, import contents, credentials, raw request data, or user-entered text — the type system is the primary guardrail.
+Attribute schemas permit safe diagnostic primitives only (HTTP status, route templates, retry counts, machine error codes, etc.). Callers must never add financial values, entity identifiers, import contents, credentials, raw request data, or user-entered text.
 
-Runtime shaping applies only:
+Optional `attributes` objects are single-level only: keys map to `string | number | boolean | null`. Nested objects and arrays are out of scope for this package.
 
-- depth, key count, string length, array length, and total serialized byte bounds
-- dropping a small hard blocklist if a caller bypasses types at runtime (`password`, `token`, `body`, etc.)
+The package trusts correctly typed callers. It does not maintain a runtime blocklist or recursive sanitizer for bypassed types. Diagnostic `message` values may be lightly trimmed for length; sensitive content must not be placed there by callers.
 
-PostHog ingest filters and privacy-first Session Replay masking remain second-line defenses.
+PostHog ingest filters and privacy-first Session Replay masking remain product-level defenses at adapter wiring time — not substitutes for typed attributes and caller discipline.
 
-Correlation IDs (`X-Request-Id`, `X-Operation-Id`, PostHog session/distinct headers) are observability-only and must never influence auth or tenancy. The API is authoritative for request IDs.
+Correlation IDs (`X-Request-Id`, `X-Operation-Id`, PostHog session/distinct headers) are observability-only and must never influence auth or tenancy. The API is authoritative for request IDs. IDs are created with `crypto.randomUUID()`.
 
 ## Observability signals (follow-up wiring)
 
@@ -84,6 +84,8 @@ Telemetry is non-blocking: initialization, emission, queues, and exporter failur
 
 Every API failure emits a trace/log outcome. Expected validation, not-found, authorization/tenant, and known domain-conflict outcomes do not create Error Tracking issues. Network failures, malformed responses, 5xx responses, and unknown API codes do; callers may explicitly escalate an otherwise expected failure. Reporting deduplicates an API error that later reaches a recovery boundary.
 
+Safe API-error attribute helpers return flat typed fields suitable for catalog attributes (`kind`, `classification`, `status`, `code`, `route`, `method`). Duration and correlation IDs stay on the event record, not inside attribute bags.
+
 ## Database boundary
 
 Do not enable Drizzle raw SQL logging or export bound query parameters. The initial API traces cover request and high-level service work; Neon's native tooling remains the SQL/query diagnosis source. Neon OTel metrics/log exports and driver-level database spans are deferred until they can be integrated without a second observability backend or unsafe query data.
@@ -92,7 +94,7 @@ Do not enable Drizzle raw SQL logging or export bound query parameters. The init
 
 - The telemetry prerequisite must land before PLO-51's route preload and section-recovery adoption.
 - Later issues wire PostHog (browser) and OTel (API) behind this contract.
-- Tests assert safe emitted records via `createFakeTelemetryClient`, never vendor payload shapes.
+- Tests assert emitted records via `createFakeTelemetryClient`, never vendor payload shapes.
 - Catalog growth is intentional: new capabilities add named operations/surfaces rather than free-form event strings.
 - All caller-visible operations and events become durable analytics contracts, not ad hoc strings.
 - PostHog Distributed Tracing is alpha, so the OTel exporter remains isolated behind the API adapter.

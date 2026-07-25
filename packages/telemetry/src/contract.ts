@@ -1,8 +1,6 @@
 import type { TelemetryOperation, TelemetrySurface } from './catalog';
 import { assertTelemetryCatalogEntry } from './catalog';
 import type { TelemetryAttributes } from './attributes';
-import type { TelemetryAttributeValue } from './shape';
-import { shapeAttributes, shapeMessage } from './shape';
 import { parseCorrelationId } from './ids';
 
 /**
@@ -11,8 +9,25 @@ import { parseCorrelationId } from './ids';
  * interface independently — this package does not provide a shared singleton.
  */
 
+/** Flat attribute primitives only — nested objects/arrays are unsupported. */
+export type TelemetryAttributeValue = string | number | boolean | null;
+
 export type TelemetryLevel = 'debug' | 'info' | 'warn' | 'error';
 export type TelemetryOutcome = 'success' | 'failure' | 'cancelled';
+
+const MAX_MESSAGE_LENGTH = 200;
+
+/** Trim and bound a short diagnostic message. Empty → undefined. */
+export const trimMessage = (
+  message: string,
+  maxLength = MAX_MESSAGE_LENGTH
+): string | undefined => {
+  const trimmed = message.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  return trimmed.length <= maxLength ? trimmed : trimmed.slice(0, maxLength);
+};
 
 export type TelemetryEventInput<
   O extends TelemetryOperation = TelemetryOperation,
@@ -30,7 +45,10 @@ export type TelemetryEventInput<
    * Callers must not put user-entered or financial text here.
    */
   message?: string;
-  /** Operation-scoped attributes — compile-time typed per catalog entry. */
+  /**
+   * Operation-scoped attributes — compile-time typed per catalog entry.
+   * Flat primitives only (single-level keys → string | number | boolean | null).
+   */
   attributes?: TelemetryAttributes<O>;
   /** Browser/logical operation ID (UUIDv4). Telemetry only — never for auth. */
   operationId?: string;
@@ -47,8 +65,6 @@ export interface SafeTelemetryRecord {
   outcome?: TelemetryOutcome;
   message?: string;
   attributes: Record<string, TelemetryAttributeValue>;
-  droppedKeys: string[];
-  truncated: boolean;
   operationId?: string;
   requestId?: string;
   durationMs?: number;
@@ -65,8 +81,8 @@ export interface TelemetryClient {
 }
 
 /**
- * Validate catalog membership, shape attributes, and normalize correlation IDs.
- * Returns a safe record ready for emission by any adapter.
+ * Validate catalog membership and normalize correlation IDs / messages.
+ * Attributes are passed through as typed flat primitives from the caller.
  */
 export const prepareTelemetryRecord = <O extends TelemetryOperation>(
   event: TelemetryEventInput<O>
@@ -76,16 +92,16 @@ export const prepareTelemetryRecord = <O extends TelemetryOperation>(
     surface: event.surface,
   });
 
-  const { attributes, droppedKeys, truncated } = shapeAttributes(
-    event.attributes ?? {}
-  );
+  const attributes = {
+    ...(event.attributes ?? {}),
+  } as Record<string, TelemetryAttributeValue>;
 
   const operationId = parseCorrelationId(event.operationId) ?? undefined;
   const requestId = parseCorrelationId(event.requestId) ?? undefined;
 
   const message =
     typeof event.message === 'string' && event.message.length > 0
-      ? shapeMessage(event.message)
+      ? trimMessage(event.message)
       : undefined;
 
   return {
@@ -95,8 +111,6 @@ export const prepareTelemetryRecord = <O extends TelemetryOperation>(
     outcome: event.outcome,
     message,
     attributes,
-    droppedKeys,
-    truncated,
     operationId,
     requestId,
     durationMs:

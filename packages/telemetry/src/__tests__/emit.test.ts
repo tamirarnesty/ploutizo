@@ -3,49 +3,35 @@ import { prepareTelemetryRecord } from '../contract';
 import {
   asRecordSink,
   composeRecordSinks,
-  createLevelSink,
   emitMessage,
-  emitToLevelSink,
   safeEmitRecord,
-  toEmitPayload,
+  type TelemetryLevelSink,
 } from '../emit';
 
 describe('emit', () => {
-  it('builds a stable wire payload from prepared records', () => {
-    const record = prepareTelemetryRecord({
+  it('uses message when present, otherwise the operation name', () => {
+    const withMessage = prepareTelemetryRecord({
       operation: 'transactions.list',
       surface: 'web.transactions',
-      level: 'info',
-      outcome: 'success',
-      attributes: { status: 200, count: 3 },
       message: 'Listed transactions',
+    });
+    const withoutMessage = prepareTelemetryRecord({
+      operation: 'accounts.list',
+      surface: 'web.accounts',
     });
 
-    expect(toEmitPayload(record)).toEqual({
-      operation: 'transactions.list',
-      surface: 'web.transactions',
-      level: 'info',
-      outcome: 'success',
-      message: 'Listed transactions',
-      attributes: { status: 200, count: 3 },
-      droppedKeys: [],
-      truncated: false,
-      operationId: undefined,
-      requestId: undefined,
-      durationMs: undefined,
-      recordedAt: record.recordedAt,
-    });
-    expect(emitMessage(record)).toBe('Listed transactions');
+    expect(emitMessage(withMessage)).toBe('Listed transactions');
+    expect(emitMessage(withoutMessage)).toBe('accounts.list');
   });
 
-  it('routes records to level handlers', () => {
+  it('asRecordSink routes records to the matching level handler', () => {
     const warn = vi.fn();
-    const sink = createLevelSink({
+    const sink: TelemetryLevelSink = {
       debug: vi.fn(),
       info: vi.fn(),
       warn,
       error: vi.fn(),
-    });
+    };
 
     const record = prepareTelemetryRecord({
       operation: 'section.recover',
@@ -54,7 +40,7 @@ describe('emit', () => {
       attributes: { boundary: 'transactions-table' },
     });
 
-    emitToLevelSink(sink, record);
+    asRecordSink(sink).emit(record);
 
     expect(warn).toHaveBeenCalledWith(
       expect.objectContaining({ operation: 'section.recover' })
@@ -85,23 +71,16 @@ describe('emit', () => {
       surface: 'web.accounts',
     });
 
+    const level = (handler: typeof first): TelemetryLevelSink => ({
+      debug: handler,
+      info: handler,
+      warn: handler,
+      error: handler,
+    });
+
     composeRecordSinks(
-      asRecordSink(
-        createLevelSink({
-          debug: first,
-          info: first,
-          warn: first,
-          error: first,
-        })
-      ),
-      asRecordSink(
-        createLevelSink({
-          debug: second,
-          info: second,
-          warn: second,
-          error: second,
-        })
-      )
+      asRecordSink(level(first)),
+      asRecordSink(level(second))
     ).emit(record);
 
     expect(first).toHaveBeenCalledTimes(1);

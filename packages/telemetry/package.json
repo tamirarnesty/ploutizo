@@ -18,7 +18,6 @@
     ".": "./src/index.ts",
     "./catalog": "./src/catalog.ts",
     "./attributes": "./src/attributes.ts",
-    "./shape": "./src/shape.ts",
     "./emit": "./src/emit.ts",
     "./ids": "./src/ids.ts",
     "./api-error": "./src/api-error.ts",

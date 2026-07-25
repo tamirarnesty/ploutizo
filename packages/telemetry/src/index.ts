@@ -26,24 +26,8 @@ export {
 } from './attributes';
 
 export {
-  SHAPE_MAX_DEPTH,
-  SHAPE_MAX_KEYS,
-  SHAPE_MAX_ARRAY_LENGTH,
-  SHAPE_MAX_STRING_LENGTH,
-  SHAPE_MAX_TOTAL_BYTES,
-  SHAPE_MAX_MESSAGE_LENGTH,
-  shapeAttributes,
-  shapeMessage,
-  isBlocklistedAttributeKey,
-  type ShapeOptions,
-  type ShapeResult,
-  type TelemetryAttributeValue,
-} from './shape';
-
-export {
   TELEMETRY_CORRELATION_HEADERS,
-  createOperationId,
-  createRequestId,
+  createCorrelationId,
   isValidCorrelationId,
   parseCorrelationId,
   resolveCorrelationId,
@@ -62,10 +46,13 @@ export {
   type TelemetryErrorClassification,
   type ClassifyApiErrorInput,
   type ExpectedApiErrorCode,
+  type SafeApiErrorAttributes,
 } from './api-error';
 
 export {
   prepareTelemetryRecord,
+  trimMessage,
+  type TelemetryAttributeValue,
   type TelemetryClient,
   type TelemetryEventInput,
   type TelemetryLevel,
@@ -76,14 +63,9 @@ export {
 export {
   asRecordSink,
   composeRecordSinks,
-  createLevelSink,
   createSinkTelemetryClient,
   emitMessage,
-  emitToLevelSink,
   safeEmitRecord,
-  toEmitPayload,
-  type TelemetryEmitPayload,
-  type TelemetryLevelHandler,
   type TelemetryLevelSink,
   type TelemetryRecordSink,
   type SinkTelemetryClientOptions,
@@ -101,7 +83,6 @@ export { createNoopTelemetryClient } from './adapters/noop';
 export {
   createFakeTelemetryClient,
   type FakeTelemetryClient,
-  type FakeTelemetryClientOptions,
 } from './adapters/fake';
 
 export {

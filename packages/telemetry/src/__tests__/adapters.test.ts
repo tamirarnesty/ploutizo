@@ -9,7 +9,7 @@ import {
   createPostHogLevelSink,
   createPostHogTelemetryClient,
 } from '../adapters/posthog';
-import { createOperationId, createRequestId } from '../ids';
+import { createCorrelationId } from '../ids';
 import {
   asRecordSink,
   composeRecordSinks,
@@ -30,8 +30,8 @@ describe('telemetry adapters', () => {
       },
     });
 
-    const operationId = createOperationId();
-    const requestId = createRequestId();
+    const operationId = createCorrelationId();
+    const requestId = createCorrelationId();
 
     client.record({
       operation: 'transactions.list',
@@ -198,7 +198,7 @@ describe('telemetry adapters', () => {
     ).not.toThrow();
   });
 
-  it('fake adapter records shaped events and captures emit failures without throwing', async () => {
+  it('fake adapter records events and swallows emit failures without throwing', async () => {
     const fake = createFakeTelemetryClient();
 
     fake.record({
@@ -219,12 +219,12 @@ describe('telemetry adapters', () => {
       })
     ).not.toThrow();
 
-    expect(fake.failures).toHaveLength(1);
+    // Emit failure was swallowed; only the successful record remains.
+    expect(fake.records).toHaveLength(1);
     await expect(fake.flush()).resolves.toBeUndefined();
 
     fake.reset();
     expect(fake.records).toHaveLength(0);
-    expect(fake.failures).toHaveLength(0);
   });
 
   it('noop adapter is a silent TelemetryClient', () => {

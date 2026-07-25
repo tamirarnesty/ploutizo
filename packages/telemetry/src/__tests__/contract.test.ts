@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { prepareTelemetryRecord } from '../contract';
+import { prepareTelemetryRecord, trimMessage } from '../contract';
 
 describe('prepareTelemetryRecord', () => {
   it('accepts operation-scoped typed attributes', () => {
@@ -13,7 +13,6 @@ describe('prepareTelemetryRecord', () => {
     });
 
     expect(record.attributes).toEqual({ status: 200, count: 12 });
-    expect(record.droppedKeys).toEqual([]);
   });
 
   it('truncates long diagnostic messages', () => {
@@ -59,5 +58,13 @@ describe('prepareTelemetryRecord', () => {
     });
 
     expect(invalid.operationId).toBeUndefined();
+  });
+});
+
+describe('trimMessage', () => {
+  it('trims and truncates diagnostic messages', () => {
+    expect(trimMessage('  hello  ')).toBe('hello');
+    expect(trimMessage('x'.repeat(250))?.length).toBe(200);
+    expect(trimMessage('   ')).toBeUndefined();
   });
 });

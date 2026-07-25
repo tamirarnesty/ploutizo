@@ -1,21 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import {
   TELEMETRY_CORRELATION_HEADERS,
-  createOperationId,
-  createRequestId,
+  createCorrelationId,
   isValidCorrelationId,
   parseCorrelationId,
   resolveCorrelationId,
 } from '../ids';
 
 describe('correlation IDs', () => {
-  it('creates UUIDv4 operation and request IDs', () => {
-    const operationId = createOperationId();
-    const requestId = createRequestId();
+  it('creates UUIDv4 correlation IDs', () => {
+    const first = createCorrelationId();
+    const second = createCorrelationId();
 
-    expect(isValidCorrelationId(operationId)).toBe(true);
-    expect(isValidCorrelationId(requestId)).toBe(true);
-    expect(operationId).not.toBe(requestId);
+    expect(isValidCorrelationId(first)).toBe(true);
+    expect(isValidCorrelationId(second)).toBe(true);
+    expect(first).not.toBe(second);
   });
 
   it('validates and parses correlation IDs', () => {
@@ -33,7 +32,7 @@ describe('correlation IDs', () => {
   });
 
   it('resolveCorrelationId accepts valid IDs and replaces invalid ones', () => {
-    const valid = createRequestId();
+    const valid = createCorrelationId();
     expect(resolveCorrelationId(valid)).toBe(valid);
 
     const generated = resolveCorrelationId('bad-id', () => valid);

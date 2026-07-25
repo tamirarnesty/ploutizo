@@ -83,8 +83,8 @@ describe('TelemetryApiError', () => {
       code: 'NOT_FOUND',
       route: '/api/accounts/:id',
       method: 'GET',
-      durationMs: 12,
     });
+    expect(attributes).not.toHaveProperty('durationMs');
     expect(JSON.stringify(attributes)).not.toContain('Private user text');
     expect(JSON.stringify(attributes)).not.toContain('password');
   });

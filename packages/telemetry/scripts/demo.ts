@@ -6,30 +6,19 @@ import {
   TelemetryApiError,
   classifyApiError,
   createConsoleTelemetryClient,
+  createCorrelationId,
   createFakeTelemetryClient,
   createNoopTelemetryClient,
-  createOperationId,
-  createRequestId,
   prepareTelemetryRecord,
-  shapeAttributes,
   toSafeApiErrorAttributes,
 } from '../src/index';
 
 const demo = async () => {
-  const operationId = createOperationId();
-  const requestId = createRequestId();
+  const operationId = createCorrelationId();
+  const requestId = createCorrelationId();
 
   console.log('=== correlation IDs ===');
   console.log({ operationId, requestId });
-
-  console.log('\n=== shapeAttributes ===');
-  const shaped = shapeAttributes({
-    status: 200,
-    method: 'GET',
-    route: '/api/transactions',
-    count: 12,
-  });
-  console.log(JSON.stringify(shaped, null, 2));
 
   console.log('\n=== prepareTelemetryRecord ===');
   const record = prepareTelemetryRecord({
@@ -67,6 +56,7 @@ const demo = async () => {
     expected: classifyApiError(expected),
     unexpected: classifyApiError(unexpected),
     safeExpectedAttrs: toSafeApiErrorAttributes(expected),
+    durationMsOnEvent: expected.durationMs,
   });
 
   console.log('\n=== adapters (console / noop / fake) ===');
