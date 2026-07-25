@@ -1,5 +1,11 @@
-import type { TelemetryClient, TelemetryEventInput } from '../contract';
-import { prepareTelemetryRecord } from '../contract';
+import type { TelemetryClient } from '../contract';
+import {
+  asRecordSink,
+  createLevelSink,
+  createSinkTelemetryClient,
+  emitMessage,
+  type TelemetryLevelSink,
+} from '../emit';
 
 export type ConsoleTelemetrySink = Pick<
   Console,
@@ -16,46 +22,33 @@ export interface ConsoleTelemetryClientOptions {
   prefix?: string;
 }
 
+export const createConsoleLevelSink = (
+  options: ConsoleTelemetryClientOptions = {}
+): TelemetryLevelSink => {
+  const prefix = options.prefix ?? '[telemetry]';
+  const sink = options.sink ?? console;
+
+  const write = (
+    method: keyof ConsoleTelemetrySink,
+    message: string,
+    payload: unknown
+  ) => {
+    sink[method].call(sink, prefix, message, payload);
+  };
+
+  return createLevelSink({
+    debug: (record) => write('debug', emitMessage(record), record),
+    info: (record) => write('info', emitMessage(record), record),
+    warn: (record) => write('warn', emitMessage(record), record),
+    error: (record) => write('error', emitMessage(record), record),
+  });
+};
+
 /**
- * Local development adapter: emits structured JSON to the console.
- * Initialization and emission failures never throw to callers.
+ * Local development adapter: emits structured records to the console.
+ * Uses the shared level-sink path that PostHog web adapter will mirror.
  */
 export const createConsoleTelemetryClient = (
   options: ConsoleTelemetryClientOptions = {}
-): TelemetryClient => {
-  const prefix = options.prefix ?? '[telemetry]';
-  let sink: ConsoleTelemetrySink | null = options.sink ?? console;
-
-  const safeEmit = (level: TelemetryEventInput['level'], payload: unknown) => {
-    if (!sink) {
-      return;
-    }
-    try {
-      const method =
-        level === 'debug'
-          ? sink.debug.bind(sink)
-          : level === 'warn'
-            ? sink.warn.bind(sink)
-            : level === 'error'
-              ? sink.error.bind(sink)
-              : sink.info.bind(sink);
-      method(prefix, payload);
-    } catch {
-      // Emission must never affect product behavior.
-    }
-  };
-
-  return {
-    record: (event) => {
-      try {
-        const record = prepareTelemetryRecord(event);
-        safeEmit(record.level, record);
-      } catch {
-        // Catalog/sanitize/sink failures degrade to no-op.
-      }
-    },
-    flush: async () => {
-      // Console has nothing to flush; keep the promise API for adapter parity.
-    },
-  };
-};
+): TelemetryClient =>
+  createSinkTelemetryClient(asRecordSink(createConsoleLevelSink(options)));

@@ -11,20 +11,34 @@ export {
 } from './catalog';
 
 export {
-  SANITIZE_MAX_DEPTH,
-  SANITIZE_MAX_KEYS,
-  SANITIZE_MAX_ARRAY_LENGTH,
-  SANITIZE_MAX_STRING_LENGTH,
-  SANITIZE_MAX_TOTAL_BYTES,
-  REDACTED,
-  OMITTED,
-  TRUNCATED,
-  sanitizeAttributes,
-  isProhibitedAttributeKey,
-  type SanitizeOptions,
-  type SanitizeResult,
-  type SanitizedAttributeValue,
-} from './sanitize';
+  type HttpMethod,
+  type HttpOutcomeAttributes,
+  type OperationLifecycleAttributes,
+  type ApiRequestCompleteAttributes,
+  type BrowserApiRequestAttributes,
+  type RoutePreloadAttributes,
+  type SectionSurfaceAttributes,
+  type DomainListAttributes,
+  type DomainReadAttributes,
+  type DomainMutationAttributes,
+  type TelemetryAttributeMap,
+  type TelemetryAttributes,
+} from './attributes';
+
+export {
+  SHAPE_MAX_DEPTH,
+  SHAPE_MAX_KEYS,
+  SHAPE_MAX_ARRAY_LENGTH,
+  SHAPE_MAX_STRING_LENGTH,
+  SHAPE_MAX_TOTAL_BYTES,
+  SHAPE_MAX_MESSAGE_LENGTH,
+  shapeAttributes,
+  shapeMessage,
+  isBlocklistedAttributeKey,
+  type ShapeOptions,
+  type ShapeResult,
+  type TelemetryAttributeValue,
+} from './shape';
 
 export {
   TELEMETRY_CORRELATION_HEADERS,
@@ -57,10 +71,26 @@ export {
   type TelemetryLevel,
   type TelemetryOutcome,
   type SafeTelemetryRecord,
-  type PrepareTelemetryRecordOptions,
 } from './contract';
 
 export {
+  asRecordSink,
+  composeRecordSinks,
+  createLevelSink,
+  createSinkTelemetryClient,
+  emitMessage,
+  emitToLevelSink,
+  safeEmitRecord,
+  toEmitPayload,
+  type TelemetryEmitPayload,
+  type TelemetryLevelHandler,
+  type TelemetryLevelSink,
+  type TelemetryRecordSink,
+  type SinkTelemetryClientOptions,
+} from './emit';
+
+export {
+  createConsoleLevelSink,
   createConsoleTelemetryClient,
   type ConsoleTelemetryClientOptions,
   type ConsoleTelemetrySink,
@@ -73,3 +103,12 @@ export {
   type FakeTelemetryClient,
   type FakeTelemetryClientOptions,
 } from './adapters/fake';
+
+export {
+  createPostHogLevelSink,
+  createPostHogTelemetryClient,
+  createLocalTelemetryClient,
+  type PostHogLogger,
+  type PostHogTelemetryBridge,
+  type PostHogTelemetryClientOptions,
+} from './adapters/posthog';

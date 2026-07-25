@@ -1,8 +1,9 @@
 import type { TelemetryOperation, TelemetrySurface } from './catalog';
 import { assertTelemetryCatalogEntry } from './catalog';
-import type { SanitizedAttributeValue } from './sanitize';
-import { sanitizeAttributes } from './sanitize';
-import { isValidCorrelationId } from './ids';
+import type { TelemetryAttributes } from './attributes';
+import type { TelemetryAttributeValue } from './shape';
+import { shapeAttributes, shapeMessage } from './shape';
+import { parseCorrelationId } from './ids';
 
 /**
  * Vendor-neutral telemetry contract shared by web and API callers.
@@ -13,9 +14,11 @@ import { isValidCorrelationId } from './ids';
 export type TelemetryLevel = 'debug' | 'info' | 'warn' | 'error';
 export type TelemetryOutcome = 'success' | 'failure' | 'cancelled';
 
-export interface TelemetryEventInput {
+export type TelemetryEventInput<
+  O extends TelemetryOperation = TelemetryOperation,
+> = {
   /** Stable catalog operation name (required). */
-  operation: TelemetryOperation;
+  operation: O;
   /** Stable catalog surface (required). */
   surface: TelemetrySurface;
   /** Log severity; defaults to adapter-specific behavior (usually info). */
@@ -27,15 +30,15 @@ export interface TelemetryEventInput {
    * Callers must not put user-entered or financial text here.
    */
   message?: string;
-  /** Free-form attributes — accepted only after bounded recursive sanitization. */
-  attributes?: Record<string, unknown>;
+  /** Operation-scoped attributes — compile-time typed per catalog entry. */
+  attributes?: TelemetryAttributes<O>;
   /** Browser/logical operation ID (UUIDv4). Telemetry only — never for auth. */
   operationId?: string;
   /** API HTTP attempt request ID (UUIDv4). Telemetry only — never for auth. */
   requestId?: string;
   /** Duration in milliseconds when measured. */
   durationMs?: number;
-}
+};
 
 export interface SafeTelemetryRecord {
   operation: TelemetryOperation;
@@ -43,8 +46,8 @@ export interface SafeTelemetryRecord {
   level: TelemetryLevel;
   outcome?: TelemetryOutcome;
   message?: string;
-  attributes: Record<string, SanitizedAttributeValue>;
-  redactedKeys: string[];
+  attributes: Record<string, TelemetryAttributeValue>;
+  droppedKeys: string[];
   truncated: boolean;
   operationId?: string;
   requestId?: string;
@@ -61,41 +64,28 @@ export interface TelemetryClient {
   flush(): Promise<void>;
 }
 
-export interface PrepareTelemetryRecordOptions {
-  /** When true, unknown catalog entries throw (default). Adapters may catch. */
-  enforceCatalog?: boolean;
-}
-
 /**
- * Validate catalog membership, sanitize attributes, and normalize correlation IDs.
+ * Validate catalog membership, shape attributes, and normalize correlation IDs.
  * Returns a safe record ready for emission by any adapter.
  */
-export const prepareTelemetryRecord = (
-  event: TelemetryEventInput,
-  options: PrepareTelemetryRecordOptions = {}
+export const prepareTelemetryRecord = <O extends TelemetryOperation>(
+  event: TelemetryEventInput<O>
 ): SafeTelemetryRecord => {
-  const enforceCatalog = options.enforceCatalog ?? true;
-  if (enforceCatalog) {
-    assertTelemetryCatalogEntry({
-      operation: event.operation,
-      surface: event.surface,
-    });
-  }
+  assertTelemetryCatalogEntry({
+    operation: event.operation,
+    surface: event.surface,
+  });
 
-  const { attributes, redactedKeys, truncated } = sanitizeAttributes(
+  const { attributes, droppedKeys, truncated } = shapeAttributes(
     event.attributes ?? {}
   );
 
-  const operationId = isValidCorrelationId(event.operationId)
-    ? event.operationId
-    : undefined;
-  const requestId = isValidCorrelationId(event.requestId)
-    ? event.requestId
-    : undefined;
+  const operationId = parseCorrelationId(event.operationId) ?? undefined;
+  const requestId = parseCorrelationId(event.requestId) ?? undefined;
 
   const message =
     typeof event.message === 'string' && event.message.length > 0
-      ? event.message.slice(0, 200)
+      ? shapeMessage(event.message)
       : undefined;
 
   return {
@@ -105,7 +95,7 @@ export const prepareTelemetryRecord = (
     outcome: event.outcome,
     message,
     attributes,
-    redactedKeys,
+    droppedKeys,
     truncated,
     operationId,
     requestId,

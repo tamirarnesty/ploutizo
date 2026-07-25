@@ -108,9 +108,6 @@ export const classifyApiError = (
       return 'expected';
     }
     // Unknown machine codes are actionable even on 4xx.
-    if (typeof input.status === 'number' && expectedStatusSet.has(input.status)) {
-      return 'unexpected';
-    }
     return 'unexpected';
   }
 
@@ -118,7 +115,11 @@ export const classifyApiError = (
     return 'expected';
   }
 
-  if (typeof input.status === 'number' && input.status >= 400 && input.status < 500) {
+  if (
+    typeof input.status === 'number' &&
+    input.status >= 400 &&
+    input.status < 500
+  ) {
     // 4xx without a known code — treat as unexpected so unknowns surface.
     return 'unexpected';
   }
@@ -126,11 +127,12 @@ export const classifyApiError = (
   return 'unexpected';
 };
 
-export const isTelemetryApiError = (value: unknown): value is TelemetryApiError =>
-  value instanceof TelemetryApiError;
+export const isTelemetryApiError = (
+  value: unknown
+): value is TelemetryApiError => value instanceof TelemetryApiError;
 
 /**
- * Safe diagnostic fields suitable for sanitized telemetry attributes.
+ * Safe diagnostic fields suitable for typed telemetry attributes.
  * Excludes user-facing message text and raw causes.
  */
 export const toSafeApiErrorAttributes = (

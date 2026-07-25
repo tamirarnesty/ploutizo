@@ -1,14 +1,26 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createConsoleTelemetryClient } from '../adapters/console';
+import {
+  createConsoleLevelSink,
+  createConsoleTelemetryClient,
+} from '../adapters/console';
 import { createFakeTelemetryClient } from '../adapters/fake';
 import { createNoopTelemetryClient } from '../adapters/noop';
+import {
+  createPostHogLevelSink,
+  createPostHogTelemetryClient,
+} from '../adapters/posthog';
 import { createOperationId, createRequestId } from '../ids';
-import { REDACTED } from '../sanitize';
+import {
+  asRecordSink,
+  composeRecordSinks,
+  createSinkTelemetryClient,
+} from '../emit';
 
 describe('telemetry adapters', () => {
-  it('console adapter emits sanitized structured records', () => {
+  it('console adapter emits structured records via the shared level sink', () => {
     const info = vi.fn();
     const client = createConsoleTelemetryClient({
+      prefix: '[telemetry]',
       sink: {
         debug: vi.fn(),
         info,
@@ -31,23 +43,99 @@ describe('telemetry adapters', () => {
       durationMs: 18,
       attributes: {
         status: 200,
-        accountId: 'should-redact',
-        method: 'GET',
+        count: 4,
       },
     });
 
     expect(info).toHaveBeenCalledTimes(1);
-    const payload = info.mock.calls[0]?.[1] as {
-      operation: string;
-      attributes: Record<string, unknown>;
-      operationId: string;
-      requestId: string;
+    expect(info.mock.calls[0]?.[0]).toBe('[telemetry]');
+    expect(info.mock.calls[0]?.[1]).toBe('transactions.list');
+    expect(info.mock.calls[0]?.[2]).toMatchObject({
+      operation: 'transactions.list',
+      attributes: { status: 200, count: 4 },
+      operationId,
+      requestId,
+    });
+  });
+
+  it('posthog adapter routes levels to logger and capture for wide events', () => {
+    const logger = {
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
     };
-    expect(payload.operation).toBe('transactions.list');
-    expect(payload.operationId).toBe(operationId);
-    expect(payload.requestId).toBe(requestId);
-    expect(payload.attributes.accountId).toBe(REDACTED);
-    expect(payload.attributes.status).toBe(200);
+    const capture = vi.fn();
+    const flush = vi.fn(async () => undefined);
+    const client = createPostHogTelemetryClient({
+      logger,
+      capture,
+      flush,
+    });
+
+    client.record({
+      operation: 'api.request.complete',
+      surface: 'api.request',
+      level: 'info',
+      outcome: 'success',
+      message: 'Request completed',
+      attributes: { status: 200, route: '/api/accounts' },
+    });
+
+    expect(logger.info).toHaveBeenCalledWith(
+      'Request completed',
+      expect.objectContaining({
+        operation: 'api.request.complete',
+        attributes: { status: 200, route: '/api/accounts' },
+      })
+    );
+    expect(capture).toHaveBeenCalledWith(
+      'api.request.complete',
+      expect.objectContaining({
+        operation: 'api.request.complete',
+      })
+    );
+  });
+
+  it('composeRecordSinks fans out to console and posthog sinks', () => {
+    const info = vi.fn();
+    const logger = {
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    };
+
+    const client = createSinkTelemetryClient(
+      composeRecordSinks(
+        asRecordSink(
+          createConsoleLevelSink({
+            sink: {
+              debug: vi.fn(),
+              info,
+              warn: vi.fn(),
+              error: vi.fn(),
+              log: vi.fn(),
+            },
+          })
+        ),
+        asRecordSink(
+          createPostHogLevelSink({
+            logger,
+            capture: vi.fn(),
+          })
+        )
+      )
+    );
+
+    client.record({
+      operation: 'route.preload',
+      surface: 'web.dashboard',
+      attributes: { route: '/dashboard' },
+    });
+
+    expect(info).toHaveBeenCalledTimes(1);
+    expect(logger.info).toHaveBeenCalledTimes(1);
   });
 
   it('console and noop adapters preserve caller results when emission fails', async () => {
@@ -76,7 +164,7 @@ describe('telemetry adapters', () => {
       consoleClient.record({
         operation: 'accounts.list',
         surface: 'api.accounts',
-        attributes: { password: 'nope' },
+        attributes: { status: 200 },
       });
       noop.record({
         operation: 'accounts.list',
@@ -110,17 +198,16 @@ describe('telemetry adapters', () => {
     ).not.toThrow();
   });
 
-  it('fake adapter records safe events and captures emit failures without throwing', async () => {
+  it('fake adapter records shaped events and captures emit failures without throwing', async () => {
     const fake = createFakeTelemetryClient();
 
     fake.record({
       operation: 'route.preload',
       surface: 'web.dashboard',
-      attributes: { description: 'secret note', route: '/dashboard' },
+      attributes: { route: '/dashboard' },
     });
 
     expect(fake.records).toHaveLength(1);
-    expect(fake.records[0]?.attributes.description).toBe(REDACTED);
     expect(fake.records[0]?.attributes.route).toBe('/dashboard');
 
     fake.failNextEmit(new Error('transport down'));
@@ -128,6 +215,7 @@ describe('telemetry adapters', () => {
       fake.record({
         operation: 'section.recover',
         surface: 'web.dashboard',
+        attributes: { boundary: 'transactions-table' },
       })
     ).not.toThrow();
 
@@ -146,6 +234,7 @@ describe('telemetry adapters', () => {
         operation: 'api.request.complete',
         surface: 'api.request',
         outcome: 'success',
+        attributes: { status: 200, route: '/api/health' },
       })
     ).not.toThrow();
   });

@@ -3,7 +3,6 @@
  * Run from package: pnpm --filter @ploutizo/telemetry demo
  */
 import {
-  REDACTED,
   TelemetryApiError,
   classifyApiError,
   createConsoleTelemetryClient,
@@ -12,7 +11,7 @@ import {
   createOperationId,
   createRequestId,
   prepareTelemetryRecord,
-  sanitizeAttributes,
+  shapeAttributes,
   toSafeApiErrorAttributes,
 } from '../src/index';
 
@@ -23,18 +22,14 @@ const demo = async () => {
   console.log('=== correlation IDs ===');
   console.log({ operationId, requestId });
 
-  console.log('\n=== sanitizeAttributes ===');
-  const sanitized = sanitizeAttributes({
+  console.log('\n=== shapeAttributes ===');
+  const shaped = shapeAttributes({
     status: 200,
     method: 'GET',
-    accountId: '550e8400-e29b-41d4-a716-446655440000',
-    amountCents: 1299,
-    description: 'Coffee',
-    password: 'hunter2',
-    outcome: 'success',
+    route: '/api/transactions',
+    count: 12,
   });
-  console.log(JSON.stringify(sanitized, null, 2));
-  console.log('accountId redacted?', sanitized.attributes.accountId === REDACTED);
+  console.log(JSON.stringify(shaped, null, 2));
 
   console.log('\n=== prepareTelemetryRecord ===');
   const record = prepareTelemetryRecord({
@@ -46,8 +41,7 @@ const demo = async () => {
     durationMs: 22,
     attributes: {
       status: 200,
-      route: '/api/transactions',
-      body: { secret: true },
+      count: 12,
     },
   });
   console.log(JSON.stringify(record, null, 2));
@@ -86,11 +80,12 @@ const demo = async () => {
     outcome: 'success',
     operationId,
     requestId,
-    attributes: { status: 200, notes: 'should redact' },
+    attributes: { status: 200, route: '/api/accounts' },
   });
   noop.record({
     operation: 'accounts.list',
     surface: 'api.accounts',
+    attributes: { status: 200, count: 3 },
   });
   consoleClient.record({
     operation: 'route.preload',

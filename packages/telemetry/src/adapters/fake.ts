@@ -4,6 +4,7 @@ import type {
   TelemetryEventInput,
 } from '../contract';
 import { prepareTelemetryRecord } from '../contract';
+import type { TelemetryRecordSink } from '../emit';
 
 export interface FakeTelemetryClient extends TelemetryClient {
   /** Records successfully prepared for emission (in order). */
@@ -36,6 +37,17 @@ export const createFakeTelemetryClient = (
   const failures: { event: TelemetryEventInput; error: unknown }[] = [];
   let pendingEmitError: unknown | undefined;
 
+  const sink: TelemetryRecordSink = {
+    emit: (record) => {
+      if (pendingEmitError !== undefined) {
+        const error = pendingEmitError;
+        pendingEmitError = undefined;
+        throw error;
+      }
+      records.push(record);
+    },
+  };
+
   const client: FakeTelemetryClient = {
     get records() {
       return records;
@@ -54,12 +66,13 @@ export const createFakeTelemetryClient = (
     record: (event) => {
       try {
         const record = prepareTelemetryRecord(event);
-        if (pendingEmitError !== undefined) {
-          const error = pendingEmitError;
-          pendingEmitError = undefined;
-          throw error;
+        try {
+          sink.emit(record);
+        } catch (error) {
+          if (captureFailures) {
+            failures.push({ event, error });
+          }
         }
-        records.push(record);
       } catch (error) {
         if (captureFailures) {
           failures.push({ event, error });

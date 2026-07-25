@@ -34,9 +34,9 @@ describe('TelemetryApiError', () => {
   });
 
   it('classifies expected product outcomes', () => {
-    expect(
-      classifyApiError({ status: 400, code: 'VALIDATION_ERROR' })
-    ).toBe('expected');
+    expect(classifyApiError({ status: 400, code: 'VALIDATION_ERROR' })).toBe(
+      'expected'
+    );
     expect(classifyApiError({ status: 404, code: 'NOT_FOUND' })).toBe(
       'expected'
     );

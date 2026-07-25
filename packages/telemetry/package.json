@@ -17,11 +17,14 @@
   "exports": {
     ".": "./src/index.ts",
     "./catalog": "./src/catalog.ts",
-    "./sanitize": "./src/sanitize.ts",
+    "./attributes": "./src/attributes.ts",
+    "./shape": "./src/shape.ts",
+    "./emit": "./src/emit.ts",
     "./ids": "./src/ids.ts",
     "./api-error": "./src/api-error.ts",
     "./adapters/console": "./src/adapters/console.ts",
     "./adapters/noop": "./src/adapters/noop.ts",
-    "./adapters/fake": "./src/adapters/fake.ts"
+    "./adapters/fake": "./src/adapters/fake.ts",
+    "./adapters/posthog": "./src/adapters/posthog.ts"
   }
 }
