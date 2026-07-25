@@ -42,8 +42,8 @@ export type TelemetryAttributeMap = {
   'section.recover': SectionSurfaceAttributes;
 };
 
-export type TelemetryAttributes<O extends TelemetryOperation> =
-  TelemetryAttributeMap[O];
+export type TelemetryAttributes<TOperation extends TelemetryOperation> =
+  TelemetryAttributeMap[TOperation];
 
 type _AssertAllOperationsMapped = [
   Exclude<TelemetryOperation, keyof TelemetryAttributeMap>,

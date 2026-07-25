@@ -1,8 +1,5 @@
-import {
-  prepareTelemetryRecord,
-  type TelemetryClient,
-  type TelemetryEventInput,
-} from '../contract';
+import { prepareTelemetryRecord } from '../contract';
+import type { TelemetryClient, TelemetryEventInput } from '../contract';
 
 export type ConsoleTelemetrySink = Pick<
   Console,

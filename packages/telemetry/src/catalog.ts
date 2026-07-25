@@ -26,8 +26,9 @@ export type TelemetryOperation = keyof typeof TELEMETRY_CATALOG;
 export type TelemetrySurface =
   | (typeof WEB_TELEMETRY_SURFACES)[number]
   | (typeof API_TELEMETRY_SURFACES)[number];
-export type TelemetrySurfaceForOperation<O extends TelemetryOperation> =
-  (typeof TELEMETRY_CATALOG)[O]['surfaces'][number];
+export type TelemetrySurfaceForOperation<
+  TOperation extends TelemetryOperation,
+> = (typeof TELEMETRY_CATALOG)[TOperation]['surfaces'][number];
 
 export const TELEMETRY_OPERATIONS = Object.keys(
   TELEMETRY_CATALOG

@@ -1,0 +1,40 @@
+// @ts-check
+
+import { tanstackConfig } from '@tanstack/eslint-config';
+
+export default [
+  {
+    ignores: ['eslint.config.js', 'vitest.config.ts', 'scripts/**'],
+  },
+  ...tanstackConfig,
+  {
+    rules: {
+      // Forbid file extensions on relative imports — use bare specifiers (e.g. './foo', not './foo.js')
+      'import/extensions': ['error', 'never'],
+      // Enforce T[] over Array<T>
+      '@typescript-eslint/array-type': ['error', { default: 'array' }],
+      // Enforce import order: 1) third-party 2) @ploutizo/* workspace 3) relative
+      'import/order': [
+        'error',
+        {
+          groups: [
+            'builtin',
+            'external',
+            'internal',
+            'parent',
+            'sibling',
+            'index',
+            'object',
+            'type',
+          ],
+          pathGroups: [
+            { pattern: '@ploutizo/**', group: 'internal', position: 'before' },
+          ],
+          pathGroupsExcludedImportTypes: ['builtin', 'external', 'object'],
+        },
+      ],
+      // Prefer const arrow functions over function declarations
+      'func-style': ['error', 'expression'],
+    },
+  },
+];

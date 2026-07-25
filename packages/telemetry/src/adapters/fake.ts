@@ -1,8 +1,5 @@
-import {
-  prepareTelemetryRecord,
-  type SafeTelemetryRecord,
-  type TelemetryClient,
-} from '../contract';
+import { prepareTelemetryRecord } from '../contract';
+import type { SafeTelemetryRecord, TelemetryClient } from '../contract';
 
 export interface FakeTelemetryClient extends TelemetryClient {
   /** Records successfully prepared for emission (in order). */

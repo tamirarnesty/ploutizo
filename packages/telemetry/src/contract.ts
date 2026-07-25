@@ -1,11 +1,11 @@
+import { assertTelemetryCatalogEntry } from './catalog';
+import { parseCorrelationId } from './ids';
 import type {
   TelemetryOperation,
   TelemetrySurface,
   TelemetrySurfaceForOperation,
 } from './catalog';
-import { assertTelemetryCatalogEntry } from './catalog';
 import type { TelemetryAttributes } from './attributes';
-import { parseCorrelationId } from './ids';
 
 /**
  * Vendor-neutral telemetry contract shared by web and API callers.
@@ -34,12 +34,12 @@ export const trimMessage = (
 };
 
 export type TelemetryEventInput<
-  O extends TelemetryOperation = TelemetryOperation,
+  TOperation extends TelemetryOperation = TelemetryOperation,
 > = {
   /** Stable catalog operation name (required). */
-  operation: O;
+  operation: TOperation;
   /** Stable catalog surface (required). */
-  surface: TelemetrySurfaceForOperation<O>;
+  surface: TelemetrySurfaceForOperation<TOperation>;
   /** Log severity; defaults to adapter-specific behavior (usually info). */
   level?: TelemetryLevel;
   /** Optional outcome for completion-style wide events. */
@@ -53,7 +53,7 @@ export type TelemetryEventInput<
    * Operation-scoped attributes — compile-time typed per catalog entry.
    * Flat primitives only (single-level keys → string | number | boolean | null).
    */
-  attributes?: TelemetryAttributes<O>;
+  attributes?: TelemetryAttributes<TOperation>;
   /** Browser/logical operation ID (UUIDv4). Telemetry only — never for auth. */
   operationId?: string;
   /** API HTTP attempt request ID (UUIDv4). Telemetry only — never for auth. */
@@ -80,16 +80,18 @@ export interface SafeTelemetryRecord {
  * in a way that changes product behavior — failures degrade to no-op.
  */
 export interface TelemetryClient {
-  record<O extends TelemetryOperation>(event: TelemetryEventInput<O>): void;
-  flush(): Promise<void>;
+  record: <TOperation extends TelemetryOperation>(
+    event: TelemetryEventInput<TOperation>
+  ) => void;
+  flush: () => Promise<void>;
 }
 
 /**
  * Validate catalog membership and normalize correlation IDs / messages.
  * Attributes are passed through as typed flat primitives from the caller.
  */
-export const prepareTelemetryRecord = <O extends TelemetryOperation>(
-  event: TelemetryEventInput<O>
+export const prepareTelemetryRecord = <TOperation extends TelemetryOperation>(
+  event: TelemetryEventInput<TOperation>
 ): SafeTelemetryRecord => {
   assertTelemetryCatalogEntry({
     operation: event.operation,
