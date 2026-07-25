@@ -16,21 +16,33 @@ import { transactionsRouter } from './routes/transactions';
 import { settlementsRouter } from './routes/settlements';
 import { importsRouter } from './routes/imports';
 import { DomainError, NotFoundError } from './lib/errors';
+import {
+  TELEMETRY_EXPOSE_HEADERS,
+  initApiOtel,
+  requestTelemetry,
+} from './telemetry';
 import type { AppEnv } from './types';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
+
+// Boot OTel exporters before request handling (non-blocking; failures degrade).
+initApiOtel();
 
 const app = new Hono<AppEnv>();
 
 // Invariant middleware order (docs/stack-and-conventions.md):
-// CORS → Clerk → authorized party guard → tenant guard
+// CORS → request telemetry → Clerk → authorized party guard → tenant guard
 // 1. CORS — handles preflight before Clerk so OPTIONS requests are not rejected
 app.use(
   '*',
   cors({
     origin: (origin) => resolveAllowedOrigin(origin),
     credentials: true,
+    exposeHeaders: [...TELEMETRY_EXPOSE_HEADERS],
   })
 );
+
+// 1b. Request telemetry — after CORS, before Clerk (PLO-64)
+app.use('*', requestTelemetry());
 
 // 2. Clerk JWT verification — clockSkewInMs handles Railway container clock drift (D-04)
 // azp validation uses authorizedPartyGuard + isAllowedParty so Railway PR preview
@@ -64,9 +76,10 @@ app.route('/api/settlements', settlementsRouter);
 app.route('/api/imports', importsRouter);
 
 // Unmatched routes — returns JSON shape consistent with onError handler
-app.notFound((c) =>
-  c.json({ error: { code: 'NOT_FOUND', message: 'Not found' } }, 404)
-);
+app.notFound((c) => {
+  c.set('telemetryError', { code: 'NOT_FOUND', kind: 'http' });
+  return c.json({ error: { code: 'NOT_FOUND', message: 'Not found' } }, 404);
+});
 
 // Centralized error handler (D-04) — registered AFTER routes, BEFORE serve()
 // NotFoundError → 404 NOT_FOUND
@@ -74,15 +87,31 @@ app.notFound((c) =>
 // Generic Error → 500 INTERNAL_ERROR
 app.onError((err, c) => {
   if (err instanceof NotFoundError) {
+    c.set('telemetryError', {
+      code: 'NOT_FOUND',
+      kind: 'http',
+      message: err.message,
+    });
     return c.json({ error: { code: 'NOT_FOUND', message: err.message } }, 404);
   }
   if (err instanceof DomainError) {
+    const code = err.code ?? 'DOMAIN_ERROR';
+    c.set('telemetryError', {
+      code,
+      kind: 'http',
+      message: err.message,
+    });
     return c.json(
-      { error: { code: err.code ?? 'DOMAIN_ERROR', message: err.message } },
+      { error: { code, message: err.message } },
       err.statusCode as ContentfulStatusCode
     );
   }
   console.error('[API] Unhandled error:', err);
+  c.set('telemetryError', {
+    code: 'INTERNAL_ERROR',
+    kind: 'http',
+    message: 'Unexpected error',
+  });
   return c.json(
     { error: { code: 'INTERNAL_ERROR', message: 'Unexpected error' } },
     500

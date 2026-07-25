@@ -23,6 +23,7 @@
     "./catalog": "./src/catalog.ts",
     "./attributes": "./src/attributes.ts",
     "./ids": "./src/ids.ts",
+    "./classify": "./src/classify.ts",
     "./adapters/console": "./src/adapters/console.ts",
     "./adapters/noop": "./src/adapters/noop.ts",
     "./adapters/fake": "./src/adapters/fake.ts"

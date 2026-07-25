@@ -30,6 +30,16 @@ export {
 } from './ids';
 
 export {
+  classifyApiOutcome,
+  isReportableApiOutcome,
+  toApiRequestCompleteAttributes,
+  type ApiOutcomeClassification,
+  type ApiOutcomeClassificationResult,
+  type ApiOutcomeKind,
+  type ClassifyApiOutcomeInput,
+} from './classify';
+
+export {
   prepareTelemetryRecord,
   trimMessage,
   type TelemetryAttributeValue,

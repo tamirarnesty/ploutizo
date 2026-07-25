@@ -20,7 +20,7 @@
 - Form state always uses `useAppForm` from `@ploutizo/ui/components/form` (TanStack Form + Zod). Never use `useState` for form field values.
 - `packages/db` uses `@neondatabase/serverless` WebSocket Pool (not postgres.js). Set `neonConfig.webSocketConstructor` before constructing the Pool.
 - Client-side persistence in `apps/web` must use Zustand stores in `@/lib/prefs/` for localStorage-backed prefs and `@/lib/prefs/sessionPref` for ephemeral sessionStorage prefs. Never call `localStorage`/`sessionStorage` directly in components or hooks. Exception: theme via next-themes. Key naming: `ploutizo:{feature}:{preference}`.
-- API middleware order is invariant: **CORS → Clerk → tenant guard** (see `apps/api/src/index.ts`).
+- API middleware order is invariant: **CORS → request telemetry → Clerk → tenant guard** (see `apps/api/src/index.ts`). Request telemetry owns `X-Request-Id` and one wide `api.request.complete` record per request.
 
 ## Base components
 

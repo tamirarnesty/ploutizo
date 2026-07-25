@@ -8,6 +8,7 @@ watchPatterns = [
   "packages/types/**",
   "packages/utils/**",
   "packages/validators/**",
+  "packages/telemetry/**",
   "package.json",
   "pnpm-lock.yaml",
   "turbo.json",

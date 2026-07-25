@@ -18,6 +18,8 @@ Three `.env` files must exist — see `.env.example` in `apps/web/`, `apps/api/`
 - `CLERK_SECRET_KEY`, `VITE_CLERK_PUBLISHABLE_KEY` / `CLERK_PUBLISHABLE_KEY` — Clerk auth (cloud service, no local substitute)
 - `DATABASE_URL` — Neon serverless Postgres connection string (cloud service, no local DB)
 - `CLERK_WEBHOOK_SECRET` — Clerk webhook signing secret (API only)
+- `APP_ENV` — deployment environment for telemetry (`local` / `preview` / `production`); do not infer from `NODE_ENV`
+- `POSTHOG_PROJECT_TOKEN` — optional; when set, API OTel traces/logs export to PostHog (local still mirrors structured console output)
 
 Without real Clerk keys both servers start but return 500 on all routes (Clerk middleware fails). Without a real `DATABASE_URL` the API cannot reach the database.
 
