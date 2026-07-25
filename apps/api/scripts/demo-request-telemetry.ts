@@ -63,7 +63,9 @@ const main = async () => {
   lines.push('\n=== GET /health (invalid X-Request-Id regenerated) ===');
   lines.push(`status: ${invalid.status}`);
   lines.push(`X-Request-Id: ${invalid.headers.get(REQUEST_ID_HEADER)}`);
-  lines.push(`regenerated: ${invalid.headers.get(REQUEST_ID_HEADER) !== 'bad-id'}`);
+  lines.push(
+    `regenerated: ${invalid.headers.get(REQUEST_ID_HEADER) !== 'bad-id'}`
+  );
 
   console.log(lines.join('\n'));
 };

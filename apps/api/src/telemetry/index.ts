@@ -25,10 +25,7 @@ export {
   requestTelemetry,
   type RequestTelemetryMiddlewareOptions,
 } from './requestTelemetry';
-export {
-  resolveNormalizedRoute,
-  scrubPathToTemplate,
-} from './routeTemplate';
+export { resolveNormalizedRoute, scrubPathToTemplate } from './routeTemplate';
 export {
   startRootSpan,
   createNoopSpanHandle,

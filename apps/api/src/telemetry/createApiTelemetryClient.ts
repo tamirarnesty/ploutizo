@@ -1,13 +1,14 @@
 import { SeverityNumber, logs } from '@opentelemetry/api-logs';
 import {
-  
-  
-  
-  
   createConsoleTelemetryClient,
-  prepareTelemetryRecord
+  prepareTelemetryRecord,
 } from '@ploutizo/telemetry';
-import type {SafeTelemetryRecord, TelemetryClient, TelemetryEventInput, TelemetryLevel} from '@ploutizo/telemetry';
+import type {
+  SafeTelemetryRecord,
+  TelemetryClient,
+  TelemetryEventInput,
+  TelemetryLevel,
+} from '@ploutizo/telemetry';
 import { forceFlushApiOtel } from './otel';
 import type { ApiTelemetryEnv } from './env';
 import type { RequestSpanHandle } from './spanHandle';
@@ -113,9 +114,7 @@ export const createApiTelemetryClient = (
       try {
         await Promise.all([
           consoleClient?.flush() ?? Promise.resolve(),
-          options.env.exportEnabled
-            ? forceFlushApiOtel()
-            : Promise.resolve(),
+          options.env.exportEnabled ? forceFlushApiOtel() : Promise.resolve(),
         ]);
       } catch {
         // ignore

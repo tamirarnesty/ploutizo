@@ -12,13 +12,10 @@ import {
   ATTR_SERVICE_NAME,
   ATTR_SERVICE_VERSION,
 } from '@opentelemetry/semantic-conventions';
-import {  trace } from '@opentelemetry/api';
-import {
-  
-  resolveApiTelemetryEnv
-} from './env';
-import type {Tracer} from '@opentelemetry/api';
-import type {ApiTelemetryEnv} from './env';
+import { trace } from '@opentelemetry/api';
+import { resolveApiTelemetryEnv } from './env';
+import type { Tracer } from '@opentelemetry/api';
+import type { ApiTelemetryEnv } from './env';
 
 export interface ApiOtelRuntime {
   tracer: Tracer;
@@ -122,9 +119,12 @@ export const initApiOtel = (
       tracerProvider.register();
     }
   } catch (error) {
-    console.error('[telemetry] OTel initialization failed; using no-op tracer', {
-      message: error instanceof Error ? error.message : String(error),
-    });
+    console.error(
+      '[telemetry] OTel initialization failed; using no-op tracer',
+      {
+        message: error instanceof Error ? error.message : String(error),
+      }
+    );
     try {
       tracerProvider = new NodeTracerProvider({ resource });
       tracerProvider.register();

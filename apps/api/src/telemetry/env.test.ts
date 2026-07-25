@@ -17,9 +17,9 @@ describe('resolveApiTelemetryEnv', () => {
   });
 
   it('mirrors console only when APP_ENV is explicitly local', () => {
-    expect(
-      resolveApiTelemetryEnv({ APP_ENV: 'local' }).mirrorConsole
-    ).toBe(true);
+    expect(resolveApiTelemetryEnv({ APP_ENV: 'local' }).mirrorConsole).toBe(
+      true
+    );
     expect(
       resolveApiTelemetryEnv({
         APP_ENV: 'production',

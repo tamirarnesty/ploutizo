@@ -61,8 +61,7 @@ export const createSpanHandle = (span: Span): RequestSpanHandle => {
     },
     traceId: spanContext.traceId || undefined,
     spanId: spanContext.spanId || undefined,
-    withActive: (fn) =>
-      context.with(trace.setSpan(context.active(), span), fn),
+    withActive: (fn) => context.with(trace.setSpan(context.active(), span), fn),
   };
 };
 

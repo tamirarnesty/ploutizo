@@ -128,7 +128,10 @@ export const toApiRequestCompleteAttributes = (
   if (typeof input.route === 'string') {
     attributes.route = input.route;
   }
-  if (typeof input.retryCount === 'number' && Number.isFinite(input.retryCount)) {
+  if (
+    typeof input.retryCount === 'number' &&
+    Number.isFinite(input.retryCount)
+  ) {
     attributes.retryCount = input.retryCount;
   }
   if (typeof input.attempt === 'number' && Number.isFinite(input.attempt)) {

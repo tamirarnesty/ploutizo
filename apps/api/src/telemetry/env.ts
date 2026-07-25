@@ -47,9 +47,7 @@ export const resolveApiTelemetryEnv = (
   );
 
   const release =
-    env.APP_RELEASE?.trim() ||
-    env.RAILWAY_GIT_COMMIT_SHA?.trim() ||
-    undefined;
+    env.APP_RELEASE?.trim() || env.RAILWAY_GIT_COMMIT_SHA?.trim() || undefined;
 
   const serviceName = env.OTEL_SERVICE_NAME?.trim() || 'ploutizo-api';
 

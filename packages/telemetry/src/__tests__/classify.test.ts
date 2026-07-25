@@ -8,7 +8,11 @@ import {
 describe('classifyApiOutcome', () => {
   it('treats validation, not-found, auth/tenant, and known domain conflicts as expected', () => {
     expect(
-      classifyApiOutcome({ status: 400, code: 'VALIDATION_ERROR', kind: 'http' })
+      classifyApiOutcome({
+        status: 400,
+        code: 'VALIDATION_ERROR',
+        kind: 'http',
+      })
     ).toEqual({ classification: 'expected', reportable: false });
 
     expect(
@@ -102,7 +106,11 @@ describe('classifyApiOutcome', () => {
 
   it('exposes isReportableApiOutcome as a convenience', () => {
     expect(
-      isReportableApiOutcome({ status: 500, code: 'INTERNAL_ERROR', kind: 'http' })
+      isReportableApiOutcome({
+        status: 500,
+        code: 'INTERNAL_ERROR',
+        kind: 'http',
+      })
     ).toBe(true);
     expect(
       isReportableApiOutcome({ status: 404, code: 'NOT_FOUND', kind: 'http' })

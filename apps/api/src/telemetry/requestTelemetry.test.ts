@@ -1,16 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Hono } from 'hono';
 import {
-  
   createCorrelationId,
-  createFakeTelemetryClient
+  createFakeTelemetryClient,
 } from '@ploutizo/telemetry';
-import type {FakeTelemetryClient} from '@ploutizo/telemetry';
+import type { FakeTelemetryClient } from '@ploutizo/telemetry';
 import { DomainError, NotFoundError } from '../lib/errors';
-import {
-  OPERATION_ID_HEADER,
-  REQUEST_ID_HEADER,
-} from './headers';
+import { OPERATION_ID_HEADER, REQUEST_ID_HEADER } from './headers';
 import { requestTelemetry } from './requestTelemetry';
 import { createNoopSpanHandle } from './spanHandle';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
