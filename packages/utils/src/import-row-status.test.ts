@@ -348,4 +348,23 @@ describe('toImportRowStatusFields', () => {
       reviewAssigneeMemberIds: ['member_1'],
     });
   });
+
+  it('defaults missing assignees to an empty array', () => {
+    expect(
+      toImportRowStatusFields({
+        status: 'needs_review',
+        reviewDate: '2026-05-02',
+        reviewAmount: 4218,
+        reviewType: 'expense',
+        reviewDescription: 'Coffee',
+        parsedDate: null,
+        parsedAmount: null,
+        parsedType: null,
+        parsedDescription: null,
+        reviewCategoryId: 'cat_1',
+      })
+    ).toMatchObject({
+      reviewAssigneeMemberIds: [],
+    });
+  });
 });

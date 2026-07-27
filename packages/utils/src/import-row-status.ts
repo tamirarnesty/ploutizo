@@ -36,6 +36,15 @@ export type ImportRowStatusFields = ImportRowStatusInput & {
   status: ImportRowStatus;
 };
 
+/** Partial runtime row shapes may omit assignees before normalization. */
+export type ImportRowStatusNormalizeInput = Omit<
+  ImportRowStatusInput,
+  'reviewAssigneeMemberIds'
+> & {
+  status: ImportRowStatus;
+  reviewAssigneeMemberIds?: string[] | null;
+};
+
 export type ImportRowStructuralBlocker = Extract<
   ImportRowReviewBlocker,
   'date' | 'amount' | 'description' | 'type'
@@ -121,7 +130,7 @@ export const formatImportRowStructuralInvalidReason = (
 };
 
 export const toImportRowStatusFields = (
-  row: ImportRowStatusInput & { status: ImportRowStatus }
+  row: ImportRowStatusNormalizeInput
 ): ImportRowStatusFields => ({
   status: row.status,
   reviewDate: row.reviewDate ?? null,
@@ -133,7 +142,7 @@ export const toImportRowStatusFields = (
   parsedType: toImportTransactionType(row.parsedType),
   parsedDescription: row.parsedDescription ?? null,
   reviewCategoryId: row.reviewCategoryId ?? null,
-  reviewAssigneeMemberIds: row.reviewAssigneeMemberIds,
+  reviewAssigneeMemberIds: row.reviewAssigneeMemberIds ?? [],
 });
 
 const getReviewPhaseBlockers = (
