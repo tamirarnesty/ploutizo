@@ -47,8 +47,3 @@ export {
 } from './adapters/console';
 
 export { createNoopTelemetryClient } from './adapters/noop';
-
-export {
-  createFakeTelemetryClient,
-  type FakeTelemetryClient,
-} from './adapters/fake';

@@ -89,6 +89,10 @@ export interface TelemetryClient {
 /**
  * Validate catalog membership and normalize correlation IDs / messages.
  * Attributes are passed through as typed flat primitives from the caller.
+ *
+ * Throws {@link TelemetryCatalogError} on invalid operation/surface pairs.
+ * Application code should use {@link TelemetryClient.record} via an adapter;
+ * adapters must catch failures so telemetry never blocks product behavior.
  */
 export const prepareTelemetryRecord = <TOperation extends TelemetryOperation>(
   event: TelemetryEventInput<TOperation>

@@ -54,6 +54,17 @@ type _AssertAllOperationsMapped = [
       Exclude<TelemetryOperation, keyof TelemetryAttributeMap>,
     ];
 
+type _AssertAllSchemasHaveOperations = [
+  Exclude<keyof TelemetryAttributeMap, TelemetryOperation>,
+] extends [never]
+  ? true
+  : [
+      'Orphan attribute schema for unknown operation:',
+      Exclude<keyof TelemetryAttributeMap, TelemetryOperation>,
+    ];
+
 const _allOperationsMapped: _AssertAllOperationsMapped = true;
+const _allSchemasHaveOperations: _AssertAllSchemasHaveOperations = true;
 
 void _allOperationsMapped;
+void _allSchemasHaveOperations;
