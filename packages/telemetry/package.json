@@ -1,0 +1,30 @@
+{
+  "name": "@ploutizo/telemetry",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js}\" && eslint --fix",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js}\"",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@tanstack/eslint-config": "^0.4.0",
+    "@types/node": "^25.5.2",
+    "eslint": "^10.1.0",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./catalog": "./src/catalog.ts",
+    "./attributes": "./src/attributes.ts",
+    "./ids": "./src/ids.ts",
+    "./adapters/console": "./src/adapters/console.ts",
+    "./adapters/noop": "./src/adapters/noop.ts",
+    "./adapters/fake": "./src/adapters/fake.ts"
+  }
+}

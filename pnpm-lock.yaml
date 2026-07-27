@@ -108,7 +108,7 @@ importers:
         version: 1.0.13(@tanstack/react-router@1.170.8(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@tanstack/react-start@1.168.11(crossws@0.4.7(srvx@0.11.18))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@clerk/ui':
         specifier: latest
-        version: 1.25.5(@solana/web3.js@1.98.4(bufferutil@4.1.0)(typescript@6.0.2)(utf-8-validate@6.0.6))(@types/react@19.2.14)(bs58@6.0.0)(react-dom@19.2.5(react@19.2.5))(react-native@0.85.1(@babel/core@7.29.0)(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.5)(utf-8-validate@6.0.6))(react@19.2.5)(typescript@6.0.2)
+        version: 1.26.0(@solana/web3.js@1.98.4(bufferutil@4.1.0)(typescript@6.0.2)(utf-8-validate@6.0.6))(@types/react@19.2.14)(bs58@6.0.0)(react-dom@19.2.5(react@19.2.5))(react-native@0.85.1(@babel/core@7.29.0)(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.5)(utf-8-validate@6.0.6))(react@19.2.5)(typescript@6.0.2)
       '@ploutizo/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -261,6 +261,24 @@ importers:
       drizzle-kit:
         specifier: ^0.31.10
         version: 0.31.10
+      eslint:
+        specifier: ^10.1.0
+        version: 10.2.0(jiti@2.7.0)
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.2
+      vitest:
+        specifier: ^4.1.2
+        version: 4.1.4(@types/node@25.6.0)(jsdom@29.1.1(@noble/hashes@1.8.0))(msw@2.13.3(@types/node@25.6.0)(typescript@6.0.2))(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))
+
+  packages/telemetry:
+    devDependencies:
+      '@tanstack/eslint-config':
+        specifier: ^0.4.0
+        version: 0.4.0(@typescript-eslint/utils@8.58.2(eslint@10.2.0(jiti@2.7.0))(typescript@6.0.2))(eslint@10.2.0(jiti@2.7.0))(typescript@6.0.2)
+      '@types/node':
+        specifier: ^25.5.2
+        version: 25.6.0
       eslint:
         specifier: ^10.1.0
         version: 10.2.0(jiti@2.7.0)
@@ -646,8 +664,8 @@ packages:
     peerDependencies:
       hono: '>=4'
 
-  '@clerk/localizations@4.13.5':
-    resolution: {integrity: sha512-DX2rXqWqf6cxl83PDJGfB6jG0dkBQ6F5pmijxImtH4ARN2FKWi+KseLRk+oV5Czj10qn7HacRN/daqnz1eC7Iw==}
+  '@clerk/localizations@4.13.8':
+    resolution: {integrity: sha512-xM5XlvlvKEKpHwojsqGhrK023izLpnE5ExPdA8qOIQDTWzC3/2CIngliijYL1hyA485zkgew0yHOXwHTJRmoVw==}
     engines: {node: '>=20.9.0'}
 
   '@clerk/localizations@4.4.1':
@@ -661,8 +679,8 @@ packages:
       react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
       react-dom: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
 
-  '@clerk/shared@4.25.5':
-    resolution: {integrity: sha512-pb+pA+88OACHSuE0JhsnV7Qzl1j9UhI9KrXivS831x1BJOtNYORnDqRg3xss2SPFcC46clE9S5QqkRQqv1lSsg==}
+  '@clerk/shared@4.25.8':
+    resolution: {integrity: sha512-ob0E/YJAoDTO4CzHI0nasXGsJUc1cFo0jxPO8xVz/A0+C1R0k1da0EJD8L6F03DzKMn3efSa4mOy3BXTpBVZqw==}
     engines: {node: '>=20.9.0'}
     peerDependencies:
       react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
@@ -718,8 +736,8 @@ packages:
       react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
       react-dom: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
 
-  '@clerk/ui@1.25.5':
-    resolution: {integrity: sha512-ru4l9DqqRGqpYvVhleWOFKh2d3Fi1HTty43aagh+es7XSQ1e09yI11oQdmxrRwgfd/yBdywSMwrlGmvSXaZuxg==}
+  '@clerk/ui@1.26.0':
+    resolution: {integrity: sha512-wvJqM9vWvHNyznJmC5h2RpJ2YMeTfDOcFuPUD2e4vPkv42oqL4CPg84+2zjinCuYbRRf3F6lbVDO5Q3wOEHMYw==}
     engines: {node: '>=20.9.0'}
     peerDependencies:
       react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
@@ -3058,6 +3076,9 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
+  '@stylexjs/stylex@0.19.0':
+    resolution: {integrity: sha512-CnUFp7YMaDLDeemsWOfJgoC/gKM5P/yBNMcpJaE6ChJmXr7s0DJwSeGTTlHJcqqwN9OW1qGtmARWLFhGZN1pTA==}
+
   '@stylistic/eslint-plugin@5.10.0':
     resolution: {integrity: sha512-nPK52ZHvot8Ju/0A4ucSX1dcPV2/1clx0kLcH5wDmrE4naKso7TUC/voUyU1O9OTKTrR6MYip6LP0ogEMQ9jPQ==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
@@ -4249,6 +4270,9 @@ packages:
     peerDependenciesMeta:
       srvx:
         optional: true
+
+  css-mediaquery@0.1.2:
+    resolution: {integrity: sha512-COtn4EROW5dBGlE/4PiKnh6rZpAPxDeFLaEEwt4i10jpDMFt2EhQGS79QmmrO+iKCHv0PU/HrOWEhijFd1x99Q==}
 
   css-select@5.2.2:
     resolution: {integrity: sha512-TizTzUddG/xYLA3NXodFM0fSbNizXjOKhqiQQwvhlspadZokn1KDy0NZFS0wuEubIYAV5/c1/lAr0TaaFXEXzw==}
@@ -6566,6 +6590,9 @@ packages:
     resolution: {integrity: sha512-laJTa3Jb+VQpaC6DseHhF7dXVqHTfJPCRDaEbid/drOhgitgYku/letMUqOXFoWV0zIIUbjpdH2t+tYj4bQMRQ==}
     engines: {node: '>=8'}
 
+  styleq@0.2.1:
+    resolution: {integrity: sha512-L0TR0NQb+X4/ktDEKmjWyp27gla+LUYi/by5k5SjKXf6/pvZP7wbwEB5J+tqxdFVPgzbsuz+d4RTScO/QZquBw==}
+
   stylis@4.2.0:
     resolution: {integrity: sha512-Orov6g6BB1sDfYgzWfTHDOxamtX1bE/zo104Dh9e6fqJ3PooipYyfJ0pUmrZO2wAvO8YbEyeFrkV91XTsGMSrw==}
 
@@ -7528,9 +7555,9 @@ snapshots:
       - react
       - react-dom
 
-  '@clerk/localizations@4.13.5(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
+  '@clerk/localizations@4.13.8(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
     dependencies:
-      '@clerk/shared': 4.25.5(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@clerk/shared': 4.25.8(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
     transitivePeerDependencies:
       - react
       - react-dom
@@ -7549,7 +7576,7 @@ snapshots:
       react-dom: 19.2.5(react@19.2.5)
       tslib: 2.8.1
 
-  '@clerk/shared@4.25.5(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
+  '@clerk/shared@4.25.8(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
     dependencies:
       '@tanstack/query-core': 5.100.14
       dequal: 2.0.3
@@ -7603,10 +7630,10 @@ snapshots:
       react-dom: 19.2.5(react@19.2.5)
       tslib: 2.8.1
 
-  '@clerk/ui@1.25.5(@solana/web3.js@1.98.4(bufferutil@4.1.0)(typescript@6.0.2)(utf-8-validate@6.0.6))(@types/react@19.2.14)(bs58@6.0.0)(react-dom@19.2.5(react@19.2.5))(react-native@0.85.1(@babel/core@7.29.0)(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.5)(utf-8-validate@6.0.6))(react@19.2.5)(typescript@6.0.2)':
+  '@clerk/ui@1.26.0(@solana/web3.js@1.98.4(bufferutil@4.1.0)(typescript@6.0.2)(utf-8-validate@6.0.6))(@types/react@19.2.14)(bs58@6.0.0)(react-dom@19.2.5(react@19.2.5))(react-native@0.85.1(@babel/core@7.29.0)(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.5)(utf-8-validate@6.0.6))(react@19.2.5)(typescript@6.0.2)':
     dependencies:
-      '@clerk/localizations': 4.13.5(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@clerk/shared': 4.25.5(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@clerk/localizations': 4.13.8(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@clerk/shared': 4.25.8(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@emotion/cache': 11.11.0
       '@emotion/react': 11.11.1(@types/react@19.2.14)(react@19.2.5)
       '@floating-ui/react': 0.27.12(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -7614,6 +7641,7 @@ snapshots:
       '@solana/wallet-adapter-base': 0.9.27(@solana/web3.js@1.98.4(bufferutil@4.1.0)(typescript@6.0.2))
       '@solana/wallet-adapter-react': 0.15.39(@solana/web3.js@1.98.4(bufferutil@4.1.0)(typescript@6.0.2)(utf-8-validate@6.0.6))(bs58@6.0.0)(react-native@0.85.1(@babel/core@7.29.0)(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.5)(utf-8-validate@6.0.6))(react@19.2.5)(typescript@6.0.2)
       '@solana/wallet-standard': 1.1.4(@solana/wallet-adapter-base@0.9.27(@solana/web3.js@1.98.4(bufferutil@4.1.0)(typescript@6.0.2)))(@solana/web3.js@1.98.4(bufferutil@4.1.0)(typescript@6.0.2))(bs58@6.0.0)(react@19.2.5)
+      '@stylexjs/stylex': 0.19.0
       '@swc/helpers': 0.5.21
       copy-to-clipboard: 3.3.3
       core-js: 3.47.0
@@ -9279,7 +9307,7 @@ snapshots:
       debug: 4.4.3
       invariant: 2.2.4
       metro: 0.84.3(bufferutil@4.1.0)
-      metro-config: 0.84.3(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+      metro-config: 0.84.3(bufferutil@4.1.0)
       metro-core: 0.84.3
       semver: 7.7.4
     transitivePeerDependencies:
@@ -9869,6 +9897,12 @@ snapshots:
   '@stablelib/base64@1.0.1': {}
 
   '@standard-schema/spec@1.1.0': {}
+
+  '@stylexjs/stylex@0.19.0':
+    dependencies:
+      css-mediaquery: 0.1.2
+      invariant: 2.2.4
+      styleq: 0.2.1
 
   '@stylistic/eslint-plugin@5.10.0(eslint@10.2.0(jiti@2.7.0))':
     dependencies:
@@ -11155,6 +11189,8 @@ snapshots:
     optionalDependencies:
       srvx: 0.11.18
 
+  css-mediaquery@0.1.2: {}
+
   css-select@5.2.2:
     dependencies:
       boolbase: 1.0.0
@@ -12371,6 +12407,21 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  metro-config@0.84.3(bufferutil@4.1.0):
+    dependencies:
+      connect: 3.7.0
+      flow-enums-runtime: 0.0.6
+      jest-validate: 29.7.0
+      metro: 0.84.3(bufferutil@4.1.0)
+      metro-cache: 0.84.3
+      metro-core: 0.84.3
+      metro-runtime: 0.84.3
+      yaml: 2.8.3
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+
   metro-config@0.84.3(bufferutil@4.1.0)(utf-8-validate@6.0.6):
     dependencies:
       connect: 3.7.0
@@ -12522,7 +12573,7 @@ snapshots:
       metro-babel-transformer: 0.84.3
       metro-cache: 0.84.3
       metro-cache-key: 0.84.3
-      metro-config: 0.84.3(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+      metro-config: 0.84.3(bufferutil@4.1.0)
       metro-core: 0.84.3
       metro-file-map: 0.84.3
       metro-resolver: 0.84.3
@@ -13697,6 +13748,8 @@ snapshots:
   strip-indent@3.0.0:
     dependencies:
       min-indent: 1.0.1
+
+  styleq@0.2.1: {}
 
   stylis@4.2.0: {}
 
