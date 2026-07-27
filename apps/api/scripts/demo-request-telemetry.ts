@@ -1,8 +1,6 @@
 import { Hono } from 'hono';
-import {
-  createCorrelationId,
-  createFakeTelemetryClient,
-} from '@ploutizo/telemetry';
+import { createCorrelationId } from '@ploutizo/telemetry';
+import { createFakeTelemetryClient } from '@ploutizo/telemetry/adapters/fake';
 import { REQUEST_ID_HEADER } from '../src/telemetry/headers';
 import { requestTelemetry } from '../src/telemetry/requestTelemetry';
 import { createNoopSpanHandle } from '../src/telemetry/spanHandle';

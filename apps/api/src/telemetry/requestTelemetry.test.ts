@@ -1,10 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Hono } from 'hono';
-import {
-  createCorrelationId,
-  createFakeTelemetryClient,
-} from '@ploutizo/telemetry';
-import type { FakeTelemetryClient } from '@ploutizo/telemetry';
+import { createCorrelationId } from '@ploutizo/telemetry';
+import { createFakeTelemetryClient } from '@ploutizo/telemetry/adapters/fake';
+import type { FakeTelemetryClient } from '@ploutizo/telemetry/adapters/fake';
 import { DomainError, NotFoundError } from '../lib/errors';
 import { OPERATION_ID_HEADER, REQUEST_ID_HEADER } from './headers';
 import { requestTelemetry } from './requestTelemetry';
