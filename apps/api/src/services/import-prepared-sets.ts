@@ -23,10 +23,7 @@ import {
   lockPreparedSetRevisionForBatch,
   toImportPreparedSet,
 } from '@/lib/queries/import-prepared-sets';
-import {
-  fetchDraftSummaryById,
-  listDraftRows,
-} from '@/lib/queries/imports';
+import { fetchDraftSummaryById, listDraftRows } from '@/lib/queries/imports';
 
 export const buildReviewedValuesSnapshot = (
   row: ImportDraftRowRecord
