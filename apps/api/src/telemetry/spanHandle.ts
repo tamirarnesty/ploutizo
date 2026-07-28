@@ -88,20 +88,3 @@ export const startRootSpan = (
     return createNoopSpanHandle();
   }
 };
-
-/**
- * Start a high-level child span under the active request context.
- * Callers must omit SQL, params, bodies, credentials, and domain identifiers.
- */
-export const startServiceSpan = (
-  tracer: Tracer,
-  name: string,
-  attributes?: Record<string, string | number | boolean>
-): RequestSpanHandle => {
-  try {
-    const span = tracer.startSpan(name, { attributes });
-    return createSpanHandle(span);
-  } catch {
-    return createNoopSpanHandle();
-  }
-};

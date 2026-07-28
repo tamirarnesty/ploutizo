@@ -4,6 +4,7 @@
 // Per D-02.
 
 import { zValidator } from '@hono/zod-validator';
+import { respondWithApiError } from './apiErrorResponse';
 import type { ZodSchema } from 'zod';
 import type { ValidationTargets } from 'hono';
 
@@ -19,9 +20,10 @@ export const appValidator = <T extends ZodSchema>(
           result.error.issues
         );
       }
-      return c.json(
-        { error: { code: 'VALIDATION_ERROR', errors: result.error.issues } },
-        400
-      );
+      return respondWithApiError(c, {
+        code: 'VALIDATION_ERROR',
+        status: 400,
+        errors: result.error.issues,
+      });
     }
   });

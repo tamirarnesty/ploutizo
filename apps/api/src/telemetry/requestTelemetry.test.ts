@@ -4,10 +4,13 @@ import { createCorrelationId } from '@ploutizo/telemetry';
 import { createFakeTelemetryClient } from '@ploutizo/telemetry/adapters/fake';
 import type { FakeTelemetryClient } from '@ploutizo/telemetry/adapters/fake';
 import { DomainError, NotFoundError } from '../lib/errors';
+import {
+  registerApiErrorHandlers,
+  respondWithApiError,
+} from '../lib/apiErrorResponse';
 import { OPERATION_ID_HEADER, REQUEST_ID_HEADER } from './headers';
 import { requestTelemetry } from './requestTelemetry';
 import { createNoopSpanHandle } from './spanHandle';
-import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import type { AppEnv } from '../types';
 import type { ApiTelemetryEnv } from './env';
 
@@ -50,44 +53,14 @@ const buildApp = (fake: FakeTelemetryClient) => {
     return c.json({ data: { ok: true } });
   });
   app.get('/api/tenant-required', (c) =>
-    c.json(
-      {
-        error: {
-          code: 'TENANT_REQUIRED',
-          message: 'No active organisation.',
-        },
-      },
-      401
-    )
+    respondWithApiError(c, {
+      code: 'TENANT_REQUIRED',
+      message: 'No active organisation.',
+      status: 401,
+    })
   );
 
-  app.notFound((c) => {
-    c.set('telemetryError', { code: 'NOT_FOUND', kind: 'http' });
-    return c.json({ error: { code: 'NOT_FOUND', message: 'Not found' } }, 404);
-  });
-
-  app.onError((err, c) => {
-    if (err instanceof NotFoundError) {
-      c.set('telemetryError', { code: 'NOT_FOUND', kind: 'http' });
-      return c.json(
-        { error: { code: 'NOT_FOUND', message: err.message } },
-        404
-      );
-    }
-    if (err instanceof DomainError) {
-      const code = err.code ?? 'DOMAIN_ERROR';
-      c.set('telemetryError', { code, kind: 'http' });
-      return c.json(
-        { error: { code, message: err.message } },
-        err.statusCode as ContentfulStatusCode
-      );
-    }
-    c.set('telemetryError', { code: 'INTERNAL_ERROR', kind: 'http' });
-    return c.json(
-      { error: { code: 'INTERNAL_ERROR', message: 'Unexpected error' } },
-      500
-    );
-  });
+  registerApiErrorHandlers(app);
 
   return app;
 };
@@ -181,7 +154,7 @@ describe('requestTelemetry middleware', () => {
     });
   });
 
-  it('recovers machine codes from early-return JSON error bodies', async () => {
+  it('classifies errors when telemetry context is set via respondWithApiError', async () => {
     const fake = createFakeTelemetryClient();
     const res = await buildApp(fake).request('/api/tenant-required');
 
@@ -224,23 +197,14 @@ describe('requestTelemetry middleware', () => {
     expect(fake.records).toHaveLength(0);
   });
 
-  it('keeps flush failures from delaying the response path', async () => {
+  it('does not flush telemetry on each request', async () => {
     const fake = createFakeTelemetryClient();
-    const flush = vi.fn(
-      () =>
-        new Promise<void>((resolve) => {
-          setTimeout(resolve, 500);
-        })
-    );
+    const flush = vi.fn(async () => undefined);
     fake.flush = flush;
 
-    const started = Date.now();
     const res = await buildApp(fake).request('/health');
-    const elapsed = Date.now() - started;
 
     expect(res.status).toBe(200);
-    expect(flush).toHaveBeenCalled();
-    // Fire-and-forget flush budget is 50ms; response must not wait on the 500ms flush.
-    expect(elapsed).toBeLessThan(200);
+    expect(flush).not.toHaveBeenCalled();
   });
 });

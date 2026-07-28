@@ -1,5 +1,6 @@
 import { createMiddleware } from 'hono/factory';
 import { Webhook } from 'svix';
+import { respondWithApiError } from '../lib/apiErrorResponse';
 import type { WebhookEvent } from '@clerk/backend';
 
 // webhookAuth: extracts Svix signature verification from the webhooks route handler.
@@ -12,12 +13,11 @@ export const webhookAuth = () =>
     async (c, next) => {
       const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
       if (!webhookSecret) {
-        return c.json(
-          {
-            error: { code: 'CONFIG_ERROR', message: 'Missing webhook secret.' },
-          },
-          500
-        );
+        return respondWithApiError(c, {
+          code: 'CONFIG_ERROR',
+          message: 'Missing webhook secret.',
+          status: 500,
+        });
       }
       const svix = new Webhook(webhookSecret);
       const payload = await c.req.text();
@@ -34,15 +34,11 @@ export const webhookAuth = () =>
         if (process.env.NODE_ENV !== 'production') {
           console.warn('[webhooks/clerk] Svix verify failed:', detail);
         }
-        return c.json(
-          {
-            error: {
-              code: 'INVALID_SIGNATURE',
-              message: 'Webhook signature verification failed.',
-            },
-          },
-          400
-        );
+        return respondWithApiError(c, {
+          code: 'INVALID_SIGNATURE',
+          message: 'Webhook signature verification failed.',
+          status: 400,
+        });
       }
       c.set('webhookEvent', event);
       await next();

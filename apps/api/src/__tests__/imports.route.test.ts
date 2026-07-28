@@ -1,5 +1,5 @@
-import { Hono } from 'hono';
 import { describe, expect, it, vi } from 'vitest';
+import { createRouteTestApp } from './testUtils';
 import type { AppEnv } from '@/types';
 import { importsRouter } from '@/routes/imports';
 import {
@@ -22,12 +22,13 @@ vi.mock('@/services/imports', () => ({
   updateImportDraftRowSelection: vi.fn(),
 }));
 
-const app = new Hono<AppEnv>();
-app.use('*', async (c, next) => {
-  c.set('orgId', 'org_1');
-  await next();
+const app = createRouteTestApp<AppEnv>((testApp) => {
+  testApp.use('*', async (c, next) => {
+    c.set('orgId', 'org_1');
+    await next();
+  });
+  testApp.route('/', importsRouter);
 });
-app.route('/', importsRouter);
 
 describe('imports router', () => {
   it('returns import targets from the service', async () => {

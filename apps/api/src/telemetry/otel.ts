@@ -51,10 +51,21 @@ const withTimeout = async (
  * Initialize API OpenTelemetry exporters to PostHog.
  * Safe to call once at process boot; failures degrade to a local tracer.
  */
+const warnIfInferredPreviewEnv = (env: ApiTelemetryEnv) => {
+  if (!env.exportEnabled || env.appEnv !== 'preview') return;
+  if (process.env.APP_ENV?.trim()) return;
+
+  console.warn(
+    '[telemetry] POSTHOG_PROJECT_TOKEN is set but APP_ENV is unset; deployment.environment defaults to "preview". Set APP_ENV=production on production deploys.'
+  );
+};
+
 export const initApiOtel = (
   env: ApiTelemetryEnv = resolveApiTelemetryEnv()
 ): ApiOtelRuntime => {
   if (runtime) return runtime;
+
+  warnIfInferredPreviewEnv(env);
 
   const resourceAttrs: Record<string, string> = {
     [ATTR_SERVICE_NAME]: env.serviceName,

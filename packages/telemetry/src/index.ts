@@ -31,8 +31,6 @@ export {
 
 export {
   classifyApiOutcome,
-  isReportableApiOutcome,
-  toApiRequestCompleteAttributes,
   type ApiOutcomeClassification,
   type ApiOutcomeClassificationResult,
   type ApiOutcomeKind,

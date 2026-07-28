@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { Hono } from 'hono';
 import { householdsRouter } from '../routes/households';
+import { createRouteTestApp } from './testUtils';
 
 vi.mock('@clerk/hono', () => ({
   getAuth: vi.fn(() => ({ orgId: 'org_test123', userId: 'user_clerk_abc' })),
@@ -31,8 +31,9 @@ vi.mock('@ploutizo/db/schema', () => ({
   users: {},
 }));
 
-const app = new Hono();
-app.route('/', householdsRouter);
+const app = createRouteTestApp((testApp) => {
+  testApp.route('/', householdsRouter);
+});
 
 beforeEach(() => {
   vi.resetAllMocks();

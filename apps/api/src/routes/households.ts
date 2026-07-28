@@ -5,7 +5,6 @@ import {
   updateHouseholdSettingsSchema,
 } from '@ploutizo/validators';
 import { appValidator } from '../lib/validator';
-import { DomainError } from '../lib/errors';
 import {
   getHousehold,
   getHouseholdSettings,
@@ -17,7 +16,6 @@ import {
   updateHouseholdSettings,
 } from '../services/households';
 import type { AppEnv } from '../types';
-import type { ContentfulStatusCode } from 'hono/utils/http-status';
 
 const householdsRouter = new Hono<AppEnv>();
 
@@ -61,18 +59,8 @@ householdsRouter.post(
   async (c) => {
     const orgId = c.get('orgId');
     const data = c.req.valid('json');
-    try {
-      const result = await inviteMember(orgId, data);
-      return c.json({ data: result });
-    } catch (err) {
-      if (err instanceof DomainError) {
-        return c.json(
-          { error: { code: err.code ?? 'DOMAIN_ERROR' } },
-          err.statusCode as ContentfulStatusCode
-        );
-      }
-      throw err;
-    }
+    const result = await inviteMember(orgId, data);
+    return c.json({ data: result });
   }
 );
 
@@ -82,36 +70,16 @@ householdsRouter.delete('/members/:memberId', async (c) => {
   const orgId = c.get('orgId');
   const { userId: callerClerkId } = getAuth(c);
   const { memberId } = c.req.param();
-  try {
-    const result = await removeMember(memberId, orgId, callerClerkId);
-    return c.json({ data: result });
-  } catch (err) {
-    if (err instanceof DomainError) {
-      return c.json(
-        { error: { code: err.code ?? 'DOMAIN_ERROR' } },
-        err.statusCode as ContentfulStatusCode
-      );
-    }
-    throw err;
-  }
+  const result = await removeMember(memberId, orgId, callerClerkId);
+  return c.json({ data: result });
 });
 
 // GET /invitations — list pending and expired invitations for the current org
 // SECURITY: orgId comes from c.get('orgId') (set by tenantGuard from JWT) — never from client
 householdsRouter.get('/invitations', async (c) => {
   const orgId = c.get('orgId');
-  try {
-    const rows = await listInvitations(orgId);
-    return c.json({ data: rows });
-  } catch (err) {
-    if (err instanceof DomainError) {
-      return c.json(
-        { error: { code: err.code ?? 'DOMAIN_ERROR' } },
-        err.statusCode as ContentfulStatusCode
-      );
-    }
-    throw err;
-  }
+  const rows = await listInvitations(orgId);
+  return c.json({ data: rows });
 });
 
 // DELETE /invitations/:invitationId — revoke an invitation (calls Clerk POST .../revoke under the hood)
@@ -120,22 +88,12 @@ householdsRouter.delete('/invitations/:invitationId', async (c) => {
   const orgId = c.get('orgId');
   const { userId: requestingUserId } = getAuth(c);
   const { invitationId } = c.req.param();
-  try {
-    const result = await revokeInvitation(
-      orgId,
-      invitationId,
-      requestingUserId ?? ''
-    );
-    return c.json({ data: result });
-  } catch (err) {
-    if (err instanceof DomainError) {
-      return c.json(
-        { error: { code: err.code ?? 'DOMAIN_ERROR' } },
-        err.statusCode as ContentfulStatusCode
-      );
-    }
-    throw err;
-  }
+  const result = await revokeInvitation(
+    orgId,
+    invitationId,
+    requestingUserId ?? ''
+  );
+  return c.json({ data: result });
 });
 
 export { householdsRouter };

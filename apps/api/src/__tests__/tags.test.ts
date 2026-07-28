@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Hono } from 'hono';
 import { tagsRouter } from '../routes/tags';
+import { createRouteTestApp } from './testUtils';
 
 vi.mock('@clerk/hono', () => ({
   getAuth: vi.fn(() => ({ orgId: 'org_test123' })),
@@ -39,8 +39,9 @@ vi.mock('@ploutizo/db', () => ({
 }));
 vi.mock('@ploutizo/db/schema', () => ({ tags: {} }));
 
-const app = new Hono();
-app.route('/', tagsRouter);
+const app = createRouteTestApp((testApp) => {
+  testApp.route('/', tagsRouter);
+});
 
 describe('POST /api/tags', () => {
   it('returns 201 with created tag', async () => {

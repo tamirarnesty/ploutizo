@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  classifyApiOutcome,
-  isReportableApiOutcome,
-  toApiRequestCompleteAttributes,
-} from '../classify';
+import { classifyApiOutcome } from '../classify';
 
 describe('classifyApiOutcome', () => {
   it('treats validation, not-found, auth/tenant, and known domain conflicts as expected', () => {
@@ -33,6 +29,38 @@ describe('classifyApiOutcome', () => {
 
     expect(
       classifyApiOutcome({ status: 422, code: 'DOMAIN_ERROR', kind: 'http' })
+    ).toEqual({ classification: 'expected', reportable: false });
+
+    expect(
+      classifyApiOutcome({
+        status: 403,
+        code: 'SELF_REMOVAL_FORBIDDEN',
+        kind: 'http',
+      })
+    ).toEqual({ classification: 'expected', reportable: false });
+
+    expect(
+      classifyApiOutcome({
+        status: 409,
+        code: 'ALREADY_MEMBER',
+        kind: 'http',
+      })
+    ).toEqual({ classification: 'expected', reportable: false });
+
+    expect(
+      classifyApiOutcome({
+        status: 400,
+        code: 'TRANSACTION_ACCOUNT_POLICY_VIOLATION',
+        kind: 'http',
+      })
+    ).toEqual({ classification: 'expected', reportable: false });
+
+    expect(
+      classifyApiOutcome({
+        status: 400,
+        code: 'IMPORT_FILE_CORRUPT',
+        kind: 'http',
+      })
     ).toEqual({ classification: 'expected', reportable: false });
   });
 
@@ -83,13 +111,35 @@ describe('classifyApiOutcome', () => {
     });
   });
 
-  it('treats unrecognized machine codes as unexpected/reportable', () => {
+  it('treats any 4xx machine code as an expected application outcome', () => {
     expect(
       classifyApiOutcome({
         status: 403,
-        code: 'SELF_REMOVAL_FORBIDDEN',
+        code: 'FUTURE_UNKNOWN_CODE',
         kind: 'http',
       })
+    ).toEqual({ classification: 'expected', reportable: false });
+
+    expect(
+      classifyApiOutcome({
+        status: 400,
+        code: 'TYPO_IN_NEW_HANDLER',
+        kind: 'http',
+      })
+    ).toEqual({ classification: 'expected', reportable: false });
+  });
+
+  it('still reportables explicit system failure codes on 4xx', () => {
+    expect(
+      classifyApiOutcome({
+        status: 400,
+        code: 'INTERNAL_ERROR',
+        kind: 'http',
+      })
+    ).toEqual({ classification: 'unexpected', reportable: true });
+
+    expect(
+      classifyApiOutcome({ status: 409, code: 'UNKNOWN', kind: 'http' })
     ).toEqual({ classification: 'unexpected', reportable: true });
   });
 
@@ -101,49 +151,6 @@ describe('classifyApiOutcome', () => {
     expect(classifyApiOutcome({ status: 201, kind: 'http' })).toEqual({
       classification: 'expected',
       reportable: false,
-    });
-  });
-
-  it('exposes isReportableApiOutcome as a convenience', () => {
-    expect(
-      isReportableApiOutcome({
-        status: 500,
-        code: 'INTERNAL_ERROR',
-        kind: 'http',
-      })
-    ).toBe(true);
-    expect(
-      isReportableApiOutcome({ status: 404, code: 'NOT_FOUND', kind: 'http' })
-    ).toBe(false);
-  });
-});
-
-describe('toApiRequestCompleteAttributes', () => {
-  it('exposes only catalog-safe flat fields', () => {
-    expect(
-      toApiRequestCompleteAttributes({
-        status: 500,
-        method: 'GET',
-        route: '/api/accounts/:id',
-        code: 'INTERNAL_ERROR',
-        kind: 'http',
-        classification: 'unexpected',
-        retryCount: 0,
-        attempt: 1,
-        // Sensitive / non-catalog fields must be ignored if passed loosely.
-        message: 'should not appear',
-        orgId: 'org_123',
-        body: { secret: true },
-      } as never)
-    ).toEqual({
-      status: 500,
-      method: 'GET',
-      route: '/api/accounts/:id',
-      code: 'INTERNAL_ERROR',
-      kind: 'http',
-      classification: 'unexpected',
-      retryCount: 0,
-      attempt: 1,
     });
   });
 });

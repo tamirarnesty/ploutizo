@@ -5,9 +5,9 @@ import {
   createNoopTelemetryClient,
   parseCorrelationId,
   resolveCorrelationId,
-  toApiRequestCompleteAttributes,
 } from '@ploutizo/telemetry';
 import type {
+  ApiRequestCompleteAttributes,
   HttpMethod,
   TelemetryClient,
   TelemetryLevel,
@@ -21,16 +21,9 @@ import {
   REQUEST_ID_HEADER,
 } from './headers';
 import { getApiTelemetryEnv, getApiTracer } from './otel';
-import {
-  readErrorContextFromResponse,
-  sanitizeCorrelationHeader,
-} from './readErrorContext';
-import { resolveNormalizedRoute, scrubPathToTemplate } from './routeTemplate';
+import { sanitizeCorrelationHeader } from './readErrorContext';
+import { resolveNormalizedRoute } from './routeTemplate';
 import { createNoopSpanHandle, startRootSpan } from './spanHandle';
-import type {
-  RequestTelemetryState,
-  TelemetryErrorContext,
-} from './requestContext';
 import type { ApiTelemetryEnv } from './env';
 import type { RequestSpanHandle } from './spanHandle';
 import type { AppEnv } from '../types';
@@ -42,8 +35,6 @@ const HTTP_METHODS = new Set<HttpMethod>([
   'PATCH',
   'DELETE',
 ]);
-
-const FLUSH_BUDGET_MS = 50;
 
 export interface RequestTelemetryMiddlewareOptions {
   env?: ApiTelemetryEnv;
@@ -58,7 +49,6 @@ export interface RequestTelemetryMiddlewareOptions {
     requestId: string;
     operationId?: string;
     method: string;
-    path: string;
     env: ApiTelemetryEnv;
   }) => RequestSpanHandle;
 }
@@ -73,15 +63,6 @@ const describeOutcome = (
   if (reportable) return { outcome: 'failure', level: 'error' };
   if (status >= 400) return { outcome: 'failure', level: 'warn' };
   return { outcome: 'success', level: 'info' };
-};
-
-const fireAndForgetFlush = (client: TelemetryClient) => {
-  void Promise.race([
-    client.flush().catch(() => undefined),
-    new Promise<void>((resolve) => {
-      setTimeout(resolve, FLUSH_BUDGET_MS);
-    }),
-  ]);
 };
 
 const defaultCreateClient: NonNullable<
@@ -102,14 +83,12 @@ const defaultCreateClient: NonNullable<
 
 const defaultStartSpan: NonNullable<
   RequestTelemetryMiddlewareOptions['startSpan']
-> = ({ requestId, operationId, method, path, env }) => {
+> = ({ requestId, operationId, method, env }) => {
   try {
     return startRootSpan(getApiTracer(), {
       name: 'api.request',
       attributes: {
         'http.method': method,
-        // Scrub before attach — never export raw entity IDs on spans.
-        'http.route': scrubPathToTemplate(path),
         'request.id': requestId,
         'deployment.environment': env.appEnv,
         'service.name': env.serviceName,
@@ -152,7 +131,6 @@ export const requestTelemetry = (
       requestId,
       operationId,
       method: c.req.method,
-      path: c.req.path,
       env,
     });
 
@@ -170,20 +148,6 @@ export const requestTelemetry = (
       env,
     });
 
-    const state: RequestTelemetryState = {
-      requestId,
-      operationId,
-      client,
-      span,
-      posthogSessionId,
-      posthogDistinctId,
-    };
-
-    c.set('requestId', requestId);
-    if (operationId) c.set('operationId', operationId);
-    c.set('telemetry', client);
-    c.set('requestTelemetry', state);
-
     try {
       await span.withActive(async () => {
         await next();
@@ -194,9 +158,7 @@ export const requestTelemetry = (
         const route = resolveNormalizedRoute(c);
         const method = asHttpMethod(c.req.method);
         const durationMs = Math.max(0, now() - startedAt);
-        const explicitError = c.get('telemetryError');
-        const errorContext: TelemetryErrorContext | undefined =
-          explicitError ?? (await readErrorContextFromResponse(c));
+        const errorContext = c.get('telemetryError');
 
         const classification = classifyApiOutcome({
           status,
@@ -238,7 +200,7 @@ export const requestTelemetry = (
           requestId,
           operationId,
           durationMs,
-          attributes: toApiRequestCompleteAttributes({
+          attributes: {
             status,
             method,
             route,
@@ -250,13 +212,12 @@ export const requestTelemetry = (
             release: env.release,
             traceId: span.traceId,
             spanId: span.spanId,
-          }),
+          } satisfies ApiRequestCompleteAttributes,
         });
       } catch {
         // Completion emission must never alter the response.
       } finally {
         span.end();
-        fireAndForgetFlush(client);
       }
     }
   });

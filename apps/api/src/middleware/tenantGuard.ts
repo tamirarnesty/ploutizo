@@ -4,6 +4,7 @@ import { db } from '@ploutizo/db';
 import { ensureOrgSeeded } from '@ploutizo/db/seeds';
 import { orgs } from '@ploutizo/db/schema';
 import { ensureCallerSyncedToOrg } from '../services/clerkMembershipSync';
+import { respondWithApiError } from '../lib/apiErrorResponse';
 import { redactIdentifier } from '../lib/redact';
 import type { AppEnv } from '../types';
 
@@ -44,15 +45,11 @@ export const tenantGuard = () =>
   createMiddleware<AppEnv>(async (c, next) => {
     const { orgId, userId } = getAuth(c);
     if (!orgId) {
-      return c.json(
-        {
-          error: {
-            code: 'TENANT_REQUIRED',
-            message: 'No active organisation.',
-          },
-        },
-        401
-      );
+      return respondWithApiError(c, {
+        code: 'TENANT_REQUIRED',
+        message: 'No active organisation.',
+        status: 401,
+      });
     }
     if (!touchedOrgBootstrap.has(orgId)) {
       await db.insert(orgs).values({ id: orgId }).onConflictDoNothing();

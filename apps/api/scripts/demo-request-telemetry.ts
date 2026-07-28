@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { createCorrelationId } from '@ploutizo/telemetry';
 import { createFakeTelemetryClient } from '@ploutizo/telemetry/adapters/fake';
+import { registerApiErrorHandlers } from '../src/lib/apiErrorResponse';
 import { REQUEST_ID_HEADER } from '../src/telemetry/headers';
 import { requestTelemetry } from '../src/telemetry/requestTelemetry';
 import { createNoopSpanHandle } from '../src/telemetry/spanHandle';
@@ -29,13 +30,7 @@ const main = async () => {
   app.get('/api/boom', () => {
     throw new Error('boom');
   });
-  app.onError((_err, c) => {
-    c.set('telemetryError', { code: 'INTERNAL_ERROR', kind: 'http' });
-    return c.json(
-      { error: { code: 'INTERNAL_ERROR', message: 'Unexpected error' } },
-      500
-    );
-  });
+  registerApiErrorHandlers(app);
 
   const lines: string[] = [];
   const inbound = createCorrelationId();

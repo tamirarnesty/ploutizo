@@ -158,12 +158,17 @@ export const createSettlement = async (
   const account = await fetchAccountForSettlement(orgId, data.accountId);
   if (!account) throw new NotFoundError('Account not found');
   if (account.archivedAt !== null) {
-    throw new DomainError(400, 'Cannot settle an archived account');
+    throw new DomainError(
+      400,
+      'Cannot settle an archived account',
+      'SETTLEMENT_ARCHIVED_ACCOUNT'
+    );
   }
   if (account.type !== 'credit_card') {
     throw new DomainError(
       400,
-      'Settlement can only be recorded against a credit card account'
+      'Settlement can only be recorded against a credit card account',
+      'SETTLEMENT_INVALID_ACCOUNT_TYPE'
     );
   }
 
@@ -177,7 +182,8 @@ export const createSettlement = async (
   if (data.counterpartAccountId === data.accountId) {
     throw new DomainError(
       400,
-      'Paid-from account must differ from the card being settled'
+      'Paid-from account must differ from the card being settled',
+      'SETTLEMENT_SAME_ACCOUNT'
     );
   }
 
@@ -209,7 +215,8 @@ export const createSettlement = async (
     if (!sameMemberIdSet(submittedIds, expectedIds)) {
       throw new DomainError(
         400,
-        'Shared settlement assignees must match all shared participants on this card'
+        'Shared settlement assignees must match all shared participants on this card',
+        'SETTLEMENT_ASSIGNEE_MISMATCH'
       );
     }
     const memberIds = [...expectedIds];

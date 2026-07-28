@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Hono } from 'hono';
 import { db } from '@ploutizo/db';
+import { createRouteTestApp } from './testUtils';
 import type { Mock } from 'vitest';
 import type { MockDbTransactionClient } from './testUtils';
 import { accountsRouter } from '@/routes/accounts';
@@ -115,8 +115,9 @@ vi.mock('@ploutizo/db/schema', () => ({
   users: {},
 }));
 
-const app = new Hono();
-app.route('/', accountsRouter);
+const app = createRouteTestApp((testApp) => {
+  testApp.route('/', accountsRouter);
+});
 
 describe('GET /api/accounts', () => {
   it('returns 200 with data array', async () => {

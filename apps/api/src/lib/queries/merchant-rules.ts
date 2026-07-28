@@ -63,7 +63,9 @@ export const updateMerchantRule = async (
 
 // DELETE /:id — hard delete rule
 export const deleteMerchantRule = async (id: string, orgId: string) => {
-  await db
+  const rows = await db
     .delete(merchantRules)
-    .where(and(eq(merchantRules.id, id), eq(merchantRules.orgId, orgId)));
+    .where(and(eq(merchantRules.id, id), eq(merchantRules.orgId, orgId)))
+    .returning({ id: merchantRules.id });
+  return rows.at(0) ?? null;
 };

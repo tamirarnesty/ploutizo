@@ -15,7 +15,7 @@ import { merchantRulesRouter } from './routes/merchant-rules';
 import { transactionsRouter } from './routes/transactions';
 import { settlementsRouter } from './routes/settlements';
 import { importsRouter } from './routes/imports';
-import { DomainError, NotFoundError } from './lib/errors';
+import { registerApiErrorHandlers } from './lib/apiErrorResponse';
 import {
   TELEMETRY_EXPOSE_HEADERS,
   initApiOtel,
@@ -23,7 +23,6 @@ import {
   shutdownApiOtel,
 } from './telemetry';
 import type { AppEnv } from './types';
-import type { ContentfulStatusCode } from 'hono/utils/http-status';
 
 // Boot OTel exporters before request handling (non-blocking; failures degrade).
 initApiOtel();
@@ -85,36 +84,7 @@ app.route('/api/transactions', transactionsRouter);
 app.route('/api/settlements', settlementsRouter);
 app.route('/api/imports', importsRouter);
 
-// Unmatched routes — returns JSON shape consistent with onError handler
-app.notFound((c) => {
-  // Telemetry gets machine code only — never user-facing/error text.
-  c.set('telemetryError', { code: 'NOT_FOUND', kind: 'http' });
-  return c.json({ error: { code: 'NOT_FOUND', message: 'Not found' } }, 404);
-});
-
 // Centralized error handler (D-04) — registered AFTER routes, BEFORE serve()
-// NotFoundError → 404 NOT_FOUND
-// DomainError → statusCode DOMAIN_ERROR
-// Generic Error → 500 INTERNAL_ERROR
-app.onError((err, c) => {
-  if (err instanceof NotFoundError) {
-    c.set('telemetryError', { code: 'NOT_FOUND', kind: 'http' });
-    return c.json({ error: { code: 'NOT_FOUND', message: err.message } }, 404);
-  }
-  if (err instanceof DomainError) {
-    const code = err.code ?? 'DOMAIN_ERROR';
-    c.set('telemetryError', { code, kind: 'http' });
-    return c.json(
-      { error: { code, message: err.message } },
-      err.statusCode as ContentfulStatusCode
-    );
-  }
-  console.error('[API] Unhandled error:', err);
-  c.set('telemetryError', { code: 'INTERNAL_ERROR', kind: 'http' });
-  return c.json(
-    { error: { code: 'INTERNAL_ERROR', message: 'Unexpected error' } },
-    500
-  );
-});
+registerApiErrorHandlers(app);
 
 serve({ fetch: app.fetch, port: Number(process.env.PORT ?? 8080) });

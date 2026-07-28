@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '@ploutizo/db';
+import { NotFoundError } from '@/lib/errors';
 import { updateTransaction } from '@/services/transactions';
 import {
   enrichTransactions,
@@ -179,12 +180,13 @@ describe('updateTransaction — PATCH split-sum validation', () => {
     expect(enrichTransactions).not.toHaveBeenCalled();
   });
 
-  it('returns null when transaction is not found before validation', async () => {
+  it('throws NotFoundError when transaction is not found before validation', async () => {
     vi.mocked(fetchTransactionById).mockResolvedValueOnce(null as never);
 
-    const result = await updateTransaction(ORG_ID, TXN_ID, expensePayload);
+    await expect(
+      updateTransaction(ORG_ID, TXN_ID, expensePayload)
+    ).rejects.toBeInstanceOf(NotFoundError);
 
-    expect(result).toBeNull();
     expect(enrichTransactions).not.toHaveBeenCalled();
     expect(updateTransactionScalarsQuery).not.toHaveBeenCalled();
   });
