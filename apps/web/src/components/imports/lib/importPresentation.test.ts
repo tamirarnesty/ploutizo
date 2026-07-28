@@ -29,6 +29,8 @@ const baseRow = {
   reviewDescription: 'Coffee',
   reviewCategoryId: 'cat_1',
   reviewAssigneeMemberIds: ['member_1'],
+  reviewCounterpartAccountId: null,
+  reviewRefundOf: null,
   reviewRefundLinkHint: null,
   reviewNotes: null,
   reviewTagIds: [],
@@ -137,8 +139,9 @@ describe('importPresentation review helpers', () => {
         status: 'needs_review',
         reviewType: 'settlement',
         reviewCategoryId: null,
+        reviewAssigneeMemberIds: [],
       })
-    ).toBe('Needs review: settlement requires review; missing category');
+    ).toBe('Needs review: settlement requires review; missing assignee');
   });
 });
 

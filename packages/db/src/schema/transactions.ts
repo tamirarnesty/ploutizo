@@ -87,6 +87,11 @@ export const transactions = pgTable(
       onDelete: 'set null',
     }),
     /**
+     * Bank/statement reference for duplicate detection. Unique only among active
+     * rows on the same account so soft-deleted imports may be re-imported.
+     */
+    externalId: text('external_id'),
+    /**
      * Reserved for recurring transaction generation logic (deferred to v2, D-07).
      * No FK — recurring templates table does not exist in v1.
      */
@@ -109,6 +114,9 @@ export const transactions = pgTable(
       .on(t.deletedAt)
       .where(sql`deleted_at IS NULL`), // D-16: partial index for all active-data queries
     index('transactions_org_idx').on(t.orgId),
+    uniqueIndex('transactions_active_account_external_id_idx')
+      .on(t.accountId, t.externalId)
+      .where(sql`deleted_at IS NULL AND external_id IS NOT NULL`),
   ]
 );
 

@@ -17,6 +17,8 @@ export interface ImportRowReviewFields {
   parsedType: ImportTransactionType | null;
   reviewCategoryId: string | null;
   reviewAssigneeMemberIds: string[];
+  /** Settlement funding account — required for new settlement creates. */
+  reviewCounterpartAccountId?: string | null;
 }
 
 export type ImportRowReviewBlocker =
@@ -143,6 +145,7 @@ export const toImportRowStatusFields = (
   parsedDescription: row.parsedDescription ?? null,
   reviewCategoryId: row.reviewCategoryId ?? null,
   reviewAssigneeMemberIds: row.reviewAssigneeMemberIds ?? [],
+  reviewCounterpartAccountId: row.reviewCounterpartAccountId ?? null,
 });
 
 const getReviewPhaseBlockers = (
@@ -151,8 +154,15 @@ const getReviewPhaseBlockers = (
   const blockers: ImportRowReviewBlocker[] = [];
   const type = resolveImportRowReviewType(row);
 
-  if (type === 'settlement') blockers.push('settlement');
-  if (!row.reviewCategoryId) blockers.push('category');
+  if (type === 'expense' || type === 'refund') {
+    if (!row.reviewCategoryId) blockers.push('category');
+  }
+
+  if (type === 'settlement' && !row.reviewCounterpartAccountId) {
+    // Funding / Pay-toward readiness — counterpart is settlement funding.
+    blockers.push('settlement');
+  }
+
   if (row.reviewAssigneeMemberIds.length === 0) blockers.push('assignee');
   return blockers;
 };

@@ -24,6 +24,7 @@ import type {
 } from '@/lib/queries/imports';
 import { assertOrgWriteReferences } from '@/lib/assertOrgWriteReferences';
 import { DomainError, NotFoundError } from '@/lib/errors';
+import { isUniqueViolation } from '@/lib/isUniqueViolation';
 import {
   adjustImportDraftRowCounts,
   discardImportDraftQuery,
@@ -44,19 +45,12 @@ import {
 } from '@/lib/queries/imports';
 import { listCategories } from '@/lib/queries/categories';
 import { listOrgMembers } from '@/lib/queries/households';
+import {
+  fetchAccountWriteReference,
+  transactionExistsInOrg,
+} from '@/lib/queries/scope';
 import { listTags } from '@/lib/queries/tags';
 import { parsePloutizoNormalizedCsv } from '@/lib/imports/normalizedCsv';
-
-const isUniqueViolation = (error: unknown): boolean => {
-  let current: unknown = error;
-  while (current && typeof current === 'object') {
-    if ('code' in current && (current as { code: string }).code === '23505') {
-      return true;
-    }
-    current = 'cause' in current ? (current as { cause: unknown }).cause : null;
-  }
-  return false;
-};
 
 const toImportDraftSummary = (
   row: ImportDraftSummaryRow
@@ -207,6 +201,7 @@ export const createNormalizedImportDraft = async (
                 parsedDescription: row.parsedDescription ?? null,
                 reviewCategoryId: resolvedRefs.reviewCategoryId,
                 reviewAssigneeMemberIds: resolvedRefs.reviewAssigneeMemberIds,
+                reviewCounterpartAccountId: null,
               })
             ),
             orgId,
@@ -257,6 +252,19 @@ export const updateImportDraftRow = async (
     memberIds: merged.reviewAssigneeMemberIds,
   });
 
+  if (merged.reviewCounterpartAccountId) {
+    const funding = await fetchAccountWriteReference(
+      orgId,
+      merged.reviewCounterpartAccountId
+    );
+    if (!funding) throw new NotFoundError('Account not found');
+  }
+
+  if (merged.reviewRefundOf) {
+    const ok = await transactionExistsInOrg(orgId, merged.reviewRefundOf);
+    if (!ok) throw new NotFoundError('Transaction not found');
+  }
+
   const statusFields = toImportRowStatusFields({
     status: existing.status,
     reviewDate: merged.reviewDate ?? null,
@@ -269,6 +277,7 @@ export const updateImportDraftRow = async (
     parsedDescription: merged.parsedDescription ?? null,
     reviewCategoryId: merged.reviewCategoryId ?? null,
     reviewAssigneeMemberIds: merged.reviewAssigneeMemberIds,
+    reviewCounterpartAccountId: merged.reviewCounterpartAccountId ?? null,
   });
   const status = deriveImportRowStatus(statusFields);
   const invalidReason =

@@ -1,7 +1,11 @@
+import { BILL_PAYMENT_CATEGORY_NAME } from '@ploutizo/types';
+import { and, eq } from 'drizzle-orm';
 import { db } from '../client';
-import { merchantRules } from '../schema/index';
+import { categories, merchantRules } from '../schema/index';
 
+type SelectExecutor = { select: typeof db.select };
 type InsertExecutor = { insert: typeof db.insert };
+type SeedExecutor = SelectExecutor & InsertExecutor;
 
 // Default merchant rules seeded at org creation.
 // INVARIANT: Every row has orgId set — no global merchant rule rows.
@@ -50,6 +54,13 @@ const DEFAULT_MERCHANT_RULES: {
   },
 ];
 
+const BILL_PAYMENT_RULE = {
+  matchType: 'contains' as const,
+  pattern: 'PAYMENT THANK YOU',
+  renameTo: BILL_PAYMENT_CATEGORY_NAME,
+  priority: 5,
+};
+
 export const insertSeedMerchantRulesForOrg = async (
   executor: InsertExecutor,
   orgId: string
@@ -63,6 +74,47 @@ export const insertSeedMerchantRulesForOrg = async (
       priority: rule.priority,
     }))
   );
+};
+
+export const ensureBillPaymentMerchantRuleForOrg = async (
+  executor: SeedExecutor,
+  orgId: string
+): Promise<void> => {
+  const [billPaymentCategory] = await executor
+    .select({ id: categories.id })
+    .from(categories)
+    .where(
+      and(
+        eq(categories.orgId, orgId),
+        eq(categories.name, BILL_PAYMENT_CATEGORY_NAME)
+      )
+    )
+    .limit(1);
+
+  if (!billPaymentCategory) return;
+
+  const [existingRule] = await executor
+    .select({ id: merchantRules.id })
+    .from(merchantRules)
+    .where(
+      and(
+        eq(merchantRules.orgId, orgId),
+        eq(merchantRules.pattern, BILL_PAYMENT_RULE.pattern),
+        eq(merchantRules.matchType, BILL_PAYMENT_RULE.matchType)
+      )
+    )
+    .limit(1);
+
+  if (existingRule) return;
+
+  await executor.insert(merchantRules).values({
+    orgId,
+    pattern: BILL_PAYMENT_RULE.pattern,
+    matchType: BILL_PAYMENT_RULE.matchType,
+    renameTo: BILL_PAYMENT_RULE.renameTo,
+    categoryId: billPaymentCategory.id,
+    priority: BILL_PAYMENT_RULE.priority,
+  });
 };
 
 export const seedOrgMerchantRules = async (orgId: string): Promise<void> => {

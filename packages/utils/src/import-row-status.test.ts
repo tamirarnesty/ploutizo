@@ -165,13 +165,36 @@ describe('deriveImportRowStatus', () => {
     ).toBe('invalid');
   });
 
-  it('returns needs_review for settlement type', () => {
+  it('returns needs_review for settlement type without funding', () => {
     expect(
       deriveImportRowStatus({
         ...readyFields,
         reviewType: 'settlement',
+        reviewCategoryId: null,
       })
     ).toBe('needs_review');
+  });
+
+  it('returns ready for settlement with funding and assignees', () => {
+    expect(
+      deriveImportRowStatus({
+        ...readyFields,
+        reviewType: 'settlement',
+        reviewCategoryId: null,
+        reviewCounterpartAccountId: 'fund-1',
+      })
+    ).toBe('ready');
+  });
+
+  it('does not require category for settlement rows', () => {
+    expect(
+      getImportRowReviewBlockers({
+        ...readyFields,
+        reviewType: 'settlement',
+        reviewCategoryId: null,
+        reviewCounterpartAccountId: 'fund-1',
+      })
+    ).toEqual([]);
   });
 
   it('returns needs_review when assignees are missing', () => {
@@ -257,23 +280,17 @@ describe('evaluateImportRow', () => {
 
     expect(evaluation).toEqual({
       status: 'invalid',
-      blockers: [
-        'date',
-        'amount',
-        'description',
-        'type',
-        'category',
-        'assignee',
-      ],
+      blockers: ['date', 'amount', 'description', 'type', 'assignee'],
     });
     expect(deriveImportRowStatus(incomplete)).toBe(evaluation.status);
     expect(getImportRowReviewBlockers(incomplete)).toEqual(evaluation.blockers);
   });
 
-  it('flags settlement as needs_review with a settlement blocker', () => {
+  it('flags settlement without funding as needs_review', () => {
     const settlement = {
       ...readyFields,
       reviewType: 'settlement' as const,
+      reviewCategoryId: null,
     };
     const evaluation = evaluateImportRow(settlement);
 
@@ -283,6 +300,17 @@ describe('evaluateImportRow', () => {
     });
     expect(deriveImportRowStatus(settlement)).toBe(evaluation.status);
     expect(getImportRowReviewBlockers(settlement)).toEqual(evaluation.blockers);
+  });
+
+  it('marks funded settlement rows ready without a category', () => {
+    expect(
+      evaluateImportRow({
+        ...readyFields,
+        reviewType: 'settlement',
+        reviewCategoryId: null,
+        reviewCounterpartAccountId: 'fund-1',
+      })
+    ).toEqual({ status: 'ready', blockers: [] });
   });
 
   it('preserves skipped while still reporting blockers', () => {
@@ -346,6 +374,7 @@ describe('toImportRowStatusFields', () => {
       parsedDescription: null,
       reviewCategoryId: 'cat_1',
       reviewAssigneeMemberIds: ['member_1'],
+      reviewCounterpartAccountId: null,
     });
   });
 
@@ -365,6 +394,7 @@ describe('toImportRowStatusFields', () => {
       })
     ).toMatchObject({
       reviewAssigneeMemberIds: [],
+      reviewCounterpartAccountId: null,
     });
   });
 });

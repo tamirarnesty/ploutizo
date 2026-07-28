@@ -17,6 +17,8 @@ export const updateImportDraftRowSchema = z
     reviewDescription: z.string().trim().min(1).nullable().optional(),
     reviewCategoryId: z.string().uuid().nullable().optional(),
     reviewAssigneeMemberIds: z.array(z.string().uuid()).optional(),
+    reviewCounterpartAccountId: z.string().uuid().nullable().optional(),
+    reviewRefundOf: z.string().uuid().nullable().optional(),
     reviewRefundLinkHint: z.string().trim().min(1).nullable().optional(),
     reviewNotes: z.string().trim().nullable().optional(),
     reviewTagIds: z.array(z.string().uuid()).optional(),

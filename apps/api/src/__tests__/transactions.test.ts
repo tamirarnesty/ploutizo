@@ -208,29 +208,45 @@ app.route('/', transactionsRouter);
 const VALID_ACCOUNT_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 const VALID_MEMBER_ID_1 = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12';
 const VALID_MEMBER_ID_2 = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13';
+const VALID_CATEGORY_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14';
 
 const defaultAssignees = [
   { memberId: VALID_MEMBER_ID_1, amountCents: 5000, percentage: 100 },
 ];
+
+const expenseFields = {
+  type: 'expense' as const,
+  accountId: VALID_ACCOUNT_ID,
+  amount: 5000,
+  date: '2026-01-15',
+  description: 'Test expense',
+  categoryId: VALID_CATEGORY_ID,
+  assignees: defaultAssignees,
+};
 
 describe('POST /api/transactions', () => {
   it('TXN-POST-01: creates expense with valid payload → 201', async () => {
     const res = await app.request('/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'expense',
-        accountId: VALID_ACCOUNT_ID,
-        amount: 5000,
-        date: '2026-01-15',
-        description: 'Test expense',
-        assignees: defaultAssignees,
-      }),
+      body: JSON.stringify(expenseFields),
     });
     expect(res.status).toBe(201);
     const body = (await res.json()) as any;
     expect(body.data.id).toBe('txn_1');
     expect(body.data.orgId).toBe('org_test123');
+  });
+
+  it('TXN-POST-01b: expense without categoryId → 400 VALIDATION_ERROR', async () => {
+    const { categoryId: _omit, ...withoutCategory } = expenseFields;
+    const res = await app.request('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(withoutCategory),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as any;
+    expect(body.error.code).toBe('VALIDATION_ERROR');
   });
 
   it('TXN-POST-02: income without incomeType → 400 VALIDATION_ERROR', async () => {
@@ -278,11 +294,7 @@ describe('POST /api/transactions', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        type: 'expense',
-        accountId: VALID_ACCOUNT_ID,
-        amount: 5000,
-        date: '2026-01-15',
-        description: 'Test expense',
+        ...expenseFields,
         assignees: [
           { memberId: VALID_MEMBER_ID_1, amountCents: 3000, percentage: 50 },
           { memberId: VALID_MEMBER_ID_2, amountCents: 3000, percentage: 50 },
@@ -401,12 +413,8 @@ describe('PATCH /api/transactions/:id', () => {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        type: 'expense',
-        accountId: VALID_ACCOUNT_ID,
-        amount: 5000,
-        date: '2026-01-15',
+        ...expenseFields,
         description: 'Updated',
-        assignees: defaultAssignees,
       }),
     });
     expect(res.status).toBe(200);
@@ -419,10 +427,7 @@ describe('PATCH /api/transactions/:id', () => {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        type: 'expense',
-        accountId: VALID_ACCOUNT_ID,
-        amount: 5000,
-        date: '2026-01-15',
+        ...expenseFields,
         description: 'Updated',
         assignees: [],
       }),
@@ -438,12 +443,8 @@ describe('PATCH /api/transactions/:id', () => {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        type: 'expense',
-        accountId: VALID_ACCOUNT_ID,
-        amount: 5000,
-        date: '2026-01-15',
+        ...expenseFields,
         description: 'X',
-        assignees: defaultAssignees,
       }),
     });
     expect(res.status).toBe(404);

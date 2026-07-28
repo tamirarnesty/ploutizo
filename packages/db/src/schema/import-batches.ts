@@ -105,6 +105,16 @@ export const importBatchRows = pgTable(
       .$type<string[]>()
       .notNull()
       .default([]),
+    /** Settlement funding account selected during review (paid-from). */
+    reviewCounterpartAccountId: uuid(
+      'review_counterpart_account_id'
+    ).references(() => accounts.id, { onDelete: 'set null' }),
+    /**
+     * Reviewed refund link to an existing expense. Original CSV hint remains in
+     * review_refund_link_hint / source provenance fields.
+     * FK to transactions is applied in SQL migration to avoid a schema cycle.
+     */
+    reviewRefundOf: uuid('review_refund_of'),
     reviewRefundLinkHint: text('review_refund_link_hint'),
     reviewNotes: text('review_notes'),
     reviewTagIds: jsonb('review_tag_ids')
@@ -126,6 +136,7 @@ export const importBatchRows = pgTable(
       t.batchId,
       t.rowNumber
     ),
+    uniqueIndex('import_batch_rows_id_org_id_idx').on(t.id, t.orgId),
     foreignKey({
       columns: [t.batchId, t.orgId],
       foreignColumns: [importBatches.id, importBatches.orgId],

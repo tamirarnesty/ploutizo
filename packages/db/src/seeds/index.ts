@@ -1,8 +1,14 @@
 import { count, eq, sql } from 'drizzle-orm';
 import { db } from '../client';
 import { categories, merchantRules } from '../schema';
-import { insertSeedCategoriesForOrg } from './categories';
-import { insertSeedMerchantRulesForOrg } from './merchantRules';
+import {
+  ensureBillPaymentCategoryForOrg,
+  insertSeedCategoriesForOrg,
+} from './categories';
+import {
+  ensureBillPaymentMerchantRuleForOrg,
+  insertSeedMerchantRulesForOrg,
+} from './merchantRules';
 
 /**
  * Populate default categories and merchant rules for `orgId`.
@@ -15,6 +21,9 @@ import { insertSeedMerchantRulesForOrg } from './merchantRules';
  * dedicated lock row + `SELECT … FOR UPDATE` — extra schema. We use a short
  * transaction + `pg_advisory_xact_lock` keyed by `orgId` so all seed paths
  * serialize per org, re-count both tables after locking, then insert independently.
+ *
+ * Bill Payment category + merchant rule are ensured on every seed pass so orgs
+ * created before import finalization still receive them.
  */
 export const seedOrg = async (orgId: string): Promise<void> => {
   await db.transaction(async (tx) => {
@@ -32,10 +41,13 @@ export const seedOrg = async (orgId: string): Promise<void> => {
 
     if (Number(categoriesRow.n) === 0) {
       await insertSeedCategoriesForOrg(tx, orgId);
+    } else {
+      await ensureBillPaymentCategoryForOrg(tx, orgId);
     }
     if (Number(rulesRow.n) === 0) {
       await insertSeedMerchantRulesForOrg(tx, orgId);
     }
+    await ensureBillPaymentMerchantRuleForOrg(tx, orgId);
   });
 };
 
@@ -43,6 +55,7 @@ export const seedOrg = async (orgId: string): Promise<void> => {
  * Fast path when the org is already seeded (avoids opening a transaction).
  * `seedOrg` remains the single idempotent implementation under the advisory lock.
  * Checks both categories and merchant rules — if either is missing, runs full seed.
+ * Also runs when Bill Payment may still need backfill (category count below full seed).
  */
 export const ensureOrgSeeded = async (orgId: string): Promise<void> => {
   const [categoriesRow] = await db
@@ -53,12 +66,18 @@ export const ensureOrgSeeded = async (orgId: string): Promise<void> => {
     .select({ n: count() })
     .from(merchantRules)
     .where(eq(merchantRules.orgId, orgId));
-  if (Number(categoriesRow.n) > 0 && Number(rulesRow.n) > 0) return;
+  // 12 = prior 11 spend categories + Bill Payment.
+  if (Number(categoriesRow.n) >= 12 && Number(rulesRow.n) > 0) return;
   await seedOrg(orgId);
 };
 
-export { insertSeedCategoriesForOrg, seedOrgCategories } from './categories';
 export {
+  ensureBillPaymentCategoryForOrg,
+  insertSeedCategoriesForOrg,
+  seedOrgCategories,
+} from './categories';
+export {
+  ensureBillPaymentMerchantRuleForOrg,
   insertSeedMerchantRulesForOrg,
   seedOrgMerchantRules,
 } from './merchantRules';

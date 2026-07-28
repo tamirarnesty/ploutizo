@@ -148,6 +148,19 @@ export const insertImportBatchRows = async (
   return tx.insert(importBatchRows).values(values).returning();
 };
 
+export const fetchImportBatchInOrg = async (
+  orgId: string,
+  batchId: string,
+  client: DbClient = db
+) => {
+  const rows = await client
+    .select({ id: importBatches.id })
+    .from(importBatches)
+    .where(and(eq(importBatches.id, batchId), eq(importBatches.orgId, orgId)))
+    .limit(1);
+  return rows.at(0) ?? null;
+};
+
 export const discardImportDraftQuery = async (
   orgId: string,
   draftId: string

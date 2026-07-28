@@ -15,11 +15,13 @@ const assignee = (amountCents = 1000, percentage = 100) => ({
 });
 
 // Shared base payload for all type variants
+const categoryId = '550e8400-e29b-41d4-a716-446655440099';
 const baseFields = {
   accountId: '550e8400-e29b-41d4-a716-446655440000',
   amount: 1000,
   date: '2024-01-15',
   description: 'Test transaction',
+  categoryId,
   assignees: [assignee()],
 };
 
@@ -309,5 +311,63 @@ describe('VAL-03 — updateTransactionSchema field changes', () => {
   it('rejects assignees: [] (cannot clear splits with empty array via flat update schema)', () => {
     const result = updateTransactionSchema.safeParse({ assignees: [] });
     expect(result.success).toBe(false);
+  });
+});
+
+describe('createTransactionSchema — category + import provenance', () => {
+  it('rejects expense without categoryId', () => {
+    const { categoryId: _omit, ...withoutCategory } = baseFields;
+    expect(
+      createTransactionSchema.safeParse({
+        ...withoutCategory,
+        type: 'expense',
+      }).success
+    ).toBe(false);
+  });
+
+  it('rejects refund without categoryId', () => {
+    const { categoryId: _omit, ...withoutCategory } = baseFields;
+    expect(
+      createTransactionSchema.safeParse({
+        ...withoutCategory,
+        type: 'refund',
+      }).success
+    ).toBe(false);
+  });
+
+  it('accepts settlement without categoryId and with optional Bill Payment category', () => {
+    const { categoryId: _omit, ...withoutCategory } = baseFields;
+    expect(
+      createTransactionSchema.safeParse({
+        ...withoutCategory,
+        type: 'settlement',
+        counterpartAccountId: '550e8400-e29b-41d4-a716-446655440002',
+      }).success
+    ).toBe(true);
+    expect(
+      createTransactionSchema.safeParse({
+        ...baseFields,
+        type: 'settlement',
+        counterpartAccountId: '550e8400-e29b-41d4-a716-446655440002',
+      }).success
+    ).toBe(true);
+  });
+
+  it('accepts import provenance on expense writes', () => {
+    const result = createTransactionSchema.safeParse({
+      ...baseFields,
+      type: 'expense',
+      importBatchId: '550e8400-e29b-41d4-a716-446655440010',
+      rawDescription: 'COFFEE SHOP #42',
+      externalId: 'visa-1001',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toMatchObject({
+        importBatchId: '550e8400-e29b-41d4-a716-446655440010',
+        rawDescription: 'COFFEE SHOP #42',
+        externalId: 'visa-1001',
+      });
+    }
   });
 });

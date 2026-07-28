@@ -345,6 +345,7 @@ describe('createTransactionSchema — common fields', () => {
     amount: 1000,
     date: '2024-01-15',
     description: 'Test expense',
+    categoryId: '550e8400-e29b-41d4-a716-446655440099',
     assignees: [
       {
         memberId: '550e8400-e29b-41d4-a716-446655440003',
@@ -410,6 +411,7 @@ describe('createTransactionSchema — per-type branches', () => {
     amount: 5000,
     date: '2024-03-01',
     description: 'Test transaction',
+    categoryId: '550e8400-e29b-41d4-a716-446655440099',
     assignees: [
       {
         memberId: '550e8400-e29b-41d4-a716-446655440003',

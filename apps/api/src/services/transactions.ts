@@ -20,6 +20,7 @@ import type { ListQueryParams } from '@/lib/queries/transactions';
 import type { z } from 'zod';
 import { assertOrgWriteReferences } from '@/lib/assertOrgWriteReferences';
 import { DomainError, NotFoundError } from '@/lib/errors';
+import { isUniqueViolation } from '@/lib/isUniqueViolation';
 import {
   fetchAccountWriteReference,
   transactionExistsInOrg,
@@ -37,6 +38,7 @@ import {
   softDeleteTransactionQuery,
   updateTransactionScalarsQuery,
 } from '@/lib/queries/transactions';
+import { fetchImportBatchInOrg } from '@/lib/queries/imports';
 
 export type { ListQueryParams };
 
@@ -172,50 +174,79 @@ export const createTransaction = async (
     assignees
   );
 
-  return db.transaction(async (tx) => {
-    const writeReferences = await loadTransactionWriteReferences(
-      orgId,
-      {
-        accountId: transactionData.accountId,
-        counterpartAccountId:
-          'counterpartAccountId' in transactionData
-            ? transactionData.counterpartAccountId
-            : undefined,
-        refundOf:
-          'refundOf' in transactionData ? transactionData.refundOf : undefined,
-        categoryId:
-          'categoryId' in transactionData
-            ? transactionData.categoryId
-            : undefined,
-        tagIds,
-        assignees: normalizedAssignees,
-      },
-      tx
-    );
-    assertTransactionAccountPolicy(transactionData.type, writeReferences);
+  try {
+    return await db.transaction(async (tx) => {
+      if (transactionData.importBatchId) {
+        const batch = await fetchImportBatchInOrg(
+          orgId,
+          transactionData.importBatchId,
+          tx
+        );
+        if (!batch) {
+          throw new NotFoundError('Import batch not found.');
+        }
+      }
 
-    const [inserted] = await tx
-      .insert(transactions)
-      .values({ orgId, ...transactionData })
-      .returning();
+      const writeReferences = await loadTransactionWriteReferences(
+        orgId,
+        {
+          accountId: transactionData.accountId,
+          counterpartAccountId:
+            'counterpartAccountId' in transactionData
+              ? transactionData.counterpartAccountId
+              : undefined,
+          refundOf:
+            'refundOf' in transactionData
+              ? transactionData.refundOf
+              : undefined,
+          categoryId:
+            'categoryId' in transactionData
+              ? transactionData.categoryId
+              : undefined,
+          tagIds,
+          assignees: normalizedAssignees,
+        },
+        tx
+      );
+      assertTransactionAccountPolicy(transactionData.type, writeReferences);
 
-    await tx.insert(transactionAssignees).values(
-      normalizedAssignees.map((a) => ({
-        transactionId: inserted.id,
-        memberId: a.memberId,
-        amountCents: a.amountCents,
-        percentage: a.percentage.toString(),
-      }))
-    );
+      const [inserted] = await tx
+        .insert(transactions)
+        .values({ orgId, ...transactionData })
+        .returning();
 
-    if (tagIds && tagIds.length > 0) {
-      await tx
-        .insert(transactionTags)
-        .values(tagIds.map((tagId) => ({ transactionId: inserted.id, tagId })));
+      await tx.insert(transactionAssignees).values(
+        normalizedAssignees.map((a) => ({
+          transactionId: inserted.id,
+          memberId: a.memberId,
+          amountCents: a.amountCents,
+          percentage: a.percentage.toString(),
+        }))
+      );
+
+      if (tagIds && tagIds.length > 0) {
+        await tx
+          .insert(transactionTags)
+          .values(
+            tagIds.map((tagId) => ({ transactionId: inserted.id, tagId }))
+          );
+      }
+
+      return inserted;
+    });
+  } catch (error) {
+    if (error instanceof DomainError || error instanceof NotFoundError) {
+      throw error;
     }
-
-    return inserted;
-  });
+    if (isUniqueViolation(error)) {
+      throw new DomainError(
+        409,
+        'An active transaction with this external id already exists on this account.',
+        'EXTERNAL_ID_CONFLICT'
+      );
+    }
+    throw error;
+  }
 };
 
 export const listTransactions = async (params: ListQueryParams) => {

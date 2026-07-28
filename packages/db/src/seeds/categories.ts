@@ -1,7 +1,10 @@
+import { BILL_PAYMENT_CATEGORY_NAME } from '@ploutizo/types';
 import { db } from '../client';
 import { categories } from '../schema/index';
 
-type InsertExecutor = { insert: typeof db.insert };
+type InsertExecutor = {
+  insert: typeof db.insert;
+};
 
 // Default categories seeded at org creation.
 // INVARIANT: Every row has orgId set — no global category rows.
@@ -18,6 +21,11 @@ const DEFAULT_CATEGORIES: { name: string; icon: string; sortOrder: number }[] =
     { name: 'Travel', icon: 'Plane', sortOrder: 8 },
     { name: 'Personal Care', icon: 'Sparkles', sortOrder: 9 },
     { name: 'Other', icon: 'MoreHorizontal', sortOrder: 10 },
+    {
+      name: BILL_PAYMENT_CATEGORY_NAME,
+      icon: 'CreditCard',
+      sortOrder: 11,
+    },
   ];
 
 /** Insert default categories — use `db` from tests; `seedOrg` passes a transaction client. */
@@ -33,6 +41,24 @@ export const insertSeedCategoriesForOrg = async (
       sortOrder: cat.sortOrder,
     }))
   );
+};
+
+/** Idempotent Bill Payment category for orgs seeded before import finalization. */
+export const ensureBillPaymentCategoryForOrg = async (
+  executor: InsertExecutor,
+  orgId: string
+): Promise<void> => {
+  await executor
+    .insert(categories)
+    .values({
+      orgId,
+      name: BILL_PAYMENT_CATEGORY_NAME,
+      icon: 'CreditCard',
+      sortOrder: 11,
+    })
+    .onConflictDoNothing({
+      target: [categories.orgId, categories.name],
+    });
 };
 
 export const seedOrgCategories = async (orgId: string): Promise<void> => {

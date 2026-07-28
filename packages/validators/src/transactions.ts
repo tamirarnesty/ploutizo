@@ -14,29 +14,43 @@ const requiredAssigneesSchema = z
   .min(1, 'At least one assignee is required.');
 
 /**
+ * Import provenance accepted by the normal transaction write path.
+ * Manual UI omits these; import confirm (later) supplies them.
+ */
+export const importTransactionProvenanceSchema = z.object({
+  importBatchId: z.string().uuid().optional(),
+  /** Bank memo retained when the reviewed description differs. */
+  rawDescription: z.string().min(1).nullable().optional(),
+  /** Immutable bank reference — unique among active rows on the account. */
+  externalId: z.string().min(1).nullable().optional(),
+});
+
+/**
  * Base fields shared by all 6 transaction types.
  * amount: unsigned integer cents (D-18, D-02) — must be positive, no sign encoding
  * date: ISO date string YYYY-MM-DD (D-18) — z.string().date() validates format only (not datetime)
  * notes: optional free-text field (D-21) — replaces merchant/incomeSource free-text
  */
-const baseTransactionSchema = z.object({
-  accountId: z.string().uuid(),
-  amount: z.number().int().positive(),
-  date: z.string().date(),
-  description: z.string().min(1, 'Description is required.'),
-  notes: z.string().optional(),
-  assignees: requiredAssigneesSchema,
-  tagIds: z.array(z.string().uuid()).optional(),
-});
+const baseTransactionSchema = z
+  .object({
+    accountId: z.string().uuid(),
+    amount: z.number().int().positive(),
+    date: z.string().date(),
+    description: z.string().min(1, 'Description is required.'),
+    notes: z.string().optional(),
+    assignees: requiredAssigneesSchema,
+    tagIds: z.array(z.string().uuid()).optional(),
+  })
+  .merge(importTransactionProvenanceSchema);
 
 const expenseTransactionSchema = baseTransactionSchema.extend({
   type: z.literal('expense'),
-  categoryId: z.string().uuid().optional(),
+  categoryId: z.string().uuid(),
 });
 
 const refundTransactionSchema = baseTransactionSchema.extend({
   type: z.literal('refund'),
-  categoryId: z.string().uuid().optional(),
+  categoryId: z.string().uuid(),
   refundOf: z.string().uuid().optional(),
 });
 
@@ -56,6 +70,8 @@ const settlementTransactionSchema = baseTransactionSchema.extend({
   type: z.literal('settlement'),
   // settledAccountId renamed to counterpartAccountId (D-07, D-14)
   counterpartAccountId: z.string().uuid().optional(),
+  /** Bill Payment category for list readability — optional, not spend. */
+  categoryId: z.string().uuid().optional(),
 });
 
 const contributionTransactionSchema = baseTransactionSchema.extend({
