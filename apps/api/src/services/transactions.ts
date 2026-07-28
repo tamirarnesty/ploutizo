@@ -198,11 +198,7 @@ export const createTransaction = async (
   );
 
   return db.transaction(async (tx) => {
-    await assertImportBatchProvenance(
-      orgId,
-      transactionData.importBatchId,
-      tx
-    );
+    await assertImportBatchProvenance(orgId, transactionData.importBatchId, tx);
 
     const writeReferences = await loadTransactionWriteReferences(
       orgId,
@@ -213,9 +209,7 @@ export const createTransaction = async (
             ? transactionData.counterpartAccountId
             : undefined,
         refundOf:
-          'refundOf' in transactionData
-            ? transactionData.refundOf
-            : undefined,
+          'refundOf' in transactionData ? transactionData.refundOf : undefined,
         categoryId:
           'categoryId' in transactionData
             ? transactionData.categoryId

@@ -427,6 +427,7 @@ describe('import finalization foundation — prepared set revisions', () => {
     vi.mocked(listDraftRows).mockResolvedValue([draftRow as never]);
     vi.mocked(lockPreparedSetRevisionForBatch).mockResolvedValue(undefined);
     vi.mocked(fetchLatestPreparedSetForBatch).mockResolvedValue(null);
+    vi.mocked(transactionExistsInOrg).mockResolvedValue(true);
     vi.mocked(insertImportPreparedSet).mockResolvedValue({
       id: 'prep_1',
       orgId: ORG,
@@ -523,6 +524,20 @@ describe('import finalization foundation — prepared set revisions', () => {
     ]).catch((e: unknown) => e);
 
     expect(err).toBeInstanceOf(NotFoundError);
+  });
+
+  it('rejects prepared outcomes that point at a cross-org transaction', async () => {
+    vi.mocked(transactionExistsInOrg).mockResolvedValue(false);
+    const err = await createImportPreparedSetRevision(ORG, BATCH, [
+      {
+        batchRowId: ROW,
+        outcome: 'matched',
+        transactionId: TXN,
+      },
+    ]).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(NotFoundError);
+    expect(transactionExistsInOrg).toHaveBeenCalledWith(ORG, TXN, mockTx);
   });
 
   it('returns the latest prepared set with durable outcomes', async () => {

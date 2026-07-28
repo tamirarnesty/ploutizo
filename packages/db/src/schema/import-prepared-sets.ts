@@ -75,11 +75,10 @@ export const importPreparedOutcomes = pgTable(
     outcome: importPreparedOutcomeEnum('outcome').notNull(),
     /**
      * Created or matched transaction once Confirm records the outcome.
-     * Null while the prepared set is only staged.
+     * Null while the prepared set is only staged. Composite org FK prevents
+     * cross-tenant transaction pointers.
      */
-    transactionId: uuid('transaction_id').references(() => transactions.id, {
-      onDelete: 'set null',
-    }),
+    transactionId: uuid('transaction_id'),
     reviewedValues: jsonb('reviewed_values')
       .$type<ImportPreparedReviewedValues>()
       .notNull(),
@@ -102,5 +101,9 @@ export const importPreparedOutcomes = pgTable(
       columns: [t.batchRowId, t.orgId],
       foreignColumns: [importBatchRows.id, importBatchRows.orgId],
     }).onDelete('cascade'),
+    foreignKey({
+      columns: [t.transactionId, t.orgId],
+      foreignColumns: [transactions.id, transactions.orgId],
+    }).onDelete('set null'),
   ]
 );

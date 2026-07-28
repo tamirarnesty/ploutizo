@@ -24,6 +24,7 @@ import {
   toImportPreparedSet,
 } from '@/lib/queries/import-prepared-sets';
 import { fetchDraftSummaryById, listDraftRows } from '@/lib/queries/imports';
+import { transactionExistsInOrg } from '@/lib/queries/scope';
 
 /** Caller-supplied prepare outcome; server owns the reviewedValues snapshot. */
 export type PreparedOutcomeSpec = {
@@ -106,6 +107,14 @@ export const createImportPreparedSetRevision = async (
     for (const outcome of outcomes) {
       if (!rowsById.has(outcome.batchRowId)) {
         throw new NotFoundError('Import draft row not found.');
+      }
+      if (outcome.transactionId) {
+        const ok = await transactionExistsInOrg(
+          orgId,
+          outcome.transactionId,
+          tx
+        );
+        if (!ok) throw new NotFoundError('Transaction not found');
       }
     }
 

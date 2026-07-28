@@ -1,7 +1,8 @@
 import { BILL_PAYMENT_CATEGORY_NAME } from '@ploutizo/types';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../client';
-import { categories, merchantRules } from '../schema/index';
+import { merchantRules } from '../schema/index';
+import { findBillPaymentCategoryId } from './categories';
 
 type SelectExecutor = { select: typeof db.select };
 type InsertExecutor = { insert: typeof db.insert };
@@ -13,6 +14,7 @@ export const BILL_PAYMENT_MERCHANT_RULE_PATTERN = 'PAYMENT THANK YOU' as const;
 // Default merchant rules seeded at org creation.
 // INVARIANT: Every row has orgId set — no global merchant rule rows.
 // Schema uses `pattern` (not matchValue) and `renameTo` (not renameDescription).
+// Bill Payment is ensured separately so it can resolve categoryId after categories exist.
 const DEFAULT_MERCHANT_RULES: {
   name: string;
   matchType: 'contains' | 'starts_with' | 'ends_with' | 'exact' | 'regex';
@@ -79,25 +81,6 @@ export const insertSeedMerchantRulesForOrg = async (
   );
 };
 
-export const findBillPaymentCategoryId = async (
-  executor: SelectExecutor,
-  orgId: string
-): Promise<string | null> => {
-  const row = (
-    await executor
-      .select({ id: categories.id })
-      .from(categories)
-      .where(
-        and(
-          eq(categories.orgId, orgId),
-          eq(categories.name, BILL_PAYMENT_CATEGORY_NAME)
-        )
-      )
-      .limit(1)
-  ).at(0);
-  return row?.id ?? null;
-};
-
 export const hasBillPaymentMerchantRule = async (
   executor: SelectExecutor,
   orgId: string
@@ -122,7 +105,10 @@ export const ensureBillPaymentMerchantRuleForOrg = async (
   executor: SeedExecutor,
   orgId: string
 ): Promise<void> => {
-  const billPaymentCategoryId = await findBillPaymentCategoryId(executor, orgId);
+  const billPaymentCategoryId = await findBillPaymentCategoryId(
+    executor,
+    orgId
+  );
   if (!billPaymentCategoryId) return;
 
   if (await hasBillPaymentMerchantRule(executor, orgId)) return;

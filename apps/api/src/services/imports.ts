@@ -4,9 +4,11 @@ import { createImportReferenceResolver } from '@ploutizo/utils';
 import {
   deriveImportRowStatus,
   formatImportRowStructuralInvalidReason,
+  resolveImportRowReviewType,
   toImportRowStatusFields,
   toImportTransactionType,
 } from '@ploutizo/utils/import-row-status';
+import { validateTransactionAccountPolicy } from '@ploutizo/utils/transaction-policy';
 import type {
   ImportDraft,
   ImportDraftRow,
@@ -258,6 +260,29 @@ export const updateImportDraftRow = async (
       merged.reviewCounterpartAccountId
     );
     if (!funding) throw new NotFoundError('Account not found');
+
+    const reviewType = resolveImportRowReviewType({
+      reviewType: toImportTransactionType(merged.reviewType),
+      parsedType: toImportTransactionType(merged.parsedType),
+    });
+    if (reviewType === 'settlement') {
+      const draft = await fetchDraftSummaryById(orgId, existing.batchId);
+      if (!draft?.accountId) throw new NotFoundError('Import draft not found.');
+      const card = await fetchAccountWriteReference(orgId, draft.accountId);
+      if (!card) throw new NotFoundError('Account not found');
+      const policy = validateTransactionAccountPolicy({
+        type: 'settlement',
+        account: card,
+        counterpartAccount: funding,
+      });
+      if (!policy.valid) {
+        throw new DomainError(
+          400,
+          policy.violations.map((v) => v.message).join(' '),
+          'TRANSACTION_ACCOUNT_POLICY_VIOLATION'
+        );
+      }
+    }
   }
 
   if (merged.reviewRefundOf) {

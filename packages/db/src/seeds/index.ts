@@ -84,6 +84,7 @@ export const ensureOrgSeeded = async (orgId: string): Promise<void> => {
 
 export {
   ensureBillPaymentCategoryForOrg,
+  findBillPaymentCategoryId,
   hasBillPaymentCategory,
   insertSeedCategoriesForOrg,
   seedOrgCategories,

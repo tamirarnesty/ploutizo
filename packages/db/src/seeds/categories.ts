@@ -45,10 +45,10 @@ export const insertSeedCategoriesForOrg = async (
   );
 };
 
-export const hasBillPaymentCategory = async (
+export const findBillPaymentCategoryId = async (
   executor: SelectExecutor,
   orgId: string
-): Promise<boolean> => {
+): Promise<string | null> => {
   const row = (
     await executor
       .select({ id: categories.id })
@@ -61,8 +61,14 @@ export const hasBillPaymentCategory = async (
       )
       .limit(1)
   ).at(0);
-  return Boolean(row);
+  return row?.id ?? null;
 };
+
+export const hasBillPaymentCategory = async (
+  executor: SelectExecutor,
+  orgId: string
+): Promise<boolean> =>
+  Boolean(await findBillPaymentCategoryId(executor, orgId));
 
 /** Idempotent Bill Payment category for orgs seeded before import finalization. */
 export const ensureBillPaymentCategoryForOrg = async (
