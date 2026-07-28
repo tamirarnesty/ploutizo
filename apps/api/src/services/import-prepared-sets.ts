@@ -1,9 +1,4 @@
 import { db } from '@ploutizo/db';
-import type {
-  ImportPreparedReviewedValues,
-  ImportPreparedSet,
-  ImportTransactionType,
-} from '@ploutizo/types';
 import {
   resolveImportRowReviewAmount,
   resolveImportRowReviewDate,
@@ -11,13 +6,13 @@ import {
   resolveImportRowReviewType,
   toImportTransactionType,
 } from '@ploutizo/utils/import-row-status';
+import type {
+  ImportPreparedReviewedValues,
+  ImportPreparedSet,
+} from '@ploutizo/types';
 import type { PreparedOutcomeInput } from '@/lib/queries/import-prepared-sets';
+import type { ImportDraftRowRecord } from '@/lib/queries/imports';
 import { DomainError, NotFoundError } from '@/lib/errors';
-import {
-  fetchDraftSummaryById,
-  listDraftRows,
-  type ImportDraftRowRecord,
-} from '@/lib/queries/imports';
 import {
   fetchLatestPreparedSetForBatch,
   fetchLatestPreparedSetRevision,
@@ -28,6 +23,10 @@ import {
   lockPreparedSetRevisionForBatch,
   toImportPreparedSet,
 } from '@/lib/queries/import-prepared-sets';
+import {
+  fetchDraftSummaryById,
+  listDraftRows,
+} from '@/lib/queries/imports';
 
 export const buildReviewedValuesSnapshot = (
   row: ImportDraftRowRecord
@@ -58,7 +57,7 @@ export const buildReviewedValuesSnapshot = (
       reviewAmount: row.reviewAmount,
       parsedAmount: row.parsedAmount,
     }),
-    type: type as ImportTransactionType | null,
+    type,
     description,
     categoryId: row.reviewCategoryId,
     assigneeMemberIds: row.reviewAssigneeMemberIds,

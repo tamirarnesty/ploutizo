@@ -1,28 +1,31 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DomainError, NotFoundError } from '@/lib/errors';
-import { createTransaction } from '@/services/transactions';
+import {
+  fetchLatestPreparedSetForBatch,
+  fetchLatestPreparedSetRevision,
+  insertImportPreparedOutcomes,
+  insertImportPreparedSet,
+  listPreparedOutcomesForSet,
+  lockPreparedSetRevisionForBatch,
+} from '@/lib/queries/import-prepared-sets';
+import {
+  fetchDraftSummaryById,
+  fetchImportBatchInOrg,
+  listDraftRows,
+} from '@/lib/queries/imports';
+import {
+  allMembersInOrg,
+  allTagsInOrg,
+  categoryExistsInOrg,
+  fetchAccountWriteReference,
+  transactionExistsInOrg,
+} from '@/lib/queries/scope';
 import {
   buildReviewedValuesSnapshot,
   createImportPreparedSetRevision,
   getLatestImportPreparedSet,
 } from '@/services/import-prepared-sets';
-import {
-  fetchAccountWriteReference,
-  allMembersInOrg,
-  allTagsInOrg,
-  categoryExistsInOrg,
-  transactionExistsInOrg,
-} from '@/lib/queries/scope';
-import { fetchImportBatchInOrg } from '@/lib/queries/imports';
-import { fetchDraftSummaryById, listDraftRows } from '@/lib/queries/imports';
-import {
-  fetchLatestPreparedSetRevision,
-  insertImportPreparedOutcomes,
-  insertImportPreparedSet,
-  lockPreparedSetRevisionForBatch,
-  fetchLatestPreparedSetForBatch,
-  listPreparedOutcomesForSet,
-} from '@/lib/queries/import-prepared-sets';
+import { createTransaction } from '@/services/transactions';
 
 const mockTx = {
   insert: vi.fn(),
@@ -60,7 +63,10 @@ vi.mock('@/lib/queries/scope', () => ({
 }));
 
 vi.mock('@/lib/queries/imports', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/queries/imports')>();
+  const actual = await importOriginal();
+  if (typeof actual !== 'object' || actual === null) {
+    throw new Error('Unexpected @/lib/queries/imports module shape.');
+  }
   return {
     ...actual,
     fetchImportBatchInOrg: vi.fn(),
@@ -70,8 +76,12 @@ vi.mock('@/lib/queries/imports', async (importOriginal) => {
 });
 
 vi.mock('@/lib/queries/import-prepared-sets', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('@/lib/queries/import-prepared-sets')>();
+  const actual = await importOriginal();
+  if (typeof actual !== 'object' || actual === null) {
+    throw new Error(
+      'Unexpected @/lib/queries/import-prepared-sets module shape.'
+    );
+  }
   return {
     ...actual,
     fetchLatestPreparedSetRevision: vi.fn(),
@@ -332,8 +342,8 @@ describe('import finalization foundation — prepared set revisions', () => {
       revision: 1,
       createdAt: new Date('2026-05-20T12:00:00Z'),
     });
-    vi.mocked(insertImportPreparedOutcomes).mockImplementation(
-      async (_tx, values) =>
+    vi.mocked(insertImportPreparedOutcomes).mockImplementation((_tx, values) =>
+      Promise.resolve(
         values.map((value, index) => ({
           id: `out_${index}`,
           orgId: value.orgId,
@@ -344,6 +354,7 @@ describe('import finalization foundation — prepared set revisions', () => {
           reviewedValues: value.reviewedValues,
           createdAt: new Date('2026-05-20T12:00:00Z'),
         }))
+      )
     );
   });
 

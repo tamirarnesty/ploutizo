@@ -96,7 +96,7 @@ describe('seedOrg', () => {
     const mockTx = {
       execute: mockExecute,
       select: vi.fn((args?: unknown) => {
-        if (args && typeof args === 'object' && 'n' in (args as object)) {
+        if (args && typeof args === 'object' && 'n' in args) {
           return {
             from: vi.fn(() => ({
               where: vi.fn(() => Promise.resolve([{ n: 0 }])),
@@ -153,7 +153,7 @@ describe('seedOrg', () => {
     const mockTx = {
       execute: vi.fn(() => Promise.resolve()),
       select: vi.fn((args?: unknown) => {
-        if (args && typeof args === 'object' && 'n' in (args as object)) {
+        if (args && typeof args === 'object' && 'n' in args) {
           countCalls += 1;
           return {
             from: vi.fn(() => ({
@@ -201,7 +201,7 @@ describe('seedOrg', () => {
     const mockTx = {
       execute: vi.fn(() => Promise.resolve()),
       select: vi.fn((args?: unknown) => {
-        if (args && typeof args === 'object' && 'n' in (args as object)) {
+        if (args && typeof args === 'object' && 'n' in args) {
           countCalls += 1;
           return {
             from: vi.fn(() => ({

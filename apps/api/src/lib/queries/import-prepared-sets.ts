@@ -34,7 +34,7 @@ export const fetchLatestPreparedSetRevision = async (
         eq(importPreparedSets.batchId, batchId)
       )
     );
-  return row?.revision ?? null;
+  return row.revision ?? null;
 };
 
 export const insertImportPreparedSet = async (

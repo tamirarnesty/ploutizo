@@ -80,30 +80,34 @@ export const ensureBillPaymentMerchantRuleForOrg = async (
   executor: SeedExecutor,
   orgId: string
 ): Promise<void> => {
-  const [billPaymentCategory] = await executor
-    .select({ id: categories.id })
-    .from(categories)
-    .where(
-      and(
-        eq(categories.orgId, orgId),
-        eq(categories.name, BILL_PAYMENT_CATEGORY_NAME)
+  const billPaymentCategory = (
+    await executor
+      .select({ id: categories.id })
+      .from(categories)
+      .where(
+        and(
+          eq(categories.orgId, orgId),
+          eq(categories.name, BILL_PAYMENT_CATEGORY_NAME)
+        )
       )
-    )
-    .limit(1);
+      .limit(1)
+  ).at(0);
 
   if (!billPaymentCategory) return;
 
-  const [existingRule] = await executor
-    .select({ id: merchantRules.id })
-    .from(merchantRules)
-    .where(
-      and(
-        eq(merchantRules.orgId, orgId),
-        eq(merchantRules.pattern, BILL_PAYMENT_RULE.pattern),
-        eq(merchantRules.matchType, BILL_PAYMENT_RULE.matchType)
+  const existingRule = (
+    await executor
+      .select({ id: merchantRules.id })
+      .from(merchantRules)
+      .where(
+        and(
+          eq(merchantRules.orgId, orgId),
+          eq(merchantRules.pattern, BILL_PAYMENT_RULE.pattern),
+          eq(merchantRules.matchType, BILL_PAYMENT_RULE.matchType)
+        )
       )
-    )
-    .limit(1);
+      .limit(1)
+  ).at(0);
 
   if (existingRule) return;
 
