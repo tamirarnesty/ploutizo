@@ -1,5 +1,5 @@
 {
-  "id": "ea767ddb-1eaf-4f19-9539-94e1a9495f23",
+  "id": "47f80579-eafd-4ae9-9e73-5f3bbbd0aa06",
   "prevId": "6c226ba5-a364-4bee-89bb-74830e75bd50",
   "version": "7",
   "dialect": "postgresql",
@@ -1903,6 +1903,27 @@
           "method": "btree",
           "with": {}
         },
+        "transactions_id_org_id_idx": {
+          "name": "transactions_id_org_id_idx",
+          "columns": [
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "org_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "transactions_active_account_external_id_idx": {
           "name": "transactions_active_account_external_id_idx",
           "columns": [
@@ -2161,19 +2182,6 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "import_prepared_outcomes_transaction_id_transactions_id_fk": {
-          "name": "import_prepared_outcomes_transaction_id_transactions_id_fk",
-          "tableFrom": "import_prepared_outcomes",
-          "tableTo": "transactions",
-          "columnsFrom": [
-            "transaction_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
         "import_prepared_outcomes_prepared_set_id_org_id_import_prepared_sets_id_org_id_fk": {
           "name": "import_prepared_outcomes_prepared_set_id_org_id_import_prepared_sets_id_org_id_fk",
           "tableFrom": "import_prepared_outcomes",
@@ -2202,6 +2210,21 @@
             "org_id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "import_prepared_outcomes_transaction_id_org_id_transactions_id_org_id_fk": {
+          "name": "import_prepared_outcomes_transaction_id_org_id_transactions_id_org_id_fk",
+          "tableFrom": "import_prepared_outcomes",
+          "tableTo": "transactions",
+          "columnsFrom": [
+            "transaction_id",
+            "org_id"
+          ],
+          "columnsTo": [
+            "id",
+            "org_id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
