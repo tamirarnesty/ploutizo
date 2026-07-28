@@ -368,7 +368,7 @@ describe('import finalization foundation — transaction provenance', () => {
       })
     );
     const scalarPayload = vi.mocked(updateTransactionScalarsQuery).mock
-      .calls[0]?.[3] as Record<string, unknown>;
+      .calls[0]?.[3];
     expect(scalarPayload).not.toHaveProperty('importBatchId');
     expect(scalarPayload).not.toHaveProperty('externalId');
     expect(scalarPayload).not.toHaveProperty('rawDescription');
