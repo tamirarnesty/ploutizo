@@ -18,7 +18,7 @@ export interface ImportRowReviewFields {
   reviewCategoryId: string | null;
   reviewAssigneeMemberIds: string[];
   /** Settlement funding account — required for new settlement creates. */
-  reviewCounterpartAccountId?: string | null;
+  reviewCounterpartAccountId: string | null;
 }
 
 export type ImportRowReviewBlocker =
@@ -41,10 +41,11 @@ export type ImportRowStatusFields = ImportRowStatusInput & {
 /** Partial runtime row shapes may omit assignees before normalization. */
 export type ImportRowStatusNormalizeInput = Omit<
   ImportRowStatusInput,
-  'reviewAssigneeMemberIds'
+  'reviewAssigneeMemberIds' | 'reviewCounterpartAccountId'
 > & {
   status: ImportRowStatus;
   reviewAssigneeMemberIds?: string[] | null;
+  reviewCounterpartAccountId?: string | null;
 };
 
 export type ImportRowStructuralBlocker = Extract<

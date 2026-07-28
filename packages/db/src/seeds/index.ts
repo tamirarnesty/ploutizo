@@ -3,10 +3,12 @@ import { db } from '../client';
 import { categories, merchantRules } from '../schema';
 import {
   ensureBillPaymentCategoryForOrg,
+  hasBillPaymentCategory,
   insertSeedCategoriesForOrg,
 } from './categories';
 import {
   ensureBillPaymentMerchantRuleForOrg,
+  hasBillPaymentMerchantRule,
   insertSeedMerchantRulesForOrg,
 } from './merchantRules';
 
@@ -54,8 +56,7 @@ export const seedOrg = async (orgId: string): Promise<void> => {
 /**
  * Fast path when the org is already seeded (avoids opening a transaction).
  * `seedOrg` remains the single idempotent implementation under the advisory lock.
- * Checks both categories and merchant rules — if either is missing, runs full seed.
- * Also runs when Bill Payment may still need backfill (category count below full seed).
+ * Runs full seed when categories/rules are missing or Bill Payment backfill is needed.
  */
 export const ensureOrgSeeded = async (orgId: string): Promise<void> => {
   const [categoriesRow] = await db
@@ -66,18 +67,31 @@ export const ensureOrgSeeded = async (orgId: string): Promise<void> => {
     .select({ n: count() })
     .from(merchantRules)
     .where(eq(merchantRules.orgId, orgId));
-  // 12 = prior 11 spend categories + Bill Payment.
-  if (Number(categoriesRow.n) >= 12 && Number(rulesRow.n) > 0) return;
+
+  if (Number(categoriesRow.n) === 0 || Number(rulesRow.n) === 0) {
+    await seedOrg(orgId);
+    return;
+  }
+
+  const [hasBillCategory, hasBillRule] = await Promise.all([
+    hasBillPaymentCategory(db, orgId),
+    hasBillPaymentMerchantRule(db, orgId),
+  ]);
+
+  if (hasBillCategory && hasBillRule) return;
   await seedOrg(orgId);
 };
 
 export {
   ensureBillPaymentCategoryForOrg,
+  hasBillPaymentCategory,
   insertSeedCategoriesForOrg,
   seedOrgCategories,
 } from './categories';
 export {
+  BILL_PAYMENT_MERCHANT_RULE_PATTERN,
   ensureBillPaymentMerchantRuleForOrg,
+  hasBillPaymentMerchantRule,
   insertSeedMerchantRulesForOrg,
   seedOrgMerchantRules,
 } from './merchantRules';

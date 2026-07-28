@@ -120,8 +120,12 @@ export const fetchDraftSummaryById = async (orgId: string, draftId: string) => {
   return rows.at(0) ?? null;
 };
 
-export const listDraftRows = async (orgId: string, draftId: string) =>
-  db
+export const listDraftRows = async (
+  orgId: string,
+  draftId: string,
+  client: DbClient = db
+) =>
+  client
     .select()
     .from(importBatchRows)
     .where(

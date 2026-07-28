@@ -7,6 +7,9 @@ type SelectExecutor = { select: typeof db.select };
 type InsertExecutor = { insert: typeof db.insert };
 type SeedExecutor = SelectExecutor & InsertExecutor;
 
+/** Pattern used for seeded bill-payment merchant classification. */
+export const BILL_PAYMENT_MERCHANT_RULE_PATTERN = 'PAYMENT THANK YOU' as const;
+
 // Default merchant rules seeded at org creation.
 // INVARIANT: Every row has orgId set — no global merchant rule rows.
 // Schema uses `pattern` (not matchValue) and `renameTo` (not renameDescription).
@@ -56,7 +59,7 @@ const DEFAULT_MERCHANT_RULES: {
 
 const BILL_PAYMENT_RULE = {
   matchType: 'contains' as const,
-  pattern: 'PAYMENT THANK YOU',
+  pattern: BILL_PAYMENT_MERCHANT_RULE_PATTERN,
   renameTo: BILL_PAYMENT_CATEGORY_NAME,
   priority: 5,
 };
@@ -76,11 +79,11 @@ export const insertSeedMerchantRulesForOrg = async (
   );
 };
 
-export const ensureBillPaymentMerchantRuleForOrg = async (
-  executor: SeedExecutor,
+export const findBillPaymentCategoryId = async (
+  executor: SelectExecutor,
   orgId: string
-): Promise<void> => {
-  const billPaymentCategory = (
+): Promise<string | null> => {
+  const row = (
     await executor
       .select({ id: categories.id })
       .from(categories)
@@ -92,9 +95,13 @@ export const ensureBillPaymentMerchantRuleForOrg = async (
       )
       .limit(1)
   ).at(0);
+  return row?.id ?? null;
+};
 
-  if (!billPaymentCategory) return;
-
+export const hasBillPaymentMerchantRule = async (
+  executor: SelectExecutor,
+  orgId: string
+): Promise<boolean> => {
   const existingRule = (
     await executor
       .select({ id: merchantRules.id })
@@ -108,15 +115,24 @@ export const ensureBillPaymentMerchantRuleForOrg = async (
       )
       .limit(1)
   ).at(0);
+  return Boolean(existingRule);
+};
 
-  if (existingRule) return;
+export const ensureBillPaymentMerchantRuleForOrg = async (
+  executor: SeedExecutor,
+  orgId: string
+): Promise<void> => {
+  const billPaymentCategoryId = await findBillPaymentCategoryId(executor, orgId);
+  if (!billPaymentCategoryId) return;
+
+  if (await hasBillPaymentMerchantRule(executor, orgId)) return;
 
   await executor.insert(merchantRules).values({
     orgId,
     pattern: BILL_PAYMENT_RULE.pattern,
     matchType: BILL_PAYMENT_RULE.matchType,
     renameTo: BILL_PAYMENT_RULE.renameTo,
-    categoryId: billPaymentCategory.id,
+    categoryId: billPaymentCategoryId,
     priority: BILL_PAYMENT_RULE.priority,
   });
 };

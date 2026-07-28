@@ -102,12 +102,16 @@ const RefundCategoryField = ({
   form: TransactionFormInstance;
   categories: Category[];
 }) => (
-  <form.AppField name="categoryId">
+  <form.AppField
+    name="categoryId"
+    validators={{
+      onSubmit: ({ value }: { value: string }) =>
+        !value ? 'Category is required for refund transactions.' : undefined,
+    }}
+  >
     {(field) => (
-      <Field>
-        <FieldLabel htmlFor="tx-refund-categoryId">
-          Category (optional)
-        </FieldLabel>
+      <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
+        <FieldLabel htmlFor="tx-refund-categoryId">Category</FieldLabel>
         <Select
           value={field.state.value}
           onValueChange={(v) => {
@@ -128,6 +132,13 @@ const RefundCategoryField = ({
             ))}
           </SelectContent>
         </Select>
+        {field.state.meta.errors.length > 0 ? (
+          <FieldError
+            errors={
+              field.state.meta.errors as unknown as { message?: string }[]
+            }
+          />
+        ) : null}
       </Field>
     )}
   </form.AppField>

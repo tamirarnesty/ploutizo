@@ -53,4 +53,17 @@ describe('toApiPayload', () => {
       },
     ]);
   });
+
+  it('preserves settlement Bill Payment categoryId on write', () => {
+    const value = expenseBase();
+    value.type = 'settlement';
+    value.counterpartAccountId = '550e8400-e29b-41d4-a716-446655440002';
+    value.categoryId = '550e8400-e29b-41d4-a716-446655440099';
+    const payload = toApiPayload(value);
+    expect(payload).toMatchObject({
+      type: 'settlement',
+      counterpartAccountId: '550e8400-e29b-41d4-a716-446655440002',
+      categoryId: '550e8400-e29b-41d4-a716-446655440099',
+    });
+  });
 });

@@ -149,6 +149,7 @@ export const toApiPayload = (
       return {
         ...base,
         counterpartAccountId: value.counterpartAccountId || undefined,
+        categoryId: value.categoryId || undefined,
       };
     case 'contribution':
       return {

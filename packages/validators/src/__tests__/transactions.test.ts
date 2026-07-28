@@ -370,4 +370,20 @@ describe('createTransactionSchema — category + import provenance', () => {
       });
     }
   });
+
+  it('strips import provenance from PATCH payloads', () => {
+    const result = patchTransactionSchema.safeParse({
+      ...baseFields,
+      type: 'expense',
+      importBatchId: '550e8400-e29b-41d4-a716-446655440010',
+      rawDescription: 'COFFEE SHOP #42',
+      externalId: 'visa-1001',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).not.toHaveProperty('importBatchId');
+      expect(result.data).not.toHaveProperty('rawDescription');
+      expect(result.data).not.toHaveProperty('externalId');
+    }
+  });
 });

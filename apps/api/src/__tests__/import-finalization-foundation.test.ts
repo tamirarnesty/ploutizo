@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DomainError, NotFoundError } from '@/lib/errors';
 import {
   fetchLatestPreparedSetForBatch,
-  fetchLatestPreparedSetRevision,
   insertImportPreparedOutcomes,
   insertImportPreparedSet,
   listPreparedOutcomesForSet,
@@ -25,7 +24,11 @@ import {
   createImportPreparedSetRevision,
   getLatestImportPreparedSet,
 } from '@/services/import-prepared-sets';
-import { createTransaction } from '@/services/transactions';
+import { createTransaction, updateTransaction } from '@/services/transactions';
+import {
+  fetchTransactionById,
+  updateTransactionScalarsQuery,
+} from '@/lib/queries/transactions';
 
 const mockTx = {
   insert: vi.fn(),
@@ -84,7 +87,6 @@ vi.mock('@/lib/queries/import-prepared-sets', async (importOriginal) => {
   }
   return {
     ...actual,
-    fetchLatestPreparedSetRevision: vi.fn(),
     insertImportPreparedSet: vi.fn(),
     insertImportPreparedOutcomes: vi.fn(),
     lockPreparedSetRevisionForBatch: vi.fn(),
@@ -101,6 +103,7 @@ const MEMBER = '550e8400-e29b-41d4-a716-446655440020';
 const CATEGORY = '550e8400-e29b-41d4-a716-446655440030';
 const BATCH = '550e8400-e29b-41d4-a716-446655440040';
 const ROW = '550e8400-e29b-41d4-a716-446655440050';
+const TXN = '550e8400-e29b-41d4-a716-446655440070';
 
 const baseAssignees = [
   { memberId: MEMBER, amountCents: 4218, percentage: 100 },
@@ -212,7 +215,10 @@ describe('import finalization foundation — transaction provenance', () => {
 
   it('maps active-row external id conflicts to DomainError(409)', async () => {
     const values = vi.fn().mockReturnValue({
-      returning: vi.fn().mockRejectedValue({ code: '23505' }),
+      returning: vi.fn().mockRejectedValue({
+        code: '23505',
+        constraint: 'transactions_active_account_external_id_idx',
+      }),
     });
     mockTx.insert.mockReturnValue({ values });
 
@@ -230,6 +236,38 @@ describe('import finalization foundation — transaction provenance', () => {
     expect(err).toBeInstanceOf(DomainError);
     expect((err as DomainError).statusCode).toBe(409);
     expect((err as DomainError).code).toBe('EXTERNAL_ID_CONFLICT');
+  });
+
+  it('does not map unrelated unique violations as external-id conflicts', async () => {
+    mockTx.insert
+      .mockReturnValueOnce({
+        values: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([{ id: TXN, type: 'expense' }]),
+        }),
+      })
+      .mockReturnValueOnce({
+        values: vi.fn().mockRejectedValue({
+          code: '23505',
+          constraint: 'transaction_assignees_tx_member_idx',
+        }),
+      });
+
+    const err = await createTransaction(ORG, {
+      type: 'expense',
+      accountId: ACCOUNT,
+      amount: 4218,
+      date: '2026-05-02',
+      description: 'Neighborhood Coffee',
+      categoryId: CATEGORY,
+      assignees: baseAssignees,
+      externalId: 'visa-1001',
+    }).catch((e: unknown) => e);
+
+    expect(err).not.toBeInstanceOf(DomainError);
+    expect(err).toMatchObject({
+      code: '23505',
+      constraint: 'transaction_assignees_tx_member_idx',
+    });
   });
 
   it('persists settlement funding and category on the normal write path', async () => {
@@ -280,6 +318,60 @@ describe('import finalization foundation — transaction provenance', () => {
         importBatchId: BATCH,
       })
     );
+  });
+
+  it('preserves settlement Bill Payment category on update', async () => {
+    vi.mocked(fetchAccountWriteReference).mockImplementation(
+      (_orgId, accountId) =>
+        Promise.resolve(
+          accountId === ACCOUNT
+            ? { id: ACCOUNT, type: 'credit_card' }
+            : { id: FUNDING, type: 'chequing' }
+        )
+    );
+    vi.mocked(fetchTransactionById).mockResolvedValue({
+      id: TXN,
+      orgId: ORG,
+      type: 'settlement',
+      accountId: ACCOUNT,
+      amount: 25000,
+      date: '2026-05-15',
+      description: 'Bill Payment',
+      categoryId: CATEGORY,
+      counterpartAccountId: FUNDING,
+    } as never);
+    vi.mocked(updateTransactionScalarsQuery).mockResolvedValue({
+      id: TXN,
+      type: 'settlement',
+      categoryId: CATEGORY,
+    } as never);
+
+    await updateTransaction(ORG, TXN, {
+      type: 'settlement',
+      accountId: ACCOUNT,
+      amount: 25000,
+      date: '2026-05-15',
+      description: 'Bill Payment',
+      categoryId: CATEGORY,
+      counterpartAccountId: FUNDING,
+      assignees: [{ memberId: MEMBER, amountCents: 25000, percentage: 100 }],
+    });
+
+    expect(updateTransactionScalarsQuery).toHaveBeenCalledWith(
+      mockTx,
+      ORG,
+      TXN,
+      expect.objectContaining({
+        type: 'settlement',
+        categoryId: CATEGORY,
+        counterpartAccountId: FUNDING,
+      })
+    );
+    const scalarPayload = vi.mocked(updateTransactionScalarsQuery).mock
+      .calls[0]?.[3] as Record<string, unknown>;
+    expect(scalarPayload).not.toHaveProperty('importBatchId');
+    expect(scalarPayload).not.toHaveProperty('externalId');
+    expect(scalarPayload).not.toHaveProperty('rawDescription');
   });
 
   it('persists refund link plus provenance on refund creates', async () => {
@@ -334,7 +426,7 @@ describe('import finalization foundation — prepared set revisions', () => {
     } as never);
     vi.mocked(listDraftRows).mockResolvedValue([draftRow as never]);
     vi.mocked(lockPreparedSetRevisionForBatch).mockResolvedValue(undefined);
-    vi.mocked(fetchLatestPreparedSetRevision).mockResolvedValue(null);
+    vi.mocked(fetchLatestPreparedSetForBatch).mockResolvedValue(null);
     vi.mocked(insertImportPreparedSet).mockResolvedValue({
       id: 'prep_1',
       orgId: ORG,
@@ -376,18 +468,29 @@ describe('import finalization foundation — prepared set revisions', () => {
     });
   });
 
-  it('creates immutable revision 1 then increments to revision 2', async () => {
+  it('creates immutable revision 1 then increments to revision 2 using server snapshots', async () => {
     const first = await createImportPreparedSetRevision(ORG, BATCH, [
       {
         batchRowId: ROW,
         outcome: 'created',
-        reviewedValues: buildReviewedValuesSnapshot(draftRow as never),
       },
     ]);
     expect(first.revision).toBe(1);
     expect(first.outcomes[0]?.outcome).toBe('created');
+    expect(first.outcomes[0]?.reviewedValues).toMatchObject({
+      description: 'Neighborhood Coffee',
+      externalId: 'visa-1001',
+      rawDescription: 'COFFEE SHOP #42',
+    });
+    expect(listDraftRows).toHaveBeenCalledWith(ORG, BATCH, mockTx);
 
-    vi.mocked(fetchLatestPreparedSetRevision).mockResolvedValue(1);
+    vi.mocked(fetchLatestPreparedSetForBatch).mockResolvedValue({
+      id: 'prep_1',
+      orgId: ORG,
+      batchId: BATCH,
+      revision: 1,
+      createdAt: new Date('2026-05-20T12:00:00Z'),
+    });
     vi.mocked(insertImportPreparedSet).mockResolvedValue({
       id: 'prep_2',
       orgId: ORG,
@@ -400,7 +503,7 @@ describe('import finalization foundation — prepared set revisions', () => {
       {
         batchRowId: ROW,
         outcome: 'matched',
-        reviewedValues: buildReviewedValuesSnapshot(draftRow as never),
+        transactionId: TXN,
       },
     ]);
     expect(second.revision).toBe(2);
@@ -416,7 +519,6 @@ describe('import finalization foundation — prepared set revisions', () => {
       {
         batchRowId: '550e8400-e29b-41d4-a716-446655440099',
         outcome: 'skipped',
-        reviewedValues: buildReviewedValuesSnapshot(draftRow as never),
       },
     ]).catch((e: unknown) => e);
 

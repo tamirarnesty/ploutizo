@@ -1,7 +1,9 @@
 import { BILL_PAYMENT_CATEGORY_NAME } from '@ploutizo/types';
+import { and, eq } from 'drizzle-orm';
 import { db } from '../client';
 import { categories } from '../schema/index';
 
+type SelectExecutor = { select: typeof db.select };
 type InsertExecutor = {
   insert: typeof db.insert;
 };
@@ -41,6 +43,25 @@ export const insertSeedCategoriesForOrg = async (
       sortOrder: cat.sortOrder,
     }))
   );
+};
+
+export const hasBillPaymentCategory = async (
+  executor: SelectExecutor,
+  orgId: string
+): Promise<boolean> => {
+  const row = (
+    await executor
+      .select({ id: categories.id })
+      .from(categories)
+      .where(
+        and(
+          eq(categories.orgId, orgId),
+          eq(categories.name, BILL_PAYMENT_CATEGORY_NAME)
+        )
+      )
+      .limit(1)
+  ).at(0);
+  return Boolean(row);
 };
 
 /** Idempotent Bill Payment category for orgs seeded before import finalization. */

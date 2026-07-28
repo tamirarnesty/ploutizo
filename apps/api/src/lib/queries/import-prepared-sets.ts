@@ -3,39 +3,11 @@ import {
   importPreparedOutcomes,
   importPreparedSets,
 } from '@ploutizo/db/schema';
-import { and, desc, eq, max, sql } from 'drizzle-orm';
-import type {
-  ImportPreparedOutcome,
-  ImportPreparedReviewedValues,
-  ImportPreparedSet,
-} from '@ploutizo/types';
+import { and, desc, eq, sql } from 'drizzle-orm';
+import type { ImportPreparedSet } from '@ploutizo/types';
 import type { DrizzleTransaction } from '@/lib/queries/imports';
 
 type DbClient = DrizzleTransaction | typeof db;
-
-export type PreparedOutcomeInput = {
-  batchRowId: string;
-  outcome: ImportPreparedOutcome;
-  reviewedValues: ImportPreparedReviewedValues;
-  transactionId?: string | null;
-};
-
-export const fetchLatestPreparedSetRevision = async (
-  orgId: string,
-  batchId: string,
-  client: DbClient = db
-): Promise<number | null> => {
-  const [row] = await client
-    .select({ revision: max(importPreparedSets.revision) })
-    .from(importPreparedSets)
-    .where(
-      and(
-        eq(importPreparedSets.orgId, orgId),
-        eq(importPreparedSets.batchId, batchId)
-      )
-    );
-  return row.revision ?? null;
-};
 
 export const insertImportPreparedSet = async (
   tx: DrizzleTransaction,

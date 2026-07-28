@@ -115,6 +115,7 @@ describe('deriveImportRowStatus', () => {
     parsedDescription: null as string | null,
     reviewCategoryId: 'cat-1',
     reviewAssigneeMemberIds: ['member_1'],
+    reviewCounterpartAccountId: null as string | null,
   };
 
   it('marks structurally invalid rows as invalid even when previously ready', () => {
@@ -256,6 +257,7 @@ describe('evaluateImportRow', () => {
     parsedDescription: null as string | null,
     reviewCategoryId: 'cat-1',
     reviewAssigneeMemberIds: ['member_1'],
+    reviewCounterpartAccountId: null as string | null,
   };
 
   it('returns ready with no blockers for a complete expense row', () => {

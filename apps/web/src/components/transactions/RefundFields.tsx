@@ -1,4 +1,4 @@
-import { Field, FieldLabel } from '@ploutizo/ui/components/field';
+import { Field, FieldError, FieldLabel } from '@ploutizo/ui/components/field';
 import {
   Select,
   SelectContent,
@@ -23,12 +23,16 @@ export const RefundFields = ({
   onAssigneesChange,
 }: RefundFieldsProps) => (
   <>
-    <form.AppField name="categoryId">
+    <form.AppField
+      name="categoryId"
+      validators={{
+        onSubmit: ({ value }: { value: string }) =>
+          !value ? 'Category is required for refund transactions.' : undefined,
+      }}
+    >
       {(field) => (
-        <Field>
-          <FieldLabel htmlFor="tx-refund-categoryId">
-            Category (optional)
-          </FieldLabel>
+        <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
+          <FieldLabel htmlFor="tx-refund-categoryId">Category</FieldLabel>
           <Select
             value={field.state.value}
             onValueChange={(v) => {
@@ -49,6 +53,13 @@ export const RefundFields = ({
               ))}
             </SelectContent>
           </Select>
+          {field.state.meta.errors.length > 0 ? (
+            <FieldError
+              errors={
+                field.state.meta.errors as unknown as { message?: string }[]
+              }
+            />
+          ) : null}
         </Field>
       )}
     </form.AppField>
