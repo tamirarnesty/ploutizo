@@ -27,4 +27,4 @@ This mirrors expense/refund classification and avoids a second attribution model
 
 - Implementers must classify balances in the query layer by **assignee count per transaction**, not by summing assignee rows into a single member balance.
 - `apps/api` cannot import `apps/web/src/lib/lrm.ts`; extract LRM to a shared package for POST settlements.
-- UI and validators change in the same release as the API (breaking GET/POST); see `.planning/specs/settlement-balances-redesign.md`.
+- UI and validators change in the same release as the API (breaking GET/POST); see settlement assignee redesign in `CONTEXT.md` and settlement API/UI implementation.
