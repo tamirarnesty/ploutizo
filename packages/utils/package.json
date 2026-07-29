@@ -12,7 +12,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@ploutizo/types": "workspace:*"
+    "@ploutizo/types": "workspace:*",
+    "re2": "^1.26.1"
   },
   "devDependencies": {
     "@tanstack/eslint-config": "^0.4.0",
