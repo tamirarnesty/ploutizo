@@ -3,12 +3,12 @@ import { db } from '@ploutizo/db';
 import { NotFoundError } from '@/lib/errors';
 import {
   createNormalizedImportDraft,
+  getImportDraft,
   listImportTargets,
   updateImportDraftRow,
   updateImportDraftRowSelection,
 } from '@/services/imports';
 import {
-  adjustImportDraftRowCounts,
   fetchActiveCreditCardAccount,
   fetchActiveDraftByAccount,
   fetchDraftRowById,
@@ -22,6 +22,7 @@ import {
   updateImportDraftRowQuery,
   updateImportDraftRowSelectionQuery,
 } from '@/lib/queries/imports';
+import { listRefundTargetExpensesByIds } from '@/lib/queries/import-refund-targets';
 import { assertOrgWriteReferences } from '@/lib/assertOrgWriteReferences';
 import { listOrgMembers } from '@/lib/queries/households';
 import { listCategories } from '@/lib/queries/categories';
@@ -47,10 +48,13 @@ vi.mock('@/lib/queries/imports', () => ({
   listDraftRows: vi.fn(),
   listDraftRowIdsForDraft: vi.fn(),
   listImportTargetAccounts: vi.fn(),
-  adjustImportDraftRowCounts: vi.fn(),
   touchImportDraft: vi.fn(),
   updateImportDraftRowQuery: vi.fn(),
   updateImportDraftRowSelectionQuery: vi.fn(),
+}));
+
+vi.mock('@/lib/queries/import-refund-targets', () => ({
+  listRefundTargetExpensesByIds: vi.fn(),
 }));
 
 vi.mock('@/lib/queries/households', () => ({
@@ -136,6 +140,7 @@ describe('import service', () => {
     vi.mocked(fetchActiveDraftByAccount).mockResolvedValue(null);
     vi.mocked(fetchDraftSummaryById).mockResolvedValue(summaryRow);
     vi.mocked(listDraftRows).mockResolvedValue([draftRow]);
+    vi.mocked(listRefundTargetExpensesByIds).mockResolvedValue(new Map());
     vi.mocked(listOrgMembers).mockResolvedValue([
       {
         id: '44444444-4444-4444-8444-444444444444',
@@ -240,6 +245,24 @@ describe('import service', () => {
       ])
     );
     expect(result.draft.rows).toHaveLength(1);
+    expect(result.draft.validRowCount).toBe(1);
+    expect(result.draft.invalidRowCount).toBe(0);
+  });
+
+  it('derives row status on GET without persisting recomputation', async () => {
+    const needsReviewRow = {
+      ...draftRow,
+      status: 'needs_review' as const,
+      reviewCategoryId: null,
+    };
+    vi.mocked(listDraftRows).mockResolvedValue([needsReviewRow]);
+
+    const draft = await getImportDraft('org_1', summaryRow.id);
+
+    expect(draft.rows[0]?.status).toBe('needs_review');
+    expect(draft.validRowCount).toBe(1);
+    expect(draft.invalidRowCount).toBe(0);
+    expect(listRefundTargetExpensesByIds).toHaveBeenCalledWith('org_1', []);
   });
 
   it('resumes the active draft for an account without inserting a new batch', async () => {
@@ -271,7 +294,7 @@ describe('import service', () => {
     expect(result.draft.id).toBe(summaryRow.id);
   });
 
-  it('recomputes row status to ready when category is patched onto a needs_review row', async () => {
+  it('derives ready status when category is patched onto a needs_review row', async () => {
     const needsReviewRow = {
       ...draftRow,
       status: 'needs_review' as const,
@@ -280,14 +303,11 @@ describe('import service', () => {
     const updatedRow = {
       ...needsReviewRow,
       reviewCategoryId: '55555555-5555-4555-8555-555555555555',
-      status: 'ready' as const,
       updatedAt: new Date('2026-05-20T13:00:00Z'),
     };
-    const tx = {} as never;
 
     vi.mocked(fetchDraftRowById).mockResolvedValue(needsReviewRow);
     vi.mocked(updateImportDraftRowQuery).mockResolvedValue(updatedRow);
-    vi.mocked(db.transaction).mockImplementation(async (fn) => fn(tx));
 
     const result = await updateImportDraftRow('org_1', draftRow.id, {
       reviewCategoryId: '55555555-5555-4555-8555-555555555555',
@@ -298,21 +318,12 @@ describe('import service', () => {
       draftRow.id,
       {
         reviewCategoryId: '55555555-5555-4555-8555-555555555555',
-        status: 'ready',
-        invalidReason: null,
-      },
-      tx
-    );
-    expect(adjustImportDraftRowCounts).toHaveBeenCalledWith(
-      'org_1',
-      summaryRow.id,
-      { validRowCount: 0, invalidRowCount: 0 },
-      tx
+      }
     );
     expect(result.status).toBe('ready');
   });
 
-  it('recomputes invalid row to needs_review when core review fields are patched', async () => {
+  it('derives needs_review when core review fields are patched onto an invalid row', async () => {
     const invalidRow = {
       ...draftRow,
       status: 'invalid' as const,
@@ -334,15 +345,11 @@ describe('import service', () => {
       reviewAmount: 4218,
       reviewType: 'expense' as const,
       reviewDescription: 'Coffee',
-      status: 'needs_review' as const,
-      invalidReason: null,
       updatedAt: new Date('2026-05-20T13:00:00Z'),
     };
-    const tx = {} as never;
 
     vi.mocked(fetchDraftRowById).mockResolvedValue(invalidRow);
     vi.mocked(updateImportDraftRowQuery).mockResolvedValue(updatedRow);
-    vi.mocked(db.transaction).mockImplementation(async (fn) => fn(tx));
 
     const result = await updateImportDraftRow('org_1', draftRow.id, {
       reviewDate: '2026-05-02',
@@ -359,21 +366,13 @@ describe('import service', () => {
         reviewAmount: 4218,
         reviewType: 'expense',
         reviewDescription: 'Coffee',
-        status: 'needs_review',
-        invalidReason: null,
-      },
-      tx
-    );
-    expect(adjustImportDraftRowCounts).toHaveBeenCalledWith(
-      'org_1',
-      summaryRow.id,
-      { validRowCount: 1, invalidRowCount: -1 },
-      tx
+      }
     );
     expect(result.status).toBe('needs_review');
+    expect(result.invalidReason).toBeNull();
   });
 
-  it('refreshes invalidReason when an invalid row stays invalid after partial correction', async () => {
+  it('derives invalidReason when an invalid row stays invalid after partial correction', async () => {
     const invalidRow = {
       ...draftRow,
       status: 'invalid' as const,
@@ -393,40 +392,24 @@ describe('import service', () => {
     const updatedRow = {
       ...invalidRow,
       reviewDate: '2026-05-02',
-      status: 'invalid' as const,
-      invalidReason: 'Amount must be a positive number.',
       updatedAt: new Date('2026-05-20T13:00:00Z'),
     };
-    const tx = {} as never;
 
     vi.mocked(fetchDraftRowById).mockResolvedValue(invalidRow);
     vi.mocked(updateImportDraftRowQuery).mockResolvedValue(updatedRow);
-    vi.mocked(db.transaction).mockImplementation(async (fn) => fn(tx));
 
     const result = await updateImportDraftRow('org_1', draftRow.id, {
       reviewDate: '2026-05-02',
     });
 
-    expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
-      'org_1',
-      draftRow.id,
-      {
-        reviewDate: '2026-05-02',
-        status: 'invalid',
-        invalidReason: 'Amount must be a positive number.',
-      },
-      tx
-    );
-    expect(adjustImportDraftRowCounts).toHaveBeenCalledWith(
-      'org_1',
-      summaryRow.id,
-      { validRowCount: 0, invalidRowCount: 0 },
-      tx
-    );
+    expect(updateImportDraftRowQuery).toHaveBeenCalledWith('org_1', draftRow.id, {
+      reviewDate: '2026-05-02',
+    });
+    expect(result.status).toBe('invalid');
     expect(result.invalidReason).toBe('Amount must be a positive number.');
   });
 
-  it('adjusts draft counts when a valid row becomes invalid', async () => {
+  it('derives invalid status when a row loses required review fields', async () => {
     const reviewOnlyRow = {
       ...draftRow,
       status: 'needs_review' as const,
@@ -440,71 +423,49 @@ describe('import service', () => {
     const updatedRow = {
       ...reviewOnlyRow,
       reviewDate: null,
-      status: 'invalid' as const,
       updatedAt: new Date('2026-05-20T13:00:00Z'),
     };
-    const tx = {} as never;
 
     vi.mocked(fetchDraftRowById).mockResolvedValue(reviewOnlyRow);
     vi.mocked(updateImportDraftRowQuery).mockResolvedValue(updatedRow);
-    vi.mocked(db.transaction).mockImplementation(async (fn) => fn(tx));
 
     const result = await updateImportDraftRow('org_1', draftRow.id, {
       reviewDate: null,
     });
 
-    expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
-      'org_1',
-      draftRow.id,
-      {
-        reviewDate: null,
-        status: 'invalid',
-        invalidReason: 'Date must be a valid YYYY-MM-DD value.',
-      },
-      tx
-    );
-    expect(adjustImportDraftRowCounts).toHaveBeenCalledWith(
-      'org_1',
-      summaryRow.id,
-      { validRowCount: -1, invalidRowCount: 1 },
-      tx
-    );
+    expect(updateImportDraftRowQuery).toHaveBeenCalledWith('org_1', draftRow.id, {
+      reviewDate: null,
+    });
     expect(result.status).toBe('invalid');
+    expect(result.invalidReason).toBe('Date must be a valid YYYY-MM-DD value.');
   });
 
-  it('persists row selection updates', async () => {
-    const tx = {} as never;
-
+  it('persists row field updates without writing derived status columns', async () => {
     vi.mocked(fetchDraftRowById).mockResolvedValue(draftRow);
     vi.mocked(updateImportDraftRowQuery).mockResolvedValue({
       ...draftRow,
-      selectedForImport: true,
+      reviewNotes: 'memo',
+      updatedAt: new Date('2026-05-20T13:00:00Z'),
     });
-    vi.mocked(db.transaction).mockImplementation(async (fn) => fn(tx));
 
     const result = await updateImportDraftRow('org_1', draftRow.id, {
-      selectedForImport: true,
+      reviewNotes: 'memo',
     });
 
-    expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
-      'org_1',
-      draftRow.id,
-      expect.objectContaining({ selectedForImport: true }),
-      tx
-    );
-    expect(adjustImportDraftRowCounts).toHaveBeenCalledWith(
-      'org_1',
-      summaryRow.id,
-      { validRowCount: 0, invalidRowCount: 0 },
-      tx
-    );
-    expect(result.selectedForImport).toBe(true);
+    expect(updateImportDraftRowQuery).toHaveBeenCalledWith('org_1', draftRow.id, {
+      reviewNotes: 'memo',
+    });
+    expect(result.reviewNotes).toBe('memo');
+    expect(result.status).toBe('ready');
   });
 
-  it('updates row selection in batch for a draft', async () => {
+  it('updates row selection in batch for a draft and returns derived rows', async () => {
     vi.mocked(fetchDraftSummaryById).mockResolvedValue(summaryRow);
     vi.mocked(listDraftRowIdsForDraft).mockResolvedValue([{ id: draftRow.id }]);
     vi.mocked(updateImportDraftRowSelectionQuery).mockResolvedValue([
+      { ...draftRow, selectedForImport: true },
+    ]);
+    vi.mocked(listDraftRows).mockResolvedValue([
       { ...draftRow, selectedForImport: true },
     ]);
     const tx = {} as never;
@@ -555,6 +516,22 @@ describe('import service', () => {
     );
     vi.mocked(transactionExistsInOrg).mockResolvedValue(true);
     vi.mocked(updateImportDraftRowQuery).mockResolvedValue(updatedRow);
+    vi.mocked(listRefundTargetExpensesByIds).mockResolvedValue(
+      new Map([
+        [
+          expenseId,
+          {
+            id: expenseId,
+            accountId: summaryRow.accountId,
+            amount: 5000,
+            categoryId: '55555555-5555-4555-8555-555555555555',
+            assigneeMemberIds: ['44444444-4444-4444-8444-444444444444'],
+            type: 'expense',
+            deleted: false,
+          },
+        ],
+      ])
+    );
     vi.mocked(db.transaction).mockImplementation(async (fn) => fn(tx));
 
     const result = await updateImportDraftRow('org_1', draftRow.id, {
@@ -570,15 +547,11 @@ describe('import service', () => {
       {
         reviewCounterpartAccountId: fundingId,
         reviewRefundOf: expenseId,
-        status: 'needs_review',
-        invalidReason: null,
-      },
-      tx
+      }
     );
     expect(result).toMatchObject({
       reviewCounterpartAccountId: fundingId,
       reviewRefundOf: expenseId,
-      // Original imported provenance is retained beside review edits.
       externalId: settlementRow.externalId,
       sourceDate: settlementRow.sourceDate,
       sourceAmount: settlementRow.sourceAmount,
@@ -588,6 +561,7 @@ describe('import service', () => {
       parsedAmount: settlementRow.parsedAmount,
       parsedType: settlementRow.parsedType,
       parsedDescription: settlementRow.parsedDescription,
+      status: 'needs_review',
     });
   });
 
