@@ -52,17 +52,21 @@ export const updateMerchantRule = async (
   orgId: string,
   data: z.infer<typeof updateMerchantRuleSchema>
 ) => {
-  if (data.pattern !== undefined) {
-    try {
-      new RegExp(data.pattern);
-    } catch {
-      throw new DomainError(
-        400,
-        'Invalid regular expression.',
-        'INVALID_REGEX'
+  // Mirror create: any resulting regex rule must pass the complexity guard.
+  if (data.pattern !== undefined || data.matchType === 'regex') {
+    let matchType = data.matchType;
+    let pattern = data.pattern;
+    if (matchType === undefined || pattern === undefined) {
+      const existing = (await listMerchantRulesQuery(orgId)).find(
+        (rule) => rule.id === id
       );
+      if (!existing) throw new NotFoundError('Rule not found.');
+      matchType ??= existing.matchType;
+      pattern ??= existing.pattern;
     }
+    validateRegex(matchType, pattern);
   }
+
   const updated = await updateMerchantRuleQuery(id, orgId, data);
   if (!updated) throw new NotFoundError('Rule not found.');
   return updated;

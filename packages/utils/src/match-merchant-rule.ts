@@ -24,7 +24,7 @@ export const isSafeMerchantRegexPattern = (pattern: string): boolean => {
   if (/([+*]\??)\1/.test(trimmed)) return false;
   // Ambiguous adjacent quantified wildcards.
   if (/(\.\*|\.\+){2,}/.test(trimmed)) return false;
-  // Overlapping alternation under repetition: (a|a)+, (a|aa)*, (a+|b*)+, etc.
+  // Overlapping alternation under repetition: (a|a)+, (a|aa)*, ^(a|aa)+$, etc.
   if (/\([^)]*\|[^)]*\)[+*{]/.test(trimmed)) return false;
   if (/\([^)]*[+*][^)]*\|[^)]*\)/.test(trimmed)) return false;
   // Backreferences amplify matching cost.

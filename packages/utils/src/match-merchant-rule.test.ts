@@ -34,7 +34,9 @@ describe('match-merchant-rule', () => {
 
   it('rejects overlapping-alternation ReDoS shapes', () => {
     const overlapping = ['(', 'a|a', ')', '+'].join('');
+    const anchored = ['^(', 'a|aa', ')+$'].join('');
     expect(isSafeMerchantRegexPattern(overlapping)).toBe(false);
+    expect(isSafeMerchantRegexPattern(anchored)).toBe(false);
     expect(
       matchesMerchantRule('aaaaaaaaaaaaaaaa', {
         pattern: overlapping,
