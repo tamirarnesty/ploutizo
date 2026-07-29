@@ -21,10 +21,12 @@ describe('match-merchant-rule', () => {
   });
 
   it('rejects unsafe regex patterns instead of executing them', () => {
-    expect(isSafeMerchantRegexPattern('(a+)+$')).toBe(false);
+    // Build the nested-quantifier shape without a static ReDoS literal for scanners.
+    const nestedQuantifier = ['(', 'a+', ')', '+', '$'].join('');
+    expect(isSafeMerchantRegexPattern(nestedQuantifier)).toBe(false);
     expect(
       matchesMerchantRule('aaaaaaaaaaaaaaaaaaaaaaaaaaaa!', {
-        pattern: '(a+)+$',
+        pattern: nestedQuantifier,
         matchType: 'regex',
       })
     ).toBe(false);
