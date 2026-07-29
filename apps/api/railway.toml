@@ -10,6 +10,7 @@ watchPatterns = [
   "packages/validators/**",
   "package.json",
   "pnpm-lock.yaml",
+  "railpack.json",
   "turbo.json",
   "drizzle.config.ts"
 ]
