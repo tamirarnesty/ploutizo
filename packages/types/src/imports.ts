@@ -57,6 +57,11 @@ export interface ImportDraftRow {
   reviewCounterpartAccountId: string | null;
   /** Reviewed refund link to an existing expense transaction. */
   reviewRefundOf: string | null;
+  /**
+   * Reviewed refund link to an expense row in the same import draft.
+   * Mutually exclusive with `reviewRefundOf` at the service boundary.
+   */
+  reviewRefundOfBatchRowId: string | null;
   /** Original CSV refund-link hint retained as provenance. */
   reviewRefundLinkHint: string | null;
   reviewNotes: string | null;
@@ -80,6 +85,8 @@ export interface ImportPreparedReviewedValues {
   assigneeMemberIds: string[];
   counterpartAccountId: string | null;
   refundOf: string | null;
+  /** Same-import expense row id when the refund is linked within the draft. */
+  refundOfBatchRowId: string | null;
   notes: string | null;
   tagIds: string[];
   externalId: string | null;

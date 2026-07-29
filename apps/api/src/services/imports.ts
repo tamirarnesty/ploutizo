@@ -1,13 +1,7 @@
 import { db } from '@ploutizo/db';
 import { NORMALIZED_IMPORT_EXAMPLE_CSV } from '@ploutizo/types';
 import { createImportReferenceResolver } from '@ploutizo/utils';
-import {
-  deriveImportRowStatus,
-  formatImportRowStructuralInvalidReason,
-  resolveImportRowReviewType,
-  toImportRowStatusFields,
-  toImportTransactionType,
-} from '@ploutizo/utils/import-row-status';
+import { toImportTransactionType } from '@ploutizo/utils/import-row-status';
 import { validateTransactionAccountPolicy } from '@ploutizo/utils/transaction-policy';
 import type {
   ImportDraft,
@@ -47,12 +41,25 @@ import {
 } from '@/lib/queries/imports';
 import { listCategories } from '@/lib/queries/categories';
 import { listOrgMembers } from '@/lib/queries/households';
+import { listAccountMembers } from '@/lib/queries/accounts';
+import { listRefundTargetExpensesByIds } from '@/lib/queries/import-refund-targets';
+import { listMerchantRulesForClassification } from '@/lib/queries/merchant-rules-classification';
 import {
   fetchAccountWriteReference,
   transactionExistsInOrg,
 } from '@/lib/queries/scope';
 import { listTags } from '@/lib/queries/tags';
 import { parsePloutizoNormalizedCsv } from '@/lib/imports/normalizedCsv';
+import {
+  applyInitialImportClassification,
+  applyRefundLinkInheritance,
+  buildRefundLinkEvaluations,
+  derivePersistedRowStatus,
+  deriveTypeChangeSideEffects,
+  resolveBillPaymentCategoryId,
+  resolveReviewTypeFromRow,
+  toRefundLinkDraftRow,
+} from '@/services/import-classification';
 
 const toImportDraftSummary = (
   row: ImportDraftSummaryRow
@@ -97,6 +104,25 @@ const toImportDraftRow = (row: ImportDraftRowRecord): ImportDraftRow => ({
   createdAt: row.createdAt.toISOString(),
   updatedAt: row.updatedAt.toISOString(),
 });
+
+const collectRefundOfIds = (rows: readonly ImportDraftRowRecord[]): string[] =>
+  rows.flatMap((row) => (row.reviewRefundOf ? [row.reviewRefundOf] : []));
+
+const loadRefundEvaluationsForDraft = async (
+  orgId: string,
+  targetAccountId: string,
+  draftRows: ImportDraftRowRecord[]
+) => {
+  const existingExpenses = await listRefundTargetExpensesByIds(
+    orgId,
+    collectRefundOfIds(draftRows)
+  );
+  return buildRefundLinkEvaluations(
+    draftRows,
+    targetAccountId,
+    existingExpenses
+  );
+};
 
 export const listImportTargets = async (
   orgId: string
@@ -147,18 +173,59 @@ export const createNormalizedImportDraft = async (
   }
 
   const parsed = parsePloutizoNormalizedCsv(input.content);
-  const [orgMembers, orgCategories, orgTags] = await Promise.all([
-    listOrgMembers(orgId),
-    listCategories(orgId),
-    listTags(orgId),
-  ]);
+  const [orgMembers, orgCategories, orgTags, merchantRules, accountMembers] =
+    await Promise.all([
+      listOrgMembers(orgId),
+      listCategories(orgId),
+      listTags(orgId),
+      listMerchantRulesForClassification(orgId),
+      listAccountMembers(orgId, input.accountId),
+    ]);
   const resolveImportReferences = createImportReferenceResolver({
     categories: orgCategories,
     tags: orgTags,
     members: orgMembers,
   });
+  const classificationCatalogs = {
+    merchantRules,
+    billPaymentCategoryId: resolveBillPaymentCategoryId(orgCategories),
+    accountOwnerMemberIds: accountMembers.map((member) => member.memberId),
+  };
 
   try {
+    const classifiedRows = parsed.rows.map((row) => {
+      const { csvCategoryName, csvAssigneeName, csvTagNames, ...rowFields } =
+        row;
+      const resolvedRefs = resolveImportReferences({
+        csvCategoryName,
+        csvAssigneeName,
+        csvTagNames,
+      });
+      const classified = applyInitialImportClassification(
+        row,
+        resolvedRefs,
+        classificationCatalogs
+      );
+
+      return {
+        ...rowFields,
+        reviewType: classified.reviewType,
+        reviewDescription: classified.reviewDescription,
+        reviewCategoryId: classified.reviewCategoryId,
+        reviewAssigneeMemberIds: classified.reviewAssigneeMemberIds,
+        reviewTagIds: classified.reviewTagIds,
+        reviewCounterpartAccountId: null,
+        reviewRefundOf: null,
+        reviewRefundOfBatchRowId: null,
+        status: classified.status,
+        invalidReason: classified.invalidReason,
+        orgId,
+      };
+    });
+    const invalidRowCount = classifiedRows.filter(
+      (row) => row.status === 'invalid'
+    ).length;
+
     const draftId = await db.transaction(async (tx) => {
       const batch = await insertImportBatch(tx, {
         orgId,
@@ -167,49 +234,14 @@ export const createNormalizedImportDraft = async (
         status: 'draft',
         fileName: input.fileName,
         importedAt: new Date(),
-        rowCount: parsed.rowCount,
-        validRowCount: parsed.validRowCount,
-        invalidRowCount: parsed.invalidRowCount,
+        rowCount: classifiedRows.length,
+        validRowCount: classifiedRows.length - invalidRowCount,
+        invalidRowCount,
       });
 
       await insertImportBatchRows(
         tx,
-        parsed.rows.map((row) => {
-          const {
-            csvCategoryName,
-            csvAssigneeName,
-            csvTagNames,
-            ...rowFields
-          } = row;
-          const resolvedRefs = resolveImportReferences({
-            csvCategoryName,
-            csvAssigneeName,
-            csvTagNames,
-          });
-
-          return {
-            ...rowFields,
-            ...resolvedRefs,
-            status: deriveImportRowStatus(
-              toImportRowStatusFields({
-                status: row.status,
-                reviewDate: row.reviewDate ?? null,
-                reviewAmount: row.reviewAmount ?? null,
-                reviewType: toImportTransactionType(row.reviewType),
-                reviewDescription: row.reviewDescription ?? null,
-                parsedDate: row.parsedDate ?? null,
-                parsedAmount: row.parsedAmount ?? null,
-                parsedType: toImportTransactionType(row.parsedType),
-                parsedDescription: row.parsedDescription ?? null,
-                reviewCategoryId: resolvedRefs.reviewCategoryId,
-                reviewAssigneeMemberIds: resolvedRefs.reviewAssigneeMemberIds,
-                reviewCounterpartAccountId: null,
-              })
-            ),
-            orgId,
-            batchId: batch.id,
-          };
-        })
+        classifiedRows.map((row) => ({ ...row, batchId: batch.id }))
       );
 
       return batch.id;
@@ -246,7 +278,42 @@ export const updateImportDraftRow = async (
   const existing = await fetchDraftRowById(orgId, rowId);
   if (!existing) throw new NotFoundError('Import draft row not found.');
 
-  const merged = { ...existing, ...input };
+  const draft = await fetchDraftSummaryById(orgId, existing.batchId);
+  if (!draft?.accountId) throw new NotFoundError('Import draft not found.');
+  const targetAccountId = draft.accountId;
+
+  const categories = await listCategories(orgId);
+  const billPaymentCategoryId = resolveBillPaymentCategoryId(categories);
+
+  let patch: UpdateImportDraftRowInput = { ...input };
+
+  const previousType = resolveReviewTypeFromRow(existing);
+  const nextType =
+    patch.reviewType !== undefined
+      ? toImportTransactionType(patch.reviewType)
+      : previousType;
+
+  if (
+    patch.reviewType !== undefined &&
+    nextType !== previousType &&
+    previousType != null
+  ) {
+    patch = {
+      ...deriveTypeChangeSideEffects(nextType, billPaymentCategoryId),
+      ...patch,
+      // Caller-supplied type-specific fields win over clears when present.
+      reviewType: patch.reviewType,
+    };
+  }
+
+  // Mutual exclusivity: setting one refund target clears the other.
+  if (patch.reviewRefundOf != null) {
+    patch.reviewRefundOfBatchRowId = null;
+  } else if (patch.reviewRefundOfBatchRowId != null) {
+    patch.reviewRefundOf = null;
+  }
+
+  let merged = { ...existing, ...patch };
 
   await assertOrgWriteReferences(orgId, {
     categoryId: merged.reviewCategoryId ?? null,
@@ -261,14 +328,8 @@ export const updateImportDraftRow = async (
     );
     if (!funding) throw new NotFoundError('Account not found');
 
-    const reviewType = resolveImportRowReviewType({
-      reviewType: toImportTransactionType(merged.reviewType),
-      parsedType: toImportTransactionType(merged.parsedType),
-    });
-    if (reviewType === 'settlement') {
-      const draft = await fetchDraftSummaryById(orgId, existing.batchId);
-      if (!draft?.accountId) throw new NotFoundError('Import draft not found.');
-      const card = await fetchAccountWriteReference(orgId, draft.accountId);
+    if (nextType === 'settlement') {
+      const card = await fetchAccountWriteReference(orgId, targetAccountId);
       if (!card) throw new NotFoundError('Account not found');
       const policy = validateTransactionAccountPolicy({
         type: 'settlement',
@@ -290,25 +351,52 @@ export const updateImportDraftRow = async (
     if (!ok) throw new NotFoundError('Transaction not found');
   }
 
-  const statusFields = toImportRowStatusFields({
-    status: existing.status,
-    reviewDate: merged.reviewDate ?? null,
-    reviewAmount: merged.reviewAmount ?? null,
-    reviewType: toImportTransactionType(merged.reviewType),
-    reviewDescription: merged.reviewDescription ?? null,
-    parsedDate: merged.parsedDate ?? null,
-    parsedAmount: merged.parsedAmount ?? null,
-    parsedType: toImportTransactionType(merged.parsedType),
-    parsedDescription: merged.parsedDescription ?? null,
-    reviewCategoryId: merged.reviewCategoryId ?? null,
-    reviewAssigneeMemberIds: merged.reviewAssigneeMemberIds,
-    reviewCounterpartAccountId: merged.reviewCounterpartAccountId ?? null,
-  });
-  const status = deriveImportRowStatus(statusFields);
-  const invalidReason =
-    status === 'invalid'
-      ? formatImportRowStructuralInvalidReason(statusFields)
-      : null;
+  if (merged.reviewRefundOfBatchRowId) {
+    const target = await fetchDraftRowById(
+      orgId,
+      merged.reviewRefundOfBatchRowId
+    );
+    if (!target || target.batchId !== existing.batchId) {
+      throw new NotFoundError('Import draft row not found.');
+    }
+  }
+
+  // Inherit category/assignees when establishing a valid refund link.
+  const draftRowsPreview = (await listDraftRows(orgId, existing.batchId)).map(
+    (row) => (row.id === rowId ? { ...row, ...merged } : row)
+  );
+  const evaluations = await loadRefundEvaluationsForDraft(
+    orgId,
+    targetAccountId,
+    draftRowsPreview
+  );
+  const selfEvaluation = evaluations.get(rowId);
+  if (
+    (patch.reviewRefundOf !== undefined ||
+      patch.reviewRefundOfBatchRowId !== undefined) &&
+    selfEvaluation
+  ) {
+    patch = applyRefundLinkInheritance(patch, selfEvaluation);
+    merged = { ...existing, ...patch };
+  }
+
+  const { status, invalidReason } = derivePersistedRowStatus(
+    {
+      status: existing.status,
+      reviewDate: merged.reviewDate ?? null,
+      reviewAmount: merged.reviewAmount ?? null,
+      reviewType: merged.reviewType,
+      reviewDescription: merged.reviewDescription ?? null,
+      parsedDate: merged.parsedDate ?? null,
+      parsedAmount: merged.parsedAmount ?? null,
+      parsedType: merged.parsedType,
+      parsedDescription: merged.parsedDescription ?? null,
+      reviewCategoryId: merged.reviewCategoryId ?? null,
+      reviewAssigneeMemberIds: merged.reviewAssigneeMemberIds,
+      reviewCounterpartAccountId: merged.reviewCounterpartAccountId ?? null,
+    },
+    Boolean(selfEvaluation && selfEvaluation.linked && !selfEvaluation.valid)
+  );
 
   const wasInvalid = existing.status === 'invalid';
   const isInvalid = status === 'invalid';
@@ -324,7 +412,7 @@ export const updateImportDraftRow = async (
       orgId,
       rowId,
       {
-        ...input,
+        ...patch,
         status,
         invalidReason,
       },
@@ -332,6 +420,63 @@ export const updateImportDraftRow = async (
     );
     if (!row) return null;
     await adjustImportDraftRowCounts(orgId, existing.batchId, countDelta, tx);
+
+    // Recompute sibling refund-row statuses when links/amounts/selection deps change.
+    const allRows = await listDraftRows(orgId, existing.batchId, tx);
+    const liveRows = allRows.map((r) => (r.id === rowId ? row : r));
+    const liveEvaluations = await loadRefundEvaluationsForDraft(
+      orgId,
+      targetAccountId,
+      liveRows
+    );
+
+    for (const sibling of liveRows) {
+      if (sibling.id === rowId) continue;
+      const evaluation = liveEvaluations.get(sibling.id);
+      if (!evaluation?.linked) continue;
+      const next = derivePersistedRowStatus(
+        {
+          status: sibling.status,
+          reviewDate: sibling.reviewDate ?? null,
+          reviewAmount: sibling.reviewAmount,
+          reviewType: sibling.reviewType,
+          reviewDescription: sibling.reviewDescription,
+          parsedDate: sibling.parsedDate ?? null,
+          parsedAmount: sibling.parsedAmount,
+          parsedType: sibling.parsedType,
+          parsedDescription: sibling.parsedDescription,
+          reviewCategoryId: sibling.reviewCategoryId,
+          reviewAssigneeMemberIds: sibling.reviewAssigneeMemberIds,
+          reviewCounterpartAccountId: sibling.reviewCounterpartAccountId,
+        },
+        !evaluation.valid
+      );
+      if (
+        next.status === sibling.status &&
+        next.invalidReason === sibling.invalidReason
+      ) {
+        continue;
+      }
+      const siblingWasInvalid = sibling.status === 'invalid';
+      const siblingIsInvalid = next.status === 'invalid';
+      await updateImportDraftRowQuery(
+        orgId,
+        sibling.id,
+        { status: next.status, invalidReason: next.invalidReason },
+        tx
+      );
+      await adjustImportDraftRowCounts(
+        orgId,
+        existing.batchId,
+        siblingWasInvalid && !siblingIsInvalid
+          ? { validRowCount: 1, invalidRowCount: -1 }
+          : !siblingWasInvalid && siblingIsInvalid
+            ? { validRowCount: -1, invalidRowCount: 1 }
+            : { validRowCount: 0, invalidRowCount: 0 },
+        tx
+      );
+    }
+
     return row;
   });
   if (!updated) throw new NotFoundError('Import draft row not found.');
@@ -345,6 +490,7 @@ export const updateImportDraftRowSelection = async (
 ): Promise<ImportDraftRow[]> => {
   const draft = await fetchDraftSummaryById(orgId, draftId);
   if (!draft) throw new NotFoundError('Import draft not found.');
+  if (!draft.accountId) throw new NotFoundError('Import draft not found.');
 
   const uniqueRowIds = [...new Set(input.rowIds)];
   const matchingRows = await listDraftRowIdsForDraft(
@@ -367,8 +513,63 @@ export const updateImportDraftRowSelection = async (
     if (rows.length !== uniqueRowIds.length) {
       throw new NotFoundError('Import draft row not found.');
     }
+
+    // Selection of a same-import expense target can unblock/block linked refunds.
+    const allRows = await listDraftRows(orgId, draftId, tx);
+    const evaluations = await loadRefundEvaluationsForDraft(
+      orgId,
+      draft.accountId!,
+      allRows
+    );
+
+    for (const row of allRows) {
+      const evaluation = evaluations.get(row.id);
+      if (!evaluation?.linked) continue;
+      const next = derivePersistedRowStatus(
+        {
+          status: row.status,
+          reviewDate: row.reviewDate ?? null,
+          reviewAmount: row.reviewAmount,
+          reviewType: row.reviewType,
+          reviewDescription: row.reviewDescription,
+          parsedDate: row.parsedDate ?? null,
+          parsedAmount: row.parsedAmount,
+          parsedType: row.parsedType,
+          parsedDescription: row.parsedDescription,
+          reviewCategoryId: row.reviewCategoryId,
+          reviewAssigneeMemberIds: row.reviewAssigneeMemberIds,
+          reviewCounterpartAccountId: row.reviewCounterpartAccountId,
+        },
+        !evaluation.valid
+      );
+      if (
+        next.status === row.status &&
+        next.invalidReason === row.invalidReason
+      ) {
+        continue;
+      }
+      const wasInvalid = row.status === 'invalid';
+      const isInvalid = next.status === 'invalid';
+      await updateImportDraftRowQuery(
+        orgId,
+        row.id,
+        { status: next.status, invalidReason: next.invalidReason },
+        tx
+      );
+      await adjustImportDraftRowCounts(
+        orgId,
+        draftId,
+        wasInvalid && !isInvalid
+          ? { validRowCount: 1, invalidRowCount: -1 }
+          : !wasInvalid && isInvalid
+            ? { validRowCount: -1, invalidRowCount: 1 }
+            : { validRowCount: 0, invalidRowCount: 0 },
+        tx
+      );
+    }
+
     await touchImportDraft(orgId, draftId, tx);
-    return rows;
+    return listDraftRows(orgId, draftId, tx);
   });
 
   return updated.map(toImportDraftRow);
@@ -376,3 +577,10 @@ export const updateImportDraftRowSelection = async (
 
 export const getNormalizedImportExampleCsv = () =>
   NORMALIZED_IMPORT_EXAMPLE_CSV;
+
+// Re-export helpers used by tests
+export {
+  applyInitialImportClassification,
+  deriveTypeChangeSideEffects,
+  toRefundLinkDraftRow,
+};

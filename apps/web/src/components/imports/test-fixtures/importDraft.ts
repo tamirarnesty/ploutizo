@@ -29,6 +29,7 @@ export const makeImportDraftRow = (
   reviewAssigneeMemberIds: ['member_1'],
   reviewCounterpartAccountId: null,
   reviewRefundOf: null,
+  reviewRefundOfBatchRowId: null,
   reviewRefundLinkHint: null,
   reviewNotes: null,
   reviewTagIds: [],

@@ -122,6 +122,12 @@ export const importBatchRows = pgTable(
      * `ON DELETE SET NULL (review_refund_of)` to preserve org_id.
      */
     reviewRefundOf: uuid('review_refund_of'),
+    /**
+     * Same-import expense row this refund links to. Mutually exclusive with
+     * `reviewRefundOf` at the service boundary. Self-FK is same-table so it
+     * is declared in SQL migration `0011_import_classification_refund_links.sql`.
+     */
+    reviewRefundOfBatchRowId: uuid('review_refund_of_batch_row_id'),
     reviewRefundLinkHint: text('review_refund_link_hint'),
     reviewNotes: text('review_notes'),
     reviewTagIds: jsonb('review_tag_ids')

@@ -217,6 +217,23 @@ describe('deriveImportRowStatus', () => {
     ).toBe('ready');
   });
 
+  it('returns needs_review when a refund link is blocked', () => {
+    expect(
+      deriveImportRowStatus({
+        ...readyFields,
+        reviewType: 'refund',
+        refundLinkBlocked: true,
+      })
+    ).toBe('needs_review');
+    expect(
+      getImportRowReviewBlockers({
+        ...readyFields,
+        reviewType: 'refund',
+        refundLinkBlocked: true,
+      })
+    ).toContain('refund_link');
+  });
+
   it('withDerivedImportRowStatus writes derived status onto the row', () => {
     const row = withDerivedImportRowStatus({
       ...readyFields,
@@ -377,6 +394,7 @@ describe('toImportRowStatusFields', () => {
       reviewCategoryId: 'cat_1',
       reviewAssigneeMemberIds: ['member_1'],
       reviewCounterpartAccountId: null,
+      refundLinkBlocked: false,
     });
   });
 

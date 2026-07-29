@@ -40,6 +40,11 @@ vi.mock('@/components/transactions/TransactionTagPicker', () => ({
   TransactionTagPicker: () => <div>Tag picker</div>,
 }));
 
+vi.mock('@/lib/data-access/transactions', () => ({
+  useGetTransactions: () => ({ data: { data: [], total: 0, page: 1, limit: 10 } }),
+  useSearchTransactions: () => ({ data: [] }),
+}));
+
 const baseRow = (): ImportDraftRow => ({
   id: '33333333-3333-4333-8333-333333333333',
   batchId: '11111111-1111-4111-8111-111111111111',
@@ -64,6 +69,7 @@ const baseRow = (): ImportDraftRow => ({
   reviewAssigneeMemberIds: ['44444444-4444-4444-8444-444444444444'],
   reviewCounterpartAccountId: null,
   reviewRefundOf: null,
+  reviewRefundOfBatchRowId: null,
   reviewRefundLinkHint: null,
   reviewNotes: null,
   reviewTagIds: [],
@@ -76,8 +82,12 @@ const renderRowFields = (row: ImportDraftRow) =>
   render(
     <ImportDraftReviewProvider
       draftId={row.batchId}
+      accountId="acct_1"
       categories={[mockCategory]}
       orgMembers={[]}
+      accounts={[]}
+      billPaymentCategoryId="cat-bill"
+      draftRows={[row]}
       updateRow={updateRow}
       failedRowIds={[]}
     >

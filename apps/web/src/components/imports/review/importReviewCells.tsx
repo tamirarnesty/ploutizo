@@ -26,6 +26,10 @@ import type { ImportDraftRow, ImportTransactionType } from '@ploutizo/types';
 import { CategorySelect } from '@/components/categories/CategorySelect';
 import { CurrencyInput } from '@/components/currency/CurrencyInput';
 import {
+  buildImportTypeChangePatch,
+  isSettlementImportRow,
+} from '../lib/importClassification';
+import {
   getImportRowLabel,
   resolveImportRowOriginalDescription,
 } from '../lib/importPresentation';
@@ -196,6 +200,7 @@ interface ImportReviewTypeCellProps {
 }
 
 export const ImportReviewTypeCell = ({ row }: ImportReviewTypeCellProps) => {
+  const { billPaymentCategoryId } = useImportDraftReviewContext();
   const { saveField, disabled } = useImportDraftReviewRowSave(row);
   const rowLabel = getImportRowLabel(row);
 
@@ -207,7 +212,9 @@ export const ImportReviewTypeCell = ({ row }: ImportReviewTypeCellProps) => {
       ariaLabel={`Type for ${rowLabel}`}
       onChange={(nextType) => {
         if (nextType === resolveImportRowReviewType(row)) return;
-        saveField({ reviewType: nextType });
+        saveField(
+          buildImportTypeChangePatch(nextType, billPaymentCategoryId)
+        );
       }}
     />
   );
@@ -270,6 +277,22 @@ export const ImportReviewCategoryCell = ({
   const { categories } = useImportDraftReviewContext();
   const { saveField, disabled } = useImportDraftReviewRowSave(row);
   const rowLabel = getImportRowLabel(row);
+  const settlement = isSettlementImportRow(row);
+  const categoryName =
+    categories.find((category) => category.id === row.reviewCategoryId)?.name ??
+    null;
+
+  if (settlement) {
+    return (
+      <Text
+        variant="body-sm"
+        className="text-muted-foreground"
+        aria-label={`Category for ${rowLabel}`}
+      >
+        {categoryName ?? 'Bill Payment'}
+      </Text>
+    );
+  }
 
   return (
     <CategorySelect
@@ -298,13 +321,17 @@ export const ImportReviewAssigneeCell = ({
   const { orgMembers } = useImportDraftReviewContext();
   const { saveField, disabled } = useImportDraftReviewRowSave(row);
   const rowLabel = getImportRowLabel(row);
+  const settlement = isSettlementImportRow(row);
+  const fieldLabel = settlement
+    ? `Pay toward for ${rowLabel}`
+    : `Assignees for ${rowLabel}`;
 
   return (
     <ImportAssigneeField
       row={row}
       orgMembers={orgMembers}
       disabled={disabled}
-      ariaLabel={`Assignees for ${rowLabel}`}
+      ariaLabel={fieldLabel}
       onSave={(memberIds) => {
         if (memberIds.join('|') === row.reviewAssigneeMemberIds.join('|')) {
           return;

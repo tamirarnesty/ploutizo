@@ -53,6 +53,30 @@ export {
   type ImportReferenceCatalogs,
   type ResolvedImportReferences,
 } from './match-import-references';
+export {
+  findMatchingMerchantRule,
+  matchesMerchantRule,
+  type MerchantRuleMatchInput,
+} from './match-merchant-rule';
+export {
+  BILL_PAYMENT_DESCRIPTION_PATTERN,
+  classifyImportRow,
+  isBillPaymentDescription,
+  type ClassifyImportRowInput,
+  type ClassifyMerchantRule,
+  type ClassifiedImportRowValues,
+} from './classify-import-row';
+export {
+  evaluateImportRefundLink,
+  evaluateImportRefundLinks,
+  inheritRefundLinkFields,
+  sumSelectedRefundsByTarget,
+  type ExistingRefundTargetExpense,
+  type EvaluateImportRefundLinksOptions,
+  type ImportRefundLinkDraftRow,
+  type ImportRefundLinkEvaluation,
+  type ImportRefundLinkIssue,
+} from './import-refund-links';
 export { lrmSplit } from './lrm';
 export {
   scaleAssigneeSplitProportionally,

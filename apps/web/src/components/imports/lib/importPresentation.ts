@@ -12,7 +12,10 @@ import type {
   OrgMember,
 } from '@ploutizo/types';
 
-type ImportRowMissingBlocker = Exclude<ImportRowReviewBlocker, 'settlement'>;
+type ImportRowMissingBlocker = Exclude<
+  ImportRowReviewBlocker,
+  'settlement' | 'refund_link'
+>;
 
 const IMPORT_ROW_MISSING_BLOCKER_LABELS: Record<
   ImportRowMissingBlocker,
@@ -60,14 +63,17 @@ const formatNeedsReviewTooltip = (
   if (blockers.length === 0) return 'Needs review';
 
   const requiresSettlement = blockers.includes('settlement');
+  const requiresRefundLink = blockers.includes('refund_link');
   const missingLabels = blockers
     .filter(
-      (blocker): blocker is ImportRowMissingBlocker => blocker !== 'settlement'
+      (blocker): blocker is ImportRowMissingBlocker =>
+        blocker !== 'settlement' && blocker !== 'refund_link'
     )
     .map((blocker) => IMPORT_ROW_MISSING_BLOCKER_LABELS[blocker]);
 
   const parts: string[] = [];
-  if (requiresSettlement) parts.push('settlement requires review');
+  if (requiresSettlement) parts.push('settlement requires funding account');
+  if (requiresRefundLink) parts.push('refund link needs review');
   if (missingLabels.length > 0) {
     parts.push(`missing ${missingLabels.join(', ')}`);
   }
@@ -94,6 +100,12 @@ export const shouldDefaultExpandImportRow = (row: ImportDraftRow): boolean => {
   if (row.reviewTagIds.length > 0) return true;
   if (row.invalidReason) return true;
   if (row.status === 'needs_review' || row.status === 'invalid') return true;
+  if (row.reviewType === 'settlement' || row.parsedType === 'settlement') {
+    return true;
+  }
+  if (row.reviewType === 'refund' || row.parsedType === 'refund') {
+    return true;
+  }
   return false;
 };
 

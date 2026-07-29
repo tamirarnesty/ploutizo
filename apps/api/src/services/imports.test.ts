@@ -25,6 +25,9 @@ import {
 import { assertOrgWriteReferences } from '@/lib/assertOrgWriteReferences';
 import { listOrgMembers } from '@/lib/queries/households';
 import { listCategories } from '@/lib/queries/categories';
+import { listAccountMembers } from '@/lib/queries/accounts';
+import { listMerchantRulesForClassification } from '@/lib/queries/merchant-rules-classification';
+import { listRefundTargetExpensesByIds } from '@/lib/queries/import-refund-targets';
 import {
   fetchAccountWriteReference,
   transactionExistsInOrg,
@@ -63,6 +66,18 @@ vi.mock('@/lib/queries/categories', () => ({
 
 vi.mock('@/lib/queries/tags', () => ({
   listTags: vi.fn(),
+}));
+
+vi.mock('@/lib/queries/accounts', () => ({
+  listAccountMembers: vi.fn(),
+}));
+
+vi.mock('@/lib/queries/merchant-rules-classification', () => ({
+  listMerchantRulesForClassification: vi.fn(),
+}));
+
+vi.mock('@/lib/queries/import-refund-targets', () => ({
+  listRefundTargetExpensesByIds: vi.fn(),
 }));
 
 vi.mock('@/lib/assertOrgWriteReferences', () => ({
@@ -118,6 +133,7 @@ const draftRow = {
   reviewAssigneeMemberIds: ['44444444-4444-4444-8444-444444444444'],
   reviewCounterpartAccountId: null,
   reviewRefundOf: null,
+  reviewRefundOfBatchRowId: null,
   reviewRefundLinkHint: null,
   reviewNotes: null,
   reviewTagIds: [],
@@ -162,6 +178,15 @@ describe('import service', () => {
       },
     ]);
     vi.mocked(listTags).mockResolvedValue([]);
+    vi.mocked(listAccountMembers).mockResolvedValue([
+      {
+        id: 'am_1',
+        accountId: summaryRow.accountId,
+        memberId: '44444444-4444-4444-8444-444444444444',
+      },
+    ]);
+    vi.mocked(listMerchantRulesForClassification).mockResolvedValue([]);
+    vi.mocked(listRefundTargetExpensesByIds).mockResolvedValue(new Map());
     vi.mocked(assertOrgWriteReferences).mockResolvedValue(undefined);
     vi.mocked(fetchAccountWriteReference).mockResolvedValue({
       id: '66666666-6666-4666-8666-666666666666',
@@ -507,6 +532,9 @@ describe('import service', () => {
     vi.mocked(updateImportDraftRowSelectionQuery).mockResolvedValue([
       { ...draftRow, selectedForImport: true },
     ]);
+    vi.mocked(listDraftRows).mockResolvedValue([
+      { ...draftRow, selectedForImport: true },
+    ]);
     const tx = {} as never;
     vi.mocked(db.transaction).mockImplementation(async (fn) => fn(tx));
 
@@ -534,17 +562,27 @@ describe('import service', () => {
       ...draftRow,
       reviewType: 'settlement' as const,
       reviewCategoryId: null,
-      reviewAssigneeMemberIds: [],
+      reviewAssigneeMemberIds: ['44444444-4444-4444-8444-444444444444'],
     };
-    const updatedRow = {
+    const updatedSettlement = {
       ...settlementRow,
       reviewCounterpartAccountId: fundingId,
+      status: 'ready' as const,
+      updatedAt: new Date('2026-05-20T13:00:00Z'),
+    };
+    const refundRow = {
+      ...draftRow,
+      id: '99999999-9999-4999-8999-999999999999',
+      reviewType: 'refund' as const,
+    };
+    const updatedRefund = {
+      ...refundRow,
       reviewRefundOf: expenseId,
       updatedAt: new Date('2026-05-20T13:00:00Z'),
     };
     const tx = {} as never;
 
-    vi.mocked(fetchDraftRowById).mockResolvedValue(settlementRow);
+    vi.mocked(fetchDraftRowById).mockResolvedValueOnce(settlementRow);
     vi.mocked(fetchDraftSummaryById).mockResolvedValue(summaryRow);
     vi.mocked(fetchAccountWriteReference).mockImplementation((_org, id) =>
       Promise.resolve(
@@ -553,42 +591,112 @@ describe('import service', () => {
           : { id: fundingId, type: 'chequing' }
       )
     );
-    vi.mocked(transactionExistsInOrg).mockResolvedValue(true);
-    vi.mocked(updateImportDraftRowQuery).mockResolvedValue(updatedRow);
+    vi.mocked(listDraftRows).mockResolvedValue([settlementRow]);
+    vi.mocked(updateImportDraftRowQuery).mockResolvedValueOnce(
+      updatedSettlement
+    );
     vi.mocked(db.transaction).mockImplementation(async (fn) => fn(tx));
 
-    const result = await updateImportDraftRow('org_1', draftRow.id, {
+    const settlementResult = await updateImportDraftRow(
+      'org_1',
+      settlementRow.id,
+      {
+        reviewCounterpartAccountId: fundingId,
+      }
+    );
+
+    expect(fetchAccountWriteReference).toHaveBeenCalledWith('org_1', fundingId);
+    expect(settlementResult).toMatchObject({
       reviewCounterpartAccountId: fundingId,
+      reviewType: 'settlement',
+      externalId: settlementRow.externalId,
+      sourceDescription: settlementRow.sourceDescription,
+    });
+
+    vi.mocked(fetchDraftRowById).mockResolvedValue(refundRow);
+    vi.mocked(transactionExistsInOrg).mockResolvedValue(true);
+    vi.mocked(listDraftRows).mockResolvedValue([refundRow]);
+    vi.mocked(updateImportDraftRowQuery).mockResolvedValue(updatedRefund);
+
+    const refundResult = await updateImportDraftRow('org_1', refundRow.id, {
       reviewRefundOf: expenseId,
     });
 
-    expect(fetchAccountWriteReference).toHaveBeenCalledWith('org_1', fundingId);
     expect(transactionExistsInOrg).toHaveBeenCalledWith('org_1', expenseId);
-    expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
-      'org_1',
-      draftRow.id,
-      {
-        reviewCounterpartAccountId: fundingId,
-        reviewRefundOf: expenseId,
-        status: 'needs_review',
-        invalidReason: null,
-      },
-      tx
-    );
-    expect(result).toMatchObject({
-      reviewCounterpartAccountId: fundingId,
+    expect(refundResult).toMatchObject({
       reviewRefundOf: expenseId,
-      // Original imported provenance is retained beside review edits.
-      externalId: settlementRow.externalId,
-      sourceDate: settlementRow.sourceDate,
-      sourceAmount: settlementRow.sourceAmount,
-      sourceDescription: settlementRow.sourceDescription,
-      sourceType: settlementRow.sourceType,
-      parsedDate: settlementRow.parsedDate,
-      parsedAmount: settlementRow.parsedAmount,
-      parsedType: settlementRow.parsedType,
-      parsedDescription: settlementRow.parsedDescription,
+      reviewType: 'refund',
     });
+  });
+
+  it('classifies bill payments and applies ownership defaults on create', async () => {
+    vi.mocked(listCategories).mockResolvedValue([
+      {
+        id: '55555555-5555-4555-8555-555555555555',
+        orgId: 'org_1',
+        name: 'Dining',
+        icon: null,
+        colour: null,
+        sortOrder: 0,
+        archivedAt: null,
+        createdAt: new Date('2026-01-01T00:00:00Z'),
+      },
+      {
+        id: '77777777-7777-4777-8777-777777777777',
+        orgId: 'org_1',
+        name: 'Bill Payment',
+        icon: null,
+        colour: null,
+        sortOrder: 1,
+        archivedAt: null,
+        createdAt: new Date('2026-01-01T00:00:00Z'),
+      },
+    ]);
+    vi.mocked(listAccountMembers).mockResolvedValue([
+      {
+        id: 'am_1',
+        accountId: summaryRow.accountId,
+        memberId: '44444444-4444-4444-8444-444444444444',
+      },
+      {
+        id: 'am_2',
+        accountId: summaryRow.accountId,
+        memberId: '88888888-8888-4888-8888-888888888888',
+      },
+    ]);
+
+    await createNormalizedImportDraft('org_1', {
+      accountId: summaryRow.accountId,
+      fileName: 'statement.csv',
+      content: [
+        'date,amount,description,type',
+        '2026-05-15,250.00,PAYMENT THANK YOU,expense',
+        '2026-05-02,42.18,Unknown Cafe,expense',
+      ].join('\n'),
+    });
+
+    expect(insertImportBatchRows).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.arrayContaining([
+        expect.objectContaining({
+          reviewType: 'settlement',
+          reviewCategoryId: '77777777-7777-4777-8777-777777777777',
+          reviewAssigneeMemberIds: [
+            '44444444-4444-4444-8444-444444444444',
+            '88888888-8888-4888-8888-888888888888',
+          ],
+        }),
+        expect.objectContaining({
+          reviewType: 'expense',
+          reviewDescription: 'Unknown Cafe',
+          reviewAssigneeMemberIds: [
+            '44444444-4444-4444-8444-444444444444',
+            '88888888-8888-4888-8888-888888888888',
+          ],
+          status: 'needs_review',
+        }),
+      ])
+    );
   });
 
   it('rejects reviewCounterpartAccountId not in org (two-org isolation)', async () => {
