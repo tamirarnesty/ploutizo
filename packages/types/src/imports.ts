@@ -1,8 +1,12 @@
 import type {
   ImportBatchStatus,
+  ImportPreparedOutcome,
   ImportRowStatus,
   ImportTransactionType,
 } from './enums';
+
+/** Seeded settlement category for bill-payment readability in transaction lists. */
+export const BILL_PAYMENT_CATEGORY_NAME = 'Bill Payment' as const;
 
 export interface ImportTargetAccount {
   id: string;
@@ -49,6 +53,11 @@ export interface ImportDraftRow {
   reviewDescription: string | null;
   reviewCategoryId: string | null;
   reviewAssigneeMemberIds: string[];
+  /** Settlement funding account (paid-from / counterpart). */
+  reviewCounterpartAccountId: string | null;
+  /** Reviewed refund link to an existing expense transaction. */
+  reviewRefundOf: string | null;
+  /** Original CSV refund-link hint retained as provenance. */
   reviewRefundLinkHint: string | null;
   reviewNotes: string | null;
   reviewTagIds: string[];
@@ -59,4 +68,42 @@ export interface ImportDraftRow {
 
 export interface ImportDraft extends ImportDraftSummary {
   rows: ImportDraftRow[];
+}
+
+/** Immutable reviewed values captured when a prepared set revision is created. */
+export interface ImportPreparedReviewedValues {
+  date: string | null;
+  amount: number | null;
+  type: ImportTransactionType | null;
+  description: string | null;
+  categoryId: string | null;
+  assigneeMemberIds: string[];
+  counterpartAccountId: string | null;
+  refundOf: string | null;
+  notes: string | null;
+  tagIds: string[];
+  externalId: string | null;
+  rawDescription: string | null;
+  selectedForImport: boolean;
+}
+
+export interface ImportPreparedSetSummary {
+  id: string;
+  batchId: string;
+  revision: number;
+  createdAt: string;
+}
+
+export interface ImportPreparedOutcomeRow {
+  id: string;
+  preparedSetId: string;
+  batchRowId: string;
+  outcome: ImportPreparedOutcome;
+  transactionId: string | null;
+  reviewedValues: ImportPreparedReviewedValues;
+  createdAt: string;
+}
+
+export interface ImportPreparedSet extends ImportPreparedSetSummary {
+  outcomes: ImportPreparedOutcomeRow[];
 }

@@ -15,6 +15,8 @@ const ACCOUNT_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 const MEMBER_A = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12';
 const MEMBER_B = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13';
 
+const CATEGORY_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14';
+
 const mockTx = { __mockTx: true as const };
 
 const baseTxRow = {
@@ -25,6 +27,7 @@ const baseTxRow = {
   date: '2026-01-15',
   accountId: ACCOUNT_ID,
   description: 'Groceries',
+  categoryId: CATEGORY_ID,
 };
 
 const expensePayload = {
@@ -33,6 +36,7 @@ const expensePayload = {
   amount: 5000,
   date: '2026-01-15',
   description: 'Groceries',
+  categoryId: CATEGORY_ID,
   assignees: [
     { memberId: MEMBER_A, amountCents: 3000, percentage: 60 },
     { memberId: MEMBER_B, amountCents: 2000, percentage: 40 },
@@ -45,6 +49,7 @@ const amountOnlyPayload = {
   amount: 5000,
   date: '2026-01-15',
   description: 'Groceries',
+  categoryId: CATEGORY_ID,
 };
 
 vi.mock('@ploutizo/db', () => ({

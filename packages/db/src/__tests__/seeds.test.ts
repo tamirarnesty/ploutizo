@@ -58,9 +58,10 @@ describe('seedOrgCategories', () => {
     await seedOrgCategories('org_test123');
 
     const insertedRows = (
-      mockValues.mock.calls[0] as unknown as [{ orgId: string }[]]
+      mockValues.mock.calls[0] as unknown as [{ orgId: string; name: string }[]]
     )[0];
     expect(insertedRows.every((row) => row.orgId === 'org_test123')).toBe(true);
+    expect(insertedRows.some((row) => row.name === 'Bill Payment')).toBe(true);
   });
 });
 
@@ -91,13 +92,28 @@ describe('seedOrg', () => {
     vi.clearAllMocks();
     const mockValues = vi.fn(() => Promise.resolve());
     const mockExecute = vi.fn((_sqlQuery: unknown) => Promise.resolve());
+    let lookupCall = 0;
     const mockTx = {
       execute: mockExecute,
-      select: vi.fn(() => ({
-        from: vi.fn(() => ({
-          where: vi.fn(() => Promise.resolve([{ n: 0 }])),
-        })),
-      })),
+      select: vi.fn((args?: unknown) => {
+        if (args && typeof args === 'object' && 'n' in args) {
+          return {
+            from: vi.fn(() => ({
+              where: vi.fn(() => Promise.resolve([{ n: 0 }])),
+            })),
+          };
+        }
+        lookupCall += 1;
+        return {
+          from: vi.fn(() => ({
+            where: vi.fn(() => ({
+              limit: vi.fn(() =>
+                Promise.resolve(lookupCall === 1 ? [{ id: 'cat_bill' }] : [])
+              ),
+            })),
+          })),
+        };
+      }),
       insert: vi.mocked(db.insert),
     };
     vi.mocked(db.transaction).mockImplementationOnce(async (fn) => {
@@ -113,19 +129,99 @@ describe('seedOrg', () => {
     const executedSql = mockExecute.mock.calls[0][0] as Record<string, unknown>;
     const sqlString = JSON.stringify(executedSql);
     expect(sqlString).toContain('pg_advisory_xact_lock');
-    expect(db.insert).toHaveBeenCalledTimes(2);
+    // categories + default merchant rules + bill payment rule
+    expect(db.insert).toHaveBeenCalledTimes(3);
   });
 
-  it('does not insert when the org already has categories (count under lock)', async () => {
+  it('ensures Bill Payment category and rule when categories already exist', async () => {
     vi.clearAllMocks();
     const mockInsert = vi.mocked(db.insert);
+    const onConflictDoNothing = vi.fn(() => Promise.resolve());
+    let insertCall = 0;
+    mockInsert.mockImplementation(() => {
+      insertCall += 1;
+      if (insertCall === 1) {
+        return {
+          values: vi.fn(() => ({ onConflictDoNothing })),
+        } as never;
+      }
+      return mockInsertReturn(vi.fn(() => Promise.resolve()));
+    });
+
+    let countCalls = 0;
+    let lookupCalls = 0;
     const mockTx = {
       execute: vi.fn(() => Promise.resolve()),
-      select: vi.fn(() => ({
-        from: vi.fn(() => ({
-          where: vi.fn(() => Promise.resolve([{ n: 11 }])),
-        })),
-      })),
+      select: vi.fn((args?: unknown) => {
+        if (args && typeof args === 'object' && 'n' in args) {
+          countCalls += 1;
+          return {
+            from: vi.fn(() => ({
+              where: vi.fn(() =>
+                Promise.resolve([{ n: countCalls === 1 ? 11 : 5 }])
+              ),
+            })),
+          };
+        }
+        lookupCalls += 1;
+        return {
+          from: vi.fn(() => ({
+            where: vi.fn(() => ({
+              limit: vi.fn(() =>
+                Promise.resolve(lookupCalls === 1 ? [{ id: 'cat_bill' }] : [])
+              ),
+            })),
+          })),
+        };
+      }),
+      insert: mockInsert,
+    };
+    vi.mocked(db.transaction).mockImplementationOnce(async (fn) => {
+      await fn(mockTx as never);
+    });
+
+    const { seedOrg } = await import('../seeds/index');
+    await seedOrg('org_existing');
+
+    expect(onConflictDoNothing).toHaveBeenCalled();
+    // category ensure + bill payment rule insert (no existing rule)
+    expect(mockInsert).toHaveBeenCalledTimes(2);
+  });
+
+  it('skips full category/rule inserts when both tables already have rows, but still ensures Bill Payment', async () => {
+    vi.clearAllMocks();
+    const mockInsert = vi.mocked(db.insert);
+    const onConflictDoNothing = vi.fn(() => Promise.resolve());
+    mockInsert.mockReturnValue({
+      values: vi.fn(() => ({ onConflictDoNothing })),
+    } as never);
+
+    let lookupCalls = 0;
+    const mockTx = {
+      execute: vi.fn(() => Promise.resolve()),
+      select: vi.fn((args?: unknown) => {
+        if (args && typeof args === 'object' && 'n' in args) {
+          return {
+            from: vi.fn(() => ({
+              where: vi.fn(() => Promise.resolve([{ n: 12 }])),
+            })),
+          };
+        }
+        lookupCalls += 1;
+        return {
+          from: vi.fn(() => ({
+            where: vi.fn(() => ({
+              limit: vi.fn(() =>
+                Promise.resolve(
+                  lookupCalls === 1
+                    ? [{ id: 'cat_bill' }]
+                    : [{ id: 'rule_bill' }]
+                )
+              ),
+            })),
+          })),
+        };
+      }),
       insert: mockInsert,
     };
     vi.mocked(db.transaction).mockImplementationOnce(async (fn) => {
@@ -135,59 +231,95 @@ describe('seedOrg', () => {
     const { seedOrg } = await import('../seeds/index');
     await seedOrg('org_seeded');
 
-    expect(mockInsert).not.toHaveBeenCalled();
-  });
-
-  it('backfills only the missing table when one table is present and the other is empty', async () => {
-    vi.clearAllMocks();
-    const mockValues = vi.fn(() => Promise.resolve());
-    const mockInsert = vi.mocked(db.insert);
-    let callCount = 0;
-    const mockTx = {
-      execute: vi.fn(() => Promise.resolve()),
-      select: vi.fn(() => ({
-        from: vi.fn(() => ({
-          // First call returns count 5 (categories present), second call returns count 0 (merchant rules missing)
-          where: vi.fn(() =>
-            Promise.resolve([{ n: callCount++ === 0 ? 5 : 0 }])
-          ),
-        })),
-      })),
-      insert: mockInsert,
-    };
-    vi.mocked(db.transaction).mockImplementationOnce(async (fn) => {
-      await fn(mockTx as never);
-    });
-    vi.mocked(db.insert).mockReturnValue(mockInsertReturn(mockValues));
-
-    const { seedOrg } = await import('../seeds/index');
-    await seedOrg('org_partial');
-
-    // Should insert only once (for merchant rules, not categories)
-    expect(mockInsert).toHaveBeenCalledOnce();
+    // Bill Payment category ensure still inserts with onConflictDoNothing
+    expect(onConflictDoNothing).toHaveBeenCalled();
+    // Existing bill payment rule means no extra rule insert beyond the ensure path
+    expect(mockInsert).toHaveBeenCalledTimes(1);
   });
 });
 
 describe('ensureOrgSeeded', () => {
-  it('does not open a transaction when both table counts are already non-zero', async () => {
+  it('does not open a transaction when Bill Payment category and rule already exist', async () => {
     vi.clearAllMocks();
     let callCount = 0;
-    // Return non-zero counts for both categories and merchant rules
-    vi.mocked(db.select).mockImplementation(
-      () =>
-        ({
+    vi.mocked(db.select).mockImplementation((args?: unknown) => {
+      if (args && typeof args === 'object' && 'n' in args) {
+        return {
           from: vi.fn(() => ({
             where: vi.fn(() =>
-              Promise.resolve([{ n: callCount++ === 0 ? 5 : 3 }])
+              Promise.resolve([{ n: callCount++ === 0 ? 12 : 6 }])
             ),
           })),
-        }) as never
-    );
+        } as never;
+      }
+      return {
+        from: vi.fn(() => ({
+          where: vi.fn(() => ({
+            limit: vi.fn(() => Promise.resolve([{ id: 'exists' }])),
+          })),
+        })),
+      } as never;
+    });
 
     const { ensureOrgSeeded } = await import('../seeds/index');
     await ensureOrgSeeded('org_already_seeded');
 
-    // Transaction should NOT be called (fast path — both counts non-zero)
     expect(db.transaction).not.toHaveBeenCalled();
+  });
+
+  it('runs seedOrg when categories exist but Bill Payment is missing', async () => {
+    vi.clearAllMocks();
+    let callCount = 0;
+    vi.mocked(db.select).mockImplementation((args?: unknown) => {
+      if (args && typeof args === 'object' && 'n' in args) {
+        return {
+          from: vi.fn(() => ({
+            where: vi.fn(() =>
+              Promise.resolve([{ n: callCount++ === 0 ? 15 : 6 }])
+            ),
+          })),
+        } as never;
+      }
+      return {
+        from: vi.fn(() => ({
+          where: vi.fn(() => ({
+            limit: vi.fn(() => Promise.resolve([])),
+          })),
+        })),
+      } as never;
+    });
+
+    const mockExecute = vi.fn(() => Promise.resolve());
+    const onConflictDoNothing = vi.fn(() => Promise.resolve());
+    const mockTx = {
+      execute: mockExecute,
+      select: vi.fn((args?: unknown) => {
+        if (args && typeof args === 'object' && 'n' in args) {
+          return {
+            from: vi.fn(() => ({
+              where: vi.fn(() => Promise.resolve([{ n: 15 }])),
+            })),
+          };
+        }
+        return {
+          from: vi.fn(() => ({
+            where: vi.fn(() => ({
+              limit: vi.fn(() => Promise.resolve([{ id: 'cat_bill' }])),
+            })),
+          })),
+        };
+      }),
+      insert: vi.fn(() => ({
+        values: vi.fn(() => ({ onConflictDoNothing })),
+      })),
+    };
+    vi.mocked(db.transaction).mockImplementationOnce(async (fn) => {
+      await fn(mockTx as never);
+    });
+
+    const { ensureOrgSeeded } = await import('../seeds/index');
+    await ensureOrgSeeded('org_custom_categories');
+
+    expect(db.transaction).toHaveBeenCalledOnce();
   });
 });

@@ -4,6 +4,7 @@ import { DomainError, NotFoundError } from '@/lib/errors';
 import {
   allMembersInOrg,
   allTagsInOrg,
+  categoryExistsInOrg,
   fetchAccountWriteReference,
 } from '@/lib/queries/scope';
 import { createTransaction, updateTransaction } from '@/services/transactions';
@@ -50,6 +51,10 @@ vi.mock('@/lib/queries/scope', () => ({
   transactionExistsInOrg: vi.fn(),
 }));
 
+vi.mock('@/lib/queries/imports', () => ({
+  fetchImportBatchInOrg: vi.fn(),
+}));
+
 const ORG_A = 'org_a';
 const ACCOUNT_A = '550e8400-e29b-41d4-a716-446655440010';
 const ACCOUNT_B = '550e8400-e29b-41d4-a716-446655440011';
@@ -74,11 +79,13 @@ describe('createTransaction — cross-org reference rejection', () => {
     vi.mocked(fetchAccountWriteReference).mockReset();
     vi.mocked(allMembersInOrg).mockReset();
     vi.mocked(allTagsInOrg).mockReset();
+    vi.mocked(categoryExistsInOrg).mockReset();
     mockAccountLookups({
       [ACCOUNT_A]: accountRef(ACCOUNT_A, 'chequing'),
     });
     vi.mocked(allMembersInOrg).mockResolvedValue(true);
     vi.mocked(allTagsInOrg).mockResolvedValue(true);
+    vi.mocked(categoryExistsInOrg).mockResolvedValue(true);
   });
 
   it('rejects primary accountId not in org (two-org isolation)', async () => {
@@ -90,6 +97,7 @@ describe('createTransaction — cross-org reference rejection', () => {
       amount: 1000,
       date: '2026-05-01',
       description: 'Test',
+      categoryId: '550e8400-e29b-41d4-a716-446655440099',
       assignees: baseAssignees,
     }).catch((e: unknown) => e);
 
@@ -112,6 +120,7 @@ describe('createTransaction — cross-org reference rejection', () => {
       amount: 1000,
       date: '2026-05-01',
       description: 'Test',
+      categoryId: '550e8400-e29b-41d4-a716-446655440099',
       assignees: baseAssignees,
     }).catch((e: unknown) => e);
 
@@ -126,7 +135,9 @@ describe('createTransaction — transaction account policy wiring', () => {
   beforeEach(() => {
     vi.mocked(fetchAccountWriteReference).mockReset();
     vi.mocked(allMembersInOrg).mockReset();
+    vi.mocked(categoryExistsInOrg).mockReset();
     vi.mocked(allMembersInOrg).mockResolvedValue(true);
+    vi.mocked(categoryExistsInOrg).mockResolvedValue(true);
   });
 
   it('maps policy violations to DomainError before persisting', async () => {

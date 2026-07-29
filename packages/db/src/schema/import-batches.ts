@@ -38,9 +38,7 @@ export const importBatches = pgTable(
     orgId: text('org_id')
       .notNull()
       .references(() => orgs.id, { onDelete: 'cascade' }),
-    accountId: uuid('account_id').references(() => accounts.id, {
-      onDelete: 'restrict',
-    }),
+    accountId: uuid('account_id'),
     /** Bank identifier string (e.g. 'td', 'rbc', 'ploutizo') — normalizer sets this. */
     source: text('source').notNull(),
     status: importBatchStatusEnum('status').notNull().default('draft'),
@@ -66,6 +64,10 @@ export const importBatches = pgTable(
     uniqueIndex('import_batches_one_active_draft_per_account_idx')
       .on(t.orgId, t.accountId)
       .where(sql`status = 'draft'`),
+    foreignKey({
+      columns: [t.accountId, t.orgId],
+      foreignColumns: [accounts.id, accounts.orgId],
+    }).onDelete('restrict'),
   ]
 );
 
@@ -75,9 +77,7 @@ export const importBatchRows = pgTable(
     id: uuid('id')
       .primaryKey()
       .default(sql`gen_random_uuid()`),
-    batchId: uuid('batch_id')
-      .notNull()
-      .references(() => importBatches.id, { onDelete: 'cascade' }),
+    batchId: uuid('batch_id').notNull(),
     orgId: text('org_id')
       .notNull()
       .references(() => orgs.id, { onDelete: 'cascade' }),
@@ -98,13 +98,30 @@ export const importBatchRows = pgTable(
     reviewAmount: integer('review_amount'),
     reviewType: transactionTypeEnum('review_type'),
     reviewDescription: text('review_description'),
-    reviewCategoryId: uuid('review_category_id').references(
-      () => categories.id
-    ),
+    reviewCategoryId: uuid('review_category_id'),
     reviewAssigneeMemberIds: jsonb('review_assignee_member_ids')
       .$type<string[]>()
       .notNull()
       .default([]),
+    /**
+     * Settlement funding account selected during review (paid-from).
+     * Migration 0010 uses `ON DELETE SET NULL (review_counterpart_account_id)`
+     * so the required org_id remains intact.
+     */
+    reviewCounterpartAccountId: uuid('review_counterpart_account_id'),
+    /**
+     * Reviewed refund link to an existing expense. Original CSV hint remains in
+     * review_refund_link_hint / source provenance fields.
+     *
+     * Composite org FK lives only in
+     * `0010_import_finalization_foundation.sql` as
+     * `import_batch_rows_review_refund_of_org_id_transactions_id_org_id_fk`
+     * — Drizzle cannot declare it here without a schema cycle
+     * (transactions → import_batches → transactions). Keep that SQL
+     * constraint in sync with this comment. It uses
+     * `ON DELETE SET NULL (review_refund_of)` to preserve org_id.
+     */
+    reviewRefundOf: uuid('review_refund_of'),
     reviewRefundLinkHint: text('review_refund_link_hint'),
     reviewNotes: text('review_notes'),
     reviewTagIds: jsonb('review_tag_ids')
@@ -120,15 +137,23 @@ export const importBatchRows = pgTable(
       .defaultNow(),
   },
   (t) => [
-    index('import_batch_rows_batch_idx').on(t.batchId),
     index('import_batch_rows_org_idx').on(t.orgId),
     uniqueIndex('import_batch_rows_batch_row_number_idx').on(
       t.batchId,
       t.rowNumber
     ),
+    uniqueIndex('import_batch_rows_id_org_id_idx').on(t.id, t.orgId),
     foreignKey({
       columns: [t.batchId, t.orgId],
       foreignColumns: [importBatches.id, importBatches.orgId],
     }).onDelete('cascade'),
+    foreignKey({
+      columns: [t.reviewCategoryId, t.orgId],
+      foreignColumns: [categories.id, categories.orgId],
+    }),
+    foreignKey({
+      columns: [t.reviewCounterpartAccountId, t.orgId],
+      foreignColumns: [accounts.id, accounts.orgId],
+    }).onDelete('set null'),
   ]
 );

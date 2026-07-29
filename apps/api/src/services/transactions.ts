@@ -20,6 +20,7 @@ import type { ListQueryParams } from '@/lib/queries/transactions';
 import type { z } from 'zod';
 import { assertOrgWriteReferences } from '@/lib/assertOrgWriteReferences';
 import { DomainError, NotFoundError } from '@/lib/errors';
+import { isExternalIdUniqueViolation } from '@/lib/isUniqueViolation';
 import {
   fetchAccountWriteReference,
   transactionExistsInOrg,
@@ -37,6 +38,7 @@ import {
   softDeleteTransactionQuery,
   updateTransactionScalarsQuery,
 } from '@/lib/queries/transactions';
+import { fetchImportBatchInOrg } from '@/lib/queries/imports';
 
 export type { ListQueryParams };
 
@@ -158,6 +160,29 @@ const assertTransactionAccountPolicy = (
   }
 };
 
+const assertImportBatchProvenance = async (
+  orgId: string,
+  importBatchId: string | undefined,
+  tx: DrizzleTransaction
+) => {
+  if (!importBatchId) return;
+  const batch = await fetchImportBatchInOrg(orgId, importBatchId, tx);
+  if (!batch) {
+    throw new NotFoundError('Import batch not found.');
+  }
+};
+
+const mapExternalIdConflict = (error: unknown): never => {
+  if (isExternalIdUniqueViolation(error)) {
+    throw new DomainError(
+      409,
+      'An active transaction with this external id already exists on this account.',
+      'EXTERNAL_ID_CONFLICT'
+    );
+  }
+  throw error;
+};
+
 export const createTransaction = async (
   orgId: string,
   data: z.infer<typeof createTransactionSchema>
@@ -173,6 +198,8 @@ export const createTransaction = async (
   );
 
   return db.transaction(async (tx) => {
+    await assertImportBatchProvenance(orgId, transactionData.importBatchId, tx);
+
     const writeReferences = await loadTransactionWriteReferences(
       orgId,
       {
@@ -194,10 +221,16 @@ export const createTransaction = async (
     );
     assertTransactionAccountPolicy(transactionData.type, writeReferences);
 
-    const [inserted] = await tx
-      .insert(transactions)
-      .values({ orgId, ...transactionData })
-      .returning();
+    let inserted: typeof transactions.$inferSelect;
+    try {
+      const [row] = await tx
+        .insert(transactions)
+        .values({ orgId, ...transactionData })
+        .returning();
+      inserted = row;
+    } catch (error) {
+      return mapExternalIdConflict(error);
+    }
 
     await tx.insert(transactionAssignees).values(
       normalizedAssignees.map((a) => ({
@@ -263,74 +296,82 @@ export const updateTransaction = async (
   if (data.type !== 'income') {
     typeSpecificNulls.incomeType = null;
   }
-  if (!['expense', 'refund'].includes(data.type)) {
+  // Expense/refund require category; settlement may keep Bill Payment readability.
+  if (!['expense', 'refund', 'settlement'].includes(data.type)) {
     typeSpecificNulls.categoryId = null;
   }
   Object.assign(updateData, typeSpecificNulls);
 
-  return db.transaction(async (tx) => {
-    const row = await fetchTransactionById(orgId, id, tx);
-    if (!row) return null;
+  try {
+    return await db.transaction(async (tx) => {
+      const row = await fetchTransactionById(orgId, id, tx);
+      if (!row) return null;
 
-    const writeReferences = await loadTransactionWriteReferences(
-      orgId,
-      {
-        accountId: data.accountId,
-        counterpartAccountId:
-          'counterpartAccountId' in data
-            ? data.counterpartAccountId
-            : undefined,
-        refundOf: 'refundOf' in data ? data.refundOf : undefined,
-        categoryId: 'categoryId' in data ? data.categoryId : undefined,
-        tagIds,
-        assignees,
-      },
-      tx
-    );
-    assertTransactionAccountPolicy(data.type, writeReferences);
-
-    const needsPersistedAssignees = data.assignees === undefined;
-
-    let existingAssignees: readonly { amountCents: number }[] = [];
-    if (needsPersistedAssignees) {
-      const { assigneeMap } = await enrichTransactions(orgId, [row], tx);
-      existingAssignees = (assigneeMap[row.id] ?? []) as readonly {
-        amountCents: number;
-      }[];
-    }
-
-    const rowsForSplitCheck = assigneeRowsForPatchSplitSum(
-      data.assignees,
-      existingAssignees
-    );
-    if (rowsForSplitCheck) {
-      const splitError = validateSplitSum(data.amount, rowsForSplitCheck);
-      if (splitError) throw new Error(splitError);
-    }
-
-    const updated = await updateTransactionScalarsQuery(
-      tx,
-      orgId,
-      id,
-      updateData as Record<string, unknown>
-    );
-
-    if (!updated) return null;
-
-    if (assignees !== undefined) {
-      const normalizedAssignees = normalizeTransactionAssignees(
-        data.amount,
-        assignees
+      const writeReferences = await loadTransactionWriteReferences(
+        orgId,
+        {
+          accountId: data.accountId,
+          counterpartAccountId:
+            'counterpartAccountId' in data
+              ? data.counterpartAccountId
+              : undefined,
+          refundOf: 'refundOf' in data ? data.refundOf : undefined,
+          categoryId: 'categoryId' in data ? data.categoryId : undefined,
+          tagIds,
+          assignees,
+        },
+        tx
       );
-      await replaceAssignees(tx, id, normalizedAssignees);
-    }
+      assertTransactionAccountPolicy(data.type, writeReferences);
 
-    if (tagIds !== undefined) {
-      await replaceTags(tx, id, tagIds);
-    }
+      const needsPersistedAssignees = data.assignees === undefined;
 
-    return updated;
-  });
+      let existingAssignees: readonly { amountCents: number }[] = [];
+      if (needsPersistedAssignees) {
+        const { assigneeMap } = await enrichTransactions(orgId, [row], tx);
+        existingAssignees = (assigneeMap[row.id] ?? []) as readonly {
+          amountCents: number;
+        }[];
+      }
+
+      const rowsForSplitCheck = assigneeRowsForPatchSplitSum(
+        data.assignees,
+        existingAssignees
+      );
+      if (rowsForSplitCheck) {
+        const splitError = validateSplitSum(data.amount, rowsForSplitCheck);
+        if (splitError) throw new Error(splitError);
+      }
+
+      const updated = await updateTransactionScalarsQuery(
+        tx,
+        orgId,
+        id,
+        updateData as Record<string, unknown>
+      );
+
+      if (!updated) return null;
+
+      if (assignees !== undefined) {
+        const normalizedAssignees = normalizeTransactionAssignees(
+          data.amount,
+          assignees
+        );
+        await replaceAssignees(tx, id, normalizedAssignees);
+      }
+
+      if (tagIds !== undefined) {
+        await replaceTags(tx, id, tagIds);
+      }
+
+      return updated;
+    });
+  } catch (error) {
+    if (error instanceof DomainError || error instanceof NotFoundError) {
+      throw error;
+    }
+    return mapExternalIdConflict(error);
+  }
 };
 
 export const deleteTransaction = async (
@@ -341,4 +382,10 @@ export const deleteTransaction = async (
 export const restoreTransaction = async (
   orgId: string,
   id: string
-): Promise<{ id: string } | null> => restoreTransactionQuery(orgId, id);
+): Promise<{ id: string } | null> => {
+  try {
+    return await restoreTransactionQuery(orgId, id);
+  } catch (error) {
+    return mapExternalIdConflict(error);
+  }
+};

@@ -1,0 +1,102 @@
+/**
+ * packages/db/schema/import-prepared-sets.ts
+ *
+ * Immutable, revision-bound prepared import sets and durable finalize outcomes.
+ * Continue/prepare creates a new revision; Confirm (later) commits against one.
+ */
+import { sql } from 'drizzle-orm';
+import {
+  foreignKey,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core';
+
+import type { ImportPreparedReviewedValues } from '@ploutizo/types';
+
+import { orgs } from './auth';
+import { importBatchRows, importBatches } from './import-batches';
+import { importPreparedOutcomeEnum } from './enums';
+import { transactions } from './transactions';
+
+export const importPreparedSets = pgTable(
+  'import_prepared_sets',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    orgId: text('org_id')
+      .notNull()
+      .references(() => orgs.id, { onDelete: 'cascade' }),
+    batchId: uuid('batch_id').notNull(),
+    /** Monotonic revision per batch — prior revisions remain immutable. */
+    revision: integer('revision').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index('import_prepared_sets_org_idx').on(t.orgId),
+    uniqueIndex('import_prepared_sets_batch_revision_idx').on(
+      t.batchId,
+      t.revision
+    ),
+    uniqueIndex('import_prepared_sets_id_org_id_idx').on(t.id, t.orgId),
+    foreignKey({
+      columns: [t.batchId, t.orgId],
+      foreignColumns: [importBatches.id, importBatches.orgId],
+    }).onDelete('cascade'),
+  ]
+);
+
+export const importPreparedOutcomes = pgTable(
+  'import_prepared_outcomes',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    orgId: text('org_id')
+      .notNull()
+      .references(() => orgs.id, { onDelete: 'cascade' }),
+    preparedSetId: uuid('prepared_set_id').notNull(),
+    batchRowId: uuid('batch_row_id').notNull(),
+    outcome: importPreparedOutcomeEnum('outcome').notNull(),
+    /**
+     * Created or matched transaction once Confirm records the outcome.
+     * Null while the prepared set is only staged. Composite org FK prevents
+     * cross-tenant transaction pointers. Migration 0010 uses
+     * `ON DELETE SET NULL (transaction_id)` so the required org_id remains.
+     */
+    transactionId: uuid('transaction_id'),
+    reviewedValues: jsonb('reviewed_values')
+      .$type<ImportPreparedReviewedValues>()
+      .notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index('import_prepared_outcomes_org_idx').on(t.orgId),
+    uniqueIndex('import_prepared_outcomes_set_row_idx').on(
+      t.preparedSetId,
+      t.batchRowId
+    ),
+    foreignKey({
+      columns: [t.preparedSetId, t.orgId],
+      foreignColumns: [importPreparedSets.id, importPreparedSets.orgId],
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [t.batchRowId, t.orgId],
+      foreignColumns: [importBatchRows.id, importBatchRows.orgId],
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [t.transactionId, t.orgId],
+      foreignColumns: [transactions.id, transactions.orgId],
+    }).onDelete('set null'),
+  ]
+);

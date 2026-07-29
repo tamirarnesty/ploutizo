@@ -62,6 +62,8 @@ const baseRow = (): ImportDraftRow => ({
   reviewDescription: 'Coffee',
   reviewCategoryId: 'cat_1',
   reviewAssigneeMemberIds: ['44444444-4444-4444-8444-444444444444'],
+  reviewCounterpartAccountId: null,
+  reviewRefundOf: null,
   reviewRefundLinkHint: null,
   reviewNotes: null,
   reviewTagIds: [],

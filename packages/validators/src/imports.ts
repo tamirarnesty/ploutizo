@@ -1,4 +1,7 @@
-import { IMPORT_TRANSACTION_TYPE_VALUES } from '@ploutizo/types';
+import {
+  IMPORT_PREPARED_OUTCOME_VALUES,
+  IMPORT_TRANSACTION_TYPE_VALUES,
+} from '@ploutizo/types';
 import { z } from 'zod';
 
 const importTransactionTypeSchema = z.enum(IMPORT_TRANSACTION_TYPE_VALUES);
@@ -17,6 +20,8 @@ export const updateImportDraftRowSchema = z
     reviewDescription: z.string().trim().min(1).nullable().optional(),
     reviewCategoryId: z.string().uuid().nullable().optional(),
     reviewAssigneeMemberIds: z.array(z.string().uuid()).optional(),
+    reviewCounterpartAccountId: z.string().uuid().nullable().optional(),
+    reviewRefundOf: z.string().uuid().nullable().optional(),
     reviewRefundLinkHint: z.string().trim().min(1).nullable().optional(),
     reviewNotes: z.string().trim().nullable().optional(),
     reviewTagIds: z.array(z.string().uuid()).optional(),
@@ -38,4 +43,40 @@ export const updateImportDraftRowSelectionSchema = z.object({
 
 export type UpdateImportDraftRowSelectionInput = z.infer<
   typeof updateImportDraftRowSelectionSchema
+>;
+
+/** Runtime contract for immutable prepared-set reviewed-value snapshots. */
+export const importPreparedReviewedValuesSchema = z.object({
+  date: z.string().nullable(),
+  amount: z.number().int().nullable(),
+  type: importTransactionTypeSchema.nullable(),
+  description: z.string().nullable(),
+  categoryId: z.string().uuid().nullable(),
+  assigneeMemberIds: z.array(z.string().uuid()),
+  counterpartAccountId: z.string().uuid().nullable(),
+  refundOf: z.string().uuid().nullable(),
+  notes: z.string().nullable(),
+  tagIds: z.array(z.string().uuid()),
+  externalId: z.string().nullable(),
+  rawDescription: z.string().nullable(),
+  selectedForImport: z.boolean(),
+});
+
+export type ImportPreparedReviewedValuesInput = z.infer<
+  typeof importPreparedReviewedValuesSchema
+>;
+
+export const importPreparedOutcomeSchema = z.enum(
+  IMPORT_PREPARED_OUTCOME_VALUES
+);
+
+/** Caller-supplied prepare outcome; server owns the reviewedValues snapshot. */
+export const prepareImportOutcomeSchema = z.object({
+  batchRowId: z.string().uuid(),
+  outcome: importPreparedOutcomeSchema,
+  transactionId: z.string().uuid().nullable().optional(),
+});
+
+export type PrepareImportOutcomeInput = z.infer<
+  typeof prepareImportOutcomeSchema
 >;

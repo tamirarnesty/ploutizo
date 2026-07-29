@@ -55,7 +55,6 @@ ALTER TABLE "transactions" ADD CONSTRAINT "transactions_category_id_categories_i
 ALTER TABLE "transactions" ADD CONSTRAINT "transactions_refund_of_transactions_id_fk" FOREIGN KEY ("refund_of") REFERENCES "public"."transactions"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "transactions" ADD CONSTRAINT "transactions_to_account_id_accounts_id_fk" FOREIGN KEY ("to_account_id") REFERENCES "public"."accounts"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "transactions" ADD CONSTRAINT "transactions_settled_account_id_accounts_id_fk" FOREIGN KEY ("settled_account_id") REFERENCES "public"."accounts"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "transactions" ADD CONSTRAINT "transactions_import_batch_id_import_batches_id_fk" FOREIGN KEY ("import_batch_id") REFERENCES "public"."import_batches"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "import_batches_org_idx" ON "import_batches" USING btree ("org_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "transaction_assignees_tx_member_idx" ON "transaction_assignees" USING btree ("transaction_id","member_id");--> statement-breakpoint
 CREATE INDEX "transaction_assignees_tx_idx" ON "transaction_assignees" USING btree ("transaction_id");--> statement-breakpoint

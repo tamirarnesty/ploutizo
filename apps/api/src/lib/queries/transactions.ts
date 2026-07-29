@@ -76,6 +76,7 @@ const TX_COLUMNS = {
   refundOfDate: refundSource.date,
   refundOfAmountCents: refundSource.amount,
   importBatchId: transactions.importBatchId,
+  externalId: transactions.externalId,
   recurringTemplateId: transactions.recurringTemplateId,
   deletedAt: transactions.deletedAt,
   createdAt: transactions.createdAt,

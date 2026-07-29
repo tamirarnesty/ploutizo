@@ -50,6 +50,7 @@ export const categories = pgTable(
   },
   (t) => [
     uniqueIndex('categories_org_name_idx').on(t.orgId, t.name),
+    uniqueIndex('categories_id_org_id_idx').on(t.id, t.orgId),
     index('categories_org_idx').on(t.orgId),
   ]
 );

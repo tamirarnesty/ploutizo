@@ -71,6 +71,19 @@ export const IMPORT_ROW_STATUS_VALUES = [
 
 export type ImportRowStatus = (typeof IMPORT_ROW_STATUS_VALUES)[number];
 
+/** Durable finalize outcomes for a revision-bound prepared import set. */
+export const IMPORT_PREPARED_OUTCOME_VALUES = [
+  'created',
+  'matched',
+  'skipped',
+  'invalid',
+  'unresolved',
+  'unprocessed',
+] as const;
+
+export type ImportPreparedOutcome =
+  (typeof IMPORT_PREPARED_OUTCOME_VALUES)[number];
+
 export const INCOME_TYPE_VALUES = [
   'direct_deposit',
   'e_transfer',

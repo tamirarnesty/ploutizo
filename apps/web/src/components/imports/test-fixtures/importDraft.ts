@@ -27,6 +27,8 @@ export const makeImportDraftRow = (
   reviewDescription: 'Coffee',
   reviewCategoryId: 'cat_1',
   reviewAssigneeMemberIds: ['member_1'],
+  reviewCounterpartAccountId: null,
+  reviewRefundOf: null,
   reviewRefundLinkHint: null,
   reviewNotes: null,
   reviewTagIds: [],

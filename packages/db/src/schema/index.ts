@@ -5,3 +5,4 @@ export * from './classification';
 export * from './accounts';
 export * from './import-batches';
 export * from './transactions';
+export * from './import-prepared-sets';

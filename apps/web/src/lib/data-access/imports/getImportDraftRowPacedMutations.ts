@@ -26,6 +26,8 @@ const REVIEW_PATCH_KEYS = [
   'reviewDescription',
   'reviewCategoryId',
   'reviewAssigneeMemberIds',
+  'reviewCounterpartAccountId',
+  'reviewRefundOf',
   'reviewRefundLinkHint',
   'reviewNotes',
   'reviewTagIds',

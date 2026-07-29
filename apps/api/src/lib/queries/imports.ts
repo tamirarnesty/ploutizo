@@ -104,8 +104,12 @@ export const fetchActiveDraftByAccount = async (
   return rows.at(0) ?? null;
 };
 
-export const fetchDraftSummaryById = async (orgId: string, draftId: string) => {
-  const rows = await db
+export const fetchDraftSummaryById = async (
+  orgId: string,
+  draftId: string,
+  client: DbClient = db
+) => {
+  const rows = await client
     .select(IMPORT_SUMMARY_COLUMNS)
     .from(importBatches)
     .innerJoin(accounts, eq(accounts.id, importBatches.accountId))
@@ -120,8 +124,12 @@ export const fetchDraftSummaryById = async (orgId: string, draftId: string) => {
   return rows.at(0) ?? null;
 };
 
-export const listDraftRows = async (orgId: string, draftId: string) =>
-  db
+export const listDraftRows = async (
+  orgId: string,
+  draftId: string,
+  client: DbClient = db
+) =>
+  client
     .select()
     .from(importBatchRows)
     .where(
@@ -146,6 +154,19 @@ export const insertImportBatchRows = async (
 ) => {
   if (values.length === 0) return [];
   return tx.insert(importBatchRows).values(values).returning();
+};
+
+export const fetchImportBatchInOrg = async (
+  orgId: string,
+  batchId: string,
+  client: DbClient = db
+) => {
+  const rows = await client
+    .select({ id: importBatches.id })
+    .from(importBatches)
+    .where(and(eq(importBatches.id, batchId), eq(importBatches.orgId, orgId)))
+    .limit(1);
+  return rows.at(0) ?? null;
 };
 
 export const discardImportDraftQuery = async (
