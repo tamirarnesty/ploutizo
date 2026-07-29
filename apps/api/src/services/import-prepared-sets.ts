@@ -81,6 +81,17 @@ export const createImportPreparedSetRevision = async (
     );
   }
 
+  const seenBatchRowIds = new Set<string>();
+  for (const outcome of outcomes) {
+    if (seenBatchRowIds.has(outcome.batchRowId)) {
+      throw new DomainError(
+        400,
+        'Prepared set outcomes must not contain duplicate batch rows.'
+      );
+    }
+    seenBatchRowIds.add(outcome.batchRowId);
+  }
+
   const prepared = await db.transaction(async (tx) => {
     await lockPreparedSetRevisionForBatch(tx, orgId, batchId);
 

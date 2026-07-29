@@ -590,6 +590,26 @@ describe('import finalization foundation — prepared set revisions', () => {
     expect(err).toBeInstanceOf(NotFoundError);
   });
 
+  it('rejects prepared sets with duplicate batch rows', async () => {
+    const err = await createImportPreparedSetRevision(ORG, BATCH, [
+      {
+        batchRowId: ROW,
+        outcome: 'created',
+      },
+      {
+        batchRowId: ROW,
+        outcome: 'skipped',
+      },
+    ]).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(DomainError);
+    expect(err).toMatchObject({
+      statusCode: 400,
+      message: 'Prepared set outcomes must not contain duplicate batch rows.',
+    });
+    expect(lockPreparedSetRevisionForBatch).not.toHaveBeenCalled();
+  });
+
   it('rejects prepared outcomes that point at a cross-org transaction', async () => {
     vi.mocked(allTransactionsInOrg).mockResolvedValue(false);
     const err = await createImportPreparedSetRevision(ORG, BATCH, [
