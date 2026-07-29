@@ -1,4 +1,4 @@
-import RE2 from 're2';
+import { RE2JS } from 're2js';
 import type { MerchantMatchType } from '@ploutizo/types';
 
 export interface MerchantRuleMatchInput {
@@ -9,9 +9,11 @@ export interface MerchantRuleMatchInput {
 export const MERCHANT_REGEX_MAX_PATTERN_LENGTH = 120;
 export const MERCHANT_REGEX_MAX_HAYSTACK_LENGTH = 256;
 
+const CASE_INSENSITIVE = RE2JS.CASE_INSENSITIVE;
+
 /**
  * Syntax + length validation for tenant regex merchant rules.
- * Matching uses RE2 (linear time) — no heuristic backtracking guards.
+ * Matching uses RE2JS (linear time) — no heuristic backtracking guards.
  */
 export const isValidMerchantRegexPattern = (pattern: string): boolean => {
   const trimmed = pattern.trim();
@@ -19,7 +21,7 @@ export const isValidMerchantRegexPattern = (pattern: string): boolean => {
     return false;
   }
   try {
-    void new RE2(trimmed, 'i');
+    RE2JS.compile(trimmed, CASE_INSENSITIVE);
     return true;
   } catch {
     return false;
@@ -53,7 +55,7 @@ export const matchesMerchantRule = (
       if (haystack.length > MERCHANT_REGEX_MAX_HAYSTACK_LENGTH) return false;
       if (!isValidMerchantRegexPattern(pattern)) return false;
       try {
-        return new RE2(pattern, 'i').test(haystack);
+        return RE2JS.compile(pattern, CASE_INSENSITIVE).test(haystack);
       } catch {
         return false;
       }

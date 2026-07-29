@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@ploutizo/types": "workspace:*",
-    "re2": "^1.26.1"
+    "re2js": "^2.8.6"
   },
   "devDependencies": {
     "@tanstack/eslint-config": "^0.4.0",
