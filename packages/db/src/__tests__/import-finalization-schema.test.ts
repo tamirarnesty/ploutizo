@@ -138,9 +138,7 @@ describe('import finalization foundation schema contracts', () => {
 
   it('persists same-import refund link targets on draft rows', () => {
     expect(importBatchesSchema).toContain('review_refund_of_batch_row_id');
-    expect(classificationMigration).toContain(
-      'review_refund_of_batch_row_id'
-    );
+    expect(classificationMigration).toContain('review_refund_of_batch_row_id');
     expect(classificationMigration).toContain(
       'import_batch_rows_review_refund_of_batch_row_id_import_batch_rows_id_fk'
     );

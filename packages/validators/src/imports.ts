@@ -33,10 +33,7 @@ export const updateImportDraftRowSchema = z
   })
   .refine(
     (value) =>
-      !(
-        value.reviewRefundOf != null &&
-        value.reviewRefundOfBatchRowId != null
-      ),
+      !(value.reviewRefundOf != null && value.reviewRefundOfBatchRowId != null),
     {
       message:
         'A refund can link to an existing expense or a same-import expense, not both.',

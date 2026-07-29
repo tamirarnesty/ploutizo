@@ -212,9 +212,7 @@ export const ImportReviewTypeCell = ({ row }: ImportReviewTypeCellProps) => {
       ariaLabel={`Type for ${rowLabel}`}
       onChange={(nextType) => {
         if (nextType === resolveImportRowReviewType(row)) return;
-        saveField(
-          buildImportTypeChangePatch(nextType, billPaymentCategoryId)
-        );
+        saveField(buildImportTypeChangePatch(nextType, billPaymentCategoryId));
       }}
     />
   );

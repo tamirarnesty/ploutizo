@@ -6,7 +6,7 @@ export type DrizzleTransaction = Parameters<
   Parameters<typeof db.transaction>[0]
 >[0];
 
-type DbClient = DrizzleTransaction | typeof db;
+export type DbClient = DrizzleTransaction | typeof db;
 
 const IMPORT_SUMMARY_COLUMNS = {
   id: importBatches.id,

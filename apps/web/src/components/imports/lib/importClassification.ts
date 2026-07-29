@@ -1,14 +1,12 @@
 import { BILL_PAYMENT_CATEGORY_NAME } from '@ploutizo/types';
-import {
-  evaluateImportRefundLinks,
-  type ImportRefundLinkDraftRow,
-} from '@ploutizo/utils';
+import { evaluateImportRefundLinks } from '@ploutizo/utils';
 import {
   deriveImportRowStatus,
   resolveImportRowReviewType,
   toImportRowStatusFields,
   toImportTransactionType,
 } from '@ploutizo/utils/import-row-status';
+import type { ImportRefundLinkDraftRow } from '@ploutizo/utils';
 import type { ImportDraftRow, ImportTransactionType } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import type { Category } from '@/lib/data-access/categories';
@@ -64,9 +62,7 @@ export const deriveImportDraftRowStatus = (
   return deriveImportRowStatus(
     toImportRowStatusFields({
       ...row,
-      refundLinkBlocked: Boolean(
-        evaluation?.linked && evaluation && !evaluation.valid
-      ),
+      refundLinkBlocked: Boolean(evaluation?.linked && !evaluation.valid),
     })
   );
 };

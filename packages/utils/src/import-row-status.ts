@@ -47,9 +47,7 @@ export type ImportRowStatusFields = ImportRowStatusInput & {
 /** Partial runtime row shapes may omit assignees before normalization. */
 export type ImportRowStatusNormalizeInput = Omit<
   ImportRowStatusInput,
-  | 'reviewAssigneeMemberIds'
-  | 'reviewCounterpartAccountId'
-  | 'refundLinkBlocked'
+  'reviewAssigneeMemberIds' | 'reviewCounterpartAccountId' | 'refundLinkBlocked'
 > & {
   status: ImportRowStatus;
   reviewAssigneeMemberIds?: string[] | null;

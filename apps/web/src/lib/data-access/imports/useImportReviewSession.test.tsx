@@ -80,10 +80,16 @@ describe('useImportReviewSession', () => {
     vi.mocked(fetchUpdateImportDraftRow).mockImplementation((rowId, body) => {
       const row = draft.rows.find((entry) => entry.id === rowId);
       if (!row) return Promise.reject(new Error(`missing row ${rowId}`));
-      return Promise.resolve({
+      const updated = {
         ...row,
         ...body,
         updatedAt: '2026-05-20T12:00:01.000Z',
+      };
+      return Promise.resolve({
+        row: updated,
+        draftRows: draft.rows.map((entry) =>
+          entry.id === rowId ? updated : entry
+        ),
       });
     });
     vi.mocked(fetchUpdateImportDraftRowSelection).mockReset();
@@ -274,18 +280,15 @@ describe('useImportReviewSession', () => {
   });
 
   it('does not let an older failed persist overwrite a newer same-row value', async () => {
+    type UpdateResponse = Awaited<ReturnType<typeof fetchUpdateImportDraftRow>>;
     let rejectFirst: ((error: Error) => void) | undefined;
     const firstPersist = new Promise<never>((_resolve, reject) => {
       rejectFirst = reject;
     });
-    let resolveSecond:
-      | ((row: ReturnType<typeof makeImportDraftRow>) => void)
-      | undefined;
-    const secondPersist = new Promise<ReturnType<typeof makeImportDraftRow>>(
-      (resolve) => {
-        resolveSecond = resolve;
-      }
-    );
+    let resolveSecond: ((response: UpdateResponse) => void) | undefined;
+    const secondPersist = new Promise<UpdateResponse>((resolve) => {
+      resolveSecond = resolve;
+    });
 
     vi.mocked(fetchUpdateImportDraftRow)
       .mockImplementationOnce(() => firstPersist)
@@ -329,10 +332,16 @@ describe('useImportReviewSession', () => {
     ).toBe('Newer');
 
     await act(async () => {
-      resolveSecond?.({
+      const updated = {
         ...draft.rows[0],
         reviewDescription: 'Newer',
         updatedAt: '2026-05-20T12:00:02.000Z',
+      };
+      resolveSecond?.({
+        row: updated,
+        draftRows: draft.rows.map((entry) =>
+          entry.id === updated.id ? updated : entry
+        ),
       });
       await secondPersist;
     });
@@ -426,10 +435,16 @@ describe('useImportReviewSession', () => {
       callOrder.push('row');
       const row = draft.rows.find((entry) => entry.id === rowId);
       if (!row) return Promise.reject(new Error(`missing row ${rowId}`));
-      return Promise.resolve({
+      const updated = {
         ...row,
         ...body,
         updatedAt: '2026-05-20T12:00:01.000Z',
+      };
+      return Promise.resolve({
+        row: updated,
+        draftRows: draft.rows.map((entry) =>
+          entry.id === rowId ? updated : entry
+        ),
       });
     });
     vi.mocked(fetchUpdateImportDraftRowSelection).mockImplementation(
@@ -569,10 +584,16 @@ describe('useImportReviewSession', () => {
     vi.mocked(fetchUpdateImportDraftRow).mockImplementation((rowId, body) => {
       const row = draft.rows.find((entry) => entry.id === rowId);
       if (!row) return Promise.reject(new Error(`missing row ${rowId}`));
-      return Promise.resolve({
+      const updated = {
         ...row,
         ...body,
         updatedAt: '2026-05-20T12:00:02.000Z',
+      };
+      return Promise.resolve({
+        row: updated,
+        draftRows: draft.rows.map((entry) =>
+          entry.id === rowId ? updated : entry
+        ),
       });
     });
 
@@ -660,14 +681,11 @@ describe('useImportReviewSession', () => {
   });
 
   it('does not let a stale success overwrite a reverted same-row value', async () => {
-    let resolveFirst:
-      | ((row: ReturnType<typeof makeImportDraftRow>) => void)
-      | undefined;
-    const firstPersist = new Promise<ReturnType<typeof makeImportDraftRow>>(
-      (resolve) => {
-        resolveFirst = resolve;
-      }
-    );
+    type UpdateResponse = Awaited<ReturnType<typeof fetchUpdateImportDraftRow>>;
+    let resolveFirst: ((response: UpdateResponse) => void) | undefined;
+    const firstPersist = new Promise<UpdateResponse>((resolve) => {
+      resolveFirst = resolve;
+    });
 
     vi.mocked(fetchUpdateImportDraftRow).mockImplementationOnce(
       () => firstPersist
@@ -694,10 +712,16 @@ describe('useImportReviewSession', () => {
     ).toBe('Coffee');
 
     await act(async () => {
-      resolveFirst?.({
+      const updated = {
         ...draft.rows[0],
         reviewDescription: 'Attempt B',
         updatedAt: '2026-05-20T12:00:02.000Z',
+      };
+      resolveFirst?.({
+        row: updated,
+        draftRows: draft.rows.map((entry) =>
+          entry.id === updated.id ? updated : entry
+        ),
       });
       await firstPersist;
     });

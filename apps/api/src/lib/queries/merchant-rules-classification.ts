@@ -1,5 +1,5 @@
 import { db } from '@ploutizo/db';
-import { merchantRules, merchantRuleTags } from '@ploutizo/db/schema';
+import { merchantRuleTags, merchantRules } from '@ploutizo/db/schema';
 import { eq } from 'drizzle-orm';
 import type { ClassifyMerchantRule } from '@ploutizo/utils';
 

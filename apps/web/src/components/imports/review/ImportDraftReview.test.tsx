@@ -83,8 +83,11 @@ vi.mock('@/lib/data-access/accounts', () => ({
 }));
 
 vi.mock('@/lib/data-access/transactions', () => ({
-  useGetTransactions: () => ({ data: { data: [], total: 0, page: 1, limit: 10 } }),
+  useGetTransactions: () => ({
+    data: { data: [], total: 0, page: 1, limit: 10 },
+  }),
   useSearchTransactions: () => ({ data: [] }),
+  useGetTransaction: () => ({ data: undefined }),
 }));
 
 vi.mock('@/hooks/persistedPageSize', () => ({

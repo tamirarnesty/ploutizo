@@ -8,7 +8,6 @@ import {
   updateImportDraftRowSelection,
 } from '@/services/imports';
 import {
-  adjustImportDraftRowCounts,
   fetchActiveCreditCardAccount,
   fetchActiveDraftByAccount,
   fetchDraftRowById,
@@ -28,6 +27,7 @@ import { listCategories } from '@/lib/queries/categories';
 import { listAccountMembers } from '@/lib/queries/accounts';
 import { listMerchantRulesForClassification } from '@/lib/queries/merchant-rules-classification';
 import { listRefundTargetExpensesByIds } from '@/lib/queries/import-refund-targets';
+import { syncDraftRefundLinkStatuses } from '@/services/import-refund-sync';
 import {
   fetchAccountWriteReference,
   transactionExistsInOrg,
@@ -78,6 +78,10 @@ vi.mock('@/lib/queries/merchant-rules-classification', () => ({
 
 vi.mock('@/lib/queries/import-refund-targets', () => ({
   listRefundTargetExpensesByIds: vi.fn(),
+}));
+
+vi.mock('@/services/import-refund-sync', () => ({
+  syncDraftRefundLinkStatuses: vi.fn(),
 }));
 
 vi.mock('@/lib/assertOrgWriteReferences', () => ({
@@ -187,6 +191,13 @@ describe('import service', () => {
     ]);
     vi.mocked(listMerchantRulesForClassification).mockResolvedValue([]);
     vi.mocked(listRefundTargetExpensesByIds).mockResolvedValue(new Map());
+    vi.mocked(syncDraftRefundLinkStatuses).mockImplementation(async () => {
+      const last = vi.mocked(updateImportDraftRowQuery).mock.results.at(-1);
+      const updated = last ? await last.value : null;
+      const rows = await listDraftRows('org_1', summaryRow.id);
+      if (!updated) return rows;
+      return rows.map((row) => (row.id === updated.id ? updated : row));
+    });
     vi.mocked(assertOrgWriteReferences).mockResolvedValue(undefined);
     vi.mocked(fetchAccountWriteReference).mockResolvedValue({
       id: '66666666-6666-4666-8666-666666666666',
@@ -321,20 +332,16 @@ describe('import service', () => {
     expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
       'org_1',
       draftRow.id,
-      {
-        reviewCategoryId: '55555555-5555-4555-8555-555555555555',
-        status: 'ready',
-        invalidReason: null,
-      },
+      { reviewCategoryId: '55555555-5555-4555-8555-555555555555' },
       tx
     );
-    expect(adjustImportDraftRowCounts).toHaveBeenCalledWith(
+    expect(syncDraftRefundLinkStatuses).toHaveBeenCalledWith(
       'org_1',
       summaryRow.id,
-      { validRowCount: 0, invalidRowCount: 0 },
+      summaryRow.accountId,
       tx
     );
-    expect(result.status).toBe('ready');
+    expect(result.row.status).toBe('ready');
   });
 
   it('recomputes invalid row to needs_review when core review fields are patched', async () => {
@@ -384,18 +391,11 @@ describe('import service', () => {
         reviewAmount: 4218,
         reviewType: 'expense',
         reviewDescription: 'Coffee',
-        status: 'needs_review',
-        invalidReason: null,
       },
       tx
     );
-    expect(adjustImportDraftRowCounts).toHaveBeenCalledWith(
-      'org_1',
-      summaryRow.id,
-      { validRowCount: 1, invalidRowCount: -1 },
-      tx
-    );
-    expect(result.status).toBe('needs_review');
+    expect(syncDraftRefundLinkStatuses).toHaveBeenCalled();
+    expect(result.row.status).toBe('needs_review');
   });
 
   it('refreshes invalidReason when an invalid row stays invalid after partial correction', async () => {
@@ -435,20 +435,11 @@ describe('import service', () => {
     expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
       'org_1',
       draftRow.id,
-      {
-        reviewDate: '2026-05-02',
-        status: 'invalid',
-        invalidReason: 'Amount must be a positive number.',
-      },
+      { reviewDate: '2026-05-02' },
       tx
     );
-    expect(adjustImportDraftRowCounts).toHaveBeenCalledWith(
-      'org_1',
-      summaryRow.id,
-      { validRowCount: 0, invalidRowCount: 0 },
-      tx
-    );
-    expect(result.invalidReason).toBe('Amount must be a positive number.');
+    expect(syncDraftRefundLinkStatuses).toHaveBeenCalled();
+    expect(result.row.invalidReason).toBe('Amount must be a positive number.');
   });
 
   it('adjusts draft counts when a valid row becomes invalid', async () => {
@@ -481,20 +472,11 @@ describe('import service', () => {
     expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
       'org_1',
       draftRow.id,
-      {
-        reviewDate: null,
-        status: 'invalid',
-        invalidReason: 'Date must be a valid YYYY-MM-DD value.',
-      },
+      { reviewDate: null },
       tx
     );
-    expect(adjustImportDraftRowCounts).toHaveBeenCalledWith(
-      'org_1',
-      summaryRow.id,
-      { validRowCount: -1, invalidRowCount: 1 },
-      tx
-    );
-    expect(result.status).toBe('invalid');
+    expect(syncDraftRefundLinkStatuses).toHaveBeenCalled();
+    expect(result.row.status).toBe('invalid');
   });
 
   it('persists row selection updates', async () => {
@@ -517,13 +499,8 @@ describe('import service', () => {
       expect.objectContaining({ selectedForImport: true }),
       tx
     );
-    expect(adjustImportDraftRowCounts).toHaveBeenCalledWith(
-      'org_1',
-      summaryRow.id,
-      { validRowCount: 0, invalidRowCount: 0 },
-      tx
-    );
-    expect(result.selectedForImport).toBe(true);
+    expect(syncDraftRefundLinkStatuses).toHaveBeenCalled();
+    expect(result.row.selectedForImport).toBe(true);
   });
 
   it('updates row selection in batch for a draft', async () => {
@@ -606,7 +583,7 @@ describe('import service', () => {
     );
 
     expect(fetchAccountWriteReference).toHaveBeenCalledWith('org_1', fundingId);
-    expect(settlementResult).toMatchObject({
+    expect(settlementResult.row).toMatchObject({
       reviewCounterpartAccountId: fundingId,
       reviewType: 'settlement',
       externalId: settlementRow.externalId,
@@ -623,7 +600,7 @@ describe('import service', () => {
     });
 
     expect(transactionExistsInOrg).toHaveBeenCalledWith('org_1', expenseId);
-    expect(refundResult).toMatchObject({
+    expect(refundResult.row).toMatchObject({
       reviewRefundOf: expenseId,
       reviewType: 'refund',
     });

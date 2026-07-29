@@ -98,7 +98,10 @@ describe('imports router', () => {
   });
 
   it('validates row patch payloads before updating a draft row', async () => {
-    vi.mocked(updateImportDraftRow).mockResolvedValue({ id: 'row_1' } as never);
+    vi.mocked(updateImportDraftRow).mockResolvedValue({
+      row: { id: 'row_1' },
+      draftRows: [{ id: 'row_1' }],
+    } as never);
 
     const bad = await app.request('/rows/row_1', {
       method: 'PATCH',
@@ -123,6 +126,12 @@ describe('imports router', () => {
       }),
     });
     expect(good.status).toBe(200);
+    const goodBody = (await good.json()) as {
+      data: { id: string };
+      draftRows: { id: string }[];
+    };
+    expect(goodBody.data).toEqual({ id: 'row_1' });
+    expect(goodBody.draftRows).toEqual([{ id: 'row_1' }]);
     expect(updateImportDraftRow).toHaveBeenCalledWith('org_1', 'row_1', {
       reviewCategoryId: '55555555-5555-4555-8555-555555555555',
       reviewAssigneeMemberIds: ['44444444-4444-4444-8444-444444444444'],
@@ -131,8 +140,8 @@ describe('imports router', () => {
 
   it('accepts row selection patch payloads', async () => {
     vi.mocked(updateImportDraftRow).mockResolvedValue({
-      id: 'row_1',
-      selectedForImport: true,
+      row: { id: 'row_1', selectedForImport: true },
+      draftRows: [{ id: 'row_1', selectedForImport: true }],
     } as never);
 
     const res = await app.request('/rows/row_1', {

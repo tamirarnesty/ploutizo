@@ -4,12 +4,6 @@ import {
   evaluateImportRefundLinks,
   inheritRefundLinkFields,
 } from '@ploutizo/utils';
-import type {
-  ClassifyMerchantRule,
-  ExistingRefundTargetExpense,
-  ImportRefundLinkDraftRow,
-  ImportRefundLinkEvaluation,
-} from '@ploutizo/utils';
 import {
   deriveImportRowStatus,
   formatImportRowStructuralInvalidReason,
@@ -17,11 +11,17 @@ import {
   toImportRowStatusFields,
   toImportTransactionType,
 } from '@ploutizo/utils/import-row-status';
+import type {
+  ClassifyMerchantRule,
+  ExistingRefundTargetExpense,
+  ImportRefundLinkDraftRow,
+  ImportRefundLinkEvaluation,
+  ResolvedImportReferences,
+} from '@ploutizo/utils';
 import type { ImportTransactionType } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import type { ImportDraftRowRecord } from '@/lib/queries/imports';
 import type { ParsedImportRow } from '@/lib/imports/normalizedCsv';
-import type { ResolvedImportReferences } from '@ploutizo/utils';
 
 export interface ClassificationCatalogs {
   merchantRules: readonly ClassifyMerchantRule[];
@@ -129,10 +129,10 @@ export const buildRefundLinkEvaluations = (
   targetAccountId: string,
   existingExpenses: ReadonlyMap<string, ExistingRefundTargetExpense>
 ): Map<string, ImportRefundLinkEvaluation> =>
-  evaluateImportRefundLinks(
-    draftRows.map(toRefundLinkDraftRow),
-    { targetAccountId, existingExpenses }
-  );
+  evaluateImportRefundLinks(draftRows.map(toRefundLinkDraftRow), {
+    targetAccountId,
+    existingExpenses,
+  });
 
 export const derivePersistedRowStatus = (
   row: {

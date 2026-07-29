@@ -26,6 +26,7 @@ import {
 import type { ImportDraftRow } from '@ploutizo/types';
 import { TransactionTagPicker } from '@/components/transactions/TransactionTagPicker';
 import {
+  useGetTransaction,
   useGetTransactions,
   useSearchTransactions,
 } from '@/lib/data-access/transactions';
@@ -103,11 +104,22 @@ export const ImportDraftReviewRowDetails = ({
     debouncedQuery,
     'expense'
   );
+  const { data: linkedExistingExpense } = useGetTransaction(row.reviewRefundOf);
   const existingExpenses = (
     debouncedQuery.trim().length >= 2 ? searchResults : recentExpenses
   ).filter((tx) => tx.accountId === accountId);
 
-  const selectedExisting = existingExpenses.find(
+  // Keep an invalid/unfinalizable saved target visible even when it is absent
+  // from recent/search results (deleted, wrong account, or off the first page).
+  const existingExpenseOptions = (() => {
+    if (!linkedExistingExpense) return existingExpenses;
+    if (existingExpenses.some((tx) => tx.id === linkedExistingExpense.id)) {
+      return existingExpenses;
+    }
+    return [linkedExistingExpense, ...existingExpenses];
+  })();
+
+  const selectedExisting = existingExpenseOptions.find(
     (tx) => tx.id === row.reviewRefundOf
   );
   const selectedSameImport = sameImportExpenses.find(
@@ -203,7 +215,7 @@ export const ImportDraftReviewRowDetails = ({
                     return;
                   }
 
-                  const existing = existingExpenses.find(
+                  const existing = existingExpenseOptions.find(
                     (tx) => buildExpenseLabel(tx) === label
                   );
                   if (existing) {
@@ -256,7 +268,7 @@ export const ImportDraftReviewRowDetails = ({
                         {buildSameImportLabel(candidate)}
                       </ComboboxItem>
                     ))}
-                    {existingExpenses.map((tx) => (
+                    {existingExpenseOptions.map((tx) => (
                       <ComboboxItem
                         key={`tx-${tx.id}`}
                         value={buildExpenseLabel(tx)}
