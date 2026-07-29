@@ -1,14 +1,8 @@
 import { createPacedMutations, debounceStrategy } from '@tanstack/db';
-import { evaluateImportRefundLinks } from '@ploutizo/utils';
-import {
-  deriveImportRowStatus,
-  toImportRowStatusFields,
-  toImportTransactionType,
-} from '@ploutizo/utils/import-row-status';
 import type { ImportDraft, ImportDraftRow } from '@ploutizo/types';
-import type { ImportRefundLinkDraftRow } from '@ploutizo/utils';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import { queryClient } from '@/lib/queryClient';
+import { deriveImportDraftRowStatus } from './deriveImportDraftRowStatus';
 import {
   getImportReviewAutosaveSnapshot,
   markImportReviewPending,
@@ -23,19 +17,6 @@ import type { Transaction } from '@tanstack/db';
 
 type DraftRowsCollection = ReturnType<typeof getImportDraftRowsCollection>;
 
-const toRefundDraftRow = (row: ImportDraftRow): ImportRefundLinkDraftRow => ({
-  id: row.id,
-  reviewType: toImportTransactionType(row.reviewType),
-  parsedType: toImportTransactionType(row.parsedType),
-  reviewAmount: row.reviewAmount,
-  parsedAmount: row.parsedAmount,
-  reviewCategoryId: row.reviewCategoryId,
-  reviewAssigneeMemberIds: row.reviewAssigneeMemberIds,
-  reviewRefundOf: row.reviewRefundOf,
-  reviewRefundOfBatchRowId: row.reviewRefundOfBatchRowId,
-  selectedForImport: row.selectedForImport,
-});
-
 const resolveOptimisticRowStatus = (
   draftId: string,
   row: ImportDraftRow,
@@ -46,22 +27,12 @@ const resolveOptimisticRowStatus = (
   );
   const accountId = draft?.account.id;
   if (!accountId) {
-    return deriveImportRowStatus(toImportRowStatusFields(row));
+    return row.status;
   }
   const draftRows = [...collection.values()].map((entry) =>
     entry.id === row.id ? row : entry
   );
-  const evaluations = evaluateImportRefundLinks(
-    draftRows.map(toRefundDraftRow),
-    { targetAccountId: accountId }
-  );
-  const evaluation = evaluations.get(row.id);
-  return deriveImportRowStatus(
-    toImportRowStatusFields({
-      ...row,
-      refundLinkBlocked: Boolean(evaluation?.linked && !evaluation.valid),
-    })
-  );
+  return deriveImportDraftRowStatus(row, draftRows, accountId);
 };
 
 export const IMPORT_ROW_PACE_WAIT_MS = 500;

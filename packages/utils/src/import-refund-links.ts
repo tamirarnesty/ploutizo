@@ -18,6 +18,31 @@ export interface ImportRefundLinkDraftRow {
   selectedForImport: boolean;
 }
 
+/** Normalize draft/API row shapes into the refund-link evaluation input. */
+export const toImportRefundLinkDraftRow = (row: {
+  id: string;
+  reviewType: string | null;
+  parsedType: string | null;
+  reviewAmount: number | null;
+  parsedAmount: number | null;
+  reviewCategoryId: string | null;
+  reviewAssigneeMemberIds: readonly string[] | null | undefined;
+  reviewRefundOf: string | null;
+  reviewRefundOfBatchRowId: string | null;
+  selectedForImport: boolean;
+}): ImportRefundLinkDraftRow => ({
+  id: row.id,
+  reviewType: toImportTransactionType(row.reviewType),
+  parsedType: toImportTransactionType(row.parsedType),
+  reviewAmount: row.reviewAmount,
+  parsedAmount: row.parsedAmount,
+  reviewCategoryId: row.reviewCategoryId,
+  reviewAssigneeMemberIds: row.reviewAssigneeMemberIds ?? [],
+  reviewRefundOf: row.reviewRefundOf,
+  reviewRefundOfBatchRowId: row.reviewRefundOfBatchRowId,
+  selectedForImport: row.selectedForImport,
+});
+
 export interface ExistingRefundTargetExpense {
   id: string;
   accountId: string;
@@ -50,6 +75,10 @@ export interface ImportRefundLinkEvaluation {
   inheritedCategoryId: string | null;
   inheritedAssigneeMemberIds: string[];
 }
+
+export const isImportRefundLinkBlocked = (
+  evaluation: ImportRefundLinkEvaluation | undefined
+): boolean => Boolean(evaluation?.linked && !evaluation.valid);
 
 export interface EvaluateImportRefundLinksOptions {
   targetAccountId: string;
@@ -116,7 +145,8 @@ export const evaluateImportRefundLink = (
   row: ImportRefundLinkDraftRow,
   draftRows: readonly ImportRefundLinkDraftRow[],
   options: EvaluateImportRefundLinksOptions,
-  selectedRefundTotals?: ReadonlyMap<string, number>
+  selectedRefundTotals?: ReadonlyMap<string, number>,
+  draftRowsById?: ReadonlyMap<string, ImportRefundLinkDraftRow>
 ): ImportRefundLinkEvaluation => {
   const type = resolveImportRowReviewType({
     reviewType: toImportTransactionType(row.reviewType),
@@ -166,7 +196,9 @@ export const evaluateImportRefundLink = (
     if (row.reviewRefundOfBatchRowId === row.id) {
       issues.push('self_link');
     }
-    const target = draftRows.find((r) => r.id === row.reviewRefundOfBatchRowId);
+    const target =
+      draftRowsById?.get(row.reviewRefundOfBatchRowId) ??
+      draftRows.find((r) => r.id === row.reviewRefundOfBatchRowId);
     if (!target) {
       issues.push('missing_target');
     } else {
@@ -213,11 +245,12 @@ export const evaluateImportRefundLinks = (
   options: EvaluateImportRefundLinksOptions
 ): Map<string, ImportRefundLinkEvaluation> => {
   const totals = sumSelectedRefundsByTarget(draftRows);
+  const draftRowsById = new Map(draftRows.map((row) => [row.id, row]));
   const results = new Map<string, ImportRefundLinkEvaluation>();
   for (const row of draftRows) {
     results.set(
       row.id,
-      evaluateImportRefundLink(row, draftRows, options, totals)
+      evaluateImportRefundLink(row, draftRows, options, totals, draftRowsById)
     );
   }
   return results;

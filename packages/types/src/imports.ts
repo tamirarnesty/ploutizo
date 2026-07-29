@@ -8,6 +8,9 @@ import type {
 /** Seeded settlement category for bill-payment readability in transaction lists. */
 export const BILL_PAYMENT_CATEGORY_NAME = 'Bill Payment' as const;
 
+/** Description substring used by seeded bill-payment detection and merchant rule. */
+export const BILL_PAYMENT_DESCRIPTION_PATTERN = 'PAYMENT THANK YOU' as const;
+
 export interface ImportTargetAccount {
   id: string;
   name: string;

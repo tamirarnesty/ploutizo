@@ -89,3 +89,7 @@ export const useImportDraftReviewContext = () => {
 /** Persist-failure cue — empty outside the review provider (e.g. loading shell). */
 export const useImportDraftReviewFailedRowIds = (): readonly string[] =>
   useContext(ImportDraftReviewContext)?.failedRowIds ?? [];
+
+/** Optional review context for cues that also render outside the provider. */
+export const useOptionalImportDraftReviewContext = () =>
+  useContext(ImportDraftReviewContext);

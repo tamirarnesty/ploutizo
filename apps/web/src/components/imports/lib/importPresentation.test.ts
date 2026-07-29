@@ -133,6 +133,20 @@ describe('importPresentation review helpers', () => {
     ).toBe('Needs review: settlement requires funding account');
   });
 
+  it('describes refund-link blockers when provided by draft evaluation', () => {
+    expect(
+      getImportRowStatusTooltip(
+        {
+          ...baseRow,
+          status: 'needs_review',
+          reviewType: 'refund',
+          reviewRefundOf: 'tx_missing',
+        },
+        { refundLinkBlocked: true }
+      )
+    ).toBe('Needs review: refund link needs review');
+  });
+
   it('combines settlement and missing-field blockers in the tooltip', () => {
     expect(
       getImportRowStatusTooltip({

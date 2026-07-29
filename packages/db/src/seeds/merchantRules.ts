@@ -1,4 +1,7 @@
-import { BILL_PAYMENT_CATEGORY_NAME } from '@ploutizo/types';
+import {
+  BILL_PAYMENT_CATEGORY_NAME,
+  BILL_PAYMENT_DESCRIPTION_PATTERN,
+} from '@ploutizo/types';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../client';
 import { merchantRules } from '../schema/index';
@@ -8,8 +11,9 @@ type SelectExecutor = { select: typeof db.select };
 type InsertExecutor = { insert: typeof db.insert };
 type SeedExecutor = SelectExecutor & InsertExecutor;
 
-/** Pattern used for seeded bill-payment merchant classification. */
-export const BILL_PAYMENT_MERCHANT_RULE_PATTERN = 'PAYMENT THANK YOU' as const;
+/** @deprecated Prefer BILL_PAYMENT_DESCRIPTION_PATTERN from @ploutizo/types. */
+export const BILL_PAYMENT_MERCHANT_RULE_PATTERN =
+  BILL_PAYMENT_DESCRIPTION_PATTERN;
 
 // Default merchant rules seeded at org creation.
 // INVARIANT: Every row has orgId set — no global merchant rule rows.

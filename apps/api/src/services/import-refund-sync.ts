@@ -1,4 +1,7 @@
-import { computeImportDraftRowCounts } from '@ploutizo/utils';
+import {
+  computeImportDraftRowCounts,
+  isImportRefundLinkBlocked,
+} from '@ploutizo/utils';
 import type { ExistingRefundTargetExpense } from '@ploutizo/utils';
 import type { DbClient, ImportDraftRowRecord } from '@/lib/queries/imports';
 import {
@@ -36,10 +39,7 @@ export const syncDraftRefundLinkStatuses = async (
     expenses
   );
 
-  const nextRows: ImportDraftRowRecord[] = [];
-  for (const row of draftRows) {
-    const evaluation = evaluations.get(row.id);
-    const refundLinkBlocked = Boolean(evaluation?.linked && !evaluation.valid);
+  const updates = draftRows.flatMap((row) => {
     const next = derivePersistedRowStatus(
       {
         status: row.status,
@@ -55,25 +55,33 @@ export const syncDraftRefundLinkStatuses = async (
         reviewAssigneeMemberIds: row.reviewAssigneeMemberIds,
         reviewCounterpartAccountId: row.reviewCounterpartAccountId,
       },
-      refundLinkBlocked
+      isImportRefundLinkBlocked(evaluations.get(row.id))
     );
 
     if (
       next.status === row.status &&
       next.invalidReason === row.invalidReason
     ) {
-      nextRows.push(row);
-      continue;
+      return [];
     }
 
-    const updated = await updateImportDraftRowQuery(
-      orgId,
-      row.id,
-      { status: next.status, invalidReason: next.invalidReason },
-      client
-    );
-    nextRows.push(updated ?? { ...row, ...next });
-  }
+    return [{ row, next }];
+  });
+
+  const updatedById = new Map<string, ImportDraftRowRecord>();
+  await Promise.all(
+    updates.map(async ({ row, next }) => {
+      const updated = await updateImportDraftRowQuery(
+        orgId,
+        row.id,
+        { status: next.status, invalidReason: next.invalidReason },
+        client
+      );
+      updatedById.set(row.id, updated ?? { ...row, ...next });
+    })
+  );
+
+  const nextRows = draftRows.map((row) => updatedById.get(row.id) ?? row);
 
   const before = computeImportDraftRowCounts(draftRows);
   const after = computeImportDraftRowCounts(nextRows);

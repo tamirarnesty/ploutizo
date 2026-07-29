@@ -1,9 +1,11 @@
-import { BILL_PAYMENT_CATEGORY_NAME } from '@ploutizo/types';
+import {
+  BILL_PAYMENT_CATEGORY_NAME,
+  BILL_PAYMENT_DESCRIPTION_PATTERN,
+} from '@ploutizo/types';
 import type { ImportTransactionType, MerchantMatchType } from '@ploutizo/types';
 import { findMatchingMerchantRule } from './match-merchant-rule';
 
-/** Pattern used by seeded bill-payment detection (before merchant rules). */
-export const BILL_PAYMENT_DESCRIPTION_PATTERN = 'PAYMENT THANK YOU' as const;
+export { BILL_PAYMENT_DESCRIPTION_PATTERN };
 
 export interface ClassifyMerchantRule {
   pattern: string;
@@ -132,8 +134,6 @@ export const classifyImportRow = (
   }
   if (reviewTagIds.length === 0 && input.csvTagIds.length > 0) {
     reviewTagIds = [...input.csvTagIds];
-  } else if (input.csvTagIds.length > 0) {
-    reviewTagIds = [...new Set([...reviewTagIds, ...input.csvTagIds])];
   }
 
   return {

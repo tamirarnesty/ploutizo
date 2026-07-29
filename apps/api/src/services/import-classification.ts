@@ -3,6 +3,7 @@ import {
   classifyImportRow,
   evaluateImportRefundLinks,
   inheritRefundLinkFields,
+  toImportRefundLinkDraftRow,
 } from '@ploutizo/utils';
 import {
   deriveImportRowStatus,
@@ -111,18 +112,7 @@ export const toRefundLinkDraftRow = (
     | 'reviewRefundOfBatchRowId'
     | 'selectedForImport'
   >
-): ImportRefundLinkDraftRow => ({
-  id: row.id,
-  reviewType: toImportTransactionType(row.reviewType),
-  parsedType: toImportTransactionType(row.parsedType),
-  reviewAmount: row.reviewAmount,
-  parsedAmount: row.parsedAmount,
-  reviewCategoryId: row.reviewCategoryId,
-  reviewAssigneeMemberIds: row.reviewAssigneeMemberIds,
-  reviewRefundOf: row.reviewRefundOf,
-  reviewRefundOfBatchRowId: row.reviewRefundOfBatchRowId,
-  selectedForImport: row.selectedForImport,
-});
+): ImportRefundLinkDraftRow => toImportRefundLinkDraftRow(row);
 
 export const buildRefundLinkEvaluations = (
   draftRows: readonly ImportDraftRowRecord[],

@@ -43,8 +43,12 @@ interface ImportDraftReviewRowDetailsProps {
   row: ImportDraftRow;
 }
 
-const buildExpenseLabel = (tx: TransactionRow) =>
-  `${tx.description || '—'} · ${tx.date} · ${formatCurrency(tx.amount)}`;
+const existingRefundValue = (id: string) => `existing:${id}`;
+const sameImportRefundValue = (id: string) => `same-import:${id}`;
+
+const buildExpenseLabel = (
+  tx: Pick<TransactionRow, 'description' | 'date' | 'amount'>
+) => `${tx.description || '—'} · ${tx.date} · ${formatCurrency(tx.amount)}`;
 
 const buildSameImportLabel = (target: ImportDraftRow) => {
   const description =
@@ -53,6 +57,9 @@ const buildSameImportLabel = (target: ImportDraftRow) => {
   const amountLabel = amount != null ? formatCurrency(amount) : '—';
   return `${description} · same import · ${amountLabel}`;
 };
+
+const buildUnavailableExistingLabel = (id: string) =>
+  `Linked expense (unavailable) · ${id.slice(0, 8)}`;
 
 export const ImportDraftReviewRowDetails = ({
   row,
@@ -81,15 +88,30 @@ export const ImportDraftReviewRowDetails = ({
     [accounts, accountId]
   );
 
-  const sameImportExpenses = useMemo(
+  const linkedSameImportRow = useMemo(
     () =>
-      draftRows.filter(
-        (candidate) =>
-          candidate.id !== row.id &&
-          resolveImportRowReviewType(candidate) === 'expense'
-      ),
-    [draftRows, row.id]
+      draftRows.find(
+        (candidate) => candidate.id === row.reviewRefundOfBatchRowId
+      ) ?? null,
+    [draftRows, row.reviewRefundOfBatchRowId]
   );
+
+  const sameImportExpenses = useMemo(() => {
+    const expenses = draftRows.filter(
+      (candidate) =>
+        candidate.id !== row.id &&
+        resolveImportRowReviewType(candidate) === 'expense'
+    );
+    // Keep an invalid/unfinalizable same-import target visible after type flips.
+    if (
+      linkedSameImportRow &&
+      linkedSameImportRow.id !== row.id &&
+      !expenses.some((candidate) => candidate.id === linkedSameImportRow.id)
+    ) {
+      return [linkedSameImportRow, ...expenses];
+    }
+    return expenses;
+  }, [draftRows, linkedSameImportRow, row.id]);
 
   const { data: recentExpensesResponse } = useGetTransactions({
     page: 1,
@@ -104,7 +126,14 @@ export const ImportDraftReviewRowDetails = ({
     debouncedQuery,
     'expense'
   );
-  const { data: linkedExistingExpense } = useGetTransaction(row.reviewRefundOf);
+  const linkedExistingQuery = useGetTransaction(row.reviewRefundOf);
+  const linkedExistingExpense = linkedExistingQuery.data;
+  const linkedExistingUnavailable =
+    Boolean(row.reviewRefundOf) &&
+    linkedExistingQuery.isFetched &&
+    !linkedExistingQuery.isLoading &&
+    !linkedExistingExpense;
+
   const existingExpenses = (
     debouncedQuery.trim().length >= 2 ? searchResults : recentExpenses
   ).filter((tx) => tx.accountId === accountId);
@@ -127,10 +156,12 @@ export const ImportDraftReviewRowDetails = ({
   );
 
   const refundComboboxValue = selectedExisting
-    ? buildExpenseLabel(selectedExisting)
+    ? existingRefundValue(selectedExisting.id)
     : selectedSameImport
-      ? buildSameImportLabel(selectedSameImport)
-      : null;
+      ? sameImportRefundValue(selectedSameImport.id)
+      : linkedExistingUnavailable && row.reviewRefundOf
+        ? existingRefundValue(row.reviewRefundOf)
+        : null;
 
   return (
     <div className="bg-muted/10 px-3 py-2">
@@ -205,8 +236,8 @@ export const ImportDraftReviewRowDetails = ({
               <Combobox
                 value={refundComboboxValue}
                 inputValue={refundQuery}
-                onValueChange={(label: string | null) => {
-                  if (!label) {
+                onValueChange={(value: string | null) => {
+                  if (!value) {
                     setRefundQuery('');
                     saveField({
                       reviewRefundOf: null,
@@ -215,10 +246,20 @@ export const ImportDraftReviewRowDetails = ({
                     return;
                   }
 
-                  const existing = existingExpenseOptions.find(
-                    (tx) => buildExpenseLabel(tx) === label
-                  );
-                  if (existing) {
+                  if (value.startsWith('existing:')) {
+                    const id = value.slice('existing:'.length);
+                    const existing = existingExpenseOptions.find(
+                      (tx) => tx.id === id
+                    );
+                    if (!existing) {
+                      // Keep unavailable linked targets selectable for clear/replace.
+                      setRefundQuery(buildUnavailableExistingLabel(id));
+                      saveField({
+                        reviewRefundOf: id,
+                        reviewRefundOfBatchRowId: null,
+                      });
+                      return;
+                    }
                     setRefundQuery(existing.description || '—');
                     saveField({
                       reviewRefundOf: existing.id,
@@ -231,10 +272,12 @@ export const ImportDraftReviewRowDetails = ({
                     return;
                   }
 
-                  const sameImport = sameImportExpenses.find(
-                    (candidate) => buildSameImportLabel(candidate) === label
-                  );
-                  if (sameImport) {
+                  if (value.startsWith('same-import:')) {
+                    const id = value.slice('same-import:'.length);
+                    const sameImport = sameImportExpenses.find(
+                      (candidate) => candidate.id === id
+                    );
+                    if (!sameImport) return;
                     setRefundQuery(
                       resolveImportRowReviewDescription(sameImport) ??
                         `Row ${sameImport.rowNumber}`
@@ -260,18 +303,29 @@ export const ImportDraftReviewRowDetails = ({
                 />
                 <ComboboxContent>
                   <ComboboxList>
-                    {sameImportExpenses.map((candidate) => (
+                    {sameImportExpenses.map((candidate) => {
+                      const label = buildSameImportLabel(candidate);
+                      return (
+                        <ComboboxItem
+                          key={`row-${candidate.id}`}
+                          value={sameImportRefundValue(candidate.id)}
+                        >
+                          {label}
+                        </ComboboxItem>
+                      );
+                    })}
+                    {linkedExistingUnavailable && row.reviewRefundOf ? (
                       <ComboboxItem
-                        key={`row-${candidate.id}`}
-                        value={buildSameImportLabel(candidate)}
+                        key={`tx-unavailable-${row.reviewRefundOf}`}
+                        value={existingRefundValue(row.reviewRefundOf)}
                       >
-                        {buildSameImportLabel(candidate)}
+                        {buildUnavailableExistingLabel(row.reviewRefundOf)}
                       </ComboboxItem>
-                    ))}
+                    ) : null}
                     {existingExpenseOptions.map((tx) => (
                       <ComboboxItem
                         key={`tx-${tx.id}`}
-                        value={buildExpenseLabel(tx)}
+                        value={existingRefundValue(tx.id)}
                       >
                         {buildExpenseLabel(tx)}
                       </ComboboxItem>

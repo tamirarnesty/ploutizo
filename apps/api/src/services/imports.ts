@@ -146,7 +146,21 @@ export const getImportDraft = async (
 ): Promise<ImportDraft> => {
   const summary = await fetchDraftSummaryById(orgId, draftId);
   if (!summary) throw new NotFoundError('Import draft not found.');
-  const rows = await listDraftRows(orgId, draftId);
+  if (!summary.accountId) throw new NotFoundError('Import draft not found.');
+
+  const listed = await listDraftRows(orgId, draftId);
+  const hasRefundLinks = listed.some(
+    (row) => row.reviewRefundOf || row.reviewRefundOfBatchRowId
+  );
+
+  // Re-evaluate refund-link validity on load when links exist so Continue
+  // reflects deleted / amount-changed targets without an intervening edit.
+  const rows = hasRefundLinks
+    ? await db.transaction(async (tx) =>
+        syncDraftRefundLinkStatuses(orgId, draftId, summary.accountId!, tx)
+      )
+    : listed;
+
   return {
     ...toImportDraftSummary(summary),
     rows: rows.map(toImportDraftRow),
@@ -360,15 +374,20 @@ export const updateImportDraftRow = async (
     patch.reviewRefundOf !== undefined ||
     patch.reviewRefundOfBatchRowId !== undefined
   ) {
-    const draftRowsPreview = (await listDraftRows(orgId, existing.batchId)).map(
-      (row) => (row.id === rowId ? { ...row, ...merged } : row)
-    );
-    const evaluations = await loadRefundEvaluationsForDraft(
-      orgId,
-      targetAccountId,
-      draftRowsPreview
-    );
-    patch = applyRefundLinkInheritance(patch, evaluations.get(rowId));
+    const needsInheritance =
+      patch.reviewCategoryId === undefined ||
+      patch.reviewAssigneeMemberIds === undefined;
+    if (needsInheritance) {
+      const draftRowsPreview = (
+        await listDraftRows(orgId, existing.batchId)
+      ).map((row) => (row.id === rowId ? { ...row, ...merged } : row));
+      const evaluations = await loadRefundEvaluationsForDraft(
+        orgId,
+        targetAccountId,
+        draftRowsPreview
+      );
+      patch = applyRefundLinkInheritance(patch, evaluations.get(rowId));
+    }
   }
 
   const draftRows = await db.transaction(async (tx) => {

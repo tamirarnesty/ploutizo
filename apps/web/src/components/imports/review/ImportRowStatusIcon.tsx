@@ -6,9 +6,17 @@ import {
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
 import { cn } from '@ploutizo/ui/lib/utils';
+import {
+  evaluateImportRefundLinks,
+  isImportRefundLinkBlocked,
+  toImportRefundLinkDraftRow,
+} from '@ploutizo/utils';
 import type { ImportDraftRow } from '@ploutizo/types';
 import { getImportRowStatusTooltip } from '../lib/importPresentation';
-import { useImportDraftReviewFailedRowIds } from './ImportDraftReviewContext';
+import {
+  useImportDraftReviewFailedRowIds,
+  useOptionalImportDraftReviewContext,
+} from './ImportDraftReviewContext';
 
 const statusIconClassName: Record<ImportDraftRow['status'], string> = {
   ready: 'text-emerald-600 dark:text-emerald-400',
@@ -53,10 +61,20 @@ interface ImportRowStatusIconProps {
 
 export const ImportRowStatusIcon = ({ row }: ImportRowStatusIconProps) => {
   const failedRowIds = useImportDraftReviewFailedRowIds();
+  const reviewContext = useOptionalImportDraftReviewContext();
+  const refundLinkBlocked = reviewContext
+    ? isImportRefundLinkBlocked(
+        evaluateImportRefundLinks(
+          reviewContext.draftRows.map(toImportRefundLinkDraftRow),
+          { targetAccountId: reviewContext.accountId }
+        ).get(row.id)
+      )
+    : false;
+
   const persistFailed = failedRowIds.includes(row.id);
   const tooltip = persistFailed
     ? 'Could not save this row. Use Retry in the draft autosave strip.'
-    : getImportRowStatusTooltip(row);
+    : getImportRowStatusTooltip(row, { refundLinkBlocked });
 
   return (
     <Tooltip>

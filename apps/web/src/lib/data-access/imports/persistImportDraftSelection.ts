@@ -33,8 +33,6 @@ const confirmSelectionIntoCollection = (
     return;
   }
 
-  const serverById = new Map(serverRows.map((row) => [row.id, row]));
-
   // Apply selection for toggled ids and status for every returned row so
   // same-import refund-link blockers stay in sync with Continue gating.
   for (const serverRow of serverRows) {
