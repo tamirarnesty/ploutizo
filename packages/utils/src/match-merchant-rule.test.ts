@@ -32,6 +32,17 @@ describe('match-merchant-rule', () => {
     ).toBe(false);
   });
 
+  it('rejects overlapping-alternation ReDoS shapes', () => {
+    const overlapping = ['(', 'a|a', ')', '+'].join('');
+    expect(isSafeMerchantRegexPattern(overlapping)).toBe(false);
+    expect(
+      matchesMerchantRule('aaaaaaaaaaaaaaaa', {
+        pattern: overlapping,
+        matchType: 'regex',
+      })
+    ).toBe(false);
+  });
+
   it('allows simple compile-safe regex patterns', () => {
     expect(isSafeMerchantRegexPattern('^AMAZON.*')).toBe(true);
     expect(

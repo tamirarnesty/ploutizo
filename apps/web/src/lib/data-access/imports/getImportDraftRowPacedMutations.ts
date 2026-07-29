@@ -158,7 +158,7 @@ const confirmPersistIntoCollection = (
         collection.utils.writeUpdate(draftRow);
         continue;
       }
-      if (draftRow.updatedAt < siblingLive.updatedAt) {
+      if (draftRow.updatedAt <= siblingLive.updatedAt) {
         continue;
       }
       collection.utils.writeUpdate({

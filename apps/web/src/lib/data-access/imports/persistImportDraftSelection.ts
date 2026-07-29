@@ -49,8 +49,9 @@ const confirmSelectionIntoCollection = (
         : serverRow.selectedForImport
       : live.selectedForImport;
 
-    // Prefer fresher live status when a concurrent row PATCH already applied.
-    const preferServerStatus = serverRow.updatedAt >= live.updatedAt;
+    // Prefer a strictly fresher server snapshot so equal-timestamp stale
+    // responses cannot overwrite live/optimistic refund readiness.
+    const preferServerStatus = serverRow.updatedAt > live.updatedAt;
     collection.utils.writeUpdate({
       ...live,
       selectedForImport: nextSelected,

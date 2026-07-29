@@ -6,12 +6,13 @@ export interface MerchantRuleMatchInput {
 }
 
 /** Soft caps for tenant regex patterns during classification matching. */
-export const MERCHANT_REGEX_MAX_PATTERN_LENGTH = 200;
-export const MERCHANT_REGEX_MAX_HAYSTACK_LENGTH = 2_000;
+export const MERCHANT_REGEX_MAX_PATTERN_LENGTH = 120;
+export const MERCHANT_REGEX_MAX_HAYSTACK_LENGTH = 256;
 
 /**
  * Heuristic guard against common catastrophic-backtracking shapes.
- * Invalid or unsafe patterns are treated as non-matches during classification.
+ * Invalid or unsafe patterns are treated as non-matches during classification
+ * and rejected when saving merchant rules.
  */
 export const isSafeMerchantRegexPattern = (pattern: string): boolean => {
   const trimmed = pattern.trim();
@@ -21,8 +22,13 @@ export const isSafeMerchantRegexPattern = (pattern: string): boolean => {
   // Nested quantifiers / overlapping repetitions: (a+)+, (a*)*, (a+){2,}, etc.
   if (/(\([^()]*[+*][^()]*\))[+*?]/.test(trimmed)) return false;
   if (/([+*]\??)\1/.test(trimmed)) return false;
-  // Ambiguous adjacent quantified wildcards: .+?*.+ or .*a+
+  // Ambiguous adjacent quantified wildcards.
   if (/(\.\*|\.\+){2,}/.test(trimmed)) return false;
+  // Overlapping alternation under repetition: (a|a)+, (a|aa)*, (a+|b*)+, etc.
+  if (/\([^)]*\|[^)]*\)[+*{]/.test(trimmed)) return false;
+  if (/\([^)]*[+*][^)]*\|[^)]*\)/.test(trimmed)) return false;
+  // Backreferences amplify matching cost.
+  if (/\\[1-9]/.test(trimmed)) return false;
 
   try {
     void new RegExp(trimmed, 'i');
