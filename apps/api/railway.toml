@@ -24,6 +24,3 @@ restartPolicyMaxRetries = 3
 [deploy.multiRegionConfig]
 [deploy.multiRegionConfig.us-east4-eqdc4a]
 numReplicas = 1
-
-[environments.pr.deploy]
-preDeployCommand = []
