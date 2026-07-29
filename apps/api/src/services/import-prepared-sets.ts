@@ -7,8 +7,8 @@ import {
   toImportTransactionType,
 } from '@ploutizo/utils/import-row-status';
 import { importPreparedReviewedValuesSchema } from '@ploutizo/validators';
+import type { PrepareImportOutcomeInput } from '@ploutizo/validators';
 import type {
-  ImportPreparedOutcome,
   ImportPreparedReviewedValues,
   ImportPreparedSet,
 } from '@ploutizo/types';
@@ -25,13 +25,6 @@ import {
 } from '@/lib/queries/import-prepared-sets';
 import { fetchDraftSummaryById, listDraftRows } from '@/lib/queries/imports';
 import { transactionExistsInOrg } from '@/lib/queries/scope';
-
-/** Caller-supplied prepare outcome; server owns the reviewedValues snapshot. */
-export type PreparedOutcomeSpec = {
-  batchRowId: string;
-  outcome: ImportPreparedOutcome;
-  transactionId?: string | null;
-};
 
 export const buildReviewedValuesSnapshot = (
   row: ImportDraftRowRecord
@@ -86,7 +79,7 @@ export const buildReviewedValuesSnapshot = (
 export const createImportPreparedSetRevision = async (
   orgId: string,
   batchId: string,
-  outcomes: PreparedOutcomeSpec[]
+  outcomes: PrepareImportOutcomeInput[]
 ): Promise<ImportPreparedSet> => {
   const draft = await fetchDraftSummaryById(orgId, batchId);
   if (!draft) throw new NotFoundError('Import draft not found.');
@@ -99,7 +92,7 @@ export const createImportPreparedSetRevision = async (
   }
 
   const prepared = await db.transaction(async (tx) => {
-    await lockPreparedSetRevisionForBatch(tx, batchId);
+    await lockPreparedSetRevisionForBatch(tx, orgId, batchId);
 
     const draftRows = await listDraftRows(orgId, batchId, tx);
     const rowsById = new Map(draftRows.map((row) => [row.id, row]));

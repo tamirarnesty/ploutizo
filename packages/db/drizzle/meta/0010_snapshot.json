@@ -1,5 +1,5 @@
 {
-  "id": "47f80579-eafd-4ae9-9e73-5f3bbbd0aa06",
+  "id": "9dbc27e6-257a-4fcb-9661-fd657b8332e5",
   "prevId": "6c226ba5-a364-4bee-89bb-74830e75bd50",
   "version": "7",
   "dialect": "postgresql",
@@ -330,6 +330,27 @@
             },
             {
               "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "categories_id_org_id_idx": {
+          "name": "categories_id_org_id_idx",
+          "columns": [
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "org_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -924,6 +945,27 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "accounts_id_org_id_idx": {
+          "name": "accounts_id_org_id_idx",
+          "columns": [
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "org_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -1242,32 +1284,6 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "import_batch_rows_review_category_id_categories_id_fk": {
-          "name": "import_batch_rows_review_category_id_categories_id_fk",
-          "tableFrom": "import_batch_rows",
-          "tableTo": "categories",
-          "columnsFrom": [
-            "review_category_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "import_batch_rows_review_counterpart_account_id_accounts_id_fk": {
-          "name": "import_batch_rows_review_counterpart_account_id_accounts_id_fk",
-          "tableFrom": "import_batch_rows",
-          "tableTo": "accounts",
-          "columnsFrom": [
-            "review_counterpart_account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
         "import_batch_rows_batch_id_org_id_import_batches_id_org_id_fk": {
           "name": "import_batch_rows_batch_id_org_id_import_batches_id_org_id_fk",
           "tableFrom": "import_batch_rows",
@@ -1281,6 +1297,36 @@
             "org_id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "import_batch_rows_review_category_id_org_id_categories_id_org_id_fk": {
+          "name": "import_batch_rows_review_category_id_org_id_categories_id_org_id_fk",
+          "tableFrom": "import_batch_rows",
+          "tableTo": "categories",
+          "columnsFrom": [
+            "review_category_id",
+            "org_id"
+          ],
+          "columnsTo": [
+            "id",
+            "org_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "import_batch_rows_review_counterpart_account_id_org_id_accounts_id_org_id_fk": {
+          "name": "import_batch_rows_review_counterpart_account_id_org_id_accounts_id_org_id_fk",
+          "tableFrom": "import_batch_rows",
+          "tableTo": "accounts",
+          "columnsFrom": [
+            "review_counterpart_account_id",
+            "org_id"
+          ],
+          "columnsTo": [
+            "id",
+            "org_id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },

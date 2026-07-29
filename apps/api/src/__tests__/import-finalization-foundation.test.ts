@@ -238,6 +238,52 @@ describe('import finalization foundation — transaction provenance', () => {
     expect((err as DomainError).code).toBe('EXTERNAL_ID_CONFLICT');
   });
 
+  it('writes externalId without a service-side uniqueness preflight', async () => {
+    // Re-import after soft-delete is owned by the partial unique index
+    // (deleted_at IS NULL). The write path inserts and maps only that
+    // active-row constraint — it does not look up prior soft-deleted peers.
+    const inserted = await createTransaction(ORG, {
+      type: 'expense',
+      accountId: ACCOUNT,
+      amount: 4218,
+      date: '2026-05-02',
+      description: 'Neighborhood Coffee',
+      categoryId: CATEGORY,
+      assignees: baseAssignees,
+      importBatchId: BATCH,
+      rawDescription: 'COFFEE SHOP #42',
+      externalId: 'visa-1001',
+    });
+
+    expect(inserted).toMatchObject({ externalId: 'visa-1001' });
+    const valuesFn = mockTx.insert.mock.results[0]?.value.values as ReturnType<
+      typeof vi.fn
+    >;
+    expect(valuesFn).toHaveBeenCalledWith(
+      expect.objectContaining({ externalId: 'visa-1001' })
+    );
+  });
+
+  it('rejects importBatchId that does not belong to the org', async () => {
+    vi.mocked(fetchImportBatchInOrg).mockResolvedValue(null);
+
+    const err = await createTransaction(ORG, {
+      type: 'expense',
+      accountId: ACCOUNT,
+      amount: 4218,
+      date: '2026-05-02',
+      description: 'Neighborhood Coffee',
+      categoryId: CATEGORY,
+      assignees: baseAssignees,
+      importBatchId: BATCH,
+      externalId: 'visa-1001',
+    }).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(NotFoundError);
+    expect((err as NotFoundError).message).toBe('Import batch not found.');
+    expect(fetchImportBatchInOrg).toHaveBeenCalledWith(ORG, BATCH, mockTx);
+  });
+
   it('does not map unrelated unique violations as external-id conflicts', async () => {
     mockTx.insert
       .mockReturnValueOnce({
@@ -483,6 +529,11 @@ describe('import finalization foundation — prepared set revisions', () => {
       externalId: 'visa-1001',
       rawDescription: 'COFFEE SHOP #42',
     });
+    expect(lockPreparedSetRevisionForBatch).toHaveBeenCalledWith(
+      mockTx,
+      ORG,
+      BATCH
+    );
     expect(listDraftRows).toHaveBeenCalledWith(ORG, BATCH, mockTx);
 
     vi.mocked(fetchLatestPreparedSetForBatch).mockResolvedValue({

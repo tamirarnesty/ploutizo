@@ -58,6 +58,7 @@ export const accounts = pgTable(
   (t) => [
     index('accounts_org_idx').on(t.orgId),
     index('accounts_org_statement_due_day_idx').on(t.orgId, t.statementDueDay),
+    uniqueIndex('accounts_id_org_id_idx').on(t.id, t.orgId),
   ]
 );
 

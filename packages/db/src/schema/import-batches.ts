@@ -98,21 +98,23 @@ export const importBatchRows = pgTable(
     reviewAmount: integer('review_amount'),
     reviewType: transactionTypeEnum('review_type'),
     reviewDescription: text('review_description'),
-    reviewCategoryId: uuid('review_category_id').references(
-      () => categories.id
-    ),
+    reviewCategoryId: uuid('review_category_id'),
     reviewAssigneeMemberIds: jsonb('review_assignee_member_ids')
       .$type<string[]>()
       .notNull()
       .default([]),
     /** Settlement funding account selected during review (paid-from). */
-    reviewCounterpartAccountId: uuid(
-      'review_counterpart_account_id'
-    ).references(() => accounts.id, { onDelete: 'set null' }),
+    reviewCounterpartAccountId: uuid('review_counterpart_account_id'),
     /**
      * Reviewed refund link to an existing expense. Original CSV hint remains in
      * review_refund_link_hint / source provenance fields.
-     * FK to transactions is applied in SQL migration to avoid a schema cycle.
+     *
+     * Composite org FK lives only in
+     * `0010_import_finalization_foundation.sql` as
+     * `import_batch_rows_review_refund_of_org_id_transactions_id_org_id_fk`
+     * — Drizzle cannot declare it here without a schema cycle
+     * (transactions → import_batches → transactions). Keep that SQL
+     * constraint in sync with this comment.
      */
     reviewRefundOf: uuid('review_refund_of'),
     reviewRefundLinkHint: text('review_refund_link_hint'),
@@ -141,5 +143,13 @@ export const importBatchRows = pgTable(
       columns: [t.batchId, t.orgId],
       foreignColumns: [importBatches.id, importBatches.orgId],
     }).onDelete('cascade'),
+    foreignKey({
+      columns: [t.reviewCategoryId, t.orgId],
+      foreignColumns: [categories.id, categories.orgId],
+    }),
+    foreignKey({
+      columns: [t.reviewCounterpartAccountId, t.orgId],
+      foreignColumns: [accounts.id, accounts.orgId],
+    }).onDelete('set null'),
   ]
 );

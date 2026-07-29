@@ -1,0 +1,74 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
+
+const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
+const migration = readFileSync(
+  join(root, 'drizzle/0010_import_finalization_foundation.sql'),
+  'utf8'
+);
+const accountsSchema = readFileSync(
+  join(root, 'src/schema/accounts.ts'),
+  'utf8'
+);
+const categoriesSchema = readFileSync(
+  join(root, 'src/schema/classification.ts'),
+  'utf8'
+);
+const importBatchesSchema = readFileSync(
+  join(root, 'src/schema/import-batches.ts'),
+  'utf8'
+);
+const transactionsSchema = readFileSync(
+  join(root, 'src/schema/transactions.ts'),
+  'utf8'
+);
+
+describe('import finalization foundation schema contracts', () => {
+  it('scopes external-id uniqueness to active rows only', () => {
+    expect(transactionsSchema).toContain(
+      'transactions_active_account_external_id_idx'
+    );
+    expect(transactionsSchema).toContain(
+      'deleted_at IS NULL AND external_id IS NOT NULL'
+    );
+    expect(migration).toContain(
+      'CREATE UNIQUE INDEX "transactions_active_account_external_id_idx"'
+    );
+    expect(migration).toContain(
+      'WHERE deleted_at IS NULL AND external_id IS NOT NULL'
+    );
+  });
+
+  it('uses composite org FKs for draft review category, funding, and refund', () => {
+    expect(accountsSchema).toContain("uniqueIndex('accounts_id_org_id_idx')");
+    expect(categoriesSchema).toContain(
+      "uniqueIndex('categories_id_org_id_idx')"
+    );
+    expect(importBatchesSchema).toContain(
+      'columns: [t.reviewCategoryId, t.orgId]'
+    );
+    expect(importBatchesSchema).toContain(
+      'columns: [t.reviewCounterpartAccountId, t.orgId]'
+    );
+
+    expect(migration).toContain('CREATE UNIQUE INDEX "accounts_id_org_id_idx"');
+    expect(migration).toContain(
+      'CREATE UNIQUE INDEX "categories_id_org_id_idx"'
+    );
+    expect(migration).toContain(
+      'import_batch_rows_review_category_id_org_id_categories_id_org_id_fk'
+    );
+    expect(migration).toContain(
+      'import_batch_rows_review_counterpart_account_id_org_id_accounts_id_org_id_fk'
+    );
+    expect(migration).toContain(
+      'import_batch_rows_review_refund_of_org_id_transactions_id_org_id_fk'
+    );
+    expect(importBatchesSchema).toContain(
+      'import_batch_rows_review_refund_of_org_id_transactions_id_org_id_fk'
+    );
+    expect(migration).toContain('SQL-only composite org FK');
+  });
+});

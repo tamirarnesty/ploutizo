@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '@ploutizo/db';
+import { NotFoundError } from '@/lib/errors';
 import {
   createNormalizedImportDraft,
   listImportTargets,
@@ -24,6 +25,10 @@ import {
 import { assertOrgWriteReferences } from '@/lib/assertOrgWriteReferences';
 import { listOrgMembers } from '@/lib/queries/households';
 import { listCategories } from '@/lib/queries/categories';
+import {
+  fetchAccountWriteReference,
+  transactionExistsInOrg,
+} from '@/lib/queries/scope';
 import { listTags } from '@/lib/queries/tags';
 
 vi.mock('@ploutizo/db', () => ({
@@ -62,6 +67,11 @@ vi.mock('@/lib/queries/tags', () => ({
 
 vi.mock('@/lib/assertOrgWriteReferences', () => ({
   assertOrgWriteReferences: vi.fn(),
+}));
+
+vi.mock('@/lib/queries/scope', () => ({
+  fetchAccountWriteReference: vi.fn(),
+  transactionExistsInOrg: vi.fn(),
 }));
 
 const summaryRow = {
@@ -153,6 +163,11 @@ describe('import service', () => {
     ]);
     vi.mocked(listTags).mockResolvedValue([]);
     vi.mocked(assertOrgWriteReferences).mockResolvedValue(undefined);
+    vi.mocked(fetchAccountWriteReference).mockResolvedValue({
+      id: '66666666-6666-4666-8666-666666666666',
+      type: 'chequing',
+    });
+    vi.mocked(transactionExistsInOrg).mockResolvedValue(true);
     vi.mocked(insertImportBatch).mockResolvedValue({
       id: summaryRow.id,
     } as never);
@@ -510,5 +525,99 @@ describe('import service', () => {
     expect(touchImportDraft).toHaveBeenCalledWith('org_1', summaryRow.id, tx);
     expect(result).toHaveLength(1);
     expect(result[0]?.selectedForImport).toBe(true);
+  });
+
+  it('persists settlement funding and refund-link review values', async () => {
+    const fundingId = '66666666-6666-4666-8666-666666666666';
+    const expenseId = '77777777-7777-4777-8777-777777777777';
+    const settlementRow = {
+      ...draftRow,
+      reviewType: 'settlement' as const,
+      reviewCategoryId: null,
+      reviewAssigneeMemberIds: [],
+    };
+    const updatedRow = {
+      ...settlementRow,
+      reviewCounterpartAccountId: fundingId,
+      reviewRefundOf: expenseId,
+      updatedAt: new Date('2026-05-20T13:00:00Z'),
+    };
+    const tx = {} as never;
+
+    vi.mocked(fetchDraftRowById).mockResolvedValue(settlementRow);
+    vi.mocked(fetchDraftSummaryById).mockResolvedValue(summaryRow);
+    vi.mocked(fetchAccountWriteReference).mockImplementation((_org, id) =>
+      Promise.resolve(
+        id === summaryRow.accountId
+          ? { id: summaryRow.accountId, type: 'credit_card' }
+          : { id: fundingId, type: 'chequing' }
+      )
+    );
+    vi.mocked(transactionExistsInOrg).mockResolvedValue(true);
+    vi.mocked(updateImportDraftRowQuery).mockResolvedValue(updatedRow);
+    vi.mocked(db.transaction).mockImplementation(async (fn) => fn(tx));
+
+    const result = await updateImportDraftRow('org_1', draftRow.id, {
+      reviewCounterpartAccountId: fundingId,
+      reviewRefundOf: expenseId,
+    });
+
+    expect(fetchAccountWriteReference).toHaveBeenCalledWith('org_1', fundingId);
+    expect(transactionExistsInOrg).toHaveBeenCalledWith('org_1', expenseId);
+    expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
+      'org_1',
+      draftRow.id,
+      {
+        reviewCounterpartAccountId: fundingId,
+        reviewRefundOf: expenseId,
+        status: 'needs_review',
+        invalidReason: null,
+      },
+      tx
+    );
+    expect(result).toMatchObject({
+      reviewCounterpartAccountId: fundingId,
+      reviewRefundOf: expenseId,
+      // Original imported provenance is retained beside review edits.
+      externalId: settlementRow.externalId,
+      sourceDate: settlementRow.sourceDate,
+      sourceAmount: settlementRow.sourceAmount,
+      sourceDescription: settlementRow.sourceDescription,
+      sourceType: settlementRow.sourceType,
+      parsedDate: settlementRow.parsedDate,
+      parsedAmount: settlementRow.parsedAmount,
+      parsedType: settlementRow.parsedType,
+      parsedDescription: settlementRow.parsedDescription,
+    });
+  });
+
+  it('rejects reviewCounterpartAccountId not in org (two-org isolation)', async () => {
+    const fundingId = '66666666-6666-4666-8666-666666666666';
+    vi.mocked(fetchDraftRowById).mockResolvedValue(draftRow);
+    vi.mocked(fetchAccountWriteReference).mockResolvedValue(null);
+
+    const err = await updateImportDraftRow('org_1', draftRow.id, {
+      reviewCounterpartAccountId: fundingId,
+    }).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(NotFoundError);
+    expect((err as NotFoundError).message).toBe('Account not found');
+    expect(fetchAccountWriteReference).toHaveBeenCalledWith('org_1', fundingId);
+    expect(updateImportDraftRowQuery).not.toHaveBeenCalled();
+  });
+
+  it('rejects reviewRefundOf not in org (two-org isolation)', async () => {
+    const expenseId = '77777777-7777-4777-8777-777777777777';
+    vi.mocked(fetchDraftRowById).mockResolvedValue(draftRow);
+    vi.mocked(transactionExistsInOrg).mockResolvedValue(false);
+
+    const err = await updateImportDraftRow('org_1', draftRow.id, {
+      reviewRefundOf: expenseId,
+    }).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(NotFoundError);
+    expect((err as NotFoundError).message).toBe('Transaction not found');
+    expect(transactionExistsInOrg).toHaveBeenCalledWith('org_1', expenseId);
+    expect(updateImportDraftRowQuery).not.toHaveBeenCalled();
   });
 });

@@ -82,13 +82,14 @@ export const fetchLatestPreparedSetForBatch = async (
   return rows.at(0) ?? null;
 };
 
-/** Lock prepared-set revision allocation for a batch (advisory). */
+/** Lock prepared-set revision allocation for a batch (advisory, org-scoped key). */
 export const lockPreparedSetRevisionForBatch = async (
   tx: DrizzleTransaction,
+  orgId: string,
   batchId: string
 ) => {
   await tx.execute(
-    sql`select pg_advisory_xact_lock(abs(hashtext(${`import-prepared:${batchId}`})::bigint))`
+    sql`select pg_advisory_xact_lock(abs(hashtext(${`import-prepared:${orgId}:${batchId}`})::bigint))`
   );
 };
 

@@ -18,9 +18,12 @@ CREATE TABLE "import_prepared_outcomes" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+ALTER TABLE "import_batch_rows" DROP CONSTRAINT "import_batch_rows_review_category_id_categories_id_fk";--> statement-breakpoint
 ALTER TABLE "import_batch_rows" ADD COLUMN "review_counterpart_account_id" uuid;--> statement-breakpoint
 ALTER TABLE "import_batch_rows" ADD COLUMN "review_refund_of" uuid;--> statement-breakpoint
 ALTER TABLE "transactions" ADD COLUMN "external_id" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "accounts_id_org_id_idx" ON "accounts" USING btree ("id","org_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "categories_id_org_id_idx" ON "categories" USING btree ("id","org_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "import_batch_rows_id_org_id_idx" ON "import_batch_rows" USING btree ("id","org_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "import_prepared_sets_id_org_id_idx" ON "import_prepared_sets" USING btree ("id","org_id");--> statement-breakpoint
 CREATE INDEX "import_prepared_sets_org_idx" ON "import_prepared_sets" USING btree ("org_id");--> statement-breakpoint
@@ -40,5 +43,9 @@ ALTER TABLE "import_prepared_outcomes" ADD CONSTRAINT "import_prepared_outcomes_
 ALTER TABLE "import_prepared_outcomes" ADD CONSTRAINT "import_prepared_outcomes_prepared_set_id_org_id_import_prepared_sets_id_org_id_fk" FOREIGN KEY ("prepared_set_id","org_id") REFERENCES "public"."import_prepared_sets"("id","org_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "import_prepared_outcomes" ADD CONSTRAINT "import_prepared_outcomes_batch_row_id_org_id_import_batch_rows_id_org_id_fk" FOREIGN KEY ("batch_row_id","org_id") REFERENCES "public"."import_batch_rows"("id","org_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "import_prepared_outcomes" ADD CONSTRAINT "import_prepared_outcomes_transaction_id_org_id_transactions_id_org_id_fk" FOREIGN KEY ("transaction_id","org_id") REFERENCES "public"."transactions"("id","org_id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "import_batch_rows" ADD CONSTRAINT "import_batch_rows_review_counterpart_account_id_accounts_id_fk" FOREIGN KEY ("review_counterpart_account_id") REFERENCES "public"."accounts"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "import_batch_rows" ADD CONSTRAINT "import_batch_rows_review_refund_of_transactions_id_fk" FOREIGN KEY ("review_refund_of") REFERENCES "public"."transactions"("id") ON DELETE set null ON UPDATE no action;
+ALTER TABLE "import_batch_rows" ADD CONSTRAINT "import_batch_rows_review_category_id_org_id_categories_id_org_id_fk" FOREIGN KEY ("review_category_id","org_id") REFERENCES "public"."categories"("id","org_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "import_batch_rows" ADD CONSTRAINT "import_batch_rows_review_counterpart_account_id_org_id_accounts_id_org_id_fk" FOREIGN KEY ("review_counterpart_account_id","org_id") REFERENCES "public"."accounts"("id","org_id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+-- SQL-only composite org FK: review_refund_of cannot be declared in
+-- packages/db/src/schema/import-batches.ts without a transactions ↔ import_batches
+-- cycle. Keep constraint name in sync with the reviewRefundOf schema comment.
+ALTER TABLE "import_batch_rows" ADD CONSTRAINT "import_batch_rows_review_refund_of_org_id_transactions_id_org_id_fk" FOREIGN KEY ("review_refund_of","org_id") REFERENCES "public"."transactions"("id","org_id") ON DELETE set null ON UPDATE no action;
