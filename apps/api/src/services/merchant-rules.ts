@@ -1,4 +1,5 @@
 import { db } from '@ploutizo/db';
+import { isSafeMerchantRegexPattern } from '@ploutizo/utils';
 import type {
   createMerchantRuleSchema,
   updateMerchantRuleSchema,
@@ -16,10 +17,12 @@ import type { z } from 'zod';
 // Moved from routes/merchant-rules.ts per D-06 — business logic belongs in service
 const validateRegex = (matchType: string, pattern: string): void => {
   if (matchType !== 'regex') return;
-  try {
-    new RegExp(pattern);
-  } catch {
-    throw new DomainError(400, 'Invalid regular expression.', 'INVALID_REGEX');
+  if (!isSafeMerchantRegexPattern(pattern)) {
+    throw new DomainError(
+      400,
+      'Regular expression is invalid or too complex.',
+      'INVALID_REGEX'
+    );
   }
 };
 

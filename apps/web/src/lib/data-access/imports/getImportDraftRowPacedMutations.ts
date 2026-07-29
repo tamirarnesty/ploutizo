@@ -148,6 +148,8 @@ const confirmPersistIntoCollection = (
   collection.utils.writeUpdate(next);
 
   // Apply sibling refund-link status updates from the server draft snapshot.
+  // Only accept sibling status from responses at least as fresh as the live row
+  // so out-of-order paced PATCHes cannot regress newer refund readiness.
   if (draftRows) {
     for (const draftRow of draftRows) {
       if (draftRow.id === attempted.id) continue;
@@ -156,14 +158,14 @@ const confirmPersistIntoCollection = (
         collection.utils.writeUpdate(draftRow);
         continue;
       }
+      if (draftRow.updatedAt < siblingLive.updatedAt) {
+        continue;
+      }
       collection.utils.writeUpdate({
         ...siblingLive,
         status: draftRow.status,
         invalidReason: draftRow.invalidReason,
-        updatedAt:
-          draftRow.updatedAt >= siblingLive.updatedAt
-            ? draftRow.updatedAt
-            : siblingLive.updatedAt,
+        updatedAt: draftRow.updatedAt,
       });
     }
   }

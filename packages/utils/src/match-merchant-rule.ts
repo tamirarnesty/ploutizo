@@ -5,6 +5,34 @@ export interface MerchantRuleMatchInput {
   matchType: MerchantMatchType;
 }
 
+/** Soft caps for tenant regex patterns during classification matching. */
+export const MERCHANT_REGEX_MAX_PATTERN_LENGTH = 200;
+export const MERCHANT_REGEX_MAX_HAYSTACK_LENGTH = 2_000;
+
+/**
+ * Heuristic guard against common catastrophic-backtracking shapes.
+ * Invalid or unsafe patterns are treated as non-matches during classification.
+ */
+export const isSafeMerchantRegexPattern = (pattern: string): boolean => {
+  const trimmed = pattern.trim();
+  if (!trimmed) return false;
+  if (trimmed.length > MERCHANT_REGEX_MAX_PATTERN_LENGTH) return false;
+
+  // Nested quantifiers / overlapping repetitions: (a+)+, (a*)*, (a+){2,}, etc.
+  if (/(\([^()]*[+*][^()]*\))[+*?]/.test(trimmed)) return false;
+  if (/([+*]\??)\1/.test(trimmed)) return false;
+  // Ambiguous adjacent quantified wildcards: .+?*.+ or .*a+
+  if (/(\.\*|\.\+){2,}/.test(trimmed)) return false;
+
+  try {
+     
+    new RegExp(trimmed, 'i');
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 /** Case-insensitive merchant-rule match against a description. */
 export const matchesMerchantRule = (
   description: string,
@@ -29,6 +57,8 @@ export const matchesMerchantRule = (
     case 'ends_with':
       return upperHaystack.endsWith(upperPattern);
     case 'regex': {
+      if (haystack.length > MERCHANT_REGEX_MAX_HAYSTACK_LENGTH) return false;
+      if (!isSafeMerchantRegexPattern(pattern)) return false;
       try {
         return new RegExp(pattern, 'i').test(haystack);
       } catch {

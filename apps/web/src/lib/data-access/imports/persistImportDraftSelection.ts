@@ -49,15 +49,16 @@ const confirmSelectionIntoCollection = (
         : serverRow.selectedForImport
       : live.selectedForImport;
 
+    // Prefer fresher live status when a concurrent row PATCH already applied.
+    const preferServerStatus = serverRow.updatedAt >= live.updatedAt;
     collection.utils.writeUpdate({
       ...live,
       selectedForImport: nextSelected,
-      status: serverRow.status,
-      invalidReason: serverRow.invalidReason,
-      updatedAt:
-        serverRow.updatedAt >= live.updatedAt
-          ? serverRow.updatedAt
-          : live.updatedAt,
+      status: preferServerStatus ? serverRow.status : live.status,
+      invalidReason: preferServerStatus
+        ? serverRow.invalidReason
+        : live.invalidReason,
+      updatedAt: preferServerStatus ? serverRow.updatedAt : live.updatedAt,
     });
   }
 };

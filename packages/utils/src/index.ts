@@ -55,7 +55,10 @@ export {
 } from './match-import-references';
 export {
   findMatchingMerchantRule,
+  isSafeMerchantRegexPattern,
   matchesMerchantRule,
+  MERCHANT_REGEX_MAX_HAYSTACK_LENGTH,
+  MERCHANT_REGEX_MAX_PATTERN_LENGTH,
   type MerchantRuleMatchInput,
 } from './match-merchant-rule';
 export {
