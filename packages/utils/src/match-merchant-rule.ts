@@ -25,8 +25,7 @@ export const isSafeMerchantRegexPattern = (pattern: string): boolean => {
   if (/(\.\*|\.\+){2,}/.test(trimmed)) return false;
 
   try {
-     
-    new RegExp(trimmed, 'i');
+    void new RegExp(trimmed, 'i');
     return true;
   } catch {
     return false;
