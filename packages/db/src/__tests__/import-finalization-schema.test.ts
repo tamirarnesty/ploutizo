@@ -8,6 +8,10 @@ const migration = readFileSync(
   join(root, 'drizzle/0010_import_finalization_foundation.sql'),
   'utf8'
 );
+const classificationMigration = readFileSync(
+  join(root, 'drizzle/0011_import_classification_refund_links.sql'),
+  'utf8'
+);
 const importDraftsMigration = readFileSync(
   join(root, 'drizzle/0007_import_drafts.sql'),
   'utf8'
@@ -56,6 +60,7 @@ describe('import finalization foundation schema contracts', () => {
     expect(importBatchesSchema).toContain(
       'columns: [t.reviewCounterpartAccountId, t.orgId]'
     );
+    expect(importBatchesSchema).toContain('reviewRefundOfBatchRowId');
 
     expect(importDraftsMigration).toContain(
       'CREATE UNIQUE INDEX "accounts_id_org_id_idx"'
@@ -128,6 +133,14 @@ describe('import finalization foundation schema contracts', () => {
     );
     expect(importDraftsMigration).not.toContain(
       'CREATE INDEX "import_batch_rows_batch_idx"'
+    );
+  });
+
+  it('persists same-import refund link targets on draft rows', () => {
+    expect(importBatchesSchema).toContain('review_refund_of_batch_row_id');
+    expect(classificationMigration).toContain('review_refund_of_batch_row_id');
+    expect(classificationMigration).toContain(
+      'import_batch_rows_review_refund_of_batch_row_id_import_batch_rows_id_fk'
     );
   });
 });

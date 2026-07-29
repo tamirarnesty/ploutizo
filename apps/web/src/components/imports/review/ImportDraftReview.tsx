@@ -13,9 +13,11 @@ import type {
   ImportDraftMeta,
   ImportReviewAutosaveStatus,
 } from '@/lib/data-access/imports';
+import { useGetAccounts } from '@/lib/data-access/accounts';
 import { useGetCategories } from '@/lib/data-access/categories';
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import { PendingInputFlushProvider } from '@/lib/money/pending-input-flush';
+import { findBillPaymentCategoryId } from '../lib/importClassification';
 import { useImportDraftReviewState } from '../lib/useImportDraftReviewState';
 import { ImportDraftReviewHeader } from './ImportDraftReviewHeader';
 import { ImportDraftReviewProvider } from './ImportDraftReviewContext';
@@ -71,6 +73,8 @@ const ImportDraftReviewContent = ({
 }: ImportDraftReviewProps) => {
   const { data: categories = [] } = useGetCategories();
   const { data: orgMembers = [] } = useGetOrgMembers();
+  const { data: accounts = [] } = useGetAccounts();
+  const billPaymentCategoryId = findBillPaymentCategoryId(categories);
   const reviewState = useImportDraftReviewState({
     meta,
     rows,
@@ -118,8 +122,12 @@ const ImportDraftReviewContent = ({
         ) : meta ? (
           <ImportDraftReviewProvider
             draftId={meta.id}
+            accountId={meta.account.id}
             categories={categories}
             orgMembers={orgMembers}
+            accounts={accounts}
+            billPaymentCategoryId={billPaymentCategoryId}
+            draftRows={rows}
             updateRow={updateRow}
             failedRowIds={failedRowIds}
           >

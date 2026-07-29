@@ -33,30 +33,33 @@ const confirmSelectionIntoCollection = (
     return;
   }
 
-  const serverById = new Map(serverRows.map((row) => [row.id, row]));
-  for (const rowId of rowIds) {
-    const live = collection.get(rowId);
-    const serverRow = serverById.get(rowId);
+  // Apply selection for toggled ids and status for every returned row so
+  // same-import refund-link blockers stay in sync with Continue gating.
+  for (const serverRow of serverRows) {
+    const live = collection.get(serverRow.id);
     if (!live) {
-      if (serverRow) collection.utils.writeUpdate(serverRow);
+      collection.utils.writeUpdate(serverRow);
       continue;
     }
-    if (!serverRow) {
-      collection.utils.writeUpdate(live);
-      continue;
-    }
-    // Prefer a newer local selection toggle over this response.
-    const nextSelected =
-      live.selectedForImport !== selectedForImport
+
+    const wasToggled = rowIds.includes(serverRow.id);
+    const nextSelected = wasToggled
+      ? live.selectedForImport !== selectedForImport
         ? live.selectedForImport
-        : serverRow.selectedForImport;
+        : serverRow.selectedForImport
+      : live.selectedForImport;
+
+    // Prefer a strictly fresher server snapshot so equal-timestamp stale
+    // responses cannot overwrite live/optimistic refund readiness.
+    const preferServerStatus = serverRow.updatedAt > live.updatedAt;
     collection.utils.writeUpdate({
       ...live,
       selectedForImport: nextSelected,
-      updatedAt:
-        serverRow.updatedAt >= live.updatedAt
-          ? serverRow.updatedAt
-          : live.updatedAt,
+      status: preferServerStatus ? serverRow.status : live.status,
+      invalidReason: preferServerStatus
+        ? serverRow.invalidReason
+        : live.invalidReason,
+      updatedAt: preferServerStatus ? serverRow.updatedAt : live.updatedAt,
     });
   }
 };

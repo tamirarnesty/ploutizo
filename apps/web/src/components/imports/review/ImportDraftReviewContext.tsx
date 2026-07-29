@@ -1,13 +1,17 @@
 import { createContext, useContext, useMemo } from 'react';
-import type { OrgMember } from '@ploutizo/types';
+import type { Account, ImportDraftRow, OrgMember } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import type { Category } from '@/lib/data-access/categories';
 import type { ReactNode } from 'react';
 
 interface ImportDraftReviewContextValue {
   draftId: string;
+  accountId: string;
   categories: Category[];
   orgMembers: OrgMember[];
+  accounts: Account[];
+  billPaymentCategoryId: string | null;
+  draftRows: readonly ImportDraftRow[];
   updateRow: (rowId: string, patch: UpdateImportDraftRowInput) => void;
   failedRowIds: readonly string[];
 }
@@ -17,8 +21,12 @@ const ImportDraftReviewContext =
 
 interface ImportDraftReviewProviderProps {
   draftId: string;
+  accountId: string;
   categories: Category[];
   orgMembers: OrgMember[];
+  accounts: Account[];
+  billPaymentCategoryId: string | null;
+  draftRows: ImportDraftRow[];
   updateRow: (rowId: string, patch: UpdateImportDraftRowInput) => void;
   failedRowIds: string[];
   children: ReactNode;
@@ -26,8 +34,12 @@ interface ImportDraftReviewProviderProps {
 
 export const ImportDraftReviewProvider = ({
   draftId,
+  accountId,
   categories,
   orgMembers,
+  accounts,
+  billPaymentCategoryId,
+  draftRows,
   updateRow,
   failedRowIds,
   children,
@@ -35,12 +47,26 @@ export const ImportDraftReviewProvider = ({
   const value = useMemo(
     () => ({
       draftId,
+      accountId,
       categories,
       orgMembers,
+      accounts,
+      billPaymentCategoryId,
+      draftRows,
       updateRow,
       failedRowIds,
     }),
-    [draftId, categories, orgMembers, updateRow, failedRowIds]
+    [
+      draftId,
+      accountId,
+      categories,
+      orgMembers,
+      accounts,
+      billPaymentCategoryId,
+      draftRows,
+      updateRow,
+      failedRowIds,
+    ]
   );
 
   return (
@@ -63,3 +89,7 @@ export const useImportDraftReviewContext = () => {
 /** Persist-failure cue — empty outside the review provider (e.g. loading shell). */
 export const useImportDraftReviewFailedRowIds = (): readonly string[] =>
   useContext(ImportDraftReviewContext)?.failedRowIds ?? [];
+
+/** Optional review context for cues that also render outside the provider. */
+export const useOptionalImportDraftReviewContext = () =>
+  useContext(ImportDraftReviewContext);

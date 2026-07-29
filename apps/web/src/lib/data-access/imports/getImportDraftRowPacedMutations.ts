@@ -1,10 +1,8 @@
 import { createPacedMutations, debounceStrategy } from '@tanstack/db';
-import {
-  deriveImportRowStatus,
-  toImportRowStatusFields,
-} from '@ploutizo/utils/import-row-status';
-import type { ImportDraftRow } from '@ploutizo/types';
+import type { ImportDraft, ImportDraftRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
+import { queryClient } from '@/lib/queryClient';
+import { deriveImportDraftRowStatus } from './deriveImportDraftRowStatus';
 import {
   getImportReviewAutosaveSnapshot,
   markImportReviewPending,
@@ -14,7 +12,28 @@ import {
 } from './importReviewAutosave';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
 import { fetchUpdateImportDraftRow } from './fetchUpdateImportDraftRow';
+import { importDraftQueryKey } from './queryKeys';
 import type { Transaction } from '@tanstack/db';
+
+type DraftRowsCollection = ReturnType<typeof getImportDraftRowsCollection>;
+
+const resolveOptimisticRowStatus = (
+  draftId: string,
+  row: ImportDraftRow,
+  collection: DraftRowsCollection
+): ImportDraftRow['status'] => {
+  const draft = queryClient.getQueryData<ImportDraft>(
+    importDraftQueryKey(draftId)
+  );
+  const accountId = draft?.account.id;
+  if (!accountId) {
+    return row.status;
+  }
+  const draftRows = [...collection.values()].map((entry) =>
+    entry.id === row.id ? row : entry
+  );
+  return deriveImportDraftRowStatus(row, draftRows, accountId);
+};
 
 export const IMPORT_ROW_PACE_WAIT_MS = 500;
 
@@ -28,6 +47,7 @@ const REVIEW_PATCH_KEYS = [
   'reviewAssigneeMemberIds',
   'reviewCounterpartAccountId',
   'reviewRefundOf',
+  'reviewRefundOfBatchRowId',
   'reviewRefundLinkHint',
   'reviewNotes',
   'reviewTagIds',
@@ -81,8 +101,10 @@ const liveHasNewerThanAttempt = (
  * Always writeUpdate before mutationFn returns so dropping optimistic state does not regress.
  */
 const confirmPersistIntoCollection = (
-  collection: ReturnType<typeof getImportDraftRowsCollection>,
+  draftId: string,
+  collection: DraftRowsCollection,
   serverRow: ImportDraftRow | null,
+  draftRows: ImportDraftRow[] | null,
   attempted: ImportDraftRow,
   original: ImportDraftRow,
   patch: UpdateImportDraftRowInput
@@ -115,17 +137,38 @@ const confirmPersistIntoCollection = (
     }
   }
 
-  // Only take server status/timestamps when this persist still owns the row.
-  // Avoid older responses clobbering status derived from newer local field edits.
   if (!preferLive && serverRow.updatedAt >= live.updatedAt) {
     next.updatedAt = serverRow.updatedAt;
     next.status = serverRow.status;
     next.invalidReason = serverRow.invalidReason;
   } else {
-    next.status = deriveImportRowStatus(toImportRowStatusFields(next));
+    next.status = resolveOptimisticRowStatus(draftId, next, collection);
   }
 
   collection.utils.writeUpdate(next);
+
+  // Apply sibling refund-link status updates from the server draft snapshot.
+  // Only accept sibling status from responses at least as fresh as the live row
+  // so out-of-order paced PATCHes cannot regress newer refund readiness.
+  if (draftRows) {
+    for (const draftRow of draftRows) {
+      if (draftRow.id === attempted.id) continue;
+      const siblingLive = collection.get(draftRow.id);
+      if (!siblingLive) {
+        collection.utils.writeUpdate(draftRow);
+        continue;
+      }
+      if (draftRow.updatedAt <= siblingLive.updatedAt) {
+        continue;
+      }
+      collection.utils.writeUpdate({
+        ...siblingLive,
+        status: draftRow.status,
+        invalidReason: draftRow.invalidReason,
+        updatedAt: draftRow.updatedAt,
+      });
+    }
+  }
 };
 
 const patchFromLiveKeys = (
@@ -153,7 +196,7 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
       const collection = getImportDraftRowsCollection(draftId);
       collection.update(rowId, (draft) => {
         Object.assign(draft, patch);
-        draft.status = deriveImportRowStatus(toImportRowStatusFields(draft));
+        draft.status = resolveOptimisticRowStatus(draftId, draft, collection);
       });
     },
     mutationFn: async ({ transaction }) => {
@@ -189,10 +232,15 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
 
       const persistedKeys = Object.keys(patch);
       try {
-        const serverRow = await fetchUpdateImportDraftRow(rowId, patch);
+        const { row: serverRow, draftRows } = await fetchUpdateImportDraftRow(
+          rowId,
+          patch
+        );
         confirmPersistIntoCollection(
+          draftId,
           collection,
           serverRow,
+          draftRows,
           attempted,
           original,
           patch
@@ -201,7 +249,9 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
       } catch {
         // Keep working-copy edits (ADR 0005) — do not throw (avoids optimistic rollback).
         confirmPersistIntoCollection(
+          draftId,
           collection,
+          null,
           null,
           attempted,
           original,
@@ -284,8 +334,19 @@ export const retryFailedImportDraftRowPersists = async (draftId: string) => {
       markImportReviewPersistStart(draftId, rowId);
       const persistedKeys = Object.keys(patch);
       try {
-        const serverRow = await fetchUpdateImportDraftRow(rowId, patch);
-        confirmPersistIntoCollection(collection, serverRow, live, live, patch);
+        const { row: serverRow, draftRows } = await fetchUpdateImportDraftRow(
+          rowId,
+          patch
+        );
+        confirmPersistIntoCollection(
+          draftId,
+          collection,
+          serverRow,
+          draftRows,
+          live,
+          live,
+          patch
+        );
         // Explicit Retry: clear all tracked failures for the row.
         markImportReviewPersistSuccess(draftId, rowId);
       } catch {

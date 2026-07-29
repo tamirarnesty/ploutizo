@@ -22,6 +22,7 @@ export const updateImportDraftRowSchema = z
     reviewAssigneeMemberIds: z.array(z.string().uuid()).optional(),
     reviewCounterpartAccountId: z.string().uuid().nullable().optional(),
     reviewRefundOf: z.string().uuid().nullable().optional(),
+    reviewRefundOfBatchRowId: z.string().uuid().nullable().optional(),
     reviewRefundLinkHint: z.string().trim().min(1).nullable().optional(),
     reviewNotes: z.string().trim().nullable().optional(),
     reviewTagIds: z.array(z.string().uuid()).optional(),
@@ -29,7 +30,16 @@ export const updateImportDraftRowSchema = z
   })
   .refine((value) => Object.keys(value).length > 0, {
     message: 'At least one field is required.',
-  });
+  })
+  .refine(
+    (value) =>
+      !(value.reviewRefundOf != null && value.reviewRefundOfBatchRowId != null),
+    {
+      message:
+        'A refund can link to an existing expense or a same-import expense, not both.',
+      path: ['reviewRefundOfBatchRowId'],
+    }
+  );
 
 export type CreateImportDraftInput = z.infer<typeof createImportDraftSchema>;
 export type UpdateImportDraftRowInput = z.infer<
@@ -55,6 +65,7 @@ export const importPreparedReviewedValuesSchema = z.object({
   assigneeMemberIds: z.array(z.string().uuid()),
   counterpartAccountId: z.string().uuid().nullable(),
   refundOf: z.string().uuid().nullable(),
+  refundOfBatchRowId: z.string().uuid().nullable(),
   notes: z.string().nullable(),
   tagIds: z.array(z.string().uuid()),
   externalId: z.string().nullable(),

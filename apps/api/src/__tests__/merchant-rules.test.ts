@@ -105,6 +105,17 @@ describe('POST /api/merchant-rules', () => {
     });
     expect(res.status).toBe(201);
   });
+  it('returns 400 INVALID_REGEX on unsafe regex pattern', async () => {
+    const unsafe = ['^(', 'a|aa', ')+$'].join('');
+    const res = await app.request('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pattern: unsafe, matchType: 'regex' }),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe('INVALID_REGEX');
+  });
   it('returns 400 on missing pattern', async () => {
     const res = await app.request('/', {
       method: 'POST',

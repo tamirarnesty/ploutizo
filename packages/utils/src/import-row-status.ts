@@ -19,6 +19,11 @@ export interface ImportRowReviewFields {
   reviewAssigneeMemberIds: string[];
   /** Settlement funding account — required for new settlement creates. */
   reviewCounterpartAccountId: string | null;
+  /**
+   * When true, an explicit refund link is present but invalid/unfinalizable.
+   * Computed by draft-level refund-link evaluation (not stored).
+   */
+  refundLinkBlocked?: boolean;
 }
 
 export type ImportRowReviewBlocker =
@@ -28,7 +33,8 @@ export type ImportRowReviewBlocker =
   | 'type'
   | 'category'
   | 'assignee'
-  | 'settlement';
+  | 'settlement'
+  | 'refund_link';
 
 /** Fields required to derive durable/optimistic import row status. */
 export type ImportRowStatusInput = ImportRowStructuralFields &
@@ -41,11 +47,12 @@ export type ImportRowStatusFields = ImportRowStatusInput & {
 /** Partial runtime row shapes may omit assignees before normalization. */
 export type ImportRowStatusNormalizeInput = Omit<
   ImportRowStatusInput,
-  'reviewAssigneeMemberIds' | 'reviewCounterpartAccountId'
+  'reviewAssigneeMemberIds' | 'reviewCounterpartAccountId' | 'refundLinkBlocked'
 > & {
   status: ImportRowStatus;
   reviewAssigneeMemberIds?: string[] | null;
   reviewCounterpartAccountId?: string | null;
+  refundLinkBlocked?: boolean;
 };
 
 export type ImportRowStructuralBlocker = Extract<
@@ -147,6 +154,7 @@ export const toImportRowStatusFields = (
   reviewCategoryId: row.reviewCategoryId ?? null,
   reviewAssigneeMemberIds: row.reviewAssigneeMemberIds ?? [],
   reviewCounterpartAccountId: row.reviewCounterpartAccountId ?? null,
+  refundLinkBlocked: row.refundLinkBlocked ?? false,
 });
 
 const getReviewPhaseBlockers = (
@@ -160,11 +168,16 @@ const getReviewPhaseBlockers = (
   }
 
   if (type === 'settlement' && !row.reviewCounterpartAccountId) {
-    // Funding / Pay-toward readiness — counterpart is settlement funding.
+    // Funding readiness — counterpart is settlement funding account.
+    // Pay toward is the assignee set (required below for all types).
     blockers.push('settlement');
   }
 
   if (row.reviewAssigneeMemberIds.length === 0) blockers.push('assignee');
+
+  if (type === 'refund' && row.refundLinkBlocked) {
+    blockers.push('refund_link');
+  }
   return blockers;
 };
 

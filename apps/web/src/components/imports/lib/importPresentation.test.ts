@@ -31,6 +31,7 @@ const baseRow = {
   reviewAssigneeMemberIds: ['member_1'],
   reviewCounterpartAccountId: null,
   reviewRefundOf: null,
+  reviewRefundOfBatchRowId: null,
   reviewRefundLinkHint: null,
   reviewNotes: null,
   reviewTagIds: [],
@@ -129,7 +130,21 @@ describe('importPresentation review helpers', () => {
         status: 'needs_review',
         reviewType: 'settlement',
       })
-    ).toBe('Needs review: settlement requires review');
+    ).toBe('Needs review: settlement requires funding account');
+  });
+
+  it('describes refund-link blockers when provided by draft evaluation', () => {
+    expect(
+      getImportRowStatusTooltip(
+        {
+          ...baseRow,
+          status: 'needs_review',
+          reviewType: 'refund',
+          reviewRefundOf: 'tx_missing',
+        },
+        { refundLinkBlocked: true }
+      )
+    ).toBe('Needs review: refund link needs review');
   });
 
   it('combines settlement and missing-field blockers in the tooltip', () => {
@@ -141,7 +156,9 @@ describe('importPresentation review helpers', () => {
         reviewCategoryId: null,
         reviewAssigneeMemberIds: [],
       })
-    ).toBe('Needs review: settlement requires review; missing assignee');
+    ).toBe(
+      'Needs review: settlement requires funding account; missing assignee'
+    );
   });
 });
 

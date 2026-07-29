@@ -54,6 +54,7 @@ export const buildReviewedValuesSnapshot = (
     assigneeMemberIds: row.reviewAssigneeMemberIds,
     counterpartAccountId: row.reviewCounterpartAccountId,
     refundOf: row.reviewRefundOf,
+    refundOfBatchRowId: row.reviewRefundOfBatchRowId,
     notes: row.reviewNotes,
     tagIds: row.reviewTagIds,
     externalId: row.externalId,

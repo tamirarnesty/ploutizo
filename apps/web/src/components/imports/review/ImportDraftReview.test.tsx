@@ -61,6 +61,35 @@ vi.mock('@/lib/data-access/org', () => ({
   }),
 }));
 
+vi.mock('@/lib/data-access/accounts', () => ({
+  useGetAccounts: () => ({
+    data: [
+      {
+        id: 'acct_1',
+        name: 'Visa',
+        institution: 'TD',
+        lastFour: '1234',
+        type: 'credit_card',
+      },
+      {
+        id: 'acct_chequing',
+        name: 'Chequing',
+        institution: 'TD',
+        lastFour: '5678',
+        type: 'chequing',
+      },
+    ],
+  }),
+}));
+
+vi.mock('@/lib/data-access/transactions', () => ({
+  useGetTransactions: () => ({
+    data: { data: [], total: 0, page: 1, limit: 10 },
+  }),
+  useSearchTransactions: () => ({ data: [] }),
+  useGetTransaction: () => ({ data: undefined }),
+}));
+
 vi.mock('@/hooks/persistedPageSize', () => ({
   usePersistedPageSize: () => ({
     pagination: paginationMocks.pagination,
