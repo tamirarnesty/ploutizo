@@ -4,16 +4,18 @@ import {
   formatImportRowStructuralInvalidReason,
   toImportRowStatusFields,
   toImportTransactionType,
-  type ImportRowReviewBlocker,
 } from './import-row-status';
 import {
   evaluateImportRefundLinks,
   isImportRefundLinkBlocked,
   toImportRefundLinkDraftRow,
-  type EvaluateImportRefundLinksOptions,
-  type ExistingRefundTargetExpense,
-  type ImportRefundLinkDraftRow,
-  type ImportRefundLinkEvaluation,
+} from './import-refund-links';
+import type { ImportRowReviewBlocker } from './import-row-status';
+import type {
+  EvaluateImportRefundLinksOptions,
+  ExistingRefundTargetExpense,
+  ImportRefundLinkDraftRow,
+  ImportRefundLinkEvaluation,
 } from './import-refund-links';
 
 /** Durable import draft row fields used for status derivation. */
@@ -123,10 +125,7 @@ export const evaluateImportDraft = (
   const refundEvaluations = buildRefundLinkEvaluations(ctx);
   const results = new Map<string, ImportDraftRowEvaluation>();
   for (const row of rows) {
-    results.set(
-      row.id,
-      evaluateImportDraftRow(row, ctx, refundEvaluations)
-    );
+    results.set(row.id, evaluateImportDraftRow(row, ctx, refundEvaluations));
   }
   return results;
 };

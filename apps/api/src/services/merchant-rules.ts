@@ -1,5 +1,5 @@
 import { db } from '@ploutizo/db';
-import { isValidMerchantRegexPattern } from '@ploutizo/utils';
+import { isValidMerchantRegexPattern } from '@ploutizo/utils/match-merchant-rule';
 import type {
   createMerchantRuleSchema,
   updateMerchantRuleSchema,

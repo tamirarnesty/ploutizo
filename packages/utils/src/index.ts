@@ -47,14 +47,6 @@ export {
   type ImportRefundLinkIssue,
 } from './import-refund-links';
 export {
-  findMatchingMerchantRule,
-  isValidMerchantRegexPattern,
-  matchesMerchantRule,
-  MERCHANT_REGEX_MAX_HAYSTACK_LENGTH,
-  MERCHANT_REGEX_MAX_PATTERN_LENGTH,
-  type MerchantRuleMatchInput,
-} from './match-merchant-rule';
-export {
   canContinueImportReview,
   formatImportReviewContinueBlocker,
   getImportReviewContinueBlocker,

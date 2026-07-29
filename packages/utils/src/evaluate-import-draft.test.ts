@@ -52,7 +52,11 @@ describe('evaluateImportDraftRow', () => {
   });
 
   it('preserves skipped sticky status', () => {
-    const skipped = { ...baseRow, status: 'skipped' as const, reviewRefundOf: null };
+    const skipped = {
+      ...baseRow,
+      status: 'skipped' as const,
+      reviewRefundOf: null,
+    };
     const ctx = toImportDraftEvaluationContext([skipped], {
       targetAccountId: 'account-1',
       existingExpenses: new Map(),
