@@ -104,12 +104,8 @@
           "name": "org_members_org_id_orgs_id_fk",
           "tableFrom": "org_members",
           "tableTo": "orgs",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -117,12 +113,8 @@
           "name": "org_members_user_id_users_id_fk",
           "tableFrom": "org_members",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -246,16 +238,12 @@
         "users_external_id_unique": {
           "name": "users_external_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "external_id"
-          ]
+          "columns": ["external_id"]
         },
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -382,12 +370,8 @@
           "name": "categories_org_id_orgs_id_fk",
           "tableFrom": "categories",
           "tableTo": "orgs",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -450,12 +434,8 @@
           "name": "merchant_rule_tags_rule_id_merchant_rules_id_fk",
           "tableFrom": "merchant_rule_tags",
           "tableTo": "merchant_rules",
-          "columnsFrom": [
-            "rule_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["rule_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -463,12 +443,8 @@
           "name": "merchant_rule_tags_tag_id_tags_id_fk",
           "tableFrom": "merchant_rule_tags",
           "tableTo": "tags",
-          "columnsFrom": [
-            "tag_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["tag_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -585,12 +561,8 @@
           "name": "merchant_rules_org_id_orgs_id_fk",
           "tableFrom": "merchant_rules",
           "tableTo": "orgs",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -598,12 +570,8 @@
           "name": "merchant_rules_category_id_categories_id_fk",
           "tableFrom": "merchant_rules",
           "tableTo": "categories",
-          "columnsFrom": [
-            "category_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["category_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -611,12 +579,8 @@
           "name": "merchant_rules_assignee_id_org_members_id_fk",
           "tableFrom": "merchant_rules",
           "tableTo": "org_members",
-          "columnsFrom": [
-            "assignee_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["assignee_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -713,12 +677,8 @@
           "name": "tags_org_id_orgs_id_fk",
           "tableFrom": "tags",
           "tableTo": "orgs",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -811,12 +771,8 @@
           "name": "account_members_account_id_accounts_id_fk",
           "tableFrom": "account_members",
           "tableTo": "accounts",
-          "columnsFrom": [
-            "account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["account_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -824,12 +780,8 @@
           "name": "account_members_member_id_org_members_id_fk",
           "tableFrom": "account_members",
           "tableTo": "org_members",
-          "columnsFrom": [
-            "member_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["member_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -973,12 +925,8 @@
           "name": "accounts_org_id_orgs_id_fk",
           "tableFrom": "accounts",
           "tableTo": "orgs",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1184,21 +1132,6 @@
         }
       },
       "indexes": {
-        "import_batch_rows_batch_idx": {
-          "name": "import_batch_rows_batch_idx",
-          "columns": [
-            {
-              "expression": "batch_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "import_batch_rows_org_idx": {
           "name": "import_batch_rows_org_idx",
           "columns": [
@@ -1258,29 +1191,12 @@
         }
       },
       "foreignKeys": {
-        "import_batch_rows_batch_id_import_batches_id_fk": {
-          "name": "import_batch_rows_batch_id_import_batches_id_fk",
-          "tableFrom": "import_batch_rows",
-          "tableTo": "import_batches",
-          "columnsFrom": [
-            "batch_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
         "import_batch_rows_org_id_orgs_id_fk": {
           "name": "import_batch_rows_org_id_orgs_id_fk",
           "tableFrom": "import_batch_rows",
           "tableTo": "orgs",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1288,14 +1204,8 @@
           "name": "import_batch_rows_batch_id_org_id_import_batches_id_org_id_fk",
           "tableFrom": "import_batch_rows",
           "tableTo": "import_batches",
-          "columnsFrom": [
-            "batch_id",
-            "org_id"
-          ],
-          "columnsTo": [
-            "id",
-            "org_id"
-          ],
+          "columnsFrom": ["batch_id", "org_id"],
+          "columnsTo": ["id", "org_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1303,14 +1213,8 @@
           "name": "import_batch_rows_review_category_id_org_id_categories_id_org_id_fk",
           "tableFrom": "import_batch_rows",
           "tableTo": "categories",
-          "columnsFrom": [
-            "review_category_id",
-            "org_id"
-          ],
-          "columnsTo": [
-            "id",
-            "org_id"
-          ],
+          "columnsFrom": ["review_category_id", "org_id"],
+          "columnsTo": ["id", "org_id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1318,14 +1222,8 @@
           "name": "import_batch_rows_review_counterpart_account_id_org_id_accounts_id_org_id_fk",
           "tableFrom": "import_batch_rows",
           "tableTo": "accounts",
-          "columnsFrom": [
-            "review_counterpart_account_id",
-            "org_id"
-          ],
-          "columnsTo": [
-            "id",
-            "org_id"
-          ],
+          "columnsFrom": ["review_counterpart_account_id", "org_id"],
+          "columnsTo": ["id", "org_id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1539,25 +1437,17 @@
           "name": "import_batches_org_id_orgs_id_fk",
           "tableFrom": "import_batches",
           "tableTo": "orgs",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "import_batches_account_id_accounts_id_fk": {
-          "name": "import_batches_account_id_accounts_id_fk",
+        "import_batches_account_id_org_id_accounts_id_org_id_fk": {
+          "name": "import_batches_account_id_org_id_accounts_id_org_id_fk",
           "tableFrom": "import_batches",
           "tableTo": "accounts",
-          "columnsFrom": [
-            "account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["account_id", "org_id"],
+          "columnsTo": ["id", "org_id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1662,12 +1552,8 @@
           "name": "transaction_assignees_transaction_id_transactions_id_fk",
           "tableFrom": "transaction_assignees",
           "tableTo": "transactions",
-          "columnsFrom": [
-            "transaction_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["transaction_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1675,12 +1561,8 @@
           "name": "transaction_assignees_member_id_org_members_id_fk",
           "tableFrom": "transaction_assignees",
           "tableTo": "org_members",
-          "columnsFrom": [
-            "member_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["member_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1714,12 +1596,8 @@
           "name": "transaction_tags_transaction_id_transactions_id_fk",
           "tableFrom": "transaction_tags",
           "tableTo": "transactions",
-          "columnsFrom": [
-            "transaction_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["transaction_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1727,12 +1605,8 @@
           "name": "transaction_tags_tag_id_tags_id_fk",
           "tableFrom": "transaction_tags",
           "tableTo": "tags",
-          "columnsFrom": [
-            "tag_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["tag_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1740,10 +1614,7 @@
       "compositePrimaryKeys": {
         "transaction_tags_transaction_id_tag_id_pk": {
           "name": "transaction_tags_transaction_id_tag_id_pk",
-          "columns": [
-            "transaction_id",
-            "tag_id"
-          ]
+          "columns": ["transaction_id", "tag_id"]
         }
       },
       "uniqueConstraints": {},
@@ -1998,12 +1869,8 @@
           "name": "transactions_org_id_orgs_id_fk",
           "tableFrom": "transactions",
           "tableTo": "orgs",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2011,12 +1878,8 @@
           "name": "transactions_account_id_accounts_id_fk",
           "tableFrom": "transactions",
           "tableTo": "accounts",
-          "columnsFrom": [
-            "account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["account_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -2024,12 +1887,8 @@
           "name": "transactions_category_id_categories_id_fk",
           "tableFrom": "transactions",
           "tableTo": "categories",
-          "columnsFrom": [
-            "category_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["category_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -2037,12 +1896,8 @@
           "name": "transactions_refund_of_transactions_id_fk",
           "tableFrom": "transactions",
           "tableTo": "transactions",
-          "columnsFrom": [
-            "refund_of"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["refund_of"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -2050,25 +1905,17 @@
           "name": "transactions_counterpart_account_id_accounts_id_fk",
           "tableFrom": "transactions",
           "tableTo": "accounts",
-          "columnsFrom": [
-            "counterpart_account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["counterpart_account_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
-        "transactions_import_batch_id_import_batches_id_fk": {
-          "name": "transactions_import_batch_id_import_batches_id_fk",
+        "transactions_import_batch_id_org_id_import_batches_id_org_id_fk": {
+          "name": "transactions_import_batch_id_org_id_import_batches_id_org_id_fk",
           "tableFrom": "transactions",
           "tableTo": "import_batches",
-          "columnsFrom": [
-            "import_batch_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["import_batch_id", "org_id"],
+          "columnsTo": ["id", "org_id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -2151,21 +1998,6 @@
           "method": "btree",
           "with": {}
         },
-        "import_prepared_outcomes_prepared_set_idx": {
-          "name": "import_prepared_outcomes_prepared_set_idx",
-          "columns": [
-            {
-              "expression": "prepared_set_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "import_prepared_outcomes_set_row_idx": {
           "name": "import_prepared_outcomes_set_row_idx",
           "columns": [
@@ -2193,38 +2025,8 @@
           "name": "import_prepared_outcomes_org_id_orgs_id_fk",
           "tableFrom": "import_prepared_outcomes",
           "tableTo": "orgs",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "import_prepared_outcomes_prepared_set_id_import_prepared_sets_id_fk": {
-          "name": "import_prepared_outcomes_prepared_set_id_import_prepared_sets_id_fk",
-          "tableFrom": "import_prepared_outcomes",
-          "tableTo": "import_prepared_sets",
-          "columnsFrom": [
-            "prepared_set_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "import_prepared_outcomes_batch_row_id_import_batch_rows_id_fk": {
-          "name": "import_prepared_outcomes_batch_row_id_import_batch_rows_id_fk",
-          "tableFrom": "import_prepared_outcomes",
-          "tableTo": "import_batch_rows",
-          "columnsFrom": [
-            "batch_row_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2232,14 +2034,8 @@
           "name": "import_prepared_outcomes_prepared_set_id_org_id_import_prepared_sets_id_org_id_fk",
           "tableFrom": "import_prepared_outcomes",
           "tableTo": "import_prepared_sets",
-          "columnsFrom": [
-            "prepared_set_id",
-            "org_id"
-          ],
-          "columnsTo": [
-            "id",
-            "org_id"
-          ],
+          "columnsFrom": ["prepared_set_id", "org_id"],
+          "columnsTo": ["id", "org_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2247,14 +2043,8 @@
           "name": "import_prepared_outcomes_batch_row_id_org_id_import_batch_rows_id_org_id_fk",
           "tableFrom": "import_prepared_outcomes",
           "tableTo": "import_batch_rows",
-          "columnsFrom": [
-            "batch_row_id",
-            "org_id"
-          ],
-          "columnsTo": [
-            "id",
-            "org_id"
-          ],
+          "columnsFrom": ["batch_row_id", "org_id"],
+          "columnsTo": ["id", "org_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2262,14 +2052,8 @@
           "name": "import_prepared_outcomes_transaction_id_org_id_transactions_id_org_id_fk",
           "tableFrom": "import_prepared_outcomes",
           "tableTo": "transactions",
-          "columnsFrom": [
-            "transaction_id",
-            "org_id"
-          ],
-          "columnsTo": [
-            "id",
-            "org_id"
-          ],
+          "columnsFrom": ["transaction_id", "org_id"],
+          "columnsTo": ["id", "org_id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -2333,21 +2117,6 @@
           "method": "btree",
           "with": {}
         },
-        "import_prepared_sets_batch_idx": {
-          "name": "import_prepared_sets_batch_idx",
-          "columns": [
-            {
-              "expression": "batch_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "import_prepared_sets_batch_revision_idx": {
           "name": "import_prepared_sets_batch_revision_idx",
           "columns": [
@@ -2396,25 +2165,8 @@
           "name": "import_prepared_sets_org_id_orgs_id_fk",
           "tableFrom": "import_prepared_sets",
           "tableTo": "orgs",
-          "columnsFrom": [
-            "org_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "import_prepared_sets_batch_id_import_batches_id_fk": {
-          "name": "import_prepared_sets_batch_id_import_batches_id_fk",
-          "tableFrom": "import_prepared_sets",
-          "tableTo": "import_batches",
-          "columnsFrom": [
-            "batch_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["org_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2422,14 +2174,8 @@
           "name": "import_prepared_sets_batch_id_org_id_import_batches_id_org_id_fk",
           "tableFrom": "import_prepared_sets",
           "tableTo": "import_batches",
-          "columnsFrom": [
-            "batch_id",
-            "org_id"
-          ],
-          "columnsTo": [
-            "id",
-            "org_id"
-          ],
+          "columnsFrom": ["batch_id", "org_id"],
+          "columnsTo": ["id", "org_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2457,22 +2203,12 @@
     "public.budget_period_type": {
       "name": "budget_period_type",
       "schema": "public",
-      "values": [
-        "monthly",
-        "weekly",
-        "bi_weekly",
-        "yearly",
-        "custom"
-      ]
+      "values": ["monthly", "weekly", "bi_weekly", "yearly", "custom"]
     },
     "public.import_batch_status": {
       "name": "import_batch_status",
       "schema": "public",
-      "values": [
-        "draft",
-        "completed",
-        "discarded"
-      ]
+      "values": ["draft", "completed", "discarded"]
     },
     "public.import_prepared_outcome": {
       "name": "import_prepared_outcome",
@@ -2489,53 +2225,27 @@
     "public.import_row_status": {
       "name": "import_row_status",
       "schema": "public",
-      "values": [
-        "ready",
-        "needs_review",
-        "invalid",
-        "skipped"
-      ]
+      "values": ["ready", "needs_review", "invalid", "skipped"]
     },
     "public.income_type": {
       "name": "income_type",
       "schema": "public",
-      "values": [
-        "direct_deposit",
-        "e_transfer",
-        "cash",
-        "cheque",
-        "other"
-      ]
+      "values": ["direct_deposit", "e_transfer", "cash", "cheque", "other"]
     },
     "public.investment_type": {
       "name": "investment_type",
       "schema": "public",
-      "values": [
-        "tfsa",
-        "rrsp",
-        "fhsa",
-        "resp",
-        "non_registered",
-        "other"
-      ]
+      "values": ["tfsa", "rrsp", "fhsa", "resp", "non_registered", "other"]
     },
     "public.member_role": {
       "name": "member_role",
       "schema": "public",
-      "values": [
-        "admin"
-      ]
+      "values": ["admin"]
     },
     "public.merchant_match_type": {
       "name": "merchant_match_type",
       "schema": "public",
-      "values": [
-        "exact",
-        "contains",
-        "starts_with",
-        "ends_with",
-        "regex"
-      ]
+      "values": ["exact", "contains", "starts_with", "ends_with", "regex"]
     },
     "public.notification_type": {
       "name": "notification_type",
@@ -2552,21 +2262,12 @@
     "public.recurring_frequency": {
       "name": "recurring_frequency",
       "schema": "public",
-      "values": [
-        "daily",
-        "weekly",
-        "bi_weekly",
-        "monthly",
-        "yearly"
-      ]
+      "values": ["daily", "weekly", "bi_weekly", "monthly", "yearly"]
     },
     "public.recurring_status": {
       "name": "recurring_status",
       "schema": "public",
-      "values": [
-        "active",
-        "stopped"
-      ]
+      "values": ["active", "stopped"]
     },
     "public.transaction_type": {
       "name": "transaction_type",

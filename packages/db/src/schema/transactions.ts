@@ -8,6 +8,7 @@
 import { sql } from 'drizzle-orm';
 import {
   date,
+  foreignKey,
   index,
   integer,
   numeric,
@@ -82,10 +83,8 @@ export const transactions = pgTable(
     notes: text('notes'),
 
     // --- import linkage (D-06, D-13) ---
-    /** Nullable FK to import batch. NULL for manually-created transactions (D-06, D-13). */
-    importBatchId: uuid('import_batch_id').references(() => importBatches.id, {
-      onDelete: 'set null',
-    }),
+    /** Nullable import batch. NULL for manually-created transactions (D-06, D-13). */
+    importBatchId: uuid('import_batch_id'),
     /**
      * Bank/statement reference for duplicate detection. Unique only among active
      * rows on the same account so soft-deleted imports may be re-imported.
@@ -118,6 +117,10 @@ export const transactions = pgTable(
     uniqueIndex('transactions_active_account_external_id_idx')
       .on(t.accountId, t.externalId)
       .where(sql`deleted_at IS NULL AND external_id IS NOT NULL`),
+    foreignKey({
+      columns: [t.importBatchId, t.orgId],
+      foreignColumns: [importBatches.id, importBatches.orgId],
+    }).onDelete('set null'),
   ]
 );
 

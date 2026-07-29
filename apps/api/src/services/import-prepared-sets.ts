@@ -24,27 +24,20 @@ import {
   toImportPreparedSet,
 } from '@/lib/queries/import-prepared-sets';
 import { fetchDraftSummaryById, listDraftRows } from '@/lib/queries/imports';
-import { transactionExistsInOrg } from '@/lib/queries/scope';
+import { allTransactionsInOrg } from '@/lib/queries/scope';
 
 export const buildReviewedValuesSnapshot = (
   row: ImportDraftRowRecord
 ): ImportPreparedReviewedValues => {
-  const type = toImportTransactionType(
-    resolveImportRowReviewType({
-      reviewType: toImportTransactionType(row.reviewType),
-      parsedType: toImportTransactionType(row.parsedType),
-    })
-  );
+  const type = resolveImportRowReviewType({
+    reviewType: toImportTransactionType(row.reviewType),
+    parsedType: toImportTransactionType(row.parsedType),
+  });
 
   const description = resolveImportRowReviewDescription({
     reviewDescription: row.reviewDescription,
     parsedDescription: row.parsedDescription,
   });
-  const sourceDescription = row.sourceDescription?.trim() || null;
-  const rawDescription =
-    description && sourceDescription && description !== sourceDescription
-      ? sourceDescription
-      : null;
 
   const snapshot = {
     date: resolveImportRowReviewDate({
@@ -64,7 +57,7 @@ export const buildReviewedValuesSnapshot = (
     notes: row.reviewNotes,
     tagIds: row.reviewTagIds,
     externalId: row.externalId,
-    rawDescription,
+    rawDescription: row.sourceDescription?.trim() || null,
     selectedForImport: row.selectedForImport,
   };
 
@@ -81,9 +74,6 @@ export const createImportPreparedSetRevision = async (
   batchId: string,
   outcomes: PrepareImportOutcomeInput[]
 ): Promise<ImportPreparedSet> => {
-  const draft = await fetchDraftSummaryById(orgId, batchId);
-  if (!draft) throw new NotFoundError('Import draft not found.');
-
   if (outcomes.length === 0) {
     throw new DomainError(
       400,
@@ -94,21 +84,25 @@ export const createImportPreparedSetRevision = async (
   const prepared = await db.transaction(async (tx) => {
     await lockPreparedSetRevisionForBatch(tx, orgId, batchId);
 
+    const draft = await fetchDraftSummaryById(orgId, batchId, tx);
+    if (!draft) throw new NotFoundError('Import draft not found.');
+
     const draftRows = await listDraftRows(orgId, batchId, tx);
     const rowsById = new Map(draftRows.map((row) => [row.id, row]));
 
-    for (const outcome of outcomes) {
-      if (!rowsById.has(outcome.batchRowId)) {
+    const validatedOutcomes = outcomes.map((outcome) => {
+      const row = rowsById.get(outcome.batchRowId);
+      if (!row) {
         throw new NotFoundError('Import draft row not found.');
       }
-      if (outcome.transactionId) {
-        const ok = await transactionExistsInOrg(
-          orgId,
-          outcome.transactionId,
-          tx
-        );
-        if (!ok) throw new NotFoundError('Transaction not found');
-      }
+      return { outcome, row };
+    });
+
+    const transactionIds = validatedOutcomes.flatMap(({ outcome }) =>
+      outcome.transactionId ? [outcome.transactionId] : []
+    );
+    if (!(await allTransactionsInOrg(orgId, transactionIds, tx))) {
+      throw new NotFoundError('Transaction not found');
     }
 
     const latest = await fetchLatestPreparedSetForBatch(orgId, batchId, tx);
@@ -122,20 +116,14 @@ export const createImportPreparedSetRevision = async (
 
     const insertedOutcomes = await insertImportPreparedOutcomes(
       tx,
-      outcomes.map((outcome) => {
-        const row = rowsById.get(outcome.batchRowId);
-        if (!row) {
-          throw new NotFoundError('Import draft row not found.');
-        }
-        return {
-          orgId,
-          preparedSetId: set.id,
-          batchRowId: outcome.batchRowId,
-          outcome: outcome.outcome,
-          transactionId: outcome.transactionId ?? null,
-          reviewedValues: buildReviewedValuesSnapshot(row),
-        };
-      })
+      validatedOutcomes.map(({ outcome, row }) => ({
+        orgId,
+        preparedSetId: set.id,
+        batchRowId: outcome.batchRowId,
+        outcome: outcome.outcome,
+        transactionId: outcome.transactionId ?? null,
+        reviewedValues: buildReviewedValuesSnapshot(row),
+      }))
     );
 
     return toImportPreparedSet(set, insertedOutcomes);

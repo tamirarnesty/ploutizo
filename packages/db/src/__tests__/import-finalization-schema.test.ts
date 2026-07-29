@@ -8,6 +8,10 @@ const migration = readFileSync(
   join(root, 'drizzle/0010_import_finalization_foundation.sql'),
   'utf8'
 );
+const importDraftsMigration = readFileSync(
+  join(root, 'drizzle/0007_import_drafts.sql'),
+  'utf8'
+);
 const accountsSchema = readFileSync(
   join(root, 'src/schema/accounts.ts'),
   'utf8'
@@ -53,7 +57,9 @@ describe('import finalization foundation schema contracts', () => {
       'columns: [t.reviewCounterpartAccountId, t.orgId]'
     );
 
-    expect(migration).toContain('CREATE UNIQUE INDEX "accounts_id_org_id_idx"');
+    expect(importDraftsMigration).toContain(
+      'CREATE UNIQUE INDEX "accounts_id_org_id_idx"'
+    );
     expect(migration).toContain(
       'CREATE UNIQUE INDEX "categories_id_org_id_idx"'
     );
@@ -66,9 +72,62 @@ describe('import finalization foundation schema contracts', () => {
     expect(migration).toContain(
       'import_batch_rows_review_refund_of_org_id_transactions_id_org_id_fk'
     );
+    expect(migration).toContain(
+      'ON DELETE SET NULL ("review_counterpart_account_id")'
+    );
+    expect(migration).toContain('ON DELETE SET NULL ("review_refund_of")');
+    expect(migration).toContain('ON DELETE SET NULL ("transaction_id")');
     expect(importBatchesSchema).toContain(
       'import_batch_rows_review_refund_of_org_id_transactions_id_org_id_fk'
     );
     expect(migration).toContain('SQL-only composite org FK');
+  });
+
+  it('uses composite FKs without redundant single-column constraints', () => {
+    expect(migration).toContain(
+      'import_prepared_sets_batch_id_org_id_import_batches_id_org_id_fk'
+    );
+    expect(migration).toContain(
+      'import_prepared_outcomes_prepared_set_id_org_id_import_prepared_sets_id_org_id_fk'
+    );
+    expect(migration).toContain(
+      'import_prepared_outcomes_batch_row_id_org_id_import_batch_rows_id_org_id_fk'
+    );
+    expect(migration).not.toContain(
+      'import_prepared_sets_batch_id_import_batches_id_fk'
+    );
+    expect(migration).not.toContain(
+      'import_prepared_outcomes_prepared_set_id_import_prepared_sets_id_fk'
+    );
+    expect(migration).not.toContain(
+      'import_prepared_outcomes_batch_row_id_import_batch_rows_id_fk'
+    );
+    expect(migration).not.toContain(
+      'CREATE INDEX "import_prepared_sets_batch_idx"'
+    );
+    expect(migration).not.toContain(
+      'CREATE INDEX "import_prepared_outcomes_prepared_set_idx"'
+    );
+    expect(importDraftsMigration).toContain(
+      'import_batches_account_id_org_id_accounts_id_org_id_fk'
+    );
+    expect(importDraftsMigration).toContain(
+      'transactions_import_batch_id_org_id_import_batches_id_org_id_fk'
+    );
+    expect(importDraftsMigration).toContain(
+      'ON DELETE SET NULL ("import_batch_id")'
+    );
+    expect(importDraftsMigration).not.toContain(
+      'import_batch_rows_batch_id_import_batches_id_fk'
+    );
+    expect(importDraftsMigration).not.toContain(
+      'import_batches_account_id_accounts_id_fk'
+    );
+    expect(importDraftsMigration).not.toContain(
+      'transactions_import_batch_id_import_batches_id_fk'
+    );
+    expect(importDraftsMigration).not.toContain(
+      'CREATE INDEX "import_batch_rows_batch_idx"'
+    );
   });
 });

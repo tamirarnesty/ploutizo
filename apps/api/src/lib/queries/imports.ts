@@ -104,8 +104,12 @@ export const fetchActiveDraftByAccount = async (
   return rows.at(0) ?? null;
 };
 
-export const fetchDraftSummaryById = async (orgId: string, draftId: string) => {
-  const rows = await db
+export const fetchDraftSummaryById = async (
+  orgId: string,
+  draftId: string,
+  client: DbClient = db
+) => {
+  const rows = await client
     .select(IMPORT_SUMMARY_COLUMNS)
     .from(importBatches)
     .innerJoin(accounts, eq(accounts.id, importBatches.accountId))

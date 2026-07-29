@@ -15,6 +15,7 @@ import {
 import {
   allMembersInOrg,
   allTagsInOrg,
+  allTransactionsInOrg,
   categoryExistsInOrg,
   fetchAccountWriteReference,
   transactionExistsInOrg,
@@ -61,6 +62,7 @@ vi.mock('@/lib/queries/scope', () => ({
   fetchAccountWriteReference: vi.fn(),
   allMembersInOrg: vi.fn(),
   allTagsInOrg: vi.fn(),
+  allTransactionsInOrg: vi.fn(),
   categoryExistsInOrg: vi.fn(),
   transactionExistsInOrg: vi.fn(),
 }));
@@ -151,6 +153,7 @@ describe('import finalization foundation — transaction provenance', () => {
     });
     vi.mocked(allMembersInOrg).mockResolvedValue(true);
     vi.mocked(allTagsInOrg).mockResolvedValue(true);
+    vi.mocked(allTransactionsInOrg).mockResolvedValue(true);
     vi.mocked(categoryExistsInOrg).mockResolvedValue(true);
     vi.mocked(transactionExistsInOrg).mockResolvedValue(true);
     vi.mocked(fetchImportBatchInOrg).mockResolvedValue({ id: BATCH });
@@ -515,6 +518,15 @@ describe('import finalization foundation — prepared set revisions', () => {
     });
   });
 
+  it('retains source description when it matches the reviewed description', () => {
+    const snapshot = buildReviewedValuesSnapshot({
+      ...draftRow,
+      reviewDescription: draftRow.sourceDescription,
+    } as never);
+
+    expect(snapshot.rawDescription).toBe('COFFEE SHOP #42');
+  });
+
   it('creates immutable revision 1 then increments to revision 2 using server snapshots', async () => {
     const first = await createImportPreparedSetRevision(ORG, BATCH, [
       {
@@ -534,6 +546,7 @@ describe('import finalization foundation — prepared set revisions', () => {
       ORG,
       BATCH
     );
+    expect(fetchDraftSummaryById).toHaveBeenCalledWith(ORG, BATCH, mockTx);
     expect(listDraftRows).toHaveBeenCalledWith(ORG, BATCH, mockTx);
 
     vi.mocked(fetchLatestPreparedSetForBatch).mockResolvedValue({
@@ -578,7 +591,7 @@ describe('import finalization foundation — prepared set revisions', () => {
   });
 
   it('rejects prepared outcomes that point at a cross-org transaction', async () => {
-    vi.mocked(transactionExistsInOrg).mockResolvedValue(false);
+    vi.mocked(allTransactionsInOrg).mockResolvedValue(false);
     const err = await createImportPreparedSetRevision(ORG, BATCH, [
       {
         batchRowId: ROW,
@@ -588,7 +601,7 @@ describe('import finalization foundation — prepared set revisions', () => {
     ]).catch((e: unknown) => e);
 
     expect(err).toBeInstanceOf(NotFoundError);
-    expect(transactionExistsInOrg).toHaveBeenCalledWith(ORG, TXN, mockTx);
+    expect(allTransactionsInOrg).toHaveBeenCalledWith(ORG, [TXN], mockTx);
   });
 
   it('returns the latest prepared set with durable outcomes', async () => {

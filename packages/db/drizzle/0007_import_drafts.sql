@@ -54,14 +54,14 @@ WHERE ib."account_id" IS NULL
     SELECT 1 FROM "transactions" t WHERE t."import_batch_id" = ib."id"
   );--> statement-breakpoint
 ALTER TABLE "import_batches" ALTER COLUMN "status" SET DEFAULT 'draft';--> statement-breakpoint
-ALTER TABLE "import_batch_rows" ADD CONSTRAINT "import_batch_rows_batch_id_import_batches_id_fk" FOREIGN KEY ("batch_id") REFERENCES "public"."import_batches"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE UNIQUE INDEX "import_batches_id_org_id_idx" ON "import_batches" USING btree ("id","org_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "accounts_id_org_id_idx" ON "accounts" USING btree ("id","org_id");--> statement-breakpoint
 ALTER TABLE "import_batch_rows" ADD CONSTRAINT "import_batch_rows_org_id_orgs_id_fk" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "import_batch_rows" ADD CONSTRAINT "import_batch_rows_batch_id_org_id_import_batches_id_org_id_fk" FOREIGN KEY ("batch_id","org_id") REFERENCES "public"."import_batches"("id","org_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "import_batch_rows_batch_idx" ON "import_batch_rows" USING btree ("batch_id");--> statement-breakpoint
 CREATE INDEX "import_batch_rows_org_idx" ON "import_batch_rows" USING btree ("org_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "import_batch_rows_batch_row_number_idx" ON "import_batch_rows" USING btree ("batch_id","row_number");--> statement-breakpoint
-ALTER TABLE "import_batches" ADD CONSTRAINT "import_batches_account_id_accounts_id_fk" FOREIGN KEY ("account_id") REFERENCES "public"."accounts"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "import_batches" ADD CONSTRAINT "import_batches_account_id_org_id_accounts_id_org_id_fk" FOREIGN KEY ("account_id","org_id") REFERENCES "public"."accounts"("id","org_id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "transactions" ADD CONSTRAINT "transactions_import_batch_id_org_id_import_batches_id_org_id_fk" FOREIGN KEY ("import_batch_id","org_id") REFERENCES "public"."import_batches"("id","org_id") ON DELETE SET NULL ("import_batch_id") ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "import_batches_org_status_idx" ON "import_batches" USING btree ("org_id","status");--> statement-breakpoint
 CREATE INDEX "import_batches_org_account_idx" ON "import_batches" USING btree ("org_id","account_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "import_batches_one_active_draft_per_account_idx" ON "import_batches" USING btree ("org_id","account_id") WHERE status = 'draft';

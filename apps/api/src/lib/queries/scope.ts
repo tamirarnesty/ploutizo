@@ -164,6 +164,24 @@ export const transactionExistsInOrg = async (
   return rows.length > 0;
 };
 
+/** True when every transaction id exists under orgId. Empty list is vacuously true. */
+export const allTransactionsInOrg = async (
+  orgId: string,
+  transactionIds: string[],
+  tx?: DrizzleTransaction
+): Promise<boolean> => {
+  if (transactionIds.length === 0) return true;
+  const unique = [...new Set(transactionIds)];
+  const ex = tx ?? db;
+  const rows = await ex
+    .select({ id: transactions.id })
+    .from(transactions)
+    .where(
+      and(eq(transactions.orgId, orgId), inArray(transactions.id, unique))
+    );
+  return rows.length === unique.length;
+};
+
 /** True when every tag id exists under orgId. Empty list is vacuously true. */
 export const allTagsInOrg = async (
   orgId: string,

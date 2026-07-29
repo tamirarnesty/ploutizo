@@ -33,9 +33,7 @@ export const importPreparedSets = pgTable(
     orgId: text('org_id')
       .notNull()
       .references(() => orgs.id, { onDelete: 'cascade' }),
-    batchId: uuid('batch_id')
-      .notNull()
-      .references(() => importBatches.id, { onDelete: 'cascade' }),
+    batchId: uuid('batch_id').notNull(),
     /** Monotonic revision per batch — prior revisions remain immutable. */
     revision: integer('revision').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true })
@@ -44,7 +42,6 @@ export const importPreparedSets = pgTable(
   },
   (t) => [
     index('import_prepared_sets_org_idx').on(t.orgId),
-    index('import_prepared_sets_batch_idx').on(t.batchId),
     uniqueIndex('import_prepared_sets_batch_revision_idx').on(
       t.batchId,
       t.revision
@@ -66,17 +63,14 @@ export const importPreparedOutcomes = pgTable(
     orgId: text('org_id')
       .notNull()
       .references(() => orgs.id, { onDelete: 'cascade' }),
-    preparedSetId: uuid('prepared_set_id')
-      .notNull()
-      .references(() => importPreparedSets.id, { onDelete: 'cascade' }),
-    batchRowId: uuid('batch_row_id')
-      .notNull()
-      .references(() => importBatchRows.id, { onDelete: 'cascade' }),
+    preparedSetId: uuid('prepared_set_id').notNull(),
+    batchRowId: uuid('batch_row_id').notNull(),
     outcome: importPreparedOutcomeEnum('outcome').notNull(),
     /**
      * Created or matched transaction once Confirm records the outcome.
      * Null while the prepared set is only staged. Composite org FK prevents
-     * cross-tenant transaction pointers.
+     * cross-tenant transaction pointers. Migration 0010 uses
+     * `ON DELETE SET NULL (transaction_id)` so the required org_id remains.
      */
     transactionId: uuid('transaction_id'),
     reviewedValues: jsonb('reviewed_values')
@@ -88,7 +82,6 @@ export const importPreparedOutcomes = pgTable(
   },
   (t) => [
     index('import_prepared_outcomes_org_idx').on(t.orgId),
-    index('import_prepared_outcomes_prepared_set_idx').on(t.preparedSetId),
     uniqueIndex('import_prepared_outcomes_set_row_idx').on(
       t.preparedSetId,
       t.batchRowId
