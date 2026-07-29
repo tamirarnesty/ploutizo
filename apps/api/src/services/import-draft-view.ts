@@ -1,10 +1,12 @@
 import {
   computeImportDraftRowCounts,
   evaluateImportDraft,
-  type ImportDraftDurableRow,
-  type ImportDraftRowEvaluation,
 } from '@ploutizo/utils';
 import { toImportTransactionType } from '@ploutizo/utils/import-row-status';
+import type {
+  ImportDraftDurableRow,
+  ImportDraftRowEvaluation,
+} from '@ploutizo/utils';
 import type { ImportDraft, ImportDraftRow } from '@ploutizo/types';
 import type {
   ImportDraftRowRecord,
@@ -100,9 +102,7 @@ export const buildImportDraftRows = async (
     targetAccountId,
     rows
   );
-  return rows.map((row) =>
-    toImportDraftRow(row, evaluations.get(row.id)!)
-  );
+  return rows.map((row) => toImportDraftRow(row, evaluations.get(row.id)!));
 };
 
 export const buildImportDraftView = async (

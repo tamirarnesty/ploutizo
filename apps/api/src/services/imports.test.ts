@@ -402,9 +402,13 @@ describe('import service', () => {
       reviewDate: '2026-05-02',
     });
 
-    expect(updateImportDraftRowQuery).toHaveBeenCalledWith('org_1', draftRow.id, {
-      reviewDate: '2026-05-02',
-    });
+    expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
+      'org_1',
+      draftRow.id,
+      {
+        reviewDate: '2026-05-02',
+      }
+    );
     expect(result.status).toBe('invalid');
     expect(result.invalidReason).toBe('Amount must be a positive number.');
   });
@@ -433,9 +437,13 @@ describe('import service', () => {
       reviewDate: null,
     });
 
-    expect(updateImportDraftRowQuery).toHaveBeenCalledWith('org_1', draftRow.id, {
-      reviewDate: null,
-    });
+    expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
+      'org_1',
+      draftRow.id,
+      {
+        reviewDate: null,
+      }
+    );
     expect(result.status).toBe('invalid');
     expect(result.invalidReason).toBe('Date must be a valid YYYY-MM-DD value.');
   });
@@ -452,9 +460,13 @@ describe('import service', () => {
       reviewNotes: 'memo',
     });
 
-    expect(updateImportDraftRowQuery).toHaveBeenCalledWith('org_1', draftRow.id, {
-      reviewNotes: 'memo',
-    });
+    expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
+      'org_1',
+      draftRow.id,
+      {
+        reviewNotes: 'memo',
+      }
+    );
     expect(result.reviewNotes).toBe('memo');
     expect(result.status).toBe('ready');
   });
