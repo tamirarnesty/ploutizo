@@ -5,78 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1774967582960,
-      "tag": "0000_many_anthem",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1775065356946,
-      "tag": "0001_remarkable_callisto",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1775765601221,
-      "tag": "0002_easy_stellaris",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1775950456411,
-      "tag": "0003_charming_baron_zemo",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1776733663831,
-      "tag": "0004_empty_mephistopheles",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1778245297110,
-      "tag": "0005_volatile_metal_master",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1778256144783,
-      "tag": "0006_careful_random",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1783219108519,
-      "tag": "0007_import_drafts",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1784158182460,
-      "tag": "0008_stormy_silver_sable",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1784159139988,
-      "tag": "0009_import_review_fks",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1785326541890,
-      "tag": "0010_import_finalization_foundation",
+      "when": 1785469324858,
+      "tag": "0000_free_corsair",
       "breakpoints": true
     }
   ]

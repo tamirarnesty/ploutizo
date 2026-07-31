@@ -1,1 +1,0 @@
-CREATE INDEX "accounts_org_statement_due_day_idx" ON "accounts" USING btree ("org_id","statement_due_day");

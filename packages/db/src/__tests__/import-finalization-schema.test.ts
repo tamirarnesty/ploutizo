@@ -5,11 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const migration = readFileSync(
-  join(root, 'drizzle/0010_import_finalization_foundation.sql'),
-  'utf8'
-);
-const importDraftsMigration = readFileSync(
-  join(root, 'drizzle/0007_import_drafts.sql'),
+  join(root, 'drizzle/0000_free_corsair.sql'),
   'utf8'
 );
 const accountsSchema = readFileSync(
@@ -57,9 +53,7 @@ describe('import finalization foundation schema contracts', () => {
       'columns: [t.reviewCounterpartAccountId, t.orgId]'
     );
 
-    expect(importDraftsMigration).toContain(
-      'CREATE UNIQUE INDEX "accounts_id_org_id_idx"'
-    );
+    expect(migration).toContain('CREATE UNIQUE INDEX "accounts_id_org_id_idx"');
     expect(migration).toContain(
       'CREATE UNIQUE INDEX "categories_id_org_id_idx"'
     );
@@ -73,10 +67,12 @@ describe('import finalization foundation schema contracts', () => {
       'import_batch_rows_review_refund_of_org_id_transactions_id_org_id_fk'
     );
     expect(migration).toContain(
-      'ON DELETE SET NULL ("review_counterpart_account_id")'
+      'review_counterpart_account_id_org_id_accounts_id_org_id_fk'
     );
     expect(migration).toContain('ON DELETE SET NULL ("review_refund_of")');
-    expect(migration).toContain('ON DELETE SET NULL ("transaction_id")');
+    expect(migration).toContain(
+      'import_prepared_outcomes_transaction_id_org_id_transactions_id_org_id_fk'
+    );
     expect(importBatchesSchema).toContain(
       'import_batch_rows_review_refund_of_org_id_transactions_id_org_id_fk'
     );
@@ -108,25 +104,21 @@ describe('import finalization foundation schema contracts', () => {
     expect(migration).not.toContain(
       'CREATE INDEX "import_prepared_outcomes_prepared_set_idx"'
     );
-    expect(importDraftsMigration).toContain(
+    expect(migration).toContain(
       'import_batches_account_id_org_id_accounts_id_org_id_fk'
     );
-    expect(importDraftsMigration).toContain(
+    expect(migration).toContain(
       'transactions_import_batch_id_org_id_import_batches_id_org_id_fk'
     );
-    expect(importDraftsMigration).toContain(
-      'ON DELETE SET NULL ("import_batch_id")'
-    );
-    expect(importDraftsMigration).not.toContain(
+    expect(migration).toContain('ON DELETE set null ON UPDATE no action');
+    expect(migration).not.toContain(
       'import_batch_rows_batch_id_import_batches_id_fk'
     );
-    expect(importDraftsMigration).not.toContain(
-      'import_batches_account_id_accounts_id_fk'
-    );
-    expect(importDraftsMigration).not.toContain(
+    expect(migration).not.toContain('import_batches_account_id_accounts_id_fk');
+    expect(migration).not.toContain(
       'transactions_import_batch_id_import_batches_id_fk'
     );
-    expect(importDraftsMigration).not.toContain(
+    expect(migration).not.toContain(
       'CREATE INDEX "import_batch_rows_batch_idx"'
     );
   });
