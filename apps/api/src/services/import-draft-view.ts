@@ -4,10 +4,16 @@ import {
 } from '@ploutizo/utils';
 import { toImportTransactionType } from '@ploutizo/utils/import-row-status';
 import type {
+  ExistingRefundTargetExpense,
   ImportDraftDurableRow,
   ImportDraftRowEvaluation,
 } from '@ploutizo/utils';
-import type { ImportDraft, ImportDraftRow } from '@ploutizo/types';
+import type {
+  ImportDraft,
+  ImportDraftPersistedRow,
+  ImportDraftRow,
+  RefundTargetFact,
+} from '@ploutizo/types';
 import type {
   ImportDraftRowRecord,
   ImportDraftSummaryRow,
@@ -18,6 +24,24 @@ const collectRefundOfIds = (
   rows: readonly Pick<ImportDraftRowRecord, 'reviewRefundOf'>[]
 ): string[] =>
   rows.flatMap((row) => (row.reviewRefundOf ? [row.reviewRefundOf] : []));
+
+export const refundTargetFactsRecordFromMap = (
+  map: ReadonlyMap<string, ExistingRefundTargetExpense>
+): Record<string, RefundTargetFact> => {
+  const record: Record<string, RefundTargetFact> = {};
+  for (const [id, fact] of map) {
+    record[id] = {
+      id: fact.id,
+      accountId: fact.accountId,
+      amount: fact.amount,
+      categoryId: fact.categoryId,
+      assigneeMemberIds: [...fact.assigneeMemberIds],
+      type: fact.type,
+      deleted: fact.deleted,
+    };
+  }
+  return record;
+};
 
 export const toImportDraftDurableRow = (
   row: ImportDraftRowRecord
@@ -39,15 +63,12 @@ export const toImportDraftDurableRow = (
   selectedForImport: row.selectedForImport,
 });
 
-export const toImportDraftRow = (
-  row: ImportDraftRowRecord,
-  evaluation: ImportDraftRowEvaluation
-): ImportDraftRow => ({
+export const toImportDraftPersistedRow = (
+  row: ImportDraftRowRecord
+): ImportDraftPersistedRow => ({
   id: row.id,
   batchId: row.batchId,
   rowNumber: row.rowNumber,
-  status: evaluation.status,
-  invalidReason: evaluation.invalidReason,
   rawData: row.rawData,
   externalId: row.externalId,
   sourceDate: row.sourceDate,
@@ -74,7 +95,16 @@ export const toImportDraftRow = (
   updatedAt: row.updatedAt.toISOString(),
 });
 
-const deriveImportDraftRowEvaluations = async (
+export const toImportDraftRow = (
+  row: ImportDraftRowRecord,
+  evaluation: ImportDraftRowEvaluation
+): ImportDraftRow => ({
+  ...toImportDraftPersistedRow(row),
+  status: evaluation.status,
+  invalidReason: evaluation.invalidReason,
+});
+
+const loadDraftRefundContext = async (
   orgId: string,
   targetAccountId: string,
   rows: readonly ImportDraftRowRecord[]
@@ -83,39 +113,39 @@ const deriveImportDraftRowEvaluations = async (
     orgId,
     collectRefundOfIds(rows)
   );
-  return evaluateImportDraft(
+  const evaluations = evaluateImportDraft(
     rows.map((row) => toImportDraftDurableRow(row)),
     {
       targetAccountId,
       existingExpenses,
     }
   );
-};
-
-export const buildImportDraftRows = async (
-  orgId: string,
-  targetAccountId: string,
-  rows: readonly ImportDraftRowRecord[]
-): Promise<ImportDraftRow[]> => {
-  const evaluations = await deriveImportDraftRowEvaluations(
-    orgId,
-    targetAccountId,
-    rows
-  );
-  return rows.map((row) => toImportDraftRow(row, evaluations.get(row.id)!));
+  return {
+    evaluations,
+    refundTargetFacts: refundTargetFactsRecordFromMap(existingExpenses),
+  };
 };
 
 export const buildImportDraftView = async (
   orgId: string,
   summary: ImportDraftSummaryRow,
   rows: readonly ImportDraftRowRecord[],
-  toSummary: (row: ImportDraftSummaryRow) => Omit<ImportDraft, 'rows'>
+  toSummary: (
+    row: ImportDraftSummaryRow
+  ) => Omit<ImportDraft, 'rows' | 'refundTargetFacts'>
 ): Promise<ImportDraft> => {
   if (!summary.accountId) {
     throw new Error('Import draft is missing an account.');
   }
 
-  const apiRows = await buildImportDraftRows(orgId, summary.accountId, rows);
+  const { evaluations, refundTargetFacts } = await loadDraftRefundContext(
+    orgId,
+    summary.accountId,
+    rows
+  );
+  const apiRows = rows.map((row) =>
+    toImportDraftRow(row, evaluations.get(row.id)!)
+  );
   const counts = computeImportDraftRowCounts(apiRows);
 
   return {
@@ -124,5 +154,6 @@ export const buildImportDraftView = async (
     validRowCount: counts.validRowCount,
     invalidRowCount: counts.invalidRowCount,
     rows: apiRows,
+    refundTargetFacts,
   };
 };

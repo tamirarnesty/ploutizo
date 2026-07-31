@@ -1,9 +1,11 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { UpdateImportDraftRowResult } from '@ploutizo/types';
 import {
   makeImportDraft,
   makeImportDraftRow,
+  toPersistedImportDraftRow,
 } from '@/components/imports/test-fixtures/importDraft';
 import { queryClient } from '@/lib/queryClient';
 import {
@@ -81,21 +83,23 @@ describe('useImportReviewSession', () => {
       const row = draft.rows.find((entry) => entry.id === rowId);
       if (!row) return Promise.reject(new Error(`missing row ${rowId}`));
       return Promise.resolve({
-        ...row,
-        ...body,
-        updatedAt: '2026-05-20T12:00:01.000Z',
-      });
+        row: toPersistedImportDraftRow(row, {
+          ...body,
+          updatedAt: '2026-05-20T12:00:01.000Z',
+        }),
+      } satisfies UpdateImportDraftRowResult);
     });
     vi.mocked(fetchUpdateImportDraftRowSelection).mockReset();
     vi.mocked(fetchUpdateImportDraftRowSelection).mockImplementation(
       (_draftId, body) => {
         const rows = draft.rows
           .filter((row) => body.rowIds.includes(row.id))
-          .map((row) => ({
-            ...row,
-            selectedForImport: body.selectedForImport,
-            updatedAt: '2026-05-20T12:00:01.000Z',
-          }));
+          .map((row) =>
+            toPersistedImportDraftRow(row, {
+              selectedForImport: body.selectedForImport,
+              updatedAt: '2026-05-20T12:00:01.000Z',
+            })
+          );
         return Promise.resolve(rows);
       }
     );
@@ -279,13 +283,11 @@ describe('useImportReviewSession', () => {
       rejectFirst = reject;
     });
     let resolveSecond:
-      | ((row: ReturnType<typeof makeImportDraftRow>) => void)
+      | ((result: UpdateImportDraftRowResult) => void)
       | undefined;
-    const secondPersist = new Promise<ReturnType<typeof makeImportDraftRow>>(
-      (resolve) => {
-        resolveSecond = resolve;
-      }
-    );
+    const secondPersist = new Promise<UpdateImportDraftRowResult>((resolve) => {
+      resolveSecond = resolve;
+    });
 
     vi.mocked(fetchUpdateImportDraftRow)
       .mockImplementationOnce(() => firstPersist)
@@ -329,10 +331,13 @@ describe('useImportReviewSession', () => {
     ).toBe('Newer');
 
     await act(async () => {
+      const readyRow = draft.rows.find((row) => row.id === 'row_ready');
+      if (!readyRow) throw new Error('missing row_ready');
       resolveSecond?.({
-        ...draft.rows[0],
-        reviewDescription: 'Newer',
-        updatedAt: '2026-05-20T12:00:02.000Z',
+        row: toPersistedImportDraftRow(readyRow, {
+          reviewDescription: 'Newer',
+          updatedAt: '2026-05-20T12:00:02.000Z',
+        }),
       });
       await secondPersist;
     });
@@ -427,9 +432,10 @@ describe('useImportReviewSession', () => {
       const row = draft.rows.find((entry) => entry.id === rowId);
       if (!row) return Promise.reject(new Error(`missing row ${rowId}`));
       return Promise.resolve({
-        ...row,
-        ...body,
-        updatedAt: '2026-05-20T12:00:01.000Z',
+        row: toPersistedImportDraftRow(row, {
+          ...body,
+          updatedAt: '2026-05-20T12:00:01.000Z',
+        }),
       });
     });
     vi.mocked(fetchUpdateImportDraftRowSelection).mockImplementation(
@@ -438,11 +444,12 @@ describe('useImportReviewSession', () => {
         return Promise.resolve(
           draft.rows
             .filter((row) => body.rowIds.includes(row.id))
-            .map((row) => ({
-              ...row,
-              selectedForImport: body.selectedForImport,
-              updatedAt: '2026-05-20T12:00:01.000Z',
-            }))
+            .map((row) =>
+              toPersistedImportDraftRow(row, {
+                selectedForImport: body.selectedForImport,
+                updatedAt: '2026-05-20T12:00:01.000Z',
+              })
+            )
         );
       }
     );
@@ -570,9 +577,10 @@ describe('useImportReviewSession', () => {
       const row = draft.rows.find((entry) => entry.id === rowId);
       if (!row) return Promise.reject(new Error(`missing row ${rowId}`));
       return Promise.resolve({
-        ...row,
-        ...body,
-        updatedAt: '2026-05-20T12:00:02.000Z',
+        row: toPersistedImportDraftRow(row, {
+          ...body,
+          updatedAt: '2026-05-20T12:00:02.000Z',
+        }),
       });
     });
 
@@ -661,13 +669,11 @@ describe('useImportReviewSession', () => {
 
   it('does not let a stale success overwrite a reverted same-row value', async () => {
     let resolveFirst:
-      | ((row: ReturnType<typeof makeImportDraftRow>) => void)
+      | ((result: UpdateImportDraftRowResult) => void)
       | undefined;
-    const firstPersist = new Promise<ReturnType<typeof makeImportDraftRow>>(
-      (resolve) => {
-        resolveFirst = resolve;
-      }
-    );
+    const firstPersist = new Promise<UpdateImportDraftRowResult>((resolve) => {
+      resolveFirst = resolve;
+    });
 
     vi.mocked(fetchUpdateImportDraftRow).mockImplementationOnce(
       () => firstPersist
@@ -694,10 +700,13 @@ describe('useImportReviewSession', () => {
     ).toBe('Coffee');
 
     await act(async () => {
+      const readyRow = draft.rows.find((row) => row.id === 'row_ready');
+      if (!readyRow) throw new Error('missing row_ready');
       resolveFirst?.({
-        ...draft.rows[0],
-        reviewDescription: 'Attempt B',
-        updatedAt: '2026-05-20T12:00:02.000Z',
+        row: toPersistedImportDraftRow(readyRow, {
+          reviewDescription: 'Attempt B',
+          updatedAt: '2026-05-20T12:00:02.000Z',
+        }),
       });
       await firstPersist;
     });
@@ -706,6 +715,87 @@ describe('useImportReviewSession', () => {
       result.current.rows.find((row) => row.id === 'row_ready')
         ?.reviewDescription
     ).toBe('Coffee');
+    unmount();
+  });
+
+  it('keeps refund-link needs_review after a non-refund field PATCH', async () => {
+    const expenseId = 'expense_wrong_account';
+    const refundDraft = makeImportDraft({
+      id: 'draft_session_1',
+      account: {
+        id: 'acct_amex',
+        name: 'Amex',
+        institution: 'Amex',
+        lastFour: '5678',
+      },
+      fileName: 'amex.csv',
+      refundTargetFacts: {
+        [expenseId]: {
+          id: expenseId,
+          accountId: 'other_acct',
+          amount: 5000,
+          categoryId: 'cat_1',
+          assigneeMemberIds: ['member_1'],
+          type: 'expense',
+          deleted: false,
+        },
+      },
+      rows: [
+        makeImportDraftRow({
+          id: 'row_refund',
+          reviewType: 'refund',
+          parsedType: 'refund',
+          reviewAmount: 1000,
+          parsedAmount: 1000,
+          reviewRefundOf: expenseId,
+          reviewCategoryId: null,
+          status: 'needs_review',
+          selectedForImport: true,
+        }),
+      ],
+    });
+    vi.mocked(fetchImportDraft).mockResolvedValue(refundDraft);
+    vi.mocked(fetchUpdateImportDraftRow).mockImplementation((rowId, body) => {
+      const row = refundDraft.rows.find((entry) => entry.id === rowId);
+      if (!row) return Promise.reject(new Error(`missing row ${rowId}`));
+      return Promise.resolve({
+        row: toPersistedImportDraftRow(row, {
+          ...body,
+          updatedAt: '2026-05-20T12:00:01.000Z',
+        }),
+      } satisfies UpdateImportDraftRowResult);
+    });
+
+    const { result, unmount } = await hydrateSession();
+    expect(
+      result.current.rows.find((row) => row.id === 'row_refund')?.status
+    ).toBe('needs_review');
+
+    vi.useFakeTimers();
+    act(() => {
+      result.current.updateRow('row_refund', {
+        reviewCategoryId: 'cat_2',
+      });
+    });
+
+    expect(
+      result.current.rows.find((row) => row.id === 'row_refund')?.status
+    ).toBe('needs_review');
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
+    });
+
+    expect(fetchUpdateImportDraftRow).toHaveBeenCalledWith('row_refund', {
+      reviewCategoryId: 'cat_2',
+    });
+    expect(
+      result.current.rows.find((row) => row.id === 'row_refund')?.status
+    ).toBe('needs_review');
+    expect(
+      result.current.rows.find((row) => row.id === 'row_refund')
+        ?.reviewCategoryId
+    ).toBe('cat_2');
     unmount();
   });
 });

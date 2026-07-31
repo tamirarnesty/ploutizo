@@ -27,6 +27,7 @@ describe('toImportDraftMeta', () => {
       fileName: 'statement.csv',
       rowCount: draft.rowCount,
       invalidRowCount: draft.invalidRowCount,
+      refundTargetFacts: {},
     });
     expect(meta).not.toHaveProperty('rows');
   });

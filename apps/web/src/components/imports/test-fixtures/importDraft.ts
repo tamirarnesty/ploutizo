@@ -1,7 +1,19 @@
 import { computeImportDraftRowCounts } from '@ploutizo/utils/import-row-status';
-import type { ImportDraft, ImportDraftRow } from '@ploutizo/types';
+import type {
+  ImportDraft,
+  ImportDraftPersistedRow,
+  ImportDraftRow,
+} from '@ploutizo/types';
 
 export const DRAFT_ID = 'draft_1';
+
+export const toPersistedImportDraftRow = (
+  row: ImportDraftRow,
+  overrides: Partial<ImportDraftPersistedRow> = {}
+): ImportDraftPersistedRow => {
+  const { status: _status, invalidReason: _invalidReason, ...persisted } = row;
+  return { ...persisted, ...overrides };
+};
 
 export const makeImportDraftRow = (
   overrides: Partial<ImportDraftRow> = {}
@@ -85,6 +97,7 @@ export const makeImportDraft = (
     discardedAt: null,
     createdAt: '2026-05-20T12:00:00.000Z',
     updatedAt: '2026-05-20T12:00:00.000Z',
+    refundTargetFacts: {},
     ...overrides,
     rows,
   };

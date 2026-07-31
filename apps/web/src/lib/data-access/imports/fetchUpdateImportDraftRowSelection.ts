@@ -1,12 +1,12 @@
-import type { ImportDraftRow } from '@ploutizo/types';
+import type { ImportDraftPersistedRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowSelectionInput } from '@ploutizo/validators';
 import { apiFetch } from '@/lib/queryClient';
 
 export const fetchUpdateImportDraftRowSelection = (
   draftId: string,
   body: UpdateImportDraftRowSelectionInput
-): Promise<ImportDraftRow[]> =>
-  apiFetch<{ data: ImportDraftRow[] }>(
+): Promise<ImportDraftPersistedRow[]> =>
+  apiFetch<{ data: ImportDraftPersistedRow[] }>(
     `/api/imports/drafts/${draftId}/rows/selection`,
     {
       method: 'PATCH',

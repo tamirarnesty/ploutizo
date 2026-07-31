@@ -64,8 +64,13 @@ importsRouter.patch(
   async (c) => {
     const orgId = c.get('orgId');
     const input = c.req.valid('json');
-    const row = await updateImportDraftRow(orgId, c.req.param('id'), input);
-    return c.json({ data: row });
+    const result = await updateImportDraftRow(orgId, c.req.param('id'), input);
+    return c.json({
+      data: result.row,
+      ...(result.refundTargetFacts
+        ? { refundTargetFacts: result.refundTargetFacts }
+        : {}),
+    });
   }
 );
 

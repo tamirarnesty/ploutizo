@@ -98,7 +98,9 @@ describe('imports router', () => {
   });
 
   it('validates row patch payloads before updating a draft row', async () => {
-    vi.mocked(updateImportDraftRow).mockResolvedValue({ id: 'row_1' } as never);
+    vi.mocked(updateImportDraftRow).mockResolvedValue({
+      row: { id: 'row_1' } as never,
+    });
 
     const bad = await app.request('/rows/row_1', {
       method: 'PATCH',
@@ -131,9 +133,11 @@ describe('imports router', () => {
 
   it('accepts row selection patch payloads', async () => {
     vi.mocked(updateImportDraftRow).mockResolvedValue({
-      id: 'row_1',
-      selectedForImport: true,
-    } as never);
+      row: {
+        id: 'row_1',
+        selectedForImport: true,
+      } as never,
+    });
 
     const res = await app.request('/rows/row_1', {
       method: 'PATCH',

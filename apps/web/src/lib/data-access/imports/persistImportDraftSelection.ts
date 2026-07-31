@@ -1,5 +1,5 @@
 import { createOptimisticAction } from '@tanstack/db';
-import type { ImportDraftRow } from '@ploutizo/types';
+import type { ImportDraftPersistedRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowSelectionInput } from '@ploutizo/validators';
 import {
   getImportReviewAutosaveSnapshot,
@@ -10,6 +10,7 @@ import {
 import { fetchUpdateImportDraftRowSelection } from './fetchUpdateImportDraftRowSelection';
 import { flushImportDraftRowPacedMutations } from './getImportDraftRowPacedMutations';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
+import { rederiveImportDraftWorkingCopy } from './rederiveImportDraftWorkingCopy';
 
 interface SelectionVariables {
   draftId: string;
@@ -19,7 +20,7 @@ interface SelectionVariables {
 
 const confirmSelectionIntoCollection = (
   draftId: string,
-  serverRows: ImportDraftRow[] | null,
+  serverRows: ImportDraftPersistedRow[] | null,
   rowIds: string[],
   selectedForImport: boolean
 ) => {
@@ -30,6 +31,7 @@ const confirmSelectionIntoCollection = (
       const live = collection.get(rowId);
       if (live) collection.utils.writeUpdate(live);
     }
+    rederiveImportDraftWorkingCopy(draftId);
     return;
   }
 
@@ -38,7 +40,6 @@ const confirmSelectionIntoCollection = (
     const live = collection.get(rowId);
     const serverRow = serverById.get(rowId);
     if (!live) {
-      if (serverRow) collection.utils.writeUpdate(serverRow);
       continue;
     }
     if (!serverRow) {
@@ -59,6 +60,7 @@ const confirmSelectionIntoCollection = (
           : live.updatedAt,
     });
   }
+  rederiveImportDraftWorkingCopy(draftId);
 };
 
 const persistSelection = createOptimisticAction<SelectionVariables>({
@@ -69,6 +71,7 @@ const persistSelection = createOptimisticAction<SelectionVariables>({
         draft.selectedForImport = selectedForImport;
       }
     });
+    rederiveImportDraftWorkingCopy(draftId);
   },
   mutationFn: async ({ draftId, rowIds, selectedForImport }) => {
     markImportReviewSelectionStart(draftId);

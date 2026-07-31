@@ -10,9 +10,10 @@ import {
 import { validateTransactionAccountPolicy } from '@ploutizo/utils/transaction-policy';
 import type {
   ImportDraft,
-  ImportDraftRow,
+  ImportDraftPersistedRow,
   ImportDraftSummary,
   ImportTargetAccount,
+  UpdateImportDraftRowResult,
 } from '@ploutizo/types';
 import type {
   CreateImportDraftInput,
@@ -48,9 +49,11 @@ import {
 } from '@/lib/queries/scope';
 import { listTags } from '@/lib/queries/tags';
 import { parsePloutizoNormalizedCsv } from '@/lib/imports/normalizedCsv';
+import { listRefundTargetExpensesByIds } from '@/lib/queries/import-refund-targets';
 import {
-  buildImportDraftRows,
   buildImportDraftView,
+  refundTargetFactsRecordFromMap,
+  toImportDraftPersistedRow,
 } from '@/services/import-draft-view';
 
 const toImportDraftSummary = (
@@ -228,7 +231,7 @@ export const updateImportDraftRow = async (
   orgId: string,
   rowId: string,
   input: UpdateImportDraftRowInput
-): Promise<ImportDraftRow> => {
+): Promise<UpdateImportDraftRowResult> => {
   const existing = await fetchDraftRowById(orgId, rowId);
   if (!existing) throw new NotFoundError('Import draft row not found.');
 
@@ -280,22 +283,25 @@ export const updateImportDraftRow = async (
   const updated = await updateImportDraftRowQuery(orgId, rowId, input);
   if (!updated) throw new NotFoundError('Import draft row not found.');
 
-  const allRows = await listDraftRows(orgId, existing.batchId);
-  const derivedRows = await buildImportDraftRows(
-    orgId,
-    draft.accountId,
-    allRows
-  );
-  const derivedRow = derivedRows.find((row) => row.id === rowId);
-  if (!derivedRow) throw new NotFoundError('Import draft row not found.');
-  return derivedRow;
+  const row = toImportDraftPersistedRow(updated);
+
+  let refundTargetFacts: UpdateImportDraftRowResult['refundTargetFacts'];
+  if (Object.prototype.hasOwnProperty.call(input, 'reviewRefundOf')) {
+    const refundOf = input.reviewRefundOf;
+    if (refundOf) {
+      const expenses = await listRefundTargetExpensesByIds(orgId, [refundOf]);
+      refundTargetFacts = refundTargetFactsRecordFromMap(expenses);
+    }
+  }
+
+  return refundTargetFacts ? { row, refundTargetFacts } : { row };
 };
 
 export const updateImportDraftRowSelection = async (
   orgId: string,
   draftId: string,
   input: UpdateImportDraftRowSelectionInput
-): Promise<ImportDraftRow[]> => {
+): Promise<ImportDraftPersistedRow[]> => {
   const draft = await fetchDraftSummaryById(orgId, draftId);
   if (!draft) throw new NotFoundError('Import draft not found.');
   if (!draft.accountId) throw new NotFoundError('Import draft not found.');
@@ -310,22 +316,25 @@ export const updateImportDraftRowSelection = async (
     throw new NotFoundError('Import draft row not found.');
   }
 
+  let persistedRows: Awaited<
+    ReturnType<typeof updateImportDraftRowSelectionQuery>
+  > = [];
+
   await db.transaction(async (tx) => {
-    const rows = await updateImportDraftRowSelectionQuery(
+    persistedRows = await updateImportDraftRowSelectionQuery(
       orgId,
       draftId,
       uniqueRowIds,
       input.selectedForImport,
       tx
     );
-    if (rows.length !== uniqueRowIds.length) {
+    if (persistedRows.length !== uniqueRowIds.length) {
       throw new NotFoundError('Import draft row not found.');
     }
     await touchImportDraft(orgId, draftId, tx);
   });
 
-  const allRows = await listDraftRows(orgId, draftId);
-  return buildImportDraftRows(orgId, draft.accountId, allRows);
+  return persistedRows.map(toImportDraftPersistedRow);
 };
 
 export const getNormalizedImportExampleCsv = () =>
