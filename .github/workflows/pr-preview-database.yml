@@ -1,25 +1,9 @@
 # Provisions an isolated Neon database branch for each Railway PR preview environment.
 #
-# Required GitHub secrets:
-#   NEON_API_KEY        — from Neon GitHub integration (Integrations → GitHub)
-#   RAILWAY_API_TOKEN   — account-scoped token from Railway account settings
-#
-# Required GitHub variables:
-#   NEON_PROJECT_ID          — Neon project ID (e.g. misty-wave-12922807)
-#   RAILWAY_PROJECT_ID       — Railway project ID
-#   RAILWAY_API_SERVICE_ID   — Railway API service ID
-#
-# Optional GitHub variables:
-#   NEON_PARENT_BRANCH       — Neon branch to fork from (default: production)
-#   RAILWAY_PR_ENV_PREFIX    — Railway PR environment name prefix (default: ploutizo-pr)
-#
 # Notes:
 #   Focused PR environments may skip the API when watch paths are unchanged. This
 #   workflow still sets DATABASE_URL and runs `railway redeploy --from-source` to
 #   deploy the API against the preview Neon branch.
-#   Railway wait logic is inlined so PR-controlled repository files never run with
-#   account-scoped credentials.
-#
 name: PR Preview Database
 
 on:
@@ -124,7 +108,7 @@ jobs:
 
   delete_preview_database:
     name: Delete preview database
-    if: github.event.pull_request.draft == false && github.event.action == 'closed'
+    if: github.event.action == 'closed'
     runs-on: ubuntu-latest
     steps:
       - name: Delete Neon branch
