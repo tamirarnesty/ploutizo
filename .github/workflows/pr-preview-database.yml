@@ -1,0 +1,119 @@
+# Provisions an isolated Neon database branch for each Railway PR preview environment.
+#
+# Required GitHub secrets:
+#   NEON_API_KEY        — from Neon GitHub integration (Integrations → GitHub)
+#   RAILWAY_API_TOKEN   — account-scoped token from Railway account settings
+#
+# Required GitHub variables:
+#   NEON_PROJECT_ID          — Neon project ID (e.g. misty-wave-12922807)
+#   RAILWAY_PROJECT_ID       — Railway project ID
+#   RAILWAY_API_SERVICE_ID   — Railway API service ID
+#
+# Optional GitHub variables:
+#   NEON_PARENT_BRANCH       — Neon branch to fork from (default: production)
+#   RAILWAY_PR_ENV_PREFIX    — Railway PR environment name prefix (default: ploutizo-pr)
+#
+name: PR Preview Database
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+concurrency:
+  group: pr-preview-database-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  setup:
+    if: github.event.pull_request.draft == false
+    name: Setup
+    runs-on: ubuntu-latest
+    outputs:
+      head_branch: ${{ steps.branch_name.outputs.current_branch }}
+      neon_branch_name: preview/pr-${{ github.event.pull_request.number }}-${{ steps.branch_name.outputs.current_branch }}
+      railway_environment_name: ${{ vars.RAILWAY_PR_ENV_PREFIX != '' && vars.RAILWAY_PR_ENV_PREFIX || 'ploutizo-pr' }}-${{ github.event.pull_request.number }}
+      neon_parent_branch: ${{ vars.NEON_PARENT_BRANCH != '' && vars.NEON_PARENT_BRANCH || 'production' }}
+    steps:
+      - name: Get head branch name
+        id: branch_name
+        uses: tj-actions/branch-names@v8
+
+  provision_preview_database:
+    name: Provision preview database
+    needs: setup
+    if: github.event.pull_request.draft == false && github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli@latest
+
+      - name: Compute Neon branch expiration
+        id: expiration
+        run: |
+          echo "expires_at=$(date -u --date '+14 days' +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
+
+      - name: Create Neon branch from production
+        id: neon
+        uses: neondatabase/create-branch-action@v6
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch_name: ${{ needs.setup.outputs.neon_branch_name }}
+          parent_branch: ${{ needs.setup.outputs.neon_parent_branch }}
+          database: ploutizo
+          api_key: ${{ secrets.NEON_API_KEY }}
+          expires_at: ${{ steps.expiration.outputs.expires_at }}
+
+      - name: Wait for Railway PR environment
+        run: |
+          chmod +x .github/scripts/wait-for-railway-pr-environment.sh
+          .github/scripts/wait-for-railway-pr-environment.sh \
+            "${{ github.event.pull_request.number }}" \
+            "${{ vars.RAILWAY_PR_ENV_PREFIX != '' && vars.RAILWAY_PR_ENV_PREFIX || 'ploutizo-pr' }}" \
+            "${{ vars.RAILWAY_PROJECT_ID }}"
+
+      - name: Set DATABASE_URL on Railway API service
+        env:
+          DATABASE_URL: ${{ steps.neon.outputs.db_url_pooled }}
+        run: |
+          printf '%s' "$DATABASE_URL" | railway variable set DATABASE_URL --stdin \
+            --project "${{ vars.RAILWAY_PROJECT_ID }}" \
+            --environment "${{ needs.setup.outputs.railway_environment_name }}" \
+            --service "${{ vars.RAILWAY_API_SERVICE_ID }}" \
+            --skip-deploys
+
+      - name: Redeploy API with preview database
+        run: |
+          for attempt in $(seq 1 12); do
+            if railway redeploy -y \
+              --project "${{ vars.RAILWAY_PROJECT_ID }}" \
+              --environment "${{ needs.setup.outputs.railway_environment_name }}" \
+              --service "${{ vars.RAILWAY_API_SERVICE_ID }}"; then
+              echo "API redeploy triggered"
+              exit 0
+            fi
+            echo "Redeploy not ready yet (${attempt}/12), retrying in 15s..."
+            sleep 15
+          done
+          echo "Failed to redeploy API after setting DATABASE_URL" >&2
+          exit 1
+
+  delete_preview_database:
+    name: Delete preview database
+    needs: setup
+    if: github.event.pull_request.draft == false && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete Neon branch
+        uses: neondatabase/delete-branch-action@v3
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch: ${{ needs.setup.outputs.neon_branch_name }}
+          api_key: ${{ secrets.NEON_API_KEY }}
