@@ -3,7 +3,6 @@ import { NORMALIZED_IMPORT_EXAMPLE_CSV } from '@ploutizo/types';
 import { createImportReferenceResolver } from '@ploutizo/utils';
 import {
   deriveImportRowStatus,
-  formatImportRowStructuralInvalidReason,
   resolveImportRowReviewType,
   toImportRowStatusFields,
   toImportTransactionType,
@@ -20,15 +19,11 @@ import type {
   UpdateImportDraftRowInput,
   UpdateImportDraftRowSelectionInput,
 } from '@ploutizo/validators';
-import type {
-  ImportDraftRowRecord,
-  ImportDraftSummaryRow,
-} from '@/lib/queries/imports';
+import type { ImportDraftSummaryRow } from '@/lib/queries/imports';
 import { assertOrgWriteReferences } from '@/lib/assertOrgWriteReferences';
 import { DomainError, NotFoundError } from '@/lib/errors';
 import { isUniqueViolation } from '@/lib/isUniqueViolation';
 import {
-  adjustImportDraftRowCounts,
   discardImportDraftQuery,
   fetchActiveCreditCardAccount,
   fetchActiveDraftByAccount,
@@ -53,6 +48,10 @@ import {
 } from '@/lib/queries/scope';
 import { listTags } from '@/lib/queries/tags';
 import { parsePloutizoNormalizedCsv } from '@/lib/imports/normalizedCsv';
+import {
+  buildImportDraftRows,
+  buildImportDraftView,
+} from '@/services/import-draft-view';
 
 const toImportDraftSummary = (
   row: ImportDraftSummaryRow
@@ -88,16 +87,6 @@ const toImportDraftSummary = (
   };
 };
 
-const toImportDraftRow = (row: ImportDraftRowRecord): ImportDraftRow => ({
-  ...row,
-  parsedDate: row.parsedDate ?? null,
-  reviewDate: row.reviewDate ?? null,
-  parsedType: toImportTransactionType(row.parsedType),
-  reviewType: toImportTransactionType(row.reviewType),
-  createdAt: row.createdAt.toISOString(),
-  updatedAt: row.updatedAt.toISOString(),
-});
-
 export const listImportTargets = async (
   orgId: string
 ): Promise<ImportTargetAccount[]> => listImportTargetAccounts(orgId);
@@ -123,10 +112,7 @@ export const getImportDraft = async (
   const summary = await fetchDraftSummaryById(orgId, draftId);
   if (!summary) throw new NotFoundError('Import draft not found.');
   const rows = await listDraftRows(orgId, draftId);
-  return {
-    ...toImportDraftSummary(summary),
-    rows: rows.map(toImportDraftRow),
-  };
+  return buildImportDraftView(orgId, summary, rows, toImportDraftSummary);
 };
 
 export const createNormalizedImportDraft = async (
@@ -246,6 +232,9 @@ export const updateImportDraftRow = async (
   const existing = await fetchDraftRowById(orgId, rowId);
   if (!existing) throw new NotFoundError('Import draft row not found.');
 
+  const draft = await fetchDraftSummaryById(orgId, existing.batchId);
+  if (!draft?.accountId) throw new NotFoundError('Import draft not found.');
+
   const merged = { ...existing, ...input };
 
   await assertOrgWriteReferences(orgId, {
@@ -266,8 +255,6 @@ export const updateImportDraftRow = async (
       parsedType: toImportTransactionType(merged.parsedType),
     });
     if (reviewType === 'settlement') {
-      const draft = await fetchDraftSummaryById(orgId, existing.batchId);
-      if (!draft?.accountId) throw new NotFoundError('Import draft not found.');
       const card = await fetchAccountWriteReference(orgId, draft.accountId);
       if (!card) throw new NotFoundError('Account not found');
       const policy = validateTransactionAccountPolicy({
@@ -290,52 +277,18 @@ export const updateImportDraftRow = async (
     if (!ok) throw new NotFoundError('Transaction not found');
   }
 
-  const statusFields = toImportRowStatusFields({
-    status: existing.status,
-    reviewDate: merged.reviewDate ?? null,
-    reviewAmount: merged.reviewAmount ?? null,
-    reviewType: toImportTransactionType(merged.reviewType),
-    reviewDescription: merged.reviewDescription ?? null,
-    parsedDate: merged.parsedDate ?? null,
-    parsedAmount: merged.parsedAmount ?? null,
-    parsedType: toImportTransactionType(merged.parsedType),
-    parsedDescription: merged.parsedDescription ?? null,
-    reviewCategoryId: merged.reviewCategoryId ?? null,
-    reviewAssigneeMemberIds: merged.reviewAssigneeMemberIds,
-    reviewCounterpartAccountId: merged.reviewCounterpartAccountId ?? null,
-  });
-  const status = deriveImportRowStatus(statusFields);
-  const invalidReason =
-    status === 'invalid'
-      ? formatImportRowStructuralInvalidReason(statusFields)
-      : null;
-
-  const wasInvalid = existing.status === 'invalid';
-  const isInvalid = status === 'invalid';
-  const countDelta =
-    wasInvalid && !isInvalid
-      ? { validRowCount: 1, invalidRowCount: -1 }
-      : !wasInvalid && isInvalid
-        ? { validRowCount: -1, invalidRowCount: 1 }
-        : { validRowCount: 0, invalidRowCount: 0 };
-
-  const updated = await db.transaction(async (tx) => {
-    const row = await updateImportDraftRowQuery(
-      orgId,
-      rowId,
-      {
-        ...input,
-        status,
-        invalidReason,
-      },
-      tx
-    );
-    if (!row) return null;
-    await adjustImportDraftRowCounts(orgId, existing.batchId, countDelta, tx);
-    return row;
-  });
+  const updated = await updateImportDraftRowQuery(orgId, rowId, input);
   if (!updated) throw new NotFoundError('Import draft row not found.');
-  return toImportDraftRow(updated);
+
+  const allRows = await listDraftRows(orgId, existing.batchId);
+  const derivedRows = await buildImportDraftRows(
+    orgId,
+    draft.accountId,
+    allRows
+  );
+  const derivedRow = derivedRows.find((row) => row.id === rowId);
+  if (!derivedRow) throw new NotFoundError('Import draft row not found.');
+  return derivedRow;
 };
 
 export const updateImportDraftRowSelection = async (
@@ -345,6 +298,7 @@ export const updateImportDraftRowSelection = async (
 ): Promise<ImportDraftRow[]> => {
   const draft = await fetchDraftSummaryById(orgId, draftId);
   if (!draft) throw new NotFoundError('Import draft not found.');
+  if (!draft.accountId) throw new NotFoundError('Import draft not found.');
 
   const uniqueRowIds = [...new Set(input.rowIds)];
   const matchingRows = await listDraftRowIdsForDraft(
@@ -356,7 +310,7 @@ export const updateImportDraftRowSelection = async (
     throw new NotFoundError('Import draft row not found.');
   }
 
-  const updated = await db.transaction(async (tx) => {
+  await db.transaction(async (tx) => {
     const rows = await updateImportDraftRowSelectionQuery(
       orgId,
       draftId,
@@ -368,10 +322,10 @@ export const updateImportDraftRowSelection = async (
       throw new NotFoundError('Import draft row not found.');
     }
     await touchImportDraft(orgId, draftId, tx);
-    return rows;
   });
 
-  return updated.map(toImportDraftRow);
+  const allRows = await listDraftRows(orgId, draftId);
+  return buildImportDraftRows(orgId, draft.accountId, allRows);
 };
 
 export const getNormalizedImportExampleCsv = () =>
