@@ -31,6 +31,17 @@ export interface ImportDraftSummary {
   updatedAt: string;
 }
 
+/** Server-loaded facts for existing-expense refund link validation. */
+export interface RefundTargetFact {
+  id: string;
+  accountId: string;
+  amount: number;
+  categoryId: string | null;
+  assigneeMemberIds: string[];
+  type: string;
+  deleted: boolean;
+}
+
 export interface ImportDraftRow {
   id: string;
   batchId: string;
@@ -66,8 +77,20 @@ export interface ImportDraftRow {
   updatedAt: string;
 }
 
+/** Durable import draft row persisted in Postgres — no derived status fields. */
+export type ImportDraftPersistedRow = Omit<
+  ImportDraftRow,
+  'status' | 'invalidReason'
+>;
+
 export interface ImportDraft extends ImportDraftSummary {
   rows: ImportDraftRow[];
+  refundTargetFacts: Record<string, RefundTargetFact>;
+}
+
+export interface UpdateImportDraftRowResult {
+  row: ImportDraftPersistedRow;
+  refundTargetFacts?: Record<string, RefundTargetFact>;
 }
 
 /** Immutable reviewed values captured when a prepared set revision is created. */

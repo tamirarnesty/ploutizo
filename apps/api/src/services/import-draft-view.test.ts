@@ -102,5 +102,6 @@ describe('buildImportDraftView', () => {
     expect(draft.validRowCount).toBe(1);
     expect(draft.invalidRowCount).toBe(1);
     expect(draft.rowCount).toBe(2);
+    expect(draft.refundTargetFacts).toEqual({});
   });
 });

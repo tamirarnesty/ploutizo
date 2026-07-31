@@ -1,9 +1,5 @@
 import { createPacedMutations, debounceStrategy } from '@tanstack/db';
-import {
-  deriveImportRowStatus,
-  toImportRowStatusFields,
-} from '@ploutizo/utils/import-row-status';
-import type { ImportDraftRow } from '@ploutizo/types';
+import type { ImportDraftPersistedRow, ImportDraftRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import {
   getImportReviewAutosaveSnapshot,
@@ -14,6 +10,11 @@ import {
 } from './importReviewAutosave';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
 import { fetchUpdateImportDraftRow } from './fetchUpdateImportDraftRow';
+import { applyImportDraftRefundTargetFactDelta } from './mergeImportDraftRefundTargetFacts';
+import {
+  evaluateImportDraftWorkingCopy,
+  rederiveImportDraftWorkingCopy,
+} from './rederiveImportDraftWorkingCopy';
 import type { Transaction } from '@tanstack/db';
 
 export const IMPORT_ROW_PACE_WAIT_MS = 500;
@@ -63,6 +64,42 @@ const valuesEqual = (left: unknown, right: unknown): boolean => {
 const patchKeys = (patch: UpdateImportDraftRowInput) =>
   Object.keys(patch) as (keyof UpdateImportDraftRowInput)[];
 
+const mergePersistedPatchFields = (
+  target: ImportDraftRow,
+  persisted: ImportDraftPersistedRow,
+  patch: UpdateImportDraftRowInput
+) => {
+  for (const key of patchKeys(patch)) {
+    Object.assign(target, {
+      [key]: persisted[key as keyof ImportDraftPersistedRow],
+    });
+  }
+};
+
+const patchTouchedRefundOf = (patch: UpdateImportDraftRowInput) =>
+  Object.prototype.hasOwnProperty.call(patch, 'reviewRefundOf');
+
+const syncRefundTargetFacts = (
+  draftId: string,
+  patch: UpdateImportDraftRowInput,
+  original: ImportDraftRow,
+  refundTargetFacts?: Awaited<
+    ReturnType<typeof fetchUpdateImportDraftRow>
+  >['refundTargetFacts']
+) => {
+  const collection = getImportDraftRowsCollection(draftId);
+  applyImportDraftRefundTargetFactDelta(draftId, {
+    merge: refundTargetFacts,
+    previousRefundOf: patchTouchedRefundOf(patch)
+      ? original.reviewRefundOf
+      : undefined,
+    nextRefundOf: patchTouchedRefundOf(patch)
+      ? patch.reviewRefundOf
+      : undefined,
+    rows: collection.toArray,
+  });
+};
+
 /** True when live holds a value beyond this mutation's original and attempted snapshots. */
 const liveHasNewerThanAttempt = (
   live: ImportDraftRow,
@@ -82,21 +119,41 @@ const liveHasNewerThanAttempt = (
  */
 const confirmPersistIntoCollection = (
   collection: ReturnType<typeof getImportDraftRowsCollection>,
-  serverRow: ImportDraftRow | null,
+  server: Awaited<ReturnType<typeof fetchUpdateImportDraftRow>> | null,
   attempted: ImportDraftRow,
   original: ImportDraftRow,
-  patch: UpdateImportDraftRowInput
+  patch: UpdateImportDraftRowInput,
+  draftId: string
 ) => {
+  const serverRow = server?.row ?? null;
   const live = collection.get(attempted.id);
 
   if (!live) {
-    collection.utils.writeUpdate(serverRow ?? attempted);
+    if (serverRow) {
+      const merged = { ...attempted };
+      mergePersistedPatchFields(merged, serverRow, patch);
+      if (serverRow.updatedAt >= merged.updatedAt) {
+        merged.updatedAt = serverRow.updatedAt;
+      }
+      collection.utils.writeUpdate(merged);
+      syncRefundTargetFacts(
+        draftId,
+        patch,
+        original,
+        server?.refundTargetFacts
+      );
+      rederiveImportDraftWorkingCopy(draftId);
+      return;
+    }
+    collection.utils.writeUpdate(attempted);
+    rederiveImportDraftWorkingCopy(draftId);
     return;
   }
 
   if (!serverRow) {
     // Failure: keep whatever is currently live (may already include a newer edit).
     collection.utils.writeUpdate(live);
+    rederiveImportDraftWorkingCopy(draftId);
     return;
   }
 
@@ -111,21 +168,19 @@ const confirmPersistIntoCollection = (
     ) {
       Object.assign(next, { [key]: live[key] });
     } else {
-      Object.assign(next, { [key]: serverRow[key] });
+      Object.assign(next, {
+        [key]: serverRow[key as keyof ImportDraftPersistedRow],
+      });
     }
   }
 
-  // Only take server status/timestamps when this persist still owns the row.
-  // Avoid older responses clobbering status derived from newer local field edits.
   if (!preferLive && serverRow.updatedAt >= live.updatedAt) {
     next.updatedAt = serverRow.updatedAt;
-    next.status = serverRow.status;
-    next.invalidReason = serverRow.invalidReason;
-  } else {
-    next.status = deriveImportRowStatus(toImportRowStatusFields(next));
   }
 
   collection.utils.writeUpdate(next);
+  syncRefundTargetFacts(draftId, patch, original, server?.refundTargetFacts);
+  rederiveImportDraftWorkingCopy(draftId);
 };
 
 const patchFromLiveKeys = (
@@ -143,6 +198,33 @@ const patchFromLiveKeys = (
     : null;
 };
 
+const applyOptimisticRowPatch = (
+  draftId: string,
+  rowId: string,
+  patch: UpdateImportDraftRowInput
+) => {
+  const collection = getImportDraftRowsCollection(draftId);
+  const rowsForEval = collection.toArray.map((row) =>
+    row.id === rowId ? { ...row, ...patch } : row
+  );
+  const evaluations = evaluateImportDraftWorkingCopy(draftId, rowsForEval);
+
+  collection.update(rowId, (draft) => {
+    Object.assign(draft, patch);
+    const evaluation = evaluations?.get(rowId);
+    if (!evaluation) return;
+    draft.status = evaluation.status;
+    draft.invalidReason = evaluation.invalidReason;
+  });
+
+  if (evaluations) {
+    rederiveImportDraftWorkingCopy(draftId, {
+      rows: rowsForEval,
+      skipIds: new Set([rowId]),
+    });
+  }
+};
+
 const createRowPacedMutations = (draftId: string, rowId: string) => {
   const strategy = debounceStrategy({ wait: IMPORT_ROW_PACE_WAIT_MS });
   let latestTx: Transaction | null = null;
@@ -150,11 +232,7 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
   const mutate = createPacedMutations<ImportDraftRowPatchVariables>({
     onMutate: ({ patch }) => {
       markImportReviewPending(draftId, rowId);
-      const collection = getImportDraftRowsCollection(draftId);
-      collection.update(rowId, (draft) => {
-        Object.assign(draft, patch);
-        draft.status = deriveImportRowStatus(toImportRowStatusFields(draft));
-      });
+      applyOptimisticRowPatch(draftId, rowId, patch);
     },
     mutationFn: async ({ transaction }) => {
       markImportReviewPersistStart(draftId, rowId);
@@ -183,19 +261,21 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
 
       if (Object.keys(patch).length === 0) {
         collection.utils.writeUpdate(attempted);
+        rederiveImportDraftWorkingCopy(draftId);
         markImportReviewPersistSuccess(draftId, rowId);
         return;
       }
 
       const persistedKeys = Object.keys(patch);
       try {
-        const serverRow = await fetchUpdateImportDraftRow(rowId, patch);
+        const server = await fetchUpdateImportDraftRow(rowId, patch);
         confirmPersistIntoCollection(
           collection,
-          serverRow,
+          server,
           attempted,
           original,
-          patch
+          patch,
+          draftId
         );
         markImportReviewPersistSuccess(draftId, rowId, persistedKeys);
       } catch {
@@ -205,7 +285,8 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
           null,
           attempted,
           original,
-          patch
+          patch,
+          draftId
         );
         markImportReviewPersistFailure(draftId, rowId, persistedKeys);
       }
@@ -284,13 +365,21 @@ export const retryFailedImportDraftRowPersists = async (draftId: string) => {
       markImportReviewPersistStart(draftId, rowId);
       const persistedKeys = Object.keys(patch);
       try {
-        const serverRow = await fetchUpdateImportDraftRow(rowId, patch);
-        confirmPersistIntoCollection(collection, serverRow, live, live, patch);
+        const server = await fetchUpdateImportDraftRow(rowId, patch);
+        confirmPersistIntoCollection(
+          collection,
+          server,
+          live,
+          live,
+          patch,
+          draftId
+        );
         // Explicit Retry: clear all tracked failures for the row.
         markImportReviewPersistSuccess(draftId, rowId);
       } catch {
         const current = collection.get(rowId);
         if (current) collection.utils.writeUpdate(current);
+        rederiveImportDraftWorkingCopy(draftId);
         markImportReviewPersistFailure(draftId, rowId, persistedKeys);
       }
     })

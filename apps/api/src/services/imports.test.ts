@@ -262,6 +262,7 @@ describe('import service', () => {
     expect(draft.rows[0]?.status).toBe('needs_review');
     expect(draft.validRowCount).toBe(1);
     expect(draft.invalidRowCount).toBe(0);
+    expect(draft.refundTargetFacts).toEqual({});
     expect(listRefundTargetExpensesByIds).toHaveBeenCalledWith('org_1', []);
   });
 
@@ -294,7 +295,7 @@ describe('import service', () => {
     expect(result.draft.id).toBe(summaryRow.id);
   });
 
-  it('derives ready status when category is patched onto a needs_review row', async () => {
+  it('returns persisted row without derived status when category is patched', async () => {
     const needsReviewRow = {
       ...draftRow,
       status: 'needs_review' as const,
@@ -308,7 +309,6 @@ describe('import service', () => {
 
     vi.mocked(fetchDraftRowById).mockResolvedValue(needsReviewRow);
     vi.mocked(updateImportDraftRowQuery).mockResolvedValue(updatedRow);
-    vi.mocked(listDraftRows).mockResolvedValue([updatedRow]);
 
     const result = await updateImportDraftRow('org_1', draftRow.id, {
       reviewCategoryId: '55555555-5555-4555-8555-555555555555',
@@ -321,10 +321,15 @@ describe('import service', () => {
         reviewCategoryId: '55555555-5555-4555-8555-555555555555',
       }
     );
-    expect(result.status).toBe('ready');
+    expect(listDraftRows).not.toHaveBeenCalled();
+    expect(result.row.reviewCategoryId).toBe(
+      '55555555-5555-4555-8555-555555555555'
+    );
+    expect(result.row).not.toHaveProperty('status');
+    expect(result.row).not.toHaveProperty('invalidReason');
   });
 
-  it('derives needs_review when core review fields are patched onto an invalid row', async () => {
+  it('returns persisted row without re-deriving status when review fields are patched', async () => {
     const invalidRow = {
       ...draftRow,
       status: 'invalid' as const,
@@ -351,7 +356,6 @@ describe('import service', () => {
 
     vi.mocked(fetchDraftRowById).mockResolvedValue(invalidRow);
     vi.mocked(updateImportDraftRowQuery).mockResolvedValue(updatedRow);
-    vi.mocked(listDraftRows).mockResolvedValue([updatedRow]);
 
     const result = await updateImportDraftRow('org_1', draftRow.id, {
       reviewDate: '2026-05-02',
@@ -370,11 +374,12 @@ describe('import service', () => {
         reviewDescription: 'Coffee',
       }
     );
-    expect(result.status).toBe('needs_review');
-    expect(result.invalidReason).toBeNull();
+    expect(listDraftRows).not.toHaveBeenCalled();
+    expect(result.row.reviewDescription).toBe('Coffee');
+    expect(result.row).not.toHaveProperty('status');
   });
 
-  it('derives invalidReason when an invalid row stays invalid after partial correction', async () => {
+  it('returns persisted row without derived invalidReason when a row stays structurally invalid', async () => {
     const invalidRow = {
       ...draftRow,
       status: 'invalid' as const,
@@ -399,7 +404,6 @@ describe('import service', () => {
 
     vi.mocked(fetchDraftRowById).mockResolvedValue(invalidRow);
     vi.mocked(updateImportDraftRowQuery).mockResolvedValue(updatedRow);
-    vi.mocked(listDraftRows).mockResolvedValue([updatedRow]);
 
     const result = await updateImportDraftRow('org_1', draftRow.id, {
       reviewDate: '2026-05-02',
@@ -412,11 +416,12 @@ describe('import service', () => {
         reviewDate: '2026-05-02',
       }
     );
-    expect(result.status).toBe('invalid');
-    expect(result.invalidReason).toBe('Amount must be a positive number.');
+    expect(listDraftRows).not.toHaveBeenCalled();
+    expect(result.row.reviewDate).toBe('2026-05-02');
+    expect(result.row).not.toHaveProperty('invalidReason');
   });
 
-  it('derives invalid status when a row loses required review fields', async () => {
+  it('returns persisted row when a row loses required review fields', async () => {
     const reviewOnlyRow = {
       ...draftRow,
       status: 'needs_review' as const,
@@ -435,7 +440,6 @@ describe('import service', () => {
 
     vi.mocked(fetchDraftRowById).mockResolvedValue(reviewOnlyRow);
     vi.mocked(updateImportDraftRowQuery).mockResolvedValue(updatedRow);
-    vi.mocked(listDraftRows).mockResolvedValue([updatedRow]);
 
     const result = await updateImportDraftRow('org_1', draftRow.id, {
       reviewDate: null,
@@ -448,8 +452,9 @@ describe('import service', () => {
         reviewDate: null,
       }
     );
-    expect(result.status).toBe('invalid');
-    expect(result.invalidReason).toBe('Date must be a valid YYYY-MM-DD value.');
+    expect(listDraftRows).not.toHaveBeenCalled();
+    expect(result.row.reviewDate).toBeNull();
+    expect(result.row).not.toHaveProperty('status');
   });
 
   it('persists row field updates without writing derived status columns', async () => {
@@ -461,7 +466,6 @@ describe('import service', () => {
 
     vi.mocked(fetchDraftRowById).mockResolvedValue(draftRow);
     vi.mocked(updateImportDraftRowQuery).mockResolvedValue(updatedRow);
-    vi.mocked(listDraftRows).mockResolvedValue([updatedRow]);
 
     const result = await updateImportDraftRow('org_1', draftRow.id, {
       reviewNotes: 'memo',
@@ -474,17 +478,15 @@ describe('import service', () => {
         reviewNotes: 'memo',
       }
     );
-    expect(result.reviewNotes).toBe('memo');
-    expect(result.status).toBe('ready');
+    expect(listDraftRows).not.toHaveBeenCalled();
+    expect(result.row.reviewNotes).toBe('memo');
+    expect(result.row).not.toHaveProperty('status');
   });
 
-  it('updates row selection in batch for a draft and returns derived rows', async () => {
+  it('updates row selection in batch and returns persisted rows only', async () => {
     vi.mocked(fetchDraftSummaryById).mockResolvedValue(summaryRow);
     vi.mocked(listDraftRowIdsForDraft).mockResolvedValue([{ id: draftRow.id }]);
     vi.mocked(updateImportDraftRowSelectionQuery).mockResolvedValue([
-      { ...draftRow, selectedForImport: true },
-    ]);
-    vi.mocked(listDraftRows).mockResolvedValue([
       { ...draftRow, selectedForImport: true },
     ]);
     const tx = {} as never;
@@ -503,25 +505,14 @@ describe('import service', () => {
       tx
     );
     expect(touchImportDraft).toHaveBeenCalledWith('org_1', summaryRow.id, tx);
+    expect(listDraftRows).not.toHaveBeenCalled();
     expect(result).toHaveLength(1);
     expect(result[0]?.selectedForImport).toBe(true);
+    expect(result[0]).not.toHaveProperty('status');
   });
 
-  it('derives needs_review when sibling refunds make cumulative total exceed target', async () => {
+  it('returns persisted row without sibling re-derive when refund category is patched', async () => {
     const expenseId = '77777777-7777-4777-8777-777777777777';
-    const siblingRefundRow = {
-      ...draftRow,
-      id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
-      rowNumber: 1,
-      reviewType: 'refund' as const,
-      parsedType: 'refund' as const,
-      reviewAmount: 3000,
-      parsedAmount: 3000,
-      reviewRefundOf: expenseId,
-      reviewCategoryId: null,
-      reviewAssigneeMemberIds: [],
-      selectedForImport: true,
-    };
     const refundRow = {
       ...draftRow,
       reviewType: 'refund' as const,
@@ -541,36 +532,19 @@ describe('import service', () => {
 
     vi.mocked(fetchDraftRowById).mockResolvedValue(refundRow);
     vi.mocked(updateImportDraftRowQuery).mockResolvedValue(updatedRefundRow);
-    vi.mocked(listDraftRows).mockResolvedValue([
-      siblingRefundRow,
-      updatedRefundRow,
-    ]);
-    vi.mocked(listRefundTargetExpensesByIds).mockResolvedValue(
-      new Map([
-        [
-          expenseId,
-          {
-            id: expenseId,
-            accountId: summaryRow.accountId,
-            amount: 5000,
-            categoryId: '55555555-5555-4555-8555-555555555555',
-            assigneeMemberIds: ['44444444-4444-4444-8444-444444444444'],
-            type: 'expense',
-            deleted: false,
-          },
-        ],
-      ])
-    );
 
     const result = await updateImportDraftRow('org_1', refundRow.id, {
       reviewCategoryId: '55555555-5555-4555-8555-555555555555',
     });
 
-    expect(listDraftRows).toHaveBeenCalledWith('org_1', summaryRow.id);
-    expect(result.status).toBe('needs_review');
+    expect(listDraftRows).not.toHaveBeenCalled();
+    expect(result.row.reviewCategoryId).toBe(
+      '55555555-5555-4555-8555-555555555555'
+    );
+    expect(result.row).not.toHaveProperty('status');
   });
 
-  it('persists settlement funding and refund-link review values', async () => {
+  it('returns refundTargetFacts when reviewRefundOf is patched', async () => {
     const fundingId = '66666666-6666-4666-8666-666666666666';
     const expenseId = '77777777-7777-4777-8777-777777777777';
     const settlementRow = {
@@ -585,7 +559,6 @@ describe('import service', () => {
       reviewRefundOf: expenseId,
       updatedAt: new Date('2026-05-20T13:00:00Z'),
     };
-    const tx = {} as never;
 
     vi.mocked(fetchDraftRowById).mockResolvedValue(settlementRow);
     vi.mocked(fetchDraftSummaryById).mockResolvedValue(summaryRow);
@@ -598,7 +571,6 @@ describe('import service', () => {
     );
     vi.mocked(transactionExistsInOrg).mockResolvedValue(true);
     vi.mocked(updateImportDraftRowQuery).mockResolvedValue(updatedRow);
-    vi.mocked(listDraftRows).mockResolvedValue([updatedRow]);
     vi.mocked(listRefundTargetExpensesByIds).mockResolvedValue(
       new Map([
         [
@@ -615,7 +587,6 @@ describe('import service', () => {
         ],
       ])
     );
-    vi.mocked(db.transaction).mockImplementation(async (fn) => fn(tx));
 
     const result = await updateImportDraftRow('org_1', draftRow.id, {
       reviewCounterpartAccountId: fundingId,
@@ -632,19 +603,23 @@ describe('import service', () => {
         reviewRefundOf: expenseId,
       }
     );
-    expect(result).toMatchObject({
+    expect(listDraftRows).not.toHaveBeenCalled();
+    expect(result.row).toMatchObject({
       reviewCounterpartAccountId: fundingId,
       reviewRefundOf: expenseId,
       externalId: settlementRow.externalId,
-      sourceDate: settlementRow.sourceDate,
-      sourceAmount: settlementRow.sourceAmount,
-      sourceDescription: settlementRow.sourceDescription,
-      sourceType: settlementRow.sourceType,
-      parsedDate: settlementRow.parsedDate,
-      parsedAmount: settlementRow.parsedAmount,
-      parsedType: settlementRow.parsedType,
-      parsedDescription: settlementRow.parsedDescription,
-      status: 'needs_review',
+    });
+    expect(result.row).not.toHaveProperty('status');
+    expect(result.refundTargetFacts).toEqual({
+      [expenseId]: {
+        id: expenseId,
+        accountId: summaryRow.accountId,
+        amount: 5000,
+        categoryId: '55555555-5555-4555-8555-555555555555',
+        assigneeMemberIds: ['44444444-4444-4444-8444-444444444444'],
+        type: 'expense',
+        deleted: false,
+      },
     });
   });
 
