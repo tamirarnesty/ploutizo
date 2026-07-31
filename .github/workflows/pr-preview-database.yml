@@ -13,6 +13,11 @@
 #   NEON_PARENT_BRANCH       — Neon branch to fork from (default: production)
 #   RAILWAY_PR_ENV_PREFIX    — Railway PR environment name prefix (default: ploutizo-pr)
 #
+# Notes:
+#   Focused PR environments may skip the API when watch paths are unchanged. This
+#   workflow still sets DATABASE_URL and runs `railway redeploy --from-source` to
+#   deploy the API against the preview Neon branch.
+#
 name: PR Preview Database
 
 on:
@@ -89,20 +94,20 @@ jobs:
             --service "${{ vars.RAILWAY_API_SERVICE_ID }}" \
             --skip-deploys
 
-      - name: Redeploy API with preview database
+      - name: Deploy API with preview database
         run: |
           for attempt in $(seq 1 12); do
-            if railway redeploy -y \
+            if railway redeploy -y --from-source \
               --project "${{ vars.RAILWAY_PROJECT_ID }}" \
               --environment "${{ needs.setup.outputs.railway_environment_name }}" \
               --service "${{ vars.RAILWAY_API_SERVICE_ID }}"; then
-              echo "API redeploy triggered"
+              echo "API deploy triggered from source"
               exit 0
             fi
-            echo "Redeploy not ready yet (${attempt}/12), retrying in 15s..."
+            echo "Deploy not ready yet (${attempt}/12), retrying in 15s..."
             sleep 15
           done
-          echo "Failed to redeploy API after setting DATABASE_URL" >&2
+          echo "Failed to deploy API after setting DATABASE_URL" >&2
           exit 1
 
   delete_preview_database:

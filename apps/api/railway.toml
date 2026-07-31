@@ -1,6 +1,7 @@
 [build]
 builder = "RAILPACK"
 buildCommand = "pnpm --filter api... build"
+# PR preview DB workflow deploys via `railway redeploy --from-source` when watch paths skip API.
 watchPatterns = [
   "apps/api/**",
   "packages/db/**",
