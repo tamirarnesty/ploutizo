@@ -281,7 +281,11 @@ export const updateImportDraftRow = async (
   if (!updated) throw new NotFoundError('Import draft row not found.');
 
   const allRows = await listDraftRows(orgId, existing.batchId);
-  const derivedRows = await buildImportDraftRows(orgId, draft.accountId, allRows);
+  const derivedRows = await buildImportDraftRows(
+    orgId,
+    draft.accountId,
+    allRows
+  );
   const derivedRow = derivedRows.find((row) => row.id === rowId);
   if (!derivedRow) throw new NotFoundError('Import draft row not found.');
   return derivedRow;

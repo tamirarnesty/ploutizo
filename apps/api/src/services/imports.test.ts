@@ -541,7 +541,10 @@ describe('import service', () => {
 
     vi.mocked(fetchDraftRowById).mockResolvedValue(refundRow);
     vi.mocked(updateImportDraftRowQuery).mockResolvedValue(updatedRefundRow);
-    vi.mocked(listDraftRows).mockResolvedValue([siblingRefundRow, updatedRefundRow]);
+    vi.mocked(listDraftRows).mockResolvedValue([
+      siblingRefundRow,
+      updatedRefundRow,
+    ]);
     vi.mocked(listRefundTargetExpensesByIds).mockResolvedValue(
       new Map([
         [
