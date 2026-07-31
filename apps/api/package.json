@@ -26,7 +26,8 @@
     "neverthrow": "^8.2.0",
     "svix": "^1.90.0",
     "zod": "^4.3.6",
-    "@ploutizo/utils": "workspace:*"
+    "@ploutizo/utils": "workspace:*",
+    "re2js": "^2.8.6"
   },
   "devDependencies": {
     "@clerk/backend": "^3.2.9",

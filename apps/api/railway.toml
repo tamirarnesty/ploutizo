@@ -6,6 +6,7 @@ watchPatterns = [
   "apps/api/**",
   "packages/db/**",
   "packages/types/**",
+  "packages/utils/**",
   "packages/validators/**",
   "package.json",
   "pnpm-lock.yaml",

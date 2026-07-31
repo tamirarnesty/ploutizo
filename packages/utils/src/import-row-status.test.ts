@@ -377,6 +377,7 @@ describe('toImportRowStatusFields', () => {
       reviewCategoryId: 'cat_1',
       reviewAssigneeMemberIds: ['member_1'],
       reviewCounterpartAccountId: null,
+      refundLinkBlocked: false,
     });
   });
 

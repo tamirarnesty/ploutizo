@@ -12,7 +12,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@ploutizo/types": "workspace:*"
+    "@ploutizo/types": "workspace:*",
+    "re2js": "^2.8.6"
   },
   "devDependencies": {
     "@tanstack/eslint-config": "^0.4.0",
@@ -26,6 +27,7 @@
     "./currency": "./src/currency.ts",
     "./import-row-status": "./src/import-row-status.ts",
     "./import-row-readiness": "./src/import-row-readiness.ts",
+    "./match-merchant-rule": "./src/match-merchant-rule.ts",
     "./settlement-threshold": "./src/settlement-threshold.ts",
     "./transaction-policy": "./src/transaction-policy/index.ts"
   }
