@@ -5,8 +5,8 @@ pr_number="${1:?PR number required}"
 env_prefix="${2:-ploutizo-pr}"
 project_id="${3:?Railway project ID required}"
 target_name="${env_prefix}-${pr_number}"
-
-railway link -p "$project_id" >/dev/null
+# Link to a stable environment so the CLI can list ephemeral PR envs in CI.
+railway link -p "$project_id" -e production >/dev/null
 
 for attempt in $(seq 1 36); do
   if railway environment list --ephemeral --json \
