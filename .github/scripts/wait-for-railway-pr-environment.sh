@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Local debugging helper. CI inlines this logic in pr-preview-database.yml so
+# PR-controlled files never run with account-scoped Railway credentials.
 set -euo pipefail
 
 pr_number="${1:?PR number required}"
