@@ -1,4 +1,4 @@
-import { SignInButton, SignUpButton } from '@clerk/tanstack-react-start';
+import { Link } from '@tanstack/react-router';
 import { Button } from '@ploutizo/ui/components/button';
 import { Text } from '@ploutizo/ui/components/text';
 
@@ -14,12 +14,16 @@ export const HomePage = () => {
         </Text>
       </div>
       <div className="flex flex-wrap items-center justify-center gap-3">
-        <SignInButton mode="modal">
-          <Button variant="outline">Sign in</Button>
-        </SignInButton>
-        <SignUpButton mode="modal">
-          <Button>Get started</Button>
-        </SignUpButton>
+        <Button
+          nativeButton={false}
+          variant="outline"
+          render={<Link to="/sign-in/$" />}
+        >
+          Sign in
+        </Button>
+        <Button nativeButton={false} render={<Link to="/sign-up/$" />}>
+          Get started
+        </Button>
       </div>
     </div>
   );
