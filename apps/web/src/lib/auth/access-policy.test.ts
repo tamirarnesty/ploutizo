@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import {
-  resolveAccessRedirect,
-  type AccessPolicy,
-  type AuthState,
-} from './access-policy';
+import { resolveAccessRedirect } from './access-policy';
+import type { AccessPolicy, AuthState } from './access-policy';
 
 const signedOut: AuthState = { isAuthenticated: false, orgId: null };
 const signedInNoOrg: AuthState = { isAuthenticated: true, orgId: null };
