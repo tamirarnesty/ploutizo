@@ -72,5 +72,6 @@ export const updateMerchantRule = async (
 };
 
 export const deleteMerchantRule = async (id: string, orgId: string) => {
-  await deleteMerchantRuleQuery(id, orgId);
+  const deleted = await deleteMerchantRuleQuery(id, orgId);
+  if (!deleted) throw new NotFoundError('Rule not found.');
 };

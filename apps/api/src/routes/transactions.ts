@@ -6,7 +6,7 @@ import {
 import type { ListQueryParams } from '@/services/transactions';
 import type { AppEnv } from '@/types';
 import { appValidator } from '@/lib/validator';
-import { DomainError, NotFoundError } from '@/lib/errors';
+import { DomainError } from '@/lib/errors';
 import {
   checkCounterpartAccountOwnership,
   checkRefundOfOwnership,
@@ -32,10 +32,7 @@ transactionsRouter.post(
     // D-11: validate split sum before hitting DB
     const splitError = validateSplitSum(data.amount, data.assignees);
     if (splitError) {
-      return c.json(
-        { error: { code: 'BAD_REQUEST', message: splitError } },
-        400
-      );
+      throw new DomainError(400, splitError, 'BAD_REQUEST');
     }
 
     // T1: validate counterpartAccountId belongs to this org — T-03.4.1-T1
@@ -48,7 +45,8 @@ transactionsRouter.post(
       if (!valid)
         throw new DomainError(
           400,
-          'counterpartAccountId references an account not in this org'
+          'counterpartAccountId references an account not in this org',
+          'INVALID_COUNTERPART_ACCOUNT'
         );
     }
 
@@ -59,7 +57,8 @@ transactionsRouter.post(
       if (!owned)
         throw new DomainError(
           400,
-          'refundOf transaction not found in this org'
+          'refundOf transaction not found in this org',
+          'INVALID_REFUND_REFERENCE'
         );
     }
 
@@ -128,12 +127,6 @@ transactionsRouter.get('/:id', async (c) => {
   const orgId = c.get('orgId');
   const id = c.req.param('id');
   const row = await getTransaction(orgId, id);
-  if (!row) {
-    return c.json(
-      { error: { code: 'NOT_FOUND', message: 'Transaction not found.' } },
-      404
-    );
-  }
   return c.json({ data: row });
 });
 
@@ -143,12 +136,6 @@ transactionsRouter.patch('/:id/restore', async (c) => {
   const orgId = c.get('orgId');
   const id = c.req.param('id');
   const result = await restoreTransaction(orgId, id);
-  if (!result) {
-    return c.json(
-      { error: { code: 'NOT_FOUND', message: 'Transaction not found.' } },
-      404
-    );
-  }
   return c.json({ data: result });
 });
 
@@ -172,7 +159,8 @@ transactionsRouter.patch(
       if (!valid)
         throw new DomainError(
           400,
-          'counterpartAccountId references an account not in this org'
+          'counterpartAccountId references an account not in this org',
+          'INVALID_COUNTERPART_ACCOUNT'
         );
     }
 
@@ -183,28 +171,12 @@ transactionsRouter.patch(
       if (!owned)
         throw new DomainError(
           400,
-          'refundOf transaction not found in this org'
+          'refundOf transaction not found in this org',
+          'INVALID_REFUND_REFERENCE'
         );
     }
 
-    let updated;
-    try {
-      updated = await updateTransaction(orgId, id, data);
-    } catch (err) {
-      if (err instanceof NotFoundError || err instanceof DomainError) {
-        throw err;
-      }
-      // updateTransaction throws on split sum mismatch (D-11)
-      const message = err instanceof Error ? err.message : 'Invalid request';
-      return c.json({ error: { code: 'BAD_REQUEST', message } }, 400);
-    }
-
-    if (!updated) {
-      return c.json(
-        { error: { code: 'NOT_FOUND', message: 'Transaction not found.' } },
-        404
-      );
-    }
+    const updated = await updateTransaction(orgId, id, data);
     return c.json({ data: updated });
   }
 );
@@ -214,12 +186,6 @@ transactionsRouter.delete('/:id', async (c) => {
   const orgId = c.get('orgId');
   const id = c.req.param('id');
   const result = await deleteTransaction(orgId, id);
-  if (!result) {
-    return c.json(
-      { error: { code: 'NOT_FOUND', message: 'Transaction not found.' } },
-      404
-    );
-  }
   return c.json({ data: result });
 });
 

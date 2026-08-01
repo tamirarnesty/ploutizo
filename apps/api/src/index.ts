@@ -2,6 +2,7 @@ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { clerkMiddleware } from '@clerk/hono';
+import { closeDb } from '@ploutizo/db';
 import { tenantGuard } from './middleware/tenantGuard';
 import { authorizedPartyGuard } from './middleware/authorizedPartyGuard';
 import { resolveAllowedOrigin } from './lib/allowedOrigins';
@@ -15,22 +16,41 @@ import { merchantRulesRouter } from './routes/merchant-rules';
 import { transactionsRouter } from './routes/transactions';
 import { settlementsRouter } from './routes/settlements';
 import { importsRouter } from './routes/imports';
-import { DomainError, NotFoundError } from './lib/errors';
+import { registerApiErrorHandlers } from './lib/apiErrorResponse';
+import {
+  TELEMETRY_EXPOSE_HEADERS,
+  initApiOtel,
+  requestTelemetry,
+  shutdownApiOtel,
+} from './telemetry';
+import { createApiShutdown } from './serverLifecycle';
+import type { Server } from 'node:http';
 import type { AppEnv } from './types';
-import type { ContentfulStatusCode } from 'hono/utils/http-status';
+
+/** Below serverShutdownTimeoutMs so idle keep-alive sockets expire during drain. */
+const KEEP_ALIVE_TIMEOUT_MS = 2_000;
+/** Node requires headersTimeout > keepAliveTimeout. */
+const HEADERS_TIMEOUT_MS = 10_000;
+
+// Boot OTel exporters before request handling (non-blocking; failures degrade).
+initApiOtel();
 
 const app = new Hono<AppEnv>();
 
 // Invariant middleware order (docs/stack-and-conventions.md):
-// CORS → Clerk → authorized party guard → tenant guard
+// CORS → request telemetry → Clerk → authorized party guard → tenant guard
 // 1. CORS — handles preflight before Clerk so OPTIONS requests are not rejected
 app.use(
   '*',
   cors({
     origin: (origin) => resolveAllowedOrigin(origin),
     credentials: true,
+    exposeHeaders: [...TELEMETRY_EXPOSE_HEADERS],
   })
 );
+
+// 1b. Request telemetry — after CORS, before Clerk (PLO-64)
+app.use('*', requestTelemetry());
 
 // 2. Clerk JWT verification — clockSkewInMs handles Railway container clock drift (D-04)
 // azp validation uses authorizedPartyGuard + isAllowedParty so Railway PR preview
@@ -63,30 +83,22 @@ app.route('/api/transactions', transactionsRouter);
 app.route('/api/settlements', settlementsRouter);
 app.route('/api/imports', importsRouter);
 
-// Unmatched routes — returns JSON shape consistent with onError handler
-app.notFound((c) =>
-  c.json({ error: { code: 'NOT_FOUND', message: 'Not found' } }, 404)
-);
-
 // Centralized error handler (D-04) — registered AFTER routes, BEFORE serve()
-// NotFoundError → 404 NOT_FOUND
-// DomainError → statusCode DOMAIN_ERROR
-// Generic Error → 500 INTERNAL_ERROR
-app.onError((err, c) => {
-  if (err instanceof NotFoundError) {
-    return c.json({ error: { code: 'NOT_FOUND', message: err.message } }, 404);
-  }
-  if (err instanceof DomainError) {
-    return c.json(
-      { error: { code: err.code ?? 'DOMAIN_ERROR', message: err.message } },
-      err.statusCode as ContentfulStatusCode
-    );
-  }
-  console.error('[API] Unhandled error:', err);
-  return c.json(
-    { error: { code: 'INTERNAL_ERROR', message: 'Unexpected error' } },
-    500
-  );
+registerApiErrorHandlers(app);
+
+const server = serve({
+  fetch: app.fetch,
+  port: Number(process.env.PORT ?? 8080),
+});
+(server as Server).keepAliveTimeout = KEEP_ALIVE_TIMEOUT_MS;
+(server as Server).headersTimeout = HEADERS_TIMEOUT_MS;
+
+const shutdown = createApiShutdown({
+  server,
+  shutdownResources: closeDb,
+  shutdownTelemetry: shutdownApiOtel,
+  exit: (code) => process.exit(code),
 });
 
-serve({ fetch: app.fetch, port: Number(process.env.PORT ?? 8080) });
+process.once('SIGTERM', () => void shutdown());
+process.once('SIGINT', () => void shutdown());

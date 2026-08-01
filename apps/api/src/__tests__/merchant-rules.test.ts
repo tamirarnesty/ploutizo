@@ -1,8 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Hono } from 'hono';
+import { db } from '@ploutizo/db';
 import { merchantRulesRouter } from '../routes/merchant-rules';
-import { DomainError, NotFoundError } from '../lib/errors';
-import type { ContentfulStatusCode } from 'hono/utils/http-status';
+import { createRouteTestApp } from './testUtils';
 
 vi.mock('@clerk/hono', () => ({
   getAuth: vi.fn(() => ({ orgId: 'org_test123' })),
@@ -40,9 +39,11 @@ vi.mock('@ploutizo/db', () => ({
           .mockReturnValue({ returning: vi.fn().mockResolvedValue([{}]) }),
       }),
     }),
-    delete: vi
-      .fn()
-      .mockReturnValue({ where: vi.fn().mockResolvedValue(undefined) }),
+    delete: vi.fn().mockReturnValue({
+      where: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: 'rule_1' }]),
+      }),
+    }),
     transaction: vi.fn((fn) =>
       fn({
         update: vi.fn().mockReturnValue({
@@ -56,26 +57,8 @@ vi.mock('@ploutizo/db', () => ({
 }));
 vi.mock('@ploutizo/db/schema', () => ({ merchantRules: {} }));
 
-const app = new Hono();
-app.route('/', merchantRulesRouter);
-// onError mirrors production handler — thin routes no longer catch DomainError inline
-app.onError((err, c) => {
-  if (err instanceof NotFoundError) {
-    return c.json(
-      { error: { code: err.code ?? 'NOT_FOUND', message: err.message } },
-      404
-    );
-  }
-  if (err instanceof DomainError) {
-    return c.json(
-      { error: { code: err.code ?? 'DOMAIN_ERROR', message: err.message } },
-      err.statusCode as ContentfulStatusCode
-    );
-  }
-  return c.json(
-    { error: { code: 'INTERNAL_ERROR', message: 'Unexpected error' } },
-    500
-  );
+const app = createRouteTestApp((testApp) => {
+  testApp.route('/', merchantRulesRouter);
 });
 
 describe('POST /api/merchant-rules', () => {
@@ -128,5 +111,25 @@ describe('PATCH /api/merchant-rules/reorder', () => {
       }),
     });
     expect(res.status).toBe(200);
+  });
+});
+
+describe('DELETE /api/merchant-rules/:id', () => {
+  it('returns 204 when rule exists', async () => {
+    const res = await app.request('/rule_1', { method: 'DELETE' });
+    expect(res.status).toBe(204);
+  });
+
+  it('returns 404 when rule is missing', async () => {
+    vi.mocked(db.delete).mockReturnValueOnce({
+      where: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([]),
+      }),
+    } as never);
+
+    const res = await app.request('/rule_missing', { method: 'DELETE' });
+    expect(res.status).toBe(404);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe('NOT_FOUND');
   });
 });

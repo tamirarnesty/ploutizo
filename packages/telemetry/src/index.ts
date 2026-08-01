@@ -30,6 +30,14 @@ export {
 } from './ids';
 
 export {
+  classifyApiOutcome,
+  type ApiOutcomeClassification,
+  type ApiOutcomeClassificationResult,
+  type ApiOutcomeKind,
+  type ClassifyApiOutcomeInput,
+} from './classify';
+
+export {
   prepareTelemetryRecord,
   trimMessage,
   type TelemetryAttributeValue,

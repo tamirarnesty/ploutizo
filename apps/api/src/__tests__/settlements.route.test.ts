@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { Hono } from 'hono';
 import { settlementsRouter } from '../routes/settlements';
 import {
   createSettlement,
   getSettlementBalances,
 } from '../services/settlements';
+import { createRouteTestApp } from './testUtils';
 import type { AppEnv } from '../types';
 
 vi.mock('@clerk/hono', () => ({
@@ -19,13 +19,13 @@ vi.mock('../services/settlements', () => ({
   createSettlement: vi.fn(),
 }));
 
-const app = new Hono<AppEnv>();
-// Mount with orgId pre-set via inline middleware to mimic tenantGuard behavior in tests
-app.use('/*', async (c, next) => {
-  c.set('orgId', 'org_test123');
-  await next();
+const app = createRouteTestApp<AppEnv>((testApp) => {
+  testApp.use('/*', async (c, next) => {
+    c.set('orgId', 'org_test123');
+    await next();
+  });
+  testApp.route('/', settlementsRouter);
 });
-app.route('/', settlementsRouter);
 
 describe('GET /api/settlements route', () => {
   beforeEach(() => {

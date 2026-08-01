@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Hono } from 'hono';
+import { NotFoundError } from '../lib/errors';
 import { transactionsRouter } from '../routes/transactions';
 import {
   deleteTransaction,
@@ -9,6 +9,7 @@ import {
   updateTransaction,
   validateSplitSum,
 } from '../services/transactions';
+import { createRouteTestApp } from './testUtils';
 import type { ListQueryParams } from '../services/transactions';
 import type { MockDbTransactionClient } from './testUtils';
 
@@ -201,8 +202,9 @@ vi.mock('../services/transactions', () => ({
   restoreTransaction: vi.fn().mockResolvedValue({ id: 'txn_1' }),
 }));
 
-const app = new Hono();
-app.route('/', transactionsRouter);
+const app = createRouteTestApp((testApp) => {
+  testApp.route('/', transactionsRouter);
+});
 
 // Valid UUIDs for test payloads — Zod v4 requires proper version bits ([1-8] in position 15, [89abAB] in position 20)
 const VALID_ACCOUNT_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
@@ -398,7 +400,9 @@ describe('GET /api/transactions/:id', () => {
   });
 
   it('TXN-GET-03: GET /:id on soft-deleted transaction → 404', async () => {
-    vi.mocked(getTransaction).mockResolvedValueOnce(null);
+    vi.mocked(getTransaction).mockRejectedValueOnce(
+      new NotFoundError('Transaction not found.')
+    );
     const res = await app.request('/txn_missing');
     expect(res.status).toBe(404);
     const body = (await res.json()) as any;
@@ -438,7 +442,9 @@ describe('PATCH /api/transactions/:id', () => {
   });
 
   it('TXN-PATCH-02: wrong orgId → 404', async () => {
-    vi.mocked(updateTransaction).mockResolvedValueOnce(null);
+    vi.mocked(updateTransaction).mockRejectedValueOnce(
+      new NotFoundError('Transaction not found.')
+    );
     const res = await app.request('/txn_missing', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -522,7 +528,9 @@ describe('DELETE /api/transactions/:id', () => {
   });
 
   it('TXN-DELETE-02: already-deleted → 404', async () => {
-    vi.mocked(deleteTransaction).mockResolvedValueOnce(null);
+    vi.mocked(deleteTransaction).mockRejectedValueOnce(
+      new NotFoundError('Transaction not found.')
+    );
     const res = await app.request('/txn_1', { method: 'DELETE' });
     expect(res.status).toBe(404);
     const body = (await res.json()) as { error: { code: string } };
@@ -539,7 +547,9 @@ describe('PATCH /:id/restore', () => {
   });
 
   it('TXN-RESTORE-02: PATCH /:id/restore — 404 when not found (wrong org or already active)', async () => {
-    vi.mocked(restoreTransaction).mockResolvedValueOnce(null);
+    vi.mocked(restoreTransaction).mockRejectedValueOnce(
+      new NotFoundError('Transaction not found.')
+    );
     const res = await app.request('/txn_1/restore', { method: 'PATCH' });
     expect(res.status).toBe(404);
     const body = (await res.json()) as { error: { code: string } };

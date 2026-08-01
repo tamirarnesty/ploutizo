@@ -1,5 +1,6 @@
 import { createMiddleware } from 'hono/factory';
 import { getAuth } from '@clerk/hono';
+import { respondWithApiError } from '../lib/apiErrorResponse';
 import { isAllowedParty } from '../lib/allowedOrigins';
 import type { AppEnv } from '../types';
 
@@ -16,15 +17,11 @@ export const authorizedPartyGuard = () =>
 
     const azp = auth.sessionClaims.azp;
     if (typeof azp === 'string' && !isAllowedParty(azp)) {
-      return c.json(
-        {
-          error: {
-            code: 'UNAUTHORIZED',
-            message: 'Invalid authorized party.',
-          },
-        },
-        401
-      );
+      return respondWithApiError(c, {
+        code: 'UNAUTHORIZED',
+        message: 'Invalid authorized party.',
+        status: 401,
+      });
     }
 
     await next();

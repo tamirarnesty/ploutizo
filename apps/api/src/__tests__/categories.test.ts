@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Hono } from 'hono';
 import { categoriesRouter } from '../routes/categories';
+import { createRouteTestApp } from './testUtils';
 
 vi.mock('@clerk/hono', () => ({
   getAuth: vi.fn(() => ({ orgId: 'org_test123' })),
@@ -61,8 +61,9 @@ vi.mock('@ploutizo/db', () => ({
 }));
 vi.mock('@ploutizo/db/schema', () => ({ categories: {} }));
 
-const app = new Hono();
-app.route('/', categoriesRouter);
+const app = createRouteTestApp((testApp) => {
+  testApp.route('/', categoriesRouter);
+});
 
 describe('GET /api/categories', () => {
   it('returns 200 with data array', async () => {

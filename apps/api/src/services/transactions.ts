@@ -183,6 +183,14 @@ const mapExternalIdConflict = (error: unknown): never => {
   throw error;
 };
 
+const runTransactionWrite = async <T>(write: () => Promise<T>): Promise<T> => {
+  try {
+    return await write();
+  } catch (error) {
+    return mapExternalIdConflict(error);
+  }
+};
+
 export const createTransaction = async (
   orgId: string,
   data: z.infer<typeof createTransactionSchema>
@@ -190,7 +198,7 @@ export const createTransaction = async (
   const { assignees, tagIds, ...transactionData } = data;
 
   const splitError = validateSplitSum(transactionData.amount, assignees);
-  if (splitError) throw new Error(splitError);
+  if (splitError) throw new DomainError(400, splitError, 'BAD_REQUEST');
 
   const normalizedAssignees = normalizeTransactionAssignees(
     transactionData.amount,
@@ -221,16 +229,13 @@ export const createTransaction = async (
     );
     assertTransactionAccountPolicy(transactionData.type, writeReferences);
 
-    let inserted: typeof transactions.$inferSelect;
-    try {
+    const inserted = await runTransactionWrite(async () => {
       const [row] = await tx
         .insert(transactions)
         .values({ orgId, ...transactionData })
         .returning();
-      inserted = row;
-    } catch (error) {
-      return mapExternalIdConflict(error);
-    }
+      return row;
+    });
 
     await tx.insert(transactionAssignees).values(
       normalizedAssignees.map((a) => ({
@@ -270,7 +275,7 @@ export const listTransactions = async (params: ListQueryParams) => {
 
 export const getTransaction = async (orgId: string, id: string) => {
   const row = await fetchTransactionById(orgId, id);
-  if (!row) return null;
+  if (!row) throw new NotFoundError('Transaction not found.');
   const { assigneeMap, tagMap } = await enrichTransactions(orgId, [row]);
   return {
     ...row,
@@ -302,90 +307,89 @@ export const updateTransaction = async (
   }
   Object.assign(updateData, typeSpecificNulls);
 
-  try {
-    return await db.transaction(async (tx) => {
-      const row = await fetchTransactionById(orgId, id, tx);
-      if (!row) return null;
+  return db.transaction(async (tx) => {
+    const row = await fetchTransactionById(orgId, id, tx);
+    if (!row) throw new NotFoundError('Transaction not found.');
 
-      const writeReferences = await loadTransactionWriteReferences(
-        orgId,
-        {
-          accountId: data.accountId,
-          counterpartAccountId:
-            'counterpartAccountId' in data
-              ? data.counterpartAccountId
-              : undefined,
-          refundOf: 'refundOf' in data ? data.refundOf : undefined,
-          categoryId: 'categoryId' in data ? data.categoryId : undefined,
-          tagIds,
-          assignees,
-        },
-        tx
-      );
-      assertTransactionAccountPolicy(data.type, writeReferences);
+    const writeReferences = await loadTransactionWriteReferences(
+      orgId,
+      {
+        accountId: data.accountId,
+        counterpartAccountId:
+          'counterpartAccountId' in data
+            ? data.counterpartAccountId
+            : undefined,
+        refundOf: 'refundOf' in data ? data.refundOf : undefined,
+        categoryId: 'categoryId' in data ? data.categoryId : undefined,
+        tagIds,
+        assignees,
+      },
+      tx
+    );
+    assertTransactionAccountPolicy(data.type, writeReferences);
 
-      const needsPersistedAssignees = data.assignees === undefined;
+    const needsPersistedAssignees = data.assignees === undefined;
 
-      let existingAssignees: readonly { amountCents: number }[] = [];
-      if (needsPersistedAssignees) {
-        const { assigneeMap } = await enrichTransactions(orgId, [row], tx);
-        existingAssignees = (assigneeMap[row.id] ?? []) as readonly {
-          amountCents: number;
-        }[];
-      }
+    let existingAssignees: readonly { amountCents: number }[] = [];
+    if (needsPersistedAssignees) {
+      const { assigneeMap } = await enrichTransactions(orgId, [row], tx);
+      existingAssignees = (assigneeMap[row.id] ?? []) as readonly {
+        amountCents: number;
+      }[];
+    }
 
-      const rowsForSplitCheck = assigneeRowsForPatchSplitSum(
-        data.assignees,
-        existingAssignees
-      );
-      if (rowsForSplitCheck) {
-        const splitError = validateSplitSum(data.amount, rowsForSplitCheck);
-        if (splitError) throw new Error(splitError);
-      }
+    const rowsForSplitCheck = assigneeRowsForPatchSplitSum(
+      data.assignees,
+      existingAssignees
+    );
+    if (rowsForSplitCheck) {
+      const splitError = validateSplitSum(data.amount, rowsForSplitCheck);
+      if (splitError) throw new DomainError(400, splitError, 'BAD_REQUEST');
+    }
 
-      const updated = await updateTransactionScalarsQuery(
+    const updated = await runTransactionWrite(() =>
+      updateTransactionScalarsQuery(
         tx,
         orgId,
         id,
         updateData as Record<string, unknown>
+      )
+    );
+
+    if (!updated) throw new NotFoundError('Transaction not found.');
+
+    if (assignees !== undefined) {
+      const normalizedAssignees = normalizeTransactionAssignees(
+        data.amount,
+        assignees
       );
-
-      if (!updated) return null;
-
-      if (assignees !== undefined) {
-        const normalizedAssignees = normalizeTransactionAssignees(
-          data.amount,
-          assignees
-        );
-        await replaceAssignees(tx, id, normalizedAssignees);
-      }
-
-      if (tagIds !== undefined) {
-        await replaceTags(tx, id, tagIds);
-      }
-
-      return updated;
-    });
-  } catch (error) {
-    if (error instanceof DomainError || error instanceof NotFoundError) {
-      throw error;
+      await replaceAssignees(tx, id, normalizedAssignees);
     }
-    return mapExternalIdConflict(error);
-  }
+
+    if (tagIds !== undefined) {
+      await replaceTags(tx, id, tagIds);
+    }
+
+    return updated;
+  });
 };
 
 export const deleteTransaction = async (
   orgId: string,
   id: string
-): Promise<{ id: string } | null> => softDeleteTransactionQuery(orgId, id);
+): Promise<{ id: string }> => {
+  const result = await softDeleteTransactionQuery(orgId, id);
+  if (!result) throw new NotFoundError('Transaction not found.');
+  return result;
+};
 
 export const restoreTransaction = async (
   orgId: string,
   id: string
-): Promise<{ id: string } | null> => {
-  try {
-    return await restoreTransactionQuery(orgId, id);
-  } catch (error) {
-    return mapExternalIdConflict(error);
-  }
+): Promise<{ id: string }> => {
+  const result = await runTransactionWrite(() =>
+    restoreTransactionQuery(orgId, id)
+  );
+  if (!result) throw new NotFoundError('Transaction not found.');
+  return result;
 };

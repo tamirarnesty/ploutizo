@@ -244,6 +244,7 @@ describe('createSettlement service', () => {
     );
     expect(err).toBeInstanceOf(DomainError);
     expect((err as DomainError).statusCode).toBe(400);
+    expect((err as DomainError).code).toBe('SETTLEMENT_INVALID_ACCOUNT_TYPE');
     expect((err as DomainError).message).toBe(
       'Settlement can only be recorded against a credit card account'
     );
@@ -268,6 +269,7 @@ describe('createSettlement service', () => {
       (e: unknown) => e
     );
     expect(err).toBeInstanceOf(DomainError);
+    expect((err as DomainError).code).toBe('SETTLEMENT_ARCHIVED_ACCOUNT');
     expect((err as DomainError).message).toBe(
       'Cannot settle an archived account'
     );
@@ -348,6 +350,7 @@ describe('createSettlement service', () => {
 
     expect(err).toBeInstanceOf(DomainError);
     expect((err as DomainError).statusCode).toBe(400);
+    expect((err as DomainError).code).toBe('SETTLEMENT_ASSIGNEE_MISMATCH');
   });
 
   it('POST-SETTLE-10: counterpart account not in org => throws NotFoundError', async () => {
@@ -375,6 +378,7 @@ describe('createSettlement service', () => {
 
     expect(err).toBeInstanceOf(DomainError);
     expect((err as DomainError).statusCode).toBe(400);
+    expect((err as DomainError).code).toBe('SETTLEMENT_SAME_ACCOUNT');
     expect((err as DomainError).message).toBe(
       'Paid-from account must differ from the card being settled'
     );

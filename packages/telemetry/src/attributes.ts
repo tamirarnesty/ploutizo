@@ -20,8 +20,17 @@ export interface ApiRequestCompleteAttributes extends HttpOutcomeAttributes {
   classification?: 'expected' | 'unexpected';
   code?: string;
   kind?: 'http' | 'network' | 'malformed' | 'unknown';
+  /** Deployment environment resource label (`local` | `preview` | `production`). */
+  environment?: string;
+  /** Service name resource label (e.g. `ploutizo-api`). */
+  service?: string;
+  /** Release/version resource label when known. */
+  release?: string;
+  /** Active OTel trace id when a root span is present. */
+  traceId?: string;
+  /** Active OTel span id when a root span is present. */
+  spanId?: string;
 }
-
 export type BrowserApiRequestAttributes = HttpOutcomeAttributes;
 
 export interface RoutePreloadAttributes {
