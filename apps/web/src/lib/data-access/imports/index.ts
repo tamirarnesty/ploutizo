@@ -8,6 +8,10 @@ export {
   getImportDraftRowPacedMutations,
   IMPORT_ROW_PACE_WAIT_MS,
 } from './getImportDraftRowPacedMutations';
+export {
+  evaluateImportDraftWorkingCopy,
+  rederiveImportDraftWorkingCopy,
+} from './rederiveImportDraftWorkingCopy';
 export { fetchUpdateImportDraftRow } from './fetchUpdateImportDraftRow';
 export { fetchUpdateImportDraftRowSelection } from './fetchUpdateImportDraftRowSelection';
 export type { ImportReviewAutosaveStatus } from './importReviewAutosave';

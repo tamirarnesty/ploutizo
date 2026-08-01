@@ -25,28 +25,20 @@ const confirmSelectionIntoCollection = (
   selectedForImport: boolean
 ) => {
   const collection = getImportDraftRowsCollection(draftId);
+  const serverById = serverRows
+    ? new Map(serverRows.map((row) => [row.id, row]))
+    : null;
 
-  if (!serverRows) {
-    for (const rowId of rowIds) {
-      const live = collection.get(rowId);
-      if (live) collection.utils.writeUpdate(live);
-    }
-    rederiveImportDraftWorkingCopy(draftId);
-    return;
-  }
-
-  const serverById = new Map(serverRows.map((row) => [row.id, row]));
   for (const rowId of rowIds) {
     const live = collection.get(rowId);
-    const serverRow = serverById.get(rowId);
-    if (!live) {
-      continue;
-    }
+    if (!live) continue;
+
+    const serverRow = serverById?.get(rowId);
     if (!serverRow) {
       collection.utils.writeUpdate(live);
       continue;
     }
-    // Prefer a newer local selection toggle over this response.
+
     const nextSelected =
       live.selectedForImport !== selectedForImport
         ? live.selectedForImport

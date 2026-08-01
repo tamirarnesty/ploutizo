@@ -1,5 +1,9 @@
 import { createPacedMutations, debounceStrategy } from '@tanstack/db';
-import type { ImportDraftPersistedRow, ImportDraftRow } from '@ploutizo/types';
+import type {
+  ImportDraftPersistedRow,
+  ImportDraftRow,
+  UpdateImportDraftRowResult,
+} from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import {
   getImportReviewAutosaveSnapshot,
@@ -64,44 +68,8 @@ const valuesEqual = (left: unknown, right: unknown): boolean => {
 const patchKeys = (patch: UpdateImportDraftRowInput) =>
   Object.keys(patch) as (keyof UpdateImportDraftRowInput)[];
 
-const mergePersistedPatchFields = (
-  target: ImportDraftRow,
-  persisted: ImportDraftPersistedRow,
-  patch: UpdateImportDraftRowInput
-) => {
-  for (const key of patchKeys(patch)) {
-    Object.assign(target, {
-      [key]: persisted[key as keyof ImportDraftPersistedRow],
-    });
-  }
-};
-
-const patchTouchedRefundOf = (patch: UpdateImportDraftRowInput) =>
-  Object.prototype.hasOwnProperty.call(patch, 'reviewRefundOf');
-
-const syncRefundTargetFacts = (
-  draftId: string,
-  patch: UpdateImportDraftRowInput,
-  original: ImportDraftRow,
-  refundTargetFacts?: Awaited<
-    ReturnType<typeof fetchUpdateImportDraftRow>
-  >['refundTargetFacts']
-) => {
-  const collection = getImportDraftRowsCollection(draftId);
-  applyImportDraftRefundTargetFactDelta(draftId, {
-    merge: refundTargetFacts,
-    previousRefundOf: patchTouchedRefundOf(patch)
-      ? original.reviewRefundOf
-      : undefined,
-    nextRefundOf: patchTouchedRefundOf(patch)
-      ? patch.reviewRefundOf
-      : undefined,
-    rows: collection.toArray,
-  });
-};
-
-/** True when live holds a value beyond this mutation's original and attempted snapshots. */
-const liveHasNewerThanAttempt = (
+/** Live diverged from this mutation on a patched field after the attempt snapshot. */
+const liveHasNewerFields = (
   live: ImportDraftRow,
   attempted: ImportDraftRow,
   original: ImportDraftRow,
@@ -113,13 +81,44 @@ const liveHasNewerThanAttempt = (
       !valuesEqual(live[key], original[key])
   );
 
+const liveNewerForPatchKey = (
+  live: ImportDraftRow | undefined,
+  attempted: ImportDraftRow,
+  original: ImportDraftRow,
+  key: keyof UpdateImportDraftRowInput,
+  preferLive: boolean
+) =>
+  preferLive &&
+  live !== undefined &&
+  !valuesEqual(live[key], attempted[key]) &&
+  !valuesEqual(live[key], original[key]);
+
+const syncRefundTargetFacts = (
+  draftId: string,
+  patch: UpdateImportDraftRowInput,
+  original: ImportDraftRow,
+  refundTargetFacts?: UpdateImportDraftRowResult['refundTargetFacts']
+) => {
+  const touchedRefundOf = Object.prototype.hasOwnProperty.call(
+    patch,
+    'reviewRefundOf'
+  );
+  const collection = getImportDraftRowsCollection(draftId);
+  applyImportDraftRefundTargetFactDelta(draftId, {
+    merge: refundTargetFacts,
+    previousRefundOf: touchedRefundOf ? original.reviewRefundOf : undefined,
+    nextRefundOf: touchedRefundOf ? patch.reviewRefundOf : undefined,
+    rows: collection.toArray,
+  });
+};
+
 /**
  * Confirm persisted state into the synced store without clobbering a newer live edit.
  * Always writeUpdate before mutationFn returns so dropping optimistic state does not regress.
  */
 const confirmPersistIntoCollection = (
   collection: ReturnType<typeof getImportDraftRowsCollection>,
-  server: Awaited<ReturnType<typeof fetchUpdateImportDraftRow>> | null,
+  server: UpdateImportDraftRowResult | null,
   attempted: ImportDraftRow,
   original: ImportDraftRow,
   patch: UpdateImportDraftRowInput,
@@ -128,58 +127,37 @@ const confirmPersistIntoCollection = (
   const serverRow = server?.row ?? null;
   const live = collection.get(attempted.id);
 
-  if (!live) {
-    if (serverRow) {
-      const merged = { ...attempted };
-      mergePersistedPatchFields(merged, serverRow, patch);
-      if (serverRow.updatedAt >= merged.updatedAt) {
-        merged.updatedAt = serverRow.updatedAt;
-      }
-      collection.utils.writeUpdate(merged);
-      syncRefundTargetFacts(
-        draftId,
-        patch,
-        original,
-        server?.refundTargetFacts
-      );
-      rederiveImportDraftWorkingCopy(draftId);
-      return;
-    }
-    collection.utils.writeUpdate(attempted);
-    rederiveImportDraftWorkingCopy(draftId);
-    return;
-  }
-
-  if (!serverRow) {
-    // Failure: keep whatever is currently live (may already include a newer edit).
+  if (live && !serverRow) {
     collection.utils.writeUpdate(live);
     rederiveImportDraftWorkingCopy(draftId);
     return;
   }
 
-  const preferLive = liveHasNewerThanAttempt(live, attempted, original, patch);
+  const preferLive =
+    live !== undefined && liveHasNewerFields(live, attempted, original, patch);
   const next: ImportDraftRow = { ...(preferLive ? live : attempted) };
 
-  for (const key of patchKeys(patch)) {
-    if (
-      preferLive &&
-      !valuesEqual(live[key], attempted[key]) &&
-      !valuesEqual(live[key], original[key])
-    ) {
-      Object.assign(next, { [key]: live[key] });
-    } else {
+  if (serverRow) {
+    for (const key of patchKeys(patch)) {
       Object.assign(next, {
-        [key]: serverRow[key as keyof ImportDraftPersistedRow],
+        [key]: liveNewerForPatchKey(live, attempted, original, key, preferLive)
+          ? live![key]
+          : serverRow[key as keyof ImportDraftPersistedRow],
       });
+    }
+
+    if (!preferLive) {
+      const timestampSource = live ?? next;
+      if (serverRow.updatedAt >= timestampSource.updatedAt) {
+        next.updatedAt = serverRow.updatedAt;
+      }
     }
   }
 
-  if (!preferLive && serverRow.updatedAt >= live.updatedAt) {
-    next.updatedAt = serverRow.updatedAt;
-  }
-
   collection.utils.writeUpdate(next);
-  syncRefundTargetFacts(draftId, patch, original, server?.refundTargetFacts);
+  if (server) {
+    syncRefundTargetFacts(draftId, patch, original, server.refundTargetFacts);
+  }
   rederiveImportDraftWorkingCopy(draftId);
 };
 

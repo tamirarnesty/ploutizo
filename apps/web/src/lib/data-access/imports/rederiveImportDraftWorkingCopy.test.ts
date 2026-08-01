@@ -28,6 +28,78 @@ describe('rederiveImportDraftWorkingCopy', () => {
     queryClient.clear();
   });
 
+  it('marks same-import refund rows ready without external facts', async () => {
+    const draft = makeImportDraft({
+      id: 'draft_same_import_refund',
+      rows: [
+        makeImportDraftRow({
+          id: 'row_expense',
+          reviewType: 'expense',
+          parsedType: 'expense',
+          reviewAmount: 5000,
+          parsedAmount: 5000,
+          selectedForImport: true,
+        }),
+        makeImportDraftRow({
+          id: 'row_refund',
+          rowNumber: 3,
+          reviewType: 'refund',
+          parsedType: 'refund',
+          reviewAmount: 2000,
+          parsedAmount: 2000,
+          reviewCategoryId: 'cat_1',
+          reviewAssigneeMemberIds: ['member_1'],
+          reviewRefundOf: null,
+          status: 'needs_review',
+          selectedForImport: true,
+          // Same-import link — not on ImportDraftRow yet; evaluator reads it when present.
+          ...({ reviewRefundOfBatchRowId: 'row_expense' } as Partial<
+            ReturnType<typeof makeImportDraftRow>
+          >),
+        }),
+      ],
+    });
+
+    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
+    vi.mocked(fetchImportDraft).mockResolvedValue(draft);
+    const collection = getImportDraftRowsCollection(draft.id);
+    await collection.preload();
+
+    rederiveImportDraftWorkingCopy(draft.id);
+
+    expect(collection.get('row_refund')?.status).toBe('ready');
+  });
+
+  it('marks existing-expense refund rows needs_review when facts are missing', async () => {
+    const expenseId = 'expense_missing_facts';
+    const draft = makeImportDraft({
+      id: 'draft_missing_facts',
+      refundTargetFacts: {},
+      rows: [
+        makeImportDraftRow({
+          id: 'row_refund',
+          reviewType: 'refund',
+          parsedType: 'refund',
+          reviewAmount: 1000,
+          parsedAmount: 1000,
+          reviewRefundOf: expenseId,
+          reviewCategoryId: null,
+          status: 'ready',
+          selectedForImport: true,
+        }),
+      ],
+    });
+
+    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
+    vi.mocked(fetchImportDraft).mockResolvedValue(draft);
+    const collection = getImportDraftRowsCollection(draft.id);
+    await collection.preload();
+
+    rederiveImportDraftWorkingCopy(draft.id);
+
+    expect(collection.get('row_refund')?.status).toBe('needs_review');
+  });
+
   it('marks refund rows needs_review when target facts are wrong-account', async () => {
     const expenseId = 'expense_1';
     const draft = makeImportDraft({
