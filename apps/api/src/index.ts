@@ -2,6 +2,7 @@ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { clerkMiddleware } from '@clerk/hono';
+import { closeDb } from '@ploutizo/db';
 import { tenantGuard } from './middleware/tenantGuard';
 import { authorizedPartyGuard } from './middleware/authorizedPartyGuard';
 import { resolveAllowedOrigin } from './lib/allowedOrigins';
@@ -23,7 +24,13 @@ import {
   shutdownApiOtel,
 } from './telemetry';
 import { createApiShutdown } from './serverLifecycle';
+import type { Server } from 'node:http';
 import type { AppEnv } from './types';
+
+/** Below serverShutdownTimeoutMs so idle keep-alive sockets expire during drain. */
+const KEEP_ALIVE_TIMEOUT_MS = 2_000;
+/** Node requires headersTimeout > keepAliveTimeout. */
+const HEADERS_TIMEOUT_MS = 10_000;
 
 // Boot OTel exporters before request handling (non-blocking; failures degrade).
 initApiOtel();
@@ -83,8 +90,12 @@ const server = serve({
   fetch: app.fetch,
   port: Number(process.env.PORT ?? 8080),
 });
+(server as Server).keepAliveTimeout = KEEP_ALIVE_TIMEOUT_MS;
+(server as Server).headersTimeout = HEADERS_TIMEOUT_MS;
+
 const shutdown = createApiShutdown({
   server,
+  shutdownResources: closeDb,
   shutdownTelemetry: shutdownApiOtel,
   exit: (code) => process.exit(code),
 });

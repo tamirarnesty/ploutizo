@@ -12,3 +12,8 @@ neonConfig.webSocketConstructor = globalThis.WebSocket;
 const pool = new Pool({ connectionString: process.env.DATABASE_URL! });
 
 export const db = drizzle({ client: pool, schema });
+
+/** Graceful shutdown — call after HTTP drain so in-flight queries can finish. */
+export const closeDb = async (): Promise<void> => {
+  await pool.end();
+};

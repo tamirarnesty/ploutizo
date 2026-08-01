@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+const poolEnd = vi.fn(() => Promise.resolve());
+
 // Mock @neondatabase/serverless and drizzle-orm/neon-serverless before importing client
 vi.mock('@neondatabase/serverless', () => ({
-  Pool: vi.fn(function (this: any) {
+  Pool: vi.fn(function (this: { end: typeof poolEnd }) {
+    this.end = poolEnd;
     return this;
   }),
   neonConfig: {}, // plain writable object — must NOT be frozen (Pitfall 2)
@@ -32,5 +35,12 @@ describe('db client', () => {
         connectionString: 'postgresql://test:test@localhost/test',
       })
     );
+  });
+
+  it('closeDb ends the pool', async () => {
+    poolEnd.mockClear();
+    const { closeDb } = await import('../client');
+    await closeDb();
+    expect(poolEnd).toHaveBeenCalledOnce();
   });
 });
