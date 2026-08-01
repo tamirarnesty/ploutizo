@@ -67,8 +67,12 @@ const applyEvaluationsToCollection = (
 };
 
 /**
- * Re-run the shared draft evaluator and write derived status onto collection
- * rows. Single client derivation path for icons / Continue.
+ * Re-run the shared draft evaluator and write derived `status` /
+ * `invalidReason` onto collection rows.
+ *
+ * Sole client status writer for review icons and Continue
+ * (`canContinueImportReview` reads collection `status` only). Optimistic
+ * paced patches may set status inline, then call this for siblings.
  */
 export const rederiveImportDraftWorkingCopy = (
   draftId: string,

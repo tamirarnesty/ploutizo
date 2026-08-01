@@ -69,27 +69,12 @@ const patchKeys = (patch: UpdateImportDraftRowInput) =>
   Object.keys(patch) as (keyof UpdateImportDraftRowInput)[];
 
 /** Live diverged from this mutation on a patched field after the attempt snapshot. */
-const liveHasNewerFields = (
+const isLiveNewerField = (
   live: ImportDraftRow,
   attempted: ImportDraftRow,
   original: ImportDraftRow,
-  patch: UpdateImportDraftRowInput
+  key: keyof UpdateImportDraftRowInput
 ) =>
-  patchKeys(patch).some(
-    (key) =>
-      !valuesEqual(live[key], attempted[key]) &&
-      !valuesEqual(live[key], original[key])
-  );
-
-const liveNewerForPatchKey = (
-  live: ImportDraftRow | undefined,
-  attempted: ImportDraftRow,
-  original: ImportDraftRow,
-  key: keyof UpdateImportDraftRowInput,
-  preferLive: boolean
-) =>
-  preferLive &&
-  live !== undefined &&
   !valuesEqual(live[key], attempted[key]) &&
   !valuesEqual(live[key], original[key]);
 
@@ -113,7 +98,8 @@ const syncRefundTargetFacts = (
 };
 
 /**
- * Confirm persisted state into the synced store without clobbering a newer live edit.
+ * Confirm persisted durable fields into the synced store without clobbering a
+ * newer live edit. Always re-derive — never merge server status / invalidReason.
  * Always writeUpdate before mutationFn returns so dropping optimistic state does not regress.
  */
 const confirmPersistIntoCollection = (
@@ -127,37 +113,36 @@ const confirmPersistIntoCollection = (
   const serverRow = server?.row ?? null;
   const live = collection.get(attempted.id);
 
-  if (live && !serverRow) {
-    collection.utils.writeUpdate(live);
+  if (!serverRow) {
+    collection.utils.writeUpdate(live ?? attempted);
     rederiveImportDraftWorkingCopy(draftId);
     return;
   }
 
+  const keys = patchKeys(patch);
   const preferLive =
-    live !== undefined && liveHasNewerFields(live, attempted, original, patch);
+    live !== undefined &&
+    keys.some((key) => isLiveNewerField(live, attempted, original, key));
   const next: ImportDraftRow = { ...(preferLive ? live : attempted) };
 
-  if (serverRow) {
-    for (const key of patchKeys(patch)) {
-      Object.assign(next, {
-        [key]: liveNewerForPatchKey(live, attempted, original, key, preferLive)
-          ? live![key]
+  for (const key of keys) {
+    Object.assign(next, {
+      [key]:
+        live !== undefined && isLiveNewerField(live, attempted, original, key)
+          ? live[key]
           : serverRow[key as keyof ImportDraftPersistedRow],
-      });
-    }
+    });
+  }
 
-    if (!preferLive) {
-      const timestampSource = live ?? next;
-      if (serverRow.updatedAt >= timestampSource.updatedAt) {
-        next.updatedAt = serverRow.updatedAt;
-      }
+  if (!preferLive) {
+    const timestampSource = live ?? next;
+    if (serverRow.updatedAt >= timestampSource.updatedAt) {
+      next.updatedAt = serverRow.updatedAt;
     }
   }
 
   collection.utils.writeUpdate(next);
-  if (server) {
-    syncRefundTargetFacts(draftId, patch, original, server.refundTargetFacts);
-  }
+  syncRefundTargetFacts(draftId, patch, original, server?.refundTargetFacts);
   rederiveImportDraftWorkingCopy(draftId);
 };
 

@@ -80,12 +80,18 @@ const formatNeedsReviewTooltip = (
   return `Needs review: ${parts.join('; ')}`;
 };
 
-export const getImportRowStatusTooltip = (row: ImportDraftRow): string => {
+export const getImportRowStatusTooltip = (
+  row: ImportDraftRow,
+  /** Prefer draft-evaluator blockers so refund_link issues surface in tooltips. */
+  blockers?: ImportRowReviewBlocker[]
+): string => {
   switch (row.status) {
     case 'ready':
       return 'Ready to import';
     case 'needs_review':
-      return formatNeedsReviewTooltip(getImportRowReviewBlockers(row));
+      return formatNeedsReviewTooltip(
+        blockers ?? getImportRowReviewBlockers(row)
+      );
     case 'invalid':
       return row.invalidReason ?? 'Invalid row';
     case 'skipped':

@@ -100,6 +100,8 @@ export const toImportDraftRow = (
   evaluation: ImportDraftRowEvaluation
 ): ImportDraftRow => ({
   ...toImportDraftPersistedRow(row),
+  // Same-import batch-row links are working-copy only until the DB column lands.
+  reviewRefundOfBatchRowId: null,
   status: evaluation.status,
   invalidReason: evaluation.invalidReason,
 });

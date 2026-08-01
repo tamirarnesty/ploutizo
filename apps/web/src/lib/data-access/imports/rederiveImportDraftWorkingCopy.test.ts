@@ -9,7 +9,10 @@ import {
   resetImportDraftRowsCollectionsForTests,
 } from './getImportDraftRowsCollection';
 import { importDraftQueryKey } from './queryKeys';
-import { rederiveImportDraftWorkingCopy } from './rederiveImportDraftWorkingCopy';
+import {
+  evaluateImportDraftWorkingCopy,
+  rederiveImportDraftWorkingCopy,
+} from './rederiveImportDraftWorkingCopy';
 import { fetchImportDraft } from './useGetImportDraft';
 
 vi.mock('./useGetImportDraft', () => ({
@@ -31,6 +34,7 @@ describe('rederiveImportDraftWorkingCopy', () => {
   it('marks same-import refund rows ready without external facts', async () => {
     const draft = makeImportDraft({
       id: 'draft_same_import_refund',
+      refundTargetFacts: {},
       rows: [
         makeImportDraftRow({
           id: 'row_expense',
@@ -50,12 +54,9 @@ describe('rederiveImportDraftWorkingCopy', () => {
           reviewCategoryId: 'cat_1',
           reviewAssigneeMemberIds: ['member_1'],
           reviewRefundOf: null,
+          reviewRefundOfBatchRowId: 'row_expense',
           status: 'needs_review',
           selectedForImport: true,
-          // Same-import link — not on ImportDraftRow yet; evaluator reads it when present.
-          ...({ reviewRefundOfBatchRowId: 'row_expense' } as Partial<
-            ReturnType<typeof makeImportDraftRow>
-          >),
         }),
       ],
     });
@@ -68,6 +69,47 @@ describe('rederiveImportDraftWorkingCopy', () => {
     rederiveImportDraftWorkingCopy(draft.id);
 
     expect(collection.get('row_refund')?.status).toBe('ready');
+    const evaluation = evaluateImportDraftWorkingCopy(draft.id)?.get(
+      'row_refund'
+    );
+    expect(evaluation?.blockers).toEqual([]);
+    expect(evaluation?.refundLink?.issues).toEqual([]);
+  });
+
+  it('marks same-import refund rows needs_review when the target is missing', async () => {
+    const draft = makeImportDraft({
+      id: 'draft_same_import_missing',
+      refundTargetFacts: {},
+      rows: [
+        makeImportDraftRow({
+          id: 'row_refund',
+          reviewType: 'refund',
+          parsedType: 'refund',
+          reviewAmount: 2000,
+          parsedAmount: 2000,
+          reviewCategoryId: 'cat_1',
+          reviewAssigneeMemberIds: ['member_1'],
+          reviewRefundOf: null,
+          reviewRefundOfBatchRowId: 'row_missing_expense',
+          status: 'ready',
+          selectedForImport: true,
+        }),
+      ],
+    });
+
+    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
+    vi.mocked(fetchImportDraft).mockResolvedValue(draft);
+    const collection = getImportDraftRowsCollection(draft.id);
+    await collection.preload();
+
+    rederiveImportDraftWorkingCopy(draft.id);
+
+    expect(collection.get('row_refund')?.status).toBe('needs_review');
+    const evaluation = evaluateImportDraftWorkingCopy(draft.id)?.get(
+      'row_refund'
+    );
+    expect(evaluation?.blockers).toContain('refund_link');
+    expect(evaluation?.refundLink?.issues).toContain('missing_target');
   });
 
   it('marks existing-expense refund rows needs_review when facts are missing', async () => {
@@ -83,7 +125,9 @@ describe('rederiveImportDraftWorkingCopy', () => {
           reviewAmount: 1000,
           parsedAmount: 1000,
           reviewRefundOf: expenseId,
-          reviewCategoryId: null,
+          reviewRefundOfBatchRowId: null,
+          reviewCategoryId: 'cat_1',
+          reviewAssigneeMemberIds: ['member_1'],
           status: 'ready',
           selectedForImport: true,
         }),
@@ -98,6 +142,11 @@ describe('rederiveImportDraftWorkingCopy', () => {
     rederiveImportDraftWorkingCopy(draft.id);
 
     expect(collection.get('row_refund')?.status).toBe('needs_review');
+    const evaluation = evaluateImportDraftWorkingCopy(draft.id)?.get(
+      'row_refund'
+    );
+    expect(evaluation?.blockers).toContain('refund_link');
+    expect(evaluation?.refundLink?.issues).toContain('missing_target');
   });
 
   it('marks refund rows needs_review when target facts are wrong-account', async () => {
@@ -136,5 +185,10 @@ describe('rederiveImportDraftWorkingCopy', () => {
     rederiveImportDraftWorkingCopy(draft.id);
 
     expect(collection.get('row_refund')?.status).toBe('needs_review');
+    const evaluation = evaluateImportDraftWorkingCopy(draft.id)?.get(
+      'row_refund'
+    );
+    expect(evaluation?.blockers).toContain('refund_link');
+    expect(evaluation?.refundLink?.issues).toContain('wrong_account');
   });
 });
