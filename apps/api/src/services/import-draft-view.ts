@@ -20,7 +20,7 @@ import type {
 } from '@/lib/queries/imports';
 import { listRefundTargetExpensesByIds } from '@/lib/queries/import-refund-targets';
 
-const collectRefundOfIds = (
+export const collectRefundOfIds = (
   rows: readonly Pick<ImportDraftRowRecord, 'reviewRefundOf'>[]
 ): string[] =>
   rows.flatMap((row) => (row.reviewRefundOf ? [row.reviewRefundOf] : []));

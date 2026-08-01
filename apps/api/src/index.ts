@@ -78,7 +78,13 @@ app.onError((err, c) => {
   }
   if (err instanceof DomainError) {
     return c.json(
-      { error: { code: err.code ?? 'DOMAIN_ERROR', message: err.message } },
+      {
+        error: {
+          code: err.code ?? 'DOMAIN_ERROR',
+          message: err.message,
+          ...(err.details !== undefined ? { details: err.details } : {}),
+        },
+      },
       err.statusCode as ContentfulStatusCode
     );
   }

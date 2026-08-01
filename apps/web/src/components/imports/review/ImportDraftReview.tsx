@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Inbox } from 'lucide-react';
 import {
   Empty,
@@ -7,12 +7,14 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@ploutizo/ui/components/empty';
-import type { ImportDraftRow } from '@ploutizo/types';
+import type { ImportDraftRow, ImportPreparedSet } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import type {
   ImportDraftMeta,
   ImportReviewAutosaveStatus,
 } from '@/lib/data-access/imports';
+import { useContinueImportDraft } from '@/lib/data-access/imports/useContinueImportDraft';
+import { getApiErrorMessage } from '@/lib/queryClient';
 import { useGetCategories } from '@/lib/data-access/categories';
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import { PendingInputFlushProvider } from '@/lib/money/pending-input-flush';
@@ -80,12 +82,45 @@ const ImportDraftReviewContent = ({
     hasUnsavedWork,
   });
   const { canContinue, continueBlocker, hasReviewableRows } = reviewState;
+  const draftId = meta?.id ?? '';
+  const continueMutation = useContinueImportDraft(draftId);
+  const [preparedSet, setPreparedSet] = useState<ImportPreparedSet | null>(
+    null
+  );
+  const [continueError, setContinueError] = useState<string | null>(null);
+
+  const continueDraftFingerprint = useMemo(
+    () =>
+      rows
+        .map(
+          (row) =>
+            `${row.id}:${row.updatedAt}:${row.selectedForImport}:${row.reviewCategoryId}:${row.reviewAmount}:${row.reviewDescription}`
+        )
+        .join('|'),
+    [rows]
+  );
+
+  useEffect(() => {
+    setPreparedSet(null);
+    setContinueError(null);
+  }, [continueDraftFingerprint, hasUnsavedWork]);
 
   const handleContinue = useCallback(async () => {
+    if (!draftId) return;
     const ok = await flush();
     if (!ok) return;
-    // Proceed to import-set verification / finalize lands with ADR 0004.
-  }, [flush]);
+
+    setContinueError(null);
+    try {
+      const nextPreparedSet = await continueMutation.mutateAsync();
+      setPreparedSet(nextPreparedSet);
+    } catch (error) {
+      setPreparedSet(null);
+      setContinueError(
+        getApiErrorMessage(error, 'Could not prepare this import for finalize.')
+      );
+    }
+  }, [continueMutation, draftId, flush]);
 
   const showEmptyState = !isLoading && meta && !hasReviewableRows;
 
@@ -97,6 +132,9 @@ const ImportDraftReviewContent = ({
         isLoading={isLoading}
         canContinue={canContinue}
         continueBlocker={continueBlocker}
+        continueError={continueError}
+        isContinuing={continueMutation.isPending}
+        preparedSet={preparedSet}
         autosaveStatus={autosaveStatus}
         onRetryAutosave={retryAutosave}
         onContinue={handleContinue}

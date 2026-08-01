@@ -98,6 +98,14 @@ export interface UpdateImportDraftRowResult {
   refundTargetFacts?: Record<string, RefundTargetFact>;
 }
 
+/** Per-row blocker payload when Continue rejects under the prepared-set lock. */
+export interface ImportContinueNotReadyRow {
+  batchRowId: string;
+  status: ImportRowStatus;
+  blockers: string[];
+  invalidReason: string | null;
+}
+
 /** Immutable reviewed values captured when a prepared set revision is created. */
 export interface ImportPreparedReviewedValues {
   date: string | null;

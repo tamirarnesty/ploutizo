@@ -8,6 +8,11 @@ import {
   lockPreparedSetRevisionForBatch,
 } from '@/lib/queries/import-prepared-sets';
 import {
+  listRefundTargetExpensesByIds,
+  sumPriorRefundTotalsByTransactionTarget,
+} from '@/lib/queries/import-refund-targets';
+import { listOrgMembers } from '@/lib/queries/households';
+import {
   fetchDraftSummaryById,
   fetchImportBatchInOrg,
   listDraftRows,
@@ -22,6 +27,7 @@ import {
 } from '@/lib/queries/scope';
 import {
   buildReviewedValuesSnapshot,
+  continueImportDraft,
   createImportPreparedSetRevision,
   getLatestImportPreparedSet,
 } from '@/services/import-prepared-sets';
@@ -97,6 +103,15 @@ vi.mock('@/lib/queries/import-prepared-sets', async (importOriginal) => {
     fetchPreparedSetById: vi.fn(),
   };
 });
+
+vi.mock('@/lib/queries/import-refund-targets', () => ({
+  listRefundTargetExpensesByIds: vi.fn(),
+  sumPriorRefundTotalsByTransactionTarget: vi.fn(),
+}));
+
+vi.mock('@/lib/queries/households', () => ({
+  listOrgMembers: vi.fn(),
+}));
 
 const ORG = 'org_a';
 const ACCOUNT = '550e8400-e29b-41d4-a716-446655440010';
@@ -474,6 +489,7 @@ describe('import finalization foundation — prepared set revisions', () => {
       accountId: ACCOUNT,
     } as never);
     vi.mocked(listDraftRows).mockResolvedValue([draftRow as never]);
+    vi.mocked(allTransactionsInOrg).mockResolvedValue(true);
     vi.mocked(lockPreparedSetRevisionForBatch).mockResolvedValue(undefined);
     vi.mocked(fetchLatestPreparedSetForBatch).mockResolvedValue(null);
     vi.mocked(transactionExistsInOrg).mockResolvedValue(true);
@@ -651,6 +667,129 @@ describe('import finalization foundation — prepared set revisions', () => {
         revision: 1,
         outcomes: [{ outcome: 'unprocessed', batchRowId: ROW }],
       }
+    );
+  });
+});
+
+describe('continueImportDraft', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(fetchDraftSummaryById).mockResolvedValue({
+      id: BATCH,
+      accountId: ACCOUNT,
+    } as never);
+    vi.mocked(listDraftRows).mockResolvedValue([draftRow as never]);
+    vi.mocked(allTransactionsInOrg).mockResolvedValue(true);
+    vi.mocked(listRefundTargetExpensesByIds).mockResolvedValue(new Map());
+    vi.mocked(sumPriorRefundTotalsByTransactionTarget).mockResolvedValue(
+      new Map()
+    );
+    vi.mocked(listOrgMembers).mockResolvedValue([
+      { id: MEMBER, userId: 'user_1', orgId: ORG, role: 'member' },
+    ] as never);
+    vi.mocked(lockPreparedSetRevisionForBatch).mockResolvedValue(undefined);
+    vi.mocked(fetchLatestPreparedSetForBatch).mockResolvedValue(null);
+    vi.mocked(transactionExistsInOrg).mockResolvedValue(true);
+    vi.mocked(insertImportPreparedSet).mockResolvedValue({
+      id: 'prep_1',
+      orgId: ORG,
+      batchId: BATCH,
+      revision: 1,
+      createdAt: new Date('2026-05-20T12:00:00Z'),
+    });
+    vi.mocked(insertImportPreparedOutcomes).mockImplementation((_tx, values) =>
+      Promise.resolve(
+        values.map((value, index) => ({
+          id: `out_${index}`,
+          orgId: value.orgId,
+          preparedSetId: value.preparedSetId,
+          batchRowId: value.batchRowId,
+          outcome: value.outcome,
+          transactionId: value.transactionId ?? null,
+          reviewedValues: value.reviewedValues,
+          createdAt: new Date('2026-05-20T12:00:00Z'),
+        }))
+      )
+    );
+    vi.mocked(listPreparedOutcomesForSet).mockResolvedValue([
+      {
+        id: 'out_0',
+        orgId: ORG,
+        preparedSetId: 'prep_1',
+        batchRowId: ROW,
+        outcome: 'unprocessed',
+        transactionId: null,
+        reviewedValues: buildReviewedValuesSnapshot(draftRow as never),
+        createdAt: new Date('2026-05-20T12:00:00Z'),
+      },
+    ]);
+  });
+
+  it('creates a prepared set when selected rows are ready', async () => {
+    const result = await continueImportDraft(ORG, BATCH);
+
+    expect(lockPreparedSetRevisionForBatch).toHaveBeenCalledWith(
+      mockTx,
+      ORG,
+      BATCH
+    );
+    expect(insertImportPreparedSet).toHaveBeenCalled();
+    expect(result).toMatchObject({
+      revision: 1,
+      outcomes: [{ outcome: 'unprocessed', batchRowId: ROW }],
+    });
+  });
+
+  it('rejects when no rows are selected for import', async () => {
+    vi.mocked(listDraftRows).mockResolvedValue([
+      { ...draftRow, selectedForImport: false } as never,
+    ]);
+
+    const err = await continueImportDraft(ORG, BATCH).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(DomainError);
+    expect(err).toMatchObject({
+      statusCode: 400,
+      code: 'IMPORT_CONTINUE_NONE_SELECTED',
+    });
+    expect(insertImportPreparedSet).not.toHaveBeenCalled();
+  });
+
+  it('rejects when a selected row is not ready', async () => {
+    vi.mocked(listDraftRows).mockResolvedValue([
+      { ...draftRow, reviewCategoryId: null } as never,
+    ]);
+
+    const err = await continueImportDraft(ORG, BATCH).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(DomainError);
+    expect(err).toMatchObject({
+      statusCode: 400,
+      code: 'IMPORT_CONTINUE_NOT_READY',
+    });
+    expect(err).toHaveProperty('details');
+    expect(insertImportPreparedSet).not.toHaveBeenCalled();
+  });
+
+  it('snapshots the evaluated draft rows without re-reading for preparation', async () => {
+    const evaluatedRow = { ...draftRow };
+    const staleRow = { ...draftRow, reviewCategoryId: null };
+
+    vi.mocked(listDraftRows).mockResolvedValueOnce([evaluatedRow as never]);
+    vi.mocked(listDraftRows).mockResolvedValue([staleRow as never]);
+
+    await continueImportDraft(ORG, BATCH);
+
+    expect(listDraftRows).toHaveBeenCalledTimes(1);
+    expect(insertImportPreparedOutcomes).toHaveBeenCalledWith(
+      mockTx,
+      expect.arrayContaining([
+        expect.objectContaining({
+          reviewedValues: expect.objectContaining({
+            categoryId: CATEGORY,
+          }),
+        }),
+      ])
     );
   });
 });

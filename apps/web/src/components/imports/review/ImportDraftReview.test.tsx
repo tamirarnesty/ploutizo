@@ -61,6 +61,18 @@ vi.mock('@/lib/data-access/org', () => ({
   }),
 }));
 
+const continueMocks = vi.hoisted(() => ({
+  mutateAsync: vi.fn(),
+  isPending: false,
+}));
+
+vi.mock('@/lib/data-access/imports/useContinueImportDraft', () => ({
+  useContinueImportDraft: () => ({
+    mutateAsync: continueMocks.mutateAsync,
+    isPending: continueMocks.isPending,
+  }),
+}));
+
 vi.mock('@/hooks/persistedPageSize', () => ({
   usePersistedPageSize: () => ({
     pagination: paginationMocks.pagination,
@@ -87,6 +99,15 @@ const renderReview = (draft = makeImportDraft()) => {
   );
 };
 
+const renderReviewWith = (draft: ReturnType<typeof makeImportDraft>) => {
+  const { rows, ...meta } = draft;
+  return (
+    <TooltipProvider delay={0}>
+      <ImportDraftReview meta={meta} rows={rows} {...reviewSessionProps} />
+    </TooltipProvider>
+  );
+};
+
 const renderLoadingReview = () =>
   render(
     <TooltipProvider delay={0}>
@@ -101,6 +122,14 @@ describe('ImportDraftReview', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     paginationMocks.pagination = { pageIndex: 0, pageSize: 25 };
+    continueMocks.mutateAsync.mockResolvedValue({
+      id: 'prep_1',
+      orgId: 'org_1',
+      batchId: 'draft_1',
+      revision: 1,
+      createdAt: '2026-05-20T12:00:00.000Z',
+      outcomes: [],
+    });
   });
 
   it('mounts the review grid', () => {
@@ -109,11 +138,15 @@ describe('ImportDraftReview', () => {
     expect(screen.getByRole('table')).toBeInTheDocument();
   });
 
-  it('keeps Continue disabled with preview copy and tooltip-only blocker', () => {
+  it('keeps Continue disabled when no rows are selected', () => {
     renderReview();
 
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
-    expect(screen.getByText('Import commit coming soon')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Continue prepares the selected rows for finalize import.'
+      )
+    ).toBeInTheDocument();
     expect(
       screen.queryByText('Select at least one row to continue.')
     ).not.toBeInTheDocument();
@@ -332,11 +365,79 @@ describe('ImportDraftReview', () => {
 
     await waitFor(() =>
       expect(
-        screen.getByText(
-          '1 selected row still needs review. Import commit coming soon.'
-        )
+        screen.getByText('1 selected row still needs review.')
       ).toBeInTheDocument()
     );
+  });
+
+  it('continues when selected rows are ready', async () => {
+    const user = userEvent.setup();
+    renderReview(
+      makeImportDraft({
+        rows: [
+          makeImportDraftRow({
+            id: 'row_ready',
+            status: 'ready',
+            reviewDescription: 'Coffee',
+            selectedForImport: true,
+          }),
+        ],
+      })
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(flush).toHaveBeenCalledTimes(1);
+    expect(continueMocks.mutateAsync).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByText('Prepared revision 1 for finalize.')
+    ).toBeInTheDocument();
+  });
+
+  it('clears prepared status when selection changes', async () => {
+    const user = userEvent.setup();
+    const readyDraft = makeImportDraft({
+      rows: [
+        makeImportDraftRow({
+          id: 'row_ready',
+          status: 'ready',
+          reviewDescription: 'Coffee',
+          selectedForImport: true,
+        }),
+      ],
+    });
+    const { rerender } = renderReview(readyDraft);
+
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(
+      screen.getByText('Prepared revision 1 for finalize.')
+    ).toBeInTheDocument();
+
+    rerender(
+      renderReviewWith(
+        makeImportDraft({
+          rows: [
+            makeImportDraftRow({
+              id: 'row_ready',
+              status: 'ready',
+              reviewDescription: 'Coffee',
+              selectedForImport: false,
+              updatedAt: '2026-05-20T12:01:00.000Z',
+            }),
+          ],
+        })
+      )
+    );
+
+    expect(
+      screen.queryByText('Prepared revision 1 for finalize.')
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Continue prepares the selected rows for finalize import.'
+      )
+    ).toBeInTheDocument();
   });
 
   it('renders disabled assignee toggles for invalid rows in the grid', () => {
