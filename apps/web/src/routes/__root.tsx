@@ -4,14 +4,11 @@ import {
   HeadContent,
   Scripts,
   createRootRouteWithContext,
-  redirect,
 } from '@tanstack/react-router';
 import { ClerkProvider, useAuth } from '@clerk/tanstack-react-start';
-import { auth } from '@clerk/tanstack-react-start/server';
 import { shadcn } from '@clerk/ui/themes';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
-import { createServerFn } from '@tanstack/react-start';
 import appCss from '@ploutizo/ui/globals.css?url';
 import { ThemeProvider } from '@ploutizo/ui/components/theme-provider';
 import { Toaster } from '@ploutizo/ui/components/sonner';
@@ -22,18 +19,6 @@ import { AppDevtools } from '../components/devtools/AppDevtools';
 import { NotFound } from '../components/not-found/NotFound';
 import { ErrorBoundary } from '../components/error-boundary/ErrorBoundary';
 import type { RouterContext } from '../router';
-
-const requireAppAccess = createServerFn({ method: 'POST' })
-  .inputValidator((data: { requireOrg: boolean }) => data)
-  .handler(async ({ data }) => {
-    const { isAuthenticated, orgId } = await auth();
-    if (!isAuthenticated) {
-      throw redirect({ to: '/sign-in/$' });
-    }
-    if (data.requireOrg && !orgId) {
-      throw redirect({ to: '/onboarding' });
-    }
-  });
 
 // TokenInitializer: wires Clerk's getToken into the React Query apiFetch helper.
 // Must run inside ClerkProvider so useAuth() has access to the Clerk session.
@@ -81,15 +66,6 @@ const RootDocument = ({ children }: { children: React.ReactNode }) => (
 );
 
 export const Route = createRootRouteWithContext<RouterContext>()({
-  beforeLoad: async ({ location }) => {
-    const isAuthRoute =
-      location.pathname.startsWith('/sign-in') ||
-      location.pathname.startsWith('/sign-up');
-    const isOnboarding = location.pathname === '/onboarding';
-    if (!isAuthRoute) {
-      await requireAppAccess({ data: { requireOrg: !isOnboarding } });
-    }
-  },
   head: () => ({
     meta: [
       {

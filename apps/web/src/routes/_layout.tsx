@@ -8,6 +8,7 @@ import { getCookie } from '@tanstack/react-start/server';
 import { SidebarInset, SidebarProvider } from '@ploutizo/ui/components/sidebar';
 import { cn } from '@ploutizo/ui/lib/utils';
 import { CommandPaletteProvider } from '@/lib/command';
+import { requireAuthAndOrg } from '@/lib/auth/require-access';
 import { resolveMainContentLayout } from '@/lib/layout/main-content-layout';
 import { AppSidebar } from '../components/AppSidebar';
 import { TopBar } from '../components/TopBar';
@@ -54,6 +55,7 @@ const LayoutShell = () => {
 };
 
 export const Route = createFileRoute('/_layout')({
+  beforeLoad: () => requireAuthAndOrg(),
   loader: () => getSidebarState(),
   component: LayoutShell,
 });

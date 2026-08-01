@@ -1,24 +1,8 @@
-import {
-  Show,
-  SignInButton,
-  SignUpButton,
-  UserButton,
-} from '@clerk/tanstack-react-start';
 import { createFileRoute } from '@tanstack/react-router';
+import { HomePage } from '@/components/home/HomePage';
+import { redirectIfAuthenticated } from '@/lib/auth/require-access';
 
-const App = () => {
-  return (
-    <div>
-      <h1>Index Route</h1>
-      <Show when="signed-in">
-        <UserButton />
-      </Show>
-      <Show when="signed-out">
-        <SignInButton />
-        <SignUpButton />
-      </Show>
-    </div>
-  );
-};
-
-export const Route = createFileRoute('/')({ component: App });
+export const Route = createFileRoute('/')({
+  beforeLoad: () => redirectIfAuthenticated(),
+  component: HomePage,
+});
