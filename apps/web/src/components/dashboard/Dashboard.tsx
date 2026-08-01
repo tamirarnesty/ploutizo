@@ -7,6 +7,7 @@ import { useGetOrgMembers } from '@/lib/data-access/org';
 import { useGetSettlements } from '@/lib/data-access/settlements';
 import { selectCreditCardAccounts } from '@/lib/settlements';
 import { CardBalancesGrid } from '@/components/dashboard/card-balances/CardBalancesGrid';
+import { TelemetryReplayBlock } from '@/telemetry';
 import { SettleDialog } from './SettleDialog';
 import { SettlementSummaryPane } from './SettlementSummaryPane';
 
@@ -56,7 +57,7 @@ export const Dashboard = () => {
         </Text>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+      <TelemetryReplayBlock className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <div className="min-w-0 md:col-span-3">
           {settlementsError ? (
             <Text variant="error">
@@ -78,7 +79,7 @@ export const Dashboard = () => {
             members={members}
           />
         </div>
-      </div>
+      </TelemetryReplayBlock>
 
       <SettleDialog
         open={dialogOpen}

@@ -3,6 +3,7 @@ import { Dialog, DialogContent } from '@ploutizo/ui/components/dialog';
 import type { SettlementAccountRow } from '@ploutizo/types';
 import { SettleDialogForm } from '@/components/dashboard/settle-dialog/SettleDialogForm';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';
+import { TelemetryReplayBlock } from '@/telemetry';
 
 export interface SettleDialogProps {
   open: boolean;
@@ -32,14 +33,16 @@ export const SettleDialog = ({
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent>
-        {account && resolvedPayToward ? (
-          <SettleDialogForm
-            key={`${account.account.id}:${resolvedPayToward}`}
-            account={account}
-            initialPayToward={resolvedPayToward}
-            onClose={onClose}
-          />
-        ) : null}
+        <TelemetryReplayBlock>
+          {account && resolvedPayToward ? (
+            <SettleDialogForm
+              key={`${account.account.id}:${resolvedPayToward}`}
+              account={account}
+              initialPayToward={resolvedPayToward}
+              onClose={onClose}
+            />
+          ) : null}
+        </TelemetryReplayBlock>
       </DialogContent>
     </Dialog>
   );
