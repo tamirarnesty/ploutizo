@@ -39,6 +39,7 @@ export const BrowserTelemetryRoot = ({
         }}
         fallback={({ error }) => (
           <ErrorBoundary
+            captureException={false}
             error={error instanceof Error ? error : new Error(String(error))}
             reset={() => {
               window.location.reload();

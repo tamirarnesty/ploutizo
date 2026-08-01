@@ -9,6 +9,7 @@ interface TelemetryReplayBlockProps {
 
 /**
  * Marks finance-sensitive UI for session replay blocking.
+ * Use on page regions and finance overlay roots (sheets, dialogs).
  * Pair with PostHog `blockSelector` privacy config.
  */
 export const TelemetryReplayBlock = ({

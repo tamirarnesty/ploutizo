@@ -12,16 +12,29 @@ const ART_ERR = ` ███████╗██████╗ █████�
  ███████╗██║  ██║██║  ██║
  ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝`;
 
-export const ErrorBoundary = ({ error, reset }: ErrorComponentProps) => {
+type ErrorBoundaryProps = ErrorComponentProps & {
+  /** Route errors capture manually; React errors rely on PostHogErrorBoundary. */
+  captureException?: boolean;
+};
+
+export const ErrorBoundary = ({
+  error,
+  reset,
+  captureException = true,
+}: ErrorBoundaryProps) => {
   const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
+    if (!captureException) {
+      return;
+    }
+
     captureBrowserException(error, {
       operation: 'section.recover',
       surface: 'web.root',
       boundary: 'route.error',
     });
-  }, [error]);
+  }, [captureException, error]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6">

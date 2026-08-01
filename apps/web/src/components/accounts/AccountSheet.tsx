@@ -6,6 +6,7 @@ import {
 } from '@ploutizo/ui/components/sheet';
 import type { Account } from '@ploutizo/types';
 import { useArchiveAccount } from '@/lib/data-access/accounts';
+import { TelemetryReplayBlock } from '@/telemetry';
 import { AccountForm } from './AccountForm';
 
 interface AccountSheetProps {
@@ -34,15 +35,19 @@ export const AccountSheet = ({ open, account, onClose }: AccountSheetProps) => {
         side="right"
         className="flex w-[440px] flex-col p-0 sm:w-[440px]"
       >
-        <SheetHeader className="border-b border-border px-6 py-4">
-          <SheetTitle>{isEditing ? 'Edit account' : 'Add account'}</SheetTitle>
-        </SheetHeader>
+        <TelemetryReplayBlock className="flex min-h-0 flex-1 flex-col">
+          <SheetHeader className="border-b border-border px-6 py-4">
+            <SheetTitle>
+              {isEditing ? 'Edit account' : 'Add account'}
+            </SheetTitle>
+          </SheetHeader>
 
-        <AccountForm
-          account={account}
-          onClose={onClose}
-          onArchive={handleArchive}
-        />
+          <AccountForm
+            account={account}
+            onClose={onClose}
+            onArchive={handleArchive}
+          />
+        </TelemetryReplayBlock>
       </SheetContent>
     </Sheet>
   );

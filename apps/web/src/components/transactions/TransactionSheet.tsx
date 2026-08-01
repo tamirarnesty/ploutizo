@@ -16,6 +16,7 @@ import {
   SheetTitle,
 } from '@ploutizo/ui/components/sheet';
 import type { TransactionRow } from '@/lib/data-access/transactions';
+import { TelemetryReplayBlock } from '@/telemetry';
 import { TransactionForm } from './TransactionForm';
 
 interface TransactionSheetProps {
@@ -68,19 +69,21 @@ export const TransactionSheet = ({
           side="right"
           className="flex w-[560px] flex-col p-0 sm:w-[560px]"
         >
-          <SheetHeader className="border-b border-border px-6 py-4">
-            <SheetTitle>
-              {isEditing ? 'Edit transaction' : 'Add transaction'}
-            </SheetTitle>
-          </SheetHeader>
+          <TelemetryReplayBlock className="flex min-h-0 flex-1 flex-col">
+            <SheetHeader className="border-b border-border px-6 py-4">
+              <SheetTitle>
+                {isEditing ? 'Edit transaction' : 'Add transaction'}
+              </SheetTitle>
+            </SheetHeader>
 
-          {/* key resets form state when switching between transactions (D-09) */}
-          <TransactionForm
-            key={transaction?.id ?? 'new'}
-            transaction={transaction}
-            onClose={onClose}
-            onDirtyChange={setIsDirty}
-          />
+            {/* key resets form state when switching between transactions (D-09) */}
+            <TransactionForm
+              key={transaction?.id ?? 'new'}
+              transaction={transaction}
+              onClose={onClose}
+              onDirtyChange={setIsDirty}
+            />
+          </TelemetryReplayBlock>
         </SheetContent>
       </Sheet>
 
