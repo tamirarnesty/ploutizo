@@ -17,6 +17,7 @@ import {
   updateImportDraftRow,
   updateImportDraftRowSelection,
 } from '@/services/imports';
+import { continueImportDraft } from '@/services/import-prepared-sets';
 
 const importsRouter = new Hono<AppEnv>();
 
@@ -56,6 +57,12 @@ importsRouter.delete('/drafts/:id', async (c) => {
   const orgId = c.get('orgId');
   const row = await discardImportDraft(orgId, c.req.param('id'));
   return c.json({ data: row });
+});
+
+importsRouter.post('/drafts/:id/continue', async (c) => {
+  const orgId = c.get('orgId');
+  const preparedSet = await continueImportDraft(orgId, c.req.param('id'));
+  return c.json({ data: preparedSet }, 201);
 });
 
 importsRouter.patch(
