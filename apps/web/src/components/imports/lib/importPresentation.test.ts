@@ -31,6 +31,7 @@ const baseRow = {
   reviewAssigneeMemberIds: ['member_1'],
   reviewCounterpartAccountId: null,
   reviewRefundOf: null,
+  reviewRefundOfBatchRowId: null,
   reviewRefundLinkHint: null,
   reviewNotes: null,
   reviewTagIds: [],
@@ -130,6 +131,19 @@ describe('importPresentation review helpers', () => {
         reviewType: 'settlement',
       })
     ).toBe('Needs review: settlement requires review');
+  });
+
+  it('includes refund_link when evaluator blockers are provided', () => {
+    expect(
+      getImportRowStatusTooltip(
+        {
+          ...baseRow,
+          status: 'needs_review',
+          reviewType: 'refund',
+        },
+        ['refund_link']
+      )
+    ).toBe('Needs review: refund link needs review');
   });
 
   it('combines settlement and missing-field blockers in the tooltip', () => {

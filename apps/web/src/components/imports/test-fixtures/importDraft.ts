@@ -11,7 +11,12 @@ export const toPersistedImportDraftRow = (
   row: ImportDraftRow,
   overrides: Partial<ImportDraftPersistedRow> = {}
 ): ImportDraftPersistedRow => {
-  const { status: _status, invalidReason: _invalidReason, ...persisted } = row;
+  const {
+    status: _status,
+    invalidReason: _invalidReason,
+    reviewRefundOfBatchRowId: _batchRowId,
+    ...persisted
+  } = row;
   return { ...persisted, ...overrides };
 };
 
@@ -41,6 +46,7 @@ export const makeImportDraftRow = (
   reviewAssigneeMemberIds: ['member_1'],
   reviewCounterpartAccountId: null,
   reviewRefundOf: null,
+  reviewRefundOfBatchRowId: null,
   reviewRefundLinkHint: null,
   reviewNotes: null,
   reviewTagIds: [],

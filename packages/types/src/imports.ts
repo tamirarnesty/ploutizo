@@ -68,6 +68,11 @@ export interface ImportDraftRow {
   reviewCounterpartAccountId: string | null;
   /** Reviewed refund link to an existing expense transaction. */
   reviewRefundOf: string | null;
+  /**
+   * Same-import refund target (draft row id). Evaluated on the working copy;
+   * not yet persisted — omitted from `ImportDraftPersistedRow` until the DB column lands.
+   */
+  reviewRefundOfBatchRowId: string | null;
   /** Original CSV refund-link hint retained as provenance. */
   reviewRefundLinkHint: string | null;
   reviewNotes: string | null;
@@ -80,7 +85,7 @@ export interface ImportDraftRow {
 /** Durable import draft row persisted in Postgres — no derived status fields. */
 export type ImportDraftPersistedRow = Omit<
   ImportDraftRow,
-  'status' | 'invalidReason'
+  'status' | 'invalidReason' | 'reviewRefundOfBatchRowId'
 >;
 
 export interface ImportDraft extends ImportDraftSummary {
