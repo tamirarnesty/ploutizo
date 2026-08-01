@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '@ploutizo/db';
-import { NotFoundError } from '@/lib/errors';
-import { updateTransaction } from '@/services/transactions';
+import { DomainError, NotFoundError } from '@/lib/errors';
+import { restoreTransaction, updateTransaction } from '@/services/transactions';
 import {
   enrichTransactions,
   fetchTransactionById,
   replaceAssignees,
   replaceTags,
+  restoreTransactionQuery,
   updateTransactionScalarsQuery,
 } from '@/lib/queries/transactions';
 
@@ -67,6 +68,7 @@ vi.mock('@/lib/queries/transactions', () => ({
   updateTransactionScalarsQuery: vi.fn(),
   replaceAssignees: vi.fn(),
   replaceTags: vi.fn(),
+  restoreTransactionQuery: vi.fn(),
 }));
 
 vi.mock('@/lib/queries/scope', () => ({
@@ -93,6 +95,7 @@ describe('updateTransaction — PATCH split-sum validation', () => {
     vi.mocked(updateTransactionScalarsQuery).mockReset();
     vi.mocked(replaceAssignees).mockReset();
     vi.mocked(replaceTags).mockReset();
+    vi.mocked(restoreTransactionQuery).mockReset();
 
     vi.mocked(fetchTransactionById).mockResolvedValue(baseTxRow as never);
     vi.mocked(updateTransactionScalarsQuery).mockResolvedValue({
@@ -189,5 +192,35 @@ describe('updateTransaction — PATCH split-sum validation', () => {
 
     expect(enrichTransactions).not.toHaveBeenCalled();
     expect(updateTransactionScalarsQuery).not.toHaveBeenCalled();
+  });
+
+  it('maps an active external-id conflict during update to a domain conflict', async () => {
+    vi.mocked(updateTransactionScalarsQuery).mockRejectedValueOnce({
+      code: '23505',
+      constraint: 'transactions_active_account_external_id_idx',
+    });
+
+    const error = await updateTransaction(ORG_ID, TXN_ID, expensePayload).catch(
+      (caught: unknown) => caught
+    );
+
+    expect(error).toBeInstanceOf(DomainError);
+    expect((error as DomainError).statusCode).toBe(409);
+    expect((error as DomainError).code).toBe('EXTERNAL_ID_CONFLICT');
+  });
+
+  it('maps an active external-id conflict during restore to a domain conflict', async () => {
+    vi.mocked(restoreTransactionQuery).mockRejectedValueOnce({
+      code: '23505',
+      constraint: 'transactions_active_account_external_id_idx',
+    });
+
+    const error = await restoreTransaction(ORG_ID, TXN_ID).catch(
+      (caught: unknown) => caught
+    );
+
+    expect(error).toBeInstanceOf(DomainError);
+    expect((error as DomainError).statusCode).toBe(409);
+    expect((error as DomainError).code).toBe('EXTERNAL_ID_CONFLICT');
   });
 });

@@ -22,19 +22,11 @@ import {
   requestTelemetry,
   shutdownApiOtel,
 } from './telemetry';
+import { createApiShutdown } from './serverLifecycle';
 import type { AppEnv } from './types';
 
 // Boot OTel exporters before request handling (non-blocking; failures degrade).
 initApiOtel();
-
-const registerShutdownHooks = () => {
-  const shutdown = () => {
-    void shutdownApiOtel();
-  };
-  process.once('SIGTERM', shutdown);
-  process.once('SIGINT', shutdown);
-};
-registerShutdownHooks();
 
 const app = new Hono<AppEnv>();
 
@@ -87,4 +79,15 @@ app.route('/api/imports', importsRouter);
 // Centralized error handler (D-04) — registered AFTER routes, BEFORE serve()
 registerApiErrorHandlers(app);
 
-serve({ fetch: app.fetch, port: Number(process.env.PORT ?? 8080) });
+const server = serve({
+  fetch: app.fetch,
+  port: Number(process.env.PORT ?? 8080),
+});
+const shutdown = createApiShutdown({
+  server,
+  shutdownTelemetry: shutdownApiOtel,
+  exit: (code) => process.exit(code),
+});
+
+process.once('SIGTERM', () => void shutdown());
+process.once('SIGINT', () => void shutdown());

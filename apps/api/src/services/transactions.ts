@@ -183,6 +183,14 @@ const mapExternalIdConflict = (error: unknown): never => {
   throw error;
 };
 
+const runTransactionWrite = async <T>(write: () => Promise<T>): Promise<T> => {
+  try {
+    return await write();
+  } catch (error) {
+    return mapExternalIdConflict(error);
+  }
+};
+
 export const createTransaction = async (
   orgId: string,
   data: z.infer<typeof createTransactionSchema>
@@ -221,16 +229,13 @@ export const createTransaction = async (
     );
     assertTransactionAccountPolicy(transactionData.type, writeReferences);
 
-    let inserted: typeof transactions.$inferSelect;
-    try {
+    const inserted = await runTransactionWrite(async () => {
       const [row] = await tx
         .insert(transactions)
         .values({ orgId, ...transactionData })
         .returning();
-      inserted = row;
-    } catch (error) {
-      return mapExternalIdConflict(error);
-    }
+      return row;
+    });
 
     await tx.insert(transactionAssignees).values(
       normalizedAssignees.map((a) => ({
@@ -342,11 +347,13 @@ export const updateTransaction = async (
       if (splitError) throw new DomainError(400, splitError, 'BAD_REQUEST');
     }
 
-    const updated = await updateTransactionScalarsQuery(
-      tx,
-      orgId,
-      id,
-      updateData as Record<string, unknown>
+    const updated = await runTransactionWrite(() =>
+      updateTransactionScalarsQuery(
+        tx,
+        orgId,
+        id,
+        updateData as Record<string, unknown>
+      )
     );
 
     if (!updated) throw new NotFoundError('Transaction not found.');
@@ -380,7 +387,9 @@ export const restoreTransaction = async (
   orgId: string,
   id: string
 ): Promise<{ id: string }> => {
-  const result = await restoreTransactionQuery(orgId, id);
+  const result = await runTransactionWrite(() =>
+    restoreTransactionQuery(orgId, id)
+  );
   if (!result) throw new NotFoundError('Transaction not found.');
   return result;
 };
