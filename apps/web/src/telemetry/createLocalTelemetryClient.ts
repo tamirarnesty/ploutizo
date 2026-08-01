@@ -27,7 +27,10 @@ export const createLocalTelemetryClient = (
 
   const posthogClient =
     options.env.exportEnabled && options.posthog
-      ? createPostHogTelemetryClient({ env: options.env, posthog: options.posthog })
+      ? createPostHogTelemetryClient({
+          env: options.env,
+          posthog: options.posthog,
+        })
       : undefined;
 
   if (!consoleClient && !posthogClient) {

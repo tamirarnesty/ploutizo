@@ -44,7 +44,9 @@ export const addTelemetryExceptionStep = (
             ...(context.operation
               ? { 'telemetry.operation': context.operation }
               : {}),
-            ...(context.surface ? { 'telemetry.surface': context.surface } : {}),
+            ...(context.surface
+              ? { 'telemetry.surface': context.surface }
+              : {}),
             ...(context.boundary
               ? { 'telemetry.boundary': context.boundary }
               : {}),

@@ -2,7 +2,9 @@ import { createContext, useContext, useMemo } from 'react';
 import { createNoopTelemetryClient } from '@ploutizo/telemetry';
 import type { TelemetryClient } from '@ploutizo/telemetry';
 
-const TelemetryContext = createContext<TelemetryClient>(createNoopTelemetryClient());
+const TelemetryContext = createContext<TelemetryClient>(
+  createNoopTelemetryClient()
+);
 
 export const TelemetryProvider = ({
   client,
@@ -13,7 +15,9 @@ export const TelemetryProvider = ({
 }) => {
   const value = useMemo(() => client, [client]);
   return (
-    <TelemetryContext.Provider value={value}>{children}</TelemetryContext.Provider>
+    <TelemetryContext.Provider value={value}>
+      {children}
+    </TelemetryContext.Provider>
   );
 };
 

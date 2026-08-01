@@ -85,7 +85,9 @@ describe('TelemetryIdentitySync', () => {
 
     const { rerender } = render(<TelemetryIdentitySync />);
 
-    await waitFor(() => expect(group).toHaveBeenCalledWith('household', 'org_1'));
+    await waitFor(() =>
+      expect(group).toHaveBeenCalledWith('household', 'org_1')
+    );
 
     mockUseOrganization.mockReturnValue({
       organization: { id: 'org_2' },

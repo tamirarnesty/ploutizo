@@ -6,7 +6,11 @@ import type { WebTelemetryEnv } from './env';
 let initialized = false;
 
 export const initPostHog = (env: WebTelemetryEnv): PostHog | null => {
-  if (typeof window === 'undefined' || !env.exportEnabled || !env.posthogToken) {
+  if (
+    typeof window === 'undefined' ||
+    !env.exportEnabled ||
+    !env.posthogToken
+  ) {
     return null;
   }
 

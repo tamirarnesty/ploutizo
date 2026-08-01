@@ -98,7 +98,9 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
   return (
     <div className={importReviewPageClassName}>
       <ImportReviewBreadcrumbs />
-      <TelemetryReplayBlock className="min-h-0 flex-1">{body}</TelemetryReplayBlock>
+      <TelemetryReplayBlock className="min-h-0 flex-1">
+        {body}
+      </TelemetryReplayBlock>
     </div>
   );
 };

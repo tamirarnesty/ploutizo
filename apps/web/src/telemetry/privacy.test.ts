@@ -14,7 +14,9 @@ describe('browser telemetry privacy config', () => {
       blockClass: 'ph-no-capture',
       blockSelector: TELEMETRY_REPLAY_BLOCK_SELECTOR,
     });
-    expect(TELEMETRY_REPLAY_BLOCK_SELECTOR).toBe(`[${TELEMETRY_REPLAY_BLOCK_ATTR}]`);
+    expect(TELEMETRY_REPLAY_BLOCK_SELECTOR).toBe(
+      `[${TELEMETRY_REPLAY_BLOCK_ATTR}]`
+    );
   });
 
   it('disables console autocapture and masks element attributes', () => {

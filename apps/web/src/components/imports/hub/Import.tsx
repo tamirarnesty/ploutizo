@@ -155,38 +155,38 @@ export const Import = () => {
         />
 
         <section className="space-y-3">
-        <Text as="h2" variant="h3">
-          Active drafts
-        </Text>
-        {draftsError ? (
-          <Text variant="error">
-            Couldn&apos;t load active drafts. Check your connection and try
-            again.
+          <Text as="h2" variant="h3">
+            Active drafts
           </Text>
-        ) : (
-          <ImportDraftList
-            drafts={activeDrafts}
-            discardingDraftId={discardDraft.variables}
-            isDiscarding={discardDraft.isPending}
-            isLoading={draftsLoading}
-            onDiscard={handleDiscard}
-          />
-        )}
-      </section>
+          {draftsError ? (
+            <Text variant="error">
+              Couldn&apos;t load active drafts. Check your connection and try
+              again.
+            </Text>
+          ) : (
+            <ImportDraftList
+              drafts={activeDrafts}
+              discardingDraftId={discardDraft.variables}
+              isDiscarding={discardDraft.isPending}
+              isLoading={draftsLoading}
+              onDiscard={handleDiscard}
+            />
+          )}
+        </section>
 
-      <section className="space-y-3">
-        <Text as="h2" variant="h3">
-          Recent history
-        </Text>
-        {historyError ? (
-          <Text variant="error">
-            Couldn&apos;t load import history. Check your connection and try
-            again.
+        <section className="space-y-3">
+          <Text as="h2" variant="h3">
+            Recent history
           </Text>
-        ) : (
-          <ImportHistoryList history={history} isLoading={historyLoading} />
-        )}
-      </section>
+          {historyError ? (
+            <Text variant="error">
+              Couldn&apos;t load import history. Check your connection and try
+              again.
+            </Text>
+          ) : (
+            <ImportHistoryList history={history} isLoading={historyLoading} />
+          )}
+        </section>
       </TelemetryReplayBlock>
     </div>
   );

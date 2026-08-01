@@ -39,9 +39,7 @@ export const BrowserTelemetryRoot = ({
         }}
         fallback={({ error }) => (
           <ErrorBoundary
-            error={
-              error instanceof Error ? error : new Error(String(error))
-            }
+            error={error instanceof Error ? error : new Error(String(error))}
             reset={() => {
               window.location.reload();
             }}
@@ -57,7 +55,5 @@ export const BrowserTelemetryRoot = ({
     return content;
   }
 
-  return (
-    <PostHogProvider client={posthog}>{content}</PostHogProvider>
-  );
+  return <PostHogProvider client={posthog}>{content}</PostHogProvider>;
 };
