@@ -20,3 +20,15 @@ Project guidance is split across `docs/`. Read the linked file when a task match
 | [docs/development-environment.md](docs/development-environment.md)   | Dev servers, env secrets, Turborepo quality commands, Clerk webhooks and test credentials |
 
 Architecture decision records: [docs/adr/](docs/adr/).
+
+## Before commit/push
+
+From the **workspace root**, run lint and formatting across the whole monorepo — not just the package you edited:
+
+```bash
+pnpm turbo format        # Prettier write + eslint --fix (all packages)
+pnpm turbo format:check  # verify formatting
+pnpm turbo lint          # ESLint (all packages)
+```
+
+Fix any failures before committing or pushing. Scoped checks (e.g. `pnpm --filter web lint`) are fine while iterating; the root `pnpm turbo …` pass is required before push.
