@@ -149,7 +149,11 @@ const createImportPreparedSetRevisionInTransaction = async (
   orgId: string,
   batchId: string,
   outcomes: PrepareImportOutcomeInput[],
-  options?: { skipLock?: boolean }
+  options?: {
+    skipLock?: boolean;
+    /** Use these exact row records for snapshots instead of re-reading draft rows. */
+    snapshotRowsById?: ReadonlyMap<string, ImportDraftRowRecord>;
+  }
 ): Promise<ImportPreparedSet> => {
   if (!options?.skipLock) {
     await lockPreparedSetRevisionForBatch(tx, orgId, batchId);
@@ -158,8 +162,11 @@ const createImportPreparedSetRevisionInTransaction = async (
   const draft = await fetchDraftSummaryById(orgId, batchId, tx);
   if (!draft) throw new NotFoundError('Import draft not found.');
 
-  const draftRows = await listDraftRows(orgId, batchId, tx);
-  const rowsById = new Map(draftRows.map((row) => [row.id, row]));
+  const rowsById =
+    options?.snapshotRowsById ??
+    new Map(
+      (await listDraftRows(orgId, batchId, tx)).map((row) => [row.id, row])
+    );
 
   const validatedOutcomes = outcomes.map((outcome) => {
     const row = rowsById.get(outcome.batchRowId);
@@ -274,12 +281,14 @@ export const continueImportDraft = async (
 
     assertNoDuplicateBatchRowIds(outcomes);
 
+    const snapshotRowsById = new Map(draftRows.map((row) => [row.id, row]));
+
     return createImportPreparedSetRevisionInTransaction(
       tx,
       orgId,
       batchId,
       outcomes,
-      { skipLock: true }
+      { skipLock: true, snapshotRowsById }
     );
   });
 

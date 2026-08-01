@@ -99,6 +99,15 @@ const renderReview = (draft = makeImportDraft()) => {
   );
 };
 
+const renderReviewWith = (draft: ReturnType<typeof makeImportDraft>) => {
+  const { rows, ...meta } = draft;
+  return (
+    <TooltipProvider delay={0}>
+      <ImportDraftReview meta={meta} rows={rows} {...reviewSessionProps} />
+    </TooltipProvider>
+  );
+};
+
 const renderLoadingReview = () =>
   render(
     <TooltipProvider delay={0}>
@@ -382,6 +391,52 @@ describe('ImportDraftReview', () => {
     expect(continueMocks.mutateAsync).toHaveBeenCalledTimes(1);
     expect(
       screen.getByText('Prepared revision 1 for finalize.')
+    ).toBeInTheDocument();
+  });
+
+  it('clears prepared status when selection changes', async () => {
+    const user = userEvent.setup();
+    const readyDraft = makeImportDraft({
+      rows: [
+        makeImportDraftRow({
+          id: 'row_ready',
+          status: 'ready',
+          reviewDescription: 'Coffee',
+          selectedForImport: true,
+        }),
+      ],
+    });
+    const { rerender } = renderReview(readyDraft);
+
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(
+      screen.getByText('Prepared revision 1 for finalize.')
+    ).toBeInTheDocument();
+
+    rerender(
+      renderReviewWith(
+        makeImportDraft({
+          rows: [
+            makeImportDraftRow({
+              id: 'row_ready',
+              status: 'ready',
+              reviewDescription: 'Coffee',
+              selectedForImport: false,
+              updatedAt: '2026-05-20T12:01:00.000Z',
+            }),
+          ],
+        })
+      )
+    );
+
+    expect(
+      screen.queryByText('Prepared revision 1 for finalize.')
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Continue prepares the selected rows for finalize import.'
+      )
     ).toBeInTheDocument();
   });
 

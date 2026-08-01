@@ -770,4 +770,26 @@ describe('continueImportDraft', () => {
     expect(err).toHaveProperty('details');
     expect(insertImportPreparedSet).not.toHaveBeenCalled();
   });
+
+  it('snapshots the evaluated draft rows without re-reading for preparation', async () => {
+    const evaluatedRow = { ...draftRow };
+    const staleRow = { ...draftRow, reviewCategoryId: null };
+
+    vi.mocked(listDraftRows).mockResolvedValueOnce([evaluatedRow as never]);
+    vi.mocked(listDraftRows).mockResolvedValue([staleRow as never]);
+
+    await continueImportDraft(ORG, BATCH);
+
+    expect(listDraftRows).toHaveBeenCalledTimes(1);
+    expect(insertImportPreparedOutcomes).toHaveBeenCalledWith(
+      mockTx,
+      expect.arrayContaining([
+        expect.objectContaining({
+          reviewedValues: expect.objectContaining({
+            categoryId: CATEGORY,
+          }),
+        }),
+      ])
+    );
+  });
 });
