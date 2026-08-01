@@ -7,7 +7,9 @@ export class DomainError extends Error {
     public statusCode: number,
     message: string,
     /** Optional machine-readable code included in the error response (defaults to 'DOMAIN_ERROR'). */
-    public code?: string
+    public code?: string,
+    /** Optional structured payload for clients (e.g. per-row Continue blockers). */
+    public details?: unknown
   ) {
     super(message);
     this.name = 'DomainError';

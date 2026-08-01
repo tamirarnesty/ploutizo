@@ -9,6 +9,7 @@ import {
   updateImportDraftRow,
   updateImportDraftRowSelection,
 } from '@/services/imports';
+import { continueImportDraft } from '@/services/import-prepared-sets';
 
 vi.mock('@/services/imports', () => ({
   createNormalizedImportDraft: vi.fn(),
@@ -20,6 +21,10 @@ vi.mock('@/services/imports', () => ({
   listImportTargets: vi.fn(),
   updateImportDraftRow: vi.fn(),
   updateImportDraftRowSelection: vi.fn(),
+}));
+
+vi.mock('@/services/import-prepared-sets', () => ({
+  continueImportDraft: vi.fn(),
 }));
 
 const app = createRouteTestApp<AppEnv>((testApp) => {
@@ -191,5 +196,23 @@ describe('imports router', () => {
 
     expect(res.status).toBe(200);
     expect(discardImportDraft).toHaveBeenCalledWith('org_1', 'draft_1');
+  });
+
+  it('continues an import draft into a prepared set revision', async () => {
+    vi.mocked(continueImportDraft).mockResolvedValue({
+      id: 'prep_1',
+      orgId: 'org_1',
+      batchId: 'draft_1',
+      revision: 1,
+      createdAt: new Date('2026-05-20T12:00:00Z'),
+      outcomes: [],
+    } as never);
+
+    const res = await app.request('/drafts/draft_1/continue', {
+      method: 'POST',
+    });
+
+    expect(res.status).toBe(201);
+    expect(continueImportDraft).toHaveBeenCalledWith('org_1', 'draft_1');
   });
 });
