@@ -7,7 +7,7 @@ import {
 } from '@ploutizo/ui/components/tooltip';
 import { cn } from '@ploutizo/ui/lib/utils';
 import type { ImportDraftRow } from '@ploutizo/types';
-import { evaluateImportDraftWorkingCopy } from '@/lib/data-access/imports';
+import { evaluateImportDraftWorkingCopy } from '@/lib/data-access/imports/rederiveImportDraftWorkingCopy';
 import { getImportRowStatusTooltip } from '../lib/importPresentation';
 import {
   useImportDraftReviewContext,
