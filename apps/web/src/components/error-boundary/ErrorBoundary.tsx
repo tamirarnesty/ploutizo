@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { Button } from '@ploutizo/ui/components/button';
 import { Text } from '@ploutizo/ui/components/text';
+import { captureBrowserException } from '@/telemetry';
 import type { ErrorComponentProps } from '@tanstack/react-router';
 
 const ART_ERR = ` ███████╗██████╗ ██████╗
@@ -14,10 +15,17 @@ const ART_ERR = ` ███████╗██████╗ █████�
 export const ErrorBoundary = ({ error, reset }: ErrorComponentProps) => {
   const [showDetails, setShowDetails] = useState(false);
 
+  useEffect(() => {
+    captureBrowserException(error, {
+      operation: 'section.recover',
+      surface: 'web.root',
+      boundary: 'route.error',
+    });
+  }, [error]);
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6">
       <div className="flex w-full max-w-lg flex-col items-center">
-        {/* Status bar */}
         <div className="mb-8 flex w-full items-center justify-between border-b border-border pb-3">
           <span className="font-mono text-xs tracking-widest text-muted-foreground">
             ● STATUS — ERROR
@@ -27,17 +35,14 @@ export const ErrorBoundary = ({ error, reset }: ErrorComponentProps) => {
           </span>
         </div>
 
-        {/* Art block */}
         <pre className="mb-6 font-mono text-xs leading-[1.15] text-muted-foreground opacity-40 select-none">
           {ART_ERR}
         </pre>
 
-        {/* Error label */}
         <p className="mb-6 font-mono text-xs tracking-widest text-muted-foreground">
           ERROR · 0x500
         </p>
 
-        {/* Heading + subtext */}
         <div className="mb-8 space-y-2 text-center">
           <Text as="h1" variant="h1">
             Something went wrong
@@ -48,7 +53,6 @@ export const ErrorBoundary = ({ error, reset }: ErrorComponentProps) => {
           </Text>
         </div>
 
-        {/* Action buttons */}
         <div className="flex justify-center gap-2">
           <Button onClick={reset}>Try again</Button>
           <Button
@@ -60,7 +64,6 @@ export const ErrorBoundary = ({ error, reset }: ErrorComponentProps) => {
           </Button>
         </div>
 
-        {/* Dev-mode error detail — not rendered in production */}
         {import.meta.env.DEV && (
           <div className="mt-6 space-y-2">
             <p className="font-mono text-xs text-muted-foreground">

@@ -17,6 +17,7 @@ import {
   useGetImportHistory,
   useGetImportTargets,
 } from '@/lib/data-access/imports';
+import { TelemetryReplayBlock } from '@/telemetry';
 import { ImportDraftList } from './ImportDraftList';
 import { ImportHistoryList } from './ImportHistoryList';
 import { ImportUploadForm } from './ImportUploadForm';
@@ -145,14 +146,15 @@ export const Import = () => {
         </div>
       </div>
 
-      <ImportUploadForm
-        targets={targets}
-        targetsLoading={targetsLoading}
-        activeDrafts={activeDrafts}
-        activeDraftsLoading={draftsLoading || draftsError}
-      />
+      <TelemetryReplayBlock className="space-y-8">
+        <ImportUploadForm
+          targets={targets}
+          targetsLoading={targetsLoading}
+          activeDrafts={activeDrafts}
+          activeDraftsLoading={draftsLoading || draftsError}
+        />
 
-      <section className="space-y-3">
+        <section className="space-y-3">
         <Text as="h2" variant="h3">
           Active drafts
         </Text>
@@ -185,6 +187,7 @@ export const Import = () => {
           <ImportHistoryList history={history} isLoading={historyLoading} />
         )}
       </section>
+      </TelemetryReplayBlock>
     </div>
   );
 };

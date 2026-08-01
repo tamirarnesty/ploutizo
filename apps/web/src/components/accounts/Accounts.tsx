@@ -3,6 +3,7 @@ import { Button } from '@ploutizo/ui/components/button';
 import { Text } from '@ploutizo/ui/components/text';
 import type { Account } from '@ploutizo/types';
 import { useGetAccounts } from '@/lib/data-access/accounts';
+import { TelemetryReplayBlock } from '@/telemetry';
 import { AccountsTable } from './AccountsTable';
 import { AccountSheet } from './AccountSheet';
 
@@ -34,12 +35,14 @@ export const Accounts = () => {
         </Button>
       </div>
 
-      <AccountsTable
-        accounts={accounts}
-        isLoading={isLoading}
-        onRowClick={handleRowClick}
-        onAddClick={handleAddClick}
-      />
+      <TelemetryReplayBlock>
+        <AccountsTable
+          accounts={accounts}
+          isLoading={isLoading}
+          onRowClick={handleRowClick}
+          onAddClick={handleAddClick}
+        />
+      </TelemetryReplayBlock>
 
       <AccountSheet
         open={sheetOpen}

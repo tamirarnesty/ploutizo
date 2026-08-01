@@ -18,6 +18,7 @@ import {
   EmptyTitle,
 } from '@ploutizo/ui/components/empty';
 import { useImportReviewSession } from '@/lib/data-access/imports';
+import { TelemetryReplayBlock } from '@/telemetry';
 import { ImportDraftReview } from './ImportDraftReview';
 import { useImportReviewLeaveGuard } from './useImportReviewLeaveGuard';
 
@@ -97,7 +98,7 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
   return (
     <div className={importReviewPageClassName}>
       <ImportReviewBreadcrumbs />
-      {body}
+      <TelemetryReplayBlock className="min-h-0 flex-1">{body}</TelemetryReplayBlock>
     </div>
   );
 };
