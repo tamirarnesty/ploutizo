@@ -60,14 +60,23 @@ describe('app.onError() handler', () => {
 
   it('includes DomainError details in the response body', async () => {
     const app = buildApp(() => {
-      throw new DomainError(400, 'Some selected rows are not ready to import.', 'IMPORT_CONTINUE_NOT_READY', {
-        rows: [{ batchRowId: 'row_1' }],
-      });
+      throw new DomainError(
+        400,
+        'Some selected rows are not ready to import.',
+        'IMPORT_CONTINUE_NOT_READY',
+        {
+          rows: [{ batchRowId: 'row_1' }],
+        }
+      );
     });
     const res = await app.request('/');
     expect(res.status).toBe(400);
     const body = (await res.json()) as {
-      error: { code: string; message: string; details?: { rows: { batchRowId: string }[] } };
+      error: {
+        code: string;
+        message: string;
+        details?: { rows: { batchRowId: string }[] };
+      };
     };
     expect(body.error.code).toBe('IMPORT_CONTINUE_NOT_READY');
     expect(body.error.details).toEqual({ rows: [{ batchRowId: 'row_1' }] });

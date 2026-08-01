@@ -38,6 +38,18 @@ vi.mock('@/lib/data-access/imports', () => ({
   useImportReviewSession: vi.fn(),
 }));
 
+const continueMocks = vi.hoisted(() => ({
+  mutateAsync: vi.fn(),
+  isPending: false,
+}));
+
+vi.mock('@/lib/data-access/imports/useContinueImportDraft', () => ({
+  useContinueImportDraft: () => ({
+    mutateAsync: continueMocks.mutateAsync,
+    isPending: continueMocks.isPending,
+  }),
+}));
+
 vi.mock('@/lib/data-access/categories', () => ({
   useGetCategories: () => ({
     data: [{ id: 'cat_1', name: 'Dining' }],
@@ -91,6 +103,14 @@ const toSession = (value = draft) => {
 describe('ImportReview', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    continueMocks.mutateAsync.mockResolvedValue({
+      id: 'prep_1',
+      orgId: 'org_1',
+      batchId: 'draft_1',
+      revision: 1,
+      createdAt: '2026-05-20T12:00:00.000Z',
+      outcomes: [],
+    });
   });
 
   it('shows a missing draft empty state', () => {
@@ -126,7 +146,11 @@ describe('ImportReview', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('table')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
-    expect(screen.getByText('Import commit coming soon')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Continue prepares the selected rows for finalize import.'
+      )
+    ).toBeInTheDocument();
     expect(
       screen.queryByText('Select at least one row to continue.')
     ).not.toBeInTheDocument();

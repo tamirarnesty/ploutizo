@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Inbox } from 'lucide-react';
 import {
   Empty,
@@ -88,6 +88,22 @@ const ImportDraftReviewContent = ({
     null
   );
   const [continueError, setContinueError] = useState<string | null>(null);
+
+  const continueDraftFingerprint = useMemo(
+    () =>
+      rows
+        .map(
+          (row) =>
+            `${row.id}:${row.updatedAt}:${row.selectedForImport}:${row.reviewCategoryId}:${row.reviewAmount}:${row.reviewDescription}`
+        )
+        .join('|'),
+    [rows]
+  );
+
+  useEffect(() => {
+    setPreparedSet(null);
+    setContinueError(null);
+  }, [continueDraftFingerprint, hasUnsavedWork]);
 
   const handleContinue = useCallback(async () => {
     if (!draftId) return;
