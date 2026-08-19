@@ -733,6 +733,12 @@ describe('continueImportDraft', () => {
       ORG,
       BATCH
     );
+    expect(listOrgMembers).toHaveBeenCalledWith(ORG, mockTx);
+    expect(sumPriorRefundTotalsByTransactionTarget).toHaveBeenCalledWith(
+      ORG,
+      [],
+      mockTx
+    );
     expect(insertImportPreparedSet).toHaveBeenCalled();
     expect(result).toMatchObject({
       revision: 1,

@@ -6,11 +6,7 @@ import {
   users,
 } from '@ploutizo/db/schema';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
-
-// Drizzle transaction type for functions that participate in an outer db.transaction().
-export type DrizzleTransaction = Parameters<
-  Parameters<typeof db.transaction>[0]
->[0];
+import type { Transaction } from '@ploutizo/db';
 
 // GET / — list accounts for org; active only unless includeArchived=true
 export const listAccounts = async (orgId: string, includeArchived: boolean) => {
@@ -26,7 +22,7 @@ export const listAccounts = async (orgId: string, includeArchived: boolean) => {
 
 // POST / — insert account row
 export const insertAccount = async (
-  tx: DrizzleTransaction,
+  tx: Transaction,
   orgId: string,
   data: Omit<
     typeof accounts.$inferInsert,
@@ -42,7 +38,7 @@ export const insertAccount = async (
 
 // POST / — insert account member rows in batch
 export const insertAccountMembers = async (
-  tx: DrizzleTransaction,
+  tx: Transaction,
   accountId: string,
   memberIds: string[]
 ) => {
@@ -54,7 +50,7 @@ export const insertAccountMembers = async (
 
 // PATCH /:id — update account scalar fields; returns updated row or null
 export const updateAccount = async (
-  tx: DrizzleTransaction,
+  tx: Transaction,
   orgId: string,
   id: string,
   data: Partial<typeof accounts.$inferInsert>
@@ -69,7 +65,7 @@ export const updateAccount = async (
 
 // PATCH /:id — replace all member rows for an account
 export const replaceAccountMembers = async (
-  tx: DrizzleTransaction,
+  tx: Transaction,
   accountId: string,
   memberIds: string[]
 ) => {

@@ -64,13 +64,26 @@ vi.mock('@/lib/data-access/org', () => ({
 const continueMocks = vi.hoisted(() => ({
   mutateAsync: vi.fn(),
   isPending: false,
+  error: null as unknown,
+  reset: vi.fn(),
 }));
 
 vi.mock('@/lib/data-access/imports/useContinueImportDraft', () => ({
   useContinueImportDraft: () => ({
     mutateAsync: continueMocks.mutateAsync,
     isPending: continueMocks.isPending,
+    error: continueMocks.error,
+    reset: continueMocks.reset,
   }),
+}));
+
+const flushPendingInputs = vi.fn();
+
+vi.mock('@/lib/money/pending-input-flush', () => ({
+  PendingInputFlushProvider: ({ children }: { children: React.ReactNode }) =>
+    children,
+  useFlushPendingInputs: () => flushPendingInputs,
+  useRegisterInputFlush: () => undefined,
 }));
 
 vi.mock('@/hooks/persistedPageSize', () => ({
@@ -99,15 +112,6 @@ const renderReview = (draft = makeImportDraft()) => {
   );
 };
 
-const renderReviewWith = (draft: ReturnType<typeof makeImportDraft>) => {
-  const { rows, ...meta } = draft;
-  return (
-    <TooltipProvider delay={0}>
-      <ImportDraftReview meta={meta} rows={rows} {...reviewSessionProps} />
-    </TooltipProvider>
-  );
-};
-
 const renderLoadingReview = () =>
   render(
     <TooltipProvider delay={0}>
@@ -122,6 +126,8 @@ describe('ImportDraftReview', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     paginationMocks.pagination = { pageIndex: 0, pageSize: 25 };
+    continueMocks.isPending = false;
+    continueMocks.error = null;
     continueMocks.mutateAsync.mockResolvedValue({
       id: 'prep_1',
       orgId: 'org_1',
@@ -387,15 +393,69 @@ describe('ImportDraftReview', () => {
 
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
+    expect(flushPendingInputs).toHaveBeenCalledTimes(1);
     expect(flush).toHaveBeenCalledTimes(1);
+    expect(flushPendingInputs.mock.invocationCallOrder[0]).toBeLessThan(
+      flush.mock.invocationCallOrder[0]
+    );
     expect(continueMocks.mutateAsync).toHaveBeenCalledTimes(1);
     expect(
-      screen.getByText('Prepared revision 1 for finalize.')
+      screen.getByText(
+        'Continue prepares the selected rows for finalize import.'
+      )
     ).toBeInTheDocument();
   });
 
-  it('clears prepared status when selection changes', async () => {
+  it('shows server continue blockers in the tooltip', async () => {
     const user = userEvent.setup();
+    continueMocks.error = {
+      error: {
+        code: 'IMPORT_CONTINUE_NOT_READY',
+        message: 'Some selected rows are not ready to import.',
+        details: {
+          rows: [
+            {
+              batchRowId: 'row_ready',
+              status: 'needs_review',
+              blockers: ['refund_link'],
+              invalidReason:
+                'Refund exceeds the remaining amount on the original expense.',
+            },
+          ],
+        },
+      },
+    };
+    renderReview(
+      makeImportDraft({
+        rows: [
+          makeImportDraftRow({
+            id: 'row_ready',
+            status: 'ready',
+            reviewDescription: 'Coffee',
+            selectedForImport: true,
+          }),
+        ],
+      })
+    );
+
+    await user.hover(screen.getByRole('button', { name: 'Continue' }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          'Refund exceeds the remaining amount on the original expense.'
+        )
+      ).toBeInTheDocument()
+    );
+  });
+
+  it('clears a stale continue error when unsaved work begins', () => {
+    continueMocks.error = {
+      error: {
+        code: 'IMPORT_CONTINUE_NOT_READY',
+        message: 'Some selected rows are not ready to import.',
+      },
+    };
     const readyDraft = makeImportDraft({
       rows: [
         makeImportDraftRow({
@@ -407,37 +467,20 @@ describe('ImportDraftReview', () => {
       ],
     });
     const { rerender } = renderReview(readyDraft);
-
-    await user.click(screen.getByRole('button', { name: 'Continue' }));
-
-    expect(
-      screen.getByText('Prepared revision 1 for finalize.')
-    ).toBeInTheDocument();
+    const { rows, ...meta } = readyDraft;
 
     rerender(
-      renderReviewWith(
-        makeImportDraft({
-          rows: [
-            makeImportDraftRow({
-              id: 'row_ready',
-              status: 'ready',
-              reviewDescription: 'Coffee',
-              selectedForImport: false,
-              updatedAt: '2026-05-20T12:01:00.000Z',
-            }),
-          ],
-        })
-      )
+      <TooltipProvider delay={0}>
+        <ImportDraftReview
+          meta={meta}
+          rows={rows}
+          {...reviewSessionProps}
+          hasUnsavedWork
+        />
+      </TooltipProvider>
     );
 
-    expect(
-      screen.queryByText('Prepared revision 1 for finalize.')
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByText(
-        'Continue prepares the selected rows for finalize import.'
-      )
-    ).toBeInTheDocument();
+    expect(continueMocks.reset).toHaveBeenCalled();
   });
 
   it('renders disabled assignee toggles for invalid rows in the grid', () => {

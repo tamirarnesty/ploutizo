@@ -1,15 +1,11 @@
 import { db } from '@ploutizo/db';
 import { categories } from '@ploutizo/db/schema';
 import { and, eq, isNull } from 'drizzle-orm';
-
-// Drizzle transaction type for functions that participate in an outer db.transaction().
-export type DrizzleTransaction = Parameters<
-  Parameters<typeof db.transaction>[0]
->[0];
+import type { Transaction } from '@ploutizo/db';
 
 // PATCH /reorder — update sortOrder for each id in sequence
 export const reorderCategories = async (
-  tx: DrizzleTransaction,
+  tx: Transaction,
   orgId: string,
   orderedIds: string[]
 ) => {

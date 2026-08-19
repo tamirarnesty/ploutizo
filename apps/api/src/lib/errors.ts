@@ -2,14 +2,14 @@
 // Services throw these; the onError handler in index.ts maps them to responses.
 // Per D-03, D-04.
 
-export class DomainError extends Error {
+export class DomainError<TDetails = unknown> extends Error {
   constructor(
     public statusCode: number,
     message: string,
     /** Optional machine-readable code included in the error response (defaults to 'DOMAIN_ERROR'). */
     public code?: string,
     /** Optional structured payload for clients (e.g. per-row Continue blockers). */
-    public details?: unknown
+    public details?: TDetails
   ) {
     super(message);
     this.name = 'DomainError';

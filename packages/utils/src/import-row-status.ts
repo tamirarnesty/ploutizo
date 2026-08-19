@@ -1,5 +1,11 @@
 import { IMPORT_TRANSACTION_TYPE_VALUES } from '@ploutizo/types';
-import type { ImportRowStatus, ImportTransactionType } from '@ploutizo/types';
+import type {
+  ImportRowReviewBlocker,
+  ImportRowStatus,
+  ImportTransactionType,
+} from '@ploutizo/types';
+
+export type { ImportRowReviewBlocker };
 
 export interface ImportRowStructuralFields {
   reviewDate: string | null;
@@ -25,16 +31,6 @@ export interface ImportRowReviewFields {
    */
   refundLinkBlocked?: boolean;
 }
-
-export type ImportRowReviewBlocker =
-  | 'date'
-  | 'amount'
-  | 'description'
-  | 'type'
-  | 'category'
-  | 'assignee'
-  | 'settlement'
-  | 'refund_link';
 
 /** Fields required to derive durable/optimistic import row status. */
 export type ImportRowStatusInput = ImportRowStructuralFields &

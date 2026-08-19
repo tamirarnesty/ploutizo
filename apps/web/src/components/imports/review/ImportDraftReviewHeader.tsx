@@ -7,7 +7,7 @@ import {
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
 import { formatAccountLabel } from '@ploutizo/utils';
-import type { ImportDraftRow, ImportPreparedSet } from '@ploutizo/types';
+import type { ImportDraftRow } from '@ploutizo/types';
 import type {
   ImportDraftMeta,
   ImportReviewAutosaveStatus,
@@ -23,7 +23,6 @@ interface ImportDraftReviewHeaderProps {
   continueBlocker: string | null;
   continueError: string | null;
   isContinuing: boolean;
-  preparedSet: ImportPreparedSet | null;
   autosaveStatus: ImportReviewAutosaveStatus;
   onRetryAutosave: () => void;
   onContinue: () => void | Promise<void>;
@@ -47,7 +46,6 @@ export const ImportDraftReviewHeader = ({
   continueBlocker,
   continueError,
   isContinuing,
-  preparedSet,
   autosaveStatus,
   onRetryAutosave,
   onContinue,
@@ -64,13 +62,7 @@ export const ImportDraftReviewHeader = ({
     </Button>
   );
 
-  const tooltipContent =
-    continueError ??
-    (continueBlocker ? continueBlocker : preparedSet ? null : null);
-
-  const statusCopy = preparedSet
-    ? `Prepared revision ${preparedSet.revision} for finalize.`
-    : 'Continue prepares the selected rows for finalize import.';
+  const tooltipContent = continueError ?? continueBlocker;
 
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -109,7 +101,7 @@ export const ImportDraftReviewHeader = ({
             variant="body-sm"
             className="max-w-sm text-right text-muted-foreground"
           >
-            {statusCopy}
+            Continue prepares the selected rows for finalize import.
           </Text>
         ) : null}
       </div>

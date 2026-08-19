@@ -1,15 +1,11 @@
 import { db } from '@ploutizo/db';
 import { merchantRules } from '@ploutizo/db/schema';
 import { and, eq } from 'drizzle-orm';
-
-// Drizzle transaction type for functions that participate in an outer db.transaction().
-export type DrizzleTransaction = Parameters<
-  Parameters<typeof db.transaction>[0]
->[0];
+import type { Transaction } from '@ploutizo/db';
 
 // PATCH /reorder — update priority for each id in sequence
 export const reorderMerchantRules = async (
-  tx: DrizzleTransaction,
+  tx: Transaction,
   orgId: string,
   orderedIds: string[]
 ) => {

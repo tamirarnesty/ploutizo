@@ -1,10 +1,8 @@
 import { db } from '@ploutizo/db';
 import { transactionAssignees, transactions } from '@ploutizo/db/schema';
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
+import type { DbClient } from '@ploutizo/db';
 import type { ExistingRefundTargetExpense } from '@ploutizo/utils';
-import type { DrizzleTransaction } from '@/lib/queries/imports';
-
-type DbClient = DrizzleTransaction | typeof db;
 
 /**
  * Load transaction targets for import refund-link validation by id.
