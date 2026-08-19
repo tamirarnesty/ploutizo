@@ -115,15 +115,6 @@ const readSeedMeta = (org: Organization): SeedFixtureMeta => {
   return { ...publicMeta, ...privateMeta };
 };
 
-const isCanonicalSeedOrg = (org: Organization): boolean => {
-  const meta = readSeedMeta(org);
-  if (meta.ploutizoSeedFixture === CANONICAL_FIXTURE_ID) return true;
-  return (
-    org.name === CANONICAL_HOUSEHOLD_NAME &&
-    meta.ploutizoSeedFixture !== VARIANT_FIXTURE_ID
-  );
-};
-
 const variantNumberFromOrg = (org: Organization): number | undefined => {
   const meta = readSeedMeta(org);
   if (meta.ploutizoSeedFixture !== VARIANT_FIXTURE_ID) return undefined;
@@ -399,7 +390,9 @@ const ensureUser = async (
       skipPasswordChecks: true,
     });
   } catch (err) {
-    fail(`Failed to create Clerk user ${spec.email}: ${formatClerkError(err)}`);
+    return fail(
+      `Failed to create Clerk user ${spec.email}: ${formatClerkError(err)}`
+    );
   }
 };
 
@@ -497,10 +490,12 @@ const mintOrgJwtViaFrontend = async (
     errors?: unknown;
   };
   if (!tokenRes.ok || !tokenJson.jwt) {
-    fail(`Clerk Frontend session token failed: ${JSON.stringify(tokenJson)}`);
+    return fail(
+      `Clerk Frontend session token failed: ${JSON.stringify(tokenJson)}`
+    );
   }
   if (jwtOrgId(tokenJson.jwt) !== orgId) {
-    fail('Frontend session token is missing the household org_id claim');
+    return fail('Frontend session token is missing the household org_id claim');
   }
   return tokenJson.jwt;
 };
@@ -567,8 +562,11 @@ const shared = (memberIds: [string, string], amountCents: number) =>
 
 const categoryByName = (categories: CategoryRow[], name: string): string => {
   const row = categories.find((c) => c.name === name);
-  if (!row)
-    fail(`Seeded category "${name}" was not returned by GET /api/categories`);
+  if (!row) {
+    return fail(
+      `Seeded category "${name}" was not returned by GET /api/categories`
+    );
+  }
   return row.id;
 };
 
@@ -851,7 +849,9 @@ const pickMember = (
   label: string
 ): MemberRow => {
   const row = rows.find((m) => m.externalId === clerkUserId);
-  if (!row) fail(`Expected household member ${label} after Clerk sync`);
+  if (!row) {
+    return fail(`Expected household member ${label} after Clerk sync`);
+  }
   return row;
 };
 
@@ -902,7 +902,7 @@ const stampSeedMetadata = async (
       },
     });
   } catch (err) {
-    fail(
+    return fail(
       `Failed to stamp seed metadata on ${org.id}: ${formatClerkError(err)}`
     );
   }
@@ -956,7 +956,9 @@ const resolveSeedHousehold = async (
       await ensureOrgMembership(clerk, org.id, alanUser.id, MEMBERS[1].email);
       return { org, created: true };
     } catch (err) {
-      fail(`Failed to create seed variant household: ${formatClerkError(err)}`);
+      return fail(
+        `Failed to create seed variant household: ${formatClerkError(err)}`
+      );
     }
   }
 
@@ -965,10 +967,7 @@ const resolveSeedHousehold = async (
       (org) => readSeedMeta(org).ploutizoSeedFixture === CANONICAL_FIXTURE_ID
     )
     .sort((a, b) => a.createdAt - b.createdAt);
-  const named = adaOrgs
-    .filter(isCanonicalSeedOrg)
-    .sort((a, b) => a.createdAt - b.createdAt);
-  const existing = tagged[0] ?? named[0];
+  const existing = tagged[0];
   if (existing) {
     const org = await stampSeedMetadata(clerk, existing, CANONICAL_FIXTURE_ID);
     await ensureOrgMembership(clerk, org.id, alanUser.id, MEMBERS[1].email);
@@ -986,7 +985,7 @@ const resolveSeedHousehold = async (
     await ensureOrgMembership(clerk, org.id, alanUser.id, MEMBERS[1].email);
     return { org, created: true };
   } catch (err) {
-    fail(`Failed to create Clerk household: ${formatClerkError(err)}`);
+    return fail(`Failed to create Clerk household: ${formatClerkError(err)}`);
   }
 };
 
