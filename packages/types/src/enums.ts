@@ -66,7 +66,6 @@ export const IMPORT_ROW_STATUS_VALUES = [
   'ready',
   'needs_review',
   'invalid',
-  'skipped',
 ] as const;
 
 export type ImportRowStatus = (typeof IMPORT_ROW_STATUS_VALUES)[number];

@@ -104,7 +104,6 @@ describe('isImportRowStructurallyInvalid', () => {
 
 describe('deriveImportRowStatus', () => {
   const readyFields = {
-    status: 'ready' as const,
     reviewDate: '2026-05-02',
     reviewAmount: 4218,
     reviewType: 'expense' as const,
@@ -128,23 +127,8 @@ describe('deriveImportRowStatus', () => {
     ).toBe('invalid');
   });
 
-  it('recovers from invalid to ready when structural fields and review fields are complete', () => {
-    expect(
-      deriveImportRowStatus({
-        ...readyFields,
-        status: 'invalid',
-      })
-    ).toBe('ready');
-  });
-
-  it('preserves skipped', () => {
-    expect(
-      deriveImportRowStatus({
-        ...readyFields,
-        status: 'skipped',
-        reviewCategoryId: null,
-      })
-    ).toBe('skipped');
+  it('recovers to ready when structural fields and review fields are complete', () => {
+    expect(deriveImportRowStatus(readyFields)).toBe('ready');
   });
 
   it('returns needs_review when category is cleared', () => {
@@ -234,11 +218,10 @@ describe('computeImportDraftRowCounts', () => {
         { status: 'ready' },
         { status: 'needs_review' },
         { status: 'invalid' },
-        { status: 'skipped' },
       ])
     ).toEqual({
-      rowCount: 4,
-      validRowCount: 3,
+      rowCount: 3,
+      validRowCount: 2,
       invalidRowCount: 1,
     });
   });
@@ -246,7 +229,6 @@ describe('computeImportDraftRowCounts', () => {
 
 describe('evaluateImportRow', () => {
   const readyFields = {
-    status: 'ready' as const,
     reviewDate: '2026-05-02',
     reviewAmount: 4218,
     reviewType: 'expense' as const,
@@ -315,15 +297,14 @@ describe('evaluateImportRow', () => {
     ).toEqual({ status: 'ready', blockers: [] });
   });
 
-  it('preserves skipped while still reporting blockers', () => {
+  it('treats missing review fields as needs_review rather than skipped', () => {
     expect(
       evaluateImportRow({
         ...readyFields,
-        status: 'skipped',
         reviewCategoryId: null,
       })
     ).toEqual({
-      status: 'skipped',
+      status: 'needs_review',
       blockers: ['category'],
     });
   });
@@ -352,7 +333,6 @@ describe('toImportRowStatusFields', () => {
   it('normalizes nullable review fields before status derivation', () => {
     expect(
       toImportRowStatusFields({
-        status: 'needs_review',
         reviewDate: '2026-05-02',
         reviewAmount: 4218,
         reviewType: 'expense',
@@ -365,7 +345,6 @@ describe('toImportRowStatusFields', () => {
         reviewAssigneeMemberIds: ['member_1'],
       })
     ).toEqual({
-      status: 'needs_review',
       reviewDate: '2026-05-02',
       reviewAmount: 4218,
       reviewType: 'expense',
@@ -384,7 +363,6 @@ describe('toImportRowStatusFields', () => {
   it('defaults missing assignees to an empty array', () => {
     expect(
       toImportRowStatusFields({
-        status: 'needs_review',
         reviewDate: '2026-05-02',
         reviewAmount: 4218,
         reviewType: 'expense',

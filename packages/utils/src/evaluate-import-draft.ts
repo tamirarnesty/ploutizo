@@ -21,7 +21,6 @@ import type {
 /** Durable import draft row fields used for status derivation. */
 export interface ImportDraftDurableRow {
   id: string;
-  status: ImportRowStatus;
   reviewDate: string | null;
   reviewAmount: number | null;
   reviewType: string | null;
@@ -82,7 +81,6 @@ export const evaluateImportDraftRow = (
   const refundLinkBlocked = isImportRefundLinkBlocked(refundLink ?? undefined);
 
   const statusFields = toImportRowStatusFields({
-    status: row.status,
     reviewDate: row.reviewDate,
     reviewAmount: row.reviewAmount,
     reviewType: toImportTransactionType(row.reviewType),

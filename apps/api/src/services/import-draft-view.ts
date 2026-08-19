@@ -52,7 +52,6 @@ export const toImportDraftDurableRow = (
   row: ImportDraftRowRecord
 ): ImportDraftDurableRow => ({
   id: row.id,
-  status: row.status,
   reviewDate: row.reviewDate ?? null,
   reviewAmount: row.reviewAmount,
   reviewType: row.reviewType,
@@ -142,6 +141,33 @@ export const loadDraftRefundContext = async (
   };
 };
 
+export const deriveImportDraftReviewCounts = (
+  evaluations: ReadonlyMap<string, ImportDraftRowEvaluation>
+) =>
+  computeImportDraftRowCounts(
+    [...evaluations.values()].map((evaluation) => ({
+      status: evaluation.status,
+    }))
+  );
+
+export const withLiveImportReviewCounts = <
+  T extends {
+    rowCount: number;
+    validRowCount: number;
+    invalidRowCount: number;
+  },
+>(
+  summary: T,
+  evaluations: ReadonlyMap<string, ImportDraftRowEvaluation>
+): T => {
+  const counts = deriveImportDraftReviewCounts(evaluations);
+  return {
+    ...summary,
+    validRowCount: counts.validRowCount,
+    invalidRowCount: counts.invalidRowCount,
+  };
+};
+
 export const buildImportDraftView = async (
   orgId: string,
   summary: ImportDraftSummaryRow,
@@ -162,11 +188,11 @@ export const buildImportDraftView = async (
   const apiRows = rows.map((row) =>
     toImportDraftRow(row, evaluations.get(row.id)!)
   );
-  const counts = computeImportDraftRowCounts(apiRows);
+  const counts = deriveImportDraftReviewCounts(evaluations);
 
   return {
     ...toSummary(summary),
-    rowCount: counts.rowCount,
+    rowCount: summary.rowCount,
     validRowCount: counts.validRowCount,
     invalidRowCount: counts.invalidRowCount,
     rows: apiRows,

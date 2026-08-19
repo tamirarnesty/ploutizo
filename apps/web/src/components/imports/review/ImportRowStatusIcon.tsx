@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2, CircleSlash, XCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import {
   Tooltip,
@@ -18,7 +18,6 @@ const statusIconClassName: Record<ImportDraftRow['status'], string> = {
   ready: 'text-emerald-600 dark:text-emerald-400',
   needs_review: 'text-amber-600 dark:text-amber-400',
   invalid: 'text-destructive',
-  skipped: 'text-muted-foreground',
 };
 
 const StatusIcon = ({
@@ -44,8 +43,6 @@ const StatusIcon = ({
       return <AlertCircle className={className} aria-hidden="true" />;
     case 'invalid':
       return <XCircle className={className} aria-hidden="true" />;
-    case 'skipped':
-      return <CircleSlash className={className} aria-hidden="true" />;
     default:
       return <AlertCircle className={className} aria-hidden="true" />;
   }

@@ -180,7 +180,7 @@ describe('ImportReview', () => {
 
     expect(screen.getByText('No transactions to review')).toBeInTheDocument();
     expect(
-      screen.getByText(/Every row in this draft is invalid or skipped/)
+      screen.getByText(/Every row in this draft is invalid/)
     ).toBeInTheDocument();
   });
 });

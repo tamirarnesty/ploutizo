@@ -23,11 +23,7 @@ import {
 import { accounts } from './accounts';
 import { orgs } from './auth';
 import { categories } from './classification';
-import {
-  importBatchStatusEnum,
-  importRowStatusEnum,
-  transactionTypeEnum,
-} from './enums';
+import { importBatchStatusEnum, transactionTypeEnum } from './enums';
 
 export const importBatches = pgTable(
   'import_batches',
@@ -45,8 +41,6 @@ export const importBatches = pgTable(
     fileName: text('file_name'),
     importedAt: timestamp('imported_at', { withTimezone: true }).notNull(),
     rowCount: integer('row_count').notNull(),
-    validRowCount: integer('valid_row_count').notNull().default(0),
-    invalidRowCount: integer('invalid_row_count').notNull().default(0),
     completedAt: timestamp('completed_at', { withTimezone: true }),
     discardedAt: timestamp('discarded_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true })
@@ -82,8 +76,6 @@ export const importBatchRows = pgTable(
       .notNull()
       .references(() => orgs.id, { onDelete: 'cascade' }),
     rowNumber: integer('row_number').notNull(),
-    status: importRowStatusEnum('status').notNull(),
-    invalidReason: text('invalid_reason'),
     rawData: jsonb('raw_data').$type<Record<string, string>>().notNull(),
     externalId: text('external_id'),
     sourceDate: text('source_date'),

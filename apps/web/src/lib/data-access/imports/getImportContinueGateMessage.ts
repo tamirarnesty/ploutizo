@@ -14,7 +14,6 @@ const IMPORT_ROW_STATUS_VALUES = new Set<ImportRowStatus>([
   'ready',
   'needs_review',
   'invalid',
-  'skipped',
 ]);
 
 const IMPORT_ROW_REVIEW_BLOCKERS = new Set<ImportRowReviewBlocker>([

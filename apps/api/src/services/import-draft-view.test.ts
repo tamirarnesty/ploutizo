@@ -20,8 +20,6 @@ const summaryRow = {
   status: 'draft' as const,
   fileName: 'statement.csv',
   rowCount: 2,
-  validRowCount: 0,
-  invalidRowCount: 2,
   importedAt: new Date('2026-05-20T12:00:00Z'),
   completedAt: null,
   discardedAt: null,
@@ -34,8 +32,6 @@ const readyRow = {
   batchId: summaryRow.id,
   orgId: 'org_1',
   rowNumber: 1,
-  status: 'needs_review' as const,
-  invalidReason: null,
   rawData: {},
   externalId: null,
   sourceDate: '2026-05-02',
@@ -72,7 +68,6 @@ describe('buildImportDraftView', () => {
       rowNumber: 2,
       reviewDate: null,
       parsedDate: null,
-      status: 'invalid' as const,
     };
 
     const draft = await buildImportDraftView(
@@ -91,8 +86,8 @@ describe('buildImportDraftView', () => {
         status: row.status,
         fileName: row.fileName,
         rowCount: row.rowCount,
-        validRowCount: row.validRowCount,
-        invalidRowCount: row.invalidRowCount,
+        validRowCount: 0,
+        invalidRowCount: 0,
         importedAt: row.importedAt.toISOString(),
         completedAt: null,
         discardedAt: null,
