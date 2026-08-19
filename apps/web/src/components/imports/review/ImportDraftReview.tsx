@@ -91,9 +91,9 @@ const ImportDraftReviewContent = ({
     useContinueImportDraft(draftId);
 
   useEffect(() => {
-    if (!hasUnsavedWork) return;
+    if (!isPending || autosaveStatus === 'idle') return;
     reset();
-  }, [hasUnsavedWork, reset]);
+  }, [autosaveStatus, isPending, reset]);
 
   const handleContinue = useCallback(async () => {
     if (!draftId) return;

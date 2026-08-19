@@ -449,7 +449,8 @@ describe('ImportDraftReview', () => {
     );
   });
 
-  it('clears a stale continue error when unsaved work begins', () => {
+  it('clears a stale continue error when autosave begins during a pending continue', () => {
+    continueMocks.isPending = true;
     continueMocks.error = {
       error: {
         code: 'IMPORT_CONTINUE_NOT_READY',
@@ -468,6 +469,7 @@ describe('ImportDraftReview', () => {
     });
     const { rerender } = renderReview(readyDraft);
     const { rows, ...meta } = readyDraft;
+    continueMocks.reset.mockClear();
 
     rerender(
       <TooltipProvider delay={0}>
@@ -475,6 +477,7 @@ describe('ImportDraftReview', () => {
           meta={meta}
           rows={rows}
           {...reviewSessionProps}
+          autosaveStatus="saving"
           hasUnsavedWork
         />
       </TooltipProvider>
