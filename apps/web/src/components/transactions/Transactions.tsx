@@ -12,6 +12,7 @@ import { useGetOrgMembers } from '@/lib/data-access/org';
 import { useGetTags } from '@/lib/data-access/tags';
 import type { TransactionRow } from '@/lib/data-access/transactions';
 import { useTablePageSize } from '@/hooks/persistedPageSize';
+import { TelemetryReplayBlock } from '@/telemetry';
 import { TransactionsTable } from './TransactionsTable';
 import { TransactionSheet } from './TransactionSheet';
 import { buildFilterFields } from './TransactionFilterFields';
@@ -458,22 +459,24 @@ export const Transactions = () => {
         }
       />
 
-      <TransactionsTable
-        transactions={transactions}
-        total={total}
-        isLoading={isLoading}
-        page={page}
-        limit={limit}
-        sort={sort}
-        order={order}
-        onPageChange={handlePageChange}
-        onLimitChange={handleLimitChange}
-        onSortChange={handleSortChange}
-        onFilteredEmpty={hasActiveFilters}
-        onClearFilters={handleClearFilters}
-        onEdit={handleEdit}
-        onOpenOriginal={handleOpenOriginal}
-      />
+      <TelemetryReplayBlock>
+        <TransactionsTable
+          transactions={transactions}
+          total={total}
+          isLoading={isLoading}
+          page={page}
+          limit={limit}
+          sort={sort}
+          order={order}
+          onPageChange={handlePageChange}
+          onLimitChange={handleLimitChange}
+          onSortChange={handleSortChange}
+          onFilteredEmpty={hasActiveFilters}
+          onClearFilters={handleClearFilters}
+          onEdit={handleEdit}
+          onOpenOriginal={handleOpenOriginal}
+        />
+      </TelemetryReplayBlock>
 
       <TransactionSheet
         open={sheetOpen}
