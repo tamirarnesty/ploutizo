@@ -3,6 +3,8 @@ import {
   evaluateImportDraft,
 } from '@ploutizo/utils';
 import { toImportTransactionType } from '@ploutizo/utils/import-row-status';
+import { db } from '@ploutizo/db';
+import type { DbClient } from '@ploutizo/db';
 import type {
   ExistingRefundTargetExpense,
   ImportDraftDurableRow,
@@ -18,7 +20,10 @@ import type {
   ImportDraftRowRecord,
   ImportDraftSummaryRow,
 } from '@/lib/queries/imports';
-import { listRefundTargetExpensesByIds } from '@/lib/queries/import-refund-targets';
+import {
+  listRefundTargetExpensesByIds,
+  sumPriorRefundTotalsByTransactionTarget,
+} from '@/lib/queries/import-refund-targets';
 
 const collectRefundOfIds = (
   rows: readonly Pick<ImportDraftRowRecord, 'reviewRefundOf'>[]
@@ -106,20 +111,29 @@ export const toImportDraftRow = (
   invalidReason: evaluation.invalidReason,
 });
 
-const loadDraftRefundContext = async (
+export const loadDraftRefundContext = async (
   orgId: string,
   targetAccountId: string,
-  rows: readonly ImportDraftRowRecord[]
+  rows: readonly ImportDraftRowRecord[],
+  options?: {
+    client?: DbClient;
+    includePriorRefunds?: boolean;
+  }
 ) => {
-  const existingExpenses = await listRefundTargetExpensesByIds(
-    orgId,
-    collectRefundOfIds(rows)
-  );
+  const client = options?.client ?? db;
+  const refundOfIds = collectRefundOfIds(rows);
+  const [existingExpenses, priorRefundsByTarget] = await Promise.all([
+    listRefundTargetExpensesByIds(orgId, refundOfIds, client),
+    options?.includePriorRefunds
+      ? sumPriorRefundTotalsByTransactionTarget(orgId, refundOfIds, client)
+      : Promise.resolve(undefined),
+  ]);
   const evaluations = evaluateImportDraft(
     rows.map((row) => toImportDraftDurableRow(row)),
     {
       targetAccountId,
       existingExpenses,
+      ...(priorRefundsByTarget ? { priorRefundsByTarget } : {}),
     }
   );
   return {

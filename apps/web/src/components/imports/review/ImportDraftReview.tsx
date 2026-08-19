@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { Inbox } from 'lucide-react';
 import {
   Empty,
@@ -13,9 +13,14 @@ import type {
   ImportDraftMeta,
   ImportReviewAutosaveStatus,
 } from '@/lib/data-access/imports';
+import { getImportContinueGateMessage } from '@/lib/data-access/imports/getImportContinueGateMessage';
+import { useContinueImportDraft } from '@/lib/data-access/imports/useContinueImportDraft';
 import { useGetCategories } from '@/lib/data-access/categories';
 import { useGetOrgMembers } from '@/lib/data-access/org';
-import { PendingInputFlushProvider } from '@/lib/money/pending-input-flush';
+import {
+  PendingInputFlushProvider,
+  useFlushPendingInputs,
+} from '@/lib/money/pending-input-flush';
 import { useImportDraftReviewState } from '../lib/useImportDraftReviewState';
 import { ImportDraftReviewHeader } from './ImportDraftReviewHeader';
 import { ImportDraftReviewProvider } from './ImportDraftReviewContext';
@@ -80,14 +85,31 @@ const ImportDraftReviewContent = ({
     hasUnsavedWork,
   });
   const { canContinue, continueBlocker, hasReviewableRows } = reviewState;
+  const draftId = meta?.id ?? '';
+  const flushPendingInputs = useFlushPendingInputs();
+  const { mutateAsync, isPending, error, reset } =
+    useContinueImportDraft(draftId);
+
+  useEffect(() => {
+    if (!isPending || autosaveStatus === 'idle') return;
+    reset();
+  }, [autosaveStatus, isPending, reset]);
 
   const handleContinue = useCallback(async () => {
+    if (!draftId) return;
+    flushPendingInputs();
     const ok = await flush();
     if (!ok) return;
-    // Proceed to import-set verification / finalize lands with ADR 0004.
-  }, [flush]);
+
+    try {
+      await mutateAsync();
+    } catch {
+      // Tooltip reads mutation.error from the existing Continue gate.
+    }
+  }, [draftId, flush, flushPendingInputs, mutateAsync]);
 
   const showEmptyState = !isLoading && meta && !hasReviewableRows;
+  const continueError = error ? getImportContinueGateMessage(error) : null;
 
   return (
     <section className="flex min-h-0 flex-1 flex-col gap-3">
@@ -97,6 +119,8 @@ const ImportDraftReviewContent = ({
         isLoading={isLoading}
         canContinue={canContinue}
         continueBlocker={continueBlocker}
+        continueError={continueError}
+        isContinuing={isPending}
         autosaveStatus={autosaveStatus}
         onRetryAutosave={retryAutosave}
         onContinue={handleContinue}

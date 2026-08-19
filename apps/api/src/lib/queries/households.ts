@@ -1,6 +1,7 @@
 import { db } from '@ploutizo/db';
 import { orgMembers, orgs, users } from '@ploutizo/db/schema';
 import { and, eq } from 'drizzle-orm';
+import type { DbClient } from '@ploutizo/db';
 
 // GET / — fetch org name and imageUrl
 export const fetchOrg = async (orgId: string) => {
@@ -34,8 +35,8 @@ export const updateOrgSettings = async (
 };
 
 // GET /members — list members with user join for avatar/name fields
-export const listOrgMembers = async (orgId: string) => {
-  return db
+export const listOrgMembers = async (orgId: string, client: DbClient = db) => {
+  return client
     .select({
       id: orgMembers.id,
       orgId: orgMembers.orgId,

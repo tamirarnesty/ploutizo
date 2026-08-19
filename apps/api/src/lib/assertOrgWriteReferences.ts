@@ -1,4 +1,4 @@
-import type { DrizzleTransaction } from '@/lib/queries/scope';
+import type { Transaction } from '@ploutizo/db';
 import { NotFoundError } from '@/lib/errors';
 import {
   allMembersInOrg,
@@ -15,7 +15,7 @@ export interface OrgWriteReferences {
 export const assertOrgWriteReferences = async (
   orgId: string,
   refs: OrgWriteReferences,
-  tx?: DrizzleTransaction
+  tx?: Transaction
 ): Promise<void> => {
   await Promise.all([
     refs.categoryId

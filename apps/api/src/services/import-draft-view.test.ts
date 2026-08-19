@@ -1,9 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import { buildImportDraftView } from '@/services/import-draft-view';
-import { listRefundTargetExpensesByIds } from '@/lib/queries/import-refund-targets';
+import {
+  listRefundTargetExpensesByIds,
+  sumPriorRefundTotalsByTransactionTarget,
+} from '@/lib/queries/import-refund-targets';
 
 vi.mock('@/lib/queries/import-refund-targets', () => ({
   listRefundTargetExpensesByIds: vi.fn(),
+  sumPriorRefundTotalsByTransactionTarget: vi.fn(),
 }));
 
 const summaryRow = {
@@ -103,5 +107,6 @@ describe('buildImportDraftView', () => {
     expect(draft.invalidRowCount).toBe(1);
     expect(draft.rowCount).toBe(2);
     expect(draft.refundTargetFacts).toEqual({});
+    expect(sumPriorRefundTotalsByTransactionTarget).not.toHaveBeenCalled();
   });
 });

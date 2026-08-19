@@ -263,7 +263,7 @@ describe('import service', () => {
     expect(draft.validRowCount).toBe(1);
     expect(draft.invalidRowCount).toBe(0);
     expect(draft.refundTargetFacts).toEqual({});
-    expect(listRefundTargetExpensesByIds).toHaveBeenCalledWith('org_1', []);
+    expect(listRefundTargetExpensesByIds).toHaveBeenCalledWith('org_1', [], db);
   });
 
   it('resumes the active draft for an account without inserting a new batch', async () => {

@@ -1,6 +1,7 @@
 import { db } from '@ploutizo/db';
 import { transactionAssignees, transactions } from '@ploutizo/db/schema';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
+import type { DbClient } from '@ploutizo/db';
 import type { ExistingRefundTargetExpense } from '@ploutizo/utils';
 
 /**
@@ -9,13 +10,14 @@ import type { ExistingRefundTargetExpense } from '@ploutizo/utils';
  */
 export const listRefundTargetExpensesByIds = async (
   orgId: string,
-  transactionIds: string[]
+  transactionIds: string[],
+  client: DbClient = db
 ): Promise<Map<string, ExistingRefundTargetExpense>> => {
   const result = new Map<string, ExistingRefundTargetExpense>();
   if (transactionIds.length === 0) return result;
 
   const uniqueIds = [...new Set(transactionIds)];
-  const rows = await db
+  const rows = await client
     .select({
       id: transactions.id,
       accountId: transactions.accountId,
@@ -33,7 +35,7 @@ export const listRefundTargetExpensesByIds = async (
   const assigneeRows =
     ids.length === 0
       ? []
-      : await db
+      : await client
           .select({
             transactionId: transactionAssignees.transactionId,
             memberId: transactionAssignees.memberId,
@@ -61,4 +63,41 @@ export const listRefundTargetExpensesByIds = async (
   }
 
   return result;
+};
+
+/**
+ * Sum finalized refund amounts per existing-expense target (`tx:${id}` keys).
+ * Used at Continue to enforce cross-import cumulative refund caps.
+ */
+export const sumPriorRefundTotalsByTransactionTarget = async (
+  orgId: string,
+  transactionIds: string[],
+  client: DbClient = db
+): Promise<Map<string, number>> => {
+  const totals = new Map<string, number>();
+  if (transactionIds.length === 0) return totals;
+
+  const uniqueIds = [...new Set(transactionIds)];
+  const rows = await client
+    .select({
+      refundOf: transactions.refundOf,
+      total: sql<number>`sum(abs(${transactions.amount}))`.mapWith(Number),
+    })
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.orgId, orgId),
+        eq(transactions.type, 'refund'),
+        inArray(transactions.refundOf, uniqueIds),
+        isNull(transactions.deletedAt)
+      )
+    )
+    .groupBy(transactions.refundOf);
+
+  for (const row of rows) {
+    if (!row.refundOf) continue;
+    totals.set(`tx:${row.refundOf}`, row.total);
+  }
+
+  return totals;
 };

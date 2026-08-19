@@ -8,6 +8,7 @@ export interface ApiErrorBody {
     code: string;
     message?: string;
     errors?: unknown;
+    details?: unknown;
   };
 }
 
@@ -19,6 +20,7 @@ export const respondWithApiError = (
     status: ContentfulStatusCode;
     message?: string;
     errors?: unknown;
+    details?: unknown;
   } & Pick<TelemetryErrorContext, 'kind' | 'escalate'>
 ) => {
   c.set('telemetryError', {
@@ -30,6 +32,7 @@ export const respondWithApiError = (
   const body: ApiErrorBody = { error: { code: input.code } };
   if (input.message) body.error.message = input.message;
   if (input.errors !== undefined) body.error.errors = input.errors;
+  if (input.details !== undefined) body.error.details = input.details;
 
   return c.json(body, input.status);
 };
@@ -48,6 +51,7 @@ export const handleApiError = (err: unknown, c: Context) => {
       code,
       message: err.message,
       status: err.statusCode as ContentfulStatusCode,
+      ...(err.details !== undefined ? { details: err.details } : {}),
     });
   }
   console.error('[API] Unhandled error:', err);

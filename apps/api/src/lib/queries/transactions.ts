@@ -29,6 +29,7 @@ import {
   or,
   sql,
 } from 'drizzle-orm';
+import type { Transaction } from '@ploutizo/db';
 import type {
   SortOrder,
   TransactionSortField,
@@ -40,11 +41,6 @@ import {
   activeTransactions,
   transactionExistsInOrg,
 } from '@/lib/queries/scope';
-// Drizzle transaction type for functions that participate in an outer db.transaction().
-// Derived from db's own inference so it stays correct across schema changes.
-export type DrizzleTransaction = Parameters<
-  Parameters<typeof db.transaction>[0]
->[0];
 
 // Alias for counterpart account join (D-23) — left join to accounts using counterpartAccountId FK
 const counterpartAccounts = alias(accounts, 'counterpart_accounts');
@@ -342,7 +338,7 @@ export const countQuery = async (params: ListQueryParams): Promise<number> => {
 export const fetchTransactionById = async (
   orgId: string,
   id: string,
-  tx?: DrizzleTransaction
+  tx?: Transaction
 ) => {
   const ex = tx ?? db;
   const rows = await ex
@@ -366,7 +362,7 @@ export const fetchTransactionById = async (
 export const enrichTransactions = async (
   orgId: string,
   baseRows: { id: string }[],
-  tx?: DrizzleTransaction
+  tx?: Transaction
 ) => {
   const ex = tx ?? db;
   const txIds = baseRows.map((r) => r.id);
@@ -488,7 +484,7 @@ export const restoreTransactionQuery = async (
 // WHERE: eq(id) + eq(orgId) + isNull(deletedAt) — Pitfall 7: 0 rows → returns null → caller sends 404.
 // Returns the updated row or null if not found / wrong org / already deleted.
 export const updateTransactionScalarsQuery = async (
-  tx: DrizzleTransaction,
+  tx: Transaction,
   orgId: string,
   id: string,
   data: Record<string, unknown>
@@ -505,7 +501,7 @@ export const updateTransactionScalarsQuery = async (
 // D-03: always deletes existing rows first; inserts new ones if assignees is non-empty.
 // percentage column is numeric — Drizzle expects string.
 export const replaceAssignees = async (
-  tx: DrizzleTransaction,
+  tx: Transaction,
   transactionId: string,
   assignees: {
     memberId: string;
@@ -531,7 +527,7 @@ export const replaceAssignees = async (
 // Replace-all tags for a transaction inside an outer db.transaction().
 // D-03: always deletes existing rows first; inserts new ones if tagIds is non-empty.
 export const replaceTags = async (
-  tx: DrizzleTransaction,
+  tx: Transaction,
   transactionId: string,
   tagIds: string[]
 ): Promise<void> => {

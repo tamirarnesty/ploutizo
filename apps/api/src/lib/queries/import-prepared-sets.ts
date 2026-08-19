@@ -4,13 +4,11 @@ import {
   importPreparedSets,
 } from '@ploutizo/db/schema';
 import { and, desc, eq, sql } from 'drizzle-orm';
+import type { DbClient, Transaction } from '@ploutizo/db';
 import type { ImportPreparedSet } from '@ploutizo/types';
-import type { DrizzleTransaction } from '@/lib/queries/imports';
-
-type DbClient = DrizzleTransaction | typeof db;
 
 export const insertImportPreparedSet = async (
-  tx: DrizzleTransaction,
+  tx: Transaction,
   values: {
     orgId: string;
     batchId: string;
@@ -22,7 +20,7 @@ export const insertImportPreparedSet = async (
 };
 
 export const insertImportPreparedOutcomes = async (
-  tx: DrizzleTransaction,
+  tx: Transaction,
   values: (typeof importPreparedOutcomes.$inferInsert)[]
 ) => {
   if (values.length === 0) return [];
@@ -84,7 +82,7 @@ export const fetchLatestPreparedSetForBatch = async (
 
 /** Lock prepared-set revision allocation for a batch (advisory, org-scoped key). */
 export const lockPreparedSetRevisionForBatch = async (
-  tx: DrizzleTransaction,
+  tx: Transaction,
   orgId: string,
   batchId: string
 ) => {

@@ -61,6 +61,31 @@ vi.mock('@/lib/data-access/org', () => ({
   }),
 }));
 
+const continueMocks = vi.hoisted(() => ({
+  mutateAsync: vi.fn(),
+  isPending: false,
+  error: null as unknown,
+  reset: vi.fn(),
+}));
+
+vi.mock('@/lib/data-access/imports/useContinueImportDraft', () => ({
+  useContinueImportDraft: () => ({
+    mutateAsync: continueMocks.mutateAsync,
+    isPending: continueMocks.isPending,
+    error: continueMocks.error,
+    reset: continueMocks.reset,
+  }),
+}));
+
+const flushPendingInputs = vi.fn();
+
+vi.mock('@/lib/money/pending-input-flush', () => ({
+  PendingInputFlushProvider: ({ children }: { children: React.ReactNode }) =>
+    children,
+  useFlushPendingInputs: () => flushPendingInputs,
+  useRegisterInputFlush: () => undefined,
+}));
+
 vi.mock('@/hooks/persistedPageSize', () => ({
   usePersistedPageSize: () => ({
     pagination: paginationMocks.pagination,
@@ -101,6 +126,16 @@ describe('ImportDraftReview', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     paginationMocks.pagination = { pageIndex: 0, pageSize: 25 };
+    continueMocks.isPending = false;
+    continueMocks.error = null;
+    continueMocks.mutateAsync.mockResolvedValue({
+      id: 'prep_1',
+      orgId: 'org_1',
+      batchId: 'draft_1',
+      revision: 1,
+      createdAt: '2026-05-20T12:00:00.000Z',
+      outcomes: [],
+    });
   });
 
   it('mounts the review grid', () => {
@@ -109,11 +144,15 @@ describe('ImportDraftReview', () => {
     expect(screen.getByRole('table')).toBeInTheDocument();
   });
 
-  it('keeps Continue disabled with preview copy and tooltip-only blocker', () => {
+  it('keeps Continue disabled when no rows are selected', () => {
     renderReview();
 
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
-    expect(screen.getByText('Import commit coming soon')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Continue prepares the selected rows for finalize import.'
+      )
+    ).toBeInTheDocument();
     expect(
       screen.queryByText('Select at least one row to continue.')
     ).not.toBeInTheDocument();
@@ -332,11 +371,119 @@ describe('ImportDraftReview', () => {
 
     await waitFor(() =>
       expect(
+        screen.getByText('1 selected row still needs review.')
+      ).toBeInTheDocument()
+    );
+  });
+
+  it('continues when selected rows are ready', async () => {
+    const user = userEvent.setup();
+    renderReview(
+      makeImportDraft({
+        rows: [
+          makeImportDraftRow({
+            id: 'row_ready',
+            status: 'ready',
+            reviewDescription: 'Coffee',
+            selectedForImport: true,
+          }),
+        ],
+      })
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(flushPendingInputs).toHaveBeenCalledTimes(1);
+    expect(flush).toHaveBeenCalledTimes(1);
+    expect(flushPendingInputs.mock.invocationCallOrder[0]).toBeLessThan(
+      flush.mock.invocationCallOrder[0]
+    );
+    expect(continueMocks.mutateAsync).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByText(
+        'Continue prepares the selected rows for finalize import.'
+      )
+    ).toBeInTheDocument();
+  });
+
+  it('shows server continue blockers in the tooltip', async () => {
+    const user = userEvent.setup();
+    continueMocks.error = {
+      error: {
+        code: 'IMPORT_CONTINUE_NOT_READY',
+        message: 'Some selected rows are not ready to import.',
+        details: {
+          rows: [
+            {
+              batchRowId: 'row_ready',
+              status: 'needs_review',
+              blockers: ['refund_link'],
+              invalidReason:
+                'Refund exceeds the remaining amount on the original expense.',
+            },
+          ],
+        },
+      },
+    };
+    renderReview(
+      makeImportDraft({
+        rows: [
+          makeImportDraftRow({
+            id: 'row_ready',
+            status: 'ready',
+            reviewDescription: 'Coffee',
+            selectedForImport: true,
+          }),
+        ],
+      })
+    );
+
+    await user.hover(screen.getByRole('button', { name: 'Continue' }));
+
+    await waitFor(() =>
+      expect(
         screen.getByText(
-          '1 selected row still needs review. Import commit coming soon.'
+          'Refund exceeds the remaining amount on the original expense.'
         )
       ).toBeInTheDocument()
     );
+  });
+
+  it('clears a stale continue error when autosave begins during a pending continue', () => {
+    continueMocks.isPending = true;
+    continueMocks.error = {
+      error: {
+        code: 'IMPORT_CONTINUE_NOT_READY',
+        message: 'Some selected rows are not ready to import.',
+      },
+    };
+    const readyDraft = makeImportDraft({
+      rows: [
+        makeImportDraftRow({
+          id: 'row_ready',
+          status: 'ready',
+          reviewDescription: 'Coffee',
+          selectedForImport: true,
+        }),
+      ],
+    });
+    const { rerender } = renderReview(readyDraft);
+    const { rows, ...meta } = readyDraft;
+    continueMocks.reset.mockClear();
+
+    rerender(
+      <TooltipProvider delay={0}>
+        <ImportDraftReview
+          meta={meta}
+          rows={rows}
+          {...reviewSessionProps}
+          autosaveStatus="saving"
+          hasUnsavedWork
+        />
+      </TooltipProvider>
+    );
+
+    expect(continueMocks.reset).toHaveBeenCalled();
   });
 
   it('renders disabled assignee toggles for invalid rows in the grid', () => {

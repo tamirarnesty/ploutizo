@@ -13,16 +13,12 @@ import {
 } from '@ploutizo/db/schema';
 import { SETTLEMENT_QUALIFYING_TRANSACTION_TYPE_VALUES } from '@ploutizo/types';
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
+import type { Transaction } from '@ploutizo/db';
 import type { AccountType } from '@ploutizo/types';
 import type { SQL } from 'drizzle-orm';
 
 const SETTLEMENT_QUALIFYING_TX_TYPES =
   SETTLEMENT_QUALIFYING_TRANSACTION_TYPE_VALUES;
-
-/** Drizzle transaction client for queries that join an outer `db.transaction()`. */
-export type DrizzleTransaction = Parameters<
-  Parameters<typeof db.transaction>[0]
->[0];
 
 /** Active transactions for an org: org_id + not soft-deleted. */
 export const activeTransactions = (orgId: string): SQL[] => [
@@ -110,7 +106,7 @@ export const fetchAccountWriteReference = async (
   orgId: string,
   accountId: string,
   options: AccountInOrgOptions = {},
-  tx?: DrizzleTransaction
+  tx?: Transaction
 ): Promise<AccountWriteReference | null> => {
   const ex = tx ?? db;
   const query = ex
@@ -137,7 +133,7 @@ export const accountExistsInOrg = async (
 export const categoryExistsInOrg = async (
   orgId: string,
   categoryId: string,
-  tx?: DrizzleTransaction
+  tx?: Transaction
 ): Promise<boolean> => {
   const ex = tx ?? db;
   const rows = await ex
@@ -151,7 +147,7 @@ export const categoryExistsInOrg = async (
 export const transactionExistsInOrg = async (
   orgId: string,
   transactionId: string,
-  tx?: DrizzleTransaction
+  tx?: Transaction
 ): Promise<boolean> => {
   const ex = tx ?? db;
   const rows = await ex
@@ -168,7 +164,7 @@ export const transactionExistsInOrg = async (
 export const allTransactionsInOrg = async (
   orgId: string,
   transactionIds: string[],
-  tx?: DrizzleTransaction
+  tx?: Transaction
 ): Promise<boolean> => {
   if (transactionIds.length === 0) return true;
   const unique = [...new Set(transactionIds)];
@@ -186,7 +182,7 @@ export const allTransactionsInOrg = async (
 export const allTagsInOrg = async (
   orgId: string,
   tagIds: string[],
-  tx?: DrizzleTransaction
+  tx?: Transaction
 ): Promise<boolean> => {
   if (tagIds.length === 0) return true;
   const unique = [...new Set(tagIds)];
@@ -202,7 +198,7 @@ export const allTagsInOrg = async (
 export const allMembersInOrg = async (
   orgId: string,
   memberIds: string[],
-  tx?: DrizzleTransaction
+  tx?: Transaction
 ): Promise<boolean> => {
   if (memberIds.length === 0) return true;
   const unique = [...new Set(memberIds)];

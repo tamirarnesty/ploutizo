@@ -1,12 +1,7 @@
 import { db } from '@ploutizo/db';
 import { accounts, importBatchRows, importBatches } from '@ploutizo/db/schema';
 import { and, desc, eq, exists, inArray, isNull, ne, sql } from 'drizzle-orm';
-
-export type DrizzleTransaction = Parameters<
-  Parameters<typeof db.transaction>[0]
->[0];
-
-type DbClient = DrizzleTransaction | typeof db;
+import type { DbClient, Transaction } from '@ploutizo/db';
 
 const IMPORT_SUMMARY_COLUMNS = {
   id: importBatches.id,
@@ -141,7 +136,7 @@ export const listDraftRows = async (
     .orderBy(importBatchRows.rowNumber);
 
 export const insertImportBatch = async (
-  tx: DrizzleTransaction,
+  tx: Transaction,
   values: typeof importBatches.$inferInsert
 ) => {
   const [row] = await tx.insert(importBatches).values(values).returning();
@@ -149,7 +144,7 @@ export const insertImportBatch = async (
 };
 
 export const insertImportBatchRows = async (
-  tx: DrizzleTransaction,
+  tx: Transaction,
   values: (typeof importBatchRows.$inferInsert)[]
 ) => {
   if (values.length === 0) return [];

@@ -6,16 +6,14 @@ import {
 } from '@ploutizo/db/schema';
 import { normalizeTransactionAssignees } from '@ploutizo/utils';
 import { validateTransactionAccountPolicy } from '@ploutizo/utils/transaction-policy';
+import type { Transaction } from '@ploutizo/db';
 import type { TransactionType } from '@ploutizo/types';
 import type {
   CreateTransactionInput,
   UpdateTransactionServiceInput,
   createTransactionSchema,
 } from '@ploutizo/validators';
-import type {
-  AccountWriteReference,
-  DrizzleTransaction,
-} from '@/lib/queries/scope';
+import type { AccountWriteReference } from '@/lib/queries/scope';
 import type { ListQueryParams } from '@/lib/queries/transactions';
 import type { z } from 'zod';
 import { assertOrgWriteReferences } from '@/lib/assertOrgWriteReferences';
@@ -89,7 +87,7 @@ const loadTransactionWriteReferences = async (
     tagIds?: string[];
     assignees?: { memberId: string }[];
   },
-  tx: DrizzleTransaction
+  tx: Transaction
 ): Promise<LoadedTransactionWriteReferences> => {
   const counterpartId = data.counterpartAccountId ?? null;
   // Lock in stable id order so concurrent opposite-direction writes cannot deadlock.
@@ -163,7 +161,7 @@ const assertTransactionAccountPolicy = (
 const assertImportBatchProvenance = async (
   orgId: string,
   importBatchId: string | undefined,
-  tx: DrizzleTransaction
+  tx: Transaction
 ) => {
   if (!importBatchId) return;
   const batch = await fetchImportBatchInOrg(orgId, importBatchId, tx);

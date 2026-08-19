@@ -5,6 +5,17 @@ import type {
   ImportTransactionType,
 } from './enums';
 
+/** Review-field blockers from the shared import draft evaluator. */
+export type ImportRowReviewBlocker =
+  | 'date'
+  | 'amount'
+  | 'description'
+  | 'type'
+  | 'category'
+  | 'assignee'
+  | 'settlement'
+  | 'refund_link';
+
 /** Seeded settlement category for bill-payment readability in transaction lists. */
 export const BILL_PAYMENT_CATEGORY_NAME = 'Bill Payment' as const;
 
@@ -96,6 +107,18 @@ export interface ImportDraft extends ImportDraftSummary {
 export interface UpdateImportDraftRowResult {
   row: ImportDraftPersistedRow;
   refundTargetFacts?: Record<string, RefundTargetFact>;
+}
+
+/** Per-row blocker payload when Continue rejects under the prepared-set lock. */
+export interface ImportContinueNotReadyRow {
+  batchRowId: string;
+  status: ImportRowStatus;
+  blockers: ImportRowReviewBlocker[];
+  invalidReason: string | null;
+}
+
+export interface ImportContinueNotReadyDetails {
+  rows: ImportContinueNotReadyRow[];
 }
 
 /** Immutable reviewed values captured when a prepared set revision is created. */
