@@ -47,6 +47,18 @@ The Clerk dashboard webhook endpoint is set to `https://play.svix.com/in/c_DXiiP
 
 Webhooks are only needed when testing flows that trigger Clerk events: sign-up, login/logout, org (household) creation/update, member invite/join. See `apps/api/src/services/webhooks.ts` for the full event list.
 
+### Seed the `cloud-environments` Neon branch
+
+```bash
+pnpm --filter api seed:cloud-environments
+```
+
+Copy `apps/api/.env.cloud-environments.example` to `apps/api/.env.cloud-environments` and point `DATABASE_URL` at the Neon **cloud-environments** branch (direct compute URL). Clerk keys can match local dev.
+
+Default is idempotent: it reuses Ada/Alan and the canonical `Cloud Env Seed Household`, and skips ledger writes if the fixture accounts already exist. Pass `--variant` after `--` to create a separate copy of the same fixture (`pnpm --filter api seed:cloud-environments -- --variant`). `--keep-running` leaves the API (default port 18080) and svix tunnel up.
+
+The Homebrew `svix listen` mints a Play URL that may differ from the Clerk dashboard relay. Member rows still sync via `tenantGuard` when the script authenticates as both users.
+
 ## Test credentials
 
 Use Clerk test email mode ([docs](https://clerk.com/docs/guides/development/testing/test-emails-and-phones.md)):
