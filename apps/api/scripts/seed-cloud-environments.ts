@@ -4,7 +4,8 @@
  * Starts a non-watch API + svix webhook tunnel, provisions a 2-member Clerk
  * household, then writes accounts/transactions/settlements through the HTTP API.
  * Default is idempotent: reuse the canonical household and skip writes when
- * the fixture accounts already exist. `--variant` creates a separate copy.
+ * the fixture accounts, tags, and ledger already exist. `--variant` creates a
+ * separate copy.
  * `--keep-running` leaves the API and svix tunnel up afterward.
  *
  *   pnpm --filter api seed:cloud-environments
@@ -46,6 +47,9 @@ const EXPECTED_ACCOUNT_NAMES = [
   "Alan's Interac",
   'Joint TFSA',
 ] as const;
+const EXPECTED_TAG_NAMES = ['weekend', 'recurring'] as const;
+/** 15 posted transactions plus the 2 settlements that persist as transactions. */
+const EXPECTED_LEDGER_TRANSACTION_COUNT = 17;
 const REQUIRED_ENV = [
   'DATABASE_URL',
   'CLERK_SECRET_KEY',
@@ -228,20 +232,38 @@ const decodeFrontendApi = (publishableKey: string): string => {
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const waitForHealth = async (baseUrl: string) => {
+const apiChildExitLabel = (child: ChildProcess) =>
+  child.signalCode ?? `code ${child.exitCode}`;
+
+const assertApiChildAlive = (child: ChildProcess, baseUrl: string) => {
+  if (child.exitCode === null && child.signalCode === null) return;
+  fail(
+    `API process exited before becoming healthy (${apiChildExitLabel(child)}). ${baseUrl} may already be in use by another process.`
+  );
+};
+
+const waitForHealth = async (baseUrl: string, child: ChildProcess) => {
   const deadline = Date.now() + 90_000;
   while (Date.now() < deadline) {
+    assertApiChildAlive(child, baseUrl);
     try {
       const res = await fetch(`${baseUrl}/health`);
       if (res.ok) {
         const body = (await res.json()) as Envelope<{ status?: string }>;
-        if (body.data?.status === 'ok') return;
+        if (body.data?.status === 'ok') {
+          // Occupied-port children can crash with EADDRINUSE after a health
+          // response from the process that already owns the port.
+          await wait(500);
+          assertApiChildAlive(child, baseUrl);
+          return;
+        }
       }
     } catch {
       // API has not bound yet
     }
     await wait(400);
   }
+  assertApiChildAlive(child, baseUrl);
   fail(`API did not become healthy at ${baseUrl}/health`);
 };
 
@@ -550,6 +572,17 @@ const categoryByName = (categories: CategoryRow[], name: string): string => {
   return row.id;
 };
 
+const ensureTag = async (
+  api: ReturnType<typeof createApiClient>,
+  existing: TagRow[],
+  name: string,
+  colour: string
+): Promise<TagRow> => {
+  const found = existing.find((tag) => tag.name === name);
+  if (found) return found;
+  return api.post<TagRow>('/api/tags', { name, colour });
+};
+
 const seedHousehold = async (
   api: ReturnType<typeof createApiClient>,
   members: { ada: MemberRow; alan: MemberRow }
@@ -564,14 +597,14 @@ const seedHousehold = async (
   const travel = categoryByName(categories, 'Travel');
   const personalCare = categoryByName(categories, 'Personal Care');
 
-  const weekend = await api.post<TagRow>('/api/tags', {
-    name: 'weekend',
-    colour: 'blue-500',
-  });
-  const recurring = await api.post<TagRow>('/api/tags', {
-    name: 'recurring',
-    colour: 'violet-500',
-  });
+  const existingTags = await api.getData<TagRow[]>('/api/tags');
+  const weekend = await ensureTag(api, existingTags, 'weekend', 'blue-500');
+  const recurring = await ensureTag(
+    api,
+    existingTags,
+    'recurring',
+    'violet-500'
+  );
 
   const { ada, alan } = members;
   const both: [string, string] = [ada.id, alan.id];
@@ -957,13 +990,32 @@ const resolveSeedHousehold = async (
   }
 };
 
-const fixtureAccountStatus = (
-  accounts: { name: string }[]
-): 'empty' | 'complete' | 'partial' => {
-  const names = new Set(accounts.map((account) => account.name));
-  const present = EXPECTED_ACCOUNT_NAMES.filter((name) => names.has(name));
-  if (present.length === 0) return 'empty';
-  if (present.length === EXPECTED_ACCOUNT_NAMES.length) return 'complete';
+const fixtureStatus = ({
+  accounts,
+  tags,
+  transactionCount,
+}: {
+  accounts: { name: string }[];
+  tags: { name: string }[];
+  transactionCount: number;
+}): 'empty' | 'complete' | 'partial' => {
+  const accountNames = new Set(accounts.map((account) => account.name));
+  const presentAccounts = EXPECTED_ACCOUNT_NAMES.filter((name) =>
+    accountNames.has(name)
+  );
+  const tagNames = new Set(tags.map((tag) => tag.name));
+  const presentTags = EXPECTED_TAG_NAMES.filter((name) => tagNames.has(name));
+  const ledgerComplete =
+    presentTags.length === EXPECTED_TAG_NAMES.length &&
+    transactionCount >= EXPECTED_LEDGER_TRANSACTION_COUNT;
+
+  if (presentAccounts.length === 0) return 'empty';
+  if (
+    presentAccounts.length === EXPECTED_ACCOUNT_NAMES.length &&
+    ledgerComplete
+  ) {
+    return 'complete';
+  }
   return 'partial';
 };
 
@@ -1039,7 +1091,7 @@ const main = async () => {
   try {
     log(`Starting API on ${apiBaseUrl} with ${ENV_FILE}`);
     apiChild = spawnApi(port);
-    await waitForHealth(apiBaseUrl);
+    await waitForHealth(apiBaseUrl, apiChild);
 
     log('Starting svix listen for Clerk webhooks');
     const svix = spawnSvix(apiBaseUrl);
@@ -1095,13 +1147,22 @@ const main = async () => {
     );
     log(`Household ${org.id}: ${ada.displayName} + ${alan.displayName}`);
 
-    const existingAccounts =
-      await adaApi.getData<AccountRow[]>('/api/accounts');
-    const status = fixtureAccountStatus(existingAccounts);
+    const [existingAccounts, existingTags, transactionPage] = await Promise.all(
+      [
+        adaApi.getData<AccountRow[]>('/api/accounts'),
+        adaApi.getData<TagRow[]>('/api/tags'),
+        adaApi.getRaw<{ total: number }>('/api/transactions?limit=1'),
+      ]
+    );
+    const status = fixtureStatus({
+      accounts: existingAccounts,
+      tags: existingTags,
+      transactionCount: transactionPage.total ?? 0,
+    });
     if (status === 'complete') {
       log(
         created
-          ? 'Fixture accounts already present on the new household; skipping writes.'
+          ? 'Fixture already present on the new household; skipping writes.'
           : 'Canonical seed household already has fixture data; skipping writes. Pass --variant for a separate copy.'
       );
       const settlements = await adaApi.getRaw<{
@@ -1128,8 +1189,9 @@ const main = async () => {
       const present = existingAccounts
         .map((account) => account.name)
         .join(', ');
+      const presentTags = existingTags.map((tag) => tag.name).join(', ');
       fail(
-        `Household ${org.id} has a partial seed (${present || 'unexpected accounts'}). Refusing to add more transactions. Pass --variant to create a clean copy.`
+        `Household ${org.id} has a partial seed (accounts: ${present || 'none'}; tags: ${presentTags || 'none'}; transactions: ${transactionPage.total ?? 0}). Refusing to add more transactions. Pass --variant to create a clean copy.`
       );
     }
 
