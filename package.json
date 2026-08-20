@@ -23,17 +23,11 @@
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "shadcn": "^4.1.2",
-    "turbo": "^2.9.12",
+    "turbo": "^2.10.11",
     "typescript": "^6.0.2"
   },
-  "packageManager": "pnpm@9.15.9",
+  "packageManager": "pnpm@11.22.0",
   "engines": {
     "node": ">=22"
-  },
-  "pnpm": {
-    "overrides": {
-      "iconv-lite@0.6.3": "0.7.2",
-      "typescript-eslint": "^8.58.0"
-    }
   }
 }
