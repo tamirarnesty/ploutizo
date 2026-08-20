@@ -94,8 +94,6 @@ export const getImportRowStatusTooltip = (
       );
     case 'invalid':
       return row.invalidReason ?? 'Invalid row';
-    case 'skipped':
-      return 'Skipped and will not import';
     default:
       return row.status;
   }

@@ -4,6 +4,7 @@ import { NotFoundError } from '@/lib/errors';
 import {
   createNormalizedImportDraft,
   getImportDraft,
+  listActiveImportDrafts,
   listImportTargets,
   updateImportDraftRow,
   updateImportDraftRowSelection,
@@ -15,8 +16,10 @@ import {
   fetchDraftSummaryById,
   insertImportBatch,
   insertImportBatchRows,
+  listActiveImportDraftSummaries,
   listDraftRowIdsForDraft,
   listDraftRows,
+  listDraftRowsForBatches,
   listImportTargetAccounts,
   touchImportDraft,
   updateImportDraftRowQuery,
@@ -45,8 +48,10 @@ vi.mock('@/lib/queries/imports', () => ({
   fetchDraftSummaryById: vi.fn(),
   insertImportBatch: vi.fn(),
   insertImportBatchRows: vi.fn(),
+  listActiveImportDraftSummaries: vi.fn(),
   listDraftRows: vi.fn(),
   listDraftRowIdsForDraft: vi.fn(),
+  listDraftRowsForBatches: vi.fn(),
   listImportTargetAccounts: vi.fn(),
   touchImportDraft: vi.fn(),
   updateImportDraftRowQuery: vi.fn(),
@@ -88,8 +93,6 @@ const summaryRow = {
   status: 'draft' as const,
   fileName: 'statement.csv',
   rowCount: 2,
-  validRowCount: 1,
-  invalidRowCount: 1,
   importedAt: new Date('2026-05-20T12:00:00Z'),
   completedAt: null,
   discardedAt: null,
@@ -102,8 +105,6 @@ const draftRow = {
   batchId: summaryRow.id,
   orgId: 'org_1',
   rowNumber: 2,
-  status: 'ready' as const,
-  invalidReason: null,
   rawData: { date: '2026-05-02' },
   externalId: 'visa-1001',
   sourceDate: '2026-05-02',
@@ -221,8 +222,13 @@ describe('import service', () => {
         status: 'draft',
         fileName: 'statement.csv',
         rowCount: 2,
-        validRowCount: 1,
-        invalidRowCount: 1,
+      })
+    );
+    expect(insertImportBatch).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.not.objectContaining({
+        validRowCount: expect.anything(),
+        invalidRowCount: expect.anything(),
       })
     );
     expect(insertImportBatchRows).toHaveBeenCalledWith(
@@ -231,7 +237,6 @@ describe('import service', () => {
         expect.objectContaining({
           batchId: summaryRow.id,
           orgId: 'org_1',
-          status: 'ready',
           reviewDescription: 'Coffee',
           reviewCategoryId: '55555555-5555-4555-8555-555555555555',
           reviewAssigneeMemberIds: ['44444444-4444-4444-8444-444444444444'],
@@ -239,11 +244,17 @@ describe('import service', () => {
         expect.objectContaining({
           batchId: summaryRow.id,
           orgId: 'org_1',
-          status: 'invalid',
-          invalidReason: expect.stringContaining('Date must be'),
+          parsedDate: null,
+          parsedAmount: null,
+          reviewDescription: null,
         }),
       ])
     );
+    const insertedRows = vi.mocked(insertImportBatchRows).mock.calls[0][1];
+    expect(insertedRows[0]).not.toHaveProperty('status');
+    expect(insertedRows[0]).not.toHaveProperty('invalidReason');
+    expect(insertedRows[1]).not.toHaveProperty('status');
+    expect(insertedRows[1]).not.toHaveProperty('invalidReason');
     expect(result.draft.rows).toHaveLength(1);
     expect(result.draft.validRowCount).toBe(1);
     expect(result.draft.invalidRowCount).toBe(0);
@@ -252,7 +263,6 @@ describe('import service', () => {
   it('derives row status on GET without persisting recomputation', async () => {
     const needsReviewRow = {
       ...draftRow,
-      status: 'needs_review' as const,
       reviewCategoryId: null,
     };
     vi.mocked(listDraftRows).mockResolvedValue([needsReviewRow]);
@@ -264,6 +274,37 @@ describe('import service', () => {
     expect(draft.invalidRowCount).toBe(0);
     expect(draft.refundTargetFacts).toEqual({});
     expect(listRefundTargetExpensesByIds).toHaveBeenCalledWith('org_1', [], db);
+  });
+
+  it('derives hub draft counts from current row facts', async () => {
+    vi.mocked(listActiveImportDraftSummaries).mockResolvedValue([summaryRow]);
+    vi.mocked(listDraftRowsForBatches).mockResolvedValue([
+      draftRow,
+      {
+        ...draftRow,
+        id: '44444444-4444-4444-8444-444444444444',
+        rowNumber: 3,
+        parsedDate: null,
+        parsedAmount: null,
+        parsedType: null,
+        parsedDescription: null,
+        reviewDate: null,
+        reviewAmount: null,
+        reviewType: null,
+        reviewDescription: null,
+      },
+    ]);
+
+    const drafts = await listActiveImportDrafts('org_1');
+
+    expect(drafts).toEqual([
+      expect.objectContaining({
+        id: summaryRow.id,
+        rowCount: 2,
+        validRowCount: 1,
+        invalidRowCount: 1,
+      }),
+    ]);
   });
 
   it('resumes the active draft for an account without inserting a new batch', async () => {
@@ -298,7 +339,6 @@ describe('import service', () => {
   it('returns persisted row without derived status when category is patched', async () => {
     const needsReviewRow = {
       ...draftRow,
-      status: 'needs_review' as const,
       reviewCategoryId: null,
     };
     const updatedRow = {
@@ -332,8 +372,6 @@ describe('import service', () => {
   it('returns persisted row without re-deriving status when review fields are patched', async () => {
     const invalidRow = {
       ...draftRow,
-      status: 'invalid' as const,
-      invalidReason: 'Date must be a valid YYYY-MM-DD value.',
       parsedDate: null,
       parsedAmount: null,
       parsedType: null,
@@ -382,9 +420,6 @@ describe('import service', () => {
   it('returns persisted row without derived invalidReason when a row stays structurally invalid', async () => {
     const invalidRow = {
       ...draftRow,
-      status: 'invalid' as const,
-      invalidReason:
-        'Date must be a valid YYYY-MM-DD value. Amount must be a positive number.',
       parsedDate: null,
       parsedAmount: null,
       parsedType: 'expense' as const,
@@ -424,7 +459,6 @@ describe('import service', () => {
   it('returns persisted row when a row loses required review fields', async () => {
     const reviewOnlyRow = {
       ...draftRow,
-      status: 'needs_review' as const,
       parsedDate: null,
       parsedAmount: null,
       parsedType: null,

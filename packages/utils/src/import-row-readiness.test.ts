@@ -18,11 +18,10 @@ const baseRow = {
 };
 
 describe('import-row-readiness', () => {
-  it('treats invalid and skipped rows as not selectable', () => {
+  it('treats invalid rows as not selectable', () => {
     expect(isImportRowSelectable({ status: 'ready' })).toBe(true);
     expect(isImportRowSelectable({ status: 'needs_review' })).toBe(true);
     expect(isImportRowSelectable({ status: 'invalid' })).toBe(false);
-    expect(isImportRowSelectable({ status: 'skipped' })).toBe(false);
   });
 
   it('requires selected rows to be ready before continue is allowed', () => {

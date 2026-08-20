@@ -14,7 +14,7 @@ const expectImportError = (fn: () => unknown, code: string) => {
 };
 
 describe('parsePloutizoNormalizedCsv', () => {
-  it('keeps invalid rows with reasons when at least one row is reviewable', () => {
+  it('keeps unparseable rows as durable facts when at least one row is importable', () => {
     const parsed = parsePloutizoNormalizedCsv(
       [
         'date,amount,description,type,external id,category,notes,tags',
@@ -24,11 +24,11 @@ describe('parsePloutizoNormalizedCsv', () => {
     );
 
     expect(parsed.rowCount).toBe(2);
-    expect(parsed.validRowCount).toBe(1);
-    expect(parsed.invalidRowCount).toBe(1);
+    expect(parsed).not.toHaveProperty('validRowCount');
+    expect(parsed).not.toHaveProperty('invalidRowCount');
     expect(parsed.rows[0]).toMatchObject({
-      status: 'needs_review',
       parsedAmount: 4218,
+      reviewDescription: 'Neighborhood Grocery',
       csvCategoryName: 'Groceries',
       csvTagNames: ['food', 'errands'],
       rawData: {
@@ -37,14 +37,23 @@ describe('parsePloutizoNormalizedCsv', () => {
         description: 'Neighborhood Grocery',
       },
     });
-    expect(parsed.rows[1].status).toBe('invalid');
-    expect(parsed.rows[1].invalidReason).toContain('Date must be');
-    expect(parsed.rows[1].invalidReason).toContain('Amount must be');
-    expect(parsed.rows[1].invalidReason).toContain('Description is required');
-    expect(parsed.rows[1].invalidReason).toContain('Type must be');
+    expect(parsed.rows[0]).not.toHaveProperty('status');
+    expect(parsed.rows[0]).not.toHaveProperty('invalidReason');
+    expect(parsed.rows[1]).toMatchObject({
+      parsedDate: null,
+      parsedAmount: null,
+      parsedType: null,
+      parsedDescription: null,
+      reviewDate: null,
+      reviewAmount: null,
+      reviewType: null,
+      reviewDescription: null,
+    });
+    expect(parsed.rows[1]).not.toHaveProperty('status');
+    expect(parsed.rows[1]).not.toHaveProperty('invalidReason');
   });
 
-  it('marks rows needing classification as needs_review', () => {
+  it('seeds reviewed values from parsed source facts', () => {
     const parsed = parsePloutizoNormalizedCsv(
       ['date,amount,description,type', '2026-05-02,42.18,Coffee,expense'].join(
         '\n'
@@ -52,10 +61,13 @@ describe('parsePloutizoNormalizedCsv', () => {
     );
 
     expect(parsed.rows[0]).toMatchObject({
-      status: 'needs_review',
+      reviewDate: '2026-05-02',
+      reviewAmount: 4218,
+      reviewType: 'expense',
       reviewDescription: 'Coffee',
       csvCategoryName: null,
     });
+    expect(parsed.rows[0]).not.toHaveProperty('status');
   });
 
   it('rejects unrecognized files with missing required headers', () => {
@@ -86,7 +98,7 @@ describe('parsePloutizoNormalizedCsv', () => {
     );
   });
 
-  it('rejects malformed grouped amount tokens', () => {
+  it('keeps malformed grouped amount tokens as unparsed facts', () => {
     const parsed = parsePloutizoNormalizedCsv(
       [
         'date,amount,description,type',
@@ -95,11 +107,11 @@ describe('parsePloutizoNormalizedCsv', () => {
       ].join('\n')
     );
 
-    expect(parsed.rows[1].status).toBe('invalid');
-    expect(parsed.rows[1].invalidReason).toContain('Amount must be');
+    expect(parsed.rows[1].parsedAmount).toBeNull();
+    expect(parsed.rows[1].reviewAmount).toBeNull();
   });
 
-  it('rejects amounts with misplaced dollar signs', () => {
+  it('parses dollar amounts and keeps misplaced dollar signs unparsed', () => {
     const parsed = parsePloutizoNormalizedCsv(
       [
         'date,amount,description,type',
@@ -110,10 +122,8 @@ describe('parsePloutizoNormalizedCsv', () => {
     );
 
     expect(parsed.rows[0].parsedAmount).toBe(4218);
-    expect(parsed.rows[1].status).toBe('invalid');
-    expect(parsed.rows[1].invalidReason).toContain('Amount must be');
-    expect(parsed.rows[2].status).toBe('invalid');
-    expect(parsed.rows[2].invalidReason).toContain('Amount must be');
+    expect(parsed.rows[1].parsedAmount).toBeNull();
+    expect(parsed.rows[2].parsedAmount).toBeNull();
   });
 
   it('rejects empty files and files with no importable rows', () => {

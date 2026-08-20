@@ -6,8 +6,6 @@ import {
 } from '@ploutizo/types';
 import { parseImportTags } from '@ploutizo/utils';
 import {
-  computeImportDraftRowCounts,
-  formatImportRowStructuralInvalidReason,
   isImportRowStructurallyInvalid,
   toImportTransactionType,
 } from '@ploutizo/utils/import-row-status';
@@ -34,8 +32,6 @@ type HeaderKey =
 type ParsedImportRowBase = Pick<
   ImportDraftRow,
   | 'rowNumber'
-  | 'status'
-  | 'invalidReason'
   | 'rawData'
   | 'externalId'
   | 'sourceDate'
@@ -63,8 +59,6 @@ export type ParsedImportRow = ParsedImportRowBase & {
 export interface ParsedNormalizedImport {
   source: typeof NORMALIZED_IMPORT_SOURCE;
   rowCount: number;
-  validRowCount: number;
-  invalidRowCount: number;
   rows: ParsedImportRow[];
 }
 
@@ -252,25 +246,9 @@ const parseRow = (
   const parsedAmount = parseAmountCents(sourceAmount);
   const parsedType = parseType(sourceType);
   const parsedDescription = sourceDescription;
-  const structuralFields = {
-    reviewDate: null,
-    reviewAmount: null,
-    reviewType: null,
-    reviewDescription: null,
-    parsedDate,
-    parsedAmount,
-    parsedType,
-    parsedDescription,
-  };
-  const isInvalid = isImportRowStructurallyInvalid(structuralFields);
-  const status = isInvalid ? ('invalid' as const) : ('needs_review' as const);
-  const invalidReason =
-    formatImportRowStructuralInvalidReason(structuralFields);
 
   return {
     rowNumber: record.rowNumber,
-    status,
-    invalidReason,
     rawData: buildRawData(record, headers),
     externalId,
     sourceDate,
@@ -349,9 +327,11 @@ export const parsePloutizoNormalizedCsv = (
   const rows = dataRecords.map((record) =>
     parseRow(record, headers, headerMap)
   );
-  const { validRowCount, invalidRowCount } = computeImportDraftRowCounts(rows);
+  const hasImportableRow = rows.some(
+    (row) => !isImportRowStructurallyInvalid(row)
+  );
 
-  if (validRowCount === 0) {
+  if (!hasImportableRow) {
     throw new DomainError(
       400,
       'No importable rows were found in the CSV file.',
@@ -362,8 +342,6 @@ export const parsePloutizoNormalizedCsv = (
   return {
     source: NORMALIZED_IMPORT_SOURCE,
     rowCount: rows.length,
-    validRowCount,
-    invalidRowCount,
     rows,
   };
 };

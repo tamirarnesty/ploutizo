@@ -45,7 +45,7 @@ const getEmptyDraftDescription = (rows: ImportDraftRow[]): string => {
   }
 
   const invalidRowCount = rows.filter((row) => row.status === 'invalid').length;
-  const parts = ['Every row in this draft is invalid or skipped.'];
+  const parts = ['Every row in this draft is invalid.'];
   if (invalidRowCount > 0) {
     parts.push(
       invalidRowCount === 1

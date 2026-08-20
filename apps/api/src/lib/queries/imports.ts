@@ -13,8 +13,6 @@ const IMPORT_SUMMARY_COLUMNS = {
   status: importBatches.status,
   fileName: importBatches.fileName,
   rowCount: importBatches.rowCount,
-  validRowCount: importBatches.validRowCount,
-  invalidRowCount: importBatches.invalidRowCount,
   importedAt: importBatches.importedAt,
   completedAt: importBatches.completedAt,
   discardedAt: importBatches.discardedAt,
@@ -135,6 +133,24 @@ export const listDraftRows = async (
     )
     .orderBy(importBatchRows.rowNumber);
 
+export const listDraftRowsForBatches = async (
+  orgId: string,
+  batchIds: readonly string[],
+  client: DbClient = db
+) => {
+  if (batchIds.length === 0) return [];
+  return client
+    .select()
+    .from(importBatchRows)
+    .where(
+      and(
+        eq(importBatchRows.orgId, orgId),
+        inArray(importBatchRows.batchId, [...batchIds])
+      )
+    )
+    .orderBy(importBatchRows.batchId, importBatchRows.rowNumber);
+};
+
 export const insertImportBatch = async (
   tx: Transaction,
   values: typeof importBatches.$inferInsert
@@ -253,27 +269,6 @@ export const touchImportDraft = async (
   await client
     .update(importBatches)
     .set({ updatedAt: new Date() })
-    .where(and(eq(importBatches.id, draftId), eq(importBatches.orgId, orgId)));
-};
-
-export const adjustImportDraftRowCounts = async (
-  orgId: string,
-  draftId: string,
-  delta: { validRowCount: number; invalidRowCount: number },
-  client: DbClient = db
-) => {
-  if (delta.validRowCount === 0 && delta.invalidRowCount === 0) {
-    await touchImportDraft(orgId, draftId, client);
-    return;
-  }
-
-  await client
-    .update(importBatches)
-    .set({
-      validRowCount: sql`${importBatches.validRowCount} + ${delta.validRowCount}`,
-      invalidRowCount: sql`${importBatches.invalidRowCount} + ${delta.invalidRowCount}`,
-      updatedAt: new Date(),
-    })
     .where(and(eq(importBatches.id, draftId), eq(importBatches.orgId, orgId)));
 };
 

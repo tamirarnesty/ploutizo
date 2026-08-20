@@ -8,6 +8,10 @@ const journal = JSON.parse(
   readFileSync(join(root, 'drizzle/meta/_journal.json'), 'utf8')
 ) as { entries: { tag: string }[] };
 const baselineMigration = readFileSync(
+  join(root, `drizzle/${journal.entries[0]?.tag}.sql`),
+  'utf8'
+);
+const latestMigration = readFileSync(
   join(root, `drizzle/${journal.entries.at(-1)?.tag}.sql`),
   'utf8'
 );
@@ -47,5 +51,43 @@ describe('baseline migration contracts', () => {
     expect(baselineMigration).not.toContain(
       'transactions_import_batch_id_import_batches_id_fk'
     );
+  });
+
+  it('retains upload source facts, reviewed values, selection, and batch lifecycle', () => {
+    expect(baselineMigration).toContain('"row_count" integer NOT NULL');
+    expect(baselineMigration).toContain('"selected_for_import"');
+    expect(baselineMigration).toContain('"review_date"');
+    expect(baselineMigration).toContain('"review_amount"');
+    expect(baselineMigration).toContain('"external_id"');
+    expect(baselineMigration).toContain('"completed_at"');
+    expect(baselineMigration).toContain('"discarded_at"');
+    expect(baselineMigration).toContain('"imported_at"');
+  });
+});
+
+describe('derive-on-read facts cleanup migration', () => {
+  it('drops persisted review status, invalid reasons, and upload-time counts', () => {
+    expect(latestMigration).toContain(
+      'ALTER TABLE "import_batch_rows" DROP COLUMN "status"'
+    );
+    expect(latestMigration).toContain(
+      'ALTER TABLE "import_batch_rows" DROP COLUMN "invalid_reason"'
+    );
+    expect(latestMigration).toContain(
+      'ALTER TABLE "import_batches" DROP COLUMN "valid_row_count"'
+    );
+    expect(latestMigration).toContain(
+      'ALTER TABLE "import_batches" DROP COLUMN "invalid_row_count"'
+    );
+    expect(latestMigration).toContain('DROP TYPE "public"."import_row_status"');
+  });
+
+  it('does not drop source, lifecycle, or reviewed-value columns', () => {
+    expect(latestMigration).not.toContain('DROP COLUMN "row_count"');
+    expect(latestMigration).not.toContain('DROP COLUMN "selected_for_import"');
+    expect(latestMigration).not.toContain('DROP COLUMN "review_date"');
+    expect(latestMigration).not.toContain('DROP COLUMN "completed_at"');
+    expect(latestMigration).not.toContain('DROP COLUMN "discarded_at"');
+    expect(latestMigration).not.toContain('DROP COLUMN "external_id"');
   });
 });

@@ -131,8 +131,6 @@ const draftRow = {
   batchId: BATCH,
   orgId: ORG,
   rowNumber: 1,
-  status: 'ready' as const,
-  invalidReason: null,
   rawData: {},
   externalId: 'visa-1001',
   sourceDate: '2026-05-02',

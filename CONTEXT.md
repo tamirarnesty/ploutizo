@@ -43,8 +43,8 @@ _Avoid_: Card-funded contribution, contribution to a chequing account
 ### Import language
 
 **Import hub**:
-The starting point for credit card import work. It helps a household member start a new import, resume or discard active drafts, and see recent import outcomes; it is not the place where a draft is fully reviewed.
-_Avoid_: Import wizard, import review page
+The starting point for credit card import work. It helps a household member start a new import, resume or discard active drafts, and see recent import outcomes; it is not the place where a draft is fully reviewed. Active-draft counts on the hub are live **review evaluation**, derived from current draft facts, not stored upload-time snapshots.
+_Avoid_: Import wizard, import review page, trusting persisted valid/invalid counts
 
 **Import draft**:
 A durable in-progress import for one **settlement-scoped account**. A household member can resume or discard it before confirm; mid-review corrections and selection are saved on the draft so resume continues from the last persisted state. Only one active import draft may exist for a credit card account at a time.
@@ -63,8 +63,8 @@ An import draft row the user has explicitly chosen to include in the next confir
 _Avoid_: Automatically included row, checked transaction
 
 **Skipped import row**:
-An import draft row that will not move into the **prepared import set**. A row is skipped by remaining unselected during **Review import** and is recorded as skipped or unprocessed when the draft closes.
-_Avoid_: Selected no-op row, finalize outcome
+A finalized import outcome for a row that did not become a created or matched transaction. During **Review import**, exclusion is **selection** (`selectedForImport`); unselected rows are outside the **import set**. Skipped is recorded when the draft closes or a prepared set captures that outcome — it is not a persisted Review import status.
+_Avoid_: Review status column, sticky skipped status, selected no-op row
 
 **Import set**:
 The selected import rows in one **import draft**. It is not the whole uploaded file; rows the user leaves unselected are outside the import set.
@@ -79,8 +79,8 @@ An import set with at least one selected row whose selected rows all satisfy the
 _Avoid_: File valid, draft complete
 
 **Prepared import set**:
-A stable, immutable, revision-bound set of selected-row finalize outcomes created after the **import set** passes requirement evaluation. The user reviews this prepared set during **Finalize import** before committing new transactions and matched/no-op outcomes. Returning to **Review import**, or any intervening draft edit, discards the prepared import set; another Continue must verify and create a new prepared set from the current reviewed values and selection.
-_Avoid_: Live draft rows, temporary UI selection
+Temporary Continue → Finalize staging: a stable, immutable, revision-bound snapshot of selected-row finalize outcomes created after the **import set** passes requirement evaluation. The user reviews this prepared set during **Finalize import** before committing new transactions and matched/no-op outcomes. Returning to **Review import**, or any intervening draft edit, discards the prepared import set; another Continue must verify and create a new prepared set from the current reviewed values and selection. After Finalize confirms and transaction writes complete, staging is cleaned up; it is not Import history.
+_Avoid_: Live draft rows, temporary UI selection, permanent history store
 
 **Import set verification**:
 The server-side requirement evaluation that confirms a selected **import set** can move from **Review import** to **Finalize import**. Verification uses the shared transaction requirements plus import-specific requirements and is repeated before bulk transaction creation.
@@ -111,8 +111,8 @@ An imported row whose **import row requirements** are satisfied. Confirm is bloc
 _Avoid_: Confirmed row, imported row
 
 **Import row status**:
-A derived review state used to present an import row during review. It summarizes requirement evaluation for the row but is not the authority for whether the **import set** can move to **Finalize import**.
-_Avoid_: Source of truth, eligibility flag
+A derived **review evaluation** used to present an import row during review (`ready`, `needs_review`, `invalid`). It is computed from durable draft facts plus external facts by the shared evaluator and is not persisted. It summarizes requirement evaluation for the row but is not the authority for whether the **import set** can move to **Finalize import**.
+_Avoid_: Source of truth, eligibility flag, database status column, skipped as a review status
 
 **Invalid import row**:
 A CSV line the app cannot parse into a candidate transaction. It does not fail the whole file; it appears in review/history as invalid with a reason, is excluded from selection by default, and never becomes a transaction.
@@ -167,8 +167,16 @@ A household-facing CSV template for credit card imports when a bank-specific exp
 _Avoid_: General-purpose ledger migration format
 
 **Import history**:
-The user-visible record of draft, completed, undone, expired, and discarded imports. It explains what happened to an uploaded statement without treating the original file as permanent history.
-_Avoid_: File archive, statement archive
+The user-visible record of what happened to an uploaded file — draft, completed, discarded, expired, or undone — plus finalized outcome counts after **Finalize import**. It is not limited to successfully created transactions. History excludes incomplete **Review import** evaluation while still showing the batch lifecycle of discarded or otherwise closed imports.
+_Avoid_: File archive, statement archive, reusing review status as history, history of only created transactions
+
+**Completed import result**:
+Durable batch-level facts recorded when Finalize succeeds: file/account/source identity, lifecycle state, total rows, outcome counts (created, matched, skipped, invalid, unresolved, unprocessed), and timestamps. Distinct from **Review evaluation** and from temporary **prepared import set** staging. Implemented with Finalize (PLO-56).
+_Avoid_: Copying review status columns into history, treating prepared staging as history
+
+**Import transaction provenance**:
+The durable link from a created or matched transaction back to its import batch and source identity (batch id, external id, raw description). Matched rows keep their relationship to the existing transaction so duplicate handling remains explainable.
+_Avoid_: Using review status as provenance, retaining full dropped-row draft payloads as permanent history
 
 **Import access** (v1):
 Any household member may upload, review, and confirm credit card imports for any household credit card account. No role or account-ownership restriction.

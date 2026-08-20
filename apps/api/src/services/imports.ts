@@ -2,9 +2,7 @@ import { db } from '@ploutizo/db';
 import { NORMALIZED_IMPORT_EXAMPLE_CSV } from '@ploutizo/types';
 import { createImportReferenceResolver } from '@ploutizo/utils';
 import {
-  deriveImportRowStatus,
   resolveImportRowReviewType,
-  toImportRowStatusFields,
   toImportTransactionType,
 } from '@ploutizo/utils/import-row-status';
 import { validateTransactionAccountPolicy } from '@ploutizo/utils/transaction-policy';
@@ -35,6 +33,7 @@ import {
   listActiveImportDraftSummaries,
   listDraftRowIdsForDraft,
   listDraftRows,
+  listDraftRowsForBatches,
   listImportTargetAccounts,
   listRecentImportHistory,
   touchImportDraft,
@@ -52,8 +51,10 @@ import { parsePloutizoNormalizedCsv } from '@/lib/imports/normalizedCsv';
 import { listRefundTargetExpensesByIds } from '@/lib/queries/import-refund-targets';
 import {
   buildImportDraftView,
+  loadDraftRefundContext,
   refundTargetFactsRecordFromMap,
   toImportDraftPersistedRow,
+  withLiveImportReviewCounts,
 } from '@/services/import-draft-view';
 
 const toImportDraftSummary = (
@@ -76,6 +77,9 @@ const toImportDraftSummary = (
   } = row;
   return {
     ...summary,
+    // History omits live review counts until PLO-56 records completed results.
+    validRowCount: 0,
+    invalidRowCount: 0,
     account: {
       id: accountId,
       name: accountName,
@@ -97,8 +101,37 @@ export const listImportTargets = async (
 export const listActiveImportDrafts = async (
   orgId: string
 ): Promise<ImportDraftSummary[]> => {
-  const rows = await listActiveImportDraftSummaries(orgId);
-  return rows.map(toImportDraftSummary);
+  const summaries = await listActiveImportDraftSummaries(orgId);
+  if (summaries.length === 0) return [];
+
+  const rows = await listDraftRowsForBatches(
+    orgId,
+    summaries.map((summary) => summary.id)
+  );
+  const rowsByBatch = new Map<string, typeof rows>();
+  for (const row of rows) {
+    const batchRows = rowsByBatch.get(row.batchId) ?? [];
+    batchRows.push(row);
+    rowsByBatch.set(row.batchId, batchRows);
+  }
+
+  return Promise.all(
+    summaries.map(async (summary) => {
+      if (!summary.accountId) {
+        throw new DomainError(500, 'Import draft is missing an account.');
+      }
+      const batchRows = rowsByBatch.get(summary.id) ?? [];
+      const { evaluations } = await loadDraftRefundContext(
+        orgId,
+        summary.accountId,
+        batchRows
+      );
+      return withLiveImportReviewCounts(
+        toImportDraftSummary(summary),
+        evaluations
+      );
+    })
+  );
 };
 
 export const listImportHistory = async (
@@ -157,8 +190,6 @@ export const createNormalizedImportDraft = async (
         fileName: input.fileName,
         importedAt: new Date(),
         rowCount: parsed.rowCount,
-        validRowCount: parsed.validRowCount,
-        invalidRowCount: parsed.invalidRowCount,
       });
 
       await insertImportBatchRows(
@@ -179,22 +210,6 @@ export const createNormalizedImportDraft = async (
           return {
             ...rowFields,
             ...resolvedRefs,
-            status: deriveImportRowStatus(
-              toImportRowStatusFields({
-                status: row.status,
-                reviewDate: row.reviewDate ?? null,
-                reviewAmount: row.reviewAmount ?? null,
-                reviewType: toImportTransactionType(row.reviewType),
-                reviewDescription: row.reviewDescription ?? null,
-                parsedDate: row.parsedDate ?? null,
-                parsedAmount: row.parsedAmount ?? null,
-                parsedType: toImportTransactionType(row.parsedType),
-                parsedDescription: row.parsedDescription ?? null,
-                reviewCategoryId: resolvedRefs.reviewCategoryId,
-                reviewAssigneeMemberIds: resolvedRefs.reviewAssigneeMemberIds,
-                reviewCounterpartAccountId: null,
-              })
-            ),
             orgId,
             batchId: batch.id,
           };

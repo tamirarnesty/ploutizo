@@ -32,20 +32,17 @@ export interface ImportRowReviewFields {
   refundLinkBlocked?: boolean;
 }
 
-/** Fields required to derive durable/optimistic import row status. */
+/** Durable/optimistic review fields used to derive import row status. */
 export type ImportRowStatusInput = ImportRowStructuralFields &
   ImportRowReviewFields;
 
-export type ImportRowStatusFields = ImportRowStatusInput & {
-  status: ImportRowStatus;
-};
+export type ImportRowStatusFields = ImportRowStatusInput;
 
 /** Partial runtime row shapes may omit assignees before normalization. */
 export type ImportRowStatusNormalizeInput = Omit<
   ImportRowStatusInput,
   'reviewAssigneeMemberIds' | 'reviewCounterpartAccountId' | 'refundLinkBlocked'
 > & {
-  status: ImportRowStatus;
   reviewAssigneeMemberIds?: string[] | null;
   reviewCounterpartAccountId?: string | null;
   refundLinkBlocked?: boolean;
@@ -138,7 +135,6 @@ export const formatImportRowStructuralInvalidReason = (
 export const toImportRowStatusFields = (
   row: ImportRowStatusNormalizeInput
 ): ImportRowStatusFields => ({
-  status: row.status,
   reviewDate: row.reviewDate ?? null,
   reviewAmount: row.reviewAmount ?? null,
   reviewType: toImportTransactionType(row.reviewType),
@@ -189,17 +185,13 @@ export const isImportRowStructurallyInvalid = (
 ): boolean => getImportRowStructuralBlockers(row).length > 0;
 
 /**
- * Single evaluation of durable/optimistic import row status + blockers.
- * Sticky only for `skipped`; structural invalidity is always re-evaluated.
+ * Single evaluation of review status + blockers from durable/optimistic facts.
+ * Selection is not a review status; `skipped` is a prepared/finalized outcome.
  */
 export const evaluateImportRow = (
   row: ImportRowStatusFields
 ): ImportRowEvaluation => {
   const blockers = getImportRowReviewBlockers(row);
-
-  if (row.status === 'skipped') {
-    return { status: 'skipped', blockers };
-  }
 
   if (blockers.some((blocker) => STRUCTURAL_BLOCKERS.has(blocker))) {
     return { status: 'invalid', blockers };
@@ -216,9 +208,9 @@ export const deriveImportRowStatus = (
   row: ImportRowStatusFields
 ): ImportRowStatus => evaluateImportRow(row).status;
 
-export const withDerivedImportRowStatus = <T extends ImportRowStatusFields>(
+export const withDerivedImportRowStatus = <T extends ImportRowStatusInput>(
   row: T
-): T => ({
+): T & { status: ImportRowStatus } => ({
   ...row,
   status: deriveImportRowStatus(row),
 });
