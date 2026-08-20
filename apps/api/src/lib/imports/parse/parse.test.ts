@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_NORMALIZED_IMPORT_BYTES } from '@ploutizo/types';
-import { parsePloutizoNormalizedCsv } from './normalizedCsv';
+import { MAX_IMPORT_BYTES, MAX_IMPORT_ROWS } from '@ploutizo/types';
+import { parseImportUpload } from './index';
 import { DomainError } from '@/lib/errors';
 
 const expectImportError = (fn: () => unknown, code: string) => {
@@ -13,9 +13,9 @@ const expectImportError = (fn: () => unknown, code: string) => {
   }
 };
 
-describe('parsePloutizoNormalizedCsv', () => {
+describe('parseImportUpload', () => {
   it('keeps unparseable rows as durable facts when at least one row is importable', () => {
-    const parsed = parsePloutizoNormalizedCsv(
+    const parsed = parseImportUpload(
       [
         'date,amount,description,type,external id,category,notes,tags',
         '2026-05-02,42.18,Neighborhood Grocery,expense,visa-1001,Groceries,Weekly shop,food; errands',
@@ -23,6 +23,7 @@ describe('parsePloutizoNormalizedCsv', () => {
       ].join('\n')
     );
 
+    expect(parsed.format).toBe('internal');
     expect(parsed.rowCount).toBe(2);
     expect(parsed).not.toHaveProperty('validRowCount');
     expect(parsed).not.toHaveProperty('invalidRowCount');
@@ -54,7 +55,7 @@ describe('parsePloutizoNormalizedCsv', () => {
   });
 
   it('seeds reviewed values from parsed source facts', () => {
-    const parsed = parsePloutizoNormalizedCsv(
+    const parsed = parseImportUpload(
       ['date,amount,description,type', '2026-05-02,42.18,Coffee,expense'].join(
         '\n'
       )
@@ -70,10 +71,20 @@ describe('parsePloutizoNormalizedCsv', () => {
     expect(parsed.rows[0]).not.toHaveProperty('status');
   });
 
+  it('parses RFC-escaped quotes in fields', () => {
+    const parsed = parseImportUpload(
+      [
+        'date,amount,description,type',
+        '2026-05-02,42.18,"12"" pizza",expense',
+      ].join('\n')
+    );
+
+    expect(parsed.rows[0]?.sourceDescription).toBe('12" pizza');
+  });
+
   it('rejects unrecognized files with missing required headers', () => {
     expectImportError(
-      () =>
-        parsePloutizoNormalizedCsv('posted,total,memo\n2026-05-02,42,Coffee'),
+      () => parseImportUpload('posted,total,memo\n2026-05-02,42,Coffee'),
       'IMPORT_FILE_UNRECOGNIZED'
     );
   });
@@ -81,7 +92,7 @@ describe('parsePloutizoNormalizedCsv', () => {
   it('rejects corrupt CSV with an unclosed quoted field', () => {
     expectImportError(
       () =>
-        parsePloutizoNormalizedCsv(
+        parseImportUpload(
           'date,amount,description,type\n2026-05-02,42.18,"Coffee,expense'
         ),
       'IMPORT_FILE_CORRUPT'
@@ -91,15 +102,25 @@ describe('parsePloutizoNormalizedCsv', () => {
   it('rejects corrupt CSV with trailing characters after a quoted field', () => {
     expectImportError(
       () =>
-        parsePloutizoNormalizedCsv(
+        parseImportUpload(
           'date,amount,description,type\n2026-05-02,42.18,"Coffee"x,expense'
         ),
       'IMPORT_FILE_CORRUPT'
     );
   });
 
+  it('rejects unquoted interior quotes as corrupt CSV', () => {
+    expectImportError(
+      () =>
+        parseImportUpload(
+          'date,amount,description,type\n2026-05-02,42.18,12" pizza,expense'
+        ),
+      'IMPORT_FILE_CORRUPT'
+    );
+  });
+
   it('keeps malformed grouped amount tokens as unparsed facts', () => {
-    const parsed = parsePloutizoNormalizedCsv(
+    const parsed = parseImportUpload(
       [
         'date,amount,description,type',
         '2026-05-02,42.18,Coffee,expense',
@@ -112,7 +133,7 @@ describe('parsePloutizoNormalizedCsv', () => {
   });
 
   it('parses dollar amounts and keeps misplaced dollar signs unparsed', () => {
-    const parsed = parsePloutizoNormalizedCsv(
+    const parsed = parseImportUpload(
       [
         'date,amount,description,type',
         '2026-05-02,$42.18,Coffee,expense',
@@ -127,23 +148,33 @@ describe('parsePloutizoNormalizedCsv', () => {
   });
 
   it('rejects empty files and files with no importable rows', () => {
+    expectImportError(() => parseImportUpload('  \n\n'), 'IMPORT_FILE_EMPTY');
     expectImportError(
-      () => parsePloutizoNormalizedCsv('  \n\n'),
+      () => parseImportUpload('date,amount,description,type\n'),
       'IMPORT_FILE_EMPTY'
     );
     expectImportError(
       () =>
-        parsePloutizoNormalizedCsv(
-          'date,amount,description,type\nnot-a-date,nope,,wat'
-        ),
+        parseImportUpload('date,amount,description,type\nnot-a-date,nope,,wat'),
       'IMPORT_FILE_EMPTY'
     );
   });
 
-  it('rejects files over the normalized import size limit', () => {
+  it('rejects files over the import size limit', () => {
+    expectImportError(
+      () => parseImportUpload('a'.repeat(MAX_IMPORT_BYTES + 1)),
+      'IMPORT_FILE_TOO_LARGE'
+    );
+  });
+
+  it('rejects files over the import row limit', () => {
+    const rows = Array.from(
+      { length: MAX_IMPORT_ROWS + 1 },
+      () => '2026-05-02,1.00,Coffee,expense'
+    );
     expectImportError(
       () =>
-        parsePloutizoNormalizedCsv('a'.repeat(MAX_NORMALIZED_IMPORT_BYTES + 1)),
+        parseImportUpload(['date,amount,description,type', ...rows].join('\n')),
       'IMPORT_FILE_TOO_LARGE'
     );
   });

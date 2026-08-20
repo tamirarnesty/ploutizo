@@ -72,6 +72,10 @@ export {
 } from './format-account-label';
 export { parseImportTags } from './parse-import-tags';
 export {
+  tryParseImportAmountToCents,
+  tryParseImportIsoDate,
+} from './import-coercion';
+export {
   createImportReferenceResolver,
   type ImportCsvHints,
   type ImportReferenceCatalogs,

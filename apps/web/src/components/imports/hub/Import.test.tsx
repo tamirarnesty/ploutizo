@@ -115,7 +115,7 @@ const draftSummary = {
     institution: 'TD',
     lastFour: '1234',
   },
-  source: 'ploutizo_normalized',
+  source: 'internal',
   status: 'draft' as const,
   fileName: 'statement.csv',
   rowCount: 2,

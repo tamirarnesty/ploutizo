@@ -11,7 +11,7 @@ const historyItem: ImportDraftSummary = {
     institution: 'TD',
     lastFour: '1234',
   },
-  source: 'ploutizo_normalized',
+  source: 'internal',
   status: 'completed',
   fileName: 'statement.csv',
   rowCount: 10,

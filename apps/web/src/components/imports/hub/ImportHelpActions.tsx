@@ -6,7 +6,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
-import { NORMALIZED_IMPORT_EXAMPLE_CSV } from '@ploutizo/types';
+import { INTERNAL_IMPORT_EXAMPLE_CSV } from '@ploutizo/types';
 import { downloadText } from '@/lib/download';
 import { ImportGuideDialog } from './ImportGuideDialog';
 
@@ -24,7 +24,7 @@ export const ImportHelpActions = () => {
               onClick={() =>
                 downloadText(
                   'ploutizo-normalized-import-example.csv',
-                  NORMALIZED_IMPORT_EXAMPLE_CSV,
+                  INTERNAL_IMPORT_EXAMPLE_CSV,
                   'text/csv'
                 )
               }

@@ -29,16 +29,17 @@
     "@opentelemetry/sdk-trace-node": "^2.10.0",
     "@opentelemetry/semantic-conventions": "^1.43.0",
     "@ploutizo/db": "workspace:*",
+    "@ploutizo/telemetry": "workspace:*",
     "@ploutizo/types": "workspace:*",
     "@ploutizo/utils": "workspace:*",
     "@ploutizo/validators": "workspace:*",
+    "csv-parse": "^7.0.2",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.10",
     "neverthrow": "^8.2.0",
+    "re2js": "^2.8.6",
     "svix": "^1.90.0",
-    "zod": "^4.3.6",
-    "@ploutizo/telemetry": "workspace:*",
-    "re2js": "^2.8.6"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@clerk/backend": "^3.2.9",

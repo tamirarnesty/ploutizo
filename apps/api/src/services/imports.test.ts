@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '@ploutizo/db';
 import { NotFoundError } from '@/lib/errors';
 import {
-  createNormalizedImportDraft,
+  createImportDraft,
   getImportDraft,
   listActiveImportDrafts,
   listImportTargets,
@@ -89,7 +89,7 @@ const summaryRow = {
   accountName: 'Visa',
   accountInstitution: 'TD',
   accountLastFour: '1234',
-  source: 'ploutizo_normalized',
+  source: 'internal',
   status: 'draft' as const,
   fileName: 'statement.csv',
   rowCount: 2,
@@ -201,7 +201,7 @@ describe('import service', () => {
   });
 
   it('persists a normalized draft and every parsed row in one transaction', async () => {
-    const result = await createNormalizedImportDraft('org_1', {
+    const result = await createImportDraft('org_1', {
       accountId: summaryRow.accountId,
       fileName: 'statement.csv',
       content: [
@@ -218,7 +218,7 @@ describe('import service', () => {
       expect.objectContaining({
         orgId: 'org_1',
         accountId: summaryRow.accountId,
-        source: 'ploutizo_normalized',
+        source: 'internal',
         status: 'draft',
         fileName: 'statement.csv',
         rowCount: 2,
@@ -310,7 +310,7 @@ describe('import service', () => {
   it('resumes the active draft for an account without inserting a new batch', async () => {
     vi.mocked(fetchActiveDraftByAccount).mockResolvedValue(summaryRow);
 
-    const result = await createNormalizedImportDraft('org_1', {
+    const result = await createImportDraft('org_1', {
       accountId: summaryRow.accountId,
       fileName: 'new.csv',
       content: 'date,amount,description,type\n2026-05-02,42.18,Coffee,expense',
@@ -326,7 +326,7 @@ describe('import service', () => {
     vi.mocked(fetchActiveDraftByAccount).mockResolvedValueOnce(null);
     vi.mocked(fetchActiveDraftByAccount).mockResolvedValueOnce(summaryRow);
 
-    const result = await createNormalizedImportDraft('org_1', {
+    const result = await createImportDraft('org_1', {
       accountId: summaryRow.accountId,
       fileName: 'statement.csv',
       content: 'date,amount,description,type\n2026-05-02,42.18,Coffee,expense',

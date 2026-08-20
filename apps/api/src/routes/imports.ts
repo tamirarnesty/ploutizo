@@ -7,10 +7,10 @@ import {
 import type { AppEnv } from '@/types';
 import { appValidator } from '@/lib/validator';
 import {
-  createNormalizedImportDraft,
+  createImportDraft,
   discardImportDraft,
   getImportDraft,
-  getNormalizedImportExampleCsv,
+  getImportExampleCsv,
   listActiveImportDrafts,
   listImportHistory,
   listImportTargets,
@@ -39,7 +39,7 @@ importsRouter.post(
   async (c) => {
     const orgId = c.get('orgId');
     const input = c.req.valid('json');
-    const result = await createNormalizedImportDraft(orgId, input);
+    const result = await createImportDraft(orgId, input);
     return c.json(
       { data: result.draft, meta: { reusedExisting: result.reusedExisting } },
       result.reusedExisting ? 200 : 201
@@ -108,7 +108,7 @@ importsRouter.get('/normalized-example.csv', (c) => {
     'Content-Disposition',
     'attachment; filename="ploutizo-normalized-import-example.csv"'
   );
-  return c.body(getNormalizedImportExampleCsv());
+  return c.body(getImportExampleCsv());
 });
 
 export { importsRouter };

@@ -1,17 +1,19 @@
-export const NORMALIZED_IMPORT_SOURCE = 'ploutizo_normalized' as const;
+export const INTERNAL_IMPORT_FORMAT = 'internal' as const;
 
-export const MAX_NORMALIZED_IMPORT_BYTES = 512 * 1024;
+export type ImportFormatId = typeof INTERNAL_IMPORT_FORMAT;
 
-export const MAX_NORMALIZED_IMPORT_ROWS = 1_000;
+export const MAX_IMPORT_BYTES = 512 * 1024;
 
-export const NORMALIZED_IMPORT_REQUIRED_COLUMNS = [
+export const MAX_IMPORT_ROWS = 1_000;
+
+export const INTERNAL_IMPORT_REQUIRED_COLUMNS = [
   'date',
   'amount',
   'description',
   'type',
 ] as const;
 
-export const NORMALIZED_IMPORT_OPTIONAL_COLUMNS = [
+export const INTERNAL_IMPORT_OPTIONAL_COLUMNS = [
   'external id',
   'category',
   'assignee hint',
@@ -20,7 +22,7 @@ export const NORMALIZED_IMPORT_OPTIONAL_COLUMNS = [
   'tags',
 ] as const;
 
-export const NORMALIZED_IMPORT_FORMAT_RULES: readonly (readonly [
+export const INTERNAL_IMPORT_FORMAT_RULES: readonly (readonly [
   string,
   string,
 ])[] = [
@@ -31,7 +33,7 @@ export const NORMALIZED_IMPORT_FORMAT_RULES: readonly (readonly [
   ['tags', 'Separate multiple tags with semicolons.'],
 ];
 
-export const NORMALIZED_IMPORT_EXAMPLE_CSV = [
+export const INTERNAL_IMPORT_EXAMPLE_CSV = [
   'date,amount,description,type,external id,category,assignee hint,refund link hints,notes,tags',
   '2026-05-02,42.18,Neighborhood Grocery,expense,visa-1001,Groceries,Ada,,Weekly shop,food; errands',
   '2026-05-08,14.99,Returned Charger,refund,visa-1002,Household,Ada,visa-0911,Returned item,',
