@@ -1,86 +1,38 @@
+import { parse } from 'csv-parse/sync';
+import { CsvError } from 'csv-parse';
 import { MAX_IMPORT_BYTES } from '@ploutizo/types';
 import type { CsvRecord, CsvUpload } from './types';
 import { DomainError } from '@/lib/errors';
 
 const parseCsvRecords = (content: string): CsvRecord[] => {
-  const records: CsvRecord[] = [];
-  let row: string[] = [];
-  let value = '';
-  let inQuotes = false;
-  let rowNumber = 1;
+  try {
+    const rows = parse(content, {
+      bom: true,
+      relax_column_count: true,
+      skip_empty_lines: false,
+    });
 
-  const pushValue = () => {
-    row.push(value);
-    value = '';
-  };
-
-  const pushRow = () => {
-    pushValue();
-    records.push({ cells: row, rowNumber });
-    row = [];
-    rowNumber += 1;
-  };
-
-  for (let i = 0; i < content.length; i += 1) {
-    const char = content[i];
-    const next = content[i + 1];
-
-    if (char === '"') {
-      if (inQuotes && next === '"') {
-        value += '"';
-        i += 1;
-      } else if (inQuotes) {
-        inQuotes = false;
-        if (next && next !== ',' && next !== '\n' && next !== '\r') {
-          throw new DomainError(
-            400,
-            'The CSV file could not be read because a quoted field contains trailing characters.',
-            'IMPORT_FILE_CORRUPT'
-          );
-        }
-      } else if (value.length === 0) {
-        inQuotes = true;
-      } else {
-        value += char;
-      }
-      continue;
+    return rows.map((cells, index) => ({
+      cells,
+      rowNumber: index + 1,
+    }));
+  } catch (error) {
+    if (error instanceof CsvError) {
+      throw new DomainError(
+        400,
+        'The CSV file could not be read.',
+        'IMPORT_FILE_CORRUPT'
+      );
     }
-
-    if (char === ',' && !inQuotes) {
-      pushValue();
-      continue;
-    }
-
-    if ((char === '\n' || char === '\r') && !inQuotes) {
-      if (char === '\r' && next === '\n') i += 1;
-      pushRow();
-      continue;
-    }
-
-    value += char;
+    throw error;
   }
-
-  if (inQuotes) {
-    throw new DomainError(
-      400,
-      'The CSV file could not be read because a quoted field is not closed.',
-      'IMPORT_FILE_CORRUPT'
-    );
-  }
-
-  if (value.length > 0 || row.length > 0) {
-    pushRow();
-  }
-
-  return records;
 };
 
 export const isBlankRecord = (record: CsvRecord) =>
   record.cells.every((cell) => cell.trim().length === 0);
 
 export const readCsvUpload = (content: string): CsvUpload => {
-  const strippedContent = content.replace(/^\uFEFF/, '');
-  if (Buffer.byteLength(strippedContent, 'utf8') > MAX_IMPORT_BYTES) {
+  if (Buffer.byteLength(content, 'utf8') > MAX_IMPORT_BYTES) {
     throw new DomainError(
       413,
       'The CSV file is too large. Upload a file smaller than 512 KB.',
@@ -88,6 +40,6 @@ export const readCsvUpload = (content: string): CsvUpload => {
     );
   }
 
-  const records = parseCsvRecords(strippedContent);
+  const records = parseCsvRecords(content);
   return { records };
 };
