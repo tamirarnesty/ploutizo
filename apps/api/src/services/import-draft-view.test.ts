@@ -16,7 +16,7 @@ const summaryRow = {
   accountName: 'Visa',
   accountInstitution: 'TD',
   accountLastFour: '1234',
-  source: 'ploutizo_normalized',
+  source: 'internal',
   status: 'draft' as const,
   fileName: 'statement.csv',
   rowCount: 2,

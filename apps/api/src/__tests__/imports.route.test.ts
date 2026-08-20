@@ -3,7 +3,7 @@ import { createRouteTestApp } from './testUtils';
 import type { AppEnv } from '@/types';
 import { importsRouter } from '@/routes/imports';
 import {
-  createNormalizedImportDraft,
+  createImportDraft,
   discardImportDraft,
   listImportTargets,
   updateImportDraftRow,
@@ -12,10 +12,10 @@ import {
 import { continueImportDraft } from '@/services/import-prepared-sets';
 
 vi.mock('@/services/imports', () => ({
-  createNormalizedImportDraft: vi.fn(),
+  createImportDraft: vi.fn(),
   discardImportDraft: vi.fn(),
   getImportDraft: vi.fn(),
-  getNormalizedImportExampleCsv: vi.fn(() => 'date,amount,description,type\n'),
+  getImportExampleCsv: vi.fn(() => 'date,amount,description,type\n'),
   listActiveImportDrafts: vi.fn(() => []),
   listImportHistory: vi.fn(() => []),
   listImportTargets: vi.fn(),
@@ -54,7 +54,7 @@ describe('imports router', () => {
   });
 
   it('creates an import draft with a normalized CSV payload', async () => {
-    vi.mocked(createNormalizedImportDraft).mockResolvedValue({
+    vi.mocked(createImportDraft).mockResolvedValue({
       reusedExisting: false,
       draft: { id: 'draft_1', rows: [] } as never,
     });
@@ -71,14 +71,14 @@ describe('imports router', () => {
     });
 
     expect(res.status).toBe(201);
-    expect(createNormalizedImportDraft).toHaveBeenCalledWith(
+    expect(createImportDraft).toHaveBeenCalledWith(
       'org_1',
       expect.objectContaining({ fileName: 'statement.csv' })
     );
   });
 
-  it('returns an existing draft when createNormalizedImportDraft reuses one', async () => {
-    vi.mocked(createNormalizedImportDraft).mockResolvedValue({
+  it('returns an existing draft when createImportDraft reuses one', async () => {
+    vi.mocked(createImportDraft).mockResolvedValue({
       reusedExisting: true,
       draft: { id: 'draft_1', rows: [] } as never,
     });

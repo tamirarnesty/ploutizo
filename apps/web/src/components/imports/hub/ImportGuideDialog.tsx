@@ -8,9 +8,9 @@ import {
 } from '@ploutizo/ui/components/dialog';
 import { Text } from '@ploutizo/ui/components/text';
 import {
-  NORMALIZED_IMPORT_FORMAT_RULES,
-  NORMALIZED_IMPORT_OPTIONAL_COLUMNS,
-  NORMALIZED_IMPORT_REQUIRED_COLUMNS,
+  INTERNAL_IMPORT_FORMAT_RULES,
+  INTERNAL_IMPORT_OPTIONAL_COLUMNS,
+  INTERNAL_IMPORT_REQUIRED_COLUMNS,
 } from '@ploutizo/types';
 
 interface ImportGuideDialogProps {
@@ -37,7 +37,7 @@ export const ImportGuideDialog = ({
             Required columns
           </Text>
           <div className="flex flex-wrap gap-2">
-            {NORMALIZED_IMPORT_REQUIRED_COLUMNS.map((column) => (
+            {INTERNAL_IMPORT_REQUIRED_COLUMNS.map((column) => (
               <Badge key={column} variant="outline">
                 {column}
               </Badge>
@@ -50,7 +50,7 @@ export const ImportGuideDialog = ({
             Optional columns
           </Text>
           <div className="flex flex-wrap gap-2">
-            {NORMALIZED_IMPORT_OPTIONAL_COLUMNS.map((column) => (
+            {INTERNAL_IMPORT_OPTIONAL_COLUMNS.map((column) => (
               <Badge key={column} variant="secondary">
                 {column}
               </Badge>
@@ -67,7 +67,7 @@ export const ImportGuideDialog = ({
               </tr>
             </thead>
             <tbody>
-              {NORMALIZED_IMPORT_FORMAT_RULES.map(([field, rule]) => (
+              {INTERNAL_IMPORT_FORMAT_RULES.map(([field, rule]) => (
                 <tr
                   key={field}
                   className="border-b border-border last:border-0"

@@ -40,7 +40,7 @@ const draftSummary: ImportDraftSummary = {
     institution: 'TD',
     lastFour: '1234',
   },
-  source: 'ploutizo_normalized',
+  source: 'internal',
   status: 'draft',
   fileName: 'statement.csv',
   rowCount: 2,

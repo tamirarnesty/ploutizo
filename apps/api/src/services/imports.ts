@@ -1,5 +1,5 @@
 import { db } from '@ploutizo/db';
-import { NORMALIZED_IMPORT_EXAMPLE_CSV } from '@ploutizo/types';
+import { INTERNAL_IMPORT_EXAMPLE_CSV } from '@ploutizo/types';
 import { createImportReferenceResolver } from '@ploutizo/utils';
 import {
   resolveImportRowReviewType,
@@ -47,7 +47,7 @@ import {
   transactionExistsInOrg,
 } from '@/lib/queries/scope';
 import { listTags } from '@/lib/queries/tags';
-import { parsePloutizoNormalizedCsv } from '@/lib/imports/normalizedCsv';
+import { parseImportUpload } from '@/lib/imports/parse';
 import { listRefundTargetExpensesByIds } from '@/lib/queries/import-refund-targets';
 import {
   buildImportDraftView,
@@ -151,7 +151,7 @@ export const getImportDraft = async (
   return buildImportDraftView(orgId, summary, rows, toImportDraftSummary);
 };
 
-export const createNormalizedImportDraft = async (
+export const createImportDraft = async (
   orgId: string,
   input: CreateImportDraftInput
 ): Promise<{ draft: ImportDraft; reusedExisting: boolean }> => {
@@ -168,7 +168,7 @@ export const createNormalizedImportDraft = async (
     };
   }
 
-  const parsed = parsePloutizoNormalizedCsv(input.content);
+  const parsed = parseImportUpload(input.content);
   const [orgMembers, orgCategories, orgTags] = await Promise.all([
     listOrgMembers(orgId),
     listCategories(orgId),
@@ -185,7 +185,7 @@ export const createNormalizedImportDraft = async (
       const batch = await insertImportBatch(tx, {
         orgId,
         accountId: input.accountId,
-        source: parsed.source,
+        source: parsed.format,
         status: 'draft',
         fileName: input.fileName,
         importedAt: new Date(),
@@ -352,5 +352,4 @@ export const updateImportDraftRowSelection = async (
   return persistedRows.map(toImportDraftPersistedRow);
 };
 
-export const getNormalizedImportExampleCsv = () =>
-  NORMALIZED_IMPORT_EXAMPLE_CSV;
+export const getImportExampleCsv = () => INTERNAL_IMPORT_EXAMPLE_CSV;

@@ -20,7 +20,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
-import { MAX_NORMALIZED_IMPORT_BYTES } from '@ploutizo/types';
+import { MAX_IMPORT_BYTES } from '@ploutizo/types';
 import { formatAccountLabel } from '@ploutizo/utils';
 import type { ImportDraftSummary, ImportTargetAccount } from '@ploutizo/types';
 import { useCreateImportDraft } from '@/lib/data-access/imports';
@@ -175,7 +175,7 @@ export const ImportUploadForm = ({
                   id="import-file"
                   label="CSV file"
                   accept={CSV_ACCEPT}
-                  maxSize={MAX_NORMALIZED_IMPORT_BYTES}
+                  maxSize={MAX_IMPORT_BYTES}
                   disabled={
                     isCreatingDraft ||
                     targetsLoading ||
