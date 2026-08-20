@@ -1,17 +1,9 @@
 import {
   INTERNAL_IMPORT_FORMAT,
   INTERNAL_IMPORT_REQUIRED_COLUMNS,
-  MAX_IMPORT_ROWS,
 } from '@ploutizo/types';
 import { parseImportTags } from '@ploutizo/utils';
-import { isBlankRecord } from '../read';
-import type {
-  CsvRecord,
-  CsvUpload,
-  ImportNormalizer,
-  SourceImportRow,
-} from '../types';
-import { DomainError } from '@/lib/errors';
+import type { CsvRecord, ImportNormalizer, SourceImportRow } from '../types';
 
 type HeaderKey =
   | 'date'
@@ -84,22 +76,6 @@ const buildRawData = (record: CsvRecord, headers: string[]) => {
   return rawData;
 };
 
-const getHeaderContext = (upload: CsvUpload) => {
-  const headerIndex = upload.records.findIndex(
-    (record) => !isBlankRecord(record)
-  );
-  if (headerIndex === -1) return null;
-
-  const headerRecord = upload.records[headerIndex];
-  const headers = headerRecord.cells.map((header) => header.trim());
-  const headerMap = buildHeaderMap(headers);
-  const dataRecords = upload.records
-    .slice(headerIndex + 1)
-    .filter((record) => !isBlankRecord(record));
-
-  return { headers, headerMap, dataRecords };
-};
-
 const hasRequiredHeaders = (headerMap: Map<HeaderKey, number>) =>
   REQUIRED_HEADERS.every((header) => headerMap.has(header));
 
@@ -115,51 +91,22 @@ const mapRow = (
   sourceAmount: readCell(record, headerMap, 'amount'),
   sourceDescription: readCell(record, headerMap, 'description'),
   sourceType: readCell(record, headerMap, 'type'),
-  csvCategoryName: readCell(record, headerMap, 'category'),
-  csvAssigneeName: readCell(record, headerMap, 'assigneeHint'),
-  csvTagNames: parseImportTags(readCell(record, headerMap, 'tags') ?? ''),
+  hints: {
+    csvCategoryName: readCell(record, headerMap, 'category'),
+    csvAssigneeName: readCell(record, headerMap, 'assigneeHint'),
+    csvTagNames: parseImportTags(readCell(record, headerMap, 'tags') ?? ''),
+  },
   reviewRefundLinkHint: readCell(record, headerMap, 'refundLinkHint'),
   reviewNotes: readCell(record, headerMap, 'notes'),
 });
 
 export const internalImportNormalizer: ImportNormalizer = {
   format: INTERNAL_IMPORT_FORMAT,
-  matches: (upload) => {
-    const context = getHeaderContext(upload);
-    if (!context) return false;
-    return hasRequiredHeaders(context.headerMap);
-  },
+  matches: (upload) => hasRequiredHeaders(buildHeaderMap(upload.headers)),
   normalize: (upload) => {
-    const context = getHeaderContext(upload);
-    if (!context) {
-      throw new DomainError(400, 'The CSV file is empty.', 'IMPORT_FILE_EMPTY');
-    }
-
-    const { headers, headerMap, dataRecords } = context;
-    if (!hasRequiredHeaders(headerMap)) {
-      throw new DomainError(
-        400,
-        'This file is not a Ploutizo normalized CSV. Required columns are date, amount, description, and type.',
-        'IMPORT_FILE_UNRECOGNIZED'
-      );
-    }
-
-    if (dataRecords.length === 0) {
-      throw new DomainError(
-        400,
-        'The CSV file has no data rows.',
-        'IMPORT_FILE_EMPTY'
-      );
-    }
-
-    if (dataRecords.length > MAX_IMPORT_ROWS) {
-      throw new DomainError(
-        413,
-        'The CSV file has too many rows. Upload 1,000 rows or fewer.',
-        'IMPORT_FILE_TOO_LARGE'
-      );
-    }
-
-    return dataRecords.map((record) => mapRow(record, headers, headerMap));
+    const headerMap = buildHeaderMap(upload.headers);
+    return upload.dataRecords.map((record) =>
+      mapRow(record, upload.headers, headerMap)
+    );
   },
 };

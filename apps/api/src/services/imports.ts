@@ -168,7 +168,9 @@ export const createImportDraft = async (
     };
   }
 
-  const parsed = parseImportUpload(input.content);
+  const parsed = parseImportUpload(input.content, {
+    fileName: input.fileName,
+  });
   const [orgMembers, orgCategories, orgTags] = await Promise.all([
     listOrgMembers(orgId),
     listCategories(orgId),

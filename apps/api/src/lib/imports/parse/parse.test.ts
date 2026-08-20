@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_IMPORT_BYTES } from '@ploutizo/types';
+import { MAX_IMPORT_BYTES, MAX_IMPORT_ROWS } from '@ploutizo/types';
 import { parseImportUpload } from './index';
 import { DomainError } from '@/lib/errors';
 
@@ -71,6 +71,20 @@ describe('parseImportUpload', () => {
     expect(parsed.rows[0]).not.toHaveProperty('status');
   });
 
+  it('keeps unquoted interior quotes as literal description characters', () => {
+    const parsed = parseImportUpload(
+      [
+        'date,amount,description,type',
+        '2026-05-02,42.18,12" pizza,expense',
+        '2026-05-03,18.00,Joe "The Boss" Cafe,expense',
+      ].join('\n')
+    );
+
+    expect(parsed.rows[0]?.sourceDescription).toBe('12" pizza');
+    expect(parsed.rows[1]?.sourceDescription).toBe('Joe "The Boss" Cafe');
+    expect(parsed.rowCount).toBe(2);
+  });
+
   it('rejects unrecognized files with missing required headers', () => {
     expectImportError(
       () => parseImportUpload('posted,total,memo\n2026-05-02,42,Coffee'),
@@ -93,6 +107,17 @@ describe('parseImportUpload', () => {
       () =>
         parseImportUpload(
           'date,amount,description,type\n2026-05-02,42.18,"Coffee"x,expense'
+        ),
+      'IMPORT_FILE_CORRUPT'
+    );
+    expectImportError(
+      () =>
+        parseImportUpload(
+          [
+            'date,amount,description,type',
+            '2026-05-02,42.18,12" pizza,expense',
+            '2026-05-03,1.00,"Coffee"x,expense',
+          ].join('\n')
         ),
       'IMPORT_FILE_CORRUPT'
     );
@@ -129,6 +154,10 @@ describe('parseImportUpload', () => {
   it('rejects empty files and files with no importable rows', () => {
     expectImportError(() => parseImportUpload('  \n\n'), 'IMPORT_FILE_EMPTY');
     expectImportError(
+      () => parseImportUpload('date,amount,description,type\n'),
+      'IMPORT_FILE_EMPTY'
+    );
+    expectImportError(
       () =>
         parseImportUpload('date,amount,description,type\nnot-a-date,nope,,wat'),
       'IMPORT_FILE_EMPTY'
@@ -138,6 +167,18 @@ describe('parseImportUpload', () => {
   it('rejects files over the import size limit', () => {
     expectImportError(
       () => parseImportUpload('a'.repeat(MAX_IMPORT_BYTES + 1)),
+      'IMPORT_FILE_TOO_LARGE'
+    );
+  });
+
+  it('rejects files over the import row limit', () => {
+    const rows = Array.from(
+      { length: MAX_IMPORT_ROWS + 1 },
+      () => '2026-05-02,1.00,Coffee,expense'
+    );
+    expectImportError(
+      () =>
+        parseImportUpload(['date,amount,description,type', ...rows].join('\n')),
       'IMPORT_FILE_TOO_LARGE'
     );
   });

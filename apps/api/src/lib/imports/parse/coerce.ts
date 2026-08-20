@@ -6,27 +6,30 @@ import {
   isImportRowStructurallyInvalid,
   toImportTransactionType,
 } from '@ploutizo/utils/import-row-status';
+import type { ImportCsvHints } from '@ploutizo/utils';
 import type { ImportTransactionType } from '@ploutizo/types';
 import type { ParsedImportRow, SourceImportRow } from './types';
 import { DomainError } from '@/lib/errors';
+
+const EMPTY_HINTS: ImportCsvHints = {
+  csvCategoryName: null,
+  csvAssigneeName: null,
+  csvTagNames: [],
+};
 
 const parseType = (value: string | null): ImportTransactionType | null =>
   toImportTransactionType(value?.trim().toLowerCase());
 
 const coerceRow = (row: SourceImportRow): ParsedImportRow => {
+  const { hints, reviewRefundLinkHint, reviewNotes, ...source } = row;
   const parsedDate = tryParseImportIsoDate(row.sourceDate);
   const parsedAmount = tryParseImportAmountToCents(row.sourceAmount);
   const parsedType = parseType(row.sourceType);
   const parsedDescription = row.sourceDescription;
+  const csvHints = hints ?? EMPTY_HINTS;
 
   return {
-    rowNumber: row.rowNumber,
-    rawData: row.rawData,
-    externalId: row.externalId,
-    sourceDate: row.sourceDate,
-    sourceAmount: row.sourceAmount,
-    sourceDescription: row.sourceDescription,
-    sourceType: row.sourceType,
+    ...source,
     parsedDate,
     parsedAmount,
     parsedType,
@@ -35,11 +38,11 @@ const coerceRow = (row: SourceImportRow): ParsedImportRow => {
     reviewAmount: parsedAmount,
     reviewType: parsedType,
     reviewDescription: parsedDescription,
-    csvCategoryName: row.csvCategoryName,
-    csvAssigneeName: row.csvAssigneeName,
-    csvTagNames: row.csvTagNames,
-    reviewRefundLinkHint: row.reviewRefundLinkHint,
-    reviewNotes: row.reviewNotes,
+    csvCategoryName: csvHints.csvCategoryName,
+    csvAssigneeName: csvHints.csvAssigneeName,
+    csvTagNames: csvHints.csvTagNames,
+    reviewRefundLinkHint: reviewRefundLinkHint ?? null,
+    reviewNotes: reviewNotes ?? null,
   };
 };
 
