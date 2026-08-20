@@ -350,6 +350,19 @@ describe('useImportReviewSession', () => {
   });
 
   it('updates selection on the collection immediately and persists via bulk API', async () => {
+    const staleReadyDraft = {
+      ...draft,
+      rows: draft.rows.map((row) =>
+        row.id === 'row_ready'
+          ? {
+              ...row,
+              status: 'needs_review' as const,
+              invalidReason: 'stale persisted status',
+            }
+          : row
+      ),
+    };
+    vi.mocked(fetchImportDraft).mockResolvedValue(staleReadyDraft);
     const { result, unmount } = await hydrateSession();
 
     act(() => {
@@ -372,6 +385,13 @@ describe('useImportReviewSession', () => {
         selectedForImport: true,
       }
     );
+    expect(
+      result.current.rows.find((row) => row.id === 'row_ready')
+    ).toMatchObject({
+      selectedForImport: true,
+      status: 'ready',
+      invalidReason: null,
+    });
     unmount();
   });
 
