@@ -71,18 +71,15 @@ describe('parseImportUpload', () => {
     expect(parsed.rows[0]).not.toHaveProperty('status');
   });
 
-  it('keeps unquoted interior quotes as literal description characters', () => {
+  it('parses RFC-escaped quotes in fields', () => {
     const parsed = parseImportUpload(
       [
         'date,amount,description,type',
-        '2026-05-02,42.18,12" pizza,expense',
-        '2026-05-03,18.00,Joe "The Boss" Cafe,expense',
+        '2026-05-02,42.18,"12"" pizza",expense',
       ].join('\n')
     );
 
     expect(parsed.rows[0]?.sourceDescription).toBe('12" pizza');
-    expect(parsed.rows[1]?.sourceDescription).toBe('Joe "The Boss" Cafe');
-    expect(parsed.rowCount).toBe(2);
   });
 
   it('rejects unrecognized files with missing required headers', () => {
@@ -110,14 +107,13 @@ describe('parseImportUpload', () => {
         ),
       'IMPORT_FILE_CORRUPT'
     );
+  });
+
+  it('rejects unquoted interior quotes as corrupt CSV', () => {
     expectImportError(
       () =>
         parseImportUpload(
-          [
-            'date,amount,description,type',
-            '2026-05-02,42.18,12" pizza,expense',
-            '2026-05-03,1.00,"Coffee"x,expense',
-          ].join('\n')
+          'date,amount,description,type\n2026-05-02,42.18,12" pizza,expense'
         ),
       'IMPORT_FILE_CORRUPT'
     );
