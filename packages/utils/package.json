@@ -26,6 +26,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./currency": "./src/currency.ts",
+    "./classify-import-rows": "./src/classify-import-rows.ts",
     "./import-coercion": "./src/import-coercion.ts",
     "./import-row-status": "./src/import-row-status.ts",
     "./import-row-readiness": "./src/import-row-readiness.ts",

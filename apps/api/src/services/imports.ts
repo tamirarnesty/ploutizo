@@ -1,6 +1,6 @@
 import { db } from '@ploutizo/db';
 import { INTERNAL_IMPORT_EXAMPLE_CSV } from '@ploutizo/types';
-import { createImportReferenceResolver } from '@ploutizo/utils';
+import { createImportRowClassifier } from '@ploutizo/utils';
 import {
   resolveImportRowReviewType,
   toImportTransactionType,
@@ -40,8 +40,10 @@ import {
   updateImportDraftRowQuery,
   updateImportDraftRowSelectionQuery,
 } from '@/lib/queries/imports';
+import { listAccountMemberDetails } from '@/lib/queries/accounts';
 import { listCategories } from '@/lib/queries/categories';
 import { listOrgMembers } from '@/lib/queries/households';
+import { listMerchantRulesWithTags } from '@/lib/queries/merchant-rules';
 import {
   fetchAccountWriteReference,
   transactionExistsInOrg,
@@ -171,16 +173,24 @@ export const createImportDraft = async (
   const parsed = parseImportUpload(input.content, {
     fileName: input.fileName,
   });
-  const [orgMembers, orgCategories, orgTags] = await Promise.all([
-    listOrgMembers(orgId),
-    listCategories(orgId),
-    listTags(orgId),
-  ]);
-  const resolveImportReferences = createImportReferenceResolver({
-    categories: orgCategories,
-    tags: orgTags,
-    members: orgMembers,
-  });
+  const [orgMembers, orgCategories, orgTags, merchantRules, accountOwners] =
+    await Promise.all([
+      listOrgMembers(orgId),
+      listCategories(orgId),
+      listTags(orgId),
+      listMerchantRulesWithTags(orgId),
+      listAccountMemberDetails(orgId, [input.accountId]),
+    ]);
+  const classificationContext = {
+    catalogs: {
+      categories: orgCategories,
+      tags: orgTags,
+      members: orgMembers,
+    },
+    merchantRules,
+    accountOwnerMemberIds: accountOwners.map((owner) => owner.memberId),
+  };
+  const classifyRow = createImportRowClassifier(classificationContext);
 
   try {
     const draftId = await db.transaction(async (tx) => {
@@ -198,20 +208,16 @@ export const createImportDraft = async (
         tx,
         parsed.rows.map((row) => {
           const {
-            csvCategoryName,
-            csvAssigneeName,
-            csvTagNames,
+            csvCategoryName: _csvCategoryName,
+            csvAssigneeName: _csvAssigneeName,
+            csvTagNames: _csvTagNames,
+            classificationHint: _classificationHint,
             ...rowFields
           } = row;
-          const resolvedRefs = resolveImportReferences({
-            csvCategoryName,
-            csvAssigneeName,
-            csvTagNames,
-          });
 
           return {
             ...rowFields,
-            ...resolvedRefs,
+            ...classifyRow(row),
             orgId,
             batchId: batch.id,
           };

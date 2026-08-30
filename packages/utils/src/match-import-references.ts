@@ -8,6 +8,7 @@ interface NamedEntity extends Identified {
 
 interface OrgMemberLike extends Identified {
   displayName: string;
+  firstName?: string | null;
 }
 
 export interface ImportCsvHints {
@@ -51,6 +52,39 @@ const matchIdByName = (
   return index.get(normalizeName(name)) ?? null;
 };
 
+const firstNameFromDisplayName = (displayName: string): string =>
+  displayName.trim().split(/\s+/)[0] ?? '';
+
+const indexMemberNames = (members: OrgMemberLike[]): Map<string, string[]> => {
+  const index = new Map<string, string[]>();
+  const add = (name: string | null | undefined, id: string) => {
+    const key = normalizeName(name ?? '');
+    if (!key) return;
+    const ids = index.get(key) ?? [];
+    if (!ids.includes(id)) ids.push(id);
+    index.set(key, ids);
+  };
+
+  for (const member of members) {
+    add(member.displayName, member.id);
+    add(member.firstName, member.id);
+    if (!member.firstName?.trim()) {
+      add(firstNameFromDisplayName(member.displayName), member.id);
+    }
+  }
+
+  return index;
+};
+
+const matchUniqueMemberId = (
+  name: string | null | undefined,
+  index: Map<string, string[]>
+): string | null => {
+  if (!name?.trim()) return null;
+  const ids = index.get(normalizeName(name));
+  return ids?.length === 1 ? (ids[0] ?? null) : null;
+};
+
 export const createImportReferenceResolver = (
   catalogs: ImportReferenceCatalogs
 ) => {
@@ -59,13 +93,10 @@ export const createImportReferenceResolver = (
     (category) => category.name
   );
   const tagsByName = indexByNormalizedName(catalogs.tags, (tag) => tag.name);
-  const membersByName = indexByNormalizedName(
-    catalogs.members,
-    (member) => member.displayName
-  );
+  const membersByName = indexMemberNames(catalogs.members);
 
   return (hints: ImportCsvHints): ResolvedImportReferences => {
-    const memberId = matchIdByName(hints.csvAssigneeName, membersByName);
+    const memberId = matchUniqueMemberId(hints.csvAssigneeName, membersByName);
     const reviewTagIds = [
       ...new Set(
         hints.csvTagNames

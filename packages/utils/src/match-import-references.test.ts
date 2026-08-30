@@ -12,8 +12,8 @@ describe('createImportReferenceResolver', () => {
       { id: 'tag-2', name: 'errands' },
     ],
     members: [
-      { id: 'member-1', displayName: 'Tamir Arnesty' },
-      { id: 'member-2', displayName: 'Alex Smith' },
+      { id: 'member-1', displayName: 'Tamir Arnesty', firstName: 'Tamir' },
+      { id: 'member-2', displayName: 'Alex Smith', firstName: 'Alex' },
     ],
   });
 
@@ -35,7 +35,7 @@ describe('createImportReferenceResolver', () => {
     expect(
       resolve({
         csvCategoryName: null,
-        csvAssigneeName: 'Tamir',
+        csvAssigneeName: 'Jordan',
         csvTagNames: [],
       })
     ).toEqual({
@@ -43,6 +43,16 @@ describe('createImportReferenceResolver', () => {
       reviewTagIds: [],
       reviewAssigneeMemberIds: [],
     });
+  });
+
+  it('resolves a unique first name', () => {
+    expect(
+      resolve({
+        csvCategoryName: null,
+        csvAssigneeName: 'Tamir',
+        csvTagNames: [],
+      }).reviewAssigneeMemberIds
+    ).toEqual(['member-1']);
   });
 
   it('returns null category for unknown names', () => {
@@ -55,9 +65,18 @@ describe('createImportReferenceResolver', () => {
     ).toBeNull();
   });
 
-  it('does not partial-match display names', () => {
+  it('leaves assignees empty when a first name matches more than one member', () => {
+    const resolveAmbiguous = createImportReferenceResolver({
+      categories: [],
+      tags: [],
+      members: [
+        { id: 'member-1', displayName: 'Tamir Arnesty', firstName: 'Tamir' },
+        { id: 'member-3', displayName: 'Tamir Smith', firstName: 'Tamir' },
+      ],
+    });
+
     expect(
-      resolve({
+      resolveAmbiguous({
         csvCategoryName: null,
         csvAssigneeName: 'Tamir',
         csvTagNames: [],

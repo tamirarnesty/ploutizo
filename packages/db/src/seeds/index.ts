@@ -6,11 +6,7 @@ import {
   hasBillPaymentCategory,
   insertSeedCategoriesForOrg,
 } from './categories';
-import {
-  ensureBillPaymentMerchantRuleForOrg,
-  hasBillPaymentMerchantRule,
-  insertSeedMerchantRulesForOrg,
-} from './merchantRules';
+import { insertSeedMerchantRulesForOrg } from './merchantRules';
 
 /**
  * Populate default categories and merchant rules for `orgId`.
@@ -24,8 +20,9 @@ import {
  * transaction + `pg_advisory_xact_lock` keyed by `orgId` so all seed paths
  * serialize per org, re-count both tables after locking, then insert independently.
  *
- * Bill Payment category + merchant rule are ensured on every seed pass so orgs
- * created before import finalization still receive them.
+ * Bill Payment category is ensured on every seed pass so orgs created before
+ * import finalization still receive it. The former PAYMENT THANK YOU merchant
+ * rule is no longer seeded; existing tenant copies are left in place.
  */
 export const seedOrg = async (orgId: string): Promise<void> => {
   await db.transaction(async (tx) => {
@@ -49,7 +46,6 @@ export const seedOrg = async (orgId: string): Promise<void> => {
     if (Number(rulesRow.n) === 0) {
       await insertSeedMerchantRulesForOrg(tx, orgId);
     }
-    await ensureBillPaymentMerchantRuleForOrg(tx, orgId);
   });
 };
 
@@ -73,12 +69,7 @@ export const ensureOrgSeeded = async (orgId: string): Promise<void> => {
     return;
   }
 
-  const [hasBillCategory, hasBillRule] = await Promise.all([
-    hasBillPaymentCategory(db, orgId),
-    hasBillPaymentMerchantRule(db, orgId),
-  ]);
-
-  if (hasBillCategory && hasBillRule) return;
+  if (await hasBillPaymentCategory(db, orgId)) return;
   await seedOrg(orgId);
 };
 
@@ -90,9 +81,6 @@ export {
   seedOrgCategories,
 } from './categories';
 export {
-  BILL_PAYMENT_MERCHANT_RULE_PATTERN,
-  ensureBillPaymentMerchantRuleForOrg,
-  hasBillPaymentMerchantRule,
   insertSeedMerchantRulesForOrg,
   seedOrgMerchantRules,
 } from './merchantRules';

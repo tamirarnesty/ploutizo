@@ -27,8 +27,10 @@ import {
 } from '@/lib/queries/imports';
 import { listRefundTargetExpensesByIds } from '@/lib/queries/import-refund-targets';
 import { assertOrgWriteReferences } from '@/lib/assertOrgWriteReferences';
+import { listAccountMemberDetails } from '@/lib/queries/accounts';
 import { listOrgMembers } from '@/lib/queries/households';
 import { listCategories } from '@/lib/queries/categories';
+import { listMerchantRulesWithTags } from '@/lib/queries/merchant-rules';
 import {
   fetchAccountWriteReference,
   transactionExistsInOrg,
@@ -62,12 +64,20 @@ vi.mock('@/lib/queries/import-refund-targets', () => ({
   listRefundTargetExpensesByIds: vi.fn(),
 }));
 
+vi.mock('@/lib/queries/accounts', () => ({
+  listAccountMemberDetails: vi.fn(),
+}));
+
 vi.mock('@/lib/queries/households', () => ({
   listOrgMembers: vi.fn(),
 }));
 
 vi.mock('@/lib/queries/categories', () => ({
   listCategories: vi.fn(),
+}));
+
+vi.mock('@/lib/queries/merchant-rules', () => ({
+  listMerchantRulesWithTags: vi.fn(),
 }));
 
 vi.mock('@/lib/queries/tags', () => ({
@@ -168,6 +178,8 @@ describe('import service', () => {
       },
     ]);
     vi.mocked(listTags).mockResolvedValue([]);
+    vi.mocked(listMerchantRulesWithTags).mockResolvedValue([]);
+    vi.mocked(listAccountMemberDetails).mockResolvedValue([]);
     vi.mocked(assertOrgWriteReferences).mockResolvedValue(undefined);
     vi.mocked(fetchAccountWriteReference).mockResolvedValue({
       id: '66666666-6666-4666-8666-666666666666',
@@ -255,9 +267,15 @@ describe('import service', () => {
     expect(insertedRows[0]).not.toHaveProperty('invalidReason');
     expect(insertedRows[1]).not.toHaveProperty('status');
     expect(insertedRows[1]).not.toHaveProperty('invalidReason');
+    expect(insertedRows[0]).not.toHaveProperty('selectedForImport');
+    expect(insertedRows[0]).not.toHaveProperty('classificationHint');
     expect(result.draft.rows).toHaveLength(1);
     expect(result.draft.validRowCount).toBe(1);
     expect(result.draft.invalidRowCount).toBe(0);
+    expect(listMerchantRulesWithTags).toHaveBeenCalledWith('org_1');
+    expect(listAccountMemberDetails).toHaveBeenCalledWith('org_1', [
+      summaryRow.accountId,
+    ]);
   });
 
   it('derives row status on GET without persisting recomputation', async () => {
@@ -319,6 +337,8 @@ describe('import service', () => {
     expect(result.reusedExisting).toBe(true);
     expect(insertImportBatch).not.toHaveBeenCalled();
     expect(insertImportBatchRows).not.toHaveBeenCalled();
+    expect(listMerchantRulesWithTags).not.toHaveBeenCalled();
+    expect(listAccountMemberDetails).not.toHaveBeenCalled();
   });
 
   it('returns the raced draft when concurrent uploads hit the unique draft index', async () => {
@@ -362,6 +382,7 @@ describe('import service', () => {
       }
     );
     expect(listDraftRows).not.toHaveBeenCalled();
+    expect(listMerchantRulesWithTags).not.toHaveBeenCalled();
     expect(result.row.reviewCategoryId).toBe(
       '55555555-5555-4555-8555-555555555555'
     );

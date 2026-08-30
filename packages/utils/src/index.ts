@@ -74,6 +74,7 @@ export { parseImportTags } from './parse-import-tags';
 export {
   tryParseImportAmountToCents,
   tryParseImportIsoDate,
+  trimApostrophes,
 } from './import-coercion';
 export {
   createImportReferenceResolver,
@@ -81,6 +82,17 @@ export {
   type ImportReferenceCatalogs,
   type ResolvedImportReferences,
 } from './match-import-references';
+export {
+  classifyImportRow,
+  classifyImportRows,
+  createImportRowClassifier,
+  type ClassifiedImportReviewValues,
+  type ClassifyImportContext,
+  type ClassifyImportMerchantRule,
+  type ClassifyImportRow,
+  type ClassifyImportRowInput,
+  type ImportClassificationHint,
+} from './classify-import-rows';
 export { lrmSplit } from './lrm';
 export {
   scaleAssigneeSplitProportionally,

@@ -1,6 +1,7 @@
 import { db } from '@ploutizo/db';
-import { merchantRules } from '@ploutizo/db/schema';
-import { and, eq } from 'drizzle-orm';
+import { merchantRuleTags, merchantRules } from '@ploutizo/db/schema';
+import { and, eq, inArray } from 'drizzle-orm';
+import type { ImportClassificationMerchantRule } from '@ploutizo/types';
 import type { Transaction } from '@ploutizo/db';
 
 // PATCH /reorder — update priority for each id in sequence
@@ -26,6 +27,42 @@ export const listMerchantRules = async (orgId: string) => {
     .from(merchantRules)
     .where(eq(merchantRules.orgId, orgId))
     .orderBy(merchantRules.priority);
+};
+
+export const listMerchantRulesWithTags = async (
+  orgId: string
+): Promise<ImportClassificationMerchantRule[]> => {
+  const rules = await listMerchantRules(orgId);
+  if (rules.length === 0) return [];
+
+  const tagRows = await db
+    .select({
+      ruleId: merchantRuleTags.ruleId,
+      tagId: merchantRuleTags.tagId,
+    })
+    .from(merchantRuleTags)
+    .where(
+      inArray(
+        merchantRuleTags.ruleId,
+        rules.map((rule) => rule.id)
+      )
+    );
+
+  const tagIdsByRule = new Map<string, string[]>();
+  for (const row of tagRows) {
+    const tagIds = tagIdsByRule.get(row.ruleId) ?? [];
+    tagIds.push(row.tagId);
+    tagIdsByRule.set(row.ruleId, tagIds);
+  }
+
+  return rules.map((rule) => ({
+    pattern: rule.pattern,
+    matchType: rule.matchType,
+    renameTo: rule.renameTo,
+    categoryId: rule.categoryId,
+    assigneeId: rule.assigneeId,
+    tagIds: tagIdsByRule.get(rule.id) ?? [],
+  }));
 };
 
 // POST / — insert rule; returns inserted row

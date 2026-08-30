@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  trimApostrophes,
   tryParseImportAmountToCents,
   tryParseImportIsoDate,
 } from './import-coercion';
@@ -30,5 +31,21 @@ describe('tryParseImportAmountToCents', () => {
     expect(tryParseImportAmountToCents('"12,34.56"')).toBeNull();
     expect(tryParseImportAmountToCents('0')).toBeNull();
     expect(tryParseImportAmountToCents(null)).toBeNull();
+  });
+});
+
+describe('trimApostrophes', () => {
+  it('trims leading and trailing apostrophes', () => {
+    expect(trimApostrophes("'AMEX-12345")).toBe('AMEX-12345');
+    expect(trimApostrophes("AMEX-12345'")).toBe('AMEX-12345');
+    expect(trimApostrophes("'AMEX-12345'")).toBe('AMEX-12345');
+    expect(trimApostrophes('AMEX-12345')).toBe('AMEX-12345');
+    expect(trimApostrophes("'O'Brien'")).toBe("O'Brien");
+  });
+
+  it('returns null for empty values after trimming', () => {
+    expect(trimApostrophes(null)).toBeNull();
+    expect(trimApostrophes("'")).toBeNull();
+    expect(trimApostrophes("''")).toBeNull();
   });
 });
