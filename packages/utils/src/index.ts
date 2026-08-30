@@ -81,6 +81,13 @@ export {
   type ImportReferenceCatalogs,
   type ResolvedImportReferences,
 } from './match-import-references';
+export {
+  classifyImportRows,
+  type ClassifiedImportReviewValues,
+  type ClassifyImportContext,
+  type ClassifyImportMerchantRule,
+  type ClassifyImportRowInput,
+} from './classify-import-rows';
 export { lrmSplit } from './lrm';
 export {
   scaleAssigneeSplitProportionally,

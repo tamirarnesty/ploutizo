@@ -129,11 +129,11 @@ describe('seedOrg', () => {
     const executedSql = mockExecute.mock.calls[0][0] as Record<string, unknown>;
     const sqlString = JSON.stringify(executedSql);
     expect(sqlString).toContain('pg_advisory_xact_lock');
-    // categories + default merchant rules + bill payment rule
-    expect(db.insert).toHaveBeenCalledTimes(3);
+    // categories + default merchant rules
+    expect(db.insert).toHaveBeenCalledTimes(2);
   });
 
-  it('ensures Bill Payment category and rule when categories already exist', async () => {
+  it('ensures Bill Payment category when categories already exist', async () => {
     vi.clearAllMocks();
     const mockInsert = vi.mocked(db.insert);
     const onConflictDoNothing = vi.fn(() => Promise.resolve());
@@ -184,8 +184,7 @@ describe('seedOrg', () => {
     await seedOrg('org_existing');
 
     expect(onConflictDoNothing).toHaveBeenCalled();
-    // category ensure + bill payment rule insert (no existing rule)
-    expect(mockInsert).toHaveBeenCalledTimes(2);
+    expect(mockInsert).toHaveBeenCalledTimes(1);
   });
 
   it('skips full category/rule inserts when both tables already have rows, but still ensures Bill Payment', async () => {
@@ -233,13 +232,12 @@ describe('seedOrg', () => {
 
     // Bill Payment category ensure still inserts with onConflictDoNothing
     expect(onConflictDoNothing).toHaveBeenCalled();
-    // Existing bill payment rule means no extra rule insert beyond the ensure path
     expect(mockInsert).toHaveBeenCalledTimes(1);
   });
 });
 
 describe('ensureOrgSeeded', () => {
-  it('does not open a transaction when Bill Payment category and rule already exist', async () => {
+  it('does not open a transaction when Bill Payment category already exists', async () => {
     vi.clearAllMocks();
     let callCount = 0;
     vi.mocked(db.select).mockImplementation((args?: unknown) => {
