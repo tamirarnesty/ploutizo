@@ -273,7 +273,7 @@ describe('import service', () => {
     expect(result.draft.invalidRowCount).toBe(0);
   });
 
-  it('classifies a credit-side vault phrase as a settlement before persistence', async () => {
+  it('classifies a refund bill-payment phrase as a settlement before persistence', async () => {
     vi.mocked(listCategories).mockResolvedValue([
       {
         id: '88888888-8888-4888-8888-888888888888',
@@ -311,7 +311,7 @@ describe('import service', () => {
     ]);
   });
 
-  it('does not convert an expense vault phrase into a settlement', async () => {
+  it('does not convert an expense bill-payment phrase into a settlement', async () => {
     await createImportDraft('org_1', {
       accountId: summaryRow.accountId,
       fileName: 'statement.csv',

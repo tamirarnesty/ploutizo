@@ -210,7 +210,6 @@ export const createImportDraft = async (
             csvCategoryName: _csvCategoryName,
             csvAssigneeName: _csvAssigneeName,
             csvTagNames: _csvTagNames,
-            paymentHint: _paymentHint,
             ...rowFields
           } = row;
 

@@ -87,6 +87,7 @@ export {
   type ClassifyImportContext,
   type ClassifyImportMerchantRule,
   type ClassifyImportRowInput,
+  type ImportClassificationHint,
 } from './classify-import-rows';
 export { lrmSplit } from './lrm';
 export {

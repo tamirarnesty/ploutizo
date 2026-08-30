@@ -7,16 +7,18 @@ import type {
   ImportReferenceCatalogs,
 } from './match-import-references';
 
-const PAYMENT_PHRASE_VAULT = new Set([
+const BILL_PAYMENT_PHRASES = new Set([
   'PAYMENT THANK YOU',
   'PAYMENT RECEIVED THANK YOU',
   'PAIEMENT MERCI',
 ]);
 
+export type ImportClassificationHint = 'bill_payment';
+
 export interface ClassifyImportRowInput extends ImportCsvHints {
   parsedType: ImportTransactionType | null;
   parsedDescription: string | null;
-  paymentHint?: boolean;
+  classificationHint?: ImportClassificationHint | null;
   externalId: string | null;
 }
 
@@ -46,15 +48,15 @@ export interface ClassifiedImportReviewValues {
   externalId: string | null;
 }
 
-const normalizePaymentPhrase = (value: string): string =>
+const normalizeBillPaymentPhrase = (value: string): string =>
   value
     .toUpperCase()
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim();
 
-const matchesPaymentPhraseVault = (description: string | null): boolean => {
+const matchesBillPaymentPhrase = (description: string | null): boolean => {
   if (!description?.trim()) return false;
-  return PAYMENT_PHRASE_VAULT.has(normalizePaymentPhrase(description));
+  return BILL_PAYMENT_PHRASES.has(normalizeBillPaymentPhrase(description));
 };
 
 const stripLeadingSpreadsheetApostrophe = (
@@ -74,30 +76,44 @@ const findBillPaymentCategoryId = (
   return match?.id ?? null;
 };
 
-const isCreditBaseline = (type: ImportTransactionType | null): boolean =>
+const isRefundBaseline = (type: ImportTransactionType | null): boolean =>
   type === 'refund';
 
+const hasBillPaymentHint = (row: ClassifyImportRowInput): boolean =>
+  row.classificationHint === 'bill_payment';
+
 const isSettlementRow = (row: ClassifyImportRowInput): boolean => {
-  if (row.parsedType === 'settlement' || row.paymentHint) return true;
+  if (row.parsedType === 'settlement' || hasBillPaymentHint(row)) return true;
   return (
-    isCreditBaseline(row.parsedType) &&
-    matchesPaymentPhraseVault(row.parsedDescription)
+    isRefundBaseline(row.parsedType) &&
+    matchesBillPaymentPhrase(row.parsedDescription)
   );
 };
 
-const classifySettlement = (
+const withUnselectedReviewDefaults = (
   row: ClassifyImportRowInput,
-  context: ClassifyImportContext
+  review: Omit<
+    ClassifiedImportReviewValues,
+    'reviewCounterpartAccountId' | 'reviewRefundOf' | 'externalId'
+  >
 ): ClassifiedImportReviewValues => ({
-  reviewType: 'settlement',
-  reviewDescription: BILL_PAYMENT_CATEGORY_NAME,
-  reviewCategoryId: findBillPaymentCategoryId(context.catalogs),
-  reviewAssigneeMemberIds: [],
-  reviewTagIds: [],
+  ...review,
   reviewCounterpartAccountId: null,
   reviewRefundOf: null,
   externalId: stripLeadingSpreadsheetApostrophe(row.externalId),
 });
+
+const classifySettlement = (
+  row: ClassifyImportRowInput,
+  context: ClassifyImportContext
+): ClassifiedImportReviewValues =>
+  withUnselectedReviewDefaults(row, {
+    reviewType: 'settlement',
+    reviewDescription: BILL_PAYMENT_CATEGORY_NAME,
+    reviewCategoryId: findBillPaymentCategoryId(context.catalogs),
+    reviewAssigneeMemberIds: [],
+    reviewTagIds: [],
+  });
 
 const classifyExpenseOrRefund = (
   row: ClassifyImportRowInput,
@@ -127,16 +143,13 @@ const classifyExpenseOrRefund = (
         : [...context.accountOwnerMemberIds];
   const renamed = rule?.renameTo?.trim();
 
-  return {
+  return withUnselectedReviewDefaults(row, {
     reviewType: row.parsedType,
     reviewDescription: renamed || row.parsedDescription,
     reviewCategoryId,
     reviewAssigneeMemberIds,
     reviewTagIds,
-    reviewCounterpartAccountId: null,
-    reviewRefundOf: null,
-    externalId: stripLeadingSpreadsheetApostrophe(row.externalId),
-  };
+  });
 };
 
 export const classifyImportRows = (

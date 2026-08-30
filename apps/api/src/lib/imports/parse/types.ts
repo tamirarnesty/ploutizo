@@ -26,8 +26,6 @@ export interface SourceImportRow {
   sourceDescription: string | null;
   sourceType: string | null;
   hints?: ImportCsvHints;
-  /** Canonical parse-time payment signal. Classification writes settlement. */
-  paymentHint?: boolean;
   reviewRefundLinkHint?: string | null;
   reviewNotes?: string | null;
 }

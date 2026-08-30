@@ -58,7 +58,7 @@ const classifyOne = (
 ) => classifyImportRows([row], context)[0];
 
 describe('classifyImportRows — settlement', () => {
-  it('classifies a credit-side vault phrase as a settlement', () => {
+  it('classifies a refund bill-payment phrase as a settlement', () => {
     expect(
       classifyOne(
         baseRow({
@@ -78,7 +78,7 @@ describe('classifyImportRows — settlement', () => {
     });
   });
 
-  it('classifies sanitized vault phrases after punctuation and whitespace collapse', () => {
+  it('classifies sanitized bill-payment phrases after punctuation and whitespace collapse', () => {
     expect(
       classifyOne(
         baseRow({
@@ -97,7 +97,7 @@ describe('classifyImportRows — settlement', () => {
     ).toBe('settlement');
   });
 
-  it('does not substring-match payment phrases', () => {
+  it('does not substring-match bill-payment phrases', () => {
     expect(
       classifyOne(
         baseRow({
@@ -118,24 +118,24 @@ describe('classifyImportRows — settlement', () => {
     ).toBe('expense');
   });
 
-  it('classifies an accepted payment hint as a settlement even on an expense baseline', () => {
+  it('classifies a bill-payment hint as a settlement even on an expense baseline', () => {
     expect(
       classifyOne(
         baseRow({
           parsedDescription: 'PC FINANCIAL PAYMENT',
-          paymentHint: true,
+          classificationHint: 'bill_payment',
         })
       ).reviewType
     ).toBe('settlement');
   });
 
-  it('classifies an accepted payment hint on a credit-side row as a settlement', () => {
+  it('classifies a bill-payment hint on a refund as a settlement', () => {
     expect(
       classifyOne(
         baseRow({
           parsedType: 'refund',
           parsedDescription: 'PC FINANCIAL PAYMENT',
-          paymentHint: true,
+          classificationHint: 'bill_payment',
         })
       ).reviewType
     ).toBe('settlement');
