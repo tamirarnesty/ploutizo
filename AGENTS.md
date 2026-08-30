@@ -23,6 +23,20 @@ Project guidance is split across `docs/`. Read the linked file when a task match
 
 Architecture decision records: [docs/adr/](docs/adr/).
 
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked in Linear. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Uses the default canonical triage labels. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Uses a multi-context layout. See `docs/agents/domain.md`.
+
 ## Before commit/push
 
 From the **workspace root**, run lint and formatting across the whole monorepo — not just the package you edited:
