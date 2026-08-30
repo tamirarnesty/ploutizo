@@ -44,12 +44,6 @@ export const matchesBillPaymentPhrase = (
   );
 };
 
-/** Legacy seeded merchant rules for bill payment — superseded by built-in classification. */
-export const isBillPaymentMerchantRulePattern = (pattern: string): boolean =>
-  (BILL_PAYMENT_PHRASES as readonly string[]).includes(
-    normalizeBillPaymentPhrase(pattern)
-  );
-
 /** Merchant rule shape consumed by upload-time import classification. */
 export interface ImportClassificationMerchantRule {
   pattern: string;

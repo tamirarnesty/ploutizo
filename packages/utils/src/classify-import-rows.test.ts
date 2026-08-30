@@ -340,7 +340,7 @@ describe('classifyImportRows — merchant rules and precedence', () => {
     });
   });
 
-  it('ignores legacy seeded bill-payment merchant rules on expense rows', () => {
+  it('applies merchant rules to expense rows that are not settlements', () => {
     expect(
       classifyOne(
         baseRow({
@@ -361,12 +361,12 @@ describe('classifyImportRows — merchant rules and precedence', () => {
       )
     ).toMatchObject({
       reviewType: 'expense',
-      reviewDescription: 'PAYMENT THANK YOU',
-      reviewCategoryId: null,
+      reviewDescription: BILL_PAYMENT_CATEGORY_NAME,
+      reviewCategoryId: BILL_PAYMENT_CATEGORY_ID,
     });
   });
 
-  it('ignores legacy bill-payment merchant rules on non-exact refund phrases', () => {
+  it('applies merchant rules to non-exact refund phrases', () => {
     expect(
       classifyOne(
         baseRow({
@@ -388,8 +388,8 @@ describe('classifyImportRows — merchant rules and precedence', () => {
       )
     ).toMatchObject({
       reviewType: 'refund',
-      reviewDescription: 'PAYMENT THANK YOU FROM JANE',
-      reviewCategoryId: null,
+      reviewDescription: BILL_PAYMENT_CATEGORY_NAME,
+      reviewCategoryId: BILL_PAYMENT_CATEGORY_ID,
     });
   });
 });

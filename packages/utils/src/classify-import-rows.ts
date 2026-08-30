@@ -1,6 +1,5 @@
 import {
   BILL_PAYMENT_CATEGORY_NAME,
-  isBillPaymentMerchantRulePattern,
   matchesBillPaymentPhrase,
 } from '@ploutizo/types';
 import type {
@@ -50,11 +49,6 @@ const billPaymentCategoryIdFromCatalog = (
   );
   return match?.id ?? null;
 };
-
-const merchantRulesForClassification = (
-  rules: readonly ImportClassificationMerchantRule[]
-): readonly ImportClassificationMerchantRule[] =>
-  rules.filter((rule) => !isBillPaymentMerchantRulePattern(rule.pattern));
 
 const isRefundBaseline = (type: ImportTransactionType | null): boolean =>
   type === 'refund';
@@ -106,7 +100,7 @@ const classifyExpenseOrRefund = (
   });
   const rule = findMatchingMerchantRule(
     row.parsedDescription ?? '',
-    merchantRulesForClassification(context.merchantRules)
+    context.merchantRules
   );
 
   const reviewCategoryId = csv.reviewCategoryId ?? rule?.categoryId ?? null;
