@@ -39,6 +39,6 @@ export const tryParseImportAmountToCents = (
 /** Trim leading and trailing apostrophes from spreadsheet text cells. */
 export const trimApostrophes = (value: string | null): string | null => {
   if (value == null) return null;
-  const trimmed = value.replace(/^'+|'+$/g, '');
+  const trimmed = value.replace(/^'+|(?<!')'+$/g, '');
   return trimmed.length > 0 ? trimmed : null;
 };

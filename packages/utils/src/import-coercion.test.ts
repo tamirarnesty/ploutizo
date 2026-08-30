@@ -40,6 +40,7 @@ describe('trimApostrophes', () => {
     expect(trimApostrophes("AMEX-12345'")).toBe('AMEX-12345');
     expect(trimApostrophes("'AMEX-12345'")).toBe('AMEX-12345');
     expect(trimApostrophes('AMEX-12345')).toBe('AMEX-12345');
+    expect(trimApostrophes("'O'Brien'")).toBe("O'Brien");
   });
 
   it('returns null for empty values after trimming', () => {
