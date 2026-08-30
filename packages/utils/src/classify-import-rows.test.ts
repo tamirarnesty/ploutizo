@@ -74,7 +74,6 @@ describe('classifyImportRows — settlement', () => {
       reviewTagIds: [],
       reviewCounterpartAccountId: null,
       reviewRefundOf: null,
-      externalId: null,
     });
   });
 
@@ -340,6 +339,59 @@ describe('classifyImportRows — merchant rules and precedence', () => {
       reviewTagIds: [],
     });
   });
+
+  it('ignores legacy seeded bill-payment merchant rules on expense rows', () => {
+    expect(
+      classifyOne(
+        baseRow({
+          parsedDescription: 'PAYMENT THANK YOU',
+        }),
+        baseContext({
+          merchantRules: [
+            {
+              pattern: 'PAYMENT THANK YOU',
+              matchType: 'contains',
+              renameTo: BILL_PAYMENT_CATEGORY_NAME,
+              categoryId: BILL_PAYMENT_CATEGORY_ID,
+              assigneeId: null,
+              tagIds: [],
+            },
+          ],
+        })
+      )
+    ).toMatchObject({
+      reviewType: 'expense',
+      reviewDescription: 'PAYMENT THANK YOU',
+      reviewCategoryId: null,
+    });
+  });
+
+  it('ignores legacy bill-payment merchant rules on non-exact refund phrases', () => {
+    expect(
+      classifyOne(
+        baseRow({
+          parsedType: 'refund',
+          parsedDescription: 'PAYMENT THANK YOU FROM JANE',
+        }),
+        baseContext({
+          merchantRules: [
+            {
+              pattern: 'PAYMENT THANK YOU',
+              matchType: 'contains',
+              renameTo: BILL_PAYMENT_CATEGORY_NAME,
+              categoryId: BILL_PAYMENT_CATEGORY_ID,
+              assigneeId: null,
+              tagIds: [],
+            },
+          ],
+        })
+      )
+    ).toMatchObject({
+      reviewType: 'refund',
+      reviewDescription: 'PAYMENT THANK YOU FROM JANE',
+      reviewCategoryId: null,
+    });
+  });
 });
 
 describe('classifyImportRows — member-name matching', () => {
@@ -403,21 +455,5 @@ describe('classifyImportRows — member-name matching', () => {
         })
       ).reviewAssigneeMemberIds
     ).toEqual([OTHER_TAMIR_ID]);
-  });
-});
-
-describe('classifyImportRows — provenance', () => {
-  it('strips one leading spreadsheet apostrophe from externalId', () => {
-    expect(classifyOne(baseRow({ externalId: "'AMEX-12345" })).externalId).toBe(
-      'AMEX-12345'
-    );
-    expect(classifyOne(baseRow({ externalId: 'AMEX-12345' })).externalId).toBe(
-      'AMEX-12345'
-    );
-  });
-
-  it('does not invent an external id', () => {
-    expect(classifyOne(baseRow({ externalId: null })).externalId).toBeNull();
-    expect(classifyOne(baseRow({ externalId: "'" })).externalId).toBeNull();
   });
 });

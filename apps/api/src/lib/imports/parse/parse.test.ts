@@ -29,7 +29,8 @@ describe('parseImportUpload', () => {
     expect(parsed).not.toHaveProperty('invalidRowCount');
     expect(parsed.rows[0]).toMatchObject({
       parsedAmount: 4218,
-      reviewDescription: 'Neighborhood Grocery',
+      parsedDescription: 'Neighborhood Grocery',
+      reviewDescription: null,
       csvCategoryName: 'Groceries',
       csvTagNames: ['food', 'errands'],
       rawData: {
@@ -54,7 +55,7 @@ describe('parseImportUpload', () => {
     expect(parsed.rows[1]).not.toHaveProperty('invalidReason');
   });
 
-  it('seeds reviewed values from parsed source facts', () => {
+  it('leaves review type and description for upload-time classification', () => {
     const parsed = parseImportUpload(
       ['date,amount,description,type', '2026-05-02,42.18,Coffee,expense'].join(
         '\n'
@@ -62,13 +63,28 @@ describe('parseImportUpload', () => {
     );
 
     expect(parsed.rows[0]).toMatchObject({
+      parsedDate: '2026-05-02',
+      parsedAmount: 4218,
+      parsedType: 'expense',
+      parsedDescription: 'Coffee',
       reviewDate: '2026-05-02',
       reviewAmount: 4218,
-      reviewType: 'expense',
-      reviewDescription: 'Coffee',
+      reviewType: null,
+      reviewDescription: null,
       csvCategoryName: null,
     });
     expect(parsed.rows[0]).not.toHaveProperty('status');
+  });
+
+  it('trims surrounding apostrophes from external ids', () => {
+    const parsed = parseImportUpload(
+      [
+        'date,amount,description,type,external id',
+        "2026-05-02,42.18,Coffee,expense,'AMEX-12345",
+      ].join('\n')
+    );
+
+    expect(parsed.rows[0]?.externalId).toBe('AMEX-12345');
   });
 
   it('parses RFC-escaped quotes in fields', () => {

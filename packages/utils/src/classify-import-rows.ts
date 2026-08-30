@@ -1,17 +1,18 @@
-import { BILL_PAYMENT_CATEGORY_NAME } from '@ploutizo/types';
-import type { ImportTransactionType, MerchantMatchType } from '@ploutizo/types';
+import {
+  BILL_PAYMENT_CATEGORY_NAME,
+  isBillPaymentMerchantRulePattern,
+  matchesBillPaymentPhrase,
+} from '@ploutizo/types';
+import type {
+  ImportClassificationMerchantRule,
+  ImportTransactionType,
+} from '@ploutizo/types';
 import { createImportReferenceResolver } from './match-import-references';
 import { findMatchingMerchantRule } from './match-merchant-rule';
 import type {
   ImportCsvHints,
   ImportReferenceCatalogs,
 } from './match-import-references';
-
-const BILL_PAYMENT_PHRASES = new Set([
-  'PAYMENT THANK YOU',
-  'PAYMENT RECEIVED THANK YOU',
-  'PAIEMENT MERCI',
-]);
 
 export type ImportClassificationHint = 'bill_payment';
 
@@ -22,18 +23,12 @@ export interface ClassifyImportRowInput extends ImportCsvHints {
   externalId: string | null;
 }
 
-export interface ClassifyImportMerchantRule {
-  pattern: string;
-  matchType: MerchantMatchType;
-  renameTo: string | null;
-  categoryId: string | null;
-  assigneeId: string | null;
-  tagIds: readonly string[];
-}
+/** @deprecated Use `ImportClassificationMerchantRule` from `@ploutizo/types`. */
+export interface ClassifyImportMerchantRule extends ImportClassificationMerchantRule {}
 
 export interface ClassifyImportContext {
   catalogs: ImportReferenceCatalogs;
-  merchantRules: readonly ClassifyImportMerchantRule[];
+  merchantRules: readonly ImportClassificationMerchantRule[];
   accountOwnerMemberIds: readonly string[];
 }
 
@@ -45,29 +40,9 @@ export interface ClassifiedImportReviewValues {
   reviewTagIds: string[];
   reviewCounterpartAccountId: null;
   reviewRefundOf: null;
-  externalId: string | null;
 }
 
-const normalizeBillPaymentPhrase = (value: string): string =>
-  value
-    .toUpperCase()
-    .replace(/[^\p{L}\p{N}]+/gu, ' ')
-    .trim();
-
-const matchesBillPaymentPhrase = (description: string | null): boolean => {
-  if (!description?.trim()) return false;
-  return BILL_PAYMENT_PHRASES.has(normalizeBillPaymentPhrase(description));
-};
-
-const stripLeadingSpreadsheetApostrophe = (
-  value: string | null
-): string | null => {
-  if (value == null) return null;
-  const stripped = value.startsWith("'") ? value.slice(1) : value;
-  return stripped.length > 0 ? stripped : null;
-};
-
-const findBillPaymentCategoryId = (
+const billPaymentCategoryIdFromCatalog = (
   catalogs: ImportReferenceCatalogs
 ): string | null => {
   const match = catalogs.categories.find(
@@ -75,6 +50,11 @@ const findBillPaymentCategoryId = (
   );
   return match?.id ?? null;
 };
+
+const merchantRulesForClassification = (
+  rules: readonly ImportClassificationMerchantRule[]
+): readonly ImportClassificationMerchantRule[] =>
+  rules.filter((rule) => !isBillPaymentMerchantRulePattern(rule.pattern));
 
 const isRefundBaseline = (type: ImportTransactionType | null): boolean =>
   type === 'refund';
@@ -91,26 +71,25 @@ const isSettlementRow = (row: ClassifyImportRowInput): boolean => {
 };
 
 const withUnselectedReviewDefaults = (
-  row: ClassifyImportRowInput,
   review: Omit<
     ClassifiedImportReviewValues,
-    'reviewCounterpartAccountId' | 'reviewRefundOf' | 'externalId'
+    'reviewCounterpartAccountId' | 'reviewRefundOf'
   >
 ): ClassifiedImportReviewValues => ({
   ...review,
   reviewCounterpartAccountId: null,
   reviewRefundOf: null,
-  externalId: stripLeadingSpreadsheetApostrophe(row.externalId),
 });
 
+// Settlements use a fixed Bill Payment shape; CSV hints are intentionally ignored.
 const classifySettlement = (
-  row: ClassifyImportRowInput,
+  _row: ClassifyImportRowInput,
   context: ClassifyImportContext
 ): ClassifiedImportReviewValues =>
-  withUnselectedReviewDefaults(row, {
+  withUnselectedReviewDefaults({
     reviewType: 'settlement',
     reviewDescription: BILL_PAYMENT_CATEGORY_NAME,
-    reviewCategoryId: findBillPaymentCategoryId(context.catalogs),
+    reviewCategoryId: billPaymentCategoryIdFromCatalog(context.catalogs),
     reviewAssigneeMemberIds: [],
     reviewTagIds: [],
   });
@@ -127,7 +106,7 @@ const classifyExpenseOrRefund = (
   });
   const rule = findMatchingMerchantRule(
     row.parsedDescription ?? '',
-    context.merchantRules
+    merchantRulesForClassification(context.merchantRules)
   );
 
   const reviewCategoryId = csv.reviewCategoryId ?? rule?.categoryId ?? null;
@@ -143,7 +122,7 @@ const classifyExpenseOrRefund = (
         : [...context.accountOwnerMemberIds];
   const renamed = rule?.renameTo?.trim();
 
-  return withUnselectedReviewDefaults(row, {
+  return withUnselectedReviewDefaults({
     reviewType: row.parsedType,
     reviewDescription: renamed || row.parsedDescription,
     reviewCategoryId,
@@ -152,15 +131,30 @@ const classifyExpenseOrRefund = (
   });
 };
 
+export type ClassifyImportRow = (
+  row: ClassifyImportRowInput
+) => ClassifiedImportReviewValues;
+
+export const createImportRowClassifier = (
+  context: ClassifyImportContext
+): ClassifyImportRow => {
+  const resolveCsvHints = createImportReferenceResolver(context.catalogs);
+
+  return (row) =>
+    isSettlementRow(row)
+      ? classifySettlement(row, context)
+      : classifyExpenseOrRefund(row, context, resolveCsvHints);
+};
+
+export const classifyImportRow = (
+  row: ClassifyImportRowInput,
+  context: ClassifyImportContext
+): ClassifiedImportReviewValues => createImportRowClassifier(context)(row);
+
 export const classifyImportRows = (
   rows: readonly ClassifyImportRowInput[],
   context: ClassifyImportContext
 ): ClassifiedImportReviewValues[] => {
-  const resolveCsvHints = createImportReferenceResolver(context.catalogs);
-
-  return rows.map((row) =>
-    isSettlementRow(row)
-      ? classifySettlement(row, context)
-      : classifyExpenseOrRefund(row, context, resolveCsvHints)
-  );
+  const classifyRow = createImportRowClassifier(context);
+  return rows.map(classifyRow);
 };

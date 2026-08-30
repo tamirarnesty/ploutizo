@@ -3,6 +3,7 @@ import type {
   ImportPreparedOutcome,
   ImportRowStatus,
   ImportTransactionType,
+  MerchantMatchType,
 } from './enums';
 
 /** Review-field blockers from the shared import draft evaluator. */
@@ -18,6 +19,46 @@ export type ImportRowReviewBlocker =
 
 /** Seeded settlement category for bill-payment readability in transaction lists. */
 export const BILL_PAYMENT_CATEGORY_NAME = 'Bill Payment' as const;
+
+/** Exact normalized phrases that identify bill-payment settlements on refund rows. */
+export const BILL_PAYMENT_PHRASES = [
+  'PAYMENT THANK YOU',
+  'PAYMENT RECEIVED THANK YOU',
+  'PAIEMENT MERCI',
+] as const;
+
+export type BillPaymentPhrase = (typeof BILL_PAYMENT_PHRASES)[number];
+
+export const normalizeBillPaymentPhrase = (value: string): string =>
+  value
+    .toUpperCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim();
+
+export const matchesBillPaymentPhrase = (
+  description: string | null
+): boolean => {
+  if (!description?.trim()) return false;
+  return (BILL_PAYMENT_PHRASES as readonly string[]).includes(
+    normalizeBillPaymentPhrase(description)
+  );
+};
+
+/** Legacy seeded merchant rules for bill payment — superseded by built-in classification. */
+export const isBillPaymentMerchantRulePattern = (pattern: string): boolean =>
+  (BILL_PAYMENT_PHRASES as readonly string[]).includes(
+    normalizeBillPaymentPhrase(pattern)
+  );
+
+/** Merchant rule shape consumed by upload-time import classification. */
+export interface ImportClassificationMerchantRule {
+  pattern: string;
+  matchType: MerchantMatchType;
+  renameTo: string | null;
+  categoryId: string | null;
+  assigneeId: string | null;
+  tagIds: readonly string[];
+}
 
 export interface ImportTargetAccount {
   id: string;

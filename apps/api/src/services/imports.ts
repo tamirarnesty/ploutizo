@@ -1,6 +1,6 @@
 import { db } from '@ploutizo/db';
 import { INTERNAL_IMPORT_EXAMPLE_CSV } from '@ploutizo/types';
-import { classifyImportRows } from '@ploutizo/utils/classify-import-rows';
+import { createImportRowClassifier } from '@ploutizo/utils';
 import {
   resolveImportRowReviewType,
   toImportTransactionType,
@@ -181,7 +181,7 @@ export const createImportDraft = async (
       listMerchantRulesWithTags(orgId),
       listAccountMemberDetails(orgId, [input.accountId]),
     ]);
-  const classifiedRows = classifyImportRows(parsed.rows, {
+  const classificationContext = {
     catalogs: {
       categories: orgCategories,
       tags: orgTags,
@@ -189,7 +189,8 @@ export const createImportDraft = async (
     },
     merchantRules,
     accountOwnerMemberIds: accountOwners.map((owner) => owner.memberId),
-  });
+  };
+  const classifyRow = createImportRowClassifier(classificationContext);
 
   try {
     const draftId = await db.transaction(async (tx) => {
@@ -205,17 +206,18 @@ export const createImportDraft = async (
 
       await insertImportBatchRows(
         tx,
-        parsed.rows.map((row, index) => {
+        parsed.rows.map((row) => {
           const {
             csvCategoryName: _csvCategoryName,
             csvAssigneeName: _csvAssigneeName,
             csvTagNames: _csvTagNames,
+            classificationHint: _classificationHint,
             ...rowFields
           } = row;
 
           return {
             ...rowFields,
-            ...classifiedRows[index],
+            ...classifyRow(row),
             orgId,
             batchId: batch.id,
           };

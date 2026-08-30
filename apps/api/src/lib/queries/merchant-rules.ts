@@ -1,6 +1,7 @@
 import { db } from '@ploutizo/db';
 import { merchantRuleTags, merchantRules } from '@ploutizo/db/schema';
 import { and, eq, inArray } from 'drizzle-orm';
+import type { ImportClassificationMerchantRule } from '@ploutizo/types';
 import type { Transaction } from '@ploutizo/db';
 
 // PATCH /reorder — update priority for each id in sequence
@@ -28,7 +29,9 @@ export const listMerchantRules = async (orgId: string) => {
     .orderBy(merchantRules.priority);
 };
 
-export const listMerchantRulesWithTags = async (orgId: string) => {
+export const listMerchantRulesWithTags = async (
+  orgId: string
+): Promise<ImportClassificationMerchantRule[]> => {
   const rules = await listMerchantRules(orgId);
   if (rules.length === 0) return [];
 

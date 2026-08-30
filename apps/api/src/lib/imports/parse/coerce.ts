@@ -1,4 +1,5 @@
 import {
+  trimApostrophes,
   tryParseImportAmountToCents,
   tryParseImportIsoDate,
 } from '@ploutizo/utils/import-coercion';
@@ -30,14 +31,15 @@ const coerceRow = (row: SourceImportRow): ParsedImportRow => {
 
   return {
     ...source,
+    externalId: trimApostrophes(row.externalId),
     parsedDate,
     parsedAmount,
     parsedType,
     parsedDescription,
     reviewDate: parsedDate,
     reviewAmount: parsedAmount,
-    reviewType: parsedType,
-    reviewDescription: parsedDescription,
+    reviewType: null,
+    reviewDescription: null,
     csvCategoryName: csvHints.csvCategoryName,
     csvAssigneeName: csvHints.csvAssigneeName,
     csvTagNames: csvHints.csvTagNames,

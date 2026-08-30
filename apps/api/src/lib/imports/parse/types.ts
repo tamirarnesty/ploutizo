@@ -1,5 +1,5 @@
 import type { ImportDraftRow, ImportFormatId } from '@ploutizo/types';
-import type { ImportCsvHints } from '@ploutizo/utils';
+import type { ImportClassificationHint, ImportCsvHints } from '@ploutizo/utils';
 
 export interface ParseImportHints {
   institution?: string | null;
@@ -26,6 +26,7 @@ export interface SourceImportRow {
   sourceDescription: string | null;
   sourceType: string | null;
   hints?: ImportCsvHints;
+  classificationHint?: ImportClassificationHint | null;
   reviewRefundLinkHint?: string | null;
   reviewNotes?: string | null;
 }
