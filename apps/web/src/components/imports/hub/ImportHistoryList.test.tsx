@@ -11,7 +11,7 @@ const historyItem: ImportDraftSummary = {
     institutionId: 'td',
     lastFour: '1234',
   },
-  source: 'internal',
+  detectedInstitutionId: null,
   status: 'completed',
   fileName: 'statement.csv',
   rowCount: 10,

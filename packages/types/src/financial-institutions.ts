@@ -27,6 +27,10 @@ export const FINANCIAL_INSTITUTIONS = FINANCIAL_INSTITUTION_IDS.map((id) => ({
 
 export type FinancialInstitution = (typeof FINANCIAL_INSTITUTIONS)[number];
 
+/** SQL VALUES clause for seeding `financial_institutions` — ids only, names live in types. */
+export const buildFinancialInstitutionCatalogInsertSql = (): string =>
+  FINANCIAL_INSTITUTION_IDS.map((id) => `\t('${id}')`).join(',\n');
+
 /** Account types that must have a Financial institution on create/edit. */
 export const INSTITUTION_REQUIRED_ACCOUNT_TYPES = [
   'credit_card',

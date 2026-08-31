@@ -34,7 +34,10 @@ import {
   FieldLabel,
 } from '@ploutizo/ui/components/field';
 import { Text } from '@ploutizo/ui/components/text';
-import { AccountFormSchema } from '@ploutizo/validators';
+import {
+  AccountFormSchema,
+  accountInstitutionViolation,
+} from '@ploutizo/validators';
 import { useAppForm } from '@ploutizo/ui/components/form';
 import {
   FINANCIAL_INSTITUTIONS,
@@ -284,14 +287,13 @@ const AccountFormInner = ({
                 <form.AppField
                   name="institutionId"
                   validators={{
-                    onSubmit: ({
-                      value,
-                    }: {
-                      value: AccountFormType['institutionId'];
-                    }) =>
-                      required && !value
-                        ? { message: 'Financial institution is required.' }
-                        : undefined,
+                    onSubmit: ({ value, fieldApi }) => {
+                      const message = accountInstitutionViolation(
+                        fieldApi.form.getFieldValue('type'),
+                        value
+                      );
+                      return message ? { message } : undefined;
+                    },
                   }}
                 >
                   {(field) => (

@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@ploutizo/ui/components/sonner';
-import { formatInstitutionMismatchWarning } from '@ploutizo/utils';
 import type { ImportDraft } from '@ploutizo/types';
 import type { CreateImportDraftInput } from '@ploutizo/validators';
 import { apiFetch } from '@/lib/queryClient';
@@ -31,11 +30,6 @@ export const useCreateImportDraft = () => {
         toast.info('Resumed existing draft for this card.');
       } else {
         toast.success('CSV uploaded.');
-      }
-      if (response.data.institutionMismatch) {
-        toast.warning(
-          formatInstitutionMismatchWarning(response.data.institutionMismatch)
-        );
       }
     },
   });

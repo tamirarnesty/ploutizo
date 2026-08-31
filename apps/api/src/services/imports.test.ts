@@ -99,7 +99,7 @@ const summaryRow = {
   accountName: 'Visa',
   accountInstitutionId: 'td',
   accountLastFour: '1234',
-  source: 'internal',
+  detectedInstitutionId: null,
   status: 'draft' as const,
   fileName: 'statement.csv',
   rowCount: 2,
@@ -230,7 +230,7 @@ describe('import service', () => {
       expect.objectContaining({
         orgId: 'org_1',
         accountId: summaryRow.accountId,
-        source: 'internal',
+        detectedInstitutionId: null,
         status: 'draft',
         fileName: 'statement.csv',
         rowCount: 2,
@@ -298,7 +298,7 @@ describe('import service', () => {
   it('exposes a derived institution mismatch when detected source and account differ', async () => {
     vi.mocked(fetchDraftSummaryById).mockResolvedValue({
       ...summaryRow,
-      source: 'amex',
+      detectedInstitutionId: 'amex',
       accountInstitutionId: 'td',
     });
 
@@ -313,7 +313,7 @@ describe('import service', () => {
   it('does not warn when the detected source or account institution is unknown', async () => {
     vi.mocked(fetchDraftSummaryById).mockResolvedValue({
       ...summaryRow,
-      source: 'internal',
+      detectedInstitutionId: null,
       accountInstitutionId: 'td',
     });
 
@@ -325,7 +325,7 @@ describe('import service', () => {
   it('does not attach a mismatch warning after the draft is closed', async () => {
     vi.mocked(fetchDraftSummaryById).mockResolvedValue({
       ...summaryRow,
-      source: 'amex',
+      detectedInstitutionId: 'amex',
       accountInstitutionId: 'td',
       status: 'completed',
     });

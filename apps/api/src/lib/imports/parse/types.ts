@@ -1,4 +1,4 @@
-import type { ImportDraftRow, ImportFormatId } from '@ploutizo/types';
+import type { FinancialInstitutionId, ImportDraftRow } from '@ploutizo/types';
 import type { ImportClassificationHint, ImportCsvHints } from '@ploutizo/utils';
 
 export interface ParseImportHints {
@@ -51,14 +51,13 @@ export type ParsedImportRow = Omit<
   >;
 
 export interface ParsedImport {
-  format: ImportFormatId;
-  institution?: string;
+  detectedInstitutionId: FinancialInstitutionId | null;
   rowCount: number;
   rows: ParsedImportRow[];
 }
 
 export interface ImportNormalizer {
-  format: ImportFormatId;
+  detectedInstitutionId: FinancialInstitutionId | null;
   matches: (upload: CsvUpload) => boolean;
   normalize: (upload: CsvUpload) => SourceImportRow[];
 }

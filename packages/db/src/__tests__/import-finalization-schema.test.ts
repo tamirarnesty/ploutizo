@@ -1,6 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  FINANCIAL_INSTITUTION_IDS,
+  buildFinancialInstitutionCatalogInsertSql,
+} from '@ploutizo/types';
 import { describe, expect, it } from 'vitest';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -101,19 +105,28 @@ describe('derive-on-read facts cleanup migration', () => {
 });
 
 describe('financial institution catalog migration', () => {
-  it('seeds the fixed Financial institution catalog', () => {
+  it('seeds every catalog id from FINANCIAL_INSTITUTION_IDS', () => {
     expect(financialInstitutionMigration).toContain(
       'CREATE TABLE "financial_institutions"'
     );
-    expect(financialInstitutionMigration).toContain("('amex', 'Amex')");
-    expect(financialInstitutionMigration).toContain("('cibc', 'CIBC')");
+    expect(financialInstitutionMigration).not.toContain('"name"');
     expect(financialInstitutionMigration).toContain(
-      "('pc_financial', 'PC Financial')"
+      buildFinancialInstitutionCatalogInsertSql()
     );
-    expect(financialInstitutionMigration).toContain("('td', 'TD')");
-    expect(financialInstitutionMigration).toContain("('rbc', 'RBC')");
+    for (const id of FINANCIAL_INSTITUTION_IDS) {
+      expect(financialInstitutionMigration).toContain(`('${id}')`);
+    }
+  });
+
+  it('stores detected import institutions by catalog id', () => {
     expect(financialInstitutionMigration).toContain(
-      "('wealthsimple', 'Wealthsimple')"
+      'RENAME COLUMN "source" TO "detected_institution_id"'
+    );
+    expect(financialInstitutionMigration).toContain(
+      'ALTER TABLE "import_batches" ALTER COLUMN "detected_institution_id" DROP NOT NULL'
+    );
+    expect(financialInstitutionMigration).toContain(
+      'import_batches_detected_institution_id_financial_institutions_id_fk'
     );
   });
 

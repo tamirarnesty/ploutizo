@@ -4,6 +4,7 @@ import {
   FINANCIAL_INSTITUTIONS,
   FINANCIAL_INSTITUTION_IDS,
   accountRequiresFinancialInstitution,
+  buildFinancialInstitutionCatalogInsertSql,
   getFinancialInstitution,
   getFinancialInstitutionName,
   isFinancialInstitutionId,
@@ -28,6 +29,12 @@ describe('Financial institution catalog', () => {
       'rbc',
       'wealthsimple',
     ]);
+  });
+
+  it('buildFinancialInstitutionCatalogInsertSql matches the catalog ids', () => {
+    expect(buildFinancialInstitutionCatalogInsertSql()).toBe(
+      FINANCIAL_INSTITUTION_IDS.map((id) => `\t('${id}')`).join(',\n')
+    );
   });
 
   it('resolves catalog entries by id', () => {

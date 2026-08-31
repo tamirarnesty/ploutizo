@@ -1,3 +1,4 @@
+import { toFinancialInstitutionId } from '@ploutizo/types';
 import { describe, expect, it, vi } from 'vitest';
 import { buildImportDraftView } from '@/services/import-draft-view';
 import {
@@ -16,7 +17,7 @@ const summaryRow = {
   accountName: 'Visa',
   accountInstitutionId: 'td',
   accountLastFour: '1234',
-  source: 'internal',
+  detectedInstitutionId: null,
   status: 'draft' as const,
   fileName: 'statement.csv',
   rowCount: 2,
@@ -82,7 +83,9 @@ describe('buildImportDraftView', () => {
           institutionId: 'td',
           lastFour: row.accountLastFour,
         },
-        source: row.source,
+        detectedInstitutionId: toFinancialInstitutionId(
+          row.detectedInstitutionId
+        ),
         status: row.status,
         fileName: row.fileName,
         rowCount: row.rowCount,

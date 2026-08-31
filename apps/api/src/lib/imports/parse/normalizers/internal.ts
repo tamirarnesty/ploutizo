@@ -1,7 +1,4 @@
-import {
-  INTERNAL_IMPORT_FORMAT,
-  INTERNAL_IMPORT_REQUIRED_COLUMNS,
-} from '@ploutizo/types';
+import { INTERNAL_IMPORT_REQUIRED_COLUMNS } from '@ploutizo/types';
 import { parseImportTags } from '@ploutizo/utils';
 import type { CsvRecord, ImportNormalizer, SourceImportRow } from '../types';
 
@@ -101,7 +98,7 @@ const mapRow = (
 });
 
 export const internalImportNormalizer: ImportNormalizer = {
-  format: INTERNAL_IMPORT_FORMAT,
+  detectedInstitutionId: null,
   matches: (upload) => hasRequiredHeaders(buildHeaderMap(upload.headers)),
   normalize: (upload) => {
     const headerMap = buildHeaderMap(upload.headers);

@@ -68,7 +68,7 @@ export interface ImportTargetAccount {
 export interface ImportDraftSummary {
   id: string;
   account: ImportTargetAccount;
-  source: string;
+  detectedInstitutionId: FinancialInstitutionId | null;
   status: ImportBatchStatus;
   fileName: string | null;
   rowCount: number;

@@ -32,11 +32,23 @@ vi.mock('@/lib/queries/scope', () => ({
 }));
 
 vi.mock('@/lib/queries/accounts', () => ({
+  fetchAccountRecord: vi.fn().mockResolvedValue({
+    id: 'acct_1',
+    orgId: 'org_a',
+    name: 'Shared',
+    type: 'chequing',
+    institutionId: 'td',
+  }),
   insertAccount: vi.fn().mockResolvedValue({
     id: 'acct_new',
     orgId: 'org_a',
     name: 'Shared',
     type: 'chequing',
+    institutionId: 'td',
+    lastFour: null,
+    archivedAt: null,
+    createdAt: new Date('2026-01-01T00:00:00Z'),
+    updatedAt: new Date('2026-01-01T00:00:00Z'),
   }),
   insertAccountMembers: vi.fn(),
   updateAccount: vi.fn(),

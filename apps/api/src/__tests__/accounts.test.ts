@@ -284,7 +284,43 @@ describe('POST /api/accounts', () => {
 });
 
 describe('PATCH /api/accounts/:id', () => {
+  const mockExistingAccount = (overrides: Record<string, unknown> = {}) => {
+    (vi.mocked(db.select) as MockedAccountsDbSelect).mockReturnValueOnce({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue([
+            {
+              id: 'acct_1',
+              orgId: 'org_test123',
+              name: 'Chequing',
+              type: 'chequing',
+              institutionId: null,
+              lastFour: null,
+              archivedAt: null,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              ...overrides,
+            },
+          ]),
+        }),
+      }),
+    });
+  };
+
+  it('returns 400 when updating a required-type account that still lacks an institution', async () => {
+    mockExistingAccount({ type: 'credit_card', institutionId: null });
+
+    const res = await app.request('/acct_1', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Renamed Visa' }),
+    });
+
+    expect(res.status).toBe(400);
+  });
+
   it('returns 400 when clearing the Financial institution on a credit card', async () => {
+    mockExistingAccount({ type: 'credit_card', institutionId: 'td' });
     const res = await app.request('/acct_1', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -294,6 +330,7 @@ describe('PATCH /api/accounts/:id', () => {
   });
 
   it('returns 400 when clearing the Financial institution without a cash account type', async () => {
+    mockExistingAccount({ type: 'chequing', institutionId: 'td' });
     const res = await app.request('/acct_1', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -303,6 +340,7 @@ describe('PATCH /api/accounts/:id', () => {
   });
 
   it('accepts a selected Financial institution on update', async () => {
+    mockExistingAccount({ type: 'chequing', institutionId: null });
     const res = await app.request('/acct_1', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },

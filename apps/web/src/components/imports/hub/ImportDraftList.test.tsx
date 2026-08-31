@@ -40,7 +40,7 @@ const draftSummary: ImportDraftSummary = {
     institutionId: 'td',
     lastFour: '1234',
   },
-  source: 'internal',
+  detectedInstitutionId: null,
   status: 'draft',
   fileName: 'statement.csv',
   rowCount: 2,

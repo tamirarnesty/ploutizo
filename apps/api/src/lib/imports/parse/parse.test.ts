@@ -23,7 +23,7 @@ describe('parseImportUpload', () => {
       ].join('\n')
     );
 
-    expect(parsed.format).toBe('internal');
+    expect(parsed.detectedInstitutionId).toBeNull();
     expect(parsed.rowCount).toBe(2);
     expect(parsed).not.toHaveProperty('validRowCount');
     expect(parsed).not.toHaveProperty('invalidRowCount');

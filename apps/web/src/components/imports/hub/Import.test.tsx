@@ -115,7 +115,7 @@ const draftSummary = {
     institutionId: 'td',
     lastFour: '1234',
   },
-  source: 'internal',
+  detectedInstitutionId: null,
   status: 'draft' as const,
   fileName: 'statement.csv',
   rowCount: 2,

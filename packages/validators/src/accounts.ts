@@ -13,24 +13,38 @@ const institutionIdSchema = z.preprocess(
   z.enum(FINANCIAL_INSTITUTION_IDS).nullable().optional()
 );
 
+export const accountInstitutionViolation = (
+  type: AccountType,
+  institutionId: string | null | undefined
+): string | null => {
+  if (!accountRequiresFinancialInstitution(type)) return null;
+  return institutionId ? null : 'Financial institution is required.';
+};
+
 const refineAccountInstitution = (
   data: { type?: string; institutionId?: string | null },
   ctx: z.RefinementCtx
 ) => {
   const type = data.type as AccountType | undefined;
   const cleared = data.institutionId === null;
-  const missingForRequiredType =
-    type != null &&
-    accountRequiresFinancialInstitution(type) &&
-    !data.institutionId;
-  const clearedWithoutCashType =
-    cleared && (type == null || accountRequiresFinancialInstitution(type));
-  if (!missingForRequiredType && !clearedWithoutCashType) return;
-  ctx.addIssue({
-    code: 'custom',
-    path: ['institutionId'],
-    message: 'Financial institution is required.',
-  });
+  if (type != null) {
+    const message = accountInstitutionViolation(type, data.institutionId);
+    if (message) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['institutionId'],
+        message,
+      });
+      return;
+    }
+  }
+  if (cleared && type == null) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['institutionId'],
+      message: 'Financial institution is required.',
+    });
+  }
 };
 
 export const createAccountSchema = z

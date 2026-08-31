@@ -56,6 +56,7 @@ import {
 } from '@/lib/queries/scope';
 import { listTags } from '@/lib/queries/tags';
 import { parseImportUpload } from '@/lib/imports/parse';
+import { toImportTargetAccount } from '@/lib/accounts/accountResponse';
 import { listRefundTargetExpensesByIds } from '@/lib/queries/import-refund-targets';
 import {
   buildImportDraftView,
@@ -81,10 +82,12 @@ const toImportDraftSummary = (
     discardedAt,
     createdAt,
     updatedAt,
+    detectedInstitutionId,
     ...summary
   } = row;
   return {
     ...summary,
+    detectedInstitutionId: toFinancialInstitutionId(detectedInstitutionId),
     // History omits live review counts until PLO-56 records completed results.
     validRowCount: 0,
     invalidRowCount: 0,
@@ -97,8 +100,11 @@ const toImportDraftSummary = (
     institutionMismatch:
       summary.status === 'draft'
         ? getInstitutionMismatchWarning({
-            detectedInstitutionId: summary.source,
-            accountInstitutionId,
+            detectedInstitutionId: toFinancialInstitutionId(
+              detectedInstitutionId
+            ),
+            accountInstitutionId:
+              toFinancialInstitutionId(accountInstitutionId),
           })
         : null,
     importedAt: importedAt.toISOString(),
@@ -113,10 +119,7 @@ export const listImportTargets = async (
   orgId: string
 ): Promise<ImportTargetAccount[]> => {
   const rows = await listImportTargetAccounts(orgId);
-  return rows.map((row) => ({
-    ...row,
-    institutionId: toFinancialInstitutionId(row.institutionId),
-  }));
+  return rows.map(toImportTargetAccount);
 };
 
 export const listActiveImportDrafts = async (
@@ -216,7 +219,7 @@ export const createImportDraft = async (
       const batch = await insertImportBatch(tx, {
         orgId,
         accountId: input.accountId,
-        source: parsed.format,
+        detectedInstitutionId: parsed.detectedInstitutionId,
         status: 'draft',
         fileName: input.fileName,
         importedAt: new Date(),

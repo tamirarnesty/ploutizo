@@ -5,6 +5,7 @@ import {
   CategoryFormSchema,
   HouseholdSettingsFormSchema,
   RuleFormSchema,
+  accountInstitutionViolation,
   createAccountSchema,
   createTransactionSchema,
   updateAccountSchema,
@@ -134,6 +135,13 @@ describe('updateAccountSchema', () => {
   it('accepts partial update', () => {
     const result = updateAccountSchema.safeParse({ name: 'New Name' });
     expect(result.success).toBe(true);
+  });
+
+  it('accountInstitutionViolation rejects required types without an institution', () => {
+    expect(accountInstitutionViolation('credit_card', null)).toBe(
+      'Financial institution is required.'
+    );
+    expect(accountInstitutionViolation('prepaid_cash', null)).toBeNull();
   });
 
   it('rejects clearing the Financial institution on a required account type', () => {
