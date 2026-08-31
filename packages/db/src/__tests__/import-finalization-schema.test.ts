@@ -117,19 +117,18 @@ describe('financial institution catalog migration', () => {
     );
   });
 
-  it('clears development institution values before replacing the free-text field', () => {
-    const clearAt = financialInstitutionMigration.indexOf(
-      'UPDATE "accounts" SET "institution" = NULL'
-    );
+  it('replaces the free-text institution column without a data-clearing UPDATE', () => {
     const addAt = financialInstitutionMigration.indexOf(
       'ADD COLUMN "institution_id"'
     );
     const dropAt = financialInstitutionMigration.indexOf(
       'DROP COLUMN "institution"'
     );
-    expect(clearAt).toBeGreaterThan(-1);
-    expect(addAt).toBeGreaterThan(clearAt);
+    expect(addAt).toBeGreaterThan(-1);
     expect(dropAt).toBeGreaterThan(addAt);
+    expect(financialInstitutionMigration).not.toContain(
+      'UPDATE "accounts" SET "institution"'
+    );
     expect(financialInstitutionMigration).not.toContain(
       'SET "institution_id" ='
     );
