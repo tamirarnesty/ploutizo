@@ -112,7 +112,7 @@ const draftSummary = {
   account: {
     id: 'acct_1',
     name: 'Visa',
-    institution: 'TD',
+    institutionId: 'td',
     lastFour: '1234',
   },
   source: 'internal',
@@ -126,6 +126,7 @@ const draftSummary = {
   discardedAt: null,
   createdAt: '2026-05-20T12:00:00.000Z',
   updatedAt: '2026-05-20T12:00:00.000Z',
+  institutionMismatch: null,
 };
 
 const setImportPageData = ({
@@ -142,7 +143,7 @@ const setImportPageData = ({
       {
         id: 'acct_1',
         name: 'Visa',
-        institution: 'TD',
+        institutionId: 'td',
         lastFour: '1234',
       },
     ],
@@ -243,7 +244,7 @@ describe('Import', () => {
         {
           id: 'acct_1',
           name: 'Visa',
-          institution: 'TD',
+          institutionId: 'td',
           lastFour: '1234',
         },
       ],

@@ -69,7 +69,7 @@ const baseRow: SettlementBalanceRow = {
   accountId: 'a1',
   accountName: 'Amex',
   accountType: 'credit_card',
-  institution: null,
+  institutionId: null,
   lastFour: null,
   statementDueDay: null,
   memberId: 'm1',

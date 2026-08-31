@@ -6,7 +6,7 @@ describe('formatAccountLabel', () => {
     expect(
       formatAccountLabel({
         name: 'Visa',
-        institution: 'TD',
+        institutionId: 'td',
         lastFour: '1234',
       })
     ).toBe('Visa · TD · ••1234');
@@ -16,7 +16,7 @@ describe('formatAccountLabel', () => {
     expect(
       formatAccountLabel({
         name: 'Visa',
-        institution: null,
+        institutionId: null,
         lastFour: null,
       })
     ).toBe('Visa');
@@ -26,7 +26,7 @@ describe('formatAccountLabel', () => {
     expect(
       formatAccountLabel({
         name: '  ',
-        institution: 'TD',
+        institutionId: 'td',
         lastFour: '1234',
       })
     ).toBe('Unnamed Account · TD · ••1234');

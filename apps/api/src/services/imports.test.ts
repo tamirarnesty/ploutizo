@@ -97,7 +97,7 @@ const summaryRow = {
   id: '11111111-1111-4111-8111-111111111111',
   accountId: '22222222-2222-4222-8222-222222222222',
   accountName: 'Visa',
-  accountInstitution: 'TD',
+  accountInstitutionId: 'td',
   accountLastFour: '1234',
   source: 'internal',
   status: 'draft' as const,
@@ -197,7 +197,7 @@ describe('import service', () => {
       {
         id: summaryRow.accountId,
         name: 'Visa',
-        institution: 'TD',
+        institutionId: 'td',
         lastFour: '1234',
       },
     ]);
@@ -206,7 +206,7 @@ describe('import service', () => {
       {
         id: summaryRow.accountId,
         name: 'Visa',
-        institution: 'TD',
+        institutionId: 'td',
         lastFour: '1234',
       },
     ]);
@@ -291,7 +291,48 @@ describe('import service', () => {
     expect(draft.validRowCount).toBe(1);
     expect(draft.invalidRowCount).toBe(0);
     expect(draft.refundTargetFacts).toEqual({});
+    expect(draft.institutionMismatch).toBeNull();
     expect(listRefundTargetExpensesByIds).toHaveBeenCalledWith('org_1', [], db);
+  });
+
+  it('exposes a derived institution mismatch when detected source and account differ', async () => {
+    vi.mocked(fetchDraftSummaryById).mockResolvedValue({
+      ...summaryRow,
+      source: 'amex',
+      accountInstitutionId: 'td',
+    });
+
+    const draft = await getImportDraft('org_1', summaryRow.id);
+
+    expect(draft.institutionMismatch).toEqual({
+      detectedInstitutionId: 'amex',
+      accountInstitutionId: 'td',
+    });
+  });
+
+  it('does not warn when the detected source or account institution is unknown', async () => {
+    vi.mocked(fetchDraftSummaryById).mockResolvedValue({
+      ...summaryRow,
+      source: 'internal',
+      accountInstitutionId: 'td',
+    });
+
+    const draft = await getImportDraft('org_1', summaryRow.id);
+
+    expect(draft.institutionMismatch).toBeNull();
+  });
+
+  it('does not attach a mismatch warning after the draft is closed', async () => {
+    vi.mocked(fetchDraftSummaryById).mockResolvedValue({
+      ...summaryRow,
+      source: 'amex',
+      accountInstitutionId: 'td',
+      status: 'completed',
+    });
+
+    const draft = await getImportDraft('org_1', summaryRow.id);
+
+    expect(draft.institutionMismatch).toBeNull();
   });
 
   it('derives hub draft counts from current row facts', async () => {

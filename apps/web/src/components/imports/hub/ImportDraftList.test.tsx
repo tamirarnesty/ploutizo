@@ -37,7 +37,7 @@ const draftSummary: ImportDraftSummary = {
   account: {
     id: 'acct_1',
     name: 'Visa',
-    institution: 'TD',
+    institutionId: 'td',
     lastFour: '1234',
   },
   source: 'internal',
@@ -51,6 +51,7 @@ const draftSummary: ImportDraftSummary = {
   discardedAt: null,
   createdAt: '2026-05-20T12:00:00.000Z',
   updatedAt: '2026-05-20T12:00:00.000Z',
+  institutionMismatch: null,
 };
 
 describe('ImportDraftList', () => {

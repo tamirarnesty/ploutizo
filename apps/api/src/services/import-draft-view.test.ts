@@ -14,7 +14,7 @@ const summaryRow = {
   id: '11111111-1111-4111-8111-111111111111',
   accountId: '22222222-2222-4222-8222-222222222222',
   accountName: 'Visa',
-  accountInstitution: 'TD',
+  accountInstitutionId: 'td',
   accountLastFour: '1234',
   source: 'internal',
   status: 'draft' as const,
@@ -79,7 +79,7 @@ describe('buildImportDraftView', () => {
         account: {
           id: row.accountId!,
           name: row.accountName,
-          institution: row.accountInstitution,
+          institutionId: 'td',
           lastFour: row.accountLastFour,
         },
         source: row.source,
@@ -93,6 +93,7 @@ describe('buildImportDraftView', () => {
         discardedAt: null,
         createdAt: row.createdAt.toISOString(),
         updatedAt: row.updatedAt.toISOString(),
+        institutionMismatch: null,
       })
     );
 

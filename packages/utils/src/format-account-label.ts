@@ -1,17 +1,19 @@
+import { getFinancialInstitutionName } from '@ploutizo/types';
+
 export interface AccountLabelInput {
   name: string;
-  institution: string | null;
+  institutionId?: string | null;
   lastFour: string | null;
 }
 
 export const formatAccountLabel = ({
   name,
-  institution,
+  institutionId,
   lastFour,
 }: AccountLabelInput): string =>
   [
     name.trim() || 'Unnamed Account',
-    institution,
+    getFinancialInstitutionName(institutionId ?? null),
     lastFour ? `••${lastFour}` : null,
   ]
     .filter(Boolean)

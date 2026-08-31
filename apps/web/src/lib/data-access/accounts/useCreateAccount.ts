@@ -5,7 +5,7 @@ import { apiFetch } from '@/lib/queryClient';
 interface CreateAccountBody {
   name: string;
   type: string;
-  institution?: string;
+  institutionId?: string | null;
   lastFour?: string;
   memberIds?: string[];
 }

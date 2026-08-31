@@ -87,7 +87,7 @@ const targets: ImportTargetAccount[] = [
   {
     id: 'acct_1',
     name: 'Visa',
-    institution: 'TD',
+    institutionId: 'td',
     lastFour: '1234',
   },
 ];
@@ -97,7 +97,7 @@ const activeDraft: ImportDraftSummary = {
   account: {
     id: 'acct_1',
     name: 'Visa',
-    institution: 'TD',
+    institutionId: 'td',
     lastFour: '1234',
   },
   source: 'internal',
@@ -111,6 +111,7 @@ const activeDraft: ImportDraftSummary = {
   discardedAt: null,
   createdAt: '2026-05-20T12:00:00.000Z',
   updatedAt: '2026-05-20T12:00:00.000Z',
+  institutionMismatch: null,
 };
 
 const renderUploadForm = (

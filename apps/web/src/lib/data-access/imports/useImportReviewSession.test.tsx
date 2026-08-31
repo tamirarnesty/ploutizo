@@ -38,7 +38,7 @@ const draft = makeImportDraft({
   account: {
     id: 'acct_amex',
     name: 'Amex',
-    institution: 'Amex',
+    institutionId: 'amex',
     lastFour: '5678',
   },
   fileName: 'amex.csv',
@@ -124,7 +124,7 @@ describe('useImportReviewSession', () => {
       account: {
         id: 'acct_amex',
         name: 'Amex',
-        institution: 'Amex',
+        institutionId: 'amex',
         lastFour: '5678',
       },
       fileName: 'amex.csv',
@@ -745,7 +745,7 @@ describe('useImportReviewSession', () => {
       account: {
         id: 'acct_amex',
         name: 'Amex',
-        institution: 'Amex',
+        institutionId: 'amex',
         lastFour: '5678',
       },
       fileName: 'amex.csv',

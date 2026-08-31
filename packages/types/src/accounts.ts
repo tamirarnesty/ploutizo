@@ -1,4 +1,5 @@
 import type { AccountType } from './enums';
+import type { FinancialInstitutionId } from './financial-institutions';
 
 export interface AccountOwner {
   id: string; // orgMembers.id (the member UUID)
@@ -11,7 +12,7 @@ export interface Account {
   orgId: string;
   name: string;
   type: AccountType;
-  institution: string | null;
+  institutionId: FinancialInstitutionId | null;
   lastFour: string | null;
   archivedAt: string | null;
   createdAt: string;

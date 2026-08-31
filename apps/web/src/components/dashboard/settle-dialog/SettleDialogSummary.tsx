@@ -5,6 +5,7 @@ import {
 } from '@ploutizo/ui/components/dialog';
 import { Text } from '@ploutizo/ui/components/text';
 import { formatCurrency } from '@ploutizo/utils/currency';
+import { getFinancialInstitutionName } from '@ploutizo/types';
 import type { SettlementAccountRow } from '@ploutizo/types';
 
 type SettleDialogSummaryProps = {
@@ -13,7 +14,7 @@ type SettleDialogSummaryProps = {
 
 export const SettleDialogSummary = ({ account }: SettleDialogSummaryProps) => {
   const card = account.account;
-  const institution = card.institution?.trim();
+  const institution = getFinancialInstitutionName(card.institutionId);
   const last = card.lastFour?.trim();
 
   const metaParts: string[] = [];

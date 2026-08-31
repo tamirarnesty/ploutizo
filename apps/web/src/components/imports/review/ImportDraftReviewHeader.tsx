@@ -6,7 +6,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
-import { formatAccountLabel } from '@ploutizo/utils';
+import {
+  formatAccountLabel,
+  formatInstitutionMismatchWarning,
+} from '@ploutizo/utils';
 import type { ImportDraftRow } from '@ploutizo/types';
 import type {
   ImportDraftMeta,
@@ -75,6 +78,14 @@ export const ImportDraftReviewHeader = ({
             <Text variant="body-sm" className="truncate text-muted-foreground">
               {formatImportDraftReviewSubtitle(toLiveSubtitleMeta(meta, rows))}
             </Text>
+            {meta.institutionMismatch ? (
+              <Text
+                variant="body-sm"
+                className="mt-1 text-amber-700 dark:text-amber-400"
+              >
+                {formatInstitutionMismatchWarning(meta.institutionMismatch)}
+              </Text>
+            ) : null}
           </>
         ) : (
           <div className="space-y-2">

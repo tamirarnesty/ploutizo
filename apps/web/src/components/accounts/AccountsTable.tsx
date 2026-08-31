@@ -15,6 +15,7 @@ import { Badge } from '@ploutizo/ui/components/badge';
 import { Button } from '@ploutizo/ui/components/button';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
+import { getFinancialInstitutionName } from '@ploutizo/types';
 import type { Account } from '@ploutizo/types';
 import {
   DATA_GRID_PAGINATION_ROW_CLASSNAME,
@@ -115,7 +116,7 @@ export const AccountsTable = ({
         ),
       },
       {
-        accessorKey: 'institution',
+        accessorKey: 'institutionId',
         header: 'Institution',
         size: 160,
         meta: {
@@ -125,7 +126,7 @@ export const AccountsTable = ({
         },
         cell: ({ row }) => (
           <Text as="span" variant="body-sm" className="text-muted-foreground">
-            {row.original.institution ?? '—'}
+            {getFinancialInstitutionName(row.original.institutionId) ?? '—'}
           </Text>
         ),
       },

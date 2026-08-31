@@ -8,7 +8,7 @@ describe('toImportDraftMeta', () => {
       account: {
         id: 'acct_visa',
         name: 'Visa',
-        institution: 'TD',
+        institutionId: 'td',
         lastFour: '1234',
       },
       fileName: 'statement.csv',
@@ -21,7 +21,7 @@ describe('toImportDraftMeta', () => {
       account: {
         id: 'acct_visa',
         name: 'Visa',
-        institution: 'TD',
+        institutionId: 'td',
         lastFour: '1234',
       },
       fileName: 'statement.csv',

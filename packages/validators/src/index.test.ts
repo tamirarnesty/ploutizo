@@ -17,6 +17,7 @@ describe('createAccountSchema', () => {
     const result = createAccountSchema.safeParse({
       name: 'Chequing',
       type: 'chequing',
+      institutionId: 'td',
     });
     expect(result.success).toBe(true);
   });
@@ -49,16 +50,52 @@ describe('createAccountSchema', () => {
 
   it('accepts all valid account types', () => {
     for (const type of ACCOUNT_TYPE_VALUES) {
-      const result = createAccountSchema.safeParse({ name: 'Test', type });
+      const result = createAccountSchema.safeParse({
+        name: 'Test',
+        type,
+        institutionId: 'td',
+      });
       expect(result.success).toBe(true);
     }
+  });
+
+  it('requires a Financial institution for bank-backed and investment types', () => {
+    for (const type of ['credit_card', 'chequing', 'savings', 'investment']) {
+      const result = createAccountSchema.safeParse({ name: 'Test', type });
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(
+          result.error.issues.some(
+            (issue) =>
+              issue.path.includes('institutionId') &&
+              issue.message === 'Financial institution is required.'
+          )
+        ).toBe(true);
+      }
+    }
+  });
+
+  it('allows cash accounts without a Financial institution', () => {
+    for (const type of ['prepaid_cash', 'e_transfer']) {
+      const result = createAccountSchema.safeParse({ name: 'Cash', type });
+      expect(result.success).toBe(true);
+    }
+  });
+
+  it('rejects unknown Financial institution ids', () => {
+    const result = createAccountSchema.safeParse({
+      name: 'Visa',
+      type: 'credit_card',
+      institutionId: 'tangerine',
+    });
+    expect(result.success).toBe(false);
   });
 
   it('accepts optional fields', () => {
     const result = createAccountSchema.safeParse({
       name: 'Visa',
       type: 'credit_card',
-      institution: 'TD Bank',
+      institutionId: 'td',
       lastFour: '1234',
       memberIds: ['123e4567-e89b-12d3-a456-426614174000'],
     });
@@ -69,6 +106,7 @@ describe('createAccountSchema', () => {
     const result = createAccountSchema.safeParse({
       name: 'Test',
       type: 'chequing',
+      institutionId: 'td',
       lastFour: '12345',
     });
     expect(result.success).toBe(false);
@@ -78,6 +116,7 @@ describe('createAccountSchema', () => {
     const result = createAccountSchema.safeParse({
       name: 'Test',
       type: 'chequing',
+      institutionId: 'td',
     });
     expect(result.success).toBe(true);
     if (result.success) {
@@ -94,6 +133,27 @@ describe('updateAccountSchema', () => {
 
   it('accepts partial update', () => {
     const result = updateAccountSchema.safeParse({ name: 'New Name' });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects clearing the Financial institution on a required account type', () => {
+    const result = updateAccountSchema.safeParse({
+      type: 'credit_card',
+      institutionId: null,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects clearing the Financial institution without a cash account type', () => {
+    const result = updateAccountSchema.safeParse({ institutionId: null });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts clearing the Financial institution on a cash account', () => {
+    const result = updateAccountSchema.safeParse({
+      type: 'prepaid_cash',
+      institutionId: null,
+    });
     expect(result.success).toBe(true);
   });
 
@@ -162,6 +222,7 @@ describe('AccountFormSchema', () => {
     const result = AccountFormSchema.safeParse({
       name: 'TD Chequing',
       type: 'chequing',
+      institutionId: 'td',
       ownership: 'personal',
       memberIds: [],
     });

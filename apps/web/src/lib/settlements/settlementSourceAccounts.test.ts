@@ -14,7 +14,7 @@ const account = (
     name: 'Test',
     owners: [],
     archivedAt: null,
-    institution: null,
+    institutionId: null,
     lastFour: null,
     ...overrides,
   }) as Account;

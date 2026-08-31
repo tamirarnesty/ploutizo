@@ -1,4 +1,5 @@
 import { Text } from '@ploutizo/ui/components/text';
+import { getFinancialInstitutionName } from '@ploutizo/types';
 import type { AccountOwner, SettlementAccountRow } from '@ploutizo/types';
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
 import { SignedBalanceText } from '@/components/dashboard/SignedBalanceText';
@@ -9,7 +10,7 @@ import { getFirstNameFromDisplayName } from '@/lib/memberDisplayName';
 export const renderCardBalancesCardCell = (
   account: SettlementAccountRow['account']
 ) => {
-  const institution = account.institution?.trim();
+  const institution = getFinancialInstitutionName(account.institutionId);
   const last = account.lastFour?.trim();
 
   const metaParts: string[] = [];

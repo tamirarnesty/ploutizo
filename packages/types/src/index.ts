@@ -1,4 +1,5 @@
 export * from './enums';
+export * from './financial-institutions';
 export * from './accounts';
 export * from './household';
 export * from './org';

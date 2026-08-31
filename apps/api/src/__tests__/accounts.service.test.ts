@@ -54,6 +54,7 @@ describe('accounts service — org-scoped member validation', () => {
     const err = await createAccount('org_a', {
       name: 'Shared',
       type: 'chequing',
+      institutionId: 'td',
       memberIds: ['mem_other_org'],
     }).catch((e: unknown) => e);
 

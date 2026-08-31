@@ -610,35 +610,35 @@ const seedHousehold = async (
   const jointChequing = await api.post<AccountRow>('/api/accounts', {
     name: 'Joint Chequing',
     type: 'chequing',
-    institution: 'EQ Bank',
+    institutionId: 'td',
     lastFour: '4410',
     memberIds: both,
   });
   const adaChequing = await api.post<AccountRow>('/api/accounts', {
     name: "Ada's Chequing",
     type: 'chequing',
-    institution: 'Tangerine',
+    institutionId: 'td',
     lastFour: '1188',
     memberIds: [ada.id],
   });
   const jointSavings = await api.post<AccountRow>('/api/accounts', {
     name: 'Joint Savings',
     type: 'savings',
-    institution: 'EQ Bank',
+    institutionId: 'td',
     lastFour: '9021',
     memberIds: both,
   });
   const adaVisa = await api.post<AccountRow>('/api/accounts', {
     name: "Ada's Visa",
     type: 'credit_card',
-    institution: 'Tangerine',
+    institutionId: 'td',
     lastFour: '4242',
     memberIds: [ada.id],
   });
   const jointVisa = await api.post<AccountRow>('/api/accounts', {
     name: 'Joint Visa',
     type: 'credit_card',
-    institution: 'Amex',
+    institutionId: 'amex',
     lastFour: '1005',
     memberIds: both,
   });
@@ -655,7 +655,7 @@ const seedHousehold = async (
   const tfsa = await api.post<AccountRow>('/api/accounts', {
     name: 'Joint TFSA',
     type: 'investment',
-    institution: 'Wealthsimple',
+    institutionId: 'wealthsimple',
     memberIds: both,
   });
 

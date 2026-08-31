@@ -11,8 +11,12 @@ const baselineMigration = readFileSync(
   join(root, `drizzle/${journal.entries[0]?.tag}.sql`),
   'utf8'
 );
-const latestMigration = readFileSync(
-  join(root, `drizzle/${journal.entries.at(-1)?.tag}.sql`),
+const deriveOnReadMigration = readFileSync(
+  join(root, 'drizzle/0001_import_derive_on_read_facts.sql'),
+  'utf8'
+);
+const financialInstitutionMigration = readFileSync(
+  join(root, 'drizzle/0002_financial_institution_catalog.sql'),
   'utf8'
 );
 
@@ -67,27 +71,67 @@ describe('baseline migration contracts', () => {
 
 describe('derive-on-read facts cleanup migration', () => {
   it('drops persisted review status, invalid reasons, and upload-time counts', () => {
-    expect(latestMigration).toContain(
+    expect(deriveOnReadMigration).toContain(
       'ALTER TABLE "import_batch_rows" DROP COLUMN "status"'
     );
-    expect(latestMigration).toContain(
+    expect(deriveOnReadMigration).toContain(
       'ALTER TABLE "import_batch_rows" DROP COLUMN "invalid_reason"'
     );
-    expect(latestMigration).toContain(
+    expect(deriveOnReadMigration).toContain(
       'ALTER TABLE "import_batches" DROP COLUMN "valid_row_count"'
     );
-    expect(latestMigration).toContain(
+    expect(deriveOnReadMigration).toContain(
       'ALTER TABLE "import_batches" DROP COLUMN "invalid_row_count"'
     );
-    expect(latestMigration).toContain('DROP TYPE "public"."import_row_status"');
+    expect(deriveOnReadMigration).toContain(
+      'DROP TYPE "public"."import_row_status"'
+    );
   });
 
   it('does not drop source, lifecycle, or reviewed-value columns', () => {
-    expect(latestMigration).not.toContain('DROP COLUMN "row_count"');
-    expect(latestMigration).not.toContain('DROP COLUMN "selected_for_import"');
-    expect(latestMigration).not.toContain('DROP COLUMN "review_date"');
-    expect(latestMigration).not.toContain('DROP COLUMN "completed_at"');
-    expect(latestMigration).not.toContain('DROP COLUMN "discarded_at"');
-    expect(latestMigration).not.toContain('DROP COLUMN "external_id"');
+    expect(deriveOnReadMigration).not.toContain('DROP COLUMN "row_count"');
+    expect(deriveOnReadMigration).not.toContain(
+      'DROP COLUMN "selected_for_import"'
+    );
+    expect(deriveOnReadMigration).not.toContain('DROP COLUMN "review_date"');
+    expect(deriveOnReadMigration).not.toContain('DROP COLUMN "completed_at"');
+    expect(deriveOnReadMigration).not.toContain('DROP COLUMN "discarded_at"');
+    expect(deriveOnReadMigration).not.toContain('DROP COLUMN "external_id"');
+  });
+});
+
+describe('financial institution catalog migration', () => {
+  it('seeds the fixed Financial institution catalog', () => {
+    expect(financialInstitutionMigration).toContain(
+      'CREATE TABLE "financial_institutions"'
+    );
+    expect(financialInstitutionMigration).toContain("('amex', 'Amex')");
+    expect(financialInstitutionMigration).toContain("('cibc', 'CIBC')");
+    expect(financialInstitutionMigration).toContain(
+      "('pc_financial', 'PC Financial')"
+    );
+    expect(financialInstitutionMigration).toContain("('td', 'TD')");
+    expect(financialInstitutionMigration).toContain("('rbc', 'RBC')");
+    expect(financialInstitutionMigration).toContain(
+      "('wealthsimple', 'Wealthsimple')"
+    );
+  });
+
+  it('clears development institution values before replacing the free-text field', () => {
+    const clearAt = financialInstitutionMigration.indexOf(
+      'UPDATE "accounts" SET "institution" = NULL'
+    );
+    const addAt = financialInstitutionMigration.indexOf(
+      'ADD COLUMN "institution_id"'
+    );
+    const dropAt = financialInstitutionMigration.indexOf(
+      'DROP COLUMN "institution"'
+    );
+    expect(clearAt).toBeGreaterThan(-1);
+    expect(addAt).toBeGreaterThan(clearAt);
+    expect(dropAt).toBeGreaterThan(addAt);
+    expect(financialInstitutionMigration).not.toContain(
+      'SET "institution_id" ='
+    );
   });
 });

@@ -19,6 +19,7 @@ import {
 
 import { accountTypeEnum } from './enums';
 import { orgMembers, orgs } from './auth';
+import { financialInstitutions } from './financial-institutions';
 
 /**
  * accounts
@@ -38,7 +39,9 @@ export const accounts = pgTable(
       .references(() => orgs.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     type: accountTypeEnum('type').notNull(),
-    institution: text('institution'),
+    institutionId: text('institution_id').references(
+      () => financialInstitutions.id
+    ),
     lastFour: text('last_four'),
     /**
      * Day of the month (1–31) when a credit-card or similar account's statement is due.

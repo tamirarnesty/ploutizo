@@ -11,7 +11,7 @@ const makeAccount = (): SettlementAccountRow => ({
     id: 'acct-1',
     name: 'Platinum',
     type: 'credit_card',
-    institution: 'Coast',
+    institutionId: 'td',
     lastFour: '4242',
     statementDueDay: 15,
     owners: [

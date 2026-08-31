@@ -1,6 +1,12 @@
 import { db } from '@ploutizo/db';
-import { INTERNAL_IMPORT_EXAMPLE_CSV } from '@ploutizo/types';
-import { createImportRowClassifier } from '@ploutizo/utils';
+import {
+  INTERNAL_IMPORT_EXAMPLE_CSV,
+  toFinancialInstitutionId,
+} from '@ploutizo/types';
+import {
+  createImportRowClassifier,
+  getInstitutionMismatchWarning,
+} from '@ploutizo/utils';
 import {
   resolveImportRowReviewType,
   toImportTransactionType,
@@ -68,7 +74,7 @@ const toImportDraftSummary = (
   const {
     accountId,
     accountName,
-    accountInstitution,
+    accountInstitutionId,
     accountLastFour,
     importedAt,
     completedAt,
@@ -85,9 +91,16 @@ const toImportDraftSummary = (
     account: {
       id: accountId,
       name: accountName,
-      institution: accountInstitution,
+      institutionId: toFinancialInstitutionId(accountInstitutionId),
       lastFour: accountLastFour,
     },
+    institutionMismatch:
+      summary.status === 'draft'
+        ? getInstitutionMismatchWarning({
+            detectedInstitutionId: summary.source,
+            accountInstitutionId,
+          })
+        : null,
     importedAt: importedAt.toISOString(),
     completedAt: completedAt?.toISOString() ?? null,
     discardedAt: discardedAt?.toISOString() ?? null,
@@ -98,7 +111,13 @@ const toImportDraftSummary = (
 
 export const listImportTargets = async (
   orgId: string
-): Promise<ImportTargetAccount[]> => listImportTargetAccounts(orgId);
+): Promise<ImportTargetAccount[]> => {
+  const rows = await listImportTargetAccounts(orgId);
+  return rows.map((row) => ({
+    ...row,
+    institutionId: toFinancialInstitutionId(row.institutionId),
+  }));
+};
 
 export const listActiveImportDrafts = async (
   orgId: string

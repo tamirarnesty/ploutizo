@@ -2,6 +2,7 @@
 export * from './enums';
 export * from './auth';
 export * from './classification';
+export * from './financial-institutions';
 export * from './accounts';
 export * from './import-batches';
 export * from './transactions';
