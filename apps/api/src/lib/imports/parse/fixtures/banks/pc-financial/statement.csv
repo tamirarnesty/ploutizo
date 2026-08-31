@@ -1,0 +1,6 @@
+"Description","Type","Card Holder Name","Date","Time","Amount"
+"NEIGHBORHOOD GROCERY","PURCHASE","Ada Example","05/02/2026","09:15:00","-12.34"
+"INTEREST CHARGE","INTEREST","Ada Example","05/08/2026","00:00:00","-1.25"
+"PC FINANCIAL PAYMENT THANK YOU","PAYMENT","Ada Example","05/15/2026","08:00:00","50.00"
+"ANNUAL FEE","FEE","Ada Example","05/16/2026","00:00:00","-12.00"
+"BROKEN DATE","PURCHASE","Ada Example","13/40/2026","09:15:00","-2.00"

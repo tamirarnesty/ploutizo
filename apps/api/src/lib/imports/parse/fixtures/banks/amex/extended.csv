@@ -1,0 +1,5 @@
+Date,Date Processed,Description,Card Member,Account #,Amount,Foreign Spend Amount,Commission,Exchange Rate,Merchant,Merchant Address,Merchant City/State,Zip Code,Country,Reference,Category
+2 May 2026,3 May 2026,NEIGHBORHOOD GROCERY,Ada Example,XXXX-XXXXXX-00000,12.34,10.00,0.25,1.234,Example Merchant,100 Example St,Toronto ON,A1A 1A1,Canada,'AMEX-REF-0001,Merchandise
+8 May 2026,8 May 2026,MERCHANT CREDIT,Ada Example,XXXX-XXXXXX-00000,-5.00,,,,,,,,,'AMEX-REF-0002,
+15 May 2026,16 May 2026,PAYMENT RECEIVED - THANK YOU,Ada Example,XXXX-XXXXXX-00000,-50.00,,,,,,,,,'AMEX-REF-0003,
+2 May 2026,3 May 2026,MISSING AMOUNT,Pat Nomatch,XXXX-XXXXXX-00000,,,,,,,,,,,
