@@ -89,11 +89,6 @@ export const fetchAccountRecord = async (orgId: string, id: string) => {
   return rows.at(0) ?? null;
 };
 
-export const fetchAccountById = async (orgId: string, id: string) => {
-  const row = await fetchAccountRecord(orgId, id);
-  return row ? { id: row.id } : null;
-};
-
 // GET /:id/members — list members of an account scoped via accounts anchor
 export const listAccountMembers = async (orgId: string, accountId: string) => {
   return db

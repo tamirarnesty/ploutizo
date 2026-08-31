@@ -85,26 +85,25 @@ const toImportDraftSummary = (
     detectedInstitutionId,
     ...summary
   } = row;
+  const detectedId = toFinancialInstitutionId(detectedInstitutionId);
+  const accountInstitution = toFinancialInstitutionId(accountInstitutionId);
   return {
     ...summary,
-    detectedInstitutionId: toFinancialInstitutionId(detectedInstitutionId),
+    detectedInstitutionId: detectedId,
     // History omits live review counts until PLO-56 records completed results.
     validRowCount: 0,
     invalidRowCount: 0,
     account: {
       id: accountId,
       name: accountName,
-      institutionId: toFinancialInstitutionId(accountInstitutionId),
+      institutionId: accountInstitution,
       lastFour: accountLastFour,
     },
     institutionMismatch:
       summary.status === 'draft'
         ? getInstitutionMismatchWarning({
-            detectedInstitutionId: toFinancialInstitutionId(
-              detectedInstitutionId
-            ),
-            accountInstitutionId:
-              toFinancialInstitutionId(accountInstitutionId),
+            detectedInstitutionId: detectedId,
+            accountInstitutionId: accountInstitution,
           })
         : null,
     importedAt: importedAt.toISOString(),

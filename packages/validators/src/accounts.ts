@@ -21,6 +21,19 @@ export const accountInstitutionViolation = (
   return institutionId ? null : 'Financial institution is required.';
 };
 
+/** Validates institution rules after merging a partial PATCH with the stored account. */
+export const mergeAccountInstitutionViolation = (
+  existing: { type: AccountType; institutionId: string | null },
+  patch: { type?: AccountType; institutionId?: string | null | undefined }
+): string | null => {
+  const type = patch.type ?? existing.type;
+  const institutionId =
+    patch.institutionId !== undefined
+      ? patch.institutionId
+      : existing.institutionId;
+  return accountInstitutionViolation(type, institutionId);
+};
+
 const refineAccountInstitution = (
   data: { type?: string; institutionId?: string | null },
   ctx: z.RefinementCtx

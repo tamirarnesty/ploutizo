@@ -58,7 +58,7 @@ import {
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import { MemberToggleGroup } from '@/components/members/MemberToggleGroup';
 
-const NONE_INSTITUTION = '__none__';
+const OPTIONAL_INSTITUTION_SELECT_VALUE = '__none__';
 
 const ACCOUNT_TYPES = [
   { value: 'chequing', label: 'Chequing' },
@@ -308,10 +308,12 @@ const AccountFormInner = ({
                           : 'Financial institution (optional)'}
                       </FieldLabel>
                       <Select
-                        value={field.state.value ?? NONE_INSTITUTION}
+                        value={
+                          field.state.value ?? OPTIONAL_INSTITUTION_SELECT_VALUE
+                        }
                         onValueChange={(value) =>
                           field.handleChange(
-                            value === NONE_INSTITUTION
+                            value === OPTIONAL_INSTITUTION_SELECT_VALUE
                               ? null
                               : (value as FinancialInstitutionId)
                           )
@@ -329,7 +331,9 @@ const AccountFormInner = ({
                         <SelectContent>
                           <SelectGroup>
                             {required ? null : (
-                              <SelectItem value={NONE_INSTITUTION}>
+                              <SelectItem
+                                value={OPTIONAL_INSTITUTION_SELECT_VALUE}
+                              >
                                 None
                               </SelectItem>
                             )}

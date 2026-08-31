@@ -1,5 +1,5 @@
 import { Text } from '@ploutizo/ui/components/text';
-import { getFinancialInstitutionName } from '@ploutizo/types';
+import { formatAccountInstitutionMeta } from '@ploutizo/utils';
 import type { AccountOwner, SettlementAccountRow } from '@ploutizo/types';
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
 import { SignedBalanceText } from '@/components/dashboard/SignedBalanceText';
@@ -10,14 +10,10 @@ import { getFirstNameFromDisplayName } from '@/lib/memberDisplayName';
 export const renderCardBalancesCardCell = (
   account: SettlementAccountRow['account']
 ) => {
-  const institution = getFinancialInstitutionName(account.institutionId);
-  const last = account.lastFour?.trim();
-
-  const metaParts: string[] = [];
-  if (institution) metaParts.push(institution);
-  if (last) metaParts.push(`•••• ${last}`);
-
-  const metaLine = metaParts.length > 0 ? metaParts.join(' ') : null;
+  const metaLine = formatAccountInstitutionMeta({
+    institutionId: account.institutionId,
+    lastFour: account.lastFour,
+  });
 
   return (
     <div className="min-w-0">

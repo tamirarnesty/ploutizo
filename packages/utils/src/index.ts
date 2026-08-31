@@ -68,7 +68,9 @@ export {
 } from './transaction-type-labels';
 export {
   formatAccountLabel,
+  formatAccountInstitutionMeta,
   type AccountLabelInput,
+  type AccountInstitutionMetaInput,
 } from './format-account-label';
 export {
   formatInstitutionMismatchWarning,

@@ -1,5 +1,5 @@
 import { db } from '@ploutizo/db';
-import { accountInstitutionViolation } from '@ploutizo/validators';
+import { mergeAccountInstitutionViolation } from '@ploutizo/validators';
 import type {
   createAccountSchema,
   updateAccountSchema,
@@ -24,16 +24,6 @@ const assertMembersInOrg = async (orgId: string, memberIds: string[]) => {
   if (memberIds.length === 0) return;
   const ok = await allMembersInOrg(orgId, memberIds);
   if (!ok) throw new NotFoundError('Member not found in this household');
-};
-
-const assertAccountInstitution = (
-  type: z.infer<typeof createAccountSchema>['type'],
-  institutionId: string | null | undefined
-) => {
-  const message = accountInstitutionViolation(type, institutionId);
-  if (message) {
-    throw new DomainError(400, message, 'VALIDATION_ERROR');
-  }
 };
 
 export const listAccounts = async (orgId: string, includeArchived: boolean) => {
@@ -81,12 +71,10 @@ export const updateAccount = async (
   if (!existing) throw new NotFoundError('Account not found.');
 
   const { memberIds, archivedAt, ...updateData } = data;
-  const mergedType = updateData.type ?? existing.type;
-  const mergedInstitutionId =
-    updateData.institutionId !== undefined
-      ? updateData.institutionId
-      : existing.institutionId;
-  assertAccountInstitution(mergedType, mergedInstitutionId);
+  const message = mergeAccountInstitutionViolation(existing, updateData);
+  if (message) {
+    throw new DomainError(400, message, 'VALIDATION_ERROR');
+  }
 
   if (memberIds !== undefined) {
     await assertMembersInOrg(orgId, memberIds);

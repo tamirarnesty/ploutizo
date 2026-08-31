@@ -1,11 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import {
-  FINANCIAL_INSTITUTION_IDS,
-  buildFinancialInstitutionCatalogInsertSql,
-} from '@ploutizo/types';
 import { describe, expect, it } from 'vitest';
+import { FINANCIAL_INSTITUTION_IDS } from '@ploutizo/types';
+import { buildFinancialInstitutionCatalogInsertSql } from '../financial-institution-catalog-seed';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const journal = JSON.parse(

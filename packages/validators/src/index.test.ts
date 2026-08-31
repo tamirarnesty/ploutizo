@@ -8,6 +8,7 @@ import {
   accountInstitutionViolation,
   createAccountSchema,
   createTransactionSchema,
+  mergeAccountInstitutionViolation,
   updateAccountSchema,
   updateHouseholdSettingsSchema,
   updateTransactionSchema,
@@ -142,6 +143,27 @@ describe('updateAccountSchema', () => {
       'Financial institution is required.'
     );
     expect(accountInstitutionViolation('prepaid_cash', null)).toBeNull();
+  });
+
+  it('mergeAccountInstitutionViolation validates merged PATCH state', () => {
+    expect(
+      mergeAccountInstitutionViolation(
+        { type: 'credit_card', institutionId: 'td' },
+        {}
+      )
+    ).toBeNull();
+    expect(
+      mergeAccountInstitutionViolation(
+        { type: 'credit_card', institutionId: null },
+        {}
+      )
+    ).toBe('Financial institution is required.');
+    expect(
+      mergeAccountInstitutionViolation(
+        { type: 'chequing', institutionId: 'td' },
+        { institutionId: null }
+      )
+    ).toBe('Financial institution is required.');
   });
 
   it('rejects clearing the Financial institution on a required account type', () => {
