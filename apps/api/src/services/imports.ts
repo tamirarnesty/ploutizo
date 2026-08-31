@@ -1,6 +1,12 @@
 import { db } from '@ploutizo/db';
-import { INTERNAL_IMPORT_EXAMPLE_CSV } from '@ploutizo/types';
-import { createImportRowClassifier } from '@ploutizo/utils';
+import {
+  INTERNAL_IMPORT_EXAMPLE_CSV,
+  toFinancialInstitutionId,
+} from '@ploutizo/types';
+import {
+  createImportRowClassifier,
+  getInstitutionMismatchWarning,
+} from '@ploutizo/utils';
 import {
   resolveImportRowReviewType,
   toImportTransactionType,
@@ -50,6 +56,7 @@ import {
 } from '@/lib/queries/scope';
 import { listTags } from '@/lib/queries/tags';
 import { parseImportUpload } from '@/lib/imports/parse';
+import { toImportTargetAccount } from '@/lib/accounts/accountResponse';
 import { listRefundTargetExpensesByIds } from '@/lib/queries/import-refund-targets';
 import {
   buildImportDraftView,
@@ -68,26 +75,37 @@ const toImportDraftSummary = (
   const {
     accountId,
     accountName,
-    accountInstitution,
+    accountInstitutionId,
     accountLastFour,
     importedAt,
     completedAt,
     discardedAt,
     createdAt,
     updatedAt,
+    detectedInstitutionId,
     ...summary
   } = row;
+  const detectedId = toFinancialInstitutionId(detectedInstitutionId);
+  const accountInstitution = toFinancialInstitutionId(accountInstitutionId);
   return {
     ...summary,
+    detectedInstitutionId: detectedId,
     // History omits live review counts until PLO-56 records completed results.
     validRowCount: 0,
     invalidRowCount: 0,
     account: {
       id: accountId,
       name: accountName,
-      institution: accountInstitution,
+      institutionId: accountInstitution,
       lastFour: accountLastFour,
     },
+    institutionMismatch:
+      summary.status === 'draft'
+        ? getInstitutionMismatchWarning({
+            detectedInstitutionId: detectedId,
+            accountInstitutionId: accountInstitution,
+          })
+        : null,
     importedAt: importedAt.toISOString(),
     completedAt: completedAt?.toISOString() ?? null,
     discardedAt: discardedAt?.toISOString() ?? null,
@@ -98,7 +116,10 @@ const toImportDraftSummary = (
 
 export const listImportTargets = async (
   orgId: string
-): Promise<ImportTargetAccount[]> => listImportTargetAccounts(orgId);
+): Promise<ImportTargetAccount[]> => {
+  const rows = await listImportTargetAccounts(orgId);
+  return rows.map(toImportTargetAccount);
+};
 
 export const listActiveImportDrafts = async (
   orgId: string
@@ -197,7 +218,7 @@ export const createImportDraft = async (
       const batch = await insertImportBatch(tx, {
         orgId,
         accountId: input.accountId,
-        source: parsed.format,
+        detectedInstitutionId: parsed.detectedInstitutionId,
         status: 'draft',
         fileName: input.fileName,
         importedAt: new Date(),

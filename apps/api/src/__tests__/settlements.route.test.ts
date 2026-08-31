@@ -38,7 +38,7 @@ describe('GET /api/settlements route', () => {
         id: 'acct_1',
         name: 'Amex Gold',
         type: 'credit_card' as const,
-        institution: 'American Express',
+        institutionId: 'amex' as const,
         lastFour: '1234',
         statementDueDay: 15,
         owners: [

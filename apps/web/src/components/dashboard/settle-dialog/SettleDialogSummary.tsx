@@ -5,6 +5,7 @@ import {
 } from '@ploutizo/ui/components/dialog';
 import { Text } from '@ploutizo/ui/components/text';
 import { formatCurrency } from '@ploutizo/utils/currency';
+import { formatAccountInstitutionMeta } from '@ploutizo/utils';
 import type { SettlementAccountRow } from '@ploutizo/types';
 
 type SettleDialogSummaryProps = {
@@ -13,13 +14,10 @@ type SettleDialogSummaryProps = {
 
 export const SettleDialogSummary = ({ account }: SettleDialogSummaryProps) => {
   const card = account.account;
-  const institution = card.institution?.trim();
-  const last = card.lastFour?.trim();
-
-  const metaParts: string[] = [];
-  if (institution) metaParts.push(institution);
-  if (last) metaParts.push(`•••• ${last}`);
-  const metaLine = metaParts.length > 0 ? metaParts.join(' ') : null;
+  const metaLine = formatAccountInstitutionMeta({
+    institutionId: card.institutionId,
+    lastFour: card.lastFour,
+  });
 
   const totalLabel = formatCurrency(account.totalBalanceCents);
   const dueLabel = account.dueDate

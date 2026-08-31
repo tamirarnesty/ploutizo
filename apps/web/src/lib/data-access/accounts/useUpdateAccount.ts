@@ -5,7 +5,7 @@ import { apiFetch } from '@/lib/queryClient';
 interface UpdateAccountBody {
   name?: string;
   type?: string;
-  institution?: string | null;
+  institutionId?: string | null;
   lastFour?: string | null;
   memberIds?: string[];
 }

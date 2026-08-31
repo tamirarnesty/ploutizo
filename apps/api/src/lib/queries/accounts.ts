@@ -80,9 +80,9 @@ export const replaceAccountMembers = async (
 };
 
 // GET /:id/members — verify account belongs to org (for member endpoint scope check)
-export const fetchAccountById = async (orgId: string, id: string) => {
+export const fetchAccountRecord = async (orgId: string, id: string) => {
   const rows = await db
-    .select({ id: accounts.id })
+    .select()
     .from(accounts)
     .where(and(eq(accounts.id, id), eq(accounts.orgId, orgId)))
     .limit(1);

@@ -7,9 +7,9 @@ const IMPORT_SUMMARY_COLUMNS = {
   id: importBatches.id,
   accountId: importBatches.accountId,
   accountName: accounts.name,
-  accountInstitution: accounts.institution,
+  accountInstitutionId: accounts.institutionId,
   accountLastFour: accounts.lastFour,
-  source: importBatches.source,
+  detectedInstitutionId: importBatches.detectedInstitutionId,
   status: importBatches.status,
   fileName: importBatches.fileName,
   rowCount: importBatches.rowCount,
@@ -25,7 +25,7 @@ export const listImportTargetAccounts = async (orgId: string) =>
     .select({
       id: accounts.id,
       name: accounts.name,
-      institution: accounts.institution,
+      institutionId: accounts.institutionId,
       lastFour: accounts.lastFour,
     })
     .from(accounts)

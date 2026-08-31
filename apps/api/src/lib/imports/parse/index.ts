@@ -15,7 +15,7 @@ export const parseImportUpload = (
   const rows = coerceImportRows(sourceRows);
 
   return {
-    format: normalizer.format,
+    detectedInstitutionId: normalizer.detectedInstitutionId,
     rowCount: rows.length,
     rows,
   };

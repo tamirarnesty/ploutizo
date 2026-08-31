@@ -1,14 +1,16 @@
 import { db } from '@ploutizo/db';
+import { mergeAccountInstitutionViolation } from '@ploutizo/validators';
 import type {
   createAccountSchema,
   updateAccountSchema,
 } from '@ploutizo/validators';
 import type { z } from 'zod';
-import { NotFoundError } from '@/lib/errors';
+import { DomainError, NotFoundError } from '@/lib/errors';
+import { toAccountResponse } from '@/lib/accounts/accountResponse';
 import { allMembersInOrg } from '@/lib/queries/scope';
 import {
   archiveAccount,
-  fetchAccountById,
+  fetchAccountRecord,
   insertAccount,
   insertAccountMembers,
   listAccountMemberDetails,
@@ -44,7 +46,7 @@ export const listAccounts = async (orgId: string, includeArchived: boolean) => {
     });
     byAccount.set(m.accountId, list);
   }
-  return rows.map((r) => ({ ...r, owners: byAccount.get(r.id) ?? [] }));
+  return rows.map((row) => toAccountResponse(row, byAccount.get(row.id) ?? []));
 };
 
 export const createAccount = async (
@@ -56,7 +58,7 @@ export const createAccount = async (
   return db.transaction(async (tx) => {
     const row = await insertAccount(tx, orgId, accountData);
     await insertAccountMembers(tx, row.id, memberIds);
-    return row;
+    return toAccountResponse(row);
   });
 };
 
@@ -65,7 +67,15 @@ export const updateAccount = async (
   id: string,
   data: z.infer<typeof updateAccountSchema>
 ) => {
+  const existing = await fetchAccountRecord(orgId, id);
+  if (!existing) throw new NotFoundError('Account not found.');
+
   const { memberIds, archivedAt, ...updateData } = data;
+  const message = mergeAccountInstitutionViolation(existing, updateData);
+  if (message) {
+    throw new DomainError(400, message, 'VALIDATION_ERROR');
+  }
+
   if (memberIds !== undefined) {
     await assertMembersInOrg(orgId, memberIds);
   }
@@ -78,13 +88,13 @@ export const updateAccount = async (
     return row;
   });
   if (!updated) throw new NotFoundError('Account not found.');
-  return updated;
+  return toAccountResponse(updated);
 };
 
 export const getAccountMembers = async (orgId: string, accountId: string) => {
   const rows = await listAccountMembers(orgId, accountId);
   if (rows.length === 0) {
-    const account = await fetchAccountById(orgId, accountId);
+    const account = await fetchAccountRecord(orgId, accountId);
     if (!account) throw new NotFoundError('Account not found.');
   }
   return rows;
@@ -93,5 +103,5 @@ export const getAccountMembers = async (orgId: string, accountId: string) => {
 export const archiveAccountById = async (orgId: string, id: string) => {
   const updated = await archiveAccount(orgId, id);
   if (!updated) throw new NotFoundError('Account not found.');
-  return updated;
+  return toAccountResponse(updated);
 };

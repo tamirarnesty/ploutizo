@@ -258,6 +258,10 @@ _Avoid_: Full payoff required
 A settlement payment that reduces the card’s shared balance (two or more assignees on the settlement transaction, equal split across shared participants). Distinct from **personal settlement** — same card, different bucket. **Partial settlement** allowed.
 _Avoid_: Household payment, pool settle
 
+**Financial institution**:
+A seeded central catalog of issuers (Amex, CIBC, PC Financial, TD, RBC, Wealthsimple) referenced by accounts via `institutionId`. Household members choose from this fixed list when creating or editing accounts; there is no custom entry or catalog-management UI. Required for credit-card, chequing, savings, and investment accounts; optional for cash accounts (`prepaid_cash`, `e_transfer`). The selected credit card's Financial institution is the authority for import mismatch comparison. Being in the catalog does not imply a supported import format (RBC is selectable with no approved CSV).
+_Avoid_: Free-text institution, bank name as an unvalidated string, treating catalog membership as import support
+
 **Account ownership**:
 Whether an account is labeled personal or shared in household settings. Describes who uses the account; does not determine how individual transactions are classified for card balances.
 _Avoid_: Using ownership interchangeably with shared transaction

@@ -31,7 +31,7 @@ vi.mock('@ploutizo/db', () => ({
             orgId: 'org_test123',
             name: 'Chequing',
             type: 'chequing',
-            institution: null,
+            institutionId: null,
             lastFour: null,
             archivedAt: null,
             createdAt: new Date().toISOString(),
@@ -49,7 +49,7 @@ vi.mock('@ploutizo/db', () => ({
               orgId: 'org_test123',
               name: 'Chequing Updated',
               type: 'chequing',
-              institution: null,
+              institutionId: null,
               lastFour: null,
               archivedAt: null,
               createdAt: new Date().toISOString(),
@@ -70,7 +70,7 @@ vi.mock('@ploutizo/db', () => ({
                   orgId: 'org_test123',
                   name: 'Chequing',
                   type: 'chequing',
-                  institution: null,
+                  institutionId: null,
                   lastFour: null,
                   archivedAt: null,
                   createdAt: new Date().toISOString(),
@@ -91,7 +91,7 @@ vi.mock('@ploutizo/db', () => ({
                     orgId: 'org_test123',
                     name: 'Chequing Updated',
                     type: 'chequing',
-                    institution: null,
+                    institutionId: null,
                     lastFour: null,
                     archivedAt: null,
                     createdAt: new Date().toISOString(),
@@ -140,7 +140,7 @@ describe('GET /api/accounts', () => {
                 orgId: 'org_test123',
                 name: 'Chequing',
                 type: 'chequing',
-                institution: null,
+                institutionId: null,
                 lastFour: null,
                 archivedAt: null,
                 createdAt: new Date().toISOString(),
@@ -198,7 +198,7 @@ describe('GET /api/accounts', () => {
                 orgId: 'org_test123',
                 name: 'Personal',
                 type: 'chequing',
-                institution: null,
+                institutionId: null,
                 lastFour: null,
                 archivedAt: null,
                 createdAt: new Date().toISOString(),
@@ -232,7 +232,11 @@ describe('POST /api/accounts', () => {
     const res = await app.request('/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'Chequing', type: 'chequing' }),
+      body: JSON.stringify({
+        name: 'Chequing',
+        type: 'chequing',
+        institutionId: 'td',
+      }),
     });
     expect(res.status).toBe(201);
     const body = (await res.json()) as { data: { id: string; orgId: string } };
@@ -244,7 +248,7 @@ describe('POST /api/accounts', () => {
     const res = await app.request('/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ institution: 'TD Bank' }),
+      body: JSON.stringify({ institutionId: 'td' }),
     });
     expect(res.status).toBe(400);
     const body = (await res.json()) as { error: { code: string } };
@@ -258,6 +262,91 @@ describe('POST /api/accounts', () => {
       body: JSON.stringify({ name: 'Test', type: 'bitcoin_wallet' }),
     });
     expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when a credit card is missing a Financial institution', async () => {
+    const res = await app.request('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Visa', type: 'credit_card' }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('creates a cash account without a Financial institution', async () => {
+    const res = await app.request('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Wallet', type: 'prepaid_cash' }),
+    });
+    expect(res.status).toBe(201);
+  });
+});
+
+describe('PATCH /api/accounts/:id', () => {
+  const mockExistingAccount = (overrides: Record<string, unknown> = {}) => {
+    (vi.mocked(db.select) as MockedAccountsDbSelect).mockReturnValueOnce({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue([
+            {
+              id: 'acct_1',
+              orgId: 'org_test123',
+              name: 'Chequing',
+              type: 'chequing',
+              institutionId: null,
+              lastFour: null,
+              archivedAt: null,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              ...overrides,
+            },
+          ]),
+        }),
+      }),
+    });
+  };
+
+  it('returns 400 when updating a required-type account that still lacks an institution', async () => {
+    mockExistingAccount({ type: 'credit_card', institutionId: null });
+
+    const res = await app.request('/acct_1', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Renamed Visa' }),
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when clearing the Financial institution on a credit card', async () => {
+    mockExistingAccount({ type: 'credit_card', institutionId: 'td' });
+    const res = await app.request('/acct_1', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'credit_card', institutionId: null }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when clearing the Financial institution without a cash account type', async () => {
+    mockExistingAccount({ type: 'chequing', institutionId: 'td' });
+    const res = await app.request('/acct_1', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ institutionId: null }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('accepts a selected Financial institution on update', async () => {
+    mockExistingAccount({ type: 'chequing', institutionId: null });
+    const res = await app.request('/acct_1', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'chequing', institutionId: 'cibc' }),
+    });
+    expect(res.status).toBe(200);
   });
 });
 

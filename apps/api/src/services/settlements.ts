@@ -1,12 +1,13 @@
 import { lrmSplit } from '@ploutizo/utils';
 import { formatSettlementDescription } from '@ploutizo/utils/transaction-policy';
-import type { CreateSettlementInput } from '@ploutizo/validators';
+import { toFinancialInstitutionId } from '@ploutizo/types';
 import type {
   AccountOwner,
   GetSettlementBalancesResponse,
   SettlementAccountRow,
   SettlementMemberRow,
 } from '@ploutizo/types';
+import type { CreateSettlementInput } from '@ploutizo/validators';
 import type { SettlementBalanceRow } from '@/lib/queries/settlements';
 import { DomainError, NotFoundError } from '@/lib/errors';
 import { listAccountMemberDetails } from '@/lib/queries/accounts';
@@ -62,7 +63,7 @@ export const getSettlementBalances = async (
           id: row.accountId,
           name: row.accountName,
           type: row.accountType,
-          institution: row.institution,
+          institutionId: toFinancialInstitutionId(row.institutionId),
           lastFour: row.lastFour,
           statementDueDay: row.statementDueDay,
           owners: [],

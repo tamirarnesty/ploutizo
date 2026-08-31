@@ -34,10 +34,22 @@ import {
   FieldLabel,
 } from '@ploutizo/ui/components/field';
 import { Text } from '@ploutizo/ui/components/text';
-import { AccountFormSchema } from '@ploutizo/validators';
+import {
+  AccountFormSchema,
+  accountInstitutionViolation,
+} from '@ploutizo/validators';
 import { useAppForm } from '@ploutizo/ui/components/form';
+import {
+  FINANCIAL_INSTITUTIONS,
+  accountRequiresFinancialInstitution,
+} from '@ploutizo/types';
+import type {
+  Account,
+  AccountMember,
+  FinancialInstitutionId,
+  OrgMember,
+} from '@ploutizo/types';
 import type { AccountForm as AccountFormType } from '@ploutizo/validators';
-import type { Account, AccountMember, OrgMember } from '@ploutizo/types';
 import {
   useCreateAccount,
   useGetAccountMembers,
@@ -45,6 +57,8 @@ import {
 } from '@/lib/data-access/accounts';
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import { MemberToggleGroup } from '@/components/members/MemberToggleGroup';
+
+const OPTIONAL_INSTITUTION_SELECT_VALUE = '__none__';
 
 const ACCOUNT_TYPES = [
   { value: 'chequing', label: 'Chequing' },
@@ -119,7 +133,7 @@ const AccountFormInner = ({
     defaultValues: {
       name: account?.name ?? '',
       type: account?.type ?? 'chequing',
-      institution: account?.institution ?? '',
+      institutionId: account?.institutionId ?? null,
       lastFour: account?.lastFour ?? '',
       // personal = 1 owner (just me), shared = 2+ owners
       ownership:
@@ -145,7 +159,7 @@ const AccountFormInner = ({
       const payload = {
         name: value.name.trim(),
         type: value.type,
-        institution: value.institution?.trim() || undefined,
+        institutionId: value.institutionId ?? null,
         lastFour: value.lastFour?.trim() || undefined,
         memberIds: value.memberIds,
       };
@@ -263,25 +277,87 @@ const AccountFormInner = ({
             )}
           </form.AppField>
 
-          {/* Field 4: institution */}
-          <form.AppField name="institution">
-            {(field) => (
-              <Field>
-                <FieldLabel htmlFor="account-institution">
-                  Institution (optional)
-                </FieldLabel>
-                <Input
-                  id="account-institution"
-                  name="account-institution"
-                  autoComplete="organization"
-                  value={field.state.value ?? ''}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                  placeholder="e.g. TD Bank"
-                />
-              </Field>
-            )}
-          </form.AppField>
+          {/* Field 4: Financial institution catalog */}
+          <form.Subscribe
+            selector={(s: { values: AccountFormType }) => s.values.type}
+          >
+            {(type) => {
+              const required = accountRequiresFinancialInstitution(type);
+              return (
+                <form.AppField
+                  name="institutionId"
+                  validators={{
+                    onSubmit: ({ value, fieldApi }) => {
+                      const message = accountInstitutionViolation(
+                        fieldApi.form.getFieldValue('type'),
+                        value
+                      );
+                      return message ? { message } : undefined;
+                    },
+                  }}
+                >
+                  {(field) => (
+                    <Field
+                      data-invalid={
+                        field.state.meta.errors.length > 0 || undefined
+                      }
+                    >
+                      <FieldLabel htmlFor="account-institution">
+                        {required
+                          ? 'Financial institution'
+                          : 'Financial institution (optional)'}
+                      </FieldLabel>
+                      <Select
+                        value={
+                          field.state.value ?? OPTIONAL_INSTITUTION_SELECT_VALUE
+                        }
+                        onValueChange={(value) =>
+                          field.handleChange(
+                            value === OPTIONAL_INSTITUTION_SELECT_VALUE
+                              ? null
+                              : (value as FinancialInstitutionId)
+                          )
+                        }
+                      >
+                        <SelectTrigger id="account-institution">
+                          <SelectValue placeholder="Select a Financial institution">
+                            {(value: string) =>
+                              FINANCIAL_INSTITUTIONS.find(
+                                (institution) => institution.id === value
+                              )?.name ?? (required ? 'Select…' : 'None')
+                            }
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            {required ? null : (
+                              <SelectItem
+                                value={OPTIONAL_INSTITUTION_SELECT_VALUE}
+                              >
+                                None
+                              </SelectItem>
+                            )}
+                            {FINANCIAL_INSTITUTIONS.map(({ id, name }) => (
+                              <SelectItem key={id} value={id}>
+                                {name}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                      {field.state.meta.errors.length > 0 ? (
+                        <FieldError
+                          errors={
+                            field.state.meta.errors as { message?: string }[]
+                          }
+                        />
+                      ) : null}
+                    </Field>
+                  )}
+                </form.AppField>
+              );
+            }}
+          </form.Subscribe>
 
           {/* Field 5: lastFour */}
           <form.AppField name="lastFour">

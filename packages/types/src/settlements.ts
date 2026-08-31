@@ -25,7 +25,7 @@ export interface SettlementMemberRow {
  */
 export type SettlementAccountRowAccount = Pick<
   Account,
-  'id' | 'name' | 'type' | 'institution' | 'lastFour' | 'owners'
+  'id' | 'name' | 'type' | 'institutionId' | 'lastFour' | 'owners'
 > & {
   statementDueDay: number | null;
 };

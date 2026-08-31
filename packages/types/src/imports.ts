@@ -5,6 +5,10 @@ import type {
   ImportTransactionType,
   MerchantMatchType,
 } from './enums';
+import type {
+  FinancialInstitutionId,
+  InstitutionMismatchWarning,
+} from './financial-institutions';
 
 /** Review-field blockers from the shared import draft evaluator. */
 export type ImportRowReviewBlocker =
@@ -57,14 +61,14 @@ export interface ImportClassificationMerchantRule {
 export interface ImportTargetAccount {
   id: string;
   name: string;
-  institution: string | null;
+  institutionId: FinancialInstitutionId | null;
   lastFour: string | null;
 }
 
 export interface ImportDraftSummary {
   id: string;
   account: ImportTargetAccount;
-  source: string;
+  detectedInstitutionId: FinancialInstitutionId | null;
   status: ImportBatchStatus;
   fileName: string | null;
   rowCount: number;
@@ -75,6 +79,7 @@ export interface ImportDraftSummary {
   discardedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  institutionMismatch: InstitutionMismatchWarning | null;
 }
 
 /** Server-loaded facts for existing-expense refund link validation. */

@@ -58,7 +58,7 @@ const settlementCreditCardSelect = {
   accountId: accounts.id,
   accountName: accounts.name,
   accountType: accounts.type,
-  institution: accounts.institution,
+  institutionId: accounts.institutionId,
   lastFour: accounts.lastFour,
   statementDueDay: accounts.statementDueDay,
 };

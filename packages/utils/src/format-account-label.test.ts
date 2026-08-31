@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { formatAccountLabel } from './format-account-label';
+import {
+  formatAccountInstitutionMeta,
+  formatAccountLabel,
+} from './format-account-label';
 
 describe('formatAccountLabel', () => {
   it('joins name, institution, and masked last four', () => {
     expect(
       formatAccountLabel({
         name: 'Visa',
-        institution: 'TD',
+        institutionId: 'td',
         lastFour: '1234',
       })
     ).toBe('Visa · TD · ••1234');
@@ -16,7 +19,7 @@ describe('formatAccountLabel', () => {
     expect(
       formatAccountLabel({
         name: 'Visa',
-        institution: null,
+        institutionId: null,
         lastFour: null,
       })
     ).toBe('Visa');
@@ -26,9 +29,23 @@ describe('formatAccountLabel', () => {
     expect(
       formatAccountLabel({
         name: '  ',
-        institution: 'TD',
+        institutionId: 'td',
         lastFour: '1234',
       })
     ).toBe('Unnamed Account · TD · ••1234');
+  });
+});
+
+describe('formatAccountInstitutionMeta', () => {
+  it('joins institution name and masked last four', () => {
+    expect(
+      formatAccountInstitutionMeta({ institutionId: 'td', lastFour: '1234' })
+    ).toBe('TD •••• 1234');
+  });
+
+  it('returns null when both parts are absent', () => {
+    expect(
+      formatAccountInstitutionMeta({ institutionId: null, lastFour: null })
+    ).toBeNull();
   });
 });

@@ -15,6 +15,13 @@
       "when": 1787182746152,
       "tag": "0001_import_derive_on_read_facts",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788138420786,
+      "tag": "0002_financial_institution_catalog",
+      "breakpoints": true
     }
   ]
 }
