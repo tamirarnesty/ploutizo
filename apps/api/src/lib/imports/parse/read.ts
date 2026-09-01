@@ -47,17 +47,10 @@ export const readCsvUpload = (content: string): CsvUpload => {
   }
 
   const headers = records[headerIndex].cells.map((header) => header.trim());
-  const dataRecords = records
-    .slice(headerIndex + 1)
+  const recordsFromContent = records
+    .slice(headerIndex)
     .filter((record) => !isBlankRecord(record));
-
-  if (dataRecords.length === 0) {
-    throw new DomainError(
-      400,
-      'The CSV file has no data rows.',
-      'IMPORT_FILE_EMPTY'
-    );
-  }
+  const dataRecords = recordsFromContent.slice(1);
 
   if (dataRecords.length > MAX_IMPORT_ROWS) {
     throw new DomainError(
@@ -67,5 +60,5 @@ export const readCsvUpload = (content: string): CsvUpload => {
     );
   }
 
-  return { headers, dataRecords };
+  return { headers, dataRecords, records: recordsFromContent };
 };

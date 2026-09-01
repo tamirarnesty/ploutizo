@@ -1,7 +1,7 @@
 import {
   trimApostrophes,
   tryParseImportAmountToCents,
-  tryParseImportIsoDate,
+  tryParseImportDate,
 } from '@ploutizo/utils/import-coercion';
 import {
   isImportRowStructurallyInvalid,
@@ -23,7 +23,7 @@ const parseType = (value: string | null): ImportTransactionType | null =>
 
 const coerceRow = (row: SourceImportRow): ParsedImportRow => {
   const { hints, reviewRefundLinkHint, reviewNotes, ...source } = row;
-  const parsedDate = tryParseImportIsoDate(row.sourceDate);
+  const parsedDate = tryParseImportDate(row.sourceDate);
   const parsedAmount = tryParseImportAmountToCents(row.sourceAmount);
   const parsedType = parseType(row.sourceType);
   const parsedDescription = row.sourceDescription;

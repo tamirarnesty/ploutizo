@@ -14,6 +14,8 @@ export type CsvRecord = {
 export interface CsvUpload {
   headers: string[];
   dataRecords: CsvRecord[];
+  /** All non-blank records, including the first row (headers for headered files). */
+  records: CsvRecord[];
 }
 
 /** Adapter output: canonical source fields plus optional format-specific extras. */

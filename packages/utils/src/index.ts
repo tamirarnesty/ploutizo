@@ -80,6 +80,7 @@ export type { InstitutionMismatchWarning } from '@ploutizo/types';
 export { parseImportTags } from './parse-import-tags';
 export {
   tryParseImportAmountToCents,
+  tryParseImportDate,
   tryParseImportIsoDate,
   trimApostrophes,
 } from './import-coercion';

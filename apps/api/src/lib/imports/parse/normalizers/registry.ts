@@ -1,8 +1,16 @@
+import { amexImportNormalizer } from './amex';
+import { cibcImportNormalizer, tdImportNormalizer } from './headerless';
 import { internalImportNormalizer } from './internal';
+import { pcFinancialImportNormalizer } from './pc-financial';
 import type { CsvUpload, ImportNormalizer } from '../types';
 import { DomainError } from '@/lib/errors';
 
-const bankNormalizers: ImportNormalizer[] = [];
+const bankNormalizers: ImportNormalizer[] = [
+  amexImportNormalizer,
+  pcFinancialImportNormalizer,
+  tdImportNormalizer,
+  cibcImportNormalizer,
+];
 
 export const detectImportNormalizer = (upload: CsvUpload): ImportNormalizer => {
   const bankMatches = bankNormalizers.filter((normalizer) =>

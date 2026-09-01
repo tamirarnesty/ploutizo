@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '@ploutizo/db';
 import { NotFoundError } from '@/lib/errors';
@@ -276,6 +279,43 @@ describe('import service', () => {
     expect(listAccountMemberDetails).toHaveBeenCalledWith('org_1', [
       summaryRow.accountId,
     ]);
+  });
+
+  it('persists a recognized bank upload on the existing draft path', async () => {
+    const amexShort = readFileSync(
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        '../lib/imports/parse/fixtures/banks/amex/short.csv'
+      ),
+      'utf8'
+    );
+
+    await createImportDraft('org_1', {
+      accountId: summaryRow.accountId,
+      fileName: 'amex-short.csv',
+      content: amexShort,
+    });
+
+    expect(insertImportBatch).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        detectedInstitutionId: 'amex',
+        fileName: 'amex-short.csv',
+        rowCount: 4,
+      })
+    );
+    const insertedRows = vi.mocked(insertImportBatchRows).mock.calls[0][1];
+    expect(insertedRows).toHaveLength(4);
+    expect(insertedRows[0]).toMatchObject({
+      parsedType: 'expense',
+      parsedDate: '2026-05-02',
+      parsedAmount: 1234,
+    });
+    expect(insertedRows[2]).toMatchObject({
+      parsedType: 'refund',
+      reviewType: 'settlement',
+    });
+    expect(insertedRows[0]).not.toHaveProperty('classificationHint');
   });
 
   it('derives row status on GET without persisting recomputation', async () => {
