@@ -310,6 +310,9 @@ describe('AccountForm', () => {
       screen.getByTestId('account-statement-due-day-wrap')
     ).toBeInTheDocument();
     expect(dueDay).toHaveValue('15');
+    expect(screen.getByTestId('account-last-four-row').className).toContain(
+      'grid-cols-2'
+    );
   });
 
   it('persists statementDueDay on credit cards and null on other types', async () => {

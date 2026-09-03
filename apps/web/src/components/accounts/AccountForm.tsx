@@ -329,91 +329,105 @@ const AccountFormInner = ({
             }}
           </form.Subscribe>
 
-          {/* Field 4: lastFour */}
-          <form.AppField name="lastFour">
-            {(field) => (
-              <Field data-testid="account-last-four-row">
-                <FieldLabel htmlFor="account-last-four">
-                  Last 4 digits
-                </FieldLabel>
-                <Input
-                  id="account-last-four"
-                  name="account-last-four"
-                  autoComplete="off"
-                  value={field.state.value ?? ''}
-                  onChange={(e) =>
-                    field.handleChange(
-                      e.target.value.replace(/\D/g, '').slice(0, 4)
-                    )
-                  }
-                  onBlur={field.handleBlur}
-                  placeholder="1234"
-                  maxLength={4}
-                  className="font-mono"
-                />
-              </Field>
-            )}
-          </form.AppField>
-
-          {/* Field 5: statement due day — credit cards only */}
+          {/* Field 4: lastFour; credit cards split with statement due day */}
           <form.Subscribe
             selector={(s: { values: AccountFormValues }) => s.values.type}
           >
-            {(type) =>
-              type === 'credit_card' ? (
-                <form.AppField
-                  name="statementDueDay"
-                  validators={{
-                    onSubmit: ({ value }) => {
-                      const result = statementDueDaySchema.safeParse(
-                        value === '' ? null : value
-                      );
-                      if (!result.success) {
-                        return { message: result.error.issues[0]?.message };
-                      }
-                      return undefined;
-                    },
-                  }}
+            {(type) => {
+              const isCreditCard = type === 'credit_card';
+              return (
+                <div
+                  data-testid="account-last-four-row"
+                  className={
+                    isCreditCard
+                      ? 'grid grid-cols-2 gap-4 *:min-w-0'
+                      : undefined
+                  }
                 >
-                  {(field) => (
-                    <Field
-                      data-testid="account-statement-due-day-wrap"
-                      data-invalid={
-                        field.state.meta.errors.length > 0 || undefined
-                      }
-                    >
-                      <FieldLabel htmlFor="account-statement-due-day">
-                        Statement due day
-                      </FieldLabel>
-                      <Input
-                        id="account-statement-due-day"
-                        name="account-statement-due-day"
-                        autoComplete="off"
-                        inputMode="numeric"
-                        value={field.state.value ?? ''}
-                        onChange={(e) =>
-                          field.handleChange(
-                            e.target.value.replace(/\D/g, '').slice(0, 2)
-                          )
-                        }
-                        onBlur={field.handleBlur}
-                        placeholder="15"
-                        maxLength={2}
-                        className="font-mono"
-                        aria-invalid={field.state.meta.errors.length > 0}
-                      />
-                      {field.state.meta.errors.length > 0 ? (
-                        <FieldError
-                          errors={
-                            field.state.meta.errors as { message?: string }[]
+                  <form.AppField name="lastFour">
+                    {(field) => (
+                      <Field>
+                        <FieldLabel htmlFor="account-last-four">
+                          Last 4 digits
+                        </FieldLabel>
+                        <Input
+                          id="account-last-four"
+                          name="account-last-four"
+                          autoComplete="off"
+                          value={field.state.value ?? ''}
+                          onChange={(e) =>
+                            field.handleChange(
+                              e.target.value.replace(/\D/g, '').slice(0, 4)
+                            )
                           }
+                          onBlur={field.handleBlur}
+                          placeholder="1234"
+                          maxLength={4}
+                          className="font-mono"
                         />
-                      ) : null}
-                    </Field>
-                  )}
-                </form.AppField>
-              ) : null
-            }
+                      </Field>
+                    )}
+                  </form.AppField>
+                  {isCreditCard ? (
+                    <form.AppField
+                      name="statementDueDay"
+                      validators={{
+                        onSubmit: ({ value }) => {
+                          const result = statementDueDaySchema.safeParse(
+                            value === '' ? null : value
+                          );
+                          if (!result.success) {
+                            return {
+                              message: result.error.issues[0]?.message,
+                            };
+                          }
+                          return undefined;
+                        },
+                      }}
+                    >
+                      {(field) => (
+                        <Field
+                          data-testid="account-statement-due-day-wrap"
+                          data-invalid={
+                            field.state.meta.errors.length > 0 || undefined
+                          }
+                        >
+                          <FieldLabel htmlFor="account-statement-due-day">
+                            Statement due day
+                          </FieldLabel>
+                          <Input
+                            id="account-statement-due-day"
+                            name="account-statement-due-day"
+                            autoComplete="off"
+                            inputMode="numeric"
+                            value={field.state.value ?? ''}
+                            onChange={(e) =>
+                              field.handleChange(
+                                e.target.value.replace(/\D/g, '').slice(0, 2)
+                              )
+                            }
+                            onBlur={field.handleBlur}
+                            placeholder="15"
+                            maxLength={2}
+                            className="font-mono"
+                            aria-invalid={field.state.meta.errors.length > 0}
+                          />
+                          {field.state.meta.errors.length > 0 ? (
+                            <FieldError
+                              errors={
+                                field.state.meta.errors as {
+                                  message?: string;
+                                }[]
+                              }
+                            />
+                          ) : null}
+                        </Field>
+                      )}
+                    </form.AppField>
+                  ) : null}
+                </div>
+              );
+            }}
           </form.Subscribe>
 
           {/* Field 5: owners — always multi-select */}
