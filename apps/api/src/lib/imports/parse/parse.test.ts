@@ -46,13 +46,23 @@ describe('parseImportUpload auto-detection', () => {
   it('returns mapping_required for an unrecognized CSV', () => {
     const result = parseImportUpload('posted,total,memo\n2026-05-02,42,Coffee');
 
-    expect(result).toEqual({ kind: 'mapping_required' });
+    expect(result).toEqual({
+      kind: 'mapping_required',
+      candidateProfileIds: [],
+      columns: ['posted', 'total', 'memo'],
+      sampleRows: [['2026-05-02', '42', 'Coffee']],
+    });
   });
 
   it('returns mapping_required for an empty-but-readable CSV', () => {
     const result = parseImportUpload('a,b,c\n,,,');
 
-    expect(result).toEqual({ kind: 'mapping_required' });
+    expect(result).toEqual({
+      kind: 'mapping_required',
+      candidateProfileIds: [],
+      columns: ['a', 'b', 'c'],
+      sampleRows: [],
+    });
   });
 });
 
@@ -287,6 +297,105 @@ describe('parseImportUpload', () => {
           internalSelection
         ),
       'IMPORT_FILE_TOO_LARGE'
+    );
+  });
+
+  it('rejects headerless files over the import row limit', () => {
+    const rows = Array.from(
+      { length: MAX_IMPORT_ROWS + 1 },
+      () => '05/02/2026,Coffee,1.00,,100.00'
+    );
+    expectImportError(
+      () => parseImportUpload(rows.join('\n')),
+      'IMPORT_FILE_TOO_LARGE'
+    );
+  });
+});
+
+describe('parseImportUpload custom mapping', () => {
+  it('maps a headed file with a named signed-amount column', () => {
+    const parsed = requireParsed(
+      parseImportUpload('posted,total,memo\n2026-05-02,42.00,Coffee', {
+        kind: 'mapping',
+        mapping: {
+          dateColumn: 'posted',
+          dateFormat: 'YYYY-MM-DD',
+          descriptionColumn: 'memo',
+          amount: {
+            kind: 'signed',
+            column: 'total',
+            positiveIsExpense: true,
+          },
+        },
+      })
+    );
+
+    expect(parsed.contentProfileId).toBeNull();
+    expect(parsed.rowCount).toBe(1);
+    expect(parsed.rows[0]).toMatchObject({
+      parsedDate: '2026-05-02',
+      parsedAmount: 4200,
+      parsedType: 'expense',
+      parsedDescription: 'Coffee',
+    });
+  });
+
+  it('maps headerless rows without skipping the first record', () => {
+    const parsed = requireParsed(
+      parseImportUpload(
+        [
+          '05/02/2026,NEIGHBORHOOD GROCERY,12.34,,100.00',
+          '05/08/2026,MERCHANT CREDIT,,5.00,105.00',
+        ].join('\n'),
+        {
+          kind: 'mapping',
+          mapping: {
+            dateColumn: 'Column 1',
+            dateFormat: 'MM/DD/YYYY',
+            descriptionColumn: 'Column 2',
+            amount: {
+              kind: 'debit_credit',
+              debitColumn: 'Column 3',
+              creditColumn: 'Column 4',
+            },
+          },
+        }
+      )
+    );
+
+    expect(parsed.contentProfileId).toBeNull();
+    expect(parsed.rowCount).toBe(2);
+    expect(parsed.rows[0]).toMatchObject({
+      parsedDate: '2026-05-02',
+      parsedAmount: 1234,
+      parsedType: 'expense',
+      parsedDescription: 'NEIGHBORHOOD GROCERY',
+    });
+    expect(parsed.rows[1]).toMatchObject({
+      parsedDate: '2026-05-08',
+      parsedAmount: 500,
+      parsedType: 'refund',
+      parsedDescription: 'MERCHANT CREDIT',
+    });
+  });
+
+  it('rejects a mapping that names a missing column', () => {
+    expectImportError(
+      () =>
+        parseImportUpload('posted,total,memo\n2026-05-02,42,Coffee', {
+          kind: 'mapping',
+          mapping: {
+            dateColumn: 'posted',
+            dateFormat: 'YYYY-MM-DD',
+            descriptionColumn: 'memo',
+            amount: {
+              kind: 'signed',
+              column: 'amount',
+              positiveIsExpense: true,
+            },
+          },
+        }),
+      'IMPORT_INVALID_SELECTION'
     );
   });
 });

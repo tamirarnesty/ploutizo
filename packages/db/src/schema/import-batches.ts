@@ -8,6 +8,7 @@
 import { sql } from 'drizzle-orm';
 import {
   boolean,
+  check,
   date,
   foreignKey,
   index,
@@ -19,6 +20,8 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
+
+import type { ImportContentProfileId } from '@ploutizo/types';
 
 import { accounts } from './accounts';
 import { orgs } from './auth';
@@ -36,7 +39,9 @@ export const importBatches = pgTable(
       .references(() => orgs.id, { onDelete: 'cascade' }),
     accountId: uuid('account_id'),
     /** Content profile used to parse the upload; null for custom-mapped uploads. */
-    contentProfileId: text('content_profile_id'),
+    contentProfileId: text(
+      'content_profile_id'
+    ).$type<ImportContentProfileId | null>(),
     status: importBatchStatusEnum('status').notNull().default('draft'),
     fileName: text('file_name'),
     importedAt: timestamp('imported_at', { withTimezone: true }).notNull(),
@@ -62,6 +67,10 @@ export const importBatches = pgTable(
       columns: [t.accountId, t.orgId],
       foreignColumns: [accounts.id, accounts.orgId],
     }).onDelete('restrict'),
+    check(
+      'import_batches_content_profile_id_check',
+      sql`content_profile_id is null or content_profile_id in ('internal', 'amex', 'pc_financial', 'mdy_debit_credit_balance', 'iso_debit_credit_masked_card')`
+    ),
   ]
 );
 

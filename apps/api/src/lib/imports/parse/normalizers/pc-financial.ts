@@ -61,9 +61,14 @@ const mapRow = (
   };
 };
 
+const matchesPcFinancial = (
+  upload: Parameters<ImportContentProfile['matches']>[0]
+) => headersMatchInOrder(upload.headers, REQUIRED_HEADERS);
+
 export const pcFinancialContentProfile: ImportContentProfile = {
   profileId: 'pc_financial',
-  matches: (upload) => headersMatchInOrder(upload.headers, REQUIRED_HEADERS),
+  matches: matchesPcFinancial,
+  acceptsSelection: matchesPcFinancial,
   parseDate: tryParseImportMdyDate,
   normalize: (upload) => {
     const readCell = createNamedCellReader(upload.headers);

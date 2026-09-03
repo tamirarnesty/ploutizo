@@ -160,7 +160,8 @@ describe('bank CSV contract fixtures', () => {
     expect(mixed[1]?.[0]).toBe('2026-05-03');
     expect(unrecognized[0]?.length).toBe(3);
     expect(notes).toContain('mapping_required');
-    expect(notes).toContain('IMPORT_FILE_AMBIGUOUS');
+    expect(notes).toContain('candidateProfileIds');
     expect(notes).toContain('IMPORT_INVALID_SELECTION');
+    expect(notes).not.toContain('IMPORT_FILE_AMBIGUOUS');
   });
 });

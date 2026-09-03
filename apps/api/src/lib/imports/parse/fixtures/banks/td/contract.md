@@ -1,6 +1,6 @@
-# TD CSV contract
+# MDY debit/credit/balance CSV contract
 
-Format id: `td`. Financial institution: `td`.
+Content profile: `mdy_debit_credit_balance`. This is a generic positional layout, not a bank. Historically observed on TD credit-card exports; the same layout may appear from any issuer.
 
 Authority: [Spec: Approved Bank Import Formats and Financial Institutions](https://linear.app/ploutizo/document/spec-approved-bank-import-formats-and-financial-institutions-019cae9f9dc4).
 
@@ -16,9 +16,11 @@ Headerless export. Strict positional signature, five columns:
 | 3     | credit           | refund amount when populated  |
 | 4     | running balance  | provenance only               |
 
-A shared headerless mapper with CIBC is allowed. Return `td` only when this signature is established: five columns and `MM/DD/YYYY` dates on the rows that have a parseable date. A minority of unparseable dates does not make the file unrecognized; those rows are Invalid import rows. Do not guess an issuer from a generic five-column file. Auto-detection does not apply — the member must select the generic `mdy_debit_credit_balance` profile.
+A shared headerless mapper with `iso_debit_credit_masked_card` is allowed. Detection (`matches`) requires every data row to keep this signature: five columns, `MM/DD/YYYY` (not ISO) in column 0, a monetary amount in column 5, and at least one row with exclusive debit or credit. Auto-detection does not apply — the member must select this profile (or a custom mapping) before draft creation. Files that look like this layout are suggested as candidates on `mapping_required`.
 
-The current CSV reader treats the first nonblank row as headers. PLO-33 must give headerless normalizers raw positional records.
+After the member confirms this profile (`acceptsSelection`), a minority of signature-breaking rows are Invalid import rows, not `IMPORT_INVALID_SELECTION`. Confirmation still requires five columns and at least one row whose date is `MM/DD/YYYY` and not ISO. Confirming this profile on an ISO-only file is `IMPORT_INVALID_SELECTION`.
+
+Do not guess an issuer from a generic five-column file.
 
 ## Dates
 
@@ -38,9 +40,7 @@ No transaction-level external id. Do not use running balance as an identifier.
 
 ## Failures
 
-Malformed dates or debit/credit combinations in a recognized TD file are Invalid import rows. Unreadable input, unrecognized or mixed headerless structure, or no importable rows are Import file failures.
-
-When a headerless file cannot reliably be identified as TD, leave `detectedInstitutionId` null so no institution mismatch warning is shown.
+Malformed dates or debit/credit combinations after confirmation are Invalid import rows. Unreadable input, mixed headerless structure that does not accept this profile, or no importable rows are Import file failures. Without a selection, a file that fails the strict detection signature returns `mapping_required` rather than auto-importing.
 
 ## Fixtures
 

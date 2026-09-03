@@ -6,7 +6,10 @@ import type {
   MerchantMatchType,
 } from './enums';
 import type { FinancialInstitutionId } from './financial-institutions';
-import type { ImportContentProfileId } from './import-formats';
+import type {
+  ImportContentProfileId,
+  ImportUploadMappingRequired,
+} from './import-formats';
 
 /** Review-field blockers from the shared import draft evaluator. */
 export type ImportRowReviewBlocker =
@@ -148,7 +151,7 @@ export type CreateImportDraftResponse =
       data: ImportDraft;
       meta: { reusedExisting: boolean };
     }
-  | { kind: 'mapping_required' };
+  | ImportUploadMappingRequired;
 
 export interface UpdateImportDraftRowResult {
   row: ImportDraftPersistedRow;

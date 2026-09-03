@@ -1,6 +1,6 @@
 # Amex CSV contract
 
-Format id: `amex`. Financial institution: `amex`.
+Content profile: `amex`. Detection is from file contents, not the selected card's Financial institution.
 
 Authority: [Spec: Approved Bank Import Formats and Financial Institutions](https://linear.app/ploutizo/document/spec-approved-bank-import-formats-and-financial-institutions-019cae9f9dc4).
 
@@ -38,7 +38,7 @@ Bill payment rows use the refund baseline. Shared exact phrase vault matching (a
 
 Malformed dates or amounts in a recognized file are Invalid import rows. Unreadable input, unrecognized structure, or no importable rows are Import file failures.
 
-Institution mismatch is a non-blocking warning only when this format is detected as `amex` and the selected card's Financial institution is known and different.
+CSV contents never identify a bank or source account. Institution mismatch is not part of import.
 
 ## Fixtures
 

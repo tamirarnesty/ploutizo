@@ -1,7 +1,3 @@
-export const INTERNAL_IMPORT_FORMAT = 'internal' as const;
-
-export type ImportFormatId = typeof INTERNAL_IMPORT_FORMAT;
-
 // ---------------------------------------------------------------------------
 // Content profiles
 // ---------------------------------------------------------------------------
@@ -30,13 +26,6 @@ export const GENERIC_POSITIONAL_IMPORT_PROFILE_IDS = [
 
 export type GenericPositionalImportProfileId =
   (typeof GENERIC_POSITIONAL_IMPORT_PROFILE_IDS)[number];
-
-/** Profiles offered when auto-detection cannot pick a single match. */
-export const CHOOSABLE_IMPORT_CONTENT_PROFILE_IDS =
-  IMPORT_CONTENT_PROFILE_IDS.filter(
-    (profileId): profileId is Exclude<ImportContentProfileId, 'internal'> =>
-      profileId !== 'internal'
-  );
 
 export const IMPORT_CONTENT_PROFILE_LABELS: Record<
   ImportContentProfileId,
@@ -67,7 +56,7 @@ export type ImportCustomMappingDateFormat =
 // ---------------------------------------------------------------------------
 
 export type ImportAmountSemantics =
-  | { kind: 'signed'; positiveIsExpense: boolean }
+  | { kind: 'signed'; column: string; positiveIsExpense: boolean }
   | { kind: 'debit_credit'; debitColumn: string; creditColumn: string };
 
 export interface ImportCustomMapping {
@@ -82,7 +71,17 @@ export type ImportContentSelection =
   | { kind: 'profile'; profileId: ImportContentProfileId }
   | { kind: 'mapping'; mapping: ImportCustomMapping };
 
-export type ImportUploadMappingRequired = { kind: 'mapping_required' };
+export type ImportUploadMappingRequired = {
+  kind: 'mapping_required';
+  /** Known profiles that match this file; empty when only custom mapping applies. */
+  candidateProfileIds: ImportContentProfileId[];
+  /** Column lookup keys: header names, or `Column N` for headerless files. */
+  columns: string[];
+  /** First data rows, for the mapping preview. */
+  sampleRows: string[][];
+};
+
+export const MAPPING_REQUIRED_SAMPLE_ROW_COUNT = 3;
 
 export const MAX_IMPORT_BYTES = 512 * 1024;
 

@@ -4,6 +4,7 @@ import { parseImportTags } from '@ploutizo/utils';
 import { buildRawData, normalizeHeader, optionalTrim } from './cells';
 import type {
   CsvRecord,
+  CsvUpload,
   ImportContentProfile,
   SourceImportRow,
 } from '../types';
@@ -86,9 +87,13 @@ const mapRow = (
   reviewNotes: readCell(record, headerMap, 'notes'),
 });
 
+const matchesInternal = (upload: CsvUpload) =>
+  hasRequiredHeaders(buildHeaderMap(upload.headers));
+
 export const internalContentProfile: ImportContentProfile = {
   profileId: 'internal',
-  matches: (upload) => hasRequiredHeaders(buildHeaderMap(upload.headers)),
+  matches: matchesInternal,
+  acceptsSelection: matchesInternal,
   parseDate: tryParseImportIsoDate,
   normalize: (upload) => {
     const headerMap = buildHeaderMap(upload.headers);

@@ -77,6 +77,20 @@ const matchesHeaderless = (
   );
 };
 
+const acceptsHeaderlessSelection = (
+  upload: CsvUpload,
+  signature: HeaderlessFormatSignature
+) => {
+  if (!isFiveColumnHeaderless(upload)) return false;
+
+  return upload.records.some((record) => {
+    const date = firstCell(record);
+    return (
+      signature.looksLikeOwnDate(date) && !signature.looksLikeOtherDate(date)
+    );
+  });
+};
+
 const mapHeaderlessRow = (record: CsvRecord): SourceImportRow => {
   const { sourceAmount, sourceType } = readDebitCreditAmount(
     optionalTrim(record.cells[2]),
@@ -106,6 +120,7 @@ const createHeaderlessProfile = (
 ): ImportContentProfile => ({
   profileId,
   matches: (upload) => matchesHeaderless(upload, signature),
+  acceptsSelection: (upload) => acceptsHeaderlessSelection(upload, signature),
   parseDate: signature.parseDate,
   normalize: (upload) => upload.records.map(mapHeaderlessRow),
 });

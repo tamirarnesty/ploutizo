@@ -16,9 +16,13 @@ const REQUIRED_HEADERS = [
   'amount',
 ] as const;
 
+const matchesAmex = (upload: Parameters<ImportContentProfile['matches']>[0]) =>
+  headersMatchInOrder(upload.headers, REQUIRED_HEADERS);
+
 export const amexContentProfile: ImportContentProfile = {
   profileId: 'amex',
-  matches: (upload) => headersMatchInOrder(upload.headers, REQUIRED_HEADERS),
+  matches: matchesAmex,
+  acceptsSelection: matchesAmex,
   parseDate: tryParseImportDayMonthYearDate,
   normalize: (upload) => {
     const readCell = createNamedCellReader(upload.headers);

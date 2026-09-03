@@ -1,6 +1,6 @@
 # PC Financial CSV contract
 
-Format id: `pc_financial`. Financial institution: `pc_financial`.
+Content profile: `pc_financial`. Detection is from file contents, not the selected card's Financial institution.
 
 Authority: [Spec: Approved Bank Import Formats and Financial Institutions](https://linear.app/ploutizo/document/spec-approved-bank-import-formats-and-financial-institutions-019cae9f9dc4).
 
@@ -20,12 +20,12 @@ Parse `Date` as `MM/DD/YYYY`. Emit date-only `YYYY-MM-DD`. `Time` is source prov
 
 `Type` is the authoritative direction signal, not the signed amount:
 
-| `Type` | Baseline | Extra |
-| --- | --- | --- |
-| `PURCHASE` | expense | |
-| `INTEREST` | expense | |
-| `PAYMENT` | refund | `classificationHint: 'bill_payment'` |
-| any other value | Invalid import row | keep the raw type |
+| `Type`          | Baseline           | Extra                                |
+| --------------- | ------------------ | ------------------------------------ |
+| `PURCHASE`      | expense            |                                      |
+| `INTEREST`      | expense            |                                      |
+| `PAYMENT`       | refund             | `classificationHint: 'bill_payment'` |
+| any other value | Invalid import row | keep the raw type                    |
 
 Observed purchases and interest are negative; observed payments are positive. Emit a positive absolute amount. Never emit `parsedType: settlement`.
 
@@ -39,7 +39,7 @@ No transaction-level external id. `Card Holder Name` is cardholder metadata, not
 
 Unsupported `Type` values, malformed dates, and malformed amounts in a recognized file are Invalid import rows. Unreadable input, unrecognized structure, or no importable rows are Import file failures.
 
-Institution mismatch is a non-blocking warning only when this format is detected as `pc_financial` and the selected card's Financial institution is known and different.
+CSV contents never identify a bank or source account. Institution mismatch is not part of import.
 
 ## Fixtures
 

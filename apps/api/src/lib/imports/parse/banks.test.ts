@@ -40,6 +40,16 @@ const requireParsed = (result: ParseImportUploadResult): ParsedImport => {
   return result;
 };
 
+const expectMappingRequired = (
+  result: ParseImportUploadResult,
+  candidateProfileIds: string[]
+) => {
+  expect(result).toMatchObject({
+    kind: 'mapping_required',
+    candidateProfileIds,
+  });
+};
+
 describe('parseImportUpload auto-detection — Amex', () => {
   it('auto-detects the Amex profile without institution inference', () => {
     const result = requireParsed(
@@ -213,7 +223,7 @@ describe('parseImportUpload auto-detection — mdy_debit_credit_balance (generic
   it('returns mapping_required without explicit selection', () => {
     const result = parseImportUpload(readFixture('td', 'statement.csv'));
 
-    expect(result).toEqual({ kind: 'mapping_required' });
+    expectMappingRequired(result, ['mdy_debit_credit_balance']);
   });
 });
 
@@ -283,7 +293,7 @@ describe('parseImportUpload auto-detection — iso_debit_credit_masked_card (gen
   it('returns mapping_required without explicit selection', () => {
     const result = parseImportUpload(readFixture('cibc', 'statement.csv'));
 
-    expect(result).toEqual({ kind: 'mapping_required' });
+    expectMappingRequired(result, ['iso_debit_credit_masked_card']);
   });
 });
 
@@ -345,7 +355,7 @@ describe('parseImportUpload — mapping_required', () => {
       readFixture('shared', 'headerless-unrecognized.csv')
     );
 
-    expect(result).toEqual({ kind: 'mapping_required' });
+    expectMappingRequired(result, []);
   });
 
   it('returns mapping_required for a generic five-column MDY file without monetary balance', () => {
@@ -356,7 +366,7 @@ describe('parseImportUpload — mapping_required', () => {
       ].join('\n')
     );
 
-    expect(result).toEqual({ kind: 'mapping_required' });
+    expectMappingRequired(result, []);
   });
 
   it('returns mapping_required for ops-shaped rows with numeric column 5', () => {
@@ -367,7 +377,7 @@ describe('parseImportUpload — mapping_required', () => {
       ].join('\n')
     );
 
-    expect(result).toEqual({ kind: 'mapping_required' });
+    expectMappingRequired(result, ['mdy_debit_credit_balance']);
   });
 
   it('returns mapping_required for MDY-shaped rows without monetary running balances', () => {
@@ -375,7 +385,7 @@ describe('parseImportUpload — mapping_required', () => {
       '05/02/2026,NEIGHBORHOOD GROCERY,12.34,,not a balance'
     );
 
-    expect(result).toEqual({ kind: 'mapping_required' });
+    expectMappingRequired(result, []);
   });
 
   it('returns mapping_required for CIBC-shaped rows with wrong masked card pattern', () => {
@@ -383,7 +393,7 @@ describe('parseImportUpload — mapping_required', () => {
       '2026-05-02,NEIGHBORHOOD GROCERY,12.34,,4505*******1234'
     );
 
-    expect(result).toEqual({ kind: 'mapping_required' });
+    expectMappingRequired(result, []);
   });
 
   it('does not recognize mixed headerless dates as a known profile', () => {
@@ -391,7 +401,52 @@ describe('parseImportUpload — mapping_required', () => {
       readFixture('shared', 'headerless-mixed-dates.csv')
     );
 
-    expect(result).toEqual({ kind: 'mapping_required' });
+    expectMappingRequired(result, []);
+  });
+
+  it('does not auto-detect a generic positional file when some rows fail the signature', () => {
+    const result = parseImportUpload(
+      [
+        '05/02/2026,NEIGHBORHOOD GROCERY,12.34,,100.00',
+        'not-a-date,BROKEN SIGNATURE,12.34,,100.00',
+      ].join('\n')
+    );
+
+    expectMappingRequired(result, []);
+  });
+});
+
+describe('parseImportUpload — confirmed generic positional selection', () => {
+  it('parses a confirmed generic positional file when some rows fail the detection signature', () => {
+    const parsed = requireParsed(
+      parseImportUpload(
+        [
+          '05/02/2026,NEIGHBORHOOD GROCERY,12.34,,100.00',
+          'not-a-date,BROKEN SIGNATURE,12.34,,100.00',
+        ].join('\n'),
+        { kind: 'profile', profileId: 'mdy_debit_credit_balance' }
+      )
+    );
+
+    expect(parsed.contentProfileId).toBe('mdy_debit_credit_balance');
+    expect(parsed.rowCount).toBe(2);
+    expect(parsed.rows[0]?.parsedDate).toBe('2026-05-02');
+    expect(parsed.rows[1]?.parsedDate).toBeNull();
+    expect(parsed.rows[1]?.parsedDescription).toBe('BROKEN SIGNATURE');
+  });
+
+  it('parses mixed-date headerless rows when MDY is explicitly selected', () => {
+    const parsed = requireParsed(
+      parseImportUpload(readFixture('shared', 'headerless-mixed-dates.csv'), {
+        kind: 'profile',
+        profileId: 'mdy_debit_credit_balance',
+      })
+    );
+
+    expect(parsed.contentProfileId).toBe('mdy_debit_credit_balance');
+    expect(parsed.rows[0]?.parsedDate).toBe('2026-05-02');
+    expect(parsed.rows[1]?.parsedDate).toBeNull();
+    expect(parsed.rows[1]?.parsedDescription).toBe('CORNER PHARMACY');
   });
 });
 
@@ -406,6 +461,17 @@ describe('parseImportUpload — invalid selection', () => {
             profileId: 'amex',
           }
         ),
+      'IMPORT_INVALID_SELECTION'
+    );
+  });
+
+  it('rejects confirming MDY on an ISO-only file', () => {
+    expectImportError(
+      () =>
+        parseImportUpload(readFixture('cibc', 'statement.csv'), {
+          kind: 'profile',
+          profileId: 'mdy_debit_credit_balance',
+        }),
       'IMPORT_INVALID_SELECTION'
     );
   });

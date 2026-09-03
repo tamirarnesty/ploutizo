@@ -14,11 +14,7 @@ import {
   readDebitCreditAmount,
   readSignedAmount,
 } from './cells';
-import type {
-  CsvUpload,
-  ImportContentProfile,
-  SourceImportRow,
-} from '../types';
+import type { CsvUpload, SourceImportRow } from '../types';
 import { DomainError } from '@/lib/errors';
 
 const DATE_PARSERS: Record<
@@ -49,7 +45,7 @@ const buildAmountReader = (
   amount: ImportAmountSemantics
 ) => {
   if (amount.kind === 'signed') {
-    const idx = requireColumnIndex(headers, 'amount');
+    const idx = requireColumnIndex(headers, amount.column);
     const { positiveIsExpense } = amount;
     return (cells: string[]) =>
       readSignedAmount(optionalTrim(cells[idx]), positiveIsExpense);
@@ -64,14 +60,19 @@ const buildAmountReader = (
     );
 };
 
+export type CustomMappingNormalizer = {
+  parseDate: (value: string | null) => string | null;
+  normalize: (upload: CsvUpload) => SourceImportRow[];
+};
+
 /**
- * Build a one-shot `ImportContentProfile` from a member-supplied custom mapping.
+ * Build a one-shot normalizer from a member-supplied custom mapping.
  * Validates that all required columns exist in the file; throws on failure.
  */
-export const buildCustomMappingProfile = (
+export const buildCustomMappingNormalizer = (
   upload: CsvUpload,
   mapping: ImportCustomMapping
-): ImportContentProfile => {
+): CustomMappingNormalizer => {
   const headers = upload.headers;
   const dateIdx = requireColumnIndex(headers, mapping.dateColumn);
   const descIdx = requireColumnIndex(headers, mapping.descriptionColumn);
@@ -83,8 +84,12 @@ export const buildCustomMappingProfile = (
   const readAmount = buildAmountReader(headers, mapping.amount);
   const parseDate = DATE_PARSERS[mapping.dateFormat];
 
-  const normalize = (csvUpload: CsvUpload): SourceImportRow[] =>
-    csvUpload.records.slice(1).map((record) => {
+  const normalize = (csvUpload: CsvUpload): SourceImportRow[] => {
+    const dataRecords = csvUpload.hasHeaderRow
+      ? csvUpload.records.slice(1)
+      : csvUpload.records;
+
+    return dataRecords.map((record) => {
       const { sourceAmount, sourceType } = readAmount(record.cells);
       return {
         rowNumber: record.rowNumber,
@@ -96,11 +101,7 @@ export const buildCustomMappingProfile = (
         sourceType,
       };
     });
-
-  return {
-    profileId: 'internal', // custom mappings produce the generic internal contract
-    matches: () => true, // always matches when explicitly selected
-    parseDate,
-    normalize,
   };
+
+  return { parseDate, normalize };
 };

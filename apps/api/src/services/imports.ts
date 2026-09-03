@@ -12,6 +12,7 @@ import {
 import { validateTransactionAccountPolicy } from '@ploutizo/utils/transaction-policy';
 import type {
   CreateImportDraftResponse,
+  ImportContentProfileId,
   ImportDraft,
   ImportDraftPersistedRow,
   ImportDraftSummary,
@@ -65,6 +66,14 @@ import {
   withLiveImportReviewCounts,
 } from '@/services/import-draft-view';
 
+const toContentProfileId = (
+  contentProfileId: string | null
+): ImportContentProfileId | null => {
+  if (contentProfileId == null) return null;
+  if (isImportContentProfileId(contentProfileId)) return contentProfileId;
+  throw new DomainError(500, 'Import draft has an unknown content profile.');
+};
+
 const toImportDraftSummary = (
   row: ImportDraftSummaryRow
 ): ImportDraftSummary => {
@@ -87,9 +96,7 @@ const toImportDraftSummary = (
   const accountInstitution = toFinancialInstitutionId(accountInstitutionId);
   return {
     ...summary,
-    contentProfileId: isImportContentProfileId(contentProfileId)
-      ? contentProfileId
-      : null,
+    contentProfileId: toContentProfileId(contentProfileId),
     // History omits live review counts until PLO-56 records completed results.
     validRowCount: 0,
     invalidRowCount: 0,
@@ -187,7 +194,7 @@ export const createImportDraft = async (
 
   const parsed = parseImportUpload(input.content, input.selection);
   if (parsed.kind === 'mapping_required') {
-    return { kind: 'mapping_required' };
+    return parsed;
   }
   const [orgMembers, orgCategories, orgTags, merchantRules, accountOwners] =
     await Promise.all([

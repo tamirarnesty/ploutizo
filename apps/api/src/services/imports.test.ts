@@ -350,7 +350,7 @@ describe('import service', () => {
     expect(draft.contentProfileId).toBe('amex');
   });
 
-  it('returns null contentProfileId for custom-mapped or unknown profile uploads', async () => {
+  it('returns null contentProfileId for custom-mapped uploads', async () => {
     vi.mocked(fetchDraftSummaryById).mockResolvedValue({
       ...summaryRow,
       contentProfileId: null,
@@ -359,6 +359,18 @@ describe('import service', () => {
     const draft = await getImportDraft('org_1', summaryRow.id);
 
     expect(draft.contentProfileId).toBeNull();
+  });
+
+  it('fails closed when a persisted content profile id is unknown', async () => {
+    vi.mocked(fetchDraftSummaryById).mockResolvedValue({
+      ...summaryRow,
+      contentProfileId: 'not-a-profile' as never,
+    });
+
+    await expect(getImportDraft('org_1', summaryRow.id)).rejects.toMatchObject({
+      statusCode: 500,
+      message: 'Import draft has an unknown content profile.',
+    });
   });
 
   it('derives hub draft counts from current row facts', async () => {
@@ -399,7 +411,12 @@ describe('import service', () => {
       content: 'posted,total,memo\n2026-05-02,42,Coffee',
     });
 
-    expect(result).toEqual({ kind: 'mapping_required' });
+    expect(result).toEqual({
+      kind: 'mapping_required',
+      candidateProfileIds: [],
+      columns: ['posted', 'total', 'memo'],
+      sampleRows: [['2026-05-02', '42', 'Coffee']],
+    });
     expect(insertImportBatch).not.toHaveBeenCalled();
   });
 
@@ -413,7 +430,11 @@ describe('import service', () => {
       ].join('\n'),
     });
 
-    expect(result).toEqual({ kind: 'mapping_required' });
+    expect(result).toMatchObject({
+      kind: 'mapping_required',
+      candidateProfileIds: ['mdy_debit_credit_balance'],
+      columns: ['Column 1', 'Column 2', 'Column 3', 'Column 4', 'Column 5'],
+    });
     expect(insertImportBatch).not.toHaveBeenCalled();
   });
 

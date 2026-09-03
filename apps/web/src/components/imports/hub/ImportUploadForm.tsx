@@ -20,11 +20,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
-import {
-  CHOOSABLE_IMPORT_CONTENT_PROFILE_IDS,
-  IMPORT_CONTENT_PROFILE_LABELS,
-  MAX_IMPORT_BYTES,
-} from '@ploutizo/types';
+import { MAX_IMPORT_BYTES } from '@ploutizo/types';
 import { formatAccountLabel } from '@ploutizo/utils';
 import type {
   ImportContentProfileId,
@@ -35,6 +31,7 @@ import type {
 import { useCreateImportDraft } from '@/lib/data-access/imports';
 import { readCsvFile } from '@/lib/imports/readCsvFile';
 import { getApiErrorMessage } from '@/lib/queryClient';
+import { ImportFormatChoiceForm } from './ImportFormatChoiceForm';
 import { ImportHelpActions } from './ImportHelpActions';
 
 const CSV_ACCEPT = '.csv,text/csv';
@@ -53,8 +50,10 @@ type UploadStep =
       content: string;
       fileName: string;
       accountId: string;
-    }
-  | { kind: 'creating' };
+      candidateProfileIds: ImportContentProfileId[];
+      columns: string[];
+      sampleRows: string[][];
+    };
 
 export const ImportUploadForm = ({
   targets,
@@ -66,12 +65,9 @@ export const ImportUploadForm = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [step, setStep] = useState<UploadStep>({ kind: 'idle' });
-  const [selectedProfileId, setSelectedProfileId] = useState<
-    ImportContentProfileId | ''
-  >(CHOOSABLE_IMPORT_CONTENT_PROFILE_IDS[0] ?? '');
+  const [submitting, setSubmitting] = useState(false);
 
   const createDraft = useCreateImportDraft();
-  const isLoading = step.kind === 'creating';
 
   const firstTargetId = targets[0]?.id ?? '';
   const targetIds = useMemo(
@@ -98,19 +94,22 @@ export const ImportUploadForm = ({
     content: string,
     selection?: ImportContentSelection
   ) => {
-    setStep({ kind: 'creating' });
+    setSubmitting(true);
     createDraft.mutate(
       { accountId, fileName, content, selection },
       {
         onSuccess: (response) => {
+          setSubmitting(false);
           if (response.kind === 'mapping_required') {
             setStep({
               kind: 'choose_format',
               content,
               fileName,
               accountId,
+              candidateProfileIds: response.candidateProfileIds,
+              columns: response.columns,
+              sampleRows: response.sampleRows,
             });
-            setSelectedProfileId(CHOOSABLE_IMPORT_CONTENT_PROFILE_IDS[0] ?? '');
             return;
           }
           setSelectedFile(null);
@@ -122,7 +121,7 @@ export const ImportUploadForm = ({
           setUploadError(
             getApiErrorMessage(error, "Couldn't process that CSV.")
           );
-          setStep({ kind: 'idle' });
+          setSubmitting(false);
         },
       }
     );
@@ -152,22 +151,8 @@ export const ImportUploadForm = ({
     },
   });
 
-  const handleConfirmFormat = () => {
-    if (step.kind !== 'choose_format') return;
-    if (!selectedProfileId) {
-      setUploadError('Select a format to continue.');
-      return;
-    }
-    setUploadError(null);
-    submitDraft(step.accountId, step.fileName, step.content, {
-      kind: 'profile',
-      profileId: selectedProfileId,
-    });
-  };
-
   const handleCancelFormatChoice = () => {
     setStep({ kind: 'idle' });
-    setSelectedProfileId(CHOOSABLE_IMPORT_CONTENT_PROFILE_IDS[0] ?? '');
     setUploadError(null);
   };
 
@@ -180,66 +165,17 @@ export const ImportUploadForm = ({
 
   if (step.kind === 'choose_format') {
     return (
-      <div className="space-y-4 rounded-md border border-border p-4">
-        <div>
-          <Text as="h3" variant="h3">
-            Choose import format
-          </Text>
-          <Text variant="body-sm" className="mt-1 text-muted-foreground">
-            This file wasn't automatically recognized. Choose the format that
-            matches your CSV.
-          </Text>
-        </div>
-
-        <Field>
-          <FieldLabel htmlFor="import-format">Format</FieldLabel>
-          <Select
-            value={selectedProfileId}
-            onValueChange={(value) => {
-              if (value) setSelectedProfileId(value);
-            }}
-          >
-            <SelectTrigger id="import-format">
-              <SelectValue placeholder="Select a format" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {CHOOSABLE_IMPORT_CONTENT_PROFILE_IDS.map((profileId) => (
-                  <SelectItem key={profileId} value={profileId}>
-                    {IMPORT_CONTENT_PROFILE_LABELS[profileId]}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </Field>
-
-        {uploadError ? (
-          <Text variant="body-sm" className="text-destructive">
-            {uploadError}
-          </Text>
-        ) : null}
-
-        <div className="flex gap-2">
-          <LoadingButton
-            type="button"
-            icon={<Upload />}
-            loading={isLoading}
-            disabled={isLoading || !selectedProfileId}
-            onClick={handleConfirmFormat}
-          >
-            Upload
-          </LoadingButton>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={isLoading}
-            onClick={handleCancelFormatChoice}
-          >
-            Cancel
-          </Button>
-        </div>
-      </div>
+      <ImportFormatChoiceForm
+        candidateProfileIds={step.candidateProfileIds}
+        columns={step.columns}
+        sampleRows={step.sampleRows}
+        submitting={submitting}
+        error={uploadError}
+        onSubmit={(selection) =>
+          submitDraft(step.accountId, step.fileName, step.content, selection)
+        }
+        onCancel={handleCancelFormatChoice}
+      />
     );
   }
 
@@ -264,7 +200,9 @@ export const ImportUploadForm = ({
               >
                 <SelectTrigger
                   id="import-account"
-                  disabled={isLoading || targetsLoading || targets.length === 0}
+                  disabled={
+                    submitting || targetsLoading || targets.length === 0
+                  }
                 >
                   <SelectValue
                     placeholder={
@@ -308,7 +246,7 @@ export const ImportUploadForm = ({
                   accept={CSV_ACCEPT}
                   maxSize={MAX_IMPORT_BYTES}
                   disabled={
-                    isLoading ||
+                    submitting ||
                     targetsLoading ||
                     activeDraftsLoading ||
                     activeDraft !== undefined
@@ -330,7 +268,7 @@ export const ImportUploadForm = ({
                           <Button
                             type="button"
                             variant="outline"
-                            disabled={isLoading}
+                            disabled={submitting}
                             onClick={() => goToDraftReview(activeDraft.id)}
                           />
                         }
@@ -347,9 +285,9 @@ export const ImportUploadForm = ({
                     <LoadingButton
                       type="submit"
                       icon={<Upload />}
-                      loading={isLoading}
+                      loading={submitting}
                       disabled={
-                        isLoading ||
+                        submitting ||
                         targetsLoading ||
                         activeDraftsLoading ||
                         !accountId

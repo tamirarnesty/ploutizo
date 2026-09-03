@@ -57,7 +57,7 @@ const ALL_PROFILES = [...NAMED_PROFILES, internalContentProfile];
 
 /**
  * Return the profile for a member-confirmed profile ID.
- * Throws if the profile does not match the actual upload.
+ * Throws if the file cannot be parsed as that layout.
  */
 export const resolveSelectedProfile = (
   upload: CsvUpload,
@@ -71,7 +71,7 @@ export const resolveSelectedProfile = (
       'IMPORT_INVALID_SELECTION'
     );
   }
-  if (!profile.matches(upload)) {
+  if (!profile.acceptsSelection(upload)) {
     throw new DomainError(
       400,
       'The selected format does not match this file.',

@@ -73,6 +73,11 @@ export const looksLikeImportIsoDate = (value: string | null): boolean =>
 export const looksLikeImportMdyDate = (value: string | null): boolean =>
   value != null && MDY_DATE_PATTERN.test(value.trim());
 
+/** True when the token has `D MMM YYYY` shape, even if the calendar date is invalid. */
+export const looksLikeImportDayMonthYearDate = (
+  value: string | null
+): boolean => value != null && DAY_MONTH_YEAR_PATTERN.test(value.trim());
+
 const IMPORT_AMOUNT_TOKEN = /^\$?\s*(\d+|\d{1,3}(,\d{3})+)(\.\d{1,2})?$/;
 
 /** True when the value is a strict unsigned import amount token, including zero. */

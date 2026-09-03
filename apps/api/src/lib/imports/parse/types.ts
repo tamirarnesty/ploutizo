@@ -12,15 +12,14 @@ export type CsvRecord = {
 
 export interface CsvUpload {
   /**
-   * The first non-blank row's cells, lowercased and trimmed.
-   * For headed layouts (Amex, PC Financial, internal) these are the column
-   * names; normalizers skip `records[0]` with `.slice(1)`.
-   * For headerless layouts (positional profiles) `records` contains only data
-   * rows and `headers` reflects the first data row — positional normalizers
-   * never consult `headers`.
+   * Column lookup keys. Headed files use the first row's trimmed cells;
+   * headerless files use `Column N`. Headed normalizers skip `records[0]`.
+   * Headerless normalizers treat every record as data and ignore `headers`.
    */
   headers: string[];
-  /** All non-blank rows including the first row. */
+  /** True when the first non-blank row is column names, not a data row. */
+  hasHeaderRow: boolean;
+  /** All non-blank rows, including a header row when `hasHeaderRow` is true. */
   records: CsvRecord[];
 }
 
@@ -76,7 +75,14 @@ export type ParseImportUploadResult =
  */
 export interface ImportContentProfile {
   profileId: ImportContentProfileId;
+  /** Strict detection: used to auto-detect or suggest this profile. */
   matches: (upload: CsvUpload) => boolean;
+  /**
+   * Member-confirmed selection: the file can be parsed as this layout.
+   * Headed profiles use the same check as `matches`. Headerless profiles
+   * accept a minority of signature failures as Invalid import rows.
+   */
+  acceptsSelection: (upload: CsvUpload) => boolean;
   normalize: (upload: CsvUpload) => SourceImportRow[];
   parseDate: (value: string | null) => string | null;
 }

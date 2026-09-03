@@ -15,6 +15,7 @@ const importTransactionTypeSchema = z.enum(IMPORT_TRANSACTION_TYPE_VALUES);
 const importAmountSemanticsSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('signed'),
+    column: z.string().min(1),
     positiveIsExpense: z.boolean(),
   }),
   z.object({
@@ -24,13 +25,20 @@ const importAmountSemanticsSchema = z.discriminatedUnion('kind', [
   }),
 ]);
 
-const importCustomMappingSchema = z.object({
-  dateColumn: z.string().min(1),
-  dateFormat: z.enum(IMPORT_CUSTOM_MAPPING_DATE_FORMATS),
-  descriptionColumn: z.string().min(1),
-  amount: importAmountSemanticsSchema,
-  externalIdColumn: z.string().min(1).optional(),
-});
+const importCustomMappingSchema = z
+  .object({
+    dateColumn: z.string().min(1),
+    dateFormat: z.enum(IMPORT_CUSTOM_MAPPING_DATE_FORMATS),
+    descriptionColumn: z.string().min(1),
+    amount: importAmountSemanticsSchema,
+    externalIdColumn: z.string().min(1).optional(),
+  })
+  .refine(
+    (mapping) =>
+      mapping.amount.kind !== 'debit_credit' ||
+      mapping.amount.debitColumn !== mapping.amount.creditColumn,
+    { message: 'Debit and credit columns must be different.', path: ['amount'] }
+  );
 
 export const importContentSelectionSchema = z.discriminatedUnion('kind', [
   z.object({

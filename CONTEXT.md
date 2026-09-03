@@ -267,7 +267,7 @@ A settlement payment that reduces the card’s shared balance (two or more assig
 _Avoid_: Household payment, pool settle
 
 **Financial institution**:
-A seeded central catalog of issuers (Amex, CIBC, PC Financial, TD, RBC, Wealthsimple) referenced by accounts via `institutionId`. Household members choose from this fixed list when creating or editing accounts; there is no custom entry or catalog-management UI. Required for credit-card, chequing, savings, and investment accounts; optional for cash accounts (`prepaid_cash`, `e_transfer`). The selected credit card's Financial institution is the authority for import mismatch comparison. Being in the catalog does not imply a supported import format (RBC is selectable with no approved CSV).
+A seeded central catalog of issuers (Amex, CIBC, PC Financial, TD, RBC, Wealthsimple) referenced by accounts via `institutionId`. Household members choose from this fixed list when creating or editing accounts; there is no custom entry or catalog-management UI. Required for credit-card, chequing, savings, and investment accounts; optional for cash accounts (`prepaid_cash`, `e_transfer`). Being in the catalog does not imply a supported import format (RBC is selectable with no approved CSV). CSV import parses a content profile from file contents; it does not infer or compare institutions.
 _Avoid_: Free-text institution, bank name as an unvalidated string, treating catalog membership as import support
 
 **Account ownership**:

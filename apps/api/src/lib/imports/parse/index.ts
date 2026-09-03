@@ -1,16 +1,20 @@
-import { MAX_IMPORT_ROWS } from '@ploutizo/types';
+import {
+  MAPPING_REQUIRED_SAMPLE_ROW_COUNT,
+  MAX_IMPORT_ROWS,
+} from '@ploutizo/types';
 import type {
   ImportContentSelection,
   ImportUploadMappingRequired,
 } from '@ploutizo/types';
 import { coerceImportRows } from './coerce';
-import { buildCustomMappingProfile } from './normalizers/custom-mapping';
+import { buildCustomMappingNormalizer } from './normalizers/custom-mapping';
 import {
   findAutoDetectableProfiles,
+  findMatchingProfiles,
   resolveSelectedProfile,
 } from './normalizers/registry';
 import { readCsvUpload } from './read';
-import type { ParseImportUploadResult } from './types';
+import type { CsvUpload, ParseImportUploadResult } from './types';
 import { DomainError } from '@/lib/errors';
 
 export type {
@@ -19,9 +23,23 @@ export type {
   ParsedImportRow,
 } from './types';
 
-const isMappingRequired = (
-  result: ParseImportUploadResult
-): result is ImportUploadMappingRequired => result.kind === 'mapping_required';
+const toMappingRequired = (upload: CsvUpload): ImportUploadMappingRequired => {
+  const candidates = findMatchingProfiles(upload).filter(
+    (profile) => profile.profileId !== 'internal'
+  );
+  const dataRecords = upload.hasHeaderRow
+    ? upload.records.slice(1)
+    : upload.records;
+
+  return {
+    kind: 'mapping_required',
+    candidateProfileIds: candidates.map((profile) => profile.profileId),
+    columns: upload.headers,
+    sampleRows: dataRecords
+      .slice(0, MAPPING_REQUIRED_SAMPLE_ROW_COUNT)
+      .map((record) => record.cells),
+  };
+};
 
 /**
  * Parse and normalize a CSV upload.
@@ -37,18 +55,16 @@ export const parseImportUpload = (
   let resolvedSelection = selection;
   if (!resolvedSelection) {
     const matches = findAutoDetectableProfiles(upload);
-    if (matches.length !== 1) return { kind: 'mapping_required' };
+    if (matches.length !== 1) return toMappingRequired(upload);
     resolvedSelection = { kind: 'profile', profileId: matches[0].profileId };
   }
 
-  let profile;
-  if (resolvedSelection.kind === 'profile') {
-    profile = resolveSelectedProfile(upload, resolvedSelection.profileId);
-  } else {
-    profile = buildCustomMappingProfile(upload, resolvedSelection.mapping);
-  }
+  const normalizer =
+    resolvedSelection.kind === 'profile'
+      ? resolveSelectedProfile(upload, resolvedSelection.profileId)
+      : buildCustomMappingNormalizer(upload, resolvedSelection.mapping);
 
-  const sourceRows = profile.normalize(upload);
+  const sourceRows = normalizer.normalize(upload);
   if (sourceRows.length > MAX_IMPORT_ROWS) {
     throw new DomainError(
       413,
@@ -56,7 +72,7 @@ export const parseImportUpload = (
       'IMPORT_FILE_TOO_LARGE'
     );
   }
-  const rows = coerceImportRows(sourceRows, profile.parseDate);
+  const rows = coerceImportRows(sourceRows, normalizer.parseDate);
 
   return {
     kind: 'parsed',
@@ -66,5 +82,3 @@ export const parseImportUpload = (
     rows,
   };
 };
-
-export const isParseImportMappingRequired = isMappingRequired;

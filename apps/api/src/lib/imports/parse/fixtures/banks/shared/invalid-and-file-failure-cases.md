@@ -13,17 +13,18 @@ Headerless files use strict positional signatures and resolve to a **generic pos
 - `mdy_debit_credit_balance`: five columns, `MM/DD/YYYY` dates, monetary balance in column 5
 - `iso_debit_credit_masked_card`: five columns, `YYYY-MM-DD` dates, masked card in column 5
 
-Generic positional profiles never auto-detect. The member must choose the profile (or supply a custom mapping) before draft creation.
+Generic positional profiles never auto-detect. Strict `matches` requires every data row to keep the signature. Files that match are suggested as `candidateProfileIds` on `mapping_required`; the member must choose the profile (or supply a custom mapping) before draft creation.
 
-If no auto-detectable profile matches and the member has not submitted a selection, the result is `mapping_required`.
+After confirmation, `acceptsSelection` is looser: five columns plus at least one row whose date matches this profile and not the other. Minority signature failures become Invalid import rows. Confirming the wrong date family (MDY on an ISO-only file, or the reverse) is `IMPORT_INVALID_SELECTION`.
+
+If no auto-detectable profile matches and the member has not submitted a selection, the result is `mapping_required` with `candidateProfileIds`, `columns`, and `sampleRows`. Two named profiles matching the same file also return `mapping_required`; there is no separate ambiguous-file failure.
 
 ## File-level failure categories
 
 | Category                                                       | Code                                                       | Example                                                                           |
 | -------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| No recognized profile and member has not submitted a selection | `mapping_required` (not a failure — needs member decision) | `headerless-unrecognized.csv`                                                     |
+| No recognized auto-detectable profile; member has not selected | `mapping_required` (not a failure — needs member decision) | `headerless-unrecognized.csv`; two named profiles matching the same file          |
 | Member submitted an invalid profile selection                  | `IMPORT_INVALID_SELECTION`                                 | profile ID doesn't match the file                                                 |
-| Ambiguous file (two profiles match)                            | `IMPORT_FILE_AMBIGUOUS`                                    | only occurs when two profiles match the same file                                 |
 | Unreadable CSV                                                 | `IMPORT_FILE_CORRUPT`                                      | unclosed quote, trailing characters after a quoted field, unquoted interior quote |
 | Empty                                                          | `IMPORT_FILE_EMPTY`                                        | blank file or only a header row                                                   |
 | No importable rows after normalization                         | `IMPORT_FILE_NO_ROWS`                                      | every row structurally unusable                                                   |
