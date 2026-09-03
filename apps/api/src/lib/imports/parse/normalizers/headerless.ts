@@ -6,12 +6,11 @@ import {
   tryParseImportIsoDate,
   tryParseImportMdyDate,
 } from '@ploutizo/utils/import-coercion';
-import type { FinancialInstitutionId } from '@ploutizo/types';
 import { buildRawData, optionalTrim, toAbsoluteAmountSource } from './cells';
 import type {
   CsvRecord,
   CsvUpload,
-  ImportNormalizer,
+  ImportContentProfile,
   SourceImportRow,
 } from '../types';
 
@@ -46,7 +45,7 @@ type HeaderlessFormatSignature = {
   looksLikeOwnDate: (value: string | null) => boolean;
   looksLikeOtherDate: (value: string | null) => boolean;
   parseDate: (value: string | null) => string | null;
-  hasAccountMarker: (record: CsvRecord) => boolean;
+  hasColumnFiveMarker: (record: CsvRecord) => boolean;
 };
 
 const matchesHeaderless = (
@@ -62,7 +61,7 @@ const matchesHeaderless = (
         signature.looksLikeOwnDate(date) &&
         !signature.looksLikeOtherDate(date) &&
         hasNonEmptyDescription(record) &&
-        signature.hasAccountMarker(record)
+        signature.hasColumnFiveMarker(record)
       );
     }) &&
     upload.records.some(
@@ -99,28 +98,48 @@ const mapHeaderlessRow = (record: CsvRecord): SourceImportRow => {
   };
 };
 
-const createHeaderlessNormalizer = (
-  detectedInstitutionId: FinancialInstitutionId,
+const createHeaderlessProfile = (
+  profileId: ImportContentProfile['profileId'],
   signature: HeaderlessFormatSignature
-): ImportNormalizer => ({
-  detectedInstitutionId,
+): ImportContentProfile => ({
+  profileId,
   matches: (upload) => matchesHeaderless(upload, signature),
   parseDate: signature.parseDate,
   normalize: (upload) => upload.records.map(mapHeaderlessRow),
 });
 
-export const tdImportNormalizer = createHeaderlessNormalizer('td', {
-  looksLikeOwnDate: looksLikeImportMdyDate,
-  looksLikeOtherDate: looksLikeImportIsoDate,
-  parseDate: tryParseImportMdyDate,
-  hasAccountMarker: (record) =>
-    hasMonetaryAmount(optionalTrim(record.cells[4])),
-});
+/**
+ * Generic positional profile: `MM/DD/YYYY`, description, debit, credit,
+ * running balance (monetary amount).
+ *
+ * Historically matched TD credit-card exports. This profile carries no
+ * institution identity — the same layout may appear from any issuer.
+ */
+export const mdyDebitCreditBalanceProfile = createHeaderlessProfile(
+  'mdy_debit_credit_balance',
+  {
+    looksLikeOwnDate: looksLikeImportMdyDate,
+    looksLikeOtherDate: looksLikeImportIsoDate,
+    parseDate: tryParseImportMdyDate,
+    hasColumnFiveMarker: (record) =>
+      hasMonetaryAmount(optionalTrim(record.cells[4])),
+  }
+);
 
-export const cibcImportNormalizer = createHeaderlessNormalizer('cibc', {
-  looksLikeOwnDate: looksLikeImportIsoDate,
-  looksLikeOtherDate: looksLikeImportMdyDate,
-  parseDate: tryParseImportIsoDate,
-  hasAccountMarker: (record) =>
-    /^\d{4}\*{8}\d{4}$/.test(optionalTrim(record.cells[4]) ?? ''),
-});
+/**
+ * Generic positional profile: ISO date, description, debit, credit,
+ * masked card number (`NNNN********NNNN`).
+ *
+ * Historically matched CIBC credit-card exports. This profile carries no
+ * institution identity.
+ */
+export const isoDebitCreditMaskedCardProfile = createHeaderlessProfile(
+  'iso_debit_credit_masked_card',
+  {
+    looksLikeOwnDate: looksLikeImportIsoDate,
+    looksLikeOtherDate: looksLikeImportMdyDate,
+    parseDate: tryParseImportIsoDate,
+    hasColumnFiveMarker: (record) =>
+      /^\d{4}\*{8}\d{4}$/.test(optionalTrim(record.cells[4]) ?? ''),
+  }
+);

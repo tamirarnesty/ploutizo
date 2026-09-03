@@ -22,7 +22,6 @@ import {
 
 import { accounts } from './accounts';
 import { orgs } from './auth';
-import { financialInstitutions } from './financial-institutions';
 import { categories } from './classification';
 import { importBatchStatusEnum, transactionTypeEnum } from './enums';
 
@@ -36,10 +35,8 @@ export const importBatches = pgTable(
       .notNull()
       .references(() => orgs.id, { onDelete: 'cascade' }),
     accountId: uuid('account_id'),
-    /** Detected catalog institution from the uploaded file; null for generic internal CSV. */
-    detectedInstitutionId: text('detected_institution_id').references(
-      () => financialInstitutions.id
-    ),
+    /** Content profile used to parse the upload; null for custom-mapped uploads. */
+    contentProfileId: text('content_profile_id'),
     status: importBatchStatusEnum('status').notNull().default('draft'),
     fileName: text('file_name'),
     importedAt: timestamp('imported_at', { withTimezone: true }).notNull(),

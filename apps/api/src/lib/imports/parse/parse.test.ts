@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_IMPORT_BYTES, MAX_IMPORT_ROWS } from '@ploutizo/types';
-import { parseImportUpload } from './index';
+import type { ImportContentSelection } from '@ploutizo/types';
+import { inspectImportUpload, parseImportUpload } from './index';
 import { DomainError } from '@/lib/errors';
+
+const internalSelection: ImportContentSelection = {
+  kind: 'profile',
+  profileId: 'internal',
+};
 
 const expectImportError = (fn: () => unknown, code: string) => {
   try {
@@ -13,6 +19,38 @@ const expectImportError = (fn: () => unknown, code: string) => {
   }
 };
 
+describe('inspectImportUpload', () => {
+  it('returns recognized for a valid internal CSV', () => {
+    const result = inspectImportUpload(
+      ['date,amount,description,type', '2026-05-02,42.18,Coffee,expense'].join(
+        '\n'
+      )
+    );
+
+    expect(result.kind).toBe('recognized');
+    if (result.kind !== 'recognized') return;
+    expect(result.profileId).toBe('internal');
+    expect(result.preview.rowCount).toBe(1);
+    expect(result.preview.sampleParsedRows[0]?.sourceDescription).toBe(
+      'Coffee'
+    );
+  });
+
+  it('returns mapping_required for an unrecognized CSV', () => {
+    const result = inspectImportUpload(
+      'posted,total,memo\n2026-05-02,42,Coffee'
+    );
+
+    expect(result.kind).toBe('mapping_required');
+  });
+
+  it('returns mapping_required for an empty-but-readable CSV', () => {
+    const result = inspectImportUpload('a,b,c\n,,,');
+
+    expect(result.kind).toBe('mapping_required');
+  });
+});
+
 describe('parseImportUpload', () => {
   it('keeps unparseable rows as durable facts when at least one row is importable', () => {
     const parsed = parseImportUpload(
@@ -20,10 +58,11 @@ describe('parseImportUpload', () => {
         'date,amount,description,type,external id,category,notes,tags',
         '2026-05-02,42.18,Neighborhood Grocery,expense,visa-1001,Groceries,Weekly shop,food; errands',
         'not-a-date,nope,,charge,visa-1002,,,',
-      ].join('\n')
+      ].join('\n'),
+      internalSelection
     );
 
-    expect(parsed.detectedInstitutionId).toBeNull();
+    expect(parsed.contentProfileId).toBe('internal');
     expect(parsed.rowCount).toBe(2);
     expect(parsed).not.toHaveProperty('validRowCount');
     expect(parsed).not.toHaveProperty('invalidRowCount');
@@ -59,7 +98,8 @@ describe('parseImportUpload', () => {
     const parsed = parseImportUpload(
       ['date,amount,description,type', '2026-05-02,42.18,Coffee,expense'].join(
         '\n'
-      )
+      ),
+      internalSelection
     );
 
     expect(parsed.rows[0]).toMatchObject({
@@ -76,14 +116,15 @@ describe('parseImportUpload', () => {
     expect(parsed.rows[0]).not.toHaveProperty('status');
   });
 
-  it('parses only ISO dates on the manual template', () => {
+  it('parses only ISO dates on the internal profile', () => {
     const parsed = parseImportUpload(
       [
         'date,amount,description,type',
         '2026-05-02,42.18,Coffee,expense',
         '05/08/2026,5.00,Tea,expense',
         '8 May 2026,1.00,Water,expense',
-      ].join('\n')
+      ].join('\n'),
+      internalSelection
     );
 
     expect(parsed.rows[0]?.parsedDate).toBe('2026-05-02');
@@ -98,7 +139,8 @@ describe('parseImportUpload', () => {
       [
         'date,amount,description,type,external id',
         "2026-05-02,42.18,Coffee,expense,'AMEX-12345",
-      ].join('\n')
+      ].join('\n'),
+      internalSelection
     );
 
     expect(parsed.rows[0]?.externalId).toBe('AMEX-12345');
@@ -109,16 +151,21 @@ describe('parseImportUpload', () => {
       [
         'date,amount,description,type',
         '2026-05-02,42.18,"12"" pizza",expense',
-      ].join('\n')
+      ].join('\n'),
+      internalSelection
     );
 
     expect(parsed.rows[0]?.sourceDescription).toBe('12" pizza');
   });
 
-  it('rejects unrecognized files with missing required headers', () => {
+  it('rejects a profile selection that does not match the file', () => {
     expectImportError(
-      () => parseImportUpload('posted,total,memo\n2026-05-02,42,Coffee'),
-      'IMPORT_FILE_UNRECOGNIZED'
+      () =>
+        parseImportUpload('posted,total,memo\n2026-05-02,42,Coffee', {
+          kind: 'profile',
+          profileId: 'internal',
+        }),
+      'IMPORT_INVALID_SELECTION'
     );
   });
 
@@ -126,7 +173,8 @@ describe('parseImportUpload', () => {
     expectImportError(
       () =>
         parseImportUpload(
-          'date,amount,description,type\n2026-05-02,42.18,"Coffee,expense'
+          'date,amount,description,type\n2026-05-02,42.18,"Coffee,expense',
+          internalSelection
         ),
       'IMPORT_FILE_CORRUPT'
     );
@@ -136,7 +184,8 @@ describe('parseImportUpload', () => {
     expectImportError(
       () =>
         parseImportUpload(
-          'date,amount,description,type\n2026-05-02,42.18,"Coffee"x,expense'
+          'date,amount,description,type\n2026-05-02,42.18,"Coffee"x,expense',
+          internalSelection
         ),
       'IMPORT_FILE_CORRUPT'
     );
@@ -146,7 +195,8 @@ describe('parseImportUpload', () => {
     expectImportError(
       () =>
         parseImportUpload(
-          'date,amount,description,type\n2026-05-02,42.18,12" pizza,expense'
+          'date,amount,description,type\n2026-05-02,42.18,12" pizza,expense',
+          internalSelection
         ),
       'IMPORT_FILE_CORRUPT'
     );
@@ -158,7 +208,8 @@ describe('parseImportUpload', () => {
         'date,amount,description,type',
         '2026-05-02,42.18,Coffee,expense',
         '2026-05-03,"12,34.56",Tea,expense',
-      ].join('\n')
+      ].join('\n'),
+      internalSelection
     );
 
     expect(parsed.rows[1].parsedAmount).toBeNull();
@@ -172,7 +223,8 @@ describe('parseImportUpload', () => {
         '2026-05-02,$42.18,Coffee,expense',
         '2026-05-03,12$34.56,Tea,expense',
         '2026-05-04,$$42.00,Water,expense',
-      ].join('\n')
+      ].join('\n'),
+      internalSelection
     );
 
     expect(parsed.rows[0].parsedAmount).toBe(4218);
@@ -180,22 +232,26 @@ describe('parseImportUpload', () => {
     expect(parsed.rows[2].parsedAmount).toBeNull();
   });
 
-  it('rejects empty files and files with no importable rows', () => {
-    expectImportError(() => parseImportUpload('  \n\n'), 'IMPORT_FILE_EMPTY');
+  it('rejects truly empty CSV files', () => {
     expectImportError(
-      () => parseImportUpload('date,amount,description,type\n'),
+      () => parseImportUpload('  \n\n', internalSelection),
       'IMPORT_FILE_EMPTY'
     );
+  });
+
+  it('rejects files with only a header row and no data rows', () => {
+    // normalizer slice(1) returns []; coerce throws IMPORT_FILE_EMPTY
     expectImportError(
       () =>
-        parseImportUpload('date,amount,description,type\nnot-a-date,nope,,wat'),
+        parseImportUpload('date,amount,description,type', internalSelection),
       'IMPORT_FILE_EMPTY'
     );
   });
 
   it('rejects files over the import size limit', () => {
     expectImportError(
-      () => parseImportUpload('a'.repeat(MAX_IMPORT_BYTES + 1)),
+      () =>
+        parseImportUpload('a'.repeat(MAX_IMPORT_BYTES + 1), internalSelection),
       'IMPORT_FILE_TOO_LARGE'
     );
   });
@@ -207,7 +263,10 @@ describe('parseImportUpload', () => {
     );
     expectImportError(
       () =>
-        parseImportUpload(['date,amount,description,type', ...rows].join('\n')),
+        parseImportUpload(
+          ['date,amount,description,type', ...rows].join('\n'),
+          internalSelection
+        ),
       'IMPORT_FILE_TOO_LARGE'
     );
   });

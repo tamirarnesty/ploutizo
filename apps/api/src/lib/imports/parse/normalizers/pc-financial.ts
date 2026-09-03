@@ -6,7 +6,11 @@ import {
   headersMatchInOrder,
   toAbsoluteAmountSource,
 } from './cells';
-import type { CsvRecord, ImportNormalizer, SourceImportRow } from '../types';
+import type {
+  CsvRecord,
+  ImportContentProfile,
+  SourceImportRow,
+} from '../types';
 
 const REQUIRED_HEADERS = [
   'description',
@@ -57,8 +61,8 @@ const mapRow = (
   };
 };
 
-export const pcFinancialImportNormalizer: ImportNormalizer = {
-  detectedInstitutionId: 'pc_financial',
+export const pcFinancialContentProfile: ImportContentProfile = {
+  profileId: 'pc_financial',
   matches: (upload) => headersMatchInOrder(upload.headers, REQUIRED_HEADERS),
   parseDate: tryParseImportMdyDate,
   normalize: (upload) => {

@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import {
   createImportDraftSchema,
+  inspectImportUploadSchema,
   updateImportDraftRowSchema,
   updateImportDraftRowSelectionSchema,
 } from '@ploutizo/validators';
@@ -11,6 +12,7 @@ import {
   discardImportDraft,
   getImportDraft,
   getImportExampleCsv,
+  inspectImport,
   listActiveImportDrafts,
   listImportHistory,
   listImportTargets,
@@ -20,6 +22,16 @@ import {
 import { continueImportDraft } from '@/services/import-prepared-sets';
 
 const importsRouter = new Hono<AppEnv>();
+
+importsRouter.post(
+  '/inspect',
+  appValidator('json', inspectImportUploadSchema),
+  async (c) => {
+    const { content } = c.req.valid('json');
+    const result = inspectImport(content);
+    return c.json({ data: result });
+  }
+);
 
 importsRouter.get('/targets', async (c) => {
   const orgId = c.get('orgId');

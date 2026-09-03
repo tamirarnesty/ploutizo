@@ -72,11 +72,6 @@ export {
   type AccountLabelInput,
   type AccountInstitutionMetaInput,
 } from './format-account-label';
-export {
-  formatInstitutionMismatchWarning,
-  getInstitutionMismatchWarning,
-} from './institution-mismatch';
-export type { InstitutionMismatchWarning } from '@ploutizo/types';
 export { parseImportTags } from './parse-import-tags';
 export {
   tryParseImportAmountToCents,

@@ -67,6 +67,7 @@ describe('imports router', () => {
         fileName: 'statement.csv',
         content:
           'date,amount,description,type\n2026-05-02,42.18,Coffee,expense',
+        selection: { kind: 'profile', profileId: 'internal' },
       }),
     });
 
@@ -91,6 +92,7 @@ describe('imports router', () => {
         fileName: 'statement.csv',
         content:
           'date,amount,description,type\n2026-05-02,42.18,Coffee,expense',
+        selection: { kind: 'profile', profileId: 'internal' },
       }),
     });
     const body = (await res.json()) as {

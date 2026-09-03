@@ -104,7 +104,7 @@ describe('bank CSV contract fixtures', () => {
     expect(data[4]?.[3]).toBe('13/40/2026');
   });
 
-  it('covers TD headerless debit, credit, and phrase-vault Bill payment rows', () => {
+  it('covers mdy_debit_credit_balance fixture: debit, credit, and phrase-vault Bill payment rows', () => {
     const rows = parseCsv(readFixture('td', 'statement.csv'));
 
     expect(rows).toHaveLength(4);
@@ -129,7 +129,7 @@ describe('bank CSV contract fixtures', () => {
     expect(rows[3]?.[3]).toBe('5.00');
   });
 
-  it('covers CIBC headerless debit, credit, and phrase-vault Bill payment rows', () => {
+  it('covers iso_debit_credit_masked_card fixture: debit, credit, and phrase-vault Bill payment rows', () => {
     const rows = parseCsv(readFixture('cibc', 'statement.csv'));
 
     expect(rows).toHaveLength(4);
@@ -159,8 +159,8 @@ describe('bank CSV contract fixtures', () => {
     expect(mixed[0]?.[0]).toBe('05/02/2026');
     expect(mixed[1]?.[0]).toBe('2026-05-03');
     expect(unrecognized[0]?.length).toBe(3);
-    expect(notes).toContain('IMPORT_FILE_UNRECOGNIZED');
+    expect(notes).toContain('mapping_required');
     expect(notes).toContain('IMPORT_FILE_AMBIGUOUS');
-    expect(notes).toContain('detectedInstitutionId');
+    expect(notes).toContain('IMPORT_INVALID_SELECTION');
   });
 });

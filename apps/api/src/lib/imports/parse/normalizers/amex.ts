@@ -5,7 +5,7 @@ import {
   headersMatchInOrder,
   toAbsoluteAmountSource,
 } from './cells';
-import type { ImportNormalizer, SourceImportRow } from '../types';
+import type { ImportContentProfile, SourceImportRow } from '../types';
 
 const REQUIRED_HEADERS = [
   'date',
@@ -16,8 +16,8 @@ const REQUIRED_HEADERS = [
   'amount',
 ] as const;
 
-export const amexImportNormalizer: ImportNormalizer = {
-  detectedInstitutionId: 'amex',
+export const amexContentProfile: ImportContentProfile = {
+  profileId: 'amex',
   matches: (upload) => headersMatchInOrder(upload.headers, REQUIRED_HEADERS),
   parseDate: tryParseImportDayMonthYearDate,
   normalize: (upload) => {

@@ -102,7 +102,7 @@ const summaryRow = {
   accountName: 'Visa',
   accountInstitutionId: 'td',
   accountLastFour: '1234',
-  detectedInstitutionId: null,
+  contentProfileId: null,
   status: 'draft' as const,
   fileName: 'statement.csv',
   rowCount: 2,
@@ -224,6 +224,7 @@ describe('import service', () => {
         '2026-05-02,42.18,Coffee,expense,Dining,Tamir Arnesty',
         'bad,nope,,wat,',
       ].join('\n'),
+      selection: { kind: 'profile', profileId: 'internal' },
     });
 
     expect(result.reusedExisting).toBe(false);
@@ -233,7 +234,7 @@ describe('import service', () => {
       expect.objectContaining({
         orgId: 'org_1',
         accountId: summaryRow.accountId,
-        detectedInstitutionId: null,
+        contentProfileId: 'internal',
         status: 'draft',
         fileName: 'statement.csv',
         rowCount: 2,
@@ -281,7 +282,7 @@ describe('import service', () => {
     ]);
   });
 
-  it('persists a recognized bank upload on the existing draft path', async () => {
+  it('persists a recognized profile upload on the existing draft path', async () => {
     const amexShort = readFileSync(
       join(
         dirname(fileURLToPath(import.meta.url)),
@@ -294,12 +295,13 @@ describe('import service', () => {
       accountId: summaryRow.accountId,
       fileName: 'amex-short.csv',
       content: amexShort,
+      selection: { kind: 'profile', profileId: 'amex' },
     });
 
     expect(insertImportBatch).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
-        detectedInstitutionId: 'amex',
+        contentProfileId: 'amex',
         fileName: 'amex-short.csv',
         rowCount: 4,
       })
@@ -331,48 +333,30 @@ describe('import service', () => {
     expect(draft.validRowCount).toBe(1);
     expect(draft.invalidRowCount).toBe(0);
     expect(draft.refundTargetFacts).toEqual({});
-    expect(draft.institutionMismatch).toBeNull();
+    expect(draft.contentProfileId).toBeNull();
     expect(listRefundTargetExpensesByIds).toHaveBeenCalledWith('org_1', [], db);
   });
 
-  it('exposes a derived institution mismatch when detected source and account differ', async () => {
+  it('surfaces the content profile id when the batch was parsed with a known profile', async () => {
     vi.mocked(fetchDraftSummaryById).mockResolvedValue({
       ...summaryRow,
-      detectedInstitutionId: 'amex',
-      accountInstitutionId: 'td',
+      contentProfileId: 'amex',
     });
 
     const draft = await getImportDraft('org_1', summaryRow.id);
 
-    expect(draft.institutionMismatch).toEqual({
-      detectedInstitutionId: 'amex',
-      accountInstitutionId: 'td',
-    });
+    expect(draft.contentProfileId).toBe('amex');
   });
 
-  it('does not warn when the detected source or account institution is unknown', async () => {
+  it('returns null contentProfileId for custom-mapped or unknown profile uploads', async () => {
     vi.mocked(fetchDraftSummaryById).mockResolvedValue({
       ...summaryRow,
-      detectedInstitutionId: null,
-      accountInstitutionId: 'td',
+      contentProfileId: null,
     });
 
     const draft = await getImportDraft('org_1', summaryRow.id);
 
-    expect(draft.institutionMismatch).toBeNull();
-  });
-
-  it('does not attach a mismatch warning after the draft is closed', async () => {
-    vi.mocked(fetchDraftSummaryById).mockResolvedValue({
-      ...summaryRow,
-      detectedInstitutionId: 'amex',
-      accountInstitutionId: 'td',
-      status: 'completed',
-    });
-
-    const draft = await getImportDraft('org_1', summaryRow.id);
-
-    expect(draft.institutionMismatch).toBeNull();
+    expect(draft.contentProfileId).toBeNull();
   });
 
   it('derives hub draft counts from current row facts', async () => {
@@ -413,6 +397,7 @@ describe('import service', () => {
       accountId: summaryRow.accountId,
       fileName: 'new.csv',
       content: 'date,amount,description,type\n2026-05-02,42.18,Coffee,expense',
+      selection: { kind: 'profile', profileId: 'internal' },
     });
 
     expect(result.reusedExisting).toBe(true);
@@ -431,6 +416,7 @@ describe('import service', () => {
       accountId: summaryRow.accountId,
       fileName: 'statement.csv',
       content: 'date,amount,description,type\n2026-05-02,42.18,Coffee,expense',
+      selection: { kind: 'profile', profileId: 'internal' },
     });
 
     expect(result.reusedExisting).toBe(true);

@@ -2,7 +2,11 @@ import { tryParseImportIsoDate } from '@ploutizo/utils/import-coercion';
 import { INTERNAL_IMPORT_REQUIRED_COLUMNS } from '@ploutizo/types';
 import { parseImportTags } from '@ploutizo/utils';
 import { buildRawData, normalizeHeader, optionalTrim } from './cells';
-import type { CsvRecord, ImportNormalizer, SourceImportRow } from '../types';
+import type {
+  CsvRecord,
+  ImportContentProfile,
+  SourceImportRow,
+} from '../types';
 
 type HeaderKey =
   | 'date'
@@ -82,8 +86,8 @@ const mapRow = (
   reviewNotes: readCell(record, headerMap, 'notes'),
 });
 
-export const internalImportNormalizer: ImportNormalizer = {
-  detectedInstitutionId: null,
+export const internalContentProfile: ImportContentProfile = {
+  profileId: 'internal',
   matches: (upload) => hasRequiredHeaders(buildHeaderMap(upload.headers)),
   parseDate: tryParseImportIsoDate,
   normalize: (upload) => {

@@ -25,6 +25,7 @@ export {
   useImportReviewSession,
   type ImportReviewSession,
 } from './useImportReviewSession';
+export * from './useInspectImport';
 export * from './useGetImportTargets';
 export * from './useGetImportDrafts';
 export * from './useGetImportDraft';

@@ -1,12 +1,10 @@
 import { db } from '@ploutizo/db';
 import {
   INTERNAL_IMPORT_EXAMPLE_CSV,
+  isImportContentProfileId,
   toFinancialInstitutionId,
 } from '@ploutizo/types';
-import {
-  createImportRowClassifier,
-  getInstitutionMismatchWarning,
-} from '@ploutizo/utils';
+import { createImportRowClassifier } from '@ploutizo/utils';
 import {
   resolveImportRowReviewType,
   toImportTransactionType,
@@ -55,7 +53,7 @@ import {
   transactionExistsInOrg,
 } from '@/lib/queries/scope';
 import { listTags } from '@/lib/queries/tags';
-import { parseImportUpload } from '@/lib/imports/parse';
+import { inspectImportUpload, parseImportUpload } from '@/lib/imports/parse';
 import { toImportTargetAccount } from '@/lib/accounts/accountResponse';
 import { listRefundTargetExpensesByIds } from '@/lib/queries/import-refund-targets';
 import {
@@ -77,19 +75,20 @@ const toImportDraftSummary = (
     accountName,
     accountInstitutionId,
     accountLastFour,
+    contentProfileId,
     importedAt,
     completedAt,
     discardedAt,
     createdAt,
     updatedAt,
-    detectedInstitutionId,
     ...summary
   } = row;
-  const detectedId = toFinancialInstitutionId(detectedInstitutionId);
   const accountInstitution = toFinancialInstitutionId(accountInstitutionId);
   return {
     ...summary,
-    detectedInstitutionId: detectedId,
+    contentProfileId: isImportContentProfileId(contentProfileId)
+      ? contentProfileId
+      : null,
     // History omits live review counts until PLO-56 records completed results.
     validRowCount: 0,
     invalidRowCount: 0,
@@ -99,13 +98,6 @@ const toImportDraftSummary = (
       institutionId: accountInstitution,
       lastFour: accountLastFour,
     },
-    institutionMismatch:
-      summary.status === 'draft'
-        ? getInstitutionMismatchWarning({
-            detectedInstitutionId: detectedId,
-            accountInstitutionId: accountInstitution,
-          })
-        : null,
     importedAt: importedAt.toISOString(),
     completedAt: completedAt?.toISOString() ?? null,
     discardedAt: discardedAt?.toISOString() ?? null,
@@ -191,9 +183,7 @@ export const createImportDraft = async (
     };
   }
 
-  const parsed = parseImportUpload(input.content, {
-    fileName: input.fileName,
-  });
+  const parsed = parseImportUpload(input.content, input.selection);
   const [orgMembers, orgCategories, orgTags, merchantRules, accountOwners] =
     await Promise.all([
       listOrgMembers(orgId),
@@ -218,7 +208,7 @@ export const createImportDraft = async (
       const batch = await insertImportBatch(tx, {
         orgId,
         accountId: input.accountId,
-        detectedInstitutionId: parsed.detectedInstitutionId,
+        contentProfileId: parsed.contentProfileId,
         status: 'draft',
         fileName: input.fileName,
         importedAt: new Date(),
@@ -380,5 +370,7 @@ export const updateImportDraftRowSelection = async (
 
   return persistedRows.map(toImportDraftPersistedRow);
 };
+
+export const inspectImport = (content: string) => inspectImportUpload(content);
 
 export const getImportExampleCsv = () => INTERNAL_IMPORT_EXAMPLE_CSV;

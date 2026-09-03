@@ -1,10 +1,9 @@
-import type { FinancialInstitutionId, ImportDraftRow } from '@ploutizo/types';
+import type {
+  ImportContentProfileId,
+  ImportContentSelection,
+  ImportDraftRow,
+} from '@ploutizo/types';
 import type { ImportClassificationHint, ImportCsvHints } from '@ploutizo/utils';
-
-export interface ParseImportHints {
-  institution?: string | null;
-  fileName?: string;
-}
 
 export type CsvRecord = {
   cells: string[];
@@ -12,7 +11,16 @@ export type CsvRecord = {
 };
 
 export interface CsvUpload {
+  /**
+   * The first non-blank row's cells, lowercased and trimmed.
+   * For headed layouts (Amex, PC Financial, internal) these are the column
+   * names; normalizers skip `records[0]` with `.slice(1)`.
+   * For headerless layouts (positional profiles) `records` contains only data
+   * rows and `headers` reflects the first data row — positional normalizers
+   * never consult `headers`.
+   */
   headers: string[];
+  /** All non-blank rows including the first row. */
   records: CsvRecord[];
 }
 
@@ -51,14 +59,21 @@ export type ParsedImportRow = Omit<
   >;
 
 export interface ParsedImport {
-  detectedInstitutionId: FinancialInstitutionId | null;
+  /** The content profile that was used to parse this upload. */
+  contentProfileId: ImportContentProfileId | null;
   rowCount: number;
   rows: ParsedImportRow[];
 }
 
-export interface ImportNormalizer {
-  detectedInstitutionId: FinancialInstitutionId | null;
+/**
+ * A content profile: parsing semantics for one CSV layout.
+ * Does not carry any financial-institution identity.
+ */
+export interface ImportContentProfile {
+  profileId: ImportContentProfileId;
   matches: (upload: CsvUpload) => boolean;
   normalize: (upload: CsvUpload) => SourceImportRow[];
   parseDate: (value: string | null) => string | null;
 }
+
+export type { ImportContentSelection };

@@ -4,6 +4,7 @@ import { dollarsToCents } from './currency';
 
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const MDY_DATE_PATTERN = /^\d{2}\/\d{2}\/\d{4}$/;
+const DMY_DATE_PATTERN = /^\d{2}\/\d{2}\/\d{4}$/;
 const DAY_MONTH_YEAR_PATTERN = /^\d{1,2} [A-Za-z]{3} \d{4}$/;
 const PARSE_REFERENCE_DATE = new Date(Date.UTC(2000, 0, 1));
 
@@ -50,6 +51,17 @@ export const tryParseImportDayMonthYearDate = (
   const unpadded = format(date, 'd MMM yyyy', { locale: enUS }).toLowerCase();
   const padded = format(date, 'dd MMM yyyy', { locale: enUS }).toLowerCase();
   if (unpadded !== normalized && padded !== normalized) return null;
+  return toIsoCalendarDate(date);
+};
+
+/** Strict DD/MM/YYYY import date token (calendar-valid only). */
+export const tryParseImportDmyDate = (value: string | null): string | null => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!DMY_DATE_PATTERN.test(trimmed)) return null;
+
+  const date = parse(trimmed, 'dd/MM/yyyy', PARSE_REFERENCE_DATE);
+  if (!isValid(date) || format(date, 'dd/MM/yyyy') !== trimmed) return null;
   return toIsoCalendarDate(date);
 };
 

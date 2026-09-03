@@ -11,6 +11,7 @@ import { Import } from './Import';
 
 const importMocks = vi.hoisted(() => ({
   createImportDraftMutate: vi.fn(),
+  inspectImportMutate: vi.fn(),
   navigate: vi.fn(),
   toastInfo: vi.fn(),
   toastSuccess: vi.fn(),
@@ -101,6 +102,10 @@ vi.mock('@/lib/data-access/imports', () => ({
     mutate: importMocks.createImportDraftMutate,
     isPending: false,
   }),
+  useInspectImport: () => ({
+    mutate: importMocks.inspectImportMutate,
+    isPending: false,
+  }),
   useDiscardImportDraft: vi.fn(),
   useGetImportDrafts: vi.fn(),
   useGetImportHistory: vi.fn(),
@@ -115,7 +120,7 @@ const draftSummary = {
     institutionId: 'td',
     lastFour: '1234',
   },
-  detectedInstitutionId: null,
+  contentProfileId: null,
   status: 'draft' as const,
   fileName: 'statement.csv',
   rowCount: 2,
@@ -126,7 +131,6 @@ const draftSummary = {
   discardedAt: null,
   createdAt: '2026-05-20T12:00:00.000Z',
   updatedAt: '2026-05-20T12:00:00.000Z',
-  institutionMismatch: null,
 };
 
 const setImportPageData = ({
@@ -165,11 +169,30 @@ const setImportPageData = ({
 };
 
 describe('Import', () => {
+  const recognizedResult = {
+    data: {
+      kind: 'recognized' as const,
+      profileId: 'internal' as const,
+      preview: { rowCount: 1, sampleParsedRows: [] },
+    },
+  };
+
   beforeEach(() => {
     importMocks.createImportDraftMutate.mockReset();
+    importMocks.inspectImportMutate.mockReset();
     importMocks.navigate.mockReset();
     importMocks.toastInfo.mockReset();
     importMocks.toastSuccess.mockReset();
+    // Default: inspect succeeds with a recognized profile
+    importMocks.inspectImportMutate.mockImplementation(
+      (_payload: unknown, options: Record<string, unknown> | undefined) => {
+        (
+          options?.onSuccess as
+            | ((r: typeof recognizedResult) => void)
+            | undefined
+        )?.(recognizedResult);
+      }
+    );
     Object.defineProperty(URL, 'createObjectURL', {
       configurable: true,
       value: vi.fn(() => 'blob:csv'),
@@ -308,7 +331,12 @@ describe('Import', () => {
 
     await waitFor(() =>
       expect(importMocks.createImportDraftMutate).toHaveBeenCalledWith(
-        { accountId: 'acct_1', fileName: 'statement.csv', content },
+        expect.objectContaining({
+          accountId: 'acct_1',
+          fileName: 'statement.csv',
+          content,
+          selection: { kind: 'profile', profileId: 'internal' },
+        }),
         expect.any(Object)
       )
     );
@@ -319,8 +347,15 @@ describe('Import', () => {
     setImportPageData();
 
     importMocks.createImportDraftMutate.mockImplementation(
-      (_payload, options) => {
-        options?.onSuccess?.({
+      (_payload: unknown, options: Record<string, unknown> | undefined) => {
+        (
+          options?.onSuccess as
+            | ((r: {
+                data: { id: string };
+                meta: { reusedExisting: boolean };
+              }) => void)
+            | undefined
+        )?.({
           data: { id: 'draft_1' },
           meta: { reusedExisting: false },
         });

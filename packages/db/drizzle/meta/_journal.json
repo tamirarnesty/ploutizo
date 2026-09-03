@@ -22,6 +22,13 @@
       "when": 1788138420786,
       "tag": "0002_financial_institution_catalog",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1757000000000,
+      "tag": "0003_import_content_profiles",
+      "breakpoints": true
     }
   ]
 }
