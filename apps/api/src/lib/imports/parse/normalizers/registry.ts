@@ -1,3 +1,4 @@
+import { GENERIC_POSITIONAL_IMPORT_PROFILE_IDS } from '@ploutizo/types';
 import type { ImportContentProfileId } from '@ploutizo/types';
 import { amexContentProfile } from './amex';
 import {
@@ -35,6 +36,21 @@ export const findMatchingProfiles = (
   if (internalContentProfile.matches(upload)) return [internalContentProfile];
   return [];
 };
+
+const genericPositionalProfileIds = new Set<string>(
+  GENERIC_POSITIONAL_IMPORT_PROFILE_IDS
+);
+
+const isAutoDetectableProfile = (profileId: ImportContentProfileId) =>
+  !genericPositionalProfileIds.has(profileId);
+
+/** Profiles eligible for upload without an explicit member selection. */
+export const findAutoDetectableProfiles = (
+  upload: CsvUpload
+): ImportContentProfile[] =>
+  findMatchingProfiles(upload).filter((profile) =>
+    isAutoDetectableProfile(profile.profileId)
+  );
 
 /** All profiles in order (named first, then internal). */
 const ALL_PROFILES = [...NAMED_PROFILES, internalContentProfile];

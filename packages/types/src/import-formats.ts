@@ -22,6 +22,15 @@ export const isImportContentProfileId = (
 ): value is ImportContentProfileId =>
   IMPORT_CONTENT_PROFILE_IDS.includes(value as ImportContentProfileId);
 
+/** Headerless positional layouts — match only after explicit member selection. */
+export const GENERIC_POSITIONAL_IMPORT_PROFILE_IDS = [
+  'mdy_debit_credit_balance',
+  'iso_debit_credit_masked_card',
+] as const satisfies readonly ImportContentProfileId[];
+
+export type GenericPositionalImportProfileId =
+  (typeof GENERIC_POSITIONAL_IMPORT_PROFILE_IDS)[number];
+
 /** Profiles offered when auto-detection cannot pick a single match. */
 export const CHOOSABLE_IMPORT_CONTENT_PROFILE_IDS =
   IMPORT_CONTENT_PROFILE_IDS.filter(

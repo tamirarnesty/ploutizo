@@ -210,14 +210,10 @@ describe('parseImportUpload — PC Financial', () => {
 });
 
 describe('parseImportUpload auto-detection — mdy_debit_credit_balance (generic positional)', () => {
-  it('auto-detects the generic MDY profile — never as TD or any institution', () => {
-    const result = requireParsed(
-      parseImportUpload(readFixture('td', 'statement.csv'))
-    );
+  it('returns mapping_required without explicit selection', () => {
+    const result = parseImportUpload(readFixture('td', 'statement.csv'));
 
-    expect(result.contentProfileId).toBe('mdy_debit_credit_balance');
-    expect(result).not.toHaveProperty('institutionId');
-    expect(result).not.toHaveProperty('detectedInstitutionId');
+    expect(result).toEqual({ kind: 'mapping_required' });
   });
 });
 
@@ -284,14 +280,10 @@ describe('parseImportUpload — mdy_debit_credit_balance', () => {
 });
 
 describe('parseImportUpload auto-detection — iso_debit_credit_masked_card (generic positional)', () => {
-  it('auto-detects the generic ISO profile — never as CIBC or any institution', () => {
-    const result = requireParsed(
-      parseImportUpload(readFixture('cibc', 'statement.csv'))
-    );
+  it('returns mapping_required without explicit selection', () => {
+    const result = parseImportUpload(readFixture('cibc', 'statement.csv'));
 
-    expect(result.contentProfileId).toBe('iso_debit_credit_masked_card');
-    expect(result).not.toHaveProperty('institutionId');
-    expect(result).not.toHaveProperty('detectedInstitutionId');
+    expect(result).toEqual({ kind: 'mapping_required' });
   });
 });
 
@@ -361,6 +353,17 @@ describe('parseImportUpload — mapping_required', () => {
       [
         '05/08/2026,Site inspection,4,,completed',
         '05/09/2026,Permit review,2,,in progress',
+      ].join('\n')
+    );
+
+    expect(result).toEqual({ kind: 'mapping_required' });
+  });
+
+  it('returns mapping_required for ops-shaped rows with numeric column 5', () => {
+    const result = parseImportUpload(
+      [
+        '05/08/2026,Site inspection,4,,100',
+        '05/09/2026,Permit review,2,,102',
       ].join('\n')
     );
 

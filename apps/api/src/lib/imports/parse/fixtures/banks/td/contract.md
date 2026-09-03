@@ -8,15 +8,15 @@ Authority: [Spec: Approved Bank Import Formats and Financial Institutions](https
 
 Headerless export. Strict positional signature, five columns:
 
-| Index | Field | Role |
-| --- | --- | --- |
-| 0 | transaction date | `MM/DD/YYYY` |
-| 1 | description | source description |
-| 2 | debit | expense amount when populated |
-| 3 | credit | refund amount when populated |
-| 4 | running balance | provenance only |
+| Index | Field            | Role                          |
+| ----- | ---------------- | ----------------------------- |
+| 0     | transaction date | `MM/DD/YYYY`                  |
+| 1     | description      | source description            |
+| 2     | debit            | expense amount when populated |
+| 3     | credit           | refund amount when populated  |
+| 4     | running balance  | provenance only               |
 
-A shared headerless mapper with CIBC is allowed. Return `td` only when this signature is established: five columns and `MM/DD/YYYY` dates on the rows that have a parseable date. A minority of unparseable dates does not make the file unrecognized; those rows are Invalid import rows. Do not guess an issuer from a generic five-column file.
+A shared headerless mapper with CIBC is allowed. Return `td` only when this signature is established: five columns and `MM/DD/YYYY` dates on the rows that have a parseable date. A minority of unparseable dates does not make the file unrecognized; those rows are Invalid import rows. Do not guess an issuer from a generic five-column file. Auto-detection does not apply — the member must select the generic `mdy_debit_credit_balance` profile.
 
 The current CSV reader treats the first nonblank row as headers. PLO-33 must give headerless normalizers raw positional records.
 

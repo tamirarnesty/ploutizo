@@ -6,7 +6,7 @@ import type {
 import { coerceImportRows } from './coerce';
 import { buildCustomMappingProfile } from './normalizers/custom-mapping';
 import {
-  findMatchingProfiles,
+  findAutoDetectableProfiles,
   resolveSelectedProfile,
 } from './normalizers/registry';
 import { readCsvUpload } from './read';
@@ -36,7 +36,7 @@ export const parseImportUpload = (
 
   let resolvedSelection = selection;
   if (!resolvedSelection) {
-    const matches = findMatchingProfiles(upload);
+    const matches = findAutoDetectableProfiles(upload);
     if (matches.length !== 1) return { kind: 'mapping_required' };
     resolvedSelection = { kind: 'profile', profileId: matches[0].profileId };
   }

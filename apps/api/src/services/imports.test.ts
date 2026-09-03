@@ -403,6 +403,20 @@ describe('import service', () => {
     expect(insertImportBatch).not.toHaveBeenCalled();
   });
 
+  it('returns mapping_required for a generic positional file without explicit selection', async () => {
+    const result = await createImportDraft('org_1', {
+      accountId: summaryRow.accountId,
+      fileName: 'statement.csv',
+      content: [
+        '05/02/2026,NEIGHBORHOOD GROCERY,12.34,,100.00',
+        '05/08/2026,MERCHANT CREDIT,,5.00,105.00',
+      ].join('\n'),
+    });
+
+    expect(result).toEqual({ kind: 'mapping_required' });
+    expect(insertImportBatch).not.toHaveBeenCalled();
+  });
+
   it('auto-detects a recognized profile when selection is omitted', async () => {
     await createImportDraft('org_1', {
       accountId: summaryRow.accountId,
