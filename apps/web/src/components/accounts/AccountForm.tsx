@@ -32,9 +32,8 @@ import {
 import { Text } from '@ploutizo/ui/components/text';
 import {
   AccountFormSchema,
+  accountFormFieldsSchema,
   accountInstitutionViolation,
-  persistAccountStatementDueDay,
-  statementDueDaySchema,
 } from '@ploutizo/validators';
 import { useAppForm } from '@ploutizo/ui/components/form';
 import {
@@ -47,7 +46,7 @@ import type {
   FinancialInstitutionId,
   OrgMember,
 } from '@ploutizo/types';
-import type { AccountForm as AccountFormParsed } from '@ploutizo/validators';
+import type { AccountFormValues } from '@ploutizo/validators';
 import {
   useCreateAccount,
   useGetAccountMembers,
@@ -55,8 +54,6 @@ import {
 } from '@/lib/data-access/accounts';
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import { MemberToggleGroup } from '@/components/members/MemberToggleGroup';
-
-type AccountFormValues = AccountFormParsed;
 
 const OPTIONAL_INSTITUTION_SELECT_VALUE = '__none__';
 
@@ -146,7 +143,7 @@ const AccountFormInner = ({
     } as AccountFormValues,
     validators: {
       onSubmit: ({ value }: { value: AccountFormValues }) => {
-        const result = AccountFormSchema.safeParse(value);
+        const result = accountFormFieldsSchema.safeParse(value);
         if (!result.success) {
           return result.error.issues.map((i) => i.message).join(', ');
         }
@@ -155,19 +152,8 @@ const AccountFormInner = ({
     onSubmit: ({ value }: { value: AccountFormValues }) => {
       const result = AccountFormSchema.safeParse(value);
       if (!result.success) return;
-      const payload = {
-        name: result.data.name.trim(),
-        type: result.data.type,
-        institutionId: result.data.institutionId ?? null,
-        lastFour: result.data.lastFour?.trim() || undefined,
-        statementDueDay: persistAccountStatementDueDay(
-          result.data.type,
-          statementDueDaySchema.parse(result.data.statementDueDay ?? null)
-        ),
-        memberIds: result.data.memberIds,
-      };
       const mutation = isEditing ? updateAccount : createAccount;
-      mutation.mutate(payload, {
+      mutation.mutate(result.data, {
         onSuccess: onClose,
         onError: () =>
           form.setErrorMap({
@@ -191,7 +177,7 @@ const AccountFormInner = ({
           {/* Field 1: name */}
           <form.AppField
             name="name"
-            validators={{ onChange: AccountFormSchema.shape.name }}
+            validators={{ onChange: accountFormFieldsSchema.shape.name }}
           >
             {(field) => (
               <Field
@@ -262,7 +248,7 @@ const AccountFormInner = ({
                     onSubmit: ({ value, fieldApi }) => {
                       const message = accountInstitutionViolation(
                         fieldApi.form.getFieldValue('type'),
-                        value
+                        value as string | null | undefined
                       );
                       return message ? { message } : undefined;
                     },
@@ -369,22 +355,7 @@ const AccountFormInner = ({
                     )}
                   </form.AppField>
                   {isCreditCard ? (
-                    <form.AppField
-                      name="statementDueDay"
-                      validators={{
-                        onSubmit: ({ value }) => {
-                          const result = statementDueDaySchema.safeParse(
-                            value === '' ? null : value
-                          );
-                          if (!result.success) {
-                            return {
-                              message: result.error.issues[0]?.message,
-                            };
-                          }
-                          return undefined;
-                        },
-                      }}
-                    >
+                    <form.AppField name="statementDueDay">
                       {(field) => (
                         <Field
                           data-testid="account-statement-due-day-wrap"
@@ -415,7 +386,7 @@ const AccountFormInner = ({
                           {field.state.meta.errors.length > 0 ? (
                             <FieldError
                               errors={
-                                field.state.meta.errors as {
+                                field.state.meta.errors as unknown as {
                                   message?: string;
                                 }[]
                               }
@@ -433,7 +404,7 @@ const AccountFormInner = ({
           {/* Field 5: owners — always multi-select */}
           <form.AppField
             name="memberIds"
-            validators={{ onSubmit: AccountFormSchema.shape.memberIds }}
+            validators={{ onSubmit: accountFormFieldsSchema.shape.memberIds }}
           >
             {(field) => (
               <Field

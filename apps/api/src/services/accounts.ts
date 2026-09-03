@@ -1,5 +1,6 @@
 import { db } from '@ploutizo/db';
 import {
+  OWNERS_REQUIRED_MESSAGE,
   mergeAccountInstitutionViolation,
   mergeAccountStatementDueDay,
 } from '@ploutizo/validators';
@@ -9,14 +10,13 @@ import type {
 } from '@ploutizo/validators';
 import type { z } from 'zod';
 import { DomainError, NotFoundError } from '@/lib/errors';
-import { toAccountResponse } from '@/lib/accounts/accountResponse';
+import { buildAccount, buildAccounts } from '@/lib/accounts/accountResponse';
 import { allMembersInOrg } from '@/lib/queries/scope';
 import {
   archiveAccount,
   fetchAccountRecord,
   insertAccount,
   insertAccountMembers,
-  listAccountMemberDetails,
   listAccountMembers,
   listAccounts as listAccountsQuery,
   replaceAccountMembers,
@@ -29,27 +29,16 @@ const assertMembersInOrg = async (orgId: string, memberIds: string[]) => {
   if (!ok) throw new NotFoundError('Member not found in this household');
 };
 
+const assertAccountHasOwners = async (orgId: string, accountId: string) => {
+  const members = await listAccountMembers(orgId, accountId);
+  if (members.length === 0) {
+    throw new DomainError(400, OWNERS_REQUIRED_MESSAGE, 'VALIDATION_ERROR');
+  }
+};
+
 export const listAccounts = async (orgId: string, includeArchived: boolean) => {
   const rows = await listAccountsQuery(orgId, includeArchived);
-  if (rows.length === 0) return [];
-  const memberRows = await listAccountMemberDetails(
-    orgId,
-    rows.map((r) => r.id)
-  );
-  const byAccount = new Map<
-    string,
-    { id: string; displayName: string; imageUrl: string | null }[]
-  >();
-  for (const m of memberRows) {
-    const list = byAccount.get(m.accountId) ?? [];
-    list.push({
-      id: m.memberId,
-      displayName: m.displayName,
-      imageUrl: m.imageUrl ?? null,
-    });
-    byAccount.set(m.accountId, list);
-  }
-  return rows.map((row) => toAccountResponse(row, byAccount.get(row.id) ?? []));
+  return buildAccounts(orgId, rows);
 };
 
 export const createAccount = async (
@@ -58,11 +47,12 @@ export const createAccount = async (
 ) => {
   const { memberIds, ...accountData } = data;
   await assertMembersInOrg(orgId, memberIds);
-  return db.transaction(async (tx) => {
-    const row = await insertAccount(tx, orgId, accountData);
-    await insertAccountMembers(tx, row.id, memberIds);
-    return toAccountResponse(row);
+  const row = await db.transaction(async (tx) => {
+    const inserted = await insertAccount(tx, orgId, accountData);
+    await insertAccountMembers(tx, inserted.id, memberIds);
+    return inserted;
   });
+  return buildAccount(orgId, row);
 };
 
 export const updateAccount = async (
@@ -87,6 +77,8 @@ export const updateAccount = async (
 
   if (memberIds !== undefined) {
     await assertMembersInOrg(orgId, memberIds);
+  } else {
+    await assertAccountHasOwners(orgId, id);
   }
   const updated = await db.transaction(async (tx) => {
     const row = await updateAccountQuery(tx, orgId, id, accountPatch);
@@ -97,7 +89,7 @@ export const updateAccount = async (
     return row;
   });
   if (!updated) throw new NotFoundError('Account not found.');
-  return toAccountResponse(updated);
+  return buildAccount(orgId, updated);
 };
 
 export const getAccountMembers = async (orgId: string, accountId: string) => {
@@ -112,5 +104,5 @@ export const getAccountMembers = async (orgId: string, accountId: string) => {
 export const archiveAccountById = async (orgId: string, id: string) => {
   const updated = await archiveAccount(orgId, id);
   if (!updated) throw new NotFoundError('Account not found.');
-  return toAccountResponse(updated);
+  return buildAccount(orgId, updated);
 };

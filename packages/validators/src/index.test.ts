@@ -11,6 +11,7 @@ import {
   mergeAccountInstitutionViolation,
   mergeAccountStatementDueDay,
   persistAccountStatementDueDay,
+  toAccountWritePayload,
   updateAccountSchema,
   updateHouseholdSettingsSchema,
   updateTransactionSchema,
@@ -414,7 +415,7 @@ describe('AccountFormSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('keeps a typed statement due day when the form type is not a credit card', () => {
+  it('nulls statement due day in the write payload for non-credit-card types', () => {
     const result = AccountFormSchema.safeParse({
       name: 'Chequing',
       type: 'chequing',
@@ -424,8 +425,30 @@ describe('AccountFormSchema', () => {
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.statementDueDay).toBe('15');
+      expect(result.data.statementDueDay).toBeNull();
     }
+  });
+});
+
+describe('toAccountWritePayload', () => {
+  it('trims name, normalizes lastFour, and persists statement due day rules', () => {
+    expect(
+      toAccountWritePayload({
+        name: '  Visa  ',
+        type: 'credit_card',
+        institutionId: 'td',
+        lastFour: ' 4242 ',
+        statementDueDay: '15',
+        memberIds: ['123e4567-e89b-12d3-a456-426614174000'],
+      })
+    ).toEqual({
+      name: 'Visa',
+      type: 'credit_card',
+      institutionId: 'td',
+      lastFour: '4242',
+      statementDueDay: 15,
+      memberIds: ['123e4567-e89b-12d3-a456-426614174000'],
+    });
   });
 });
 

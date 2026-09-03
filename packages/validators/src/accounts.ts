@@ -73,8 +73,10 @@ export const mergeAccountStatementDueDay = (
   patch: { type?: AccountType; statementDueDay?: number | null }
 ): number | null | undefined => {
   const type = patch.type ?? existing.type;
+  if (patch.statementDueDay !== undefined) {
+    return persistAccountStatementDueDay(type, patch.statementDueDay);
+  }
   if (type !== 'credit_card') return null;
-  if (patch.statementDueDay !== undefined) return patch.statementDueDay;
   return undefined;
 };
 
@@ -104,6 +106,42 @@ const refineAccountInstitution = (
   }
 };
 
+const refineAccountStatementDueDay = (
+  data: { type: AccountType; statementDueDay?: string | number | null },
+  ctx: z.RefinementCtx
+) => {
+  if (data.type !== 'credit_card') return;
+  const result = statementDueDaySchema.safeParse(data.statementDueDay);
+  if (!result.success) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['statementDueDay'],
+      message: result.error.issues[0]?.message ?? STATEMENT_DUE_DAY_MESSAGE,
+    });
+  }
+};
+
+export const toAccountWritePayload = (data: {
+  name: string;
+  type: AccountType;
+  institutionId?: string | null;
+  lastFour?: string;
+  statementDueDay?: string | number | null;
+  memberIds: string[];
+}) => ({
+  name: data.name.trim(),
+  type: data.type,
+  institutionId: data.institutionId ?? null,
+  lastFour: data.lastFour?.trim() || undefined,
+  statementDueDay: persistAccountStatementDueDay(
+    data.type,
+    data.type === 'credit_card'
+      ? statementDueDaySchema.parse(data.statementDueDay ?? null)
+      : null
+  ),
+  memberIds: data.memberIds,
+});
+
 export const createAccountSchema = z
   .object({
     name: z.string().min(1, 'Account name is required.'),
@@ -114,13 +152,7 @@ export const createAccountSchema = z
     memberIds: ownerIdsSchema,
   })
   .superRefine(refineAccountInstitution)
-  .transform((data) => ({
-    ...data,
-    statementDueDay: persistAccountStatementDueDay(
-      data.type,
-      data.statementDueDay
-    ),
-  }));
+  .transform((data) => toAccountWritePayload(data));
 
 export const updateAccountSchema = z
   .object({
@@ -137,7 +169,7 @@ export const updateAccountSchema = z
 export type CreateAccountInput = z.infer<typeof createAccountSchema>;
 export type UpdateAccountInput = z.infer<typeof updateAccountSchema>;
 
-export const AccountFormSchema = z
+export const accountFormFieldsSchema = z
   .object({
     name: z.string().min(1, 'Account name is required.'),
     type: z.enum(ACCOUNT_TYPE_VALUES, { error: 'Account type is required.' }),
@@ -147,15 +179,11 @@ export const AccountFormSchema = z
     memberIds: ownerIdsSchema,
   })
   .superRefine(refineAccountInstitution)
-  .superRefine((data, ctx) => {
-    if (data.type !== 'credit_card') return;
-    const result = statementDueDaySchema.safeParse(data.statementDueDay);
-    if (!result.success) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['statementDueDay'],
-        message: result.error.issues[0]?.message ?? STATEMENT_DUE_DAY_MESSAGE,
-      });
-    }
-  });
-export type AccountForm = z.infer<typeof AccountFormSchema>;
+  .superRefine(refineAccountStatementDueDay);
+
+export const AccountFormSchema = accountFormFieldsSchema.transform(
+  toAccountWritePayload
+);
+
+export type AccountFormValues = z.input<typeof accountFormFieldsSchema>;
+export type AccountForm = z.output<typeof AccountFormSchema>;

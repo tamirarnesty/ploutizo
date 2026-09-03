@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '@ploutizo/db';
 import { createRouteTestApp } from './testUtils';
 import type { Mock } from 'vitest';
@@ -8,6 +8,104 @@ import { accountsRouter } from '@/routes/accounts';
 /** `db.select` after `vi.mock('@ploutizo/db')` — use for `mockReturnValueOnce` chains. */
 type MockedAccountsDbSelect = Mock;
 
+const defaultSelectFrom = () => ({
+  where: vi.fn().mockReturnValue({
+    orderBy: vi.fn().mockResolvedValue([]),
+    limit: vi.fn().mockResolvedValue([]),
+  }),
+  innerJoin: vi.fn().mockReturnValue({
+    innerJoin: vi.fn().mockReturnValue({
+      innerJoin: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue([]),
+      }),
+    }),
+  }),
+});
+
+const resetDbSelectMock = () => {
+  (vi.mocked(db.select) as MockedAccountsDbSelect).mockReset();
+  (vi.mocked(db.select) as MockedAccountsDbSelect).mockReturnValue({
+    from: vi.fn().mockImplementation(defaultSelectFrom),
+  });
+};
+
+const mockAccountMemberDetails = (
+  members: {
+    accountId: string;
+    memberId: string;
+    displayName: string;
+    imageUrl: string | null;
+  }[] = []
+) => {
+  (vi.mocked(db.select) as MockedAccountsDbSelect).mockReturnValueOnce({
+    from: vi.fn().mockReturnValue({
+      innerJoin: vi.fn().mockReturnValue({
+        innerJoin: vi.fn().mockReturnValue({
+          innerJoin: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue(members),
+          }),
+        }),
+      }),
+    }),
+  });
+};
+
+const mockExistingAccount = (overrides: Record<string, unknown> = {}) => {
+  (vi.mocked(db.select) as MockedAccountsDbSelect).mockReturnValueOnce({
+    from: vi.fn().mockReturnValue({
+      where: vi.fn().mockReturnValue({
+        limit: vi.fn().mockResolvedValue([
+          {
+            id: 'acct_1',
+            orgId: 'org_test123',
+            name: 'Chequing',
+            type: 'chequing',
+            institutionId: null,
+            lastFour: null,
+            statementDueDay: null,
+            archivedAt: null,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            ...overrides,
+          },
+        ]),
+      }),
+    }),
+  });
+};
+
+const mockListAccountMembers = (
+  members: {
+    id: string;
+    accountId: string;
+    memberId: string;
+  }[] = [{ id: 'am_1', accountId: 'acct_1', memberId: 'mem_1' }]
+) => {
+  (vi.mocked(db.select) as MockedAccountsDbSelect).mockReturnValueOnce({
+    from: vi.fn().mockReturnValue({
+      innerJoin: vi.fn().mockReturnValue({
+        innerJoin: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue(members),
+        }),
+      }),
+    }),
+  });
+};
+
+const mockSuccessfulAccountWrite = (
+  overrides: Record<string, unknown> = {},
+  members: {
+    accountId: string;
+    memberId: string;
+    displayName: string;
+    imageUrl: string | null;
+  }[] = []
+) => {
+  mockExistingAccount(overrides);
+  mockListAccountMembers();
+  mockAccountMemberDetails(members);
+};
+
 // Mock @clerk/hono so getAuth returns a known orgId
 vi.mock('@clerk/hono', () => ({
   getAuth: vi.fn(() => ({ orgId: 'org_test123' })),
@@ -16,13 +114,7 @@ vi.mock('@clerk/hono', () => ({
 // Mock @ploutizo/db so no real DB calls happen
 vi.mock('@ploutizo/db', () => ({
   db: {
-    select: vi.fn().mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          orderBy: vi.fn().mockResolvedValue([]),
-        }),
-      }),
-    }),
+    select: vi.fn(),
     insert: vi.fn().mockReturnValue({
       values: vi.fn().mockReturnValue({
         returning: vi.fn().mockResolvedValue([
@@ -121,6 +213,10 @@ vi.mock('@ploutizo/db/schema', () => ({
 
 const app = createRouteTestApp((testApp) => {
   testApp.route('/', accountsRouter);
+});
+
+beforeEach(() => {
+  resetDbSelectMock();
 });
 
 const OWNER_ID = '123e4567-e89b-12d3-a456-426614174000';
@@ -238,6 +334,15 @@ describe('GET /api/accounts', () => {
 
 describe('POST /api/accounts', () => {
   it('returns 201 with created account on valid payload', async () => {
+    mockAccountMemberDetails([
+      {
+        accountId: 'acct_1',
+        memberId: OWNER_ID,
+        displayName: 'Alice',
+        imageUrl: 'https://img.clerk.com/alice.jpg',
+      },
+    ]);
+
     const res = await app.request('/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -249,9 +354,22 @@ describe('POST /api/accounts', () => {
       }),
     });
     expect(res.status).toBe(201);
-    const body = (await res.json()) as { data: { id: string; orgId: string } };
+    const body = (await res.json()) as {
+      data: {
+        id: string;
+        orgId: string;
+        owners: { id: string; displayName: string; imageUrl: string | null }[];
+      };
+    };
     expect(body.data).toHaveProperty('id');
     expect(body.data.orgId).toBe('org_test123');
+    expect(body.data.owners).toEqual([
+      {
+        id: OWNER_ID,
+        displayName: 'Alice',
+        imageUrl: 'https://img.clerk.com/alice.jpg',
+      },
+    ]);
   });
 
   it('returns 400 on missing required fields', async () => {
@@ -323,29 +441,6 @@ describe('POST /api/accounts', () => {
 });
 
 describe('PATCH /api/accounts/:id', () => {
-  const mockExistingAccount = (overrides: Record<string, unknown> = {}) => {
-    (vi.mocked(db.select) as MockedAccountsDbSelect).mockReturnValueOnce({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          limit: vi.fn().mockResolvedValue([
-            {
-              id: 'acct_1',
-              orgId: 'org_test123',
-              name: 'Chequing',
-              type: 'chequing',
-              institutionId: null,
-              lastFour: null,
-              archivedAt: null,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              ...overrides,
-            },
-          ]),
-        }),
-      }),
-    });
-  };
-
   it('returns 400 when updating a required-type account that still lacks an institution', async () => {
     mockExistingAccount({ type: 'credit_card', institutionId: null });
 
@@ -379,7 +474,7 @@ describe('PATCH /api/accounts/:id', () => {
   });
 
   it('accepts a selected Financial institution on update', async () => {
-    mockExistingAccount({ type: 'chequing', institutionId: null });
+    mockSuccessfulAccountWrite({ type: 'chequing', institutionId: null });
     const res = await app.request('/acct_1', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -399,7 +494,7 @@ describe('PATCH /api/accounts/:id', () => {
   });
 
   it('accepts a credit-card statement due day', async () => {
-    mockExistingAccount({
+    mockSuccessfulAccountWrite({
       type: 'credit_card',
       institutionId: 'td',
       statementDueDay: null,
@@ -415,6 +510,7 @@ describe('PATCH /api/accounts/:id', () => {
 
 describe('DELETE /api/accounts/:id/archive', () => {
   it('returns 200 or 404 for archive endpoint', async () => {
+    mockAccountMemberDetails();
     const res = await app.request('/acct_1/archive', { method: 'DELETE' });
     expect([200, 404]).toContain(res.status);
   });
