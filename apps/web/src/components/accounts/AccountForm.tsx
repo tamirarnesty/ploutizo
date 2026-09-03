@@ -57,9 +57,7 @@ import {
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import { MemberToggleGroup } from '@/components/members/MemberToggleGroup';
 
-type AccountFormValues = Omit<AccountFormParsed, 'statementDueDay'> & {
-  statementDueDay: string;
-};
+type AccountFormValues = AccountFormParsed;
 
 const OPTIONAL_INSTITUTION_SELECT_VALUE = '__none__';
 
@@ -165,7 +163,7 @@ const AccountFormInner = ({
         lastFour: result.data.lastFour?.trim() || undefined,
         statementDueDay: persistAccountStatementDueDay(
           result.data.type,
-          result.data.statementDueDay ?? null
+          statementDueDaySchema.parse(result.data.statementDueDay ?? null)
         ),
         memberIds: result.data.memberIds,
       };
@@ -278,9 +276,7 @@ const AccountFormInner = ({
                       }
                     >
                       <FieldLabel htmlFor="account-institution">
-                        {required
-                          ? 'Financial institution'
-                          : 'Financial institution (optional)'}
+                        Financial institution
                       </FieldLabel>
                       <Select
                         value={
@@ -356,7 +352,7 @@ const AccountFormInner = ({
                       {(field) => (
                         <Field>
                           <FieldLabel htmlFor="account-last-four">
-                            Last 4 digits (optional)
+                            Last 4 digits
                           </FieldLabel>
                           <Input
                             id="account-last-four"
@@ -392,7 +388,12 @@ const AccountFormInner = ({
                     <form.AppField
                       name="statementDueDay"
                       validators={{
-                        onSubmit: ({ value }) => {
+                        onSubmit: ({ value, fieldApi }) => {
+                          if (
+                            fieldApi.form.getFieldValue('type') !==
+                            'credit_card'
+                          )
+                            return undefined;
                           const result = statementDueDaySchema.safeParse(
                             value === '' ? null : value
                           );
@@ -412,7 +413,7 @@ const AccountFormInner = ({
                           }
                         >
                           <FieldLabel htmlFor="account-statement-due-day">
-                            Statement due day (optional)
+                            Statement due day
                           </FieldLabel>
                           <Input
                             id="account-statement-due-day"

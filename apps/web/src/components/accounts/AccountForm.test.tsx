@@ -239,9 +239,7 @@ describe('AccountForm', () => {
       />
     );
 
-    expect(
-      screen.getByText('Financial institution (optional)')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Financial institution')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
 
@@ -284,7 +282,7 @@ describe('AccountForm', () => {
     expect(
       screen.getByTestId('account-statement-due-day-wrap')
     ).toHaveAttribute('aria-hidden', 'false');
-    const dueDay = screen.getByLabelText('Statement due day (optional)');
+    const dueDay = screen.getByLabelText('Statement due day');
 
     await user.type(dueDay, '15');
     await user.click(screen.getByRole('button', { name: 'Chequing' }));
@@ -293,9 +291,7 @@ describe('AccountForm', () => {
     ).toHaveAttribute('aria-hidden', 'true');
 
     await user.click(screen.getByRole('button', { name: 'Credit Card' }));
-    expect(screen.getByLabelText('Statement due day (optional)')).toHaveValue(
-      '15'
-    );
+    expect(screen.getByLabelText('Statement due day')).toHaveValue('15');
   });
 
   it('opens a credit card already split with the due day prefilled', () => {
@@ -314,7 +310,7 @@ describe('AccountForm', () => {
       />
     );
 
-    const dueDay = screen.getByLabelText('Statement due day (optional)');
+    const dueDay = screen.getByLabelText('Statement due day');
     expect(
       screen.getByTestId('account-statement-due-day-wrap')
     ).toHaveAttribute('aria-hidden', 'false');
@@ -331,10 +327,7 @@ describe('AccountForm', () => {
     await user.type(screen.getByLabelText('Name'), 'Visa');
     await user.click(screen.getByRole('button', { name: 'Credit Card' }));
     await user.click(screen.getByRole('button', { name: 'TD' }));
-    await user.type(
-      screen.getByLabelText('Statement due day (optional)'),
-      '15'
-    );
+    await user.type(screen.getByLabelText('Statement due day'), '15');
     await user.click(screen.getByRole('button', { name: 'Add account' }));
 
     await waitFor(() => {

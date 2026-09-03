@@ -143,8 +143,19 @@ export const AccountFormSchema = z
     type: z.enum(ACCOUNT_TYPE_VALUES, { error: 'Account type is required.' }),
     institutionId: institutionIdSchema,
     lastFour: z.string().max(4).optional(),
-    statementDueDay: statementDueDaySchema.optional(),
+    statementDueDay: z.string().optional(),
     memberIds: ownerIdsSchema,
   })
-  .superRefine(refineAccountInstitution);
+  .superRefine(refineAccountInstitution)
+  .superRefine((data, ctx) => {
+    if (data.type !== 'credit_card') return;
+    const result = statementDueDaySchema.safeParse(data.statementDueDay);
+    if (!result.success) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['statementDueDay'],
+        message: result.error.issues[0]?.message ?? STATEMENT_DUE_DAY_MESSAGE,
+      });
+    }
+  });
 export type AccountForm = z.infer<typeof AccountFormSchema>;
