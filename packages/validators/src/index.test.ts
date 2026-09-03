@@ -424,7 +424,7 @@ describe('AccountFormSchema', () => {
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.statementDueDay).toBe(15);
+      expect(result.data.statementDueDay).toBe('15');
     }
   });
 });
