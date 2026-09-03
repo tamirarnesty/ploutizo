@@ -5,10 +5,10 @@ import { parse } from 'csv-parse/sync';
 import { describe, expect, it } from 'vitest';
 import { matchesBillPaymentPhrase } from '@ploutizo/types';
 
-const banksDir = dirname(fileURLToPath(import.meta.url));
+const profilesDir = dirname(fileURLToPath(import.meta.url));
 
 const readFixture = (...relativePath: string[]) =>
-  readFileSync(join(banksDir, ...relativePath), 'utf8');
+  readFileSync(join(profilesDir, ...relativePath), 'utf8');
 
 const parseCsv = (content: string): string[][] =>
   parse(content, { relax_column_count: true, skip_empty_lines: true });
@@ -45,7 +45,7 @@ const PC_HEADERS = [
   'Amount',
 ] as const;
 
-describe('bank CSV contract fixtures', () => {
+describe('content profile contract fixtures', () => {
   it('covers Amex short accepted shapes and an unmatched Card Member hint', () => {
     const rows = parseCsv(readFixture('amex', 'short.csv'));
     const [headers, ...data] = rows;

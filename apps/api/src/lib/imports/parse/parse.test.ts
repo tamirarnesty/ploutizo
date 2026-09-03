@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { MAX_IMPORT_BYTES, MAX_IMPORT_ROWS } from '@ploutizo/types';
 import type { ImportContentSelection } from '@ploutizo/types';
 import { parseImportUpload } from './index';
@@ -43,26 +43,35 @@ describe('parseImportUpload auto-detection', () => {
     expect(result.rows[0]?.parsedDescription).toBe('Coffee');
   });
 
-  it('returns mapping_required for an unrecognized CSV', () => {
-    const result = parseImportUpload('posted,total,memo\n2026-05-02,42,Coffee');
-
-    expect(result).toEqual({
-      kind: 'mapping_required',
-      candidateProfileIds: [],
-      columns: ['posted', 'total', 'memo'],
-      sampleRows: [['2026-05-02', '42', 'Coffee']],
-    });
+  it('rejects an unrecognized headed CSV', () => {
+    expectImportError(
+      () => parseImportUpload('posted,total,memo\n2026-05-02,42,Coffee'),
+      'IMPORT_FILE_UNRECOGNIZED'
+    );
   });
 
-  it('returns mapping_required for an empty-but-readable CSV', () => {
-    const result = parseImportUpload('a,b,c\n,,,');
+  it('rejects a header-only CSV without data rows', () => {
+    expectImportError(
+      () => parseImportUpload('a,b,c\n,,,'),
+      'IMPORT_FILE_EMPTY'
+    );
+    expectImportError(() => parseImportUpload('a,b,c'), 'IMPORT_FILE_EMPTY');
+  });
 
-    expect(result).toEqual({
-      kind: 'mapping_required',
-      candidateProfileIds: [],
-      columns: ['a', 'b', 'c'],
-      sampleRows: [],
-    });
+  it('returns mapping_required when multiple profiles auto-detect', async () => {
+    const registry = await import('./normalizers/registry');
+    const { amexContentProfile } = await import('./normalizers/amex');
+    const { internalContentProfile } = await import('./normalizers/internal');
+    const spy = vi
+      .spyOn(registry, 'findAutoDetectableProfiles')
+      .mockReturnValue([amexContentProfile, internalContentProfile]);
+
+    const result = parseImportUpload(
+      'date,amount,description,type\n2026-05-02,42.18,Coffee,expense'
+    );
+
+    expect(result).toMatchObject({ kind: 'mapping_required' });
+    spy.mockRestore();
   });
 });
 

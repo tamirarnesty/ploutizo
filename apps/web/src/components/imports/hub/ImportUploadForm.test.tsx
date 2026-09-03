@@ -395,15 +395,15 @@ describe('ImportUploadForm', () => {
     expect(screen.getByText('Choose import format')).toBeInTheDocument();
   });
 
-  it('submits a custom mapping when no profile candidates match', async () => {
+  it('submits a custom mapping for headerless files without profile candidates', async () => {
     const user = userEvent.setup();
     uploadMocks.createImportDraftMutate.mockImplementation(
       (_payload: unknown, options: Record<string, unknown> | undefined) => {
         (options?.onSuccess as ((r: unknown) => void) | undefined)?.({
           kind: 'mapping_required',
           candidateProfileIds: [],
-          columns: ['posted', 'total', 'memo'],
-          sampleRows: [['2026-05-02', '42.00', 'Coffee']],
+          columns: ['Column 1', 'Column 2', 'Column 3'],
+          sampleRows: [['05/02/2026', 'Coffee', '42.00']],
         });
       }
     );
@@ -435,12 +435,12 @@ describe('ImportUploadForm', () => {
           selection: {
             kind: 'mapping',
             mapping: {
-              dateColumn: 'posted',
+              dateColumn: 'Column 1',
               dateFormat: 'YYYY-MM-DD',
-              descriptionColumn: 'memo',
+              descriptionColumn: 'Column 2',
               amount: {
                 kind: 'signed',
-                column: 'total',
+                column: 'Column 3',
                 positiveIsExpense: true,
               },
             },

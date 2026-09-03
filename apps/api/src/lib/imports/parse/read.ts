@@ -101,6 +101,10 @@ export const readCsvUpload = (content: string): CsvUpload => {
     ? recordsFromContent.length - 1
     : recordsFromContent.length;
 
+  if (dataRowCount === 0) {
+    throw new DomainError(400, 'The CSV file is empty.', 'IMPORT_FILE_EMPTY');
+  }
+
   if (dataRowCount > MAX_IMPORT_ROWS) {
     throw new DomainError(
       413,

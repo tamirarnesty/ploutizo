@@ -54,9 +54,30 @@ export const parseImportUpload = (
 
   let resolvedSelection = selection;
   if (!resolvedSelection) {
-    const matches = findAutoDetectableProfiles(upload);
-    if (matches.length !== 1) return toMappingRequired(upload);
-    resolvedSelection = { kind: 'profile', profileId: matches[0].profileId };
+    const autoMatches = findAutoDetectableProfiles(upload);
+    if (autoMatches.length === 1) {
+      resolvedSelection = {
+        kind: 'profile',
+        profileId: autoMatches[0].profileId,
+      };
+    } else if (autoMatches.length > 1) {
+      return toMappingRequired(upload);
+    } else {
+      const hasCandidateProfiles = findMatchingProfiles(upload).some(
+        (profile) => profile.profileId !== 'internal'
+      );
+      if (hasCandidateProfiles) {
+        return toMappingRequired(upload);
+      }
+      if (upload.hasHeaderRow) {
+        throw new DomainError(
+          400,
+          'The CSV format was not recognized.',
+          'IMPORT_FILE_UNRECOGNIZED'
+        );
+      }
+      return toMappingRequired(upload);
+    }
   }
 
   const normalizer =

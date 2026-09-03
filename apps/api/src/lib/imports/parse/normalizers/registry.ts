@@ -10,16 +10,17 @@ import { pcFinancialContentProfile } from './pc-financial';
 import type { CsvUpload, ImportContentProfile } from '../types';
 import { DomainError } from '@/lib/errors';
 
-/**
- * Named content profiles checked before the internal fallback.
- * A file matching any of these does not trigger the internal fallback check.
- */
-const NAMED_PROFILES: ImportContentProfile[] = [
+const CONTENT_PROFILES: ImportContentProfile[] = [
   amexContentProfile,
   pcFinancialContentProfile,
   mdyDebitCreditBalanceProfile,
   isoDebitCreditMaskedCardProfile,
+  internalContentProfile,
 ];
+
+const namedContentProfiles = CONTENT_PROFILES.filter(
+  (profile) => profile.profileId !== 'internal'
+);
 
 /**
  * Inspect a parsed CSV upload and return the matching profile(s).
@@ -29,7 +30,7 @@ const NAMED_PROFILES: ImportContentProfile[] = [
 export const findMatchingProfiles = (
   upload: CsvUpload
 ): ImportContentProfile[] => {
-  const namedMatches = NAMED_PROFILES.filter((profile) =>
+  const namedMatches = namedContentProfiles.filter((profile) =>
     profile.matches(upload)
   );
   if (namedMatches.length > 0) return namedMatches;
@@ -52,9 +53,6 @@ export const findAutoDetectableProfiles = (
     isAutoDetectableProfile(profile.profileId)
   );
 
-/** All profiles in order (named first, then internal). */
-const ALL_PROFILES = [...NAMED_PROFILES, internalContentProfile];
-
 /**
  * Return the profile for a member-confirmed profile ID.
  * Throws if the file cannot be parsed as that layout.
@@ -63,7 +61,7 @@ export const resolveSelectedProfile = (
   upload: CsvUpload,
   profileId: ImportContentProfileId
 ): ImportContentProfile => {
-  const profile = ALL_PROFILES.find((p) => p.profileId === profileId);
+  const profile = CONTENT_PROFILES.find((p) => p.profileId === profileId);
   if (!profile) {
     throw new DomainError(
       400,

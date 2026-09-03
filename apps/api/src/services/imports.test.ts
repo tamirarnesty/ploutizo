@@ -3,6 +3,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '@ploutizo/db';
+import { deriveImportRowStatus } from '@ploutizo/utils';
+import type { ImportRowStatusInput } from '@ploutizo/utils';
 import { NotFoundError } from '@/lib/errors';
 import {
   createImportDraft,
@@ -288,7 +290,7 @@ describe('import service', () => {
     const amexShort = readFileSync(
       join(
         dirname(fileURLToPath(import.meta.url)),
-        '../lib/imports/parse/fixtures/banks/amex/short.csv'
+        '../lib/imports/parse/fixtures/profiles/amex/short.csv'
       ),
       'utf8'
     );
@@ -404,18 +406,15 @@ describe('import service', () => {
     ]);
   });
 
-  it('returns mapping_required when auto-detection cannot pick a profile', async () => {
-    const result = await createImportDraft('org_1', {
-      accountId: summaryRow.accountId,
-      fileName: 'unknown.csv',
-      content: 'posted,total,memo\n2026-05-02,42,Coffee',
-    });
-
-    expect(result).toEqual({
-      kind: 'mapping_required',
-      candidateProfileIds: [],
-      columns: ['posted', 'total', 'memo'],
-      sampleRows: [['2026-05-02', '42', 'Coffee']],
+  it('rejects an unrecognized headed CSV without explicit selection', async () => {
+    await expect(
+      createImportDraft('org_1', {
+        accountId: summaryRow.accountId,
+        fileName: 'unknown.csv',
+        content: 'posted,total,memo\n2026-05-02,42,Coffee',
+      })
+    ).rejects.toMatchObject({
+      code: 'IMPORT_FILE_UNRECOGNIZED',
     });
     expect(insertImportBatch).not.toHaveBeenCalled();
   });
@@ -450,6 +449,32 @@ describe('import service', () => {
       expect.objectContaining({
         contentProfileId: 'internal',
       })
+    );
+  });
+
+  it('persists invalid row facts after confirming a generic positional profile', async () => {
+    const result = await createImportDraft('org_1', {
+      accountId: summaryRow.accountId,
+      fileName: 'statement.csv',
+      content: [
+        '05/02/2026,NEIGHBORHOOD GROCERY,12.34,,100.00',
+        'not-a-date,BROKEN SIGNATURE,12.34,,100.00',
+      ].join('\n'),
+      selection: { kind: 'profile', profileId: 'mdy_debit_credit_balance' },
+    });
+
+    expect(result.kind).toBe('draft');
+    const insertedRows = vi.mocked(insertImportBatchRows).mock.calls[0][1];
+    expect(insertedRows).toHaveLength(2);
+    expect(insertedRows[0]).toMatchObject({
+      parsedDate: '2026-05-02',
+    });
+    expect(insertedRows[1]).toMatchObject({
+      parsedDate: null,
+      parsedDescription: 'BROKEN SIGNATURE',
+    });
+    expect(deriveImportRowStatus(insertedRows[1] as ImportRowStatusInput)).toBe(
+      'invalid'
     );
   });
 

@@ -10,18 +10,21 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { BILL_PAYMENT_CATEGORY_NAME } from '@ploutizo/types';
-import { classifyImportRows } from '@ploutizo/utils';
+import {
+  classifyImportRows,
+  isImportRowStructurallyInvalid,
+} from '@ploutizo/utils';
 import { parseImportUpload } from './index';
 import type { ParseImportUploadResult, ParsedImport } from './types';
 import { DomainError } from '@/lib/errors';
 
-const banksDir = join(
+const profilesDir = join(
   dirname(fileURLToPath(import.meta.url)),
-  'fixtures/banks'
+  'fixtures/profiles'
 );
 
 const readFixture = (...relativePath: string[]) =>
-  readFileSync(join(banksDir, ...relativePath), 'utf8');
+  readFileSync(join(profilesDir, ...relativePath), 'utf8');
 
 const expectImportError = (fn: () => unknown, code: string) => {
   try {
@@ -433,6 +436,21 @@ describe('parseImportUpload — confirmed generic positional selection', () => {
     expect(parsed.rows[0]?.parsedDate).toBe('2026-05-02');
     expect(parsed.rows[1]?.parsedDate).toBeNull();
     expect(parsed.rows[1]?.parsedDescription).toBe('BROKEN SIGNATURE');
+  });
+
+  it('keeps signature-breaking rows structurally invalid after generic confirmation', () => {
+    const parsed = requireParsed(
+      parseImportUpload(
+        [
+          '05/02/2026,NEIGHBORHOOD GROCERY,12.34,,100.00',
+          'not-a-date,BROKEN SIGNATURE,12.34,,100.00',
+        ].join('\n'),
+        { kind: 'profile', profileId: 'mdy_debit_credit_balance' }
+      )
+    );
+
+    expect(isImportRowStructurallyInvalid(parsed.rows[0])).toBe(false);
+    expect(isImportRowStructurallyInvalid(parsed.rows[1])).toBe(true);
   });
 
   it('parses mixed-date headerless rows when MDY is explicitly selected', () => {

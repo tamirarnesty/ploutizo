@@ -23,7 +23,8 @@ If no auto-detectable profile matches and the member has not submitted a selecti
 
 | Category                                                       | Code                                                       | Example                                                                           |
 | -------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| No recognized auto-detectable profile; member has not selected | `mapping_required` (not a failure — needs member decision) | `headerless-unrecognized.csv`; two named profiles matching the same file          |
+| No recognized auto-detectable profile; member has not selected | `mapping_required` (not a failure — needs member decision) | headerless files with candidate profiles; two named profiles matching the same file |
+| Unrecognized headed CSV                                        | `IMPORT_FILE_UNRECOGNIZED`                                 | headed file with no matching profile and no candidates                              |
 | Member submitted an invalid profile selection                  | `IMPORT_INVALID_SELECTION`                                 | profile ID doesn't match the file                                                 |
 | Unreadable CSV                                                 | `IMPORT_FILE_CORRUPT`                                      | unclosed quote, trailing characters after a quoted field, unquoted interior quote |
 | Empty                                                          | `IMPORT_FILE_EMPTY`                                        | blank file or only a header row                                                   |

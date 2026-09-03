@@ -21,6 +21,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 
+import { importContentProfileIdCheckSql } from '@ploutizo/types';
 import type { ImportContentProfileId } from '@ploutizo/types';
 
 import { accounts } from './accounts';
@@ -69,7 +70,7 @@ export const importBatches = pgTable(
     }).onDelete('restrict'),
     check(
       'import_batches_content_profile_id_check',
-      sql`content_profile_id is null or content_profile_id in ('internal', 'amex', 'pc_financial', 'mdy_debit_credit_balance', 'iso_debit_credit_masked_card')`
+      sql.raw(importContentProfileIdCheckSql())
     ),
   ]
 );

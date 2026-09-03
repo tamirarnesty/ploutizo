@@ -18,6 +18,12 @@ export const isImportContentProfileId = (
 ): value is ImportContentProfileId =>
   IMPORT_CONTENT_PROFILE_IDS.includes(value as ImportContentProfileId);
 
+/** Keep `import_batches` CHECK constraints in sync with `IMPORT_CONTENT_PROFILE_IDS`. */
+export const importContentProfileIdCheckSql = () =>
+  `content_profile_id is null or content_profile_id in (${IMPORT_CONTENT_PROFILE_IDS.map(
+    (id) => `'${id}'`
+  ).join(', ')})`;
+
 /** Headerless positional layouts — match only after explicit member selection. */
 export const GENERIC_POSITIONAL_IMPORT_PROFILE_IDS = [
   'mdy_debit_credit_balance',

@@ -70,8 +70,11 @@ const toContentProfileId = (
   contentProfileId: string | null
 ): ImportContentProfileId | null => {
   if (contentProfileId == null) return null;
-  if (isImportContentProfileId(contentProfileId)) return contentProfileId;
-  throw new DomainError(500, 'Import draft has an unknown content profile.');
+  // Fail closed when persisted IDs drift from IMPORT_CONTENT_PROFILE_IDS.
+  if (!isImportContentProfileId(contentProfileId)) {
+    throw new DomainError(500, 'Import draft has an unknown content profile.');
+  }
+  return contentProfileId;
 };
 
 const toImportDraftSummary = (
