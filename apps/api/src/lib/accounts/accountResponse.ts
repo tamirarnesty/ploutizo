@@ -9,7 +9,7 @@ import { listAccountMemberDetails } from '@/lib/queries/accounts';
 
 type AccountRow = typeof accounts.$inferSelect;
 
-type AccountMemberDetailRow = {
+export type AccountMemberDetailRow = {
   accountId: string;
   memberId: string;
   displayName: string;
@@ -67,6 +67,14 @@ export const buildAccounts = async (
   return rows.map((row) =>
     mapAccountRow(row, ownersByAccountId.get(row.id) ?? [])
   );
+};
+
+export const buildAccountFromMemberRows = (
+  row: AccountRow,
+  memberRows: AccountMemberDetailRow[]
+): Account => {
+  const ownersByAccountId = ownersByAccountIdFromMemberRows(memberRows);
+  return mapAccountRow(row, ownersByAccountId.get(row.id) ?? []);
 };
 
 export const buildAccount = async (

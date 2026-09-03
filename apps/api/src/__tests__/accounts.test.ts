@@ -154,6 +154,7 @@ vi.mock('@ploutizo/db', () => ({
     transaction: vi.fn(
       async (fn: (tx: MockDbTransactionClient) => Promise<unknown>) => {
         const result = await fn({
+          select: vi.mocked(db.select),
           insert: vi.fn().mockReturnValue({
             values: vi.fn().mockReturnValue({
               returning: vi.fn().mockResolvedValue([
@@ -402,6 +403,8 @@ describe('POST /api/accounts', () => {
   });
 
   it('creates a cash account without a Financial institution', async () => {
+    mockAccountMemberDetails();
+
     const res = await app.request('/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

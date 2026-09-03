@@ -83,6 +83,7 @@ vi.mock('@ploutizo/db', () => ({
     transaction: vi.fn(
       async (fn: (tx: MockDbTransactionClient) => Promise<unknown>) => {
         const result = await fn({
+          select: vi.fn(),
           insert: vi.fn().mockReturnValue({
             values: vi.fn().mockReturnValue({
               returning: vi.fn().mockResolvedValue([mockTxRow]),

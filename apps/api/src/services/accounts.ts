@@ -10,13 +10,18 @@ import type {
 } from '@ploutizo/validators';
 import type { z } from 'zod';
 import { DomainError, NotFoundError } from '@/lib/errors';
-import { buildAccount, buildAccounts } from '@/lib/accounts/accountResponse';
+import {
+  buildAccount,
+  buildAccountFromMemberRows,
+  buildAccounts,
+} from '@/lib/accounts/accountResponse';
 import { allMembersInOrg } from '@/lib/queries/scope';
 import {
   archiveAccount,
   fetchAccountRecord,
   insertAccount,
   insertAccountMembers,
+  listAccountMemberDetails,
   listAccountMembers,
   listAccounts as listAccountsQuery,
   replaceAccountMembers,
@@ -47,12 +52,12 @@ export const createAccount = async (
 ) => {
   const { memberIds, ...accountData } = data;
   await assertMembersInOrg(orgId, memberIds);
-  const row = await db.transaction(async (tx) => {
+  return db.transaction(async (tx) => {
     const inserted = await insertAccount(tx, orgId, accountData);
     await insertAccountMembers(tx, inserted.id, memberIds);
-    return inserted;
+    const memberRows = await listAccountMemberDetails(orgId, [inserted.id], tx);
+    return buildAccountFromMemberRows(inserted, memberRows);
   });
-  return buildAccount(orgId, row);
 };
 
 export const updateAccount = async (
@@ -86,10 +91,11 @@ export const updateAccount = async (
     if (memberIds !== undefined) {
       await replaceAccountMembers(tx, id, memberIds);
     }
-    return row;
+    const memberRows = await listAccountMemberDetails(orgId, [row.id], tx);
+    return buildAccountFromMemberRows(row, memberRows);
   });
   if (!updated) throw new NotFoundError('Account not found.');
-  return buildAccount(orgId, updated);
+  return updated;
 };
 
 export const getAccountMembers = async (orgId: string, accountId: string) => {

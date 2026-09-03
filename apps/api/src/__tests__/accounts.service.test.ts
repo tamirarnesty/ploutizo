@@ -73,6 +73,8 @@ vi.mock('@/lib/queries/accounts', () => ({
 describe('accounts service — org-scoped member validation', () => {
   beforeEach(() => {
     vi.mocked(allMembersInOrg).mockReset();
+    vi.mocked(listAccountMemberDetails).mockReset();
+    vi.mocked(listAccountMemberDetails).mockResolvedValue([]);
     vi.mocked(listAccountMembers).mockResolvedValue([
       { id: 'am_1', accountId: 'acct_1', memberId: 'mem_1' },
     ]);
@@ -116,9 +118,11 @@ describe('accounts service — org-scoped member validation', () => {
       statementDueDay: null,
     });
 
-    expect(listAccountMemberDetails).toHaveBeenCalledWith('org_a', [
-      'acct_new',
-    ]);
+    expect(listAccountMemberDetails).toHaveBeenCalledWith(
+      'org_a',
+      ['acct_new'],
+      expect.anything()
+    );
     expect(account.owners).toEqual([
       {
         id: 'mem_1',
@@ -126,6 +130,24 @@ describe('accounts service — org-scoped member validation', () => {
         imageUrl: 'https://img.clerk.com/alice.jpg',
       },
     ]);
+  });
+
+  it('rolls back create when owner lookup fails inside the transaction', async () => {
+    vi.mocked(allMembersInOrg).mockResolvedValue(true);
+    vi.mocked(listAccountMemberDetails).mockRejectedValue(
+      new Error('owner lookup failed')
+    );
+
+    await expect(
+      createAccount('org_a', {
+        name: 'Shared',
+        type: 'chequing',
+        institutionId: 'td',
+        lastFour: undefined,
+        memberIds: ['mem_1'],
+        statementDueDay: null,
+      })
+    ).rejects.toThrow('owner lookup failed');
   });
 
   it('rejects update when memberIds include a member from another org', async () => {
@@ -219,7 +241,11 @@ describe('accounts service — org-scoped member validation', () => {
       memberIds: ['mem_1'],
     });
 
-    expect(listAccountMemberDetails).toHaveBeenCalledWith('org_a', ['acct_1']);
+    expect(listAccountMemberDetails).toHaveBeenCalledWith(
+      'org_a',
+      ['acct_1'],
+      expect.anything()
+    );
     expect(account.owners).toEqual([
       {
         id: 'mem_1',
