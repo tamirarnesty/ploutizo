@@ -1,8 +1,8 @@
 import { tryParseImportDayMonthYearDate } from '@ploutizo/utils/import-coercion';
 import {
   buildRawData,
+  createNamedCellReader,
   headersMatchInOrder,
-  readNamedCell,
   toAbsoluteAmountSource,
 } from './cells';
 import type { ImportNormalizer, SourceImportRow } from '../types';
@@ -20,25 +20,26 @@ export const amexImportNormalizer: ImportNormalizer = {
   detectedInstitutionId: 'amex',
   matches: (upload) => headersMatchInOrder(upload.headers, REQUIRED_HEADERS),
   parseDate: tryParseImportDayMonthYearDate,
-  normalize: (upload) =>
-    upload.dataRecords.map((record): SourceImportRow => {
-      const amount = readNamedCell(record, upload.headers, 'Amount');
+  normalize: (upload) => {
+    const readCell = createNamedCellReader(upload.headers);
+    return upload.records.slice(1).map((record): SourceImportRow => {
+      const amount = readCell(record, 'Amount');
       const { sourceAmount, isNegative } = toAbsoluteAmountSource(amount);
 
       return {
         rowNumber: record.rowNumber,
         rawData: buildRawData(record, upload.headers),
-        externalId: readNamedCell(record, upload.headers, 'Reference'),
-        sourceDate: readNamedCell(record, upload.headers, 'Date'),
+        externalId: readCell(record, 'Reference'),
+        sourceDate: readCell(record, 'Date'),
         sourceAmount,
-        sourceDescription: readNamedCell(record, upload.headers, 'Description'),
+        sourceDescription: readCell(record, 'Description'),
         sourceType: sourceAmount ? (isNegative ? 'refund' : 'expense') : null,
         hints: {
           csvCategoryName: null,
-          csvAssigneeName: readNamedCell(record, upload.headers, 'Card Member'),
+          csvAssigneeName: readCell(record, 'Card Member'),
           csvTagNames: [],
         },
-        classificationHint: null,
       };
-    }),
+    });
+  },
 };

@@ -88,8 +88,8 @@ export const internalImportNormalizer: ImportNormalizer = {
   parseDate: tryParseImportIsoDate,
   normalize: (upload) => {
     const headerMap = buildHeaderMap(upload.headers);
-    return upload.dataRecords.map((record) =>
-      mapRow(record, upload.headers, headerMap)
-    );
+    return upload.records
+      .slice(1)
+      .map((record) => mapRow(record, upload.headers, headerMap));
   },
 };

@@ -13,8 +13,6 @@ export type CsvRecord = {
 
 export interface CsvUpload {
   headers: string[];
-  dataRecords: CsvRecord[];
-  /** All non-blank records, including the first row (headers for headered files). */
   records: CsvRecord[];
 }
 
@@ -28,7 +26,7 @@ export interface SourceImportRow {
   sourceDescription: string | null;
   sourceType: string | null;
   hints?: ImportCsvHints;
-  classificationHint?: ImportClassificationHint | null;
+  classificationHint?: ImportClassificationHint;
   reviewRefundLinkHint?: string | null;
   reviewNotes?: string | null;
 }

@@ -63,7 +63,6 @@ const mapHeaderlessRow = (record: CsvRecord): SourceImportRow => {
     sourceDescription: optionalTrim(record.cells[1]),
     sourceType:
       exclusiveAmount == null ? null : hasDebit ? 'expense' : 'refund',
-    classificationHint: null,
   };
 };
 

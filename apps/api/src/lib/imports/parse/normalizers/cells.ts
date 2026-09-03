@@ -16,6 +16,17 @@ export const headersMatchInOrder = (
     (header, index) => normalizeHeader(headers[index] ?? '') === header
   );
 
+export const createNamedCellReader = (headers: string[]) => {
+  const indices = new Map(
+    headers.map((header, index) => [normalizeHeader(header), index])
+  );
+
+  return (record: CsvRecord, header: string) => {
+    const index = indices.get(normalizeHeader(header));
+    return index === undefined ? null : optionalTrim(record.cells[index]);
+  };
+};
+
 export const buildRawData = (record: CsvRecord, headers: string[]) => {
   const rawData: Record<string, string> = {};
   for (let index = 0; index < headers.length; index += 1) {
@@ -23,17 +34,6 @@ export const buildRawData = (record: CsvRecord, headers: string[]) => {
     rawData[header] = record.cells[index] ?? '';
   }
   return rawData;
-};
-
-export const readNamedCell = (
-  record: CsvRecord,
-  headers: string[],
-  header: string
-) => {
-  const index = headers.findIndex(
-    (value) => normalizeHeader(value) === normalizeHeader(header)
-  );
-  return index === -1 ? null : optionalTrim(record.cells[index]);
 };
 
 /** Strip a leading sign so coerce can parse a positive absolute amount. */

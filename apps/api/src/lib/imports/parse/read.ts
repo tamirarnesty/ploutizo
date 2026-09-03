@@ -50,9 +50,8 @@ export const readCsvUpload = (content: string): CsvUpload => {
   const recordsFromContent = records
     .slice(headerIndex)
     .filter((record) => !isBlankRecord(record));
-  const dataRecords = recordsFromContent.slice(1);
 
-  if (dataRecords.length > MAX_IMPORT_ROWS) {
+  if (recordsFromContent.length - 1 > MAX_IMPORT_ROWS) {
     throw new DomainError(
       413,
       'The CSV file has too many rows. Upload 1,000 rows or fewer.',
@@ -60,5 +59,5 @@ export const readCsvUpload = (content: string): CsvUpload => {
     );
   }
 
-  return { headers, dataRecords, records: recordsFromContent };
+  return { headers, records: recordsFromContent };
 };

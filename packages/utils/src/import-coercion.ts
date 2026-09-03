@@ -61,12 +61,6 @@ export const looksLikeImportIsoDate = (value: string | null): boolean =>
 export const looksLikeImportMdyDate = (value: string | null): boolean =>
   value != null && MDY_DATE_PATTERN.test(value.trim());
 
-/** Parse an approved import source date into a date-only ISO calendar date. */
-export const tryParseImportDate = (value: string | null): string | null =>
-  tryParseImportIsoDate(value) ??
-  tryParseImportMdyDate(value) ??
-  tryParseImportDayMonthYearDate(value);
-
 const IMPORT_AMOUNT_TOKEN = /^\$?\s*(\d+|\d{1,3}(,\d{3})+)(\.\d{1,2})?$/;
 
 /**

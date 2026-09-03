@@ -49,7 +49,6 @@ describe('parseImportUpload — Amex', () => {
       parsedType: 'expense',
       parsedDescription: 'NEIGHBORHOOD GROCERY',
       csvAssigneeName: 'Pat Nomatch',
-      classificationHint: null,
     });
     expect(parsed.rows[1]).toMatchObject({
       sourceDate: '8 May 2026',
@@ -64,7 +63,6 @@ describe('parseImportUpload — Amex', () => {
       parsedAmount: 5000,
       parsedType: 'refund',
       parsedDescription: 'PAYMENT RECEIVED - THANK YOU',
-      classificationHint: null,
     });
     expect(parsed.rows[3]).toMatchObject({
       sourceDate: '32 Foo 2026',
@@ -92,12 +90,10 @@ describe('parseImportUpload — Amex', () => {
       parsedType: 'refund',
       parsedAmount: 500,
       parsedDescription: 'MERCHANT CREDIT',
-      classificationHint: null,
     });
     expect(parsed.rows[2]).toMatchObject({
       parsedType: 'refund',
       parsedDescription: 'PAYMENT RECEIVED - THANK YOU',
-      classificationHint: null,
     });
     expect(parsed.rows[3]).toMatchObject({
       parsedAmount: null,
@@ -136,14 +132,12 @@ describe('parseImportUpload — PC Financial', () => {
       parsedType: 'expense',
       parsedDescription: 'NEIGHBORHOOD GROCERY',
       sourceType: 'expense',
-      classificationHint: null,
     });
     expect(parsed.rows[1]).toMatchObject({
       parsedDate: '2026-05-08',
       parsedAmount: 125,
       parsedType: 'expense',
       sourceType: 'expense',
-      classificationHint: null,
     });
     expect(parsed.rows[2]).toMatchObject({
       parsedDate: '2026-05-15',
@@ -188,7 +182,6 @@ describe('parseImportUpload — TD', () => {
       parsedAmount: 1234,
       parsedType: 'expense',
       parsedDescription: 'NEIGHBORHOOD GROCERY',
-      classificationHint: null,
     });
     expect(parsed.rows[1]).toMatchObject({
       parsedDate: '2026-05-08',
@@ -201,7 +194,6 @@ describe('parseImportUpload — TD', () => {
       parsedAmount: 5000,
       parsedType: 'refund',
       parsedDescription: 'PAYMENT - THANK YOU',
-      classificationHint: null,
     });
     expect(parsed.rows[3]).toMatchObject({
       parsedType: null,
@@ -237,7 +229,6 @@ describe('parseImportUpload — CIBC', () => {
       parsedDate: '2026-05-15',
       parsedType: 'refund',
       parsedDescription: 'PAIEMENT MERCI',
-      classificationHint: null,
     });
     expect(parsed.rows[3]).toMatchObject({
       parsedType: null,
@@ -300,7 +291,6 @@ describe('parseImportUpload → classifyImportRows', () => {
 
     expect(parsed.rows[2]).toMatchObject({
       parsedType: 'refund',
-      classificationHint: null,
     });
     expect(classified[2]?.reviewType).toBe('settlement');
   });
