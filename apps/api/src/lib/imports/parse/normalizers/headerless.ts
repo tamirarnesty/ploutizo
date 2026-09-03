@@ -1,6 +1,8 @@
 import {
+  isImportAmountToken,
   looksLikeImportIsoDate,
   looksLikeImportMdyDate,
+  tryParseImportAmountToCents,
   tryParseImportIsoDate,
   tryParseImportMdyDate,
 } from '@ploutizo/utils/import-coercion';
@@ -24,20 +26,51 @@ const isFiveColumnHeaderless = (upload: CsvUpload) =>
 const firstCell = (record: CsvRecord | undefined) =>
   optionalTrim(record?.cells[0]);
 
-const looksLikeHeaderlessDateCell = (value: string | null) =>
-  /\d/.test(value ?? '');
+const hasNonEmptyDescription = (record: CsvRecord) =>
+  optionalTrim(record.cells[1]) != null;
+
+const hasImportAmount = (value: string | null) =>
+  tryParseImportAmountToCents(toAbsoluteAmountSource(value).sourceAmount) !=
+  null;
+
+const hasMonetaryAmount = (value: string | null) =>
+  isImportAmountToken(toAbsoluteAmountSource(value).sourceAmount);
+
+const hasExclusiveDebitOrCredit = (record: CsvRecord) => {
+  const hasDebit = hasImportAmount(optionalTrim(record.cells[2]));
+  const hasCredit = hasImportAmount(optionalTrim(record.cells[3]));
+  return hasDebit !== hasCredit;
+};
+
+type HeaderlessFormatSignature = {
+  looksLikeOwnDate: (value: string | null) => boolean;
+  looksLikeOtherDate: (value: string | null) => boolean;
+  parseDate: (value: string | null) => string | null;
+  hasAccountMarker: (record: CsvRecord) => boolean;
+};
 
 const matchesHeaderless = (
   upload: CsvUpload,
-  looksLikeOther: (value: string | null) => boolean,
-  parseOwn: (value: string | null) => string | null
+  signature: HeaderlessFormatSignature
 ) => {
   if (!isFiveColumnHeaderless(upload)) return false;
-  if (!looksLikeHeaderlessDateCell(firstCell(upload.records[0]))) return false;
 
-  const dates = upload.records.map((record) => firstCell(record));
-  if (dates.some((date) => looksLikeOther(date))) return false;
-  return dates.some((date) => parseOwn(date) != null);
+  return (
+    upload.records.every((record) => {
+      const date = firstCell(record);
+      return (
+        signature.looksLikeOwnDate(date) &&
+        !signature.looksLikeOtherDate(date) &&
+        hasNonEmptyDescription(record) &&
+        signature.hasAccountMarker(record)
+      );
+    }) &&
+    upload.records.some(
+      (record) =>
+        signature.parseDate(firstCell(record)) != null &&
+        hasExclusiveDebitOrCredit(record)
+    )
+  );
 };
 
 const mapHeaderlessRow = (record: CsvRecord): SourceImportRow => {
@@ -68,23 +101,26 @@ const mapHeaderlessRow = (record: CsvRecord): SourceImportRow => {
 
 const createHeaderlessNormalizer = (
   detectedInstitutionId: FinancialInstitutionId,
-  looksLikeOther: (value: string | null) => boolean,
-  parseOwn: (value: string | null) => string | null
+  signature: HeaderlessFormatSignature
 ): ImportNormalizer => ({
   detectedInstitutionId,
-  matches: (upload) => matchesHeaderless(upload, looksLikeOther, parseOwn),
-  parseDate: parseOwn,
+  matches: (upload) => matchesHeaderless(upload, signature),
+  parseDate: signature.parseDate,
   normalize: (upload) => upload.records.map(mapHeaderlessRow),
 });
 
-export const tdImportNormalizer = createHeaderlessNormalizer(
-  'td',
-  looksLikeImportIsoDate,
-  tryParseImportMdyDate
-);
+export const tdImportNormalizer = createHeaderlessNormalizer('td', {
+  looksLikeOwnDate: looksLikeImportMdyDate,
+  looksLikeOtherDate: looksLikeImportIsoDate,
+  parseDate: tryParseImportMdyDate,
+  hasAccountMarker: (record) =>
+    hasMonetaryAmount(optionalTrim(record.cells[4])),
+});
 
-export const cibcImportNormalizer = createHeaderlessNormalizer(
-  'cibc',
-  looksLikeImportMdyDate,
-  tryParseImportIsoDate
-);
+export const cibcImportNormalizer = createHeaderlessNormalizer('cibc', {
+  looksLikeOwnDate: looksLikeImportIsoDate,
+  looksLikeOtherDate: looksLikeImportMdyDate,
+  parseDate: tryParseImportIsoDate,
+  hasAccountMarker: (record) =>
+    /^\*{3}\d{4}$/.test(optionalTrim(record.cells[4]) ?? ''),
+});

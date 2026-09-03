@@ -200,6 +200,18 @@ describe('parseImportUpload — TD', () => {
       parsedDescription: 'BROKEN DEBIT CREDIT',
     });
   });
+
+  it('accepts a zero running balance and keeps an invalid date as a row error', () => {
+    const parsed = parseImportUpload(
+      [
+        '05/02/2026,NEIGHBORHOOD GROCERY,12.34,,0.00',
+        '13/40/2026,BROKEN DATE,5.00,,105.00',
+      ].join('\n')
+    );
+
+    expect(parsed.detectedInstitutionId).toBe('td');
+    expect(parsed.rows[1]?.parsedDate).toBeNull();
+  });
 });
 
 describe('parseImportUpload — CIBC', () => {
@@ -235,6 +247,18 @@ describe('parseImportUpload — CIBC', () => {
       parsedDescription: 'BROKEN DEBIT CREDIT',
     });
   });
+
+  it('keeps an ISO-shaped but calendar-invalid date as an invalid row', () => {
+    const parsed = parseImportUpload(
+      [
+        '2026-05-02,NEIGHBORHOOD GROCERY,12.34,,***0000',
+        '2026-02-30,BROKEN DATE,5.00,,***0000',
+      ].join('\n')
+    );
+
+    expect(parsed.detectedInstitutionId).toBe('cibc');
+    expect(parsed.rows[1]?.parsedDate).toBeNull();
+  });
 });
 
 describe('parseImportUpload — Import file failures', () => {
@@ -242,6 +266,36 @@ describe('parseImportUpload — Import file failures', () => {
     expectImportError(
       () =>
         parseImportUpload(readFixture('shared', 'headerless-unrecognized.csv')),
+      'IMPORT_FILE_UNRECOGNIZED'
+    );
+  });
+
+  it('rejects a generic five-column MDY file without a TD balance signature', () => {
+    expectImportError(
+      () =>
+        parseImportUpload(
+          [
+            '05/08/2026,Site inspection,4,,completed',
+            '05/09/2026,Permit review,2,,in progress',
+          ].join('\n')
+        ),
+      'IMPORT_FILE_UNRECOGNIZED'
+    );
+  });
+
+  it('rejects TD-shaped rows without monetary running balances', () => {
+    expectImportError(
+      () =>
+        parseImportUpload(
+          '05/02/2026,NEIGHBORHOOD GROCERY,12.34,,not a balance'
+        ),
+      'IMPORT_FILE_UNRECOGNIZED'
+    );
+  });
+
+  it('rejects CIBC-shaped rows with the wrong masked card number', () => {
+    expectImportError(
+      () => parseImportUpload('2026-05-02,NEIGHBORHOOD GROCERY,12.34,,*0000'),
       'IMPORT_FILE_UNRECOGNIZED'
     );
   });

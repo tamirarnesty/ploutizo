@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  isImportAmountToken,
   trimApostrophes,
   tryParseImportAmountToCents,
   tryParseImportDayMonthYearDate,
@@ -28,6 +29,11 @@ describe('import date coercion', () => {
 });
 
 describe('tryParseImportAmountToCents', () => {
+  it('recognizes zero as a structurally valid amount token', () => {
+    expect(isImportAmountToken('0')).toBe(true);
+    expect(isImportAmountToken('$0.00')).toBe(true);
+  });
+
   it('parses dollar amounts with optional leading currency symbol', () => {
     expect(tryParseImportAmountToCents('42.18')).toBe(4218);
     expect(tryParseImportAmountToCents('$42.18')).toBe(4218);

@@ -63,6 +63,10 @@ export const looksLikeImportMdyDate = (value: string | null): boolean =>
 
 const IMPORT_AMOUNT_TOKEN = /^\$?\s*(\d+|\d{1,3}(,\d{3})+)(\.\d{1,2})?$/;
 
+/** True when the value is a strict unsigned import amount token, including zero. */
+export const isImportAmountToken = (value: string | null): boolean =>
+  value != null && IMPORT_AMOUNT_TOKEN.test(value.trim());
+
 /**
  * Strict positive import amount token → integer cents.
  * Rejects misplaced currency symbols and grouped amounts inside quoted fields.
@@ -70,9 +74,8 @@ const IMPORT_AMOUNT_TOKEN = /^\$?\s*(\d+|\d{1,3}(,\d{3})+)(\.\d{1,2})?$/;
 export const tryParseImportAmountToCents = (
   value: string | null
 ): number | null => {
-  if (!value) return null;
+  if (!value || !isImportAmountToken(value)) return null;
   const raw = value.trim();
-  if (!IMPORT_AMOUNT_TOKEN.test(raw)) return null;
 
   const normalized = raw.replace(/^\$\s*/, '').replace(/,/g, '');
   const dollars = Number(normalized);
