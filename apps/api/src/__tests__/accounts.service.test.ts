@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NotFoundError } from '@/lib/errors';
 import { allMembersInOrg } from '@/lib/queries/scope';
+import {
+  fetchAccountRecord,
+  updateAccount as updateAccountQuery,
+} from '@/lib/queries/accounts';
 import { createAccount, updateAccount } from '@/services/accounts';
 
 vi.mock('@ploutizo/db', () => ({
@@ -38,6 +42,7 @@ vi.mock('@/lib/queries/accounts', () => ({
     name: 'Shared',
     type: 'chequing',
     institutionId: 'td',
+    statementDueDay: null,
   }),
   insertAccount: vi.fn().mockResolvedValue({
     id: 'acct_new',
@@ -46,6 +51,7 @@ vi.mock('@/lib/queries/accounts', () => ({
     type: 'chequing',
     institutionId: 'td',
     lastFour: null,
+    statementDueDay: null,
     archivedAt: null,
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-01T00:00:00Z'),
@@ -68,6 +74,7 @@ describe('accounts service — org-scoped member validation', () => {
       type: 'chequing',
       institutionId: 'td',
       memberIds: ['mem_other_org'],
+      statementDueDay: null,
     }).catch((e: unknown) => e);
 
     expect(err).toBeInstanceOf(NotFoundError);
@@ -84,5 +91,47 @@ describe('accounts service — org-scoped member validation', () => {
     }).catch((e: unknown) => e);
 
     expect(err).toBeInstanceOf(NotFoundError);
+  });
+
+  it('persists statementDueDay null when changing a card to a non-card type', async () => {
+    vi.mocked(fetchAccountRecord).mockResolvedValue({
+      id: 'acct_1',
+      orgId: 'org_a',
+      name: 'Visa',
+      type: 'credit_card',
+      institutionId: 'td',
+      lastFour: null,
+      statementDueDay: 15,
+      archivedAt: null,
+      createdAt: new Date('2026-01-01T00:00:00Z'),
+      updatedAt: new Date('2026-01-01T00:00:00Z'),
+    });
+    vi.mocked(updateAccountQuery).mockResolvedValue({
+      id: 'acct_1',
+      orgId: 'org_a',
+      name: 'Visa',
+      type: 'chequing',
+      institutionId: 'td',
+      lastFour: null,
+      statementDueDay: null,
+      archivedAt: null,
+      createdAt: new Date('2026-01-01T00:00:00Z'),
+      updatedAt: new Date('2026-01-01T00:00:00Z'),
+    });
+
+    await updateAccount('org_a', 'acct_1', {
+      type: 'chequing',
+      institutionId: 'td',
+    });
+
+    expect(updateAccountQuery).toHaveBeenCalledWith(
+      expect.anything(),
+      'org_a',
+      'acct_1',
+      expect.objectContaining({
+        type: 'chequing',
+        statementDueDay: null,
+      })
+    );
   });
 });

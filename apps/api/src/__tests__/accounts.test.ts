@@ -108,6 +108,10 @@ vi.mock('@ploutizo/db', () => ({
   },
 }));
 
+vi.mock('@/lib/queries/scope', () => ({
+  allMembersInOrg: vi.fn().mockResolvedValue(true),
+}));
+
 vi.mock('@ploutizo/db/schema', () => ({
   accounts: {},
   accountMembers: {},
@@ -118,6 +122,8 @@ vi.mock('@ploutizo/db/schema', () => ({
 const app = createRouteTestApp((testApp) => {
   testApp.route('/', accountsRouter);
 });
+
+const OWNER_ID = '123e4567-e89b-12d3-a456-426614174000';
 
 describe('GET /api/accounts', () => {
   it('returns 200 with data array', async () => {
@@ -142,6 +148,7 @@ describe('GET /api/accounts', () => {
                 type: 'chequing',
                 institutionId: null,
                 lastFour: null,
+                statementDueDay: 15,
                 archivedAt: null,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
@@ -174,9 +181,11 @@ describe('GET /api/accounts', () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
       data: {
+        statementDueDay: number | null;
         owners: { id: string; displayName: string; imageUrl: string | null }[];
       }[];
     };
+    expect(body.data[0].statementDueDay).toBe(15);
     expect(body.data[0].owners).toEqual([
       {
         id: 'mem_1',
@@ -236,6 +245,7 @@ describe('POST /api/accounts', () => {
         name: 'Chequing',
         type: 'chequing',
         institutionId: 'td',
+        memberIds: [OWNER_ID],
       }),
     });
     expect(res.status).toBe(201);
@@ -277,9 +287,38 @@ describe('POST /api/accounts', () => {
     const res = await app.request('/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'Wallet', type: 'prepaid_cash' }),
+      body: JSON.stringify({
+        name: 'Wallet',
+        type: 'prepaid_cash',
+        memberIds: [OWNER_ID],
+      }),
     });
     expect(res.status).toBe(201);
+  });
+
+  it('returns 400 when memberIds is missing or empty', async () => {
+    const missing = await app.request('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Chequing',
+        type: 'chequing',
+        institutionId: 'td',
+      }),
+    });
+    expect(missing.status).toBe(400);
+
+    const empty = await app.request('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Chequing',
+        type: 'chequing',
+        institutionId: 'td',
+        memberIds: [],
+      }),
+    });
+    expect(empty.status).toBe(400);
   });
 });
 
@@ -345,6 +384,30 @@ describe('PATCH /api/accounts/:id', () => {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ type: 'chequing', institutionId: 'cibc' }),
+    });
+    expect(res.status).toBe(200);
+  });
+
+  it('returns 400 when memberIds is an empty list', async () => {
+    mockExistingAccount({ type: 'chequing', institutionId: 'td' });
+    const res = await app.request('/acct_1', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ memberIds: [] }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('accepts a credit-card statement due day', async () => {
+    mockExistingAccount({
+      type: 'credit_card',
+      institutionId: 'td',
+      statementDueDay: null,
+    });
+    const res = await app.request('/acct_1', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ statementDueDay: 15 }),
     });
     expect(res.status).toBe(200);
   });

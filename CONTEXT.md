@@ -263,8 +263,16 @@ A seeded central catalog of issuers (Amex, CIBC, PC Financial, TD, RBC, Wealthsi
 _Avoid_: Free-text institution, bank name as an unvalidated string, treating catalog membership as import support
 
 **Account ownership**:
-Whether an account is labeled personal or shared in household settings. Describes who uses the account; does not determine how individual transactions are classified for card balances.
-_Avoid_: Using ownership interchangeably with shared transaction
+The household members who own an account (the member set on `account_members`). Ownership is that set — not a stored Personal/Shared label. Describes who uses the account; does not determine how individual transactions are classified for card balances. Every write requires at least one owner.
+_Avoid_: Using ownership interchangeably with shared transaction, co-owners, treating Personal/Shared as a stored account label
+
+**Statement due day**:
+The day of the month (1–31) stored on a credit card account. Optional; blank means none. Non-credit-card accounts do not persist a statement due day. Distinct from **due date**.
+_Avoid_: Due date (for this stored field), statement date, payment due day
+
+**Due date**:
+The next calendar occurrence of a credit card’s **statement due day**, shown on card balances. Short months clamp days 29–31 to the last day of the month.
+_Avoid_: Using due date for the stored 1–31 field
 
 **Assignee**:
 A household member attributed to a transaction with a split amount. Every transaction must have one or more assignees so activity can always be attributed to members.

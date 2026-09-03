@@ -1,5 +1,8 @@
 import { db } from '@ploutizo/db';
-import { mergeAccountInstitutionViolation } from '@ploutizo/validators';
+import {
+  mergeAccountInstitutionViolation,
+  mergeAccountStatementDueDay,
+} from '@ploutizo/validators';
 import type {
   createAccountSchema,
   updateAccountSchema,
@@ -53,7 +56,7 @@ export const createAccount = async (
   orgId: string,
   data: z.infer<typeof createAccountSchema>
 ) => {
-  const { memberIds = [], ...accountData } = data;
+  const { memberIds, ...accountData } = data;
   await assertMembersInOrg(orgId, memberIds);
   return db.transaction(async (tx) => {
     const row = await insertAccount(tx, orgId, accountData);
@@ -70,17 +73,23 @@ export const updateAccount = async (
   const existing = await fetchAccountRecord(orgId, id);
   if (!existing) throw new NotFoundError('Account not found.');
 
-  const { memberIds, archivedAt, ...updateData } = data;
+  const { memberIds, archivedAt: _archivedAt, ...updateData } = data;
   const message = mergeAccountInstitutionViolation(existing, updateData);
   if (message) {
     throw new DomainError(400, message, 'VALIDATION_ERROR');
   }
 
+  const statementDueDay = mergeAccountStatementDueDay(existing, updateData);
+  const accountPatch = {
+    ...updateData,
+    ...(statementDueDay !== undefined ? { statementDueDay } : {}),
+  };
+
   if (memberIds !== undefined) {
     await assertMembersInOrg(orgId, memberIds);
   }
   const updated = await db.transaction(async (tx) => {
-    const row = await updateAccountQuery(tx, orgId, id, updateData);
+    const row = await updateAccountQuery(tx, orgId, id, accountPatch);
     if (!row) return null;
     if (memberIds !== undefined) {
       await replaceAccountMembers(tx, id, memberIds);

@@ -7,7 +7,8 @@ interface CreateAccountBody {
   type: string;
   institutionId?: string | null;
   lastFour?: string;
-  memberIds?: string[];
+  statementDueDay?: number | null;
+  memberIds: string[];
 }
 
 export const createAccount = async (

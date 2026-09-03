@@ -14,10 +14,13 @@ export interface Account {
   type: AccountType;
   institutionId: FinancialInstitutionId | null;
   lastFour: string | null;
+  /** Day of month 1–31 on credit cards; null when unset or the account is not a card. */
+  statementDueDay: number | null;
   archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
-  owners: AccountOwner[]; // populated by listAccountMemberDetails join; [] for personal accounts
+  /** Account ownership: household members on this account (may be empty on legacy rows). */
+  owners: AccountOwner[];
 }
 
 export interface AccountMember {

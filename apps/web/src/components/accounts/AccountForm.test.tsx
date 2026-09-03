@@ -1,11 +1,16 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Account, AccountMember } from '@ploutizo/types';
 import { AccountForm } from '@/components/accounts/AccountForm';
+
+const ADA_ID = '123e4567-e89b-12d3-a456-426614174000';
+const ALAN_ID = '123e4567-e89b-12d3-a456-426614174001';
 
 const mocks = vi.hoisted(() => ({
   createMutate: vi.fn(),
   updateMutate: vi.fn(),
+  accountMembers: [] as AccountMember[],
 }));
 
 vi.mock('@clerk/tanstack-react-start', () => ({
@@ -13,7 +18,10 @@ vi.mock('@clerk/tanstack-react-start', () => ({
 }));
 
 vi.mock('@/lib/data-access/accounts', () => ({
-  useGetAccountMembers: () => ({ data: [], isLoading: false }),
+  useGetAccountMembers: () => ({
+    data: mocks.accountMembers,
+    isLoading: false,
+  }),
   useCreateAccount: () => ({ mutate: mocks.createMutate }),
   useUpdateAccount: () => ({ mutate: mocks.updateMutate }),
 }));
@@ -22,9 +30,15 @@ vi.mock('@/lib/data-access/org', () => ({
   useGetOrgMembers: () => ({
     data: [
       {
-        id: 'mem_1',
+        id: ADA_ID,
         externalId: 'user_1',
         displayName: 'Ada',
+        imageUrl: null,
+      },
+      {
+        id: ALAN_ID,
+        externalId: 'user_2',
+        displayName: 'Alan',
         imageUrl: null,
       },
     ],
@@ -116,10 +130,26 @@ vi.mock('@ploutizo/ui/components/alert-dialog', () => ({
   ),
 }));
 
+const accountFixture = (overrides: Partial<Account> = {}): Account => ({
+  id: 'acct_1',
+  orgId: 'org_1',
+  name: 'Joint Chequing',
+  type: 'chequing',
+  institutionId: 'td',
+  lastFour: '4410',
+  statementDueDay: null,
+  archivedAt: null,
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z',
+  owners: [],
+  ...overrides,
+});
+
 describe('AccountForm', () => {
   beforeEach(() => {
     mocks.createMutate.mockReset();
     mocks.updateMutate.mockReset();
+    mocks.accountMembers = [];
   });
 
   it('presents a fixed Financial institution dropdown instead of free text', () => {
@@ -134,6 +164,23 @@ describe('AccountForm', () => {
     expect(
       screen.queryByRole('button', { name: 'Tangerine' })
     ).not.toBeInTheDocument();
+  });
+
+  it('does not offer a Personal / Shared ownership toggle', () => {
+    render(<AccountForm account={null} onClose={vi.fn()} />);
+
+    expect(screen.queryByText('Personal')).not.toBeInTheDocument();
+    expect(screen.queryByText('Shared')).not.toBeInTheDocument();
+    expect(screen.getByText('Owners')).toBeInTheDocument();
+  });
+
+  it('pre-selects the current member on create', () => {
+    render(<AccountForm account={null} onClose={vi.fn()} />);
+
+    expect(screen.getByRole('button', { name: 'Ada' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
   });
 
   it('requires a Financial institution for chequing accounts', async () => {
@@ -153,23 +200,10 @@ describe('AccountForm', () => {
 
   it('submits the selected Financial institution id when editing', async () => {
     const user = userEvent.setup();
-    render(
-      <AccountForm
-        account={{
-          id: 'acct_1',
-          orgId: 'org_1',
-          name: 'Joint Chequing',
-          type: 'chequing',
-          institutionId: 'td',
-          lastFour: '4410',
-          archivedAt: null,
-          createdAt: '2026-01-01T00:00:00.000Z',
-          updatedAt: '2026-01-01T00:00:00.000Z',
-          owners: [],
-        }}
-        onClose={vi.fn()}
-      />
-    );
+    mocks.accountMembers = [
+      { id: 'am_1', accountId: 'acct_1', memberId: ADA_ID },
+    ];
+    render(<AccountForm account={accountFixture()} onClose={vi.fn()} />);
 
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
 
@@ -179,6 +213,8 @@ describe('AccountForm', () => {
           name: 'Joint Chequing',
           type: 'chequing',
           institutionId: 'td',
+          memberIds: [ADA_ID],
+          statementDueDay: null,
         }),
         expect.any(Object)
       );
@@ -187,20 +223,18 @@ describe('AccountForm', () => {
 
   it('allows cash accounts without a Financial institution', async () => {
     const user = userEvent.setup();
+    mocks.accountMembers = [
+      { id: 'am_cash', accountId: 'acct_cash', memberId: ADA_ID },
+    ];
     render(
       <AccountForm
-        account={{
+        account={accountFixture({
           id: 'acct_cash',
-          orgId: 'org_1',
           name: 'Wallet',
           type: 'prepaid_cash',
           institutionId: null,
           lastFour: null,
-          archivedAt: null,
-          createdAt: '2026-01-01T00:00:00.000Z',
-          updatedAt: '2026-01-01T00:00:00.000Z',
-          owners: [],
-        }}
+        })}
         onClose={vi.fn()}
       />
     );
@@ -217,6 +251,98 @@ describe('AccountForm', () => {
           name: 'Wallet',
           type: 'prepaid_cash',
           institutionId: null,
+          statementDueDay: null,
+        }),
+        expect.any(Object)
+      );
+    });
+  });
+
+  it('blocks save when an account has zero owners', async () => {
+    const user = userEvent.setup();
+    render(<AccountForm account={accountFixture()} onClose={vi.fn()} />);
+
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('At least one owner is required.')
+      ).toBeInTheDocument();
+    });
+    expect(mocks.updateMutate).not.toHaveBeenCalled();
+  });
+
+  it('shows statement due day only for credit cards and keeps the typed day', async () => {
+    const user = userEvent.setup();
+    render(<AccountForm account={null} onClose={vi.fn()} />);
+
+    expect(
+      screen.getByTestId('account-statement-due-day-wrap')
+    ).toHaveAttribute('aria-hidden', 'true');
+
+    await user.click(screen.getByRole('button', { name: 'Credit Card' }));
+    expect(
+      screen.getByTestId('account-statement-due-day-wrap')
+    ).toHaveAttribute('aria-hidden', 'false');
+    const dueDay = screen.getByLabelText('Statement due day (optional)');
+
+    await user.type(dueDay, '15');
+    await user.click(screen.getByRole('button', { name: 'Chequing' }));
+    expect(
+      screen.getByTestId('account-statement-due-day-wrap')
+    ).toHaveAttribute('aria-hidden', 'true');
+
+    await user.click(screen.getByRole('button', { name: 'Credit Card' }));
+    expect(screen.getByLabelText('Statement due day (optional)')).toHaveValue(
+      '15'
+    );
+  });
+
+  it('opens a credit card already split with the due day prefilled', () => {
+    mocks.accountMembers = [
+      { id: 'am_1', accountId: 'acct_1', memberId: ADA_ID },
+    ];
+    render(
+      <AccountForm
+        account={accountFixture({
+          name: 'Visa',
+          type: 'credit_card',
+          lastFour: '4242',
+          statementDueDay: 15,
+        })}
+        onClose={vi.fn()}
+      />
+    );
+
+    const dueDay = screen.getByLabelText('Statement due day (optional)');
+    expect(
+      screen.getByTestId('account-statement-due-day-wrap')
+    ).toHaveAttribute('aria-hidden', 'false');
+    expect(dueDay).toHaveValue('15');
+    expect(screen.getByTestId('account-last-four-row').className).toContain(
+      'grid-cols-[minmax(0,1fr)_minmax(0,1fr)]'
+    );
+  });
+
+  it('persists statementDueDay on credit cards and null on other types', async () => {
+    const user = userEvent.setup();
+    render(<AccountForm account={null} onClose={vi.fn()} />);
+
+    await user.type(screen.getByLabelText('Name'), 'Visa');
+    await user.click(screen.getByRole('button', { name: 'Credit Card' }));
+    await user.click(screen.getByRole('button', { name: 'TD' }));
+    await user.type(
+      screen.getByLabelText('Statement due day (optional)'),
+      '15'
+    );
+    await user.click(screen.getByRole('button', { name: 'Add account' }));
+
+    await waitFor(() => {
+      expect(mocks.createMutate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'credit_card',
+          statementDueDay: 15,
+          memberIds: [ADA_ID],
         }),
         expect.any(Object)
       );

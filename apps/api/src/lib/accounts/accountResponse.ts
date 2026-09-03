@@ -21,6 +21,7 @@ export const toAccountResponse = (
   type: row.type,
   institutionId: toFinancialInstitutionId(row.institutionId),
   lastFour: row.lastFour,
+  statementDueDay: row.statementDueDay ?? null,
   archivedAt: row.archivedAt ? toIsoString(row.archivedAt) : null,
   createdAt: toIsoString(row.createdAt),
   updatedAt: toIsoString(row.updatedAt),
