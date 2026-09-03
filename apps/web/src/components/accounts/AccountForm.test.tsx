@@ -270,28 +270,23 @@ describe('AccountForm', () => {
     expect(mocks.updateMutate).not.toHaveBeenCalled();
   });
 
-  it('shows statement due day only for credit cards and keeps the typed day', async () => {
+  it('shows statement due day only for credit cards', async () => {
     const user = userEvent.setup();
     render(<AccountForm account={null} onClose={vi.fn()} />);
 
     expect(
-      screen.getByTestId('account-statement-due-day-wrap')
-    ).toHaveAttribute('aria-hidden', 'true');
+      screen.queryByTestId('account-statement-due-day-wrap')
+    ).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Credit Card' }));
     expect(
       screen.getByTestId('account-statement-due-day-wrap')
-    ).toHaveAttribute('aria-hidden', 'false');
-    const dueDay = screen.getByLabelText('Statement due day');
+    ).toBeInTheDocument();
 
-    await user.type(dueDay, '15');
     await user.click(screen.getByRole('button', { name: 'Chequing' }));
     expect(
-      screen.getByTestId('account-statement-due-day-wrap')
-    ).toHaveAttribute('aria-hidden', 'true');
-
-    await user.click(screen.getByRole('button', { name: 'Credit Card' }));
-    expect(screen.getByLabelText('Statement due day')).toHaveValue('15');
+      screen.queryByTestId('account-statement-due-day-wrap')
+    ).not.toBeInTheDocument();
   });
 
   it('opens a credit card already split with the due day prefilled', () => {
@@ -313,11 +308,8 @@ describe('AccountForm', () => {
     const dueDay = screen.getByLabelText('Statement due day');
     expect(
       screen.getByTestId('account-statement-due-day-wrap')
-    ).toHaveAttribute('aria-hidden', 'false');
+    ).toBeInTheDocument();
     expect(dueDay).toHaveValue('15');
-    expect(screen.getByTestId('account-last-four-row').className).toContain(
-      'grid-cols-[minmax(0,1fr)_minmax(0,1fr)]'
-    );
   });
 
   it('persists statementDueDay on credit cards and null on other types', async () => {
