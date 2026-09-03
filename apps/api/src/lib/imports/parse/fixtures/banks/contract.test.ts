@@ -139,7 +139,7 @@ describe('bank CSV contract fixtures', () => {
       'NEIGHBORHOOD GROCERY',
       '12.34',
       '',
-      '***0000',
+      '4505********1234',
     ]);
     expect(rows[1]?.[3]).toBe('5.00');
     expect(rows[2]?.[1]).toBe('PAIEMENT MERCI');

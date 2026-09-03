@@ -14,7 +14,7 @@ Headerless export. Strict positional signature, five columns:
 | 1 | description | source description |
 | 2 | debit | expense amount when populated |
 | 3 | credit | refund amount when populated |
-| 4 | masked card number | account metadata; often contains `*` |
+| 4 | masked card number | account metadata in `4505********1234` form |
 
 A shared headerless mapper with TD is allowed. Return `cibc` only when this signature is established: five columns and `YYYY-MM-DD` dates on the rows that have a parseable date. A minority of unparseable dates does not make the file unrecognized; those rows are Invalid import rows. Do not guess an issuer from a generic five-column file.
 

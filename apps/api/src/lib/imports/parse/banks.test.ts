@@ -251,8 +251,8 @@ describe('parseImportUpload — CIBC', () => {
   it('keeps an ISO-shaped but calendar-invalid date as an invalid row', () => {
     const parsed = parseImportUpload(
       [
-        '2026-05-02,NEIGHBORHOOD GROCERY,12.34,,***0000',
-        '2026-02-30,BROKEN DATE,5.00,,***0000',
+        '2026-05-02,NEIGHBORHOOD GROCERY,12.34,,4505********1234',
+        '2026-02-30,BROKEN DATE,5.00,,4505********1234',
       ].join('\n')
     );
 
@@ -295,7 +295,10 @@ describe('parseImportUpload — Import file failures', () => {
 
   it('rejects CIBC-shaped rows with the wrong masked card number', () => {
     expectImportError(
-      () => parseImportUpload('2026-05-02,NEIGHBORHOOD GROCERY,12.34,,*0000'),
+      () =>
+        parseImportUpload(
+          '2026-05-02,NEIGHBORHOOD GROCERY,12.34,,4505*******1234'
+        ),
       'IMPORT_FILE_UNRECOGNIZED'
     );
   });

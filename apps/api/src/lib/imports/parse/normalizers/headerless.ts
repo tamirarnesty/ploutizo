@@ -122,5 +122,5 @@ export const cibcImportNormalizer = createHeaderlessNormalizer('cibc', {
   looksLikeOtherDate: looksLikeImportMdyDate,
   parseDate: tryParseImportIsoDate,
   hasAccountMarker: (record) =>
-    /^\*{3}\d{4}$/.test(optionalTrim(record.cells[4]) ?? ''),
+    /^\d{4}\*{8}\d{4}$/.test(optionalTrim(record.cells[4]) ?? ''),
 });
