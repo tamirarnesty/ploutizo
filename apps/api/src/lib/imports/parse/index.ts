@@ -21,7 +21,7 @@ export const parseImportUpload = (
       'IMPORT_FILE_TOO_LARGE'
     );
   }
-  const rows = coerceImportRows(sourceRows);
+  const rows = coerceImportRows(sourceRows, normalizer.parseDate);
 
   return {
     detectedInstitutionId: normalizer.detectedInstitutionId,

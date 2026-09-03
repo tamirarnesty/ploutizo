@@ -62,4 +62,5 @@ export interface ImportNormalizer {
   detectedInstitutionId: FinancialInstitutionId | null;
   matches: (upload: CsvUpload) => boolean;
   normalize: (upload: CsvUpload) => SourceImportRow[];
+  parseDate: (value: string | null) => string | null;
 }

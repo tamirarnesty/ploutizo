@@ -1,3 +1,4 @@
+import { tryParseImportDayMonthYearDate } from '@ploutizo/utils/import-coercion';
 import {
   buildRawData,
   headersMatchInOrder,
@@ -18,6 +19,7 @@ const REQUIRED_HEADERS = [
 export const amexImportNormalizer: ImportNormalizer = {
   detectedInstitutionId: 'amex',
   matches: (upload) => headersMatchInOrder(upload.headers, REQUIRED_HEADERS),
+  parseDate: tryParseImportDayMonthYearDate,
   normalize: (upload) =>
     upload.dataRecords.map((record): SourceImportRow => {
       const amount = readNamedCell(record, upload.headers, 'Amount');

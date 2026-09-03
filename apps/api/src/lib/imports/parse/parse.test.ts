@@ -76,6 +76,23 @@ describe('parseImportUpload', () => {
     expect(parsed.rows[0]).not.toHaveProperty('status');
   });
 
+  it('parses only ISO dates on the manual template', () => {
+    const parsed = parseImportUpload(
+      [
+        'date,amount,description,type',
+        '2026-05-02,42.18,Coffee,expense',
+        '05/08/2026,5.00,Tea,expense',
+        '8 May 2026,1.00,Water,expense',
+      ].join('\n')
+    );
+
+    expect(parsed.rows[0]?.parsedDate).toBe('2026-05-02');
+    expect(parsed.rows[1]?.sourceDate).toBe('05/08/2026');
+    expect(parsed.rows[1]?.parsedDate).toBeNull();
+    expect(parsed.rows[2]?.sourceDate).toBe('8 May 2026');
+    expect(parsed.rows[2]?.parsedDate).toBeNull();
+  });
+
   it('trims surrounding apostrophes from external ids', () => {
     const parsed = parseImportUpload(
       [

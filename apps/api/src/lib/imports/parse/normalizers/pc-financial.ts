@@ -1,3 +1,4 @@
+import { tryParseImportMdyDate } from '@ploutizo/utils/import-coercion';
 import type { ImportClassificationHint } from '@ploutizo/utils';
 import {
   buildRawData,
@@ -57,6 +58,7 @@ const mapRow = (record: CsvRecord, headers: string[]): SourceImportRow => {
 export const pcFinancialImportNormalizer: ImportNormalizer = {
   detectedInstitutionId: 'pc_financial',
   matches: (upload) => headersMatchInOrder(upload.headers, REQUIRED_HEADERS),
+  parseDate: tryParseImportMdyDate,
   normalize: (upload) =>
     upload.dataRecords.map((record) => mapRow(record, upload.headers)),
 };

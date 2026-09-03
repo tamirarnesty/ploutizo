@@ -1,7 +1,6 @@
 import {
   trimApostrophes,
   tryParseImportAmountToCents,
-  tryParseImportDate,
 } from '@ploutizo/utils/import-coercion';
 import {
   isImportRowStructurallyInvalid,
@@ -21,9 +20,12 @@ const EMPTY_HINTS: ImportCsvHints = {
 const parseType = (value: string | null): ImportTransactionType | null =>
   toImportTransactionType(value?.trim().toLowerCase());
 
-const coerceRow = (row: SourceImportRow): ParsedImportRow => {
+const coerceRow = (
+  row: SourceImportRow,
+  parseDate: (value: string | null) => string | null
+): ParsedImportRow => {
   const { hints, reviewRefundLinkHint, reviewNotes, ...source } = row;
-  const parsedDate = tryParseImportDate(row.sourceDate);
+  const parsedDate = parseDate(row.sourceDate);
   const parsedAmount = tryParseImportAmountToCents(row.sourceAmount);
   const parsedType = parseType(row.sourceType);
   const parsedDescription = row.sourceDescription;
@@ -49,9 +51,10 @@ const coerceRow = (row: SourceImportRow): ParsedImportRow => {
 };
 
 export const coerceImportRows = (
-  rows: SourceImportRow[]
+  rows: SourceImportRow[],
+  parseDate: (value: string | null) => string | null
 ): ParsedImportRow[] => {
-  const coercedRows = rows.map(coerceRow);
+  const coercedRows = rows.map((row) => coerceRow(row, parseDate));
   const hasImportableRow = coercedRows.some(
     (row) => !isImportRowStructurallyInvalid(row)
   );

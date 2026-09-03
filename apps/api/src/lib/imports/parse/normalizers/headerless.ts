@@ -5,7 +5,7 @@ import {
   tryParseImportMdyDate,
 } from '@ploutizo/utils/import-coercion';
 import type { FinancialInstitutionId } from '@ploutizo/types';
-import { optionalTrim, toAbsoluteAmountSource } from './cells';
+import { buildRawData, optionalTrim, toAbsoluteAmountSource } from './cells';
 import type {
   CsvRecord,
   CsvUpload,
@@ -50,13 +50,13 @@ const mapHeaderlessRow = (record: CsvRecord): SourceImportRow => {
 
   return {
     rowNumber: record.rowNumber,
-    rawData: {
-      date: record.cells[0] ?? '',
-      description: record.cells[1] ?? '',
-      debit: record.cells[2] ?? '',
-      credit: record.cells[3] ?? '',
-      column_5: record.cells[4] ?? '',
-    },
+    rawData: buildRawData(record, [
+      'date',
+      'description',
+      'debit',
+      'credit',
+      'column_5',
+    ]),
     externalId: null,
     sourceDate: optionalTrim(record.cells[0]),
     sourceAmount,
@@ -74,6 +74,7 @@ const createHeaderlessNormalizer = (
 ): ImportNormalizer => ({
   detectedInstitutionId,
   matches: (upload) => matchesHeaderless(upload, looksLikeOther, parseOwn),
+  parseDate: parseOwn,
   normalize: (upload) => upload.records.map(mapHeaderlessRow),
 });
 
