@@ -11,7 +11,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { BILL_PAYMENT_CATEGORY_NAME } from '@ploutizo/types';
 import { classifyImportRows } from '@ploutizo/utils';
-import { inspectImportUpload, parseImportUpload } from './index';
+import { parseImportUpload } from './index';
+import type { ParseImportUploadResult, ParsedImport } from './types';
 import { DomainError } from '@/lib/errors';
 
 const banksDir = join(
@@ -32,33 +33,40 @@ const expectImportError = (fn: () => unknown, code: string) => {
   }
 };
 
-describe('inspectImportUpload — Amex', () => {
-  it('recognizes the Amex profile without institution inference', () => {
-    const result = inspectImportUpload(readFixture('amex', 'short.csv'));
+const requireParsed = (result: ParseImportUploadResult): ParsedImport => {
+  if (result.kind === 'mapping_required') {
+    throw new Error('Expected parsed import');
+  }
+  return result;
+};
 
-    expect(result.kind).toBe('recognized');
-    if (result.kind !== 'recognized') return;
-    expect(result.profileId).toBe('amex');
-    expect(result.preview.rowCount).toBe(4);
-  });
-
-  it('recognizes the extended Amex export and strips BOM', () => {
-    const result = inspectImportUpload(
-      `\uFEFF${readFixture('amex', 'extended.csv')}`
+describe('parseImportUpload auto-detection — Amex', () => {
+  it('auto-detects the Amex profile without institution inference', () => {
+    const result = requireParsed(
+      parseImportUpload(readFixture('amex', 'short.csv'))
     );
 
-    expect(result.kind).toBe('recognized');
-    if (result.kind !== 'recognized') return;
-    expect(result.profileId).toBe('amex');
+    expect(result.contentProfileId).toBe('amex');
+    expect(result.rowCount).toBe(4);
+  });
+
+  it('auto-detects the extended Amex export and strips BOM', () => {
+    const result = requireParsed(
+      parseImportUpload(`\uFEFF${readFixture('amex', 'extended.csv')}`)
+    );
+
+    expect(result.contentProfileId).toBe('amex');
   });
 });
 
 describe('parseImportUpload — Amex', () => {
   it('normalizes signed amounts and D MMM YYYY dates', () => {
-    const parsed = parseImportUpload(readFixture('amex', 'short.csv'), {
-      kind: 'profile',
-      profileId: 'amex',
-    });
+    const parsed = requireParsed(
+      parseImportUpload(readFixture('amex', 'short.csv'), {
+        kind: 'profile',
+        profileId: 'amex',
+      })
+    );
 
     expect(parsed.contentProfileId).toBe('amex');
     expect(parsed.rowCount).toBe(4);
@@ -103,9 +111,11 @@ describe('parseImportUpload — Amex', () => {
   });
 
   it('uses the extended export Reference as external id', () => {
-    const parsed = parseImportUpload(
-      `\uFEFF${readFixture('amex', 'extended.csv')}`,
-      { kind: 'profile', profileId: 'amex' }
+    const parsed = requireParsed(
+      parseImportUpload(`\uFEFF${readFixture('amex', 'extended.csv')}`, {
+        kind: 'profile',
+        profileId: 'amex',
+      })
     );
 
     expect(parsed.contentProfileId).toBe('amex');
@@ -137,23 +147,23 @@ describe('parseImportUpload — Amex', () => {
   });
 });
 
-describe('inspectImportUpload — PC Financial', () => {
-  it('recognizes the PC Financial profile', () => {
-    const result = inspectImportUpload(
-      readFixture('pc-financial', 'statement.csv')
+describe('parseImportUpload auto-detection — PC Financial', () => {
+  it('auto-detects the PC Financial profile', () => {
+    const result = requireParsed(
+      parseImportUpload(readFixture('pc-financial', 'statement.csv'))
     );
 
-    expect(result.kind).toBe('recognized');
-    if (result.kind !== 'recognized') return;
-    expect(result.profileId).toBe('pc_financial');
+    expect(result.contentProfileId).toBe('pc_financial');
   });
 });
 
 describe('parseImportUpload — PC Financial', () => {
   it('uses Type for direction, MM/DD/YYYY dates, and a bill-payment hint', () => {
-    const parsed = parseImportUpload(
-      readFixture('pc-financial', 'statement.csv'),
-      { kind: 'profile', profileId: 'pc_financial' }
+    const parsed = requireParsed(
+      parseImportUpload(readFixture('pc-financial', 'statement.csv'), {
+        kind: 'profile',
+        profileId: 'pc_financial',
+      })
     );
 
     expect(parsed.contentProfileId).toBe('pc_financial');
@@ -199,14 +209,13 @@ describe('parseImportUpload — PC Financial', () => {
   });
 });
 
-describe('inspectImportUpload — mdy_debit_credit_balance (generic positional)', () => {
-  it('recognizes the generic MDY profile — never as TD or any institution', () => {
-    const result = inspectImportUpload(readFixture('td', 'statement.csv'));
+describe('parseImportUpload auto-detection — mdy_debit_credit_balance (generic positional)', () => {
+  it('auto-detects the generic MDY profile — never as TD or any institution', () => {
+    const result = requireParsed(
+      parseImportUpload(readFixture('td', 'statement.csv'))
+    );
 
-    expect(result.kind).toBe('recognized');
-    if (result.kind !== 'recognized') return;
-    expect(result.profileId).toBe('mdy_debit_credit_balance');
-    // Must not carry any institution identity
+    expect(result.contentProfileId).toBe('mdy_debit_credit_balance');
     expect(result).not.toHaveProperty('institutionId');
     expect(result).not.toHaveProperty('detectedInstitutionId');
   });
@@ -214,10 +223,12 @@ describe('inspectImportUpload — mdy_debit_credit_balance (generic positional)'
 
 describe('parseImportUpload — mdy_debit_credit_balance', () => {
   it('detects headerless MM/DD/YYYY debit/credit rows with no institution result', () => {
-    const parsed = parseImportUpload(readFixture('td', 'statement.csv'), {
-      kind: 'profile',
-      profileId: 'mdy_debit_credit_balance',
-    });
+    const parsed = requireParsed(
+      parseImportUpload(readFixture('td', 'statement.csv'), {
+        kind: 'profile',
+        profileId: 'mdy_debit_credit_balance',
+      })
+    );
 
     expect(parsed.contentProfileId).toBe('mdy_debit_credit_balance');
     expect(parsed.rowCount).toBe(4);
@@ -257,12 +268,14 @@ describe('parseImportUpload — mdy_debit_credit_balance', () => {
   });
 
   it('accepts a zero running balance and keeps an invalid date as a row error', () => {
-    const parsed = parseImportUpload(
-      [
-        '05/02/2026,NEIGHBORHOOD GROCERY,12.34,,0.00',
-        '13/40/2026,BROKEN DATE,5.00,,105.00',
-      ].join('\n'),
-      { kind: 'profile', profileId: 'mdy_debit_credit_balance' }
+    const parsed = requireParsed(
+      parseImportUpload(
+        [
+          '05/02/2026,NEIGHBORHOOD GROCERY,12.34,,0.00',
+          '13/40/2026,BROKEN DATE,5.00,,105.00',
+        ].join('\n'),
+        { kind: 'profile', profileId: 'mdy_debit_credit_balance' }
+      )
     );
 
     expect(parsed.contentProfileId).toBe('mdy_debit_credit_balance');
@@ -270,13 +283,13 @@ describe('parseImportUpload — mdy_debit_credit_balance', () => {
   });
 });
 
-describe('inspectImportUpload — iso_debit_credit_masked_card (generic positional)', () => {
-  it('recognizes the generic ISO profile — never as CIBC or any institution', () => {
-    const result = inspectImportUpload(readFixture('cibc', 'statement.csv'));
+describe('parseImportUpload auto-detection — iso_debit_credit_masked_card (generic positional)', () => {
+  it('auto-detects the generic ISO profile — never as CIBC or any institution', () => {
+    const result = requireParsed(
+      parseImportUpload(readFixture('cibc', 'statement.csv'))
+    );
 
-    expect(result.kind).toBe('recognized');
-    if (result.kind !== 'recognized') return;
-    expect(result.profileId).toBe('iso_debit_credit_masked_card');
+    expect(result.contentProfileId).toBe('iso_debit_credit_masked_card');
     expect(result).not.toHaveProperty('institutionId');
     expect(result).not.toHaveProperty('detectedInstitutionId');
   });
@@ -284,10 +297,12 @@ describe('inspectImportUpload — iso_debit_credit_masked_card (generic position
 
 describe('parseImportUpload — iso_debit_credit_masked_card', () => {
   it('detects headerless ISO debit/credit rows with no institution result', () => {
-    const parsed = parseImportUpload(readFixture('cibc', 'statement.csv'), {
-      kind: 'profile',
-      profileId: 'iso_debit_credit_masked_card',
-    });
+    const parsed = requireParsed(
+      parseImportUpload(readFixture('cibc', 'statement.csv'), {
+        kind: 'profile',
+        profileId: 'iso_debit_credit_masked_card',
+      })
+    );
 
     expect(parsed.contentProfileId).toBe('iso_debit_credit_masked_card');
     expect(parsed.rowCount).toBe(4);
@@ -317,12 +332,14 @@ describe('parseImportUpload — iso_debit_credit_masked_card', () => {
   });
 
   it('keeps an ISO-shaped but calendar-invalid date as an invalid row', () => {
-    const parsed = parseImportUpload(
-      [
-        '2026-05-02,NEIGHBORHOOD GROCERY,12.34,,4505********1234',
-        '2026-02-30,BROKEN DATE,5.00,,4505********1234',
-      ].join('\n'),
-      { kind: 'profile', profileId: 'iso_debit_credit_masked_card' }
+    const parsed = requireParsed(
+      parseImportUpload(
+        [
+          '2026-05-02,NEIGHBORHOOD GROCERY,12.34,,4505********1234',
+          '2026-02-30,BROKEN DATE,5.00,,4505********1234',
+        ].join('\n'),
+        { kind: 'profile', profileId: 'iso_debit_credit_masked_card' }
+      )
     );
 
     expect(parsed.contentProfileId).toBe('iso_debit_credit_masked_card');
@@ -330,50 +347,48 @@ describe('parseImportUpload — iso_debit_credit_masked_card', () => {
   });
 });
 
-describe('inspectImportUpload — mapping_required', () => {
+describe('parseImportUpload — mapping_required', () => {
   it('returns mapping_required for an unrecognized headerless file', () => {
-    const result = inspectImportUpload(
+    const result = parseImportUpload(
       readFixture('shared', 'headerless-unrecognized.csv')
     );
 
-    expect(result.kind).toBe('mapping_required');
+    expect(result).toEqual({ kind: 'mapping_required' });
   });
 
   it('returns mapping_required for a generic five-column MDY file without monetary balance', () => {
-    const result = inspectImportUpload(
+    const result = parseImportUpload(
       [
         '05/08/2026,Site inspection,4,,completed',
         '05/09/2026,Permit review,2,,in progress',
       ].join('\n')
     );
 
-    expect(result.kind).toBe('mapping_required');
+    expect(result).toEqual({ kind: 'mapping_required' });
   });
 
   it('returns mapping_required for MDY-shaped rows without monetary running balances', () => {
-    const result = inspectImportUpload(
+    const result = parseImportUpload(
       '05/02/2026,NEIGHBORHOOD GROCERY,12.34,,not a balance'
     );
 
-    expect(result.kind).toBe('mapping_required');
+    expect(result).toEqual({ kind: 'mapping_required' });
   });
 
   it('returns mapping_required for CIBC-shaped rows with wrong masked card pattern', () => {
-    const result = inspectImportUpload(
+    const result = parseImportUpload(
       '2026-05-02,NEIGHBORHOOD GROCERY,12.34,,4505*******1234'
     );
 
-    expect(result.kind).toBe('mapping_required');
+    expect(result).toEqual({ kind: 'mapping_required' });
   });
 
   it('does not recognize mixed headerless dates as a known profile', () => {
-    const result = inspectImportUpload(
+    const result = parseImportUpload(
       readFixture('shared', 'headerless-mixed-dates.csv')
     );
 
-    // Either no match (mapping_required) or multiple matches (which inspectImportUpload
-    // also returns as mapping_required since it needs disambiguation).
-    expect(result.kind).toBe('mapping_required');
+    expect(result).toEqual({ kind: 'mapping_required' });
   });
 });
 
@@ -407,9 +422,11 @@ describe('parseImportUpload → classifyImportRows', () => {
   };
 
   it('classifies a PC payment hint as settlement when the description is not a vault phrase', () => {
-    const parsed = parseImportUpload(
-      readFixture('pc-financial', 'statement.csv'),
-      { kind: 'profile', profileId: 'pc_financial' }
+    const parsed = requireParsed(
+      parseImportUpload(readFixture('pc-financial', 'statement.csv'), {
+        kind: 'profile',
+        profileId: 'pc_financial',
+      })
     );
     const classified = classifyImportRows(parsed.rows, classificationContext);
 
@@ -421,10 +438,12 @@ describe('parseImportUpload → classifyImportRows', () => {
   });
 
   it('classifies a vault-phrase refund as settlement without a classification hint', () => {
-    const parsed = parseImportUpload(readFixture('amex', 'short.csv'), {
-      kind: 'profile',
-      profileId: 'amex',
-    });
+    const parsed = requireParsed(
+      parseImportUpload(readFixture('amex', 'short.csv'), {
+        kind: 'profile',
+        profileId: 'amex',
+      })
+    );
     const classified = classifyImportRows(parsed.rows, classificationContext);
 
     expect(parsed.rows[2]).toMatchObject({
@@ -434,12 +453,14 @@ describe('parseImportUpload → classifyImportRows', () => {
   });
 
   it('does not classify an expense as settlement from its description', () => {
-    const parsed = parseImportUpload(
-      [
-        'date,amount,description,type',
-        '2026-05-02,12.34,PAYMENT THANK YOU,expense',
-      ].join('\n'),
-      { kind: 'profile', profileId: 'internal' }
+    const parsed = requireParsed(
+      parseImportUpload(
+        [
+          'date,amount,description,type',
+          '2026-05-02,12.34,PAYMENT THANK YOU,expense',
+        ].join('\n'),
+        { kind: 'profile', profileId: 'internal' }
+      )
     );
     const classified = classifyImportRows(parsed.rows, classificationContext);
 

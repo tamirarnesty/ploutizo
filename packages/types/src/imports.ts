@@ -142,6 +142,14 @@ export interface ImportDraft extends ImportDraftSummary {
   refundTargetFacts: Record<string, RefundTargetFact>;
 }
 
+export type CreateImportDraftResponse =
+  | {
+      kind: 'draft';
+      data: ImportDraft;
+      meta: { reusedExisting: boolean };
+    }
+  | { kind: 'mapping_required' };
+
 export interface UpdateImportDraftRowResult {
   row: ImportDraftPersistedRow;
   refundTargetFacts?: Record<string, RefundTargetFact>;

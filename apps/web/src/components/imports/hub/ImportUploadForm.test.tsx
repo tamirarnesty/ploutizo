@@ -7,7 +7,6 @@ import { ImportUploadForm } from './ImportUploadForm';
 
 const uploadMocks = vi.hoisted(() => ({
   createImportDraftMutate: vi.fn(),
-  inspectImportMutate: vi.fn(),
   navigate: vi.fn(),
   readCsvFile: vi.fn(),
   isPending: false,
@@ -20,10 +19,6 @@ vi.mock('@tanstack/react-router', () => ({
 vi.mock('@/lib/data-access/imports', () => ({
   useCreateImportDraft: () => ({
     mutate: uploadMocks.createImportDraftMutate,
-    isPending: uploadMocks.isPending,
-  }),
-  useInspectImport: () => ({
-    mutate: uploadMocks.inspectImportMutate,
     isPending: uploadMocks.isPending,
   }),
 }));
@@ -128,31 +123,27 @@ const renderUploadForm = (
   );
 
 describe('ImportUploadForm', () => {
-  const recognizedInspectResult = {
-    data: {
-      kind: 'recognized' as const,
-      profileId: 'internal' as const,
-      preview: { rowCount: 1, sampleParsedRows: [] },
-    },
+  const createdDraftResponse = {
+    kind: 'draft' as const,
+    data: { id: 'draft_1' },
+    meta: { reusedExisting: false },
   };
 
   beforeEach(() => {
     uploadMocks.createImportDraftMutate.mockReset();
-    uploadMocks.inspectImportMutate.mockReset();
     uploadMocks.navigate.mockReset();
     uploadMocks.readCsvFile.mockReset();
     uploadMocks.isPending = false;
     uploadMocks.readCsvFile.mockResolvedValue(
       'date,amount,description,type\n2026-05-02,42.18,Coffee,expense'
     );
-    // Default: inspection succeeds with a recognized profile
-    uploadMocks.inspectImportMutate.mockImplementation(
+    uploadMocks.createImportDraftMutate.mockImplementation(
       (_payload: unknown, options: Record<string, unknown> | undefined) => {
         (
           options?.onSuccess as
-            | ((r: typeof recognizedInspectResult) => void)
+            | ((r: typeof createdDraftResponse) => void)
             | undefined
-        )?.(recognizedInspectResult);
+        )?.(createdDraftResponse);
       }
     );
   });

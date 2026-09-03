@@ -48,26 +48,14 @@ export type ImportContentSelectionInput = z.infer<
 >;
 
 // ---------------------------------------------------------------------------
-// Inspection
-// ---------------------------------------------------------------------------
-
-export const inspectImportUploadSchema = z.object({
-  content: z.string().min(1, 'CSV file is empty.'),
-});
-
-export type InspectImportUploadInput = z.infer<
-  typeof inspectImportUploadSchema
->;
-
-// ---------------------------------------------------------------------------
-// Draft creation (now requires a confirmed selection)
+// Draft creation
 // ---------------------------------------------------------------------------
 
 export const createImportDraftSchema = z.object({
   accountId: z.string().uuid(),
   fileName: z.string().trim().min(1, 'File name is required.').max(255),
   content: z.string().min(1, 'CSV file is empty.'),
-  selection: importContentSelectionSchema,
+  selection: importContentSelectionSchema.optional(),
 });
 
 export const updateImportDraftRowSchema = z

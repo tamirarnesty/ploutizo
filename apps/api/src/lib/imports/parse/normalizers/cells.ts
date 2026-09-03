@@ -48,3 +48,37 @@ export const toAbsoluteAmountSource = (
     isNegative,
   };
 };
+
+type AmountFields = {
+  sourceAmount: string | null;
+  sourceType: string | null;
+};
+
+/** Map a signed amount column to absolute amount + expense/refund type. */
+export const readSignedAmount = (
+  raw: string | null,
+  positiveIsExpense = true
+): AmountFields => {
+  const { sourceAmount, isNegative } = toAbsoluteAmountSource(raw);
+  if (!sourceAmount) return { sourceAmount: null, sourceType: null };
+  const isExpense = isNegative ? !positiveIsExpense : positiveIsExpense;
+  return { sourceAmount, sourceType: isExpense ? 'expense' : 'refund' };
+};
+
+/** Map exclusive debit/credit columns to absolute amount + expense/refund type. */
+export const readDebitCreditAmount = (
+  debitRaw: string | null,
+  creditRaw: string | null
+): AmountFields => {
+  const { sourceAmount: debitAmt } = toAbsoluteAmountSource(debitRaw);
+  const { sourceAmount: creditAmt } = toAbsoluteAmountSource(creditRaw);
+  const hasDebit = debitAmt != null;
+  const hasCredit = creditAmt != null;
+  if (hasDebit === hasCredit) {
+    return { sourceAmount: null, sourceType: null };
+  }
+  return {
+    sourceAmount: hasDebit ? debitAmt : creditAmt,
+    sourceType: hasDebit ? 'expense' : 'refund',
+  };
+};

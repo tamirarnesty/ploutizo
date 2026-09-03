@@ -1,7 +1,7 @@
 import type {
   ImportContentProfileId,
-  ImportContentSelection,
   ImportDraftRow,
+  ImportUploadMappingRequired,
 } from '@ploutizo/types';
 import type { ImportClassificationHint, ImportCsvHints } from '@ploutizo/utils';
 
@@ -59,11 +59,16 @@ export type ParsedImportRow = Omit<
   >;
 
 export interface ParsedImport {
+  kind: 'parsed';
   /** The content profile that was used to parse this upload. */
   contentProfileId: ImportContentProfileId | null;
   rowCount: number;
   rows: ParsedImportRow[];
 }
+
+export type ParseImportUploadResult =
+  | ParsedImport
+  | ImportUploadMappingRequired;
 
 /**
  * A content profile: parsing semantics for one CSV layout.
@@ -75,5 +80,3 @@ export interface ImportContentProfile {
   normalize: (upload: CsvUpload) => SourceImportRow[];
   parseDate: (value: string | null) => string | null;
 }
-
-export type { ImportContentSelection };

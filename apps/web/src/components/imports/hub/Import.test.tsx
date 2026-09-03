@@ -11,7 +11,6 @@ import { Import } from './Import';
 
 const importMocks = vi.hoisted(() => ({
   createImportDraftMutate: vi.fn(),
-  inspectImportMutate: vi.fn(),
   navigate: vi.fn(),
   toastInfo: vi.fn(),
   toastSuccess: vi.fn(),
@@ -102,10 +101,6 @@ vi.mock('@/lib/data-access/imports', () => ({
     mutate: importMocks.createImportDraftMutate,
     isPending: false,
   }),
-  useInspectImport: () => ({
-    mutate: importMocks.inspectImportMutate,
-    isPending: false,
-  }),
   useDiscardImportDraft: vi.fn(),
   useGetImportDrafts: vi.fn(),
   useGetImportHistory: vi.fn(),
@@ -169,28 +164,24 @@ const setImportPageData = ({
 };
 
 describe('Import', () => {
-  const recognizedResult = {
-    data: {
-      kind: 'recognized' as const,
-      profileId: 'internal' as const,
-      preview: { rowCount: 1, sampleParsedRows: [] },
-    },
+  const createdDraftResponse = {
+    kind: 'draft' as const,
+    data: { id: 'draft_1' },
+    meta: { reusedExisting: false },
   };
 
   beforeEach(() => {
     importMocks.createImportDraftMutate.mockReset();
-    importMocks.inspectImportMutate.mockReset();
     importMocks.navigate.mockReset();
     importMocks.toastInfo.mockReset();
     importMocks.toastSuccess.mockReset();
-    // Default: inspect succeeds with a recognized profile
-    importMocks.inspectImportMutate.mockImplementation(
+    importMocks.createImportDraftMutate.mockImplementation(
       (_payload: unknown, options: Record<string, unknown> | undefined) => {
         (
           options?.onSuccess as
-            | ((r: typeof recognizedResult) => void)
+            | ((r: typeof createdDraftResponse) => void)
             | undefined
-        )?.(recognizedResult);
+        )?.(createdDraftResponse);
       }
     );
     Object.defineProperty(URL, 'createObjectURL', {
@@ -335,7 +326,6 @@ describe('Import', () => {
           accountId: 'acct_1',
           fileName: 'statement.csv',
           content,
-          selection: { kind: 'profile', profileId: 'internal' },
         }),
         expect.any(Object)
       )
@@ -350,15 +340,9 @@ describe('Import', () => {
       (_payload: unknown, options: Record<string, unknown> | undefined) => {
         (
           options?.onSuccess as
-            | ((r: {
-                data: { id: string };
-                meta: { reusedExisting: boolean };
-              }) => void)
+            | ((r: typeof createdDraftResponse) => void)
             | undefined
-        )?.({
-          data: { id: 'draft_1' },
-          meta: { reusedExisting: false },
-        });
+        )?.(createdDraftResponse);
       }
     );
 

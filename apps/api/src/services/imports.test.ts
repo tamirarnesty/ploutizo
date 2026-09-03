@@ -227,7 +227,9 @@ describe('import service', () => {
       selection: { kind: 'profile', profileId: 'internal' },
     });
 
-    expect(result.reusedExisting).toBe(false);
+    expect(result.kind).toBe('draft');
+    if (result.kind !== 'draft') return;
+    expect(result.meta.reusedExisting).toBe(false);
     expect(db.transaction).toHaveBeenCalledTimes(1);
     expect(insertImportBatch).toHaveBeenCalledWith(
       expect.anything(),
@@ -273,9 +275,9 @@ describe('import service', () => {
     expect(insertedRows[1]).not.toHaveProperty('invalidReason');
     expect(insertedRows[0]).not.toHaveProperty('selectedForImport');
     expect(insertedRows[0]).not.toHaveProperty('classificationHint');
-    expect(result.draft.rows).toHaveLength(1);
-    expect(result.draft.validRowCount).toBe(1);
-    expect(result.draft.invalidRowCount).toBe(0);
+    expect(result.data.rows).toHaveLength(1);
+    expect(result.data.validRowCount).toBe(1);
+    expect(result.data.invalidRowCount).toBe(0);
     expect(listMerchantRulesWithTags).toHaveBeenCalledWith('org_1');
     expect(listAccountMemberDetails).toHaveBeenCalledWith('org_1', [
       summaryRow.accountId,
@@ -390,6 +392,32 @@ describe('import service', () => {
     ]);
   });
 
+  it('returns mapping_required when auto-detection cannot pick a profile', async () => {
+    const result = await createImportDraft('org_1', {
+      accountId: summaryRow.accountId,
+      fileName: 'unknown.csv',
+      content: 'posted,total,memo\n2026-05-02,42,Coffee',
+    });
+
+    expect(result).toEqual({ kind: 'mapping_required' });
+    expect(insertImportBatch).not.toHaveBeenCalled();
+  });
+
+  it('auto-detects a recognized profile when selection is omitted', async () => {
+    await createImportDraft('org_1', {
+      accountId: summaryRow.accountId,
+      fileName: 'statement.csv',
+      content: 'date,amount,description,type\n2026-05-02,42.18,Coffee,expense',
+    });
+
+    expect(insertImportBatch).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        contentProfileId: 'internal',
+      })
+    );
+  });
+
   it('resumes the active draft for an account without inserting a new batch', async () => {
     vi.mocked(fetchActiveDraftByAccount).mockResolvedValue(summaryRow);
 
@@ -400,7 +428,9 @@ describe('import service', () => {
       selection: { kind: 'profile', profileId: 'internal' },
     });
 
-    expect(result.reusedExisting).toBe(true);
+    expect(result.kind).toBe('draft');
+    if (result.kind !== 'draft') return;
+    expect(result.meta.reusedExisting).toBe(true);
     expect(insertImportBatch).not.toHaveBeenCalled();
     expect(insertImportBatchRows).not.toHaveBeenCalled();
     expect(listMerchantRulesWithTags).not.toHaveBeenCalled();
@@ -419,8 +449,10 @@ describe('import service', () => {
       selection: { kind: 'profile', profileId: 'internal' },
     });
 
-    expect(result.reusedExisting).toBe(true);
-    expect(result.draft.id).toBe(summaryRow.id);
+    expect(result.kind).toBe('draft');
+    if (result.kind !== 'draft') return;
+    expect(result.meta.reusedExisting).toBe(true);
+    expect(result.data.id).toBe(summaryRow.id);
   });
 
   it('returns persisted row without derived status when category is patched', async () => {

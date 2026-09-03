@@ -20,32 +20,24 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
-import { IMPORT_CONTENT_PROFILE_IDS, MAX_IMPORT_BYTES } from '@ploutizo/types';
+import {
+  CHOOSABLE_IMPORT_CONTENT_PROFILE_IDS,
+  IMPORT_CONTENT_PROFILE_LABELS,
+  MAX_IMPORT_BYTES,
+} from '@ploutizo/types';
 import { formatAccountLabel } from '@ploutizo/utils';
 import type {
   ImportContentProfileId,
   ImportContentSelection,
   ImportDraftSummary,
   ImportTargetAccount,
-  InspectImportResult,
 } from '@ploutizo/types';
-import {
-  useCreateImportDraft,
-  useInspectImport,
-} from '@/lib/data-access/imports';
+import { useCreateImportDraft } from '@/lib/data-access/imports';
 import { readCsvFile } from '@/lib/imports/readCsvFile';
 import { getApiErrorMessage } from '@/lib/queryClient';
 import { ImportHelpActions } from './ImportHelpActions';
 
 const CSV_ACCEPT = '.csv,text/csv';
-
-const PROFILE_LABELS: Record<ImportContentProfileId, string> = {
-  internal: 'Ploutizo normalized',
-  amex: 'Amex',
-  pc_financial: 'PC Financial',
-  mdy_debit_credit_balance: 'Generic: MM/DD/YYYY debit/credit/balance',
-  iso_debit_credit_masked_card: 'Generic: ISO date debit/credit/masked card',
-};
 
 interface ImportUploadFormProps {
   targets: ImportTargetAccount[];
@@ -56,10 +48,8 @@ interface ImportUploadFormProps {
 
 type UploadStep =
   | { kind: 'idle' }
-  | { kind: 'inspecting' }
   | {
       kind: 'choose_format';
-      inspectResult: Extract<InspectImportResult, { kind: 'mapping_required' }>;
       content: string;
       fileName: string;
       accountId: string;
@@ -78,12 +68,10 @@ export const ImportUploadForm = ({
   const [step, setStep] = useState<UploadStep>({ kind: 'idle' });
   const [selectedProfileId, setSelectedProfileId] = useState<
     ImportContentProfileId | ''
-  >('');
+  >(CHOOSABLE_IMPORT_CONTENT_PROFILE_IDS[0] ?? '');
 
-  const inspectImport = useInspectImport();
   const createDraft = useCreateImportDraft();
-
-  const isLoading = step.kind === 'inspecting' || step.kind === 'creating';
+  const isLoading = step.kind === 'creating';
 
   const firstTargetId = targets[0]?.id ?? '';
   const targetIds = useMemo(
@@ -108,13 +96,23 @@ export const ImportUploadForm = ({
     accountId: string,
     fileName: string,
     content: string,
-    selection: ImportContentSelection
+    selection?: ImportContentSelection
   ) => {
     setStep({ kind: 'creating' });
     createDraft.mutate(
       { accountId, fileName, content, selection },
       {
         onSuccess: (response) => {
+          if (response.kind === 'mapping_required') {
+            setStep({
+              kind: 'choose_format',
+              content,
+              fileName,
+              accountId,
+            });
+            setSelectedProfileId(CHOOSABLE_IMPORT_CONTENT_PROFILE_IDS[0] ?? '');
+            return;
+          }
           setSelectedFile(null);
           setUploadError(null);
           setStep({ kind: 'idle' });
@@ -149,39 +147,8 @@ export const ImportUploadForm = ({
         return;
       }
 
-      setStep({ kind: 'inspecting' });
-      inspectImport.mutate(
-        { content },
-        {
-          onSuccess: (response) => {
-            const result = response.data;
-            if (result.kind === 'recognized') {
-              submitDraft(value.accountId, selectedFile.name, content, {
-                kind: 'profile',
-                profileId: result.profileId,
-              });
-            } else {
-              setStep({
-                kind: 'choose_format',
-                inspectResult: result,
-                content,
-                fileName: selectedFile.name,
-                accountId: value.accountId,
-              });
-              const first = result.suggestedProfileIds[0] as
-                | ImportContentProfileId
-                | undefined;
-              setSelectedProfileId(first ?? '');
-            }
-          },
-          onError: (error) => {
-            setUploadError(
-              getApiErrorMessage(error, "Couldn't process that CSV.")
-            );
-            setStep({ kind: 'idle' });
-          },
-        }
-      );
+      setUploadError(null);
+      submitDraft(value.accountId, selectedFile.name, content);
     },
   });
 
@@ -200,7 +167,7 @@ export const ImportUploadForm = ({
 
   const handleCancelFormatChoice = () => {
     setStep({ kind: 'idle' });
-    setSelectedProfileId('');
+    setSelectedProfileId(CHOOSABLE_IMPORT_CONTENT_PROFILE_IDS[0] ?? '');
     setUploadError(null);
   };
 
@@ -212,11 +179,6 @@ export const ImportUploadForm = ({
   }, [firstTargetId, form, targetIds]);
 
   if (step.kind === 'choose_format') {
-    const suggestedIds =
-      step.inspectResult.suggestedProfileIds.length > 0
-        ? step.inspectResult.suggestedProfileIds
-        : [...IMPORT_CONTENT_PROFILE_IDS];
-
     return (
       <div className="space-y-4 rounded-md border border-border p-4">
         <div>
@@ -242,9 +204,9 @@ export const ImportUploadForm = ({
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                {suggestedIds.map((profileId) => (
+                {CHOOSABLE_IMPORT_CONTENT_PROFILE_IDS.map((profileId) => (
                   <SelectItem key={profileId} value={profileId}>
-                    {PROFILE_LABELS[profileId]}
+                    {IMPORT_CONTENT_PROFILE_LABELS[profileId]}
                   </SelectItem>
                 ))}
               </SelectGroup>

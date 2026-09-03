@@ -3,7 +3,7 @@ import {
   buildRawData,
   createNamedCellReader,
   headersMatchInOrder,
-  toAbsoluteAmountSource,
+  readSignedAmount,
 } from './cells';
 import type { ImportContentProfile, SourceImportRow } from '../types';
 
@@ -23,8 +23,9 @@ export const amexContentProfile: ImportContentProfile = {
   normalize: (upload) => {
     const readCell = createNamedCellReader(upload.headers);
     return upload.records.slice(1).map((record): SourceImportRow => {
-      const amount = readCell(record, 'Amount');
-      const { sourceAmount, isNegative } = toAbsoluteAmountSource(amount);
+      const { sourceAmount, sourceType } = readSignedAmount(
+        readCell(record, 'Amount')
+      );
 
       return {
         rowNumber: record.rowNumber,
@@ -33,7 +34,7 @@ export const amexContentProfile: ImportContentProfile = {
         sourceDate: readCell(record, 'Date'),
         sourceAmount,
         sourceDescription: readCell(record, 'Description'),
-        sourceType: sourceAmount ? (isNegative ? 'refund' : 'expense') : null,
+        sourceType,
         hints: {
           csvCategoryName: null,
           csvAssigneeName: readCell(record, 'Card Member'),

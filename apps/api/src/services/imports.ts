@@ -11,6 +11,7 @@ import {
 } from '@ploutizo/utils/import-row-status';
 import { validateTransactionAccountPolicy } from '@ploutizo/utils/transaction-policy';
 import type {
+  CreateImportDraftResponse,
   ImportDraft,
   ImportDraftPersistedRow,
   ImportDraftSummary,
@@ -53,7 +54,7 @@ import {
   transactionExistsInOrg,
 } from '@/lib/queries/scope';
 import { listTags } from '@/lib/queries/tags';
-import { inspectImportUpload, parseImportUpload } from '@/lib/imports/parse';
+import { parseImportUpload } from '@/lib/imports/parse';
 import { toImportTargetAccount } from '@/lib/accounts/accountResponse';
 import { listRefundTargetExpensesByIds } from '@/lib/queries/import-refund-targets';
 import {
@@ -169,7 +170,7 @@ export const getImportDraft = async (
 export const createImportDraft = async (
   orgId: string,
   input: CreateImportDraftInput
-): Promise<{ draft: ImportDraft; reusedExisting: boolean }> => {
+): Promise<CreateImportDraftResponse> => {
   const account = await fetchActiveCreditCardAccount(orgId, input.accountId);
   if (!account) {
     throw new NotFoundError('Import target account not found.');
@@ -178,12 +179,16 @@ export const createImportDraft = async (
   const existingDraft = await fetchActiveDraftByAccount(orgId, input.accountId);
   if (existingDraft) {
     return {
-      draft: await getImportDraft(orgId, existingDraft.id),
-      reusedExisting: true,
+      kind: 'draft',
+      data: await getImportDraft(orgId, existingDraft.id),
+      meta: { reusedExisting: true },
     };
   }
 
   const parsed = parseImportUpload(input.content, input.selection);
+  if (parsed.kind === 'mapping_required') {
+    return { kind: 'mapping_required' };
+  }
   const [orgMembers, orgCategories, orgTags, merchantRules, accountOwners] =
     await Promise.all([
       listOrgMembers(orgId),
@@ -239,8 +244,9 @@ export const createImportDraft = async (
     });
 
     return {
-      draft: await getImportDraft(orgId, draftId),
-      reusedExisting: false,
+      kind: 'draft',
+      data: await getImportDraft(orgId, draftId),
+      meta: { reusedExisting: false },
     };
   } catch (error) {
     if (!isUniqueViolation(error)) throw error;
@@ -249,8 +255,9 @@ export const createImportDraft = async (
     if (!racedDraft) throw error;
 
     return {
-      draft: await getImportDraft(orgId, racedDraft.id),
-      reusedExisting: true,
+      kind: 'draft',
+      data: await getImportDraft(orgId, racedDraft.id),
+      meta: { reusedExisting: true },
     };
   }
 };
@@ -370,7 +377,5 @@ export const updateImportDraftRowSelection = async (
 
   return persistedRows.map(toImportDraftPersistedRow);
 };
-
-export const inspectImport = (content: string) => inspectImportUpload(content);
 
 export const getImportExampleCsv = () => INTERNAL_IMPORT_EXAMPLE_CSV;

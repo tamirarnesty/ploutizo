@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_IMPORT_BYTES, MAX_IMPORT_ROWS } from '@ploutizo/types';
 import type { ImportContentSelection } from '@ploutizo/types';
-import { inspectImportUpload, parseImportUpload } from './index';
+import { parseImportUpload } from './index';
+import type { ParseImportUploadResult, ParsedImport } from './types';
 import { DomainError } from '@/lib/errors';
 
 const internalSelection: ImportContentSelection = {
@@ -19,47 +20,53 @@ const expectImportError = (fn: () => unknown, code: string) => {
   }
 };
 
-describe('inspectImportUpload', () => {
-  it('returns recognized for a valid internal CSV', () => {
-    const result = inspectImportUpload(
-      ['date,amount,description,type', '2026-05-02,42.18,Coffee,expense'].join(
-        '\n'
+const requireParsed = (result: ParseImportUploadResult): ParsedImport => {
+  if (result.kind === 'mapping_required') {
+    throw new Error('Expected parsed import');
+  }
+  return result;
+};
+
+describe('parseImportUpload auto-detection', () => {
+  it('auto-detects a valid internal CSV', () => {
+    const result = requireParsed(
+      parseImportUpload(
+        [
+          'date,amount,description,type',
+          '2026-05-02,42.18,Coffee,expense',
+        ].join('\n')
       )
     );
 
-    expect(result.kind).toBe('recognized');
-    if (result.kind !== 'recognized') return;
-    expect(result.profileId).toBe('internal');
-    expect(result.preview.rowCount).toBe(1);
-    expect(result.preview.sampleParsedRows[0]?.sourceDescription).toBe(
-      'Coffee'
-    );
+    expect(result.contentProfileId).toBe('internal');
+    expect(result.rowCount).toBe(1);
+    expect(result.rows[0]?.parsedDescription).toBe('Coffee');
   });
 
   it('returns mapping_required for an unrecognized CSV', () => {
-    const result = inspectImportUpload(
-      'posted,total,memo\n2026-05-02,42,Coffee'
-    );
+    const result = parseImportUpload('posted,total,memo\n2026-05-02,42,Coffee');
 
-    expect(result.kind).toBe('mapping_required');
+    expect(result).toEqual({ kind: 'mapping_required' });
   });
 
   it('returns mapping_required for an empty-but-readable CSV', () => {
-    const result = inspectImportUpload('a,b,c\n,,,');
+    const result = parseImportUpload('a,b,c\n,,,');
 
-    expect(result.kind).toBe('mapping_required');
+    expect(result).toEqual({ kind: 'mapping_required' });
   });
 });
 
 describe('parseImportUpload', () => {
   it('keeps unparseable rows as durable facts when at least one row is importable', () => {
-    const parsed = parseImportUpload(
-      [
-        'date,amount,description,type,external id,category,notes,tags',
-        '2026-05-02,42.18,Neighborhood Grocery,expense,visa-1001,Groceries,Weekly shop,food; errands',
-        'not-a-date,nope,,charge,visa-1002,,,',
-      ].join('\n'),
-      internalSelection
+    const parsed = requireParsed(
+      parseImportUpload(
+        [
+          'date,amount,description,type,external id,category,notes,tags',
+          '2026-05-02,42.18,Neighborhood Grocery,expense,visa-1001,Groceries,Weekly shop,food; errands',
+          'not-a-date,nope,,charge,visa-1002,,,',
+        ].join('\n'),
+        internalSelection
+      )
     );
 
     expect(parsed.contentProfileId).toBe('internal');
@@ -95,11 +102,14 @@ describe('parseImportUpload', () => {
   });
 
   it('leaves review type and description for upload-time classification', () => {
-    const parsed = parseImportUpload(
-      ['date,amount,description,type', '2026-05-02,42.18,Coffee,expense'].join(
-        '\n'
-      ),
-      internalSelection
+    const parsed = requireParsed(
+      parseImportUpload(
+        [
+          'date,amount,description,type',
+          '2026-05-02,42.18,Coffee,expense',
+        ].join('\n'),
+        internalSelection
+      )
     );
 
     expect(parsed.rows[0]).toMatchObject({
@@ -117,14 +127,16 @@ describe('parseImportUpload', () => {
   });
 
   it('parses only ISO dates on the internal profile', () => {
-    const parsed = parseImportUpload(
-      [
-        'date,amount,description,type',
-        '2026-05-02,42.18,Coffee,expense',
-        '05/08/2026,5.00,Tea,expense',
-        '8 May 2026,1.00,Water,expense',
-      ].join('\n'),
-      internalSelection
+    const parsed = requireParsed(
+      parseImportUpload(
+        [
+          'date,amount,description,type',
+          '2026-05-02,42.18,Coffee,expense',
+          '05/08/2026,5.00,Tea,expense',
+          '8 May 2026,1.00,Water,expense',
+        ].join('\n'),
+        internalSelection
+      )
     );
 
     expect(parsed.rows[0]?.parsedDate).toBe('2026-05-02');
@@ -135,24 +147,28 @@ describe('parseImportUpload', () => {
   });
 
   it('trims surrounding apostrophes from external ids', () => {
-    const parsed = parseImportUpload(
-      [
-        'date,amount,description,type,external id',
-        "2026-05-02,42.18,Coffee,expense,'AMEX-12345",
-      ].join('\n'),
-      internalSelection
+    const parsed = requireParsed(
+      parseImportUpload(
+        [
+          'date,amount,description,type,external id',
+          "2026-05-02,42.18,Coffee,expense,'AMEX-12345",
+        ].join('\n'),
+        internalSelection
+      )
     );
 
     expect(parsed.rows[0]?.externalId).toBe('AMEX-12345');
   });
 
   it('parses RFC-escaped quotes in fields', () => {
-    const parsed = parseImportUpload(
-      [
-        'date,amount,description,type',
-        '2026-05-02,42.18,"12"" pizza",expense',
-      ].join('\n'),
-      internalSelection
+    const parsed = requireParsed(
+      parseImportUpload(
+        [
+          'date,amount,description,type',
+          '2026-05-02,42.18,"12"" pizza",expense',
+        ].join('\n'),
+        internalSelection
+      )
     );
 
     expect(parsed.rows[0]?.sourceDescription).toBe('12" pizza');
@@ -203,13 +219,15 @@ describe('parseImportUpload', () => {
   });
 
   it('keeps malformed grouped amount tokens as unparsed facts', () => {
-    const parsed = parseImportUpload(
-      [
-        'date,amount,description,type',
-        '2026-05-02,42.18,Coffee,expense',
-        '2026-05-03,"12,34.56",Tea,expense',
-      ].join('\n'),
-      internalSelection
+    const parsed = requireParsed(
+      parseImportUpload(
+        [
+          'date,amount,description,type',
+          '2026-05-02,42.18,Coffee,expense',
+          '2026-05-03,"12,34.56",Tea,expense',
+        ].join('\n'),
+        internalSelection
+      )
     );
 
     expect(parsed.rows[1].parsedAmount).toBeNull();
@@ -217,14 +235,16 @@ describe('parseImportUpload', () => {
   });
 
   it('parses dollar amounts and keeps misplaced dollar signs unparsed', () => {
-    const parsed = parseImportUpload(
-      [
-        'date,amount,description,type',
-        '2026-05-02,$42.18,Coffee,expense',
-        '2026-05-03,12$34.56,Tea,expense',
-        '2026-05-04,$$42.00,Water,expense',
-      ].join('\n'),
-      internalSelection
+    const parsed = requireParsed(
+      parseImportUpload(
+        [
+          'date,amount,description,type',
+          '2026-05-02,$42.18,Coffee,expense',
+          '2026-05-03,12$34.56,Tea,expense',
+          '2026-05-04,$$42.00,Water,expense',
+        ].join('\n'),
+        internalSelection
+      )
     );
 
     expect(parsed.rows[0].parsedAmount).toBe(4218);
@@ -240,7 +260,6 @@ describe('parseImportUpload', () => {
   });
 
   it('rejects files with only a header row and no data rows', () => {
-    // normalizer slice(1) returns []; coerce throws IMPORT_FILE_EMPTY
     expectImportError(
       () =>
         parseImportUpload('date,amount,description,type', internalSelection),

@@ -6,7 +6,12 @@ import {
   tryParseImportIsoDate,
   tryParseImportMdyDate,
 } from '@ploutizo/utils/import-coercion';
-import { buildRawData, optionalTrim, toAbsoluteAmountSource } from './cells';
+import {
+  buildRawData,
+  optionalTrim,
+  readDebitCreditAmount,
+  toAbsoluteAmountSource,
+} from './cells';
 import type {
   CsvRecord,
   CsvUpload,
@@ -73,12 +78,10 @@ const matchesHeaderless = (
 };
 
 const mapHeaderlessRow = (record: CsvRecord): SourceImportRow => {
-  const debit = optionalTrim(record.cells[2]);
-  const credit = optionalTrim(record.cells[3]);
-  const hasDebit = debit != null;
-  const hasCredit = credit != null;
-  const exclusiveAmount = hasDebit === hasCredit ? null : (debit ?? credit);
-  const { sourceAmount } = toAbsoluteAmountSource(exclusiveAmount);
+  const { sourceAmount, sourceType } = readDebitCreditAmount(
+    optionalTrim(record.cells[2]),
+    optionalTrim(record.cells[3])
+  );
 
   return {
     rowNumber: record.rowNumber,
@@ -93,8 +96,7 @@ const mapHeaderlessRow = (record: CsvRecord): SourceImportRow => {
     sourceDate: optionalTrim(record.cells[0]),
     sourceAmount,
     sourceDescription: optionalTrim(record.cells[1]),
-    sourceType:
-      exclusiveAmount == null ? null : hasDebit ? 'expense' : 'refund',
+    sourceType,
   };
 };
 

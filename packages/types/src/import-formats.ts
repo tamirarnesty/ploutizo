@@ -22,6 +22,24 @@ export const isImportContentProfileId = (
 ): value is ImportContentProfileId =>
   IMPORT_CONTENT_PROFILE_IDS.includes(value as ImportContentProfileId);
 
+/** Profiles offered when auto-detection cannot pick a single match. */
+export const CHOOSABLE_IMPORT_CONTENT_PROFILE_IDS =
+  IMPORT_CONTENT_PROFILE_IDS.filter(
+    (profileId): profileId is Exclude<ImportContentProfileId, 'internal'> =>
+      profileId !== 'internal'
+  );
+
+export const IMPORT_CONTENT_PROFILE_LABELS: Record<
+  ImportContentProfileId,
+  string
+> = {
+  internal: 'Ploutizo normalized',
+  amex: 'Amex',
+  pc_financial: 'PC Financial',
+  mdy_debit_credit_balance: 'Generic: MM/DD/YYYY debit/credit/balance',
+  iso_debit_credit_masked_card: 'Generic: ISO date debit/credit/masked card',
+};
+
 // ---------------------------------------------------------------------------
 // V1 custom mapping date formats
 // ---------------------------------------------------------------------------
@@ -55,33 +73,7 @@ export type ImportContentSelection =
   | { kind: 'profile'; profileId: ImportContentProfileId }
   | { kind: 'mapping'; mapping: ImportCustomMapping };
 
-// ---------------------------------------------------------------------------
-// Inspection result (returned before draft creation)
-// ---------------------------------------------------------------------------
-
-export interface ImportPreview {
-  rowCount: number;
-  /** First few rows for display purposes. */
-  sampleParsedRows: {
-    sourceDate: string | null;
-    sourceAmount: string | null;
-    sourceDescription: string | null;
-    sourceType: string | null;
-  }[];
-}
-
-export type InspectImportResult =
-  | {
-      kind: 'recognized';
-      profileId: ImportContentProfileId;
-      preview: ImportPreview;
-    }
-  | {
-      kind: 'mapping_required';
-      headers: string[] | null;
-      sampleRows: { cells: string[]; rowNumber: number }[];
-      suggestedProfileIds: ImportContentProfileId[];
-    };
+export type ImportUploadMappingRequired = { kind: 'mapping_required' };
 
 export const MAX_IMPORT_BYTES = 512 * 1024;
 

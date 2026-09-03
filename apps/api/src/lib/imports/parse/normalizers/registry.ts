@@ -36,36 +36,6 @@ export const findMatchingProfiles = (
   return [];
 };
 
-/**
- * Return the single recognized profile for an upload, or throw a domain error
- * if the upload is ambiguous or unrecognized.
- *
- * Used by `parseImportUpload` when a profile selection has been confirmed.
- */
-export const detectContentProfile = (
-  upload: CsvUpload
-): ImportContentProfile => {
-  const matches = findMatchingProfiles(upload);
-
-  if (matches.length > 1) {
-    throw new DomainError(
-      400,
-      'This file matches more than one supported format.',
-      'IMPORT_FILE_AMBIGUOUS'
-    );
-  }
-
-  if (matches.length === 1) {
-    return matches[0];
-  }
-
-  throw new DomainError(
-    400,
-    'This file is not a recognized import format.',
-    'IMPORT_FILE_UNRECOGNIZED'
-  );
-};
-
 /** All profiles in order (named first, then internal). */
 const ALL_PROFILES = [...NAMED_PROFILES, internalContentProfile];
 
@@ -93,19 +63,4 @@ export const resolveSelectedProfile = (
     );
   }
   return profile;
-};
-
-/**
- * Return suggested profile IDs for `mapping_required` — profiles whose
- * positional/structural heuristics partially match the upload.
- * For now we suggest all non-internal profiles that at least have the right
- * column count; callers may narrow further.
- */
-export const suggestCompatibleProfileIds = (
-  _upload: CsvUpload
-): ImportContentProfileId[] => {
-  // v1: always offer all known profiles (except internal — it has distinct required headers)
-  return ALL_PROFILES.filter((p) => p.profileId !== 'internal').map(
-    (p) => p.profileId
-  );
 };

@@ -8,7 +8,12 @@ import type {
   ImportCustomMapping,
   ImportCustomMappingDateFormat,
 } from '@ploutizo/types';
-import { buildRawData, optionalTrim, toAbsoluteAmountSource } from './cells';
+import {
+  buildRawData,
+  optionalTrim,
+  readDebitCreditAmount,
+  readSignedAmount,
+} from './cells';
 import type {
   CsvUpload,
   ImportContentProfile,
@@ -25,15 +30,10 @@ const DATE_PARSERS: Record<
   'DD/MM/YYYY': tryParseImportDmyDate,
 };
 
-const getColumnIndex = (headers: string[], column: string): number => {
-  const idx = headers.findIndex(
-    (h) => h.trim().toLowerCase() === column.trim().toLowerCase()
-  );
-  return idx;
-};
-
 const requireColumnIndex = (headers: string[], column: string): number => {
-  const idx = getColumnIndex(headers, column);
+  const idx = headers.findIndex(
+    (header) => header.trim().toLowerCase() === column.trim().toLowerCase()
+  );
   if (idx === -1) {
     throw new DomainError(
       400,
@@ -50,41 +50,18 @@ const buildAmountReader = (
 ) => {
   if (amount.kind === 'signed') {
     const idx = requireColumnIndex(headers, 'amount');
-    const positiveIsExpense = amount.positiveIsExpense;
-    return (
-      cells: string[]
-    ): Pick<SourceImportRow, 'sourceAmount' | 'sourceType'> => {
-      const raw = optionalTrim(cells[idx]);
-      const { sourceAmount, isNegative } = toAbsoluteAmountSource(raw);
-      let sourceType: string | null = null;
-      if (sourceAmount) {
-        sourceType = (isNegative ? !positiveIsExpense : positiveIsExpense)
-          ? 'expense'
-          : 'refund';
-      }
-      return { sourceAmount, sourceType };
-    };
-  } else {
-    const debitIdx = requireColumnIndex(headers, amount.debitColumn);
-    const creditIdx = requireColumnIndex(headers, amount.creditColumn);
-    return (
-      cells: string[]
-    ): Pick<SourceImportRow, 'sourceAmount' | 'sourceType'> => {
-      const debitRaw = optionalTrim(cells[debitIdx]);
-      const creditRaw = optionalTrim(cells[creditIdx]);
-      const { sourceAmount: debitAmt } = toAbsoluteAmountSource(debitRaw);
-      const { sourceAmount: creditAmt } = toAbsoluteAmountSource(creditRaw);
-      const hasDebit = debitAmt != null;
-      const hasCredit = creditAmt != null;
-      if (hasDebit === hasCredit) {
-        return { sourceAmount: null, sourceType: null };
-      }
-      return {
-        sourceAmount: hasDebit ? debitAmt : creditAmt,
-        sourceType: hasDebit ? 'expense' : 'refund',
-      };
-    };
+    const { positiveIsExpense } = amount;
+    return (cells: string[]) =>
+      readSignedAmount(optionalTrim(cells[idx]), positiveIsExpense);
   }
+
+  const debitIdx = requireColumnIndex(headers, amount.debitColumn);
+  const creditIdx = requireColumnIndex(headers, amount.creditColumn);
+  return (cells: string[]) =>
+    readDebitCreditAmount(
+      optionalTrim(cells[debitIdx]),
+      optionalTrim(cells[creditIdx])
+    );
 };
 
 /**

@@ -55,8 +55,9 @@ describe('imports router', () => {
 
   it('creates an import draft with a normalized CSV payload', async () => {
     vi.mocked(createImportDraft).mockResolvedValue({
-      reusedExisting: false,
-      draft: { id: 'draft_1', rows: [] } as never,
+      kind: 'draft',
+      data: { id: 'draft_1', rows: [] } as never,
+      meta: { reusedExisting: false },
     });
 
     const res = await app.request('/drafts', {
@@ -80,8 +81,9 @@ describe('imports router', () => {
 
   it('returns an existing draft when createImportDraft reuses one', async () => {
     vi.mocked(createImportDraft).mockResolvedValue({
-      reusedExisting: true,
-      draft: { id: 'draft_1', rows: [] } as never,
+      kind: 'draft',
+      data: { id: 'draft_1', rows: [] } as never,
+      meta: { reusedExisting: true },
     });
 
     const res = await app.request('/drafts', {
@@ -96,6 +98,7 @@ describe('imports router', () => {
       }),
     });
     const body = (await res.json()) as {
+      kind: 'draft';
       data: { id: string };
       meta: { reusedExisting: boolean };
     };
