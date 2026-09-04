@@ -62,8 +62,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           EVENT_NAME: ${{ github.event_name }}
           PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+          HEAD_BRANCH: ${{ github.ref_name }}
           REPO: ${{ github.repository }}
-          COMMIT_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
 
@@ -89,14 +89,14 @@ jobs:
             exit 0
           fi
 
-          pr=$(gh api "repos/${REPO}/commits/${COMMIT_SHA}/pulls" \
-            --jq '[.[] | select(.state == "open")] | first // empty')
+          pr=$(gh pr list --repo "$REPO" --head "$HEAD_BRANCH" --state open \
+            --json number,isDraft --jq '.[0] // empty')
           if [[ -z "$pr" ]]; then
-            echo "No open PR contains ${COMMIT_SHA}; skipping"
+            echo "No open PR for ${HEAD_BRANCH}; skipping"
             echo "should_provision=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if [[ "$(jq -r '.draft' <<<"$pr")" == "true" ]]; then
+          if [[ "$(jq -r '.isDraft' <<<"$pr")" == "true" ]]; then
             echo "PR $(jq -r '.number' <<<"$pr") is a draft; skipping"
             echo "should_provision=false" >> "$GITHUB_OUTPUT"
             exit 0
