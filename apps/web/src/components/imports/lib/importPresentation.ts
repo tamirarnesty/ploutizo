@@ -4,6 +4,7 @@ import {
   resolveImportRowReviewDescription,
 } from '@ploutizo/utils/import-row-status';
 import type { ImportRowReviewBlocker } from '@ploutizo/utils/import-row-status';
+import type { ImportMatchEvaluation } from '@ploutizo/utils';
 import type {
   ImportBatchStatus,
   ImportDraft,
@@ -14,7 +15,7 @@ import type {
 
 type ImportRowMissingBlocker = Exclude<
   ImportRowReviewBlocker,
-  'settlement' | 'refund_link'
+  'settlement' | 'refund_link' | 'match'
 >;
 
 const IMPORT_ROW_MISSING_BLOCKER_LABELS: Record<
@@ -64,16 +65,20 @@ const formatNeedsReviewTooltip = (
 
   const requiresSettlement = blockers.includes('settlement');
   const requiresRefundLink = blockers.includes('refund_link');
+  const requiresMatch = blockers.includes('match');
   const missingLabels = blockers
     .filter(
       (blocker): blocker is ImportRowMissingBlocker =>
-        blocker !== 'settlement' && blocker !== 'refund_link'
+        blocker !== 'settlement' &&
+        blocker !== 'refund_link' &&
+        blocker !== 'match'
     )
     .map((blocker) => IMPORT_ROW_MISSING_BLOCKER_LABELS[blocker]);
 
   const parts: string[] = [];
   if (requiresSettlement) parts.push('settlement requires review');
   if (requiresRefundLink) parts.push('refund link needs review');
+  if (requiresMatch) parts.push('match needs review');
   if (missingLabels.length > 0) {
     parts.push(`missing ${missingLabels.join(', ')}`);
   }
@@ -83,10 +88,17 @@ const formatNeedsReviewTooltip = (
 export const getImportRowStatusTooltip = (
   row: ImportDraftRow,
   /** Prefer draft-evaluator blockers so refund_link issues surface in tooltips. */
-  blockers?: ImportRowReviewBlocker[]
+  blockers?: ImportRowReviewBlocker[],
+  match?: ImportMatchEvaluation | null
 ): string => {
   switch (row.status) {
     case 'ready':
+      if (match?.acceptedMatch) {
+        return 'Accepted as a match; this row will not create a new transaction.';
+      }
+      if (match?.exactCandidate) {
+        return `${match.exactCandidate.explanation} Leave unselected to skip, or select to record as matched.`;
+      }
       return 'Ready to import';
     case 'needs_review':
       return formatNeedsReviewTooltip(

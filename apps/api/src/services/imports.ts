@@ -4,7 +4,12 @@ import {
   isImportContentProfileId,
   toFinancialInstitutionId,
 } from '@ploutizo/types';
-import { createImportRowClassifier } from '@ploutizo/utils';
+import {
+  createImportRowClassifier,
+  evaluateImportMatches,
+  matchDecisionForSelectionChange,
+  toImportMatchDraftRow,
+} from '@ploutizo/utils';
 import {
   resolveImportRowReviewType,
   toImportTransactionType,
@@ -58,9 +63,11 @@ import { listTags } from '@/lib/queries/tags';
 import { parseImportUpload } from '@/lib/imports/parse';
 import { toImportTargetAccount } from '@/lib/accounts/accountResponse';
 import { listRefundTargetExpensesByIds } from '@/lib/queries/import-refund-targets';
+import { listImportMatchTargets } from '@/lib/queries/import-match-targets';
 import {
   buildImportDraftView,
   loadDraftRefundContext,
+  matchTargetFactsRecordFromMap,
   refundTargetFactsRecordFromMap,
   toImportDraftPersistedRow,
   withLiveImportReviewCounts,
@@ -331,6 +338,14 @@ export const updateImportDraftRow = async (
     if (!ok) throw new NotFoundError('Transaction not found');
   }
 
+  if (merged.reviewMatchedTransactionId) {
+    const ok = await transactionExistsInOrg(
+      orgId,
+      merged.reviewMatchedTransactionId
+    );
+    if (!ok) throw new NotFoundError('Transaction not found');
+  }
+
   const updated = await updateImportDraftRowQuery(orgId, rowId, input);
   if (!updated) throw new NotFoundError('Import draft row not found.');
 
@@ -345,7 +360,22 @@ export const updateImportDraftRow = async (
     }
   }
 
-  return refundTargetFacts ? { row, refundTargetFacts } : { row };
+  let matchTargetFacts: UpdateImportDraftRowResult['matchTargetFacts'];
+  if (
+    Object.prototype.hasOwnProperty.call(input, 'reviewMatchedTransactionId')
+  ) {
+    const matchedId = input.reviewMatchedTransactionId;
+    if (matchedId) {
+      const targets = await listImportMatchTargets(orgId, draft.accountId, [
+        matchedId,
+      ]);
+      matchTargetFacts = matchTargetFactsRecordFromMap(targets);
+    }
+  }
+
+  return refundTargetFacts || matchTargetFacts
+    ? { row, refundTargetFacts, matchTargetFacts }
+    : { row };
 };
 
 export const updateImportDraftRowSelection = async (
@@ -355,7 +385,8 @@ export const updateImportDraftRowSelection = async (
 ): Promise<ImportDraftPersistedRow[]> => {
   const draft = await fetchDraftSummaryById(orgId, draftId);
   if (!draft) throw new NotFoundError('Import draft not found.');
-  if (!draft.accountId) throw new NotFoundError('Import draft not found.');
+  const accountId = draft.accountId;
+  if (!accountId) throw new NotFoundError('Import draft not found.');
 
   const uniqueRowIds = [...new Set(input.rowIds)];
   const matchingRows = await listDraftRowIdsForDraft(
@@ -382,6 +413,46 @@ export const updateImportDraftRowSelection = async (
     if (persistedRows.length !== uniqueRowIds.length) {
       throw new NotFoundError('Import draft row not found.');
     }
+
+    const draftRows = await listDraftRows(orgId, draftId, tx);
+    const existingTransactions = await listImportMatchTargets(
+      orgId,
+      accountId,
+      draftRows.flatMap((row) =>
+        row.reviewMatchedTransactionId ? [row.reviewMatchedTransactionId] : []
+      ),
+      tx
+    );
+    const matchEvaluations = evaluateImportMatches(
+      draftRows.map((row) => toImportMatchDraftRow(row)),
+      {
+        targetAccountId: accountId,
+        existingTransactions: [...existingTransactions.values()],
+      }
+    );
+
+    const nextPersisted = [...persistedRows];
+    for (const [index, persisted] of persistedRows.entries()) {
+      const nextMatchedTransactionId = matchDecisionForSelectionChange({
+        selectedForImport: input.selectedForImport,
+        currentMatchedTransactionId: persisted.reviewMatchedTransactionId,
+        dismissed: persisted.reviewMatchDismissed,
+        exactCandidate:
+          matchEvaluations.get(persisted.id)?.exactCandidate ?? null,
+      });
+      if (nextMatchedTransactionId === persisted.reviewMatchedTransactionId) {
+        continue;
+      }
+      const updated = await updateImportDraftRowQuery(
+        orgId,
+        persisted.id,
+        { reviewMatchedTransactionId: nextMatchedTransactionId },
+        tx
+      );
+      if (updated) nextPersisted[index] = updated;
+    }
+    persistedRows = nextPersisted;
+
     await touchImportDraft(orgId, draftId, tx);
   });
 

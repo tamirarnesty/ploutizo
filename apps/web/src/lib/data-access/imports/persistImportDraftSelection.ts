@@ -1,3 +1,4 @@
+import { matchDecisionForSelectionChange } from '@ploutizo/utils';
 import { createOptimisticAction } from '@tanstack/db';
 import type { ImportDraftPersistedRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowSelectionInput } from '@ploutizo/validators';
@@ -10,7 +11,10 @@ import {
 import { fetchUpdateImportDraftRowSelection } from './fetchUpdateImportDraftRowSelection';
 import { flushImportDraftRowPacedMutations } from './getImportDraftRowPacedMutations';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
-import { rederiveImportDraftWorkingCopy } from './rederiveImportDraftWorkingCopy';
+import {
+  evaluateImportDraftWorkingCopy,
+  rederiveImportDraftWorkingCopy,
+} from './rederiveImportDraftWorkingCopy';
 
 interface SelectionVariables {
   draftId: string;
@@ -46,6 +50,10 @@ const confirmSelectionIntoCollection = (
     collection.utils.writeUpdate({
       ...live,
       selectedForImport: nextSelected,
+      reviewMatchedTransactionId:
+        live.selectedForImport !== selectedForImport
+          ? live.reviewMatchedTransactionId
+          : serverRow.reviewMatchedTransactionId,
       updatedAt:
         serverRow.updatedAt >= live.updatedAt
           ? serverRow.updatedAt
@@ -57,9 +65,17 @@ const confirmSelectionIntoCollection = (
 
 const persistSelection = createOptimisticAction<SelectionVariables>({
   onMutate: ({ draftId, rowIds, selectedForImport }) => {
+    const evaluations = evaluateImportDraftWorkingCopy(draftId);
     const collection = getImportDraftRowsCollection(draftId);
     collection.update(rowIds, (drafts) => {
       for (const draft of drafts) {
+        draft.reviewMatchedTransactionId = matchDecisionForSelectionChange({
+          selectedForImport,
+          currentMatchedTransactionId: draft.reviewMatchedTransactionId,
+          dismissed: draft.reviewMatchDismissed,
+          exactCandidate:
+            evaluations?.get(draft.id)?.match?.exactCandidate ?? null,
+        });
         draft.selectedForImport = selectedForImport;
       }
     });

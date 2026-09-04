@@ -297,6 +297,18 @@ describe('evaluateImportRow', () => {
     ).toEqual({ status: 'ready', blockers: [] });
   });
 
+  it('flags unresolved match review as needs_review', () => {
+    expect(
+      evaluateImportRow({
+        ...readyFields,
+        matchBlocked: true,
+      })
+    ).toEqual({
+      status: 'needs_review',
+      blockers: ['match'],
+    });
+  });
+
   it('treats missing review fields as needs_review rather than skipped', () => {
     expect(
       evaluateImportRow({
@@ -357,6 +369,7 @@ describe('toImportRowStatusFields', () => {
       reviewAssigneeMemberIds: ['member_1'],
       reviewCounterpartAccountId: null,
       refundLinkBlocked: false,
+      matchBlocked: false,
     });
   });
 

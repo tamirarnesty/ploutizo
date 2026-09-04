@@ -25,6 +25,7 @@ const IMPORT_ROW_REVIEW_BLOCKERS = new Set<ImportRowReviewBlocker>([
   'assignee',
   'settlement',
   'refund_link',
+  'match',
 ]);
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>

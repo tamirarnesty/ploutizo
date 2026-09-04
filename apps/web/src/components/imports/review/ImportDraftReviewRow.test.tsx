@@ -4,6 +4,7 @@ import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ImportDraftRow } from '@ploutizo/types';
 import type { Category } from '@/lib/data-access/categories';
+import { evaluateImportDraftWorkingCopy } from '@/lib/data-access/imports/rederiveImportDraftWorkingCopy';
 import { ImportDraftReviewProvider } from './ImportDraftReviewContext';
 import { ImportDraftReviewRowDetails } from './ImportDraftReviewRowDetails';
 import { ImportReviewDescriptionCell } from './importReviewCells';
@@ -41,6 +42,11 @@ vi.mock('@/components/transactions/TransactionTagPicker', () => ({
   TransactionTagPicker: () => <div>Tag picker</div>,
 }));
 
+vi.mock('@/lib/data-access/imports/rederiveImportDraftWorkingCopy', () => ({
+  evaluateImportDraftWorkingCopy: vi.fn(),
+  rederiveImportDraftWorkingCopy: vi.fn(),
+}));
+
 const baseRow = (): ImportDraftRow => ({
   id: '33333333-3333-4333-8333-333333333333',
   batchId: '11111111-1111-4111-8111-111111111111',
@@ -67,6 +73,8 @@ const baseRow = (): ImportDraftRow => ({
   reviewRefundOf: null,
   reviewRefundOfBatchRowId: null,
   reviewRefundLinkHint: null,
+  reviewMatchedTransactionId: null,
+  reviewMatchDismissed: false,
   reviewNotes: null,
   reviewTagIds: [],
   selectedForImport: false,
@@ -135,6 +143,119 @@ describe('ImportDraftReviewRow', () => {
       expect(
         document.querySelector('[data-slot="tooltip-content"]')
       ).toHaveTextContent('Original: AMAZON.CA*5O5BA0SV0 866-216-1072');
+    });
+  });
+
+  it('explains an exact match and keeps it as a suggestion until selected', () => {
+    vi.mocked(evaluateImportDraftWorkingCopy).mockReturnValue(
+      new Map([
+        [
+          baseRow().id,
+          {
+            status: 'ready',
+            blockers: [],
+            invalidReason: null,
+            refundLink: null,
+            refundSuggestion: null,
+            match: {
+              candidates: [
+                {
+                  transactionId: 'tx-1',
+                  kind: 'external_id',
+                  explanation: 'Exact external ID match on this card.',
+                },
+              ],
+              exactCandidate: {
+                transactionId: 'tx-1',
+                kind: 'external_id',
+                explanation: 'Exact external ID match on this card.',
+              },
+              advisoryCandidates: [],
+              collisionRowIds: [],
+              acceptedMatch: null,
+              acceptedMatchValid: true,
+              matchBlocked: false,
+              matchNeedsReview: false,
+              issues: [],
+            },
+          },
+        ],
+      ])
+    );
+
+    renderRowFields(baseRow());
+
+    expect(
+      screen.getByText(
+        /Exact external ID match on this card\. Leave unselected to skip, or select to record as matched\./
+      )
+    ).toBeInTheDocument();
+  });
+
+  it('lets the user accept or dismiss an advisory match without mutating the existing transaction', async () => {
+    const user = userEvent.setup();
+    const row = baseRow();
+    vi.mocked(evaluateImportDraftWorkingCopy).mockReturnValue(
+      new Map([
+        [
+          row.id,
+          {
+            status: 'needs_review',
+            blockers: ['match'],
+            invalidReason: null,
+            refundLink: null,
+            refundSuggestion: null,
+            match: {
+              candidates: [
+                {
+                  transactionId: 'tx-1',
+                  kind: 'fuzzy_description',
+                  explanation:
+                    'Similar description on the same date and amount.',
+                },
+              ],
+              exactCandidate: null,
+              advisoryCandidates: [
+                {
+                  transactionId: 'tx-1',
+                  kind: 'fuzzy_description',
+                  explanation:
+                    'Similar description on the same date and amount.',
+                },
+              ],
+              collisionRowIds: ['row-other'],
+              acceptedMatch: null,
+              acceptedMatchValid: true,
+              matchBlocked: false,
+              matchNeedsReview: true,
+              issues: ['collision'],
+            },
+          },
+        ],
+      ])
+    );
+
+    renderRowFields(row);
+
+    expect(
+      screen.getByText(
+        'Another row in this import uses the same external ID. Select one row and leave the other unselected.'
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Similar description on the same date and amount.')
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Use this match' }));
+    expect(updateRow).toHaveBeenCalledWith(row.id, {
+      reviewMatchedTransactionId: 'tx-1',
+      reviewMatchDismissed: false,
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Not a match' }));
+    expect(updateRow).toHaveBeenCalledWith(row.id, {
+      reviewMatchedTransactionId: null,
+      reviewMatchDismissed: true,
     });
   });
 });

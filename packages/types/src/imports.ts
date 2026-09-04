@@ -20,7 +20,8 @@ export type ImportRowReviewBlocker =
   | 'category'
   | 'assignee'
   | 'settlement'
-  | 'refund_link';
+  | 'refund_link'
+  | 'match';
 
 /** Seeded settlement category for bill-payment readability in transaction lists. */
 export const BILL_PAYMENT_CATEGORY_NAME = 'Bill Payment' as const;
@@ -94,6 +95,19 @@ export interface RefundTargetFact {
   deleted: boolean;
 }
 
+/** Existing ledger row used for import match and refund-link suggestions. */
+export interface MatchTargetFact {
+  id: string;
+  accountId: string;
+  type: string;
+  date: string;
+  amount: number;
+  description: string;
+  rawDescription: string | null;
+  externalId: string | null;
+  deleted: boolean;
+}
+
 export interface ImportDraftRow {
   id: string;
   batchId: string;
@@ -127,6 +141,10 @@ export interface ImportDraftRow {
   reviewRefundOfBatchRowId: string | null;
   /** Original CSV refund-link hint retained as provenance. */
   reviewRefundLinkHint: string | null;
+  /** Accepted match target; selecting an exact candidate writes this. */
+  reviewMatchedTransactionId: string | null;
+  /** User declined match suggestions and will import the row as new. */
+  reviewMatchDismissed: boolean;
   reviewNotes: string | null;
   reviewTagIds: string[];
   selectedForImport: boolean;
@@ -143,6 +161,7 @@ export type ImportDraftPersistedRow = Omit<
 export interface ImportDraft extends ImportDraftSummary {
   rows: ImportDraftRow[];
   refundTargetFacts: Record<string, RefundTargetFact>;
+  matchTargetFacts: Record<string, MatchTargetFact>;
 }
 
 export type CreateImportDraftResponse =
@@ -156,6 +175,7 @@ export type CreateImportDraftResponse =
 export interface UpdateImportDraftRowResult {
   row: ImportDraftPersistedRow;
   refundTargetFacts?: Record<string, RefundTargetFact>;
+  matchTargetFacts?: Record<string, MatchTargetFact>;
 }
 
 /** Per-row blocker payload when Continue rejects under the prepared-set lock. */

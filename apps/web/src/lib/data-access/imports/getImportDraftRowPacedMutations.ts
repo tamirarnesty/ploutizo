@@ -15,6 +15,7 @@ import {
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
 import { fetchUpdateImportDraftRow } from './fetchUpdateImportDraftRow';
 import { applyImportDraftRefundTargetFactDelta } from './mergeImportDraftRefundTargetFacts';
+import { mergeImportDraftMatchTargetFacts } from './mergeImportDraftMatchTargetFacts';
 import {
   evaluateImportDraftWorkingCopy,
   rederiveImportDraftWorkingCopy,
@@ -34,6 +35,8 @@ const REVIEW_PATCH_KEYS = [
   'reviewCounterpartAccountId',
   'reviewRefundOf',
   'reviewRefundLinkHint',
+  'reviewMatchedTransactionId',
+  'reviewMatchDismissed',
   'reviewNotes',
   'reviewTagIds',
 ] as const satisfies readonly (keyof UpdateImportDraftRowInput)[];
@@ -143,6 +146,9 @@ const confirmPersistIntoCollection = (
 
   collection.utils.writeUpdate(next);
   syncRefundTargetFacts(draftId, patch, original, server?.refundTargetFacts);
+  if (server?.matchTargetFacts) {
+    mergeImportDraftMatchTargetFacts(draftId, server.matchTargetFacts);
+  }
   rederiveImportDraftWorkingCopy(draftId);
 };
 

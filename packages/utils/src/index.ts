@@ -34,10 +34,25 @@ export {
   type ImportDraftRowView,
 } from './evaluate-import-draft';
 export {
+  evaluateImportMatches,
+  matchDecisionForSelectionChange,
+  toImportMatchDraftRow,
+  type ExactImportMatchKind,
+  type EvaluateImportMatchesOptions,
+  type ImportAcceptedMatch,
+  type ImportMatchCandidate,
+  type ImportMatchDraftRow,
+  type ImportMatchEvaluation,
+  type ImportMatchIssue,
+  type ImportMatchKind,
+  type ImportMatchTargetTransaction,
+} from './import-matches';
+export {
   evaluateImportRefundLink,
   evaluateImportRefundLinks,
   inheritRefundLinkFields,
   isImportRefundLinkBlocked,
+  suggestImportRefundLink,
   sumSelectedRefundsByTarget,
   toImportRefundLinkDraftRow,
   type EvaluateImportRefundLinksOptions,
@@ -45,6 +60,8 @@ export {
   type ImportRefundLinkDraftRow,
   type ImportRefundLinkEvaluation,
   type ImportRefundLinkIssue,
+  type ImportRefundSuggestion,
+  type ImportRefundSuggestionTarget,
 } from './import-refund-links';
 export {
   canContinueImportReview,

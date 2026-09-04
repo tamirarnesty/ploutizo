@@ -4,10 +4,15 @@ import {
   listRefundTargetExpensesByIds,
   sumPriorRefundTotalsByTransactionTarget,
 } from '@/lib/queries/import-refund-targets';
+import { listImportMatchTargets } from '@/lib/queries/import-match-targets';
 
 vi.mock('@/lib/queries/import-refund-targets', () => ({
   listRefundTargetExpensesByIds: vi.fn(),
   sumPriorRefundTotalsByTransactionTarget: vi.fn(),
+}));
+
+vi.mock('@/lib/queries/import-match-targets', () => ({
+  listImportMatchTargets: vi.fn(),
 }));
 
 const summaryRow = {
@@ -51,6 +56,8 @@ const readyRow = {
   reviewCounterpartAccountId: null,
   reviewRefundOf: null,
   reviewRefundLinkHint: null,
+  reviewMatchedTransactionId: null,
+  reviewMatchDismissed: false,
   reviewNotes: null,
   reviewTagIds: [],
   selectedForImport: false,
@@ -61,6 +68,7 @@ const readyRow = {
 describe('buildImportDraftView', () => {
   it('recomputes summary counts from derived row status', async () => {
     vi.mocked(listRefundTargetExpensesByIds).mockResolvedValue(new Map());
+    vi.mocked(listImportMatchTargets).mockResolvedValue(new Map());
 
     const invalidRow = {
       ...readyRow,
@@ -102,6 +110,7 @@ describe('buildImportDraftView', () => {
     expect(draft.invalidRowCount).toBe(1);
     expect(draft.rowCount).toBe(2);
     expect(draft.refundTargetFacts).toEqual({});
+    expect(draft.matchTargetFacts).toEqual({});
     expect(sumPriorRefundTotalsByTransactionTarget).not.toHaveBeenCalled();
   });
 });

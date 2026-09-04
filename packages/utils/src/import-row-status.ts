@@ -30,6 +30,11 @@ export interface ImportRowReviewFields {
    * Computed by draft-level refund-link evaluation (not stored).
    */
   refundLinkBlocked?: boolean;
+  /**
+   * When true, match/collision/advisory review is unresolved.
+   * Computed by draft-level match evaluation (not stored).
+   */
+  matchBlocked?: boolean;
 }
 
 /** Durable/optimistic review fields used to derive import row status. */
@@ -41,11 +46,15 @@ export type ImportRowStatusFields = ImportRowStatusInput;
 /** Partial runtime row shapes may omit assignees before normalization. */
 export type ImportRowStatusNormalizeInput = Omit<
   ImportRowStatusInput,
-  'reviewAssigneeMemberIds' | 'reviewCounterpartAccountId' | 'refundLinkBlocked'
+  | 'reviewAssigneeMemberIds'
+  | 'reviewCounterpartAccountId'
+  | 'refundLinkBlocked'
+  | 'matchBlocked'
 > & {
   reviewAssigneeMemberIds?: string[] | null;
   reviewCounterpartAccountId?: string | null;
   refundLinkBlocked?: boolean;
+  matchBlocked?: boolean;
 };
 
 export type ImportRowStructuralBlocker = Extract<
@@ -147,6 +156,7 @@ export const toImportRowStatusFields = (
   reviewAssigneeMemberIds: row.reviewAssigneeMemberIds ?? [],
   reviewCounterpartAccountId: row.reviewCounterpartAccountId ?? null,
   refundLinkBlocked: row.refundLinkBlocked ?? false,
+  matchBlocked: row.matchBlocked ?? false,
 });
 
 const getReviewPhaseBlockers = (
@@ -168,6 +178,9 @@ const getReviewPhaseBlockers = (
 
   if (type === 'refund' && row.refundLinkBlocked) {
     blockers.push('refund_link');
+  }
+  if (row.matchBlocked) {
+    blockers.push('match');
   }
   return blockers;
 };
