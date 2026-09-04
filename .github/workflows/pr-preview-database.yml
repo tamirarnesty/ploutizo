@@ -1,9 +1,15 @@
 # Provisions an isolated Neon database branch for each Railway PR preview environment.
 #
+# Preview DBs are a fresh copy of production whenever API or DB schema changes.
+# Web-only pushes skip this job so the preview database is left alone.
+# Reused Neon branches are reset from production before migrate runs.
+#
 # Notes:
 #   Focused PR environments may skip the API when watch paths are unchanged. This
 #   workflow still sets DATABASE_URL and runs `railway redeploy --from-source` to
 #   deploy the API against the preview Neon branch.
+#   Path detection uses the GitHub compare API so this workflow never checks out
+#   PR-controlled files while holding account-scoped Railway credentials.
 name: PR Preview Database
 
 on:
@@ -16,6 +22,7 @@ concurrency:
 
 permissions:
   contents: read
+  actions: read
 
 env:
   NEON_BRANCH_NAME: preview/pr-${{ github.event.pull_request.number }}
@@ -28,15 +35,59 @@ jobs:
     if: github.event.pull_request.draft == false && github.event.action != 'closed'
     runs-on: ubuntu-latest
     steps:
+      - name: Detect API or DB schema changes
+        id: preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_ACTION: ${{ github.event.action }}
+          BEFORE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_BRANCH: ${{ github.head_ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$PR_ACTION" != "synchronize" ]]; then
+            echo "should_reset=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          before="$BEFORE_SHA"
+          if [[ -z "$before" || "$before" == "0000000000000000000000000000000000000000" ]]; then
+            before=$(gh api \
+              "repos/${{ github.repository }}/actions/workflows/pr-preview-database.yml/runs?event=pull_request&per_page=20" \
+              --jq --arg sha "$HEAD_SHA" --arg branch "$HEAD_BRANCH" \
+              '[.workflow_runs[] | select(.head_branch == $branch and .head_sha != $sha)] | first | .head_sha // empty')
+          fi
+          if [[ -z "$before" ]]; then
+            before="$BASE_SHA"
+          fi
+
+          if ! files=$(gh api "repos/${{ github.repository }}/compare/${before}...${HEAD_SHA}" \
+            --jq 'if .truncated == true then "truncated" else (.files[]?.filename // empty) end'); then
+            echo "Could not compare ${before}...${HEAD_SHA}; resetting preview database from production"
+            echo "should_reset=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ "$files" == "truncated" ]] || printf '%s\n' "$files" | grep -qE '^(apps/api/|packages/db/|drizzle\.config\.ts$)'; then
+            echo "API or DB schema paths changed; resetting preview database from production"
+            echo "should_reset=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No API or DB schema changes in this push; skipping preview database reset"
+            echo "should_reset=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Install Railway CLI
+        if: steps.preview.outputs.should_reset == 'true'
         run: npm install -g @railway/cli@5.30.1
 
       - name: Compute Neon branch expiration
+        if: steps.preview.outputs.should_reset == 'true'
         id: expiration
         run: |
           echo "expires_at=$(date -u --date '+14 days' +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
 
       - name: Create Neon branch from production
+        if: steps.preview.outputs.should_reset == 'true'
         id: neon
         uses: neondatabase/create-branch-action@fb620d43d4c565abaf088b848a4e28e5c4ea4d9c # v6
         with:
@@ -47,7 +98,17 @@ jobs:
           api_key: ${{ secrets.NEON_API_KEY }}
           expires_at: ${{ steps.expiration.outputs.expires_at }}
 
+      - name: Reset reused Neon branch from production
+        if: steps.preview.outputs.should_reset == 'true' && steps.neon.outputs.created != 'true'
+        uses: neondatabase/reset-branch-action@470ab8101095ea33737c294d17364a72fd80761b # v1
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch: ${{ env.NEON_BRANCH_NAME }}
+          parent: true
+          api_key: ${{ secrets.NEON_API_KEY }}
+
       - name: Refresh Neon branch expiration
+        if: steps.preview.outputs.should_reset == 'true'
         env:
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
         run: |
@@ -60,6 +121,7 @@ jobs:
             -d "$payload"
 
       - name: Wait for Railway PR environment
+        if: steps.preview.outputs.should_reset == 'true'
         env:
           RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
         run: |
@@ -78,6 +140,7 @@ jobs:
           exit 1
 
       - name: Set DATABASE_URL on Railway API service
+        if: steps.preview.outputs.should_reset == 'true'
         env:
           RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
           DATABASE_URL: ${{ steps.neon.outputs.db_url_pooled }}
@@ -89,6 +152,7 @@ jobs:
             --skip-deploys
 
       - name: Deploy API with preview database
+        if: steps.preview.outputs.should_reset == 'true'
         env:
           RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
         run: |
