@@ -1,5 +1,10 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '@ploutizo/db';
+import { deriveImportRowStatus } from '@ploutizo/utils';
+import type { ImportRowStatusInput } from '@ploutizo/utils';
 import { NotFoundError } from '@/lib/errors';
 import {
   createImportDraft,
@@ -99,7 +104,7 @@ const summaryRow = {
   accountName: 'Visa',
   accountInstitutionId: 'td',
   accountLastFour: '1234',
-  detectedInstitutionId: null,
+  contentProfileId: null,
   status: 'draft' as const,
   fileName: 'statement.csv',
   rowCount: 2,
@@ -221,16 +226,19 @@ describe('import service', () => {
         '2026-05-02,42.18,Coffee,expense,Dining,Tamir Arnesty',
         'bad,nope,,wat,',
       ].join('\n'),
+      selection: { kind: 'profile', profileId: 'internal' },
     });
 
-    expect(result.reusedExisting).toBe(false);
+    expect(result.kind).toBe('draft');
+    if (result.kind !== 'draft') return;
+    expect(result.meta.reusedExisting).toBe(false);
     expect(db.transaction).toHaveBeenCalledTimes(1);
     expect(insertImportBatch).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
         orgId: 'org_1',
         accountId: summaryRow.accountId,
-        detectedInstitutionId: null,
+        contentProfileId: 'internal',
         status: 'draft',
         fileName: 'statement.csv',
         rowCount: 2,
@@ -269,13 +277,51 @@ describe('import service', () => {
     expect(insertedRows[1]).not.toHaveProperty('invalidReason');
     expect(insertedRows[0]).not.toHaveProperty('selectedForImport');
     expect(insertedRows[0]).not.toHaveProperty('classificationHint');
-    expect(result.draft.rows).toHaveLength(1);
-    expect(result.draft.validRowCount).toBe(1);
-    expect(result.draft.invalidRowCount).toBe(0);
+    expect(result.data.rows).toHaveLength(1);
+    expect(result.data.validRowCount).toBe(1);
+    expect(result.data.invalidRowCount).toBe(0);
     expect(listMerchantRulesWithTags).toHaveBeenCalledWith('org_1');
     expect(listAccountMemberDetails).toHaveBeenCalledWith('org_1', [
       summaryRow.accountId,
     ]);
+  });
+
+  it('persists a recognized profile upload on the existing draft path', async () => {
+    const amexShort = readFileSync(
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        '../lib/imports/parse/fixtures/profiles/amex/short.csv'
+      ),
+      'utf8'
+    );
+
+    await createImportDraft('org_1', {
+      accountId: summaryRow.accountId,
+      fileName: 'amex-short.csv',
+      content: amexShort,
+      selection: { kind: 'profile', profileId: 'amex' },
+    });
+
+    expect(insertImportBatch).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        contentProfileId: 'amex',
+        fileName: 'amex-short.csv',
+        rowCount: 4,
+      })
+    );
+    const insertedRows = vi.mocked(insertImportBatchRows).mock.calls[0][1];
+    expect(insertedRows).toHaveLength(4);
+    expect(insertedRows[0]).toMatchObject({
+      parsedType: 'expense',
+      parsedDate: '2026-05-02',
+      parsedAmount: 1234,
+    });
+    expect(insertedRows[2]).toMatchObject({
+      parsedType: 'refund',
+      reviewType: 'settlement',
+    });
+    expect(insertedRows[0]).not.toHaveProperty('classificationHint');
   });
 
   it('derives row status on GET without persisting recomputation', async () => {
@@ -291,48 +337,42 @@ describe('import service', () => {
     expect(draft.validRowCount).toBe(1);
     expect(draft.invalidRowCount).toBe(0);
     expect(draft.refundTargetFacts).toEqual({});
-    expect(draft.institutionMismatch).toBeNull();
+    expect(draft.contentProfileId).toBeNull();
     expect(listRefundTargetExpensesByIds).toHaveBeenCalledWith('org_1', [], db);
   });
 
-  it('exposes a derived institution mismatch when detected source and account differ', async () => {
+  it('surfaces the content profile id when the batch was parsed with a known profile', async () => {
     vi.mocked(fetchDraftSummaryById).mockResolvedValue({
       ...summaryRow,
-      detectedInstitutionId: 'amex',
-      accountInstitutionId: 'td',
+      contentProfileId: 'amex',
     });
 
     const draft = await getImportDraft('org_1', summaryRow.id);
 
-    expect(draft.institutionMismatch).toEqual({
-      detectedInstitutionId: 'amex',
-      accountInstitutionId: 'td',
-    });
+    expect(draft.contentProfileId).toBe('amex');
   });
 
-  it('does not warn when the detected source or account institution is unknown', async () => {
+  it('returns null contentProfileId for custom-mapped uploads', async () => {
     vi.mocked(fetchDraftSummaryById).mockResolvedValue({
       ...summaryRow,
-      detectedInstitutionId: null,
-      accountInstitutionId: 'td',
+      contentProfileId: null,
     });
 
     const draft = await getImportDraft('org_1', summaryRow.id);
 
-    expect(draft.institutionMismatch).toBeNull();
+    expect(draft.contentProfileId).toBeNull();
   });
 
-  it('does not attach a mismatch warning after the draft is closed', async () => {
+  it('fails closed when a persisted content profile id is unknown', async () => {
     vi.mocked(fetchDraftSummaryById).mockResolvedValue({
       ...summaryRow,
-      detectedInstitutionId: 'amex',
-      accountInstitutionId: 'td',
-      status: 'completed',
+      contentProfileId: 'not-a-profile' as never,
     });
 
-    const draft = await getImportDraft('org_1', summaryRow.id);
-
-    expect(draft.institutionMismatch).toBeNull();
+    await expect(getImportDraft('org_1', summaryRow.id)).rejects.toMatchObject({
+      statusCode: 500,
+      message: 'Import draft has an unknown content profile.',
+    });
   });
 
   it('derives hub draft counts from current row facts', async () => {
@@ -366,6 +406,78 @@ describe('import service', () => {
     ]);
   });
 
+  it('rejects an unrecognized headed CSV without explicit selection', async () => {
+    await expect(
+      createImportDraft('org_1', {
+        accountId: summaryRow.accountId,
+        fileName: 'unknown.csv',
+        content: 'posted,total,memo\n2026-05-02,42,Coffee',
+      })
+    ).rejects.toMatchObject({
+      code: 'IMPORT_FILE_UNRECOGNIZED',
+    });
+    expect(insertImportBatch).not.toHaveBeenCalled();
+  });
+
+  it('returns mapping_required for a generic positional file without explicit selection', async () => {
+    const result = await createImportDraft('org_1', {
+      accountId: summaryRow.accountId,
+      fileName: 'statement.csv',
+      content: [
+        '05/02/2026,NEIGHBORHOOD GROCERY,12.34,,100.00',
+        '05/08/2026,MERCHANT CREDIT,,5.00,105.00',
+      ].join('\n'),
+    });
+
+    expect(result).toMatchObject({
+      kind: 'mapping_required',
+      candidateProfileIds: ['mdy_debit_credit_balance'],
+      columns: ['Column 1', 'Column 2', 'Column 3', 'Column 4', 'Column 5'],
+    });
+    expect(insertImportBatch).not.toHaveBeenCalled();
+  });
+
+  it('auto-detects a recognized profile when selection is omitted', async () => {
+    await createImportDraft('org_1', {
+      accountId: summaryRow.accountId,
+      fileName: 'statement.csv',
+      content: 'date,amount,description,type\n2026-05-02,42.18,Coffee,expense',
+    });
+
+    expect(insertImportBatch).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        contentProfileId: 'internal',
+      })
+    );
+  });
+
+  it('persists invalid row facts after confirming a generic positional profile', async () => {
+    const result = await createImportDraft('org_1', {
+      accountId: summaryRow.accountId,
+      fileName: 'statement.csv',
+      content: [
+        '05/02/2026,NEIGHBORHOOD GROCERY,12.34,,100.00',
+        'not-a-date,BROKEN SIGNATURE,12.34,,100.00',
+      ].join('\n'),
+      selection: { kind: 'profile', profileId: 'mdy_debit_credit_balance' },
+    });
+
+    expect(result.kind).toBe('draft');
+    const insertedRows = vi.mocked(insertImportBatchRows).mock.calls[0][1];
+    expect(insertedRows).toHaveLength(2);
+    expect(insertedRows[0]).toMatchObject({
+      parsedDate: '2026-05-02',
+    });
+    expect(insertedRows[1]).toMatchObject({
+      parsedDate: null,
+      parsedDescription: 'BROKEN SIGNATURE',
+    });
+    expect(deriveImportRowStatus(insertedRows[1] as ImportRowStatusInput)).toBe(
+      'invalid'
+    );
+  });
+
   it('resumes the active draft for an account without inserting a new batch', async () => {
     vi.mocked(fetchActiveDraftByAccount).mockResolvedValue(summaryRow);
 
@@ -373,9 +485,12 @@ describe('import service', () => {
       accountId: summaryRow.accountId,
       fileName: 'new.csv',
       content: 'date,amount,description,type\n2026-05-02,42.18,Coffee,expense',
+      selection: { kind: 'profile', profileId: 'internal' },
     });
 
-    expect(result.reusedExisting).toBe(true);
+    expect(result.kind).toBe('draft');
+    if (result.kind !== 'draft') return;
+    expect(result.meta.reusedExisting).toBe(true);
     expect(insertImportBatch).not.toHaveBeenCalled();
     expect(insertImportBatchRows).not.toHaveBeenCalled();
     expect(listMerchantRulesWithTags).not.toHaveBeenCalled();
@@ -391,10 +506,13 @@ describe('import service', () => {
       accountId: summaryRow.accountId,
       fileName: 'statement.csv',
       content: 'date,amount,description,type\n2026-05-02,42.18,Coffee,expense',
+      selection: { kind: 'profile', profileId: 'internal' },
     });
 
-    expect(result.reusedExisting).toBe(true);
-    expect(result.draft.id).toBe(summaryRow.id);
+    expect(result.kind).toBe('draft');
+    if (result.kind !== 'draft') return;
+    expect(result.meta.reusedExisting).toBe(true);
+    expect(result.data.id).toBe(summaryRow.id);
   });
 
   it('returns persisted row without derived status when category is patched', async () => {

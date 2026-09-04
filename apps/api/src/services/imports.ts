@@ -1,18 +1,18 @@
 import { db } from '@ploutizo/db';
 import {
   INTERNAL_IMPORT_EXAMPLE_CSV,
+  isImportContentProfileId,
   toFinancialInstitutionId,
 } from '@ploutizo/types';
-import {
-  createImportRowClassifier,
-  getInstitutionMismatchWarning,
-} from '@ploutizo/utils';
+import { createImportRowClassifier } from '@ploutizo/utils';
 import {
   resolveImportRowReviewType,
   toImportTransactionType,
 } from '@ploutizo/utils/import-row-status';
 import { validateTransactionAccountPolicy } from '@ploutizo/utils/transaction-policy';
 import type {
+  CreateImportDraftResponse,
+  ImportContentProfileId,
   ImportDraft,
   ImportDraftPersistedRow,
   ImportDraftSummary,
@@ -66,6 +66,17 @@ import {
   withLiveImportReviewCounts,
 } from '@/services/import-draft-view';
 
+const toContentProfileId = (
+  contentProfileId: string | null
+): ImportContentProfileId | null => {
+  if (contentProfileId == null) return null;
+  // Fail closed when persisted IDs drift from IMPORT_CONTENT_PROFILE_IDS.
+  if (!isImportContentProfileId(contentProfileId)) {
+    throw new DomainError(500, 'Import draft has an unknown content profile.');
+  }
+  return contentProfileId;
+};
+
 const toImportDraftSummary = (
   row: ImportDraftSummaryRow
 ): ImportDraftSummary => {
@@ -77,19 +88,18 @@ const toImportDraftSummary = (
     accountName,
     accountInstitutionId,
     accountLastFour,
+    contentProfileId,
     importedAt,
     completedAt,
     discardedAt,
     createdAt,
     updatedAt,
-    detectedInstitutionId,
     ...summary
   } = row;
-  const detectedId = toFinancialInstitutionId(detectedInstitutionId);
   const accountInstitution = toFinancialInstitutionId(accountInstitutionId);
   return {
     ...summary,
-    detectedInstitutionId: detectedId,
+    contentProfileId: toContentProfileId(contentProfileId),
     // History omits live review counts until PLO-56 records completed results.
     validRowCount: 0,
     invalidRowCount: 0,
@@ -99,13 +109,6 @@ const toImportDraftSummary = (
       institutionId: accountInstitution,
       lastFour: accountLastFour,
     },
-    institutionMismatch:
-      summary.status === 'draft'
-        ? getInstitutionMismatchWarning({
-            detectedInstitutionId: detectedId,
-            accountInstitutionId: accountInstitution,
-          })
-        : null,
     importedAt: importedAt.toISOString(),
     completedAt: completedAt?.toISOString() ?? null,
     discardedAt: discardedAt?.toISOString() ?? null,
@@ -177,7 +180,7 @@ export const getImportDraft = async (
 export const createImportDraft = async (
   orgId: string,
   input: CreateImportDraftInput
-): Promise<{ draft: ImportDraft; reusedExisting: boolean }> => {
+): Promise<CreateImportDraftResponse> => {
   const account = await fetchActiveCreditCardAccount(orgId, input.accountId);
   if (!account) {
     throw new NotFoundError('Import target account not found.');
@@ -186,14 +189,16 @@ export const createImportDraft = async (
   const existingDraft = await fetchActiveDraftByAccount(orgId, input.accountId);
   if (existingDraft) {
     return {
-      draft: await getImportDraft(orgId, existingDraft.id),
-      reusedExisting: true,
+      kind: 'draft',
+      data: await getImportDraft(orgId, existingDraft.id),
+      meta: { reusedExisting: true },
     };
   }
 
-  const parsed = parseImportUpload(input.content, {
-    fileName: input.fileName,
-  });
+  const parsed = parseImportUpload(input.content, input.selection);
+  if (parsed.kind === 'mapping_required') {
+    return parsed;
+  }
   const [orgMembers, orgCategories, orgTags, merchantRules, accountOwners] =
     await Promise.all([
       listOrgMembers(orgId),
@@ -218,7 +223,7 @@ export const createImportDraft = async (
       const batch = await insertImportBatch(tx, {
         orgId,
         accountId: input.accountId,
-        detectedInstitutionId: parsed.detectedInstitutionId,
+        contentProfileId: parsed.contentProfileId,
         status: 'draft',
         fileName: input.fileName,
         importedAt: new Date(),
@@ -249,8 +254,9 @@ export const createImportDraft = async (
     });
 
     return {
-      draft: await getImportDraft(orgId, draftId),
-      reusedExisting: false,
+      kind: 'draft',
+      data: await getImportDraft(orgId, draftId),
+      meta: { reusedExisting: false },
     };
   } catch (error) {
     if (!isUniqueViolation(error)) throw error;
@@ -259,8 +265,9 @@ export const createImportDraft = async (
     if (!racedDraft) throw error;
 
     return {
-      draft: await getImportDraft(orgId, racedDraft.id),
-      reusedExisting: true,
+      kind: 'draft',
+      data: await getImportDraft(orgId, racedDraft.id),
+      meta: { reusedExisting: true },
     };
   }
 };

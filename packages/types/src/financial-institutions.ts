@@ -59,8 +59,3 @@ export const accountRequiresFinancialInstitution = (
   type: AccountType
 ): boolean =>
   (INSTITUTION_REQUIRED_ACCOUNT_TYPES as readonly AccountType[]).includes(type);
-
-export interface InstitutionMismatchWarning {
-  detectedInstitutionId: FinancialInstitutionId;
-  accountInstitutionId: FinancialInstitutionId;
-}

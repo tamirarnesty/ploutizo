@@ -9,7 +9,7 @@ const IMPORT_SUMMARY_COLUMNS = {
   accountName: accounts.name,
   accountInstitutionId: accounts.institutionId,
   accountLastFour: accounts.lastFour,
-  detectedInstitutionId: importBatches.detectedInstitutionId,
+  contentProfileId: importBatches.contentProfileId,
   status: importBatches.status,
   fileName: importBatches.fileName,
   rowCount: importBatches.rowCount,

@@ -1,10 +1,9 @@
-import type { FinancialInstitutionId, ImportDraftRow } from '@ploutizo/types';
+import type {
+  ImportContentProfileId,
+  ImportDraftRow,
+  ImportUploadMappingRequired,
+} from '@ploutizo/types';
 import type { ImportClassificationHint, ImportCsvHints } from '@ploutizo/utils';
-
-export interface ParseImportHints {
-  institution?: string | null;
-  fileName?: string;
-}
 
 export type CsvRecord = {
   cells: string[];
@@ -12,8 +11,16 @@ export type CsvRecord = {
 };
 
 export interface CsvUpload {
+  /**
+   * Column lookup keys. Headed files use the first row's trimmed cells;
+   * headerless files use `Column N`. Headed normalizers skip `records[0]`.
+   * Headerless normalizers treat every record as data and ignore `headers`.
+   */
   headers: string[];
-  dataRecords: CsvRecord[];
+  /** True when the first non-blank row is column names, not a data row. */
+  hasHeaderRow: boolean;
+  /** All non-blank rows, including a header row when `hasHeaderRow` is true. */
+  records: CsvRecord[];
 }
 
 /** Adapter output: canonical source fields plus optional format-specific extras. */
@@ -26,7 +33,7 @@ export interface SourceImportRow {
   sourceDescription: string | null;
   sourceType: string | null;
   hints?: ImportCsvHints;
-  classificationHint?: ImportClassificationHint | null;
+  classificationHint?: ImportClassificationHint;
   reviewRefundLinkHint?: string | null;
   reviewNotes?: string | null;
 }
@@ -51,13 +58,31 @@ export type ParsedImportRow = Omit<
   >;
 
 export interface ParsedImport {
-  detectedInstitutionId: FinancialInstitutionId | null;
+  kind: 'parsed';
+  /** The content profile that was used to parse this upload. */
+  contentProfileId: ImportContentProfileId | null;
   rowCount: number;
   rows: ParsedImportRow[];
 }
 
-export interface ImportNormalizer {
-  detectedInstitutionId: FinancialInstitutionId | null;
+export type ParseImportUploadResult =
+  | ParsedImport
+  | ImportUploadMappingRequired;
+
+/**
+ * A content profile: parsing semantics for one CSV layout.
+ * Does not carry any financial-institution identity.
+ */
+export interface ImportContentProfile {
+  profileId: ImportContentProfileId;
+  /** Strict detection: used to auto-detect or suggest this profile. */
   matches: (upload: CsvUpload) => boolean;
+  /**
+   * Member-confirmed selection: the file can be parsed as this layout.
+   * Headed profiles use the same check as `matches`. Headerless profiles
+   * accept a minority of signature failures as Invalid import rows.
+   */
+  acceptsSelection: (upload: CsvUpload) => boolean;
   normalize: (upload: CsvUpload) => SourceImportRow[];
+  parseDate: (value: string | null) => string | null;
 }

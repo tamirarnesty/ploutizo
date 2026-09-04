@@ -1,4 +1,6 @@
 import {
+  IMPORT_CONTENT_PROFILE_IDS,
+  IMPORT_CUSTOM_MAPPING_DATE_FORMATS,
   IMPORT_PREPARED_OUTCOME_VALUES,
   IMPORT_TRANSACTION_TYPE_VALUES,
 } from '@ploutizo/types';
@@ -6,10 +8,62 @@ import { z } from 'zod';
 
 const importTransactionTypeSchema = z.enum(IMPORT_TRANSACTION_TYPE_VALUES);
 
+// ---------------------------------------------------------------------------
+// Content selection schemas
+// ---------------------------------------------------------------------------
+
+const importAmountSemanticsSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('signed'),
+    column: z.string().min(1),
+    positiveIsExpense: z.boolean(),
+  }),
+  z.object({
+    kind: z.literal('debit_credit'),
+    debitColumn: z.string().min(1),
+    creditColumn: z.string().min(1),
+  }),
+]);
+
+const importCustomMappingSchema = z
+  .object({
+    dateColumn: z.string().min(1),
+    dateFormat: z.enum(IMPORT_CUSTOM_MAPPING_DATE_FORMATS),
+    descriptionColumn: z.string().min(1),
+    amount: importAmountSemanticsSchema,
+    externalIdColumn: z.string().min(1).optional(),
+  })
+  .refine(
+    (mapping) =>
+      mapping.amount.kind !== 'debit_credit' ||
+      mapping.amount.debitColumn !== mapping.amount.creditColumn,
+    { message: 'Debit and credit columns must be different.', path: ['amount'] }
+  );
+
+export const importContentSelectionSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('profile'),
+    profileId: z.enum(IMPORT_CONTENT_PROFILE_IDS),
+  }),
+  z.object({
+    kind: z.literal('mapping'),
+    mapping: importCustomMappingSchema,
+  }),
+]);
+
+export type ImportContentSelectionInput = z.infer<
+  typeof importContentSelectionSchema
+>;
+
+// ---------------------------------------------------------------------------
+// Draft creation
+// ---------------------------------------------------------------------------
+
 export const createImportDraftSchema = z.object({
   accountId: z.string().uuid(),
   fileName: z.string().trim().min(1, 'File name is required.').max(255),
   content: z.string().min(1, 'CSV file is empty.'),
+  selection: importContentSelectionSchema.optional(),
 });
 
 export const updateImportDraftRowSchema = z

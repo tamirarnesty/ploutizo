@@ -115,7 +115,7 @@ const draftSummary = {
     institutionId: 'td',
     lastFour: '1234',
   },
-  detectedInstitutionId: null,
+  contentProfileId: null,
   status: 'draft' as const,
   fileName: 'statement.csv',
   rowCount: 2,
@@ -126,7 +126,6 @@ const draftSummary = {
   discardedAt: null,
   createdAt: '2026-05-20T12:00:00.000Z',
   updatedAt: '2026-05-20T12:00:00.000Z',
-  institutionMismatch: null,
 };
 
 const setImportPageData = ({
@@ -165,11 +164,26 @@ const setImportPageData = ({
 };
 
 describe('Import', () => {
+  const createdDraftResponse = {
+    kind: 'draft' as const,
+    data: { id: 'draft_1' },
+    meta: { reusedExisting: false },
+  };
+
   beforeEach(() => {
     importMocks.createImportDraftMutate.mockReset();
     importMocks.navigate.mockReset();
     importMocks.toastInfo.mockReset();
     importMocks.toastSuccess.mockReset();
+    importMocks.createImportDraftMutate.mockImplementation(
+      (_payload: unknown, options: Record<string, unknown> | undefined) => {
+        (
+          options?.onSuccess as
+            | ((r: typeof createdDraftResponse) => void)
+            | undefined
+        )?.(createdDraftResponse);
+      }
+    );
     Object.defineProperty(URL, 'createObjectURL', {
       configurable: true,
       value: vi.fn(() => 'blob:csv'),
@@ -308,7 +322,11 @@ describe('Import', () => {
 
     await waitFor(() =>
       expect(importMocks.createImportDraftMutate).toHaveBeenCalledWith(
-        { accountId: 'acct_1', fileName: 'statement.csv', content },
+        expect.objectContaining({
+          accountId: 'acct_1',
+          fileName: 'statement.csv',
+          content,
+        }),
         expect.any(Object)
       )
     );
@@ -319,11 +337,12 @@ describe('Import', () => {
     setImportPageData();
 
     importMocks.createImportDraftMutate.mockImplementation(
-      (_payload, options) => {
-        options?.onSuccess?.({
-          data: { id: 'draft_1' },
-          meta: { reusedExisting: false },
-        });
+      (_payload: unknown, options: Record<string, unknown> | undefined) => {
+        (
+          options?.onSuccess as
+            | ((r: typeof createdDraftResponse) => void)
+            | undefined
+        )?.(createdDraftResponse);
       }
     );
 

@@ -8,6 +8,7 @@
 import { sql } from 'drizzle-orm';
 import {
   boolean,
+  check,
   date,
   foreignKey,
   index,
@@ -20,9 +21,11 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 
+import { importContentProfileIdCheckSql } from '@ploutizo/types';
+import type { ImportContentProfileId } from '@ploutizo/types';
+
 import { accounts } from './accounts';
 import { orgs } from './auth';
-import { financialInstitutions } from './financial-institutions';
 import { categories } from './classification';
 import { importBatchStatusEnum, transactionTypeEnum } from './enums';
 
@@ -36,10 +39,10 @@ export const importBatches = pgTable(
       .notNull()
       .references(() => orgs.id, { onDelete: 'cascade' }),
     accountId: uuid('account_id'),
-    /** Detected catalog institution from the uploaded file; null for generic internal CSV. */
-    detectedInstitutionId: text('detected_institution_id').references(
-      () => financialInstitutions.id
-    ),
+    /** Content profile used to parse the upload; null for custom-mapped uploads. */
+    contentProfileId: text(
+      'content_profile_id'
+    ).$type<ImportContentProfileId | null>(),
     status: importBatchStatusEnum('status').notNull().default('draft'),
     fileName: text('file_name'),
     importedAt: timestamp('imported_at', { withTimezone: true }).notNull(),
@@ -65,6 +68,10 @@ export const importBatches = pgTable(
       columns: [t.accountId, t.orgId],
       foreignColumns: [accounts.id, accounts.orgId],
     }).onDelete('restrict'),
+    check(
+      'import_batches_content_profile_id_check',
+      sql.raw(importContentProfileIdCheckSql())
+    ),
   ]
 );
 

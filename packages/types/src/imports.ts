@@ -5,10 +5,11 @@ import type {
   ImportTransactionType,
   MerchantMatchType,
 } from './enums';
+import type { FinancialInstitutionId } from './financial-institutions';
 import type {
-  FinancialInstitutionId,
-  InstitutionMismatchWarning,
-} from './financial-institutions';
+  ImportContentProfileId,
+  ImportUploadMappingRequired,
+} from './import-formats';
 
 /** Review-field blockers from the shared import draft evaluator. */
 export type ImportRowReviewBlocker =
@@ -68,7 +69,8 @@ export interface ImportTargetAccount {
 export interface ImportDraftSummary {
   id: string;
   account: ImportTargetAccount;
-  detectedInstitutionId: FinancialInstitutionId | null;
+  /** Content profile used to parse the uploaded CSV; null for custom-mapped uploads. */
+  contentProfileId: ImportContentProfileId | null;
   status: ImportBatchStatus;
   fileName: string | null;
   rowCount: number;
@@ -79,7 +81,6 @@ export interface ImportDraftSummary {
   discardedAt: string | null;
   createdAt: string;
   updatedAt: string;
-  institutionMismatch: InstitutionMismatchWarning | null;
 }
 
 /** Server-loaded facts for existing-expense refund link validation. */
@@ -143,6 +144,14 @@ export interface ImportDraft extends ImportDraftSummary {
   rows: ImportDraftRow[];
   refundTargetFacts: Record<string, RefundTargetFact>;
 }
+
+export type CreateImportDraftResponse =
+  | {
+      kind: 'draft';
+      data: ImportDraft;
+      meta: { reusedExisting: boolean };
+    }
+  | ImportUploadMappingRequired;
 
 export interface UpdateImportDraftRowResult {
   row: ImportDraftPersistedRow;

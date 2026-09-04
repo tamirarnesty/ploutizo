@@ -1,24 +1,39 @@
 import { describe, expect, it } from 'vitest';
 import {
+  isImportAmountToken,
   trimApostrophes,
   tryParseImportAmountToCents,
+  tryParseImportDayMonthYearDate,
   tryParseImportIsoDate,
+  tryParseImportMdyDate,
 } from './import-coercion';
 
-describe('tryParseImportIsoDate', () => {
-  it('accepts valid ISO calendar dates', () => {
-    expect(tryParseImportIsoDate('2026-05-02')).toBe('2026-05-02');
+describe('import date coercion', () => {
+  it.each([
+    ['ISO', tryParseImportIsoDate, '2026-05-02', '2026-05-02'],
+    ['MM/DD/YYYY', tryParseImportMdyDate, '05/02/2026', '2026-05-02'],
+    ['D MMM YYYY', tryParseImportDayMonthYearDate, '2 May 2026', '2026-05-02'],
+    ['D MMM YYYY', tryParseImportDayMonthYearDate, '08 May 2026', '2026-05-08'],
+  ])('normalizes %s dates', (_format, parseDate, value, expected) => {
+    expect(parseDate(value)).toBe(expected);
   });
 
-  it('rejects invalid calendar dates and non-ISO shapes', () => {
-    expect(tryParseImportIsoDate('2026-02-30')).toBeNull();
-    expect(tryParseImportIsoDate('not-a-date')).toBeNull();
-    expect(tryParseImportIsoDate('2026/05/02')).toBeNull();
-    expect(tryParseImportIsoDate(null)).toBeNull();
+  it.each([
+    ['ISO', tryParseImportIsoDate, '2026-02-30'],
+    ['MM/DD/YYYY', tryParseImportMdyDate, '13/40/2026'],
+    ['D MMM YYYY', tryParseImportDayMonthYearDate, '32 Foo 2026'],
+    ['ISO', tryParseImportIsoDate, '2026/05/02'],
+  ])('rejects invalid %s dates', (_format, parseDate, value) => {
+    expect(parseDate(value)).toBeNull();
   });
 });
 
 describe('tryParseImportAmountToCents', () => {
+  it('recognizes zero as a structurally valid amount token', () => {
+    expect(isImportAmountToken('0')).toBe(true);
+    expect(isImportAmountToken('$0.00')).toBe(true);
+  });
+
   it('parses dollar amounts with optional leading currency symbol', () => {
     expect(tryParseImportAmountToCents('42.18')).toBe(4218);
     expect(tryParseImportAmountToCents('$42.18')).toBe(4218);

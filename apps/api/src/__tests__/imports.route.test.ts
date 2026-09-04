@@ -55,8 +55,64 @@ describe('imports router', () => {
 
   it('creates an import draft with a normalized CSV payload', async () => {
     vi.mocked(createImportDraft).mockResolvedValue({
-      reusedExisting: false,
-      draft: { id: 'draft_1', rows: [] } as never,
+      kind: 'draft',
+      data: { id: 'draft_1', rows: [] } as never,
+      meta: { reusedExisting: false },
+    });
+
+    const res = await app.request('/drafts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        accountId: '22222222-2222-4222-8222-222222222222',
+        fileName: 'statement.csv',
+        content:
+          'date,amount,description,type\n2026-05-02,42.18,Coffee,expense',
+        selection: { kind: 'profile', profileId: 'internal' },
+      }),
+    });
+
+    expect(res.status).toBe(201);
+    expect(createImportDraft).toHaveBeenCalledWith(
+      'org_1',
+      expect.objectContaining({ fileName: 'statement.csv' })
+    );
+  });
+
+  it('returns an existing draft when createImportDraft reuses one', async () => {
+    vi.mocked(createImportDraft).mockResolvedValue({
+      kind: 'draft',
+      data: { id: 'draft_1', rows: [] } as never,
+      meta: { reusedExisting: true },
+    });
+
+    const res = await app.request('/drafts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        accountId: '22222222-2222-4222-8222-222222222222',
+        fileName: 'statement.csv',
+        content:
+          'date,amount,description,type\n2026-05-02,42.18,Coffee,expense',
+        selection: { kind: 'profile', profileId: 'internal' },
+      }),
+    });
+    const body = (await res.json()) as {
+      kind: 'draft';
+      data: { id: string };
+      meta: { reusedExisting: boolean };
+    };
+
+    expect(res.status).toBe(200);
+    expect(body.meta.reusedExisting).toBe(true);
+    expect(body.data.id).toBe('draft_1');
+  });
+
+  it('auto-detects a profile when selection is omitted', async () => {
+    vi.mocked(createImportDraft).mockResolvedValue({
+      kind: 'draft',
+      data: { id: 'draft_1', rows: [] } as never,
+      meta: { reusedExisting: false },
     });
 
     const res = await app.request('/drafts', {
@@ -73,14 +129,16 @@ describe('imports router', () => {
     expect(res.status).toBe(201);
     expect(createImportDraft).toHaveBeenCalledWith(
       'org_1',
-      expect.objectContaining({ fileName: 'statement.csv' })
+      expect.not.objectContaining({ selection: expect.anything() })
     );
   });
 
-  it('returns an existing draft when createImportDraft reuses one', async () => {
+  it('returns mapping_required when auto-detection needs a member choice', async () => {
     vi.mocked(createImportDraft).mockResolvedValue({
-      reusedExisting: true,
-      draft: { id: 'draft_1', rows: [] } as never,
+      kind: 'mapping_required',
+      candidateProfileIds: ['mdy_debit_credit_balance'],
+      columns: ['Column 1', 'Column 2', 'Column 3', 'Column 4', 'Column 5'],
+      sampleRows: [['05/02/2026', 'GROCERY', '12.34', '', '100.00']],
     });
 
     const res = await app.request('/drafts', {
@@ -90,17 +148,17 @@ describe('imports router', () => {
         accountId: '22222222-2222-4222-8222-222222222222',
         fileName: 'statement.csv',
         content:
-          'date,amount,description,type\n2026-05-02,42.18,Coffee,expense',
+          '05/02/2026,NEIGHBORHOOD GROCERY,12.34,,100.00\n05/08/2026,MERCHANT CREDIT,,5.00,105.00',
       }),
     });
     const body = (await res.json()) as {
-      data: { id: string };
-      meta: { reusedExisting: boolean };
+      kind: 'mapping_required';
+      candidateProfileIds: string[];
     };
 
     expect(res.status).toBe(200);
-    expect(body.meta.reusedExisting).toBe(true);
-    expect(body.data.id).toBe('draft_1');
+    expect(body.kind).toBe('mapping_required');
+    expect(body.candidateProfileIds).toEqual(['mdy_debit_credit_balance']);
   });
 
   it('validates row patch payloads before updating a draft row', async () => {

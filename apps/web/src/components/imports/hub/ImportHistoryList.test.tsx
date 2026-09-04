@@ -11,7 +11,7 @@ const historyItem: ImportDraftSummary = {
     institutionId: 'td',
     lastFour: '1234',
   },
-  detectedInstitutionId: null,
+  contentProfileId: null,
   status: 'completed',
   fileName: 'statement.csv',
   rowCount: 10,
@@ -22,7 +22,6 @@ const historyItem: ImportDraftSummary = {
   discardedAt: null,
   createdAt: '2026-05-20T12:00:00.000Z',
   updatedAt: '2026-05-21T12:00:00.000Z',
-  institutionMismatch: null,
 };
 
 describe('ImportHistoryList', () => {

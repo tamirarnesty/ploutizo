@@ -58,6 +58,14 @@ _Avoid_: Processing import, inline draft preview, finalize-only save
 The credit card import flow is upload from the **Import hub**, server processing and **Initial import classification**, review/edit in **Review import**, server verification of the selected **Import set**, final confirmation in **Finalize import**, then bulk creation and recording of outcomes.
 _Avoid_: One-step import, background import
 
+**Import content profile**:
+A reusable description of how to interpret a CSV layout: its columns, date tokens, amount/sign semantics, and any format-specific classification hints. A profile selects parsing semantics only; it does not identify the institution that produced a file or alter the selected destination account.
+_Avoid_: Detected bank, file owner, source account
+
+**Mapping-required upload**:
+A readable CSV for which the server cannot safely select parsing semantics. The household member must select a compatible **Import content profile** or provide a one-time custom mapping before an **Import draft** is created. The mapping is not persisted after rows are normalized.
+_Avoid_: Import file failure, unsupported upload
+
 **Selected import row**:
 An import draft row the user has explicitly chosen to include in the next confirm. Selected rows define the **import set**; they may still be unresolved during review, but must satisfy all **import row requirements** before confirm.
 _Avoid_: Automatically included row, checked transaction
@@ -119,7 +127,7 @@ A CSV line the app cannot parse into a candidate transaction. It does not fail t
 _Avoid_: Failed import, rejected file
 
 **Import file failure**:
-The upload is rejected when the file cannot be processed at all: corrupt/unreadable CSV, unrecognized credit card format, over size/row limits, or no importable data rows. Row-level problems do not fail the file.
+The upload is rejected when the file cannot be processed at all: corrupt/unreadable CSV, over size/row limits, or no importable data rows after a confirmed **Import content profile** or mapping. A **Mapping-required upload** is not an import file failure. Row-level problems do not fail the file.
 _Avoid_: Partial file rejection
 
 **Temporary source file**:
@@ -259,7 +267,7 @@ A settlement payment that reduces the card’s shared balance (two or more assig
 _Avoid_: Household payment, pool settle
 
 **Financial institution**:
-A seeded central catalog of issuers (Amex, CIBC, PC Financial, TD, RBC, Wealthsimple) referenced by accounts via `institutionId`. Household members choose from this fixed list when creating or editing accounts; there is no custom entry or catalog-management UI. Required for credit-card, chequing, savings, and investment accounts; optional for cash accounts (`prepaid_cash`, `e_transfer`). The selected credit card's Financial institution is the authority for import mismatch comparison. Being in the catalog does not imply a supported import format (RBC is selectable with no approved CSV).
+A seeded central catalog of issuers (Amex, CIBC, PC Financial, TD, RBC, Wealthsimple) referenced by accounts via `institutionId`. Household members choose from this fixed list when creating or editing accounts; there is no custom entry or catalog-management UI. Required for credit-card, chequing, savings, and investment accounts; optional for cash accounts (`prepaid_cash`, `e_transfer`). Being in the catalog does not imply a supported import format (RBC is selectable with no approved CSV). CSV import parses a content profile from file contents; it does not infer or compare institutions.
 _Avoid_: Free-text institution, bank name as an unvalidated string, treating catalog membership as import support
 
 **Account ownership**:

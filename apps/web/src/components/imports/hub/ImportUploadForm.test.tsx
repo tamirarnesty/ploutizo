@@ -16,6 +16,79 @@ vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => uploadMocks.navigate,
 }));
 
+vi.mock('@ploutizo/ui/components/select', async () => {
+  const React = await import('react');
+  const SelectChangeContext = React.createContext<(value: string) => void>(
+    () => {}
+  );
+
+  return {
+    Select: ({
+      children,
+      onValueChange,
+    }: {
+      children: React.ReactNode;
+      onValueChange?: (value: string) => void;
+    }) =>
+      React.createElement(
+        SelectChangeContext.Provider,
+        { value: onValueChange ?? (() => {}) },
+        children
+      ),
+    SelectTrigger: ({
+      id,
+      children,
+    }: {
+      id?: string;
+      children: React.ReactNode;
+    }) => React.createElement('div', { id }, children),
+    SelectValue: ({
+      placeholder,
+      children,
+    }: {
+      placeholder?: string;
+      children?: React.ReactNode;
+    }) => React.createElement('span', null, placeholder ?? children),
+    SelectContent: ({ children }: { children: React.ReactNode }) =>
+      React.createElement('div', null, children),
+    SelectGroup: ({ children }: { children: React.ReactNode }) =>
+      React.createElement('div', null, children),
+    SelectItem: ({
+      value,
+      children,
+    }: {
+      value: string;
+      children: React.ReactNode;
+    }) => {
+      const onValueChange = React.useContext(SelectChangeContext);
+      return React.createElement(
+        'button',
+        { type: 'button', onClick: () => onValueChange(value) },
+        children
+      );
+    },
+  };
+});
+
+vi.mock('@ploutizo/ui/components/checkbox', () => ({
+  Checkbox: ({
+    id,
+    checked,
+    onCheckedChange,
+  }: {
+    id?: string;
+    checked?: boolean;
+    onCheckedChange?: (checked: boolean) => void;
+  }) => (
+    <input
+      id={id}
+      type="checkbox"
+      checked={checked}
+      onChange={(event) => onCheckedChange?.(event.target.checked)}
+    />
+  ),
+}));
+
 vi.mock('@/lib/data-access/imports', () => ({
   useCreateImportDraft: () => ({
     mutate: uploadMocks.createImportDraftMutate,
@@ -100,7 +173,7 @@ const activeDraft: ImportDraftSummary = {
     institutionId: 'td',
     lastFour: '1234',
   },
-  detectedInstitutionId: null,
+  contentProfileId: null,
   status: 'draft',
   fileName: 'statement.csv',
   rowCount: 2,
@@ -111,7 +184,6 @@ const activeDraft: ImportDraftSummary = {
   discardedAt: null,
   createdAt: '2026-05-20T12:00:00.000Z',
   updatedAt: '2026-05-20T12:00:00.000Z',
-  institutionMismatch: null,
 };
 
 const renderUploadForm = (
@@ -124,6 +196,12 @@ const renderUploadForm = (
   );
 
 describe('ImportUploadForm', () => {
+  const createdDraftResponse = {
+    kind: 'draft' as const,
+    data: { id: 'draft_1' },
+    meta: { reusedExisting: false },
+  };
+
   beforeEach(() => {
     uploadMocks.createImportDraftMutate.mockReset();
     uploadMocks.navigate.mockReset();
@@ -131,6 +209,15 @@ describe('ImportUploadForm', () => {
     uploadMocks.isPending = false;
     uploadMocks.readCsvFile.mockResolvedValue(
       'date,amount,description,type\n2026-05-02,42.18,Coffee,expense'
+    );
+    uploadMocks.createImportDraftMutate.mockImplementation(
+      (_payload: unknown, options: Record<string, unknown> | undefined) => {
+        (
+          options?.onSuccess as
+            | ((r: typeof createdDraftResponse) => void)
+            | undefined
+        )?.(createdDraftResponse);
+      }
     );
   });
 
@@ -164,8 +251,8 @@ describe('ImportUploadForm', () => {
   it('shows a processing error when draft creation fails', async () => {
     const user = userEvent.setup();
     uploadMocks.createImportDraftMutate.mockImplementation(
-      (_payload, options) => {
-        options?.onError?.({});
+      (_payload: unknown, options: Record<string, unknown> | undefined) => {
+        (options?.onError as ((e: unknown) => void) | undefined)?.({});
       }
     );
     renderUploadForm();
@@ -215,5 +302,152 @@ describe('ImportUploadForm', () => {
 
     expect(dialog).toHaveAttribute('data-open', 'true');
     expect(screen.getByText('Required columns')).toBeInTheDocument();
+  });
+
+  it('asks for a matching format instead of defaulting to Amex', async () => {
+    const user = userEvent.setup();
+    uploadMocks.createImportDraftMutate.mockImplementation(
+      (_payload: unknown, options: Record<string, unknown> | undefined) => {
+        (options?.onSuccess as ((r: unknown) => void) | undefined)?.({
+          kind: 'mapping_required',
+          candidateProfileIds: ['mdy_debit_credit_balance'],
+          columns: ['Column 1', 'Column 2', 'Column 3', 'Column 4', 'Column 5'],
+          sampleRows: [['05/02/2026', 'GROCERY', '12.34', '', '100.00']],
+        });
+      }
+    );
+    renderUploadForm();
+
+    const file = new File(['csv'], 'statement.csv', { type: 'text/csv' });
+    await user.upload(screen.getByLabelText('CSV file'), file);
+    await user.click(screen.getByRole('button', { name: 'Upload' }));
+
+    await waitFor(() =>
+      expect(screen.getByText('Choose import format')).toBeInTheDocument()
+    );
+    expect(
+      screen.getByRole('button', {
+        name: 'Generic: MM/DD/YYYY debit/credit/balance',
+      })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Amex' })
+    ).not.toBeInTheDocument();
+
+    uploadMocks.createImportDraftMutate.mockImplementation(
+      (_payload: unknown, options: Record<string, unknown> | undefined) => {
+        (
+          options?.onSuccess as
+            | ((r: typeof createdDraftResponse) => void)
+            | undefined
+        )?.(createdDraftResponse);
+      }
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Upload' }));
+
+    await waitFor(() =>
+      expect(uploadMocks.createImportDraftMutate).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          selection: {
+            kind: 'profile',
+            profileId: 'mdy_debit_credit_balance',
+          },
+        }),
+        expect.any(Object)
+      )
+    );
+  });
+
+  it('keeps the format chooser open when confirmation fails', async () => {
+    const user = userEvent.setup();
+    uploadMocks.createImportDraftMutate.mockImplementation(
+      (_payload: unknown, options: Record<string, unknown> | undefined) => {
+        (options?.onSuccess as ((r: unknown) => void) | undefined)?.({
+          kind: 'mapping_required',
+          candidateProfileIds: ['mdy_debit_credit_balance'],
+          columns: ['Column 1'],
+          sampleRows: [],
+        });
+      }
+    );
+    renderUploadForm();
+
+    const file = new File(['csv'], 'statement.csv', { type: 'text/csv' });
+    await user.upload(screen.getByLabelText('CSV file'), file);
+    await user.click(screen.getByRole('button', { name: 'Upload' }));
+
+    await waitFor(() =>
+      expect(screen.getByText('Choose import format')).toBeInTheDocument()
+    );
+
+    uploadMocks.createImportDraftMutate.mockImplementation(
+      (_payload: unknown, options: Record<string, unknown> | undefined) => {
+        (options?.onError as ((e: unknown) => void) | undefined)?.({});
+      }
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Upload' }));
+
+    await waitFor(() =>
+      expect(screen.getByText("Couldn't process that CSV.")).toBeInTheDocument()
+    );
+    expect(screen.getByText('Choose import format')).toBeInTheDocument();
+  });
+
+  it('submits a custom mapping for headerless files without profile candidates', async () => {
+    const user = userEvent.setup();
+    uploadMocks.createImportDraftMutate.mockImplementation(
+      (_payload: unknown, options: Record<string, unknown> | undefined) => {
+        (options?.onSuccess as ((r: unknown) => void) | undefined)?.({
+          kind: 'mapping_required',
+          candidateProfileIds: [],
+          columns: ['Column 1', 'Column 2', 'Column 3'],
+          sampleRows: [['05/02/2026', 'Coffee', '42.00']],
+        });
+      }
+    );
+    renderUploadForm();
+
+    const file = new File(['csv'], 'unknown.csv', { type: 'text/csv' });
+    await user.upload(screen.getByLabelText('CSV file'), file);
+    await user.click(screen.getByRole('button', { name: 'Upload' }));
+
+    await waitFor(() =>
+      expect(screen.getByText('Date column')).toBeInTheDocument()
+    );
+
+    uploadMocks.createImportDraftMutate.mockImplementation(
+      (_payload: unknown, options: Record<string, unknown> | undefined) => {
+        (
+          options?.onSuccess as
+            | ((r: typeof createdDraftResponse) => void)
+            | undefined
+        )?.(createdDraftResponse);
+      }
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Upload' }));
+
+    await waitFor(() =>
+      expect(uploadMocks.createImportDraftMutate).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          selection: {
+            kind: 'mapping',
+            mapping: {
+              dateColumn: 'Column 1',
+              dateFormat: 'YYYY-MM-DD',
+              descriptionColumn: 'Column 2',
+              amount: {
+                kind: 'signed',
+                column: 'Column 3',
+                positiveIsExpense: true,
+              },
+            },
+          },
+        }),
+        expect.any(Object)
+      )
+    );
   });
 });

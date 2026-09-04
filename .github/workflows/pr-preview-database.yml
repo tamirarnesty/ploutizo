@@ -25,6 +25,7 @@ on:
       - 'apps/api/**'
       - 'packages/db/**'
       - 'drizzle.config.ts'
+      - '.github/workflows/pr-preview-database.yml'
   workflow_dispatch:
     inputs:
       pr_number:
@@ -61,9 +62,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           EVENT_NAME: ${{ github.event_name }}
           PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
-          HEAD_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          HEAD_BRANCH: ${{ github.ref_name }}
           REPO: ${{ github.repository }}
-          REPO_OWNER: ${{ github.repository_owner }}
         run: |
           set -euo pipefail
 
@@ -89,7 +89,7 @@ jobs:
             exit 0
           fi
 
-          pr=$(gh pr list --repo "$REPO" --head "${REPO_OWNER}:${HEAD_BRANCH}" --state open \
+          pr=$(gh pr list --repo "$REPO" --head "$HEAD_BRANCH" --state open \
             --json number,isDraft --jq '.[0] // empty')
           if [[ -z "$pr" ]]; then
             echo "No open PR for ${HEAD_BRANCH}; skipping"

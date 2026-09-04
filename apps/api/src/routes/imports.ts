@@ -40,10 +40,10 @@ importsRouter.post(
     const orgId = c.get('orgId');
     const input = c.req.valid('json');
     const result = await createImportDraft(orgId, input);
-    return c.json(
-      { data: result.draft, meta: { reusedExisting: result.reusedExisting } },
-      result.reusedExisting ? 200 : 201
-    );
+    if (result.kind === 'mapping_required') {
+      return c.json(result);
+    }
+    return c.json(result, result.meta.reusedExisting ? 200 : 201);
   }
 );
 

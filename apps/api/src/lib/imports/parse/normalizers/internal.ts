@@ -1,6 +1,13 @@
+import { tryParseImportIsoDate } from '@ploutizo/utils/import-coercion';
 import { INTERNAL_IMPORT_REQUIRED_COLUMNS } from '@ploutizo/types';
 import { parseImportTags } from '@ploutizo/utils';
-import type { CsvRecord, ImportNormalizer, SourceImportRow } from '../types';
+import { buildRawData, normalizeHeader, optionalTrim } from './cells';
+import type {
+  CsvRecord,
+  CsvUpload,
+  ImportContentProfile,
+  SourceImportRow,
+} from '../types';
 
 type HeaderKey =
   | 'date'
@@ -36,14 +43,6 @@ const HEADER_ALIASES: Partial<Record<string, HeaderKey>> = {
   tags: 'tags',
 };
 
-const normalizeHeader = (value: string) =>
-  value.trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ');
-
-const optionalTrim = (value: string | undefined): string | null => {
-  const trimmed = value?.trim() ?? '';
-  return trimmed.length > 0 ? trimmed : null;
-};
-
 const buildHeaderMap = (headers: string[]) => {
   const map = new Map<HeaderKey, number>();
   headers.forEach((header, index) => {
@@ -62,15 +61,6 @@ const readCell = (
 ) => {
   const index = headerMap.get(key);
   return index === undefined ? null : optionalTrim(record.cells[index]);
-};
-
-const buildRawData = (record: CsvRecord, headers: string[]) => {
-  const rawData: Record<string, string> = {};
-  for (let index = 0; index < headers.length; index += 1) {
-    const header = headers[index]?.trim() || `column_${index + 1}`;
-    rawData[header] = record.cells[index] ?? '';
-  }
-  return rawData;
 };
 
 const hasRequiredHeaders = (headerMap: Map<HeaderKey, number>) =>
@@ -97,13 +87,18 @@ const mapRow = (
   reviewNotes: readCell(record, headerMap, 'notes'),
 });
 
-export const internalImportNormalizer: ImportNormalizer = {
-  detectedInstitutionId: null,
-  matches: (upload) => hasRequiredHeaders(buildHeaderMap(upload.headers)),
+const matchesInternal = (upload: CsvUpload) =>
+  hasRequiredHeaders(buildHeaderMap(upload.headers));
+
+export const internalContentProfile: ImportContentProfile = {
+  profileId: 'internal',
+  matches: matchesInternal,
+  acceptsSelection: matchesInternal,
+  parseDate: tryParseImportIsoDate,
   normalize: (upload) => {
     const headerMap = buildHeaderMap(upload.headers);
-    return upload.dataRecords.map((record) =>
-      mapRow(record, upload.headers, headerMap)
-    );
+    return upload.records
+      .slice(1)
+      .map((record) => mapRow(record, upload.headers, headerMap));
   },
 };
