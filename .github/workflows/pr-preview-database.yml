@@ -53,10 +53,11 @@ jobs:
 
           before="$BEFORE_SHA"
           if [[ -z "$before" || "$before" == "0000000000000000000000000000000000000000" ]]; then
-            before=$(gh api \
-              "repos/${{ github.repository }}/actions/workflows/pr-preview-database.yml/runs?event=pull_request&per_page=20" \
-              --jq --arg sha "$HEAD_SHA" --arg branch "$HEAD_BRANCH" \
-              '[.workflow_runs[] | select(.head_branch == $branch and .head_sha != $sha)] | first | .head_sha // empty')
+            before=$(
+              gh api "repos/${{ github.repository }}/actions/workflows/pr-preview-database.yml/runs?event=pull_request&per_page=20" \
+                | jq -r --arg sha "$HEAD_SHA" --arg branch "$HEAD_BRANCH" \
+                  '[.workflow_runs[] | select(.head_branch == $branch and .head_sha != $sha)] | first | .head_sha // empty'
+            ) || before=""
           fi
           if [[ -z "$before" ]]; then
             before="$BASE_SHA"
