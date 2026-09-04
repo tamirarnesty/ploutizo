@@ -24,6 +24,7 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -345,6 +346,10 @@ const TransactionFormInner = ({
                         {isMultiAccount ? 'Source' : 'Account'}
                       </FieldLabel>
                       <Select
+                        items={accounts.map((account) => ({
+                          label: account.name,
+                          value: account.id,
+                        }))}
                         value={field.state.value}
                         onValueChange={(v) => {
                           if (v !== null) field.handleChange(v);
@@ -352,16 +357,21 @@ const TransactionFormInner = ({
                       >
                         <SelectTrigger id="tx-accountId">
                           <SelectValue>
-                            {accounts.find((a) => a.id === field.state.value)
-                              ?.name ?? 'Select account'}
+                            {(selected: string) =>
+                              accounts.find(
+                                (account) => account.id === selected
+                              )?.name ?? 'Select account'
+                            }
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                          {accounts.map((a) => (
-                            <SelectItem key={a.id} value={a.id}>
-                              {a.name}
-                            </SelectItem>
-                          ))}
+                          <SelectGroup>
+                            {accounts.map((account) => (
+                              <SelectItem key={account.id} value={account.id}>
+                                {account.name}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
                         </SelectContent>
                       </Select>
                       {field.state.meta.errors.length > 0 ? (

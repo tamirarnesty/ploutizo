@@ -2,6 +2,7 @@ import { Field, FieldError, FieldLabel } from '@ploutizo/ui/components/field';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -26,6 +27,10 @@ export const ExpenseFields = ({ form, categories }: ExpenseFieldsProps) => (
       <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
         <FieldLabel htmlFor="tx-categoryId">Category</FieldLabel>
         <Select
+          items={categories.map((category) => ({
+            label: category.name,
+            value: category.id,
+          }))}
           value={field.state.value}
           onValueChange={(v) => {
             if (v !== null) field.handleChange(v);
@@ -33,16 +38,20 @@ export const ExpenseFields = ({ form, categories }: ExpenseFieldsProps) => (
         >
           <SelectTrigger id="tx-categoryId">
             <SelectValue>
-              {categories.find((c) => c.id === field.state.value)?.name ??
-                'Select category'}
+              {(selected: string) =>
+                categories.find((category) => category.id === selected)?.name ??
+                'Select category'
+              }
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            {categories.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.name}
-              </SelectItem>
-            ))}
+            <SelectGroup>
+              {categories.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectGroup>
           </SelectContent>
         </Select>
         {field.state.meta.errors.length > 0 ? (

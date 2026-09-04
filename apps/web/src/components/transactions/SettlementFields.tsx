@@ -2,6 +2,7 @@ import { Field, FieldError, FieldLabel } from '@ploutizo/ui/components/field';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -31,6 +32,10 @@ export const SettlementFields = ({ form, accounts }: SettlementFieldsProps) => (
         <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
           <FieldLabel htmlFor="tx-settlement-source">Source</FieldLabel>
           <Select
+            items={accounts.map((account) => ({
+              label: account.name,
+              value: account.id,
+            }))}
             value={field.state.value}
             onValueChange={(v) => {
               if (v !== null) field.handleChange(v);
@@ -38,16 +43,20 @@ export const SettlementFields = ({ form, accounts }: SettlementFieldsProps) => (
           >
             <SelectTrigger id="tx-settlement-source">
               <SelectValue>
-                {accounts.find((a) => a.id === field.state.value)?.name ??
-                  'Select account'}
+                {(selected: string) =>
+                  accounts.find((account) => account.id === selected)?.name ??
+                  'Select account'
+                }
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {accounts.map((a) => (
-                <SelectItem key={a.id} value={a.id}>
-                  {a.name}
-                </SelectItem>
-              ))}
+              <SelectGroup>
+                {accounts.map((account) => (
+                  <SelectItem key={account.id} value={account.id}>
+                    {account.name}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
             </SelectContent>
           </Select>
           {field.state.meta.errors.length > 0 ? (
@@ -74,6 +83,10 @@ export const SettlementFields = ({ form, accounts }: SettlementFieldsProps) => (
             Destination
           </FieldLabel>
           <Select
+            items={accounts.map((account) => ({
+              label: account.name,
+              value: account.id,
+            }))}
             value={field.state.value}
             onValueChange={(v) => {
               if (v !== null) field.handleChange(v);
@@ -81,16 +94,20 @@ export const SettlementFields = ({ form, accounts }: SettlementFieldsProps) => (
           >
             <SelectTrigger id="tx-settlement-destination">
               <SelectValue>
-                {accounts.find((a) => a.id === field.state.value)?.name ??
-                  'Select account'}
+                {(selected: string) =>
+                  accounts.find((account) => account.id === selected)?.name ??
+                  'Select account'
+                }
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {accounts.map((a) => (
-                <SelectItem key={a.id} value={a.id}>
-                  {a.name}
-                </SelectItem>
-              ))}
+              <SelectGroup>
+                {accounts.map((account) => (
+                  <SelectItem key={account.id} value={account.id}>
+                    {account.name}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
             </SelectContent>
           </Select>
           {field.state.meta.errors.length > 0 ? (

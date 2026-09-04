@@ -2,6 +2,7 @@ import { Field, FieldError, FieldLabel } from '@ploutizo/ui/components/field';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -16,22 +17,22 @@ import type { AssigneeFormRow, TransactionFormValues } from './types';
 // D-19: import caption (└ Original: ...) is deferred because originalDescription
 // and originalMerchant columns are absent from the current DB schema.
 
-const TYPE_LABELS: Record<string, string | undefined> = {
-  expense: 'Expense',
-  income: 'Income',
-  transfer: 'Transfer',
-  settlement: 'Settlement',
-  refund: 'Refund',
-  contribution: 'Contribution',
-};
+const TRANSACTION_TYPE_ITEMS = [
+  { label: 'Expense', value: 'expense' },
+  { label: 'Income', value: 'income' },
+  { label: 'Transfer', value: 'transfer' },
+  { label: 'Settlement', value: 'settlement' },
+  { label: 'Refund', value: 'refund' },
+  { label: 'Contribution', value: 'contribution' },
+] as const;
 
-const INCOME_TYPE_LABELS: Record<string, string | undefined> = {
-  direct_deposit: 'Direct deposit',
-  e_transfer: 'e-Transfer',
-  cash: 'Cash',
-  cheque: 'Cheque',
-  other: 'Other',
-};
+const INCOME_TYPE_ITEMS = [
+  { label: 'Direct deposit', value: 'direct_deposit' },
+  { label: 'e-Transfer', value: 'e_transfer' },
+  { label: 'Cash', value: 'cash' },
+  { label: 'Cheque', value: 'cheque' },
+  { label: 'Other', value: 'other' },
+] as const;
 
 interface TransactionTypeFieldsProps {
   form: TransactionFormInstance;
@@ -69,6 +70,7 @@ const TypeSelectField = ({
       <Field>
         <FieldLabel htmlFor="tx-type">Type</FieldLabel>
         <Select
+          items={TRANSACTION_TYPE_ITEMS}
           value={field.state.value}
           onValueChange={(v) =>
             field.handleChange(v as TransactionFormValues['type'])
@@ -77,16 +79,20 @@ const TypeSelectField = ({
           <SelectTrigger id="tx-type" autoFocus>
             {/* autoFocus: type is the primary purpose of opening the sheet (per web-design-guidelines) */}
             <SelectValue>
-              {TYPE_LABELS[field.state.value] ?? 'Select type'}
+              {(selected: string) =>
+                TRANSACTION_TYPE_ITEMS.find((item) => item.value === selected)
+                  ?.label ?? selected
+              }
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="expense">Expense</SelectItem>
-            <SelectItem value="income">Income</SelectItem>
-            <SelectItem value="transfer">Transfer</SelectItem>
-            <SelectItem value="settlement">Settlement</SelectItem>
-            <SelectItem value="refund">Refund</SelectItem>
-            <SelectItem value="contribution">Contribution</SelectItem>
+            <SelectGroup>
+              {TRANSACTION_TYPE_ITEMS.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
           </SelectContent>
         </Select>
       </Field>
@@ -113,6 +119,10 @@ const RefundCategoryField = ({
       <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
         <FieldLabel htmlFor="tx-refund-categoryId">Category</FieldLabel>
         <Select
+          items={categories.map((category) => ({
+            label: category.name,
+            value: category.id,
+          }))}
           value={field.state.value}
           onValueChange={(v) => {
             if (v !== null) field.handleChange(v);
@@ -120,16 +130,20 @@ const RefundCategoryField = ({
         >
           <SelectTrigger id="tx-refund-categoryId">
             <SelectValue>
-              {categories.find((c) => c.id === field.state.value)?.name ??
-                'Select category'}
+              {(selected: string) =>
+                categories.find((category) => category.id === selected)?.name ??
+                'Select category'
+              }
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            {categories.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.name}
-              </SelectItem>
-            ))}
+            <SelectGroup>
+              {categories.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectGroup>
           </SelectContent>
         </Select>
         {field.state.meta.errors.length > 0 ? (
@@ -157,6 +171,7 @@ const IncomeTypeField = ({ form }: { form: TransactionFormInstance }) => (
       <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
         <FieldLabel htmlFor="tx-incomeType">Income type</FieldLabel>
         <Select
+          items={INCOME_TYPE_ITEMS}
           value={field.state.value}
           onValueChange={(v) => {
             if (v !== null) field.handleChange(v);
@@ -164,15 +179,20 @@ const IncomeTypeField = ({ form }: { form: TransactionFormInstance }) => (
         >
           <SelectTrigger id="tx-incomeType">
             <SelectValue>
-              {INCOME_TYPE_LABELS[field.state.value] ?? 'Select type'}
+              {(selected: string) =>
+                INCOME_TYPE_ITEMS.find((item) => item.value === selected)
+                  ?.label ?? selected
+              }
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="direct_deposit">Direct deposit</SelectItem>
-            <SelectItem value="e_transfer">e-Transfer</SelectItem>
-            <SelectItem value="cash">Cash</SelectItem>
-            <SelectItem value="cheque">Cheque</SelectItem>
-            <SelectItem value="other">Other</SelectItem>
+            <SelectGroup>
+              {INCOME_TYPE_ITEMS.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
           </SelectContent>
         </Select>
         {field.state.meta.errors.length > 0 ? (
