@@ -1,5 +1,5 @@
 import { differenceInCalendarDays } from 'date-fns';
-import type { ImportTransactionType } from '@ploutizo/types';
+import type { ImportTransactionType, MatchTargetFact } from '@ploutizo/types';
 import {
   resolveImportRowReviewAmount,
   resolveImportRowReviewDate,
@@ -37,17 +37,22 @@ export type ImportMatchIssue =
   | 'deleted_target'
   | 'ambiguous_exact';
 
-export interface ImportMatchTargetTransaction {
-  id: string;
-  accountId: string;
-  type: string;
-  date: string;
-  amount: number;
-  description: string;
-  rawDescription: string | null;
-  externalId: string | null;
-  deleted: boolean;
-}
+export type ImportMatchTargetTransaction = MatchTargetFact;
+
+export const matchTargetFactsRecordFromMap = (
+  map: ReadonlyMap<string, MatchTargetFact>
+): Record<string, MatchTargetFact> => Object.fromEntries(map);
+
+export const matchTargetFactsToTransactions = (
+  facts: Record<string, MatchTargetFact>
+): MatchTargetFact[] => Object.values(facts);
+
+export const collectMatchedTransactionIds = (
+  rows: readonly { reviewMatchedTransactionId: string | null }[]
+): string[] =>
+  rows.flatMap((row) =>
+    row.reviewMatchedTransactionId ? [row.reviewMatchedTransactionId] : []
+  );
 
 export interface ImportMatchDraftRow {
   id: string;
@@ -416,8 +421,8 @@ export const toImportMatchDraftRow = (row: {
   parsedDescription: string | null;
   sourceDescription?: string | null;
   selectedForImport: boolean;
-  reviewMatchedTransactionId?: string | null;
-  reviewMatchDismissed?: boolean;
+  reviewMatchedTransactionId: string | null;
+  reviewMatchDismissed: boolean;
 }): ImportMatchDraftRow => ({
   id: row.id,
   externalId: row.externalId ?? null,
@@ -431,8 +436,8 @@ export const toImportMatchDraftRow = (row: {
   parsedDescription: row.parsedDescription,
   sourceDescription: row.sourceDescription ?? null,
   selectedForImport: row.selectedForImport,
-  reviewMatchedTransactionId: row.reviewMatchedTransactionId ?? null,
-  reviewMatchDismissed: row.reviewMatchDismissed ?? false,
+  reviewMatchedTransactionId: row.reviewMatchedTransactionId,
+  reviewMatchDismissed: row.reviewMatchDismissed,
 });
 
 export const matchDecisionForSelectionChange = (input: {

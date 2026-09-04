@@ -210,7 +210,7 @@ describe('evaluateImportDraft — matching', () => {
     expect(result.match?.acceptedMatch).toBeNull();
   });
 
-  it('surfaces advisory candidates as Needs review without accepting them', () => {
+  it('keeps an unselected advisory match ready and surfaces review copy without blocking Continue', () => {
     const advisoryRow = {
       ...matchRow,
       externalId: null,
@@ -233,10 +233,42 @@ describe('evaluateImportDraft — matching', () => {
       })
     );
 
-    expect(result.status).toBe('needs_review');
-    expect(result.blockers).toContain('match');
+    expect(result.status).toBe('ready');
+    expect(result.blockers).not.toContain('match');
+    expect(result.match?.matchNeedsReview).toBe(true);
+    expect(result.match?.matchBlocked).toBe(false);
     expect(result.match?.acceptedMatch).toBeNull();
     expect(result.match?.advisoryCandidates[0]?.kind).toBe('fuzzy_description');
+  });
+
+  it('blocks Continue on a selected advisory match until the user decides', () => {
+    const advisoryRow = {
+      ...matchRow,
+      externalId: null,
+      selectedForImport: true,
+      sourceDescription: 'STARBUCKS STORE 123',
+      parsedDescription: 'STARBUCKS STORE 123',
+      reviewDescription: 'STARBUCKS STORE 123',
+    };
+    const result = evaluateImportDraftRow(
+      advisoryRow,
+      toImportDraftEvaluationContext([advisoryRow], {
+        targetAccountId: 'account-1',
+        existingTransactions: [
+          {
+            ...existing,
+            externalId: null,
+            rawDescription: 'STARBUCKS STORE 99',
+            description: 'STARBUCKS STORE 99',
+          },
+        ],
+      })
+    );
+
+    expect(result.status).toBe('needs_review');
+    expect(result.blockers).toContain('match');
+    expect(result.match?.matchBlocked).toBe(true);
+    expect(result.match?.acceptedMatch).toBeNull();
   });
 
   it('blocks Continue when a selected identity match is no longer valid', () => {

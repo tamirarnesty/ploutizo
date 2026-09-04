@@ -8,7 +8,10 @@ import {
 import { cn } from '@ploutizo/ui/lib/utils';
 import type { ImportDraftRow } from '@ploutizo/types';
 import { evaluateImportDraftWorkingCopy } from '@/lib/data-access/imports/rederiveImportDraftWorkingCopy';
-import { getImportRowStatusTooltip } from '../lib/importPresentation';
+import {
+  getImportRowStatusIconKind,
+  getImportRowStatusTooltip,
+} from '../lib/importPresentation';
 import {
   useImportDraftReviewContext,
   useImportDraftReviewFailedRowIds,
@@ -73,7 +76,10 @@ export const ImportRowStatusIcon = ({ row }: ImportRowStatusIconProps) => {
           />
         }
       >
-        <StatusIcon status={row.status} persistFailed={persistFailed} />
+        <StatusIcon
+          status={getImportRowStatusIconKind(row, evaluation?.match)}
+          persistFailed={persistFailed}
+        />
       </TooltipTrigger>
       <TooltipContent>{tooltip}</TooltipContent>
     </Tooltip>

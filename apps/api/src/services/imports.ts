@@ -5,9 +5,11 @@ import {
   toFinancialInstitutionId,
 } from '@ploutizo/types';
 import {
+  collectMatchedTransactionIds,
   createImportRowClassifier,
   evaluateImportMatches,
   matchDecisionForSelectionChange,
+  matchTargetFactsRecordFromMap,
   toImportMatchDraftRow,
 } from '@ploutizo/utils';
 import {
@@ -66,8 +68,7 @@ import { listRefundTargetExpensesByIds } from '@/lib/queries/import-refund-targe
 import { listImportMatchTargets } from '@/lib/queries/import-match-targets';
 import {
   buildImportDraftView,
-  loadDraftRefundContext,
-  matchTargetFactsRecordFromMap,
+  loadDraftEvaluationContext,
   refundTargetFactsRecordFromMap,
   toImportDraftPersistedRow,
   withLiveImportReviewCounts,
@@ -154,7 +155,7 @@ export const listActiveImportDrafts = async (
         throw new DomainError(500, 'Import draft is missing an account.');
       }
       const batchRows = rowsByBatch.get(summary.id) ?? [];
-      const { evaluations } = await loadDraftRefundContext(
+      const { evaluations } = await loadDraftEvaluationContext(
         orgId,
         summary.accountId,
         batchRows
@@ -418,9 +419,7 @@ export const updateImportDraftRowSelection = async (
     const existingTransactions = await listImportMatchTargets(
       orgId,
       accountId,
-      draftRows.flatMap((row) =>
-        row.reviewMatchedTransactionId ? [row.reviewMatchedTransactionId] : []
-      ),
+      collectMatchedTransactionIds(draftRows),
       tx
     );
     const matchEvaluations = evaluateImportMatches(

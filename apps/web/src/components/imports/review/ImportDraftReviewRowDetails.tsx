@@ -5,7 +5,10 @@ import { Textarea } from '@ploutizo/ui/components/textarea';
 import type { ImportDraftRow } from '@ploutizo/types';
 import { TransactionTagPicker } from '@/components/transactions/TransactionTagPicker';
 import { evaluateImportDraftWorkingCopy } from '@/lib/data-access/imports/rederiveImportDraftWorkingCopy';
-import { getImportRowLabel } from '../lib/importPresentation';
+import {
+  formatExactImportMatchCopy,
+  getImportRowLabel,
+} from '../lib/importPresentation';
 import { useImportDraftReviewContext } from './ImportDraftReviewContext';
 import { useImportDraftReviewRowSave } from './useImportDraftReviewRowSave';
 
@@ -61,8 +64,7 @@ export const ImportDraftReviewRowDetails = ({
       ) : null}
       {exactExplanation ? (
         <Text variant="body-sm" className="mb-2 text-muted-foreground">
-          {exactExplanation} Leave unselected to skip, or select to record as
-          matched.
+          {formatExactImportMatchCopy(exactExplanation)}
         </Text>
       ) : null}
       {advisory &&

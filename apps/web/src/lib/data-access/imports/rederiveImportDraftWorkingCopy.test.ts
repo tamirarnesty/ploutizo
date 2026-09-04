@@ -261,11 +261,14 @@ describe('rederiveImportDraftWorkingCopy', () => {
 
     rederiveImportDraftWorkingCopy(draft.id);
 
-    expect(collection.get('row_a')?.status).toBe('needs_review');
-    expect(collection.get('row_b')?.status).toBe('needs_review');
-    expect(
-      evaluateImportDraftWorkingCopy(draft.id)?.get('row_a')?.blockers
-    ).toContain('match');
+    expect(collection.get('row_a')?.status).toBe('ready');
+    expect(collection.get('row_b')?.status).toBe('ready');
+    const collisionEvaluation = evaluateImportDraftWorkingCopy(draft.id)?.get(
+      'row_a'
+    );
+    expect(collisionEvaluation?.blockers).not.toContain('match');
+    expect(collisionEvaluation?.match?.matchNeedsReview).toBe(true);
+    expect(collisionEvaluation?.match?.matchBlocked).toBe(false);
 
     collection.utils.writeUpdate({
       ...collection.get('row_a')!,
@@ -279,6 +282,14 @@ describe('rederiveImportDraftWorkingCopy', () => {
       evaluateImportDraftWorkingCopy(draft.id)?.get('row_a')?.match
         ?.acceptedMatch
     ).toBeNull();
+    expect(
+      evaluateImportDraftWorkingCopy(draft.id)?.get('row_a')?.match
+        ?.matchNeedsReview
+    ).toBe(false);
+    expect(
+      evaluateImportDraftWorkingCopy(draft.id)?.get('row_b')?.match
+        ?.matchNeedsReview
+    ).toBe(false);
   });
 
   it('blocks Continue on a selected advisory match until the user decides', async () => {

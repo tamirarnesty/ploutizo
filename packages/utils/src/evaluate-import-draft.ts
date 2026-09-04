@@ -153,7 +153,7 @@ export const evaluateImportDraftRow = (
     reviewAssigneeMemberIds: [...row.reviewAssigneeMemberIds],
     reviewCounterpartAccountId: row.reviewCounterpartAccountId,
     refundLinkBlocked,
-    matchBlocked: Boolean(match?.matchNeedsReview),
+    matchBlocked: Boolean(match?.matchBlocked),
   });
 
   const evaluation = evaluateImportRow(statusFields);

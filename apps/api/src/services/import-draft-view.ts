@@ -1,6 +1,8 @@
 import {
+  collectMatchedTransactionIds,
   computeImportDraftRowCounts,
   evaluateImportDraft,
+  matchTargetFactsRecordFromMap,
 } from '@ploutizo/utils';
 import { toImportTransactionType } from '@ploutizo/utils/import-row-status';
 import { db } from '@ploutizo/db';
@@ -9,13 +11,11 @@ import type {
   ExistingRefundTargetExpense,
   ImportDraftDurableRow,
   ImportDraftRowEvaluation,
-  ImportMatchTargetTransaction,
 } from '@ploutizo/utils';
 import type {
   ImportDraft,
   ImportDraftPersistedRow,
   ImportDraftRow,
-  MatchTargetFact,
   RefundTargetFact,
 } from '@ploutizo/types';
 import type {
@@ -32,37 +32,6 @@ const collectRefundOfIds = (
   rows: readonly Pick<ImportDraftRowRecord, 'reviewRefundOf'>[]
 ): string[] =>
   rows.flatMap((row) => (row.reviewRefundOf ? [row.reviewRefundOf] : []));
-
-const collectMatchedTransactionIds = (
-  rows: readonly Pick<ImportDraftRowRecord, 'reviewMatchedTransactionId'>[]
-): string[] =>
-  rows.flatMap((row) =>
-    row.reviewMatchedTransactionId ? [row.reviewMatchedTransactionId] : []
-  );
-
-export const matchTargetFactsRecordFromMap = (
-  map: ReadonlyMap<string, ImportMatchTargetTransaction>
-): Record<string, MatchTargetFact> => {
-  const record: Record<string, MatchTargetFact> = {};
-  for (const [id, fact] of map) {
-    record[id] = {
-      id: fact.id,
-      accountId: fact.accountId,
-      type: fact.type,
-      date: fact.date,
-      amount: fact.amount,
-      description: fact.description,
-      rawDescription: fact.rawDescription,
-      externalId: fact.externalId,
-      deleted: fact.deleted,
-    };
-  }
-  return record;
-};
-
-export const matchTargetFactsToTransactions = (
-  facts: Record<string, MatchTargetFact>
-): ImportMatchTargetTransaction[] => Object.values(facts);
 
 export const refundTargetFactsRecordFromMap = (
   map: ReadonlyMap<string, ExistingRefundTargetExpense>
@@ -151,7 +120,7 @@ export const toImportDraftRow = (
   invalidReason: evaluation.invalidReason,
 });
 
-export const loadDraftRefundContext = async (
+export const loadDraftEvaluationContext = async (
   orgId: string,
   targetAccountId: string,
   rows: readonly ImportDraftRowRecord[],
@@ -227,7 +196,7 @@ export const buildImportDraftView = async (
   }
 
   const { evaluations, refundTargetFacts, matchTargetFacts } =
-    await loadDraftRefundContext(orgId, summary.accountId, rows);
+    await loadDraftEvaluationContext(orgId, summary.accountId, rows);
   const apiRows = rows.map((row) =>
     toImportDraftRow(row, evaluations.get(row.id)!)
   );

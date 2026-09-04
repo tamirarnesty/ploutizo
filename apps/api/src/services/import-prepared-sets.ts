@@ -30,7 +30,7 @@ import {
 import { fetchDraftSummaryById, listDraftRows } from '@/lib/queries/imports';
 import { listOrgMembers } from '@/lib/queries/households';
 import { allTransactionsInOrg } from '@/lib/queries/scope';
-import { loadDraftRefundContext } from '@/services/import-draft-view';
+import { loadDraftEvaluationContext } from '@/services/import-draft-view';
 
 export const buildReviewedValuesSnapshot = (
   row: ImportDraftRowRecord
@@ -93,7 +93,7 @@ const evaluateSelectedRowsForContinue = async (
   tx: Transaction
 ): Promise<ImportContinueNotReadyRow[]> => {
   const [{ evaluations }, members] = await Promise.all([
-    loadDraftRefundContext(orgId, targetAccountId, draftRows, {
+    loadDraftEvaluationContext(orgId, targetAccountId, draftRows, {
       client: tx,
       includePriorRefunds: true,
     }),

@@ -783,6 +783,38 @@ describe('continueImportDraft', () => {
     expect(insertImportPreparedSet).not.toHaveBeenCalled();
   });
 
+  it('creates a prepared set when a selected row has a saved accepted match', async () => {
+    vi.mocked(listDraftRows).mockResolvedValue([
+      { ...draftRow, reviewMatchedTransactionId: TXN } as never,
+    ]);
+    vi.mocked(listImportMatchTargets).mockResolvedValue(
+      new Map([
+        [
+          TXN,
+          {
+            id: TXN,
+            accountId: ACCOUNT,
+            type: 'expense',
+            date: '2026-05-02',
+            amount: 4218,
+            description: 'Neighborhood Coffee',
+            rawDescription: 'COFFEE SHOP #42',
+            externalId: 'visa-1001',
+            deleted: false,
+          },
+        ],
+      ])
+    );
+
+    const result = await continueImportDraft(ORG, BATCH);
+
+    expect(insertImportPreparedSet).toHaveBeenCalled();
+    expect(result).toMatchObject({
+      revision: 1,
+      outcomes: [{ outcome: 'unprocessed', batchRowId: ROW }],
+    });
+  });
+
   it('snapshots the evaluated draft rows without re-reading for preparation', async () => {
     const evaluatedRow = { ...draftRow };
     const staleRow = { ...draftRow, reviewCategoryId: null };

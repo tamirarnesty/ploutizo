@@ -1,13 +1,14 @@
-import { evaluateImportDraft } from '@ploutizo/utils';
+import {
+  evaluateImportDraft,
+  matchTargetFactsToTransactions,
+} from '@ploutizo/utils';
 import type {
   ExistingRefundTargetExpense,
   ImportDraftRowEvaluation,
-  ImportMatchTargetTransaction,
 } from '@ploutizo/utils';
 import type {
   ImportDraft,
   ImportDraftRow,
-  MatchTargetFact,
   RefundTargetFact,
 } from '@ploutizo/types';
 import { queryClient } from '@/lib/queryClient';
@@ -23,10 +24,6 @@ export const refundTargetFactsToExpenseMap = (
   }
   return map;
 };
-
-export const matchTargetFactsToTransactions = (
-  facts: Record<string, MatchTargetFact>
-): ImportMatchTargetTransaction[] => Object.values(facts);
 
 /** Shared evaluator over working-copy rows + session facts. */
 export const evaluateImportDraftWorkingCopy = (

@@ -58,6 +58,9 @@ export const resolveImportRowOriginalDescription = (
   return trimmed ? trimmed : null;
 };
 
+export const formatExactImportMatchCopy = (explanation: string): string =>
+  `${explanation} Leave unselected to skip, or select to record as matched.`;
+
 const formatNeedsReviewTooltip = (
   blockers: ImportRowReviewBlocker[]
 ): string => {
@@ -96,8 +99,11 @@ export const getImportRowStatusTooltip = (
       if (match?.acceptedMatch) {
         return 'Accepted as a match; this row will not create a new transaction.';
       }
+      if (match?.matchNeedsReview) {
+        return formatNeedsReviewTooltip(['match']);
+      }
       if (match?.exactCandidate) {
-        return `${match.exactCandidate.explanation} Leave unselected to skip, or select to record as matched.`;
+        return formatExactImportMatchCopy(match.exactCandidate.explanation);
       }
       return 'Ready to import';
     case 'needs_review':
@@ -109,6 +115,15 @@ export const getImportRowStatusTooltip = (
     default:
       return row.status;
   }
+};
+
+export const getImportRowStatusIconKind = (
+  row: ImportDraftRow,
+  match?: ImportMatchEvaluation | null
+): ImportDraftRow['status'] => {
+  if (row.status === 'invalid') return 'invalid';
+  if (match?.matchNeedsReview) return 'needs_review';
+  return row.status;
 };
 
 export const shouldDefaultExpandImportRow = (row: ImportDraftRow): boolean => {
