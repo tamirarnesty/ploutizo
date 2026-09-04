@@ -3,6 +3,7 @@ import { Field, FieldLabel } from '@ploutizo/ui/components/field';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -37,6 +38,10 @@ export const ContributionFields = ({
             Destination
           </FieldLabel>
           <Select
+            items={investmentAccounts.map((account) => ({
+              label: account.name,
+              value: account.id,
+            }))}
             value={field.state.value}
             onValueChange={(v) => {
               if (v !== null) field.handleChange(v);
@@ -44,15 +49,19 @@ export const ContributionFields = ({
           >
             <SelectTrigger id="tx-contribution-counterpartAccountId">
               <SelectValue>
-                {accountMap.get(field.state.value)?.name ?? 'Select account'}
+                {(selected: string) =>
+                  accountMap.get(selected)?.name ?? 'Select account'
+                }
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {investmentAccounts.map((a) => (
-                <SelectItem key={a.id} value={a.id}>
-                  {a.name}
-                </SelectItem>
-              ))}
+              <SelectGroup>
+                {investmentAccounts.map((account) => (
+                  <SelectItem key={account.id} value={account.id}>
+                    {account.name}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
             </SelectContent>
           </Select>
         </Field>
