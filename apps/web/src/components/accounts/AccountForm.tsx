@@ -24,10 +24,6 @@ import {
 } from '@ploutizo/ui/components/select';
 import { Spinner } from '@ploutizo/ui/components/spinner';
 import {
-  ToggleGroup,
-  ToggleGroupItem,
-} from '@ploutizo/ui/components/toggle-group';
-import {
   Field,
   FieldError,
   FieldGroup,
@@ -36,6 +32,7 @@ import {
 import { Text } from '@ploutizo/ui/components/text';
 import {
   AccountFormSchema,
+  accountFormFieldsSchema,
   accountInstitutionViolation,
 } from '@ploutizo/validators';
 import { useAppForm } from '@ploutizo/ui/components/form';
@@ -49,7 +46,7 @@ import type {
   FinancialInstitutionId,
   OrgMember,
 } from '@ploutizo/types';
-import type { AccountForm as AccountFormType } from '@ploutizo/validators';
+import type { AccountFormValues } from '@ploutizo/validators';
 import {
   useCreateAccount,
   useGetAccountMembers,
@@ -135,36 +132,28 @@ const AccountFormInner = ({
       type: account?.type ?? 'chequing',
       institutionId: account?.institutionId ?? null,
       lastFour: account?.lastFour ?? '',
-      // personal = 1 owner (just me), shared = 2+ owners
-      ownership:
-        loadedMemberIds.length > 1
-          ? ('shared' as const)
-          : ('personal' as const),
+      statementDueDay:
+        account?.statementDueDay != null ? String(account.statementDueDay) : '',
       // Edit: restore saved members. Create: pre-select current user.
       memberIds: isEditing
         ? loadedMemberIds
         : currentMemberId
           ? [currentMemberId]
           : [],
-    } as AccountFormType,
+    } as AccountFormValues,
     validators: {
-      onSubmit: ({ value }: { value: AccountFormType }) => {
-        const result = AccountFormSchema.safeParse(value);
+      onSubmit: ({ value }: { value: AccountFormValues }) => {
+        const result = accountFormFieldsSchema.safeParse(value);
         if (!result.success) {
           return result.error.issues.map((i) => i.message).join(', ');
         }
       },
     },
-    onSubmit: ({ value }: { value: AccountFormType }) => {
-      const payload = {
-        name: value.name.trim(),
-        type: value.type,
-        institutionId: value.institutionId ?? null,
-        lastFour: value.lastFour?.trim() || undefined,
-        memberIds: value.memberIds,
-      };
+    onSubmit: ({ value }: { value: AccountFormValues }) => {
+      const result = AccountFormSchema.safeParse(value);
+      if (!result.success) return;
       const mutation = isEditing ? updateAccount : createAccount;
-      mutation.mutate(payload, {
+      mutation.mutate(result.data, {
         onSuccess: onClose,
         onError: () =>
           form.setErrorMap({
@@ -185,41 +174,10 @@ const AccountFormInner = ({
     >
       <div className="flex-1 overflow-y-auto px-6 py-4">
         <FieldGroup>
-          {/* Field 1: ownership */}
-          <Field>
-            <FieldLabel>Ownership</FieldLabel>
-            <form.AppField name="ownership">
-              {(field) => (
-                <ToggleGroup
-                  value={[field.state.value]}
-                  onValueChange={(v) => {
-                    const last = v[v.length - 1];
-                    if (!last) return;
-                    field.handleChange(last as 'personal' | 'shared');
-                    if (last === 'personal') {
-                      const memberIds = form.getFieldValue('memberIds');
-                      if (memberIds.length > 1) {
-                        form.setFieldValue('memberIds', [memberIds[0]]);
-                      }
-                    }
-                  }}
-                  variant="outline"
-                >
-                  <ToggleGroupItem value="personal" className="flex-1">
-                    Personal
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="shared" className="flex-1">
-                    Shared
-                  </ToggleGroupItem>
-                </ToggleGroup>
-              )}
-            </form.AppField>
-          </Field>
-
-          {/* Field 2: name */}
+          {/* Field 1: name */}
           <form.AppField
             name="name"
-            validators={{ onChange: AccountFormSchema.shape.name }}
+            validators={{ onChange: accountFormFieldsSchema.shape.name }}
           >
             {(field) => (
               <Field
@@ -245,7 +203,7 @@ const AccountFormInner = ({
             )}
           </form.AppField>
 
-          {/* Field 3: type */}
+          {/* Field 2: type */}
           <form.AppField name="type">
             {(field) => (
               <Field>
@@ -253,7 +211,7 @@ const AccountFormInner = ({
                 <Select
                   value={field.state.value}
                   onValueChange={(v) =>
-                    field.handleChange(v as AccountFormType['type'])
+                    field.handleChange(v as AccountFormValues['type'])
                   }
                 >
                   <SelectTrigger id="account-type">
@@ -277,9 +235,9 @@ const AccountFormInner = ({
             )}
           </form.AppField>
 
-          {/* Field 4: Financial institution catalog */}
+          {/* Field 3: Financial institution catalog */}
           <form.Subscribe
-            selector={(s: { values: AccountFormType }) => s.values.type}
+            selector={(s: { values: AccountFormValues }) => s.values.type}
           >
             {(type) => {
               const required = accountRequiresFinancialInstitution(type);
@@ -290,7 +248,7 @@ const AccountFormInner = ({
                     onSubmit: ({ value, fieldApi }) => {
                       const message = accountInstitutionViolation(
                         fieldApi.form.getFieldValue('type'),
-                        value
+                        value as string | null | undefined
                       );
                       return message ? { message } : undefined;
                     },
@@ -303,9 +261,7 @@ const AccountFormInner = ({
                       }
                     >
                       <FieldLabel htmlFor="account-institution">
-                        {required
-                          ? 'Financial institution'
-                          : 'Financial institution (optional)'}
+                        Financial institution
                       </FieldLabel>
                       <Select
                         value={
@@ -359,54 +315,116 @@ const AccountFormInner = ({
             }}
           </form.Subscribe>
 
-          {/* Field 5: lastFour */}
-          <form.AppField name="lastFour">
-            {(field) => (
-              <Field>
-                <FieldLabel htmlFor="account-last-four">
-                  Last 4 digits (optional)
-                </FieldLabel>
-                <Input
-                  id="account-last-four"
-                  name="account-last-four"
-                  autoComplete="off"
-                  value={field.state.value ?? ''}
-                  onChange={(e) =>
-                    field.handleChange(
-                      e.target.value.replace(/\D/g, '').slice(0, 4)
-                    )
+          {/* Field 4: lastFour; credit cards split with statement due day */}
+          <form.Subscribe
+            selector={(s: { values: AccountFormValues }) => s.values.type}
+          >
+            {(type) => {
+              const isCreditCard = type === 'credit_card';
+              return (
+                <div
+                  data-testid="account-last-four-row"
+                  className={
+                    isCreditCard
+                      ? 'grid grid-cols-2 gap-4 *:min-w-0'
+                      : undefined
                   }
-                  onBlur={field.handleBlur}
-                  placeholder="1234"
-                  maxLength={4}
-                  className="font-mono"
+                >
+                  <form.AppField name="lastFour">
+                    {(field) => (
+                      <Field>
+                        <FieldLabel htmlFor="account-last-four">
+                          Last 4 digits
+                        </FieldLabel>
+                        <Input
+                          id="account-last-four"
+                          name="account-last-four"
+                          autoComplete="off"
+                          value={field.state.value ?? ''}
+                          onChange={(e) =>
+                            field.handleChange(
+                              e.target.value.replace(/\D/g, '').slice(0, 4)
+                            )
+                          }
+                          onBlur={field.handleBlur}
+                          placeholder="1234"
+                          maxLength={4}
+                          className="font-mono"
+                        />
+                      </Field>
+                    )}
+                  </form.AppField>
+                  {isCreditCard ? (
+                    <form.AppField name="statementDueDay">
+                      {(field) => (
+                        <Field
+                          data-testid="account-statement-due-day-wrap"
+                          data-invalid={
+                            field.state.meta.errors.length > 0 || undefined
+                          }
+                        >
+                          <FieldLabel htmlFor="account-statement-due-day">
+                            Statement due day
+                          </FieldLabel>
+                          <Input
+                            id="account-statement-due-day"
+                            name="account-statement-due-day"
+                            autoComplete="off"
+                            inputMode="numeric"
+                            value={field.state.value ?? ''}
+                            onChange={(e) =>
+                              field.handleChange(
+                                e.target.value.replace(/\D/g, '').slice(0, 2)
+                              )
+                            }
+                            onBlur={field.handleBlur}
+                            placeholder="15"
+                            maxLength={2}
+                            className="font-mono"
+                            aria-invalid={field.state.meta.errors.length > 0}
+                          />
+                          {field.state.meta.errors.length > 0 ? (
+                            <FieldError
+                              errors={
+                                field.state.meta.errors as unknown as {
+                                  message?: string;
+                                }[]
+                              }
+                            />
+                          ) : null}
+                        </Field>
+                      )}
+                    </form.AppField>
+                  ) : null}
+                </div>
+              );
+            }}
+          </form.Subscribe>
+
+          {/* Field 5: owners — always multi-select */}
+          <form.AppField
+            name="memberIds"
+            validators={{ onSubmit: accountFormFieldsSchema.shape.memberIds }}
+          >
+            {(field) => (
+              <Field
+                data-invalid={field.state.meta.errors.length > 0 || undefined}
+              >
+                <FieldLabel>Owners</FieldLabel>
+                <MemberToggleGroup
+                  members={orgMembers}
+                  value={field.state.value}
+                  onChange={(ids) => field.handleChange(ids)}
+                  ariaLabel="Owners"
                 />
+                {field.state.meta.errors.length > 0 ? (
+                  <FieldError
+                    errors={field.state.meta.errors as { message?: string }[]}
+                  />
+                ) : null}
               </Field>
             )}
           </form.AppField>
-
-          {/* Field 6: owner/co-owner selection — personal = single-select, shared = multi-select */}
-          <form.Subscribe
-            selector={(s: { values: AccountFormType }) => s.values.ownership}
-          >
-            {(ownership) => (
-              <form.AppField name="memberIds">
-                {(field) => (
-                  <Field>
-                    <FieldLabel>
-                      {ownership === 'shared' ? 'Co-owners' : 'Owner'}
-                    </FieldLabel>
-                    <MemberToggleGroup
-                      members={orgMembers}
-                      value={field.state.value}
-                      onChange={(ids) => field.handleChange(ids)}
-                      multiple={ownership === 'shared'}
-                    />
-                  </Field>
-                )}
-              </form.AppField>
-            )}
-          </form.Subscribe>
 
           {/* Form-level mutation error */}
           <form.Subscribe

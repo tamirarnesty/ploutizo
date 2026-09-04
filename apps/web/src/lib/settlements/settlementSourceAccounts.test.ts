@@ -16,6 +16,7 @@ const account = (
     archivedAt: null,
     institutionId: null,
     lastFour: null,
+    statementDueDay: null,
     ...overrides,
   }) as Account;
 

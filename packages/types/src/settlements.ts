@@ -19,16 +19,19 @@ export interface SettlementMemberRow {
 }
 
 /**
- * Account projection in GET settlements — `Pick<Account, …>` plus `statementDueDay`
- * from the accounts table (not exposed on full `Account` list DTO).
+ * Account projection in GET settlements.
  * `owners` mirrors `account_members` (same source as GET /accounts).
  */
 export type SettlementAccountRowAccount = Pick<
   Account,
-  'id' | 'name' | 'type' | 'institutionId' | 'lastFour' | 'owners'
-> & {
-  statementDueDay: number | null;
-};
+  | 'id'
+  | 'name'
+  | 'type'
+  | 'institutionId'
+  | 'lastFour'
+  | 'statementDueDay'
+  | 'owners'
+>;
 
 export interface SettlementAccountRow {
   account: SettlementAccountRowAccount;

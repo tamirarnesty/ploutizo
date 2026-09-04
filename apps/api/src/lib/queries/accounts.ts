@@ -113,10 +113,12 @@ export const listAccountMembers = async (orgId: string, accountId: string) => {
 // Guard: inArray([]) generates invalid SQL in some Drizzle/PG versions (Pitfall 4).
 export const listAccountMemberDetails = async (
   orgId: string,
-  accountIds: string[]
+  accountIds: string[],
+  tx?: Transaction
 ) => {
   if (accountIds.length === 0) return [];
-  return db
+  const ex = tx ?? db;
+  return ex
     .select({
       accountId: accountMembers.accountId,
       memberId: orgMembers.id,

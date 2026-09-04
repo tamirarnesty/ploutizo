@@ -9,10 +9,15 @@ import {
   createAccountSchema,
   createTransactionSchema,
   mergeAccountInstitutionViolation,
+  mergeAccountStatementDueDay,
+  persistAccountStatementDueDay,
+  toAccountWritePayload,
   updateAccountSchema,
   updateHouseholdSettingsSchema,
   updateTransactionSchema,
 } from './index';
+
+const OWNER_ID = '123e4567-e89b-12d3-a456-426614174000';
 
 describe('createAccountSchema', () => {
   it('accepts valid account payload', () => {
@@ -20,6 +25,7 @@ describe('createAccountSchema', () => {
       name: 'Chequing',
       type: 'chequing',
       institutionId: 'td',
+      memberIds: [OWNER_ID],
     });
     expect(result.success).toBe(true);
   });
@@ -56,6 +62,7 @@ describe('createAccountSchema', () => {
         name: 'Test',
         type,
         institutionId: 'td',
+        memberIds: [OWNER_ID],
       });
       expect(result.success).toBe(true);
     }
@@ -63,7 +70,11 @@ describe('createAccountSchema', () => {
 
   it('requires a Financial institution for bank-backed and investment types', () => {
     for (const type of ['credit_card', 'chequing', 'savings', 'investment']) {
-      const result = createAccountSchema.safeParse({ name: 'Test', type });
+      const result = createAccountSchema.safeParse({
+        name: 'Test',
+        type,
+        memberIds: [OWNER_ID],
+      });
       expect(result.success).toBe(false);
       if (!result.success) {
         expect(
@@ -79,7 +90,11 @@ describe('createAccountSchema', () => {
 
   it('allows cash accounts without a Financial institution', () => {
     for (const type of ['prepaid_cash', 'e_transfer']) {
-      const result = createAccountSchema.safeParse({ name: 'Cash', type });
+      const result = createAccountSchema.safeParse({
+        name: 'Cash',
+        type,
+        memberIds: [OWNER_ID],
+      });
       expect(result.success).toBe(true);
     }
   });
@@ -99,9 +114,13 @@ describe('createAccountSchema', () => {
       type: 'credit_card',
       institutionId: 'td',
       lastFour: '1234',
-      memberIds: ['123e4567-e89b-12d3-a456-426614174000'],
+      statementDueDay: 15,
+      memberIds: [OWNER_ID],
     });
     expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.statementDueDay).toBe(15);
+    }
   });
 
   it('rejects lastFour longer than 4 chars', () => {
@@ -110,19 +129,75 @@ describe('createAccountSchema', () => {
       type: 'chequing',
       institutionId: 'td',
       lastFour: '12345',
+      memberIds: [OWNER_ID],
     });
     expect(result.success).toBe(false);
   });
 
-  it('defaults memberIds to empty array', () => {
-    const result = createAccountSchema.safeParse({
+  it('requires at least one owner', () => {
+    const missing = createAccountSchema.safeParse({
       name: 'Test',
       type: 'chequing',
       institutionId: 'td',
     });
+    expect(missing.success).toBe(false);
+
+    const empty = createAccountSchema.safeParse({
+      name: 'Test',
+      type: 'chequing',
+      institutionId: 'td',
+      memberIds: [],
+    });
+    expect(empty.success).toBe(false);
+    if (!empty.success) {
+      expect(
+        empty.error.issues.some(
+          (i) => i.message === 'At least one owner is required.'
+        )
+      ).toBe(true);
+    }
+  });
+
+  it('persists statementDueDay null for non-credit-card types', () => {
+    const result = createAccountSchema.safeParse({
+      name: 'Chequing',
+      type: 'chequing',
+      institutionId: 'td',
+      statementDueDay: 15,
+      memberIds: [OWNER_ID],
+    });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.memberIds).toEqual([]);
+      expect(result.data.statementDueDay).toBeNull();
+    }
+  });
+
+  it('accepts statementDueDay 29–31 on credit cards', () => {
+    for (const day of [29, 30, 31]) {
+      const result = createAccountSchema.safeParse({
+        name: 'Visa',
+        type: 'credit_card',
+        institutionId: 'td',
+        statementDueDay: day,
+        memberIds: [OWNER_ID],
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.statementDueDay).toBe(day);
+      }
+    }
+  });
+
+  it('rejects statementDueDay outside 1–31', () => {
+    for (const day of [0, 32]) {
+      const result = createAccountSchema.safeParse({
+        name: 'Visa',
+        type: 'credit_card',
+        institutionId: 'td',
+        statementDueDay: day,
+        memberIds: [OWNER_ID],
+      });
+      expect(result.success).toBe(false);
     }
   });
 });
@@ -203,6 +278,33 @@ describe('updateAccountSchema', () => {
     const result = updateAccountSchema.safeParse({ type: 'bad_type' });
     expect(result.success).toBe(false);
   });
+
+  it('may omit memberIds but rejects an empty owner list', () => {
+    expect(updateAccountSchema.safeParse({ name: 'Renamed' }).success).toBe(
+      true
+    );
+    const empty = updateAccountSchema.safeParse({ memberIds: [] });
+    expect(empty.success).toBe(false);
+    if (!empty.success) {
+      expect(
+        empty.error.issues.some(
+          (i) => i.message === 'At least one owner is required.'
+        )
+      ).toBe(true);
+    }
+  });
+
+  it('accepts statementDueDay null or 1–31', () => {
+    expect(
+      updateAccountSchema.safeParse({ statementDueDay: null }).success
+    ).toBe(true);
+    expect(updateAccountSchema.safeParse({ statementDueDay: 31 }).success).toBe(
+      true
+    );
+    expect(updateAccountSchema.safeParse({ statementDueDay: 32 }).success).toBe(
+      false
+    );
+  });
 });
 
 describe('updateHouseholdSettingsSchema', () => {
@@ -253,8 +355,7 @@ describe('AccountFormSchema', () => {
       name: 'TD Chequing',
       type: 'chequing',
       institutionId: 'td',
-      ownership: 'personal',
-      memberIds: [],
+      memberIds: [OWNER_ID],
     });
     expect(result.success).toBe(true);
   });
@@ -263,8 +364,7 @@ describe('AccountFormSchema', () => {
     const result = AccountFormSchema.safeParse({
       name: '',
       type: 'chequing',
-      ownership: 'personal',
-      memberIds: [],
+      memberIds: [OWNER_ID],
     });
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -279,8 +379,7 @@ describe('AccountFormSchema', () => {
     const result = AccountFormSchema.safeParse({
       name: 'x',
       type: 'invalid_type',
-      ownership: 'personal',
-      memberIds: [],
+      memberIds: [OWNER_ID],
     });
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -295,7 +394,6 @@ describe('AccountFormSchema', () => {
     const result = AccountFormSchema.safeParse({
       name: 'x',
       type: 'chequing',
-      ownership: 'shared',
       memberIds: ['not-a-uuid'],
     });
     expect(result.success).toBe(false);
@@ -305,6 +403,92 @@ describe('AccountFormSchema', () => {
       );
       expect(memberErrors.length).toBeGreaterThan(0);
     }
+  });
+
+  it('rejects an empty owner list', () => {
+    const result = AccountFormSchema.safeParse({
+      name: 'Visa',
+      type: 'credit_card',
+      institutionId: 'td',
+      memberIds: [],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('nulls statement due day in the write payload for non-credit-card types', () => {
+    const result = AccountFormSchema.safeParse({
+      name: 'Chequing',
+      type: 'chequing',
+      institutionId: 'td',
+      statementDueDay: '15',
+      memberIds: [OWNER_ID],
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.statementDueDay).toBeNull();
+    }
+  });
+});
+
+describe('toAccountWritePayload', () => {
+  it('trims name, normalizes lastFour, and persists statement due day rules', () => {
+    expect(
+      toAccountWritePayload({
+        name: '  Visa  ',
+        type: 'credit_card',
+        institutionId: 'td',
+        lastFour: ' 4242 ',
+        statementDueDay: '15',
+        memberIds: ['123e4567-e89b-12d3-a456-426614174000'],
+      })
+    ).toEqual({
+      name: 'Visa',
+      type: 'credit_card',
+      institutionId: 'td',
+      lastFour: '4242',
+      statementDueDay: 15,
+      memberIds: ['123e4567-e89b-12d3-a456-426614174000'],
+    });
+  });
+});
+
+describe('persistAccountStatementDueDay', () => {
+  it('keeps the day on credit cards and nulls it for every other type', () => {
+    expect(persistAccountStatementDueDay('credit_card', 15)).toBe(15);
+    expect(persistAccountStatementDueDay('credit_card', null)).toBeNull();
+    expect(persistAccountStatementDueDay('chequing', 15)).toBeNull();
+  });
+});
+
+describe('mergeAccountStatementDueDay', () => {
+  it('always persists null when the saved type is not a credit card', () => {
+    expect(
+      mergeAccountStatementDueDay(
+        { type: 'credit_card', statementDueDay: 15 },
+        { type: 'chequing' }
+      )
+    ).toBeNull();
+    expect(
+      mergeAccountStatementDueDay(
+        { type: 'chequing', statementDueDay: null },
+        { statementDueDay: 15 }
+      )
+    ).toBeNull();
+  });
+
+  it('applies an explicit day on credit cards and leaves omitted days unchanged', () => {
+    expect(
+      mergeAccountStatementDueDay(
+        { type: 'credit_card', statementDueDay: 15 },
+        { statementDueDay: 28 }
+      )
+    ).toBe(28);
+    expect(
+      mergeAccountStatementDueDay(
+        { type: 'credit_card', statementDueDay: 15 },
+        {}
+      )
+    ).toBeUndefined();
   });
 });
 
