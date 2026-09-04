@@ -1,20 +1,30 @@
 # Provisions an isolated Neon database branch for each Railway PR preview environment.
 #
 # Non-draft open / ready-for-review always get a production snapshot. Later pushes
-# reset from production only when the PR still touches API or DB schema paths.
-# Drafts are skipped; use workflow_dispatch to provision one manually.
+# that change API or DB schema paths reset from current production, then migrate.
+# GitHub evaluates those paths against the push itself, so web-only commits do not
+# run this workflow. Drafts are skipped; use workflow_dispatch to provision one
+# manually.
 #
 # Notes:
 #   Focused PR environments may skip the API when watch paths are unchanged. This
 #   workflow still sets DATABASE_URL and runs `railway redeploy --from-source` to
 #   deploy the API against the preview Neon branch.
-#   Path detection uses the GitHub API so this workflow never checks out
-#   PR-controlled files while holding account-scoped Railway credentials.
+#   Detect never checks out PR-controlled files while holding Railway credentials.
 name: PR Preview Database
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize, ready_for_review, closed]
+    types: [opened, reopened, ready_for_review, closed]
+  push:
+    branches-ignore:
+      - main
+    tags-ignore:
+      - '**'
+    paths:
+      - 'apps/api/**'
+      - 'packages/db/**'
+      - 'drizzle.config.ts'
   workflow_dispatch:
     inputs:
       pr_number:
@@ -23,7 +33,7 @@ on:
         type: number
 
 concurrency:
-  group: pr-preview-database-${{ github.event.pull_request.number || inputs.pr_number }}
+  group: pr-preview-database-${{ github.event.pull_request.head.ref || (github.event_name == 'workflow_dispatch' && format('pr-{0}', inputs.pr_number)) || github.ref_name }}
   cancel-in-progress: false
 
 permissions:
@@ -36,7 +46,10 @@ env:
 jobs:
   detect:
     name: Detect whether to provision
-    if: github.event_name == 'workflow_dispatch' || (github.event.action != 'closed' && github.event.pull_request.draft == false)
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
     outputs:
       should_provision: ${{ steps.decide.outputs.should_provision }}
@@ -47,42 +60,49 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           EVENT_NAME: ${{ github.event_name }}
-          PR_ACTION: ${{ github.event.action }}
           PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          REPO: ${{ github.repository }}
+          REPO_OWNER: ${{ github.repository_owner }}
         run: |
           set -euo pipefail
-          if [[ -z "$PR_NUMBER" ]]; then
-            echo "PR number is required" >&2
-            exit 1
-          fi
-          echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
 
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
-            state=$(gh api "repos/${{ github.repository }}/pulls/${PR_NUMBER}" --jq '.state')
+            if [[ -z "$PR_NUMBER" ]]; then
+              echo "PR number is required" >&2
+              exit 1
+            fi
+            state=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}" --jq '.state')
             if [[ "$state" != "open" ]]; then
               echo "PR ${PR_NUMBER} is ${state}; skipping preview database provision" >&2
               exit 1
             fi
             echo "Manual dispatch for PR ${PR_NUMBER}"
+            echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
             echo "should_provision=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          if [[ "$PR_ACTION" != "synchronize" ]]; then
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
             echo "should_provision=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          files=$(gh api --paginate \
-            "repos/${{ github.repository }}/pulls/${PR_NUMBER}/files" \
-            --jq '.[].filename')
-          if printf '%s\n' "$files" | grep -qE '^(apps/api/|packages/db/|drizzle\.config\.ts$)'; then
-            echo "PR touches API or DB schema paths"
-            echo "should_provision=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "No API or DB schema paths in this PR; skipping preview database reset"
+          pr=$(gh pr list --repo "$REPO" --head "${REPO_OWNER}:${HEAD_BRANCH}" --state open \
+            --json number,isDraft --jq '.[0] // empty')
+          if [[ -z "$pr" ]]; then
+            echo "No open PR for ${HEAD_BRANCH}; skipping"
             echo "should_provision=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          if [[ "$(jq -r '.isDraft' <<<"$pr")" == "true" ]]; then
+            echo "PR $(jq -r '.number' <<<"$pr") is a draft; skipping"
+            echo "should_provision=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "pr_number=$(jq -r '.number' <<<"$pr")" >> "$GITHUB_OUTPUT"
+          echo "should_provision=true" >> "$GITHUB_OUTPUT"
 
   provision:
     name: Provision preview database
