@@ -1,94 +1,107 @@
 # Provisions an isolated Neon database branch for each Railway PR preview environment.
 #
-# Preview DBs are a fresh copy of production whenever API or DB schema changes.
-# Web-only pushes skip this job so the preview database is left alone.
-# Reused Neon branches are reset from production before migrate runs.
+# Non-draft open / ready-for-review always get a production snapshot. Later pushes
+# reset from production only when the PR still touches API or DB schema paths.
+# Drafts are skipped; use workflow_dispatch to provision one manually.
 #
 # Notes:
 #   Focused PR environments may skip the API when watch paths are unchanged. This
 #   workflow still sets DATABASE_URL and runs `railway redeploy --from-source` to
 #   deploy the API against the preview Neon branch.
-#   Path detection uses the GitHub compare API so this workflow never checks out
+#   Path detection uses the GitHub API so this workflow never checks out
 #   PR-controlled files while holding account-scoped Railway credentials.
 name: PR Preview Database
 
 on:
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review, closed]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number to provision a preview database for
+        required: true
+        type: number
 
 concurrency:
-  group: pr-preview-database-${{ github.event.pull_request.number }}
+  group: pr-preview-database-${{ github.event.pull_request.number || inputs.pr_number }}
   cancel-in-progress: false
 
 permissions:
   contents: read
-  actions: read
+  pull-requests: read
 
 env:
-  NEON_BRANCH_NAME: preview/pr-${{ github.event.pull_request.number }}
-  RAILWAY_ENVIRONMENT_NAME: ${{ vars.RAILWAY_PR_ENV_PREFIX != '' && vars.RAILWAY_PR_ENV_PREFIX || 'ploutizo-pr' }}-${{ github.event.pull_request.number }}
   NEON_PARENT_BRANCH: ${{ vars.NEON_PARENT_BRANCH != '' && vars.NEON_PARENT_BRANCH || 'production' }}
 
 jobs:
-  provision_preview_database:
-    name: Provision preview database
-    if: github.event.pull_request.draft == false && github.event.action != 'closed'
+  detect:
+    name: Detect whether to provision
+    if: github.event_name == 'workflow_dispatch' || (github.event.action != 'closed' && github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
+    outputs:
+      should_provision: ${{ steps.decide.outputs.should_provision }}
+      pr_number: ${{ steps.decide.outputs.pr_number }}
     steps:
-      - name: Detect API or DB schema changes
-        id: preview
+      - name: Decide whether to provision
+        id: decide
         env:
           GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
           PR_ACTION: ${{ github.event.action }}
-          BEFORE_SHA: ${{ github.event.before }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          HEAD_BRANCH: ${{ github.head_ref }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
         run: |
           set -euo pipefail
+          if [[ -z "$PR_NUMBER" ]]; then
+            echo "PR number is required" >&2
+            exit 1
+          fi
+          echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            state=$(gh api "repos/${{ github.repository }}/pulls/${PR_NUMBER}" --jq '.state')
+            if [[ "$state" != "open" ]]; then
+              echo "PR ${PR_NUMBER} is ${state}; skipping preview database provision" >&2
+              exit 1
+            fi
+            echo "Manual dispatch for PR ${PR_NUMBER}"
+            echo "should_provision=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           if [[ "$PR_ACTION" != "synchronize" ]]; then
-            echo "should_reset=true" >> "$GITHUB_OUTPUT"
+            echo "should_provision=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          before="$BEFORE_SHA"
-          if [[ -z "$before" || "$before" == "0000000000000000000000000000000000000000" ]]; then
-            before=$(
-              gh api "repos/${{ github.repository }}/actions/workflows/pr-preview-database.yml/runs?event=pull_request&per_page=20" \
-                | jq -r --arg sha "$HEAD_SHA" --arg branch "$HEAD_BRANCH" \
-                  '[.workflow_runs[] | select(.head_branch == $branch and .head_sha != $sha)] | first | .head_sha // empty'
-            ) || before=""
-          fi
-          if [[ -z "$before" ]]; then
-            before="$BASE_SHA"
-          fi
-
-          if ! files=$(gh api "repos/${{ github.repository }}/compare/${before}...${HEAD_SHA}" \
-            --jq 'if .truncated == true then "truncated" else (.files[]?.filename // empty) end'); then
-            echo "Could not compare ${before}...${HEAD_SHA}; resetting preview database from production"
-            echo "should_reset=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          if [[ "$files" == "truncated" ]] || printf '%s\n' "$files" | grep -qE '^(apps/api/|packages/db/|drizzle\.config\.ts$)'; then
-            echo "API or DB schema paths changed; resetting preview database from production"
-            echo "should_reset=true" >> "$GITHUB_OUTPUT"
+          files=$(gh api --paginate \
+            "repos/${{ github.repository }}/pulls/${PR_NUMBER}/files" \
+            --jq '.[].filename')
+          if printf '%s\n' "$files" | grep -qE '^(apps/api/|packages/db/|drizzle\.config\.ts$)'; then
+            echo "PR touches API or DB schema paths"
+            echo "should_provision=true" >> "$GITHUB_OUTPUT"
           else
-            echo "No API or DB schema changes in this push; skipping preview database reset"
-            echo "should_reset=false" >> "$GITHUB_OUTPUT"
+            echo "No API or DB schema paths in this PR; skipping preview database reset"
+            echo "should_provision=false" >> "$GITHUB_OUTPUT"
           fi
 
+  provision:
+    name: Provision preview database
+    needs: detect
+    if: needs.detect.outputs.should_provision == 'true'
+    runs-on: ubuntu-latest
+    env:
+      NEON_BRANCH_NAME: preview/pr-${{ needs.detect.outputs.pr_number }}
+      RAILWAY_ENVIRONMENT_NAME: ${{ vars.RAILWAY_PR_ENV_PREFIX != '' && vars.RAILWAY_PR_ENV_PREFIX || 'ploutizo-pr' }}-${{ needs.detect.outputs.pr_number }}
+    steps:
       - name: Install Railway CLI
-        if: steps.preview.outputs.should_reset == 'true'
         run: npm install -g @railway/cli@5.30.1
 
       - name: Compute Neon branch expiration
-        if: steps.preview.outputs.should_reset == 'true'
         id: expiration
         run: |
           echo "expires_at=$(date -u --date '+14 days' +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
 
       - name: Create Neon branch from production
-        if: steps.preview.outputs.should_reset == 'true'
         id: neon
         uses: neondatabase/create-branch-action@fb620d43d4c565abaf088b848a4e28e5c4ea4d9c # v6
         with:
@@ -100,7 +113,7 @@ jobs:
           expires_at: ${{ steps.expiration.outputs.expires_at }}
 
       - name: Reset reused Neon branch from production
-        if: steps.preview.outputs.should_reset == 'true' && steps.neon.outputs.created != 'true'
+        if: steps.neon.outputs.created != 'true'
         uses: neondatabase/reset-branch-action@470ab8101095ea33737c294d17364a72fd80761b # v1
         with:
           project_id: ${{ vars.NEON_PROJECT_ID }}
@@ -109,7 +122,6 @@ jobs:
           api_key: ${{ secrets.NEON_API_KEY }}
 
       - name: Refresh Neon branch expiration
-        if: steps.preview.outputs.should_reset == 'true'
         env:
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
         run: |
@@ -122,7 +134,6 @@ jobs:
             -d "$payload"
 
       - name: Wait for Railway PR environment
-        if: steps.preview.outputs.should_reset == 'true'
         env:
           RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
         run: |
@@ -141,7 +152,6 @@ jobs:
           exit 1
 
       - name: Set DATABASE_URL on Railway API service
-        if: steps.preview.outputs.should_reset == 'true'
         env:
           RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
           DATABASE_URL: ${{ steps.neon.outputs.db_url_pooled }}
@@ -153,7 +163,6 @@ jobs:
             --skip-deploys
 
       - name: Deploy API with preview database
-        if: steps.preview.outputs.should_reset == 'true'
         env:
           RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
         run: |
@@ -171,12 +180,16 @@ jobs:
           echo "Failed to deploy API after setting DATABASE_URL" >&2
           exit 1
 
-  delete_preview_database:
+  delete:
     name: Delete preview database
-    if: github.event.action == 'closed'
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
+    env:
+      NEON_BRANCH_NAME: preview/pr-${{ github.event.pull_request.number }}
     steps:
       - name: Delete Neon branch
+        # Drafts that never provisioned have no branch; closing them should still succeed.
+        continue-on-error: true
         uses: neondatabase/delete-branch-action@4468d825d5a88ef4012f1705a82f02ec3072f776 # v3
         with:
           project_id: ${{ vars.NEON_PROJECT_ID }}
