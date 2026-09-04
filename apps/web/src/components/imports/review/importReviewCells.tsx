@@ -7,11 +7,17 @@ import { Input } from '@ploutizo/ui/components/input';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@ploutizo/ui/components/select';
 import { Text } from '@ploutizo/ui/components/text';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@ploutizo/ui/components/tooltip';
 import { cn } from '@ploutizo/ui/lib/utils';
 import { formatTransactionTypeLabel } from '@ploutizo/utils';
 import { centsToDollars, dollarsToCents } from '@ploutizo/utils/currency';
@@ -42,6 +48,13 @@ interface ImportTransactionTypeSelectProps {
   onChange: (type: ImportTransactionType) => void;
 }
 
+const importTransactionTypeItems = IMPORT_TRANSACTION_TYPE_VALUES.map(
+  (type) => ({
+    label: formatTransactionTypeLabel(type),
+    value: type,
+  })
+);
+
 const ImportTransactionTypeSelect = ({
   id,
   value,
@@ -50,21 +63,29 @@ const ImportTransactionTypeSelect = ({
   onChange,
 }: ImportTransactionTypeSelectProps) => (
   <Select
-    value={value ?? ''}
+    items={importTransactionTypeItems}
+    value={value ?? null}
     disabled={disabled}
-    onValueChange={(next) => onChange(next as ImportTransactionType)}
+    onValueChange={(next) => {
+      if (next) onChange(next);
+    }}
   >
     <SelectTrigger id={id} className="w-36" aria-label={ariaLabel}>
       <SelectValue>
-        {value ? formatTransactionTypeLabel(value) : 'Select type'}
+        {(selected: string) =>
+          importTransactionTypeItems.find((item) => item.value === selected)
+            ?.label ?? selected
+        }
       </SelectValue>
     </SelectTrigger>
     <SelectContent>
-      {IMPORT_TRANSACTION_TYPE_VALUES.map((type) => (
-        <SelectItem key={type} value={type}>
-          {formatTransactionTypeLabel(type)}
-        </SelectItem>
-      ))}
+      <SelectGroup>
+        {importTransactionTypeItems.map((item) => (
+          <SelectItem key={item.value} value={item.value}>
+            {item.label}
+          </SelectItem>
+        ))}
+      </SelectGroup>
     </SelectContent>
   </Select>
 );
@@ -252,9 +273,21 @@ export const ImportReviewDescriptionCell = ({
         }}
       />
       {showOriginalDescription ? (
-        <Text variant="body-sm" className="mt-1 text-muted-foreground">
-          Original: {originalDescription}
-        </Text>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Text
+                variant="body-sm"
+                className="mt-1 block w-full min-w-0 cursor-default truncate leading-snug text-muted-foreground"
+              />
+            }
+          >
+            Original: {originalDescription}
+          </TooltipTrigger>
+          <TooltipContent className="max-w-sm">
+            Original: {originalDescription}
+          </TooltipContent>
+        </Tooltip>
       ) : null}
     </>
   );

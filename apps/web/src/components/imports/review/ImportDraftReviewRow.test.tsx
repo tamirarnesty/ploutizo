@@ -1,5 +1,6 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ImportDraftRow } from '@ploutizo/types';
 import type { Category } from '@/lib/data-access/categories';
@@ -75,16 +76,18 @@ const baseRow = (): ImportDraftRow => ({
 
 const renderRowFields = (row: ImportDraftRow) =>
   render(
-    <ImportDraftReviewProvider
-      draftId={row.batchId}
-      categories={[mockCategory]}
-      orgMembers={[]}
-      updateRow={updateRow}
-      failedRowIds={[]}
-    >
-      <ImportReviewDescriptionCell row={row} />
-      <ImportDraftReviewRowDetails row={row} />
-    </ImportDraftReviewProvider>
+    <TooltipProvider delay={0}>
+      <ImportDraftReviewProvider
+        draftId={row.batchId}
+        categories={[mockCategory]}
+        orgMembers={[]}
+        updateRow={updateRow}
+        failedRowIds={[]}
+      >
+        <ImportReviewDescriptionCell row={row} />
+        <ImportDraftReviewRowDetails row={row} />
+      </ImportDraftReviewProvider>
+    </TooltipProvider>
   );
 
 describe('ImportDraftReviewRow', () => {
@@ -109,6 +112,29 @@ describe('ImportDraftReviewRow', () => {
     });
     expect(updateRow).toHaveBeenCalledWith(row.id, {
       reviewNotes: 'Still editing notes',
+    });
+  });
+
+  it('truncates the original description and reveals it on hover', async () => {
+    const user = userEvent.setup();
+    const row = {
+      ...baseRow(),
+      reviewDescription: 'Amazon',
+      parsedDescription: 'AMAZON.CA*5O5BA0SV0 866-216-1072',
+      sourceDescription: 'AMAZON.CA*5O5BA0SV0 866-216-1072',
+    };
+    renderRowFields(row);
+
+    const original = screen.getByText(
+      'Original: AMAZON.CA*5O5BA0SV0 866-216-1072'
+    );
+    expect(original).toHaveClass('truncate');
+
+    await user.hover(original);
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-slot="tooltip-content"]')
+      ).toHaveTextContent('Original: AMAZON.CA*5O5BA0SV0 866-216-1072');
     });
   });
 });

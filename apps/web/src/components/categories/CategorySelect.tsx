@@ -1,6 +1,7 @@
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -27,26 +28,41 @@ export const CategorySelect = ({
   placeholder = 'Select category',
   triggerClassName,
   ariaLabel,
-}: CategorySelectProps) => (
-  <Select
-    value={value}
-    disabled={disabled}
-    onValueChange={(next) => {
-      if (next) onValueChange(next);
-    }}
-  >
-    <SelectTrigger id={id} className={triggerClassName} aria-label={ariaLabel}>
-      <SelectValue>
-        {categories.find((category) => category.id === value)?.name ??
-          placeholder}
-      </SelectValue>
-    </SelectTrigger>
-    <SelectContent>
-      {categories.map((category) => (
-        <SelectItem key={category.id} value={category.id}>
-          {category.name}
-        </SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
-);
+}: CategorySelectProps) => {
+  const items = categories.map((category) => ({
+    label: category.name,
+    value: category.id,
+  }));
+
+  return (
+    <Select
+      items={items}
+      value={value}
+      disabled={disabled}
+      onValueChange={(next) => {
+        if (next) onValueChange(next);
+      }}
+    >
+      <SelectTrigger
+        id={id}
+        className={triggerClassName}
+        aria-label={ariaLabel}
+      >
+        <SelectValue>
+          {(selected: string) =>
+            items.find((item) => item.value === selected)?.label ?? placeholder
+          }
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          {items.map((item) => (
+            <SelectItem key={item.value} value={item.value}>
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
+  );
+};
