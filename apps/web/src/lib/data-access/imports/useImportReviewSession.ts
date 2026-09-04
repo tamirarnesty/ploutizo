@@ -15,10 +15,7 @@ import {
   releaseImportDraftRowPacedMutations,
   retryFailedImportDraftRowPersists,
 } from './getImportDraftRowPacedMutations';
-import {
-  getImportDraftRowsCollection,
-  releaseImportDraftRowsCollection,
-} from './getImportDraftRowsCollection';
+import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
 import {
   persistImportDraftSelection,
   retryFailedImportDraftSelection,
@@ -68,7 +65,6 @@ export const useImportReviewSession = (
     return () => {
       releaseImportDraftRowPacedMutations(draftId);
       releaseImportReviewAutosave(draftId);
-      void releaseImportDraftRowsCollection(draftId);
     };
   }, [draftId]);
 
@@ -121,7 +117,9 @@ export const useImportReviewSession = (
     rows,
     isLoading:
       metaQuery.isPending ||
-      (metaQuery.isSuccess && liveRows.isLoading && rows.length === 0),
+      (metaQuery.isSuccess &&
+        rows.length === 0 &&
+        (liveRows.isLoading || !liveRows.isReady)),
     isError: metaQuery.isError,
     updateRow,
     setSelection,

@@ -14,6 +14,7 @@ import {
 } from './getImportDraftRowPacedMutations';
 import { resetImportDraftRowsCollectionsForTests } from './getImportDraftRowsCollection';
 import { resetImportReviewAutosaveForTests } from './importReviewAutosave';
+import { importDraftQueryKey } from './queryKeys';
 import { fetchUpdateImportDraftRow } from './fetchUpdateImportDraftRow';
 import { fetchUpdateImportDraftRowSelection } from './fetchUpdateImportDraftRowSelection';
 import { fetchImportDraft } from './useGetImportDraft';
@@ -142,7 +143,7 @@ describe('useImportReviewSession', () => {
     unmount();
   });
 
-  it('releases the session collection on unmount so remount can re-hydrate', async () => {
+  it('keeps the session collection on unmount so remount still has live rows', async () => {
     const { unmount } = await hydrateSession();
     unmount();
 
@@ -155,9 +156,50 @@ describe('useImportReviewSession', () => {
       expect(result.current.meta?.id).toBe('draft_session_1');
       expect(result.current.rows).toHaveLength(2);
     });
-    // Warm Query cache may satisfy the remount; collection is a fresh session instance.
     expect(result.current.isError).toBe(false);
     unmountAgain();
+  });
+
+  it('hydrates live rows from a warm draft cache (hub Continue / post-upload)', async () => {
+    queryClient.setQueryData(importDraftQueryKey('draft_session_1'), draft);
+
+    const { result, unmount } = renderHook(
+      () => useImportReviewSession('draft_session_1'),
+      { wrapper }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+      expect(result.current.meta?.id).toBe('draft_session_1');
+      expect(result.current.rows).toHaveLength(2);
+    });
+    expect(result.current.isError).toBe(false);
+    unmount();
+  });
+
+  it('re-hydrates rows when remount races the previous session cleanup', async () => {
+    queryClient.setQueryData(importDraftQueryKey('draft_session_1'), draft);
+
+    const first = renderHook(() => useImportReviewSession('draft_session_1'), {
+      wrapper,
+    });
+    await waitFor(() => {
+      expect(first.result.current.rows).toHaveLength(2);
+    });
+    first.unmount();
+
+    const { result, unmount } = renderHook(
+      () => useImportReviewSession('draft_session_1'),
+      { wrapper }
+    );
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+      expect(result.current.meta?.id).toBe('draft_session_1');
+      expect(result.current.rows).toHaveLength(2);
+    });
+    expect(result.current.isError).toBe(false);
+    unmount();
   });
 
   it('exposes error state when the draft GET fails', async () => {

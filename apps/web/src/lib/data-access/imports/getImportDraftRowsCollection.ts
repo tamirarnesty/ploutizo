@@ -35,12 +35,12 @@ export const getImportDraftRowsCollection = (
   return collection;
 };
 
-/** End the review-session collection so a remount re-hydrates from GET. */
+/** Drop a draft's working copy after discard (or in tests). Hub ↔ review nav keeps it warm. */
 export const releaseImportDraftRowsCollection = async (draftId: string) => {
   const collection = importDraftRowsCollections.get(draftId);
   if (!collection) return;
-  await collection.cleanup();
   importDraftRowsCollections.delete(draftId);
+  await collection.cleanup();
 };
 
 export const resetImportDraftRowsCollectionsForTests = async () => {
