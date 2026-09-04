@@ -1,32 +1,117 @@
 # Provisions an isolated Neon database branch for each Railway PR preview environment.
 #
+# Non-draft open / ready-for-review always get a production snapshot. Later pushes
+# that change API or DB schema paths reset from current production, then migrate.
+# GitHub evaluates those paths against the push itself, so web-only commits do not
+# run this workflow. Drafts are skipped; use workflow_dispatch to provision one
+# manually.
+#
 # Notes:
 #   Focused PR environments may skip the API when watch paths are unchanged. This
 #   workflow still sets DATABASE_URL and runs `railway redeploy --from-source` to
 #   deploy the API against the preview Neon branch.
+#   Detect never checks out PR-controlled files while holding Railway credentials.
 name: PR Preview Database
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize, ready_for_review, closed]
+    types: [opened, reopened, ready_for_review, closed]
+  push:
+    branches-ignore:
+      - main
+    tags-ignore:
+      - '**'
+    paths:
+      - 'apps/api/**'
+      - 'packages/db/**'
+      - 'drizzle.config.ts'
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number to provision a preview database for
+        required: true
+        type: number
 
 concurrency:
-  group: pr-preview-database-${{ github.event.pull_request.number }}
+  group: pr-preview-database-${{ github.event.pull_request.head.ref || (github.event_name == 'workflow_dispatch' && format('pr-{0}', inputs.pr_number)) || github.ref_name }}
   cancel-in-progress: false
 
 permissions:
   contents: read
+  pull-requests: read
 
 env:
-  NEON_BRANCH_NAME: preview/pr-${{ github.event.pull_request.number }}
-  RAILWAY_ENVIRONMENT_NAME: ${{ vars.RAILWAY_PR_ENV_PREFIX != '' && vars.RAILWAY_PR_ENV_PREFIX || 'ploutizo-pr' }}-${{ github.event.pull_request.number }}
   NEON_PARENT_BRANCH: ${{ vars.NEON_PARENT_BRANCH != '' && vars.NEON_PARENT_BRANCH || 'production' }}
 
 jobs:
-  provision_preview_database:
-    name: Provision preview database
-    if: github.event.pull_request.draft == false && github.event.action != 'closed'
+  detect:
+    name: Detect whether to provision
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
+    outputs:
+      should_provision: ${{ steps.decide.outputs.should_provision }}
+      pr_number: ${{ steps.decide.outputs.pr_number }}
+    steps:
+      - name: Decide whether to provision
+        id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          REPO: ${{ github.repository }}
+          REPO_OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ -z "$PR_NUMBER" ]]; then
+              echo "PR number is required" >&2
+              exit 1
+            fi
+            state=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}" --jq '.state')
+            if [[ "$state" != "open" ]]; then
+              echo "PR ${PR_NUMBER} is ${state}; skipping preview database provision" >&2
+              exit 1
+            fi
+            echo "Manual dispatch for PR ${PR_NUMBER}"
+            echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+            echo "should_provision=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+            echo "should_provision=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          pr=$(gh pr list --repo "$REPO" --head "${REPO_OWNER}:${HEAD_BRANCH}" --state open \
+            --json number,isDraft --jq '.[0] // empty')
+          if [[ -z "$pr" ]]; then
+            echo "No open PR for ${HEAD_BRANCH}; skipping"
+            echo "should_provision=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ "$(jq -r '.isDraft' <<<"$pr")" == "true" ]]; then
+            echo "PR $(jq -r '.number' <<<"$pr") is a draft; skipping"
+            echo "should_provision=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "pr_number=$(jq -r '.number' <<<"$pr")" >> "$GITHUB_OUTPUT"
+          echo "should_provision=true" >> "$GITHUB_OUTPUT"
+
+  provision:
+    name: Provision preview database
+    needs: detect
+    if: needs.detect.outputs.should_provision == 'true'
+    runs-on: ubuntu-latest
+    env:
+      NEON_BRANCH_NAME: preview/pr-${{ needs.detect.outputs.pr_number }}
+      RAILWAY_ENVIRONMENT_NAME: ${{ vars.RAILWAY_PR_ENV_PREFIX != '' && vars.RAILWAY_PR_ENV_PREFIX || 'ploutizo-pr' }}-${{ needs.detect.outputs.pr_number }}
     steps:
       - name: Install Railway CLI
         run: npm install -g @railway/cli@5.30.1
@@ -46,6 +131,15 @@ jobs:
           database: ploutizo
           api_key: ${{ secrets.NEON_API_KEY }}
           expires_at: ${{ steps.expiration.outputs.expires_at }}
+
+      - name: Reset reused Neon branch from production
+        if: steps.neon.outputs.created != 'true'
+        uses: neondatabase/reset-branch-action@470ab8101095ea33737c294d17364a72fd80761b # v1
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch: ${{ env.NEON_BRANCH_NAME }}
+          parent: true
+          api_key: ${{ secrets.NEON_API_KEY }}
 
       - name: Refresh Neon branch expiration
         env:
@@ -106,12 +200,16 @@ jobs:
           echo "Failed to deploy API after setting DATABASE_URL" >&2
           exit 1
 
-  delete_preview_database:
+  delete:
     name: Delete preview database
-    if: github.event.action == 'closed'
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
+    env:
+      NEON_BRANCH_NAME: preview/pr-${{ github.event.pull_request.number }}
     steps:
       - name: Delete Neon branch
+        # Drafts that never provisioned have no branch; closing them should still succeed.
+        continue-on-error: true
         uses: neondatabase/delete-branch-action@4468d825d5a88ef4012f1705a82f02ec3072f776 # v3
         with:
           project_id: ${{ vars.NEON_PROJECT_ID }}
