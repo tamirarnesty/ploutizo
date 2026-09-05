@@ -40,6 +40,7 @@ import { listMerchantRulesWithTags } from '@/lib/queries/merchant-rules';
 import {
   fetchAccountWriteReference,
   transactionExistsInOrg,
+  transactionExistsOnAccount,
 } from '@/lib/queries/scope';
 import { listTags } from '@/lib/queries/tags';
 
@@ -101,6 +102,7 @@ vi.mock('@/lib/assertOrgWriteReferences', () => ({
 vi.mock('@/lib/queries/scope', () => ({
   fetchAccountWriteReference: vi.fn(),
   transactionExistsInOrg: vi.fn(),
+  transactionExistsOnAccount: vi.fn(),
 }));
 
 const summaryRow = {
@@ -199,6 +201,7 @@ describe('import service', () => {
       type: 'chequing',
     });
     vi.mocked(transactionExistsInOrg).mockResolvedValue(true);
+    vi.mocked(transactionExistsOnAccount).mockResolvedValue(true);
     vi.mocked(insertImportBatch).mockResolvedValue({
       id: summaryRow.id,
     } as never);
@@ -774,6 +777,12 @@ describe('import service', () => {
       selectedForImport: true,
     });
 
+    expect(transactionExistsOnAccount).toHaveBeenCalledWith(
+      'org_1',
+      'tx-1',
+      summaryRow.accountId,
+      tx
+    );
     expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
       'org_1',
       draftRow.id,
@@ -832,6 +841,151 @@ describe('import service', () => {
     expect(result).toHaveLength(2);
     expect(result[0]?.reviewMatchedTransactionId).toBeNull();
     expect(result[1]?.reviewMatchedTransactionId).toBeNull();
+  });
+
+  it('saves a same-account match on row update', async () => {
+    const updatedRow = {
+      ...draftRow,
+      reviewMatchedTransactionId: 'tx-1',
+      updatedAt: new Date('2026-05-20T13:00:00Z'),
+    };
+    vi.mocked(fetchDraftRowById).mockResolvedValue(draftRow);
+    vi.mocked(updateImportDraftRowQuery).mockResolvedValue(updatedRow);
+
+    const result = await updateImportDraftRow('org_1', draftRow.id, {
+      reviewMatchedTransactionId: 'tx-1',
+    });
+
+    expect(transactionExistsOnAccount).toHaveBeenCalledWith(
+      'org_1',
+      'tx-1',
+      summaryRow.accountId,
+      undefined
+    );
+    expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
+      'org_1',
+      draftRow.id,
+      { reviewMatchedTransactionId: 'tx-1' }
+    );
+    expect(result.row.reviewMatchedTransactionId).toBe('tx-1');
+  });
+
+  it('rejects a cross-account or missing match on row update without persisting', async () => {
+    vi.mocked(fetchDraftRowById).mockResolvedValue(draftRow);
+    vi.mocked(transactionExistsOnAccount).mockResolvedValue(false);
+
+    const err = await updateImportDraftRow('org_1', draftRow.id, {
+      reviewMatchedTransactionId: 'tx-other',
+    }).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(NotFoundError);
+    expect((err as NotFoundError).message).toBe('Transaction not found');
+    expect(transactionExistsOnAccount).toHaveBeenCalledWith(
+      'org_1',
+      'tx-other',
+      summaryRow.accountId,
+      undefined
+    );
+    expect(updateImportDraftRowQuery).not.toHaveBeenCalled();
+  });
+
+  it('clears a saved match without an account ownership check', async () => {
+    const existing = {
+      ...draftRow,
+      reviewMatchedTransactionId: 'tx-1',
+    };
+    const updatedRow = {
+      ...existing,
+      reviewMatchedTransactionId: null,
+      updatedAt: new Date('2026-05-20T13:00:00Z'),
+    };
+    vi.mocked(fetchDraftRowById).mockResolvedValue(existing);
+    vi.mocked(updateImportDraftRowQuery).mockResolvedValue(updatedRow);
+
+    const result = await updateImportDraftRow('org_1', draftRow.id, {
+      reviewMatchedTransactionId: null,
+    });
+
+    expect(transactionExistsOnAccount).not.toHaveBeenCalled();
+    expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
+      'org_1',
+      draftRow.id,
+      { reviewMatchedTransactionId: null }
+    );
+    expect(result.row.reviewMatchedTransactionId).toBeNull();
+  });
+
+  it('does not re-check an existing match when other fields are patched', async () => {
+    const existing = {
+      ...draftRow,
+      reviewMatchedTransactionId: 'tx-1',
+    };
+    const updatedRow = {
+      ...existing,
+      reviewNotes: 'memo',
+      updatedAt: new Date('2026-05-20T13:00:00Z'),
+    };
+    vi.mocked(fetchDraftRowById).mockResolvedValue(existing);
+    vi.mocked(updateImportDraftRowQuery).mockResolvedValue(updatedRow);
+
+    await updateImportDraftRow('org_1', draftRow.id, {
+      reviewNotes: 'memo',
+    });
+
+    expect(transactionExistsOnAccount).not.toHaveBeenCalled();
+    expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
+      'org_1',
+      draftRow.id,
+      { reviewNotes: 'memo' }
+    );
+  });
+
+  it('rejects a cross-account auto-accept during bulk selection without persisting the match', async () => {
+    const matchedRow = {
+      ...draftRow,
+      selectedForImport: true,
+    };
+    vi.mocked(fetchDraftSummaryById).mockResolvedValue(summaryRow);
+    vi.mocked(listDraftRowIdsForDraft).mockResolvedValue([{ id: draftRow.id }]);
+    vi.mocked(updateImportDraftRowSelectionQuery).mockResolvedValue([
+      matchedRow,
+    ]);
+    vi.mocked(listDraftRows).mockResolvedValue([matchedRow]);
+    vi.mocked(listImportMatchTargets).mockResolvedValue(
+      new Map([
+        [
+          'tx-1',
+          {
+            id: 'tx-1',
+            accountId: summaryRow.accountId,
+            type: 'expense' as const,
+            date: '2026-05-02',
+            amount: 4218,
+            description: 'Coffee',
+            rawDescription: 'Coffee',
+            externalId: 'visa-1001',
+            deleted: false,
+          },
+        ],
+      ])
+    );
+    vi.mocked(transactionExistsOnAccount).mockResolvedValue(false);
+    const tx = {} as never;
+    vi.mocked(db.transaction).mockImplementation(async (fn) => fn(tx));
+
+    const err = await updateImportDraftRowSelection('org_1', summaryRow.id, {
+      rowIds: [draftRow.id],
+      selectedForImport: true,
+    }).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(NotFoundError);
+    expect(transactionExistsOnAccount).toHaveBeenCalledWith(
+      'org_1',
+      'tx-1',
+      summaryRow.accountId,
+      tx
+    );
+    expect(updateImportDraftRowQuery).not.toHaveBeenCalled();
   });
 
   it('returns persisted row without sibling re-derive when refund category is patched', async () => {

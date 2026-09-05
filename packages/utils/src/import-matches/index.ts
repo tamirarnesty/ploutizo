@@ -46,3 +46,5 @@ export {
 } from './decisions';
 
 export { IMPORT_MATCH_ISSUE_COPY } from './presentation';
+
+export { isImportMatchTargetOnAccount } from './targets';

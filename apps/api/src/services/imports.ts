@@ -14,6 +14,7 @@ import {
   toImportTransactionType,
 } from '@ploutizo/utils/import-row-status';
 import { validateTransactionAccountPolicy } from '@ploutizo/utils/transaction-policy';
+import type { Transaction } from '@ploutizo/db';
 import type {
   CreateImportDraftResponse,
   ImportContentProfileId,
@@ -57,6 +58,7 @@ import { listMerchantRulesWithTags } from '@/lib/queries/merchant-rules';
 import {
   fetchAccountWriteReference,
   transactionExistsInOrg,
+  transactionExistsOnAccount,
 } from '@/lib/queries/scope';
 import { listTags } from '@/lib/queries/tags';
 import { parseImportUpload } from '@/lib/imports/parse';
@@ -70,6 +72,21 @@ import {
   toImportDraftPersistedRow,
   withLiveImportReviewCounts,
 } from '@/services/import-draft-view';
+
+const requireMatchTargetOnDraftAccount = async (
+  orgId: string,
+  transactionId: string,
+  accountId: string,
+  tx?: Transaction
+) => {
+  const ok = await transactionExistsOnAccount(
+    orgId,
+    transactionId,
+    accountId,
+    tx
+  );
+  if (!ok) throw new NotFoundError('Transaction not found');
+};
 
 const toContentProfileId = (
   contentProfileId: string | null
@@ -336,12 +353,12 @@ export const updateImportDraftRow = async (
     if (!ok) throw new NotFoundError('Transaction not found');
   }
 
-  if (merged.reviewMatchedTransactionId) {
-    const ok = await transactionExistsInOrg(
+  if (input.reviewMatchedTransactionId) {
+    await requireMatchTargetOnDraftAccount(
       orgId,
-      merged.reviewMatchedTransactionId
+      input.reviewMatchedTransactionId,
+      draft.accountId
     );
-    if (!ok) throw new NotFoundError('Transaction not found');
   }
 
   const updated = await updateImportDraftRowQuery(orgId, rowId, input);
@@ -419,6 +436,14 @@ export const updateImportDraftRowSelection = async (
         nextMatchedTransactionId === persisted.reviewMatchedTransactionId
       ) {
         continue;
+      }
+      if (nextMatchedTransactionId) {
+        await requireMatchTargetOnDraftAccount(
+          orgId,
+          nextMatchedTransactionId,
+          accountId,
+          tx
+        );
       }
       const updated = await updateImportDraftRowQuery(
         orgId,

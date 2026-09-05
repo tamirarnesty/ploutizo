@@ -42,6 +42,7 @@ export {
   importMatchTargetQueryBounds,
   importMatchTargetQueryInput,
   IMPORT_MATCH_ISSUE_COPY,
+  isImportMatchTargetOnAccount,
   type ExactImportMatchKind,
   type ImportMatchTargetQueryBounds,
   type ImportMatchTargetQueryInput,

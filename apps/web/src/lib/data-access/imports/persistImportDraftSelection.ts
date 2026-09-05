@@ -12,6 +12,7 @@ import {
 import { fetchUpdateImportDraftRowSelection } from './fetchUpdateImportDraftRowSelection';
 import { flushImportDraftRowPacedMutations } from './getImportDraftRowPacedMutations';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
+import { importMatchTransactionIdForDraft } from './importMatchTargetOnAccount';
 import { importDraftQueryKey } from './queryKeys';
 import { rederiveImportDraftWorkingCopy } from './rederiveImportDraftWorkingCopy';
 
@@ -46,7 +47,10 @@ const applySelectionMatchDecisions = (
   collection.update(rowIds, (drafts) => {
     for (const draft of drafts) {
       draft.selectedForImport = selectedForImport;
-      draft.reviewMatchedTransactionId = patches.get(draft.id) ?? null;
+      const decided = patches.get(draft.id) ?? null;
+      draft.reviewMatchedTransactionId = decided
+        ? importMatchTransactionIdForDraft(draftId, decided)
+        : null;
     }
   });
 };

@@ -5,6 +5,7 @@ import {
   evaluateImportMatches,
   importMatchTargetQueryBounds,
   importMatchTargetQueryInput,
+  isImportMatchTargetOnAccount,
   matchDecisionForSelectionChange,
   matchDecisionsForSelectedRows,
 } from './import-matches';
@@ -107,6 +108,26 @@ describe('importMatchTargetQueryInput', () => {
       maxDate: '2026-05-09',
       externalIds: ['visa-1001'],
     });
+  });
+});
+
+describe('isImportMatchTargetOnAccount', () => {
+  it('accepts a fact on the destination account and rejects others', () => {
+    expect(
+      isImportMatchTargetOnAccount(
+        { accountId: targetAccountId },
+        targetAccountId
+      )
+    ).toBe(true);
+    expect(
+      isImportMatchTargetOnAccount(
+        { accountId: 'other-account' },
+        targetAccountId
+      )
+    ).toBe(false);
+    expect(isImportMatchTargetOnAccount(undefined, targetAccountId)).toBe(
+      false
+    );
   });
 });
 

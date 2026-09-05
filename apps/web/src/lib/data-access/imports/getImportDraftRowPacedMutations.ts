@@ -14,6 +14,7 @@ import {
 } from './importReviewAutosave';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
 import { fetchUpdateImportDraftRow } from './fetchUpdateImportDraftRow';
+import { sanitizeImportMatchPatch } from './importMatchTargetOnAccount';
 import { applyImportDraftRefundTargetFactDelta } from './mergeImportDraftRefundTargetFacts';
 import {
   evaluateImportDraftWorkingCopy,
@@ -260,7 +261,9 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
   });
 
   const wrappedMutate = (variables: ImportDraftRowPatchVariables) => {
-    const tx = mutate(variables);
+    const patch = sanitizeImportMatchPatch(draftId, variables.patch);
+    if (Object.keys(patch).length === 0) return;
+    const tx = mutate({ patch });
     latestTx = tx;
     return tx;
   };
@@ -324,8 +327,11 @@ export const retryFailedImportDraftRowPersists = async (draftId: string) => {
     failures.map(async ([rowId, keys]) => {
       const live = collection.get(rowId);
       if (!live) return;
-      const patch = patchFromLiveKeys(live, [...keys]);
-      if (!patch) return;
+      const patch = sanitizeImportMatchPatch(
+        draftId,
+        patchFromLiveKeys(live, [...keys]) ?? {}
+      );
+      if (Object.keys(patch).length === 0) return;
 
       markImportReviewPersistStart(draftId, rowId);
       const persistedKeys = Object.keys(patch);
