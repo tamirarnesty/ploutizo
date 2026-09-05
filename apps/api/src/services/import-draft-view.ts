@@ -2,6 +2,7 @@ import {
   collectMatchedTransactionIds,
   computeImportDraftRowCounts,
   evaluateImportDraft,
+  importMatchTargetQueryBounds,
 } from '@ploutizo/utils';
 import { toImportTransactionType } from '@ploutizo/utils/import-row-status';
 import { db } from '@ploutizo/db';
@@ -140,7 +141,15 @@ export const loadDraftEvaluationContext = async (
         ? sumPriorRefundTotalsByTransactionTarget(orgId, refundOfIds, client)
         : Promise.resolve(undefined),
       loadMatchTargets
-        ? listImportMatchTargets(orgId, targetAccountId, matchedIds, client)
+        ? listImportMatchTargets(
+            orgId,
+            targetAccountId,
+            {
+              extraIds: matchedIds,
+              ...importMatchTargetQueryBounds(rows),
+            },
+            client
+          )
         : Promise.resolve(new Map()),
     ]);
   const evaluations = evaluateImportDraft(

@@ -255,4 +255,102 @@ describe('ImportDraftReviewRow', () => {
       reviewMatchDismissed: true,
     });
   });
+
+  it('lets the user clear an invalidated saved match', async () => {
+    const user = userEvent.setup();
+    const row = {
+      ...baseRow(),
+      reviewMatchedTransactionId: 'tx-1',
+    };
+    vi.mocked(evaluateImportDraftWorkingCopy).mockReturnValue(
+      new Map([
+        [
+          row.id,
+          {
+            status: 'needs_review',
+            blockers: ['match'],
+            invalidReason: null,
+            refundLink: null,
+            refundSuggestion: null,
+            match: {
+              candidates: [],
+              exactCandidate: null,
+              advisoryCandidates: [],
+              collisionRowIds: [],
+              acceptedMatch: null,
+              acceptedMatchValid: false,
+              issues: ['invalidated_decision'],
+            },
+          },
+        ],
+      ])
+    );
+
+    renderRowFields(row);
+
+    expect(
+      screen.getByText(
+        'The saved match is no longer valid. Clear it or restore the original values to continue.'
+      )
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Clear match' }));
+    expect(updateRow).toHaveBeenCalledWith(row.id, {
+      reviewMatchedTransactionId: null,
+      reviewMatchDismissed: true,
+    });
+  });
+
+  it('restores advisory controls when a saved match was invalidated', () => {
+    const row = {
+      ...baseRow(),
+      reviewMatchedTransactionId: 'tx-1',
+    };
+    vi.mocked(evaluateImportDraftWorkingCopy).mockReturnValue(
+      new Map([
+        [
+          row.id,
+          {
+            status: 'needs_review',
+            blockers: ['match'],
+            invalidReason: null,
+            refundLink: null,
+            refundSuggestion: null,
+            match: {
+              candidates: [
+                {
+                  transactionId: 'tx-2',
+                  kind: 'fuzzy_description',
+                  explanation:
+                    'Similar description on the same date and amount.',
+                },
+              ],
+              exactCandidate: null,
+              advisoryCandidates: [
+                {
+                  transactionId: 'tx-2',
+                  kind: 'fuzzy_description',
+                  explanation:
+                    'Similar description on the same date and amount.',
+                },
+              ],
+              collisionRowIds: [],
+              acceptedMatch: null,
+              acceptedMatchValid: false,
+              issues: ['invalidated_decision'],
+            },
+          },
+        ],
+      ])
+    );
+
+    renderRowFields(row);
+
+    expect(
+      screen.getByRole('button', { name: 'Use this match' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Not a match' })
+    ).toBeInTheDocument();
+  });
 });

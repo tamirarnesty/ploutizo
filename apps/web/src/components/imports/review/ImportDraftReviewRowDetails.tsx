@@ -36,8 +36,13 @@ export const ImportDraftReviewRowDetails = ({
   const match = evaluation?.match;
   const exactCandidate = match?.exactCandidate;
   const exactExplanation = exactCandidate?.explanation;
+  const savedMatchIsInvalid =
+    Boolean(row.reviewMatchedTransactionId) &&
+    match?.acceptedMatchValid === false;
   const advisory =
-    exactCandidate || row.reviewMatchDismissed || row.reviewMatchedTransactionId
+    exactCandidate ||
+    row.reviewMatchDismissed ||
+    (row.reviewMatchedTransactionId && !savedMatchIsInvalid)
       ? undefined
       : match?.advisoryCandidates[0];
   const refundSuggestion = evaluation?.refundSuggestion;
@@ -98,6 +103,24 @@ export const ImportDraftReviewRowDetails = ({
             }
           >
             Not a match
+          </Button>
+        </div>
+      ) : null}
+      {savedMatchIsInvalid && !advisory ? (
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            size="xs"
+            variant="outline"
+            disabled={disabled}
+            onClick={() =>
+              saveField({
+                reviewMatchedTransactionId: null,
+                reviewMatchDismissed: true,
+              })
+            }
+          >
+            Clear match
           </Button>
         </div>
       ) : null}

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { MatchTargetFact } from '@ploutizo/types';
 import {
   evaluateImportMatches,
+  importMatchTargetQueryBounds,
   matchDecisionForSelectionChange,
 } from './import-matches';
 import type { ImportMatchDraftRow } from './import-matches';
@@ -49,6 +50,42 @@ const evaluate = (
     targetAccountId,
     existingTransactions: transactions,
   });
+
+describe('importMatchTargetQueryBounds', () => {
+  it('expands the import date window by settlement tolerance', () => {
+    expect(
+      importMatchTargetQueryBounds([
+        { reviewDate: '2026-05-02', parsedDate: '2026-05-02' },
+        { reviewDate: '2026-05-10', parsedDate: '2026-05-10' },
+      ])
+    ).toEqual({
+      minDate: '2026-04-25',
+      maxDate: '2026-05-17',
+      externalIds: [],
+    });
+  });
+
+  it('collects external IDs even when dates are missing', () => {
+    expect(
+      importMatchTargetQueryBounds([
+        {
+          reviewDate: null,
+          parsedDate: null,
+          externalId: 'visa-1001',
+        },
+        {
+          reviewDate: null,
+          parsedDate: null,
+          externalId: ' visa-1002 ',
+        },
+      ])
+    ).toEqual({
+      minDate: null,
+      maxDate: null,
+      externalIds: ['visa-1001', 'visa-1002'],
+    });
+  });
+});
 
 describe('evaluateImportMatches — exact external ID', () => {
   it('matches an active same-kind transaction on the target card by external ID', () => {

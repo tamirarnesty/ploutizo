@@ -8,6 +8,7 @@ import {
   collectMatchedTransactionIds,
   createImportRowClassifier,
   evaluateImportMatches,
+  importMatchTargetQueryBounds,
   matchDecisionForSelectionChange,
   toImportMatchDraftRow,
 } from '@ploutizo/utils';
@@ -404,7 +405,10 @@ export const updateImportDraftRowSelection = async (
     const existingTransactions = await listImportMatchTargets(
       orgId,
       accountId,
-      collectMatchedTransactionIds(draftRows),
+      {
+        extraIds: collectMatchedTransactionIds(draftRows),
+        ...importMatchTargetQueryBounds(draftRows),
+      },
       tx
     );
     const matchEvaluations = evaluateImportMatches(
