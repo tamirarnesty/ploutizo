@@ -150,7 +150,9 @@ export const evaluateImportMatches = (
     const selectedInCollisionGroup =
       (row.selectedForImport ? 1 : 0) +
       collisionRowIds.filter((id) => selectedIds.has(id)).length;
-    if (collisionRowIds.length > 0 && selectedInCollisionGroup > 1) {
+    // Unresolved until exactly one member is selected. Unselected members stay
+    // needs_review (amber) without blocking Continue for other ready rows.
+    if (collisionRowIds.length > 0 && selectedInCollisionGroup !== 1) {
       issues.push('collision');
     }
 

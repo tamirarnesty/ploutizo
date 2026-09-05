@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { canContinueImportReview } from '@ploutizo/utils';
 import {
   makeImportDraft,
   makeImportDraftRow,
@@ -233,18 +234,24 @@ describe('rederiveImportDraftWorkingCopy', () => {
     expect(evaluation?.match?.acceptedMatch).toBeNull();
   });
 
-  it('blocks same-import external-ID collisions only when multiple rows are selected', async () => {
+  it('keeps same-import external-ID collisions in review until exactly one row is selected', async () => {
     const draft = makeImportDraft({
       id: 'draft_collision',
       rows: [
         makeImportDraftRow({
+          id: 'row_ready',
+          externalId: 'visa-2002',
+          selectedForImport: true,
+        }),
+        makeImportDraftRow({
           id: 'row_a',
+          rowNumber: 3,
           externalId: 'visa-1001',
           selectedForImport: false,
         }),
         makeImportDraftRow({
           id: 'row_b',
-          rowNumber: 3,
+          rowNumber: 4,
           externalId: 'visa-1001',
           reviewDescription: 'Coffee copy',
           sourceDescription: 'Coffee copy',
@@ -261,12 +268,15 @@ describe('rederiveImportDraftWorkingCopy', () => {
 
     rederiveImportDraftWorkingCopy(draft.id);
 
-    expect(collection.get('row_a')?.status).toBe('ready');
-    expect(collection.get('row_b')?.status).toBe('ready');
+    expect(collection.get('row_a')?.status).toBe('needs_review');
+    expect(collection.get('row_b')?.status).toBe('needs_review');
+    expect(collection.get('row_ready')?.status).toBe('ready');
     const unselectedEvaluation = evaluateImportDraftWorkingCopy(draft.id)?.get(
       'row_a'
     );
-    expect(unselectedEvaluation?.match?.issues).not.toContain('collision');
+    expect(unselectedEvaluation?.blockers).toContain('match');
+    expect(unselectedEvaluation?.match?.issues).toContain('collision');
+    expect(canContinueImportReview(collection.toArray)).toBe(true);
 
     collection.utils.writeUpdate({
       ...collection.get('row_a')!,
@@ -285,6 +295,7 @@ describe('rederiveImportDraftWorkingCopy', () => {
     );
     expect(collisionEvaluation?.blockers).toContain('match');
     expect(collisionEvaluation?.match?.issues).toContain('collision');
+    expect(canContinueImportReview(collection.toArray)).toBe(false);
 
     collection.utils.writeUpdate({
       ...collection.get('row_b')!,
@@ -304,6 +315,7 @@ describe('rederiveImportDraftWorkingCopy', () => {
     expect(
       evaluateImportDraftWorkingCopy(draft.id)?.get('row_b')?.match?.issues
     ).not.toContain('collision');
+    expect(canContinueImportReview(collection.toArray)).toBe(true);
   });
 
   it('blocks Continue on a selected advisory match until the user decides', async () => {

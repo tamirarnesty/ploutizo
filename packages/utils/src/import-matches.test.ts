@@ -194,7 +194,7 @@ describe('evaluateImportMatches — fallback identity', () => {
 });
 
 describe('evaluateImportMatches — same-import collisions', () => {
-  it('tracks collision groups without blocking unselected duplicate rows', () => {
+  it('flags a collision group as unresolved when no row is selected', () => {
     const rows = [
       row({ id: 'row-a', selectedForImport: false }),
       row({ id: 'row-b', selectedForImport: false }),
@@ -203,11 +203,11 @@ describe('evaluateImportMatches — same-import collisions', () => {
 
     expect(evaluations.get('row-a')?.collisionRowIds).toEqual(['row-b']);
     expect(evaluations.get('row-b')?.collisionRowIds).toEqual(['row-a']);
-    expect(evaluations.get('row-a')?.issues).not.toContain('collision');
-    expect(evaluations.get('row-b')?.issues).not.toContain('collision');
+    expect(evaluations.get('row-a')?.issues).toContain('collision');
+    expect(evaluations.get('row-b')?.issues).toContain('collision');
   });
 
-  it('blocks Continue when two colliding rows are both selected', () => {
+  it('flags a collision group as unresolved when more than one row is selected', () => {
     const rows = [
       row({ id: 'row-a', selectedForImport: true }),
       row({ id: 'row-b', selectedForImport: true }),
@@ -531,6 +531,22 @@ describe('matchDecisionsForSelectedRows', () => {
 
     expect(patches.get('row-a')).toBeNull();
     expect(patches.get('row-b')).toBeNull();
+  });
+
+  it('auto-accepts the exact match once exactly one colliding row is selected', () => {
+    const rows = [
+      row({ id: 'row-a', selectedForImport: true }),
+      row({ id: 'row-b', selectedForImport: false }),
+    ];
+    const patches = matchDecisionsForSelectedRows(rows, {
+      rowIds: ['row-a'],
+      selectedForImport: true,
+      targetAccountId,
+      existingTransactions: [tx()],
+    });
+
+    expect(patches.get('row-a')).toBe('tx-1');
+    expect(patches.has('row-b')).toBe(false);
   });
 });
 

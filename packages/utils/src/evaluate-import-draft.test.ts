@@ -270,6 +270,42 @@ describe('evaluateImportDraft — matching', () => {
     expect(result.match?.acceptedMatch).toBeNull();
   });
 
+  it('marks unselected same-import collisions as needs review until one row is selected', () => {
+    const rowA = {
+      ...matchRow,
+      id: 'row-a',
+      selectedForImport: false,
+    };
+    const rowB = {
+      ...matchRow,
+      id: 'row-b',
+      selectedForImport: false,
+    };
+
+    const unselected = evaluateImportDraft([rowA, rowB], {
+      targetAccountId: 'account-1',
+      existingTransactions: [],
+    });
+    expect(unselected.get('row-a')).toMatchObject({
+      status: 'needs_review',
+      blockers: ['match'],
+    });
+    expect(unselected.get('row-a')?.match?.issues).toContain('collision');
+    expect(unselected.get('row-b')?.match?.issues).toContain('collision');
+
+    const resolved = evaluateImportDraft(
+      [{ ...rowA, selectedForImport: true }, rowB],
+      {
+        targetAccountId: 'account-1',
+        existingTransactions: [],
+      }
+    );
+    expect(resolved.get('row-a')?.status).toBe('ready');
+    expect(resolved.get('row-b')?.status).toBe('ready');
+    expect(resolved.get('row-a')?.match?.issues).not.toContain('collision');
+    expect(resolved.get('row-b')?.match?.issues).not.toContain('collision');
+  });
+
   it('blocks Continue when a selected identity match is no longer valid', () => {
     const selected = {
       ...matchRow,
