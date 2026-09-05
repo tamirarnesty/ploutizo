@@ -87,7 +87,6 @@ const renderRowFields = (row: ImportDraftRow) =>
     <TooltipProvider delay={0}>
       <ImportDraftReviewProvider
         draftId={row.batchId}
-        rows={[row]}
         categories={[mockCategory]}
         orgMembers={[]}
         updateRow={updateRow}

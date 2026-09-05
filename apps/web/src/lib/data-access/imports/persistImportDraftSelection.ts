@@ -65,17 +65,22 @@ const confirmSelectionIntoCollection = (
 
 const persistSelection = createOptimisticAction<SelectionVariables>({
   onMutate: ({ draftId, rowIds, selectedForImport }) => {
-    const evaluations = evaluateImportDraftWorkingCopy(draftId);
     const collection = getImportDraftRowsCollection(draftId);
     collection.update(rowIds, (drafts) => {
       for (const draft of drafts) {
+        draft.selectedForImport = selectedForImport;
+      }
+    });
+    const evaluations = evaluateImportDraftWorkingCopy(draftId);
+    collection.update(rowIds, (drafts) => {
+      for (const draft of drafts) {
+        const match = evaluations?.get(draft.id)?.match;
         draft.reviewMatchedTransactionId = matchDecisionForSelectionChange({
           selectedForImport,
           currentMatchedTransactionId: draft.reviewMatchedTransactionId,
-          exactCandidate:
-            evaluations?.get(draft.id)?.match?.exactCandidate ?? null,
+          exactCandidate: match?.exactCandidate ?? null,
+          collisionUnresolved: match?.issues.includes('collision') ?? false,
         });
-        draft.selectedForImport = selectedForImport;
       }
     });
     rederiveImportDraftWorkingCopy(draftId);

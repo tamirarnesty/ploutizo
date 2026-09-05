@@ -783,6 +783,57 @@ describe('import service', () => {
     expect(result[0]?.reviewMatchedTransactionId).toBe('tx-1');
   });
 
+  it('does not auto-accept an exact match when bulk-selecting colliding rows', async () => {
+    const rowB = {
+      ...draftRow,
+      id: '44444444-4444-4444-8444-444444444444',
+      rowNumber: 3,
+    };
+    const selectedRows = [
+      { ...draftRow, selectedForImport: true },
+      { ...rowB, selectedForImport: true },
+    ];
+    vi.mocked(fetchDraftSummaryById).mockResolvedValue(summaryRow);
+    vi.mocked(listDraftRowIdsForDraft).mockResolvedValue([
+      { id: draftRow.id },
+      { id: rowB.id },
+    ]);
+    vi.mocked(updateImportDraftRowSelectionQuery).mockResolvedValue(
+      selectedRows
+    );
+    vi.mocked(listDraftRows).mockResolvedValue(selectedRows);
+    vi.mocked(listImportMatchTargets).mockResolvedValue(
+      new Map([
+        [
+          'tx-1',
+          {
+            id: 'tx-1',
+            accountId: summaryRow.accountId,
+            type: 'expense',
+            date: '2026-05-02',
+            amount: 4218,
+            description: 'Coffee',
+            rawDescription: 'Coffee',
+            externalId: 'visa-1001',
+            deleted: false,
+          },
+        ],
+      ])
+    );
+    const tx = {} as never;
+    vi.mocked(db.transaction).mockImplementation(async (fn) => fn(tx));
+
+    const result = await updateImportDraftRowSelection('org_1', summaryRow.id, {
+      rowIds: [draftRow.id, rowB.id],
+      selectedForImport: true,
+    });
+
+    expect(updateImportDraftRowQuery).not.toHaveBeenCalled();
+    expect(result).toHaveLength(2);
+    expect(result[0]?.reviewMatchedTransactionId).toBeNull();
+    expect(result[1]?.reviewMatchedTransactionId).toBeNull();
+  });
+
   it('returns persisted row without sibling re-derive when refund category is patched', async () => {
     const expenseId = '77777777-7777-4777-8777-777777777777';
     const refundRow = {

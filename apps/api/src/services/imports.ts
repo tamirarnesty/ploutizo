@@ -158,8 +158,7 @@ export const listActiveImportDrafts = async (
       const { evaluations } = await loadDraftEvaluationContext(
         orgId,
         summary.accountId,
-        batchRows,
-        { includeMatchTargets: false }
+        batchRows
       );
       return withLiveImportReviewCounts(
         toImportDraftSummary(summary),
@@ -421,11 +420,12 @@ export const updateImportDraftRowSelection = async (
 
     const nextPersisted = [...persistedRows];
     for (const [index, persisted] of persistedRows.entries()) {
+      const evaluation = matchEvaluations.get(persisted.id);
       const nextMatchedTransactionId = matchDecisionForSelectionChange({
         selectedForImport: input.selectedForImport,
         currentMatchedTransactionId: persisted.reviewMatchedTransactionId,
-        exactCandidate:
-          matchEvaluations.get(persisted.id)?.exactCandidate ?? null,
+        exactCandidate: evaluation?.exactCandidate ?? null,
+        collisionUnresolved: evaluation?.issues.includes('collision') ?? false,
       });
       if (nextMatchedTransactionId === persisted.reviewMatchedTransactionId) {
         continue;

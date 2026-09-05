@@ -454,10 +454,12 @@ export const matchDecisionForSelectionChange = (input: {
   selectedForImport: boolean;
   currentMatchedTransactionId: string | null;
   exactCandidate: ImportMatchCandidate | null;
+  collisionUnresolved?: boolean;
 }): string | null => {
   if (!input.selectedForImport) return null;
   if (input.currentMatchedTransactionId) {
     return input.currentMatchedTransactionId;
   }
+  if (input.collisionUnresolved) return null;
   return input.exactCandidate?.transactionId ?? null;
 };

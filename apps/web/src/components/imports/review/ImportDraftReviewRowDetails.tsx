@@ -19,6 +19,12 @@ const MATCH_ISSUE_COPY: Partial<Record<ImportMatchIssue, string>> = {
     'The saved match is no longer valid. Clear it or restore the original values to continue.',
   ambiguous_exact:
     'Multiple exact matches exist on this card. Review before continuing.',
+  advisory_unresolved:
+    'A similar transaction was found. Accept or dismiss the suggestion to continue.',
+  missing_target: 'The saved match no longer exists. Clear it to continue.',
+  deleted_target: 'The saved match was deleted. Clear it to continue.',
+  wrong_account:
+    'The saved match is on a different card. Clear it to continue.',
 };
 
 interface ImportDraftReviewRowDetailsProps {
@@ -39,6 +45,11 @@ export const ImportDraftReviewRowDetails = ({
   const savedMatchIsInvalid =
     Boolean(row.reviewMatchedTransactionId) &&
     match?.acceptedMatchValid === false;
+  const clearSavedMatch = () =>
+    saveField({
+      reviewMatchedTransactionId: null,
+      reviewMatchDismissed: true,
+    });
   const advisory =
     exactCandidate ||
     row.reviewMatchDismissed ||
@@ -95,12 +106,7 @@ export const ImportDraftReviewRowDetails = ({
             size="xs"
             variant="ghost"
             disabled={disabled}
-            onClick={() =>
-              saveField({
-                reviewMatchedTransactionId: null,
-                reviewMatchDismissed: true,
-              })
-            }
+            onClick={clearSavedMatch}
           >
             Not a match
           </Button>
@@ -113,12 +119,7 @@ export const ImportDraftReviewRowDetails = ({
             size="xs"
             variant="outline"
             disabled={disabled}
-            onClick={() =>
-              saveField({
-                reviewMatchedTransactionId: null,
-                reviewMatchDismissed: true,
-              })
-            }
+            onClick={clearSavedMatch}
           >
             Clear match
           </Button>

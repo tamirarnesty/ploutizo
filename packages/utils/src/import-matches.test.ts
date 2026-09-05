@@ -472,4 +472,23 @@ describe('matchDecisionForSelectionChange', () => {
       })
     ).toBe('tx-1');
   });
+
+  it('does not auto-accept an exact candidate while a same-import collision is unresolved', () => {
+    const evaluation = evaluate(
+      [
+        row({ id: 'row-a', selectedForImport: true }),
+        row({ id: 'row-b', selectedForImport: true }),
+      ],
+      [tx()]
+    ).get('row-a')!;
+
+    expect(
+      matchDecisionForSelectionChange({
+        selectedForImport: true,
+        currentMatchedTransactionId: null,
+        exactCandidate: evaluation.exactCandidate,
+        collisionUnresolved: evaluation.issues.includes('collision'),
+      })
+    ).toBeNull();
+  });
 });
