@@ -72,7 +72,6 @@ const persistSelection = createOptimisticAction<SelectionVariables>({
         draft.reviewMatchedTransactionId = matchDecisionForSelectionChange({
           selectedForImport,
           currentMatchedTransactionId: draft.reviewMatchedTransactionId,
-          dismissed: draft.reviewMatchDismissed,
           exactCandidate:
             evaluations?.get(draft.id)?.match?.exactCandidate ?? null,
         });

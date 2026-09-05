@@ -2,7 +2,6 @@ import {
   collectMatchedTransactionIds,
   computeImportDraftRowCounts,
   evaluateImportDraft,
-  matchTargetFactsRecordFromMap,
 } from '@ploutizo/utils';
 import { toImportTransactionType } from '@ploutizo/utils/import-row-status';
 import { db } from '@ploutizo/db';
@@ -127,18 +126,22 @@ export const loadDraftEvaluationContext = async (
   options?: {
     client?: DbClient;
     includePriorRefunds?: boolean;
+    includeMatchTargets?: boolean;
   }
 ) => {
   const client = options?.client ?? db;
   const refundOfIds = collectRefundOfIds(rows);
-  const matchedIds = collectMatchedTransactionIds(rows);
+  const loadMatchTargets = options?.includeMatchTargets !== false;
+  const matchedIds = loadMatchTargets ? collectMatchedTransactionIds(rows) : [];
   const [existingExpenses, priorRefundsByTarget, existingTransactions] =
     await Promise.all([
       listRefundTargetExpensesByIds(orgId, refundOfIds, client),
       options?.includePriorRefunds
         ? sumPriorRefundTotalsByTransactionTarget(orgId, refundOfIds, client)
         : Promise.resolve(undefined),
-      listImportMatchTargets(orgId, targetAccountId, matchedIds, client),
+      loadMatchTargets
+        ? listImportMatchTargets(orgId, targetAccountId, matchedIds, client)
+        : Promise.resolve(new Map()),
     ]);
   const evaluations = evaluateImportDraft(
     rows.map((row) => toImportDraftDurableRow(row)),
@@ -152,7 +155,7 @@ export const loadDraftEvaluationContext = async (
   return {
     evaluations,
     refundTargetFacts: refundTargetFactsRecordFromMap(existingExpenses),
-    matchTargetFacts: matchTargetFactsRecordFromMap(existingTransactions),
+    matchTargetFacts: Object.fromEntries(existingTransactions),
   };
 };
 

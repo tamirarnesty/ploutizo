@@ -3,14 +3,23 @@ import { Button } from '@ploutizo/ui/components/button';
 import { Text } from '@ploutizo/ui/components/text';
 import { Textarea } from '@ploutizo/ui/components/textarea';
 import type { ImportDraftRow } from '@ploutizo/types';
+import type { ImportMatchIssue } from '@ploutizo/utils';
 import { TransactionTagPicker } from '@/components/transactions/TransactionTagPicker';
-import { evaluateImportDraftWorkingCopy } from '@/lib/data-access/imports/rederiveImportDraftWorkingCopy';
 import {
   formatExactImportMatchCopy,
   getImportRowLabel,
 } from '../lib/importPresentation';
-import { useImportDraftReviewContext } from './ImportDraftReviewContext';
+import { useImportDraftRowEvaluation } from './ImportDraftReviewContext';
 import { useImportDraftReviewRowSave } from './useImportDraftReviewRowSave';
+
+const MATCH_ISSUE_COPY: Partial<Record<ImportMatchIssue, string>> = {
+  collision:
+    'Another row in this import uses the same external ID. Select one row and leave the other unselected.',
+  invalidated_decision:
+    'The saved match is no longer valid. Clear it or restore the original values to continue.',
+  ambiguous_exact:
+    'Multiple exact matches exist on this card. Review before continuing.',
+};
 
 interface ImportDraftReviewRowDetailsProps {
   row: ImportDraftRow;
@@ -19,15 +28,18 @@ interface ImportDraftReviewRowDetailsProps {
 export const ImportDraftReviewRowDetails = ({
   row,
 }: ImportDraftReviewRowDetailsProps) => {
-  const { draftId } = useImportDraftReviewContext();
   const { saveField, disabled } = useImportDraftReviewRowSave(row);
   const [notesDraft, setNotesDraft] = useState(() => row.reviewNotes ?? '');
   const rowLabel = getImportRowLabel(row);
   const tagsInputId = `import-row-tags-${row.id}`;
-  const evaluation = evaluateImportDraftWorkingCopy(draftId)?.get(row.id);
+  const evaluation = useImportDraftRowEvaluation(row.id);
   const match = evaluation?.match;
-  const exactExplanation = match?.exactCandidate?.explanation;
-  const advisory = match?.advisoryCandidates[0];
+  const exactCandidate = match?.exactCandidate;
+  const exactExplanation = exactCandidate?.explanation;
+  const advisory =
+    exactCandidate || row.reviewMatchDismissed || row.reviewMatchedTransactionId
+      ? undefined
+      : match?.advisoryCandidates[0];
   const refundSuggestion = evaluation?.refundSuggestion;
 
   useEffect(() => {
@@ -36,40 +48,25 @@ export const ImportDraftReviewRowDetails = ({
 
   return (
     <div className="bg-muted/10 px-3 py-2">
-      {match?.issues.includes('collision') ? (
-        <Text
-          variant="body-sm"
-          className="mb-2 text-amber-700 dark:text-amber-400"
-        >
-          Another row in this import uses the same external ID. Select one row
-          and leave the other unselected.
-        </Text>
-      ) : null}
-      {match?.issues.includes('invalidated_decision') ? (
-        <Text
-          variant="body-sm"
-          className="mb-2 text-amber-700 dark:text-amber-400"
-        >
-          The saved match is no longer valid. Clear it or restore the original
-          values to continue.
-        </Text>
-      ) : null}
-      {match?.issues.includes('ambiguous_exact') ? (
-        <Text
-          variant="body-sm"
-          className="mb-2 text-amber-700 dark:text-amber-400"
-        >
-          Multiple exact matches exist on this card. Review before continuing.
-        </Text>
-      ) : null}
+      {(match?.issues ?? []).map((issue) => {
+        const copy = MATCH_ISSUE_COPY[issue];
+        if (!copy) return null;
+        return (
+          <Text
+            key={issue}
+            variant="body-sm"
+            className="mb-2 text-amber-700 dark:text-amber-400"
+          >
+            {copy}
+          </Text>
+        );
+      })}
       {exactExplanation ? (
         <Text variant="body-sm" className="mb-2 text-muted-foreground">
           {formatExactImportMatchCopy(exactExplanation)}
         </Text>
       ) : null}
-      {advisory &&
-      !row.reviewMatchDismissed &&
-      !row.reviewMatchedTransactionId ? (
+      {advisory ? (
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <Text variant="body-sm" className="text-muted-foreground">
             {advisory.explanation}

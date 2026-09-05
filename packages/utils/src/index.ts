@@ -37,8 +37,6 @@ export {
   evaluateImportMatches,
   matchDecisionForSelectionChange,
   toImportMatchDraftRow,
-  matchTargetFactsRecordFromMap,
-  matchTargetFactsToTransactions,
   collectMatchedTransactionIds,
   type ExactImportMatchKind,
   type EvaluateImportMatchesOptions,
@@ -48,7 +46,6 @@ export {
   type ImportMatchEvaluation,
   type ImportMatchIssue,
   type ImportMatchKind,
-  type ImportMatchTargetTransaction,
 } from './import-matches';
 export {
   evaluateImportRefundLink,

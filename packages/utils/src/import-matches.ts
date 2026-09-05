@@ -37,16 +37,6 @@ export type ImportMatchIssue =
   | 'deleted_target'
   | 'ambiguous_exact';
 
-export type ImportMatchTargetTransaction = MatchTargetFact;
-
-export const matchTargetFactsRecordFromMap = (
-  map: ReadonlyMap<string, MatchTargetFact>
-): Record<string, MatchTargetFact> => Object.fromEntries(map);
-
-export const matchTargetFactsToTransactions = (
-  facts: Record<string, MatchTargetFact>
-): MatchTargetFact[] => Object.values(facts);
-
 export const collectMatchedTransactionIds = (
   rows: readonly { reviewMatchedTransactionId: string | null }[]
 ): string[] =>
@@ -89,16 +79,13 @@ export interface ImportMatchEvaluation {
   collisionRowIds: string[];
   acceptedMatch: ImportAcceptedMatch | null;
   acceptedMatchValid: boolean;
-  /** Selected-row Continue block: invalidated decisions, selected collisions, unresolved advisory. */
-  matchBlocked: boolean;
-  /** Review-visible uncertainty, including unselected advisory/collision rows. */
-  matchNeedsReview: boolean;
+  /** Unresolved match reasons. Drives the `match` status blocker. */
   issues: ImportMatchIssue[];
 }
 
 export interface EvaluateImportMatchesOptions {
   targetAccountId: string;
-  existingTransactions: readonly ImportMatchTargetTransaction[];
+  existingTransactions: readonly MatchTargetFact[];
 }
 
 const EXACT_MATCH_EXPLANATIONS: Record<ExactImportMatchKind, string> = {
@@ -174,16 +161,14 @@ const rowRawDescription = (row: ImportMatchDraftRow): string =>
     row.sourceDescription ?? row.parsedDescription
   );
 
-const transactionRawDescription = (
-  transaction: ImportMatchTargetTransaction
-): string =>
+const transactionRawDescription = (transaction: MatchTargetFact): string =>
   normalizeImportMatchDescription(
     transaction.rawDescription ?? transaction.description
   );
 
 const classifyAgainstTransaction = (
   row: ImportMatchDraftRow,
-  transaction: ImportMatchTargetTransaction,
+  transaction: MatchTargetFact,
   targetAccountId: string
 ): ImportMatchCandidate | null => {
   if (transaction.accountId !== targetAccountId) return null;
@@ -266,7 +251,7 @@ const collisionGroups = (
 const decisionIssues = (
   row: ImportMatchDraftRow,
   targetAccountId: string,
-  transactionsById: ReadonlyMap<string, ImportMatchTargetTransaction>,
+  transactionsById: ReadonlyMap<string, MatchTargetFact>,
   candidates: readonly ImportMatchCandidate[]
 ): { issues: ImportMatchIssue[]; acceptedMatchValid: boolean } => {
   const matchedId = row.reviewMatchedTransactionId;
@@ -334,9 +319,6 @@ export const evaluateImportMatches = (
     if (exactMatches.length > 1) {
       issues.push('ambiguous_exact');
     }
-    if (collisionRowIds.length > 0) {
-      issues.push('collision');
-    }
 
     const decision = decisionIssues(
       row,
@@ -346,22 +328,19 @@ export const evaluateImportMatches = (
     );
     issues.push(...decision.issues);
 
-    const selectedCollisionCount = collisionRowIds.filter((id) =>
-      selectedIds.has(id)
-    ).length;
-    const collisionBlocksContinue =
-      row.selectedForImport &&
-      collisionRowIds.length > 0 &&
-      selectedCollisionCount > 0;
+    const selectedInCollisionGroup =
+      (row.selectedForImport ? 1 : 0) +
+      collisionRowIds.filter((id) => selectedIds.has(id)).length;
+    if (collisionRowIds.length > 0 && selectedInCollisionGroup !== 1) {
+      issues.push('collision');
+    }
 
-    const hasUnresolvedAdvisory =
-      row.selectedForImport &&
+    if (
       !row.reviewMatchDismissed &&
       !row.reviewMatchedTransactionId &&
       advisoryCandidates.length > 0 &&
-      exactCandidate === null;
-
-    if (hasUnresolvedAdvisory) {
+      exactCandidate === null
+    ) {
       issues.push('advisory_unresolved');
     }
 
@@ -376,21 +355,6 @@ export const evaluateImportMatches = (
           }
         : null;
 
-    const matchBlocked =
-      collisionBlocksContinue ||
-      (row.selectedForImport && !decision.acceptedMatchValid) ||
-      hasUnresolvedAdvisory;
-
-    const selectedInCollisionGroup =
-      (row.selectedForImport ? 1 : 0) + selectedCollisionCount;
-    const collisionNeedsReview =
-      collisionRowIds.length > 0 && selectedInCollisionGroup !== 1;
-    const advisoryNeedsReview =
-      advisoryCandidates.length > 0 &&
-      !row.reviewMatchDismissed &&
-      !row.reviewMatchedTransactionId &&
-      exactCandidate === null;
-
     results.set(row.id, {
       candidates: classified,
       exactCandidate,
@@ -398,9 +362,6 @@ export const evaluateImportMatches = (
       collisionRowIds,
       acceptedMatch,
       acceptedMatchValid: decision.acceptedMatchValid,
-      matchBlocked,
-      matchNeedsReview:
-        matchBlocked || collisionNeedsReview || advisoryNeedsReview,
       issues,
     });
   }
@@ -443,11 +404,9 @@ export const toImportMatchDraftRow = (row: {
 export const matchDecisionForSelectionChange = (input: {
   selectedForImport: boolean;
   currentMatchedTransactionId: string | null;
-  dismissed: boolean;
   exactCandidate: ImportMatchCandidate | null;
 }): string | null => {
   if (!input.selectedForImport) return null;
-  if (input.dismissed) return null;
   if (input.currentMatchedTransactionId) {
     return input.currentMatchedTransactionId;
   }

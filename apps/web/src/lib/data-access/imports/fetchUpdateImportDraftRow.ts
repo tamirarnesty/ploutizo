@@ -12,12 +12,10 @@ export const fetchUpdateImportDraftRow = (
   apiFetch<{
     data: ImportDraftPersistedRow;
     refundTargetFacts?: UpdateImportDraftRowResult['refundTargetFacts'];
-    matchTargetFacts?: UpdateImportDraftRowResult['matchTargetFacts'];
   }>(`/api/imports/rows/${rowId}`, {
     method: 'PATCH',
     body: JSON.stringify(body),
   }).then((r) => ({
     row: r.data,
     ...(r.refundTargetFacts ? { refundTargetFacts: r.refundTargetFacts } : {}),
-    ...(r.matchTargetFacts ? { matchTargetFacts: r.matchTargetFacts } : {}),
   }));

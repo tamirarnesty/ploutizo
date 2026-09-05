@@ -1,4 +1,4 @@
-import type { ImportRowStatus } from '@ploutizo/types';
+import type { ImportRowStatus, MatchTargetFact } from '@ploutizo/types';
 import {
   evaluateImportRow,
   formatImportRowStructuralInvalidReason,
@@ -25,7 +25,6 @@ import type {
   EvaluateImportMatchesOptions,
   ImportMatchDraftRow,
   ImportMatchEvaluation,
-  ImportMatchTargetTransaction,
 } from './import-matches';
 
 /** Durable import draft row fields used for status derivation. */
@@ -51,11 +50,8 @@ export interface ImportDraftDurableRow {
   reviewMatchDismissed: boolean;
 }
 
-export interface ImportDraftEvaluationOptions extends Omit<
-  EvaluateImportRefundLinksOptions,
-  'draftRows'
-> {
-  existingTransactions?: readonly ImportMatchTargetTransaction[];
+export interface ImportDraftEvaluationOptions extends EvaluateImportRefundLinksOptions {
+  existingTransactions?: readonly MatchTargetFact[];
 }
 
 export interface ImportDraftEvaluationContext {
@@ -63,7 +59,7 @@ export interface ImportDraftEvaluationContext {
   draftRows: readonly ImportRefundLinkDraftRow[];
   matchDraftRows: readonly ImportMatchDraftRow[];
   existingExpenses: ReadonlyMap<string, ExistingRefundTargetExpense>;
-  existingTransactions: readonly ImportMatchTargetTransaction[];
+  existingTransactions: readonly MatchTargetFact[];
   priorRefundsByTarget?: ReadonlyMap<string, number>;
 }
 
@@ -124,19 +120,23 @@ export const evaluateImportDraftRow = (
   row: ImportDraftDurableRow,
   ctx: ImportDraftEvaluationContext,
   refundEvaluations?: ReadonlyMap<string, ImportRefundLinkEvaluation>,
-  matchEvaluations?: ReadonlyMap<string, ImportMatchEvaluation>
+  matchEvaluations?: ReadonlyMap<string, ImportMatchEvaluation>,
+  suggestionTargets?: readonly ImportRefundSuggestionTarget[]
 ): ImportDraftRowEvaluation => {
   const evaluations = refundEvaluations ?? buildRefundLinkEvaluations(ctx);
   const matches = matchEvaluations ?? buildMatchEvaluations(ctx);
   const refundLink = evaluations.get(row.id) ?? null;
   const refundLinkBlocked = isImportRefundLinkBlocked(refundLink ?? undefined);
   const match = matches.get(row.id) ?? null;
+  const refundDraftRow =
+    ctx.draftRows.find((draftRow) => draftRow.id === row.id) ??
+    toImportRefundLinkDraftRow(row);
   const refundSuggestion = suggestImportRefundLink(
-    toImportRefundLinkDraftRow(row),
+    refundDraftRow,
     ctx.draftRows,
     {
       targetAccountId: ctx.targetAccountId,
-      existingExpenses: refundSuggestionTargets(ctx),
+      existingExpenses: suggestionTargets ?? refundSuggestionTargets(ctx),
     }
   );
 
@@ -153,7 +153,7 @@ export const evaluateImportDraftRow = (
     reviewAssigneeMemberIds: [...row.reviewAssigneeMemberIds],
     reviewCounterpartAccountId: row.reviewCounterpartAccountId,
     refundLinkBlocked,
-    matchBlocked: Boolean(match?.matchBlocked),
+    matchBlocked: (match?.issues.length ?? 0) > 0,
   });
 
   const evaluation = evaluateImportRow(statusFields);
@@ -175,21 +175,23 @@ export const evaluateImportDraftRow = (
 /** Derive presentation status for every row in a draft. */
 export const evaluateImportDraft = (
   rows: readonly ImportDraftDurableRow[],
-  options: ImportDraftEvaluationOptions & {
-    draftRows?: readonly ImportRefundLinkDraftRow[];
-  }
+  options: ImportDraftEvaluationOptions
 ): Map<string, ImportDraftRowEvaluation> => {
   const ctx = toImportDraftEvaluationContext(rows, options);
-  if (options.draftRows) {
-    ctx.draftRows = options.draftRows;
-  }
   const refundEvaluations = buildRefundLinkEvaluations(ctx);
   const matchEvaluations = buildMatchEvaluations(ctx);
+  const suggestionTargets = refundSuggestionTargets(ctx);
   const results = new Map<string, ImportDraftRowEvaluation>();
   for (const row of rows) {
     results.set(
       row.id,
-      evaluateImportDraftRow(row, ctx, refundEvaluations, matchEvaluations)
+      evaluateImportDraftRow(
+        row,
+        ctx,
+        refundEvaluations,
+        matchEvaluations,
+        suggestionTargets
+      )
     );
   }
   return results;
@@ -218,9 +220,7 @@ export const buildImportDraftRowView = <T extends ImportDraftDurableRow>(
 
 export const buildImportDraftRowViews = <T extends ImportDraftDurableRow>(
   rows: readonly T[],
-  options: ImportDraftEvaluationOptions & {
-    draftRows?: readonly ImportRefundLinkDraftRow[];
-  }
+  options: ImportDraftEvaluationOptions
 ): ImportDraftRowView<T>[] => {
   const evaluations = evaluateImportDraft(rows, options);
   return rows.map((row) =>

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import type { ImportDraftRow, OrgMember } from '@ploutizo/types';
 import {
   formatImportBatchStatusLabel,
-  getImportRowStatusIconKind,
   getImportRowStatusTooltip,
   importBatchStatusVariant,
   resolveImportRowAssigneeMemberIds,
@@ -168,8 +167,6 @@ describe('importPresentation review helpers', () => {
         collisionRowIds: [],
         acceptedMatch: null,
         acceptedMatchValid: true,
-        matchBlocked: false,
-        matchNeedsReview: false,
         issues: [],
       })
     ).toBe(
@@ -177,51 +174,7 @@ describe('importPresentation review helpers', () => {
     );
   });
 
-  it('keeps unselected advisory copy on a ready row without a match blocker', () => {
-    expect(
-      getImportRowStatusTooltip(baseRow, [], {
-        candidates: [
-          {
-            transactionId: 'tx-1',
-            kind: 'fuzzy_description',
-            explanation: 'Similar description on the same date and amount.',
-          },
-        ],
-        exactCandidate: null,
-        advisoryCandidates: [
-          {
-            transactionId: 'tx-1',
-            kind: 'fuzzy_description',
-            explanation: 'Similar description on the same date and amount.',
-          },
-        ],
-        collisionRowIds: [],
-        acceptedMatch: null,
-        acceptedMatchValid: true,
-        matchBlocked: false,
-        matchNeedsReview: true,
-        issues: [],
-      })
-    ).toBe('Needs review: match needs review');
-  });
-
-  it('shows the amber review icon for ready rows that still need match review', () => {
-    expect(
-      getImportRowStatusIconKind(baseRow, {
-        candidates: [],
-        exactCandidate: null,
-        advisoryCandidates: [],
-        collisionRowIds: [],
-        acceptedMatch: null,
-        acceptedMatchValid: true,
-        matchBlocked: false,
-        matchNeedsReview: true,
-        issues: ['collision'],
-      })
-    ).toBe('needs_review');
-  });
-
-  it('includes match when evaluator blockers are provided', () => {
+  it('uses the match blocker for unresolved advisory review copy', () => {
     expect(
       getImportRowStatusTooltip(
         {

@@ -9,7 +9,6 @@ import {
   createImportRowClassifier,
   evaluateImportMatches,
   matchDecisionForSelectionChange,
-  matchTargetFactsRecordFromMap,
   toImportMatchDraftRow,
 } from '@ploutizo/utils';
 import {
@@ -158,7 +157,8 @@ export const listActiveImportDrafts = async (
       const { evaluations } = await loadDraftEvaluationContext(
         orgId,
         summary.accountId,
-        batchRows
+        batchRows,
+        { includeMatchTargets: false }
       );
       return withLiveImportReviewCounts(
         toImportDraftSummary(summary),
@@ -361,22 +361,7 @@ export const updateImportDraftRow = async (
     }
   }
 
-  let matchTargetFacts: UpdateImportDraftRowResult['matchTargetFacts'];
-  if (
-    Object.prototype.hasOwnProperty.call(input, 'reviewMatchedTransactionId')
-  ) {
-    const matchedId = input.reviewMatchedTransactionId;
-    if (matchedId) {
-      const targets = await listImportMatchTargets(orgId, draft.accountId, [
-        matchedId,
-      ]);
-      matchTargetFacts = matchTargetFactsRecordFromMap(targets);
-    }
-  }
-
-  return refundTargetFacts || matchTargetFacts
-    ? { row, refundTargetFacts, matchTargetFacts }
-    : { row };
+  return refundTargetFacts ? { row, refundTargetFacts } : { row };
 };
 
 export const updateImportDraftRowSelection = async (
@@ -435,7 +420,6 @@ export const updateImportDraftRowSelection = async (
       const nextMatchedTransactionId = matchDecisionForSelectionChange({
         selectedForImport: input.selectedForImport,
         currentMatchedTransactionId: persisted.reviewMatchedTransactionId,
-        dismissed: persisted.reviewMatchDismissed,
         exactCandidate:
           matchEvaluations.get(persisted.id)?.exactCandidate ?? null,
       });

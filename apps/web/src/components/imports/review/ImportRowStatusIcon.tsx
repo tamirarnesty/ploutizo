@@ -7,14 +7,10 @@ import {
 } from '@ploutizo/ui/components/tooltip';
 import { cn } from '@ploutizo/ui/lib/utils';
 import type { ImportDraftRow } from '@ploutizo/types';
-import { evaluateImportDraftWorkingCopy } from '@/lib/data-access/imports/rederiveImportDraftWorkingCopy';
+import { getImportRowStatusTooltip } from '../lib/importPresentation';
 import {
-  getImportRowStatusIconKind,
-  getImportRowStatusTooltip,
-} from '../lib/importPresentation';
-import {
-  useImportDraftReviewContext,
   useImportDraftReviewFailedRowIds,
+  useImportDraftRowEvaluation,
 } from './ImportDraftReviewContext';
 
 const statusIconClassName: Record<ImportDraftRow['status'], string> = {
@@ -57,9 +53,8 @@ interface ImportRowStatusIconProps {
 
 export const ImportRowStatusIcon = ({ row }: ImportRowStatusIconProps) => {
   const failedRowIds = useImportDraftReviewFailedRowIds();
-  const { draftId } = useImportDraftReviewContext();
   const persistFailed = failedRowIds.includes(row.id);
-  const evaluation = evaluateImportDraftWorkingCopy(draftId)?.get(row.id);
+  const evaluation = useImportDraftRowEvaluation(row.id);
   const tooltip = persistFailed
     ? 'Could not save this row. Use Retry in the draft autosave strip.'
     : getImportRowStatusTooltip(row, evaluation?.blockers, evaluation?.match);
@@ -76,10 +71,7 @@ export const ImportRowStatusIcon = ({ row }: ImportRowStatusIconProps) => {
           />
         }
       >
-        <StatusIcon
-          status={getImportRowStatusIconKind(row, evaluation?.match)}
-          persistFailed={persistFailed}
-        />
+        <StatusIcon status={row.status} persistFailed={persistFailed} />
       </TooltipTrigger>
       <TooltipContent>{tooltip}</TooltipContent>
     </Tooltip>

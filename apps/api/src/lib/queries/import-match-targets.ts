@@ -2,7 +2,7 @@ import { db } from '@ploutizo/db';
 import { transactions } from '@ploutizo/db/schema';
 import { and, eq, inArray, isNull, or } from 'drizzle-orm';
 import type { DbClient } from '@ploutizo/db';
-import type { ImportMatchTargetTransaction } from '@ploutizo/utils';
+import type { MatchTargetFact } from '@ploutizo/types';
 
 /**
  * Load match/refund suggestion targets for the destination card.
@@ -14,8 +14,8 @@ export const listImportMatchTargets = async (
   accountId: string,
   extraIds: readonly string[] = [],
   client: DbClient = db
-): Promise<Map<string, ImportMatchTargetTransaction>> => {
-  const result = new Map<string, ImportMatchTargetTransaction>();
+): Promise<Map<string, MatchTargetFact>> => {
+  const result = new Map<string, MatchTargetFact>();
   const uniqueExtraIds = [...new Set(extraIds.filter(Boolean))];
 
   const rows = await client

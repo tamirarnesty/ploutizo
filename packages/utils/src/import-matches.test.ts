@@ -1,12 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import type { MatchTargetFact } from '@ploutizo/types';
 import {
   evaluateImportMatches,
   matchDecisionForSelectionChange,
 } from './import-matches';
-import type {
-  ImportMatchDraftRow,
-  ImportMatchTargetTransaction,
-} from './import-matches';
+import type { ImportMatchDraftRow } from './import-matches';
 
 const targetAccountId = 'account-1';
 
@@ -30,9 +28,7 @@ const row = (
   ...overrides,
 });
 
-const tx = (
-  overrides: Partial<ImportMatchTargetTransaction> = {}
-): ImportMatchTargetTransaction => ({
+const tx = (overrides: Partial<MatchTargetFact> = {}): MatchTargetFact => ({
   id: 'tx-1',
   accountId: targetAccountId,
   type: 'expense',
@@ -47,7 +43,7 @@ const tx = (
 
 const evaluate = (
   rows: ImportMatchDraftRow[],
-  transactions: ImportMatchTargetTransaction[]
+  transactions: MatchTargetFact[]
 ) =>
   evaluateImportMatches(rows, {
     targetAccountId,
@@ -148,8 +144,7 @@ describe('evaluateImportMatches — same-import collisions', () => {
     expect(evaluations.get('row-a')?.collisionRowIds).toEqual(['row-b']);
     expect(evaluations.get('row-b')?.collisionRowIds).toEqual(['row-a']);
     expect(evaluations.get('row-a')?.issues).toContain('collision');
-    expect(evaluations.get('row-a')?.matchBlocked).toBe(false);
-    expect(evaluations.get('row-a')?.matchNeedsReview).toBe(true);
+    expect(evaluations.get('row-b')?.issues).toContain('collision');
   });
 
   it('blocks Continue when two colliding rows are both selected', () => {
@@ -159,22 +154,19 @@ describe('evaluateImportMatches — same-import collisions', () => {
     ];
     const evaluations = evaluate(rows, []);
 
-    expect(evaluations.get('row-a')?.matchBlocked).toBe(true);
-    expect(evaluations.get('row-b')?.matchBlocked).toBe(true);
+    expect(evaluations.get('row-a')?.issues).toContain('collision');
+    expect(evaluations.get('row-b')?.issues).toContain('collision');
   });
 
-  it('clears the Continue block when one colliding row is selected and the other is not', () => {
+  it('clears the collision once exactly one colliding row is selected', () => {
     const rows = [
       row({ id: 'row-a', selectedForImport: true }),
       row({ id: 'row-b', selectedForImport: false }),
     ];
     const evaluations = evaluate(rows, []);
 
-    expect(evaluations.get('row-a')?.matchBlocked).toBe(false);
-    expect(evaluations.get('row-b')?.issues).toContain('collision');
-    expect(evaluations.get('row-b')?.matchBlocked).toBe(false);
-    expect(evaluations.get('row-a')?.matchNeedsReview).toBe(false);
-    expect(evaluations.get('row-b')?.matchNeedsReview).toBe(false);
+    expect(evaluations.get('row-a')?.issues).not.toContain('collision');
+    expect(evaluations.get('row-b')?.issues).not.toContain('collision');
   });
 });
 
@@ -199,9 +191,8 @@ describe('evaluateImportMatches — advisory candidates', () => {
         explanation: 'Similar description on the same date and amount.',
       },
     ]);
-    expect(evaluation?.matchBlocked).toBe(false);
-    expect(evaluation?.matchNeedsReview).toBe(true);
     expect(evaluation?.acceptedMatch).toBeNull();
+    expect(evaluation?.issues).toContain('advisory_unresolved');
   });
 
   it('keeps date-tolerant settlement comparisons as review-only suggestions', () => {
@@ -274,7 +265,6 @@ describe('evaluateImportMatches — advisory candidates', () => {
     ).get('row-1');
 
     expect(evaluation?.acceptedMatch).toBeNull();
-    expect(evaluation?.matchBlocked).toBe(true);
     expect(evaluation?.issues).toContain('advisory_unresolved');
   });
 
@@ -301,7 +291,7 @@ describe('evaluateImportMatches — advisory candidates', () => {
       transactionId: 'tx-1',
       kind: 'fuzzy_description',
     });
-    expect(evaluation?.matchBlocked).toBe(false);
+    expect(evaluation?.issues).not.toContain('advisory_unresolved');
   });
 });
 
@@ -324,7 +314,6 @@ describe('evaluateImportMatches — stable decisions', () => {
       kind: 'external_id',
     });
     expect(evaluation?.acceptedMatchValid).toBe(true);
-    expect(evaluation?.matchBlocked).toBe(false);
   });
 
   it('preserves a saved identity match and blocks Continue after the identity no longer holds', () => {
@@ -343,7 +332,6 @@ describe('evaluateImportMatches — stable decisions', () => {
     expect(evaluation?.exactCandidate).toBeNull();
     expect(evaluation?.acceptedMatch).toBeNull();
     expect(evaluation?.issues).toContain('invalidated_decision');
-    expect(evaluation?.matchBlocked).toBe(true);
     expect(evaluation?.acceptedMatchValid).toBe(false);
   });
 
@@ -363,10 +351,9 @@ describe('evaluateImportMatches — stable decisions', () => {
       kind: 'external_id',
     });
     expect(evaluation?.acceptedMatchValid).toBe(true);
-    expect(evaluation?.matchBlocked).toBe(false);
   });
 
-  it('does not overwrite a dismissed decision with a new exact candidate', () => {
+  it('does not treat a dismissed exact candidate as an accepted match until selection writes it', () => {
     const evaluation = evaluate(
       [
         row({
@@ -379,7 +366,20 @@ describe('evaluateImportMatches — stable decisions', () => {
 
     expect(evaluation?.exactCandidate?.transactionId).toBe('tx-1');
     expect(evaluation?.acceptedMatch).toBeNull();
-    expect(evaluation?.matchBlocked).toBe(false);
+    expect(evaluation?.issues).toEqual([]);
+  });
+
+  it('treats multiple exact identity matches as unresolved review', () => {
+    const evaluation = evaluate(
+      [row({ externalId: null })],
+      [
+        tx({ id: 'tx-1', externalId: null }),
+        tx({ id: 'tx-2', externalId: null }),
+      ]
+    ).get('row-1');
+
+    expect(evaluation?.exactCandidate).toBeNull();
+    expect(evaluation?.issues).toContain('ambiguous_exact');
   });
 });
 
@@ -391,7 +391,6 @@ describe('matchDecisionForSelectionChange', () => {
       matchDecisionForSelectionChange({
         selectedForImport: true,
         currentMatchedTransactionId: null,
-        dismissed: false,
         exactCandidate: evaluation.exactCandidate,
       })
     ).toBe('tx-1');
@@ -404,7 +403,6 @@ describe('matchDecisionForSelectionChange', () => {
       matchDecisionForSelectionChange({
         selectedForImport: false,
         currentMatchedTransactionId: 'tx-1',
-        dismissed: false,
         exactCandidate: evaluation.exactCandidate,
       })
     ).toBeNull();
@@ -415,7 +413,6 @@ describe('matchDecisionForSelectionChange', () => {
       matchDecisionForSelectionChange({
         selectedForImport: true,
         currentMatchedTransactionId: 'tx-saved',
-        dismissed: false,
         exactCandidate: {
           transactionId: 'tx-1',
           kind: 'external_id',
@@ -425,18 +422,17 @@ describe('matchDecisionForSelectionChange', () => {
     ).toBe('tx-saved');
   });
 
-  it('does not auto-accept an exact candidate after the user dismisses it', () => {
+  it('still auto-accepts an exact candidate when the row was previously dismissed', () => {
     expect(
       matchDecisionForSelectionChange({
         selectedForImport: true,
         currentMatchedTransactionId: null,
-        dismissed: true,
         exactCandidate: {
           transactionId: 'tx-1',
           kind: 'external_id',
           explanation: 'Exact external ID match on this card.',
         },
       })
-    ).toBeNull();
+    ).toBe('tx-1');
   });
 });

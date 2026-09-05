@@ -175,7 +175,6 @@ export type CreateImportDraftResponse =
 export interface UpdateImportDraftRowResult {
   row: ImportDraftPersistedRow;
   refundTargetFacts?: Record<string, RefundTargetFact>;
-  matchTargetFacts?: Record<string, MatchTargetFact>;
 }
 
 /** Per-row blocker payload when Continue rejects under the prepared-set lock. */

@@ -77,9 +77,6 @@ importsRouter.patch(
       ...(result.refundTargetFacts
         ? { refundTargetFacts: result.refundTargetFacts }
         : {}),
-      ...(result.matchTargetFacts
-        ? { matchTargetFacts: result.matchTargetFacts }
-        : {}),
     });
   }
 );

@@ -87,6 +87,7 @@ const renderRowFields = (row: ImportDraftRow) =>
     <TooltipProvider delay={0}>
       <ImportDraftReviewProvider
         draftId={row.batchId}
+        rows={[row]}
         categories={[mockCategory]}
         orgMembers={[]}
         updateRow={updateRow}
@@ -174,8 +175,6 @@ describe('ImportDraftReviewRow', () => {
               collisionRowIds: [],
               acceptedMatch: null,
               acceptedMatchValid: true,
-              matchBlocked: false,
-              matchNeedsReview: false,
               issues: [],
             },
           },
@@ -226,8 +225,6 @@ describe('ImportDraftReviewRow', () => {
               collisionRowIds: ['row-other'],
               acceptedMatch: null,
               acceptedMatchValid: true,
-              matchBlocked: false,
-              matchNeedsReview: true,
               issues: ['collision'],
             },
           },

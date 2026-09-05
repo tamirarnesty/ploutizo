@@ -210,7 +210,7 @@ describe('evaluateImportDraft — matching', () => {
     expect(result.match?.acceptedMatch).toBeNull();
   });
 
-  it('keeps an unselected advisory match ready and surfaces review copy without blocking Continue', () => {
+  it('marks an unselected advisory match as needs review without selecting it', () => {
     const advisoryRow = {
       ...matchRow,
       externalId: null,
@@ -233,10 +233,9 @@ describe('evaluateImportDraft — matching', () => {
       })
     );
 
-    expect(result.status).toBe('ready');
-    expect(result.blockers).not.toContain('match');
-    expect(result.match?.matchNeedsReview).toBe(true);
-    expect(result.match?.matchBlocked).toBe(false);
+    expect(result.status).toBe('needs_review');
+    expect(result.blockers).toContain('match');
+    expect(result.match?.issues).toContain('advisory_unresolved');
     expect(result.match?.acceptedMatch).toBeNull();
     expect(result.match?.advisoryCandidates[0]?.kind).toBe('fuzzy_description');
   });
@@ -267,7 +266,7 @@ describe('evaluateImportDraft — matching', () => {
 
     expect(result.status).toBe('needs_review');
     expect(result.blockers).toContain('match');
-    expect(result.match?.matchBlocked).toBe(true);
+    expect(result.match?.issues).toContain('advisory_unresolved');
     expect(result.match?.acceptedMatch).toBeNull();
   });
 
