@@ -11,6 +11,7 @@ import {
   listRefundTargetExpensesByIds,
   sumPriorRefundTotalsByTransactionTarget,
 } from '@/lib/queries/import-refund-targets';
+import { listImportMatchTargets } from '@/lib/queries/import-match-targets';
 import { listOrgMembers } from '@/lib/queries/households';
 import {
   fetchDraftSummaryById,
@@ -109,6 +110,10 @@ vi.mock('@/lib/queries/import-refund-targets', () => ({
   sumPriorRefundTotalsByTransactionTarget: vi.fn(),
 }));
 
+vi.mock('@/lib/queries/import-match-targets', () => ({
+  listImportMatchTargets: vi.fn(),
+}));
+
 vi.mock('@/lib/queries/households', () => ({
   listOrgMembers: vi.fn(),
 }));
@@ -150,6 +155,8 @@ const draftRow = {
   reviewCounterpartAccountId: null,
   reviewRefundOf: null,
   reviewRefundLinkHint: null,
+  reviewMatchedTransactionId: null,
+  reviewMatchDismissed: false,
   reviewNotes: 'weekly',
   reviewTagIds: [],
   selectedForImport: true,
@@ -679,6 +686,7 @@ describe('continueImportDraft', () => {
     vi.mocked(listDraftRows).mockResolvedValue([draftRow as never]);
     vi.mocked(allTransactionsInOrg).mockResolvedValue(true);
     vi.mocked(listRefundTargetExpensesByIds).mockResolvedValue(new Map());
+    vi.mocked(listImportMatchTargets).mockResolvedValue(new Map());
     vi.mocked(sumPriorRefundTotalsByTransactionTarget).mockResolvedValue(
       new Map()
     );
@@ -773,6 +781,38 @@ describe('continueImportDraft', () => {
     });
     expect(err).toHaveProperty('details');
     expect(insertImportPreparedSet).not.toHaveBeenCalled();
+  });
+
+  it('creates a prepared set when a selected row has a saved accepted match', async () => {
+    vi.mocked(listDraftRows).mockResolvedValue([
+      { ...draftRow, reviewMatchedTransactionId: TXN } as never,
+    ]);
+    vi.mocked(listImportMatchTargets).mockResolvedValue(
+      new Map([
+        [
+          TXN,
+          {
+            id: TXN,
+            accountId: ACCOUNT,
+            type: 'expense',
+            date: '2026-05-02',
+            amount: 4218,
+            description: 'Neighborhood Coffee',
+            rawDescription: 'COFFEE SHOP #42',
+            externalId: 'visa-1001',
+            deleted: false,
+          },
+        ],
+      ])
+    );
+
+    const result = await continueImportDraft(ORG, BATCH);
+
+    expect(insertImportPreparedSet).toHaveBeenCalled();
+    expect(result).toMatchObject({
+      revision: 1,
+      outcomes: [{ outcome: 'unprocessed', batchRowId: ROW }],
+    });
   });
 
   it('snapshots the evaluated draft rows without re-reading for preparation', async () => {

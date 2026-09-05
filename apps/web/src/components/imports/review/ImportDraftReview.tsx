@@ -142,6 +142,7 @@ const ImportDraftReviewContent = ({
         ) : meta ? (
           <ImportDraftReviewProvider
             draftId={meta.id}
+            rows={rows}
             categories={categories}
             orgMembers={orgMembers}
             updateRow={updateRow}

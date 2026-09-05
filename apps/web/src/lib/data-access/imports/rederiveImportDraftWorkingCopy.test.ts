@@ -191,4 +191,144 @@ describe('rederiveImportDraftWorkingCopy', () => {
     expect(evaluation?.blockers).toContain('refund_link');
     expect(evaluation?.refundLink?.issues).toContain('wrong_account');
   });
+
+  it('keeps an unselected exact match ready and exposes no accepted-match decision', async () => {
+    const draft = makeImportDraft({
+      id: 'draft_exact_match',
+      matchTargetFacts: {
+        tx_1: {
+          id: 'tx_1',
+          accountId: 'acct_1',
+          type: 'expense',
+          date: '2026-05-02',
+          amount: 4218,
+          description: 'Coffee',
+          rawDescription: 'Coffee',
+          externalId: 'visa-1001',
+          deleted: false,
+        },
+      },
+      rows: [
+        makeImportDraftRow({
+          id: 'row_match',
+          externalId: 'visa-1001',
+          selectedForImport: false,
+        }),
+      ],
+    });
+
+    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
+    vi.mocked(fetchImportDraft).mockResolvedValue(draft);
+    const collection = getImportDraftRowsCollection(draft.id);
+    await collection.preload();
+
+    rederiveImportDraftWorkingCopy(draft.id);
+
+    expect(collection.get('row_match')?.status).toBe('ready');
+    expect(collection.get('row_match')?.selectedForImport).toBe(false);
+    const evaluation = evaluateImportDraftWorkingCopy(draft.id)?.get(
+      'row_match'
+    );
+    expect(evaluation?.match?.exactCandidate?.kind).toBe('external_id');
+    expect(evaluation?.match?.acceptedMatch).toBeNull();
+  });
+
+  it('keeps same-import external-ID collisions unresolved until one row is selected', async () => {
+    const draft = makeImportDraft({
+      id: 'draft_collision',
+      rows: [
+        makeImportDraftRow({
+          id: 'row_a',
+          externalId: 'visa-1001',
+          selectedForImport: false,
+        }),
+        makeImportDraftRow({
+          id: 'row_b',
+          rowNumber: 3,
+          externalId: 'visa-1001',
+          reviewDescription: 'Coffee copy',
+          sourceDescription: 'Coffee copy',
+          parsedDescription: 'Coffee copy',
+          selectedForImport: false,
+        }),
+      ],
+    });
+
+    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
+    vi.mocked(fetchImportDraft).mockResolvedValue(draft);
+    const collection = getImportDraftRowsCollection(draft.id);
+    await collection.preload();
+
+    rederiveImportDraftWorkingCopy(draft.id);
+
+    expect(collection.get('row_a')?.status).toBe('needs_review');
+    expect(collection.get('row_b')?.status).toBe('needs_review');
+    const collisionEvaluation = evaluateImportDraftWorkingCopy(draft.id)?.get(
+      'row_a'
+    );
+    expect(collisionEvaluation?.blockers).toContain('match');
+    expect(collisionEvaluation?.match?.issues).toContain('collision');
+
+    collection.utils.writeUpdate({
+      ...collection.get('row_a')!,
+      selectedForImport: true,
+    });
+    rederiveImportDraftWorkingCopy(draft.id);
+
+    expect(collection.get('row_a')?.status).toBe('ready');
+    expect(collection.get('row_b')?.status).toBe('ready');
+    expect(
+      evaluateImportDraftWorkingCopy(draft.id)?.get('row_a')?.match
+        ?.acceptedMatch
+    ).toBeNull();
+    expect(
+      evaluateImportDraftWorkingCopy(draft.id)?.get('row_a')?.match?.issues
+    ).not.toContain('collision');
+    expect(
+      evaluateImportDraftWorkingCopy(draft.id)?.get('row_b')?.match?.issues
+    ).not.toContain('collision');
+  });
+
+  it('blocks Continue on a selected advisory match until the user decides', async () => {
+    const draft = makeImportDraft({
+      id: 'draft_advisory_match',
+      matchTargetFacts: {
+        tx_1: {
+          id: 'tx_1',
+          accountId: 'acct_1',
+          type: 'expense',
+          date: '2026-05-02',
+          amount: 4218,
+          description: 'STARBUCKS STORE 99',
+          rawDescription: 'STARBUCKS STORE 99',
+          externalId: null,
+          deleted: false,
+        },
+      },
+      rows: [
+        makeImportDraftRow({
+          id: 'row_advisory',
+          externalId: null,
+          sourceDescription: 'STARBUCKS STORE 123',
+          parsedDescription: 'STARBUCKS STORE 123',
+          reviewDescription: 'STARBUCKS STORE 123',
+          selectedForImport: true,
+        }),
+      ],
+    });
+
+    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
+    vi.mocked(fetchImportDraft).mockResolvedValue(draft);
+    const collection = getImportDraftRowsCollection(draft.id);
+    await collection.preload();
+
+    rederiveImportDraftWorkingCopy(draft.id);
+
+    expect(collection.get('row_advisory')?.status).toBe('needs_review');
+    const evaluation = evaluateImportDraftWorkingCopy(draft.id)?.get(
+      'row_advisory'
+    );
+    expect(evaluation?.blockers).toContain('match');
+    expect(evaluation?.match?.acceptedMatch).toBeNull();
+  });
 });

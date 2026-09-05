@@ -31,6 +31,7 @@ import {
   updateImportDraftRowSelectionQuery,
 } from '@/lib/queries/imports';
 import { listRefundTargetExpensesByIds } from '@/lib/queries/import-refund-targets';
+import { listImportMatchTargets } from '@/lib/queries/import-match-targets';
 import { assertOrgWriteReferences } from '@/lib/assertOrgWriteReferences';
 import { listAccountMemberDetails } from '@/lib/queries/accounts';
 import { listOrgMembers } from '@/lib/queries/households';
@@ -67,6 +68,10 @@ vi.mock('@/lib/queries/imports', () => ({
 
 vi.mock('@/lib/queries/import-refund-targets', () => ({
   listRefundTargetExpensesByIds: vi.fn(),
+}));
+
+vi.mock('@/lib/queries/import-match-targets', () => ({
+  listImportMatchTargets: vi.fn(),
 }));
 
 vi.mock('@/lib/queries/accounts', () => ({
@@ -139,6 +144,8 @@ const draftRow = {
   reviewCounterpartAccountId: null,
   reviewRefundOf: null,
   reviewRefundLinkHint: null,
+  reviewMatchedTransactionId: null,
+  reviewMatchDismissed: false,
   reviewNotes: null,
   reviewTagIds: [],
   selectedForImport: false,
@@ -157,6 +164,7 @@ describe('import service', () => {
     vi.mocked(fetchDraftSummaryById).mockResolvedValue(summaryRow);
     vi.mocked(listDraftRows).mockResolvedValue([draftRow]);
     vi.mocked(listRefundTargetExpensesByIds).mockResolvedValue(new Map());
+    vi.mocked(listImportMatchTargets).mockResolvedValue(new Map());
     vi.mocked(listOrgMembers).mockResolvedValue([
       {
         id: '44444444-4444-4444-8444-444444444444',
@@ -719,10 +727,60 @@ describe('import service', () => {
       tx
     );
     expect(touchImportDraft).toHaveBeenCalledWith('org_1', summaryRow.id, tx);
-    expect(listDraftRows).not.toHaveBeenCalled();
+    expect(listDraftRows).toHaveBeenCalledWith('org_1', summaryRow.id, tx);
     expect(result).toHaveLength(1);
     expect(result[0]?.selectedForImport).toBe(true);
     expect(result[0]).not.toHaveProperty('status');
+  });
+
+  it('accepts an exact match when the row is selected', async () => {
+    const matchedRow = {
+      ...draftRow,
+      selectedForImport: true,
+    };
+    vi.mocked(fetchDraftSummaryById).mockResolvedValue(summaryRow);
+    vi.mocked(listDraftRowIdsForDraft).mockResolvedValue([{ id: draftRow.id }]);
+    vi.mocked(updateImportDraftRowSelectionQuery).mockResolvedValue([
+      matchedRow,
+    ]);
+    vi.mocked(listDraftRows).mockResolvedValue([matchedRow]);
+    vi.mocked(listImportMatchTargets).mockResolvedValue(
+      new Map([
+        [
+          'tx-1',
+          {
+            id: 'tx-1',
+            accountId: summaryRow.accountId,
+            type: 'expense',
+            date: '2026-05-02',
+            amount: 4218,
+            description: 'Coffee',
+            rawDescription: 'Coffee',
+            externalId: 'visa-1001',
+            deleted: false,
+          },
+        ],
+      ])
+    );
+    vi.mocked(updateImportDraftRowQuery).mockResolvedValue({
+      ...matchedRow,
+      reviewMatchedTransactionId: 'tx-1',
+    });
+    const tx = {} as never;
+    vi.mocked(db.transaction).mockImplementation(async (fn) => fn(tx));
+
+    const result = await updateImportDraftRowSelection('org_1', summaryRow.id, {
+      rowIds: [draftRow.id],
+      selectedForImport: true,
+    });
+
+    expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
+      'org_1',
+      draftRow.id,
+      { reviewMatchedTransactionId: 'tx-1' },
+      tx
+    );
+    expect(result[0]?.reviewMatchedTransactionId).toBe('tx-1');
   });
 
   it('returns persisted row without sibling re-derive when refund category is patched', async () => {

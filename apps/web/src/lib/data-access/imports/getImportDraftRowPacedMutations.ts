@@ -34,6 +34,8 @@ const REVIEW_PATCH_KEYS = [
   'reviewCounterpartAccountId',
   'reviewRefundOf',
   'reviewRefundLinkHint',
+  'reviewMatchedTransactionId',
+  'reviewMatchDismissed',
   'reviewNotes',
   'reviewTagIds',
 ] as const satisfies readonly (keyof UpdateImportDraftRowInput)[];
@@ -182,7 +184,7 @@ const applyOptimisticRowPatch = (
 
   if (evaluations) {
     rederiveImportDraftWorkingCopy(draftId, {
-      rows: rowsForEval,
+      evaluations,
       skipIds: new Set([rowId]),
     });
   }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   evaluateImportRefundLinks,
+  suggestImportRefundLink,
   sumSelectedRefundsByTarget,
 } from './import-refund-links';
 
@@ -99,5 +100,102 @@ describe('evaluateImportRefundLinks', () => {
     );
 
     expect(evaluations.get('refund-1')?.issues).toContain('cumulative_exceeds');
+  });
+});
+
+describe('suggestImportRefundLink', () => {
+  it('suggests an existing same-amount expense with a similar description', () => {
+    const suggestion = suggestImportRefundLink(
+      {
+        ...refundRow({ reviewRefundOf: null, reviewRefundOfBatchRowId: null }),
+        sourceDescription: 'AMAZON MARKETPLACE',
+        parsedDescription: 'AMAZON MARKETPLACE',
+      },
+      [],
+      {
+        targetAccountId: 'account-1',
+        existingExpenses: [
+          {
+            id: 'tx-expense',
+            accountId: 'account-1',
+            amount: 2000,
+            description: 'Amazon',
+            rawDescription: 'AMAZON MARKETPLACE',
+            deleted: false,
+          },
+        ],
+      }
+    );
+
+    expect(suggestion).toEqual({
+      kind: 'existing',
+      transactionId: 'tx-expense',
+      batchRowId: null,
+      explanation:
+        'Suggested refund of an existing expense with the same amount.',
+    });
+  });
+
+  it('still returns a current suggestion when the user already saved a different link', () => {
+    const suggestion = suggestImportRefundLink(
+      {
+        ...refundRow({
+          reviewRefundOf: 'tx-saved',
+          reviewRefundOfBatchRowId: null,
+        }),
+        sourceDescription: 'AMAZON MARKETPLACE',
+        parsedDescription: 'AMAZON MARKETPLACE',
+      },
+      [],
+      {
+        targetAccountId: 'account-1',
+        existingExpenses: [
+          {
+            id: 'tx-expense',
+            accountId: 'account-1',
+            amount: 2000,
+            description: 'Amazon',
+            rawDescription: 'AMAZON MARKETPLACE',
+            deleted: false,
+          },
+        ],
+      }
+    );
+
+    expect(suggestion?.transactionId).toBe('tx-expense');
+  });
+
+  it('does not suggest a soft-deleted or other-account expense', () => {
+    const suggestion = suggestImportRefundLink(
+      {
+        ...refundRow({ reviewRefundOf: null, reviewRefundOfBatchRowId: null }),
+        sourceDescription: 'AMAZON MARKETPLACE',
+        parsedDescription: 'AMAZON MARKETPLACE',
+      },
+      [],
+      {
+        targetAccountId: 'account-1',
+        existingExpenses: [
+          {
+            id: 'tx-deleted',
+            accountId: 'account-1',
+            amount: 2000,
+            description: 'Amazon',
+            rawDescription: 'AMAZON MARKETPLACE',
+            deleted: true,
+          },
+          {
+            id: 'tx-other',
+            accountId: 'other-card',
+            amount: 2000,
+            description: 'Amazon',
+            rawDescription: 'AMAZON MARKETPLACE',
+            deleted: false,
+          },
+        ],
+      }
+    );
+
+    expect(suggestion).toBeNull();
   });
 });

@@ -1,6 +1,11 @@
 import type { ImportTransactionType } from '@ploutizo/types';
 import {
+  importDescriptionsAreSimilar,
+  normalizeImportMatchDescription,
+} from './import-matches';
+import {
   resolveImportRowReviewAmount,
+  resolveImportRowReviewDescription,
   resolveImportRowReviewType,
   toImportTransactionType,
 } from './import-row-status';
@@ -16,6 +21,9 @@ export interface ImportRefundLinkDraftRow {
   reviewRefundOf: string | null;
   reviewRefundOfBatchRowId: string | null;
   selectedForImport: boolean;
+  sourceDescription?: string | null;
+  parsedDescription?: string | null;
+  reviewDescription?: string | null;
 }
 
 /** Normalize draft/API row shapes into the refund-link evaluation input. */
@@ -30,6 +38,9 @@ export const toImportRefundLinkDraftRow = (row: {
   reviewRefundOf: string | null;
   reviewRefundOfBatchRowId?: string | null;
   selectedForImport: boolean;
+  sourceDescription?: string | null;
+  parsedDescription?: string | null;
+  reviewDescription?: string | null;
 }): ImportRefundLinkDraftRow => ({
   id: row.id,
   reviewType: toImportTransactionType(row.reviewType),
@@ -41,6 +52,9 @@ export const toImportRefundLinkDraftRow = (row: {
   reviewRefundOf: row.reviewRefundOf,
   reviewRefundOfBatchRowId: row.reviewRefundOfBatchRowId ?? null,
   selectedForImport: row.selectedForImport,
+  sourceDescription: row.sourceDescription ?? null,
+  parsedDescription: row.parsedDescription ?? null,
+  reviewDescription: row.reviewDescription ?? null,
 });
 
 export interface ExistingRefundTargetExpense {
@@ -260,6 +274,123 @@ export const evaluateImportRefundLinks = (
     );
   }
   return results;
+};
+
+export interface ImportRefundSuggestionTarget {
+  id: string;
+  accountId: string;
+  amount: number;
+  description: string;
+  rawDescription: string | null;
+  deleted: boolean;
+}
+
+export interface ImportRefundSuggestion {
+  kind: 'existing' | 'same_import';
+  transactionId: string | null;
+  batchRowId: string | null;
+  explanation: string;
+}
+
+const refundRowDescription = (row: {
+  sourceDescription?: string | null;
+  parsedDescription?: string | null;
+  reviewDescription?: string | null;
+}): string =>
+  normalizeImportMatchDescription(
+    row.sourceDescription ??
+      row.parsedDescription ??
+      resolveImportRowReviewDescription({
+        reviewDescription: row.reviewDescription ?? null,
+        parsedDescription: row.parsedDescription ?? null,
+      })
+  );
+
+/** Derived refund-link suggestion. Never writes the user's saved decision. */
+export const suggestImportRefundLink = (
+  row: ImportRefundLinkDraftRow,
+  draftRows: readonly ImportRefundLinkDraftRow[],
+  options: {
+    targetAccountId: string;
+    existingExpenses?: readonly ImportRefundSuggestionTarget[];
+  }
+): ImportRefundSuggestion | null => {
+  const type = resolveImportRowReviewType({
+    reviewType: toImportTransactionType(row.reviewType),
+    parsedType: toImportTransactionType(row.parsedType),
+  });
+  if (type !== 'refund') return null;
+
+  const amount = resolveImportRowReviewAmount(row);
+  if (amount == null || amount <= 0) return null;
+
+  const description = refundRowDescription(row);
+  if (!description) return null;
+
+  const scored: {
+    score: number;
+    suggestion: ImportRefundSuggestion;
+  }[] = [];
+
+  for (const expense of options.existingExpenses ?? []) {
+    if (expense.deleted) continue;
+    if (expense.accountId !== options.targetAccountId) continue;
+    if (expense.amount < amount) continue;
+    const expenseDescription = normalizeImportMatchDescription(
+      expense.rawDescription ?? expense.description
+    );
+    if (!importDescriptionsAreSimilar(description, expenseDescription)) {
+      continue;
+    }
+    scored.push({
+      score: expense.amount === amount ? 2 : 1,
+      suggestion: {
+        kind: 'existing',
+        transactionId: expense.id,
+        batchRowId: null,
+        explanation:
+          expense.amount === amount
+            ? 'Suggested refund of an existing expense with the same amount.'
+            : 'Suggested refund of an existing expense with a similar description.',
+      },
+    });
+  }
+
+  for (const target of draftRows) {
+    if (target.id === row.id) continue;
+    const targetType = resolveImportRowReviewType({
+      reviewType: toImportTransactionType(target.reviewType),
+      parsedType: toImportTransactionType(target.parsedType),
+    });
+    if (targetType !== 'expense') continue;
+    if (!target.selectedForImport) continue;
+    const targetAmount = resolveImportRowReviewAmount(target);
+    if (targetAmount == null || targetAmount < amount) continue;
+    const targetDescription = refundRowDescription(target);
+    if (!importDescriptionsAreSimilar(description, targetDescription)) {
+      continue;
+    }
+    scored.push({
+      score: targetAmount === amount ? 2 : 1,
+      suggestion: {
+        kind: 'same_import',
+        transactionId: null,
+        batchRowId: target.id,
+        explanation:
+          targetAmount === amount
+            ? 'Suggested refund of a selected expense in this import.'
+            : 'Suggested refund of a similar selected expense in this import.',
+      },
+    });
+  }
+
+  if (scored.length === 0) return null;
+  scored.sort((left, right) => right.score - left.score);
+  const best = scored[0];
+  if (scored.filter((item) => item.score === best.score).length > 1) {
+    return null;
+  }
+  return best.suggestion;
 };
 
 export const inheritRefundLinkFields = (

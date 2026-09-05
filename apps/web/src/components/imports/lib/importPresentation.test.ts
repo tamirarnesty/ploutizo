@@ -33,6 +33,8 @@ const baseRow = {
   reviewRefundOf: null,
   reviewRefundOfBatchRowId: null,
   reviewRefundLinkHint: null,
+  reviewMatchedTransactionId: null,
+  reviewMatchDismissed: false,
   reviewNotes: null,
   reviewTagIds: [],
   selectedForImport: false,
@@ -144,6 +146,44 @@ describe('importPresentation review helpers', () => {
         ['refund_link']
       )
     ).toBe('Needs review: refund link needs review');
+  });
+
+  it('explains an unselected exact match without treating it as ready-to-create', () => {
+    expect(
+      getImportRowStatusTooltip(baseRow, [], {
+        candidates: [
+          {
+            transactionId: 'tx-1',
+            kind: 'external_id',
+            explanation: 'Exact external ID match on this card.',
+          },
+        ],
+        exactCandidate: {
+          transactionId: 'tx-1',
+          kind: 'external_id',
+          explanation: 'Exact external ID match on this card.',
+        },
+        advisoryCandidates: [],
+        collisionRowIds: [],
+        acceptedMatch: null,
+        acceptedMatchValid: true,
+        issues: [],
+      })
+    ).toBe(
+      'Exact external ID match on this card. Leave unselected to skip, or select to record as matched.'
+    );
+  });
+
+  it('uses the match blocker for unresolved advisory review copy', () => {
+    expect(
+      getImportRowStatusTooltip(
+        {
+          ...baseRow,
+          status: 'needs_review',
+        },
+        ['match']
+      )
+    ).toBe('Needs review: match needs review');
   });
 
   it('combines settlement and missing-field blockers in the tooltip', () => {

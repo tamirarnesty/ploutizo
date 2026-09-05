@@ -4,7 +4,13 @@ import {
   isImportContentProfileId,
   toFinancialInstitutionId,
 } from '@ploutizo/types';
-import { createImportRowClassifier } from '@ploutizo/utils';
+import {
+  collectMatchedTransactionIds,
+  createImportRowClassifier,
+  evaluateImportMatches,
+  matchDecisionForSelectionChange,
+  toImportMatchDraftRow,
+} from '@ploutizo/utils';
 import {
   resolveImportRowReviewType,
   toImportTransactionType,
@@ -58,9 +64,10 @@ import { listTags } from '@/lib/queries/tags';
 import { parseImportUpload } from '@/lib/imports/parse';
 import { toImportTargetAccount } from '@/lib/accounts/accountResponse';
 import { listRefundTargetExpensesByIds } from '@/lib/queries/import-refund-targets';
+import { listImportMatchTargets } from '@/lib/queries/import-match-targets';
 import {
   buildImportDraftView,
-  loadDraftRefundContext,
+  loadDraftEvaluationContext,
   refundTargetFactsRecordFromMap,
   toImportDraftPersistedRow,
   withLiveImportReviewCounts,
@@ -147,10 +154,11 @@ export const listActiveImportDrafts = async (
         throw new DomainError(500, 'Import draft is missing an account.');
       }
       const batchRows = rowsByBatch.get(summary.id) ?? [];
-      const { evaluations } = await loadDraftRefundContext(
+      const { evaluations } = await loadDraftEvaluationContext(
         orgId,
         summary.accountId,
-        batchRows
+        batchRows,
+        { includeMatchTargets: false }
       );
       return withLiveImportReviewCounts(
         toImportDraftSummary(summary),
@@ -331,6 +339,14 @@ export const updateImportDraftRow = async (
     if (!ok) throw new NotFoundError('Transaction not found');
   }
 
+  if (merged.reviewMatchedTransactionId) {
+    const ok = await transactionExistsInOrg(
+      orgId,
+      merged.reviewMatchedTransactionId
+    );
+    if (!ok) throw new NotFoundError('Transaction not found');
+  }
+
   const updated = await updateImportDraftRowQuery(orgId, rowId, input);
   if (!updated) throw new NotFoundError('Import draft row not found.');
 
@@ -355,7 +371,8 @@ export const updateImportDraftRowSelection = async (
 ): Promise<ImportDraftPersistedRow[]> => {
   const draft = await fetchDraftSummaryById(orgId, draftId);
   if (!draft) throw new NotFoundError('Import draft not found.');
-  if (!draft.accountId) throw new NotFoundError('Import draft not found.');
+  const accountId = draft.accountId;
+  if (!accountId) throw new NotFoundError('Import draft not found.');
 
   const uniqueRowIds = [...new Set(input.rowIds)];
   const matchingRows = await listDraftRowIdsForDraft(
@@ -382,6 +399,43 @@ export const updateImportDraftRowSelection = async (
     if (persistedRows.length !== uniqueRowIds.length) {
       throw new NotFoundError('Import draft row not found.');
     }
+
+    const draftRows = await listDraftRows(orgId, draftId, tx);
+    const existingTransactions = await listImportMatchTargets(
+      orgId,
+      accountId,
+      collectMatchedTransactionIds(draftRows),
+      tx
+    );
+    const matchEvaluations = evaluateImportMatches(
+      draftRows.map((row) => toImportMatchDraftRow(row)),
+      {
+        targetAccountId: accountId,
+        existingTransactions: [...existingTransactions.values()],
+      }
+    );
+
+    const nextPersisted = [...persistedRows];
+    for (const [index, persisted] of persistedRows.entries()) {
+      const nextMatchedTransactionId = matchDecisionForSelectionChange({
+        selectedForImport: input.selectedForImport,
+        currentMatchedTransactionId: persisted.reviewMatchedTransactionId,
+        exactCandidate:
+          matchEvaluations.get(persisted.id)?.exactCandidate ?? null,
+      });
+      if (nextMatchedTransactionId === persisted.reviewMatchedTransactionId) {
+        continue;
+      }
+      const updated = await updateImportDraftRowQuery(
+        orgId,
+        persisted.id,
+        { reviewMatchedTransactionId: nextMatchedTransactionId },
+        tx
+      );
+      if (updated) nextPersisted[index] = updated;
+    }
+    persistedRows = nextPersisted;
+
     await touchImportDraft(orgId, draftId, tx);
   });
 

@@ -145,3 +145,28 @@ describe('financial institution catalog migration', () => {
     );
   });
 });
+
+describe('import match decision migration', () => {
+  const matchDecisionMigration = readFileSync(
+    join(root, 'drizzle/0004_harsh_tusk.sql'),
+    'utf8'
+  );
+
+  it('adds the accepted-match decision columns', () => {
+    expect(matchDecisionMigration).toContain(
+      'ADD COLUMN "review_matched_transaction_id" uuid'
+    );
+    expect(matchDecisionMigration).toContain(
+      'ADD COLUMN "review_match_dismissed" boolean DEFAULT false NOT NULL'
+    );
+  });
+
+  it('keeps the SQL-only matched-transaction composite org FK', () => {
+    expect(matchDecisionMigration).toContain(
+      'import_batch_rows_review_matched_transaction_id_org_id_transactions_id_org_id_fk'
+    );
+    expect(matchDecisionMigration).toContain(
+      'ON DELETE SET NULL ("review_matched_transaction_id")'
+    );
+  });
+});

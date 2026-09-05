@@ -95,7 +95,7 @@ The server-side requirement evaluation that confirms a selected **import set** c
 _Avoid_: Client-only status check, trusting cached readiness
 
 **Finalize import**:
-The last confirmation checkpoint for an import draft. It lets the user review the **prepared import set** before committing new transactions, recording matched/no-op rows, recording skipped and unprocessed outcomes, and closing the draft completely. Confirm is idempotent: the first request claims the prepared set; later requests return its completed summary without creating further transactions.
+The last confirmation checkpoint for an import draft. It lets the user review the **prepared import set** before committing new transactions, recording matched/no-op rows, recording skipped and invalid outcomes, and closing the draft completely. Confirm is idempotent: the first request claims the prepared set; later requests return its completed summary without creating further transactions.
 _Avoid_: Partial confirm, background import
 
 **Bill payment row**:
@@ -175,11 +175,11 @@ A household-facing CSV template for credit card imports when a bank-specific exp
 _Avoid_: General-purpose ledger migration format
 
 **Import history**:
-The user-visible record of what happened to an uploaded file — draft, completed, discarded, expired, or undone — plus finalized outcome counts after **Finalize import**. It is not limited to successfully created transactions. History excludes incomplete **Review import** evaluation while still showing the batch lifecycle of discarded or otherwise closed imports.
+The user-visible record of what happened to an uploaded file — draft, completed, or discarded — plus finalized outcome counts after **Finalize import**. It is not limited to successfully created transactions. History excludes incomplete **Review import** evaluation while still showing the batch lifecycle of discarded or otherwise closed imports.
 _Avoid_: File archive, statement archive, reusing review status as history, history of only created transactions
 
 **Completed import result**:
-Durable batch-level facts recorded when Finalize succeeds: file/account/source identity, lifecycle state, total rows, outcome counts (created, matched, skipped, invalid, unresolved, unprocessed), and timestamps. Distinct from **Review evaluation** and from temporary **prepared import set** staging. Implemented with Finalize (PLO-56).
+Durable batch-level facts recorded when Finalize succeeds: file/account/source identity, lifecycle state, total rows, outcome counts (created, matched, skipped, invalid), and timestamps. Distinct from **Review evaluation** and from temporary **prepared import set** staging. Implemented with Finalize (PLO-56).
 _Avoid_: Copying review status columns into history, treating prepared staging as history
 
 **Import transaction provenance**:
@@ -195,12 +195,8 @@ A bank-provided reference from a credit card statement row, stored on imported t
 _Avoid_: Ploutizo transaction id, Clerk external id, household-wide bank reference matching
 
 **Completed import**:
-An import draft that has been fully processed once. Its history records the outcome count for every row: created, matched/no-op, skipped, invalid, unresolved, or unprocessed. Selected processable rows may create transactions; skipped, invalid, unresolved, or unprocessed rows may help prefill later manual transaction entry, but they cannot be batch-processed again from the completed import.
+An import draft that has been fully processed once. Its history records the outcome count for every row: created, matched/no-op, skipped, or invalid. Selected processable rows may create transactions; skipped or invalid rows may help prefill later manual transaction entry, but they cannot be batch-processed again from the completed import.
 _Avoid_: Partial draft, resumable leftover rows
-
-**Unprocessed import row**:
-A row retained in a completed import’s history that was intentionally neither created nor accepted as a matched/no-op transaction. It is distinct from a **Skipped import row**, which was left unselected during Review import, and from an **Invalid import row**, which could not become a candidate transaction.
-_Avoid_: Failed confirm row, temporary pending row
 
 ### Settlement balances (credit cards)
 
