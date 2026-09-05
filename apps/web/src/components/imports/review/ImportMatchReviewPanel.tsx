@@ -36,9 +36,7 @@ export const ImportMatchReviewPanel = ({
       onAcceptAdvisory(ui.advisory.transactionId);
       return;
     }
-    if (action === 'dismiss_match' || action === 'clear_invalid_match') {
-      onDismissMatch();
-    }
+    onDismissMatch();
   };
 
   return (
@@ -61,36 +59,25 @@ export const ImportMatchReviewPanel = ({
           {formatExactImportMatchCopy(ui.exactExplanation)}
         </Text>
       ) : null}
-      {ui.advisory ? (
+      {ui.advisory || ui.actions.length > 0 ? (
         <div className="mb-2 flex flex-wrap items-center gap-2">
-          <Text variant="body-sm" className="text-muted-foreground">
-            {ui.advisory.explanation}
-          </Text>
+          {ui.advisory ? (
+            <Text variant="body-sm" className="text-muted-foreground">
+              {ui.advisory.explanation}
+            </Text>
+          ) : null}
           {ui.actions.map((action) => (
             <Button
               key={action}
               type="button"
               size="xs"
-              variant={action === 'accept_advisory' ? 'outline' : 'ghost'}
+              variant={action === 'dismiss_match' ? 'ghost' : 'outline'}
               disabled={disabled}
               onClick={() => handleAction(action)}
             >
               {ACTION_LABELS[action]}
             </Button>
           ))}
-        </div>
-      ) : null}
-      {!ui.advisory && ui.actions.includes('clear_invalid_match') ? (
-        <div className="mb-2 flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            size="xs"
-            variant="outline"
-            disabled={disabled}
-            onClick={() => handleAction('clear_invalid_match')}
-          >
-            {ACTION_LABELS.clear_invalid_match}
-          </Button>
         </div>
       ) : null}
     </>

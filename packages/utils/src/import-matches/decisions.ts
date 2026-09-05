@@ -1,41 +1,12 @@
 import type { MatchTargetFact } from '@ploutizo/types';
-import { toImportTransactionType } from '../import-row-status';
+import { evaluateImportMatches } from './evaluate';
+import type { ImportMatchDraftRowSource } from './evaluate';
 import type {
   ImportMatchCandidate,
   ImportMatchDraftRow,
   ImportMatchEvaluation,
   ImportMatchIssue,
 } from './types';
-
-export const savedDecisionIssues = (
-  row: ImportMatchDraftRow,
-  targetAccountId: string,
-  transactionsById: ReadonlyMap<string, MatchTargetFact>,
-  candidates: readonly ImportMatchCandidate[]
-): { issues: ImportMatchIssue[]; acceptedMatchValid: boolean } => {
-  const matchedId = row.reviewMatchedTransactionId;
-  if (!matchedId) {
-    return { issues: [], acceptedMatchValid: true };
-  }
-
-  const issues: ImportMatchIssue[] = [];
-  const target = transactionsById.get(matchedId);
-  if (!target) {
-    issues.push('missing_target');
-  } else {
-    if (target.deleted) issues.push('deleted_target');
-    if (target.accountId !== targetAccountId) issues.push('wrong_account');
-  }
-
-  const stillACandidate = candidates.some(
-    (item) => item.transactionId === matchedId
-  );
-  if (!stillACandidate && issues.length === 0) {
-    issues.push('invalidated_decision');
-  }
-
-  return { issues, acceptedMatchValid: issues.length === 0 };
-};
 
 export const matchDecisionForSelectionChange = (input: {
   selectedForImport: boolean;
@@ -54,43 +25,39 @@ export const matchDecisionForSelectionChange = (input: {
 export interface MatchDecisionsForSelectedRowsInput {
   rowIds: readonly string[];
   selectedForImport: boolean;
-  options: {
-    targetAccountId: string;
-    existingTransactions: readonly MatchTargetFact[];
-  };
+  targetAccountId: string;
+  existingTransactions: readonly MatchTargetFact[];
 }
 
-export const toImportMatchDraftRow = (row: {
-  id: string;
-  externalId?: string | null;
-  reviewDate: string | null;
-  parsedDate: string | null;
-  reviewAmount: number | null;
-  parsedAmount: number | null;
-  reviewType: string | null;
-  parsedType: string | null;
-  reviewDescription: string | null;
-  parsedDescription: string | null;
-  sourceDescription?: string | null;
-  selectedForImport: boolean;
-  reviewMatchedTransactionId: string | null;
-  reviewMatchDismissed: boolean;
-}): ImportMatchDraftRow => ({
-  id: row.id,
-  externalId: row.externalId ?? null,
-  reviewDate: row.reviewDate,
-  parsedDate: row.parsedDate,
-  reviewAmount: row.reviewAmount,
-  parsedAmount: row.parsedAmount,
-  reviewType: toImportTransactionType(row.reviewType),
-  parsedType: toImportTransactionType(row.parsedType),
-  reviewDescription: row.reviewDescription,
-  parsedDescription: row.parsedDescription,
-  sourceDescription: row.sourceDescription ?? null,
-  selectedForImport: row.selectedForImport,
-  reviewMatchedTransactionId: row.reviewMatchedTransactionId,
-  reviewMatchDismissed: row.reviewMatchDismissed,
-});
+/** Derive saved match IDs after selection changes. Rows must already reflect the new selection. */
+export const matchDecisionsForSelectedRows = (
+  rows: readonly ImportMatchDraftRowSource[],
+  input: MatchDecisionsForSelectedRowsInput
+): Map<string, string | null> => {
+  const evaluations = evaluateImportMatches(rows, {
+    targetAccountId: input.targetAccountId,
+    existingTransactions: input.existingTransactions,
+  });
+  const rowsById = new Map(rows.map((row) => [row.id, row]));
+  const patches = new Map<string, string | null>();
+
+  for (const rowId of input.rowIds) {
+    const row = rowsById.get(rowId);
+    if (!row) continue;
+    const evaluation = evaluations.get(rowId);
+    patches.set(
+      rowId,
+      matchDecisionForSelectionChange({
+        selectedForImport: input.selectedForImport,
+        currentMatchedTransactionId: row.reviewMatchedTransactionId,
+        exactCandidate: evaluation?.exactCandidate ?? null,
+        collisionUnresolved: evaluation?.issues.includes('collision') ?? false,
+      })
+    );
+  }
+
+  return patches;
+};
 
 export type ImportMatchReviewAction =
   | 'accept_advisory'
@@ -115,12 +82,13 @@ export const deriveImportMatchReviewUiState = (
   const savedMatchIsInvalid =
     Boolean(row.reviewMatchedTransactionId) &&
     match?.acceptedMatchValid === false;
-  const advisory =
-    exactCandidate ||
+  const keepAdvisoryHidden =
+    Boolean(exactCandidate) ||
     row.reviewMatchDismissed ||
-    (row.reviewMatchedTransactionId && !savedMatchIsInvalid)
-      ? null
-      : (match?.advisoryCandidates[0] ?? null);
+    (Boolean(row.reviewMatchedTransactionId) && !savedMatchIsInvalid);
+  const advisory = keepAdvisoryHidden
+    ? null
+    : (match?.advisoryCandidates[0] ?? null);
 
   const actions: ImportMatchReviewAction[] = [];
   if (advisory) {

@@ -1,8 +1,7 @@
 import {
-  collectMatchedTransactionIds,
   computeImportDraftRowCounts,
   evaluateImportDraft,
-  importMatchTargetQueryBounds,
+  importMatchTargetQueryInput,
 } from '@ploutizo/utils';
 import { toImportTransactionType } from '@ploutizo/utils/import-row-status';
 import { db } from '@ploutizo/db';
@@ -133,7 +132,6 @@ export const loadDraftEvaluationContext = async (
   const client = options?.client ?? db;
   const refundOfIds = collectRefundOfIds(rows);
   const loadMatchTargets = options?.includeMatchTargets !== false;
-  const matchedIds = loadMatchTargets ? collectMatchedTransactionIds(rows) : [];
   const [existingExpenses, priorRefundsByTarget, existingTransactions] =
     await Promise.all([
       listRefundTargetExpensesByIds(orgId, refundOfIds, client),
@@ -144,10 +142,7 @@ export const loadDraftEvaluationContext = async (
         ? listImportMatchTargets(
             orgId,
             targetAccountId,
-            {
-              extraIds: matchedIds,
-              ...importMatchTargetQueryBounds(rows),
-            },
+            importMatchTargetQueryInput(rows),
             client
           )
         : Promise.resolve(new Map()),
@@ -168,7 +163,7 @@ export const loadDraftEvaluationContext = async (
   };
 };
 
-export const deriveImportDraftReviewCounts = (
+const reviewCountsFromEvaluations = (
   evaluations: ReadonlyMap<string, ImportDraftRowEvaluation>
 ) =>
   computeImportDraftRowCounts(
@@ -187,7 +182,7 @@ export const withLiveImportReviewCounts = <
   summary: T,
   evaluations: ReadonlyMap<string, ImportDraftRowEvaluation>
 ): T => {
-  const counts = deriveImportDraftReviewCounts(evaluations);
+  const counts = reviewCountsFromEvaluations(evaluations);
   return {
     ...summary,
     validRowCount: counts.validRowCount,
@@ -212,7 +207,7 @@ export const buildImportDraftView = async (
   const apiRows = rows.map((row) =>
     toImportDraftRow(row, evaluations.get(row.id)!)
   );
-  const counts = deriveImportDraftReviewCounts(evaluations);
+  const counts = reviewCountsFromEvaluations(evaluations);
 
   return {
     ...toSummary(summary),

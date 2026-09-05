@@ -5,11 +5,9 @@ import {
   toFinancialInstitutionId,
 } from '@ploutizo/types';
 import {
-  collectMatchedTransactionIds,
   createImportRowClassifier,
-  importMatchTargetQueryBounds,
+  importMatchTargetQueryInput,
   matchDecisionsForSelectedRows,
-  toImportMatchDraftRow,
 } from '@ploutizo/utils';
 import {
   resolveImportRowReviewType,
@@ -403,20 +401,14 @@ export const updateImportDraftRowSelection = async (
     const existingTransactions = await listImportMatchTargets(
       orgId,
       accountId,
-      {
-        extraIds: collectMatchedTransactionIds(draftRows),
-        ...importMatchTargetQueryBounds(draftRows),
-      },
+      importMatchTargetQueryInput(draftRows),
       tx
     );
-    const matchRows = draftRows.map((row) => toImportMatchDraftRow(row));
-    const matchPatches = matchDecisionsForSelectedRows(matchRows, {
+    const matchPatches = matchDecisionsForSelectedRows(draftRows, {
       rowIds: uniqueRowIds,
       selectedForImport: input.selectedForImport,
-      options: {
-        targetAccountId: accountId,
-        existingTransactions: [...existingTransactions.values()],
-      },
+      targetAccountId: accountId,
+      existingTransactions: [...existingTransactions.values()],
     });
 
     const nextPersisted = [...persistedRows];

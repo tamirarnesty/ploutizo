@@ -11,21 +11,16 @@ import {
   suggestImportRefundLink,
   toImportRefundLinkDraftRow,
 } from './import-refund-links';
-import { evaluateImportMatches, toImportMatchDraftRow } from './import-matches';
+import { evaluateImportMatches } from './import-matches';
 import type { ImportRowReviewBlocker } from './import-row-status';
 import type {
   EvaluateImportRefundLinksOptions,
-  ExistingRefundTargetExpense,
   ImportRefundLinkDraftRow,
   ImportRefundLinkEvaluation,
   ImportRefundSuggestion,
   ImportRefundSuggestionTarget,
 } from './import-refund-links';
-import type {
-  EvaluateImportMatchesOptions,
-  ImportMatchDraftRow,
-  ImportMatchEvaluation,
-} from './import-matches';
+import type { ImportMatchEvaluation } from './import-matches';
 
 /** Durable import draft row fields used for status derivation. */
 export interface ImportDraftDurableRow {
@@ -57,10 +52,9 @@ export interface ImportDraftEvaluationOptions extends EvaluateImportRefundLinksO
 export interface ImportDraftEvaluationContext {
   targetAccountId: string;
   draftRows: readonly ImportRefundLinkDraftRow[];
-  matchDraftRows: readonly ImportMatchDraftRow[];
-  existingExpenses: ReadonlyMap<string, ExistingRefundTargetExpense>;
-  existingTransactions: readonly MatchTargetFact[];
-  priorRefundsByTarget?: ReadonlyMap<string, number>;
+  refundEvaluations: ReadonlyMap<string, ImportRefundLinkEvaluation>;
+  matchEvaluations: ReadonlyMap<string, ImportMatchEvaluation>;
+  suggestionTargets: readonly ImportRefundSuggestionTarget[];
 }
 
 export interface ImportDraftRowEvaluation {
@@ -72,39 +66,10 @@ export interface ImportDraftRowEvaluation {
   match: ImportMatchEvaluation | null;
 }
 
-export const toImportDraftEvaluationContext = (
-  rows: readonly ImportDraftDurableRow[],
-  options: ImportDraftEvaluationOptions
-): ImportDraftEvaluationContext => ({
-  targetAccountId: options.targetAccountId,
-  draftRows: rows.map((row) => toImportRefundLinkDraftRow(row)),
-  matchDraftRows: rows.map((row) => toImportMatchDraftRow(row)),
-  existingExpenses: options.existingExpenses ?? new Map(),
-  existingTransactions: options.existingTransactions ?? [],
-  priorRefundsByTarget: options.priorRefundsByTarget,
-});
-
-const buildRefundLinkEvaluations = (
-  ctx: ImportDraftEvaluationContext
-): Map<string, ImportRefundLinkEvaluation> =>
-  evaluateImportRefundLinks(ctx.draftRows, {
-    targetAccountId: ctx.targetAccountId,
-    existingExpenses: ctx.existingExpenses,
-    priorRefundsByTarget: ctx.priorRefundsByTarget,
-  });
-
-const buildMatchEvaluations = (
-  ctx: ImportDraftEvaluationContext
-): Map<string, ImportMatchEvaluation> =>
-  evaluateImportMatches(ctx.matchDraftRows, {
-    targetAccountId: ctx.targetAccountId,
-    existingTransactions: ctx.existingTransactions,
-  } satisfies EvaluateImportMatchesOptions);
-
 const refundSuggestionTargets = (
-  ctx: ImportDraftEvaluationContext
+  existingTransactions: readonly MatchTargetFact[]
 ): ImportRefundSuggestionTarget[] =>
-  ctx.existingTransactions
+  existingTransactions
     .filter((transaction) => transaction.type === 'expense')
     .map((transaction) => ({
       id: transaction.id,
@@ -115,28 +80,44 @@ const refundSuggestionTargets = (
       deleted: transaction.deleted,
     }));
 
+export const toImportDraftEvaluationContext = (
+  rows: readonly ImportDraftDurableRow[],
+  options: ImportDraftEvaluationOptions
+): ImportDraftEvaluationContext => {
+  const targetAccountId = options.targetAccountId;
+  const draftRows = rows.map((row) => toImportRefundLinkDraftRow(row));
+  const existingExpenses = options.existingExpenses ?? new Map();
+  const existingTransactions = options.existingTransactions ?? [];
+  const priorRefundsByTarget = options.priorRefundsByTarget;
+  return {
+    targetAccountId,
+    draftRows,
+    refundEvaluations: evaluateImportRefundLinks(draftRows, {
+      targetAccountId,
+      existingExpenses,
+      priorRefundsByTarget,
+    }),
+    matchEvaluations: evaluateImportMatches(rows, {
+      targetAccountId,
+      existingTransactions,
+    }),
+    suggestionTargets: refundSuggestionTargets(existingTransactions),
+  };
+};
+
 /** Derive presentation status for one import draft row. */
 export const evaluateImportDraftRow = (
   row: ImportDraftDurableRow,
-  ctx: ImportDraftEvaluationContext,
-  refundEvaluations?: ReadonlyMap<string, ImportRefundLinkEvaluation>,
-  matchEvaluations?: ReadonlyMap<string, ImportMatchEvaluation>,
-  suggestionTargets?: readonly ImportRefundSuggestionTarget[]
+  ctx: ImportDraftEvaluationContext
 ): ImportDraftRowEvaluation => {
-  const evaluations = refundEvaluations ?? buildRefundLinkEvaluations(ctx);
-  const matches = matchEvaluations ?? buildMatchEvaluations(ctx);
-  const refundLink = evaluations.get(row.id) ?? null;
-  const refundLinkBlocked = isImportRefundLinkBlocked(refundLink ?? undefined);
-  const match = matches.get(row.id) ?? null;
-  const refundDraftRow =
-    ctx.draftRows.find((draftRow) => draftRow.id === row.id) ??
-    toImportRefundLinkDraftRow(row);
+  const refundLink = ctx.refundEvaluations.get(row.id) ?? null;
+  const match = ctx.matchEvaluations.get(row.id) ?? null;
   const refundSuggestion = suggestImportRefundLink(
-    refundDraftRow,
+    toImportRefundLinkDraftRow(row),
     ctx.draftRows,
     {
       targetAccountId: ctx.targetAccountId,
-      existingExpenses: suggestionTargets ?? refundSuggestionTargets(ctx),
+      existingExpenses: ctx.suggestionTargets,
     }
   );
 
@@ -152,7 +133,7 @@ export const evaluateImportDraftRow = (
     reviewCategoryId: row.reviewCategoryId,
     reviewAssigneeMemberIds: [...row.reviewAssigneeMemberIds],
     reviewCounterpartAccountId: row.reviewCounterpartAccountId,
-    refundLinkBlocked,
+    refundLinkBlocked: isImportRefundLinkBlocked(refundLink ?? undefined),
     matchBlocked: (match?.issues.length ?? 0) > 0,
   });
 
@@ -178,21 +159,9 @@ export const evaluateImportDraft = (
   options: ImportDraftEvaluationOptions
 ): Map<string, ImportDraftRowEvaluation> => {
   const ctx = toImportDraftEvaluationContext(rows, options);
-  const refundEvaluations = buildRefundLinkEvaluations(ctx);
-  const matchEvaluations = buildMatchEvaluations(ctx);
-  const suggestionTargets = refundSuggestionTargets(ctx);
   const results = new Map<string, ImportDraftRowEvaluation>();
   for (const row of rows) {
-    results.set(
-      row.id,
-      evaluateImportDraftRow(
-        row,
-        ctx,
-        refundEvaluations,
-        matchEvaluations,
-        suggestionTargets
-      )
-    );
+    results.set(row.id, evaluateImportDraftRow(row, ctx));
   }
   return results;
 };

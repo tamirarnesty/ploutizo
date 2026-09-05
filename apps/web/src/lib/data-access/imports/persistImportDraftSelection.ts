@@ -1,7 +1,4 @@
-import {
-  matchDecisionsForSelectedRows,
-  toImportMatchDraftRow,
-} from '@ploutizo/utils';
+import { matchDecisionsForSelectedRows } from '@ploutizo/utils';
 import { createOptimisticAction } from '@tanstack/db';
 import type { ImportDraft, ImportDraftPersistedRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowSelectionInput } from '@ploutizo/validators';
@@ -24,34 +21,27 @@ interface SelectionVariables {
   selectedForImport: boolean;
 }
 
-const matchDecisionOptions = (draftId: string) => {
-  const draft = queryClient.getQueryData<ImportDraft>(
-    importDraftQueryKey(draftId)
-  );
-  if (!draft?.account.id) return null;
-  return {
-    targetAccountId: draft.account.id,
-    existingTransactions: Object.values(draft.matchTargetFacts),
-  };
-};
-
 const applySelectionMatchDecisions = (
   draftId: string,
   rowIds: string[],
   selectedForImport: boolean
 ) => {
-  const options = matchDecisionOptions(draftId);
-  if (!options) return;
+  const importDraft = queryClient.getQueryData<ImportDraft>(
+    importDraftQueryKey(draftId)
+  );
+  if (!importDraft?.account.id) return;
 
   const collection = getImportDraftRowsCollection(draftId);
   const rowIdSet = new Set(rowIds);
   const nextRows = collection.toArray.map((row) =>
     rowIdSet.has(row.id) ? { ...row, selectedForImport } : row
   );
-  const patches = matchDecisionsForSelectedRows(
-    nextRows.map((row) => toImportMatchDraftRow(row)),
-    { rowIds, selectedForImport, options }
-  );
+  const patches = matchDecisionsForSelectedRows(nextRows, {
+    rowIds,
+    selectedForImport,
+    targetAccountId: importDraft.account.id,
+    existingTransactions: Object.values(importDraft.matchTargetFacts),
+  });
 
   collection.update(rowIds, (drafts) => {
     for (const draft of drafts) {

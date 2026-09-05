@@ -32,8 +32,7 @@ export const evaluateImportDraftWorkingCopy = (
   );
   if (!draft?.account.id) return null;
 
-  const collection = getImportDraftRowsCollection(draftId);
-  const workingRows = rows ?? collection.toArray;
+  const workingRows = rows ?? getImportDraftRowsCollection(draftId).toArray;
   if (workingRows.length === 0) return null;
 
   return evaluateImportDraft(workingRows, {

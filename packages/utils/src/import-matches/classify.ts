@@ -1,10 +1,9 @@
 import { differenceInCalendarDays } from 'date-fns';
-import type { MatchTargetFact } from '@ploutizo/types';
+import type { ImportTransactionType, MatchTargetFact } from '@ploutizo/types';
 import {
   resolveImportRowReviewAmount,
   resolveImportRowReviewDate,
   resolveImportRowReviewType,
-  toImportTransactionType,
 } from '../import-row-status';
 import {
   importDescriptionsAreSimilar,
@@ -52,69 +51,84 @@ const candidate = (
     : ADVISORY_MATCH_EXPLANATIONS[kind],
 });
 
-const rowRawDescription = (row: ImportMatchDraftRow): string =>
-  normalizeImportMatchDescription(
-    row.sourceDescription ?? row.parsedDescription
-  );
+export interface ImportMatchRowFacts {
+  externalId: string | null;
+  type: ImportTransactionType | null;
+  date: string | null;
+  amount: number | null;
+  description: string;
+}
 
-const transactionRawDescription = (transaction: MatchTargetFact): string =>
+export const importMatchRowFacts = (
+  row: ImportMatchDraftRow
+): ImportMatchRowFacts => ({
+  externalId: row.externalId?.trim() || null,
+  type: resolveImportRowReviewType(row),
+  date: resolveImportRowReviewDate(row),
+  amount: resolveImportRowReviewAmount(row),
+  description: normalizeImportMatchDescription(
+    row.sourceDescription ?? row.parsedDescription
+  ),
+});
+
+export const importMatchTransactionDescription = (
+  transaction: MatchTargetFact
+): string =>
   normalizeImportMatchDescription(
     transaction.rawDescription ?? transaction.description
   );
 
 export const classifyAgainstTransaction = (
-  row: ImportMatchDraftRow,
+  row: ImportMatchRowFacts,
   transaction: MatchTargetFact,
-  targetAccountId: string
+  txDescription: string
 ): ImportMatchCandidate | null => {
-  if (transaction.accountId !== targetAccountId) return null;
-  if (transaction.deleted) return null;
-
-  const rowExternalId = row.externalId?.trim() || null;
   const txExternalId = transaction.externalId?.trim() || null;
-  if (rowExternalId && txExternalId && rowExternalId === txExternalId) {
+  if (row.externalId && txExternalId && row.externalId === txExternalId) {
     return candidate(transaction.id, 'external_id');
   }
 
-  const type = resolveImportRowReviewType({
-    reviewType: toImportTransactionType(row.reviewType),
-    parsedType: toImportTransactionType(row.parsedType),
-  });
-  const date = resolveImportRowReviewDate(row);
-  const amount = resolveImportRowReviewAmount(row);
+  const { type, date, amount } = row;
   if (!type || !date || amount == null) return null;
   if (transaction.type !== type) return null;
 
-  const rowDescription = rowRawDescription(row);
-  const txDescription = transactionRawDescription(transaction);
   const sameDate = transaction.date === date;
   const sameAmount = transaction.amount === amount;
-  const sameRawDescription = rowDescription === txDescription;
-  const similarDescription = importDescriptionsAreSimilar(
-    rowDescription,
-    txDescription
-  );
+  const sameRawDescription = row.description === txDescription;
 
-  if (!rowExternalId && sameDate && sameAmount && sameRawDescription) {
+  if (!row.externalId && sameDate && sameAmount && sameRawDescription) {
     return candidate(transaction.id, 'identity');
   }
 
-  if (sameDate && sameAmount && similarDescription && !sameRawDescription) {
+  const mightBeAdvisory =
+    (sameDate && sameAmount && !sameRawDescription) ||
+    (type === 'settlement' && sameAmount && !sameDate) ||
+    (sameDate && !sameAmount);
+  if (!mightBeAdvisory) return null;
+  if (!importDescriptionsAreSimilar(row.description, txDescription)) {
+    return null;
+  }
+
+  if (sameDate && sameAmount) {
     return candidate(transaction.id, 'fuzzy_description');
   }
 
-  if (type === 'settlement' && sameAmount && similarDescription && !sameDate) {
+  if (type === 'settlement' && sameAmount && !sameDate) {
     const dayDiff = Math.abs(differenceInCalendarDays(date, transaction.date));
     if (dayDiff > 0 && dayDiff <= IMPORT_MATCH_DATE_TOLERANCE_DAYS) {
       return candidate(transaction.id, 'date_tolerant');
     }
+    return null;
   }
 
-  if (sameDate && similarDescription && !sameAmount) {
-    const amountDiff = Math.abs(transaction.amount - amount);
-    if (amountDiff > 0 && amountDiff <= IMPORT_MATCH_NEAR_AMOUNT_CENTS) {
-      return candidate(transaction.id, 'near_amount');
-    }
+  const amountDiff = Math.abs(transaction.amount - amount);
+  if (
+    sameDate &&
+    !sameAmount &&
+    amountDiff > 0 &&
+    amountDiff <= IMPORT_MATCH_NEAR_AMOUNT_CENTS
+  ) {
+    return candidate(transaction.id, 'near_amount');
   }
 
   return null;

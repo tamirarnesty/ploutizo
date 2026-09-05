@@ -4,6 +4,7 @@ import {
   deriveImportMatchReviewUiState,
   evaluateImportMatches,
   importMatchTargetQueryBounds,
+  importMatchTargetQueryInput,
   matchDecisionForSelectionChange,
   matchDecisionsForSelectedRows,
 } from './import-matches';
@@ -85,6 +86,26 @@ describe('importMatchTargetQueryBounds', () => {
       minDate: null,
       maxDate: null,
       externalIds: ['visa-1001', 'visa-1002'],
+    });
+  });
+});
+
+describe('importMatchTargetQueryInput', () => {
+  it('includes saved match ids with the date and external-id bounds', () => {
+    expect(
+      importMatchTargetQueryInput([
+        {
+          reviewDate: '2026-05-02',
+          parsedDate: '2026-05-02',
+          externalId: 'visa-1001',
+          reviewMatchedTransactionId: 'tx-saved',
+        },
+      ])
+    ).toEqual({
+      extraIds: ['tx-saved'],
+      minDate: '2026-04-25',
+      maxDate: '2026-05-09',
+      externalIds: ['visa-1001'],
     });
   });
 });
@@ -504,7 +525,8 @@ describe('matchDecisionsForSelectedRows', () => {
     const patches = matchDecisionsForSelectedRows(rows, {
       rowIds: ['row-a', 'row-b'],
       selectedForImport: true,
-      options: { targetAccountId, existingTransactions: [tx()] },
+      targetAccountId,
+      existingTransactions: [tx()],
     });
 
     expect(patches.get('row-a')).toBeNull();

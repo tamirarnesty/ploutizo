@@ -1,12 +1,9 @@
+import { normalizeBillPaymentPhrase } from '@ploutizo/types';
 import { IMPORT_MATCH_FUZZY_DESCRIPTION_MIN_SIMILARITY } from './types';
 
 export const normalizeImportMatchDescription = (
   value: string | null | undefined
-): string =>
-  (value ?? '')
-    .toUpperCase()
-    .replace(/[^\p{L}\p{N}]+/gu, ' ')
-    .trim();
+): string => normalizeBillPaymentPhrase(value ?? '');
 
 const descriptionTokens = (value: string): Set<string> =>
   new Set(value.split(' ').filter(Boolean));

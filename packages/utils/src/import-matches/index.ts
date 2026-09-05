@@ -20,29 +20,29 @@ export {
 
 export { classifyAgainstTransaction, isExactImportMatchKind } from './classify';
 
-export { collisionGroups, hasUnresolvedCollisionIssue } from './collisions';
+export { collisionGroups } from './collisions';
 
 export {
   collectMatchedTransactionIds,
   importMatchTargetQueryBounds,
+  importMatchTargetQueryInput,
   type ImportMatchTargetQueryBounds,
+  type ImportMatchTargetQueryInput,
 } from './query-bounds';
 
 export {
   evaluateImportMatches,
   type EvaluateImportMatchesOptions,
+  type ImportMatchDraftRowSource,
 } from './evaluate';
 
 export {
-  savedDecisionIssues,
   matchDecisionForSelectionChange,
-  toImportMatchDraftRow,
+  matchDecisionsForSelectedRows,
   deriveImportMatchReviewUiState,
   type MatchDecisionsForSelectedRowsInput,
   type ImportMatchReviewAction,
   type ImportMatchReviewUiState,
 } from './decisions';
-
-export { matchDecisionsForSelectedRows } from './selection';
 
 export { IMPORT_MATCH_ISSUE_COPY } from './presentation';
