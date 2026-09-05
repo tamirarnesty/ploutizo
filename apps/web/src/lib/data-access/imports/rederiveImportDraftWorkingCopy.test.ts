@@ -233,7 +233,7 @@ describe('rederiveImportDraftWorkingCopy', () => {
     expect(evaluation?.match?.acceptedMatch).toBeNull();
   });
 
-  it('keeps same-import external-ID collisions unresolved until one row is selected', async () => {
+  it('blocks same-import external-ID collisions only when multiple rows are selected', async () => {
     const draft = makeImportDraft({
       id: 'draft_collision',
       rows: [
@@ -261,6 +261,23 @@ describe('rederiveImportDraftWorkingCopy', () => {
 
     rederiveImportDraftWorkingCopy(draft.id);
 
+    expect(collection.get('row_a')?.status).toBe('ready');
+    expect(collection.get('row_b')?.status).toBe('ready');
+    const unselectedEvaluation = evaluateImportDraftWorkingCopy(draft.id)?.get(
+      'row_a'
+    );
+    expect(unselectedEvaluation?.match?.issues).not.toContain('collision');
+
+    collection.utils.writeUpdate({
+      ...collection.get('row_a')!,
+      selectedForImport: true,
+    });
+    collection.utils.writeUpdate({
+      ...collection.get('row_b')!,
+      selectedForImport: true,
+    });
+    rederiveImportDraftWorkingCopy(draft.id);
+
     expect(collection.get('row_a')?.status).toBe('needs_review');
     expect(collection.get('row_b')?.status).toBe('needs_review');
     const collisionEvaluation = evaluateImportDraftWorkingCopy(draft.id)?.get(
@@ -270,8 +287,8 @@ describe('rederiveImportDraftWorkingCopy', () => {
     expect(collisionEvaluation?.match?.issues).toContain('collision');
 
     collection.utils.writeUpdate({
-      ...collection.get('row_a')!,
-      selectedForImport: true,
+      ...collection.get('row_b')!,
+      selectedForImport: false,
     });
     rederiveImportDraftWorkingCopy(draft.id);
 

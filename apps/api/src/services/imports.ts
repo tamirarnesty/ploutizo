@@ -7,9 +7,8 @@ import {
 import {
   collectMatchedTransactionIds,
   createImportRowClassifier,
-  evaluateImportMatches,
   importMatchTargetQueryBounds,
-  matchDecisionForSelectionChange,
+  matchDecisionsForSelectedRows,
   toImportMatchDraftRow,
 } from '@ploutizo/utils';
 import {
@@ -410,24 +409,23 @@ export const updateImportDraftRowSelection = async (
       },
       tx
     );
-    const matchEvaluations = evaluateImportMatches(
-      draftRows.map((row) => toImportMatchDraftRow(row)),
-      {
+    const matchRows = draftRows.map((row) => toImportMatchDraftRow(row));
+    const matchPatches = matchDecisionsForSelectedRows(matchRows, {
+      rowIds: uniqueRowIds,
+      selectedForImport: input.selectedForImport,
+      options: {
         targetAccountId: accountId,
         existingTransactions: [...existingTransactions.values()],
-      }
-    );
+      },
+    });
 
     const nextPersisted = [...persistedRows];
     for (const [index, persisted] of persistedRows.entries()) {
-      const evaluation = matchEvaluations.get(persisted.id);
-      const nextMatchedTransactionId = matchDecisionForSelectionChange({
-        selectedForImport: input.selectedForImport,
-        currentMatchedTransactionId: persisted.reviewMatchedTransactionId,
-        exactCandidate: evaluation?.exactCandidate ?? null,
-        collisionUnresolved: evaluation?.issues.includes('collision') ?? false,
-      });
-      if (nextMatchedTransactionId === persisted.reviewMatchedTransactionId) {
+      const nextMatchedTransactionId = matchPatches.get(persisted.id);
+      if (
+        nextMatchedTransactionId === undefined ||
+        nextMatchedTransactionId === persisted.reviewMatchedTransactionId
+      ) {
         continue;
       }
       const updated = await updateImportDraftRowQuery(

@@ -36,9 +36,12 @@ export {
 export {
   evaluateImportMatches,
   matchDecisionForSelectionChange,
+  matchDecisionsForSelectedRows,
+  deriveImportMatchReviewUiState,
   toImportMatchDraftRow,
   collectMatchedTransactionIds,
   importMatchTargetQueryBounds,
+  IMPORT_MATCH_ISSUE_COPY,
   type ExactImportMatchKind,
   type ImportMatchTargetQueryBounds,
   type EvaluateImportMatchesOptions,
@@ -48,6 +51,9 @@ export {
   type ImportMatchEvaluation,
   type ImportMatchIssue,
   type ImportMatchKind,
+  type ImportMatchReviewAction,
+  type ImportMatchReviewUiState,
+  type MatchDecisionsForSelectedRowsInput,
 } from './import-matches';
 export {
   evaluateImportRefundLink,

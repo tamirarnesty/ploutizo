@@ -3,29 +3,11 @@ import { Button } from '@ploutizo/ui/components/button';
 import { Text } from '@ploutizo/ui/components/text';
 import { Textarea } from '@ploutizo/ui/components/textarea';
 import type { ImportDraftRow } from '@ploutizo/types';
-import type { ImportMatchIssue } from '@ploutizo/utils';
 import { TransactionTagPicker } from '@/components/transactions/TransactionTagPicker';
-import {
-  formatExactImportMatchCopy,
-  getImportRowLabel,
-} from '../lib/importPresentation';
+import { getImportRowLabel } from '../lib/importPresentation';
+import { ImportMatchReviewPanel } from './ImportMatchReviewPanel';
 import { useImportDraftRowEvaluation } from './ImportDraftReviewContext';
 import { useImportDraftReviewRowSave } from './useImportDraftReviewRowSave';
-
-const MATCH_ISSUE_COPY: Partial<Record<ImportMatchIssue, string>> = {
-  collision:
-    'Another row in this import uses the same external ID. Select one row and leave the other unselected.',
-  invalidated_decision:
-    'The saved match is no longer valid. Clear it or restore the original values to continue.',
-  ambiguous_exact:
-    'Multiple exact matches exist on this card. Review before continuing.',
-  advisory_unresolved:
-    'A similar transaction was found. Accept or dismiss the suggestion to continue.',
-  missing_target: 'The saved match no longer exists. Clear it to continue.',
-  deleted_target: 'The saved match was deleted. Clear it to continue.',
-  wrong_account:
-    'The saved match is on a different card. Clear it to continue.',
-};
 
 interface ImportDraftReviewRowDetailsProps {
   row: ImportDraftRow;
@@ -39,92 +21,31 @@ export const ImportDraftReviewRowDetails = ({
   const rowLabel = getImportRowLabel(row);
   const tagsInputId = `import-row-tags-${row.id}`;
   const evaluation = useImportDraftRowEvaluation(row.id);
-  const match = evaluation?.match;
-  const exactCandidate = match?.exactCandidate;
-  const exactExplanation = exactCandidate?.explanation;
-  const savedMatchIsInvalid =
-    Boolean(row.reviewMatchedTransactionId) &&
-    match?.acceptedMatchValid === false;
-  const clearSavedMatch = () =>
-    saveField({
-      reviewMatchedTransactionId: null,
-      reviewMatchDismissed: true,
-    });
-  const advisory =
-    exactCandidate ||
-    row.reviewMatchDismissed ||
-    (row.reviewMatchedTransactionId && !savedMatchIsInvalid)
-      ? undefined
-      : match?.advisoryCandidates[0];
   const refundSuggestion = evaluation?.refundSuggestion;
 
   useEffect(() => {
     setNotesDraft(row.reviewNotes ?? '');
   }, [row.id, row.reviewNotes]);
 
+  const dismissMatch = () =>
+    saveField({
+      reviewMatchedTransactionId: null,
+      reviewMatchDismissed: true,
+    });
+
   return (
     <div className="bg-muted/10 px-3 py-2">
-      {(match?.issues ?? []).map((issue) => {
-        const copy = MATCH_ISSUE_COPY[issue];
-        if (!copy) return null;
-        return (
-          <Text
-            key={issue}
-            variant="body-sm"
-            className="mb-2 text-amber-700 dark:text-amber-400"
-          >
-            {copy}
-          </Text>
-        );
-      })}
-      {exactExplanation ? (
-        <Text variant="body-sm" className="mb-2 text-muted-foreground">
-          {formatExactImportMatchCopy(exactExplanation)}
-        </Text>
-      ) : null}
-      {advisory ? (
-        <div className="mb-2 flex flex-wrap items-center gap-2">
-          <Text variant="body-sm" className="text-muted-foreground">
-            {advisory.explanation}
-          </Text>
-          <Button
-            type="button"
-            size="xs"
-            variant="outline"
-            disabled={disabled}
-            onClick={() =>
-              saveField({
-                reviewMatchedTransactionId: advisory.transactionId,
-                reviewMatchDismissed: false,
-              })
-            }
-          >
-            Use this match
-          </Button>
-          <Button
-            type="button"
-            size="xs"
-            variant="ghost"
-            disabled={disabled}
-            onClick={clearSavedMatch}
-          >
-            Not a match
-          </Button>
-        </div>
-      ) : null}
-      {savedMatchIsInvalid && !advisory ? (
-        <div className="mb-2 flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            size="xs"
-            variant="outline"
-            disabled={disabled}
-            onClick={clearSavedMatch}
-          >
-            Clear match
-          </Button>
-        </div>
-      ) : null}
+      <ImportMatchReviewPanel
+        row={row}
+        disabled={disabled}
+        onAcceptAdvisory={(transactionId) =>
+          saveField({
+            reviewMatchedTransactionId: transactionId,
+            reviewMatchDismissed: false,
+          })
+        }
+        onDismissMatch={dismissMatch}
+      />
       {refundSuggestion?.kind === 'existing' &&
       refundSuggestion.transactionId &&
       !row.reviewRefundOf ? (

@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { MatchTargetFact } from '@ploutizo/types';
 import {
+  deriveImportMatchReviewUiState,
   evaluateImportMatches,
   importMatchTargetQueryBounds,
   matchDecisionForSelectionChange,
+  matchDecisionsForSelectedRows,
 } from './import-matches';
 import type { ImportMatchDraftRow } from './import-matches';
 
@@ -171,7 +173,7 @@ describe('evaluateImportMatches — fallback identity', () => {
 });
 
 describe('evaluateImportMatches — same-import collisions', () => {
-  it('flags same-import external-ID collisions until exactly one row is selected', () => {
+  it('tracks collision groups without blocking unselected duplicate rows', () => {
     const rows = [
       row({ id: 'row-a', selectedForImport: false }),
       row({ id: 'row-b', selectedForImport: false }),
@@ -180,8 +182,8 @@ describe('evaluateImportMatches — same-import collisions', () => {
 
     expect(evaluations.get('row-a')?.collisionRowIds).toEqual(['row-b']);
     expect(evaluations.get('row-b')?.collisionRowIds).toEqual(['row-a']);
-    expect(evaluations.get('row-a')?.issues).toContain('collision');
-    expect(evaluations.get('row-b')?.issues).toContain('collision');
+    expect(evaluations.get('row-a')?.issues).not.toContain('collision');
+    expect(evaluations.get('row-b')?.issues).not.toContain('collision');
   });
 
   it('blocks Continue when two colliding rows are both selected', () => {
@@ -490,5 +492,42 @@ describe('matchDecisionForSelectionChange', () => {
         collisionUnresolved: evaluation.issues.includes('collision'),
       })
     ).toBeNull();
+  });
+});
+
+describe('matchDecisionsForSelectedRows', () => {
+  it('assigns no saved match when bulk-selecting colliding rows', () => {
+    const rows = [
+      row({ id: 'row-a', selectedForImport: true }),
+      row({ id: 'row-b', selectedForImport: true }),
+    ];
+    const patches = matchDecisionsForSelectedRows(rows, {
+      rowIds: ['row-a', 'row-b'],
+      selectedForImport: true,
+      options: { targetAccountId, existingTransactions: [tx()] },
+    });
+
+    expect(patches.get('row-a')).toBeNull();
+    expect(patches.get('row-b')).toBeNull();
+  });
+});
+
+describe('deriveImportMatchReviewUiState', () => {
+  it('offers clear match when a saved decision is invalid and no advisory remains', () => {
+    const ui = deriveImportMatchReviewUiState(
+      { reviewMatchedTransactionId: 'tx-1', reviewMatchDismissed: false },
+      {
+        candidates: [],
+        exactCandidate: null,
+        advisoryCandidates: [],
+        collisionRowIds: [],
+        acceptedMatch: null,
+        acceptedMatchValid: false,
+        issues: ['invalidated_decision'],
+      }
+    );
+
+    expect(ui.actions).toEqual(['clear_invalid_match']);
+    expect(ui.advisory).toBeNull();
   });
 });

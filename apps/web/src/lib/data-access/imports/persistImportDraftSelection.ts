@@ -1,7 +1,11 @@
-import { matchDecisionForSelectionChange } from '@ploutizo/utils';
+import {
+  matchDecisionsForSelectedRows,
+  toImportMatchDraftRow,
+} from '@ploutizo/utils';
 import { createOptimisticAction } from '@tanstack/db';
-import type { ImportDraftPersistedRow } from '@ploutizo/types';
+import type { ImportDraft, ImportDraftPersistedRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowSelectionInput } from '@ploutizo/validators';
+import { queryClient } from '@/lib/queryClient';
 import {
   getImportReviewAutosaveSnapshot,
   markImportReviewSelectionFailure,
@@ -11,16 +15,51 @@ import {
 import { fetchUpdateImportDraftRowSelection } from './fetchUpdateImportDraftRowSelection';
 import { flushImportDraftRowPacedMutations } from './getImportDraftRowPacedMutations';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
-import {
-  evaluateImportDraftWorkingCopy,
-  rederiveImportDraftWorkingCopy,
-} from './rederiveImportDraftWorkingCopy';
+import { importDraftQueryKey } from './queryKeys';
+import { rederiveImportDraftWorkingCopy } from './rederiveImportDraftWorkingCopy';
 
 interface SelectionVariables {
   draftId: string;
   rowIds: string[];
   selectedForImport: boolean;
 }
+
+const matchDecisionOptions = (draftId: string) => {
+  const draft = queryClient.getQueryData<ImportDraft>(
+    importDraftQueryKey(draftId)
+  );
+  if (!draft?.account.id) return null;
+  return {
+    targetAccountId: draft.account.id,
+    existingTransactions: Object.values(draft.matchTargetFacts),
+  };
+};
+
+const applySelectionMatchDecisions = (
+  draftId: string,
+  rowIds: string[],
+  selectedForImport: boolean
+) => {
+  const options = matchDecisionOptions(draftId);
+  if (!options) return;
+
+  const collection = getImportDraftRowsCollection(draftId);
+  const rowIdSet = new Set(rowIds);
+  const nextRows = collection.toArray.map((row) =>
+    rowIdSet.has(row.id) ? { ...row, selectedForImport } : row
+  );
+  const patches = matchDecisionsForSelectedRows(
+    nextRows.map((row) => toImportMatchDraftRow(row)),
+    { rowIds, selectedForImport, options }
+  );
+
+  collection.update(rowIds, (drafts) => {
+    for (const draft of drafts) {
+      draft.selectedForImport = selectedForImport;
+      draft.reviewMatchedTransactionId = patches.get(draft.id) ?? null;
+    }
+  });
+};
 
 const confirmSelectionIntoCollection = (
   draftId: string,
@@ -65,24 +104,7 @@ const confirmSelectionIntoCollection = (
 
 const persistSelection = createOptimisticAction<SelectionVariables>({
   onMutate: ({ draftId, rowIds, selectedForImport }) => {
-    const collection = getImportDraftRowsCollection(draftId);
-    collection.update(rowIds, (drafts) => {
-      for (const draft of drafts) {
-        draft.selectedForImport = selectedForImport;
-      }
-    });
-    const evaluations = evaluateImportDraftWorkingCopy(draftId);
-    collection.update(rowIds, (drafts) => {
-      for (const draft of drafts) {
-        const match = evaluations?.get(draft.id)?.match;
-        draft.reviewMatchedTransactionId = matchDecisionForSelectionChange({
-          selectedForImport,
-          currentMatchedTransactionId: draft.reviewMatchedTransactionId,
-          exactCandidate: match?.exactCandidate ?? null,
-          collisionUnresolved: match?.issues.includes('collision') ?? false,
-        });
-      }
-    });
+    applySelectionMatchDecisions(draftId, rowIds, selectedForImport);
     rederiveImportDraftWorkingCopy(draftId);
   },
   mutationFn: async ({ draftId, rowIds, selectedForImport }) => {
