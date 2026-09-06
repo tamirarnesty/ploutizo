@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { SettlementAccountRow, SettlementStatus } from '@ploutizo/types';
-import { getSettleInitialValues } from '@/components/dashboard/settle-dialog/getSettleInitialValues';
+import {
+  getSettleAmountForPayToward,
+  getSettleInitialValues,
+} from '@/components/dashboard/settle-dialog/getSettleInitialValues';
 
 const fixture = (): SettlementAccountRow => ({
   account: {
@@ -99,5 +102,12 @@ describe('getSettleInitialValues', () => {
     expect(v.payToward).toBe('shared');
     expect(v.amountDollars).toBe(2);
     expect(v.sourceAccountId).toBe('bank-joint');
+  });
+
+  it('recomputes amount when pay-toward changes', () => {
+    const account = fixture();
+    expect(getSettleAmountForPayToward(account, 'alice')).toBe(0);
+    expect(getSettleAmountForPayToward(account, 'betty')).toBe(5);
+    expect(getSettleAmountForPayToward(account, 'shared')).toBe(2);
   });
 });
