@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
-import { NotFoundError } from '../lib/errors';
+import { DomainError, NotFoundError } from '../lib/errors';
 import { transactionsRouter } from '../routes/transactions';
 import {
+  createTransaction,
   deleteTransaction,
   getTransaction,
   listTransactions,
   restoreTransaction,
   updateTransaction,
-  validateSplitSum,
 } from '../services/transactions';
 import { createRouteTestApp } from './testUtils';
 import type { ListQueryParams } from '../services/transactions';
@@ -141,8 +141,6 @@ vi.mock('../services/transactions', () => ({
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   }),
-  validateSplitSum: vi.fn().mockReturnValue(null), // default: valid
-  checkRefundOfOwnership: vi.fn().mockResolvedValue(true),
   listTransactions: vi.fn().mockResolvedValue({
     data: [],
     total: 0,
@@ -290,8 +288,12 @@ describe('POST /api/transactions', () => {
   });
 
   it('TXN-POST-04: assignees sum mismatch → 400 BAD_REQUEST', async () => {
-    vi.mocked(validateSplitSum).mockReturnValueOnce(
-      'Assignee amounts must sum to transaction amount'
+    vi.mocked(createTransaction).mockRejectedValueOnce(
+      new DomainError(
+        400,
+        'Assignee amounts must sum to transaction amount',
+        'BAD_REQUEST'
+      )
     );
     const res = await app.request('/', {
       method: 'POST',

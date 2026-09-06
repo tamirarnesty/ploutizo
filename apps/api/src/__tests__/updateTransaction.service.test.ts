@@ -69,6 +69,8 @@ vi.mock('@/lib/queries/transactions', () => ({
   replaceAssignees: vi.fn(),
   replaceTags: vi.fn(),
   restoreTransactionQuery: vi.fn(),
+  counterpartAccountBelongsToOrg: vi.fn().mockResolvedValue(true),
+  refundOfExists: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock('@/lib/queries/scope', () => ({
@@ -177,7 +179,18 @@ describe('updateTransaction — PATCH split-sum validation', () => {
       assignees: newAssignees,
     });
 
-    expect(updateTransactionScalarsQuery).toHaveBeenCalled();
+    expect(updateTransactionScalarsQuery).toHaveBeenCalledWith(
+      mockTx,
+      ORG_ID,
+      TXN_ID,
+      expect.objectContaining({
+        type: 'expense',
+        categoryId: CATEGORY_ID,
+        counterpartAccountId: null,
+        refundOf: null,
+        incomeType: null,
+      })
+    );
     expect(replaceAssignees).toHaveBeenCalledWith(mockTx, TXN_ID, newAssignees);
     expect(fetchTransactionById).toHaveBeenCalledWith(ORG_ID, TXN_ID, mockTx);
     expect(enrichTransactions).not.toHaveBeenCalled();
