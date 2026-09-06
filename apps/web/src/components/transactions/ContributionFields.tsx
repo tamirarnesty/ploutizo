@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { Field, FieldLabel } from '@ploutizo/ui/components/field';
 import {
   Select,
@@ -9,7 +8,10 @@ import {
   SelectValue,
 } from '@ploutizo/ui/components/select';
 import type { Account } from '@ploutizo/types';
+import { AccountSlotEmptyState } from './AccountSlotEmptyState';
+import { getTransactionFormAccountOptions } from './getTransactionFormAccountOptions';
 import type { TransactionFormInstance } from './hooks/useTransactionForm';
+import type { TransactionFormValues } from './types';
 
 export interface ContributionFieldsProps {
   form: TransactionFormInstance;
@@ -19,53 +21,65 @@ export interface ContributionFieldsProps {
 export const ContributionFields = ({
   form,
   accounts,
-}: ContributionFieldsProps) => {
-  const investmentAccounts = useMemo(
-    () => accounts.filter((a) => a.type === 'investment'),
-    [accounts]
-  );
+}: ContributionFieldsProps) => (
+  <form.Subscribe
+    selector={(s: { values: TransactionFormValues }) => ({
+      accountId: s.values.accountId,
+      counterpartAccountId: s.values.counterpartAccountId,
+    })}
+  >
+    {({ accountId, counterpartAccountId }) => {
+      const destinationAccounts = getTransactionFormAccountOptions({
+        type: 'contribution',
+        slot: 'counterpartAccountId',
+        accounts,
+        otherSelectedAccountId: accountId,
+        preserveAccountId: counterpartAccountId,
+      });
 
-  const accountMap = useMemo(
-    () => new Map(investmentAccounts.map((a) => [a.id, a])),
-    [investmentAccounts]
-  );
-
-  return (
-    <form.AppField name="counterpartAccountId">
-      {(field) => (
-        <Field>
-          <FieldLabel htmlFor="tx-contribution-counterpartAccountId">
-            Destination
-          </FieldLabel>
-          <Select
-            items={investmentAccounts.map((account) => ({
-              label: account.name,
-              value: account.id,
-            }))}
-            value={field.state.value}
-            onValueChange={(v) => {
-              if (v !== null) field.handleChange(v);
-            }}
-          >
-            <SelectTrigger id="tx-contribution-counterpartAccountId">
-              <SelectValue>
-                {(selected: string) =>
-                  accountMap.get(selected)?.name ?? 'Select account'
-                }
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {investmentAccounts.map((account) => (
-                  <SelectItem key={account.id} value={account.id}>
-                    {account.name}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </Field>
-      )}
-    </form.AppField>
-  );
-};
+      return (
+        <form.AppField name="counterpartAccountId">
+          {(field) =>
+            destinationAccounts.length === 0 ? (
+              <AccountSlotEmptyState label="Destination" />
+            ) : (
+              <Field>
+                <FieldLabel htmlFor="tx-contribution-counterpartAccountId">
+                  Destination
+                </FieldLabel>
+                <Select
+                  items={destinationAccounts.map((account) => ({
+                    label: account.name,
+                    value: account.id,
+                  }))}
+                  value={field.state.value}
+                  onValueChange={(v) => {
+                    if (v !== null) field.handleChange(v);
+                  }}
+                >
+                  <SelectTrigger id="tx-contribution-counterpartAccountId">
+                    <SelectValue>
+                      {(selected: string) =>
+                        accounts.find((account) => account.id === selected)
+                          ?.name ?? 'Select account'
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {destinationAccounts.map((account) => (
+                        <SelectItem key={account.id} value={account.id}>
+                          {account.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
+            )
+          }
+        </form.AppField>
+      );
+    }}
+  </form.Subscribe>
+);

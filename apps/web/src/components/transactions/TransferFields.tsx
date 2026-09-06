@@ -9,6 +9,8 @@ import {
   SelectValue,
 } from '@ploutizo/ui/components/select';
 import type { Account } from '@ploutizo/types';
+import { AccountSlotEmptyState } from './AccountSlotEmptyState';
+import { getTransactionFormAccountOptions } from './getTransactionFormAccountOptions';
 import type { TransactionFormInstance } from './hooks/useTransactionForm';
 import type { TransactionFormValues } from './types';
 
@@ -37,10 +39,16 @@ const TransferDestinationField = ({
   accounts,
   field,
 }: TransferDestinationFieldProps) => {
-  // Compute destination list — excludes source account.
   const destinationAccounts = useMemo(
-    () => accounts.filter((a) => a.id !== sourceAccountId),
-    [accounts, sourceAccountId]
+    () =>
+      getTransactionFormAccountOptions({
+        type: 'transfer',
+        slot: 'counterpartAccountId',
+        accounts,
+        otherSelectedAccountId: sourceAccountId,
+        preserveAccountId: field.state.value,
+      }),
+    [accounts, sourceAccountId, field.state.value]
   );
 
   // Clear the destination selection only when sourceAccountId *changes* to
@@ -59,6 +67,10 @@ const TransferDestinationField = ({
     // across the same field instance; we only want to react to sourceAccountId changes.
   }, [sourceAccountId]);
 
+  if (destinationAccounts.length === 0) {
+    return <AccountSlotEmptyState label="Destination" />;
+  }
+
   return (
     <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
       <FieldLabel htmlFor="tx-counterpartAccountId">Destination</FieldLabel>
@@ -75,8 +87,8 @@ const TransferDestinationField = ({
         <SelectTrigger id="tx-counterpartAccountId">
           <SelectValue>
             {(selected: string) =>
-              destinationAccounts.find((account) => account.id === selected)
-                ?.name ?? 'Select account'
+              accounts.find((account) => account.id === selected)?.name ??
+              'Select account'
             }
           </SelectValue>
         </SelectTrigger>
