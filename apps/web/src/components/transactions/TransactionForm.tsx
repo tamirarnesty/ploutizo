@@ -14,7 +14,6 @@ import {
 } from '@ploutizo/ui/components/input-group';
 import { Spinner } from '@ploutizo/ui/components/spinner';
 import { Textarea } from '@ploutizo/ui/components/textarea';
-import { cn } from '@ploutizo/ui/lib/utils';
 import {
   Field,
   FieldError,
@@ -59,6 +58,7 @@ import {
 } from '@/lib/money/pending-input-flush';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import { useTransactionForm } from './hooks/useTransactionForm';
+import { getTransactionFormAccountOptions } from './getTransactionFormAccountOptions';
 import { TransactionTypeFields } from './TransactionTypeFields';
 import { TransferFields } from './TransferFields';
 import { SettlementFields } from './SettlementFields';
@@ -320,13 +320,26 @@ const TransactionFormInner = ({
 
           {/* accountId — full-width "Account" for single-account types;
               2-col [Source | Destination] for multi-account types */}
-          <form.Subscribe selector={(s) => s.values.type}>
-            {(type) => {
+          <form.Subscribe
+            selector={(s) => ({
+              type: s.values.type,
+              accountId: s.values.accountId,
+              counterpartAccountId: s.values.counterpartAccountId,
+            })}
+          >
+            {({ type, accountId, counterpartAccountId }) => {
               const isMultiAccount = [
                 'transfer',
                 'settlement',
                 'contribution',
               ].includes(type);
+              const accountOptions = getTransactionFormAccountOptions({
+                type,
+                slot: 'accountId',
+                accounts,
+                otherSelectedAccountId: counterpartAccountId,
+                preserveAccountId: accountId,
+              });
 
               const sourceField = (
                 <form.AppField
@@ -346,7 +359,7 @@ const TransactionFormInner = ({
                         {isMultiAccount ? 'Source' : 'Account'}
                       </FieldLabel>
                       <Select
-                        items={accounts.map((account) => ({
+                        items={accountOptions.map((account) => ({
                           label: account.name,
                           value: account.id,
                         }))}
@@ -366,7 +379,7 @@ const TransactionFormInner = ({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectGroup>
-                            {accounts.map((account) => (
+                            {accountOptions.map((account) => (
                               <SelectItem key={account.id} value={account.id}>
                                 {account.name}
                               </SelectItem>

@@ -8,7 +8,9 @@ import {
   SelectValue,
 } from '@ploutizo/ui/components/select';
 import type { Account } from '@ploutizo/types';
+import { getTransactionFormAccountOptions } from './getTransactionFormAccountOptions';
 import type { TransactionFormInstance } from './hooks/useTransactionForm';
+import type { TransactionFormValues } from './types';
 
 export interface SettlementFieldsProps {
   form: TransactionFormInstance;
@@ -20,105 +22,139 @@ export interface SettlementFieldsProps {
 //   counterpartAccountId = Source (bank account funding the payment)
 // Both fields are rendered here so TransactionForm can skip the generic sourceField for settlement.
 export const SettlementFields = ({ form, accounts }: SettlementFieldsProps) => (
-  <div className="grid grid-cols-2 gap-4">
-    <form.AppField
-      name="counterpartAccountId"
-      validators={{
-        onChange: ({ value }: { value: string }) =>
-          !value ? 'Source account is required.' : undefined,
-      }}
-    >
-      {(field) => (
-        <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
-          <FieldLabel htmlFor="tx-settlement-source">Source</FieldLabel>
-          <Select
-            items={accounts.map((account) => ({
-              label: account.name,
-              value: account.id,
-            }))}
-            value={field.state.value}
-            onValueChange={(v) => {
-              if (v !== null) field.handleChange(v);
-            }}
-          >
-            <SelectTrigger id="tx-settlement-source">
-              <SelectValue>
-                {(selected: string) =>
-                  accounts.find((account) => account.id === selected)?.name ??
-                  'Select account'
-                }
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {accounts.map((account) => (
-                  <SelectItem key={account.id} value={account.id}>
-                    {account.name}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          {field.state.meta.errors.length > 0 ? (
-            <FieldError
-              errors={
-                field.state.meta.errors as unknown as { message?: string }[]
-              }
-            />
-          ) : null}
-        </Field>
-      )}
-    </form.AppField>
+  <form.Subscribe
+    selector={(s: { values: TransactionFormValues }) => ({
+      accountId: s.values.accountId,
+      counterpartAccountId: s.values.counterpartAccountId,
+    })}
+  >
+    {({ accountId, counterpartAccountId }) => {
+      const sourceAccounts = getTransactionFormAccountOptions({
+        type: 'settlement',
+        slot: 'counterpartAccountId',
+        accounts,
+        otherSelectedAccountId: accountId,
+        preserveAccountId: counterpartAccountId,
+      });
+      const destinationAccounts = getTransactionFormAccountOptions({
+        type: 'settlement',
+        slot: 'accountId',
+        accounts,
+        otherSelectedAccountId: counterpartAccountId,
+        preserveAccountId: accountId,
+      });
 
-    <form.AppField
-      name="accountId"
-      validators={{
-        onChange: ({ value }: { value: string }) =>
-          !value ? 'Destination account is required.' : undefined,
-      }}
-    >
-      {(field) => (
-        <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
-          <FieldLabel htmlFor="tx-settlement-destination">
-            Destination
-          </FieldLabel>
-          <Select
-            items={accounts.map((account) => ({
-              label: account.name,
-              value: account.id,
-            }))}
-            value={field.state.value}
-            onValueChange={(v) => {
-              if (v !== null) field.handleChange(v);
+      return (
+        <div className="grid grid-cols-2 gap-4">
+          <form.AppField
+            name="counterpartAccountId"
+            validators={{
+              onChange: ({ value }: { value: string }) =>
+                !value ? 'Source account is required.' : undefined,
             }}
           >
-            <SelectTrigger id="tx-settlement-destination">
-              <SelectValue>
-                {(selected: string) =>
-                  accounts.find((account) => account.id === selected)?.name ??
-                  'Select account'
-                }
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {accounts.map((account) => (
-                  <SelectItem key={account.id} value={account.id}>
-                    {account.name}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          {field.state.meta.errors.length > 0 ? (
-            <FieldError
-              errors={
-                field.state.meta.errors as unknown as { message?: string }[]
-              }
-            />
-          ) : null}
-        </Field>
-      )}
-    </form.AppField>
-  </div>
+            {(field) => (
+              <Field
+                data-invalid={field.state.meta.errors.length > 0 || undefined}
+              >
+                <FieldLabel htmlFor="tx-settlement-source">Source</FieldLabel>
+                <Select
+                  items={sourceAccounts.map((account) => ({
+                    label: account.name,
+                    value: account.id,
+                  }))}
+                  value={field.state.value}
+                  onValueChange={(v) => {
+                    if (v !== null) field.handleChange(v);
+                  }}
+                >
+                  <SelectTrigger id="tx-settlement-source">
+                    <SelectValue>
+                      {(selected: string) =>
+                        accounts.find((account) => account.id === selected)
+                          ?.name ?? 'Select account'
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {sourceAccounts.map((account) => (
+                        <SelectItem key={account.id} value={account.id}>
+                          {account.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                {field.state.meta.errors.length > 0 ? (
+                  <FieldError
+                    errors={
+                      field.state.meta.errors as unknown as {
+                        message?: string;
+                      }[]
+                    }
+                  />
+                ) : null}
+              </Field>
+            )}
+          </form.AppField>
+
+          <form.AppField
+            name="accountId"
+            validators={{
+              onChange: ({ value }: { value: string }) =>
+                !value ? 'Destination account is required.' : undefined,
+            }}
+          >
+            {(field) => (
+              <Field
+                data-invalid={field.state.meta.errors.length > 0 || undefined}
+              >
+                <FieldLabel htmlFor="tx-settlement-destination">
+                  Destination
+                </FieldLabel>
+                <Select
+                  items={destinationAccounts.map((account) => ({
+                    label: account.name,
+                    value: account.id,
+                  }))}
+                  value={field.state.value}
+                  onValueChange={(v) => {
+                    if (v !== null) field.handleChange(v);
+                  }}
+                >
+                  <SelectTrigger id="tx-settlement-destination">
+                    <SelectValue>
+                      {(selected: string) =>
+                        accounts.find((account) => account.id === selected)
+                          ?.name ?? 'Select account'
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {destinationAccounts.map((account) => (
+                        <SelectItem key={account.id} value={account.id}>
+                          {account.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                {field.state.meta.errors.length > 0 ? (
+                  <FieldError
+                    errors={
+                      field.state.meta.errors as unknown as {
+                        message?: string;
+                      }[]
+                    }
+                  />
+                ) : null}
+              </Field>
+            )}
+          </form.AppField>
+        </div>
+      );
+    }}
+  </form.Subscribe>
 );

@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from '@ploutizo/ui/components/select';
 import type { Account } from '@ploutizo/types';
+import { getTransactionFormAccountOptions } from './getTransactionFormAccountOptions';
 import type { TransactionFormInstance } from './hooks/useTransactionForm';
 import type { TransactionFormValues } from './types';
 
@@ -37,10 +38,16 @@ const TransferDestinationField = ({
   accounts,
   field,
 }: TransferDestinationFieldProps) => {
-  // Compute destination list — excludes source account.
   const destinationAccounts = useMemo(
-    () => accounts.filter((a) => a.id !== sourceAccountId),
-    [accounts, sourceAccountId]
+    () =>
+      getTransactionFormAccountOptions({
+        type: 'transfer',
+        slot: 'counterpartAccountId',
+        accounts,
+        otherSelectedAccountId: sourceAccountId,
+        preserveAccountId: field.state.value,
+      }),
+    [accounts, sourceAccountId, field.state.value]
   );
 
   // Clear the destination selection only when sourceAccountId *changes* to
@@ -75,8 +82,8 @@ const TransferDestinationField = ({
         <SelectTrigger id="tx-counterpartAccountId">
           <SelectValue>
             {(selected: string) =>
-              destinationAccounts.find((account) => account.id === selected)
-                ?.name ?? 'Select account'
+              accounts.find((account) => account.id === selected)?.name ??
+              'Select account'
             }
           </SelectValue>
         </SelectTrigger>
