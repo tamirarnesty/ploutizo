@@ -4,18 +4,15 @@ import {
   transactionTags,
   transactions,
 } from '@ploutizo/db/schema';
-import { normalizeTransactionAssignees } from '@ploutizo/utils';
 import { validateTransactionAccountPolicy } from '@ploutizo/utils/transaction-policy';
 import type { Transaction } from '@ploutizo/db';
 import type { TransactionType } from '@ploutizo/types';
 import type {
   CreateTransactionInput,
   UpdateTransactionServiceInput,
-  createTransactionSchema,
 } from '@ploutizo/validators';
 import type { AccountWriteReference } from '@/lib/queries/scope';
 import type { ListQueryParams } from '@/lib/queries/transactions';
-import type { z } from 'zod';
 import { assertOrgWriteReferences } from '@/lib/assertOrgWriteReferences';
 import { DomainError, NotFoundError } from '@/lib/errors';
 import { isExternalIdUniqueViolation } from '@/lib/isUniqueViolation';
@@ -26,10 +23,8 @@ import {
 import {
   buildListQuery,
   countQuery,
-  counterpartAccountBelongsToOrg,
   enrichTransactions,
   fetchTransactionById,
-  refundOfExists,
   replaceAssignees,
   replaceTags,
   restoreTransactionQuery,
@@ -37,40 +32,13 @@ import {
   updateTransactionScalarsQuery,
 } from '@/lib/queries/transactions';
 import { fetchImportBatchInOrg } from '@/lib/queries/imports';
+import {
+  assertTransactionWriteOrgRefs,
+  planCreateTransactionWrite,
+  planUpdateTransactionWrite,
+} from '@/services/transaction-write-planner';
 
 export type { ListQueryParams };
-
-export const validateSplitSum = (
-  amount: number,
-  assignees?: { amountCents: number }[]
-): string | null => {
-  if (!assignees || assignees.length === 0) return null;
-  const sum = assignees.reduce((acc, a) => acc + a.amountCents, 0);
-  return sum === amount
-    ? null
-    : 'Assignee amounts must sum to transaction amount';
-};
-
-export const assigneeRowsForPatchSplitSum = (
-  payloadAssignees: CreateTransactionInput['assignees'] | undefined,
-  existingAssignees: readonly { amountCents: number }[]
-): { amountCents: number }[] | null => {
-  const rows =
-    payloadAssignees !== undefined
-      ? payloadAssignees.map((a) => ({ amountCents: a.amountCents }))
-      : existingAssignees.map((a) => ({ amountCents: a.amountCents }));
-  return rows.length > 0 ? rows : null;
-};
-
-export const checkRefundOfOwnership = async (
-  orgId: string,
-  refundOfId: string
-): Promise<boolean> => refundOfExists(orgId, refundOfId);
-
-export const checkCounterpartAccountOwnership = async (
-  orgId: string,
-  accountId: string
-): Promise<boolean> => counterpartAccountBelongsToOrg(orgId, accountId);
 
 type LoadedTransactionWriteReferences = {
   account: AccountWriteReference;
@@ -191,17 +159,11 @@ const runTransactionWrite = async <T>(write: () => Promise<T>): Promise<T> => {
 
 export const createTransaction = async (
   orgId: string,
-  data: z.infer<typeof createTransactionSchema>
+  data: CreateTransactionInput
 ) => {
-  const { assignees, tagIds, ...transactionData } = data;
-
-  const splitError = validateSplitSum(transactionData.amount, assignees);
-  if (splitError) throw new DomainError(400, splitError, 'BAD_REQUEST');
-
-  const normalizedAssignees = normalizeTransactionAssignees(
-    transactionData.amount,
-    assignees
-  );
+  const { transactionData, tagIds, normalizedAssignees } =
+    planCreateTransactionWrite(data);
+  await assertTransactionWriteOrgRefs(orgId, data);
 
   return db.transaction(async (tx) => {
     await assertImportBatchProvenance(orgId, transactionData.importBatchId, tx);
@@ -287,23 +249,7 @@ export const updateTransaction = async (
   id: string,
   data: UpdateTransactionServiceInput
 ) => {
-  const { assignees, tagIds, ...updateData } = data;
-
-  const typeSpecificNulls: Record<string, null> = {};
-  if (!['transfer', 'settlement', 'contribution'].includes(data.type)) {
-    typeSpecificNulls.counterpartAccountId = null;
-  }
-  if (data.type !== 'refund') {
-    typeSpecificNulls.refundOf = null;
-  }
-  if (data.type !== 'income') {
-    typeSpecificNulls.incomeType = null;
-  }
-  // Expense/refund require category; settlement may keep Bill Payment readability.
-  if (!['expense', 'refund', 'settlement'].includes(data.type)) {
-    typeSpecificNulls.categoryId = null;
-  }
-  Object.assign(updateData, typeSpecificNulls);
+  await assertTransactionWriteOrgRefs(orgId, data);
 
   return db.transaction(async (tx) => {
     const row = await fetchTransactionById(orgId, id, tx);
@@ -319,8 +265,8 @@ export const updateTransaction = async (
             : undefined,
         refundOf: 'refundOf' in data ? data.refundOf : undefined,
         categoryId: 'categoryId' in data ? data.categoryId : undefined,
-        tagIds,
-        assignees,
+        tagIds: data.tagIds,
+        assignees: data.assignees,
       },
       tx
     );
@@ -336,14 +282,8 @@ export const updateTransaction = async (
       }[];
     }
 
-    const rowsForSplitCheck = assigneeRowsForPatchSplitSum(
-      data.assignees,
-      existingAssignees
-    );
-    if (rowsForSplitCheck) {
-      const splitError = validateSplitSum(data.amount, rowsForSplitCheck);
-      if (splitError) throw new DomainError(400, splitError, 'BAD_REQUEST');
-    }
+    const { updateData, tagIds, normalizedAssignees } =
+      planUpdateTransactionWrite(data, existingAssignees);
 
     const updated = await runTransactionWrite(() =>
       updateTransactionScalarsQuery(
@@ -356,11 +296,7 @@ export const updateTransaction = async (
 
     if (!updated) throw new NotFoundError('Transaction not found.');
 
-    if (assignees !== undefined) {
-      const normalizedAssignees = normalizeTransactionAssignees(
-        data.amount,
-        assignees
-      );
+    if (normalizedAssignees !== undefined) {
       await replaceAssignees(tx, id, normalizedAssignees);
     }
 

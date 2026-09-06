@@ -9,7 +9,9 @@ import {
 } from '@/lib/queries/scope';
 import { createTransaction, updateTransaction } from '@/services/transactions';
 import {
+  counterpartAccountBelongsToOrg,
   fetchTransactionById,
+  refundOfExists,
   updateTransactionScalarsQuery,
 } from '@/lib/queries/transactions';
 
@@ -37,8 +39,8 @@ vi.mock('@/lib/queries/transactions', () => ({
   replaceTags: vi.fn(),
   buildListQuery: vi.fn(),
   countQuery: vi.fn(),
-  counterpartAccountBelongsToOrg: vi.fn(),
-  refundOfExists: vi.fn(),
+  counterpartAccountBelongsToOrg: vi.fn().mockResolvedValue(true),
+  refundOfExists: vi.fn().mockResolvedValue(true),
   softDeleteTransactionQuery: vi.fn(),
   restoreTransactionQuery: vi.fn(),
 }));
@@ -274,5 +276,81 @@ describe('updateTransaction — transaction account policy wiring', () => {
       {},
       mockTx
     );
+  });
+});
+
+describe('createTransaction — write planner checks', () => {
+  beforeEach(() => {
+    vi.mocked(fetchAccountWriteReference).mockReset();
+    vi.mocked(counterpartAccountBelongsToOrg).mockReset();
+    vi.mocked(refundOfExists).mockReset();
+    vi.mocked(allMembersInOrg).mockReset();
+    vi.mocked(categoryExistsInOrg).mockReset();
+    mockAccountLookups({
+      [ACCOUNT_A]: accountRef(ACCOUNT_A, 'chequing'),
+      [ACCOUNT_B]: accountRef(ACCOUNT_B, 'savings'),
+    });
+    vi.mocked(allMembersInOrg).mockResolvedValue(true);
+    vi.mocked(categoryExistsInOrg).mockResolvedValue(true);
+    vi.mocked(counterpartAccountBelongsToOrg).mockResolvedValue(true);
+    vi.mocked(refundOfExists).mockResolvedValue(true);
+  });
+
+  it('rejects split-sum mismatch before org or account lookups', async () => {
+    const err = await createTransaction(ORG_A, {
+      type: 'expense',
+      accountId: ACCOUNT_A,
+      amount: 1000,
+      date: '2026-05-01',
+      description: 'Test',
+      categoryId: '550e8400-e29b-41d4-a716-446655440099',
+      assignees: [{ memberId: MEMBER_A, amountCents: 999, percentage: 100 }],
+    }).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(DomainError);
+    expect((err as DomainError).code).toBe('BAD_REQUEST');
+    expect((err as DomainError).message).toBe(
+      'Assignee amounts must sum to transaction amount'
+    );
+    expect(counterpartAccountBelongsToOrg).not.toHaveBeenCalled();
+    expect(fetchAccountWriteReference).not.toHaveBeenCalled();
+  });
+
+  it('rejects counterpartAccountId that is not in the org', async () => {
+    vi.mocked(counterpartAccountBelongsToOrg).mockResolvedValueOnce(false);
+
+    const err = await createTransaction(ORG_A, {
+      type: 'transfer',
+      accountId: ACCOUNT_A,
+      counterpartAccountId: ACCOUNT_B,
+      amount: 1000,
+      date: '2026-05-01',
+      description: 'Transfer',
+      assignees: baseAssignees,
+    }).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(DomainError);
+    expect((err as DomainError).code).toBe('INVALID_COUNTERPART_ACCOUNT');
+    expect(fetchAccountWriteReference).not.toHaveBeenCalled();
+  });
+
+  it('rejects refundOf that is not in the org', async () => {
+    vi.mocked(refundOfExists).mockResolvedValueOnce(false);
+    const refundOfId = '550e8400-e29b-41d4-a716-446655440030';
+
+    const err = await createTransaction(ORG_A, {
+      type: 'refund',
+      accountId: ACCOUNT_A,
+      amount: 1000,
+      date: '2026-05-01',
+      description: 'Refund',
+      categoryId: '550e8400-e29b-41d4-a716-446655440099',
+      refundOf: refundOfId,
+      assignees: baseAssignees,
+    }).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(DomainError);
+    expect((err as DomainError).code).toBe('INVALID_REFUND_REFERENCE');
+    expect(fetchAccountWriteReference).not.toHaveBeenCalled();
   });
 });
