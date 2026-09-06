@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { SPLIT_SUM_MISMATCH_MESSAGE } from '@ploutizo/utils/assignee-split';
 import type {
   CreateTransactionInput,
   UpdateTransactionServiceInput,
@@ -9,13 +10,11 @@ import {
   refundOfExists,
 } from '@/lib/queries/transactions';
 import {
-  SPLIT_SUM_MISMATCH_MESSAGE,
   assertTransactionWriteOrgRefs,
   assigneeRowsForPatchSplitSum,
   planCreateTransactionWrite,
   planUpdateTransactionWrite,
   typeSpecificNullsForWrite,
-  validateSplitSum,
 } from '@/services/transaction-write-planner';
 
 vi.mock('@/lib/queries/transactions', () => ({
@@ -35,25 +34,6 @@ const matchingAssignees = [
   { memberId: MEMBER_A, amountCents: 3000, percentage: 60 },
   { memberId: MEMBER_B, amountCents: 2000, percentage: 40 },
 ];
-
-describe('validateSplitSum', () => {
-  it('accepts matching assignee amounts', () => {
-    expect(
-      validateSplitSum(5000, [{ amountCents: 3000 }, { amountCents: 2000 }])
-    ).toBeNull();
-  });
-
-  it('rejects when assignee amounts do not sum to the transaction amount', () => {
-    expect(
-      validateSplitSum(5000, [{ amountCents: 3000 }, { amountCents: 3000 }])
-    ).toBe(SPLIT_SUM_MISMATCH_MESSAGE);
-  });
-
-  it('skips the check when assignees are omitted or empty', () => {
-    expect(validateSplitSum(5000)).toBeNull();
-    expect(validateSplitSum(5000, [])).toBeNull();
-  });
-});
 
 describe('assigneeRowsForPatchSplitSum', () => {
   const existing = [{ amountCents: 3000 }, { amountCents: 2000 }];

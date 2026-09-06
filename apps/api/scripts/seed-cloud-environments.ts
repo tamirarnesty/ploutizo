@@ -24,7 +24,7 @@ import {
   type Organization,
   type User,
 } from '@clerk/backend';
-import { lrmSplit } from '@ploutizo/utils';
+import { lrmSplit } from '@ploutizo/utils/assignee-split';
 import { formatGeneratedTransactionDescription } from '@ploutizo/utils/transaction-policy';
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
