@@ -127,6 +127,16 @@ describe('getTransactionFormAccountOptions', () => {
     ).toEqual(['card-1']);
   });
 
+  it('returns no settlement destination options when no credit cards exist', () => {
+    expect(
+      getTransactionFormAccountOptions({
+        type: 'settlement',
+        slot: 'accountId',
+        accounts: accounts.filter((row) => row.type !== 'credit_card'),
+      })
+    ).toEqual([]);
+  });
+
   it('returns chequing then savings for settlement source and excludes the card', () => {
     expect(
       ids(

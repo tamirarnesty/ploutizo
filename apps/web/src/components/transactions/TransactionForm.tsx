@@ -58,6 +58,7 @@ import {
 } from '@/lib/money/pending-input-flush';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import { useTransactionForm } from './hooks/useTransactionForm';
+import { AccountSlotEmptyState } from './AccountSlotEmptyState';
 import { getTransactionFormAccountOptions } from './getTransactionFormAccountOptions';
 import { TransactionTypeFields } from './TransactionTypeFields';
 import { TransferFields } from './TransferFields';
@@ -349,55 +350,61 @@ const TransactionFormInner = ({
                       !value ? 'Account is required.' : undefined,
                   }}
                 >
-                  {(field) => (
-                    <Field
-                      data-invalid={
-                        field.state.meta.errors.length > 0 || undefined
-                      }
-                    >
-                      <FieldLabel htmlFor="tx-accountId">
-                        {isMultiAccount ? 'Source' : 'Account'}
-                      </FieldLabel>
-                      <Select
-                        items={accountOptions.map((account) => ({
-                          label: account.name,
-                          value: account.id,
-                        }))}
-                        value={field.state.value}
-                        onValueChange={(v) => {
-                          if (v !== null) field.handleChange(v);
-                        }}
+                  {(field) =>
+                    accountOptions.length === 0 ? (
+                      <AccountSlotEmptyState
+                        label={isMultiAccount ? 'Source' : 'Account'}
+                      />
+                    ) : (
+                      <Field
+                        data-invalid={
+                          field.state.meta.errors.length > 0 || undefined
+                        }
                       >
-                        <SelectTrigger id="tx-accountId">
-                          <SelectValue>
-                            {(selected: string) =>
-                              accounts.find(
-                                (account) => account.id === selected
-                              )?.name ?? 'Select account'
+                        <FieldLabel htmlFor="tx-accountId">
+                          {isMultiAccount ? 'Source' : 'Account'}
+                        </FieldLabel>
+                        <Select
+                          items={accountOptions.map((account) => ({
+                            label: account.name,
+                            value: account.id,
+                          }))}
+                          value={field.state.value}
+                          onValueChange={(v) => {
+                            if (v !== null) field.handleChange(v);
+                          }}
+                        >
+                          <SelectTrigger id="tx-accountId">
+                            <SelectValue>
+                              {(selected: string) =>
+                                accounts.find(
+                                  (account) => account.id === selected
+                                )?.name ?? 'Select account'
+                              }
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              {accountOptions.map((account) => (
+                                <SelectItem key={account.id} value={account.id}>
+                                  {account.name}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                        {field.state.meta.errors.length > 0 ? (
+                          <FieldError
+                            errors={
+                              field.state.meta.errors as unknown as {
+                                message?: string;
+                              }[]
                             }
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            {accountOptions.map((account) => (
-                              <SelectItem key={account.id} value={account.id}>
-                                {account.name}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                      {field.state.meta.errors.length > 0 ? (
-                        <FieldError
-                          errors={
-                            field.state.meta.errors as unknown as {
-                              message?: string;
-                            }[]
-                          }
-                        />
-                      ) : null}
-                    </Field>
-                  )}
+                          />
+                        ) : null}
+                      </Field>
+                    )
+                  }
                 </form.AppField>
               );
 

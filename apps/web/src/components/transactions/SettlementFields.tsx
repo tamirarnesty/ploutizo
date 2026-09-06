@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from '@ploutizo/ui/components/select';
 import type { Account } from '@ploutizo/types';
+import { AccountSlotEmptyState } from './AccountSlotEmptyState';
 import { getTransactionFormAccountOptions } from './getTransactionFormAccountOptions';
 import type { TransactionFormInstance } from './hooks/useTransactionForm';
 import type { TransactionFormValues } from './types';
@@ -53,50 +54,54 @@ export const SettlementFields = ({ form, accounts }: SettlementFieldsProps) => (
                 !value ? 'Source account is required.' : undefined,
             }}
           >
-            {(field) => (
-              <Field
-                data-invalid={field.state.meta.errors.length > 0 || undefined}
-              >
-                <FieldLabel htmlFor="tx-settlement-source">Source</FieldLabel>
-                <Select
-                  items={sourceAccounts.map((account) => ({
-                    label: account.name,
-                    value: account.id,
-                  }))}
-                  value={field.state.value}
-                  onValueChange={(v) => {
-                    if (v !== null) field.handleChange(v);
-                  }}
+            {(field) =>
+              sourceAccounts.length === 0 ? (
+                <AccountSlotEmptyState label="Source" />
+              ) : (
+                <Field
+                  data-invalid={field.state.meta.errors.length > 0 || undefined}
                 >
-                  <SelectTrigger id="tx-settlement-source">
-                    <SelectValue>
-                      {(selected: string) =>
-                        accounts.find((account) => account.id === selected)
-                          ?.name ?? 'Select account'
+                  <FieldLabel htmlFor="tx-settlement-source">Source</FieldLabel>
+                  <Select
+                    items={sourceAccounts.map((account) => ({
+                      label: account.name,
+                      value: account.id,
+                    }))}
+                    value={field.state.value}
+                    onValueChange={(v) => {
+                      if (v !== null) field.handleChange(v);
+                    }}
+                  >
+                    <SelectTrigger id="tx-settlement-source">
+                      <SelectValue>
+                        {(selected: string) =>
+                          accounts.find((account) => account.id === selected)
+                            ?.name ?? 'Select account'
+                        }
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {sourceAccounts.map((account) => (
+                          <SelectItem key={account.id} value={account.id}>
+                            {account.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                  {field.state.meta.errors.length > 0 ? (
+                    <FieldError
+                      errors={
+                        field.state.meta.errors as unknown as {
+                          message?: string;
+                        }[]
                       }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {sourceAccounts.map((account) => (
-                        <SelectItem key={account.id} value={account.id}>
-                          {account.name}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-                {field.state.meta.errors.length > 0 ? (
-                  <FieldError
-                    errors={
-                      field.state.meta.errors as unknown as {
-                        message?: string;
-                      }[]
-                    }
-                  />
-                ) : null}
-              </Field>
-            )}
+                    />
+                  ) : null}
+                </Field>
+              )
+            }
           </form.AppField>
 
           <form.AppField
@@ -106,52 +111,56 @@ export const SettlementFields = ({ form, accounts }: SettlementFieldsProps) => (
                 !value ? 'Destination account is required.' : undefined,
             }}
           >
-            {(field) => (
-              <Field
-                data-invalid={field.state.meta.errors.length > 0 || undefined}
-              >
-                <FieldLabel htmlFor="tx-settlement-destination">
-                  Destination
-                </FieldLabel>
-                <Select
-                  items={destinationAccounts.map((account) => ({
-                    label: account.name,
-                    value: account.id,
-                  }))}
-                  value={field.state.value}
-                  onValueChange={(v) => {
-                    if (v !== null) field.handleChange(v);
-                  }}
+            {(field) =>
+              destinationAccounts.length === 0 ? (
+                <AccountSlotEmptyState label="Destination" />
+              ) : (
+                <Field
+                  data-invalid={field.state.meta.errors.length > 0 || undefined}
                 >
-                  <SelectTrigger id="tx-settlement-destination">
-                    <SelectValue>
-                      {(selected: string) =>
-                        accounts.find((account) => account.id === selected)
-                          ?.name ?? 'Select account'
+                  <FieldLabel htmlFor="tx-settlement-destination">
+                    Destination
+                  </FieldLabel>
+                  <Select
+                    items={destinationAccounts.map((account) => ({
+                      label: account.name,
+                      value: account.id,
+                    }))}
+                    value={field.state.value}
+                    onValueChange={(v) => {
+                      if (v !== null) field.handleChange(v);
+                    }}
+                  >
+                    <SelectTrigger id="tx-settlement-destination">
+                      <SelectValue>
+                        {(selected: string) =>
+                          accounts.find((account) => account.id === selected)
+                            ?.name ?? 'Select account'
+                        }
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {destinationAccounts.map((account) => (
+                          <SelectItem key={account.id} value={account.id}>
+                            {account.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                  {field.state.meta.errors.length > 0 ? (
+                    <FieldError
+                      errors={
+                        field.state.meta.errors as unknown as {
+                          message?: string;
+                        }[]
                       }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {destinationAccounts.map((account) => (
-                        <SelectItem key={account.id} value={account.id}>
-                          {account.name}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-                {field.state.meta.errors.length > 0 ? (
-                  <FieldError
-                    errors={
-                      field.state.meta.errors as unknown as {
-                        message?: string;
-                      }[]
-                    }
-                  />
-                ) : null}
-              </Field>
-            )}
+                    />
+                  ) : null}
+                </Field>
+              )
+            }
           </form.AppField>
         </div>
       );

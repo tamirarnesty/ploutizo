@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from '@ploutizo/ui/components/select';
 import type { Account } from '@ploutizo/types';
+import { AccountSlotEmptyState } from './AccountSlotEmptyState';
 import { getTransactionFormAccountOptions } from './getTransactionFormAccountOptions';
 import type { TransactionFormInstance } from './hooks/useTransactionForm';
 import type { TransactionFormValues } from './types';
@@ -65,6 +66,10 @@ const TransferDestinationField = ({
     // field intentionally omitted — field.state.value and field.handleChange are stable
     // across the same field instance; we only want to react to sourceAccountId changes.
   }, [sourceAccountId]);
+
+  if (destinationAccounts.length === 0) {
+    return <AccountSlotEmptyState label="Destination" />;
+  }
 
   return (
     <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
