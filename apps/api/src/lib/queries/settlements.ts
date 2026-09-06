@@ -13,6 +13,10 @@ import {
   orgMemberExists,
   settlementQualifying,
 } from '@/lib/queries/scope';
+import {
+  aggregateSettlementLedger,
+  settlementLedgerPairKey,
+} from '@/lib/settlements/aggregateSettlementLedger';
 
 const signedAssigneeAmountSql = sql<number>`(CASE
   WHEN ${transactions.type} = 'expense' THEN ${transactionAssignees.amountCents}
@@ -90,54 +94,11 @@ const fetchSettlementHouseholdMembers = (orgId: string) =>
 
 /**
  * One org-scoped scan over qualifying credit-card transactions × assignees;
- * aggregates personal, shared balance, and shared participants in memory.
+ * buckets personal, shared balance, and shared participants via the pure ledger.
  */
 const fetchSettlementAggregateParts = async (orgId: string) => {
   const scanRows = await fetchSettlementScanRows(orgId);
-
-  const personalByPair = new Map<string, number>();
-  const sharedByAccount = new Map<string, number>();
-  const sharedTxSeen = new Set<string>();
-  const participantsByAccount = new Map<string, Set<string>>();
-
-  for (const row of scanRows) {
-    const count = row.assigneeCount;
-    const accountId = row.accountId;
-    const txKey = `${accountId}:${row.transactionId}`;
-
-    if (count === 1) {
-      const pairKey = `${accountId}:${row.memberId}`;
-      personalByPair.set(
-        pairKey,
-        (personalByPair.get(pairKey) ?? 0) + row.signedAssigneeCents
-      );
-    } else if (count >= 2) {
-      if (!sharedTxSeen.has(txKey)) {
-        sharedTxSeen.add(txKey);
-        sharedByAccount.set(
-          accountId,
-          (sharedByAccount.get(accountId) ?? 0) + row.signedTransactionCents
-        );
-      }
-      const set = participantsByAccount.get(accountId) ?? new Set<string>();
-      set.add(row.memberId);
-      participantsByAccount.set(accountId, set);
-    }
-  }
-
-  const participantsByAccountSorted = new Map<string, string[]>();
-  for (const [accountId, ids] of participantsByAccount) {
-    participantsByAccountSorted.set(
-      accountId,
-      [...ids].sort((a, b) => a.localeCompare(b))
-    );
-  }
-
-  return {
-    personalByPair,
-    sharedByAccount,
-    participantsByAccount: participantsByAccountSorted,
-  };
+  return aggregateSettlementLedger(scanRows);
 };
 
 /** Shared participants for one card — used by POST validation. */
@@ -196,7 +157,7 @@ export const fetchSettlementBalances = async (orgId: string) => {
     const sharedBalanceCents = sharedByAccount.get(cc.accountId) ?? 0;
     const sharedParticipantIds = participantsByAccount.get(cc.accountId) ?? [];
     for (const m of householdMembers) {
-      const key = `${cc.accountId}:${m.memberId}`;
+      const key = settlementLedgerPairKey(cc.accountId, m.memberId);
       creditCardRows.push({
         ...cc,
         ...m,
