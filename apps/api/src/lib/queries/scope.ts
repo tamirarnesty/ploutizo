@@ -144,21 +144,53 @@ export const categoryExistsInOrg = async (
   return rows.length > 0;
 };
 
-export const transactionExistsInOrg = async (
+const transactionInOrg = (
   orgId: string,
   transactionId: string,
+  accountId?: string
+): SQL => {
+  const parts: SQL[] = [
+    eq(transactions.id, transactionId),
+    eq(transactions.orgId, orgId),
+  ];
+  if (accountId) parts.push(eq(transactions.accountId, accountId));
+  return and(...parts)!;
+};
+
+const findTransactionInScope = async (
+  orgId: string,
+  transactionId: string,
+  accountId: string | undefined,
   tx?: Transaction
 ): Promise<boolean> => {
   const ex = tx ?? db;
   const rows = await ex
     .select({ id: transactions.id })
     .from(transactions)
-    .where(
-      and(eq(transactions.id, transactionId), eq(transactions.orgId, orgId))
-    )
+    .where(transactionInOrg(orgId, transactionId, accountId))
     .limit(1);
   return rows.length > 0;
 };
+
+export const transactionExistsInOrg = async (
+  orgId: string,
+  transactionId: string,
+  tx?: Transaction
+): Promise<boolean> =>
+  findTransactionInScope(orgId, transactionId, undefined, tx);
+
+/**
+ * Org + destination-account ownership for import match writes.
+ * Includes soft-deleted rows so a saved decision can still be cleared;
+ * review evaluation explains `deleted_target`.
+ */
+export const transactionExistsOnAccount = async (
+  orgId: string,
+  transactionId: string,
+  accountId: string,
+  tx?: Transaction
+): Promise<boolean> =>
+  findTransactionInScope(orgId, transactionId, accountId, tx);
 
 /** True when every transaction id exists under orgId. Empty list is vacuously true. */
 export const allTransactionsInOrg = async (

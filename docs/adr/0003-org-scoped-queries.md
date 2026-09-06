@@ -9,7 +9,7 @@ Clerk `tenantGuard` sets `orgId` on every authenticated request, but tenancy was
 We centralize org scope in `apps/api/src/lib/queries/scope.ts`:
 
 - **Predicates** — `activeTransactions`, `activeAccounts`, `settlementQualifying`, `accountInOrg` for composable `WHERE` clauses.
-- **Ownership checks** — `accountExistsInOrg`, `categoryExistsInOrg`, `transactionExistsInOrg`, `allTagsInOrg`, `allMembersInOrg`, `orgMemberExists` for create/update validation before inserts.
+- **Ownership checks** — `accountExistsInOrg`, `categoryExistsInOrg`, `transactionExistsInOrg`, `transactionExistsOnAccount`, `allTagsInOrg`, `allMembersInOrg`, `orgMemberExists` for create/update validation before inserts.
 - **Settlement helpers** — `assigneeCountsForOrg` (per-org subquery, not a global module singleton).
 
 ## Anchor vs child tables

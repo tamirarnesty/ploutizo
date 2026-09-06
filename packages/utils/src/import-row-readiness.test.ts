@@ -65,6 +65,25 @@ describe('import-row-readiness', () => {
     expect(isImportRowReadyForImport(rows[0])).toBe(true);
   });
 
+  it('does not let unselected needs-review rows block Continue', () => {
+    const rows = [
+      {
+        ...baseRow,
+        status: 'ready' as const,
+        reviewAssigneeMemberIds: ['member_1'],
+        selectedForImport: true,
+      },
+      {
+        ...baseRow,
+        status: 'needs_review' as const,
+        selectedForImport: false,
+      },
+    ];
+
+    expect(canContinueImportReview(rows)).toBe(true);
+    expect(getImportReviewContinueBlockerReason(rows)).toBeNull();
+  });
+
   it('trusts derived ready status without a separate empty-assignee defense', () => {
     const rows = [
       {

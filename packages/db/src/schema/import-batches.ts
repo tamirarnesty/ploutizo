@@ -125,6 +125,15 @@ export const importBatchRows = pgTable(
      */
     reviewRefundOf: uuid('review_refund_of'),
     reviewRefundLinkHint: text('review_refund_link_hint'),
+    /**
+     * Accepted match to an existing transaction. Composite org FK lives in
+     * `0004_harsh_tusk.sql` for the same schema-cycle reason as
+     * review_refund_of.
+     */
+    reviewMatchedTransactionId: uuid('review_matched_transaction_id'),
+    reviewMatchDismissed: boolean('review_match_dismissed')
+      .notNull()
+      .default(false),
     reviewNotes: text('review_notes'),
     reviewTagIds: jsonb('review_tag_ids')
       .$type<string[]>()

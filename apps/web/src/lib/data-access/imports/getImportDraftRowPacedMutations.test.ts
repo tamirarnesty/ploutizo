@@ -134,4 +134,96 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
 
     expect(collection.get('row_1')?.reviewDescription).toBe('Kept locally');
   });
+
+  it('does not apply or persist a cross-account match id', async () => {
+    const guardedDraft = makeImportDraft({
+      id: 'draft_paced_1',
+      matchTargetFacts: {
+        tx_other: {
+          id: 'tx_other',
+          accountId: 'acct_other',
+          type: 'expense',
+          date: '2026-05-02',
+          amount: 4218,
+          description: 'Other card',
+          rawDescription: 'Other card',
+          externalId: 'visa-9999',
+          deleted: false,
+        },
+      },
+      rows: [
+        makeImportDraftRow({
+          id: 'row_1',
+          reviewDescription: 'Coffee',
+          status: 'ready',
+        }),
+      ],
+    });
+    queryClient.setQueryData(
+      importDraftQueryKey(guardedDraft.id),
+      guardedDraft
+    );
+    vi.mocked(fetchImportDraft).mockResolvedValue(guardedDraft);
+    const collection = getImportDraftRowsCollection(guardedDraft.id);
+    await collection.preload();
+
+    vi.useFakeTimers();
+    const mutate = getImportDraftRowPacedMutations(guardedDraft.id, 'row_1');
+    mutate({ patch: { reviewMatchedTransactionId: 'tx_other' } });
+    await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
+    await vi.runAllTimersAsync();
+
+    expect(collection.get('row_1')?.reviewMatchedTransactionId).toBeNull();
+    expect(fetchUpdateImportDraftRow).not.toHaveBeenCalled();
+  });
+
+  it('persists a same-account match id', async () => {
+    const guardedDraft = makeImportDraft({
+      id: 'draft_paced_1',
+      matchTargetFacts: {
+        tx_same: {
+          id: 'tx_same',
+          accountId: 'acct_1',
+          type: 'expense',
+          date: '2026-05-02',
+          amount: 4218,
+          description: 'Coffee',
+          rawDescription: 'Coffee',
+          externalId: 'visa-1001',
+          deleted: false,
+        },
+      },
+      rows: [
+        makeImportDraftRow({
+          id: 'row_1',
+          reviewDescription: 'Coffee',
+          status: 'ready',
+        }),
+      ],
+    });
+    queryClient.setQueryData(
+      importDraftQueryKey(guardedDraft.id),
+      guardedDraft
+    );
+    vi.mocked(fetchImportDraft).mockResolvedValue(guardedDraft);
+    vi.mocked(fetchUpdateImportDraftRow).mockResolvedValue({
+      row: toPersistedImportDraftRow(guardedDraft.rows[0], {
+        reviewMatchedTransactionId: 'tx_same',
+        updatedAt: '2026-05-20T12:00:05.000Z',
+      }),
+    } satisfies UpdateImportDraftRowResult);
+    const collection = getImportDraftRowsCollection(guardedDraft.id);
+    await collection.preload();
+
+    vi.useFakeTimers();
+    const mutate = getImportDraftRowPacedMutations(guardedDraft.id, 'row_1');
+    mutate({ patch: { reviewMatchedTransactionId: 'tx_same' } });
+    await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
+    await vi.runAllTimersAsync();
+
+    expect(fetchUpdateImportDraftRow).toHaveBeenCalledWith('row_1', {
+      reviewMatchedTransactionId: 'tx_same',
+    });
+    expect(collection.get('row_1')?.reviewMatchedTransactionId).toBe('tx_same');
+  });
 });

@@ -1,6 +1,7 @@
 import {
   computeImportDraftRowCounts,
   evaluateImportDraft,
+  importMatchTargetQueryInput,
 } from '@ploutizo/utils';
 import { toImportTransactionType } from '@ploutizo/utils/import-row-status';
 import { db } from '@ploutizo/db';
@@ -24,6 +25,7 @@ import {
   listRefundTargetExpensesByIds,
   sumPriorRefundTotalsByTransactionTarget,
 } from '@/lib/queries/import-refund-targets';
+import { listImportMatchTargets } from '@/lib/queries/import-match-targets';
 
 const collectRefundOfIds = (
   rows: readonly Pick<ImportDraftRowRecord, 'reviewRefundOf'>[]
@@ -64,7 +66,12 @@ export const toImportDraftDurableRow = (
   reviewAssigneeMemberIds: row.reviewAssigneeMemberIds,
   reviewCounterpartAccountId: row.reviewCounterpartAccountId,
   reviewRefundOf: row.reviewRefundOf,
+  reviewRefundOfBatchRowId: undefined,
   selectedForImport: row.selectedForImport,
+  externalId: row.externalId,
+  sourceDescription: row.sourceDescription,
+  reviewMatchedTransactionId: row.reviewMatchedTransactionId,
+  reviewMatchDismissed: row.reviewMatchDismissed,
 });
 
 export const toImportDraftPersistedRow = (
@@ -92,6 +99,8 @@ export const toImportDraftPersistedRow = (
   reviewCounterpartAccountId: row.reviewCounterpartAccountId,
   reviewRefundOf: row.reviewRefundOf,
   reviewRefundLinkHint: row.reviewRefundLinkHint,
+  reviewMatchedTransactionId: row.reviewMatchedTransactionId,
+  reviewMatchDismissed: row.reviewMatchDismissed,
   reviewNotes: row.reviewNotes,
   reviewTagIds: row.reviewTagIds,
   selectedForImport: row.selectedForImport,
@@ -110,38 +119,51 @@ export const toImportDraftRow = (
   invalidReason: evaluation.invalidReason,
 });
 
-export const loadDraftRefundContext = async (
+export const loadDraftEvaluationContext = async (
   orgId: string,
   targetAccountId: string,
   rows: readonly ImportDraftRowRecord[],
   options?: {
     client?: DbClient;
     includePriorRefunds?: boolean;
+    includeMatchTargets?: boolean;
   }
 ) => {
   const client = options?.client ?? db;
   const refundOfIds = collectRefundOfIds(rows);
-  const [existingExpenses, priorRefundsByTarget] = await Promise.all([
-    listRefundTargetExpensesByIds(orgId, refundOfIds, client),
-    options?.includePriorRefunds
-      ? sumPriorRefundTotalsByTransactionTarget(orgId, refundOfIds, client)
-      : Promise.resolve(undefined),
-  ]);
+  const loadMatchTargets = options?.includeMatchTargets !== false;
+  const [existingExpenses, priorRefundsByTarget, existingTransactions] =
+    await Promise.all([
+      listRefundTargetExpensesByIds(orgId, refundOfIds, client),
+      options?.includePriorRefunds
+        ? sumPriorRefundTotalsByTransactionTarget(orgId, refundOfIds, client)
+        : Promise.resolve(undefined),
+      loadMatchTargets
+        ? listImportMatchTargets(
+            orgId,
+            targetAccountId,
+            importMatchTargetQueryInput(rows),
+            client
+          )
+        : Promise.resolve(new Map()),
+    ]);
   const evaluations = evaluateImportDraft(
     rows.map((row) => toImportDraftDurableRow(row)),
     {
       targetAccountId,
       existingExpenses,
+      existingTransactions: [...existingTransactions.values()],
       ...(priorRefundsByTarget ? { priorRefundsByTarget } : {}),
     }
   );
   return {
     evaluations,
     refundTargetFacts: refundTargetFactsRecordFromMap(existingExpenses),
+    matchTargetFacts: Object.fromEntries(existingTransactions),
   };
 };
 
-export const deriveImportDraftReviewCounts = (
+const reviewCountsFromEvaluations = (
   evaluations: ReadonlyMap<string, ImportDraftRowEvaluation>
 ) =>
   computeImportDraftRowCounts(
@@ -160,7 +182,7 @@ export const withLiveImportReviewCounts = <
   summary: T,
   evaluations: ReadonlyMap<string, ImportDraftRowEvaluation>
 ): T => {
-  const counts = deriveImportDraftReviewCounts(evaluations);
+  const counts = reviewCountsFromEvaluations(evaluations);
   return {
     ...summary,
     validRowCount: counts.validRowCount,
@@ -174,21 +196,18 @@ export const buildImportDraftView = async (
   rows: readonly ImportDraftRowRecord[],
   toSummary: (
     row: ImportDraftSummaryRow
-  ) => Omit<ImportDraft, 'rows' | 'refundTargetFacts'>
+  ) => Omit<ImportDraft, 'rows' | 'refundTargetFacts' | 'matchTargetFacts'>
 ): Promise<ImportDraft> => {
   if (!summary.accountId) {
     throw new Error('Import draft is missing an account.');
   }
 
-  const { evaluations, refundTargetFacts } = await loadDraftRefundContext(
-    orgId,
-    summary.accountId,
-    rows
-  );
+  const { evaluations, refundTargetFacts, matchTargetFacts } =
+    await loadDraftEvaluationContext(orgId, summary.accountId, rows);
   const apiRows = rows.map((row) =>
     toImportDraftRow(row, evaluations.get(row.id)!)
   );
-  const counts = deriveImportDraftReviewCounts(evaluations);
+  const counts = reviewCountsFromEvaluations(evaluations);
 
   return {
     ...toSummary(summary),
@@ -197,5 +216,6 @@ export const buildImportDraftView = async (
     invalidRowCount: counts.invalidRowCount,
     rows: apiRows,
     refundTargetFacts,
+    matchTargetFacts,
   };
 };

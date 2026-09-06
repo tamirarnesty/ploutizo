@@ -1,8 +1,8 @@
 import type { ImportDraft, ImportDraftSummary } from '@ploutizo/types';
 
-/** Draft session header + refund facts for local evaluation (no live row edits). */
+/** Draft session header + refund/match facts for local evaluation (no live row edits). */
 export type ImportDraftMeta = ImportDraftSummary &
-  Pick<ImportDraft, 'refundTargetFacts'>;
+  Pick<ImportDraft, 'refundTargetFacts' | 'matchTargetFacts'>;
 
 export const toImportDraftMeta = (draft: ImportDraft): ImportDraftMeta => {
   const { rows: _rows, ...meta } = draft;

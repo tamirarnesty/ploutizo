@@ -28,6 +28,7 @@ describe('toImportDraftMeta', () => {
       rowCount: draft.rowCount,
       invalidRowCount: draft.invalidRowCount,
       refundTargetFacts: {},
+      matchTargetFacts: {},
     });
     expect(meta).not.toHaveProperty('rows');
   });

@@ -1,0 +1,4 @@
+ALTER TABLE "import_batch_rows" ADD COLUMN "review_matched_transaction_id" uuid;--> statement-breakpoint
+ALTER TABLE "import_batch_rows" ADD COLUMN "review_match_dismissed" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+-- SQL-only composite org FK: review_matched_transaction_id cannot be declared in Drizzle without a schema cycle.
+ALTER TABLE "import_batch_rows" ADD CONSTRAINT "import_batch_rows_review_matched_transaction_id_org_id_transactions_id_org_id_fk" FOREIGN KEY ("review_matched_transaction_id","org_id") REFERENCES "public"."transactions"("id","org_id") ON DELETE SET NULL ("review_matched_transaction_id") ON UPDATE no action;

@@ -32,13 +32,13 @@ export const evaluateImportDraftWorkingCopy = (
   );
   if (!draft?.account.id) return null;
 
-  const collection = getImportDraftRowsCollection(draftId);
-  const workingRows = rows ?? collection.toArray;
+  const workingRows = rows ?? getImportDraftRowsCollection(draftId).toArray;
   if (workingRows.length === 0) return null;
 
   return evaluateImportDraft(workingRows, {
     targetAccountId: draft.account.id,
     existingExpenses: refundTargetFactsToExpenseMap(draft.refundTargetFacts),
+    existingTransactions: Object.values(draft.matchTargetFacts),
   });
 };
 
@@ -79,9 +79,13 @@ export const rederiveImportDraftWorkingCopy = (
   options?: {
     rows?: readonly ImportDraftRow[];
     skipIds?: ReadonlySet<string>;
+    evaluations?: Map<string, ImportDraftRowEvaluation> | null;
   }
 ) => {
-  const evaluations = evaluateImportDraftWorkingCopy(draftId, options?.rows);
+  const evaluations =
+    options && 'evaluations' in options
+      ? options.evaluations
+      : evaluateImportDraftWorkingCopy(draftId, options?.rows);
   if (!evaluations) return;
   applyEvaluationsToCollection(draftId, evaluations, options?.skipIds);
 };
