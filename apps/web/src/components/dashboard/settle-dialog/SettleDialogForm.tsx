@@ -1,7 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { FieldGroup } from '@ploutizo/ui/components/field';
 import { useAppForm } from '@ploutizo/ui/components/form';
-import { dollarsToCents } from '@ploutizo/utils/currency';
 import type { SettlementAccountRow } from '@ploutizo/types';
 import {
   getSettleAmountForPayToward,
@@ -24,7 +23,10 @@ import {
 } from '@/components/dashboard/settleFormSchema';
 import { useGetAccounts } from '@/lib/data-access/accounts';
 import { useCreateSettlement } from '@/lib/data-access/settlements';
-import { getSettlementSourceAccounts } from '@/lib/settlements';
+import {
+  getSettlementSourceAccounts,
+  toCreateSettlementPayload,
+} from '@/lib/settlements';
 import {
   PendingInputFlushProvider,
   useFlushPendingInputs,
@@ -72,22 +74,10 @@ const SettleDialogFormContent = ({
       },
     },
     onSubmit: async ({ value }) => {
-      const amountCents = dollarsToCents(value.amountDollars);
-      const trimmedNotes = value.notes?.trim() ?? '';
-      const assignees =
-        value.payToward === 'shared'
-          ? account.sharedParticipantIds.map((memberId) => ({ memberId }))
-          : [{ memberId: value.payToward }];
-
       try {
-        await createSettlement.mutateAsync({
-          assignees,
-          accountId: account.account.id,
-          counterpartAccountId: value.sourceAccountId,
-          amountCents,
-          date: value.date,
-          ...(trimmedNotes.length > 0 ? { notes: trimmedNotes } : {}),
-        });
+        await createSettlement.mutateAsync(
+          toCreateSettlementPayload(account, value)
+        );
         onClose();
       } catch {
         form.setErrorMap({
