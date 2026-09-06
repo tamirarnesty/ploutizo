@@ -7,9 +7,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@ploutizo/ui/components/select';
+import type { Account } from '@ploutizo/types';
 import type { Category } from '@/lib/data-access/categories';
 import { ExpenseFields } from './ExpenseFields';
 import { RefundLinker } from './RefundLinker';
+import { resolveTransactionFormAccountIdForType } from './getTransactionFormAccountOptions';
 import type { TransactionFormInstance } from './hooks/useTransactionForm';
 import type { AssigneeFormRow, TransactionFormValues } from './types';
 
@@ -36,6 +38,7 @@ const INCOME_TYPE_ITEMS = [
 
 interface TransactionTypeFieldsProps {
   form: TransactionFormInstance;
+  accounts: Account[];
   categories: Category[];
   onAssigneesChange: (assignees: AssigneeFormRow[]) => void;
   /** Called after any type-switch, before field clears. Plan 06 passes () => setIsDescriptionUnlocked(false). */
@@ -47,15 +50,17 @@ interface TransactionTypeFieldsProps {
  */
 const TypeSelectField = ({
   form,
+  accounts,
   onTypeChange,
 }: {
   form: TransactionFormInstance;
+  accounts: Account[];
   onTypeChange?: () => void;
 }) => (
   <form.AppField
     name="type"
     listeners={{
-      onChange: () => {
+      onChange: ({ value }: { value: TransactionFormValues['type'] }) => {
         // Notify parent before field clears (e.g. Plan 06 resets description lock)
         onTypeChange?.();
         // Clear ALL type-specific fields unconditionally — no if-guard (D-07)
@@ -63,6 +68,14 @@ const TypeSelectField = ({
         form.setFieldValue('refundOf', '');
         form.setFieldValue('incomeType', '');
         form.setFieldValue('counterpartAccountId', '');
+        const nextAccountId = resolveTransactionFormAccountIdForType({
+          type: value,
+          accounts,
+          accountId: form.getFieldValue('accountId'),
+        });
+        if (nextAccountId !== form.getFieldValue('accountId')) {
+          form.setFieldValue('accountId', nextAccountId);
+        }
       },
     }}
   >
@@ -228,6 +241,7 @@ const renderSubtypeField = (
 
 export const TransactionTypeFields = ({
   form,
+  accounts,
   categories,
   onAssigneesChange,
   onTypeChange,
@@ -237,11 +251,19 @@ export const TransactionTypeFields = ({
       <>
         {MULTI_ACCOUNT_TYPES.includes(type) ? (
           // Multi-account: Type is full-width; Source + Destination rendered below in TransactionForm
-          <TypeSelectField form={form} onTypeChange={onTypeChange} />
+          <TypeSelectField
+            form={form}
+            accounts={accounts}
+            onTypeChange={onTypeChange}
+          />
         ) : (
           // Single-account: [Type | Subtype] 2-col
           <div className="grid grid-cols-2 gap-4">
-            <TypeSelectField form={form} onTypeChange={onTypeChange} />
+            <TypeSelectField
+              form={form}
+              accounts={accounts}
+              onTypeChange={onTypeChange}
+            />
             {renderSubtypeField(type, form, categories)}
           </div>
         )}

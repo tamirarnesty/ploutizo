@@ -313,6 +313,7 @@ const TransactionFormInner = ({
           {/* TransactionTypeFields: type Select + listeners + conditional type-specific fields */}
           <TransactionTypeFields
             form={form}
+            accounts={accounts}
             categories={categories}
             onAssigneesChange={(assignees) =>
               form.setFieldValue('assignees', assignees)

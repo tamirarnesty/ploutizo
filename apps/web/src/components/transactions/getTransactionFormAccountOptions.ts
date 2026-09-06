@@ -29,3 +29,29 @@ export const getTransactionFormAccountOptions = ({
     otherSelectedAccountId: otherSelectedAccountId || null,
     preserveAccountId: preserveAccountId || null,
   }) as Account[];
+
+/**
+ * After a type switch, keep `accountId` only when it is still selectable for
+ * the new type. Do not preserve archived/ineligible rows — that would hide a
+ * stale UUID behind the empty state and submit an invalid write.
+ */
+export const resolveTransactionFormAccountIdForType = ({
+  type,
+  accounts,
+  accountId,
+}: {
+  type: TransactionType;
+  accounts: readonly Account[];
+  accountId: string;
+}): string => {
+  if (!accountId) return '';
+
+  const eligible = getTransactionFormAccountOptions({
+    type,
+    slot: 'accountId',
+    accounts,
+  });
+
+  if (eligible.length === 0) return '';
+  return eligible.some((account) => account.id === accountId) ? accountId : '';
+};

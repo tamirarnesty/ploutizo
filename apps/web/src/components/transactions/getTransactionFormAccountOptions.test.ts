@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { Account } from '@ploutizo/types';
-import { getTransactionFormAccountOptions } from './getTransactionFormAccountOptions';
+import {
+  getTransactionFormAccountOptions,
+  resolveTransactionFormAccountIdForType,
+} from './getTransactionFormAccountOptions';
 
 const account = (
   overrides: Partial<Account> & Pick<Account, 'id' | 'name' | 'type'>
@@ -191,5 +194,49 @@ describe('getTransactionFormAccountOptions', () => {
       'sav-1',
       'prepaid-1',
     ]);
+  });
+});
+
+describe('resolveTransactionFormAccountIdForType', () => {
+  it('clears a credit-card account when switching to contribution', () => {
+    expect(
+      resolveTransactionFormAccountIdForType({
+        type: 'contribution',
+        accounts,
+        accountId: 'card-1',
+      })
+    ).toBe('');
+  });
+
+  it('clears accountId when the new type has no eligible source accounts', () => {
+    expect(
+      resolveTransactionFormAccountIdForType({
+        type: 'contribution',
+        accounts: accounts.filter(
+          (row) => row.type !== 'chequing' && row.type !== 'savings'
+        ),
+        accountId: 'card-1',
+      })
+    ).toBe('');
+  });
+
+  it('keeps a chequing account when switching expense to contribution', () => {
+    expect(
+      resolveTransactionFormAccountIdForType({
+        type: 'contribution',
+        accounts,
+        accountId: 'cheq-alpha',
+      })
+    ).toBe('cheq-alpha');
+  });
+
+  it('keeps a credit card when switching expense to refund', () => {
+    expect(
+      resolveTransactionFormAccountIdForType({
+        type: 'refund',
+        accounts,
+        accountId: 'card-1',
+      })
+    ).toBe('card-1');
   });
 });
