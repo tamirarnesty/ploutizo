@@ -40,6 +40,8 @@ export const buildCleanSearch = (
   if (result.assigneeId_op === 'is') delete result.assigneeId_op;
   if (result.tagIds_op === 'is_any_of') delete result.tagIds_op;
   if (result.dateRange_op === 'between') delete result.dateRange_op;
+  if (!result.importBatchId) delete result.importBatchId;
+  if (!result.importOutcome) delete result.importOutcome;
   return result;
 };
 
@@ -261,6 +263,10 @@ export const Transactions = () => {
     assigneeId_op: search.assigneeId_op,
     tagIds_op: search.tagIds_op,
     dateRange_op: search.dateRange_op,
+    importLink:
+      search.importBatchId && search.importOutcome
+        ? { batchId: search.importBatchId, outcome: search.importOutcome }
+        : undefined,
   });
 
   const { data: accounts = [] } = useGetAccounts();
@@ -308,6 +314,8 @@ export const Transactions = () => {
       'assigneeId_op',
       'tagIds_op',
       'dateRange_op',
+      'importBatchId',
+      'importOutcome',
     ] as const;
     const changed = filterKeys.some((k) => prev[k] !== search[k]);
     if (!changed) return;
@@ -355,6 +363,8 @@ export const Transactions = () => {
             page: 1,
             sort: prev.sort,
             order: prev.order,
+            importBatchId: prev.importBatchId,
+            importOutcome: prev.importOutcome,
             ...mapped,
           }),
         replace: true,

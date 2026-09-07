@@ -4,6 +4,7 @@ import {
   formatImportBatchStatusLabel,
   getImportRowStatusTooltip,
   importBatchStatusVariant,
+  prioritizeImportRows,
   resolveImportRowAssigneeMemberIds,
   shouldDefaultExpandImportRow,
 } from './importPresentation';
@@ -210,5 +211,22 @@ describe('importPresentation batch status presentation', () => {
     expect(importBatchStatusVariant('completed')).toBe('outline');
     expect(importBatchStatusVariant('discarded')).toBe('secondary');
     expect(importBatchStatusVariant('draft')).toBe('secondary');
+  });
+});
+
+describe('prioritizeImportRows', () => {
+  it('moves affected rows to the front in first-seen issue order', () => {
+    expect(
+      prioritizeImportRows(
+        [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }],
+        ['c', 'a', 'c']
+      )
+    ).toEqual([{ id: 'c' }, { id: 'a' }, { id: 'b' }, { id: 'd' }]);
+  });
+
+  it('keeps original order when no rows are prioritized', () => {
+    const rows = [{ id: 'a' }, { id: 'b' }];
+    expect(prioritizeImportRows(rows, [])).toEqual(rows);
+    expect(prioritizeImportRows(rows, [])).not.toBe(rows);
   });
 });

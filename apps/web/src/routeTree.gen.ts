@@ -24,7 +24,10 @@ import { Route as LayoutSettingsHouseholdRouteImport } from './routes/_layout.se
 import { Route as LayoutSettingsCategoriesRouteImport } from './routes/_layout.settings/categories'
 import { Route as LayoutTransactionsImportRouteRouteImport } from './routes/_layout.transactions/import/route'
 import { Route as LayoutTransactionsImportIndexRouteImport } from './routes/_layout.transactions/import/index'
-import { Route as LayoutTransactionsImportDraftIdRouteImport } from './routes/_layout.transactions/import/$draftId'
+import { Route as LayoutTransactionsImportHistoryRouteImport } from './routes/_layout.transactions/import/history'
+import { Route as LayoutTransactionsImportDraftIdRouteRouteImport } from './routes/_layout.transactions/import/$draftId/route'
+import { Route as LayoutTransactionsImportDraftIdIndexRouteImport } from './routes/_layout.transactions/import/$draftId/index'
+import { Route as LayoutTransactionsImportDraftIdFinalizeRouteImport } from './routes/_layout.transactions/import/$draftId/finalize'
 
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
@@ -104,11 +107,29 @@ const LayoutTransactionsImportIndexRoute =
     path: '/',
     getParentRoute: () => LayoutTransactionsImportRouteRoute,
   } as any)
-const LayoutTransactionsImportDraftIdRoute =
-  LayoutTransactionsImportDraftIdRouteImport.update({
+const LayoutTransactionsImportDraftIdRouteRoute =
+  LayoutTransactionsImportDraftIdRouteRouteImport.update({
     id: '/$draftId',
     path: '/$draftId',
     getParentRoute: () => LayoutTransactionsImportRouteRoute,
+  } as any)
+const LayoutTransactionsImportHistoryRoute =
+  LayoutTransactionsImportHistoryRouteImport.update({
+    id: '/history',
+    path: '/history',
+    getParentRoute: () => LayoutTransactionsImportRouteRoute,
+  } as any)
+const LayoutTransactionsImportDraftIdIndexRoute =
+  LayoutTransactionsImportDraftIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => LayoutTransactionsImportDraftIdRouteRoute,
+  } as any)
+const LayoutTransactionsImportDraftIdFinalizeRoute =
+  LayoutTransactionsImportDraftIdFinalizeRouteImport.update({
+    id: '/finalize',
+    path: '/finalize',
+    getParentRoute: () => LayoutTransactionsImportDraftIdRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -125,8 +146,11 @@ export interface FileRoutesByFullPath {
   '/settings/household': typeof LayoutSettingsHouseholdRoute
   '/settings/merchant-rules': typeof LayoutSettingsMerchantRulesRoute
   '/transactions/': typeof LayoutTransactionsIndexRoute
-  '/transactions/import/$draftId': typeof LayoutTransactionsImportDraftIdRoute
+  '/transactions/import/$draftId': typeof LayoutTransactionsImportDraftIdRouteRouteWithChildren
   '/transactions/import/': typeof LayoutTransactionsImportIndexRoute
+  '/transactions/import/history': typeof LayoutTransactionsImportHistoryRoute
+  '/transactions/import/$draftId/': typeof LayoutTransactionsImportDraftIdIndexRoute
+  '/transactions/import/$draftId/finalize': typeof LayoutTransactionsImportDraftIdFinalizeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -140,8 +164,10 @@ export interface FileRoutesByTo {
   '/settings/household': typeof LayoutSettingsHouseholdRoute
   '/settings/merchant-rules': typeof LayoutSettingsMerchantRulesRoute
   '/transactions': typeof LayoutTransactionsIndexRoute
-  '/transactions/import/$draftId': typeof LayoutTransactionsImportDraftIdRoute
+  '/transactions/import/$draftId': typeof LayoutTransactionsImportDraftIdIndexRoute
   '/transactions/import': typeof LayoutTransactionsImportIndexRoute
+  '/transactions/import/history': typeof LayoutTransactionsImportHistoryRoute
+  '/transactions/import/$draftId/finalize': typeof LayoutTransactionsImportDraftIdFinalizeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -159,8 +185,11 @@ export interface FileRoutesById {
   '/_layout/settings/household': typeof LayoutSettingsHouseholdRoute
   '/_layout/settings/merchant-rules': typeof LayoutSettingsMerchantRulesRoute
   '/_layout/transactions/': typeof LayoutTransactionsIndexRoute
-  '/_layout/transactions/import/$draftId': typeof LayoutTransactionsImportDraftIdRoute
+  '/_layout/transactions/import/$draftId': typeof LayoutTransactionsImportDraftIdRouteRouteWithChildren
   '/_layout/transactions/import/': typeof LayoutTransactionsImportIndexRoute
+  '/_layout/transactions/import/history': typeof LayoutTransactionsImportHistoryRoute
+  '/_layout/transactions/import/$draftId/': typeof LayoutTransactionsImportDraftIdIndexRoute
+  '/_layout/transactions/import/$draftId/finalize': typeof LayoutTransactionsImportDraftIdFinalizeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -180,6 +209,9 @@ export interface FileRouteTypes {
     | '/transactions/'
     | '/transactions/import/$draftId'
     | '/transactions/import/'
+    | '/transactions/import/history'
+    | '/transactions/import/$draftId/'
+    | '/transactions/import/$draftId/finalize'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -195,6 +227,8 @@ export interface FileRouteTypes {
     | '/transactions'
     | '/transactions/import/$draftId'
     | '/transactions/import'
+    | '/transactions/import/history'
+    | '/transactions/import/$draftId/finalize'
   id:
     | '__root__'
     | '/'
@@ -213,6 +247,9 @@ export interface FileRouteTypes {
     | '/_layout/transactions/'
     | '/_layout/transactions/import/$draftId'
     | '/_layout/transactions/import/'
+    | '/_layout/transactions/import/history'
+    | '/_layout/transactions/import/$draftId/'
+    | '/_layout/transactions/import/$draftId/finalize'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -334,8 +371,29 @@ declare module '@tanstack/react-router' {
       id: '/_layout/transactions/import/$draftId'
       path: '/$draftId'
       fullPath: '/transactions/import/$draftId'
-      preLoaderRoute: typeof LayoutTransactionsImportDraftIdRouteImport
+      preLoaderRoute: typeof LayoutTransactionsImportDraftIdRouteRouteImport
       parentRoute: typeof LayoutTransactionsImportRouteRoute
+    }
+    '/_layout/transactions/import/history': {
+      id: '/_layout/transactions/import/history'
+      path: '/history'
+      fullPath: '/transactions/import/history'
+      preLoaderRoute: typeof LayoutTransactionsImportHistoryRouteImport
+      parentRoute: typeof LayoutTransactionsImportRouteRoute
+    }
+    '/_layout/transactions/import/$draftId/': {
+      id: '/_layout/transactions/import/$draftId/'
+      path: '/'
+      fullPath: '/transactions/import/$draftId/'
+      preLoaderRoute: typeof LayoutTransactionsImportDraftIdIndexRouteImport
+      parentRoute: typeof LayoutTransactionsImportDraftIdRouteRoute
+    }
+    '/_layout/transactions/import/$draftId/finalize': {
+      id: '/_layout/transactions/import/$draftId/finalize'
+      path: '/finalize'
+      fullPath: '/transactions/import/$draftId/finalize'
+      preLoaderRoute: typeof LayoutTransactionsImportDraftIdFinalizeRouteImport
+      parentRoute: typeof LayoutTransactionsImportDraftIdRouteRoute
     }
   }
 }
@@ -355,14 +413,35 @@ const LayoutSettingsRouteRouteChildren: LayoutSettingsRouteRouteChildren = {
 const LayoutSettingsRouteRouteWithChildren =
   LayoutSettingsRouteRoute._addFileChildren(LayoutSettingsRouteRouteChildren)
 
+interface LayoutTransactionsImportDraftIdRouteRouteChildren {
+  LayoutTransactionsImportDraftIdIndexRoute: typeof LayoutTransactionsImportDraftIdIndexRoute
+  LayoutTransactionsImportDraftIdFinalizeRoute: typeof LayoutTransactionsImportDraftIdFinalizeRoute
+}
+
+const LayoutTransactionsImportDraftIdRouteRouteChildren: LayoutTransactionsImportDraftIdRouteRouteChildren =
+  {
+    LayoutTransactionsImportDraftIdIndexRoute:
+      LayoutTransactionsImportDraftIdIndexRoute,
+    LayoutTransactionsImportDraftIdFinalizeRoute:
+      LayoutTransactionsImportDraftIdFinalizeRoute,
+  }
+
+const LayoutTransactionsImportDraftIdRouteRouteWithChildren =
+  LayoutTransactionsImportDraftIdRouteRoute._addFileChildren(
+    LayoutTransactionsImportDraftIdRouteRouteChildren,
+  )
+
 interface LayoutTransactionsImportRouteRouteChildren {
-  LayoutTransactionsImportDraftIdRoute: typeof LayoutTransactionsImportDraftIdRoute
+  LayoutTransactionsImportDraftIdRouteRoute: typeof LayoutTransactionsImportDraftIdRouteRouteWithChildren
+  LayoutTransactionsImportHistoryRoute: typeof LayoutTransactionsImportHistoryRoute
   LayoutTransactionsImportIndexRoute: typeof LayoutTransactionsImportIndexRoute
 }
 
 const LayoutTransactionsImportRouteRouteChildren: LayoutTransactionsImportRouteRouteChildren =
   {
-    LayoutTransactionsImportDraftIdRoute: LayoutTransactionsImportDraftIdRoute,
+    LayoutTransactionsImportDraftIdRouteRoute:
+      LayoutTransactionsImportDraftIdRouteRouteWithChildren,
+    LayoutTransactionsImportHistoryRoute: LayoutTransactionsImportHistoryRoute,
     LayoutTransactionsImportIndexRoute: LayoutTransactionsImportIndexRoute,
   }
 

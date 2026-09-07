@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   getCoreRowModel,
   getExpandedRowModel,
@@ -32,10 +32,19 @@ import type { ImportDraftReviewState } from '../lib/useImportDraftReviewState';
 
 interface ImportDraftReviewTableProps {
   reviewState: ImportDraftReviewState;
+  focusRowId?: string | null;
 }
+
+export const focusImportReviewRow = (rowId: string) => {
+  const target = document.getElementById(`import-row-${rowId}`);
+  if (!target) return;
+  target.focus();
+  target.scrollIntoView({ block: 'nearest' });
+};
 
 export const ImportDraftReviewTable = ({
   reviewState,
+  focusRowId = null,
 }: ImportDraftReviewTableProps) => {
   const {
     pagination,
@@ -92,7 +101,9 @@ export const ImportDraftReviewTable = ({
   const [initialExpanded] = useState(() =>
     Object.fromEntries(
       rows
-        .filter(shouldDefaultExpandImportRow)
+        .filter(
+          (row) => shouldDefaultExpandImportRow(row) || row.id === focusRowId
+        )
         .map((row) => [row.id, true] as const)
     )
   );
@@ -115,6 +126,17 @@ export const ImportDraftReviewTable = ({
     getPaginationRowModel: getPaginationRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
   });
+
+  useEffect(() => {
+    if (!focusRowId) return;
+    table.setExpanded((current) =>
+      current === true ? current : { ...current, [focusRowId]: true }
+    );
+    const frame = window.requestAnimationFrame(() => {
+      focusImportReviewRow(focusRowId);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusRowId, table]);
 
   return (
     <div className="flex max-h-full min-h-0 w-full min-w-0 flex-col">

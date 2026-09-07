@@ -153,7 +153,7 @@ const setImportPageData = ({
     isLoading: false,
   } as never);
   vi.mocked(useGetImportHistory).mockReturnValue({
-    data: [],
+    data: { data: [], nextCursor: null },
     isLoading: false,
   } as never);
   vi.mocked(useDiscardImportDraft).mockReturnValue({
@@ -204,7 +204,7 @@ describe('Import', () => {
       isLoading: false,
     } as never);
     vi.mocked(useGetImportHistory).mockReturnValue({
-      data: [],
+      data: { data: [], nextCursor: null },
       isLoading: false,
     } as never);
     vi.mocked(useDiscardImportDraft).mockReturnValue({
@@ -269,7 +269,7 @@ describe('Import', () => {
       isLoading: true,
     } as never);
     vi.mocked(useGetImportHistory).mockReturnValue({
-      data: [],
+      data: { data: [], nextCursor: null },
       isLoading: false,
     } as never);
     vi.mocked(useDiscardImportDraft).mockReturnValue({
@@ -392,5 +392,15 @@ describe('Import', () => {
     const discardButtons = screen.getAllByRole('button', { name: /discard/i });
     expect(discardButtons[0]).toBeDisabled();
     expect(discardButtons[1]).not.toBeDisabled();
+  });
+
+  it('links the compact recent-history list to View all history', () => {
+    setImportPageData();
+
+    render(<Import />);
+
+    expect(
+      screen.getByRole('link', { name: 'View all history' })
+    ).toHaveAttribute('href', '/transactions/import/history');
   });
 });

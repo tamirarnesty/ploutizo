@@ -23,6 +23,7 @@
     "@ploutizo/validators": "workspace:^",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/db": "^0.6.16",
+    "@tanstack/history": "1.162.0",
     "@tanstack/query-db-collection": "^1.1.0",
     "@tanstack/react-db": "^0.1.94",
     "@tanstack/react-form": "1.28.6",

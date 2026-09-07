@@ -47,7 +47,7 @@ describe('useContinueImportDraft', () => {
     vi.mocked(fetchContinueImportDraft).mockReset();
   });
 
-  it('toasts when continue succeeds without later review changes', async () => {
+  it('resolves the prepared set when continue succeeds without later review changes', async () => {
     vi.mocked(fetchContinueImportDraft).mockResolvedValue(preparedSet);
     const { result } = renderHook(() => useContinueImportDraft('draft_1'), {
       wrapper,
@@ -57,9 +57,10 @@ describe('useContinueImportDraft', () => {
       await result.current.mutateAsync();
     });
 
-    expect(toastSuccess).toHaveBeenCalledWith(
-      'Prepared revision 3 for finalize.'
-    );
+    await waitFor(() => {
+      expect(result.current.data).toEqual(preparedSet);
+    });
+    expect(toastSuccess).not.toHaveBeenCalled();
   });
 
   it('does not toast when the review changes before continue settles', async () => {

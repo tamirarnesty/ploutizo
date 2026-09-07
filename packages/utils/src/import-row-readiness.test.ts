@@ -24,7 +24,7 @@ describe('import-row-readiness', () => {
     expect(isImportRowSelectable({ status: 'invalid' })).toBe(false);
   });
 
-  it('requires selected rows to be ready before continue is allowed', () => {
+  it('allows continue when selected rows still need review', () => {
     const rows = [
       {
         ...baseRow,
@@ -40,8 +40,9 @@ describe('import-row-readiness', () => {
     ];
 
     expect(getSelectedImportRows(rows)).toHaveLength(2);
-    expect(canContinueImportReview(rows)).toBe(false);
+    expect(canContinueImportReview(rows)).toBe(true);
     expect(isImportRowResolved(rows[1])).toBe(false);
+    expect(getImportReviewContinueBlockerReason(rows)).toBeNull();
   });
 
   it('allows continue when every selected row is ready', () => {
@@ -98,7 +99,7 @@ describe('import-row-readiness', () => {
     expect(getImportReviewContinueBlockerReason(rows)).toBeNull();
   });
 
-  it('blocks continue when ready rows only reference departed org members', () => {
+  it('does not client-gate continue when ready rows only reference departed members', () => {
     const rows = [
       {
         ...baseRow,
@@ -110,17 +111,11 @@ describe('import-row-readiness', () => {
     const validAssigneeMemberIds = new Set(['member_1']);
 
     expect(canContinueImportReview(rows, { validAssigneeMemberIds })).toBe(
-      false
+      true
     );
     expect(
       getImportReviewContinueBlockerReason(rows, { validAssigneeMemberIds })
-    ).toEqual({
-      kind: 'missing_assignee',
-      count: 1,
-    });
-    expect(
-      getImportReviewContinueBlocker(rows, { validAssigneeMemberIds })
-    ).toBe('1 selected row needs an assignee.');
+    ).toBeNull();
   });
 
   it('explains when no rows are selected', () => {

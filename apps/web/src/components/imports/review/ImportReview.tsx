@@ -1,5 +1,7 @@
-import { Link } from '@tanstack/react-router';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
 import { FileQuestion } from 'lucide-react';
+import { toast } from '@ploutizo/ui/components/sonner';
 import { Button } from '@ploutizo/ui/components/button';
 import {
   Breadcrumb,
@@ -17,7 +19,13 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@ploutizo/ui/components/empty';
-import { useImportReviewSession } from '@/lib/data-access/imports';
+import { useQueryClient } from '@tanstack/react-query';
+import type { ImportRequirementFailure } from '@ploutizo/types';
+import {
+  IMPORT_REVIEW_PREPARE_AGAIN_MESSAGE,
+  importDraftQueryKey,
+  useImportReviewSession,
+} from '@/lib/data-access/imports';
 import { ImportDraftReview } from './ImportDraftReview';
 import { useImportReviewLeaveGuard } from './useImportReviewLeaveGuard';
 
@@ -59,8 +67,42 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
   const session = useImportReviewSession(draftId);
   const { meta, rows, isLoading, isError, hasUnsavedWork, flush } = session;
   const reviewProps = sessionReviewProps(session);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const importReviewState = useRouterState({
+    select: (state) => state.location.state.importReview,
+  });
+  const consumedStateKey = useRef<string | null>(null);
+  const [inboundIssues, setInboundIssues] = useState<
+    ImportRequirementFailure[]
+  >([]);
 
   useImportReviewLeaveGuard({ hasUnsavedWork, flush });
+
+  useEffect(() => {
+    if (!importReviewState) return;
+    const stateKey = JSON.stringify(importReviewState);
+    if (consumedStateKey.current === stateKey) return;
+    consumedStateKey.current = stateKey;
+
+    if (importReviewState.prepareAgain) {
+      toast.info(IMPORT_REVIEW_PREPARE_AGAIN_MESSAGE);
+    }
+    if (importReviewState.issues && importReviewState.issues.length > 0) {
+      setInboundIssues(importReviewState.issues);
+    }
+
+    void queryClient.invalidateQueries({
+      queryKey: importDraftQueryKey(draftId),
+    });
+
+    void navigate({
+      to: '/transactions/import/$draftId',
+      params: { draftId },
+      replace: true,
+      state: { importReview: undefined },
+    });
+  }, [draftId, importReviewState, navigate, queryClient]);
 
   const body = (() => {
     if (isLoading) {
@@ -91,7 +133,14 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
       );
     }
 
-    return <ImportDraftReview meta={meta} rows={rows} {...reviewProps} />;
+    return (
+      <ImportDraftReview
+        meta={meta}
+        rows={rows}
+        inboundIssues={inboundIssues}
+        {...reviewProps}
+      />
+    );
   })();
 
   return (

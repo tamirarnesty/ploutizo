@@ -3,6 +3,8 @@ import { queryClient } from './lib/queryClient';
 import { routeTree } from './routeTree.gen';
 import type { QueryClient } from '@tanstack/react-query';
 
+import type { ImportReviewLocationState } from './lib/data-access/imports/importReviewLocationState';
+
 export interface RouterContext {
   queryClient: QueryClient;
 }
@@ -22,6 +24,12 @@ export const getRouter = () => {
 
   return router;
 };
+
+declare module '@tanstack/history' {
+  interface HistoryState {
+    importReview?: ImportReviewLocationState;
+  }
+}
 
 declare module '@tanstack/react-router' {
   interface Register {

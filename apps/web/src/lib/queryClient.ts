@@ -43,6 +43,9 @@ export const apiFetch = async <T>(
       .catch(() => ({ error: { code: 'UNKNOWN', message: res.statusText } }));
     throw error;
   }
+  if (res.status === 204) {
+    return undefined as T;
+  }
   return res.json() as Promise<T>;
 };
 
@@ -54,6 +57,12 @@ export interface ApiErrorBody {
     errors?: { message?: string }[];
   };
 }
+
+export const getApiErrorCode = (error: unknown): string | undefined => {
+  if (typeof error !== 'object' || error === null) return undefined;
+  const maybeError = error as ApiErrorBody;
+  return maybeError.error?.code;
+};
 
 export const getApiErrorMessage = (
   error: unknown,

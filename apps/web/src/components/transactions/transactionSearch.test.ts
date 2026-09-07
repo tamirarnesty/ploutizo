@@ -69,4 +69,22 @@ describe('validateTransactionSearch', () => {
       expect(validateTransactionSearch({ sort })).toEqual({ sort });
     }
   });
+
+  it('keeps matching import batch and outcome params together', () => {
+    expect(
+      validateTransactionSearch({
+        importBatchId: 'batch_1',
+        importOutcome: 'created',
+      })
+    ).toEqual({
+      importBatchId: 'batch_1',
+      importOutcome: 'created',
+    });
+    expect(
+      validateTransactionSearch({
+        importBatchId: 'batch_1',
+        importOutcome: 'skipped',
+      })
+    ).toEqual({});
+  });
 });

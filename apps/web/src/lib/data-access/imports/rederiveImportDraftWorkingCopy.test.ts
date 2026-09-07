@@ -295,7 +295,7 @@ describe('rederiveImportDraftWorkingCopy', () => {
     );
     expect(collisionEvaluation?.blockers).toContain('match');
     expect(collisionEvaluation?.match?.issues).toContain('collision');
-    expect(canContinueImportReview(collection.toArray)).toBe(false);
+    expect(canContinueImportReview(collection.toArray)).toBe(true);
 
     collection.utils.writeUpdate({
       ...collection.get('row_b')!,
