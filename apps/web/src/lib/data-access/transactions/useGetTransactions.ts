@@ -76,6 +76,8 @@ export interface TransactionQueryParams {
   assigneeId_op?: string; // 'is' | 'is_not' | 'empty' | 'not_empty'
   tagIds_op?: string; // 'is_any_of' | 'is_not_any_of' | 'includes_all' | 'excludes_all' | 'empty' | 'not_empty'
   dateRange_op?: string; // 'between' | 'after' | 'before'
+  importBatchId?: string;
+  importOutcome?: 'created' | 'matched';
 }
 
 export interface TransactionListResponse {

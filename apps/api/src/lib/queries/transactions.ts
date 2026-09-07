@@ -2,6 +2,7 @@ import { db } from '@ploutizo/db';
 import {
   accounts,
   categories,
+  importTransactionLinks,
   orgMembers,
   tags,
   transactionAssignees,
@@ -37,8 +38,8 @@ import type {
 } from '@ploutizo/types';
 import type { SQL } from 'drizzle-orm';
 import {
-  accountExistsInOrg,
   activeTransactions,
+  fetchAccountWriteReference,
   transactionExistsInOrg,
 } from '@/lib/queries/scope';
 
@@ -101,6 +102,8 @@ export type ListQueryParams = {
   assigneeId_op?: string; // 'is' | 'is_not' | 'empty' | 'not_empty'
   tagIds_op?: string; // 'is_any_of' | 'is_not_any_of' | 'includes_all' | 'excludes_all' | 'empty' | 'not_empty'
   dateRange_op?: string; // 'between' | 'after' | 'before' | 'is' | 'is_not' | 'not_between'
+  importBatchId?: string;
+  importOutcome?: 'created' | 'matched';
 };
 
 // Build the WHERE conditions array for list + count queries
@@ -288,6 +291,25 @@ export const buildConditions = (params: ListQueryParams): SQL[] => {
       sql`(${transactions.description} ILIKE ${'%' + params.description + '%'} OR ${transactions.rawDescription} ILIKE ${'%' + params.description + '%'})`
     );
   }
+
+  if (params.importBatchId && params.importOutcome) {
+    conditions.push(
+      exists(
+        db
+          .select({ one: sql`1` })
+          .from(importTransactionLinks)
+          .where(
+            and(
+              eq(importTransactionLinks.transactionId, transactions.id),
+              eq(importTransactionLinks.orgId, params.orgId),
+              eq(importTransactionLinks.batchId, params.importBatchId),
+              eq(importTransactionLinks.outcome, params.importOutcome)
+            )
+          )
+      )
+    );
+  }
+
   return conditions;
 };
 
@@ -435,14 +457,17 @@ export const enrichTransactions = async (
 // Validate counterpartAccountId belongs to the same org — T1 security mitigation (T-03.4.1-T1)
 export const counterpartAccountBelongsToOrg = async (
   orgId: string,
-  accountId: string
-): Promise<boolean> => accountExistsInOrg(orgId, accountId);
+  accountId: string,
+  tx?: Transaction
+): Promise<boolean> =>
+  Boolean(await fetchAccountWriteReference(orgId, accountId, {}, tx));
 
 // Validate that a refundOf transaction ID exists in the same org (D-13)
 export const refundOfExists = async (
   orgId: string,
-  refundOfId: string
-): Promise<boolean> => transactionExistsInOrg(orgId, refundOfId);
+  refundOfId: string,
+  tx?: Transaction
+): Promise<boolean> => transactionExistsInOrg(orgId, refundOfId, tx);
 
 // Soft-delete a transaction by setting deletedAt = now() (D-15).
 // WHERE: eq(id) + eq(orgId) + isNull(deletedAt) — prevents cross-org and double-delete.

@@ -17,10 +17,15 @@ import { validateTransactionAccountPolicy } from '@ploutizo/utils/transaction-po
 import type { Transaction } from '@ploutizo/db';
 import type {
   CreateImportDraftResponse,
+  ImportCompletedHistoryItem,
+  ImportCompletedResult,
   ImportContentProfileId,
+  ImportDiscardedHistoryItem,
   ImportDraft,
   ImportDraftPersistedRow,
   ImportDraftSummary,
+  ImportHistoryItem,
+  ImportHistoryPage,
   ImportTargetAccount,
   UpdateImportDraftRowResult,
 } from '@ploutizo/types';
@@ -34,6 +39,10 @@ import { assertOrgWriteReferences } from '@/lib/assertOrgWriteReferences';
 import { DomainError, NotFoundError } from '@/lib/errors';
 import { isUniqueViolation } from '@/lib/isUniqueViolation';
 import {
+  decodeImportHistoryCursor,
+  encodeImportHistoryCursor,
+} from '@/lib/import-history-cursor';
+import {
   discardImportDraftQuery,
   fetchActiveCreditCardAccount,
   fetchActiveDraftByAccount,
@@ -45,8 +54,8 @@ import {
   listDraftRowIdsForDraft,
   listDraftRows,
   listDraftRowsForBatches,
+  listImportHistoryPage,
   listImportTargetAccounts,
-  listRecentImportHistory,
   updateImportDraftRowQuery,
   updateImportDraftRowSelectionQuery,
 } from '@/lib/queries/imports';
@@ -99,46 +108,121 @@ const toContentProfileId = (
   return contentProfileId;
 };
 
-const toImportDraftSummary = (
-  row: ImportDraftSummaryRow
-): ImportDraftSummary => {
+const toImportAccount = (row: ImportDraftSummaryRow) => {
   if (!row.accountId) {
     throw new DomainError(500, 'Import draft is missing an account.');
   }
-  const {
-    accountId,
-    accountName,
-    accountInstitutionId,
-    accountLastFour,
-    contentProfileId,
-    importedAt,
-    completedAt,
-    discardedAt,
-    revision: _revision,
-    createdAt,
-    updatedAt,
-    ...summary
-  } = row;
-  const accountInstitution = toFinancialInstitutionId(accountInstitutionId);
   return {
-    ...summary,
-    contentProfileId: toContentProfileId(contentProfileId),
-    // History omits live review counts until PLO-56 records completed results.
-    validRowCount: 0,
-    invalidRowCount: 0,
-    account: {
-      id: accountId,
-      name: accountName,
-      institutionId: accountInstitution,
-      lastFour: accountLastFour,
-    },
-    importedAt: importedAt.toISOString(),
-    completedAt: completedAt?.toISOString() ?? null,
-    discardedAt: discardedAt?.toISOString() ?? null,
-    createdAt: createdAt.toISOString(),
-    updatedAt: updatedAt.toISOString(),
+    id: row.accountId,
+    name: row.accountName,
+    institutionId: toFinancialInstitutionId(row.accountInstitutionId),
+    lastFour: row.accountLastFour,
   };
 };
+
+const toImportDraftSummary = (
+  row: ImportDraftSummaryRow
+): ImportDraftSummary => {
+  const account = toImportAccount(row);
+  return {
+    id: row.id,
+    account,
+    contentProfileId: toContentProfileId(row.contentProfileId),
+    status: row.status,
+    fileName: row.fileName,
+    rowCount: row.rowCount,
+    validRowCount: 0,
+    invalidRowCount: 0,
+    importedAt: row.importedAt.toISOString(),
+    completedAt: row.completedAt?.toISOString() ?? null,
+    discardedAt: row.discardedAt?.toISOString() ?? null,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+};
+
+const requireCompletedCounts = (row: ImportDraftSummaryRow) => {
+  if (
+    row.createdCount == null ||
+    row.matchedCount == null ||
+    row.skippedCount == null ||
+    row.invalidCount == null ||
+    !row.completedAt ||
+    !row.finalizedPreparedSetId
+  ) {
+    throw new DomainError(500, 'Completed import is missing result facts.');
+  }
+  return {
+    createdCount: row.createdCount,
+    matchedCount: row.matchedCount,
+    skippedCount: row.skippedCount,
+    invalidCount: row.invalidCount,
+    completedAt: row.completedAt,
+    preparedSetId: row.finalizedPreparedSetId,
+  };
+};
+
+export const toImportCompletedHistoryItem = (
+  row: ImportDraftSummaryRow
+): ImportCompletedHistoryItem => {
+  const account = toImportAccount(row);
+  const counts = requireCompletedCounts(row);
+  return {
+    id: row.id,
+    account,
+    contentProfileId: toContentProfileId(row.contentProfileId),
+    status: 'completed',
+    fileName: row.fileName,
+    rowCount: row.rowCount,
+    importedAt: row.importedAt.toISOString(),
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    completedAt: counts.completedAt.toISOString(),
+    discardedAt: null,
+    createdCount: counts.createdCount,
+    matchedCount: counts.matchedCount,
+    skippedCount: counts.skippedCount,
+    invalidCount: counts.invalidCount,
+  };
+};
+
+export const toImportCompletedResult = (
+  row: ImportDraftSummaryRow
+): ImportCompletedResult => ({
+  ...toImportCompletedHistoryItem(row),
+  preparedSetId: requireCompletedCounts(row).preparedSetId,
+});
+
+const toImportDiscardedHistoryItem = (
+  row: ImportDraftSummaryRow
+): ImportDiscardedHistoryItem => {
+  const account = toImportAccount(row);
+  if (!row.discardedAt) {
+    throw new DomainError(500, 'Discarded import is missing discardedAt.');
+  }
+  return {
+    id: row.id,
+    account,
+    contentProfileId: toContentProfileId(row.contentProfileId),
+    status: 'discarded',
+    fileName: row.fileName,
+    rowCount: row.rowCount,
+    importedAt: row.importedAt.toISOString(),
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    completedAt: null,
+    discardedAt: row.discardedAt.toISOString(),
+  };
+};
+
+const toImportHistoryItem = (row: ImportDraftSummaryRow): ImportHistoryItem => {
+  if (row.status === 'completed') return toImportCompletedHistoryItem(row);
+  if (row.status === 'discarded') return toImportDiscardedHistoryItem(row);
+  throw new DomainError(500, 'Import history only includes closed batches.');
+};
+
+const historyClosedAt = (item: ImportHistoryItem) =>
+  new Date(item.status === 'completed' ? item.completedAt : item.discardedAt);
 
 export const listImportTargets = async (
   orgId: string
@@ -184,10 +268,31 @@ export const listActiveImportDrafts = async (
 };
 
 export const listImportHistory = async (
-  orgId: string
-): Promise<ImportDraftSummary[]> => {
-  const rows = await listRecentImportHistory(orgId);
-  return rows.map(toImportDraftSummary);
+  orgId: string,
+  input: { cursor?: string; limit?: number } = {}
+): Promise<ImportHistoryPage> => {
+  const limit = input.limit ?? 10;
+  let cursor: { closedAt: string; id: string } | undefined;
+  if (input.cursor) {
+    const decoded = decodeImportHistoryCursor(input.cursor);
+    if (!decoded) {
+      throw new DomainError(400, 'Invalid history cursor.', 'INVALID_CURSOR');
+    }
+    cursor = decoded;
+  }
+
+  const rows = await listImportHistoryPage(orgId, { limit, cursor });
+  const hasMore = rows.length > limit;
+  const pageRows = hasMore ? rows.slice(0, limit) : rows;
+  const data = pageRows.map(toImportHistoryItem);
+  const last = data.at(-1);
+  return {
+    data,
+    nextCursor:
+      hasMore && last
+        ? encodeImportHistoryCursor(historyClosedAt(last), last.id)
+        : null,
+  };
 };
 
 export const getImportDraft = async (

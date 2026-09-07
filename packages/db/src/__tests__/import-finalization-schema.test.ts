@@ -195,3 +195,53 @@ describe('prepared revision binding migration', () => {
     );
   });
 });
+
+describe('completed import result migration', () => {
+  const completedResultMigration = readFileSync(
+    join(root, 'drizzle/0006_overjoyed_outlaw_kid.sql'),
+    'utf8'
+  );
+
+  it('adds completed-result count columns and claimed prepared-set id', () => {
+    expect(completedResultMigration).toContain(
+      'ADD COLUMN "finalized_prepared_set_id" uuid'
+    );
+    expect(completedResultMigration).toContain(
+      'ADD COLUMN "created_count" integer'
+    );
+    expect(completedResultMigration).toContain(
+      'ADD COLUMN "matched_count" integer'
+    );
+    expect(completedResultMigration).toContain(
+      'ADD COLUMN "skipped_count" integer'
+    );
+    expect(completedResultMigration).toContain(
+      'ADD COLUMN "invalid_count" integer'
+    );
+  });
+
+  it('stores created and matched links separately from transaction provenance', () => {
+    expect(completedResultMigration).toContain(
+      'CREATE TABLE "import_transaction_links"'
+    );
+    expect(completedResultMigration).toContain(
+      '"outcome" "import_transaction_link_outcome" NOT NULL'
+    );
+    expect(completedResultMigration).toContain(
+      'import_transaction_links_transaction_id_org_id_transactions_id_org_id_fk'
+    );
+  });
+
+  it('reconciles completed counts to row_count and indexes history by closed time', () => {
+    expect(completedResultMigration).toContain(
+      'created_count + matched_count + skipped_count + invalid_count'
+    );
+    expect(completedResultMigration).toContain('= row_count');
+    expect(completedResultMigration).toContain(
+      'import_batches_org_history_closed_idx'
+    );
+    expect(completedResultMigration).toContain(
+      'COALESCE("completed_at", "discarded_at")'
+    );
+  });
+});

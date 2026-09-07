@@ -57,6 +57,7 @@ transactionsRouter.get('/', async (c) => {
     ...tagIdsArr,
     ...(tagIdsComma ? tagIdsComma.split(',').filter(Boolean) : []),
   ];
+  const importOutcomeQuery = c.req.query('importOutcome');
 
   const params: ListQueryParams = {
     orgId,
@@ -78,6 +79,11 @@ transactionsRouter.get('/', async (c) => {
     assigneeId_op: c.req.query('assigneeId_op'),
     tagIds_op: c.req.query('tagIds_op'),
     dateRange_op: c.req.query('dateRange_op'),
+    importBatchId: c.req.query('importBatchId'),
+    importOutcome:
+      importOutcomeQuery === 'created' || importOutcomeQuery === 'matched'
+        ? importOutcomeQuery
+        : undefined,
   };
 
   const result = await listTransactions(params);

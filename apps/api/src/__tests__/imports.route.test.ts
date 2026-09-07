@@ -1,10 +1,11 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRouteTestApp } from './testUtils';
 import type { AppEnv } from '@/types';
 import { importsRouter } from '@/routes/imports';
 import {
   createImportDraft,
   discardImportDraft,
+  listImportHistory,
   listImportTargets,
   updateImportDraftRow,
   updateImportDraftRowSelection,
@@ -14,6 +15,7 @@ import {
   getActiveImportPreparedConfirmation,
   invalidateImportPreparedSet,
 } from '@/services/import-prepared-sets';
+import { finalizeImportDraft } from '@/services/import-finalize';
 
 vi.mock('@/services/imports', () => ({
   createImportDraft: vi.fn(),
@@ -21,7 +23,7 @@ vi.mock('@/services/imports', () => ({
   getImportDraft: vi.fn(),
   getImportExampleCsv: vi.fn(() => 'date,amount,description,type\n'),
   listActiveImportDrafts: vi.fn(() => []),
-  listImportHistory: vi.fn(() => []),
+  listImportHistory: vi.fn(() => ({ data: [], nextCursor: null })),
   listImportTargets: vi.fn(),
   updateImportDraftRow: vi.fn(),
   updateImportDraftRowSelection: vi.fn(),
@@ -33,6 +35,10 @@ vi.mock('@/services/import-prepared-sets', () => ({
   invalidateImportPreparedSet: vi.fn(),
 }));
 
+vi.mock('@/services/import-finalize', () => ({
+  finalizeImportDraft: vi.fn(),
+}));
+
 const app = createRouteTestApp<AppEnv>((testApp) => {
   testApp.use('*', async (c, next) => {
     c.set('orgId', 'org_1');
@@ -41,7 +47,13 @@ const app = createRouteTestApp<AppEnv>((testApp) => {
   testApp.route('/', importsRouter);
 });
 
+const PREPARED_SET_ID = '550e8400-e29b-41d4-a716-446655440060';
+const OTHER_PREPARED_SET_ID = '550e8400-e29b-41d4-a716-446655440061';
+
 describe('imports router', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
   it('returns import targets from the service', async () => {
     vi.mocked(listImportTargets).mockResolvedValue([
       {
@@ -403,5 +415,237 @@ describe('imports router', () => {
     });
 
     expect(res.status).toBe(404);
+  });
+
+  it('finalizes an explicit prepared set', async () => {
+    vi.mocked(finalizeImportDraft).mockResolvedValue({
+      id: 'draft_1',
+      account: {
+        id: 'acct_1',
+        name: 'Visa',
+        institutionId: 'td',
+        lastFour: '1234',
+      },
+      contentProfileId: 'internal',
+      status: 'completed',
+      fileName: 'statement.csv',
+      rowCount: 4,
+      createdCount: 1,
+      matchedCount: 1,
+      skippedCount: 1,
+      invalidCount: 1,
+      importedAt: '2026-05-20T12:00:00.000Z',
+      completedAt: '2026-05-21T12:00:00.000Z',
+      discardedAt: null,
+      createdAt: '2026-05-20T12:00:00.000Z',
+      updatedAt: '2026-05-21T12:00:00.000Z',
+      preparedSetId: PREPARED_SET_ID,
+    });
+
+    const res = await app.request('/drafts/draft_1/finalize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ preparedSetId: PREPARED_SET_ID }),
+    });
+    const body = (await res.json()) as {
+      data: { preparedSetId: string; createdCount: number };
+    };
+
+    expect(res.status).toBe(200);
+    expect(finalizeImportDraft).toHaveBeenCalledWith(
+      'org_1',
+      'draft_1',
+      PREPARED_SET_ID
+    );
+    expect(body.data.preparedSetId).toBe(PREPARED_SET_ID);
+    expect(body.data.createdCount).toBe(1);
+  });
+
+  it('rejects finalize without an explicit preparedSetId', async () => {
+    const res = await app.request('/drafts/draft_1/finalize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+
+    expect(res.status).toBe(400);
+    expect(finalizeImportDraft).not.toHaveBeenCalled();
+  });
+
+  it('returns structured finalize failures from the service', async () => {
+    const { DomainError } = await import('@/lib/errors');
+    vi.mocked(finalizeImportDraft).mockRejectedValue(
+      new DomainError(
+        400,
+        'Some selected rows are not ready to import.',
+        'IMPORT_FINALIZE_NOT_READY',
+        {
+          rows: [
+            {
+              batchRowId: '11111111-1111-4111-8111-111111111111',
+              key: 'import.external_id.active_conflict',
+            },
+          ],
+        }
+      )
+    );
+
+    const res = await app.request('/drafts/draft_1/finalize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ preparedSetId: PREPARED_SET_ID }),
+    });
+    const body = (await res.json()) as {
+      error: { code: string; details?: { rows: { key: string }[] } };
+    };
+
+    expect(res.status).toBe(400);
+    expect(body.error.code).toBe('IMPORT_FINALIZE_NOT_READY');
+    expect(body.error.details?.rows[0]?.key).toBe(
+      'import.external_id.active_conflict'
+    );
+  });
+
+  it('returns a conflict when finalize aliases another revision', async () => {
+    const { DomainError } = await import('@/lib/errors');
+    vi.mocked(finalizeImportDraft).mockRejectedValue(
+      new DomainError(
+        409,
+        'This prepared import set cannot be finalized.',
+        'IMPORT_FINALIZE_CONFLICT'
+      )
+    );
+
+    const res = await app.request('/drafts/draft_1/finalize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ preparedSetId: OTHER_PREPARED_SET_ID }),
+    });
+    const body = (await res.json()) as { error: { code: string } };
+
+    expect(res.status).toBe(409);
+    expect(body.error.code).toBe('IMPORT_FINALIZE_CONFLICT');
+  });
+
+  it('404s finalize for another org’s draft', async () => {
+    const { NotFoundError } = await import('@/lib/errors');
+    vi.mocked(finalizeImportDraft).mockRejectedValue(
+      new NotFoundError('Import draft not found.')
+    );
+
+    const res = await app.request('/drafts/draft_1/finalize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ preparedSetId: PREPARED_SET_ID }),
+    });
+
+    expect(res.status).toBe(404);
+  });
+
+  it('rejects a non-uuid preparedSetId before calling the service', async () => {
+    const res = await app.request('/drafts/draft_1/finalize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ preparedSetId: 'prep_1' }),
+    });
+
+    expect(res.status).toBe(400);
+    expect(finalizeImportDraft).not.toHaveBeenCalled();
+  });
+
+  it('returns INTERNAL_ERROR for unexpected finalize failures', async () => {
+    vi.mocked(finalizeImportDraft).mockRejectedValue(
+      new Error('connection reset')
+    );
+
+    const res = await app.request('/drafts/draft_1/finalize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ preparedSetId: PREPARED_SET_ID }),
+    });
+    const body = (await res.json()) as { error: { code: string } };
+
+    expect(res.status).toBe(500);
+    expect(body.error.code).toBe('INTERNAL_ERROR');
+  });
+
+  it('returns cursor-paginated completed and discarded history', async () => {
+    vi.mocked(listImportHistory).mockResolvedValue({
+      data: [
+        {
+          id: 'completed_1',
+          account: {
+            id: 'acct_1',
+            name: 'Visa',
+            institutionId: 'td',
+            lastFour: '1234',
+          },
+          contentProfileId: 'internal',
+          status: 'completed',
+          fileName: 'statement.csv',
+          rowCount: 4,
+          createdCount: 1,
+          matchedCount: 1,
+          skippedCount: 1,
+          invalidCount: 1,
+          importedAt: '2026-05-20T12:00:00.000Z',
+          completedAt: '2026-05-21T12:00:00.000Z',
+          discardedAt: null,
+          createdAt: '2026-05-20T12:00:00.000Z',
+          updatedAt: '2026-05-21T12:00:00.000Z',
+        },
+        {
+          id: 'discarded_1',
+          account: {
+            id: 'acct_1',
+            name: 'Visa',
+            institutionId: 'td',
+            lastFour: '1234',
+          },
+          contentProfileId: null,
+          status: 'discarded',
+          fileName: 'old.csv',
+          rowCount: 8,
+          importedAt: '2026-05-10T12:00:00.000Z',
+          completedAt: null,
+          discardedAt: '2026-05-11T12:00:00.000Z',
+          createdAt: '2026-05-10T12:00:00.000Z',
+          updatedAt: '2026-05-11T12:00:00.000Z',
+        },
+      ],
+      nextCursor: 'next_page',
+    });
+
+    const res = await app.request('/history?limit=2&cursor=abc');
+    const body = (await res.json()) as {
+      data: { status: string; createdCount?: number }[];
+      nextCursor: string | null;
+    };
+
+    expect(res.status).toBe(200);
+    expect(listImportHistory).toHaveBeenCalledWith('org_1', {
+      limit: 2,
+      cursor: 'abc',
+    });
+    expect(body.nextCursor).toBe('next_page');
+    expect(body.data[0]).toMatchObject({
+      status: 'completed',
+      createdCount: 1,
+    });
+    expect(body.data[1]).toMatchObject({ status: 'discarded' });
+    expect(body.data[1]).not.toHaveProperty('createdCount');
+  });
+
+  it('returns INVALID_CURSOR from history when the service rejects the cursor', async () => {
+    const { DomainError } = await import('@/lib/errors');
+    vi.mocked(listImportHistory).mockRejectedValue(
+      new DomainError(400, 'Invalid history cursor.', 'INVALID_CURSOR')
+    );
+
+    const res = await app.request('/history?cursor=not-a-cursor');
+    const body = (await res.json()) as { error: { code: string } };
+
+    expect(res.status).toBe(400);
+    expect(body.error.code).toBe('INVALID_CURSOR');
   });
 });

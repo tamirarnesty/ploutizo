@@ -54,6 +54,12 @@ export const importBatches = pgTable(
     revision: integer('revision').notNull().default(1),
     completedAt: timestamp('completed_at', { withTimezone: true }),
     discardedAt: timestamp('discarded_at', { withTimezone: true }),
+    /** Claimed prepared-set id for Finalize idempotency after staging cleanup. */
+    finalizedPreparedSetId: uuid('finalized_prepared_set_id'),
+    createdCount: integer('created_count'),
+    matchedCount: integer('matched_count'),
+    skippedCount: integer('skipped_count'),
+    invalidCount: integer('invalid_count'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -69,6 +75,11 @@ export const importBatches = pgTable(
     uniqueIndex('import_batches_one_active_draft_per_account_idx')
       .on(t.orgId, t.accountId)
       .where(sql`status = 'draft'`),
+    /**
+     * Closed-history index lives only in `0006_overjoyed_outlaw_kid.sql` as
+     * `import_batches_org_history_closed_idx` — Drizzle cannot declare
+     * `COALESCE(completed_at, discarded_at) DESC` expression indexes here.
+     */
     foreignKey({
       columns: [t.accountId, t.orgId],
       foreignColumns: [accounts.id, accounts.orgId],
@@ -76,6 +87,43 @@ export const importBatches = pgTable(
     check(
       'import_batches_content_profile_id_check',
       sql.raw(importContentProfileIdCheckSql())
+    ),
+    check(
+      'import_batches_lifecycle_result_check',
+      sql`
+        (
+          status = 'draft'
+          AND completed_at IS NULL
+          AND discarded_at IS NULL
+          AND finalized_prepared_set_id IS NULL
+          AND created_count IS NULL
+          AND matched_count IS NULL
+          AND skipped_count IS NULL
+          AND invalid_count IS NULL
+        )
+        OR (
+          status = 'discarded'
+          AND discarded_at IS NOT NULL
+          AND completed_at IS NULL
+          AND finalized_prepared_set_id IS NULL
+          AND created_count IS NULL
+          AND matched_count IS NULL
+          AND skipped_count IS NULL
+          AND invalid_count IS NULL
+        )
+        OR (
+          status = 'completed'
+          AND completed_at IS NOT NULL
+          AND discarded_at IS NULL
+          AND finalized_prepared_set_id IS NOT NULL
+          AND created_count IS NOT NULL
+          AND matched_count IS NOT NULL
+          AND skipped_count IS NOT NULL
+          AND invalid_count IS NOT NULL
+          AND created_count + matched_count + skipped_count + invalid_count
+            = row_count
+        )
+      `
     ),
   ]
 );

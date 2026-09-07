@@ -151,7 +151,7 @@ const insertPreparedSetFromRows = async (
   return toImportPreparedSet(set, insertedOutcomes);
 };
 
-const loadCounterpartAccounts = async (
+export const loadCounterpartAccounts = async (
   orgId: string,
   rows: readonly ImportDraftRowRecord[],
   tx: Transaction
@@ -207,7 +207,7 @@ export const createImportPreparedSetRevision = async (
   });
 };
 
-const evaluateImportSetForContinue = async (
+export const evaluateImportSetForContinue = async (
   orgId: string,
   targetAccountId: string,
   draftRows: readonly ImportDraftRowRecord[],

@@ -9,6 +9,7 @@ import {
   normalizeTransactionAssignees,
   validateSplitSum,
 } from '@ploutizo/utils/assignee-split';
+import type { Transaction } from '@ploutizo/db';
 import type { TransactionType } from '@ploutizo/types';
 import type {
   CreateTransactionInput,
@@ -75,12 +76,14 @@ export const assertSplitSum = (
 
 export const assertTransactionWriteOrgRefs = async (
   orgId: string,
-  data: CreateTransactionInput | UpdateTransactionServiceInput
+  data: CreateTransactionInput | UpdateTransactionServiceInput,
+  tx?: Transaction
 ): Promise<void> => {
   if ('counterpartAccountId' in data && data.counterpartAccountId) {
     const valid = await counterpartAccountBelongsToOrg(
       orgId,
-      data.counterpartAccountId
+      data.counterpartAccountId,
+      tx
     );
     if (!valid) {
       throw new DomainError(
@@ -92,7 +95,7 @@ export const assertTransactionWriteOrgRefs = async (
   }
 
   if ('refundOf' in data && data.refundOf) {
-    const owned = await refundOfExists(orgId, data.refundOf);
+    const owned = await refundOfExists(orgId, data.refundOf, tx);
     if (!owned) {
       throw new DomainError(
         400,

@@ -49,6 +49,21 @@ export const deleteImportPreparedSet = async (
     );
 };
 
+export const deleteImportPreparedSetsForBatch = async (
+  tx: Transaction,
+  orgId: string,
+  batchId: string
+) => {
+  await tx
+    .delete(importPreparedSets)
+    .where(
+      and(
+        eq(importPreparedSets.orgId, orgId),
+        eq(importPreparedSets.batchId, batchId)
+      )
+    );
+};
+
 export const fetchPreparedSetById = async (
   orgId: string,
   preparedSetId: string,

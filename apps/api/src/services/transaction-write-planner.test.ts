@@ -238,7 +238,8 @@ describe('assertTransactionWriteOrgRefs', () => {
     });
     expect(counterpartAccountBelongsToOrg).toHaveBeenCalledWith(
       ORG_ID,
-      ACCOUNT_B
+      ACCOUNT_B,
+      undefined
     );
   });
 
@@ -262,7 +263,7 @@ describe('assertTransactionWriteOrgRefs', () => {
       code: 'INVALID_REFUND_REFERENCE',
       message: 'refundOf transaction not found in this org',
     });
-    expect(refundOfExists).toHaveBeenCalledWith(ORG_ID, REFUND_OF);
+    expect(refundOfExists).toHaveBeenCalledWith(ORG_ID, REFUND_OF, undefined);
   });
 
   it('skips counterpart and refund checks when those fields are absent', async () => {
@@ -302,10 +303,11 @@ describe('assertTransactionWriteOrgRefs', () => {
       assignees: matchingAssignees,
     });
 
-    expect(refundOfExists).toHaveBeenCalledWith(ORG_ID, REFUND_OF);
+    expect(refundOfExists).toHaveBeenCalledWith(ORG_ID, REFUND_OF, undefined);
     expect(counterpartAccountBelongsToOrg).toHaveBeenCalledWith(
       ORG_ID,
-      ACCOUNT_B
+      ACCOUNT_B,
+      undefined
     );
   });
 });
