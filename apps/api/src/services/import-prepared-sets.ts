@@ -1,7 +1,7 @@
 import { db } from '@ploutizo/db';
 import {
   evaluateImportSetRequirements,
-  projectImportPreparedOutcome,
+  projectImportPreparedOutcomes,
 } from '@ploutizo/utils/import-requirements';
 import {
   resolveImportRowReviewAmount,
@@ -46,6 +46,7 @@ import {
   allTransactionsInOrg,
   fetchAccountWriteReference,
 } from '@/lib/queries/scope';
+import { listActiveExternalIdOwners } from '@/lib/queries/import-match-targets';
 import {
   loadDraftEvaluationContext,
   toImportDraftDurableRow,
@@ -207,7 +208,7 @@ export const createImportPreparedSetRevision = async (
   });
 };
 
-export const evaluateImportSetForContinue = async (
+export const verifyImportPreparedSet = async (
   orgId: string,
   targetAccountId: string,
   draftRows: readonly ImportDraftRowRecord[],
@@ -241,6 +242,18 @@ export const evaluateImportSetForContinue = async (
       evaluation.match ? [[id, evaluation.match] as const] : []
     )
   );
+  const createdExternalIds = durableRows.flatMap((row) => {
+    if (!row.selectedForImport) return [];
+    if (matchEvaluations.get(row.id)?.acceptedMatch) return [];
+    const externalId = row.externalId?.trim();
+    return externalId ? [externalId] : [];
+  });
+  const activeExternalIdOwners = await listActiveExternalIdOwners(
+    orgId,
+    targetAccountId,
+    createdExternalIds,
+    tx
+  );
 
   const failures = evaluateImportSetRequirements({
     rows: durableRows,
@@ -249,9 +262,14 @@ export const evaluateImportSetForContinue = async (
     validAssigneeMemberIds: new Set(members.map((member) => member.id)),
     refundEvaluations,
     matchEvaluations,
+    activeExternalIdOwners,
   });
 
-  return { failures, matchEvaluations };
+  return {
+    failures,
+    matchEvaluations,
+    projections: projectImportPreparedOutcomes(durableRows, matchEvaluations),
+  };
 };
 
 /**
@@ -281,12 +299,8 @@ export const continueImportDraft = async (
       );
     }
 
-    const { failures, matchEvaluations } = await evaluateImportSetForContinue(
-      orgId,
-      draft.accountId,
-      draftRows,
-      tx
-    );
+    const { failures, matchEvaluations, projections } =
+      await verifyImportPreparedSet(orgId, draft.accountId, draftRows, tx);
     if (failures.length > 0) {
       throw new DomainError<ImportRequirementFailureDetails>(
         400,
@@ -316,10 +330,10 @@ export const continueImportDraft = async (
 
     const outcomes: PrepareImportOutcomeInput[] = draftRows.map((row) => {
       const match = matchEvaluations.get(row.id);
-      const outcome = projectImportPreparedOutcome(
-        toImportDraftDurableRow(row),
-        match
-      );
+      const outcome = projections.get(row.id);
+      if (!outcome) {
+        throw new DomainError(500, 'Prepared projection is missing a row.');
+      }
       return {
         batchRowId: row.id,
         outcome,

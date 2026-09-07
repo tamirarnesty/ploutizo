@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  countPreparedOutcomes,
+  diffPreparedProjection,
   evaluateImportSetRequirements,
   isImportRequirementKey,
   projectImportPreparedOutcome,
@@ -171,6 +173,66 @@ describe('evaluateImportSetRequirements', () => {
     ]);
   });
 
+  it('flags an active ledger owner of a created-row external id', () => {
+    const failures = evaluateImportSetRequirements(
+      baseInput({
+        rows: [expenseRow({ externalId: 'visa-created' })],
+        activeExternalIdOwners: new Map([['visa-created', 'tx-existing']]),
+      })
+    );
+
+    expect(failures).toEqual([
+      {
+        batchRowId: 'row-expense',
+        key: 'import.external_id.active_conflict',
+        params: { transactionId: 'tx-existing', externalId: 'visa-created' },
+      },
+    ]);
+  });
+
+  it('does not flag active external ids on accepted matches', () => {
+    const match: ImportMatchEvaluation = {
+      acceptedMatch: { transactionId: 'tx-1', kind: 'external_id' },
+      acceptedMatchValid: true,
+      issues: [],
+      candidates: [],
+      exactCandidate: null,
+      advisoryCandidates: [],
+      collisionRowIds: [],
+    };
+    const failures = evaluateImportSetRequirements(
+      baseInput({
+        rows: [expenseRow({ externalId: 'visa-1001' })],
+        matchEvaluations: new Map([['row-expense', match]]),
+        activeExternalIdOwners: new Map([['visa-1001', 'tx-1']]),
+      })
+    );
+
+    expect(failures).toEqual([]);
+  });
+
+  it('maps duplicate match targets to namespaced keys', () => {
+    const match: ImportMatchEvaluation = {
+      acceptedMatch: { transactionId: 'tx-1', kind: 'identity' },
+      acceptedMatchValid: true,
+      issues: ['duplicate_target'],
+      candidates: [],
+      exactCandidate: null,
+      advisoryCandidates: [],
+      collisionRowIds: [],
+    };
+    const failures = evaluateImportSetRequirements(
+      baseInput({
+        matchEvaluations: new Map([['row-expense', match]]),
+      })
+    );
+
+    expect(failures).toContainEqual({
+      batchRowId: 'row-expense',
+      key: 'import.match.duplicate_target',
+    });
+  });
+
   it('rejects settlement rows that use the same account as counterpart', () => {
     const failures = evaluateImportSetRequirements(
       baseInput({
@@ -279,5 +341,43 @@ describe('isImportRequirementKey', () => {
 
   it('rejects unknown strings', () => {
     expect(isImportRequirementKey('import.legacy.prose_failure')).toBe(false);
+  });
+});
+
+describe('countPreparedOutcomes', () => {
+  it('counts mutually exclusive outcomes', () => {
+    expect(
+      countPreparedOutcomes([
+        { outcome: 'created' },
+        { outcome: 'matched' },
+        { outcome: 'skipped' },
+        { outcome: 'invalid' },
+        { outcome: 'unprocessed' },
+      ])
+    ).toEqual({ created: 1, matched: 1, skipped: 1, invalid: 1 });
+  });
+});
+
+describe('diffPreparedProjection', () => {
+  it('flags stored outcomes that no longer match live projection', () => {
+    const match: ImportMatchEvaluation = {
+      acceptedMatch: { transactionId: 'tx-2', kind: 'identity' },
+      acceptedMatchValid: true,
+      issues: [],
+      candidates: [],
+      exactCandidate: null,
+      advisoryCandidates: [],
+      collisionRowIds: [],
+    };
+
+    expect(
+      diffPreparedProjection(
+        [{ batchRowId: 'row-1', outcome: 'matched', transactionId: 'tx-1' }],
+        new Map([['row-1', 'matched']]),
+        new Map([['row-1', match]])
+      )
+    ).toEqual([
+      { batchRowId: 'row-1', key: 'import.match.invalidated_decision' },
+    ]);
   });
 });

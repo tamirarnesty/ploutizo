@@ -1,5 +1,7 @@
 import { IMPORT_REQUIREMENT_KEY_VALUES } from '@ploutizo/types';
 import type {
+  ImportPreparedOutcome,
+  ImportPreparedOutcomeCounts,
   ImportPreparedProjectionOutcome,
   ImportRequirementFailure,
   ImportRequirementKey,
@@ -44,6 +46,7 @@ const MATCH_REQUIREMENT_KEYS = {
   wrong_account: 'import.match.wrong_account',
   deleted_target: 'import.match.deleted_target',
   ambiguous_exact: 'import.match.ambiguous_exact',
+  duplicate_target: 'import.match.duplicate_target',
 } as const satisfies Record<ImportMatchIssue, ImportRequirementKey>;
 
 const ACCOUNT_REQUIREMENT_KEYS = {
@@ -64,7 +67,15 @@ export interface EvaluateImportSetRequirementsInput {
   validAssigneeMemberIds: ReadonlySet<string>;
   refundEvaluations: ReadonlyMap<string, ImportRefundLinkEvaluation>;
   matchEvaluations: ReadonlyMap<string, ImportMatchEvaluation>;
+  /** Active ledger owners of created-row external ids (Continue and Finalize). */
+  activeExternalIdOwners?: ReadonlyMap<string, string>;
 }
+
+export type StoredImportPreparedOutcome = {
+  batchRowId: string;
+  outcome: ImportPreparedOutcome;
+  transactionId: string | null;
+};
 
 const failure = (
   batchRowId: string,
@@ -157,13 +168,26 @@ const evaluateCreateRequirements = (
     }
   }
 
+  const externalId = row.externalId?.trim();
+  if (externalId) {
+    const ownerId = input.activeExternalIdOwners?.get(externalId);
+    if (ownerId) {
+      failures.push(
+        failure(row.id, 'import.external_id.active_conflict', {
+          transactionId: ownerId,
+          externalId,
+        })
+      );
+    }
+  }
+
   return failures;
 };
 
 /**
  * Shared transaction requirements composed with import-specific requirements.
- * Used by Continue today; Finalize will reuse the same evaluator. Only selected
- * rows are evaluated — unselected rows are outside the Import set.
+ * Continue and Finalize use this evaluator. Only selected rows are evaluated —
+ * unselected rows are outside the Import set.
  */
 export const evaluateImportSetRequirements = (
   input: EvaluateImportSetRequirementsInput
@@ -194,6 +218,75 @@ export const projectImportPreparedOutcome = (
   if (isImportRowStructurallyInvalid(toStatusFields(row))) return 'invalid';
   if (!row.selectedForImport) return 'skipped';
   return 'created';
+};
+
+export const projectImportPreparedOutcomes = (
+  rows: readonly ImportDraftDurableRow[],
+  matchEvaluations: ReadonlyMap<string, ImportMatchEvaluation>
+): Map<string, ImportPreparedProjectionOutcome> =>
+  new Map(
+    rows.map((row) => [
+      row.id,
+      projectImportPreparedOutcome(row, matchEvaluations.get(row.id)),
+    ])
+  );
+
+export const countPreparedOutcomes = (
+  outcomes: readonly Pick<StoredImportPreparedOutcome, 'outcome'>[]
+): ImportPreparedOutcomeCounts => {
+  const counts: ImportPreparedOutcomeCounts = {
+    created: 0,
+    matched: 0,
+    skipped: 0,
+    invalid: 0,
+  };
+  for (const outcome of outcomes) {
+    if (outcome.outcome === 'created') counts.created += 1;
+    else if (outcome.outcome === 'matched') counts.matched += 1;
+    else if (outcome.outcome === 'skipped') counts.skipped += 1;
+    else if (outcome.outcome === 'invalid') counts.invalid += 1;
+  }
+  return counts;
+};
+
+/** Stored prepared projection vs live re-projection (Finalize re-verify). */
+export const diffPreparedProjection = (
+  stored: readonly StoredImportPreparedOutcome[],
+  liveByRowId: ReadonlyMap<string, ImportPreparedProjectionOutcome>,
+  matchEvaluations: ReadonlyMap<string, ImportMatchEvaluation>
+): ImportRequirementFailure[] => {
+  const failures: ImportRequirementFailure[] = [];
+  for (const outcome of stored) {
+    const live = liveByRowId.get(outcome.batchRowId);
+    if (live == null) {
+      failures.push(
+        failure(outcome.batchRowId, 'import.match.invalidated_decision')
+      );
+      continue;
+    }
+    if (live !== outcome.outcome) {
+      failures.push(
+        failure(
+          outcome.batchRowId,
+          outcome.outcome === 'matched' || live === 'matched'
+            ? 'import.match.invalidated_decision'
+            : 'import.match.missing_target'
+        )
+      );
+      continue;
+    }
+    if (
+      outcome.outcome === 'matched' &&
+      outcome.transactionId !==
+        (matchEvaluations.get(outcome.batchRowId)?.acceptedMatch
+          ?.transactionId ?? null)
+    ) {
+      failures.push(
+        failure(outcome.batchRowId, 'import.match.invalidated_decision')
+      );
+    }
+  }
+  return failures;
 };
 
 export const isImportRequirementKey = (

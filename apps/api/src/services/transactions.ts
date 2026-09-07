@@ -66,7 +66,12 @@ const loadTransactionWriteReferences = async (
 
   const refs = new Map<string, AccountWriteReference>();
   for (const accountId of idsToLock) {
-    const loaded = await fetchAccountWriteReference(orgId, accountId, {}, tx);
+    const loaded = await fetchAccountWriteReference(
+      orgId,
+      accountId,
+      { forUpdate: true },
+      tx
+    );
     if (!loaded) {
       throw new NotFoundError('Account not found');
     }

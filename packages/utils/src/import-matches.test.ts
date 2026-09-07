@@ -249,6 +249,36 @@ describe('evaluateImportMatches — same-import collisions', () => {
     expect(evaluations.get('row-a')?.issues).not.toContain('collision');
     expect(evaluations.get('row-b')?.issues).not.toContain('collision');
   });
+
+  it('flags two selected rows that accept the same existing transaction', () => {
+    const existing = tx({ id: 'tx-shared', externalId: null });
+    const evaluations = evaluate(
+      [
+        row({
+          id: 'row-a',
+          externalId: null,
+          selectedForImport: true,
+          reviewMatchedTransactionId: 'tx-shared',
+        }),
+        row({
+          id: 'row-b',
+          externalId: null,
+          selectedForImport: true,
+          reviewMatchedTransactionId: 'tx-shared',
+        }),
+      ],
+      [existing]
+    );
+
+    expect(evaluations.get('row-a')?.acceptedMatch?.transactionId).toBe(
+      'tx-shared'
+    );
+    expect(evaluations.get('row-b')?.acceptedMatch?.transactionId).toBe(
+      'tx-shared'
+    );
+    expect(evaluations.get('row-a')?.issues).toContain('duplicate_target');
+    expect(evaluations.get('row-b')?.issues).toContain('duplicate_target');
+  });
 });
 
 describe('evaluateImportMatches — advisory candidates', () => {

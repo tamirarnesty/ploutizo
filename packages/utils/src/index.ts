@@ -34,11 +34,15 @@ export {
   type ImportDraftRowView,
 } from './evaluate-import-draft';
 export {
+  countPreparedOutcomes,
+  diffPreparedProjection,
   evaluateImportSetRequirements,
   isImportRequirementKey,
   projectImportPreparedOutcome,
+  projectImportPreparedOutcomes,
   type EvaluateImportSetRequirementsInput,
   type ImportRequirementAccount,
+  type StoredImportPreparedOutcome,
 } from './import-requirements';
 export {
   evaluateImportMatches,

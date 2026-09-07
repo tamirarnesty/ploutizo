@@ -47,6 +47,8 @@ const REQUIREMENT_COPY: Record<ImportRequirementKey, string> = {
   'import.match.deleted_target': 'The matched transaction was deleted.',
   'import.match.ambiguous_exact':
     'Multiple exact matches were found for this row.',
+  'import.match.duplicate_target':
+    'Another selected row already matches this transaction.',
   'import.external_id.active_conflict':
     'An active transaction already uses this external id.',
 };

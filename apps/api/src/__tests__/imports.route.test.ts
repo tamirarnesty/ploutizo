@@ -5,11 +5,11 @@ import { importsRouter } from '@/routes/imports';
 import {
   createImportDraft,
   discardImportDraft,
-  listImportHistory,
   listImportTargets,
   updateImportDraftRow,
   updateImportDraftRowSelection,
 } from '@/services/imports';
+import { listImportHistory } from '@/services/import-history';
 import {
   continueImportDraft,
   getActiveImportPreparedConfirmation,
@@ -23,10 +23,13 @@ vi.mock('@/services/imports', () => ({
   getImportDraft: vi.fn(),
   getImportExampleCsv: vi.fn(() => 'date,amount,description,type\n'),
   listActiveImportDrafts: vi.fn(() => []),
-  listImportHistory: vi.fn(() => ({ data: [], nextCursor: null })),
   listImportTargets: vi.fn(),
   updateImportDraftRow: vi.fn(),
   updateImportDraftRowSelection: vi.fn(),
+}));
+
+vi.mock('@/services/import-history', () => ({
+  listImportHistory: vi.fn(() => ({ data: [], nextCursor: null })),
 }));
 
 vi.mock('@/services/import-prepared-sets', () => ({

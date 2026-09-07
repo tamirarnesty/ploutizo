@@ -12,7 +12,10 @@ import {
   listRefundTargetExpensesByIds,
   sumPriorRefundTotalsByTransactionTarget,
 } from '@/lib/queries/import-refund-targets';
-import { listImportMatchTargets } from '@/lib/queries/import-match-targets';
+import {
+  listActiveExternalIdOwners,
+  listImportMatchTargets,
+} from '@/lib/queries/import-match-targets';
 import { listOrgMembers } from '@/lib/queries/households';
 import {
   bumpImportDraftRevision,
@@ -117,6 +120,7 @@ vi.mock('@/lib/queries/import-refund-targets', () => ({
 
 vi.mock('@/lib/queries/import-match-targets', () => ({
   listImportMatchTargets: vi.fn(),
+  listActiveExternalIdOwners: vi.fn(() => new Map()),
 }));
 
 vi.mock('@/lib/queries/households', () => ({
@@ -744,6 +748,7 @@ describe('continueImportDraft', () => {
     vi.mocked(allTransactionsInOrg).mockResolvedValue(true);
     vi.mocked(listRefundTargetExpensesByIds).mockResolvedValue(new Map());
     vi.mocked(listImportMatchTargets).mockResolvedValue(new Map());
+    vi.mocked(listActiveExternalIdOwners).mockResolvedValue(new Map());
     vi.mocked(sumPriorRefundTotalsByTransactionTarget).mockResolvedValue(
       new Map()
     );
@@ -840,6 +845,78 @@ describe('continueImportDraft', () => {
             key: 'transaction.category.required',
           },
         ],
+      },
+    });
+    expect(insertImportPreparedSet).not.toHaveBeenCalled();
+  });
+
+  it('rejects created rows whose external id already exists on the account', async () => {
+    vi.mocked(listActiveExternalIdOwners).mockResolvedValue(
+      new Map([['visa-1001', TXN]])
+    );
+
+    const err = await continueImportDraft(ORG, BATCH).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(DomainError);
+    expect(err).toMatchObject({
+      statusCode: 400,
+      code: 'IMPORT_CONTINUE_NOT_READY',
+      details: {
+        rows: [
+          {
+            batchRowId: ROW,
+            key: 'import.external_id.active_conflict',
+            params: { transactionId: TXN, externalId: 'visa-1001' },
+          },
+        ],
+      },
+    });
+    expect(insertImportPreparedSet).not.toHaveBeenCalled();
+  });
+
+  it('rejects two selected rows that accept the same existing transaction', async () => {
+    const sharedTarget = { ...matchTarget, externalId: null };
+    vi.mocked(fetchDraftSummaryById).mockResolvedValue({
+      id: BATCH,
+      accountId: ACCOUNT,
+      revision: 1,
+      rowCount: 2,
+    } as never);
+    vi.mocked(listDraftRows).mockResolvedValue([
+      {
+        ...draftRow,
+        externalId: null,
+        reviewMatchedTransactionId: TXN,
+      },
+      {
+        ...draftRow,
+        id: ROW_MATCHED,
+        rowNumber: 2,
+        externalId: null,
+        reviewMatchedTransactionId: TXN,
+      },
+    ] as never);
+    vi.mocked(listImportMatchTargets).mockResolvedValue(
+      new Map([[TXN, sharedTarget]])
+    );
+
+    const err = await continueImportDraft(ORG, BATCH).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(DomainError);
+    expect(err).toMatchObject({
+      statusCode: 400,
+      code: 'IMPORT_CONTINUE_NOT_READY',
+      details: {
+        rows: expect.arrayContaining([
+          expect.objectContaining({
+            batchRowId: ROW,
+            key: 'import.match.duplicate_target',
+          }),
+          expect.objectContaining({
+            batchRowId: ROW_MATCHED,
+            key: 'import.match.duplicate_target',
+          }),
+        ]),
       },
     });
     expect(insertImportPreparedSet).not.toHaveBeenCalled();

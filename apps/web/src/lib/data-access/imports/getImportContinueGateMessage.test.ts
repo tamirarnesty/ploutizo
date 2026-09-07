@@ -33,6 +33,25 @@ describe('getImportContinueNotReadyDetails', () => {
 });
 
 describe('getImportContinueGateMessage', () => {
+  it('maps duplicate match targets to web-owned copy', () => {
+    expect(
+      getImportContinueGateMessage({
+        error: {
+          code: 'IMPORT_CONTINUE_NOT_READY',
+          message: 'Some selected rows are not ready to import.',
+          details: {
+            rows: [
+              {
+                batchRowId: 'row_1',
+                key: 'import.match.duplicate_target',
+              },
+            ],
+          },
+        },
+      })
+    ).toBe('Another selected row already matches this transaction.');
+  });
+
   it('maps requirement keys to web-owned copy', () => {
     expect(
       getImportContinueGateMessage({

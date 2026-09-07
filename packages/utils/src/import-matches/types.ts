@@ -28,7 +28,8 @@ export type ImportMatchIssue =
   | 'missing_target'
   | 'wrong_account'
   | 'deleted_target'
-  | 'ambiguous_exact';
+  | 'ambiguous_exact'
+  | 'duplicate_target';
 
 export interface ImportMatchDraftRow {
   id: string;

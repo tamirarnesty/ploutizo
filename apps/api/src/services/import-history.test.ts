@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DomainError } from '@/lib/errors';
-import { listImportHistory } from '@/services/imports';
+import { listImportHistory } from '@/services/import-history';
 import { listImportHistoryPage } from '@/lib/queries/imports';
 import { encodeImportHistoryCursor } from '@/lib/import-history-cursor';
 

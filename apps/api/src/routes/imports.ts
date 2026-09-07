@@ -14,11 +14,11 @@ import {
   getImportDraft,
   getImportExampleCsv,
   listActiveImportDrafts,
-  listImportHistory,
   listImportTargets,
   updateImportDraftRow,
   updateImportDraftRowSelection,
 } from '@/services/imports';
+import { listImportHistory } from '@/services/import-history';
 import {
   continueImportDraft,
   getActiveImportPreparedConfirmation,

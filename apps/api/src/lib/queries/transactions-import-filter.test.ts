@@ -22,30 +22,18 @@ const BASE = {
 const BATCH = '550e8400-e29b-41d4-a716-446655440040';
 
 describe('transaction list import provenance filter', () => {
-  it('adds a links-table filter only when batch and outcome are both present', () => {
+  it('adds a links-table filter when importLink is present', () => {
     const unfiltered = buildConditions(BASE);
     const matched = buildConditions({
       ...BASE,
-      importBatchId: BATCH,
-      importOutcome: 'matched',
+      importLink: { batchId: BATCH, outcome: 'matched' },
     });
     const created = buildConditions({
       ...BASE,
-      importBatchId: BATCH,
-      importOutcome: 'created',
-    });
-    const batchOnly = buildConditions({
-      ...BASE,
-      importBatchId: BATCH,
-    });
-    const outcomeOnly = buildConditions({
-      ...BASE,
-      importOutcome: 'matched',
+      importLink: { batchId: BATCH, outcome: 'created' },
     });
 
     expect(matched.length).toBe(unfiltered.length + 1);
     expect(created.length).toBe(unfiltered.length + 1);
-    expect(batchOnly.length).toBe(unfiltered.length);
-    expect(outcomeOnly.length).toBe(unfiltered.length);
   });
 });

@@ -206,6 +206,7 @@ export const IMPORT_REQUIREMENT_KEY_VALUES = [
   'import.match.wrong_account',
   'import.match.deleted_target',
   'import.match.ambiguous_exact',
+  'import.match.duplicate_target',
   'import.external_id.active_conflict',
 ] as const;
 

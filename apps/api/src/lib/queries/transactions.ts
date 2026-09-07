@@ -102,9 +102,26 @@ export type ListQueryParams = {
   assigneeId_op?: string; // 'is' | 'is_not' | 'empty' | 'not_empty'
   tagIds_op?: string; // 'is_any_of' | 'is_not_any_of' | 'includes_all' | 'excludes_all' | 'empty' | 'not_empty'
   dateRange_op?: string; // 'between' | 'after' | 'before' | 'is' | 'is_not' | 'not_between'
-  importBatchId?: string;
-  importOutcome?: 'created' | 'matched';
+  importLink?: { batchId: string; outcome: 'created' | 'matched' };
 };
+
+const importTransactionLinkExists = (
+  orgId: string,
+  link: { batchId: string; outcome: 'created' | 'matched' }
+) =>
+  exists(
+    db
+      .select({ one: sql`1` })
+      .from(importTransactionLinks)
+      .where(
+        and(
+          eq(importTransactionLinks.transactionId, transactions.id),
+          eq(importTransactionLinks.orgId, orgId),
+          eq(importTransactionLinks.batchId, link.batchId),
+          eq(importTransactionLinks.outcome, link.outcome)
+        )
+      )
+  );
 
 // Build the WHERE conditions array for list + count queries
 export const buildConditions = (params: ListQueryParams): SQL[] => {
@@ -292,21 +309,9 @@ export const buildConditions = (params: ListQueryParams): SQL[] => {
     );
   }
 
-  if (params.importBatchId && params.importOutcome) {
+  if (params.importLink) {
     conditions.push(
-      exists(
-        db
-          .select({ one: sql`1` })
-          .from(importTransactionLinks)
-          .where(
-            and(
-              eq(importTransactionLinks.transactionId, transactions.id),
-              eq(importTransactionLinks.orgId, params.orgId),
-              eq(importTransactionLinks.batchId, params.importBatchId),
-              eq(importTransactionLinks.outcome, params.importOutcome)
-            )
-          )
-      )
+      importTransactionLinkExists(params.orgId, params.importLink)
     );
   }
 

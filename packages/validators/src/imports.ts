@@ -158,3 +158,8 @@ export type ImportHistoryQueryInput = z.infer<typeof importHistoryQuerySchema>;
 export const importTransactionLinkOutcomeSchema = z.enum(
   IMPORT_TRANSACTION_LINK_OUTCOME_VALUES
 );
+
+export const importTransactionLinkFilterSchema = z.object({
+  batchId: z.string().uuid(),
+  outcome: importTransactionLinkOutcomeSchema,
+});
