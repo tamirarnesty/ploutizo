@@ -34,7 +34,6 @@ import { assertOrgWriteReferences } from '@/lib/assertOrgWriteReferences';
 import { DomainError, NotFoundError } from '@/lib/errors';
 import { isUniqueViolation } from '@/lib/isUniqueViolation';
 import {
-  bumpImportDraftRevision,
   discardImportDraftQuery,
   fetchActiveCreditCardAccount,
   fetchActiveDraftByAccount,
@@ -63,7 +62,7 @@ import {
 import { listTags } from '@/lib/queries/tags';
 import { parseImportUpload } from '@/lib/imports/parse';
 import { toImportTargetAccount } from '@/lib/accounts/accountResponse';
-import { lockPreparedSetRevisionForBatch } from '@/lib/queries/import-prepared-sets';
+import { invalidatePreparedStagingForDraft } from '@/services/import-prepared-sets';
 import { listRefundTargetExpensesByIds } from '@/lib/queries/import-refund-targets';
 import { listImportMatchTargets } from '@/lib/queries/import-match-targets';
 import {
@@ -374,10 +373,9 @@ export const updateImportDraftRow = async (
   }
 
   const updated = await db.transaction(async (tx) => {
-    await lockPreparedSetRevisionForBatch(tx, orgId, existing.batchId);
     const next = await updateImportDraftRowQuery(orgId, rowId, input, tx);
     if (!next) throw new NotFoundError('Import draft row not found.');
-    await bumpImportDraftRevision(orgId, existing.batchId, tx);
+    await invalidatePreparedStagingForDraft(tx, orgId, existing.batchId);
     return next;
   });
 
@@ -420,7 +418,6 @@ export const updateImportDraftRowSelection = async (
   > = [];
 
   await db.transaction(async (tx) => {
-    await lockPreparedSetRevisionForBatch(tx, orgId, draftId);
     persistedRows = await updateImportDraftRowSelectionQuery(
       orgId,
       draftId,
@@ -473,7 +470,7 @@ export const updateImportDraftRowSelection = async (
     }
     persistedRows = nextPersisted;
 
-    await bumpImportDraftRevision(orgId, draftId, tx);
+    await invalidatePreparedStagingForDraft(tx, orgId, draftId);
   });
 
   return persistedRows.map(toImportDraftPersistedRow);

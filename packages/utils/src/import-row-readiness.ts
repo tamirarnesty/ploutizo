@@ -60,10 +60,10 @@ export const getSelectableImportRows = <T extends ImportRowSelectionFields>(
 ): T[] => rows.filter(isImportRowSelectable);
 
 /**
- * Continue gate for Review import. Reads derived `row.status` from the
- * working copy — clients must keep status current via
- * `rederiveImportDraftWorkingCopy` (or an optimistic path that delegates to it).
- * Server Continue (prepared-set lock) re-evaluates independently.
+ * Continue gate for Review import. Uses derived `row.status` as a client-side
+ * pre-check only — server Continue/Finalize re-evaluate through
+ * `evaluateImportSetRequirements` and return authoritative structured failures.
+ * PLO-95 will loosen this gate so selected rows can reach the server verifier.
  */
 export const canContinueImportReview = (
   rows: readonly ImportRowSelectionFields[],

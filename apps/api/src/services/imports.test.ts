@@ -14,8 +14,8 @@ import {
   updateImportDraftRow,
   updateImportDraftRowSelection,
 } from '@/services/imports';
+import { invalidatePreparedStagingForDraft } from '@/services/import-prepared-sets';
 import {
-  bumpImportDraftRevision,
   fetchActiveCreditCardAccount,
   fetchActiveDraftByAccount,
   fetchDraftRowById,
@@ -62,14 +62,20 @@ vi.mock('@/lib/queries/imports', () => ({
   listDraftRowIdsForDraft: vi.fn(),
   listDraftRowsForBatches: vi.fn(),
   listImportTargetAccounts: vi.fn(),
-  bumpImportDraftRevision: vi.fn(),
   updateImportDraftRowQuery: vi.fn(),
   updateImportDraftRowSelectionQuery: vi.fn(),
 }));
 
-vi.mock('@/lib/queries/import-prepared-sets', () => ({
-  lockPreparedSetRevisionForBatch: vi.fn(),
-}));
+vi.mock('@/services/import-prepared-sets', async (importOriginal) => {
+  const actual = await importOriginal();
+  if (typeof actual !== 'object' || actual === null) {
+    throw new Error('Unexpected @/services/import-prepared-sets module shape.');
+  }
+  return {
+    ...actual,
+    invalidatePreparedStagingForDraft: vi.fn(),
+  };
+});
 
 vi.mock('@/lib/queries/import-refund-targets', () => ({
   listRefundTargetExpensesByIds: vi.fn(),
@@ -701,6 +707,8 @@ describe('import service', () => {
 
     vi.mocked(fetchDraftRowById).mockResolvedValue(draftRow);
     vi.mocked(updateImportDraftRowQuery).mockResolvedValue(updatedRow);
+    const tx = {} as never;
+    vi.mocked(db.transaction).mockImplementation(async (fn) => fn(tx));
 
     const result = await updateImportDraftRow('org_1', draftRow.id, {
       reviewNotes: 'memo',
@@ -712,7 +720,12 @@ describe('import service', () => {
       {
         reviewNotes: 'memo',
       },
-      expect.anything()
+      tx
+    );
+    expect(invalidatePreparedStagingForDraft).toHaveBeenCalledWith(
+      tx,
+      'org_1',
+      draftRow.batchId
     );
     expect(listDraftRows).not.toHaveBeenCalled();
     expect(result.row.reviewNotes).toBe('memo');
@@ -740,10 +753,10 @@ describe('import service', () => {
       true,
       tx
     );
-    expect(bumpImportDraftRevision).toHaveBeenCalledWith(
+    expect(invalidatePreparedStagingForDraft).toHaveBeenCalledWith(
+      tx,
       'org_1',
-      summaryRow.id,
-      tx
+      summaryRow.id
     );
     expect(listDraftRows).toHaveBeenCalledWith('org_1', summaryRow.id, tx);
     expect(result).toHaveLength(1);

@@ -367,15 +367,24 @@ export const getActiveImportPreparedConfirmation = async (
   return toImportPreparedConfirmation(set, outcomes, draft.rowCount);
 };
 
+/** Invalidate active prepared staging by advancing the draft revision. */
+export const invalidatePreparedStagingForDraft = async (
+  tx: Transaction,
+  orgId: string,
+  batchId: string
+) => {
+  await lockPreparedSetRevisionForBatch(tx, orgId, batchId);
+  await bumpImportDraftRevision(orgId, batchId, tx);
+};
+
 export const invalidateImportPreparedSet = async (
   orgId: string,
   batchId: string
 ): Promise<void> => {
   await db.transaction(async (tx) => {
-    await lockPreparedSetRevisionForBatch(tx, orgId, batchId);
     const draft = await fetchDraftSummaryById(orgId, batchId, tx);
     if (!draft) throw new NotFoundError('Import draft not found.');
-    await bumpImportDraftRevision(orgId, batchId, tx);
+    await invalidatePreparedStagingForDraft(tx, orgId, batchId);
   });
 };
 

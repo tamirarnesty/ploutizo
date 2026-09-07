@@ -162,8 +162,8 @@ const evaluateCreateRequirements = (
 
 /**
  * Shared transaction requirements composed with import-specific requirements.
- * Used by Review import, Continue, and later Finalize. Only selected rows are
- * evaluated — unselected rows are outside the Import set.
+ * Used by Continue today; Finalize will reuse the same evaluator. Only selected
+ * rows are evaluated — unselected rows are outside the Import set.
  */
 export const evaluateImportSetRequirements = (
   input: EvaluateImportSetRequirementsInput
