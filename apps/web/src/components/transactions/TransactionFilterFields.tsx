@@ -174,9 +174,10 @@ export const buildFilterFields = (
   accounts: { id: string; name: string }[],
   categories: { id: string; name: string }[],
   members: { id: string; displayName: string }[],
-  tags: { id: string; name: string }[]
+  tags: { id: string; name: string }[],
+  options?: { includeImportResult?: boolean }
 ): FilterFieldConfig<string>[] => {
-  return [
+  const fields: FilterFieldConfig<string>[] = [
     {
       key: 'type',
       label: 'Type',
@@ -245,4 +246,16 @@ export const buildFilterFields = (
       options: tags.map((t) => ({ value: t.id, label: t.name })),
     },
   ];
+  if (options?.includeImportResult) {
+    fields.push({
+      key: 'importOutcome',
+      label: 'Import result',
+      type: 'select',
+      options: [
+        { value: 'created', label: 'Created' },
+        { value: 'matched', label: 'Matched' },
+      ],
+    });
+  }
+  return fields;
 };
