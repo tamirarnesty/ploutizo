@@ -3,6 +3,7 @@ import type {
   updateHouseholdSettingsSchema,
 } from '@ploutizo/validators';
 import type { PendingInvitation } from '@ploutizo/types';
+import { ClerkOrgAdminError, clerkOrgAdmin } from '../lib/clerkOrgAdmin';
 import { DomainError, NotFoundError } from '../lib/errors';
 import {
   deleteOrgMember,
@@ -12,6 +13,7 @@ import {
   listOrgMembers,
   updateOrgSettings as updateOrgSettingsQuery,
 } from '../lib/queries/households';
+import type { ClerkOrgAdminPort } from '../lib/clerkOrgAdmin';
 import type { z } from 'zod';
 
 export const getHousehold = async (orgId: string) => {
@@ -39,51 +41,44 @@ export const listMembers = async (orgId: string) => {
   return listOrgMembers(orgId);
 };
 
-// Clerk REST API calls stay in service layer (they are business logic, not DB queries).
+const mapInviteError = (err: unknown): DomainError => {
+  if (err instanceof ClerkOrgAdminError) {
+    switch (err.code) {
+      case 'already_member':
+        return new DomainError(
+          409,
+          'Already a member of this organisation.',
+          'ALREADY_MEMBER'
+        );
+      case 'invitation_pending':
+        return new DomainError(
+          409,
+          'Invitation already pending.',
+          'INVITATION_PENDING'
+        );
+      case 'invalid_email':
+        return new DomainError(400, 'Invalid email address.', 'INVALID_EMAIL');
+      case 'quota_exceeded':
+        return new DomainError(402, 'Member quota exceeded.', 'QUOTA_EXCEEDED');
+      default:
+        return new DomainError(500, 'An unexpected error occurred.', 'UNKNOWN');
+    }
+  }
+  return new DomainError(500, 'An unexpected error occurred.', 'UNKNOWN');
+};
+
 export const inviteMember = async (
   orgId: string,
-  data: z.infer<typeof InviteMemberFormSchema>
+  data: z.infer<typeof InviteMemberFormSchema>,
+  orgAdmin: ClerkOrgAdminPort = clerkOrgAdmin
 ) => {
-  const clerkRes = await fetch(
-    `https://api.clerk.com/v1/organizations/${orgId}/invitations`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email_address: data.email, role: 'org:admin' }),
-    }
-  );
-  if (!clerkRes.ok) {
-    const clerkBody = (await clerkRes.json()) as {
-      errors?: { code: string }[];
-    };
-    const code = clerkBody.errors?.[0]?.code;
-    if (
-      code === 'already_a_member_of_this_org' ||
-      code === 'already_a_member_in_organization'
-    ) {
-      throw new DomainError(
-        409,
-        'Already a member of this organisation.',
-        'ALREADY_MEMBER'
-      );
-    }
-    if (code === 'invitation_already_pending') {
-      throw new DomainError(
-        409,
-        'Invitation already pending.',
-        'INVITATION_PENDING'
-      );
-    }
-    if (code === 'form_param_format_invalid') {
-      throw new DomainError(400, 'Invalid email address.', 'INVALID_EMAIL');
-    }
-    if (code === 'quota_exceeded') {
-      throw new DomainError(402, 'Member quota exceeded.', 'QUOTA_EXCEEDED');
-    }
-    throw new DomainError(500, 'An unexpected error occurred.', 'UNKNOWN');
+  try {
+    await orgAdmin.createInvitation({
+      organizationId: orgId,
+      emailAddress: data.email,
+    });
+  } catch (err) {
+    throw mapInviteError(err);
   }
   return { sent: true };
 };
@@ -92,7 +87,8 @@ export const inviteMember = async (
 export const removeMember = async (
   memberId: string,
   orgId: string,
-  callerClerkId: string | null | undefined
+  callerClerkId: string | null | undefined,
+  orgAdmin: ClerkOrgAdminPort = clerkOrgAdmin
 ) => {
   const member = await fetchOrgMemberWithUser(memberId, orgId);
   if (!member) throw new NotFoundError('Member not found.');
@@ -107,14 +103,12 @@ export const removeMember = async (
   }
 
   // Remove from Clerk org before local DB to avoid split-brain
-  const clerkRes = await fetch(
-    `https://api.clerk.com/v1/organizations/${orgId}/memberships/${member.externalId}`,
-    {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}` },
-    }
-  );
-  if (!clerkRes.ok && clerkRes.status !== 404) {
+  try {
+    await orgAdmin.deleteMembership({
+      organizationId: orgId,
+      clerkUserId: member.externalId,
+    });
+  } catch {
     throw new DomainError(500, 'An unexpected error occurred.', 'UNKNOWN');
   }
 
@@ -123,56 +117,29 @@ export const removeMember = async (
 };
 
 export const listInvitations = async (
-  orgId: string
+  orgId: string,
+  orgAdmin: ClerkOrgAdminPort = clerkOrgAdmin
 ): Promise<PendingInvitation[]> => {
-  // Status filter MUST include both 'pending' and 'expired' so expired-state branch is reachable.
-  // Clerk REST accepts repeated `status` query params: ?status=pending&status=expired
-  const url = `https://api.clerk.com/v1/organizations/${orgId}/invitations?status=pending&status=expired&limit=100`;
-  const clerkRes = await fetch(url, {
-    headers: { Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}` },
-  });
-  if (!clerkRes.ok) {
+  try {
+    return await orgAdmin.listInvitations(orgId);
+  } catch {
     throw new DomainError(500, 'Failed to list invitations.', 'UNKNOWN');
   }
-  // Clerk REST returns snake_case — map to camelCase here.
-  // Timestamps are Unix MILLISECONDS — pass directly to new Date().
-  const body = (await clerkRes.json()) as {
-    data: {
-      id: string;
-      email_address: string;
-      status: string;
-      created_at: number;
-      expires_at: number | null;
-    }[];
-  };
-  return body.data.map((inv) => ({
-    id: inv.id,
-    email: inv.email_address,
-    status: inv.status as PendingInvitation['status'],
-    createdAt: new Date(inv.created_at).toISOString(),
-    expiresAt: inv.expires_at ? new Date(inv.expires_at).toISOString() : null,
-  }));
 };
 
-// Clerk revoke endpoint is POST .../revoke (NOT DELETE) — requires requesting_user_id (otherwise 422).
-// The internal ploutizo API exposes this as DELETE /api/households/invitations/:id (REST convention).
 export const revokeInvitation = async (
   orgId: string,
   invitationId: string,
-  requestingUserId: string
+  requestingUserId: string,
+  orgAdmin: ClerkOrgAdminPort = clerkOrgAdmin
 ) => {
-  const clerkRes = await fetch(
-    `https://api.clerk.com/v1/organizations/${orgId}/invitations/${invitationId}/revoke`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ requesting_user_id: requestingUserId }),
-    }
-  );
-  if (!clerkRes.ok && clerkRes.status !== 404) {
+  try {
+    await orgAdmin.revokeInvitation({
+      organizationId: orgId,
+      invitationId,
+      requestingUserId,
+    });
+  } catch {
     throw new DomainError(500, 'An unexpected error occurred.', 'UNKNOWN');
   }
   return { revoked: true };

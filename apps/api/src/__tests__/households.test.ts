@@ -1,10 +1,32 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ClerkOrgAdminError } from '../lib/clerkOrgAdmin';
 import { householdsRouter } from '../routes/households';
 import { createRouteTestApp } from './testUtils';
+import type { AppEnv } from '../types';
+
+const { mockClerkOrgAdmin } = vi.hoisted(() => ({
+  mockClerkOrgAdmin: {
+    createInvitation: vi.fn(),
+    listInvitations: vi.fn(),
+    revokeInvitation: vi.fn(),
+    deleteMembership: vi.fn(),
+  },
+}));
 
 vi.mock('@clerk/hono', () => ({
   getAuth: vi.fn(() => ({ orgId: 'org_test123', userId: 'user_clerk_abc' })),
 }));
+
+vi.mock('../lib/clerkOrgAdmin', async (importOriginal) => {
+  const actual = await importOriginal();
+  if (typeof actual !== 'object' || actual === null) {
+    throw new Error('Unexpected ../lib/clerkOrgAdmin module shape.');
+  }
+  return {
+    ...actual,
+    clerkOrgAdmin: mockClerkOrgAdmin,
+  };
+});
 
 // Default DB mock — covers settings, update, and members queries
 const mockSelect = vi.fn();
@@ -31,7 +53,11 @@ vi.mock('@ploutizo/db/schema', () => ({
   users: {},
 }));
 
-const app = createRouteTestApp((testApp) => {
+const app = createRouteTestApp<AppEnv>((testApp) => {
+  testApp.use('/*', async (c, next) => {
+    c.set('orgId', 'org_test123');
+    await next();
+  });
   testApp.route('/', householdsRouter);
 });
 
@@ -183,13 +209,11 @@ describe('GET /api/households (overview)', () => {
 
 describe('POST /api/households/invitations', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn());
+    mockClerkOrgAdmin.createInvitation.mockReset();
+    mockClerkOrgAdmin.createInvitation.mockResolvedValue(undefined);
   });
 
   it('returns 200 with { data: { sent: true } } on success', async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      new Response(JSON.stringify({}), { status: 200 })
-    );
     const res = await app.request('/invitations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -198,14 +222,15 @@ describe('POST /api/households/invitations', () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as { data: { sent: boolean } };
     expect(body.data.sent).toBe(true);
+    expect(mockClerkOrgAdmin.createInvitation).toHaveBeenCalledWith({
+      organizationId: 'org_test123',
+      emailAddress: 'new@example.com',
+    });
   });
 
   it('returns 409 ALREADY_MEMBER when Clerk returns already_a_member_of_this_org', async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      new Response(
-        JSON.stringify({ errors: [{ code: 'already_a_member_of_this_org' }] }),
-        { status: 422 }
-      )
+    mockClerkOrgAdmin.createInvitation.mockRejectedValue(
+      new ClerkOrgAdminError('already_member')
     );
     const res = await app.request('/invitations', {
       method: 'POST',
@@ -218,11 +243,8 @@ describe('POST /api/households/invitations', () => {
   });
 
   it('returns 409 INVITATION_PENDING when Clerk returns invitation_already_pending', async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      new Response(
-        JSON.stringify({ errors: [{ code: 'invitation_already_pending' }] }),
-        { status: 422 }
-      )
+    mockClerkOrgAdmin.createInvitation.mockRejectedValue(
+      new ClerkOrgAdminError('invitation_pending')
     );
     const res = await app.request('/invitations', {
       method: 'POST',
@@ -237,26 +259,20 @@ describe('POST /api/households/invitations', () => {
 
 describe('GET /api/households/invitations', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn());
+    mockClerkOrgAdmin.listInvitations.mockReset();
+    mockClerkOrgAdmin.listInvitations.mockResolvedValue([]);
   });
 
   it('returns 200 with mapped camelCase invitations array', async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          data: [
-            {
-              id: 'inv_abc',
-              email_address: 'user@example.com',
-              status: 'pending',
-              created_at: 1678886400000, // Unix ms = 2023-03-15T12:00:00Z
-              expires_at: 1681564800000, // Unix ms = 2023-04-15T12:00:00Z
-            },
-          ],
-        }),
-        { status: 200 }
-      )
-    );
+    mockClerkOrgAdmin.listInvitations.mockResolvedValue([
+      {
+        id: 'inv_abc',
+        email: 'user@example.com',
+        status: 'pending',
+        createdAt: new Date(1678886400000).toISOString(),
+        expiresAt: new Date(1681564800000).toISOString(),
+      },
+    ]);
     const res = await app.request('/invitations');
     expect(res.status).toBe(200);
     const body = (await res.json()) as { data: Record<string, unknown>[] };
@@ -272,42 +288,30 @@ describe('GET /api/households/invitations', () => {
     // Timestamps are Unix ms — passed directly to new Date() (year 2023, not 1970)
     expect(row['createdAt']).toBe(new Date(1678886400000).toISOString());
     expect(row['expiresAt']).toBe(new Date(1681564800000).toISOString());
-  });
-
-  it('passes ?status=pending&status=expired to Clerk', async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      new Response(JSON.stringify({ data: [] }), { status: 200 })
+    expect(mockClerkOrgAdmin.listInvitations).toHaveBeenCalledWith(
+      'org_test123'
     );
-    await app.request('/invitations');
-    const calledUrl = vi.mocked(fetch).mock.calls[0]?.[0] as string;
-    expect(calledUrl).toContain('status=pending');
-    expect(calledUrl).toContain('status=expired');
   });
 
   it('returns null expiresAt when Clerk omits expires_at', async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          data: [
-            {
-              id: 'inv_abc',
-              email_address: 'user@example.com',
-              status: 'pending',
-              created_at: 1678886400000,
-              expires_at: null,
-            },
-          ],
-        }),
-        { status: 200 }
-      )
-    );
+    mockClerkOrgAdmin.listInvitations.mockResolvedValue([
+      {
+        id: 'inv_abc',
+        email: 'user@example.com',
+        status: 'pending',
+        createdAt: new Date(1678886400000).toISOString(),
+        expiresAt: null,
+      },
+    ]);
     const res = await app.request('/invitations');
     const body = (await res.json()) as { data: Record<string, unknown>[] };
     expect(body.data[0]?.expiresAt).toBeNull();
   });
 
   it('returns 500 when Clerk responds non-OK', async () => {
-    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 500 }));
+    mockClerkOrgAdmin.listInvitations.mockRejectedValue(
+      new ClerkOrgAdminError('unknown')
+    );
     const res = await app.request('/invitations');
     expect(res.status).toBe(500);
   });
@@ -315,10 +319,8 @@ describe('GET /api/households/invitations', () => {
 
 describe('DELETE /api/households/invitations/:invitationId', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn());
-    vi.mocked(fetch).mockResolvedValue(
-      new Response(JSON.stringify({}), { status: 200 })
-    );
+    mockClerkOrgAdmin.revokeInvitation.mockReset();
+    mockClerkOrgAdmin.revokeInvitation.mockResolvedValue(undefined);
   });
 
   it('returns 200 { data: { revoked: true } } on Clerk success', async () => {
@@ -328,21 +330,17 @@ describe('DELETE /api/households/invitations/:invitationId', () => {
     expect(body.data.revoked).toBe(true);
   });
 
-  it('calls Clerk with POST .../revoke and includes requesting_user_id in body', async () => {
+  it('revokes through the org-admin port with requestingUserId', async () => {
     await app.request('/invitations/inv_abc', { method: 'DELETE' });
-    const [calledUrl, calledInit] = vi.mocked(fetch).mock.calls[0] ?? [];
-    expect(String(calledUrl)).toContain('/invitations/inv_abc/revoke');
-    expect(calledInit?.method).toBe('POST');
-    const bodyStr =
-      typeof calledInit?.body === 'string' ? calledInit.body : '{}';
-    const parsedBody = JSON.parse(bodyStr) as { requesting_user_id?: string };
-    expect(parsedBody).toHaveProperty('requesting_user_id');
-    // requesting_user_id is non-empty (set by tenantGuard test harness)
-    expect(typeof parsedBody.requesting_user_id).toBe('string');
+    expect(mockClerkOrgAdmin.revokeInvitation).toHaveBeenCalledWith({
+      organizationId: 'org_test123',
+      invitationId: 'inv_abc',
+      requestingUserId: 'user_clerk_abc',
+    });
   });
 
   it('treats Clerk 404 as success (idempotent revoke)', async () => {
-    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 404 }));
+    mockClerkOrgAdmin.revokeInvitation.mockResolvedValue(undefined);
     const res = await app.request('/invitations/inv_gone', {
       method: 'DELETE',
     });
@@ -350,7 +348,9 @@ describe('DELETE /api/households/invitations/:invitationId', () => {
   });
 
   it('returns 500 when Clerk responds with non-404 error', async () => {
-    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 500 }));
+    mockClerkOrgAdmin.revokeInvitation.mockRejectedValue(
+      new ClerkOrgAdminError('unknown')
+    );
     const res = await app.request('/invitations/inv_abc', { method: 'DELETE' });
     expect(res.status).toBe(500);
   });
@@ -358,8 +358,8 @@ describe('DELETE /api/households/invitations/:invitationId', () => {
 
 describe('DELETE /api/households/members/:memberId', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn());
-    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 200 }));
+    mockClerkOrgAdmin.deleteMembership.mockReset();
+    mockClerkOrgAdmin.deleteMembership.mockResolvedValue(undefined);
   });
 
   it('returns 200 { data: { removed: true } } for valid non-self member', async () => {
@@ -380,6 +380,10 @@ describe('DELETE /api/households/members/:memberId', () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as { data: { removed: boolean } };
     expect(body.data.removed).toBe(true);
+    expect(mockClerkOrgAdmin.deleteMembership).toHaveBeenCalledWith({
+      organizationId: 'org_test123',
+      clerkUserId: 'user_clerk_other',
+    });
   });
 
   it('returns 403 SELF_REMOVAL_FORBIDDEN when caller tries to remove themselves', async () => {
@@ -397,6 +401,7 @@ describe('DELETE /api/households/members/:memberId', () => {
     expect(res.status).toBe(403);
     const body = (await res.json()) as { error: { code: string } };
     expect(body.error.code).toBe('SELF_REMOVAL_FORBIDDEN');
+    expect(mockClerkOrgAdmin.deleteMembership).not.toHaveBeenCalled();
   });
 
   it('returns 404 when memberId not found in org', async () => {

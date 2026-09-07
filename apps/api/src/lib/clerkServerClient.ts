@@ -6,9 +6,10 @@ let cached: ClerkClient | null = null;
 let didLogMissingSecret = false;
 
 /**
- * Singleton Clerk Backend client for server-side REST calls (same secret as
- * `Authorization: Bearer` Clerk fetches elsewhere). Returns `null` when the
- * secret is unset so callers can fail open (e.g. tenant guard sync).
+ * Singleton Clerk Backend client for server-side admin/API calls. Household
+ * invite and membership admin operations go through `clerkOrgAdmin`. Returns
+ * `null` when the secret is unset so callers can fail open (e.g. tenant guard
+ * sync).
  */
 export const getClerkServerClient = (): ClerkClient | null => {
   const secret = process.env.CLERK_SECRET_KEY;
