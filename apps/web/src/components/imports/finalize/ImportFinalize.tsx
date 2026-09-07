@@ -146,6 +146,7 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
   const invalidatePrepared = useInvalidatePreparedImport(draftId);
   const finalizeImport = useFinalizeImportDraft(draftId);
   const [transportError, setTransportError] = useState<string | null>(null);
+  const [discardError, setDiscardError] = useState<string | null>(null);
   const leavingRef = useRef(false);
   const redirectedRef = useRef(false);
   const meta = draftQuery.data ? toImportDraftMeta(draftQuery.data) : undefined;
@@ -180,20 +181,37 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
     void navigate({ to: '/transactions/import' });
   }, [draftId, navigate, preparedQuery.error, preparedQuery.isError]);
 
+  const confirmPreparedDiscard = useCallback(async (): Promise<boolean> => {
+    setDiscardError(null);
+    try {
+      await invalidatePrepared.mutateAsync();
+      return true;
+    } catch (error) {
+      if (getApiErrorCode(error) === 'NOT_FOUND') return true;
+      setDiscardError(
+        getApiErrorMessage(
+          error,
+          'Could not discard this prepared import. Retry to try again.'
+        )
+      );
+      return false;
+    }
+  }, [invalidatePrepared]);
+
   const invalidateThenReview = useCallback(async () => {
     if (leavingRef.current) return;
     leavingRef.current = true;
-    try {
-      await invalidatePrepared.mutateAsync();
-    } catch {
-      // Staging may already be gone; still return to Review import.
+    const discarded = await confirmPreparedDiscard();
+    if (!discarded) {
+      leavingRef.current = false;
+      return;
     }
     void navigate({
       to: '/transactions/import/$draftId',
       params: { draftId },
       ignoreBlocker: true,
     });
-  }, [draftId, invalidatePrepared, navigate]);
+  }, [confirmPreparedDiscard, draftId, navigate]);
 
   useBlocker({
     shouldBlockFn: async ({ current, next }) => {
@@ -202,10 +220,10 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
       const goingToReview = next.pathname === `/transactions/import/${draftId}`;
       if (!goingToReview) return false;
       leavingRef.current = true;
-      try {
-        await invalidatePrepared.mutateAsync();
-      } catch {
-        // Allow the return even when invalidation already happened.
+      const discarded = await confirmPreparedDiscard();
+      if (!discarded) {
+        leavingRef.current = false;
+        return true;
       }
       return false;
     },
@@ -214,8 +232,10 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
 
   const handleFinalize = async () => {
     const prepared = preparedQuery.data;
-    if (!prepared || finalizeImport.isPending) return;
+    if (!prepared || finalizeImport.isPending || invalidatePrepared.isPending)
+      return;
     setTransportError(null);
+    setDiscardError(null);
     try {
       const result = await finalizeImport.mutateAsync({
         preparedSetId: prepared.id,
@@ -277,6 +297,8 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
   const loadFailed =
     preparedQuery.isError && !preparedNotFoundRedirect(preparedQuery.error);
   const finalizeBusy = finalizeImport.isPending;
+  const discardBusy = invalidatePrepared.isPending;
+  const actionError = discardError ?? transportError;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-8">
@@ -306,23 +328,23 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
               <Button
                 type="button"
                 variant="outline"
-                disabled={finalizeBusy || invalidatePrepared.isPending}
+                disabled={finalizeBusy || discardBusy}
                 onClick={() => {
                   void invalidateThenReview();
                 }}
               >
-                Back to Review
+                {discardError ? 'Retry' : 'Back to Review'}
               </Button>
               <LoadingButton
                 type="button"
                 loading={finalizeBusy}
                 loadingText="Finalizing…"
-                disabled={!confirmation}
+                disabled={!confirmation || discardBusy}
                 onClick={() => {
                   void handleFinalize();
                 }}
               >
-                {transportError ? 'Retry' : 'Finalize import'}
+                {transportError && !discardError ? 'Retry' : 'Finalize import'}
               </LoadingButton>
             </div>
             <Text
@@ -335,13 +357,13 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
           </div>
         </div>
 
-        {transportError ? (
+        {actionError ? (
           <div
             className="rounded-md border border-destructive/30 bg-destructive/5 p-3"
             role="alert"
           >
             <Text variant="body-sm" className="text-destructive">
-              {transportError}
+              {actionError}
             </Text>
           </div>
         ) : null}

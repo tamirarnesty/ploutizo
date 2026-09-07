@@ -281,6 +281,89 @@ describe('ImportFinalize', () => {
     expect(finalizeMocks.invalidate.mutateAsync).toHaveBeenCalledTimes(1);
   });
 
+  it('stays on Finalize when discarding the prepared import fails', async () => {
+    const user = userEvent.setup();
+    finalizeMocks.invalidate.mutateAsync.mockRejectedValueOnce({
+      error: { code: 'UNKNOWN', message: 'The connection dropped.' },
+    });
+
+    render(<ImportFinalize draftId="draft_1" />);
+    await user.click(screen.getByRole('button', { name: 'Back to Review' }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'The connection dropped.'
+      )
+    );
+    expect(finalizeMocks.navigate).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeEnabled();
+    expect(
+      screen.getByRole('button', { name: 'Finalize import' })
+    ).toBeEnabled();
+
+    finalizeMocks.invalidate.mutateAsync.mockResolvedValue(undefined);
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+
+    await waitFor(() =>
+      expect(finalizeMocks.navigate).toHaveBeenCalledWith({
+        to: '/transactions/import/$draftId',
+        params: { draftId: 'draft_1' },
+        ignoreBlocker: true,
+      })
+    );
+    expect(finalizeMocks.invalidate.mutateAsync).toHaveBeenCalledTimes(2);
+  });
+
+  it('returns to Review import when discard finds the prepared set already gone', async () => {
+    const user = userEvent.setup();
+    finalizeMocks.invalidate.mutateAsync.mockRejectedValue({
+      error: { code: 'NOT_FOUND', message: 'Import draft not found.' },
+    });
+
+    render(<ImportFinalize draftId="draft_1" />);
+    await user.click(screen.getByRole('button', { name: 'Back to Review' }));
+
+    await waitFor(() =>
+      expect(finalizeMocks.navigate).toHaveBeenCalledWith({
+        to: '/transactions/import/$draftId',
+        params: { draftId: 'draft_1' },
+        ignoreBlocker: true,
+      })
+    );
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('blocks browser Back when discarding the prepared import fails', async () => {
+    finalizeMocks.invalidate.mutateAsync.mockRejectedValue({
+      error: { code: 'UNKNOWN', message: 'The connection dropped.' },
+    });
+
+    render(<ImportFinalize draftId="draft_1" />);
+
+    await expect(
+      finalizeMocks.shouldBlockFn?.({
+        current: { pathname: '/transactions/import/draft_1/finalize' },
+        next: { pathname: '/transactions/import/draft_1' },
+      })
+    ).resolves.toBe(true);
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'The connection dropped.'
+      )
+    );
+    expect(finalizeMocks.invalidate.mutateAsync).toHaveBeenCalledTimes(1);
+
+    finalizeMocks.invalidate.mutateAsync.mockResolvedValue(undefined);
+    await expect(
+      finalizeMocks.shouldBlockFn?.({
+        current: { pathname: '/transactions/import/draft_1/finalize' },
+        next: { pathname: '/transactions/import/draft_1' },
+      })
+    ).resolves.toBe(false);
+    expect(finalizeMocks.invalidate.mutateAsync).toHaveBeenCalledTimes(2);
+  });
+
   it('returns stale finalize failures to Review import with affected rows', async () => {
     const user = userEvent.setup();
     finalizeMocks.finalize.mutateAsync.mockRejectedValue({
