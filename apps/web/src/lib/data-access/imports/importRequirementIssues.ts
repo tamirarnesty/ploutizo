@@ -4,11 +4,14 @@ import type {
   ImportRequirementFailureDetails,
   ImportRequirementKey,
 } from '@ploutizo/types';
+import { getApiErrorCode, getApiErrorMessage } from '@/lib/queryClient';
 import type { ApiErrorBody } from '@/lib/queryClient';
-import { getApiErrorMessage } from '@/lib/queryClient';
 
 export const IMPORT_CONTINUE_NOT_READY = 'IMPORT_CONTINUE_NOT_READY';
 export const IMPORT_CONTINUE_NONE_SELECTED = 'IMPORT_CONTINUE_NONE_SELECTED';
+export const IMPORT_FINALIZE_NOT_READY = 'IMPORT_FINALIZE_NOT_READY';
+export const IMPORT_FINALIZE_STALE = 'IMPORT_FINALIZE_STALE';
+export const IMPORT_FINALIZE_CONFLICT = 'IMPORT_FINALIZE_CONFLICT';
 
 const REQUIREMENT_COPY: Record<ImportRequirementKey, string> = {
   'transaction.date.required': 'Date is required.',
@@ -53,6 +56,18 @@ const REQUIREMENT_COPY: Record<ImportRequirementKey, string> = {
     'An active transaction already uses this external id.',
 };
 
+const DOMAIN_ISSUE_CODES = new Set([
+  IMPORT_CONTINUE_NOT_READY,
+  IMPORT_FINALIZE_NOT_READY,
+  IMPORT_FINALIZE_STALE,
+]);
+
+const STALE_RETURN_CODES = new Set([
+  IMPORT_FINALIZE_STALE,
+  IMPORT_FINALIZE_CONFLICT,
+  IMPORT_FINALIZE_NOT_READY,
+]);
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
@@ -71,6 +86,9 @@ const toRequirementFailure = (
     : { batchRowId: value.batchRowId, key };
 };
 
+export const getImportRequirementCopy = (key: ImportRequirementKey): string =>
+  REQUIREMENT_COPY[key];
+
 export const getImportContinueNotReadyDetails = (
   details: unknown
 ): ImportRequirementFailureDetails | null => {
@@ -81,15 +99,43 @@ export const getImportContinueNotReadyDetails = (
   return rows.length > 0 ? { rows } : null;
 };
 
-export const getImportContinueGateMessage = (error: unknown): string => {
+export const getImportRequirementFailures = (
+  error: unknown
+): ImportRequirementFailure[] => {
   const body = error as ApiErrorBody;
-  const code = body.error?.code;
-  if (code === IMPORT_CONTINUE_NOT_READY) {
-    const details = getImportContinueNotReadyDetails(body.error?.details);
-    const reasons = [
-      ...new Set((details?.rows ?? []).map((row) => REQUIREMENT_COPY[row.key])),
-    ];
-    if (reasons.length > 0) return reasons.join(' ');
+  return getImportContinueNotReadyDetails(body.error?.details)?.rows ?? [];
+};
+
+export const summarizeImportRequirementIssues = (
+  failures: readonly ImportRequirementFailure[]
+): string => {
+  const reasons = [
+    ...new Set(failures.map((row) => getImportRequirementCopy(row.key))),
+  ];
+  return reasons.join(' ');
+};
+
+export const getImportRequirementIssueRowIds = (
+  failures: readonly ImportRequirementFailure[]
+): string[] => [...new Set(failures.map((row) => row.batchRowId))];
+
+export const isImportDomainIssueError = (error: unknown): boolean => {
+  const code = getApiErrorCode(error);
+  return code !== undefined && DOMAIN_ISSUE_CODES.has(code);
+};
+
+export const isImportStaleFinalizeError = (error: unknown): boolean => {
+  const code = getApiErrorCode(error);
+  return code !== undefined && STALE_RETURN_CODES.has(code);
+};
+
+export const getImportContinueGateMessage = (error: unknown): string => {
+  const code = getApiErrorCode(error);
+  if (code && DOMAIN_ISSUE_CODES.has(code)) {
+    const summary = summarizeImportRequirementIssues(
+      getImportRequirementFailures(error)
+    );
+    if (summary) return summary;
   }
 
   return getApiErrorMessage(

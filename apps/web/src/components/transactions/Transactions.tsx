@@ -40,11 +40,13 @@ export const buildCleanSearch = (
   if (result.assigneeId_op === 'is') delete result.assigneeId_op;
   if (result.tagIds_op === 'is_any_of') delete result.tagIds_op;
   if (result.dateRange_op === 'between') delete result.dateRange_op;
+  if (!result.importBatchId) delete result.importBatchId;
+  if (!result.importOutcome) delete result.importOutcome;
   return result;
 };
 
 // Maps Filter[] state back to URL search params, including operator params
-const filtersToSearch = (
+export const filtersToSearch = (
   filters: Filter<string>[]
 ): Partial<TransactionSearch> => {
   const result: Partial<TransactionSearch> = {};
@@ -104,6 +106,11 @@ const filtersToSearch = (
         if (f.operator && f.operator !== 'is_any_of')
           result.tagIds_op = f.operator;
       }
+    } else if (
+      f.field === 'importOutcome' &&
+      (f.values[0] === 'created' || f.values[0] === 'matched')
+    ) {
+      result.importOutcome = f.values[0];
     }
   }
   return result;
@@ -113,7 +120,9 @@ const filtersToSearch = (
 // IDs are stable per field (not Date.now()) so filter chips keep their React
 // identity across URL-sync re-renders — prevents open popovers from unmounting.
 // Operators are now restored from URL params so they survive page refresh.
-const searchToFilters = (search: TransactionSearch): Filter<string>[] => {
+export const searchToFilters = (
+  search: TransactionSearch
+): Filter<string>[] => {
   const filters: Filter<string>[] = [];
   if (search.type) {
     filters.push({
@@ -230,8 +239,33 @@ const searchToFilters = (search: TransactionSearch): Filter<string>[] => {
       values: [search.dateFrom ?? '', search.dateTo ?? ''],
     });
   }
+  if (search.importBatchId && search.importOutcome) {
+    filters.push({
+      id: 'filter-importOutcome',
+      field: 'importOutcome',
+      operator: 'is',
+      values: [search.importOutcome],
+    });
+  }
   return filters;
 };
+
+export const hasActiveFilters = (search: TransactionSearch): boolean =>
+  Boolean(search.type) ||
+  Boolean(search.dateFrom) ||
+  Boolean(search.dateTo) ||
+  Boolean(search.accountId) ||
+  Boolean(search.categoryId) ||
+  Boolean(search.assigneeId) ||
+  Boolean(search.tagIds) ||
+  // empty/not_empty operators don't require a value param
+  search.categoryId_op === 'empty' ||
+  search.categoryId_op === 'not_empty' ||
+  search.assigneeId_op === 'empty' ||
+  search.assigneeId_op === 'not_empty' ||
+  search.tagIds_op === 'empty' ||
+  search.tagIds_op === 'not_empty' ||
+  Boolean(search.importBatchId && search.importOutcome);
 
 export const Transactions = () => {
   // from: '/_layout/transactions/' is the route ID (not fullPath) — useMatch looks up
@@ -261,6 +295,10 @@ export const Transactions = () => {
     assigneeId_op: search.assigneeId_op,
     tagIds_op: search.tagIds_op,
     dateRange_op: search.dateRange_op,
+    importLink:
+      search.importBatchId && search.importOutcome
+        ? { batchId: search.importBatchId, outcome: search.importOutcome }
+        : undefined,
   });
 
   const { data: accounts = [] } = useGetAccounts();
@@ -308,6 +346,8 @@ export const Transactions = () => {
       'assigneeId_op',
       'tagIds_op',
       'dateRange_op',
+      'importBatchId',
+      'importOutcome',
     ] as const;
     const changed = filterKeys.some((k) => prev[k] !== search[k]);
     if (!changed) return;
@@ -317,26 +357,14 @@ export const Transactions = () => {
     setActiveFilters(fromUrl);
   }, [search]);
 
-  const hasActiveFilters =
-    Boolean(search.type) ||
-    Boolean(search.dateFrom) ||
-    Boolean(search.dateTo) ||
-    Boolean(search.accountId) ||
-    Boolean(search.categoryId) ||
-    Boolean(search.assigneeId) ||
-    Boolean(search.tagIds) ||
-    // empty/not_empty operators don't require a value param
-    search.categoryId_op === 'empty' ||
-    search.categoryId_op === 'not_empty' ||
-    search.assigneeId_op === 'empty' ||
-    search.assigneeId_op === 'not_empty' ||
-    search.tagIds_op === 'empty' ||
-    search.tagIds_op === 'not_empty';
-
-  // Build FilterFieldConfig for the Filters component (6 fields per D-28)
+  // Build FilterFieldConfig for the Filters component (6 fields per D-28).
+  // Import result is only offered when a provenance batch is already in the URL.
   const filterFields = useMemo(
-    () => buildFilterFields(accounts, categories, members, tags),
-    [accounts, categories, members, tags]
+    () =>
+      buildFilterFields(accounts, categories, members, tags, {
+        includeImportResult: Boolean(search.importBatchId),
+      }),
+    [accounts, categories, members, tags, search.importBatchId]
   );
 
   const handleFiltersChange = useCallback(
@@ -350,12 +378,16 @@ export const Transactions = () => {
         to: '/transactions',
         // Rebuild from scratch — only keep sort/pagination from prev.
         // Spreading prev would leave stale filter params when a filter is removed.
+        // Import batch stays only while the Import result chip remains.
         search: (prev) =>
           buildCleanSearch({
             page: 1,
             sort: prev.sort,
             order: prev.order,
             ...mapped,
+            importBatchId: mapped.importOutcome
+              ? prev.importBatchId
+              : undefined,
           }),
         replace: true,
       });
@@ -469,7 +501,7 @@ export const Transactions = () => {
         onPageChange={handlePageChange}
         onLimitChange={handleLimitChange}
         onSortChange={handleSortChange}
-        onFilteredEmpty={hasActiveFilters}
+        onFilteredEmpty={hasActiveFilters(search)}
         onClearFilters={handleClearFilters}
         onEdit={handleEdit}
         onOpenOriginal={handleOpenOriginal}

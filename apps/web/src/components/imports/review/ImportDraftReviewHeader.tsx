@@ -1,11 +1,6 @@
 import { Button } from '@ploutizo/ui/components/button';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@ploutizo/ui/components/tooltip';
 import { formatAccountLabel } from '@ploutizo/utils';
 import type { ImportDraftRow } from '@ploutizo/types';
 import type {
@@ -21,12 +16,15 @@ interface ImportDraftReviewHeaderProps {
   isLoading?: boolean;
   canContinue: boolean;
   continueBlocker: string | null;
-  continueError: string | null;
   isContinuing: boolean;
   autosaveStatus: ImportReviewAutosaveStatus;
   onRetryAutosave: () => void;
   onContinue: () => void | Promise<void>;
 }
+
+const CONTINUE_HINT_ID = 'import-review-continue-hint';
+const CONTINUE_DEFAULT_HINT =
+  'Continue prepares the selected rows for finalize import.';
 
 const toLiveSubtitleMeta = (
   meta: ImportDraftMeta,
@@ -44,25 +42,15 @@ export const ImportDraftReviewHeader = ({
   isLoading = false,
   canContinue,
   continueBlocker,
-  continueError,
   isContinuing,
   autosaveStatus,
   onRetryAutosave,
   onContinue,
 }: ImportDraftReviewHeaderProps) => {
-  const continueButton = (
-    <Button
-      disabled={!canContinue || isContinuing}
-      type="button"
-      onClick={() => {
-        void onContinue();
-      }}
-    >
-      {isContinuing ? 'Preparing…' : 'Continue'}
-    </Button>
-  );
-
-  const tooltipContent = continueError ?? continueBlocker;
+  const continueEnabled = canContinue && !isContinuing;
+  const hint = isContinuing
+    ? 'Preparing the selected import set…'
+    : (continueBlocker ?? CONTINUE_DEFAULT_HINT);
 
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -91,17 +79,24 @@ export const ImportDraftReviewHeader = ({
         {isLoading ? (
           <Skeleton className="h-9 w-24" />
         ) : (
-          <Tooltip disabled={!tooltipContent}>
-            <TooltipTrigger render={continueButton} />
-            <TooltipContent>{tooltipContent}</TooltipContent>
-          </Tooltip>
+          <Button
+            disabled={!continueEnabled}
+            type="button"
+            aria-describedby={CONTINUE_HINT_ID}
+            onClick={() => {
+              void onContinue();
+            }}
+          >
+            {isContinuing ? 'Preparing…' : 'Continue'}
+          </Button>
         )}
         {meta ? (
           <Text
+            id={CONTINUE_HINT_ID}
             variant="body-sm"
             className="max-w-sm text-right text-muted-foreground"
           >
-            Continue prepares the selected rows for finalize import.
+            {hint}
           </Text>
         ) : null}
       </div>

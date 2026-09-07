@@ -85,7 +85,7 @@ export const Import = () => {
     isError: draftsError,
   } = draftsQuery;
   const {
-    data: historyData,
+    data: historyPage,
     isLoading: historyLoading,
     isError: historyError,
   } = historyQuery;
@@ -93,7 +93,7 @@ export const Import = () => {
 
   const targets = targetsData ?? [];
   const activeDrafts = activeDraftsData ?? [];
-  const history = historyData ?? [];
+  const history = historyPage?.data ?? [];
 
   const handleDiscard = (draftId: string) => {
     discardDraft.mutate(draftId);
@@ -173,9 +173,19 @@ export const Import = () => {
       </section>
 
       <section className="space-y-3">
-        <Text as="h2" variant="h3">
-          Recent history
-        </Text>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Text as="h2" variant="h3">
+            Recent history
+          </Text>
+          <Button
+            nativeButton={false}
+            variant="link"
+            size="sm"
+            render={<Link to="/transactions/import/history" />}
+          >
+            View all history
+          </Button>
+        </div>
         {historyError ? (
           <Text variant="error">
             Couldn&apos;t load import history. Check your connection and try

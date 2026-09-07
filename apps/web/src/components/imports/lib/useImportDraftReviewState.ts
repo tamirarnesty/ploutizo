@@ -5,9 +5,13 @@ import {
   getSelectableImportRows,
 } from '@ploutizo/utils/import-row-readiness';
 import type { ImportDraftRow, OrgMember } from '@ploutizo/types';
-import type { ImportDraftMeta } from '@/lib/data-access/imports';
+import type {
+  ImportDraftMeta,
+  ImportReviewAutosaveStatus,
+} from '@/lib/data-access/imports';
 import { usePersistedPageSize } from '@/hooks/persistedPageSize';
 import { useFlushPendingInputs } from '@/lib/money/pending-input-flush';
+import { prioritizeImportRows } from './importPresentation';
 import type { PaginationState, Updater } from '@tanstack/react-table';
 
 interface UseImportDraftReviewStateOptions {
@@ -17,6 +21,8 @@ interface UseImportDraftReviewStateOptions {
   isLoading?: boolean;
   setSelection: (rowIds: string[], selectedForImport: boolean) => void;
   hasUnsavedWork: boolean;
+  autosaveStatus: ImportReviewAutosaveStatus;
+  priorityRowIds?: readonly string[];
 }
 
 export interface ImportDraftReviewState {
@@ -41,11 +47,16 @@ export const useImportDraftReviewState = ({
   isLoading = false,
   setSelection,
   hasUnsavedWork,
+  autosaveStatus,
+  priorityRowIds = [],
 }: UseImportDraftReviewStateOptions): ImportDraftReviewState => {
   const flushPendingInputs = useFlushPendingInputs();
   const { pagination, setPagination } = usePersistedPageSize('import-review');
 
-  const rows = sessionRows;
+  const rows = useMemo(
+    () => prioritizeImportRows(sessionRows, priorityRowIds),
+    [priorityRowIds, sessionRows]
+  );
   const selectableRows = useMemo(() => getSelectableImportRows(rows), [rows]);
   const validAssigneeMemberIds = useMemo(
     () => new Set(orgMembers.map((member) => member.id)),
@@ -70,13 +81,23 @@ export const useImportDraftReviewState = ({
   const rowContinueBlocker = meta
     ? getImportReviewContinueBlocker(rows, continueOptions)
     : null;
-  const continueBlocker = hasUnsavedWork
-    ? 'Save your changes before continuing.'
-    : rowContinueBlocker;
-  const canContinue = meta
-    ? canContinueImportReview(rows, continueOptions) && !hasUnsavedWork
-    : false;
+  const persistenceBlocker =
+    autosaveStatus === 'failed'
+      ? 'Retry failed saves before continuing.'
+      : autosaveStatus === 'saving' || hasUnsavedWork
+        ? 'Save your changes before continuing.'
+        : null;
+  const continueBlocker = persistenceBlocker ?? rowContinueBlocker;
+  const canContinue =
+    Boolean(meta) &&
+    canContinueImportReview(rows, continueOptions) &&
+    persistenceBlocker === null;
   const hasReviewableRows = selectableRows.length > 0;
+
+  useEffect(() => {
+    if (priorityRowIds.length === 0 || pageIndex === 0) return;
+    setPagination({ pageIndex: 0, pageSize });
+  }, [pageIndex, pageSize, priorityRowIds, setPagination]);
 
   useEffect(() => {
     if (pageIndex <= pageCount - 1) return;

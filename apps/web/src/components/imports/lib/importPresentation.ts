@@ -45,6 +45,20 @@ export const formatImportBatchStatusLabel = (
   status: ImportBatchStatus
 ): string => IMPORT_BATCH_STATUS_LABELS[status];
 
+export const formatImportHistoryTimestamp = (iso: string): string =>
+  new Date(iso).toLocaleString('en-CA', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+
+export const formatImportCompletedCounts = (item: {
+  createdCount: number;
+  matchedCount: number;
+  skippedCount: number;
+  invalidCount: number;
+}): string =>
+  `Created ${item.createdCount} · Matched ${item.matchedCount} · Skipped ${item.skippedCount} · Invalid ${item.invalidCount}`;
+
 export const importBatchStatusVariant = (
   status: ImportBatchStatus
 ): 'destructive' | 'secondary' | 'default' | 'outline' | undefined =>
@@ -130,6 +144,27 @@ export const resolveImportRowAssigneeMemberIds = (
     row.reviewAssigneeMemberIds,
     new Set(orgMembers.map((member) => member.id))
   );
+
+export const prioritizeImportRows = <T extends { id: string }>(
+  rows: readonly T[],
+  priorityRowIds: readonly string[]
+): T[] => {
+  if (priorityRowIds.length === 0) return [...rows];
+  const order = new Map<string, number>();
+  for (const id of priorityRowIds) {
+    if (!order.has(id)) order.set(id, order.size);
+  }
+  const prioritized: T[] = [];
+  const rest: T[] = [];
+  for (const row of rows) {
+    if (order.has(row.id)) prioritized.push(row);
+    else rest.push(row);
+  }
+  prioritized.sort(
+    (left, right) => (order.get(left.id) ?? 0) - (order.get(right.id) ?? 0)
+  );
+  return [...prioritized, ...rest];
+};
 
 export const formatImportDraftReviewSubtitle = (
   draft: ImportDraftSummary | ImportDraft

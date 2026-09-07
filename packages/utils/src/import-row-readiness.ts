@@ -60,72 +60,27 @@ export const getSelectableImportRows = <T extends ImportRowSelectionFields>(
 ): T[] => rows.filter(isImportRowSelectable);
 
 /**
- * Continue gate for Review import. Uses derived `row.status` as a client-side
- * pre-check only — server Continue/Finalize re-evaluate through
- * `evaluateImportSetRequirements` and return authoritative structured failures.
- * PLO-95 will loosen this gate so selected rows can reach the server verifier.
+ * Continue gate for Review import. Client gating is selection-only so the
+ * server can return authoritative requirement failures. Persistence and
+ * in-flight Continue state are gated by the Review UI, not this helper.
  */
 export const canContinueImportReview = (
   rows: readonly ImportRowSelectionFields[],
-  options?: ImportReviewContinueOptions
-): boolean => {
-  const selectedRows = getSelectedImportRows(rows);
-  if (selectedRows.length === 0) return false;
-  return selectedRows.every((row) => isImportRowReadyForImport(row, options));
-};
+  _options?: ImportReviewContinueOptions
+): boolean => getSelectedImportRows(rows).length > 0;
 
-export type ImportReviewContinueBlockerReason =
-  | { kind: 'none_selected' }
-  | { kind: 'needs_review'; count: number }
-  | { kind: 'missing_assignee'; count: number };
+export type ImportReviewContinueBlockerReason = { kind: 'none_selected' };
 
 export const getImportReviewContinueBlockerReason = (
   rows: readonly ImportRowSelectionFields[],
-  options?: ImportReviewContinueOptions
-): ImportReviewContinueBlockerReason | null => {
-  const selectedRows = getSelectedImportRows(rows);
-  if (selectedRows.length === 0) {
-    return { kind: 'none_selected' };
-  }
-
-  const needsReviewCount = selectedRows.filter(
-    (row) => !isImportRowResolved(row)
-  ).length;
-  if (needsReviewCount > 0) {
-    return { kind: 'needs_review', count: needsReviewCount };
-  }
-
-  // Live-member filter only: derived `ready` already requires stored assignees.
-  if (options?.validAssigneeMemberIds) {
-    const missingAssigneeCount = selectedRows.filter(
-      (row) => !rowHasLiveAssignee(row, options.validAssigneeMemberIds)
-    ).length;
-    if (missingAssigneeCount > 0) {
-      return { kind: 'missing_assignee', count: missingAssigneeCount };
-    }
-  }
-
-  return null;
-};
+  _options?: ImportReviewContinueOptions
+): ImportReviewContinueBlockerReason | null =>
+  getSelectedImportRows(rows).length === 0 ? { kind: 'none_selected' } : null;
 
 /** Default English copy for continue gating; UI may map reasons for i18n later. */
 export const formatImportReviewContinueBlocker = (
-  reason: ImportReviewContinueBlockerReason
-): string => {
-  switch (reason.kind) {
-    case 'none_selected':
-      return 'Select at least one row to continue.';
-    case 'needs_review': {
-      const rowLabel =
-        reason.count === 1 ? 'row still needs' : 'rows still need';
-      return `${reason.count} selected ${rowLabel} review.`;
-    }
-    case 'missing_assignee': {
-      const rowLabel = reason.count === 1 ? 'row needs' : 'rows need';
-      return `${reason.count} selected ${rowLabel} an assignee.`;
-    }
-  }
-};
+  _reason: ImportReviewContinueBlockerReason
+): string => 'Select at least one row to continue.';
 
 export const getImportReviewContinueBlocker = (
   rows: readonly ImportRowSelectionFields[],

@@ -35,6 +35,8 @@ export type TransactionSearch = {
   assigneeId_op?: string; // 'is' | 'is_not' | 'empty' | 'not_empty'
   tagIds_op?: string; // 'is_any_of' | 'is_not_any_of' | 'includes_all' | 'excludes_all' | 'empty' | 'not_empty'
   dateRange_op?: string; // 'between' | 'after' | 'before' | 'is' | 'is_not' | 'not_between'
+  importBatchId?: string;
+  importOutcome?: 'created' | 'matched';
 };
 
 const TRANSACTION_SEARCH_STRING_FIELDS = [
@@ -82,6 +84,13 @@ const parseOptionalString = (value: unknown): string | undefined => {
   return typeof value === 'string' ? value : undefined;
 };
 
+const parseOptionalImportOutcome = (
+  value: unknown
+): TransactionSearch['importOutcome'] | undefined => {
+  if (value === 'created' || value === 'matched') return value;
+  return undefined;
+};
+
 export const validateTransactionSearch = (
   search: Record<string, unknown>
 ): TransactionSearch => {
@@ -99,6 +108,13 @@ export const validateTransactionSearch = (
   for (const field of TRANSACTION_SEARCH_STRING_FIELDS) {
     const value = parseOptionalString(search[field]);
     if (value !== undefined) result[field] = value;
+  }
+
+  const importBatchId = parseOptionalString(search.importBatchId);
+  const importOutcome = parseOptionalImportOutcome(search.importOutcome);
+  if (importBatchId && importOutcome) {
+    result.importBatchId = importBatchId;
+    result.importOutcome = importOutcome;
   }
 
   return result;

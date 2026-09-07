@@ -111,7 +111,11 @@ export const ImportReviewSelectionCell = ({
     : `Expand details for ${rowLabel}`;
 
   return (
-    <div className="flex items-center gap-1">
+    <div
+      id={`import-row-${row.id}`}
+      tabIndex={-1}
+      className="flex items-center gap-1 outline-none"
+    >
       <Checkbox
         aria-label={`Select ${rowLabel}`}
         checked={row.selectedForImport}

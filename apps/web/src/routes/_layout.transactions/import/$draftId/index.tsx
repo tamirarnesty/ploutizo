@@ -2,19 +2,15 @@ import { createFileRoute } from '@tanstack/react-router';
 import {
   getImportDraftRowsCollection,
   importDraftQueryOptions,
-} from '../../../lib/data-access/imports';
-import { ImportReview } from '../../../components/imports/review/ImportReview';
+} from '../../../../lib/data-access/imports';
+import { ImportReview } from '../../../../components/imports/review/ImportReview';
 
 const ImportReviewRoute = () => {
   const { draftId } = Route.useParams();
   return <ImportReview draftId={draftId} />;
 };
 
-export const Route = createFileRoute('/_layout/transactions/import/$draftId')({
-  ssr: false,
-  staticData: {
-    mainContentLayout: 'viewport',
-  },
+export const Route = createFileRoute('/_layout/transactions/import/$draftId/')({
   /**
    * TanStack DB collections are client-only. Intent preload warms Query, then
    * `preload()` materializes the review working copy before the route renders.
