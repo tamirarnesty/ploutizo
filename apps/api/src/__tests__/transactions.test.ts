@@ -391,6 +391,39 @@ describe('GET /api/transactions', () => {
       | undefined;
     expect(callArgs?.description).toBeUndefined();
   });
+
+  it('passes created/matched import provenance filters to listTransactions', async () => {
+    vi.mocked(listTransactions).mockClear();
+    const res = await app.request(
+      '/?importBatchId=550e8400-e29b-41d4-a716-446655440040&importOutcome=matched'
+    );
+    expect(res.status).toBe(200);
+    const callArgs = vi.mocked(listTransactions).mock.calls[0]?.[0] as
+      | ListQueryParams
+      | undefined;
+    expect(callArgs?.importLink).toEqual({
+      batchId: '550e8400-e29b-41d4-a716-446655440040',
+      outcome: 'matched',
+    });
+  });
+
+  it('rejects a partial import provenance filter', async () => {
+    vi.mocked(listTransactions).mockClear();
+    const res = await app.request(
+      '/?importBatchId=550e8400-e29b-41d4-a716-446655440040'
+    );
+    expect(res.status).toBe(400);
+    expect(listTransactions).not.toHaveBeenCalled();
+  });
+
+  it('rejects unknown importOutcome values', async () => {
+    vi.mocked(listTransactions).mockClear();
+    const res = await app.request(
+      '/?importBatchId=550e8400-e29b-41d4-a716-446655440040&importOutcome=skipped'
+    );
+    expect(res.status).toBe(400);
+    expect(listTransactions).not.toHaveBeenCalled();
+  });
 });
 
 describe('GET /api/transactions/:id', () => {

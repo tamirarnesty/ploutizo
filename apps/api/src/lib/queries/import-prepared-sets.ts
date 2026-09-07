@@ -1,3 +1,4 @@
+import { countPreparedOutcomes } from '@ploutizo/utils/import-requirements';
 import { db } from '@ploutizo/db';
 import {
   importPreparedOutcomes,
@@ -9,7 +10,6 @@ import type { DbClient, Transaction } from '@ploutizo/db';
 import type {
   ImportPreparedConfirmation,
   ImportPreparedConfirmationRow,
-  ImportPreparedOutcomeCounts,
   ImportPreparedSet,
   ImportPreparedSetSummary,
 } from '@ploutizo/types';
@@ -45,6 +45,21 @@ export const deleteImportPreparedSet = async (
       and(
         eq(importPreparedSets.id, preparedSetId),
         eq(importPreparedSets.orgId, orgId)
+      )
+    );
+};
+
+export const deleteImportPreparedSetsForBatch = async (
+  tx: Transaction,
+  orgId: string,
+  batchId: string
+) => {
+  await tx
+    .delete(importPreparedSets)
+    .where(
+      and(
+        eq(importPreparedSets.orgId, orgId),
+        eq(importPreparedSets.batchId, batchId)
       )
     );
 };
@@ -147,13 +162,6 @@ export const toImportPreparedSet = (
   })),
 });
 
-const EMPTY_COUNTS: ImportPreparedOutcomeCounts = {
-  created: 0,
-  matched: 0,
-  skipped: 0,
-  invalid: 0,
-};
-
 export const isCompletePreparedProjection = (
   outcomes: readonly Pick<ImportPreparedOutcomeRecord, 'outcome'>[],
   rowCount: number
@@ -169,13 +177,12 @@ export const toImportPreparedConfirmation = (
   outcomes: ImportPreparedOutcomeRecord[],
   rowCount: number
 ): ImportPreparedConfirmation => {
-  const counts = { ...EMPTY_COUNTS };
+  const counts = countPreparedOutcomes(outcomes);
   const created: ImportPreparedConfirmationRow[] = [];
   const matched: ImportPreparedConfirmationRow[] = [];
 
   for (const outcome of outcomes) {
     if (!isImportPreparedProjectionOutcome(outcome.outcome)) continue;
-    counts[outcome.outcome] += 1;
     if (outcome.outcome !== 'created' && outcome.outcome !== 'matched') {
       continue;
     }

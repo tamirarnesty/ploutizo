@@ -1,10 +1,12 @@
 import { Hono } from 'hono';
 import {
   createTransactionSchema,
+  importTransactionLinkFilterSchema,
   patchTransactionSchema,
 } from '@ploutizo/validators';
 import type { ListQueryParams } from '@/services/transactions';
 import type { AppEnv } from '@/types';
+import { DomainError } from '@/lib/errors';
 import { appValidator } from '@/lib/validator';
 import {
   createTransaction,
@@ -57,6 +59,23 @@ transactionsRouter.get('/', async (c) => {
     ...tagIdsArr,
     ...(tagIdsComma ? tagIdsComma.split(',').filter(Boolean) : []),
   ];
+  const importBatchId = c.req.query('importBatchId');
+  const importOutcome = c.req.query('importOutcome');
+  let importLink: ListQueryParams['importLink'];
+  if (importBatchId !== undefined || importOutcome !== undefined) {
+    const parsed = importTransactionLinkFilterSchema.safeParse({
+      batchId: importBatchId,
+      outcome: importOutcome,
+    });
+    if (!parsed.success) {
+      throw new DomainError(
+        400,
+        'importBatchId and importOutcome must both be provided.',
+        'INVALID_IMPORT_LINK_FILTER'
+      );
+    }
+    importLink = parsed.data;
+  }
 
   const params: ListQueryParams = {
     orgId,
@@ -78,6 +97,7 @@ transactionsRouter.get('/', async (c) => {
     assigneeId_op: c.req.query('assigneeId_op'),
     tagIds_op: c.req.query('tagIds_op'),
     dateRange_op: c.req.query('dateRange_op'),
+    importLink,
   };
 
   const result = await listTransactions(params);

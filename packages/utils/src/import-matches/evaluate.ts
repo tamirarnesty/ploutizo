@@ -187,5 +187,20 @@ export const evaluateImportMatches = (
     });
   }
 
+  const claimedTargets = new Map<string, string[]>();
+  for (const [rowId, evaluation] of results) {
+    const transactionId = evaluation.acceptedMatch?.transactionId;
+    if (!transactionId) continue;
+    const rowIds = claimedTargets.get(transactionId) ?? [];
+    rowIds.push(rowId);
+    claimedTargets.set(transactionId, rowIds);
+  }
+  for (const rowIds of claimedTargets.values()) {
+    if (rowIds.length < 2) continue;
+    for (const rowId of rowIds) {
+      results.get(rowId)?.issues.push('duplicate_target');
+    }
+  }
+
   return results;
 };

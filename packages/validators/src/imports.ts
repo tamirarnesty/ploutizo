@@ -2,6 +2,7 @@ import {
   IMPORT_CONTENT_PROFILE_IDS,
   IMPORT_CUSTOM_MAPPING_DATE_FORMATS,
   IMPORT_PREPARED_PROJECTION_OUTCOME_VALUES,
+  IMPORT_TRANSACTION_LINK_OUTCOME_VALUES,
   IMPORT_TRANSACTION_TYPE_VALUES,
 } from '@ploutizo/types';
 import { z } from 'zod';
@@ -138,3 +139,27 @@ export const prepareImportOutcomeSchema = z.object({
 export type PrepareImportOutcomeInput = z.infer<
   typeof prepareImportOutcomeSchema
 >;
+
+export const finalizeImportDraftSchema = z.object({
+  preparedSetId: z.string().uuid(),
+});
+
+export type FinalizeImportDraftInput = z.infer<
+  typeof finalizeImportDraftSchema
+>;
+
+export const importHistoryQuerySchema = z.object({
+  cursor: z.string().min(1).optional(),
+  limit: z.coerce.number().int().min(1).max(50).optional(),
+});
+
+export type ImportHistoryQueryInput = z.infer<typeof importHistoryQuerySchema>;
+
+export const importTransactionLinkOutcomeSchema = z.enum(
+  IMPORT_TRANSACTION_LINK_OUTCOME_VALUES
+);
+
+export const importTransactionLinkFilterSchema = z.object({
+  batchId: z.string().uuid(),
+  outcome: importTransactionLinkOutcomeSchema,
+});

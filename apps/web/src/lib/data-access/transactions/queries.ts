@@ -33,6 +33,10 @@ export const fetchTransactions = async (
   if (params.assigneeId_op) qs.set('assigneeId_op', params.assigneeId_op);
   if (params.tagIds_op) qs.set('tagIds_op', params.tagIds_op);
   if (params.dateRange_op) qs.set('dateRange_op', params.dateRange_op);
+  if (params.importLink) {
+    qs.set('importBatchId', params.importLink.batchId);
+    qs.set('importOutcome', params.importLink.outcome);
+  }
   return apiFetch<TransactionListResponse>(
     `/api/transactions?${qs.toString()}`
   );

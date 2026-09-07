@@ -108,7 +108,7 @@ describe('createTransaction — cross-org reference rejection', () => {
     expect(fetchAccountWriteReference).toHaveBeenCalledWith(
       ORG_A,
       ACCOUNT_A,
-      {},
+      { forUpdate: true },
       mockTx
     );
   });
@@ -220,10 +220,21 @@ describe('createTransaction — transaction account policy wiring', () => {
     expect(fetchAccountWriteReference).toHaveBeenCalledWith(
       ORG_A,
       ACCOUNT_A,
-      {},
+      { forUpdate: true },
       mockTx
     );
     expect(fetchAccountWriteReference).toHaveBeenCalledWith(
+      ORG_A,
+      ACCOUNT_B,
+      { forUpdate: true },
+      mockTx
+    );
+    expect(counterpartAccountBelongsToOrg).toHaveBeenCalledWith(
+      ORG_A,
+      ACCOUNT_B,
+      mockTx
+    );
+    expect(fetchAccountWriteReference).not.toHaveBeenCalledWith(
       ORG_A,
       ACCOUNT_B,
       {},
@@ -273,7 +284,7 @@ describe('updateTransaction — transaction account policy wiring', () => {
     expect(fetchAccountWriteReference).toHaveBeenCalledWith(
       ORG_A,
       ACCOUNT_A,
-      {},
+      { forUpdate: true },
       mockTx
     );
   });

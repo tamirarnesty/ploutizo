@@ -66,7 +66,12 @@ const loadTransactionWriteReferences = async (
 
   const refs = new Map<string, AccountWriteReference>();
   for (const accountId of idsToLock) {
-    const loaded = await fetchAccountWriteReference(orgId, accountId, {}, tx);
+    const loaded = await fetchAccountWriteReference(
+      orgId,
+      accountId,
+      { forUpdate: true },
+      tx
+    );
     if (!loaded) {
       throw new NotFoundError('Account not found');
     }
@@ -157,64 +162,67 @@ const runTransactionWrite = async <T>(write: () => Promise<T>): Promise<T> => {
   }
 };
 
-export const createTransaction = async (
+export const createTransactionInTx = async (
+  tx: Transaction,
   orgId: string,
   data: CreateTransactionInput
 ) => {
   const { transactionData, tagIds, normalizedAssignees } =
     planCreateTransactionWrite(data);
-  await assertTransactionWriteOrgRefs(orgId, data);
+  await assertTransactionWriteOrgRefs(orgId, data, tx);
+  await assertImportBatchProvenance(orgId, transactionData.importBatchId, tx);
 
-  return db.transaction(async (tx) => {
-    await assertImportBatchProvenance(orgId, transactionData.importBatchId, tx);
+  const writeReferences = await loadTransactionWriteReferences(
+    orgId,
+    {
+      accountId: transactionData.accountId,
+      counterpartAccountId:
+        'counterpartAccountId' in transactionData
+          ? transactionData.counterpartAccountId
+          : undefined,
+      refundOf:
+        'refundOf' in transactionData ? transactionData.refundOf : undefined,
+      categoryId:
+        'categoryId' in transactionData
+          ? transactionData.categoryId
+          : undefined,
+      tagIds,
+      assignees: normalizedAssignees,
+    },
+    tx
+  );
+  assertTransactionAccountPolicy(transactionData.type, writeReferences);
 
-    const writeReferences = await loadTransactionWriteReferences(
-      orgId,
-      {
-        accountId: transactionData.accountId,
-        counterpartAccountId:
-          'counterpartAccountId' in transactionData
-            ? transactionData.counterpartAccountId
-            : undefined,
-        refundOf:
-          'refundOf' in transactionData ? transactionData.refundOf : undefined,
-        categoryId:
-          'categoryId' in transactionData
-            ? transactionData.categoryId
-            : undefined,
-        tagIds,
-        assignees: normalizedAssignees,
-      },
-      tx
-    );
-    assertTransactionAccountPolicy(transactionData.type, writeReferences);
-
-    const inserted = await runTransactionWrite(async () => {
-      const [row] = await tx
-        .insert(transactions)
-        .values({ orgId, ...transactionData })
-        .returning();
-      return row;
-    });
-
-    await tx.insert(transactionAssignees).values(
-      normalizedAssignees.map((a) => ({
-        transactionId: inserted.id,
-        memberId: a.memberId,
-        amountCents: a.amountCents,
-        percentage: a.percentage.toString(),
-      }))
-    );
-
-    if (tagIds && tagIds.length > 0) {
-      await tx
-        .insert(transactionTags)
-        .values(tagIds.map((tagId) => ({ transactionId: inserted.id, tagId })));
-    }
-
-    return inserted;
+  const inserted = await runTransactionWrite(async () => {
+    const [row] = await tx
+      .insert(transactions)
+      .values({ orgId, ...transactionData })
+      .returning();
+    return row;
   });
+
+  await tx.insert(transactionAssignees).values(
+    normalizedAssignees.map((a) => ({
+      transactionId: inserted.id,
+      memberId: a.memberId,
+      amountCents: a.amountCents,
+      percentage: a.percentage.toString(),
+    }))
+  );
+
+  if (tagIds && tagIds.length > 0) {
+    await tx
+      .insert(transactionTags)
+      .values(tagIds.map((tagId) => ({ transactionId: inserted.id, tagId })));
+  }
+
+  return inserted;
 };
+
+export const createTransaction = async (
+  orgId: string,
+  data: CreateTransactionInput
+) => db.transaction(async (tx) => createTransactionInTx(tx, orgId, data));
 
 export const listTransactions = async (params: ListQueryParams) => {
   const [baseRows, total] = await Promise.all([

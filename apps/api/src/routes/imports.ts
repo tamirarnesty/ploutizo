@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import {
   createImportDraftSchema,
+  finalizeImportDraftSchema,
+  importHistoryQuerySchema,
   updateImportDraftRowSchema,
   updateImportDraftRowSelectionSchema,
 } from '@ploutizo/validators';
@@ -12,16 +14,17 @@ import {
   getImportDraft,
   getImportExampleCsv,
   listActiveImportDrafts,
-  listImportHistory,
   listImportTargets,
   updateImportDraftRow,
   updateImportDraftRowSelection,
 } from '@/services/imports';
+import { listImportHistory } from '@/services/import-history';
 import {
   continueImportDraft,
   getActiveImportPreparedConfirmation,
   invalidateImportPreparedSet,
 } from '@/services/import-prepared-sets';
+import { finalizeImportDraft } from '@/services/import-finalize';
 
 const importsRouter = new Hono<AppEnv>();
 
@@ -84,6 +87,21 @@ importsRouter.delete('/drafts/:id/prepared', async (c) => {
   return new Response(null, { status: 204 });
 });
 
+importsRouter.post(
+  '/drafts/:id/finalize',
+  appValidator('json', finalizeImportDraftSchema),
+  async (c) => {
+    const orgId = c.get('orgId');
+    const { preparedSetId } = c.req.valid('json');
+    const result = await finalizeImportDraft(
+      orgId,
+      c.req.param('id'),
+      preparedSetId
+    );
+    return c.json({ data: result });
+  }
+);
+
 importsRouter.patch(
   '/rows/:id',
   appValidator('json', updateImportDraftRowSchema),
@@ -115,11 +133,16 @@ importsRouter.patch(
   }
 );
 
-importsRouter.get('/history', async (c) => {
-  const orgId = c.get('orgId');
-  const rows = await listImportHistory(orgId);
-  return c.json({ data: rows });
-});
+importsRouter.get(
+  '/history',
+  appValidator('query', importHistoryQuerySchema),
+  async (c) => {
+    const orgId = c.get('orgId');
+    const query = c.req.valid('query');
+    const page = await listImportHistory(orgId, query);
+    return c.json(page);
+  }
+);
 
 importsRouter.get('/normalized-example.csv', (c) => {
   c.header('Content-Type', 'text/csv; charset=utf-8');

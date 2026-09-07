@@ -129,6 +129,11 @@ const summaryRow = {
   completedAt: null,
   discardedAt: null,
   revision: 1,
+  finalizedPreparedSetId: null,
+  createdCount: null,
+  matchedCount: null,
+  skippedCount: null,
+  invalidCount: null,
   createdAt: new Date('2026-05-20T12:00:00Z'),
   updatedAt: new Date('2026-05-20T12:00:00Z'),
 };

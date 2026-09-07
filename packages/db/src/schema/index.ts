@@ -7,3 +7,4 @@ export * from './accounts';
 export * from './import-batches';
 export * from './transactions';
 export * from './import-prepared-sets';
+export * from './import-transaction-links';

@@ -99,3 +99,35 @@ export const listImportMatchTargets = async (
 
   return result;
 };
+
+/** Active (non-deleted) external-id owners on one account. */
+export const listActiveExternalIdOwners = async (
+  orgId: string,
+  accountId: string,
+  externalIds: readonly string[],
+  client: DbClient = db
+): Promise<Map<string, string>> => {
+  const ids = [...new Set(externalIds.filter(Boolean))];
+  if (ids.length === 0) return new Map();
+
+  const rows = await client
+    .select({
+      id: transactions.id,
+      externalId: transactions.externalId,
+    })
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.orgId, orgId),
+        eq(transactions.accountId, accountId),
+        isNull(transactions.deletedAt),
+        inArray(transactions.externalId, ids)
+      )
+    );
+
+  return new Map(
+    rows.flatMap((row) =>
+      row.externalId ? [[row.externalId, row.id] as const] : []
+    )
+  );
+};

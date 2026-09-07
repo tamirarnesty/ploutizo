@@ -98,6 +98,15 @@ export const isImportPreparedProjectionOutcome = (
     value
   );
 
+/** Durable created/matched relationship from an import batch to a transaction. */
+export const IMPORT_TRANSACTION_LINK_OUTCOME_VALUES = [
+  'created',
+  'matched',
+] as const;
+
+export type ImportTransactionLinkOutcome =
+  (typeof IMPORT_TRANSACTION_LINK_OUTCOME_VALUES)[number];
+
 export const INCOME_TYPE_VALUES = [
   'direct_deposit',
   'e_transfer',

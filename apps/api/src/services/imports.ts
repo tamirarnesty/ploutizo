@@ -1,9 +1,5 @@
 import { db } from '@ploutizo/db';
-import {
-  INTERNAL_IMPORT_EXAMPLE_CSV,
-  isImportContentProfileId,
-  toFinancialInstitutionId,
-} from '@ploutizo/types';
+import { INTERNAL_IMPORT_EXAMPLE_CSV } from '@ploutizo/types';
 import {
   createImportRowClassifier,
   importMatchTargetQueryInput,
@@ -17,7 +13,6 @@ import { validateTransactionAccountPolicy } from '@ploutizo/utils/transaction-po
 import type { Transaction } from '@ploutizo/db';
 import type {
   CreateImportDraftResponse,
-  ImportContentProfileId,
   ImportDraft,
   ImportDraftPersistedRow,
   ImportDraftSummary,
@@ -29,7 +24,6 @@ import type {
   UpdateImportDraftRowInput,
   UpdateImportDraftRowSelectionInput,
 } from '@ploutizo/validators';
-import type { ImportDraftSummaryRow } from '@/lib/queries/imports';
 import { assertOrgWriteReferences } from '@/lib/assertOrgWriteReferences';
 import { DomainError, NotFoundError } from '@/lib/errors';
 import { isUniqueViolation } from '@/lib/isUniqueViolation';
@@ -46,7 +40,6 @@ import {
   listDraftRows,
   listDraftRowsForBatches,
   listImportTargetAccounts,
-  listRecentImportHistory,
   updateImportDraftRowQuery,
   updateImportDraftRowSelectionQuery,
 } from '@/lib/queries/imports';
@@ -62,6 +55,7 @@ import {
 import { listTags } from '@/lib/queries/tags';
 import { parseImportUpload } from '@/lib/imports/parse';
 import { toImportTargetAccount } from '@/lib/accounts/accountResponse';
+import { toImportDraftSummary } from '@/services/import-batch-mappers';
 import { invalidatePreparedStagingForDraft } from '@/services/import-prepared-sets';
 import { listRefundTargetExpensesByIds } from '@/lib/queries/import-refund-targets';
 import { listImportMatchTargets } from '@/lib/queries/import-match-targets';
@@ -86,58 +80,6 @@ const requireMatchTargetOnDraftAccount = async (
     tx
   );
   if (!ok) throw new NotFoundError('Transaction not found');
-};
-
-const toContentProfileId = (
-  contentProfileId: string | null
-): ImportContentProfileId | null => {
-  if (contentProfileId == null) return null;
-  // Fail closed when persisted IDs drift from IMPORT_CONTENT_PROFILE_IDS.
-  if (!isImportContentProfileId(contentProfileId)) {
-    throw new DomainError(500, 'Import draft has an unknown content profile.');
-  }
-  return contentProfileId;
-};
-
-const toImportDraftSummary = (
-  row: ImportDraftSummaryRow
-): ImportDraftSummary => {
-  if (!row.accountId) {
-    throw new DomainError(500, 'Import draft is missing an account.');
-  }
-  const {
-    accountId,
-    accountName,
-    accountInstitutionId,
-    accountLastFour,
-    contentProfileId,
-    importedAt,
-    completedAt,
-    discardedAt,
-    revision: _revision,
-    createdAt,
-    updatedAt,
-    ...summary
-  } = row;
-  const accountInstitution = toFinancialInstitutionId(accountInstitutionId);
-  return {
-    ...summary,
-    contentProfileId: toContentProfileId(contentProfileId),
-    // History omits live review counts until PLO-56 records completed results.
-    validRowCount: 0,
-    invalidRowCount: 0,
-    account: {
-      id: accountId,
-      name: accountName,
-      institutionId: accountInstitution,
-      lastFour: accountLastFour,
-    },
-    importedAt: importedAt.toISOString(),
-    completedAt: completedAt?.toISOString() ?? null,
-    discardedAt: discardedAt?.toISOString() ?? null,
-    createdAt: createdAt.toISOString(),
-    updatedAt: updatedAt.toISOString(),
-  };
 };
 
 export const listImportTargets = async (
@@ -181,13 +123,6 @@ export const listActiveImportDrafts = async (
       );
     })
   );
-};
-
-export const listImportHistory = async (
-  orgId: string
-): Promise<ImportDraftSummary[]> => {
-  const rows = await listRecentImportHistory(orgId);
-  return rows.map(toImportDraftSummary);
 };
 
 export const getImportDraft = async (

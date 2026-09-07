@@ -206,6 +206,8 @@ export const IMPORT_REQUIREMENT_KEY_VALUES = [
   'import.match.wrong_account',
   'import.match.deleted_target',
   'import.match.ambiguous_exact',
+  'import.match.duplicate_target',
+  'import.external_id.active_conflict',
 ] as const;
 
 export type ImportRequirementKey =
@@ -288,4 +290,48 @@ export interface ImportPreparedConfirmation extends ImportPreparedSetSummary {
   counts: ImportPreparedOutcomeCounts;
   created: ImportPreparedConfirmationRow[];
   matched: ImportPreparedConfirmationRow[];
+}
+
+/** Shared identity facts for completed and discarded Import history. */
+export interface ImportHistoryIdentity {
+  id: string;
+  account: ImportTargetAccount;
+  contentProfileId: ImportContentProfileId | null;
+  fileName: string | null;
+  rowCount: number;
+  importedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Durable completed-result facts recorded when Finalize succeeds. */
+export interface ImportCompletedHistoryItem extends ImportHistoryIdentity {
+  status: 'completed';
+  completedAt: string;
+  discardedAt: null;
+  createdCount: number;
+  matchedCount: number;
+  skippedCount: number;
+  invalidCount: number;
+}
+
+/** Discarded history: lifecycle/source facts only — no synthesized outcome counts. */
+export interface ImportDiscardedHistoryItem extends ImportHistoryIdentity {
+  status: 'discarded';
+  completedAt: null;
+  discardedAt: string;
+}
+
+export type ImportHistoryItem =
+  | ImportCompletedHistoryItem
+  | ImportDiscardedHistoryItem;
+
+export interface ImportHistoryPage {
+  data: ImportHistoryItem[];
+  nextCursor: string | null;
+}
+
+/** Successful Finalize summary — completed history plus the claimed prepared-set id. */
+export interface ImportCompletedResult extends ImportCompletedHistoryItem {
+  preparedSetId: string;
 }

@@ -7,6 +7,7 @@ import {
   BUDGET_PERIOD_TYPE_VALUES,
   IMPORT_BATCH_STATUS_VALUES,
   IMPORT_PREPARED_OUTCOME_VALUES,
+  IMPORT_TRANSACTION_LINK_OUTCOME_VALUES,
   INCOME_TYPE_VALUES,
   INVESTMENT_TYPE_VALUES,
   MEMBER_ROLE_VALUES,
@@ -33,6 +34,11 @@ export const importBatchStatusEnum = pgEnum('import_batch_status', [
 export const importPreparedOutcomeEnum = pgEnum('import_prepared_outcome', [
   ...IMPORT_PREPARED_OUTCOME_VALUES,
 ]);
+
+export const importTransactionLinkOutcomeEnum = pgEnum(
+  'import_transaction_link_outcome',
+  [...IMPORT_TRANSACTION_LINK_OUTCOME_VALUES]
+);
 
 export const accountTypeEnum = pgEnum('account_type', [...ACCOUNT_TYPE_VALUES]);
 

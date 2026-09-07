@@ -15,4 +15,6 @@ export const IMPORT_MATCH_ISSUE_COPY: Partial<
   deleted_target: 'The saved match was deleted. Clear it to continue.',
   wrong_account:
     'The saved match is on a different card. Clear it to continue.',
+  duplicate_target:
+    'Another selected row already matches this transaction. Keep one match and import or skip the other.',
 };

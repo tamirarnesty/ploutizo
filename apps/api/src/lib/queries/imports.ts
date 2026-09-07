@@ -1,6 +1,16 @@
 import { db } from '@ploutizo/db';
 import { accounts, importBatchRows, importBatches } from '@ploutizo/db/schema';
-import { and, desc, eq, exists, inArray, isNull, ne, sql } from 'drizzle-orm';
+import {
+  and,
+  desc,
+  eq,
+  exists,
+  inArray,
+  isNull,
+  lt,
+  or,
+  sql,
+} from 'drizzle-orm';
 import type { DbClient, Transaction } from '@ploutizo/db';
 
 const IMPORT_SUMMARY_COLUMNS = {
@@ -17,6 +27,11 @@ const IMPORT_SUMMARY_COLUMNS = {
   completedAt: importBatches.completedAt,
   discardedAt: importBatches.discardedAt,
   revision: importBatches.revision,
+  finalizedPreparedSetId: importBatches.finalizedPreparedSetId,
+  createdCount: importBatches.createdCount,
+  matchedCount: importBatches.matchedCount,
+  skippedCount: importBatches.skippedCount,
+  invalidCount: importBatches.invalidCount,
   createdAt: importBatches.createdAt,
   updatedAt: importBatches.updatedAt,
 } as const;
@@ -68,16 +83,95 @@ export const listActiveImportDraftSummaries = async (orgId: string) =>
     )
     .orderBy(desc(importBatches.updatedAt));
 
-export const listRecentImportHistory = async (orgId: string, limit = 10) =>
-  db
+const HISTORY_CLOSED_AT = sql`COALESCE(${importBatches.completedAt}, ${importBatches.discardedAt})`;
+
+export const listImportHistoryPage = async (
+  orgId: string,
+  options: {
+    limit: number;
+    cursor?: { closedAt: string; id: string };
+  }
+) => {
+  const conditions = [
+    eq(importBatches.orgId, orgId),
+    inArray(importBatches.status, ['completed', 'discarded']),
+  ];
+
+  if (options.cursor) {
+    const cursorClosedAt = options.cursor.closedAt;
+    const cursorFilter = or(
+      sql`${HISTORY_CLOSED_AT} < ${cursorClosedAt}::timestamptz`,
+      and(
+        sql`${HISTORY_CLOSED_AT} = ${cursorClosedAt}::timestamptz`,
+        lt(importBatches.id, options.cursor.id)
+      )
+    );
+    if (cursorFilter) conditions.push(cursorFilter);
+  }
+
+  return db
     .select(IMPORT_SUMMARY_COLUMNS)
     .from(importBatches)
     .innerJoin(accounts, eq(accounts.id, importBatches.accountId))
+    .where(and(...conditions))
+    .orderBy(sql`${HISTORY_CLOSED_AT} DESC`, desc(importBatches.id))
+    .limit(options.limit + 1);
+};
+
+export const fetchImportBatchSummaryById = async (
+  orgId: string,
+  batchId: string,
+  client: DbClient = db,
+  options?: { forUpdate?: boolean }
+) => {
+  const query = client
+    .select(IMPORT_SUMMARY_COLUMNS)
+    .from(importBatches)
+    .innerJoin(accounts, eq(accounts.id, importBatches.accountId))
+    .where(and(eq(importBatches.orgId, orgId), eq(importBatches.id, batchId)))
+    .limit(1);
+
+  const rows = options?.forUpdate
+    ? await query.for('update', { of: importBatches })
+    : await query;
+  return rows.at(0) ?? null;
+};
+
+export const completeImportBatch = async (
+  tx: Transaction,
+  input: {
+    orgId: string;
+    batchId: string;
+    preparedSetId: string;
+    completedAt: Date;
+    createdCount: number;
+    matchedCount: number;
+    skippedCount: number;
+    invalidCount: number;
+  }
+) => {
+  const rows = await tx
+    .update(importBatches)
+    .set({
+      status: 'completed',
+      completedAt: input.completedAt,
+      updatedAt: input.completedAt,
+      finalizedPreparedSetId: input.preparedSetId,
+      createdCount: input.createdCount,
+      matchedCount: input.matchedCount,
+      skippedCount: input.skippedCount,
+      invalidCount: input.invalidCount,
+    })
     .where(
-      and(eq(importBatches.orgId, orgId), ne(importBatches.status, 'draft'))
+      and(
+        eq(importBatches.orgId, input.orgId),
+        eq(importBatches.id, input.batchId),
+        eq(importBatches.status, 'draft')
+      )
     )
-    .orderBy(desc(importBatches.updatedAt))
-    .limit(limit);
+    .returning();
+  return rows.at(0) ?? null;
+};
 
 export const fetchActiveDraftByAccount = async (
   orgId: string,

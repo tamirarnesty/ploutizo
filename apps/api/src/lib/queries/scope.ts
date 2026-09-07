@@ -98,16 +98,25 @@ export type AccountWriteReference = {
   type: AccountType;
 };
 
+export type AccountWriteReferenceOptions = AccountInOrgOptions & {
+  /**
+   * Take `FOR UPDATE` on the selected snapshot. Independent of `tx` —
+   * pass `tx` to read uncommitted writes, and `forUpdate` only when this
+   * session must lock the row.
+   */
+  forUpdate?: boolean;
+};
+
 /**
  * Loads an org-scoped account reference for write validation.
- * When `tx` is provided, locks the row with `FOR UPDATE` until that transaction commits.
  */
 export const fetchAccountWriteReference = async (
   orgId: string,
   accountId: string,
-  options: AccountInOrgOptions = {},
+  options: AccountWriteReferenceOptions = {},
   tx?: Transaction
 ): Promise<AccountWriteReference | null> => {
+  const { forUpdate = false, ...accountOptions } = options;
   const ex = tx ?? db;
   const query = ex
     .select({
@@ -115,9 +124,9 @@ export const fetchAccountWriteReference = async (
       type: accounts.type,
     })
     .from(accounts)
-    .where(accountInOrg(orgId, accountId, options))
+    .where(accountInOrg(orgId, accountId, accountOptions))
     .limit(1);
-  const rows = await (tx ? query.for('update') : query);
+  const rows = await (tx && forUpdate ? query.for('update') : query);
   return rows.at(0) ?? null;
 };
 

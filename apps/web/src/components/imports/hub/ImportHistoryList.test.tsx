@@ -1,9 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import type { ImportDraftSummary } from '@ploutizo/types';
+import type { ImportHistoryItem } from '@ploutizo/types';
 import { ImportHistoryList } from './ImportHistoryList';
 
-const historyItem: ImportDraftSummary = {
+const historyItem: ImportHistoryItem = {
   id: 'batch_1',
   account: {
     id: 'acct_1',
@@ -15,8 +15,10 @@ const historyItem: ImportDraftSummary = {
   status: 'completed',
   fileName: 'statement.csv',
   rowCount: 10,
-  validRowCount: 10,
-  invalidRowCount: 0,
+  createdCount: 6,
+  matchedCount: 2,
+  skippedCount: 1,
+  invalidCount: 1,
   importedAt: '2026-05-20T12:00:00.000Z',
   completedAt: '2026-05-21T12:00:00.000Z',
   discardedAt: null,
