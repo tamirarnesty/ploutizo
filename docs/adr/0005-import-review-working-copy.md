@@ -16,7 +16,7 @@ During **Review import**, the UI must feel instant while still persisting correc
 | TanStack DB rows `queryCollection` | Session working copy while review is mounted — only place components write row data                                                                                                                                                                                                                             |
 | Slim TanStack Query (draft meta)   | Account, file name, batch lifecycle, `rowCount`, live derived review counts, and other non-row context                                                                                                                                                                                                          |
 | Controlled inputs                  | Presentation only — never a second store or authority                                                                                                                                                                                                                                                           |
-| **Import row status** / counts     | Derived from durable facts plus external facts by the shared evaluator. Client writers: `rederiveImportDraftWorkingCopy` (and optimistic paced patches that delegate to it). `canContinueImportReview` reads collection `status` only. Server **import set verification** remains authoritative at Continue.    |
+| **Import row status** / counts     | Derived from durable facts plus external facts by the shared evaluator. Client writers: `rederiveImportDraftWorkingCopy` (and optimistic paced patches that delegate to it). `canContinueImportReview` gates on selection only so the server can return authoritative requirement failures at Continue. Server **import set verification** remains authoritative at Continue and Finalize.    |
 
 Hub create / discard / list stay on TanStack Query and are **outside** the working-copy contract. The Import hub read module still uses the same evaluator to derive live review counts from current draft rows.
 
@@ -105,9 +105,7 @@ If TanStack DB’s default is to drop optimistic state when `mutationFn` throws,
 
 1. **Done / hotfix:** scoped React Query rollback + freshness guards on the current per-field PATCH path — stops clobbering; **not** the destination.
 2. **Next:** migrate review row editing to collection + paced mutations; remove dual field authority and draft-wide cache restore.
-3. **Then:** wire Continue / finalize against a coherent working copy and flush contract.
-
-Do not enable Continue while the dual-layer RQ + local-field model is still the edit path.
+3. **Done:** Continue / Finalize wired against the working-copy flush contract and server-authoritative prepared-set lifecycle (PLO-56).
 
 ## Considered options
 
@@ -133,20 +131,23 @@ The import module has one durable fact store and adapters that derive presentati
 1. **Import draft facts** — source provenance, parsed values, reviewed import values, and import-set selection.
 2. **Review evaluation** — derived status, blockers, invalid reasons, refund-link issues, and live review counts. GET, the client working copy, the Import hub, and Continue all use the shared evaluator.
 3. **Prepared import set** — temporary Continue → Finalize staging with a stable reviewed-value snapshot. Not Import history.
-4. **Completed import result** — future PLO-56 durable batch lifecycle and finalized outcome facts for Import history.
-5. **Transaction provenance** — future PLO-56 links from created or matched transactions back to the import batch and source identity.
+4. **Completed import result** — durable batch lifecycle and finalized outcome facts for Import history (implemented in PLO-56).
+5. **Transaction provenance** — links from created or matched transactions back to the import batch and source identity (implemented in PLO-56).
 
-`rowCount` is an immutable upload/source fact. Valid/invalid review counts are derived. Finalized outcome counts (created, matched, skipped, invalid, unresolved, unprocessed) are a separate completed-result fact and must not reuse review-status columns.
+`rowCount` is an immutable upload/source fact. Valid/invalid review counts are derived. Finalized outcome counts (`created`, `matched`, `skipped`, `invalid`) are a separate completed-result fact and must not reuse review-status columns.
 
 Selection (`selectedForImport`) is the durable import-set fact. `skipped` is a prepared/finalized outcome, not a Review import status.
 
-### Prepared staging and Import history (PLO-56)
+### Prepared staging and Import history
+
+Delivered in PLO-56 (see [Spec: Normalized Import Finalization Stack](https://linear.app/ploutizo/document/spec-normalized-import-finalization-stack-12fb7409837e)):
 
 - Continue re-evaluates the selected import set server-side and creates a revision-bound prepared set with a full-file outcome projection (`created`, `matched`, `skipped`, `invalid`).
-- Finalize consumes only the current prepared revision.
+- Finalize consumes only the named prepared revision (`preparedSetId`).
 - Staging cleanup is atomic with Finalize: transaction creation, matched-transaction linkage, completed result recording, and staging cleanup must not leave a partially finalized state.
-- Import history answers “what happened to this uploaded file?”: draft, completed, discarded, expired, and undone lifecycle, plus finalized outcome counts. It excludes incomplete Review import state.
+- Import history answers “what happened to this uploaded file?” for **completed** and **discarded** batches, plus finalized outcome counts. Active drafts remain on the Import hub. It excludes incomplete Review import state.
 - History may retain successful transaction provenance for created and matched outcomes without retaining full dropped-row draft payloads.
+- Expired and undone lifecycle states are out of scope for history v1.
 
 ## Consequences
 
