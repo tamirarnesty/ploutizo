@@ -1,7 +1,7 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ImportPreparedSet } from '@ploutizo/types';
+import type { ImportPreparedSetSummary } from '@ploutizo/types';
 import { queryClient } from '@/lib/queryClient';
 import { fetchContinueImportDraft } from './fetchContinueImportDraft';
 import { useContinueImportDraft } from './useContinueImportDraft';
@@ -19,12 +19,11 @@ vi.mock('./fetchContinueImportDraft', () => ({
   fetchContinueImportDraft: vi.fn(),
 }));
 
-const preparedSet: ImportPreparedSet = {
+const preparedSet: ImportPreparedSetSummary = {
   id: 'prepared_1',
   batchId: 'draft_1',
   revision: 3,
   createdAt: '2026-05-20T12:00:00.000Z',
-  outcomes: [],
 };
 
 const wrapper = ({ children }: { children: ReactNode }) => (
@@ -64,13 +63,13 @@ describe('useContinueImportDraft', () => {
   });
 
   it('does not toast when the review changes before continue settles', async () => {
-    const pending = deferred<ImportPreparedSet>();
+    const pending = deferred<ImportPreparedSetSummary>();
     vi.mocked(fetchContinueImportDraft).mockReturnValue(pending.promise);
     const { result } = renderHook(() => useContinueImportDraft('draft_1'), {
       wrapper,
     });
 
-    let continuePromise: Promise<ImportPreparedSet> | undefined;
+    let continuePromise: Promise<ImportPreparedSetSummary> | undefined;
     act(() => {
       continuePromise = result.current.mutateAsync();
     });
@@ -95,7 +94,7 @@ describe('useContinueImportDraft', () => {
   });
 
   it('does not toast when the request is aborted before continue settles', async () => {
-    const pending = deferred<ImportPreparedSet>();
+    const pending = deferred<ImportPreparedSetSummary>();
     let capturedSignal: AbortSignal | undefined;
     vi.mocked(fetchContinueImportDraft).mockImplementation(
       (_draftId, signal) => {
@@ -107,7 +106,7 @@ describe('useContinueImportDraft', () => {
       wrapper,
     });
 
-    let continuePromise: Promise<ImportPreparedSet> | undefined;
+    let continuePromise: Promise<ImportPreparedSetSummary> | undefined;
     act(() => {
       continuePromise = result.current.mutateAsync();
     });
@@ -129,13 +128,13 @@ describe('useContinueImportDraft', () => {
   });
 
   it('does not keep a stale continue error after the review changes', async () => {
-    const pending = deferred<ImportPreparedSet>();
+    const pending = deferred<ImportPreparedSetSummary>();
     vi.mocked(fetchContinueImportDraft).mockReturnValue(pending.promise);
     const { result } = renderHook(() => useContinueImportDraft('draft_1'), {
       wrapper,
     });
 
-    let continuePromise: Promise<ImportPreparedSet> | undefined;
+    let continuePromise: Promise<ImportPreparedSetSummary> | undefined;
     act(() => {
       continuePromise = result.current.mutateAsync();
     });

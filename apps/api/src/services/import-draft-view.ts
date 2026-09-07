@@ -66,7 +66,7 @@ export const toImportDraftDurableRow = (
   reviewAssigneeMemberIds: row.reviewAssigneeMemberIds,
   reviewCounterpartAccountId: row.reviewCounterpartAccountId,
   reviewRefundOf: row.reviewRefundOf,
-  reviewRefundOfBatchRowId: undefined,
+  reviewRefundOfBatchRowId: row.reviewRefundOfBatchRowId,
   selectedForImport: row.selectedForImport,
   externalId: row.externalId,
   sourceDescription: row.sourceDescription,
@@ -98,6 +98,7 @@ export const toImportDraftPersistedRow = (
   reviewAssigneeMemberIds: row.reviewAssigneeMemberIds,
   reviewCounterpartAccountId: row.reviewCounterpartAccountId,
   reviewRefundOf: row.reviewRefundOf,
+  reviewRefundOfBatchRowId: row.reviewRefundOfBatchRowId,
   reviewRefundLinkHint: row.reviewRefundLinkHint,
   reviewMatchedTransactionId: row.reviewMatchedTransactionId,
   reviewMatchDismissed: row.reviewMatchDismissed,
@@ -113,8 +114,6 @@ export const toImportDraftRow = (
   evaluation: ImportDraftRowEvaluation
 ): ImportDraftRow => ({
   ...toImportDraftPersistedRow(row),
-  // Same-import batch-row links are working-copy only until the DB column lands.
-  reviewRefundOfBatchRowId: null,
   status: evaluation.status,
   invalidReason: evaluation.invalidReason,
 });

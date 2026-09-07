@@ -5,15 +5,18 @@ import {
 } from './getImportContinueGateMessage';
 
 describe('getImportContinueNotReadyDetails', () => {
-  it('parses per-row continue blocker details', () => {
+  it('parses namespaced requirement failures', () => {
     expect(
       getImportContinueNotReadyDetails({
         rows: [
           {
             batchRowId: 'row_1',
-            status: 'needs_review',
-            blockers: ['refund_link', 'unknown'],
-            invalidReason: 'Refund exceeds the remaining amount.',
+            key: 'import.refund_link.cumulative_exceeds',
+            params: { cap: 100 },
+          },
+          {
+            batchRowId: 'row_2',
+            key: 'not-a-key',
           },
         ],
       })
@@ -21,9 +24,8 @@ describe('getImportContinueNotReadyDetails', () => {
       rows: [
         {
           batchRowId: 'row_1',
-          status: 'needs_review',
-          blockers: ['refund_link'],
-          invalidReason: 'Refund exceeds the remaining amount.',
+          key: 'import.refund_link.cumulative_exceeds',
+          params: { cap: 100 },
         },
       ],
     });
@@ -31,7 +33,7 @@ describe('getImportContinueNotReadyDetails', () => {
 });
 
 describe('getImportContinueGateMessage', () => {
-  it('prefers evaluator invalidReason for not-ready continue errors', () => {
+  it('maps requirement keys to web-owned copy', () => {
     expect(
       getImportContinueGateMessage({
         error: {
@@ -41,16 +43,13 @@ describe('getImportContinueGateMessage', () => {
             rows: [
               {
                 batchRowId: 'row_1',
-                status: 'needs_review',
-                blockers: ['refund_link'],
-                invalidReason:
-                  'Refund exceeds the remaining amount on the original expense.',
+                key: 'import.refund_link.cumulative_exceeds',
               },
             ],
           },
         },
       })
-    ).toBe('Refund exceeds the remaining amount on the original expense.');
+    ).toBe('Linked refunds exceed the original expense amount.');
   });
 
   it('falls back to the continue error message when details are missing', () => {

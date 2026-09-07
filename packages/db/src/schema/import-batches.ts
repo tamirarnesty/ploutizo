@@ -47,6 +47,11 @@ export const importBatches = pgTable(
     fileName: text('file_name'),
     importedAt: timestamp('imported_at', { withTimezone: true }).notNull(),
     rowCount: integer('row_count').notNull(),
+    /**
+     * Content revision incremented on every draft mutation. Prepared sets are
+     * bound to this value; a mismatch means staging is stale.
+     */
+    revision: integer('revision').notNull().default(1),
     completedAt: timestamp('completed_at', { withTimezone: true }),
     discardedAt: timestamp('discarded_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true })
@@ -124,6 +129,15 @@ export const importBatchRows = pgTable(
      * `ON DELETE SET NULL (review_refund_of)` to preserve org_id.
      */
     reviewRefundOf: uuid('review_refund_of'),
+    /**
+     * Same-import refund target (draft row id). Composite org FK lives only in
+     * `0005_dizzy_kang.sql` as
+     * `import_batch_rows_review_refund_of_batch_row_id_org_id_fk` — Drizzle
+     * `ON DELETE SET NULL` would also null `org_id`. Keep that SQL constraint
+     * in sync with this comment. It uses
+     * `ON DELETE SET NULL (review_refund_of_batch_row_id)` to preserve org_id.
+     */
+    reviewRefundOfBatchRowId: uuid('review_refund_of_batch_row_id'),
     reviewRefundLinkHint: text('review_refund_link_hint'),
     /**
      * Accepted match to an existing transaction. Composite org FK lives in

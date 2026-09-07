@@ -416,10 +416,7 @@ describe('ImportDraftReview', () => {
           rows: [
             {
               batchRowId: 'row_ready',
-              status: 'needs_review',
-              blockers: ['refund_link'],
-              invalidReason:
-                'Refund exceeds the remaining amount on the original expense.',
+              key: 'import.refund_link.cumulative_exceeds',
             },
           ],
         },
@@ -442,9 +439,7 @@ describe('ImportDraftReview', () => {
 
     await waitFor(() =>
       expect(
-        screen.getByText(
-          'Refund exceeds the remaining amount on the original expense.'
-        )
+        screen.getByText('Linked refunds exceed the original expense amount.')
       ).toBeInTheDocument()
     );
   });

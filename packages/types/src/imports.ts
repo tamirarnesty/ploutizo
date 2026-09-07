@@ -134,10 +134,7 @@ export interface ImportDraftRow {
   reviewCounterpartAccountId: string | null;
   /** Reviewed refund link to an existing expense transaction. */
   reviewRefundOf: string | null;
-  /**
-   * Same-import refund target (draft row id). Evaluated on the working copy;
-   * not yet persisted — omitted from `ImportDraftPersistedRow` until the DB column lands.
-   */
+  /** Same-import refund target (draft row id). Durable Import draft fact. */
   reviewRefundOfBatchRowId: string | null;
   /** Original CSV refund-link hint retained as provenance. */
   reviewRefundLinkHint: string | null;
@@ -155,7 +152,7 @@ export interface ImportDraftRow {
 /** Durable import draft row persisted in Postgres — no derived status fields. */
 export type ImportDraftPersistedRow = Omit<
   ImportDraftRow,
-  'status' | 'invalidReason' | 'reviewRefundOfBatchRowId'
+  'status' | 'invalidReason'
 >;
 
 export interface ImportDraft extends ImportDraftSummary {
@@ -177,16 +174,51 @@ export interface UpdateImportDraftRowResult {
   refundTargetFacts?: Record<string, RefundTargetFact>;
 }
 
-/** Per-row blocker payload when Continue rejects under the prepared-set lock. */
-export interface ImportContinueNotReadyRow {
+/**
+ * Namespaced requirement keys returned by Continue/Finalize. Presentation copy
+ * is owned by the Web app — these keys are the server contract.
+ */
+export const IMPORT_REQUIREMENT_KEY_VALUES = [
+  'transaction.date.required',
+  'transaction.amount.positive',
+  'transaction.description.required',
+  'transaction.type.required',
+  'transaction.category.required',
+  'transaction.assignee.required',
+  'transaction.assignee.unknown',
+  'transaction.account.missing',
+  'transaction.account.disallowed_type',
+  'transaction.account.same_account_not_allowed',
+  'import.refund_link.missing_target',
+  'import.refund_link.wrong_account',
+  'import.refund_link.deleted_target',
+  'import.refund_link.not_expense',
+  'import.refund_link.target_not_selected',
+  'import.refund_link.target_not_expense',
+  'import.refund_link.target_unfinalizable',
+  'import.refund_link.cumulative_exceeds',
+  'import.refund_link.self_link',
+  'import.refund_link.dual_link',
+  'import.match.collision',
+  'import.match.invalidated_decision',
+  'import.match.advisory_unresolved',
+  'import.match.missing_target',
+  'import.match.wrong_account',
+  'import.match.deleted_target',
+  'import.match.ambiguous_exact',
+] as const;
+
+export type ImportRequirementKey =
+  (typeof IMPORT_REQUIREMENT_KEY_VALUES)[number];
+
+export interface ImportRequirementFailure {
   batchRowId: string;
-  status: ImportRowStatus;
-  blockers: ImportRowReviewBlocker[];
-  invalidReason: string | null;
+  key: ImportRequirementKey;
+  params?: Record<string, unknown>;
 }
 
-export interface ImportContinueNotReadyDetails {
-  rows: ImportContinueNotReadyRow[];
+export interface ImportRequirementFailureDetails {
+  rows: ImportRequirementFailure[];
 }
 
 /** Immutable reviewed values captured when a prepared set revision is created. */
@@ -199,6 +231,7 @@ export interface ImportPreparedReviewedValues {
   assigneeMemberIds: string[];
   counterpartAccountId: string | null;
   refundOf: string | null;
+  refundOfBatchRowId: string | null;
   notes: string | null;
   tagIds: string[];
   externalId: string | null;
@@ -225,4 +258,34 @@ export interface ImportPreparedOutcomeRow {
 
 export interface ImportPreparedSet extends ImportPreparedSetSummary {
   outcomes: ImportPreparedOutcomeRow[];
+}
+
+export const IMPORT_PREPARED_CONFIRMATION_OUTCOME_VALUES = [
+  'created',
+  'matched',
+] as const;
+
+export type ImportPreparedConfirmationOutcome =
+  (typeof IMPORT_PREPARED_CONFIRMATION_OUTCOME_VALUES)[number];
+
+export interface ImportPreparedOutcomeCounts {
+  created: number;
+  matched: number;
+  skipped: number;
+  invalid: number;
+}
+
+export interface ImportPreparedConfirmationRow {
+  batchRowId: string;
+  outcome: ImportPreparedConfirmationOutcome;
+  transactionId: string | null;
+  reviewedValues: ImportPreparedReviewedValues;
+}
+
+/** Read-only Finalize confirmation DTO for the active prepared revision. */
+export interface ImportPreparedConfirmation extends ImportPreparedSetSummary {
+  rowCount: number;
+  counts: ImportPreparedOutcomeCounts;
+  created: ImportPreparedConfirmationRow[];
+  matched: ImportPreparedConfirmationRow[];
 }

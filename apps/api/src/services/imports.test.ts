@@ -15,6 +15,7 @@ import {
   updateImportDraftRowSelection,
 } from '@/services/imports';
 import {
+  bumpImportDraftRevision,
   fetchActiveCreditCardAccount,
   fetchActiveDraftByAccount,
   fetchDraftRowById,
@@ -26,7 +27,6 @@ import {
   listDraftRows,
   listDraftRowsForBatches,
   listImportTargetAccounts,
-  touchImportDraft,
   updateImportDraftRowQuery,
   updateImportDraftRowSelectionQuery,
 } from '@/lib/queries/imports';
@@ -62,9 +62,13 @@ vi.mock('@/lib/queries/imports', () => ({
   listDraftRowIdsForDraft: vi.fn(),
   listDraftRowsForBatches: vi.fn(),
   listImportTargetAccounts: vi.fn(),
-  touchImportDraft: vi.fn(),
+  bumpImportDraftRevision: vi.fn(),
   updateImportDraftRowQuery: vi.fn(),
   updateImportDraftRowSelectionQuery: vi.fn(),
+}));
+
+vi.mock('@/lib/queries/import-prepared-sets', () => ({
+  lockPreparedSetRevisionForBatch: vi.fn(),
 }));
 
 vi.mock('@/lib/queries/import-refund-targets', () => ({
@@ -118,6 +122,7 @@ const summaryRow = {
   importedAt: new Date('2026-05-20T12:00:00Z'),
   completedAt: null,
   discardedAt: null,
+  revision: 1,
   createdAt: new Date('2026-05-20T12:00:00Z'),
   updatedAt: new Date('2026-05-20T12:00:00Z'),
 };
@@ -145,6 +150,7 @@ const draftRow = {
   reviewAssigneeMemberIds: ['44444444-4444-4444-8444-444444444444'],
   reviewCounterpartAccountId: null,
   reviewRefundOf: null,
+  reviewRefundOfBatchRowId: null,
   reviewRefundLinkHint: null,
   reviewMatchedTransactionId: null,
   reviewMatchDismissed: false,
@@ -549,7 +555,8 @@ describe('import service', () => {
       draftRow.id,
       {
         reviewCategoryId: '55555555-5555-4555-8555-555555555555',
-      }
+      },
+      expect.anything()
     );
     expect(listDraftRows).not.toHaveBeenCalled();
     expect(listMerchantRulesWithTags).not.toHaveBeenCalled();
@@ -601,7 +608,8 @@ describe('import service', () => {
         reviewAmount: 4218,
         reviewType: 'expense',
         reviewDescription: 'Coffee',
-      }
+      },
+      expect.anything()
     );
     expect(listDraftRows).not.toHaveBeenCalled();
     expect(result.row.reviewDescription).toBe('Coffee');
@@ -640,7 +648,8 @@ describe('import service', () => {
       draftRow.id,
       {
         reviewDate: '2026-05-02',
-      }
+      },
+      expect.anything()
     );
     expect(listDraftRows).not.toHaveBeenCalled();
     expect(result.row.reviewDate).toBe('2026-05-02');
@@ -675,7 +684,8 @@ describe('import service', () => {
       draftRow.id,
       {
         reviewDate: null,
-      }
+      },
+      expect.anything()
     );
     expect(listDraftRows).not.toHaveBeenCalled();
     expect(result.row.reviewDate).toBeNull();
@@ -701,7 +711,8 @@ describe('import service', () => {
       draftRow.id,
       {
         reviewNotes: 'memo',
-      }
+      },
+      expect.anything()
     );
     expect(listDraftRows).not.toHaveBeenCalled();
     expect(result.row.reviewNotes).toBe('memo');
@@ -729,7 +740,11 @@ describe('import service', () => {
       true,
       tx
     );
-    expect(touchImportDraft).toHaveBeenCalledWith('org_1', summaryRow.id, tx);
+    expect(bumpImportDraftRevision).toHaveBeenCalledWith(
+      'org_1',
+      summaryRow.id,
+      tx
+    );
     expect(listDraftRows).toHaveBeenCalledWith('org_1', summaryRow.id, tx);
     expect(result).toHaveLength(1);
     expect(result[0]?.selectedForImport).toBe(true);
@@ -865,7 +880,8 @@ describe('import service', () => {
     expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
       'org_1',
       draftRow.id,
-      { reviewMatchedTransactionId: 'tx-1' }
+      { reviewMatchedTransactionId: 'tx-1' },
+      expect.anything()
     );
     expect(result.row.reviewMatchedTransactionId).toBe('tx-1');
   });
@@ -910,7 +926,8 @@ describe('import service', () => {
     expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
       'org_1',
       draftRow.id,
-      { reviewMatchedTransactionId: null }
+      { reviewMatchedTransactionId: null },
+      expect.anything()
     );
     expect(result.row.reviewMatchedTransactionId).toBeNull();
   });
@@ -936,7 +953,8 @@ describe('import service', () => {
     expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
       'org_1',
       draftRow.id,
-      { reviewNotes: 'memo' }
+      { reviewNotes: 'memo' },
+      expect.anything()
     );
   });
 
@@ -1078,7 +1096,8 @@ describe('import service', () => {
       {
         reviewCounterpartAccountId: fundingId,
         reviewRefundOf: expenseId,
-      }
+      },
+      expect.anything()
     );
     expect(listDraftRows).not.toHaveBeenCalled();
     expect(result.row).toMatchObject({

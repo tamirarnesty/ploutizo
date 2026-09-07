@@ -3,9 +3,16 @@ import {
   importPreparedOutcomes,
   importPreparedSets,
 } from '@ploutizo/db/schema';
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
+import { isImportPreparedProjectionOutcome } from '@ploutizo/types';
 import type { DbClient, Transaction } from '@ploutizo/db';
-import type { ImportPreparedSet } from '@ploutizo/types';
+import type {
+  ImportPreparedConfirmation,
+  ImportPreparedConfirmationRow,
+  ImportPreparedOutcomeCounts,
+  ImportPreparedSet,
+  ImportPreparedSetSummary,
+} from '@ploutizo/types';
 
 export const insertImportPreparedSet = async (
   tx: Transaction,
@@ -25,6 +32,21 @@ export const insertImportPreparedOutcomes = async (
 ) => {
   if (values.length === 0) return [];
   return tx.insert(importPreparedOutcomes).values(values).returning();
+};
+
+export const deleteImportPreparedSet = async (
+  tx: Transaction,
+  orgId: string,
+  preparedSetId: string
+) => {
+  await tx
+    .delete(importPreparedSets)
+    .where(
+      and(
+        eq(importPreparedSets.id, preparedSetId),
+        eq(importPreparedSets.orgId, orgId)
+      )
+    );
 };
 
 export const fetchPreparedSetById = async (
@@ -61,9 +83,10 @@ export const listPreparedOutcomesForSet = async (
     )
     .orderBy(importPreparedOutcomes.createdAt);
 
-export const fetchLatestPreparedSetForBatch = async (
+export const fetchPreparedSetForBatchRevision = async (
   orgId: string,
   batchId: string,
+  revision: number,
   client: DbClient = db
 ) => {
   const rows = await client
@@ -72,10 +95,10 @@ export const fetchLatestPreparedSetForBatch = async (
     .where(
       and(
         eq(importPreparedSets.orgId, orgId),
-        eq(importPreparedSets.batchId, batchId)
+        eq(importPreparedSets.batchId, batchId),
+        eq(importPreparedSets.revision, revision)
       )
     )
-    .orderBy(desc(importPreparedSets.revision))
     .limit(1);
   return rows.at(0) ?? null;
 };
@@ -99,14 +122,20 @@ export type ImportPreparedOutcomeRecord = Awaited<
   ReturnType<typeof listPreparedOutcomesForSet>
 >[number];
 
-export const toImportPreparedSet = (
-  set: ImportPreparedSetRecord,
-  outcomes: ImportPreparedOutcomeRecord[]
-): ImportPreparedSet => ({
+export const toImportPreparedSetSummary = (
+  set: ImportPreparedSetRecord
+): ImportPreparedSetSummary => ({
   id: set.id,
   batchId: set.batchId,
   revision: set.revision,
   createdAt: set.createdAt.toISOString(),
+});
+
+export const toImportPreparedSet = (
+  set: ImportPreparedSetRecord,
+  outcomes: ImportPreparedOutcomeRecord[]
+): ImportPreparedSet => ({
+  ...toImportPreparedSetSummary(set),
   outcomes: outcomes.map((outcome) => ({
     id: outcome.id,
     preparedSetId: outcome.preparedSetId,
@@ -117,3 +146,54 @@ export const toImportPreparedSet = (
     createdAt: outcome.createdAt.toISOString(),
   })),
 });
+
+const EMPTY_COUNTS: ImportPreparedOutcomeCounts = {
+  created: 0,
+  matched: 0,
+  skipped: 0,
+  invalid: 0,
+};
+
+export const isCompletePreparedProjection = (
+  outcomes: readonly Pick<ImportPreparedOutcomeRecord, 'outcome'>[],
+  rowCount: number
+) => {
+  if (outcomes.length !== rowCount) return false;
+  return outcomes.every((outcome) =>
+    isImportPreparedProjectionOutcome(outcome.outcome)
+  );
+};
+
+export const toImportPreparedConfirmation = (
+  set: ImportPreparedSetRecord,
+  outcomes: ImportPreparedOutcomeRecord[],
+  rowCount: number
+): ImportPreparedConfirmation => {
+  const counts = { ...EMPTY_COUNTS };
+  const created: ImportPreparedConfirmationRow[] = [];
+  const matched: ImportPreparedConfirmationRow[] = [];
+
+  for (const outcome of outcomes) {
+    if (!isImportPreparedProjectionOutcome(outcome.outcome)) continue;
+    counts[outcome.outcome] += 1;
+    if (outcome.outcome !== 'created' && outcome.outcome !== 'matched') {
+      continue;
+    }
+    const row: ImportPreparedConfirmationRow = {
+      batchRowId: outcome.batchRowId,
+      outcome: outcome.outcome,
+      transactionId: outcome.transactionId,
+      reviewedValues: outcome.reviewedValues,
+    };
+    if (outcome.outcome === 'created') created.push(row);
+    else matched.push(row);
+  }
+
+  return {
+    ...toImportPreparedSetSummary(set),
+    rowCount,
+    counts,
+    created,
+    matched,
+  };
+};

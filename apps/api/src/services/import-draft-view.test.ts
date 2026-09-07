@@ -28,6 +28,7 @@ const summaryRow = {
   importedAt: new Date('2026-05-20T12:00:00Z'),
   completedAt: null,
   discardedAt: null,
+  revision: 1,
   createdAt: new Date('2026-05-20T12:00:00Z'),
   updatedAt: new Date('2026-05-20T12:00:00Z'),
 };
@@ -55,6 +56,7 @@ const readyRow = {
   reviewAssigneeMemberIds: ['44444444-4444-4444-8444-444444444444'],
   reviewCounterpartAccountId: null,
   reviewRefundOf: null,
+  reviewRefundOfBatchRowId: null,
   reviewRefundLinkHint: null,
   reviewMatchedTransactionId: null,
   reviewMatchDismissed: false,

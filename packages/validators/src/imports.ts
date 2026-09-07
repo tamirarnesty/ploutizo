@@ -1,7 +1,7 @@
 import {
   IMPORT_CONTENT_PROFILE_IDS,
   IMPORT_CUSTOM_MAPPING_DATE_FORMATS,
-  IMPORT_PREPARED_OUTCOME_VALUES,
+  IMPORT_PREPARED_PROJECTION_OUTCOME_VALUES,
   IMPORT_TRANSACTION_TYPE_VALUES,
 } from '@ploutizo/types';
 import { z } from 'zod';
@@ -76,6 +76,7 @@ export const updateImportDraftRowSchema = z
     reviewAssigneeMemberIds: z.array(z.string().uuid()).optional(),
     reviewCounterpartAccountId: z.string().uuid().nullable().optional(),
     reviewRefundOf: z.string().uuid().nullable().optional(),
+    reviewRefundOfBatchRowId: z.string().uuid().nullable().optional(),
     reviewRefundLinkHint: z.string().trim().min(1).nullable().optional(),
     reviewMatchedTransactionId: z.string().uuid().nullable().optional(),
     reviewMatchDismissed: z.boolean().optional(),
@@ -111,6 +112,7 @@ export const importPreparedReviewedValuesSchema = z.object({
   assigneeMemberIds: z.array(z.string().uuid()),
   counterpartAccountId: z.string().uuid().nullable(),
   refundOf: z.string().uuid().nullable(),
+  refundOfBatchRowId: z.string().uuid().nullable(),
   notes: z.string().nullable(),
   tagIds: z.array(z.string().uuid()),
   externalId: z.string().nullable(),
@@ -123,7 +125,7 @@ export type ImportPreparedReviewedValuesInput = z.infer<
 >;
 
 export const importPreparedOutcomeSchema = z.enum(
-  IMPORT_PREPARED_OUTCOME_VALUES
+  IMPORT_PREPARED_PROJECTION_OUTCOME_VALUES
 );
 
 /** Caller-supplied prepare outcome; server owns the reviewedValues snapshot. */

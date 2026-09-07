@@ -34,6 +34,13 @@ export {
   type ImportDraftRowView,
 } from './evaluate-import-draft';
 export {
+  evaluateImportSetRequirements,
+  isImportRequirementKey,
+  projectImportPreparedOutcome,
+  type EvaluateImportSetRequirementsInput,
+  type ImportRequirementAccount,
+} from './import-requirements';
+export {
   evaluateImportMatches,
   matchDecisionForSelectionChange,
   matchDecisionsForSelectedRows,
