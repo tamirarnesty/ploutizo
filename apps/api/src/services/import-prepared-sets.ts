@@ -364,7 +364,13 @@ export const getActiveImportPreparedConfirmation = async (
   if (!isCompletePreparedProjection(outcomes, draft.rowCount)) {
     throw new NotFoundError('Prepared import set not found.');
   }
-  return toImportPreparedConfirmation(set, outcomes, draft.rowCount);
+
+  const currentDraft = await fetchDraftSummaryById(orgId, batchId);
+  if (!currentDraft || currentDraft.revision !== draft.revision) {
+    throw new NotFoundError('Prepared import set not found.');
+  }
+
+  return toImportPreparedConfirmation(set, outcomes, currentDraft.rowCount);
 };
 
 /** Invalidate active prepared staging by advancing the draft revision. */

@@ -190,9 +190,9 @@ export const projectImportPreparedOutcome = (
   row: ImportDraftDurableRow,
   match: ImportMatchEvaluation | undefined
 ): ImportPreparedProjectionOutcome => {
+  if (row.selectedForImport && match?.acceptedMatch) return 'matched';
   if (isImportRowStructurallyInvalid(toStatusFields(row))) return 'invalid';
   if (!row.selectedForImport) return 'skipped';
-  if (match?.acceptedMatch) return 'matched';
   return 'created';
 };
 

@@ -236,6 +236,35 @@ describe('projectImportPreparedOutcome', () => {
     expect(projectImportPreparedOutcome(expenseRow(), match)).toBe('matched');
   });
 
+  it('classifies accepted matches as matched without create-only fields', () => {
+    const match: ImportMatchEvaluation = {
+      acceptedMatch: { transactionId: 'tx-1', kind: 'external_id' },
+      acceptedMatchValid: true,
+      issues: [],
+      candidates: [],
+      exactCandidate: null,
+      advisoryCandidates: [],
+      collisionRowIds: [],
+    };
+
+    expect(
+      projectImportPreparedOutcome(
+        expenseRow({
+          reviewDate: null,
+          parsedDate: null,
+          reviewAmount: null,
+          parsedAmount: null,
+          reviewType: null,
+          parsedType: null,
+          reviewDescription: null,
+          parsedDescription: null,
+          reviewCategoryId: null,
+        }),
+        match
+      )
+    ).toBe('matched');
+  });
+
   it('classifies selected create candidates as created', () => {
     expect(projectImportPreparedOutcome(expenseRow(), undefined)).toBe(
       'created'

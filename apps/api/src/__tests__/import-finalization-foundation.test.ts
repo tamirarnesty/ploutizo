@@ -1211,6 +1211,48 @@ describe('prepared staging invalidation', () => {
     );
   });
 
+  it('404s when the draft revision advances after the prepared set is loaded', async () => {
+    vi.mocked(fetchDraftSummaryById)
+      .mockResolvedValueOnce({
+        id: BATCH,
+        accountId: ACCOUNT,
+        revision: 1,
+        rowCount: 1,
+      } as never)
+      .mockResolvedValueOnce({
+        id: BATCH,
+        accountId: ACCOUNT,
+        revision: 2,
+        rowCount: 1,
+      } as never);
+    vi.mocked(fetchPreparedSetForBatchRevision).mockResolvedValue({
+      id: 'prep_1',
+      orgId: ORG,
+      batchId: BATCH,
+      revision: 1,
+      createdAt: new Date('2026-05-20T12:00:00Z'),
+    });
+    vi.mocked(listPreparedOutcomesForSet).mockResolvedValue([
+      {
+        id: 'out_0',
+        orgId: ORG,
+        preparedSetId: 'prep_1',
+        batchRowId: ROW,
+        outcome: 'created',
+        transactionId: null,
+        reviewedValues: buildReviewedValuesSnapshot(draftRow as never),
+        createdAt: new Date('2026-05-20T12:00:00Z'),
+      },
+    ]);
+
+    const err = await getActiveImportPreparedConfirmation(ORG, BATCH).catch(
+      (e: unknown) => e
+    );
+
+    expect(err).toBeInstanceOf(NotFoundError);
+    expect(fetchDraftSummaryById).toHaveBeenCalledTimes(2);
+  });
+
   it('404s when the draft is not in the org', async () => {
     vi.mocked(fetchDraftSummaryById).mockResolvedValue(null);
 
