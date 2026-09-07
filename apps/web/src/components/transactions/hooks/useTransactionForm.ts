@@ -1,6 +1,6 @@
 import { useAppForm } from '@ploutizo/ui/components/form';
 import { createTransactionSchema } from '@ploutizo/validators';
-import { normalizeTransactionAssignees } from '@ploutizo/utils';
+import { normalizeTransactionAssignees } from '@ploutizo/utils/assignee-split';
 import {
   formatGeneratedTransactionDescriptionFromAccounts,
   resolveTransactionDescriptionPolicy,

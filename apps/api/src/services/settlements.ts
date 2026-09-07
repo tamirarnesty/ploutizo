@@ -1,4 +1,4 @@
-import { lrmSplit } from '@ploutizo/utils';
+import { lrmSplit } from '@ploutizo/utils/assignee-split';
 import { formatSettlementDescription } from '@ploutizo/utils/transaction-policy';
 import { toFinancialInstitutionId } from '@ploutizo/types';
 import type {

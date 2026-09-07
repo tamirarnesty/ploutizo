@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { lrmSplit } from '@ploutizo/utils';
+import { lrmSplit } from '@ploutizo/utils/assignee-split';
 import { formatGeneratedTransactionDescriptionFromAccounts } from '@ploutizo/utils/transaction-policy';
 import type { Account } from '@ploutizo/types';
 import type { TransactionRow } from '@/lib/data-access/transactions';

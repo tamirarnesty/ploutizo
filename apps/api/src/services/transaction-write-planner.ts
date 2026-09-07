@@ -1,11 +1,14 @@
 /**
  * Write-time checks and payload shaping for transaction create/update.
  *
- * Owns split-sum validation, type-specific scalar nulling, and counterpart /
- * refundOf org guards so those rules live in one place instead of being
- * duplicated in the HTTP route and service.
+ * Owns type-specific scalar nulling, counterpart / refundOf org guards, and
+ * DomainError mapping for split-sum failures. Split math and validateSplitSum
+ * live in `@ploutizo/utils/assignee-split`.
  */
-import { normalizeTransactionAssignees } from '@ploutizo/utils';
+import {
+  normalizeTransactionAssignees,
+  validateSplitSum,
+} from '@ploutizo/utils/assignee-split';
 import type { TransactionType } from '@ploutizo/types';
 import type {
   CreateTransactionInput,
@@ -29,19 +32,7 @@ const CATEGORY_TYPES: ReadonlySet<TransactionType> = new Set([
   'settlement',
 ]);
 
-export const SPLIT_SUM_MISMATCH_MESSAGE =
-  'Assignee amounts must sum to transaction amount';
-
 export type SplitAssigneeRow = { amountCents: number };
-
-export const validateSplitSum = (
-  amount: number,
-  assignees?: SplitAssigneeRow[]
-): string | null => {
-  if (!assignees || assignees.length === 0) return null;
-  const sum = assignees.reduce((acc, a) => acc + a.amountCents, 0);
-  return sum === amount ? null : SPLIT_SUM_MISMATCH_MESSAGE;
-};
 
 export const assigneeRowsForPatchSplitSum = (
   payloadAssignees: CreateTransactionInput['assignees'] | undefined,
