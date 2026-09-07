@@ -47,7 +47,6 @@ import {
   listDraftRowsForBatches,
   listImportTargetAccounts,
   listRecentImportHistory,
-  touchImportDraft,
   updateImportDraftRowQuery,
   updateImportDraftRowSelectionQuery,
 } from '@/lib/queries/imports';
@@ -63,6 +62,7 @@ import {
 import { listTags } from '@/lib/queries/tags';
 import { parseImportUpload } from '@/lib/imports/parse';
 import { toImportTargetAccount } from '@/lib/accounts/accountResponse';
+import { invalidatePreparedStagingForDraft } from '@/services/import-prepared-sets';
 import { listRefundTargetExpensesByIds } from '@/lib/queries/import-refund-targets';
 import { listImportMatchTargets } from '@/lib/queries/import-match-targets';
 import {
@@ -114,6 +114,7 @@ const toImportDraftSummary = (
     importedAt,
     completedAt,
     discardedAt,
+    revision: _revision,
     createdAt,
     updatedAt,
     ...summary
@@ -361,8 +362,22 @@ export const updateImportDraftRow = async (
     );
   }
 
-  const updated = await updateImportDraftRowQuery(orgId, rowId, input);
-  if (!updated) throw new NotFoundError('Import draft row not found.');
+  if (input.reviewRefundOfBatchRowId) {
+    const target = await fetchDraftRowById(
+      orgId,
+      input.reviewRefundOfBatchRowId
+    );
+    if (!target || target.batchId !== existing.batchId) {
+      throw new NotFoundError('Import draft row not found.');
+    }
+  }
+
+  const updated = await db.transaction(async (tx) => {
+    const next = await updateImportDraftRowQuery(orgId, rowId, input, tx);
+    if (!next) throw new NotFoundError('Import draft row not found.');
+    await invalidatePreparedStagingForDraft(tx, orgId, existing.batchId);
+    return next;
+  });
 
   const row = toImportDraftPersistedRow(updated);
 
@@ -455,7 +470,7 @@ export const updateImportDraftRowSelection = async (
     }
     persistedRows = nextPersisted;
 
-    await touchImportDraft(orgId, draftId, tx);
+    await invalidatePreparedStagingForDraft(tx, orgId, draftId);
   });
 
   return persistedRows.map(toImportDraftPersistedRow);

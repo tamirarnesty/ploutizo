@@ -170,3 +170,28 @@ describe('import match decision migration', () => {
     );
   });
 });
+
+describe('prepared revision binding migration', () => {
+  const preparedRevisionMigration = readFileSync(
+    join(root, 'drizzle/0005_dizzy_kang.sql'),
+    'utf8'
+  );
+
+  it('adds draft revision and same-import refund target columns', () => {
+    expect(preparedRevisionMigration).toContain(
+      'ADD COLUMN "review_refund_of_batch_row_id" uuid'
+    );
+    expect(preparedRevisionMigration).toContain(
+      'ADD COLUMN "revision" integer DEFAULT 1 NOT NULL'
+    );
+  });
+
+  it('keeps the SQL-only same-import refund composite org FK', () => {
+    expect(preparedRevisionMigration).toContain(
+      'import_batch_rows_review_refund_of_batch_row_id_org_id_fk'
+    );
+    expect(preparedRevisionMigration).toContain(
+      'ON DELETE SET NULL ("review_refund_of_batch_row_id")'
+    );
+  });
+});

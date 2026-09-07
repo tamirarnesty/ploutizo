@@ -142,7 +142,7 @@ Selection (`selectedForImport`) is the durable import-set fact. `skipped` is a p
 
 ### Prepared staging and Import history (PLO-56)
 
-- Continue re-evaluates the selected import set server-side and creates temporary prepared staging.
+- Continue re-evaluates the selected import set server-side and creates a revision-bound prepared set with a full-file outcome projection (`created`, `matched`, `skipped`, `invalid`).
 - Finalize consumes only the current prepared revision.
 - Staging cleanup is atomic with Finalize: transaction creation, matched-transaction linkage, completed result recording, and staging cleanup must not leave a partially finalized state.
 - Import history answers “what happened to this uploaded file?”: draft, completed, discarded, expired, and undone lifecycle, plus finalized outcome counts. It excludes incomplete Review import state.

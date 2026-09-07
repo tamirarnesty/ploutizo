@@ -9,7 +9,11 @@ import {
   updateImportDraftRow,
   updateImportDraftRowSelection,
 } from '@/services/imports';
-import { continueImportDraft } from '@/services/import-prepared-sets';
+import {
+  continueImportDraft,
+  getActiveImportPreparedConfirmation,
+  invalidateImportPreparedSet,
+} from '@/services/import-prepared-sets';
 
 vi.mock('@/services/imports', () => ({
   createImportDraft: vi.fn(),
@@ -25,6 +29,8 @@ vi.mock('@/services/imports', () => ({
 
 vi.mock('@/services/import-prepared-sets', () => ({
   continueImportDraft: vi.fn(),
+  getActiveImportPreparedConfirmation: vi.fn(),
+  invalidateImportPreparedSet: vi.fn(),
 }));
 
 const app = createRouteTestApp<AppEnv>((testApp) => {
@@ -259,18 +265,143 @@ describe('imports router', () => {
   it('continues an import draft into a prepared set revision', async () => {
     vi.mocked(continueImportDraft).mockResolvedValue({
       id: 'prep_1',
-      orgId: 'org_1',
       batchId: 'draft_1',
       revision: 1,
-      createdAt: new Date('2026-05-20T12:00:00Z'),
-      outcomes: [],
-    } as never);
+      createdAt: '2026-05-20T12:00:00.000Z',
+    });
 
     const res = await app.request('/drafts/draft_1/continue', {
       method: 'POST',
     });
+    const body = (await res.json()) as {
+      data: { id: string; revision: number };
+    };
 
     expect(res.status).toBe(201);
     expect(continueImportDraft).toHaveBeenCalledWith('org_1', 'draft_1');
+    expect(body.data).toEqual({
+      id: 'prep_1',
+      batchId: 'draft_1',
+      revision: 1,
+      createdAt: '2026-05-20T12:00:00.000Z',
+    });
+    expect(body.data).not.toHaveProperty('outcomes');
+  });
+
+  it('returns structured continue failures from the service', async () => {
+    const { DomainError } = await import('@/lib/errors');
+    vi.mocked(continueImportDraft).mockRejectedValue(
+      new DomainError(
+        400,
+        'Some selected rows are not ready to import.',
+        'IMPORT_CONTINUE_NOT_READY',
+        {
+          rows: [
+            {
+              batchRowId: '11111111-1111-4111-8111-111111111111',
+              key: 'transaction.category.required',
+            },
+          ],
+        }
+      )
+    );
+
+    const res = await app.request('/drafts/draft_1/continue', {
+      method: 'POST',
+    });
+    const body = (await res.json()) as {
+      error: {
+        code: string;
+        details?: { rows: { key: string }[] };
+      };
+    };
+
+    expect(res.status).toBe(400);
+    expect(body.error.code).toBe('IMPORT_CONTINUE_NOT_READY');
+    expect(body.error.details?.rows[0]?.key).toBe(
+      'transaction.category.required'
+    );
+  });
+
+  it('returns the active prepared confirmation DTO', async () => {
+    vi.mocked(getActiveImportPreparedConfirmation).mockResolvedValue({
+      id: 'prep_1',
+      batchId: 'draft_1',
+      revision: 1,
+      createdAt: '2026-05-20T12:00:00.000Z',
+      rowCount: 4,
+      counts: { created: 1, matched: 1, skipped: 1, invalid: 1 },
+      created: [],
+      matched: [],
+    });
+
+    const res = await app.request('/drafts/draft_1/prepared');
+    const body = (await res.json()) as {
+      data: { revision: number; counts: { created: number } };
+    };
+
+    expect(res.status).toBe(200);
+    expect(getActiveImportPreparedConfirmation).toHaveBeenCalledWith(
+      'org_1',
+      'draft_1'
+    );
+    expect(body.data.counts.created).toBe(1);
+  });
+
+  it('invalidates active prepared staging', async () => {
+    vi.mocked(invalidateImportPreparedSet).mockResolvedValue(undefined);
+
+    const res = await app.request('/drafts/draft_1/prepared', {
+      method: 'DELETE',
+    });
+
+    expect(res.status).toBe(204);
+    expect(invalidateImportPreparedSet).toHaveBeenCalledWith(
+      'org_1',
+      'draft_1'
+    );
+  });
+
+  it('404s prepared reads when the active revision has no prepared set', async () => {
+    const { NotFoundError } = await import('@/lib/errors');
+    vi.mocked(getActiveImportPreparedConfirmation).mockRejectedValue(
+      new NotFoundError('Prepared import set not found.')
+    );
+
+    const res = await app.request('/drafts/draft_1/prepared');
+
+    expect(res.status).toBe(404);
+    expect(getActiveImportPreparedConfirmation).toHaveBeenCalledWith(
+      'org_1',
+      'draft_1'
+    );
+  });
+
+  it('404s prepared reads for another org’s draft', async () => {
+    const { NotFoundError } = await import('@/lib/errors');
+    vi.mocked(getActiveImportPreparedConfirmation).mockRejectedValue(
+      new NotFoundError('Import draft not found.')
+    );
+
+    const res = await app.request('/drafts/draft_1/prepared');
+
+    expect(res.status).toBe(404);
+    expect(getActiveImportPreparedConfirmation).toHaveBeenCalledWith(
+      'org_1',
+      'draft_1'
+    );
+  });
+
+  it('404s continue for a missing org-scoped draft', async () => {
+    const { NotFoundError } = await import('@/lib/errors');
+    vi.mocked(continueImportDraft).mockRejectedValue(
+      new NotFoundError('Import draft not found.')
+    );
+
+    const res = await app.request('/drafts/missing/continue', {
+      method: 'POST',
+    });
+
+    expect(res.status).toBe(404);
   });
 });

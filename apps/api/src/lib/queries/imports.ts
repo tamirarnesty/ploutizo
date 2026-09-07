@@ -16,6 +16,7 @@ const IMPORT_SUMMARY_COLUMNS = {
   importedAt: importBatches.importedAt,
   completedAt: importBatches.completedAt,
   discardedAt: importBatches.discardedAt,
+  revision: importBatches.revision,
   createdAt: importBatches.createdAt,
   updatedAt: importBatches.updatedAt,
 } as const;
@@ -261,15 +262,19 @@ export const updateImportDraftRowQuery = async (
   return rows.at(0) ?? null;
 };
 
-export const touchImportDraft = async (
+export const bumpImportDraftRevision = async (
   orgId: string,
   draftId: string,
   client: DbClient = db
 ) => {
-  await client
+  const rows = await client
     .update(importBatches)
-    .set({ updatedAt: new Date() })
+    .set({
+      revision: sql`${importBatches.revision} + 1`,
+      updatedAt: new Date(),
+    })
     .where(and(eq(importBatches.id, draftId), eq(importBatches.orgId, orgId)));
+  return rows;
 };
 
 const draftRowInActiveDraftCondition = (orgId: string) =>

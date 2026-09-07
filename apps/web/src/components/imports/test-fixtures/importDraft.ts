@@ -11,12 +11,7 @@ export const toPersistedImportDraftRow = (
   row: ImportDraftRow,
   overrides: Partial<ImportDraftPersistedRow> = {}
 ): ImportDraftPersistedRow => {
-  const {
-    status: _status,
-    invalidReason: _invalidReason,
-    reviewRefundOfBatchRowId: _batchRowId,
-    ...persisted
-  } = row;
+  const { status: _status, invalidReason: _invalidReason, ...persisted } = row;
   return { ...persisted, ...overrides };
 };
 

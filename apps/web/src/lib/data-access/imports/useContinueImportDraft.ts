@@ -1,7 +1,7 @@
 import { useCallback, useRef } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from '@ploutizo/ui/components/sonner';
-import type { ImportPreparedSet } from '@ploutizo/types';
+import type { ImportPreparedSetSummary } from '@ploutizo/types';
 import type { ApiErrorBody } from '@/lib/queryClient';
 import { fetchContinueImportDraft } from './fetchContinueImportDraft';
 import type { UseMutationResult } from '@tanstack/react-query';
@@ -30,7 +30,7 @@ export const useContinueImportDraft = (draftId: string) => {
   const abortRef = useRef<AbortController | null>(null);
 
   const mutation = useMutation<
-    ImportPreparedSet,
+    ImportPreparedSetSummary,
     ApiErrorBody | ObsoleteContinueError,
     void
   >({

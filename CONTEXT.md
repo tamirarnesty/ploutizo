@@ -87,7 +87,7 @@ An import set with at least one selected row whose selected rows all satisfy the
 _Avoid_: File valid, draft complete
 
 **Prepared import set**:
-Temporary Continue → Finalize staging: a stable, immutable, revision-bound snapshot of selected-row finalize outcomes created after the **import set** passes requirement evaluation. The user reviews this prepared set during **Finalize import** before committing new transactions and matched/no-op outcomes. Returning to **Review import**, or any intervening draft edit, discards the prepared import set; another Continue must verify and create a new prepared set from the current reviewed values and selection. After Finalize confirms and transaction writes complete, staging is cleaned up; it is not Import history.
+Temporary Continue → Finalize staging: a stable, immutable, revision-bound snapshot of mutually exclusive finalize outcomes for every source row (`created`, `matched`, `skipped`, `invalid`), created after the **import set** passes requirement evaluation. Outcome counts sum to the immutable source `rowCount`. The user reviews this prepared set during **Finalize import** before committing new transactions and recording matched/no-op, skipped, and invalid outcomes. Returning to **Review import**, or any intervening draft edit, discards the prepared import set; another Continue must verify and create a new prepared set from the current reviewed values and selection. After Finalize confirms and transaction writes complete, staging is cleaned up; it is not Import history.
 _Avoid_: Live draft rows, temporary UI selection, permanent history store
 
 **Import set verification**:
