@@ -9,6 +9,7 @@ import {
   insertLocalUserIfAbsent,
   insertOrgMemberIfAbsent,
   updateLocalUserFromUserJson,
+  updateOrgMemberFromMembershipJson,
   userJsonToLocalUserRow,
 } from './clerkDbMirror';
 import type {
@@ -64,6 +65,12 @@ export const handleUserUpdated = async (data: UserJSON) => {
   await updateLocalUserFromUserJson(data);
 };
 
+export const handleOrgMembershipUpdated = async (
+  data: OrganizationMembershipJSON
+) => {
+  await updateOrgMemberFromMembershipJson(data);
+};
+
 export const handleOrgMembershipCreated = async (
   data: OrganizationMembershipJSON
 ) => {
@@ -113,6 +120,8 @@ export const dispatchWebhookEvent = async (event: WebhookEvent) => {
       return handleUserUpdated(event.data);
     case 'organizationMembership.created':
       return handleOrgMembershipCreated(event.data);
+    case 'organizationMembership.updated':
+      return handleOrgMembershipUpdated(event.data);
     case 'organizationMembership.deleted':
       return handleOrgMembershipDeleted(event.data);
     default: {

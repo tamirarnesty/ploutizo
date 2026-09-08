@@ -2,7 +2,11 @@ import { db } from '@ploutizo/db';
 import { orgMembers, users } from '@ploutizo/db/schema';
 import { and, eq, isNull, lt, or } from 'drizzle-orm';
 import { mapClerkOrgRoleToAppRole } from './clerkRoleMapping';
-import type { User, UserJSON } from '@clerk/backend';
+import type {
+  OrganizationMembershipJSON,
+  User,
+  UserJSON,
+} from '@clerk/backend';
 
 /** Resolve local `users.id` from a Clerk user id; `undefined` when no mirror row exists. */
 export const findLocalUserIdByClerkId = async (
@@ -205,20 +209,87 @@ export const deleteOrgMemberIfPresent = async (params: {
   });
 };
 
-/** Applies `user.updated` webhook fields — mirrors previous `handleUserUpdated` logic. */
+/**
+ * Applies `user.updated` webhook fields: upsert local `users` (create when
+ * `user.created` never landed) and refresh that person's `org_members.display_name`
+ * in every household they belong to.
+ */
 export const updateLocalUserFromUserJson = async (
   data: UserJSON
 ): Promise<void> => {
   const row = userJsonToLocalUserRow(data);
   if (!row) return;
-  await db
-    .update(users)
-    .set({
+
+  const upserted = await db
+    .insert(users)
+    .values({
+      externalId: row.externalId,
       email: row.email,
       fullName: row.fullName,
       firstName: row.firstName,
       lastName: row.lastName,
       imageUrl: row.imageUrl,
     })
-    .where(eq(users.externalId, row.externalId));
+    .onConflictDoUpdate({
+      target: users.externalId,
+      set: {
+        email: row.email,
+        fullName: row.fullName,
+        firstName: row.firstName,
+        lastName: row.lastName,
+        imageUrl: row.imageUrl,
+      },
+    })
+    .returning({ id: users.id });
+
+  const appUserId = upserted.at(0)?.id;
+  if (appUserId === undefined) return;
+
+  const displayName = buildOrgMemberDisplayName({
+    firstName: row.firstName,
+    lastName: row.lastName,
+    fallbackUserId: row.externalId,
+  });
+
+  await db
+    .update(orgMembers)
+    .set({ displayName })
+    .where(eq(orgMembers.userId, appUserId));
+};
+
+/**
+ * Applies `organizationMembership.updated` webhook fields for one household.
+ * Does not heal a missing local `users` row — request-time sync covers the caller.
+ */
+export const updateOrgMemberFromMembershipJson = async (
+  data: OrganizationMembershipJSON
+): Promise<void> => {
+  const clerkUserId = data.public_user_data.user_id;
+  const appUser = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.externalId, clerkUserId))
+    .then((rows) => rows.at(0));
+
+  if (appUser === undefined) return;
+
+  const displayName = buildOrgMemberDisplayName({
+    firstName: data.public_user_data.first_name,
+    lastName: data.public_user_data.last_name,
+    fallbackUserId: clerkUserId,
+  });
+  const role = mapClerkOrgRoleToAppRole(data.role, {
+    orgId: data.organization.id,
+    appUserId: appUser.id,
+  });
+
+  await db
+    .update(orgMembers)
+    .set({ displayName, role })
+    .where(
+      and(
+        eq(orgMembers.orgId, data.organization.id),
+        eq(orgMembers.userId, appUser.id)
+      )
+    );
 };
