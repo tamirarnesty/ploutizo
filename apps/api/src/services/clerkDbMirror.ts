@@ -4,6 +4,34 @@ import { and, eq } from 'drizzle-orm';
 import { mapClerkOrgRoleToAppRole } from './clerkRoleMapping';
 import type { User, UserJSON } from '@clerk/backend';
 
+/** Resolve local `users.id` from a Clerk user id; `undefined` when no mirror row exists. */
+export const findLocalUserIdByClerkId = async (
+  clerkUserId: string
+): Promise<string | undefined> => {
+  const row = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.externalId, clerkUserId))
+    .limit(1)
+    .then((rows) => rows.at(0));
+  return row?.id;
+};
+
+/** Hard-delete `org_members` by org + app user id (shared by in-app and webhook paths). */
+export const deleteOrgMemberByOrgAndAppUserId = async (params: {
+  orgId: string;
+  appUserId: string;
+}): Promise<void> => {
+  await db
+    .delete(orgMembers)
+    .where(
+      and(
+        eq(orgMembers.orgId, params.orgId),
+        eq(orgMembers.userId, params.appUserId)
+      )
+    );
+};
+
 /**
  * Normalized user row for `users` inserts — shared by Clerk webhooks and
  * `ensureCallerSyncedToOrg` so webhook JSON and Backend SDK shapes converge here.
@@ -135,19 +163,13 @@ export const deleteOrgMemberIfPresent = async (params: {
   orgId: string;
   clerkUserId: string;
 }): Promise<void> => {
-  const user = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.externalId, params.clerkUserId))
-    .limit(1)
-    .then((rows) => rows.at(0));
-  if (!user) return;
+  const appUserId = await findLocalUserIdByClerkId(params.clerkUserId);
+  if (!appUserId) return;
 
-  await db
-    .delete(orgMembers)
-    .where(
-      and(eq(orgMembers.orgId, params.orgId), eq(orgMembers.userId, user.id))
-    );
+  await deleteOrgMemberByOrgAndAppUserId({
+    orgId: params.orgId,
+    appUserId,
+  });
 };
 
 /** Applies `user.updated` webhook fields — mirrors previous `handleUserUpdated` logic. */

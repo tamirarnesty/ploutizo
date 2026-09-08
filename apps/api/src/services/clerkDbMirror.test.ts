@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { deleteOrgMemberIfPresent } from './clerkDbMirror';
+import {
+  deleteOrgMemberByOrgAndAppUserId,
+  deleteOrgMemberIfPresent,
+  findLocalUserIdByClerkId,
+} from './clerkDbMirror';
 
 const mockDelete = vi.fn();
 const mockSelect = vi.fn();
@@ -30,6 +34,42 @@ const chainDelete = () => {
   return { where };
 };
 
+describe('findLocalUserIdByClerkId', () => {
+  beforeEach(() => {
+    mockSelect.mockReset();
+  });
+
+  it('returns the local user id when a mirror row exists', async () => {
+    chainSelect([{ id: 'app_user_1' }]);
+    await expect(findLocalUserIdByClerkId('user_clerk_1')).resolves.toBe(
+      'app_user_1'
+    );
+  });
+
+  it('returns undefined when the local user row is missing', async () => {
+    chainSelect([]);
+    await expect(
+      findLocalUserIdByClerkId('user_missing')
+    ).resolves.toBeUndefined();
+  });
+});
+
+describe('deleteOrgMemberByOrgAndAppUserId', () => {
+  beforeEach(() => {
+    mockDelete.mockReset();
+  });
+
+  it('issues a hard delete for the org and app user', async () => {
+    const deleteChain = chainDelete();
+    await deleteOrgMemberByOrgAndAppUserId({
+      orgId: 'org_1',
+      appUserId: 'app_user_1',
+    });
+    expect(deleteChain.where).toHaveBeenCalled();
+    expect(mockDelete).toHaveBeenCalled();
+  });
+});
+
 describe('deleteOrgMemberIfPresent', () => {
   beforeEach(() => {
     mockSelect.mockReset();
@@ -37,7 +77,7 @@ describe('deleteOrgMemberIfPresent', () => {
   });
 
   it('deletes org_members when the local user exists', async () => {
-    const selectChain = chainSelect([{ id: 'app_user_1' }]);
+    chainSelect([{ id: 'app_user_1' }]);
     const deleteChain = chainDelete();
 
     await deleteOrgMemberIfPresent({
@@ -45,12 +85,11 @@ describe('deleteOrgMemberIfPresent', () => {
       clerkUserId: 'user_clerk_1',
     });
 
-    expect(selectChain.from).toHaveBeenCalled();
     expect(deleteChain.where).toHaveBeenCalled();
     expect(mockDelete).toHaveBeenCalled();
   });
 
-  it('is a no-op when the local user row is missing', async () => {
+  it('skips delete when the local user row is missing', async () => {
     chainSelect([]);
 
     await deleteOrgMemberIfPresent({
@@ -61,7 +100,7 @@ describe('deleteOrgMemberIfPresent', () => {
     expect(mockDelete).not.toHaveBeenCalled();
   });
 
-  it('is a no-op when the membership row was already removed', async () => {
+  it('is safe to call again when the membership row is already gone', async () => {
     chainSelect([{ id: 'app_user_1' }]);
     chainDelete();
 

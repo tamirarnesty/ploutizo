@@ -5,19 +5,21 @@ import {
   insertOrgMemberIfAbsent,
   updateLocalUserFromUserJson,
 } from './clerkDbMirror';
+import { HANDLED_CLERK_WEBHOOK_EVENTS } from './clerkWebhookEvents';
 import { dispatchWebhookEvent, handleOrgMembershipDeleted } from './webhooks';
 import type { OrganizationMembershipJSON, WebhookEvent } from '@clerk/backend';
 
 vi.mock('./clerkDbMirror', () => ({
   buildOrgMemberDisplayName: vi.fn(() => 'Ada Lovelace'),
   deleteOrgMemberIfPresent: vi.fn(),
+  findLocalUserIdByClerkId: vi.fn(),
   insertLocalUserIfAbsent: vi.fn(),
   insertOrgMemberIfAbsent: vi.fn(),
   updateLocalUserFromUserJson: vi.fn(),
   userJsonToLocalUserRow: vi.fn(),
 }));
 
-const membershipPayload = (): OrganizationMembershipJSON =>
+const membershipDeletedPayload = (): OrganizationMembershipJSON =>
   ({
     id: 'orgmem_1',
     object: 'organization_membership',
@@ -53,17 +55,35 @@ const membershipPayload = (): OrganizationMembershipJSON =>
     updated_at: 1,
   }) as unknown as OrganizationMembershipJSON;
 
+const membershipDeletedEvent = (): WebhookEvent =>
+  ({
+    type: 'organizationMembership.deleted',
+    data: membershipDeletedPayload(),
+  }) as WebhookEvent;
+
+const expectMembershipDeleted = () => {
+  expect(deleteOrgMemberIfPresent).toHaveBeenCalledWith({
+    orgId: 'org_1',
+    clerkUserId: 'user_removed',
+  });
+};
+
+describe('HANDLED_CLERK_WEBHOOK_EVENTS', () => {
+  it('includes organizationMembership.deleted for dashboard subscription', () => {
+    expect(HANDLED_CLERK_WEBHOOK_EVENTS).toContain(
+      'organizationMembership.deleted'
+    );
+  });
+});
+
 describe('handleOrgMembershipDeleted', () => {
   beforeEach(() => {
     vi.mocked(deleteOrgMemberIfPresent).mockReset();
   });
 
   it('deletes the local org member for the Clerk org and user', async () => {
-    await handleOrgMembershipDeleted(membershipPayload());
-    expect(deleteOrgMemberIfPresent).toHaveBeenCalledWith({
-      orgId: 'org_1',
-      clerkUserId: 'user_removed',
-    });
+    await handleOrgMembershipDeleted(membershipDeletedPayload());
+    expectMembershipDeleted();
   });
 });
 
@@ -76,22 +96,12 @@ describe('dispatchWebhookEvent', () => {
   });
 
   it('routes organizationMembership.deleted to the membership delete handler', async () => {
-    const event = {
-      type: 'organizationMembership.deleted',
-      data: membershipPayload(),
-    } as WebhookEvent;
-    await dispatchWebhookEvent(event);
-    expect(deleteOrgMemberIfPresent).toHaveBeenCalledWith({
-      orgId: 'org_1',
-      clerkUserId: 'user_removed',
-    });
+    await dispatchWebhookEvent(membershipDeletedEvent());
+    expectMembershipDeleted();
   });
 
-  it('is a no-op for duplicate organizationMembership.deleted deliveries', async () => {
-    const event = {
-      type: 'organizationMembership.deleted',
-      data: membershipPayload(),
-    } as WebhookEvent;
+  it('dispatches delete handler on each duplicate delivery', async () => {
+    const event = membershipDeletedEvent();
     await dispatchWebhookEvent(event);
     await dispatchWebhookEvent(event);
     expect(deleteOrgMemberIfPresent).toHaveBeenCalledTimes(2);
