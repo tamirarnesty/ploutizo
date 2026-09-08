@@ -19,6 +19,14 @@ export {
   type ImportRowStructuralFields,
 } from './import-row-status';
 export {
+  buildPreparedImportRowSnapshot,
+  type PreparedImportRowSnapshotSource,
+} from './prepared-import-snapshot';
+export {
+  resolveReviewedImportValues,
+  type ImportRowResolvableFields,
+} from './reviewed-import-values';
+export {
   evaluateImportDraft,
   evaluateImportDraftRow,
   buildImportDraftRowView,

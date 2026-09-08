@@ -103,6 +103,40 @@ export type UpdateImportDraftRowSelectionInput = z.infer<
   typeof updateImportDraftRowSelectionSchema
 >;
 
+export const reviewedImportValuesSchema = z.object({
+  date: z.string().nullable(),
+  amount: z.number().int().nullable(),
+  type: importTransactionTypeSchema.nullable(),
+  description: z.string().nullable(),
+  categoryId: z.string().uuid().nullable(),
+  assigneeMemberIds: z.array(z.string().uuid()),
+  counterpartAccountId: z.string().uuid().nullable(),
+  refundOf: z.string().uuid().nullable(),
+  refundOfBatchRowId: z.string().uuid().nullable(),
+  notes: z.string().nullable(),
+  tagIds: z.array(z.string().uuid()),
+});
+
+export const importRowProvenanceSchema = z.object({
+  externalId: z.string().nullable(),
+  rawDescription: z.string().nullable(),
+});
+
+export const preparedImportRowSnapshotSchema = z.object({
+  reviewedValues: reviewedImportValuesSchema,
+  provenance: importRowProvenanceSchema,
+});
+
+export type ReviewedImportValuesInput = z.infer<
+  typeof reviewedImportValuesSchema
+>;
+export type ImportRowProvenanceInput = z.infer<
+  typeof importRowProvenanceSchema
+>;
+export type PreparedImportRowSnapshotInput = z.infer<
+  typeof preparedImportRowSnapshotSchema
+>;
+
 export const importPreparedOutcomeSchema = z.enum(
   IMPORT_PREPARED_PROJECTION_OUTCOME_VALUES
 );

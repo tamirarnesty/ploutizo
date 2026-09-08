@@ -3,7 +3,8 @@ import {
   evaluateImportSetRequirements,
   projectImportPreparedOutcomes,
 } from '@ploutizo/utils/import-requirements';
-import { resolveReviewedImportValues } from '@ploutizo/utils/reviewed-import-values';
+import { buildPreparedImportRowSnapshot } from '@ploutizo/utils/prepared-import-snapshot';
+import { preparedImportRowSnapshotSchema } from '@ploutizo/validators';
 import type { Transaction } from '@ploutizo/db';
 import type { PrepareImportOutcomeInput } from '@ploutizo/validators';
 import type {
@@ -47,13 +48,8 @@ import {
 
 const toPreparedImportRowSnapshot = (
   row: ImportDraftRowRecord
-): PreparedImportRowSnapshot => ({
-  reviewedValues: resolveReviewedImportValues(row),
-  provenance: {
-    externalId: row.externalId,
-    rawDescription: row.sourceDescription?.trim() || null,
-  },
-});
+): PreparedImportRowSnapshot =>
+  preparedImportRowSnapshotSchema.parse(buildPreparedImportRowSnapshot(row));
 
 const assertNoDuplicateBatchRowIds = (
   outcomes: PrepareImportOutcomeInput[]

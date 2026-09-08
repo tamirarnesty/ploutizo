@@ -172,16 +172,15 @@ export const ImportReviewAmountCell = ({
   row,
 }: ImportReviewAmountCellProps) => {
   const { saveField, disabled } = useImportDraftReviewRowSave(row);
+  const { amount } = resolveReviewedImportValues(row);
   const [amountDraft, setAmountDraft] = useState<number | undefined>(() =>
-    row.reviewAmount != null ? centsToDollars(row.reviewAmount) : undefined
+    amount != null ? centsToDollars(amount) : undefined
   );
   const rowLabel = getImportRowLabel(row);
 
   useEffect(() => {
-    setAmountDraft(
-      row.reviewAmount != null ? centsToDollars(row.reviewAmount) : undefined
-    );
-  }, [row.id, row.reviewAmount]);
+    setAmountDraft(amount != null ? centsToDollars(amount) : undefined);
+  }, [row.id, amount]);
 
   return (
     <CurrencyInput
@@ -196,9 +195,8 @@ export const ImportReviewAmountCell = ({
           return;
         }
         const nextAmount = dollarsToCents(next);
-        if (nextAmount !== row.reviewAmount) {
-          saveField({ reviewAmount: nextAmount });
-        }
+        if (nextAmount === amount) return;
+        saveField({ reviewAmount: nextAmount });
       }}
       onBlur={() => {
         if (amountDraft === undefined || !Number.isFinite(amountDraft)) {
@@ -242,8 +240,9 @@ export const ImportReviewDescriptionCell = ({
   row,
 }: ImportReviewDescriptionCellProps) => {
   const { saveField, disabled } = useImportDraftReviewRowSave(row);
+  const { description } = resolveReviewedImportValues(row);
   const [descriptionDraft, setDescriptionDraft] = useState(
-    () => row.reviewDescription ?? ''
+    () => description ?? ''
   );
   const rowLabel = getImportRowLabel(row);
   const originalDescription = resolveImportRowOriginalDescription(row);
@@ -252,8 +251,8 @@ export const ImportReviewDescriptionCell = ({
     descriptionDraft.trim() !== originalDescription.trim();
 
   useEffect(() => {
-    setDescriptionDraft(row.reviewDescription ?? '');
-  }, [row.id, row.reviewDescription]);
+    setDescriptionDraft(description ?? '');
+  }, [row.id, description]);
 
   return (
     <>
@@ -268,7 +267,7 @@ export const ImportReviewDescriptionCell = ({
           const raw = event.currentTarget.value;
           setDescriptionDraft(raw);
           const next = raw.trim() || null;
-          if (next === row.reviewDescription) return;
+          if (next === description) return;
           saveField({ reviewDescription: next });
         }}
       />

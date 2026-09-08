@@ -4,8 +4,8 @@ import type {
 } from '@ploutizo/types';
 import { toImportTransactionType } from './import-coercion';
 
-/** Durable/optimistic import row fields needed to resolve transaction values. */
-type ReviewedImportValueSource = {
+/** Import row fields consumed by value resolution and prepared snapshots. */
+export type ImportRowResolvableFields = {
   reviewDate?: string | null;
   parsedDate?: string | null;
   reviewAmount?: number | null;
@@ -32,6 +32,7 @@ const resolveDescription = (
   return trimmed ? trimmed : null;
 };
 
+/** When reviewType is null, parsedType is used; a present but invalid reviewType resolves to null without parsed fallback. */
 const resolveType = (
   reviewType: string | null | undefined,
   parsedType: string | null | undefined
@@ -42,7 +43,7 @@ const resolveType = (
 
 /** Effective transaction values. Selection and provenance stay outside this object. */
 export const resolveReviewedImportValues = (
-  row: ReviewedImportValueSource
+  row: ImportRowResolvableFields
 ): ReviewedImportValues => ({
   date: row.reviewDate ?? row.parsedDate ?? null,
   amount: row.reviewAmount ?? row.parsedAmount ?? null,

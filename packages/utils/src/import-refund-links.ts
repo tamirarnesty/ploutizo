@@ -6,7 +6,7 @@ import {
   importDescriptionsAreSimilar,
   normalizeImportMatchDescription,
 } from './import-matches';
-import { toImportTransactionType } from './import-row-status';
+import { toImportTransactionType } from './import-coercion';
 import { resolveReviewedImportValues } from './reviewed-import-values';
 
 export interface ImportRefundLinkDraftRow {
