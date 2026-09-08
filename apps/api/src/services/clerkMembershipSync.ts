@@ -74,6 +74,8 @@ export const ensureCallerSyncedToOrg = async (
     orgId,
     appUserId: dbUser.id,
     displayName,
+    clerkMembershipId: match.id,
+    membershipCreatedAt: new Date(match.createdAt),
     clerkOrgRole: match.role,
   });
 };

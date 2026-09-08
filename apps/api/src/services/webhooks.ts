@@ -1,9 +1,11 @@
 import { db } from '@ploutizo/db';
-import { orgs, users } from '@ploutizo/db/schema';
+import { orgs } from '@ploutizo/db/schema';
 import { eq } from 'drizzle-orm';
 import { seedOrg } from '@ploutizo/db/seeds';
 import {
   buildOrgMemberDisplayName,
+  deleteOrgMemberIfPresent,
+  findLocalUserIdByClerkId,
   insertLocalUserIfAbsent,
   insertOrgMemberIfAbsent,
   updateLocalUserFromUserJson,
@@ -16,9 +18,15 @@ import type {
   WebhookEvent,
 } from '@clerk/backend';
 
+export { HANDLED_CLERK_WEBHOOK_EVENTS } from './clerkWebhookEvents';
+
 // One handler per Clerk event type — per D-07, D-08.
 // Clerk v3 uses Webhook<type, Data> generics so Extract<WebhookEvent, {type}> resolves to never.
 // Import JSON types directly instead of extracting from the discriminated union.
+//
+// Clerk dashboard webhook endpoint must subscribe to every event in
+// {@link HANDLED_CLERK_WEBHOOK_EVENTS}. Intentionally unhandled: user.deleted,
+// organization.deleted (cascade elsewhere), invitations, sessions, billing.
 
 export const handleOrgCreated = async (data: OrganizationJSON) => {
   await db
@@ -59,13 +67,10 @@ export const handleUserUpdated = async (data: UserJSON) => {
 export const handleOrgMembershipCreated = async (
   data: OrganizationMembershipJSON
 ) => {
-  const user = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.externalId, data.public_user_data.user_id))
-    .then((rows) => rows.at(0));
-
-  if (!user) return;
+  const appUserId = await findLocalUserIdByClerkId(
+    data.public_user_data.user_id
+  );
+  if (!appUserId) return;
 
   const displayName = buildOrgMemberDisplayName({
     firstName: data.public_user_data.first_name,
@@ -75,9 +80,21 @@ export const handleOrgMembershipCreated = async (
 
   await insertOrgMemberIfAbsent({
     orgId: data.organization.id,
-    appUserId: user.id,
+    appUserId,
     displayName,
+    clerkMembershipId: data.id,
+    membershipCreatedAt: new Date(data.created_at),
     clerkOrgRole: data.role,
+  });
+};
+
+export const handleOrgMembershipDeleted = async (
+  data: OrganizationMembershipJSON
+) => {
+  await deleteOrgMemberIfPresent({
+    orgId: data.organization.id,
+    clerkUserId: data.public_user_data.user_id,
+    clerkMembershipId: data.id,
   });
 };
 
@@ -96,6 +113,8 @@ export const dispatchWebhookEvent = async (event: WebhookEvent) => {
       return handleUserUpdated(event.data);
     case 'organizationMembership.created':
       return handleOrgMembershipCreated(event.data);
+    case 'organizationMembership.deleted':
+      return handleOrgMembershipDeleted(event.data);
     default: {
       const unhandled = event as { type?: string };
       console.warn(
