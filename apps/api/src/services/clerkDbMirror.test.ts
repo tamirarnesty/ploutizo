@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  deleteOrgMemberByOrgAndAppUserId,
+  deleteOrgMemberByClerkMembershipId,
   deleteOrgMemberIfPresent,
   findLocalUserIdByClerkId,
 } from './clerkDbMirror';
@@ -16,7 +16,11 @@ vi.mock('@ploutizo/db', () => ({
 }));
 
 vi.mock('@ploutizo/db/schema', () => ({
-  orgMembers: { orgId: 'orgId', userId: 'userId' },
+  orgMembers: {
+    orgId: 'orgId',
+    userId: 'userId',
+    externalId: 'externalId',
+  },
   users: { id: 'id', externalId: 'externalId' },
 }));
 
@@ -54,16 +58,17 @@ describe('findLocalUserIdByClerkId', () => {
   });
 });
 
-describe('deleteOrgMemberByOrgAndAppUserId', () => {
+describe('deleteOrgMemberByClerkMembershipId', () => {
   beforeEach(() => {
     mockDelete.mockReset();
   });
 
-  it('issues a hard delete for the org and app user', async () => {
+  it('issues a hard delete scoped to org, app user, and Clerk membership id', async () => {
     const deleteChain = chainDelete();
-    await deleteOrgMemberByOrgAndAppUserId({
+    await deleteOrgMemberByClerkMembershipId({
       orgId: 'org_1',
       appUserId: 'app_user_1',
+      clerkMembershipId: 'orgmem_1',
     });
     expect(deleteChain.where).toHaveBeenCalled();
     expect(mockDelete).toHaveBeenCalled();
@@ -83,6 +88,7 @@ describe('deleteOrgMemberIfPresent', () => {
     await deleteOrgMemberIfPresent({
       orgId: 'org_1',
       clerkUserId: 'user_clerk_1',
+      clerkMembershipId: 'orgmem_1',
     });
 
     expect(deleteChain.where).toHaveBeenCalled();
@@ -95,6 +101,7 @@ describe('deleteOrgMemberIfPresent', () => {
     await deleteOrgMemberIfPresent({
       orgId: 'org_1',
       clerkUserId: 'user_missing',
+      clerkMembershipId: 'orgmem_1',
     });
 
     expect(mockDelete).not.toHaveBeenCalled();
@@ -107,10 +114,12 @@ describe('deleteOrgMemberIfPresent', () => {
     await deleteOrgMemberIfPresent({
       orgId: 'org_1',
       clerkUserId: 'user_clerk_1',
+      clerkMembershipId: 'orgmem_1',
     });
     await deleteOrgMemberIfPresent({
       orgId: 'org_1',
       clerkUserId: 'user_clerk_1',
+      clerkMembershipId: 'orgmem_1',
     });
 
     expect(mockDelete).toHaveBeenCalledTimes(2);

@@ -17,17 +17,19 @@ export const findLocalUserIdByClerkId = async (
   return row?.id;
 };
 
-/** Hard-delete `org_members` by org + app user id (shared by in-app and webhook paths). */
-export const deleteOrgMemberByOrgAndAppUserId = async (params: {
+/** Hard-delete `org_members` when the stored Clerk membership id matches. */
+export const deleteOrgMemberByClerkMembershipId = async (params: {
   orgId: string;
   appUserId: string;
+  clerkMembershipId: string;
 }): Promise<void> => {
   await db
     .delete(orgMembers)
     .where(
       and(
         eq(orgMembers.orgId, params.orgId),
-        eq(orgMembers.userId, params.appUserId)
+        eq(orgMembers.userId, params.appUserId),
+        eq(orgMembers.externalId, params.clerkMembershipId)
       )
     );
 };
@@ -136,6 +138,7 @@ export const insertOrgMemberIfAbsent = async (params: {
   orgId: string;
   appUserId: string;
   displayName: string;
+  clerkMembershipId: string;
   /** Clerk org role (e.g. `org:admin`); mapped via {@link mapClerkOrgRoleToAppRole}. */
   clerkOrgRole?: string | null;
 }): Promise<void> => {
@@ -148,10 +151,18 @@ export const insertOrgMemberIfAbsent = async (params: {
     .values({
       orgId: params.orgId,
       userId: params.appUserId,
+      externalId: params.clerkMembershipId,
       role,
       displayName: params.displayName,
     })
-    .onConflictDoNothing({ target: [orgMembers.orgId, orgMembers.userId] });
+    .onConflictDoUpdate({
+      target: [orgMembers.orgId, orgMembers.userId],
+      set: {
+        externalId: params.clerkMembershipId,
+        role,
+        displayName: params.displayName,
+      },
+    });
 };
 
 /**
@@ -162,13 +173,15 @@ export const insertOrgMemberIfAbsent = async (params: {
 export const deleteOrgMemberIfPresent = async (params: {
   orgId: string;
   clerkUserId: string;
+  clerkMembershipId: string;
 }): Promise<void> => {
   const appUserId = await findLocalUserIdByClerkId(params.clerkUserId);
   if (!appUserId) return;
 
-  await deleteOrgMemberByOrgAndAppUserId({
+  await deleteOrgMemberByClerkMembershipId({
     orgId: params.orgId,
     appUserId,
+    clerkMembershipId: params.clerkMembershipId,
   });
 };
 

@@ -98,6 +98,11 @@ export const orgMembers = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     role: memberRoleEnum('role').notNull().default('admin'),
+    /**
+     * Clerk organization membership ID (e.g. "orgmem_2abc...").
+     * Used to ignore stale `organizationMembership.deleted` webhooks after rejoin.
+     */
+    externalId: text('external_id'),
     displayName: text('display_name').notNull(),
     /** Private — used only for TFSA contribution room calculation. */
     birthYear: integer('birth_year'),

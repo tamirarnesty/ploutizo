@@ -82,6 +82,7 @@ export const handleOrgMembershipCreated = async (
     orgId: data.organization.id,
     appUserId,
     displayName,
+    clerkMembershipId: data.id,
     clerkOrgRole: data.role,
   });
 };
@@ -92,6 +93,7 @@ export const handleOrgMembershipDeleted = async (
   await deleteOrgMemberIfPresent({
     orgId: data.organization.id,
     clerkUserId: data.public_user_data.user_id,
+    clerkMembershipId: data.id,
   });
 };
 

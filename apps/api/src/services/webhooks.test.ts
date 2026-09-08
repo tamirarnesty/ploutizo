@@ -65,6 +65,7 @@ const expectMembershipDeleted = () => {
   expect(deleteOrgMemberIfPresent).toHaveBeenCalledWith({
     orgId: 'org_1',
     clerkUserId: 'user_removed',
+    clerkMembershipId: 'orgmem_1',
   });
 };
 
