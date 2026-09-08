@@ -3,11 +3,11 @@ import { orgs } from '@ploutizo/db/schema';
 import { eq } from 'drizzle-orm';
 import { seedOrg } from '@ploutizo/db/seeds';
 import {
-  buildOrgMemberDisplayName,
   deleteOrgMemberIfPresent,
   findLocalUserIdByClerkId,
   insertLocalUserIfAbsent,
   insertOrgMemberIfAbsent,
+  memberDisplayNameFromMembershipJson,
   updateLocalUserFromUserJson,
   updateOrgMemberFromMembershipJson,
   userJsonToLocalUserRow,
@@ -79,11 +79,7 @@ export const handleOrgMembershipCreated = async (
   );
   if (!appUserId) return;
 
-  const displayName = buildOrgMemberDisplayName({
-    firstName: data.public_user_data.first_name,
-    lastName: data.public_user_data.last_name,
-    fallbackUserId: data.public_user_data.user_id,
-  });
+  const displayName = memberDisplayNameFromMembershipJson(data);
 
   await insertOrgMemberIfAbsent({
     orgId: data.organization.id,

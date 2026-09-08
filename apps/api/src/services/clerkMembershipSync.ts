@@ -1,10 +1,8 @@
-import { db } from '@ploutizo/db';
-import { users } from '@ploutizo/db/schema';
-import { eq } from 'drizzle-orm';
 import { getClerkServerClient } from '../lib/clerkServerClient';
 import {
   buildOrgMemberDisplayName,
   clerkBackendUserToLocalUserRow,
+  findLocalUserIdByClerkId,
   insertLocalUserIfAbsent,
   insertOrgMemberIfAbsent,
 } from './clerkDbMirror';
@@ -33,13 +31,8 @@ export const ensureCallerSyncedToOrg = async (
   if (!localUser) return;
   await insertLocalUserIfAbsent(localUser);
 
-  const rows = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.externalId, clerkUser.id))
-    .limit(1);
-  const dbUser = rows.at(0);
-  if (dbUser === undefined) return;
+  const appUserId = await findLocalUserIdByClerkId(clerkUser.id);
+  if (appUserId === undefined) return;
 
   let match: OrganizationMembership | undefined;
   let offset = 0;
@@ -72,7 +65,7 @@ export const ensureCallerSyncedToOrg = async (
 
   await insertOrgMemberIfAbsent({
     orgId,
-    appUserId: dbUser.id,
+    appUserId,
     displayName,
     clerkMembershipId: match.id,
     membershipCreatedAt: new Date(match.createdAt),

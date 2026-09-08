@@ -55,6 +55,15 @@ export type LocalUserRowInput = {
   imageUrl: string | null;
 };
 
+const localUserRowToInsertValues = (row: LocalUserRowInput) => ({
+  externalId: row.externalId,
+  email: row.email,
+  fullName: row.fullName,
+  firstName: row.firstName,
+  lastName: row.lastName,
+  imageUrl: row.imageUrl,
+});
+
 /** Join Clerk first + last; `null` when both absent (unlike membership display, which falls back to an id). */
 export const joinClerkFirstLast = (
   firstName: string | null | undefined,
@@ -111,14 +120,7 @@ export const insertLocalUserIfAbsent = async (
 ): Promise<void> => {
   await db
     .insert(users)
-    .values({
-      externalId: row.externalId,
-      email: row.email,
-      fullName: row.fullName,
-      firstName: row.firstName,
-      lastName: row.lastName,
-      imageUrl: row.imageUrl,
-    })
+    .values(localUserRowToInsertValues(row))
     .onConflictDoNothing({ target: users.externalId });
 };
 
@@ -133,6 +135,16 @@ export const buildOrgMemberDisplayName = (params: {
 }): string =>
   joinClerkFirstLast(params.firstName, params.lastName) ??
   params.fallbackUserId;
+
+/** Display name for a Clerk membership webhook payload. */
+export const memberDisplayNameFromMembershipJson = (
+  data: OrganizationMembershipJSON
+): string =>
+  buildOrgMemberDisplayName({
+    firstName: data.public_user_data.first_name,
+    lastName: data.public_user_data.last_name,
+    fallbackUserId: data.public_user_data.user_id,
+  });
 
 /**
  * True when an incoming Clerk membership should replace the stored mirror identity.
@@ -222,23 +234,10 @@ export const updateLocalUserFromUserJson = async (
 
   const upserted = await db
     .insert(users)
-    .values({
-      externalId: row.externalId,
-      email: row.email,
-      fullName: row.fullName,
-      firstName: row.firstName,
-      lastName: row.lastName,
-      imageUrl: row.imageUrl,
-    })
+    .values(localUserRowToInsertValues(row))
     .onConflictDoUpdate({
       target: users.externalId,
-      set: {
-        email: row.email,
-        fullName: row.fullName,
-        firstName: row.firstName,
-        lastName: row.lastName,
-        imageUrl: row.imageUrl,
-      },
+      set: localUserRowToInsertValues(row),
     })
     .returning({ id: users.id });
 
@@ -265,22 +264,13 @@ export const updateOrgMemberFromMembershipJson = async (
   data: OrganizationMembershipJSON
 ): Promise<void> => {
   const clerkUserId = data.public_user_data.user_id;
-  const appUser = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.externalId, clerkUserId))
-    .then((rows) => rows.at(0));
+  const appUserId = await findLocalUserIdByClerkId(clerkUserId);
+  if (appUserId === undefined) return;
 
-  if (appUser === undefined) return;
-
-  const displayName = buildOrgMemberDisplayName({
-    firstName: data.public_user_data.first_name,
-    lastName: data.public_user_data.last_name,
-    fallbackUserId: clerkUserId,
-  });
+  const displayName = memberDisplayNameFromMembershipJson(data);
   const role = mapClerkOrgRoleToAppRole(data.role, {
     orgId: data.organization.id,
-    appUserId: appUser.id,
+    appUserId,
   });
 
   await db
@@ -289,7 +279,7 @@ export const updateOrgMemberFromMembershipJson = async (
     .where(
       and(
         eq(orgMembers.orgId, data.organization.id),
-        eq(orgMembers.userId, appUser.id)
+        eq(orgMembers.userId, appUserId)
       )
     );
 };

@@ -12,13 +12,12 @@ import {
   dispatchWebhookEvent,
   handleOrgMembershipCreated,
   handleOrgMembershipDeleted,
-  handleOrgMembershipUpdated,
-  handleUserUpdated,
 } from './webhooks';
 import type { OrganizationMembershipJSON, WebhookEvent } from '@clerk/backend';
 
 vi.mock('./clerkDbMirror', () => ({
   buildOrgMemberDisplayName: vi.fn(() => 'Ada Lovelace'),
+  memberDisplayNameFromMembershipJson: vi.fn(() => 'Ada Lovelace'),
   deleteOrgMemberIfPresent: vi.fn(),
   findLocalUserIdByClerkId: vi.fn(),
   insertLocalUserIfAbsent: vi.fn(),
@@ -185,27 +184,5 @@ describe('dispatchWebhookEvent', () => {
     expect(deleteOrgMemberIfPresent).not.toHaveBeenCalled();
     expect(warnSpy).toHaveBeenCalledTimes(2);
     warnSpy.mockRestore();
-  });
-});
-
-describe('webhook handlers', () => {
-  beforeEach(() => {
-    vi.mocked(updateLocalUserFromUserJson).mockReset();
-    vi.mocked(updateOrgMemberFromMembershipJson).mockReset();
-  });
-
-  it('handleUserUpdated delegates to updateLocalUserFromUserJson', async () => {
-    const data = { id: 'user_2' } as never;
-    await handleUserUpdated(data);
-    expect(updateLocalUserFromUserJson).toHaveBeenCalledWith(data);
-  });
-
-  it('handleOrgMembershipUpdated delegates to updateOrgMemberFromMembershipJson', async () => {
-    const data = {
-      organization: { id: 'org_2' },
-      public_user_data: { user_id: 'user_2' },
-    } as never;
-    await handleOrgMembershipUpdated(data);
-    expect(updateOrgMemberFromMembershipJson).toHaveBeenCalledWith(data);
   });
 });

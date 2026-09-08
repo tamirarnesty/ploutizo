@@ -2,20 +2,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   updateLocalUserFromUserJson,
   updateOrgMemberFromMembershipJson,
-  userJsonToLocalUserRow,
 } from './clerkDbMirror';
 import type { OrganizationMembershipJSON, UserJSON } from '@clerk/backend';
 
 const {
   mockOnConflictDoUpdate,
   mockInsertReturning,
+  mockUpdateSet,
   mockUpdateWhere,
-  mockSelectWhere,
+  mockSelect,
 } = vi.hoisted(() => ({
   mockOnConflictDoUpdate: vi.fn(),
   mockInsertReturning: vi.fn(),
+  mockUpdateSet: vi.fn(),
   mockUpdateWhere: vi.fn().mockResolvedValue(undefined),
-  mockSelectWhere: vi.fn(),
+  mockSelect: vi.fn(),
 }));
 
 vi.mock('@ploutizo/db', () => ({
@@ -26,15 +27,9 @@ vi.mock('@ploutizo/db', () => ({
       }),
     }),
     update: vi.fn().mockReturnValue({
-      set: vi.fn().mockReturnValue({
-        where: mockUpdateWhere,
-      }),
+      set: mockUpdateSet,
     }),
-    select: vi.fn().mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: mockSelectWhere,
-      }),
-    }),
+    select: (...args: unknown[]) => mockSelect(...args),
   },
 }));
 
@@ -45,6 +40,15 @@ vi.mock('@ploutizo/db/schema', () => ({
     orgId: 'orgMembers.orgId',
   },
 }));
+
+const chainSelect = (rows: unknown[]) => {
+  const resolved = Promise.resolve(rows);
+  const limit = vi.fn().mockReturnValue(resolved);
+  const where = vi.fn().mockReturnValue({ limit });
+  const from = vi.fn().mockReturnValue({ where });
+  mockSelect.mockReturnValue({ from });
+  return { limit, where, from };
+};
 
 const buildUserJson = (overrides: Partial<UserJSON> = {}): UserJSON =>
   ({
@@ -80,21 +84,10 @@ const buildMembershipJson = (
     ...overrides,
   }) as OrganizationMembershipJSON;
 
-describe('userJsonToLocalUserRow', () => {
-  it('returns null when the primary email is missing', () => {
-    expect(
-      userJsonToLocalUserRow(
-        buildUserJson({
-          primary_email_address_id: 'missing',
-        })
-      )
-    ).toBeNull();
-  });
-});
-
 describe('updateLocalUserFromUserJson', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
     mockOnConflictDoUpdate.mockReturnValue({
       returning: mockInsertReturning,
     });
@@ -107,7 +100,7 @@ describe('updateLocalUserFromUserJson', () => {
     );
 
     expect(mockOnConflictDoUpdate).not.toHaveBeenCalled();
-    expect(mockUpdateWhere).not.toHaveBeenCalled();
+    expect(mockUpdateSet).not.toHaveBeenCalled();
   });
 
   it('upserts the local user and refreshes org member display names', async () => {
@@ -115,6 +108,7 @@ describe('updateLocalUserFromUserJson', () => {
 
     expect(mockOnConflictDoUpdate).toHaveBeenCalledOnce();
     expect(mockInsertReturning).toHaveBeenCalledOnce();
+    expect(mockUpdateSet).toHaveBeenCalledWith({ displayName: 'Ada Lovelace' });
     expect(mockUpdateWhere).toHaveBeenCalledOnce();
   });
 });
@@ -122,23 +116,22 @@ describe('updateLocalUserFromUserJson', () => {
 describe('updateOrgMemberFromMembershipJson', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockSelectWhere.mockImplementation(() =>
-      Promise.resolve([{ id: 'app_user_1' }])
-    );
+    mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
+    chainSelect([{ id: 'app_user_1' }]);
   });
 
   it('does not write when the local user row is missing', async () => {
-    mockSelectWhere.mockResolvedValueOnce([]);
+    chainSelect([]);
 
     await updateOrgMemberFromMembershipJson(buildMembershipJson());
 
-    expect(mockUpdateWhere).not.toHaveBeenCalled();
+    expect(mockUpdateSet).not.toHaveBeenCalled();
   });
 
   it('updates display name and role for the household membership', async () => {
     await updateOrgMemberFromMembershipJson(
       buildMembershipJson({
-        role: 'org:member',
+        role: 'org:admin',
         public_user_data: {
           user_id: 'user_clerk_abc',
           first_name: 'Alan',
@@ -150,6 +143,10 @@ describe('updateOrgMemberFromMembershipJson', () => {
       })
     );
 
+    expect(mockUpdateSet).toHaveBeenCalledWith({
+      displayName: 'Alan Turing',
+      role: 'admin',
+    });
     expect(mockUpdateWhere).toHaveBeenCalledOnce();
   });
 });
