@@ -1,1 +1,0 @@
-ALTER TABLE "org_members" ADD COLUMN "external_id" text;

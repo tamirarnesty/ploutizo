@@ -1,6 +1,6 @@
 import { db } from '@ploutizo/db';
 import { orgMembers, users } from '@ploutizo/db/schema';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull, lt, or } from 'drizzle-orm';
 import { mapClerkOrgRoleToAppRole } from './clerkRoleMapping';
 import type { User, UserJSON } from '@clerk/backend';
 
@@ -131,14 +131,28 @@ export const buildOrgMemberDisplayName = (params: {
   params.fallbackUserId;
 
 /**
+ * True when an incoming Clerk membership should replace the stored mirror identity.
+ * `null` stored timestamps are treated as unset so the first post-migration create can populate.
+ */
+export const shouldReplaceMirroredMembership = (
+  storedCreatedAt: Date | null | undefined,
+  incomingCreatedAt: Date
+): boolean =>
+  storedCreatedAt == null ||
+  storedCreatedAt.getTime() < incomingCreatedAt.getTime();
+
+/**
  * Insert local `org_members` row if absent — same semantics as
- * `organizationMembership.created` webhook (`onConflictDoNothing` on org + user).
+ * `organizationMembership.created` webhook. On conflict, replace the stored
+ * Clerk membership identity only when the incoming membership is newer.
  */
 export const insertOrgMemberIfAbsent = async (params: {
   orgId: string;
   appUserId: string;
   displayName: string;
   clerkMembershipId: string;
+  /** Clerk organization membership `created_at`. */
+  membershipCreatedAt: Date;
   /** Clerk org role (e.g. `org:admin`); mapped via {@link mapClerkOrgRoleToAppRole}. */
   clerkOrgRole?: string | null;
 }): Promise<void> => {
@@ -152,6 +166,7 @@ export const insertOrgMemberIfAbsent = async (params: {
       orgId: params.orgId,
       userId: params.appUserId,
       externalId: params.clerkMembershipId,
+      membershipCreatedAt: params.membershipCreatedAt,
       role,
       displayName: params.displayName,
     })
@@ -159,9 +174,14 @@ export const insertOrgMemberIfAbsent = async (params: {
       target: [orgMembers.orgId, orgMembers.userId],
       set: {
         externalId: params.clerkMembershipId,
+        membershipCreatedAt: params.membershipCreatedAt,
         role,
         displayName: params.displayName,
       },
+      setWhere: or(
+        isNull(orgMembers.membershipCreatedAt),
+        lt(orgMembers.membershipCreatedAt, params.membershipCreatedAt)
+      ),
     });
 };
 

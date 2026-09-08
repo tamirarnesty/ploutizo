@@ -1,12 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   deleteOrgMemberIfPresent,
+  findLocalUserIdByClerkId,
   insertLocalUserIfAbsent,
   insertOrgMemberIfAbsent,
   updateLocalUserFromUserJson,
 } from './clerkDbMirror';
 import { HANDLED_CLERK_WEBHOOK_EVENTS } from './clerkWebhookEvents';
-import { dispatchWebhookEvent, handleOrgMembershipDeleted } from './webhooks';
+import {
+  dispatchWebhookEvent,
+  handleOrgMembershipCreated,
+  handleOrgMembershipDeleted,
+} from './webhooks';
 import type { OrganizationMembershipJSON, WebhookEvent } from '@clerk/backend';
 
 vi.mock('./clerkDbMirror', () => ({
@@ -61,6 +66,15 @@ const membershipDeletedEvent = (): WebhookEvent =>
     data: membershipDeletedPayload(),
   }) as WebhookEvent;
 
+const membershipCreatedPayload = (
+  createdAt: number = 2_000
+): OrganizationMembershipJSON =>
+  ({
+    ...membershipDeletedPayload(),
+    id: 'orgmem_new',
+    created_at: createdAt,
+  }) as unknown as OrganizationMembershipJSON;
+
 const expectMembershipDeleted = () => {
   expect(deleteOrgMemberIfPresent).toHaveBeenCalledWith({
     orgId: 'org_1',
@@ -88,9 +102,32 @@ describe('handleOrgMembershipDeleted', () => {
   });
 });
 
+describe('handleOrgMembershipCreated', () => {
+  beforeEach(() => {
+    vi.mocked(findLocalUserIdByClerkId).mockReset();
+    vi.mocked(insertOrgMemberIfAbsent).mockReset();
+  });
+
+  it('passes Clerk membership created_at when mirroring the member', async () => {
+    vi.mocked(findLocalUserIdByClerkId).mockResolvedValue('app_user_1');
+
+    await handleOrgMembershipCreated(membershipCreatedPayload(2_000));
+
+    expect(insertOrgMemberIfAbsent).toHaveBeenCalledWith({
+      orgId: 'org_1',
+      appUserId: 'app_user_1',
+      displayName: 'Ada Lovelace',
+      clerkMembershipId: 'orgmem_new',
+      membershipCreatedAt: new Date(2_000),
+      clerkOrgRole: 'org:member',
+    });
+  });
+});
+
 describe('dispatchWebhookEvent', () => {
   beforeEach(() => {
     vi.mocked(deleteOrgMemberIfPresent).mockReset();
+    vi.mocked(findLocalUserIdByClerkId).mockReset();
     vi.mocked(insertLocalUserIfAbsent).mockReset();
     vi.mocked(insertOrgMemberIfAbsent).mockReset();
     vi.mocked(updateLocalUserFromUserJson).mockReset();

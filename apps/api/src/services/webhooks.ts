@@ -83,6 +83,7 @@ export const handleOrgMembershipCreated = async (
     appUserId,
     displayName,
     clerkMembershipId: data.id,
+    membershipCreatedAt: new Date(data.created_at),
     clerkOrgRole: data.role,
   });
 };

@@ -1,5 +1,5 @@
 {
-  "id": "6c12b451-40b2-4b06-ab58-e8a61f84d32d",
+  "id": "80fcce29-d9bd-4c09-b1d2-f16efb8eb0bc",
   "prevId": "50ead732-1b0a-4fe1-afd8-4d9e047d793b",
   "version": "7",
   "dialect": "postgresql",
@@ -38,6 +38,12 @@
         "external_id": {
           "name": "external_id",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "membership_created_at": {
+          "name": "membership_created_at",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         },

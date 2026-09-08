@@ -103,6 +103,14 @@ export const orgMembers = pgTable(
      * Used to ignore stale `organizationMembership.deleted` webhooks after rejoin.
      */
     externalId: text('external_id'),
+    /**
+     * Clerk organization membership `created_at`.
+     * Incoming creates replace the stored identity only when this timestamp is
+     * newer, so a delayed create for a previous membership cannot evict a rejoin.
+     */
+    membershipCreatedAt: timestamp('membership_created_at', {
+      withTimezone: true,
+    }),
     displayName: text('display_name').notNull(),
     /** Private — used only for TFSA contribution room calculation. */
     birthYear: integer('birth_year'),

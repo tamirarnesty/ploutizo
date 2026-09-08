@@ -54,8 +54,8 @@
     {
       "idx": 7,
       "version": "7",
-      "when": 1788875359728,
-      "tag": "0007_org_member_external_id",
+      "when": 1788879371746,
+      "tag": "0007_org_member_clerk_membership",
       "breakpoints": true
     }
   ]
