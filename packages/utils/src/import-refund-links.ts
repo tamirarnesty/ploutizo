@@ -1,14 +1,13 @@
-import type { ImportTransactionType } from '@ploutizo/types';
+import type {
+  ImportTransactionType,
+  ReviewedImportValues,
+} from '@ploutizo/types';
 import {
   importDescriptionsAreSimilar,
   normalizeImportMatchDescription,
 } from './import-matches';
-import {
-  resolveImportRowReviewAmount,
-  resolveImportRowReviewDescription,
-  resolveImportRowReviewType,
-  toImportTransactionType,
-} from './import-row-status';
+import { toImportTransactionType } from './import-row-status';
+import { resolveReviewedImportValues } from './reviewed-import-values';
 
 export interface ImportRefundLinkDraftRow {
   id: string;
@@ -121,15 +120,14 @@ const emptyEvaluation = (
 });
 
 const isSameImportExpenseFinalizable = (
-  target: ImportRefundLinkDraftRow
+  target: ImportRefundLinkDraftRow,
+  values: ReviewedImportValues
 ): boolean => {
-  const type = resolveImportRowReviewType(target);
-  if (type !== 'expense') return false;
+  if (values.type !== 'expense') return false;
   if (!target.selectedForImport) return false;
-  if (!target.reviewCategoryId) return false;
-  if (target.reviewAssigneeMemberIds.length === 0) return false;
-  const amount = resolveImportRowReviewAmount(target);
-  return amount != null && amount > 0;
+  if (!values.categoryId) return false;
+  if (values.assigneeMemberIds.length === 0) return false;
+  return values.amount != null && values.amount > 0;
 };
 
 /**
@@ -141,21 +139,17 @@ export const sumSelectedRefundsByTarget = (
 ): Map<string, number> => {
   const totals = new Map<string, number>();
   for (const row of rows) {
-    const type = resolveImportRowReviewType({
-      reviewType: toImportTransactionType(row.reviewType),
-      parsedType: toImportTransactionType(row.parsedType),
-    });
-    if (type !== 'refund' || !row.selectedForImport) continue;
-    const amount = resolveImportRowReviewAmount(row);
-    if (amount == null || amount <= 0) continue;
+    const values = resolveReviewedImportValues(row);
+    if (values.type !== 'refund' || !row.selectedForImport) continue;
+    if (values.amount == null || values.amount <= 0) continue;
 
-    const key = row.reviewRefundOf
-      ? `tx:${row.reviewRefundOf}`
-      : row.reviewRefundOfBatchRowId
-        ? `row:${row.reviewRefundOfBatchRowId}`
+    const key = values.refundOf
+      ? `tx:${values.refundOf}`
+      : values.refundOfBatchRowId
+        ? `row:${values.refundOfBatchRowId}`
         : null;
     if (!key) continue;
-    totals.set(key, (totals.get(key) ?? 0) + amount);
+    totals.set(key, (totals.get(key) ?? 0) + values.amount);
   }
   return totals;
 };
@@ -167,16 +161,13 @@ export const evaluateImportRefundLink = (
   selectedRefundTotals?: ReadonlyMap<string, number>,
   draftRowsById?: ReadonlyMap<string, ImportRefundLinkDraftRow>
 ): ImportRefundLinkEvaluation => {
-  const type = resolveImportRowReviewType({
-    reviewType: toImportTransactionType(row.reviewType),
-    parsedType: toImportTransactionType(row.parsedType),
-  });
-  if (type !== 'refund') {
+  const values = resolveReviewedImportValues(row);
+  if (values.type !== 'refund') {
     return emptyEvaluation(false);
   }
 
-  const hasExisting = Boolean(row.reviewRefundOf);
-  const hasSameImport = Boolean(row.reviewRefundOfBatchRowId);
+  const hasExisting = Boolean(values.refundOf);
+  const hasSameImport = Boolean(values.refundOfBatchRowId);
   if (!hasExisting && !hasSameImport) {
     return emptyEvaluation(false);
   }
@@ -191,10 +182,10 @@ export const evaluateImportRefundLink = (
   let targetAmount: number | null = null;
   let targetKey: string | null = null;
 
-  if (hasExisting && row.reviewRefundOf) {
-    targetKey = `tx:${row.reviewRefundOf}`;
+  if (hasExisting && values.refundOf) {
+    targetKey = `tx:${values.refundOf}`;
     if (options.existingExpenses) {
-      const expense = options.existingExpenses.get(row.reviewRefundOf);
+      const expense = options.existingExpenses.get(values.refundOf);
       if (!expense) {
         issues.push('missing_target');
       } else {
@@ -210,33 +201,30 @@ export const evaluateImportRefundLink = (
     }
   }
 
-  if (hasSameImport && row.reviewRefundOfBatchRowId) {
-    targetKey = `row:${row.reviewRefundOfBatchRowId}`;
-    if (row.reviewRefundOfBatchRowId === row.id) {
+  if (hasSameImport && values.refundOfBatchRowId) {
+    targetKey = `row:${values.refundOfBatchRowId}`;
+    if (values.refundOfBatchRowId === row.id) {
       issues.push('self_link');
     }
     const target =
-      draftRowsById?.get(row.reviewRefundOfBatchRowId) ??
-      draftRows.find((r) => r.id === row.reviewRefundOfBatchRowId);
+      draftRowsById?.get(values.refundOfBatchRowId) ??
+      draftRows.find((r) => r.id === values.refundOfBatchRowId);
     if (!target) {
       issues.push('missing_target');
     } else {
-      const targetType = resolveImportRowReviewType({
-        reviewType: toImportTransactionType(target.reviewType),
-        parsedType: toImportTransactionType(target.parsedType),
-      });
-      if (targetType !== 'expense') {
+      const targetValues = resolveReviewedImportValues(target);
+      if (targetValues.type !== 'expense') {
         issues.push('target_not_expense');
       }
       if (!target.selectedForImport) {
         issues.push('target_not_selected');
       }
-      if (!isSameImportExpenseFinalizable(target)) {
+      if (!isSameImportExpenseFinalizable(target, targetValues)) {
         issues.push('target_unfinalizable');
       }
-      inheritedCategoryId = target.reviewCategoryId;
-      inheritedAssigneeMemberIds = [...target.reviewAssigneeMemberIds];
-      targetAmount = resolveImportRowReviewAmount(target);
+      inheritedCategoryId = targetValues.categoryId;
+      inheritedAssigneeMemberIds = [...targetValues.assigneeMemberIds];
+      targetAmount = targetValues.amount;
     }
   }
 
@@ -292,18 +280,15 @@ export interface ImportRefundSuggestion {
   explanation: string;
 }
 
-const refundRowDescription = (row: {
-  sourceDescription?: string | null;
-  parsedDescription?: string | null;
-  reviewDescription?: string | null;
-}): string =>
+const refundRowDescription = (
+  row: {
+    sourceDescription?: string | null;
+    parsedDescription?: string | null;
+  },
+  resolvedDescription: string | null
+): string =>
   normalizeImportMatchDescription(
-    row.sourceDescription ??
-      row.parsedDescription ??
-      resolveImportRowReviewDescription({
-        reviewDescription: row.reviewDescription ?? null,
-        parsedDescription: row.parsedDescription ?? null,
-      })
+    row.sourceDescription ?? row.parsedDescription ?? resolvedDescription
   );
 
 /** Derived refund-link suggestion. Never writes the user's saved decision. */
@@ -315,16 +300,12 @@ export const suggestImportRefundLink = (
     existingExpenses?: readonly ImportRefundSuggestionTarget[];
   }
 ): ImportRefundSuggestion | null => {
-  const type = resolveImportRowReviewType({
-    reviewType: toImportTransactionType(row.reviewType),
-    parsedType: toImportTransactionType(row.parsedType),
-  });
-  if (type !== 'refund') return null;
+  const values = resolveReviewedImportValues(row);
+  if (values.type !== 'refund') return null;
 
-  const amount = resolveImportRowReviewAmount(row);
-  if (amount == null || amount <= 0) return null;
+  if (values.amount == null || values.amount <= 0) return null;
 
-  const description = refundRowDescription(row);
+  const description = refundRowDescription(row, values.description);
   if (!description) return null;
 
   const scored: {
@@ -335,7 +316,7 @@ export const suggestImportRefundLink = (
   for (const expense of options.existingExpenses ?? []) {
     if (expense.deleted) continue;
     if (expense.accountId !== options.targetAccountId) continue;
-    if (expense.amount < amount) continue;
+    if (expense.amount < values.amount) continue;
     const expenseDescription = normalizeImportMatchDescription(
       expense.rawDescription ?? expense.description
     );
@@ -343,13 +324,13 @@ export const suggestImportRefundLink = (
       continue;
     }
     scored.push({
-      score: expense.amount === amount ? 2 : 1,
+      score: expense.amount === values.amount ? 2 : 1,
       suggestion: {
         kind: 'existing',
         transactionId: expense.id,
         batchRowId: null,
         explanation:
-          expense.amount === amount
+          expense.amount === values.amount
             ? 'Suggested refund of an existing expense with the same amount.'
             : 'Suggested refund of an existing expense with a similar description.',
       },
@@ -358,26 +339,27 @@ export const suggestImportRefundLink = (
 
   for (const target of draftRows) {
     if (target.id === row.id) continue;
-    const targetType = resolveImportRowReviewType({
-      reviewType: toImportTransactionType(target.reviewType),
-      parsedType: toImportTransactionType(target.parsedType),
-    });
-    if (targetType !== 'expense') continue;
+    const targetValues = resolveReviewedImportValues(target);
+    if (targetValues.type !== 'expense') continue;
     if (!target.selectedForImport) continue;
-    const targetAmount = resolveImportRowReviewAmount(target);
-    if (targetAmount == null || targetAmount < amount) continue;
-    const targetDescription = refundRowDescription(target);
+    if (targetValues.amount == null || targetValues.amount < values.amount) {
+      continue;
+    }
+    const targetDescription = refundRowDescription(
+      target,
+      targetValues.description
+    );
     if (!importDescriptionsAreSimilar(description, targetDescription)) {
       continue;
     }
     scored.push({
-      score: targetAmount === amount ? 2 : 1,
+      score: targetValues.amount === values.amount ? 2 : 1,
       suggestion: {
         kind: 'same_import',
         transactionId: null,
         batchRowId: target.id,
         explanation:
-          targetAmount === amount
+          targetValues.amount === values.amount
             ? 'Suggested refund of a selected expense in this import.'
             : 'Suggested refund of a similar selected expense in this import.',
       },

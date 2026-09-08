@@ -1,8 +1,6 @@
 import { getLiveAssigneeMemberIds } from '@ploutizo/utils/import-row-readiness';
-import {
-  getImportRowReviewBlockers,
-  resolveImportRowReviewDescription,
-} from '@ploutizo/utils/import-row-status';
+import { getImportRowReviewBlockers } from '@ploutizo/utils/import-row-status';
+import { resolveReviewedImportValues } from '@ploutizo/utils/reviewed-import-values';
 import type { ImportRowReviewBlocker } from '@ploutizo/utils/import-row-status';
 import type { ImportMatchEvaluation } from '@ploutizo/utils';
 import type {
@@ -31,7 +29,7 @@ const IMPORT_ROW_MISSING_BLOCKER_LABELS: Record<
 };
 
 export const getImportRowLabel = (row: ImportDraftRow): string =>
-  resolveImportRowReviewDescription(row) ??
+  resolveReviewedImportValues(row).description ??
   row.sourceDescription?.trim() ??
   'import row';
 

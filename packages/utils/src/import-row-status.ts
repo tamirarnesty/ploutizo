@@ -1,11 +1,17 @@
-import { IMPORT_TRANSACTION_TYPE_VALUES } from '@ploutizo/types';
 import type {
   ImportRowReviewBlocker,
   ImportRowStatus,
   ImportTransactionType,
+  ReviewedImportValues,
 } from '@ploutizo/types';
+import {
+  isImportTransactionType,
+  toImportTransactionType,
+} from './import-coercion';
+import { resolveReviewedImportValues } from './reviewed-import-values';
 
 export type { ImportRowReviewBlocker };
+export { isImportTransactionType, toImportTransactionType };
 
 export interface ImportRowStructuralFields {
   reviewDate: string | null;
@@ -82,54 +88,21 @@ export interface ImportRowEvaluation {
   blockers: ImportRowReviewBlocker[];
 }
 
-export const isImportTransactionType = (
-  value: string | null | undefined
-): value is ImportTransactionType =>
-  IMPORT_TRANSACTION_TYPE_VALUES.includes(value as ImportTransactionType);
-
-export const toImportTransactionType = (
-  value: string | null | undefined
-): ImportTransactionType | null =>
-  isImportTransactionType(value) ? value : null;
-
-export const resolveImportRowReviewDate = (
-  row: Pick<ImportRowStructuralFields, 'reviewDate' | 'parsedDate'>
-): string | null => row.reviewDate ?? row.parsedDate;
-
-export const resolveImportRowReviewAmount = (
-  row: Pick<ImportRowStructuralFields, 'reviewAmount' | 'parsedAmount'>
-): number | null => row.reviewAmount ?? row.parsedAmount;
-
-export const resolveImportRowReviewType = (
-  row: Pick<ImportRowReviewFields, 'reviewType' | 'parsedType'>
-): ImportTransactionType | null => row.reviewType ?? row.parsedType;
-
-export const resolveImportRowReviewDescription = (
-  row: Pick<
-    ImportRowStructuralFields,
-    'reviewDescription' | 'parsedDescription'
-  >
-): string | null => {
-  const description = row.reviewDescription ?? row.parsedDescription;
-  const trimmed = description?.trim();
-  return trimmed ? trimmed : null;
+const structuralBlockersFromValues = (
+  values: Pick<ReviewedImportValues, 'date' | 'amount' | 'type' | 'description'>
+): ImportRowStructuralBlocker[] => {
+  const blockers: ImportRowStructuralBlocker[] = [];
+  if (!values.date) blockers.push('date');
+  if (values.amount == null || values.amount <= 0) blockers.push('amount');
+  if (!values.description) blockers.push('description');
+  if (!values.type) blockers.push('type');
+  return blockers;
 };
 
 export const getImportRowStructuralBlockers = (
   row: ImportRowStructuralFields
-): ImportRowStructuralBlocker[] => {
-  const blockers: ImportRowStructuralBlocker[] = [];
-  const date = resolveImportRowReviewDate(row);
-  const amount = resolveImportRowReviewAmount(row);
-  const type = resolveImportRowReviewType(row);
-  const description = resolveImportRowReviewDescription(row);
-
-  if (!date) blockers.push('date');
-  if (amount == null || amount <= 0) blockers.push('amount');
-  if (!description) blockers.push('description');
-  if (!type) blockers.push('type');
-  return blockers;
-};
+): ImportRowStructuralBlocker[] =>
+  structuralBlockersFromValues(resolveReviewedImportValues(row));
 
 export const formatImportRowStructuralInvalidReason = (
   row: ImportRowStructuralFields
@@ -160,23 +133,23 @@ export const toImportRowStatusFields = (
 });
 
 const getReviewPhaseBlockers = (
-  row: ImportRowReviewFields
+  row: ImportRowReviewFields,
+  values: ReviewedImportValues
 ): ImportRowReviewBlocker[] => {
   const blockers: ImportRowReviewBlocker[] = [];
-  const type = resolveImportRowReviewType(row);
 
-  if (type === 'expense' || type === 'refund') {
-    if (!row.reviewCategoryId) blockers.push('category');
+  if (values.type === 'expense' || values.type === 'refund') {
+    if (!values.categoryId) blockers.push('category');
   }
 
-  if (type === 'settlement' && !row.reviewCounterpartAccountId) {
+  if (values.type === 'settlement' && !values.counterpartAccountId) {
     // Funding / Pay-toward readiness — counterpart is settlement funding.
     blockers.push('settlement');
   }
 
-  if (row.reviewAssigneeMemberIds.length === 0) blockers.push('assignee');
+  if (values.assigneeMemberIds.length === 0) blockers.push('assignee');
 
-  if (type === 'refund' && row.refundLinkBlocked) {
+  if (values.type === 'refund' && row.refundLinkBlocked) {
     blockers.push('refund_link');
   }
   if (row.matchBlocked) {
@@ -188,10 +161,13 @@ const getReviewPhaseBlockers = (
 /** Structured review blockers — single rule list for status and tooltips. */
 export const getImportRowReviewBlockers = (
   row: ImportRowStructuralFields & ImportRowReviewFields
-): ImportRowReviewBlocker[] => [
-  ...getImportRowStructuralBlockers(row),
-  ...getReviewPhaseBlockers(row),
-];
+): ImportRowReviewBlocker[] => {
+  const values = resolveReviewedImportValues(row);
+  return [
+    ...structuralBlockersFromValues(values),
+    ...getReviewPhaseBlockers(row, values),
+  ];
+};
 
 export const isImportRowStructurallyInvalid = (
   row: ImportRowStructuralFields

@@ -223,8 +223,8 @@ export interface ImportRequirementFailureDetails {
   rows: ImportRequirementFailure[];
 }
 
-/** Immutable reviewed values captured when a prepared set revision is created. */
-export interface ImportPreparedReviewedValues {
+/** Effective transaction values after reviewed edits override parsed values. */
+export interface ReviewedImportValues {
   date: string | null;
   amount: number | null;
   type: ImportTransactionType | null;
@@ -236,9 +236,18 @@ export interface ImportPreparedReviewedValues {
   refundOfBatchRowId: string | null;
   notes: string | null;
   tagIds: string[];
+}
+
+/** Immutable import-source identity retained beside reviewed transaction values. */
+export interface ImportRowProvenance {
   externalId: string | null;
   rawDescription: string | null;
-  selectedForImport: boolean;
+}
+
+/** Revision-bound prepared-row snapshot. Selection lives on the outcome, not here. */
+export interface PreparedImportRowSnapshot {
+  reviewedValues: ReviewedImportValues;
+  provenance: ImportRowProvenance;
 }
 
 export interface ImportPreparedSetSummary {
@@ -254,7 +263,7 @@ export interface ImportPreparedOutcomeRow {
   batchRowId: string;
   outcome: ImportPreparedOutcome;
   transactionId: string | null;
-  reviewedValues: ImportPreparedReviewedValues;
+  snapshot: PreparedImportRowSnapshot;
   createdAt: string;
 }
 
@@ -281,7 +290,7 @@ export interface ImportPreparedConfirmationRow {
   batchRowId: string;
   outcome: ImportPreparedConfirmationOutcome;
   transactionId: string | null;
-  reviewedValues: ImportPreparedReviewedValues;
+  snapshot: PreparedImportRowSnapshot;
 }
 
 /** Read-only Finalize confirmation DTO for the active prepared revision. */

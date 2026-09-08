@@ -104,26 +104,27 @@ const PreparedRowsTable = ({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
-              <tr key={row.batchRowId} className="border-t border-border">
-                <td className="px-3 py-2">
-                  {formatReviewedDate(row.reviewedValues.date)}
-                </td>
-                <td className="px-3 py-2">
-                  {row.reviewedValues.description ?? '—'}
-                </td>
-                <td className="px-3 py-2">
-                  {row.reviewedValues.type
-                    ? formatTransactionTypeLabel(row.reviewedValues.type)
-                    : '—'}
-                </td>
-                <td className="px-3 py-2">
-                  {row.reviewedValues.amount == null
-                    ? '—'
-                    : formatCurrency(row.reviewedValues.amount)}
-                </td>
-              </tr>
-            ))}
+            {rows.map((row) => {
+              const values = row.snapshot.reviewedValues;
+              return (
+                <tr key={row.batchRowId} className="border-t border-border">
+                  <td className="px-3 py-2">
+                    {formatReviewedDate(values.date)}
+                  </td>
+                  <td className="px-3 py-2">{values.description ?? '—'}</td>
+                  <td className="px-3 py-2">
+                    {values.type
+                      ? formatTransactionTypeLabel(values.type)
+                      : '—'}
+                  </td>
+                  <td className="px-3 py-2">
+                    {values.amount == null
+                      ? '—'
+                      : formatCurrency(values.amount)}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

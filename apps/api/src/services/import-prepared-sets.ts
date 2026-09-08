@@ -3,22 +3,15 @@ import {
   evaluateImportSetRequirements,
   projectImportPreparedOutcomes,
 } from '@ploutizo/utils/import-requirements';
-import {
-  resolveImportRowReviewAmount,
-  resolveImportRowReviewDate,
-  resolveImportRowReviewDescription,
-  resolveImportRowReviewType,
-  toImportTransactionType,
-} from '@ploutizo/utils/import-row-status';
-import { importPreparedReviewedValuesSchema } from '@ploutizo/validators';
+import { resolveReviewedImportValues } from '@ploutizo/utils/reviewed-import-values';
 import type { Transaction } from '@ploutizo/db';
 import type { PrepareImportOutcomeInput } from '@ploutizo/validators';
 import type {
   ImportPreparedConfirmation,
-  ImportPreparedReviewedValues,
   ImportPreparedSet,
   ImportPreparedSetSummary,
   ImportRequirementFailureDetails,
+  PreparedImportRowSnapshot,
 } from '@ploutizo/types';
 import type { ImportDraftRowRecord } from '@/lib/queries/imports';
 import type { AccountWriteReference } from '@/lib/queries/scope';
@@ -52,44 +45,15 @@ import {
   toImportDraftDurableRow,
 } from '@/services/import-draft-view';
 
-export const buildReviewedValuesSnapshot = (
+const toPreparedImportRowSnapshot = (
   row: ImportDraftRowRecord
-): ImportPreparedReviewedValues => {
-  const type = resolveImportRowReviewType({
-    reviewType: toImportTransactionType(row.reviewType),
-    parsedType: toImportTransactionType(row.parsedType),
-  });
-
-  const description = resolveImportRowReviewDescription({
-    reviewDescription: row.reviewDescription,
-    parsedDescription: row.parsedDescription,
-  });
-
-  const snapshot = {
-    date: resolveImportRowReviewDate({
-      reviewDate: row.reviewDate ?? null,
-      parsedDate: row.parsedDate ?? null,
-    }),
-    amount: resolveImportRowReviewAmount({
-      reviewAmount: row.reviewAmount,
-      parsedAmount: row.parsedAmount,
-    }),
-    type,
-    description,
-    categoryId: row.reviewCategoryId,
-    assigneeMemberIds: row.reviewAssigneeMemberIds,
-    counterpartAccountId: row.reviewCounterpartAccountId,
-    refundOf: row.reviewRefundOf,
-    refundOfBatchRowId: row.reviewRefundOfBatchRowId,
-    notes: row.reviewNotes,
-    tagIds: row.reviewTagIds,
+): PreparedImportRowSnapshot => ({
+  reviewedValues: resolveReviewedImportValues(row),
+  provenance: {
     externalId: row.externalId,
     rawDescription: row.sourceDescription?.trim() || null,
-    selectedForImport: row.selectedForImport,
-  };
-
-  return importPreparedReviewedValuesSchema.parse(snapshot);
-};
+  },
+});
 
 const assertNoDuplicateBatchRowIds = (
   outcomes: PrepareImportOutcomeInput[]
@@ -145,7 +109,7 @@ const insertPreparedSetFromRows = async (
       batchRowId: outcome.batchRowId,
       outcome: outcome.outcome,
       transactionId: outcome.transactionId ?? null,
-      reviewedValues: buildReviewedValuesSnapshot(row),
+      snapshot: toPreparedImportRowSnapshot(row),
     }))
   );
 

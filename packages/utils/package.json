@@ -29,6 +29,7 @@
     "./classify-import-rows": "./src/classify-import-rows.ts",
     "./import-coercion": "./src/import-coercion.ts",
     "./import-row-status": "./src/import-row-status.ts",
+    "./reviewed-import-values": "./src/reviewed-import-values.ts",
     "./import-row-readiness": "./src/import-row-readiness.ts",
     "./import-requirements": "./src/import-requirements.ts",
     "./match-merchant-rule": "./src/match-merchant-rule.ts",

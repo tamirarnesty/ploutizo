@@ -245,3 +245,28 @@ describe('completed import result migration', () => {
     );
   });
 });
+
+describe('prepared row snapshot cutover migration', () => {
+  const snapshotCutoverMigration = readFileSync(
+    join(root, 'drizzle/0009_prepared_row_snapshot.sql'),
+    'utf8'
+  );
+
+  it('deletes existing prepared staging before renaming the snapshot column', () => {
+    const truncateAt = snapshotCutoverMigration.indexOf(
+      'TRUNCATE TABLE "import_prepared_outcomes", "import_prepared_sets"'
+    );
+    const renameAt = snapshotCutoverMigration.indexOf(
+      'RENAME COLUMN "reviewed_values" TO "row_snapshot"'
+    );
+    expect(truncateAt).toBeGreaterThan(-1);
+    expect(renameAt).toBeGreaterThan(truncateAt);
+  });
+
+  it('does not transform or retain the flat reviewed_values shape', () => {
+    expect(snapshotCutoverMigration).not.toContain(
+      'UPDATE "import_prepared_outcomes"'
+    );
+    expect(snapshotCutoverMigration).not.toContain('reviewed_values ->');
+  });
+});

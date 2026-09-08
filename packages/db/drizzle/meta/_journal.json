@@ -64,6 +64,13 @@
       "when": 1788891649556,
       "tag": "0008_drop_derived_person_names",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788897736485,
+      "tag": "0009_prepared_row_snapshot",
+      "breakpoints": true
     }
   ]
 }

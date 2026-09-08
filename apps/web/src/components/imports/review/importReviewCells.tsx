@@ -21,12 +21,7 @@ import {
 import { cn } from '@ploutizo/ui/lib/utils';
 import { formatTransactionTypeLabel } from '@ploutizo/utils';
 import { centsToDollars, dollarsToCents } from '@ploutizo/utils/currency';
-import {
-  resolveImportRowReviewAmount,
-  resolveImportRowReviewDate,
-  resolveImportRowReviewDescription,
-  resolveImportRowReviewType,
-} from '@ploutizo/utils/import-row-status';
+import { resolveReviewedImportValues } from '@ploutizo/utils/reviewed-import-values';
 import { IMPORT_TRANSACTION_TYPE_VALUES } from '@ploutizo/types';
 import type { ImportDraftRow, ImportTransactionType } from '@ploutizo/types';
 import { CategorySelect } from '@/components/categories/CategorySelect';
@@ -152,17 +147,17 @@ interface ImportReviewDateCellProps {
 export const ImportReviewDateCell = ({ row }: ImportReviewDateCellProps) => {
   const { saveField, disabled } = useImportDraftReviewRowSave(row);
   const rowLabel = getImportRowLabel(row);
-  const reviewDate = resolveImportRowReviewDate(row) ?? '';
+  const { date } = resolveReviewedImportValues(row);
 
   return (
     <DatePicker
       id={`import-row-date-${row.id}`}
       aria-label={`Date for ${rowLabel}`}
-      value={reviewDate || undefined}
+      value={date || undefined}
       disabled={disabled}
       onChange={(nextDate) => {
         const next = nextDate || null;
-        if (next === resolveImportRowReviewDate(row)) return;
+        if (next === date) return;
         saveField({ reviewDate: next });
       }}
     />
@@ -223,15 +218,16 @@ interface ImportReviewTypeCellProps {
 export const ImportReviewTypeCell = ({ row }: ImportReviewTypeCellProps) => {
   const { saveField, disabled } = useImportDraftReviewRowSave(row);
   const rowLabel = getImportRowLabel(row);
+  const { type } = resolveReviewedImportValues(row);
 
   return (
     <ImportTransactionTypeSelect
       id={`import-row-type-${row.id}`}
-      value={resolveImportRowReviewType(row)}
+      value={type}
       disabled={disabled}
       ariaLabel={`Type for ${rowLabel}`}
       onChange={(nextType) => {
-        if (nextType === resolveImportRowReviewType(row)) return;
+        if (nextType === type) return;
         saveField({ reviewType: nextType });
       }}
     />

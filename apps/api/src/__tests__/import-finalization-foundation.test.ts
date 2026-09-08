@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { resolveReviewedImportValues } from '@ploutizo/utils/reviewed-import-values';
+import type { PreparedImportRowSnapshot } from '@ploutizo/types';
 import { DomainError, NotFoundError } from '@/lib/errors';
 import {
   deleteImportPreparedSet,
@@ -32,7 +34,6 @@ import {
   transactionExistsInOrg,
 } from '@/lib/queries/scope';
 import {
-  buildReviewedValuesSnapshot,
   continueImportDraft,
   createImportPreparedSetRevision,
   getActiveImportPreparedConfirmation,
@@ -177,6 +178,16 @@ const draftRow = {
   createdAt: new Date('2026-05-20T12:00:00Z'),
   updatedAt: new Date('2026-05-20T12:00:00Z'),
 };
+
+const rowSnapshot = (
+  row: typeof draftRow = draftRow
+): PreparedImportRowSnapshot => ({
+  reviewedValues: resolveReviewedImportValues(row),
+  provenance: {
+    externalId: row.externalId.trim() || null,
+    rawDescription: row.sourceDescription.trim() || null,
+  },
+});
 
 describe('import finalization foundation — transaction provenance', () => {
   beforeEach(() => {
@@ -530,39 +541,11 @@ describe('import finalization foundation — prepared set revisions', () => {
           batchRowId: value.batchRowId,
           outcome: value.outcome,
           transactionId: value.transactionId ?? null,
-          reviewedValues: value.reviewedValues,
+          snapshot: value.snapshot,
           createdAt: new Date('2026-05-20T12:00:00Z'),
         }))
       )
     );
-  });
-
-  it('snapshots reviewed values including raw description provenance', () => {
-    expect(buildReviewedValuesSnapshot(draftRow as never)).toEqual({
-      date: '2026-05-02',
-      amount: 4218,
-      type: 'expense',
-      description: 'Neighborhood Coffee',
-      categoryId: CATEGORY,
-      assigneeMemberIds: [MEMBER],
-      counterpartAccountId: null,
-      refundOf: null,
-      refundOfBatchRowId: null,
-      notes: 'weekly',
-      tagIds: [],
-      externalId: 'visa-1001',
-      rawDescription: 'COFFEE SHOP #42',
-      selectedForImport: true,
-    });
-  });
-
-  it('retains source description when it matches the reviewed description', () => {
-    const snapshot = buildReviewedValuesSnapshot({
-      ...draftRow,
-      reviewDescription: draftRow.sourceDescription,
-    } as never);
-
-    expect(snapshot.rawDescription).toBe('COFFEE SHOP #42');
   });
 
   it('creates immutable revision 1 then increments to revision 2 using server snapshots', async () => {
@@ -574,10 +557,17 @@ describe('import finalization foundation — prepared set revisions', () => {
     ]);
     expect(first.revision).toBe(1);
     expect(first.outcomes[0]?.outcome).toBe('created');
-    expect(first.outcomes[0]?.reviewedValues).toMatchObject({
-      description: 'Neighborhood Coffee',
-      externalId: 'visa-1001',
-      rawDescription: 'COFFEE SHOP #42',
+    expect(first.outcomes[0]?.snapshot).toEqual({
+      reviewedValues: expect.objectContaining({
+        date: '2026-05-02',
+        amount: 4218,
+        type: 'expense',
+        description: 'Neighborhood Coffee',
+      }),
+      provenance: {
+        externalId: 'visa-1001',
+        rawDescription: 'COFFEE SHOP #42',
+      },
     });
     expect(lockPreparedSetRevisionForBatch).toHaveBeenCalledWith(
       mockTx,
@@ -677,7 +667,7 @@ describe('import finalization foundation — prepared set revisions', () => {
         batchRowId: ROW,
         outcome: 'created',
         transactionId: null,
-        reviewedValues: buildReviewedValuesSnapshot(draftRow as never),
+        snapshot: rowSnapshot(),
         createdAt: new Date('2026-05-20T12:00:00Z'),
       },
     ]);
@@ -710,7 +700,7 @@ describe('import finalization foundation — prepared set revisions', () => {
         batchRowId: ROW,
         outcome: 'unprocessed',
         transactionId: null,
-        reviewedValues: buildReviewedValuesSnapshot(draftRow as never),
+        snapshot: rowSnapshot(),
         createdAt: new Date('2026-05-20T12:00:00Z'),
       },
     ]);
@@ -778,7 +768,7 @@ describe('continueImportDraft', () => {
           batchRowId: value.batchRowId,
           outcome: value.outcome,
           transactionId: value.transactionId ?? null,
-          reviewedValues: value.reviewedValues,
+          snapshot: value.snapshot,
           createdAt: new Date('2026-05-20T12:00:00Z'),
         }))
       )
@@ -1099,8 +1089,10 @@ describe('continueImportDraft', () => {
         expect.objectContaining({
           batchRowId: ROW_REFUND,
           outcome: 'created',
-          reviewedValues: expect.objectContaining({
-            refundOfBatchRowId: ROW,
+          snapshot: expect.objectContaining({
+            reviewedValues: expect.objectContaining({
+              refundOfBatchRowId: ROW,
+            }),
           }),
         }),
       ])
@@ -1164,7 +1156,7 @@ describe('continueImportDraft', () => {
         batchRowId: ROW,
         outcome: 'created',
         transactionId: null,
-        reviewedValues: buildReviewedValuesSnapshot(draftRow as never),
+        snapshot: rowSnapshot(),
         createdAt: new Date('2026-05-20T11:00:00Z'),
       },
     ]);
@@ -1195,7 +1187,7 @@ describe('continueImportDraft', () => {
         batchRowId: ROW,
         outcome: 'unprocessed',
         transactionId: null,
-        reviewedValues: buildReviewedValuesSnapshot(draftRow as never),
+        snapshot: rowSnapshot(),
         createdAt: new Date('2026-05-20T11:00:00Z'),
       },
     ]);
@@ -1234,8 +1226,10 @@ describe('continueImportDraft', () => {
       mockTx,
       expect.arrayContaining([
         expect.objectContaining({
-          reviewedValues: expect.objectContaining({
-            categoryId: CATEGORY,
+          snapshot: expect.objectContaining({
+            reviewedValues: expect.objectContaining({
+              categoryId: CATEGORY,
+            }),
           }),
         }),
       ])
@@ -1317,7 +1311,7 @@ describe('prepared staging invalidation', () => {
         batchRowId: ROW,
         outcome: 'created',
         transactionId: null,
-        reviewedValues: buildReviewedValuesSnapshot(draftRow as never),
+        snapshot: rowSnapshot(),
         createdAt: new Date('2026-05-20T12:00:00Z'),
       },
     ]);

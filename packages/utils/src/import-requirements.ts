@@ -9,13 +9,10 @@ import type {
 import { getLiveAssigneeMemberIds } from './import-row-readiness';
 import {
   isImportRowStructurallyInvalid,
-  resolveImportRowReviewAmount,
-  resolveImportRowReviewDate,
-  resolveImportRowReviewDescription,
-  resolveImportRowReviewType,
   toImportRowStatusFields,
   toImportTransactionType,
 } from './import-row-status';
+import { resolveReviewedImportValues } from './reviewed-import-values';
 import { validateTransactionAccountPolicy } from './transaction-policy';
 import type { TransactionAccountReference } from './transaction-policy';
 import type { ImportDraftDurableRow } from './evaluate-import-draft';
@@ -104,32 +101,28 @@ const evaluateCreateRequirements = (
   input: EvaluateImportSetRequirementsInput
 ): ImportRequirementFailure[] => {
   const failures: ImportRequirementFailure[] = [];
-  const fields = toStatusFields(row);
-  const date = resolveImportRowReviewDate(fields);
-  const amount = resolveImportRowReviewAmount(fields);
-  const description = resolveImportRowReviewDescription(fields);
-  const type = resolveImportRowReviewType(fields);
+  const values = resolveReviewedImportValues(row);
 
-  if (!date) failures.push(failure(row.id, 'transaction.date.required'));
-  if (amount == null || amount <= 0) {
+  if (!values.date) failures.push(failure(row.id, 'transaction.date.required'));
+  if (values.amount == null || values.amount <= 0) {
     failures.push(failure(row.id, 'transaction.amount.positive'));
   }
-  if (!description) {
+  if (!values.description) {
     failures.push(failure(row.id, 'transaction.description.required'));
   }
-  if (!type) failures.push(failure(row.id, 'transaction.type.required'));
+  if (!values.type) failures.push(failure(row.id, 'transaction.type.required'));
 
-  if (type === 'expense' || type === 'refund') {
-    if (!row.reviewCategoryId) {
+  if (values.type === 'expense' || values.type === 'refund') {
+    if (!values.categoryId) {
       failures.push(failure(row.id, 'transaction.category.required'));
     }
   }
 
   const liveAssignees = getLiveAssigneeMemberIds(
-    row.reviewAssigneeMemberIds,
+    values.assigneeMemberIds,
     input.validAssigneeMemberIds
   );
-  const unknownAssignees = row.reviewAssigneeMemberIds.filter(
+  const unknownAssignees = values.assigneeMemberIds.filter(
     (memberId) => !input.validAssigneeMemberIds.has(memberId)
   );
   if (liveAssignees.length === 0) {
@@ -143,12 +136,12 @@ const evaluateCreateRequirements = (
     );
   }
 
-  if (type) {
-    const counterpart = row.reviewCounterpartAccountId
-      ? (input.counterpartAccounts.get(row.reviewCounterpartAccountId) ?? null)
+  if (values.type) {
+    const counterpart = values.counterpartAccountId
+      ? (input.counterpartAccounts.get(values.counterpartAccountId) ?? null)
       : null;
     const policy = validateTransactionAccountPolicy({
-      type,
+      type: values.type,
       account: input.targetAccount,
       counterpartAccount: counterpart,
     });

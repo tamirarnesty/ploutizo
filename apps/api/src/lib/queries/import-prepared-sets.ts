@@ -157,7 +157,7 @@ export const toImportPreparedSet = (
     batchRowId: outcome.batchRowId,
     outcome: outcome.outcome,
     transactionId: outcome.transactionId,
-    reviewedValues: outcome.reviewedValues,
+    snapshot: outcome.snapshot,
     createdAt: outcome.createdAt.toISOString(),
   })),
 });
@@ -190,7 +190,7 @@ export const toImportPreparedConfirmation = (
       batchRowId: outcome.batchRowId,
       outcome: outcome.outcome,
       transactionId: outcome.transactionId,
-      reviewedValues: outcome.reviewedValues,
+      snapshot: outcome.snapshot,
     };
     if (outcome.outcome === 'created') created.push(row);
     else matched.push(row);
