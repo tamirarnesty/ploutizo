@@ -8,6 +8,9 @@ type MemberLabelSource = Pick<
 const trimmed = (value: string | null | undefined): string =>
   value?.trim() ?? '';
 
+const normalizedFirstName = (value: string | null | undefined): string =>
+  trimmed(value).toLowerCase();
+
 export const memberFullLabel = (member: MemberLabelSource): string => {
   const joined = [trimmed(member.firstName), trimmed(member.lastName)]
     .filter(Boolean)
@@ -23,7 +26,8 @@ export const memberShortLabel = (
   const firstName = trimmed(member.firstName);
   if (!firstName) return memberFullLabel(member);
   const sameFirst = household.filter(
-    (other) => trimmed(other.firstName) === firstName
+    (other) =>
+      normalizedFirstName(other.firstName) === normalizedFirstName(firstName)
   );
   if (sameFirst.length > 1) return memberFullLabel(member);
   return firstName;

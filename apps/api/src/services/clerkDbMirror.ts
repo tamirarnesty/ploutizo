@@ -224,7 +224,8 @@ export const updateOrgMemberFromMembershipJson = async (
     .where(
       and(
         eq(orgMembers.orgId, data.organization.id),
-        eq(orgMembers.userId, appUserId)
+        eq(orgMembers.userId, appUserId),
+        eq(orgMembers.externalId, data.id)
       )
     );
 };

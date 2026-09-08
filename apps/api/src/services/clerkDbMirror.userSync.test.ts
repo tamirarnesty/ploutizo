@@ -1,3 +1,5 @@
+import { and, eq } from 'drizzle-orm';
+import { orgMembers } from '@ploutizo/db/schema';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   updateLocalUserFromUserJson,
@@ -31,6 +33,7 @@ vi.mock('@ploutizo/db/schema', () => ({
   orgMembers: {
     userId: 'orgMembers.userId',
     orgId: 'orgMembers.orgId',
+    externalId: 'orgMembers.externalId',
   },
 }));
 
@@ -194,6 +197,12 @@ describe('updateOrgMemberFromMembershipJson', () => {
     );
 
     expect(mockUpdateSet).toHaveBeenCalledWith({ role: 'admin' });
-    expect(mockUpdateWhere).toHaveBeenCalledOnce();
+    expect(mockUpdateWhere).toHaveBeenCalledWith(
+      and(
+        eq(orgMembers.orgId, 'org_household'),
+        eq(orgMembers.userId, 'app_user_1'),
+        eq(orgMembers.externalId, 'orgmem_1')
+      )
+    );
   });
 });

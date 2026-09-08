@@ -53,6 +53,25 @@ describe('memberShortLabel', () => {
     expect(memberShortLabel(tamir, [tamir, tamirSmith])).toBe('Tamir Arnesty');
   });
 
+  it('uses the full label when first names differ only by case', () => {
+    const alexLower = {
+      firstName: 'alex',
+      lastName: 'One',
+      email: 'alex1@example.com',
+    };
+    const alexUpper = {
+      firstName: 'Alex',
+      lastName: 'Two',
+      email: 'alex2@example.com',
+    };
+    expect(memberShortLabel(alexLower, [alexLower, alexUpper])).toBe(
+      'alex One'
+    );
+    expect(memberShortLabel(alexUpper, [alexLower, alexUpper])).toBe(
+      'Alex Two'
+    );
+  });
+
   it('uses the full label when first name is missing', () => {
     const unnamed = {
       firstName: null,
