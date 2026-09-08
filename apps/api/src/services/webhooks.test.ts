@@ -2,9 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   deleteOrgMemberIfPresent,
   findLocalUserIdByClerkId,
-  insertLocalUserIfAbsent,
   insertOrgMemberIfAbsent,
   updateLocalUserFromUserJson,
+  updateOrgMemberFromMembershipJson,
+  upsertLocalUser,
 } from './clerkDbMirror';
 import { HANDLED_CLERK_WEBHOOK_EVENTS } from './clerkWebhookEvents';
 import {
@@ -15,12 +16,12 @@ import {
 import type { OrganizationMembershipJSON, WebhookEvent } from '@clerk/backend';
 
 vi.mock('./clerkDbMirror', () => ({
-  buildOrgMemberDisplayName: vi.fn(() => 'Ada Lovelace'),
   deleteOrgMemberIfPresent: vi.fn(),
   findLocalUserIdByClerkId: vi.fn(),
-  insertLocalUserIfAbsent: vi.fn(),
+  upsertLocalUser: vi.fn(),
   insertOrgMemberIfAbsent: vi.fn(),
   updateLocalUserFromUserJson: vi.fn(),
+  updateOrgMemberFromMembershipJson: vi.fn(),
   userJsonToLocalUserRow: vi.fn(),
 }));
 
@@ -84,7 +85,11 @@ const expectMembershipDeleted = () => {
 };
 
 describe('HANDLED_CLERK_WEBHOOK_EVENTS', () => {
-  it('includes organizationMembership.deleted for dashboard subscription', () => {
+  it('includes membership lifecycle and profile sync events', () => {
+    expect(HANDLED_CLERK_WEBHOOK_EVENTS).toContain('user.updated');
+    expect(HANDLED_CLERK_WEBHOOK_EVENTS).toContain(
+      'organizationMembership.updated'
+    );
     expect(HANDLED_CLERK_WEBHOOK_EVENTS).toContain(
       'organizationMembership.deleted'
     );
@@ -116,7 +121,6 @@ describe('handleOrgMembershipCreated', () => {
     expect(insertOrgMemberIfAbsent).toHaveBeenCalledWith({
       orgId: 'org_1',
       appUserId: 'app_user_1',
-      displayName: 'Ada Lovelace',
       clerkMembershipId: 'orgmem_new',
       membershipCreatedAt: new Date(2_000),
       clerkOrgRole: 'org:member',
@@ -128,9 +132,28 @@ describe('dispatchWebhookEvent', () => {
   beforeEach(() => {
     vi.mocked(deleteOrgMemberIfPresent).mockReset();
     vi.mocked(findLocalUserIdByClerkId).mockReset();
-    vi.mocked(insertLocalUserIfAbsent).mockReset();
+    vi.mocked(upsertLocalUser).mockReset();
     vi.mocked(insertOrgMemberIfAbsent).mockReset();
     vi.mocked(updateLocalUserFromUserJson).mockReset();
+    vi.mocked(updateOrgMemberFromMembershipJson).mockReset();
+  });
+
+  it('routes user.updated to the user mirror helper', async () => {
+    const data = { id: 'user_1' } as never;
+    await dispatchWebhookEvent({ type: 'user.updated', data } as never);
+    expect(updateLocalUserFromUserJson).toHaveBeenCalledWith(data);
+  });
+
+  it('routes organizationMembership.updated to the membership mirror helper', async () => {
+    const data = {
+      organization: { id: 'org_1' },
+      public_user_data: { user_id: 'user_1' },
+    } as never;
+    await dispatchWebhookEvent({
+      type: 'organizationMembership.updated',
+      data,
+    } as never);
+    expect(updateOrgMemberFromMembershipJson).toHaveBeenCalledWith(data);
   });
 
   it('routes organizationMembership.deleted to the membership delete handler', async () => {

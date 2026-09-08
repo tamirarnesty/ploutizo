@@ -3,12 +3,12 @@ import { orgs } from '@ploutizo/db/schema';
 import { eq } from 'drizzle-orm';
 import { seedOrg } from '@ploutizo/db/seeds';
 import {
-  buildOrgMemberDisplayName,
   deleteOrgMemberIfPresent,
   findLocalUserIdByClerkId,
-  insertLocalUserIfAbsent,
   insertOrgMemberIfAbsent,
   updateLocalUserFromUserJson,
+  updateOrgMemberFromMembershipJson,
+  upsertLocalUser,
   userJsonToLocalUserRow,
 } from './clerkDbMirror';
 import type {
@@ -57,11 +57,17 @@ export const handleOrgUpdated = async (data: OrganizationJSON) => {
 export const handleUserCreated = async (data: UserJSON) => {
   const row = userJsonToLocalUserRow(data);
   if (!row) return;
-  await insertLocalUserIfAbsent(row);
+  await upsertLocalUser(row, 'ignore');
 };
 
 export const handleUserUpdated = async (data: UserJSON) => {
   await updateLocalUserFromUserJson(data);
+};
+
+export const handleOrgMembershipUpdated = async (
+  data: OrganizationMembershipJSON
+) => {
+  await updateOrgMemberFromMembershipJson(data);
 };
 
 export const handleOrgMembershipCreated = async (
@@ -72,16 +78,9 @@ export const handleOrgMembershipCreated = async (
   );
   if (!appUserId) return;
 
-  const displayName = buildOrgMemberDisplayName({
-    firstName: data.public_user_data.first_name,
-    lastName: data.public_user_data.last_name,
-    fallbackUserId: data.public_user_data.user_id,
-  });
-
   await insertOrgMemberIfAbsent({
     orgId: data.organization.id,
     appUserId,
-    displayName,
     clerkMembershipId: data.id,
     membershipCreatedAt: new Date(data.created_at),
     clerkOrgRole: data.role,
@@ -113,6 +112,8 @@ export const dispatchWebhookEvent = async (event: WebhookEvent) => {
       return handleUserUpdated(event.data);
     case 'organizationMembership.created':
       return handleOrgMembershipCreated(event.data);
+    case 'organizationMembership.updated':
+      return handleOrgMembershipUpdated(event.data);
     case 'organizationMembership.deleted':
       return handleOrgMembershipDeleted(event.data);
     default: {

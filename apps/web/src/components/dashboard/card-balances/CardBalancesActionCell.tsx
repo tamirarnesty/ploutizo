@@ -9,28 +9,19 @@ import {
 import { Button } from '@ploutizo/ui/components/button';
 import { cn } from '@ploutizo/ui/lib/utils';
 import { WalletCards } from 'lucide-react';
-import type { SettlementAccountRow } from '@ploutizo/types';
+import type { CardBalanceRowViewModel } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
 import type { CardBalancesSettleClickHandler } from '@/components/dashboard/card-balances/types';
 import { SettlePayTowardMenuItem } from '@/components/dashboard/card-balances/SettlePayTowardMenuItem';
 
 type CardBalancesActionCellProps = {
-  account: SettlementAccountRow;
+  row: CardBalanceRowViewModel;
   onSettleClick: CardBalancesSettleClickHandler;
 };
 
-const sortMembersForMenu = (account: SettlementAccountRow) =>
-  [...account.members].sort((a, b) =>
-    a.member.name.localeCompare(b.member.name, undefined, {
-      sensitivity: 'base',
-    })
-  );
-
 export const CardBalancesActionCell = ({
-  account,
+  row,
   onSettleClick,
 }: CardBalancesActionCellProps) => {
-  const menuMembers = sortMembersForMenu(account);
-
   return (
     <div
       className={cn(
@@ -48,32 +39,27 @@ export const CardBalancesActionCell = ({
             <Button
               variant="ghost"
               size="icon-sm"
-              aria-label={`Settle ${account.account.name}`}
+              aria-label={`Settle ${row.account.name}`}
               aria-haspopup="menu"
             >
               <WalletCards className="size-4 shrink-0" aria-hidden />
             </Button>
           }
         />
-        <DropdownMenuContent align="end" className="min-w-[12rem]">
+        <DropdownMenuContent align="end" className="min-w-48">
           <DropdownMenuGroup>
             <DropdownMenuLabel className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               Pay toward
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {menuMembers.map((m) => (
+            {row.settleMenuEntries.map((entry) => (
               <SettlePayTowardMenuItem
-                key={m.member.id}
-                label={m.member.name}
-                balanceCents={m.personalBalanceCents}
-                onSelect={() => onSettleClick(account, m.member.id)}
+                key={entry.payToward}
+                label={entry.label}
+                balanceCents={entry.balanceCents}
+                onSelect={() => onSettleClick(row, entry.payToward)}
               />
             ))}
-            <SettlePayTowardMenuItem
-              label="Shared"
-              balanceCents={account.sharedBalanceCents}
-              onSelect={() => onSettleClick(account, 'shared')}
-            />
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>

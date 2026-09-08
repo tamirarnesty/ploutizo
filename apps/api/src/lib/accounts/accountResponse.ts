@@ -1,8 +1,8 @@
 import { toFinancialInstitutionId } from '@ploutizo/types';
 import type {
   Account,
-  AccountOwner,
   ImportTargetAccount,
+  MemberIdentity,
 } from '@ploutizo/types';
 import type { accounts } from '@ploutizo/db/schema';
 import { listAccountMemberDetails } from '@/lib/queries/accounts';
@@ -12,14 +12,16 @@ type AccountRow = typeof accounts.$inferSelect;
 export type AccountMemberDetailRow = {
   accountId: string;
   memberId: string;
-  displayName: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
   imageUrl: string | null;
 };
 
 const toIsoString = (value: Date | string) =>
   value instanceof Date ? value.toISOString() : value;
 
-const mapAccountRow = (row: AccountRow, owners: AccountOwner[]): Account => ({
+const mapAccountRow = (row: AccountRow, owners: MemberIdentity[]): Account => ({
   id: row.id,
   orgId: row.orgId,
   name: row.name,
@@ -36,12 +38,14 @@ const mapAccountRow = (row: AccountRow, owners: AccountOwner[]): Account => ({
 const ownersByAccountIdFromMemberRows = (
   memberRows: AccountMemberDetailRow[]
 ) => {
-  const ownersByAccountId = new Map<string, AccountOwner[]>();
+  const ownersByAccountId = new Map<string, MemberIdentity[]>();
   for (const member of memberRows) {
     const owners = ownersByAccountId.get(member.accountId) ?? [];
     owners.push({
       id: member.memberId,
-      displayName: member.displayName,
+      firstName: member.firstName,
+      lastName: member.lastName,
+      email: member.email,
       imageUrl: member.imageUrl ?? null,
     });
     ownersByAccountId.set(member.accountId, owners);
@@ -49,8 +53,11 @@ const ownersByAccountIdFromMemberRows = (
   return ownersByAccountId;
 };
 
-const fetchOwnersByAccountId = async (orgId: string, accountIds: string[]) => {
-  if (accountIds.length === 0) return new Map<string, AccountOwner[]>();
+export const fetchOwnersByAccountId = async (
+  orgId: string,
+  accountIds: string[]
+) => {
+  if (accountIds.length === 0) return new Map<string, MemberIdentity[]>();
   const memberRows = await listAccountMemberDetails(orgId, accountIds);
   return ownersByAccountIdFromMemberRows(memberRows);
 };

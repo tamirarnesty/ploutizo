@@ -7,16 +7,18 @@ import {
   ItemTitle,
 } from '@ploutizo/ui/components/item';
 import { Text } from '@ploutizo/ui/components/text';
+import { memberFullLabel, memberShortLabel } from '@ploutizo/utils';
 import type { OrgMember } from '@ploutizo/types';
 import { UserAvatar } from '@/components/members/UserAvatar';
-import { getOrgMemberFirstName } from '@/lib/memberDisplayName';
 
 type SettlementMemberListRowEmptyProps = {
   member: OrgMember;
+  household: OrgMember[];
 };
 
 export const SettlementMemberListRowEmpty = ({
   member,
+  household,
 }: SettlementMemberListRowEmptyProps) => (
   <Item
     variant="default"
@@ -25,14 +27,14 @@ export const SettlementMemberListRowEmpty = ({
   >
     <ItemMedia variant="default" className="shrink-0">
       <UserAvatar
-        name={member.displayName}
+        name={memberFullLabel(member)}
         imageUrl={member.imageUrl ?? null}
         size="sm"
       />
     </ItemMedia>
     <ItemContent className="min-w-0">
       <ItemTitle className="leading-tight">
-        {getOrgMemberFirstName(member)}
+        {memberShortLabel(member, household)}
       </ItemTitle>
       <ItemDescription className="text-xs leading-tight">
         Add a card

@@ -5,6 +5,7 @@ export const HANDLED_CLERK_WEBHOOK_EVENTS = [
   'user.created',
   'user.updated',
   'organizationMembership.created',
+  'organizationMembership.updated',
   'organizationMembership.deleted',
 ] as const;
 

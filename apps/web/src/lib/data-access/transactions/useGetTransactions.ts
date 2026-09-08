@@ -7,7 +7,9 @@ export interface TransactionAssignee {
   memberId: string;
   amountCents: number;
   percentage: string | null;
-  memberName: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
   imageUrl: string | null;
 }
 

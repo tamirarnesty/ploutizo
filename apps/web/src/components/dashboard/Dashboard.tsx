@@ -1,8 +1,9 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Text } from '@ploutizo/ui/components/text';
-import type { SettlementAccountRow } from '@ploutizo/types';
-import type { CardBalancesSettleClickHandler } from '@/components/dashboard/card-balances/types';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';
+import type { CardBalanceRowViewModel } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
+import type { CardBalancesSettleClickHandler } from '@/components/dashboard/card-balances/types';
+import { buildCardBalanceViewModels } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import { useGetSettlements } from '@/lib/data-access/settlements';
 import { selectCreditCardAccounts } from '@/lib/settlements';
@@ -22,7 +23,7 @@ export const Dashboard = () => {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [activeAccount, setActiveAccount] =
-    useState<SettlementAccountRow | null>(null);
+    useState<CardBalanceRowViewModel | null>(null);
   const [dialogPayToward, setDialogPayToward] = useState<PayToward | null>(
     null
   );
@@ -30,6 +31,11 @@ export const Dashboard = () => {
   const creditCardAccounts = useMemo(
     () => selectCreditCardAccounts(settlements?.accounts),
     [settlements?.accounts]
+  );
+
+  const cardBalanceRows = useMemo(
+    () => buildCardBalanceViewModels(creditCardAccounts, members),
+    [creditCardAccounts, members]
   );
 
   const handleSettleClick = useCallback<CardBalancesSettleClickHandler>(
@@ -64,7 +70,7 @@ export const Dashboard = () => {
             </Text>
           ) : (
             <CardBalancesGrid
-              accounts={creditCardAccounts}
+              rows={cardBalanceRows}
               isLoading={settlementsLoading}
               onSettleClick={handleSettleClick}
             />

@@ -66,6 +66,7 @@ export const MembersList = () => {
         <MemberRow
           key={member.id}
           member={member}
+          household={members}
           isCurrentUser={member.externalId === user?.id}
           onRemove={handleRemove}
         />

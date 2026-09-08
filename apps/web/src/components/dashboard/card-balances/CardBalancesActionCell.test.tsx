@@ -5,6 +5,7 @@ import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import type { SettlementAccountRow, SettlementStatus } from '@ploutizo/types';
 import type { CardBalancesSettleClickHandler } from '@/components/dashboard/card-balances/types';
 import { CardBalancesActionCell } from '@/components/dashboard/card-balances/CardBalancesActionCell';
+import { buildCardBalanceViewModels } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
 
 const makeAccount = (): SettlementAccountRow => ({
   account: {
@@ -15,8 +16,20 @@ const makeAccount = (): SettlementAccountRow => ({
     lastFour: '4242',
     statementDueDay: 15,
     owners: [
-      { id: 'mAda', displayName: 'Ada Lovelace', imageUrl: null },
-      { id: 'mAlan', displayName: 'Alan Turing', imageUrl: null },
+      {
+        id: 'mAda',
+        firstName: 'Ada Lovelace',
+        lastName: null,
+        email: 'mAda@example.com',
+        imageUrl: null,
+      },
+      {
+        id: 'mAlan',
+        firstName: 'Alan Turing',
+        lastName: null,
+        email: 'mAlan@example.com',
+        imageUrl: null,
+      },
     ],
   },
   totalBalanceCents: 5000,
@@ -24,17 +37,31 @@ const makeAccount = (): SettlementAccountRow => ({
   sharedParticipantIds: ['mAda', 'mAlan'],
   members: [
     {
-      member: { id: 'mAda', name: 'Ada Lovelace', avatarUrl: null },
+      member: {
+        id: 'mAda',
+        firstName: 'Ada Lovelace',
+        lastName: null,
+        email: 'mAda@example.com',
+        imageUrl: null,
+      },
       personalBalanceCents: 3000,
     },
     {
-      member: { id: 'mAlan', name: 'Alan Turing', avatarUrl: null },
+      member: {
+        id: 'mAlan',
+        firstName: 'Alan Turing',
+        lastName: null,
+        email: 'mAlan@example.com',
+        imageUrl: null,
+      },
       personalBalanceCents: 1000,
     },
   ],
   dueDate: '2026-05-31',
   status: 'on_track' as SettlementStatus,
 });
+
+const makeRow = () => buildCardBalanceViewModels([makeAccount()], [])[0];
 
 describe('CardBalancesActionCell', () => {
   it('lists all members and Shared, then settles chosen member', async () => {
@@ -46,7 +73,7 @@ describe('CardBalancesActionCell', () => {
       <TooltipProvider delay={0}>
         <div className="group/row">
           <CardBalancesActionCell
-            account={makeAccount()}
+            row={makeRow()}
             onSettleClick={onSettleClick}
           />
         </div>
@@ -88,7 +115,7 @@ describe('CardBalancesActionCell', () => {
       <TooltipProvider delay={0}>
         <div className="group/row">
           <CardBalancesActionCell
-            account={makeAccount()}
+            row={makeRow()}
             onSettleClick={onSettleClick}
           />
         </div>

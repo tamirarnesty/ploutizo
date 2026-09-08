@@ -131,7 +131,7 @@ describe('PATCH /api/households/settings', () => {
 });
 
 describe('GET /api/households/members', () => {
-  it('returns 200 with members including imageUrl, firstName, lastName', async () => {
+  it('returns 200 with members including imageUrl, email, firstName, lastName', async () => {
     mockSelect.mockReturnValue({
       from: vi.fn().mockReturnValue({
         innerJoin: vi.fn().mockReturnValue({
@@ -140,10 +140,10 @@ describe('GET /api/households/members', () => {
               {
                 id: 'mem_1',
                 orgId: 'org_test123',
-                displayName: 'Alice',
                 role: 'admin',
                 joinedAt: new Date().toISOString(),
                 externalId: 'user_ext_1',
+                email: 'alice@example.com',
                 imageUrl: 'https://example.com/alice.jpg',
                 firstName: 'Alice',
                 lastName: 'Smith',
@@ -158,6 +158,7 @@ describe('GET /api/households/members', () => {
     const body = (await res.json()) as { data: Record<string, unknown>[] };
     expect(body.data).toHaveLength(1);
     expect(body.data[0]).toHaveProperty('imageUrl');
+    expect(body.data[0]).toHaveProperty('email');
     expect(body.data[0]).toHaveProperty('firstName');
     expect(body.data[0]).toHaveProperty('lastName');
   });

@@ -8,6 +8,7 @@ import {
 import { Calendar } from '@ploutizo/ui/components/calendar';
 import { Button } from '@ploutizo/ui/components/button';
 import { format, isValid, parseISO } from 'date-fns';
+import { memberFullLabel } from '@ploutizo/utils';
 import type { FilterFieldConfig } from '@ploutizo/ui/components/reui/filters';
 import type { DateRange } from 'react-day-picker';
 
@@ -173,7 +174,12 @@ const DateRangeFilterRenderer = ({
 export const buildFilterFields = (
   accounts: { id: string; name: string }[],
   categories: { id: string; name: string }[],
-  members: { id: string; displayName: string }[],
+  members: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+  }[],
   tags: { id: string; name: string }[],
   options?: { includeImportResult?: boolean }
 ): FilterFieldConfig<string>[] => {
@@ -236,7 +242,10 @@ export const buildFilterFields = (
       key: 'assigneeId',
       label: 'Assignee',
       type: 'select',
-      options: members.map((m) => ({ value: m.id, label: m.displayName })),
+      options: members.map((m) => ({
+        value: m.id,
+        label: memberFullLabel(m),
+      })),
     },
     {
       key: 'tagIds',

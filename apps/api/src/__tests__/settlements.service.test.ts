@@ -73,8 +73,10 @@ const baseRow: SettlementBalanceRow = {
   lastFour: null,
   statementDueDay: null,
   memberId: 'm1',
-  memberName: 'Alice',
-  memberAvatarUrl: null,
+  firstName: 'Alice',
+  lastName: null,
+  email: 'alice@example.com',
+  imageUrl: null,
   personalBalanceCents: 0,
   sharedBalanceCents: 0,
   sharedParticipantIds: [],
@@ -93,7 +95,6 @@ describe('getSettlementBalances service', () => {
         ...baseRow,
         accountType: 'chequing',
         memberId: 'm1',
-        memberName: 'Alice',
         personalBalanceCents: 0,
         sharedBalanceCents: 0,
       },
@@ -101,7 +102,6 @@ describe('getSettlementBalances service', () => {
         ...baseRow,
         accountType: 'chequing',
         memberId: 'm2',
-        memberName: 'Bob',
         personalBalanceCents: 0,
         sharedBalanceCents: 0,
       },
@@ -116,7 +116,6 @@ describe('getSettlementBalances service', () => {
         ...baseRow,
         accountType: 'credit_card',
         memberId: 'm1',
-        memberName: 'Alice',
         personalBalanceCents: 0,
         sharedBalanceCents: 0,
       },
@@ -124,7 +123,6 @@ describe('getSettlementBalances service', () => {
         ...baseRow,
         accountType: 'credit_card',
         memberId: 'm2',
-        memberName: 'Bob',
         personalBalanceCents: 0,
         sharedBalanceCents: 0,
       },
@@ -162,7 +160,6 @@ describe('getSettlementBalances service', () => {
       {
         ...baseRow,
         memberId: 'm1',
-        memberName: 'Alice',
         personalBalanceCents: 5000,
         sharedBalanceCents: 3000,
         sharedParticipantIds: ['m1', 'm2'],
@@ -170,7 +167,6 @@ describe('getSettlementBalances service', () => {
       {
         ...baseRow,
         memberId: 'm2',
-        memberName: 'Bob',
         personalBalanceCents: -1000,
         sharedBalanceCents: 3000,
         sharedParticipantIds: ['m1', 'm2'],
@@ -193,13 +189,17 @@ describe('getSettlementBalances service', () => {
       {
         accountId: 'a1',
         memberId: 'm1',
-        displayName: 'Alice',
+        firstName: 'Alice',
+        lastName: null,
+        email: 'alice@example.com',
         imageUrl: 'https://example.com/a.jpg',
       },
       {
         accountId: 'a1',
         memberId: 'm2',
-        displayName: 'Bob',
+        firstName: 'Bob',
+        lastName: null,
+        email: 'bob@example.com',
         imageUrl: null,
       },
     ]);
@@ -208,8 +208,20 @@ describe('getSettlementBalances service', () => {
       'a1',
     ]);
     expect(r.accounts[0]?.account.owners).toEqual([
-      { id: 'm1', displayName: 'Alice', imageUrl: 'https://example.com/a.jpg' },
-      { id: 'm2', displayName: 'Bob', imageUrl: null },
+      {
+        id: 'm1',
+        firstName: 'Alice',
+        lastName: null,
+        email: 'alice@example.com',
+        imageUrl: 'https://example.com/a.jpg',
+      },
+      {
+        id: 'm2',
+        firstName: 'Bob',
+        lastName: null,
+        email: 'bob@example.com',
+        imageUrl: null,
+      },
     ]);
   });
 });

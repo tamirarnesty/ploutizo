@@ -1,77 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import type {
-  Account,
-  SettlementAccountRow,
-  SettlementStatus,
-} from '@ploutizo/types';
+import {
+  defaultSettlementMembers,
+  defaultSettlementSourceAccounts,
+  mockFundingAccount,
+  mockSettlementAccountRow,
+} from '@/test/settlementFixtures';
 import {
   composeSettleAmountForPayToward,
   composeSettleFormValues,
 } from './composeSettleForm';
 
-const fixture = (): SettlementAccountRow => ({
-  account: {
-    id: 'a1',
-    name: 'Test Card',
-    type: 'credit_card',
-    institutionId: null,
-    lastFour: null,
-    statementDueDay: null,
-    owners: [{ id: 'alice', displayName: 'Alice', imageUrl: null }],
-  },
-  totalBalanceCents: 400,
-  sharedBalanceCents: 200,
-  sharedParticipantIds: ['alice', 'betty'],
-  members: [
-    {
-      member: { id: 'alice', name: 'Alice', avatarUrl: null },
-      personalBalanceCents: -100,
-    },
-    {
-      member: { id: 'betty', name: 'Betty', avatarUrl: null },
-      personalBalanceCents: 500,
-    },
-    {
-      member: { id: 'cas', name: 'Cas', avatarUrl: null },
-      personalBalanceCents: 0,
-    },
-  ],
-  dueDate: null,
-  status: null as SettlementStatus | null,
-});
-
-const account = (
-  overrides: Partial<Account> & Pick<Account, 'id' | 'name' | 'type'>
-): Account =>
-  ({
-    orgId: 'org',
-    institutionId: null,
-    lastFour: null,
-    statementDueDay: null,
-    archivedAt: null,
-    createdAt: '',
-    updatedAt: '',
-    owners: [],
-    ...overrides,
-  }) as Account;
-
-const sourceAccounts: Account[] = [
-  account({
-    id: 'bank-alice',
-    name: 'Alice Chequing',
-    type: 'chequing',
-    owners: [{ id: 'alice', displayName: 'Alice', imageUrl: null }],
-  }),
-  account({
-    id: 'bank-joint',
-    name: 'Joint',
-    type: 'chequing',
-    owners: [
-      { id: 'alice', displayName: 'Alice', imageUrl: null },
-      { id: 'betty', displayName: 'Betty', imageUrl: null },
-    ],
-  }),
-];
+const fixture = mockSettlementAccountRow;
+const sourceAccounts = defaultSettlementSourceAccounts;
+const account = mockFundingAccount;
 
 describe('composeSettleFormValues', () => {
   it('uses explicit member pay-toward and prefill from personal balance', () => {
@@ -130,8 +71,8 @@ describe('composeSettleFormValues', () => {
           name: 'Joint Savings',
           type: 'savings',
           owners: [
-            { id: 'alice', displayName: 'Alice', imageUrl: null },
-            { id: 'betty', displayName: 'Betty', imageUrl: null },
+            defaultSettlementMembers.alice,
+            defaultSettlementMembers.betty,
           ],
         }),
         ...sourceAccounts,
@@ -150,15 +91,15 @@ describe('composeSettleFormValues', () => {
           id: 'bank-alice',
           name: 'Alice Chequing',
           type: 'chequing',
-          owners: [{ id: 'alice', displayName: 'Alice', imageUrl: null }],
+          owners: [defaultSettlementMembers.alice],
         }),
         account({
           id: 'joint-savings',
           name: 'Joint Savings',
           type: 'savings',
           owners: [
-            { id: 'alice', displayName: 'Alice', imageUrl: null },
-            { id: 'betty', displayName: 'Betty', imageUrl: null },
+            defaultSettlementMembers.alice,
+            defaultSettlementMembers.betty,
           ],
         }),
       ],
@@ -176,7 +117,7 @@ describe('composeSettleFormValues', () => {
           id: 'bank-alice',
           name: 'Alice Chequing',
           type: 'chequing',
-          owners: [{ id: 'alice', displayName: 'Alice', imageUrl: null }],
+          owners: [defaultSettlementMembers.alice],
         }),
       ],
       '2026-01-05',

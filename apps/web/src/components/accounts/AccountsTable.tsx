@@ -16,6 +16,7 @@ import { Button } from '@ploutizo/ui/components/button';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
 import { getFinancialInstitutionName } from '@ploutizo/types';
+import { memberFullLabel } from '@ploutizo/utils';
 import type { Account } from '@ploutizo/types';
 import {
   DATA_GRID_PAGINATION_ROW_CLASSNAME,
@@ -162,7 +163,7 @@ export const AccountsTable = ({
           <MemberAvatarGroup
             members={row.original.owners.map((o) => ({
               id: o.id,
-              name: o.displayName,
+              name: memberFullLabel(o),
               imageUrl: o.imageUrl,
             }))}
             withTooltips

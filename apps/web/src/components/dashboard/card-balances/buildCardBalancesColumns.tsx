@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { DataGridColumnHeader } from '@ploutizo/ui/components/reui/data-grid/data-grid-column-header';
-import type { SettlementAccountRow } from '@ploutizo/types';
+import type { CardBalanceRowViewModel } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
 import type { CardBalancesSettleClickHandler } from '@/components/dashboard/card-balances/types';
 import { CardBalancesActionCell } from '@/components/dashboard/card-balances/CardBalancesActionCell';
 import { CardBalancesBreakdownCell } from '@/components/dashboard/card-balances/CardBalancesBreakdownCell';
@@ -29,7 +29,7 @@ const columnHeaderIcon = (Icon: typeof CreditCard) => (
 /** Sketch 006 / grid-structure-and-density.md column order */
 export const buildCardBalancesColumns = (
   onSettleClick: CardBalancesSettleClickHandler
-): ColumnDef<SettlementAccountRow>[] => [
+): ColumnDef<CardBalanceRowViewModel>[] => [
   {
     id: 'card',
     accessorFn: (row) => row.account.name,
@@ -65,7 +65,7 @@ export const buildCardBalancesColumns = (
       cellClassName: 'min-w-[92px]',
       skeleton: <Skeleton className="h-4 w-16 motion-safe:animate-pulse" />,
     },
-    cell: ({ row }) => renderCardBalancesOwnerCell(row.original.account.owners),
+    cell: ({ row }) => renderCardBalancesOwnerCell(row.original.ownerDisplay),
   },
   {
     id: 'balance',
@@ -154,7 +154,7 @@ export const buildCardBalancesColumns = (
       cellClassName: 'min-w-[360px]',
       skeleton: <Skeleton className="h-10 w-full motion-safe:animate-pulse" />,
     },
-    cell: ({ row }) => <CardBalancesBreakdownCell account={row.original} />,
+    cell: ({ row }) => <CardBalancesBreakdownCell row={row.original} />,
   },
   {
     id: 'action',
@@ -167,7 +167,7 @@ export const buildCardBalancesColumns = (
     },
     cell: ({ row }) => (
       <CardBalancesActionCell
-        account={row.original}
+        row={row.original}
         onSettleClick={onSettleClick}
       />
     ),

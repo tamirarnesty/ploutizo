@@ -40,10 +40,10 @@ export const listOrgMembers = async (orgId: string, client: DbClient = db) => {
     .select({
       id: orgMembers.id,
       orgId: orgMembers.orgId,
-      displayName: orgMembers.displayName,
       role: orgMembers.role,
       joinedAt: orgMembers.joinedAt,
       externalId: users.externalId,
+      email: users.email,
       imageUrl: users.imageUrl,
       firstName: users.firstName,
       lastName: users.lastName,
@@ -51,7 +51,7 @@ export const listOrgMembers = async (orgId: string, client: DbClient = db) => {
     .from(orgMembers)
     .innerJoin(users, eq(users.id, orgMembers.userId))
     .where(eq(orgMembers.orgId, orgId))
-    .orderBy(orgMembers.displayName);
+    .orderBy(users.lastName, users.firstName, users.email);
 };
 
 // DELETE /members/:memberId — look up member's Clerk externalId for self-removal guard

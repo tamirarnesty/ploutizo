@@ -8,6 +8,7 @@ import { listOrgMembers } from '@/lib/queries/households';
 type SeedUser = {
   id: string;
   externalId: string;
+  email: string;
   imageUrl: string | null;
   firstName: string | null;
   lastName: string | null;
@@ -18,7 +19,6 @@ type SeedMember = {
   orgId: string;
   userId: string;
   externalId: string;
-  displayName: string;
   role: 'admin' | 'member';
   joinedAt: Date;
 };
@@ -36,6 +36,7 @@ const membershipDb = vi.hoisted(() => {
       {
         id: 'app_user_caller',
         externalId: 'user_caller',
+        email: 'caller@example.com',
         imageUrl: null,
         firstName: 'Caller',
         lastName: null,
@@ -43,6 +44,7 @@ const membershipDb = vi.hoisted(() => {
       {
         id: 'app_user_other',
         externalId: 'user_other',
+        email: 'other@example.com',
         imageUrl: null,
         firstName: 'Other',
         lastName: null,
@@ -54,7 +56,6 @@ const membershipDb = vi.hoisted(() => {
         orgId: 'org_1',
         userId: 'app_user_caller',
         externalId: 'orgmem_caller',
-        displayName: 'Caller',
         role: 'admin',
         joinedAt: new Date('2026-01-01T00:00:00.000Z'),
       },
@@ -63,7 +64,6 @@ const membershipDb = vi.hoisted(() => {
         orgId: 'org_1',
         userId: 'app_user_other',
         externalId: 'orgmem_other_current',
-        displayName: 'Other',
         role: 'member',
         joinedAt: new Date('2026-01-02T00:00:00.000Z'),
       },
@@ -84,16 +84,21 @@ const membershipDb = vi.hoisted(() => {
         return {
           id: member.id,
           orgId: member.orgId,
-          displayName: member.displayName,
           role: member.role,
           joinedAt: member.joinedAt,
           externalId: user.externalId,
+          email: user.email,
           imageUrl: user.imageUrl,
           firstName: user.firstName,
           lastName: user.lastName,
         };
       })
-      .sort((a, b) => a.displayName.localeCompare(b.displayName));
+      .sort(
+        (a, b) =>
+          (a.lastName ?? '').localeCompare(b.lastName ?? '') ||
+          (a.firstName ?? '').localeCompare(b.firstName ?? '') ||
+          a.email.localeCompare(b.email)
+      );
 
   const chainMemberList = (orgId: string) => {
     const orderBy = vi.fn().mockResolvedValue(listMembersForOrg(orgId));
@@ -165,7 +170,6 @@ const resetMembers = () => {
       orgId: 'org_1',
       userId: 'app_user_caller',
       externalId: 'orgmem_caller',
-      displayName: 'Caller',
       role: 'admin',
       joinedAt: new Date('2026-01-01T00:00:00.000Z'),
     },
@@ -174,7 +178,6 @@ const resetMembers = () => {
       orgId: 'org_1',
       userId: 'app_user_other',
       externalId: 'orgmem_other_current',
-      displayName: 'Other',
       role: 'member',
       joinedAt: new Date('2026-01-02T00:00:00.000Z'),
     },

@@ -2,15 +2,14 @@ import { lrmSplit } from '@ploutizo/utils/assignee-split';
 import { formatSettlementDescription } from '@ploutizo/utils/transaction-policy';
 import { toFinancialInstitutionId } from '@ploutizo/types';
 import type {
-  AccountOwner,
   GetSettlementBalancesResponse,
   SettlementAccountRow,
   SettlementMemberRow,
 } from '@ploutizo/types';
 import type { CreateSettlementInput } from '@ploutizo/validators';
 import type { SettlementBalanceRow } from '@/lib/queries/settlements';
+import { fetchOwnersByAccountId } from '@/lib/accounts/accountResponse';
 import { DomainError, NotFoundError } from '@/lib/errors';
-import { listAccountMemberDetails } from '@/lib/queries/accounts';
 import {
   fetchAccountForSettlement,
   fetchSettlementBalances,
@@ -77,8 +76,10 @@ export const getSettlementBalances = async (
     bucket.members.push({
       member: {
         id: row.memberId,
-        name: row.memberName,
-        avatarUrl: row.memberAvatarUrl,
+        firstName: row.firstName,
+        lastName: row.lastName,
+        email: row.email,
+        imageUrl: row.imageUrl,
       },
       personalBalanceCents: row.personalBalanceCents,
     });
@@ -120,20 +121,10 @@ export const getSettlementBalances = async (
     });
   }
 
-  const ownerRows = await listAccountMemberDetails(
+  const ownersByAccountId = await fetchOwnersByAccountId(
     orgId,
     accounts.map((a) => a.account.id)
   );
-  const ownersByAccountId = new Map<string, AccountOwner[]>();
-  for (const row of ownerRows) {
-    const list = ownersByAccountId.get(row.accountId) ?? [];
-    list.push({
-      id: row.memberId,
-      displayName: row.displayName,
-      imageUrl: row.imageUrl ?? null,
-    });
-    ownersByAccountId.set(row.accountId, list);
-  }
 
   return {
     accounts: accounts.map((a) => ({

@@ -16,10 +16,10 @@ const orgMembers: OrgMember[] = [
   {
     id: 'member_1',
     orgId: 'org_1',
-    displayName: 'Tamir Arnesty',
     role: 'admin',
     joinedAt: '2026-01-01T00:00:00.000Z',
     externalId: 'user_1',
+    email: 'tamir@example.com',
     firstName: 'Tamir',
     lastName: 'Arnesty',
     imageUrl: null,

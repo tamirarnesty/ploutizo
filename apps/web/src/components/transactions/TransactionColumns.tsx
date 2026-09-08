@@ -27,6 +27,7 @@ import {
 } from '@ploutizo/ui/components/tooltip';
 import { cn } from '@ploutizo/ui/lib/utils';
 import { formatCurrency } from '@ploutizo/utils/currency';
+import { memberFullLabel } from '@ploutizo/utils';
 import { ICON_MAP } from '@/components/categories/LucideIconPicker';
 import { getColourBadgeClassFromRaw } from '@/components/colour/colour-token-classes';
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
@@ -359,7 +360,7 @@ export const buildColumns = (
         <MemberAvatarGroup
           members={row.original.assignees.map((a) => ({
             id: a.memberId,
-            name: a.memberName ?? '',
+            name: memberFullLabel(a),
             imageUrl: a.imageUrl,
           }))}
           withTooltips

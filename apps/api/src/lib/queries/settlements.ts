@@ -81,8 +81,10 @@ const fetchSettlementCreditCardAccounts = (orgId: string) =>
 
 const settlementHouseholdMemberSelect = {
   memberId: orgMembers.id,
-  memberName: orgMembers.displayName,
-  memberAvatarUrl: users.imageUrl,
+  firstName: users.firstName,
+  lastName: users.lastName,
+  email: users.email,
+  imageUrl: users.imageUrl,
 };
 
 const fetchSettlementHouseholdMembers = (orgId: string) =>

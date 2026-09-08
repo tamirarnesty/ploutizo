@@ -9,6 +9,7 @@ import {
   RadioGroupItem,
 } from '@ploutizo/ui/components/radio-group';
 import { Users } from 'lucide-react';
+import { memberFullLabel } from '@ploutizo/utils';
 import type { SettlementAccountRow } from '@ploutizo/types';
 import { SignedBalanceText } from '@/components/dashboard/SignedBalanceText';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';
@@ -83,12 +84,12 @@ export const SettleMemberRadioList = ({
         <SettleMemberRadioRow
           key={m.member.id}
           value={m.member.id}
-          title={m.member.name}
+          title={memberFullLabel(m.member)}
           balanceCents={m.personalBalanceCents}
           leading={
             <UserAvatar
-              name={m.member.name}
-              imageUrl={m.member.avatarUrl}
+              name={memberFullLabel(m.member)}
+              imageUrl={m.member.imageUrl}
               size="sm"
             />
           }

@@ -12,7 +12,6 @@ type MirrorMember = {
   userId: string;
   externalId: string;
   membershipCreatedAt: Date;
-  displayName: string;
   role: string;
 };
 
@@ -92,7 +91,6 @@ const insertMembership = (params: {
   insertOrgMemberIfAbsent({
     orgId: 'org_1',
     appUserId: 'app_user_1',
-    displayName: 'Ada',
     clerkMembershipId: params.clerkMembershipId,
     membershipCreatedAt: params.membershipCreatedAt,
     clerkOrgRole: 'org:admin',
@@ -228,7 +226,6 @@ describe('insertOrgMemberIfAbsent', () => {
         userId: 'app_user_1',
         externalId: 'orgmem_new',
         membershipCreatedAt: newCreatedAt,
-        displayName: 'Ada',
         role: 'admin',
       },
     ]);

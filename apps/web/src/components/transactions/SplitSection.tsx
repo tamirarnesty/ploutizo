@@ -6,6 +6,7 @@ import {
 } from '@ploutizo/ui/components/toggle-group';
 import { lrmSplit } from '@ploutizo/utils/assignee-split';
 import { formatCurrency } from '@ploutizo/utils/currency';
+import { memberFullLabel } from '@ploutizo/utils';
 import type { OrgMember } from '@ploutizo/types';
 import { AssigneeRow } from './AssigneeRow';
 import type { AssigneeFormRow } from './types';
@@ -132,23 +133,23 @@ export const SplitSection = ({
         </Text>
       ) : (
         <div className="flex flex-col gap-2">
-          {value.map((row) => (
-            <AssigneeRow
-              key={row.memberId}
-              memberId={row.memberId}
-              memberName={
-                orgMembers.find((m) => m.id === row.memberId)?.displayName ??
-                null
-              }
-              imageUrl={orgMembers.find((m) => m.id === row.memberId)?.imageUrl}
-              amountCents={row.amountCents}
-              percentage={row.percentage}
-              mode={mode}
-              totalCents={amountCents}
-              onChange={handleRowChange}
-              onRemove={handleRemove}
-            />
-          ))}
+          {value.map((row) => {
+            const member = orgMembers.find((m) => m.id === row.memberId);
+            return (
+              <AssigneeRow
+                key={row.memberId}
+                memberId={row.memberId}
+                memberName={member ? memberFullLabel(member) : null}
+                imageUrl={member?.imageUrl}
+                amountCents={row.amountCents}
+                percentage={row.percentage}
+                mode={mode}
+                totalCents={amountCents}
+                onChange={handleRowChange}
+                onRemove={handleRemove}
+              />
+            );
+          })}
         </div>
       )}
 

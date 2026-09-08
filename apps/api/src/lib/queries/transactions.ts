@@ -408,7 +408,9 @@ export const enrichTransactions = async (
         memberId: transactionAssignees.memberId,
         amountCents: transactionAssignees.amountCents,
         percentage: transactionAssignees.percentage, // string — display only
-        memberName: orgMembers.displayName,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
         imageUrl: users.imageUrl,
       })
       .from(transactionAssignees)
