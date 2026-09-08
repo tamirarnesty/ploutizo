@@ -6,11 +6,13 @@ import {
   formatImportRowStructuralInvalidReason,
   getImportRowReviewBlockers,
   isImportRowStructurallyInvalid,
-  isImportTransactionType,
   toImportRowStatusFields,
-  toImportTransactionType,
   withDerivedImportRowStatus,
 } from './import-row-status';
+import {
+  isImportTransactionType,
+  toImportTransactionType,
+} from './import-coercion';
 
 describe('import transaction type coercion', () => {
   it('accepts known import transaction types', () => {

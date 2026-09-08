@@ -10,8 +10,8 @@ import { getLiveAssigneeMemberIds } from './import-row-readiness';
 import {
   isImportRowStructurallyInvalid,
   toImportRowStatusFields,
-  toImportTransactionType,
 } from './import-row-status';
+import { toImportTransactionType } from './import-coercion';
 import { resolveReviewedImportValues } from './reviewed-import-values';
 import { validateTransactionAccountPolicy } from './transaction-policy';
 import type { TransactionAccountReference } from './transaction-policy';

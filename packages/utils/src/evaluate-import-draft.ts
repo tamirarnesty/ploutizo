@@ -3,13 +3,12 @@ import {
   evaluateImportRow,
   formatImportRowStructuralInvalidReason,
   toImportRowStatusFields,
-  toImportTransactionType,
 } from './import-row-status';
+import { toImportTransactionType } from './import-coercion';
 import {
   evaluateImportRefundLinks,
   isImportRefundLinkBlocked,
   suggestImportRefundLink,
-  toImportRefundLinkDraftRow,
 } from './import-refund-links';
 import { evaluateImportMatches } from './import-matches';
 import type { ImportRowReviewBlocker } from './import-row-status';
@@ -85,7 +84,7 @@ export const toImportDraftEvaluationContext = (
   options: ImportDraftEvaluationOptions
 ): ImportDraftEvaluationContext => {
   const targetAccountId = options.targetAccountId;
-  const draftRows = rows.map((row) => toImportRefundLinkDraftRow(row));
+  const draftRows = rows;
   const existingExpenses = options.existingExpenses ?? new Map();
   const existingTransactions = options.existingTransactions ?? [];
   const priorRefundsByTarget = options.priorRefundsByTarget;
@@ -112,14 +111,10 @@ export const evaluateImportDraftRow = (
 ): ImportDraftRowEvaluation => {
   const refundLink = ctx.refundEvaluations.get(row.id) ?? null;
   const match = ctx.matchEvaluations.get(row.id) ?? null;
-  const refundSuggestion = suggestImportRefundLink(
-    toImportRefundLinkDraftRow(row),
-    ctx.draftRows,
-    {
-      targetAccountId: ctx.targetAccountId,
-      existingExpenses: ctx.suggestionTargets,
-    }
-  );
+  const refundSuggestion = suggestImportRefundLink(row, ctx.draftRows, {
+    targetAccountId: ctx.targetAccountId,
+    existingExpenses: ctx.suggestionTargets,
+  });
 
   const statusFields = toImportRowStatusFields({
     reviewDate: row.reviewDate,

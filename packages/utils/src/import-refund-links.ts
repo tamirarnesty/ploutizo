@@ -1,60 +1,16 @@
-import type {
-  ImportTransactionType,
-  ReviewedImportValues,
-} from '@ploutizo/types';
+import type { ReviewedImportValues } from '@ploutizo/types';
 import {
   importDescriptionsAreSimilar,
   normalizeImportMatchDescription,
 } from './import-matches';
-import { toImportTransactionType } from './import-coercion';
 import { resolveReviewedImportValues } from './reviewed-import-values';
+import type { ImportRowResolvableFields } from './reviewed-import-values';
 
-export interface ImportRefundLinkDraftRow {
+export type ImportRefundLinkDraftRow = ImportRowResolvableFields & {
   id: string;
-  reviewType: ImportTransactionType | null;
-  parsedType: ImportTransactionType | null;
-  reviewAmount: number | null;
-  parsedAmount: number | null;
-  reviewCategoryId: string | null;
-  reviewAssigneeMemberIds: readonly string[];
-  reviewRefundOf: string | null;
-  reviewRefundOfBatchRowId: string | null;
   selectedForImport: boolean;
   sourceDescription?: string | null;
-  parsedDescription?: string | null;
-  reviewDescription?: string | null;
-}
-
-/** Normalize draft/API row shapes into the refund-link evaluation input. */
-export const toImportRefundLinkDraftRow = (row: {
-  id: string;
-  reviewType: string | null;
-  parsedType: string | null;
-  reviewAmount: number | null;
-  parsedAmount: number | null;
-  reviewCategoryId: string | null;
-  reviewAssigneeMemberIds: readonly string[] | null | undefined;
-  reviewRefundOf: string | null;
-  reviewRefundOfBatchRowId?: string | null;
-  selectedForImport: boolean;
-  sourceDescription?: string | null;
-  parsedDescription?: string | null;
-  reviewDescription?: string | null;
-}): ImportRefundLinkDraftRow => ({
-  id: row.id,
-  reviewType: toImportTransactionType(row.reviewType),
-  parsedType: toImportTransactionType(row.parsedType),
-  reviewAmount: row.reviewAmount,
-  parsedAmount: row.parsedAmount,
-  reviewCategoryId: row.reviewCategoryId,
-  reviewAssigneeMemberIds: row.reviewAssigneeMemberIds ?? [],
-  reviewRefundOf: row.reviewRefundOf,
-  reviewRefundOfBatchRowId: row.reviewRefundOfBatchRowId ?? null,
-  selectedForImport: row.selectedForImport,
-  sourceDescription: row.sourceDescription ?? null,
-  parsedDescription: row.parsedDescription ?? null,
-  reviewDescription: row.reviewDescription ?? null,
-});
+};
 
 export interface ExistingRefundTargetExpense {
   id: string;

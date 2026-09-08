@@ -1,32 +1,25 @@
 import type {
   ImportRowReviewBlocker,
   ImportRowStatus,
-  ImportTransactionType,
   ReviewedImportValues,
 } from '@ploutizo/types';
-import {
-  isImportTransactionType,
-  toImportTransactionType,
-} from './import-coercion';
+import { toImportTransactionType } from './import-coercion';
 import { resolveReviewedImportValues } from './reviewed-import-values';
 
 export type { ImportRowReviewBlocker };
-export { isImportTransactionType, toImportTransactionType };
 
 export interface ImportRowStructuralFields {
   reviewDate: string | null;
   reviewAmount: number | null;
-  reviewType: ImportTransactionType | null;
+  reviewType: string | null;
   reviewDescription: string | null;
   parsedDate: string | null;
   parsedAmount: number | null;
-  parsedType: ImportTransactionType | null;
+  parsedType: string | null;
   parsedDescription: string | null;
 }
 
 export interface ImportRowReviewFields {
-  reviewType: ImportTransactionType | null;
-  parsedType: ImportTransactionType | null;
   reviewCategoryId: string | null;
   reviewAssigneeMemberIds: string[];
   /** Settlement funding account — required for new settlement creates. */

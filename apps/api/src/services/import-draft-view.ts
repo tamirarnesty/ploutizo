@@ -3,7 +3,7 @@ import {
   evaluateImportDraft,
   importMatchTargetQueryInput,
 } from '@ploutizo/utils';
-import { toImportTransactionType } from '@ploutizo/utils/import-row-status';
+import { toImportTransactionType } from '@ploutizo/utils/import-coercion';
 import { db } from '@ploutizo/db';
 import type { DbClient } from '@ploutizo/db';
 import type {

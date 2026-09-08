@@ -127,16 +127,6 @@ export const preparedImportRowSnapshotSchema = z.object({
   provenance: importRowProvenanceSchema,
 });
 
-export type ReviewedImportValuesInput = z.infer<
-  typeof reviewedImportValuesSchema
->;
-export type ImportRowProvenanceInput = z.infer<
-  typeof importRowProvenanceSchema
->;
-export type PreparedImportRowSnapshotInput = z.infer<
-  typeof preparedImportRowSnapshotSchema
->;
-
 export const importPreparedOutcomeSchema = z.enum(
   IMPORT_PREPARED_PROJECTION_OUTCOME_VALUES
 );

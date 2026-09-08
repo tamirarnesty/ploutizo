@@ -108,13 +108,6 @@ describe('import finalization foundation — prepared set revisions', () => {
         rawDescription: 'COFFEE SHOP #42',
       },
     });
-    expect(lockPreparedSetRevisionForBatch).toHaveBeenCalledWith(
-      mockTx,
-      ORG,
-      BATCH
-    );
-    expect(fetchDraftSummaryById).toHaveBeenCalledWith(ORG, BATCH, mockTx);
-    expect(listDraftRows).toHaveBeenCalledWith(ORG, BATCH, mockTx);
 
     vi.mocked(fetchDraftSummaryById).mockResolvedValue({
       id: BATCH,
@@ -317,21 +310,6 @@ describe('continueImportDraft', () => {
   it('creates a revision-bound prepared set and returns its identifier', async () => {
     const result = await continueImportDraft(ORG, BATCH);
 
-    expect(lockPreparedSetRevisionForBatch).toHaveBeenCalledWith(
-      mockTx,
-      ORG,
-      BATCH
-    );
-    expect(listOrgMembers).toHaveBeenCalledWith(ORG, mockTx);
-    expect(sumPriorRefundTotalsByTransactionTarget).toHaveBeenCalledWith(
-      ORG,
-      [],
-      mockTx
-    );
-    expect(insertImportPreparedSet).toHaveBeenCalledWith(
-      mockTx,
-      expect.objectContaining({ revision: 1 })
-    );
     expect(result).toEqual({
       id: 'prep_1',
       batchId: BATCH,

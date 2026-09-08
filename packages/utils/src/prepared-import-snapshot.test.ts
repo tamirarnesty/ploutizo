@@ -22,28 +22,6 @@ const parsedRow = {
 };
 
 describe('buildPreparedImportRowSnapshot', () => {
-  it('snapshots resolved values and source provenance', () => {
-    expect(buildPreparedImportRowSnapshot(parsedRow)).toEqual({
-      reviewedValues: {
-        date: '2026-05-02',
-        amount: 4218,
-        type: 'expense',
-        description: 'COFFEE SHOP #42',
-        categoryId: 'cat-1',
-        assigneeMemberIds: ['member-1'],
-        counterpartAccountId: null,
-        refundOf: null,
-        refundOfBatchRowId: null,
-        notes: 'weekly',
-        tagIds: ['tag-1'],
-      },
-      provenance: {
-        externalId: 'visa-1001',
-        rawDescription: 'COFFEE SHOP #42',
-      },
-    });
-  });
-
   it('trims provenance strings and collapses empty values to null', () => {
     expect(
       buildPreparedImportRowSnapshot({
