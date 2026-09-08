@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   updateLocalUserFromUserJson,
   updateOrgMemberFromMembershipJson,
+  upsertLocalUser,
 } from './clerkDbMirror';
 import type { OrganizationMembershipJSON, UserJSON } from '@clerk/backend';
 
@@ -105,6 +106,58 @@ describe('updateLocalUserFromUserJson', () => {
     });
     expect(mockOnConflictDoUpdate).toHaveBeenCalledOnce();
     expect(mockUpdateSet).not.toHaveBeenCalled();
+  });
+});
+
+describe('upsertLocalUser', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockValues.mockReturnValue({
+      onConflictDoUpdate: mockOnConflictDoUpdate,
+    });
+  });
+
+  it('upserts Clerk person fields keyed by external_id', async () => {
+    await upsertLocalUser(
+      {
+        externalId: 'user_clerk_abc',
+        email: 'ada@example.com',
+        firstName: 'Grace',
+        lastName: 'Hopper',
+        imageUrl: null,
+      },
+      'update'
+    );
+
+    expect(mockValues).toHaveBeenCalledWith({
+      externalId: 'user_clerk_abc',
+      email: 'ada@example.com',
+      firstName: 'Grace',
+      lastName: 'Hopper',
+      imageUrl: null,
+    });
+    expect(mockOnConflictDoUpdate).toHaveBeenCalledOnce();
+  });
+
+  it('ignores conflicts when policy is ignore', async () => {
+    const mockOnConflictDoNothing = vi.fn().mockResolvedValue(undefined);
+    mockValues.mockReturnValueOnce({
+      onConflictDoNothing: mockOnConflictDoNothing,
+    });
+
+    await upsertLocalUser(
+      {
+        externalId: 'user_clerk_abc',
+        email: 'ada@example.com',
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        imageUrl: null,
+      },
+      'ignore'
+    );
+
+    expect(mockOnConflictDoNothing).toHaveBeenCalledOnce();
+    expect(mockOnConflictDoUpdate).not.toHaveBeenCalled();
   });
 });
 

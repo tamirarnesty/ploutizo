@@ -2,8 +2,8 @@ import { getClerkServerClient } from '../lib/clerkServerClient';
 import {
   clerkBackendUserToLocalUserRow,
   findLocalUserIdByClerkId,
-  insertLocalUserIfAbsent,
   insertOrgMemberIfAbsent,
+  upsertLocalUser,
 } from './clerkDbMirror';
 import type { OrganizationMembership } from '@clerk/backend';
 
@@ -13,7 +13,8 @@ const PAGE_LIMIT = 100;
  * When Clerk webhooks never reached this environment, `users` and `org_members`
  * rows are missing even though the session has a valid org + user. That breaks
  * household member pickers (e.g. transaction assignees). Uses the same DB
- * mirror helpers as webhook handlers (`user.created`, `organizationMembership.created`).
+ * mirror helpers as webhook handlers. Refreshes Clerk person fields on each call so
+ * household-visible names stay current when `user.updated` webhooks lag.
  */
 export const ensureCallerSyncedToOrg = async (
   orgId: string,
@@ -28,7 +29,7 @@ export const ensureCallerSyncedToOrg = async (
 
   const localUser = clerkBackendUserToLocalUserRow(clerkUser);
   if (!localUser) return;
-  await insertLocalUserIfAbsent(localUser);
+  await upsertLocalUser(localUser, 'update');
 
   const appUserId = await findLocalUserIdByClerkId(clerkUser.id);
   if (appUserId === undefined) return;

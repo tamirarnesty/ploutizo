@@ -1,14 +1,13 @@
-import type { OrgMember, SettlementAccountRow } from '@ploutizo/types';
+import type { CardBalanceRowViewModel } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';
 
 export type CardBalancesSettleClickHandler = (
-  account: SettlementAccountRow,
+  account: CardBalanceRowViewModel,
   payToward: PayToward
 ) => void;
 
 export interface CardBalancesGridProps {
-  accounts: SettlementAccountRow[];
-  household: readonly OrgMember[];
+  rows: CardBalanceRowViewModel[];
   isLoading: boolean;
   onSettleClick: CardBalancesSettleClickHandler;
 }

@@ -16,6 +16,12 @@ export interface OrgMember {
   lastName: string | null;
 }
 
+/** Clerk person projection shared by roster embeds (owners, settlement rows, etc.). */
+export type MemberIdentity = Pick<
+  OrgMember,
+  'id' | 'firstName' | 'lastName' | 'email' | 'imageUrl'
+>;
+
 export interface PendingInvitation {
   id: string;
   email: string;

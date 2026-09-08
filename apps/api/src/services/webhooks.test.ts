@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   deleteOrgMemberIfPresent,
   findLocalUserIdByClerkId,
-  insertLocalUserIfAbsent,
   insertOrgMemberIfAbsent,
   updateLocalUserFromUserJson,
   updateOrgMemberFromMembershipJson,
+  upsertLocalUser,
 } from './clerkDbMirror';
 import { HANDLED_CLERK_WEBHOOK_EVENTS } from './clerkWebhookEvents';
 import {
@@ -18,7 +18,7 @@ import type { OrganizationMembershipJSON, WebhookEvent } from '@clerk/backend';
 vi.mock('./clerkDbMirror', () => ({
   deleteOrgMemberIfPresent: vi.fn(),
   findLocalUserIdByClerkId: vi.fn(),
-  insertLocalUserIfAbsent: vi.fn(),
+  upsertLocalUser: vi.fn(),
   insertOrgMemberIfAbsent: vi.fn(),
   updateLocalUserFromUserJson: vi.fn(),
   updateOrgMemberFromMembershipJson: vi.fn(),
@@ -132,7 +132,7 @@ describe('dispatchWebhookEvent', () => {
   beforeEach(() => {
     vi.mocked(deleteOrgMemberIfPresent).mockReset();
     vi.mocked(findLocalUserIdByClerkId).mockReset();
-    vi.mocked(insertLocalUserIfAbsent).mockReset();
+    vi.mocked(upsertLocalUser).mockReset();
     vi.mocked(insertOrgMemberIfAbsent).mockReset();
     vi.mocked(updateLocalUserFromUserJson).mockReset();
     vi.mocked(updateOrgMemberFromMembershipJson).mockReset();

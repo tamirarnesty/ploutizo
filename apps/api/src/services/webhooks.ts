@@ -5,10 +5,10 @@ import { seedOrg } from '@ploutizo/db/seeds';
 import {
   deleteOrgMemberIfPresent,
   findLocalUserIdByClerkId,
-  insertLocalUserIfAbsent,
   insertOrgMemberIfAbsent,
   updateLocalUserFromUserJson,
   updateOrgMemberFromMembershipJson,
+  upsertLocalUser,
   userJsonToLocalUserRow,
 } from './clerkDbMirror';
 import type {
@@ -57,7 +57,7 @@ export const handleOrgUpdated = async (data: OrganizationJSON) => {
 export const handleUserCreated = async (data: UserJSON) => {
   const row = userJsonToLocalUserRow(data);
   if (!row) return;
-  await insertLocalUserIfAbsent(row);
+  await upsertLocalUser(row, 'ignore');
 };
 
 export const handleUserUpdated = async (data: UserJSON) => {

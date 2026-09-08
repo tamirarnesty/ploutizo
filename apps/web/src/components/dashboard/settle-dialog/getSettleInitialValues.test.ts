@@ -13,22 +13,48 @@ const fixture = (): SettlementAccountRow => ({
     institutionId: null,
     lastFour: null,
     statementDueDay: null,
-    owners: [{ id: 'alice', displayName: 'Alice', imageUrl: null }],
+    owners: [
+      {
+        id: 'alice',
+        firstName: 'Alice',
+        lastName: null,
+        email: 'alice@example.com',
+        imageUrl: null,
+      },
+    ],
   },
   totalBalanceCents: 400,
   sharedBalanceCents: 200,
   sharedParticipantIds: ['alice', 'betty'],
   members: [
     {
-      member: { id: 'alice', name: 'Alice', avatarUrl: null },
+      member: {
+        id: 'alice',
+        firstName: 'Alice',
+        lastName: null,
+        email: 'alice@example.com',
+        imageUrl: null,
+      },
       personalBalanceCents: -100,
     },
     {
-      member: { id: 'betty', name: 'Betty', avatarUrl: null },
+      member: {
+        id: 'betty',
+        firstName: 'Betty',
+        lastName: null,
+        email: 'betty@example.com',
+        imageUrl: null,
+      },
       personalBalanceCents: 500,
     },
     {
-      member: { id: 'cas', name: 'Cas', avatarUrl: null },
+      member: {
+        id: 'cas',
+        firstName: 'Cas',
+        lastName: null,
+        email: 'cas@example.com',
+        imageUrl: null,
+      },
       personalBalanceCents: 0,
     },
   ],
@@ -48,7 +74,15 @@ const sourceAccounts = [
     archivedAt: null,
     createdAt: '',
     updatedAt: '',
-    owners: [{ id: 'alice', displayName: 'Alice', imageUrl: null }],
+    owners: [
+      {
+        id: 'alice',
+        firstName: 'Alice',
+        lastName: null,
+        email: 'alice@example.com',
+        imageUrl: null,
+      },
+    ],
   },
   {
     id: 'bank-joint',
@@ -62,8 +96,20 @@ const sourceAccounts = [
     createdAt: '',
     updatedAt: '',
     owners: [
-      { id: 'alice', displayName: 'Alice', imageUrl: null },
-      { id: 'betty', displayName: 'Betty', imageUrl: null },
+      {
+        id: 'alice',
+        firstName: 'Alice',
+        lastName: null,
+        email: 'alice@example.com',
+        imageUrl: null,
+      },
+      {
+        id: 'betty',
+        firstName: 'Betty',
+        lastName: null,
+        email: 'betty@example.com',
+        imageUrl: null,
+      },
     ],
   },
 ];

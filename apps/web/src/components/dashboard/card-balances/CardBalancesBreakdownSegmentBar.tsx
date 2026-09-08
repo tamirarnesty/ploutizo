@@ -1,5 +1,5 @@
 import { cn } from '@ploutizo/ui/lib/utils';
-import type { AttributionSlice } from '@/components/dashboard/card-balances/CardBalancesBreakdownCell';
+import type { CardBalanceAttributionChip } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
 import type { MemberChartSegmentSlotClassMap } from '@/components/dashboard/card-balances/cardBalancesMemberDisplay';
 import {
   MEMBER_CHART_SEGMENT_CLASSES,
@@ -7,12 +7,12 @@ import {
 } from '@/components/dashboard/card-balances/cardBalancesMemberDisplay';
 
 export type CardBalancesBreakdownSegmentBarProps = {
-  slices: readonly AttributionSlice[];
+  chips: readonly CardBalanceAttributionChip[];
   memberSegmentClassMap: MemberChartSegmentSlotClassMap;
 };
 
 export const CardBalancesBreakdownSegmentBar = ({
-  slices,
+  chips,
   memberSegmentClassMap,
 }: CardBalancesBreakdownSegmentBarProps) => (
   <div
@@ -23,15 +23,15 @@ export const CardBalancesBreakdownSegmentBar = ({
     aria-hidden
     role="presentation"
   >
-    {slices.map((slice) => {
-      const weight = Math.max(Math.abs(slice.balanceCents), 0);
+    {chips.map((chip) => {
+      const weight = Math.max(Math.abs(chip.balanceCents), 0);
       const fillClass =
-        slice.kind === 'shared'
+        chip.kind === 'shared'
           ? SHARED_CHART_SEGMENT_CLASS
-          : (memberSegmentClassMap.get(slice.memberId) ??
+          : (memberSegmentClassMap.get(chip.memberId) ??
             MEMBER_CHART_SEGMENT_CLASSES[0]);
       const key =
-        slice.kind === 'shared' ? 'shared-seg' : `seg-${slice.memberId}`;
+        chip.kind === 'shared' ? 'shared-seg' : `seg-${chip.memberId}`;
 
       return (
         <div

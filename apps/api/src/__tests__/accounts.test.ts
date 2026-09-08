@@ -285,14 +285,22 @@ describe('GET /api/accounts', () => {
     const body = (await res.json()) as {
       data: {
         statementDueDay: number | null;
-        owners: { id: string; displayName: string; imageUrl: string | null }[];
+        owners: {
+          id: string;
+          firstName: string | null;
+          lastName: string | null;
+          email: string;
+          imageUrl: string | null;
+        }[];
       }[];
     };
     expect(body.data[0].statementDueDay).toBe(15);
     expect(body.data[0].owners).toEqual([
       {
         id: 'mem_1',
-        displayName: 'Alice',
+        firstName: 'Alice',
+        lastName: null,
+        email: 'alice@example.com',
         imageUrl: 'https://img.clerk.com/alice.jpg',
       },
     ]);
@@ -367,7 +375,13 @@ describe('POST /api/accounts', () => {
       data: {
         id: string;
         orgId: string;
-        owners: { id: string; displayName: string; imageUrl: string | null }[];
+        owners: {
+          id: string;
+          firstName: string | null;
+          lastName: string | null;
+          email: string;
+          imageUrl: string | null;
+        }[];
       };
     };
     expect(body.data).toHaveProperty('id');
@@ -375,7 +389,9 @@ describe('POST /api/accounts', () => {
     expect(body.data.owners).toEqual([
       {
         id: OWNER_ID,
-        displayName: 'Alice',
+        firstName: 'Alice',
+        lastName: null,
+        email: 'alice@example.com',
         imageUrl: 'https://img.clerk.com/alice.jpg',
       },
     ]);

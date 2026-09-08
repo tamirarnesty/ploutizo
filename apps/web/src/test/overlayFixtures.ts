@@ -13,14 +13,28 @@ export const mockSettlementAccount = (): SettlementAccountRow => ({
     institutionId: 'td',
     lastFour: '4242',
     statementDueDay: 15,
-    owners: [{ id: 'mAda', displayName: 'Ada', imageUrl: null }],
+    owners: [
+      {
+        id: 'mAda',
+        firstName: 'Ada',
+        lastName: null,
+        email: 'mAda@example.com',
+        imageUrl: null,
+      },
+    ],
   },
   totalBalanceCents: 5000,
   sharedBalanceCents: 0,
   sharedParticipantIds: [],
   members: [
     {
-      member: { id: 'mAda', name: 'Ada', avatarUrl: null },
+      member: {
+        id: 'mAda',
+        firstName: 'Ada',
+        lastName: null,
+        email: 'mAda@example.com',
+        imageUrl: null,
+      },
       personalBalanceCents: 5000,
     },
   ],

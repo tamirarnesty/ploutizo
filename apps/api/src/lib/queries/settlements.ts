@@ -7,7 +7,6 @@ import {
   users,
 } from '@ploutizo/db/schema';
 import { and, eq, isNull, sql } from 'drizzle-orm';
-import { memberFullLabel } from '@ploutizo/utils';
 import {
   accountInOrg,
   assigneeCountsForOrg,
@@ -85,7 +84,7 @@ const settlementHouseholdMemberSelect = {
   firstName: users.firstName,
   lastName: users.lastName,
   email: users.email,
-  memberAvatarUrl: users.imageUrl,
+  imageUrl: users.imageUrl,
 };
 
 const fetchSettlementHouseholdMembers = async (orgId: string) => {
@@ -96,8 +95,10 @@ const fetchSettlementHouseholdMembers = async (orgId: string) => {
     .where(eq(orgMembers.orgId, orgId));
   return rows.map((row) => ({
     memberId: row.memberId,
-    memberName: memberFullLabel(row),
-    memberAvatarUrl: row.memberAvatarUrl,
+    firstName: row.firstName,
+    lastName: row.lastName,
+    email: row.email,
+    imageUrl: row.imageUrl,
   }));
 };
 

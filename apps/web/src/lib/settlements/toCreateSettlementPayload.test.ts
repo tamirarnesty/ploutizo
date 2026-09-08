@@ -16,18 +16,38 @@ const fixture = (): SettlementAccountRow => ({
     institutionId: null,
     lastFour: null,
     statementDueDay: null,
-    owners: [{ id: ALICE_ID, displayName: 'Alice', imageUrl: null }],
+    owners: [
+      {
+        id: ALICE_ID,
+        firstName: 'Alice',
+        lastName: null,
+        email: 'Alice@example.com',
+        imageUrl: null,
+      },
+    ],
   },
   totalBalanceCents: 700,
   sharedBalanceCents: 200,
   sharedParticipantIds: [ALICE_ID, BETTY_ID],
   members: [
     {
-      member: { id: ALICE_ID, name: 'Alice', avatarUrl: null },
+      member: {
+        id: ALICE_ID,
+        firstName: 'Alice',
+        lastName: null,
+        email: 'Alice@example.com',
+        imageUrl: null,
+      },
       personalBalanceCents: 500,
     },
     {
-      member: { id: BETTY_ID, name: 'Betty', avatarUrl: null },
+      member: {
+        id: BETTY_ID,
+        firstName: 'Betty',
+        lastName: null,
+        email: 'Betty@example.com',
+        imageUrl: null,
+      },
       personalBalanceCents: 0,
     },
   ],

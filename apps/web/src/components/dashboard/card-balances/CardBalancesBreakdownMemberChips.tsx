@@ -1,40 +1,32 @@
 import { Badge } from '@ploutizo/ui/components/badge';
 import { Text } from '@ploutizo/ui/components/text';
 import { cn } from '@ploutizo/ui/lib/utils';
-import type { OrgMember } from '@ploutizo/types';
-import type { AttributionSlice } from '@/components/dashboard/card-balances/CardBalancesBreakdownCell';
+import type { CardBalanceAttributionChip } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
 import type { MemberChartSlotClassMap } from '@/components/dashboard/card-balances/cardBalancesMemberDisplay';
 import {
   MEMBER_CHART_DOT_CLASSES,
   SHARED_CHART_DOT_CLASS,
 } from '@/components/dashboard/card-balances/cardBalancesMemberDisplay';
 import { SignedBalanceText } from '@/components/dashboard/SignedBalanceText';
-import { householdShortLabel } from '@/lib/householdShortLabel';
 
 export type CardBalancesBreakdownMemberChipsProps = {
-  slices: readonly AttributionSlice[];
-  household: readonly OrgMember[];
+  chips: readonly CardBalanceAttributionChip[];
   memberChartClassMap: MemberChartSlotClassMap;
 };
 
 export const CardBalancesBreakdownMemberChips = ({
-  slices,
-  household,
+  chips,
   memberChartClassMap,
 }: CardBalancesBreakdownMemberChipsProps) => (
   <div className="flex flex-wrap gap-1.5">
-    {slices.map((slice) => {
-      const label =
-        slice.kind === 'shared'
-          ? 'Shared'
-          : householdShortLabel(slice.memberId, household, slice.name);
+    {chips.map((chip) => {
       const fillClass =
-        slice.kind === 'shared'
+        chip.kind === 'shared'
           ? SHARED_CHART_DOT_CLASS
-          : (memberChartClassMap.get(slice.memberId) ??
+          : (memberChartClassMap.get(chip.memberId) ??
             MEMBER_CHART_DOT_CLASSES[0]);
       const key =
-        slice.kind === 'shared' ? 'shared-chip' : `chip-${slice.memberId}`;
+        chip.kind === 'shared' ? 'shared-chip' : `chip-${chip.memberId}`;
 
       return (
         <Badge
@@ -53,10 +45,10 @@ export const CardBalancesBreakdownMemberChips = ({
             variant="caption"
             className="min-w-0 truncate leading-tight"
           >
-            {label}
+            {chip.label}
           </Text>
           <SignedBalanceText
-            cents={slice.balanceCents}
+            cents={chip.balanceCents}
             variant="caption"
             className="shrink-0 leading-tight font-normal"
           />

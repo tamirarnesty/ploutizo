@@ -39,7 +39,13 @@ describe('computeCreditCardMemberRollup', () => {
         sharedBalanceCents: 2000,
         members: [
           {
-            member: { id: 'alice', name: 'Alice', avatarUrl: null },
+            member: {
+              id: 'alice',
+              firstName: 'Alice',
+              lastName: null,
+              email: 'alice@example.com',
+              imageUrl: null,
+            },
             personalBalanceCents: 1000,
           },
         ],
@@ -54,7 +60,13 @@ describe('computeCreditCardMemberRollup', () => {
         sharedBalanceCents: 500,
         members: [
           {
-            member: { id: 'alice', name: 'Alice', avatarUrl: null },
+            member: {
+              id: 'alice',
+              firstName: 'Alice',
+              lastName: null,
+              email: 'alice@example.com',
+              imageUrl: null,
+            },
             personalBalanceCents: 500,
           },
         ],

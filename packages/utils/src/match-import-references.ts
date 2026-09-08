@@ -1,3 +1,4 @@
+import type { MemberIdentity } from '@ploutizo/types';
 import { memberFullLabel } from './member-label';
 
 interface Identified {
@@ -6,12 +7,6 @@ interface Identified {
 
 interface NamedEntity extends Identified {
   name: string;
-}
-
-interface OrgMemberLike extends Identified {
-  firstName?: string | null;
-  lastName?: string | null;
-  email: string;
 }
 
 export interface ImportCsvHints {
@@ -29,7 +24,7 @@ export interface ResolvedImportReferences {
 export interface ImportReferenceCatalogs {
   categories: NamedEntity[];
   tags: NamedEntity[];
-  members: OrgMemberLike[];
+  members: MemberIdentity[];
 }
 
 const normalizeName = (value: string) => value.trim().toLowerCase();
@@ -55,7 +50,7 @@ const matchIdByName = (
   return index.get(normalizeName(name)) ?? null;
 };
 
-const indexMemberNames = (members: OrgMemberLike[]): Map<string, string[]> => {
+const indexMemberNames = (members: MemberIdentity[]): Map<string, string[]> => {
   const index = new Map<string, string[]>();
   const add = (name: string | null | undefined, id: string) => {
     const key = normalizeName(name ?? '');

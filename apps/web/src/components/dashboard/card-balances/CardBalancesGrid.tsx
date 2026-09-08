@@ -37,8 +37,7 @@ const CardBalancesGridHeader = () => (
 );
 
 export const CardBalancesGrid = ({
-  accounts,
-  household,
+  rows,
   isLoading,
   onSettleClick,
 }: CardBalancesGridProps) => {
@@ -46,12 +45,12 @@ export const CardBalancesGrid = ({
   const { pagination, setPagination } = usePersistedPageSize('card-balances');
 
   const columns = useMemo(
-    () => buildCardBalancesColumns(onSettleClick, household),
-    [onSettleClick, household]
+    () => buildCardBalancesColumns(onSettleClick),
+    [onSettleClick]
   );
 
   const table = useReactTable({
-    data: accounts,
+    data: rows,
     columns,
     state: { sorting, pagination },
     onSortingChange: setSorting,
@@ -62,16 +61,16 @@ export const CardBalancesGrid = ({
   });
 
   const balanceTotalCents = useMemo(
-    () => accounts.reduce((sum, row) => sum + row.totalBalanceCents, 0),
-    [accounts]
+    () => rows.reduce((sum, row) => sum + row.totalBalanceCents, 0),
+    [rows]
   );
 
   const footer =
-    accounts.length === 0 ? undefined : (
+    rows.length === 0 ? undefined : (
       <CardBalancesGridFooter balanceTotalCents={balanceTotalCents} />
     );
 
-  if (accounts.length === 0 && !isLoading) {
+  if (rows.length === 0 && !isLoading) {
     return (
       <Card className="w-full gap-0 py-0">
         <CardBalancesGridHeader />
@@ -83,7 +82,7 @@ export const CardBalancesGrid = ({
   return (
     <DataGrid
       table={table}
-      recordCount={accounts.length}
+      recordCount={rows.length}
       isLoading={isLoading}
       tableLayout={{
         width: 'auto',

@@ -1,13 +1,14 @@
-export type MemberLabelFields = {
-  firstName?: string | null;
-  lastName?: string | null;
-  email: string;
-};
+import type { MemberIdentity } from '@ploutizo/types';
+
+type MemberLabelSource = Pick<
+  MemberIdentity,
+  'firstName' | 'lastName' | 'email'
+>;
 
 const trimmed = (value: string | null | undefined): string =>
   value?.trim() ?? '';
 
-export const memberFullLabel = (member: MemberLabelFields): string => {
+export const memberFullLabel = (member: MemberLabelSource): string => {
   const joined = [trimmed(member.firstName), trimmed(member.lastName)]
     .filter(Boolean)
     .join(' ');
@@ -16,8 +17,8 @@ export const memberFullLabel = (member: MemberLabelFields): string => {
 };
 
 export const memberShortLabel = (
-  member: MemberLabelFields,
-  household: readonly MemberLabelFields[]
+  member: MemberLabelSource,
+  household: readonly MemberLabelSource[]
 ): string => {
   const firstName = trimmed(member.firstName);
   if (!firstName) return memberFullLabel(member);

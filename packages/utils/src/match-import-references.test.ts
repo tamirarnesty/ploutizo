@@ -17,12 +17,14 @@ describe('createImportReferenceResolver', () => {
         firstName: 'Tamir',
         lastName: 'Arnesty',
         email: 'tamir@example.com',
+        imageUrl: null,
       },
       {
         id: 'member-2',
         firstName: 'Alex',
         lastName: 'Smith',
         email: 'alex@example.com',
+        imageUrl: null,
       },
     ],
   });
@@ -85,12 +87,14 @@ describe('createImportReferenceResolver', () => {
           firstName: 'Tamir',
           lastName: 'Arnesty',
           email: 'tamir@example.com',
+          imageUrl: null,
         },
         {
           id: 'member-3',
           firstName: 'Tamir',
           lastName: 'Smith',
           email: 'tamir.smith@example.com',
+          imageUrl: null,
         },
       ],
     });

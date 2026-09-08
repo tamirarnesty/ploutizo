@@ -1,11 +1,6 @@
 import type { AccountType } from './enums';
 import type { FinancialInstitutionId } from './financial-institutions';
-
-export interface AccountOwner {
-  id: string; // orgMembers.id (the member UUID)
-  displayName: string;
-  imageUrl: string | null;
-}
+import type { MemberIdentity } from './org';
 
 export interface Account {
   id: string;
@@ -20,7 +15,7 @@ export interface Account {
   createdAt: string;
   updatedAt: string;
   /** Account ownership: household members on this account (may be empty on legacy rows). */
-  owners: AccountOwner[];
+  owners: MemberIdentity[];
 }
 
 export interface AccountMember {

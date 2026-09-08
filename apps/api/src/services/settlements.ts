@@ -1,10 +1,9 @@
 import { lrmSplit } from '@ploutizo/utils/assignee-split';
-import { memberFullLabel } from '@ploutizo/utils';
 import { formatSettlementDescription } from '@ploutizo/utils/transaction-policy';
 import { toFinancialInstitutionId } from '@ploutizo/types';
 import type {
-  AccountOwner,
   GetSettlementBalancesResponse,
+  MemberIdentity,
   SettlementAccountRow,
   SettlementMemberRow,
 } from '@ploutizo/types';
@@ -78,8 +77,10 @@ export const getSettlementBalances = async (
     bucket.members.push({
       member: {
         id: row.memberId,
-        name: row.memberName,
-        avatarUrl: row.memberAvatarUrl,
+        firstName: row.firstName,
+        lastName: row.lastName,
+        email: row.email,
+        imageUrl: row.imageUrl,
       },
       personalBalanceCents: row.personalBalanceCents,
     });
@@ -125,12 +126,14 @@ export const getSettlementBalances = async (
     orgId,
     accounts.map((a) => a.account.id)
   );
-  const ownersByAccountId = new Map<string, AccountOwner[]>();
+  const ownersByAccountId = new Map<string, MemberIdentity[]>();
   for (const row of ownerRows) {
     const list = ownersByAccountId.get(row.accountId) ?? [];
     list.push({
       id: row.memberId,
-      displayName: memberFullLabel(row),
+      firstName: row.firstName,
+      lastName: row.lastName,
+      email: row.email,
       imageUrl: row.imageUrl ?? null,
     });
     ownersByAccountId.set(row.accountId, list);

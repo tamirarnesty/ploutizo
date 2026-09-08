@@ -128,7 +128,9 @@ describe('accounts service — org-scoped member validation', () => {
     expect(account.owners).toEqual([
       {
         id: 'mem_1',
-        displayName: 'Alice',
+        firstName: 'Alice',
+        lastName: null,
+        email: 'alice@example.com',
         imageUrl: 'https://img.clerk.com/alice.jpg',
       },
     ]);
@@ -253,7 +255,9 @@ describe('accounts service — org-scoped member validation', () => {
     expect(account.owners).toEqual([
       {
         id: 'mem_1',
-        displayName: 'Alice',
+        firstName: 'Alice',
+        lastName: null,
+        email: 'alice@example.com',
         imageUrl: null,
       },
     ]);

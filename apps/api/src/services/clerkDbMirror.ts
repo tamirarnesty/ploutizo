@@ -96,17 +96,25 @@ export const clerkBackendUserToLocalUserRow = (
   };
 };
 
-/**
- * Insert local `users` row if absent — same semantics as `user.created` webhook
- * (`onConflictDoNothing` on `external_id`).
- */
-export const insertLocalUserIfAbsent = async (
-  row: LocalUserRowInput
+export type UpsertLocalUserConflict = 'ignore' | 'update';
+
+/** Write Clerk person fields to local `users`, keyed by `external_id`. */
+export const upsertLocalUser = async (
+  row: LocalUserRowInput,
+  conflict: UpsertLocalUserConflict
 ): Promise<void> => {
-  await db
-    .insert(users)
-    .values(localUserRowToInsertValues(row))
-    .onConflictDoNothing({ target: users.externalId });
+  const values = localUserRowToInsertValues(row);
+  if (conflict === 'ignore') {
+    await db
+      .insert(users)
+      .values(values)
+      .onConflictDoNothing({ target: users.externalId });
+    return;
+  }
+  await db.insert(users).values(values).onConflictDoUpdate({
+    target: users.externalId,
+    set: values,
+  });
 };
 
 /**
@@ -192,13 +200,7 @@ export const updateLocalUserFromUserJson = async (
   const row = userJsonToLocalUserRow(data);
   if (!row) return;
 
-  await db
-    .insert(users)
-    .values(localUserRowToInsertValues(row))
-    .onConflictDoUpdate({
-      target: users.externalId,
-      set: localUserRowToInsertValues(row),
-    });
+  await upsertLocalUser(row, 'update');
 };
 
 /**

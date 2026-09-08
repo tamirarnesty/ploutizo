@@ -1,21 +1,10 @@
 import type { Account } from './accounts';
-import type { OrgMember } from './org';
+import type { MemberIdentity } from './org';
 
 export type SettlementStatus = 'due_soon' | 'on_track';
 
-/**
- * Member projection in GET settlements — same semantics as OrgMember subsets:
- * `name` is the derived full member label (first + last, else email);
- * `avatarUrl` is avatar (= `OrgMember.imageUrl`).
- * Names differ from `OrgMember` to match settlements JSON (`name`/`avatarUrl` on wire).
- */
-export type SettlementMemberRowMember = Pick<OrgMember, 'id'> & {
-  name: string;
-  avatarUrl: OrgMember['imageUrl'];
-};
-
 export interface SettlementMemberRow {
-  member: SettlementMemberRowMember;
+  member: MemberIdentity;
   personalBalanceCents: number;
 }
 

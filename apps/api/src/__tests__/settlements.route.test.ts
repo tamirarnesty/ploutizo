@@ -44,7 +44,9 @@ describe('GET /api/settlements route', () => {
         owners: [
           {
             id: 'mem_1',
-            displayName: 'Alice',
+            firstName: 'Alice',
+            lastName: null,
+            email: 'Alice@example.com',
             imageUrl: null,
           },
         ],
@@ -54,7 +56,13 @@ describe('GET /api/settlements route', () => {
       sharedParticipantIds: [],
       members: [
         {
-          member: { id: 'mem_1', name: 'Alice', avatarUrl: null },
+          member: {
+            id: 'mem_1',
+            firstName: 'Alice',
+            lastName: null,
+            email: 'mem_1@example.com',
+            imageUrl: null,
+          },
           personalBalanceCents: 5000,
         },
       ],
