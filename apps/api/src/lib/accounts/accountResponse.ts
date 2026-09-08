@@ -53,7 +53,10 @@ const ownersByAccountIdFromMemberRows = (
   return ownersByAccountId;
 };
 
-const fetchOwnersByAccountId = async (orgId: string, accountIds: string[]) => {
+export const fetchOwnersByAccountId = async (
+  orgId: string,
+  accountIds: string[]
+) => {
   if (accountIds.length === 0) return new Map<string, MemberIdentity[]>();
   const memberRows = await listAccountMemberDetails(orgId, accountIds);
   return ownersByAccountIdFromMemberRows(memberRows);

@@ -18,11 +18,6 @@ interface SplitSectionProps {
   orgMembers: OrgMember[];
 }
 
-const memberNameForId = (orgMembers: OrgMember[], memberId: string) => {
-  const member = orgMembers.find((row) => row.id === memberId);
-  return member ? memberFullLabel(member) : null;
-};
-
 export const SplitSection = ({
   value,
   onChange,
@@ -138,20 +133,23 @@ export const SplitSection = ({
         </Text>
       ) : (
         <div className="flex flex-col gap-2">
-          {value.map((row) => (
-            <AssigneeRow
-              key={row.memberId}
-              memberId={row.memberId}
-              memberName={memberNameForId(orgMembers, row.memberId)}
-              imageUrl={orgMembers.find((m) => m.id === row.memberId)?.imageUrl}
-              amountCents={row.amountCents}
-              percentage={row.percentage}
-              mode={mode}
-              totalCents={amountCents}
-              onChange={handleRowChange}
-              onRemove={handleRemove}
-            />
-          ))}
+          {value.map((row) => {
+            const member = orgMembers.find((m) => m.id === row.memberId);
+            return (
+              <AssigneeRow
+                key={row.memberId}
+                memberId={row.memberId}
+                memberName={member ? memberFullLabel(member) : null}
+                imageUrl={member?.imageUrl}
+                amountCents={row.amountCents}
+                percentage={row.percentage}
+                mode={mode}
+                totalCents={amountCents}
+                onChange={handleRowChange}
+                onRemove={handleRemove}
+              />
+            );
+          })}
         </div>
       )}
 

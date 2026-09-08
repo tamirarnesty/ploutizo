@@ -4,6 +4,7 @@ import type {
   OrgMember,
   SettlementAccountRow,
 } from '@ploutizo/types';
+import type { PayToward } from '@/components/dashboard/settleFormSchema';
 
 export type CardBalanceAttributionChip =
   | {
@@ -23,9 +24,16 @@ export type CardBalanceOwnerDisplay = {
   label: string;
 };
 
+export type CardBalanceSettleMenuEntry = {
+  payToward: PayToward;
+  label: string;
+  balanceCents: number;
+};
+
 export type CardBalanceRowViewModel = SettlementAccountRow & {
   ownerDisplay: CardBalanceOwnerDisplay;
   attributionChips: CardBalanceAttributionChip[];
+  settleMenuEntries: CardBalanceSettleMenuEntry[];
 };
 
 const memberFromHousehold = (
@@ -100,6 +108,37 @@ const buildAttributionChips = (
   return chips;
 };
 
+const buildSettleMenuEntries = (
+  account: SettlementAccountRow,
+  household: readonly OrgMember[]
+): CardBalanceSettleMenuEntry[] => {
+  const memberEntries = [...account.members]
+    .map((memberRow) => {
+      const member = memberFromHousehold(
+        household,
+        memberRow.member.id,
+        memberRow.member
+      );
+      return {
+        payToward: memberRow.member.id,
+        label: memberFullLabel(member),
+        balanceCents: memberRow.personalBalanceCents,
+      };
+    })
+    .sort((a, b) =>
+      a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })
+    );
+
+  return [
+    ...memberEntries,
+    {
+      payToward: 'shared',
+      label: 'Shared',
+      balanceCents: account.sharedBalanceCents,
+    },
+  ];
+};
+
 export const buildCardBalanceViewModels = (
   accounts: SettlementAccountRow[],
   household: readonly OrgMember[]
@@ -108,4 +147,5 @@ export const buildCardBalanceViewModels = (
     ...account,
     ownerDisplay: buildOwnerDisplay(account.account.owners, household),
     attributionChips: buildAttributionChips(account, household),
+    settleMenuEntries: buildSettleMenuEntries(account, household),
   }));

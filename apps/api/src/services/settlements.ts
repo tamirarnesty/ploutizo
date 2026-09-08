@@ -3,14 +3,13 @@ import { formatSettlementDescription } from '@ploutizo/utils/transaction-policy'
 import { toFinancialInstitutionId } from '@ploutizo/types';
 import type {
   GetSettlementBalancesResponse,
-  MemberIdentity,
   SettlementAccountRow,
   SettlementMemberRow,
 } from '@ploutizo/types';
 import type { CreateSettlementInput } from '@ploutizo/validators';
 import type { SettlementBalanceRow } from '@/lib/queries/settlements';
+import { fetchOwnersByAccountId } from '@/lib/accounts/accountResponse';
 import { DomainError, NotFoundError } from '@/lib/errors';
-import { listAccountMemberDetails } from '@/lib/queries/accounts';
 import {
   fetchAccountForSettlement,
   fetchSettlementBalances,
@@ -122,22 +121,10 @@ export const getSettlementBalances = async (
     });
   }
 
-  const ownerRows = await listAccountMemberDetails(
+  const ownersByAccountId = await fetchOwnersByAccountId(
     orgId,
     accounts.map((a) => a.account.id)
   );
-  const ownersByAccountId = new Map<string, MemberIdentity[]>();
-  for (const row of ownerRows) {
-    const list = ownersByAccountId.get(row.accountId) ?? [];
-    list.push({
-      id: row.memberId,
-      firstName: row.firstName,
-      lastName: row.lastName,
-      email: row.email,
-      imageUrl: row.imageUrl ?? null,
-    });
-    ownersByAccountId.set(row.accountId, list);
-  }
 
   return {
     accounts: accounts.map((a) => ({

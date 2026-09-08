@@ -87,20 +87,12 @@ const settlementHouseholdMemberSelect = {
   imageUrl: users.imageUrl,
 };
 
-const fetchSettlementHouseholdMembers = async (orgId: string) => {
-  const rows = await db
+const fetchSettlementHouseholdMembers = (orgId: string) =>
+  db
     .select(settlementHouseholdMemberSelect)
     .from(orgMembers)
     .innerJoin(users, eq(users.id, orgMembers.userId))
     .where(eq(orgMembers.orgId, orgId));
-  return rows.map((row) => ({
-    memberId: row.memberId,
-    firstName: row.firstName,
-    lastName: row.lastName,
-    email: row.email,
-    imageUrl: row.imageUrl,
-  }));
-};
 
 /**
  * One org-scoped scan over qualifying credit-card transactions × assignees;

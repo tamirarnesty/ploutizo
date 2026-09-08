@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Text } from '@ploutizo/ui/components/text';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';
+import type { CardBalanceRowViewModel } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
 import type { CardBalancesSettleClickHandler } from '@/components/dashboard/card-balances/types';
 import { buildCardBalanceViewModels } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
 import { useGetOrgMembers } from '@/lib/data-access/org';
@@ -21,9 +22,8 @@ export const Dashboard = () => {
   const summaryPaneLoading = settlementsLoading || membersLoading;
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [activeAccount, setActiveAccount] = useState<
-    ReturnType<typeof buildCardBalanceViewModels>[number] | null
-  >(null);
+  const [activeAccount, setActiveAccount] =
+    useState<CardBalanceRowViewModel | null>(null);
   const [dialogPayToward, setDialogPayToward] = useState<PayToward | null>(
     null
   );

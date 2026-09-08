@@ -1,4 +1,3 @@
-import { memberFullLabel } from '@ploutizo/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,23 +18,10 @@ type CardBalancesActionCellProps = {
   onSettleClick: CardBalancesSettleClickHandler;
 };
 
-const sortMembersForMenu = (row: CardBalanceRowViewModel) =>
-  [...row.members].sort((a, b) =>
-    memberFullLabel(a.member).localeCompare(
-      memberFullLabel(b.member),
-      undefined,
-      {
-        sensitivity: 'base',
-      }
-    )
-  );
-
 export const CardBalancesActionCell = ({
   row,
   onSettleClick,
 }: CardBalancesActionCellProps) => {
-  const menuMembers = sortMembersForMenu(row);
-
   return (
     <div
       className={cn(
@@ -60,25 +46,20 @@ export const CardBalancesActionCell = ({
             </Button>
           }
         />
-        <DropdownMenuContent align="end" className="min-w-[12rem]">
+        <DropdownMenuContent align="end" className="min-w-48">
           <DropdownMenuGroup>
             <DropdownMenuLabel className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               Pay toward
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {menuMembers.map((memberRow) => (
+            {row.settleMenuEntries.map((entry) => (
               <SettlePayTowardMenuItem
-                key={memberRow.member.id}
-                label={memberFullLabel(memberRow.member)}
-                balanceCents={memberRow.personalBalanceCents}
-                onSelect={() => onSettleClick(row, memberRow.member.id)}
+                key={entry.payToward}
+                label={entry.label}
+                balanceCents={entry.balanceCents}
+                onSelect={() => onSettleClick(row, entry.payToward)}
               />
             ))}
-            <SettlePayTowardMenuItem
-              label="Shared"
-              balanceCents={row.sharedBalanceCents}
-              onSelect={() => onSettleClick(row, 'shared')}
-            />
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>

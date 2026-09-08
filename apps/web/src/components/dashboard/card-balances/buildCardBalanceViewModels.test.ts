@@ -74,4 +74,20 @@ describe('buildCardBalanceViewModels', () => {
       label: 'Alex Smith',
     });
   });
+
+  it('precomputes settle menu entries sorted by member label with shared last', () => {
+    const [row] = buildCardBalanceViewModels([account()], household);
+    expect(row.settleMenuEntries).toEqual([
+      {
+        payToward: 'm1',
+        label: 'Alex Smith',
+        balanceCents: 100,
+      },
+      {
+        payToward: 'shared',
+        label: 'Shared',
+        balanceCents: 0,
+      },
+    ]);
+  });
 });

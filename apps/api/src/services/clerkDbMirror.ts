@@ -52,14 +52,6 @@ export type LocalUserRowInput = {
   imageUrl: string | null;
 };
 
-const localUserRowToInsertValues = (row: LocalUserRowInput) => ({
-  externalId: row.externalId,
-  email: row.email,
-  firstName: row.firstName,
-  lastName: row.lastName,
-  imageUrl: row.imageUrl,
-});
-
 const primaryEmailFromUserJson = (data: UserJSON): string | undefined =>
   data.email_addresses.find((e) => e.id === data.primary_email_address_id)
     ?.email_address;
@@ -103,7 +95,13 @@ export const upsertLocalUser = async (
   row: LocalUserRowInput,
   conflict: UpsertLocalUserConflict
 ): Promise<void> => {
-  const values = localUserRowToInsertValues(row);
+  const values = {
+    externalId: row.externalId,
+    email: row.email,
+    firstName: row.firstName,
+    lastName: row.lastName,
+    imageUrl: row.imageUrl,
+  };
   if (conflict === 'ignore') {
     await db
       .insert(users)
