@@ -45,7 +45,7 @@ svix listen http://localhost:8080/webhooks/clerk
 
 The Clerk dashboard webhook endpoint is set to `https://play.svix.com/in/c_DXiiPoSOVJFMDsOp1h5EKOWjg6z/`. Install the svix CLI first (`curl -sL https://github.com/svix/svix-webhooks/releases/download/v1.92.2/svix-cli-installer.sh | bash`, then add `$HOME/.svix/bin` to `PATH`).
 
-Webhooks are only needed when testing flows that trigger Clerk events: sign-up, login/logout, org (household) creation/update, member invite/join. See `apps/api/src/services/webhooks.ts` for the full event list.
+Webhooks are only needed when testing flows that trigger Clerk events: sign-up, login/logout, org (household) creation/update, member invite/join/leave. See `apps/api/src/services/webhooks.ts` for the full subscribed event list (including `organizationMembership.deleted`).
 
 ### Seed the `cloud-environments` Neon branch
 

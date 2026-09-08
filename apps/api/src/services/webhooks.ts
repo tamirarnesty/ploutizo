@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm';
 import { seedOrg } from '@ploutizo/db/seeds';
 import {
   buildOrgMemberDisplayName,
+  deleteOrgMemberIfPresent,
   insertLocalUserIfAbsent,
   insertOrgMemberIfAbsent,
   updateLocalUserFromUserJson,
@@ -19,6 +20,17 @@ import type {
 // One handler per Clerk event type — per D-07, D-08.
 // Clerk v3 uses Webhook<type, Data> generics so Extract<WebhookEvent, {type}> resolves to never.
 // Import JSON types directly instead of extracting from the discriminated union.
+//
+// Clerk dashboard webhook endpoint must subscribe to:
+// - organization.created
+// - organization.updated
+// - user.created
+// - user.updated
+// - organizationMembership.created
+// - organizationMembership.deleted
+//
+// Intentionally unhandled: user.deleted, organization.deleted (cascade elsewhere),
+// invitations, sessions, billing.
 
 export const handleOrgCreated = async (data: OrganizationJSON) => {
   await db
@@ -81,6 +93,15 @@ export const handleOrgMembershipCreated = async (
   });
 };
 
+export const handleOrgMembershipDeleted = async (
+  data: OrganizationMembershipJSON
+) => {
+  await deleteOrgMemberIfPresent({
+    orgId: data.organization.id,
+    clerkUserId: data.public_user_data.user_id,
+  });
+};
+
 // Dispatch event to the appropriate handler based on event.type narrowing (D-08).
 // Casts needed because Clerk v3 Webhook<type, Data> generics cause event.data to not
 // narrow to the concrete JSON types after Extract<WebhookEvent, {type}>.
@@ -96,6 +117,8 @@ export const dispatchWebhookEvent = async (event: WebhookEvent) => {
       return handleUserUpdated(event.data);
     case 'organizationMembership.created':
       return handleOrgMembershipCreated(event.data);
+    case 'organizationMembership.deleted':
+      return handleOrgMembershipDeleted(event.data);
     default: {
       const unhandled = event as { type?: string };
       console.warn(

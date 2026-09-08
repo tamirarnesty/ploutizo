@@ -1,6 +1,6 @@
 import { db } from '@ploutizo/db';
 import { orgMembers, users } from '@ploutizo/db/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { mapClerkOrgRoleToAppRole } from './clerkRoleMapping';
 import type { User, UserJSON } from '@clerk/backend';
 
@@ -124,6 +124,30 @@ export const insertOrgMemberIfAbsent = async (params: {
       displayName: params.displayName,
     })
     .onConflictDoNothing({ target: [orgMembers.orgId, orgMembers.userId] });
+};
+
+/**
+ * Hard-delete local `org_members` row when Clerk membership is removed — same semantics
+ * as in-app remove and `organizationMembership.deleted` webhook. Idempotent when the row
+ * is already gone (including after in-app remove).
+ */
+export const deleteOrgMemberIfPresent = async (params: {
+  orgId: string;
+  clerkUserId: string;
+}): Promise<void> => {
+  const user = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.externalId, params.clerkUserId))
+    .limit(1)
+    .then((rows) => rows.at(0));
+  if (!user) return;
+
+  await db
+    .delete(orgMembers)
+    .where(
+      and(eq(orgMembers.orgId, params.orgId), eq(orgMembers.userId, user.id))
+    );
 };
 
 /** Applies `user.updated` webhook fields — mirrors previous `handleUserUpdated` logic. */
