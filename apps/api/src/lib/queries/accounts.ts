@@ -122,7 +122,9 @@ export const listAccountMemberDetails = async (
     .select({
       accountId: accountMembers.accountId,
       memberId: orgMembers.id,
-      displayName: orgMembers.displayName,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      email: users.email,
       imageUrl: users.imageUrl,
     })
     .from(accountMembers)

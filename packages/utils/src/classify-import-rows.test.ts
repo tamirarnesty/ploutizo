@@ -43,8 +43,18 @@ const baseContext = (
       { id: RULE_TAG_ID, name: 'rewards' },
     ],
     members: [
-      { id: TAMIR_ID, displayName: 'Tamir Arnesty', firstName: 'Tamir' },
-      { id: ALEX_ID, displayName: 'Alex Smith', firstName: 'Alex' },
+      {
+        id: TAMIR_ID,
+        firstName: 'Tamir',
+        lastName: 'Arnesty',
+        email: 'tamir@example.com',
+      },
+      {
+        id: ALEX_ID,
+        firstName: 'Alex',
+        lastName: 'Smith',
+        email: 'alex@example.com',
+      },
     ],
   },
   merchantRules: [],
@@ -416,13 +426,15 @@ describe('classifyImportRows — member-name matching', () => {
             members: [
               {
                 id: TAMIR_ID,
-                displayName: 'Tamir Arnesty',
                 firstName: 'Tamir',
+                lastName: 'Arnesty',
+                email: 'tamir@example.com',
               },
               {
                 id: OTHER_TAMIR_ID,
-                displayName: 'Tamir Smith',
                 firstName: 'Tamir',
+                lastName: 'Smith',
+                email: 'tamir.smith@example.com',
               },
             ],
           },
@@ -442,13 +454,15 @@ describe('classifyImportRows — member-name matching', () => {
             members: [
               {
                 id: TAMIR_ID,
-                displayName: 'Tamir Arnesty',
                 firstName: 'Tamir',
+                lastName: 'Arnesty',
+                email: 'tamir@example.com',
               },
               {
                 id: OTHER_TAMIR_ID,
-                displayName: 'Tamir Smith',
                 firstName: 'Tamir',
+                lastName: 'Smith',
+                email: 'tamir.smith@example.com',
               },
             ],
           },

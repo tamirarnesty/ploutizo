@@ -1,11 +1,15 @@
 import { Text } from '@ploutizo/ui/components/text';
 import { formatAccountInstitutionMeta } from '@ploutizo/utils';
-import type { AccountOwner, SettlementAccountRow } from '@ploutizo/types';
+import type {
+  AccountOwner,
+  OrgMember,
+  SettlementAccountRow,
+} from '@ploutizo/types';
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
 import { SignedBalanceText } from '@/components/dashboard/SignedBalanceText';
 import { RightAlignedCell } from '@/components/dashboard/card-balances/RightAlignedColumnHeader';
 import { formatDueShort } from '@/components/dashboard/card-balances/formatDueShort';
-import { getFirstNameFromDisplayName } from '@/lib/memberDisplayName';
+import { householdShortLabel } from '@/lib/householdShortLabel';
 
 export const renderCardBalancesCardCell = (
   account: SettlementAccountRow['account']
@@ -36,7 +40,10 @@ export const renderCardBalancesCardCell = (
   );
 };
 
-export const renderCardBalancesOwnerCell = (owners: AccountOwner[]) => {
+export const renderCardBalancesOwnerCell = (
+  owners: AccountOwner[],
+  household: readonly OrgMember[]
+) => {
   const sorted = [...owners].sort(
     (a, b) =>
       a.displayName.localeCompare(b.displayName) || a.id.localeCompare(b.id)
@@ -53,9 +60,10 @@ export const renderCardBalancesOwnerCell = (owners: AccountOwner[]) => {
   }));
 
   const isShared = sorted.length > 1;
+  const owner = sorted[0];
   const label = isShared
     ? 'Shared'
-    : getFirstNameFromDisplayName(sorted[0].displayName);
+    : householdShortLabel(owner.id, household, owner.displayName);
 
   const avatarsForSketch = isShared
     ? avatarMembers.slice(0, 2)

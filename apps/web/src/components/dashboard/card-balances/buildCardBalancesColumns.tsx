@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { DataGridColumnHeader } from '@ploutizo/ui/components/reui/data-grid/data-grid-column-header';
-import type { SettlementAccountRow } from '@ploutizo/types';
+import type { OrgMember, SettlementAccountRow } from '@ploutizo/types';
 import type { CardBalancesSettleClickHandler } from '@/components/dashboard/card-balances/types';
 import { CardBalancesActionCell } from '@/components/dashboard/card-balances/CardBalancesActionCell';
 import { CardBalancesBreakdownCell } from '@/components/dashboard/card-balances/CardBalancesBreakdownCell';
@@ -28,7 +28,8 @@ const columnHeaderIcon = (Icon: typeof CreditCard) => (
 
 /** Sketch 006 / grid-structure-and-density.md column order */
 export const buildCardBalancesColumns = (
-  onSettleClick: CardBalancesSettleClickHandler
+  onSettleClick: CardBalancesSettleClickHandler,
+  household: readonly OrgMember[]
 ): ColumnDef<SettlementAccountRow>[] => [
   {
     id: 'card',
@@ -65,7 +66,8 @@ export const buildCardBalancesColumns = (
       cellClassName: 'min-w-[92px]',
       skeleton: <Skeleton className="h-4 w-16 motion-safe:animate-pulse" />,
     },
-    cell: ({ row }) => renderCardBalancesOwnerCell(row.original.account.owners),
+    cell: ({ row }) =>
+      renderCardBalancesOwnerCell(row.original.account.owners, household),
   },
   {
     id: 'balance',
@@ -154,7 +156,9 @@ export const buildCardBalancesColumns = (
       cellClassName: 'min-w-[360px]',
       skeleton: <Skeleton className="h-10 w-full motion-safe:animate-pulse" />,
     },
-    cell: ({ row }) => <CardBalancesBreakdownCell account={row.original} />,
+    cell: ({ row }) => (
+      <CardBalancesBreakdownCell account={row.original} household={household} />
+    ),
   },
   {
     id: 'action',

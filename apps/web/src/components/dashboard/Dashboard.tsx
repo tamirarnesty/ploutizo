@@ -65,6 +65,7 @@ export const Dashboard = () => {
           ) : (
             <CardBalancesGrid
               accounts={creditCardAccounts}
+              household={members}
               isLoading={settlementsLoading}
               onSettleClick={handleSettleClick}
             />

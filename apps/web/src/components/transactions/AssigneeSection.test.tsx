@@ -31,10 +31,10 @@ const members: OrgMember[] = [
   {
     id: 'member-a',
     orgId: 'org-1',
-    displayName: 'Member A',
     role: 'admin',
     joinedAt: '2026-01-01T00:00:00.000Z',
     externalId: 'ext-a',
+    email: 'member-a@example.com',
     imageUrl: null,
     firstName: 'Member',
     lastName: 'A',
@@ -42,10 +42,10 @@ const members: OrgMember[] = [
   {
     id: 'member-b',
     orgId: 'org-1',
-    displayName: 'Member B',
     role: 'admin',
     joinedAt: '2026-01-01T00:00:00.000Z',
     externalId: 'ext-b',
+    email: 'member-b@example.com',
     imageUrl: null,
     firstName: 'Member',
     lastName: 'B',

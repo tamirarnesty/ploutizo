@@ -5,26 +5,18 @@ import {
 } from './clerkDbMirror';
 import type { OrganizationMembershipJSON, UserJSON } from '@clerk/backend';
 
-const {
-  mockOnConflictDoUpdate,
-  mockInsertReturning,
-  mockUpdateSet,
-  mockUpdateWhere,
-  mockSelect,
-} = vi.hoisted(() => ({
-  mockOnConflictDoUpdate: vi.fn(),
-  mockInsertReturning: vi.fn(),
-  mockUpdateSet: vi.fn(),
-  mockUpdateWhere: vi.fn().mockResolvedValue(undefined),
-  mockSelect: vi.fn(),
-}));
+const { mockOnConflictDoUpdate, mockValues, mockUpdateSet, mockSelect } =
+  vi.hoisted(() => ({
+    mockOnConflictDoUpdate: vi.fn().mockResolvedValue(undefined),
+    mockValues: vi.fn(),
+    mockUpdateSet: vi.fn(),
+    mockSelect: vi.fn(),
+  }));
 
 vi.mock('@ploutizo/db', () => ({
   db: {
     insert: vi.fn().mockReturnValue({
-      values: vi.fn().mockReturnValue({
-        onConflictDoUpdate: mockOnConflictDoUpdate,
-      }),
+      values: mockValues,
     }),
     update: vi.fn().mockReturnValue({
       set: mockUpdateSet,
@@ -87,11 +79,9 @@ const buildMembershipJson = (
 describe('updateLocalUserFromUserJson', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
-    mockOnConflictDoUpdate.mockReturnValue({
-      returning: mockInsertReturning,
+    mockValues.mockReturnValue({
+      onConflictDoUpdate: mockOnConflictDoUpdate,
     });
-    mockInsertReturning.mockResolvedValue([{ id: 'app_user_1' }]);
   });
 
   it('writes nothing when the webhook payload has no primary email', async () => {
@@ -99,21 +89,28 @@ describe('updateLocalUserFromUserJson', () => {
       buildUserJson({ primary_email_address_id: 'missing' })
     );
 
-    expect(mockOnConflictDoUpdate).not.toHaveBeenCalled();
+    expect(mockValues).not.toHaveBeenCalled();
     expect(mockUpdateSet).not.toHaveBeenCalled();
   });
 
-  it('upserts the local user and refreshes org member display names', async () => {
+  it('upserts Clerk person fields on the local user and does not write memberships', async () => {
     await updateLocalUserFromUserJson(buildUserJson());
 
+    expect(mockValues).toHaveBeenCalledWith({
+      externalId: 'user_clerk_abc',
+      email: 'ada@example.com',
+      firstName: 'Ada',
+      lastName: 'Lovelace',
+      imageUrl: 'https://example.com/ada.png',
+    });
     expect(mockOnConflictDoUpdate).toHaveBeenCalledOnce();
-    expect(mockInsertReturning).toHaveBeenCalledOnce();
-    expect(mockUpdateSet).toHaveBeenCalledWith({ displayName: 'Ada Lovelace' });
-    expect(mockUpdateWhere).toHaveBeenCalledOnce();
+    expect(mockUpdateSet).not.toHaveBeenCalled();
   });
 });
 
 describe('updateOrgMemberFromMembershipJson', () => {
+  const mockUpdateWhere = vi.fn().mockResolvedValue(undefined);
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
@@ -128,7 +125,7 @@ describe('updateOrgMemberFromMembershipJson', () => {
     expect(mockUpdateSet).not.toHaveBeenCalled();
   });
 
-  it('updates display name and role for the household membership', async () => {
+  it('writes mapped role for the household membership and not a name', async () => {
     await updateOrgMemberFromMembershipJson(
       buildMembershipJson({
         role: 'org:admin',
@@ -143,10 +140,7 @@ describe('updateOrgMemberFromMembershipJson', () => {
       })
     );
 
-    expect(mockUpdateSet).toHaveBeenCalledWith({
-      displayName: 'Alan Turing',
-      role: 'admin',
-    });
+    expect(mockUpdateSet).toHaveBeenCalledWith({ role: 'admin' });
     expect(mockUpdateWhere).toHaveBeenCalledOnce();
   });
 });

@@ -33,7 +33,9 @@ const mockAccountMemberDetails = (
   members: {
     accountId: string;
     memberId: string;
-    displayName: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
     imageUrl: string | null;
   }[] = []
 ) => {
@@ -97,7 +99,9 @@ const mockSuccessfulAccountWrite = (
   members: {
     accountId: string;
     memberId: string;
-    displayName: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
     imageUrl: string | null;
   }[] = []
 ) => {
@@ -264,7 +268,9 @@ describe('GET /api/accounts', () => {
                   {
                     accountId: 'acct_1',
                     memberId: 'mem_1',
-                    displayName: 'Alice',
+                    firstName: 'Alice',
+                    lastName: null,
+                    email: 'alice@example.com',
                     imageUrl: 'https://img.clerk.com/alice.jpg',
                   },
                 ]),
@@ -339,7 +345,9 @@ describe('POST /api/accounts', () => {
       {
         accountId: 'acct_1',
         memberId: OWNER_ID,
-        displayName: 'Alice',
+        firstName: 'Alice',
+        lastName: null,
+        email: 'alice@example.com',
         imageUrl: 'https://img.clerk.com/alice.jpg',
       },
     ]);

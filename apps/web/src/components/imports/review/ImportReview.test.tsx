@@ -101,8 +101,9 @@ vi.mock('@/lib/data-access/org', () => ({
     data: [
       {
         id: 'member_1',
-        displayName: 'Tamir Arnesty',
+        email: 'tamir@example.com',
         firstName: 'Tamir',
+        lastName: 'Arnesty',
         imageUrl: null,
       },
     ],

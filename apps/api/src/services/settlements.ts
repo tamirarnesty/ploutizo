@@ -1,4 +1,5 @@
 import { lrmSplit } from '@ploutizo/utils/assignee-split';
+import { memberFullLabel } from '@ploutizo/utils';
 import { formatSettlementDescription } from '@ploutizo/utils/transaction-policy';
 import { toFinancialInstitutionId } from '@ploutizo/types';
 import type {
@@ -129,7 +130,7 @@ export const getSettlementBalances = async (
     const list = ownersByAccountId.get(row.accountId) ?? [];
     list.push({
       id: row.memberId,
-      displayName: row.displayName,
+      displayName: memberFullLabel(row),
       imageUrl: row.imageUrl ?? null,
     });
     ownersByAccountId.set(row.accountId, list);

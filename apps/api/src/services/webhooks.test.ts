@@ -16,8 +16,6 @@ import {
 import type { OrganizationMembershipJSON, WebhookEvent } from '@clerk/backend';
 
 vi.mock('./clerkDbMirror', () => ({
-  buildOrgMemberDisplayName: vi.fn(() => 'Ada Lovelace'),
-  memberDisplayNameFromMembershipJson: vi.fn(() => 'Ada Lovelace'),
   deleteOrgMemberIfPresent: vi.fn(),
   findLocalUserIdByClerkId: vi.fn(),
   insertLocalUserIfAbsent: vi.fn(),
@@ -123,7 +121,6 @@ describe('handleOrgMembershipCreated', () => {
     expect(insertOrgMemberIfAbsent).toHaveBeenCalledWith({
       orgId: 'org_1',
       appUserId: 'app_user_1',
-      displayName: 'Ada Lovelace',
       clerkMembershipId: 'orgmem_new',
       membershipCreatedAt: new Date(2_000),
       clerkOrgRole: 'org:member',

@@ -6,6 +6,7 @@ import {
 } from '@ploutizo/ui/components/toggle-group';
 import { lrmSplit } from '@ploutizo/utils/assignee-split';
 import { formatCurrency } from '@ploutizo/utils/currency';
+import { memberFullLabel } from '@ploutizo/utils';
 import type { OrgMember } from '@ploutizo/types';
 import { AssigneeRow } from './AssigneeRow';
 import type { AssigneeFormRow } from './types';
@@ -16,6 +17,11 @@ interface SplitSectionProps {
   amountCents: number;
   orgMembers: OrgMember[];
 }
+
+const memberNameForId = (orgMembers: OrgMember[], memberId: string) => {
+  const member = orgMembers.find((row) => row.id === memberId);
+  return member ? memberFullLabel(member) : null;
+};
 
 export const SplitSection = ({
   value,
@@ -136,10 +142,7 @@ export const SplitSection = ({
             <AssigneeRow
               key={row.memberId}
               memberId={row.memberId}
-              memberName={
-                orgMembers.find((m) => m.id === row.memberId)?.displayName ??
-                null
-              }
+              memberName={memberNameForId(orgMembers, row.memberId)}
               imageUrl={orgMembers.find((m) => m.id === row.memberId)?.imageUrl}
               amountCents={row.amountCents}
               percentage={row.percentage}

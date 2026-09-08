@@ -111,6 +111,11 @@ export {
   type AccountLabelInput,
   type AccountInstitutionMetaInput,
 } from './format-account-label';
+export {
+  memberFullLabel,
+  memberShortLabel,
+  type MemberLabelFields,
+} from './member-label';
 export { parseImportTags } from './parse-import-tags';
 export {
   tryParseImportAmountToCents,

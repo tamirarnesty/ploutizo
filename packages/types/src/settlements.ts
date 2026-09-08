@@ -5,11 +5,12 @@ export type SettlementStatus = 'due_soon' | 'on_track';
 
 /**
  * Member projection in GET settlements — same semantics as OrgMember subsets:
- * `name` is the roster label (= `OrgMember.displayName`), `avatarUrl` is avatar (= `OrgMember.imageUrl`).
+ * `name` is the derived full member label (first + last, else email);
+ * `avatarUrl` is avatar (= `OrgMember.imageUrl`).
  * Names differ from `OrgMember` to match settlements JSON (`name`/`avatarUrl` on wire).
  */
 export type SettlementMemberRowMember = Pick<OrgMember, 'id'> & {
-  name: OrgMember['displayName'];
+  name: string;
   avatarUrl: OrgMember['imageUrl'];
 };
 

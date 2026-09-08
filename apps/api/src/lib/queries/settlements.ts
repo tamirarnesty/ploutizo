@@ -7,6 +7,7 @@ import {
   users,
 } from '@ploutizo/db/schema';
 import { and, eq, isNull, sql } from 'drizzle-orm';
+import { memberFullLabel } from '@ploutizo/utils';
 import {
   accountInOrg,
   assigneeCountsForOrg,
@@ -81,16 +82,24 @@ const fetchSettlementCreditCardAccounts = (orgId: string) =>
 
 const settlementHouseholdMemberSelect = {
   memberId: orgMembers.id,
-  memberName: orgMembers.displayName,
+  firstName: users.firstName,
+  lastName: users.lastName,
+  email: users.email,
   memberAvatarUrl: users.imageUrl,
 };
 
-const fetchSettlementHouseholdMembers = (orgId: string) =>
-  db
+const fetchSettlementHouseholdMembers = async (orgId: string) => {
+  const rows = await db
     .select(settlementHouseholdMemberSelect)
     .from(orgMembers)
     .innerJoin(users, eq(users.id, orgMembers.userId))
     .where(eq(orgMembers.orgId, orgId));
+  return rows.map((row) => ({
+    memberId: row.memberId,
+    memberName: memberFullLabel(row),
+    memberAvatarUrl: row.memberAvatarUrl,
+  }));
+};
 
 /**
  * One org-scoped scan over qualifying credit-card transactions × assignees;

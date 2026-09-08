@@ -30,6 +30,7 @@ import {
   or,
   sql,
 } from 'drizzle-orm';
+import { memberFullLabel } from '@ploutizo/utils';
 import type { Transaction } from '@ploutizo/db';
 import type {
   SortOrder,
@@ -408,7 +409,9 @@ export const enrichTransactions = async (
         memberId: transactionAssignees.memberId,
         amountCents: transactionAssignees.amountCents,
         percentage: transactionAssignees.percentage, // string — display only
-        memberName: orgMembers.displayName,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
         imageUrl: users.imageUrl,
       })
       .from(transactionAssignees)
@@ -448,8 +451,14 @@ export const enrichTransactions = async (
       ),
   ]);
 
-  const assigneeMap: Record<string, typeof assigneeRows> = {};
-  for (const a of assigneeRows) {
+  const labelledAssignees = assigneeRows.map(
+    ({ firstName, lastName, email, ...assignee }) => ({
+      ...assignee,
+      memberName: memberFullLabel({ firstName, lastName, email }),
+    })
+  );
+  const assigneeMap: Record<string, typeof labelledAssignees> = {};
+  for (const a of labelledAssignees) {
     (assigneeMap[a.transactionId] ??= []).push(a);
   }
   const tagMap: Record<string, typeof tagRows> = {};

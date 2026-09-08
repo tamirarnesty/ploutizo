@@ -12,8 +12,18 @@ describe('createImportReferenceResolver', () => {
       { id: 'tag-2', name: 'errands' },
     ],
     members: [
-      { id: 'member-1', displayName: 'Tamir Arnesty', firstName: 'Tamir' },
-      { id: 'member-2', displayName: 'Alex Smith', firstName: 'Alex' },
+      {
+        id: 'member-1',
+        firstName: 'Tamir',
+        lastName: 'Arnesty',
+        email: 'tamir@example.com',
+      },
+      {
+        id: 'member-2',
+        firstName: 'Alex',
+        lastName: 'Smith',
+        email: 'alex@example.com',
+      },
     ],
   });
 
@@ -70,8 +80,18 @@ describe('createImportReferenceResolver', () => {
       categories: [],
       tags: [],
       members: [
-        { id: 'member-1', displayName: 'Tamir Arnesty', firstName: 'Tamir' },
-        { id: 'member-3', displayName: 'Tamir Smith', firstName: 'Tamir' },
+        {
+          id: 'member-1',
+          firstName: 'Tamir',
+          lastName: 'Arnesty',
+          email: 'tamir@example.com',
+        },
+        {
+          id: 'member-3',
+          firstName: 'Tamir',
+          lastName: 'Smith',
+          email: 'tamir.smith@example.com',
+        },
       ],
     });
 

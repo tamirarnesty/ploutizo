@@ -1,4 +1,5 @@
 import { toFinancialInstitutionId } from '@ploutizo/types';
+import { memberFullLabel } from '@ploutizo/utils';
 import type {
   Account,
   AccountOwner,
@@ -12,7 +13,9 @@ type AccountRow = typeof accounts.$inferSelect;
 export type AccountMemberDetailRow = {
   accountId: string;
   memberId: string;
-  displayName: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
   imageUrl: string | null;
 };
 
@@ -41,7 +44,7 @@ const ownersByAccountIdFromMemberRows = (
     const owners = ownersByAccountId.get(member.accountId) ?? [];
     owners.push({
       id: member.memberId,
-      displayName: member.displayName,
+      displayName: memberFullLabel(member),
       imageUrl: member.imageUrl ?? null,
     });
     ownersByAccountId.set(member.accountId, owners);

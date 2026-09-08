@@ -32,9 +32,8 @@ const cents = () => integer();
 
 /**
  * users
- * Mirrored from the auth provider (currently Clerk) on first sign-in via webhook.
- * externalId is the auth provider's user ID — intentionally provider-agnostic.
- * If the auth provider changes, this field remains semantically correct.
+ * Clerk person projection: externalId, email, firstName, lastName, imageUrl.
+ * Clerk remains the identity authority; local rows follow user.created / user.updated.
  */
 export const users = pgTable('users', {
   id: uuid('id')
@@ -46,7 +45,6 @@ export const users = pgTable('users', {
    */
   externalId: text('external_id').notNull().unique(),
   email: text('email').notNull().unique(),
-  fullName: text('full_name'),
   imageUrl: text('image_url'),
   firstName: text('first_name'),
   lastName: text('last_name'),
@@ -111,7 +109,6 @@ export const orgMembers = pgTable(
     membershipCreatedAt: timestamp('membership_created_at', {
       withTimezone: true,
     }),
-    displayName: text('display_name').notNull(),
     /** Private — used only for TFSA contribution room calculation. */
     birthYear: integer('birth_year'),
     /**

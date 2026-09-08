@@ -42,14 +42,11 @@ export const deleteOrgMemberByClerkMembershipId = async (params: {
  * Normalized user row for `users` inserts — shared by Clerk webhooks and
  * `ensureCallerSyncedToOrg` so webhook JSON and Backend SDK shapes converge here.
  *
- * `fullName` mirrors Clerk’s joined name and matches the existing `users.full_name`
- * column (used in API payloads and search); `firstName` / `lastName` stay the
- * structured source of truth when Clerk sends them.
+ * Copies Clerk person fields only: id, primary email, first, last, image URL.
  */
 export type LocalUserRowInput = {
   externalId: string;
   email: string;
-  fullName: string | null;
   firstName: string | null;
   lastName: string | null;
   imageUrl: string | null;
@@ -58,34 +55,24 @@ export type LocalUserRowInput = {
 const localUserRowToInsertValues = (row: LocalUserRowInput) => ({
   externalId: row.externalId,
   email: row.email,
-  fullName: row.fullName,
   firstName: row.firstName,
   lastName: row.lastName,
   imageUrl: row.imageUrl,
 });
 
-/** Join Clerk first + last; `null` when both absent (unlike membership display, which falls back to an id). */
-export const joinClerkFirstLast = (
-  firstName: string | null | undefined,
-  lastName: string | null | undefined
-): string | null => {
-  const s = [firstName, lastName].filter(Boolean).join(' ');
-  return s.length > 0 ? s : null;
-};
+const primaryEmailFromUserJson = (data: UserJSON): string | undefined =>
+  data.email_addresses.find((e) => e.id === data.primary_email_address_id)
+    ?.email_address;
 
 /** Map Clerk webhook `user.*` JSON (`UserJSON`) to the local `users` row shape. */
 export const userJsonToLocalUserRow = (
   data: UserJSON
 ): LocalUserRowInput | null => {
-  const primaryEmail = data.email_addresses.find(
-    (e) => e.id === data.primary_email_address_id
-  )?.email_address;
+  const primaryEmail = primaryEmailFromUserJson(data);
   if (!primaryEmail) return null;
-  const fullName = joinClerkFirstLast(data.first_name, data.last_name);
   return {
     externalId: data.id,
     email: primaryEmail,
-    fullName,
     firstName: data.first_name ?? null,
     lastName: data.last_name ?? null,
     imageUrl: data.image_url,
@@ -100,11 +87,9 @@ export const clerkBackendUserToLocalUserRow = (
     (e) => e.id === user.primaryEmailAddressId
   )?.emailAddress;
   if (!primaryEmail) return null;
-  const fullName = joinClerkFirstLast(user.firstName, user.lastName);
   return {
     externalId: user.id,
     email: primaryEmail,
-    fullName,
     firstName: user.firstName ?? null,
     lastName: user.lastName ?? null,
     imageUrl: user.imageUrl,
@@ -125,28 +110,6 @@ export const insertLocalUserIfAbsent = async (
 };
 
 /**
- * Same display-name rule as `organizationMembership.created` webhook:
- * `first_name` + `last_name`, else Clerk user id string.
- */
-export const buildOrgMemberDisplayName = (params: {
-  firstName: string | null | undefined;
-  lastName: string | null | undefined;
-  fallbackUserId: string;
-}): string =>
-  joinClerkFirstLast(params.firstName, params.lastName) ??
-  params.fallbackUserId;
-
-/** Display name for a Clerk membership webhook payload. */
-export const memberDisplayNameFromMembershipJson = (
-  data: OrganizationMembershipJSON
-): string =>
-  buildOrgMemberDisplayName({
-    firstName: data.public_user_data.first_name,
-    lastName: data.public_user_data.last_name,
-    fallbackUserId: data.public_user_data.user_id,
-  });
-
-/**
  * True when an incoming Clerk membership should replace the stored mirror identity.
  * `null` stored timestamps are treated as unset so the first post-migration create can populate.
  */
@@ -165,7 +128,6 @@ export const shouldReplaceMirroredMembership = (
 export const insertOrgMemberIfAbsent = async (params: {
   orgId: string;
   appUserId: string;
-  displayName: string;
   clerkMembershipId: string;
   /** Clerk organization membership `created_at`. */
   membershipCreatedAt: Date;
@@ -184,7 +146,6 @@ export const insertOrgMemberIfAbsent = async (params: {
       externalId: params.clerkMembershipId,
       membershipCreatedAt: params.membershipCreatedAt,
       role,
-      displayName: params.displayName,
     })
     .onConflictDoUpdate({
       target: [orgMembers.orgId, orgMembers.userId],
@@ -192,7 +153,6 @@ export const insertOrgMemberIfAbsent = async (params: {
         externalId: params.clerkMembershipId,
         membershipCreatedAt: params.membershipCreatedAt,
         role,
-        displayName: params.displayName,
       },
       setWhere: or(
         isNull(orgMembers.membershipCreatedAt),
@@ -223,8 +183,8 @@ export const deleteOrgMemberIfPresent = async (params: {
 
 /**
  * Applies `user.updated` webhook fields: upsert local `users` (create when
- * `user.created` never landed) and refresh that person's `org_members.display_name`
- * in every household they belong to.
+ * `user.created` never landed). Person names live on `users`; roster labels
+ * are derived at read time.
  */
 export const updateLocalUserFromUserJson = async (
   data: UserJSON
@@ -232,33 +192,19 @@ export const updateLocalUserFromUserJson = async (
   const row = userJsonToLocalUserRow(data);
   if (!row) return;
 
-  const upserted = await db
+  await db
     .insert(users)
     .values(localUserRowToInsertValues(row))
     .onConflictDoUpdate({
       target: users.externalId,
       set: localUserRowToInsertValues(row),
-    })
-    .returning({ id: users.id });
-
-  const appUserId = upserted.at(0)?.id;
-  if (appUserId === undefined) return;
-
-  const displayName = buildOrgMemberDisplayName({
-    firstName: row.firstName,
-    lastName: row.lastName,
-    fallbackUserId: row.externalId,
-  });
-
-  await db
-    .update(orgMembers)
-    .set({ displayName })
-    .where(eq(orgMembers.userId, appUserId));
+    });
 };
 
 /**
  * Applies `organizationMembership.updated` webhook fields for one household.
- * Does not heal a missing local `users` row — request-time sync covers the caller.
+ * Writes mapped role only. Does not heal a missing local `users` row —
+ * request-time sync covers the caller.
  */
 export const updateOrgMemberFromMembershipJson = async (
   data: OrganizationMembershipJSON
@@ -267,7 +213,6 @@ export const updateOrgMemberFromMembershipJson = async (
   const appUserId = await findLocalUserIdByClerkId(clerkUserId);
   if (appUserId === undefined) return;
 
-  const displayName = memberDisplayNameFromMembershipJson(data);
   const role = mapClerkOrgRoleToAppRole(data.role, {
     orgId: data.organization.id,
     appUserId,
@@ -275,7 +220,7 @@ export const updateOrgMemberFromMembershipJson = async (
 
   await db
     .update(orgMembers)
-    .set({ displayName, role })
+    .set({ role })
     .where(
       and(
         eq(orgMembers.orgId, data.organization.id),

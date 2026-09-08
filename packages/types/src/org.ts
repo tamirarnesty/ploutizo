@@ -7,10 +7,10 @@ export type PendingInvitationStatus =
 export interface OrgMember {
   id: string;
   orgId: string;
-  displayName: string;
   role: 'admin';
   joinedAt: string;
   externalId: string;
+  email: string;
   imageUrl: string | null;
   firstName: string | null;
   lastName: string | null;

@@ -33,6 +33,7 @@
     "./import-requirements": "./src/import-requirements.ts",
     "./match-merchant-rule": "./src/match-merchant-rule.ts",
     "./settlement-threshold": "./src/settlement-threshold.ts",
+    "./member-label": "./src/member-label.ts",
     "./assignee-split": "./src/assignee-split/index.ts",
     "./transaction-policy": "./src/transaction-policy/index.ts"
   }

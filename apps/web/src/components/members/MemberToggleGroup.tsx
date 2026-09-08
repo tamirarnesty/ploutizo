@@ -3,6 +3,7 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from '@ploutizo/ui/components/toggle-group';
+import { memberFullLabel, memberShortLabel } from '@ploutizo/utils';
 import type { OrgMember } from '@ploutizo/types';
 import { UserAvatar } from './UserAvatar';
 
@@ -49,15 +50,15 @@ export const MemberToggleGroup = ({
           value={member.id}
           disabled={disabled}
           className="px-3 data-[state=on]:border-primary/30 data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
-          aria-label={member.displayName}
+          aria-label={memberFullLabel(member)}
         >
           <UserAvatar
             size="sm"
-            name={member.displayName}
+            name={memberFullLabel(member)}
             imageUrl={member.imageUrl}
           />
           <span className="ml-1.5 text-sm">
-            {member.displayName.split(' ')[0]}
+            {memberShortLabel(member, members)}
           </span>
         </ToggleGroupItem>
       ))}

@@ -80,12 +80,19 @@ export const SettlementSummaryPane = ({
                 cardCount: 0,
               };
               if (!hasHouseholdCreditCards) {
-                return <SettlementMemberListRowEmpty key={m.id} member={m} />;
+                return (
+                  <SettlementMemberListRowEmpty
+                    key={m.id}
+                    member={m}
+                    household={members}
+                  />
+                );
               }
               return (
                 <SettlementMemberListRowBalance
                   key={m.id}
                   member={m}
+                  household={members}
                   rollup={rollup}
                 />
               );

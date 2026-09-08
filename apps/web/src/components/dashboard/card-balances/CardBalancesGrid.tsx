@@ -38,6 +38,7 @@ const CardBalancesGridHeader = () => (
 
 export const CardBalancesGrid = ({
   accounts,
+  household,
   isLoading,
   onSettleClick,
 }: CardBalancesGridProps) => {
@@ -45,8 +46,8 @@ export const CardBalancesGrid = ({
   const { pagination, setPagination } = usePersistedPageSize('card-balances');
 
   const columns = useMemo(
-    () => buildCardBalancesColumns(onSettleClick),
-    [onSettleClick]
+    () => buildCardBalancesColumns(onSettleClick, household),
+    [onSettleClick, household]
   );
 
   const table = useReactTable({

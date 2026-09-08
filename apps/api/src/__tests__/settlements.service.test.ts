@@ -193,13 +193,17 @@ describe('getSettlementBalances service', () => {
       {
         accountId: 'a1',
         memberId: 'm1',
-        displayName: 'Alice',
+        firstName: 'Alice',
+        lastName: null,
+        email: 'alice@example.com',
         imageUrl: 'https://example.com/a.jpg',
       },
       {
         accountId: 'a1',
         memberId: 'm2',
-        displayName: 'Bob',
+        firstName: 'Bob',
+        lastName: null,
+        email: 'bob@example.com',
         imageUrl: null,
       },
     ]);

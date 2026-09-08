@@ -1,6 +1,7 @@
 import { Badge } from '@ploutizo/ui/components/badge';
 import { Text } from '@ploutizo/ui/components/text';
 import { cn } from '@ploutizo/ui/lib/utils';
+import type { OrgMember } from '@ploutizo/types';
 import type { AttributionSlice } from '@/components/dashboard/card-balances/CardBalancesBreakdownCell';
 import type { MemberChartSlotClassMap } from '@/components/dashboard/card-balances/cardBalancesMemberDisplay';
 import {
@@ -8,15 +9,17 @@ import {
   SHARED_CHART_DOT_CLASS,
 } from '@/components/dashboard/card-balances/cardBalancesMemberDisplay';
 import { SignedBalanceText } from '@/components/dashboard/SignedBalanceText';
-import { getFirstNameFromDisplayName } from '@/lib/memberDisplayName';
+import { householdShortLabel } from '@/lib/householdShortLabel';
 
 export type CardBalancesBreakdownMemberChipsProps = {
   slices: readonly AttributionSlice[];
+  household: readonly OrgMember[];
   memberChartClassMap: MemberChartSlotClassMap;
 };
 
 export const CardBalancesBreakdownMemberChips = ({
   slices,
+  household,
   memberChartClassMap,
 }: CardBalancesBreakdownMemberChipsProps) => (
   <div className="flex flex-wrap gap-1.5">
@@ -24,7 +27,7 @@ export const CardBalancesBreakdownMemberChips = ({
       const label =
         slice.kind === 'shared'
           ? 'Shared'
-          : getFirstNameFromDisplayName(slice.name);
+          : householdShortLabel(slice.memberId, household, slice.name);
       const fillClass =
         slice.kind === 'shared'
           ? SHARED_CHART_DOT_CLASS

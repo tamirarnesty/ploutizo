@@ -25,6 +25,7 @@ import {
   type User,
 } from '@clerk/backend';
 import { lrmSplit } from '@ploutizo/utils/assignee-split';
+import { memberFullLabel } from '@ploutizo/utils';
 import { formatGeneratedTransactionDescription } from '@ploutizo/utils/transaction-policy';
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
@@ -73,9 +74,9 @@ const MEMBERS = [
 
 type MemberRow = {
   id: string;
-  displayName: string;
   firstName: string | null;
   lastName: string | null;
+  email: string;
   externalId: string;
 };
 
@@ -1144,7 +1145,9 @@ const main = async () => {
       adaUser,
       alanUser
     );
-    log(`Household ${org.id}: ${ada.displayName} + ${alan.displayName}`);
+    log(
+      `Household ${org.id}: ${memberFullLabel(ada)} + ${memberFullLabel(alan)}`
+    );
 
     const [existingAccounts, existingTags, transactionPage] = await Promise.all(
       [

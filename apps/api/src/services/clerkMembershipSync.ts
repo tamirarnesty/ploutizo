@@ -1,6 +1,5 @@
 import { getClerkServerClient } from '../lib/clerkServerClient';
 import {
-  buildOrgMemberDisplayName,
   clerkBackendUserToLocalUserRow,
   findLocalUserIdByClerkId,
   insertLocalUserIfAbsent,
@@ -55,18 +54,9 @@ export const ensureCallerSyncedToOrg = async (
   }
   if (match === undefined) return;
 
-  const pud = match.publicUserData;
-  const fallbackUserId = pud?.userId ?? clerkUser.id;
-  const displayName = buildOrgMemberDisplayName({
-    firstName: pud?.firstName,
-    lastName: pud?.lastName,
-    fallbackUserId,
-  });
-
   await insertOrgMemberIfAbsent({
     orgId,
     appUserId,
-    displayName,
     clerkMembershipId: match.id,
     membershipCreatedAt: new Date(match.createdAt),
     clerkOrgRole: match.role,

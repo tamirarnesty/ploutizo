@@ -1,4 +1,4 @@
-import type { SettlementAccountRow } from '@ploutizo/types';
+import type { OrgMember, SettlementAccountRow } from '@ploutizo/types';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';
 
 export type CardBalancesSettleClickHandler = (
@@ -8,6 +8,7 @@ export type CardBalancesSettleClickHandler = (
 
 export interface CardBalancesGridProps {
   accounts: SettlementAccountRow[];
+  household: readonly OrgMember[];
   isLoading: boolean;
   onSettleClick: CardBalancesSettleClickHandler;
 }

@@ -188,10 +188,10 @@ describe('import service', () => {
       {
         id: '44444444-4444-4444-8444-444444444444',
         orgId: 'org_1',
-        displayName: 'Tamir Arnesty',
         role: 'admin',
         joinedAt: new Date('2026-01-01T00:00:00Z'),
         externalId: 'user_1',
+        email: 'tamir@example.com',
         imageUrl: null,
         firstName: 'Tamir',
         lastName: 'Arnesty',

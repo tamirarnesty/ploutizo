@@ -1,3 +1,5 @@
+import { memberFullLabel } from './member-label';
+
 interface Identified {
   id: string;
 }
@@ -7,8 +9,9 @@ interface NamedEntity extends Identified {
 }
 
 interface OrgMemberLike extends Identified {
-  displayName: string;
   firstName?: string | null;
+  lastName?: string | null;
+  email: string;
 }
 
 export interface ImportCsvHints {
@@ -52,9 +55,6 @@ const matchIdByName = (
   return index.get(normalizeName(name)) ?? null;
 };
 
-const firstNameFromDisplayName = (displayName: string): string =>
-  displayName.trim().split(/\s+/)[0] ?? '';
-
 const indexMemberNames = (members: OrgMemberLike[]): Map<string, string[]> => {
   const index = new Map<string, string[]>();
   const add = (name: string | null | undefined, id: string) => {
@@ -66,11 +66,9 @@ const indexMemberNames = (members: OrgMemberLike[]): Map<string, string[]> => {
   };
 
   for (const member of members) {
-    add(member.displayName, member.id);
+    add(memberFullLabel(member), member.id);
     add(member.firstName, member.id);
-    if (!member.firstName?.trim()) {
-      add(firstNameFromDisplayName(member.displayName), member.id);
-    }
+    add(member.email, member.id);
   }
 
   return index;

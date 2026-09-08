@@ -6,11 +6,11 @@ import {
   ItemMedia,
   ItemTitle,
 } from '@ploutizo/ui/components/item';
+import { memberFullLabel, memberShortLabel } from '@ploutizo/utils';
 import type { OrgMember } from '@ploutizo/types';
 import type { MemberSettlementRollup } from '@/lib/settlements';
 import { SignedBalanceText } from '@/components/dashboard/SignedBalanceText';
 import { UserAvatar } from '@/components/members/UserAvatar';
-import { getOrgMemberFirstName } from '@/lib/memberDisplayName';
 
 const cardScopeCaption = (cardCount: number) => {
   if (cardCount === 0) return null;
@@ -19,11 +19,13 @@ const cardScopeCaption = (cardCount: number) => {
 
 type SettlementMemberListRowBalanceProps = {
   member: OrgMember;
+  household: OrgMember[];
   rollup: MemberSettlementRollup;
 };
 
 export const SettlementMemberListRowBalance = ({
   member,
+  household,
   rollup,
 }: SettlementMemberListRowBalanceProps) => {
   const scopeCaption = cardScopeCaption(rollup.cardCount);
@@ -36,14 +38,14 @@ export const SettlementMemberListRowBalance = ({
     >
       <ItemMedia variant="default" className="shrink-0">
         <UserAvatar
-          name={member.displayName}
+          name={memberFullLabel(member)}
           imageUrl={member.imageUrl ?? null}
           size="sm"
         />
       </ItemMedia>
       <ItemContent className="min-w-0">
         <ItemTitle className="leading-tight">
-          {getOrgMemberFirstName(member)}
+          {memberShortLabel(member, household)}
         </ItemTitle>
         {scopeCaption ? (
           <ItemDescription className="text-xs leading-tight">

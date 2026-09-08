@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { SettlementAccountRow } from '@ploutizo/types';
+import type { OrgMember, SettlementAccountRow } from '@ploutizo/types';
 import { buildMemberChartVisualSlots } from '@/components/dashboard/card-balances/cardBalancesMemberDisplay';
 import { CardBalancesBreakdownMemberChips } from '@/components/dashboard/card-balances/CardBalancesBreakdownMemberChips';
 import { CardBalancesBreakdownSegmentBar } from '@/components/dashboard/card-balances/CardBalancesBreakdownSegmentBar';
@@ -41,11 +41,13 @@ export const buildAttributionSlices = (
 
 type CardBalancesBreakdownCellProps = {
   account: SettlementAccountRow;
+  household: readonly OrgMember[];
 };
 
 /** Segmented balance bar + themed member badges with first-name + signed dollar amount. */
 export const CardBalancesBreakdownCell = ({
   account,
+  household,
 }: CardBalancesBreakdownCellProps) => {
   const slices = useMemo(() => buildAttributionSlices(account), [account]);
 
@@ -73,6 +75,7 @@ export const CardBalancesBreakdownCell = ({
       />
       <CardBalancesBreakdownMemberChips
         slices={slices}
+        household={household}
         memberChartClassMap={dotClasses}
       />
     </div>

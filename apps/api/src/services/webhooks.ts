@@ -7,7 +7,6 @@ import {
   findLocalUserIdByClerkId,
   insertLocalUserIfAbsent,
   insertOrgMemberIfAbsent,
-  memberDisplayNameFromMembershipJson,
   updateLocalUserFromUserJson,
   updateOrgMemberFromMembershipJson,
   userJsonToLocalUserRow,
@@ -79,12 +78,9 @@ export const handleOrgMembershipCreated = async (
   );
   if (!appUserId) return;
 
-  const displayName = memberDisplayNameFromMembershipJson(data);
-
   await insertOrgMemberIfAbsent({
     orgId: data.organization.id,
     appUserId,
-    displayName,
     clerkMembershipId: data.id,
     membershipCreatedAt: new Date(data.created_at),
     clerkOrgRole: data.role,
