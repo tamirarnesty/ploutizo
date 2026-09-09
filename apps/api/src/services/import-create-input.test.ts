@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { ImportPreparedReviewedValues } from '@ploutizo/types';
+import type {
+  PreparedImportRowSnapshot,
+  ReviewedImportValues,
+} from '@ploutizo/types';
 import { DomainError } from '@/lib/errors';
 import { toImportCreateTransactionInput } from '@/services/import-create-input';
 
@@ -10,24 +13,27 @@ const CATEGORY = '550e8400-e29b-41d4-a716-446655440030';
 const FUNDING = '550e8400-e29b-41d4-a716-446655440011';
 const EXPENSE = '550e8400-e29b-41d4-a716-446655440070';
 
-const values = (
-  overrides: Partial<ImportPreparedReviewedValues> = {}
-): ImportPreparedReviewedValues => ({
-  date: '2026-05-02',
-  amount: 4218,
-  type: 'expense',
-  description: 'Neighborhood Coffee',
-  categoryId: CATEGORY,
-  assigneeMemberIds: [MEMBER],
-  counterpartAccountId: null,
-  refundOf: null,
-  refundOfBatchRowId: null,
-  notes: null,
-  tagIds: [],
-  externalId: 'visa-created',
-  rawDescription: 'COFFEE SHOP #42',
-  selectedForImport: true,
-  ...overrides,
+const snapshot = (
+  overrides: Partial<ReviewedImportValues> = {}
+): PreparedImportRowSnapshot => ({
+  reviewedValues: {
+    date: '2026-05-02',
+    amount: 4218,
+    type: 'expense',
+    description: 'Neighborhood Coffee',
+    categoryId: CATEGORY,
+    assigneeMemberIds: [MEMBER],
+    counterpartAccountId: null,
+    refundOf: null,
+    refundOfBatchRowId: null,
+    notes: null,
+    tagIds: [],
+    ...overrides,
+  },
+  provenance: {
+    externalId: 'visa-created',
+    rawDescription: 'COFFEE SHOP #42',
+  },
 });
 
 describe('toImportCreateTransactionInput', () => {
@@ -36,7 +42,7 @@ describe('toImportCreateTransactionInput', () => {
       toImportCreateTransactionInput({
         accountId: ACCOUNT,
         batchId: BATCH,
-        values: values(),
+        snapshot: snapshot(),
         refundOf: null,
       })
     ).toMatchObject({
@@ -45,6 +51,7 @@ describe('toImportCreateTransactionInput', () => {
       importBatchId: BATCH,
       categoryId: CATEGORY,
       externalId: 'visa-created',
+      rawDescription: 'COFFEE SHOP #42',
     });
   });
 
@@ -53,7 +60,7 @@ describe('toImportCreateTransactionInput', () => {
       toImportCreateTransactionInput({
         accountId: ACCOUNT,
         batchId: BATCH,
-        values: values({ type: 'refund', amount: 1000 }),
+        snapshot: snapshot({ type: 'refund', amount: 1000 }),
         refundOf: EXPENSE,
       })
     ).toMatchObject({
@@ -67,7 +74,7 @@ describe('toImportCreateTransactionInput', () => {
     const input = toImportCreateTransactionInput({
       accountId: ACCOUNT,
       batchId: BATCH,
-      values: values({
+      snapshot: snapshot({
         type: 'settlement',
         counterpartAccountId: null,
         categoryId: null,
@@ -86,7 +93,7 @@ describe('toImportCreateTransactionInput', () => {
       toImportCreateTransactionInput({
         accountId: ACCOUNT,
         batchId: BATCH,
-        values: values({
+        snapshot: snapshot({
           type: 'settlement',
           counterpartAccountId: FUNDING,
           categoryId: null,
@@ -105,7 +112,7 @@ describe('toImportCreateTransactionInput', () => {
         toImportCreateTransactionInput({
           accountId: ACCOUNT,
           batchId: BATCH,
-          values: values({ categoryId: null }),
+          snapshot: snapshot({ categoryId: null }),
           refundOf: null,
         });
       } catch (error) {

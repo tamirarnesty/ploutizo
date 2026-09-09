@@ -126,7 +126,7 @@ const applyPreparedOutcomes = async (
   }[] = [];
 
   for (const outcome of sortCreatedImportOutcomes(createdOutcomes)) {
-    const values = outcome.reviewedValues;
+    const values = outcome.snapshot.reviewedValues;
     const refundOf =
       values.refundOf ??
       (values.refundOfBatchRowId
@@ -138,7 +138,7 @@ const applyPreparedOutcomes = async (
       toImportCreateTransactionInput({
         accountId: batch.accountId,
         batchId: batch.id,
-        values,
+        snapshot: outcome.snapshot,
         refundOf,
       })
     );

@@ -5,10 +5,7 @@ import {
   importMatchTargetQueryInput,
   matchDecisionsForSelectedRows,
 } from '@ploutizo/utils';
-import {
-  resolveImportRowReviewType,
-  toImportTransactionType,
-} from '@ploutizo/utils/import-row-status';
+import { resolveReviewedImportValues } from '@ploutizo/utils/reviewed-import-values';
 import { validateTransactionAccountPolicy } from '@ploutizo/utils/transaction-policy';
 import type { Transaction } from '@ploutizo/db';
 import type {
@@ -262,11 +259,8 @@ export const updateImportDraftRow = async (
     );
     if (!funding) throw new NotFoundError('Account not found');
 
-    const reviewType = resolveImportRowReviewType({
-      reviewType: toImportTransactionType(merged.reviewType),
-      parsedType: toImportTransactionType(merged.parsedType),
-    });
-    if (reviewType === 'settlement') {
+    const { type } = resolveReviewedImportValues(merged);
+    if (type === 'settlement') {
       const card = await fetchAccountWriteReference(orgId, draft.accountId);
       if (!card) throw new NotFoundError('Account not found');
       const policy = validateTransactionAccountPolicy({

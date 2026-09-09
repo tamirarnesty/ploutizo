@@ -1,5 +1,5 @@
 import type { MatchTargetFact } from '@ploutizo/types';
-import { toImportTransactionType } from '../import-row-status';
+import { toImportTransactionType } from '../import-coercion';
 import {
   classifyAgainstTransaction,
   importMatchRowFacts,

@@ -6,15 +6,13 @@ import {
   formatImportRowStructuralInvalidReason,
   getImportRowReviewBlockers,
   isImportRowStructurallyInvalid,
-  isImportTransactionType,
-  resolveImportRowReviewAmount,
-  resolveImportRowReviewDate,
-  resolveImportRowReviewDescription,
-  resolveImportRowReviewType,
   toImportRowStatusFields,
-  toImportTransactionType,
   withDerivedImportRowStatus,
 } from './import-row-status';
+import {
+  isImportTransactionType,
+  toImportTransactionType,
+} from './import-coercion';
 
 describe('import transaction type coercion', () => {
   it('accepts known import transaction types', () => {
@@ -26,35 +24,6 @@ describe('import transaction type coercion', () => {
     expect(isImportTransactionType('transfer')).toBe(false);
     expect(toImportTransactionType(null)).toBeNull();
     expect(toImportTransactionType('nope')).toBeNull();
-  });
-});
-
-describe('effective review field resolvers', () => {
-  it('falls back from review to parsed fields', () => {
-    expect(
-      resolveImportRowReviewDate({
-        reviewDate: null,
-        parsedDate: '2026-05-02',
-      })
-    ).toBe('2026-05-02');
-    expect(
-      resolveImportRowReviewAmount({
-        reviewAmount: null,
-        parsedAmount: 4218,
-      })
-    ).toBe(4218);
-    expect(
-      resolveImportRowReviewType({
-        reviewType: null,
-        parsedType: 'expense',
-      })
-    ).toBe('expense');
-    expect(
-      resolveImportRowReviewDescription({
-        reviewDescription: null,
-        parsedDescription: 'Coffee',
-      })
-    ).toBe('Coffee');
   });
 });
 

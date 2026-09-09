@@ -17,7 +17,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 
-import type { ImportPreparedReviewedValues } from '@ploutizo/types';
+import type { PreparedImportRowSnapshot } from '@ploutizo/types';
 
 import { orgs } from './auth';
 import { importBatchRows, importBatches } from './import-batches';
@@ -73,8 +73,8 @@ export const importPreparedOutcomes = pgTable(
      * `ON DELETE SET NULL (transaction_id)` so the required org_id remains.
      */
     transactionId: uuid('transaction_id'),
-    reviewedValues: jsonb('reviewed_values')
-      .$type<ImportPreparedReviewedValues>()
+    snapshot: jsonb('row_snapshot')
+      .$type<PreparedImportRowSnapshot>()
       .notNull(),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()

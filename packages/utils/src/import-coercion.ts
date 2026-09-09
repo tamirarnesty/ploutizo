@@ -1,5 +1,7 @@
 import { format, isValid, parse, parseISO } from 'date-fns';
 import { enUS } from 'date-fns/locale';
+import { IMPORT_TRANSACTION_TYPE_VALUES } from '@ploutizo/types';
+import type { ImportTransactionType } from '@ploutizo/types';
 import { dollarsToCents } from './currency';
 
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -101,6 +103,16 @@ export const tryParseImportAmountToCents = (
   const cents = dollarsToCents(dollars);
   return Number.isSafeInteger(cents) && cents > 0 ? cents : null;
 };
+
+export const isImportTransactionType = (
+  value: string | null | undefined
+): value is ImportTransactionType =>
+  IMPORT_TRANSACTION_TYPE_VALUES.includes(value as ImportTransactionType);
+
+export const toImportTransactionType = (
+  value: string | null | undefined
+): ImportTransactionType | null =>
+  isImportTransactionType(value) ? value : null;
 
 /** Trim leading and trailing apostrophes from spreadsheet text cells. */
 export const trimApostrophes = (value: string | null): string | null => {

@@ -103,8 +103,7 @@ export type UpdateImportDraftRowSelectionInput = z.infer<
   typeof updateImportDraftRowSelectionSchema
 >;
 
-/** Runtime contract for immutable prepared-set reviewed-value snapshots. */
-export const importPreparedReviewedValuesSchema = z.object({
+export const reviewedImportValuesSchema = z.object({
   date: z.string().nullable(),
   amount: z.number().int().nullable(),
   type: importTransactionTypeSchema.nullable(),
@@ -116,20 +115,23 @@ export const importPreparedReviewedValuesSchema = z.object({
   refundOfBatchRowId: z.string().uuid().nullable(),
   notes: z.string().nullable(),
   tagIds: z.array(z.string().uuid()),
-  externalId: z.string().nullable(),
-  rawDescription: z.string().nullable(),
-  selectedForImport: z.boolean(),
 });
 
-export type ImportPreparedReviewedValuesInput = z.infer<
-  typeof importPreparedReviewedValuesSchema
->;
+export const importRowProvenanceSchema = z.object({
+  externalId: z.string().nullable(),
+  rawDescription: z.string().nullable(),
+});
+
+export const preparedImportRowSnapshotSchema = z.object({
+  reviewedValues: reviewedImportValuesSchema,
+  provenance: importRowProvenanceSchema,
+});
 
 export const importPreparedOutcomeSchema = z.enum(
   IMPORT_PREPARED_PROJECTION_OUTCOME_VALUES
 );
 
-/** Caller-supplied prepare outcome; server owns the reviewedValues snapshot. */
+/** Caller-supplied prepare outcome; server owns the row snapshot. */
 export const prepareImportOutcomeSchema = z.object({
   batchRowId: z.string().uuid(),
   outcome: importPreparedOutcomeSchema,

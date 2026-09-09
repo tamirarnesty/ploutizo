@@ -77,21 +77,24 @@ vi.mock('@/lib/data-access/imports/useFinalizeImportDraft', () => ({
   useFinalizeImportDraft: () => finalizeMocks.finalize,
 }));
 
-const reviewedValues = {
-  date: '2026-05-02',
-  amount: 4218,
-  type: 'expense' as const,
-  description: 'Coffee',
-  categoryId: 'cat_1',
-  assigneeMemberIds: ['member_1'],
-  counterpartAccountId: null,
-  refundOf: null,
-  refundOfBatchRowId: null,
-  notes: null,
-  tagIds: [] as string[],
-  externalId: null,
-  rawDescription: 'Coffee',
-  selectedForImport: true,
+const snapshot = {
+  reviewedValues: {
+    date: '2026-05-02',
+    amount: 4218,
+    type: 'expense' as const,
+    description: 'Coffee',
+    categoryId: 'cat_1',
+    assigneeMemberIds: ['member_1'],
+    counterpartAccountId: null,
+    refundOf: null,
+    refundOfBatchRowId: null,
+    notes: null,
+    tagIds: [] as string[],
+  },
+  provenance: {
+    externalId: null,
+    rawDescription: 'Coffee',
+  },
 };
 
 const confirmation: ImportPreparedConfirmation = {
@@ -111,7 +114,7 @@ const confirmation: ImportPreparedConfirmation = {
       batchRowId: 'row_1',
       outcome: 'created',
       transactionId: null,
-      reviewedValues,
+      snapshot,
     },
   ],
   matched: [
@@ -119,9 +122,12 @@ const confirmation: ImportPreparedConfirmation = {
       batchRowId: 'row_2',
       outcome: 'matched',
       transactionId: 'txn_1',
-      reviewedValues: {
-        ...reviewedValues,
-        description: 'Lunch',
+      snapshot: {
+        ...snapshot,
+        reviewedValues: {
+          ...snapshot.reviewedValues,
+          description: 'Lunch',
+        },
       },
     },
   ],

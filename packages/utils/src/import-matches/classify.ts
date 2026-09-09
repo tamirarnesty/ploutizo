@@ -1,10 +1,6 @@
 import { differenceInCalendarDays } from 'date-fns';
 import type { ImportTransactionType, MatchTargetFact } from '@ploutizo/types';
-import {
-  resolveImportRowReviewAmount,
-  resolveImportRowReviewDate,
-  resolveImportRowReviewType,
-} from '../import-row-status';
+import { resolveReviewedImportValues } from '../reviewed-import-values';
 import {
   importDescriptionsAreSimilar,
   normalizeImportMatchDescription,
@@ -61,15 +57,18 @@ export interface ImportMatchRowFacts {
 
 export const importMatchRowFacts = (
   row: ImportMatchDraftRow
-): ImportMatchRowFacts => ({
-  externalId: row.externalId?.trim() || null,
-  type: resolveImportRowReviewType(row),
-  date: resolveImportRowReviewDate(row),
-  amount: resolveImportRowReviewAmount(row),
-  description: normalizeImportMatchDescription(
-    row.sourceDescription ?? row.parsedDescription
-  ),
-});
+): ImportMatchRowFacts => {
+  const values = resolveReviewedImportValues(row);
+  return {
+    externalId: row.externalId?.trim() || null,
+    type: values.type,
+    date: values.date,
+    amount: values.amount,
+    description: normalizeImportMatchDescription(
+      row.sourceDescription ?? row.parsedDescription
+    ),
+  };
+};
 
 export const importMatchTransactionDescription = (
   transaction: MatchTargetFact

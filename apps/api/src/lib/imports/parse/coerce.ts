@@ -1,11 +1,9 @@
 import {
+  toImportTransactionType,
   trimApostrophes,
   tryParseImportAmountToCents,
 } from '@ploutizo/utils/import-coercion';
-import {
-  isImportRowStructurallyInvalid,
-  toImportTransactionType,
-} from '@ploutizo/utils/import-row-status';
+import { isImportRowStructurallyInvalid } from '@ploutizo/utils/import-row-status';
 import type { ImportCsvHints } from '@ploutizo/utils';
 import type { ImportTransactionType } from '@ploutizo/types';
 import type { ParsedImportRow, SourceImportRow } from './types';

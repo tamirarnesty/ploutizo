@@ -1,5 +1,5 @@
 import { addDays, format, parseISO } from 'date-fns';
-import { resolveImportRowReviewDate } from '../import-row-status';
+import { resolveReviewedImportValues } from '../reviewed-import-values';
 import { IMPORT_MATCH_DATE_TOLERANCE_DAYS } from './types';
 
 export const collectMatchedTransactionIds = (
@@ -31,7 +31,7 @@ export const importMatchTargetQueryBounds = (
   const externalIds: string[] = [];
 
   for (const row of rows) {
-    const date = resolveImportRowReviewDate(row);
+    const date = resolveReviewedImportValues(row).date;
     if (date) dates.push(date);
     const externalId = row.externalId?.trim();
     if (externalId) externalIds.push(externalId);

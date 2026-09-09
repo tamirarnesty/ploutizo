@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ImportPreparedReviewedValues } from '@ploutizo/types';
+import type {
+  PreparedImportRowSnapshot,
+  ReviewedImportValues,
+} from '@ploutizo/types';
 import { DomainError, NotFoundError } from '@/lib/errors';
 import { finalizeImportDraft } from '@/services/import-finalize';
 import {
@@ -108,24 +111,29 @@ const EXISTING_TX = '550e8400-e29b-41d4-a716-446655440070';
 const CREATED_TX = '550e8400-e29b-41d4-a716-446655440071';
 const REFUND_TX = '550e8400-e29b-41d4-a716-446655440072';
 
-const reviewed = (
-  overrides: Partial<ImportPreparedReviewedValues> = {}
-): ImportPreparedReviewedValues => ({
-  date: '2026-05-02',
-  amount: 4218,
-  type: 'expense',
-  description: 'Neighborhood Coffee',
-  categoryId: CATEGORY,
-  assigneeMemberIds: [MEMBER],
-  counterpartAccountId: null,
-  refundOf: null,
-  refundOfBatchRowId: null,
-  notes: 'weekly',
-  tagIds: [],
-  externalId: 'visa-created',
-  rawDescription: 'COFFEE SHOP #42',
-  selectedForImport: true,
-  ...overrides,
+const snapshot = (
+  overrides: Partial<ReviewedImportValues> = {},
+  provenance: Partial<PreparedImportRowSnapshot['provenance']> = {}
+): PreparedImportRowSnapshot => ({
+  reviewedValues: {
+    date: '2026-05-02',
+    amount: 4218,
+    type: 'expense',
+    description: 'Neighborhood Coffee',
+    categoryId: CATEGORY,
+    assigneeMemberIds: [MEMBER],
+    counterpartAccountId: null,
+    refundOf: null,
+    refundOfBatchRowId: null,
+    notes: 'weekly',
+    tagIds: [],
+    ...overrides,
+  },
+  provenance: {
+    externalId: 'visa-created',
+    rawDescription: 'COFFEE SHOP #42',
+    ...provenance,
+  },
 });
 
 const draftRow = (id: string, extra: Record<string, unknown> = {}) => ({
@@ -217,16 +225,19 @@ const outcome = (
   batchRowId,
   outcome: kind,
   transactionId: kind === 'matched' ? EXISTING_TX : null,
-  reviewedValues: reviewed({
-    selectedForImport: kind === 'created' || kind === 'matched',
-    externalId:
-      kind === 'created'
-        ? 'visa-created'
-        : kind === 'matched'
-          ? 'visa-1001'
-          : null,
-    type: kind === 'invalid' ? null : 'expense',
-  }),
+  snapshot: snapshot(
+    {
+      type: kind === 'invalid' ? null : 'expense',
+    },
+    {
+      externalId:
+        kind === 'created'
+          ? 'visa-created'
+          : kind === 'matched'
+            ? 'visa-1001'
+            : null,
+    }
+  ),
   createdAt: new Date('2026-05-20T12:00:00Z'),
   ...extra,
 });
@@ -235,17 +246,18 @@ const mixedOutcomes = [
   outcome(ROW_CREATED, 'created'),
   outcome(ROW_MATCHED, 'matched'),
   outcome(ROW_SKIPPED, 'skipped', {
-    reviewedValues: reviewed({ selectedForImport: false, externalId: null }),
+    snapshot: snapshot({}, { externalId: null }),
   }),
   outcome(ROW_INVALID, 'invalid', {
-    reviewedValues: reviewed({
-      selectedForImport: false,
-      type: null,
-      description: null,
-      amount: null,
-      date: null,
-      externalId: null,
-    }),
+    snapshot: snapshot(
+      {
+        type: null,
+        description: null,
+        amount: null,
+        date: null,
+      },
+      { externalId: null }
+    ),
   }),
 ];
 
@@ -535,15 +547,17 @@ describe('finalizeImportDraft', () => {
   });
 
   it('creates same-import expenses before linked refunds', async () => {
-    const refundReviewed = reviewed({
-      type: 'refund',
-      amount: 1000,
-      externalId: 'visa-refund',
-      refundOfBatchRowId: ROW_CREATED,
-      description: 'Coffee refund',
-    });
+    const refundSnapshot = snapshot(
+      {
+        type: 'refund',
+        amount: 1000,
+        refundOfBatchRowId: ROW_CREATED,
+        description: 'Coffee refund',
+      },
+      { externalId: 'visa-refund' }
+    );
     vi.mocked(listPreparedOutcomesForSet).mockResolvedValue([
-      outcome(ROW_REFUND, 'created', { reviewedValues: refundReviewed }),
+      outcome(ROW_REFUND, 'created', { snapshot: refundSnapshot }),
       outcome(ROW_CREATED, 'created'),
     ] as never);
     vi.mocked(fetchImportBatchSummaryById)
@@ -600,16 +614,18 @@ describe('finalizeImportDraft', () => {
   });
 
   it('links same-import refunds to matched expense transaction ids', async () => {
-    const refundReviewed = reviewed({
-      type: 'refund',
-      amount: 1000,
-      externalId: 'visa-refund',
-      refundOfBatchRowId: ROW_MATCHED,
-      description: 'Coffee refund',
-    });
+    const refundSnapshot = snapshot(
+      {
+        type: 'refund',
+        amount: 1000,
+        refundOfBatchRowId: ROW_MATCHED,
+        description: 'Coffee refund',
+      },
+      { externalId: 'visa-refund' }
+    );
     vi.mocked(listPreparedOutcomesForSet).mockResolvedValue([
       outcome(ROW_MATCHED, 'matched'),
-      outcome(ROW_REFUND, 'created', { reviewedValues: refundReviewed }),
+      outcome(ROW_REFUND, 'created', { snapshot: refundSnapshot }),
     ] as never);
     vi.mocked(fetchImportBatchSummaryById)
       .mockResolvedValueOnce({ ...draftBatch, rowCount: 2 } as never)

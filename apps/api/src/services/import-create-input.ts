@@ -1,8 +1,9 @@
 import { lrmSplit } from '@ploutizo/utils/assignee-split';
 import { createTransactionSchema } from '@ploutizo/validators';
 import type {
-  ImportPreparedReviewedValues,
   ImportTransactionType,
+  PreparedImportRowSnapshot,
+  ReviewedImportValues,
 } from '@ploutizo/types';
 import type { CreateTransactionInput } from '@ploutizo/validators';
 import type { ImportPreparedOutcomeRecord } from '@/lib/queries/import-prepared-sets';
@@ -15,7 +16,7 @@ export const IMPORT_TYPE_CREATE_ORDER: Record<ImportTransactionType, number> = {
 };
 
 const requireImportType = (
-  values: ImportPreparedReviewedValues
+  values: ReviewedImportValues
 ): ImportTransactionType => {
   if (
     values.type !== 'expense' &&
@@ -31,10 +32,11 @@ const requireImportType = (
 export const toImportCreateTransactionInput = (input: {
   accountId: string;
   batchId: string;
-  values: ImportPreparedReviewedValues;
+  snapshot: PreparedImportRowSnapshot;
   refundOf: string | null;
 }): CreateTransactionInput => {
-  const { accountId, batchId, values, refundOf } = input;
+  const { accountId, batchId, snapshot, refundOf } = input;
+  const values = snapshot.reviewedValues;
   if (values.date == null || values.amount == null || !values.description) {
     throw new DomainError(
       500,
@@ -51,8 +53,8 @@ export const toImportCreateTransactionInput = (input: {
     assignees: lrmSplit(values.amount, values.assigneeMemberIds),
     tagIds: values.tagIds.length > 0 ? values.tagIds : undefined,
     importBatchId: batchId,
-    rawDescription: values.rawDescription,
-    externalId: values.externalId,
+    rawDescription: snapshot.provenance.rawDescription,
+    externalId: snapshot.provenance.externalId,
   };
 
   const type = requireImportType(values);
@@ -90,8 +92,12 @@ export const sortCreatedImportOutcomes = (
 ) =>
   [...outcomes].sort((left, right) => {
     const order =
-      IMPORT_TYPE_CREATE_ORDER[requireImportType(left.reviewedValues)] -
-      IMPORT_TYPE_CREATE_ORDER[requireImportType(right.reviewedValues)];
+      IMPORT_TYPE_CREATE_ORDER[
+        requireImportType(left.snapshot.reviewedValues)
+      ] -
+      IMPORT_TYPE_CREATE_ORDER[
+        requireImportType(right.snapshot.reviewedValues)
+      ];
     if (order !== 0) return order;
     return left.batchRowId.localeCompare(right.batchRowId);
   });
