@@ -2,33 +2,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SidebarProvider } from '@ploutizo/ui/components/sidebar';
+import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
 import { AppSidebar } from './AppSidebar';
-
-const routerMocks = vi.hoisted(() => ({
-  pathname: '/dashboard',
-}));
-
-vi.mock('@tanstack/react-router', () => ({
-  Link: ({
-    children,
-    to,
-    onClick,
-  }: {
-    children: React.ReactNode;
-    to: string;
-    onClick?: () => void;
-  }) => (
-    <a href={to} onClick={onClick}>
-      {children}
-    </a>
-  ),
-  useRouterState: (options?: {
-    select?: (state: { location: { pathname: string } }) => unknown;
-  }) => {
-    const state = { location: { pathname: routerMocks.pathname } };
-    return options?.select ? options.select(state) : state;
-  },
-}));
 
 vi.mock('@/lib/command', () => ({
   CommandPaletteTrigger: () => (
@@ -52,6 +27,7 @@ const renderSidebar = (pathname = '/dashboard') =>
 
 describe('AppSidebar', () => {
   beforeEach(() => {
+    resetRouterMocks();
     routerMocks.pathname = '/dashboard';
     Object.defineProperty(window, 'matchMedia', {
       writable: true,

@@ -18,7 +18,7 @@ import { useGetImportDrafts } from '@/lib/data-access/imports';
 export const CommandPalette = () => {
   const { open, setOpen } = useCommandPalette();
   const navigate = useNavigate();
-  const draftsQuery = useGetImportDrafts();
+  const draftsQuery = useGetImportDrafts({ enabled: open });
   const drafts = draftsQuery.data ?? [];
   const commandGroups = useMemo(() => getCommandGroups(drafts), [drafts]);
 

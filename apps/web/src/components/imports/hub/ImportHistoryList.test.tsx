@@ -1,24 +1,8 @@
+import '@/test/mockTanstackRouter';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { ImportHistoryItem } from '@ploutizo/types';
 import { ImportHistoryList } from './ImportHistoryList';
-
-vi.mock('@tanstack/react-router', () => ({
-  Link: ({
-    children,
-    to,
-    search,
-  }: {
-    children: React.ReactNode;
-    to: string;
-    search?: Record<string, string>;
-  }) => {
-    const href = search
-      ? `${to}?${new URLSearchParams(search).toString()}`
-      : to;
-    return <a href={href}>{children}</a>;
-  },
-}));
 
 const completedItem: ImportHistoryItem = {
   id: 'batch_1',

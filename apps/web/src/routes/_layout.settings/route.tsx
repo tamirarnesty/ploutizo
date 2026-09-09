@@ -1,5 +1,6 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router';
 import { Text } from '@ploutizo/ui/components/text';
+import { normalizePathname } from '@/lib/navigation/normalizePathname';
 
 const SettingsLayout = () => {
   return (
@@ -15,10 +16,7 @@ const SettingsLayout = () => {
 export const Route = createFileRoute('/_layout/settings')({
   component: SettingsLayout,
   beforeLoad: ({ location }) => {
-    if (
-      location.pathname === '/settings' ||
-      location.pathname === '/settings/'
-    ) {
+    if (normalizePathname(location.pathname) === '/settings') {
       throw redirect({ to: '/settings/categories' });
     }
   },

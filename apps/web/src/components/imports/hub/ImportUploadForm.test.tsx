@@ -3,17 +3,13 @@ import userEvent from '@testing-library/user-event';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ImportDraftSummary, ImportTargetAccount } from '@ploutizo/types';
+import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
 import { ImportUploadForm } from './ImportUploadForm';
 
 const uploadMocks = vi.hoisted(() => ({
   createImportDraftMutate: vi.fn(),
-  navigate: vi.fn(),
   readCsvFile: vi.fn(),
   isPending: false,
-}));
-
-vi.mock('@tanstack/react-router', () => ({
-  useNavigate: () => uploadMocks.navigate,
 }));
 
 vi.mock('@ploutizo/ui/components/select', async () => {
@@ -203,8 +199,8 @@ describe('ImportUploadForm', () => {
   };
 
   beforeEach(() => {
+    resetRouterMocks();
     uploadMocks.createImportDraftMutate.mockReset();
-    uploadMocks.navigate.mockReset();
     uploadMocks.readCsvFile.mockReset();
     uploadMocks.isPending = false;
     uploadMocks.readCsvFile.mockResolvedValue(

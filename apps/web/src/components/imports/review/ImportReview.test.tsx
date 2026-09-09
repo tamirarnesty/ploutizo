@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
 import {
   IMPORT_REVIEW_PREPARE_AGAIN_MESSAGE,
   useImportReviewSession,
@@ -11,36 +12,9 @@ import {
 } from '../test-fixtures/importDraft';
 import { ImportReview } from './ImportReview';
 
-const reviewRouterMocks = vi.hoisted(() => ({
-  navigate: vi.fn(),
-  importReviewState: undefined as
-    | { prepareAgain?: boolean; issues?: { batchRowId: string; key: string }[] }
-    | undefined,
-}));
-
 const reviewToastMocks = vi.hoisted(() => ({
   info: vi.fn(),
   error: vi.fn(),
-}));
-
-vi.mock('@tanstack/react-router', () => ({
-  Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
-    <a href={to}>{children}</a>
-  ),
-  useBlocker: vi.fn(),
-  useNavigate: () => reviewRouterMocks.navigate,
-  useRouterState: ({
-    select,
-  }: {
-    select: (state: {
-      location: { state: { importReview?: unknown } };
-    }) => unknown;
-  }) =>
-    select({
-      location: {
-        state: { importReview: reviewRouterMocks.importReviewState },
-      },
-    }),
 }));
 
 vi.mock('@ploutizo/ui/components/sonner', () => ({
@@ -154,8 +128,8 @@ const renderReview = (draftId = 'draft_1') => {
 
 describe('ImportReview', () => {
   beforeEach(() => {
+    resetRouterMocks();
     vi.clearAllMocks();
-    reviewRouterMocks.importReviewState = undefined;
     continueMocks.error = null;
     continueMocks.isPending = false;
     continueMocks.mutateAsync.mockResolvedValue({
@@ -229,7 +203,7 @@ describe('ImportReview', () => {
   });
 
   it('toasts a prepare-again message and refetches the draft from inbound router state', async () => {
-    reviewRouterMocks.importReviewState = { prepareAgain: true };
+    routerMocks.locationState.importReview = { prepareAgain: true };
     vi.mocked(useImportReviewSession).mockReturnValue(toSession());
 
     renderReview();
@@ -240,7 +214,7 @@ describe('ImportReview', () => {
       )
     );
     await waitFor(() =>
-      expect(reviewRouterMocks.navigate).toHaveBeenCalledWith({
+      expect(routerMocks.navigate).toHaveBeenCalledWith({
         to: '/import/$draftId',
         params: { draftId: 'draft_1' },
         replace: true,

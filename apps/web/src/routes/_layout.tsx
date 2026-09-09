@@ -9,6 +9,7 @@ import { SidebarInset, SidebarProvider } from '@ploutizo/ui/components/sidebar';
 import { cn } from '@ploutizo/ui/lib/utils';
 import { CommandPaletteProvider } from '@/lib/command';
 import { requireAuthAndOrg } from '@/lib/auth/require-access';
+import { activeImportDraftsQueryOptions } from '@/lib/data-access/imports';
 import { resolveMainContentLayout } from '@/lib/layout/main-content-layout';
 import { AppSidebar } from '../components/AppSidebar';
 import { TopBar } from '../components/TopBar';
@@ -56,6 +57,10 @@ const LayoutShell = () => {
 
 export const Route = createFileRoute('/_layout')({
   beforeLoad: () => requireAuthAndOrg(),
-  loader: () => getSidebarState(),
+  loader: ({ context }) => {
+    // Warm the command palette's Continue Import list without blocking shell render.
+    void context.queryClient.prefetchQuery(activeImportDraftsQueryOptions);
+    return getSidebarState();
+  },
   component: LayoutShell,
 });

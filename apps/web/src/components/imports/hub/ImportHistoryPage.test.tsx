@@ -1,26 +1,10 @@
+import '@/test/mockTanstackRouter';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ImportHistoryItem } from '@ploutizo/types';
 import { useGetImportHistoryInfinite } from '@/lib/data-access/imports';
 import { ImportHistoryPage } from './ImportHistoryPage';
-
-vi.mock('@tanstack/react-router', () => ({
-  Link: ({
-    children,
-    to,
-    search,
-  }: {
-    children: React.ReactNode;
-    to: string;
-    search?: Record<string, string>;
-  }) => {
-    const href = search
-      ? `${to}?${new URLSearchParams(search).toString()}`
-      : to;
-    return <a href={href}>{children}</a>;
-  },
-}));
 
 vi.mock('@ploutizo/ui/components/loading-button', () => ({
   LoadingButton: ({
