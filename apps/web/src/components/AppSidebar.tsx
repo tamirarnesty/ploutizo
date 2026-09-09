@@ -24,13 +24,12 @@ import {
   CollapsibleTrigger,
 } from '@ploutizo/ui/components/collapsible';
 import { ThemeToggle } from '@ploutizo/ui/components/theme-toggle';
-import {
-  sidebarPrimaryNav,
-  sidebarSettingsNav,
-  toRegisteredRoute,
-} from '@/lib/navigation';
+import { sidebarPrimaryNav, sidebarSettingsNav } from '@/lib/navigation';
 import { CommandPaletteTrigger } from '@/lib/command';
-import type { SidebarNavItem } from '@/lib/navigation/types';
+import type { AppNavRoute, SidebarNavItem } from '@/lib/navigation/types';
+
+const isNavPathActive = (pathname: string, to: AppNavRoute) =>
+  pathname === to || pathname.startsWith(`${to}/`);
 
 interface SidebarNavigationItemProps {
   item: SidebarNavItem;
@@ -38,12 +37,31 @@ interface SidebarNavigationItemProps {
   onNavigate: () => void;
 }
 
+const SidebarParentLink = ({
+  item,
+  pathname,
+  onNavigate,
+}: SidebarNavigationItemProps) => {
+  const Icon = item.icon;
+
+  return (
+    <SidebarMenuButton
+      isActive={isNavPathActive(pathname, item.to)}
+      tooltip={item.label}
+      render={<Link to={item.to} onClick={onNavigate} />}
+    >
+      <Icon />
+      <span>{item.label}</span>
+    </SidebarMenuButton>
+  );
+};
+
 const SidebarNavigationItem = ({
   item,
   pathname,
   onNavigate,
 }: SidebarNavigationItemProps) => {
-  const isActive = pathname === item.to || pathname.startsWith(`${item.to}/`);
+  const isActive = isNavPathActive(pathname, item.to);
   const [open, setOpen] = useState(isActive);
 
   useEffect(() => {
@@ -51,22 +69,16 @@ const SidebarNavigationItem = ({
   }, [isActive]);
 
   if (!item.children) {
-    const Icon = item.icon;
     return (
       <SidebarMenuItem>
-        <SidebarMenuButton
-          isActive={isActive}
-          tooltip={item.label}
-          render={<Link to={toRegisteredRoute(item.to)} onClick={onNavigate} />}
-        >
-          <Icon />
-          <span>{item.label}</span>
-        </SidebarMenuButton>
+        <SidebarParentLink
+          item={item}
+          pathname={pathname}
+          onNavigate={onNavigate}
+        />
       </SidebarMenuItem>
     );
   }
-
-  const Icon = item.icon;
 
   return (
     <Collapsible
@@ -75,14 +87,11 @@ const SidebarNavigationItem = ({
       className="group/collapsible"
       render={<SidebarMenuItem />}
     >
-      <SidebarMenuButton
-        isActive={isActive}
-        tooltip={item.label}
-        render={<Link to={toRegisteredRoute(item.to)} onClick={onNavigate} />}
-      >
-        <Icon />
-        <span>{item.label}</span>
-      </SidebarMenuButton>
+      <SidebarParentLink
+        item={item}
+        pathname={pathname}
+        onNavigate={onNavigate}
+      />
       <SidebarMenuAction
         showOnHover
         aria-label={`Toggle ${item.label} submenu`}
@@ -94,8 +103,8 @@ const SidebarNavigationItem = ({
         {item.children.map(({ label, to, icon: ChildIcon }) => (
           <SidebarMenuSubItem key={to}>
             <SidebarMenuSubButton
-              isActive={pathname === to || pathname.startsWith(`${to}/`)}
-              render={<Link to={toRegisteredRoute(to)} onClick={onNavigate} />}
+              isActive={isNavPathActive(pathname, to)}
+              render={<Link to={to} onClick={onNavigate} />}
             >
               <ChildIcon />
               <span>{label}</span>

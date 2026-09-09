@@ -10,8 +10,8 @@ import {
   CommandList,
 } from '@ploutizo/ui/components/command';
 
-import { getCommandGroups, toRegisteredRoute } from '@/lib/navigation';
 import type { CommandDefinition } from '@/lib/command/types';
+import { getCommandGroups } from '@/lib/command/getCommandGroups';
 import { useCommandPalette } from '@/lib/command/useCommandPalette';
 import { useGetImportDrafts } from '@/lib/data-access/imports';
 
@@ -28,7 +28,7 @@ export const CommandPalette = () => {
   const runCommand = useCallback(
     (command: CommandDefinition) => {
       if (command.type === 'nav') {
-        navigate({ to: toRegisteredRoute(command.to) });
+        navigate({ to: command.to });
       } else if (command.type === 'import-draft') {
         navigate({
           to: '/import/$draftId',
@@ -37,8 +37,7 @@ export const CommandPalette = () => {
       } else {
         command.run({
           close,
-          navigate: (options) =>
-            navigate({ to: toRegisteredRoute(options.to) }),
+          navigate: (options) => navigate({ to: options.to }),
         });
       }
       close();

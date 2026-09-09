@@ -20,11 +20,13 @@ export type SidebarNavChild = {
   label: string;
   to: AppNavRoute;
   icon: LucideIcon;
+  keywords?: readonly string[];
 };
 
 export type SidebarNavItem = {
   label: string;
   to: AppNavRoute;
   icon: LucideIcon;
+  keywords?: readonly string[];
   children?: readonly SidebarNavChild[];
 };

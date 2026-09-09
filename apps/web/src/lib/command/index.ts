@@ -1,6 +1,7 @@
 export { CommandPalette } from './CommandPalette';
 export { CommandPaletteProvider } from './CommandPaletteProvider';
 export { CommandPaletteTrigger } from './CommandPaletteTrigger';
+export { getCommandGroups } from './getCommandGroups';
 export { useCommandPalette } from './useCommandPalette';
 export { useCommandPaletteShortcut } from './useCommandPaletteShortcut';
 export type {
