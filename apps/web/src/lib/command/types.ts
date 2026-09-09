@@ -15,6 +15,15 @@ export type NavCommand = {
   keywords?: readonly string[];
 };
 
+export type ImportDraftCommand = {
+  type: 'import-draft';
+  id: string;
+  label: string;
+  draftId: string;
+  icon: LucideIcon;
+  keywords?: readonly string[];
+};
+
 export type ActionCommand = {
   type: 'action';
   id: string;
@@ -24,7 +33,7 @@ export type ActionCommand = {
   run: (ctx: CommandContext) => void;
 };
 
-export type CommandDefinition = NavCommand | ActionCommand;
+export type CommandDefinition = NavCommand | ImportDraftCommand | ActionCommand;
 
 export type CommandGroupDefinition = {
   heading: string;

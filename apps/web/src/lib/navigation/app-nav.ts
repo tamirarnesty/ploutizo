@@ -1,16 +1,19 @@
 import {
   CreditCard,
   FileUp,
+  History,
   LayoutDashboard,
   Settings,
+  Tags,
+  Users,
   Wallet,
+  WandSparkles,
 } from 'lucide-react';
 
+import { formatAccountLabel } from '@ploutizo/utils';
+import type { ImportDraftSummary } from '@ploutizo/types';
 import type { CommandGroupDefinition, NavCommand } from '@/lib/command/types';
-import type {
-  SidebarNavItem,
-  SidebarSettingsNavItem,
-} from '@/lib/navigation/types';
+import type { SidebarNavItem } from '@/lib/navigation/types';
 
 export const sidebarPrimaryNav: readonly SidebarNavItem[] = [
   {
@@ -28,6 +31,11 @@ export const sidebarPrimaryNav: readonly SidebarNavItem[] = [
         to: '/transactions/import',
         icon: FileUp,
       },
+      {
+        label: 'Import History',
+        to: '/transactions/import/history',
+        icon: History,
+      },
     ],
   },
   {
@@ -41,7 +49,24 @@ export const sidebarSettingsNav = {
   label: 'Settings',
   to: '/settings',
   icon: Settings,
-} as const satisfies SidebarSettingsNavItem;
+  children: [
+    {
+      label: 'Categories & Tags',
+      to: '/settings/categories',
+      icon: Tags,
+    },
+    {
+      label: 'Merchant Rules',
+      to: '/settings/merchant-rules',
+      icon: WandSparkles,
+    },
+    {
+      label: 'Household',
+      to: '/settings/household',
+      icon: Users,
+    },
+  ],
+} as const satisfies SidebarNavItem;
 
 const navigationCommands = [
   {
@@ -70,12 +95,23 @@ const navigationCommands = [
   },
   {
     type: 'nav',
+    id: 'nav-import-history',
+    label: 'Import History',
+    to: '/transactions/import/history',
+    icon: History,
+    keywords: ['import', 'history', 'uploads'],
+  },
+  {
+    type: 'nav',
     id: 'nav-accounts',
     label: 'Accounts',
     to: '/accounts',
     icon: CreditCard,
     keywords: ['cards', 'credit'],
   },
+] as const satisfies readonly NavCommand[];
+
+const settingsCommands = [
   {
     type: 'nav',
     id: 'nav-settings',
@@ -84,18 +120,70 @@ const navigationCommands = [
     icon: Settings,
     keywords: ['preferences', 'theme'],
   },
+  {
+    type: 'nav',
+    id: 'nav-settings-categories',
+    label: 'Categories & Tags',
+    to: '/settings/categories',
+    icon: Tags,
+    keywords: ['settings', 'categories', 'tags'],
+  },
+  {
+    type: 'nav',
+    id: 'nav-settings-merchant-rules',
+    label: 'Merchant Rules',
+    to: '/settings/merchant-rules',
+    icon: WandSparkles,
+    keywords: ['settings', 'merchant', 'rules'],
+  },
+  {
+    type: 'nav',
+    id: 'nav-settings-household',
+    label: 'Household',
+    to: '/settings/household',
+    icon: Users,
+    keywords: ['settings', 'members', 'household'],
+  },
 ] as const satisfies readonly NavCommand[];
 
-/** Command palette groups. Actions group will be appended here in a future pass. */
-export const commandGroups = [
+const staticCommandGroups = [
   {
     heading: 'Navigation',
     commands: navigationCommands,
   },
+  {
+    heading: 'Settings',
+    commands: settingsCommands,
+  },
 ] as const satisfies readonly CommandGroupDefinition[];
 
-export const getCommandGroups = (): readonly CommandGroupDefinition[] =>
-  commandGroups;
+export const getCommandGroups = (
+  drafts: readonly ImportDraftSummary[] = []
+): readonly CommandGroupDefinition[] => {
+  if (drafts.length === 0) return staticCommandGroups;
+
+  return [
+    ...staticCommandGroups,
+    {
+      heading: 'Continue Import',
+      commands: drafts.map((draft) => ({
+        type: 'import-draft' as const,
+        id: `import-draft-${draft.id}`,
+        label: `${formatAccountLabel(draft.account)} — ${
+          draft.fileName ?? 'Untitled CSV'
+        }`,
+        draftId: draft.id,
+        icon: FileUp,
+        keywords: [
+          'continue',
+          'draft',
+          formatAccountLabel(draft.account),
+          draft.fileName ?? '',
+        ],
+      })),
+    },
+  ];
+};
 
 export const getNavigationCommands = (): readonly NavCommand[] =>
   navigationCommands;

@@ -19,11 +19,16 @@ export const CommandPaletteTrigger = () => {
     <Button
       variant="outline"
       aria-label="Open command palette"
-      className="align-middle"
+      className="w-full justify-between group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2!"
       onClick={() => setOpen(true)}
     >
       <SearchIcon />
-      <Kbd>{shortcutLabel}</Kbd>
+      <span className="flex-1 text-left group-data-[collapsible=icon]:hidden">
+        Search
+      </span>
+      <Kbd className="group-data-[collapsible=icon]:hidden">
+        {shortcutLabel}
+      </Kbd>
     </Button>
   );
 };

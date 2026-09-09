@@ -13,10 +13,13 @@ import {
 import { getCommandGroups, toRegisteredRoute } from '@/lib/navigation';
 import type { CommandDefinition } from '@/lib/command/types';
 import { useCommandPalette } from '@/lib/command/useCommandPalette';
+import { useGetImportDrafts } from '@/lib/data-access/imports';
 
 export const CommandPalette = () => {
   const { open, setOpen } = useCommandPalette();
   const navigate = useNavigate();
+  const draftsQuery = useGetImportDrafts(open);
+  const drafts = draftsQuery.data ?? [];
 
   const close = useCallback(() => {
     setOpen(false);
@@ -26,6 +29,11 @@ export const CommandPalette = () => {
     (command: CommandDefinition) => {
       if (command.type === 'nav') {
         navigate({ to: toRegisteredRoute(command.to) });
+      } else if (command.type === 'import-draft') {
+        navigate({
+          to: '/transactions/import/$draftId',
+          params: { draftId: command.draftId },
+        });
       } else {
         command.run({
           close,
@@ -44,7 +52,7 @@ export const CommandPalette = () => {
         <CommandInput placeholder="Type a command or search..." />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
-          {getCommandGroups().map((group) => (
+          {getCommandGroups(drafts).map((group) => (
             <CommandGroup key={group.heading} heading={group.heading}>
               {group.commands.map((command) => {
                 const Icon = command.icon;
