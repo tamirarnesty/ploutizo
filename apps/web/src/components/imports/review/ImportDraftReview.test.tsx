@@ -411,7 +411,7 @@ describe('ImportDraftReview', () => {
     expect(continueMocks.mutateAsync).toHaveBeenCalledTimes(1);
     await waitFor(() =>
       expect(reviewRouterMocks.navigate).toHaveBeenCalledWith({
-        to: '/transactions/import/$draftId/finalize',
+        to: '/import/$draftId/finalize',
         params: { draftId: 'draft_1' },
       })
     );

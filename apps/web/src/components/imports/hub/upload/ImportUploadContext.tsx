@@ -89,7 +89,7 @@ export const ImportUploadProvider = ({
   const goToDraftReview = useCallback(
     (draftId: string) => {
       void navigate({
-        to: '/transactions/import/$draftId',
+        to: '/import/$draftId',
         params: { draftId },
       });
     },

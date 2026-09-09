@@ -7,8 +7,8 @@ export type AppNavRoute = Extract<
   FileRouteTypes['to'],
   | '/dashboard'
   | '/transactions'
-  | '/transactions/import'
-  | '/transactions/import/history'
+  | '/import'
+  | '/import/history'
   | '/accounts'
   | '/settings'
   | '/settings/categories'

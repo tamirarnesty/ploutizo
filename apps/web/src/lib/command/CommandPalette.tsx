@@ -18,7 +18,7 @@ import { useGetImportDrafts } from '@/lib/data-access/imports';
 export const CommandPalette = () => {
   const { open, setOpen } = useCommandPalette();
   const navigate = useNavigate();
-  const draftsQuery = useGetImportDrafts(open);
+  const draftsQuery = useGetImportDrafts();
   const drafts = draftsQuery.data ?? [];
 
   const close = useCallback(() => {
@@ -31,7 +31,7 @@ export const CommandPalette = () => {
         navigate({ to: toRegisteredRoute(command.to) });
       } else if (command.type === 'import-draft') {
         navigate({
-          to: '/transactions/import/$draftId',
+          to: '/import/$draftId',
           params: { draftId: command.draftId },
         });
       } else {

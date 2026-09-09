@@ -22,7 +22,7 @@ Hub create / discard / list stay on TanStack Query and are **outside** the worki
 
 ### Session boundary
 
-Working-copy rules apply only while `/transactions/import/$draftId` is mounted and the draft is still active. Leaving review ends the session contract (cache/collection may stay warm in memory, but editing authority ends). Returning to review re-hydrates from GET (or warm data + reconcile). Hub ↔ review navigation does **not** extend the working-copy lifecycle.
+Working-copy rules apply only while `/import/$draftId` is mounted and the draft is still active. Leaving review ends the session contract (cache/collection may stay warm in memory, but editing authority ends). Returning to review re-hydrates from GET (or warm data + reconcile). Hub ↔ review navigation does **not** extend the working-copy lifecycle.
 
 ### Shape: rows collection + meta query
 

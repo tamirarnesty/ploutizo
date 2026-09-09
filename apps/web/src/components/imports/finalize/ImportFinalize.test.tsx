@@ -268,7 +268,7 @@ describe('ImportFinalize', () => {
       expect(finalizeMocks.invalidate.mutateAsync).toHaveBeenCalledTimes(1)
     );
     expect(finalizeMocks.navigate).toHaveBeenCalledWith({
-      to: '/transactions/import/$draftId',
+      to: '/import/$draftId',
       params: { draftId: 'draft_1' },
       ignoreBlocker: true,
     });
@@ -279,8 +279,8 @@ describe('ImportFinalize', () => {
 
     await expect(
       finalizeMocks.shouldBlockFn?.({
-        current: { pathname: '/transactions/import/draft_1/finalize' },
-        next: { pathname: '/transactions/import/draft_1' },
+        current: { pathname: '/import/draft_1/finalize' },
+        next: { pathname: '/import/draft_1' },
       })
     ).resolves.toBe(false);
 
@@ -312,7 +312,7 @@ describe('ImportFinalize', () => {
 
     await waitFor(() =>
       expect(finalizeMocks.navigate).toHaveBeenCalledWith({
-        to: '/transactions/import/$draftId',
+        to: '/import/$draftId',
         params: { draftId: 'draft_1' },
         ignoreBlocker: true,
       })
@@ -331,7 +331,7 @@ describe('ImportFinalize', () => {
 
     await waitFor(() =>
       expect(finalizeMocks.navigate).toHaveBeenCalledWith({
-        to: '/transactions/import/$draftId',
+        to: '/import/$draftId',
         params: { draftId: 'draft_1' },
         ignoreBlocker: true,
       })
@@ -348,8 +348,8 @@ describe('ImportFinalize', () => {
 
     await expect(
       finalizeMocks.shouldBlockFn?.({
-        current: { pathname: '/transactions/import/draft_1/finalize' },
-        next: { pathname: '/transactions/import/draft_1' },
+        current: { pathname: '/import/draft_1/finalize' },
+        next: { pathname: '/import/draft_1' },
       })
     ).resolves.toBe(true);
 
@@ -363,8 +363,8 @@ describe('ImportFinalize', () => {
     finalizeMocks.invalidate.mutateAsync.mockResolvedValue(undefined);
     await expect(
       finalizeMocks.shouldBlockFn?.({
-        current: { pathname: '/transactions/import/draft_1/finalize' },
-        next: { pathname: '/transactions/import/draft_1' },
+        current: { pathname: '/import/draft_1/finalize' },
+        next: { pathname: '/import/draft_1' },
       })
     ).resolves.toBe(false);
     expect(finalizeMocks.invalidate.mutateAsync).toHaveBeenCalledTimes(2);
@@ -392,7 +392,7 @@ describe('ImportFinalize', () => {
 
     await waitFor(() =>
       expect(finalizeMocks.navigate).toHaveBeenCalledWith({
-        to: '/transactions/import/$draftId',
+        to: '/import/$draftId',
         params: { draftId: 'draft_1' },
         state: {
           importReview: {
@@ -446,7 +446,7 @@ describe('ImportFinalize', () => {
       )
     );
     expect(finalizeMocks.navigate).toHaveBeenCalledWith({
-      to: '/transactions/import',
+      to: '/import',
       ignoreBlocker: true,
     });
 
@@ -477,7 +477,7 @@ describe('ImportFinalize', () => {
 
     await waitFor(() =>
       expect(finalizeMocks.navigate).toHaveBeenCalledWith({
-        to: '/transactions/import/$draftId',
+        to: '/import/$draftId',
         params: { draftId: 'draft_1' },
         state: { importReview: { prepareAgain: true } },
       })
@@ -501,7 +501,7 @@ describe('ImportFinalize', () => {
 
     await waitFor(() =>
       expect(finalizeMocks.navigate).toHaveBeenCalledWith({
-        to: '/transactions/import',
+        to: '/import',
       })
     );
   });

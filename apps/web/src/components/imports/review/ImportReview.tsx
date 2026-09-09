@@ -37,9 +37,7 @@ const ImportReviewBreadcrumbs = () => (
   <Breadcrumb>
     <BreadcrumbList>
       <BreadcrumbItem>
-        <BreadcrumbLink render={<Link to="/transactions/import" />}>
-          Import
-        </BreadcrumbLink>
+        <BreadcrumbLink render={<Link to="/import" />}>Import</BreadcrumbLink>
       </BreadcrumbItem>
       <BreadcrumbSeparator />
       <BreadcrumbItem>
@@ -97,7 +95,7 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
     });
 
     void navigate({
-      to: '/transactions/import/$draftId',
+      to: '/import/$draftId',
       params: { draftId },
       replace: true,
       state: { importReview: undefined },
@@ -122,10 +120,7 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Button
-              nativeButton={false}
-              render={<Link to="/transactions/import" />}
-            >
+            <Button nativeButton={false} render={<Link to="/import" />}>
               Back to Import
             </Button>
           </EmptyContent>

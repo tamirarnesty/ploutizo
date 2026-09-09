@@ -181,7 +181,7 @@ export const Import = () => {
             nativeButton={false}
             variant="link"
             size="sm"
-            render={<Link to="/transactions/import/history" />}
+            render={<Link to="/import/history" />}
           >
             View all history
           </Button>

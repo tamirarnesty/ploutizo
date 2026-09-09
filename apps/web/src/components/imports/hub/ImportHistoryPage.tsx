@@ -24,7 +24,7 @@ export const ImportHistoryPage = () => {
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink render={<Link to="/transactions/import" />}>
+            <BreadcrumbLink render={<Link to="/import" />}>
               Import
             </BreadcrumbLink>
           </BreadcrumbItem>

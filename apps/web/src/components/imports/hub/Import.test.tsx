@@ -357,7 +357,7 @@ describe('Import', () => {
 
     await waitFor(() =>
       expect(importMocks.navigate).toHaveBeenCalledWith({
-        to: '/transactions/import/$draftId',
+        to: '/import/$draftId',
         params: { draftId: 'draft_1' },
       })
     );
@@ -370,7 +370,7 @@ describe('Import', () => {
 
     expect(screen.getByRole('link', { name: /continue/i })).toHaveAttribute(
       'href',
-      '/transactions/import/draft_1'
+      '/import/draft_1'
     );
     expect(
       screen.queryByText('Date must be a valid YYYY-MM-DD value.')
@@ -401,6 +401,6 @@ describe('Import', () => {
 
     expect(
       screen.getByRole('link', { name: 'View all history' })
-    ).toHaveAttribute('href', '/transactions/import/history');
+    ).toHaveAttribute('href', '/import/history');
   });
 });

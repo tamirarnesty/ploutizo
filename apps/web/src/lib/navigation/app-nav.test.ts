@@ -28,13 +28,22 @@ const draft: ImportDraftSummary = {
 };
 
 describe('app navigation', () => {
-  it('exposes stable child destinations in the sidebar', () => {
+  it('exposes Import as a peer of Transactions with Import History nested', () => {
+    expect(sidebarPrimaryNav.map((item) => item.label)).toEqual([
+      'Dashboard',
+      'Transactions',
+      'Import',
+      'Accounts',
+    ]);
     expect(
       sidebarPrimaryNav.find((item) => item.label === 'Transactions')?.children
-    ).toMatchObject([
-      { label: 'Import', to: '/transactions/import' },
-      { label: 'Import History', to: '/transactions/import/history' },
-    ]);
+    ).toBeUndefined();
+    expect(
+      sidebarPrimaryNav.find((item) => item.label === 'Import')
+    ).toMatchObject({
+      to: '/import',
+      children: [{ label: 'Import History', to: '/import/history' }],
+    });
     expect(sidebarSettingsNav.children).toMatchObject([
       { label: 'Categories & Tags', to: '/settings/categories' },
       { label: 'Merchant Rules', to: '/settings/merchant-rules' },
@@ -52,8 +61,8 @@ describe('app navigation', () => {
     expect(groups.flatMap((group) => group.commands)).toMatchObject([
       { to: '/dashboard' },
       { to: '/transactions' },
-      { to: '/transactions/import' },
-      { to: '/transactions/import/history' },
+      { to: '/import', label: 'Import' },
+      { to: '/import/history' },
       { to: '/accounts' },
       { to: '/settings' },
       { to: '/settings/categories' },
@@ -62,13 +71,20 @@ describe('app navigation', () => {
     ]);
   });
 
-  it('adds active drafts as resumable commands', () => {
-    const groups = getCommandGroups([draft]);
-    const continueImport = groups.find(
-      (group) => group.heading === 'Continue Import'
-    );
+  it('places Continue Import first when drafts exist and omits it otherwise', () => {
+    expect(getCommandGroups().map((group) => group.heading)).toEqual([
+      'Navigation',
+      'Settings',
+    ]);
 
-    expect(continueImport?.commands).toMatchObject([
+    const groups = getCommandGroups([draft]);
+
+    expect(groups.map((group) => group.heading)).toEqual([
+      'Continue Import',
+      'Navigation',
+      'Settings',
+    ]);
+    expect(groups[0]?.commands).toMatchObject([
       {
         type: 'import-draft',
         draftId: draft.id,

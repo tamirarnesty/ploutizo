@@ -146,7 +146,7 @@ const ImportDraftReviewContent = ({
       await mutateAsync();
       setIssues([]);
       await navigate({
-        to: '/transactions/import/$draftId/finalize',
+        to: '/import/$draftId/finalize',
         params: { draftId },
       });
     } catch (error) {

@@ -182,7 +182,7 @@ describe('ImportReview', () => {
     expect(screen.getByText('Draft not available')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Import' })).toHaveAttribute(
       'href',
-      '/transactions/import'
+      '/import'
     );
   });
 
@@ -241,7 +241,7 @@ describe('ImportReview', () => {
     );
     await waitFor(() =>
       expect(reviewRouterMocks.navigate).toHaveBeenCalledWith({
-        to: '/transactions/import/$draftId',
+        to: '/import/$draftId',
         params: { draftId: 'draft_1' },
         replace: true,
         state: { importReview: undefined },

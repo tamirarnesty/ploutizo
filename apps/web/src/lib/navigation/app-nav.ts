@@ -25,15 +25,15 @@ export const sidebarPrimaryNav: readonly SidebarNavItem[] = [
     label: 'Transactions',
     to: '/transactions',
     icon: Wallet,
+  },
+  {
+    label: 'Import',
+    to: '/import',
+    icon: FileUp,
     children: [
       {
-        label: 'Import',
-        to: '/transactions/import',
-        icon: FileUp,
-      },
-      {
         label: 'Import History',
-        to: '/transactions/import/history',
+        to: '/import/history',
         icon: History,
       },
     ],
@@ -87,9 +87,9 @@ const navigationCommands = [
   },
   {
     type: 'nav',
-    id: 'nav-import-transactions',
-    label: 'Import transactions',
-    to: '/transactions/import',
+    id: 'nav-import',
+    label: 'Import',
+    to: '/import',
     icon: FileUp,
     keywords: ['import', 'upload', 'csv', 'file'],
   },
@@ -97,7 +97,7 @@ const navigationCommands = [
     type: 'nav',
     id: 'nav-import-history',
     label: 'Import History',
-    to: '/transactions/import/history',
+    to: '/import/history',
     icon: History,
     keywords: ['import', 'history', 'uploads'],
   },
@@ -163,7 +163,6 @@ export const getCommandGroups = (
   if (drafts.length === 0) return staticCommandGroups;
 
   return [
-    ...staticCommandGroups,
     {
       heading: 'Continue Import',
       commands: drafts.map((draft) => ({
@@ -182,6 +181,7 @@ export const getCommandGroups = (
         ],
       })),
     },
+    ...staticCommandGroups,
   ];
 };
 

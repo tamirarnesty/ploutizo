@@ -81,7 +81,7 @@ describe('ImportDraftList', () => {
     expect(screen.getByText('statement.csv')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /continue/i })).toHaveAttribute(
       'href',
-      '/transactions/import/draft_1'
+      '/import/draft_1'
     );
   });
 });

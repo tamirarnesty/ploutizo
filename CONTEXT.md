@@ -43,8 +43,8 @@ _Avoid_: Card-funded contribution, contribution to a chequing account
 ### Import language
 
 **Import hub**:
-The starting point for credit card import work. It helps a household member start a new import, resume or discard active drafts, and see recent import outcomes; it is not the place where a draft is fully reviewed. Active-draft counts on the hub are live **review evaluation**, derived from current draft facts, not stored upload-time snapshots.
-_Avoid_: Import wizard, import review page, trusting persisted valid/invalid counts
+The primary place for credit card import work. A household member uploads a statement, resumes or discards active drafts, and sees recent import outcomes here. It is not a subpage of the transaction list, and it is not where a draft is fully reviewed. Active-draft counts on the hub are live **review evaluation**, derived from current draft facts, not stored upload-time snapshots.
+_Avoid_: Import wizard, import review page, treating Import as a transaction-list subpage, trusting persisted valid/invalid counts
 
 **Import draft**:
 A durable in-progress import for one **settlement-scoped account**. A household member can resume or discard it before confirm; mid-review corrections and selection are saved on the draft so resume continues from the last persisted state. Only one active import draft may exist for a credit card account at a time.
@@ -171,7 +171,7 @@ Every expense and refund transaction must have a category. Settlements and other
 _Avoid_: Import-only category requirement, optional spend category
 
 **Ploutizo normalized import format**:
-A household-facing CSV template for credit card imports when a bank-specific export is unavailable. Required columns: date, amount, description, type (`expense` | `refund` | `settlement`). Optional columns include external id, category, assignee hint, refund link hints, notes, and tags. The Import page is the primary place to download the example file and format guide in v1.
+A household-facing CSV template for credit card imports when a bank-specific export is unavailable. Required columns: date, amount, description, type (`expense` | `refund` | `settlement`). Optional columns include external id, category, assignee hint, refund link hints, notes, and tags. The **Import hub** is the primary place to download the example file and format guide in v1.
 _Avoid_: General-purpose ledger migration format
 
 **Import history**:
