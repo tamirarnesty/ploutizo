@@ -1,3 +1,4 @@
+import { useAuth } from '@clerk/tanstack-react-start';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import type { ImportDraftSummary } from '@ploutizo/types';
 import { apiFetch } from '@/lib/queryClient';
@@ -13,10 +14,11 @@ export const fetchActiveImportDrafts = async (): Promise<
   return r.data;
 };
 
-export const activeImportDraftsQueryOptions = queryOptions({
-  queryKey: activeImportDraftsQueryKey,
-  queryFn: fetchActiveImportDrafts,
-});
+export const activeImportDraftsQueryOptions = (orgId: string) =>
+  queryOptions({
+    queryKey: activeImportDraftsQueryKey(orgId),
+    queryFn: fetchActiveImportDrafts,
+  });
 
 type UseGetImportDraftsOptions = {
   enabled?: boolean;
@@ -24,8 +26,11 @@ type UseGetImportDraftsOptions = {
 
 export const useGetImportDrafts = (
   options?: UseGetImportDraftsOptions
-): UseQueryResult<ImportDraftSummary[]> =>
-  useQuery({
-    ...activeImportDraftsQueryOptions,
-    enabled: options?.enabled ?? true,
+): UseQueryResult<ImportDraftSummary[]> => {
+  const { orgId } = useAuth();
+
+  return useQuery({
+    ...activeImportDraftsQueryOptions(orgId ?? ''),
+    enabled: (options?.enabled ?? true) && Boolean(orgId),
   });
+};

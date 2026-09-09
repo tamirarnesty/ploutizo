@@ -3,7 +3,7 @@ import type { ImportCompletedResult } from '@ploutizo/types';
 import type { ApiErrorBody } from '@/lib/queryClient';
 import { fetchFinalizeImportDraft } from './fetchFinalizeImportDraft';
 import {
-  activeImportDraftsQueryKey,
+  activeImportDraftsQueryKeyRoot,
   importDraftQueryKey,
   importHistoryQueryKey,
   importPreparedQueryKey,
@@ -22,7 +22,7 @@ export const useFinalizeImportDraft = (draftId: string) => {
       queryClient.removeQueries({ queryKey: importPreparedQueryKey(draftId) });
       queryClient.removeQueries({ queryKey: importDraftQueryKey(draftId) });
       void queryClient.invalidateQueries({
-        queryKey: activeImportDraftsQueryKey,
+        queryKey: activeImportDraftsQueryKeyRoot,
       });
       void queryClient.invalidateQueries({ queryKey: importHistoryQueryKey });
     },

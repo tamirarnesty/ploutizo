@@ -5,6 +5,7 @@ import {
 } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/react-start';
 import { getCookie } from '@tanstack/react-start/server';
+import { auth } from '@clerk/tanstack-react-start/server';
 import { SidebarInset, SidebarProvider } from '@ploutizo/ui/components/sidebar';
 import { cn } from '@ploutizo/ui/lib/utils';
 import { CommandPaletteProvider } from '@/lib/command';
@@ -57,9 +58,14 @@ const LayoutShell = () => {
 
 export const Route = createFileRoute('/_layout')({
   beforeLoad: () => requireAuthAndOrg(),
-  loader: ({ context }) => {
+  loader: async ({ context }) => {
     // Warm the command palette's Continue Import list without blocking shell render.
-    void context.queryClient.prefetchQuery(activeImportDraftsQueryOptions);
+    const { orgId } = await auth();
+    if (orgId) {
+      void context.queryClient.prefetchQuery(
+        activeImportDraftsQueryOptions(orgId)
+      );
+    }
     return getSidebarState();
   },
   component: LayoutShell,

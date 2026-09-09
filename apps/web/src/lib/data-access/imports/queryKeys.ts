@@ -1,6 +1,9 @@
 export const importTargetsQueryKey = ['imports', 'targets'] as const;
 
-export const activeImportDraftsQueryKey = ['imports', 'drafts'] as const;
+export const activeImportDraftsQueryKeyRoot = ['imports', 'drafts'] as const;
+
+export const activeImportDraftsQueryKey = (orgId: string) =>
+  [...activeImportDraftsQueryKeyRoot, orgId] as const;
 
 export const importHistoryQueryKey = ['imports', 'history'] as const;
 
