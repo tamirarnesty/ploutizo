@@ -23,4 +23,24 @@ describe('CommandPaletteTrigger', () => {
     await user.click(trigger);
     expect(setOpen).toHaveBeenCalledWith(true);
   });
+
+  it('uses collapsed-sidebar styling hooks for icon-only mode', () => {
+    const setOpen = vi.fn();
+
+    render(
+      <CommandPaletteContextProvider value={{ open: false, setOpen }}>
+        <div className="group" data-collapsible="icon">
+          <CommandPaletteTrigger />
+        </div>
+      </CommandPaletteContextProvider>
+    );
+
+    const trigger = screen.getByRole('button', {
+      name: 'Open command palette',
+    });
+    expect(trigger.className).toContain('group-data-[collapsible=icon]:size-8');
+    expect(screen.getByText('Search').className).toContain(
+      'group-data-[collapsible=icon]:hidden'
+    );
+  });
 });

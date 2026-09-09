@@ -22,7 +22,12 @@ vi.mock('@tanstack/react-router', () => ({
       {children}
     </a>
   ),
-  useRouterState: () => ({ location: { pathname: routerMocks.pathname } }),
+  useRouterState: (options?: {
+    select?: (state: { location: { pathname: string } }) => unknown;
+  }) => {
+    const state = { location: { pathname: routerMocks.pathname } };
+    return options?.select ? options.select(state) : state;
+  },
 }));
 
 vi.mock('@/lib/command', () => ({
@@ -33,14 +38,17 @@ vi.mock('@/lib/command', () => ({
   ),
 }));
 
-const renderSidebar = (pathname = '/dashboard') => {
+const SidebarHarness = ({ pathname }: { pathname: string }) => {
   routerMocks.pathname = pathname;
-  return render(
+  return (
     <SidebarProvider>
       <AppSidebar />
     </SidebarProvider>
   );
 };
+
+const renderSidebar = (pathname = '/dashboard') =>
+  render(<SidebarHarness pathname={pathname} />);
 
 describe('AppSidebar', () => {
   beforeEach(() => {
@@ -137,5 +145,41 @@ describe('AppSidebar', () => {
     expect(
       screen.getByRole('link', { name: 'Import History' })
     ).toHaveAttribute('href', '/import/history');
+  });
+
+  it('opens the Settings branch on a settings deep link', () => {
+    renderSidebar('/settings/categories');
+
+    expect(
+      screen.getByRole('link', { name: 'Categories & Tags' })
+    ).toHaveAttribute('href', '/settings/categories');
+  });
+
+  it('does not change route when toggling the Import submenu', async () => {
+    const user = userEvent.setup();
+    renderSidebar('/dashboard');
+
+    await user.click(
+      screen.getByRole('button', { name: 'Toggle Import submenu' })
+    );
+
+    expect(routerMocks.pathname).toBe('/dashboard');
+    expect(
+      screen.getByRole('link', { name: 'Import History' })
+    ).toBeInTheDocument();
+  });
+
+  it('closes an expanded branch after navigating away from it', () => {
+    const { rerender } = renderSidebar('/import/history');
+
+    expect(
+      screen.getByRole('link', { name: 'Import History' })
+    ).toBeInTheDocument();
+
+    rerender(<SidebarHarness pathname="/dashboard" />);
+
+    expect(
+      screen.queryByRole('link', { name: 'Import History' })
+    ).not.toBeInTheDocument();
   });
 });

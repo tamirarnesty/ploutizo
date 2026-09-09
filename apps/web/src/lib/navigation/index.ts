@@ -1,6 +1,3 @@
-export {
-  sidebarPrimaryNav,
-  sidebarSettingsNav,
-  staticCommandGroups,
-} from './app-nav';
-export type { AppNavRoute, SidebarNavChild, SidebarNavItem } from './types';
+export { sidebarPrimaryNav, sidebarSettingsNav } from './app-nav';
+export { isAppNavRouteActive } from './isAppNavRouteActive';
+export type { AppNavRoute, SidebarNavItem } from './types';

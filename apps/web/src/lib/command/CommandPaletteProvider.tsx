@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { CommandPalette } from '@/lib/command/CommandPalette';
 import { CommandPaletteContextProvider } from '@/lib/command/useCommandPalette';
@@ -12,11 +12,12 @@ export const CommandPaletteProvider = ({
   children: ReactNode;
 }) => {
   const [open, setOpen] = useState(false);
+  const contextValue = useMemo(() => ({ open, setOpen }), [open]);
 
   useCommandPaletteShortcut(setOpen);
 
   return (
-    <CommandPaletteContextProvider value={{ open, setOpen }}>
+    <CommandPaletteContextProvider value={contextValue}>
       {children}
       <CommandPalette />
     </CommandPaletteContextProvider>

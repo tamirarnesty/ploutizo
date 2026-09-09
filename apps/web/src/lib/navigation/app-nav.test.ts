@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  sidebarPrimaryNav,
-  sidebarSettingsNav,
-  staticCommandGroups,
-} from './app-nav';
+import { sidebarPrimaryNav, sidebarSettingsNav } from './app-nav';
 
 describe('app navigation', () => {
   it('exposes Import as a peer of Transactions with Import History nested', () => {
@@ -14,8 +10,8 @@ describe('app navigation', () => {
       'Accounts',
     ]);
     expect(
-      sidebarPrimaryNav.find((item) => item.label === 'Transactions')?.children
-    ).toBeUndefined();
+      sidebarPrimaryNav.find((item) => item.label === 'Transactions')
+    ).not.toHaveProperty('children');
     expect(
       sidebarPrimaryNav.find((item) => item.label === 'Import')
     ).toMatchObject({
@@ -26,26 +22,6 @@ describe('app navigation', () => {
       { label: 'Categories & Tags', to: '/settings/categories' },
       { label: 'Merchant Rules', to: '/settings/merchant-rules' },
       { label: 'Household', to: '/settings/household' },
-    ]);
-  });
-
-  it('derives command-palette destinations from the sidebar definition', () => {
-    expect(staticCommandGroups.map((group) => group.heading)).toEqual([
-      'Navigation',
-      'Settings',
-    ]);
-    expect(
-      staticCommandGroups.flatMap((group) => group.commands)
-    ).toMatchObject([
-      { to: '/dashboard' },
-      { to: '/transactions' },
-      { to: '/import', label: 'Import' },
-      { to: '/import/history' },
-      { to: '/accounts' },
-      { to: '/settings' },
-      { to: '/settings/categories' },
-      { to: '/settings/merchant-rules' },
-      { to: '/settings/household' },
     ]);
   });
 });

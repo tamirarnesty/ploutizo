@@ -2,7 +2,7 @@ import { FileUp } from 'lucide-react';
 
 import { formatAccountLabel } from '@ploutizo/utils';
 import type { ImportDraftSummary } from '@ploutizo/types';
-import { staticCommandGroups } from '@/lib/navigation';
+import { staticCommandGroups } from '@/lib/command/staticCommandGroups';
 import type {
   CommandGroupDefinition,
   ImportDraftCommand,
@@ -10,21 +10,19 @@ import type {
 
 const toImportDraftCommand = (
   draft: ImportDraftSummary
-): ImportDraftCommand => ({
-  type: 'import-draft',
-  id: `import-draft-${draft.id}`,
-  label: `${formatAccountLabel(draft.account)} — ${
-    draft.fileName ?? 'Untitled CSV'
-  }`,
-  draftId: draft.id,
-  icon: FileUp,
-  keywords: [
-    'continue',
-    'draft',
-    formatAccountLabel(draft.account),
-    draft.fileName ?? '',
-  ],
-});
+): ImportDraftCommand => {
+  const accountLabel = formatAccountLabel(draft.account);
+  const fileName = draft.fileName ?? 'Untitled CSV';
+
+  return {
+    type: 'import-draft',
+    id: `import-draft-${draft.id}`,
+    label: `${accountLabel} — ${fileName}`,
+    draftId: draft.id,
+    icon: FileUp,
+    keywords: ['continue', 'draft', accountLabel, fileName],
+  };
+};
 
 export const getCommandGroups = (
   drafts: readonly ImportDraftSummary[] = []

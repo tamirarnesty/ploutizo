@@ -10,10 +10,9 @@ import {
   WandSparkles,
 } from 'lucide-react';
 
-import type { CommandGroupDefinition, NavCommand } from '@/lib/command/types';
-import type { SidebarNavChild, SidebarNavItem } from '@/lib/navigation/types';
+import type { SidebarNavItem } from '@/lib/navigation/types';
 
-export const sidebarPrimaryNav: readonly SidebarNavItem[] = [
+export const sidebarPrimaryNav = [
   {
     label: 'Dashboard',
     to: '/dashboard',
@@ -46,7 +45,7 @@ export const sidebarPrimaryNav: readonly SidebarNavItem[] = [
     icon: CreditCard,
     keywords: ['cards', 'credit'],
   },
-];
+] as const satisfies readonly SidebarNavItem[];
 
 export const sidebarSettingsNav = {
   label: 'Settings',
@@ -74,33 +73,3 @@ export const sidebarSettingsNav = {
     },
   ],
 } as const satisfies SidebarNavItem;
-
-const toNavCommand = ({
-  label,
-  to,
-  icon,
-  keywords,
-}: SidebarNavChild): NavCommand => ({
-  type: 'nav',
-  id: `nav-${to.slice(1).replaceAll('/', '-')}`,
-  label,
-  to,
-  icon,
-  keywords,
-});
-
-const flattenNavItem = (item: SidebarNavItem): NavCommand[] => [
-  toNavCommand(item),
-  ...(item.children ?? []).map(toNavCommand),
-];
-
-export const staticCommandGroups = [
-  {
-    heading: 'Navigation',
-    commands: sidebarPrimaryNav.flatMap(flattenNavItem),
-  },
-  {
-    heading: 'Settings',
-    commands: flattenNavItem(sidebarSettingsNav),
-  },
-] as const satisfies readonly CommandGroupDefinition[];

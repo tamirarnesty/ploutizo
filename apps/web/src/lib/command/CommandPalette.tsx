@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import {
   Command,
@@ -20,29 +20,21 @@ export const CommandPalette = () => {
   const navigate = useNavigate();
   const draftsQuery = useGetImportDrafts();
   const drafts = draftsQuery.data ?? [];
-
-  const close = useCallback(() => {
-    setOpen(false);
-  }, [setOpen]);
+  const commandGroups = useMemo(() => getCommandGroups(drafts), [drafts]);
 
   const runCommand = useCallback(
     (command: CommandDefinition) => {
       if (command.type === 'nav') {
         navigate({ to: command.to });
-      } else if (command.type === 'import-draft') {
+      } else {
         navigate({
           to: '/import/$draftId',
           params: { draftId: command.draftId },
         });
-      } else {
-        command.run({
-          close,
-          navigate: (options) => navigate({ to: options.to }),
-        });
       }
-      close();
+      setOpen(false);
     },
-    [close, navigate]
+    [navigate, setOpen]
   );
 
   return (
@@ -51,7 +43,7 @@ export const CommandPalette = () => {
         <CommandInput placeholder="Type a command or search..." />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
-          {getCommandGroups(drafts).map((group) => (
+          {commandGroups.map((group) => (
             <CommandGroup key={group.heading} heading={group.heading}>
               {group.commands.map((command) => {
                 const Icon = command.icon;

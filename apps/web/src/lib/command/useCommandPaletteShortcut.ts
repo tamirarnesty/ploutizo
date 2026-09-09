@@ -9,7 +9,8 @@ export const useCommandPaletteShortcut = (setOpen: (open: boolean) => void) => {
       if (event.key.toLowerCase() !== 'k') return;
       if (!event.metaKey && !event.ctrlKey) return;
 
-      const target = event.target as HTMLElement;
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
       if (
         target.tagName === 'INPUT' ||
         target.tagName === 'TEXTAREA' ||

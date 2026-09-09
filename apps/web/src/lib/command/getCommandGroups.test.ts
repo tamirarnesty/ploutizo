@@ -1,27 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { ImportDraftSummary } from '@ploutizo/types';
+import { makeImportDraftSummary } from '@/components/imports/test-fixtures/importDraft';
 import { getCommandGroups } from './getCommandGroups';
 
-const draft: ImportDraftSummary = {
-  id: 'draft_123',
-  account: {
-    id: 'account_123',
-    name: 'Visa',
-    institutionId: null,
-    lastFour: '1234',
-  },
-  contentProfileId: null,
-  status: 'draft',
-  fileName: 'august.csv',
-  rowCount: 12,
-  validRowCount: 12,
-  invalidRowCount: 0,
-  importedAt: '2026-09-09T00:00:00.000Z',
-  completedAt: null,
-  discardedAt: null,
-  createdAt: '2026-09-09T00:00:00.000Z',
-  updatedAt: '2026-09-09T00:00:00.000Z',
-};
+const draft = makeImportDraftSummary();
 
 describe('getCommandGroups', () => {
   it('places Continue Import first when drafts exist and omits it otherwise', () => {

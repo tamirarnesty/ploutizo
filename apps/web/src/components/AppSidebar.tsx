@@ -24,12 +24,13 @@ import {
   CollapsibleTrigger,
 } from '@ploutizo/ui/components/collapsible';
 import { ThemeToggle } from '@ploutizo/ui/components/theme-toggle';
-import { sidebarPrimaryNav, sidebarSettingsNav } from '@/lib/navigation';
+import {
+  isAppNavRouteActive,
+  sidebarPrimaryNav,
+  sidebarSettingsNav,
+} from '@/lib/navigation';
 import { CommandPaletteTrigger } from '@/lib/command';
-import type { AppNavRoute, SidebarNavItem } from '@/lib/navigation/types';
-
-const isNavPathActive = (pathname: string, to: AppNavRoute) =>
-  pathname === to || pathname.startsWith(`${to}/`);
+import type { SidebarNavItem } from '@/lib/navigation/types';
 
 interface SidebarNavigationItemProps {
   item: SidebarNavItem;
@@ -46,7 +47,7 @@ const SidebarParentLink = ({
 
   return (
     <SidebarMenuButton
-      isActive={isNavPathActive(pathname, item.to)}
+      isActive={isAppNavRouteActive(pathname, item.to)}
       tooltip={item.label}
       render={<Link to={item.to} onClick={onNavigate} />}
     >
@@ -61,11 +62,11 @@ const SidebarNavigationItem = ({
   pathname,
   onNavigate,
 }: SidebarNavigationItemProps) => {
-  const isActive = isNavPathActive(pathname, item.to);
+  const isActive = isAppNavRouteActive(pathname, item.to);
   const [open, setOpen] = useState(isActive);
 
   useEffect(() => {
-    if (isActive) setOpen(true);
+    setOpen(isActive);
   }, [isActive]);
 
   if (!item.children) {
@@ -103,7 +104,7 @@ const SidebarNavigationItem = ({
         {item.children.map(({ label, to, icon: ChildIcon }) => (
           <SidebarMenuSubItem key={to}>
             <SidebarMenuSubButton
-              isActive={isNavPathActive(pathname, to)}
+              isActive={isAppNavRouteActive(pathname, to)}
               render={<Link to={to} onClick={onNavigate} />}
             >
               <ChildIcon />
@@ -117,7 +118,9 @@ const SidebarNavigationItem = ({
 };
 
 export const AppSidebar = () => {
-  const { location } = useRouterState();
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
 
   // Store sidebar context in a ref so closeMobile has stable [] deps (advanced-event-handler-refs)
   const sidebarCtx = useSidebar();
@@ -147,7 +150,7 @@ export const AppSidebar = () => {
                 <SidebarNavigationItem
                   key={item.to}
                   item={item}
-                  pathname={location.pathname}
+                  pathname={pathname}
                   onNavigate={closeMobile}
                 />
               ))}
@@ -160,7 +163,7 @@ export const AppSidebar = () => {
             <SidebarMenu>
               <SidebarNavigationItem
                 item={sidebarSettingsNav}
-                pathname={location.pathname}
+                pathname={pathname}
                 onNavigate={closeMobile}
               />
             </SidebarMenu>
