@@ -1,6 +1,5 @@
 export {
   getCommandGroups,
-  getNavigationCommands,
   sidebarPrimaryNav,
   sidebarSettingsNav,
 } from './app-nav';

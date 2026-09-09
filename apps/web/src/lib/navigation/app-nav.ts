@@ -184,6 +184,3 @@ export const getCommandGroups = (
     ...staticCommandGroups,
   ];
 };
-
-export const getNavigationCommands = (): readonly NavCommand[] =>
-  navigationCommands;

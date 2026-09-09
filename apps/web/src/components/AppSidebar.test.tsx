@@ -88,13 +88,15 @@ describe('AppSidebar', () => {
 
   it('toggles Import History without navigating away from the hub landing', async () => {
     const user = userEvent.setup();
-    renderSidebar('/import');
+    renderSidebar('/dashboard');
 
-    if (!screen.queryByRole('link', { name: 'Import History' })) {
-      await user.click(
-        screen.getByRole('button', { name: 'Toggle Import submenu' })
-      );
-    }
+    expect(
+      screen.queryByRole('link', { name: 'Import History' })
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole('button', { name: 'Toggle Import submenu' })
+    );
 
     expect(
       screen.getByRole('link', { name: 'Import History' })
@@ -102,6 +104,30 @@ describe('AppSidebar', () => {
     expect(screen.getByRole('link', { name: 'Import' })).toHaveAttribute(
       'href',
       '/import'
+    );
+  });
+
+  it('reveals Settings destinations from a separate chevron', async () => {
+    const user = userEvent.setup();
+    renderSidebar('/dashboard');
+
+    expect(
+      screen.queryByRole('link', { name: 'Categories & Tags' })
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole('button', { name: 'Toggle Settings submenu' })
+    );
+
+    expect(
+      screen.getByRole('link', { name: 'Categories & Tags' })
+    ).toHaveAttribute('href', '/settings/categories');
+    expect(
+      screen.getByRole('link', { name: 'Merchant Rules' })
+    ).toHaveAttribute('href', '/settings/merchant-rules');
+    expect(screen.getByRole('link', { name: 'Household' })).toHaveAttribute(
+      'href',
+      '/settings/household'
     );
   });
 
