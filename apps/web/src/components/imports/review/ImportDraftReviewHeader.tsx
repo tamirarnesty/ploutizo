@@ -8,7 +8,10 @@ import type {
   ImportReviewAutosaveStatus,
 } from '@/lib/data-access/imports';
 import { formatImportDraftReviewSubtitle } from '../lib/importPresentation';
-import { ImportReviewAutosaveStrip } from './ImportReviewAutosaveStrip';
+import {
+  IMPORT_REVIEW_CONTINUE_HINT_ID,
+  ImportReviewContinueHint,
+} from './ImportReviewContinueHint';
 
 interface ImportDraftReviewHeaderProps {
   meta?: ImportDraftMeta;
@@ -21,10 +24,6 @@ interface ImportDraftReviewHeaderProps {
   onRetryAutosave: () => void;
   onContinue: () => void | Promise<void>;
 }
-
-const CONTINUE_HINT_ID = 'import-review-continue-hint';
-const CONTINUE_DEFAULT_HINT =
-  'Continue prepares the selected rows for finalize import.';
 
 const toLiveSubtitleMeta = (
   meta: ImportDraftMeta,
@@ -48,9 +47,6 @@ export const ImportDraftReviewHeader = ({
   onContinue,
 }: ImportDraftReviewHeaderProps) => {
   const continueEnabled = canContinue && !isContinuing;
-  const hint = isContinuing
-    ? 'Preparing the selected import set…'
-    : (continueBlocker ?? CONTINUE_DEFAULT_HINT);
 
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -72,17 +68,13 @@ export const ImportDraftReviewHeader = ({
         )}
       </div>
       <div className="flex flex-col items-end gap-1.5">
-        <ImportReviewAutosaveStrip
-          status={autosaveStatus}
-          onRetry={onRetryAutosave}
-        />
         {isLoading ? (
           <Skeleton className="h-9 w-24" />
         ) : (
           <Button
             disabled={!continueEnabled}
             type="button"
-            aria-describedby={CONTINUE_HINT_ID}
+            aria-describedby={IMPORT_REVIEW_CONTINUE_HINT_ID}
             onClick={() => {
               void onContinue();
             }}
@@ -91,13 +83,12 @@ export const ImportDraftReviewHeader = ({
           </Button>
         )}
         {meta ? (
-          <Text
-            id={CONTINUE_HINT_ID}
-            variant="body-sm"
-            className="max-w-sm text-right text-muted-foreground"
-          >
-            {hint}
-          </Text>
+          <ImportReviewContinueHint
+            autosaveStatus={autosaveStatus}
+            continueBlocker={continueBlocker}
+            isContinuing={isContinuing}
+            onRetryAutosave={onRetryAutosave}
+          />
         ) : null}
       </div>
     </div>

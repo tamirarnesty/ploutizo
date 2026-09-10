@@ -56,7 +56,6 @@ const sessionReviewProps = (
   setSelection: session.setSelection,
   autosaveStatus: session.autosaveStatus,
   failedRowIds: session.failedRowIds,
-  hasUnsavedWork: session.hasUnsavedWork,
   retryAutosave: session.retryAutosave,
   flush: session.flush,
 });

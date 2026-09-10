@@ -138,7 +138,6 @@ const reviewSessionProps = {
   setSelection,
   autosaveStatus: 'idle' as const,
   failedRowIds: [] as string[],
-  hasUnsavedWork: false,
   retryAutosave,
   flush,
 };
@@ -480,15 +479,13 @@ describe('ImportDraftReview', () => {
           rows={rows}
           {...reviewSessionProps}
           autosaveStatus="failed"
-          hasUnsavedWork
         />
       </TooltipProvider>
     );
 
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
-    expect(
-      screen.getByText('Retry failed saves before continuing.')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Save failed')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
   });
 
   it('disables Continue while review persistence is in flight', () => {
@@ -510,15 +507,12 @@ describe('ImportDraftReview', () => {
           rows={rows}
           {...reviewSessionProps}
           autosaveStatus="saving"
-          hasUnsavedWork
         />
       </TooltipProvider>
     );
 
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
-    expect(
-      screen.getByText('Save your changes before continuing.')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Saving…')).toBeInTheDocument();
   });
 
   it('shows server continue issues inline, toasts a summary, and focuses the first row', async () => {

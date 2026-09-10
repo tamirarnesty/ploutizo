@@ -56,7 +56,7 @@ export const ImportRowStatusIcon = ({ row }: ImportRowStatusIconProps) => {
   const persistFailed = failedRowIds.includes(row.id);
   const evaluation = useImportDraftRowEvaluation(row.id);
   const tooltip = persistFailed
-    ? 'Could not save this row. Use Retry in the draft autosave strip.'
+    ? 'Could not save this row. Use Retry below Continue.'
     : getImportRowStatusTooltip(row, evaluation?.blockers, evaluation?.match);
 
   return (

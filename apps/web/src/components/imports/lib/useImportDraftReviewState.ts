@@ -20,7 +20,6 @@ interface UseImportDraftReviewStateOptions {
   orgMembers?: OrgMember[];
   isLoading?: boolean;
   setSelection: (rowIds: string[], selectedForImport: boolean) => void;
-  hasUnsavedWork: boolean;
   autosaveStatus: ImportReviewAutosaveStatus;
   priorityRowIds?: readonly string[];
 }
@@ -46,7 +45,6 @@ export const useImportDraftReviewState = ({
   orgMembers = [],
   isLoading = false,
   setSelection,
-  hasUnsavedWork,
   autosaveStatus,
   priorityRowIds = [],
 }: UseImportDraftReviewStateOptions): ImportDraftReviewState => {
@@ -78,20 +76,15 @@ export const useImportDraftReviewState = ({
     [currentPageRows]
   );
 
-  const rowContinueBlocker = meta
+  const continueBlocker = meta
     ? getImportReviewContinueBlocker(rows, continueOptions)
     : null;
-  const persistenceBlocker =
-    autosaveStatus === 'failed'
-      ? 'Retry failed saves before continuing.'
-      : autosaveStatus === 'saving' || hasUnsavedWork
-        ? 'Save your changes before continuing.'
-        : null;
-  const continueBlocker = persistenceBlocker ?? rowContinueBlocker;
+  const persistenceBlocked =
+    autosaveStatus === 'failed' || autosaveStatus === 'saving';
   const canContinue =
     Boolean(meta) &&
     canContinueImportReview(rows, continueOptions) &&
-    persistenceBlocker === null;
+    !persistenceBlocked;
   const hasReviewableRows = selectableRows.length > 0;
 
   useEffect(() => {

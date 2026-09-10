@@ -46,7 +46,6 @@ interface ImportDraftReviewProps {
   setSelection: (rowIds: string[], selectedForImport: boolean) => void;
   autosaveStatus: ImportReviewAutosaveStatus;
   failedRowIds: string[];
-  hasUnsavedWork: boolean;
   retryAutosave: () => void;
   flush: () => Promise<boolean>;
   inboundIssues?: ImportRequirementFailure[];
@@ -90,7 +89,6 @@ const ImportDraftReviewContent = ({
   setSelection,
   autosaveStatus,
   failedRowIds,
-  hasUnsavedWork,
   retryAutosave,
   flush,
   inboundIssues = [],
@@ -109,7 +107,6 @@ const ImportDraftReviewContent = ({
     orgMembers,
     isLoading,
     setSelection,
-    hasUnsavedWork,
     autosaveStatus,
     priorityRowIds,
   });
