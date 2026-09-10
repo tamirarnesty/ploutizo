@@ -1,17 +1,12 @@
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
 import { useImportReviewLeaveGuard } from './useImportReviewLeaveGuard';
-
-const useBlocker = vi.hoisted(() => vi.fn());
-
-vi.mock('@tanstack/react-router', () => ({
-  useBlocker,
-}));
 
 describe('useImportReviewLeaveGuard', () => {
   beforeEach(() => {
-    useBlocker.mockReset();
-    useBlocker.mockImplementation(() => undefined);
+    resetRouterMocks();
+    routerMocks.useBlocker.mockImplementation(() => undefined);
   });
 
   it('blocks in-app leave when flush fails and allows leave when flush succeeds', async () => {
@@ -24,14 +19,14 @@ describe('useImportReviewLeaveGuard', () => {
       useImportReviewLeaveGuard({ hasUnsavedWork: true, flush })
     );
 
-    expect(useBlocker).toHaveBeenCalledWith(
+    expect(routerMocks.useBlocker).toHaveBeenCalledWith(
       expect.objectContaining({
         enableBeforeUnload: true,
         shouldBlockFn: expect.any(Function),
       })
     );
 
-    const { shouldBlockFn } = useBlocker.mock.calls[0]?.[0] as {
+    const { shouldBlockFn } = routerMocks.useBlocker.mock.calls[0]?.[0] as {
       shouldBlockFn: () => Promise<boolean>;
     };
 
@@ -47,7 +42,7 @@ describe('useImportReviewLeaveGuard', () => {
       useImportReviewLeaveGuard({ hasUnsavedWork: false, flush })
     );
 
-    const { shouldBlockFn, enableBeforeUnload } = useBlocker.mock
+    const { shouldBlockFn, enableBeforeUnload } = routerMocks.useBlocker.mock
       .calls[0]?.[0] as {
       shouldBlockFn: () => Promise<boolean>;
       enableBeforeUnload: boolean;

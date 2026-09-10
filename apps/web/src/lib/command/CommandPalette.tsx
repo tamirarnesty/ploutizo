@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import {
   Command,
@@ -10,32 +10,31 @@ import {
   CommandList,
 } from '@ploutizo/ui/components/command';
 
-import { getCommandGroups, toRegisteredRoute } from '@/lib/navigation';
 import type { CommandDefinition } from '@/lib/command/types';
+import { getCommandGroups } from '@/lib/command/getCommandGroups';
 import { useCommandPalette } from '@/lib/command/useCommandPalette';
+import { useGetImportDrafts } from '@/lib/data-access/imports';
 
 export const CommandPalette = () => {
   const { open, setOpen } = useCommandPalette();
   const navigate = useNavigate();
-
-  const close = useCallback(() => {
-    setOpen(false);
-  }, [setOpen]);
+  const draftsQuery = useGetImportDrafts({ enabled: open });
+  const drafts = draftsQuery.data ?? [];
+  const commandGroups = useMemo(() => getCommandGroups(drafts), [drafts]);
 
   const runCommand = useCallback(
     (command: CommandDefinition) => {
       if (command.type === 'nav') {
-        navigate({ to: toRegisteredRoute(command.to) });
+        navigate({ to: command.to });
       } else {
-        command.run({
-          close,
-          navigate: (options) =>
-            navigate({ to: toRegisteredRoute(options.to) }),
+        navigate({
+          to: '/import/$draftId',
+          params: { draftId: command.draftId },
         });
       }
-      close();
+      setOpen(false);
     },
-    [close, navigate]
+    [navigate, setOpen]
   );
 
   return (
@@ -44,7 +43,7 @@ export const CommandPalette = () => {
         <CommandInput placeholder="Type a command or search..." />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
-          {getCommandGroups().map((group) => (
+          {commandGroups.map((group) => (
             <CommandGroup key={group.heading} heading={group.heading}>
               {group.commands.map((command) => {
                 const Icon = command.icon;

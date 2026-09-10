@@ -1,7 +1,6 @@
 import { OrganizationSwitcher, UserButton } from '@clerk/tanstack-react-start';
 import { SidebarTrigger } from '@ploutizo/ui/components/sidebar';
 import { Separator } from '@ploutizo/ui/components/separator';
-import { CommandPaletteTrigger } from '@/lib/command';
 import { AppLogo } from './AppLogo';
 
 export const TopBar = () => {
@@ -11,7 +10,6 @@ export const TopBar = () => {
       <SidebarTrigger className="md:hidden" />
       <AppLogo />
       <div className="ml-auto flex items-center gap-2">
-        <CommandPaletteTrigger />
         <OrganizationSwitcher
           hidePersonal={true}
           afterCreateOrganizationUrl="/dashboard"

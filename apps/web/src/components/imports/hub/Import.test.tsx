@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
 import {
   useDiscardImportDraft,
   useGetImportDrafts,
@@ -11,26 +12,8 @@ import { Import } from './Import';
 
 const importMocks = vi.hoisted(() => ({
   createImportDraftMutate: vi.fn(),
-  navigate: vi.fn(),
   toastInfo: vi.fn(),
   toastSuccess: vi.fn(),
-}));
-
-vi.mock('@tanstack/react-router', () => ({
-  Link: ({
-    children,
-    to,
-    params,
-  }: {
-    children: React.ReactNode;
-    to: string;
-    params?: { draftId?: string };
-  }) => (
-    <a href={params?.draftId ? to.replace('$draftId', params.draftId) : to}>
-      {children}
-    </a>
-  ),
-  useNavigate: () => importMocks.navigate,
 }));
 
 vi.mock('@ploutizo/ui/components/sonner', () => ({
@@ -171,8 +154,8 @@ describe('Import', () => {
   };
 
   beforeEach(() => {
+    resetRouterMocks();
     importMocks.createImportDraftMutate.mockReset();
-    importMocks.navigate.mockReset();
     importMocks.toastInfo.mockReset();
     importMocks.toastSuccess.mockReset();
     importMocks.createImportDraftMutate.mockImplementation(
@@ -356,8 +339,8 @@ describe('Import', () => {
     await user.click(screen.getByRole('button', { name: 'Upload' }));
 
     await waitFor(() =>
-      expect(importMocks.navigate).toHaveBeenCalledWith({
-        to: '/transactions/import/$draftId',
+      expect(routerMocks.navigate).toHaveBeenCalledWith({
+        to: '/import/$draftId',
         params: { draftId: 'draft_1' },
       })
     );
@@ -370,7 +353,7 @@ describe('Import', () => {
 
     expect(screen.getByRole('link', { name: /continue/i })).toHaveAttribute(
       'href',
-      '/transactions/import/draft_1'
+      '/import/draft_1'
     );
     expect(
       screen.queryByText('Date must be a valid YYYY-MM-DD value.')
@@ -401,6 +384,6 @@ describe('Import', () => {
 
     expect(
       screen.getByRole('link', { name: 'View all history' })
-    ).toHaveAttribute('href', '/transactions/import/history');
+    ).toHaveAttribute('href', '/import/history');
   });
 });

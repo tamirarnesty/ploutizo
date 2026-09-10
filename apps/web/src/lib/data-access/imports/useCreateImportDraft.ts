@@ -4,7 +4,7 @@ import type { CreateImportDraftResponse } from '@ploutizo/types';
 import type { CreateImportDraftInput } from '@ploutizo/validators';
 import { apiFetch } from '@/lib/queryClient';
 import {
-  activeImportDraftsQueryKey,
+  activeImportDraftsQueryKeyRoot,
   importDraftQueryKey,
   importHistoryQueryKey,
 } from './queryKeys';
@@ -19,7 +19,7 @@ export const useCreateImportDraft = () => {
       }),
     onSuccess: (response) => {
       if (response.kind === 'mapping_required') return;
-      void qc.invalidateQueries({ queryKey: activeImportDraftsQueryKey });
+      void qc.invalidateQueries({ queryKey: activeImportDraftsQueryKeyRoot });
       void qc.invalidateQueries({ queryKey: importHistoryQueryKey });
       qc.setQueryData(importDraftQueryKey(response.data.id), response.data);
       if (response.meta.reusedExisting) {

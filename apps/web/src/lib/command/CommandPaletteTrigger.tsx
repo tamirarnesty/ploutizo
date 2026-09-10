@@ -3,6 +3,7 @@ import { SearchIcon } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import { Kbd } from '@ploutizo/ui/components/kbd';
 
+import { getCommandPaletteShortcutLabel } from '@/lib/command/platform';
 import { useCommandPalette } from '@/lib/command/useCommandPalette';
 
 export const CommandPaletteTrigger = () => {
@@ -10,20 +11,23 @@ export const CommandPaletteTrigger = () => {
   const [shortcutLabel, setShortcutLabel] = useState('Ctrl+K');
 
   useEffect(() => {
-    setShortcutLabel(
-      navigator.platform.toUpperCase().includes('MAC') ? '⌘K' : 'Ctrl+K'
-    );
+    setShortcutLabel(getCommandPaletteShortcutLabel());
   }, []);
 
   return (
     <Button
       variant="outline"
       aria-label="Open command palette"
-      className="align-middle"
+      className="w-full justify-between group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2!"
       onClick={() => setOpen(true)}
     >
       <SearchIcon />
-      <Kbd>{shortcutLabel}</Kbd>
+      <span className="flex-1 text-left group-data-[collapsible=icon]:hidden">
+        Search
+      </span>
+      <Kbd className="group-data-[collapsible=icon]:hidden">
+        {shortcutLabel}
+      </Kbd>
     </Button>
   );
 };

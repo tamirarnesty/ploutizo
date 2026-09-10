@@ -47,12 +47,7 @@ export const ImportDraftCard = ({
       <Button
         variant="outline"
         nativeButton={false}
-        render={
-          <Link
-            to="/transactions/import/$draftId"
-            params={{ draftId: draft.id }}
-          />
-        }
+        render={<Link to="/import/$draftId" params={{ draftId: draft.id }} />}
       >
         <RotateCcw />
         Continue

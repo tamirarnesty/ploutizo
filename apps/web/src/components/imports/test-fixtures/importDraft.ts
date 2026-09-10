@@ -3,6 +3,7 @@ import type {
   ImportDraft,
   ImportDraftPersistedRow,
   ImportDraftRow,
+  ImportDraftSummary,
 } from '@ploutizo/types';
 
 export const DRAFT_ID = 'draft_1';
@@ -50,6 +51,30 @@ export const makeImportDraftRow = (
   selectedForImport: false,
   createdAt: '2026-05-20T12:00:00.000Z',
   updatedAt: '2026-05-20T12:00:00.000Z',
+  ...overrides,
+});
+
+export const makeImportDraftSummary = (
+  overrides: Partial<ImportDraftSummary> = {}
+): ImportDraftSummary => ({
+  id: 'draft_123',
+  account: {
+    id: 'account_123',
+    name: 'Visa',
+    institutionId: null,
+    lastFour: '1234',
+  },
+  contentProfileId: null,
+  status: 'draft',
+  fileName: 'august.csv',
+  rowCount: 12,
+  validRowCount: 12,
+  invalidRowCount: 0,
+  importedAt: '2026-09-09T00:00:00.000Z',
+  completedAt: null,
+  discardedAt: null,
+  createdAt: '2026-09-09T00:00:00.000Z',
+  updatedAt: '2026-09-09T00:00:00.000Z',
   ...overrides,
 });
 

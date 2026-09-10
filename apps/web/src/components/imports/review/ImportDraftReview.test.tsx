@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
 import {
   makeImportDraft,
   makeImportDraftRow,
@@ -69,16 +70,8 @@ const continueMocks = vi.hoisted(() => ({
   reset: vi.fn(),
 }));
 
-const reviewRouterMocks = vi.hoisted(() => ({
-  navigate: vi.fn(),
-}));
-
 const reviewToastMocks = vi.hoisted(() => ({
   error: vi.fn(),
-}));
-
-vi.mock('@tanstack/react-router', () => ({
-  useNavigate: () => reviewRouterMocks.navigate,
 }));
 
 vi.mock('@ploutizo/ui/components/sonner', () => ({
@@ -143,6 +136,7 @@ const getRowExpandButtons = () =>
 
 describe('ImportDraftReview', () => {
   beforeEach(() => {
+    resetRouterMocks();
     vi.clearAllMocks();
     HTMLElement.prototype.scrollIntoView = vi.fn();
     paginationMocks.pagination = { pageIndex: 0, pageSize: 25 };
@@ -410,8 +404,8 @@ describe('ImportDraftReview', () => {
     );
     expect(continueMocks.mutateAsync).toHaveBeenCalledTimes(1);
     await waitFor(() =>
-      expect(reviewRouterMocks.navigate).toHaveBeenCalledWith({
-        to: '/transactions/import/$draftId/finalize',
+      expect(routerMocks.navigate).toHaveBeenCalledWith({
+        to: '/import/$draftId/finalize',
         params: { draftId: 'draft_1' },
       })
     );
@@ -436,7 +430,7 @@ describe('ImportDraftReview', () => {
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     expect(continueMocks.mutateAsync).not.toHaveBeenCalled();
-    expect(reviewRouterMocks.navigate).not.toHaveBeenCalled();
+    expect(routerMocks.navigate).not.toHaveBeenCalled();
   });
 
   it('disables Continue when persistence has failed', () => {

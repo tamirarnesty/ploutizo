@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ImportPreparedConfirmation } from '@ploutizo/types';
+import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
 import {
   makeImportDraft,
   makeImportDraftRow,
@@ -9,14 +10,7 @@ import {
 import { ImportFinalize, preparedNotFoundRedirect } from './ImportFinalize';
 
 const finalizeMocks = vi.hoisted(() => ({
-  navigate: vi.fn(),
   toastSuccess: vi.fn(),
-  shouldBlockFn: undefined as
-    | ((args: {
-        current: { pathname: string };
-        next: { pathname: string };
-      }) => boolean | Promise<boolean>)
-    | undefined,
   prepared: {
     data: undefined as ImportPreparedConfirmation | undefined,
     isLoading: false,
@@ -35,23 +29,6 @@ const finalizeMocks = vi.hoisted(() => ({
   finalize: {
     mutateAsync: vi.fn(),
     isPending: false,
-  },
-}));
-
-vi.mock('@tanstack/react-router', () => ({
-  Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
-    <a href={to}>{children}</a>
-  ),
-  useNavigate: () => finalizeMocks.navigate,
-  useBlocker: ({
-    shouldBlockFn,
-  }: {
-    shouldBlockFn: (args: {
-      current: { pathname: string };
-      next: { pathname: string };
-    }) => boolean | Promise<boolean>;
-  }) => {
-    finalizeMocks.shouldBlockFn = shouldBlockFn;
   },
 }));
 
@@ -187,8 +164,8 @@ describe('preparedNotFoundRedirect', () => {
 
 describe('ImportFinalize', () => {
   beforeEach(() => {
+    resetRouterMocks();
     vi.clearAllMocks();
-    finalizeMocks.shouldBlockFn = undefined;
     finalizeMocks.prepared = {
       data: confirmation,
       isLoading: false,
@@ -267,8 +244,8 @@ describe('ImportFinalize', () => {
     await waitFor(() =>
       expect(finalizeMocks.invalidate.mutateAsync).toHaveBeenCalledTimes(1)
     );
-    expect(finalizeMocks.navigate).toHaveBeenCalledWith({
-      to: '/transactions/import/$draftId',
+    expect(routerMocks.navigate).toHaveBeenCalledWith({
+      to: '/import/$draftId',
       params: { draftId: 'draft_1' },
       ignoreBlocker: true,
     });
@@ -278,9 +255,9 @@ describe('ImportFinalize', () => {
     render(<ImportFinalize draftId="draft_1" />);
 
     await expect(
-      finalizeMocks.shouldBlockFn?.({
-        current: { pathname: '/transactions/import/draft_1/finalize' },
-        next: { pathname: '/transactions/import/draft_1' },
+      routerMocks.shouldBlockFn?.({
+        current: { pathname: '/import/draft_1/finalize' },
+        next: { pathname: '/import/draft_1' },
       })
     ).resolves.toBe(false);
 
@@ -301,7 +278,7 @@ describe('ImportFinalize', () => {
         'The connection dropped.'
       )
     );
-    expect(finalizeMocks.navigate).not.toHaveBeenCalled();
+    expect(routerMocks.navigate).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Retry' })).toBeEnabled();
     expect(
       screen.getByRole('button', { name: 'Finalize import' })
@@ -311,8 +288,8 @@ describe('ImportFinalize', () => {
     await user.click(screen.getByRole('button', { name: 'Retry' }));
 
     await waitFor(() =>
-      expect(finalizeMocks.navigate).toHaveBeenCalledWith({
-        to: '/transactions/import/$draftId',
+      expect(routerMocks.navigate).toHaveBeenCalledWith({
+        to: '/import/$draftId',
         params: { draftId: 'draft_1' },
         ignoreBlocker: true,
       })
@@ -330,8 +307,8 @@ describe('ImportFinalize', () => {
     await user.click(screen.getByRole('button', { name: 'Back to Review' }));
 
     await waitFor(() =>
-      expect(finalizeMocks.navigate).toHaveBeenCalledWith({
-        to: '/transactions/import/$draftId',
+      expect(routerMocks.navigate).toHaveBeenCalledWith({
+        to: '/import/$draftId',
         params: { draftId: 'draft_1' },
         ignoreBlocker: true,
       })
@@ -347,9 +324,9 @@ describe('ImportFinalize', () => {
     render(<ImportFinalize draftId="draft_1" />);
 
     await expect(
-      finalizeMocks.shouldBlockFn?.({
-        current: { pathname: '/transactions/import/draft_1/finalize' },
-        next: { pathname: '/transactions/import/draft_1' },
+      routerMocks.shouldBlockFn?.({
+        current: { pathname: '/import/draft_1/finalize' },
+        next: { pathname: '/import/draft_1' },
       })
     ).resolves.toBe(true);
 
@@ -362,9 +339,9 @@ describe('ImportFinalize', () => {
 
     finalizeMocks.invalidate.mutateAsync.mockResolvedValue(undefined);
     await expect(
-      finalizeMocks.shouldBlockFn?.({
-        current: { pathname: '/transactions/import/draft_1/finalize' },
-        next: { pathname: '/transactions/import/draft_1' },
+      routerMocks.shouldBlockFn?.({
+        current: { pathname: '/import/draft_1/finalize' },
+        next: { pathname: '/import/draft_1' },
       })
     ).resolves.toBe(false);
     expect(finalizeMocks.invalidate.mutateAsync).toHaveBeenCalledTimes(2);
@@ -391,8 +368,8 @@ describe('ImportFinalize', () => {
     await user.click(screen.getByRole('button', { name: 'Finalize import' }));
 
     await waitFor(() =>
-      expect(finalizeMocks.navigate).toHaveBeenCalledWith({
-        to: '/transactions/import/$draftId',
+      expect(routerMocks.navigate).toHaveBeenCalledWith({
+        to: '/import/$draftId',
         params: { draftId: 'draft_1' },
         state: {
           importReview: {
@@ -423,7 +400,7 @@ describe('ImportFinalize', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(
       'The connection dropped.'
     );
-    expect(finalizeMocks.navigate).not.toHaveBeenCalled();
+    expect(routerMocks.navigate).not.toHaveBeenCalled();
 
     finalizeMocks.finalize.mutateAsync.mockResolvedValue(completedResult);
     await user.click(screen.getByRole('button', { name: 'Retry' }));
@@ -445,8 +422,8 @@ describe('ImportFinalize', () => {
         })
       )
     );
-    expect(finalizeMocks.navigate).toHaveBeenCalledWith({
-      to: '/transactions/import',
+    expect(routerMocks.navigate).toHaveBeenCalledWith({
+      to: '/import',
       ignoreBlocker: true,
     });
 
@@ -454,7 +431,7 @@ describe('ImportFinalize', () => {
       action?: { onClick?: () => void };
     };
     toastArg.action?.onClick?.();
-    expect(finalizeMocks.navigate).toHaveBeenCalledWith({
+    expect(routerMocks.navigate).toHaveBeenCalledWith({
       to: '/transactions',
       search: { importBatchId: 'batch_1', importOutcome: 'created' },
     });
@@ -476,8 +453,8 @@ describe('ImportFinalize', () => {
     render(<ImportFinalize draftId="draft_1" />);
 
     await waitFor(() =>
-      expect(finalizeMocks.navigate).toHaveBeenCalledWith({
-        to: '/transactions/import/$draftId',
+      expect(routerMocks.navigate).toHaveBeenCalledWith({
+        to: '/import/$draftId',
         params: { draftId: 'draft_1' },
         state: { importReview: { prepareAgain: true } },
       })
@@ -500,8 +477,8 @@ describe('ImportFinalize', () => {
     render(<ImportFinalize draftId="draft_1" />);
 
     await waitFor(() =>
-      expect(finalizeMocks.navigate).toHaveBeenCalledWith({
-        to: '/transactions/import',
+      expect(routerMocks.navigate).toHaveBeenCalledWith({
+        to: '/import',
       })
     );
   });

@@ -1,12 +1,15 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useRouterState } from '@tanstack/react-router';
+import { ChevronRight } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarHeader,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
@@ -15,17 +18,109 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@ploutizo/ui/components/sidebar';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@ploutizo/ui/components/collapsible';
 import { ThemeToggle } from '@ploutizo/ui/components/theme-toggle';
 import {
+  isAppNavRouteActive,
   sidebarPrimaryNav,
   sidebarSettingsNav,
-  toRegisteredRoute,
 } from '@/lib/navigation';
+import { CommandPaletteTrigger } from '@/lib/command';
+import type { SidebarNavItem } from '@/lib/navigation/types';
+
+interface SidebarNavigationItemProps {
+  item: SidebarNavItem;
+  pathname: string;
+  onNavigate: () => void;
+}
+
+const SidebarParentLink = ({
+  item,
+  pathname,
+  onNavigate,
+}: SidebarNavigationItemProps) => {
+  const Icon = item.icon;
+
+  return (
+    <SidebarMenuButton
+      isActive={isAppNavRouteActive(pathname, item.to)}
+      tooltip={item.label}
+      render={<Link to={item.to} onClick={onNavigate} />}
+    >
+      <Icon />
+      <span>{item.label}</span>
+    </SidebarMenuButton>
+  );
+};
+
+const SidebarNavigationItem = ({
+  item,
+  pathname,
+  onNavigate,
+}: SidebarNavigationItemProps) => {
+  const isActive = isAppNavRouteActive(pathname, item.to);
+  const [open, setOpen] = useState(isActive);
+
+  useEffect(() => {
+    setOpen(isActive);
+  }, [isActive]);
+
+  if (!item.children) {
+    return (
+      <SidebarMenuItem>
+        <SidebarParentLink
+          item={item}
+          pathname={pathname}
+          onNavigate={onNavigate}
+        />
+      </SidebarMenuItem>
+    );
+  }
+
+  return (
+    <Collapsible
+      open={open}
+      onOpenChange={setOpen}
+      className="group/collapsible"
+      render={<SidebarMenuItem />}
+    >
+      <SidebarParentLink
+        item={item}
+        pathname={pathname}
+        onNavigate={onNavigate}
+      />
+      <SidebarMenuAction
+        showOnHover
+        aria-label={`Toggle ${item.label} submenu`}
+        render={<CollapsibleTrigger />}
+      >
+        <ChevronRight className="transition-transform group-data-[open]/collapsible:rotate-90" />
+      </SidebarMenuAction>
+      <CollapsibleContent render={<SidebarMenuSub />}>
+        {item.children.map(({ label, to, icon: ChildIcon }) => (
+          <SidebarMenuSubItem key={to}>
+            <SidebarMenuSubButton
+              isActive={isAppNavRouteActive(pathname, to)}
+              render={<Link to={to} onClick={onNavigate} />}
+            >
+              <ChildIcon />
+              <span>{label}</span>
+            </SidebarMenuSubButton>
+          </SidebarMenuSubItem>
+        ))}
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};
 
 export const AppSidebar = () => {
-  const { location } = useRouterState();
-  const isSettingsActive = location.pathname.startsWith('/settings');
-  const SettingsIcon = sidebarSettingsNav.icon;
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
 
   // Store sidebar context in a ref so closeMobile has stable [] deps (advanced-event-handler-refs)
   const sidebarCtx = useSidebar();
@@ -43,88 +138,39 @@ export const AppSidebar = () => {
       variant="inset"
       className="top-10 h-[calc(100svh-2.5rem)]"
     >
-      {/* Primary nav */}
+      <SidebarHeader>
+        <CommandPaletteTrigger />
+      </SidebarHeader>
+
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu className="gap-1">
-              {sidebarPrimaryNav.map(({ label, to, icon: Icon, children }) => {
-                const active =
-                  location.pathname === to ||
-                  (to === '/transactions' &&
-                    location.pathname.startsWith('/transactions/')) ||
-                  (to !== '/transactions' &&
-                    location.pathname.startsWith(`${to}/`));
-                return (
-                  <SidebarMenuItem key={to}>
-                    <SidebarMenuButton
-                      isActive={active}
-                      tooltip={label}
-                      render={
-                        <Link
-                          to={toRegisteredRoute(to)}
-                          onClick={closeMobile}
-                        />
-                      }
-                    >
-                      <Icon />
-                      <span>{label}</span>
-                    </SidebarMenuButton>
-                    {children ? (
-                      <SidebarMenuSub>
-                        {children.map(
-                          ({
-                            label: childLabel,
-                            to: childTo,
-                            icon: ChildIcon,
-                          }) => (
-                            <SidebarMenuSubItem key={childTo}>
-                              <SidebarMenuSubButton
-                                isActive={location.pathname === childTo}
-                                render={
-                                  <Link
-                                    to={toRegisteredRoute(childTo)}
-                                    onClick={closeMobile}
-                                  />
-                                }
-                              >
-                                <ChildIcon />
-                                <span>{childLabel}</span>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          )
-                        )}
-                      </SidebarMenuSub>
-                    ) : null}
-                  </SidebarMenuItem>
-                );
-              })}
+              {sidebarPrimaryNav.map((item) => (
+                <SidebarNavigationItem
+                  key={item.to}
+                  item={item}
+                  pathname={pathname}
+                  onNavigate={closeMobile}
+                />
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Settings — pushed to bottom of content via mt-auto */}
         <SidebarGroup className="mt-auto">
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  isActive={isSettingsActive}
-                  tooltip={sidebarSettingsNav.label}
-                  render={
-                    <Link to={sidebarSettingsNav.to} onClick={closeMobile} />
-                  }
-                >
-                  <SettingsIcon />
-                  <span>{sidebarSettingsNav.label}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              <SidebarNavigationItem
+                item={sidebarSettingsNav}
+                pathname={pathname}
+                onNavigate={closeMobile}
+              />
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
-      {/* Footer: ThemeToggle (hidden when collapsed) + collapse toggle (desktop only) */}
       <SidebarFooter className="flex-row items-center justify-between px-2 py-1">
         <div className="group-data-[collapsible=icon]:hidden">
           <ThemeToggle />

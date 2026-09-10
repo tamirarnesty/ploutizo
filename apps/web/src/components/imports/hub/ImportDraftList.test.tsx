@@ -1,23 +1,8 @@
+import '@/test/mockTanstackRouter';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { ImportDraftSummary } from '@ploutizo/types';
 import { ImportDraftList } from './ImportDraftList';
-
-vi.mock('@tanstack/react-router', () => ({
-  Link: ({
-    children,
-    to,
-    params,
-  }: {
-    children: React.ReactNode;
-    to: string;
-    params?: { draftId?: string };
-  }) => (
-    <a href={params?.draftId ? to.replace('$draftId', params.draftId) : to}>
-      {children}
-    </a>
-  ),
-}));
 
 vi.mock('@ploutizo/ui/components/loading-button', () => ({
   LoadingButton: ({
@@ -81,7 +66,7 @@ describe('ImportDraftList', () => {
     expect(screen.getByText('statement.csv')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /continue/i })).toHaveAttribute(
       'href',
-      '/transactions/import/draft_1'
+      '/import/draft_1'
     );
   });
 });

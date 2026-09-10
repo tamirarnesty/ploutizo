@@ -50,9 +50,7 @@ const ImportFinalizeBreadcrumbs = () => (
   <Breadcrumb>
     <BreadcrumbList>
       <BreadcrumbItem>
-        <BreadcrumbLink render={<Link to="/transactions/import" />}>
-          Import
-        </BreadcrumbLink>
+        <BreadcrumbLink render={<Link to="/import" />}>Import</BreadcrumbLink>
       </BreadcrumbItem>
       <BreadcrumbSeparator />
       <BreadcrumbItem>
@@ -155,7 +153,7 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
   const returnToReview = useCallback(
     (issues?: ReturnType<typeof getImportRequirementFailures>) => {
       void navigate({
-        to: '/transactions/import/$draftId',
+        to: '/import/$draftId',
         params: { draftId },
         state: {
           importReview:
@@ -173,13 +171,13 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
     redirectedRef.current = true;
     if (redirect === 'review') {
       void navigate({
-        to: '/transactions/import/$draftId',
+        to: '/import/$draftId',
         params: { draftId },
         state: { importReview: { prepareAgain: true } },
       });
       return;
     }
-    void navigate({ to: '/transactions/import' });
+    void navigate({ to: '/import' });
   }, [draftId, navigate, preparedQuery.error, preparedQuery.isError]);
 
   const confirmPreparedDiscard = useCallback(async (): Promise<boolean> => {
@@ -208,7 +206,7 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
       return;
     }
     void navigate({
-      to: '/transactions/import/$draftId',
+      to: '/import/$draftId',
       params: { draftId },
       ignoreBlocker: true,
     });
@@ -218,7 +216,7 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
     shouldBlockFn: async ({ current, next }) => {
       if (leavingRef.current) return false;
       if (current.pathname === next.pathname) return false;
-      const goingToReview = next.pathname === `/transactions/import/${draftId}`;
+      const goingToReview = next.pathname === `/import/${draftId}`;
       if (!goingToReview) return false;
       leavingRef.current = true;
       const discarded = await confirmPreparedDiscard();
@@ -265,7 +263,7 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
           : undefined,
       });
       void navigate({
-        to: '/transactions/import',
+        to: '/import',
         ignoreBlocker: true,
       });
     } catch (error) {
@@ -282,7 +280,7 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
         notFoundRedirect === 'hub' ||
         getApiErrorCode(error) === 'NOT_FOUND'
       ) {
-        void navigate({ to: '/transactions/import' });
+        void navigate({ to: '/import' });
         return;
       }
       setTransportError(

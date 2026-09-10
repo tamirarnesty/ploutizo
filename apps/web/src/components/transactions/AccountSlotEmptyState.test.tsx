@@ -1,12 +1,7 @@
+import '@/test/mockTanstackRouter';
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { AccountSlotEmptyState } from './AccountSlotEmptyState';
-
-vi.mock('@tanstack/react-router', () => ({
-  Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
-    <a href={to}>{children}</a>
-  ),
-}));
 
 describe('AccountSlotEmptyState', () => {
   it('explains the gap and links to Accounts to create an eligible account', () => {
