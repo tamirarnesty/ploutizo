@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import { DatePicker } from '@ploutizo/ui/components/date-picker';
@@ -26,6 +26,8 @@ import { IMPORT_TRANSACTION_TYPE_VALUES } from '@ploutizo/types';
 import type { ImportDraftRow, ImportTransactionType } from '@ploutizo/types';
 import { CategorySelect } from '@/components/categories/CategorySelect';
 import { CurrencyInput } from '@/components/currency/CurrencyInput';
+import { useGetAccounts } from '@/lib/data-access/accounts';
+import { getSettlementSourceAccounts } from '@/lib/settlements/settlementSourceAccounts';
 import {
   getImportRowLabel,
   resolveImportRowOriginalDescription,
@@ -33,6 +35,7 @@ import {
 import { ImportAssigneeField } from './ImportAssigneeField';
 import { useImportDraftReviewContext } from './ImportDraftReviewContext';
 import { ImportRowStatusIcon } from './ImportRowStatusIcon';
+import { useDebouncedImportTextSave } from './useDebouncedImportTextSave';
 import { useImportDraftReviewRowSave } from './useImportDraftReviewRowSave';
 
 interface ImportTransactionTypeSelectProps {
@@ -241,18 +244,21 @@ export const ImportReviewDescriptionCell = ({
 }: ImportReviewDescriptionCellProps) => {
   const { saveField, disabled } = useImportDraftReviewRowSave(row);
   const { description } = resolveReviewedImportValues(row);
-  const [descriptionDraft, setDescriptionDraft] = useState(
-    () => description ?? ''
-  );
   const rowLabel = getImportRowLabel(row);
   const originalDescription = resolveImportRowOriginalDescription(row);
+  const {
+    draft: descriptionDraft,
+    onChange,
+    onFocus,
+    onBlur,
+  } = useDebouncedImportTextSave(
+    description,
+    (next) => saveField({ reviewDescription: next }),
+    { resetKey: row.id }
+  );
   const showOriginalDescription =
     originalDescription != null &&
     descriptionDraft.trim() !== originalDescription.trim();
-
-  useEffect(() => {
-    setDescriptionDraft(description ?? '');
-  }, [row.id, description]);
 
   return (
     <>
@@ -264,12 +270,10 @@ export const ImportReviewDescriptionCell = ({
         disabled={disabled}
         autoComplete="off"
         onChange={(event) => {
-          const raw = event.currentTarget.value;
-          setDescriptionDraft(raw);
-          const next = raw.trim() || null;
-          if (next === description) return;
-          saveField({ reviewDescription: next });
+          onChange(event.currentTarget.value);
         }}
+        onFocus={onFocus}
+        onBlur={onBlur}
       />
       {showOriginalDescription ? (
         <Tooltip>
@@ -320,6 +324,82 @@ export const ImportReviewCategoryCell = ({
   );
 };
 
+interface ImportReviewPaidFromCellProps {
+  row: ImportDraftRow;
+}
+
+export const ImportReviewPaidFromCell = ({
+  row,
+}: ImportReviewPaidFromCellProps) => {
+  const { cardAccountId } = useImportDraftReviewContext();
+  const { data: accounts = [], isLoading } = useGetAccounts();
+  const { saveField, disabled } = useImportDraftReviewRowSave(row);
+  const rowLabel = getImportRowLabel(row);
+  const sourceAccounts = useMemo(
+    () => getSettlementSourceAccounts(accounts, cardAccountId),
+    [accounts, cardAccountId]
+  );
+  const paidFromItems = useMemo(
+    () =>
+      sourceAccounts.map((account) => ({
+        label: account.name,
+        value: account.id,
+      })),
+    [sourceAccounts]
+  );
+  const selectedAccountId = row.reviewCounterpartAccountId ?? '';
+
+  if (isLoading) {
+    return (
+      <Text variant="body-sm" className="text-muted-foreground">
+        Loading accounts…
+      </Text>
+    );
+  }
+
+  if (sourceAccounts.length === 0) {
+    return (
+      <Text variant="body-sm" className="text-muted-foreground">
+        Add a chequing or savings account
+      </Text>
+    );
+  }
+
+  return (
+    <Select
+      items={paidFromItems}
+      value={selectedAccountId || null}
+      disabled={disabled}
+      onValueChange={(next) => {
+        if (!next || next === row.reviewCounterpartAccountId) return;
+        saveField({ reviewCounterpartAccountId: next });
+      }}
+    >
+      <SelectTrigger
+        id={`import-row-paid-from-${row.id}`}
+        className="w-44"
+        aria-label={`Paid from for ${rowLabel}`}
+      >
+        <SelectValue placeholder="Paid from">
+          {(selected: string) =>
+            paidFromItems.find((item) => item.value === selected)?.label ??
+            'Paid from'
+          }
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          {paidFromItems.map((item) => (
+            <SelectItem key={item.value} value={item.value}>
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
+  );
+};
+
 interface ImportReviewAssigneeCellProps {
   row: ImportDraftRow;
 }
@@ -330,13 +410,18 @@ export const ImportReviewAssigneeCell = ({
   const { orgMembers } = useImportDraftReviewContext();
   const { saveField, disabled } = useImportDraftReviewRowSave(row);
   const rowLabel = getImportRowLabel(row);
+  const { type } = resolveReviewedImportValues(row);
+  const assigneeLabel =
+    type === 'settlement'
+      ? `Pay toward for ${rowLabel}`
+      : `Assignees for ${rowLabel}`;
 
   return (
     <ImportAssigneeField
       row={row}
       orgMembers={orgMembers}
       disabled={disabled}
-      ariaLabel={`Assignees for ${rowLabel}`}
+      ariaLabel={assigneeLabel}
       onSave={(memberIds) => {
         if (memberIds.join('|') === row.reviewAssigneeMemberIds.join('|')) {
           return;

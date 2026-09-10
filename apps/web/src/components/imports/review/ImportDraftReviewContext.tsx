@@ -10,6 +10,7 @@ import type { ReactNode } from 'react';
 
 interface ImportDraftReviewContextValue {
   draftId: string;
+  cardAccountId: string;
   categories: Category[];
   orgMembers: OrgMember[];
   updateRow: (rowId: string, patch: UpdateImportDraftRowInput) => void;
@@ -22,6 +23,7 @@ const ImportDraftReviewContext =
 
 interface ImportDraftReviewProviderProps {
   draftId: string;
+  cardAccountId: string;
   categories: Category[];
   orgMembers: OrgMember[];
   updateRow: (rowId: string, patch: UpdateImportDraftRowInput) => void;
@@ -31,6 +33,7 @@ interface ImportDraftReviewProviderProps {
 
 export const ImportDraftReviewProvider = ({
   draftId,
+  cardAccountId,
   categories,
   orgMembers,
   updateRow,
@@ -52,13 +55,22 @@ export const ImportDraftReviewProvider = ({
   const value = useMemo(
     () => ({
       draftId,
+      cardAccountId,
       categories,
       orgMembers,
       updateRow,
       failedRowIds,
       evaluations,
     }),
-    [draftId, categories, orgMembers, updateRow, failedRowIds, evaluations]
+    [
+      draftId,
+      cardAccountId,
+      categories,
+      orgMembers,
+      updateRow,
+      failedRowIds,
+      evaluations,
+    ]
   );
 
   return (

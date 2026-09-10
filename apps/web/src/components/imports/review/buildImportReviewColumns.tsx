@@ -17,6 +17,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
+import { resolveReviewedImportValues } from '@ploutizo/utils/reviewed-import-values';
 import type { ImportDraftRow } from '@ploutizo/types';
 import { ImportDraftReviewRowDetails } from './ImportDraftReviewRowDetails';
 import {
@@ -25,6 +26,7 @@ import {
   ImportReviewCategoryCell,
   ImportReviewDateCell,
   ImportReviewDescriptionCell,
+  ImportReviewPaidFromCell,
   ImportReviewSelectionCell,
   ImportReviewTypeCell,
 } from './importReviewCells';
@@ -207,7 +209,7 @@ export const buildImportReviewColumns = ({
       header: ({ column }) => (
         <DataGridColumnHeader
           column={column}
-          title="Category"
+          title="Category / Paid from"
           icon={columnHeaderIcon(Tag)}
         />
       ),
@@ -218,14 +220,19 @@ export const buildImportReviewColumns = ({
         cellClassName: 'min-w-48',
         skeleton: <Skeleton className="h-4 w-28" />,
       },
-      cell: ({ row }) => <ImportReviewCategoryCell row={row.original} />,
+      cell: ({ row }) =>
+        resolveReviewedImportValues(row.original).type === 'settlement' ? (
+          <ImportReviewPaidFromCell row={row.original} />
+        ) : (
+          <ImportReviewCategoryCell row={row.original} />
+        ),
     },
     {
       id: 'assignee',
       header: ({ column }) => (
         <DataGridColumnHeader
           column={column}
-          title="Assignee"
+          title="Assignee / Pay toward"
           icon={columnHeaderIcon(Users)}
         />
       ),

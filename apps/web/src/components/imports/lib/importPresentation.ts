@@ -91,7 +91,7 @@ const formatNeedsReviewTooltip = (
     .map((blocker) => IMPORT_ROW_MISSING_BLOCKER_LABELS[blocker]);
 
   const parts: string[] = [];
-  if (requiresSettlement) parts.push('settlement requires review');
+  if (requiresSettlement) parts.push('paid from account required');
   if (requiresRefundLink) parts.push('refund link needs review');
   if (requiresMatch) parts.push('match needs review');
   if (missingLabels.length > 0) {
