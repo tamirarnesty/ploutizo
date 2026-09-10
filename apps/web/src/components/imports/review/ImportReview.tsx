@@ -26,6 +26,7 @@ import {
   importDraftQueryKey,
   useImportReviewSession,
 } from '@/lib/data-access/imports';
+import { importDraftReviewRoute } from '@/lib/navigation';
 import { ImportDraftReview } from './ImportDraftReview';
 import { useImportReviewLeaveGuard } from './useImportReviewLeaveGuard';
 
@@ -95,8 +96,7 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
     });
 
     void navigate({
-      to: '/import/$draftId',
-      params: { draftId },
+      ...importDraftReviewRoute(draftId),
       replace: true,
       state: { importReview: undefined },
     });

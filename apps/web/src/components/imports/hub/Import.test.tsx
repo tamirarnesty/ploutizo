@@ -8,6 +8,7 @@ import {
   useGetImportHistory,
   useGetImportTargets,
 } from '@/lib/data-access/imports';
+import { importDraftReviewRoute } from '@/lib/navigation';
 import { Import } from './Import';
 
 const importMocks = vi.hoisted(() => ({
@@ -339,10 +340,9 @@ describe('Import', () => {
     await user.click(screen.getByRole('button', { name: 'Upload' }));
 
     await waitFor(() =>
-      expect(routerMocks.navigate).toHaveBeenCalledWith({
-        to: '/import/$draftId',
-        params: { draftId: 'draft_1' },
-      })
+      expect(routerMocks.navigate).toHaveBeenCalledWith(
+        importDraftReviewRoute('draft_1')
+      )
     );
   });
 

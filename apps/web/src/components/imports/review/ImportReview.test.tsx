@@ -6,6 +6,7 @@ import {
   IMPORT_REVIEW_PREPARE_AGAIN_MESSAGE,
   useImportReviewSession,
 } from '@/lib/data-access/imports';
+import { importDraftReviewRoute } from '@/lib/navigation';
 import {
   makeImportDraft,
   makeImportDraftRow,
@@ -215,8 +216,7 @@ describe('ImportReview', () => {
     );
     await waitFor(() =>
       expect(routerMocks.navigate).toHaveBeenCalledWith({
-        to: '/import/$draftId',
-        params: { draftId: 'draft_1' },
+        ...importDraftReviewRoute('draft_1'),
         replace: true,
         state: { importReview: undefined },
       })

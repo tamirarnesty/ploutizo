@@ -22,6 +22,7 @@ import {
   summarizeImportRequirementIssues,
 } from '@/lib/data-access/imports/importRequirementIssues';
 import { useContinueImportDraft } from '@/lib/data-access/imports/useContinueImportDraft';
+import { importDraftFinalizeRoute } from '@/lib/navigation';
 import { useGetCategories } from '@/lib/data-access/categories';
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import {
@@ -145,10 +146,7 @@ const ImportDraftReviewContent = ({
     try {
       await mutateAsync();
       setIssues([]);
-      await navigate({
-        to: '/import/$draftId/finalize',
-        params: { draftId },
-      });
+      await navigate(importDraftFinalizeRoute(draftId));
     } catch (error) {
       const failures = getImportRequirementFailures(error);
       setIssues(failures);

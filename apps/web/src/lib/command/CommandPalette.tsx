@@ -14,6 +14,7 @@ import type { CommandDefinition } from '@/lib/command/types';
 import { getCommandGroups } from '@/lib/command/getCommandGroups';
 import { useCommandPalette } from '@/lib/command/useCommandPalette';
 import { useGetImportDrafts } from '@/lib/data-access/imports';
+import { importDraftReviewRoute } from '@/lib/navigation';
 
 export const CommandPalette = () => {
   const { open, setOpen } = useCommandPalette();
@@ -27,10 +28,7 @@ export const CommandPalette = () => {
       if (command.type === 'nav') {
         navigate({ to: command.to });
       } else {
-        navigate({
-          to: '/import/$draftId',
-          params: { draftId: command.draftId },
-        });
+        navigate(importDraftReviewRoute(command.draftId));
       }
       setOpen(false);
     },

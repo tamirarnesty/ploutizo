@@ -2,6 +2,10 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ImportPreparedConfirmation } from '@ploutizo/types';
+import {
+  importDraftReviewPathname,
+  importDraftReviewRoute,
+} from '@/lib/navigation';
 import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
 import {
   makeImportDraft,
@@ -245,8 +249,7 @@ describe('ImportFinalize', () => {
       expect(finalizeMocks.invalidate.mutateAsync).toHaveBeenCalledTimes(1)
     );
     expect(routerMocks.navigate).toHaveBeenCalledWith({
-      to: '/import/$draftId',
-      params: { draftId: 'draft_1' },
+      ...importDraftReviewRoute('draft_1'),
       ignoreBlocker: true,
     });
   });
@@ -257,7 +260,7 @@ describe('ImportFinalize', () => {
     await expect(
       routerMocks.shouldBlockFn?.({
         current: { pathname: '/import/draft_1/finalize' },
-        next: { pathname: '/import/draft_1' },
+        next: { pathname: importDraftReviewPathname('draft_1') },
       })
     ).resolves.toBe(false);
 
@@ -289,8 +292,7 @@ describe('ImportFinalize', () => {
 
     await waitFor(() =>
       expect(routerMocks.navigate).toHaveBeenCalledWith({
-        to: '/import/$draftId',
-        params: { draftId: 'draft_1' },
+        ...importDraftReviewRoute('draft_1'),
         ignoreBlocker: true,
       })
     );
@@ -308,8 +310,7 @@ describe('ImportFinalize', () => {
 
     await waitFor(() =>
       expect(routerMocks.navigate).toHaveBeenCalledWith({
-        to: '/import/$draftId',
-        params: { draftId: 'draft_1' },
+        ...importDraftReviewRoute('draft_1'),
         ignoreBlocker: true,
       })
     );
@@ -326,7 +327,7 @@ describe('ImportFinalize', () => {
     await expect(
       routerMocks.shouldBlockFn?.({
         current: { pathname: '/import/draft_1/finalize' },
-        next: { pathname: '/import/draft_1' },
+        next: { pathname: importDraftReviewPathname('draft_1') },
       })
     ).resolves.toBe(true);
 
@@ -341,7 +342,7 @@ describe('ImportFinalize', () => {
     await expect(
       routerMocks.shouldBlockFn?.({
         current: { pathname: '/import/draft_1/finalize' },
-        next: { pathname: '/import/draft_1' },
+        next: { pathname: importDraftReviewPathname('draft_1') },
       })
     ).resolves.toBe(false);
     expect(finalizeMocks.invalidate.mutateAsync).toHaveBeenCalledTimes(2);
@@ -369,8 +370,7 @@ describe('ImportFinalize', () => {
 
     await waitFor(() =>
       expect(routerMocks.navigate).toHaveBeenCalledWith({
-        to: '/import/$draftId',
-        params: { draftId: 'draft_1' },
+        ...importDraftReviewRoute('draft_1'),
         state: {
           importReview: {
             issues: [
@@ -454,8 +454,7 @@ describe('ImportFinalize', () => {
 
     await waitFor(() =>
       expect(routerMocks.navigate).toHaveBeenCalledWith({
-        to: '/import/$draftId',
-        params: { draftId: 'draft_1' },
+        ...importDraftReviewRoute('draft_1'),
         state: { importReview: { prepareAgain: true } },
       })
     );
