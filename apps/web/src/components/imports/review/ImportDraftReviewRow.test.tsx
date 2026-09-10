@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -19,6 +19,8 @@ const mockCategory: Category = {
   archivedAt: null,
   createdAt: '2026-05-20T12:00:00Z',
 };
+
+const cardAccountId = '99999999-9999-4999-8999-999999999999';
 
 const updateRow = vi.fn();
 
@@ -87,6 +89,7 @@ const renderRowFields = (row: ImportDraftRow) =>
     <TooltipProvider delay={0}>
       <ImportDraftReviewProvider
         draftId={row.batchId}
+        cardAccountId={cardAccountId}
         categories={[mockCategory]}
         orgMembers={[]}
         updateRow={updateRow}
@@ -104,23 +107,25 @@ describe('ImportDraftReviewRow', () => {
   });
 
   it('writes description and notes through the working-copy write API', async () => {
-    const user = userEvent.setup();
     const row = baseRow();
     renderRowFields(row);
 
     const descriptionInput = screen.getByLabelText('Description for Coffee');
     const notesInput = screen.getByLabelText('Notes for Coffee');
 
-    await user.clear(descriptionInput);
-    await user.type(descriptionInput, 'Updated coffee');
-    await user.type(notesInput, 'Still editing notes');
+    fireEvent.change(descriptionInput, { target: { value: 'Updated coffee' } });
+    await waitFor(() =>
+      expect(updateRow).toHaveBeenCalledWith(row.id, {
+        reviewDescription: 'Updated coffee',
+      })
+    );
 
-    expect(updateRow).toHaveBeenCalledWith(row.id, {
-      reviewDescription: 'Updated coffee',
-    });
-    expect(updateRow).toHaveBeenCalledWith(row.id, {
-      reviewNotes: 'Still editing notes',
-    });
+    fireEvent.change(notesInput, { target: { value: 'Still editing notes' } });
+    await waitFor(() =>
+      expect(updateRow).toHaveBeenCalledWith(row.id, {
+        reviewNotes: 'Still editing notes',
+      })
+    );
   });
 
   it('truncates the original description and reveals it on hover', async () => {
