@@ -477,42 +477,48 @@ export const buildColumns = (
         );
       },
     },
-    // 9. Actions
+    // 9. Actions — chrome column, not a data column (no resize handle)
     {
       id: 'actions',
       enableSorting: false,
+      enableResizing: false,
+      enableHiding: false,
       header: '',
       size: 48,
+      minSize: 48,
+      maxSize: 48,
       meta: {
-        headerClassName: 'w-12',
-        cellClassName: 'w-12',
+        headerClassName: 'w-12 max-w-12 px-1',
+        cellClassName: 'w-12 max-w-12 px-1',
       },
       cell: ({ row }) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Transaction actions"
-                className="opacity-0 focus-visible:opacity-100 data-[state=open]:opacity-100 [tr:hover_&]:opacity-100"
+        <div className="flex justify-center">
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Transaction actions"
+                  className="opacity-0 focus-visible:opacity-100 data-popup-open:opacity-100 [tr:hover_&]:opacity-100"
+                >
+                  <MoreHorizontal className="size-4" />
+                </Button>
+              }
+            />
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onEdit(row.original)}>
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => setDeleteId(row.original.id)}
               >
-                <MoreHorizontal className="size-4" />
-              </Button>
-            }
-          />
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onEdit(row.original)}>
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-destructive focus:text-destructive"
-              onClick={() => setDeleteId(row.original.id)}
-            >
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       ),
     },
   ];
