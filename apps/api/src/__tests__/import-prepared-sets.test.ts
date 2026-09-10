@@ -45,12 +45,11 @@ import {
 } from '@/lib/queries/scope';
 import {
   continueImportDraft,
-  createImportPreparedSetRevision,
   getActiveImportPreparedConfirmation,
   invalidateImportPreparedSet,
 } from '@/services/import-prepared-sets';
 
-describe('import finalization foundation — prepared set revisions', () => {
+describe('prepared import confirmation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(fetchDraftSummaryById).mockResolvedValue({
@@ -59,128 +58,6 @@ describe('import finalization foundation — prepared set revisions', () => {
       revision: 1,
       rowCount: 1,
     } as never);
-    vi.mocked(listDraftRows).mockResolvedValue([draftRow as never]);
-    vi.mocked(allTransactionsInOrg).mockResolvedValue(true);
-    vi.mocked(lockPreparedSetRevisionForBatch).mockResolvedValue(undefined);
-    vi.mocked(fetchPreparedSetForBatchRevision).mockResolvedValue(null);
-    vi.mocked(transactionExistsInOrg).mockResolvedValue(true);
-    vi.mocked(insertImportPreparedSet).mockResolvedValue({
-      id: 'prep_1',
-      orgId: ORG,
-      batchId: BATCH,
-      revision: 1,
-      createdAt: new Date('2026-05-20T12:00:00Z'),
-    });
-    vi.mocked(insertImportPreparedOutcomes).mockImplementation((_tx, values) =>
-      Promise.resolve(
-        values.map((value, index) => ({
-          id: `out_${index}`,
-          orgId: value.orgId,
-          preparedSetId: value.preparedSetId,
-          batchRowId: value.batchRowId,
-          outcome: value.outcome,
-          transactionId: value.transactionId ?? null,
-          snapshot: value.snapshot,
-          createdAt: new Date('2026-05-20T12:00:00Z'),
-        }))
-      )
-    );
-  });
-
-  it('creates immutable revision 1 then increments to revision 2 using server snapshots', async () => {
-    const first = await createImportPreparedSetRevision(ORG, BATCH, [
-      {
-        batchRowId: ROW,
-        outcome: 'created',
-      },
-    ]);
-    expect(first.revision).toBe(1);
-    expect(first.outcomes[0]?.outcome).toBe('created');
-    expect(first.outcomes[0]?.snapshot).toEqual({
-      reviewedValues: expect.objectContaining({
-        date: '2026-05-02',
-        amount: 4218,
-        type: 'expense',
-        description: 'Neighborhood Coffee',
-      }),
-      provenance: {
-        externalId: 'visa-1001',
-        rawDescription: 'COFFEE SHOP #42',
-      },
-    });
-
-    vi.mocked(fetchDraftSummaryById).mockResolvedValue({
-      id: BATCH,
-      accountId: ACCOUNT,
-      revision: 2,
-      rowCount: 1,
-    } as never);
-    vi.mocked(insertImportPreparedSet).mockResolvedValue({
-      id: 'prep_2',
-      orgId: ORG,
-      batchId: BATCH,
-      revision: 2,
-      createdAt: new Date('2026-05-20T13:00:00Z'),
-    });
-
-    const second = await createImportPreparedSetRevision(ORG, BATCH, [
-      {
-        batchRowId: ROW,
-        outcome: 'matched',
-        transactionId: TXN,
-      },
-    ]);
-    expect(second.revision).toBe(2);
-    expect(second.outcomes[0]?.outcome).toBe('matched');
-    expect(insertImportPreparedSet).toHaveBeenLastCalledWith(
-      mockTx,
-      expect.objectContaining({ revision: 2 })
-    );
-  });
-
-  it('rejects prepared sets for unknown draft rows', async () => {
-    const err = await createImportPreparedSetRevision(ORG, BATCH, [
-      {
-        batchRowId: '550e8400-e29b-41d4-a716-446655440099',
-        outcome: 'skipped',
-      },
-    ]).catch((e: unknown) => e);
-
-    expect(err).toBeInstanceOf(NotFoundError);
-  });
-
-  it('rejects prepared sets with duplicate batch rows', async () => {
-    const err = await createImportPreparedSetRevision(ORG, BATCH, [
-      {
-        batchRowId: ROW,
-        outcome: 'created',
-      },
-      {
-        batchRowId: ROW,
-        outcome: 'skipped',
-      },
-    ]).catch((e: unknown) => e);
-
-    expect(err).toBeInstanceOf(DomainError);
-    expect(err).toMatchObject({
-      statusCode: 400,
-      message: 'Prepared set outcomes must not contain duplicate batch rows.',
-    });
-    expect(lockPreparedSetRevisionForBatch).not.toHaveBeenCalled();
-  });
-
-  it('rejects prepared outcomes that point at a cross-org transaction', async () => {
-    vi.mocked(allTransactionsInOrg).mockResolvedValue(false);
-    const err = await createImportPreparedSetRevision(ORG, BATCH, [
-      {
-        batchRowId: ROW,
-        outcome: 'matched',
-        transactionId: TXN,
-      },
-    ]).catch((e: unknown) => e);
-
-    expect(err).toBeInstanceOf(NotFoundError);
-    expect(allTransactionsInOrg).toHaveBeenCalledWith(ORG, [TXN], mockTx);
   });
 
   it('returns the active prepared confirmation for the current draft revision', async () => {

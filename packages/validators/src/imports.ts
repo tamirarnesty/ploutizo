@@ -131,17 +131,6 @@ export const importPreparedOutcomeSchema = z.enum(
   IMPORT_PREPARED_PROJECTION_OUTCOME_VALUES
 );
 
-/** Caller-supplied prepare outcome; server owns the row snapshot. */
-export const prepareImportOutcomeSchema = z.object({
-  batchRowId: z.string().uuid(),
-  outcome: importPreparedOutcomeSchema,
-  transactionId: z.string().uuid().nullable().optional(),
-});
-
-export type PrepareImportOutcomeInput = z.infer<
-  typeof prepareImportOutcomeSchema
->;
-
 export const finalizeImportDraftSchema = z.object({
   preparedSetId: z.string().uuid(),
 });

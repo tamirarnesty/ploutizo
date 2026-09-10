@@ -1,4 +1,3 @@
-import { countPreparedOutcomes } from '@ploutizo/utils/import-requirements';
 import { db } from '@ploutizo/db';
 import {
   importPreparedOutcomes,
@@ -10,6 +9,7 @@ import type { DbClient, Transaction } from '@ploutizo/db';
 import type {
   ImportPreparedConfirmation,
   ImportPreparedConfirmationRow,
+  ImportPreparedOutcomeCounts,
   ImportPreparedSet,
   ImportPreparedSetSummary,
 } from '@ploutizo/types';
@@ -170,6 +170,24 @@ export const isCompletePreparedProjection = (
   return outcomes.every((outcome) =>
     isImportPreparedProjectionOutcome(outcome.outcome)
   );
+};
+
+const countPreparedOutcomes = (
+  outcomes: readonly Pick<ImportPreparedOutcomeRecord, 'outcome'>[]
+): ImportPreparedOutcomeCounts => {
+  const counts: ImportPreparedOutcomeCounts = {
+    created: 0,
+    matched: 0,
+    skipped: 0,
+    invalid: 0,
+  };
+  for (const outcome of outcomes) {
+    if (outcome.outcome === 'created') counts.created += 1;
+    else if (outcome.outcome === 'matched') counts.matched += 1;
+    else if (outcome.outcome === 'skipped') counts.skipped += 1;
+    else if (outcome.outcome === 'invalid') counts.invalid += 1;
+  }
+  return counts;
 };
 
 export const toImportPreparedConfirmation = (
