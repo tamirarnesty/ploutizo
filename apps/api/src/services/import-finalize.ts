@@ -1,25 +1,19 @@
 import { db } from '@ploutizo/db';
-import {
-  countPreparedOutcomes,
-  diffPreparedProjection,
-} from '@ploutizo/utils/import-requirements';
+import { verifyPreparedImportSetForFinalize } from '@ploutizo/utils/import-set-verification';
 import type { Transaction } from '@ploutizo/db';
 import type {
   ImportCompletedResult,
+  ImportPreparedOutcomeCounts,
   ImportRequirementFailure,
   ImportRequirementFailureDetails,
   ImportTransactionLinkOutcome,
 } from '@ploutizo/types';
 import type { ImportDraftSummaryRow } from '@/lib/queries/imports';
-import type {
-  ImportPreparedOutcomeRecord,
-  ImportPreparedSetRecord,
-} from '@/lib/queries/import-prepared-sets';
+import type { ImportPreparedOutcomeRecord } from '@/lib/queries/import-prepared-sets';
 import { DomainError, NotFoundError } from '@/lib/errors';
 import {
   completeImportBatch,
   fetchImportBatchSummaryById,
-  listDraftRows,
 } from '@/lib/queries/imports';
 import {
   deleteImportPreparedSetsForBatch,
@@ -36,7 +30,7 @@ import {
 import { toImportCompletedResult } from '@/services/import-history';
 import {
   invalidatePreparedStagingForDraft,
-  verifyImportPreparedSet,
+  loadImportFinalizeExternalFacts,
 } from '@/services/import-prepared-sets';
 import { createTransactionInTx } from '@/services/transactions';
 
@@ -63,6 +57,24 @@ const conflictError = () =>
     'IMPORT_FINALIZE_CONFLICT'
   );
 
+const countPreparedOutcomes = (
+  outcomes: readonly Pick<ImportPreparedOutcomeRecord, 'outcome'>[]
+): ImportPreparedOutcomeCounts => {
+  const counts: ImportPreparedOutcomeCounts = {
+    created: 0,
+    matched: 0,
+    skipped: 0,
+    invalid: 0,
+  };
+  for (const outcome of outcomes) {
+    if (outcome.outcome === 'created') counts.created += 1;
+    else if (outcome.outcome === 'matched') counts.matched += 1;
+    else if (outcome.outcome === 'skipped') counts.skipped += 1;
+    else if (outcome.outcome === 'invalid') counts.invalid += 1;
+  }
+  return counts;
+};
+
 type FinalizeTxResult =
   | { kind: 'ok'; result: ImportCompletedResult }
   | { kind: 'fail'; error: DomainError };
@@ -71,29 +83,33 @@ const applyPreparedOutcomes = async (
   tx: Transaction,
   orgId: string,
   batch: ImportDraftSummaryRow,
-  prepared: ImportPreparedSetRecord,
+  preparedSetId: string,
   outcomes: ImportPreparedOutcomeRecord[]
 ): Promise<FinalizeTxResult> => {
   if (!batch.accountId) {
     throw new DomainError(500, 'Import draft is missing an account.');
   }
 
-  const draftRows = await listDraftRows(orgId, batch.id, tx);
-  const verified = await verifyImportPreparedSet(
+  const externalFacts = await loadImportFinalizeExternalFacts(
     orgId,
     batch.accountId,
-    draftRows,
+    outcomes,
+    batch.rowCount,
     tx
   );
-  const projectionFailures = diffPreparedProjection(
-    outcomes,
-    verified.projections,
-    verified.matchEvaluations
+  const preparedRows = outcomes.map((outcome) => ({
+    batchRowId: outcome.batchRowId,
+    outcome: outcome.outcome,
+    transactionId: outcome.transactionId,
+    snapshot: outcome.snapshot,
+  }));
+  const verified = verifyPreparedImportSetForFinalize(
+    preparedRows,
+    externalFacts
   );
-  const allFailures = [...verified.failures, ...projectionFailures];
-  if (allFailures.length > 0) {
+  if (!verified.ready) {
     await invalidatePreparedStagingForDraft(tx, orgId, batch.id);
-    return { kind: 'fail', error: notReadyError(allFailures) };
+    return { kind: 'fail', error: notReadyError(verified.failures) };
   }
 
   const counts = countPreparedOutcomes(outcomes);
@@ -169,7 +185,7 @@ const applyPreparedOutcomes = async (
   const completed = await completeImportBatch(tx, {
     orgId,
     batchId: batch.id,
-    preparedSetId: prepared.id,
+    preparedSetId,
     completedAt,
     createdCount: counts.created,
     matchedCount: counts.matched,
@@ -228,7 +244,24 @@ export const finalizeImportDraft = async (
       return { kind: 'fail' as const, error: staleError() };
     }
 
-    return applyPreparedOutcomes(tx, orgId, batch, prepared, outcomes);
+    const applyResult = await applyPreparedOutcomes(
+      tx,
+      orgId,
+      batch,
+      prepared.id,
+      outcomes
+    );
+    if (applyResult.kind === 'fail') {
+      return applyResult;
+    }
+
+    return {
+      kind: 'ok' as const,
+      result: {
+        ...applyResult.result,
+        preparedSetId,
+      },
+    };
   });
 
   if (outcome.kind === 'fail') throw outcome.error;
