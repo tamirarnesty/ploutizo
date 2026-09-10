@@ -1,5 +1,9 @@
-import { IMPORT_CUSTOM_MAPPING_DATE_FORMATS } from '@ploutizo/types';
+import {
+  GENERIC_POSITIONAL_IMPORT_PROFILE_COLUMN_LABELS,
+  IMPORT_CUSTOM_MAPPING_DATE_FORMATS,
+} from '@ploutizo/types';
 import type {
+  GenericPositionalImportProfileId,
   ImportAmountSemantics,
   ImportContentProfileId,
   ImportContentSelection,
@@ -89,5 +93,26 @@ export const formatChoiceIntro = (
   candidateProfileIds.length > 0
     ? 'This file matches a known layout. Confirm the format, or map columns yourself.'
     : "This file wasn't automatically recognized. Map the columns that match your CSV.";
+
+const isGenericPositionalProfile = (
+  formatChoice: FormatChoice
+): formatChoice is GenericPositionalImportProfileId =>
+  formatChoice in GENERIC_POSITIONAL_IMPORT_PROFILE_COLUMN_LABELS;
+
+export const getPreviewColumnLabels = (
+  columns: string[],
+  formatChoice: FormatChoice
+): string[] => {
+  if (
+    formatChoice === CUSTOM_FORMAT_CHOICE ||
+    !isGenericPositionalProfile(formatChoice)
+  ) {
+    return columns;
+  }
+
+  const profileLabels =
+    GENERIC_POSITIONAL_IMPORT_PROFILE_COLUMN_LABELS[formatChoice];
+  return columns.map((column, index) => profileLabels[index] ?? column);
+};
 
 export { IMPORT_CUSTOM_MAPPING_DATE_FORMATS };
