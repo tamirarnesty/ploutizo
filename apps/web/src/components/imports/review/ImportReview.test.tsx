@@ -49,7 +49,7 @@ vi.mock('@/lib/data-access/imports/useImportReviewSession', () => ({
 }));
 
 const continueMocks = vi.hoisted(() => ({
-  mutateAsync: vi.fn(),
+  continueImport: vi.fn(),
   isPending: false,
   error: null as unknown,
   reset: vi.fn(),
@@ -57,7 +57,7 @@ const continueMocks = vi.hoisted(() => ({
 
 vi.mock('@/lib/data-access/imports/useContinueImportDraft', () => ({
   useContinueImportDraft: () => ({
-    mutateAsync: continueMocks.mutateAsync,
+    continueImport: continueMocks.continueImport,
     isPending: continueMocks.isPending,
     error: continueMocks.error,
     reset: continueMocks.reset,
@@ -132,7 +132,7 @@ describe('ImportReview', () => {
     vi.clearAllMocks();
     continueMocks.error = null;
     continueMocks.isPending = false;
-    continueMocks.mutateAsync.mockResolvedValue({
+    continueMocks.continueImport.mockResolvedValue({
       id: 'prep_1',
       orgId: 'org_1',
       batchId: 'draft_1',

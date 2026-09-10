@@ -3,6 +3,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ImportPreparedSetSummary } from '@ploutizo/types';
 import { queryClient } from '@/lib/queryClient';
+import { markImportReviewPending } from './importReviewAutosave';
 import { fetchContinueImportDraft } from './fetchContinueImportDraft';
 import { useContinueImportDraft } from './useContinueImportDraft';
 import type { ReactNode } from 'react';
@@ -54,13 +55,44 @@ describe('useContinueImportDraft', () => {
     });
 
     await act(async () => {
-      await result.current.mutateAsync();
+      await result.current.continueImport();
     });
 
     await waitFor(() => {
       expect(result.current.data).toEqual(preparedSet);
     });
     expect(toastSuccess).not.toHaveBeenCalled();
+  });
+
+  it('returns null when the user edits the review before continue settles', async () => {
+    const pending = deferred<ImportPreparedSetSummary>();
+    vi.mocked(fetchContinueImportDraft).mockReturnValue(pending.promise);
+    const { result } = renderHook(() => useContinueImportDraft('draft_1'), {
+      wrapper,
+    });
+
+    let continuePromise: Promise<ImportPreparedSetSummary | null> | undefined;
+    act(() => {
+      continuePromise = result.current.continueImport();
+    });
+    await waitFor(() => {
+      expect(fetchContinueImportDraft).toHaveBeenCalled();
+    });
+
+    act(() => {
+      markImportReviewPending('draft_1', 'row_1');
+    });
+
+    await act(async () => {
+      pending.resolve(preparedSet);
+      await expect(continuePromise).resolves.toBeNull();
+    });
+
+    expect(toastSuccess).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(result.current.isError).toBe(false);
+      expect(result.current.error).toBeNull();
+    });
   });
 
   it('does not toast when the review changes before continue settles', async () => {
@@ -70,9 +102,9 @@ describe('useContinueImportDraft', () => {
       wrapper,
     });
 
-    let continuePromise: Promise<ImportPreparedSetSummary> | undefined;
+    let continuePromise: Promise<ImportPreparedSetSummary | null> | undefined;
     act(() => {
-      continuePromise = result.current.mutateAsync();
+      continuePromise = result.current.continueImport();
     });
     await waitFor(() => {
       expect(fetchContinueImportDraft).toHaveBeenCalled();
@@ -84,7 +116,7 @@ describe('useContinueImportDraft', () => {
 
     await act(async () => {
       pending.resolve(preparedSet);
-      await continuePromise?.catch(() => undefined);
+      await expect(continuePromise).resolves.toBeNull();
     });
 
     expect(toastSuccess).not.toHaveBeenCalled();
@@ -107,9 +139,9 @@ describe('useContinueImportDraft', () => {
       wrapper,
     });
 
-    let continuePromise: Promise<ImportPreparedSetSummary> | undefined;
+    let continuePromise: Promise<ImportPreparedSetSummary | null> | undefined;
     act(() => {
-      continuePromise = result.current.mutateAsync();
+      continuePromise = result.current.continueImport();
     });
     await waitFor(() => {
       expect(capturedSignal).toBeDefined();
@@ -122,7 +154,7 @@ describe('useContinueImportDraft', () => {
 
     await act(async () => {
       pending.resolve(preparedSet);
-      await continuePromise?.catch(() => undefined);
+      await expect(continuePromise).resolves.toBeNull();
     });
 
     expect(toastSuccess).not.toHaveBeenCalled();
@@ -135,9 +167,9 @@ describe('useContinueImportDraft', () => {
       wrapper,
     });
 
-    let continuePromise: Promise<ImportPreparedSetSummary> | undefined;
+    let continuePromise: Promise<ImportPreparedSetSummary | null> | undefined;
     act(() => {
-      continuePromise = result.current.mutateAsync();
+      continuePromise = result.current.continueImport();
     });
     await waitFor(() => {
       expect(fetchContinueImportDraft).toHaveBeenCalled();
@@ -154,7 +186,7 @@ describe('useContinueImportDraft', () => {
           message: 'Some selected rows are not ready to import.',
         },
       });
-      await continuePromise?.catch(() => undefined);
+      await expect(continuePromise).resolves.toBeNull();
     });
 
     await waitFor(() => {

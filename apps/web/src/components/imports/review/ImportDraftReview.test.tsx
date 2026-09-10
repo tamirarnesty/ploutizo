@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type * as PendingInputFlushModule from '@/lib/money/pending-input-flush';
 import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
 import {
   makeImportDraft,
@@ -43,6 +44,26 @@ vi.mock('@/components/transactions/TransactionTagPicker', () => ({
   TransactionTagPicker: () => <div>Tag picker</div>,
 }));
 
+vi.mock('@/lib/data-access/accounts', () => ({
+  useGetAccounts: () => ({
+    data: [
+      {
+        id: 'cheq_1',
+        orgId: 'org_1',
+        name: 'Chequing',
+        type: 'chequing',
+        institutionId: null,
+        lastFour: null,
+        statementDueDay: null,
+        archivedAt: null,
+        createdAt: '2026-05-20T12:00:00Z',
+        updatedAt: '2026-05-20T12:00:00Z',
+        owners: [],
+      },
+    ],
+  }),
+}));
+
 vi.mock('@/lib/data-access/categories', () => ({
   useGetCategories: () => ({
     data: [{ id: 'cat_1', name: 'Dining' }],
@@ -64,7 +85,7 @@ vi.mock('@/lib/data-access/org', () => ({
 }));
 
 const continueMocks = vi.hoisted(() => ({
-  mutateAsync: vi.fn(),
+  continueImport: vi.fn(),
   isPending: false,
   error: null as unknown,
   reset: vi.fn(),
@@ -82,7 +103,7 @@ vi.mock('@ploutizo/ui/components/sonner', () => ({
 
 vi.mock('@/lib/data-access/imports/useContinueImportDraft', () => ({
   useContinueImportDraft: () => ({
-    mutateAsync: continueMocks.mutateAsync,
+    continueImport: continueMocks.continueImport,
     isPending: continueMocks.isPending,
     error: continueMocks.error,
     reset: continueMocks.reset,
@@ -91,12 +112,19 @@ vi.mock('@/lib/data-access/imports/useContinueImportDraft', () => ({
 
 const flushPendingInputs = vi.fn();
 
-vi.mock('@/lib/money/pending-input-flush', () => ({
-  PendingInputFlushProvider: ({ children }: { children: React.ReactNode }) =>
-    children,
-  useFlushPendingInputs: () => flushPendingInputs,
-  useRegisterInputFlush: () => undefined,
-}));
+vi.mock('@/lib/money/pending-input-flush', async (importOriginal) => {
+  const actual = await importOriginal<typeof PendingInputFlushModule>();
+  return {
+    ...actual,
+    useFlushPendingInputs: () => {
+      const flushAll = actual.useFlushPendingInputs();
+      return () => {
+        flushPendingInputs();
+        flushAll();
+      };
+    },
+  };
+});
 
 vi.mock('@/hooks/persistedPageSize', () => ({
   usePersistedPageSize: () => ({
@@ -142,7 +170,7 @@ describe('ImportDraftReview', () => {
     paginationMocks.pagination = { pageIndex: 0, pageSize: 25 };
     continueMocks.isPending = false;
     continueMocks.error = null;
-    continueMocks.mutateAsync.mockResolvedValue({
+    continueMocks.continueImport.mockResolvedValue({
       id: 'prep_1',
       orgId: 'org_1',
       batchId: 'draft_1',
@@ -402,7 +430,7 @@ describe('ImportDraftReview', () => {
     expect(flushPendingInputs.mock.invocationCallOrder[0]).toBeLessThan(
       flush.mock.invocationCallOrder[0]
     );
-    expect(continueMocks.mutateAsync).toHaveBeenCalledTimes(1);
+    expect(continueMocks.continueImport).toHaveBeenCalledTimes(1);
     await waitFor(() =>
       expect(routerMocks.navigate).toHaveBeenCalledWith({
         to: '/import/$draftId/finalize',
@@ -429,7 +457,7 @@ describe('ImportDraftReview', () => {
 
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
-    expect(continueMocks.mutateAsync).not.toHaveBeenCalled();
+    expect(continueMocks.continueImport).not.toHaveBeenCalled();
     expect(routerMocks.navigate).not.toHaveBeenCalled();
   });
 
@@ -495,7 +523,7 @@ describe('ImportDraftReview', () => {
 
   it('shows server continue issues inline, toasts a summary, and focuses the first row', async () => {
     const user = userEvent.setup();
-    continueMocks.mutateAsync.mockRejectedValue({
+    continueMocks.continueImport.mockRejectedValue({
       error: {
         code: 'IMPORT_CONTINUE_NOT_READY',
         message: 'Some selected rows are not ready to import.',
@@ -541,41 +569,27 @@ describe('ImportDraftReview', () => {
     );
   });
 
-  it('clears a stale continue error when autosave begins during a pending continue', () => {
-    continueMocks.isPending = true;
-    continueMocks.error = {
-      error: {
-        code: 'IMPORT_CONTINUE_NOT_READY',
-        message: 'Some selected rows are not ready to import.',
-      },
-    };
-    const readyDraft = makeImportDraft({
-      rows: [
-        makeImportDraftRow({
-          id: 'row_ready',
-          status: 'ready',
-          reviewDescription: 'Coffee',
-          selectedForImport: true,
-        }),
-      ],
-    });
-    const { rerender } = renderReview(readyDraft);
-    const { rows, ...meta } = readyDraft;
-    continueMocks.reset.mockClear();
-
-    rerender(
-      <TooltipProvider delay={0}>
-        <ImportDraftReview
-          meta={meta}
-          rows={rows}
-          {...reviewSessionProps}
-          autosaveStatus="saving"
-          hasUnsavedWork
-        />
-      </TooltipProvider>
+  it('does not navigate when continue is cancelled by a later review edit', async () => {
+    const user = userEvent.setup();
+    continueMocks.continueImport.mockResolvedValueOnce(null);
+    renderReview(
+      makeImportDraft({
+        rows: [
+          makeImportDraftRow({
+            id: 'row_ready',
+            status: 'ready',
+            reviewDescription: 'Coffee',
+            selectedForImport: true,
+          }),
+        ],
+      })
     );
 
-    expect(continueMocks.reset).toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(continueMocks.continueImport).toHaveBeenCalledTimes(1);
+    expect(routerMocks.navigate).not.toHaveBeenCalled();
+    expect(reviewToastMocks.error).not.toHaveBeenCalled();
   });
 
   it('renders disabled assignee toggles for invalid rows in the grid', () => {

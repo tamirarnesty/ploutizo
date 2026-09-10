@@ -116,18 +116,13 @@ const ImportDraftReviewContent = ({
   const { canContinue, continueBlocker, hasReviewableRows } = reviewState;
   const draftId = meta?.id ?? '';
   const flushPendingInputs = useFlushPendingInputs();
-  const { mutateAsync, isPending, reset } = useContinueImportDraft(draftId);
+  const { continueImport, isPending } = useContinueImportDraft(draftId);
 
   useEffect(() => {
     if (inboundIssues.length === 0) return;
     setIssues(inboundIssues);
     presentImportRequirementIssues(inboundIssues);
   }, [inboundIssues]);
-
-  useEffect(() => {
-    if (!isPending || autosaveStatus === 'idle') return;
-    reset();
-  }, [autosaveStatus, isPending, reset]);
 
   const rowLabels = useMemo(
     () =>
@@ -143,7 +138,8 @@ const ImportDraftReviewContent = ({
     if (!ok) return;
 
     try {
-      await mutateAsync();
+      const preparedSet = await continueImport();
+      if (!preparedSet) return;
       setIssues([]);
       await navigate({
         to: '/import/$draftId/finalize',
@@ -158,7 +154,7 @@ const ImportDraftReviewContent = ({
         toast.error(getImportContinueGateMessage(error));
       }
     }
-  }, [draftId, flush, flushPendingInputs, mutateAsync, navigate]);
+  }, [draftId, flush, flushPendingInputs, continueImport, navigate]);
 
   const showEmptyState = !isLoading && meta && !hasReviewableRows;
 
