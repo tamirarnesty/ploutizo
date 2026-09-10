@@ -13,6 +13,7 @@ import type {
   ImportTargetAccount,
 } from '@ploutizo/types';
 import { useCreateImportDraft } from '@/lib/data-access/imports';
+import { importDraftReviewRoute } from '@/lib/navigation';
 import { getApiErrorMessage } from '@/lib/queryClient';
 import type { ReactNode } from 'react';
 
@@ -88,10 +89,7 @@ export const ImportUploadProvider = ({
 
   const goToDraftReview = useCallback(
     (draftId: string) => {
-      void navigate({
-        to: '/import/$draftId',
-        params: { draftId },
-      });
+      void navigate(importDraftReviewRoute(draftId));
     },
     [navigate]
   );

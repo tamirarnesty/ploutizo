@@ -17,6 +17,7 @@ import { LoadingButton } from '@ploutizo/ui/components/loading-button';
 import { Text } from '@ploutizo/ui/components/text';
 import { formatAccountLabel } from '@ploutizo/utils';
 import type { ImportDraftSummary } from '@ploutizo/types';
+import { importDraftReviewRoute } from '@/lib/navigation';
 
 interface ImportDraftCardProps {
   draft: ImportDraftSummary;
@@ -65,7 +66,7 @@ export const ImportDraftCard = ({
         <Button
           variant="outline"
           nativeButton={false}
-          render={<Link to="/import/$draftId" params={{ draftId: draft.id }} />}
+          render={<Link {...importDraftReviewRoute(draft.id)} />}
         >
           <RotateCcw />
           Continue

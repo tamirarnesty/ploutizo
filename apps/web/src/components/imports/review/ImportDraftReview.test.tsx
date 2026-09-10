@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Account } from '@ploutizo/types';
+import { importDraftFinalizeRoute } from '@/lib/navigation';
 import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
 import {
   makeImportDraft,
@@ -500,10 +501,9 @@ describe('ImportDraftReview', () => {
     );
     expect(continueMocks.continueImport).toHaveBeenCalledTimes(1);
     await waitFor(() =>
-      expect(routerMocks.navigate).toHaveBeenCalledWith({
-        to: '/import/$draftId/finalize',
-        params: { draftId: 'draft_1' },
-      })
+      expect(routerMocks.navigate).toHaveBeenCalledWith(
+        importDraftFinalizeRoute('draft_1')
+      )
     );
   });
 
