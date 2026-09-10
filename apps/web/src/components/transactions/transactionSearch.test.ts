@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { validateTransactionSearch } from './transactionSearch';
+import {
+  buildTransactionQueryParams,
+  validateTransactionSearch,
+} from './transactionSearch';
 
 describe('validateTransactionSearch', () => {
   it('returns an empty object when search is empty', () => {
@@ -86,5 +89,63 @@ describe('validateTransactionSearch', () => {
         importOutcome: 'skipped',
       })
     ).toEqual({});
+  });
+});
+
+describe('buildTransactionQueryParams', () => {
+  it('applies defaults and maps import link fields', () => {
+    expect(buildTransactionQueryParams({}, 25)).toEqual({
+      page: 1,
+      limit: 25,
+      sort: 'date',
+      order: 'desc',
+      type: undefined,
+      dateFrom: undefined,
+      dateTo: undefined,
+      accountId: undefined,
+      categoryId: undefined,
+      assigneeId: undefined,
+      tagIds: undefined,
+      type_op: undefined,
+      accountId_op: undefined,
+      categoryId_op: undefined,
+      assigneeId_op: undefined,
+      tagIds_op: undefined,
+      dateRange_op: undefined,
+      importLink: undefined,
+    });
+
+    expect(
+      buildTransactionQueryParams(
+        {
+          page: 2,
+          sort: 'amount',
+          order: 'asc',
+          type: 'expense',
+          importBatchId: 'batch_1',
+          importOutcome: 'matched',
+        },
+        50
+      )
+    ).toEqual({
+      page: 2,
+      limit: 50,
+      sort: 'amount',
+      order: 'asc',
+      type: 'expense',
+      dateFrom: undefined,
+      dateTo: undefined,
+      accountId: undefined,
+      categoryId: undefined,
+      assigneeId: undefined,
+      tagIds: undefined,
+      type_op: undefined,
+      accountId_op: undefined,
+      categoryId_op: undefined,
+      assigneeId_op: undefined,
+      tagIds_op: undefined,
+      dateRange_op: undefined,
+      importLink: { batchId: 'batch_1', outcome: 'matched' },
+    });
   });
 });

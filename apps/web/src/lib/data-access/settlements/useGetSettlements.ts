@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import type { GetSettlementBalancesResponse } from '@ploutizo/types';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
@@ -10,10 +10,13 @@ export const fetchSettlements =
     return apiFetch<GetSettlementBalancesResponse>('/api/settlements');
   };
 
+export const settlementsQueryOptions = () =>
+  queryOptions({
+    queryKey: ['settlements'],
+    queryFn: fetchSettlements,
+  });
+
 export const useGetSettlements =
   (): UseQueryResult<GetSettlementBalancesResponse> => {
-    return useQuery({
-      queryKey: ['settlements'],
-      queryFn: fetchSettlements,
-    });
+    return useQuery(settlementsQueryOptions());
   };

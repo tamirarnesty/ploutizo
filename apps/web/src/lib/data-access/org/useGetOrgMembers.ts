@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import type { OrgMember } from '@ploutizo/types';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
@@ -8,9 +8,12 @@ export const fetchOrgMembers = async (): Promise<OrgMember[]> => {
   return r.data;
 };
 
-export const useGetOrgMembers = (): UseQueryResult<OrgMember[]> => {
-  return useQuery({
+export const orgMembersQueryOptions = () =>
+  queryOptions({
     queryKey: ['org-members'],
     queryFn: fetchOrgMembers,
   });
+
+export const useGetOrgMembers = (): UseQueryResult<OrgMember[]> => {
+  return useQuery(orgMembersQueryOptions());
 };
