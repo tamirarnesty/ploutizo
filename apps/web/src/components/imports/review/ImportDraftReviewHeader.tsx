@@ -56,10 +56,13 @@ export const ImportDraftReviewHeader = ({
       <div className="min-w-0 flex-1">
         {meta ? (
           <>
-            <Text as="h2" variant="h3" className="truncate">
+            <Text as="h2" variant="h3" className="wrap-break-word">
               {formatAccountLabel(meta.account)}
             </Text>
-            <Text variant="body-sm" className="truncate text-muted-foreground">
+            <Text
+              variant="body-sm"
+              className="wrap-break-word text-muted-foreground"
+            >
               {formatImportDraftReviewSubtitle(toLiveSubtitleMeta(meta, rows))}
             </Text>
           </>

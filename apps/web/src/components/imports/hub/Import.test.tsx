@@ -372,9 +372,10 @@ describe('Import', () => {
 
     render(<Import />);
 
-    const discardButtons = screen.getAllByRole('button', { name: /discard/i });
-    expect(discardButtons[0]).toBeDisabled();
-    expect(discardButtons[1]).not.toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: /Loading Discard/i })
+    ).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^Discard$/ })).toBeEnabled();
   });
 
   it('links the compact recent-history list to View all history', () => {

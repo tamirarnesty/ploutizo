@@ -208,6 +208,62 @@ describe('ImportFinalize', () => {
     ).toBeEnabled();
   });
 
+  it('keeps a long account name readable by wrapping', () => {
+    finalizeMocks.draft = {
+      data: makeImportDraft({
+        account: {
+          id: 'acct_1',
+          name: 'Joint Everyday Rewards Visa Infinite Privilege',
+          institutionId: 'td',
+          lastFour: '1234',
+        },
+        rows: [makeImportDraftRow({ selectedForImport: true })],
+      }),
+      isLoading: false,
+      isError: false,
+    };
+
+    render(<ImportFinalize draftId="draft_1" />);
+
+    const heading = screen.getByRole('heading', {
+      name: 'Joint Everyday Rewards Visa Infinite Privilege · TD · ••1234',
+    });
+    expect(heading).toHaveClass('wrap-break-word');
+    expect(heading).not.toHaveClass('truncate');
+  });
+
+  it('uses direct recovery copy when discarding the prepared import fails without a message', async () => {
+    const user = userEvent.setup();
+    finalizeMocks.invalidate.mutateAsync.mockRejectedValueOnce({
+      error: { code: 'UNKNOWN' },
+    });
+
+    render(<ImportFinalize draftId="draft_1" />);
+    await user.click(screen.getByRole('button', { name: 'Back to Review' }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Could not discard this prepared import. Please retry.'
+      )
+    );
+  });
+
+  it('uses direct recovery copy when finalizing fails without a message', async () => {
+    const user = userEvent.setup();
+    finalizeMocks.finalize.mutateAsync.mockRejectedValueOnce({
+      error: { code: 'UNKNOWN' },
+    });
+
+    render(<ImportFinalize draftId="draft_1" />);
+    await user.click(screen.getByRole('button', { name: 'Finalize import' }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Could not finalize this import. Please retry.'
+      )
+    );
+  });
+
   it('disables Finalize import and shows loading after the first click', async () => {
     const user = userEvent.setup();
     let release!: (value: typeof completedResult) => void;

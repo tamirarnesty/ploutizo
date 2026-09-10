@@ -107,11 +107,14 @@ export const ImportHistoryList = ({
           key={item.id}
           className="flex flex-wrap items-start justify-between gap-3 p-3"
         >
-          <div className="min-w-0 space-y-1">
-            <Text variant="body-sm" className="truncate font-medium">
+          <div className="min-w-0 flex-1 space-y-1">
+            <Text variant="body-sm" className="font-medium wrap-break-word">
               {formatAccountLabel(item.account)}
             </Text>
-            <Text variant="body-sm" className="truncate text-muted-foreground">
+            <Text
+              variant="body-sm"
+              className="wrap-break-word text-muted-foreground"
+            >
               {item.fileName ?? 'Untitled CSV'}
             </Text>
             {variant === 'detailed' ? (

@@ -65,6 +65,36 @@ describe('ImportHistoryList', () => {
     expect(screen.queryByRole('link', { name: 'View matched' })).toBeNull();
   });
 
+  it('keeps long account names and filenames readable by wrapping', () => {
+    render(
+      <ImportHistoryList
+        history={[
+          {
+            ...completedItem,
+            account: {
+              ...completedItem.account,
+              name: 'Joint Everyday Rewards Visa Infinite Privilege',
+            },
+            fileName:
+              'td-visa-infinite-privilege-statement-january-through-march-2026.csv',
+          },
+        ]}
+      />
+    );
+
+    const accountName = screen.getByText(
+      'Joint Everyday Rewards Visa Infinite Privilege · TD · ••1234'
+    );
+    const fileName = screen.getByText(
+      'td-visa-infinite-privilege-statement-january-through-march-2026.csv'
+    );
+
+    expect(accountName).toHaveClass('wrap-break-word');
+    expect(accountName).not.toHaveClass('truncate');
+    expect(fileName).toHaveClass('wrap-break-word');
+    expect(fileName).not.toHaveClass('truncate');
+  });
+
   it('shows detailed completed counts and provenance links when counts are non-zero', () => {
     render(<ImportHistoryList history={[completedItem]} variant="detailed" />);
 
