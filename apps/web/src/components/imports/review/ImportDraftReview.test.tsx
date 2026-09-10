@@ -2,7 +2,6 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type * as PendingInputFlushModule from '@/lib/money/pending-input-flush';
 import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
 import {
   makeImportDraft,
@@ -112,19 +111,12 @@ vi.mock('@/lib/data-access/imports/useContinueImportDraft', () => ({
 
 const flushPendingInputs = vi.fn();
 
-vi.mock('@/lib/money/pending-input-flush', async (importOriginal) => {
-  const actual = await importOriginal<typeof PendingInputFlushModule>();
-  return {
-    ...actual,
-    useFlushPendingInputs: () => {
-      const flushAll = actual.useFlushPendingInputs();
-      return () => {
-        flushPendingInputs();
-        flushAll();
-      };
-    },
-  };
-});
+vi.mock('@/lib/money/pending-input-flush', () => ({
+  PendingInputFlushProvider: ({ children }: { children: React.ReactNode }) =>
+    children,
+  useFlushPendingInputs: () => flushPendingInputs,
+  useRegisterInputFlush: () => undefined,
+}));
 
 vi.mock('@/hooks/persistedPageSize', () => ({
   usePersistedPageSize: () => ({

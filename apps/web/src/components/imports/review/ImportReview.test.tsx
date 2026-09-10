@@ -84,6 +84,13 @@ vi.mock('@/lib/data-access/org', () => ({
   }),
 }));
 
+vi.mock('@/lib/data-access/accounts', () => ({
+  useGetAccounts: () => ({
+    data: [],
+    isLoading: false,
+  }),
+}));
+
 vi.mock('@/hooks/persistedPageSize', () => ({
   usePersistedPageSize: () => ({
     pagination: { pageIndex: 0, pageSize: 25 },

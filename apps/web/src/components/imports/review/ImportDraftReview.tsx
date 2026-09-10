@@ -19,6 +19,7 @@ import {
   summarizeImportRequirementIssues,
 } from '@/lib/data-access/imports/importRequirementIssues';
 import { useContinueImportDraft } from '@/lib/data-access/imports/useContinueImportDraft';
+import { useGetAccounts } from '@/lib/data-access/accounts';
 import { useGetCategories } from '@/lib/data-access/categories';
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import {
@@ -89,6 +90,7 @@ const ImportDraftReviewContent = ({
   const navigate = useNavigate();
   const { data: categories = [] } = useGetCategories();
   const { data: orgMembers = [] } = useGetOrgMembers();
+  const { data: accounts = [] } = useGetAccounts();
   const [issues, setIssues] = useState<ImportRequirementFailure[]>([]);
   const priorityRowIds = useMemo(
     () => getImportRequirementIssueRowIds(issues),
@@ -181,6 +183,7 @@ const ImportDraftReviewContent = ({
           <ImportDraftReviewProvider
             draftId={meta.id}
             cardAccountId={meta.account.id}
+            accounts={accounts}
             categories={categories}
             orgMembers={orgMembers}
             updateRow={updateRow}

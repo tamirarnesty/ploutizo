@@ -97,8 +97,9 @@ Rejected: selection-only path that bypasses the collection; select-all as N inde
 | Persist failure         | **Keep collection edits** — do not roll back the working copy                                                                                           |
 | Retry                   | Re-persist current collection diff; further edits reset the debounce and may succeed on their own                                                       |
 | Row failure signal      | Optional status icon + explanation on the row (same presentation family as ready / needs review) — **not** a second retry control                       |
-| Continue / in-app leave | Flush pending paced work; **block** leave or Continue if flush fails or Failed remains                                                                  |
+| Continue / in-app leave | Flush pending paced work; **block** leave or Continue if flush fails or Failed remains. In-flight Continue **aborts** when autosave status becomes `saving` (the user started new work). |
 | Tab close / refresh     | Best-effort flush (`visibilitychange` / `beforeunload`); warn when pending or failed — browsers cannot reliably await                                   |
+| Text vs discrete writes | **Same path.** Every field calls the working-copy write on change. Text inputs may keep focused chrome so typing is not clobbered; they are not a second store and must not add a second debounce. |
 
 Continue and Finalize action labels are self-explanatory; do not add subtitle hints beneath those buttons.
 
@@ -117,7 +118,7 @@ If TanStack DB’s default is to drop optimistic state when `mutationFn` throws,
 | RQ nested `ImportDraft` as long-term working copy  | Manual merge/rollback; encourages second local buffer; caused whole-draft restore clobber               |
 | Local field state as authority for text            | Multi-truth; flush rules; keep only as short-lived input chrome if a widget requires it, never as store |
 | Cache-on-every-keystroke into RQ                   | Grid rerender cost; still leaves persistence policy hand-rolled                                         |
-| Dual debounce (short discrete / long text)         | Minor UX gain; extra factory branching — single 500ms is enough                                         |
+| Dual debounce (short discrete / long text, or a UI timer in front of paced mutations) | Minor UX gain; extra factory branching and a second store — single 500ms paced debounce is enough |
 | Per-row TanStack Query `mutationKey` only          | Patch on per-field PATCH design; subsumed by paced merge + per-row queues                               |
 | Draft-level single paced queue                     | Cross-row edits block or coalesce incorrectly                                                           |
 | Full-row blind server merge on success             | Clobbers in-flight fields; prefer merged paced diff / scoped apply                                      |

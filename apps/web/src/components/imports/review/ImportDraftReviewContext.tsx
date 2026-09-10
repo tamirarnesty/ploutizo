@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo } from 'react';
 import { useLiveQuery } from '@tanstack/react-db';
-import type { OrgMember } from '@ploutizo/types';
+import type { Account, OrgMember } from '@ploutizo/types';
 import type { ImportDraftRowEvaluation } from '@ploutizo/utils';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import type { Category } from '@/lib/data-access/categories';
@@ -12,6 +12,7 @@ import type { ReactNode } from 'react';
 interface ImportDraftReviewContextValue {
   draftId: string;
   cardAccountId: string;
+  accounts: readonly Account[];
   categories: Category[];
   orgMembers: OrgMember[];
   updateRow: (rowId: string, patch: UpdateImportDraftRowInput) => void;
@@ -25,6 +26,7 @@ const ImportDraftReviewContext =
 interface ImportDraftReviewProviderProps {
   draftId: string;
   cardAccountId: string;
+  accounts: readonly Account[];
   categories: Category[];
   orgMembers: OrgMember[];
   updateRow: (rowId: string, patch: UpdateImportDraftRowInput) => void;
@@ -34,6 +36,7 @@ interface ImportDraftReviewProviderProps {
 export const ImportDraftReviewProvider = ({
   draftId,
   cardAccountId,
+  accounts,
   categories,
   orgMembers,
   updateRow,
@@ -56,6 +59,7 @@ export const ImportDraftReviewProvider = ({
     () => ({
       draftId,
       cardAccountId,
+      accounts,
       categories,
       orgMembers,
       updateRow,
@@ -65,6 +69,7 @@ export const ImportDraftReviewProvider = ({
     [
       draftId,
       cardAccountId,
+      accounts,
       categories,
       orgMembers,
       updateRow,

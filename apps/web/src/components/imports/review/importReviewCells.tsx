@@ -26,7 +26,6 @@ import { IMPORT_TRANSACTION_TYPE_VALUES } from '@ploutizo/types';
 import type { ImportDraftRow, ImportTransactionType } from '@ploutizo/types';
 import { CategorySelect } from '@/components/categories/CategorySelect';
 import { CurrencyInput } from '@/components/currency/CurrencyInput';
-import { useGetAccounts } from '@/lib/data-access/accounts';
 import { getSettlementSourceAccounts } from '@/lib/settlements/settlementSourceAccounts';
 import {
   getImportRowLabel,
@@ -35,8 +34,8 @@ import {
 import { ImportAssigneeField } from './ImportAssigneeField';
 import { useImportDraftReviewContext } from './ImportDraftReviewContext';
 import { ImportRowStatusIcon } from './ImportRowStatusIcon';
-import { useDebouncedImportTextSave } from './useDebouncedImportTextSave';
 import { useImportDraftReviewRowSave } from './useImportDraftReviewRowSave';
+import { useImportReviewTextDraft } from './useImportReviewTextDraft';
 
 interface ImportTransactionTypeSelectProps {
   id: string;
@@ -251,10 +250,10 @@ export const ImportReviewDescriptionCell = ({
     onChange,
     onFocus,
     onBlur,
-  } = useDebouncedImportTextSave(
+  } = useImportReviewTextDraft(
     description,
     (next) => saveField({ reviewDescription: next }),
-    { resetKey: row.id }
+    row.id
   );
   const showOriginalDescription =
     originalDescription != null &&
@@ -331,8 +330,7 @@ interface ImportReviewPaidFromCellProps {
 export const ImportReviewPaidFromCell = ({
   row,
 }: ImportReviewPaidFromCellProps) => {
-  const { cardAccountId } = useImportDraftReviewContext();
-  const { data: accounts = [], isLoading } = useGetAccounts();
+  const { accounts, cardAccountId } = useImportDraftReviewContext();
   const { saveField, disabled } = useImportDraftReviewRowSave(row);
   const rowLabel = getImportRowLabel(row);
   const sourceAccounts = useMemo(
@@ -348,14 +346,6 @@ export const ImportReviewPaidFromCell = ({
     [sourceAccounts]
   );
   const selectedAccountId = row.reviewCounterpartAccountId ?? '';
-
-  if (isLoading) {
-    return (
-      <Text variant="body-sm" className="text-muted-foreground">
-        Loading accounts…
-      </Text>
-    );
-  }
 
   if (sourceAccounts.length === 0) {
     return (
@@ -399,6 +389,15 @@ export const ImportReviewPaidFromCell = ({
     </Select>
   );
 };
+
+export const ImportReviewCategoryOrPaidFromCell = ({
+  row,
+}: ImportReviewCategoryCellProps) =>
+  resolveReviewedImportValues(row).type === 'settlement' ? (
+    <ImportReviewPaidFromCell row={row} />
+  ) : (
+    <ImportReviewCategoryCell row={row} />
+  );
 
 interface ImportReviewAssigneeCellProps {
   row: ImportDraftRow;

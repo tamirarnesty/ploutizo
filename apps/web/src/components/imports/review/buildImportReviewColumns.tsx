@@ -17,16 +17,14 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
-import { resolveReviewedImportValues } from '@ploutizo/utils/reviewed-import-values';
 import type { ImportDraftRow } from '@ploutizo/types';
 import { ImportDraftReviewRowDetails } from './ImportDraftReviewRowDetails';
 import {
   ImportReviewAmountCell,
   ImportReviewAssigneeCell,
-  ImportReviewCategoryCell,
+  ImportReviewCategoryOrPaidFromCell,
   ImportReviewDateCell,
   ImportReviewDescriptionCell,
-  ImportReviewPaidFromCell,
   ImportReviewSelectionCell,
   ImportReviewTypeCell,
 } from './importReviewCells';
@@ -220,12 +218,9 @@ export const buildImportReviewColumns = ({
         cellClassName: 'min-w-48',
         skeleton: <Skeleton className="h-4 w-28" />,
       },
-      cell: ({ row }) =>
-        resolveReviewedImportValues(row.original).type === 'settlement' ? (
-          <ImportReviewPaidFromCell row={row.original} />
-        ) : (
-          <ImportReviewCategoryCell row={row.original} />
-        ),
+      cell: ({ row }) => (
+        <ImportReviewCategoryOrPaidFromCell row={row.original} />
+      ),
     },
     {
       id: 'assignee',

@@ -1,39 +1,50 @@
-import { useSyncExternalStore } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 import {
   getImportReviewAutosaveSnapshot,
   subscribeImportReviewAutosave,
 } from './importReviewAutosave';
-import type { ImportReviewAutosaveStatus } from './importReviewAutosave';
+import type {
+  ImportReviewAutosaveSnapshot,
+  ImportReviewAutosaveStatus,
+} from './importReviewAutosave';
 
-const subscribe = (draftId: string) => (onStoreChange: () => void) =>
-  subscribeImportReviewAutosave(draftId, onStoreChange);
+const selectStatus = (snapshot: ImportReviewAutosaveSnapshot) =>
+  snapshot.status;
+const selectHasUnsavedWork = (snapshot: ImportReviewAutosaveSnapshot) =>
+  snapshot.hasUnsavedWork;
+const selectFailedRowIds = (snapshot: ImportReviewAutosaveSnapshot) =>
+  snapshot.failedRowIds;
+
+const useImportReviewAutosaveSlice = <T>(
+  draftId: string,
+  select: (snapshot: ImportReviewAutosaveSnapshot) => T
+): T => {
+  const subscribe = useCallback(
+    (onStoreChange: () => void) =>
+      subscribeImportReviewAutosave(draftId, onStoreChange),
+    [draftId]
+  );
+
+  return useSyncExternalStore(
+    subscribe,
+    () => select(getImportReviewAutosaveSnapshot(draftId)),
+    () => select(getImportReviewAutosaveSnapshot(draftId))
+  );
+};
 
 /** Draft-level autosave status for header UI only (ADR 0005). */
 export const useImportReviewAutosaveStatus = (
   draftId: string
 ): ImportReviewAutosaveStatus =>
-  useSyncExternalStore(
-    subscribe(draftId),
-    () => getImportReviewAutosaveSnapshot(draftId).status,
-    () => getImportReviewAutosaveSnapshot(draftId).status
-  );
+  useImportReviewAutosaveSlice(draftId, selectStatus);
 
 /** Leave-guard input; isolated from row grid re-renders. */
 export const useImportReviewAutosaveHasUnsavedWork = (
   draftId: string
-): boolean =>
-  useSyncExternalStore(
-    subscribe(draftId),
-    () => getImportReviewAutosaveSnapshot(draftId).hasUnsavedWork,
-    () => getImportReviewAutosaveSnapshot(draftId).hasUnsavedWork
-  );
+): boolean => useImportReviewAutosaveSlice(draftId, selectHasUnsavedWork);
 
 /** Row persist failures for status icons; reference-stable when ids unchanged. */
 export const useImportReviewAutosaveFailedRowIds = (
   draftId: string
 ): readonly string[] =>
-  useSyncExternalStore(
-    subscribe(draftId),
-    () => getImportReviewAutosaveSnapshot(draftId).failedRowIds,
-    () => getImportReviewAutosaveSnapshot(draftId).failedRowIds
-  );
+  useImportReviewAutosaveSlice(draftId, selectFailedRowIds);

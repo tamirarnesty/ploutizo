@@ -94,6 +94,7 @@ const renderRowFields = (row: ImportDraftRow) =>
       <ImportDraftReviewProvider
         draftId={row.batchId}
         cardAccountId={cardAccountId}
+        accounts={[]}
         categories={[mockCategory]}
         orgMembers={[]}
         updateRow={updateRow}
@@ -117,18 +118,14 @@ describe('ImportDraftReviewRow', () => {
     const notesInput = screen.getByLabelText('Notes for Coffee');
 
     fireEvent.change(descriptionInput, { target: { value: 'Updated coffee' } });
-    await waitFor(() =>
-      expect(updateRow).toHaveBeenCalledWith(row.id, {
-        reviewDescription: 'Updated coffee',
-      })
-    );
+    expect(updateRow).toHaveBeenCalledWith(row.id, {
+      reviewDescription: 'Updated coffee',
+    });
 
     fireEvent.change(notesInput, { target: { value: 'Still editing notes' } });
-    await waitFor(() =>
-      expect(updateRow).toHaveBeenCalledWith(row.id, {
-        reviewNotes: 'Still editing notes',
-      })
-    );
+    expect(updateRow).toHaveBeenCalledWith(row.id, {
+      reviewNotes: 'Still editing notes',
+    });
   });
 
   it('truncates the original description and reveals it on hover', async () => {

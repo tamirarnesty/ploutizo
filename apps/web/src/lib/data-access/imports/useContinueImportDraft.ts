@@ -2,7 +2,10 @@ import { useCallback, useRef } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import type { ImportPreparedSetSummary } from '@ploutizo/types';
 import type { ApiErrorBody } from '@/lib/queryClient';
-import { subscribeImportReviewUserEdits } from './importReviewAutosave';
+import {
+  getImportReviewAutosaveSnapshot,
+  subscribeImportReviewAutosave,
+} from './importReviewAutosave';
 import { fetchContinueImportDraft } from './fetchContinueImportDraft';
 import type { UseMutationResult } from '@tanstack/react-query';
 
@@ -43,9 +46,14 @@ export const useContinueImportDraft = (draftId: string) => {
       const controller = new AbortController();
       abortRef.current = controller;
       const generation = generationRef.current;
-      const unsubscribeReviewEdits = subscribeImportReviewUserEdits(
+      const abortIfReviewSaving = () => {
+        if (getImportReviewAutosaveSnapshot(draftId).status === 'saving') {
+          invalidateInFlightContinue();
+        }
+      };
+      const unsubscribeAutosave = subscribeImportReviewAutosave(
         draftId,
-        invalidateInFlightContinue
+        abortIfReviewSaving
       );
 
       try {
@@ -63,7 +71,7 @@ export const useContinueImportDraft = (draftId: string) => {
         }
         throw error;
       } finally {
-        unsubscribeReviewEdits();
+        unsubscribeAutosave();
         if (abortRef.current === controller) {
           abortRef.current = null;
         }

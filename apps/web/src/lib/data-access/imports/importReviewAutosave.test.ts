@@ -6,7 +6,7 @@ import {
   markImportReviewSelectionStart,
   markImportReviewSelectionSuccess,
   resetImportReviewAutosaveForTests,
-  subscribeImportReviewUserEdits,
+  subscribeImportReviewAutosave,
 } from './importReviewAutosave';
 
 describe('importReviewAutosave selection failures', () => {
@@ -14,28 +14,30 @@ describe('importReviewAutosave selection failures', () => {
     resetImportReviewAutosaveForTests();
   });
 
-  it('notifies listeners when a new review edit is queued', () => {
+  it('notifies autosave listeners when a new review edit is queued', () => {
     const draftId = 'draft_1';
     const listener = vi.fn();
 
-    const unsubscribe = subscribeImportReviewUserEdits(draftId, listener);
+    const unsubscribe = subscribeImportReviewAutosave(draftId, listener);
     markImportReviewPending(draftId, 'row_a');
 
     expect(listener).toHaveBeenCalledTimes(1);
+    expect(getImportReviewAutosaveSnapshot(draftId).status).toBe('saving');
 
     unsubscribe();
     markImportReviewPending(draftId, 'row_b');
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
-  it('notifies listeners when selection persistence starts', () => {
+  it('notifies autosave listeners when selection persistence starts', () => {
     const draftId = 'draft_1';
     const listener = vi.fn();
-    const unsubscribe = subscribeImportReviewUserEdits(draftId, listener);
+    const unsubscribe = subscribeImportReviewAutosave(draftId, listener);
 
     markImportReviewSelectionStart(draftId);
 
     expect(listener).toHaveBeenCalledTimes(1);
+    expect(getImportReviewAutosaveSnapshot(draftId).status).toBe('saving');
     unsubscribe();
   });
 

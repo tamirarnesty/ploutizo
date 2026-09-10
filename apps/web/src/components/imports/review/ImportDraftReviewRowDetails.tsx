@@ -6,7 +6,7 @@ import { TransactionTagPicker } from '@/components/transactions/TransactionTagPi
 import { getImportRowLabel } from '../lib/importPresentation';
 import { ImportMatchReviewPanel } from './ImportMatchReviewPanel';
 import { useImportDraftRowEvaluation } from './ImportDraftReviewContext';
-import { useDebouncedImportTextSave } from './useDebouncedImportTextSave';
+import { useImportReviewTextDraft } from './useImportReviewTextDraft';
 import { useImportDraftReviewRowSave } from './useImportDraftReviewRowSave';
 
 interface ImportDraftReviewRowDetailsProps {
@@ -26,10 +26,10 @@ export const ImportDraftReviewRowDetails = ({
     onChange: onNotesChange,
     onFocus: onNotesFocus,
     onBlur: onNotesBlur,
-  } = useDebouncedImportTextSave(
+  } = useImportReviewTextDraft(
     row.reviewNotes,
     (next) => saveField({ reviewNotes: next }),
-    { resetKey: row.id }
+    row.id
   );
 
   const dismissMatch = () =>

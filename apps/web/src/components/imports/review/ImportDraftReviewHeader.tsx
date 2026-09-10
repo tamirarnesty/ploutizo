@@ -43,13 +43,13 @@ export const ImportDraftReviewHeader = ({
 }: ImportDraftReviewHeaderProps) => {
   const draftId = meta?.id ?? '';
   const autosaveStatus = useImportReviewAutosaveStatus(draftId);
-  const continueEnabled = getImportReviewContinueEnabled(
+  const continueEnabled = getImportReviewContinueEnabled({
     meta,
     rows,
     orgMembers,
     autosaveStatus,
-    isContinuing
-  );
+    isContinuing,
+  });
 
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">

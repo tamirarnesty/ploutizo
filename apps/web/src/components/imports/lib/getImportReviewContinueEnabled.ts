@@ -5,13 +5,21 @@ import type {
   ImportReviewAutosaveStatus,
 } from '@/lib/data-access/imports';
 
-export const getImportReviewContinueEnabled = (
-  meta: ImportDraftMeta | undefined,
-  rows: readonly ImportDraftRow[],
-  orgMembers: readonly OrgMember[],
-  autosaveStatus: ImportReviewAutosaveStatus,
-  isContinuing: boolean
-): boolean => {
+interface GetImportReviewContinueEnabledOptions {
+  meta: ImportDraftMeta | undefined;
+  rows: readonly ImportDraftRow[];
+  orgMembers: readonly OrgMember[];
+  autosaveStatus: ImportReviewAutosaveStatus;
+  isContinuing: boolean;
+}
+
+export const getImportReviewContinueEnabled = ({
+  meta,
+  rows,
+  orgMembers,
+  autosaveStatus,
+  isContinuing,
+}: GetImportReviewContinueEnabledOptions): boolean => {
   if (!meta || isContinuing) return false;
 
   const validAssigneeMemberIds = new Set(orgMembers.map((member) => member.id));

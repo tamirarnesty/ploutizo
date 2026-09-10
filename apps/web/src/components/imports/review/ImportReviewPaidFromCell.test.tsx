@@ -24,13 +24,6 @@ const chequingAccount: Account = {
   owners: [],
 };
 
-vi.mock('@/lib/data-access/accounts', () => ({
-  useGetAccounts: () => ({
-    data: [chequingAccount],
-    isLoading: false,
-  }),
-}));
-
 vi.mock('@/lib/data-access/imports/useImportReviewAutosave', () => ({
   useImportReviewAutosaveFailedRowIds: () => [],
 }));
@@ -101,6 +94,7 @@ const renderPaidFromCell = (row: ImportDraftRow) =>
     <ImportDraftReviewProvider
       draftId={row.batchId}
       cardAccountId={cardAccountId}
+      accounts={[chequingAccount]}
       categories={[]}
       orgMembers={[]}
       updateRow={updateRow}

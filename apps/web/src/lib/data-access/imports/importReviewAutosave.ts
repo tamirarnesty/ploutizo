@@ -28,13 +28,6 @@ const emptySnapshot: ImportReviewAutosaveSnapshot = {
 const draftStates = new Map<string, DraftAutosaveState>();
 const draftSnapshots = new Map<string, ImportReviewAutosaveSnapshot>();
 const listeners = new Map<string, Set<() => void>>();
-const reviewEditListeners = new Map<string, Set<() => void>>();
-
-const notifyImportReviewUserEdits = (draftId: string) => {
-  const draftListeners = reviewEditListeners.get(draftId);
-  if (!draftListeners) return;
-  for (const listener of draftListeners) listener();
-};
 
 const getOrCreateState = (draftId: string): DraftAutosaveState => {
   const existing = draftStates.get(draftId);
@@ -135,27 +128,10 @@ export const subscribeImportReviewAutosave = (
   };
 };
 
-export const subscribeImportReviewUserEdits = (
-  draftId: string,
-  listener: () => void
-) => {
-  let draftListeners = reviewEditListeners.get(draftId);
-  if (!draftListeners) {
-    draftListeners = new Set();
-    reviewEditListeners.set(draftId, draftListeners);
-  }
-  draftListeners.add(listener);
-  return () => {
-    draftListeners.delete(listener);
-    if (draftListeners.size === 0) reviewEditListeners.delete(draftId);
-  };
-};
-
 export const markImportReviewPending = (draftId: string, rowId: string) => {
   const state = getOrCreateState(draftId);
   state.pendingRowIds.add(rowId);
   emit(draftId);
-  notifyImportReviewUserEdits(draftId);
 };
 
 export const markImportReviewPersistStart = (
@@ -216,7 +192,6 @@ export const markImportReviewSelectionStart = (draftId: string) => {
   const state = getOrCreateState(draftId);
   state.inFlightCount += 1;
   emit(draftId);
-  notifyImportReviewUserEdits(draftId);
 };
 
 export const markImportReviewSelectionSuccess = (
@@ -250,7 +225,6 @@ export const releaseImportReviewAutosave = (draftId: string) => {
   draftStates.delete(draftId);
   draftSnapshots.delete(draftId);
   listeners.delete(draftId);
-  reviewEditListeners.delete(draftId);
 };
 
 /** Resolve once the draft is not in the Saving state (pending/in-flight cleared). */
@@ -271,5 +245,4 @@ export const resetImportReviewAutosaveForTests = () => {
   draftStates.clear();
   draftSnapshots.clear();
   listeners.clear();
-  reviewEditListeners.clear();
 };
