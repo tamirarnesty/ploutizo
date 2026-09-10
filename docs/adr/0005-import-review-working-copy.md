@@ -10,13 +10,13 @@ During **Review import**, the UI must feel instant while still persisting correc
 
 ### Authority
 
-| Layer                              | Role                                                                                                                                                                                                                                                                                                            |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Postgres via API                   | Durable **import draft facts** — source provenance, parsed values, reviewed import values, refund references, tags, assignees, settlement funding, selection, `rowCount`, and batch lifecycle. Resumable across sessions. Does not persist review status, invalid reasons, or upload-time valid/invalid counts. |
-| TanStack DB rows `queryCollection` | Session working copy while review is mounted — only place components write row data                                                                                                                                                                                                                             |
-| Slim TanStack Query (draft meta)   | Account, file name, batch lifecycle, `rowCount`, live derived review counts, and other non-row context                                                                                                                                                                                                          |
-| Controlled inputs                  | Presentation only — never a second store or authority                                                                                                                                                                                                                                                           |
-| **Import row status** / counts     | Derived from durable facts plus external facts by the shared evaluator. Client writers: `rederiveImportDraftWorkingCopy` (and optimistic paced patches that delegate to it). `canContinueImportReview` gates on selection only so the server can return authoritative requirement failures at Continue. Server **import set verification** remains authoritative at Continue and Finalize.    |
+| Layer                              | Role                                                                                                                                                                                                                                                                                                                                                                                       |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Postgres via API                   | Durable **import draft facts** — source provenance, parsed values, reviewed import values, refund references, tags, assignees, settlement funding, selection, `rowCount`, and batch lifecycle. Resumable across sessions. Does not persist review status, invalid reasons, or upload-time valid/invalid counts.                                                                            |
+| TanStack DB rows `queryCollection` | Session working copy while review is mounted — only place components write row data                                                                                                                                                                                                                                                                                                        |
+| Slim TanStack Query (draft meta)   | Account, file name, batch lifecycle, `rowCount`, live derived review counts, and other non-row context                                                                                                                                                                                                                                                                                     |
+| Controlled inputs                  | Presentation only — never a second store or authority                                                                                                                                                                                                                                                                                                                                      |
+| **Import row status** / counts     | Derived from durable facts plus external facts by the shared evaluator. Client writers: `rederiveImportDraftWorkingCopy` (and optimistic paced patches that delegate to it). `canContinueImportReview` gates on selection only so the server can return authoritative requirement failures at Continue. Server **import set verification** remains authoritative at Continue and Finalize. |
 
 Hub create / discard / list stay on TanStack Query and are **outside** the working-copy contract. The Import hub read module still uses the same evaluator to derive live review counts from current draft rows.
 
@@ -90,14 +90,17 @@ Rejected: selection-only path that bypasses the collection; select-all as N inde
 
 ### Autosave UX (standard patterns)
 
-| Concern                 | Behavior                                                                                                                          |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Status surface          | **Draft-level** strip: Saving → Saved → Failed · Retry                                                                            |
-| Persist failure         | **Keep collection edits** — do not roll back the working copy                                                                     |
-| Retry                   | Re-persist current collection diff; further edits reset the debounce and may succeed on their own                                 |
-| Row failure signal      | Optional status icon + explanation on the row (same presentation family as ready / needs review) — **not** a second retry control |
-| Continue / in-app leave | Flush pending paced work; **block** leave or Continue if flush fails or Failed remains                                            |
-| Tab close / refresh     | Best-effort flush (`visibilitychange` / `beforeunload`); warn when pending or failed — browsers cannot reliably await             |
+| Concern                 | Behavior                                                                                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Status surface          | **Draft-level** status in a fixed-height slot below Continue: Saving → Saved (brief) → Failed · Retry — slot stays mounted so the header does not shift |
+| Render isolation        | Autosave store subscriptions live in the review header, leave guard, and row provider — **not** the session hook or grid state hook                     |
+| Persist failure         | **Keep collection edits** — do not roll back the working copy                                                                                           |
+| Retry                   | Re-persist current collection diff; further edits reset the debounce and may succeed on their own                                                       |
+| Row failure signal      | Optional status icon + explanation on the row (same presentation family as ready / needs review) — **not** a second retry control                       |
+| Continue / in-app leave | Flush pending paced work; **block** leave or Continue if flush fails or Failed remains                                                                  |
+| Tab close / refresh     | Best-effort flush (`visibilitychange` / `beforeunload`); warn when pending or failed — browsers cannot reliably await                                   |
+
+Continue and Finalize action labels are self-explanatory; do not add subtitle hints beneath those buttons.
 
 If TanStack DB’s default is to drop optimistic state when `mutationFn` throws, adapt the persistence adapter so product behavior stays keep-edits-and-retry (beta API constraint, not a product compromise).
 

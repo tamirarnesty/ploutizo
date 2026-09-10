@@ -60,13 +60,22 @@ const deriveStatus = (
   return 'idle';
 };
 
+const arraysEqual = (left: readonly string[], right: readonly string[]) =>
+  left.length === right.length &&
+  left.every((value, index) => value === right[index]);
+
 const toSnapshot = (
-  state: DraftAutosaveState
+  state: DraftAutosaveState,
+  previous?: ImportReviewAutosaveSnapshot
 ): ImportReviewAutosaveSnapshot => {
   const status = deriveStatus(state);
+  const failedRowIds = [...state.failedRowIds];
   return {
     status,
-    failedRowIds: [...state.failedRowIds],
+    failedRowIds:
+      previous && arraysEqual(previous.failedRowIds, failedRowIds)
+        ? previous.failedRowIds
+        : failedRowIds,
     hasUnsavedWork: status === 'saving' || status === 'failed',
     failedSelectionRowIds: [...state.failedSelectionRowIds],
     failedFieldKeys: state.failedFieldKeys,
@@ -74,7 +83,7 @@ const toSnapshot = (
 };
 
 const cacheSnapshot = (draftId: string, state: DraftAutosaveState) => {
-  draftSnapshots.set(draftId, toSnapshot(state));
+  draftSnapshots.set(draftId, toSnapshot(state, draftSnapshots.get(draftId)));
 };
 
 const emit = (draftId: string) => {

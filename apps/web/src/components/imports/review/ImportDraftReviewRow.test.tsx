@@ -49,6 +49,10 @@ vi.mock('@/lib/data-access/imports/rederiveImportDraftWorkingCopy', () => ({
   rederiveImportDraftWorkingCopy: vi.fn(),
 }));
 
+vi.mock('@/lib/data-access/imports/useImportReviewAutosave', () => ({
+  useImportReviewAutosaveFailedRowIds: () => [],
+}));
+
 const baseRow = (): ImportDraftRow => ({
   id: '33333333-3333-4333-8333-333333333333',
   batchId: '11111111-1111-4111-8111-111111111111',
@@ -93,7 +97,6 @@ const renderRowFields = (row: ImportDraftRow) =>
         categories={[mockCategory]}
         orgMembers={[]}
         updateRow={updateRow}
-        failedRowIds={[]}
       >
         <ImportReviewDescriptionCell row={row} />
         <ImportDraftReviewRowDetails row={row} />

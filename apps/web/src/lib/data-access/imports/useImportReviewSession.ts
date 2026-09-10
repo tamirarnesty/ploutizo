@@ -1,14 +1,8 @@
-import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLiveQuery } from '@tanstack/react-db';
 import type { ImportDraftRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
-import {
-  getImportReviewAutosaveSnapshot,
-  releaseImportReviewAutosave,
-  subscribeImportReviewAutosave,
-  waitForImportReviewAutosaveSettled,
-} from './importReviewAutosave';
 import {
   flushImportDraftRowPacedMutations,
   getImportDraftRowPacedMutations,
@@ -20,10 +14,14 @@ import {
   persistImportDraftSelection,
   retryFailedImportDraftSelection,
 } from './persistImportDraftSelection';
+import {
+  getImportReviewAutosaveSnapshot,
+  releaseImportReviewAutosave,
+  waitForImportReviewAutosaveSettled,
+} from './importReviewAutosave';
 import { importDraftQueryKey } from './queryKeys';
 import { fetchImportDraft } from './useGetImportDraft';
 import { toImportDraftMeta } from './toImportDraftMeta';
-import type { ImportReviewAutosaveStatus } from './importReviewAutosave';
 import type { ImportDraftMeta } from './toImportDraftMeta';
 
 export interface ImportReviewSession {
@@ -35,9 +33,6 @@ export interface ImportReviewSession {
   updateRow: (rowId: string, patch: UpdateImportDraftRowInput) => void;
   /** Import-set selection: collection first, then bulk selection API. */
   setSelection: (rowIds: string[], selectedForImport: boolean) => void;
-  autosaveStatus: ImportReviewAutosaveStatus;
-  failedRowIds: string[];
-  hasUnsavedWork: boolean;
   retryAutosave: () => void;
   /** Flush pending paced work. Returns false when Failed remains. */
   flush: () => Promise<boolean>;
@@ -53,12 +48,6 @@ export const useImportReviewSession = (
   const rowsCollection = useMemo(
     () => getImportDraftRowsCollection(draftId),
     [draftId]
-  );
-
-  const autosave = useSyncExternalStore(
-    (onStoreChange) => subscribeImportReviewAutosave(draftId, onStoreChange),
-    () => getImportReviewAutosaveSnapshot(draftId),
-    () => getImportReviewAutosaveSnapshot(draftId)
   );
 
   useEffect(() => {
@@ -123,9 +112,6 @@ export const useImportReviewSession = (
     isError: metaQuery.isError,
     updateRow,
     setSelection,
-    autosaveStatus: autosave.status,
-    failedRowIds: autosave.failedRowIds,
-    hasUnsavedWork: autosave.hasUnsavedWork,
     retryAutosave,
     flush,
   };

@@ -346,13 +346,6 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
                 {transportError && !discardError ? 'Retry' : 'Finalize import'}
               </LoadingButton>
             </div>
-            <Text
-              variant="body-sm"
-              className="max-w-sm text-right text-muted-foreground"
-            >
-              This page is the confirmation checkpoint. Finalizing records the
-              prepared outcomes.
-            </Text>
           </div>
         </div>
 

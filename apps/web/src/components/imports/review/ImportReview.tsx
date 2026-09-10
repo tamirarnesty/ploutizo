@@ -27,7 +27,7 @@ import {
   useImportReviewSession,
 } from '@/lib/data-access/imports';
 import { ImportDraftReview } from './ImportDraftReview';
-import { useImportReviewLeaveGuard } from './useImportReviewLeaveGuard';
+import { ImportReviewLeaveGuard } from './ImportReviewLeaveGuard';
 
 interface ImportReviewProps {
   draftId: string;
@@ -54,15 +54,13 @@ const sessionReviewProps = (
 ) => ({
   updateRow: session.updateRow,
   setSelection: session.setSelection,
-  autosaveStatus: session.autosaveStatus,
-  failedRowIds: session.failedRowIds,
   retryAutosave: session.retryAutosave,
   flush: session.flush,
 });
 
 export const ImportReview = ({ draftId }: ImportReviewProps) => {
   const session = useImportReviewSession(draftId);
-  const { meta, rows, isLoading, isError, hasUnsavedWork, flush } = session;
+  const { meta, rows, isLoading, isError, flush } = session;
   const reviewProps = sessionReviewProps(session);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -73,8 +71,6 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
   const [inboundIssues, setInboundIssues] = useState<
     ImportRequirementFailure[]
   >([]);
-
-  useImportReviewLeaveGuard({ hasUnsavedWork, flush });
 
   useEffect(() => {
     if (!importReviewState) return;
@@ -139,6 +135,7 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
 
   return (
     <div className={importReviewPageClassName}>
+      <ImportReviewLeaveGuard draftId={draftId} flush={flush} />
       <ImportReviewBreadcrumbs />
       {body}
     </div>

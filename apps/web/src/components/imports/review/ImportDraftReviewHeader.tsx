@@ -2,25 +2,22 @@ import { Button } from '@ploutizo/ui/components/button';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
 import { formatAccountLabel } from '@ploutizo/utils';
-import type { ImportDraftRow } from '@ploutizo/types';
-import type {
-  ImportDraftMeta,
-  ImportReviewAutosaveStatus,
-} from '@/lib/data-access/imports';
+import type { ImportDraftRow, OrgMember } from '@ploutizo/types';
+import type { ImportDraftMeta } from '@/lib/data-access/imports';
+import { useImportReviewAutosaveStatus } from '@/lib/data-access/imports/useImportReviewAutosave';
 import { formatImportDraftReviewSubtitle } from '../lib/importPresentation';
+import { getImportReviewContinueEnabled } from '../lib/getImportReviewContinueEnabled';
 import {
-  IMPORT_REVIEW_CONTINUE_HINT_ID,
-  ImportReviewContinueHint,
-} from './ImportReviewContinueHint';
+  IMPORT_REVIEW_AUTOSAVE_STATUS_ID,
+  ImportReviewAutosaveStatus,
+} from './ImportReviewAutosaveStatus';
 
 interface ImportDraftReviewHeaderProps {
   meta?: ImportDraftMeta;
   rows?: ImportDraftRow[];
+  orgMembers?: OrgMember[];
   isLoading?: boolean;
-  canContinue: boolean;
-  continueBlocker: string | null;
   isContinuing: boolean;
-  autosaveStatus: ImportReviewAutosaveStatus;
   onRetryAutosave: () => void;
   onContinue: () => void | Promise<void>;
 }
@@ -38,15 +35,21 @@ const toLiveSubtitleMeta = (
 export const ImportDraftReviewHeader = ({
   meta,
   rows = [],
+  orgMembers = [],
   isLoading = false,
-  canContinue,
-  continueBlocker,
   isContinuing,
-  autosaveStatus,
   onRetryAutosave,
   onContinue,
 }: ImportDraftReviewHeaderProps) => {
-  const continueEnabled = canContinue && !isContinuing;
+  const draftId = meta?.id ?? '';
+  const autosaveStatus = useImportReviewAutosaveStatus(draftId);
+  const continueEnabled = getImportReviewContinueEnabled(
+    meta,
+    rows,
+    orgMembers,
+    autosaveStatus,
+    isContinuing
+  );
 
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -74,7 +77,7 @@ export const ImportDraftReviewHeader = ({
           <Button
             disabled={!continueEnabled}
             type="button"
-            aria-describedby={IMPORT_REVIEW_CONTINUE_HINT_ID}
+            aria-describedby={IMPORT_REVIEW_AUTOSAVE_STATUS_ID}
             onClick={() => {
               void onContinue();
             }}
@@ -83,13 +86,13 @@ export const ImportDraftReviewHeader = ({
           </Button>
         )}
         {meta ? (
-          <ImportReviewContinueHint
-            autosaveStatus={autosaveStatus}
-            continueBlocker={continueBlocker}
-            isContinuing={isContinuing}
+          <ImportReviewAutosaveStatus
+            status={autosaveStatus}
             onRetryAutosave={onRetryAutosave}
           />
-        ) : null}
+        ) : (
+          <div className="min-h-5 min-w-32" aria-hidden />
+        )}
       </div>
     </div>
   );

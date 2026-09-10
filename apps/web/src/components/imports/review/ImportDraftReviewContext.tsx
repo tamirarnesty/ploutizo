@@ -6,6 +6,7 @@ import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import type { Category } from '@/lib/data-access/categories';
 import { getImportDraftRowsCollection } from '@/lib/data-access/imports/getImportDraftRowsCollection';
 import { evaluateImportDraftWorkingCopy } from '@/lib/data-access/imports/rederiveImportDraftWorkingCopy';
+import { useImportReviewAutosaveFailedRowIds } from '@/lib/data-access/imports/useImportReviewAutosave';
 import type { ReactNode } from 'react';
 
 interface ImportDraftReviewContextValue {
@@ -27,7 +28,6 @@ interface ImportDraftReviewProviderProps {
   categories: Category[];
   orgMembers: OrgMember[];
   updateRow: (rowId: string, patch: UpdateImportDraftRowInput) => void;
-  failedRowIds: string[];
   children: ReactNode;
 }
 
@@ -37,9 +37,9 @@ export const ImportDraftReviewProvider = ({
   categories,
   orgMembers,
   updateRow,
-  failedRowIds,
   children,
 }: ImportDraftReviewProviderProps) => {
+  const failedRowIds = useImportReviewAutosaveFailedRowIds(draftId);
   const rowsCollection = useMemo(
     () => getImportDraftRowsCollection(draftId),
     [draftId]

@@ -11,10 +11,7 @@ import {
 } from '@ploutizo/ui/components/empty';
 import type { ImportDraftRow, ImportRequirementFailure } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
-import type {
-  ImportDraftMeta,
-  ImportReviewAutosaveStatus,
-} from '@/lib/data-access/imports';
+import type { ImportDraftMeta } from '@/lib/data-access/imports';
 import {
   getImportContinueGateMessage,
   getImportRequirementFailures,
@@ -44,8 +41,6 @@ interface ImportDraftReviewProps {
   isLoading?: boolean;
   updateRow: (rowId: string, patch: UpdateImportDraftRowInput) => void;
   setSelection: (rowIds: string[], selectedForImport: boolean) => void;
-  autosaveStatus: ImportReviewAutosaveStatus;
-  failedRowIds: string[];
   retryAutosave: () => void;
   flush: () => Promise<boolean>;
   inboundIssues?: ImportRequirementFailure[];
@@ -87,8 +82,6 @@ const ImportDraftReviewContent = ({
   isLoading = false,
   updateRow,
   setSelection,
-  autosaveStatus,
-  failedRowIds,
   retryAutosave,
   flush,
   inboundIssues = [],
@@ -104,13 +97,11 @@ const ImportDraftReviewContent = ({
   const reviewState = useImportDraftReviewState({
     meta,
     rows,
-    orgMembers,
     isLoading,
     setSelection,
-    autosaveStatus,
     priorityRowIds,
   });
-  const { canContinue, continueBlocker, hasReviewableRows } = reviewState;
+  const { hasReviewableRows } = reviewState;
   const draftId = meta?.id ?? '';
   const flushPendingInputs = useFlushPendingInputs();
   const { continueImport, isPending } = useContinueImportDraft(draftId);
@@ -160,11 +151,9 @@ const ImportDraftReviewContent = ({
       <ImportDraftReviewHeader
         meta={meta}
         rows={rows}
+        orgMembers={orgMembers}
         isLoading={isLoading}
-        canContinue={canContinue}
-        continueBlocker={continueBlocker}
         isContinuing={isPending}
-        autosaveStatus={autosaveStatus}
         onRetryAutosave={retryAutosave}
         onContinue={handleContinue}
       />
@@ -195,7 +184,6 @@ const ImportDraftReviewContent = ({
             categories={categories}
             orgMembers={orgMembers}
             updateRow={updateRow}
-            failedRowIds={failedRowIds}
           >
             <ImportDraftReviewTable
               key={meta.id}

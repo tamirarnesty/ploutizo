@@ -31,6 +31,10 @@ vi.mock('@/lib/data-access/accounts', () => ({
   }),
 }));
 
+vi.mock('@/lib/data-access/imports/useImportReviewAutosave', () => ({
+  useImportReviewAutosaveFailedRowIds: () => [],
+}));
+
 vi.mock('@ploutizo/ui/components/select', async () => {
   const React = await import('react');
   const SelectChangeContext = React.createContext<(value: string) => void>(
@@ -100,7 +104,6 @@ const renderPaidFromCell = (row: ImportDraftRow) =>
       categories={[]}
       orgMembers={[]}
       updateRow={updateRow}
-      failedRowIds={[]}
     >
       <ImportReviewPaidFromCell row={row} />
     </ImportDraftReviewProvider>

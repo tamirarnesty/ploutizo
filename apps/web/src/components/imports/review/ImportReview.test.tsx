@@ -107,9 +107,6 @@ const toSession = (value = draft) => {
     isError: false,
     updateRow: vi.fn(),
     setSelection: vi.fn(),
-    autosaveStatus: 'idle' as const,
-    failedRowIds: [] as string[],
-    hasUnsavedWork: false,
     retryAutosave: vi.fn(),
     flush: vi.fn(() => Promise.resolve(true)),
   };
@@ -175,9 +172,6 @@ describe('ImportReview', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('table')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
-    expect(
-      screen.getByText('Select at least one row to continue.')
-    ).toBeInTheDocument();
   });
 
   it('shows an empty state when no rows are reviewable', () => {

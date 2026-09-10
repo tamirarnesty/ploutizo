@@ -133,11 +133,18 @@ vi.mock('@/hooks/persistedPageSize', () => ({
   }),
 }));
 
+const autosaveStatusMock = vi.hoisted(() => ({
+  current: 'idle' as 'idle' | 'saving' | 'saved' | 'failed',
+}));
+
+vi.mock('@/lib/data-access/imports/useImportReviewAutosave', () => ({
+  useImportReviewAutosaveStatus: () => autosaveStatusMock.current,
+  useImportReviewAutosaveFailedRowIds: () => [],
+}));
+
 const reviewSessionProps = {
   updateRow,
   setSelection,
-  autosaveStatus: 'idle' as const,
-  failedRowIds: [] as string[],
   retryAutosave,
   flush,
 };
@@ -163,6 +170,7 @@ const getRowExpandButtons = () =>
 
 describe('ImportDraftReview', () => {
   beforeEach(() => {
+    autosaveStatusMock.current = 'idle';
     resetRouterMocks();
     vi.clearAllMocks();
     HTMLElement.prototype.scrollIntoView = vi.fn();
@@ -190,9 +198,6 @@ describe('ImportDraftReview', () => {
     renderReview();
 
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
-    expect(
-      screen.getByText('Select at least one row to continue.')
-    ).toBeInTheDocument();
   });
 
   it('selects a row via the row checkbox', async () => {
@@ -400,11 +405,6 @@ describe('ImportDraftReview', () => {
     );
 
     expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
-    expect(
-      screen.getByText(
-        'Continue prepares the selected rows for finalize import.'
-      )
-    ).toBeInTheDocument();
   });
 
   it('continues when selected rows are ready', async () => {
@@ -461,6 +461,7 @@ describe('ImportDraftReview', () => {
   });
 
   it('disables Continue when persistence has failed', () => {
+    autosaveStatusMock.current = 'failed';
     const draft = makeImportDraft({
       rows: [
         makeImportDraftRow({
@@ -474,12 +475,7 @@ describe('ImportDraftReview', () => {
     const { rows, ...meta } = draft;
     render(
       <TooltipProvider delay={0}>
-        <ImportDraftReview
-          meta={meta}
-          rows={rows}
-          {...reviewSessionProps}
-          autosaveStatus="failed"
-        />
+        <ImportDraftReview meta={meta} rows={rows} {...reviewSessionProps} />
       </TooltipProvider>
     );
 
@@ -489,6 +485,7 @@ describe('ImportDraftReview', () => {
   });
 
   it('disables Continue while review persistence is in flight', () => {
+    autosaveStatusMock.current = 'saving';
     const draft = makeImportDraft({
       rows: [
         makeImportDraftRow({
@@ -502,12 +499,7 @@ describe('ImportDraftReview', () => {
     const { rows, ...meta } = draft;
     render(
       <TooltipProvider delay={0}>
-        <ImportDraftReview
-          meta={meta}
-          rows={rows}
-          {...reviewSessionProps}
-          autosaveStatus="saving"
-        />
+        <ImportDraftReview meta={meta} rows={rows} {...reviewSessionProps} />
       </TooltipProvider>
     );
 
