@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import type { ImportTargetAccount } from '@ploutizo/types';
 import { apiFetch } from '@/lib/queryClient';
 import { importTargetsQueryKey } from './queryKeys';
@@ -11,8 +11,11 @@ export const fetchImportTargets = async (): Promise<ImportTargetAccount[]> => {
   return r.data;
 };
 
-export const useGetImportTargets = (): UseQueryResult<ImportTargetAccount[]> =>
-  useQuery({
+export const importTargetsQueryOptions = () =>
+  queryOptions({
     queryKey: importTargetsQueryKey,
     queryFn: fetchImportTargets,
   });
+
+export const useGetImportTargets = (): UseQueryResult<ImportTargetAccount[]> =>
+  useQuery(importTargetsQueryOptions());

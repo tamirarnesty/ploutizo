@@ -1,4 +1,8 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import {
+  queryOptions,
+  useInfiniteQuery,
+  useQuery,
+} from '@tanstack/react-query';
 import type { ImportHistoryPage } from '@ploutizo/types';
 import { apiFetch } from '@/lib/queryClient';
 import {
@@ -24,13 +28,18 @@ export const fetchImportHistoryPage = async (input: {
   return apiFetch<ImportHistoryPage>(`/api/imports/history?${qs.toString()}`);
 };
 
-export const useGetImportHistory = (
+export const importHistoryPageQueryOptions = (
   limit = IMPORT_HUB_HISTORY_LIMIT
-): UseQueryResult<ImportHistoryPage> =>
-  useQuery({
+) =>
+  queryOptions({
     queryKey: importHistoryPageQueryKey(limit),
     queryFn: () => fetchImportHistoryPage({ limit }),
   });
+
+export const useGetImportHistory = (
+  limit = IMPORT_HUB_HISTORY_LIMIT
+): UseQueryResult<ImportHistoryPage> =>
+  useQuery(importHistoryPageQueryOptions(limit));
 
 export const useGetImportHistoryInfinite = (
   limit = IMPORT_HISTORY_PAGE_SIZE

@@ -15,6 +15,7 @@ import { useTablePageSize } from '@/hooks/persistedPageSize';
 import { TransactionsTable } from './TransactionsTable';
 import { TransactionSheet } from './TransactionSheet';
 import { buildFilterFields } from './TransactionFilterFields';
+import { buildTransactionQueryParams } from './transactionSearch';
 import type { TransactionSearch } from './transactionSearch';
 
 // Strips URL params that match their defaults to keep the URL clean (D-04)
@@ -277,29 +278,10 @@ export const Transactions = () => {
   const { pageSize: limit, setPageSize } = useTablePageSize('transactions');
 
   // Fire ALL queries at top level — no waterfalls (vercel-react-best-practices)
-  const { data: txData, isLoading } = useGetTransactions({
-    page: search.page ?? 1,
-    limit,
-    sort: search.sort ?? 'date',
-    order: search.order ?? 'desc',
-    type: search.type,
-    dateFrom: search.dateFrom,
-    dateTo: search.dateTo,
-    accountId: search.accountId,
-    categoryId: search.categoryId,
-    assigneeId: search.assigneeId,
-    tagIds: search.tagIds,
-    type_op: search.type_op,
-    accountId_op: search.accountId_op,
-    categoryId_op: search.categoryId_op,
-    assigneeId_op: search.assigneeId_op,
-    tagIds_op: search.tagIds_op,
-    dateRange_op: search.dateRange_op,
-    importLink:
-      search.importBatchId && search.importOutcome
-        ? { batchId: search.importBatchId, outcome: search.importOutcome }
-        : undefined,
-  });
+  const transactionQueryParams = buildTransactionQueryParams(search, limit);
+  const { data: txData, isLoading } = useGetTransactions(
+    transactionQueryParams
+  );
 
   const { data: accounts = [] } = useGetAccounts();
   const { data: categories = [] } = useGetCategories();
