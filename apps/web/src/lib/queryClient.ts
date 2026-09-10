@@ -23,6 +23,13 @@ export const queryClient = new QueryClient({
   },
 });
 
+// Drop in-flight work first so a late response cannot repopulate the cache
+// after sign-out, then wipe queries and mutations so the next session starts cold.
+export const clearSessionQueryCache = () => {
+  void queryClient.cancelQueries();
+  queryClient.clear();
+};
+
 // Typed API fetch helper — all API calls go through this, never raw fetch
 export const apiFetch = async <T>(
   path: string,

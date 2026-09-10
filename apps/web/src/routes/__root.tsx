@@ -13,6 +13,7 @@ import appCss from '@ploutizo/ui/globals.css?url';
 import { ThemeProvider } from '@ploutizo/ui/components/theme-provider';
 import { Toaster } from '@ploutizo/ui/components/sonner';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
+import { useClearSessionQueryCache } from '../lib/auth/useClearSessionQueryCache';
 import { queryClient, setTokenGetter } from '../lib/queryClient';
 import { MoneyLocaleProvider } from '../lib/money/money-locale';
 import { AppDevtools } from '../components/devtools/AppDevtools';
@@ -20,7 +21,8 @@ import { NotFound } from '../components/not-found/NotFound';
 import { ErrorBoundary } from '../components/error-boundary/ErrorBoundary';
 import type { RouterContext } from '../router';
 
-// TokenInitializer: wires Clerk's getToken into the React Query apiFetch helper.
+// TokenInitializer: wires Clerk's getToken into the React Query apiFetch helper
+// and drops the query cache when the signed-in user changes (including logout).
 // Must run inside ClerkProvider so useAuth() has access to the Clerk session.
 // getToken stored in a ref so setTokenGetter is called once — in-flight queries
 // always read the latest token via the ref without re-registering the getter.
@@ -28,6 +30,7 @@ const TokenInitializer = () => {
   const { getToken } = useAuth();
   const getTokenRef = useRef(getToken);
   getTokenRef.current = getToken;
+  useClearSessionQueryCache();
   useEffect(() => {
     setTokenGetter(() => getTokenRef.current());
   }, []);
