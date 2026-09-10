@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
 import { makeImportDraftSummary } from '@/components/imports/test-fixtures/importDraft';
 import { useGetImportDrafts } from '@/lib/data-access/imports';
+import { importDraftReviewRoute } from '@/lib/navigation';
 import { CommandPalette } from './CommandPalette';
 import { CommandPaletteContextProvider } from './useCommandPalette';
 
@@ -64,9 +65,8 @@ describe('CommandPalette', () => {
 
     await user.click(screen.getByText('Visa · ••1234 — august.csv'));
 
-    expect(routerMocks.navigate).toHaveBeenCalledWith({
-      to: '/import/$draftId',
-      params: { draftId: draft.id },
-    });
+    expect(routerMocks.navigate).toHaveBeenCalledWith(
+      importDraftReviewRoute(draft.id)
+    );
   });
 });

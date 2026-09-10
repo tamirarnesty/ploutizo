@@ -32,6 +32,10 @@ import {
   useGetPreparedImport,
   useInvalidatePreparedImport,
 } from '@/lib/data-access/imports';
+import {
+  importDraftReviewPathname,
+  importDraftReviewRoute,
+} from '@/lib/navigation';
 
 interface ImportFinalizeProps {
   draftId: string;
@@ -153,8 +157,7 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
   const returnToReview = useCallback(
     (issues?: ReturnType<typeof getImportRequirementFailures>) => {
       void navigate({
-        to: '/import/$draftId',
-        params: { draftId },
+        ...importDraftReviewRoute(draftId),
         state: {
           importReview:
             issues && issues.length > 0 ? { issues } : { prepareAgain: true },
@@ -171,8 +174,7 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
     redirectedRef.current = true;
     if (redirect === 'review') {
       void navigate({
-        to: '/import/$draftId',
-        params: { draftId },
+        ...importDraftReviewRoute(draftId),
         state: { importReview: { prepareAgain: true } },
       });
       return;
@@ -206,8 +208,7 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
       return;
     }
     void navigate({
-      to: '/import/$draftId',
-      params: { draftId },
+      ...importDraftReviewRoute(draftId),
       ignoreBlocker: true,
     });
   }, [confirmPreparedDiscard, draftId, navigate]);
@@ -216,7 +217,8 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
     shouldBlockFn: async ({ current, next }) => {
       if (leavingRef.current) return false;
       if (current.pathname === next.pathname) return false;
-      const goingToReview = next.pathname === `/import/${draftId}`;
+      const goingToReview =
+        next.pathname === importDraftReviewPathname(draftId);
       if (!goingToReview) return false;
       leavingRef.current = true;
       const discarded = await confirmPreparedDiscard();
