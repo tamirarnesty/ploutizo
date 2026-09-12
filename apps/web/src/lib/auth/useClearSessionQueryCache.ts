@@ -1,21 +1,26 @@
 import { useAuth } from '@clerk/tanstack-react-start';
-import { useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { clearSessionQueryCache } from '@/lib/queryClient';
 import { shouldClearSessionQueryCache } from './shouldClearSessionQueryCache';
 
+// Sync during render — not in an effect — so route children in the same commit
+// cannot read the previous account's cache on a loaded-user switch.
 export const useClearSessionQueryCache = () => {
   const { isLoaded, userId } = useAuth();
-  const previousUserIdRef = useRef<string | null | undefined>(undefined);
+  const [previousUserId, setPreviousUserId] = useState<
+    string | null | undefined
+  >(undefined);
 
-  useEffect(() => {
-    const { shouldClear, nextUserId } = shouldClearSessionQueryCache(
-      isLoaded,
-      previousUserIdRef.current,
-      userId
-    );
-    previousUserIdRef.current = nextUserId;
+  const { shouldClear, nextUserId } = shouldClearSessionQueryCache(
+    isLoaded,
+    previousUserId,
+    userId
+  );
+
+  if (previousUserId !== nextUserId) {
     if (shouldClear) {
       clearSessionQueryCache();
     }
-  }, [isLoaded, userId]);
+    setPreviousUserId(nextUserId);
+  }
 };

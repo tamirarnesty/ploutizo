@@ -24,6 +24,8 @@ import type { RouterContext } from '../router';
 // TokenInitializer: wires Clerk's getToken into the React Query apiFetch helper
 // and drops the query cache when the signed-in user changes (including logout).
 // Must run inside ClerkProvider so useAuth() has access to the Clerk session.
+// Must render before route children so a user switch clears the shared cache
+// before authenticated screens can read the previous account's entries.
 // getToken stored in a ref so setTokenGetter is called once — in-flight queries
 // always read the latest token via the ref without re-registering the getter.
 const TokenInitializer = () => {

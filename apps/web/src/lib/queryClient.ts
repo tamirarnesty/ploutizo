@@ -1,4 +1,4 @@
-import { QueryClient } from '@tanstack/react-query';
+import { MutationCache, QueryClient } from '@tanstack/react-query';
 
 // API base URL from env var — never hardcode ploutizo.app or localhost
 const API_BASE_URL = import.meta.env.VITE_API_URL as string;
@@ -10,7 +10,59 @@ export const setTokenGetter = (getter: () => Promise<string | null>) => {
   tokenGetter = getter;
 };
 
+// Bumped on every session cache clear so callbacks from an older session cannot
+// write the previous account's snapshots back into the shared query cache.
+let queryCacheSessionEpoch = 0;
+
+const bindMutationCallbackToSession = <
+  TCallback extends (...args: never[]) => unknown,
+>(
+  startedAtEpoch: number,
+  callback: TCallback | undefined
+): TCallback | undefined => {
+  if (!callback) {
+    return undefined;
+  }
+  return ((...args: Parameters<TCallback>) => {
+    if (startedAtEpoch !== queryCacheSessionEpoch) {
+      return;
+    }
+    return callback(...args);
+  }) as TCallback;
+};
+
+const createSessionBoundMutationCache = () => {
+  const mutationCache = new MutationCache();
+  const build = mutationCache.build.bind(mutationCache);
+  mutationCache.build = ((client, options, state) => {
+    const startedAtEpoch = queryCacheSessionEpoch;
+    const mutation = build(client, options, state);
+    mutation.setOptions({
+      ...mutation.options,
+      onMutate: bindMutationCallbackToSession(
+        startedAtEpoch,
+        mutation.options.onMutate
+      ),
+      onSuccess: bindMutationCallbackToSession(
+        startedAtEpoch,
+        mutation.options.onSuccess
+      ),
+      onError: bindMutationCallbackToSession(
+        startedAtEpoch,
+        mutation.options.onError
+      ),
+      onSettled: bindMutationCallbackToSession(
+        startedAtEpoch,
+        mutation.options.onSettled
+      ),
+    });
+    return mutation;
+  }) as MutationCache['build'];
+  return mutationCache;
+};
+
 export const queryClient = new QueryClient({
+  mutationCache: createSessionBoundMutationCache(),
   defaultOptions: {
     queries: {
       // staleTime: 60s — stale-while-revalidate semantics (client-swr-dedup rule).
@@ -25,7 +77,10 @@ export const queryClient = new QueryClient({
 
 // Drop in-flight work first so a late response cannot repopulate the cache
 // after sign-out, then wipe queries and mutations so the next session starts cold.
+// Increment the session epoch before clearing so already-running mutation
+// callbacks from the previous account are ignored if they settle afterward.
 export const clearSessionQueryCache = () => {
+  queryCacheSessionEpoch += 1;
   void queryClient.cancelQueries();
   queryClient.clear();
 };
