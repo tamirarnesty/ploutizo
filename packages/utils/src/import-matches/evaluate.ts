@@ -17,6 +17,11 @@ import type {
 export interface EvaluateImportMatchesOptions {
   targetAccountId: string;
   existingTransactions: readonly MatchTargetFact[];
+  /**
+   * Skip advisory_unresolved. Finalize revalidates accepted matches only;
+   * unresolved advisories are a Review-time concern.
+   */
+  ignoreUnresolvedAdvisories?: boolean;
 }
 
 export type ImportMatchDraftRowSource = {
@@ -157,6 +162,7 @@ export const evaluateImportMatches = (
     }
 
     if (
+      !options.ignoreUnresolvedAdvisories &&
       !row.reviewMatchDismissed &&
       !row.reviewMatchedTransactionId &&
       advisoryCandidates.length > 0 &&
