@@ -242,6 +242,8 @@ export interface ReviewedImportValues {
 export interface ImportRowProvenance {
   externalId: string | null;
   rawDescription: string | null;
+  /** Parsed description used for match fallback when rawDescription is null. */
+  parsedDescription: string | null;
 }
 
 /** Revision-bound prepared-row snapshot. Selection lives on the outcome, not here. */
@@ -285,6 +287,24 @@ export interface ImportPreparedOutcomeCounts {
   skipped: number;
   invalid: number;
 }
+
+export const countPreparedOutcomes = (
+  outcomes: readonly { outcome: string }[]
+): ImportPreparedOutcomeCounts => {
+  const counts: ImportPreparedOutcomeCounts = {
+    created: 0,
+    matched: 0,
+    skipped: 0,
+    invalid: 0,
+  };
+  for (const { outcome } of outcomes) {
+    if (outcome === 'created') counts.created += 1;
+    else if (outcome === 'matched') counts.matched += 1;
+    else if (outcome === 'skipped') counts.skipped += 1;
+    else if (outcome === 'invalid') counts.invalid += 1;
+  }
+  return counts;
+};
 
 export interface ImportPreparedConfirmationRow {
   batchRowId: string;

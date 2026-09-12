@@ -36,6 +36,26 @@ describe('buildPreparedImportRowSnapshot', () => {
       provenance: {
         externalId: 'visa-1001',
         rawDescription: null,
+        parsedDescription: 'COFFEE SHOP #42',
+      },
+    });
+  });
+
+  it('keeps parsedDescription when the reviewed description differs', () => {
+    expect(
+      buildPreparedImportRowSnapshot({
+        ...parsedRow,
+        reviewDescription: 'Neighborhood Coffee',
+        sourceDescription: null,
+      })
+    ).toEqual({
+      reviewedValues: expect.objectContaining({
+        description: 'Neighborhood Coffee',
+      }),
+      provenance: {
+        externalId: 'visa-1001',
+        rawDescription: null,
+        parsedDescription: 'COFFEE SHOP #42',
       },
     });
   });
