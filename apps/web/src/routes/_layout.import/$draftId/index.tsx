@@ -22,7 +22,7 @@ export const Route = createFileRoute('/_layout/import/$draftId/')({
         .ensureQueryData(importDraftQueryOptions(params.draftId))
         .catch(() => undefined),
       context.queryClient
-        .ensureQueryData(accountsQueryOptions())
+        .ensureQueryData(accountsQueryOptions(true))
         .catch(() => undefined),
     ]);
     await getImportDraftRowsCollection(params.draftId)
