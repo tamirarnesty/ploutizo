@@ -1,9 +1,9 @@
 import { db } from '@ploutizo/db';
 import { verifyPreparedImportSetForFinalize } from '@ploutizo/utils/import-set-verification';
+import { countPreparedOutcomes } from '@ploutizo/types';
 import type { Transaction } from '@ploutizo/db';
 import type {
   ImportCompletedResult,
-  ImportPreparedOutcomeCounts,
   ImportRequirementFailure,
   ImportRequirementFailureDetails,
   ImportTransactionLinkOutcome,
@@ -56,24 +56,6 @@ const conflictError = () =>
     'This prepared import set cannot be finalized.',
     'IMPORT_FINALIZE_CONFLICT'
   );
-
-const countPreparedOutcomes = (
-  outcomes: readonly Pick<ImportPreparedOutcomeRecord, 'outcome'>[]
-): ImportPreparedOutcomeCounts => {
-  const counts: ImportPreparedOutcomeCounts = {
-    created: 0,
-    matched: 0,
-    skipped: 0,
-    invalid: 0,
-  };
-  for (const outcome of outcomes) {
-    if (outcome.outcome === 'created') counts.created += 1;
-    else if (outcome.outcome === 'matched') counts.matched += 1;
-    else if (outcome.outcome === 'skipped') counts.skipped += 1;
-    else if (outcome.outcome === 'invalid') counts.invalid += 1;
-  }
-  return counts;
-};
 
 type FinalizeTxResult =
   | { kind: 'ok'; result: ImportCompletedResult }
@@ -251,17 +233,7 @@ export const finalizeImportDraft = async (
       prepared.id,
       outcomes
     );
-    if (applyResult.kind === 'fail') {
-      return applyResult;
-    }
-
-    return {
-      kind: 'ok' as const,
-      result: {
-        ...applyResult.result,
-        preparedSetId,
-      },
-    };
+    return applyResult;
   });
 
   if (outcome.kind === 'fail') throw outcome.error;

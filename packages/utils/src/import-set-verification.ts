@@ -63,9 +63,8 @@ export interface ImportRequirementAccount {
   type: TransactionAccountReference['type'];
 }
 
-export interface ImportContinueDraftFacts {
+export interface ImportExternalFacts {
   rowCount: number;
-  rows: readonly ImportDraftDurableRow[];
   targetAccount: ImportRequirementAccount;
   counterpartAccounts: ReadonlyMap<string, ImportRequirementAccount>;
   validAssigneeMemberIds: ReadonlySet<string>;
@@ -74,6 +73,10 @@ export interface ImportContinueDraftFacts {
   priorRefundsByTarget?: ReadonlyMap<string, number>;
   activeExternalIdOwners?: ReadonlyMap<string, string>;
 }
+
+export type ImportContinueDraftFacts = ImportExternalFacts & {
+  rows: readonly ImportDraftDurableRow[];
+};
 
 export interface PreparedImportOutcomeProjection {
   batchRowId: string;
@@ -93,16 +96,7 @@ export interface PreparedImportSetRow {
   snapshot: PreparedImportRowSnapshot;
 }
 
-export interface ImportFinalizeExternalFacts {
-  rowCount: number;
-  targetAccount: ImportRequirementAccount;
-  counterpartAccounts: ReadonlyMap<string, ImportRequirementAccount>;
-  validAssigneeMemberIds: ReadonlySet<string>;
-  existingTransactions: readonly MatchTargetFact[];
-  existingExpenses: ReadonlyMap<string, ExistingRefundTargetExpense>;
-  priorRefundsByTarget?: ReadonlyMap<string, number>;
-  activeExternalIdOwners?: ReadonlyMap<string, string>;
-}
+export type ImportFinalizeExternalFacts = ImportExternalFacts;
 
 export type VerifyPreparedImportSetForFinalizeResult =
   | { ready: true; verified: readonly PreparedImportSetRow[] }
@@ -266,6 +260,24 @@ const buildRefundLinkOptions = (
     : {}),
 });
 
+const PREPARED_SET_UNKNOWN_ROW_ID = 'unknown';
+
+const completenessFailure = (
+  batchRowId: string | undefined
+): ImportRequirementFailure =>
+  failure(
+    batchRowId ?? PREPARED_SET_UNKNOWN_ROW_ID,
+    'import.match.invalidated_decision'
+  );
+
+/**
+ * Reconstruct a durable row from the immutable snapshot for revalidation.
+ * Match classification uses sourceDescription ?? parsedDescription, so those
+ * come from provenance — never reviewedValues.description.
+ *
+ * Advisory unresolved is suppressed via evaluateImportMatches
+ * `{ ignoreUnresolvedAdvisories: true }`, not by forging reviewMatchDismissed.
+ */
 const toFinalizeEvaluationRow = (
   row: PreparedImportSetRow
 ): ImportDraftDurableRow => {
@@ -282,7 +294,7 @@ const toFinalizeEvaluationRow = (
     parsedDate: reviewedValues.date,
     parsedAmount: reviewedValues.amount,
     parsedType: reviewedValues.type,
-    parsedDescription: reviewedValues.description,
+    parsedDescription: provenance.parsedDescription,
     reviewCategoryId: reviewedValues.categoryId,
     reviewAssigneeMemberIds: reviewedValues.assigneeMemberIds,
     reviewCounterpartAccountId: reviewedValues.counterpartAccountId,
@@ -293,7 +305,7 @@ const toFinalizeEvaluationRow = (
     sourceDescription: provenance.rawDescription,
     reviewMatchedTransactionId:
       row.outcome === 'matched' ? row.transactionId : null,
-    reviewMatchDismissed: true,
+    reviewMatchDismissed: false,
   };
 };
 
@@ -393,12 +405,7 @@ export const verifyImportSetForContinue = (
   if (projection.length !== draftFacts.rowCount) {
     return {
       ready: false,
-      failures: [
-        failure(
-          draftFacts.rows[0]?.id ?? 'unknown',
-          'import.match.invalidated_decision'
-        ),
-      ],
+      failures: [completenessFailure(draftFacts.rows[0]?.id)],
     };
   }
 
@@ -414,7 +421,10 @@ export const verifyPreparedImportSetForFinalize = (
   currentExternalFacts: ImportFinalizeExternalFacts
 ): VerifyPreparedImportSetForFinalizeResult => {
   if (preparedRows.length !== currentExternalFacts.rowCount) {
-    return { ready: false, failures: [] };
+    return {
+      ready: false,
+      failures: [completenessFailure(preparedRows[0]?.batchRowId)],
+    };
   }
 
   const shapeFailures = verifyPreparedSetShape(preparedRows);
@@ -433,6 +443,7 @@ export const verifyPreparedImportSetForFinalize = (
   const matchEvaluations = evaluateImportMatches(evaluationRows, {
     targetAccountId: currentExternalFacts.targetAccount.id,
     existingTransactions: currentExternalFacts.existingTransactions,
+    ignoreUnresolvedAdvisories: true,
   });
 
   const failures = [

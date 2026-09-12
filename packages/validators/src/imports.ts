@@ -120,6 +120,7 @@ export const reviewedImportValuesSchema = z.object({
 export const importRowProvenanceSchema = z.object({
   externalId: z.string().nullable(),
   rawDescription: z.string().nullable(),
+  parsedDescription: z.string().nullable(),
 });
 
 export const preparedImportRowSnapshotSchema = z.object({

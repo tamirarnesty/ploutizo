@@ -4,6 +4,7 @@ import { verifyImportSetForContinue } from '@ploutizo/utils/import-set-verificat
 import { preparedImportRowSnapshotSchema } from '@ploutizo/validators';
 import type {
   ImportContinueDraftFacts,
+  ImportExternalFacts,
   ImportFinalizeExternalFacts,
   PreparedImportOutcomeProjection,
 } from '@ploutizo/utils/import-set-verification';
@@ -21,6 +22,7 @@ import type {
   ImportPreparedSetRecord,
 } from '@/lib/queries/import-prepared-sets';
 import type { AccountWriteReference } from '@/lib/queries/scope';
+import type { ImportMatchTargetQueryInput } from '@/lib/queries/import-match-targets';
 import { DomainError, NotFoundError } from '@/lib/errors';
 import {
   deleteImportPreparedSet,
@@ -72,18 +74,18 @@ export const loadCounterpartAccounts = async (
   return counterparts;
 };
 
-export const loadImportContinueDraftFacts = async (
+const loadImportExternalFacts = async (
   orgId: string,
   targetAccountId: string,
-  draft: { rowCount: number },
-  draftRows: readonly ImportDraftRowRecord[],
+  input: {
+    refundOfIds: string[];
+    matchQuery: ImportMatchTargetQueryInput;
+    counterpartIds: readonly string[];
+    createdExternalIds: readonly string[];
+    rowCount: number;
+  },
   tx: Transaction
-): Promise<ImportContinueDraftFacts> => {
-  const durableRows = draftRows.map(toImportDraftDurableRow);
-  const refundOfIds = draftRows.flatMap((row) =>
-    row.reviewRefundOf ? [row.reviewRefundOf] : []
-  );
-
+): Promise<ImportExternalFacts> => {
   const [
     existingExpenses,
     priorRefundsByTarget,
@@ -91,14 +93,9 @@ export const loadImportContinueDraftFacts = async (
     members,
     targetAccount,
   ] = await Promise.all([
-    listRefundTargetExpensesByIds(orgId, refundOfIds, tx),
-    sumPriorRefundTotalsByTransactionTarget(orgId, refundOfIds, tx),
-    listImportMatchTargets(
-      orgId,
-      targetAccountId,
-      importMatchTargetQueryInput(draftRows),
-      tx
-    ),
+    listRefundTargetExpensesByIds(orgId, input.refundOfIds, tx),
+    sumPriorRefundTotalsByTransactionTarget(orgId, input.refundOfIds, tx),
+    listImportMatchTargets(orgId, targetAccountId, input.matchQuery, tx),
     listOrgMembers(orgId, tx),
     fetchAccountWriteReference(orgId, targetAccountId, {}, tx),
   ]);
@@ -107,29 +104,18 @@ export const loadImportContinueDraftFacts = async (
     throw new DomainError(500, 'Import draft is missing an account.');
   }
 
-  const counterpartAccounts = await loadCounterpartAccounts(
-    orgId,
-    draftRows.flatMap((row) =>
-      row.reviewCounterpartAccountId ? [row.reviewCounterpartAccountId] : []
+  const [counterpartAccounts, activeExternalIdOwners] = await Promise.all([
+    loadCounterpartAccounts(orgId, input.counterpartIds, tx),
+    listActiveExternalIdOwners(
+      orgId,
+      targetAccountId,
+      input.createdExternalIds,
+      tx
     ),
-    tx
-  );
-
-  const createdExternalIds = durableRows.flatMap((row) => {
-    if (!row.selectedForImport) return [];
-    const externalId = row.externalId?.trim();
-    return externalId ? [externalId] : [];
-  });
-  const activeExternalIdOwners = await listActiveExternalIdOwners(
-    orgId,
-    targetAccountId,
-    createdExternalIds,
-    tx
-  );
+  ]);
 
   return {
-    rowCount: draft.rowCount,
-    rows: durableRows,
+    rowCount: input.rowCount,
     targetAccount,
     counterpartAccounts,
     validAssigneeMemberIds: new Set(members.map((member) => member.id)),
@@ -137,6 +123,41 @@ export const loadImportContinueDraftFacts = async (
     existingExpenses,
     priorRefundsByTarget,
     activeExternalIdOwners,
+  };
+};
+
+export const loadImportContinueDraftFacts = async (
+  orgId: string,
+  targetAccountId: string,
+  draft: { rowCount: number },
+  draftRows: readonly ImportDraftRowRecord[],
+  tx: Transaction
+): Promise<ImportContinueDraftFacts> => {
+  const durableRows = draftRows.map(toImportDraftDurableRow);
+  const createdExternalIds = durableRows.flatMap((row) => {
+    if (!row.selectedForImport) return [];
+    const externalId = row.externalId?.trim();
+    return externalId ? [externalId] : [];
+  });
+
+  return {
+    ...(await loadImportExternalFacts(
+      orgId,
+      targetAccountId,
+      {
+        refundOfIds: draftRows.flatMap((row) =>
+          row.reviewRefundOf ? [row.reviewRefundOf] : []
+        ),
+        matchQuery: importMatchTargetQueryInput(draftRows),
+        counterpartIds: draftRows.flatMap((row) =>
+          row.reviewCounterpartAccountId ? [row.reviewCounterpartAccountId] : []
+        ),
+        createdExternalIds,
+        rowCount: draft.rowCount,
+      },
+      tx
+    )),
+    rows: durableRows,
   };
 };
 
@@ -146,72 +167,37 @@ export const loadImportFinalizeExternalFacts = async (
   preparedOutcomes: readonly ImportPreparedOutcomeRecord[],
   rowCount: number,
   tx: Transaction
-): Promise<ImportFinalizeExternalFacts> => {
-  const refundOfIds = preparedOutcomes.flatMap((row) =>
-    row.snapshot.reviewedValues.refundOf
-      ? [row.snapshot.reviewedValues.refundOf]
-      : []
-  );
-  const matchedTransactionIds = preparedOutcomes.flatMap((row) =>
-    row.outcome === 'matched' && row.transactionId ? [row.transactionId] : []
-  );
-
-  const [
-    existingExpenses,
-    priorRefundsByTarget,
-    existingTransactions,
-    members,
-    targetAccount,
-  ] = await Promise.all([
-    listRefundTargetExpensesByIds(orgId, refundOfIds, tx),
-    sumPriorRefundTotalsByTransactionTarget(orgId, refundOfIds, tx),
-    listImportMatchTargets(
-      orgId,
-      targetAccountId,
-      { extraIds: matchedTransactionIds },
-      tx
-    ),
-    listOrgMembers(orgId, tx),
-    fetchAccountWriteReference(orgId, targetAccountId, {}, tx),
-  ]);
-
-  if (!targetAccount) {
-    throw new DomainError(500, 'Import draft is missing an account.');
-  }
-
-  const counterpartAccounts = await loadCounterpartAccounts(
-    orgId,
-    preparedOutcomes.flatMap((row) =>
-      row.snapshot.reviewedValues.counterpartAccountId
-        ? [row.snapshot.reviewedValues.counterpartAccountId]
-        : []
-    ),
-    tx
-  );
-
-  const createdExternalIds = preparedOutcomes.flatMap((row) => {
-    if (row.outcome !== 'created') return [];
-    const externalId = row.snapshot.provenance.externalId?.trim();
-    return externalId ? [externalId] : [];
-  });
-  const activeExternalIdOwners = await listActiveExternalIdOwners(
+): Promise<ImportFinalizeExternalFacts> =>
+  loadImportExternalFacts(
     orgId,
     targetAccountId,
-    createdExternalIds,
+    {
+      refundOfIds: preparedOutcomes.flatMap((row) =>
+        row.snapshot.reviewedValues.refundOf
+          ? [row.snapshot.reviewedValues.refundOf]
+          : []
+      ),
+      matchQuery: {
+        extraIds: preparedOutcomes.flatMap((row) =>
+          row.outcome === 'matched' && row.transactionId
+            ? [row.transactionId]
+            : []
+        ),
+      },
+      counterpartIds: preparedOutcomes.flatMap((row) =>
+        row.snapshot.reviewedValues.counterpartAccountId
+          ? [row.snapshot.reviewedValues.counterpartAccountId]
+          : []
+      ),
+      createdExternalIds: preparedOutcomes.flatMap((row) => {
+        if (row.outcome !== 'created') return [];
+        const externalId = row.snapshot.provenance.externalId?.trim();
+        return externalId ? [externalId] : [];
+      }),
+      rowCount,
+    },
     tx
   );
-
-  return {
-    rowCount,
-    targetAccount,
-    counterpartAccounts,
-    validAssigneeMemberIds: new Set(members.map((member) => member.id)),
-    existingTransactions: [...existingTransactions.values()],
-    existingExpenses,
-    priorRefundsByTarget,
-    activeExternalIdOwners,
-  };
-};
 
 const insertPreparedSetFromProjection = async (
   tx: Transaction,

@@ -3,6 +3,7 @@ import {
   verifyImportSetForContinue,
   verifyPreparedImportSetForFinalize,
 } from './import-set-verification';
+import { buildPreparedImportRowSnapshot } from './prepared-import-snapshot';
 import type {
   ImportContinueDraftFacts,
   ImportFinalizeExternalFacts,
@@ -48,25 +49,8 @@ const continueFacts = (
   ...overrides,
 });
 
-const snapshotFromRow = (row: ImportDraftDurableRow) => ({
-  reviewedValues: {
-    date: row.reviewDate,
-    amount: row.reviewAmount,
-    type: 'expense' as const,
-    description: row.reviewDescription,
-    categoryId: row.reviewCategoryId,
-    assigneeMemberIds: [...row.reviewAssigneeMemberIds],
-    counterpartAccountId: row.reviewCounterpartAccountId,
-    refundOf: row.reviewRefundOf,
-    refundOfBatchRowId: row.reviewRefundOfBatchRowId,
-    notes: null,
-    tagIds: [],
-  },
-  provenance: {
-    externalId: row.externalId ?? null,
-    rawDescription: row.sourceDescription ?? null,
-  },
-});
+const snapshotFromRow = (row: ImportDraftDurableRow) =>
+  buildPreparedImportRowSnapshot(row);
 
 describe('verifyImportSetForContinue', () => {
   it('ignores unselected rows', () => {
@@ -480,5 +464,258 @@ describe('verifyPreparedImportSetForFinalize', () => {
         key: 'import.match.invalidated_decision',
       });
     }
+  });
+
+  it('revalidates an identity match against current external facts', () => {
+    const matched = preparedRow({
+      outcome: 'matched',
+      transactionId: 'tx-1',
+      snapshot: snapshotFromRow(
+        expenseRow({
+          reviewMatchedTransactionId: 'tx-1',
+          externalId: null,
+          sourceDescription: 'COFFEE',
+        })
+      ),
+    });
+
+    const result = verifyPreparedImportSetForFinalize(
+      [matched],
+      finalizeFacts({
+        existingTransactions: [
+          {
+            id: 'tx-1',
+            accountId: TARGET_ACCOUNT.id,
+            type: 'expense',
+            date: '2026-05-02',
+            amount: 4218,
+            description: 'Coffee',
+            rawDescription: 'COFFEE',
+            externalId: null,
+            deleted: false,
+          },
+        ],
+      })
+    );
+
+    expect(result).toEqual({ ready: true, verified: [matched] });
+  });
+
+  it('keeps an identity match when reviewed description differs and rawDescription is null', () => {
+    const matched = preparedRow({
+      outcome: 'matched',
+      transactionId: 'tx-1',
+      snapshot: snapshotFromRow(
+        expenseRow({
+          reviewMatchedTransactionId: 'tx-1',
+          externalId: null,
+          sourceDescription: null,
+          parsedDescription: 'Coffee',
+          reviewDescription: 'Neighborhood Coffee',
+        })
+      ),
+    });
+
+    const result = verifyPreparedImportSetForFinalize(
+      [matched],
+      finalizeFacts({
+        existingTransactions: [
+          {
+            id: 'tx-1',
+            accountId: TARGET_ACCOUNT.id,
+            type: 'expense',
+            date: '2026-05-02',
+            amount: 4218,
+            description: 'Neighborhood Coffee',
+            rawDescription: 'Coffee',
+            externalId: null,
+            deleted: false,
+          },
+        ],
+      })
+    );
+
+    expect(result).toEqual({ ready: true, verified: [matched] });
+  });
+
+  it('flags refund cumulative_exceeds against current prior totals', () => {
+    const refund = preparedRow({
+      batchRowId: 'row-refund',
+      snapshot: snapshotFromRow(
+        expenseRow({
+          id: 'row-refund',
+          reviewType: 'refund',
+          parsedType: 'refund',
+          reviewRefundOf: 'tx-expense',
+        })
+      ),
+    });
+
+    const result = verifyPreparedImportSetForFinalize(
+      [refund],
+      finalizeFacts({
+        existingExpenses: new Map([
+          [
+            'tx-expense',
+            {
+              id: 'tx-expense',
+              accountId: TARGET_ACCOUNT.id,
+              amount: 4218,
+              categoryId: 'cat-1',
+              assigneeMemberIds: ['member-1'],
+              type: 'expense',
+              deleted: false,
+            },
+          ],
+        ]),
+        priorRefundsByTarget: new Map([['tx:tx-expense', 100]]),
+      })
+    );
+
+    expect(result.ready).toBe(false);
+    if (!result.ready) {
+      expect(result.failures).toContainEqual({
+        batchRowId: 'row-refund',
+        key: 'import.refund_link.cumulative_exceeds',
+      });
+    }
+  });
+
+  it('flags a deleted refund expense target', () => {
+    const refund = preparedRow({
+      batchRowId: 'row-refund',
+      snapshot: snapshotFromRow(
+        expenseRow({
+          id: 'row-refund',
+          reviewType: 'refund',
+          parsedType: 'refund',
+          reviewRefundOf: 'tx-expense',
+        })
+      ),
+    });
+
+    const result = verifyPreparedImportSetForFinalize(
+      [refund],
+      finalizeFacts({
+        existingExpenses: new Map([
+          [
+            'tx-expense',
+            {
+              id: 'tx-expense',
+              accountId: TARGET_ACCOUNT.id,
+              amount: 4218,
+              categoryId: 'cat-1',
+              assigneeMemberIds: ['member-1'],
+              type: 'expense',
+              deleted: true,
+            },
+          ],
+        ]),
+      })
+    );
+
+    expect(result.ready).toBe(false);
+    if (!result.ready) {
+      expect(result.failures).toContainEqual({
+        batchRowId: 'row-refund',
+        key: 'import.refund_link.deleted_target',
+      });
+    }
+  });
+
+  it('flags assignees removed after Continue', () => {
+    const result = verifyPreparedImportSetForFinalize(
+      [preparedRow()],
+      finalizeFacts({
+        validAssigneeMemberIds: new Set(),
+      })
+    );
+
+    expect(result.ready).toBe(false);
+    if (!result.ready) {
+      expect(result.failures).toContainEqual({
+        batchRowId: 'row-expense',
+        key: 'transaction.assignee.required',
+      });
+      expect(result.failures).toContainEqual({
+        batchRowId: 'row-expense',
+        key: 'transaction.assignee.unknown',
+        params: { memberIds: ['member-1'] },
+      });
+    }
+  });
+
+  it('emits a structured failure when prepared rowCount mismatches', () => {
+    const result = verifyPreparedImportSetForFinalize(
+      [preparedRow()],
+      finalizeFacts({ rowCount: 2 })
+    );
+
+    expect(result).toEqual({
+      ready: false,
+      failures: [
+        {
+          batchRowId: 'row-expense',
+          key: 'import.match.invalidated_decision',
+        },
+      ],
+    });
+  });
+
+  it('emits a structured failure for an empty prepared set with a nonzero rowCount', () => {
+    const result = verifyPreparedImportSetForFinalize([], finalizeFacts());
+
+    expect(result).toEqual({
+      ready: false,
+      failures: [
+        {
+          batchRowId: 'unknown',
+          key: 'import.match.invalidated_decision',
+        },
+      ],
+    });
+  });
+
+  it('rejects a matched row that is missing its transaction id', () => {
+    const result = verifyPreparedImportSetForFinalize(
+      [
+        preparedRow({
+          outcome: 'matched',
+          transactionId: null,
+        }),
+      ],
+      finalizeFacts()
+    );
+
+    expect(result).toEqual({
+      ready: false,
+      failures: [
+        {
+          batchRowId: 'row-expense',
+          key: 'import.match.invalidated_decision',
+        },
+      ],
+    });
+  });
+
+  it('rejects a prepared row whose outcome is not a projection kind', () => {
+    const result = verifyPreparedImportSetForFinalize(
+      [
+        preparedRow({
+          outcome: 'unresolved',
+        }),
+      ],
+      finalizeFacts()
+    );
+
+    expect(result).toEqual({
+      ready: false,
+      failures: [
+        {
+          batchRowId: 'row-expense',
+          key: 'import.match.invalidated_decision',
+        },
+      ],
+    });
   });
 });

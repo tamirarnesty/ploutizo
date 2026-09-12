@@ -145,6 +145,7 @@ const snapshot = (
   provenance: {
     externalId: 'visa-created',
     rawDescription: 'COFFEE SHOP #42',
+    parsedDescription: 'Coffee Shop',
     ...provenance,
   },
 });
