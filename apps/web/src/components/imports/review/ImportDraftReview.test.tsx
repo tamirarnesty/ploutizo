@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Account } from '@ploutizo/types';
 import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
 import {
   makeImportDraft,
@@ -43,24 +44,31 @@ vi.mock('@/components/transactions/TransactionTagPicker', () => ({
   TransactionTagPicker: () => <div>Tag picker</div>,
 }));
 
+const defaultAccountsQueryData: Account[] = [
+  {
+    id: 'cheq_1',
+    orgId: 'org_1',
+    name: 'Chequing',
+    type: 'chequing',
+    institutionId: null,
+    lastFour: null,
+    statementDueDay: null,
+    archivedAt: null,
+    createdAt: '2026-05-20T12:00:00Z',
+    updatedAt: '2026-05-20T12:00:00Z',
+    owners: [],
+  },
+];
+
+const accountsQueryMocks = vi.hoisted(() => ({
+  data: undefined as Account[] | undefined,
+  isPending: false,
+  isError: false,
+  refetch: vi.fn(),
+}));
+
 vi.mock('@/lib/data-access/accounts', () => ({
-  useGetAccounts: () => ({
-    data: [
-      {
-        id: 'cheq_1',
-        orgId: 'org_1',
-        name: 'Chequing',
-        type: 'chequing',
-        institutionId: null,
-        lastFour: null,
-        statementDueDay: null,
-        archivedAt: null,
-        createdAt: '2026-05-20T12:00:00Z',
-        updatedAt: '2026-05-20T12:00:00Z',
-        owners: [],
-      },
-    ],
-  }),
+  useGetAccounts: () => accountsQueryMocks,
 }));
 
 vi.mock('@/lib/data-access/categories', () => ({
@@ -165,6 +173,7 @@ describe('ImportDraftReview', () => {
     autosaveStatusMock.current = 'idle';
     resetRouterMocks();
     vi.clearAllMocks();
+    sessionStorage.clear();
     HTMLElement.prototype.scrollIntoView = vi.fn();
     paginationMocks.pagination = { pageIndex: 0, pageSize: 25 };
     continueMocks.isPending = false;
@@ -178,6 +187,9 @@ describe('ImportDraftReview', () => {
       outcomes: [],
     });
     flush.mockResolvedValue(true);
+    accountsQueryMocks.data = defaultAccountsQueryData;
+    accountsQueryMocks.isPending = false;
+    accountsQueryMocks.isError = false;
   });
 
   it('mounts the review grid', () => {
@@ -333,6 +345,71 @@ describe('ImportDraftReview', () => {
     expect(screen.getByText('1 - 25 of 26')).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'Go to next page' })
+    ).toBeInTheDocument();
+  });
+
+  it('shows account loading instead of empty-account guidance on settlement rows', () => {
+    accountsQueryMocks.data = undefined;
+    accountsQueryMocks.isPending = true;
+    renderReview(
+      makeImportDraft({
+        rows: [
+          makeImportDraftRow({
+            reviewType: 'settlement',
+            reviewCategoryId: null,
+            reviewCounterpartAccountId: null,
+          }),
+        ],
+      })
+    );
+
+    expect(screen.getByText('Loading accounts…')).toBeInTheDocument();
+    expect(
+      screen.queryByText('Add a chequing or savings account')
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows a retryable accounts failure instead of empty-account guidance', async () => {
+    const user = userEvent.setup();
+    accountsQueryMocks.data = undefined;
+    accountsQueryMocks.isError = true;
+    renderReview(
+      makeImportDraft({
+        rows: [
+          makeImportDraftRow({
+            reviewType: 'settlement',
+            reviewCategoryId: null,
+            reviewCounterpartAccountId: null,
+          }),
+        ],
+      })
+    );
+
+    expect(screen.getByText("Couldn't load accounts")).toBeInTheDocument();
+    expect(
+      screen.queryByText('Add a chequing or savings account')
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(accountsQueryMocks.refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows empty-account guidance only after a successful empty accounts response', () => {
+    accountsQueryMocks.data = [];
+    renderReview(
+      makeImportDraft({
+        rows: [
+          makeImportDraftRow({
+            reviewType: 'settlement',
+            reviewCategoryId: null,
+            reviewCounterpartAccountId: null,
+          }),
+        ],
+      })
+    );
+
+    expect(
+      screen.getByText('Add a chequing or savings account')
     ).toBeInTheDocument();
   });
 

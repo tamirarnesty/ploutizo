@@ -67,4 +67,36 @@ describe('settlementSourceAccounts', () => {
       'savings',
     ]);
   });
+
+  it('preserves the current archived funding account for edit', () => {
+    const archivedId = '33333333-3333-3333-3333-333333333333';
+    const sources = getSettlementSourceAccounts(
+      [
+        account({
+          id: '22222222-2222-2222-2222-222222222222',
+          type: 'chequing',
+          name: 'Chequing',
+        }),
+        account({
+          id: archivedId,
+          type: 'savings',
+          name: 'Old Savings',
+          archivedAt: '2026-01-01',
+        }),
+        account({
+          id: '44444444-4444-4444-4444-444444444444',
+          type: 'savings',
+          name: 'Closed Savings',
+          archivedAt: '2026-02-01',
+        }),
+      ],
+      cardId,
+      archivedId
+    );
+
+    expect(sources.map((source) => source.id)).toEqual([
+      '22222222-2222-2222-2222-222222222222',
+      archivedId,
+    ]);
+  });
 });

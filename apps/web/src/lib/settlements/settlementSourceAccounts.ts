@@ -20,11 +20,13 @@ export const isSettlementSourceAccount = (
 
 export const getSettlementSourceAccounts = (
   accounts: readonly Account[],
-  cardAccountId: string
+  cardAccountId: string,
+  preserveAccountId?: string | null
 ): Account[] =>
   getAccountOptionsForTransactionSlot({
     type: 'settlement',
     slot: 'counterpartAccountId',
     accounts,
     otherSelectedAccountId: cardAccountId,
+    preserveAccountId: preserveAccountId || null,
   }) as Account[];

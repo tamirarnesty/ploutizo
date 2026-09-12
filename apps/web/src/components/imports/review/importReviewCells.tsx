@@ -327,27 +327,79 @@ interface ImportReviewPaidFromCellProps {
   row: ImportDraftRow;
 }
 
+const UNAVAILABLE_PAID_FROM_LABEL = 'Unavailable account';
+
+const getPaidFromAccountLabel = (account: {
+  name: string;
+  archivedAt: string | null;
+}) => (account.archivedAt ? `${account.name} (archived)` : account.name);
+
 export const ImportReviewPaidFromCell = ({
   row,
 }: ImportReviewPaidFromCellProps) => {
-  const { accounts, cardAccountId } = useImportDraftReviewContext();
+  const { accounts, accountsStatus, cardAccountId, refetchAccounts } =
+    useImportDraftReviewContext();
   const { saveField, disabled } = useImportDraftReviewRowSave(row);
   const rowLabel = getImportRowLabel(row);
-  const sourceAccounts = useMemo(
-    () => getSettlementSourceAccounts(accounts, cardAccountId),
-    [accounts, cardAccountId]
-  );
-  const paidFromItems = useMemo(
-    () =>
-      sourceAccounts.map((account) => ({
-        label: account.name,
-        value: account.id,
-      })),
-    [sourceAccounts]
-  );
   const selectedAccountId = row.reviewCounterpartAccountId ?? '';
+  const sourceAccounts = useMemo(
+    () =>
+      getSettlementSourceAccounts(
+        accounts,
+        cardAccountId,
+        selectedAccountId || null
+      ),
+    [accounts, cardAccountId, selectedAccountId]
+  );
+  const paidFromItems = useMemo(() => {
+    const items = sourceAccounts.map((account) => ({
+      label: getPaidFromAccountLabel(account),
+      value: account.id,
+    }));
+    if (
+      selectedAccountId &&
+      !items.some((item) => item.value === selectedAccountId)
+    ) {
+      items.unshift({
+        label: UNAVAILABLE_PAID_FROM_LABEL,
+        value: selectedAccountId,
+      });
+    }
+    return items;
+  }, [selectedAccountId, sourceAccounts]);
+  const selectedIsStale =
+    selectedAccountId !== '' &&
+    !sourceAccounts.some(
+      (account) => account.id === selectedAccountId && !account.archivedAt
+    );
 
-  if (sourceAccounts.length === 0) {
+  if (accountsStatus === 'pending') {
+    return (
+      <Text variant="body-sm" className="text-muted-foreground">
+        Loading accounts…
+      </Text>
+    );
+  }
+
+  if (accountsStatus === 'error') {
+    return (
+      <div className="flex items-center gap-1">
+        <Text variant="error">Couldn&apos;t load accounts</Text>
+        <Button
+          type="button"
+          variant="ghost"
+          size="xs"
+          onClick={() => {
+            refetchAccounts();
+          }}
+        >
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
+  if (paidFromItems.length === 0) {
     return (
       <Text variant="body-sm" className="text-muted-foreground">
         Add a chequing or savings account
@@ -356,37 +408,53 @@ export const ImportReviewPaidFromCell = ({
   }
 
   return (
-    <Select
-      items={paidFromItems}
-      value={selectedAccountId || null}
-      disabled={disabled}
-      onValueChange={(next) => {
-        if (!next || next === row.reviewCounterpartAccountId) return;
-        saveField({ reviewCounterpartAccountId: next });
-      }}
-    >
-      <SelectTrigger
-        id={`import-row-paid-from-${row.id}`}
-        className="w-44"
-        aria-label={`Paid from for ${rowLabel}`}
+    <div className="flex items-center gap-1">
+      <Select
+        items={paidFromItems}
+        value={selectedAccountId || null}
+        disabled={disabled}
+        onValueChange={(next) => {
+          if (!next || next === row.reviewCounterpartAccountId) return;
+          saveField({ reviewCounterpartAccountId: next });
+        }}
       >
-        <SelectValue placeholder="Paid from">
-          {(selected: string) =>
-            paidFromItems.find((item) => item.value === selected)?.label ??
-            'Paid from'
-          }
-        </SelectValue>
-      </SelectTrigger>
-      <SelectContent>
-        <SelectGroup>
-          {paidFromItems.map((item) => (
-            <SelectItem key={item.value} value={item.value}>
-              {item.label}
-            </SelectItem>
-          ))}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
+        <SelectTrigger
+          id={`import-row-paid-from-${row.id}`}
+          className="w-44"
+          aria-label={`Paid from for ${rowLabel}`}
+        >
+          <SelectValue placeholder="Paid from">
+            {(selected: string) =>
+              paidFromItems.find((item) => item.value === selected)?.label ??
+              'Paid from'
+            }
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            {paidFromItems.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+      {selectedIsStale ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="xs"
+          disabled={disabled}
+          aria-label={`Clear paid from for ${rowLabel}`}
+          onClick={() => {
+            saveField({ reviewCounterpartAccountId: null });
+          }}
+        >
+          Clear
+        </Button>
+      ) : null}
+    </div>
   );
 };
 

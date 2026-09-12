@@ -9,10 +9,14 @@ import { evaluateImportDraftWorkingCopy } from '@/lib/data-access/imports/rederi
 import { useImportReviewAutosaveFailedRowIds } from '@/lib/data-access/imports/useImportReviewAutosave';
 import type { ReactNode } from 'react';
 
+export type ImportReviewAccountsStatus = 'pending' | 'error' | 'success';
+
 interface ImportDraftReviewContextValue {
   draftId: string;
   cardAccountId: string;
   accounts: readonly Account[];
+  accountsStatus: ImportReviewAccountsStatus;
+  refetchAccounts: () => void;
   categories: Category[];
   orgMembers: OrgMember[];
   updateRow: (rowId: string, patch: UpdateImportDraftRowInput) => void;
@@ -27,16 +31,22 @@ interface ImportDraftReviewProviderProps {
   draftId: string;
   cardAccountId: string;
   accounts: readonly Account[];
+  accountsStatus?: ImportReviewAccountsStatus;
+  refetchAccounts?: () => void;
   categories: Category[];
   orgMembers: OrgMember[];
   updateRow: (rowId: string, patch: UpdateImportDraftRowInput) => void;
   children: ReactNode;
 }
 
+const noopRefetchAccounts = () => {};
+
 export const ImportDraftReviewProvider = ({
   draftId,
   cardAccountId,
   accounts,
+  accountsStatus = 'success',
+  refetchAccounts = noopRefetchAccounts,
   categories,
   orgMembers,
   updateRow,
@@ -60,6 +70,8 @@ export const ImportDraftReviewProvider = ({
       draftId,
       cardAccountId,
       accounts,
+      accountsStatus,
+      refetchAccounts,
       categories,
       orgMembers,
       updateRow,
@@ -70,6 +82,8 @@ export const ImportDraftReviewProvider = ({
       draftId,
       cardAccountId,
       accounts,
+      accountsStatus,
+      refetchAccounts,
       categories,
       orgMembers,
       updateRow,

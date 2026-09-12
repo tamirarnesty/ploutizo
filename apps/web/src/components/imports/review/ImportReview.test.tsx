@@ -87,7 +87,9 @@ vi.mock('@/lib/data-access/org', () => ({
 vi.mock('@/lib/data-access/accounts', () => ({
   useGetAccounts: () => ({
     data: [],
-    isLoading: false,
+    isPending: false,
+    isError: false,
+    refetch: vi.fn(),
   }),
 }));
 

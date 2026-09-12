@@ -90,7 +90,20 @@ const ImportDraftReviewContent = ({
   const navigate = useNavigate();
   const { data: categories = [] } = useGetCategories();
   const { data: orgMembers = [] } = useGetOrgMembers();
-  const { data: accounts = [] } = useGetAccounts();
+  const {
+    data: accounts,
+    isPending: accountsPending,
+    isError: accountsError,
+    refetch: refetchAccounts,
+  } = useGetAccounts(true);
+  const accountsStatus = accountsPending
+    ? 'pending'
+    : accountsError && !accounts
+      ? 'error'
+      : 'success';
+  const handleRefetchAccounts = useCallback(() => {
+    void refetchAccounts();
+  }, [refetchAccounts]);
   const [issues, setIssues] = useState<ImportRequirementFailure[]>([]);
   const priorityRowIds = useMemo(
     () => getImportRequirementIssueRowIds(issues),
@@ -183,7 +196,9 @@ const ImportDraftReviewContent = ({
           <ImportDraftReviewProvider
             draftId={meta.id}
             cardAccountId={meta.account.id}
-            accounts={accounts}
+            accounts={accounts ?? []}
+            accountsStatus={accountsStatus}
+            refetchAccounts={handleRefetchAccounts}
             categories={categories}
             orgMembers={orgMembers}
             updateRow={updateRow}
