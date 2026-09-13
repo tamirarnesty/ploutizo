@@ -1,5 +1,5 @@
 import { parseColourToken } from '@ploutizo/validators';
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import type { ColourToken } from '@ploutizo/validators';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
@@ -20,14 +20,19 @@ export const fetchCategories = async (): Promise<Category[]> => {
   return r.data;
 };
 
-export const useGetCategories = (): UseQueryResult<Category[]> => {
-  return useQuery({
+const selectCategories = (data: Category[]) =>
+  data.map((c) => ({
+    ...c,
+    colour: parseColourToken(c.colour),
+  }));
+
+export const categoriesQueryOptions = () =>
+  queryOptions({
     queryKey: ['categories'],
     queryFn: fetchCategories,
-    select: (data) =>
-      data.map((c) => ({
-        ...c,
-        colour: parseColourToken(c.colour),
-      })),
+    select: selectCategories,
   });
+
+export const useGetCategories = (): UseQueryResult<Category[]> => {
+  return useQuery(categoriesQueryOptions());
 };

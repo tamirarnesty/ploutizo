@@ -5,6 +5,7 @@ import {
   PAGE_SIZE_STORAGE_KEYS,
   getDefaultPageSize,
   isAllowedPageSize,
+  parseStoredPageSize,
 } from './pageSizeConfig';
 import { createPerKeyLocalStorage } from './perKeyLocalStorage';
 import type { PageSizeScope } from './pageSizeConfig';
@@ -54,8 +55,20 @@ if (typeof window !== 'undefined') {
   });
 }
 
-export const readStoredPageSize = (scope: PageSizeScope): number =>
-  usePageSizeStore.getState().pageSizes[scope];
+export const ensurePageSizeHydrated = async (): Promise<void> => {
+  if (typeof window === 'undefined') return;
+  await usePageSizeStore.persist.rehydrate();
+};
+
+export const readStoredPageSize = (scope: PageSizeScope): number => {
+  if (typeof window === 'undefined') {
+    return getDefaultPageSize(scope);
+  }
+  return parseStoredPageSize(
+    scope,
+    window.localStorage.getItem(PAGE_SIZE_SCOPES[scope].storageKey)
+  );
+};
 
 export const persistPageSize = (scope: PageSizeScope, pageSize: number) => {
   usePageSizeStore.getState().setPageSize(scope, pageSize);
