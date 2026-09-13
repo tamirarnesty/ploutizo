@@ -20,6 +20,7 @@ import {
 } from '@/lib/data-access/imports/importRequirementIssues';
 import { useContinueImportDraft } from '@/lib/data-access/imports/useContinueImportDraft';
 import { useGetAccounts } from '@/lib/data-access/accounts';
+import { importDraftFinalizeRoute } from '@/lib/navigation';
 import { useGetCategories } from '@/lib/data-access/categories';
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import {
@@ -144,10 +145,7 @@ const ImportDraftReviewContent = ({
       const preparedSet = await continueImport();
       if (!preparedSet) return;
       setIssues([]);
-      await navigate({
-        to: '/import/$draftId/finalize',
-        params: { draftId },
-      });
+      await navigate(importDraftFinalizeRoute(draftId));
     } catch (error) {
       const failures = getImportRequirementFailures(error);
       setIssues(failures);
