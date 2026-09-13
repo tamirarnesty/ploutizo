@@ -5,7 +5,7 @@ export type HouseholdDefaultCategory = {
   icon: string;
 };
 
-/** Default spend categories seeded for new households. */
+/** Default household categories (spend categories plus Bill Payment). */
 export const HOUSEHOLD_DEFAULT_CATEGORIES: readonly HouseholdDefaultCategory[] =
   [
     { name: 'Bills', icon: 'Receipt' },
@@ -27,6 +27,6 @@ export const HOUSEHOLD_DEFAULT_CATEGORIES: readonly HouseholdDefaultCategory[] =
     { name: BILL_PAYMENT_CATEGORY_NAME, icon: 'CreditCard' },
   ];
 
-export const householdDefaultCategoryIcons = (): readonly string[] => [
+export const HOUSEHOLD_DEFAULT_CATEGORY_ICONS: readonly string[] = [
   ...new Set(HOUSEHOLD_DEFAULT_CATEGORIES.map((category) => category.icon)),
 ];

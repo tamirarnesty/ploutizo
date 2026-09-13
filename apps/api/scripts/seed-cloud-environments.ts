@@ -50,18 +50,18 @@ const EXPECTED_ACCOUNT_NAMES = [
   'Joint TFSA',
 ] as const;
 const EXPECTED_TAG_NAMES = ['weekend', 'recurring'] as const;
-const FIXTURE_CATEGORY_NAMES = [
-  'Groceries',
-  'Takeout',
-  'Drinks & Treats',
-  'Transport',
-  'Bills',
-  'Entertainment',
-  'Shopping',
-  'Travel',
-  'Health & Wellbeing',
-] as const;
-const DEFAULT_CATEGORY_NAMES = new Set(
+const FIXTURE_TRANSACTION_CATEGORY_NAMES = {
+  groceries: 'Groceries',
+  takeout: 'Takeout',
+  drinks: 'Drinks & Treats',
+  transport: 'Transport',
+  bills: 'Bills',
+  entertainment: 'Entertainment',
+  shopping: 'Shopping',
+  travel: 'Travel',
+  health: 'Health & Wellbeing',
+} as const;
+const HOUSEHOLD_DEFAULT_CATEGORY_NAMES = new Set(
   HOUSEHOLD_DEFAULT_CATEGORIES.map((category) => category.name)
 );
 /** 15 posted transactions plus the 2 settlements that persist as transactions. */
@@ -566,6 +566,10 @@ const createApiClient = (baseUrl: string, jwt: string) => {
       const body = await requestJson<Envelope<T>>('POST', path, json);
       return body.data;
     },
+    patch: async <T>(path: string, json: unknown): Promise<T> => {
+      const body = await requestJson<Envelope<T>>('PATCH', path, json);
+      return body.data;
+    },
     delete: async <T>(path: string): Promise<T> => {
       const body = await requestJson<Envelope<T>>('DELETE', path);
       return body.data;
@@ -590,37 +594,91 @@ const categoryByName = (categories: CategoryRow[], name: string): string => {
   return row.id;
 };
 
+const resolveFixtureTransactionCategories = (categories: CategoryRow[]) =>
+  Object.fromEntries(
+    Object.entries(FIXTURE_TRANSACTION_CATEGORY_NAMES).map(([key, name]) => [
+      key,
+      categoryByName(categories, name),
+    ])
+  ) as {
+    [K in keyof typeof FIXTURE_TRANSACTION_CATEGORY_NAMES]: string;
+  };
+
+const isDefaultCategoryCatalogCurrent = (
+  categories: CategoryRow[]
+): boolean => {
+  if (
+    categories.some(
+      (category) => !HOUSEHOLD_DEFAULT_CATEGORY_NAMES.has(category.name)
+    )
+  ) {
+    return false;
+  }
+
+  const orderedDefaultIds = HOUSEHOLD_DEFAULT_CATEGORIES.flatMap((category) => {
+    const row = categories.find(
+      (candidate) => candidate.name === category.name
+    );
+    return row ? [row.id] : [];
+  });
+  if (orderedDefaultIds.length !== HOUSEHOLD_DEFAULT_CATEGORIES.length) {
+    return false;
+  }
+
+  return categories.every(
+    (category, index) => category.id === orderedDefaultIds[index]
+  );
+};
+
 const ensureFixtureCategories = async (
   api: ReturnType<typeof createApiClient>
 ): Promise<CategoryRow[]> => {
   let categories = await api.getData<CategoryRow[]>('/api/categories');
-  const hasFixtureCategories = FIXTURE_CATEGORY_NAMES.every((name) =>
-    categories.some((category) => category.name === name)
-  );
-  if (hasFixtureCategories) return categories;
+  if (isDefaultCategoryCatalogCurrent(categories)) return categories;
 
   log(
     'Fixture household categories are out of date; syncing to current defaults'
   );
 
-  for (const category of categories) {
-    if (!DEFAULT_CATEGORY_NAMES.has(category.name)) {
-      await api.delete(`/api/categories/${category.id}/archive`);
-    }
-  }
+  await Promise.all(
+    categories
+      .filter(
+        (category) => !HOUSEHOLD_DEFAULT_CATEGORY_NAMES.has(category.name)
+      )
+      .map((category) => api.delete(`/api/categories/${category.id}/archive`))
+  );
 
-  categories = await api.getData<CategoryRow[]>('/api/categories');
+  categories = categories.filter((category) =>
+    HOUSEHOLD_DEFAULT_CATEGORY_NAMES.has(category.name)
+  );
   const existingNames = new Set(categories.map((category) => category.name));
-  for (const [sortOrder, category] of HOUSEHOLD_DEFAULT_CATEGORIES.entries()) {
-    if (existingNames.has(category.name)) continue;
-    await api.post<CategoryRow>('/api/categories', {
-      name: category.name,
-      icon: category.icon,
-      sortOrder,
-    });
-  }
+  const created = await Promise.all(
+    HOUSEHOLD_DEFAULT_CATEGORIES.flatMap((category, sortOrder) =>
+      existingNames.has(category.name)
+        ? []
+        : [
+            api.post<CategoryRow>('/api/categories', {
+              name: category.name,
+              icon: category.icon,
+              sortOrder,
+            }),
+          ]
+    )
+  );
+  categories = [...categories, ...created];
 
-  return api.getData<CategoryRow[]>('/api/categories');
+  const categoryIdByName = new Map(
+    categories.map((category) => [category.name, category.id])
+  );
+  const orderedIds = HOUSEHOLD_DEFAULT_CATEGORIES.map(
+    (category) => categoryIdByName.get(category.name)!
+  );
+  await api.patch('/api/categories/reorder', { orderedIds });
+
+  return HOUSEHOLD_DEFAULT_CATEGORIES.map((category) => ({
+    id: categoryIdByName.get(category.name)!,
+    name: category.name,
+  }));
 };
 
 const ensureTag = async (
@@ -639,15 +697,17 @@ const seedHousehold = async (
   members: { ada: MemberRow; alan: MemberRow }
 ) => {
   const categories = await ensureFixtureCategories(api);
-  const groceries = categoryByName(categories, 'Groceries');
-  const takeout = categoryByName(categories, 'Takeout');
-  const drinks = categoryByName(categories, 'Drinks & Treats');
-  const transport = categoryByName(categories, 'Transport');
-  const bills = categoryByName(categories, 'Bills');
-  const entertainment = categoryByName(categories, 'Entertainment');
-  const shopping = categoryByName(categories, 'Shopping');
-  const travel = categoryByName(categories, 'Travel');
-  const health = categoryByName(categories, 'Health & Wellbeing');
+  const {
+    groceries,
+    takeout,
+    drinks,
+    transport,
+    bills,
+    entertainment,
+    shopping,
+    travel,
+    health,
+  } = resolveFixtureTransactionCategories(categories);
 
   const existingTags = await api.getData<TagRow[]>('/api/tags');
   const weekend = await ensureTag(api, existingTags, 'weekend', 'blue-500');
