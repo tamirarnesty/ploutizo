@@ -38,6 +38,20 @@ describe('pageSizeStore', () => {
     return mod;
   };
 
+  it('readStoredPageSize returns persisted value before store rehydration', async () => {
+    localStorage.setItem('ploutizo:transactions:page-size', '50');
+    const { readStoredPageSize } = await import('./pageSizeStore');
+    expect(readStoredPageSize('transactions')).toBe(50);
+  });
+
+  it('ensurePageSizeHydrated loads persisted sizes into the store', async () => {
+    localStorage.setItem('ploutizo:transactions:page-size', '50');
+    const { ensurePageSizeHydrated, usePageSizeStore } =
+      await import('./pageSizeStore');
+    await ensurePageSizeHydrated();
+    expect(usePageSizeStore.getState().pageSizes.transactions).toBe(50);
+  });
+
   it('readStoredPageSize returns defaults when storage is empty', async () => {
     const { readStoredPageSize } = await loadStore();
     expect(readStoredPageSize('transactions')).toBe(25);

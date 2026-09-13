@@ -1,7 +1,7 @@
 import {
   PAGE_SIZE_SCOPES,
-  getDefaultPageSize,
   isAllowedPageSize,
+  parseStoredPageSize,
 } from './pageSizeConfig';
 import type { PageSizeScope } from './pageSizeConfig';
 import type { StateStorage } from 'zustand/middleware';
@@ -10,17 +10,14 @@ type PersistedPageSizes = {
   pageSizes: Record<PageSizeScope, number>;
 };
 
-const parseScopeValue = (scope: PageSizeScope, raw: string | null): number => {
-  if (raw === null) return getDefaultPageSize(scope);
-  const parsed = Number(raw);
-  return isAllowedPageSize(scope, parsed) ? parsed : getDefaultPageSize(scope);
-};
-
 const readPageSizes = (): Record<PageSizeScope, number> => {
   const pageSizes = {} as Record<PageSizeScope, number>;
   for (const scope of Object.keys(PAGE_SIZE_SCOPES) as PageSizeScope[]) {
     const { storageKey } = PAGE_SIZE_SCOPES[scope];
-    pageSizes[scope] = parseScopeValue(scope, localStorage.getItem(storageKey));
+    pageSizes[scope] = parseStoredPageSize(
+      scope,
+      localStorage.getItem(storageKey)
+    );
   }
   return pageSizes;
 };
