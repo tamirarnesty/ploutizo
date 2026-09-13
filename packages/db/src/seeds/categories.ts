@@ -30,19 +30,20 @@ const DEFAULT_CATEGORIES: { name: string; icon: string; sortOrder: number }[] =
     },
   ];
 
-/** Insert default categories — use `db` from tests; `seedOrg` passes a transaction client. */
+export const seedCategoryRowsForOrg = (orgId: string) =>
+  DEFAULT_CATEGORIES.map((cat) => ({
+    orgId,
+    name: cat.name,
+    icon: cat.icon,
+    sortOrder: cat.sortOrder,
+  }));
+
+/** Insert default categories. `seedOrg` passes a transaction client. */
 export const insertSeedCategoriesForOrg = async (
   executor: InsertExecutor,
   orgId: string
 ): Promise<void> => {
-  await executor.insert(categories).values(
-    DEFAULT_CATEGORIES.map((cat) => ({
-      orgId, // non-nullable — always set to the passed orgId
-      name: cat.name,
-      icon: cat.icon,
-      sortOrder: cat.sortOrder,
-    }))
-  );
+  await executor.insert(categories).values(seedCategoryRowsForOrg(orgId));
 };
 
 export const findBillPaymentCategoryId = async (
