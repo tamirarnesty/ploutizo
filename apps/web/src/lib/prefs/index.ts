@@ -12,6 +12,7 @@ export {
   type TablePageSize,
 } from './pageSizeConfig';
 export {
+  ensurePageSizeHydrated,
   persistPageSize,
   readStoredPageSize,
   usePageSizeStore,

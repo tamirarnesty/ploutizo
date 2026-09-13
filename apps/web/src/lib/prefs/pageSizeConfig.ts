@@ -55,3 +55,12 @@ export const isAllowedPageSize = (
 
 export const getDefaultPageSize = (scope: PageSizeScope): number =>
   PAGE_SIZE_SCOPES[scope].defaultSize;
+
+export const parseStoredPageSize = (
+  scope: PageSizeScope,
+  raw: string | null
+): number => {
+  if (raw === null) return getDefaultPageSize(scope);
+  const parsed = Number(raw);
+  return isAllowedPageSize(scope, parsed) ? parsed : getDefaultPageSize(scope);
+};
