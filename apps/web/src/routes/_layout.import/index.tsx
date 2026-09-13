@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { auth } from '@clerk/tanstack-react-start/server';
+import { getAuthOrgId } from '@/lib/auth/require-access';
 import {
   activeImportDraftsQueryOptions,
   importHistoryPageQueryOptions,
@@ -14,7 +14,9 @@ export const Route = createFileRoute('/_layout/import/')({
       context.queryClient.ensureQueryData(importHistoryPageQueryOptions()),
     ];
 
-    const { orgId } = await auth();
+    // Child loaders run on client intent preload; raw Clerk auth() has no
+    // Start context there. resolve orgId through a server fn instead.
+    const orgId = await getAuthOrgId().catch(() => null);
     if (orgId) {
       warmup.push(
         context.queryClient.ensureQueryData(
