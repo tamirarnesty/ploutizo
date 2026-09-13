@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { Button } from '@ploutizo/ui/components/button';
 import { Text } from '@ploutizo/ui/components/text';
 import { Textarea } from '@ploutizo/ui/components/textarea';
@@ -7,6 +6,7 @@ import { TransactionTagPicker } from '@/components/transactions/TransactionTagPi
 import { getImportRowLabel } from '../lib/importPresentation';
 import { ImportMatchReviewPanel } from './ImportMatchReviewPanel';
 import { useImportDraftRowEvaluation } from './ImportDraftReviewContext';
+import { useImportReviewTextDraft } from './useImportReviewTextDraft';
 import { useImportDraftReviewRowSave } from './useImportDraftReviewRowSave';
 
 interface ImportDraftReviewRowDetailsProps {
@@ -17,15 +17,20 @@ export const ImportDraftReviewRowDetails = ({
   row,
 }: ImportDraftReviewRowDetailsProps) => {
   const { saveField, disabled } = useImportDraftReviewRowSave(row);
-  const [notesDraft, setNotesDraft] = useState(() => row.reviewNotes ?? '');
   const rowLabel = getImportRowLabel(row);
   const tagsInputId = `import-row-tags-${row.id}`;
   const evaluation = useImportDraftRowEvaluation(row.id);
   const refundSuggestion = evaluation?.refundSuggestion;
-
-  useEffect(() => {
-    setNotesDraft(row.reviewNotes ?? '');
-  }, [row.id, row.reviewNotes]);
+  const {
+    draft: notesDraft,
+    onChange: onNotesChange,
+    onFocus: onNotesFocus,
+    onBlur: onNotesBlur,
+  } = useImportReviewTextDraft(
+    row.reviewNotes,
+    (next) => saveField({ reviewNotes: next }),
+    row.id
+  );
 
   const dismissMatch = () =>
     saveField({
@@ -86,12 +91,10 @@ export const ImportDraftReviewRowDetails = ({
             autoComplete="off"
             placeholder="Add a note…"
             onChange={(event) => {
-              const raw = event.currentTarget.value;
-              setNotesDraft(raw);
-              const next = raw.trim() || null;
-              if (next === row.reviewNotes) return;
-              saveField({ reviewNotes: next });
+              onNotesChange(event.currentTarget.value);
             }}
+            onFocus={onNotesFocus}
+            onBlur={onNotesBlur}
           />
         </div>
         <div className="min-w-0">

@@ -49,7 +49,7 @@ vi.mock('@/lib/data-access/imports/useImportReviewSession', () => ({
 }));
 
 const continueMocks = vi.hoisted(() => ({
-  mutateAsync: vi.fn(),
+  continueImport: vi.fn(),
   isPending: false,
   error: null as unknown,
   reset: vi.fn(),
@@ -57,7 +57,7 @@ const continueMocks = vi.hoisted(() => ({
 
 vi.mock('@/lib/data-access/imports/useContinueImportDraft', () => ({
   useContinueImportDraft: () => ({
-    mutateAsync: continueMocks.mutateAsync,
+    continueImport: continueMocks.continueImport,
     isPending: continueMocks.isPending,
     error: continueMocks.error,
     reset: continueMocks.reset,
@@ -84,6 +84,15 @@ vi.mock('@/lib/data-access/org', () => ({
   }),
 }));
 
+vi.mock('@/lib/data-access/accounts', () => ({
+  useGetAccounts: () => ({
+    data: [],
+    isPending: false,
+    isError: false,
+    refetch: vi.fn(),
+  }),
+}));
+
 vi.mock('@/hooks/persistedPageSize', () => ({
   usePersistedPageSize: () => ({
     pagination: { pageIndex: 0, pageSize: 25 },
@@ -107,9 +116,6 @@ const toSession = (value = draft) => {
     isError: false,
     updateRow: vi.fn(),
     setSelection: vi.fn(),
-    autosaveStatus: 'idle' as const,
-    failedRowIds: [] as string[],
-    hasUnsavedWork: false,
     retryAutosave: vi.fn(),
     flush: vi.fn(() => Promise.resolve(true)),
   };
@@ -132,7 +138,7 @@ describe('ImportReview', () => {
     vi.clearAllMocks();
     continueMocks.error = null;
     continueMocks.isPending = false;
-    continueMocks.mutateAsync.mockResolvedValue({
+    continueMocks.continueImport.mockResolvedValue({
       id: 'prep_1',
       orgId: 'org_1',
       batchId: 'draft_1',
@@ -175,9 +181,6 @@ describe('ImportReview', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('table')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
-    expect(
-      screen.getByText('Select at least one row to continue.')
-    ).toBeInTheDocument();
   });
 
   it('shows an empty state when no rows are reviewable', () => {

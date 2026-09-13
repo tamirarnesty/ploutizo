@@ -133,7 +133,7 @@ describe('importPresentation review helpers', () => {
         status: 'needs_review',
         reviewType: 'settlement',
       })
-    ).toBe('Needs review: settlement requires review');
+    ).toBe('Needs review: paid from account required');
   });
 
   it('includes refund_link when evaluator blockers are provided', () => {
@@ -196,7 +196,7 @@ describe('importPresentation review helpers', () => {
         reviewCategoryId: null,
         reviewAssigneeMemberIds: [],
       })
-    ).toBe('Needs review: settlement requires review; missing assignee');
+    ).toBe('Needs review: paid from account required; missing assignee');
   });
 });
 

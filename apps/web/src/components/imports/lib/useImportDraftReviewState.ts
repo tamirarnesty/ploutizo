@@ -1,14 +1,7 @@
 import { useCallback, useEffect, useMemo } from 'react';
-import {
-  canContinueImportReview,
-  getImportReviewContinueBlocker,
-  getSelectableImportRows,
-} from '@ploutizo/utils/import-row-readiness';
+import { getSelectableImportRows } from '@ploutizo/utils/import-row-readiness';
 import type { ImportDraftRow, OrgMember } from '@ploutizo/types';
-import type {
-  ImportDraftMeta,
-  ImportReviewAutosaveStatus,
-} from '@/lib/data-access/imports';
+import type { ImportDraftMeta } from '@/lib/data-access/imports';
 import { usePersistedPageSize } from '@/hooks/persistedPageSize';
 import { useFlushPendingInputs } from '@/lib/money/pending-input-flush';
 import { prioritizeImportRows } from './importPresentation';
@@ -17,11 +10,8 @@ import type { PaginationState, Updater } from '@tanstack/react-table';
 interface UseImportDraftReviewStateOptions {
   meta?: ImportDraftMeta;
   rows?: ImportDraftRow[];
-  orgMembers?: OrgMember[];
   isLoading?: boolean;
   setSelection: (rowIds: string[], selectedForImport: boolean) => void;
-  hasUnsavedWork: boolean;
-  autosaveStatus: ImportReviewAutosaveStatus;
   priorityRowIds?: readonly string[];
 }
 
@@ -34,8 +24,6 @@ export interface ImportDraftReviewState {
   headerIndeterminate: boolean;
   setRowSelection: (row: ImportDraftRow, selectedForImport: boolean) => void;
   setAllSelection: (selectedForImport: boolean) => void;
-  canContinue: boolean;
-  continueBlocker: string | null;
   hasReviewableRows: boolean;
   isLoading: boolean;
 }
@@ -43,11 +31,8 @@ export interface ImportDraftReviewState {
 export const useImportDraftReviewState = ({
   meta,
   rows: sessionRows = [],
-  orgMembers = [],
   isLoading = false,
   setSelection,
-  hasUnsavedWork,
-  autosaveStatus,
   priorityRowIds = [],
 }: UseImportDraftReviewStateOptions): ImportDraftReviewState => {
   const flushPendingInputs = useFlushPendingInputs();
@@ -58,14 +43,6 @@ export const useImportDraftReviewState = ({
     [priorityRowIds, sessionRows]
   );
   const selectableRows = useMemo(() => getSelectableImportRows(rows), [rows]);
-  const validAssigneeMemberIds = useMemo(
-    () => new Set(orgMembers.map((member) => member.id)),
-    [orgMembers]
-  );
-  const continueOptions = useMemo(
-    () => (orgMembers.length > 0 ? { validAssigneeMemberIds } : undefined),
-    [orgMembers.length, validAssigneeMemberIds]
-  );
 
   const { pageIndex, pageSize } = pagination;
   const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
@@ -78,20 +55,6 @@ export const useImportDraftReviewState = ({
     [currentPageRows]
   );
 
-  const rowContinueBlocker = meta
-    ? getImportReviewContinueBlocker(rows, continueOptions)
-    : null;
-  const persistenceBlocker =
-    autosaveStatus === 'failed'
-      ? 'Retry failed saves before continuing.'
-      : autosaveStatus === 'saving' || hasUnsavedWork
-        ? 'Save your changes before continuing.'
-        : null;
-  const continueBlocker = persistenceBlocker ?? rowContinueBlocker;
-  const canContinue =
-    Boolean(meta) &&
-    canContinueImportReview(rows, continueOptions) &&
-    persistenceBlocker === null;
   const hasReviewableRows = selectableRows.length > 0;
 
   useEffect(() => {
@@ -149,8 +112,6 @@ export const useImportDraftReviewState = ({
     headerIndeterminate,
     setRowSelection,
     setAllSelection,
-    canContinue,
-    continueBlocker,
     hasReviewableRows,
     isLoading,
   };

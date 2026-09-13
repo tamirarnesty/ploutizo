@@ -2,29 +2,25 @@ import { Button } from '@ploutizo/ui/components/button';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
 import { formatAccountLabel } from '@ploutizo/utils';
-import type { ImportDraftRow } from '@ploutizo/types';
-import type {
-  ImportDraftMeta,
-  ImportReviewAutosaveStatus,
-} from '@/lib/data-access/imports';
+import type { ImportDraftRow, OrgMember } from '@ploutizo/types';
+import type { ImportDraftMeta } from '@/lib/data-access/imports';
+import { useImportReviewAutosaveStatus } from '@/lib/data-access/imports/useImportReviewAutosave';
 import { formatImportDraftReviewSubtitle } from '../lib/importPresentation';
-import { ImportReviewAutosaveStrip } from './ImportReviewAutosaveStrip';
+import { getImportReviewContinueEnabled } from '../lib/getImportReviewContinueEnabled';
+import {
+  IMPORT_REVIEW_AUTOSAVE_STATUS_ID,
+  ImportReviewAutosaveStatus,
+} from './ImportReviewAutosaveStatus';
 
 interface ImportDraftReviewHeaderProps {
   meta?: ImportDraftMeta;
   rows?: ImportDraftRow[];
+  orgMembers?: OrgMember[];
   isLoading?: boolean;
-  canContinue: boolean;
-  continueBlocker: string | null;
   isContinuing: boolean;
-  autosaveStatus: ImportReviewAutosaveStatus;
   onRetryAutosave: () => void;
   onContinue: () => void | Promise<void>;
 }
-
-const CONTINUE_HINT_ID = 'import-review-continue-hint';
-const CONTINUE_DEFAULT_HINT =
-  'Continue prepares the selected rows for finalize import.';
 
 const toLiveSubtitleMeta = (
   meta: ImportDraftMeta,
@@ -39,28 +35,34 @@ const toLiveSubtitleMeta = (
 export const ImportDraftReviewHeader = ({
   meta,
   rows = [],
+  orgMembers = [],
   isLoading = false,
-  canContinue,
-  continueBlocker,
   isContinuing,
-  autosaveStatus,
   onRetryAutosave,
   onContinue,
 }: ImportDraftReviewHeaderProps) => {
-  const continueEnabled = canContinue && !isContinuing;
-  const hint = isContinuing
-    ? 'Preparing the selected import set…'
-    : (continueBlocker ?? CONTINUE_DEFAULT_HINT);
+  const draftId = meta?.id ?? '';
+  const autosaveStatus = useImportReviewAutosaveStatus(draftId);
+  const continueEnabled = getImportReviewContinueEnabled({
+    meta,
+    rows,
+    orgMembers,
+    autosaveStatus,
+    isContinuing,
+  });
 
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div className="min-w-0 flex-1">
         {meta ? (
           <>
-            <Text as="h2" variant="h3" className="truncate">
+            <Text as="h2" variant="h3" className="wrap-break-word">
               {formatAccountLabel(meta.account)}
             </Text>
-            <Text variant="body-sm" className="truncate text-muted-foreground">
+            <Text
+              variant="body-sm"
+              className="wrap-break-word text-muted-foreground"
+            >
               {formatImportDraftReviewSubtitle(toLiveSubtitleMeta(meta, rows))}
             </Text>
           </>
@@ -72,17 +74,13 @@ export const ImportDraftReviewHeader = ({
         )}
       </div>
       <div className="flex flex-col items-end gap-1.5">
-        <ImportReviewAutosaveStrip
-          status={autosaveStatus}
-          onRetry={onRetryAutosave}
-        />
         {isLoading ? (
           <Skeleton className="h-9 w-24" />
         ) : (
           <Button
             disabled={!continueEnabled}
             type="button"
-            aria-describedby={CONTINUE_HINT_ID}
+            aria-describedby={IMPORT_REVIEW_AUTOSAVE_STATUS_ID}
             onClick={() => {
               void onContinue();
             }}
@@ -91,14 +89,13 @@ export const ImportDraftReviewHeader = ({
           </Button>
         )}
         {meta ? (
-          <Text
-            id={CONTINUE_HINT_ID}
-            variant="body-sm"
-            className="max-w-sm text-right text-muted-foreground"
-          >
-            {hint}
-          </Text>
-        ) : null}
+          <ImportReviewAutosaveStatus
+            status={autosaveStatus}
+            onRetryAutosave={onRetryAutosave}
+          />
+        ) : (
+          <div className="min-h-5 min-w-32" aria-hidden />
+        )}
       </div>
     </div>
   );

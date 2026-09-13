@@ -13,7 +13,10 @@ import {
   resetImportDraftRowPacedMutationsForTests,
 } from './getImportDraftRowPacedMutations';
 import { resetImportDraftRowsCollectionsForTests } from './getImportDraftRowsCollection';
-import { resetImportReviewAutosaveForTests } from './importReviewAutosave';
+import {
+  getImportReviewAutosaveSnapshot,
+  resetImportReviewAutosaveForTests,
+} from './importReviewAutosave';
 import { importDraftQueryKey } from './queryKeys';
 import { fetchUpdateImportDraftRow } from './fetchUpdateImportDraftRow';
 import { fetchUpdateImportDraftRowSelection } from './fetchUpdateImportDraftRowSelection';
@@ -63,8 +66,11 @@ const wrapper = ({ children }: { children: ReactNode }) => (
   <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 );
 
+const draftId = 'draft_session_1';
+const autosaveSnapshot = () => getImportReviewAutosaveSnapshot(draftId);
+
 const hydrateSession = async () => {
-  const hook = renderHook(() => useImportReviewSession('draft_session_1'), {
+  const hook = renderHook(() => useImportReviewSession(draftId), {
     wrapper,
   });
   await waitFor(() => {
@@ -465,7 +471,7 @@ describe('useImportReviewSession', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.autosaveStatus).toBe('failed');
+      expect(autosaveSnapshot().status).toBe('failed');
     });
 
     act(() => {
@@ -473,7 +479,7 @@ describe('useImportReviewSession', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.failedRowIds).toEqual(
+      expect(autosaveSnapshot().failedRowIds).toEqual(
         expect.arrayContaining(['row_ready', 'row_b'])
       );
     });
@@ -483,7 +489,7 @@ describe('useImportReviewSession', () => {
       flushOk = await result.current.flush();
     });
     expect(flushOk).toBe(false);
-    expect(result.current.hasUnsavedWork).toBe(true);
+    expect(autosaveSnapshot().hasUnsavedWork).toBe(true);
     unmount();
   });
 
@@ -545,7 +551,7 @@ describe('useImportReviewSession', () => {
     const { result, unmount } = await hydrateSession();
     vi.useFakeTimers();
 
-    expect(result.current.autosaveStatus).toBe('idle');
+    expect(autosaveSnapshot().status).toBe('idle');
 
     act(() => {
       result.current.updateRow('row_ready', {
@@ -553,13 +559,13 @@ describe('useImportReviewSession', () => {
       });
     });
 
-    expect(result.current.autosaveStatus).toBe('saving');
+    expect(autosaveSnapshot().status).toBe('saving');
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
     });
 
-    expect(result.current.autosaveStatus).toBe('saved');
+    expect(autosaveSnapshot().status).toBe('saved');
 
     vi.mocked(fetchUpdateImportDraftRow).mockRejectedValueOnce(
       new Error('network')
@@ -575,8 +581,8 @@ describe('useImportReviewSession', () => {
       await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
     });
 
-    expect(result.current.autosaveStatus).toBe('failed');
-    expect(result.current.failedRowIds).toContain('row_ready');
+    expect(autosaveSnapshot().status).toBe('failed');
+    expect(autosaveSnapshot().failedRowIds).toContain('row_ready');
     expect(
       result.current.rows.find((row) => row.id === 'row_ready')
         ?.reviewDescription
@@ -594,8 +600,8 @@ describe('useImportReviewSession', () => {
       });
     });
 
-    expect(result.current.hasUnsavedWork).toBe(true);
-    expect(result.current.autosaveStatus).toBe('saving');
+    expect(autosaveSnapshot().hasUnsavedWork).toBe(true);
+    expect(autosaveSnapshot().status).toBe('saving');
 
     let flushOk = false;
     await act(async () => {
@@ -603,8 +609,8 @@ describe('useImportReviewSession', () => {
     });
 
     expect(flushOk).toBe(true);
-    expect(result.current.hasUnsavedWork).toBe(false);
-    expect(result.current.autosaveStatus).toBe('saved');
+    expect(autosaveSnapshot().hasUnsavedWork).toBe(false);
+    expect(autosaveSnapshot().status).toBe('saved');
     unmount();
   });
 
@@ -625,7 +631,7 @@ describe('useImportReviewSession', () => {
       await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
     });
 
-    expect(result.current.autosaveStatus).toBe('failed');
+    expect(autosaveSnapshot().status).toBe('failed');
     vi.useRealTimers();
 
     let flushOk = true;
@@ -633,7 +639,7 @@ describe('useImportReviewSession', () => {
       flushOk = await result.current.flush();
     });
     expect(flushOk).toBe(false);
-    expect(result.current.hasUnsavedWork).toBe(true);
+    expect(autosaveSnapshot().hasUnsavedWork).toBe(true);
 
     vi.mocked(fetchUpdateImportDraftRow).mockImplementation((rowId, body) => {
       const row = draft.rows.find((entry) => entry.id === rowId);
@@ -651,14 +657,14 @@ describe('useImportReviewSession', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.autosaveStatus).toBe('saved');
+      expect(autosaveSnapshot().status).toBe('saved');
     });
 
     await act(async () => {
       flushOk = await result.current.flush();
     });
     expect(flushOk).toBe(true);
-    expect(result.current.hasUnsavedWork).toBe(false);
+    expect(autosaveSnapshot().hasUnsavedWork).toBe(false);
     unmount();
   });
 
@@ -679,7 +685,7 @@ describe('useImportReviewSession', () => {
       await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
     });
 
-    expect(result.current.autosaveStatus).toBe('failed');
+    expect(autosaveSnapshot().status).toBe('failed');
     expect(
       result.current.rows.find((row) => row.id === 'row_ready')
         ?.reviewCategoryId
@@ -699,8 +705,8 @@ describe('useImportReviewSession', () => {
       reviewCategoryId: 'cat_failed',
       reviewDescription: 'After failure',
     });
-    expect(result.current.autosaveStatus).toBe('saved');
-    expect(result.current.failedRowIds).not.toContain('row_ready');
+    expect(autosaveSnapshot().status).toBe('saved');
+    expect(autosaveSnapshot().failedRowIds).not.toContain('row_ready');
     expect(
       result.current.rows.find((row) => row.id === 'row_ready')
     ).toMatchObject({

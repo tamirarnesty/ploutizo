@@ -44,6 +44,27 @@ export const IMPORT_CONTENT_PROFILE_LABELS: Record<
   iso_debit_credit_masked_card: 'Generic: ISO date debit/credit/masked card',
 };
 
+/** Preview table headers for headerless positional profiles. */
+export const GENERIC_POSITIONAL_IMPORT_PROFILE_COLUMN_LABELS: Record<
+  GenericPositionalImportProfileId,
+  readonly string[]
+> = {
+  mdy_debit_credit_balance: [
+    'Date',
+    'Description',
+    'Debit',
+    'Credit',
+    'Balance',
+  ],
+  iso_debit_credit_masked_card: [
+    'Date',
+    'Description',
+    'Debit',
+    'Credit',
+    'Masked card',
+  ],
+};
+
 // ---------------------------------------------------------------------------
 // V1 custom mapping date formats
 // ---------------------------------------------------------------------------

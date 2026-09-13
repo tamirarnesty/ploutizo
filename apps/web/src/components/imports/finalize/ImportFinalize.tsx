@@ -190,7 +190,7 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
       setDiscardError(
         getApiErrorMessage(
           error,
-          'Could not discard this prepared import. Retry to try again.'
+          'Could not discard this prepared import. Please retry.'
         )
       );
       return false;
@@ -286,7 +286,7 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
       setTransportError(
         getApiErrorMessage(
           error,
-          'Could not finalize this import. Retry to try again.'
+          'Could not finalize this import. Please retry.'
         )
       );
     }
@@ -304,9 +304,9 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
       <ImportFinalizeBreadcrumbs />
       <section className="flex min-h-0 flex-1 flex-col gap-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             {meta ? (
-              <Text as="h2" variant="h3" className="truncate">
+              <Text as="h2" variant="h3" className="wrap-break-word">
                 {formatAccountLabel(meta.account)}
               </Text>
             ) : preparedQuery.isLoading ? (
@@ -323,7 +323,7 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
             ) : null}
           </div>
           <div className="flex flex-col items-end gap-2">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap justify-end gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -346,13 +346,6 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
                 {transportError && !discardError ? 'Retry' : 'Finalize import'}
               </LoadingButton>
             </div>
-            <Text
-              variant="body-sm"
-              className="max-w-sm text-right text-muted-foreground"
-            >
-              This page is the confirmation checkpoint. Finalizing records the
-              prepared outcomes.
-            </Text>
           </div>
         </div>
 

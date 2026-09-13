@@ -322,6 +322,21 @@ describe('ImportUploadForm', () => {
       expect(screen.getByText('Choose import format')).toBeInTheDocument()
     );
     expect(
+      screen.getByRole('columnheader', { name: 'Date' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', { name: 'Description' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', { name: 'Debit' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', { name: 'Credit' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', { name: 'Balance' })
+    ).toBeInTheDocument();
+    expect(
       screen.getByRole('button', {
         name: 'Generic: MM/DD/YYYY debit/credit/balance',
       })

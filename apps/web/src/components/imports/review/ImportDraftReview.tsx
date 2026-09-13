@@ -11,10 +11,7 @@ import {
 } from '@ploutizo/ui/components/empty';
 import type { ImportDraftRow, ImportRequirementFailure } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
-import type {
-  ImportDraftMeta,
-  ImportReviewAutosaveStatus,
-} from '@/lib/data-access/imports';
+import type { ImportDraftMeta } from '@/lib/data-access/imports';
 import {
   getImportContinueGateMessage,
   getImportRequirementFailures,
@@ -22,6 +19,7 @@ import {
   summarizeImportRequirementIssues,
 } from '@/lib/data-access/imports/importRequirementIssues';
 import { useContinueImportDraft } from '@/lib/data-access/imports/useContinueImportDraft';
+import { useGetAccounts } from '@/lib/data-access/accounts';
 import { useGetCategories } from '@/lib/data-access/categories';
 import { useGetOrgMembers } from '@/lib/data-access/org';
 import {
@@ -44,9 +42,6 @@ interface ImportDraftReviewProps {
   isLoading?: boolean;
   updateRow: (rowId: string, patch: UpdateImportDraftRowInput) => void;
   setSelection: (rowIds: string[], selectedForImport: boolean) => void;
-  autosaveStatus: ImportReviewAutosaveStatus;
-  failedRowIds: string[];
-  hasUnsavedWork: boolean;
   retryAutosave: () => void;
   flush: () => Promise<boolean>;
   inboundIssues?: ImportRequirementFailure[];
@@ -88,9 +83,6 @@ const ImportDraftReviewContent = ({
   isLoading = false,
   updateRow,
   setSelection,
-  autosaveStatus,
-  failedRowIds,
-  hasUnsavedWork,
   retryAutosave,
   flush,
   inboundIssues = [],
@@ -98,6 +90,20 @@ const ImportDraftReviewContent = ({
   const navigate = useNavigate();
   const { data: categories = [] } = useGetCategories();
   const { data: orgMembers = [] } = useGetOrgMembers();
+  const {
+    data: accounts,
+    isPending: accountsPending,
+    isError: accountsError,
+    refetch: refetchAccounts,
+  } = useGetAccounts(true);
+  const accountsStatus = accountsPending
+    ? 'pending'
+    : accountsError && !accounts
+      ? 'error'
+      : 'success';
+  const handleRefetchAccounts = useCallback(() => {
+    void refetchAccounts();
+  }, [refetchAccounts]);
   const [issues, setIssues] = useState<ImportRequirementFailure[]>([]);
   const priorityRowIds = useMemo(
     () => getImportRequirementIssueRowIds(issues),
@@ -106,28 +112,20 @@ const ImportDraftReviewContent = ({
   const reviewState = useImportDraftReviewState({
     meta,
     rows,
-    orgMembers,
     isLoading,
     setSelection,
-    hasUnsavedWork,
-    autosaveStatus,
     priorityRowIds,
   });
-  const { canContinue, continueBlocker, hasReviewableRows } = reviewState;
+  const { hasReviewableRows } = reviewState;
   const draftId = meta?.id ?? '';
   const flushPendingInputs = useFlushPendingInputs();
-  const { mutateAsync, isPending, reset } = useContinueImportDraft(draftId);
+  const { continueImport, isPending } = useContinueImportDraft(draftId);
 
   useEffect(() => {
     if (inboundIssues.length === 0) return;
     setIssues(inboundIssues);
     presentImportRequirementIssues(inboundIssues);
   }, [inboundIssues]);
-
-  useEffect(() => {
-    if (!isPending || autosaveStatus === 'idle') return;
-    reset();
-  }, [autosaveStatus, isPending, reset]);
 
   const rowLabels = useMemo(
     () =>
@@ -143,7 +141,8 @@ const ImportDraftReviewContent = ({
     if (!ok) return;
 
     try {
-      await mutateAsync();
+      const preparedSet = await continueImport();
+      if (!preparedSet) return;
       setIssues([]);
       await navigate({
         to: '/import/$draftId/finalize',
@@ -158,7 +157,7 @@ const ImportDraftReviewContent = ({
         toast.error(getImportContinueGateMessage(error));
       }
     }
-  }, [draftId, flush, flushPendingInputs, mutateAsync, navigate]);
+  }, [draftId, flush, flushPendingInputs, continueImport, navigate]);
 
   const showEmptyState = !isLoading && meta && !hasReviewableRows;
 
@@ -167,11 +166,9 @@ const ImportDraftReviewContent = ({
       <ImportDraftReviewHeader
         meta={meta}
         rows={rows}
+        orgMembers={orgMembers}
         isLoading={isLoading}
-        canContinue={canContinue}
-        continueBlocker={continueBlocker}
         isContinuing={isPending}
-        autosaveStatus={autosaveStatus}
         onRetryAutosave={retryAutosave}
         onContinue={handleContinue}
       />
@@ -198,10 +195,13 @@ const ImportDraftReviewContent = ({
         ) : meta ? (
           <ImportDraftReviewProvider
             draftId={meta.id}
+            cardAccountId={meta.account.id}
+            accounts={accounts ?? []}
+            accountsStatus={accountsStatus}
+            refetchAccounts={handleRefetchAccounts}
             categories={categories}
             orgMembers={orgMembers}
             updateRow={updateRow}
-            failedRowIds={failedRowIds}
           >
             <ImportDraftReviewTable
               key={meta.id}

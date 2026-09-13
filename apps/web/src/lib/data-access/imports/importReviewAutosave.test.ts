@@ -1,15 +1,44 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   getImportReviewAutosaveSnapshot,
+  markImportReviewPending,
   markImportReviewSelectionFailure,
   markImportReviewSelectionStart,
   markImportReviewSelectionSuccess,
   resetImportReviewAutosaveForTests,
+  subscribeImportReviewAutosave,
 } from './importReviewAutosave';
 
 describe('importReviewAutosave selection failures', () => {
   afterEach(() => {
     resetImportReviewAutosaveForTests();
+  });
+
+  it('notifies autosave listeners when a new review edit is queued', () => {
+    const draftId = 'draft_1';
+    const listener = vi.fn();
+
+    const unsubscribe = subscribeImportReviewAutosave(draftId, listener);
+    markImportReviewPending(draftId, 'row_a');
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(getImportReviewAutosaveSnapshot(draftId).status).toBe('saving');
+
+    unsubscribe();
+    markImportReviewPending(draftId, 'row_b');
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('notifies autosave listeners when selection persistence starts', () => {
+    const draftId = 'draft_1';
+    const listener = vi.fn();
+    const unsubscribe = subscribeImportReviewAutosave(draftId, listener);
+
+    markImportReviewSelectionStart(draftId);
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(getImportReviewAutosaveSnapshot(draftId).status).toBe('saving');
+    unsubscribe();
   });
 
   it('accumulates failed selection row ids across bulk failures', () => {

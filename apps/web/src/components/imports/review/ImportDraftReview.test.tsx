@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Account } from '@ploutizo/types';
 import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
 import {
   makeImportDraft,
@@ -43,6 +44,33 @@ vi.mock('@/components/transactions/TransactionTagPicker', () => ({
   TransactionTagPicker: () => <div>Tag picker</div>,
 }));
 
+const defaultAccountsQueryData: Account[] = [
+  {
+    id: 'cheq_1',
+    orgId: 'org_1',
+    name: 'Chequing',
+    type: 'chequing',
+    institutionId: null,
+    lastFour: null,
+    statementDueDay: null,
+    archivedAt: null,
+    createdAt: '2026-05-20T12:00:00Z',
+    updatedAt: '2026-05-20T12:00:00Z',
+    owners: [],
+  },
+];
+
+const accountsQueryMocks = vi.hoisted(() => ({
+  data: undefined as Account[] | undefined,
+  isPending: false,
+  isError: false,
+  refetch: vi.fn(),
+}));
+
+vi.mock('@/lib/data-access/accounts', () => ({
+  useGetAccounts: () => accountsQueryMocks,
+}));
+
 vi.mock('@/lib/data-access/categories', () => ({
   useGetCategories: () => ({
     data: [{ id: 'cat_1', name: 'Dining' }],
@@ -64,7 +92,7 @@ vi.mock('@/lib/data-access/org', () => ({
 }));
 
 const continueMocks = vi.hoisted(() => ({
-  mutateAsync: vi.fn(),
+  continueImport: vi.fn(),
   isPending: false,
   error: null as unknown,
   reset: vi.fn(),
@@ -82,7 +110,7 @@ vi.mock('@ploutizo/ui/components/sonner', () => ({
 
 vi.mock('@/lib/data-access/imports/useContinueImportDraft', () => ({
   useContinueImportDraft: () => ({
-    mutateAsync: continueMocks.mutateAsync,
+    continueImport: continueMocks.continueImport,
     isPending: continueMocks.isPending,
     error: continueMocks.error,
     reset: continueMocks.reset,
@@ -105,12 +133,18 @@ vi.mock('@/hooks/persistedPageSize', () => ({
   }),
 }));
 
+const autosaveStatusMock = vi.hoisted(() => ({
+  current: 'idle' as 'idle' | 'saving' | 'saved' | 'failed',
+}));
+
+vi.mock('@/lib/data-access/imports/useImportReviewAutosave', () => ({
+  useImportReviewAutosaveStatus: () => autosaveStatusMock.current,
+  useImportReviewAutosaveFailedRowIds: () => [],
+}));
+
 const reviewSessionProps = {
   updateRow,
   setSelection,
-  autosaveStatus: 'idle' as const,
-  failedRowIds: [] as string[],
-  hasUnsavedWork: false,
   retryAutosave,
   flush,
 };
@@ -136,13 +170,15 @@ const getRowExpandButtons = () =>
 
 describe('ImportDraftReview', () => {
   beforeEach(() => {
+    autosaveStatusMock.current = 'idle';
     resetRouterMocks();
     vi.clearAllMocks();
+    sessionStorage.clear();
     HTMLElement.prototype.scrollIntoView = vi.fn();
     paginationMocks.pagination = { pageIndex: 0, pageSize: 25 };
     continueMocks.isPending = false;
     continueMocks.error = null;
-    continueMocks.mutateAsync.mockResolvedValue({
+    continueMocks.continueImport.mockResolvedValue({
       id: 'prep_1',
       orgId: 'org_1',
       batchId: 'draft_1',
@@ -151,6 +187,9 @@ describe('ImportDraftReview', () => {
       outcomes: [],
     });
     flush.mockResolvedValue(true);
+    accountsQueryMocks.data = defaultAccountsQueryData;
+    accountsQueryMocks.isPending = false;
+    accountsQueryMocks.isError = false;
   });
 
   it('mounts the review grid', () => {
@@ -163,9 +202,6 @@ describe('ImportDraftReview', () => {
     renderReview();
 
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
-    expect(
-      screen.getByText('Select at least one row to continue.')
-    ).toBeInTheDocument();
   });
 
   it('selects a row via the row checkbox', async () => {
@@ -312,6 +348,71 @@ describe('ImportDraftReview', () => {
     ).toBeInTheDocument();
   });
 
+  it('shows account loading instead of empty-account guidance on settlement rows', () => {
+    accountsQueryMocks.data = undefined;
+    accountsQueryMocks.isPending = true;
+    renderReview(
+      makeImportDraft({
+        rows: [
+          makeImportDraftRow({
+            reviewType: 'settlement',
+            reviewCategoryId: null,
+            reviewCounterpartAccountId: null,
+          }),
+        ],
+      })
+    );
+
+    expect(screen.getByText('Loading accounts…')).toBeInTheDocument();
+    expect(
+      screen.queryByText('Add a chequing or savings account')
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows a retryable accounts failure instead of empty-account guidance', async () => {
+    const user = userEvent.setup();
+    accountsQueryMocks.data = undefined;
+    accountsQueryMocks.isError = true;
+    renderReview(
+      makeImportDraft({
+        rows: [
+          makeImportDraftRow({
+            reviewType: 'settlement',
+            reviewCategoryId: null,
+            reviewCounterpartAccountId: null,
+          }),
+        ],
+      })
+    );
+
+    expect(screen.getByText("Couldn't load accounts")).toBeInTheDocument();
+    expect(
+      screen.queryByText('Add a chequing or savings account')
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(accountsQueryMocks.refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows empty-account guidance only after a successful empty accounts response', () => {
+    accountsQueryMocks.data = [];
+    renderReview(
+      makeImportDraft({
+        rows: [
+          makeImportDraftRow({
+            reviewType: 'settlement',
+            reviewCategoryId: null,
+            reviewCounterpartAccountId: null,
+          }),
+        ],
+      })
+    );
+
+    expect(
+      screen.getByText('Add a chequing or savings account')
+    ).toBeInTheDocument();
+  });
+
   it('renders skeleton rows matching the page size while loading', () => {
     renderLoadingReview();
 
@@ -373,11 +474,6 @@ describe('ImportDraftReview', () => {
     );
 
     expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
-    expect(
-      screen.getByText(
-        'Continue prepares the selected rows for finalize import.'
-      )
-    ).toBeInTheDocument();
   });
 
   it('continues when selected rows are ready', async () => {
@@ -402,7 +498,7 @@ describe('ImportDraftReview', () => {
     expect(flushPendingInputs.mock.invocationCallOrder[0]).toBeLessThan(
       flush.mock.invocationCallOrder[0]
     );
-    expect(continueMocks.mutateAsync).toHaveBeenCalledTimes(1);
+    expect(continueMocks.continueImport).toHaveBeenCalledTimes(1);
     await waitFor(() =>
       expect(routerMocks.navigate).toHaveBeenCalledWith({
         to: '/import/$draftId/finalize',
@@ -429,11 +525,12 @@ describe('ImportDraftReview', () => {
 
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
-    expect(continueMocks.mutateAsync).not.toHaveBeenCalled();
+    expect(continueMocks.continueImport).not.toHaveBeenCalled();
     expect(routerMocks.navigate).not.toHaveBeenCalled();
   });
 
   it('disables Continue when persistence has failed', () => {
+    autosaveStatusMock.current = 'failed';
     const draft = makeImportDraft({
       rows: [
         makeImportDraftRow({
@@ -447,23 +544,17 @@ describe('ImportDraftReview', () => {
     const { rows, ...meta } = draft;
     render(
       <TooltipProvider delay={0}>
-        <ImportDraftReview
-          meta={meta}
-          rows={rows}
-          {...reviewSessionProps}
-          autosaveStatus="failed"
-          hasUnsavedWork
-        />
+        <ImportDraftReview meta={meta} rows={rows} {...reviewSessionProps} />
       </TooltipProvider>
     );
 
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
-    expect(
-      screen.getByText('Retry failed saves before continuing.')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Save failed')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
   });
 
   it('disables Continue while review persistence is in flight', () => {
+    autosaveStatusMock.current = 'saving';
     const draft = makeImportDraft({
       rows: [
         makeImportDraftRow({
@@ -477,25 +568,17 @@ describe('ImportDraftReview', () => {
     const { rows, ...meta } = draft;
     render(
       <TooltipProvider delay={0}>
-        <ImportDraftReview
-          meta={meta}
-          rows={rows}
-          {...reviewSessionProps}
-          autosaveStatus="saving"
-          hasUnsavedWork
-        />
+        <ImportDraftReview meta={meta} rows={rows} {...reviewSessionProps} />
       </TooltipProvider>
     );
 
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
-    expect(
-      screen.getByText('Save your changes before continuing.')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Saving…')).toBeInTheDocument();
   });
 
   it('shows server continue issues inline, toasts a summary, and focuses the first row', async () => {
     const user = userEvent.setup();
-    continueMocks.mutateAsync.mockRejectedValue({
+    continueMocks.continueImport.mockRejectedValue({
       error: {
         code: 'IMPORT_CONTINUE_NOT_READY',
         message: 'Some selected rows are not ready to import.',
@@ -541,41 +624,27 @@ describe('ImportDraftReview', () => {
     );
   });
 
-  it('clears a stale continue error when autosave begins during a pending continue', () => {
-    continueMocks.isPending = true;
-    continueMocks.error = {
-      error: {
-        code: 'IMPORT_CONTINUE_NOT_READY',
-        message: 'Some selected rows are not ready to import.',
-      },
-    };
-    const readyDraft = makeImportDraft({
-      rows: [
-        makeImportDraftRow({
-          id: 'row_ready',
-          status: 'ready',
-          reviewDescription: 'Coffee',
-          selectedForImport: true,
-        }),
-      ],
-    });
-    const { rerender } = renderReview(readyDraft);
-    const { rows, ...meta } = readyDraft;
-    continueMocks.reset.mockClear();
-
-    rerender(
-      <TooltipProvider delay={0}>
-        <ImportDraftReview
-          meta={meta}
-          rows={rows}
-          {...reviewSessionProps}
-          autosaveStatus="saving"
-          hasUnsavedWork
-        />
-      </TooltipProvider>
+  it('does not navigate when continue is cancelled by a later review edit', async () => {
+    const user = userEvent.setup();
+    continueMocks.continueImport.mockResolvedValueOnce(null);
+    renderReview(
+      makeImportDraft({
+        rows: [
+          makeImportDraftRow({
+            id: 'row_ready',
+            status: 'ready',
+            reviewDescription: 'Coffee',
+            selectedForImport: true,
+          }),
+        ],
+      })
     );
 
-    expect(continueMocks.reset).toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(continueMocks.continueImport).toHaveBeenCalledTimes(1);
+    expect(routerMocks.navigate).not.toHaveBeenCalled();
+    expect(reviewToastMocks.error).not.toHaveBeenCalled();
   });
 
   it('renders disabled assignee toggles for invalid rows in the grid', () => {

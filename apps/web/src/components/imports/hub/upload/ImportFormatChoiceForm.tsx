@@ -1,5 +1,9 @@
 import { Text } from '@ploutizo/ui/components/text';
-import { CUSTOM_FORMAT_CHOICE, formatChoiceIntro } from './importFormatChoice';
+import {
+  CUSTOM_FORMAT_CHOICE,
+  formatChoiceIntro,
+  getPreviewColumnLabels,
+} from './importFormatChoice';
 import { useImportUpload } from './ImportUploadContext';
 import { ImportCustomMappingFields } from './format/ImportCustomMappingFields';
 import { ImportFormatActions } from './format/ImportFormatActions';
@@ -53,7 +57,14 @@ export const ImportFormatChoiceForm = () => {
         candidateProfileIds={candidateProfileIds}
       />
 
-      <ImportFormatPreview columns={columns} sampleRows={sampleRows} />
+      <form.Subscribe selector={(state) => state.values.formatChoice}>
+        {(formatChoice) => (
+          <ImportFormatPreview
+            columns={getPreviewColumnLabels(columns, formatChoice)}
+            sampleRows={sampleRows}
+          />
+        )}
+      </form.Subscribe>
 
       {candidateProfileIds.length === 0 && hasColumns ? (
         <ImportCustomMappingFields form={form} columns={columns} />

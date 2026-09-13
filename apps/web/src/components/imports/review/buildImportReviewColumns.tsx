@@ -22,7 +22,7 @@ import { ImportDraftReviewRowDetails } from './ImportDraftReviewRowDetails';
 import {
   ImportReviewAmountCell,
   ImportReviewAssigneeCell,
-  ImportReviewCategoryCell,
+  ImportReviewCategoryOrPaidFromCell,
   ImportReviewDateCell,
   ImportReviewDescriptionCell,
   ImportReviewSelectionCell,
@@ -207,7 +207,7 @@ export const buildImportReviewColumns = ({
       header: ({ column }) => (
         <DataGridColumnHeader
           column={column}
-          title="Category"
+          title="Category / Paid from"
           icon={columnHeaderIcon(Tag)}
         />
       ),
@@ -218,14 +218,16 @@ export const buildImportReviewColumns = ({
         cellClassName: 'min-w-48',
         skeleton: <Skeleton className="h-4 w-28" />,
       },
-      cell: ({ row }) => <ImportReviewCategoryCell row={row.original} />,
+      cell: ({ row }) => (
+        <ImportReviewCategoryOrPaidFromCell row={row.original} />
+      ),
     },
     {
       id: 'assignee',
       header: ({ column }) => (
         <DataGridColumnHeader
           column={column}
-          title="Assignee"
+          title="Assignee / Pay toward"
           icon={columnHeaderIcon(Users)}
         />
       ),
