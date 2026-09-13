@@ -33,6 +33,7 @@
     "./prepared-import-snapshot": "./src/prepared-import-snapshot.ts",
     "./import-row-readiness": "./src/import-row-readiness.ts",
     "./import-requirements": "./src/import-requirements.ts",
+    "./import-set-verification": "./src/import-set-verification.ts",
     "./match-merchant-rule": "./src/match-merchant-rule.ts",
     "./settlement-threshold": "./src/settlement-threshold.ts",
     "./member-label": "./src/member-label.ts",

@@ -71,6 +71,7 @@ const snapshot = {
   provenance: {
     externalId: null,
     rawDescription: 'Coffee',
+    parsedDescription: 'Coffee',
   },
 };
 

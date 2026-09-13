@@ -22,5 +22,6 @@ export const buildPreparedImportRowSnapshot = (
   provenance: {
     externalId: normalizeNullableTrimmed(row.externalId),
     rawDescription: normalizeNullableTrimmed(row.sourceDescription),
+    parsedDescription: normalizeNullableTrimmed(row.parsedDescription),
   },
 });
