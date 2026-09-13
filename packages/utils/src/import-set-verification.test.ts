@@ -466,6 +466,48 @@ describe('verifyPreparedImportSetForFinalize', () => {
     }
   });
 
+  it('rejects a stored match that has become identity-ambiguous', () => {
+    const matched = preparedRow({
+      outcome: 'matched',
+      transactionId: 'tx-1',
+      snapshot: snapshotFromRow(
+        expenseRow({
+          reviewMatchedTransactionId: 'tx-1',
+          externalId: null,
+          sourceDescription: 'COFFEE',
+        })
+      ),
+    });
+    const identityTarget = {
+      accountId: TARGET_ACCOUNT.id,
+      type: 'expense' as const,
+      date: '2026-05-02',
+      amount: 4218,
+      description: 'Coffee',
+      rawDescription: 'COFFEE',
+      externalId: null,
+      deleted: false,
+    };
+
+    const result = verifyPreparedImportSetForFinalize(
+      [matched],
+      finalizeFacts({
+        existingTransactions: [
+          { ...identityTarget, id: 'tx-1' },
+          { ...identityTarget, id: 'tx-2' },
+        ],
+      })
+    );
+
+    expect(result.ready).toBe(false);
+    if (!result.ready) {
+      expect(result.failures).toContainEqual({
+        batchRowId: 'row-expense',
+        key: 'import.match.ambiguous_exact',
+      });
+    }
+  });
+
   it('revalidates an identity match against current external facts', () => {
     const matched = preparedRow({
       outcome: 'matched',

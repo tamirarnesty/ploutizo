@@ -177,13 +177,15 @@ export const loadImportFinalizeExternalFacts = async (
           ? [row.snapshot.reviewedValues.refundOf]
           : []
       ),
-      matchQuery: {
-        extraIds: preparedOutcomes.flatMap((row) =>
-          row.outcome === 'matched' && row.transactionId
-            ? [row.transactionId]
-            : []
-        ),
-      },
+      matchQuery: importMatchTargetQueryInput(
+        preparedOutcomes.map((row) => ({
+          reviewDate: row.snapshot.reviewedValues.date,
+          parsedDate: row.snapshot.reviewedValues.date,
+          externalId: row.snapshot.provenance.externalId,
+          reviewMatchedTransactionId:
+            row.outcome === 'matched' ? row.transactionId : null,
+        }))
+      ),
       counterpartIds: preparedOutcomes.flatMap((row) =>
         row.snapshot.reviewedValues.counterpartAccountId
           ? [row.snapshot.reviewedValues.counterpartAccountId]

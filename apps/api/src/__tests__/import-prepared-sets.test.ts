@@ -47,6 +47,7 @@ import {
   continueImportDraft,
   getActiveImportPreparedConfirmation,
   invalidateImportPreparedSet,
+  loadImportFinalizeExternalFacts,
 } from '@/services/import-prepared-sets';
 
 describe('prepared import confirmation', () => {
@@ -627,6 +628,58 @@ describe('continueImportDraft', () => {
           }),
         }),
       ])
+    );
+  });
+});
+
+describe('loadImportFinalizeExternalFacts', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(listRefundTargetExpensesByIds).mockResolvedValue(new Map());
+    vi.mocked(sumPriorRefundTotalsByTransactionTarget).mockResolvedValue(
+      new Map()
+    );
+    vi.mocked(listImportMatchTargets).mockResolvedValue(new Map());
+    vi.mocked(listActiveExternalIdOwners).mockResolvedValue(new Map());
+    vi.mocked(listOrgMembers).mockResolvedValue([
+      { id: MEMBER, userId: 'user_1', orgId: ORG, role: 'member' },
+    ] as never);
+    vi.mocked(fetchAccountWriteReference).mockResolvedValue({
+      id: ACCOUNT,
+      type: 'credit_card',
+    });
+  });
+
+  it('reloads snapshot candidate bounds and keeps stored match ids as extras', async () => {
+    await loadImportFinalizeExternalFacts(
+      ORG,
+      ACCOUNT,
+      [
+        {
+          id: 'out_0',
+          orgId: ORG,
+          preparedSetId: 'prep_1',
+          batchRowId: ROW,
+          outcome: 'matched',
+          transactionId: TXN,
+          snapshot: rowSnapshot(),
+          createdAt: new Date('2026-05-20T12:00:00Z'),
+        },
+      ],
+      1,
+      mockTx as never
+    );
+
+    expect(listImportMatchTargets).toHaveBeenCalledWith(
+      ORG,
+      ACCOUNT,
+      {
+        extraIds: [TXN],
+        minDate: '2026-04-25',
+        maxDate: '2026-05-09',
+        externalIds: ['visa-1001'],
+      },
+      mockTx
     );
   });
 });
