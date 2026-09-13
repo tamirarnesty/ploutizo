@@ -24,6 +24,13 @@ export const requireAuthAndOrg = createServerFn({ method: 'GET' }).handler(
   }
 );
 
+export const getAuthOrgId = createServerFn({ method: 'GET' }).handler(
+  async (): Promise<string | null> => {
+    const { orgId } = await auth();
+    return orgId ?? null;
+  }
+);
+
 export const redirectIfAuthenticated = createServerFn({
   method: 'GET',
 }).handler(async () => {

@@ -1,3 +1,5 @@
+import type { TransactionQueryParams } from '@/lib/data-access/transactions';
+
 // Pagination/sort params are optional — absent means "use component default".
 // validateTransactionSearch only includes present, valid fields so defaults are
 // not injected into the URL (which would pollute every /transactions URL with
@@ -90,6 +92,33 @@ const parseOptionalImportOutcome = (
   if (value === 'created' || value === 'matched') return value;
   return undefined;
 };
+
+export const buildTransactionQueryParams = (
+  search: TransactionSearch,
+  limit: number
+): TransactionQueryParams => ({
+  page: search.page ?? 1,
+  limit,
+  sort: search.sort ?? 'date',
+  order: search.order ?? 'desc',
+  type: search.type,
+  dateFrom: search.dateFrom,
+  dateTo: search.dateTo,
+  accountId: search.accountId,
+  categoryId: search.categoryId,
+  assigneeId: search.assigneeId,
+  tagIds: search.tagIds,
+  type_op: search.type_op,
+  accountId_op: search.accountId_op,
+  categoryId_op: search.categoryId_op,
+  assigneeId_op: search.assigneeId_op,
+  tagIds_op: search.tagIds_op,
+  dateRange_op: search.dateRange_op,
+  importLink:
+    search.importBatchId && search.importOutcome
+      ? { batchId: search.importBatchId, outcome: search.importOutcome }
+      : undefined,
+});
 
 export const validateTransactionSearch = (
   search: Record<string, unknown>

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import type { Account } from '@ploutizo/types';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
@@ -11,11 +11,14 @@ export const fetchAccounts = async (
   return r.data;
 };
 
-export const useGetAccounts = (
-  includeArchived = false
-): UseQueryResult<Account[]> => {
-  return useQuery({
+export const accountsQueryOptions = (includeArchived = false) =>
+  queryOptions({
     queryKey: ['accounts', { includeArchived }],
     queryFn: () => fetchAccounts(includeArchived),
   });
+
+export const useGetAccounts = (
+  includeArchived = false
+): UseQueryResult<Account[]> => {
+  return useQuery(accountsQueryOptions(includeArchived));
 };

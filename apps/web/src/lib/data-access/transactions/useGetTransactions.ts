@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import { fetchTransactions } from './queries';
 import type { UseQueryResult } from '@tanstack/react-query';
 
@@ -88,11 +88,14 @@ export interface TransactionListResponse {
   limit: number;
 }
 
-export const useGetTransactions = (
-  params: TransactionQueryParams
-): UseQueryResult<TransactionListResponse> => {
-  return useQuery({
+export const transactionsQueryOptions = (params: TransactionQueryParams) =>
+  queryOptions({
     queryKey: ['transactions', params],
     queryFn: () => fetchTransactions(params),
   });
+
+export const useGetTransactions = (
+  params: TransactionQueryParams
+): UseQueryResult<TransactionListResponse> => {
+  return useQuery(transactionsQueryOptions(params));
 };
