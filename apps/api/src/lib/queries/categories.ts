@@ -1,6 +1,6 @@
 import { db } from '@ploutizo/db';
 import { categories } from '@ploutizo/db/schema';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, isNotNull, isNull } from 'drizzle-orm';
 import type { Transaction } from '@ploutizo/db';
 
 // PATCH /reorder — update sortOrder for each id in sequence
@@ -19,12 +19,19 @@ export const reorderCategories = async (
   }
 };
 
-// GET / — list active categories for org
-export const listCategories = async (orgId: string) => {
+// GET / — list categories for org (active only unless includeArchived)
+export const listCategories = async (
+  orgId: string,
+  options?: { includeArchived?: boolean }
+) => {
+  const conditions = [eq(categories.orgId, orgId)];
+  if (!options?.includeArchived) {
+    conditions.push(isNull(categories.archivedAt));
+  }
   return db
     .select()
     .from(categories)
-    .where(and(eq(categories.orgId, orgId), isNull(categories.archivedAt)))
+    .where(and(...conditions))
     .orderBy(categories.sortOrder);
 };
 
@@ -63,6 +70,22 @@ export const archiveCategory = async (id: string, orgId: string) => {
     .update(categories)
     .set({ archivedAt: new Date() })
     .where(and(eq(categories.id, id), eq(categories.orgId, orgId)))
+    .returning();
+  return rows.at(0) ?? null;
+};
+
+// PATCH /:id/restore — unarchive category; returns updated row or null
+export const restoreCategory = async (id: string, orgId: string) => {
+  const rows = await db
+    .update(categories)
+    .set({ archivedAt: null })
+    .where(
+      and(
+        eq(categories.id, id),
+        eq(categories.orgId, orgId),
+        isNotNull(categories.archivedAt)
+      )
+    )
     .returning();
   return rows.at(0) ?? null;
 };

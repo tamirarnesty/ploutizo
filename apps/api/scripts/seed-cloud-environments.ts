@@ -24,7 +24,10 @@ import {
   type Organization,
   type User,
 } from '@clerk/backend';
-import { HOUSEHOLD_DEFAULT_CATEGORIES } from '@ploutizo/types';
+import {
+  ensureFixtureCategories,
+  fixtureCategoryId,
+} from '../src/lib/seed/fixtureCategories';
 import { lrmSplit } from '@ploutizo/utils/assignee-split';
 import { memberFullLabel } from '@ploutizo/utils';
 import { formatGeneratedTransactionDescription } from '@ploutizo/utils/transaction-policy';
@@ -50,20 +53,6 @@ const EXPECTED_ACCOUNT_NAMES = [
   'Joint TFSA',
 ] as const;
 const EXPECTED_TAG_NAMES = ['weekend', 'recurring'] as const;
-const FIXTURE_TRANSACTION_CATEGORY_NAMES = {
-  groceries: 'Groceries',
-  takeout: 'Takeout',
-  drinks: 'Drinks & Treats',
-  transport: 'Transport',
-  bills: 'Bills',
-  entertainment: 'Entertainment',
-  shopping: 'Shopping',
-  travel: 'Travel',
-  health: 'Health & Wellbeing',
-} as const;
-const HOUSEHOLD_DEFAULT_CATEGORY_NAMES = new Set(
-  HOUSEHOLD_DEFAULT_CATEGORIES.map((category) => category.name)
-);
 /** 15 posted transactions plus the 2 settlements that persist as transactions. */
 const EXPECTED_LEDGER_TRANSACTION_COUNT = 17;
 const REQUIRED_ENV = [
@@ -101,7 +90,6 @@ type AccountRow = {
   type: string;
 };
 
-type CategoryRow = { id: string; name: string };
 type TagRow = { id: string; name: string };
 
 type Envelope<T> = { data: T };
@@ -566,7 +554,7 @@ const createApiClient = (baseUrl: string, jwt: string) => {
       const body = await requestJson<Envelope<T>>('POST', path, json);
       return body.data;
     },
-    patch: async <T>(path: string, json: unknown): Promise<T> => {
+    patch: async <T>(path: string, json?: unknown): Promise<T> => {
       const body = await requestJson<Envelope<T>>('PATCH', path, json);
       return body.data;
     },
@@ -584,103 +572,6 @@ const solo = (memberId: string, amountCents: number) => [
 const shared = (memberIds: [string, string], amountCents: number) =>
   lrmSplit(amountCents, memberIds);
 
-const categoryByName = (categories: CategoryRow[], name: string): string => {
-  const row = categories.find((c) => c.name === name);
-  if (!row) {
-    return fail(
-      `Seeded category "${name}" was not returned by GET /api/categories`
-    );
-  }
-  return row.id;
-};
-
-const resolveFixtureTransactionCategories = (categories: CategoryRow[]) =>
-  Object.fromEntries(
-    Object.entries(FIXTURE_TRANSACTION_CATEGORY_NAMES).map(([key, name]) => [
-      key,
-      categoryByName(categories, name),
-    ])
-  ) as {
-    [K in keyof typeof FIXTURE_TRANSACTION_CATEGORY_NAMES]: string;
-  };
-
-const isDefaultCategoryCatalogCurrent = (
-  categories: CategoryRow[]
-): boolean => {
-  if (
-    categories.some(
-      (category) => !HOUSEHOLD_DEFAULT_CATEGORY_NAMES.has(category.name)
-    )
-  ) {
-    return false;
-  }
-
-  const orderedDefaultIds = HOUSEHOLD_DEFAULT_CATEGORIES.flatMap((category) => {
-    const row = categories.find(
-      (candidate) => candidate.name === category.name
-    );
-    return row ? [row.id] : [];
-  });
-  if (orderedDefaultIds.length !== HOUSEHOLD_DEFAULT_CATEGORIES.length) {
-    return false;
-  }
-
-  return categories.every(
-    (category, index) => category.id === orderedDefaultIds[index]
-  );
-};
-
-const ensureFixtureCategories = async (
-  api: ReturnType<typeof createApiClient>
-): Promise<CategoryRow[]> => {
-  let categories = await api.getData<CategoryRow[]>('/api/categories');
-  if (isDefaultCategoryCatalogCurrent(categories)) return categories;
-
-  log(
-    'Fixture household categories are out of date; syncing to current defaults'
-  );
-
-  await Promise.all(
-    categories
-      .filter(
-        (category) => !HOUSEHOLD_DEFAULT_CATEGORY_NAMES.has(category.name)
-      )
-      .map((category) => api.delete(`/api/categories/${category.id}/archive`))
-  );
-
-  categories = categories.filter((category) =>
-    HOUSEHOLD_DEFAULT_CATEGORY_NAMES.has(category.name)
-  );
-  const existingNames = new Set(categories.map((category) => category.name));
-  const created = await Promise.all(
-    HOUSEHOLD_DEFAULT_CATEGORIES.flatMap((category, sortOrder) =>
-      existingNames.has(category.name)
-        ? []
-        : [
-            api.post<CategoryRow>('/api/categories', {
-              name: category.name,
-              icon: category.icon,
-              sortOrder,
-            }),
-          ]
-    )
-  );
-  categories = [...categories, ...created];
-
-  const categoryIdByName = new Map(
-    categories.map((category) => [category.name, category.id])
-  );
-  const orderedIds = HOUSEHOLD_DEFAULT_CATEGORIES.map(
-    (category) => categoryIdByName.get(category.name)!
-  );
-  await api.patch('/api/categories/reorder', { orderedIds });
-
-  return HOUSEHOLD_DEFAULT_CATEGORIES.map((category) => ({
-    id: categoryIdByName.get(category.name)!,
-    name: category.name,
-  }));
-};
-
 const ensureTag = async (
   api: ReturnType<typeof createApiClient>,
   existing: TagRow[],
@@ -696,18 +587,7 @@ const seedHousehold = async (
   api: ReturnType<typeof createApiClient>,
   members: { ada: MemberRow; alan: MemberRow }
 ) => {
-  const categories = await ensureFixtureCategories(api);
-  const {
-    groceries,
-    takeout,
-    drinks,
-    transport,
-    bills,
-    entertainment,
-    shopping,
-    travel,
-    health,
-  } = resolveFixtureTransactionCategories(categories);
+  const categories = await ensureFixtureCategories(api, log);
 
   const existingTags = await api.getData<TagRow[]>('/api/tags');
   const weekend = await ensureTag(api, existingTags, 'weekend', 'blue-500');
@@ -799,7 +679,7 @@ const seedHousehold = async (
     amount: 12_500,
     date: isoDateDaysAgo(10),
     description: 'Hydro One',
-    categoryId: bills,
+    categoryId: fixtureCategoryId(categories, 'bills'),
     assignees: shared(both, 12_500),
     tagIds: [recurring.id],
   });
@@ -835,7 +715,7 @@ const seedHousehold = async (
     amount: 2_400,
     date: isoDateDaysAgo(6),
     description: 'Coffee shop',
-    categoryId: drinks,
+    categoryId: fixtureCategoryId(categories, 'drinks'),
     assignees: solo(ada.id, 2_400),
   });
   await api.post('/api/transactions', {
@@ -844,7 +724,7 @@ const seedHousehold = async (
     amount: 1_200,
     date: isoDateDaysAgo(5),
     description: 'Pharmacy',
-    categoryId: health,
+    categoryId: fixtureCategoryId(categories, 'health'),
     assignees: solo(ada.id, 1_200),
   });
   await api.post('/api/transactions', {
@@ -853,7 +733,7 @@ const seedHousehold = async (
     amount: 3_500,
     date: isoDateDaysAgo(5),
     description: 'Presto reload',
-    categoryId: transport,
+    categoryId: fixtureCategoryId(categories, 'transport'),
     assignees: solo(alan.id, 3_500),
   });
 
@@ -863,7 +743,7 @@ const seedHousehold = async (
     amount: 12_000,
     date: isoDateDaysAgo(9),
     description: 'Loblaws',
-    categoryId: groceries,
+    categoryId: fixtureCategoryId(categories, 'groceries'),
     assignees: solo(ada.id, 12_000),
   });
   const takeoutExpense = await api.post<{ id: string }>('/api/transactions', {
@@ -872,7 +752,7 @@ const seedHousehold = async (
     amount: 4_500,
     date: isoDateDaysAgo(6),
     description: 'Pizzeria',
-    categoryId: takeout,
+    categoryId: fixtureCategoryId(categories, 'takeout'),
     assignees: solo(ada.id, 4_500),
     tagIds: [weekend.id],
   });
@@ -882,7 +762,7 @@ const seedHousehold = async (
     amount: 8_000,
     date: isoDateDaysAgo(4),
     description: 'Airbnb',
-    categoryId: travel,
+    categoryId: fixtureCategoryId(categories, 'travel'),
     assignees: shared(both, 8_000),
   });
   await api.post('/api/transactions', {
@@ -891,7 +771,7 @@ const seedHousehold = async (
     amount: 1_500,
     date: isoDateDaysAgo(3),
     description: 'Pizzeria refund',
-    categoryId: takeout,
+    categoryId: fixtureCategoryId(categories, 'takeout'),
     refundOf: takeoutExpense.id,
     assignees: solo(ada.id, 1_500),
   });
@@ -902,7 +782,7 @@ const seedHousehold = async (
     amount: 20_000,
     date: isoDateDaysAgo(8),
     description: 'Costco',
-    categoryId: groceries,
+    categoryId: fixtureCategoryId(categories, 'groceries'),
     assignees: shared(both, 20_000),
   });
   await api.post('/api/transactions', {
@@ -911,7 +791,7 @@ const seedHousehold = async (
     amount: 6_000,
     date: isoDateDaysAgo(5),
     description: 'Cinema',
-    categoryId: entertainment,
+    categoryId: fixtureCategoryId(categories, 'entertainment'),
     assignees: solo(ada.id, 6_000),
     tagIds: [weekend.id],
   });
@@ -921,7 +801,7 @@ const seedHousehold = async (
     amount: 4_000,
     date: isoDateDaysAgo(4),
     description: 'Uniqlo',
-    categoryId: shopping,
+    categoryId: fixtureCategoryId(categories, 'shopping'),
     assignees: solo(alan.id, 4_000),
   });
 

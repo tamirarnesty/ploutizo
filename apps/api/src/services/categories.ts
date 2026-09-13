@@ -9,6 +9,7 @@ import {
   insertCategory,
   listCategories as listCategoriesQuery,
   reorderCategories as reorderCategoriesQuery,
+  restoreCategory,
   updateCategory as updateCategoryQuery,
 } from '../lib/queries/categories';
 import type { z } from 'zod';
@@ -22,8 +23,11 @@ export const reorderCategories = async (
   });
 };
 
-export const listCategories = async (orgId: string) => {
-  return listCategoriesQuery(orgId);
+export const listCategories = async (
+  orgId: string,
+  options?: { includeArchived?: boolean }
+) => {
+  return listCategoriesQuery(orgId, options);
 };
 
 export const createCategory = async (
@@ -46,5 +50,13 @@ export const updateCategory = async (
 export const archiveCategoryById = async (id: string, orgId: string) => {
   const updated = await archiveCategory(id, orgId);
   if (!updated) throw new NotFoundError('Category not found.');
+  return updated;
+};
+
+export const restoreCategoryById = async (id: string, orgId: string) => {
+  const updated = await restoreCategory(id, orgId);
+  if (!updated) {
+    throw new NotFoundError('Category not found or already active.');
+  }
   return updated;
 };

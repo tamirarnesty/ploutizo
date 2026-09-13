@@ -10,6 +10,7 @@ import {
   createCategory,
   listCategories,
   reorderCategories,
+  restoreCategoryById,
   updateCategory,
 } from '../services/categories';
 import type { AppEnv } from '../types';
@@ -30,7 +31,8 @@ categoriesRouter.patch(
 
 categoriesRouter.get('/', async (c) => {
   const orgId = c.get('orgId');
-  const rows = await listCategories(orgId);
+  const includeArchived = c.req.query('includeArchived') === 'true';
+  const rows = await listCategories(orgId, { includeArchived });
   return c.json({ data: rows });
 });
 
@@ -44,6 +46,13 @@ categoriesRouter.post(
     return c.json({ data: row }, 201);
   }
 );
+
+categoriesRouter.patch('/:id/restore', async (c) => {
+  const orgId = c.get('orgId');
+  const id = c.req.param('id');
+  const restored = await restoreCategoryById(id, orgId);
+  return c.json({ data: restored });
+});
 
 categoriesRouter.patch(
   '/:id',
