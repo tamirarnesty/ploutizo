@@ -1,7 +1,7 @@
 import { BILL_PAYMENT_CATEGORY_NAME } from '@ploutizo/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { db } from '@/client';
+import { db } from '../client';
 import { seedCategoryRowsForOrg } from '../seeds/categories';
 import { seedMerchantRuleRowsForOrg } from '../seeds/merchantRules';
 
