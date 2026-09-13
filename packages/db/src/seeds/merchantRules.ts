@@ -51,19 +51,23 @@ const DEFAULT_MERCHANT_RULES: {
   },
 ];
 
+export const seedMerchantRuleRowsForOrg = (orgId: string) =>
+  DEFAULT_MERCHANT_RULES.map((rule) => ({
+    orgId,
+    pattern: rule.pattern,
+    matchType: rule.matchType,
+    renameTo: rule.renameTo,
+    priority: rule.priority,
+  }));
+
+/** Insert default merchant rules. `seedOrg` passes a transaction client. */
 export const insertSeedMerchantRulesForOrg = async (
   executor: InsertExecutor,
   orgId: string
 ): Promise<void> => {
-  await executor.insert(merchantRules).values(
-    DEFAULT_MERCHANT_RULES.map((rule) => ({
-      orgId, // non-nullable — always set to the passed orgId
-      pattern: rule.pattern,
-      matchType: rule.matchType,
-      renameTo: rule.renameTo,
-      priority: rule.priority,
-    }))
-  );
+  await executor
+    .insert(merchantRules)
+    .values(seedMerchantRuleRowsForOrg(orgId));
 };
 
 export const seedOrgMerchantRules = async (orgId: string): Promise<void> => {
