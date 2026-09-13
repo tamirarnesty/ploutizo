@@ -41,3 +41,49 @@ describe('SQL-only schema contracts', () => {
     );
   });
 });
+
+describe('prepared row snapshot cutover migration', () => {
+  const snapshotCutoverMigration = sqlFile('0009_prepared_row_snapshot.sql');
+
+  it('deletes existing prepared staging before the guarded rename', () => {
+    const truncateAt = snapshotCutoverMigration.indexOf(
+      'TRUNCATE TABLE "import_prepared_outcomes", "import_prepared_sets"'
+    );
+    const renameAt = snapshotCutoverMigration.indexOf(
+      'RENAME COLUMN "reviewed_values" TO "row_snapshot"'
+    );
+    expect(truncateAt).toBeGreaterThan(-1);
+    expect(renameAt).toBeGreaterThan(truncateAt);
+  });
+
+  it('renames reviewed_values only when that column still exists', () => {
+    const guardAt = snapshotCutoverMigration.indexOf(
+      "column_name = 'reviewed_values'"
+    );
+    const renameAt = snapshotCutoverMigration.indexOf(
+      'RENAME COLUMN "reviewed_values" TO "row_snapshot"'
+    );
+    expect(guardAt).toBeGreaterThan(-1);
+    expect(renameAt).toBeGreaterThan(guardAt);
+    expect(snapshotCutoverMigration).toMatch(
+      /IF EXISTS[\s\S]*RENAME COLUMN "reviewed_values" TO "row_snapshot"/
+    );
+  });
+
+  it('no-ops when row_snapshot already exists and reviewed_values is gone', () => {
+    expect(snapshotCutoverMigration).not.toContain('RAISE EXCEPTION');
+    expect(snapshotCutoverMigration).not.toContain(
+      'DROP COLUMN "reviewed_values"'
+    );
+    expect(snapshotCutoverMigration).not.toContain(
+      "column_name = 'row_snapshot'"
+    );
+  });
+
+  it('does not transform or retain the flat reviewed_values shape', () => {
+    expect(snapshotCutoverMigration).not.toContain(
+      'UPDATE "import_prepared_outcomes"'
+    );
+    expect(snapshotCutoverMigration).not.toContain('reviewed_values ->');
+  });
+});

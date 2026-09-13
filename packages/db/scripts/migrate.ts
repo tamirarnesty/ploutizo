@@ -5,6 +5,9 @@ import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import { migrate } from 'drizzle-orm/neon-serverless/migrator';
 
+import { logMigrationError } from '../src/migration-log';
+import { runMigrations } from '../src/run-migrations';
+
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../../..');
 loadEnv({ path: join(repoRoot, '.env'), quiet: true });
 
@@ -24,33 +27,17 @@ const migrationsFolder = join(
   '../drizzle'
 );
 
-const logMigrationError = (error: unknown): void => {
-  console.error('Migration failed');
-  console.error(error);
-  if (error instanceof Error && error.cause !== undefined) {
-    console.error('cause:', error.cause);
-  }
-  if (
-    error !== null &&
-    typeof error === 'object' &&
-    'query' in error &&
-    typeof error.query === 'string'
-  ) {
-    console.error('sql:', error.query);
-  }
-};
+console.log(`Applying migrations from ${migrationsFolder}`);
+const exitCode = await runMigrations({
+  migrate,
+  db,
+  migrationsFolder,
+  pool,
+  logError: logMigrationError,
+});
 
-try {
-  console.log(`Applying migrations from ${migrationsFolder}`);
-  await migrate(db, { migrationsFolder });
+if (exitCode === 0) {
   console.log('Migrations complete');
-} catch (error) {
-  logMigrationError(error);
-  process.exitCode = 1;
-} finally {
-  await pool.end();
-}
-
-if (process.exitCode) {
-  process.exit(process.exitCode);
+} else {
+  process.exit(exitCode);
 }
