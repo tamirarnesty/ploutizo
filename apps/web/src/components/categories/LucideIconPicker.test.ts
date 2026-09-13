@@ -23,6 +23,6 @@ describe('ICON_MAP', () => {
       'CreditCard',
     ];
 
-    expect(seedIcons.every((icon) => icon in ICON_MAP)).toBe(true);
+    expect(seedIcons.filter((icon) => !(icon in ICON_MAP))).toEqual([]);
   });
 });

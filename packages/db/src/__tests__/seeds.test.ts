@@ -75,7 +75,7 @@ describe('seed rows', () => {
     );
   });
 
-  it('inserts the household default spend categories with icons, then Bill Payment', () => {
+  it('inserts all household default categories with icons and sequential sortOrder', () => {
     const rows = seedCategoryRowsForOrg('org_test123');
 
     expect(rows.map((row) => ({ name: row.name, icon: row.icon }))).toEqual([

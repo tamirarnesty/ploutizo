@@ -11,39 +11,41 @@ type InsertExecutor = {
 const BILL_PAYMENT_CATEGORY = {
   name: BILL_PAYMENT_CATEGORY_NAME,
   icon: 'CreditCard',
-  sortOrder: 16,
 } as const;
 
 // Default categories seeded at org creation.
 // INVARIANT: Every row has orgId set — no global category rows.
 // Icon names must exist in the web LucideIconPicker ICON_MAP.
-const DEFAULT_CATEGORIES: { name: string; icon: string; sortOrder: number }[] =
-  [
-    { name: 'Bills', icon: 'Receipt', sortOrder: 0 },
-    { name: 'Entertainment', icon: 'Tv', sortOrder: 1 },
-    { name: 'Takeout', icon: 'Pizza', sortOrder: 2 },
-    { name: 'Restaurants', icon: 'UtensilsCrossed', sortOrder: 3 },
-    { name: 'Drinks & Treats', icon: 'Coffee', sortOrder: 4 },
-    { name: 'Groceries', icon: 'ShoppingCart', sortOrder: 5 },
-    { name: 'House', icon: 'Home', sortOrder: 6 },
-    { name: 'Health & Wellbeing', icon: 'HeartPulse', sortOrder: 7 },
-    { name: 'Shopping', icon: 'ShoppingBag', sortOrder: 8 },
-    { name: 'Subscriptions', icon: 'Repeat', sortOrder: 9 },
-    { name: 'Transport', icon: 'Bus', sortOrder: 10 },
-    { name: 'Gas', icon: 'Fuel', sortOrder: 11 },
-    { name: 'Travel', icon: 'Plane', sortOrder: 12 },
-    { name: 'Gifts', icon: 'Gift', sortOrder: 13 },
-    { name: 'Car Maintenance', icon: 'Wrench', sortOrder: 14 },
-    { name: 'Other', icon: 'MoreHorizontal', sortOrder: 15 },
-    BILL_PAYMENT_CATEGORY,
-  ];
+const DEFAULT_CATEGORIES: { name: string; icon: string }[] = [
+  { name: 'Bills', icon: 'Receipt' },
+  { name: 'Entertainment', icon: 'Tv' },
+  { name: 'Takeout', icon: 'Pizza' },
+  { name: 'Restaurants', icon: 'UtensilsCrossed' },
+  { name: 'Drinks & Treats', icon: 'Coffee' },
+  { name: 'Groceries', icon: 'ShoppingCart' },
+  { name: 'House', icon: 'Home' },
+  { name: 'Health & Wellbeing', icon: 'HeartPulse' },
+  { name: 'Shopping', icon: 'ShoppingBag' },
+  { name: 'Subscriptions', icon: 'Repeat' },
+  { name: 'Transport', icon: 'Bus' },
+  { name: 'Gas', icon: 'Fuel' },
+  { name: 'Travel', icon: 'Plane' },
+  { name: 'Gifts', icon: 'Gift' },
+  { name: 'Car Maintenance', icon: 'Wrench' },
+  { name: 'Other', icon: 'MoreHorizontal' },
+  BILL_PAYMENT_CATEGORY,
+];
+
+const BILL_PAYMENT_SORT_ORDER = DEFAULT_CATEGORIES.findIndex(
+  (category) => category.name === BILL_PAYMENT_CATEGORY.name
+);
 
 export const seedCategoryRowsForOrg = (orgId: string) =>
-  DEFAULT_CATEGORIES.map((cat) => ({
+  DEFAULT_CATEGORIES.map((cat, sortOrder) => ({
     orgId,
     name: cat.name,
     icon: cat.icon,
-    sortOrder: cat.sortOrder,
+    sortOrder,
   }));
 
 /** Insert default categories. `seedOrg` passes a transaction client. */
@@ -90,7 +92,7 @@ export const ensureBillPaymentCategoryForOrg = async (
       orgId,
       name: BILL_PAYMENT_CATEGORY.name,
       icon: BILL_PAYMENT_CATEGORY.icon,
-      sortOrder: BILL_PAYMENT_CATEGORY.sortOrder,
+      sortOrder: BILL_PAYMENT_SORT_ORDER,
     })
     .onConflictDoNothing({
       target: [categories.orgId, categories.name],

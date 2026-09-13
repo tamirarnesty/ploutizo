@@ -754,7 +754,7 @@ const seedHousehold = async (
     categoryId: groceries,
     assignees: solo(ada.id, 12_000),
   });
-  const diningExpense = await api.post<{ id: string }>('/api/transactions', {
+  const takeoutExpense = await api.post<{ id: string }>('/api/transactions', {
     type: 'expense',
     accountId: adaVisa.id,
     amount: 4_500,
@@ -780,7 +780,7 @@ const seedHousehold = async (
     date: isoDateDaysAgo(3),
     description: 'Pizzeria refund',
     categoryId: takeout,
-    refundOf: diningExpense.id,
+    refundOf: takeoutExpense.id,
     assignees: solo(ada.id, 1_500),
   });
 
