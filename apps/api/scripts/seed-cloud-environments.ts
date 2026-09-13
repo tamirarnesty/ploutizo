@@ -588,13 +588,14 @@ const seedHousehold = async (
 ) => {
   const categories = await api.getData<CategoryRow[]>('/api/categories');
   const groceries = categoryByName(categories, 'Groceries');
-  const dining = categoryByName(categories, 'Dining & Restaurants');
-  const transportation = categoryByName(categories, 'Transportation');
-  const utilities = categoryByName(categories, 'Utilities');
+  const takeout = categoryByName(categories, 'Takeout');
+  const drinks = categoryByName(categories, 'Drinks & Treats');
+  const transport = categoryByName(categories, 'Transport');
+  const bills = categoryByName(categories, 'Bills');
   const entertainment = categoryByName(categories, 'Entertainment');
   const shopping = categoryByName(categories, 'Shopping');
   const travel = categoryByName(categories, 'Travel');
-  const personalCare = categoryByName(categories, 'Personal Care');
+  const health = categoryByName(categories, 'Health & Wellbeing');
 
   const existingTags = await api.getData<TagRow[]>('/api/tags');
   const weekend = await ensureTag(api, existingTags, 'weekend', 'blue-500');
@@ -686,7 +687,7 @@ const seedHousehold = async (
     amount: 12_500,
     date: isoDateDaysAgo(10),
     description: 'Hydro One',
-    categoryId: utilities,
+    categoryId: bills,
     assignees: shared(both, 12_500),
     tagIds: [recurring.id],
   });
@@ -722,7 +723,7 @@ const seedHousehold = async (
     amount: 2_400,
     date: isoDateDaysAgo(6),
     description: 'Coffee shop',
-    categoryId: dining,
+    categoryId: drinks,
     assignees: solo(ada.id, 2_400),
   });
   await api.post('/api/transactions', {
@@ -731,7 +732,7 @@ const seedHousehold = async (
     amount: 1_200,
     date: isoDateDaysAgo(5),
     description: 'Pharmacy',
-    categoryId: personalCare,
+    categoryId: health,
     assignees: solo(ada.id, 1_200),
   });
   await api.post('/api/transactions', {
@@ -740,7 +741,7 @@ const seedHousehold = async (
     amount: 3_500,
     date: isoDateDaysAgo(5),
     description: 'Presto reload',
-    categoryId: transportation,
+    categoryId: transport,
     assignees: solo(alan.id, 3_500),
   });
 
@@ -759,7 +760,7 @@ const seedHousehold = async (
     amount: 4_500,
     date: isoDateDaysAgo(6),
     description: 'Pizzeria',
-    categoryId: dining,
+    categoryId: takeout,
     assignees: solo(ada.id, 4_500),
     tagIds: [weekend.id],
   });
@@ -778,7 +779,7 @@ const seedHousehold = async (
     amount: 1_500,
     date: isoDateDaysAgo(3),
     description: 'Pizzeria refund',
-    categoryId: dining,
+    categoryId: takeout,
     refundOf: diningExpense.id,
     assignees: solo(ada.id, 1_500),
   });

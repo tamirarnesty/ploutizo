@@ -75,6 +75,33 @@ describe('seed rows', () => {
     );
   });
 
+  it('inserts the household default spend categories with icons, then Bill Payment', () => {
+    const rows = seedCategoryRowsForOrg('org_test123');
+
+    expect(rows.map((row) => ({ name: row.name, icon: row.icon }))).toEqual([
+      { name: 'Bills', icon: 'Receipt' },
+      { name: 'Entertainment', icon: 'Tv' },
+      { name: 'Takeout', icon: 'Pizza' },
+      { name: 'Restaurants', icon: 'UtensilsCrossed' },
+      { name: 'Drinks & Treats', icon: 'Coffee' },
+      { name: 'Groceries', icon: 'ShoppingCart' },
+      { name: 'House', icon: 'Home' },
+      { name: 'Health & Wellbeing', icon: 'HeartPulse' },
+      { name: 'Shopping', icon: 'ShoppingBag' },
+      { name: 'Subscriptions', icon: 'Repeat' },
+      { name: 'Transport', icon: 'Bus' },
+      { name: 'Gas', icon: 'Fuel' },
+      { name: 'Travel', icon: 'Plane' },
+      { name: 'Gifts', icon: 'Gift' },
+      { name: 'Car Maintenance', icon: 'Wrench' },
+      { name: 'Other', icon: 'MoreHorizontal' },
+      { name: BILL_PAYMENT_CATEGORY_NAME, icon: 'CreditCard' },
+    ]);
+    expect(rows.map((row) => row.sortOrder)).toEqual(
+      rows.map((_, index) => index)
+    );
+  });
+
   it('stamps orgId on every merchant rule', () => {
     const rows = seedMerchantRuleRowsForOrg('org_test123');
     expect(rows.every((row) => row.orgId === 'org_test123')).toBe(true);

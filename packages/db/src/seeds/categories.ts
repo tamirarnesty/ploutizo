@@ -8,26 +8,34 @@ type InsertExecutor = {
   insert: typeof db.insert;
 };
 
+const BILL_PAYMENT_CATEGORY = {
+  name: BILL_PAYMENT_CATEGORY_NAME,
+  icon: 'CreditCard',
+  sortOrder: 16,
+} as const;
+
 // Default categories seeded at org creation.
 // INVARIANT: Every row has orgId set — no global category rows.
+// Icon names must exist in the web LucideIconPicker ICON_MAP.
 const DEFAULT_CATEGORIES: { name: string; icon: string; sortOrder: number }[] =
   [
-    { name: 'Groceries', icon: 'ShoppingCart', sortOrder: 0 },
-    { name: 'Dining & Restaurants', icon: 'UtensilsCrossed', sortOrder: 1 },
-    { name: 'Transportation', icon: 'Car', sortOrder: 2 },
-    { name: 'Housing & Rent', icon: 'Home', sortOrder: 3 },
-    { name: 'Utilities', icon: 'Zap', sortOrder: 4 },
-    { name: 'Healthcare', icon: 'HeartPulse', sortOrder: 5 },
-    { name: 'Entertainment', icon: 'Tv', sortOrder: 6 },
-    { name: 'Shopping', icon: 'ShoppingBag', sortOrder: 7 },
-    { name: 'Travel', icon: 'Plane', sortOrder: 8 },
-    { name: 'Personal Care', icon: 'Sparkles', sortOrder: 9 },
-    { name: 'Other', icon: 'MoreHorizontal', sortOrder: 10 },
-    {
-      name: BILL_PAYMENT_CATEGORY_NAME,
-      icon: 'CreditCard',
-      sortOrder: 11,
-    },
+    { name: 'Bills', icon: 'Receipt', sortOrder: 0 },
+    { name: 'Entertainment', icon: 'Tv', sortOrder: 1 },
+    { name: 'Takeout', icon: 'Pizza', sortOrder: 2 },
+    { name: 'Restaurants', icon: 'UtensilsCrossed', sortOrder: 3 },
+    { name: 'Drinks & Treats', icon: 'Coffee', sortOrder: 4 },
+    { name: 'Groceries', icon: 'ShoppingCart', sortOrder: 5 },
+    { name: 'House', icon: 'Home', sortOrder: 6 },
+    { name: 'Health & Wellbeing', icon: 'HeartPulse', sortOrder: 7 },
+    { name: 'Shopping', icon: 'ShoppingBag', sortOrder: 8 },
+    { name: 'Subscriptions', icon: 'Repeat', sortOrder: 9 },
+    { name: 'Transport', icon: 'Bus', sortOrder: 10 },
+    { name: 'Gas', icon: 'Fuel', sortOrder: 11 },
+    { name: 'Travel', icon: 'Plane', sortOrder: 12 },
+    { name: 'Gifts', icon: 'Gift', sortOrder: 13 },
+    { name: 'Car Maintenance', icon: 'Wrench', sortOrder: 14 },
+    { name: 'Other', icon: 'MoreHorizontal', sortOrder: 15 },
+    BILL_PAYMENT_CATEGORY,
   ];
 
 export const seedCategoryRowsForOrg = (orgId: string) =>
@@ -80,9 +88,9 @@ export const ensureBillPaymentCategoryForOrg = async (
     .insert(categories)
     .values({
       orgId,
-      name: BILL_PAYMENT_CATEGORY_NAME,
-      icon: 'CreditCard',
-      sortOrder: 11,
+      name: BILL_PAYMENT_CATEGORY.name,
+      icon: BILL_PAYMENT_CATEGORY.icon,
+      sortOrder: BILL_PAYMENT_CATEGORY.sortOrder,
     })
     .onConflictDoNothing({
       target: [categories.orgId, categories.name],
