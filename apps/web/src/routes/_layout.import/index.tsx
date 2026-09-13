@@ -10,8 +10,12 @@ import { Import } from '../../components/imports/hub/Import';
 export const Route = createFileRoute('/_layout/import/')({
   loader: async ({ context }) => {
     const warmup: Promise<unknown>[] = [
-      context.queryClient.ensureQueryData(importTargetsQueryOptions()),
-      context.queryClient.ensureQueryData(importHistoryPageQueryOptions()),
+      context.queryClient
+        .ensureQueryData(importTargetsQueryOptions())
+        .catch(() => undefined),
+      context.queryClient
+        .ensureQueryData(importHistoryPageQueryOptions())
+        .catch(() => undefined),
     ];
 
     // Child loaders run on client intent preload; raw Clerk auth() has no
@@ -19,13 +23,13 @@ export const Route = createFileRoute('/_layout/import/')({
     const orgId = await getAuthOrgId().catch(() => null);
     if (orgId) {
       warmup.push(
-        context.queryClient.ensureQueryData(
-          activeImportDraftsQueryOptions(orgId)
-        )
+        context.queryClient
+          .ensureQueryData(activeImportDraftsQueryOptions(orgId))
+          .catch(() => undefined)
       );
     }
 
-    await Promise.all(warmup.map((promise) => promise.catch(() => undefined)));
+    await Promise.all(warmup);
   },
   component: Import,
 });
