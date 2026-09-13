@@ -1,4 +1,7 @@
-import { BILL_PAYMENT_CATEGORY_NAME } from '@ploutizo/types';
+import {
+  BILL_PAYMENT_CATEGORY_NAME,
+  HOUSEHOLD_DEFAULT_CATEGORIES,
+} from '@ploutizo/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { db } from '../client';
@@ -78,25 +81,12 @@ describe('seed rows', () => {
   it('inserts all household default categories with icons and sequential sortOrder', () => {
     const rows = seedCategoryRowsForOrg('org_test123');
 
-    expect(rows.map((row) => ({ name: row.name, icon: row.icon }))).toEqual([
-      { name: 'Bills', icon: 'Receipt' },
-      { name: 'Entertainment', icon: 'Tv' },
-      { name: 'Takeout', icon: 'Pizza' },
-      { name: 'Restaurants', icon: 'UtensilsCrossed' },
-      { name: 'Drinks & Treats', icon: 'Coffee' },
-      { name: 'Groceries', icon: 'ShoppingCart' },
-      { name: 'House', icon: 'Home' },
-      { name: 'Health & Wellbeing', icon: 'HeartPulse' },
-      { name: 'Shopping', icon: 'ShoppingBag' },
-      { name: 'Subscriptions', icon: 'Repeat' },
-      { name: 'Transport', icon: 'Bus' },
-      { name: 'Gas', icon: 'Fuel' },
-      { name: 'Travel', icon: 'Plane' },
-      { name: 'Gifts', icon: 'Gift' },
-      { name: 'Car Maintenance', icon: 'Wrench' },
-      { name: 'Other', icon: 'MoreHorizontal' },
-      { name: BILL_PAYMENT_CATEGORY_NAME, icon: 'CreditCard' },
-    ]);
+    expect(rows.map((row) => ({ name: row.name, icon: row.icon }))).toEqual(
+      HOUSEHOLD_DEFAULT_CATEGORIES.map((category) => ({
+        name: category.name,
+        icon: category.icon,
+      }))
+    );
     expect(rows.map((row) => row.sortOrder)).toEqual(
       rows.map((_, index) => index)
     );

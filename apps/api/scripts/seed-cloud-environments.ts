@@ -24,6 +24,7 @@ import {
   type Organization,
   type User,
 } from '@clerk/backend';
+import { HOUSEHOLD_DEFAULT_CATEGORIES } from '@ploutizo/types';
 import { lrmSplit } from '@ploutizo/utils/assignee-split';
 import { memberFullLabel } from '@ploutizo/utils';
 import { formatGeneratedTransactionDescription } from '@ploutizo/utils/transaction-policy';
@@ -49,6 +50,20 @@ const EXPECTED_ACCOUNT_NAMES = [
   'Joint TFSA',
 ] as const;
 const EXPECTED_TAG_NAMES = ['weekend', 'recurring'] as const;
+const FIXTURE_CATEGORY_NAMES = [
+  'Groceries',
+  'Takeout',
+  'Drinks & Treats',
+  'Transport',
+  'Bills',
+  'Entertainment',
+  'Shopping',
+  'Travel',
+  'Health & Wellbeing',
+] as const;
+const DEFAULT_CATEGORY_NAMES = new Set(
+  HOUSEHOLD_DEFAULT_CATEGORIES.map((category) => category.name)
+);
 /** 15 posted transactions plus the 2 settlements that persist as transactions. */
 const EXPECTED_LEDGER_TRANSACTION_COUNT = 17;
 const REQUIRED_ENV = [
@@ -551,6 +566,10 @@ const createApiClient = (baseUrl: string, jwt: string) => {
       const body = await requestJson<Envelope<T>>('POST', path, json);
       return body.data;
     },
+    delete: async <T>(path: string): Promise<T> => {
+      const body = await requestJson<Envelope<T>>('DELETE', path);
+      return body.data;
+    },
   };
 };
 
@@ -571,6 +590,39 @@ const categoryByName = (categories: CategoryRow[], name: string): string => {
   return row.id;
 };
 
+const ensureFixtureCategories = async (
+  api: ReturnType<typeof createApiClient>
+): Promise<CategoryRow[]> => {
+  let categories = await api.getData<CategoryRow[]>('/api/categories');
+  const hasFixtureCategories = FIXTURE_CATEGORY_NAMES.every((name) =>
+    categories.some((category) => category.name === name)
+  );
+  if (hasFixtureCategories) return categories;
+
+  log(
+    'Fixture household categories are out of date; syncing to current defaults'
+  );
+
+  for (const category of categories) {
+    if (!DEFAULT_CATEGORY_NAMES.has(category.name)) {
+      await api.delete(`/api/categories/${category.id}/archive`);
+    }
+  }
+
+  categories = await api.getData<CategoryRow[]>('/api/categories');
+  const existingNames = new Set(categories.map((category) => category.name));
+  for (const [sortOrder, category] of HOUSEHOLD_DEFAULT_CATEGORIES.entries()) {
+    if (existingNames.has(category.name)) continue;
+    await api.post<CategoryRow>('/api/categories', {
+      name: category.name,
+      icon: category.icon,
+      sortOrder,
+    });
+  }
+
+  return api.getData<CategoryRow[]>('/api/categories');
+};
+
 const ensureTag = async (
   api: ReturnType<typeof createApiClient>,
   existing: TagRow[],
@@ -586,7 +638,7 @@ const seedHousehold = async (
   api: ReturnType<typeof createApiClient>,
   members: { ada: MemberRow; alan: MemberRow }
 ) => {
-  const categories = await api.getData<CategoryRow[]>('/api/categories');
+  const categories = await ensureFixtureCategories(api);
   const groceries = categoryByName(categories, 'Groceries');
   const takeout = categoryByName(categories, 'Takeout');
   const drinks = categoryByName(categories, 'Drinks & Treats');

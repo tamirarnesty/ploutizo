@@ -1,4 +1,7 @@
-import { BILL_PAYMENT_CATEGORY_NAME } from '@ploutizo/types';
+import {
+  BILL_PAYMENT_CATEGORY_NAME,
+  HOUSEHOLD_DEFAULT_CATEGORIES,
+} from '@ploutizo/types';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../client';
 import { categories } from '../schema/index';
@@ -8,40 +11,18 @@ type InsertExecutor = {
   insert: typeof db.insert;
 };
 
-const BILL_PAYMENT_CATEGORY = {
-  name: BILL_PAYMENT_CATEGORY_NAME,
-  icon: 'CreditCard',
-} as const;
-
-// Default categories seeded at org creation.
-// INVARIANT: Every row has orgId set — no global category rows.
 // Icon names must exist in the web LucideIconPicker ICON_MAP.
-const DEFAULT_CATEGORIES: { name: string; icon: string }[] = [
-  { name: 'Bills', icon: 'Receipt' },
-  { name: 'Entertainment', icon: 'Tv' },
-  { name: 'Takeout', icon: 'Pizza' },
-  { name: 'Restaurants', icon: 'UtensilsCrossed' },
-  { name: 'Drinks & Treats', icon: 'Coffee' },
-  { name: 'Groceries', icon: 'ShoppingCart' },
-  { name: 'House', icon: 'Home' },
-  { name: 'Health & Wellbeing', icon: 'HeartPulse' },
-  { name: 'Shopping', icon: 'ShoppingBag' },
-  { name: 'Subscriptions', icon: 'Repeat' },
-  { name: 'Transport', icon: 'Bus' },
-  { name: 'Gas', icon: 'Fuel' },
-  { name: 'Travel', icon: 'Plane' },
-  { name: 'Gifts', icon: 'Gift' },
-  { name: 'Car Maintenance', icon: 'Wrench' },
-  { name: 'Other', icon: 'MoreHorizontal' },
-  BILL_PAYMENT_CATEGORY,
-];
-
-const BILL_PAYMENT_SORT_ORDER = DEFAULT_CATEGORIES.findIndex(
-  (category) => category.name === BILL_PAYMENT_CATEGORY.name
+const BILL_PAYMENT_SORT_ORDER = HOUSEHOLD_DEFAULT_CATEGORIES.findIndex(
+  (category) => category.name === BILL_PAYMENT_CATEGORY_NAME
 );
+if (BILL_PAYMENT_SORT_ORDER === -1) {
+  throw new Error('Bill Payment category missing from household defaults.');
+}
+const BILL_PAYMENT_CATEGORY =
+  HOUSEHOLD_DEFAULT_CATEGORIES[BILL_PAYMENT_SORT_ORDER];
 
 export const seedCategoryRowsForOrg = (orgId: string) =>
-  DEFAULT_CATEGORIES.map((cat, sortOrder) => ({
+  HOUSEHOLD_DEFAULT_CATEGORIES.map((cat, sortOrder) => ({
     orgId,
     name: cat.name,
     icon: cat.icon,
