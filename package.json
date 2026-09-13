@@ -13,7 +13,7 @@
     "typecheck": "turbo typecheck",
     "test": "turbo test",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
+    "db:migrate": "pnpm --filter @ploutizo/db migrate",
     "db:push": "drizzle-kit push"
   },
   "devDependencies": {

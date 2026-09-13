@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { db } from '../client';
+import { db } from '@/client';
 
 // Mock db client — we test behavior not actual DB inserts
 vi.mock('../client', () => {
