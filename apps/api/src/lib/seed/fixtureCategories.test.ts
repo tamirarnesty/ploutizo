@@ -130,6 +130,51 @@ describe('ensureFixtureCategories', () => {
     );
   });
 
+  it('leaves custom categories untouched while syncing defaults', async () => {
+    const customCategory = {
+      id: 'cat-custom',
+      name: 'Side Hustle',
+      icon: 'Briefcase',
+    };
+    const categories = activeDefaults({
+      Groceries: { icon: 'OldIcon' },
+    });
+    const api = createMockApi({
+      activeCategories: [customCategory, ...categories],
+    });
+
+    await ensureFixtureCategories(api);
+
+    expect(api.delete).not.toHaveBeenCalled();
+    expect(api.patch).toHaveBeenCalledWith('/api/categories/cat-5', {
+      icon: 'ShoppingCart',
+    });
+  });
+
+  it('returns early when defaults are current even with custom categories', async () => {
+    const customCategory = {
+      id: 'cat-custom',
+      name: 'Side Hustle',
+      icon: 'Briefcase',
+    };
+    const categories = activeDefaults();
+    const api = createMockApi({
+      activeCategories: [customCategory, ...categories],
+    });
+
+    await expect(ensureFixtureCategories(api)).resolves.toEqual([
+      customCategory,
+      ...HOUSEHOLD_DEFAULT_CATEGORIES.map((category, index) => ({
+        id: `cat-${index}`,
+        name: category.name,
+        icon: category.icon,
+      })),
+    ]);
+    expect(api.delete).not.toHaveBeenCalled();
+    expect(api.patch).not.toHaveBeenCalled();
+    expect(api.post).not.toHaveBeenCalled();
+  });
+
   it('patches stale icons on active default categories', async () => {
     const groceriesIndex = HOUSEHOLD_DEFAULT_CATEGORIES.findIndex(
       (category) => category.name === 'Groceries'

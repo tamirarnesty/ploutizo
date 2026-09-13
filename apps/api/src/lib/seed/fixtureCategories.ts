@@ -57,33 +57,23 @@ export const fixtureCategoryId = (
 export const isDefaultCategoryCatalogCurrent = (
   categories: CategoryRow[]
 ): boolean => {
+  const defaultsInListOrder = categories.filter((category) =>
+    HOUSEHOLD_DEFAULT_CATEGORY_NAMES.has(category.name)
+  );
+  if (defaultsInListOrder.length !== HOUSEHOLD_DEFAULT_CATEGORIES.length) {
+    return false;
+  }
+
   if (
-    categories.some(
-      (category) => !HOUSEHOLD_DEFAULT_CATEGORY_NAMES.has(category.name)
+    !defaultsInListOrder.every(
+      (category, index) =>
+        category.name === HOUSEHOLD_DEFAULT_CATEGORIES[index]?.name
     )
   ) {
     return false;
   }
 
-  const orderedDefaultIds = HOUSEHOLD_DEFAULT_CATEGORIES.flatMap((category) => {
-    const row = categories.find(
-      (candidate) => candidate.name === category.name
-    );
-    return row ? [row.id] : [];
-  });
-  if (orderedDefaultIds.length !== HOUSEHOLD_DEFAULT_CATEGORIES.length) {
-    return false;
-  }
-
-  if (
-    !categories.every(
-      (category, index) => category.id === orderedDefaultIds[index]
-    )
-  ) {
-    return false;
-  }
-
-  return categories.every((category) => {
+  return defaultsInListOrder.every((category) => {
     const catalog = HOUSEHOLD_DEFAULT_CATEGORY_BY_NAME.get(category.name);
     return catalog?.icon === category.icon;
   });
@@ -114,18 +104,11 @@ export const ensureFixtureCategories = async (
     'Fixture household categories are out of date; syncing to current defaults'
   );
 
-  await Promise.all(
+  const activeNames = new Set(
     categories
-      .filter(
-        (category) => !HOUSEHOLD_DEFAULT_CATEGORY_NAMES.has(category.name)
-      )
-      .map((category) => api.delete(`/api/categories/${category.id}/archive`))
+      .filter((category) => HOUSEHOLD_DEFAULT_CATEGORY_NAMES.has(category.name))
+      .map((category) => category.name)
   );
-
-  categories = categories.filter((category) =>
-    HOUSEHOLD_DEFAULT_CATEGORY_NAMES.has(category.name)
-  );
-  const activeNames = new Set(categories.map((category) => category.name));
   const storedCategories = await api.getData<StoredCategoryRow[]>(
     '/api/categories?includeArchived=true'
   );

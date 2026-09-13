@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   activeAccounts,
+  activeCategories,
   activeTransactions,
   assigneeCountsForOrg,
+  categoriesForOrg,
   settlementQualifying,
 } from '@/lib/queries/scope';
 
@@ -13,6 +15,14 @@ describe('scope query builders', () => {
 
   it('activeAccounts returns org and archived predicates', () => {
     expect(activeAccounts('org_a')).toHaveLength(2);
+  });
+
+  it('categoriesForOrg returns org predicate', () => {
+    expect(categoriesForOrg('org_a')).toHaveLength(1);
+  });
+
+  it('activeCategories returns org and archived predicates', () => {
+    expect(activeCategories('org_a')).toHaveLength(2);
   });
 
   it('settlementQualifying is a single composed predicate', () => {
