@@ -35,6 +35,8 @@ import {
   Pill,
   Pizza,
   Plane,
+  Receipt,
+  Repeat,
   Scissors,
   Shirt,
   ShoppingBag,
@@ -118,6 +120,8 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   HeartPulse,
   Sparkles,
   MoreHorizontal,
+  Receipt,
+  Repeat,
 };
 
 const ICON_NAMES = Object.keys(ICON_MAP);

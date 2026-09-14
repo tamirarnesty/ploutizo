@@ -12,7 +12,7 @@ import {
   transactions,
 } from '@ploutizo/db/schema';
 import { SETTLEMENT_QUALIFYING_TRANSACTION_TYPE_VALUES } from '@ploutizo/types';
-import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import type { Transaction } from '@ploutizo/db';
 import type { AccountType } from '@ploutizo/types';
 import type { SQL } from 'drizzle-orm';
@@ -31,6 +31,40 @@ export const activeAccounts = (orgId: string): SQL[] => [
   eq(accounts.orgId, orgId),
   isNull(accounts.archivedAt),
 ];
+
+/** Categories for an org (active and archived). */
+export const categoriesForOrg = (orgId: string): SQL[] => [
+  eq(categories.orgId, orgId),
+];
+
+/** Active (non-archived) categories for an org. */
+export const activeCategories = (orgId: string): SQL[] => [
+  ...categoriesForOrg(orgId),
+  isNull(categories.archivedAt),
+];
+
+export type CategoryInOrgOptions = {
+  /** When true, only non-archived categories match. */
+  requireActive?: boolean;
+  /** When true, only archived categories match. */
+  requireArchived?: boolean;
+};
+
+/** Predicate: category id belongs to org (optional active/archived filters). */
+export const categoryInOrg = (
+  orgId: string,
+  categoryId: string,
+  options: CategoryInOrgOptions = {}
+): SQL => {
+  const { requireActive = false, requireArchived = false } = options;
+  const parts: SQL[] = [
+    eq(categories.id, categoryId),
+    eq(categories.orgId, orgId),
+  ];
+  if (requireActive) parts.push(isNull(categories.archivedAt));
+  if (requireArchived) parts.push(isNotNull(categories.archivedAt));
+  return and(...parts)!;
+};
 
 /** Settlement balance aggregates: active tx + active credit_card account + qualifying types. */
 export const settlementQualifying = (orgId: string): SQL =>
@@ -148,7 +182,7 @@ export const categoryExistsInOrg = async (
   const rows = await ex
     .select({ id: categories.id })
     .from(categories)
-    .where(and(eq(categories.id, categoryId), eq(categories.orgId, orgId)))
+    .where(categoryInOrg(orgId, categoryId))
     .limit(1);
   return rows.length > 0;
 };

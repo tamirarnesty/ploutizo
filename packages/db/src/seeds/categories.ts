@@ -1,4 +1,7 @@
-import { BILL_PAYMENT_CATEGORY_NAME } from '@ploutizo/types';
+import {
+  BILL_PAYMENT_CATEGORY_NAME,
+  HOUSEHOLD_DEFAULT_CATEGORIES,
+} from '@ploutizo/types';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../client';
 import { categories } from '../schema/index';
@@ -8,34 +11,22 @@ type InsertExecutor = {
   insert: typeof db.insert;
 };
 
-// Default categories seeded at org creation.
-// INVARIANT: Every row has orgId set — no global category rows.
-const DEFAULT_CATEGORIES: { name: string; icon: string; sortOrder: number }[] =
-  [
-    { name: 'Groceries', icon: 'ShoppingCart', sortOrder: 0 },
-    { name: 'Dining & Restaurants', icon: 'UtensilsCrossed', sortOrder: 1 },
-    { name: 'Transportation', icon: 'Car', sortOrder: 2 },
-    { name: 'Housing & Rent', icon: 'Home', sortOrder: 3 },
-    { name: 'Utilities', icon: 'Zap', sortOrder: 4 },
-    { name: 'Healthcare', icon: 'HeartPulse', sortOrder: 5 },
-    { name: 'Entertainment', icon: 'Tv', sortOrder: 6 },
-    { name: 'Shopping', icon: 'ShoppingBag', sortOrder: 7 },
-    { name: 'Travel', icon: 'Plane', sortOrder: 8 },
-    { name: 'Personal Care', icon: 'Sparkles', sortOrder: 9 },
-    { name: 'Other', icon: 'MoreHorizontal', sortOrder: 10 },
-    {
-      name: BILL_PAYMENT_CATEGORY_NAME,
-      icon: 'CreditCard',
-      sortOrder: 11,
-    },
-  ];
+// Icon names must exist in the web LucideIconPicker ICON_MAP.
+const BILL_PAYMENT_SORT_ORDER = HOUSEHOLD_DEFAULT_CATEGORIES.findIndex(
+  (category) => category.name === BILL_PAYMENT_CATEGORY_NAME
+);
+if (BILL_PAYMENT_SORT_ORDER === -1) {
+  throw new Error('Bill Payment category missing from household defaults.');
+}
+const BILL_PAYMENT_CATEGORY =
+  HOUSEHOLD_DEFAULT_CATEGORIES[BILL_PAYMENT_SORT_ORDER];
 
 export const seedCategoryRowsForOrg = (orgId: string) =>
-  DEFAULT_CATEGORIES.map((cat) => ({
+  HOUSEHOLD_DEFAULT_CATEGORIES.map((cat, sortOrder) => ({
     orgId,
     name: cat.name,
     icon: cat.icon,
-    sortOrder: cat.sortOrder,
+    sortOrder,
   }));
 
 /** Insert default categories. `seedOrg` passes a transaction client. */
@@ -80,9 +71,9 @@ export const ensureBillPaymentCategoryForOrg = async (
     .insert(categories)
     .values({
       orgId,
-      name: BILL_PAYMENT_CATEGORY_NAME,
-      icon: 'CreditCard',
-      sortOrder: 11,
+      name: BILL_PAYMENT_CATEGORY.name,
+      icon: BILL_PAYMENT_CATEGORY.icon,
+      sortOrder: BILL_PAYMENT_SORT_ORDER,
     })
     .onConflictDoNothing({
       target: [categories.orgId, categories.name],

@@ -24,6 +24,10 @@ import {
   type Organization,
   type User,
 } from '@clerk/backend';
+import {
+  ensureFixtureCategories,
+  fixtureCategoryId,
+} from '../src/lib/seed/fixtureCategories';
 import { lrmSplit } from '@ploutizo/utils/assignee-split';
 import { memberFullLabel } from '@ploutizo/utils';
 import { formatGeneratedTransactionDescription } from '@ploutizo/utils/transaction-policy';
@@ -86,7 +90,6 @@ type AccountRow = {
   type: string;
 };
 
-type CategoryRow = { id: string; name: string };
 type TagRow = { id: string; name: string };
 
 type Envelope<T> = { data: T };
@@ -551,6 +554,14 @@ const createApiClient = (baseUrl: string, jwt: string) => {
       const body = await requestJson<Envelope<T>>('POST', path, json);
       return body.data;
     },
+    patch: async <T>(path: string, json?: unknown): Promise<T> => {
+      const body = await requestJson<Envelope<T>>('PATCH', path, json);
+      return body.data;
+    },
+    delete: async <T>(path: string): Promise<T> => {
+      const body = await requestJson<Envelope<T>>('DELETE', path);
+      return body.data;
+    },
   };
 };
 
@@ -560,16 +571,6 @@ const solo = (memberId: string, amountCents: number) => [
 
 const shared = (memberIds: [string, string], amountCents: number) =>
   lrmSplit(amountCents, memberIds);
-
-const categoryByName = (categories: CategoryRow[], name: string): string => {
-  const row = categories.find((c) => c.name === name);
-  if (!row) {
-    return fail(
-      `Seeded category "${name}" was not returned by GET /api/categories`
-    );
-  }
-  return row.id;
-};
 
 const ensureTag = async (
   api: ReturnType<typeof createApiClient>,
@@ -586,15 +587,7 @@ const seedHousehold = async (
   api: ReturnType<typeof createApiClient>,
   members: { ada: MemberRow; alan: MemberRow }
 ) => {
-  const categories = await api.getData<CategoryRow[]>('/api/categories');
-  const groceries = categoryByName(categories, 'Groceries');
-  const dining = categoryByName(categories, 'Dining & Restaurants');
-  const transportation = categoryByName(categories, 'Transportation');
-  const utilities = categoryByName(categories, 'Utilities');
-  const entertainment = categoryByName(categories, 'Entertainment');
-  const shopping = categoryByName(categories, 'Shopping');
-  const travel = categoryByName(categories, 'Travel');
-  const personalCare = categoryByName(categories, 'Personal Care');
+  const categories = await ensureFixtureCategories(api, log);
 
   const existingTags = await api.getData<TagRow[]>('/api/tags');
   const weekend = await ensureTag(api, existingTags, 'weekend', 'blue-500');
@@ -686,7 +679,7 @@ const seedHousehold = async (
     amount: 12_500,
     date: isoDateDaysAgo(10),
     description: 'Hydro One',
-    categoryId: utilities,
+    categoryId: fixtureCategoryId(categories, 'bills'),
     assignees: shared(both, 12_500),
     tagIds: [recurring.id],
   });
@@ -722,7 +715,7 @@ const seedHousehold = async (
     amount: 2_400,
     date: isoDateDaysAgo(6),
     description: 'Coffee shop',
-    categoryId: dining,
+    categoryId: fixtureCategoryId(categories, 'drinks'),
     assignees: solo(ada.id, 2_400),
   });
   await api.post('/api/transactions', {
@@ -731,7 +724,7 @@ const seedHousehold = async (
     amount: 1_200,
     date: isoDateDaysAgo(5),
     description: 'Pharmacy',
-    categoryId: personalCare,
+    categoryId: fixtureCategoryId(categories, 'health'),
     assignees: solo(ada.id, 1_200),
   });
   await api.post('/api/transactions', {
@@ -740,7 +733,7 @@ const seedHousehold = async (
     amount: 3_500,
     date: isoDateDaysAgo(5),
     description: 'Presto reload',
-    categoryId: transportation,
+    categoryId: fixtureCategoryId(categories, 'transport'),
     assignees: solo(alan.id, 3_500),
   });
 
@@ -750,16 +743,16 @@ const seedHousehold = async (
     amount: 12_000,
     date: isoDateDaysAgo(9),
     description: 'Loblaws',
-    categoryId: groceries,
+    categoryId: fixtureCategoryId(categories, 'groceries'),
     assignees: solo(ada.id, 12_000),
   });
-  const diningExpense = await api.post<{ id: string }>('/api/transactions', {
+  const takeoutExpense = await api.post<{ id: string }>('/api/transactions', {
     type: 'expense',
     accountId: adaVisa.id,
     amount: 4_500,
     date: isoDateDaysAgo(6),
     description: 'Pizzeria',
-    categoryId: dining,
+    categoryId: fixtureCategoryId(categories, 'takeout'),
     assignees: solo(ada.id, 4_500),
     tagIds: [weekend.id],
   });
@@ -769,7 +762,7 @@ const seedHousehold = async (
     amount: 8_000,
     date: isoDateDaysAgo(4),
     description: 'Airbnb',
-    categoryId: travel,
+    categoryId: fixtureCategoryId(categories, 'travel'),
     assignees: shared(both, 8_000),
   });
   await api.post('/api/transactions', {
@@ -778,8 +771,8 @@ const seedHousehold = async (
     amount: 1_500,
     date: isoDateDaysAgo(3),
     description: 'Pizzeria refund',
-    categoryId: dining,
-    refundOf: diningExpense.id,
+    categoryId: fixtureCategoryId(categories, 'takeout'),
+    refundOf: takeoutExpense.id,
     assignees: solo(ada.id, 1_500),
   });
 
@@ -789,7 +782,7 @@ const seedHousehold = async (
     amount: 20_000,
     date: isoDateDaysAgo(8),
     description: 'Costco',
-    categoryId: groceries,
+    categoryId: fixtureCategoryId(categories, 'groceries'),
     assignees: shared(both, 20_000),
   });
   await api.post('/api/transactions', {
@@ -798,7 +791,7 @@ const seedHousehold = async (
     amount: 6_000,
     date: isoDateDaysAgo(5),
     description: 'Cinema',
-    categoryId: entertainment,
+    categoryId: fixtureCategoryId(categories, 'entertainment'),
     assignees: solo(ada.id, 6_000),
     tagIds: [weekend.id],
   });
@@ -808,7 +801,7 @@ const seedHousehold = async (
     amount: 4_000,
     date: isoDateDaysAgo(4),
     description: 'Uniqlo',
-    categoryId: shopping,
+    categoryId: fixtureCategoryId(categories, 'shopping'),
     assignees: solo(alan.id, 4_000),
   });
 
@@ -1162,6 +1155,7 @@ const main = async () => {
       transactionCount: transactionPage.total ?? 0,
     });
     if (status === 'complete') {
+      await ensureFixtureCategories(adaApi, log);
       log(
         created
           ? 'Fixture already present on the new household; skipping writes.'

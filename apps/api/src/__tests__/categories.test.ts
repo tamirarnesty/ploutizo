@@ -101,6 +101,15 @@ describe('POST /api/categories', () => {
   });
 });
 
+describe('PATCH /api/categories/:id/restore', () => {
+  it('returns 200 with restored category', async () => {
+    const res = await app.request('/cat_1/restore', { method: 'PATCH' });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { data: { id: string } };
+    expect(body.data).toHaveProperty('id');
+  });
+});
+
 describe('PATCH /api/categories/reorder', () => {
   it('returns 200 with ok true', async () => {
     const res = await app.request('/reorder', {
