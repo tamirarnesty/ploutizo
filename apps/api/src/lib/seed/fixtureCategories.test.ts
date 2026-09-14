@@ -175,6 +175,29 @@ describe('ensureFixtureCategories', () => {
     expect(api.post).not.toHaveBeenCalled();
   });
 
+  it('reorders defaults then preserved custom categories so sortOrder cannot collide', async () => {
+    const customA = {
+      id: 'cat-custom-a',
+      name: 'Side Hustle',
+      icon: 'Briefcase',
+    };
+    const customB = { id: 'cat-custom-b', name: 'Pet Care', icon: 'PawPrint' };
+    const defaults = activeDefaults({ Groceries: { icon: 'OldIcon' } });
+    const api = createMockApi({
+      activeCategories: [customB, ...defaults, customA],
+    });
+
+    await ensureFixtureCategories(api);
+
+    expect(api.patch).toHaveBeenCalledWith('/api/categories/reorder', {
+      orderedIds: [
+        ...defaults.map((category) => category.id),
+        customB.id,
+        customA.id,
+      ],
+    });
+  });
+
   it('patches stale icons on active default categories', async () => {
     const groceriesIndex = HOUSEHOLD_DEFAULT_CATEGORIES.findIndex(
       (category) => category.name === 'Groceries'

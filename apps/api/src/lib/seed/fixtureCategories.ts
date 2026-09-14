@@ -147,9 +147,16 @@ export const ensureFixtureCategories = async (
   const categoryIdByName = new Map(
     categories.map((category) => [category.name, category.id])
   );
-  const orderedIds = HOUSEHOLD_DEFAULT_CATEGORIES.map(
+  const defaultIds = HOUSEHOLD_DEFAULT_CATEGORIES.map(
     (category) => categoryIdByName.get(category.name)!
   );
+  const defaultIdSet = new Set(defaultIds);
+  const orderedIds = [
+    ...defaultIds,
+    ...categories
+      .filter((category) => !defaultIdSet.has(category.id))
+      .map((category) => category.id),
+  ];
   await api.patch('/api/categories/reorder', { orderedIds });
 
   return HOUSEHOLD_DEFAULT_CATEGORIES.map((category) => ({
