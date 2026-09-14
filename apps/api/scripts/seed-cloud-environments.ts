@@ -1155,6 +1155,7 @@ const main = async () => {
       transactionCount: transactionPage.total ?? 0,
     });
     if (status === 'complete') {
+      await ensureFixtureCategories(adaApi, log);
       log(
         created
           ? 'Fixture already present on the new household; skipping writes.'

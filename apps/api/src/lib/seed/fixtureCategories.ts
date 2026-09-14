@@ -19,6 +19,7 @@ export type CategoryRow = {
   id: string;
   name: string;
   icon: string | null;
+  sortOrder: number;
 };
 
 type StoredCategoryRow = CategoryRow & { archivedAt: string | null };
@@ -29,14 +30,6 @@ export type FixtureSeedApiClient = {
   patch: <T>(path: string, json?: unknown) => Promise<T>;
   delete: <T>(path: string) => Promise<T>;
 };
-
-const HOUSEHOLD_DEFAULT_CATEGORY_NAMES = new Set(
-  HOUSEHOLD_DEFAULT_CATEGORIES.map((category) => category.name)
-);
-
-const HOUSEHOLD_DEFAULT_CATEGORY_BY_NAME = new Map(
-  HOUSEHOLD_DEFAULT_CATEGORIES.map((category) => [category.name, category])
-);
 
 const categoryByName = (categories: CategoryRow[], name: string): string => {
   const row = categories.find((category) => category.name === name);
@@ -54,61 +47,24 @@ export const fixtureCategoryId = (
 ): string =>
   categoryByName(categories, FIXTURE_TRANSACTION_CATEGORY_NAMES[key]);
 
-export const isDefaultCategoryCatalogCurrent = (
-  categories: CategoryRow[]
-): boolean => {
-  const defaultsInListOrder = categories.filter((category) =>
-    HOUSEHOLD_DEFAULT_CATEGORY_NAMES.has(category.name)
-  );
-  if (defaultsInListOrder.length !== HOUSEHOLD_DEFAULT_CATEGORIES.length) {
-    return false;
-  }
-
-  if (
-    !defaultsInListOrder.every(
-      (category, index) =>
-        category.name === HOUSEHOLD_DEFAULT_CATEGORIES[index]?.name
-    )
-  ) {
-    return false;
-  }
-
-  return defaultsInListOrder.every((category) => {
-    const catalog = HOUSEHOLD_DEFAULT_CATEGORY_BY_NAME.get(category.name);
-    return catalog?.icon === category.icon;
-  });
-};
-
-const syncCategoryIcons = async (
-  api: FixtureSeedApiClient,
-  categories: CategoryRow[]
-): Promise<CategoryRow[]> =>
-  Promise.all(
-    categories.map(async (category) => {
-      const catalog = HOUSEHOLD_DEFAULT_CATEGORY_BY_NAME.get(category.name);
-      if (!catalog || category.icon === catalog.icon) return category;
-      return api.patch<CategoryRow>(`/api/categories/${category.id}`, {
-        icon: catalog.icon,
-      });
-    })
-  );
+const nextSortOrder = (categories: CategoryRow[]): number =>
+  Math.max(-1, ...categories.map((category) => category.sortOrder)) + 1;
 
 export const ensureFixtureCategories = async (
   api: FixtureSeedApiClient,
   onLog: (message: string) => void = () => undefined
 ): Promise<CategoryRow[]> => {
-  let categories = await api.getData<CategoryRow[]>('/api/categories');
-  if (isDefaultCategoryCatalogCurrent(categories)) return categories;
+  const categories = await api.getData<CategoryRow[]>('/api/categories');
+  const activeNames = new Set(categories.map((category) => category.name));
+  const missing = HOUSEHOLD_DEFAULT_CATEGORIES.filter(
+    (category) => !activeNames.has(category.name)
+  );
+  if (missing.length === 0) return categories;
 
   onLog(
-    'Fixture household categories are out of date; syncing to current defaults'
+    'Fixture household is missing default categories; adding missing names'
   );
 
-  const activeNames = new Set(
-    categories
-      .filter((category) => HOUSEHOLD_DEFAULT_CATEGORY_NAMES.has(category.name))
-      .map((category) => category.name)
-  );
   const storedCategories = await api.getData<StoredCategoryRow[]>(
     '/api/categories?includeArchived=true'
   );
@@ -117,51 +73,21 @@ export const ensureFixtureCategories = async (
       .filter((category) => category.archivedAt !== null)
       .map((category) => [category.name, category])
   );
-  const upserted = await Promise.all(
-    HOUSEHOLD_DEFAULT_CATEGORIES.flatMap((category, sortOrder) => {
-      if (activeNames.has(category.name)) return [];
+  let appendSortOrder = nextSortOrder(categories);
+  const added = await Promise.all(
+    missing.map((category) => {
       const archived = archivedByName.get(category.name);
       if (archived) {
-        return [
-          api
-            .patch<CategoryRow>(`/api/categories/${archived.id}/restore`)
-            .then((restored) =>
-              api.patch<CategoryRow>(`/api/categories/${restored.id}`, {
-                icon: category.icon,
-                sortOrder,
-              })
-            ),
-        ];
+        return api.patch<CategoryRow>(`/api/categories/${archived.id}/restore`);
       }
-      return [
-        api.post<CategoryRow>('/api/categories', {
-          name: category.name,
-          icon: category.icon,
-          sortOrder,
-        }),
-      ];
+      const sortOrder = appendSortOrder;
+      appendSortOrder += 1;
+      return api.post<CategoryRow>('/api/categories', {
+        name: category.name,
+        icon: category.icon,
+        sortOrder,
+      });
     })
   );
-  categories = await syncCategoryIcons(api, [...categories, ...upserted]);
-
-  const categoryIdByName = new Map(
-    categories.map((category) => [category.name, category.id])
-  );
-  const defaultIds = HOUSEHOLD_DEFAULT_CATEGORIES.map(
-    (category) => categoryIdByName.get(category.name)!
-  );
-  const defaultIdSet = new Set(defaultIds);
-  const orderedIds = [
-    ...defaultIds,
-    ...categories
-      .filter((category) => !defaultIdSet.has(category.id))
-      .map((category) => category.id),
-  ];
-  await api.patch('/api/categories/reorder', { orderedIds });
-
-  return HOUSEHOLD_DEFAULT_CATEGORIES.map((category) => ({
-    id: categoryIdByName.get(category.name)!,
-    name: category.name,
-    icon: category.icon,
-  }));
+  return [...categories, ...added];
 };

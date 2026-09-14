@@ -10,6 +10,7 @@ const activeDefaults = (
     id: `cat-${index}`,
     name: category.name,
     icon: category.icon,
+    sortOrder: index,
     ...overrides[category.name],
   }));
 
@@ -34,35 +35,25 @@ const createMockApi = (
     }));
 
   const post = vi.fn(async (_path: string, json: unknown) => {
-    const body = json as { name: string; icon: string };
+    const body = json as { name: string; icon: string; sortOrder: number };
     return {
       id: `new-${body.name}`,
       name: body.name,
       icon: body.icon,
+      sortOrder: body.sortOrder,
     };
   });
-  const patch = vi.fn(async (path: string, json?: unknown) => {
-    const body = json as { icon?: string } | undefined;
-    if (path.endsWith('/restore')) {
-      const id = path.split('/')[3];
-      const stored = storedCategories.find((category) => category.id === id);
-      return {
-        id,
-        name: stored?.name ?? 'restored',
-        icon: stored?.icon ?? null,
-      };
+  const patch = vi.fn(async (path: string) => {
+    if (!path.endsWith('/restore')) {
+      throw new Error(`Unexpected PATCH ${path}`);
     }
-    if (path === '/api/categories/reorder') {
-      return { ok: true };
-    }
-    const id = path.split('/').pop()!;
-    const stored =
-      storedCategories.find((category) => category.id === id) ??
-      activeCategories.find((category) => category.id === id);
+    const id = path.split('/')[3];
+    const stored = storedCategories.find((category) => category.id === id);
     return {
       id,
-      name: stored?.name ?? 'updated',
-      icon: body?.icon ?? stored?.icon ?? null,
+      name: stored?.name ?? 'restored',
+      icon: stored?.icon ?? null,
+      sortOrder: stored?.sortOrder ?? 0,
     };
   });
   const del = vi.fn(async (_path: string) => ({}));
@@ -81,28 +72,74 @@ const createMockApi = (
   } as MockFixtureSeedApi;
 };
 
+const postedCategories = (api: MockFixtureSeedApi) =>
+  api.post.mock.calls
+    .filter(([path]) => path === '/api/categories')
+    .map(([, json]) => json as { name: string; sortOrder: number });
+
 describe('ensureFixtureCategories', () => {
-  it('returns active categories when the default catalog is already current', async () => {
-    const categories = activeDefaults();
+  it('returns active categories when every default name is already present', async () => {
+    const customCategory = {
+      id: 'cat-custom',
+      name: 'Side Hustle',
+      icon: 'Briefcase',
+      sortOrder: 0,
+    };
+    const categories = [
+      customCategory,
+      ...activeDefaults({ Groceries: { icon: 'OldIcon' } }),
+    ];
     const api = createMockApi({ activeCategories: categories });
 
-    await expect(ensureFixtureCategories(api)).resolves.toEqual(
-      HOUSEHOLD_DEFAULT_CATEGORIES.map((category, index) => ({
-        id: `cat-${index}`,
-        name: category.name,
-        icon: category.icon,
-      }))
-    );
+    await expect(ensureFixtureCategories(api)).resolves.toEqual(categories);
     expect(api.post).not.toHaveBeenCalled();
     expect(api.patch).not.toHaveBeenCalled();
     expect(api.delete).not.toHaveBeenCalled();
+  });
+
+  it('appends missing defaults after existing sortOrder without reordering', async () => {
+    const existing = [
+      {
+        id: 'old-groceries',
+        name: 'Groceries',
+        icon: 'ShoppingCart',
+        sortOrder: 0,
+      },
+      {
+        id: 'old-dining',
+        name: 'Dining & Restaurants',
+        icon: 'UtensilsCrossed',
+        sortOrder: 2,
+      },
+    ];
+    const api = createMockApi({ activeCategories: existing });
+
+    const result = await ensureFixtureCategories(api);
+    const posted = postedCategories(api);
+
+    expect(posted.map((category) => category.name)).toEqual(
+      HOUSEHOLD_DEFAULT_CATEGORIES.filter(
+        (category) => category.name !== 'Groceries'
+      ).map((category) => category.name)
+    );
+    expect(posted.map((category) => category.sortOrder)).toEqual(
+      posted.map((_, index) => 3 + index)
+    );
+    expect(api.patch).not.toHaveBeenCalled();
+    expect(api.delete).not.toHaveBeenCalled();
+    expect(result.map((category) => category.id)).toEqual([
+      'old-groceries',
+      'old-dining',
+      ...posted.map((category) => `new-${category.name}`),
+    ]);
   });
 
   it('restores an archived default instead of posting a duplicate name', async () => {
     const archivedGroceries = {
       id: 'cat-archived-groceries',
       name: 'Groceries',
-      icon: 'ShoppingCart',
+      icon: 'OldIcon',
+      sortOrder: 5,
       archivedAt: '2026-01-01T00:00:00.000Z',
     };
     const activeCategories = activeDefaults().filter(
@@ -128,91 +165,9 @@ describe('ensureFixtureCategories', () => {
     expect(api.patch).toHaveBeenCalledWith(
       '/api/categories/cat-archived-groceries/restore'
     );
-  });
-
-  it('leaves custom categories untouched while syncing defaults', async () => {
-    const customCategory = {
-      id: 'cat-custom',
-      name: 'Side Hustle',
-      icon: 'Briefcase',
-    };
-    const categories = activeDefaults({
-      Groceries: { icon: 'OldIcon' },
-    });
-    const api = createMockApi({
-      activeCategories: [customCategory, ...categories],
-    });
-
-    await ensureFixtureCategories(api);
-
-    expect(api.delete).not.toHaveBeenCalled();
-    expect(api.patch).toHaveBeenCalledWith('/api/categories/cat-5', {
-      icon: 'ShoppingCart',
-    });
-  });
-
-  it('returns early when defaults are current even with custom categories', async () => {
-    const customCategory = {
-      id: 'cat-custom',
-      name: 'Side Hustle',
-      icon: 'Briefcase',
-    };
-    const categories = activeDefaults();
-    const api = createMockApi({
-      activeCategories: [customCategory, ...categories],
-    });
-
-    await expect(ensureFixtureCategories(api)).resolves.toEqual([
-      customCategory,
-      ...HOUSEHOLD_DEFAULT_CATEGORIES.map((category, index) => ({
-        id: `cat-${index}`,
-        name: category.name,
-        icon: category.icon,
-      })),
-    ]);
-    expect(api.delete).not.toHaveBeenCalled();
-    expect(api.patch).not.toHaveBeenCalled();
-    expect(api.post).not.toHaveBeenCalled();
-  });
-
-  it('reorders defaults then preserved custom categories so sortOrder cannot collide', async () => {
-    const customA = {
-      id: 'cat-custom-a',
-      name: 'Side Hustle',
-      icon: 'Briefcase',
-    };
-    const customB = { id: 'cat-custom-b', name: 'Pet Care', icon: 'PawPrint' };
-    const defaults = activeDefaults({ Groceries: { icon: 'OldIcon' } });
-    const api = createMockApi({
-      activeCategories: [customB, ...defaults, customA],
-    });
-
-    await ensureFixtureCategories(api);
-
-    expect(api.patch).toHaveBeenCalledWith('/api/categories/reorder', {
-      orderedIds: [
-        ...defaults.map((category) => category.id),
-        customB.id,
-        customA.id,
-      ],
-    });
-  });
-
-  it('patches stale icons on active default categories', async () => {
-    const groceriesIndex = HOUSEHOLD_DEFAULT_CATEGORIES.findIndex(
-      (category) => category.name === 'Groceries'
-    );
-    const categories = activeDefaults({
-      Groceries: { icon: 'OldIcon' },
-    });
-    const api = createMockApi({ activeCategories: categories });
-
-    await ensureFixtureCategories(api);
-
-    expect(api.post).not.toHaveBeenCalled();
-    expect(api.patch).toHaveBeenCalledWith(
-      `/api/categories/cat-${groceriesIndex}`,
-      { icon: 'ShoppingCart' }
+    expect(api.patch).not.toHaveBeenCalledWith(
+      '/api/categories/cat-archived-groceries',
+      expect.anything()
     );
   });
 });
