@@ -1,4 +1,5 @@
 import { MutationCache, QueryClient } from '@tanstack/react-query';
+import { getAccessToken } from '@/lib/auth/get-access-token';
 
 // API base URL from env var — never hardcode ploutizo.app or localhost
 const API_BASE_URL = import.meta.env.VITE_API_URL as string;
@@ -90,7 +91,11 @@ export const apiFetch = async <T>(
   path: string,
   options?: RequestInit
 ): Promise<T> => {
-  const token = tokenGetter ? await tokenGetter() : null;
+  let token = tokenGetter ? await tokenGetter() : null;
+  // Clerk React getToken is empty on SSR and immediately after sign-in.
+  if (!token) {
+    token = await getAccessToken();
+  }
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {

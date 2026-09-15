@@ -5,11 +5,10 @@ import {
 } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/react-start';
 import { getCookie } from '@tanstack/react-start/server';
-import { auth } from '@clerk/tanstack-react-start/server';
 import { SidebarInset, SidebarProvider } from '@ploutizo/ui/components/sidebar';
 import { cn } from '@ploutizo/ui/lib/utils';
 import { CommandPaletteProvider } from '@/lib/command';
-import { requireAuthAndOrg } from '@/lib/auth/require-access';
+import { getAuthOrgId, requireAuthAndOrg } from '@/lib/auth/require-access';
 import { activeImportDraftsQueryOptions } from '@/lib/data-access/imports';
 import { resolveMainContentLayout } from '@/lib/layout/main-content-layout';
 import { AppSidebar } from '../components/AppSidebar';
@@ -59,8 +58,9 @@ const LayoutShell = () => {
 export const Route = createFileRoute('/_layout')({
   beforeLoad: () => requireAuthAndOrg(),
   loader: async ({ context }) => {
-    // Warm the command palette's Continue Import list without blocking shell render.
-    const { orgId } = await auth();
+    // Child loaders run on client navigation; raw Clerk auth() has no Start
+    // context there. Resolve orgId through a server fn instead.
+    const orgId = await getAuthOrgId();
     if (orgId) {
       void context.queryClient.prefetchQuery(
         activeImportDraftsQueryOptions(orgId)
