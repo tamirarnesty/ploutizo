@@ -16,7 +16,8 @@ watchPatterns = [
 ]
 
 [deploy]
-preDeployCommand = ["pnpm db:migrate"]
+# --silent hides pnpm's `$ script` stderr echo so Railway does not paint success as errors.
+preDeployCommand = ["pnpm --filter @ploutizo/db --silent migrate"]
 startCommand = "node apps/api/dist/index.js"
 healthcheckPath = "/health"
 restartPolicyType = "ON_FAILURE"

@@ -5,7 +5,11 @@ import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import { migrate } from 'drizzle-orm/neon-serverless/migrator';
 
-import { logMigrationError } from '../src/migration-log';
+import {
+  logMigrationError,
+  logMigrationStart,
+  logMigrationSuccess,
+} from '../src/migration-log';
 import { runMigrations } from '../src/run-migrations';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../../..');
@@ -13,7 +17,7 @@ loadEnv({ path: join(repoRoot, '.env'), quiet: true });
 
 const databaseUrl = process.env.DATABASE_URL;
 if (databaseUrl === undefined) {
-  console.error('db:migrate failed: DATABASE_URL is not set');
+  logMigrationError(new Error('DATABASE_URL is not set'));
   process.exit(1);
 }
 
@@ -27,7 +31,7 @@ const migrationsFolder = join(
   '../drizzle'
 );
 
-console.log(`Applying migrations from ${migrationsFolder}`);
+logMigrationStart(migrationsFolder);
 const exitCode = await runMigrations({
   migrate,
   db,
@@ -37,7 +41,7 @@ const exitCode = await runMigrations({
 });
 
 if (exitCode === 0) {
-  console.log('Migrations complete');
+  logMigrationSuccess();
 } else {
   process.exit(exitCode);
 }
