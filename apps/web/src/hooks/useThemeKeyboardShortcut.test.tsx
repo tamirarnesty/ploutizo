@@ -29,18 +29,21 @@ const renderShortcut = (children?: ReactNode) =>
 const documentTheme = () =>
   document.documentElement.classList.contains('dark') ? 'dark' : 'light';
 
-const pressD = (target: Document | HTMLElement = document.body) => {
-  fireEvent.keyDown(target, { key: 'd' });
+const pressD = (target: EventTarget = document.body) => {
+  fireEvent.keyDown(target as Element, { key: 'd' });
 };
 
 describe('useThemeKeyboardShortcut', () => {
+  let colorScheme: ReturnType<typeof installPrefersColorScheme>;
+
   beforeEach(() => {
     window.localStorage.clear();
     document.documentElement.classList.remove('light', 'dark');
-    installPrefersColorScheme(false);
+    colorScheme = installPrefersColorScheme(false);
   });
 
   afterEach(() => {
+    colorScheme.restore();
     window.localStorage.clear();
   });
 
@@ -64,6 +67,23 @@ describe('useThemeKeyboardShortcut', () => {
     ['select', () => <select aria-label="Note" />],
   ])('stays inactive while typing in a %s', (_label, Control) => {
     renderShortcut(<Control />);
+
+    const field = screen.getByLabelText('Note');
+    field.focus();
+    pressD(field);
+
+    expect(documentTheme()).toBe('light');
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBeNull();
+  });
+
+  it('stays inactive when a nested SVG inside a contenteditable control has focus', () => {
+    renderShortcut(
+      <div contentEditable="true" suppressContentEditableWarning>
+        <svg aria-label="Note" tabIndex={0}>
+          <title>Note</title>
+        </svg>
+      </div>
+    );
 
     const field = screen.getByLabelText('Note');
     field.focus();

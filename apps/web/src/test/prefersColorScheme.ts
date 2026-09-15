@@ -7,6 +7,7 @@ type ColorSchemeListener = (event: MediaQueryListEvent) => void;
 export const installPrefersColorScheme = (initialDark: boolean) => {
   let matches = initialDark;
   const listeners = new Set<ColorSchemeListener>();
+  const previousMatchMedia = window.matchMedia;
 
   const mql: MediaQueryList = {
     get matches() {
@@ -65,6 +66,13 @@ export const installPrefersColorScheme = (initialDark: boolean) => {
         media: mql.media,
       } as MediaQueryListEvent;
       listeners.forEach((listener) => listener(event));
+    },
+    restore: () => {
+      Object.defineProperty(window, 'matchMedia', {
+        writable: true,
+        configurable: true,
+        value: previousMatchMedia,
+      });
     },
   };
 };

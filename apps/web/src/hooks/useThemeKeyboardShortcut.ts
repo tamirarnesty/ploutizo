@@ -2,16 +2,17 @@ import { useEffect, useRef } from 'react';
 import { useReversibleThemeToggle } from '@ploutizo/ui/hooks/use-reversible-theme-toggle';
 
 const isEditableKeyboardTarget = (target: EventTarget | null) => {
-  if (!(target instanceof HTMLElement)) return false;
+  if (!(target instanceof Element)) return false;
   if (
-    target.tagName === 'INPUT' ||
-    target.tagName === 'TEXTAREA' ||
-    target.tagName === 'SELECT'
+    target instanceof HTMLElement &&
+    (target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.tagName === 'SELECT' ||
+      target.isContentEditable)
   ) {
     return true;
   }
   return (
-    target.isContentEditable ||
     target.closest('[contenteditable]:not([contenteditable="false"])') !== null
   );
 };

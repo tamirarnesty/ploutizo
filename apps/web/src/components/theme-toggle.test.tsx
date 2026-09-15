@@ -36,17 +36,21 @@ const documentTheme = () =>
   document.documentElement.classList.contains('dark') ? 'dark' : 'light';
 
 describe('ThemeToggle', () => {
+  let colorScheme: ReturnType<typeof installPrefersColorScheme> | undefined;
+
   beforeEach(() => {
     window.localStorage.clear();
     document.documentElement.classList.remove('light', 'dark');
   });
 
   afterEach(() => {
+    colorScheme?.restore();
+    colorScheme = undefined;
     window.localStorage.clear();
   });
 
   it('follows the operating system when no override is saved', async () => {
-    const scheme = installPrefersColorScheme(false);
+    colorScheme = installPrefersColorScheme(false);
     renderThemeToggle();
 
     expect(await themeToggle('Switch to dark mode')).toBeInTheDocument();
@@ -54,7 +58,7 @@ describe('ThemeToggle', () => {
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBeNull();
 
     act(() => {
-      scheme.setDark(true);
+      colorScheme?.setDark(true);
     });
 
     expect(await themeToggle('Switch to light mode')).toBeInTheDocument();
@@ -63,7 +67,7 @@ describe('ThemeToggle', () => {
   });
 
   it('names the destination appearance on the control, tooltip, and icon', async () => {
-    installPrefersColorScheme(false);
+    colorScheme = installPrefersColorScheme(false);
     const user = userEvent.setup();
     renderThemeToggle();
 
@@ -76,7 +80,7 @@ describe('ThemeToggle', () => {
   });
 
   it('persists an override when the destination differs from the OS', async () => {
-    installPrefersColorScheme(false);
+    colorScheme = installPrefersColorScheme(false);
     const user = userEvent.setup();
     renderThemeToggle();
 
@@ -90,7 +94,7 @@ describe('ThemeToggle', () => {
   });
 
   it('removes the override when the destination matches the OS', async () => {
-    installPrefersColorScheme(false);
+    colorScheme = installPrefersColorScheme(false);
     window.localStorage.setItem(THEME_STORAGE_KEY, 'dark');
     const user = userEvent.setup();
     renderThemeToggle();
@@ -103,7 +107,7 @@ describe('ThemeToggle', () => {
   });
 
   it('keeps an explicit override when the OS later matches it', async () => {
-    const scheme = installPrefersColorScheme(false);
+    colorScheme = installPrefersColorScheme(false);
     const user = userEvent.setup();
     renderThemeToggle();
 
@@ -111,7 +115,7 @@ describe('ThemeToggle', () => {
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
 
     act(() => {
-      scheme.setDark(true);
+      colorScheme?.setDark(true);
     });
 
     expect(await themeToggle('Switch to light mode')).toBeInTheDocument();
@@ -119,7 +123,7 @@ describe('ThemeToggle', () => {
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
 
     act(() => {
-      scheme.setDark(false);
+      colorScheme?.setDark(false);
     });
 
     expect(await themeToggle('Switch to light mode')).toBeInTheDocument();

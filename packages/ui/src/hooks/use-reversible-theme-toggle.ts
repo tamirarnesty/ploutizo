@@ -6,11 +6,16 @@ import {
   themeToggleLabel,
 } from '../lib/reversible-theme';
 
+const SYSTEM_COLOR_SCHEME_QUERY = '(prefers-color-scheme: dark)';
+
 const toColorScheme = (value: string | undefined): ColorScheme =>
   value === 'dark' ? 'dark' : 'light';
 
+const readSystemAppearance = (): ColorScheme =>
+  window.matchMedia(SYSTEM_COLOR_SCHEME_QUERY).matches ? 'dark' : 'light';
+
 export const useReversibleThemeToggle = () => {
-  const { resolvedTheme, systemTheme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -18,12 +23,11 @@ export const useReversibleThemeToggle = () => {
   }, []);
 
   const resolvedAppearance = toColorScheme(resolvedTheme);
-  const systemAppearance = toColorScheme(systemTheme);
   const label = themeToggleLabel(resolvedAppearance);
 
   const toggleTheme = useCallback(() => {
-    setTheme(nextThemePreference(resolvedAppearance, systemAppearance));
-  }, [resolvedAppearance, setTheme, systemAppearance]);
+    setTheme(nextThemePreference(resolvedAppearance, readSystemAppearance()));
+  }, [resolvedAppearance, setTheme]);
 
   return {
     mounted,
