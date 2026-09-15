@@ -172,10 +172,10 @@ export const AppSidebar = () => {
       </SidebarContent>
 
       <SidebarFooter className="flex-row items-center justify-between px-2 py-1">
+        <SidebarTrigger className="hidden md:flex" />
         <div className="group-data-[collapsible=icon]:hidden">
           <ThemeToggle />
         </div>
-        <SidebarTrigger className="hidden md:flex" />
       </SidebarFooter>
     </Sidebar>
   );

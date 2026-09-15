@@ -158,4 +158,22 @@ describe('AppSidebar', () => {
       screen.queryByRole('link', { name: 'Import History' })
     ).not.toBeInTheDocument();
   });
+
+  it('keeps the collapse trigger left of the theme control', async () => {
+    renderSidebar();
+
+    const footer = document.querySelector('[data-sidebar="footer"]');
+    expect(footer).not.toBeNull();
+
+    const trigger = footer!.querySelector('[data-sidebar="trigger"]');
+    const themeToggle = await screen.findByRole('button', {
+      name: 'Switch to dark mode',
+    });
+
+    expect(trigger).not.toBeNull();
+    expect(
+      trigger!.compareDocumentPosition(themeToggle) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
 });

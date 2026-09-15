@@ -1,32 +1,37 @@
 import { useEffect, useRef } from 'react';
-import { useTheme } from '@ploutizo/ui/hooks/use-theme';
+import { useReversibleThemeToggle } from '@ploutizo/ui/hooks/use-reversible-theme-toggle';
 
-const cycleMap = { system: 'light', light: 'dark', dark: 'system' } as const;
-type Theme = keyof typeof cycleMap;
+const isEditableKeyboardTarget = (target: EventTarget | null) => {
+  if (!(target instanceof HTMLElement)) return false;
+  if (
+    target.tagName === 'INPUT' ||
+    target.tagName === 'TEXTAREA' ||
+    target.tagName === 'SELECT'
+  ) {
+    return true;
+  }
+  return (
+    target.isContentEditable ||
+    target.closest('[contenteditable]:not([contenteditable="false"])') !== null
+  );
+};
 
 export const useThemeKeyboardShortcut = () => {
-  const { theme, setTheme } = useTheme();
+  const { toggleTheme } = useReversibleThemeToggle();
 
-  // Store handler in ref so the effect registers once but always reads latest theme
+  // Store handler in ref so the effect registers once but always reads latest toggle
   // (advanced-event-handler-refs pattern — avoids re-registering on every theme change)
   const handlerRef = useRef<(e: KeyboardEvent) => void>(undefined);
   handlerRef.current = (e: KeyboardEvent) => {
     if (e.key !== 'd') return;
     if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
-    const target = e.target as HTMLElement;
-    if (
-      target.tagName === 'INPUT' ||
-      target.tagName === 'TEXTAREA' ||
-      target.tagName === 'SELECT' ||
-      target.isContentEditable
-    )
-      return;
-    setTheme(cycleMap[(theme ?? 'system') as Theme]);
+    if (isEditableKeyboardTarget(e.target)) return;
+    toggleTheme();
   };
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => handlerRef.current?.(e);
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, []); // empty deps — registers once; latest theme always available via ref
+  }, []); // empty deps — registers once; latest toggle always available via ref
 };
