@@ -20,8 +20,12 @@ export const importHistoryInfiniteQueryKey = (
   limit: number
 ) => householdQueryKey(access, 'imports', 'history', 'infinite', limit);
 
-export const importDraftQueryKey = (id: string | null) =>
-  ['imports', 'draft', id] as const;
+export const importDraftQueryKey = (
+  access: ActiveHouseholdAccess,
+  id: string | null
+) => householdQueryKey(access, 'imports', 'draft', id);
 
-export const importPreparedQueryKey = (id: string) =>
-  ['imports', 'prepared', id] as const;
+export const importPreparedQueryKey = (
+  access: ActiveHouseholdAccess,
+  id: string
+) => householdQueryKey(access, 'imports', 'prepared', id);

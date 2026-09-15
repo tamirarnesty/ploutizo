@@ -35,7 +35,7 @@ const sameMemberIdSet = (a: string[], b: string[]): boolean => {
  *   - Computes dueDate + status from statementDueDay (D-13, D-14)
  *   - Attaches `account.owners` from `account_members` (not inferred from balances)
  *
- * @param orgId - tenant scope (from tenantGuard via c.get('orgId'))
+ * @param orgId - household scope (from tenantGuard principal.activeHouseholdId)
  * @param now - injectable clock for testability; defaults to new Date()
  */
 export const getSettlementBalances = async (

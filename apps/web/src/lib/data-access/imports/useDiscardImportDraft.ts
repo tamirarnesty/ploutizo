@@ -26,8 +26,8 @@ export const useDiscardImportDraft = () => {
         queryKey: activeImportDraftsQueryKey(access),
       });
       void qc.invalidateQueries({ queryKey: importHistoryQueryKey(access) });
-      qc.removeQueries({ queryKey: importDraftQueryKey(draftId) });
-      void releaseImportDraftRowsCollection(draftId);
+      qc.removeQueries({ queryKey: importDraftQueryKey(access, draftId) });
+      void releaseImportDraftRowsCollection(access, draftId);
     },
   });
 };

@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Account, ImportDraftRow } from '@ploutizo/types';
 import { makeImportDraftRow } from '../test-fixtures/importDraft';
+import '@/test/mockTanstackRouter';
 import { ImportDraftReviewProvider } from './ImportDraftReviewContext';
 import { ImportReviewPaidFromCell } from './importReviewCells';
 

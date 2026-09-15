@@ -21,13 +21,13 @@ export const Route = createFileRoute('/_layout/import/$draftId/')({
     const access = requireActiveHousehold(context.access);
     await Promise.all([
       context.queryClient
-        .ensureQueryData(importDraftQueryOptions(params.draftId))
+        .ensureQueryData(importDraftQueryOptions(access, params.draftId))
         .catch(() => undefined),
       context.queryClient
         .ensureQueryData(accountsQueryOptions(access, true))
         .catch(() => undefined),
     ]);
-    await getImportDraftRowsCollection(params.draftId)
+    await getImportDraftRowsCollection(access, params.draftId)
       .preload()
       .catch(() => undefined);
   },

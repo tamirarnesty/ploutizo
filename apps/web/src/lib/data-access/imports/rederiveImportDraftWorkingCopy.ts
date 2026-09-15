@@ -8,6 +8,7 @@ import type {
   ImportDraftRow,
   RefundTargetFact,
 } from '@ploutizo/types';
+import type { ActiveHouseholdAccess } from '@/lib/auth/access-policy';
 import { queryClient } from '@/lib/queryClient';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
 import { importDraftQueryKey } from './queryKeys';
@@ -24,15 +25,17 @@ export const refundTargetFactsToExpenseMap = (
 
 /** Shared evaluator over working-copy rows + session facts. */
 export const evaluateImportDraftWorkingCopy = (
+  access: ActiveHouseholdAccess,
   draftId: string,
   rows?: readonly ImportDraftRow[]
 ): Map<string, ImportDraftRowEvaluation> | null => {
   const draft = queryClient.getQueryData<ImportDraft>(
-    importDraftQueryKey(draftId)
+    importDraftQueryKey(access, draftId)
   );
   if (!draft?.account.id) return null;
 
-  const workingRows = rows ?? getImportDraftRowsCollection(draftId).toArray;
+  const workingRows =
+    rows ?? getImportDraftRowsCollection(access, draftId).toArray;
   if (workingRows.length === 0) return null;
 
   return evaluateImportDraft(workingRows, {
@@ -43,11 +46,12 @@ export const evaluateImportDraftWorkingCopy = (
 };
 
 const applyEvaluationsToCollection = (
+  access: ActiveHouseholdAccess,
   draftId: string,
   evaluations: ReadonlyMap<string, ImportDraftRowEvaluation>,
   skipIds?: ReadonlySet<string>
 ) => {
-  const collection = getImportDraftRowsCollection(draftId);
+  const collection = getImportDraftRowsCollection(access, draftId);
   for (const row of collection.toArray) {
     if (skipIds?.has(row.id)) continue;
     const evaluation = evaluations.get(row.id);
@@ -75,6 +79,7 @@ const applyEvaluationsToCollection = (
  * paced patches may set status inline, then call this for siblings.
  */
 export const rederiveImportDraftWorkingCopy = (
+  access: ActiveHouseholdAccess,
   draftId: string,
   options?: {
     rows?: readonly ImportDraftRow[];
@@ -85,7 +90,7 @@ export const rederiveImportDraftWorkingCopy = (
   const evaluations =
     options && 'evaluations' in options
       ? options.evaluations
-      : evaluateImportDraftWorkingCopy(draftId, options?.rows);
+      : evaluateImportDraftWorkingCopy(access, draftId, options?.rows);
   if (!evaluations) return;
-  applyEvaluationsToCollection(draftId, evaluations, options?.skipIds);
+  applyEvaluationsToCollection(access, draftId, evaluations, options?.skipIds);
 };

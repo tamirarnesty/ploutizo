@@ -16,6 +16,11 @@ export type AccessPolicy = 'guest' | 'signed-in' | 'active-household';
 
 export type AccessRedirect = '/sign-in/$' | '/onboarding' | '/dashboard';
 
+export type AccessNavigation = {
+  to: AccessRedirect;
+  search?: { redirect: string };
+};
+
 export type CacheIdentity = {
   signedInMemberId: string | null;
   activeHouseholdId: string | null;
@@ -85,4 +90,64 @@ export const resolveAccessRedirect = (
       return _exhaustive;
     }
   }
+};
+
+const RETURN_PATH_ORIGIN = 'https://ploutizo.invalid';
+
+export const sanitizeReturnPath = (value: unknown): string | undefined => {
+  if (
+    typeof value !== 'string' ||
+    !value.startsWith('/') ||
+    value.startsWith('//')
+  ) {
+    return undefined;
+  }
+  if (value.includes('\\') || value.includes('://')) {
+    return undefined;
+  }
+
+  try {
+    const url = new URL(value, RETURN_PATH_ORIGIN);
+    if (url.origin !== RETURN_PATH_ORIGIN) {
+      return undefined;
+    }
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return undefined;
+  }
+};
+
+export const resolveAccessNavigation = (
+  state: AccessState,
+  policy: AccessPolicy,
+  requestedReturnPath?: unknown
+): AccessNavigation | null => {
+  const to = resolveAccessRedirect(state, policy);
+  if (!to) {
+    return null;
+  }
+  if (to !== '/sign-in/$') {
+    return { to };
+  }
+  const redirect = sanitizeReturnPath(requestedReturnPath);
+  return redirect ? { to, search: { redirect } } : { to };
+};
+
+export const canResumeAccessWork = (
+  clerkLoaded: boolean,
+  clerkAccess: AccessState,
+  routeAccess: AccessState | undefined
+): boolean => {
+  if (!clerkLoaded) {
+    return true;
+  }
+  if (!routeAccess) {
+    return false;
+  }
+  const clerkIdentity = cacheIdentityFromAccess(clerkAccess);
+  const routeIdentity = cacheIdentityFromAccess(routeAccess);
+  return (
+    clerkIdentity.signedInMemberId === routeIdentity.signedInMemberId &&
+    clerkIdentity.activeHouseholdId === routeIdentity.activeHouseholdId
+  );
 };

@@ -1,8 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { loadAccess } from '@/lib/auth/load-access';
+import { enforceAccessPolicy } from '@/lib/auth/enforce-access';
 import { Onboarding } from '../components/onboarding/Onboarding';
 
 export const Route = createFileRoute('/onboarding')({
-  beforeLoad: () => loadAccess('signed-in'),
+  beforeLoad: ({ context, location }) => {
+    enforceAccessPolicy(context.access, 'signed-in', location.href);
+  },
   component: Onboarding,
 });

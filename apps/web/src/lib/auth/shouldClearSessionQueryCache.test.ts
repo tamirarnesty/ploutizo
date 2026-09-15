@@ -73,6 +73,13 @@ describe('shouldClearSessionQueryCache', () => {
     });
   });
 
+  it('clears when a different signed-in member takes over the same household', () => {
+    expect(shouldClearSessionQueryCache(true, alexA, samA)).toEqual({
+      shouldClear: true,
+      nextIdentity: samA,
+    });
+  });
+
   it('clears when the active household changes for the same signed-in member', () => {
     expect(shouldClearSessionQueryCache(true, alexA, alexB)).toEqual({
       shouldClear: true,

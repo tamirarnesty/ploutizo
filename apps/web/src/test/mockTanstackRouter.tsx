@@ -18,6 +18,11 @@ const resolveLinkHref = (
 };
 
 const { routerMocks, tanstackRouterMock } = vi.hoisted(() => {
+  const access = {
+    status: 'signed-in-with-active-household' as const,
+    signedInMemberId: 'user_test',
+    activeHouseholdId: 'org_test',
+  };
   const mocks = {
     pathname: '/',
     navigate: vi.fn(),
@@ -74,19 +79,11 @@ const { routerMocks, tanstackRouterMock } = vi.hoisted(() => {
       return mocks.useBlocker(args);
     },
     useRouteContext: () => ({
-      access: {
-        status: 'signed-in-with-active-household',
-        signedInMemberId: 'user_test',
-        activeHouseholdId: 'org_test',
-      },
+      access,
     }),
     getRouteApi: () => ({
       useRouteContext: () => ({
-        access: {
-          status: 'signed-in-with-active-household',
-          signedInMemberId: 'user_test',
-          activeHouseholdId: 'org_test',
-        },
+        access,
       }),
     }),
   };

@@ -21,8 +21,12 @@ export const useFinalizeImportDraft = (draftId: string) => {
     mutationFn: ({ preparedSetId }) =>
       fetchFinalizeImportDraft(draftId, preparedSetId),
     onSuccess: () => {
-      queryClient.removeQueries({ queryKey: importPreparedQueryKey(draftId) });
-      queryClient.removeQueries({ queryKey: importDraftQueryKey(draftId) });
+      queryClient.removeQueries({
+        queryKey: importPreparedQueryKey(access, draftId),
+      });
+      queryClient.removeQueries({
+        queryKey: importDraftQueryKey(access, draftId),
+      });
       void queryClient.invalidateQueries({
         queryKey: activeImportDraftsQueryKey(access),
       });

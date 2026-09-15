@@ -1,21 +1,18 @@
 import { redirect } from '@tanstack/react-router';
 import { resolveAccessNavigation } from './access-policy';
-import type { AccessState, ActiveHouseholdAccess } from './access-policy';
+import type { AccessPolicy, AccessState } from './access-policy';
 
-export const requireActiveHousehold = (
+export const enforceAccessPolicy = (
   access: AccessState | undefined,
+  policy: AccessPolicy,
   returnPath?: unknown
-): ActiveHouseholdAccess => {
-  if (access?.status === 'signed-in-with-active-household') {
-    return access;
-  }
+) => {
   const target = resolveAccessNavigation(
     access ?? { status: 'signed-out' },
-    'active-household',
+    policy,
     returnPath
   );
   if (target) {
     throw redirect(target);
   }
-  throw redirect({ to: '/onboarding' });
 };

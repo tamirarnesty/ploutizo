@@ -8,6 +8,8 @@ import {
   toPersistedImportDraftRow,
 } from '@/components/imports/test-fixtures/importDraft';
 import { queryClient } from '@/lib/queryClient';
+import { testActiveHouseholdAccess } from '@/test/household-access';
+import '@/test/mockTanstackRouter';
 import {
   IMPORT_ROW_PACE_WAIT_MS,
   resetImportDraftRowPacedMutationsForTests,
@@ -167,7 +169,10 @@ describe('useImportReviewSession', () => {
   });
 
   it('hydrates live rows from a warm draft cache (hub Continue / post-upload)', async () => {
-    queryClient.setQueryData(importDraftQueryKey('draft_session_1'), draft);
+    queryClient.setQueryData(
+      importDraftQueryKey(testActiveHouseholdAccess, 'draft_session_1'),
+      draft
+    );
 
     const { result, unmount } = renderHook(
       () => useImportReviewSession('draft_session_1'),
@@ -184,7 +189,10 @@ describe('useImportReviewSession', () => {
   });
 
   it('re-hydrates rows when remount races the previous session cleanup', async () => {
-    queryClient.setQueryData(importDraftQueryKey('draft_session_1'), draft);
+    queryClient.setQueryData(
+      importDraftQueryKey(testActiveHouseholdAccess, 'draft_session_1'),
+      draft
+    );
 
     const first = renderHook(() => useImportReviewSession('draft_session_1'), {
       wrapper,

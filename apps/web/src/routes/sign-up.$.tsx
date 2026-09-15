@@ -1,6 +1,6 @@
 import { SignUp } from '@clerk/tanstack-react-start';
 import { createFileRoute } from '@tanstack/react-router';
-import { loadAccess } from '@/lib/auth/load-access';
+import { enforceAccessPolicy } from '@/lib/auth/enforce-access';
 
 const Page = () => {
   return (
@@ -11,6 +11,8 @@ const Page = () => {
 };
 
 export const Route = createFileRoute('/sign-up/$')({
-  beforeLoad: () => loadAccess('guest'),
+  beforeLoad: ({ context, location }) => {
+    enforceAccessPolicy(context.access, 'guest', location.href);
+  },
   component: Page,
 });

@@ -25,7 +25,10 @@ export const useCreateImportDraft = () => {
         queryKey: activeImportDraftsQueryKey(access),
       });
       void qc.invalidateQueries({ queryKey: importHistoryQueryKey(access) });
-      qc.setQueryData(importDraftQueryKey(response.data.id), response.data);
+      qc.setQueryData(
+        importDraftQueryKey(access, response.data.id),
+        response.data
+      );
       if (response.meta.reusedExisting) {
         toast.info('Resumed existing draft for this card.');
       } else {

@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   cacheIdentityFromAccess,
+  canResumeAccessWork,
+  resolveAccessNavigation,
   resolveAccessRedirect,
+  sanitizeReturnPath,
   toAccessState,
 } from './access-policy';
 import type { AccessPolicy, AccessState } from './access-policy';
@@ -115,5 +118,74 @@ describe('cacheIdentityFromAccess', () => {
       signedInMemberId: 'user_123',
       activeHouseholdId: 'org_123',
     });
+  });
+});
+
+describe('sanitizeReturnPath', () => {
+  it('keeps a local app path', () => {
+    expect(sanitizeReturnPath('/accounts')).toBe('/accounts');
+  });
+
+  it('keeps a local path with search and hash', () => {
+    expect(sanitizeReturnPath('/import?tab=history#drafts')).toBe(
+      '/import?tab=history#drafts'
+    );
+  });
+
+  it('rejects absolute URLs', () => {
+    expect(sanitizeReturnPath('https://evil.example/steal')).toBeUndefined();
+  });
+
+  it('rejects protocol-relative URLs', () => {
+    expect(sanitizeReturnPath('//evil.example/steal')).toBeUndefined();
+  });
+
+  it('rejects backslash-normalized open redirects', () => {
+    expect(sanitizeReturnPath('/\\evil.example')).toBeUndefined();
+  });
+});
+
+describe('resolveAccessNavigation', () => {
+  it('preserves a local return path when sending a signed-out visitor to sign-in', () => {
+    expect(
+      resolveAccessNavigation(signedOut, 'active-household', '/accounts')
+    ).toEqual({
+      to: '/sign-in/$',
+      search: { redirect: '/accounts' },
+    });
+  });
+
+  it('omits an external return path when sending a signed-out visitor to sign-in', () => {
+    expect(
+      resolveAccessNavigation(
+        signedOut,
+        'active-household',
+        'https://evil.example'
+      )
+    ).toEqual({ to: '/sign-in/$' });
+  });
+});
+
+describe('canResumeAccessWork', () => {
+  it('allows work while Clerk is still loading the first snapshot', () => {
+    expect(canResumeAccessWork(false, signedOut, signedInWithHousehold)).toBe(
+      true
+    );
+  });
+
+  it('does not resume household work against a stale route snapshot', () => {
+    expect(
+      canResumeAccessWork(true, signedInWithHousehold, {
+        status: 'signed-in-with-active-household',
+        signedInMemberId: 'user_123',
+        activeHouseholdId: 'org_other',
+      })
+    ).toBe(false);
+  });
+
+  it('resumes only when Clerk identity and route access agree', () => {
+    expect(
+      canResumeAccessWork(true, signedInWithHousehold, signedInWithHousehold)
+    ).toBe(true);
   });
 });
