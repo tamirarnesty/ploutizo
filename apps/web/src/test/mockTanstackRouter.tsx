@@ -73,6 +73,22 @@ const { routerMocks, tanstackRouterMock } = vi.hoisted(() => {
       mocks.shouldBlockFn = args.shouldBlockFn;
       return mocks.useBlocker(args);
     },
+    useRouteContext: () => ({
+      access: {
+        status: 'signed-in-with-active-household',
+        signedInMemberId: 'user_test',
+        activeHouseholdId: 'org_test',
+      },
+    }),
+    getRouteApi: () => ({
+      useRouteContext: () => ({
+        access: {
+          status: 'signed-in-with-active-household',
+          signedInMemberId: 'user_test',
+          activeHouseholdId: 'org_test',
+        },
+      }),
+    }),
   };
 
   return { routerMocks: mocks, tanstackRouterMock: mockModule };

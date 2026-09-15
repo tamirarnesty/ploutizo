@@ -1,5 +1,6 @@
 import { SignIn } from '@clerk/tanstack-react-start';
 import { createFileRoute } from '@tanstack/react-router';
+import { loadAccess } from '@/lib/auth/load-access';
 
 // Handles both sign-in and sign-up pages
 const Page = () => {
@@ -11,5 +12,6 @@ const Page = () => {
 };
 
 export const Route = createFileRoute('/sign-in/$')({
+  beforeLoad: () => loadAccess('guest'),
   component: Page,
 });

@@ -1,15 +1,17 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ImportCompletedResult } from '@ploutizo/types';
+import { useActiveHouseholdAccess } from '@/lib/auth/use-active-household-access';
 import type { ApiErrorBody } from '@/lib/queryClient';
 import { fetchFinalizeImportDraft } from './fetchFinalizeImportDraft';
 import {
-  activeImportDraftsQueryKeyRoot,
+  activeImportDraftsQueryKey,
   importDraftQueryKey,
   importHistoryQueryKey,
   importPreparedQueryKey,
 } from './queryKeys';
 
 export const useFinalizeImportDraft = (draftId: string) => {
+  const access = useActiveHouseholdAccess();
   const queryClient = useQueryClient();
   return useMutation<
     ImportCompletedResult,
@@ -22,9 +24,11 @@ export const useFinalizeImportDraft = (draftId: string) => {
       queryClient.removeQueries({ queryKey: importPreparedQueryKey(draftId) });
       queryClient.removeQueries({ queryKey: importDraftQueryKey(draftId) });
       void queryClient.invalidateQueries({
-        queryKey: activeImportDraftsQueryKeyRoot,
+        queryKey: activeImportDraftsQueryKey(access),
       });
-      void queryClient.invalidateQueries({ queryKey: importHistoryQueryKey });
+      void queryClient.invalidateQueries({
+        queryKey: importHistoryQueryKey(access),
+      });
     },
   });
 };

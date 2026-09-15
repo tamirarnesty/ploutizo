@@ -1,3 +1,5 @@
+import { householdQueryKey } from '@/lib/auth/household-query-key';
+import { useActiveHouseholdAccess } from '@/lib/auth/use-active-household-access';
 import { reorderByIds } from '@/lib/reorderByIds';
 import { apiFetch } from '@/lib/queryClient';
 import { useOptimisticListMutation } from '../optimisticListMutation';
@@ -16,9 +18,11 @@ export const reorderCategories = async (
   return r.data;
 };
 
-export const useReorderCategories = () =>
-  useOptimisticListMutation<Category, string[], { ok: boolean }>({
-    queryKey: ['categories'],
+export const useReorderCategories = () => {
+  const access = useActiveHouseholdAccess();
+  return useOptimisticListMutation<Category, string[], { ok: boolean }>({
+    queryKey: householdQueryKey(access, 'categories'),
     mutationFn: reorderCategories,
     updateCache: (items, orderedIds) => reorderByIds(items, orderedIds),
   });
+};

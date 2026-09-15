@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { HomePage } from '@/components/home/HomePage';
-import { redirectIfAuthenticated } from '@/lib/auth/require-access';
+import { loadAccess } from '@/lib/auth/load-access';
 
 export const Route = createFileRoute('/')({
-  beforeLoad: () => redirectIfAuthenticated(),
+  beforeLoad: () => loadAccess('guest'),
   component: HomePage,
 });

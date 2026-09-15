@@ -2,11 +2,12 @@ import { createRouter as createTanStackRouter } from '@tanstack/react-router';
 import { queryClient } from './lib/queryClient';
 import { routeTree } from './routeTree.gen';
 import type { QueryClient } from '@tanstack/react-query';
-
+import type { AccessState } from './lib/auth/access-policy';
 import type { ImportReviewLocationState } from './lib/data-access/imports/importReviewLocationState';
 
 export interface RouterContext {
   queryClient: QueryClient;
+  access?: AccessState;
 }
 
 export const getRouter = () => {

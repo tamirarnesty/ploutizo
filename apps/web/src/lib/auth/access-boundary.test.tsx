@@ -2,18 +2,24 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { render, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { queryClient } from '@/lib/queryClient';
-import { useClearSessionQueryCache } from './useClearSessionQueryCache';
+import { useAccessBoundary } from './access-boundary';
 import type { ReactNode } from 'react';
 
 const authState = vi.hoisted(() => ({
   isLoaded: false as boolean,
+  isSignedIn: false as boolean,
   userId: undefined as string | null | undefined,
+  orgId: undefined as string | null | undefined,
+  getToken: () => Promise.resolve(null as string | null),
 }));
 
 vi.mock('@clerk/tanstack-react-start', () => ({
   useAuth: () => ({
     isLoaded: authState.isLoaded,
+    isSignedIn: authState.isSignedIn,
     userId: authState.userId,
+    orgId: authState.orgId,
+    getToken: authState.getToken,
   }),
 }));
 
@@ -27,50 +33,52 @@ const seedPriorSessionCache = () => {
   queryClient.setQueryData(['accounts'], [{ id: 'acct_prior' }]);
 };
 
-describe('useClearSessionQueryCache', () => {
+describe('useAccessBoundary', () => {
   beforeEach(() => {
     queryClient.clear();
     authState.isLoaded = false;
+    authState.isSignedIn = false;
     authState.userId = undefined;
+    authState.orgId = undefined;
   });
 
   afterEach(() => {
     queryClient.clear();
   });
 
-  it('keeps the first loaded session cache and clears when the user signs out', () => {
+  it('keeps the first loaded session cache and clears when the signed-in member signs out', () => {
     seedPriorSessionCache();
-    const { rerender } = renderHook(() => useClearSessionQueryCache(), {
-      wrapper,
-    });
+    const { rerender } = renderHook(() => useAccessBoundary(), { wrapper });
 
     authState.isLoaded = true;
+    authState.isSignedIn = true;
     authState.userId = 'user_a';
+    authState.orgId = 'org_a';
     rerender();
 
     expect(queryClient.getQueryData(['transactions'])).toEqual([
       { id: 'txn_prior' },
     ]);
 
+    authState.isSignedIn = false;
     authState.userId = null;
+    authState.orgId = null;
     rerender();
 
     expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
-    expect(queryClient.getQueryData(['household-overview'])).toBeUndefined();
-    expect(queryClient.getQueryData(['accounts'])).toBeUndefined();
   });
 
-  it('clears leftover cache when a different account signs in', () => {
-    const { rerender } = renderHook(() => useClearSessionQueryCache(), {
-      wrapper,
-    });
+  it('clears leftover cache when the active household changes', () => {
+    const { rerender } = renderHook(() => useAccessBoundary(), { wrapper });
 
     authState.isLoaded = true;
-    authState.userId = null;
+    authState.isSignedIn = true;
+    authState.userId = 'user_a';
+    authState.orgId = 'org_a';
     rerender();
 
     seedPriorSessionCache();
-    authState.userId = 'user_b';
+    authState.orgId = 'org_b';
     rerender();
 
     expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
@@ -80,7 +88,7 @@ describe('useClearSessionQueryCache', () => {
     const readsDuringRender: unknown[] = [];
 
     const SessionCacheBridge = () => {
-      useClearSessionQueryCache();
+      useAccessBoundary();
       return null;
     };
 
@@ -97,7 +105,9 @@ describe('useClearSessionQueryCache', () => {
     );
 
     authState.isLoaded = true;
+    authState.isSignedIn = true;
     authState.userId = 'user_a';
+    authState.orgId = 'org_a';
     seedPriorSessionCache();
     const { rerender } = render(renderTree());
 

@@ -7,8 +7,9 @@ import { createServerFn } from '@tanstack/react-start';
 import { getCookie } from '@tanstack/react-start/server';
 import { SidebarInset, SidebarProvider } from '@ploutizo/ui/components/sidebar';
 import { cn } from '@ploutizo/ui/lib/utils';
+import { loadAccess } from '@/lib/auth/load-access';
+import { requireActiveHousehold } from '@/lib/auth/require-active-household';
 import { CommandPaletteProvider } from '@/lib/command';
-import { getAuthOrgId, requireAuthAndOrg } from '@/lib/auth/require-access';
 import { activeImportDraftsQueryOptions } from '@/lib/data-access/imports';
 import { resolveMainContentLayout } from '@/lib/layout/main-content-layout';
 import { AppSidebar } from '../components/AppSidebar';
@@ -56,16 +57,15 @@ const LayoutShell = () => {
 };
 
 export const Route = createFileRoute('/_layout')({
-  beforeLoad: () => requireAuthAndOrg(),
+  beforeLoad: async () => {
+    const { access } = await loadAccess('active-household');
+    return { access: requireActiveHousehold(access) };
+  },
   loader: async ({ context }) => {
-    // Child loaders run on client navigation; raw Clerk auth() has no Start
-    // context there. Resolve orgId through a server fn instead.
-    const orgId = await getAuthOrgId();
-    if (orgId) {
-      void context.queryClient.prefetchQuery(
-        activeImportDraftsQueryOptions(orgId)
-      );
-    }
+    const access = requireActiveHousehold(context.access);
+    void context.queryClient.prefetchQuery(
+      activeImportDraftsQueryOptions(access)
+    );
     return getSidebarState();
   },
   component: LayoutShell,

@@ -1,17 +1,16 @@
-import { useAuth } from '@clerk/tanstack-react-start';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ImportDraftSummary } from '@ploutizo/types';
+import { useActiveHouseholdAccess } from '@/lib/auth/use-active-household-access';
 import { apiFetch } from '@/lib/queryClient';
 import { releaseImportDraftRowsCollection } from './getImportDraftRowsCollection';
 import {
   activeImportDraftsQueryKey,
-  activeImportDraftsQueryKeyRoot,
   importDraftQueryKey,
   importHistoryQueryKey,
 } from './queryKeys';
 
 export const useDiscardImportDraft = () => {
-  const { orgId } = useAuth();
+  const access = useActiveHouseholdAccess();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) =>
@@ -19,14 +18,14 @@ export const useDiscardImportDraft = () => {
         method: 'DELETE',
       }),
     onSuccess: (_response, draftId) => {
-      if (orgId) {
-        qc.setQueryData<ImportDraftSummary[]>(
-          activeImportDraftsQueryKey(orgId),
-          (current) => current?.filter((draft) => draft.id !== draftId)
-        );
-      }
-      void qc.invalidateQueries({ queryKey: activeImportDraftsQueryKeyRoot });
-      void qc.invalidateQueries({ queryKey: importHistoryQueryKey });
+      qc.setQueryData<ImportDraftSummary[]>(
+        activeImportDraftsQueryKey(access),
+        (current) => current?.filter((draft) => draft.id !== draftId)
+      );
+      void qc.invalidateQueries({
+        queryKey: activeImportDraftsQueryKey(access),
+      });
+      void qc.invalidateQueries({ queryKey: importHistoryQueryKey(access) });
       qc.removeQueries({ queryKey: importDraftQueryKey(draftId) });
       void releaseImportDraftRowsCollection(draftId);
     },

@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { requireActiveHousehold } from '@/lib/auth/require-active-household';
 import {
   getImportDraftRowsCollection,
   importDraftQueryOptions,
@@ -17,12 +18,13 @@ export const Route = createFileRoute('/_layout/import/$draftId/')({
    * `preload()` materializes the review working copy before the route renders.
    */
   loader: async ({ context, params }) => {
+    const access = requireActiveHousehold(context.access);
     await Promise.all([
       context.queryClient
         .ensureQueryData(importDraftQueryOptions(params.draftId))
         .catch(() => undefined),
       context.queryClient
-        .ensureQueryData(accountsQueryOptions(true))
+        .ensureQueryData(accountsQueryOptions(access, true))
         .catch(() => undefined),
     ]);
     await getImportDraftRowsCollection(params.draftId)

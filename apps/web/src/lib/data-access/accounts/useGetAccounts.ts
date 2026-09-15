@@ -1,6 +1,9 @@
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import type { Account } from '@ploutizo/types';
+import { householdQueryKey } from '@/lib/auth/household-query-key';
+import { useActiveHouseholdAccess } from '@/lib/auth/use-active-household-access';
 import { apiFetch } from '@/lib/queryClient';
+import type { ActiveHouseholdAccess } from '@/lib/auth/access-policy';
 import type { UseQueryResult } from '@tanstack/react-query';
 
 export const fetchAccounts = async (
@@ -11,17 +14,23 @@ export const fetchAccounts = async (
   return r.data;
 };
 
-export const accountsQueryKey = (includeArchived = false) =>
-  ['accounts', { includeArchived }] as const;
+export const accountsQueryKey = (
+  access: ActiveHouseholdAccess,
+  includeArchived = false
+) => householdQueryKey(access, 'accounts', { includeArchived });
 
-export const accountsQueryOptions = (includeArchived = false) =>
+export const accountsQueryOptions = (
+  access: ActiveHouseholdAccess,
+  includeArchived = false
+) =>
   queryOptions({
-    queryKey: accountsQueryKey(includeArchived),
+    queryKey: accountsQueryKey(access, includeArchived),
     queryFn: () => fetchAccounts(includeArchived),
   });
 
 export const useGetAccounts = (
   includeArchived = false
 ): UseQueryResult<Account[]> => {
-  return useQuery(accountsQueryOptions(includeArchived));
+  const access = useActiveHouseholdAccess();
+  return useQuery(accountsQueryOptions(access, includeArchived));
 };

@@ -4,6 +4,8 @@ import {
   useQuery,
 } from '@tanstack/react-query';
 import type { ImportHistoryPage } from '@ploutizo/types';
+import { useActiveHouseholdAccess } from '@/lib/auth/use-active-household-access';
+import type { ActiveHouseholdAccess } from '@/lib/auth/access-policy';
 import { apiFetch } from '@/lib/queryClient';
 import {
   importHistoryInfiniteQueryKey,
@@ -29,23 +31,27 @@ export const fetchImportHistoryPage = async (input: {
 };
 
 export const importHistoryPageQueryOptions = (
+  access: ActiveHouseholdAccess,
   limit = IMPORT_HUB_HISTORY_LIMIT
 ) =>
   queryOptions({
-    queryKey: importHistoryPageQueryKey(limit),
+    queryKey: importHistoryPageQueryKey(access, limit),
     queryFn: () => fetchImportHistoryPage({ limit }),
   });
 
 export const useGetImportHistory = (
   limit = IMPORT_HUB_HISTORY_LIMIT
-): UseQueryResult<ImportHistoryPage> =>
-  useQuery(importHistoryPageQueryOptions(limit));
+): UseQueryResult<ImportHistoryPage> => {
+  const access = useActiveHouseholdAccess();
+  return useQuery(importHistoryPageQueryOptions(access, limit));
+};
 
 export const useGetImportHistoryInfinite = (
   limit = IMPORT_HISTORY_PAGE_SIZE
-): UseInfiniteQueryResult<InfiniteData<ImportHistoryPage>, Error> =>
-  useInfiniteQuery({
-    queryKey: importHistoryInfiniteQueryKey(limit),
+): UseInfiniteQueryResult<InfiniteData<ImportHistoryPage>, Error> => {
+  const access = useActiveHouseholdAccess();
+  return useInfiniteQuery({
+    queryKey: importHistoryInfiniteQueryKey(access, limit),
     queryFn: ({ pageParam }) =>
       fetchImportHistoryPage({
         limit,
@@ -54,3 +60,4 @@ export const useGetImportHistoryInfinite = (
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
   });
+};
