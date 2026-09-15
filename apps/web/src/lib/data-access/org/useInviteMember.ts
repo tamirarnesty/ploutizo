@@ -14,10 +14,10 @@ export const useInviteMember = () => {
       }),
     onSettled: () => {
       void qc.invalidateQueries({
-        queryKey: householdQueryKey(access, 'org-members'),
+        queryKey: householdQueryKey(access, 'members'),
       });
       void qc.invalidateQueries({
-        queryKey: householdQueryKey(access, 'org-invitations'),
+        queryKey: householdQueryKey(access, 'invitations'),
       });
     },
   });

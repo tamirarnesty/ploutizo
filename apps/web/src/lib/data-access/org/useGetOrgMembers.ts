@@ -13,7 +13,7 @@ export const fetchOrgMembers = async (): Promise<OrgMember[]> => {
 
 export const orgMembersQueryOptions = (access: ActiveHouseholdAccess) =>
   queryOptions({
-    queryKey: householdQueryKey(access, 'org-members'),
+    queryKey: householdQueryKey(access, 'members'),
     queryFn: fetchOrgMembers,
   });
 

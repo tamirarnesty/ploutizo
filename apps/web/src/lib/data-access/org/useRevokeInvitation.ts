@@ -13,7 +13,7 @@ export const useRevokeInvitation = () => {
       }),
     onSettled: () =>
       void qc.invalidateQueries({
-        queryKey: householdQueryKey(access, 'org-invitations'),
+        queryKey: householdQueryKey(access, 'invitations'),
       }),
   });
 };

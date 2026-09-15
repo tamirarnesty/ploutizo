@@ -15,7 +15,7 @@ export const fetchOrgInvitations = async (): Promise<PendingInvitation[]> => {
 export const useGetOrgInvitations = (): UseQueryResult<PendingInvitation[]> => {
   const access = useActiveHouseholdAccess();
   return useQuery({
-    queryKey: householdQueryKey(access, 'org-invitations'),
+    queryKey: householdQueryKey(access, 'invitations'),
     queryFn: fetchOrgInvitations,
   });
 };

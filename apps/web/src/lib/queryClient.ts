@@ -87,13 +87,8 @@ export const queryClient = browserQuery.queryClient;
 // after sign-out, then wipe queries and mutations so the next session starts cold.
 // Increment the session epoch before clearing so already-running mutation
 // callbacks from the previous account are ignored if they settle afterward.
-export const clearSessionQueryCache = (client: QueryClient = queryClient) => {
-  if (client === queryClient) {
-    browserQuery.clearSessionQueryCache();
-    return;
-  }
-  void client.cancelQueries();
-  client.clear();
+export const clearSessionQueryCache = () => {
+  browserQuery.clearSessionQueryCache();
 };
 
 // Typed API fetch helper — all API calls go through this, never raw fetch

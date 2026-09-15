@@ -26,6 +26,10 @@ _Avoid_: Current org, selected org, tenant context
 Whether the visitor is signed out, signed in with no household, or signed in with an **active household**.
 _Avoid_: Auth status, session state
 
+**Household principal**:
+The verified **signed-in member** and **active household** for an interactive household request. Derived only from verified identity claims. Future capabilities or role attach here; they are not a second identity.
+_Avoid_: Tenant context, org context, request user, treating a client-supplied household id as identity
+
 ### Settlement domain
 
 **Member ↔ card obligation**:

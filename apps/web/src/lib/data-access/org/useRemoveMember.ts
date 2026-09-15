@@ -13,7 +13,7 @@ export const useRemoveMember = () => {
       }),
     onSettled: () =>
       void qc.invalidateQueries({
-        queryKey: householdQueryKey(access, 'org-members'),
+        queryKey: householdQueryKey(access, 'members'),
       }),
   });
 };
