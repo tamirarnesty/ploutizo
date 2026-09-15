@@ -49,3 +49,22 @@ if (typeof ResizeObserver === 'undefined') {
 if (typeof Element.prototype.getAnimations === 'undefined') {
   Element.prototype.getAnimations = () => [];
 }
+
+/**
+ * jsdom does not implement `HTMLElement.isContentEditable`. TanStack Hotkeys
+ * uses that getter for `ignoreInputs`, including nested focus inside editors.
+ */
+Object.defineProperty(HTMLElement.prototype, 'isContentEditable', {
+  configurable: true,
+  enumerable: true,
+  get() {
+    let node: HTMLElement | null = this;
+    while (node) {
+      const value = node.getAttribute('contenteditable');
+      if (value === 'true' || value === '') return true;
+      if (value === 'false') return false;
+      node = node.parentElement;
+    }
+    return false;
+  },
+});

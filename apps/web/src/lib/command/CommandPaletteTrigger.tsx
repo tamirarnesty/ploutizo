@@ -1,18 +1,14 @@
-import { useEffect, useState } from 'react';
 import { SearchIcon } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import { Kbd } from '@ploutizo/ui/components/kbd';
+import { useHotkeyDisplayLabel } from '@ploutizo/ui/hooks/use-hotkey-display-label';
 
-import { getCommandPaletteShortcutLabel } from '@/lib/command/platform';
+import { COMMAND_PALETTE_HOTKEY } from '@/lib/command/useCommandPaletteShortcut';
 import { useCommandPalette } from '@/lib/command/useCommandPalette';
 
 export const CommandPaletteTrigger = () => {
   const { setOpen } = useCommandPalette();
-  const [shortcutLabel, setShortcutLabel] = useState('Ctrl+K');
-
-  useEffect(() => {
-    setShortcutLabel(getCommandPaletteShortcutLabel());
-  }, []);
+  const shortcutLabel = useHotkeyDisplayLabel(COMMAND_PALETTE_HOTKEY);
 
   return (
     <Button

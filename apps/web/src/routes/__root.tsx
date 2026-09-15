@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router';
 import { ClerkProvider, useAuth } from '@clerk/tanstack-react-start';
 import { shadcn } from '@clerk/ui/themes';
+import { HotkeysProvider } from '@tanstack/react-hotkeys';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import appCss from '@ploutizo/ui/globals.css?url';
@@ -52,18 +53,20 @@ const RootDocument = ({ children }: { children: React.ReactNode }) => (
         disableTransitionOnChange
         storageKey="theme"
       >
-        <TooltipProvider delay={500}>
-          <QueryClientProvider client={queryClient}>
-            <ClerkProvider appearance={{ theme: shadcn }}>
-              <MoneyLocaleProvider>
-                <TokenInitializer />
-                {children}
-                <Toaster />
-                <AppDevtools />
-              </MoneyLocaleProvider>
-            </ClerkProvider>
-          </QueryClientProvider>
-        </TooltipProvider>
+        <HotkeysProvider>
+          <TooltipProvider delay={500}>
+            <QueryClientProvider client={queryClient}>
+              <ClerkProvider appearance={{ theme: shadcn }}>
+                <MoneyLocaleProvider>
+                  <TokenInitializer />
+                  {children}
+                  <Toaster />
+                  <AppDevtools />
+                </MoneyLocaleProvider>
+              </ClerkProvider>
+            </QueryClientProvider>
+          </TooltipProvider>
+        </HotkeysProvider>
       </ThemeProvider>
       <Scripts />
     </body>

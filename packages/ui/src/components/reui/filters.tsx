@@ -11,6 +11,11 @@ import {
   useState,
 } from 'react';
 import { useRender } from '@base-ui/react/use-render';
+import {
+  type Hotkey,
+  formatForDisplay,
+  useHotkey,
+} from '@tanstack/react-hotkeys';
 import { cva } from 'class-variance-authority';
 import { AlertCircleIcon, CheckIcon, XIcon } from 'lucide-react';
 import type React from 'react';
@@ -1153,8 +1158,7 @@ interface FiltersProps<T = unknown> {
   menuPopupClassName?: string;
   collapseAddButton?: boolean;
   enableShortcut?: boolean;
-  shortcutKey?: string;
-  shortcutLabel?: string;
+  shortcutKey?: Hotkey;
 }
 
 interface FilterSubmenuContentProps<T = unknown> {
@@ -1394,8 +1398,7 @@ export function Filters<T = unknown>({
   allowMultiple = true,
   menuPopupClassName,
   enableShortcut = false,
-  shortcutKey = 'f',
-  shortcutLabel = 'F',
+  shortcutKey = 'F',
 }: FiltersProps<T>) {
   const [addFilterOpen, setAddFilterOpen] = useState(false);
   const [menuSearchInput, setMenuSearchInput] = useState('');
@@ -1408,26 +1411,16 @@ export function Filters<T = unknown>({
   const rootInputRef = useRef<HTMLInputElement>(null);
   const rootId = useId();
 
-  useEffect(() => {
-    if (!enableShortcut) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        e.key.toLowerCase() === shortcutKey.toLowerCase() &&
-        !addFilterOpen &&
-        !(
-          document.activeElement instanceof HTMLInputElement ||
-          document.activeElement instanceof HTMLTextAreaElement
-        )
-      ) {
-        e.preventDefault();
-        setAddFilterOpen(true);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [enableShortcut, shortcutKey, addFilterOpen]);
+  useHotkey(
+    shortcutKey,
+    () => {
+      setAddFilterOpen(true);
+    },
+    {
+      enabled: enableShortcut && !addFilterOpen,
+      meta: { name: 'Add filter' },
+    }
+  );
 
   useEffect(() => {
     if (addFilterOpen && activeMenu === 'root') {
@@ -1685,9 +1678,9 @@ export function Filters<T = unknown>({
                         e.stopPropagation();
                       }}
                     />
-                    {enableShortcut && shortcutLabel && (
+                    {enableShortcut && (
                       <Kbd className="absolute top-1/2 right-2 -translate-y-1/2 border bg-background">
-                        {shortcutLabel}
+                        {formatForDisplay(shortcutKey)}
                       </Kbd>
                     )}
                   </div>
