@@ -18,12 +18,13 @@ const isEditableKeyboardTarget = (target: EventTarget | null) => {
 };
 
 export const useThemeKeyboardShortcut = () => {
-  const { toggleTheme } = useReversibleThemeToggle();
+  const { mounted, toggleTheme } = useReversibleThemeToggle();
 
   // Store handler in ref so the effect registers once but always reads latest toggle
   // (advanced-event-handler-refs pattern — avoids re-registering on every theme change)
   const handlerRef = useRef<(e: KeyboardEvent) => void>(undefined);
   handlerRef.current = (e: KeyboardEvent) => {
+    if (!mounted) return;
     if (e.key !== 'd') return;
     if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
     if (isEditableKeyboardTarget(e.target)) return;

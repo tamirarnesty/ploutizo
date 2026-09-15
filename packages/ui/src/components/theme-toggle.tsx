@@ -26,6 +26,7 @@ export const ThemeToggle = () => {
             size="icon"
             className="size-8"
             aria-label={displayLabel}
+            disabled={!mounted}
             onClick={toggleTheme}
           />
         }

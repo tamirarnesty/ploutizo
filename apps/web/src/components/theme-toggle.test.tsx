@@ -1,6 +1,7 @@
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { currentTogglePreference } from '@ploutizo/ui/hooks/use-reversible-theme-toggle';
 import { ThemeProvider } from '@ploutizo/ui/components/theme-provider';
 import { ThemeToggle } from '@ploutizo/ui/components/theme-toggle';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
@@ -129,5 +130,24 @@ describe('ThemeToggle', () => {
     expect(await themeToggle('Switch to light mode')).toBeInTheDocument();
     expect(documentTheme()).toBe('dark');
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
+  });
+
+  it('targets the shown appearance when React theme state is still unset', () => {
+    colorScheme = installPrefersColorScheme(true);
+    document.documentElement.classList.add('dark');
+
+    expect(currentTogglePreference()).toBe('light');
+  });
+
+  it('switches away from a dark system first paint instead of staying on system', async () => {
+    colorScheme = installPrefersColorScheme(true);
+    const user = userEvent.setup();
+    renderThemeToggle();
+
+    await user.click(await themeToggle('Switch to light mode'));
+
+    expect(await themeToggle('Switch to dark mode')).toBeInTheDocument();
+    expect(documentTheme()).toBe('light');
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('light');
   });
 });
