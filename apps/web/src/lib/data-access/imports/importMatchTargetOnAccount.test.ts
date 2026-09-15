@@ -5,6 +5,7 @@ import {
   makeImportDraftRow,
 } from '@/components/imports/test-fixtures/importDraft';
 import { queryClient } from '@/lib/queryClient';
+import { testActiveHouseholdAccess } from '@/test/household-access';
 import {
   importMatchTransactionIdForDraft,
   sanitizeImportMatchPatch,
@@ -42,7 +43,10 @@ describe('importMatchTargetOnAccount', () => {
   });
 
   beforeEach(() => {
-    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
+    queryClient.setQueryData(
+      importDraftQueryKey(testActiveHouseholdAccess, draft.id),
+      draft
+    );
   });
 
   afterEach(() => {
@@ -50,28 +54,50 @@ describe('importMatchTargetOnAccount', () => {
   });
 
   it('allows same-account match ids and rejects cross-account or unknown ids', () => {
-    expect(importMatchTransactionIdForDraft(draft.id, 'tx_same')).toBe(
-      'tx_same'
-    );
-    expect(importMatchTransactionIdForDraft(draft.id, 'tx_other')).toBeNull();
-    expect(importMatchTransactionIdForDraft(draft.id, 'tx_missing')).toBeNull();
-    expect(importMatchTransactionIdForDraft(draft.id, null)).toBeNull();
+    expect(
+      importMatchTransactionIdForDraft(
+        testActiveHouseholdAccess,
+        draft.id,
+        'tx_same'
+      )
+    ).toBe('tx_same');
+    expect(
+      importMatchTransactionIdForDraft(
+        testActiveHouseholdAccess,
+        draft.id,
+        'tx_other'
+      )
+    ).toBeNull();
+    expect(
+      importMatchTransactionIdForDraft(
+        testActiveHouseholdAccess,
+        draft.id,
+        'tx_missing'
+      )
+    ).toBeNull();
+    expect(
+      importMatchTransactionIdForDraft(
+        testActiveHouseholdAccess,
+        draft.id,
+        null
+      )
+    ).toBeNull();
   });
 
   it('drops an invalid match id from a row patch and keeps a clear', () => {
     expect(
-      sanitizeImportMatchPatch(draft.id, {
+      sanitizeImportMatchPatch(testActiveHouseholdAccess, draft.id, {
         reviewMatchedTransactionId: 'tx_other',
         reviewMatchDismissed: false,
       })
     ).toEqual({ reviewMatchDismissed: false });
     expect(
-      sanitizeImportMatchPatch(draft.id, {
+      sanitizeImportMatchPatch(testActiveHouseholdAccess, draft.id, {
         reviewMatchedTransactionId: null,
       })
     ).toEqual({ reviewMatchedTransactionId: null });
     expect(
-      sanitizeImportMatchPatch(draft.id, {
+      sanitizeImportMatchPatch(testActiveHouseholdAccess, draft.id, {
         reviewMatchedTransactionId: 'tx_same',
       } satisfies UpdateImportDraftRowInput)
     ).toEqual({ reviewMatchedTransactionId: 'tx_same' });

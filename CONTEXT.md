@@ -4,6 +4,32 @@ Ploutizo tracks household money across members, accounts, and transactions. Sett
 
 ## Language
 
+### Household identity
+
+**Household**:
+The group that owns accounts, transactions, and members. A **household member** belongs to a household. Identity is the Clerk organization id.
+_Avoid_: Org, organisation (as the product name), tenant, workspace
+
+**Household member**:
+A person who belongs to a **household**. Assignees and account owners are always household members. All household members appear on every card in **card balances view** (personal balance may be $0); an unused member simply has no qualifying transactions.
+_Avoid_: Active member (implies a separate inactive set), former member, user (for this role), org member
+
+**Signed-in member**:
+The person currently using the app. Identity is the Clerk user id. They may have no household yet (onboarding). One signed-in member can be a **household member** of several households; those are not the same id.
+_Avoid_: User, account, session user, treating Clerk user id as the assignee id
+
+**Active household**:
+The household the **signed-in member** is currently working in. None during onboarding. Switching it is a tenancy boundary for household data.
+_Avoid_: Current org, selected org, tenant context
+
+**Access state**:
+Whether the visitor is signed out, signed in with no household, or signed in with an **active household**.
+_Avoid_: Auth status, session state
+
+**Household principal**:
+The verified **signed-in member** and **active household** for an interactive household request. Derived only from verified identity claims. Future capabilities or role attach here; they are not a second identity.
+_Avoid_: Tenant context, org context, request user, treating a client-supplied household id as identity
+
 ### Settlement domain
 
 **Member ↔ card obligation**:
@@ -215,10 +241,6 @@ _Avoid_: Shared pool, split total, household share
 **Card balance identity**:
 On every credit card, the sum of every **household member**’s personal balances plus **shared balance** always equals the card balance.
 
-**Household member** (v1):
-Every member of the organisation (`orgMembers`). All members are active for settlement: each appears on every card in **card balances view** (personal balance may be $0). Members cannot be removed or archived in v1; an unused member simply has no qualifying transactions. Assignees on transactions are always household members.
-_Avoid_: Active member (implies a separate inactive set), former member
-
 **Settlement**:
 A transaction of type `settlement` that records paying down a credit card from a chequing or savings funding account. It is the explicit paydown type — not a generic `transfer`. Reduces obligation on the card (`accountId`); funding source is the counterpart account (`counterpartAccountId`). Distinct from the Settlement summary UI pane on the dashboard.
 _Avoid_: Payoff, payment (unless speaking generically), using `transfer` for card paydown, funding settlement from cash/investment/credit card
@@ -360,6 +382,12 @@ The date range picker applies only to summary analytics (income, expenses, spend
 
 **Dev:** Amex is paid off — hide it from card balances?  
 **Expert:** No — **card balances view** keeps every non-archived card visible with $0 (or credit if overpaid).
+
+**Dev:** Alex signs up but has not created or joined a household.  
+**Expert:** He is a **signed-in member** with no **active household** — not a **household member** yet. That is onboarding.
+
+**Dev:** Alex switches from one household to another.  
+**Expert:** Same **signed-in member**, different **active household**. Household data is always for the active household.
 
 **Dev:** Alex is in the household but never uses the shared Amex — what shows?  
 **Expert:** Alex still has a row with **personal balance** $0. **Shared balance** is one number for the card. He’s not a **shared participant** on that card until he’s on a **shared transaction** there.

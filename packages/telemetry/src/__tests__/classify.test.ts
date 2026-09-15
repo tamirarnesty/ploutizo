@@ -16,7 +16,19 @@ describe('classifyApiOutcome', () => {
     ).toEqual({ classification: 'expected', reportable: false });
 
     expect(
-      classifyApiOutcome({ status: 401, code: 'TENANT_REQUIRED', kind: 'http' })
+      classifyApiOutcome({
+        status: 401,
+        code: 'SIGNED_IN_MEMBER_REQUIRED',
+        kind: 'http',
+      })
+    ).toEqual({ classification: 'expected', reportable: false });
+
+    expect(
+      classifyApiOutcome({
+        status: 401,
+        code: 'ACTIVE_HOUSEHOLD_REQUIRED',
+        kind: 'http',
+      })
     ).toEqual({ classification: 'expected', reportable: false });
 
     expect(

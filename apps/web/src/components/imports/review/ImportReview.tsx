@@ -26,6 +26,7 @@ import {
   importDraftQueryKey,
   useImportReviewSession,
 } from '@/lib/data-access/imports';
+import { useActiveHouseholdAccess } from '@/lib/auth/use-active-household-access';
 import { importDraftReviewRoute } from '@/lib/navigation';
 import { ImportDraftReview } from './ImportDraftReview';
 import { ImportReviewLeaveGuard } from './ImportReviewLeaveGuard';
@@ -60,6 +61,7 @@ const sessionReviewProps = (
 });
 
 export const ImportReview = ({ draftId }: ImportReviewProps) => {
+  const access = useActiveHouseholdAccess();
   const session = useImportReviewSession(draftId);
   const { meta, rows, isLoading, isError, flush } = session;
   const reviewProps = sessionReviewProps(session);
@@ -87,7 +89,7 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
     }
 
     void queryClient.invalidateQueries({
-      queryKey: importDraftQueryKey(draftId),
+      queryKey: importDraftQueryKey(access, draftId),
     });
 
     void navigate({
@@ -95,7 +97,7 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
       replace: true,
       state: { importReview: undefined },
     });
-  }, [draftId, importReviewState, navigate, queryClient]);
+  }, [access, draftId, importReviewState, navigate, queryClient]);
 
   const body = (() => {
     if (isLoading) {

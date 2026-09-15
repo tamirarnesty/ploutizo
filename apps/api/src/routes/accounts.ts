@@ -14,7 +14,7 @@ const accountsRouter = new Hono<AppEnv>();
 
 // GET / — returns accounts for the org, active only unless ?include=archived
 accountsRouter.get('/', async (c) => {
-  const orgId = c.get('orgId');
+  const orgId = c.get('principal').activeHouseholdId;
   const includeArchived = c.req.query('include') === 'archived';
   const rows = await listAccounts(orgId, includeArchived);
   return c.json({ data: rows });
@@ -25,7 +25,7 @@ accountsRouter.post(
   '/',
   appValidator('json', createAccountSchema),
   async (c) => {
-    const orgId = c.get('orgId');
+    const orgId = c.get('principal').activeHouseholdId;
     const data = c.req.valid('json');
     const row = await createAccount(orgId, data);
     return c.json({ data: row }, 201);
@@ -37,7 +37,7 @@ accountsRouter.patch(
   '/:id',
   appValidator('json', updateAccountSchema),
   async (c) => {
-    const orgId = c.get('orgId');
+    const orgId = c.get('principal').activeHouseholdId;
     const id = c.req.param('id');
     const data = c.req.valid('json');
     const updated = await updateAccount(orgId, id, data);
@@ -47,7 +47,7 @@ accountsRouter.patch(
 
 // GET /:id/members — return current member rows for one account
 accountsRouter.get('/:id/members', async (c) => {
-  const orgId = c.get('orgId');
+  const orgId = c.get('principal').activeHouseholdId;
   const id = c.req.param('id');
   const rows = await getAccountMembers(orgId, id);
   return c.json({ data: rows });
@@ -55,7 +55,7 @@ accountsRouter.get('/:id/members', async (c) => {
 
 // DELETE /:id/archive — soft-archive the account by setting archivedAt
 accountsRouter.delete('/:id/archive', async (c) => {
-  const orgId = c.get('orgId');
+  const orgId = c.get('principal').activeHouseholdId;
   const id = c.req.param('id');
   const updated = await archiveAccountById(orgId, id);
   return c.json({ data: updated });

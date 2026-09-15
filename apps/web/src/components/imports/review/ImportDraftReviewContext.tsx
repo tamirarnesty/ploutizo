@@ -4,6 +4,7 @@ import type { Account, OrgMember } from '@ploutizo/types';
 import type { ImportDraftRowEvaluation } from '@ploutizo/utils';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import type { Category } from '@/lib/data-access/categories';
+import { useActiveHouseholdAccess } from '@/lib/auth/use-active-household-access';
 import { getImportDraftRowsCollection } from '@/lib/data-access/imports/getImportDraftRowsCollection';
 import { evaluateImportDraftWorkingCopy } from '@/lib/data-access/imports/rederiveImportDraftWorkingCopy';
 import { useImportReviewAutosaveFailedRowIds } from '@/lib/data-access/imports/useImportReviewAutosave';
@@ -52,18 +53,19 @@ export const ImportDraftReviewProvider = ({
   updateRow,
   children,
 }: ImportDraftReviewProviderProps) => {
+  const access = useActiveHouseholdAccess();
   const failedRowIds = useImportReviewAutosaveFailedRowIds(draftId);
   const rowsCollection = useMemo(
-    () => getImportDraftRowsCollection(draftId),
-    [draftId]
+    () => getImportDraftRowsCollection(access, draftId),
+    [access.signedInMemberId, access.activeHouseholdId, draftId]
   );
   const liveRows = useLiveQuery(
     (q) => q.from({ row: rowsCollection }),
     [rowsCollection]
   );
   const evaluations = useMemo(
-    () => evaluateImportDraftWorkingCopy(draftId),
-    [draftId, liveRows.data]
+    () => evaluateImportDraftWorkingCopy(access, draftId),
+    [access, draftId, liveRows.data]
   );
   const value = useMemo(
     () => ({

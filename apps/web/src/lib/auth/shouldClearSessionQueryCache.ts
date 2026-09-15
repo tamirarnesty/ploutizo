@@ -1,20 +1,31 @@
-/** `undefined` means Clerk has not produced a loaded snapshot yet. */
+import type { CacheIdentity } from './access-policy';
+
+/** `undefined` previous identity means Clerk has not produced a loaded snapshot yet. */
 export const shouldClearSessionQueryCache = (
   isLoaded: boolean,
-  previousUserId: string | null | undefined,
-  userId: string | null | undefined
-): { shouldClear: boolean; nextUserId: string | null | undefined } => {
+  previous: CacheIdentity | undefined,
+  next: CacheIdentity
+): { shouldClear: boolean; nextIdentity: CacheIdentity | undefined } => {
   if (!isLoaded) {
-    return { shouldClear: false, nextUserId: previousUserId };
+    return { shouldClear: false, nextIdentity: previous };
   }
 
-  const nextUserId = userId ?? null;
-  if (previousUserId === undefined) {
-    return { shouldClear: false, nextUserId };
+  if (previous === undefined) {
+    if (next.signedInMemberId === null) {
+      return { shouldClear: false, nextIdentity: undefined };
+    }
+    return { shouldClear: false, nextIdentity: next };
+  }
+
+  if (
+    previous.signedInMemberId === next.signedInMemberId &&
+    previous.activeHouseholdId === next.activeHouseholdId
+  ) {
+    return { shouldClear: false, nextIdentity: previous };
   }
 
   return {
-    shouldClear: previousUserId !== nextUserId,
-    nextUserId,
+    shouldClear: true,
+    nextIdentity: next,
   };
 };

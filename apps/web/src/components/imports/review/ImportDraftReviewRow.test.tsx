@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ImportDraftRow } from '@ploutizo/types';
 import type { Category } from '@/lib/data-access/categories';
 import { evaluateImportDraftWorkingCopy } from '@/lib/data-access/imports/rederiveImportDraftWorkingCopy';
+import '@/test/mockTanstackRouter';
 import { ImportDraftReviewProvider } from './ImportDraftReviewContext';
 import { ImportDraftReviewRowDetails } from './ImportDraftReviewRowDetails';
 import { ImportReviewDescriptionCell } from './importReviewCells';

@@ -1,4 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { householdQueryKey } from '@/lib/auth/household-query-key';
+import { useActiveHouseholdAccess } from '@/lib/auth/use-active-household-access';
 import { apiFetch } from '@/lib/queryClient';
 import { useOptimisticListMutation } from '../optimisticListMutation';
 import type { Tag } from './useGetTags';
@@ -20,9 +22,11 @@ export const createTag = async (body: CreateTagBody): Promise<Tag> => {
 };
 
 export const useCreateTag = () => {
+  const access = useActiveHouseholdAccess();
   const qc = useQueryClient();
+  const tagsQueryKey = householdQueryKey(access, 'tags');
   return useOptimisticListMutation<Tag, CreateTagBody, Tag>({
-    queryKey: ['tags'],
+    queryKey: tagsQueryKey,
     mutationFn: createTag,
     updateCache: (items, { name }) => {
       const trimmed = name.trim();
@@ -41,7 +45,7 @@ export const useCreateTag = () => {
     },
     onSuccess: (created, { name }) => {
       const placeholderId = optimisticTagId(name);
-      qc.setQueryData<Tag[]>(['tags'], (items = []) => {
+      qc.setQueryData<Tag[]>(tagsQueryKey, (items = []) => {
         const withoutPlaceholder = items.filter(
           (t) => t.id !== created.id && t.id !== placeholderId
         );

@@ -11,7 +11,7 @@ const settlementsRouter = new Hono<AppEnv>();
 
 // GET / — settlement balances per account, per member (D-02)
 settlementsRouter.get('/', async (c) => {
-  const orgId = c.get('orgId');
+  const orgId = c.get('principal').activeHouseholdId;
   const result = await getSettlementBalances(orgId);
   return c.json(result);
 });
@@ -21,7 +21,7 @@ settlementsRouter.post(
   '/',
   appValidator('json', createSettlementSchema),
   async (c) => {
-    const orgId = c.get('orgId');
+    const orgId = c.get('principal').activeHouseholdId;
     const data = c.req.valid('json');
     const row = await createSettlement(orgId, data);
     return c.json({ data: row }, 201);

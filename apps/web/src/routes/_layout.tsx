@@ -5,18 +5,18 @@ import {
 } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/react-start';
 import { getCookie } from '@tanstack/react-start/server';
-import { auth } from '@clerk/tanstack-react-start/server';
 import { SidebarInset, SidebarProvider } from '@ploutizo/ui/components/sidebar';
 import { cn } from '@ploutizo/ui/lib/utils';
+import { requireActiveHousehold } from '@/lib/auth/require-active-household';
 import { CommandPaletteProvider } from '@/lib/command';
-import { requireAuthAndOrg } from '@/lib/auth/require-access';
 import { activeImportDraftsQueryOptions } from '@/lib/data-access/imports';
 import { resolveMainContentLayout } from '@/lib/layout/main-content-layout';
 import { AppSidebar } from '../components/AppSidebar';
 import { TopBar } from '../components/TopBar';
 import { useThemeKeyboardShortcut } from '../hooks/useThemeKeyboardShortcut';
 
-const getSidebarState = createServerFn().handler(() => {
+/** Public: sidebar open/closed cookie only. No signed-in member or household data. */
+const getPublicSidebarState = createServerFn().handler(() => {
   const value = getCookie('sidebar_state');
   return value !== 'false';
 });
@@ -57,16 +57,15 @@ const LayoutShell = () => {
 };
 
 export const Route = createFileRoute('/_layout')({
-  beforeLoad: () => requireAuthAndOrg(),
+  beforeLoad: ({ context, location }) => ({
+    access: requireActiveHousehold(context.access, location.href),
+  }),
   loader: async ({ context }) => {
-    // Warm the command palette's Continue Import list without blocking shell render.
-    const { orgId } = await auth();
-    if (orgId) {
-      void context.queryClient.prefetchQuery(
-        activeImportDraftsQueryOptions(orgId)
-      );
-    }
-    return getSidebarState();
+    const access = requireActiveHousehold(context.access);
+    void context.queryClient.prefetchQuery(
+      activeImportDraftsQueryOptions(access)
+    );
+    return getPublicSidebarState();
   },
   component: LayoutShell,
 });

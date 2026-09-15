@@ -1,5 +1,7 @@
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import type { ImportDraft } from '@ploutizo/types';
+import type { ActiveHouseholdAccess } from '@/lib/auth/access-policy';
+import { useActiveHouseholdAccess } from '@/lib/auth/use-active-household-access';
 import { apiFetch } from '@/lib/queryClient';
 import { importDraftQueryKey } from './queryKeys';
 import type { UseQueryResult } from '@tanstack/react-query';
@@ -9,16 +11,21 @@ export const fetchImportDraft = async (id: string): Promise<ImportDraft> => {
   return r.data;
 };
 
-export const importDraftQueryOptions = (id: string) =>
+export const importDraftQueryOptions = (
+  access: ActiveHouseholdAccess,
+  id: string
+) =>
   queryOptions({
-    queryKey: importDraftQueryKey(id),
+    queryKey: importDraftQueryKey(access, id),
     queryFn: () => fetchImportDraft(id),
   });
 
 export const useGetImportDraft = (
   id: string | null
-): UseQueryResult<ImportDraft> =>
-  useQuery({
-    ...importDraftQueryOptions(id ?? ''),
+): UseQueryResult<ImportDraft> => {
+  const access = useActiveHouseholdAccess();
+  return useQuery({
+    ...importDraftQueryOptions(access, id ?? ''),
     enabled: Boolean(id),
   });
+};

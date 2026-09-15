@@ -1,60 +1,89 @@
 import { describe, expect, it } from 'vitest';
 import { shouldClearSessionQueryCache } from './shouldClearSessionQueryCache';
+import type { CacheIdentity } from './access-policy';
+
+const alexA: CacheIdentity = {
+  signedInMemberId: 'user_alex',
+  activeHouseholdId: 'org_a',
+};
+const alexB: CacheIdentity = {
+  signedInMemberId: 'user_alex',
+  activeHouseholdId: 'org_b',
+};
+const samA: CacheIdentity = {
+  signedInMemberId: 'user_sam',
+  activeHouseholdId: 'org_a',
+};
+const signedOut: CacheIdentity = {
+  signedInMemberId: null,
+  activeHouseholdId: null,
+};
 
 describe('shouldClearSessionQueryCache', () => {
   it('holds the previous snapshot while Clerk is still loading', () => {
-    expect(shouldClearSessionQueryCache(false, 'user_a', undefined)).toEqual({
+    expect(shouldClearSessionQueryCache(false, alexA, signedOut)).toEqual({
       shouldClear: false,
-      nextUserId: 'user_a',
+      nextIdentity: alexA,
     });
   });
 
-  it('records the first loaded user without clearing', () => {
-    expect(shouldClearSessionQueryCache(true, undefined, 'user_a')).toEqual({
+  it('records the first loaded identity without clearing', () => {
+    expect(shouldClearSessionQueryCache(true, undefined, alexA)).toEqual({
       shouldClear: false,
-      nextUserId: 'user_a',
+      nextIdentity: alexA,
     });
   });
 
-  it('records a first loaded signed-out snapshot without clearing', () => {
-    expect(shouldClearSessionQueryCache(true, undefined, null)).toEqual({
+  it('does not lock in a signed-out snapshot as the first identity', () => {
+    expect(shouldClearSessionQueryCache(true, undefined, signedOut)).toEqual({
       shouldClear: false,
-      nextUserId: null,
+      nextIdentity: undefined,
     });
   });
 
-  it('treats an undefined loaded userId as signed out', () => {
-    expect(shouldClearSessionQueryCache(true, undefined, undefined)).toEqual({
+  it('does not clear when the signed-in member and active household stay the same', () => {
+    expect(shouldClearSessionQueryCache(true, alexA, alexA)).toEqual({
       shouldClear: false,
-      nextUserId: null,
+      nextIdentity: alexA,
     });
   });
 
-  it('does not clear when the same user stays signed in', () => {
-    expect(shouldClearSessionQueryCache(true, 'user_a', 'user_a')).toEqual({
+  it('keeps the previous snapshot object when identity values are unchanged', () => {
+    const sameAsAlexA: CacheIdentity = {
+      signedInMemberId: 'user_alex',
+      activeHouseholdId: 'org_a',
+    };
+    expect(shouldClearSessionQueryCache(true, alexA, sameAsAlexA)).toEqual({
       shouldClear: false,
-      nextUserId: 'user_a',
+      nextIdentity: alexA,
     });
   });
 
-  it('clears when the user signs out', () => {
-    expect(shouldClearSessionQueryCache(true, 'user_a', null)).toEqual({
+  it('clears when the signed-in member signs out', () => {
+    expect(shouldClearSessionQueryCache(true, alexA, signedOut)).toEqual({
       shouldClear: true,
-      nextUserId: null,
+      nextIdentity: signedOut,
     });
   });
 
-  it('clears when a different account signs in after logout', () => {
-    expect(shouldClearSessionQueryCache(true, null, 'user_b')).toEqual({
+  it('clears when a different signed-in member signs in', () => {
+    expect(shouldClearSessionQueryCache(true, signedOut, samA)).toEqual({
       shouldClear: true,
-      nextUserId: 'user_b',
+      nextIdentity: samA,
     });
   });
 
-  it('clears when the signed-in account changes without an intermediate null', () => {
-    expect(shouldClearSessionQueryCache(true, 'user_a', 'user_b')).toEqual({
+  it('clears when a different signed-in member takes over the same household', () => {
+    expect(shouldClearSessionQueryCache(true, alexA, samA)).toEqual({
       shouldClear: true,
-      nextUserId: 'user_b',
+      nextIdentity: samA,
+    });
+  });
+
+  it('clears when the active household changes for the same signed-in member', () => {
+    expect(shouldClearSessionQueryCache(true, alexA, alexB)).toEqual({
+      shouldClear: true,
+      nextIdentity: alexB,
     });
   });
 });

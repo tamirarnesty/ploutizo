@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ClerkOrgAdminError } from '../lib/clerkOrgAdmin';
 import { householdsRouter } from '../routes/households';
 import { createRouteTestApp } from './testUtils';
-import type { AppEnv } from '../types';
 
 const { mockClerkOrgAdmin } = vi.hoisted(() => ({
   mockClerkOrgAdmin: {
@@ -53,11 +52,7 @@ vi.mock('@ploutizo/db/schema', () => ({
   users: {},
 }));
 
-const app = createRouteTestApp<AppEnv>((testApp) => {
-  testApp.use('/*', async (c, next) => {
-    c.set('orgId', 'org_test123');
-    await next();
-  });
+const app = createRouteTestApp((testApp) => {
   testApp.route('/', householdsRouter);
 });
 

@@ -15,10 +15,11 @@ export default [
     rules: {
       // Forbid file extensions on relative imports — use bare specifiers (e.g. './foo', not './foo.js')
       // Exception: TanStack Router auto-generates routeTree.gen — the .gen extension is intentional
+      // Exception: TanStack Start server-only modules use the .server suffix
       'import/extensions': [
         'error',
         'never',
-        { ignorePackages: true, pattern: { gen: 'always' } },
+        { ignorePackages: true, pattern: { gen: 'always', server: 'always' } },
       ],
       // Enforce T[] over Array<T>
       '@typescript-eslint/array-type': ['error', { default: 'array' }],
@@ -45,6 +46,30 @@ export default [
       ],
       // Prefer const arrow functions over function declarations
       'func-style': ['error', 'expression'],
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@clerk/tanstack-react-start',
+              importNames: ['auth'],
+              message:
+                'auth() is not isomorphic. Use resolveAccess from lib/auth.',
+            },
+            {
+              name: '@clerk/tanstack-react-start/server',
+              message:
+                'Clerk server auth() is not isomorphic. Use resolveAccess from lib/auth.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/start.ts', 'src/lib/auth/resolve-access.server.ts'],
+    rules: {
+      'no-restricted-imports': 'off',
     },
   },
 ];

@@ -1,5 +1,4 @@
 import { Hono } from 'hono';
-import { getAuth } from '@clerk/hono';
 import {
   InviteMemberFormSchema,
   updateHouseholdSettingsSchema,
@@ -21,14 +20,14 @@ const householdsRouter = new Hono<AppEnv>();
 
 // GET / — org overview (name, imageUrl)
 householdsRouter.get('/', async (c) => {
-  const orgId = c.get('orgId');
+  const orgId = c.get('principal').activeHouseholdId;
   const data = await getHousehold(orgId);
   return c.json({ data });
 });
 
 // GET /settings — returns the org's settlementThreshold
 householdsRouter.get('/settings', async (c) => {
-  const orgId = c.get('orgId');
+  const orgId = c.get('principal').activeHouseholdId;
   const data = await getHouseholdSettings(orgId);
   return c.json({ data });
 });
@@ -38,7 +37,7 @@ householdsRouter.patch(
   '/settings',
   appValidator('json', updateHouseholdSettingsSchema),
   async (c) => {
-    const orgId = c.get('orgId');
+    const orgId = c.get('principal').activeHouseholdId;
     const data = c.req.valid('json');
     const result = await updateHouseholdSettings(orgId, data);
     return c.json({ data: result });
@@ -47,7 +46,7 @@ householdsRouter.patch(
 
 // GET /members — list active members in current org
 householdsRouter.get('/members', async (c) => {
-  const orgId = c.get('orgId');
+  const orgId = c.get('principal').activeHouseholdId;
   const rows = await listMembers(orgId);
   return c.json({ data: rows });
 });
@@ -57,41 +56,42 @@ householdsRouter.post(
   '/invitations',
   appValidator('json', InviteMemberFormSchema),
   async (c) => {
-    const orgId = c.get('orgId');
+    const orgId = c.get('principal').activeHouseholdId;
     const data = c.req.valid('json');
     const result = await inviteMember(orgId, data);
     return c.json({ data: result });
   }
 );
 
-// DELETE /members/:memberId — remove a member from the org
-// getAuth(c).userId is still valid here — tenantGuard only sets orgId, not userId (RESEARCH.md Pitfall 6)
+// DELETE /members/:memberId — remove a member from the household
 householdsRouter.delete('/members/:memberId', async (c) => {
-  const orgId = c.get('orgId');
-  const { userId: callerClerkId } = getAuth(c);
+  const { signedInMemberId, activeHouseholdId } = c.get('principal');
   const { memberId } = c.req.param();
-  const result = await removeMember(memberId, orgId, callerClerkId);
+  const result = await removeMember(
+    memberId,
+    activeHouseholdId,
+    signedInMemberId
+  );
   return c.json({ data: result });
 });
 
-// GET /invitations — list pending and expired invitations for the current org
-// SECURITY: orgId comes from c.get('orgId') (set by tenantGuard from JWT) — never from client
+// GET /invitations — list pending and expired invitations for the current household
+// SECURITY: household id comes from the verified principal — never from the client
 householdsRouter.get('/invitations', async (c) => {
-  const orgId = c.get('orgId');
+  const orgId = c.get('principal').activeHouseholdId;
   const rows = await listInvitations(orgId);
   return c.json({ data: rows });
 });
 
 // DELETE /invitations/:invitationId — revoke an invitation (calls Clerk POST .../revoke under the hood)
-// SECURITY: orgId from JWT scope, userId from JWT — both server-set, never client-controllable
+// SECURITY: household id and signed-in member id are server-set from verified claims
 householdsRouter.delete('/invitations/:invitationId', async (c) => {
-  const orgId = c.get('orgId');
-  const { userId: requestingUserId } = getAuth(c);
+  const { signedInMemberId, activeHouseholdId } = c.get('principal');
   const { invitationId } = c.req.param();
   const result = await revokeInvitation(
-    orgId,
+    activeHouseholdId,
     invitationId,
-    requestingUserId ?? ''
+    signedInMemberId
   );
   return c.json({ data: result });
 });

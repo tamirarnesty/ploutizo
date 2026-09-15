@@ -1,17 +1,19 @@
 import { isImportMatchTargetOnAccount } from '@ploutizo/utils';
 import type { ImportDraft } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
+import type { ActiveHouseholdAccess } from '@/lib/auth/access-policy';
 import { queryClient } from '@/lib/queryClient';
 import { importDraftQueryKey } from './queryKeys';
 
 /** Persist only match IDs that belong to the draft destination account. */
 export const importMatchTransactionIdForDraft = (
+  access: ActiveHouseholdAccess,
   draftId: string,
   transactionId: string | null
 ): string | null => {
   if (!transactionId) return null;
   const draft = queryClient.getQueryData<ImportDraft>(
-    importDraftQueryKey(draftId)
+    importDraftQueryKey(access, draftId)
   );
   if (!draft?.account.id) return null;
   return isImportMatchTargetOnAccount(
@@ -23,6 +25,7 @@ export const importMatchTransactionIdForDraft = (
 };
 
 export const sanitizeImportMatchPatch = (
+  access: ActiveHouseholdAccess,
   draftId: string,
   patch: UpdateImportDraftRowInput
 ): UpdateImportDraftRowInput => {
@@ -32,7 +35,7 @@ export const sanitizeImportMatchPatch = (
     return patch;
   }
   const requested = patch.reviewMatchedTransactionId ?? null;
-  const allowed = importMatchTransactionIdForDraft(draftId, requested);
+  const allowed = importMatchTransactionIdForDraft(access, draftId, requested);
   if (requested === allowed) return patch;
   const next = { ...patch };
   delete next.reviewMatchedTransactionId;

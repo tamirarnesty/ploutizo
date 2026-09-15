@@ -1,82 +1,85 @@
 import { describe, expect, it } from 'vitest';
-import { resolveAccessRedirect } from './access-policy';
-import type { AccessPolicy, AuthState } from './access-policy';
+import {
+  cacheIdentityFromAccess,
+  canResumeAccessWork,
+  resolveAccessNavigation,
+  resolveAccessRedirect,
+  sanitizeReturnPath,
+  toAccessState,
+} from './access-policy';
+import type { AccessPolicy, AccessState } from './access-policy';
 
-const signedOut: AuthState = { isAuthenticated: false, orgId: null };
-const signedInNoOrg: AuthState = { isAuthenticated: true, orgId: null };
-const signedInWithOrg: AuthState = {
-  isAuthenticated: true,
-  orgId: 'org_123',
+const signedOut: AccessState = { status: 'signed-out' };
+const signedInNoHousehold: AccessState = {
+  status: 'signed-in-no-household',
+  signedInMemberId: 'user_123',
+};
+const signedInWithHousehold: AccessState = {
+  status: 'signed-in-with-active-household',
+  signedInMemberId: 'user_123',
+  activeHouseholdId: 'org_123',
 };
 
 type MatrixCase = {
   policy: AccessPolicy;
-  state: AuthState;
+  state: AccessState;
   label: string;
   expected: ReturnType<typeof resolveAccessRedirect>;
 };
 
 const matrix: MatrixCase[] = [
-  // Public surfaces — no server fn, documented for completeness
-  // sign-in / sign-up: no policy
-
-  // requireAuth (onboarding)
   {
-    policy: 'requireAuth',
+    policy: 'signed-in',
     state: signedOut,
     label: 'onboarding / signed out',
     expected: '/sign-in/$',
   },
   {
-    policy: 'requireAuth',
-    state: signedInNoOrg,
-    label: 'onboarding / signed in, no org',
+    policy: 'signed-in',
+    state: signedInNoHousehold,
+    label: 'onboarding / signed in, no household',
     expected: null,
   },
   {
-    policy: 'requireAuth',
-    state: signedInWithOrg,
-    label: 'onboarding / signed in, has org',
+    policy: 'signed-in',
+    state: signedInWithHousehold,
+    label: 'onboarding / signed in, has household',
     expected: null,
   },
-
-  // requireAuthAndOrg (_layout app shell)
   {
-    policy: 'requireAuthAndOrg',
+    policy: 'active-household',
     state: signedOut,
     label: 'app shell / signed out',
     expected: '/sign-in/$',
   },
   {
-    policy: 'requireAuthAndOrg',
-    state: signedInNoOrg,
-    label: 'app shell / signed in, no org',
+    policy: 'active-household',
+    state: signedInNoHousehold,
+    label: 'app shell / signed in, no household',
     expected: '/onboarding',
   },
   {
-    policy: 'requireAuthAndOrg',
-    state: signedInWithOrg,
-    label: 'app shell / signed in, has org',
+    policy: 'active-household',
+    state: signedInWithHousehold,
+    label: 'app shell / signed in, has household',
     expected: null,
   },
-
-  // redirectIfAuthenticated (home /)
   {
-    policy: 'redirectIfAuthenticated',
+    policy: 'guest',
     state: signedOut,
     label: 'home / signed out',
     expected: null,
   },
   {
-    policy: 'redirectIfAuthenticated',
-    state: signedInNoOrg,
-    label: 'home / signed in, no org',
+    policy: 'guest',
+    state: signedInNoHousehold,
+    label: 'home / signed in, no household',
     expected: '/onboarding',
   },
   {
-    policy: 'redirectIfAuthenticated',
-    state: signedInWithOrg,
-    label: 'home / signed in, has org',
+    policy: 'guest',
+    state: signedInWithHousehold,
+    label: 'home / signed in, has household',
     expected: '/dashboard',
   },
 ];
@@ -84,5 +87,105 @@ const matrix: MatrixCase[] = [
 describe('resolveAccessRedirect', () => {
   it.each(matrix)('$label → $expected', ({ policy, state, expected }) => {
     expect(resolveAccessRedirect(state, policy)).toBe(expected);
+  });
+});
+
+describe('toAccessState', () => {
+  it('maps a Clerk session without a household to signed-in with no household', () => {
+    expect(
+      toAccessState({
+        isAuthenticated: true,
+        userId: 'user_123',
+        orgId: null,
+      })
+    ).toEqual(signedInNoHousehold);
+  });
+
+  it('maps a Clerk session with an organization to an active household', () => {
+    expect(
+      toAccessState({
+        isAuthenticated: true,
+        userId: 'user_123',
+        orgId: 'org_123',
+      })
+    ).toEqual(signedInWithHousehold);
+  });
+});
+
+describe('cacheIdentityFromAccess', () => {
+  it('uses both the signed-in member and the active household', () => {
+    expect(cacheIdentityFromAccess(signedInWithHousehold)).toEqual({
+      signedInMemberId: 'user_123',
+      activeHouseholdId: 'org_123',
+    });
+  });
+});
+
+describe('sanitizeReturnPath', () => {
+  it('keeps a local app path', () => {
+    expect(sanitizeReturnPath('/accounts')).toBe('/accounts');
+  });
+
+  it('keeps a local path with search and hash', () => {
+    expect(sanitizeReturnPath('/import?tab=history#drafts')).toBe(
+      '/import?tab=history#drafts'
+    );
+  });
+
+  it('rejects absolute URLs', () => {
+    expect(sanitizeReturnPath('https://evil.example/steal')).toBeUndefined();
+  });
+
+  it('rejects protocol-relative URLs', () => {
+    expect(sanitizeReturnPath('//evil.example/steal')).toBeUndefined();
+  });
+
+  it('rejects backslash-normalized open redirects', () => {
+    expect(sanitizeReturnPath('/\\evil.example')).toBeUndefined();
+  });
+});
+
+describe('resolveAccessNavigation', () => {
+  it('preserves a local return path when sending a signed-out visitor to sign-in', () => {
+    expect(
+      resolveAccessNavigation(signedOut, 'active-household', '/accounts')
+    ).toEqual({
+      to: '/sign-in/$',
+      search: { redirect: '/accounts' },
+    });
+  });
+
+  it('omits an external return path when sending a signed-out visitor to sign-in', () => {
+    expect(
+      resolveAccessNavigation(
+        signedOut,
+        'active-household',
+        'https://evil.example'
+      )
+    ).toEqual({ to: '/sign-in/$' });
+  });
+});
+
+describe('canResumeAccessWork', () => {
+  it('allows work while Clerk is still loading the first snapshot', () => {
+    expect(canResumeAccessWork(false, signedOut, signedInWithHousehold)).toBe(
+      true
+    );
+  });
+
+  it('does not resume household work against a stale route snapshot', () => {
+    expect(
+      canResumeAccessWork(true, signedInWithHousehold, {
+        status: 'signed-in-with-active-household',
+        signedInMemberId: 'user_123',
+        activeHouseholdId: 'org_other',
+      })
+    ).toBe(false);
+  });
+
+  it('resumes only when Clerk identity and route access agree', () => {
+    expect(
+      canResumeAccessWork(true, signedInWithHousehold, signedInWithHousehold)
+    ).toBe(true);
   });
 });
