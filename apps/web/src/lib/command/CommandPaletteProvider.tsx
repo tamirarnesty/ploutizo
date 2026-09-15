@@ -14,7 +14,9 @@ export const CommandPaletteProvider = ({
   const [open, setOpen] = useState(false);
   const contextValue = useMemo(() => ({ open, setOpen }), [open]);
 
-  useCommandPaletteShortcut(setOpen);
+  useCommandPaletteShortcut(() => {
+    setOpen((open) => !open);
+  });
 
   return (
     <CommandPaletteContextProvider value={contextValue}>

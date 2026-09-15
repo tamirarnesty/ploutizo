@@ -1,30 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useHotkey } from '@tanstack/react-hotkeys';
 
-export const useCommandPaletteShortcut = (setOpen: (open: boolean) => void) => {
-  const setOpenRef = useRef(setOpen);
-  setOpenRef.current = setOpen;
+export const COMMAND_PALETTE_HOTKEY = 'Mod+K';
 
-  useEffect(() => {
-    const handler = (event: KeyboardEvent) => {
-      if (event.key.toLowerCase() !== 'k') return;
-      if (!event.metaKey && !event.ctrlKey) return;
-
-      const target = event.target;
-      if (!(target instanceof HTMLElement)) return;
-      if (
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
-        target.tagName === 'SELECT' ||
-        target.isContentEditable
-      ) {
-        return;
-      }
-
-      event.preventDefault();
-      setOpenRef.current(true);
-    };
-
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, []);
+export const useCommandPaletteShortcut = (onToggle: () => void) => {
+  useHotkey(COMMAND_PALETTE_HOTKEY, onToggle, {
+    meta: { name: 'Toggle command palette' },
+  });
 };

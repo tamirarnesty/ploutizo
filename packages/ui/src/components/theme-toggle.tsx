@@ -1,35 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useTheme } from 'next-themes';
-import {
-  Moon as MoonIcon,
-  Sun as SunIcon,
-  SunMoon as SunMoonIcon,
-} from 'lucide-react';
+import { Moon as MoonIcon, Sun as SunIcon } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
-
-const cycleMap = { system: 'light', light: 'dark', dark: 'system' } as const;
-type Theme = keyof typeof cycleMap;
+import { useReversibleThemeToggle } from '@ploutizo/ui/hooks/use-reversible-theme-toggle';
 
 // SSR and the first client render cannot read localStorage, so theme-dependent UI
 // must defer until mount. See: https://github.com/pacocoursey/next-themes#avoid-hydration-mismatch
-export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const current = (theme ?? 'system') as Theme;
-  const displayTheme = mounted ? current : 'system';
-  const label = displayTheme.charAt(0).toUpperCase() + displayTheme.slice(1);
+export const ThemeToggle = () => {
+  const { mounted, resolvedAppearance, label, toggleTheme } =
+    useReversibleThemeToggle();
+  const displayLabel = mounted ? label : 'Switch to dark mode';
+  const Icon = mounted && resolvedAppearance === 'dark' ? SunIcon : MoonIcon;
 
   return (
     <Tooltip>
@@ -39,16 +25,15 @@ export function ThemeToggle() {
             variant="ghost"
             size="icon"
             className="size-8"
-            onClick={() => setTheme(cycleMap[current])}
+            aria-label={displayLabel}
+            disabled={!mounted}
+            onClick={toggleTheme}
           />
         }
       >
-        {displayTheme === 'system' && <SunMoonIcon />}
-        {displayTheme === 'light' && <SunIcon />}
-        {displayTheme === 'dark' && <MoonIcon />}
-        <span className="sr-only">{label}</span>
+        <Icon />
       </TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
+      <TooltipContent>{displayLabel}</TooltipContent>
     </Tooltip>
   );
-}
+};
