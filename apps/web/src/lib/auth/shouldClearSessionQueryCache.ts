@@ -11,6 +11,9 @@ export const shouldClearSessionQueryCache = (
   }
 
   if (previous === undefined) {
+    if (next.signedInMemberId === null) {
+      return { shouldClear: false, nextIdentity: undefined };
+    }
     return { shouldClear: false, nextIdentity: next };
   }
 

@@ -15,6 +15,10 @@ export const useAccessBoundary = () => {
     CacheIdentity | undefined
   >(undefined);
 
+  if (import.meta.env.SSR) {
+    return;
+  }
+
   const access = toAccessState({
     isAuthenticated: Boolean(isSignedIn),
     userId,
@@ -37,8 +41,10 @@ export const useAccessBoundary = () => {
   }
 
   if (!isSignedIn) {
-    rememberClientBearer(null);
-    setClientBearerGetter(() => Promise.resolve(null));
+    setClientBearerGetter(null);
+    if (shouldClear) {
+      rememberClientBearer(null);
+    }
     return;
   }
 

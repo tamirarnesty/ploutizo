@@ -34,6 +34,13 @@ describe('shouldClearSessionQueryCache', () => {
     });
   });
 
+  it('does not lock in a signed-out snapshot as the first identity', () => {
+    expect(shouldClearSessionQueryCache(true, undefined, signedOut)).toEqual({
+      shouldClear: false,
+      nextIdentity: undefined,
+    });
+  });
+
   it('does not clear when the signed-in member and active household stay the same', () => {
     expect(shouldClearSessionQueryCache(true, alexA, alexA)).toEqual({
       shouldClear: false,

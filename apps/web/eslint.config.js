@@ -67,7 +67,7 @@ export default [
     },
   },
   {
-    files: ['src/start.ts', 'src/lib/auth/ensure-access.ts'],
+    files: ['src/start.ts', 'src/lib/auth/ensure-access.server.ts'],
     rules: {
       'no-restricted-imports': 'off',
     },

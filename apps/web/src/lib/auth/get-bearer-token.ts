@@ -20,7 +20,10 @@ export const resetClientBearerForTests = () => {
 
 const getClientBearer = async (): Promise<string | null> => {
   if (clientBearerGetter) {
-    return clientBearerGetter();
+    const token = await clientBearerGetter();
+    if (token) {
+      return token;
+    }
   }
   return clientBearer;
 };
