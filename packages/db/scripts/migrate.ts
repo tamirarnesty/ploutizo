@@ -17,7 +17,7 @@ loadEnv({ path: join(repoRoot, '.env'), quiet: true });
 
 const databaseUrl = process.env.DATABASE_URL;
 if (databaseUrl === undefined) {
-  logMigrationError(new Error('DATABASE_URL is not set'));
+  logMigrationError('DATABASE_URL is not set');
   process.exit(1);
 }
 

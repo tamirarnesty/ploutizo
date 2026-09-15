@@ -59,6 +59,19 @@ describe('migration log', () => {
     errorSpy.mockRestore();
   });
 
+  it('logs a string as the cause', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    logMigrationError('DATABASE_URL is not set');
+
+    expect(errorSpy.mock.calls).toEqual([
+      ['db:migrate: failed'],
+      ['db:migrate: cause: DATABASE_URL is not set'],
+    ]);
+
+    errorSpy.mockRestore();
+  });
+
   it('falls back to the query error message when the cause has no message', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const error = new DrizzleQueryError(sql, [], new Error(''));
