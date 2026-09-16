@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
 
@@ -15,7 +15,7 @@ export const fetchHouseholdSettings = async (): Promise<HouseholdSettings> => {
 
 export const useGetHouseholdSettings =
   (): UseQueryResult<HouseholdSettings> => {
-    return useQuery({
+    return useHouseholdQuery({
       queryKey: ['household-settings'],
       queryFn: fetchHouseholdSettings,
     });

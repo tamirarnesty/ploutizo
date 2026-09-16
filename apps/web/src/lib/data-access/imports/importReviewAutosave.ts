@@ -1,5 +1,3 @@
-import { registerWorkingSetCleanup } from '@/lib/access/working-set';
-
 export type ImportReviewAutosaveStatus = 'idle' | 'saving' | 'saved' | 'failed';
 
 interface DraftAutosaveState {
@@ -248,5 +246,3 @@ export const endImportReviewAutosave = () => {
   draftSnapshots.clear();
   listeners.clear();
 };
-
-registerWorkingSetCleanup(endImportReviewAutosave);

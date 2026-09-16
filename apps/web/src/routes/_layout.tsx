@@ -7,7 +7,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { getCookie } from '@tanstack/react-start/server';
 import { SidebarInset, SidebarProvider } from '@ploutizo/ui/components/sidebar';
 import { cn } from '@ploutizo/ui/lib/utils';
-import { AccessPolicyBoundary } from '@/lib/access';
+import { AccessPolicyBoundary, ensureHouseholdQueryData } from '@/lib/access';
 import { CommandPaletteProvider } from '@/lib/command';
 import { activeImportDraftsQueryOptions } from '@/lib/data-access/imports';
 import { resolveMainContentLayout } from '@/lib/layout/main-content-layout';
@@ -64,7 +64,10 @@ const LayoutShell = () => (
 
 export const Route = createFileRoute('/_layout')({
   loader: async ({ context }) => {
-    void context.queryClient.prefetchQuery(activeImportDraftsQueryOptions);
+    void ensureHouseholdQueryData(
+      context.queryClient,
+      activeImportDraftsQueryOptions
+    );
     return getPublicSidebarState();
   },
   component: LayoutShell,

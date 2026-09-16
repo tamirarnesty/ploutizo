@@ -1,5 +1,6 @@
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { useEffect } from 'react';
+import { AccessBearerBlocked } from './AccessBearerBlocked';
 import { resolveAccessNavigation, resolveAccessRedirect } from './access-state';
 import { useAccess } from './AccessProvider';
 import type { AccessPolicy } from './access-state';
@@ -16,7 +17,7 @@ export const AccessPolicyBoundary = ({
   returnPath,
   children,
 }: AccessPolicyBoundaryProps) => {
-  const { access, isReady } = useAccess();
+  const { access, isReady, bearerError, retryBearer } = useAccess();
   const navigate = useNavigate();
   const locationHref = useRouterState({
     select: (state) => state.location.href,
@@ -33,6 +34,10 @@ export const AccessPolicyBoundary = ({
       void navigate(target);
     }
   }, [access, effectiveReturnPath, isReady, navigate, policy]);
+
+  if (bearerError && access.status !== 'signed-out') {
+    return <AccessBearerBlocked onRetry={retryBearer} />;
+  }
 
   if (!isReady || redirectTarget) {
     return null;

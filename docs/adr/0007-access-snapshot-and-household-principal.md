@@ -63,3 +63,5 @@ Routes pass the principal's active household id into query and service helpers a
 - Interactive API routes authorize from the household principal. They do not take household identity from the request body or path as authority.
 - Query/service helpers keep `orgId` as the persistence parameter name (ADR 0003). Domain-facing names stay signed-in member, active household, access state, access working set, and household principal.
 - Identity-provider widget chrome may wait for the identity client to load; that is presentation, not a second access model.
+- Working-set cleanups are registered in `working-set-cleanup.ts` (imported from `AccessProvider`), not via import side effects in feature modules.
+- Route loaders prefetch household data via `ensureHouseholdQueryData` when a verified bearer is available (SSR or client intent preload); otherwise queries wait on `useHouseholdQuery` readiness.

@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { ensureHouseholdQueryData } from '@/lib/access';
 import { accountsQueryOptions } from '@/lib/data-access/accounts';
 import { categoriesQueryOptions } from '@/lib/data-access/categories';
 import { orgMembersQueryOptions } from '@/lib/data-access/org';
@@ -20,21 +21,14 @@ export const Route = createFileRoute('/_layout/transactions/')({
     const transactionParams = buildTransactionQueryParams(search, limit);
 
     await Promise.all([
-      context.queryClient
-        .ensureQueryData(transactionsQueryOptions(transactionParams))
-        .catch(() => undefined),
-      context.queryClient
-        .ensureQueryData(accountsQueryOptions())
-        .catch(() => undefined),
-      context.queryClient
-        .ensureQueryData(categoriesQueryOptions())
-        .catch(() => undefined),
-      context.queryClient
-        .ensureQueryData(orgMembersQueryOptions())
-        .catch(() => undefined),
-      context.queryClient
-        .ensureQueryData(tagsQueryOptions())
-        .catch(() => undefined),
+      ensureHouseholdQueryData(
+        context.queryClient,
+        transactionsQueryOptions(transactionParams)
+      ),
+      ensureHouseholdQueryData(context.queryClient, accountsQueryOptions()),
+      ensureHouseholdQueryData(context.queryClient, categoriesQueryOptions()),
+      ensureHouseholdQueryData(context.queryClient, orgMembersQueryOptions()),
+      ensureHouseholdQueryData(context.queryClient, tagsQueryOptions()),
     ]);
   },
   component: Transactions,

@@ -1,5 +1,6 @@
-import { queryOptions, useQuery } from '@tanstack/react-query';
+import { queryOptions } from '@tanstack/react-query';
 import type { ImportTargetAccount } from '@ploutizo/types';
+import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import { importTargetsQueryKey } from './queryKeys';
 import type { UseQueryResult } from '@tanstack/react-query';
@@ -19,5 +20,5 @@ export const importTargetsQueryOptions = queryOptions({
 export const useGetImportTargets = (): UseQueryResult<
   ImportTargetAccount[]
 > => {
-  return useQuery(importTargetsQueryOptions);
+  return useHouseholdQuery(importTargetsQueryOptions);
 };

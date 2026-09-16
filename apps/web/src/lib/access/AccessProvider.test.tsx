@@ -1,3 +1,4 @@
+import './working-set-cleanup';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -137,9 +138,10 @@ describe('AccessProvider', () => {
   it('clears the working set when the active household changes', async () => {
     queryClient.setQueryData(['accounts'], [{ id: 'acct_prior' }]);
     signInAs(householdA);
-    const { rerender } = renderHook(() => useAccess(), { wrapper });
+    const { result, rerender } = renderHook(() => useAccess(), { wrapper });
 
     await waitFor(() => {
+      expect(result.current.isReady).toBe(true);
       expect(queryClient.getQueryData(['accounts'])).toEqual([
         { id: 'acct_prior' },
       ]);
@@ -150,7 +152,28 @@ describe('AccessProvider', () => {
       Promise.resolve(unsignedJwt({ sub: 'user_a', org_id: 'org_b' }));
     rerender();
 
+    expect(result.current.isReady).toBe(false);
     expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
+  });
+
+  it('surfaces bearerError when Clerk never returns a matching token', async () => {
+    signInAs(householdA, null);
+    const { result, rerender } = renderHook(() => useAccess(), { wrapper });
+
+    expect(result.current.isReady).toBe(false);
+
+    await waitFor(() => {
+      expect(result.current.bearerError).toBe(true);
+    });
+
+    authState.getToken = () => Promise.resolve(householdAJwt);
+    result.current.retryBearer();
+    rerender();
+
+    await waitFor(() => {
+      expect(result.current.isReady).toBe(true);
+      expect(result.current.bearerError).toBe(false);
+    });
   });
 
   it('does not become ready until Clerk returns a matching token', async () => {

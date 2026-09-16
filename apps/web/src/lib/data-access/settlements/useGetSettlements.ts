@@ -1,5 +1,6 @@
-import { queryOptions, useQuery } from '@tanstack/react-query';
+import { queryOptions } from '@tanstack/react-query';
 import type { GetSettlementBalancesResponse } from '@ploutizo/types';
+import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
 
@@ -18,5 +19,5 @@ export const settlementsQueryOptions = () =>
 
 export const useGetSettlements =
   (): UseQueryResult<GetSettlementBalancesResponse> => {
-    return useQuery(settlementsQueryOptions());
+    return useHouseholdQuery(settlementsQueryOptions());
   };

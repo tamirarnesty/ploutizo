@@ -54,12 +54,12 @@ export default [
               name: '@clerk/tanstack-react-start',
               importNames: ['auth'],
               message:
-                'auth() is not isomorphic. Use resolveAccess from lib/access.',
+                'auth() is not isomorphic. Use getHouseholdBearer from lib/access.',
             },
             {
               name: '@clerk/tanstack-react-start/server',
               message:
-                'Clerk server auth() is not isomorphic. Use resolveAccess from lib/access.',
+                'Clerk server auth() is not isomorphic. Use getHouseholdBearer from lib/access.',
             },
           ],
         },

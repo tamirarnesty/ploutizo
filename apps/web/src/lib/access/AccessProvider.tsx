@@ -1,13 +1,16 @@
+import './working-set-cleanup';
 import { useAuth } from '@clerk/tanstack-react-start';
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
-import { claimsMatchAccess, toAccessState } from './access-state';
+import { toAccessState } from './access-state';
+import { resolveMatchingBearer } from './resolve-matching-bearer';
 import {
   endWorkingSet,
   setClientBearerGetter,
@@ -19,6 +22,8 @@ import type { ReactNode } from 'react';
 type AccessContextValue = {
   access: AccessState;
   isReady: boolean;
+  bearerError: boolean;
+  retryBearer: () => void;
 };
 
 const AccessContext = createContext<AccessContextValue | null>(null);
@@ -43,7 +48,9 @@ const accessKey = (access: AccessState): string => {
 
 export const AccessProvider = ({ children }: { children: ReactNode }) => {
   const { isLoaded, isSignedIn, userId, orgId, getToken } = useAuth();
-  const [isReady, setIsReady] = useState(import.meta.env.SSR);
+  const [isReady, setIsReady] = useState(false);
+  const [bearerError, setBearerError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const previousAccessKeyRef = useRef<string | undefined>(undefined);
 
   const access = useMemo(
@@ -57,54 +64,68 @@ export const AccessProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const currentAccessKey = accessKey(access);
+  const retryBearer = useCallback(() => {
+    setRetryCount((count) => count + 1);
+  }, []);
 
-  useEffect(() => {
-    if (import.meta.env.SSR) {
-      return;
-    }
+  // Sync during render — not in an effect — so route children in the same commit
+  // cannot read the previous household's cache on identity switch.
+  if (!import.meta.env.SSR) {
+    const trackedAccessKey = previousAccessKeyRef.current;
+    const identityChanged =
+      trackedAccessKey !== undefined && trackedAccessKey !== currentAccessKey;
 
     if (!isLoaded) {
-      setIsReady(false);
       setLiveAccess(null);
       setClientBearerGetter(null);
-      return;
-    }
+      if (isReady) {
+        setIsReady(false);
+      }
+      if (bearerError) {
+        setBearerError(false);
+      }
+    } else {
+      if (identityChanged) {
+        endWorkingSet();
+        setBearerError(false);
+      }
 
-    const identityChanged =
-      previousAccessKeyRef.current !== undefined &&
-      previousAccessKeyRef.current !== currentAccessKey;
-
-    if (identityChanged) {
-      endWorkingSet();
-    }
-    previousAccessKeyRef.current = currentAccessKey;
-
-    if (access.status === 'signed-out') {
       setLiveAccess(access);
-      setClientBearerGetter(null);
-      setIsReady(true);
-      return;
+      setClientBearerGetter(access.status === 'signed-out' ? null : getToken);
+
+      if (access.status === 'signed-out') {
+        if (!isReady) {
+          setIsReady(true);
+        }
+        if (bearerError) {
+          setBearerError(false);
+        }
+      } else if (identityChanged || trackedAccessKey === undefined) {
+        setIsReady(false);
+      }
     }
 
-    setLiveAccess(access);
-    setClientBearerGetter(getToken);
+    previousAccessKeyRef.current = currentAccessKey;
+  }
+
+  useEffect(() => {
+    if (import.meta.env.SSR || !isLoaded || access.status === 'signed-out') {
+      return;
+    }
 
     let cancelled = false;
     const validateToken = async () => {
+      const token = await resolveMatchingBearer(getToken, access);
+      if (cancelled) {
+        return;
+      }
+      if (token) {
+        setBearerError(false);
+        setIsReady(true);
+        return;
+      }
+      setBearerError(true);
       setIsReady(false);
-      for (const options of [undefined, { skipCache: true }]) {
-        const token = await getToken(options);
-        if (cancelled) {
-          return;
-        }
-        if (token && claimsMatchAccess(token, access)) {
-          setIsReady(true);
-          return;
-        }
-      }
-      if (!cancelled) {
-        setIsReady(false);
-      }
     };
 
     void validateToken();
@@ -112,14 +133,18 @@ export const AccessProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       cancelled = true;
     };
-  }, [access, currentAccessKey, getToken, isLoaded]);
+  }, [access, currentAccessKey, getToken, isLoaded, retryCount]);
+
+  const boundaryReady = import.meta.env.SSR ? isLoaded : isReady;
 
   const value = useMemo(
     () => ({
       access,
-      isReady,
+      isReady: boundaryReady,
+      bearerError,
+      retryBearer,
     }),
-    [access, isReady]
+    [access, boundaryReady, bearerError, retryBearer]
   );
 
   return (

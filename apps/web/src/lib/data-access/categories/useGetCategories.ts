@@ -1,6 +1,7 @@
 import { parseColourToken } from '@ploutizo/validators';
-import { queryOptions, useQuery } from '@tanstack/react-query';
+import { queryOptions } from '@tanstack/react-query';
 import type { ColourToken } from '@ploutizo/validators';
+import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
 
@@ -34,5 +35,5 @@ export const categoriesQueryOptions = () =>
   });
 
 export const useGetCategories = (): UseQueryResult<Category[]> => {
-  return useQuery(categoriesQueryOptions());
+  return useHouseholdQuery(categoriesQueryOptions());
 };

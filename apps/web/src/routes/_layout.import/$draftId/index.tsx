@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { ensureHouseholdQueryData } from '@/lib/access';
 import {
   getImportDraftRowsCollection,
   importDraftQueryOptions,
@@ -18,16 +19,17 @@ export const Route = createFileRoute('/_layout/import/$draftId/')({
    */
   loader: async ({ context, params }) => {
     await Promise.all([
-      context.queryClient
-        .ensureQueryData(importDraftQueryOptions(params.draftId))
-        .catch(() => undefined),
-      context.queryClient
-        .ensureQueryData(accountsQueryOptions(true))
-        .catch(() => undefined),
+      ensureHouseholdQueryData(
+        context.queryClient,
+        importDraftQueryOptions(params.draftId)
+      ),
+      ensureHouseholdQueryData(context.queryClient, accountsQueryOptions(true)),
     ]);
-    await getImportDraftRowsCollection(params.draftId)
-      .preload()
-      .catch(() => undefined);
+    if (import.meta.env.SSR) {
+      await getImportDraftRowsCollection(params.draftId)
+        .preload()
+        .catch(() => undefined);
+    }
   },
   component: ImportReviewRoute,
 });

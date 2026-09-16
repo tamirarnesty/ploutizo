@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Hono } from 'hono';
 import { getAuth } from '@clerk/hono';
-import { tenantGuard } from '../middleware/tenantGuard';
+import { householdGuard } from '../middleware/householdGuard';
 import { ensureCallerSyncedToOrg } from '../services/clerkMembershipSync';
 
 // Mock @clerk/hono to control what getAuth() returns per test
@@ -41,12 +41,12 @@ vi.mock('../services/clerkMembershipSync', () => ({
 
 const buildApp = () => {
   const app = new Hono();
-  app.use('*', tenantGuard());
+  app.use('*', householdGuard());
   app.get('/', (c) => c.json({ data: { ok: true } }));
   return app;
 };
 
-describe('tenantGuard()', () => {
+describe('householdGuard()', () => {
   it('rejects a missing signed-in member before returning household data', async () => {
     vi.mocked(getAuth).mockReturnValue({
       userId: undefined,
@@ -161,7 +161,7 @@ describe('tenantGuard()', () => {
       orgId: 'org_context_test',
     } as never);
     const app = new Hono();
-    app.use('*', tenantGuard());
+    app.use('*', householdGuard());
     app.get('/', (c) => {
       const principal = c.get('principal' as never) as
         | {

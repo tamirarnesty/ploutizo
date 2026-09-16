@@ -1,4 +1,5 @@
-import { queryOptions, useQuery } from '@tanstack/react-query';
+import { queryOptions } from '@tanstack/react-query';
+import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
 
@@ -26,5 +27,5 @@ export const merchantRulesQueryOptions = () =>
   });
 
 export const useGetMerchantRules = (): UseQueryResult<MerchantRule[]> => {
-  return useQuery(merchantRulesQueryOptions());
+  return useHouseholdQuery(merchantRulesQueryOptions());
 };

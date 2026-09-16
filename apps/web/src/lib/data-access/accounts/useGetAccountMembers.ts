@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import type { AccountMember } from '@ploutizo/types';
+import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
 
@@ -15,7 +15,7 @@ export const fetchAccountMembers = async (
 export const useGetAccountMembers = (
   accountId: string | null
 ): UseQueryResult<AccountMember[]> => {
-  return useQuery({
+  return useHouseholdQuery({
     queryKey: ['account-members', accountId],
     queryFn: () => fetchAccountMembers(accountId as string),
     enabled: accountId !== null,

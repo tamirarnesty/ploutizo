@@ -1,6 +1,6 @@
+import './working-set-cleanup';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { queryClient } from '@/lib/queryClient';
-import { claimsMatchAccess } from './access-state';
 import {
   endWorkingSet,
   getClientHouseholdBearer,
@@ -102,23 +102,6 @@ describe('getHouseholdBearer', () => {
     setClientBearerGetter(() => Promise.resolve(householdAJwt));
 
     await expect(getClientHouseholdBearer()).resolves.toBeNull();
-  });
-});
-
-describe('claimsMatchAccess', () => {
-  it('requires both signed-in member and active household claims', () => {
-    const token = unsignedJwt({ sub: 'user_alex', org_id: 'org_a' });
-    expect(claimsMatchAccess(token, alexInHouseholdA)).toBe(true);
-    expect(claimsMatchAccess(token, alexInHouseholdB)).toBe(false);
-  });
-
-  it('matches Clerk session tokens that nest the household id under o.id', () => {
-    const token = unsignedJwt({
-      sub: 'user_alex',
-      o: { id: 'org_a' },
-    });
-    expect(claimsMatchAccess(token, alexInHouseholdA)).toBe(true);
-    expect(claimsMatchAccess(token, alexInHouseholdB)).toBe(false);
   });
 });
 

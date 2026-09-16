@@ -5,7 +5,10 @@ import type {
   UpdateImportDraftRowResult,
 } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
-import { registerWorkingSetCleanup } from '@/lib/access/working-set';
+import {
+  getWorkingSetEpoch,
+  isCurrentWorkingSetEpoch,
+} from '@/lib/access/working-set-epoch';
 import {
   getImportReviewAutosaveSnapshot,
   markImportReviewPending,
@@ -203,6 +206,7 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
       applyOptimisticRowPatch(draftId, rowId, patch);
     },
     mutationFn: async ({ transaction }) => {
+      const startedEpoch = getWorkingSetEpoch();
       markImportReviewPersistStart(draftId, rowId);
       const collection = getImportDraftRowsCollection(draftId);
       const mutation = transaction.mutations.find(
@@ -237,6 +241,9 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
       const persistedKeys = Object.keys(patch);
       try {
         const server = await fetchUpdateImportDraftRow(rowId, patch);
+        if (!isCurrentWorkingSetEpoch(startedEpoch)) {
+          return;
+        }
         confirmPersistIntoCollection(
           collection,
           server,
@@ -247,6 +254,9 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
         );
         markImportReviewPersistSuccess(draftId, rowId, persistedKeys);
       } catch {
+        if (!isCurrentWorkingSetEpoch(startedEpoch)) {
+          return;
+        }
         // Keep working-copy edits (ADR 0005) — do not throw (avoids optimistic rollback).
         confirmPersistIntoCollection(
           collection,
@@ -339,8 +349,12 @@ export const retryFailedImportDraftRowPersists = async (draftId: string) => {
 
       markImportReviewPersistStart(draftId, rowId);
       const persistedKeys = Object.keys(patch);
+      const startedEpoch = getWorkingSetEpoch();
       try {
         const server = await fetchUpdateImportDraftRow(rowId, patch);
+        if (!isCurrentWorkingSetEpoch(startedEpoch)) {
+          return;
+        }
         confirmPersistIntoCollection(
           collection,
           server,
@@ -352,6 +366,9 @@ export const retryFailedImportDraftRowPersists = async (draftId: string) => {
         // Explicit Retry: clear all tracked failures for the row.
         markImportReviewPersistSuccess(draftId, rowId);
       } catch {
+        if (!isCurrentWorkingSetEpoch(startedEpoch)) {
+          return;
+        }
         const current = collection.get(rowId);
         if (current) collection.utils.writeUpdate(current);
         rederiveImportDraftWorkingCopy(draftId);
@@ -376,5 +393,3 @@ export const endImportDraftRowPacedMutations = () => {
   }
   rowPacedMutations.clear();
 };
-
-registerWorkingSetCleanup(endImportDraftRowPacedMutations);

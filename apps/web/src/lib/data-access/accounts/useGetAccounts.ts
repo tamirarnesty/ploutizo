@@ -1,5 +1,6 @@
-import { queryOptions, useQuery } from '@tanstack/react-query';
+import { queryOptions } from '@tanstack/react-query';
 import type { Account } from '@ploutizo/types';
+import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
 
@@ -25,5 +26,5 @@ export const accountsQueryOptions = (includeArchived = false) =>
 export const useGetAccounts = (
   includeArchived = false
 ): UseQueryResult<Account[]> => {
-  return useQuery(accountsQueryOptions(includeArchived));
+  return useHouseholdQuery(accountsQueryOptions(includeArchived));
 };

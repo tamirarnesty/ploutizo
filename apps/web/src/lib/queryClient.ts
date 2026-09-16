@@ -1,4 +1,11 @@
 import { MutationCache, QueryClient } from '@tanstack/react-query';
+import {
+  bumpWorkingSetEpoch,
+  getWorkingSetEpoch,
+  isCurrentWorkingSetEpoch,
+} from '@/lib/access/working-set-epoch';
+
+export { getWorkingSetEpoch, isCurrentWorkingSetEpoch };
 
 // API base URL from env var — never hardcode ploutizo.app or localhost
 const API_BASE_URL = import.meta.env.VITE_API_URL as string;
@@ -73,6 +80,7 @@ export const createQueryClient = () => {
     queryClient,
     endWorkingSetQueryCache: () => {
       queryCacheWorkingSetEpoch += 1;
+      bumpWorkingSetEpoch();
       void queryClient.cancelQueries();
       queryClient.clear();
     },
@@ -92,10 +100,13 @@ export const apiFetch = async <T>(
   path: string,
   options?: RequestInit
 ): Promise<T> => {
+  // Dynamic import avoids a static cycle: working-set -> queryClient -> access -> working-set.
   const { getHouseholdBearer } = await import('@/lib/access');
   const token = await getHouseholdBearer();
   if (!token) {
-    throw new Error('Household bearer unavailable');
+    const error = new Error('Household bearer unavailable');
+    error.name = 'HouseholdBearerUnavailableError';
+    throw error;
   }
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...options,

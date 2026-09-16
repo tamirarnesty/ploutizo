@@ -8,7 +8,7 @@ import { respondWithApiError } from '../lib/apiErrorResponse';
 import { redactIdentifier } from '../lib/redact';
 import type { AppEnv } from '../types';
 
-// tenantGuard: rejects requests with no signed-in member or active household.
+// householdGuard: rejects requests with no signed-in member or active household.
 // CRITICAL: checks !orgId (falsy) — Clerk returns undefined (not null) when no active org.
 // Applied to /api/* only — never to /health or /webhooks.
 //
@@ -41,7 +41,7 @@ const rememberBounded = (
   }
 };
 
-export const tenantGuard = () =>
+export const householdGuard = () =>
   createMiddleware<AppEnv>(async (c, next) => {
     c.header('Cache-Control', 'private, no-store');
     const { orgId, userId } = getAuth(c);
@@ -78,7 +78,7 @@ export const tenantGuard = () =>
         // routes may still fail if org_members is required. Omit syncKey so the next
         // request retries.
         // TODO(phase logging): replace with structured logger.
-        console.error('[tenantGuard] ensureCallerSyncedToOrg failed', {
+        console.error('[householdGuard] ensureCallerSyncedToOrg failed', {
           orgId: redactIdentifier(orgId),
           userId: redactIdentifier(userId),
           message: err instanceof Error ? err.message : String(err),

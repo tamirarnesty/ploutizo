@@ -1,6 +1,7 @@
 import { auth } from '@clerk/tanstack-react-start/server';
 import { setResponseHeader } from '@tanstack/react-start/server';
-import { claimsMatchAccess, toAccessState } from './access-state';
+import { claimsMatchAccess } from './bearer-claims';
+import { toAccessState } from './access-state';
 
 export const getRequestHouseholdBearer = async (): Promise<string | null> => {
   const { isAuthenticated, userId, orgId, getToken } = await auth();

@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import type { PendingInvitation } from '@ploutizo/types';
+import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
 
@@ -11,7 +11,7 @@ export const fetchOrgInvitations = async (): Promise<PendingInvitation[]> => {
 };
 
 export const useGetOrgInvitations = (): UseQueryResult<PendingInvitation[]> => {
-  return useQuery({
+  return useHouseholdQuery({
     queryKey: ['invitations'],
     queryFn: fetchOrgInvitations,
   });

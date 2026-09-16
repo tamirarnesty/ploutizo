@@ -1,6 +1,6 @@
 import { createIsomorphicFn } from '@tanstack/react-start';
 import { endWorkingSetQueryCache } from '@/lib/queryClient';
-import { claimsMatchAccess } from './access-state';
+import { resolveMatchingBearer } from './resolve-matching-bearer';
 import type { AccessState } from './access-state';
 
 type WorkingSetCleanup = () => void;
@@ -26,9 +26,12 @@ export const registerWorkingSetCleanup = (cleanup: WorkingSetCleanup) => {
 };
 
 export const resetWorkingSetForTests = () => {
+  endWorkingSetQueryCache();
+  for (const cleanup of workingSetCleanups) {
+    cleanup();
+  }
   clientBearerGetter = null;
   liveAccess = null;
-  workingSetCleanups.length = 0;
 };
 
 export const getClientHouseholdBearer = async (): Promise<string | null> => {
@@ -39,13 +42,7 @@ export const getClientHouseholdBearer = async (): Promise<string | null> => {
   ) {
     return null;
   }
-  for (const options of [undefined, { skipCache: true }]) {
-    const token = await clientBearerGetter(options);
-    if (token && claimsMatchAccess(token, liveAccess)) {
-      return token;
-    }
-  }
-  return null;
+  return resolveMatchingBearer(clientBearerGetter, liveAccess);
 };
 
 export const endWorkingSet = () => {

@@ -1,7 +1,6 @@
 import { createCollection } from '@tanstack/react-db';
 import { queryCollectionOptions } from '@tanstack/query-db-collection';
 import type { ImportDraftRow } from '@ploutizo/types';
-import { registerWorkingSetCleanup } from '@/lib/access/working-set';
 import { queryClient } from '@/lib/queryClient';
 import { importDraftQueryKey } from './queryKeys';
 import { fetchImportDraft } from './useGetImportDraft';
@@ -49,7 +48,3 @@ export const endImportDraftRowsCollections = async () => {
     [...importDraftRowsCollections.keys()].map(releaseImportDraftRowsCollection)
   );
 };
-
-registerWorkingSetCleanup(() => {
-  void endImportDraftRowsCollections();
-});

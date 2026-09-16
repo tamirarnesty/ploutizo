@@ -1,5 +1,6 @@
-import { queryOptions, useQuery } from '@tanstack/react-query';
+import { queryOptions } from '@tanstack/react-query';
 import type { ImportDraftSummary } from '@ploutizo/types';
+import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import { activeImportDraftsQueryKey } from './queryKeys';
 import type { UseQueryResult } from '@tanstack/react-query';
@@ -25,7 +26,7 @@ type UseGetImportDraftsOptions = {
 export const useGetImportDrafts = (
   options?: UseGetImportDraftsOptions
 ): UseQueryResult<ImportDraftSummary[]> => {
-  return useQuery({
+  return useHouseholdQuery({
     ...activeImportDraftsQueryOptions,
     enabled: options?.enabled ?? true,
   });

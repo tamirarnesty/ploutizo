@@ -1,4 +1,5 @@
-import { queryOptions, useQuery } from '@tanstack/react-query';
+import { queryOptions } from '@tanstack/react-query';
+import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { fetchTransactions } from './queries';
 import type { UseQueryResult } from '@tanstack/react-query';
 
@@ -97,5 +98,5 @@ export const transactionsQueryOptions = (params: TransactionQueryParams) =>
 export const useGetTransactions = (
   params: TransactionQueryParams
 ): UseQueryResult<TransactionListResponse> => {
-  return useQuery(transactionsQueryOptions(params));
+  return useHouseholdQuery(transactionsQueryOptions(params));
 };

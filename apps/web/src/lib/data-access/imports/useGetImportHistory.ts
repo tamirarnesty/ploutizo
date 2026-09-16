@@ -1,9 +1,10 @@
-import {
-  queryOptions,
-  useInfiniteQuery,
-  useQuery,
-} from '@tanstack/react-query';
+import { queryOptions, useInfiniteQuery } from '@tanstack/react-query';
 import type { ImportHistoryPage } from '@ploutizo/types';
+import { useAccess } from '@/lib/access';
+import {
+  isHouseholdAccessReady,
+  useHouseholdQuery,
+} from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import {
   importHistoryInfiniteQueryKey,
@@ -39,12 +40,14 @@ export const importHistoryPageQueryOptions = (
 export const useGetImportHistory = (
   limit = IMPORT_HUB_HISTORY_LIMIT
 ): UseQueryResult<ImportHistoryPage> => {
-  return useQuery(importHistoryPageQueryOptions(limit));
+  return useHouseholdQuery(importHistoryPageQueryOptions(limit));
 };
 
 export const useGetImportHistoryInfinite = (
   limit = IMPORT_HISTORY_PAGE_SIZE
 ): UseInfiniteQueryResult<InfiniteData<ImportHistoryPage>, Error> => {
+  const { isReady, access } = useAccess();
+  const householdReady = isHouseholdAccessReady(isReady, access);
   return useInfiniteQuery({
     queryKey: importHistoryInfiniteQueryKey(limit),
     queryFn: ({ pageParam }) =>
@@ -54,5 +57,6 @@ export const useGetImportHistoryInfinite = (
       }),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    enabled: householdReady,
   });
 };

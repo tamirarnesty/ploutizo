@@ -1,4 +1,5 @@
-import { queryOptions, useQuery } from '@tanstack/react-query';
+import { queryOptions } from '@tanstack/react-query';
+import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
 
@@ -17,5 +18,5 @@ export const householdOverviewQueryOptions = queryOptions({
 
 export const useGetHouseholdOverview =
   (): UseQueryResult<HouseholdOverview> => {
-    return useQuery(householdOverviewQueryOptions);
+    return useHouseholdQuery(householdOverviewQueryOptions);
   };
