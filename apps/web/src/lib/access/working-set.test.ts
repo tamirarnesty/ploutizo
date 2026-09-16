@@ -136,6 +136,15 @@ describe('claimsMatchAccess', () => {
     expect(claimsMatchAccess(token, alexInHouseholdA)).toBe(true);
     expect(claimsMatchAccess(token, alexInHouseholdB)).toBe(false);
   });
+
+  it('matches Clerk session tokens that nest the household id under o.id', () => {
+    const token = unsignedJwt({
+      sub: 'user_alex',
+      o: { id: 'org_a' },
+    });
+    expect(claimsMatchAccess(token, alexInHouseholdA)).toBe(true);
+    expect(claimsMatchAccess(token, alexInHouseholdB)).toBe(false);
+  });
 });
 
 describe('endWorkingSet', () => {

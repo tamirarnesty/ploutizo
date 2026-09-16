@@ -150,9 +150,13 @@ export const isAccessAligned = (
   return sameAccess(providerAccess, routeAccess);
 };
 
-const decodeBearerClaims = (
-  token: string
-): { sub?: unknown; org_id?: unknown } | null => {
+type BearerClaims = {
+  sub?: unknown;
+  org_id?: unknown;
+  o?: { id?: unknown };
+};
+
+const decodeBearerClaims = (token: string): BearerClaims | null => {
   const parts = token.split('.');
   if (parts.length < 2) {
     return null;
@@ -163,10 +167,21 @@ const decodeBearerClaims = (
       normalized.length + ((4 - (normalized.length % 4)) % 4),
       '='
     );
-    return JSON.parse(atob(padded)) as { sub?: unknown; org_id?: unknown };
+    return JSON.parse(atob(padded)) as BearerClaims;
   } catch {
     return null;
   }
+};
+
+const householdIdFromClaims = (claims: BearerClaims): string | undefined => {
+  if (typeof claims.org_id === 'string' && claims.org_id !== '') {
+    return claims.org_id;
+  }
+  const nestedId = claims.o?.id;
+  if (typeof nestedId === 'string' && nestedId !== '') {
+    return nestedId;
+  }
+  return undefined;
 };
 
 export const claimsMatchAccess = (
@@ -183,10 +198,11 @@ export const claimsMatchAccess = (
   if (claims.sub !== access.signedInMemberId) {
     return false;
   }
+  const householdId = householdIdFromClaims(claims);
   if (access.status === 'signed-in-no-household') {
-    return claims.org_id == null || claims.org_id === '';
+    return householdId === undefined;
   }
-  return claims.org_id === access.activeHouseholdId;
+  return householdId === access.activeHouseholdId;
 };
 
 export const enforceAccess = ((
