@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { clearSessionQueryCache, queryClient } from './queryClient';
+import { endWorkingSetQueryCache, queryClient } from './queryClient';
 
 const deferred = <T>() => {
   let resolve!: (value: T) => void;
@@ -11,19 +11,19 @@ const deferred = <T>() => {
   return { promise, resolve, reject };
 };
 
-describe('clearSessionQueryCache', () => {
+describe('endWorkingSetQueryCache', () => {
   afterEach(() => {
     queryClient.clear();
   });
 
-  it('empties cached queries so the next session cannot read prior data', () => {
+  it('empties cached queries so the next working set cannot read prior data', () => {
     queryClient.setQueryData(['transactions'], [{ id: 'txn_prior' }]);
     queryClient.setQueryData(['household-overview'], {
       name: 'Prior household',
     });
     queryClient.setQueryData(['accounts'], [{ id: 'acct_prior' }]);
 
-    clearSessionQueryCache();
+    endWorkingSetQueryCache();
 
     expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
     expect(queryClient.getQueryData(['transactions'])).toBeUndefined();
@@ -31,14 +31,14 @@ describe('clearSessionQueryCache', () => {
     expect(queryClient.getQueryData(['accounts'])).toBeUndefined();
   });
 
-  it('does not restore a late in-flight response after the session is cleared', async () => {
+  it('does not restore a late in-flight response after the working set is discarded', async () => {
     const pending = deferred<{ id: string }[]>();
     const fetchPromise = queryClient.fetchQuery({
       queryKey: ['transactions'],
       queryFn: () => pending.promise,
     });
 
-    clearSessionQueryCache();
+    endWorkingSetQueryCache();
     pending.resolve([{ id: 'txn_prior' }]);
     await fetchPromise.catch(() => undefined);
 
@@ -46,7 +46,7 @@ describe('clearSessionQueryCache', () => {
     expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
   });
 
-  it('does not restore a late mutation rollback after the session is cleared', async () => {
+  it('does not restore a late mutation rollback after the working set is discarded', async () => {
     const priorTransactions = [{ id: 'txn_prior' }];
     queryClient.setQueryData(['transactions'], priorTransactions);
 
@@ -66,7 +66,7 @@ describe('clearSessionQueryCache', () => {
     });
 
     const executePromise = mutation.execute(undefined);
-    clearSessionQueryCache();
+    endWorkingSetQueryCache();
     pending.reject(new Error('delete failed'));
     await executePromise.catch(() => undefined);
 
@@ -74,7 +74,7 @@ describe('clearSessionQueryCache', () => {
     expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
   });
 
-  it('still rolls back a failed mutation that belongs to the current session', async () => {
+  it('still rolls back a failed mutation that belongs to the current working set', async () => {
     const currentTransactions = [{ id: 'txn_current' }];
     queryClient.setQueryData(['transactions'], currentTransactions);
 

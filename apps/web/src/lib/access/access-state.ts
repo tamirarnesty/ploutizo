@@ -1,3 +1,5 @@
+import { redirect } from '@tanstack/react-router';
+
 export type AccessState =
   | { status: 'signed-out' }
   | { status: 'signed-in-no-household'; signedInMemberId: string }
@@ -19,11 +21,6 @@ export type AccessRedirect = '/sign-in/$' | '/onboarding' | '/dashboard';
 export type AccessNavigation = {
   to: AccessRedirect;
   search?: { redirect: string };
-};
-
-export type CacheIdentity = {
-  signedInMemberId: string | null;
-  activeHouseholdId: string | null;
 };
 
 export const toAccessState = ({
@@ -48,20 +45,23 @@ export const toAccessState = ({
   };
 };
 
-export const cacheIdentityFromAccess = (access: AccessState): CacheIdentity => {
-  if (access.status === 'signed-out') {
-    return { signedInMemberId: null, activeHouseholdId: null };
+export const sameAccess = (left: AccessState, right: AccessState): boolean => {
+  if (left.status === 'signed-out' || right.status === 'signed-out') {
+    return left.status === 'signed-out' && right.status === 'signed-out';
   }
-  if (access.status === 'signed-in-no-household') {
-    return {
-      signedInMemberId: access.signedInMemberId,
-      activeHouseholdId: null,
-    };
+  if (left.signedInMemberId !== right.signedInMemberId) {
+    return false;
   }
-  return {
-    signedInMemberId: access.signedInMemberId,
-    activeHouseholdId: access.activeHouseholdId,
-  };
+  if (
+    left.status === 'signed-in-no-household' ||
+    right.status === 'signed-in-no-household'
+  ) {
+    return (
+      left.status === 'signed-in-no-household' &&
+      right.status === 'signed-in-no-household'
+    );
+  }
+  return left.activeHouseholdId === right.activeHouseholdId;
 };
 
 export const resolveAccessRedirect = (
@@ -111,6 +111,9 @@ export const sanitizeReturnPath = (value: unknown): string | undefined => {
     if (url.origin !== RETURN_PATH_ORIGIN) {
       return undefined;
     }
+    if (url.pathname.startsWith('//')) {
+      return undefined;
+    }
     return `${url.pathname}${url.search}${url.hash}`;
   } catch {
     return undefined;
@@ -129,25 +132,83 @@ export const resolveAccessNavigation = (
   if (to !== '/sign-in/$') {
     return { to };
   }
-  const redirect = sanitizeReturnPath(requestedReturnPath);
-  return redirect ? { to, search: { redirect } } : { to };
+  const redirectPath = sanitizeReturnPath(requestedReturnPath);
+  return redirectPath ? { to, search: { redirect: redirectPath } } : { to };
 };
 
-export const canResumeAccessWork = (
-  clerkLoaded: boolean,
-  clerkAccess: AccessState,
+export const isAccessAligned = (
+  providerLoaded: boolean,
+  providerAccess: AccessState,
   routeAccess: AccessState | undefined
 ): boolean => {
-  if (!clerkLoaded) {
+  if (!providerLoaded) {
     return true;
   }
   if (!routeAccess) {
     return false;
   }
-  const clerkIdentity = cacheIdentityFromAccess(clerkAccess);
-  const routeIdentity = cacheIdentityFromAccess(routeAccess);
-  return (
-    clerkIdentity.signedInMemberId === routeIdentity.signedInMemberId &&
-    clerkIdentity.activeHouseholdId === routeIdentity.activeHouseholdId
-  );
+  return sameAccess(providerAccess, routeAccess);
+};
+
+const decodeBearerClaims = (
+  token: string
+): { sub?: unknown; org_id?: unknown } | null => {
+  const parts = token.split('.');
+  if (parts.length < 2) {
+    return null;
+  }
+  try {
+    const normalized = parts[1].replaceAll('-', '+').replaceAll('_', '/');
+    const padded = normalized.padEnd(
+      normalized.length + ((4 - (normalized.length % 4)) % 4),
+      '='
+    );
+    return JSON.parse(atob(padded)) as { sub?: unknown; org_id?: unknown };
+  } catch {
+    return null;
+  }
+};
+
+export const claimsMatchAccess = (
+  token: string,
+  access: AccessState
+): boolean => {
+  if (access.status === 'signed-out') {
+    return false;
+  }
+  const claims = decodeBearerClaims(token);
+  if (!claims || typeof claims.sub !== 'string') {
+    return false;
+  }
+  if (claims.sub !== access.signedInMemberId) {
+    return false;
+  }
+  if (access.status === 'signed-in-no-household') {
+    return claims.org_id == null || claims.org_id === '';
+  }
+  return claims.org_id === access.activeHouseholdId;
+};
+
+export const enforceAccess = ((
+  access: AccessState | undefined,
+  policy: AccessPolicy,
+  returnPath?: unknown
+): AccessState => {
+  const resolved = access ?? { status: 'signed-out' };
+  const target = resolveAccessNavigation(resolved, policy, returnPath);
+  if (target) {
+    throw redirect(target);
+  }
+  return resolved;
+}) as {
+  (
+    access: AccessState | undefined,
+    policy: 'active-household',
+    returnPath?: unknown
+  ): ActiveHouseholdAccess;
+  (
+    access: AccessState | undefined,
+    policy: AccessPolicy,
+    returnPath?: unknown
+  ): AccessState;
 };

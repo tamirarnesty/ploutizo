@@ -1,5 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { requireActiveHousehold } from '@/lib/auth/require-active-household';
 import {
   activeImportDraftsQueryOptions,
   importHistoryPageQueryOptions,
@@ -9,16 +8,15 @@ import { Import } from '../../components/imports/hub/Import';
 
 export const Route = createFileRoute('/_layout/import/')({
   loader: async ({ context }) => {
-    const access = requireActiveHousehold(context.access);
     await Promise.all([
       context.queryClient
-        .ensureQueryData(importTargetsQueryOptions(access))
+        .ensureQueryData(importTargetsQueryOptions())
         .catch(() => undefined),
       context.queryClient
-        .ensureQueryData(importHistoryPageQueryOptions(access))
+        .ensureQueryData(importHistoryPageQueryOptions())
         .catch(() => undefined),
       context.queryClient
-        .ensureQueryData(activeImportDraftsQueryOptions(access))
+        .ensureQueryData(activeImportDraftsQueryOptions())
         .catch(() => undefined),
     ]);
   },

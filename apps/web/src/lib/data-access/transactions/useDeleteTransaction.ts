@@ -1,15 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { householdQueryKey } from '@/lib/auth/household-query-key';
-import { useActiveHouseholdAccess } from '@/lib/auth/use-active-household-access';
 import { apiFetch } from '@/lib/queryClient';
 import type { TransactionListResponse } from './useGetTransactions';
 
 type Snapshot = [unknown[], TransactionListResponse | undefined][];
 
 export const useDeleteTransaction = () => {
-  const access = useActiveHouseholdAccess();
   const qc = useQueryClient();
-  const transactionsQueryKey = householdQueryKey(access, 'transactions');
+  const transactionsQueryKey = ['transactions'];
   return useMutation({
     mutationFn: (id: string) =>
       apiFetch<{ data: { id: string } }>(`/api/transactions/${id}`, {
@@ -57,7 +54,7 @@ export const useDeleteTransaction = () => {
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: transactionsQueryKey });
       void qc.invalidateQueries({
-        queryKey: householdQueryKey(access, 'settlements'),
+        queryKey: ['settlements'],
       });
     },
   });

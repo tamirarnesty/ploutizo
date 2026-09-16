@@ -3,7 +3,6 @@ import type {
   ImportDraftRow,
   RefundTargetFact,
 } from '@ploutizo/types';
-import type { ActiveHouseholdAccess } from '@/lib/auth/access-policy';
 import { queryClient } from '@/lib/queryClient';
 import { importDraftQueryKey } from './queryKeys';
 
@@ -13,12 +12,11 @@ export interface MergeImportDraftRefundTargetFactsInput {
 }
 
 export const mergeImportDraftRefundTargetFacts = (
-  access: ActiveHouseholdAccess,
   draftId: string,
   update: MergeImportDraftRefundTargetFactsInput
 ) => {
   queryClient.setQueryData<ImportDraft>(
-    importDraftQueryKey(access, draftId),
+    importDraftQueryKey(draftId),
     (prev) => {
       if (!prev) return prev;
       const nextFacts = { ...prev.refundTargetFacts };
@@ -52,7 +50,6 @@ export const resolveRefundTargetFactRemovals = (
 
 /** Merge PATCH fact deltas and sibling-safe GC for cleared/retargeted links. */
 export const applyImportDraftRefundTargetFactDelta = (
-  access: ActiveHouseholdAccess,
   draftId: string,
   input: {
     merge?: Record<string, RefundTargetFact>;
@@ -67,7 +64,7 @@ export const applyImportDraftRefundTargetFactDelta = (
     input.rows
   );
   if (!input.merge && removeIds.length === 0) return;
-  mergeImportDraftRefundTargetFacts(access, draftId, {
+  mergeImportDraftRefundTargetFacts(draftId, {
     merge: input.merge,
     removeIds,
   });

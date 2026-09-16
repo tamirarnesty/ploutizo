@@ -1,13 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
-  cacheIdentityFromAccess,
-  canResumeAccessWork,
+  isAccessAligned,
   resolveAccessNavigation,
   resolveAccessRedirect,
   sanitizeReturnPath,
   toAccessState,
-} from './access-policy';
-import type { AccessPolicy, AccessState } from './access-policy';
+} from './access-state';
+import type { AccessPolicy, AccessState } from './access-state';
 
 const signedOut: AccessState = { status: 'signed-out' };
 const signedInNoHousehold: AccessState = {
@@ -91,7 +90,7 @@ describe('resolveAccessRedirect', () => {
 });
 
 describe('toAccessState', () => {
-  it('maps a Clerk session without a household to signed-in with no household', () => {
+  it('maps a signed-in member without a household to signed-in with no household', () => {
     expect(
       toAccessState({
         isAuthenticated: true,
@@ -101,7 +100,7 @@ describe('toAccessState', () => {
     ).toEqual(signedInNoHousehold);
   });
 
-  it('maps a Clerk session with an organization to an active household', () => {
+  it('maps a signed-in member with an active household to that household', () => {
     expect(
       toAccessState({
         isAuthenticated: true,
@@ -109,15 +108,6 @@ describe('toAccessState', () => {
         orgId: 'org_123',
       })
     ).toEqual(signedInWithHousehold);
-  });
-});
-
-describe('cacheIdentityFromAccess', () => {
-  it('uses both the signed-in member and the active household', () => {
-    expect(cacheIdentityFromAccess(signedInWithHousehold)).toEqual({
-      signedInMemberId: 'user_123',
-      activeHouseholdId: 'org_123',
-    });
   });
 });
 
@@ -143,6 +133,11 @@ describe('sanitizeReturnPath', () => {
   it('rejects backslash-normalized open redirects', () => {
     expect(sanitizeReturnPath('/\\evil.example')).toBeUndefined();
   });
+
+  it('rejects paths that normalize to protocol-relative', () => {
+    expect(sanitizeReturnPath('/.//evil.example')).toBeUndefined();
+    expect(sanitizeReturnPath('/..//evil.example')).toBeUndefined();
+  });
 });
 
 describe('resolveAccessNavigation', () => {
@@ -166,16 +161,14 @@ describe('resolveAccessNavigation', () => {
   });
 });
 
-describe('canResumeAccessWork', () => {
-  it('allows work while Clerk is still loading the first snapshot', () => {
-    expect(canResumeAccessWork(false, signedOut, signedInWithHousehold)).toBe(
-      true
-    );
+describe('isAccessAligned', () => {
+  it('allows work while the identity client is still loading', () => {
+    expect(isAccessAligned(false, signedOut, signedInWithHousehold)).toBe(true);
   });
 
   it('does not resume household work against a stale route snapshot', () => {
     expect(
-      canResumeAccessWork(true, signedInWithHousehold, {
+      isAccessAligned(true, signedInWithHousehold, {
         status: 'signed-in-with-active-household',
         signedInMemberId: 'user_123',
         activeHouseholdId: 'org_other',
@@ -183,9 +176,13 @@ describe('canResumeAccessWork', () => {
     ).toBe(false);
   });
 
-  it('resumes only when Clerk identity and route access agree', () => {
+  it('resumes only when provider identity and route access agree', () => {
     expect(
-      canResumeAccessWork(true, signedInWithHousehold, signedInWithHousehold)
+      isAccessAligned(true, signedInWithHousehold, signedInWithHousehold)
     ).toBe(true);
+  });
+
+  it('treats a loaded signed-out provider as disagreement with a signed-in route', () => {
+    expect(isAccessAligned(true, signedOut, signedInWithHousehold)).toBe(false);
   });
 });

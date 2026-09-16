@@ -1,7 +1,6 @@
 import { SignIn } from '@clerk/tanstack-react-start';
 import { createFileRoute } from '@tanstack/react-router';
-import { enforceAccessPolicy } from '@/lib/auth/enforce-access';
-import { sanitizeReturnPath } from '@/lib/auth/access-policy';
+import { enforceAccess, sanitizeReturnPath } from '@/lib/access';
 
 const Page = () => {
   const { redirect: returnPath } = Route.useSearch();
@@ -21,7 +20,7 @@ export const Route = createFileRoute('/sign-in/$')({
     return redirect ? { redirect } : {};
   },
   beforeLoad: ({ context, location }) => {
-    enforceAccessPolicy(context.access, 'guest', location.href);
+    enforceAccess(context.access, 'guest', location.href);
   },
   component: Page,
 });

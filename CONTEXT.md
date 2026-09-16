@@ -26,6 +26,14 @@ _Avoid_: Current org, selected org, tenant context
 Whether the visitor is signed out, signed in with no household, or signed in with an **active household**.
 _Avoid_: Auth status, session state
 
+**Access policy**:
+A navigation rule derived from **access state** alone: guest, signed-in, or active-household.
+_Avoid_: Auth guard, route authorization
+
+**Access working set**:
+Household data the web app is treating as live for this **access state**. Changing **signed-in member** or **active household** discards it.
+_Avoid_: Session cache, identity-scoped query keys, hot-swap
+
 **Household principal**:
 The verified **signed-in member** and **active household** for an interactive household request. Derived only from verified identity claims. Future capabilities or role attach here; they are not a second identity.
 _Avoid_: Tenant context, org context, request user, treating a client-supplied household id as identity
@@ -387,7 +395,7 @@ The date range picker applies only to summary analytics (income, expenses, spend
 **Expert:** He is a **signed-in member** with no **active household** — not a **household member** yet. That is onboarding.
 
 **Dev:** Alex switches from one household to another.  
-**Expert:** Same **signed-in member**, different **active household**. Household data is always for the active household.
+**Expert:** Same **signed-in member**, different **active household**. The **access working set** is discarded. Household data is always for the active household.
 
 **Dev:** Alex is in the household but never uses the shared Amex — what shows?  
 **Expert:** Alex still has a row with **personal balance** $0. **Shared balance** is one number for the card. He’s not a **shared participant** on that card until he’s on a **shared transaction** there.

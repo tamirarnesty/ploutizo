@@ -3,12 +3,12 @@ import { createRouter as createTanStackRouter } from '@tanstack/react-router';
 import { createQueryClient, queryClient } from './lib/queryClient';
 import { routeTree } from './routeTree.gen';
 import type { QueryClient } from '@tanstack/react-query';
-import type { AccessState } from './lib/auth/access-policy';
+import type { AccessState } from './lib/access';
 import type { ImportReviewLocationState } from './lib/data-access/imports/importReviewLocationState';
 
 export interface RouterContext {
   queryClient: QueryClient;
-  access?: AccessState;
+  access: AccessState;
 }
 
 export const getRouter = () => {
@@ -20,6 +20,7 @@ export const getRouter = () => {
     routeTree,
     context: {
       queryClient: client,
+      access: { status: 'signed-out' },
     },
     // Query DehydratedState uses `unknown` keys; Router requires JSON-serializable types.
     dehydrate: () =>

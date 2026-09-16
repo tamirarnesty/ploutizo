@@ -1,8 +1,5 @@
 import { queryOptions, useQuery } from '@tanstack/react-query';
-import { householdQueryKey } from '@/lib/auth/household-query-key';
-import { useActiveHouseholdAccess } from '@/lib/auth/use-active-household-access';
 import { apiFetch } from '@/lib/queryClient';
-import type { ActiveHouseholdAccess } from '@/lib/auth/access-policy';
 import type { UseQueryResult } from '@tanstack/react-query';
 
 export interface MerchantRule {
@@ -22,13 +19,12 @@ export const fetchMerchantRules = async (): Promise<MerchantRule[]> => {
   return r.data;
 };
 
-export const merchantRulesQueryOptions = (access: ActiveHouseholdAccess) =>
+export const merchantRulesQueryOptions = () =>
   queryOptions({
-    queryKey: householdQueryKey(access, 'merchant-rules'),
+    queryKey: ['merchant-rules'],
     queryFn: fetchMerchantRules,
   });
 
 export const useGetMerchantRules = (): UseQueryResult<MerchantRule[]> => {
-  const access = useActiveHouseholdAccess();
-  return useQuery(merchantRulesQueryOptions(access));
+  return useQuery(merchantRulesQueryOptions());
 };

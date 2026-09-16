@@ -1,8 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@ploutizo/ui/components/sonner';
 import type { CreateSettlementInput } from '@ploutizo/validators';
-import { householdQueryKey } from '@/lib/auth/household-query-key';
-import { useActiveHouseholdAccess } from '@/lib/auth/use-active-household-access';
 import { apiFetch } from '@/lib/queryClient';
 
 // POST /api/settlements returns { data: TransactionRow } envelope per
@@ -10,7 +8,6 @@ import { apiFetch } from '@/lib/queryClient';
 // transaction row — invalidate both settlements and transactions so
 // card balances and the transactions table stay in sync without a refresh.
 export const useCreateSettlement = () => {
-  const access = useActiveHouseholdAccess();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: CreateSettlementInput) =>
@@ -21,10 +18,10 @@ export const useCreateSettlement = () => {
     onSuccess: () => {
       toast.success('Settlement recorded');
       void qc.invalidateQueries({
-        queryKey: householdQueryKey(access, 'settlements'),
+        queryKey: ['settlements'],
       });
       void qc.invalidateQueries({
-        queryKey: householdQueryKey(access, 'transactions'),
+        queryKey: ['transactions'],
       });
     },
     onError: () => {

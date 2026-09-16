@@ -1,7 +1,5 @@
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import type { ImportDraftSummary } from '@ploutizo/types';
-import { useActiveHouseholdAccess } from '@/lib/auth/use-active-household-access';
-import type { ActiveHouseholdAccess } from '@/lib/auth/access-policy';
 import { apiFetch } from '@/lib/queryClient';
 import { activeImportDraftsQueryKey } from './queryKeys';
 import type { UseQueryResult } from '@tanstack/react-query';
@@ -15,9 +13,9 @@ export const fetchActiveImportDrafts = async (): Promise<
   return r.data;
 };
 
-export const activeImportDraftsQueryOptions = (access: ActiveHouseholdAccess) =>
+export const activeImportDraftsQueryOptions = () =>
   queryOptions({
-    queryKey: activeImportDraftsQueryKey(access),
+    queryKey: activeImportDraftsQueryKey(),
     queryFn: fetchActiveImportDrafts,
   });
 
@@ -28,10 +26,8 @@ type UseGetImportDraftsOptions = {
 export const useGetImportDrafts = (
   options?: UseGetImportDraftsOptions
 ): UseQueryResult<ImportDraftSummary[]> => {
-  const access = useActiveHouseholdAccess();
-
   return useQuery({
-    ...activeImportDraftsQueryOptions(access),
+    ...activeImportDraftsQueryOptions(),
     enabled: options?.enabled ?? true,
   });
 };

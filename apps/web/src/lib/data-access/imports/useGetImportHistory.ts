@@ -4,8 +4,6 @@ import {
   useQuery,
 } from '@tanstack/react-query';
 import type { ImportHistoryPage } from '@ploutizo/types';
-import { useActiveHouseholdAccess } from '@/lib/auth/use-active-household-access';
-import type { ActiveHouseholdAccess } from '@/lib/auth/access-policy';
 import { apiFetch } from '@/lib/queryClient';
 import {
   importHistoryInfiniteQueryKey,
@@ -31,27 +29,24 @@ export const fetchImportHistoryPage = async (input: {
 };
 
 export const importHistoryPageQueryOptions = (
-  access: ActiveHouseholdAccess,
   limit = IMPORT_HUB_HISTORY_LIMIT
 ) =>
   queryOptions({
-    queryKey: importHistoryPageQueryKey(access, limit),
+    queryKey: importHistoryPageQueryKey(limit),
     queryFn: () => fetchImportHistoryPage({ limit }),
   });
 
 export const useGetImportHistory = (
   limit = IMPORT_HUB_HISTORY_LIMIT
 ): UseQueryResult<ImportHistoryPage> => {
-  const access = useActiveHouseholdAccess();
-  return useQuery(importHistoryPageQueryOptions(access, limit));
+  return useQuery(importHistoryPageQueryOptions(limit));
 };
 
 export const useGetImportHistoryInfinite = (
   limit = IMPORT_HISTORY_PAGE_SIZE
 ): UseInfiniteQueryResult<InfiniteData<ImportHistoryPage>, Error> => {
-  const access = useActiveHouseholdAccess();
   return useInfiniteQuery({
-    queryKey: importHistoryInfiniteQueryKey(access, limit),
+    queryKey: importHistoryInfiniteQueryKey(limit),
     queryFn: ({ pageParam }) =>
       fetchImportHistoryPage({
         limit,

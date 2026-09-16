@@ -4,11 +4,11 @@ import { MutationCache, QueryClient } from '@tanstack/react-query';
 const API_BASE_URL = import.meta.env.VITE_API_URL as string;
 
 export const createQueryClient = () => {
-  // Bumped on every session cache clear so callbacks from an older session cannot
-  // write the previous account's snapshots back into the shared query cache.
-  let queryCacheSessionEpoch = 0;
+  // Bumped when the access working set ends so callbacks from the previous
+  // household cannot write snapshots back into the shared query cache.
+  let queryCacheWorkingSetEpoch = 0;
 
-  const bindMutationCallbackToSession = <
+  const bindMutationCallbackToWorkingSet = <
     TCallback extends (...args: never[]) => unknown,
   >(
     startedAtEpoch: number,
@@ -18,34 +18,34 @@ export const createQueryClient = () => {
       return undefined;
     }
     return ((...args: Parameters<TCallback>) => {
-      if (startedAtEpoch !== queryCacheSessionEpoch) {
+      if (startedAtEpoch !== queryCacheWorkingSetEpoch) {
         return;
       }
       return callback(...args);
     }) as TCallback;
   };
 
-  const createSessionBoundMutationCache = () => {
+  const createWorkingSetBoundMutationCache = () => {
     const mutationCache = new MutationCache();
     const build = mutationCache.build.bind(mutationCache);
     mutationCache.build = ((client, options, state) => {
-      const startedAtEpoch = queryCacheSessionEpoch;
+      const startedAtEpoch = queryCacheWorkingSetEpoch;
       const mutation = build(client, options, state);
       mutation.setOptions({
         ...mutation.options,
-        onMutate: bindMutationCallbackToSession(
+        onMutate: bindMutationCallbackToWorkingSet(
           startedAtEpoch,
           mutation.options.onMutate
         ),
-        onSuccess: bindMutationCallbackToSession(
+        onSuccess: bindMutationCallbackToWorkingSet(
           startedAtEpoch,
           mutation.options.onSuccess
         ),
-        onError: bindMutationCallbackToSession(
+        onError: bindMutationCallbackToWorkingSet(
           startedAtEpoch,
           mutation.options.onError
         ),
-        onSettled: bindMutationCallbackToSession(
+        onSettled: bindMutationCallbackToWorkingSet(
           startedAtEpoch,
           mutation.options.onSettled
         ),
@@ -56,7 +56,7 @@ export const createQueryClient = () => {
   };
 
   const queryClient = new QueryClient({
-    mutationCache: createSessionBoundMutationCache(),
+    mutationCache: createWorkingSetBoundMutationCache(),
     defaultOptions: {
       queries: {
         // staleTime: 60s — stale-while-revalidate semantics (client-swr-dedup rule).
@@ -71,8 +71,8 @@ export const createQueryClient = () => {
 
   return {
     queryClient,
-    clearSessionQueryCache: () => {
-      queryCacheSessionEpoch += 1;
+    endWorkingSetQueryCache: () => {
+      queryCacheWorkingSetEpoch += 1;
       void queryClient.cancelQueries();
       queryClient.clear();
     },
@@ -83,12 +83,8 @@ const browserQuery = createQueryClient();
 
 export const queryClient = browserQuery.queryClient;
 
-// Drop in-flight work first so a late response cannot repopulate the cache
-// after sign-out, then wipe queries and mutations so the next session starts cold.
-// Increment the session epoch before clearing so already-running mutation
-// callbacks from the previous account are ignored if they settle afterward.
-export const clearSessionQueryCache = () => {
-  browserQuery.clearSessionQueryCache();
+export const endWorkingSetQueryCache = () => {
+  browserQuery.endWorkingSetQueryCache();
 };
 
 // Typed API fetch helper — all API calls go through this, never raw fetch
@@ -96,13 +92,16 @@ export const apiFetch = async <T>(
   path: string,
   options?: RequestInit
 ): Promise<T> => {
-  const { getBearerToken } = await import('@/lib/auth/get-bearer-token');
-  const token = await getBearerToken();
+  const { getHouseholdBearer } = await import('@/lib/access');
+  const token = await getHouseholdBearer();
+  if (!token) {
+    throw new Error('Household bearer unavailable');
+  }
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      Authorization: `Bearer ${token}`,
       ...options?.headers,
     },
   });

@@ -1,7 +1,4 @@
 import { queryOptions, useQuery } from '@tanstack/react-query';
-import { householdQueryKey } from '@/lib/auth/household-query-key';
-import { useActiveHouseholdAccess } from '@/lib/auth/use-active-household-access';
-import type { ActiveHouseholdAccess } from '@/lib/auth/access-policy';
 import { fetchTransactions } from './queries';
 import type { UseQueryResult } from '@tanstack/react-query';
 
@@ -91,18 +88,14 @@ export interface TransactionListResponse {
   limit: number;
 }
 
-export const transactionsQueryOptions = (
-  access: ActiveHouseholdAccess,
-  params: TransactionQueryParams
-) =>
+export const transactionsQueryOptions = (params: TransactionQueryParams) =>
   queryOptions({
-    queryKey: householdQueryKey(access, 'transactions', params),
+    queryKey: ['transactions', params],
     queryFn: () => fetchTransactions(params),
   });
 
 export const useGetTransactions = (
   params: TransactionQueryParams
 ): UseQueryResult<TransactionListResponse> => {
-  const access = useActiveHouseholdAccess();
-  return useQuery(transactionsQueryOptions(access, params));
+  return useQuery(transactionsQueryOptions(params));
 };

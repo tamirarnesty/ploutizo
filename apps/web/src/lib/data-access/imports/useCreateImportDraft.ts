@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@ploutizo/ui/components/sonner';
 import type { CreateImportDraftResponse } from '@ploutizo/types';
 import type { CreateImportDraftInput } from '@ploutizo/validators';
-import { useActiveHouseholdAccess } from '@/lib/auth/use-active-household-access';
 import { apiFetch } from '@/lib/queryClient';
 import {
   activeImportDraftsQueryKey,
@@ -11,7 +10,6 @@ import {
 } from './queryKeys';
 
 export const useCreateImportDraft = () => {
-  const access = useActiveHouseholdAccess();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: CreateImportDraftInput) =>
@@ -22,13 +20,10 @@ export const useCreateImportDraft = () => {
     onSuccess: (response) => {
       if (response.kind === 'mapping_required') return;
       void qc.invalidateQueries({
-        queryKey: activeImportDraftsQueryKey(access),
+        queryKey: activeImportDraftsQueryKey(),
       });
-      void qc.invalidateQueries({ queryKey: importHistoryQueryKey(access) });
-      qc.setQueryData(
-        importDraftQueryKey(access, response.data.id),
-        response.data
-      );
+      void qc.invalidateQueries({ queryKey: importHistoryQueryKey() });
+      qc.setQueryData(importDraftQueryKey(response.data.id), response.data);
       if (response.meta.reusedExisting) {
         toast.info('Resumed existing draft for this card.');
       } else {

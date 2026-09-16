@@ -1,6 +1,4 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { householdQueryKey } from '@/lib/auth/household-query-key';
-import { useActiveHouseholdAccess } from '@/lib/auth/use-active-household-access';
 import { apiFetch } from '@/lib/queryClient';
 import { useOptimisticListMutation } from '../optimisticListMutation';
 import type { Tag } from './useGetTags';
@@ -22,9 +20,8 @@ export const createTag = async (body: CreateTagBody): Promise<Tag> => {
 };
 
 export const useCreateTag = () => {
-  const access = useActiveHouseholdAccess();
   const qc = useQueryClient();
-  const tagsQueryKey = householdQueryKey(access, 'tags');
+  const tagsQueryKey = ['tags'];
   return useOptimisticListMutation<Tag, CreateTagBody, Tag>({
     queryKey: tagsQueryKey,
     mutationFn: createTag,

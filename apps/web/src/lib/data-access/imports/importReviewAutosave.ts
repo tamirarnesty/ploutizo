@@ -1,3 +1,5 @@
+import { registerWorkingSetStore } from '@/lib/access/working-set';
+
 export type ImportReviewAutosaveStatus = 'idle' | 'saving' | 'saved' | 'failed';
 
 interface DraftAutosaveState {
@@ -241,8 +243,14 @@ export const waitForImportReviewAutosaveSettled = (draftId: string) =>
     check();
   });
 
-export const resetImportReviewAutosaveForTests = () => {
+export const endImportReviewAutosave = () => {
   draftStates.clear();
   draftSnapshots.clear();
   listeners.clear();
 };
+
+registerWorkingSetStore({
+  end: () => {
+    endImportReviewAutosave();
+  },
+});

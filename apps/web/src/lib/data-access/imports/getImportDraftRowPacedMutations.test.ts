@@ -6,18 +6,17 @@ import {
   toPersistedImportDraftRow,
 } from '@/components/imports/test-fixtures/importDraft';
 import { queryClient } from '@/lib/queryClient';
-import { testActiveHouseholdAccess } from '@/test/household-access';
 import { fetchUpdateImportDraftRow } from './fetchUpdateImportDraftRow';
 import {
   IMPORT_ROW_PACE_WAIT_MS,
+  endImportDraftRowPacedMutations,
   getImportDraftRowPacedMutations,
-  resetImportDraftRowPacedMutationsForTests,
 } from './getImportDraftRowPacedMutations';
 import {
+  endImportDraftRowsCollections,
   getImportDraftRowsCollection,
-  resetImportDraftRowsCollectionsForTests,
 } from './getImportDraftRowsCollection';
-import { resetImportReviewAutosaveForTests } from './importReviewAutosave';
+import { endImportReviewAutosave } from './importReviewAutosave';
 import { importDraftQueryKey } from './queryKeys';
 import { fetchImportDraft } from './useGetImportDraft';
 
@@ -44,30 +43,24 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
 
   beforeEach(() => {
     queryClient.clear();
-    queryClient.setQueryData(
-      importDraftQueryKey(testActiveHouseholdAccess, draft.id),
-      draft
-    );
+    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
     vi.mocked(fetchImportDraft).mockReset();
     vi.mocked(fetchImportDraft).mockResolvedValue(draft);
     vi.mocked(fetchUpdateImportDraftRow).mockReset();
-    resetImportReviewAutosaveForTests();
-    resetImportDraftRowPacedMutationsForTests();
+    endImportReviewAutosave();
+    endImportDraftRowPacedMutations();
   });
 
   afterEach(async () => {
     vi.useRealTimers();
-    resetImportDraftRowPacedMutationsForTests();
-    resetImportReviewAutosaveForTests();
-    await resetImportDraftRowsCollectionsForTests();
+    endImportDraftRowPacedMutations();
+    endImportReviewAutosave();
+    await endImportDraftRowsCollections();
     queryClient.clear();
   });
 
   it('merges durable fields and re-derives status without trusting server status', async () => {
-    const collection = getImportDraftRowsCollection(
-      testActiveHouseholdAccess,
-      draft.id
-    );
+    const collection = getImportDraftRowsCollection(draft.id);
     await collection.preload();
 
     vi.mocked(fetchUpdateImportDraftRow).mockResolvedValue({
@@ -78,11 +71,7 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
     } satisfies UpdateImportDraftRowResult);
 
     vi.useFakeTimers();
-    const mutate = getImportDraftRowPacedMutations(
-      testActiveHouseholdAccess,
-      draft.id,
-      'row_1'
-    );
+    const mutate = getImportDraftRowPacedMutations(draft.id, 'row_1');
     mutate({ patch: { reviewCategoryId: null } });
 
     await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
@@ -98,10 +87,7 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
   });
 
   it('keeps newer live field values when a slower PATCH resolves', async () => {
-    const collection = getImportDraftRowsCollection(
-      testActiveHouseholdAccess,
-      draft.id
-    );
+    const collection = getImportDraftRowsCollection(draft.id);
     await collection.preload();
 
     let resolveFirst: ((value: UpdateImportDraftRowResult) => void) | undefined;
@@ -113,11 +99,7 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
     );
 
     vi.useFakeTimers();
-    const mutate = getImportDraftRowPacedMutations(
-      testActiveHouseholdAccess,
-      draft.id,
-      'row_1'
-    );
+    const mutate = getImportDraftRowPacedMutations(draft.id, 'row_1');
     mutate({ patch: { reviewDescription: 'Attempt A' } });
     await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
 
@@ -137,10 +119,7 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
   });
 
   it('keeps live working-copy values when PATCH fails', async () => {
-    const collection = getImportDraftRowsCollection(
-      testActiveHouseholdAccess,
-      draft.id
-    );
+    const collection = getImportDraftRowsCollection(draft.id);
     await collection.preload();
 
     vi.mocked(fetchUpdateImportDraftRow).mockRejectedValue(
@@ -148,11 +127,7 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
     );
 
     vi.useFakeTimers();
-    const mutate = getImportDraftRowPacedMutations(
-      testActiveHouseholdAccess,
-      draft.id,
-      'row_1'
-    );
+    const mutate = getImportDraftRowPacedMutations(draft.id, 'row_1');
     mutate({ patch: { reviewDescription: 'Kept locally' } });
     await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
     await vi.runAllTimersAsync();
@@ -185,22 +160,15 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
       ],
     });
     queryClient.setQueryData(
-      importDraftQueryKey(testActiveHouseholdAccess, guardedDraft.id),
+      importDraftQueryKey(guardedDraft.id),
       guardedDraft
     );
     vi.mocked(fetchImportDraft).mockResolvedValue(guardedDraft);
-    const collection = getImportDraftRowsCollection(
-      testActiveHouseholdAccess,
-      guardedDraft.id
-    );
+    const collection = getImportDraftRowsCollection(guardedDraft.id);
     await collection.preload();
 
     vi.useFakeTimers();
-    const mutate = getImportDraftRowPacedMutations(
-      testActiveHouseholdAccess,
-      guardedDraft.id,
-      'row_1'
-    );
+    const mutate = getImportDraftRowPacedMutations(guardedDraft.id, 'row_1');
     mutate({ patch: { reviewMatchedTransactionId: 'tx_other' } });
     await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
     await vi.runAllTimersAsync();
@@ -234,7 +202,7 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
       ],
     });
     queryClient.setQueryData(
-      importDraftQueryKey(testActiveHouseholdAccess, guardedDraft.id),
+      importDraftQueryKey(guardedDraft.id),
       guardedDraft
     );
     vi.mocked(fetchImportDraft).mockResolvedValue(guardedDraft);
@@ -244,18 +212,11 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
         updatedAt: '2026-05-20T12:00:05.000Z',
       }),
     } satisfies UpdateImportDraftRowResult);
-    const collection = getImportDraftRowsCollection(
-      testActiveHouseholdAccess,
-      guardedDraft.id
-    );
+    const collection = getImportDraftRowsCollection(guardedDraft.id);
     await collection.preload();
 
     vi.useFakeTimers();
-    const mutate = getImportDraftRowPacedMutations(
-      testActiveHouseholdAccess,
-      guardedDraft.id,
-      'row_1'
-    );
+    const mutate = getImportDraftRowPacedMutations(guardedDraft.id, 'row_1');
     mutate({ patch: { reviewMatchedTransactionId: 'tx_same' } });
     await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
     await vi.runAllTimersAsync();

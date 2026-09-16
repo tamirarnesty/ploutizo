@@ -2,7 +2,6 @@ import { matchDecisionsForSelectedRows } from '@ploutizo/utils';
 import { createOptimisticAction } from '@tanstack/db';
 import type { ImportDraft, ImportDraftPersistedRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowSelectionInput } from '@ploutizo/validators';
-import type { ActiveHouseholdAccess } from '@/lib/auth/access-policy';
 import { queryClient } from '@/lib/queryClient';
 import {
   getImportReviewAutosaveSnapshot,
@@ -18,24 +17,22 @@ import { importDraftQueryKey } from './queryKeys';
 import { rederiveImportDraftWorkingCopy } from './rederiveImportDraftWorkingCopy';
 
 interface SelectionVariables {
-  access: ActiveHouseholdAccess;
   draftId: string;
   rowIds: string[];
   selectedForImport: boolean;
 }
 
 const applySelectionMatchDecisions = (
-  access: ActiveHouseholdAccess,
   draftId: string,
   rowIds: string[],
   selectedForImport: boolean
 ) => {
   const importDraft = queryClient.getQueryData<ImportDraft>(
-    importDraftQueryKey(access, draftId)
+    importDraftQueryKey(draftId)
   );
   if (!importDraft?.account.id) return;
 
-  const collection = getImportDraftRowsCollection(access, draftId);
+  const collection = getImportDraftRowsCollection(draftId);
   const rowIdSet = new Set(rowIds);
   const nextRows = collection.toArray.map((row) =>
     rowIdSet.has(row.id) ? { ...row, selectedForImport } : row
@@ -52,20 +49,19 @@ const applySelectionMatchDecisions = (
       draft.selectedForImport = selectedForImport;
       const decided = patches.get(draft.id) ?? null;
       draft.reviewMatchedTransactionId = decided
-        ? importMatchTransactionIdForDraft(access, draftId, decided)
+        ? importMatchTransactionIdForDraft(draftId, decided)
         : null;
     }
   });
 };
 
 const confirmSelectionIntoCollection = (
-  access: ActiveHouseholdAccess,
   draftId: string,
   serverRows: ImportDraftPersistedRow[] | null,
   rowIds: string[],
   selectedForImport: boolean
 ) => {
-  const collection = getImportDraftRowsCollection(access, draftId);
+  const collection = getImportDraftRowsCollection(draftId);
   const serverById = serverRows
     ? new Map(serverRows.map((row) => [row.id, row]))
     : null;
@@ -97,18 +93,18 @@ const confirmSelectionIntoCollection = (
           : live.updatedAt,
     });
   }
-  rederiveImportDraftWorkingCopy(access, draftId);
+  rederiveImportDraftWorkingCopy(draftId);
 };
 
 const persistSelection = createOptimisticAction<SelectionVariables>({
-  onMutate: ({ access, draftId, rowIds, selectedForImport }) => {
-    applySelectionMatchDecisions(access, draftId, rowIds, selectedForImport);
-    rederiveImportDraftWorkingCopy(access, draftId);
+  onMutate: ({ draftId, rowIds, selectedForImport }) => {
+    applySelectionMatchDecisions(draftId, rowIds, selectedForImport);
+    rederiveImportDraftWorkingCopy(draftId);
   },
-  mutationFn: async ({ access, draftId, rowIds, selectedForImport }) => {
+  mutationFn: async ({ draftId, rowIds, selectedForImport }) => {
     markImportReviewSelectionStart(draftId);
     // Field persists first when ordering matters (ADR 0005).
-    await flushImportDraftRowPacedMutations(access, draftId);
+    await flushImportDraftRowPacedMutations(draftId);
 
     const body: UpdateImportDraftRowSelectionInput = {
       rowIds,
@@ -121,7 +117,6 @@ const persistSelection = createOptimisticAction<SelectionVariables>({
         body
       );
       confirmSelectionIntoCollection(
-        access,
         draftId,
         serverRows,
         rowIds,
@@ -129,37 +124,27 @@ const persistSelection = createOptimisticAction<SelectionVariables>({
       );
       markImportReviewSelectionSuccess(draftId, rowIds);
     } catch {
-      confirmSelectionIntoCollection(
-        access,
-        draftId,
-        null,
-        rowIds,
-        selectedForImport
-      );
+      confirmSelectionIntoCollection(draftId, null, rowIds, selectedForImport);
       markImportReviewSelectionFailure(draftId, rowIds);
     }
   },
 });
 
 export const persistImportDraftSelection = (
-  access: ActiveHouseholdAccess,
   draftId: string,
   rowIds: string[],
   selectedForImport: boolean
 ) => {
   if (rowIds.length === 0) return;
-  persistSelection({ access, draftId, rowIds, selectedForImport });
+  persistSelection({ draftId, rowIds, selectedForImport });
 };
 
 /** Re-persist failed selection from the live working copy (not the original intent). */
-export const retryFailedImportDraftSelection = (
-  access: ActiveHouseholdAccess,
-  draftId: string
-) => {
+export const retryFailedImportDraftSelection = (draftId: string) => {
   const { failedSelectionRowIds } = getImportReviewAutosaveSnapshot(draftId);
   if (failedSelectionRowIds.length === 0) return;
 
-  const collection = getImportDraftRowsCollection(access, draftId);
+  const collection = getImportDraftRowsCollection(draftId);
   const byValue = new Map<boolean, string[]>();
   for (const rowId of failedSelectionRowIds) {
     const live = collection.get(rowId);
@@ -170,6 +155,6 @@ export const retryFailedImportDraftSelection = (
   }
 
   for (const [selectedForImport, rowIds] of byValue) {
-    persistImportDraftSelection(access, draftId, rowIds, selectedForImport);
+    persistImportDraftSelection(draftId, rowIds, selectedForImport);
   }
 };

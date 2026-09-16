@@ -1,6 +1,4 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { householdQueryKey } from '@/lib/auth/household-query-key';
-import { useActiveHouseholdAccess } from '@/lib/auth/use-active-household-access';
 import { apiFetch } from '@/lib/queryClient';
 import type { Category } from './useGetCategories';
 
@@ -21,13 +19,12 @@ export const createCategory = async (
 };
 
 export const useCreateCategory = () => {
-  const access = useActiveHouseholdAccess();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: createCategory,
     onSettled: () =>
       qc.invalidateQueries({
-        queryKey: householdQueryKey(access, 'categories'),
+        queryKey: ['categories'],
       }),
   });
 };

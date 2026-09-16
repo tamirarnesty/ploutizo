@@ -14,8 +14,7 @@ import appCss from '@ploutizo/ui/globals.css?url';
 import { ThemeProvider } from '@ploutizo/ui/components/theme-provider';
 import { Toaster } from '@ploutizo/ui/components/sonner';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
-import { AccessBoundary } from '../lib/auth/access-boundary';
-import { resolveAccess } from '../lib/auth/resolve-access';
+import { AccessGate, resolveAccess } from '../lib/access';
 import { MoneyLocaleProvider } from '../lib/money/money-locale';
 import { AppDevtools } from '../components/devtools/AppDevtools';
 import { NotFound } from '../components/not-found/NotFound';
@@ -46,7 +45,7 @@ const RootDocument = ({ children }: { children: React.ReactNode }) => {
                   afterSignOutUrl="/sign-in/$"
                 >
                   <MoneyLocaleProvider>
-                    <AccessBoundary>{children}</AccessBoundary>
+                    <AccessGate>{children}</AccessGate>
                     <Toaster />
                     <AppDevtools />
                   </MoneyLocaleProvider>

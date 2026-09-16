@@ -2,13 +2,13 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { render, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { queryClient } from '@/lib/queryClient';
-import { useAccessBoundary } from './access-boundary';
+import { useAccessGate } from './AccessGate';
 import {
-  getClientBearerForTests,
+  getClientHouseholdBearer,
   rememberTransitionCredential,
-  resetClientBearerForTests,
-} from './get-bearer-token';
-import type { AccessState } from './access-policy';
+  resetWorkingSetForTests,
+} from './working-set';
+import type { AccessState } from './access-state';
 import type { ReactNode } from 'react';
 
 const authState = vi.hoisted(() => ({
@@ -16,7 +16,8 @@ const authState = vi.hoisted(() => ({
   isSignedIn: false as boolean,
   userId: undefined as string | null | undefined,
   orgId: undefined as string | null | undefined,
-  getToken: () => Promise.resolve(null as string | null),
+  getToken: (_options?: { skipCache?: boolean }) =>
+    Promise.resolve(null as string | null),
 }));
 
 const routeAccess = vi.hoisted(() => ({
@@ -56,7 +57,20 @@ const householdB: AccessState = {
   activeHouseholdId: 'org_b',
 };
 
-const seedPriorSessionCache = () => {
+const unsignedJwt = (payload: Record<string, unknown>) => {
+  const body = btoa(JSON.stringify(payload))
+    .replaceAll('+', '-')
+    .replaceAll('/', '_')
+    .replace(/=+$/, '');
+  return `hdr.${body}.sig`;
+};
+
+const householdAJwt = unsignedJwt({
+  sub: 'user_a',
+  org_id: 'org_a',
+});
+
+const seedPriorWorkingSet = () => {
   queryClient.setQueryData(['transactions'], [{ id: 'txn_prior' }]);
   queryClient.setQueryData(['household-overview'], { name: 'Prior household' });
   queryClient.setQueryData(['accounts'], [{ id: 'acct_prior' }]);
@@ -72,10 +86,10 @@ const signInAs = (
   routeAccess.current = access;
 };
 
-describe('useAccessBoundary', () => {
+describe('useAccessGate', () => {
   beforeEach(() => {
     queryClient.clear();
-    resetClientBearerForTests();
+    resetWorkingSetForTests();
     invalidateRouter.mockClear();
     authState.isLoaded = false;
     authState.isSignedIn = false;
@@ -87,12 +101,12 @@ describe('useAccessBoundary', () => {
 
   afterEach(() => {
     queryClient.clear();
-    resetClientBearerForTests();
+    resetWorkingSetForTests();
   });
 
-  it('keeps the first loaded session cache and clears when the signed-in member signs out', () => {
-    seedPriorSessionCache();
-    const { rerender } = renderHook(() => useAccessBoundary(), { wrapper });
+  it('keeps the first loaded working set and discards it when the signed-in member signs out', () => {
+    seedPriorWorkingSet();
+    const { rerender } = renderHook(() => useAccessGate(), { wrapper });
 
     signInAs(householdA);
     rerender();
@@ -111,15 +125,15 @@ describe('useAccessBoundary', () => {
     expect(invalidateRouter).toHaveBeenCalled();
   });
 
-  it('clears leftover cache and pauses work when the active household changes', () => {
-    const { result, rerender } = renderHook(() => useAccessBoundary(), {
+  it('discards leftover cache and pauses work when the active household changes', () => {
+    const { result, rerender } = renderHook(() => useAccessGate(), {
       wrapper,
     });
 
     signInAs(householdA);
     rerender();
 
-    seedPriorSessionCache();
+    seedPriorWorkingSet();
     authState.orgId = 'org_b';
     rerender();
 
@@ -143,8 +157,8 @@ describe('useAccessBoundary', () => {
     );
 
     signInAs(householdA);
-    seedPriorSessionCache();
-    const { result, rerender } = renderHook(() => useAccessBoundary(), {
+    seedPriorWorkingSet();
+    const { result, rerender } = renderHook(() => useAccessGate(), {
       wrapper,
     });
     render(renderTree(result.current));
@@ -163,49 +177,48 @@ describe('useAccessBoundary', () => {
     expect(result.current).toBe(true);
   });
 
-  it('keeps the loaded session cache when Clerk catches up from signed-out to signed-in', () => {
-    seedPriorSessionCache();
-    const { rerender } = renderHook(() => useAccessBoundary(), { wrapper });
-
-    authState.isLoaded = true;
-    authState.isSignedIn = false;
-    rerender();
-
-    expect(queryClient.getQueryData(['transactions'])).toEqual([
-      { id: 'txn_prior' },
-    ]);
+  it('ends the working set when the route snapshot lags the loaded provider', () => {
+    const { result, rerender } = renderHook(() => useAccessGate(), {
+      wrapper,
+    });
 
     signInAs(householdA);
     rerender();
+    seedPriorWorkingSet();
 
-    expect(queryClient.getQueryData(['transactions'])).toEqual([
-      { id: 'txn_prior' },
-    ]);
-  });
-
-  it('keeps the transition bearer while Clerk React is still catching up after login', async () => {
-    authState.isLoaded = true;
-    authState.isSignedIn = false;
-    const { rerender } = renderHook(() => useAccessBoundary(), { wrapper });
-
-    rememberTransitionCredential('session-jwt', householdA);
+    routeAccess.current = householdB;
     rerender();
 
-    await expect(getClientBearerForTests()).resolves.toBe('session-jwt');
+    expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
+    expect(invalidateRouter).toHaveBeenCalled();
+    expect(result.current).toBe(false);
+  });
+
+  it('ends the working set and invalidates when a loaded provider is signed-out against a signed-in route', () => {
+    seedPriorWorkingSet();
+    routeAccess.current = householdA;
+    const { rerender } = renderHook(() => useAccessGate(), { wrapper });
+
+    authState.isLoaded = true;
+    authState.isSignedIn = false;
+    rerender();
+
+    expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
+    expect(invalidateRouter).toHaveBeenCalled();
   });
 
   it('uses the transition bearer when Clerk is signed in but getToken is still empty', async () => {
-    rememberTransitionCredential('session-jwt', householdA);
+    rememberTransitionCredential(householdAJwt, householdA);
     signInAs(householdA);
-    renderHook(() => useAccessBoundary(), { wrapper });
+    renderHook(() => useAccessGate(), { wrapper });
 
-    await expect(getClientBearerForTests()).resolves.toBe('session-jwt');
+    await expect(getClientHouseholdBearer()).resolves.toBe(householdAJwt);
   });
 
   it('drops the remembered bearer when the signed-in member signs out', async () => {
-    rememberTransitionCredential('session-jwt', householdA);
+    rememberTransitionCredential(householdAJwt, householdA);
     signInAs(householdA);
-    const { rerender } = renderHook(() => useAccessBoundary(), { wrapper });
+    const { rerender } = renderHook(() => useAccessGate(), { wrapper });
 
     authState.isSignedIn = false;
     authState.userId = null;
@@ -213,6 +226,18 @@ describe('useAccessBoundary', () => {
     routeAccess.current = { status: 'signed-out' };
     rerender();
 
-    await expect(getClientBearerForTests()).resolves.toBeNull();
+    await expect(getClientHouseholdBearer()).resolves.toBeNull();
+  });
+
+  it('asks Clerk for a token with skipCache', async () => {
+    const getToken = vi.fn((_options?: { skipCache?: boolean }) =>
+      Promise.resolve(null)
+    );
+    authState.getToken = getToken;
+    signInAs(householdA);
+    renderHook(() => useAccessGate(), { wrapper });
+
+    await getClientHouseholdBearer();
+    expect(getToken).toHaveBeenCalledWith({ skipCache: true });
   });
 });

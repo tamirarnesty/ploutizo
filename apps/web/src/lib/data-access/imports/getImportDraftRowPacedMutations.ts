@@ -5,7 +5,7 @@ import type {
   UpdateImportDraftRowResult,
 } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
-import type { ActiveHouseholdAccess } from '@/lib/auth/access-policy';
+import { registerWorkingSetStore } from '@/lib/access/working-set';
 import {
   getImportReviewAutosaveSnapshot,
   markImportReviewPending,
@@ -84,7 +84,6 @@ const isLiveNewerField = (
   !valuesEqual(live[key], original[key]);
 
 const syncRefundTargetFacts = (
-  access: ActiveHouseholdAccess,
   draftId: string,
   patch: UpdateImportDraftRowInput,
   original: ImportDraftRow,
@@ -94,8 +93,8 @@ const syncRefundTargetFacts = (
     patch,
     'reviewRefundOf'
   );
-  const collection = getImportDraftRowsCollection(access, draftId);
-  applyImportDraftRefundTargetFactDelta(access, draftId, {
+  const collection = getImportDraftRowsCollection(draftId);
+  applyImportDraftRefundTargetFactDelta(draftId, {
     merge: refundTargetFacts,
     previousRefundOf: touchedRefundOf ? original.reviewRefundOf : undefined,
     nextRefundOf: touchedRefundOf ? patch.reviewRefundOf : undefined,
@@ -109,7 +108,6 @@ const syncRefundTargetFacts = (
  * Always writeUpdate before mutationFn returns so dropping optimistic state does not regress.
  */
 const confirmPersistIntoCollection = (
-  access: ActiveHouseholdAccess,
   collection: ReturnType<typeof getImportDraftRowsCollection>,
   server: UpdateImportDraftRowResult | null,
   attempted: ImportDraftRow,
@@ -122,7 +120,7 @@ const confirmPersistIntoCollection = (
 
   if (!serverRow) {
     collection.utils.writeUpdate(live ?? attempted);
-    rederiveImportDraftWorkingCopy(access, draftId);
+    rederiveImportDraftWorkingCopy(draftId);
     return;
   }
 
@@ -149,14 +147,8 @@ const confirmPersistIntoCollection = (
   }
 
   collection.utils.writeUpdate(next);
-  syncRefundTargetFacts(
-    access,
-    draftId,
-    patch,
-    original,
-    server?.refundTargetFacts
-  );
-  rederiveImportDraftWorkingCopy(access, draftId);
+  syncRefundTargetFacts(draftId, patch, original, server?.refundTargetFacts);
+  rederiveImportDraftWorkingCopy(draftId);
 };
 
 const patchFromLiveKeys = (
@@ -175,20 +167,15 @@ const patchFromLiveKeys = (
 };
 
 const applyOptimisticRowPatch = (
-  access: ActiveHouseholdAccess,
   draftId: string,
   rowId: string,
   patch: UpdateImportDraftRowInput
 ) => {
-  const collection = getImportDraftRowsCollection(access, draftId);
+  const collection = getImportDraftRowsCollection(draftId);
   const rowsForEval = collection.toArray.map((row) =>
     row.id === rowId ? { ...row, ...patch } : row
   );
-  const evaluations = evaluateImportDraftWorkingCopy(
-    access,
-    draftId,
-    rowsForEval
-  );
+  const evaluations = evaluateImportDraftWorkingCopy(draftId, rowsForEval);
 
   collection.update(rowId, (draft) => {
     Object.assign(draft, patch);
@@ -199,29 +186,25 @@ const applyOptimisticRowPatch = (
   });
 
   if (evaluations) {
-    rederiveImportDraftWorkingCopy(access, draftId, {
+    rederiveImportDraftWorkingCopy(draftId, {
       evaluations,
       skipIds: new Set([rowId]),
     });
   }
 };
 
-const createRowPacedMutations = (
-  access: ActiveHouseholdAccess,
-  draftId: string,
-  rowId: string
-) => {
+const createRowPacedMutations = (draftId: string, rowId: string) => {
   const strategy = debounceStrategy({ wait: IMPORT_ROW_PACE_WAIT_MS });
   let latestTx: Transaction | null = null;
 
   const mutate = createPacedMutations<ImportDraftRowPatchVariables>({
     onMutate: ({ patch }) => {
       markImportReviewPending(draftId, rowId);
-      applyOptimisticRowPatch(access, draftId, rowId, patch);
+      applyOptimisticRowPatch(draftId, rowId, patch);
     },
     mutationFn: async ({ transaction }) => {
       markImportReviewPersistStart(draftId, rowId);
-      const collection = getImportDraftRowsCollection(access, draftId);
+      const collection = getImportDraftRowsCollection(draftId);
       const mutation = transaction.mutations.find(
         (entry) => entry.key === rowId
       );
@@ -246,7 +229,7 @@ const createRowPacedMutations = (
 
       if (Object.keys(patch).length === 0) {
         collection.utils.writeUpdate(attempted);
-        rederiveImportDraftWorkingCopy(access, draftId);
+        rederiveImportDraftWorkingCopy(draftId);
         markImportReviewPersistSuccess(draftId, rowId);
         return;
       }
@@ -255,7 +238,6 @@ const createRowPacedMutations = (
       try {
         const server = await fetchUpdateImportDraftRow(rowId, patch);
         confirmPersistIntoCollection(
-          access,
           collection,
           server,
           attempted,
@@ -267,7 +249,6 @@ const createRowPacedMutations = (
       } catch {
         // Keep working-copy edits (ADR 0005) — do not throw (avoids optimistic rollback).
         confirmPersistIntoCollection(
-          access,
           collection,
           null,
           attempted,
@@ -282,7 +263,7 @@ const createRowPacedMutations = (
   });
 
   const wrappedMutate = (variables: ImportDraftRowPatchVariables) => {
-    const patch = sanitizeImportMatchPatch(access, draftId, variables.patch);
+    const patch = sanitizeImportMatchPatch(draftId, variables.patch);
     if (Object.keys(patch).length === 0) return;
     const tx = mutate({ patch });
     latestTx = tx;
@@ -314,35 +295,25 @@ type RowPacedEntry = ReturnType<typeof createRowPacedMutations>;
 
 const rowPacedMutations = new Map<string, RowPacedEntry>();
 
-const pacedKey = (
-  access: ActiveHouseholdAccess,
-  draftId: string,
-  rowId: string
-) =>
-  `${access.signedInMemberId}:${access.activeHouseholdId}:${draftId}:${rowId}`;
+const pacedKey = (draftId: string, rowId: string) => `${draftId}:${rowId}`;
 
-const pacedDraftPrefix = (access: ActiveHouseholdAccess, draftId: string) =>
-  `${access.signedInMemberId}:${access.activeHouseholdId}:${draftId}:`;
+const pacedDraftPrefix = (draftId: string) => `${draftId}:`;
 
 export const getImportDraftRowPacedMutations = (
-  access: ActiveHouseholdAccess,
   draftId: string,
   rowId: string
 ) => {
-  const key = pacedKey(access, draftId, rowId);
+  const key = pacedKey(draftId, rowId);
   const existing = rowPacedMutations.get(key);
   if (existing) return existing.mutate;
 
-  const entry = createRowPacedMutations(access, draftId, rowId);
+  const entry = createRowPacedMutations(draftId, rowId);
   rowPacedMutations.set(key, entry);
   return entry.mutate;
 };
 
-export const flushImportDraftRowPacedMutations = async (
-  access: ActiveHouseholdAccess,
-  draftId: string
-) => {
-  const prefix = pacedDraftPrefix(access, draftId);
+export const flushImportDraftRowPacedMutations = async (draftId: string) => {
+  const prefix = pacedDraftPrefix(draftId);
   await Promise.all(
     [...rowPacedMutations.entries()]
       .filter(([key]) => key.startsWith(prefix))
@@ -351,12 +322,9 @@ export const flushImportDraftRowPacedMutations = async (
 };
 
 /** Re-persist failed row fields from the live working copy (not via debounce). */
-export const retryFailedImportDraftRowPersists = async (
-  access: ActiveHouseholdAccess,
-  draftId: string
-) => {
+export const retryFailedImportDraftRowPersists = async (draftId: string) => {
   const snapshot = getImportReviewAutosaveSnapshot(draftId);
-  const collection = getImportDraftRowsCollection(access, draftId);
+  const collection = getImportDraftRowsCollection(draftId);
   const failures = [...snapshot.failedFieldKeys.entries()];
 
   await Promise.all(
@@ -364,7 +332,6 @@ export const retryFailedImportDraftRowPersists = async (
       const live = collection.get(rowId);
       if (!live) return;
       const patch = sanitizeImportMatchPatch(
-        access,
         draftId,
         patchFromLiveKeys(live, [...keys]) ?? {}
       );
@@ -375,7 +342,6 @@ export const retryFailedImportDraftRowPersists = async (
       try {
         const server = await fetchUpdateImportDraftRow(rowId, patch);
         confirmPersistIntoCollection(
-          access,
           collection,
           server,
           live,
@@ -388,18 +354,15 @@ export const retryFailedImportDraftRowPersists = async (
       } catch {
         const current = collection.get(rowId);
         if (current) collection.utils.writeUpdate(current);
-        rederiveImportDraftWorkingCopy(access, draftId);
+        rederiveImportDraftWorkingCopy(draftId);
         markImportReviewPersistFailure(draftId, rowId, persistedKeys);
       }
     })
   );
 };
 
-export const releaseImportDraftRowPacedMutations = (
-  access: ActiveHouseholdAccess,
-  draftId: string
-) => {
-  const prefix = pacedDraftPrefix(access, draftId);
+export const releaseImportDraftRowPacedMutations = (draftId: string) => {
+  const prefix = pacedDraftPrefix(draftId);
   for (const [key, entry] of rowPacedMutations) {
     if (!key.startsWith(prefix)) continue;
     entry.cleanup();
@@ -407,9 +370,15 @@ export const releaseImportDraftRowPacedMutations = (
   }
 };
 
-export const resetImportDraftRowPacedMutationsForTests = () => {
+export const endImportDraftRowPacedMutations = () => {
   for (const entry of rowPacedMutations.values()) {
     entry.cleanup();
   }
   rowPacedMutations.clear();
 };
+
+registerWorkingSetStore({
+  end: () => {
+    endImportDraftRowPacedMutations();
+  },
+});

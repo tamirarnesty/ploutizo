@@ -5,10 +5,9 @@ import {
   makeImportDraftRow,
 } from '@/components/imports/test-fixtures/importDraft';
 import { queryClient } from '@/lib/queryClient';
-import { testActiveHouseholdAccess } from '@/test/household-access';
 import {
+  endImportDraftRowsCollections,
   getImportDraftRowsCollection,
-  resetImportDraftRowsCollectionsForTests,
 } from './getImportDraftRowsCollection';
 import { importDraftQueryKey } from './queryKeys';
 import {
@@ -29,7 +28,7 @@ describe('rederiveImportDraftWorkingCopy', () => {
   });
 
   afterEach(async () => {
-    await resetImportDraftRowsCollectionsForTests();
+    await endImportDraftRowsCollections();
     queryClient.clear();
   });
 
@@ -63,24 +62,17 @@ describe('rederiveImportDraftWorkingCopy', () => {
       ],
     });
 
-    queryClient.setQueryData(
-      importDraftQueryKey(testActiveHouseholdAccess, draft.id),
-      draft
-    );
+    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
     vi.mocked(fetchImportDraft).mockResolvedValue(draft);
-    const collection = getImportDraftRowsCollection(
-      testActiveHouseholdAccess,
-      draft.id
-    );
+    const collection = getImportDraftRowsCollection(draft.id);
     await collection.preload();
 
-    rederiveImportDraftWorkingCopy(testActiveHouseholdAccess, draft.id);
+    rederiveImportDraftWorkingCopy(draft.id);
 
     expect(collection.get('row_refund')?.status).toBe('ready');
-    const evaluation = evaluateImportDraftWorkingCopy(
-      testActiveHouseholdAccess,
-      draft.id
-    )?.get('row_refund');
+    const evaluation = evaluateImportDraftWorkingCopy(draft.id)?.get(
+      'row_refund'
+    );
     expect(evaluation?.blockers).toEqual([]);
     expect(evaluation?.refundLink?.issues).toEqual([]);
   });
@@ -106,24 +98,17 @@ describe('rederiveImportDraftWorkingCopy', () => {
       ],
     });
 
-    queryClient.setQueryData(
-      importDraftQueryKey(testActiveHouseholdAccess, draft.id),
-      draft
-    );
+    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
     vi.mocked(fetchImportDraft).mockResolvedValue(draft);
-    const collection = getImportDraftRowsCollection(
-      testActiveHouseholdAccess,
-      draft.id
-    );
+    const collection = getImportDraftRowsCollection(draft.id);
     await collection.preload();
 
-    rederiveImportDraftWorkingCopy(testActiveHouseholdAccess, draft.id);
+    rederiveImportDraftWorkingCopy(draft.id);
 
     expect(collection.get('row_refund')?.status).toBe('needs_review');
-    const evaluation = evaluateImportDraftWorkingCopy(
-      testActiveHouseholdAccess,
-      draft.id
-    )?.get('row_refund');
+    const evaluation = evaluateImportDraftWorkingCopy(draft.id)?.get(
+      'row_refund'
+    );
     expect(evaluation?.blockers).toContain('refund_link');
     expect(evaluation?.refundLink?.issues).toContain('missing_target');
   });
@@ -150,24 +135,17 @@ describe('rederiveImportDraftWorkingCopy', () => {
       ],
     });
 
-    queryClient.setQueryData(
-      importDraftQueryKey(testActiveHouseholdAccess, draft.id),
-      draft
-    );
+    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
     vi.mocked(fetchImportDraft).mockResolvedValue(draft);
-    const collection = getImportDraftRowsCollection(
-      testActiveHouseholdAccess,
-      draft.id
-    );
+    const collection = getImportDraftRowsCollection(draft.id);
     await collection.preload();
 
-    rederiveImportDraftWorkingCopy(testActiveHouseholdAccess, draft.id);
+    rederiveImportDraftWorkingCopy(draft.id);
 
     expect(collection.get('row_refund')?.status).toBe('needs_review');
-    const evaluation = evaluateImportDraftWorkingCopy(
-      testActiveHouseholdAccess,
-      draft.id
-    )?.get('row_refund');
+    const evaluation = evaluateImportDraftWorkingCopy(draft.id)?.get(
+      'row_refund'
+    );
     expect(evaluation?.blockers).toContain('refund_link');
     expect(evaluation?.refundLink?.issues).toContain('missing_target');
   });
@@ -200,24 +178,17 @@ describe('rederiveImportDraftWorkingCopy', () => {
       ],
     });
 
-    queryClient.setQueryData(
-      importDraftQueryKey(testActiveHouseholdAccess, draft.id),
-      draft
-    );
+    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
     vi.mocked(fetchImportDraft).mockResolvedValue(draft);
-    const collection = getImportDraftRowsCollection(
-      testActiveHouseholdAccess,
-      draft.id
-    );
+    const collection = getImportDraftRowsCollection(draft.id);
     await collection.preload();
 
-    rederiveImportDraftWorkingCopy(testActiveHouseholdAccess, draft.id);
+    rederiveImportDraftWorkingCopy(draft.id);
 
     expect(collection.get('row_refund')?.status).toBe('needs_review');
-    const evaluation = evaluateImportDraftWorkingCopy(
-      testActiveHouseholdAccess,
-      draft.id
-    )?.get('row_refund');
+    const evaluation = evaluateImportDraftWorkingCopy(draft.id)?.get(
+      'row_refund'
+    );
     expect(evaluation?.blockers).toContain('refund_link');
     expect(evaluation?.refundLink?.issues).toContain('wrong_account');
   });
@@ -247,25 +218,18 @@ describe('rederiveImportDraftWorkingCopy', () => {
       ],
     });
 
-    queryClient.setQueryData(
-      importDraftQueryKey(testActiveHouseholdAccess, draft.id),
-      draft
-    );
+    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
     vi.mocked(fetchImportDraft).mockResolvedValue(draft);
-    const collection = getImportDraftRowsCollection(
-      testActiveHouseholdAccess,
-      draft.id
-    );
+    const collection = getImportDraftRowsCollection(draft.id);
     await collection.preload();
 
-    rederiveImportDraftWorkingCopy(testActiveHouseholdAccess, draft.id);
+    rederiveImportDraftWorkingCopy(draft.id);
 
     expect(collection.get('row_match')?.status).toBe('ready');
     expect(collection.get('row_match')?.selectedForImport).toBe(false);
-    const evaluation = evaluateImportDraftWorkingCopy(
-      testActiveHouseholdAccess,
-      draft.id
-    )?.get('row_match');
+    const evaluation = evaluateImportDraftWorkingCopy(draft.id)?.get(
+      'row_match'
+    );
     expect(evaluation?.match?.exactCandidate?.kind).toBe('external_id');
     expect(evaluation?.match?.acceptedMatch).toBeNull();
   });
@@ -297,26 +261,19 @@ describe('rederiveImportDraftWorkingCopy', () => {
       ],
     });
 
-    queryClient.setQueryData(
-      importDraftQueryKey(testActiveHouseholdAccess, draft.id),
-      draft
-    );
+    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
     vi.mocked(fetchImportDraft).mockResolvedValue(draft);
-    const collection = getImportDraftRowsCollection(
-      testActiveHouseholdAccess,
-      draft.id
-    );
+    const collection = getImportDraftRowsCollection(draft.id);
     await collection.preload();
 
-    rederiveImportDraftWorkingCopy(testActiveHouseholdAccess, draft.id);
+    rederiveImportDraftWorkingCopy(draft.id);
 
     expect(collection.get('row_a')?.status).toBe('needs_review');
     expect(collection.get('row_b')?.status).toBe('needs_review');
     expect(collection.get('row_ready')?.status).toBe('ready');
-    const unselectedEvaluation = evaluateImportDraftWorkingCopy(
-      testActiveHouseholdAccess,
-      draft.id
-    )?.get('row_a');
+    const unselectedEvaluation = evaluateImportDraftWorkingCopy(draft.id)?.get(
+      'row_a'
+    );
     expect(unselectedEvaluation?.blockers).toContain('match');
     expect(unselectedEvaluation?.match?.issues).toContain('collision');
     expect(canContinueImportReview(collection.toArray)).toBe(true);
@@ -329,14 +286,13 @@ describe('rederiveImportDraftWorkingCopy', () => {
       ...collection.get('row_b')!,
       selectedForImport: true,
     });
-    rederiveImportDraftWorkingCopy(testActiveHouseholdAccess, draft.id);
+    rederiveImportDraftWorkingCopy(draft.id);
 
     expect(collection.get('row_a')?.status).toBe('needs_review');
     expect(collection.get('row_b')?.status).toBe('needs_review');
-    const collisionEvaluation = evaluateImportDraftWorkingCopy(
-      testActiveHouseholdAccess,
-      draft.id
-    )?.get('row_a');
+    const collisionEvaluation = evaluateImportDraftWorkingCopy(draft.id)?.get(
+      'row_a'
+    );
     expect(collisionEvaluation?.blockers).toContain('match');
     expect(collisionEvaluation?.match?.issues).toContain('collision');
     expect(canContinueImportReview(collection.toArray)).toBe(true);
@@ -345,24 +301,19 @@ describe('rederiveImportDraftWorkingCopy', () => {
       ...collection.get('row_b')!,
       selectedForImport: false,
     });
-    rederiveImportDraftWorkingCopy(testActiveHouseholdAccess, draft.id);
+    rederiveImportDraftWorkingCopy(draft.id);
 
     expect(collection.get('row_a')?.status).toBe('ready');
     expect(collection.get('row_b')?.status).toBe('ready');
     expect(
-      evaluateImportDraftWorkingCopy(testActiveHouseholdAccess, draft.id)?.get(
-        'row_a'
-      )?.match?.acceptedMatch
+      evaluateImportDraftWorkingCopy(draft.id)?.get('row_a')?.match
+        ?.acceptedMatch
     ).toBeNull();
     expect(
-      evaluateImportDraftWorkingCopy(testActiveHouseholdAccess, draft.id)?.get(
-        'row_a'
-      )?.match?.issues
+      evaluateImportDraftWorkingCopy(draft.id)?.get('row_a')?.match?.issues
     ).not.toContain('collision');
     expect(
-      evaluateImportDraftWorkingCopy(testActiveHouseholdAccess, draft.id)?.get(
-        'row_b'
-      )?.match?.issues
+      evaluateImportDraftWorkingCopy(draft.id)?.get('row_b')?.match?.issues
     ).not.toContain('collision');
     expect(canContinueImportReview(collection.toArray)).toBe(true);
   });
@@ -395,24 +346,17 @@ describe('rederiveImportDraftWorkingCopy', () => {
       ],
     });
 
-    queryClient.setQueryData(
-      importDraftQueryKey(testActiveHouseholdAccess, draft.id),
-      draft
-    );
+    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
     vi.mocked(fetchImportDraft).mockResolvedValue(draft);
-    const collection = getImportDraftRowsCollection(
-      testActiveHouseholdAccess,
-      draft.id
-    );
+    const collection = getImportDraftRowsCollection(draft.id);
     await collection.preload();
 
-    rederiveImportDraftWorkingCopy(testActiveHouseholdAccess, draft.id);
+    rederiveImportDraftWorkingCopy(draft.id);
 
     expect(collection.get('row_advisory')?.status).toBe('needs_review');
-    const evaluation = evaluateImportDraftWorkingCopy(
-      testActiveHouseholdAccess,
-      draft.id
-    )?.get('row_advisory');
+    const evaluation = evaluateImportDraftWorkingCopy(draft.id)?.get(
+      'row_advisory'
+    );
     expect(evaluation?.blockers).toContain('match');
     expect(evaluation?.match?.acceptedMatch).toBeNull();
   });

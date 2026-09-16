@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useLiveQuery } from '@tanstack/react-db';
 import type { ImportDraftRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
-import { useActiveHouseholdAccess } from '@/lib/auth/use-active-household-access';
 import {
   flushImportDraftRowPacedMutations,
   getImportDraftRowPacedMutations,
@@ -46,21 +45,20 @@ export interface ImportReviewSession {
 export const useImportReviewSession = (
   draftId: string
 ): ImportReviewSession => {
-  const access = useActiveHouseholdAccess();
   const rowsCollection = useMemo(
-    () => getImportDraftRowsCollection(access, draftId),
-    [access.signedInMemberId, access.activeHouseholdId, draftId]
+    () => getImportDraftRowsCollection(draftId),
+    [draftId]
   );
 
   useEffect(() => {
     return () => {
-      releaseImportDraftRowPacedMutations(access, draftId);
+      releaseImportDraftRowPacedMutations(draftId);
       releaseImportReviewAutosave(draftId);
     };
-  }, [access.signedInMemberId, access.activeHouseholdId, draftId]);
+  }, [draftId]);
 
   const metaQuery = useQuery({
-    queryKey: importDraftQueryKey(access, draftId),
+    queryKey: importDraftQueryKey(draftId),
     queryFn: () => fetchImportDraft(draftId),
     select: toImportDraftMeta,
   });
@@ -77,30 +75,30 @@ export const useImportReviewSession = (
 
   const updateRow = useCallback(
     (rowId: string, patch: UpdateImportDraftRowInput) => {
-      getImportDraftRowPacedMutations(access, draftId, rowId)({ patch });
+      getImportDraftRowPacedMutations(draftId, rowId)({ patch });
     },
-    [access.signedInMemberId, access.activeHouseholdId, draftId]
+    [draftId]
   );
 
   const setSelection = useCallback(
     (rowIds: string[], selectedForImport: boolean) => {
-      persistImportDraftSelection(access, draftId, rowIds, selectedForImport);
+      persistImportDraftSelection(draftId, rowIds, selectedForImport);
     },
-    [access.signedInMemberId, access.activeHouseholdId, draftId]
+    [draftId]
   );
 
   const retryAutosave = useCallback(() => {
     void (async () => {
-      await retryFailedImportDraftRowPersists(access, draftId);
-      retryFailedImportDraftSelection(access, draftId);
+      await retryFailedImportDraftRowPersists(draftId);
+      retryFailedImportDraftSelection(draftId);
     })();
-  }, [access.signedInMemberId, access.activeHouseholdId, draftId]);
+  }, [draftId]);
 
   const flush = useCallback(async () => {
-    await flushImportDraftRowPacedMutations(access, draftId);
+    await flushImportDraftRowPacedMutations(draftId);
     await waitForImportReviewAutosaveSettled(draftId);
     return getImportReviewAutosaveSnapshot(draftId).status !== 'failed';
-  }, [access.signedInMemberId, access.activeHouseholdId, draftId]);
+  }, [draftId]);
 
   // Draft GET failure is authoritative — collection sync may not surface the same error flag.
   return {

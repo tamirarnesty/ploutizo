@@ -1,10 +1,7 @@
 import { parseColourToken } from '@ploutizo/validators';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import type { ColourToken } from '@ploutizo/validators';
-import { householdQueryKey } from '@/lib/auth/household-query-key';
-import { useActiveHouseholdAccess } from '@/lib/auth/use-active-household-access';
 import { apiFetch } from '@/lib/queryClient';
-import type { ActiveHouseholdAccess } from '@/lib/auth/access-policy';
 import type { UseQueryResult } from '@tanstack/react-query';
 
 export interface Category {
@@ -29,14 +26,13 @@ const selectCategories = (data: Category[]) =>
     colour: parseColourToken(c.colour),
   }));
 
-export const categoriesQueryOptions = (access: ActiveHouseholdAccess) =>
+export const categoriesQueryOptions = () =>
   queryOptions({
-    queryKey: householdQueryKey(access, 'categories'),
+    queryKey: ['categories'],
     queryFn: fetchCategories,
     select: selectCategories,
   });
 
 export const useGetCategories = (): UseQueryResult<Category[]> => {
-  const access = useActiveHouseholdAccess();
-  return useQuery(categoriesQueryOptions(access));
+  return useQuery(categoriesQueryOptions());
 };

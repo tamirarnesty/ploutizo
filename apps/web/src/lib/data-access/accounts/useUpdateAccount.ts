@@ -1,7 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Account } from '@ploutizo/types';
-import { householdQueryKey } from '@/lib/auth/household-query-key';
-import { useActiveHouseholdAccess } from '@/lib/auth/use-active-household-access';
 import { apiFetch } from '@/lib/queryClient';
 
 interface UpdateAccountBody {
@@ -25,14 +23,13 @@ export const updateAccount = async (
 };
 
 export const useUpdateAccount = (id: string) => {
-  const access = useActiveHouseholdAccess();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: UpdateAccountBody) => updateAccount(id, body),
     onSettled: () => {
-      qc.invalidateQueries({ queryKey: householdQueryKey(access, 'accounts') });
+      qc.invalidateQueries({ queryKey: ['accounts'] });
       qc.invalidateQueries({
-        queryKey: householdQueryKey(access, 'account-members', id),
+        queryKey: ['account-members', id],
       });
     },
   });

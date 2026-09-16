@@ -1,5 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+const pageJwt = vi.hoisted(() => {
+  const body = btoa(JSON.stringify({ sub: 'user_a', org_id: 'org_a' }))
+    .replaceAll('+', '-')
+    .replaceAll('/', '_')
+    .replace(/=+$/, '');
+  return `hdr.${body}.sig`;
+});
+
 const pageRequest = new Request('http://localhost:3000/dashboard');
 const setResponseHeader = vi.fn();
 
@@ -9,7 +17,7 @@ vi.mock('@clerk/tanstack-react-start/server', () => ({
       isAuthenticated: true,
       userId: 'user_a',
       orgId: 'org_a',
-      getToken: () => Promise.resolve('page-jwt'),
+      getToken: () => Promise.resolve(pageJwt),
     }),
 }));
 
@@ -25,8 +33,8 @@ describe('resolveAccessOnRequest', () => {
   });
 
   it('binds the bearer on the same request apiFetch will read and never returns it as access', async () => {
-    const { resolveAccessOnRequest } = await import('./resolve-access.server');
-    const { getRequestBearer } = await import('./request-bearer.server');
+    const { resolveAccessOnRequest, getRequestBearer } =
+      await import('./resolve.server');
 
     const result = await resolveAccessOnRequest();
 
@@ -36,8 +44,8 @@ describe('resolveAccessOnRequest', () => {
       activeHouseholdId: 'org_a',
     });
     expect(result.access).not.toHaveProperty('bearerToken');
-    expect(result.requestBearer).toBe('page-jwt');
-    expect(getRequestBearer()).toBe('page-jwt');
+    expect(result.requestBearer).toBe(pageJwt);
+    expect(getRequestBearer()).toBe(pageJwt);
     expect(setResponseHeader).toHaveBeenCalledWith(
       'Cache-Control',
       'private, no-store'

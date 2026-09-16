@@ -1,7 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Account } from '@ploutizo/types';
-import { householdQueryKey } from '@/lib/auth/household-query-key';
-import { useActiveHouseholdAccess } from '@/lib/auth/use-active-household-access';
 import { apiFetch } from '@/lib/queryClient';
 
 interface CreateAccountBody {
@@ -24,11 +22,9 @@ export const createAccount = async (
 };
 
 export const useCreateAccount = () => {
-  const access = useActiveHouseholdAccess();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: createAccount,
-    onSettled: () =>
-      qc.invalidateQueries({ queryKey: householdQueryKey(access, 'accounts') }),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['accounts'] }),
   });
 };

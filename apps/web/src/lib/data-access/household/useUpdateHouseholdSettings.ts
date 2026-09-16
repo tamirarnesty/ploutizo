@@ -1,6 +1,4 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { householdQueryKey } from '@/lib/auth/household-query-key';
-import { useActiveHouseholdAccess } from '@/lib/auth/use-active-household-access';
 import { apiFetch } from '@/lib/queryClient';
 import type { HouseholdSettings } from './useGetHouseholdSettings';
 
@@ -22,13 +20,12 @@ export const updateHouseholdSettings = async (
 };
 
 export const useUpdateHouseholdSettings = () => {
-  const access = useActiveHouseholdAccess();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: updateHouseholdSettings,
     onSettled: () =>
       void qc.invalidateQueries({
-        queryKey: householdQueryKey(access, 'household-settings'),
+        queryKey: ['household-settings'],
       }),
   });
 };

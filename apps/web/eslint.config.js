@@ -54,12 +54,12 @@ export default [
               name: '@clerk/tanstack-react-start',
               importNames: ['auth'],
               message:
-                'auth() is not isomorphic. Use resolveAccess from lib/auth.',
+                'auth() is not isomorphic. Use resolveAccess from lib/access.',
             },
             {
               name: '@clerk/tanstack-react-start/server',
               message:
-                'Clerk server auth() is not isomorphic. Use resolveAccess from lib/auth.',
+                'Clerk server auth() is not isomorphic. Use resolveAccess from lib/access.',
             },
           ],
         },
@@ -67,7 +67,7 @@ export default [
     },
   },
   {
-    files: ['src/start.ts', 'src/lib/auth/resolve-access.server.ts'],
+    files: ['src/start.ts', 'src/lib/access/resolve.server.ts'],
     rules: {
       'no-restricted-imports': 'off',
     },

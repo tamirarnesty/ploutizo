@@ -4,11 +4,10 @@ import {
   makeImportDraftRow,
 } from '@/components/imports/test-fixtures/importDraft';
 import { queryClient } from '@/lib/queryClient';
-import { testActiveHouseholdAccess } from '@/test/household-access';
 import {
+  endImportDraftRowsCollections,
   getImportDraftRowsCollection,
   releaseImportDraftRowsCollection,
-  resetImportDraftRowsCollectionsForTests,
 } from './getImportDraftRowsCollection';
 import { importDraftQueryKey } from './queryKeys';
 import { fetchImportDraft } from './useGetImportDraft';
@@ -26,37 +25,23 @@ const draft = makeImportDraft({
 describe('getImportDraftRowsCollection', () => {
   beforeEach(() => {
     queryClient.clear();
-    queryClient.setQueryData(
-      importDraftQueryKey(testActiveHouseholdAccess, draft.id),
-      draft
-    );
+    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
     vi.mocked(fetchImportDraft).mockReset();
     vi.mocked(fetchImportDraft).mockResolvedValue(draft);
   });
 
   afterEach(async () => {
-    await resetImportDraftRowsCollectionsForTests();
+    await endImportDraftRowsCollections();
     queryClient.clear();
   });
 
   it('does not reuse a collection that is still being released', async () => {
-    const first = getImportDraftRowsCollection(
-      testActiveHouseholdAccess,
-      draft.id
-    );
-    const release = releaseImportDraftRowsCollection(
-      testActiveHouseholdAccess,
-      draft.id
-    );
-    const next = getImportDraftRowsCollection(
-      testActiveHouseholdAccess,
-      draft.id
-    );
+    const first = getImportDraftRowsCollection(draft.id);
+    const release = releaseImportDraftRowsCollection(draft.id);
+    const next = getImportDraftRowsCollection(draft.id);
 
     expect(next).not.toBe(first);
     await release;
-    expect(
-      getImportDraftRowsCollection(testActiveHouseholdAccess, draft.id)
-    ).toBe(next);
+    expect(getImportDraftRowsCollection(draft.id)).toBe(next);
   });
 });
