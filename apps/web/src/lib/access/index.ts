@@ -1,14 +1,10 @@
-export {
-  enforceAccess,
-  isAccessAligned,
-  sanitizeReturnPath,
-} from './access-state';
+export { sanitizeReturnPath } from './access-state';
 export type {
   AccessNavigation,
   AccessPolicy,
   AccessRedirect,
   AccessState,
 } from './access-state';
-export { AccessGate } from './AccessGate';
-export { resolveAccess } from './resolve';
+export { AccessPolicyBoundary } from './AccessPolicyBoundary';
+export { AccessProvider, useAccess } from './AccessProvider';
 export { endWorkingSet, getHouseholdBearer } from './working-set';

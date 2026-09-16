@@ -18,11 +18,6 @@ const resolveLinkHref = (
 };
 
 const { routerMocks, tanstackRouterMock } = vi.hoisted(() => {
-  const access = {
-    status: 'signed-in-with-active-household' as const,
-    signedInMemberId: 'user_test',
-    activeHouseholdId: 'org_test',
-  };
   const mocks = {
     pathname: '/',
     navigate: vi.fn(),
@@ -78,13 +73,9 @@ const { routerMocks, tanstackRouterMock } = vi.hoisted(() => {
       mocks.shouldBlockFn = args.shouldBlockFn;
       return mocks.useBlocker(args);
     },
-    useRouteContext: () => ({
-      access,
-    }),
+    useRouteContext: () => ({}),
     getRouteApi: () => ({
-      useRouteContext: () => ({
-        access,
-      }),
+      useRouteContext: () => ({}),
     }),
   };
 

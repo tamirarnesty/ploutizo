@@ -7,7 +7,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { getCookie } from '@tanstack/react-start/server';
 import { SidebarInset, SidebarProvider } from '@ploutizo/ui/components/sidebar';
 import { cn } from '@ploutizo/ui/lib/utils';
-import { enforceAccess } from '@/lib/access';
+import { AccessPolicyBoundary } from '@/lib/access';
 import { CommandPaletteProvider } from '@/lib/command';
 import { activeImportDraftsQueryOptions } from '@/lib/data-access/imports';
 import { resolveMainContentLayout } from '@/lib/layout/main-content-layout';
@@ -21,7 +21,7 @@ const getPublicSidebarState = createServerFn().handler(() => {
   return value !== 'false';
 });
 
-const LayoutShell = () => {
+const LayoutShellContent = () => {
   useThemeKeyboardShortcut();
   const defaultOpen = Route.useLoaderData();
   const mainContentLayout = useRouterState({
@@ -56,10 +56,13 @@ const LayoutShell = () => {
   );
 };
 
+const LayoutShell = () => (
+  <AccessPolicyBoundary policy="active-household">
+    <LayoutShellContent />
+  </AccessPolicyBoundary>
+);
+
 export const Route = createFileRoute('/_layout')({
-  beforeLoad: ({ context, location }) => ({
-    access: enforceAccess(context.access, 'active-household', location.href),
-  }),
   loader: async ({ context }) => {
     void context.queryClient.prefetchQuery(activeImportDraftsQueryOptions);
     return getPublicSidebarState();

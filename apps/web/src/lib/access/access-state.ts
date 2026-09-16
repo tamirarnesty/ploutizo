@@ -1,5 +1,3 @@
-import { redirect } from '@tanstack/react-router';
-
 export type AccessState =
   | { status: 'signed-out' }
   | { status: 'signed-in-no-household'; signedInMemberId: string }
@@ -38,25 +36,6 @@ export const toAccessState = ({
     signedInMemberId: userId,
     activeHouseholdId: orgId,
   };
-};
-
-export const sameAccess = (left: AccessState, right: AccessState): boolean => {
-  if (left.status === 'signed-out' || right.status === 'signed-out') {
-    return left.status === 'signed-out' && right.status === 'signed-out';
-  }
-  if (left.signedInMemberId !== right.signedInMemberId) {
-    return false;
-  }
-  if (
-    left.status === 'signed-in-no-household' ||
-    right.status === 'signed-in-no-household'
-  ) {
-    return (
-      left.status === 'signed-in-no-household' &&
-      right.status === 'signed-in-no-household'
-    );
-  }
-  return left.activeHouseholdId === right.activeHouseholdId;
 };
 
 export const resolveAccessRedirect = (
@@ -131,16 +110,6 @@ export const resolveAccessNavigation = (
   return redirectPath ? { to, search: { redirect: redirectPath } } : { to };
 };
 
-export const isAccessAligned = (
-  providerAccess: AccessState,
-  routeAccess: AccessState | undefined
-): boolean => {
-  if (!routeAccess) {
-    return false;
-  }
-  return sameAccess(providerAccess, routeAccess);
-};
-
 type BearerClaims = {
   sub?: unknown;
   org_id?: unknown;
@@ -194,17 +163,4 @@ export const claimsMatchAccess = (
     return householdId === undefined;
   }
   return householdId === access.activeHouseholdId;
-};
-
-export const enforceAccess = (
-  access: AccessState | undefined,
-  policy: AccessPolicy,
-  returnPath?: unknown
-): AccessState => {
-  const resolved = access ?? { status: 'signed-out' };
-  const target = resolveAccessNavigation(resolved, policy, returnPath);
-  if (target) {
-    throw redirect(target);
-  }
-  return resolved;
 };

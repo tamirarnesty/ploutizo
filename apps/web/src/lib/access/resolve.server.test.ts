@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-const pageJwt = vi.hoisted(() => {
+const householdAJwt = vi.hoisted(() => {
   const body = btoa(JSON.stringify({ sub: 'user_a', org_id: 'org_a' }))
     .replaceAll('+', '-')
     .replaceAll('/', '_')
@@ -8,47 +8,54 @@ const pageJwt = vi.hoisted(() => {
   return `hdr.${body}.sig`;
 });
 
-const pageRequest = new Request('http://localhost:3000/dashboard');
 const setResponseHeader = vi.fn();
 
-vi.mock('@clerk/tanstack-react-start/server', () => ({
-  auth: () =>
-    Promise.resolve({
-      isAuthenticated: true,
-      userId: 'user_a',
-      orgId: 'org_a',
-      getToken: () => Promise.resolve(pageJwt),
-    }),
-}));
-
-vi.mock('@tanstack/react-start/server', () => ({
-  getRequest: () => pageRequest,
-  setResponseHeader: (...args: unknown[]) => setResponseHeader(...args),
-}));
-
-describe('resolveAccessOnRequest', () => {
+describe('getRequestHouseholdBearer', () => {
   afterEach(() => {
     vi.resetModules();
+    vi.doUnmock('@clerk/tanstack-react-start/server');
     setResponseHeader.mockClear();
   });
 
-  it('binds the bearer on the same request apiFetch will read and never returns it as access', async () => {
-    const { resolveAccessOnRequest, getRequestBearer } =
-      await import('./resolve.server');
+  it('returns a claim-matching bearer for authenticated household requests', async () => {
+    vi.doMock('@clerk/tanstack-react-start/server', () => ({
+      auth: () =>
+        Promise.resolve({
+          isAuthenticated: true,
+          userId: 'user_a',
+          orgId: 'org_a',
+          getToken: () => Promise.resolve(householdAJwt),
+        }),
+    }));
+    vi.doMock('@tanstack/react-start/server', () => ({
+      setResponseHeader: (...args: unknown[]) => setResponseHeader(...args),
+    }));
 
-    const result = await resolveAccessOnRequest();
+    const { getRequestHouseholdBearer } = await import('./resolve.server');
 
-    expect(result.access).toEqual({
-      status: 'signed-in-with-active-household',
-      signedInMemberId: 'user_a',
-      activeHouseholdId: 'org_a',
-    });
-    expect(result.access).not.toHaveProperty('bearerToken');
-    expect(result.requestBearer).toBe(pageJwt);
-    expect(getRequestBearer()).toBe(pageJwt);
+    await expect(getRequestHouseholdBearer()).resolves.toBe(householdAJwt);
     expect(setResponseHeader).toHaveBeenCalledWith(
       'Cache-Control',
       'private, no-store'
     );
+  });
+
+  it('returns null when the Clerk token does not match the active household', async () => {
+    vi.doMock('@clerk/tanstack-react-start/server', () => ({
+      auth: () =>
+        Promise.resolve({
+          isAuthenticated: true,
+          userId: 'user_a',
+          orgId: 'org_b',
+          getToken: () => Promise.resolve(householdAJwt),
+        }),
+    }));
+    vi.doMock('@tanstack/react-start/server', () => ({
+      setResponseHeader: (...args: unknown[]) => setResponseHeader(...args),
+    }));
+
+    const { getRequestHouseholdBearer } = await import('./resolve.server');
+
+    await expect(getRequestHouseholdBearer()).resolves.toBeNull();
   });
 });

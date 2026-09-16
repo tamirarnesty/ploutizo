@@ -5,7 +5,6 @@ import {
   endWorkingSet,
   getClientHouseholdBearer,
   registerWorkingSetCleanup,
-  rememberTransitionCredential,
   resetWorkingSetForTests,
   setClientBearerGetter,
   setLiveAccess,
@@ -37,22 +36,9 @@ const householdAJwt = unsignedJwt({
   org_id: 'org_a',
 });
 
-const householdBJwt = unsignedJwt({
-  sub: 'user_alex',
-  org_id: 'org_b',
-});
-
 describe('getHouseholdBearer', () => {
   afterEach(() => {
     resetWorkingSetForTests();
-  });
-
-  it('uses the transition bearer until Clerk React returns a matching token', async () => {
-    rememberTransitionCredential(householdAJwt, alexInHouseholdA);
-    setLiveAccess(alexInHouseholdA);
-    setClientBearerGetter(() => Promise.resolve(null));
-
-    await expect(getClientHouseholdBearer()).resolves.toBe(householdAJwt);
   });
 
   it('uses a Clerk token whose claims match live access', async () => {
@@ -60,7 +46,6 @@ describe('getHouseholdBearer', () => {
       sub: 'user_alex',
       org_id: 'org_a',
     });
-    rememberTransitionCredential(householdAJwt, alexInHouseholdA);
     setLiveAccess(alexInHouseholdA);
     setClientBearerGetter(() => Promise.resolve(clerkJwt));
 
@@ -81,64 +66,40 @@ describe('getHouseholdBearer', () => {
     expect(getToken).toHaveBeenCalledWith(undefined);
   });
 
-  it('does not let a mismatched Clerk token beat a matching transition bearer', async () => {
-    const staleHouseholdA = unsignedJwt({
-      sub: 'user_alex',
-      org_id: 'org_a',
-    });
-    rememberTransitionCredential(householdBJwt, alexInHouseholdB);
-    setLiveAccess(alexInHouseholdB);
-    setClientBearerGetter(() => Promise.resolve(staleHouseholdA));
-
-    await expect(getClientHouseholdBearer()).resolves.toBe(householdBJwt);
-  });
-
-  it('keeps the transition bearer while Clerk React is still catching up after login', async () => {
-    rememberTransitionCredential(householdAJwt, alexInHouseholdA);
-    setLiveAccess(null);
-    setClientBearerGetter(() => Promise.resolve(null));
-
-    await expect(getClientHouseholdBearer()).resolves.toBe(householdAJwt);
-  });
-
-  it('does not remember a bearer whose claims do not match the access snapshot', async () => {
-    rememberTransitionCredential(
-      unsignedJwt({ sub: 'user_other', org_id: 'org_a' }),
-      alexInHouseholdA
+  it('refreshes with skipCache when the cached token is stale', async () => {
+    const staleToken = unsignedJwt({ sub: 'user_alex', org_id: 'org_a' });
+    const freshToken = unsignedJwt({ sub: 'user_alex', org_id: 'org_b' });
+    const getToken = vi.fn((options?: { skipCache?: boolean }) =>
+      Promise.resolve(options?.skipCache ? freshToken : staleToken)
     );
-    setLiveAccess(null);
+    setLiveAccess(alexInHouseholdB);
+    setClientBearerGetter(getToken);
+
+    await expect(getClientHouseholdBearer()).resolves.toBe(freshToken);
+    expect(getToken).toHaveBeenCalledWith(undefined);
+    expect(getToken).toHaveBeenCalledWith({ skipCache: true });
+  });
+
+  it('returns null when Clerk cannot supply a matching token', async () => {
+    setLiveAccess(alexInHouseholdA);
     setClientBearerGetter(() => Promise.resolve(null));
 
     await expect(getClientHouseholdBearer()).resolves.toBeNull();
   });
 
   it('does not authorize a request after the signed-in member signs out', async () => {
-    rememberTransitionCredential(householdAJwt, alexInHouseholdA);
     setLiveAccess({ status: 'signed-out' });
-    setClientBearerGetter(() => Promise.resolve(null));
-
-    await expect(getClientHouseholdBearer()).resolves.toBeNull();
-  });
-
-  it('does not authorize a request after the signed-in member changes', async () => {
-    rememberTransitionCredential(householdAJwt, alexInHouseholdA);
-    setLiveAccess({
-      status: 'signed-in-with-active-household',
-      signedInMemberId: 'user_sam',
-      activeHouseholdId: 'org_a',
-    });
-    setClientBearerGetter(() => Promise.resolve(null));
+    setClientBearerGetter(() => Promise.resolve(householdAJwt));
 
     await expect(getClientHouseholdBearer()).resolves.toBeNull();
   });
 
   it('does not treat an unknown identity as a match for a leftover bearer', async () => {
-    rememberTransitionCredential(householdAJwt, alexInHouseholdA);
     setLiveAccess({
       status: 'signed-in-no-household',
       signedInMemberId: 'user_alex',
     });
-    setClientBearerGetter(() => Promise.resolve(null));
+    setClientBearerGetter(() => Promise.resolve(householdAJwt));
 
     await expect(getClientHouseholdBearer()).resolves.toBeNull();
   });
@@ -167,9 +128,8 @@ describe('endWorkingSet', () => {
     queryClient.clear();
   });
 
-  it('discards cache, transition bearer, and registered stores', async () => {
+  it('discards cache and registered stores', async () => {
     queryClient.setQueryData(['accounts'], [{ id: 'acct_prior' }]);
-    rememberTransitionCredential(householdAJwt, alexInHouseholdA);
     setLiveAccess(alexInHouseholdA);
     let ended = false;
     registerWorkingSetCleanup(() => {

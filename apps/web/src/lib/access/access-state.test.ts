@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  isAccessAligned,
   resolveAccessNavigation,
   resolveAccessRedirect,
   sanitizeReturnPath,
@@ -158,27 +157,5 @@ describe('resolveAccessNavigation', () => {
         'https://evil.example'
       )
     ).toEqual({ to: '/sign-in/$' });
-  });
-});
-
-describe('isAccessAligned', () => {
-  it('does not resume household work against a stale route snapshot', () => {
-    expect(
-      isAccessAligned(signedInWithHousehold, {
-        status: 'signed-in-with-active-household',
-        signedInMemberId: 'user_123',
-        activeHouseholdId: 'org_other',
-      })
-    ).toBe(false);
-  });
-
-  it('resumes only when provider identity and route access agree', () => {
-    expect(isAccessAligned(signedInWithHousehold, signedInWithHousehold)).toBe(
-      true
-    );
-  });
-
-  it('treats a loaded signed-out provider as disagreement with a signed-in route', () => {
-    expect(isAccessAligned(signedOut, signedInWithHousehold)).toBe(false);
   });
 });
