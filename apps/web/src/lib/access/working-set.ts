@@ -8,14 +8,14 @@ type TransitionCredential = {
   access: AccessState;
 };
 
-type WorkingSetStore = {
-  end: () => void;
-};
+type WorkingSetCleanup = () => void;
 
 let transitionCredential: TransitionCredential | null = null;
-let clientBearerGetter: (() => Promise<string | null>) | null = null;
+let clientBearerGetter:
+  | ((options?: { skipCache?: boolean }) => Promise<string | null>)
+  | null = null;
 let liveAccess: AccessState | null = null;
-const workingSetStores: WorkingSetStore[] = [];
+const workingSetCleanups: WorkingSetCleanup[] = [];
 
 export const rememberTransitionCredential = (
   token: string | null,
@@ -37,20 +37,20 @@ export const setLiveAccess = (access: AccessState | null) => {
 };
 
 export const setClientBearerGetter = (
-  getter: (() => Promise<string | null>) | null
+  getter: ((options?: { skipCache?: boolean }) => Promise<string | null>) | null
 ) => {
   clientBearerGetter = getter;
 };
 
-export const registerWorkingSetStore = (store: WorkingSetStore) => {
-  workingSetStores.push(store);
+export const registerWorkingSetCleanup = (cleanup: WorkingSetCleanup) => {
+  workingSetCleanups.push(cleanup);
 };
 
 export const resetWorkingSetForTests = () => {
   transitionCredential = null;
   clientBearerGetter = null;
   liveAccess = null;
-  workingSetStores.length = 0;
+  workingSetCleanups.length = 0;
 };
 
 const transitionMatchesLive = (): boolean => {
@@ -68,10 +68,12 @@ const transitionMatchesLive = (): boolean => {
 
 export const getClientHouseholdBearer = async (): Promise<string | null> => {
   if (clientBearerGetter && liveAccess && liveAccess.status !== 'signed-out') {
-    const token = await clientBearerGetter();
-    if (token && claimsMatchAccess(token, liveAccess)) {
-      transitionCredential = null;
-      return token;
+    for (const options of [undefined, { skipCache: true }]) {
+      const token = await clientBearerGetter(options);
+      if (token && claimsMatchAccess(token, liveAccess)) {
+        transitionCredential = null;
+        return token;
+      }
     }
   }
   if (transitionCredential && transitionMatchesLive()) {
@@ -83,8 +85,8 @@ export const getClientHouseholdBearer = async (): Promise<string | null> => {
 export const endWorkingSet = () => {
   transitionCredential = null;
   endWorkingSetQueryCache();
-  for (const store of workingSetStores) {
-    store.end();
+  for (const cleanup of workingSetCleanups) {
+    cleanup();
   }
 };
 

@@ -5,7 +5,7 @@ import type {
   UpdateImportDraftRowResult,
 } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
-import { registerWorkingSetStore } from '@/lib/access/working-set';
+import { registerWorkingSetCleanup } from '@/lib/access/working-set';
 import {
   getImportReviewAutosaveSnapshot,
   markImportReviewPending,
@@ -377,8 +377,4 @@ export const endImportDraftRowPacedMutations = () => {
   rowPacedMutations.clear();
 };
 
-registerWorkingSetStore({
-  end: () => {
-    endImportDraftRowPacedMutations();
-  },
-});
+registerWorkingSetCleanup(endImportDraftRowPacedMutations);

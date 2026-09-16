@@ -1,4 +1,4 @@
-import { registerWorkingSetStore } from '@/lib/access/working-set';
+import { registerWorkingSetCleanup } from '@/lib/access/working-set';
 
 export type ImportReviewAutosaveStatus = 'idle' | 'saving' | 'saved' | 'failed';
 
@@ -249,8 +249,4 @@ export const endImportReviewAutosave = () => {
   listeners.clear();
 };
 
-registerWorkingSetStore({
-  end: () => {
-    endImportReviewAutosave();
-  },
-});
+registerWorkingSetCleanup(endImportReviewAutosave);

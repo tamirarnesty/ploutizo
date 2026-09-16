@@ -10,13 +10,13 @@ export const Route = createFileRoute('/_layout/import/')({
   loader: async ({ context }) => {
     await Promise.all([
       context.queryClient
-        .ensureQueryData(importTargetsQueryOptions())
+        .ensureQueryData(importTargetsQueryOptions)
         .catch(() => undefined),
       context.queryClient
         .ensureQueryData(importHistoryPageQueryOptions())
         .catch(() => undefined),
       context.queryClient
-        .ensureQueryData(activeImportDraftsQueryOptions())
+        .ensureQueryData(activeImportDraftsQueryOptions)
         .catch(() => undefined),
     ]);
   },

@@ -11,14 +11,13 @@ export const fetchImportTargets = async (): Promise<ImportTargetAccount[]> => {
   return r.data;
 };
 
-export const importTargetsQueryOptions = () =>
-  queryOptions({
-    queryKey: importTargetsQueryKey(),
-    queryFn: fetchImportTargets,
-  });
+export const importTargetsQueryOptions = queryOptions({
+  queryKey: importTargetsQueryKey,
+  queryFn: fetchImportTargets,
+});
 
 export const useGetImportTargets = (): UseQueryResult<
   ImportTargetAccount[]
 > => {
-  return useQuery(importTargetsQueryOptions());
+  return useQuery(importTargetsQueryOptions);
 };

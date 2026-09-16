@@ -20,9 +20,9 @@ export const useCreateImportDraft = () => {
     onSuccess: (response) => {
       if (response.kind === 'mapping_required') return;
       void qc.invalidateQueries({
-        queryKey: activeImportDraftsQueryKey(),
+        queryKey: activeImportDraftsQueryKey,
       });
-      void qc.invalidateQueries({ queryKey: importHistoryQueryKey() });
+      void qc.invalidateQueries({ queryKey: importHistoryQueryKey });
       qc.setQueryData(importDraftQueryKey(response.data.id), response.data);
       if (response.meta.reusedExisting) {
         toast.info('Resumed existing draft for this card.');

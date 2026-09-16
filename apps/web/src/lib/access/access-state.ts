@@ -9,11 +9,6 @@ export type AccessState =
       activeHouseholdId: string;
     };
 
-export type ActiveHouseholdAccess = Extract<
-  AccessState,
-  { status: 'signed-in-with-active-household' }
->;
-
 export type AccessPolicy = 'guest' | 'signed-in' | 'active-household';
 
 export type AccessRedirect = '/sign-in/$' | '/onboarding' | '/dashboard';
@@ -137,13 +132,9 @@ export const resolveAccessNavigation = (
 };
 
 export const isAccessAligned = (
-  providerLoaded: boolean,
   providerAccess: AccessState,
   routeAccess: AccessState | undefined
 ): boolean => {
-  if (!providerLoaded) {
-    return true;
-  }
   if (!routeAccess) {
     return false;
   }
@@ -205,7 +196,7 @@ export const claimsMatchAccess = (
   return householdId === access.activeHouseholdId;
 };
 
-export const enforceAccess = ((
+export const enforceAccess = (
   access: AccessState | undefined,
   policy: AccessPolicy,
   returnPath?: unknown
@@ -216,15 +207,4 @@ export const enforceAccess = ((
     throw redirect(target);
   }
   return resolved;
-}) as {
-  (
-    access: AccessState | undefined,
-    policy: 'active-household',
-    returnPath?: unknown
-  ): ActiveHouseholdAccess;
-  (
-    access: AccessState | undefined,
-    policy: AccessPolicy,
-    returnPath?: unknown
-  ): AccessState;
 };

@@ -61,7 +61,7 @@ export const Route = createFileRoute('/_layout')({
     access: enforceAccess(context.access, 'active-household', location.href),
   }),
   loader: async ({ context }) => {
-    void context.queryClient.prefetchQuery(activeImportDraftsQueryOptions());
+    void context.queryClient.prefetchQuery(activeImportDraftsQueryOptions);
     return getPublicSidebarState();
   },
   component: LayoutShell,

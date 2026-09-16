@@ -8,7 +8,6 @@ export type {
   AccessPolicy,
   AccessRedirect,
   AccessState,
-  ActiveHouseholdAccess,
 } from './access-state';
 export { AccessGate } from './AccessGate';
 export { resolveAccess } from './resolve';

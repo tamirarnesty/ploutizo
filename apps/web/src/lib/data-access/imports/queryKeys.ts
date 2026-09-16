@@ -1,8 +1,8 @@
-export const importTargetsQueryKey = () => ['imports', 'targets'];
+export const importTargetsQueryKey = ['imports', 'targets'] as const;
 
-export const activeImportDraftsQueryKey = () => ['imports', 'drafts'];
+export const activeImportDraftsQueryKey = ['imports', 'drafts'] as const;
 
-export const importHistoryQueryKey = () => ['imports', 'history'];
+export const importHistoryQueryKey = ['imports', 'history'] as const;
 
 export const importHistoryPageQueryKey = (limit: number) => [
   'imports',

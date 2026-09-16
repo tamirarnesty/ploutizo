@@ -162,13 +162,9 @@ describe('resolveAccessNavigation', () => {
 });
 
 describe('isAccessAligned', () => {
-  it('allows work while the identity client is still loading', () => {
-    expect(isAccessAligned(false, signedOut, signedInWithHousehold)).toBe(true);
-  });
-
   it('does not resume household work against a stale route snapshot', () => {
     expect(
-      isAccessAligned(true, signedInWithHousehold, {
+      isAccessAligned(signedInWithHousehold, {
         status: 'signed-in-with-active-household',
         signedInMemberId: 'user_123',
         activeHouseholdId: 'org_other',
@@ -177,12 +173,12 @@ describe('isAccessAligned', () => {
   });
 
   it('resumes only when provider identity and route access agree', () => {
-    expect(
-      isAccessAligned(true, signedInWithHousehold, signedInWithHousehold)
-    ).toBe(true);
+    expect(isAccessAligned(signedInWithHousehold, signedInWithHousehold)).toBe(
+      true
+    );
   });
 
   it('treats a loaded signed-out provider as disagreement with a signed-in route', () => {
-    expect(isAccessAligned(true, signedOut, signedInWithHousehold)).toBe(false);
+    expect(isAccessAligned(signedOut, signedInWithHousehold)).toBe(false);
   });
 });

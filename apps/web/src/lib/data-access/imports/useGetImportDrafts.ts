@@ -13,11 +13,10 @@ export const fetchActiveImportDrafts = async (): Promise<
   return r.data;
 };
 
-export const activeImportDraftsQueryOptions = () =>
-  queryOptions({
-    queryKey: activeImportDraftsQueryKey(),
-    queryFn: fetchActiveImportDrafts,
-  });
+export const activeImportDraftsQueryOptions = queryOptions({
+  queryKey: activeImportDraftsQueryKey,
+  queryFn: fetchActiveImportDrafts,
+});
 
 type UseGetImportDraftsOptions = {
   enabled?: boolean;
@@ -27,7 +26,7 @@ export const useGetImportDrafts = (
   options?: UseGetImportDraftsOptions
 ): UseQueryResult<ImportDraftSummary[]> => {
   return useQuery({
-    ...activeImportDraftsQueryOptions(),
+    ...activeImportDraftsQueryOptions,
     enabled: options?.enabled ?? true,
   });
 };

@@ -26,10 +26,10 @@ export const useFinalizeImportDraft = (draftId: string) => {
         queryKey: importDraftQueryKey(draftId),
       });
       void queryClient.invalidateQueries({
-        queryKey: activeImportDraftsQueryKey(),
+        queryKey: activeImportDraftsQueryKey,
       });
       void queryClient.invalidateQueries({
-        queryKey: importHistoryQueryKey(),
+        queryKey: importHistoryQueryKey,
       });
     },
   });

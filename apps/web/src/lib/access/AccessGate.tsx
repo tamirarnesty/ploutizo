@@ -10,11 +10,6 @@ import {
 import type { AccessState } from './access-state';
 import type { ReactNode } from 'react';
 
-const accessPairKey = (
-  providerAccess: AccessState,
-  routeAccess: AccessState | undefined
-) => JSON.stringify({ providerAccess, routeAccess });
-
 export const useAccessGate = (): boolean => {
   const router = useRouter();
   const { access: routeAccess } = useRouteContext({ from: '__root__' });
@@ -23,7 +18,7 @@ export const useAccessGate = (): boolean => {
     undefined
   );
   const [shouldInvalidateRouter, setShouldInvalidateRouter] = useState(false);
-  const scheduledPair = useRef<string | null>(null);
+  const hasScheduledMismatch = useRef(false);
 
   useEffect(() => {
     if (!shouldInvalidateRouter) {
@@ -53,7 +48,7 @@ export const useAccessGate = (): boolean => {
   if (!isSignedIn) {
     setClientBearerGetter(null);
   } else {
-    setClientBearerGetter(() => getToken({ skipCache: true }));
+    setClientBearerGetter(getToken);
   }
 
   const identityChanged =
@@ -61,17 +56,20 @@ export const useAccessGate = (): boolean => {
   if (previousAccess === undefined || identityChanged) {
     if (identityChanged) {
       endWorkingSet();
-      setShouldInvalidateRouter(true);
+      if (!shouldInvalidateRouter) {
+        setShouldInvalidateRouter(true);
+      }
     }
     setPreviousAccess(providerAccess);
   }
 
-  const aligned = isAccessAligned(isLoaded, providerAccess, routeAccess);
+  const aligned = isAccessAligned(providerAccess, routeAccess);
   if (!aligned) {
-    const pair = accessPairKey(providerAccess, routeAccess);
-    if (scheduledPair.current !== pair) {
-      scheduledPair.current = pair;
-      endWorkingSet();
+    if (!hasScheduledMismatch.current) {
+      hasScheduledMismatch.current = true;
+      if (!identityChanged) {
+        endWorkingSet();
+      }
       if (!shouldInvalidateRouter) {
         setShouldInvalidateRouter(true);
       }
@@ -79,7 +77,7 @@ export const useAccessGate = (): boolean => {
     return false;
   }
 
-  scheduledPair.current = null;
+  hasScheduledMismatch.current = false;
   return true;
 };
 

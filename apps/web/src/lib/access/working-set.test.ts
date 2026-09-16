@@ -1,10 +1,10 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { queryClient } from '@/lib/queryClient';
 import { claimsMatchAccess } from './access-state';
 import {
   endWorkingSet,
   getClientHouseholdBearer,
-  registerWorkingSetStore,
+  registerWorkingSetCleanup,
   rememberTransitionCredential,
   resetWorkingSetForTests,
   setClientBearerGetter,
@@ -65,6 +65,20 @@ describe('getHouseholdBearer', () => {
     setClientBearerGetter(() => Promise.resolve(clerkJwt));
 
     await expect(getClientHouseholdBearer()).resolves.toBe(clerkJwt);
+  });
+
+  it('does not refresh a matching cached Clerk token', async () => {
+    const clerkJwt = unsignedJwt({
+      sub: 'user_alex',
+      org_id: 'org_a',
+    });
+    const getToken = vi.fn(() => Promise.resolve(clerkJwt));
+    setLiveAccess(alexInHouseholdA);
+    setClientBearerGetter(getToken);
+
+    await expect(getClientHouseholdBearer()).resolves.toBe(clerkJwt);
+    expect(getToken).toHaveBeenCalledTimes(1);
+    expect(getToken).toHaveBeenCalledWith(undefined);
   });
 
   it('does not let a mismatched Clerk token beat a matching transition bearer', async () => {
@@ -158,10 +172,8 @@ describe('endWorkingSet', () => {
     rememberTransitionCredential(householdAJwt, alexInHouseholdA);
     setLiveAccess(alexInHouseholdA);
     let ended = false;
-    registerWorkingSetStore({
-      end: () => {
-        ended = true;
-      },
+    registerWorkingSetCleanup(() => {
+      ended = true;
     });
 
     endWorkingSet();

@@ -17,13 +17,13 @@ export const useDiscardImportDraft = () => {
       }),
     onSuccess: (_response, draftId) => {
       qc.setQueryData<ImportDraftSummary[]>(
-        activeImportDraftsQueryKey(),
+        activeImportDraftsQueryKey,
         (current) => current?.filter((draft) => draft.id !== draftId)
       );
       void qc.invalidateQueries({
-        queryKey: activeImportDraftsQueryKey(),
+        queryKey: activeImportDraftsQueryKey,
       });
-      void qc.invalidateQueries({ queryKey: importHistoryQueryKey() });
+      void qc.invalidateQueries({ queryKey: importHistoryQueryKey });
       qc.removeQueries({ queryKey: importDraftQueryKey(draftId) });
       void releaseImportDraftRowsCollection(draftId);
     },

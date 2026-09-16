@@ -7,16 +7,15 @@ export interface HouseholdOverview {
   imageUrl: string | null;
 }
 
-export const householdOverviewQueryOptions = () =>
-  queryOptions({
-    queryKey: ['household-overview'],
-    queryFn: () =>
-      apiFetch<{ data: HouseholdOverview }>('/api/households').then(
-        (r) => r.data
-      ),
-  });
+export const householdOverviewQueryOptions = queryOptions({
+  queryKey: ['household-overview'],
+  queryFn: () =>
+    apiFetch<{ data: HouseholdOverview }>('/api/households').then(
+      (r) => r.data
+    ),
+});
 
 export const useGetHouseholdOverview =
   (): UseQueryResult<HouseholdOverview> => {
-    return useQuery(householdOverviewQueryOptions());
+    return useQuery(householdOverviewQueryOptions);
   };
