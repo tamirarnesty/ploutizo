@@ -1091,7 +1091,7 @@ const main = async () => {
     svixChild = svix.child;
     svixChild.on('error', (err) => {
       log(
-        `svix CLI failed to start (${err.message}). Clerk webhooks will not reach this API; tenantGuard will still backfill both callers.`
+        `svix CLI failed to start (${err.message}). Clerk webhooks will not reach this API; householdGuard will still backfill both callers.`
       );
     });
     const playUrl = await Promise.race([
@@ -1103,12 +1103,12 @@ const main = async () => {
       const normalizedPlay = playUrl.replace(/\/?$/, '/');
       if (expectedRelay && normalizedPlay !== expectedRelay) {
         log(
-          'Relay URL differs from CLERK_WEBHOOK_RELAY_URL. Clerk will not hit this tunnel unless the dashboard endpoint is updated. Member rows still sync via tenantGuard when each user calls the API.'
+          'Relay URL differs from CLERK_WEBHOOK_RELAY_URL. Clerk will not hit this tunnel unless the dashboard endpoint is updated. Member rows still sync via householdGuard when each user calls the API.'
         );
       }
     } else {
       log(
-        'svix listen did not print a Play URL in time; continuing with tenantGuard member sync'
+        'svix listen did not print a Play URL in time; continuing with householdGuard member sync'
       );
     }
 

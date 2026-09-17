@@ -4,7 +4,7 @@ status: accepted
 
 # Org-scoped data access in API queries
 
-Clerk `tenantGuard` sets a household principal (`signedInMemberId`, `activeHouseholdId`) on every authenticated request. Routes pass `principal.activeHouseholdId` into query/service helpers as `orgId`, but tenancy was enforced inconsistently in the query layer: some reads filtered by `org_id` on anchor tables only at the HTTP boundary, while child-table reads (assignees, tags, account members) could omit an org join. Write paths sometimes accepted foreign keys without verifying they belong to the active household.
+`householdGuard` sets a household principal (`signedInMemberId`, `activeHouseholdId`) on every authenticated request. Routes pass `principal.activeHouseholdId` into query/service helpers as `orgId`, but tenancy was enforced inconsistently in the query layer: some reads filtered by `org_id` on anchor tables only at the HTTP boundary, while child-table reads (assignees, tags, account members) could omit an org join. Write paths sometimes accepted foreign keys without verifying they belong to the active household.
 
 We centralize org scope in `apps/api/src/lib/queries/scope.ts`:
 
