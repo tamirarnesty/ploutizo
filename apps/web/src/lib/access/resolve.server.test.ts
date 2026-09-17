@@ -10,6 +10,33 @@ const householdAJwt = vi.hoisted(() => {
 
 const setResponseHeader = vi.fn();
 
+describe('getRequestAccess', () => {
+  afterEach(() => {
+    vi.resetModules();
+    vi.doUnmock('@clerk/tanstack-react-start/server');
+  });
+
+  it('maps Clerk auth into access state', async () => {
+    vi.doMock('@clerk/tanstack-react-start/server', () => ({
+      auth: () =>
+        Promise.resolve({
+          isAuthenticated: true,
+          userId: 'user_a',
+          orgId: 'org_a',
+          getToken: () => Promise.resolve(householdAJwt),
+        }),
+    }));
+
+    const { getRequestAccess } = await import('./resolve.server');
+
+    await expect(getRequestAccess()).resolves.toEqual({
+      status: 'signed-in-with-active-household',
+      signedInMemberId: 'user_a',
+      activeHouseholdId: 'org_a',
+    });
+  });
+});
+
 describe('getRequestHouseholdBearer', () => {
   afterEach(() => {
     vi.resetModules();

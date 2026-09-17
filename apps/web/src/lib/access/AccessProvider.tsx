@@ -99,14 +99,20 @@ export const AccessProvider = ({ children }: { children: ReactNode }) => {
 
     let cancelled = false;
     const validateToken = async () => {
-      const token = await resolveTransitionBearer(getToken, access);
-      if (cancelled) {
-        return;
-      }
-      if (token) {
-        setBearerError(false);
-        setIsReady(true);
-        return;
+      try {
+        const token = await resolveTransitionBearer(getToken, access);
+        if (cancelled) {
+          return;
+        }
+        if (token) {
+          setBearerError(false);
+          setIsReady(true);
+          return;
+        }
+      } catch {
+        if (cancelled) {
+          return;
+        }
       }
       setBearerError(true);
       setIsReady(false);

@@ -3,8 +3,8 @@ import { enforceAccessPolicy } from '@/lib/access';
 import { Onboarding } from '../components/onboarding/Onboarding';
 
 export const Route = createFileRoute('/onboarding')({
-  beforeLoad: ({ context, location }) => {
-    enforceAccessPolicy(context, 'signed-in', location.href);
+  beforeLoad: async ({ context, location }) => {
+    await enforceAccessPolicy(context, 'signed-in', location.href);
   },
   component: Onboarding,
 });

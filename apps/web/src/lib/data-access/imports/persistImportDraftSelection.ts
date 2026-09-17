@@ -2,6 +2,10 @@ import { matchDecisionsForSelectedRows } from '@ploutizo/utils';
 import { createOptimisticAction } from '@tanstack/db';
 import type { ImportDraft, ImportDraftPersistedRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowSelectionInput } from '@ploutizo/validators';
+import {
+  getWorkingSetEpoch,
+  isCurrentWorkingSetEpoch,
+} from '@/lib/access/working-set-epoch';
 import { getActiveQueryClient } from '@/lib/access/working-set-registry';
 import {
   getImportReviewAutosaveSnapshot,
@@ -106,6 +110,7 @@ const persistSelection = createOptimisticAction<SelectionVariables>({
     // Field persists first when ordering matters (ADR 0005).
     await flushImportDraftRowPacedMutations(draftId);
 
+    const startedEpoch = getWorkingSetEpoch();
     const body: UpdateImportDraftRowSelectionInput = {
       rowIds,
       selectedForImport,
@@ -116,6 +121,9 @@ const persistSelection = createOptimisticAction<SelectionVariables>({
         draftId,
         body
       );
+      if (!isCurrentWorkingSetEpoch(startedEpoch)) {
+        return;
+      }
       confirmSelectionIntoCollection(
         draftId,
         serverRows,
@@ -124,6 +132,9 @@ const persistSelection = createOptimisticAction<SelectionVariables>({
       );
       markImportReviewSelectionSuccess(draftId, rowIds);
     } catch {
+      if (!isCurrentWorkingSetEpoch(startedEpoch)) {
+        return;
+      }
       confirmSelectionIntoCollection(draftId, null, rowIds, selectedForImport);
       markImportReviewSelectionFailure(draftId, rowIds);
     }

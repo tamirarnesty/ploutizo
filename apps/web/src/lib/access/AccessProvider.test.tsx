@@ -168,4 +168,19 @@ describe('AccessProvider', () => {
       expect(result.current.bearerError).toBe(false);
     });
   });
+
+  it('surfaces bearerError when fresh token retrieval rejects', async () => {
+    signInAs(householdA, householdAJwt);
+    authState.getToken = (options?: { skipCache?: boolean }) =>
+      options?.skipCache
+        ? Promise.reject(new Error('network failure'))
+        : Promise.resolve(householdAJwt);
+
+    const { result } = renderHook(() => useAccess(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.bearerError).toBe(true);
+      expect(result.current.isReady).toBe(false);
+    });
+  });
 });

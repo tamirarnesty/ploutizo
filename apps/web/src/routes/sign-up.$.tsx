@@ -9,8 +9,8 @@ const Page = () => (
 );
 
 export const Route = createFileRoute('/sign-up/$')({
-  beforeLoad: ({ context, location }) => {
-    enforceAccessPolicy(context, 'guest', location.href);
+  beforeLoad: async ({ context, location }) => {
+    await enforceAccessPolicy(context, 'guest', location.href);
   },
   component: Page,
 });

@@ -15,8 +15,8 @@ const Page = () => {
 };
 
 export const Route = createFileRoute('/sign-in/$')({
-  beforeLoad: ({ context, location }) => {
-    enforceAccessPolicy(context, 'guest', location.href);
+  beforeLoad: async ({ context, location }) => {
+    await enforceAccessPolicy(context, 'guest', location.href);
   },
   validateSearch: (search: Record<string, unknown>): { redirect?: string } => {
     const redirect = sanitizeReturnPath(search.redirect);

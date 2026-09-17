@@ -66,24 +66,24 @@ describe('resolveAccessRedirect', () => {
 });
 
 describe('enforceAccessPolicy', () => {
-  it('does not redirect while Clerk still looks signed-out', () => {
-    expect(() =>
+  it('does not redirect while Clerk still looks signed-out on the client', async () => {
+    await expect(
       enforceAccessPolicy(
         { access: signedOut, isReady: false },
         'active-household',
         '/accounts'
       )
-    ).not.toThrow();
+    ).resolves.toBeUndefined();
   });
 
-  it('redirects a signed-in visitor off a guest route before bearer readiness', () => {
-    expect(() =>
+  it('redirects a signed-in visitor off a guest route before bearer readiness', async () => {
+    await expect(
       enforceAccessPolicy(
         { access: signedInWithHousehold, isReady: false },
         'guest',
         '/sign-in'
       )
-    ).toThrow();
+    ).rejects.toThrow();
   });
 
   it('preserves a local return path when sending a signed-out visitor to sign-in', () => {

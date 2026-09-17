@@ -67,8 +67,8 @@ const LayoutShell = () => (
 );
 
 export const Route = createFileRoute('/_layout')({
-  beforeLoad: ({ context, location }) => {
-    enforceAccessPolicy(context, 'active-household', location.href);
+  beforeLoad: async ({ context, location }) => {
+    await enforceAccessPolicy(context, 'active-household', location.href);
   },
   loader: async ({ context }) => {
     if (isHouseholdLoaderReady(context)) {
