@@ -1,3 +1,5 @@
+import { getHouseholdBearer } from '@/lib/access/working-set';
+
 // API base URL from env var — never hardcode ploutizo.app or localhost
 const API_BASE_URL = import.meta.env.VITE_API_URL as string;
 
@@ -10,8 +12,6 @@ export const apiFetch = async <T>(
   path: string,
   options?: ApiFetchOptions
 ): Promise<T> => {
-  // Dynamic import avoids a static cycle: working-set -> queryClient -> access -> working-set.
-  const { getHouseholdBearer } = await import('@/lib/access');
   const token = await getHouseholdBearer();
   if (!token) {
     const error = new Error('Household bearer unavailable');

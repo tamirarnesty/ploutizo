@@ -1,4 +1,5 @@
 import { createIsomorphicFn } from '@tanstack/react-start';
+import { getRequestHouseholdBearer } from './resolve.server';
 import type { AccessState } from './access-state';
 
 type BearerGetter = (options?: {
@@ -34,7 +35,4 @@ export const getClientHouseholdBearer = async (): Promise<string | null> => {
 
 export const getHouseholdBearer = createIsomorphicFn()
   .client(getClientHouseholdBearer)
-  .server(async () => {
-    const { getRequestHouseholdBearer } = await import('./resolve.server');
-    return getRequestHouseholdBearer();
-  });
+  .server(async () => getRequestHouseholdBearer());
