@@ -1,3 +1,4 @@
+import '@/lib/access/working-set-cleanup';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { UpdateImportDraftRowResult } from '@ploutizo/types';
 import {
@@ -5,7 +6,11 @@ import {
   makeImportDraftRow,
   toPersistedImportDraftRow,
 } from '@/components/imports/test-fixtures/importDraft';
-import { getActiveQueryClient } from '@/lib/access/working-set-registry';
+import {
+  getActiveQueryClient,
+  replaceActiveWorkingSet,
+  resetWorkingSetRegistryForTests,
+} from '@/lib/access/working-set-registry';
 import { fetchUpdateImportDraftRow } from './fetchUpdateImportDraftRow';
 import {
   IMPORT_ROW_PACE_WAIT_MS,
@@ -16,7 +21,10 @@ import {
   endImportDraftRowsCollections,
   getImportDraftRowsCollection,
 } from './getImportDraftRowsCollection';
-import { endImportReviewAutosave } from './importReviewAutosave';
+import {
+  endImportReviewAutosave,
+  getImportReviewAutosaveSnapshot,
+} from './importReviewAutosave';
 import { importDraftQueryKey } from './queryKeys';
 import { fetchImportDraft } from './useGetImportDraft';
 
@@ -56,6 +64,7 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
     endImportDraftRowPacedMutations();
     endImportReviewAutosave();
     await endImportDraftRowsCollections();
+    resetWorkingSetRegistryForTests();
     getActiveQueryClient().clear();
   });
 
@@ -225,5 +234,66 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
       reviewMatchedTransactionId: 'tx_same',
     });
     expect(collection.get('row_1')?.reviewMatchedTransactionId).toBe('tx_same');
+  });
+
+  it('does not mark row persist in flight when scope is stale at commit', async () => {
+    const collection = getImportDraftRowsCollection(draft.id);
+    await collection.preload();
+
+    vi.useFakeTimers();
+    const mutate = getImportDraftRowPacedMutations(draft.id, 'row_1');
+    mutate({ patch: { reviewDescription: 'Stale scope' } });
+    replaceActiveWorkingSet();
+    await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
+    await vi.runAllTimersAsync();
+
+    expect(fetchUpdateImportDraftRow).not.toHaveBeenCalled();
+    expect(getImportReviewAutosaveSnapshot(draft.id)).toEqual({
+      status: 'idle',
+      failedRowIds: [],
+      hasUnsavedWork: false,
+      failedSelectionRowIds: [],
+      failedFieldKeys: new Map(),
+    });
+  });
+
+  it('does not confirm row patch after a household switch while PATCH is in flight', async () => {
+    const collection = getImportDraftRowsCollection(draft.id);
+    await collection.preload();
+
+    let resolvePatch: ((value: UpdateImportDraftRowResult) => void) | undefined;
+    const patchPersist = new Promise<UpdateImportDraftRowResult>((resolve) => {
+      resolvePatch = resolve;
+    });
+    vi.mocked(fetchUpdateImportDraftRow).mockImplementationOnce(
+      () => patchPersist
+    );
+
+    vi.useFakeTimers();
+    const mutate = getImportDraftRowPacedMutations(draft.id, 'row_1');
+    mutate({ patch: { reviewDescription: 'Held across switch' } });
+    await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
+
+    expect(getImportReviewAutosaveSnapshot(draft.id).status).toBe('saving');
+    replaceActiveWorkingSet();
+
+    resolvePatch?.({
+      row: toPersistedImportDraftRow(draft.rows[0], {
+        reviewDescription: 'Held across switch',
+        updatedAt: '2026-05-20T12:00:05.000Z',
+      }),
+    });
+    await patchPersist;
+    await vi.runAllTimersAsync();
+
+    expect(fetchUpdateImportDraftRow).toHaveBeenCalledTimes(1);
+    expect(getImportDraftRowsCollection(draft.id).get('row_1')).toBeUndefined();
+    expect(getImportReviewAutosaveSnapshot(draft.id)).toEqual({
+      status: 'idle',
+      failedRowIds: [],
+      hasUnsavedWork: false,
+      failedSelectionRowIds: [],
+      failedFieldKeys: new Map(),
+    });
   });
 });

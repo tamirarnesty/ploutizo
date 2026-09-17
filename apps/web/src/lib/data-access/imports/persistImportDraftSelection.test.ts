@@ -101,4 +101,71 @@ describe('persistImportDraftSelection working-set scope', () => {
     });
     expect(getImportDraftRowsCollection(draft.id).get('row_1')).toBeUndefined();
   });
+
+  it('does not persist selection after a household switch before mutationFn runs', async () => {
+    const collection = getImportDraftRowsCollection(draft.id);
+    await collection.preload();
+
+    persistImportDraftSelection(draft.id, ['row_1'], true);
+    replaceActiveWorkingSet();
+
+    await vi.waitFor(() => {
+      expect(flushImportDraftRowPacedMutations).toHaveBeenCalled();
+    });
+
+    expect(fetchUpdateImportDraftRowSelection).not.toHaveBeenCalled();
+    expect(getImportReviewAutosaveSnapshot(draft.id)).toEqual({
+      status: 'idle',
+      failedRowIds: [],
+      hasUnsavedWork: false,
+      failedSelectionRowIds: [],
+      failedFieldKeys: new Map(),
+    });
+  });
+
+  it('A→B→A: stale selection persist does not corrupt newer autosave state', async () => {
+    const collection = getImportDraftRowsCollection(draft.id);
+    await collection.preload();
+
+    let resolveFirst: ((value: []) => void) | undefined;
+    let resolveSecond: ((value: []) => void) | undefined;
+    const firstFetch = new Promise<[]>((resolve) => {
+      resolveFirst = resolve;
+    });
+    const secondFetch = new Promise<[]>((resolve) => {
+      resolveSecond = resolve;
+    });
+    vi.mocked(fetchUpdateImportDraftRowSelection)
+      .mockImplementationOnce(() => firstFetch)
+      .mockImplementationOnce(() => secondFetch);
+
+    persistImportDraftSelection(draft.id, ['row_1'], true);
+    await vi.waitFor(() => {
+      expect(getImportReviewAutosaveSnapshot(draft.id).status).toBe('saving');
+    });
+
+    replaceActiveWorkingSet();
+    replaceActiveWorkingSet();
+
+    getActiveQueryClient().setQueryData(importDraftQueryKey(draft.id), draft);
+    await getImportDraftRowsCollection(draft.id).preload();
+
+    persistImportDraftSelection(draft.id, ['row_1'], true);
+    await vi.waitFor(() => {
+      expect(getImportReviewAutosaveSnapshot(draft.id).status).toBe('saving');
+    });
+
+    resolveFirst?.([]);
+    await firstFetch;
+    await Promise.resolve();
+
+    expect(getImportReviewAutosaveSnapshot(draft.id).status).toBe('saving');
+
+    resolveSecond?.([]);
+    await secondFetch;
+
+    await vi.waitFor(() => {
+      expect(getImportReviewAutosaveSnapshot(draft.id).status).toBe('saved');
+    });
+  });
 });

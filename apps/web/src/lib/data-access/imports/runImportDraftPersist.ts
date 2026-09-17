@@ -4,24 +4,22 @@ type RunImportDraftPersistOptions<T> = {
   scope: WorkingSetScope;
   beforePersist?: () => Promise<void>;
   onStart?: () => void;
-  /** When true, stale exits after onStart call onStale. Defaults to onStart !== undefined. */
-  tracksInFlight?: boolean;
-  onStale?: () => void;
   persist: () => Promise<T>;
   onSuccess: (result: T) => void;
   onFailure?: () => void;
 };
 
 /**
- * Run an import-review persist under a working-set epoch scope.
+ * Run an import-review persist under a working-set scope.
  * Checkpoints after every await; stale scopes abort without success/failure.
+ * Stale exits do not adjust autosave in-flight counters — working-set cleanup
+ * clears autosave on switch, and draftId/rowId aborts would corrupt a newer
+ * operation after an A→B→A household transition.
  */
 export const runImportDraftPersist = async <T>({
   scope,
   beforePersist,
   onStart,
-  tracksInFlight,
-  onStale,
   persist,
   onSuccess,
   onFailure,
@@ -37,24 +35,17 @@ export const runImportDraftPersist = async <T>({
     return false;
   }
 
-  const inFlightTracked = tracksInFlight ?? onStart !== undefined;
   onStart?.();
 
   try {
     const result = await persist();
     if (!scope.isCurrent()) {
-      if (inFlightTracked) {
-        onStale?.();
-      }
       return false;
     }
     onSuccess(result);
     return true;
   } catch {
     if (!scope.isCurrent()) {
-      if (inFlightTracked) {
-        onStale?.();
-      }
       return false;
     }
     onFailure?.();

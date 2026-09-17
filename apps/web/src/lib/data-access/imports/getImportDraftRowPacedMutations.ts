@@ -8,7 +8,6 @@ import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import { beginWorkingSetScope } from '@/lib/access/working-set-registry';
 import type { WorkingSetScope } from '@/lib/access/working-set-registry';
 import {
-  abortImportReviewPersistInFlight,
   getImportReviewAutosaveSnapshot,
   markImportReviewPending,
   markImportReviewPersistFailure,
@@ -211,12 +210,12 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
       if (!scope.isCurrent()) {
         return;
       }
-      markImportReviewPersistStart(draftId, rowId);
       const collection = getImportDraftRowsCollection(draftId);
       const mutation = transaction.mutations.find(
         (entry) => entry.key === rowId
       );
       if (!mutation || mutation.type !== 'update') {
+        markImportReviewPersistStart(draftId, rowId);
         markImportReviewPersistSuccess(draftId, rowId);
         return;
       }
@@ -238,6 +237,7 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
       if (Object.keys(patch).length === 0) {
         collection.utils.writeUpdate(attempted);
         rederiveImportDraftWorkingCopy(draftId);
+        markImportReviewPersistStart(draftId, rowId);
         markImportReviewPersistSuccess(draftId, rowId);
         return;
       }
@@ -245,8 +245,7 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
       const persistedKeys = Object.keys(patch);
       await runImportDraftPersist({
         scope,
-        tracksInFlight: true,
-        onStale: () => abortImportReviewPersistInFlight(draftId, rowId),
+        onStart: () => markImportReviewPersistStart(draftId, rowId),
         persist: () => fetchUpdateImportDraftRow(rowId, patch),
         onSuccess: (server) => {
           confirmPersistIntoCollection(
@@ -359,7 +358,6 @@ export const retryFailedImportDraftRowPersists = async (draftId: string) => {
       await runImportDraftPersist({
         scope,
         onStart: () => markImportReviewPersistStart(draftId, rowId),
-        onStale: () => abortImportReviewPersistInFlight(draftId, rowId),
         persist: () => fetchUpdateImportDraftRow(rowId, patch),
         onSuccess: (server) => {
           confirmPersistIntoCollection(

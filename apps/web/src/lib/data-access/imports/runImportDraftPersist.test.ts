@@ -5,10 +5,17 @@ import {
   replaceActiveWorkingSet,
   resetWorkingSetRegistryForTests,
 } from '@/lib/access/working-set-registry';
+import {
+  endImportReviewAutosave,
+  getImportReviewAutosaveSnapshot,
+  markImportReviewPersistStart,
+  markImportReviewPersistSuccess,
+} from './importReviewAutosave';
 import { runImportDraftPersist } from './runImportDraftPersist';
 
 describe('runImportDraftPersist', () => {
   afterEach(() => {
+    endImportReviewAutosave();
     resetWorkingSetRegistryForTests();
   });
 
@@ -16,12 +23,10 @@ describe('runImportDraftPersist', () => {
     const scope = beginWorkingSetScope();
     const onSuccess = vi.fn();
     const onFailure = vi.fn();
-    const onStale = vi.fn();
 
     await runImportDraftPersist({
       scope,
       onStart: vi.fn(),
-      onStale,
       persist: async () => 'ok',
       onSuccess,
       onFailure,
@@ -29,18 +34,15 @@ describe('runImportDraftPersist', () => {
 
     expect(onSuccess).toHaveBeenCalledWith('ok');
     expect(onFailure).not.toHaveBeenCalled();
-    expect(onStale).not.toHaveBeenCalled();
   });
 
   it('skips success after a household switch during persist', async () => {
     const scope = beginWorkingSetScope();
     const onSuccess = vi.fn();
-    const onStale = vi.fn();
 
     await runImportDraftPersist({
       scope,
       onStart: vi.fn(),
-      onStale,
       persist: async () => {
         replaceActiveWorkingSet();
         return 'late';
@@ -49,14 +51,12 @@ describe('runImportDraftPersist', () => {
     });
 
     expect(onSuccess).not.toHaveBeenCalled();
-    expect(onStale).toHaveBeenCalledTimes(1);
   });
 
   it('skips beforePersist completion when the scope goes stale during flush', async () => {
     const scope = beginWorkingSetScope();
     const onStart = vi.fn();
     const onSuccess = vi.fn();
-    const onStale = vi.fn();
 
     await runImportDraftPersist({
       scope,
@@ -64,47 +64,50 @@ describe('runImportDraftPersist', () => {
         replaceActiveWorkingSet();
       },
       onStart,
-      onStale,
       persist: async () => 'ok',
       onSuccess,
     });
 
     expect(onStart).not.toHaveBeenCalled();
     expect(onSuccess).not.toHaveBeenCalled();
-    expect(onStale).not.toHaveBeenCalled();
   });
 
-  it('does not call onStale when stale before onStart', async () => {
+  it('does not run onStart when stale before persist', async () => {
     const scope = beginWorkingSetScope();
     replaceActiveWorkingSet();
-    const onStale = vi.fn();
+    const onStart = vi.fn();
 
     await runImportDraftPersist({
       scope,
-      onStart: vi.fn(),
-      onStale,
+      onStart,
       persist: async () => 'ok',
       onSuccess: vi.fn(),
     });
 
-    expect(onStale).not.toHaveBeenCalled();
+    expect(onStart).not.toHaveBeenCalled();
   });
 
-  it('calls onStale when tracksInFlight and stale after persist', async () => {
-    const scope = beginWorkingSetScope();
-    const onStale = vi.fn();
+  it('A→B→A: stale row persist does not corrupt a newer operation autosave state', async () => {
+    const draftId = 'draft_1';
+    const rowId = 'row_1';
+    const scopeA = beginWorkingSetScope();
+
+    markImportReviewPersistStart(draftId, rowId);
+    replaceActiveWorkingSet();
+    replaceActiveWorkingSet();
+
+    markImportReviewPersistStart(draftId, rowId);
+    expect(getImportReviewAutosaveSnapshot(draftId).status).toBe('saving');
 
     await runImportDraftPersist({
-      scope,
-      tracksInFlight: true,
-      onStale,
-      persist: async () => {
-        replaceActiveWorkingSet();
-        return 'late';
-      },
+      scope: scopeA,
+      persist: async () => 'stale',
       onSuccess: vi.fn(),
     });
 
-    expect(onStale).toHaveBeenCalledTimes(1);
+    expect(getImportReviewAutosaveSnapshot(draftId).status).toBe('saving');
+
+    markImportReviewPersistSuccess(draftId, rowId);
+    expect(getImportReviewAutosaveSnapshot(draftId).status).toBe('saved');
   });
 });

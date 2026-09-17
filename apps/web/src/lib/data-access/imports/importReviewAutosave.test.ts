@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
-  abortImportReviewSelectionInFlight,
   endImportReviewAutosave,
   getImportReviewAutosaveSnapshot,
   markImportReviewPending,
@@ -73,17 +72,5 @@ describe('importReviewAutosave selection failures', () => {
     const snapshot = getImportReviewAutosaveSnapshot(draftId);
     expect(snapshot.failedSelectionRowIds).toEqual(['row_b']);
     expect(snapshot.failedRowIds).toEqual(['row_b']);
-  });
-
-  it('aborts stale selection in-flight without leaving saving state', () => {
-    const draftId = 'draft_1';
-
-    markImportReviewSelectionStart(draftId);
-    abortImportReviewSelectionInFlight(draftId);
-
-    expect(getImportReviewAutosaveSnapshot(draftId)).toMatchObject({
-      status: 'idle',
-      hasUnsavedWork: false,
-    });
   });
 });

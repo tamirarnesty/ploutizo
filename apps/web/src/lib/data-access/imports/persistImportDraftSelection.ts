@@ -6,8 +6,8 @@ import {
   beginWorkingSetScope,
   getActiveQueryClient,
 } from '@/lib/access/working-set-registry';
+import type { WorkingSetScope } from '@/lib/access/working-set-registry';
 import {
-  abortImportReviewSelectionInFlight,
   getImportReviewAutosaveSnapshot,
   markImportReviewSelectionFailure,
   markImportReviewSelectionStart,
@@ -25,6 +25,7 @@ interface SelectionVariables {
   draftId: string;
   rowIds: string[];
   selectedForImport: boolean;
+  scope: WorkingSetScope;
 }
 
 const applySelectionMatchDecisions = (
@@ -106,8 +107,7 @@ const persistSelection = createOptimisticAction<SelectionVariables>({
     applySelectionMatchDecisions(draftId, rowIds, selectedForImport);
     rederiveImportDraftWorkingCopy(draftId);
   },
-  mutationFn: async ({ draftId, rowIds, selectedForImport }) => {
-    const scope = beginWorkingSetScope();
+  mutationFn: async ({ draftId, rowIds, selectedForImport, scope }) => {
     const body: UpdateImportDraftRowSelectionInput = {
       rowIds,
       selectedForImport,
@@ -117,7 +117,6 @@ const persistSelection = createOptimisticAction<SelectionVariables>({
       scope,
       beforePersist: () => flushImportDraftRowPacedMutations(draftId),
       onStart: () => markImportReviewSelectionStart(draftId),
-      onStale: () => abortImportReviewSelectionInFlight(draftId),
       persist: () => fetchUpdateImportDraftRowSelection(draftId, body),
       onSuccess: (serverRows) => {
         confirmSelectionIntoCollection(
@@ -147,7 +146,12 @@ export const persistImportDraftSelection = (
   selectedForImport: boolean
 ) => {
   if (rowIds.length === 0) return;
-  persistSelection({ draftId, rowIds, selectedForImport });
+  persistSelection({
+    draftId,
+    rowIds,
+    selectedForImport,
+    scope: beginWorkingSetScope(),
+  });
 };
 
 /** Re-persist failed selection from the live working copy (not the original intent). */
