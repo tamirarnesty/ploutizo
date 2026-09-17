@@ -3,6 +3,10 @@ import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
 import { alertDialogMock, dialogMock, sheetMock } from '@/test/mockUiOverlays';
 
+vi.mock('@clerk/shared/loadClerkJsScript', () => ({
+  loadClerkJsScript: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('@/lib/data-access/useHouseholdQuery', async () => {
   const { useQuery } = await import('@tanstack/react-query');
   return {

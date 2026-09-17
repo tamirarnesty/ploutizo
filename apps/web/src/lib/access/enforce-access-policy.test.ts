@@ -66,10 +66,10 @@ describe('resolveAccessRedirect', () => {
 });
 
 describe('enforceAccessPolicy', () => {
-  it('does not redirect while Clerk still looks signed-out on the client', async () => {
+  it('does not redirect while Clerk identity is still loading on the client', async () => {
     await expect(
       enforceAccessPolicy(
-        { access: signedOut, isReady: false },
+        { access: signedOut, identityLoaded: false },
         'active-household',
         '/accounts'
       )
@@ -79,7 +79,7 @@ describe('enforceAccessPolicy', () => {
   it('redirects a signed-in visitor off a guest route before bearer readiness', async () => {
     await expect(
       enforceAccessPolicy(
-        { access: signedInWithHousehold, isReady: false },
+        { access: signedInWithHousehold, identityLoaded: true },
         'guest',
         '/sign-in'
       )

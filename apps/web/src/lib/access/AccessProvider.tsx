@@ -12,13 +12,24 @@ import {
 import { accessKey } from './access-key';
 import { toAccessState } from './access-state';
 import { resolveTransitionBearer } from './resolve-transition-bearer';
+import {
+  getActiveQueryClient,
+  replaceActiveWorkingSet,
+} from './working-set-registry';
+import { publishAccessRouterContext } from './access-router-context-store';
 import { setClientBearerGetter, setLiveAccess } from './working-set';
 import type { AccessState } from './access-state';
+import type { QueryClient } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 
-type AccessContextValue = {
+export type AccessSnapshot = {
   access: AccessState;
+  identityLoaded: boolean;
   isReady: boolean;
+  queryClient: QueryClient;
+};
+
+export type AccessContextValue = AccessSnapshot & {
   bearerError: boolean;
   retryBearer: () => void;
 };
@@ -38,7 +49,10 @@ export const AccessProvider = ({ children }: { children: ReactNode }) => {
   const [isReady, setIsReady] = useState(false);
   const [bearerError, setBearerError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [workingSetVersion, setWorkingSetVersion] = useState(0);
   const previousAccessKeyRef = useRef<string | undefined>(undefined);
+
+  const identityLoaded = isLoaded;
 
   const access = useMemo(
     () =>
@@ -71,6 +85,8 @@ export const AccessProvider = ({ children }: { children: ReactNode }) => {
       }
     } else {
       if (identityChanged) {
+        replaceActiveWorkingSet();
+        setWorkingSetVersion((version) => version + 1);
         setBearerError(false);
       }
 
@@ -91,6 +107,11 @@ export const AccessProvider = ({ children }: { children: ReactNode }) => {
 
     previousAccessKeyRef.current = currentAccessKey;
   }
+
+  const queryClient = useMemo(
+    () => getActiveQueryClient(),
+    [workingSetVersion, currentAccessKey]
+  );
 
   useEffect(() => {
     if (import.meta.env.SSR || !isLoaded || access.status === 'signed-out') {
@@ -125,21 +146,30 @@ export const AccessProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [access, currentAccessKey, getToken, isLoaded, retryCount]);
 
-  // Household routes must not render the app shell on SSR: client readiness waits
-  // for bearer validation, so using isLoaded on the server caused hydration mismatch.
-  const boundaryReady = import.meta.env.SSR
-    ? isLoaded && access.status === 'signed-out'
-    : isReady;
-
   const value = useMemo(
     () => ({
       access,
-      isReady: boundaryReady,
+      identityLoaded,
+      isReady,
+      queryClient,
       bearerError,
       retryBearer,
     }),
-    [access, boundaryReady, bearerError, retryBearer]
+    [access, identityLoaded, isReady, queryClient, bearerError, retryBearer]
   );
+
+  useEffect(() => {
+    if (import.meta.env.SSR) {
+      return;
+    }
+
+    publishAccessRouterContext({
+      access,
+      identityLoaded,
+      isReady,
+      queryClient,
+    });
+  }, [access, identityLoaded, isReady, queryClient]);
 
   return (
     <AccessContext.Provider value={value}>{children}</AccessContext.Provider>

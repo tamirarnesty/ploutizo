@@ -7,11 +7,9 @@ import { createServerFn } from '@tanstack/react-start';
 import { getCookie } from '@tanstack/react-start/server';
 import { SidebarInset, SidebarProvider } from '@ploutizo/ui/components/sidebar';
 import { cn } from '@ploutizo/ui/lib/utils';
-import {
-  BearerReadinessBoundary,
-  enforceAccessPolicy,
-  isHouseholdLoaderReady,
-} from '@/lib/access';
+import { BearerReadinessBoundary } from '@/lib/access';
+import { enforceAccessPolicy } from '@/lib/access/enforce-access-policy';
+import { isHouseholdLoaderReady } from '@/lib/access/household-loader-ready';
 import { CommandPaletteProvider } from '@/lib/command';
 import { activeImportDraftsQueryOptions } from '@/lib/data-access/imports';
 import { resolveMainContentLayout } from '@/lib/layout/main-content-layout';

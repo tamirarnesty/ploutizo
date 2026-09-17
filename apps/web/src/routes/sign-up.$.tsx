@@ -1,6 +1,6 @@
 import { SignUp } from '@clerk/tanstack-react-start';
 import { createFileRoute } from '@tanstack/react-router';
-import { enforceAccessPolicy } from '@/lib/access';
+import { enforceAccessPolicy } from '@/lib/access/enforce-access-policy';
 
 const Page = () => (
   <div className="flex min-h-screen items-center justify-center">

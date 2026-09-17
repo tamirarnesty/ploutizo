@@ -1,6 +1,7 @@
 import { SignIn } from '@clerk/tanstack-react-start';
 import { createFileRoute } from '@tanstack/react-router';
-import { enforceAccessPolicy, sanitizeReturnPath } from '@/lib/access';
+import { sanitizeReturnPath } from '@/lib/access';
+import { enforceAccessPolicy } from '@/lib/access/enforce-access-policy';
 
 const Page = () => {
   const { redirect: returnPath } = Route.useSearch();

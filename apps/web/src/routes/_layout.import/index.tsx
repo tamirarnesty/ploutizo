@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { isHouseholdLoaderReady } from '@/lib/access';
+import { isHouseholdLoaderReady } from '@/lib/access/household-loader-ready';
 import {
   activeImportDraftsQueryOptions,
   importHistoryPageQueryOptions,

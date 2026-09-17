@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { isHouseholdLoaderReady } from '@/lib/access';
+import { isHouseholdLoaderReady } from '@/lib/access/household-loader-ready';
 import { Dashboard } from '@/components/dashboard/Dashboard';
 import { orgMembersQueryOptions } from '@/lib/data-access/org';
 import { settlementsQueryOptions } from '@/lib/data-access/settlements';

@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { enforceAccessPolicy } from '@/lib/access';
+import { enforceAccessPolicy } from '@/lib/access/enforce-access-policy';
 import { HomePage } from '@/components/home/HomePage';
 
 export const Route = createFileRoute('/')({

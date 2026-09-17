@@ -10,6 +10,7 @@ import type { ImportReviewLocationState } from './lib/data-access/imports/import
 export interface RouterContext {
   queryClient: QueryClient;
   access: AccessState;
+  identityLoaded: boolean;
   isReady: boolean;
 }
 
@@ -25,6 +26,7 @@ export const getRouter = () => {
     context: {
       queryClient: client,
       access: signedOutAccess,
+      identityLoaded: false,
       isReady: false,
     },
     // Query DehydratedState uses `unknown` keys; Router requires JSON-serializable types.

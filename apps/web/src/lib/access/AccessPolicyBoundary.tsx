@@ -6,7 +6,7 @@ type BearerReadinessBoundaryProps = {
   children: ReactNode;
 };
 
-export const BearerReadinessBoundary = ({
+const BearerReadinessBoundaryClient = ({
   children,
 }: BearerReadinessBoundaryProps) => {
   const { access, isReady, bearerError, retryBearer } = useAccess();
@@ -20,4 +20,16 @@ export const BearerReadinessBoundary = ({
   }
 
   return children;
+};
+
+export const BearerReadinessBoundary = ({
+  children,
+}: BearerReadinessBoundaryProps) => {
+  if (import.meta.env.SSR) {
+    return null;
+  }
+
+  return (
+    <BearerReadinessBoundaryClient>{children}</BearerReadinessBoundaryClient>
+  );
 };

@@ -70,7 +70,8 @@ const signInAs = (
     Promise.resolve(token);
 };
 
-describe('AccessProvider', () => {
+/** Bearer token edge cases — Clerk auth is stubbed; provider wiring is covered in access-shell.integration.test.tsx. */
+describe('AccessProvider bearer validation', () => {
   beforeEach(() => {
     resetWorkingSetRegistryForTests();
     resetBearerStateForTests();
@@ -89,6 +90,7 @@ describe('AccessProvider', () => {
   it('stays not ready while Clerk is still loading', () => {
     const { result } = renderHook(() => useAccess(), { wrapper });
     expect(result.current.isReady).toBe(false);
+    expect(result.current.identityLoaded).toBe(false);
   });
 
   it('becomes ready for a signed-out visitor after Clerk loads', async () => {
@@ -101,6 +103,8 @@ describe('AccessProvider', () => {
       expect(result.current.isReady).toBe(true);
     });
     expect(result.current.access).toEqual({ status: 'signed-out' });
+    expect(result.current.identityLoaded).toBe(true);
+    expect(result.current.queryClient).toBe(getActiveQueryClient());
   });
 
   it('waits for a matching household token before becoming ready', async () => {

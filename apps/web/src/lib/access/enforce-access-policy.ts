@@ -10,18 +10,11 @@ const resolveAccessForPolicy = createIsomorphicFn()
   .server(async () => getRequestAccess());
 
 export const enforceAccessPolicy = async (
-  context: Pick<RouterContext, 'access' | 'isReady'>,
+  context: Pick<RouterContext, 'access' | 'identityLoaded'>,
   policy: AccessPolicy,
   locationHref: string
 ) => {
-  // Bearer readiness is for household data, not identity. Skip only while Clerk
-  // still looks signed-out on the client; otherwise guest routes stay mounted
-  // after sign-in and Clerk's afterSignIn redirect races the router.
-  if (
-    !import.meta.env.SSR &&
-    !context.isReady &&
-    context.access.status === 'signed-out'
-  ) {
+  if (!import.meta.env.SSR && !context.identityLoaded) {
     return;
   }
 
