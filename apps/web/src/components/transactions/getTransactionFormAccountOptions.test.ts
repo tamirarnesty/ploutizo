@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Account } from '@ploutizo/types';
 import {
   getTransactionFormAccountOptions,
+  resolveTransactionFormAccountIdForSlot,
   resolveTransactionFormAccountIdForType,
 } from './getTransactionFormAccountOptions';
 
@@ -116,6 +117,19 @@ describe('getTransactionFormAccountOptions', () => {
 
     expect(ids(options)).not.toContain('card-1');
     expect(ids(options)).not.toContain('cheq-alpha');
+  });
+
+  it('excludes the selected destination from the transfer source slot', () => {
+    expect(
+      ids(
+        getTransactionFormAccountOptions({
+          type: 'transfer',
+          slot: 'accountId',
+          accounts,
+          otherSelectedAccountId: 'cheq-alpha',
+        })
+      )
+    ).not.toContain('cheq-alpha');
   });
 
   it('returns only credit cards for settlement destination', () => {
@@ -238,5 +252,29 @@ describe('resolveTransactionFormAccountIdForType', () => {
         accountId: 'card-1',
       })
     ).toBe('card-1');
+  });
+});
+
+describe('resolveTransactionFormAccountIdForSlot', () => {
+  it('clears an ineligible counterpart when switching to contribution', () => {
+    expect(
+      resolveTransactionFormAccountIdForSlot({
+        type: 'contribution',
+        slot: 'counterpartAccountId',
+        accounts,
+        accountId: 'cheq-alpha',
+      })
+    ).toBe('');
+  });
+
+  it('keeps an investment counterpart when switching transfer to contribution', () => {
+    expect(
+      resolveTransactionFormAccountIdForSlot({
+        type: 'contribution',
+        slot: 'counterpartAccountId',
+        accounts,
+        accountId: 'inv-1',
+      })
+    ).toBe('inv-1');
   });
 });

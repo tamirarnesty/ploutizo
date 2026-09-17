@@ -7,11 +7,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@ploutizo/ui/components/select';
+import { getTransactionTypePolicy } from '@ploutizo/utils/transaction-policy';
 import type { Account } from '@ploutizo/types';
 import type { Category } from '@/lib/data-access/categories';
 import { ExpenseFields } from './ExpenseFields';
 import { RefundLinker } from './RefundLinker';
-import { resolveTransactionFormAccountIdForType } from './getTransactionFormAccountOptions';
+import { getTransactionFormTypeChangePatch } from './getTransactionFormTypeChange';
 import type { TransactionFormInstance } from './hooks/useTransactionForm';
 import type { AssigneeFormRow, TransactionFormValues } from './types';
 
@@ -63,18 +64,22 @@ const TypeSelectField = ({
       onChange: ({ value }: { value: TransactionFormValues['type'] }) => {
         // Notify parent before field clears (e.g. Plan 06 resets description lock)
         onTypeChange?.();
-        // Clear ALL type-specific fields unconditionally — no if-guard (D-07)
-        form.setFieldValue('categoryId', '');
-        form.setFieldValue('refundOf', '');
-        form.setFieldValue('incomeType', '');
-        form.setFieldValue('counterpartAccountId', '');
-        const nextAccountId = resolveTransactionFormAccountIdForType({
+        const patch = getTransactionFormTypeChangePatch({
           type: value,
           accounts,
-          accountId: form.getFieldValue('accountId'),
+          values: {
+            accountId: form.getFieldValue('accountId'),
+            counterpartAccountId: form.getFieldValue('counterpartAccountId'),
+            categoryId: form.getFieldValue('categoryId'),
+            refundOf: form.getFieldValue('refundOf'),
+            incomeType: form.getFieldValue('incomeType'),
+          },
         });
-        if (nextAccountId !== form.getFieldValue('accountId')) {
-          form.setFieldValue('accountId', nextAccountId);
+        for (const [field, next] of Object.entries(patch)) {
+          form.setFieldValue(
+            field as keyof TransactionFormValues,
+            next as never
+          );
         }
       },
     }}
@@ -220,23 +225,23 @@ const IncomeTypeField = ({ form }: { form: TransactionFormInstance }) => (
   </form.AppField>
 );
 
-const MULTI_ACCOUNT_TYPES = ['transfer', 'settlement', 'contribution'];
-
 const renderSubtypeField = (
   type: TransactionFormValues['type'],
   form: TransactionFormInstance,
   categories: Category[]
 ) => {
-  switch (type) {
-    case 'expense':
-      return <ExpenseFields form={form} categories={categories} />;
-    case 'refund':
-      return <RefundCategoryField form={form} categories={categories} />;
-    case 'income':
-      return <IncomeTypeField form={form} />;
-    default:
-      return null;
+  const scalarFields = getTransactionTypePolicy(type).scalarFields;
+  if (scalarFields.categoryId === 'required') {
+    return type === 'refund' ? (
+      <RefundCategoryField form={form} categories={categories} />
+    ) : (
+      <ExpenseFields form={form} categories={categories} />
+    );
   }
+  if (scalarFields.incomeType === 'required') {
+    return <IncomeTypeField form={form} />;
+  }
+  return null;
 };
 
 export const TransactionTypeFields = ({
@@ -247,32 +252,36 @@ export const TransactionTypeFields = ({
   onTypeChange,
 }: TransactionTypeFieldsProps) => (
   <form.Subscribe selector={(s) => s.values.type}>
-    {(type) => (
-      <>
-        {MULTI_ACCOUNT_TYPES.includes(type) ? (
-          // Multi-account: Type is full-width; Source + Destination rendered below in TransactionForm
-          <TypeSelectField
-            form={form}
-            accounts={accounts}
-            onTypeChange={onTypeChange}
-          />
-        ) : (
-          // Single-account: [Type | Subtype] 2-col
-          <div className="grid grid-cols-2 gap-4">
+    {(type) => {
+      const policy = getTransactionTypePolicy(type);
+      const isMultiAccount = policy.accountSlots.length > 1;
+
+      return (
+        <>
+          {isMultiAccount ? (
+            // Multi-account: Type is full-width; Source + Destination rendered below
             <TypeSelectField
               form={form}
               accounts={accounts}
               onTypeChange={onTypeChange}
             />
-            {renderSubtypeField(type, form, categories)}
-          </div>
-        )}
+          ) : (
+            // Single-account: [Type | Subtype] 2-col
+            <div className="grid grid-cols-2 gap-4">
+              <TypeSelectField
+                form={form}
+                accounts={accounts}
+                onTypeChange={onTypeChange}
+              />
+              {renderSubtypeField(type, form, categories)}
+            </div>
+          )}
 
-        {/* Type-specific fields below the type row */}
-        {type === 'refund' ? (
-          <RefundLinker form={form} onAssigneesChange={onAssigneesChange} />
-        ) : null}
-      </>
-    )}
+          {'refundOf' in policy.scalarFields ? (
+            <RefundLinker form={form} onAssigneesChange={onAssigneesChange} />
+          ) : null}
+        </>
+      );
+    }}
   </form.Subscribe>
 );
