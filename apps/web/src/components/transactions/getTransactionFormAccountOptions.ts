@@ -62,19 +62,3 @@ export const resolveTransactionFormAccountIdForSlot = ({
   if (eligible.length === 0) return '';
   return eligible.some((account) => account.id === accountId) ? accountId : '';
 };
-
-export const resolveTransactionFormAccountIdForType = ({
-  type,
-  accounts,
-  accountId,
-}: {
-  type: TransactionType;
-  accounts: readonly Account[];
-  accountId: string;
-}): string =>
-  resolveTransactionFormAccountIdForSlot({
-    type,
-    slot: 'accountId',
-    accounts,
-    accountId,
-  });
