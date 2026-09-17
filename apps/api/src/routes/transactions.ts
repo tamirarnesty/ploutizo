@@ -24,7 +24,7 @@ transactionsRouter.post(
   '/',
   appValidator('json', createTransactionSchema),
   async (c) => {
-    const orgId = c.get('orgId');
+    const orgId = c.get('principal').activeHouseholdId;
     const data = c.req.valid('json');
     const row = await createTransaction(orgId, data);
     return c.json({ data: row }, 201);
@@ -33,7 +33,7 @@ transactionsRouter.post(
 
 // GET / — paginated list with filtering and sort (D-06, D-07, D-08)
 transactionsRouter.get('/', async (c) => {
-  const orgId = c.get('orgId');
+  const orgId = c.get('principal').activeHouseholdId;
 
   const rawPage = Number(c.req.query('page'));
   const rawLimit = Number(c.req.query('limit'));
@@ -106,7 +106,7 @@ transactionsRouter.get('/', async (c) => {
 
 // GET /:id — single transaction with joined response (D-04, D-05)
 transactionsRouter.get('/:id', async (c) => {
-  const orgId = c.get('orgId');
+  const orgId = c.get('principal').activeHouseholdId;
   const id = c.req.param('id');
   const row = await getTransaction(orgId, id);
   return c.json({ data: row });
@@ -115,7 +115,7 @@ transactionsRouter.get('/:id', async (c) => {
 // PATCH /:id/restore — undo soft delete (D-15)
 // IMPORTANT: declared before PATCH /:id so Hono matches '/restore' path segment correctly (T-03.3-02, T-03.3-03)
 transactionsRouter.patch('/:id/restore', async (c) => {
-  const orgId = c.get('orgId');
+  const orgId = c.get('principal').activeHouseholdId;
   const id = c.req.param('id');
   const result = await restoreTransaction(orgId, id);
   return c.json({ data: result });
@@ -127,7 +127,7 @@ transactionsRouter.patch(
   '/:id',
   appValidator('json', patchTransactionSchema),
   async (c) => {
-    const orgId = c.get('orgId');
+    const orgId = c.get('principal').activeHouseholdId;
     const id = c.req.param('id');
     const data = c.req.valid('json');
     const updated = await updateTransaction(orgId, id, data);
@@ -137,7 +137,7 @@ transactionsRouter.patch(
 
 // DELETE /:id — soft delete (D-15)
 transactionsRouter.delete('/:id', async (c) => {
-  const orgId = c.get('orgId');
+  const orgId = c.get('principal').activeHouseholdId;
   const id = c.req.param('id');
   const result = await deleteTransaction(orgId, id);
   return c.json({ data: result });

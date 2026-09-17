@@ -5,7 +5,6 @@ import {
   getSettlementBalances,
 } from '../services/settlements';
 import { createRouteTestApp } from './testUtils';
-import type { AppEnv } from '../types';
 
 vi.mock('@clerk/hono', () => ({
   getAuth: vi.fn(() => ({ orgId: 'org_test123' })),
@@ -19,11 +18,7 @@ vi.mock('../services/settlements', () => ({
   createSettlement: vi.fn(),
 }));
 
-const app = createRouteTestApp<AppEnv>((testApp) => {
-  testApp.use('/*', async (c, next) => {
-    c.set('orgId', 'org_test123');
-    await next();
-  });
+const app = createRouteTestApp((testApp) => {
   testApp.route('/', settlementsRouter);
 });
 
@@ -87,7 +82,7 @@ describe('GET /api/settlements route', () => {
     expect(body.accounts[0]).toHaveProperty('status');
   });
 
-  it('GET-SETTLE-02: service receives the orgId from c.get("orgId")', async () => {
+  it('GET-SETTLE-02: service receives the active household id from the principal', async () => {
     await app.request('/');
     expect(getSettlementBalances).toHaveBeenCalledWith('org_test123');
   });

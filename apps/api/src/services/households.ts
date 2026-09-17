@@ -83,7 +83,7 @@ export const inviteMember = async (
   return { sent: true };
 };
 
-// callerClerkId: passed from route via getAuth(c).userId — tenantGuard does not set userId on context
+// callerClerkId: passed from route via getAuth(c).userId — householdGuard does not set userId on context
 export const removeMember = async (
   memberId: string,
   orgId: string,

@@ -21,7 +21,7 @@ merchantRulesRouter.patch(
   '/reorder',
   appValidator('json', reorderSchema),
   async (c) => {
-    const orgId = c.get('orgId');
+    const orgId = c.get('principal').activeHouseholdId;
     const { orderedIds } = c.req.valid('json');
     await reorderMerchantRules(orgId, orderedIds);
     return c.json({ data: { ok: true } });
@@ -29,7 +29,7 @@ merchantRulesRouter.patch(
 );
 
 merchantRulesRouter.get('/', async (c) => {
-  const orgId = c.get('orgId');
+  const orgId = c.get('principal').activeHouseholdId;
   const rows = await listMerchantRules(orgId);
   return c.json({ data: rows });
 });
@@ -38,7 +38,7 @@ merchantRulesRouter.post(
   '/',
   appValidator('json', createMerchantRuleSchema),
   async (c) => {
-    const orgId = c.get('orgId');
+    const orgId = c.get('principal').activeHouseholdId;
     const data = c.req.valid('json');
     const row = await createMerchantRule(orgId, data);
     return c.json({ data: row }, 201);
@@ -49,7 +49,7 @@ merchantRulesRouter.patch(
   '/:id',
   appValidator('json', updateMerchantRuleSchema),
   async (c) => {
-    const orgId = c.get('orgId');
+    const orgId = c.get('principal').activeHouseholdId;
     const id = c.req.param('id');
     const data = c.req.valid('json');
     const updated = await updateMerchantRule(id, orgId, data);
@@ -58,7 +58,7 @@ merchantRulesRouter.patch(
 );
 
 merchantRulesRouter.delete('/:id', async (c) => {
-  const orgId = c.get('orgId');
+  const orgId = c.get('principal').activeHouseholdId;
   const id = c.req.param('id');
   await deleteMerchantRule(id, orgId);
   return new Response(null, { status: 204 });
