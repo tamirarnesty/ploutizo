@@ -129,11 +129,25 @@ describe('AccessRouterBridge', () => {
     expect(getActiveQueryClient()).not.toBe(priorClient);
   });
 
-  it('invalidates the router when readiness becomes true', async () => {
+  it('invalidates the router when signed-out access becomes ready', async () => {
+    authState.isSignedIn = false;
+    authState.userId = null;
+    authState.orgId = null;
+
     renderHook(() => useAccess(), { wrapper });
 
     await waitFor(() => {
       expect(routerInvalidate).toHaveBeenCalled();
     });
+  });
+
+  it('does not invalidate when the household bearer becomes ready', async () => {
+    const { result } = renderHook(() => useAccess(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isReady).toBe(true);
+    });
+
+    expect(routerInvalidate).not.toHaveBeenCalled();
   });
 });

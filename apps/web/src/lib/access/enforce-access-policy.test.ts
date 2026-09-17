@@ -66,7 +66,7 @@ describe('resolveAccessRedirect', () => {
 });
 
 describe('enforceAccessPolicy', () => {
-  it('does not redirect while access is not ready', () => {
+  it('does not redirect while Clerk still looks signed-out', () => {
     expect(() =>
       enforceAccessPolicy(
         { access: signedOut, isReady: false },
@@ -74,6 +74,16 @@ describe('enforceAccessPolicy', () => {
         '/accounts'
       )
     ).not.toThrow();
+  });
+
+  it('redirects a signed-in visitor off a guest route before bearer readiness', () => {
+    expect(() =>
+      enforceAccessPolicy(
+        { access: signedInWithHousehold, isReady: false },
+        'guest',
+        '/sign-in'
+      )
+    ).toThrow();
   });
 
   it('preserves a local return path when sending a signed-out visitor to sign-in', () => {
