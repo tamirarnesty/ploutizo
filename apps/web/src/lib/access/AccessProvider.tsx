@@ -125,7 +125,11 @@ export const AccessProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [access, currentAccessKey, getToken, isLoaded, retryCount]);
 
-  const boundaryReady = import.meta.env.SSR ? isLoaded : isReady;
+  // Household routes must not render the app shell on SSR: client readiness waits
+  // for bearer validation, so using isLoaded on the server caused hydration mismatch.
+  const boundaryReady = import.meta.env.SSR
+    ? isLoaded && access.status === 'signed-out'
+    : isReady;
 
   const value = useMemo(
     () => ({
