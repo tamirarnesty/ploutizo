@@ -22,6 +22,7 @@ import {
 import { importDraftQueryKey } from './queryKeys';
 import { persistImportDraftSelection } from './persistImportDraftSelection';
 import { fetchImportDraft } from './useGetImportDraft';
+import type * as ImportDraftRowPacedMutationsModule from './getImportDraftRowPacedMutations';
 
 vi.mock('./useGetImportDraft', () => ({
   fetchImportDraft: vi.fn(),
@@ -32,9 +33,16 @@ vi.mock('./fetchUpdateImportDraftRowSelection', () => ({
   fetchUpdateImportDraftRowSelection: vi.fn(),
 }));
 
-vi.mock('./getImportDraftRowPacedMutations', () => ({
-  flushImportDraftRowPacedMutations: vi.fn(),
-}));
+vi.mock('./getImportDraftRowPacedMutations', async (importOriginal) => {
+  const actual = await importOriginal();
+  const paced = actual as typeof ImportDraftRowPacedMutationsModule;
+  return {
+    ...paced,
+    flushImportDraftRowPacedMutations: vi.fn(
+      paced.flushImportDraftRowPacedMutations
+    ),
+  };
+});
 
 const draft = makeImportDraft({
   id: 'draft_selection_1',
