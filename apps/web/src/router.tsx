@@ -1,23 +1,31 @@
 import { dehydrate, hydrate } from '@tanstack/react-query';
 import { createRouter as createTanStackRouter } from '@tanstack/react-router';
-import { createQueryClient, queryClient } from './lib/queryClient';
+import { createWorkingSet } from './lib/access/create-working-set';
+import { getActiveQueryClient } from './lib/access/working-set-registry';
 import { routeTree } from './routeTree.gen';
+import type { AccessState } from './lib/access/access-state';
 import type { QueryClient } from '@tanstack/react-query';
 import type { ImportReviewLocationState } from './lib/data-access/imports/importReviewLocationState';
 
 export interface RouterContext {
   queryClient: QueryClient;
+  access: AccessState;
+  isReady: boolean;
 }
+
+const signedOutAccess: AccessState = { status: 'signed-out' };
 
 export const getRouter = () => {
   const client = import.meta.env.SSR
-    ? createQueryClient().queryClient
-    : queryClient;
+    ? createWorkingSet().queryClient
+    : getActiveQueryClient();
 
   const router = createTanStackRouter({
     routeTree,
     context: {
       queryClient: client,
+      access: signedOutAccess,
+      isReady: false,
     },
     // Query DehydratedState uses `unknown` keys; Router requires JSON-serializable types.
     dehydrate: () =>

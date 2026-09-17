@@ -92,7 +92,7 @@ export interface TransactionListResponse {
 export const transactionsQueryOptions = (params: TransactionQueryParams) =>
   queryOptions({
     queryKey: ['transactions', params],
-    queryFn: () => fetchTransactions(params),
+    queryFn: ({ signal }) => fetchTransactions(params, signal),
   });
 
 export const useGetTransactions = (

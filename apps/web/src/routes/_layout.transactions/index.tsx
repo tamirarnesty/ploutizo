@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { ensureHouseholdQueryData } from '@/lib/access';
+import { isHouseholdLoaderReady } from '@/lib/access';
 import { accountsQueryOptions } from '@/lib/data-access/accounts';
 import { categoriesQueryOptions } from '@/lib/data-access/categories';
 import { orgMembersQueryOptions } from '@/lib/data-access/org';
@@ -16,19 +16,21 @@ export const Route = createFileRoute('/_layout/transactions/')({
   validateSearch: validateTransactionSearch,
   loaderDeps: ({ search }) => search,
   loader: async ({ context, deps: search }) => {
+    if (!isHouseholdLoaderReady(context)) {
+      return;
+    }
     await ensurePageSizeHydrated();
     const limit = readStoredPageSize('transactions');
     const transactionParams = buildTransactionQueryParams(search, limit);
 
     await Promise.all([
-      ensureHouseholdQueryData(
-        context.queryClient,
+      context.queryClient.ensureQueryData(
         transactionsQueryOptions(transactionParams)
       ),
-      ensureHouseholdQueryData(context.queryClient, accountsQueryOptions()),
-      ensureHouseholdQueryData(context.queryClient, categoriesQueryOptions()),
-      ensureHouseholdQueryData(context.queryClient, orgMembersQueryOptions()),
-      ensureHouseholdQueryData(context.queryClient, tagsQueryOptions()),
+      context.queryClient.ensureQueryData(accountsQueryOptions()),
+      context.queryClient.ensureQueryData(categoriesQueryOptions()),
+      context.queryClient.ensureQueryData(orgMembersQueryOptions()),
+      context.queryClient.ensureQueryData(tagsQueryOptions()),
     ]);
   },
   component: Transactions,

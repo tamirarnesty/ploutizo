@@ -9,7 +9,8 @@ export const useGetTransaction = (
 ): UseQueryResult<TransactionRow> => {
   return useHouseholdQuery({
     queryKey: ['transaction', id],
-    queryFn: () => fetchTransaction(id!),
+    queryFn: ({ signal }: { signal: AbortSignal }) =>
+      fetchTransaction(id!, signal),
     enabled: id !== null,
     initialData: options?.initialData,
   });

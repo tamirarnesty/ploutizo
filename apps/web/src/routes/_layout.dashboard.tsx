@@ -1,14 +1,17 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { ensureHouseholdQueryData } from '@/lib/access';
+import { isHouseholdLoaderReady } from '@/lib/access';
 import { Dashboard } from '@/components/dashboard/Dashboard';
 import { orgMembersQueryOptions } from '@/lib/data-access/org';
 import { settlementsQueryOptions } from '@/lib/data-access/settlements';
 
 export const Route = createFileRoute('/_layout/dashboard')({
   loader: async ({ context }) => {
+    if (!isHouseholdLoaderReady(context)) {
+      return;
+    }
     await Promise.all([
-      ensureHouseholdQueryData(context.queryClient, settlementsQueryOptions()),
-      ensureHouseholdQueryData(context.queryClient, orgMembersQueryOptions()),
+      context.queryClient.ensureQueryData(settlementsQueryOptions()),
+      context.queryClient.ensureQueryData(orgMembersQueryOptions()),
     ]);
   },
   component: Dashboard,

@@ -9,7 +9,8 @@ export const useSearchTransactions = (
 ): UseQueryResult<TransactionRow[]> => {
   return useHouseholdQuery({
     queryKey: ['transactions', 'search', description, type],
-    queryFn: () => fetchSearchTransactions(description, type),
+    queryFn: ({ signal }: { signal: AbortSignal }) =>
+      fetchSearchTransactions(description, type, signal),
     enabled: description.length >= 2,
   });
 };

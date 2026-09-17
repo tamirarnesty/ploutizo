@@ -16,8 +16,12 @@ export interface Category {
   createdAt: string;
 }
 
-export const fetchCategories = async (): Promise<Category[]> => {
-  const r = await apiFetch<{ data: Category[] }>('/api/categories');
+export const fetchCategories = async (
+  signal?: AbortSignal
+): Promise<Category[]> => {
+  const r = await apiFetch<{ data: Category[] }>('/api/categories', {
+    signal,
+  });
   return r.data;
 };
 
@@ -30,7 +34,7 @@ const selectCategories = (data: Category[]) =>
 export const categoriesQueryOptions = () =>
   queryOptions({
     queryKey: ['categories'],
-    queryFn: fetchCategories,
+    queryFn: ({ signal }) => fetchCategories(signal),
     select: selectCategories,
   });
 

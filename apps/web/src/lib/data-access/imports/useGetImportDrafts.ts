@@ -5,18 +5,19 @@ import { apiFetch } from '@/lib/queryClient';
 import { activeImportDraftsQueryKey } from './queryKeys';
 import type { UseQueryResult } from '@tanstack/react-query';
 
-export const fetchActiveImportDrafts = async (): Promise<
-  ImportDraftSummary[]
-> => {
+export const fetchActiveImportDrafts = async (
+  signal?: AbortSignal
+): Promise<ImportDraftSummary[]> => {
   const r = await apiFetch<{ data: ImportDraftSummary[] }>(
-    '/api/imports/drafts'
+    '/api/imports/drafts',
+    { signal }
   );
   return r.data;
 };
 
 export const activeImportDraftsQueryOptions = queryOptions({
   queryKey: activeImportDraftsQueryKey,
-  queryFn: fetchActiveImportDrafts,
+  queryFn: ({ signal }) => fetchActiveImportDrafts(signal),
 });
 
 type UseGetImportDraftsOptions = {

@@ -9,13 +9,10 @@ import {
   useRef,
   useState,
 } from 'react';
+import { accessKey } from './access-key';
 import { toAccessState } from './access-state';
-import { resolveMatchingBearer } from './resolve-matching-bearer';
-import {
-  endWorkingSet,
-  setClientBearerGetter,
-  setLiveAccess,
-} from './working-set';
+import { resolveTransitionBearer } from './resolve-transition-bearer';
+import { setClientBearerGetter, setLiveAccess } from './working-set';
 import type { AccessState } from './access-state';
 import type { ReactNode } from 'react';
 
@@ -34,16 +31,6 @@ export const useAccess = (): AccessContextValue => {
     throw new Error('useAccess must be used within AccessProvider');
   }
   return context;
-};
-
-const accessKey = (access: AccessState): string => {
-  if (access.status === 'signed-out') {
-    return 'signed-out';
-  }
-  if (access.status === 'signed-in-no-household') {
-    return `member:${access.signedInMemberId}`;
-  }
-  return `household:${access.signedInMemberId}:${access.activeHouseholdId}`;
 };
 
 export const AccessProvider = ({ children }: { children: ReactNode }) => {
@@ -68,8 +55,6 @@ export const AccessProvider = ({ children }: { children: ReactNode }) => {
     setRetryCount((count) => count + 1);
   }, []);
 
-  // Sync during render — not in an effect — so route children in the same commit
-  // cannot read the previous household's cache on identity switch.
   if (!import.meta.env.SSR) {
     const trackedAccessKey = previousAccessKeyRef.current;
     const identityChanged =
@@ -86,7 +71,6 @@ export const AccessProvider = ({ children }: { children: ReactNode }) => {
       }
     } else {
       if (identityChanged) {
-        endWorkingSet();
         setBearerError(false);
       }
 
@@ -115,7 +99,7 @@ export const AccessProvider = ({ children }: { children: ReactNode }) => {
 
     let cancelled = false;
     const validateToken = async () => {
-      const token = await resolveMatchingBearer(getToken, access);
+      const token = await resolveTransitionBearer(getToken, access);
       if (cancelled) {
         return;
       }

@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { ensureHouseholdQueryData } from '@/lib/access';
+import { isHouseholdLoaderReady } from '@/lib/access';
 import {
   getImportDraftRowsCollection,
   importDraftQueryOptions,
@@ -18,12 +18,14 @@ export const Route = createFileRoute('/_layout/import/$draftId/')({
    * `preload()` materializes the review working copy before the route renders.
    */
   loader: async ({ context, params }) => {
+    if (!isHouseholdLoaderReady(context)) {
+      return;
+    }
     await Promise.all([
-      ensureHouseholdQueryData(
-        context.queryClient,
+      context.queryClient.ensureQueryData(
         importDraftQueryOptions(params.draftId)
       ),
-      ensureHouseholdQueryData(context.queryClient, accountsQueryOptions(true)),
+      context.queryClient.ensureQueryData(accountsQueryOptions(true)),
     ]);
     if (import.meta.env.SSR) {
       await getImportDraftRowsCollection(params.draftId)

@@ -5,16 +5,19 @@ import { apiFetch } from '@/lib/queryClient';
 import { importTargetsQueryKey } from './queryKeys';
 import type { UseQueryResult } from '@tanstack/react-query';
 
-export const fetchImportTargets = async (): Promise<ImportTargetAccount[]> => {
+export const fetchImportTargets = async (
+  signal?: AbortSignal
+): Promise<ImportTargetAccount[]> => {
   const r = await apiFetch<{ data: ImportTargetAccount[] }>(
-    '/api/imports/targets'
+    '/api/imports/targets',
+    { signal }
   );
   return r.data;
 };
 
 export const importTargetsQueryOptions = queryOptions({
   queryKey: importTargetsQueryKey,
-  queryFn: fetchImportTargets,
+  queryFn: ({ signal }) => fetchImportTargets(signal),
 });
 
 export const useGetImportTargets = (): UseQueryResult<

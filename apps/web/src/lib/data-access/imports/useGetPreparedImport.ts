@@ -9,7 +9,8 @@ export const useGetPreparedImport = (
 ): UseQueryResult<ImportPreparedConfirmation> => {
   return useHouseholdQuery({
     queryKey: importPreparedQueryKey(draftId),
-    queryFn: () => fetchPreparedImport(draftId),
+    queryFn: ({ signal }: { signal: AbortSignal }) =>
+      fetchPreparedImport(draftId, signal),
     retry: false,
   });
 };

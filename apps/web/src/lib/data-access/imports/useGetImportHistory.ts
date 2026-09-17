@@ -19,14 +19,19 @@ import type {
 export const IMPORT_HUB_HISTORY_LIMIT = 5;
 export const IMPORT_HISTORY_PAGE_SIZE = 20;
 
-export const fetchImportHistoryPage = async (input: {
-  limit: number;
-  cursor?: string;
-}): Promise<ImportHistoryPage> => {
+export const fetchImportHistoryPage = async (
+  input: {
+    limit: number;
+    cursor?: string;
+  },
+  signal?: AbortSignal
+): Promise<ImportHistoryPage> => {
   const qs = new URLSearchParams();
   qs.set('limit', String(input.limit));
   if (input.cursor) qs.set('cursor', input.cursor);
-  return apiFetch<ImportHistoryPage>(`/api/imports/history?${qs.toString()}`);
+  return apiFetch<ImportHistoryPage>(`/api/imports/history?${qs.toString()}`, {
+    signal,
+  });
 };
 
 export const importHistoryPageQueryOptions = (
@@ -34,7 +39,7 @@ export const importHistoryPageQueryOptions = (
 ) =>
   queryOptions({
     queryKey: importHistoryPageQueryKey(limit),
-    queryFn: () => fetchImportHistoryPage({ limit }),
+    queryFn: ({ signal }) => fetchImportHistoryPage({ limit }, signal),
   });
 
 export const useGetImportHistory = (
@@ -50,11 +55,14 @@ export const useGetImportHistoryInfinite = (
   const householdReady = isHouseholdAccessReady(isReady, access);
   return useInfiniteQuery({
     queryKey: importHistoryInfiniteQueryKey(limit),
-    queryFn: ({ pageParam }) =>
-      fetchImportHistoryPage({
-        limit,
-        cursor: pageParam,
-      }),
+    queryFn: ({ signal, pageParam }) =>
+      fetchImportHistoryPage(
+        {
+          limit,
+          cursor: pageParam,
+        },
+        signal
+      ),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     enabled: householdReady,

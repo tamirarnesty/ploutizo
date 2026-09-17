@@ -15,15 +15,19 @@ export interface MerchantRule {
   createdAt: string;
 }
 
-export const fetchMerchantRules = async (): Promise<MerchantRule[]> => {
-  const r = await apiFetch<{ data: MerchantRule[] }>('/api/merchant-rules');
+export const fetchMerchantRules = async (
+  signal?: AbortSignal
+): Promise<MerchantRule[]> => {
+  const r = await apiFetch<{ data: MerchantRule[] }>('/api/merchant-rules', {
+    signal,
+  });
   return r.data;
 };
 
 export const merchantRulesQueryOptions = () =>
   queryOptions({
     queryKey: ['merchant-rules'],
-    queryFn: fetchMerchantRules,
+    queryFn: ({ signal }) => fetchMerchantRules(signal),
   });
 
 export const useGetMerchantRules = (): UseQueryResult<MerchantRule[]> => {

@@ -8,12 +8,18 @@ export interface HouseholdOverview {
   imageUrl: string | null;
 }
 
+export const fetchHouseholdOverview = async (
+  signal?: AbortSignal
+): Promise<HouseholdOverview> => {
+  const r = await apiFetch<{ data: HouseholdOverview }>('/api/households', {
+    signal,
+  });
+  return r.data;
+};
+
 export const householdOverviewQueryOptions = queryOptions({
   queryKey: ['household-overview'],
-  queryFn: () =>
-    apiFetch<{ data: HouseholdOverview }>('/api/households').then(
-      (r) => r.data
-    ),
+  queryFn: ({ signal }) => fetchHouseholdOverview(signal),
 });
 
 export const useGetHouseholdOverview =

@@ -1,13 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { enforceAccessPolicy } from '@/lib/access';
 import { HomePage } from '@/components/home/HomePage';
-import { AccessPolicyBoundary } from '@/lib/access';
-
-const Page = () => (
-  <AccessPolicyBoundary policy="guest">
-    <HomePage />
-  </AccessPolicyBoundary>
-);
 
 export const Route = createFileRoute('/')({
-  component: Page,
+  beforeLoad: ({ context, location }) => {
+    enforceAccessPolicy(context, 'guest', location.href);
+  },
+  component: HomePage,
 });

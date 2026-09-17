@@ -5,7 +5,7 @@ import {
   makeImportDraftRow,
   toPersistedImportDraftRow,
 } from '@/components/imports/test-fixtures/importDraft';
-import { queryClient } from '@/lib/queryClient';
+import { getActiveQueryClient } from '@/lib/access/working-set-registry';
 import { fetchUpdateImportDraftRow } from './fetchUpdateImportDraftRow';
 import {
   IMPORT_ROW_PACE_WAIT_MS,
@@ -42,8 +42,8 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
   });
 
   beforeEach(() => {
-    queryClient.clear();
-    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
+    getActiveQueryClient().clear();
+    getActiveQueryClient().setQueryData(importDraftQueryKey(draft.id), draft);
     vi.mocked(fetchImportDraft).mockReset();
     vi.mocked(fetchImportDraft).mockResolvedValue(draft);
     vi.mocked(fetchUpdateImportDraftRow).mockReset();
@@ -56,7 +56,7 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
     endImportDraftRowPacedMutations();
     endImportReviewAutosave();
     await endImportDraftRowsCollections();
-    queryClient.clear();
+    getActiveQueryClient().clear();
   });
 
   it('merges durable fields and re-derives status without trusting server status', async () => {
@@ -159,7 +159,7 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
         }),
       ],
     });
-    queryClient.setQueryData(
+    getActiveQueryClient().setQueryData(
       importDraftQueryKey(guardedDraft.id),
       guardedDraft
     );
@@ -201,7 +201,7 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
         }),
       ],
     });
-    queryClient.setQueryData(
+    getActiveQueryClient().setQueryData(
       importDraftQueryKey(guardedDraft.id),
       guardedDraft
     );

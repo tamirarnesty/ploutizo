@@ -15,15 +15,29 @@ import { ThemeProvider } from '@ploutizo/ui/components/theme-provider';
 import { Toaster } from '@ploutizo/ui/components/sonner';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { AccessProvider } from '../lib/access';
+import { AccessRouterBridge } from '../lib/access/access-router-bridge';
+import { accessKey } from '../lib/access/access-key';
+import { useAccess } from '../lib/access/AccessProvider';
 import { MoneyLocaleProvider } from '../lib/money/money-locale';
 import { AppDevtools } from '../components/devtools/AppDevtools';
 import { NotFound } from '../components/not-found/NotFound';
 import { ErrorBoundary } from '../components/error-boundary/ErrorBoundary';
 import type { RouterContext } from '../router';
+import type { ReactNode } from 'react';
+
+const RootQueryProvider = ({ children }: { children: ReactNode }) => {
+  const router = useRouter();
+  const { access } = useAccess();
+  const queryClient = router.options.context.queryClient;
+
+  return (
+    <QueryClientProvider client={queryClient} key={accessKey(access)}>
+      {children}
+    </QueryClientProvider>
+  );
+};
 
 const RootDocument = ({ children }: { children: React.ReactNode }) => {
-  const queryClient = useRouter().options.context.queryClient;
-
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -39,18 +53,21 @@ const RootDocument = ({ children }: { children: React.ReactNode }) => {
         >
           <HotkeysProvider>
             <TooltipProvider delay={500}>
-              <QueryClientProvider client={queryClient}>
-                <ClerkProvider
-                  appearance={{ theme: shadcn }}
-                  afterSignOutUrl="/sign-in/$"
-                >
-                  <MoneyLocaleProvider>
-                    <AccessProvider>{children}</AccessProvider>
-                    <Toaster />
-                    <AppDevtools />
-                  </MoneyLocaleProvider>
-                </ClerkProvider>
-              </QueryClientProvider>
+              <ClerkProvider
+                appearance={{ theme: shadcn }}
+                afterSignOutUrl="/sign-in/$"
+              >
+                <MoneyLocaleProvider>
+                  <AccessProvider>
+                    <AccessRouterBridge />
+                    <RootQueryProvider>
+                      {children}
+                      <Toaster />
+                      <AppDevtools />
+                    </RootQueryProvider>
+                  </AccessProvider>
+                </MoneyLocaleProvider>
+              </ClerkProvider>
             </TooltipProvider>
           </HotkeysProvider>
         </ThemeProvider>

@@ -2,11 +2,14 @@ import './working-set-cleanup';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { queryClient } from '@/lib/queryClient';
+import {
+  getActiveQueryClient,
+  resetWorkingSetRegistryForTests,
+} from './working-set-registry';
 import { AccessProvider, useAccess } from './AccessProvider';
 import {
   getClientHouseholdBearer,
-  resetWorkingSetForTests,
+  resetBearerStateForTests,
 } from './working-set';
 import type { AccessState } from './access-state';
 import type { ReactNode } from 'react';
@@ -50,7 +53,7 @@ const householdAJwt = unsignedJwt({
 });
 
 const wrapper = ({ children }: { children: ReactNode }) => (
-  <QueryClientProvider client={queryClient}>
+  <QueryClientProvider client={getActiveQueryClient()}>
     <AccessProvider>{children}</AccessProvider>
   </QueryClientProvider>
 );
@@ -63,13 +66,14 @@ const signInAs = (
   authState.isSignedIn = true;
   authState.userId = access.signedInMemberId;
   authState.orgId = access.activeHouseholdId;
-  authState.getToken = () => Promise.resolve(token);
+  authState.getToken = (_options?: { skipCache?: boolean }) =>
+    Promise.resolve(token);
 };
 
 describe('AccessProvider', () => {
   beforeEach(() => {
-    queryClient.clear();
-    resetWorkingSetForTests();
+    resetWorkingSetRegistryForTests();
+    resetBearerStateForTests();
     authState.isLoaded = false;
     authState.isSignedIn = false;
     authState.userId = undefined;
@@ -78,8 +82,8 @@ describe('AccessProvider', () => {
   });
 
   afterEach(() => {
-    queryClient.clear();
-    resetWorkingSetForTests();
+    resetWorkingSetRegistryForTests();
+    resetBearerStateForTests();
   });
 
   it('stays not ready while Clerk is still loading', () => {
@@ -106,7 +110,14 @@ describe('AccessProvider', () => {
     rerender();
     expect(result.current.isReady).toBe(false);
 
-    authState.getToken = () => Promise.resolve(householdAJwt);
+    let cacheWarmed = false;
+    authState.getToken = (options?: { skipCache?: boolean }) => {
+      if (options?.skipCache) {
+        cacheWarmed = true;
+        return Promise.resolve(householdAJwt);
+      }
+      return Promise.resolve(cacheWarmed ? householdAJwt : null);
+    };
     rerender();
 
     await waitFor(() => {
@@ -115,10 +126,13 @@ describe('AccessProvider', () => {
     await expect(getClientHouseholdBearer()).resolves.toBe(householdAJwt);
   });
 
-  it('refreshes with skipCache when the cached token is stale', async () => {
-    const staleToken = unsignedJwt({ sub: 'user_a', org_id: 'org_old' });
+  it('requests a fresh token on identity transition', async () => {
     const getToken = vi.fn((options?: { skipCache?: boolean }) =>
-      Promise.resolve(options?.skipCache ? householdAJwt : staleToken)
+      Promise.resolve(
+        options?.skipCache
+          ? householdAJwt
+          : unsignedJwt({ sub: 'user_a', org_id: 'org_old' })
+      )
     );
     authState.isLoaded = true;
     authState.isSignedIn = true;
@@ -131,29 +145,7 @@ describe('AccessProvider', () => {
     await waitFor(() => {
       expect(result.current.isReady).toBe(true);
     });
-    expect(getToken).toHaveBeenCalledWith(undefined);
     expect(getToken).toHaveBeenCalledWith({ skipCache: true });
-  });
-
-  it('clears the working set when the active household changes', async () => {
-    queryClient.setQueryData(['accounts'], [{ id: 'acct_prior' }]);
-    signInAs(householdA);
-    const { result, rerender } = renderHook(() => useAccess(), { wrapper });
-
-    await waitFor(() => {
-      expect(result.current.isReady).toBe(true);
-      expect(queryClient.getQueryData(['accounts'])).toEqual([
-        { id: 'acct_prior' },
-      ]);
-    });
-
-    authState.orgId = 'org_b';
-    authState.getToken = () =>
-      Promise.resolve(unsignedJwt({ sub: 'user_a', org_id: 'org_b' }));
-    rerender();
-
-    expect(result.current.isReady).toBe(false);
-    expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
   });
 
   it('surfaces bearerError when Clerk never returns a matching token', async () => {
@@ -166,27 +158,14 @@ describe('AccessProvider', () => {
       expect(result.current.bearerError).toBe(true);
     });
 
-    authState.getToken = () => Promise.resolve(householdAJwt);
+    authState.getToken = (options?: { skipCache?: boolean }) =>
+      Promise.resolve(options?.skipCache ? householdAJwt : null);
     result.current.retryBearer();
     rerender();
 
     await waitFor(() => {
       expect(result.current.isReady).toBe(true);
       expect(result.current.bearerError).toBe(false);
-    });
-  });
-
-  it('does not become ready until Clerk returns a matching token', async () => {
-    signInAs(householdA, null);
-    const { result, rerender } = renderHook(() => useAccess(), { wrapper });
-
-    expect(result.current.isReady).toBe(false);
-
-    authState.getToken = () => Promise.resolve(householdAJwt);
-    rerender();
-
-    await waitFor(() => {
-      expect(result.current.isReady).toBe(true);
     });
   });
 });

@@ -8,7 +8,7 @@ import type {
   ImportDraftRow,
   RefundTargetFact,
 } from '@ploutizo/types';
-import { queryClient } from '@/lib/queryClient';
+import { getActiveQueryClient } from '@/lib/access/working-set-registry';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
 import { importDraftQueryKey } from './queryKeys';
 
@@ -27,7 +27,7 @@ export const evaluateImportDraftWorkingCopy = (
   draftId: string,
   rows?: readonly ImportDraftRow[]
 ): Map<string, ImportDraftRowEvaluation> | null => {
-  const draft = queryClient.getQueryData<ImportDraft>(
+  const draft = getActiveQueryClient().getQueryData<ImportDraft>(
     importDraftQueryKey(draftId)
   );
   if (!draft?.account.id) return null;

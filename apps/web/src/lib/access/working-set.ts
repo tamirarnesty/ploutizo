@@ -1,35 +1,22 @@
 import { createIsomorphicFn } from '@tanstack/react-start';
-import { endWorkingSetQueryCache } from '@/lib/queryClient';
-import { resolveMatchingBearer } from './resolve-matching-bearer';
 import type { AccessState } from './access-state';
 
-type WorkingSetCleanup = () => void;
+type BearerGetter = (options?: {
+  skipCache?: boolean;
+}) => Promise<string | null>;
 
-let clientBearerGetter:
-  | ((options?: { skipCache?: boolean }) => Promise<string | null>)
-  | null = null;
+let clientBearerGetter: BearerGetter | null = null;
 let liveAccess: AccessState | null = null;
-const workingSetCleanups: WorkingSetCleanup[] = [];
 
 export const setLiveAccess = (access: AccessState | null) => {
   liveAccess = access;
 };
 
-export const setClientBearerGetter = (
-  getter: ((options?: { skipCache?: boolean }) => Promise<string | null>) | null
-) => {
+export const setClientBearerGetter = (getter: BearerGetter | null) => {
   clientBearerGetter = getter;
 };
 
-export const registerWorkingSetCleanup = (cleanup: WorkingSetCleanup) => {
-  workingSetCleanups.push(cleanup);
-};
-
-export const resetWorkingSetForTests = () => {
-  endWorkingSetQueryCache();
-  for (const cleanup of workingSetCleanups) {
-    cleanup();
-  }
+export const resetBearerStateForTests = () => {
   clientBearerGetter = null;
   liveAccess = null;
 };
@@ -42,14 +29,7 @@ export const getClientHouseholdBearer = async (): Promise<string | null> => {
   ) {
     return null;
   }
-  return resolveMatchingBearer(clientBearerGetter, liveAccess);
-};
-
-export const endWorkingSet = () => {
-  endWorkingSetQueryCache();
-  for (const cleanup of workingSetCleanups) {
-    cleanup();
-  }
+  return clientBearerGetter();
 };
 
 export const getHouseholdBearer = createIsomorphicFn()

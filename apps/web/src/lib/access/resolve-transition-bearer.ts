@@ -5,18 +5,16 @@ type BearerGetter = (options?: {
   skipCache?: boolean;
 }) => Promise<string | null>;
 
-export const resolveMatchingBearer = async (
+export const resolveTransitionBearer = async (
   getToken: BearerGetter,
   access: AccessState
 ): Promise<string | null> => {
   if (access.status === 'signed-out') {
     return null;
   }
-  for (const options of [undefined, { skipCache: true }]) {
-    const token = await getToken(options);
-    if (token && claimsMatchAccess(token, access)) {
-      return token;
-    }
+  const token = await getToken({ skipCache: true });
+  if (!token || !claimsMatchAccess(token, access)) {
+    return null;
   }
-  return null;
+  return token;
 };

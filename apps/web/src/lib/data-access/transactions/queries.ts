@@ -5,13 +5,22 @@ import type {
   TransactionRow,
 } from './useGetTransactions';
 
-export const fetchTransaction = async (id: string): Promise<TransactionRow> => {
-  const r = await apiFetch<{ data: TransactionRow }>(`/api/transactions/${id}`);
+export const fetchTransaction = async (
+  id: string,
+  signal?: AbortSignal
+): Promise<TransactionRow> => {
+  const r = await apiFetch<{ data: TransactionRow }>(
+    `/api/transactions/${id}`,
+    {
+      signal,
+    }
+  );
   return r.data;
 };
 
 export const fetchTransactions = async (
-  params: TransactionQueryParams
+  params: TransactionQueryParams,
+  signal?: AbortSignal
 ): Promise<TransactionListResponse> => {
   const qs = new URLSearchParams();
   qs.set('page', String(params.page));
@@ -38,20 +47,23 @@ export const fetchTransactions = async (
     qs.set('importOutcome', params.importLink.outcome);
   }
   return apiFetch<TransactionListResponse>(
-    `/api/transactions?${qs.toString()}`
+    `/api/transactions?${qs.toString()}`,
+    { signal }
   );
 };
 
 export const fetchSearchTransactions = async (
   description: string,
-  type?: string
+  type?: string,
+  signal?: AbortSignal
 ): Promise<TransactionRow[]> => {
   const qs = new URLSearchParams();
   qs.set('description', description);
   qs.set('limit', '20');
   if (type) qs.set('type', type);
   const r = await apiFetch<TransactionListResponse>(
-    `/api/transactions?${qs.toString()}`
+    `/api/transactions?${qs.toString()}`,
+    { signal }
   );
   return r.data;
 };

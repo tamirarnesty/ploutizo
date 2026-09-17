@@ -12,15 +12,15 @@ export interface Tag {
   createdAt: string;
 }
 
-export const fetchTags = async (): Promise<Tag[]> => {
-  const r = await apiFetch<{ data: Tag[] }>('/api/tags');
+export const fetchTags = async (signal?: AbortSignal): Promise<Tag[]> => {
+  const r = await apiFetch<{ data: Tag[] }>('/api/tags', { signal });
   return r.data;
 };
 
 export const tagsQueryOptions = () =>
   queryOptions({
     queryKey: ['tags'],
-    queryFn: fetchTags,
+    queryFn: ({ signal }) => fetchTags(signal),
   });
 
 export const useGetTags = (): UseQueryResult<Tag[]> => {

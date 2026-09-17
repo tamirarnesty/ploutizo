@@ -7,7 +7,11 @@ import { createServerFn } from '@tanstack/react-start';
 import { getCookie } from '@tanstack/react-start/server';
 import { SidebarInset, SidebarProvider } from '@ploutizo/ui/components/sidebar';
 import { cn } from '@ploutizo/ui/lib/utils';
-import { AccessPolicyBoundary, ensureHouseholdQueryData } from '@/lib/access';
+import {
+  BearerReadinessBoundary,
+  enforceAccessPolicy,
+  isHouseholdLoaderReady,
+} from '@/lib/access';
 import { CommandPaletteProvider } from '@/lib/command';
 import { activeImportDraftsQueryOptions } from '@/lib/data-access/imports';
 import { resolveMainContentLayout } from '@/lib/layout/main-content-layout';
@@ -57,17 +61,19 @@ const LayoutShellContent = () => {
 };
 
 const LayoutShell = () => (
-  <AccessPolicyBoundary policy="active-household">
+  <BearerReadinessBoundary>
     <LayoutShellContent />
-  </AccessPolicyBoundary>
+  </BearerReadinessBoundary>
 );
 
 export const Route = createFileRoute('/_layout')({
+  beforeLoad: ({ context, location }) => {
+    enforceAccessPolicy(context, 'active-household', location.href);
+  },
   loader: async ({ context }) => {
-    void ensureHouseholdQueryData(
-      context.queryClient,
-      activeImportDraftsQueryOptions
-    );
+    if (isHouseholdLoaderReady(context)) {
+      await context.queryClient.ensureQueryData(activeImportDraftsQueryOptions);
+    }
     return getPublicSidebarState();
   },
   component: LayoutShell,

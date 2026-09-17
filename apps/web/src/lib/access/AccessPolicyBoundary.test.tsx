@@ -1,9 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AccessPolicyBoundary } from './AccessPolicyBoundary';
+import { BearerReadinessBoundary } from './AccessPolicyBoundary';
 import { AccessProvider } from './AccessProvider';
-import { resetWorkingSetForTests } from './working-set';
+import { resetWorkingSetRegistryForTests } from './working-set-registry';
+import { resetBearerStateForTests } from './working-set';
 import type { ReactNode } from 'react';
 
 const authState = vi.hoisted(() => ({
@@ -15,8 +16,6 @@ const authState = vi.hoisted(() => ({
     Promise.resolve(null as string | null),
 }));
 
-const navigate = vi.fn();
-
 vi.mock('@clerk/tanstack-react-start', () => ({
   useAuth: () => ({
     isLoaded: authState.isLoaded,
@@ -26,15 +25,6 @@ vi.mock('@clerk/tanstack-react-start', () => ({
     getToken: authState.getToken,
   }),
 }));
-
-vi.mock('@tanstack/react-router', async () => {
-  const actual = await vi.importActual('@tanstack/react-router');
-  return {
-    ...actual,
-    useNavigate: () => navigate,
-    useRouterState: () => '/dashboard',
-  };
-});
 
 const unsignedJwt = (payload: Record<string, unknown>) => {
   const body = btoa(JSON.stringify(payload))
@@ -46,16 +36,14 @@ const unsignedJwt = (payload: Record<string, unknown>) => {
 
 const wrapper = ({ children }: { children: ReactNode }) => (
   <AccessProvider>
-    <AccessPolicyBoundary policy="active-household">
-      {children}
-    </AccessPolicyBoundary>
+    <BearerReadinessBoundary>{children}</BearerReadinessBoundary>
   </AccessProvider>
 );
 
-describe('AccessPolicyBoundary', () => {
+describe('BearerReadinessBoundary', () => {
   beforeEach(() => {
-    resetWorkingSetForTests();
-    navigate.mockClear();
+    resetWorkingSetRegistryForTests();
+    resetBearerStateForTests();
     authState.isLoaded = false;
     authState.isSignedIn = false;
     authState.userId = undefined;
@@ -64,7 +52,8 @@ describe('AccessPolicyBoundary', () => {
   });
 
   afterEach(() => {
-    resetWorkingSetForTests();
+    resetWorkingSetRegistryForTests();
+    resetBearerStateForTests();
   });
 
   it('renders nothing while access is not ready', () => {
@@ -72,18 +61,6 @@ describe('AccessPolicyBoundary', () => {
       wrapper,
     });
     expect(container).toBeEmptyDOMElement();
-  });
-
-  it('redirects signed-out visitors to sign-in with the current path', async () => {
-    authState.isLoaded = true;
-    render(<div>Child</div>, { wrapper });
-
-    await waitFor(() => {
-      expect(navigate).toHaveBeenCalledWith({
-        to: '/sign-in/$',
-        search: { redirect: '/dashboard' },
-      });
-    });
   });
 
   it('shows recovery UI when bearer validation fails', async () => {
@@ -115,7 +92,8 @@ describe('AccessPolicyBoundary', () => {
     render(<div>Child</div>, { wrapper });
 
     await screen.findByRole('button', { name: 'Retry' });
-    authState.getToken = () => Promise.resolve(matchingToken);
+    authState.getToken = (options?: { skipCache?: boolean }) =>
+      Promise.resolve(options?.skipCache ? matchingToken : null);
     await user.click(screen.getByRole('button', { name: 'Retry' }));
 
     await waitFor(() => {
