@@ -69,14 +69,14 @@ const transferFields = {
 
 const settlementFields = {
   type: z.literal('settlement'),
-  counterpartAccountId: z.string().uuid().optional(),
+  counterpartAccountId: z.string().uuid(),
   /** Bill Payment category for list readability — optional, not spend. */
   categoryId: z.string().uuid().optional(),
 } as const;
 
 const contributionFields = {
   type: z.literal('contribution'),
-  counterpartAccountId: z.string().uuid().optional(),
+  counterpartAccountId: z.string().uuid(),
 } as const;
 
 const expenseTransactionSchema = baseTransactionSchema.extend(expenseFields);

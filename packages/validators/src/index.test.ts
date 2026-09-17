@@ -768,8 +768,18 @@ describe('createTransactionSchema — per-type branches', () => {
       createTransactionSchema.safeParse({
         ...baseFields,
         type: 'settlement',
+        counterpartAccountId: '550e8400-e29b-41d4-a716-446655440002',
       }).success
     ).toBe(true);
+  });
+
+  it('rejects settlement payload missing counterpartAccountId', () => {
+    expect(
+      createTransactionSchema.safeParse({
+        ...baseFields,
+        type: 'settlement',
+      }).success
+    ).toBe(false);
   });
 
   it('rejects settlement payload without assignees', () => {
@@ -784,9 +794,21 @@ describe('createTransactionSchema — per-type branches', () => {
 
   it('accepts valid contribution payload', () => {
     expect(
-      createTransactionSchema.safeParse({ ...baseFields, type: 'contribution' })
-        .success
+      createTransactionSchema.safeParse({
+        ...baseFields,
+        type: 'contribution',
+        counterpartAccountId: '550e8400-e29b-41d4-a716-446655440002',
+      }).success
     ).toBe(true);
+  });
+
+  it('rejects contribution payload missing counterpartAccountId', () => {
+    expect(
+      createTransactionSchema.safeParse({
+        ...baseFields,
+        type: 'contribution',
+      }).success
+    ).toBe(false);
   });
 });
 
