@@ -3,11 +3,11 @@ import { createOptimisticAction } from '@tanstack/db';
 import type { ImportDraft, ImportDraftPersistedRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowSelectionInput } from '@ploutizo/validators';
 import {
-  getWorkingSetEpoch,
-  isCurrentWorkingSetEpoch,
-} from '@/lib/access/working-set-epoch';
-import { getActiveQueryClient } from '@/lib/access/working-set-registry';
+  beginWorkingSetScope,
+  getActiveQueryClient,
+} from '@/lib/access/working-set-registry';
 import {
+  abortImportReviewSelectionInFlight,
   getImportReviewAutosaveSnapshot,
   markImportReviewSelectionFailure,
   markImportReviewSelectionStart,
@@ -19,6 +19,7 @@ import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
 import { importMatchTransactionIdForDraft } from './importMatchTargetOnAccount';
 import { importDraftQueryKey } from './queryKeys';
 import { rederiveImportDraftWorkingCopy } from './rederiveImportDraftWorkingCopy';
+import { runImportDraftPersist } from './runImportDraftPersist';
 
 interface SelectionVariables {
   draftId: string;
@@ -106,38 +107,37 @@ const persistSelection = createOptimisticAction<SelectionVariables>({
     rederiveImportDraftWorkingCopy(draftId);
   },
   mutationFn: async ({ draftId, rowIds, selectedForImport }) => {
-    markImportReviewSelectionStart(draftId);
-    // Field persists first when ordering matters (ADR 0005).
-    await flushImportDraftRowPacedMutations(draftId);
-
-    const startedEpoch = getWorkingSetEpoch();
+    const scope = beginWorkingSetScope();
     const body: UpdateImportDraftRowSelectionInput = {
       rowIds,
       selectedForImport,
     };
 
-    try {
-      const serverRows = await fetchUpdateImportDraftRowSelection(
-        draftId,
-        body
-      );
-      if (!isCurrentWorkingSetEpoch(startedEpoch)) {
-        return;
-      }
-      confirmSelectionIntoCollection(
-        draftId,
-        serverRows,
-        rowIds,
-        selectedForImport
-      );
-      markImportReviewSelectionSuccess(draftId, rowIds);
-    } catch {
-      if (!isCurrentWorkingSetEpoch(startedEpoch)) {
-        return;
-      }
-      confirmSelectionIntoCollection(draftId, null, rowIds, selectedForImport);
-      markImportReviewSelectionFailure(draftId, rowIds);
-    }
+    await runImportDraftPersist({
+      scope,
+      beforePersist: () => flushImportDraftRowPacedMutations(draftId),
+      onStart: () => markImportReviewSelectionStart(draftId),
+      onStale: () => abortImportReviewSelectionInFlight(draftId),
+      persist: () => fetchUpdateImportDraftRowSelection(draftId, body),
+      onSuccess: (serverRows) => {
+        confirmSelectionIntoCollection(
+          draftId,
+          serverRows,
+          rowIds,
+          selectedForImport
+        );
+        markImportReviewSelectionSuccess(draftId, rowIds);
+      },
+      onFailure: () => {
+        confirmSelectionIntoCollection(
+          draftId,
+          null,
+          rowIds,
+          selectedForImport
+        );
+        markImportReviewSelectionFailure(draftId, rowIds);
+      },
+    });
   },
 });
 

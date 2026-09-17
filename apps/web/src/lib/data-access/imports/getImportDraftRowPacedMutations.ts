@@ -5,11 +5,10 @@ import type {
   UpdateImportDraftRowResult,
 } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
+import { beginWorkingSetScope } from '@/lib/access/working-set-registry';
+import type { WorkingSetScope } from '@/lib/access/working-set-registry';
 import {
-  getWorkingSetEpoch,
-  isCurrentWorkingSetEpoch,
-} from '@/lib/access/working-set-epoch';
-import {
+  abortImportReviewPersistInFlight,
   getImportReviewAutosaveSnapshot,
   markImportReviewPending,
   markImportReviewPersistFailure,
@@ -24,6 +23,7 @@ import {
   evaluateImportDraftWorkingCopy,
   rederiveImportDraftWorkingCopy,
 } from './rederiveImportDraftWorkingCopy';
+import { runImportDraftPersist } from './runImportDraftPersist';
 import type { Transaction } from '@tanstack/db';
 
 export const IMPORT_ROW_PACE_WAIT_MS = 500;
@@ -199,6 +199,7 @@ const applyOptimisticRowPatch = (
 const createRowPacedMutations = (draftId: string, rowId: string) => {
   const strategy = debounceStrategy({ wait: IMPORT_ROW_PACE_WAIT_MS });
   let latestTx: Transaction | null = null;
+  let persistScope: WorkingSetScope | null = null;
 
   const mutate = createPacedMutations<ImportDraftRowPatchVariables>({
     onMutate: ({ patch }) => {
@@ -206,7 +207,10 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
       applyOptimisticRowPatch(draftId, rowId, patch);
     },
     mutationFn: async ({ transaction }) => {
-      const startedEpoch = getWorkingSetEpoch();
+      const scope = persistScope ?? beginWorkingSetScope();
+      if (!scope.isCurrent()) {
+        return;
+      }
       markImportReviewPersistStart(draftId, rowId);
       const collection = getImportDraftRowsCollection(draftId);
       const mutation = transaction.mutations.find(
@@ -239,35 +243,35 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
       }
 
       const persistedKeys = Object.keys(patch);
-      try {
-        const server = await fetchUpdateImportDraftRow(rowId, patch);
-        if (!isCurrentWorkingSetEpoch(startedEpoch)) {
-          return;
-        }
-        confirmPersistIntoCollection(
-          collection,
-          server,
-          attempted,
-          original,
-          patch,
-          draftId
-        );
-        markImportReviewPersistSuccess(draftId, rowId, persistedKeys);
-      } catch {
-        if (!isCurrentWorkingSetEpoch(startedEpoch)) {
-          return;
-        }
-        // Keep working-copy edits (ADR 0005) — do not throw (avoids optimistic rollback).
-        confirmPersistIntoCollection(
-          collection,
-          null,
-          attempted,
-          original,
-          patch,
-          draftId
-        );
-        markImportReviewPersistFailure(draftId, rowId, persistedKeys);
-      }
+      await runImportDraftPersist({
+        scope,
+        tracksInFlight: true,
+        onStale: () => abortImportReviewPersistInFlight(draftId, rowId),
+        persist: () => fetchUpdateImportDraftRow(rowId, patch),
+        onSuccess: (server) => {
+          confirmPersistIntoCollection(
+            collection,
+            server,
+            attempted,
+            original,
+            patch,
+            draftId
+          );
+          markImportReviewPersistSuccess(draftId, rowId, persistedKeys);
+        },
+        onFailure: () => {
+          // Keep working-copy edits (ADR 0005) — do not throw (avoids optimistic rollback).
+          confirmPersistIntoCollection(
+            collection,
+            null,
+            attempted,
+            original,
+            patch,
+            draftId
+          );
+          markImportReviewPersistFailure(draftId, rowId, persistedKeys);
+        },
+      });
     },
     strategy,
   });
@@ -275,6 +279,7 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
   const wrappedMutate = (variables: ImportDraftRowPatchVariables) => {
     const patch = sanitizeImportMatchPatch(draftId, variables.patch);
     if (Object.keys(patch).length === 0) return;
+    persistScope = beginWorkingSetScope();
     const tx = mutate({ patch });
     latestTx = tx;
     return tx;
@@ -347,33 +352,34 @@ export const retryFailedImportDraftRowPersists = async (draftId: string) => {
       );
       if (Object.keys(patch).length === 0) return;
 
-      markImportReviewPersistStart(draftId, rowId);
+      const scope = beginWorkingSetScope();
+      if (!scope.isCurrent()) return;
+
       const persistedKeys = Object.keys(patch);
-      const startedEpoch = getWorkingSetEpoch();
-      try {
-        const server = await fetchUpdateImportDraftRow(rowId, patch);
-        if (!isCurrentWorkingSetEpoch(startedEpoch)) {
-          return;
-        }
-        confirmPersistIntoCollection(
-          collection,
-          server,
-          live,
-          live,
-          patch,
-          draftId
-        );
-        // Explicit Retry: clear all tracked failures for the row.
-        markImportReviewPersistSuccess(draftId, rowId);
-      } catch {
-        if (!isCurrentWorkingSetEpoch(startedEpoch)) {
-          return;
-        }
-        const current = collection.get(rowId);
-        if (current) collection.utils.writeUpdate(current);
-        rederiveImportDraftWorkingCopy(draftId);
-        markImportReviewPersistFailure(draftId, rowId, persistedKeys);
-      }
+      await runImportDraftPersist({
+        scope,
+        onStart: () => markImportReviewPersistStart(draftId, rowId),
+        onStale: () => abortImportReviewPersistInFlight(draftId, rowId),
+        persist: () => fetchUpdateImportDraftRow(rowId, patch),
+        onSuccess: (server) => {
+          confirmPersistIntoCollection(
+            collection,
+            server,
+            live,
+            live,
+            patch,
+            draftId
+          );
+          // Explicit Retry: clear all tracked failures for the row.
+          markImportReviewPersistSuccess(draftId, rowId);
+        },
+        onFailure: () => {
+          const current = collection.get(rowId);
+          if (current) collection.utils.writeUpdate(current);
+          rederiveImportDraftWorkingCopy(draftId);
+          markImportReviewPersistFailure(draftId, rowId, persistedKeys);
+        },
+      });
     })
   );
 };

@@ -221,6 +221,27 @@ export const markImportReviewSelectionFailure = (
   emit(draftId);
 };
 
+/** Drop a stale row persist without confirming success or failure. */
+export const abortImportReviewPersistInFlight = (
+  draftId: string,
+  rowId: string
+) => {
+  const state = draftStates.get(draftId);
+  if (!state) return;
+  state.inFlightCount = Math.max(0, state.inFlightCount - 1);
+  state.pendingRowIds.delete(rowId);
+  refreshFailedRowMembership(state, rowId);
+  emit(draftId);
+};
+
+/** Drop a stale bulk selection persist without confirming success or failure. */
+export const abortImportReviewSelectionInFlight = (draftId: string) => {
+  const state = draftStates.get(draftId);
+  if (!state) return;
+  state.inFlightCount = Math.max(0, state.inFlightCount - 1);
+  emit(draftId);
+};
+
 export const releaseImportReviewAutosave = (draftId: string) => {
   draftStates.delete(draftId);
   draftSnapshots.delete(draftId);

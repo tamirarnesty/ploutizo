@@ -2,10 +2,10 @@ import './working-set-cleanup';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   getActiveQueryClient,
+  getActiveWorkingSet,
   replaceActiveWorkingSet,
   resetWorkingSetRegistryForTests,
 } from './working-set-registry';
-import { getWorkingSetEpoch } from './working-set-epoch';
 import {
   getClientHouseholdBearer,
   resetBearerStateForTests,
@@ -88,11 +88,11 @@ describe('replaceActiveWorkingSet', () => {
     setClientBearerGetter(() => Promise.resolve(null));
   });
 
-  it('bumps the working set epoch on replacement', () => {
-    const epochBefore = getWorkingSetEpoch();
+  it('assigns a new working set id on replacement', () => {
+    const idBefore = getActiveWorkingSet().id;
 
     replaceActiveWorkingSet();
 
-    expect(getWorkingSetEpoch()).toBe(epochBefore + 1);
+    expect(getActiveWorkingSet().id).toBe(idBefore + 1);
   });
 });
