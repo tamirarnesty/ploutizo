@@ -35,10 +35,15 @@ export const getImportDraftRowsCollection = (
   return collection;
 };
 
-/** Drop a draft's working copy after discard (or in tests). Hub ↔ review nav keeps it warm. */
+/** Drop a draft's working copy after discard, finalize, or in tests. Hub ↔ review nav keeps it warm. */
 export const releaseImportDraftRowsCollection = async (draftId: string) => {
   const collection = importDraftRowsCollections.get(draftId);
-  if (!collection) return;
+  if (!collection) {
+    getActiveQueryClient().removeQueries({
+      queryKey: importDraftQueryKey(draftId),
+    });
+    return;
+  }
   importDraftRowsCollections.delete(draftId);
   await collection.cleanup();
 };

@@ -4,6 +4,7 @@ export {
   getImportDraftRowsCollection,
   releaseImportDraftRowsCollection,
 } from './getImportDraftRowsCollection';
+export { releaseImportDraftSession } from './releaseImportDraftSession';
 export {
   getImportDraftRowPacedMutations,
   IMPORT_ROW_PACE_WAIT_MS,

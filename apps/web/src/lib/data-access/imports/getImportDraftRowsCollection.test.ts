@@ -44,4 +44,17 @@ describe('getImportDraftRowsCollection', () => {
     await release;
     expect(getImportDraftRowsCollection(draft.id)).toBe(next);
   });
+
+  it('removes cached draft query data when no collection exists', async () => {
+    const queryClient = getActiveQueryClient();
+    expect(queryClient.getQueryData(importDraftQueryKey(draft.id))).toEqual(
+      draft
+    );
+
+    await releaseImportDraftRowsCollection(draft.id);
+
+    expect(
+      queryClient.getQueryData(importDraftQueryKey(draft.id))
+    ).toBeUndefined();
+  });
 });
