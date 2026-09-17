@@ -21,8 +21,9 @@ export const createTag = async (body: CreateTagBody): Promise<Tag> => {
 
 export const useCreateTag = () => {
   const qc = useQueryClient();
+  const tagsQueryKey = ['tags'];
   return useOptimisticListMutation<Tag, CreateTagBody, Tag>({
-    queryKey: ['tags'],
+    queryKey: tagsQueryKey,
     mutationFn: createTag,
     updateCache: (items, { name }) => {
       const trimmed = name.trim();
@@ -41,7 +42,7 @@ export const useCreateTag = () => {
     },
     onSuccess: (created, { name }) => {
       const placeholderId = optimisticTagId(name);
-      qc.setQueryData<Tag[]>(['tags'], (items = []) => {
+      qc.setQueryData<Tag[]>(tagsQueryKey, (items = []) => {
         const withoutPlaceholder = items.filter(
           (t) => t.id !== created.id && t.id !== placeholderId
         );

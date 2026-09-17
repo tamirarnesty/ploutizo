@@ -8,6 +8,9 @@ export const useRemoveMember = () => {
       apiFetch(`/api/households/members/${memberId}`, {
         method: 'DELETE',
       }),
-    onSettled: () => void qc.invalidateQueries({ queryKey: ['org-members'] }),
+    onSettled: () =>
+      void qc.invalidateQueries({
+        queryKey: ['members'],
+      }),
   });
 };

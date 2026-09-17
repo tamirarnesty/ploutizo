@@ -3,6 +3,14 @@ import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
 import { alertDialogMock, dialogMock, sheetMock } from '@/test/mockUiOverlays';
 
+vi.mock('@/lib/data-access/useHouseholdQuery', async () => {
+  const { useQuery } = await import('@tanstack/react-query');
+  return {
+    isHouseholdAccessReady: () => true,
+    useHouseholdQuery: useQuery,
+  };
+});
+
 vi.mock('@ploutizo/ui/components/dialog', () => dialogMock);
 vi.mock('@ploutizo/ui/components/sheet', () => sheetMock);
 vi.mock('@ploutizo/ui/components/alert-dialog', () => alertDialogMock);

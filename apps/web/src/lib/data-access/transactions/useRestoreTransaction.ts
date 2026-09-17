@@ -9,8 +9,12 @@ export const useRestoreTransaction = () => {
         method: 'PATCH',
       }),
     onSettled: () => {
-      void qc.invalidateQueries({ queryKey: ['transactions'] });
-      void qc.invalidateQueries({ queryKey: ['settlements'] });
+      void qc.invalidateQueries({
+        queryKey: ['transactions'],
+      });
+      void qc.invalidateQueries({
+        queryKey: ['settlements'],
+      });
     },
   });
 };

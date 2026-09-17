@@ -2,7 +2,7 @@ import { matchDecisionsForSelectedRows } from '@ploutizo/utils';
 import { createOptimisticAction } from '@tanstack/db';
 import type { ImportDraft, ImportDraftPersistedRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowSelectionInput } from '@ploutizo/validators';
-import { queryClient } from '@/lib/queryClient';
+import { getActiveQueryClient } from '@/lib/access/working-set-registry';
 import {
   getImportReviewAutosaveSnapshot,
   markImportReviewSelectionFailure,
@@ -27,7 +27,7 @@ const applySelectionMatchDecisions = (
   rowIds: string[],
   selectedForImport: boolean
 ) => {
-  const importDraft = queryClient.getQueryData<ImportDraft>(
+  const importDraft = getActiveQueryClient().getQueryData<ImportDraft>(
     importDraftQueryKey(draftId)
   );
   if (!importDraft?.account.id) return;

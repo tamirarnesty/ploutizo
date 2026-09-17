@@ -4,7 +4,7 @@ import {
   makeImportDraft,
   makeImportDraftRow,
 } from '@/components/imports/test-fixtures/importDraft';
-import { queryClient } from '@/lib/queryClient';
+import { getActiveQueryClient } from '@/lib/access/working-set-registry';
 import {
   importMatchTransactionIdForDraft,
   sanitizeImportMatchPatch,
@@ -42,11 +42,11 @@ describe('importMatchTargetOnAccount', () => {
   });
 
   beforeEach(() => {
-    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
+    getActiveQueryClient().setQueryData(importDraftQueryKey(draft.id), draft);
   });
 
   afterEach(() => {
-    queryClient.clear();
+    getActiveQueryClient().clear();
   });
 
   it('allows same-account match ids and rejects cross-account or unknown ids', () => {

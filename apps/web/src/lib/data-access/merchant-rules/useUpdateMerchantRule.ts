@@ -28,6 +28,9 @@ export const useUpdateMerchantRule = (id: string) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: UpdateMerchantRuleBody) => updateMerchantRule(id, body),
-    onSettled: () => qc.invalidateQueries({ queryKey: ['merchant-rules'] }),
+    onSettled: () =>
+      qc.invalidateQueries({
+        queryKey: ['merchant-rules'],
+      }),
   });
 };

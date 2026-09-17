@@ -24,6 +24,8 @@ export const useUpdateHouseholdSettings = () => {
   return useMutation({
     mutationFn: updateHouseholdSettings,
     onSettled: () =>
-      void qc.invalidateQueries({ queryKey: ['household-settings'] }),
+      void qc.invalidateQueries({
+        queryKey: ['household-settings'],
+      }),
   });
 };

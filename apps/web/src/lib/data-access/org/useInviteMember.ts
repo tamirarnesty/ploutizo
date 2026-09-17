@@ -10,8 +10,12 @@ export const useInviteMember = () => {
         body: JSON.stringify({ email }),
       }),
     onSettled: () => {
-      void qc.invalidateQueries({ queryKey: ['org-members'] });
-      void qc.invalidateQueries({ queryKey: ['org-invitations'] });
+      void qc.invalidateQueries({
+        queryKey: ['members'],
+      });
+      void qc.invalidateQueries({
+        queryKey: ['invitations'],
+      });
     },
   });
 };

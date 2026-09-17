@@ -28,7 +28,9 @@ export const useUpdateAccount = (id: string) => {
     mutationFn: (body: UpdateAccountBody) => updateAccount(id, body),
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['accounts'] });
-      qc.invalidateQueries({ queryKey: ['account-members', id] });
+      qc.invalidateQueries({
+        queryKey: ['account-members', id],
+      });
     },
   });
 };

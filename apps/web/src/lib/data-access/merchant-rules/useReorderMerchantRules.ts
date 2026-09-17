@@ -16,9 +16,10 @@ export const reorderMerchantRules = async (
   return r.data;
 };
 
-export const useReorderMerchantRules = () =>
-  useOptimisticListMutation<MerchantRule, string[], { ok: boolean }>({
+export const useReorderMerchantRules = () => {
+  return useOptimisticListMutation<MerchantRule, string[], { ok: boolean }>({
     queryKey: ['merchant-rules'],
     mutationFn: reorderMerchantRules,
     updateCache: (items, orderedIds) => reorderByIds(items, orderedIds),
   });
+};

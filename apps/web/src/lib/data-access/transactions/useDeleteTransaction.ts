@@ -6,6 +6,7 @@ type Snapshot = [unknown[], TransactionListResponse | undefined][];
 
 export const useDeleteTransaction = () => {
   const qc = useQueryClient();
+  const transactionsQueryKey = ['transactions'];
   return useMutation({
     mutationFn: (id: string) =>
       apiFetch<{ data: { id: string } }>(`/api/transactions/${id}`, {
@@ -14,11 +15,11 @@ export const useDeleteTransaction = () => {
 
     onMutate: async (_id: string): Promise<{ snapshots: Snapshot }> => {
       // Cancel any in-flight refetches so they don't overwrite the optimistic update
-      await qc.cancelQueries({ queryKey: ['transactions'] });
+      await qc.cancelQueries({ queryKey: transactionsQueryKey });
 
       // Snapshot every currently-cached transactions page/filter combo
       const snapshots = qc.getQueriesData<TransactionListResponse>({
-        queryKey: ['transactions'],
+        queryKey: transactionsQueryKey,
       }) as Snapshot;
 
       return { snapshots };
@@ -28,7 +29,7 @@ export const useDeleteTransaction = () => {
     onSuccess: (_data, id) => {
       // Remove the deleted row from all list caches after toast and sheet close have fired
       qc.setQueriesData<TransactionListResponse>(
-        { queryKey: ['transactions'] },
+        { queryKey: transactionsQueryKey },
         (old) => {
           // Skip detail queries (TransactionRow shape) — only update list responses
           if (!old || !Array.isArray(old.data)) return old;
@@ -51,8 +52,10 @@ export const useDeleteTransaction = () => {
     },
 
     onSettled: () => {
-      void qc.invalidateQueries({ queryKey: ['transactions'] });
-      void qc.invalidateQueries({ queryKey: ['settlements'] });
+      void qc.invalidateQueries({ queryKey: transactionsQueryKey });
+      void qc.invalidateQueries({
+        queryKey: ['settlements'],
+      });
     },
   });
 };

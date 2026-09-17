@@ -59,7 +59,8 @@ export const useImportReviewSession = (
 
   const metaQuery = useQuery({
     queryKey: importDraftQueryKey(draftId),
-    queryFn: () => fetchImportDraft(draftId),
+    queryFn: ({ signal }: { signal: AbortSignal }) =>
+      fetchImportDraft(draftId, signal),
     select: toImportDraftMeta,
   });
 

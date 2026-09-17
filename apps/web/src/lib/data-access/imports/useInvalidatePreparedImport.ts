@@ -7,7 +7,9 @@ export const useInvalidatePreparedImport = (draftId: string) => {
   return useMutation({
     mutationFn: () => fetchInvalidatePreparedImport(draftId),
     onSuccess: () => {
-      queryClient.removeQueries({ queryKey: importPreparedQueryKey(draftId) });
+      queryClient.removeQueries({
+        queryKey: importPreparedQueryKey(draftId),
+      });
     },
   });
 };

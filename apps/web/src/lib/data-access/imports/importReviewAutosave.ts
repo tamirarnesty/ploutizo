@@ -241,7 +241,7 @@ export const waitForImportReviewAutosaveSettled = (draftId: string) =>
     check();
   });
 
-export const resetImportReviewAutosaveForTests = () => {
+export const endImportReviewAutosave = () => {
   draftStates.clear();
   draftSnapshots.clear();
   listeners.clear();

@@ -6,6 +6,10 @@ import type {
 } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import {
+  getWorkingSetEpoch,
+  isCurrentWorkingSetEpoch,
+} from '@/lib/access/working-set-epoch';
+import {
   getImportReviewAutosaveSnapshot,
   markImportReviewPending,
   markImportReviewPersistFailure,
@@ -202,6 +206,7 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
       applyOptimisticRowPatch(draftId, rowId, patch);
     },
     mutationFn: async ({ transaction }) => {
+      const startedEpoch = getWorkingSetEpoch();
       markImportReviewPersistStart(draftId, rowId);
       const collection = getImportDraftRowsCollection(draftId);
       const mutation = transaction.mutations.find(
@@ -236,6 +241,9 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
       const persistedKeys = Object.keys(patch);
       try {
         const server = await fetchUpdateImportDraftRow(rowId, patch);
+        if (!isCurrentWorkingSetEpoch(startedEpoch)) {
+          return;
+        }
         confirmPersistIntoCollection(
           collection,
           server,
@@ -246,6 +254,9 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
         );
         markImportReviewPersistSuccess(draftId, rowId, persistedKeys);
       } catch {
+        if (!isCurrentWorkingSetEpoch(startedEpoch)) {
+          return;
+        }
         // Keep working-copy edits (ADR 0005) — do not throw (avoids optimistic rollback).
         confirmPersistIntoCollection(
           collection,
@@ -296,6 +307,8 @@ const rowPacedMutations = new Map<string, RowPacedEntry>();
 
 const pacedKey = (draftId: string, rowId: string) => `${draftId}:${rowId}`;
 
+const pacedDraftPrefix = (draftId: string) => `${draftId}:`;
+
 export const getImportDraftRowPacedMutations = (
   draftId: string,
   rowId: string
@@ -310,7 +323,7 @@ export const getImportDraftRowPacedMutations = (
 };
 
 export const flushImportDraftRowPacedMutations = async (draftId: string) => {
-  const prefix = `${draftId}:`;
+  const prefix = pacedDraftPrefix(draftId);
   await Promise.all(
     [...rowPacedMutations.entries()]
       .filter(([key]) => key.startsWith(prefix))
@@ -336,8 +349,12 @@ export const retryFailedImportDraftRowPersists = async (draftId: string) => {
 
       markImportReviewPersistStart(draftId, rowId);
       const persistedKeys = Object.keys(patch);
+      const startedEpoch = getWorkingSetEpoch();
       try {
         const server = await fetchUpdateImportDraftRow(rowId, patch);
+        if (!isCurrentWorkingSetEpoch(startedEpoch)) {
+          return;
+        }
         confirmPersistIntoCollection(
           collection,
           server,
@@ -349,6 +366,9 @@ export const retryFailedImportDraftRowPersists = async (draftId: string) => {
         // Explicit Retry: clear all tracked failures for the row.
         markImportReviewPersistSuccess(draftId, rowId);
       } catch {
+        if (!isCurrentWorkingSetEpoch(startedEpoch)) {
+          return;
+        }
         const current = collection.get(rowId);
         if (current) collection.utils.writeUpdate(current);
         rederiveImportDraftWorkingCopy(draftId);
@@ -359,14 +379,15 @@ export const retryFailedImportDraftRowPersists = async (draftId: string) => {
 };
 
 export const releaseImportDraftRowPacedMutations = (draftId: string) => {
+  const prefix = pacedDraftPrefix(draftId);
   for (const [key, entry] of rowPacedMutations) {
-    if (!key.startsWith(`${draftId}:`)) continue;
+    if (!key.startsWith(prefix)) continue;
     entry.cleanup();
     rowPacedMutations.delete(key);
   }
 };
 
-export const resetImportDraftRowPacedMutationsForTests = () => {
+export const endImportDraftRowPacedMutations = () => {
   for (const entry of rowPacedMutations.values()) {
     entry.cleanup();
   }

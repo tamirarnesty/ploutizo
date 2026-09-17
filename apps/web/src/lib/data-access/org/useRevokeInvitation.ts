@@ -9,6 +9,8 @@ export const useRevokeInvitation = () => {
         method: 'DELETE',
       }),
     onSettled: () =>
-      void qc.invalidateQueries({ queryKey: ['org-invitations'] }),
+      void qc.invalidateQueries({
+        queryKey: ['invitations'],
+      }),
   });
 };

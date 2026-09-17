@@ -22,6 +22,9 @@ export const useCreateCategory = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: createCategory,
-    onSettled: () => qc.invalidateQueries({ queryKey: ['categories'] }),
+    onSettled: () =>
+      qc.invalidateQueries({
+        queryKey: ['categories'],
+      }),
   });
 };

@@ -3,7 +3,7 @@ import type {
   ImportDraftRow,
   RefundTargetFact,
 } from '@ploutizo/types';
-import { queryClient } from '@/lib/queryClient';
+import { getActiveQueryClient } from '@/lib/access/working-set-registry';
 import { importDraftQueryKey } from './queryKeys';
 
 export interface MergeImportDraftRefundTargetFactsInput {
@@ -15,7 +15,7 @@ export const mergeImportDraftRefundTargetFacts = (
   draftId: string,
   update: MergeImportDraftRefundTargetFactsInput
 ) => {
-  queryClient.setQueryData<ImportDraft>(
+  getActiveQueryClient().setQueryData<ImportDraft>(
     importDraftQueryKey(draftId),
     (prev) => {
       if (!prev) return prev;

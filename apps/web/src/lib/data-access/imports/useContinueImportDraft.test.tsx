@@ -2,7 +2,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ImportPreparedSetSummary } from '@ploutizo/types';
-import { queryClient } from '@/lib/queryClient';
+import { getActiveQueryClient } from '@/lib/access/working-set-registry';
 import { markImportReviewPending } from './importReviewAutosave';
 import { fetchContinueImportDraft } from './fetchContinueImportDraft';
 import { useContinueImportDraft } from './useContinueImportDraft';
@@ -28,7 +28,9 @@ const preparedSet: ImportPreparedSetSummary = {
 };
 
 const wrapper = ({ children }: { children: ReactNode }) => (
-  <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  <QueryClientProvider client={getActiveQueryClient()}>
+    {children}
+  </QueryClientProvider>
 );
 
 const deferred = <T,>() => {
@@ -43,7 +45,7 @@ const deferred = <T,>() => {
 
 describe('useContinueImportDraft', () => {
   beforeEach(() => {
-    queryClient.clear();
+    getActiveQueryClient().clear();
     toastSuccess.mockReset();
     vi.mocked(fetchContinueImportDraft).mockReset();
   });
