@@ -52,10 +52,10 @@ const buildApp = (fake: FakeTelemetryClient) => {
     fake.failNextEmit(new Error('exporter down'));
     return c.json({ data: { ok: true } });
   });
-  app.get('/api/tenant-required', (c) =>
+  app.get('/api/household-required', (c) =>
     respondWithApiError(c, {
-      code: 'TENANT_REQUIRED',
-      message: 'No active organisation.',
+      code: 'ACTIVE_HOUSEHOLD_REQUIRED',
+      message: 'Active household required.',
       status: 401,
     })
   );
@@ -156,12 +156,12 @@ describe('requestTelemetry middleware', () => {
 
   it('classifies errors when telemetry context is set via respondWithApiError', async () => {
     const fake = createFakeTelemetryClient();
-    const res = await buildApp(fake).request('/api/tenant-required');
+    const res = await buildApp(fake).request('/api/household-required');
 
     expect(res.status).toBe(401);
     expect(fake.records[0]?.attributes).toMatchObject({
       status: 401,
-      code: 'TENANT_REQUIRED',
+      code: 'ACTIVE_HOUSEHOLD_REQUIRED',
       classification: 'expected',
     });
   });

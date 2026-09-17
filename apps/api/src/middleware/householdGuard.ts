@@ -8,7 +8,7 @@ import { respondWithApiError } from '../lib/apiErrorResponse';
 import { redactIdentifier } from '../lib/redact';
 import type { AppEnv } from '../types';
 
-// tenantGuard: rejects requests with no active Clerk org.
+// householdGuard: rejects requests with no signed-in member or active household.
 // CRITICAL: checks !orgId (falsy) — Clerk returns undefined (not null) when no active org.
 // Applied to /api/* only — never to /health or /webhooks.
 //
@@ -41,13 +41,21 @@ const rememberBounded = (
   }
 };
 
-export const tenantGuard = () =>
+export const householdGuard = () =>
   createMiddleware<AppEnv>(async (c, next) => {
+    c.header('Cache-Control', 'private, no-store');
     const { orgId, userId } = getAuth(c);
+    if (!userId) {
+      return respondWithApiError(c, {
+        code: 'SIGNED_IN_MEMBER_REQUIRED',
+        message: 'Signed-in member required.',
+        status: 401,
+      });
+    }
     if (!orgId) {
       return respondWithApiError(c, {
-        code: 'TENANT_REQUIRED',
-        message: 'No active organisation.',
+        code: 'ACTIVE_HOUSEHOLD_REQUIRED',
+        message: 'Active household required.',
         status: 401,
       });
     }
@@ -56,29 +64,30 @@ export const tenantGuard = () =>
       await ensureOrgSeeded(orgId);
       rememberBounded(touchedOrgBootstrap, orgId, MAX_TOUCHED_BOOTSTRAP_ORGS);
     }
-    if (userId) {
-      const syncKey = `${orgId}:${userId}`;
-      if (!touchedCallerOrgSync.has(syncKey)) {
-        try {
-          await ensureCallerSyncedToOrg(orgId, userId);
-          rememberBounded(
-            touchedCallerOrgSync,
-            syncKey,
-            MAX_TOUCHED_CALLER_SYNCS
-          );
-        } catch (err) {
-          // Clerk outage or misconfiguration — do not block the request; downstream
-          // routes may still fail if org_members is required. Omit syncKey so the next
-          // request retries.
-          // TODO(phase logging): replace with structured logger.
-          console.error('[tenantGuard] ensureCallerSyncedToOrg failed', {
-            orgId: redactIdentifier(orgId),
-            userId: redactIdentifier(userId),
-            message: err instanceof Error ? err.message : String(err),
-          });
-        }
+    const syncKey = `${orgId}:${userId}`;
+    if (!touchedCallerOrgSync.has(syncKey)) {
+      try {
+        await ensureCallerSyncedToOrg(orgId, userId);
+        rememberBounded(
+          touchedCallerOrgSync,
+          syncKey,
+          MAX_TOUCHED_CALLER_SYNCS
+        );
+      } catch (err) {
+        // Clerk outage or misconfiguration — do not block the request; downstream
+        // routes may still fail if org_members is required. Omit syncKey so the next
+        // request retries.
+        // TODO(phase logging): replace with structured logger.
+        console.error('[householdGuard] ensureCallerSyncedToOrg failed', {
+          orgId: redactIdentifier(orgId),
+          userId: redactIdentifier(userId),
+          message: err instanceof Error ? err.message : String(err),
+        });
       }
     }
-    c.set('orgId', orgId);
+    c.set('principal', {
+      signedInMemberId: userId,
+      activeHouseholdId: orgId,
+    });
     await next();
   });

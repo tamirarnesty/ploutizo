@@ -57,7 +57,7 @@ Copy `apps/api/.env.cloud-environments.example` to `apps/api/.env.cloud-environm
 
 Default is idempotent: it reuses Ada/Alan and the canonical `Cloud Env Seed Household`, and skips ledger writes if the fixture accounts already exist. Pass `--variant` after `--` to create a separate copy of the same fixture (`pnpm --filter api seed:cloud-environments -- --variant`). `--keep-running` leaves the API (default port 18080) and svix tunnel up.
 
-The Homebrew `svix listen` mints a Play URL that may differ from the Clerk dashboard relay. Member rows still sync via `tenantGuard` when the script authenticates as both users.
+The Homebrew `svix listen` mints a Play URL that may differ from the Clerk dashboard relay. Member rows still sync via `householdGuard` when the script authenticates as both users.
 
 ## Test credentials
 

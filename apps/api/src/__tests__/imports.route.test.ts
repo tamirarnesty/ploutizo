@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRouteTestApp } from './testUtils';
-import type { AppEnv } from '@/types';
 import { importsRouter } from '@/routes/imports';
 import {
   createImportDraft,
@@ -42,13 +41,15 @@ vi.mock('@/services/import-finalize', () => ({
   finalizeImportDraft: vi.fn(),
 }));
 
-const app = createRouteTestApp<AppEnv>((testApp) => {
-  testApp.use('*', async (c, next) => {
-    c.set('orgId', 'org_1');
-    await next();
-  });
-  testApp.route('/', importsRouter);
-});
+const app = createRouteTestApp(
+  (testApp) => {
+    testApp.route('/', importsRouter);
+  },
+  {
+    signedInMemberId: 'user_clerk_abc',
+    activeHouseholdId: 'org_1',
+  }
+);
 
 const PREPARED_SET_ID = '550e8400-e29b-41d4-a716-446655440060';
 const OTHER_PREPARED_SET_ID = '550e8400-e29b-41d4-a716-446655440061';

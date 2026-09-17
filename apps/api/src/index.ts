@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { clerkMiddleware } from '@clerk/hono';
 import { closeDb } from '@ploutizo/db';
-import { tenantGuard } from './middleware/tenantGuard';
+import { householdGuard } from './middleware/householdGuard';
 import { authorizedPartyGuard } from './middleware/authorizedPartyGuard';
 import { resolveAllowedOrigin } from './lib/allowedOrigins';
 import { healthRouter } from './routes/health';
@@ -38,7 +38,7 @@ initApiOtel();
 const app = new Hono<AppEnv>();
 
 // Invariant middleware order (docs/stack-and-conventions.md):
-// CORS → request telemetry → Clerk → authorized party guard → tenant guard
+// CORS → request telemetry → Clerk → authorized party guard → household guard
 // 1. CORS — handles preflight before Clerk so OPTIONS requests are not rejected
 app.use(
   '*',
@@ -66,14 +66,14 @@ app.use(
 
 app.use('*', authorizedPartyGuard());
 
-// 3. Tenant guard — scoped to /api/* ONLY (not /health, not /webhooks)
-app.use('/api/*', tenantGuard());
+// 3. Household guard — scoped to /api/* ONLY (not /health, not /webhooks)
+app.use('/api/*', householdGuard());
 
-// Routes excluded from tenant guard
+// Routes excluded from household guard
 app.route('/health', healthRouter);
 app.route('/webhooks', webhooksRouter);
 
-// Protected API routes (tenant guard enforced via /api/* middleware above)
+// Protected API routes (household guard enforced via /api/* middleware above)
 app.route('/api/accounts', accountsRouter);
 app.route('/api/households', householdsRouter);
 app.route('/api/categories', categoriesRouter);

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Hono } from 'hono';
 import { getAuth } from '@clerk/hono';
-import { tenantGuard } from '../middleware/tenantGuard';
+import { householdGuard } from '../middleware/householdGuard';
 import { ensureCallerSyncedToOrg } from '../services/clerkMembershipSync';
 
 // Mock @clerk/hono to control what getAuth() returns per test
@@ -41,61 +41,113 @@ vi.mock('../services/clerkMembershipSync', () => ({
 
 const buildApp = () => {
   const app = new Hono();
-  app.use('*', tenantGuard());
+  app.use('*', householdGuard());
   app.get('/', (c) => c.json({ data: { ok: true } }));
   return app;
 };
 
-describe('tenantGuard()', () => {
-  it('returns 401 when orgId is undefined', async () => {
-    vi.mocked(getAuth).mockReturnValue({ orgId: undefined } as never);
+describe('householdGuard()', () => {
+  it('rejects a missing signed-in member before returning household data', async () => {
+    vi.mocked(getAuth).mockReturnValue({
+      userId: undefined,
+      orgId: 'org_abc123',
+    } as never);
     const res = await buildApp().request('/');
     expect(res.status).toBe(401);
     const body = (await res.json()) as { error: { code: string } };
-    expect(body.error.code).toBe('TENANT_REQUIRED');
+    expect(body.error.code).toBe('SIGNED_IN_MEMBER_REQUIRED');
   });
 
-  it('returns 401 when orgId is null', async () => {
-    vi.mocked(getAuth).mockReturnValue({ orgId: null } as never);
+  it('rejects a missing active household before returning household data', async () => {
+    vi.mocked(getAuth).mockReturnValue({
+      userId: 'user_abc123',
+      orgId: undefined,
+    } as never);
     const res = await buildApp().request('/');
     expect(res.status).toBe(401);
     const body = (await res.json()) as { error: { code: string } };
-    expect(body.error.code).toBe('TENANT_REQUIRED');
+    expect(body.error.code).toBe('ACTIVE_HOUSEHOLD_REQUIRED');
   });
 
-  it('returns 401 when orgId is empty string', async () => {
-    vi.mocked(getAuth).mockReturnValue({ orgId: '' } as never);
+  it('returns 401 when the active household id is null', async () => {
+    vi.mocked(getAuth).mockReturnValue({
+      userId: 'user_abc123',
+      orgId: null,
+    } as never);
+    const res = await buildApp().request('/');
+    expect(res.status).toBe(401);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe('ACTIVE_HOUSEHOLD_REQUIRED');
+  });
+
+  it('returns 401 when the active household id is empty', async () => {
+    vi.mocked(getAuth).mockReturnValue({
+      userId: 'user_abc123',
+      orgId: '',
+    } as never);
     const res = await buildApp().request('/');
     expect(res.status).toBe(401);
   });
 
-  it('calls next() and returns 200 when orgId is a valid string', async () => {
-    vi.mocked(getAuth).mockReturnValue({ orgId: 'org_abc123' } as never);
+  it('calls next() and returns 200 when signed-in member and active household are present', async () => {
+    vi.mocked(getAuth).mockReturnValue({
+      userId: 'user_abc123',
+      orgId: 'org_abc123',
+    } as never);
     const res = await buildApp().request('/');
     expect(res.status).toBe(200);
     const body = (await res.json()) as { data: { ok: boolean } };
     expect(body.data.ok).toBe(true);
   });
 
+  it('marks household API responses private and uncacheable', async () => {
+    vi.mocked(getAuth).mockReturnValue({
+      userId: 'user_cache',
+      orgId: 'org_cache',
+    } as never);
+    const res = await buildApp().request('/');
+    expect(res.headers.get('Cache-Control')).toBe('private, no-store');
+  });
+
   it('upserts the org row before calling next() when orgId is valid', async () => {
     mockOnConflictDoNothing.mockClear();
     // Use a unique orgId not seen by prior tests to bypass the seenOrgBootstrap cache
-    vi.mocked(getAuth).mockReturnValue({ orgId: 'org_upsert_test' } as never);
+    vi.mocked(getAuth).mockReturnValue({
+      userId: 'user_upsert_test',
+      orgId: 'org_upsert_test',
+    } as never);
     const res = await buildApp().request('/');
     expect(res.status).toBe(200);
     expect(mockOnConflictDoNothing).toHaveBeenCalledOnce();
   });
 
-  it('does not upsert when orgId is missing (401 returned early)', async () => {
+  it('does not upsert when signed-in member is missing', async () => {
     mockOnConflictDoNothing.mockClear();
-    vi.mocked(getAuth).mockReturnValue({ orgId: undefined } as never);
+    vi.mocked(getAuth).mockReturnValue({
+      userId: undefined,
+      orgId: 'org_abc123',
+    } as never);
+    const res = await buildApp().request('/');
+    expect(res.status).toBe(401);
+    expect(mockOnConflictDoNothing).not.toHaveBeenCalled();
+  });
+
+  it('does not upsert when active household is missing', async () => {
+    mockOnConflictDoNothing.mockClear();
+    vi.mocked(getAuth).mockReturnValue({
+      userId: 'user_abc123',
+      orgId: undefined,
+    } as never);
     const res = await buildApp().request('/');
     expect(res.status).toBe(401);
     expect(mockOnConflictDoNothing).not.toHaveBeenCalled();
   });
 
   it('error body has correct shape', async () => {
-    vi.mocked(getAuth).mockReturnValue({ orgId: undefined } as never);
+    vi.mocked(getAuth).mockReturnValue({
+      userId: 'user_abc123',
+      orgId: undefined,
+    } as never);
     const res = await buildApp().request('/');
     const body = (await res.json()) as Record<string, unknown>;
     expect(body).toHaveProperty('error.code');
@@ -103,19 +155,31 @@ describe('tenantGuard()', () => {
     expect(body).not.toHaveProperty('data');
   });
 
-  it('sets orgId on context via c.set before calling next()', async () => {
-    vi.mocked(getAuth).mockReturnValue({ orgId: 'org_context_test' } as never);
-    // Build a special app that reads c.get('orgId') from a downstream handler
+  it('sets the household principal on context before calling next()', async () => {
+    vi.mocked(getAuth).mockReturnValue({
+      userId: 'user_context_test',
+      orgId: 'org_context_test',
+    } as never);
     const app = new Hono();
-    app.use('*', tenantGuard());
+    app.use('*', householdGuard());
     app.get('/', (c) => {
-      const orgId = c.get('orgId' as never) as string | undefined;
-      return c.json({ orgId });
+      const principal = c.get('principal' as never) as
+        | {
+            signedInMemberId: string;
+            activeHouseholdId: string;
+          }
+        | undefined;
+      return c.json({ principal });
     });
     const res = await app.request('/');
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { orgId: string };
-    expect(body.orgId).toBe('org_context_test');
+    const body = (await res.json()) as {
+      principal: { signedInMemberId: string; activeHouseholdId: string };
+    };
+    expect(body.principal).toEqual({
+      signedInMemberId: 'user_context_test',
+      activeHouseholdId: 'org_context_test',
+    });
   });
 
   it('runs ensureCallerSyncedToOrg for each distinct user in the same org', async () => {

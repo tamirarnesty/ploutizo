@@ -6,7 +6,7 @@ import { dispatchWebhookEvent } from '../services/webhooks';
 const webhooksRouter = new Hono();
 
 // POST /webhooks/clerk — Svix signature verified by webhookAuth middleware (D-07)
-// IMPORTANT: tenantGuard is NOT applied to this route (no JWT on webhook requests)
+// IMPORTANT: householdGuard is NOT applied to this route (no JWT on webhook requests)
 webhooksRouter.post('/clerk', webhookAuth(), async (c) => {
   const event = c.get('webhookEvent');
   await dispatchWebhookEvent(event);
