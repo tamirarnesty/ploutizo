@@ -4,7 +4,7 @@ import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
 import { SettingsTabs } from './SettingsTabs';
 
 vi.mock('@/lib/navigation/collect-nav', () => ({
-  collectSectionNav: () => [
+  collectSettingsSectionNav: () => [
     { label: 'Categories & Tags', to: '/settings/categories' },
     { label: 'Merchant Rules', to: '/settings/merchant-rules' },
     { label: 'Household', to: '/settings/household' },

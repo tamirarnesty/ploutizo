@@ -1,15 +1,15 @@
+import { useMemo } from 'react';
 import { Link, useRouter, useRouterState } from '@tanstack/react-router';
 import { Tabs, TabsList, TabsTrigger } from '@ploutizo/ui/components/tabs';
-import { collectSectionNav } from '@/lib/navigation/collect-nav';
+import { collectSettingsSectionNav } from '@/lib/navigation/collect-nav';
 import { isAppNavRouteActive } from '@/lib/navigation/isAppNavRouteActive';
-import { settingsLayoutRouteId } from '@/routes/_layout.settings/nav';
 
 export const SettingsTabs = () => {
   const router = useRouter();
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
-  const tabs = collectSectionNav(router, settingsLayoutRouteId);
+  const tabs = useMemo(() => collectSettingsSectionNav(router), [router]);
   const activeTab =
     tabs.find((tab) => isAppNavRouteActive(pathname, tab.to))?.to ??
     tabs[0]?.to;

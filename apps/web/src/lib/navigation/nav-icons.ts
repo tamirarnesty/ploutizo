@@ -24,5 +24,3 @@ export const navIcons = {
   '/settings/merchant-rules': WandSparkles,
   '/settings/household': Users,
 } as const satisfies Record<AppNavRoute, LucideIcon>;
-
-export const resolveNavIcon = (to: AppNavRoute): LucideIcon => navIcons[to];

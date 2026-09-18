@@ -10,18 +10,21 @@ import {
   CommandList,
 } from '@ploutizo/ui/components/command';
 
+import type { ImportDraftSummary } from '@ploutizo/types';
 import type { CommandDefinition } from '@/lib/command/types';
 import { getCommandGroups } from '@/lib/command/getCommandGroups';
 import { useCommandPalette } from '@/lib/command/useCommandPalette';
 import { useGetImportDrafts } from '@/lib/data-access/imports';
 import { importDraftReviewRoute } from '@/lib/navigation';
 
+const EMPTY_IMPORT_DRAFTS: readonly ImportDraftSummary[] = [];
+
 export const CommandPalette = () => {
   const { open, setOpen } = useCommandPalette();
   const router = useRouter();
   const navigate = useNavigate();
   const draftsQuery = useGetImportDrafts({ enabled: open });
-  const drafts = draftsQuery.data ?? [];
+  const drafts = draftsQuery.data ?? EMPTY_IMPORT_DRAFTS;
   const commandGroups = useMemo(
     () => getCommandGroups(router, drafts),
     [drafts, router]

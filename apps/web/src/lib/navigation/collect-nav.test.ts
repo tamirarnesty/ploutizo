@@ -1,11 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { getRouter } from '@/router';
-import { settingsLayoutRouteId } from '@/routes/_layout.settings/nav';
-import { collectNav, collectSectionNav } from './collect-nav';
-import { resolveNavIcon } from './nav-icons';
+import { collectNav, collectSettingsSectionNav } from './collect-nav';
+import { navIcons } from './nav-icons';
 import { normalizePathname } from './normalizePathname';
 import { APP_NAV_ROUTES, isAppNavRoutePath } from './types';
-import type { AnyRoute } from '@tanstack/react-router';
 
 describe('collectNav', () => {
   const router = getRouter();
@@ -68,7 +66,7 @@ describe('collectNav', () => {
           fullPath: '/unknown-nav-route',
           options: { staticData: { nav: { label: 'Unknown' } } },
           parentRoute: undefined,
-        } as AnyRoute,
+        },
       },
     };
 
@@ -78,20 +76,14 @@ describe('collectNav', () => {
   });
 
   it('resolves every route in the tree that declares staticData.nav', () => {
-    const routes = Object.values(
-      router.routesById as unknown as Record<string, AnyRoute>
-    );
+    const routes = Object.values(router.routesById);
     const navRoutes = routes.filter((route) => route.options.staticData?.nav);
 
     expect(() => collectNav(router)).not.toThrow();
     expect(navRoutes).toHaveLength(APP_NAV_ROUTES.length);
 
     for (const route of navRoutes) {
-      const normalized = normalizePathname(route.fullPath);
-      const path =
-        normalized.endsWith('/') && normalized !== '/'
-          ? normalized.slice(0, -1)
-          : normalized;
+      const path = normalizePathname(route.fullPath);
 
       if (!isAppNavRoutePath(path)) {
         throw new Error(
@@ -99,31 +91,16 @@ describe('collectNav', () => {
         );
       }
 
-      expect(resolveNavIcon(path)).toBeDefined();
-    }
-  });
-
-  it('resolves icons for every collected route', () => {
-    const { primary, footer, commandGroups } = collectNav(router);
-    const routes = [
-      ...primary,
-      ...footer,
-      ...commandGroups.flatMap((group) => group.commands),
-    ];
-
-    for (const route of routes) {
-      const to = 'to' in route ? route.to : undefined;
-      if (!to) continue;
-      expect(resolveNavIcon(to)).toBeDefined();
+      expect(navIcons[path]).toBeDefined();
     }
   });
 });
 
-describe('collectSectionNav', () => {
+describe('collectSettingsSectionNav', () => {
   const router = getRouter();
 
   it('returns settings child routes for section tabs', () => {
-    expect(collectSectionNav(router, settingsLayoutRouteId)).toMatchObject([
+    expect(collectSettingsSectionNav(router)).toMatchObject([
       { label: 'Categories & Tags', to: '/settings/categories' },
       { label: 'Merchant Rules', to: '/settings/merchant-rules' },
       { label: 'Household', to: '/settings/household' },

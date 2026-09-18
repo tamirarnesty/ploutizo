@@ -28,7 +28,7 @@ Lucide components are not serializable. A path-keyed `nav-icons.ts` map (`Record
 
 ### Settings: sidebar link + layout tabs
 
-Settings is a single footer sidebar link (active on any `/settings/*` path). Child settings routes render as Line-variant URL-navigating tabs in the settings layout via `collectSectionNav`. Command palette still lists all settings destinations in the Settings group.
+Settings is a single footer sidebar link (active on any `/settings/*` path). Child settings routes (`group: 'settings'`, `sidebar: false`) render as Line-variant URL-navigating tabs in the settings layout via `collectSettingsSectionNav`. Command palette still lists all settings destinations in the Settings group.
 
 ### Type augmentation consolidated
 
@@ -36,16 +36,16 @@ All `StaticDataRouteOption` fields (`mainContentLayout`, `nav`) augment in one `
 
 ## Considered options
 
-| Option | Why not |
-|---|---|
-| Central registry (`app-nav.ts`) | Requires manual sync with route tree; adding a route means editing multiple files |
-| `parentRouteId` in staticData | Route file hierarchy already matches nav shape for remaining sidebar groups; explicit IDs add fields without benefit |
-| Icons in staticData as string keys | Extra indirection layer; path-keyed map is simpler and type-checked |
-| `linkOptions` arrays in layout files | Duplicates labels already on route staticData; collector + Link/activeProps achieves the same tab pattern |
-| Import route folder with passthrough layout | Unnecessary for a single leaf route; dot notation matches dashboard/accounts |
+| Option                                      | Why not                                                                                                              |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Central registry (`app-nav.ts`)             | Requires manual sync with route tree; adding a route means editing multiple files                                    |
+| `parentRouteId` in staticData               | Route file hierarchy already matches nav shape for remaining sidebar groups; explicit IDs add fields without benefit |
+| Icons in staticData as string keys          | Extra indirection layer; path-keyed map is simpler and type-checked                                                  |
+| `linkOptions` arrays in layout files        | Duplicates labels already on route staticData; collector + Link/activeProps achieves the same tab pattern            |
+| Import route folder with passthrough layout | Unnecessary for a single leaf route; dot notation matches dashboard/accounts                                         |
 
 ## Consequences
 
 - Adding a navigable route: route file with `staticData.nav` + path in `APP_NAV_ROUTES` (`types.ts`) + one line in `nav-icons.ts`
 - Settings UX shifts from sidebar submenu to in-layout tabs
-- `collectNav` and `collectSectionNav` are the only nav assembly points; tests target collectors, not registries
+- `collectNav` and `collectSettingsSectionNav` are the only nav assembly points; tests target collectors, not registries

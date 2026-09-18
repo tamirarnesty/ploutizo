@@ -1,15 +1,25 @@
 import type { CommandGroupDefinition, NavCommand } from '@/lib/command/types';
-import { resolveNavIcon } from '@/lib/navigation/nav-icons';
+import { navIcons } from '@/lib/navigation/nav-icons';
 import type {
   NavGroup,
   NavPlacement,
   RouteNavStaticData,
 } from '@/lib/navigation/nav-static-data';
 import { normalizePathname } from '@/lib/navigation/normalizePathname';
-import type { AppNavRoute, SidebarNavItem } from '@/lib/navigation/types';
+import type {
+  AppNavRoute,
+  SidebarNavChild,
+  SidebarNavItem,
+} from '@/lib/navigation/types';
 import { isAppNavRoutePath } from '@/lib/navigation/types';
 import type { LucideIcon } from 'lucide-react';
-import type { AnyRoute } from '@tanstack/react-router';
+
+type NavRoute = {
+  id: string;
+  fullPath: string;
+  options: { staticData?: { nav?: RouteNavStaticData } };
+  parentRoute?: { id: string } | null | undefined;
+};
 
 type ResolvedNavRoute = {
   routeId: string;
@@ -22,7 +32,6 @@ type ResolvedNavRoute = {
   group: NavGroup;
   placement: NavPlacement;
   order: number | undefined;
-  treeOrder: number;
 };
 
 export type CollectedNav = {
@@ -31,32 +40,17 @@ export type CollectedNav = {
   commandGroups: CommandGroupDefinition[];
 };
 
-export type SectionNavItem = {
-  label: string;
-  to: AppNavRoute;
-  icon: LucideIcon;
-  keywords?: readonly string[];
-};
-
 const NAV_GROUP_HEADINGS: Record<NavGroup, string> = {
   navigation: 'Navigation',
   settings: 'Settings',
 };
 
 const toAppNavRoute = (fullPath: string): AppNavRoute | null => {
-  const normalized = normalizePathname(fullPath);
-  const withoutTrailingSlash =
-    normalized.endsWith('/') && normalized !== '/'
-      ? normalized.slice(0, -1)
-      : normalized;
-
-  return isAppNavRoutePath(withoutTrailingSlash) ? withoutTrailingSlash : null;
+  const path = normalizePathname(fullPath);
+  return isAppNavRoutePath(path) ? path : null;
 };
 
-const resolveNavRoute = (
-  route: AnyRoute,
-  treeOrder: number
-): ResolvedNavRoute | null => {
+const resolveNavRoute = (route: NavRoute): ResolvedNavRoute | null => {
   const nav = route.options.staticData?.nav;
   if (!nav) return null;
 
@@ -72,13 +66,12 @@ const resolveNavRoute = (
     parentRouteId: route.parentRoute?.id,
     to,
     nav,
-    icon: resolveNavIcon(to),
+    icon: navIcons[to],
     sidebar: nav.sidebar ?? true,
     searchable: nav.searchable ?? true,
     group: nav.group ?? 'navigation',
     placement: nav.placement ?? 'primary',
     order: nav.order,
-    treeOrder,
   };
 };
 
@@ -89,12 +82,10 @@ const compareNavRoutes = (
   const leftOrder = left.order ?? Number.POSITIVE_INFINITY;
   const rightOrder = right.order ?? Number.POSITIVE_INFINITY;
   if (leftOrder !== rightOrder) return leftOrder - rightOrder;
-  if (left.treeOrder !== right.treeOrder)
-    return left.treeOrder - right.treeOrder;
   return left.to.localeCompare(right.to);
 };
 
-const toSidebarNavItem = (route: ResolvedNavRoute): SidebarNavItem => ({
+const toSidebarNavChild = (route: ResolvedNavRoute): SidebarNavChild => ({
   label: route.nav.label,
   to: route.to,
   icon: route.icon,
@@ -104,10 +95,7 @@ const toSidebarNavItem = (route: ResolvedNavRoute): SidebarNavItem => ({
 const toNavCommand = (route: ResolvedNavRoute): NavCommand => ({
   type: 'nav',
   id: `nav-${route.to.slice(1).replaceAll('/', '-')}`,
-  label: route.nav.label,
-  to: route.to,
-  icon: route.icon,
-  keywords: route.nav.keywords,
+  ...toSidebarNavChild(route),
 });
 
 const buildSidebarTree = (routes: ResolvedNavRoute[]): SidebarNavItem[] => {
@@ -142,7 +130,7 @@ const buildSidebarTree = (routes: ResolvedNavRoute[]): SidebarNavItem[] => {
       .map((child) => toSidebarItem(child));
 
     return {
-      ...toSidebarNavItem(route),
+      ...toSidebarNavChild(route),
       ...(children.length > 0 ? { children } : {}),
     };
   };
@@ -196,22 +184,14 @@ const buildCommandGroups = (
   return groups;
 };
 
-type CollectNavRouter = {
+export type CollectNavRouter = {
   routesById: unknown;
 };
 
-const listResolvedNavRoutes = (
-  router: CollectNavRouter
-): ResolvedNavRoute[] => {
-  const routes = Object.values(router.routesById as Record<string, AnyRoute>);
-  const sortedRoutes = [...routes].sort((left, right) =>
-    left.fullPath.localeCompare(right.fullPath)
-  );
-
-  return sortedRoutes
-    .map((route, treeOrder) => resolveNavRoute(route, treeOrder))
+const listResolvedNavRoutes = (router: CollectNavRouter): ResolvedNavRoute[] =>
+  Object.values(router.routesById as Record<string, NavRoute>)
+    .map((route) => resolveNavRoute(route))
     .filter((route): route is ResolvedNavRoute => route !== null);
-};
 
 export const collectNav = (router: CollectNavRouter): CollectedNav => {
   const routes = listResolvedNavRoutes(router);
@@ -228,16 +208,10 @@ export const collectNav = (router: CollectNavRouter): CollectedNav => {
   };
 };
 
-export const collectSectionNav = (
-  router: CollectNavRouter,
-  parentRouteId: string
-): SectionNavItem[] =>
+export const collectSettingsSectionNav = (
+  router: CollectNavRouter
+): SidebarNavChild[] =>
   listResolvedNavRoutes(router)
-    .filter((route) => route.parentRouteId === parentRouteId)
+    .filter((route) => route.group === 'settings' && !route.sidebar)
     .sort(compareNavRoutes)
-    .map((route) => ({
-      label: route.nav.label,
-      to: route.to,
-      icon: route.icon,
-      keywords: route.nav.keywords,
-    }));
+    .map(toSidebarNavChild);

@@ -2,6 +2,7 @@ import { FileUp } from 'lucide-react';
 
 import { formatAccountLabel } from '@ploutizo/utils';
 import type { ImportDraftSummary } from '@ploutizo/types';
+import type { CollectNavRouter } from '@/lib/navigation/collect-nav';
 import { collectNav } from '@/lib/navigation/collect-nav';
 import type {
   CommandGroupDefinition,
@@ -25,7 +26,7 @@ const toImportDraftCommand = (
 };
 
 export const getCommandGroups = (
-  router: Parameters<typeof collectNav>[0],
+  router: CollectNavRouter,
   drafts: readonly ImportDraftSummary[] = []
 ): readonly CommandGroupDefinition[] => {
   const { commandGroups } = collectNav(router);
