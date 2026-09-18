@@ -28,26 +28,16 @@ import {
 import { cn } from '@ploutizo/ui/lib/utils';
 import { formatCurrency } from '@ploutizo/utils/currency';
 import { memberFullLabel } from '@ploutizo/utils';
-import { ICON_MAP } from '@/components/categories/LucideIconPicker';
+import { CachedLucideIcon } from '@/components/categories/CachedLucideIcon';
+import { preloadLucideIcons } from '@/components/categories/lucideIconCache';
 import { getColourBadgeClassFromRaw } from '@/components/colour/colour-token-classes';
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
 import { RightAlignedColumnHeader } from '@/components/dashboard/card-balances/RightAlignedColumnHeader';
 import type { TransactionRow } from '@/lib/data-access/transactions';
-import type { LucideIcon } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 
-// Resolves a Lucide icon by name — defined outside useMemo to be stable
-export const DynamicLucideIcon = ({
-  name,
-  size = 16,
-}: {
-  name: string | null;
-  size?: number;
-}) => {
-  if (!name) return <Tag size={size} />;
-  const Icon = ICON_MAP[name] as LucideIcon | undefined;
-  return Icon ? <Icon size={size} aria-hidden="true" /> : <Tag size={size} />;
-};
+export { CachedLucideIcon as DynamicLucideIcon } from '@/components/categories/CachedLucideIcon';
+export { preloadLucideIcons };
 
 // Per-type badge className map (per UI-SPEC.md)
 export const typeBadgeClassName: Record<string, string> = {
@@ -280,7 +270,7 @@ export const buildColumns = (
               getColourBadgeClassFromRaw(categoryColour)
             )}
           >
-            <DynamicLucideIcon name={categoryIcon} size={12} />
+            <CachedLucideIcon name={categoryIcon} size={12} />
             <span className="min-w-0 truncate">{categoryName}</span>
           </Badge>
         ) : (

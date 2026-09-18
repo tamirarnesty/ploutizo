@@ -6,7 +6,7 @@ import {
 import { Button } from '@ploutizo/ui/components/button';
 import { Text } from '@ploutizo/ui/components/text';
 import { ColourTokenDot } from '@/components/colour/ColourTokenDot';
-import { renderLucideIcon } from '@/components/categories/LucideIconPicker';
+import { renderLucideIcon } from '@/components/categories/CachedLucideIcon';
 import type { Category } from '@/lib/data-access/categories';
 import { SettingsRowAlertDialog } from './SettingsRowAlertDialog';
 

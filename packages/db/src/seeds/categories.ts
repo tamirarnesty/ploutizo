@@ -11,7 +11,7 @@ type InsertExecutor = {
   insert: typeof db.insert;
 };
 
-// Icon names must exist in the web LucideIconPicker ICON_MAP.
+// Icon names must resolve via the web Lucide catalog (PascalCase stored names).
 const BILL_PAYMENT_SORT_ORDER = HOUSEHOLD_DEFAULT_CATEGORIES.findIndex(
   (category) => category.name === BILL_PAYMENT_CATEGORY_NAME
 );
