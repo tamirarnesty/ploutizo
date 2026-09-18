@@ -31,4 +31,19 @@ describe('SettingsTabs', () => {
       '/settings/household'
     );
   });
+
+  it('uses intent preloading on tab links', () => {
+    render(<SettingsTabs />);
+
+    expect(
+      screen.getByRole('link', { name: 'Categories & Tags' })
+    ).toHaveAttribute('data-preload', 'intent');
+    expect(
+      screen.getByRole('link', { name: 'Merchant Rules' })
+    ).toHaveAttribute('data-preload', 'intent');
+    expect(screen.getByRole('link', { name: 'Household' })).toHaveAttribute(
+      'data-preload',
+      'intent'
+    );
+  });
 });

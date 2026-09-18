@@ -40,6 +40,7 @@ const { routerMocks, tanstackRouterMock, useRouterMock } = vi.hoisted(() => {
       params,
       search,
       state,
+      preload,
     }: {
       children: ReactNode;
       to: string;
@@ -47,12 +48,14 @@ const { routerMocks, tanstackRouterMock, useRouterMock } = vi.hoisted(() => {
       params?: { draftId?: string };
       search?: Record<string, string>;
       state?: unknown;
+      preload?: false | 'intent' | 'viewport' | 'render';
     }) => (
       <a
         href={resolveLinkHref(to, params, search)}
         data-router-state={
           state === undefined ? undefined : JSON.stringify(state)
         }
+        data-preload={preload === false ? undefined : preload}
         onClick={onClick}
       >
         {children}

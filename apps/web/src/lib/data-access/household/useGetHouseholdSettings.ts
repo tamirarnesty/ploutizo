@@ -1,3 +1,4 @@
+import { queryOptions } from '@tanstack/react-query';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
@@ -16,11 +17,13 @@ export const fetchHouseholdSettings = async (
   return r.data;
 };
 
+export const householdSettingsQueryOptions = () =>
+  queryOptions({
+    queryKey: ['household-settings'],
+    queryFn: ({ signal }) => fetchHouseholdSettings(signal),
+  });
+
 export const useGetHouseholdSettings =
   (): UseQueryResult<HouseholdSettings> => {
-    return useHouseholdQuery({
-      queryKey: ['household-settings'],
-      queryFn: ({ signal }: { signal: AbortSignal }) =>
-        fetchHouseholdSettings(signal),
-    });
+    return useHouseholdQuery(householdSettingsQueryOptions());
   };

@@ -23,7 +23,7 @@ export const SettingsTabs = () => {
             key={tab.to}
             value={tab.to}
             nativeButton={false}
-            render={<Link to={tab.to} />}
+            render={<Link to={tab.to} preload="intent" />}
           >
             {tab.label}
           </TabsTrigger>
