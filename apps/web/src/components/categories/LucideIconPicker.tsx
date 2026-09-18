@@ -1,61 +1,5 @@
-import { useState } from 'react';
-import {
-  Baby,
-  Bike,
-  BookOpen,
-  Briefcase,
-  Building,
-  Bus,
-  Camera,
-  Car,
-  CircleDollarSign,
-  Coffee,
-  CreditCard,
-  Dog,
-  Droplets,
-  Dumbbell,
-  Flame,
-  Fuel,
-  Gamepad2,
-  Gift,
-  Globe,
-  GraduationCap,
-  Hammer,
-  Heart,
-  HeartPulse,
-  Home,
-  Laptop,
-  Leaf,
-  MapPin,
-  Moon,
-  MoreHorizontal,
-  Music,
-  Package,
-  PiggyBank,
-  Pill,
-  Pizza,
-  Plane,
-  Receipt,
-  Repeat,
-  Scissors,
-  Shirt,
-  ShoppingBag,
-  ShoppingCart,
-  Smartphone,
-  Snowflake,
-  Sparkles,
-  Star,
-  Stethoscope,
-  Sun,
-  Tag,
-  Train,
-  TrendingUp,
-  Tv,
-  UtensilsCrossed,
-  Wallet,
-  Wrench,
-  Zap,
-} from 'lucide-react';
+import { useLayoutEffect, useMemo, useState } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   Popover,
   PopoverContent,
@@ -64,72 +8,202 @@ import {
 import { Button } from '@ploutizo/ui/components/button';
 import { Input } from '@ploutizo/ui/components/input';
 import { Text } from '@ploutizo/ui/components/text';
-import type { LucideIcon } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@ploutizo/ui/components/tooltip';
+import { CachedLucideIcon } from '@/components/categories/CachedLucideIcon';
+import {
+  filterLucideKebabIconNames,
+  kebabToPascal,
+} from '@/components/categories/lucideIconNames';
+import type { IconName } from 'lucide-react/dynamic';
 
-export const ICON_MAP: Record<string, LucideIcon> = {
-  ShoppingCart,
-  UtensilsCrossed,
-  Car,
-  Home,
-  Heart,
-  Briefcase,
-  GraduationCap,
-  Plane,
-  Gift,
-  Music,
-  Gamepad2,
-  Dog,
-  Baby,
-  Bike,
-  Dumbbell,
-  Scissors,
-  BookOpen,
-  Coffee,
-  Pizza,
-  ShoppingBag,
-  Fuel,
-  Bus,
-  Train,
-  Wallet,
-  CreditCard,
-  PiggyBank,
-  TrendingUp,
-  Building,
-  Stethoscope,
-  Pill,
-  Wrench,
-  Hammer,
-  Laptop,
-  Smartphone,
-  Tv,
-  Camera,
-  Shirt,
-  Package,
-  Leaf,
-  Sun,
-  Moon,
-  Zap,
-  Droplets,
-  Flame,
-  Snowflake,
-  Globe,
-  MapPin,
-  Star,
-  Tag,
-  CircleDollarSign,
-  HeartPulse,
-  Sparkles,
-  MoreHorizontal,
-  Receipt,
-  Repeat,
-};
-
-const ICON_NAMES = Object.keys(ICON_MAP);
+const GRID_COLUMNS = 6;
+const GRID_ROW_HEIGHT = 32;
+const GRID_VIEWPORT_HEIGHT = 192;
+const VIRTUALIZE_THRESHOLD = GRID_COLUMNS * 12;
 
 interface LucideIconPickerProps {
   value: string | null;
   onChange: (iconName: string) => void;
 }
+
+const IconGridButton = ({
+  kebabName,
+  isSelected,
+  onSelect,
+}: {
+  kebabName: IconName;
+  isSelected: boolean;
+  onSelect: (pascalName: string) => void;
+}) => {
+  const pascalName = kebabToPascal(kebabName);
+
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            role="option"
+            aria-selected={isSelected}
+            aria-label={pascalName}
+            onClick={() => onSelect(pascalName)}
+            className={isSelected ? 'bg-primary/10 ring-2 ring-primary' : ''}
+          />
+        }
+      >
+        <CachedLucideIcon name={pascalName} size={18} />
+      </TooltipTrigger>
+      <TooltipContent>{pascalName}</TooltipContent>
+    </Tooltip>
+  );
+};
+
+const IconGridRow = ({
+  rowIcons,
+  selectedPascalName,
+  onSelect,
+}: {
+  rowIcons: IconName[];
+  selectedPascalName: string | null;
+  onSelect: (pascalName: string) => void;
+}) => (
+  <div
+    className="grid w-full grid-cols-6 gap-1"
+    style={{ height: GRID_ROW_HEIGHT }}
+  >
+    {rowIcons.map((kebabName) => (
+      <IconGridButton
+        key={kebabName}
+        kebabName={kebabName}
+        isSelected={selectedPascalName === kebabToPascal(kebabName)}
+        onSelect={onSelect}
+      />
+    ))}
+  </div>
+);
+
+const VirtualizedIconGrid = ({
+  iconNames: filteredKebabNames,
+  selectedPascalName,
+  onSelect,
+}: {
+  iconNames: IconName[];
+  selectedPascalName: string | null;
+  onSelect: (pascalName: string) => void;
+}) => {
+  const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(
+    null
+  );
+  const rowCount = Math.ceil(filteredKebabNames.length / GRID_COLUMNS);
+
+  const virtualizer = useVirtualizer({
+    count: rowCount,
+    getScrollElement: () => scrollElement,
+    estimateSize: () => GRID_ROW_HEIGHT,
+    overscan: 3,
+  });
+
+  useLayoutEffect(() => {
+    if (!scrollElement) return;
+    virtualizer.measure();
+  }, [scrollElement, filteredKebabNames.length, virtualizer]);
+
+  const virtualRows = virtualizer.getVirtualItems();
+
+  return (
+    <div
+      ref={setScrollElement}
+      className="overflow-y-auto"
+      style={{ height: GRID_VIEWPORT_HEIGHT }}
+      role="listbox"
+    >
+      <div
+        className="relative w-full"
+        style={{ height: `${virtualizer.getTotalSize()}px` }}
+      >
+        {virtualRows.length > 0 ? (
+          virtualRows.map((virtualRow) => {
+            const rowStart = virtualRow.index * GRID_COLUMNS;
+            const rowIcons = filteredKebabNames.slice(
+              rowStart,
+              rowStart + GRID_COLUMNS
+            );
+
+            return (
+              <div
+                key={virtualRow.key}
+                className="absolute top-0 left-0 w-full"
+                style={{
+                  height: `${virtualRow.size}px`,
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+              >
+                <IconGridRow
+                  rowIcons={rowIcons}
+                  selectedPascalName={selectedPascalName}
+                  onSelect={onSelect}
+                />
+              </div>
+            );
+          })
+        ) : (
+          <IconGridRow
+            rowIcons={filteredKebabNames.slice(0, GRID_COLUMNS)}
+            selectedPascalName={selectedPascalName}
+            onSelect={onSelect}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+const LucideIconGrid = ({
+  filteredKebabNames,
+  selectedPascalName,
+  onSelect,
+}: {
+  filteredKebabNames: IconName[];
+  selectedPascalName: string | null;
+  onSelect: (pascalName: string) => void;
+}) => {
+  const shouldVirtualize = filteredKebabNames.length > VIRTUALIZE_THRESHOLD;
+
+  if (shouldVirtualize) {
+    return (
+      <VirtualizedIconGrid
+        iconNames={filteredKebabNames}
+        selectedPascalName={selectedPascalName}
+        onSelect={onSelect}
+      />
+    );
+  }
+
+  return (
+    <div
+      className="overflow-y-auto"
+      style={{ maxHeight: GRID_VIEWPORT_HEIGHT }}
+      role="listbox"
+    >
+      <div className="grid grid-cols-6 gap-1">
+        {filteredKebabNames.map((kebabName) => (
+          <IconGridButton
+            key={kebabName}
+            kebabName={kebabName}
+            isSelected={selectedPascalName === kebabToPascal(kebabName)}
+            onSelect={onSelect}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
 
 export const LucideIconPicker = ({
   value,
@@ -138,16 +212,25 @@ export const LucideIconPicker = ({
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
 
-  const filtered = search.trim()
-    ? ICON_NAMES.filter((name) =>
-        name.toLowerCase().includes(search.toLowerCase())
-      )
-    : ICON_NAMES;
+  const filteredKebabNames = useMemo(
+    () => filterLucideKebabIconNames(search),
+    [search]
+  );
 
-  const SelectedIcon = value ? ICON_MAP[value] : null;
+  const handleSelect = (pascalName: string) => {
+    onChange(pascalName);
+    setOpen(false);
+    setSearch('');
+  };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (!nextOpen) setSearch('');
+      }}
+    >
       <PopoverTrigger
         render={
           <Button
@@ -159,8 +242,8 @@ export const LucideIconPicker = ({
           />
         }
       >
-        {SelectedIcon ? (
-          <SelectedIcon size={16} aria-hidden="true" />
+        {value ? (
+          <CachedLucideIcon name={value} size={16} />
         ) : (
           <Text as="span" variant="body-sm" className="text-muted-foreground">
             Select icon
@@ -179,48 +262,19 @@ export const LucideIconPicker = ({
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search icons…"
         />
-        {filtered.length === 0 ? (
+        {open && filteredKebabNames.length === 0 ? (
           <Text variant="caption" className="py-2 text-center">
             No icons match "{search}".
           </Text>
-        ) : (
-          <div
-            className="grid max-h-48 grid-cols-6 gap-1 overflow-y-auto"
-            role="listbox"
-          >
-            {filtered.map((name) => {
-              const Icon = ICON_MAP[name];
-              return (
-                <Button
-                  key={name}
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  role="option"
-                  aria-selected={value === name}
-                  onClick={() => {
-                    onChange(name);
-                    setOpen(false);
-                    setSearch('');
-                  }}
-                  title={name}
-                  className={
-                    value === name ? 'bg-primary/10 ring-2 ring-primary' : ''
-                  }
-                >
-                  <Icon size={18} aria-hidden="true" />
-                </Button>
-              );
-            })}
-          </div>
-        )}
+        ) : null}
+        {open && filteredKebabNames.length > 0 ? (
+          <LucideIconGrid
+            filteredKebabNames={filteredKebabNames}
+            selectedPascalName={value}
+            onSelect={handleSelect}
+          />
+        ) : null}
       </PopoverContent>
     </Popover>
   );
-};
-
-export const renderLucideIcon = (iconName: string | null, size = 16) => {
-  if (!iconName || !(iconName in ICON_MAP)) return null;
-  const Icon = ICON_MAP[iconName];
-  return <Icon size={size} aria-hidden="true" />;
 };

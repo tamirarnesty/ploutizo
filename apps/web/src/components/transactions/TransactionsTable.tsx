@@ -18,6 +18,7 @@ import {
   PAGINATED_DATA_GRID_SCROLL_ORIENTATION,
 } from '@/components/data-grid/dataGridSharedLayout';
 import { useEffectiveTablePageSize } from '@/hooks/useEffectiveTablePageSize';
+import { usePreloadLucideIcons } from '@/components/categories/usePreloadLucideIcons';
 import { buildColumns } from './TransactionColumns';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import { TransactionsTableEmpty } from './TransactionTableEmpty';
@@ -75,6 +76,13 @@ export const TransactionsTable = ({
       },
     });
   };
+
+  const categoryIcons = useMemo(
+    () => transactions.map((transaction) => transaction.categoryIcon),
+    [transactions]
+  );
+
+  usePreloadLucideIcons(categoryIcons);
 
   const columns = useMemo(
     () => buildColumns(setDeleteId, onEdit, onOpenOriginal),
