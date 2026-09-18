@@ -158,6 +158,7 @@ describe('continueImportDraft', () => {
     vi.mocked(fetchAccountWriteReference).mockResolvedValue({
       id: ACCOUNT,
       type: 'credit_card',
+      archivedAt: null,
     });
     vi.mocked(lockPreparedSetRevisionForBatch).mockResolvedValue(undefined);
     vi.mocked(fetchPreparedSetForBatchRevision).mockResolvedValue(null);
@@ -647,6 +648,7 @@ describe('loadImportFinalizeExternalFacts', () => {
     vi.mocked(fetchAccountWriteReference).mockResolvedValue({
       id: ACCOUNT,
       type: 'credit_card',
+      archivedAt: null,
     });
   });
 

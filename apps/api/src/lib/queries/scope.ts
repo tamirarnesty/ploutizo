@@ -126,10 +126,11 @@ export const orgMemberExists = async (
   return rows.length > 0;
 };
 
-/** Account fields needed for saved-write policy validation (`{ id, type }`). */
+/** Account fields needed for saved-write policy and archive-date validation. */
 export type AccountWriteReference = {
   id: string;
   type: AccountType;
+  archivedAt: Date | null;
 };
 
 export type AccountWriteReferenceOptions = AccountInOrgOptions & {
@@ -156,6 +157,7 @@ export const fetchAccountWriteReference = async (
     .select({
       id: accounts.id,
       type: accounts.type,
+      archivedAt: accounts.archivedAt,
     })
     .from(accounts)
     .where(accountInOrg(orgId, accountId, accountOptions))

@@ -150,6 +150,8 @@ export const createSettlement = async (
   const account = await fetchAccountForSettlement(orgId, data.accountId);
   if (!account) throw new NotFoundError('Account not found');
   if (account.archivedAt !== null) {
+    // RFC A4: settle keeps a blanket reject on archived cards. Calendar-date
+    // availability applies to transaction create/edit only.
     throw new DomainError(
       400,
       'Cannot settle an archived account',

@@ -467,7 +467,14 @@ export const counterpartAccountBelongsToOrg = async (
   accountId: string,
   tx?: Transaction
 ): Promise<boolean> =>
-  Boolean(await fetchAccountWriteReference(orgId, accountId, {}, tx));
+  Boolean(
+    await fetchAccountWriteReference(
+      orgId,
+      accountId,
+      { requireActive: false },
+      tx
+    )
+  );
 
 // Validate that a refundOf transaction ID exists in the same org (D-13)
 export const refundOfExists = async (

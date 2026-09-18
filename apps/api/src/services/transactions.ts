@@ -4,7 +4,10 @@ import {
   transactionTags,
   transactions,
 } from '@ploutizo/db/schema';
-import { validateTransactionAccountPolicy } from '@ploutizo/utils/transaction-policy';
+import {
+  validateArchivedAccountAvailability,
+  validateTransactionAccountPolicy,
+} from '@ploutizo/utils/transaction-policy';
 import type { Transaction } from '@ploutizo/db';
 import type { TransactionType } from '@ploutizo/types';
 import type {
@@ -45,6 +48,11 @@ type LoadedTransactionWriteReferences = {
   counterpartAccount: AccountWriteReference | null;
 };
 
+const TRANSACTION_WRITE_ACCOUNT_REF_OPTIONS = {
+  requireActive: false,
+  forUpdate: true,
+} as const;
+
 const loadTransactionWriteReferences = async (
   orgId: string,
   data: {
@@ -69,7 +77,7 @@ const loadTransactionWriteReferences = async (
     const loaded = await fetchAccountWriteReference(
       orgId,
       accountId,
-      { forUpdate: true },
+      TRANSACTION_WRITE_ACCOUNT_REF_OPTIONS,
       tx
     );
     if (!loaded) {
@@ -127,6 +135,25 @@ const assertTransactionAccountPolicy = (
       400,
       result.violations.map((violation) => violation.message).join(' '),
       'TRANSACTION_ACCOUNT_POLICY_VIOLATION'
+    );
+  }
+};
+
+const assertArchivedAccountAvailability = (
+  date: string,
+  refs: LoadedTransactionWriteReferences
+) => {
+  const result = validateArchivedAccountAvailability({
+    date,
+    account: refs.account,
+    counterpartAccount: refs.counterpartAccount,
+  });
+
+  if (!result.valid) {
+    throw new DomainError(
+      400,
+      result.violations.map((violation) => violation.message).join(' '),
+      'ARCHIVED_ACCOUNT_DATE'
     );
   }
 };
@@ -192,6 +219,7 @@ export const createTransactionInTx = async (
     tx
   );
   assertTransactionAccountPolicy(transactionData.type, writeReferences);
+  assertArchivedAccountAvailability(transactionData.date, writeReferences);
 
   const inserted = await runTransactionWrite(async () => {
     const [row] = await tx
@@ -279,6 +307,7 @@ export const updateTransaction = async (
       tx
     );
     assertTransactionAccountPolicy(data.type, writeReferences);
+    assertArchivedAccountAvailability(data.date, writeReferences);
 
     const needsPersistedAssignees = data.assignees === undefined;
 

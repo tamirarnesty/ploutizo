@@ -288,6 +288,20 @@ describe('createSettlement service', () => {
     expect((err as DomainError).statusCode).toBe(400);
   });
 
+  it('RFC A4: rejects archived cards even when the settle date is on the archive day', async () => {
+    mockSettlementAccountLookups({
+      card: { name: 'Amex Gold', archivedAt: new Date('2026-05-08') },
+    });
+
+    const err = await createSettlement('org_1', validInput).catch(
+      (e: unknown) => e
+    );
+
+    expect(err).toBeInstanceOf(DomainError);
+    expect((err as DomainError).code).toBe('SETTLEMENT_ARCHIVED_ACCOUNT');
+    expect(createTransaction).not.toHaveBeenCalled();
+  });
+
   it('POST-SETTLE-08: member not in org => throws NotFoundError("Member not found in this household")', async () => {
     mockSettlementAccountLookups({ card: { name: 'Amex Gold' } });
     vi.mocked(memberBelongsToOrg).mockResolvedValue(false);

@@ -68,6 +68,8 @@ export const loadCounterpartAccounts = async (
 ) => {
   const counterparts = new Map<string, AccountWriteReference>();
   for (const accountId of [...new Set(counterpartIds)]) {
+    // Default requireActive:true — import settlement funding stays fenced
+    // from transaction create/edit archive-date loading.
     const account = await fetchAccountWriteReference(orgId, accountId, {}, tx);
     if (account) counterparts.set(accountId, account);
   }
