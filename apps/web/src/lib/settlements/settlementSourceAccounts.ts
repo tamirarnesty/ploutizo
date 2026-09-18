@@ -29,4 +29,6 @@ export const getSettlementSourceAccounts = (
     accounts,
     otherSelectedAccountId: cardAccountId,
     preserveAccountId: preserveAccountId || null,
+    // RFC A4: do not pass asOfDate — new settlements keep excluding archived
+    // funding rather than using transaction create/edit calendar-date rules.
   }) as Account[];

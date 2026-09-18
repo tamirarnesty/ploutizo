@@ -17,6 +17,7 @@ export const SettleDateField = ({
 }: SettleDateFieldProps) => (
   <Field data-invalid={errors.length > 0 || undefined}>
     <FieldLabel htmlFor="settle-date">Date</FieldLabel>
+    {/* RFC A4: settle does not constrain dates by archive calendar date. */}
     <DatePicker
       id="settle-date"
       value={value}

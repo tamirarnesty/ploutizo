@@ -21,7 +21,7 @@ const account = (
   }) as Account;
 
 describe('settlementSourceAccounts', () => {
-  it('excludes the card being settled and archived accounts', () => {
+  it('RFC A4: excludes archived funding rather than applying calendar-date availability', () => {
     const chequing = account({
       id: '22222222-2222-2222-2222-222222222222',
       type: 'chequing',

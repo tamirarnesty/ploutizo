@@ -8,6 +8,7 @@ export interface GetTransactionFormAccountOptionsInput {
   accounts: readonly Account[];
   otherSelectedAccountId?: string | null;
   preserveAccountId?: string | null;
+  asOfDate?: string | null;
 }
 
 /**
@@ -22,6 +23,7 @@ export const getTransactionFormAccountOptions = ({
   accounts,
   otherSelectedAccountId,
   preserveAccountId,
+  asOfDate,
 }: GetTransactionFormAccountOptionsInput): Account[] => {
   const options = getAccountOptionsForTransactionSlot({
     type,
@@ -29,6 +31,7 @@ export const getTransactionFormAccountOptions = ({
     accounts,
     otherSelectedAccountId: otherSelectedAccountId || null,
     preserveAccountId: preserveAccountId || null,
+    asOfDate: asOfDate || null,
   }) as Account[];
 
   if (!otherSelectedAccountId) return options;
@@ -45,11 +48,13 @@ export const resolveTransactionFormAccountIdForSlot = ({
   slot,
   accounts,
   accountId,
+  asOfDate,
 }: {
   type: TransactionType;
   slot: TransactionAccountSlot;
   accounts: readonly Account[];
   accountId: string;
+  asOfDate?: string | null;
 }): string => {
   if (!accountId) return '';
 
@@ -57,6 +62,7 @@ export const resolveTransactionFormAccountIdForSlot = ({
     type,
     slot,
     accounts,
+    asOfDate,
   });
 
   if (eligible.length === 0) return '';

@@ -67,6 +67,7 @@ const TypeSelectField = ({
         const patch = getTransactionFormTypeChangePatch({
           type: value,
           accounts,
+          asOfDate: form.getFieldValue('date'),
           values: {
             accountId: form.getFieldValue('accountId'),
             counterpartAccountId: form.getFieldValue('counterpartAccountId'),
