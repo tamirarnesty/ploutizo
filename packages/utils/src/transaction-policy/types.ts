@@ -62,6 +62,31 @@ export interface ResolvedTransactionDescriptionPolicy {
   mode: ResolvedDescriptionMode;
 }
 
+export interface ResolveTransactionDescriptionLockInput {
+  type: TransactionType;
+  refundOf?: string | null;
+  currentDescription: string;
+  generatedCandidate: string;
+  /**
+   * Last generated candidate applied while the field was locked.
+   * Omit on open/init (treated as the current candidate). Pass the previous
+   * candidate when it changes so a generated value can update instead of
+   * being treated as a custom mismatch.
+   */
+  previousGeneratedCandidate?: string | null;
+  /** Sticky unlock after a user edit or a custom/legacy mismatch. */
+  userUnlocked?: boolean;
+}
+
+export interface ResolvedTransactionDescriptionLock {
+  policyMode: ResolvedDescriptionMode;
+  /** Sticky manual state; true after a user edit or custom/legacy mismatch. */
+  userUnlocked: boolean;
+  /** Auto-generated field is locked and should follow the candidate. */
+  locked: boolean;
+  description: string;
+}
+
 export interface TransactionAccountReference {
   id: string;
   type: AccountType;

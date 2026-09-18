@@ -32,7 +32,40 @@ const accounts: Account[] = [
     updatedAt: '',
     owners: [],
   },
+  {
+    id: 'inv-1',
+    orgId: 'org-1',
+    name: 'FHSA',
+    type: 'investment',
+    institutionId: null,
+    lastFour: null,
+    statementDueDay: null,
+    archivedAt: null,
+    createdAt: '',
+    updatedAt: '',
+    owners: [],
+  },
 ];
+
+const transactionStub = (
+  overrides: Partial<TransactionRow> &
+    Pick<TransactionRow, 'type' | 'accountId' | 'description'>
+): TransactionRow =>
+  ({
+    id: 'tx-1',
+    counterpartAccountId: null,
+    amount: 1976,
+    date: '2026-06-04',
+    accountName: null,
+    counterpartAccountName: null,
+    categoryId: null,
+    refundOf: null,
+    incomeType: null,
+    notes: null,
+    tags: [],
+    assignees: [],
+    ...overrides,
+  }) as TransactionRow;
 
 const baseForm = (): TransactionFormValues => ({
   type: 'expense',
@@ -166,6 +199,103 @@ describe('buildDefaultValues', () => {
 
     const defaults = buildDefaultValues(transaction, accounts);
     expect(defaults.description).toBe('June card payment');
+  });
+
+  it('uses the generated transfer template when stored text matches', () => {
+    const transaction = transactionStub({
+      type: 'transfer',
+      accountId: 'bank-1',
+      counterpartAccountId: 'inv-1',
+      description: 'Transfer from Emily WS to FHSA',
+      accountName: 'Emily WS',
+      counterpartAccountName: 'FHSA',
+    });
+
+    const defaults = buildDefaultValues(transaction, accounts);
+    expect(defaults.description).toBe('Transfer from Emily WS to FHSA');
+    expect(
+      formatGeneratedTransactionDescriptionFromAccounts(
+        {
+          type: defaults.type,
+          accountId: defaults.accountId,
+          counterpartAccountId: defaults.counterpartAccountId,
+          refundOf: defaults.refundOf,
+        },
+        accounts
+      )
+    ).toBe(defaults.description);
+  });
+
+  it('keeps a custom transfer description that does not match the template', () => {
+    const defaults = buildDefaultValues(
+      transactionStub({
+        type: 'transfer',
+        accountId: 'bank-1',
+        counterpartAccountId: 'inv-1',
+        description: 'Move rent to FHSA',
+        accountName: 'Emily WS',
+        counterpartAccountName: 'FHSA',
+      }),
+      accounts
+    );
+    expect(defaults.description).toBe('Move rent to FHSA');
+  });
+
+  it('uses the generated contribution template when stored text matches', () => {
+    const defaults = buildDefaultValues(
+      transactionStub({
+        type: 'contribution',
+        accountId: 'bank-1',
+        counterpartAccountId: 'inv-1',
+        description: 'Contribution from Emily WS to FHSA',
+        accountName: 'Emily WS',
+        counterpartAccountName: 'FHSA',
+      }),
+      accounts
+    );
+    expect(defaults.description).toBe('Contribution from Emily WS to FHSA');
+  });
+
+  it('keeps a custom contribution description that does not match the template', () => {
+    const defaults = buildDefaultValues(
+      transactionStub({
+        type: 'contribution',
+        accountId: 'bank-1',
+        counterpartAccountId: 'inv-1',
+        description: 'FHSA top-up',
+        accountName: 'Emily WS',
+        counterpartAccountName: 'FHSA',
+      }),
+      accounts
+    );
+    expect(defaults.description).toBe('FHSA top-up');
+  });
+
+  it('preserves a linked-refund description while the original is not yet loaded', () => {
+    const defaults = buildDefaultValues(
+      transactionStub({
+        type: 'refund',
+        accountId: 'card-1',
+        description: 'Got money back',
+        refundOf: 'tx-expense-1',
+        accountName: 'Amex Cobalt',
+      }),
+      accounts
+    );
+    expect(defaults.description).toBe('Got money back');
+  });
+
+  it('keeps expense descriptions as stored manual text', () => {
+    const defaults = buildDefaultValues(
+      transactionStub({
+        type: 'expense',
+        accountId: 'card-1',
+        description: 'Coffee',
+        accountName: 'Amex Cobalt',
+      }),
+      accounts
+    );
+    expect(defaults.description).toBe('Coffee');
   });
 });
 

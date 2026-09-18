@@ -27,10 +27,7 @@ import {
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
 import { dollarsToCents } from '@ploutizo/utils/currency';
-import {
-  formatGeneratedTransactionDescriptionFromAccounts,
-  resolveTransactionDescriptionPolicy,
-} from '@ploutizo/utils/transaction-policy';
+import { formatGeneratedTransactionDescriptionFromAccounts } from '@ploutizo/utils/transaction-policy';
 import type { Account, OrgMember, TransactionType } from '@ploutizo/types';
 import { useGetHouseholdMembers } from '@/lib/data-access/household';
 import { useGetCategories } from '@/lib/data-access/categories';
@@ -49,6 +46,7 @@ import {
   useFlushPendingInputs,
 } from '@/lib/money/pending-input-flush';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
+import { resolveTransactionFormDescriptionLock } from './getTransactionFormDescriptionLock';
 import { useTransactionForm } from './hooks/useTransactionForm';
 import { TransactionTypeFields } from './TransactionTypeFields';
 import { TransactionAccountSlots } from './TransactionAccountSlots';
@@ -130,31 +128,75 @@ export const TransactionForm = ({
 
 // CR-01: syncs the locked description template to form state on change.
 // The (field) => (...) render prop cannot call hooks directly, so this helper
-// component uses useEffect to write lockedValue into field state.
-interface DescriptionSyncerProps {
-  isLocked: boolean;
+// component uses useEffect to write lockedValue into field state and to unlock
+// custom/legacy text when a generated candidate first resolves.
+interface DescriptionLockControllerProps {
+  type: TransactionType;
+  refundOf: string;
   lockedValue: string;
   currentValue: string;
+  userUnlocked: boolean;
+  onUnlock: () => void;
   onSync: (value: string) => void;
 }
 
-const DescriptionSyncer = ({
-  isLocked,
+const DescriptionLockController = ({
+  type,
+  refundOf,
   lockedValue,
   currentValue,
+  userUnlocked,
+  onUnlock,
   onSync,
-}: DescriptionSyncerProps) => {
-  // Only sync when lockedValue changes (account selection changes the template).
-  // Skip if the field already holds the correct value — setFieldValue unconditionally
-  // sets isDirty:true in TanStack Form, so calling it with an unchanged value would
-  // falsely mark the form dirty when opening an existing transaction in edit mode.
+}: DescriptionLockControllerProps) => {
   const currentValueRef = useRef(currentValue);
   currentValueRef.current = currentValue;
+  const previousCandidateRef = useRef(lockedValue);
+  const previousTypeRef = useRef(type);
+  const previousRefundOfRef = useRef(refundOf);
+  const onUnlockRef = useRef(onUnlock);
+  const onSyncRef = useRef(onSync);
+  onUnlockRef.current = onUnlock;
+  onSyncRef.current = onSync;
+
   useEffect(() => {
-    if (isLocked && lockedValue && lockedValue !== currentValueRef.current) {
-      onSync(lockedValue);
+    const typeChanged = previousTypeRef.current !== type;
+    const refundOfChanged = previousRefundOfRef.current !== refundOf;
+    // Type/refundOf changes start a new generated session: treat the current
+    // value as still following so leftover manual text is replaced, matching
+    // UnlockResetter. Opening an already-linked refund keeps previous='' until
+    // the original description resolves, which unlocks custom/legacy text.
+    if (typeChanged || (refundOfChanged && !userUnlocked)) {
+      previousCandidateRef.current = currentValueRef.current;
     }
-  }, [isLocked, lockedValue, onSync]);
+    previousTypeRef.current = type;
+    previousRefundOfRef.current = refundOf;
+
+    const next = resolveTransactionFormDescriptionLock({
+      type,
+      refundOf,
+      currentDescription: currentValueRef.current,
+      generatedCandidate: lockedValue,
+      previousGeneratedCandidate: previousCandidateRef.current,
+      userUnlocked: typeChanged ? false : userUnlocked,
+    });
+    previousCandidateRef.current = lockedValue;
+
+    if (next.userUnlocked && !userUnlocked) {
+      onUnlockRef.current();
+    }
+
+    // Skip if the field already holds the correct value — setFieldValue
+    // unconditionally sets isDirty:true in TanStack Form, so calling it with
+    // an unchanged value would falsely mark the form dirty on edit mount.
+    if (
+      next.locked &&
+      next.description &&
+      next.description !== currentValueRef.current
+    ) {
+      onSyncRef.current(next.description);
+    }
+  }, [type, refundOf, lockedValue, userUnlocked]);
   return null;
 };
 
@@ -207,7 +249,12 @@ const isGeneratedDescriptionType = (
   type: TransactionType,
   refundOf?: string | null
 ): boolean =>
-  resolveTransactionDescriptionPolicy({ type, refundOf }).mode === 'generated';
+  resolveTransactionFormDescriptionLock({
+    type,
+    refundOf,
+    currentDescription: '',
+    generatedCandidate: '',
+  }).shouldLock;
 
 const TransactionFormInner = ({
   transaction,
@@ -225,27 +272,24 @@ const TransactionFormInner = ({
   const [alertOpen, setAlertOpen] = useState(false);
   const [isDescriptionUnlocked, setIsDescriptionUnlocked] = useState(() => {
     if (transaction === null) return false;
-    if (
-      resolveTransactionDescriptionPolicy({
-        type: transaction.type,
-        refundOf: transaction.refundOf ?? '',
-      }).mode !== 'generated'
-    ) {
-      return false;
-    }
-    const locked = formatGeneratedTransactionDescriptionFromAccounts(
-      {
-        type: transaction.type,
-        accountId: transaction.accountId,
-        counterpartAccountId: transaction.counterpartAccountId ?? '',
-        refundOf: transaction.refundOf ?? '',
-        accountName: transaction.accountName,
-        counterpartAccountName: transaction.counterpartAccountName,
-      },
-      accounts
-    );
-    const stored = transaction.description.trim();
-    return locked !== '' && stored !== '' && stored !== locked;
+    const generatedCandidate =
+      formatGeneratedTransactionDescriptionFromAccounts(
+        {
+          type: transaction.type,
+          accountId: transaction.accountId,
+          counterpartAccountId: transaction.counterpartAccountId ?? '',
+          refundOf: transaction.refundOf ?? '',
+          accountName: transaction.accountName,
+          counterpartAccountName: transaction.counterpartAccountName,
+        },
+        accounts
+      );
+    return resolveTransactionFormDescriptionLock({
+      type: transaction.type,
+      refundOf: transaction.refundOf ?? '',
+      currentDescription: transaction.description,
+      generatedCandidate,
+    }).userUnlocked;
   });
   const [refundOriginalDesc, setRefundOriginalDesc] = useState('');
   const [refundOriginalAssigneeIds, setRefundOriginalAssigneeIds] = useState<
@@ -391,9 +435,12 @@ const TransactionFormInner = ({
             })}
           >
             {({ type, accountId, counterpartAccountId, refundOf }) => {
-              const shouldLock =
-                resolveTransactionDescriptionPolicy({ type, refundOf }).mode ===
-                'generated';
+              const shouldLock = resolveTransactionFormDescriptionLock({
+                type,
+                refundOf,
+                currentDescription: '',
+                generatedCandidate: '',
+              }).shouldLock;
               const isLocked = !isDescriptionUnlocked && shouldLock;
 
               const lockedValue =
@@ -426,10 +473,13 @@ const TransactionFormInner = ({
                         field.state.meta.errors.length > 0 || undefined
                       }
                     >
-                      <DescriptionSyncer
-                        isLocked={isLocked}
+                      <DescriptionLockController
+                        type={type}
+                        refundOf={refundOf}
                         lockedValue={lockedValue}
                         currentValue={field.state.value}
+                        userUnlocked={isDescriptionUnlocked}
+                        onUnlock={() => setIsDescriptionUnlocked(true)}
                         onSync={field.handleChange}
                       />
                       <FieldLabel htmlFor="tx-description">
