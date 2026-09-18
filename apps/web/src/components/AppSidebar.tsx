@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useRouterState } from '@tanstack/react-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useRouter, useRouterState } from '@tanstack/react-router';
 import { ChevronRight } from 'lucide-react';
 import {
   Sidebar,
@@ -24,11 +24,8 @@ import {
   CollapsibleTrigger,
 } from '@ploutizo/ui/components/collapsible';
 import { ThemeToggle } from '@ploutizo/ui/components/theme-toggle';
-import {
-  isAppNavRouteActive,
-  sidebarPrimaryNav,
-  sidebarSettingsNav,
-} from '@/lib/navigation';
+import { collectNav } from '@/lib/navigation/collect-nav';
+import { isAppNavRouteActive } from '@/lib/navigation/isAppNavRouteActive';
 import { CommandPaletteTrigger } from '@/lib/command';
 import type { SidebarNavItem } from '@/lib/navigation/types';
 
@@ -118,6 +115,8 @@ const SidebarNavigationItem = ({
 };
 
 export const AppSidebar = () => {
+  const router = useRouter();
+  const { primary, footer } = useMemo(() => collectNav(router), [router]);
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
@@ -146,7 +145,7 @@ export const AppSidebar = () => {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu className="gap-1">
-              {sidebarPrimaryNav.map((item) => (
+              {primary.map((item) => (
                 <SidebarNavigationItem
                   key={item.to}
                   item={item}
@@ -158,17 +157,22 @@ export const AppSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup className="mt-auto">
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarNavigationItem
-                item={sidebarSettingsNav}
-                pathname={pathname}
-                onNavigate={closeMobile}
-              />
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {footer.length > 0 ? (
+          <SidebarGroup className="mt-auto">
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {footer.map((item) => (
+                  <SidebarNavigationItem
+                    key={item.to}
+                    item={item}
+                    pathname={pathname}
+                    onNavigate={closeMobile}
+                  />
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ) : null}
       </SidebarContent>
 
       <SidebarFooter className="flex-row items-center justify-between px-2 py-1">

@@ -20,9 +20,3 @@ export const resolveMainContentLayout = (
 
   return MAIN_CONTENT_LAYOUT_DEFAULT;
 };
-
-declare module '@tanstack/react-router' {
-  interface StaticDataRouteOption {
-    mainContentLayout?: MainContentLayout;
-  }
-}

@@ -14,13 +14,12 @@ export const fetchSettlements = async (
   });
 };
 
-export const settlementsQueryOptions = () =>
-  queryOptions({
-    queryKey: ['settlements'],
-    queryFn: ({ signal }) => fetchSettlements(signal),
-  });
+export const settlementsQueryOptions = queryOptions({
+  queryKey: ['settlements'],
+  queryFn: ({ signal }) => fetchSettlements(signal),
+});
 
 export const useGetSettlements =
   (): UseQueryResult<GetSettlementBalancesResponse> => {
-    return useHouseholdQuery(settlementsQueryOptions());
+    return useHouseholdQuery(settlementsQueryOptions);
   };

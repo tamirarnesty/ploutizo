@@ -18,7 +18,7 @@ const resolveLinkHref = (
   return href;
 };
 
-const { routerMocks, tanstackRouterMock } = vi.hoisted(() => {
+const { routerMocks, tanstackRouterMock, useRouterMock } = vi.hoisted(() => {
   const mocks = {
     pathname: '/',
     navigate: vi.fn(),
@@ -40,6 +40,7 @@ const { routerMocks, tanstackRouterMock } = vi.hoisted(() => {
       params,
       search,
       state,
+      preload,
     }: {
       children: ReactNode;
       to: string;
@@ -47,12 +48,14 @@ const { routerMocks, tanstackRouterMock } = vi.hoisted(() => {
       params?: { draftId?: string };
       search?: Record<string, string>;
       state?: unknown;
+      preload?: false | 'intent' | 'viewport' | 'render';
     }) => (
       <a
         href={resolveLinkHref(to, params, search)}
         data-router-state={
           state === undefined ? undefined : JSON.stringify(state)
         }
+        data-preload={preload === false ? undefined : preload}
         onClick={onClick}
       >
         {children}
@@ -83,15 +86,20 @@ const { routerMocks, tanstackRouterMock } = vi.hoisted(() => {
       return mocks.useBlocker(args);
     },
     useRouteContext: () => ({}),
+    useRouter: vi.fn(),
     getRouteApi: () => ({
       useRouteContext: () => ({}),
     }),
   };
 
-  return { routerMocks: mocks, tanstackRouterMock: mockModule };
+  return {
+    routerMocks: mocks,
+    tanstackRouterMock: mockModule,
+    useRouterMock: mockModule.useRouter,
+  };
 });
 
-export { routerMocks };
+export { routerMocks, useRouterMock };
 
 export const resetRouterMocks = () => {
   routerMocks.pathname = '/';
@@ -99,6 +107,7 @@ export const resetRouterMocks = () => {
   routerMocks.locationState = {};
   routerMocks.shouldBlockFn = undefined;
   routerMocks.useBlocker.mockReset();
+  useRouterMock.mockReset();
 };
 
 vi.mock('@tanstack/react-router', () => tanstackRouterMock);

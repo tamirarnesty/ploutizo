@@ -2,7 +2,8 @@ import { FileUp } from 'lucide-react';
 
 import { formatAccountLabel } from '@ploutizo/utils';
 import type { ImportDraftSummary } from '@ploutizo/types';
-import { staticCommandGroups } from '@/lib/command/staticCommandGroups';
+import type { CollectNavRouter } from '@/lib/navigation/collect-nav';
+import { collectNav } from '@/lib/navigation/collect-nav';
 import type {
   CommandGroupDefinition,
   ImportDraftCommand,
@@ -25,15 +26,18 @@ const toImportDraftCommand = (
 };
 
 export const getCommandGroups = (
+  router: CollectNavRouter,
   drafts: readonly ImportDraftSummary[] = []
 ): readonly CommandGroupDefinition[] => {
-  if (drafts.length === 0) return staticCommandGroups;
+  const { commandGroups } = collectNav(router);
+
+  if (drafts.length === 0) return commandGroups;
 
   return [
     {
       heading: 'Continue Import',
       commands: drafts.map(toImportDraftCommand),
     },
-    ...staticCommandGroups,
+    ...commandGroups,
   ];
 };
