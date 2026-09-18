@@ -4,17 +4,23 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@ploutizo/ui/components/sheet';
-import type { Account } from '@ploutizo/types';
+import type { Account, AccountType } from '@ploutizo/types';
 import { useArchiveAccount } from '@/lib/data-access/accounts';
 import { AccountForm } from './AccountForm';
 
 interface AccountSheetProps {
   open: boolean;
   account: Account | null;
+  defaultType?: AccountType;
   onClose: () => void;
 }
 
-export const AccountSheet = ({ open, account, onClose }: AccountSheetProps) => {
+export const AccountSheet = ({
+  open,
+  account,
+  defaultType,
+  onClose,
+}: AccountSheetProps) => {
   const isEditing = account !== null;
   const archiveAccount = useArchiveAccount();
 
@@ -40,6 +46,7 @@ export const AccountSheet = ({ open, account, onClose }: AccountSheetProps) => {
 
         <AccountForm
           account={account}
+          defaultType={defaultType}
           onClose={onClose}
           onArchive={handleArchive}
         />

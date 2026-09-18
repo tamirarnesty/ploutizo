@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 
 type RouterLocationState = {
   importReview?: unknown;
+  createAccount?: unknown;
 };
 
 const resolveLinkHref = (
@@ -38,14 +39,22 @@ const { routerMocks, tanstackRouterMock } = vi.hoisted(() => {
       onClick,
       params,
       search,
+      state,
     }: {
       children: ReactNode;
       to: string;
       onClick?: () => void;
       params?: { draftId?: string };
       search?: Record<string, string>;
+      state?: unknown;
     }) => (
-      <a href={resolveLinkHref(to, params, search)} onClick={onClick}>
+      <a
+        href={resolveLinkHref(to, params, search)}
+        data-router-state={
+          state === undefined ? undefined : JSON.stringify(state)
+        }
+        onClick={onClick}
+      >
         {children}
       </a>
     ),

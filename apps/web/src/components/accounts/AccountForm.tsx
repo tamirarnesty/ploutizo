@@ -43,6 +43,7 @@ import {
 import type {
   Account,
   AccountMember,
+  AccountType,
   FinancialInstitutionId,
   OrgMember,
 } from '@ploutizo/types';
@@ -68,12 +69,14 @@ const ACCOUNT_TYPES = [
 
 interface AccountFormProps {
   account: Account | null;
+  defaultType?: AccountType;
   onClose: () => void;
   onArchive?: () => void;
 }
 
 interface AccountFormInnerProps {
   account: Account | null;
+  defaultType?: AccountType;
   existingMembers: AccountMember[];
   orgMembers: OrgMember[];
   onClose: () => void;
@@ -82,6 +85,7 @@ interface AccountFormInnerProps {
 
 export const AccountForm = ({
   account,
+  defaultType,
   onClose,
   onArchive,
 }: AccountFormProps) => {
@@ -101,8 +105,9 @@ export const AccountForm = ({
 
   return (
     <AccountFormInner
-      key={account?.id ?? 'new'}
+      key={account?.id ?? defaultType ?? 'new'}
       account={account}
+      defaultType={defaultType}
       existingMembers={existingMembers ?? []}
       orgMembers={orgMembers}
       onClose={onClose}
@@ -113,6 +118,7 @@ export const AccountForm = ({
 
 const AccountFormInner = ({
   account,
+  defaultType,
   existingMembers,
   orgMembers,
   onClose,
@@ -130,7 +136,7 @@ const AccountFormInner = ({
   const form = useAppForm({
     defaultValues: {
       name: account?.name ?? '',
-      type: account?.type ?? 'chequing',
+      type: account?.type ?? defaultType ?? 'chequing',
       institutionId: account?.institutionId ?? null,
       lastFour: account?.lastFour ?? '',
       statementDueDay:

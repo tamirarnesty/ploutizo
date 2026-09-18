@@ -51,8 +51,11 @@ const AccountSlotSelect = ({
     }}
   >
     {(field) =>
-      options.length === 0 ? (
-        <AccountSlotEmptyState label={slot.label} />
+      options.length === 0 && slot.required ? (
+        <AccountSlotEmptyState
+          label={slot.label}
+          createAccountType={slot.createAccountType}
+        />
       ) : (
         <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
           <FieldLabel htmlFor={`tx-${slot.field}`}>{slot.label}</FieldLabel>

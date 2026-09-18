@@ -340,4 +340,37 @@ describe('AccountForm', () => {
       );
     });
   });
+
+  it('prefills create type from the missing-role default', async () => {
+    const user = userEvent.setup();
+    render(
+      <AccountForm account={null} defaultType="investment" onClose={vi.fn()} />
+    );
+
+    await user.type(screen.getByLabelText('Name'), 'FHSA');
+    await user.click(screen.getByRole('button', { name: 'Wealthsimple' }));
+    await user.click(screen.getByRole('button', { name: 'Add account' }));
+
+    await waitFor(() => {
+      expect(mocks.createMutate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'FHSA',
+          type: 'investment',
+          institutionId: 'wealthsimple',
+          memberIds: [ADA_ID],
+        }),
+        expect.any(Object)
+      );
+    });
+  });
+
+  it('shows credit-card fields when create type is prefilled as credit_card', () => {
+    render(
+      <AccountForm account={null} defaultType="credit_card" onClose={vi.fn()} />
+    );
+
+    expect(
+      screen.getByTestId('account-statement-due-day-wrap')
+    ).toBeInTheDocument();
+  });
 });
