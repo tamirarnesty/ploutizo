@@ -1,10 +1,7 @@
 import { useAppForm } from '@ploutizo/ui/components/form';
 import { createTransactionSchema } from '@ploutizo/validators';
 import { normalizeTransactionAssignees } from '@ploutizo/utils/assignee-split';
-import {
-  formatGeneratedTransactionDescriptionFromAccounts,
-  resolveTransactionDescriptionLock,
-} from '@ploutizo/utils/transaction-policy';
+import { formatGeneratedTransactionDescriptionFromAccounts } from '@ploutizo/utils/transaction-policy';
 import { centsToDollars } from '@ploutizo/utils/currency';
 import type { Account } from '@ploutizo/types';
 import type {
@@ -12,6 +9,7 @@ import type {
   useCreateTransaction,
   useUpdateTransaction,
 } from '@/lib/data-access/transactions';
+import { resolveTransactionFormDescriptionLock } from '../getTransactionFormDescriptionLock';
 import { toTransactionApiPayload } from '../toTransactionApiPayload';
 import type { TransactionFormValues } from '../types';
 
@@ -89,7 +87,7 @@ export const buildDefaultValues = (
   // Align defaults with the locked template so DescriptionLockController does
   // not call handleChange on mount (which marks the form dirty). Preserve
   // custom/legacy descriptions that do not match the generated candidate.
-  values.description = resolveTransactionDescriptionLock({
+  values.description = resolveTransactionFormDescriptionLock({
     type: values.type,
     refundOf: values.refundOf,
     currentDescription: transaction.description,

@@ -27,11 +27,7 @@ import {
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
 import { dollarsToCents } from '@ploutizo/utils/currency';
-import {
-  formatGeneratedTransactionDescriptionFromAccounts,
-  resolveTransactionDescriptionLock,
-  resolveTransactionDescriptionPolicy,
-} from '@ploutizo/utils/transaction-policy';
+import { formatGeneratedTransactionDescriptionFromAccounts } from '@ploutizo/utils/transaction-policy';
 import type { Account, OrgMember, TransactionType } from '@ploutizo/types';
 import { useGetHouseholdMembers } from '@/lib/data-access/household';
 import { useGetCategories } from '@/lib/data-access/categories';
@@ -50,6 +46,7 @@ import {
   useFlushPendingInputs,
 } from '@/lib/money/pending-input-flush';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
+import { resolveTransactionFormDescriptionLock } from './getTransactionFormDescriptionLock';
 import { useTransactionForm } from './hooks/useTransactionForm';
 import { TransactionTypeFields } from './TransactionTypeFields';
 import { TransactionAccountSlots } from './TransactionAccountSlots';
@@ -175,7 +172,7 @@ const DescriptionLockController = ({
     previousTypeRef.current = type;
     previousRefundOfRef.current = refundOf;
 
-    const next = resolveTransactionDescriptionLock({
+    const next = resolveTransactionFormDescriptionLock({
       type,
       refundOf,
       currentDescription: currentValueRef.current,
@@ -252,7 +249,12 @@ const isGeneratedDescriptionType = (
   type: TransactionType,
   refundOf?: string | null
 ): boolean =>
-  resolveTransactionDescriptionPolicy({ type, refundOf }).mode === 'generated';
+  resolveTransactionFormDescriptionLock({
+    type,
+    refundOf,
+    currentDescription: '',
+    generatedCandidate: '',
+  }).shouldLock;
 
 const TransactionFormInner = ({
   transaction,
@@ -282,7 +284,7 @@ const TransactionFormInner = ({
         },
         accounts
       );
-    return resolveTransactionDescriptionLock({
+    return resolveTransactionFormDescriptionLock({
       type: transaction.type,
       refundOf: transaction.refundOf ?? '',
       currentDescription: transaction.description,
@@ -433,9 +435,12 @@ const TransactionFormInner = ({
             })}
           >
             {({ type, accountId, counterpartAccountId, refundOf }) => {
-              const shouldLock =
-                resolveTransactionDescriptionPolicy({ type, refundOf }).mode ===
-                'generated';
+              const shouldLock = resolveTransactionFormDescriptionLock({
+                type,
+                refundOf,
+                currentDescription: '',
+                generatedCandidate: '',
+              }).shouldLock;
               const isLocked = !isDescriptionUnlocked && shouldLock;
 
               const lockedValue =
