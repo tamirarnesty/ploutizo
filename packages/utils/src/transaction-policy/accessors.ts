@@ -5,6 +5,7 @@ import {
   TRANSACTION_SCALAR_FIELDS,
   TRANSACTION_TYPE_POLICIES,
 } from './policies';
+import { isAccountAvailableOnCalendarDate } from './archived-account-availability';
 import type { AccountSlotPolicy } from './policies';
 import type {
   GetAccountOptionsForTransactionSlotInput,
@@ -107,7 +108,12 @@ export const getAccountOptionsForTransactionSlot = (
     if (excludeAccountId && account.id === excludeAccountId) return false;
 
     if (isArchivedAccount(account)) {
-      return account.id === input.preserveAccountId;
+      if (account.id === input.preserveAccountId) return true;
+      if (!input.asOfDate) return false;
+      return isAccountAvailableOnCalendarDate(
+        account.archivedAt,
+        input.asOfDate
+      );
     }
 
     return true;
