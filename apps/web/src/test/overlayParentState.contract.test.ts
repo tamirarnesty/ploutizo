@@ -49,6 +49,29 @@ describe('overlay parent state contract', () => {
       expect(result.current.sheetOpen).toBe(true);
       expect(result.current.editingAccount).toBeNull();
     });
+
+    it('handleSheetClose keeps createAccountType from the route open path', () => {
+      const { result } = renderHook(() => useAccountsSheetParentState());
+
+      act(() => result.current.handleCreateFromRoute('investment'));
+      act(() => result.current.handleSheetClose());
+
+      expect(result.current.sheetOpen).toBe(false);
+      expect(result.current.editingAccount).toBeNull();
+      expect(result.current.createAccountType).toBe('investment');
+    });
+
+    it('handleAddClick clears createAccountType before open', () => {
+      const { result } = renderHook(() => useAccountsSheetParentState());
+
+      act(() => result.current.handleCreateFromRoute('investment'));
+      act(() => result.current.handleSheetClose());
+      act(() => result.current.handleAddClick());
+
+      expect(result.current.sheetOpen).toBe(true);
+      expect(result.current.editingAccount).toBeNull();
+      expect(result.current.createAccountType).toBeUndefined();
+    });
   });
 
   describe('Transactions sheet (Transactions.tsx)', () => {

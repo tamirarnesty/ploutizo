@@ -4,7 +4,7 @@ import type {
   AccountSlotPolicyReadModel,
   TransactionAccountSlot,
 } from '@ploutizo/utils/transaction-policy';
-import type { TransactionType } from '@ploutizo/types';
+import type { AccountType, TransactionType } from '@ploutizo/types';
 
 export type TransactionFormAccountSlotLabel =
   | 'Account'
@@ -16,6 +16,8 @@ export interface TransactionFormAccountSlot {
   role: AccountRole;
   required: boolean;
   label: TransactionFormAccountSlotLabel;
+  /** First allowed account type for the slot's role — used to prefill create. */
+  createAccountType: AccountType;
 }
 
 const ACCOUNT_SLOT_LABELS: Record<
@@ -46,6 +48,7 @@ const toFormAccountSlot = (
   role: slot.role,
   required: slot.required,
   label: ACCOUNT_SLOT_LABELS[slot.role],
+  createAccountType: slot.allowedAccountTypes[0],
 });
 
 /**

@@ -46,4 +46,31 @@ describe('getTransactionFormAccountSlots', () => {
       ['accountId', 'Destination'],
     ]);
   });
+
+  it('derives create-account type from the first allowed type for each role', () => {
+    expect(
+      getTransactionFormAccountSlots('expense')[0]?.createAccountType
+    ).toBe('credit_card');
+    expect(getTransactionFormAccountSlots('income')[0]?.createAccountType).toBe(
+      'chequing'
+    );
+    expect(
+      getTransactionFormAccountSlots('settlement').map((slot) => [
+        slot.label,
+        slot.createAccountType,
+      ])
+    ).toEqual([
+      ['Source', 'chequing'],
+      ['Destination', 'credit_card'],
+    ]);
+    expect(
+      getTransactionFormAccountSlots('contribution').map((slot) => [
+        slot.label,
+        slot.createAccountType,
+      ])
+    ).toEqual([
+      ['Source', 'chequing'],
+      ['Destination', 'investment'],
+    ]);
+  });
 });

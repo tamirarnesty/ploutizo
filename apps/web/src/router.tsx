@@ -6,6 +6,7 @@ import { routeTree } from './routeTree.gen';
 import type { AccessState } from './lib/access/access-state';
 import type { QueryClient } from '@tanstack/react-query';
 import type { ImportReviewLocationState } from './lib/data-access/imports/importReviewLocationState';
+import type { AccountCreateLocationState } from './lib/navigation/account-create-route';
 
 export interface RouterContext {
   queryClient: QueryClient;
@@ -56,6 +57,7 @@ export const getRouter = () => {
 declare module '@tanstack/history' {
   interface HistoryState {
     importReview?: ImportReviewLocationState;
+    createAccount?: AccountCreateLocationState;
   }
 }
 

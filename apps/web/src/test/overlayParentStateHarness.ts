@@ -5,7 +5,11 @@
  * - Transactions.tsx (transaction sheet)
  */
 import { useCallback, useState } from 'react';
-import type { Account, SettlementAccountRow } from '@ploutizo/types';
+import type {
+  Account,
+  AccountType,
+  SettlementAccountRow,
+} from '@ploutizo/types';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';
 import type { TransactionRow } from '@/lib/data-access/transactions';
 
@@ -44,14 +48,24 @@ export const useDashboardSettleDialogParentState = () => {
 export const useAccountsSheetParentState = () => {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [createAccountType, setCreateAccountType] = useState<
+    AccountType | undefined
+  >();
 
   const handleAddClick = useCallback(() => {
     setEditingAccount(null);
+    setCreateAccountType(undefined);
     setSheetOpen(true);
   }, []);
 
   const handleRowClick = useCallback((account: Account) => {
     setEditingAccount(account);
+    setSheetOpen(true);
+  }, []);
+
+  const handleCreateFromRoute = useCallback((type: AccountType) => {
+    setEditingAccount(null);
+    setCreateAccountType(type);
     setSheetOpen(true);
   }, []);
 
@@ -62,8 +76,10 @@ export const useAccountsSheetParentState = () => {
   return {
     sheetOpen,
     editingAccount,
+    createAccountType,
     handleAddClick,
     handleRowClick,
+    handleCreateFromRoute,
     handleSheetClose,
   };
 };
