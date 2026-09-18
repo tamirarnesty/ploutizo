@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { isHouseholdLoaderReady } from '@/lib/access/household-loader-ready';
 import { accountsQueryOptions } from '@/lib/data-access/accounts';
 import { categoriesQueryOptions } from '@/lib/data-access/categories';
-import { orgMembersQueryOptions } from '@/lib/data-access/org';
+import { householdMembersQueryOptions } from '@/lib/data-access/household';
 import { ensurePageSizeHydrated, readStoredPageSize } from '@/lib/prefs';
 import { tagsQueryOptions } from '@/lib/data-access/tags';
 import { transactionsQueryOptions } from '@/lib/data-access/transactions';
@@ -29,7 +29,7 @@ export const Route = createFileRoute('/_layout/transactions/')({
       ),
       context.queryClient.ensureQueryData(accountsQueryOptions()),
       context.queryClient.ensureQueryData(categoriesQueryOptions()),
-      context.queryClient.ensureQueryData(orgMembersQueryOptions()),
+      context.queryClient.ensureQueryData(householdMembersQueryOptions()),
       context.queryClient.ensureQueryData(tagsQueryOptions()),
     ]);
   },

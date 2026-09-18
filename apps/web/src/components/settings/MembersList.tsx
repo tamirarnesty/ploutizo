@@ -5,17 +5,17 @@ import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
 import {
   useGetOrgInvitations,
-  useGetOrgMembers,
   useRemoveMember,
   useRevokeInvitation,
 } from '@/lib/data-access/org';
+import { useGetHouseholdMembers } from '@/lib/data-access/household';
 import { InvitedMemberRow } from './InvitedMemberRow';
 import { MemberRow } from './MemberRow';
 import { MembersEmptyState } from './MembersEmptyState';
 
 export const MembersList = () => {
   // Per D-13: BOTH queries called unconditionally at top level — no waterfall.
-  const membersQuery = useGetOrgMembers();
+  const membersQuery = useGetHouseholdMembers();
   const invitationsQuery = useGetOrgInvitations();
   const { user } = useUser();
   const removeMutation = useRemoveMember();

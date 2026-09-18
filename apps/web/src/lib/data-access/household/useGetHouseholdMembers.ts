@@ -4,7 +4,7 @@ import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
 
-export const fetchOrgMembers = async (
+export const fetchHouseholdMembers = async (
   signal?: AbortSignal
 ): Promise<OrgMember[]> => {
   const r = await apiFetch<{ data: OrgMember[] }>('/api/households/members', {
@@ -13,12 +13,12 @@ export const fetchOrgMembers = async (
   return r.data;
 };
 
-export const orgMembersQueryOptions = () =>
+export const householdMembersQueryOptions = () =>
   queryOptions({
     queryKey: ['members'],
-    queryFn: ({ signal }) => fetchOrgMembers(signal),
+    queryFn: ({ signal }) => fetchHouseholdMembers(signal),
   });
 
-export const useGetOrgMembers = (): UseQueryResult<OrgMember[]> => {
-  return useHouseholdQuery(orgMembersQueryOptions());
+export const useGetHouseholdMembers = (): UseQueryResult<OrgMember[]> => {
+  return useHouseholdQuery(householdMembersQueryOptions());
 };
