@@ -106,4 +106,62 @@ describe('collectSettingsSectionNav', () => {
       { label: 'Household', to: '/settings/household' },
     ]);
   });
+
+  it('collects section tabs from the settings route tree, not the settings command group', () => {
+    const sectionRouter = {
+      routesById: {
+        '/_layout/settings/categories': {
+          id: '/_layout/settings/categories',
+          fullPath: '/settings/categories',
+          options: {
+            staticData: {
+              nav: {
+                label: 'Categories & Tags',
+                group: 'navigation',
+                sidebar: false,
+                order: 1,
+              },
+            },
+          },
+          parentRoute: { id: '/_layout/settings' },
+        },
+        '/_layout/settings': {
+          id: '/_layout/settings',
+          fullPath: '/settings',
+          options: {
+            staticData: {
+              nav: {
+                label: 'Settings',
+                group: 'settings',
+                placement: 'footer',
+              },
+            },
+          },
+          parentRoute: { id: '/_layout' },
+        },
+        '/_layout/import/history': {
+          id: '/_layout/import/history',
+          fullPath: '/import/history',
+          options: {
+            staticData: {
+              nav: {
+                label: 'Import History',
+                group: 'settings',
+                sidebar: false,
+                order: 2,
+              },
+            },
+          },
+          parentRoute: { id: '/_layout/import' },
+        },
+      },
+    };
+
+    expect(collectSettingsSectionNav(sectionRouter)).toEqual([
+      expect.objectContaining({
+        label: 'Categories & Tags',
+        to: '/settings/categories',
+      }),
+    ]);
+  });
 });

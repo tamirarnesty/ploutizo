@@ -45,6 +45,8 @@ const NAV_GROUP_HEADINGS: Record<NavGroup, string> = {
   settings: 'Settings',
 };
 
+const SETTINGS_SECTION_PARENT_ROUTE_ID = '/_layout/settings';
+
 const toAppNavRoute = (fullPath: string): AppNavRoute | null => {
   const path = normalizePathname(fullPath);
   return isAppNavRoutePath(path) ? path : null;
@@ -188,8 +190,28 @@ export type CollectNavRouter = {
   routesById: unknown;
 };
 
+const getRoutesById = (router: CollectNavRouter): Record<string, NavRoute> =>
+  router.routesById as Record<string, NavRoute>;
+
+const isDescendantOfRoute = (
+  route: NavRoute,
+  ancestorRouteId: string,
+  routesById: Record<string, NavRoute>
+): boolean => {
+  let parentRouteId = route.parentRoute?.id;
+
+  while (parentRouteId) {
+    if (parentRouteId === ancestorRouteId) return true;
+    if (!(parentRouteId in routesById)) break;
+    parentRouteId = routesById[parentRouteId].parentRoute?.id;
+  }
+
+  return false;
+};
+
 const listResolvedNavRoutes = (router: CollectNavRouter): ResolvedNavRoute[] =>
-  Object.values(router.routesById as Record<string, NavRoute>)
+  Object.values(getRoutesById(router))
+    .sort((left, right) => left.fullPath.localeCompare(right.fullPath))
     .map((route) => resolveNavRoute(route))
     .filter((route): route is ResolvedNavRoute => route !== null);
 
@@ -210,8 +232,19 @@ export const collectNav = (router: CollectNavRouter): CollectedNav => {
 
 export const collectSettingsSectionNav = (
   router: CollectNavRouter
-): SidebarNavChild[] =>
-  listResolvedNavRoutes(router)
-    .filter((route) => route.group === 'settings' && !route.sidebar)
+): SidebarNavChild[] => {
+  const routesById = getRoutesById(router);
+
+  return listResolvedNavRoutes(router)
+    .filter(
+      (route) =>
+        !route.sidebar &&
+        isDescendantOfRoute(
+          routesById[route.routeId],
+          SETTINGS_SECTION_PARENT_ROUTE_ID,
+          routesById
+        )
+    )
     .sort(compareNavRoutes)
     .map(toSidebarNavChild);
+};
