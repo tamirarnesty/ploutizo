@@ -1,4 +1,4 @@
-import { QueryClientProvider } from '@tanstack/react-query';
+import '@/lib/access/working-set-cleanup';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { UpdateImportDraftRowResult } from '@ploutizo/types';
@@ -9,6 +9,8 @@ import {
 } from '@/components/imports/test-fixtures/importDraft';
 import { getActiveQueryClient } from '@/lib/access/working-set-registry';
 import '@/test/mockTanstackRouter';
+import { HouseholdHookWrapper } from '@/test/household-hook-harness';
+
 import {
   IMPORT_ROW_PACE_WAIT_MS,
   endImportDraftRowPacedMutations,
@@ -24,7 +26,12 @@ import { fetchUpdateImportDraftRowSelection } from './fetchUpdateImportDraftRowS
 import { fetchImportDraft } from './useGetImportDraft';
 import { useImportReviewSession } from './useImportReviewSession';
 import type * as useGetImportDraftModule from './useGetImportDraft';
-import type { ReactNode } from 'react';
+
+vi.mock('@/lib/access/AccessProvider', async () => {
+  const { householdAccessProviderMock } =
+    await import('@/test/householdAccessMock');
+  return householdAccessProviderMock;
+});
 
 vi.mock('./useGetImportDraft', async (importOriginal) => {
   const actual = await importOriginal<typeof useGetImportDraftModule>();
@@ -68,18 +75,12 @@ const draft = makeImportDraft({
   ],
 });
 
-const wrapper = ({ children }: { children: ReactNode }) => (
-  <QueryClientProvider client={getActiveQueryClient()}>
-    {children}
-  </QueryClientProvider>
-);
-
 const draftId = 'draft_session_1';
 const autosaveSnapshot = () => getImportReviewAutosaveSnapshot(draftId);
 
 const hydrateSession = async () => {
   const hook = renderHook(() => useImportReviewSession(draftId), {
-    wrapper,
+    wrapper: HouseholdHookWrapper,
   });
   await waitFor(() => {
     expect(hook.result.current.isLoading).toBe(false);
@@ -166,7 +167,7 @@ describe('useImportReviewSession', () => {
 
     const { result, unmount: unmountAgain } = renderHook(
       () => useImportReviewSession('draft_session_1'),
-      { wrapper }
+      { wrapper: HouseholdHookWrapper }
     );
 
     await waitFor(() => {
@@ -185,7 +186,7 @@ describe('useImportReviewSession', () => {
 
     const { result, unmount } = renderHook(
       () => useImportReviewSession('draft_session_1'),
-      { wrapper }
+      { wrapper: HouseholdHookWrapper }
     );
 
     await waitFor(() => {
@@ -204,7 +205,7 @@ describe('useImportReviewSession', () => {
     );
 
     const first = renderHook(() => useImportReviewSession('draft_session_1'), {
-      wrapper,
+      wrapper: HouseholdHookWrapper,
     });
     await waitFor(() => {
       expect(first.result.current.rows).toHaveLength(2);
@@ -213,7 +214,7 @@ describe('useImportReviewSession', () => {
 
     const { result, unmount } = renderHook(
       () => useImportReviewSession('draft_session_1'),
-      { wrapper }
+      { wrapper: HouseholdHookWrapper }
     );
 
     await waitFor(() => {
@@ -230,7 +231,7 @@ describe('useImportReviewSession', () => {
 
     const { result, unmount } = renderHook(
       () => useImportReviewSession('missing_draft'),
-      { wrapper }
+      { wrapper: HouseholdHookWrapper }
     );
 
     await waitFor(

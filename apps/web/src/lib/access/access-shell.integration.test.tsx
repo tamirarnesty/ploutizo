@@ -67,11 +67,10 @@ describe('access shell integration', () => {
 
     const { view } = await renderAccessShellTree({ shell });
 
-    expect(view.queryByTestId('index-page')).not.toBeInTheDocument();
+    expect(view.getByTestId('index-page')).toBeInTheDocument();
 
     await waitFor(() => {
       expect(getAccessRouterContext().isReady).toBe(true);
-      expect(view.getByTestId('index-page')).toBeInTheDocument();
     });
     expect(getToken).toHaveBeenCalledWith({ skipCache: true });
   });

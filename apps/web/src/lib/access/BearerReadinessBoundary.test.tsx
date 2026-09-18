@@ -36,13 +36,9 @@ describe('BearerReadinessBoundary', () => {
     resetAccessShellTestState();
   });
 
-  it('holds route content until household bearer is ready', async () => {
+  it('keeps route content mounted while household bearer is not ready', async () => {
     const { view } = await renderBoundaryShell();
-    expect(view.queryByTestId('index-page')).not.toBeInTheDocument();
-
-    await waitFor(() => {
-      expect(view.getByTestId('index-page')).toBeInTheDocument();
-    });
+    expect(view.getByTestId('index-page')).toBeInTheDocument();
   });
 
   it('shows bearer blocked UI when household bearer cannot be resolved', async () => {

@@ -7,16 +7,6 @@ vi.mock('@clerk/shared/loadClerkJsScript', () => ({
   loadClerkJsScript: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('@/lib/data-access/useHouseholdQuery', async () => {
-  const { useInfiniteQuery, useMutation, useQuery } =
-    await import('@tanstack/react-query');
-  return {
-    useHouseholdQuery: useQuery,
-    useHouseholdInfiniteQuery: useInfiniteQuery,
-    useHouseholdMutation: useMutation,
-  };
-});
-
 vi.mock('@ploutizo/ui/components/dialog', () => dialogMock);
 vi.mock('@ploutizo/ui/components/sheet', () => sheetMock);
 vi.mock('@ploutizo/ui/components/alert-dialog', () => alertDialogMock);

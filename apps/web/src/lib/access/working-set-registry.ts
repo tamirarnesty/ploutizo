@@ -39,6 +39,17 @@ export const beginWorkingSetScope = (): WorkingSetScope => {
   };
 };
 
+export const createStaleWorkingSetError = () => {
+  const error = new Error('Working set is no longer current');
+  error.name = 'StaleWorkingSetError';
+  return error;
+};
+
+export const isStaleWorkingSetError = (
+  error: unknown
+): error is Error & { name: 'StaleWorkingSetError' } =>
+  error instanceof Error && error.name === 'StaleWorkingSetError';
+
 export const registerWorkingSetCleanup = (cleanup: WorkingSetCleanup) => {
   workingSetCleanups.push(cleanup);
 };
