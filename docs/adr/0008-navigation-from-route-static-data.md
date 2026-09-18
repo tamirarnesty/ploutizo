@@ -10,13 +10,13 @@ App navigation (sidebar, command palette, section tabs) is derived from TanStack
 
 Navigation metadata previously lived in `app-nav.ts` — a parallel source of truth beside the route tree. Labels, keywords, and hierarchy were duplicated or manually synchronized whenever routes changed. PLO-99 deduplicated command palette entries from the sidebar registry, but the registry itself remained the bottleneck for adding navigable routes.
 
-TanStack Router already supports synchronous route metadata through `staticData` (we use it for `mainContentLayout`). The library's community guidance for app-wide navigation is the same: declare metadata on routes, walk `router.flatRoutes` to collect it.
+TanStack Router already supports synchronous route metadata through `staticData` (we use it for `mainContentLayout`). The library's community guidance for app-wide navigation is the same: declare metadata on routes, walk the router route tree to collect it.
 
 ## Decision
 
 ### Route tree is the source of truth
 
-Each navigable route declares a `staticData.nav` block co-located with its route definition. A `collectNav(router)` function walks `flatRoutes` and produces sidebar trees, footer items, and command palette groups. Delete the central registry.
+Each navigable route declares a `staticData.nav` block co-located with its route definition. A `collectNav(router)` function walks `router.routesById` (sorted by `fullPath` for stable ordering) and produces sidebar trees, footer items, and command palette groups. Delete the central registry.
 
 ### Sidebar tree from route hierarchy
 
@@ -24,7 +24,7 @@ Child routes with `nav.sidebar: true` (default) nest under their parent when the
 
 ### Icons stay outside staticData
 
-Lucide components are not serializable. A path-keyed `nav-icons.ts` map (`Record<AppNavRoute, LucideIcon>`) provides compile-time exhaustiveness; `resolveNavIcon()` throws at runtime if a route with `nav` lacks a mapping. No silent fallback.
+Lucide components are not serializable. A path-keyed `nav-icons.ts` map (`Record<AppNavRoute, LucideIcon>`) provides compile-time exhaustiveness for icon coverage. Routes with `staticData.nav` whose `fullPath` is not listed in `APP_NAV_ROUTES` throw during collection — no silent fallback.
 
 ### Settings: sidebar link + layout tabs
 
@@ -46,6 +46,6 @@ All `StaticDataRouteOption` fields (`mainContentLayout`, `nav`) augment in one `
 
 ## Consequences
 
-- Adding a navigable route: route file with `staticData.nav` + one line in `nav-icons.ts`
+- Adding a navigable route: route file with `staticData.nav` + path in `APP_NAV_ROUTES` (`types.ts`) + one line in `nav-icons.ts`
 - Settings UX shifts from sidebar submenu to in-layout tabs
 - `collectNav` and `collectSectionNav` are the only nav assembly points; tests target collectors, not registries

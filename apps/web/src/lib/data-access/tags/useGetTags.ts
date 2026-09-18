@@ -17,12 +17,11 @@ export const fetchTags = async (signal?: AbortSignal): Promise<Tag[]> => {
   return r.data;
 };
 
-export const tagsQueryOptions = () =>
-  queryOptions({
-    queryKey: ['tags'],
-    queryFn: ({ signal }) => fetchTags(signal),
-  });
+export const tagsQueryOptions = queryOptions({
+  queryKey: ['tags'],
+  queryFn: ({ signal }) => fetchTags(signal),
+});
 
 export const useGetTags = (): UseQueryResult<Tag[]> => {
-  return useHouseholdQuery(tagsQueryOptions());
+  return useHouseholdQuery(tagsQueryOptions);
 };

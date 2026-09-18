@@ -17,7 +17,7 @@ export const Route = createFileRoute('/_layout/settings/merchant-rules')({
     if (!(await isHouseholdLoaderReady(context))) {
       return;
     }
-    await context.queryClient.ensureQueryData(merchantRulesQueryOptions());
+    await context.queryClient.ensureQueryData(merchantRulesQueryOptions);
   },
   component: MerchantRulesSettings,
 });

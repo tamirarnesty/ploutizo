@@ -24,9 +24,9 @@ export const Route = createFileRoute('/_layout/settings/household')({
     }
     await Promise.all([
       context.queryClient.ensureQueryData(householdOverviewQueryOptions),
-      context.queryClient.ensureQueryData(householdMembersQueryOptions()),
-      context.queryClient.ensureQueryData(orgInvitationsQueryOptions()),
-      context.queryClient.ensureQueryData(householdSettingsQueryOptions()),
+      context.queryClient.ensureQueryData(householdMembersQueryOptions),
+      context.queryClient.ensureQueryData(orgInvitationsQueryOptions),
+      context.queryClient.ensureQueryData(householdSettingsQueryOptions),
     ]);
   },
   component: HouseholdSettings,

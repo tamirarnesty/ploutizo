@@ -24,12 +24,11 @@ export const fetchMerchantRules = async (
   return r.data;
 };
 
-export const merchantRulesQueryOptions = () =>
-  queryOptions({
-    queryKey: ['merchant-rules'],
-    queryFn: ({ signal }) => fetchMerchantRules(signal),
-  });
+export const merchantRulesQueryOptions = queryOptions({
+  queryKey: ['merchant-rules'],
+  queryFn: ({ signal }) => fetchMerchantRules(signal),
+});
 
 export const useGetMerchantRules = (): UseQueryResult<MerchantRule[]> => {
-  return useHouseholdQuery(merchantRulesQueryOptions());
+  return useHouseholdQuery(merchantRulesQueryOptions);
 };

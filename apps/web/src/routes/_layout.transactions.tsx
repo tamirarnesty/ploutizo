@@ -35,9 +35,9 @@ export const Route = createFileRoute('/_layout/transactions')({
         transactionsQueryOptions(transactionParams)
       ),
       context.queryClient.ensureQueryData(accountsQueryOptions()),
-      context.queryClient.ensureQueryData(categoriesQueryOptions()),
-      context.queryClient.ensureQueryData(householdMembersQueryOptions()),
-      context.queryClient.ensureQueryData(tagsQueryOptions()),
+      context.queryClient.ensureQueryData(categoriesQueryOptions),
+      context.queryClient.ensureQueryData(householdMembersQueryOptions),
+      context.queryClient.ensureQueryData(tagsQueryOptions),
     ]);
   },
   component: Transactions,

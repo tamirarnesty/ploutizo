@@ -7,7 +7,7 @@ export const Route = createFileRoute('/_layout/accounts')({
   staticData: {
     nav: {
       label: 'Accounts',
-      keywords: ['accounts', 'cards'],
+      keywords: ['accounts', 'cards', 'credit'],
       order: 3,
     },
   },

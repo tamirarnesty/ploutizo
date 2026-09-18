@@ -13,12 +13,11 @@ export const fetchHouseholdMembers = async (
   return r.data;
 };
 
-export const householdMembersQueryOptions = () =>
-  queryOptions({
-    queryKey: ['members'],
-    queryFn: ({ signal }) => fetchHouseholdMembers(signal),
-  });
+export const householdMembersQueryOptions = queryOptions({
+  queryKey: ['members'],
+  queryFn: ({ signal }) => fetchHouseholdMembers(signal),
+});
 
 export const useGetHouseholdMembers = (): UseQueryResult<OrgMember[]> => {
-  return useHouseholdQuery(householdMembersQueryOptions());
+  return useHouseholdQuery(householdMembersQueryOptions);
 };

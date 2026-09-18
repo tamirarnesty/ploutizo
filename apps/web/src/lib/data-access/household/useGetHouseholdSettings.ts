@@ -17,13 +17,12 @@ export const fetchHouseholdSettings = async (
   return r.data;
 };
 
-export const householdSettingsQueryOptions = () =>
-  queryOptions({
-    queryKey: ['household-settings'],
-    queryFn: ({ signal }) => fetchHouseholdSettings(signal),
-  });
+export const householdSettingsQueryOptions = queryOptions({
+  queryKey: ['household-settings'],
+  queryFn: ({ signal }) => fetchHouseholdSettings(signal),
+});
 
 export const useGetHouseholdSettings =
   (): UseQueryResult<HouseholdSettings> => {
-    return useHouseholdQuery(householdSettingsQueryOptions());
+    return useHouseholdQuery(householdSettingsQueryOptions);
   };

@@ -19,8 +19,8 @@ export const Route = createFileRoute('/_layout/settings/categories')({
       return;
     }
     await Promise.all([
-      context.queryClient.ensureQueryData(categoriesQueryOptions()),
-      context.queryClient.ensureQueryData(tagsQueryOptions()),
+      context.queryClient.ensureQueryData(categoriesQueryOptions),
+      context.queryClient.ensureQueryData(tagsQueryOptions),
     ]);
   },
   component: CategoriesSettings,

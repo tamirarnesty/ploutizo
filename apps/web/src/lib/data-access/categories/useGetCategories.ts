@@ -31,13 +31,12 @@ const selectCategories = (data: Category[]) =>
     colour: parseColourToken(c.colour),
   }));
 
-export const categoriesQueryOptions = () =>
-  queryOptions({
-    queryKey: ['categories'],
-    queryFn: ({ signal }) => fetchCategories(signal),
-    select: selectCategories,
-  });
+export const categoriesQueryOptions = queryOptions({
+  queryKey: ['categories'],
+  queryFn: ({ signal }) => fetchCategories(signal),
+  select: selectCategories,
+});
 
 export const useGetCategories = (): UseQueryResult<Category[]> => {
-  return useHouseholdQuery(categoriesQueryOptions());
+  return useHouseholdQuery(categoriesQueryOptions);
 };

@@ -4,7 +4,7 @@ export const Route = createFileRoute('/_layout/import')({
   staticData: {
     nav: {
       label: 'Import',
-      keywords: ['import', 'upload'],
+      keywords: ['import', 'upload', 'csv', 'file'],
       order: 2,
     },
   },

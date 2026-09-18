@@ -17,8 +17,8 @@ export const Route = createFileRoute('/_layout/dashboard')({
       return;
     }
     await Promise.all([
-      context.queryClient.ensureQueryData(settlementsQueryOptions()),
-      context.queryClient.ensureQueryData(householdMembersQueryOptions()),
+      context.queryClient.ensureQueryData(settlementsQueryOptions),
+      context.queryClient.ensureQueryData(householdMembersQueryOptions),
     ]);
   },
   component: Dashboard,

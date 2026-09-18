@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { getRouter } from '@/router';
+import { settingsLayoutRouteId } from '@/routes/_layout.settings/nav';
 import { collectNav, collectSectionNav } from './collect-nav';
 import { resolveNavIcon } from './nav-icons';
+import { normalizePathname } from './normalizePathname';
+import { APP_NAV_ROUTES, isAppNavRoutePath } from './types';
+import type { AnyRoute } from '@tanstack/react-router';
 
 describe('collectNav', () => {
   const router = getRouter();
@@ -56,6 +60,49 @@ describe('collectNav', () => {
     ]);
   });
 
+  it('throws when staticData.nav is declared for a non-app-nav path', () => {
+    const misconfiguredRouter = {
+      routesById: {
+        '/test': {
+          id: '/test',
+          fullPath: '/unknown-nav-route',
+          options: { staticData: { nav: { label: 'Unknown' } } },
+          parentRoute: undefined,
+        } as AnyRoute,
+      },
+    };
+
+    expect(() => collectNav(misconfiguredRouter)).toThrow(
+      /not an app-nav route/
+    );
+  });
+
+  it('resolves every route in the tree that declares staticData.nav', () => {
+    const routes = Object.values(
+      router.routesById as unknown as Record<string, AnyRoute>
+    );
+    const navRoutes = routes.filter((route) => route.options.staticData?.nav);
+
+    expect(() => collectNav(router)).not.toThrow();
+    expect(navRoutes).toHaveLength(APP_NAV_ROUTES.length);
+
+    for (const route of navRoutes) {
+      const normalized = normalizePathname(route.fullPath);
+      const path =
+        normalized.endsWith('/') && normalized !== '/'
+          ? normalized.slice(0, -1)
+          : normalized;
+
+      if (!isAppNavRoutePath(path)) {
+        throw new Error(
+          `Route ${route.id} (${route.fullPath}) must be listed in APP_NAV_ROUTES`
+        );
+      }
+
+      expect(resolveNavIcon(path)).toBeDefined();
+    }
+  });
+
   it('resolves icons for every collected route', () => {
     const { primary, footer, commandGroups } = collectNav(router);
     const routes = [
@@ -76,7 +123,7 @@ describe('collectSectionNav', () => {
   const router = getRouter();
 
   it('returns settings child routes for section tabs', () => {
-    expect(collectSectionNav(router, '/_layout/settings')).toMatchObject([
+    expect(collectSectionNav(router, settingsLayoutRouteId)).toMatchObject([
       { label: 'Categories & Tags', to: '/settings/categories' },
       { label: 'Merchant Rules', to: '/settings/merchant-rules' },
       { label: 'Household', to: '/settings/household' },

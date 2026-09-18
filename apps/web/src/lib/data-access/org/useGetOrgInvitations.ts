@@ -14,12 +14,11 @@ export const fetchOrgInvitations = async (
   return r.data;
 };
 
-export const orgInvitationsQueryOptions = () =>
-  queryOptions({
-    queryKey: ['invitations'],
-    queryFn: ({ signal }) => fetchOrgInvitations(signal),
-  });
+export const orgInvitationsQueryOptions = queryOptions({
+  queryKey: ['invitations'],
+  queryFn: ({ signal }) => fetchOrgInvitations(signal),
+});
 
 export const useGetOrgInvitations = (): UseQueryResult<PendingInvitation[]> => {
-  return useHouseholdQuery(orgInvitationsQueryOptions());
+  return useHouseholdQuery(orgInvitationsQueryOptions);
 };
