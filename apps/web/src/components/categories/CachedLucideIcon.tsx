@@ -1,4 +1,4 @@
-import { memo, useEffect, useSyncExternalStore } from 'react';
+import { memo, useLayoutEffect, useSyncExternalStore } from 'react';
 import { Tag } from 'lucide-react';
 import {
   getLucideIconCacheSnapshot,
@@ -21,7 +21,7 @@ export const CachedLucideIcon = memo(
     const kebabName = name ? pascalToKebab(name) : null;
     const isKnown = name ? isKnownLucideIcon(name) : false;
 
-    useEffect(() => {
+    useLayoutEffect(() => {
       if (kebabName && isKnown) loadLucideIcon(kebabName);
     }, [kebabName, isKnown]);
 
@@ -34,8 +34,18 @@ export const CachedLucideIcon = memo(
       () => 'pending' as const
     );
 
-    if (!isKnown || entry === 'missing' || entry === 'pending') {
+    if (!name || !isKnown || entry === 'missing') {
       return <Tag size={size} className={className} aria-hidden="true" />;
+    }
+
+    if (entry === 'pending') {
+      return (
+        <span
+          className={className}
+          style={{ width: size, height: size, display: 'inline-block' }}
+          aria-hidden="true"
+        />
+      );
     }
 
     const Icon = entry;
@@ -44,9 +54,3 @@ export const CachedLucideIcon = memo(
 );
 
 CachedLucideIcon.displayName = 'CachedLucideIcon';
-
-export const renderLucideIcon = (
-  iconName: string | null,
-  size = 16,
-  className?: string
-) => <CachedLucideIcon name={iconName} size={size} className={className} />;

@@ -27,4 +27,11 @@ describe('lucideIconNames', () => {
     expect(filterLucideKebabIconNames('anchor')).toContain('anchor');
     expect(isKnownLucideIcon('Anchor')).toBe(true);
   });
+
+  it('matches PascalCase search queries', () => {
+    expect(filterLucideKebabIconNames('ShoppingCart')).toContain(
+      'shopping-cart'
+    );
+    expect(filterLucideKebabIconNames('Gamepad2')).toContain('gamepad-2');
+  });
 });

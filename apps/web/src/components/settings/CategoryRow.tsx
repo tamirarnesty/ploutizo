@@ -6,7 +6,7 @@ import {
 import { Button } from '@ploutizo/ui/components/button';
 import { Text } from '@ploutizo/ui/components/text';
 import { ColourTokenDot } from '@/components/colour/ColourTokenDot';
-import { renderLucideIcon } from '@/components/categories/CachedLucideIcon';
+import { CachedLucideIcon } from '@/components/categories/CachedLucideIcon';
 import type { Category } from '@/lib/data-access/categories';
 import { SettingsRowAlertDialog } from './SettingsRowAlertDialog';
 
@@ -30,7 +30,7 @@ export const CategoryRow = ({
         <GripVertical size={16} />
       </SortableItemHandle>
       <div className="text-muted-foreground">
-        {renderLucideIcon(category.icon, 16)}
+        <CachedLucideIcon name={category.icon} size={16} />
       </div>
       <ColourTokenDot token={category.colour} />
       <Text as="span" variant="body-sm" className="min-w-0 flex-1 truncate">

@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useMemo } from 'react';
 import { Text } from '@ploutizo/ui/components/text';
-import { preloadLucideIcons } from '@/components/categories/lucideIconCache';
+import { usePreloadLucideIcons } from '@/components/categories/usePreloadLucideIcons';
 import type { Category } from '@/lib/data-access/categories';
 import { CategoryRow } from './CategoryRow';
 import { SortableSettingsList } from './SortableSettingsList';
@@ -20,9 +20,12 @@ export const CategoriesList = ({
   onEdit,
   onArchive,
 }: CategoriesListProps) => {
-  useEffect(() => {
-    preloadLucideIcons(categories.map((category) => category.icon));
-  }, [categories]);
+  const categoryIcons = useMemo(
+    () => categories.map((category) => category.icon),
+    [categories]
+  );
+
+  usePreloadLucideIcons(categoryIcons);
 
   return (
     <SortableSettingsList

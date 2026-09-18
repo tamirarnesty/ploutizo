@@ -68,6 +68,25 @@ describe('LucideIconPicker', () => {
     expect(onChange).toHaveBeenCalledWith('Anchor');
   });
 
+  it('finds icons when searching with PascalCase names', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+
+    render(<LucideIconPicker value={null} onChange={onChange} />);
+
+    await user.click(screen.getByRole('button'));
+
+    const search = screen.getByPlaceholderText('Search icons…');
+    await user.type(search, 'ShoppingCart');
+
+    const shoppingCartOption = await waitFor(() =>
+      screen.getByRole('option', { name: 'ShoppingCart' })
+    );
+    await user.click(shoppingCartOption);
+
+    expect(onChange).toHaveBeenCalledWith('ShoppingCart');
+  });
+
   it('virtualizes the full catalog instead of mounting every icon at once', async () => {
     const user = userEvent.setup();
 

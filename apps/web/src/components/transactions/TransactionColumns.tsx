@@ -29,15 +29,11 @@ import { cn } from '@ploutizo/ui/lib/utils';
 import { formatCurrency } from '@ploutizo/utils/currency';
 import { memberFullLabel } from '@ploutizo/utils';
 import { CachedLucideIcon } from '@/components/categories/CachedLucideIcon';
-import { preloadLucideIcons } from '@/components/categories/lucideIconCache';
 import { getColourBadgeClassFromRaw } from '@/components/colour/colour-token-classes';
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
 import { RightAlignedColumnHeader } from '@/components/dashboard/card-balances/RightAlignedColumnHeader';
 import type { TransactionRow } from '@/lib/data-access/transactions';
 import type { ColumnDef } from '@tanstack/react-table';
-
-export { CachedLucideIcon as DynamicLucideIcon } from '@/components/categories/CachedLucideIcon';
-export { preloadLucideIcons };
 
 // Per-type badge className map (per UI-SPEC.md)
 export const typeBadgeClassName: Record<string, string> = {

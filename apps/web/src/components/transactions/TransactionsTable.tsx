@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import {
   DataGrid,
@@ -18,7 +18,8 @@ import {
   PAGINATED_DATA_GRID_SCROLL_ORIENTATION,
 } from '@/components/data-grid/dataGridSharedLayout';
 import { useEffectiveTablePageSize } from '@/hooks/useEffectiveTablePageSize';
-import { buildColumns, preloadLucideIcons } from './TransactionColumns';
+import { usePreloadLucideIcons } from '@/components/categories/usePreloadLucideIcons';
+import { buildColumns } from './TransactionColumns';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import { TransactionsTableEmpty } from './TransactionTableEmpty';
 import { TransactionsTableEmptyFiltered } from './TransactionTableEmptyFiltered';
@@ -81,9 +82,7 @@ export const TransactionsTable = ({
     [transactions]
   );
 
-  useEffect(() => {
-    preloadLucideIcons(categoryIcons);
-  }, [categoryIcons]);
+  usePreloadLucideIcons(categoryIcons);
 
   const columns = useMemo(
     () => buildColumns(setDeleteId, onEdit, onOpenOriginal),

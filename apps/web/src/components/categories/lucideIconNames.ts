@@ -26,9 +26,13 @@ export const isKnownLucideKebabIcon = (kebabName: string): boolean =>
   KEBAB_ICON_NAMES.has(kebabName);
 
 export const filterLucideKebabIconNames = (query: string): IconName[] => {
-  const trimmed = query.trim().toLowerCase();
+  const trimmed = query.trim();
   if (!trimmed) return iconNames;
-  return iconNames.filter((name) => name.includes(trimmed));
-};
 
-export const LUCIDE_ICON_COUNT = iconNames.length;
+  const needle = trimmed.toLowerCase();
+  return iconNames.filter(
+    (name) =>
+      name.includes(needle) ||
+      kebabToPascal(name).toLowerCase().includes(needle)
+  );
+};

@@ -1,6 +1,4 @@
 import { useLayoutEffect, useMemo, useState } from 'react';
-import { DynamicIcon } from 'lucide-react/dynamic';
-import { Tag } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   Popover,
@@ -59,12 +57,7 @@ const IconGridButton = ({
           />
         }
       >
-        <DynamicIcon
-          name={kebabName}
-          size={18}
-          fallback={() => <Tag size={18} aria-hidden="true" />}
-          aria-hidden="true"
-        />
+        <CachedLucideIcon name={pascalName} size={18} />
       </TooltipTrigger>
       <TooltipContent>{pascalName}</TooltipContent>
     </Tooltip>
