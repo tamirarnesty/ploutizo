@@ -21,6 +21,7 @@ export const Route = createFileRoute('/_layout/settings')({
       keywords: ['preferences', 'theme'],
       group: 'settings',
       placement: 'footer',
+      searchable: false,
       order: 0,
     },
   },

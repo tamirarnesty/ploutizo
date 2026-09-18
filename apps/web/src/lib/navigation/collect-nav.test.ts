@@ -51,7 +51,6 @@ describe('collectNav', () => {
       { to: '/import', label: 'Import' },
       { to: '/import/history' },
       { to: '/accounts' },
-      { to: '/settings' },
       { to: '/settings/categories' },
       { to: '/settings/merchant-rules' },
       { to: '/settings/household' },

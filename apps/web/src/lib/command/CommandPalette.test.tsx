@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { FileUp, Settings } from 'lucide-react';
+import { FileUp, Tags } from 'lucide-react';
 import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
 import { makeImportDraftSummary } from '@/components/imports/test-fixtures/importDraft';
 import { useGetImportDrafts } from '@/lib/data-access/imports';
@@ -40,10 +40,10 @@ vi.mock('@/lib/command/getCommandGroups', () => ({
         commands: [
           {
             type: 'nav',
-            id: 'nav-settings',
-            label: 'Settings',
-            to: '/settings',
-            icon: Settings,
+            id: 'nav-settings-categories',
+            label: 'Categories & Tags',
+            to: '/settings/categories',
+            icon: Tags,
           },
         ],
       },
