@@ -20,14 +20,6 @@ import {
   FieldGroup,
   FieldLabel,
 } from '@ploutizo/ui/components/field';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@ploutizo/ui/components/select';
 import { Text } from '@ploutizo/ui/components/text';
 import {
   Tooltip,
@@ -58,12 +50,8 @@ import {
 } from '@/lib/money/pending-input-flush';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import { useTransactionForm } from './hooks/useTransactionForm';
-import { AccountSlotEmptyState } from './AccountSlotEmptyState';
-import { getTransactionFormAccountOptions } from './getTransactionFormAccountOptions';
 import { TransactionTypeFields } from './TransactionTypeFields';
-import { TransferFields } from './TransferFields';
-import { SettlementFields } from './SettlementFields';
-import { ContributionFields } from './ContributionFields';
+import { TransactionAccountSlots } from './TransactionAccountSlots';
 import { TransactionTagPicker } from './TransactionTagPicker';
 import { AssigneeSection } from './AssigneeSection';
 import type { AssigneeFormRow } from './types';
@@ -320,113 +308,8 @@ const TransactionFormInner = ({
             }
           />
 
-          {/* accountId — full-width "Account" for single-account types;
-              2-col [Source | Destination] for multi-account types */}
-          <form.Subscribe
-            selector={(s) => ({
-              type: s.values.type,
-              accountId: s.values.accountId,
-              counterpartAccountId: s.values.counterpartAccountId,
-            })}
-          >
-            {({ type, accountId, counterpartAccountId }) => {
-              const isMultiAccount = [
-                'transfer',
-                'settlement',
-                'contribution',
-              ].includes(type);
-              const accountOptions = getTransactionFormAccountOptions({
-                type,
-                slot: 'accountId',
-                accounts,
-                otherSelectedAccountId: counterpartAccountId,
-                preserveAccountId: accountId,
-              });
-
-              const sourceField = (
-                <form.AppField
-                  name="accountId"
-                  validators={{
-                    onSubmit: ({ value }: { value: string }) =>
-                      !value ? 'Account is required.' : undefined,
-                  }}
-                >
-                  {(field) =>
-                    accountOptions.length === 0 ? (
-                      <AccountSlotEmptyState
-                        label={isMultiAccount ? 'Source' : 'Account'}
-                      />
-                    ) : (
-                      <Field
-                        data-invalid={
-                          field.state.meta.errors.length > 0 || undefined
-                        }
-                      >
-                        <FieldLabel htmlFor="tx-accountId">
-                          {isMultiAccount ? 'Source' : 'Account'}
-                        </FieldLabel>
-                        <Select
-                          items={accountOptions.map((account) => ({
-                            label: account.name,
-                            value: account.id,
-                          }))}
-                          value={field.state.value}
-                          onValueChange={(v) => {
-                            if (v !== null) field.handleChange(v);
-                          }}
-                        >
-                          <SelectTrigger id="tx-accountId">
-                            <SelectValue>
-                              {(selected: string) =>
-                                accounts.find(
-                                  (account) => account.id === selected
-                                )?.name ?? 'Select account'
-                              }
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectGroup>
-                              {accountOptions.map((account) => (
-                                <SelectItem key={account.id} value={account.id}>
-                                  {account.name}
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                        {field.state.meta.errors.length > 0 ? (
-                          <FieldError
-                            errors={
-                              field.state.meta.errors as unknown as {
-                                message?: string;
-                              }[]
-                            }
-                          />
-                        ) : null}
-                      </Field>
-                    )
-                  }
-                </form.AppField>
-              );
-
-              if (!isMultiAccount) return sourceField;
-
-              // Settlement owns its own 2-col layout (Source=counterpartAccountId, Destination=accountId)
-              if (type === 'settlement')
-                return <SettlementFields form={form} accounts={accounts} />;
-
-              return (
-                <div className="grid grid-cols-2 gap-4">
-                  {sourceField}
-                  {type === 'transfer' ? (
-                    <TransferFields form={form} accounts={accounts} />
-                  ) : type === 'contribution' ? (
-                    <ContributionFields form={form} accounts={accounts} />
-                  ) : null}
-                </div>
-              );
-            }}
-          </form.Subscribe>
+          {/* account slots — labels, options, and same-account exclusion from policy */}
+          <TransactionAccountSlots form={form} accounts={accounts} />
 
           <div className="grid grid-cols-2 gap-4">
             {/* Base field: amount */}

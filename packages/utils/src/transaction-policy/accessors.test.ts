@@ -60,10 +60,31 @@ describe('getTransactionTypePolicy', () => {
       },
     ]);
     expect(policy.scalarFields).toEqual({
-      categoryId: 'optional',
+      categoryId: 'required',
       notes: 'optional',
     });
     expect(policy.description).toEqual({ mode: 'manual' });
+  });
+
+  it('marks expense/refund categoryId required and settlement categoryId optional', () => {
+    expect(getTransactionTypePolicy('expense').scalarFields.categoryId).toBe(
+      'required'
+    );
+    expect(getTransactionTypePolicy('refund').scalarFields.categoryId).toBe(
+      'required'
+    );
+    expect(getTransactionTypePolicy('settlement').scalarFields.categoryId).toBe(
+      'optional'
+    );
+    expect(
+      getTransactionTypePolicy('transfer').scalarFields.categoryId
+    ).toBeUndefined();
+    expect(
+      getTransactionTypePolicy('contribution').scalarFields.categoryId
+    ).toBeUndefined();
+    expect(
+      getTransactionTypePolicy('income').scalarFields.categoryId
+    ).toBeUndefined();
   });
 
   it('includes counterpart slot and relationship rules for transfer', () => {
@@ -134,6 +155,13 @@ describe('getTransactionFieldsToClear', () => {
   it('clears category and refund fields when switching to transfer', () => {
     expect(getTransactionFieldsToClear('transfer')).toEqual([
       'categoryId',
+      'refundOf',
+      'incomeType',
+    ]);
+  });
+
+  it('keeps optional Bill Payment categoryId when switching to settlement', () => {
+    expect(getTransactionFieldsToClear('settlement')).toEqual([
       'refundOf',
       'incomeType',
     ]);

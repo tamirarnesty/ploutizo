@@ -94,7 +94,7 @@ export const TRANSACTION_TYPE_POLICIES: Readonly<
     accountSlots: [
       { field: 'accountId', role: 'expense_account', required: true },
     ],
-    scalarFields: { categoryId: 'optional', notes: 'optional' },
+    scalarFields: { categoryId: 'required', notes: 'optional' },
     description: { mode: 'manual' },
   },
   refund: {
@@ -102,7 +102,7 @@ export const TRANSACTION_TYPE_POLICIES: Readonly<
       { field: 'accountId', role: 'refund_account', required: true },
     ],
     scalarFields: {
-      categoryId: 'optional',
+      categoryId: 'required',
       refundOf: 'optional',
       notes: 'optional',
     },
@@ -146,7 +146,11 @@ export const TRANSACTION_TYPE_POLICIES: Readonly<
         relationshipRules: ['different_accounts'],
       },
     ],
-    scalarFields: { notes: 'optional' },
+    scalarFields: {
+      /** Bill Payment category for list readability — optional, not spend. */
+      categoryId: 'optional',
+      notes: 'optional',
+    },
     description: { mode: 'generated', source: 'account_pair' },
   },
   contribution: {

@@ -23,7 +23,7 @@ export interface TransactionFormValues {
   description: string;
   tagIds: string[]; // UUIDs of selected tags; names resolved via useGetTags for display
 
-  // expense + refund (optional for refund)
+  // expense + refund (required); settlement optional Bill Payment provenance
   categoryId: string;
 
   // refund (UUID of the original transaction; empty string = none)
@@ -32,7 +32,7 @@ export interface TransactionFormValues {
   // income
   incomeType: string; // 'direct_deposit' | 'e_transfer' | 'cash' | 'cheque' | 'other'
 
-  // transfer + settlement (D-03: single counterpart FK)
+  // transfer + settlement + contribution (D-03: single counterpart FK)
   counterpartAccountId: string;
 
   // notes (D-21: optional, always rendered)

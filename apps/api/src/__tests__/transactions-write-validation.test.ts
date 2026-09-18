@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AccountType } from '@ploutizo/types';
+import type { CreateTransactionInput } from '@ploutizo/validators';
 import { DomainError, NotFoundError } from '@/lib/errors';
 import {
   allMembersInOrg,
@@ -176,7 +177,7 @@ describe('createTransaction — transaction account policy wiring', () => {
       date: '2026-05-01',
       description: 'Settlement',
       assignees: baseAssignees,
-    }).catch((e: unknown) => e);
+    } as unknown as CreateTransactionInput).catch((e: unknown) => e);
 
     expect(err).toBeInstanceOf(DomainError);
     expect((err as DomainError).message).toContain('counterpartAccountId');
@@ -194,7 +195,7 @@ describe('createTransaction — transaction account policy wiring', () => {
       date: '2026-05-01',
       description: 'Contribution',
       assignees: baseAssignees,
-    }).catch((e: unknown) => e);
+    } as unknown as CreateTransactionInput).catch((e: unknown) => e);
 
     expect(err).toBeInstanceOf(DomainError);
     expect((err as DomainError).message).toContain('counterpartAccountId');

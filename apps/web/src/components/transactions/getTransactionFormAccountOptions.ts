@@ -12,8 +12,9 @@ export interface GetTransactionFormAccountOptionsInput {
 
 /**
  * Web adapter over shared transaction-policy account options.
- * Forms pass household `Account` rows; filtering, type order, archived
- * visibility, and same-account exclusion stay in the policy accessor.
+ * Forms pass household `Account` rows; filtering, type order, and archived
+ * visibility stay in the policy accessor. Same-account exclusion is applied
+ * for both slots so two-account types cannot pick the same account twice.
  */
 export const getTransactionFormAccountOptions = ({
   type,
@@ -21,8 +22,8 @@ export const getTransactionFormAccountOptions = ({
   accounts,
   otherSelectedAccountId,
   preserveAccountId,
-}: GetTransactionFormAccountOptionsInput): Account[] =>
-  getAccountOptionsForTransactionSlot({
+}: GetTransactionFormAccountOptionsInput): Account[] => {
+  const options = getAccountOptionsForTransactionSlot({
     type,
     slot,
     accounts,
@@ -30,17 +31,23 @@ export const getTransactionFormAccountOptions = ({
     preserveAccountId: preserveAccountId || null,
   }) as Account[];
 
+  if (!otherSelectedAccountId) return options;
+  return options.filter((account) => account.id !== otherSelectedAccountId);
+};
+
 /**
- * After a type switch, keep `accountId` only when it is still selectable for
+ * After a type switch, keep a slot value only when it is still selectable for
  * the new type. Do not preserve archived/ineligible rows — that would hide a
  * stale UUID behind the empty state and submit an invalid write.
  */
-export const resolveTransactionFormAccountIdForType = ({
+export const resolveTransactionFormAccountIdForSlot = ({
   type,
+  slot,
   accounts,
   accountId,
 }: {
   type: TransactionType;
+  slot: TransactionAccountSlot;
   accounts: readonly Account[];
   accountId: string;
 }): string => {
@@ -48,7 +55,7 @@ export const resolveTransactionFormAccountIdForType = ({
 
   const eligible = getTransactionFormAccountOptions({
     type,
-    slot: 'accountId',
+    slot,
     accounts,
   });
 

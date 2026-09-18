@@ -158,6 +158,7 @@ describe('VAL-04 — all types require assignees', () => {
     const result = createTransactionSchema.safeParse({
       ...baseFields,
       type: 'settlement',
+      counterpartAccountId: '550e8400-e29b-41d4-a716-446655440002',
     });
     expect(result.success).toBe(true);
   });
@@ -166,6 +167,7 @@ describe('VAL-04 — all types require assignees', () => {
     const result = createTransactionSchema.safeParse({
       ...baseFields,
       type: 'settlement',
+      counterpartAccountId: '550e8400-e29b-41d4-a716-446655440002',
       assignees: [],
     });
     expect(result.success).toBe(false);
@@ -216,6 +218,44 @@ describe('VAL-04 — all types require assignees', () => {
       assignees: [],
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe('createTransactionSchema — counterpartAccountId required for two-account types', () => {
+  const counterpartAccountId = '550e8400-e29b-41d4-a716-446655440002';
+
+  it('rejects settlement missing counterpartAccountId', () => {
+    const result = createTransactionSchema.safeParse({
+      ...baseFields,
+      type: 'settlement',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects contribution missing counterpartAccountId', () => {
+    const result = createTransactionSchema.safeParse({
+      ...baseFields,
+      type: 'contribution',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts settlement with counterpartAccountId', () => {
+    const result = createTransactionSchema.safeParse({
+      ...baseFields,
+      type: 'settlement',
+      counterpartAccountId,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts contribution with counterpartAccountId', () => {
+    const result = createTransactionSchema.safeParse({
+      ...baseFields,
+      type: 'contribution',
+      counterpartAccountId,
+    });
+    expect(result.success).toBe(true);
   });
 });
 

@@ -71,22 +71,27 @@ describe('toImportCreateTransactionInput', () => {
     });
   });
 
-  it('omits a null settlement counterpart so the create schema can parse', () => {
-    const input = toImportCreateTransactionInput({
-      accountId: ACCOUNT,
-      batchId: BATCH,
-      snapshot: snapshot({
-        type: 'settlement',
-        counterpartAccountId: null,
-        categoryId: null,
-      }),
-      refundOf: null,
-    });
-    expect(input).toMatchObject({
-      type: 'settlement',
-      accountId: ACCOUNT,
-    });
-    expect(input).not.toHaveProperty('counterpartAccountId');
+  it('fails closed when settlement counterpart is missing', () => {
+    const err = (() => {
+      try {
+        toImportCreateTransactionInput({
+          accountId: ACCOUNT,
+          batchId: BATCH,
+          snapshot: snapshot({
+            type: 'settlement',
+            counterpartAccountId: null,
+            categoryId: null,
+          }),
+          refundOf: null,
+        });
+      } catch (error) {
+        return error;
+      }
+      return null;
+    })();
+
+    expect(err).toBeInstanceOf(DomainError);
+    expect(err).toMatchObject({ statusCode: 500 });
   });
 
   it('projects a settlement with a funding account', () => {

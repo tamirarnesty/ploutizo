@@ -5,14 +5,17 @@ import {
   formatGeneratedTransactionDescriptionFromAccounts,
   resolveTransactionDescriptionPolicy,
 } from '@ploutizo/utils/transaction-policy';
-import { centsToDollars, dollarsToCents } from '@ploutizo/utils/currency';
+import { centsToDollars } from '@ploutizo/utils/currency';
 import type { Account } from '@ploutizo/types';
 import type {
   TransactionRow,
   useCreateTransaction,
   useUpdateTransaction,
 } from '@/lib/data-access/transactions';
+import { toTransactionApiPayload } from '../toTransactionApiPayload';
 import type { TransactionFormValues } from '../types';
+
+export { toTransactionApiPayload as toApiPayload } from '../toTransactionApiPayload';
 
 export type CreateMutation = ReturnType<typeof useCreateTransaction>;
 export type UpdateMutation = ReturnType<typeof useUpdateTransaction>;
@@ -101,66 +104,6 @@ export const buildDefaultValues = (
   return values;
 };
 
-export const toApiPayload = (
-  value: TransactionFormValues
-): Record<string, unknown> => {
-  // Always send `assignees` / `tagIds` as arrays (possibly empty). The API PATCH
-  // path uses `undefined` to mean "leave existing rows unchanged"; `[]` means
-  // replace-all with nothing (clear splits / tags). Sending `undefined` for an
-  // empty form array made "remove all assignees/tags" a silent no-op.
-  const base = {
-    type: value.type,
-    accountId: value.accountId,
-    amount:
-      value.amount === undefined || !Number.isFinite(value.amount)
-        ? 0
-        : dollarsToCents(value.amount),
-    date: value.date,
-    description: value.description.trim(),
-    notes: value.notes.trim() || undefined,
-    tagIds: value.tagIds,
-    assignees: value.assignees.map((a) => ({
-      memberId: a.memberId,
-      amountCents: a.amountCents,
-      percentage: a.percentage,
-    })),
-  };
-
-  switch (value.type) {
-    case 'expense':
-      return { ...base, categoryId: value.categoryId || undefined };
-    case 'refund':
-      return {
-        ...base,
-        categoryId: value.categoryId || undefined,
-        refundOf: value.refundOf || undefined,
-      };
-    case 'income':
-      return {
-        ...base,
-        incomeType: value.incomeType || undefined,
-      };
-    case 'transfer':
-      return {
-        ...base,
-        counterpartAccountId: value.counterpartAccountId || undefined,
-      };
-    case 'settlement':
-      return {
-        ...base,
-        counterpartAccountId: value.counterpartAccountId || undefined,
-        categoryId: value.categoryId || undefined,
-      };
-    case 'contribution':
-      return {
-        ...base,
-        counterpartAccountId: value.counterpartAccountId || undefined,
-      };
-    default:
-      return base;
-  }
-};
-
 interface UseTransactionFormOptions {
   transaction: TransactionRow | null;
   accounts: Account[];
@@ -182,7 +125,7 @@ export const useTransactionForm = ({
     defaultValues: buildDefaultValues(transaction, accounts),
     validators: {
       onSubmit: ({ value }: { value: TransactionFormValues }) => {
-        const payload = toApiPayload(value);
+        const payload = toTransactionApiPayload(value);
         const result = createTransactionSchema.safeParse(payload);
         if (!result.success) {
           return result.error.issues.map((i) => i.message).join(', ');
@@ -190,7 +133,7 @@ export const useTransactionForm = ({
       },
     },
     onSubmit: ({ value }: { value: TransactionFormValues }) => {
-      const payload = toApiPayload(value);
+      const payload = toTransactionApiPayload(value);
       const mutation = isEditing ? updateMutation : createMutation;
       mutation.mutate(payload, {
         onSuccess: onClose,

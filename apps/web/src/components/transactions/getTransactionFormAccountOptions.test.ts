@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Account } from '@ploutizo/types';
 import {
   getTransactionFormAccountOptions,
-  resolveTransactionFormAccountIdForType,
+  resolveTransactionFormAccountIdForSlot,
 } from './getTransactionFormAccountOptions';
 
 const account = (
@@ -118,6 +118,19 @@ describe('getTransactionFormAccountOptions', () => {
     expect(ids(options)).not.toContain('cheq-alpha');
   });
 
+  it('excludes the selected destination from the transfer source slot', () => {
+    expect(
+      ids(
+        getTransactionFormAccountOptions({
+          type: 'transfer',
+          slot: 'accountId',
+          accounts,
+          otherSelectedAccountId: 'cheq-alpha',
+        })
+      )
+    ).not.toContain('cheq-alpha');
+  });
+
   it('returns only credit cards for settlement destination', () => {
     expect(
       ids(
@@ -197,11 +210,12 @@ describe('getTransactionFormAccountOptions', () => {
   });
 });
 
-describe('resolveTransactionFormAccountIdForType', () => {
-  it('clears a credit-card account when switching to contribution', () => {
+describe('resolveTransactionFormAccountIdForSlot', () => {
+  it('clears a credit-card accountId when switching to contribution', () => {
     expect(
-      resolveTransactionFormAccountIdForType({
+      resolveTransactionFormAccountIdForSlot({
         type: 'contribution',
+        slot: 'accountId',
         accounts,
         accountId: 'card-1',
       })
@@ -210,8 +224,9 @@ describe('resolveTransactionFormAccountIdForType', () => {
 
   it('clears accountId when the new type has no eligible source accounts', () => {
     expect(
-      resolveTransactionFormAccountIdForType({
+      resolveTransactionFormAccountIdForSlot({
         type: 'contribution',
+        slot: 'accountId',
         accounts: accounts.filter(
           (row) => row.type !== 'chequing' && row.type !== 'savings'
         ),
@@ -220,23 +235,47 @@ describe('resolveTransactionFormAccountIdForType', () => {
     ).toBe('');
   });
 
-  it('keeps a chequing account when switching expense to contribution', () => {
+  it('keeps a chequing accountId when switching expense to contribution', () => {
     expect(
-      resolveTransactionFormAccountIdForType({
+      resolveTransactionFormAccountIdForSlot({
         type: 'contribution',
+        slot: 'accountId',
         accounts,
         accountId: 'cheq-alpha',
       })
     ).toBe('cheq-alpha');
   });
 
-  it('keeps a credit card when switching expense to refund', () => {
+  it('keeps a credit card accountId when switching expense to refund', () => {
     expect(
-      resolveTransactionFormAccountIdForType({
+      resolveTransactionFormAccountIdForSlot({
         type: 'refund',
+        slot: 'accountId',
         accounts,
         accountId: 'card-1',
       })
     ).toBe('card-1');
+  });
+
+  it('clears an ineligible counterpart when switching to contribution', () => {
+    expect(
+      resolveTransactionFormAccountIdForSlot({
+        type: 'contribution',
+        slot: 'counterpartAccountId',
+        accounts,
+        accountId: 'cheq-alpha',
+      })
+    ).toBe('');
+  });
+
+  it('keeps an investment counterpart when switching transfer to contribution', () => {
+    expect(
+      resolveTransactionFormAccountIdForSlot({
+        type: 'contribution',
+        slot: 'counterpartAccountId',
+        accounts,
+        accountId: 'inv-1',
+      })
+    ).toBe('inv-1');
   });
 });
