@@ -127,4 +127,10 @@ export interface GetAccountOptionsForTransactionSlotInput {
   otherSelectedAccountId?: string | null;
   /** Keeps an archived account visible when editing an existing selection. */
   preserveAccountId?: string | null;
+  /**
+   * Transaction calendar date (`yyyy-MM-dd`). Archived accounts available on
+   * this date appear for create/edit. Omit on settle/import option lists so
+   * those surfaces keep excluding archived accounts.
+   */
+  asOfDate?: string | null;
 }

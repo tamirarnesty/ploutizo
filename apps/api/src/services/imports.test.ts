@@ -216,6 +216,7 @@ describe('import service', () => {
     vi.mocked(fetchAccountWriteReference).mockResolvedValue({
       id: '66666666-6666-4666-8666-666666666666',
       type: 'chequing',
+      archivedAt: null,
     });
     vi.mocked(transactionExistsInOrg).mockResolvedValue(true);
     vi.mocked(transactionExistsOnAccount).mockResolvedValue(true);
@@ -1078,8 +1079,8 @@ describe('import service', () => {
     vi.mocked(fetchAccountWriteReference).mockImplementation((_org, id) =>
       Promise.resolve(
         id === summaryRow.accountId
-          ? { id: summaryRow.accountId, type: 'credit_card' }
-          : { id: fundingId, type: 'chequing' }
+          ? { id: summaryRow.accountId, type: 'credit_card', archivedAt: null }
+          : { id: fundingId, type: 'chequing', archivedAt: null }
       )
     );
     vi.mocked(transactionExistsInOrg).mockResolvedValue(true);
@@ -1107,6 +1108,11 @@ describe('import service', () => {
     });
 
     expect(fetchAccountWriteReference).toHaveBeenCalledWith('org_1', fundingId);
+    expect(fetchAccountWriteReference).not.toHaveBeenCalledWith(
+      'org_1',
+      fundingId,
+      expect.objectContaining({ requireActive: false })
+    );
     expect(transactionExistsInOrg).toHaveBeenCalledWith('org_1', expenseId);
     expect(updateImportDraftRowQuery).toHaveBeenCalledWith(
       'org_1',

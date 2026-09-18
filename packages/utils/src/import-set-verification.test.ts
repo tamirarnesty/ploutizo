@@ -239,6 +239,33 @@ describe('verifyImportSetForContinue', () => {
     });
   });
 
+  it('does not apply archive-date availability to settlement funding', () => {
+    const result = verifyImportSetForContinue(
+      continueFacts({
+        rows: [
+          expenseRow({
+            reviewType: 'settlement',
+            parsedType: 'settlement',
+            reviewDate: '2026-06-01',
+            reviewCounterpartAccountId: 'funding-1',
+          }),
+        ],
+        counterpartAccounts: new Map([
+          [
+            'funding-1',
+            {
+              id: 'funding-1',
+              type: 'chequing',
+              archivedAt: '2026-01-01',
+            } as never,
+          ],
+        ]),
+      })
+    );
+
+    expect(result.ready).toBe(true);
+  });
+
   it('rejects settlement rows that use the same account as counterpart', () => {
     const result = verifyImportSetForContinue(
       continueFacts({

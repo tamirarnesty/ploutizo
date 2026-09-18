@@ -9,6 +9,10 @@ import {
 } from '@ploutizo/ui/components/select';
 import type { Account } from '@ploutizo/types';
 import { AccountSlotEmptyState } from './AccountSlotEmptyState';
+import {
+  getTransactionFormAccountOptionLabel,
+  getTransactionFormArchiveDateError,
+} from './getTransactionFormArchiveDate';
 import { getTransactionFormAccountOptions } from './getTransactionFormAccountOptions';
 import { getTransactionFormAccountSlots } from './getTransactionFormAccountSlots';
 import type { TransactionFormAccountSlot } from './getTransactionFormAccountSlots';
@@ -35,6 +39,8 @@ interface AccountSlotSelectProps {
   slot: TransactionFormAccountSlot;
   accounts: Account[];
   options: Account[];
+  date: string;
+  otherSelectedAccountId: string;
 }
 
 const AccountSlotSelect = ({
@@ -42,12 +48,26 @@ const AccountSlotSelect = ({
   slot,
   accounts,
   options,
+  date,
+  otherSelectedAccountId,
 }: AccountSlotSelectProps) => (
   <form.AppField
     name={slot.field}
     validators={{
-      onSubmit: ({ value }: { value: string }) =>
-        slot.required && !value ? requiredMessage(slot.label) : undefined,
+      onSubmit: ({ value }: { value: string }) => {
+        if (slot.required && !value) return requiredMessage(slot.label);
+        return getTransactionFormArchiveDateError({
+          accounts,
+          date,
+          accountId:
+            slot.field === 'accountId' ? value : otherSelectedAccountId,
+          counterpartAccountId:
+            slot.field === 'counterpartAccountId'
+              ? value
+              : otherSelectedAccountId,
+          field: slot.field,
+        });
+      },
     }}
   >
     {(field) =>
@@ -61,7 +81,7 @@ const AccountSlotSelect = ({
           <FieldLabel htmlFor={`tx-${slot.field}`}>{slot.label}</FieldLabel>
           <Select
             items={options.map((account) => ({
-              label: account.name,
+              label: getTransactionFormAccountOptionLabel(account),
               value: account.id,
             }))}
             value={field.state.value}
@@ -71,17 +91,21 @@ const AccountSlotSelect = ({
           >
             <SelectTrigger id={`tx-${slot.field}`}>
               <SelectValue>
-                {(selected: string) =>
-                  accounts.find((account) => account.id === selected)?.name ??
-                  'Select account'
-                }
+                {(selected: string) => {
+                  const selectedAccount = accounts.find(
+                    (account) => account.id === selected
+                  );
+                  return selectedAccount
+                    ? getTransactionFormAccountOptionLabel(selectedAccount)
+                    : 'Select account';
+                }}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
                 {options.map((account) => (
                   <SelectItem key={account.id} value={account.id}>
-                    {account.name}
+                    {getTransactionFormAccountOptionLabel(account)}
                   </SelectItem>
                 ))}
               </SelectGroup>
@@ -109,11 +133,12 @@ export const TransactionAccountSlots = ({
   <form.Subscribe
     selector={(s: { values: TransactionFormValues }) => ({
       type: s.values.type,
+      date: s.values.date,
       accountId: s.values.accountId,
       counterpartAccountId: s.values.counterpartAccountId,
     })}
   >
-    {({ type, accountId, counterpartAccountId }) => {
+    {({ type, date, accountId, counterpartAccountId }) => {
       const slots = getTransactionFormAccountSlots(type);
       const selectedByField = { accountId, counterpartAccountId };
       const fields = slots.map((slot) => {
@@ -125,6 +150,7 @@ export const TransactionAccountSlots = ({
           accounts,
           otherSelectedAccountId,
           preserveAccountId: selectedByField[slot.field],
+          asOfDate: date,
         });
 
         return (
@@ -134,6 +160,8 @@ export const TransactionAccountSlots = ({
             slot={slot}
             accounts={accounts}
             options={options}
+            date={date}
+            otherSelectedAccountId={otherSelectedAccountId}
           />
         );
       });

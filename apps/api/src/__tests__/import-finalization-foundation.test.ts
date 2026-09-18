@@ -32,6 +32,7 @@ describe('import finalization foundation — transaction provenance', () => {
     vi.mocked(fetchAccountWriteReference).mockResolvedValue({
       id: ACCOUNT,
       type: 'credit_card',
+      archivedAt: null,
     });
     vi.mocked(allMembersInOrg).mockResolvedValue(true);
     vi.mocked(allTagsInOrg).mockResolvedValue(true);
@@ -206,8 +207,8 @@ describe('import finalization foundation — transaction provenance', () => {
       (_orgId, accountId) =>
         Promise.resolve(
           accountId === ACCOUNT
-            ? { id: ACCOUNT, type: 'credit_card' }
-            : { id: FUNDING, type: 'chequing' }
+            ? { id: ACCOUNT, type: 'credit_card', archivedAt: null }
+            : { id: FUNDING, type: 'chequing', archivedAt: null }
         )
     );
     const returning = vi.fn().mockResolvedValue([
@@ -256,8 +257,8 @@ describe('import finalization foundation — transaction provenance', () => {
       (_orgId, accountId) =>
         Promise.resolve(
           accountId === ACCOUNT
-            ? { id: ACCOUNT, type: 'credit_card' }
-            : { id: FUNDING, type: 'chequing' }
+            ? { id: ACCOUNT, type: 'credit_card', archivedAt: null }
+            : { id: FUNDING, type: 'chequing', archivedAt: null }
         )
     );
     vi.mocked(fetchTransactionById).mockResolvedValue({

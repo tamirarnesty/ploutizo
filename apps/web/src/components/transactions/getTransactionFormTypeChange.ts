@@ -24,10 +24,12 @@ export const getTransactionFormTypeChangePatch = ({
   type,
   accounts,
   values,
+  asOfDate,
 }: {
   type: TransactionType;
   accounts: readonly Account[];
   values: TransactionFormTypeChangeValues;
+  asOfDate?: string | null;
 }): Partial<TransactionFormTypeChangeValues> => {
   const patch: Partial<TransactionFormTypeChangeValues> = {};
 
@@ -43,6 +45,7 @@ export const getTransactionFormTypeChangePatch = ({
       slot: slot.field,
       accounts,
       accountId: nextValues[slot.field],
+      asOfDate,
     });
     if (resolved !== values[slot.field]) {
       patch[slot.field] = resolved;

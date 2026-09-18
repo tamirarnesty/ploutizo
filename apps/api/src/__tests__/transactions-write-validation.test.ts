@@ -63,7 +63,11 @@ const ACCOUNT_A = '550e8400-e29b-41d4-a716-446655440010';
 const ACCOUNT_B = '550e8400-e29b-41d4-a716-446655440011';
 const MEMBER_A = '550e8400-e29b-41d4-a716-446655440020';
 
-const accountRef = (id: string, type: AccountType) => ({ id, type });
+const accountRef = (
+  id: string,
+  type: AccountType,
+  archivedAt: Date | null = null
+) => ({ id, type, archivedAt });
 
 const baseAssignees = [
   { memberId: MEMBER_A, amountCents: 1000, percentage: 100 },
@@ -109,7 +113,7 @@ describe('createTransaction — cross-org reference rejection', () => {
     expect(fetchAccountWriteReference).toHaveBeenCalledWith(
       ORG_A,
       ACCOUNT_A,
-      { forUpdate: true },
+      { forUpdate: true, requireActive: false },
       mockTx
     );
   });
@@ -221,13 +225,13 @@ describe('createTransaction — transaction account policy wiring', () => {
     expect(fetchAccountWriteReference).toHaveBeenCalledWith(
       ORG_A,
       ACCOUNT_A,
-      { forUpdate: true },
+      { forUpdate: true, requireActive: false },
       mockTx
     );
     expect(fetchAccountWriteReference).toHaveBeenCalledWith(
       ORG_A,
       ACCOUNT_B,
-      { forUpdate: true },
+      { forUpdate: true, requireActive: false },
       mockTx
     );
     expect(counterpartAccountBelongsToOrg).toHaveBeenCalledWith(
@@ -285,7 +289,7 @@ describe('updateTransaction — transaction account policy wiring', () => {
     expect(fetchAccountWriteReference).toHaveBeenCalledWith(
       ORG_A,
       ACCOUNT_A,
-      { forUpdate: true },
+      { forUpdate: true, requireActive: false },
       mockTx
     );
   });
@@ -364,5 +368,223 @@ describe('createTransaction — write planner checks', () => {
     expect(err).toBeInstanceOf(DomainError);
     expect((err as DomainError).code).toBe('INVALID_REFUND_REFERENCE');
     expect(fetchAccountWriteReference).not.toHaveBeenCalled();
+  });
+});
+
+describe('createTransaction / updateTransaction — archived account dates', () => {
+  beforeEach(() => {
+    vi.mocked(fetchAccountWriteReference).mockReset();
+    vi.mocked(allMembersInOrg).mockReset();
+    vi.mocked(categoryExistsInOrg).mockReset();
+    vi.mocked(fetchTransactionById).mockReset();
+    vi.mocked(updateTransactionScalarsQuery).mockReset();
+    vi.mocked(allMembersInOrg).mockResolvedValue(true);
+    vi.mocked(categoryExistsInOrg).mockResolvedValue(true);
+    vi.mocked(fetchTransactionById).mockResolvedValue({
+      id: 'tx_1',
+      orgId: ORG_A,
+      type: 'expense',
+      amount: 1000,
+      date: '2026-01-15',
+      accountId: ACCOUNT_A,
+      description: 'Historical',
+    } as never);
+    vi.mocked(updateTransactionScalarsQuery).mockResolvedValue({
+      id: 'tx_1',
+    } as never);
+    mockTx.insert.mockClear();
+  });
+
+  it('loads archived write refs including archivedAt', async () => {
+    mockAccountLookups({
+      [ACCOUNT_A]: accountRef(
+        ACCOUNT_A,
+        'chequing',
+        new Date('2026-01-15T12:00:00.000Z')
+      ),
+    });
+
+    await createTransaction(ORG_A, {
+      type: 'expense',
+      accountId: ACCOUNT_A,
+      amount: 1000,
+      date: '2026-01-15',
+      description: 'Historical',
+      categoryId: '550e8400-e29b-41d4-a716-446655440099',
+      assignees: baseAssignees,
+    });
+
+    expect(fetchAccountWriteReference).toHaveBeenCalledWith(
+      ORG_A,
+      ACCOUNT_A,
+      { forUpdate: true, requireActive: false },
+      mockTx
+    );
+  });
+
+  it('creates an expense on an active account', async () => {
+    mockAccountLookups({
+      [ACCOUNT_A]: accountRef(ACCOUNT_A, 'chequing'),
+    });
+
+    const result = await createTransaction(ORG_A, {
+      type: 'expense',
+      accountId: ACCOUNT_A,
+      amount: 1000,
+      date: '2026-06-01',
+      description: 'Active',
+      categoryId: '550e8400-e29b-41d4-a716-446655440099',
+      assignees: baseAssignees,
+    });
+
+    expect(result).toMatchObject({ id: expect.any(String) });
+  });
+
+  it('creates a historical expense dated on the archive calendar date', async () => {
+    mockAccountLookups({
+      [ACCOUNT_A]: accountRef(
+        ACCOUNT_A,
+        'chequing',
+        new Date('2026-01-15T18:00:00.000Z')
+      ),
+    });
+
+    const result = await createTransaction(ORG_A, {
+      type: 'expense',
+      accountId: ACCOUNT_A,
+      amount: 1000,
+      date: '2026-01-15',
+      description: 'On archive date',
+      categoryId: '550e8400-e29b-41d4-a716-446655440099',
+      assignees: baseAssignees,
+    });
+
+    expect(result).toMatchObject({ id: expect.any(String) });
+  });
+
+  it('rejects create when the date is after the archived account date', async () => {
+    mockAccountLookups({
+      [ACCOUNT_A]: accountRef(
+        ACCOUNT_A,
+        'chequing',
+        new Date('2026-01-15T18:00:00.000Z')
+      ),
+    });
+
+    const err = await createTransaction(ORG_A, {
+      type: 'expense',
+      accountId: ACCOUNT_A,
+      amount: 1000,
+      date: '2026-01-16',
+      description: 'After archive',
+      categoryId: '550e8400-e29b-41d4-a716-446655440099',
+      assignees: baseAssignees,
+    }).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(DomainError);
+    expect((err as DomainError).code).toBe('ARCHIVED_ACCOUNT_DATE');
+    expect(mockTx.insert).not.toHaveBeenCalled();
+  });
+
+  it('rejects create when only the counterpart is archived after the date', async () => {
+    mockAccountLookups({
+      [ACCOUNT_A]: accountRef(ACCOUNT_A, 'chequing'),
+      [ACCOUNT_B]: accountRef(
+        ACCOUNT_B,
+        'savings',
+        new Date('2026-01-01T00:00:00.000Z')
+      ),
+    });
+
+    const err = await createTransaction(ORG_A, {
+      type: 'transfer',
+      accountId: ACCOUNT_A,
+      counterpartAccountId: ACCOUNT_B,
+      amount: 1000,
+      date: '2026-01-02',
+      description: 'Transfer',
+      assignees: baseAssignees,
+    }).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(DomainError);
+    expect((err as DomainError).code).toBe('ARCHIVED_ACCOUNT_DATE');
+    expect((err as DomainError).message).toContain('counterpart account');
+    expect(mockTx.insert).not.toHaveBeenCalled();
+  });
+
+  it('rejects both slots independently when each is after its archive date', async () => {
+    mockAccountLookups({
+      [ACCOUNT_A]: accountRef(
+        ACCOUNT_A,
+        'chequing',
+        new Date('2026-01-10T00:00:00.000Z')
+      ),
+      [ACCOUNT_B]: accountRef(
+        ACCOUNT_B,
+        'savings',
+        new Date('2026-01-05T00:00:00.000Z')
+      ),
+    });
+
+    const err = await createTransaction(ORG_A, {
+      type: 'transfer',
+      accountId: ACCOUNT_A,
+      counterpartAccountId: ACCOUNT_B,
+      amount: 1000,
+      date: '2026-01-16',
+      description: 'Transfer',
+      assignees: baseAssignees,
+    }).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(DomainError);
+    expect((err as DomainError).message).toContain('This account cannot');
+    expect((err as DomainError).message).toContain('counterpart account');
+  });
+
+  it('allows editing a historical transaction dated on or before the archive date', async () => {
+    mockAccountLookups({
+      [ACCOUNT_A]: accountRef(
+        ACCOUNT_A,
+        'chequing',
+        new Date('2026-01-15T00:00:00.000Z')
+      ),
+    });
+
+    const result = await updateTransaction(ORG_A, 'tx_1', {
+      type: 'expense',
+      accountId: ACCOUNT_A,
+      amount: 1000,
+      date: '2026-01-15',
+      description: 'Still historical',
+      categoryId: '550e8400-e29b-41d4-a716-446655440099',
+      assignees: baseAssignees,
+    });
+
+    expect(result).toMatchObject({ id: 'tx_1' });
+    expect(updateTransactionScalarsQuery).toHaveBeenCalled();
+  });
+
+  it('rejects editing a historical transaction onto a date after the archive date', async () => {
+    mockAccountLookups({
+      [ACCOUNT_A]: accountRef(
+        ACCOUNT_A,
+        'chequing',
+        new Date('2026-01-15T00:00:00.000Z')
+      ),
+    });
+
+    const err = await updateTransaction(ORG_A, 'tx_1', {
+      type: 'expense',
+      accountId: ACCOUNT_A,
+      amount: 1000,
+      date: '2026-01-16',
+      description: 'Moved after archive',
+      categoryId: '550e8400-e29b-41d4-a716-446655440099',
+      assignees: baseAssignees,
+    }).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(DomainError);
+    expect((err as DomainError).code).toBe('ARCHIVED_ACCOUNT_DATE');
+    expect(updateTransactionScalarsQuery).not.toHaveBeenCalled();
   });
 });

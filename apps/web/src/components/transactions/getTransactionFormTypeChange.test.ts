@@ -108,4 +108,32 @@ describe('getTransactionFormTypeChangePatch', () => {
       incomeType: '',
     });
   });
+
+  it('keeps a historical archived chequing account when switching expense to income', () => {
+    const archived = account({
+      id: 'cheq-archived',
+      name: 'Old Chequing',
+      type: 'chequing',
+      archivedAt: '2026-01-15',
+    });
+
+    expect(
+      getTransactionFormTypeChangePatch({
+        type: 'income',
+        accounts: [...accounts, archived],
+        asOfDate: '2026-01-15',
+        values: {
+          accountId: 'cheq-archived',
+          counterpartAccountId: '',
+          categoryId: 'cat-1',
+          refundOf: '',
+          incomeType: '',
+        },
+      })
+    ).toEqual({
+      categoryId: '',
+      refundOf: '',
+      counterpartAccountId: '',
+    });
+  });
 });

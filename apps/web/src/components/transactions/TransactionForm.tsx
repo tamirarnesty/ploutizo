@@ -52,6 +52,11 @@ import { TransactionTypeFields } from './TransactionTypeFields';
 import { TransactionAccountSlots } from './TransactionAccountSlots';
 import { TransactionTagPicker } from './TransactionTagPicker';
 import { AssigneeSection } from './AssigneeSection';
+import {
+  getTransactionFormArchiveDateError,
+  getTransactionFormLastAvailableDate,
+} from './getTransactionFormArchiveDate';
+import type { TransactionFormInstance } from './hooks/useTransactionForm';
 import type { AssigneeFormRow } from './types';
 
 interface TransactionFormProps {
@@ -86,7 +91,8 @@ export const TransactionForm = ({
     isEditing ? transaction.id : null,
     { initialData: transaction ?? undefined }
   );
-  const { data: accounts = [], isLoading: accountsLoading } = useGetAccounts();
+  const { data: accounts = [], isLoading: accountsLoading } =
+    useGetAccounts(true);
   const { data: categories = [], isLoading: categoriesLoading } =
     useGetCategories();
   const { data: orgMembers = [], isLoading: membersLoading } =
@@ -245,6 +251,62 @@ const DirtyNotifier = ({
   );
 };
 
+const TransactionDateField = ({
+  form,
+  accounts,
+  accountId,
+  counterpartAccountId,
+}: {
+  form: TransactionFormInstance;
+  accounts: Account[];
+  accountId: string;
+  counterpartAccountId: string;
+}) => {
+  const lastAvailable = getTransactionFormLastAvailableDate(
+    accounts,
+    accountId,
+    counterpartAccountId
+  );
+
+  return (
+    <form.AppField
+      name="date"
+      validators={{
+        onSubmit: ({ value }: { value: string }) => {
+          if (!value) return 'Date is required.';
+          return getTransactionFormArchiveDateError({
+            accounts,
+            date: value,
+            accountId,
+            counterpartAccountId,
+          });
+        },
+      }}
+    >
+      {(field) => (
+        <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
+          <FieldLabel>Date</FieldLabel>
+          <DatePicker
+            id="tx-date"
+            value={field.state.value}
+            onChange={field.handleChange}
+            disabledDates={lastAvailable ? { after: lastAvailable } : undefined}
+          />
+          {field.state.meta.errors.length > 0 ? (
+            <FieldError
+              errors={
+                field.state.meta.errors as unknown as {
+                  message?: string;
+                }[]
+              }
+            />
+          ) : null}
+        </Field>
+      )}
+    </form.AppField>
+  );
+};
+
 const isGeneratedDescriptionType = (
   type: TransactionType,
   refundOf?: string | null
@@ -394,35 +456,21 @@ const TransactionFormInner = ({
             </form.AppField>
 
             {/* Base field: date */}
-            <form.AppField
-              name="date"
-              validators={{
-                onSubmit: ({ value }: { value: string }) =>
-                  !value ? 'Date is required.' : undefined,
-              }}
+            <form.Subscribe
+              selector={(s) => ({
+                accountId: s.values.accountId,
+                counterpartAccountId: s.values.counterpartAccountId,
+              })}
             >
-              {(field) => (
-                <Field
-                  data-invalid={field.state.meta.errors.length > 0 || undefined}
-                >
-                  <FieldLabel>Date</FieldLabel>
-                  <DatePicker
-                    id="tx-date"
-                    value={field.state.value}
-                    onChange={field.handleChange}
-                  />
-                  {field.state.meta.errors.length > 0 ? (
-                    <FieldError
-                      errors={
-                        field.state.meta.errors as unknown as {
-                          message?: string;
-                        }[]
-                      }
-                    />
-                  ) : null}
-                </Field>
+              {({ accountId, counterpartAccountId }) => (
+                <TransactionDateField
+                  form={form}
+                  accounts={accounts}
+                  accountId={accountId}
+                  counterpartAccountId={counterpartAccountId}
+                />
               )}
-            </form.AppField>
+            </form.Subscribe>
           </div>
 
           {/* Base field: description — locked for transfer/settlement/contribution/linked-refund (D-11, D-12) */}

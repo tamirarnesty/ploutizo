@@ -189,6 +189,29 @@ describe('getTransactionFormAccountOptions', () => {
     ).toEqual(['cheq-alpha', 'cheq-zeta', 'sav-1']);
   });
 
+  it('includes archived accounts available on asOfDate', () => {
+    expect(
+      ids(
+        getTransactionFormAccountOptions({
+          type: 'expense',
+          slot: 'accountId',
+          accounts,
+          asOfDate: '2026-01-01',
+        })
+      )
+    ).toContain('cheq-archived');
+    expect(
+      ids(
+        getTransactionFormAccountOptions({
+          type: 'expense',
+          slot: 'accountId',
+          accounts,
+          asOfDate: '2026-01-02',
+        })
+      )
+    ).not.toContain('cheq-archived');
+  });
+
   it('preserves an archived account when editing that selection', () => {
     expect(
       ids(

@@ -183,6 +183,42 @@ describe('getAccountOptionsForTransactionSlot', () => {
     ]);
   });
 
+  it('includes archived accounts available on asOfDate without preserve', () => {
+    const chequingOnlyAccounts = [
+      {
+        id: 'cheq-1',
+        name: 'Chequing',
+        type: 'chequing' as const,
+        archivedAt: null,
+      },
+      {
+        id: 'cheq-2',
+        name: 'Archived Chequing',
+        type: 'chequing' as const,
+        archivedAt: '2026-01-01',
+      },
+    ];
+
+    const historical = getAccountOptionsForTransactionSlot({
+      type: 'contribution',
+      slot: 'accountId',
+      accounts: chequingOnlyAccounts,
+      asOfDate: '2026-01-01',
+    });
+    const afterArchive = getAccountOptionsForTransactionSlot({
+      type: 'contribution',
+      slot: 'accountId',
+      accounts: chequingOnlyAccounts,
+      asOfDate: '2026-01-02',
+    });
+
+    expect(historical.map((account) => account.id)).toEqual([
+      'cheq-2',
+      'cheq-1',
+    ]);
+    expect(afterArchive.map((account) => account.id)).toEqual(['cheq-1']);
+  });
+
   it('excludes archived accounts unless preserved for edit', () => {
     const chequingOnlyAccounts = [
       {
@@ -313,6 +349,19 @@ describe('validateTransactionAccountPolicy', () => {
 
     expect(result.valid).toBe(false);
     expect(result.violations[0]?.code).toBe('disallowed_account_type');
+  });
+
+  it('does not inspect archivedAt; calendar-date availability is a separate helper', () => {
+    const result = validateTransactionAccountPolicy({
+      type: 'expense',
+      account: {
+        id: 'cheq-2',
+        type: 'chequing',
+        archivedAt: '2026-01-01',
+      } as never,
+    });
+
+    expect(result).toEqual({ valid: true, violations: [] });
   });
 
   it('requires counterpart account for saved settlement writes', () => {

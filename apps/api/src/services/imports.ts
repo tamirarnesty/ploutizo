@@ -263,6 +263,8 @@ export const updateImportDraftRow = async (
     if (type === 'settlement') {
       const card = await fetchAccountWriteReference(orgId, draft.accountId);
       if (!card) throw new NotFoundError('Account not found');
+      // Import settlement funding stays on account-type policy only. Do not
+      // apply transaction create/edit archive-date availability here.
       const policy = validateTransactionAccountPolicy({
         type: 'settlement',
         account: card,

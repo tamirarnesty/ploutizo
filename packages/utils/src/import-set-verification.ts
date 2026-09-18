@@ -183,6 +183,8 @@ const evaluateCreateRequirements = (
       account: input.targetAccount,
       counterpartAccount: counterpart,
     });
+    // Archive-date availability is not applied here; import settlement
+    // funding stays on account-type policy only (PLO-45 fence).
     for (const violation of policy.violations) {
       failures.push(
         failure(row.id, ACCOUNT_REQUIREMENT_KEYS[violation.code], {

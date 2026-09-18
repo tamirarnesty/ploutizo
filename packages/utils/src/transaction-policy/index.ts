@@ -9,6 +9,17 @@ export {
 export { resolveTransactionDescriptionLock } from './description-lock';
 
 export {
+  getLastAvailableCalendarDate,
+  isAccountAvailableOnCalendarDate,
+  toCalendarDate,
+  validateArchivedAccountAvailability,
+  type ArchivedAccountDateViolation,
+  type ArchivedAtValue,
+  type ValidateArchivedAccountAvailabilityInput,
+  type ValidateArchivedAccountAvailabilityResult,
+} from './archived-account-availability';
+
+export {
   formatContributionDescription,
   formatGeneratedTransactionDescription,
   formatGeneratedTransactionDescriptionFromAccounts,
