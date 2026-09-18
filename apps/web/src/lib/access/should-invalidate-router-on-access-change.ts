@@ -1,4 +1,4 @@
-import { accessKey } from './access-key';
+import { accessKey, hasAccessIdentityChanged } from './access-key';
 import type { AccessState } from './access-state';
 
 type RouterInvalidationInput = {
@@ -15,8 +15,10 @@ export const shouldInvalidateRouterOnAccessChange = ({
   routerContextReady,
 }: RouterInvalidationInput): boolean => {
   const currentAccessKey = accessKey(access);
-  const identityChanged =
-    previousAccessKey !== undefined && previousAccessKey !== currentAccessKey;
+  const identityChanged = hasAccessIdentityChanged(
+    previousAccessKey,
+    currentAccessKey
+  );
   const readinessBecameReady = !routerContextReady && isReady;
 
   return identityChanged || readinessBecameReady;

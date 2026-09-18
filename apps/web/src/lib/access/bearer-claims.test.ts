@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { unsignedJwt } from '@/test/jwt-fixture';
 import { claimsMatchAccess } from './bearer-claims';
 import type { AccessState } from './access-state';
 
@@ -12,14 +13,6 @@ const alexInHouseholdB: AccessState = {
   status: 'signed-in-with-active-household',
   signedInMemberId: 'user_alex',
   activeHouseholdId: 'org_b',
-};
-
-const unsignedJwt = (payload: Record<string, unknown>) => {
-  const body = btoa(JSON.stringify(payload))
-    .replaceAll('+', '-')
-    .replaceAll('/', '_')
-    .replace(/=+$/, '');
-  return `hdr.${body}.sig`;
 };
 
 describe('claimsMatchAccess', () => {

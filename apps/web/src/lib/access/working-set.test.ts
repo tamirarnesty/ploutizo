@@ -1,5 +1,6 @@
 import './working-set-cleanup';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { householdJwt, unsignedJwt } from '@/test/jwt-fixture';
 import {
   getActiveQueryClient,
   getActiveWorkingSet,
@@ -26,18 +27,7 @@ const alexInHouseholdB: AccessState = {
   activeHouseholdId: 'org_b',
 };
 
-const unsignedJwt = (payload: Record<string, unknown>) => {
-  const body = btoa(JSON.stringify(payload))
-    .replaceAll('+', '-')
-    .replaceAll('/', '_')
-    .replace(/=+$/, '');
-  return `hdr.${body}.sig`;
-};
-
-const householdAJwt = unsignedJwt({
-  sub: 'user_alex',
-  org_id: 'org_a',
-});
+const householdAJwt = householdJwt('user_alex', 'org_a');
 
 describe('getHouseholdBearer', () => {
   afterEach(() => {
@@ -46,10 +36,7 @@ describe('getHouseholdBearer', () => {
   });
 
   it('uses a Clerk token from the registered getter', async () => {
-    const clerkJwt = unsignedJwt({
-      sub: 'user_alex',
-      org_id: 'org_a',
-    });
+    const clerkJwt = householdAJwt;
     setLiveAccess(alexInHouseholdA);
     setClientBearerGetter(() => Promise.resolve(clerkJwt));
 

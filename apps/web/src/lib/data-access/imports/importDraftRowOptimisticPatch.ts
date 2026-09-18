@@ -41,15 +41,13 @@ export const patchFromLiveKeys = (
   live: ImportDraftRow,
   keys: string[]
 ): UpdateImportDraftRowInput | null => {
-  const patch: Record<string, unknown> = {};
+  const changes: Record<string, unknown> = {};
   for (const key of keys) {
     if ((REVIEW_PATCH_KEYS as readonly string[]).includes(key)) {
-      patch[key] = live[key as keyof ImportDraftRow];
+      changes[key] = live[key as keyof ImportDraftRow];
     }
   }
-  return Object.keys(patch).length > 0
-    ? (patch as UpdateImportDraftRowInput)
-    : null;
+  return toValidatorPatch(changes as Partial<ImportDraftRow>);
 };
 
 export const applyOptimisticRowPatch = (

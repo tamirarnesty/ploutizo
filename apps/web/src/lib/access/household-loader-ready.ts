@@ -1,6 +1,10 @@
 import { createIsomorphicFn } from '@tanstack/react-start';
 import type { RouterContext } from '@/router';
 import { getRequestAccess, getRequestHouseholdBearer } from './resolve.server';
+import type { AccessState } from './access-state';
+
+export const isHouseholdBearerReady = (isReady: boolean, access: AccessState) =>
+  isReady && access.status === 'signed-in-with-active-household';
 
 const resolveServerHouseholdLoaderReady = async (): Promise<boolean> => {
   const access = await getRequestAccess();
@@ -12,8 +16,7 @@ const resolveServerHouseholdLoaderReady = async (): Promise<boolean> => {
 };
 
 export const isClientHouseholdLoaderReady = (context: RouterContext) =>
-  context.isReady &&
-  context.access.status === 'signed-in-with-active-household';
+  isHouseholdBearerReady(context.isReady, context.access);
 
 export const isHouseholdLoaderReady = createIsomorphicFn()
   .client(isClientHouseholdLoaderReady)

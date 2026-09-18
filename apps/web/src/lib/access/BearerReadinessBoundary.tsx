@@ -1,5 +1,6 @@
 import { AccessBearerBlocked } from './AccessBearerBlocked';
 import { useAccess } from './AccessProvider';
+import { isHouseholdBearerReady } from './household-loader-ready';
 import type { ReactNode } from 'react';
 
 type BearerReadinessBoundaryProps = {
@@ -9,12 +10,18 @@ type BearerReadinessBoundaryProps = {
 export const BearerReadinessBoundary = ({
   children,
 }: BearerReadinessBoundaryProps) => {
-  const { access, bearerError, retryBearer } = useAccess();
+  const { access, isReady, bearerError, retryBearer } = useAccess();
 
   if (bearerError && access.status !== 'signed-out') {
     return <AccessBearerBlocked onRetry={retryBearer} />;
   }
 
-  // Route content stays mounted; useHouseholdQuery reports loading until bearer-ready.
+  if (
+    access.status === 'signed-in-with-active-household' &&
+    !isHouseholdBearerReady(isReady, access)
+  ) {
+    return null;
+  }
+
   return children;
 };

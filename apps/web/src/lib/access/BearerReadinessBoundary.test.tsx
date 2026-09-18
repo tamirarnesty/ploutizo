@@ -1,5 +1,6 @@
 import { waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { householdJwt } from '@/test/jwt-fixture';
 import { AppAuthShell } from '@/app/AppAuthShell';
 import {
   createTestClerk,
@@ -9,15 +10,7 @@ import {
 import { BearerReadinessBoundary } from './BearerReadinessBoundary';
 import type { ReactNode } from 'react';
 
-const unsignedJwt = (payload: Record<string, unknown>) => {
-  const body = btoa(JSON.stringify(payload))
-    .replaceAll('+', '-')
-    .replaceAll('/', '_')
-    .replace(/=+$/, '');
-  return `hdr.${body}.sig`;
-};
-
-const householdAJwt = unsignedJwt({ sub: 'user_a', org_id: 'org_a' });
+const householdAJwt = householdJwt('user_a', 'org_a');
 
 const renderBoundaryShell = async (
   clerk = createTestClerk({
@@ -43,9 +36,13 @@ describe('BearerReadinessBoundary', () => {
     resetAccessShellTestState();
   });
 
-  it('keeps route content mounted while household bearer is not ready', async () => {
+  it('holds route content until household bearer is ready', async () => {
     const { view } = await renderBoundaryShell();
-    expect(view.getByTestId('index-page')).toBeInTheDocument();
+    expect(view.queryByTestId('index-page')).not.toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(view.getByTestId('index-page')).toBeInTheDocument();
+    });
   });
 
   it('shows bearer blocked UI when household bearer cannot be resolved', async () => {

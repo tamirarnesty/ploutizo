@@ -1,7 +1,6 @@
 import { ClerkProvider } from '@clerk/tanstack-react-start';
 import { shadcn } from '@clerk/ui/themes';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { accessKey } from '@/lib/access/access-key';
 import { AccessProvider, useAccess } from '@/lib/access/AccessProvider';
 import { useAccessRouterInvalidation } from '@/lib/access/use-access-router-invalidation';
 import { MoneyLocaleProvider } from '@/lib/money/money-locale';
@@ -12,11 +11,11 @@ export type InjectedClerk = NonNullable<
 >;
 
 const AppShell = ({ children }: { children: ReactNode }) => {
-  const { access, queryClient } = useAccess();
+  const { queryClient } = useAccess();
   useAccessRouterInvalidation();
 
   return (
-    <QueryClientProvider client={queryClient} key={accessKey(access)}>
+    <QueryClientProvider client={queryClient}>
       <MoneyLocaleProvider>{children}</MoneyLocaleProvider>
     </QueryClientProvider>
   );

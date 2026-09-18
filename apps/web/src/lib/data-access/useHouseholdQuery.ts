@@ -1,6 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { useAccess } from '@/lib/access/AccessProvider';
-import type { AccessState } from '@/lib/access/access-state';
+import { isHouseholdBearerReady } from '@/lib/access/household-loader-ready';
+import { createHouseholdBearerUnavailableError } from '@/lib/queryClient';
 import type {
   InfiniteData,
   UseInfiniteQueryOptions,
@@ -11,24 +12,6 @@ import type {
   UseQueryResult,
 } from '@tanstack/react-query';
 
-export const isHouseholdAccessReady = (isReady: boolean, access: AccessState) =>
-  isReady && access.status === 'signed-in-with-active-household';
-
-const whileHouseholdBearerPending = <TResult extends { data: unknown }>(
-  result: TResult
-): TResult => ({
-  ...result,
-  data: undefined,
-  isPending: true,
-  isLoading: true,
-  isFetching: false,
-  isSuccess: false,
-  isError: false,
-  error: null,
-  status: 'pending',
-  fetchStatus: 'idle',
-});
-
 export const useHouseholdQuery = <
   TQueryFnData = unknown,
   TError = Error,
@@ -38,17 +21,12 @@ export const useHouseholdQuery = <
   options: UseQueryOptions<TQueryFnData, TError, TData, TQueryKey>
 ): UseQueryResult<TData, TError> => {
   const { isReady, access } = useAccess();
-  const householdReady = isHouseholdAccessReady(isReady, access);
-  const result = useQuery({
+  const householdReady = isHouseholdBearerReady(isReady, access);
+
+  return useQuery({
     ...options,
     enabled: householdReady && (options.enabled ?? true),
   });
-
-  if (householdReady) {
-    return result;
-  }
-
-  return whileHouseholdBearerPending(result);
 };
 
 export const useHouseholdInfiniteQuery = <
@@ -67,17 +45,12 @@ export const useHouseholdInfiniteQuery = <
   >
 ): UseInfiniteQueryResult<TData, TError> => {
   const { isReady, access } = useAccess();
-  const householdReady = isHouseholdAccessReady(isReady, access);
-  const result = useInfiniteQuery({
+  const householdReady = isHouseholdBearerReady(isReady, access);
+
+  return useInfiniteQuery({
     ...options,
     enabled: householdReady && (options.enabled ?? true),
   });
-
-  if (householdReady) {
-    return result;
-  }
-
-  return whileHouseholdBearerPending(result);
 };
 
 export const useHouseholdMutation = <
@@ -89,16 +62,14 @@ export const useHouseholdMutation = <
   options: UseMutationOptions<TData, TError, TVariables, TContext>
 ): UseMutationResult<TData, TError, TVariables, TContext> => {
   const { isReady, access } = useAccess();
-  const householdReady = isHouseholdAccessReady(isReady, access);
+  const householdReady = isHouseholdBearerReady(isReady, access);
   const { mutationFn, ...rest } = options;
 
   return useMutation({
     ...rest,
     mutationFn: (variables, mutateContext) => {
       if (!householdReady) {
-        const error = new Error('Household bearer unavailable');
-        error.name = 'HouseholdBearerUnavailableError';
-        throw error;
+        throw createHouseholdBearerUnavailableError();
       }
       if (!mutationFn) {
         const error = new Error('mutationFn is required');

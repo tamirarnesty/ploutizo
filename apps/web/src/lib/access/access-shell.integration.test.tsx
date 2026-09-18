@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { householdJwt } from '@/test/jwt-fixture';
 import { AccessRouterRoot } from '@/app/AccessRouterRoot';
 import { AppAuthShell } from '@/app/AppAuthShell';
 import { BearerReadinessBoundary } from '@/lib/access/BearerReadinessBoundary';
@@ -13,15 +14,7 @@ import {
 } from '@/test/access-shell-harness';
 import type { ReactNode } from 'react';
 
-const unsignedJwt = (payload: Record<string, unknown>) => {
-  const body = btoa(JSON.stringify(payload))
-    .replaceAll('+', '-')
-    .replaceAll('/', '_')
-    .replace(/=+$/, '');
-  return `hdr.${body}.sig`;
-};
-
-const householdAJwt = unsignedJwt({ sub: 'user_a', org_id: 'org_a' });
+const householdAJwt = householdJwt('user_a', 'org_a');
 
 describe('access shell integration', () => {
   afterEach(() => {
@@ -74,10 +67,11 @@ describe('access shell integration', () => {
 
     const { view } = await renderAccessShellTree({ shell });
 
-    expect(view.getByTestId('index-page')).toBeInTheDocument();
+    expect(view.queryByTestId('index-page')).not.toBeInTheDocument();
 
     await waitFor(() => {
       expect(getAccessRouterContext().isReady).toBe(true);
+      expect(view.getByTestId('index-page')).toBeInTheDocument();
     });
     expect(getToken).toHaveBeenCalledWith({ skipCache: true });
   });

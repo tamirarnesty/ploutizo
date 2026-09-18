@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { unsignedJwt } from '@/test/jwt-fixture';
 import { claimsMatchAccess } from './bearer-claims';
 import { resolveTransitionBearer } from './resolve-transition-bearer';
 import type { AccessState } from './access-state';
@@ -7,14 +8,6 @@ const alexInHouseholdA: AccessState = {
   status: 'signed-in-with-active-household',
   signedInMemberId: 'user_alex',
   activeHouseholdId: 'org_a',
-};
-
-const unsignedJwt = (payload: Record<string, unknown>) => {
-  const body = btoa(JSON.stringify(payload))
-    .replaceAll('+', '-')
-    .replaceAll('/', '_')
-    .replace(/=+$/, '');
-  return `hdr.${body}.sig`;
 };
 
 describe('resolveTransitionBearer', () => {

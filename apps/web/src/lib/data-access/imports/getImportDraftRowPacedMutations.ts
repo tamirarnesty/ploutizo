@@ -1,30 +1,25 @@
 import { createPacedMutations, debounceStrategy } from '@tanstack/db';
-import type {
-  ImportDraftRow,
-  UpdateImportDraftRowResult,
-} from '@ploutizo/types';
+import type { ImportDraftRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import { beginWorkingSetScope } from '@/lib/access/working-set-registry';
 import type { WorkingSetScope } from '@/lib/access/working-set-registry';
 import {
   getImportReviewAutosaveSnapshot,
   markImportReviewPending,
-  markImportReviewPersistFailure,
   markImportReviewPersistStart,
   markImportReviewPersistSuccess,
 } from './importReviewAutosave';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
-import { fetchUpdateImportDraftRow } from './fetchUpdateImportDraftRow';
 import { sanitizeImportMatchPatch } from './importMatchTargetOnAccount';
-import { confirmPersistIntoCollection } from './importDraftRowPersistConfirm';
 import {
   applyOptimisticRowPatch,
-  patchFromLiveKeys,
   toValidatorPatch,
 } from './importDraftRowOptimisticPatch';
-import { rederiveImportDraftWorkingCopy } from './rederiveImportDraftWorkingCopy';
-import { runImportDraftPersist } from './runImportDraftPersist';
-import type { Transaction } from '@tanstack/db';
+import {
+  buildImportDraftRowPersistPatch,
+  persistImportDraftRowPatch,
+} from './persistImportDraftRowPatch';
+import type { PendingMutation, Transaction } from '@tanstack/db';
 
 export const IMPORT_ROW_PACE_WAIT_MS = 500;
 
@@ -32,12 +27,20 @@ export interface ImportDraftRowPatchVariables {
   patch: UpdateImportDraftRowInput;
 }
 
+const isRowUpdateMutation = (
+  mutation: PendingMutation<ImportDraftRow> | undefined
+): mutation is PendingMutation<ImportDraftRow, 'update'> =>
+  mutation?.type === 'update';
+
 const createRowPacedMutations = (draftId: string, rowId: string) => {
   const strategy = debounceStrategy({ wait: IMPORT_ROW_PACE_WAIT_MS });
-  let latestTx: Transaction | null = null;
+  let latestTx: Transaction<ImportDraftRow> | null = null;
   let persistScope: WorkingSetScope | null = null;
 
-  const mutate = createPacedMutations<ImportDraftRowPatchVariables>({
+  const mutate = createPacedMutations<
+    ImportDraftRowPatchVariables,
+    ImportDraftRow
+  >({
     onMutate: ({ patch }) => {
       markImportReviewPending(draftId, rowId);
       applyOptimisticRowPatch(draftId, rowId, patch);
@@ -47,64 +50,34 @@ const createRowPacedMutations = (draftId: string, rowId: string) => {
       if (!scope.isCurrent()) {
         return;
       }
+
       const collection = getImportDraftRowsCollection(draftId);
       const mutation = transaction.mutations.find(
         (entry) => entry.key === rowId
       );
-      if (!mutation || mutation.type !== 'update') {
+      if (!isRowUpdateMutation(mutation)) {
         markImportReviewPersistStart(draftId, rowId);
         markImportReviewPersistSuccess(draftId, rowId);
         return;
       }
 
-      const attempted = mutation.modified as unknown as ImportDraftRow;
-      const original = mutation.original as unknown as ImportDraftRow;
-      const changedPatch = toValidatorPatch(mutation.changes);
-      const failedKeys =
-        getImportReviewAutosaveSnapshot(draftId).failedFieldKeys.get(rowId) ??
-        [];
+      const attempted = mutation.modified;
+      const original = mutation.original;
       const live = collection.get(rowId) ?? attempted;
-      const retryFailedPatch = patchFromLiveKeys(live, failedKeys);
-      const patch = {
-        ...(retryFailedPatch ?? {}),
-        ...(changedPatch ?? {}),
-      } as UpdateImportDraftRowInput;
+      const patch = buildImportDraftRowPersistPatch(
+        draftId,
+        rowId,
+        live,
+        toValidatorPatch(mutation.changes)
+      );
 
-      if (Object.keys(patch).length === 0) {
-        collection.utils.writeUpdate(attempted);
-        rederiveImportDraftWorkingCopy(draftId);
-        markImportReviewPersistStart(draftId, rowId);
-        markImportReviewPersistSuccess(draftId, rowId);
-        return;
-      }
-
-      const persistedKeys = Object.keys(patch);
-      await runImportDraftPersist({
+      await persistImportDraftRowPatch({
+        draftId,
+        rowId,
         scope,
-        onStart: () => markImportReviewPersistStart(draftId, rowId),
-        persist: () => fetchUpdateImportDraftRow(rowId, patch),
-        onSuccess: (server: UpdateImportDraftRowResult) => {
-          confirmPersistIntoCollection(
-            collection,
-            server,
-            attempted,
-            original,
-            patch,
-            draftId
-          );
-          markImportReviewPersistSuccess(draftId, rowId, persistedKeys);
-        },
-        onFailure: () => {
-          confirmPersistIntoCollection(
-            collection,
-            null,
-            attempted,
-            original,
-            patch,
-            draftId
-          );
-          markImportReviewPersistFailure(draftId, rowId, persistedKeys);
-        },
+        patch,
+        attempted,
+        original,
       });
     },
     strategy,
@@ -175,39 +148,23 @@ export const retryFailedImportDraftRowPersists = async (draftId: string) => {
   const failures = [...snapshot.failedFieldKeys.entries()];
 
   await Promise.all(
-    failures.map(async ([rowId, keys]) => {
+    failures.map(async ([rowId]) => {
       const live = collection.get(rowId);
       if (!live) return;
-      const patch = sanitizeImportMatchPatch(
-        draftId,
-        patchFromLiveKeys(live, [...keys]) ?? {}
-      );
+
+      const patch = buildImportDraftRowPersistPatch(draftId, rowId, live, null);
       if (Object.keys(patch).length === 0) return;
 
       const scope = beginWorkingSetScope();
       if (!scope.isCurrent()) return;
 
-      const persistedKeys = Object.keys(patch);
-      await runImportDraftPersist({
+      await persistImportDraftRowPatch({
+        draftId,
+        rowId,
         scope,
-        onStart: () => markImportReviewPersistStart(draftId, rowId),
-        persist: () => fetchUpdateImportDraftRow(rowId, patch),
-        onSuccess: (server) => {
-          confirmPersistIntoCollection(
-            collection,
-            server,
-            live,
-            live,
-            patch,
-            draftId
-          );
-          markImportReviewPersistSuccess(draftId, rowId);
-        },
-        onFailure: () => {
-          const current = collection.get(rowId);
-          if (current) collection.utils.writeUpdate(current);
-          markImportReviewPersistFailure(draftId, rowId, persistedKeys);
-        },
+        patch,
+        attempted: live,
+        original: live,
       });
     })
   );

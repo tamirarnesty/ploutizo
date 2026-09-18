@@ -1,5 +1,10 @@
 import type { AccessState } from './access-state';
 
+export const hasAccessIdentityChanged = (
+  previousKey: string | undefined,
+  currentKey: string
+) => previousKey !== undefined && previousKey !== currentKey;
+
 export const accessKey = (access: AccessState): string => {
   if (access.status === 'signed-out') {
     return 'signed-out';

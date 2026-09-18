@@ -7,6 +7,12 @@ export type ApiFetchOptions = RequestInit & {
   signal?: AbortSignal;
 };
 
+export const createHouseholdBearerUnavailableError = () => {
+  const error = new Error('Household bearer unavailable');
+  error.name = 'HouseholdBearerUnavailableError';
+  return error;
+};
+
 // Typed API fetch helper — all API calls go through this, never raw fetch
 export const apiFetch = async <T>(
   path: string,
@@ -14,9 +20,7 @@ export const apiFetch = async <T>(
 ): Promise<T> => {
   const token = await getHouseholdBearer();
   if (!token) {
-    const error = new Error('Household bearer unavailable');
-    error.name = 'HouseholdBearerUnavailableError';
-    throw error;
+    throw createHouseholdBearerUnavailableError();
   }
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...options,

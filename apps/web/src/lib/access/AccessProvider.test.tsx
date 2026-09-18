@@ -2,6 +2,7 @@ import './working-set-cleanup';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { householdJwt, unsignedJwt } from '@/test/jwt-fixture';
 import {
   getActiveQueryClient,
   resetWorkingSetRegistryForTests,
@@ -39,18 +40,7 @@ const householdA: AccessState = {
   activeHouseholdId: 'org_a',
 };
 
-const unsignedJwt = (payload: Record<string, unknown>) => {
-  const body = btoa(JSON.stringify(payload))
-    .replaceAll('+', '-')
-    .replaceAll('/', '_')
-    .replace(/=+$/, '');
-  return `hdr.${body}.sig`;
-};
-
-const householdAJwt = unsignedJwt({
-  sub: 'user_a',
-  org_id: 'org_a',
-});
+const householdAJwt = householdJwt('user_a', 'org_a');
 
 const wrapper = ({ children }: { children: ReactNode }) => (
   <QueryClientProvider client={getActiveQueryClient()}>
@@ -184,10 +174,7 @@ describe('AccessProvider bearer validation', () => {
     const priorClient = result.current.queryClient;
     priorClient.setQueryData(['accounts'], [{ id: 'acct_prior' }]);
 
-    const householdBJwt = unsignedJwt({
-      sub: 'user_a',
-      org_id: 'org_b',
-    });
+    const householdBJwt = householdJwt('user_a', 'org_b');
     authState.orgId = 'org_b';
     authState.getToken = (options?: { skipCache?: boolean }) =>
       Promise.resolve(options?.skipCache ? householdBJwt : householdBJwt);

@@ -1,31 +1,39 @@
 import { useRouter } from '@tanstack/react-router';
-import { useEffect, useRef } from 'react';
+import { useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import { accessKey } from './access-key';
-import { useAccess } from './AccessProvider';
+import {
+  getAccessRouterContext,
+  getAccessRouterContextServerSnapshot,
+  subscribeAccessRouterContext,
+} from './access-router-context-store';
 import { shouldInvalidateRouterOnAccessChange } from './should-invalidate-router-on-access-change';
 
 export const useAccessRouterInvalidation = () => {
   const router = useRouter();
-  const { access, isReady } = useAccess();
-  const previousAccessKeyRef = useRef<string | undefined>(undefined);
+  const context = useSyncExternalStore(
+    subscribeAccessRouterContext,
+    getAccessRouterContext,
+    getAccessRouterContextServerSnapshot
+  );
+  const previousPublishedContextRef = useRef(context);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (import.meta.env.SSR) {
       return;
     }
 
-    const currentAccessKey = accessKey(access);
+    const previous = previousPublishedContextRef.current;
     const shouldInvalidate = shouldInvalidateRouterOnAccessChange({
-      previousAccessKey: previousAccessKeyRef.current,
-      access,
-      isReady,
-      routerContextReady: router.options.context.isReady,
+      previousAccessKey: accessKey(previous.access),
+      access: context.access,
+      isReady: context.isReady,
+      routerContextReady: previous.isReady,
     });
 
     if (shouldInvalidate) {
       void router.invalidate();
     }
 
-    previousAccessKeyRef.current = currentAccessKey;
-  }, [access, isReady, router]);
+    previousPublishedContextRef.current = context;
+  }, [context, router]);
 };

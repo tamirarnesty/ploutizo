@@ -11,7 +11,6 @@ vi.mock('@/lib/data-access/useHouseholdQuery', async () => {
   const { useInfiniteQuery, useMutation, useQuery } =
     await import('@tanstack/react-query');
   return {
-    isHouseholdAccessReady: () => true,
     useHouseholdQuery: useQuery,
     useHouseholdInfiniteQuery: useInfiniteQuery,
     useHouseholdMutation: useMutation,
