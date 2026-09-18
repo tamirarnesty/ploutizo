@@ -3,9 +3,9 @@ import type { ImportCompletedResult } from '@ploutizo/types';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import type { ApiErrorBody } from '@/lib/queryClient';
 import { fetchFinalizeImportDraft } from './fetchFinalizeImportDraft';
+import { releaseImportDraftSession } from './releaseImportDraftSession';
 import {
   activeImportDraftsQueryKey,
-  importDraftQueryKey,
   importHistoryQueryKey,
   importPreparedQueryKey,
 } from './queryKeys';
@@ -19,12 +19,10 @@ export const useFinalizeImportDraft = (draftId: string) => {
   >({
     mutationFn: ({ preparedSetId }) =>
       fetchFinalizeImportDraft(draftId, preparedSetId),
-    onSuccess: () => {
+    onSuccess: async () => {
+      await releaseImportDraftSession(draftId);
       queryClient.removeQueries({
         queryKey: importPreparedQueryKey(draftId),
-      });
-      queryClient.removeQueries({
-        queryKey: importDraftQueryKey(draftId),
       });
       void queryClient.invalidateQueries({
         queryKey: activeImportDraftsQueryKey,
