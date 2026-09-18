@@ -75,6 +75,34 @@ describe('formatGeneratedTransactionDescription', () => {
     ).toBe('');
   });
 
+  it('builds linked-refund copy from the original description', () => {
+    expect(
+      formatGeneratedTransactionDescription({
+        type: 'refund',
+        accountName: 'Chequing',
+        refundOf: 'tx-1',
+        refundOriginalDescription: 'Coffee',
+      })
+    ).toBe('Refund of Coffee');
+  });
+
+  it('builds transfer and contribution copy from account names', () => {
+    expect(
+      formatGeneratedTransactionDescription({
+        type: 'transfer',
+        accountName: 'Chequing',
+        counterpartAccountName: 'Savings',
+      })
+    ).toBe('Transfer from Chequing to Savings');
+    expect(
+      formatGeneratedTransactionDescription({
+        type: 'contribution',
+        accountName: 'Chequing',
+        counterpartAccountName: 'FHSA',
+      })
+    ).toBe('Contribution from Chequing to FHSA');
+  });
+
   it('returns empty text for manual transaction types', () => {
     expect(
       formatGeneratedTransactionDescription({
@@ -113,5 +141,35 @@ describe('formatGeneratedTransactionDescriptionFromAccounts', () => {
         [{ id: 'card-1', name: 'Amex Cobalt' }]
       )
     ).toBe('Settlement: Amex Cobalt');
+  });
+
+  it('builds linked-refund copy when the original description is provided', () => {
+    expect(
+      formatGeneratedTransactionDescriptionFromAccounts(
+        {
+          type: 'refund',
+          accountId: 'card-1',
+          refundOf: 'tx-1',
+          refundOriginalDescription: 'Coffee',
+        },
+        [{ id: 'card-1', name: 'Amex Cobalt' }]
+      )
+    ).toBe('Refund of Coffee');
+  });
+
+  it('builds contribution copy from the provided account list', () => {
+    expect(
+      formatGeneratedTransactionDescriptionFromAccounts(
+        {
+          type: 'contribution',
+          accountId: 'source-1',
+          counterpartAccountId: 'dest-1',
+        },
+        [
+          { id: 'source-1', name: 'Chequing' },
+          { id: 'dest-1', name: 'FHSA' },
+        ]
+      )
+    ).toBe('Contribution from Chequing to FHSA');
   });
 });

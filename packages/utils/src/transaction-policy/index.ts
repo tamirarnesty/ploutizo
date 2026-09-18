@@ -6,6 +6,8 @@ export {
   validateTransactionAccountPolicy,
 } from './accessors';
 
+export { resolveTransactionDescriptionLock } from './description-lock';
+
 export {
   formatContributionDescription,
   formatGeneratedTransactionDescription,
@@ -25,8 +27,10 @@ export type {
   DescriptionSource,
   GetAccountOptionsForTransactionSlotInput,
   RelationshipRule,
+  ResolveTransactionDescriptionLockInput,
   ResolveTransactionDescriptionPolicyInput,
   ResolvedDescriptionMode,
+  ResolvedTransactionDescriptionLock,
   ResolvedTransactionDescriptionPolicy,
   ScalarFieldRelevance,
   TransactionAccountOption,

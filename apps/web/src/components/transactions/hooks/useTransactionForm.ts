@@ -3,7 +3,7 @@ import { createTransactionSchema } from '@ploutizo/validators';
 import { normalizeTransactionAssignees } from '@ploutizo/utils/assignee-split';
 import {
   formatGeneratedTransactionDescriptionFromAccounts,
-  resolveTransactionDescriptionPolicy,
+  resolveTransactionDescriptionLock,
 } from '@ploutizo/utils/transaction-policy';
 import { centsToDollars } from '@ploutizo/utils/currency';
 import type { Account } from '@ploutizo/types';
@@ -75,31 +75,26 @@ export const buildDefaultValues = (
     assignees: buildAssigneeDefaults(transaction),
   };
 
-  if (
-    resolveTransactionDescriptionPolicy({
+  const generatedCandidate = formatGeneratedTransactionDescriptionFromAccounts(
+    {
       type: values.type,
+      accountId: values.accountId,
+      counterpartAccountId: values.counterpartAccountId,
       refundOf: values.refundOf,
-    }).mode === 'generated'
-  ) {
-    const locked = formatGeneratedTransactionDescriptionFromAccounts(
-      {
-        type: values.type,
-        accountId: values.accountId,
-        counterpartAccountId: values.counterpartAccountId,
-        refundOf: values.refundOf,
-        accountName: transaction.accountName,
-        counterpartAccountName: transaction.counterpartAccountName,
-      },
-      accounts
-    );
-    const stored = transaction.description.trim();
-    // Align defaults with the locked template so DescriptionSyncer does not
-    // call handleChange on mount (which marks the form dirty). Preserve custom
-    // descriptions the user saved after unlocking the field.
-    if (locked && (!stored || stored === locked)) {
-      values.description = locked;
-    }
-  }
+      accountName: transaction.accountName,
+      counterpartAccountName: transaction.counterpartAccountName,
+    },
+    accounts
+  );
+  // Align defaults with the locked template so DescriptionLockController does
+  // not call handleChange on mount (which marks the form dirty). Preserve
+  // custom/legacy descriptions that do not match the generated candidate.
+  values.description = resolveTransactionDescriptionLock({
+    type: values.type,
+    refundOf: values.refundOf,
+    currentDescription: transaction.description,
+    generatedCandidate,
+  }).description;
 
   return values;
 };
