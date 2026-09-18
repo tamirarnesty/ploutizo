@@ -1,6 +1,6 @@
-import { Outlet, createFileRoute, redirect } from '@tanstack/react-router';
+import { Outlet, createFileRoute } from '@tanstack/react-router';
 import { Text } from '@ploutizo/ui/components/text';
-import { normalizePathname } from '@/lib/navigation/normalizePathname';
+import { SettingsTabs } from '@/components/settings/SettingsTabs';
 
 const SettingsLayout = () => {
   return (
@@ -8,16 +8,21 @@ const SettingsLayout = () => {
       <Text as="h1" variant="h3">
         Settings
       </Text>
+      <SettingsTabs />
       <Outlet />
     </div>
   );
 };
 
 export const Route = createFileRoute('/_layout/settings')({
-  component: SettingsLayout,
-  beforeLoad: ({ location }) => {
-    if (normalizePathname(location.pathname) === '/settings') {
-      throw redirect({ to: '/settings/categories' });
-    }
+  staticData: {
+    nav: {
+      label: 'Settings',
+      keywords: ['preferences', 'theme'],
+      group: 'settings',
+      placement: 'footer',
+      order: 0,
+    },
   },
+  component: SettingsLayout,
 });

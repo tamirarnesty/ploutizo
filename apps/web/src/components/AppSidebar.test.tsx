@@ -2,9 +2,58 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SidebarProvider } from '@ploutizo/ui/components/sidebar';
+import { History, Settings } from 'lucide-react';
 import { fireModKey } from '@/test/keyboard';
 import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
 import { AppSidebar } from './AppSidebar';
+
+vi.mock('@/lib/navigation/collect-nav', () => ({
+  collectNav: () => ({
+    primary: [
+      {
+        label: 'Dashboard',
+        to: '/dashboard',
+        icon: () => null,
+        keywords: ['home', 'overview'],
+      },
+      {
+        label: 'Transactions',
+        to: '/transactions',
+        icon: () => null,
+        keywords: ['tx', 'list'],
+      },
+      {
+        label: 'Import',
+        to: '/import',
+        icon: () => null,
+        keywords: ['import', 'upload'],
+        children: [
+          {
+            label: 'Import History',
+            to: '/import/history',
+            icon: History,
+            keywords: ['import', 'history'],
+          },
+        ],
+      },
+      {
+        label: 'Accounts',
+        to: '/accounts',
+        icon: () => null,
+        keywords: ['accounts', 'cards'],
+      },
+    ],
+    footer: [
+      {
+        label: 'Settings',
+        to: '/settings',
+        icon: Settings,
+        keywords: ['preferences', 'theme'],
+      },
+    ],
+    commandGroups: [],
+  }),
+}));
 
 vi.mock('@/lib/command', () => ({
   CommandPaletteTrigger: () => (
@@ -92,28 +141,19 @@ describe('AppSidebar', () => {
     );
   });
 
-  it('reveals Settings destinations from a separate chevron', async () => {
-    const user = userEvent.setup();
+  it('shows Settings as a flat footer link without a submenu', () => {
     renderSidebar('/dashboard');
 
+    expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute(
+      'href',
+      '/settings'
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Toggle Settings submenu' })
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('link', { name: 'Categories & Tags' })
     ).not.toBeInTheDocument();
-
-    await user.click(
-      screen.getByRole('button', { name: 'Toggle Settings submenu' })
-    );
-
-    expect(
-      screen.getByRole('link', { name: 'Categories & Tags' })
-    ).toHaveAttribute('href', '/settings/categories');
-    expect(
-      screen.getByRole('link', { name: 'Merchant Rules' })
-    ).toHaveAttribute('href', '/settings/merchant-rules');
-    expect(screen.getByRole('link', { name: 'Household' })).toHaveAttribute(
-      'href',
-      '/settings/household'
-    );
   });
 
   it('opens the Import branch on an Import History deep link', () => {
@@ -124,12 +164,16 @@ describe('AppSidebar', () => {
     ).toHaveAttribute('href', '/import/history');
   });
 
-  it('opens the Settings branch on a settings deep link', () => {
+  it('keeps Settings active on a settings deep link', () => {
     renderSidebar('/settings/categories');
 
+    expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute(
+      'href',
+      '/settings'
+    );
     expect(
-      screen.getByRole('link', { name: 'Categories & Tags' })
-    ).toHaveAttribute('href', '/settings/categories');
+      screen.queryByRole('link', { name: 'Categories & Tags' })
+    ).not.toBeInTheDocument();
   });
 
   it('does not change route when toggling the Import submenu', async () => {

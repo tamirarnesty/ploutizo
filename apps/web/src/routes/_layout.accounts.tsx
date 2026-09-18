@@ -4,6 +4,13 @@ import { accountsQueryOptions } from '@/lib/data-access/accounts';
 import { Accounts } from '../components/accounts/Accounts';
 
 export const Route = createFileRoute('/_layout/accounts')({
+  staticData: {
+    nav: {
+      label: 'Accounts',
+      keywords: ['accounts', 'cards'],
+      order: 3,
+    },
+  },
   loader: async ({ context }) => {
     if (!(await isHouseholdLoaderReady(context))) {
       return;

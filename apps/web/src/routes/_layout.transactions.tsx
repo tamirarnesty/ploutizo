@@ -6,13 +6,20 @@ import { householdMembersQueryOptions } from '@/lib/data-access/household';
 import { ensurePageSizeHydrated, readStoredPageSize } from '@/lib/prefs';
 import { tagsQueryOptions } from '@/lib/data-access/tags';
 import { transactionsQueryOptions } from '@/lib/data-access/transactions';
-import { Transactions } from '../../components/transactions/Transactions';
+import { Transactions } from '../components/transactions/Transactions';
 import {
   buildTransactionQueryParams,
   validateTransactionSearch,
-} from '../../components/transactions/transactionSearch';
+} from '../components/transactions/transactionSearch';
 
-export const Route = createFileRoute('/_layout/transactions/')({
+export const Route = createFileRoute('/_layout/transactions')({
+  staticData: {
+    nav: {
+      label: 'Transactions',
+      keywords: ['tx', 'list'],
+      order: 1,
+    },
+  },
   validateSearch: validateTransactionSearch,
   loaderDeps: ({ search }) => search,
   loader: async ({ context, deps: search }) => {

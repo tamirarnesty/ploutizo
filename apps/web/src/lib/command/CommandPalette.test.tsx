@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { FileUp, Settings } from 'lucide-react';
 import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
 import { makeImportDraftSummary } from '@/components/imports/test-fixtures/importDraft';
 import { useGetImportDrafts } from '@/lib/data-access/imports';
@@ -14,6 +15,56 @@ const commandMocks = vi.hoisted(() => ({
 
 vi.mock('@/lib/data-access/imports', () => ({
   useGetImportDrafts: vi.fn(() => ({ data: commandMocks.drafts })),
+}));
+
+vi.mock('@/lib/command/getCommandGroups', () => ({
+  getCommandGroups: (
+    _router: unknown,
+    drafts: ReturnType<typeof makeImportDraftSummary>[] = []
+  ) => {
+    const staticGroups = [
+      {
+        heading: 'Navigation',
+        commands: [
+          {
+            type: 'nav',
+            id: 'nav-dashboard',
+            label: 'Dashboard',
+            to: '/dashboard',
+            icon: FileUp,
+          },
+        ],
+      },
+      {
+        heading: 'Settings',
+        commands: [
+          {
+            type: 'nav',
+            id: 'nav-settings',
+            label: 'Settings',
+            to: '/settings',
+            icon: Settings,
+          },
+        ],
+      },
+    ];
+
+    if (drafts.length === 0) return staticGroups;
+
+    return [
+      {
+        heading: 'Continue Import',
+        commands: drafts.map((draft) => ({
+          type: 'import-draft',
+          id: `import-draft-${draft.id}`,
+          label: 'Visa · ••1234 — august.csv',
+          draftId: draft.id,
+          icon: FileUp,
+        })),
+      },
+      ...staticGroups,
+    ];
+  },
 }));
 
 const draft = makeImportDraftSummary();

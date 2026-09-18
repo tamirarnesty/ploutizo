@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useRouter } from '@tanstack/react-router';
 import {
   Command,
   CommandDialog,
@@ -18,10 +18,14 @@ import { importDraftReviewRoute } from '@/lib/navigation';
 
 export const CommandPalette = () => {
   const { open, setOpen } = useCommandPalette();
+  const router = useRouter();
   const navigate = useNavigate();
   const draftsQuery = useGetImportDrafts({ enabled: open });
   const drafts = draftsQuery.data ?? [];
-  const commandGroups = useMemo(() => getCommandGroups(drafts), [drafts]);
+  const commandGroups = useMemo(
+    () => getCommandGroups(router, drafts),
+    [drafts, router]
+  );
 
   const runCommand = useCallback(
     (command: CommandDefinition) => {
