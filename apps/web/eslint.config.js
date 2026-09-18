@@ -72,4 +72,28 @@ export default [
       'no-restricted-imports': 'off',
     },
   },
+  {
+    files: ['src/lib/data-access/**/*.ts', 'src/lib/data-access/**/*.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@tanstack/react-query',
+              importNames: ['useQuery', 'useInfiniteQuery', 'useMutation'],
+              message:
+                'Use useHouseholdQuery, useHouseholdInfiniteQuery, or useHouseholdMutation from useHouseholdQuery.ts.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/lib/data-access/useHouseholdQuery.ts'],
+    rules: {
+      'no-restricted-imports': 'off',
+    },
+  },
 ];

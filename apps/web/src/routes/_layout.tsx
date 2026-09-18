@@ -23,7 +23,7 @@ const getPublicSidebarState = createServerFn().handler(() => {
   return value !== 'false';
 });
 
-const LayoutShellContent = () => {
+const LayoutShell = () => {
   useThemeKeyboardShortcut();
   const defaultOpen = Route.useLoaderData();
   const mainContentLayout = useRouterState({
@@ -48,7 +48,9 @@ const LayoutShellContent = () => {
                   mainContentLayout === 'viewport' && 'overflow-hidden'
                 )}
               >
-                <Outlet />
+                <BearerReadinessBoundary>
+                  <Outlet />
+                </BearerReadinessBoundary>
               </main>
             </SidebarInset>
           </div>
@@ -58,18 +60,12 @@ const LayoutShellContent = () => {
   );
 };
 
-const LayoutShell = () => (
-  <BearerReadinessBoundary>
-    <LayoutShellContent />
-  </BearerReadinessBoundary>
-);
-
 export const Route = createFileRoute('/_layout')({
   beforeLoad: async ({ context, location }) => {
     await enforceAccessPolicy(context, 'active-household', location.href);
   },
   loader: async ({ context }) => {
-    if (isHouseholdLoaderReady(context)) {
+    if (await isHouseholdLoaderReady(context)) {
       await context.queryClient.ensureQueryData(activeImportDraftsQueryOptions);
     }
     return getPublicSidebarState();

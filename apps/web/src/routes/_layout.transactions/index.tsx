@@ -16,7 +16,7 @@ export const Route = createFileRoute('/_layout/transactions/')({
   validateSearch: validateTransactionSearch,
   loaderDeps: ({ search }) => search,
   loader: async ({ context, deps: search }) => {
-    if (!isHouseholdLoaderReady(context)) {
+    if (!(await isHouseholdLoaderReady(context))) {
       return;
     }
     await ensurePageSizeHydrated();

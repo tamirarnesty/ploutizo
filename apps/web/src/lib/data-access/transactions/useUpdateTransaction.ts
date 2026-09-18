@@ -1,4 +1,5 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { TransactionRow } from './useGetTransactions';
 
@@ -9,7 +10,7 @@ type PatchTransactionResponse = Omit<TransactionRow, 'tags' | 'assignees'>;
 // This hook is a thin transport layer and does not re-validate.
 export const useUpdateTransaction = (id: string) => {
   const qc = useQueryClient();
-  return useMutation({
+  return useHouseholdMutation({
     mutationFn: (body: unknown) =>
       apiFetch<{ data: PatchTransactionResponse }>(`/api/transactions/${id}`, {
         method: 'PATCH',

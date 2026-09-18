@@ -6,30 +6,15 @@ type BearerReadinessBoundaryProps = {
   children: ReactNode;
 };
 
-const BearerReadinessBoundaryClient = ({
+export const BearerReadinessBoundary = ({
   children,
 }: BearerReadinessBoundaryProps) => {
-  const { access, isReady, bearerError, retryBearer } = useAccess();
+  const { access, bearerError, retryBearer } = useAccess();
 
   if (bearerError && access.status !== 'signed-out') {
     return <AccessBearerBlocked onRetry={retryBearer} />;
   }
 
-  if (!isReady) {
-    return null;
-  }
-
+  // Route content stays mounted; useHouseholdQuery reports loading until bearer-ready.
   return children;
-};
-
-export const BearerReadinessBoundary = ({
-  children,
-}: BearerReadinessBoundaryProps) => {
-  if (import.meta.env.SSR) {
-    return null;
-  }
-
-  return (
-    <BearerReadinessBoundaryClient>{children}</BearerReadinessBoundaryClient>
-  );
 };

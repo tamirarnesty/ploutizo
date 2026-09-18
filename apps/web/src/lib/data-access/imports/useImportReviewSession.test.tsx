@@ -23,12 +23,17 @@ import { fetchUpdateImportDraftRow } from './fetchUpdateImportDraftRow';
 import { fetchUpdateImportDraftRowSelection } from './fetchUpdateImportDraftRowSelection';
 import { fetchImportDraft } from './useGetImportDraft';
 import { useImportReviewSession } from './useImportReviewSession';
+import type * as useGetImportDraftModule from './useGetImportDraft';
 import type { ReactNode } from 'react';
 
-vi.mock('./useGetImportDraft', () => ({
-  fetchImportDraft: vi.fn(),
-  useGetImportDraft: vi.fn(),
-}));
+vi.mock('./useGetImportDraft', async (importOriginal) => {
+  const actual = await importOriginal<typeof useGetImportDraftModule>();
+  return {
+    ...actual,
+    fetchImportDraft: vi.fn(),
+    useGetImportDraft: vi.fn(),
+  };
+});
 
 vi.mock('./fetchUpdateImportDraftRow', () => ({
   fetchUpdateImportDraftRow: vi.fn(),

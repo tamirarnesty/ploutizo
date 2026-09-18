@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AccessRouterRoot } from '@/app/AccessRouterRoot';
 import { AppAuthShell } from '@/app/AppAuthShell';
-import { BearerReadinessBoundary } from '@/lib/access/AccessPolicyBoundary';
+import { BearerReadinessBoundary } from '@/lib/access/BearerReadinessBoundary';
 import { getAccessRouterContext } from '@/lib/access/access-router-context-store';
 import {
   createAccessTestRouter,
@@ -55,7 +55,7 @@ describe('access shell integration', () => {
     expect(screen.getByTestId('index-page')).toBeInTheDocument();
   });
 
-  it('gates household UI behind BearerReadinessBoundary until bearer is ready', async () => {
+  it('keeps household route content mounted while bearer is resolving', async () => {
     const getToken = vi.fn(async (options?: { skipCache?: boolean }) =>
       options?.skipCache ? householdAJwt : null
     );
@@ -74,10 +74,10 @@ describe('access shell integration', () => {
 
     const { view } = await renderAccessShellTree({ shell });
 
-    expect(view.queryByTestId('index-page')).not.toBeInTheDocument();
+    expect(view.getByTestId('index-page')).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(view.getByTestId('index-page')).toBeInTheDocument();
+      expect(getAccessRouterContext().isReady).toBe(true);
     });
     expect(getToken).toHaveBeenCalledWith({ skipCache: true });
   });

@@ -1,6 +1,7 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '@ploutizo/ui/components/sonner';
 import type { CreateSettlementInput } from '@ploutizo/validators';
+import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 
 // POST /api/settlements returns { data: TransactionRow } envelope per
@@ -9,7 +10,7 @@ import { apiFetch } from '@/lib/queryClient';
 // card balances and the transactions table stay in sync without a refresh.
 export const useCreateSettlement = () => {
   const qc = useQueryClient();
-  return useMutation({
+  return useHouseholdMutation({
     mutationFn: (body: CreateSettlementInput) =>
       apiFetch<{ data: unknown }>('/api/settlements', {
         method: 'POST',

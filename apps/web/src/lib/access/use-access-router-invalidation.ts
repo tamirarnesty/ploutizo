@@ -2,6 +2,7 @@ import { useRouter } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
 import { accessKey } from './access-key';
 import { useAccess } from './AccessProvider';
+import { shouldInvalidateRouterOnAccessChange } from './should-invalidate-router-on-access-change';
 
 export const useAccessRouterInvalidation = () => {
   const router = useRouter();
@@ -14,15 +15,12 @@ export const useAccessRouterInvalidation = () => {
     }
 
     const currentAccessKey = accessKey(access);
-    const trackedAccessKey = previousAccessKeyRef.current;
-    const identityChanged =
-      trackedAccessKey !== undefined && trackedAccessKey !== currentAccessKey;
-
-    const readinessBecameReady = !router.options.context.isReady && isReady;
-    const shouldInvalidate =
-      identityChanged ||
-      (readinessBecameReady &&
-        access.status !== 'signed-in-with-active-household');
+    const shouldInvalidate = shouldInvalidateRouterOnAccessChange({
+      previousAccessKey: previousAccessKeyRef.current,
+      access,
+      isReady,
+      routerContextReady: router.options.context.isReady,
+    });
 
     if (shouldInvalidate) {
       void router.invalidate();

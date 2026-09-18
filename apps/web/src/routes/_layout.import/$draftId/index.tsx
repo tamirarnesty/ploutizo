@@ -18,7 +18,7 @@ export const Route = createFileRoute('/_layout/import/$draftId/')({
    * `preload()` materializes the review working copy before the route renders.
    */
   loader: async ({ context, params }) => {
-    if (!isHouseholdLoaderReady(context)) {
+    if (!(await isHouseholdLoaderReady(context))) {
       return;
     }
     await Promise.all([

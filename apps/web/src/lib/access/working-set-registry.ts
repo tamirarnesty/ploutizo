@@ -8,6 +8,20 @@ type WorkingSetCleanup = () => void;
 
 const workingSetCleanups: WorkingSetCleanup[] = [];
 let activeWorkingSet: WorkingSet = createWorkingSet();
+const listeners = new Set<() => void>();
+
+const notifyWorkingSetListeners = () => {
+  for (const listener of listeners) {
+    listener();
+  }
+};
+
+export const subscribeWorkingSet = (listener: () => void) => {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+};
 
 export const getActiveQueryClient = () => activeWorkingSet.queryClient;
 
@@ -43,6 +57,7 @@ export const replaceActiveWorkingSet = (): WorkingSet => {
   teardownWorkingSet(activeWorkingSet);
   runCleanups();
   activeWorkingSet = createWorkingSet();
+  notifyWorkingSetListeners();
   return activeWorkingSet;
 };
 
@@ -51,4 +66,5 @@ export const resetWorkingSetRegistryForTests = () => {
   runCleanups();
   resetWorkingSetIdsForTests();
   activeWorkingSet = createWorkingSet();
+  notifyWorkingSetListeners();
 };

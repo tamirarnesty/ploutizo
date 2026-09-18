@@ -1,4 +1,5 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { MerchantRule } from './useGetMerchantRules';
 
@@ -26,7 +27,7 @@ export const updateMerchantRule = async (
 
 export const useUpdateMerchantRule = (id: string) => {
   const qc = useQueryClient();
-  return useMutation({
+  return useHouseholdMutation({
     mutationFn: (body: UpdateMerchantRuleBody) => updateMerchantRule(id, body),
     onSettled: () =>
       qc.invalidateQueries({

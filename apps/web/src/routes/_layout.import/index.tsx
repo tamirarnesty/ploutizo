@@ -9,7 +9,7 @@ import { Import } from '../../components/imports/hub/Import';
 
 export const Route = createFileRoute('/_layout/import/')({
   loader: async ({ context }) => {
-    if (!isHouseholdLoaderReady(context)) {
+    if (!(await isHouseholdLoaderReady(context))) {
       return;
     }
     await Promise.all([

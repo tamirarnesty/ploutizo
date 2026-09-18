@@ -5,7 +5,7 @@ import { Accounts } from '../components/accounts/Accounts';
 
 export const Route = createFileRoute('/_layout/accounts')({
   loader: async ({ context }) => {
-    if (!isHouseholdLoaderReady(context)) {
+    if (!(await isHouseholdLoaderReady(context))) {
       return;
     }
     await context.queryClient.ensureQueryData(accountsQueryOptions());

@@ -5,9 +5,11 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react';
 import { accessKey } from './access-key';
 import { toAccessState } from './access-state';
@@ -15,6 +17,7 @@ import { resolveTransitionBearer } from './resolve-transition-bearer';
 import {
   getActiveQueryClient,
   replaceActiveWorkingSet,
+  subscribeWorkingSet,
 } from './working-set-registry';
 import { publishAccessRouterContext } from './access-router-context-store';
 import { setClientBearerGetter, setLiveAccess } from './working-set';
@@ -49,7 +52,6 @@ export const AccessProvider = ({ children }: { children: ReactNode }) => {
   const [isReady, setIsReady] = useState(false);
   const [bearerError, setBearerError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
-  const [workingSetVersion, setWorkingSetVersion] = useState(0);
   const previousAccessKeyRef = useRef<string | undefined>(undefined);
 
   const identityLoaded = isLoaded;
@@ -65,53 +67,68 @@ export const AccessProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const currentAccessKey = accessKey(access);
-  const retryBearer = useCallback(() => {
-    setRetryCount((count) => count + 1);
-  }, []);
+  const trackedAccessKey = previousAccessKeyRef.current;
+  const identityChanged =
+    trackedAccessKey !== undefined && trackedAccessKey !== currentAccessKey;
 
-  if (!import.meta.env.SSR) {
-    const trackedAccessKey = previousAccessKeyRef.current;
-    const identityChanged =
-      trackedAccessKey !== undefined && trackedAccessKey !== currentAccessKey;
+  const queryClient = useSyncExternalStore(
+    subscribeWorkingSet,
+    getActiveQueryClient,
+    getActiveQueryClient
+  );
+
+  useLayoutEffect(() => {
+    if (import.meta.env.SSR) {
+      return;
+    }
+
+    const priorAccessKey = previousAccessKeyRef.current;
+    const didIdentityChange =
+      priorAccessKey !== undefined && priorAccessKey !== currentAccessKey;
 
     if (!isLoaded) {
       setLiveAccess(null);
       setClientBearerGetter(null);
-      if (isReady) {
-        setIsReady(false);
-      }
-      if (bearerError) {
-        setBearerError(false);
-      }
-    } else {
-      if (identityChanged) {
-        replaceActiveWorkingSet();
-        setWorkingSetVersion((version) => version + 1);
-        setBearerError(false);
-      }
-
-      setLiveAccess(access);
-      setClientBearerGetter(access.status === 'signed-out' ? null : getToken);
-
-      if (access.status === 'signed-out') {
-        if (!isReady) {
-          setIsReady(true);
-        }
-        if (bearerError) {
-          setBearerError(false);
-        }
-      } else if (identityChanged || trackedAccessKey === undefined) {
-        setIsReady(false);
-      }
+      previousAccessKeyRef.current = currentAccessKey;
+      return;
     }
 
-    previousAccessKeyRef.current = currentAccessKey;
-  }
+    if (didIdentityChange) {
+      replaceActiveWorkingSet();
+    }
 
-  const queryClient = useMemo(
-    () => getActiveQueryClient(),
-    [workingSetVersion, currentAccessKey]
-  );
+    setLiveAccess(access);
+    setClientBearerGetter(access.status === 'signed-out' ? null : getToken);
+    previousAccessKeyRef.current = currentAccessKey;
+  }, [isLoaded, access, currentAccessKey, getToken]);
+
+  useLayoutEffect(() => {
+    if (import.meta.env.SSR) {
+      return;
+    }
+
+    if (!isLoaded) {
+      setIsReady(false);
+      setBearerError(false);
+      return;
+    }
+
+    if (access.status === 'signed-out') {
+      setIsReady(true);
+      setBearerError(false);
+      return;
+    }
+
+    setIsReady(false);
+    setBearerError(false);
+  }, [isLoaded, currentAccessKey, access.status]);
+
+  const effectiveReady =
+    identityChanged && access.status !== 'signed-out' ? false : isReady;
+
+  const retryBearer = useCallback(() => {
+    setRetryCount((count) => count + 1);
+  }, []);
 
   useEffect(() => {
     if (import.meta.env.SSR || !isLoaded || access.status === 'signed-out') {
@@ -146,30 +163,31 @@ export const AccessProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [access, currentAccessKey, getToken, isLoaded, retryCount]);
 
-  const value = useMemo(
+  const routerContext = useMemo(
     () => ({
       access,
       identityLoaded,
-      isReady,
+      isReady: effectiveReady,
       queryClient,
-      bearerError,
-      retryBearer,
     }),
-    [access, identityLoaded, isReady, queryClient, bearerError, retryBearer]
+    [access, identityLoaded, effectiveReady, queryClient]
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (import.meta.env.SSR) {
       return;
     }
+    publishAccessRouterContext(routerContext);
+  }, [routerContext]);
 
-    publishAccessRouterContext({
-      access,
-      identityLoaded,
-      isReady,
-      queryClient,
-    });
-  }, [access, identityLoaded, isReady, queryClient]);
+  const value = useMemo(
+    () => ({
+      ...routerContext,
+      bearerError,
+      retryBearer,
+    }),
+    [routerContext, bearerError, retryBearer]
+  );
 
   return (
     <AccessContext.Provider value={value}>{children}</AccessContext.Provider>

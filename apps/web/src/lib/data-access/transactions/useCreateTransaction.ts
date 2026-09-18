@@ -1,5 +1,6 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '@ploutizo/ui/components/sonner';
+import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { TransactionRow } from './useGetTransactions';
 
@@ -8,7 +9,7 @@ import type { TransactionRow } from './useGetTransactions';
 // This hook is a thin transport layer and does not re-validate.
 export const useCreateTransaction = () => {
   const qc = useQueryClient();
-  return useMutation({
+  return useHouseholdMutation({
     mutationFn: (body: unknown) =>
       apiFetch<{ data: TransactionRow }>('/api/transactions', {
         method: 'POST',

@@ -1,4 +1,5 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { Category } from './useGetCategories';
 
@@ -21,7 +22,7 @@ export const updateCategory = async (
 
 export const useUpdateCategory = (id: string) => {
   const qc = useQueryClient();
-  return useMutation({
+  return useHouseholdMutation({
     mutationFn: (body: UpdateCategoryBody) => updateCategory(id, body),
     onSettled: () =>
       qc.invalidateQueries({

@@ -8,10 +8,13 @@ vi.mock('@clerk/shared/loadClerkJsScript', () => ({
 }));
 
 vi.mock('@/lib/data-access/useHouseholdQuery', async () => {
-  const { useQuery } = await import('@tanstack/react-query');
+  const { useInfiniteQuery, useMutation, useQuery } =
+    await import('@tanstack/react-query');
   return {
     isHouseholdAccessReady: () => true,
     useHouseholdQuery: useQuery,
+    useHouseholdInfiniteQuery: useInfiniteQuery,
+    useHouseholdMutation: useMutation,
   };
 });
 

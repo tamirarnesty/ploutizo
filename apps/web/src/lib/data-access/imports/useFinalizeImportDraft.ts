@@ -1,5 +1,6 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import type { ImportCompletedResult } from '@ploutizo/types';
+import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import type { ApiErrorBody } from '@/lib/queryClient';
 import { fetchFinalizeImportDraft } from './fetchFinalizeImportDraft';
 import {
@@ -11,7 +12,7 @@ import {
 
 export const useFinalizeImportDraft = (draftId: string) => {
   const queryClient = useQueryClient();
-  return useMutation<
+  return useHouseholdMutation<
     ImportCompletedResult,
     ApiErrorBody,
     { preparedSetId: string }

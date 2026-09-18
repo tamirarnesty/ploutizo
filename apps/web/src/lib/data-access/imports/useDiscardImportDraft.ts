@@ -1,5 +1,6 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import type { ImportDraftSummary } from '@ploutizo/types';
+import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import { releaseImportDraftRowsCollection } from './getImportDraftRowsCollection';
 import {
@@ -10,7 +11,7 @@ import {
 
 export const useDiscardImportDraft = () => {
   const qc = useQueryClient();
-  return useMutation({
+  return useHouseholdMutation({
     mutationFn: (id: string) =>
       apiFetch<{ data: { id: string } }>(`/api/imports/drafts/${id}`, {
         method: 'DELETE',

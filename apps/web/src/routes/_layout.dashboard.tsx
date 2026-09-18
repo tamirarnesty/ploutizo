@@ -6,7 +6,7 @@ import { settlementsQueryOptions } from '@/lib/data-access/settlements';
 
 export const Route = createFileRoute('/_layout/dashboard')({
   loader: async ({ context }) => {
-    if (!isHouseholdLoaderReady(context)) {
+    if (!(await isHouseholdLoaderReady(context))) {
       return;
     }
     await Promise.all([

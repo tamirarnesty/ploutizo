@@ -1,4 +1,5 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { TransactionListResponse } from './useGetTransactions';
 
@@ -7,7 +8,7 @@ type Snapshot = [unknown[], TransactionListResponse | undefined][];
 export const useDeleteTransaction = () => {
   const qc = useQueryClient();
   const transactionsQueryKey = ['transactions'];
-  return useMutation({
+  return useHouseholdMutation({
     mutationFn: (id: string) =>
       apiFetch<{ data: { id: string } }>(`/api/transactions/${id}`, {
         method: 'DELETE',

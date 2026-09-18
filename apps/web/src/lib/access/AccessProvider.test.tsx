@@ -173,6 +173,37 @@ describe('AccessProvider bearer validation', () => {
     });
   });
 
+  it('replaces the working set and resets readiness on household switch', async () => {
+    signInAs(householdA);
+    const { result, rerender } = renderHook(() => useAccess(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isReady).toBe(true);
+    });
+
+    const priorClient = result.current.queryClient;
+    priorClient.setQueryData(['accounts'], [{ id: 'acct_prior' }]);
+
+    const householdBJwt = unsignedJwt({
+      sub: 'user_a',
+      org_id: 'org_b',
+    });
+    authState.orgId = 'org_b';
+    authState.getToken = (options?: { skipCache?: boolean }) =>
+      Promise.resolve(options?.skipCache ? householdBJwt : householdBJwt);
+    rerender();
+
+    expect(result.current.isReady).toBe(false);
+    expect(result.current.queryClient).not.toBe(priorClient);
+    expect(
+      result.current.queryClient.getQueryData(['accounts'])
+    ).toBeUndefined();
+
+    await waitFor(() => {
+      expect(result.current.isReady).toBe(true);
+    });
+  });
+
   it('surfaces bearerError when fresh token retrieval rejects', async () => {
     signInAs(householdA, householdAJwt);
     authState.getToken = (options?: { skipCache?: boolean }) =>

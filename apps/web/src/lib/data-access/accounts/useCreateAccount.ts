@@ -1,5 +1,6 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import type { Account } from '@ploutizo/types';
+import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 
 interface CreateAccountBody {
@@ -23,7 +24,7 @@ export const createAccount = async (
 
 export const useCreateAccount = () => {
   const qc = useQueryClient();
-  return useMutation({
+  return useHouseholdMutation({
     mutationFn: createAccount,
     onSettled: () => qc.invalidateQueries({ queryKey: ['accounts'] }),
   });

@@ -1,4 +1,5 @@
 import type { RouterContext } from '@/router';
+import { accessKey } from './access-key';
 import { getActiveQueryClient } from './working-set-registry';
 import type { AccessState } from './access-state';
 
@@ -23,7 +24,19 @@ export const getAccessRouterContextServerSnapshot = () => {
   return serverSnapshot;
 };
 
+const routerContextMatches = (
+  left: RouterContext,
+  right: RouterContext
+): boolean =>
+  left.queryClient === right.queryClient &&
+  left.identityLoaded === right.identityLoaded &&
+  left.isReady === right.isReady &&
+  accessKey(left.access) === accessKey(right.access);
+
 export const publishAccessRouterContext = (context: RouterContext) => {
+  if (routerContextMatches(currentContext, context)) {
+    return;
+  }
   currentContext = context;
   for (const listener of listeners) {
     listener();

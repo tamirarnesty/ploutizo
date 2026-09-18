@@ -1,4 +1,5 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import type { QueryKey, UseMutationOptions } from '@tanstack/react-query';
 
 type OptimisticListContext<TItem> = {
@@ -33,7 +34,7 @@ export const useOptimisticListMutation = <
     ...rest
   } = config;
 
-  return useMutation({
+  return useHouseholdMutation({
     ...rest,
     mutationFn,
     onMutate: async (variables) => {
