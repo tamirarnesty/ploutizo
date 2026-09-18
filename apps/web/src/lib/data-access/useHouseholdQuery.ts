@@ -2,6 +2,7 @@ import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { useAccess } from '@/lib/access/AccessProvider';
 import { isHouseholdBearerReady } from '@/lib/access/household-loader-ready';
 import { createHouseholdBearerUnavailableError } from '@/lib/queryClient';
+import { isHouseholdQueryBearerReady } from './household-query-enabled';
 import type {
   InfiniteData,
   UseInfiniteQueryOptions,
@@ -21,7 +22,7 @@ export const useHouseholdQuery = <
   options: UseQueryOptions<TQueryFnData, TError, TData, TQueryKey>
 ): UseQueryResult<TData, TError> => {
   const { isReady, access } = useAccess();
-  const householdReady = isHouseholdBearerReady(isReady, access);
+  const householdReady = isHouseholdQueryBearerReady(isReady, access);
 
   return useQuery({
     ...options,
@@ -45,7 +46,7 @@ export const useHouseholdInfiniteQuery = <
   >
 ): UseInfiniteQueryResult<TData, TError> => {
   const { isReady, access } = useAccess();
-  const householdReady = isHouseholdBearerReady(isReady, access);
+  const householdReady = isHouseholdQueryBearerReady(isReady, access);
 
   return useInfiniteQuery({
     ...options,
