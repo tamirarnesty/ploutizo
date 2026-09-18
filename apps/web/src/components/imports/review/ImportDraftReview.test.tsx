@@ -78,8 +78,8 @@ vi.mock('@/lib/data-access/categories', () => ({
   }),
 }));
 
-vi.mock('@/lib/data-access/org', () => ({
-  useGetOrgMembers: () => ({
+vi.mock('@/lib/data-access/household', () => ({
+  useGetHouseholdMembers: () => ({
     data: [
       {
         id: 'member_1',

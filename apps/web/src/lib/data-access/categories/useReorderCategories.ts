@@ -16,9 +16,10 @@ export const reorderCategories = async (
   return r.data;
 };
 
-export const useReorderCategories = () =>
-  useOptimisticListMutation<Category, string[], { ok: boolean }>({
+export const useReorderCategories = () => {
+  return useOptimisticListMutation<Category, string[], { ok: boolean }>({
     queryKey: ['categories'],
     mutationFn: reorderCategories,
     updateCache: (items, orderedIds) => reorderByIds(items, orderedIds),
   });
+};

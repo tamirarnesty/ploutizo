@@ -12,9 +12,10 @@ export const archiveCategory = async (id: string): Promise<Category> => {
   return r.data;
 };
 
-export const useArchiveCategory = () =>
-  useOptimisticListMutation<Category, string, Category>({
+export const useArchiveCategory = () => {
+  return useOptimisticListMutation<Category, string, Category>({
     queryKey: ['categories'],
     mutationFn: archiveCategory,
     updateCache: (items, id) => items.filter((c) => c.id !== id),
   });
+};

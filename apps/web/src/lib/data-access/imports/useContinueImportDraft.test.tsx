@@ -1,12 +1,19 @@
-import { QueryClientProvider } from '@tanstack/react-query';
+import '@/lib/access/working-set-cleanup';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ImportPreparedSetSummary } from '@ploutizo/types';
-import { queryClient } from '@/lib/queryClient';
+import { getActiveQueryClient } from '@/lib/access/working-set-registry';
+import { HouseholdHookWrapper } from '@/test/household-hook-harness';
+
 import { markImportReviewPending } from './importReviewAutosave';
 import { fetchContinueImportDraft } from './fetchContinueImportDraft';
 import { useContinueImportDraft } from './useContinueImportDraft';
-import type { ReactNode } from 'react';
+
+vi.mock('@/lib/access/AccessProvider', async () => {
+  const { householdAccessProviderMock } =
+    await import('@/test/householdAccessMock');
+  return householdAccessProviderMock;
+});
 
 const toastSuccess = vi.hoisted(() => vi.fn());
 
@@ -27,10 +34,6 @@ const preparedSet: ImportPreparedSetSummary = {
   createdAt: '2026-05-20T12:00:00.000Z',
 };
 
-const wrapper = ({ children }: { children: ReactNode }) => (
-  <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-);
-
 const deferred = <T,>() => {
   let resolve!: (value: T) => void;
   let reject!: (reason: unknown) => void;
@@ -43,7 +46,7 @@ const deferred = <T,>() => {
 
 describe('useContinueImportDraft', () => {
   beforeEach(() => {
-    queryClient.clear();
+    getActiveQueryClient().clear();
     toastSuccess.mockReset();
     vi.mocked(fetchContinueImportDraft).mockReset();
   });
@@ -51,7 +54,7 @@ describe('useContinueImportDraft', () => {
   it('resolves the prepared set when continue succeeds without later review changes', async () => {
     vi.mocked(fetchContinueImportDraft).mockResolvedValue(preparedSet);
     const { result } = renderHook(() => useContinueImportDraft('draft_1'), {
-      wrapper,
+      wrapper: HouseholdHookWrapper,
     });
 
     await act(async () => {
@@ -68,7 +71,7 @@ describe('useContinueImportDraft', () => {
     const pending = deferred<ImportPreparedSetSummary>();
     vi.mocked(fetchContinueImportDraft).mockReturnValue(pending.promise);
     const { result } = renderHook(() => useContinueImportDraft('draft_1'), {
-      wrapper,
+      wrapper: HouseholdHookWrapper,
     });
 
     let continuePromise: Promise<ImportPreparedSetSummary | null> | undefined;
@@ -99,7 +102,7 @@ describe('useContinueImportDraft', () => {
     const pending = deferred<ImportPreparedSetSummary>();
     vi.mocked(fetchContinueImportDraft).mockReturnValue(pending.promise);
     const { result } = renderHook(() => useContinueImportDraft('draft_1'), {
-      wrapper,
+      wrapper: HouseholdHookWrapper,
     });
 
     let continuePromise: Promise<ImportPreparedSetSummary | null> | undefined;
@@ -136,7 +139,7 @@ describe('useContinueImportDraft', () => {
       }
     );
     const { result } = renderHook(() => useContinueImportDraft('draft_1'), {
-      wrapper,
+      wrapper: HouseholdHookWrapper,
     });
 
     let continuePromise: Promise<ImportPreparedSetSummary | null> | undefined;
@@ -164,7 +167,7 @@ describe('useContinueImportDraft', () => {
     const pending = deferred<ImportPreparedSetSummary>();
     vi.mocked(fetchContinueImportDraft).mockReturnValue(pending.promise);
     const { result } = renderHook(() => useContinueImportDraft('draft_1'), {
-      wrapper,
+      wrapper: HouseholdHookWrapper,
     });
 
     let continuePromise: Promise<ImportPreparedSetSummary | null> | undefined;

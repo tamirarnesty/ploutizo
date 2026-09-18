@@ -4,7 +4,7 @@ import type { PayToward } from '@/components/dashboard/settleFormSchema';
 import type { CardBalanceRowViewModel } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
 import type { CardBalancesSettleClickHandler } from '@/components/dashboard/card-balances/types';
 import { buildCardBalanceViewModels } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
-import { useGetOrgMembers } from '@/lib/data-access/org';
+import { useGetHouseholdMembers } from '@/lib/data-access/household';
 import { useGetSettlements } from '@/lib/data-access/settlements';
 import { selectCreditCardAccounts } from '@/lib/settlements';
 import { CardBalancesGrid } from '@/components/dashboard/card-balances/CardBalancesGrid';
@@ -18,7 +18,8 @@ export const Dashboard = () => {
     isLoading: settlementsLoading,
     isError: settlementsError,
   } = useGetSettlements();
-  const { data: members = [], isLoading: membersLoading } = useGetOrgMembers();
+  const { data: members = [], isLoading: membersLoading } =
+    useGetHouseholdMembers();
   const summaryPaneLoading = settlementsLoading || membersLoading;
 
   const [dialogOpen, setDialogOpen] = useState(false);

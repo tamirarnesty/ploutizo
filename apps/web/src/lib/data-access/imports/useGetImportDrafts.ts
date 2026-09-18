@@ -1,24 +1,24 @@
-import { useAuth } from '@clerk/tanstack-react-start';
-import { queryOptions, useQuery } from '@tanstack/react-query';
+import { queryOptions } from '@tanstack/react-query';
 import type { ImportDraftSummary } from '@ploutizo/types';
+import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import { activeImportDraftsQueryKey } from './queryKeys';
 import type { UseQueryResult } from '@tanstack/react-query';
 
-export const fetchActiveImportDrafts = async (): Promise<
-  ImportDraftSummary[]
-> => {
+export const fetchActiveImportDrafts = async (
+  signal?: AbortSignal
+): Promise<ImportDraftSummary[]> => {
   const r = await apiFetch<{ data: ImportDraftSummary[] }>(
-    '/api/imports/drafts'
+    '/api/imports/drafts',
+    { signal }
   );
   return r.data;
 };
 
-export const activeImportDraftsQueryOptions = (orgId: string) =>
-  queryOptions({
-    queryKey: activeImportDraftsQueryKey(orgId),
-    queryFn: fetchActiveImportDrafts,
-  });
+export const activeImportDraftsQueryOptions = queryOptions({
+  queryKey: activeImportDraftsQueryKey,
+  queryFn: ({ signal }) => fetchActiveImportDrafts(signal),
+});
 
 type UseGetImportDraftsOptions = {
   enabled?: boolean;
@@ -27,10 +27,8 @@ type UseGetImportDraftsOptions = {
 export const useGetImportDrafts = (
   options?: UseGetImportDraftsOptions
 ): UseQueryResult<ImportDraftSummary[]> => {
-  const { orgId } = useAuth();
-
-  return useQuery({
-    ...activeImportDraftsQueryOptions(orgId ?? ''),
-    enabled: (options?.enabled ?? true) && Boolean(orgId),
+  return useHouseholdQuery({
+    ...activeImportDraftsQueryOptions,
+    enabled: options?.enabled ?? true,
   });
 };

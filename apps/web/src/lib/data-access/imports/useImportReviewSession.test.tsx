@@ -1,4 +1,4 @@
-import { QueryClientProvider } from '@tanstack/react-query';
+import '@/lib/access/working-set-cleanup';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { UpdateImportDraftRowResult } from '@ploutizo/types';
@@ -7,27 +7,40 @@ import {
   makeImportDraftRow,
   toPersistedImportDraftRow,
 } from '@/components/imports/test-fixtures/importDraft';
-import { queryClient } from '@/lib/queryClient';
+import { getActiveQueryClient } from '@/lib/access/working-set-registry';
+import '@/test/mockTanstackRouter';
+import { HouseholdHookWrapper } from '@/test/household-hook-harness';
+
 import {
   IMPORT_ROW_PACE_WAIT_MS,
-  resetImportDraftRowPacedMutationsForTests,
+  endImportDraftRowPacedMutations,
 } from './getImportDraftRowPacedMutations';
-import { resetImportDraftRowsCollectionsForTests } from './getImportDraftRowsCollection';
+import { endImportDraftRowsCollections } from './getImportDraftRowsCollection';
 import {
+  endImportReviewAutosave,
   getImportReviewAutosaveSnapshot,
-  resetImportReviewAutosaveForTests,
 } from './importReviewAutosave';
 import { importDraftQueryKey } from './queryKeys';
 import { fetchUpdateImportDraftRow } from './fetchUpdateImportDraftRow';
 import { fetchUpdateImportDraftRowSelection } from './fetchUpdateImportDraftRowSelection';
 import { fetchImportDraft } from './useGetImportDraft';
 import { useImportReviewSession } from './useImportReviewSession';
-import type { ReactNode } from 'react';
+import type * as useGetImportDraftModule from './useGetImportDraft';
 
-vi.mock('./useGetImportDraft', () => ({
-  fetchImportDraft: vi.fn(),
-  useGetImportDraft: vi.fn(),
-}));
+vi.mock('@/lib/access/AccessProvider', async () => {
+  const { householdAccessProviderMock } =
+    await import('@/test/householdAccessMock');
+  return householdAccessProviderMock;
+});
+
+vi.mock('./useGetImportDraft', async (importOriginal) => {
+  const actual = await importOriginal<typeof useGetImportDraftModule>();
+  return {
+    ...actual,
+    fetchImportDraft: vi.fn(),
+    useGetImportDraft: vi.fn(),
+  };
+});
 
 vi.mock('./fetchUpdateImportDraftRow', () => ({
   fetchUpdateImportDraftRow: vi.fn(),
@@ -62,16 +75,12 @@ const draft = makeImportDraft({
   ],
 });
 
-const wrapper = ({ children }: { children: ReactNode }) => (
-  <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-);
-
 const draftId = 'draft_session_1';
 const autosaveSnapshot = () => getImportReviewAutosaveSnapshot(draftId);
 
 const hydrateSession = async () => {
   const hook = renderHook(() => useImportReviewSession(draftId), {
-    wrapper,
+    wrapper: HouseholdHookWrapper,
   });
   await waitFor(() => {
     expect(hook.result.current.isLoading).toBe(false);
@@ -82,7 +91,7 @@ const hydrateSession = async () => {
 
 describe('useImportReviewSession', () => {
   beforeEach(() => {
-    queryClient.clear();
+    getActiveQueryClient().clear();
     vi.mocked(fetchImportDraft).mockReset();
     vi.mocked(fetchImportDraft).mockResolvedValue(draft);
     vi.mocked(fetchUpdateImportDraftRow).mockReset();
@@ -114,17 +123,20 @@ describe('useImportReviewSession', () => {
 
   afterEach(async () => {
     vi.useRealTimers();
-    resetImportDraftRowPacedMutationsForTests();
-    resetImportReviewAutosaveForTests();
-    await resetImportDraftRowsCollectionsForTests();
-    queryClient.clear();
+    endImportDraftRowPacedMutations();
+    endImportReviewAutosave();
+    await endImportDraftRowsCollections();
+    getActiveQueryClient().clear();
   });
 
   it('hydrates slim draft meta and live rows from one draft GET', async () => {
     const { result, unmount } = await hydrateSession();
 
     expect(fetchImportDraft).toHaveBeenCalledTimes(1);
-    expect(fetchImportDraft).toHaveBeenCalledWith('draft_session_1');
+    expect(fetchImportDraft).toHaveBeenCalledWith(
+      'draft_session_1',
+      expect.any(AbortSignal)
+    );
 
     expect(result.current.meta).toMatchObject({
       id: 'draft_session_1',
@@ -155,7 +167,7 @@ describe('useImportReviewSession', () => {
 
     const { result, unmount: unmountAgain } = renderHook(
       () => useImportReviewSession('draft_session_1'),
-      { wrapper }
+      { wrapper: HouseholdHookWrapper }
     );
 
     await waitFor(() => {
@@ -167,11 +179,14 @@ describe('useImportReviewSession', () => {
   });
 
   it('hydrates live rows from a warm draft cache (hub Continue / post-upload)', async () => {
-    queryClient.setQueryData(importDraftQueryKey('draft_session_1'), draft);
+    getActiveQueryClient().setQueryData(
+      importDraftQueryKey('draft_session_1'),
+      draft
+    );
 
     const { result, unmount } = renderHook(
       () => useImportReviewSession('draft_session_1'),
-      { wrapper }
+      { wrapper: HouseholdHookWrapper }
     );
 
     await waitFor(() => {
@@ -184,10 +199,13 @@ describe('useImportReviewSession', () => {
   });
 
   it('re-hydrates rows when remount races the previous session cleanup', async () => {
-    queryClient.setQueryData(importDraftQueryKey('draft_session_1'), draft);
+    getActiveQueryClient().setQueryData(
+      importDraftQueryKey('draft_session_1'),
+      draft
+    );
 
     const first = renderHook(() => useImportReviewSession('draft_session_1'), {
-      wrapper,
+      wrapper: HouseholdHookWrapper,
     });
     await waitFor(() => {
       expect(first.result.current.rows).toHaveLength(2);
@@ -196,7 +214,7 @@ describe('useImportReviewSession', () => {
 
     const { result, unmount } = renderHook(
       () => useImportReviewSession('draft_session_1'),
-      { wrapper }
+      { wrapper: HouseholdHookWrapper }
     );
 
     await waitFor(() => {
@@ -213,7 +231,7 @@ describe('useImportReviewSession', () => {
 
     const { result, unmount } = renderHook(
       () => useImportReviewSession('missing_draft'),
-      { wrapper }
+      { wrapper: HouseholdHookWrapper }
     );
 
     await waitFor(

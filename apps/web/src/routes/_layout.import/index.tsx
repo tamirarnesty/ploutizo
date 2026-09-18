@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { getAuthOrgId } from '@/lib/auth/require-access';
+import { isHouseholdLoaderReady } from '@/lib/access/household-loader-ready';
 import {
   activeImportDraftsQueryOptions,
   importHistoryPageQueryOptions,
@@ -9,27 +9,14 @@ import { Import } from '../../components/imports/hub/Import';
 
 export const Route = createFileRoute('/_layout/import/')({
   loader: async ({ context }) => {
-    const warmup: Promise<unknown>[] = [
-      context.queryClient
-        .ensureQueryData(importTargetsQueryOptions())
-        .catch(() => undefined),
-      context.queryClient
-        .ensureQueryData(importHistoryPageQueryOptions())
-        .catch(() => undefined),
-    ];
-
-    // Child loaders run on client intent preload; raw Clerk auth() has no
-    // Start context there. resolve orgId through a server fn instead.
-    const orgId = await getAuthOrgId().catch(() => null);
-    if (orgId) {
-      warmup.push(
-        context.queryClient
-          .ensureQueryData(activeImportDraftsQueryOptions(orgId))
-          .catch(() => undefined)
-      );
+    if (!(await isHouseholdLoaderReady(context))) {
+      return;
     }
-
-    await Promise.all(warmup);
+    await Promise.all([
+      context.queryClient.ensureQueryData(importTargetsQueryOptions),
+      context.queryClient.ensureQueryData(importHistoryPageQueryOptions()),
+      context.queryClient.ensureQueryData(activeImportDraftsQueryOptions),
+    ]);
   },
   component: Import,
 });

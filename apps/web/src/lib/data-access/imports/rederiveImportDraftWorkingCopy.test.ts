@@ -4,10 +4,10 @@ import {
   makeImportDraft,
   makeImportDraftRow,
 } from '@/components/imports/test-fixtures/importDraft';
-import { queryClient } from '@/lib/queryClient';
+import { getActiveQueryClient } from '@/lib/access/working-set-registry';
 import {
+  endImportDraftRowsCollections,
   getImportDraftRowsCollection,
-  resetImportDraftRowsCollectionsForTests,
 } from './getImportDraftRowsCollection';
 import { importDraftQueryKey } from './queryKeys';
 import {
@@ -23,13 +23,13 @@ vi.mock('./useGetImportDraft', () => ({
 
 describe('rederiveImportDraftWorkingCopy', () => {
   beforeEach(() => {
-    queryClient.clear();
+    getActiveQueryClient().clear();
     vi.mocked(fetchImportDraft).mockReset();
   });
 
   afterEach(async () => {
-    await resetImportDraftRowsCollectionsForTests();
-    queryClient.clear();
+    await endImportDraftRowsCollections();
+    getActiveQueryClient().clear();
   });
 
   it('marks same-import refund rows ready without external facts', async () => {
@@ -62,7 +62,7 @@ describe('rederiveImportDraftWorkingCopy', () => {
       ],
     });
 
-    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
+    getActiveQueryClient().setQueryData(importDraftQueryKey(draft.id), draft);
     vi.mocked(fetchImportDraft).mockResolvedValue(draft);
     const collection = getImportDraftRowsCollection(draft.id);
     await collection.preload();
@@ -98,7 +98,7 @@ describe('rederiveImportDraftWorkingCopy', () => {
       ],
     });
 
-    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
+    getActiveQueryClient().setQueryData(importDraftQueryKey(draft.id), draft);
     vi.mocked(fetchImportDraft).mockResolvedValue(draft);
     const collection = getImportDraftRowsCollection(draft.id);
     await collection.preload();
@@ -135,7 +135,7 @@ describe('rederiveImportDraftWorkingCopy', () => {
       ],
     });
 
-    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
+    getActiveQueryClient().setQueryData(importDraftQueryKey(draft.id), draft);
     vi.mocked(fetchImportDraft).mockResolvedValue(draft);
     const collection = getImportDraftRowsCollection(draft.id);
     await collection.preload();
@@ -178,7 +178,7 @@ describe('rederiveImportDraftWorkingCopy', () => {
       ],
     });
 
-    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
+    getActiveQueryClient().setQueryData(importDraftQueryKey(draft.id), draft);
     vi.mocked(fetchImportDraft).mockResolvedValue(draft);
     const collection = getImportDraftRowsCollection(draft.id);
     await collection.preload();
@@ -218,7 +218,7 @@ describe('rederiveImportDraftWorkingCopy', () => {
       ],
     });
 
-    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
+    getActiveQueryClient().setQueryData(importDraftQueryKey(draft.id), draft);
     vi.mocked(fetchImportDraft).mockResolvedValue(draft);
     const collection = getImportDraftRowsCollection(draft.id);
     await collection.preload();
@@ -261,7 +261,7 @@ describe('rederiveImportDraftWorkingCopy', () => {
       ],
     });
 
-    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
+    getActiveQueryClient().setQueryData(importDraftQueryKey(draft.id), draft);
     vi.mocked(fetchImportDraft).mockResolvedValue(draft);
     const collection = getImportDraftRowsCollection(draft.id);
     await collection.preload();
@@ -346,7 +346,7 @@ describe('rederiveImportDraftWorkingCopy', () => {
       ],
     });
 
-    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
+    getActiveQueryClient().setQueryData(importDraftQueryKey(draft.id), draft);
     vi.mocked(fetchImportDraft).mockResolvedValue(draft);
     const collection = getImportDraftRowsCollection(draft.id);
     await collection.preload();

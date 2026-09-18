@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { useLiveQuery } from '@tanstack/react-db';
 import type { ImportDraftRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
+import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import {
   flushImportDraftRowPacedMutations,
   getImportDraftRowPacedMutations,
@@ -19,8 +19,7 @@ import {
   releaseImportReviewAutosave,
   waitForImportReviewAutosaveSettled,
 } from './importReviewAutosave';
-import { importDraftQueryKey } from './queryKeys';
-import { fetchImportDraft } from './useGetImportDraft';
+import { importDraftQueryOptions } from './useGetImportDraft';
 import { toImportDraftMeta } from './toImportDraftMeta';
 import type { ImportDraftMeta } from './toImportDraftMeta';
 
@@ -57,9 +56,8 @@ export const useImportReviewSession = (
     };
   }, [draftId]);
 
-  const metaQuery = useQuery({
-    queryKey: importDraftQueryKey(draftId),
-    queryFn: () => fetchImportDraft(draftId),
+  const metaQuery = useHouseholdQuery({
+    ...importDraftQueryOptions(draftId),
     select: toImportDraftMeta,
   });
 

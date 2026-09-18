@@ -1,17 +1,18 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '@ploutizo/ui/components/sonner';
 import type { CreateImportDraftResponse } from '@ploutizo/types';
 import type { CreateImportDraftInput } from '@ploutizo/validators';
+import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import {
-  activeImportDraftsQueryKeyRoot,
+  activeImportDraftsQueryKey,
   importDraftQueryKey,
   importHistoryQueryKey,
 } from './queryKeys';
 
 export const useCreateImportDraft = () => {
   const qc = useQueryClient();
-  return useMutation({
+  return useHouseholdMutation({
     mutationFn: (body: CreateImportDraftInput) =>
       apiFetch<CreateImportDraftResponse>('/api/imports/drafts', {
         method: 'POST',
@@ -19,7 +20,9 @@ export const useCreateImportDraft = () => {
       }),
     onSuccess: (response) => {
       if (response.kind === 'mapping_required') return;
-      void qc.invalidateQueries({ queryKey: activeImportDraftsQueryKeyRoot });
+      void qc.invalidateQueries({
+        queryKey: activeImportDraftsQueryKey,
+      });
       void qc.invalidateQueries({ queryKey: importHistoryQueryKey });
       qc.setQueryData(importDraftQueryKey(response.data.id), response.data);
       if (response.meta.reusedExisting) {

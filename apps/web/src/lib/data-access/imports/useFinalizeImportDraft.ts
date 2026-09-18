@@ -1,9 +1,10 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import type { ImportCompletedResult } from '@ploutizo/types';
+import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import type { ApiErrorBody } from '@/lib/queryClient';
 import { fetchFinalizeImportDraft } from './fetchFinalizeImportDraft';
 import {
-  activeImportDraftsQueryKeyRoot,
+  activeImportDraftsQueryKey,
   importDraftQueryKey,
   importHistoryQueryKey,
   importPreparedQueryKey,
@@ -11,7 +12,7 @@ import {
 
 export const useFinalizeImportDraft = (draftId: string) => {
   const queryClient = useQueryClient();
-  return useMutation<
+  return useHouseholdMutation<
     ImportCompletedResult,
     ApiErrorBody,
     { preparedSetId: string }
@@ -19,12 +20,18 @@ export const useFinalizeImportDraft = (draftId: string) => {
     mutationFn: ({ preparedSetId }) =>
       fetchFinalizeImportDraft(draftId, preparedSetId),
     onSuccess: () => {
-      queryClient.removeQueries({ queryKey: importPreparedQueryKey(draftId) });
-      queryClient.removeQueries({ queryKey: importDraftQueryKey(draftId) });
-      void queryClient.invalidateQueries({
-        queryKey: activeImportDraftsQueryKeyRoot,
+      queryClient.removeQueries({
+        queryKey: importPreparedQueryKey(draftId),
       });
-      void queryClient.invalidateQueries({ queryKey: importHistoryQueryKey });
+      queryClient.removeQueries({
+        queryKey: importDraftQueryKey(draftId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: activeImportDraftsQueryKey,
+      });
+      void queryClient.invalidateQueries({
+        queryKey: importHistoryQueryKey,
+      });
     },
   });
 };

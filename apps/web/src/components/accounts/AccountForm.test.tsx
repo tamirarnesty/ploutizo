@@ -26,8 +26,8 @@ vi.mock('@/lib/data-access/accounts', () => ({
   useUpdateAccount: () => ({ mutate: mocks.updateMutate }),
 }));
 
-vi.mock('@/lib/data-access/org', () => ({
-  useGetOrgMembers: () => ({
+vi.mock('@/lib/data-access/household', () => ({
+  useGetHouseholdMembers: () => ({
     data: [
       {
         id: ADA_ID,

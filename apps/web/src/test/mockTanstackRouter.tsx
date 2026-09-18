@@ -73,6 +73,10 @@ const { routerMocks, tanstackRouterMock } = vi.hoisted(() => {
       mocks.shouldBlockFn = args.shouldBlockFn;
       return mocks.useBlocker(args);
     },
+    useRouteContext: () => ({}),
+    getRouteApi: () => ({
+      useRouteContext: () => ({}),
+    }),
   };
 
   return { routerMocks: mocks, tanstackRouterMock: mockModule };

@@ -52,7 +52,7 @@ import {
   useGetAccountMembers,
   useUpdateAccount,
 } from '@/lib/data-access/accounts';
-import { useGetOrgMembers } from '@/lib/data-access/org';
+import { useGetHouseholdMembers } from '@/lib/data-access/household';
 import { MemberToggleGroup } from '@/components/members/MemberToggleGroup';
 
 const OPTIONAL_INSTITUTION_SELECT_VALUE = '__none__';
@@ -88,7 +88,8 @@ export const AccountForm = ({
   // Both queries fire simultaneously — no sequential waterfall (async-parallel rule)
   const { data: existingMembers, isLoading: membersLoading } =
     useGetAccountMembers(account?.id ?? null);
-  const { data: orgMembers = [], isLoading: orgLoading } = useGetOrgMembers();
+  const { data: orgMembers = [], isLoading: orgLoading } =
+    useGetHouseholdMembers();
 
   if (membersLoading || orgLoading) {
     return (

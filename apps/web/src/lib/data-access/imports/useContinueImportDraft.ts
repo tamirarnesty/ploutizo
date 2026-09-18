@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
-import { useMutation } from '@tanstack/react-query';
 import type { ImportPreparedSetSummary } from '@ploutizo/types';
+import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import type { ApiErrorBody } from '@/lib/queryClient';
 import {
   getImportReviewAutosaveSnapshot,
@@ -37,7 +37,7 @@ export const useContinueImportDraft = (draftId: string) => {
     abortRef.current?.abort();
   }, []);
 
-  const mutation = useMutation<
+  const mutation = useHouseholdMutation<
     ImportPreparedSetSummary,
     ApiErrorBody | ObsoleteContinueError,
     void

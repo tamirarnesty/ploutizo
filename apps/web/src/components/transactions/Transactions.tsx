@@ -8,7 +8,7 @@ import type { Filter } from '@ploutizo/ui/components/reui/filters';
 import { useGetTransactions } from '@/lib/data-access/transactions';
 import { useGetAccounts } from '@/lib/data-access/accounts';
 import { useGetCategories } from '@/lib/data-access/categories';
-import { useGetOrgMembers } from '@/lib/data-access/org';
+import { useGetHouseholdMembers } from '@/lib/data-access/household';
 import { useGetTags } from '@/lib/data-access/tags';
 import type { TransactionRow } from '@/lib/data-access/transactions';
 import { useTablePageSize } from '@/hooks/persistedPageSize';
@@ -285,7 +285,7 @@ export const Transactions = () => {
 
   const { data: accounts = [] } = useGetAccounts();
   const { data: categories = [] } = useGetCategories();
-  const { data: members = [] } = useGetOrgMembers();
+  const { data: members = [] } = useGetHouseholdMembers();
   const { data: tags = [] } = useGetTags();
 
   const transactions = txData?.data ?? [];

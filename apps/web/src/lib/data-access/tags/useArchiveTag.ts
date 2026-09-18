@@ -9,9 +9,10 @@ export const archiveTag = async (id: string): Promise<Tag> => {
   return r.data;
 };
 
-export const useArchiveTag = () =>
-  useOptimisticListMutation<Tag, string, Tag>({
+export const useArchiveTag = () => {
+  return useOptimisticListMutation<Tag, string, Tag>({
     queryKey: ['tags'],
     mutationFn: archiveTag,
     updateCache: (items, id) => items.filter((t) => t.id !== id),
   });
+};

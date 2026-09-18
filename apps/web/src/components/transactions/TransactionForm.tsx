@@ -40,7 +40,7 @@ import {
   resolveTransactionDescriptionPolicy,
 } from '@ploutizo/utils/transaction-policy';
 import type { Account, OrgMember, TransactionType } from '@ploutizo/types';
-import { useGetOrgMembers } from '@/lib/data-access/org';
+import { useGetHouseholdMembers } from '@/lib/data-access/household';
 import { useGetCategories } from '@/lib/data-access/categories';
 import { useGetAccounts } from '@/lib/data-access/accounts';
 import {
@@ -104,7 +104,7 @@ export const TransactionForm = ({
   const { data: categories = [], isLoading: categoriesLoading } =
     useGetCategories();
   const { data: orgMembers = [], isLoading: membersLoading } =
-    useGetOrgMembers();
+    useGetHouseholdMembers();
 
   // Loading gate: render Spinner until ALL required data is ready
   const isLoading =

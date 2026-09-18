@@ -1,5 +1,10 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { QueryKey, UseMutationOptions } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
+import type {
+  HouseholdMutationFunctionContext,
+  HouseholdMutationOptions,
+} from '@/lib/data-access/useHouseholdQuery';
+import type { QueryKey } from '@tanstack/react-query';
 
 type OptimisticListContext<TItem> = {
   previous: TItem[] | undefined;
@@ -10,7 +15,12 @@ type OptimisticListMutationConfig<TItem, TVariables, TData, TError> = {
   mutationFn: (variables: TVariables) => Promise<TData>;
   updateCache: (items: TItem[], variables: TVariables) => TItem[];
 } & Omit<
-  UseMutationOptions<TData, TError, TVariables, OptimisticListContext<TItem>>,
+  HouseholdMutationOptions<
+    TData,
+    TError,
+    TVariables,
+    OptimisticListContext<TItem>
+  >,
   'mutationFn' | 'onMutate'
 >;
 
@@ -33,11 +43,12 @@ export const useOptimisticListMutation = <
     ...rest
   } = config;
 
-  return useMutation({
+  return useHouseholdMutation({
     ...rest,
     mutationFn,
-    onMutate: async (variables) => {
+    onMutate: async (variables, context: HouseholdMutationFunctionContext) => {
       await qc.cancelQueries({ queryKey });
+      context.checkpointWorkingSet();
       const previous = qc.getQueryData<TItem[]>(queryKey);
       if (previous) {
         qc.setQueryData(queryKey, updateCache(previous, variables));

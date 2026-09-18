@@ -1,18 +1,22 @@
-import { useQuery } from '@tanstack/react-query';
 import type { PendingInvitation } from '@ploutizo/types';
+import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
 
-export const fetchOrgInvitations = async (): Promise<PendingInvitation[]> => {
+export const fetchOrgInvitations = async (
+  signal?: AbortSignal
+): Promise<PendingInvitation[]> => {
   const r = await apiFetch<{ data: PendingInvitation[] }>(
-    '/api/households/invitations'
+    '/api/households/invitations',
+    { signal }
   );
   return r.data;
 };
 
 export const useGetOrgInvitations = (): UseQueryResult<PendingInvitation[]> => {
-  return useQuery({
-    queryKey: ['org-invitations'],
-    queryFn: fetchOrgInvitations,
+  return useHouseholdQuery({
+    queryKey: ['invitations'],
+    queryFn: ({ signal }: { signal: AbortSignal }) =>
+      fetchOrgInvitations(signal),
   });
 };

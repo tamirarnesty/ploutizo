@@ -1,4 +1,5 @@
-import { queryOptions, useQuery } from '@tanstack/react-query';
+import { queryOptions } from '@tanstack/react-query';
+import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { fetchTransactions } from './queries';
 import type { UseQueryResult } from '@tanstack/react-query';
 
@@ -91,11 +92,11 @@ export interface TransactionListResponse {
 export const transactionsQueryOptions = (params: TransactionQueryParams) =>
   queryOptions({
     queryKey: ['transactions', params],
-    queryFn: () => fetchTransactions(params),
+    queryFn: ({ signal }) => fetchTransactions(params, signal),
   });
 
 export const useGetTransactions = (
   params: TransactionQueryParams
 ): UseQueryResult<TransactionListResponse> => {
-  return useQuery(transactionsQueryOptions(params));
+  return useHouseholdQuery(transactionsQueryOptions(params));
 };

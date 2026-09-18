@@ -1,101 +1,32 @@
-import { MutationCache, QueryClient } from '@tanstack/react-query';
+import { getHouseholdBearer } from '@/lib/access/working-set';
 
 // API base URL from env var — never hardcode ploutizo.app or localhost
 const API_BASE_URL = import.meta.env.VITE_API_URL as string;
 
-// Token getter is set at app init via setTokenGetter() before any queries run
-let tokenGetter: (() => Promise<string | null>) | null = null;
-
-export const setTokenGetter = (getter: () => Promise<string | null>) => {
-  tokenGetter = getter;
+export type ApiFetchOptions = RequestInit & {
+  signal?: AbortSignal;
 };
 
-// Bumped on every session cache clear so callbacks from an older session cannot
-// write the previous account's snapshots back into the shared query cache.
-let queryCacheSessionEpoch = 0;
-
-const bindMutationCallbackToSession = <
-  TCallback extends (...args: never[]) => unknown,
->(
-  startedAtEpoch: number,
-  callback: TCallback | undefined
-): TCallback | undefined => {
-  if (!callback) {
-    return undefined;
-  }
-  return ((...args: Parameters<TCallback>) => {
-    if (startedAtEpoch !== queryCacheSessionEpoch) {
-      return;
-    }
-    return callback(...args);
-  }) as TCallback;
-};
-
-const createSessionBoundMutationCache = () => {
-  const mutationCache = new MutationCache();
-  const build = mutationCache.build.bind(mutationCache);
-  mutationCache.build = ((client, options, state) => {
-    const startedAtEpoch = queryCacheSessionEpoch;
-    const mutation = build(client, options, state);
-    mutation.setOptions({
-      ...mutation.options,
-      onMutate: bindMutationCallbackToSession(
-        startedAtEpoch,
-        mutation.options.onMutate
-      ),
-      onSuccess: bindMutationCallbackToSession(
-        startedAtEpoch,
-        mutation.options.onSuccess
-      ),
-      onError: bindMutationCallbackToSession(
-        startedAtEpoch,
-        mutation.options.onError
-      ),
-      onSettled: bindMutationCallbackToSession(
-        startedAtEpoch,
-        mutation.options.onSettled
-      ),
-    });
-    return mutation;
-  }) as MutationCache['build'];
-  return mutationCache;
-};
-
-export const queryClient = new QueryClient({
-  mutationCache: createSessionBoundMutationCache(),
-  defaultOptions: {
-    queries: {
-      // staleTime: 60s — stale-while-revalidate semantics (client-swr-dedup rule).
-      // TanStack Query deduplicates requests with the same queryKey across all
-      // component instances. Queries are served from cache for 60s before
-      // background refetch. Increase per-query if data changes infrequently.
-      staleTime: 1000 * 60,
-      retry: 1,
-    },
-  },
-});
-
-// Drop in-flight work first so a late response cannot repopulate the cache
-// after sign-out, then wipe queries and mutations so the next session starts cold.
-// Increment the session epoch before clearing so already-running mutation
-// callbacks from the previous account are ignored if they settle afterward.
-export const clearSessionQueryCache = () => {
-  queryCacheSessionEpoch += 1;
-  void queryClient.cancelQueries();
-  queryClient.clear();
+export const createHouseholdBearerUnavailableError = () => {
+  const error = new Error('Household bearer unavailable');
+  error.name = 'HouseholdBearerUnavailableError';
+  return error;
 };
 
 // Typed API fetch helper — all API calls go through this, never raw fetch
 export const apiFetch = async <T>(
   path: string,
-  options?: RequestInit
+  options?: ApiFetchOptions
 ): Promise<T> => {
-  const token = tokenGetter ? await tokenGetter() : null;
+  const token = await getHouseholdBearer();
+  if (!token) {
+    throw createHouseholdBearerUnavailableError();
+  }
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      Authorization: `Bearer ${token}`,
       ...options?.headers,
     },
   });

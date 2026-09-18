@@ -1,7 +1,7 @@
 import { createCollection } from '@tanstack/react-db';
 import { queryCollectionOptions } from '@tanstack/query-db-collection';
 import type { ImportDraftRow } from '@ploutizo/types';
-import { queryClient } from '@/lib/queryClient';
+import { getActiveQueryClient } from '@/lib/access/working-set-registry';
 import { importDraftQueryKey } from './queryKeys';
 import { fetchImportDraft } from './useGetImportDraft';
 
@@ -10,9 +10,9 @@ const createImportDraftRowsCollection = (draftId: string) =>
     queryCollectionOptions({
       id: `import-draft-rows:${draftId}`,
       queryKey: importDraftQueryKey(draftId),
-      queryFn: () => fetchImportDraft(draftId),
+      queryFn: ({ signal }) => fetchImportDraft(draftId, signal),
       select: (draft) => draft.rows,
-      queryClient,
+      queryClient: getActiveQueryClient(),
       getKey: (row: ImportDraftRow) => row.id,
       retry: 1,
     })
@@ -43,10 +43,8 @@ export const releaseImportDraftRowsCollection = async (draftId: string) => {
   await collection.cleanup();
 };
 
-export const resetImportDraftRowsCollectionsForTests = async () => {
+export const endImportDraftRowsCollections = async () => {
   await Promise.all(
-    [...importDraftRowsCollections.keys()].map((draftId) =>
-      releaseImportDraftRowsCollection(draftId)
-    )
+    [...importDraftRowsCollections.keys()].map(releaseImportDraftRowsCollection)
   );
 };

@@ -1,17 +1,17 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  endImportReviewAutosave,
   getImportReviewAutosaveSnapshot,
   markImportReviewPending,
   markImportReviewSelectionFailure,
   markImportReviewSelectionStart,
   markImportReviewSelectionSuccess,
-  resetImportReviewAutosaveForTests,
   subscribeImportReviewAutosave,
 } from './importReviewAutosave';
 
 describe('importReviewAutosave selection failures', () => {
   afterEach(() => {
-    resetImportReviewAutosaveForTests();
+    endImportReviewAutosave();
   });
 
   it('notifies autosave listeners when a new review edit is queued', () => {

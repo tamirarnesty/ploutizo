@@ -59,12 +59,32 @@ export default defineConfig({
         __dirname,
         '../../packages/ui/src/components'
       ),
+      '@tanstack/start-storage-context': path.resolve(
+        __dirname,
+        'src/test/mocks/start-storage-context.ts'
+      ),
     },
+  },
+  define: {
+    'import.meta.env.SSR': 'false',
+    'import.meta.env.VITE_CLERK_PUBLISHABLE_KEY': JSON.stringify(
+      'pk_test_Y2xlcmsudGVzdC5kZXYk'
+    ),
   },
   test: {
     environment: 'jsdom',
     globals: false,
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     setupFiles: ['./src/test/vitest-setup.ts'],
+    server: {
+      deps: {
+        inline: [
+          '@clerk/tanstack-react-start',
+          '@tanstack/react-start',
+          '@tanstack/start-client-core',
+          '@tanstack/start-storage-context',
+        ],
+      },
+    },
   },
 });

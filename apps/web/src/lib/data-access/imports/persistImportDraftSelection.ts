@@ -2,7 +2,11 @@ import { matchDecisionsForSelectedRows } from '@ploutizo/utils';
 import { createOptimisticAction } from '@tanstack/db';
 import type { ImportDraft, ImportDraftPersistedRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowSelectionInput } from '@ploutizo/validators';
-import { queryClient } from '@/lib/queryClient';
+import {
+  beginWorkingSetScope,
+  getActiveQueryClient,
+} from '@/lib/access/working-set-registry';
+import type { WorkingSetScope } from '@/lib/access/working-set-registry';
 import {
   getImportReviewAutosaveSnapshot,
   markImportReviewSelectionFailure,
@@ -15,11 +19,13 @@ import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
 import { importMatchTransactionIdForDraft } from './importMatchTargetOnAccount';
 import { importDraftQueryKey } from './queryKeys';
 import { rederiveImportDraftWorkingCopy } from './rederiveImportDraftWorkingCopy';
+import { runImportDraftPersist } from './runImportDraftPersist';
 
 interface SelectionVariables {
   draftId: string;
   rowIds: string[];
   selectedForImport: boolean;
+  scope: WorkingSetScope;
 }
 
 const applySelectionMatchDecisions = (
@@ -27,7 +33,7 @@ const applySelectionMatchDecisions = (
   rowIds: string[],
   selectedForImport: boolean
 ) => {
-  const importDraft = queryClient.getQueryData<ImportDraft>(
+  const importDraft = getActiveQueryClient().getQueryData<ImportDraft>(
     importDraftQueryKey(draftId)
   );
   if (!importDraft?.account.id) return;
@@ -101,32 +107,36 @@ const persistSelection = createOptimisticAction<SelectionVariables>({
     applySelectionMatchDecisions(draftId, rowIds, selectedForImport);
     rederiveImportDraftWorkingCopy(draftId);
   },
-  mutationFn: async ({ draftId, rowIds, selectedForImport }) => {
-    markImportReviewSelectionStart(draftId);
-    // Field persists first when ordering matters (ADR 0005).
-    await flushImportDraftRowPacedMutations(draftId);
-
+  mutationFn: async ({ draftId, rowIds, selectedForImport, scope }) => {
     const body: UpdateImportDraftRowSelectionInput = {
       rowIds,
       selectedForImport,
     };
 
-    try {
-      const serverRows = await fetchUpdateImportDraftRowSelection(
-        draftId,
-        body
-      );
-      confirmSelectionIntoCollection(
-        draftId,
-        serverRows,
-        rowIds,
-        selectedForImport
-      );
-      markImportReviewSelectionSuccess(draftId, rowIds);
-    } catch {
-      confirmSelectionIntoCollection(draftId, null, rowIds, selectedForImport);
-      markImportReviewSelectionFailure(draftId, rowIds);
-    }
+    await runImportDraftPersist({
+      scope,
+      beforePersist: () => flushImportDraftRowPacedMutations(draftId),
+      onStart: () => markImportReviewSelectionStart(draftId),
+      persist: () => fetchUpdateImportDraftRowSelection(draftId, body),
+      onSuccess: (serverRows) => {
+        confirmSelectionIntoCollection(
+          draftId,
+          serverRows,
+          rowIds,
+          selectedForImport
+        );
+        markImportReviewSelectionSuccess(draftId, rowIds);
+      },
+      onFailure: () => {
+        confirmSelectionIntoCollection(
+          draftId,
+          null,
+          rowIds,
+          selectedForImport
+        );
+        markImportReviewSelectionFailure(draftId, rowIds);
+      },
+    });
   },
 });
 
@@ -136,7 +146,12 @@ export const persistImportDraftSelection = (
   selectedForImport: boolean
 ) => {
   if (rowIds.length === 0) return;
-  persistSelection({ draftId, rowIds, selectedForImport });
+  persistSelection({
+    draftId,
+    rowIds,
+    selectedForImport,
+    scope: beginWorkingSetScope(),
+  });
 };
 
 /** Re-persist failed selection from the live working copy (not the original intent). */

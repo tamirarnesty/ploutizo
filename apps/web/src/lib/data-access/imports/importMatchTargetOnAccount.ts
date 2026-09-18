@@ -1,7 +1,7 @@
 import { isImportMatchTargetOnAccount } from '@ploutizo/utils';
 import type { ImportDraft } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
-import { queryClient } from '@/lib/queryClient';
+import { getActiveQueryClient } from '@/lib/access/working-set-registry';
 import { importDraftQueryKey } from './queryKeys';
 
 /** Persist only match IDs that belong to the draft destination account. */
@@ -10,7 +10,7 @@ export const importMatchTransactionIdForDraft = (
   transactionId: string | null
 ): string | null => {
   if (!transactionId) return null;
-  const draft = queryClient.getQueryData<ImportDraft>(
+  const draft = getActiveQueryClient().getQueryData<ImportDraft>(
     importDraftQueryKey(draftId)
   );
   if (!draft?.account.id) return null;

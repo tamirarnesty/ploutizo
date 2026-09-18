@@ -22,7 +22,7 @@ import { useContinueImportDraft } from '@/lib/data-access/imports/useContinueImp
 import { useGetAccounts } from '@/lib/data-access/accounts';
 import { importDraftFinalizeRoute } from '@/lib/navigation';
 import { useGetCategories } from '@/lib/data-access/categories';
-import { useGetOrgMembers } from '@/lib/data-access/org';
+import { useGetHouseholdMembers } from '@/lib/data-access/household';
 import {
   PendingInputFlushProvider,
   useFlushPendingInputs,
@@ -90,7 +90,7 @@ const ImportDraftReviewContent = ({
 }: ImportDraftReviewProps) => {
   const navigate = useNavigate();
   const { data: categories = [] } = useGetCategories();
-  const { data: orgMembers = [] } = useGetOrgMembers();
+  const { data: orgMembers = [] } = useGetHouseholdMembers();
   const {
     data: accounts,
     isPending: accountsPending,

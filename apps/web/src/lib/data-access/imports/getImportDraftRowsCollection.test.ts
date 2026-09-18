@@ -3,11 +3,11 @@ import {
   makeImportDraft,
   makeImportDraftRow,
 } from '@/components/imports/test-fixtures/importDraft';
-import { queryClient } from '@/lib/queryClient';
+import { getActiveQueryClient } from '@/lib/access/working-set-registry';
 import {
+  endImportDraftRowsCollections,
   getImportDraftRowsCollection,
   releaseImportDraftRowsCollection,
-  resetImportDraftRowsCollectionsForTests,
 } from './getImportDraftRowsCollection';
 import { importDraftQueryKey } from './queryKeys';
 import { fetchImportDraft } from './useGetImportDraft';
@@ -24,15 +24,15 @@ const draft = makeImportDraft({
 
 describe('getImportDraftRowsCollection', () => {
   beforeEach(() => {
-    queryClient.clear();
-    queryClient.setQueryData(importDraftQueryKey(draft.id), draft);
+    getActiveQueryClient().clear();
+    getActiveQueryClient().setQueryData(importDraftQueryKey(draft.id), draft);
     vi.mocked(fetchImportDraft).mockReset();
     vi.mocked(fetchImportDraft).mockResolvedValue(draft);
   });
 
   afterEach(async () => {
-    await resetImportDraftRowsCollectionsForTests();
-    queryClient.clear();
+    await endImportDraftRowsCollections();
+    getActiveQueryClient().clear();
   });
 
   it('does not reuse a collection that is still being released', async () => {

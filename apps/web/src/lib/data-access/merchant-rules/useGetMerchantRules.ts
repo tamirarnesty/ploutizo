@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions } from '@tanstack/react-query';
+import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
 
@@ -14,14 +15,21 @@ export interface MerchantRule {
   createdAt: string;
 }
 
-export const fetchMerchantRules = async (): Promise<MerchantRule[]> => {
-  const r = await apiFetch<{ data: MerchantRule[] }>('/api/merchant-rules');
+export const fetchMerchantRules = async (
+  signal?: AbortSignal
+): Promise<MerchantRule[]> => {
+  const r = await apiFetch<{ data: MerchantRule[] }>('/api/merchant-rules', {
+    signal,
+  });
   return r.data;
 };
 
-export const useGetMerchantRules = (): UseQueryResult<MerchantRule[]> => {
-  return useQuery({
+export const merchantRulesQueryOptions = () =>
+  queryOptions({
     queryKey: ['merchant-rules'],
-    queryFn: fetchMerchantRules,
+    queryFn: ({ signal }) => fetchMerchantRules(signal),
   });
+
+export const useGetMerchantRules = (): UseQueryResult<MerchantRule[]> => {
+  return useHouseholdQuery(merchantRulesQueryOptions());
 };

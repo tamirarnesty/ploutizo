@@ -15,10 +15,11 @@ export default [
     rules: {
       // Forbid file extensions on relative imports — use bare specifiers (e.g. './foo', not './foo.js')
       // Exception: TanStack Router auto-generates routeTree.gen — the .gen extension is intentional
+      // Exception: TanStack Start server-only modules use the .server suffix
       'import/extensions': [
         'error',
         'never',
-        { ignorePackages: true, pattern: { gen: 'always' } },
+        { ignorePackages: true, pattern: { gen: 'always', server: 'always' } },
       ],
       // Enforce T[] over Array<T>
       '@typescript-eslint/array-type': ['error', { default: 'array' }],
@@ -45,6 +46,54 @@ export default [
       ],
       // Prefer const arrow functions over function declarations
       'func-style': ['error', 'expression'],
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@clerk/tanstack-react-start',
+              importNames: ['auth'],
+              message:
+                'auth() is not isomorphic. Use getHouseholdBearer from lib/access.',
+            },
+            {
+              name: '@clerk/tanstack-react-start/server',
+              message:
+                'Clerk server auth() is not isomorphic. Use getHouseholdBearer from lib/access.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/start.ts', 'src/lib/access/resolve.server.ts'],
+    rules: {
+      'no-restricted-imports': 'off',
+    },
+  },
+  {
+    files: ['src/lib/data-access/**/*.ts', 'src/lib/data-access/**/*.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@tanstack/react-query',
+              importNames: ['useQuery', 'useInfiniteQuery', 'useMutation'],
+              message:
+                'Use useHouseholdQuery, useHouseholdInfiniteQuery, or useHouseholdMutation from useHouseholdQuery.ts.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/lib/data-access/useHouseholdQuery.ts'],
+    rules: {
+      'no-restricted-imports': 'off',
     },
   },
 ];
