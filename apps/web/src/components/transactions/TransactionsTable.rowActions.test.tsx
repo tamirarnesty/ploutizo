@@ -66,8 +66,25 @@ describe('TransactionsTable row context menu', () => {
         .map((item) => item.textContent)
     ).toEqual(['Edit', 'Delete']);
 
+    expect(within(menu).getByRole('menuitem', { name: 'Delete' })).toHaveClass(
+      'text-destructive'
+    );
+
     await user.click(within(menu).getByRole('menuitem', { name: 'Edit' }));
     expect(onEdit).toHaveBeenCalledWith(transaction);
+  });
+
+  it('opens the same menu from a right-click on another cell in the row', async () => {
+    renderTable();
+
+    fireEvent.contextMenu(screen.getByText(/jun/i));
+
+    const menu = await screen.findByRole('menu');
+    expect(
+      within(menu)
+        .getAllByRole('menuitem')
+        .map((item) => item.textContent)
+    ).toEqual(['Edit', 'Delete']);
   });
 
   it('keeps the end-of-row actions button and opens the same items', async () => {

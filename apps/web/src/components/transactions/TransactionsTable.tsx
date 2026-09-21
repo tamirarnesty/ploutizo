@@ -20,6 +20,7 @@ import {
 import { useEffectiveTablePageSize } from '@/hooks/useEffectiveTablePageSize';
 import { usePreloadLucideIcons } from '@/components/categories/usePreloadLucideIcons';
 import { buildColumns } from './TransactionColumns';
+import { TransactionTableContextMenu } from './TransactionRowActions';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import { TransactionsTableEmpty } from './TransactionTableEmpty';
 import { TransactionsTableEmptyFiltered } from './TransactionTableEmptyFiltered';
@@ -166,7 +167,13 @@ export const TransactionsTable = ({
             <DataGridScrollArea
               orientation={PAGINATED_DATA_GRID_SCROLL_ORIENTATION}
             >
-              <DataGridTable />
+              <TransactionTableContextMenu
+                transactions={transactions}
+                onEdit={onEdit}
+                onDelete={setDeleteId}
+              >
+                <DataGridTable />
+              </TransactionTableContextMenu>
             </DataGridScrollArea>
           </DataGridContainer>
           <DataGridPagination className={DATA_GRID_PAGINATION_ROW_CLASSNAME} />

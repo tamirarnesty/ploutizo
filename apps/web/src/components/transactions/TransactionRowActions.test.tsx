@@ -5,31 +5,21 @@ import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { mockTransactionRow } from '@/test/overlayFixtures';
 import type { TransactionRow } from '@/lib/data-access/transactions';
 import { buildColumns } from './TransactionColumns';
-import { TransactionRowActionsDropdown } from './TransactionRowActionsDropdown';
 import {
-  TRANSACTION_ROW_ID_ATTR,
-  TransactionRowContextMenu,
-} from './TransactionRowContextMenu';
+  TransactionRowActionsDropdown,
+  TransactionTableContextMenu,
+} from './TransactionRowActions';
 import { getTransactionRowActions } from './transactionRowActions';
 import type { CellContext } from '@tanstack/react-table';
 
-const renderCell = (
-  columnId: string,
+const renderDescriptionCell = (
   transaction: TransactionRow,
-  handlers: {
-    onEdit: (transaction: TransactionRow) => void;
-    onDelete: (id: string) => void;
-    onOpenOriginal: (id: string) => void;
-  }
+  onOpenOriginal: (id: string) => void
 ) => {
-  const columns = buildColumns(
-    handlers.onDelete,
-    handlers.onEdit,
-    handlers.onOpenOriginal
-  );
-  const column = columns.find((entry) => entry.id === columnId);
+  const columns = buildColumns(vi.fn(), vi.fn(), onOpenOriginal);
+  const column = columns.find((entry) => entry.id === 'description');
   if (typeof column?.cell !== 'function') {
-    throw new Error(`Expected a cell renderer for ${columnId}`);
+    throw new Error('Expected a description cell renderer');
   }
 
   const context = {
@@ -46,26 +36,53 @@ const openContextMenuFrom = async (target: HTMLElement) => {
   return screen.findByRole('menu');
 };
 
+const ContextMenuHarness = ({
+  transaction,
+  onEdit = vi.fn(),
+  onDelete = vi.fn(),
+}: {
+  transaction: TransactionRow;
+  onEdit?: (transaction: TransactionRow) => void;
+  onDelete?: (id: string) => void;
+}) => (
+  <TransactionTableContextMenu
+    transactions={[transaction]}
+    onEdit={onEdit}
+    onDelete={onDelete}
+  >
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{transaction.description}</td>
+          <td>
+            <div data-transaction-id={transaction.id} />
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </TransactionTableContextMenu>
+);
+
 describe('transaction row action parity', () => {
   it('opens the same Edit / Delete menu from a row context click', async () => {
     const user = userEvent.setup();
     const transaction = mockTransactionRow();
     const onEdit = vi.fn();
-    const onDelete = vi.fn();
 
-    render(
-      <TransactionRowContextMenu
-        transaction={transaction}
-        handlers={{ onEdit, onDelete }}
-      >
-        <span>Coffee</span>
-      </TransactionRowContextMenu>
+    render(<ContextMenuHarness transaction={transaction} onEdit={onEdit} />);
+
+    const menu = await openContextMenuFrom(
+      screen.getByText(transaction.description)
     );
-
-    const menu = await openContextMenuFrom(screen.getByText('Coffee'));
     const items = within(menu).getAllByRole('menuitem');
 
     expect(items.map((item) => item.textContent)).toEqual(['Edit', 'Delete']);
+    expect(items[1]).toHaveClass('text-destructive');
 
     await user.click(within(menu).getByRole('menuitem', { name: 'Edit' }));
     expect(onEdit).toHaveBeenCalledWith(transaction);
@@ -77,21 +94,26 @@ describe('transaction row action parity', () => {
     const onDelete = vi.fn();
 
     render(
-      <TransactionRowContextMenu
-        transaction={transaction}
-        handlers={{ onEdit: vi.fn(), onDelete }}
-      >
-        <span>Coffee</span>
-      </TransactionRowContextMenu>
+      <ContextMenuHarness transaction={transaction} onDelete={onDelete} />
     );
 
-    const menu = await openContextMenuFrom(screen.getByText('Coffee'));
+    const menu = await openContextMenuFrom(
+      screen.getByText(transaction.description)
+    );
     await user.click(within(menu).getByRole('menuitem', { name: 'Delete' }));
 
     expect(onDelete).toHaveBeenCalledWith(transaction.id);
   });
 
-  it('keeps end-of-row dropdown labels, order, and handlers', async () => {
+  it('does not open the row menu from a header right-click', () => {
+    render(<ContextMenuHarness transaction={mockTransactionRow()} />);
+
+    fireEvent.contextMenu(screen.getByText('Date'));
+
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  });
+
+  it('keeps end-of-row dropdown labels, order, handlers, and Delete color', async () => {
     const user = userEvent.setup();
     const transaction = mockTransactionRow();
     const onEdit = vi.fn();
@@ -101,7 +123,12 @@ describe('transaction row action parity', () => {
       onDelete,
     });
 
-    render(<TransactionRowActionsDropdown actions={actions} />);
+    render(
+      <TransactionRowActionsDropdown
+        transactionId={transaction.id}
+        actions={actions}
+      />
+    );
 
     await user.click(
       screen.getByRole('button', { name: 'Transaction actions' })
@@ -110,6 +137,7 @@ describe('transaction row action parity', () => {
     const menu = await screen.findByRole('menu');
     const items = within(menu).getAllByRole('menuitem');
     expect(items.map((item) => item.textContent)).toEqual(['Edit', 'Delete']);
+    expect(items[1]).toHaveClass('text-destructive');
 
     await user.click(within(menu).getByRole('menuitem', { name: 'Delete' }));
     expect(onDelete).toHaveBeenCalledWith(transaction.id);
@@ -121,18 +149,12 @@ describe('transaction row action parity', () => {
     const transaction = mockTransactionRow();
     const onEdit = vi.fn();
 
-    render(
-      <TransactionRowContextMenu
-        transaction={transaction}
-        handlers={{ onEdit, onDelete: vi.fn() }}
-      >
-        <span>Coffee</span>
-      </TransactionRowContextMenu>
-    );
+    render(<ContextMenuHarness transaction={transaction} onEdit={onEdit} />);
 
-    const menu = await openContextMenuFrom(screen.getByText('Coffee'));
-    const editItem = within(menu).getByRole('menuitem', { name: 'Edit' });
-    editItem.focus();
+    const menu = await openContextMenuFrom(
+      screen.getByText(transaction.description)
+    );
+    within(menu).getByRole('menuitem', { name: 'Edit' }).focus();
     await user.keyboard('{Enter}');
 
     expect(onEdit).toHaveBeenCalledWith(transaction);
@@ -141,14 +163,7 @@ describe('transaction row action parity', () => {
   it('closes the context menu on Escape', async () => {
     const user = userEvent.setup();
 
-    render(
-      <TransactionRowContextMenu
-        transaction={mockTransactionRow()}
-        handlers={{ onEdit: vi.fn(), onDelete: vi.fn() }}
-      >
-        <span>Coffee</span>
-      </TransactionRowContextMenu>
-    );
+    render(<ContextMenuHarness transaction={mockTransactionRow()} />);
 
     const menu = await openContextMenuFrom(screen.getByText('Coffee'));
     await user.keyboard('{Escape}');
@@ -167,11 +182,7 @@ describe('transaction row action parity', () => {
       refundOfAmountCents: 1200,
     };
 
-    renderCell('description', transaction, {
-      onEdit: vi.fn(),
-      onDelete: vi.fn(),
-      onOpenOriginal,
-    });
+    renderDescriptionCell(transaction, onOpenOriginal);
 
     await user.click(
       screen.getByRole('button', {
@@ -181,29 +192,5 @@ describe('transaction row action parity', () => {
 
     expect(onOpenOriginal).toHaveBeenCalledWith('tx-original');
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
-  });
-
-  it('wraps every data cell so right-click outside the ⋯ still opens the row menu', async () => {
-    const transaction = mockTransactionRow();
-    const onEdit = vi.fn();
-
-    renderCell('date', transaction, {
-      onEdit,
-      onDelete: vi.fn(),
-      onOpenOriginal: vi.fn(),
-    });
-
-    const trigger = document.querySelector(
-      `[${TRANSACTION_ROW_ID_ATTR}="${transaction.id}"]`
-    );
-    expect(trigger).toBeTruthy();
-
-    const menu = await openContextMenuFrom(trigger as HTMLElement);
-    expect(
-      within(menu).getByRole('menuitem', { name: 'Edit' })
-    ).toBeInTheDocument();
-    expect(
-      within(menu).getByRole('menuitem', { name: 'Delete' })
-    ).toBeInTheDocument();
   });
 });
