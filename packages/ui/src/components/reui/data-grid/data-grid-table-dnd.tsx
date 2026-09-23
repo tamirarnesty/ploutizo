@@ -27,7 +27,7 @@ import {
   DataGridTableBody,
   DataGridTableBodyRow,
   DataGridTableBodyRowCell,
-  DataGridTableBodyRowExpandded,
+  DataGridTableBodyRowExpanded,
   DataGridTableBodyRowSkeleton,
   DataGridTableBodyRowSkeletonCell,
   DataGridTableEmpty,
@@ -281,7 +281,7 @@ function DataGridTableDnd<TData>({
                         })}
                     </DataGridTableBodyRow>
                     {row.getIsExpanded() && (
-                      <DataGridTableBodyRowExpandded row={row} />
+                      <DataGridTableBodyRowExpanded row={row} />
                     )}
                   </Fragment>
                 );

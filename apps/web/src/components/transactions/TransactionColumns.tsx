@@ -3,7 +3,6 @@ import {
   Coins,
   CreditCard,
   Layers2,
-  MoreHorizontal,
   NotepadText,
   Tag,
   Tags,
@@ -11,13 +10,6 @@ import {
 } from 'lucide-react';
 import { DataGridColumnHeader } from '@ploutizo/ui/components/reui/data-grid/data-grid-column-header';
 import { Badge } from '@ploutizo/ui/components/badge';
-import { Button } from '@ploutizo/ui/components/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@ploutizo/ui/components/dropdown-menu';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
 import {
@@ -33,6 +25,8 @@ import { getColourBadgeClassFromRaw } from '@/components/colour/colour-token-cla
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
 import { RightAlignedColumnHeader } from '@/components/dashboard/card-balances/RightAlignedColumnHeader';
 import type { TransactionRow } from '@/lib/data-access/transactions';
+import { TransactionRowActionsDropdown } from './TransactionRowActionMenus';
+import { getTransactionRowActions } from './transactionRowActions';
 import type { ColumnDef } from '@tanstack/react-table';
 
 // Per-type badge className map (per UI-SPEC.md)
@@ -70,6 +64,8 @@ export const buildColumns = (
   onEdit: (transaction: TransactionRow) => void,
   onOpenOriginal: (id: string) => void
 ): ColumnDef<TransactionRow>[] => {
+  const handlers = { onEdit, onDelete: setDeleteId };
+
   return [
     // 1. Date
     {
@@ -478,33 +474,9 @@ export const buildColumns = (
         cellClassName: 'w-12 max-w-12 px-1',
       },
       cell: ({ row }) => (
-        <div className="flex justify-center">
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label="Transaction actions"
-                  className="opacity-0 focus-visible:opacity-100 data-popup-open:opacity-100 [tr:hover_&]:opacity-100"
-                >
-                  <MoreHorizontal className="size-4" />
-                </Button>
-              }
-            />
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(row.original)}>
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => setDeleteId(row.original.id)}
-              >
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <TransactionRowActionsDropdown
+          actions={getTransactionRowActions(row.original, handlers)}
+        />
       ),
     },
   ];

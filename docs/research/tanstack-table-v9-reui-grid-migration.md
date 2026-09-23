@@ -77,6 +77,12 @@ The migration must update them together and verify the lockfile resolves no v8 c
 5. **Do not choose `stockFeatures` by default.** It can reduce initial migration edits, but it includes all features and forfeits v9's tree-shaking benefit. The registry already provides a feature bundle tuned for its data grid. [TanStack: `stockFeatures`][tanstack-migration]
 6. **Global metadata should not silently survive.** The installed primitive augments `ColumnMeta` globally. The registry’s feature-scoped `DataGridFeatures` approach avoids leaking grid-only metadata to unrelated tables; decide the metadata boundary before preserving `grow`, skeleton, and expanded-row contracts. [TanStack: table and column meta][tanstack-migration]
 
+## Ploutizo fork capabilities
+
+Capabilities added or changed locally in `packages/ui/src/components/reui/` (reconcile after `npx shadcn@latest add @reui/data-grid`):
+
+- **`DataGrid.renderRowContextMenu`** — Optional `(row) => ReactNode` menu content; `data-grid-row-context-menu.tsx` wraps the table viewport in a single context menu, stamps `data-grid-row-id` on body/expanded `<tr>` via `data-grid-table-body-row.tsx`, resolves the TanStack row from the open event target on open, and cancels when no body row matches (e.g. header right-click).
+
 ## Verification checklist
 
 ### Static and dependency checks

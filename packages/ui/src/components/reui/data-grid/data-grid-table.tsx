@@ -24,6 +24,24 @@ import type {
   Ref,
 } from 'react';
 import { useDataGrid } from '@/components/reui/data-grid/data-grid';
+import { DataGridRowContextMenuShell } from '@/components/reui/data-grid/data-grid-row-context-menu';
+import {
+  DataGridTableBodyRow,
+  DataGridTableBodyRowExpanded,
+  type DataGridTablePinnedBoundary,
+} from '@/components/reui/data-grid/data-grid-table-body-row';
+import { getDataGridTablePinningStyles } from '@/components/reui/data-grid/data-grid-table-pinning';
+import {
+  assignDataGridTableRef,
+  dataGridBodyCellSpacingVariants,
+  dataGridRowBorderClasses,
+  dataGridTablePinnedBodyCellClasses,
+} from '@/components/reui/data-grid/data-grid-table-shared';
+import {
+  DataGridTableFillBodyCell,
+  DataGridTableFillFootCell,
+  DataGridTableFillHeadCell,
+} from '@/components/reui/data-grid/data-grid-table-trailing-fill';
 import {
   getDataGridCssColumnWidth,
   getDataGridShowTrailingFillColumn,
@@ -46,18 +64,6 @@ const headerCellSpacingVariants = cva('', {
   },
 });
 
-const bodyCellSpacingVariants = cva('', {
-  variants: {
-    size: {
-      dense: 'px-2 py-1.5',
-      default: 'px-3 py-2',
-    },
-  },
-  defaultVariants: {
-    size: 'default',
-  },
-});
-
 const footerCellSpacingVariants = cva('', {
   variants: {
     size: {
@@ -69,42 +75,6 @@ const footerCellSpacingVariants = cva('', {
     size: 'default',
   },
 });
-
-function getPinningStyles<TData>(column: Column<TData>): CSSProperties {
-  const isPinned = column.getIsPinned();
-
-  return {
-    left: isPinned === 'left' ? `${column.getStart('left')}px` : undefined,
-    right: isPinned === 'right' ? `${column.getAfter('right')}px` : undefined,
-    position: isPinned ? 'sticky' : 'relative',
-    width: column.getSize(),
-    zIndex: isPinned ? 1 : 0,
-  };
-}
-
-const dataGridRowBorderClasses =
-  'data-[row-border]:border-b data-[row-border]:border-border data-[row-border]:[&:not(:last-child)>td]:border-b';
-
-const getDataGridBodyRowBorderEnabled = (
-  rowBorder: boolean,
-  rowBorderWhenExpanded: boolean | undefined,
-  isExpanded: boolean
-) => {
-  if (!rowBorder) return false;
-  if (!isExpanded) return true;
-  return rowBorderWhenExpanded ?? rowBorder;
-};
-
-function assignRef<T>(ref: Ref<T> | undefined, value: T | null) {
-  if (!ref) return;
-
-  if (typeof ref === 'function') {
-    ref(value);
-    return;
-  }
-
-  (ref as { current: T | null }).current = value;
-}
 
 type DataGridResizeStartEvent =
   | ReactMouseEvent<HTMLDivElement>
@@ -289,8 +259,6 @@ function startDataGridColumnResizeOnEnd<TData>(
   }));
 }
 
-type DataGridTablePinnedBoundary = 'top' | 'bottom';
-
 function getDataGridTableRowSections<TData>(
   table: Table<TData>,
   rowsPinnable?: boolean
@@ -360,51 +328,6 @@ function DataGridTableFillCol() {
     <col
       data-slot="data-grid-table-fill-col"
       style={{ width: 'var(--data-grid-fill-size, 0px)' }}
-    />
-  );
-}
-
-function DataGridTableFillHeadCell() {
-  const { props, table } = useDataGrid();
-
-  if (!getDataGridShowTrailingFillColumn(props.tableLayout, table)) return null;
-
-  return (
-    <th
-      aria-hidden="true"
-      data-slot="data-grid-table-fill-head-cell"
-      style={{ width: 'var(--data-grid-fill-size, 0px)' }}
-      className="p-0"
-    />
-  );
-}
-
-function DataGridTableFillBodyCell() {
-  const { props, table } = useDataGrid();
-
-  if (!getDataGridShowTrailingFillColumn(props.tableLayout, table)) return null;
-
-  return (
-    <td
-      aria-hidden="true"
-      data-slot="data-grid-table-fill-body-cell"
-      style={{ width: 'var(--data-grid-fill-size, 0px)' }}
-      className="p-0"
-    />
-  );
-}
-
-function DataGridTableFillFootCell() {
-  const { props, table } = useDataGrid();
-
-  if (!getDataGridShowTrailingFillColumn(props.tableLayout, table)) return null;
-
-  return (
-    <td
-      aria-hidden="true"
-      data-slot="data-grid-table-fill-foot-cell"
-      style={{ width: 'var(--data-grid-fill-size, 0px)' }}
-      className="border-t p-0"
     />
   );
 }
@@ -502,7 +425,7 @@ function DataGridTableViewport({
   const handleViewportRef = useCallback(
     (node: HTMLDivElement | null) => {
       setViewportElement(node);
-      assignRef(viewportRef, node);
+      assignDataGridTableRef(viewportRef, node);
     },
     [viewportRef]
   );
@@ -645,7 +568,7 @@ function DataGridTableHeadRowCell<TData>({
           }),
         ...(props.tableLayout?.columnsPinnable &&
           column.getCanPin() &&
-          getPinningStyles(column)),
+          getDataGridTablePinningStyles(column)),
         ...(getDataGridUsesCssColumnSizing(props.tableLayout) && {
           width: getDataGridCssColumnWidth(
             `--header-${header.id}-size`,
@@ -910,7 +833,7 @@ function DataGridTableBodyRowSkeletonCell<TData>({
   column: Column<TData>;
 }) {
   const { props, table } = useDataGrid();
-  const bodyCellSpacing = bodyCellSpacingVariants({
+  const bodyCellSpacing = dataGridBodyCellSpacingVariants({
     size: props.tableLayout?.dense ? 'dense' : 'default',
   });
 
@@ -936,7 +859,7 @@ function DataGridTableBodyRowSkeletonCell<TData>({
         column.columnDef.meta?.cellClassName,
         props.tableLayout?.columnsPinnable &&
           column.getCanPin() &&
-          'data-pinned:backdrop-blur-xs" data-pinned:bg-background/90 [&[data-pinned=left][data-last-col=left]]:border-e! [&[data-pinned=right][data-last-col=right]]:border-s! [&[data-pinned][data-last-col]]:border-border',
+          dataGridTablePinnedBodyCellClasses,
         column.getIndex() === 0 ||
           column.getIndex() === table.getVisibleFlatColumns().length - 1
           ? props.tableClassNames?.edgeCell
@@ -945,206 +868,6 @@ function DataGridTableBodyRowSkeletonCell<TData>({
     >
       {children}
     </td>
-  );
-}
-
-function DataGridTableBodyRow<TData>({
-  children,
-  row,
-  pinnedBoundary,
-  rowRef,
-  dndRef,
-  dndStyle,
-}: {
-  children: ReactNode;
-  row: Row<TData>;
-  pinnedBoundary?: DataGridTablePinnedBoundary;
-  rowRef?: React.Ref<HTMLTableRowElement>;
-  dndRef?: React.Ref<HTMLTableRowElement>;
-  dndStyle?: CSSProperties;
-}) {
-  const { props, table } = useDataGrid();
-  const isRowPinned = row.getIsPinned();
-  const rowBorder = props.tableLayout?.rowBorder ?? false;
-  const isExpanded = row.getIsExpanded();
-  const showRowBorder = getDataGridBodyRowBorderEnabled(
-    rowBorder,
-    props.tableLayout?.rowBorderWhenExpanded,
-    isExpanded
-  );
-
-  return (
-    <tr
-      ref={(node) => {
-        assignRef(rowRef, node);
-        assignRef(dndRef, node);
-      }}
-      style={{ ...(dndStyle ? dndStyle : null) }}
-      data-state={
-        table.options.enableRowSelection && row.getIsSelected()
-          ? 'selected'
-          : undefined
-      }
-      data-expanded={isExpanded || undefined}
-      data-row-border={showRowBorder || undefined}
-      data-row-pinned={isRowPinned || undefined}
-      data-row-pinned-boundary={pinnedBoundary}
-      onClick={() => props.onRowClick && props.onRowClick(row.original)}
-      className={cn(
-        'hover:bg-muted/40 data-[state=selected]:bg-muted/50',
-        props.onRowClick && 'cursor-pointer',
-        !props.tableLayout?.stripped && dataGridRowBorderClasses,
-        props.tableLayout?.cellBorder && '*:last:border-e-0',
-        props.tableLayout?.stripped &&
-          'odd:bg-muted/90 hover:bg-transparent odd:hover:bg-muted',
-        table.options.enableRowSelection && '*:first:relative',
-        props.tableLayout?.rowsPinnable &&
-          isRowPinned &&
-          'bg-muted/30 hover:bg-muted/50',
-        pinnedBoundary === 'top' && '[&>td]:shadow-[0_2px_0_rgba(0,0,0,0.03)]',
-        pinnedBoundary === 'bottom' &&
-          '[&>td]:shadow-[0_2px_0_rgba(0,0,0,0.03)]',
-        props.tableClassNames?.bodyRow
-      )}
-    >
-      {children}
-      <DataGridTableFillBodyCell />
-    </tr>
-  );
-}
-
-function DataGridTableBodyRowExpandedPinnedCell<TData>({
-  cell,
-  row,
-}: {
-  cell: Cell<TData, unknown>;
-  row: Row<TData>;
-}) {
-  const { props } = useDataGrid();
-  const { column } = cell;
-  const isPinned = column.getIsPinned();
-  const isLastLeftPinned =
-    isPinned === 'left' && column.getIsLastColumn('left');
-  const isFirstRightPinned =
-    isPinned === 'right' && column.getIsFirstColumn('right');
-  const bodyCellSpacing = bodyCellSpacingVariants({
-    size: props.tableLayout?.dense ? 'dense' : 'default',
-  });
-
-  return (
-    <td
-      aria-hidden="true"
-      style={{
-        ...(props.tableLayout?.columnsPinnable &&
-          column.getCanPin() &&
-          getPinningStyles(column)),
-        ...(getDataGridUsesCssColumnSizing(props.tableLayout) && {
-          width: getDataGridCssColumnWidth(
-            `--col-${column.id}-size`,
-            cell.column.columnDef.meta?.grow
-          ),
-        }),
-      }}
-      data-pinned={isPinned || undefined}
-      data-last-col={
-        isLastLeftPinned ? 'left' : isFirstRightPinned ? 'right' : undefined
-      }
-      className={cn(
-        'align-middle',
-        bodyCellSpacing,
-        props.tableLayout?.cellBorder && 'border-e',
-        props.tableLayout?.columnsResizable &&
-          column.getCanResize() &&
-          'truncate',
-        cell.column.columnDef.meta?.cellClassName,
-        props.tableLayout?.columnsPinnable &&
-          column.getCanPin() &&
-          'data-pinned:backdrop-blur-xs" data-pinned:bg-background/90 [&[data-pinned=left][data-last-col=left]]:border-e! [&[data-pinned=right][data-last-col=right]]:border-s! [&[data-pinned][data-last-col]]:border-border',
-        column.getIndex() === 0 ||
-          column.getIndex() === row.getVisibleCells().length - 1
-          ? props.tableClassNames?.edgeCell
-          : ''
-      )}
-    />
-  );
-}
-
-function getDataGridTableExpandedContent<TData>(
-  table: Table<TData>,
-  row: Row<TData>
-) {
-  return table
-    .getAllColumns()
-    .find((column) => column.columnDef.meta?.expandedContent)
-    ?.columnDef.meta?.expandedContent?.(row.original);
-}
-
-function DataGridTableBodyRowExpandded<TData>({ row }: { row: Row<TData> }) {
-  const { props, table } = useDataGrid();
-  const expandedContent = getDataGridTableExpandedContent(table, row);
-
-  if (!expandedContent) return null;
-
-  const rowBorder = props.tableLayout?.rowBorder ?? false;
-  const expandedRowClassName = cn(
-    !props.tableLayout?.stripped && dataGridRowBorderClasses
-  );
-  const visibleCells = row.getVisibleCells();
-  const fillColumnCount = getDataGridShowTrailingFillColumn(
-    props.tableLayout,
-    table
-  )
-    ? 1
-    : 0;
-
-  if (!props.tableLayout?.columnsPinnable) {
-    return (
-      <tr
-        data-row-border={rowBorder || undefined}
-        className={expandedRowClassName}
-      >
-        <td colSpan={visibleCells.length + fillColumnCount}>
-          {expandedContent}
-        </td>
-      </tr>
-    );
-  }
-
-  const leftCells = visibleCells.filter(
-    (cell) => cell.column.getIsPinned() === 'left'
-  );
-  const centerCells = visibleCells.filter((cell) => !cell.column.getIsPinned());
-  const rightCells = visibleCells.filter(
-    (cell) => cell.column.getIsPinned() === 'right'
-  );
-
-  return (
-    <tr
-      data-row-border={rowBorder || undefined}
-      className={expandedRowClassName}
-    >
-      {leftCells.map((cell) => (
-        <DataGridTableBodyRowExpandedPinnedCell
-          key={`expanded-${cell.id}`}
-          cell={cell}
-          row={row}
-        />
-      ))}
-      <td
-        colSpan={Math.max(centerCells.length, 1)}
-        className="p-0 align-middle"
-      >
-        {expandedContent}
-      </td>
-      {rightCells.map((cell) => (
-        <DataGridTableBodyRowExpandedPinnedCell
-          key={`expanded-${cell.id}`}
-          cell={cell}
-          row={row}
-        />
-      ))}
-      <DataGridTableFillBodyCell />
-    </tr>
   );
 }
 
@@ -1167,7 +890,7 @@ function DataGridTableBodyRowCell<TData>({
     isPinned === 'left' && column.getIsLastColumn('left');
   const isFirstRightPinned =
     isPinned === 'right' && column.getIsFirstColumn('right');
-  const bodyCellSpacing = bodyCellSpacingVariants({
+  const bodyCellSpacing = dataGridBodyCellSpacingVariants({
     size: props.tableLayout?.dense ? 'dense' : 'default',
   });
 
@@ -1179,7 +902,7 @@ function DataGridTableBodyRowCell<TData>({
       style={{
         ...(props.tableLayout?.columnsPinnable &&
           column.getCanPin() &&
-          getPinningStyles(column)),
+          getDataGridTablePinningStyles(column)),
         ...(getDataGridUsesCssColumnSizing(props.tableLayout) && {
           width: getDataGridCssColumnWidth(
             `--col-${column.id}-size`,
@@ -1202,7 +925,7 @@ function DataGridTableBodyRowCell<TData>({
         cell.column.columnDef.meta?.cellClassName,
         props.tableLayout?.columnsPinnable &&
           column.getCanPin() &&
-          'data-pinned:backdrop-blur-xs" data-pinned:bg-background/90 [&[data-pinned=left][data-last-col=left]]:border-e! [&[data-pinned=right][data-last-col=right]]:border-s! [&[data-pinned][data-last-col]]:border-border',
+          dataGridTablePinnedBodyCellClasses,
         column.getIndex() === 0 ||
           column.getIndex() === row.getVisibleCells().length - 1
           ? props.tableClassNames?.edgeCell
@@ -1236,7 +959,7 @@ function DataGridTableRenderedRow<TData>({
           </DataGridTableBodyRowCell>
         ))}
       </DataGridTableBodyRow>
-      {row.getIsExpanded() && <DataGridTableBodyRowExpandded row={row} />}
+      {row.getIsExpanded() && <DataGridTableBodyRowExpanded row={row} />}
     </Fragment>
   );
 }
@@ -1497,7 +1220,7 @@ function DataGridTable<TData>({
 }) {
   const { table, props } = useDataGrid();
 
-  return (
+  const tableMarkup = (
     <DataGridTableViewport>
       <DataGridTableBase>
         {renderHeader && (
@@ -1554,6 +1277,18 @@ function DataGridTable<TData>({
       </DataGridTableBase>
     </DataGridTableViewport>
   );
+
+  if (props.renderRowContextMenu) {
+    return (
+      <DataGridRowContextMenuShell
+        renderRowContextMenu={props.renderRowContextMenu}
+      >
+        {tableMarkup}
+      </DataGridRowContextMenuShell>
+    );
+  }
+
+  return tableMarkup;
 }
 
 export {
@@ -1562,7 +1297,7 @@ export {
   DataGridTableBody,
   DataGridTableBodyRow,
   DataGridTableBodyRowCell,
-  DataGridTableBodyRowExpandded,
+  DataGridTableBodyRowExpanded,
   DataGridTableRenderedRow,
   DataGridTableBodyRowSkeleton,
   DataGridTableBodyRowSkeletonCell,
@@ -1585,4 +1320,4 @@ export {
   getDataGridTableRowSections,
 };
 
-export type { DataGridTablePinnedBoundary };
+export type { DataGridTablePinnedBoundary } from '@/components/reui/data-grid/data-grid-table-body-row';

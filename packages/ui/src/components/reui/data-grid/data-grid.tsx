@@ -72,6 +72,8 @@ export interface DataGridProps<TData extends object> {
   recordCount: number;
   children?: ReactNode;
   onRowClick?: (row: TData) => void;
+  /** Menu items for right-click / long-press on body and expanded rows. */
+  renderRowContextMenu?: (row: TData) => ReactNode;
   isLoading?: boolean;
   loadingMode?: 'skeleton' | 'spinner';
   loadingMessage?: ReactNode | string;
@@ -160,6 +162,7 @@ function DataGridProvider<TData extends object>({
       props.allRowsLoadedMessage,
       props.emptyMessage,
       props.onRowClick,
+      props.renderRowContextMenu,
       props.className,
       JSON.stringify(props.tableLayout),
       JSON.stringify(props.tableClassNames),
