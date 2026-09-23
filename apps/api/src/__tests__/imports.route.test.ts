@@ -4,6 +4,7 @@ import { importsRouter } from '@/routes/imports';
 import {
   createImportDraft,
   discardImportDraft,
+  getImportDraft,
   listImportTargets,
   updateImportDraftRows,
 } from '@/services/imports';
@@ -174,6 +175,50 @@ describe('imports router', () => {
     expect(res.status).toBe(200);
     expect(body.kind).toBe('mapping_required');
     expect(body.candidateProfileIds).toEqual(['mdy_debit_credit_balance']);
+  });
+
+  it('returns draft GET rows without durable selection', async () => {
+    vi.mocked(getImportDraft).mockResolvedValue({
+      id: 'draft_1',
+      account: {
+        id: '22222222-2222-4222-8222-222222222222',
+        name: 'Visa',
+        institutionId: 'td',
+        lastFour: '1234',
+      },
+      contentProfileId: null,
+      status: 'draft',
+      fileName: 'statement.csv',
+      rowCount: 1,
+      validRowCount: 1,
+      invalidRowCount: 0,
+      importedAt: '2026-05-20T12:00:00.000Z',
+      completedAt: null,
+      discardedAt: null,
+      createdAt: '2026-05-20T12:00:00.000Z',
+      updatedAt: '2026-05-20T12:00:00.000Z',
+      refundTargetFacts: {},
+      matchTargetFacts: {},
+      rows: [
+        {
+          id: ROW_ID,
+          batchId: 'draft_1',
+          rowNumber: 1,
+          status: 'ready',
+          invalidReason: null,
+          reviewDescription: 'Coffee',
+        } as never,
+      ],
+    } as never);
+
+    const res = await app.request('/drafts/draft_1');
+    const body = (await res.json()) as {
+      data: { rows: Record<string, unknown>[] };
+    };
+
+    expect(res.status).toBe(200);
+    expect(body.data.rows[0]).not.toHaveProperty('selectedForImport');
+    expect(getImportDraft).toHaveBeenCalledWith('org_1', 'draft_1');
   });
 
   it('validates batch row patch payloads before updating draft rows', async () => {

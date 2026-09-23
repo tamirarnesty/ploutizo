@@ -83,7 +83,7 @@ const OutcomeCountSummary = ({
   );
 };
 
-const PreparedRowsTable = ({
+const ImportFinalizePreviewRowsTable = ({
   caption,
   rows,
 }: {
@@ -323,8 +323,11 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
 
         {preview ? (
           <>
-            <PreparedRowsTable caption="Will create" rows={preview.created} />
-            <PreparedRowsTable
+            <ImportFinalizePreviewRowsTable
+              caption="Will create"
+              rows={preview.created}
+            />
+            <ImportFinalizePreviewRowsTable
               caption="Already matched"
               rows={preview.matched}
             />

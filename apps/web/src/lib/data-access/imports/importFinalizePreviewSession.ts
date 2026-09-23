@@ -1,27 +1,31 @@
 import type { ImportFinalizePreview } from '@ploutizo/types';
+import { getActiveQueryClient } from '@/lib/access/working-set-registry';
+import { importFinalizePreviewSessionQueryKey } from './queryKeys';
 
 export interface ImportFinalizePreviewSession {
   rowIds: string[];
   preview: ImportFinalizePreview;
 }
 
-const sessions = new Map<string, ImportFinalizePreviewSession>();
-
 export const setImportFinalizePreviewSession = (
   draftId: string,
   session: ImportFinalizePreviewSession
 ) => {
-  sessions.set(draftId, session);
+  getActiveQueryClient().setQueryData(
+    importFinalizePreviewSessionQueryKey(draftId),
+    session
+  );
 };
 
 export const getImportFinalizePreviewSession = (
   draftId: string
-): ImportFinalizePreviewSession | undefined => sessions.get(draftId);
+): ImportFinalizePreviewSession | undefined =>
+  getActiveQueryClient().getQueryData(
+    importFinalizePreviewSessionQueryKey(draftId)
+  );
 
 export const clearImportFinalizePreviewSession = (draftId: string) => {
-  sessions.delete(draftId);
-};
-
-export const releaseImportFinalizePreviewSession = (draftId: string) => {
-  clearImportFinalizePreviewSession(draftId);
+  getActiveQueryClient().removeQueries({
+    queryKey: importFinalizePreviewSessionQueryKey(draftId),
+  });
 };

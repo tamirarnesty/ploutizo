@@ -216,6 +216,26 @@ describe('updateImportDraftRows', () => {
     expect(db.transaction).not.toHaveBeenCalled();
   });
 
+  it('aborts the batch when persistence fails inside the transaction', async () => {
+    const rowB = { ...draftRow, id: '44444444-4444-4444-8444-444444444444' };
+    vi.mocked(listDraftRows).mockResolvedValue([draftRow, rowB]);
+    vi.mocked(updateImportDraftRowQuery)
+      .mockResolvedValueOnce({ ...draftRow, reviewNotes: 'a' })
+      .mockRejectedValueOnce(new Error('persist failed'));
+
+    await expect(
+      updateImportDraftRows('org_1', summaryRow.id, {
+        rows: [
+          { id: draftRow.id, reviewNotes: 'a' },
+          { id: rowB.id, reviewNotes: 'b' },
+        ],
+      })
+    ).rejects.toThrow('persist failed');
+
+    expect(db.transaction).toHaveBeenCalledTimes(1);
+    expect(updateImportDraftRowQuery).toHaveBeenCalledTimes(2);
+  });
+
   it('validates each row before opening the transaction', async () => {
     vi.mocked(fetchDraftRowById).mockResolvedValue(null);
 

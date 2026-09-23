@@ -329,6 +329,13 @@ describe('import service', () => {
     expect(insertedRows[0]).not.toHaveProperty('classificationHint');
   });
 
+  it('omits durable selection from draft GET rows', async () => {
+    const draft = await getImportDraft('org_1', summaryRow.id);
+
+    expect(draft.rows).toHaveLength(1);
+    expect(draft.rows[0]).not.toHaveProperty('selectedForImport');
+  });
+
   it('derives row status on GET without persisting recomputation', async () => {
     const needsReviewRow = {
       ...draftRow,

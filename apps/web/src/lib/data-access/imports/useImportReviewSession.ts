@@ -19,6 +19,7 @@ import {
   releaseImportReviewAutosave,
   waitForImportReviewAutosaveSettled,
 } from './importReviewAutosave';
+import { isImportRowSelectedForImport } from './importReviewSelection';
 import { importDraftQueryOptions } from './useGetImportDraft';
 import { toImportDraftMeta } from './toImportDraftMeta';
 import type { ImportDraftMeta } from './toImportDraftMeta';
@@ -30,7 +31,7 @@ export interface ImportReviewSession {
   isError: boolean;
   /** Single write surface for reviewed import values (ADR 0005). */
   updateRow: (rowId: string, patch: UpdateImportDraftRowInput) => void;
-  /** Session-only import-set selection (match decisions applied at Continue on server). */
+  /** Session-only import-set selection (match decisions in working copy; server re-verifies at Continue). */
   setSelection: (rowIds: string[], selectedForImport: boolean) => void;
   retryAutosave: () => void;
   /** Flush pending paced work. Returns false when Failed remains. */
@@ -73,7 +74,7 @@ export const useImportReviewSession = (
     () =>
       liveRows.data.map((row) => ({
         ...row,
-        selectedForImport: row.selectedForImport === true,
+        selectedForImport: isImportRowSelectedForImport(row.selectedForImport),
       })),
     [liveRows.data]
   );

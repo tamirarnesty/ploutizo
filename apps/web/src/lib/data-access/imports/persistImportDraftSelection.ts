@@ -8,6 +8,7 @@ import {
 } from './importReviewAutosave';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
 import { importMatchTransactionIdForDraft } from './importMatchTargetOnAccount';
+import { isImportRowSelectedForImport } from './importReviewSelection';
 import { importDraftQueryKey } from './queryKeys';
 import { rederiveImportDraftWorkingCopy } from './rederiveImportDraftWorkingCopy';
 
@@ -31,8 +32,13 @@ const applySelectionMatchDecisions = (
   const rowIdSet = new Set(rowIds);
   const nextRows = collection.toArray.map((row) =>
     rowIdSet.has(row.id)
-      ? { ...row, selectedForImport: selectedForImport }
-      : { ...row, selectedForImport: row.selectedForImport ?? false }
+      ? { ...row, selectedForImport }
+      : {
+          ...row,
+          selectedForImport: isImportRowSelectedForImport(
+            row.selectedForImport
+          ),
+        }
   );
   const patches = matchDecisionsForSelectedRows(nextRows, {
     rowIds,
@@ -52,6 +58,7 @@ const applySelectionMatchDecisions = (
   });
 };
 
+/** Session-only selection: optimistic collection update with no API persist (PLO-112). */
 const persistSelection = createOptimisticAction<SelectionVariables>({
   onMutate: ({ draftId, rowIds, selectedForImport }) => {
     applySelectionMatchDecisions(draftId, rowIds, selectedForImport);

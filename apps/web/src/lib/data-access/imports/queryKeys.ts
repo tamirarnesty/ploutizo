@@ -23,3 +23,11 @@ export const importDraftQueryKey = (id: string | null) => [
   'draft',
   id,
 ];
+
+/** Client-only Continue → Finalize handoff; never fetched from the API. */
+export const importFinalizePreviewSessionQueryKey = (draftId: string) => [
+  'imports',
+  'draft',
+  draftId,
+  'finalize-preview-session',
+];

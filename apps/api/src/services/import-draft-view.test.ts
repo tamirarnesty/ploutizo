@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { buildImportDraftView } from '@/services/import-draft-view';
+import {
+  buildImportDraftView,
+  toImportDraftPersistedRow,
+} from '@/services/import-draft-view';
 import {
   listRefundTargetExpensesByIds,
   sumPriorRefundTotalsByTransactionTarget,
@@ -28,8 +31,6 @@ const summaryRow = {
   importedAt: new Date('2026-05-20T12:00:00Z'),
   completedAt: null,
   discardedAt: null,
-  revision: 1,
-  finalizedPreparedSetId: null,
   createdCount: null,
   matchedCount: null,
   skippedCount: null,
@@ -67,7 +68,6 @@ const readyRow = {
   reviewMatchDismissed: false,
   reviewNotes: null,
   reviewTagIds: [],
-  selectedForImport: false,
   createdAt: new Date('2026-05-20T12:00:00Z'),
   updatedAt: new Date('2026-05-20T12:00:00Z'),
 };
@@ -119,5 +119,12 @@ describe('buildImportDraftView', () => {
     expect(draft.refundTargetFacts).toEqual({});
     expect(draft.matchTargetFacts).toEqual({});
     expect(sumPriorRefundTotalsByTransactionTarget).not.toHaveBeenCalled();
+    expect(draft.rows[0]).not.toHaveProperty('selectedForImport');
+  });
+
+  it('maps persisted rows without durable selection', () => {
+    const persisted = toImportDraftPersistedRow(readyRow);
+    expect(persisted.id).toBe(readyRow.id);
+    expect(persisted).not.toHaveProperty('selectedForImport');
   });
 });

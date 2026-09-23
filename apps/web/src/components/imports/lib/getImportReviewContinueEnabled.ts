@@ -4,6 +4,7 @@ import type {
   ImportDraftMeta,
   ImportReviewAutosaveStatus,
 } from '@/lib/data-access/imports';
+import { isImportRowSelectedForImport } from '@/lib/data-access/imports/importReviewSelection';
 
 interface GetImportReviewContinueEnabledOptions {
   meta: ImportDraftMeta | undefined;
@@ -30,7 +31,7 @@ export const getImportReviewContinueEnabled = ({
 
   const selectionRows = rows.map((row) => ({
     ...row,
-    selectedForImport: row.selectedForImport ?? false,
+    selectedForImport: isImportRowSelectedForImport(row.selectedForImport),
   }));
 
   return (

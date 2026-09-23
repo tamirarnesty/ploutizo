@@ -1,6 +1,6 @@
 import { releaseImportDraftRowPacedMutations } from './getImportDraftRowPacedMutations';
 import { releaseImportDraftRowsCollection } from './getImportDraftRowsCollection';
-import { releaseImportFinalizePreviewSession } from './importFinalizePreviewSession';
+import { clearImportFinalizePreviewSession } from './importFinalizePreviewSession';
 import { releaseImportReviewAutosave } from './importReviewAutosave';
 
 /**
@@ -11,6 +11,6 @@ import { releaseImportReviewAutosave } from './importReviewAutosave';
 export const releaseImportDraftSession = async (draftId: string) => {
   releaseImportDraftRowPacedMutations(draftId);
   releaseImportReviewAutosave(draftId);
-  releaseImportFinalizePreviewSession(draftId);
+  clearImportFinalizePreviewSession(draftId);
   await releaseImportDraftRowsCollection(draftId);
 };

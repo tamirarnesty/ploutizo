@@ -42,6 +42,33 @@ describe('SQL-only schema contracts', () => {
   });
 });
 
+describe('import review session schema migration', () => {
+  const reviewSessionMigration = sqlFile(
+    '0010_import_review_session_schema.sql'
+  );
+
+  it('drops prepared staging tables and durable selection columns', () => {
+    expect(reviewSessionMigration).toContain(
+      'DROP TABLE IF EXISTS "import_prepared_outcomes"'
+    );
+    expect(reviewSessionMigration).toContain(
+      'DROP TABLE IF EXISTS "import_prepared_sets"'
+    );
+    expect(reviewSessionMigration).toContain(
+      'DROP TYPE IF EXISTS "import_prepared_outcome"'
+    );
+    expect(reviewSessionMigration).toContain(
+      'DROP COLUMN IF EXISTS "selected_for_import"'
+    );
+    expect(reviewSessionMigration).toContain(
+      'DROP COLUMN IF EXISTS "revision"'
+    );
+    expect(reviewSessionMigration).toContain(
+      'DROP COLUMN IF EXISTS "finalized_prepared_set_id"'
+    );
+  });
+});
+
 describe('prepared row snapshot cutover migration', () => {
   const snapshotCutoverMigration = sqlFile('0009_prepared_row_snapshot.sql');
 
