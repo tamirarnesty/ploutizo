@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '@ploutizo/db';
-import { NotFoundError } from '@/lib/errors';
+import { DomainError, NotFoundError } from '@/lib/errors';
 import { updateImportDraftRows } from '@/services/imports';
 import {
   fetchDraftRowById,
   fetchDraftSummaryById,
   listDraftRows,
+  lockImportDraftBatch,
   updateImportDraftRowQuery,
 } from '@/lib/queries/imports';
 import { assertOrgWriteReferences } from '@/lib/assertOrgWriteReferences';
@@ -25,6 +26,7 @@ vi.mock('@/lib/queries/imports', () => ({
   fetchDraftSummaryById: vi.fn(),
   listDraftRows: vi.fn(),
   fetchDraftRowById: vi.fn(),
+  lockImportDraftBatch: vi.fn(),
   updateImportDraftRowQuery: vi.fn(),
 }));
 
@@ -131,6 +133,11 @@ describe('updateImportDraftRows', () => {
       ],
     });
 
+    expect(lockImportDraftBatch).toHaveBeenCalledWith(
+      {},
+      'org_1',
+      summaryRow.id
+    );
     expect(updateImportDraftRowQuery).toHaveBeenCalledTimes(2);
     expect(result.rows).toHaveLength(2);
     expect(assertOrgWriteReferences).toHaveBeenCalled();
@@ -145,6 +152,68 @@ describe('updateImportDraftRows', () => {
       })
     ).rejects.toBeInstanceOf(NotFoundError);
     expect(updateImportDraftRowQuery).not.toHaveBeenCalled();
+  });
+
+  it('rejects a cross-account match without persisting', async () => {
+    vi.mocked(transactionExistsOnAccount).mockResolvedValue(false);
+
+    await expect(
+      updateImportDraftRows('org_1', summaryRow.id, {
+        rows: [
+          {
+            id: draftRow.id,
+            reviewMatchedTransactionId: '66666666-6666-4666-8666-666666666666',
+          },
+        ],
+      })
+    ).rejects.toBeInstanceOf(NotFoundError);
+
+    expect(updateImportDraftRowQuery).not.toHaveBeenCalled();
+    expect(db.transaction).not.toHaveBeenCalled();
+  });
+
+  it('returns refundTargetFacts when reviewRefundOf is patched', async () => {
+    const refundTargetId = '77777777-7777-4777-8777-777777777777';
+    vi.mocked(updateImportDraftRowQuery).mockResolvedValue({
+      ...draftRow,
+      reviewRefundOf: refundTargetId,
+    });
+    vi.mocked(listRefundTargetExpensesByIds).mockResolvedValue(
+      new Map([
+        [
+          refundTargetId,
+          {
+            id: refundTargetId,
+            accountId: summaryRow.accountId,
+            amount: 4218,
+            categoryId: draftRow.reviewCategoryId,
+            assigneeMemberIds: draftRow.reviewAssigneeMemberIds,
+            type: 'expense',
+            deleted: false,
+          },
+        ],
+      ])
+    );
+
+    const result = await updateImportDraftRows('org_1', summaryRow.id, {
+      rows: [{ id: draftRow.id, reviewRefundOf: refundTargetId }],
+    });
+
+    expect(result.refundTargetFacts?.[refundTargetId]).toMatchObject({
+      id: refundTargetId,
+    });
+  });
+
+  it('rejects duplicate row ids in one batch', async () => {
+    await expect(
+      updateImportDraftRows('org_1', summaryRow.id, {
+        rows: [
+          { id: draftRow.id, reviewNotes: 'a' },
+          { id: draftRow.id, reviewNotes: 'b' },
+        ],
+      })
+    ).rejects.toBeInstanceOf(DomainError);
+    expect(db.transaction).not.toHaveBeenCalled();
   });
 
   it('validates each row before opening the transaction', async () => {

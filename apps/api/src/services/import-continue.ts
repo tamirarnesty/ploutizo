@@ -1,25 +1,27 @@
 import { db } from '@ploutizo/db';
-import { importMatchTargetQueryInput } from '@ploutizo/utils';
-import { verifyImportSetForContinue } from '@ploutizo/utils/import-set-verification';
+import {
+  importMatchTargetQueryInput,
+  matchDecisionsForSelectedRows,
+} from '@ploutizo/utils';
+import type { ImportDraftDurableRow } from '@ploutizo/utils';
 import type {
   ImportContinueDraftFacts,
   ImportExternalFacts,
   ImportFinalizeExternalFacts,
+  PreparedImportOutcomeProjection,
 } from '@ploutizo/utils/import-set-verification';
 import type { Transaction } from '@ploutizo/db';
 import type {
   ImportFinalizePreview,
   ImportRequirementFailureDetails,
+  MatchTargetFact,
 } from '@ploutizo/types';
 import type { ImportDraftRowRecord } from '@/lib/queries/imports';
 import type { AccountWriteReference } from '@/lib/queries/scope';
 import type { ImportMatchTargetQueryInput } from '@/lib/queries/import-match-targets';
-import { DomainError, NotFoundError } from '@/lib/errors';
-import {
-  fetchDraftSummaryById,
-  listDraftRows,
-  lockImportDraftBatch,
-} from '@/lib/queries/imports';
+import { DomainError } from '@/lib/errors';
+import { lockImportDraftBatch } from '@/lib/queries/imports';
+import { verifyImportDraftProjectionForRowIds } from '@/services/import-draft-projection';
 import { listOrgMembers } from '@/lib/queries/households';
 import { fetchAccountWriteReference } from '@/lib/queries/scope';
 import {
@@ -108,6 +110,29 @@ const withSelectionOverlay = (
     })
   );
 
+/** Mirror selection-endpoint match decisions for session-only import sets. */
+export const applySelectionMatchDecisionsForImportSet = (
+  rows: readonly ImportDraftDurableRow[],
+  selectedRowIds: ReadonlySet<string>,
+  targetAccountId: string,
+  existingTransactions: readonly MatchTargetFact[]
+): ImportDraftDurableRow[] => {
+  if (selectedRowIds.size === 0) return [...rows];
+
+  const matchPatches = matchDecisionsForSelectedRows(rows, {
+    rowIds: [...selectedRowIds],
+    selectedForImport: true,
+    targetAccountId,
+    existingTransactions,
+  });
+
+  return rows.map((row) => {
+    const nextMatch = matchPatches.get(row.id);
+    if (nextMatch === undefined) return row;
+    return { ...row, reviewMatchedTransactionId: nextMatch };
+  });
+};
+
 export const loadImportContinueDraftFacts = async (
   orgId: string,
   targetAccountId: string,
@@ -123,42 +148,38 @@ export const loadImportContinueDraftFacts = async (
     return externalId ? [externalId] : [];
   });
 
+  const externalFacts = await loadImportExternalFacts(
+    orgId,
+    targetAccountId,
+    {
+      refundOfIds: draftRows.flatMap((row) =>
+        row.reviewRefundOf ? [row.reviewRefundOf] : []
+      ),
+      matchQuery: importMatchTargetQueryInput(draftRows),
+      counterpartIds: draftRows.flatMap((row) =>
+        row.reviewCounterpartAccountId ? [row.reviewCounterpartAccountId] : []
+      ),
+      createdExternalIds,
+      rowCount: draft.rowCount,
+    },
+    tx
+  );
+
   return {
-    ...(await loadImportExternalFacts(
-      orgId,
+    ...externalFacts,
+    rows: applySelectionMatchDecisionsForImportSet(
+      durableRows,
+      selectedRowIds,
       targetAccountId,
-      {
-        refundOfIds: draftRows.flatMap((row) =>
-          row.reviewRefundOf ? [row.reviewRefundOf] : []
-        ),
-        matchQuery: importMatchTargetQueryInput(draftRows),
-        counterpartIds: draftRows.flatMap((row) =>
-          row.reviewCounterpartAccountId ? [row.reviewCounterpartAccountId] : []
-        ),
-        createdExternalIds,
-        rowCount: draft.rowCount,
-      },
-      tx
-    )),
-    rows: durableRows,
+      externalFacts.existingTransactions
+    ),
   };
 };
 
 export const loadImportFinalizeExternalFacts = async (
   orgId: string,
   targetAccountId: string,
-  projection: readonly {
-    outcome: string;
-    transactionId: string | null;
-    snapshot: {
-      reviewedValues: {
-        refundOf: string | null;
-        counterpartAccountId: string | null;
-        date: string | null;
-      };
-      provenance: { externalId: string | null };
-    };
-  }[],
+  projection: readonly PreparedImportOutcomeProjection[],
   rowCount: number,
   tx: Transaction
 ): Promise<ImportFinalizeExternalFacts> =>
@@ -203,29 +224,12 @@ export const continueImportDraft = async (
   db.transaction(async (tx) => {
     await lockImportDraftBatch(tx, orgId, batchId);
 
-    const draft = await fetchDraftSummaryById(orgId, batchId, tx);
-    if (!draft) throw new NotFoundError('Import draft not found.');
-    if (!draft.accountId) {
-      throw new DomainError(500, 'Import draft is missing an account.');
-    }
-
-    const uniqueRowIds = [...new Set(rowIds)];
-    const draftRows = await listDraftRows(orgId, batchId, tx);
-    const rowIdSet = new Set(uniqueRowIds);
-    const matching = draftRows.filter((row) => rowIdSet.has(row.id));
-    if (matching.length !== uniqueRowIds.length) {
-      throw new NotFoundError('Import draft row not found.');
-    }
-
-    const draftFacts = await loadImportContinueDraftFacts(
+    const verified = await verifyImportDraftProjectionForRowIds(
       orgId,
-      draft.accountId,
-      draft,
-      draftRows,
-      rowIdSet,
+      batchId,
+      rowIds,
       tx
     );
-    const verified = verifyImportSetForContinue(draftFacts);
     if (!verified.ready) {
       throw new DomainError<ImportRequirementFailureDetails>(
         400,
@@ -237,7 +241,7 @@ export const continueImportDraft = async (
 
     return toImportFinalizePreview(
       batchId,
-      draft.rowCount,
+      verified.draft.rowCount,
       verified.projection
     );
   });

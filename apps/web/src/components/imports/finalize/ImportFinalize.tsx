@@ -20,7 +20,7 @@ import {
 } from '@ploutizo/utils';
 import type {
   ImportFinalizePreview,
-  ImportPreparedConfirmationRow,
+  ImportFinalizePreviewRow,
 } from '@ploutizo/types';
 import { getApiErrorCode, getApiErrorMessage } from '@/lib/queryClient';
 import {
@@ -88,7 +88,7 @@ const PreparedRowsTable = ({
   rows,
 }: {
   caption: string;
-  rows: ImportPreparedConfirmationRow[];
+  rows: ImportFinalizePreviewRow[];
 }) => {
   if (rows.length === 0) return null;
   return (

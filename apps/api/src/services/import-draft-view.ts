@@ -146,6 +146,7 @@ export const loadDraftEvaluationContext = async (
           )
         : Promise.resolve(new Map()),
     ]);
+  // Selection is session-only; row status derivation ignores selectedForImport.
   const evaluations = evaluateImportDraft(
     rows.map((row) => toImportDraftDurableRow(row)),
     {

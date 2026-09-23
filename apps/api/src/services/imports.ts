@@ -32,6 +32,7 @@ import {
   listDraftRows,
   listDraftRowsForBatches,
   listImportTargetAccounts,
+  lockImportDraftBatch,
   updateImportDraftRowQuery,
 } from '@/lib/queries/imports';
 import { listAccountMemberDetails } from '@/lib/queries/accounts';
@@ -314,6 +315,7 @@ export const updateImportDraftRows = async (
   for (const { id, ...patch } of input.rows) {
     const existing = existingById.get(id)!;
     await validateImportDraftRowPatch(orgId, existing, draft.accountId, patch);
+    existingById.set(id, { ...existing, ...patch });
   }
 
   const refundOfIds = input.rows.flatMap((row) =>
@@ -324,6 +326,7 @@ export const updateImportDraftRows = async (
   );
 
   const updated = await db.transaction(async (tx) => {
+    await lockImportDraftBatch(tx, orgId, draftId);
     const persisted: ImportDraftPersistedRow[] = [];
     for (const { id, ...patch } of input.rows) {
       const next = await updateImportDraftRowQuery(orgId, id, patch, tx);

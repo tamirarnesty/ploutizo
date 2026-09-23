@@ -1,36 +1,29 @@
 import { db } from '@ploutizo/db';
-import {
-  verifyImportSetForContinue,
-  verifyPreparedImportSetForFinalize,
-} from '@ploutizo/utils/import-set-verification';
+import { verifyPreparedImportSetForFinalize } from '@ploutizo/utils/import-set-verification';
 import { countPreparedOutcomes } from '@ploutizo/types';
+import type { PreparedImportOutcomeProjection } from '@ploutizo/utils/import-set-verification';
 import type { Transaction } from '@ploutizo/db';
 import type {
   ImportCompletedResult,
-  ImportPreparedOutcome,
   ImportRequirementFailure,
   ImportRequirementFailureDetails,
   ImportTransactionLinkOutcome,
-  PreparedImportRowSnapshot,
 } from '@ploutizo/types';
 import type { ImportDraftSummaryRow } from '@/lib/queries/imports';
 import { DomainError, NotFoundError } from '@/lib/errors';
 import {
   completeImportBatch,
   fetchImportBatchSummaryById,
-  listDraftRows,
   lockImportDraftBatch,
 } from '@/lib/queries/imports';
+import { verifyImportDraftProjectionForRowIds } from '@/services/import-draft-projection';
 import { insertImportTransactionLinks } from '@/lib/queries/import-transaction-links';
 import {
   sortCreatedImportOutcomes,
   toImportCreateTransactionInput,
 } from '@/services/import-create-input';
 import { toImportCompletedResult } from '@/services/import-history';
-import {
-  loadImportContinueDraftFacts,
-  loadImportFinalizeExternalFacts,
-} from '@/services/import-continue';
+import { loadImportFinalizeExternalFacts } from '@/services/import-continue';
 import { createTransactionInTx } from '@/services/transactions';
 
 const notReadyError = (rows: ImportRequirementFailure[]) =>
@@ -56,12 +49,7 @@ const applyVerifiedProjection = async (
   tx: Transaction,
   orgId: string,
   batch: ImportDraftSummaryRow,
-  verified: readonly {
-    batchRowId: string;
-    outcome: string;
-    transactionId: string | null;
-    snapshot: PreparedImportRowSnapshot;
-  }[]
+  verified: readonly PreparedImportOutcomeProjection[]
 ): Promise<FinalizeTxResult> => {
   if (!batch.accountId) {
     throw new DomainError(500, 'Import draft is missing an account.');
@@ -76,7 +64,7 @@ const applyVerifiedProjection = async (
   );
   const preparedRows = verified.map((row) => ({
     batchRowId: row.batchRowId,
-    outcome: row.outcome as ImportPreparedOutcome,
+    outcome: row.outcome,
     transactionId: row.transactionId,
     snapshot: row.snapshot,
   }));
@@ -193,6 +181,7 @@ export const finalizeImportDraft = async (
     });
     if (!batch) throw new NotFoundError('Import draft not found.');
 
+    // Idempotent finalize: rowIds are ignored once the batch is completed.
     if (batch.status === 'completed') {
       return { kind: 'ok' as const, result: toImportCompletedResult(batch) };
     }
@@ -205,22 +194,12 @@ export const finalizeImportDraft = async (
       throw new DomainError(500, 'Import draft is missing an account.');
     }
 
-    const draftRows = await listDraftRows(orgId, batchId, tx);
-    const rowIdSet = new Set(uniqueRowIds);
-    const matching = draftRows.filter((row) => rowIdSet.has(row.id));
-    if (matching.length !== uniqueRowIds.length) {
-      throw new NotFoundError('Import draft row not found.');
-    }
-
-    const draftFacts = await loadImportContinueDraftFacts(
+    const verified = await verifyImportDraftProjectionForRowIds(
       orgId,
-      batch.accountId,
-      batch,
-      draftRows,
-      rowIdSet,
+      batchId,
+      uniqueRowIds,
       tx
     );
-    const verified = verifyImportSetForContinue(draftFacts);
     if (!verified.ready) {
       return { kind: 'fail' as const, error: notReadyError(verified.failures) };
     }

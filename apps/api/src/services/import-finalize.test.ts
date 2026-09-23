@@ -1,20 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  verifyImportSetForContinue,
-  verifyPreparedImportSetForFinalize,
-} from '@ploutizo/utils/import-set-verification';
+import { verifyPreparedImportSetForFinalize } from '@ploutizo/utils/import-set-verification';
 import type {
   PreparedImportRowSnapshot,
   ReviewedImportValues,
 } from '@ploutizo/types';
 import { DomainError, NotFoundError } from '@/lib/errors';
+import { verifyImportDraftProjectionForRowIds } from '@/services/import-draft-projection';
 import { finalizeImportDraft } from '@/services/import-finalize';
 import { loadImportFinalizeExternalFacts } from '@/services/import-continue';
 import { createTransactionInTx } from '@/services/transactions';
 import {
   completeImportBatch,
   fetchImportBatchSummaryById,
-  listDraftRows,
   lockImportDraftBatch,
 } from '@/lib/queries/imports';
 import { insertImportTransactionLinks } from '@/lib/queries/import-transaction-links';
@@ -44,7 +41,6 @@ vi.mock('@/lib/queries/imports', async (importOriginal) => {
     ...actual,
     fetchImportBatchSummaryById: vi.fn(),
     completeImportBatch: vi.fn(),
-    listDraftRows: vi.fn(),
     lockImportDraftBatch: vi.fn(),
   };
 });
@@ -62,10 +58,13 @@ vi.mock('@ploutizo/utils/import-set-verification', async (importOriginal) => {
   }
   return {
     ...actual,
-    verifyImportSetForContinue: vi.fn(),
     verifyPreparedImportSetForFinalize: vi.fn(),
   };
 });
+
+vi.mock('@/services/import-draft-projection', () => ({
+  verifyImportDraftProjectionForRowIds: vi.fn(),
+}));
 
 vi.mock('@/services/import-continue', async (importOriginal) => {
   const actual = await importOriginal();
@@ -217,19 +216,12 @@ describe('finalizeImportDraft', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(lockImportDraftBatch).mockResolvedValue(undefined);
-    vi.mocked(listDraftRows).mockResolvedValue(
-      SELECTED_ROW_IDS.map((id, index) => ({
-        id,
-        batchId: BATCH,
-        orgId: ORG,
-        rowNumber: index + 1,
-      })) as never
-    );
     vi.mocked(fetchImportBatchSummaryById).mockResolvedValue(
       draftBatch as never
     );
-    vi.mocked(verifyImportSetForContinue).mockReturnValue({
+    vi.mocked(verifyImportDraftProjectionForRowIds).mockResolvedValue({
       ready: true,
+      draft: draftBatch as never,
       projection: mixedOutcomes,
     });
     vi.mocked(loadImportFinalizeExternalFacts).mockResolvedValue({
@@ -404,10 +396,6 @@ describe('finalizeImportDraft', () => {
   });
 
   it('creates same-import expenses before linked refunds', async () => {
-    vi.mocked(listDraftRows).mockResolvedValue([
-      { id: ROW_REFUND, batchId: BATCH, orgId: ORG, rowNumber: 1 },
-      { id: ROW_CREATED, batchId: BATCH, orgId: ORG, rowNumber: 2 },
-    ] as never);
     const refundSnapshot = snapshot(
       {
         type: 'refund',
@@ -421,8 +409,9 @@ describe('finalizeImportDraft', () => {
       outcome(ROW_REFUND, 'created', { snapshot: refundSnapshot }),
       outcome(ROW_CREATED, 'created'),
     ];
-    vi.mocked(verifyImportSetForContinue).mockReturnValue({
+    vi.mocked(verifyImportDraftProjectionForRowIds).mockResolvedValue({
       ready: true,
+      draft: { ...draftBatch, rowCount: 2 } as never,
       projection: refundProjection,
     });
     vi.mocked(fetchImportBatchSummaryById)
@@ -470,10 +459,6 @@ describe('finalizeImportDraft', () => {
   });
 
   it('links same-import refunds to matched expense transaction ids', async () => {
-    vi.mocked(listDraftRows).mockResolvedValue([
-      { id: ROW_MATCHED, batchId: BATCH, orgId: ORG, rowNumber: 1 },
-      { id: ROW_REFUND, batchId: BATCH, orgId: ORG, rowNumber: 2 },
-    ] as never);
     const refundSnapshot = snapshot(
       {
         type: 'refund',
@@ -487,8 +472,9 @@ describe('finalizeImportDraft', () => {
       outcome(ROW_MATCHED, 'matched'),
       outcome(ROW_REFUND, 'created', { snapshot: refundSnapshot }),
     ];
-    vi.mocked(verifyImportSetForContinue).mockReturnValue({
+    vi.mocked(verifyImportDraftProjectionForRowIds).mockResolvedValue({
       ready: true,
+      draft: { ...draftBatch, rowCount: 2 } as never,
       projection: matchedRefundProjection,
     });
     vi.mocked(fetchImportBatchSummaryById)
@@ -552,9 +538,9 @@ describe('finalizeImportDraft', () => {
   });
 
   it('404s when a selected row id is not on the draft', async () => {
-    vi.mocked(listDraftRows).mockResolvedValue([
-      { id: ROW_CREATED, batchId: BATCH, orgId: ORG, rowNumber: 1 },
-    ] as never);
+    vi.mocked(verifyImportDraftProjectionForRowIds).mockRejectedValue(
+      new NotFoundError('Import draft row not found.')
+    );
 
     await expect(
       finalizeImportDraft(ORG, BATCH, SELECTED_ROW_IDS)

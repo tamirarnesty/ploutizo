@@ -1,6 +1,5 @@
 import type {
   ImportBatchStatus,
-  ImportPreparedOutcome,
   ImportRowStatus,
   ImportTransactionType,
   MerchantMatchType,
@@ -266,34 +265,13 @@ export interface PreparedImportRowSnapshot {
   provenance: ImportRowProvenance;
 }
 
-export interface ImportPreparedSetSummary {
-  id: string;
-  batchId: string;
-  revision: number;
-  createdAt: string;
-}
-
-export interface ImportPreparedOutcomeRow {
-  id: string;
-  preparedSetId: string;
-  batchRowId: string;
-  outcome: ImportPreparedOutcome;
-  transactionId: string | null;
-  snapshot: PreparedImportRowSnapshot;
-  createdAt: string;
-}
-
-export interface ImportPreparedSet extends ImportPreparedSetSummary {
-  outcomes: ImportPreparedOutcomeRow[];
-}
-
-export const IMPORT_PREPARED_CONFIRMATION_OUTCOME_VALUES = [
+export const IMPORT_FINALIZE_PREVIEW_OUTCOME_VALUES = [
   'created',
   'matched',
 ] as const;
 
-export type ImportPreparedConfirmationOutcome =
-  (typeof IMPORT_PREPARED_CONFIRMATION_OUTCOME_VALUES)[number];
+export type ImportFinalizePreviewOutcome =
+  (typeof IMPORT_FINALIZE_PREVIEW_OUTCOME_VALUES)[number];
 
 export interface ImportPreparedOutcomeCounts {
   created: number;
@@ -320,19 +298,11 @@ export const countPreparedOutcomes = (
   return counts;
 };
 
-export interface ImportPreparedConfirmationRow {
+export interface ImportFinalizePreviewRow {
   batchRowId: string;
-  outcome: ImportPreparedConfirmationOutcome;
+  outcome: ImportFinalizePreviewOutcome;
   transactionId: string | null;
   snapshot: PreparedImportRowSnapshot;
-}
-
-/** Read-only Finalize confirmation DTO for the active prepared revision. */
-export interface ImportPreparedConfirmation extends ImportPreparedSetSummary {
-  rowCount: number;
-  counts: ImportPreparedOutcomeCounts;
-  created: ImportPreparedConfirmationRow[];
-  matched: ImportPreparedConfirmationRow[];
 }
 
 /** Stateless Continue response — full-file outcome projection for Finalize import. */
@@ -340,8 +310,8 @@ export interface ImportFinalizePreview {
   batchId: string;
   rowCount: number;
   counts: ImportPreparedOutcomeCounts;
-  created: ImportPreparedConfirmationRow[];
-  matched: ImportPreparedConfirmationRow[];
+  created: ImportFinalizePreviewRow[];
+  matched: ImportFinalizePreviewRow[];
 }
 
 /** Shared identity facts for completed and discarded Import history. */

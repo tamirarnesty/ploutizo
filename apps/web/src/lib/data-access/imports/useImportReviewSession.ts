@@ -30,7 +30,7 @@ export interface ImportReviewSession {
   isError: boolean;
   /** Single write surface for reviewed import values (ADR 0005). */
   updateRow: (rowId: string, patch: UpdateImportDraftRowInput) => void;
-  /** Import-set selection: collection first, then bulk selection API. */
+  /** Session-only import-set selection (match decisions applied at Continue on server). */
   setSelection: (rowIds: string[], selectedForImport: boolean) => void;
   retryAutosave: () => void;
   /** Flush pending paced work. Returns false when Failed remains. */
