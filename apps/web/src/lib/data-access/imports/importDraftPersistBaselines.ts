@@ -1,15 +1,7 @@
 import type { ImportReviewRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
+import { importReviewFieldValuesEqual } from './importReviewFieldEqual';
 import { REVIEW_PATCH_KEYS } from './importDraftRowOptimisticPatch';
-
-const valuesEqual = (left: unknown, right: unknown): boolean => {
-  if (Object.is(left, right)) return true;
-  if (!Array.isArray(left) || !Array.isArray(right)) return false;
-  return (
-    left.length === right.length &&
-    left.every((value, index) => Object.is(value, right[index]))
-  );
-};
 
 type BaselineFields = Record<(typeof REVIEW_PATCH_KEYS)[number], unknown>;
 
@@ -69,7 +61,7 @@ export const buildDirtyRowPatchFromBaseline = (
   const patch: Record<string, unknown> = {};
 
   for (const field of REVIEW_PATCH_KEYS) {
-    if (!valuesEqual(live[field], baseline[field])) {
+    if (!importReviewFieldValuesEqual(live[field], baseline[field])) {
       patch[field] = live[field];
     }
   }

@@ -6,16 +6,8 @@ import type {
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
 import { applyImportDraftRefundTargetFactDelta } from './mergeImportDraftRefundTargetFacts';
+import { importReviewFieldValuesEqual } from './importReviewFieldEqual';
 import { rederiveImportDraftWorkingCopy } from './rederiveImportDraftWorkingCopy';
-
-const valuesEqual = (left: unknown, right: unknown): boolean => {
-  if (Object.is(left, right)) return true;
-  if (!Array.isArray(left) || !Array.isArray(right)) return false;
-  return (
-    left.length === right.length &&
-    left.every((value, index) => Object.is(value, right[index]))
-  );
-};
 
 const patchKeys = (patch: UpdateImportDraftRowInput) =>
   Object.keys(patch) as (keyof UpdateImportDraftRowInput)[];
@@ -27,8 +19,8 @@ const isLiveNewerField = (
   original: ImportReviewRow,
   key: keyof UpdateImportDraftRowInput
 ) =>
-  !valuesEqual(live[key], attempted[key]) &&
-  !valuesEqual(live[key], original[key]);
+  !importReviewFieldValuesEqual(live[key], attempted[key]) &&
+  !importReviewFieldValuesEqual(live[key], original[key]);
 
 const syncRefundTargetFacts = (
   draftId: string,

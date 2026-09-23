@@ -1,7 +1,19 @@
-import { releaseImportDraftPacedMutations } from './getImportDraftPacedMutations';
-import { releaseImportDraftPersistBaselines } from './importDraftPersistBaselines';
-import { releaseImportReviewAutosave } from './importReviewAutosave';
-import { releaseImportDraftWorkingCopyRederive } from './scheduleImportDraftWorkingCopyRederive';
+import {
+  endImportDraftPacedMutations,
+  releaseImportDraftPacedMutations,
+} from './getImportDraftPacedMutations';
+import {
+  endImportDraftPersistBaselines,
+  releaseImportDraftPersistBaselines,
+} from './importDraftPersistBaselines';
+import {
+  endImportReviewAutosave,
+  releaseImportReviewAutosave,
+} from './importReviewAutosave';
+import {
+  endImportDraftWorkingCopyRederive,
+  releaseImportDraftWorkingCopyRederive,
+} from './scheduleImportDraftWorkingCopyRederive';
 
 /** Paced persist, autosave, baselines, and debounced rederive for one draft. */
 export const releaseImportDraftReviewRuntime = (draftId: string) => {
@@ -9,4 +21,12 @@ export const releaseImportDraftReviewRuntime = (draftId: string) => {
   releaseImportDraftPersistBaselines(draftId);
   releaseImportDraftWorkingCopyRederive(draftId);
   releaseImportReviewAutosave(draftId);
+};
+
+/** Household / working-set switch: clear all draft review runtime state. */
+export const endImportDraftReviewRuntime = () => {
+  endImportDraftPacedMutations();
+  endImportDraftPersistBaselines();
+  endImportDraftWorkingCopyRederive();
+  endImportReviewAutosave();
 };

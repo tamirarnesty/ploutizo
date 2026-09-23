@@ -53,6 +53,7 @@ import { toImportDraftSummary } from '@/services/import-batch-mappers';
 import { listRefundTargetExpensesByIds } from '@/lib/queries/import-refund-targets';
 import {
   buildImportDraftView,
+  collectReviewRefundOfIds,
   loadDraftEvaluationContext,
   refundTargetFactsRecordFromMap,
   toImportDraftPersistedRow,
@@ -357,9 +358,7 @@ export const updateImportDraftRows = async (
       rows.push(toImportDraftPersistedRow(next));
     }
 
-    const refundOfIds = input.rows.flatMap((row) =>
-      'reviewRefundOf' in row && row.reviewRefundOf ? [row.reviewRefundOf] : []
-    );
+    const refundOfIds = collectReviewRefundOfIds(input.rows);
     if (refundOfIds.length === 0) return { rows };
 
     const expenses = await listRefundTargetExpensesByIds(

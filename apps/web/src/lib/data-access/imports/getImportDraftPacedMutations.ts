@@ -20,6 +20,12 @@ import type { PendingMutation, Transaction } from '@tanstack/db';
 
 export const IMPORT_DRAFT_PACE_WAIT_MS = 3000;
 
+/**
+ * Debounced review persist pipeline (see ADR 0005):
+ * mutate → optimistic patch + autosave pending → debounce → build persist patch
+ * → batch PATCH → confirm collection + baselines → rederive → autosave saved/failed.
+ */
+
 export interface ImportDraftRowPatchVariables {
   rowId: string;
   patch: UpdateImportDraftRowInput;
@@ -36,6 +42,7 @@ const createDraftPacedMutations = (draftId: string) => {
     trailing: true,
   });
   let latestTx: Transaction<ImportReviewRow> | null = null;
+  /** Latest household working-set scope wins for the whole debounced batch commit. */
   let persistScope: WorkingSetScope | null = null;
 
   const mutate = createPacedMutations<
@@ -139,6 +146,7 @@ export const retryFailedImportDraftPersists = async (draftId: string) => {
       if (!live) return null;
       const patch = buildImportDraftRowPersistPatch(draftId, rowId, live, null);
       if (Object.keys(patch).length === 0) return null;
+      // Retry uses live for both attempted and original — no in-flight overlap to resolve.
       return {
         rowId,
         patch,

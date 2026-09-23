@@ -30,8 +30,8 @@ import {
 } from '@/lib/queries/import-refund-targets';
 import { listImportMatchTargets } from '@/lib/queries/import-match-targets';
 
-const collectRefundOfIds = (
-  rows: readonly Pick<ImportDraftRowRecord, 'reviewRefundOf'>[]
+export const collectReviewRefundOfIds = (
+  rows: readonly { reviewRefundOf?: string | null }[]
 ): string[] =>
   rows.flatMap((row) => (row.reviewRefundOf ? [row.reviewRefundOf] : []));
 
@@ -59,24 +59,9 @@ export const toImportDraftDurableRowFromRecord = (
 ): ImportDraftDurableRow =>
   toImportDraftDurableRow(
     importDraftDurableRowFieldsFrom({
-      id: row.id,
+      ...row,
       reviewDate: row.reviewDate ?? null,
-      reviewAmount: row.reviewAmount,
-      reviewType: row.reviewType,
-      reviewDescription: row.reviewDescription,
       parsedDate: row.parsedDate ?? null,
-      parsedAmount: row.parsedAmount,
-      parsedType: row.parsedType,
-      parsedDescription: row.parsedDescription,
-      reviewCategoryId: row.reviewCategoryId,
-      reviewAssigneeMemberIds: row.reviewAssigneeMemberIds,
-      reviewCounterpartAccountId: row.reviewCounterpartAccountId,
-      reviewRefundOf: row.reviewRefundOf,
-      reviewRefundOfBatchRowId: row.reviewRefundOfBatchRowId,
-      externalId: row.externalId,
-      sourceDescription: row.sourceDescription,
-      reviewMatchedTransactionId: row.reviewMatchedTransactionId,
-      reviewMatchDismissed: row.reviewMatchDismissed,
     }),
     selectedForImport
   );
@@ -130,18 +115,16 @@ export const loadDraftEvaluationContext = async (
   rows: readonly ImportDraftRowRecord[],
   options?: {
     client?: DbClient;
-    includePriorRefunds?: boolean;
     includeMatchTargets?: boolean;
   }
 ) => {
   const client = options?.client ?? db;
-  const refundOfIds = collectRefundOfIds(rows);
+  const refundOfIds = collectReviewRefundOfIds(rows);
   const loadMatchTargets = options?.includeMatchTargets !== false;
-  const includePriorRefunds = options?.includePriorRefunds !== false;
   const [existingExpenses, priorRefundsByTarget, existingTransactions] =
     await Promise.all([
       listRefundTargetExpensesByIds(orgId, refundOfIds, client),
-      includePriorRefunds
+      refundOfIds.length > 0
         ? sumPriorRefundTotalsByTransactionTarget(orgId, refundOfIds, client)
         : Promise.resolve(undefined),
       loadMatchTargets

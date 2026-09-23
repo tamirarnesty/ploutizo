@@ -17,7 +17,9 @@ export const scheduleImportDraftWorkingCopyRederive = (
   );
 };
 
-export const flushImportDraftWorkingCopyRederive = (draftId: string) => {
+export const cancelScheduledImportDraftWorkingCopyRederive = (
+  draftId: string
+) => {
   const existing = timers.get(draftId);
   if (!existing) return;
   clearTimeout(existing);
@@ -25,7 +27,7 @@ export const flushImportDraftWorkingCopyRederive = (draftId: string) => {
 };
 
 export const releaseImportDraftWorkingCopyRederive = (draftId: string) => {
-  flushImportDraftWorkingCopyRederive(draftId);
+  cancelScheduledImportDraftWorkingCopyRederive(draftId);
 };
 
 export const endImportDraftWorkingCopyRederive = () => {

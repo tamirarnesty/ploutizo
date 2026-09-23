@@ -68,7 +68,7 @@ describe('HouseholdSettingsForm', () => {
     mocks.mutate.mockReset();
     mocks.getHouseholdSettings.mockReset();
     mocks.getHouseholdSettings.mockReturnValue({
-      data: { settlementThreshold: null },
+      data: { settlementThreshold: null, autoCheckImportRowWhenReady: true },
       isLoading: false,
     });
   });
@@ -86,7 +86,7 @@ describe('HouseholdSettingsForm', () => {
 
     await waitFor(() => {
       expect(mocks.mutate).toHaveBeenCalledWith(
-        { settlementThreshold: null },
+        { settlementThreshold: null, autoCheckImportRowWhenReady: true },
         expect.any(Object)
       );
     });
@@ -95,7 +95,7 @@ describe('HouseholdSettingsForm', () => {
   it('submits immediate mode as a zero-cent override', async () => {
     const user = userEvent.setup();
     mocks.getHouseholdSettings.mockReturnValue({
-      data: { settlementThreshold: 0 },
+      data: { settlementThreshold: 0, autoCheckImportRowWhenReady: true },
       isLoading: false,
     });
 
@@ -108,7 +108,7 @@ describe('HouseholdSettingsForm', () => {
 
     await waitFor(() => {
       expect(mocks.mutate).toHaveBeenCalledWith(
-        { settlementThreshold: 0 },
+        { settlementThreshold: 0, autoCheckImportRowWhenReady: true },
         expect.any(Object)
       );
     });
@@ -117,7 +117,7 @@ describe('HouseholdSettingsForm', () => {
   it('submits custom positive threshold dollars as cents', async () => {
     const user = userEvent.setup();
     mocks.getHouseholdSettings.mockReturnValue({
-      data: { settlementThreshold: 5000 },
+      data: { settlementThreshold: 5000, autoCheckImportRowWhenReady: true },
       isLoading: false,
     });
 
@@ -130,7 +130,7 @@ describe('HouseholdSettingsForm', () => {
 
     await waitFor(() => {
       expect(mocks.mutate).toHaveBeenCalledWith(
-        { settlementThreshold: 5000 },
+        { settlementThreshold: 5000, autoCheckImportRowWhenReady: true },
         expect.any(Object)
       );
     });
@@ -139,7 +139,7 @@ describe('HouseholdSettingsForm', () => {
   it('resets a custom threshold to app default', async () => {
     const user = userEvent.setup();
     mocks.getHouseholdSettings.mockReturnValue({
-      data: { settlementThreshold: 5000 },
+      data: { settlementThreshold: 5000, autoCheckImportRowWhenReady: true },
       isLoading: false,
     });
 
@@ -150,7 +150,7 @@ describe('HouseholdSettingsForm', () => {
 
     await waitFor(() => {
       expect(mocks.mutate).toHaveBeenCalledWith(
-        { settlementThreshold: null },
+        { settlementThreshold: null, autoCheckImportRowWhenReady: true },
         expect.any(Object)
       );
     });

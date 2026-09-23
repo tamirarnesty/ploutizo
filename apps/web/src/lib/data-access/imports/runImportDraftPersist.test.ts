@@ -110,4 +110,21 @@ describe('runImportDraftPersist', () => {
     markImportReviewPersistSuccess(draftId, rowId);
     expect(getImportReviewAutosaveSnapshot(draftId).status).toBe('saved');
   });
+
+  it('runs onFailure when onSuccess throws', async () => {
+    const scope = beginWorkingSetScope();
+    const onFailure = vi.fn();
+
+    const ok = await runImportDraftPersist({
+      scope,
+      persist: async () => 'ok',
+      onSuccess: () => {
+        throw new Error('confirm failed');
+      },
+      onFailure,
+    });
+
+    expect(ok).toBe(false);
+    expect(onFailure).toHaveBeenCalledTimes(1);
+  });
 });

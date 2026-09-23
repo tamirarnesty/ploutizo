@@ -42,7 +42,15 @@ export const runImportDraftPersist = async <T>({
     if (!scope.isCurrent()) {
       return false;
     }
-    onSuccess(result);
+    try {
+      onSuccess(result);
+    } catch {
+      if (!scope.isCurrent()) {
+        return false;
+      }
+      onFailure?.();
+      return false;
+    }
     return true;
   } catch {
     if (!scope.isCurrent()) {

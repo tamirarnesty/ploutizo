@@ -194,8 +194,16 @@ const HouseholdSettingsFormFields = ({
           )}
         </form.AppField>
 
-        <form.Subscribe selector={(s) => s.values.thresholdMode}>
-          {(thresholdMode) =>
+        <form.Subscribe
+          selector={(s) => ({
+            thresholdMode: s.values.thresholdMode,
+            autoCheckImportRowWhenReady: s.values.autoCheckImportRowWhenReady,
+          })}
+        >
+          {({
+            thresholdMode,
+            autoCheckImportRowWhenReady: autoCheckFromForm,
+          }) =>
             thresholdMode === 'custom' ? (
               <form.AppField
                 name="thresholdDollars"
@@ -204,7 +212,7 @@ const HouseholdSettingsFormFields = ({
                     const result = HouseholdSettingsFormSchema.safeParse({
                       thresholdMode: 'custom',
                       thresholdDollars: value,
-                      autoCheckImportRowWhenReady,
+                      autoCheckImportRowWhenReady: autoCheckFromForm,
                     });
                     if (!result.success) {
                       return result.error.issues
