@@ -1,11 +1,10 @@
 import { queryOptions } from '@tanstack/react-query';
+import type { HouseholdSettings } from '@ploutizo/types';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
 
-export interface HouseholdSettings {
-  settlementThreshold: number | null;
-}
+export type { HouseholdSettings };
 
 export const fetchHouseholdSettings = async (
   signal?: AbortSignal

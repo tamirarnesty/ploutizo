@@ -4,7 +4,9 @@ import { DomainError, NotFoundError } from '@/lib/errors';
 import { updateImportDraftRows } from '@/services/imports';
 import {
   fetchDraftSummaryById,
+  listAllDraftRowIdsForDraft,
   listDraftRows,
+  listDraftRowsByIds,
   lockImportDraftBatch,
   updateImportDraftRowQuery,
 } from '@/lib/queries/imports';
@@ -23,7 +25,9 @@ vi.mock('@ploutizo/db', () => ({
 
 vi.mock('@/lib/queries/imports', () => ({
   fetchDraftSummaryById: vi.fn(),
+  listAllDraftRowIdsForDraft: vi.fn(),
   listDraftRows: vi.fn(),
+  listDraftRowsByIds: vi.fn(),
   lockImportDraftBatch: vi.fn(),
   updateImportDraftRowQuery: vi.fn(),
 }));
@@ -106,6 +110,11 @@ describe('updateImportDraftRows', () => {
     vi.mocked(db.transaction).mockImplementation(async (fn) => fn({} as never));
     vi.mocked(fetchDraftSummaryById).mockResolvedValue(summaryRow);
     vi.mocked(listDraftRows).mockResolvedValue([draftRow]);
+    vi.mocked(listDraftRowsByIds).mockImplementation(
+      async (_org, _draft, ids) =>
+        [draftRow].filter((row) => ids.includes(row.id))
+    );
+    vi.mocked(listAllDraftRowIdsForDraft).mockResolvedValue([draftRow.id]);
     vi.mocked(listRefundTargetExpensesByIds).mockResolvedValue(new Map());
     vi.mocked(listOrgMembers).mockResolvedValue([]);
     vi.mocked(transactionExistsInOrg).mockResolvedValue(true);
@@ -120,6 +129,11 @@ describe('updateImportDraftRows', () => {
   it('persists multiple row patches in one transaction', async () => {
     const rowB = { ...draftRow, id: '44444444-4444-4444-8444-444444444444' };
     vi.mocked(listDraftRows).mockResolvedValue([draftRow, rowB]);
+    vi.mocked(listDraftRowsByIds).mockResolvedValue([draftRow, rowB]);
+    vi.mocked(listAllDraftRowIdsForDraft).mockResolvedValue([
+      draftRow.id,
+      rowB.id,
+    ]);
     vi.mocked(updateImportDraftRowQuery)
       .mockResolvedValueOnce({ ...draftRow, reviewNotes: 'a' })
       .mockResolvedValueOnce({ ...rowB, reviewNotes: 'b' });
@@ -216,6 +230,11 @@ describe('updateImportDraftRows', () => {
   it('aborts the batch when persistence fails inside the transaction', async () => {
     const rowB = { ...draftRow, id: '44444444-4444-4444-8444-444444444444' };
     vi.mocked(listDraftRows).mockResolvedValue([draftRow, rowB]);
+    vi.mocked(listDraftRowsByIds).mockResolvedValue([draftRow, rowB]);
+    vi.mocked(listAllDraftRowIdsForDraft).mockResolvedValue([
+      draftRow.id,
+      rowB.id,
+    ]);
     vi.mocked(updateImportDraftRowQuery)
       .mockResolvedValueOnce({ ...draftRow, reviewNotes: 'a' })
       .mockRejectedValueOnce(new Error('persist failed'));
@@ -238,10 +257,11 @@ describe('updateImportDraftRows', () => {
     vi.mocked(lockImportDraftBatch).mockImplementation(async () => {
       order.push('lock');
     });
-    vi.mocked(listDraftRows).mockImplementation(async () => {
+    vi.mocked(listDraftRowsByIds).mockImplementation(async () => {
       order.push('load');
       return [draftRow];
     });
+    vi.mocked(listAllDraftRowIdsForDraft).mockResolvedValue([draftRow.id]);
     vi.mocked(assertOrgWriteReferences).mockImplementation(async () => {
       order.push('validate');
     });

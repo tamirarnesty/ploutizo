@@ -18,9 +18,9 @@ const baseRow = {
 };
 
 describe('import-row-readiness', () => {
-  it('treats invalid rows as not selectable', () => {
+  it('treats only ready rows as selectable', () => {
     expect(isImportRowSelectable({ status: 'ready' })).toBe(true);
-    expect(isImportRowSelectable({ status: 'needs_review' })).toBe(true);
+    expect(isImportRowSelectable({ status: 'needs_review' })).toBe(false);
     expect(isImportRowSelectable({ status: 'invalid' })).toBe(false);
   });
 

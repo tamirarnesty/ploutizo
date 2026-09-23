@@ -13,7 +13,7 @@ export interface ImportReviewContinueOptions {
 
 export const isImportRowSelectable = (
   row: Pick<ImportRowSelectionFields, 'status'>
-): boolean => row.status !== 'invalid';
+): boolean => row.status === 'ready';
 
 export const isImportRowResolved = (
   row: Pick<ImportRowSelectionFields, 'status'>

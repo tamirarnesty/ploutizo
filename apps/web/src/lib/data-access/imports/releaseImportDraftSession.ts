@@ -1,4 +1,6 @@
-import { releaseImportDraftRowPacedMutations } from './getImportDraftRowPacedMutations';
+import { releaseImportDraftPacedMutations } from './getImportDraftPacedMutations';
+import { releaseImportDraftPersistBaselines } from './importDraftPersistBaselines';
+import { releaseImportDraftWorkingCopyRederive } from './scheduleImportDraftWorkingCopyRederive';
 import { releaseImportDraftRowsCollection } from './getImportDraftRowsCollection';
 import { clearImportFinalizePreviewSession } from './importFinalizePreviewSession';
 import { releaseImportReviewAutosave } from './importReviewAutosave';
@@ -9,7 +11,9 @@ import { releaseImportReviewAutosave } from './importReviewAutosave';
  * does not (hub discard before review), release still clears cached draft data.
  */
 export const releaseImportDraftSession = async (draftId: string) => {
-  releaseImportDraftRowPacedMutations(draftId);
+  releaseImportDraftPacedMutations(draftId);
+  releaseImportDraftPersistBaselines(draftId);
+  releaseImportDraftWorkingCopyRederive(draftId);
   releaseImportReviewAutosave(draftId);
   clearImportFinalizePreviewSession(draftId);
   await releaseImportDraftRowsCollection(draftId);

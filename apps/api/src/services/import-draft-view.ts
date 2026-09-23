@@ -131,10 +131,11 @@ export const loadDraftEvaluationContext = async (
   const client = options?.client ?? db;
   const refundOfIds = collectRefundOfIds(rows);
   const loadMatchTargets = options?.includeMatchTargets !== false;
+  const includePriorRefunds = options?.includePriorRefunds !== false;
   const [existingExpenses, priorRefundsByTarget, existingTransactions] =
     await Promise.all([
       listRefundTargetExpensesByIds(orgId, refundOfIds, client),
-      options?.includePriorRefunds
+      includePriorRefunds
         ? sumPriorRefundTotalsByTransactionTarget(orgId, refundOfIds, client)
         : Promise.resolve(undefined),
       loadMatchTargets
@@ -160,6 +161,7 @@ export const loadDraftEvaluationContext = async (
     evaluations,
     refundTargetFacts: refundTargetFactsRecordFromMap(existingExpenses),
     matchTargetFacts: Object.fromEntries(existingTransactions),
+    priorRefundsByTarget,
   };
 };
 
@@ -196,14 +198,21 @@ export const buildImportDraftView = async (
   rows: readonly ImportDraftRowRecord[],
   toSummary: (
     row: ImportDraftSummaryRow
-  ) => Omit<ImportDraft, 'rows' | 'refundTargetFacts' | 'matchTargetFacts'>
+  ) => Omit<
+    ImportDraft,
+    'rows' | 'refundTargetFacts' | 'matchTargetFacts' | 'priorRefundsByTarget'
+  >
 ): Promise<ImportDraft> => {
   if (!summary.accountId) {
     throw new Error('Import draft is missing an account.');
   }
 
-  const { evaluations, refundTargetFacts, matchTargetFacts } =
-    await loadDraftEvaluationContext(orgId, summary.accountId, rows);
+  const {
+    evaluations,
+    refundTargetFacts,
+    matchTargetFacts,
+    priorRefundsByTarget,
+  } = await loadDraftEvaluationContext(orgId, summary.accountId, rows);
   const apiRows = rows.map((row) =>
     toImportDraftRow(row, evaluations.get(row.id)!)
   );
@@ -217,5 +226,6 @@ export const buildImportDraftView = async (
     rows: apiRows,
     refundTargetFacts,
     matchTargetFacts,
+    priorRefundsByTarget: Object.fromEntries(priorRefundsByTarget ?? new Map()),
   };
 };

@@ -133,7 +133,9 @@ export const finalizeImportDraft = async (
     if (batch.status === 'completed') return toImportCompletedResult(batch);
     if (batch.status !== 'draft') throw conflictError();
 
-    const verified = await verifyImportSetForDraft(tx, request);
+    const verified = await verifyImportSetForDraft(tx, request, {
+      summary: batch,
+    });
     if (!verified.ready) {
       throw new DomainError<ImportRequirementFailureDetails>(
         400,

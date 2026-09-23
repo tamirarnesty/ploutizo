@@ -11,6 +11,7 @@ import {
   markImportReviewPersistSuccess,
 } from './importReviewAutosave';
 import { sanitizeImportMatchPatch } from './importMatchTargetOnAccount';
+import { buildDirtyRowPatchFromBaseline } from './importDraftPersistBaselines';
 import { patchFromLiveKeys } from './importDraftRowOptimisticPatch';
 import { rederiveImportDraftWorkingCopy } from './rederiveImportDraftWorkingCopy';
 import { runImportDraftPersist } from './runImportDraftPersist';
@@ -29,14 +30,15 @@ export const buildImportDraftRowPersistPatch = (
   rowId: string,
   live: ImportReviewRow,
   changedPatch: UpdateImportDraftRowInput | null
-): UpdateImportDraftRowInput =>
-  sanitizeImportMatchPatch(draftId, {
-    ...(patchFromLiveKeys(
-      live,
-      getImportReviewAutosaveSnapshot(draftId).failedFieldKeys.get(rowId) ?? []
-    ) ?? {}),
+): UpdateImportDraftRowInput => {
+  const failedKeys =
+    getImportReviewAutosaveSnapshot(draftId).failedFieldKeys.get(rowId) ?? [];
+  return sanitizeImportMatchPatch(draftId, {
+    ...(buildDirtyRowPatchFromBaseline(live, draftId, failedKeys) ?? {}),
+    ...(patchFromLiveKeys(live, failedKeys) ?? {}),
     ...(changedPatch ?? {}),
   } as UpdateImportDraftRowInput);
+};
 
 export const persistImportDraftRowPatch = async ({
   draftId,

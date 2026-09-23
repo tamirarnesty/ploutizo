@@ -5,6 +5,7 @@ import {
   evaluateImportDraftWorkingCopy,
   rederiveImportDraftWorkingCopy,
 } from './rederiveImportDraftWorkingCopy';
+import { scheduleImportDraftWorkingCopyRederive } from './scheduleImportDraftWorkingCopyRederive';
 
 export const REVIEW_PATCH_KEYS = [
   'reviewDate',
@@ -69,10 +70,10 @@ export const applyOptimisticRowPatch = (
     draft.invalidReason = evaluation.invalidReason;
   });
 
-  if (evaluations) {
+  scheduleImportDraftWorkingCopyRederive(draftId, () => {
     rederiveImportDraftWorkingCopy(draftId, {
       evaluations,
       skipIds: new Set([rowId]),
     });
-  }
+  });
 };

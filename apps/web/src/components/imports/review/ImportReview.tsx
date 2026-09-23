@@ -81,6 +81,7 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
 
     if (importReviewState.prepareAgain) {
       toast.info(IMPORT_REVIEW_PREPARE_AGAIN_MESSAGE);
+      session.resetSelectionToEntryDefaults();
     }
     if (importReviewState.issues && importReviewState.issues.length > 0) {
       setInboundIssues(importReviewState.issues);
@@ -95,7 +96,13 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
       replace: true,
       state: { importReview: undefined },
     });
-  }, [draftId, importReviewState, navigate, queryClient]);
+  }, [
+    draftId,
+    importReviewState,
+    navigate,
+    queryClient,
+    session.resetSelectionToEntryDefaults,
+  ]);
 
   const body = (() => {
     if (isLoading) {

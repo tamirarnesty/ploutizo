@@ -4,7 +4,8 @@ import { apiFetch } from '@/lib/queryClient';
 import type { HouseholdSettings } from './useGetHouseholdSettings';
 
 interface UpdateHouseholdSettingsBody {
-  settlementThreshold: number | null;
+  settlementThreshold?: number | null;
+  autoCheckImportRowWhenReady?: boolean;
 }
 
 export const updateHouseholdSettings = async (

@@ -29,7 +29,9 @@ import {
   insertImportBatch,
   insertImportBatchRows,
   listActiveImportDraftSummaries,
+  listAllDraftRowIdsForDraft,
   listDraftRows,
+  listDraftRowsByIds,
   listDraftRowsForBatches,
   listImportTargetAccounts,
   lockImportDraftBatch,
@@ -318,9 +320,21 @@ export const updateImportDraftRows = async (
     const draft = await fetchDraftSummaryById(orgId, draftId, tx);
     if (!draft?.accountId) throw new NotFoundError('Import draft not found.');
 
-    const existingRows = await listDraftRows(orgId, draftId, tx);
+    const useTargetedLookup = input.rows.length <= 20;
+    const existingRows = useTargetedLookup
+      ? await listDraftRowsByIds(
+          orgId,
+          draftId,
+          input.rows.map((row) => row.id),
+          tx
+        )
+      : await listDraftRows(orgId, draftId, tx);
     const existingById = new Map(existingRows.map((row) => [row.id, row]));
-    const draftRowIds = new Set(existingById.keys());
+    const draftRowIds = new Set(
+      useTargetedLookup
+        ? await listAllDraftRowIdsForDraft(orgId, draftId, tx)
+        : existingRows.map((row) => row.id)
+    );
 
     for (const { id, ...patch } of input.rows) {
       const existing = existingById.get(id);

@@ -34,15 +34,26 @@ export const ImportReviewAutosaveStatus = ({
     };
   }, [status]);
 
+  const isPending = status === 'pending';
   const isSaving = status === 'saving';
   const isFailed = status === 'failed';
-  const hasStatus = isSaving || isFailed || showSavedAck;
+  const hasStatus = isPending || isSaving || isFailed || showSavedAck;
 
   return (
     <div
       className="flex min-h-5 min-w-32 items-center justify-end"
       aria-hidden={!hasStatus}
     >
+      {isPending ? (
+        <Text
+          id={IMPORT_REVIEW_AUTOSAVE_STATUS_ID}
+          variant="body-sm"
+          className="text-muted-foreground"
+          aria-live="polite"
+        >
+          Unsaved changes
+        </Text>
+      ) : null}
       {isSaving ? (
         <Text
           id={IMPORT_REVIEW_AUTOSAVE_STATUS_ID}

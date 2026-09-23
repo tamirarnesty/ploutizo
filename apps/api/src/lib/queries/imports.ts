@@ -349,6 +349,44 @@ const draftRowInActiveDraftCondition = (orgId: string) =>
       )
   );
 
+export const listAllDraftRowIdsForDraft = async (
+  orgId: string,
+  draftId: string,
+  client: DbClient = db
+) => {
+  const rows = await client
+    .select({ id: importBatchRows.id })
+    .from(importBatchRows)
+    .where(
+      and(
+        eq(importBatchRows.orgId, orgId),
+        eq(importBatchRows.batchId, draftId)
+      )
+    );
+  return rows.map((row) => row.id);
+};
+
+export const listDraftRowsByIds = async (
+  orgId: string,
+  draftId: string,
+  rowIds: readonly string[],
+  client: DbClient = db
+) => {
+  if (rowIds.length === 0) return [];
+  return client
+    .select()
+    .from(importBatchRows)
+    .where(
+      and(
+        eq(importBatchRows.orgId, orgId),
+        eq(importBatchRows.batchId, draftId),
+        inArray(importBatchRows.id, [...rowIds]),
+        draftRowInActiveDraftCondition(orgId)
+      )
+    )
+    .orderBy(importBatchRows.rowNumber);
+};
+
 export const listDraftRowIdsForDraft = async (
   orgId: string,
   draftId: string,

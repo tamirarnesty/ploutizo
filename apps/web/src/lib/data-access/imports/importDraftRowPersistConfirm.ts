@@ -59,14 +59,17 @@ export const confirmPersistIntoCollection = (
   attempted: ImportReviewRow,
   original: ImportReviewRow,
   patch: UpdateImportDraftRowInput,
-  draftId: string
+  draftId: string,
+  options?: { deferRederive?: boolean; deferRefundFactsMerge?: boolean }
 ) => {
   const serverRow = server?.row ?? null;
   const live = collection.get(attempted.id);
 
   if (!serverRow) {
     collection.utils.writeUpdate(live ?? attempted);
-    rederiveImportDraftWorkingCopy(draftId);
+    if (!options?.deferRederive) {
+      rederiveImportDraftWorkingCopy(draftId);
+    }
     return;
   }
 
@@ -95,6 +98,10 @@ export const confirmPersistIntoCollection = (
   // Selection is session-only; a toggle during the debounce must survive the confirm.
   if (live) next.selectedForImport = live.selectedForImport;
   collection.utils.writeUpdate(next);
-  syncRefundTargetFacts(draftId, patch, original, server?.refundTargetFacts);
-  rederiveImportDraftWorkingCopy(draftId);
+  if (!options?.deferRefundFactsMerge) {
+    syncRefundTargetFacts(draftId, patch, original, server?.refundTargetFacts);
+  }
+  if (!options?.deferRederive) {
+    rederiveImportDraftWorkingCopy(draftId);
+  }
 };

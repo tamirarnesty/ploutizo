@@ -132,6 +132,7 @@ export const makeImportDraft = (
     updatedAt: '2026-05-20T12:00:00.000Z',
     refundTargetFacts: {},
     matchTargetFacts: {},
+    priorRefundsByTarget: {},
     ...overrides,
     rows,
   };

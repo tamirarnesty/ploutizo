@@ -1,4 +1,9 @@
-export type ImportReviewAutosaveStatus = 'idle' | 'saving' | 'saved' | 'failed';
+export type ImportReviewAutosaveStatus =
+  | 'idle'
+  | 'pending'
+  | 'saving'
+  | 'saved'
+  | 'failed';
 
 interface DraftAutosaveState {
   pendingRowIds: Set<string>;
@@ -43,7 +48,8 @@ const getOrCreateState = (draftId: string): DraftAutosaveState => {
 const deriveStatus = (
   state: DraftAutosaveState
 ): ImportReviewAutosaveStatus => {
-  if (state.pendingRowIds.size > 0 || state.inFlightCount > 0) return 'saving';
+  if (state.inFlightCount > 0) return 'saving';
+  if (state.pendingRowIds.size > 0) return 'pending';
   if (state.failedRowIds.size > 0) return 'failed';
   if (state.hasSaved) return 'saved';
   return 'idle';
@@ -65,7 +71,8 @@ const toSnapshot = (
       previous && arraysEqual(previous.failedRowIds, failedRowIds)
         ? previous.failedRowIds
         : failedRowIds,
-    hasUnsavedWork: status === 'saving' || status === 'failed',
+    hasUnsavedWork:
+      status === 'pending' || status === 'saving' || status === 'failed',
     failedFieldKeys: state.failedFieldKeys,
   };
 };
@@ -123,6 +130,13 @@ export const subscribeImportReviewAutosave = (
 export const markImportReviewPending = (draftId: string, rowId: string) => {
   const state = getOrCreateState(draftId);
   state.pendingRowIds.add(rowId);
+  emit(draftId);
+};
+
+export const clearImportReviewPendingRow = (draftId: string, rowId: string) => {
+  const state = draftStates.get(draftId);
+  if (!state) return;
+  state.pendingRowIds.delete(rowId);
   emit(draftId);
 };
 
@@ -191,7 +205,7 @@ export const waitForImportReviewAutosaveSettled = (draftId: string) =>
   new Promise<void>((resolve) => {
     const check = () => {
       const snapshot = getImportReviewAutosaveSnapshot(draftId);
-      if (snapshot.status !== 'saving') {
+      if (snapshot.status !== 'saving' && snapshot.status !== 'pending') {
         unsubscribe();
         resolve();
       }

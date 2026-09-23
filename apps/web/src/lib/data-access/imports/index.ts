@@ -6,9 +6,9 @@ export {
 } from './getImportDraftRowsCollection';
 export { releaseImportDraftSession } from './releaseImportDraftSession';
 export {
-  getImportDraftRowPacedMutations,
-  IMPORT_ROW_PACE_WAIT_MS,
-} from './getImportDraftRowPacedMutations';
+  getImportDraftPacedMutations,
+  IMPORT_DRAFT_PACE_WAIT_MS,
+} from './getImportDraftPacedMutations';
 export {
   evaluateImportDraftWorkingCopy,
   rederiveImportDraftWorkingCopy,

@@ -16,6 +16,11 @@ export {
   type ImportRowStructuralBlocker,
   type ImportRowStructuralFields,
 } from './import-row-status';
+export { toImportDraftDurableRowFromReview } from './to-import-draft-durable-row';
+export {
+  priorRefundsByTargetFromRecord,
+  priorRefundsByTargetToRecord,
+} from './prior-refunds-by-target-record';
 export {
   evaluateImportDraft,
   evaluateImportDraftRow,

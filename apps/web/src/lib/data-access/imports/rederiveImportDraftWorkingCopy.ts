@@ -1,7 +1,10 @@
-import { evaluateImportDraft } from '@ploutizo/utils';
+import {
+  evaluateImportDraft,
+  priorRefundsByTargetFromRecord,
+  toImportDraftDurableRowFromReview,
+} from '@ploutizo/utils';
 import type {
   ExistingRefundTargetExpense,
-  ImportDraftDurableRow,
   ImportDraftRowEvaluation,
 } from '@ploutizo/utils';
 import type {
@@ -36,32 +39,16 @@ export const evaluateImportDraftWorkingCopy = (
   const workingRows = rows ?? getImportDraftRowsCollection(draftId).toArray;
   if (workingRows.length === 0) return null;
 
-  const durableRows: ImportDraftDurableRow[] = workingRows.map((row) => ({
-    id: row.id,
-    reviewDate: row.reviewDate,
-    reviewAmount: row.reviewAmount,
-    reviewType: row.reviewType,
-    reviewDescription: row.reviewDescription,
-    parsedDate: row.parsedDate,
-    parsedAmount: row.parsedAmount,
-    parsedType: row.parsedType,
-    parsedDescription: row.parsedDescription,
-    reviewCategoryId: row.reviewCategoryId,
-    reviewAssigneeMemberIds: row.reviewAssigneeMemberIds,
-    reviewCounterpartAccountId: row.reviewCounterpartAccountId,
-    reviewRefundOf: row.reviewRefundOf,
-    reviewRefundOfBatchRowId: row.reviewRefundOfBatchRowId,
-    selectedForImport: row.selectedForImport,
-    externalId: row.externalId,
-    sourceDescription: row.sourceDescription,
-    reviewMatchedTransactionId: row.reviewMatchedTransactionId,
-    reviewMatchDismissed: row.reviewMatchDismissed,
-  }));
+  const durableRows = workingRows.map(toImportDraftDurableRowFromReview);
+  const priorRefundsByTarget = priorRefundsByTargetFromRecord(
+    draft.priorRefundsByTarget
+  );
 
   return evaluateImportDraft(durableRows, {
     targetAccountId: draft.account.id,
     existingExpenses: refundTargetFactsToExpenseMap(draft.refundTargetFacts),
     existingTransactions: Object.values(draft.matchTargetFacts),
+    ...(priorRefundsByTarget.size > 0 ? { priorRefundsByTarget } : {}),
   });
 };
 

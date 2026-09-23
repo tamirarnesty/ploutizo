@@ -21,7 +21,9 @@ export const getImportReviewContinueEnabled = ({
   if (!meta || isContinuing) return false;
 
   const persistenceBlocked =
-    autosaveStatus === 'failed' || autosaveStatus === 'saving';
+    autosaveStatus === 'failed' ||
+    autosaveStatus === 'saving' ||
+    autosaveStatus === 'pending';
 
   return canContinueImportReview(rows) && !persistenceBlocked;
 };

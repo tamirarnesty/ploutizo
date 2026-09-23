@@ -19,7 +19,7 @@ describe('importReviewAutosave', () => {
     markImportReviewPending(draftId, 'row_a');
 
     expect(listener).toHaveBeenCalledTimes(1);
-    expect(getImportReviewAutosaveSnapshot(draftId).status).toBe('saving');
+    expect(getImportReviewAutosaveSnapshot(draftId).status).toBe('pending');
 
     unsubscribe();
     markImportReviewPending(draftId, 'row_b');

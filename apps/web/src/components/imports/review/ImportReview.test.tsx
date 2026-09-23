@@ -119,6 +119,7 @@ const toSession = (value = draft) => {
     setSelection: vi.fn(),
     retryAutosave: vi.fn(),
     flush: vi.fn(() => Promise.resolve(true)),
+    resetSelectionToEntryDefaults: vi.fn(),
   };
 };
 

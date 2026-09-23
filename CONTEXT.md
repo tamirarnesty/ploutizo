@@ -81,7 +81,7 @@ The primary place for credit card import work. A household member uploads a stat
 _Avoid_: Import wizard, import review page, treating Import as a transaction-list subpage, trusting persisted valid/invalid counts
 
 **Import draft**:
-A durable in-progress import for one **settlement-scoped account**. A household member can resume or discard it before confirm; mid-review corrections and selection are saved on the draft so resume continues from the last persisted state. Only one active import draft may exist for a credit card account at a time.
+A durable in-progress import for one **settlement-scoped account**. A household member can resume or discard it before confirm; **reviewed import values** persist on the draft, while checkbox **import set** selection is a session decision until **Continue**. Only one active import draft may exist for a credit card account at a time.
 _Avoid_: Temporary upload, local preview, partial import, review-only buffer that is lost on leave
 
 **Review import**:
@@ -120,16 +120,16 @@ _Avoid_: Blocker, warning, UI status
 An import set with at least one selected row whose selected rows all satisfy their **import row requirements**. Only an import set ready state can move into **Finalize import**.
 _Avoid_: File valid, draft complete
 
-**Prepared import set**:
-Temporary Continue → Finalize staging: a stable, immutable, revision-bound snapshot of mutually exclusive finalize outcomes for every source row (`created`, `matched`, `skipped`, `invalid`), created after the **import set** passes requirement evaluation. Outcome counts sum to the immutable source `rowCount`. The user reviews this prepared set during **Finalize import** before committing new transactions and recording matched/no-op, skipped, and invalid outcomes. Returning to **Review import**, or any intervening draft edit, discards the prepared import set; another Continue must verify and create a new prepared set from the current reviewed values and selection. After Finalize confirms and transaction writes complete, staging is cleaned up; it is not Import history.
-_Avoid_: Live draft rows, temporary UI selection, permanent history store
+**Import finalize preview**:
+The full-file outcome projection returned by **Continue** after **import set verification**: counts of rows that would be `created`, `matched`, `skipped`, or `invalid`, plus per-row preview detail. Held in the client session until **Finalize import**, back to **Review import**, or leaving import scope — not stored in Postgres.
+_Avoid_: Prepared import set staging, durable selection, trusting a preview after draft edits without re-verifying
 
 **Import set verification**:
 The server-side requirement evaluation that confirms a selected **import set** can move from **Review import** to **Finalize import**. Verification uses the shared transaction requirements plus import-specific requirements and is repeated before bulk transaction creation.
 _Avoid_: Client-only status check, trusting cached readiness
 
 **Finalize import**:
-The last confirmation checkpoint for an import draft. It lets the user review the **prepared import set** before committing new transactions, recording matched/no-op rows, recording skipped and invalid outcomes, and closing the draft completely. Confirm is idempotent: the first request claims the prepared set; later requests return its completed summary without creating further transactions.
+The last confirmation checkpoint for an import draft. It shows the **Import finalize preview** from the session, then commits new transactions, records matched/no-op rows, skipped and invalid outcomes, and closes the draft. Confirm is idempotent: repeat requests after success return the same completed summary without creating further transactions.
 _Avoid_: Partial confirm, background import
 
 **Bill payment row**:
@@ -141,7 +141,7 @@ An imported row that Ploutizo can align to exactly one existing same-kind transa
 _Avoid_: Silent duplicate removal, fuzzy auto-match
 
 **Matched import row**:
-An imported row accepted as representing an existing transaction, either by external id or by matching criteria such as amount, date, description, and type. It is unselected by default and recorded as a skipped matched row; if the user selects it explicitly, it finalizes as a no-op for transaction creation.
+An imported row accepted as representing an existing transaction, either by external id or by matching criteria such as amount, date, description, and type. During **Review import**, **ready** rows start checked by household default; the user may uncheck before **Continue**. At finalize, an unselected matched row is recorded as skipped; an explicitly selected match finalizes as a no-op for transaction creation.
 _Avoid_: Duplicate to import, new transaction
 
 **Needs review import row**:

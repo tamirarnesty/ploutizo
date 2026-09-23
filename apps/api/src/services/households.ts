@@ -23,18 +23,21 @@ export const getHousehold = async (orgId: string) => {
 
 export const getHouseholdSettings = async (orgId: string) => {
   const row = await fetchOrgSettings(orgId);
-  return { settlementThreshold: row?.settlementThreshold ?? null };
+  return {
+    settlementThreshold: row?.settlementThreshold ?? null,
+    autoCheckImportRowWhenReady: row?.autoCheckImportRowWhenReady ?? true,
+  };
 };
 
 export const updateHouseholdSettings = async (
   orgId: string,
   data: z.infer<typeof updateHouseholdSettingsSchema>
 ) => {
-  const updated = await updateOrgSettingsQuery(
-    orgId,
-    data.settlementThreshold ?? null
-  );
-  return { settlementThreshold: updated?.settlementThreshold ?? null };
+  const updated = await updateOrgSettingsQuery(orgId, data);
+  return {
+    settlementThreshold: updated?.settlementThreshold ?? null,
+    autoCheckImportRowWhenReady: updated?.autoCheckImportRowWhenReady ?? true,
+  };
 };
 
 export const listMembers = async (orgId: string) => {
