@@ -61,7 +61,7 @@ export const persistImportDraftRowPatch = async ({
   return runImportDraftPersist({
     scope,
     onStart: () => markImportReviewPersistStart(draftId, rowId),
-    persist: () => fetchUpdateImportDraftRow(rowId, patch),
+    persist: () => fetchUpdateImportDraftRow(draftId, rowId, patch),
     onSuccess: (server) => {
       confirmPersistIntoCollection(
         collection,

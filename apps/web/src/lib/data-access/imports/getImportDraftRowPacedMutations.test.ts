@@ -48,6 +48,7 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
       }),
     ],
   });
+  const draftId = draft.id;
 
   beforeEach(() => {
     getActiveQueryClient().clear();
@@ -86,7 +87,7 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
     await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
     await vi.runAllTimersAsync();
 
-    expect(fetchUpdateImportDraftRow).toHaveBeenCalledWith('row_1', {
+    expect(fetchUpdateImportDraftRow).toHaveBeenCalledWith(draftId, 'row_1', {
       reviewCategoryId: null,
     });
     const live = collection.get('row_1');
@@ -230,7 +231,7 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
     await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
     await vi.runAllTimersAsync();
 
-    expect(fetchUpdateImportDraftRow).toHaveBeenCalledWith('row_1', {
+    expect(fetchUpdateImportDraftRow).toHaveBeenCalledWith(draftId, 'row_1', {
       reviewMatchedTransactionId: 'tx_same',
     });
     expect(collection.get('row_1')?.reviewMatchedTransactionId).toBe('tx_same');

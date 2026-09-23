@@ -276,7 +276,14 @@ describe('rederiveImportDraftWorkingCopy', () => {
     );
     expect(unselectedEvaluation?.blockers).toContain('match');
     expect(unselectedEvaluation?.match?.issues).toContain('collision');
-    expect(canContinueImportReview(collection.toArray)).toBe(true);
+    expect(
+      canContinueImportReview(
+        collection.toArray.map((row) => ({
+          ...row,
+          selectedForImport: row.selectedForImport ?? false,
+        }))
+      )
+    ).toBe(true);
 
     collection.utils.writeUpdate({
       ...collection.get('row_a')!,
@@ -295,7 +302,14 @@ describe('rederiveImportDraftWorkingCopy', () => {
     );
     expect(collisionEvaluation?.blockers).toContain('match');
     expect(collisionEvaluation?.match?.issues).toContain('collision');
-    expect(canContinueImportReview(collection.toArray)).toBe(true);
+    expect(
+      canContinueImportReview(
+        collection.toArray.map((row) => ({
+          ...row,
+          selectedForImport: row.selectedForImport ?? false,
+        }))
+      )
+    ).toBe(true);
 
     collection.utils.writeUpdate({
       ...collection.get('row_b')!,
@@ -315,7 +329,14 @@ describe('rederiveImportDraftWorkingCopy', () => {
     expect(
       evaluateImportDraftWorkingCopy(draft.id)?.get('row_b')?.match?.issues
     ).not.toContain('collision');
-    expect(canContinueImportReview(collection.toArray)).toBe(true);
+    expect(
+      canContinueImportReview(
+        collection.toArray.map((row) => ({
+          ...row,
+          selectedForImport: row.selectedForImport ?? false,
+        }))
+      )
+    ).toBe(true);
   });
 
   it('blocks Continue on a selected advisory match until the user decides', async () => {

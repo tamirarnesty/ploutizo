@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { getSelectableImportRows } from '@ploutizo/utils/import-row-readiness';
-import type { ImportDraftRow, OrgMember } from '@ploutizo/types';
+import type { ImportReviewRow, OrgMember } from '@ploutizo/types';
 import type { ImportDraftMeta } from '@/lib/data-access/imports';
 import { usePersistedPageSize } from '@/hooks/persistedPageSize';
 import { useFlushPendingInputs } from '@/lib/money/pending-input-flush';
@@ -9,7 +9,7 @@ import type { PaginationState, Updater } from '@tanstack/react-table';
 
 interface UseImportDraftReviewStateOptions {
   meta?: ImportDraftMeta;
-  rows?: ImportDraftRow[];
+  rows?: ImportReviewRow[];
   isLoading?: boolean;
   setSelection: (rowIds: string[], selectedForImport: boolean) => void;
   priorityRowIds?: readonly string[];
@@ -18,11 +18,11 @@ interface UseImportDraftReviewStateOptions {
 export interface ImportDraftReviewState {
   pagination: PaginationState;
   setPagination: (updater: Updater<PaginationState>) => void;
-  rows: ImportDraftRow[];
-  currentPageSelectableRows: ImportDraftRow[];
+  rows: ImportReviewRow[];
+  currentPageSelectableRows: ImportReviewRow[];
   headerChecked: boolean;
   headerIndeterminate: boolean;
-  setRowSelection: (row: ImportDraftRow, selectedForImport: boolean) => void;
+  setRowSelection: (row: ImportReviewRow, selectedForImport: boolean) => void;
   setAllSelection: (selectedForImport: boolean) => void;
   hasReviewableRows: boolean;
   isLoading: boolean;
@@ -86,7 +86,7 @@ export const useImportDraftReviewState = ({
   );
 
   const setRowSelection = useCallback(
-    (row: ImportDraftRow, selectedForImport: boolean) => {
+    (row: ImportReviewRow, selectedForImport: boolean) => {
       if (row.selectedForImport === selectedForImport) return;
       applySelection([row.id], selectedForImport);
     },

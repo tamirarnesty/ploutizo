@@ -6,16 +6,17 @@ import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import { apiFetch } from '@/lib/queryClient';
 
 export const fetchUpdateImportDraftRow = (
+  draftId: string,
   rowId: string,
   body: UpdateImportDraftRowInput
 ): Promise<UpdateImportDraftRowResult> =>
   apiFetch<{
-    data: ImportDraftPersistedRow;
+    data: ImportDraftPersistedRow[];
     refundTargetFacts?: UpdateImportDraftRowResult['refundTargetFacts'];
-  }>(`/api/imports/rows/${rowId}`, {
+  }>(`/api/imports/drafts/${draftId}/rows`, {
     method: 'PATCH',
-    body: JSON.stringify(body),
+    body: JSON.stringify({ rows: [{ id: rowId, ...body }] }),
   }).then((r) => ({
-    row: r.data,
+    row: r.data[0],
     ...(r.refundTargetFacts ? { refundTargetFacts: r.refundTargetFacts } : {}),
   }));

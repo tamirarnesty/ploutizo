@@ -5,15 +5,10 @@ import {
   createImportDraft,
   discardImportDraft,
   listImportTargets,
-  updateImportDraftRow,
-  updateImportDraftRowSelection,
+  updateImportDraftRows,
 } from '@/services/imports';
 import { listImportHistory } from '@/services/import-history';
-import {
-  continueImportDraft,
-  getActiveImportPreparedConfirmation,
-  invalidateImportPreparedSet,
-} from '@/services/import-prepared-sets';
+import { continueImportDraft } from '@/services/import-continue';
 import { finalizeImportDraft } from '@/services/import-finalize';
 
 vi.mock('@/services/imports', () => ({
@@ -23,18 +18,15 @@ vi.mock('@/services/imports', () => ({
   getImportExampleCsv: vi.fn(() => 'date,amount,description,type\n'),
   listActiveImportDrafts: vi.fn(() => []),
   listImportTargets: vi.fn(),
-  updateImportDraftRow: vi.fn(),
-  updateImportDraftRowSelection: vi.fn(),
+  updateImportDraftRows: vi.fn(),
 }));
 
 vi.mock('@/services/import-history', () => ({
   listImportHistory: vi.fn(() => ({ data: [], nextCursor: null })),
 }));
 
-vi.mock('@/services/import-prepared-sets', () => ({
+vi.mock('@/services/import-continue', () => ({
   continueImportDraft: vi.fn(),
-  getActiveImportPreparedConfirmation: vi.fn(),
-  invalidateImportPreparedSet: vi.fn(),
 }));
 
 vi.mock('@/services/import-finalize', () => ({
@@ -51,8 +43,9 @@ const app = createRouteTestApp(
   }
 );
 
-const PREPARED_SET_ID = '550e8400-e29b-41d4-a716-446655440060';
-const OTHER_PREPARED_SET_ID = '550e8400-e29b-41d4-a716-446655440061';
+const ROW_ID = '11111111-1111-4111-8111-111111111111';
+const ROW_ID_2 = '22222222-2222-4222-8222-222222222222';
+const SELECTED_ROW_IDS = [ROW_ID, ROW_ID_2];
 
 describe('imports router', () => {
   beforeEach(() => {
@@ -183,90 +176,52 @@ describe('imports router', () => {
     expect(body.candidateProfileIds).toEqual(['mdy_debit_credit_balance']);
   });
 
-  it('validates row patch payloads before updating a draft row', async () => {
-    vi.mocked(updateImportDraftRow).mockResolvedValue({
-      row: { id: 'row_1' } as never,
+  it('validates batch row patch payloads before updating draft rows', async () => {
+    vi.mocked(updateImportDraftRows).mockResolvedValue({
+      rows: [{ id: ROW_ID } as never],
     });
 
-    const bad = await app.request('/rows/row_1', {
+    const bad = await app.request('/drafts/draft_1/rows', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reviewAmount: -1 }),
+      body: JSON.stringify({
+        rows: [{ id: ROW_ID, reviewAmount: -1 }],
+      }),
     });
     expect(bad.status).toBe(400);
 
-    const badDate = await app.request('/rows/row_1', {
+    const badDate = await app.request('/drafts/draft_1/rows', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reviewDate: '2026-02-30' }),
+      body: JSON.stringify({
+        rows: [{ id: ROW_ID, reviewDate: '2026-02-30' }],
+      }),
     });
     expect(badDate.status).toBe(400);
 
-    const good = await app.request('/rows/row_1', {
+    const good = await app.request('/drafts/draft_1/rows', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        reviewCategoryId: '55555555-5555-4555-8555-555555555555',
-        reviewAssigneeMemberIds: ['44444444-4444-4444-8444-444444444444'],
+        rows: [
+          {
+            id: ROW_ID,
+            reviewCategoryId: '55555555-5555-4555-8555-555555555555',
+            reviewAssigneeMemberIds: ['44444444-4444-4444-8444-444444444444'],
+          },
+        ],
       }),
     });
     expect(good.status).toBe(200);
-    expect(updateImportDraftRow).toHaveBeenCalledWith('org_1', 'row_1', {
-      reviewCategoryId: '55555555-5555-4555-8555-555555555555',
-      reviewAssigneeMemberIds: ['44444444-4444-4444-8444-444444444444'],
+    expect(updateImportDraftRows).toHaveBeenCalledWith('org_1', 'draft_1', {
+      rows: [
+        {
+          id: ROW_ID,
+          reviewCategoryId: '55555555-5555-4555-8555-555555555555',
+          reviewAssigneeMemberIds: ['44444444-4444-4444-8444-444444444444'],
+        },
+      ],
     });
-  });
-
-  it('accepts row selection patch payloads', async () => {
-    vi.mocked(updateImportDraftRow).mockResolvedValue({
-      row: {
-        id: 'row_1',
-        selectedForImport: true,
-      } as never,
-    });
-
-    const res = await app.request('/rows/row_1', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ selectedForImport: true }),
-    });
-
-    expect(res.status).toBe(200);
-    expect(updateImportDraftRow).toHaveBeenCalledWith('org_1', 'row_1', {
-      selectedForImport: true,
-    });
-  });
-
-  it('accepts batch row selection patch payloads', async () => {
-    vi.mocked(updateImportDraftRowSelection).mockResolvedValue([
-      { id: 'row_1', selectedForImport: true },
-      { id: 'row_2', selectedForImport: true },
-    ] as never);
-
-    const res = await app.request('/drafts/draft_1/rows/selection', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        rowIds: [
-          '11111111-1111-4111-8111-111111111111',
-          '22222222-2222-4222-8222-222222222222',
-        ],
-        selectedForImport: true,
-      }),
-    });
-
-    expect(res.status).toBe(200);
-    expect(updateImportDraftRowSelection).toHaveBeenCalledWith(
-      'org_1',
-      'draft_1',
-      {
-        rowIds: [
-          '11111111-1111-4111-8111-111111111111',
-          '22222222-2222-4222-8222-222222222222',
-        ],
-        selectedForImport: true,
-      }
-    );
   });
 
   it('discards an active draft', async () => {
@@ -278,30 +233,32 @@ describe('imports router', () => {
     expect(discardImportDraft).toHaveBeenCalledWith('org_1', 'draft_1');
   });
 
-  it('continues an import draft into a prepared set revision', async () => {
+  it('continues an import draft into an import finalize preview', async () => {
     vi.mocked(continueImportDraft).mockResolvedValue({
-      id: 'prep_1',
       batchId: 'draft_1',
-      revision: 1,
-      createdAt: '2026-05-20T12:00:00.000Z',
+      rowCount: 4,
+      counts: { created: 1, matched: 1, skipped: 1, invalid: 1 },
+      created: [],
+      matched: [],
     });
 
     const res = await app.request('/drafts/draft_1/continue', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rowIds: SELECTED_ROW_IDS }),
     });
     const body = (await res.json()) as {
-      data: { id: string; revision: number };
+      data: { batchId: string; rowCount: number };
     };
 
     expect(res.status).toBe(201);
-    expect(continueImportDraft).toHaveBeenCalledWith('org_1', 'draft_1');
-    expect(body.data).toEqual({
-      id: 'prep_1',
-      batchId: 'draft_1',
-      revision: 1,
-      createdAt: '2026-05-20T12:00:00.000Z',
-    });
-    expect(body.data).not.toHaveProperty('outcomes');
+    expect(continueImportDraft).toHaveBeenCalledWith(
+      'org_1',
+      'draft_1',
+      SELECTED_ROW_IDS
+    );
+    expect(body.data.batchId).toBe('draft_1');
+    expect(body.data.rowCount).toBe(4);
   });
 
   it('returns structured continue failures from the service', async () => {
@@ -314,7 +271,7 @@ describe('imports router', () => {
         {
           rows: [
             {
-              batchRowId: '11111111-1111-4111-8111-111111111111',
+              batchRowId: ROW_ID,
               key: 'transaction.category.required',
             },
           ],
@@ -324,6 +281,8 @@ describe('imports router', () => {
 
     const res = await app.request('/drafts/draft_1/continue', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rowIds: SELECTED_ROW_IDS }),
     });
     const body = (await res.json()) as {
       error: {
@@ -339,75 +298,6 @@ describe('imports router', () => {
     );
   });
 
-  it('returns the active prepared confirmation DTO', async () => {
-    vi.mocked(getActiveImportPreparedConfirmation).mockResolvedValue({
-      id: 'prep_1',
-      batchId: 'draft_1',
-      revision: 1,
-      createdAt: '2026-05-20T12:00:00.000Z',
-      rowCount: 4,
-      counts: { created: 1, matched: 1, skipped: 1, invalid: 1 },
-      created: [],
-      matched: [],
-    });
-
-    const res = await app.request('/drafts/draft_1/prepared');
-    const body = (await res.json()) as {
-      data: { revision: number; counts: { created: number } };
-    };
-
-    expect(res.status).toBe(200);
-    expect(getActiveImportPreparedConfirmation).toHaveBeenCalledWith(
-      'org_1',
-      'draft_1'
-    );
-    expect(body.data.counts.created).toBe(1);
-  });
-
-  it('invalidates active prepared staging', async () => {
-    vi.mocked(invalidateImportPreparedSet).mockResolvedValue(undefined);
-
-    const res = await app.request('/drafts/draft_1/prepared', {
-      method: 'DELETE',
-    });
-
-    expect(res.status).toBe(204);
-    expect(invalidateImportPreparedSet).toHaveBeenCalledWith(
-      'org_1',
-      'draft_1'
-    );
-  });
-
-  it('404s prepared reads when the active revision has no prepared set', async () => {
-    const { NotFoundError } = await import('@/lib/errors');
-    vi.mocked(getActiveImportPreparedConfirmation).mockRejectedValue(
-      new NotFoundError('Prepared import set not found.')
-    );
-
-    const res = await app.request('/drafts/draft_1/prepared');
-
-    expect(res.status).toBe(404);
-    expect(getActiveImportPreparedConfirmation).toHaveBeenCalledWith(
-      'org_1',
-      'draft_1'
-    );
-  });
-
-  it('404s prepared reads for another org’s draft', async () => {
-    const { NotFoundError } = await import('@/lib/errors');
-    vi.mocked(getActiveImportPreparedConfirmation).mockRejectedValue(
-      new NotFoundError('Import draft not found.')
-    );
-
-    const res = await app.request('/drafts/draft_1/prepared');
-
-    expect(res.status).toBe(404);
-    expect(getActiveImportPreparedConfirmation).toHaveBeenCalledWith(
-      'org_1',
-      'draft_1'
-    );
-  });
-
   it('404s continue for a missing org-scoped draft', async () => {
     const { NotFoundError } = await import('@/lib/errors');
     vi.mocked(continueImportDraft).mockRejectedValue(
@@ -416,12 +306,14 @@ describe('imports router', () => {
 
     const res = await app.request('/drafts/missing/continue', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rowIds: SELECTED_ROW_IDS }),
     });
 
     expect(res.status).toBe(404);
   });
 
-  it('finalizes an explicit prepared set', async () => {
+  it('finalizes a selected import set', async () => {
     vi.mocked(finalizeImportDraft).mockResolvedValue({
       id: 'draft_1',
       account: {
@@ -443,29 +335,27 @@ describe('imports router', () => {
       discardedAt: null,
       createdAt: '2026-05-20T12:00:00.000Z',
       updatedAt: '2026-05-21T12:00:00.000Z',
-      preparedSetId: PREPARED_SET_ID,
     });
 
     const res = await app.request('/drafts/draft_1/finalize', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ preparedSetId: PREPARED_SET_ID }),
+      body: JSON.stringify({ rowIds: SELECTED_ROW_IDS }),
     });
     const body = (await res.json()) as {
-      data: { preparedSetId: string; createdCount: number };
+      data: { createdCount: number };
     };
 
     expect(res.status).toBe(200);
     expect(finalizeImportDraft).toHaveBeenCalledWith(
       'org_1',
       'draft_1',
-      PREPARED_SET_ID
+      SELECTED_ROW_IDS
     );
-    expect(body.data.preparedSetId).toBe(PREPARED_SET_ID);
     expect(body.data.createdCount).toBe(1);
   });
 
-  it('rejects finalize without an explicit preparedSetId', async () => {
+  it('rejects finalize without rowIds', async () => {
     const res = await app.request('/drafts/draft_1/finalize', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -497,7 +387,7 @@ describe('imports router', () => {
     const res = await app.request('/drafts/draft_1/finalize', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ preparedSetId: PREPARED_SET_ID }),
+      body: JSON.stringify({ rowIds: SELECTED_ROW_IDS }),
     });
     const body = (await res.json()) as {
       error: { code: string; details?: { rows: { key: string }[] } };
@@ -510,12 +400,12 @@ describe('imports router', () => {
     );
   });
 
-  it('returns a conflict when finalize aliases another revision', async () => {
+  it('returns a conflict when finalize is not allowed', async () => {
     const { DomainError } = await import('@/lib/errors');
     vi.mocked(finalizeImportDraft).mockRejectedValue(
       new DomainError(
         409,
-        'This prepared import set cannot be finalized.',
+        'This import draft cannot be finalized.',
         'IMPORT_FINALIZE_CONFLICT'
       )
     );
@@ -523,7 +413,7 @@ describe('imports router', () => {
     const res = await app.request('/drafts/draft_1/finalize', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ preparedSetId: OTHER_PREPARED_SET_ID }),
+      body: JSON.stringify({ rowIds: SELECTED_ROW_IDS }),
     });
     const body = (await res.json()) as { error: { code: string } };
 
@@ -540,17 +430,17 @@ describe('imports router', () => {
     const res = await app.request('/drafts/draft_1/finalize', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ preparedSetId: PREPARED_SET_ID }),
+      body: JSON.stringify({ rowIds: SELECTED_ROW_IDS }),
     });
 
     expect(res.status).toBe(404);
   });
 
-  it('rejects a non-uuid preparedSetId before calling the service', async () => {
+  it('rejects a non-uuid row id before calling the service', async () => {
     const res = await app.request('/drafts/draft_1/finalize', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ preparedSetId: 'prep_1' }),
+      body: JSON.stringify({ rowIds: ['row_1'] }),
     });
 
     expect(res.status).toBe(400);
@@ -565,7 +455,7 @@ describe('imports router', () => {
     const res = await app.request('/drafts/draft_1/finalize', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ preparedSetId: PREPARED_SET_ID }),
+      body: JSON.stringify({ rowIds: SELECTED_ROW_IDS }),
     });
     const body = (await res.json()) as { error: { code: string } };
 

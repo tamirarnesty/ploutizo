@@ -1,7 +1,7 @@
 import '@/lib/access/working-set-cleanup';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ImportPreparedSetSummary } from '@ploutizo/types';
+import type { ImportFinalizePreview } from '@ploutizo/types';
 import { getActiveQueryClient } from '@/lib/access/working-set-registry';
 import { HouseholdHookWrapper } from '@/test/household-hook-harness';
 
@@ -27,12 +27,15 @@ vi.mock('./fetchContinueImportDraft', () => ({
   fetchContinueImportDraft: vi.fn(),
 }));
 
-const preparedSet: ImportPreparedSetSummary = {
-  id: 'prepared_1',
+const preview: ImportFinalizePreview = {
   batchId: 'draft_1',
-  revision: 3,
-  createdAt: '2026-05-20T12:00:00.000Z',
+  rowCount: 1,
+  counts: { created: 1, matched: 0, skipped: 0, invalid: 0 },
+  created: [],
+  matched: [],
 };
+
+const rowIds = ['row_1'];
 
 const deferred = <T,>() => {
   let resolve!: (value: T) => void;
@@ -51,32 +54,37 @@ describe('useContinueImportDraft', () => {
     vi.mocked(fetchContinueImportDraft).mockReset();
   });
 
-  it('resolves the prepared set when continue succeeds without later review changes', async () => {
-    vi.mocked(fetchContinueImportDraft).mockResolvedValue(preparedSet);
+  it('resolves the preview when continue succeeds without later review changes', async () => {
+    vi.mocked(fetchContinueImportDraft).mockResolvedValue(preview);
     const { result } = renderHook(() => useContinueImportDraft('draft_1'), {
       wrapper: HouseholdHookWrapper,
     });
 
     await act(async () => {
-      await result.current.continueImport();
+      await result.current.continueImport(rowIds);
     });
 
     await waitFor(() => {
-      expect(result.current.data).toEqual(preparedSet);
+      expect(result.current.data).toEqual(preview);
     });
+    expect(fetchContinueImportDraft).toHaveBeenCalledWith(
+      'draft_1',
+      rowIds,
+      expect.any(AbortSignal)
+    );
     expect(toastSuccess).not.toHaveBeenCalled();
   });
 
   it('returns null when the user edits the review before continue settles', async () => {
-    const pending = deferred<ImportPreparedSetSummary>();
+    const pending = deferred<ImportFinalizePreview>();
     vi.mocked(fetchContinueImportDraft).mockReturnValue(pending.promise);
     const { result } = renderHook(() => useContinueImportDraft('draft_1'), {
       wrapper: HouseholdHookWrapper,
     });
 
-    let continuePromise: Promise<ImportPreparedSetSummary | null> | undefined;
+    let continuePromise: Promise<ImportFinalizePreview | null> | undefined;
     act(() => {
-      continuePromise = result.current.continueImport();
+      continuePromise = result.current.continueImport(rowIds);
     });
     await waitFor(() => {
       expect(fetchContinueImportDraft).toHaveBeenCalled();
@@ -87,7 +95,7 @@ describe('useContinueImportDraft', () => {
     });
 
     await act(async () => {
-      pending.resolve(preparedSet);
+      pending.resolve(preview);
       await expect(continuePromise).resolves.toBeNull();
     });
 
@@ -99,15 +107,15 @@ describe('useContinueImportDraft', () => {
   });
 
   it('does not toast when the review changes before continue settles', async () => {
-    const pending = deferred<ImportPreparedSetSummary>();
+    const pending = deferred<ImportFinalizePreview>();
     vi.mocked(fetchContinueImportDraft).mockReturnValue(pending.promise);
     const { result } = renderHook(() => useContinueImportDraft('draft_1'), {
       wrapper: HouseholdHookWrapper,
     });
 
-    let continuePromise: Promise<ImportPreparedSetSummary | null> | undefined;
+    let continuePromise: Promise<ImportFinalizePreview | null> | undefined;
     act(() => {
-      continuePromise = result.current.continueImport();
+      continuePromise = result.current.continueImport(rowIds);
     });
     await waitFor(() => {
       expect(fetchContinueImportDraft).toHaveBeenCalled();
@@ -118,7 +126,7 @@ describe('useContinueImportDraft', () => {
     });
 
     await act(async () => {
-      pending.resolve(preparedSet);
+      pending.resolve(preview);
       await expect(continuePromise).resolves.toBeNull();
     });
 
@@ -130,10 +138,10 @@ describe('useContinueImportDraft', () => {
   });
 
   it('does not toast when the request is aborted before continue settles', async () => {
-    const pending = deferred<ImportPreparedSetSummary>();
+    const pending = deferred<ImportFinalizePreview>();
     let capturedSignal: AbortSignal | undefined;
     vi.mocked(fetchContinueImportDraft).mockImplementation(
-      (_draftId, signal) => {
+      (_draftId, _rowIds, signal) => {
         capturedSignal = signal;
         return pending.promise;
       }
@@ -142,9 +150,9 @@ describe('useContinueImportDraft', () => {
       wrapper: HouseholdHookWrapper,
     });
 
-    let continuePromise: Promise<ImportPreparedSetSummary | null> | undefined;
+    let continuePromise: Promise<ImportFinalizePreview | null> | undefined;
     act(() => {
-      continuePromise = result.current.continueImport();
+      continuePromise = result.current.continueImport(rowIds);
     });
     await waitFor(() => {
       expect(capturedSignal).toBeDefined();
@@ -156,7 +164,7 @@ describe('useContinueImportDraft', () => {
     expect(capturedSignal?.aborted).toBe(true);
 
     await act(async () => {
-      pending.resolve(preparedSet);
+      pending.resolve(preview);
       await expect(continuePromise).resolves.toBeNull();
     });
 
@@ -164,15 +172,15 @@ describe('useContinueImportDraft', () => {
   });
 
   it('does not keep a stale continue error after the review changes', async () => {
-    const pending = deferred<ImportPreparedSetSummary>();
+    const pending = deferred<ImportFinalizePreview>();
     vi.mocked(fetchContinueImportDraft).mockReturnValue(pending.promise);
     const { result } = renderHook(() => useContinueImportDraft('draft_1'), {
       wrapper: HouseholdHookWrapper,
     });
 
-    let continuePromise: Promise<ImportPreparedSetSummary | null> | undefined;
+    let continuePromise: Promise<ImportFinalizePreview | null> | undefined;
     act(() => {
-      continuePromise = result.current.continueImport();
+      continuePromise = result.current.continueImport(rowIds);
     });
     await waitFor(() => {
       expect(fetchContinueImportDraft).toHaveBeenCalled();

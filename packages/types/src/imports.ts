@@ -144,10 +144,19 @@ export interface ImportDraftRow {
   reviewMatchDismissed: boolean;
   reviewNotes: string | null;
   reviewTagIds: string[];
-  selectedForImport: boolean;
+  /**
+   * Review-session selection only. Omitted from draft GET; the web client
+   * derives defaults when hydrating a draft.
+   */
+  selectedForImport?: boolean;
   createdAt: string;
   updatedAt: string;
 }
+
+/** Import draft row in the review session — selection is always defined locally. */
+export type ImportReviewRow = ImportDraftRow & {
+  selectedForImport: boolean;
+};
 
 /** Durable import draft row persisted in Postgres — no derived status fields. */
 export type ImportDraftPersistedRow = Omit<
@@ -171,6 +180,11 @@ export type CreateImportDraftResponse =
 
 export interface UpdateImportDraftRowResult {
   row: ImportDraftPersistedRow;
+  refundTargetFacts?: Record<string, RefundTargetFact>;
+}
+
+export interface BatchUpdateImportDraftRowsResult {
+  rows: ImportDraftPersistedRow[];
   refundTargetFacts?: Record<string, RefundTargetFact>;
 }
 
@@ -321,6 +335,15 @@ export interface ImportPreparedConfirmation extends ImportPreparedSetSummary {
   matched: ImportPreparedConfirmationRow[];
 }
 
+/** Stateless Continue response — full-file outcome projection for Finalize import. */
+export interface ImportFinalizePreview {
+  batchId: string;
+  rowCount: number;
+  counts: ImportPreparedOutcomeCounts;
+  created: ImportPreparedConfirmationRow[];
+  matched: ImportPreparedConfirmationRow[];
+}
+
 /** Shared identity facts for completed and discarded Import history. */
 export interface ImportHistoryIdentity {
   id: string;
@@ -360,7 +383,5 @@ export interface ImportHistoryPage {
   nextCursor: string | null;
 }
 
-/** Successful Finalize summary — completed history plus the claimed prepared-set id. */
-export interface ImportCompletedResult extends ImportCompletedHistoryItem {
-  preparedSetId: string;
-}
+/** Successful Finalize summary — completed import batch. */
+export type ImportCompletedResult = ImportCompletedHistoryItem;

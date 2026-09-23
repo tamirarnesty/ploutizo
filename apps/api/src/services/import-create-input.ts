@@ -6,8 +6,12 @@ import type {
   ReviewedImportValues,
 } from '@ploutizo/types';
 import type { CreateTransactionInput } from '@ploutizo/validators';
-import type { ImportPreparedOutcomeRecord } from '@/lib/queries/import-prepared-sets';
 import { DomainError } from '@/lib/errors';
+
+type CreatedImportOutcome = {
+  batchRowId: string;
+  snapshot: PreparedImportRowSnapshot;
+};
 
 export const IMPORT_TYPE_CREATE_ORDER: Record<ImportTransactionType, number> = {
   expense: 0,
@@ -87,9 +91,7 @@ export const toImportCreateTransactionInput = (input: {
   return parsed.data;
 };
 
-export const sortCreatedImportOutcomes = (
-  outcomes: ImportPreparedOutcomeRecord[]
-) =>
+export const sortCreatedImportOutcomes = (outcomes: CreatedImportOutcome[]) =>
   [...outcomes].sort((left, right) => {
     const order =
       IMPORT_TYPE_CREATE_ORDER[

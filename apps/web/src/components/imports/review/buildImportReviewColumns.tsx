@@ -17,7 +17,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
-import type { ImportDraftRow } from '@ploutizo/types';
+import type { ImportDraftRow, ImportReviewRow } from '@ploutizo/types';
 import { ImportDraftReviewRowDetails } from './ImportDraftReviewRowDetails';
 import {
   ImportReviewAmountCell,
@@ -40,7 +40,7 @@ export interface BuildImportReviewColumnsOptions {
   onHeaderCheckedChange: (checked: boolean) => void;
   isLoading: boolean;
   hasSelectableRowsOnPage: boolean;
-  onSelectionChange: (row: ImportDraftRow, selected: boolean) => void;
+  onSelectionChange: (row: ImportReviewRow, selected: boolean) => void;
   isRowSelectable: (row: ImportDraftRow) => boolean;
 }
 
@@ -119,7 +119,7 @@ export const buildImportReviewColumns = ({
           selectable={isRowSelectable(row.original)}
           onExpandedChange={(expanded) => row.toggleExpanded(expanded)}
           onSelectionChange={(selected) =>
-            onSelectionChange(row.original, selected)
+            onSelectionChange(row.original as ImportReviewRow, selected)
           }
         />
       ),

@@ -9,7 +9,10 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@ploutizo/ui/components/empty';
-import type { ImportDraftRow, ImportRequirementFailure } from '@ploutizo/types';
+import type {
+  ImportRequirementFailure,
+  ImportReviewRow,
+} from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import type { ImportDraftMeta } from '@/lib/data-access/imports';
 import {
@@ -18,6 +21,7 @@ import {
   getImportRequirementIssueRowIds,
   summarizeImportRequirementIssues,
 } from '@/lib/data-access/imports/importRequirementIssues';
+import { setImportFinalizePreviewSession } from '@/lib/data-access/imports/importFinalizePreviewSession';
 import { useContinueImportDraft } from '@/lib/data-access/imports/useContinueImportDraft';
 import { useGetAccounts } from '@/lib/data-access/accounts';
 import { importDraftFinalizeRoute } from '@/lib/navigation';
@@ -39,7 +43,7 @@ import { ImportRequirementIssueList } from './ImportRequirementIssueList';
 
 interface ImportDraftReviewProps {
   meta?: ImportDraftMeta;
-  rows?: ImportDraftRow[];
+  rows?: ImportReviewRow[];
   isLoading?: boolean;
   updateRow: (rowId: string, patch: UpdateImportDraftRowInput) => void;
   setSelection: (rowIds: string[], selectedForImport: boolean) => void;
@@ -48,7 +52,7 @@ interface ImportDraftReviewProps {
   inboundIssues?: ImportRequirementFailure[];
 }
 
-const getEmptyDraftDescription = (rows: ImportDraftRow[]): string => {
+const getEmptyDraftDescription = (rows: ImportReviewRow[]): string => {
   if (rows.length === 0) {
     return 'This import draft has no transactions to review.';
   }
@@ -141,9 +145,13 @@ const ImportDraftReviewContent = ({
     const ok = await flush();
     if (!ok) return;
 
+    const rowIds = rows
+      .filter((row) => row.selectedForImport)
+      .map((row) => row.id);
     try {
-      const preparedSet = await continueImport();
-      if (!preparedSet) return;
+      const preview = await continueImport(rowIds);
+      if (!preview) return;
+      setImportFinalizePreviewSession(draftId, { rowIds, preview });
       setIssues([]);
       await navigate(importDraftFinalizeRoute(draftId));
     } catch (error) {

@@ -1,31 +1,20 @@
 import { matchDecisionsForSelectedRows } from '@ploutizo/utils';
 import { createOptimisticAction } from '@tanstack/db';
-import type { ImportDraft, ImportDraftPersistedRow } from '@ploutizo/types';
-import type { UpdateImportDraftRowSelectionInput } from '@ploutizo/validators';
+import type { ImportDraft } from '@ploutizo/types';
+import { getActiveQueryClient } from '@/lib/access/working-set-registry';
 import {
-  beginWorkingSetScope,
-  getActiveQueryClient,
-} from '@/lib/access/working-set-registry';
-import type { WorkingSetScope } from '@/lib/access/working-set-registry';
-import {
-  getImportReviewAutosaveSnapshot,
   markImportReviewSelectionFailure,
-  markImportReviewSelectionStart,
   markImportReviewSelectionSuccess,
 } from './importReviewAutosave';
-import { fetchUpdateImportDraftRowSelection } from './fetchUpdateImportDraftRowSelection';
-import { flushImportDraftRowPacedMutations } from './getImportDraftRowPacedMutations';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
 import { importMatchTransactionIdForDraft } from './importMatchTargetOnAccount';
 import { importDraftQueryKey } from './queryKeys';
 import { rederiveImportDraftWorkingCopy } from './rederiveImportDraftWorkingCopy';
-import { runImportDraftPersist } from './runImportDraftPersist';
 
 interface SelectionVariables {
   draftId: string;
   rowIds: string[];
   selectedForImport: boolean;
-  scope: WorkingSetScope;
 }
 
 const applySelectionMatchDecisions = (
@@ -41,7 +30,9 @@ const applySelectionMatchDecisions = (
   const collection = getImportDraftRowsCollection(draftId);
   const rowIdSet = new Set(rowIds);
   const nextRows = collection.toArray.map((row) =>
-    rowIdSet.has(row.id) ? { ...row, selectedForImport } : row
+    rowIdSet.has(row.id)
+      ? { ...row, selectedForImport: selectedForImport }
+      : { ...row, selectedForImport: row.selectedForImport ?? false }
   );
   const patches = matchDecisionsForSelectedRows(nextRows, {
     rowIds,
@@ -61,82 +52,19 @@ const applySelectionMatchDecisions = (
   });
 };
 
-const confirmSelectionIntoCollection = (
-  draftId: string,
-  serverRows: ImportDraftPersistedRow[] | null,
-  rowIds: string[],
-  selectedForImport: boolean
-) => {
-  const collection = getImportDraftRowsCollection(draftId);
-  const serverById = serverRows
-    ? new Map(serverRows.map((row) => [row.id, row]))
-    : null;
-
-  for (const rowId of rowIds) {
-    const live = collection.get(rowId);
-    if (!live) continue;
-
-    const serverRow = serverById?.get(rowId);
-    if (!serverRow) {
-      collection.utils.writeUpdate(live);
-      continue;
-    }
-
-    const nextSelected =
-      live.selectedForImport !== selectedForImport
-        ? live.selectedForImport
-        : serverRow.selectedForImport;
-    collection.utils.writeUpdate({
-      ...live,
-      selectedForImport: nextSelected,
-      reviewMatchedTransactionId:
-        live.selectedForImport !== selectedForImport
-          ? live.reviewMatchedTransactionId
-          : serverRow.reviewMatchedTransactionId,
-      updatedAt:
-        serverRow.updatedAt >= live.updatedAt
-          ? serverRow.updatedAt
-          : live.updatedAt,
-    });
-  }
-  rederiveImportDraftWorkingCopy(draftId);
-};
-
 const persistSelection = createOptimisticAction<SelectionVariables>({
   onMutate: ({ draftId, rowIds, selectedForImport }) => {
     applySelectionMatchDecisions(draftId, rowIds, selectedForImport);
     rederiveImportDraftWorkingCopy(draftId);
   },
-  mutationFn: async ({ draftId, rowIds, selectedForImport, scope }) => {
-    const body: UpdateImportDraftRowSelectionInput = {
-      rowIds,
-      selectedForImport,
-    };
-
-    await runImportDraftPersist({
-      scope,
-      beforePersist: () => flushImportDraftRowPacedMutations(draftId),
-      onStart: () => markImportReviewSelectionStart(draftId),
-      persist: () => fetchUpdateImportDraftRowSelection(draftId, body),
-      onSuccess: (serverRows) => {
-        confirmSelectionIntoCollection(
-          draftId,
-          serverRows,
-          rowIds,
-          selectedForImport
-        );
-        markImportReviewSelectionSuccess(draftId, rowIds);
-      },
-      onFailure: () => {
-        confirmSelectionIntoCollection(
-          draftId,
-          null,
-          rowIds,
-          selectedForImport
-        );
-        markImportReviewSelectionFailure(draftId, rowIds);
-      },
-    });
+  mutationFn: async ({ draftId, rowIds }) => {
+    try {
+      markImportReviewSelectionSuccess(draftId, rowIds);
+    } catch {
+      markImportReviewSelectionFailure(draftId, rowIds);
+      rederiveImportDraftWorkingCopy(draftId);
+      throw new Error('Selection update failed.');
+    }
   },
 });
 
@@ -146,30 +74,14 @@ export const persistImportDraftSelection = (
   selectedForImport: boolean
 ) => {
   if (rowIds.length === 0) return;
-  persistSelection({
-    draftId,
-    rowIds,
-    selectedForImport,
-    scope: beginWorkingSetScope(),
-  });
+  void persistSelection({ draftId, rowIds, selectedForImport });
 };
 
-/** Re-persist failed selection from the live working copy (not the original intent). */
+/** Re-apply failed selection from the live working copy (session-only). */
 export const retryFailedImportDraftSelection = (draftId: string) => {
-  const { failedSelectionRowIds } = getImportReviewAutosaveSnapshot(draftId);
-  if (failedSelectionRowIds.length === 0) return;
-
   const collection = getImportDraftRowsCollection(draftId);
-  const byValue = new Map<boolean, string[]>();
-  for (const rowId of failedSelectionRowIds) {
-    const live = collection.get(rowId);
-    if (!live) continue;
-    const group = byValue.get(live.selectedForImport) ?? [];
-    group.push(rowId);
-    byValue.set(live.selectedForImport, group);
-  }
-
-  for (const [selectedForImport, rowIds] of byValue) {
-    persistImportDraftSelection(draftId, rowIds, selectedForImport);
+  for (const row of collection.toArray) {
+    if (row.selectedForImport == null) continue;
+    persistImportDraftSelection(draftId, [row.id], row.selectedForImport);
   }
 };

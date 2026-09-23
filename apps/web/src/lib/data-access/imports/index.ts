@@ -14,9 +14,13 @@ export {
   rederiveImportDraftWorkingCopy,
 } from './rederiveImportDraftWorkingCopy';
 export { fetchContinueImportDraft } from './fetchContinueImportDraft';
-export { fetchPreparedImport } from './fetchPreparedImport';
-export { fetchInvalidatePreparedImport } from './fetchInvalidatePreparedImport';
 export { fetchFinalizeImportDraft } from './fetchFinalizeImportDraft';
+export {
+  clearImportFinalizePreviewSession,
+  getImportFinalizePreviewSession,
+  setImportFinalizePreviewSession,
+  type ImportFinalizePreviewSession,
+} from './importFinalizePreviewSession';
 export {
   getImportContinueGateMessage,
   getImportContinueNotReadyDetails,
@@ -37,11 +41,8 @@ export {
   type ImportReviewLocationState,
 } from './importReviewLocationState';
 export { useContinueImportDraft } from './useContinueImportDraft';
-export { useGetPreparedImport } from './useGetPreparedImport';
-export { useInvalidatePreparedImport } from './useInvalidatePreparedImport';
 export { useFinalizeImportDraft } from './useFinalizeImportDraft';
 export { fetchUpdateImportDraftRow } from './fetchUpdateImportDraftRow';
-export { fetchUpdateImportDraftRowSelection } from './fetchUpdateImportDraftRowSelection';
 export type { ImportReviewAutosaveStatus } from './importReviewAutosave';
 export {
   useImportReviewSession,

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { useLiveQuery } from '@tanstack/react-db';
-import type { ImportDraftRow } from '@ploutizo/types';
+import type { ImportReviewRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import {
@@ -25,7 +25,7 @@ import type { ImportDraftMeta } from './toImportDraftMeta';
 
 export interface ImportReviewSession {
   meta: ImportDraftMeta | undefined;
-  rows: ImportDraftRow[];
+  rows: ImportReviewRow[];
   isLoading: boolean;
   isError: boolean;
   /** Single write surface for reviewed import values (ADR 0005). */
@@ -69,7 +69,14 @@ export const useImportReviewSession = (
     [rowsCollection]
   );
 
-  const rows = liveRows.data;
+  const rows = useMemo(
+    () =>
+      liveRows.data.map((row) => ({
+        ...row,
+        selectedForImport: row.selectedForImport === true,
+      })),
+    [liveRows.data]
+  );
 
   const updateRow = useCallback(
     (rowId: string, patch: UpdateImportDraftRowInput) => {

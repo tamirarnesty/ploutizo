@@ -22,7 +22,6 @@ import {
 } from './importReviewAutosave';
 import { importDraftQueryKey } from './queryKeys';
 import { fetchUpdateImportDraftRow } from './fetchUpdateImportDraftRow';
-import { fetchUpdateImportDraftRowSelection } from './fetchUpdateImportDraftRowSelection';
 import { fetchImportDraft } from './useGetImportDraft';
 import { useImportReviewSession } from './useImportReviewSession';
 import type * as useGetImportDraftModule from './useGetImportDraft';
@@ -44,10 +43,6 @@ vi.mock('./useGetImportDraft', async (importOriginal) => {
 
 vi.mock('./fetchUpdateImportDraftRow', () => ({
   fetchUpdateImportDraftRow: vi.fn(),
-}));
-
-vi.mock('./fetchUpdateImportDraftRowSelection', () => ({
-  fetchUpdateImportDraftRowSelection: vi.fn(),
 }));
 
 const draft = makeImportDraft({
@@ -95,28 +90,16 @@ describe('useImportReviewSession', () => {
     vi.mocked(fetchImportDraft).mockReset();
     vi.mocked(fetchImportDraft).mockResolvedValue(draft);
     vi.mocked(fetchUpdateImportDraftRow).mockReset();
-    vi.mocked(fetchUpdateImportDraftRow).mockImplementation((rowId, body) => {
-      const row = draft.rows.find((entry) => entry.id === rowId);
-      if (!row) return Promise.reject(new Error(`missing row ${rowId}`));
-      return Promise.resolve({
-        row: toPersistedImportDraftRow(row, {
-          ...body,
-          updatedAt: '2026-05-20T12:00:01.000Z',
-        }),
-      } satisfies UpdateImportDraftRowResult);
-    });
-    vi.mocked(fetchUpdateImportDraftRowSelection).mockReset();
-    vi.mocked(fetchUpdateImportDraftRowSelection).mockImplementation(
-      (_draftId, body) => {
-        const rows = draft.rows
-          .filter((row) => body.rowIds.includes(row.id))
-          .map((row) =>
-            toPersistedImportDraftRow(row, {
-              selectedForImport: body.selectedForImport,
-              updatedAt: '2026-05-20T12:00:01.000Z',
-            })
-          );
-        return Promise.resolve(rows);
+    vi.mocked(fetchUpdateImportDraftRow).mockImplementation(
+      (_draftId, rowId, body) => {
+        const row = draft.rows.find((entry) => entry.id === rowId);
+        if (!row) return Promise.reject(new Error(`missing row ${rowId}`));
+        return Promise.resolve({
+          row: toPersistedImportDraftRow(row, {
+            ...body,
+            updatedAt: '2026-05-20T12:00:01.000Z',
+          }),
+        } satisfies UpdateImportDraftRowResult);
       }
     );
   });
@@ -284,10 +267,14 @@ describe('useImportReviewSession', () => {
     });
 
     expect(fetchUpdateImportDraftRow).toHaveBeenCalledTimes(1);
-    expect(fetchUpdateImportDraftRow).toHaveBeenCalledWith('row_ready', {
-      reviewDescription: 'Coffee Shop',
-      reviewCategoryId: 'cat_2',
-    });
+    expect(fetchUpdateImportDraftRow).toHaveBeenCalledWith(
+      draftId,
+      'row_ready',
+      {
+        reviewDescription: 'Coffee Shop',
+        reviewCategoryId: 'cat_2',
+      }
+    );
     unmount();
   });
 
@@ -309,10 +296,14 @@ describe('useImportReviewSession', () => {
     });
 
     expect(fetchUpdateImportDraftRow).toHaveBeenCalledTimes(2);
-    expect(fetchUpdateImportDraftRow).toHaveBeenCalledWith('row_ready', {
-      reviewDescription: 'Coffee Shop',
-    });
-    expect(fetchUpdateImportDraftRow).toHaveBeenCalledWith('row_b', {
+    expect(fetchUpdateImportDraftRow).toHaveBeenCalledWith(
+      draftId,
+      'row_ready',
+      {
+        reviewDescription: 'Coffee Shop',
+      }
+    );
+    expect(fetchUpdateImportDraftRow).toHaveBeenCalledWith(draftId, 'row_b', {
       reviewDescription: 'Market',
     });
     unmount();
@@ -415,7 +406,7 @@ describe('useImportReviewSession', () => {
     unmount();
   });
 
-  it('updates selection on the collection immediately and persists via bulk API', async () => {
+  it('updates selection on the collection immediately (session-only)', async () => {
     const staleReadyDraft = {
       ...draft,
       rows: draft.rows.map((row) =>
@@ -435,108 +426,45 @@ describe('useImportReviewSession', () => {
       result.current.setSelection(['row_ready', 'row_b'], true);
     });
 
-    expect(result.current.rows.every((row) => row.selectedForImport)).toBe(
-      true
-    );
+    await waitFor(() => {
+      expect(
+        result.current.rows.filter((row) =>
+          ['row_ready', 'row_b'].includes(row.id)
+        )
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: 'row_ready', selectedForImport: true }),
+          expect.objectContaining({ id: 'row_b', selectedForImport: true }),
+        ])
+      );
+    });
     expect(fetchUpdateImportDraftRow).not.toHaveBeenCalled();
 
     await waitFor(() => {
-      expect(fetchUpdateImportDraftRowSelection).toHaveBeenCalledTimes(1);
-    });
-
-    expect(fetchUpdateImportDraftRowSelection).toHaveBeenCalledWith(
-      'draft_session_1',
-      {
-        rowIds: ['row_ready', 'row_b'],
+      expect(
+        result.current.rows.find((row) => row.id === 'row_ready')
+      ).toMatchObject({
         selectedForImport: true,
-      }
-    );
-    expect(
-      result.current.rows.find((row) => row.id === 'row_ready')
-    ).toMatchObject({
-      selectedForImport: true,
-      status: 'ready',
-      invalidReason: null,
-    });
-    unmount();
-  });
-
-  it('keeps every failed bulk selection retryable after consecutive failures', async () => {
-    const pendingSelectionFailures = new Set(['row_ready|true', 'row_b|true']);
-    vi.mocked(fetchUpdateImportDraftRowSelection).mockImplementation(
-      (_draftId, body) => {
-        const key = `${body.rowIds.slice().sort().join(',')}|${body.selectedForImport}`;
-        if (pendingSelectionFailures.has(key)) {
-          pendingSelectionFailures.delete(key);
-          return Promise.reject(new Error('network'));
-        }
-        return Promise.resolve(
-          draft.rows
-            .filter((row) => body.rowIds.includes(row.id))
-            .map((row) => ({
-              ...row,
-              selectedForImport: body.selectedForImport,
-              updatedAt: '2026-05-20T12:00:01.000Z',
-            }))
-        );
-      }
-    );
-
-    const { result, unmount } = await hydrateSession();
-
-    act(() => {
-      result.current.setSelection(['row_ready'], true);
-    });
-
-    await waitFor(() => {
-      expect(autosaveSnapshot().status).toBe('failed');
-    });
-
-    act(() => {
-      result.current.setSelection(['row_b'], true);
-    });
-
-    await waitFor(() => {
-      expect(autosaveSnapshot().failedRowIds).toEqual(
-        expect.arrayContaining(['row_ready', 'row_b'])
-      );
-    });
-
-    let flushOk = true;
-    await act(async () => {
-      flushOk = await result.current.flush();
-    });
-    expect(flushOk).toBe(false);
-    expect(autosaveSnapshot().hasUnsavedWork).toBe(true);
-    unmount();
-  });
-
-  it('flushes pending field persists before bulk selection', async () => {
-    const callOrder: string[] = [];
-    vi.mocked(fetchUpdateImportDraftRow).mockImplementation((rowId, body) => {
-      callOrder.push('row');
-      const row = draft.rows.find((entry) => entry.id === rowId);
-      if (!row) return Promise.reject(new Error(`missing row ${rowId}`));
-      return Promise.resolve({
-        row: toPersistedImportDraftRow(row, {
-          ...body,
-          updatedAt: '2026-05-20T12:00:01.000Z',
-        }),
+        status: 'ready',
+        invalidReason: null,
       });
     });
-    vi.mocked(fetchUpdateImportDraftRowSelection).mockImplementation(
-      (_draftId, body) => {
-        callOrder.push('selection');
-        return Promise.resolve(
-          draft.rows
-            .filter((row) => body.rowIds.includes(row.id))
-            .map((row) =>
-              toPersistedImportDraftRow(row, {
-                selectedForImport: body.selectedForImport,
-                updatedAt: '2026-05-20T12:00:01.000Z',
-              })
-            )
-        );
+    unmount();
+  });
+
+  it('flushes pending field persists before applying selection', async () => {
+    const callOrder: string[] = [];
+    vi.mocked(fetchUpdateImportDraftRow).mockImplementation(
+      (_draftId, rowId, body) => {
+        callOrder.push('row');
+        const row = draft.rows.find((entry) => entry.id === rowId);
+        if (!row) return Promise.reject(new Error(`missing row ${rowId}`));
+        return Promise.resolve({
+          row: toPersistedImportDraftRow(row, {
+            ...body,
+            updatedAt: '2026-05-20T12:00:01.000Z',
+          }),
+        });
       }
     );
 
@@ -555,13 +483,16 @@ describe('useImportReviewSession', () => {
     });
 
     await waitFor(() => {
-      expect(callOrder).toEqual(['row', 'selection']);
+      expect(callOrder).toEqual(['row']);
     });
 
-    expect(fetchUpdateImportDraftRow).toHaveBeenCalledWith('row_ready', {
-      reviewDescription: 'Before select',
-    });
-    expect(fetchUpdateImportDraftRowSelection).toHaveBeenCalledTimes(1);
+    expect(fetchUpdateImportDraftRow).toHaveBeenCalledWith(
+      draftId,
+      'row_ready',
+      {
+        reviewDescription: 'Before select',
+      }
+    );
     unmount();
   });
 
@@ -659,16 +590,18 @@ describe('useImportReviewSession', () => {
     expect(flushOk).toBe(false);
     expect(autosaveSnapshot().hasUnsavedWork).toBe(true);
 
-    vi.mocked(fetchUpdateImportDraftRow).mockImplementation((rowId, body) => {
-      const row = draft.rows.find((entry) => entry.id === rowId);
-      if (!row) return Promise.reject(new Error(`missing row ${rowId}`));
-      return Promise.resolve({
-        row: toPersistedImportDraftRow(row, {
-          ...body,
-          updatedAt: '2026-05-20T12:00:02.000Z',
-        }),
-      });
-    });
+    vi.mocked(fetchUpdateImportDraftRow).mockImplementation(
+      (_draftId, rowId, body) => {
+        const row = draft.rows.find((entry) => entry.id === rowId);
+        if (!row) return Promise.reject(new Error(`missing row ${rowId}`));
+        return Promise.resolve({
+          row: toPersistedImportDraftRow(row, {
+            ...body,
+            updatedAt: '2026-05-20T12:00:02.000Z',
+          }),
+        });
+      }
+    );
 
     act(() => {
       result.current.retryAutosave();
@@ -719,10 +652,14 @@ describe('useImportReviewSession', () => {
       await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
     });
 
-    expect(fetchUpdateImportDraftRow).toHaveBeenLastCalledWith('row_ready', {
-      reviewCategoryId: 'cat_failed',
-      reviewDescription: 'After failure',
-    });
+    expect(fetchUpdateImportDraftRow).toHaveBeenLastCalledWith(
+      draftId,
+      'row_ready',
+      {
+        reviewCategoryId: 'cat_failed',
+        reviewDescription: 'After failure',
+      }
+    );
     expect(autosaveSnapshot().status).toBe('saved');
     expect(autosaveSnapshot().failedRowIds).not.toContain('row_ready');
     expect(
@@ -841,16 +778,18 @@ describe('useImportReviewSession', () => {
       ],
     });
     vi.mocked(fetchImportDraft).mockResolvedValue(refundDraft);
-    vi.mocked(fetchUpdateImportDraftRow).mockImplementation((rowId, body) => {
-      const row = refundDraft.rows.find((entry) => entry.id === rowId);
-      if (!row) return Promise.reject(new Error(`missing row ${rowId}`));
-      return Promise.resolve({
-        row: toPersistedImportDraftRow(row, {
-          ...body,
-          updatedAt: '2026-05-20T12:00:01.000Z',
-        }),
-      } satisfies UpdateImportDraftRowResult);
-    });
+    vi.mocked(fetchUpdateImportDraftRow).mockImplementation(
+      (_draftId, rowId, body) => {
+        const row = refundDraft.rows.find((entry) => entry.id === rowId);
+        if (!row) return Promise.reject(new Error(`missing row ${rowId}`));
+        return Promise.resolve({
+          row: toPersistedImportDraftRow(row, {
+            ...body,
+            updatedAt: '2026-05-20T12:00:01.000Z',
+          }),
+        } satisfies UpdateImportDraftRowResult);
+      }
+    );
 
     const { result, unmount } = await hydrateSession();
     expect(
@@ -872,9 +811,13 @@ describe('useImportReviewSession', () => {
       await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
     });
 
-    expect(fetchUpdateImportDraftRow).toHaveBeenCalledWith('row_refund', {
-      reviewCategoryId: 'cat_2',
-    });
+    expect(fetchUpdateImportDraftRow).toHaveBeenCalledWith(
+      draftId,
+      'row_refund',
+      {
+        reviewCategoryId: 'cat_2',
+      }
+    );
     expect(
       result.current.rows.find((row) => row.id === 'row_refund')?.status
     ).toBe('needs_review');

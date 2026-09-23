@@ -51,7 +51,8 @@ export const refundTargetFactsRecordFromMap = (
 };
 
 export const toImportDraftDurableRow = (
-  row: ImportDraftRowRecord
+  row: ImportDraftRowRecord,
+  options?: { selectedForImport?: boolean }
 ): ImportDraftDurableRow => ({
   id: row.id,
   reviewDate: row.reviewDate ?? null,
@@ -67,7 +68,7 @@ export const toImportDraftDurableRow = (
   reviewCounterpartAccountId: row.reviewCounterpartAccountId,
   reviewRefundOf: row.reviewRefundOf,
   reviewRefundOfBatchRowId: row.reviewRefundOfBatchRowId,
-  selectedForImport: row.selectedForImport,
+  selectedForImport: options?.selectedForImport ?? false,
   externalId: row.externalId,
   sourceDescription: row.sourceDescription,
   reviewMatchedTransactionId: row.reviewMatchedTransactionId,
@@ -104,7 +105,6 @@ export const toImportDraftPersistedRow = (
   reviewMatchDismissed: row.reviewMatchDismissed,
   reviewNotes: row.reviewNotes,
   reviewTagIds: row.reviewTagIds,
-  selectedForImport: row.selectedForImport,
   createdAt: row.createdAt.toISOString(),
   updatedAt: row.updatedAt.toISOString(),
 });

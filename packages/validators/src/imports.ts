@@ -83,7 +83,6 @@ export const updateImportDraftRowSchema = z
     reviewMatchDismissed: z.boolean().optional(),
     reviewNotes: z.string().trim().nullable().optional(),
     reviewTagIds: z.array(z.string().uuid()).optional(),
-    selectedForImport: z.boolean().optional(),
   })
   .refine((value) => Object.keys(value).length > 0, {
     message: 'At least one field is required.',
@@ -94,13 +93,24 @@ export type UpdateImportDraftRowInput = z.infer<
   typeof updateImportDraftRowSchema
 >;
 
-export const updateImportDraftRowSelectionSchema = z.object({
-  rowIds: z.array(z.string().uuid()).min(1),
-  selectedForImport: z.boolean(),
+const importDraftRowIdSchema = z.object({
+  id: z.string().uuid(),
 });
 
-export type UpdateImportDraftRowSelectionInput = z.infer<
-  typeof updateImportDraftRowSelectionSchema
+export const batchUpdateImportDraftRowsSchema = z.object({
+  rows: z.array(importDraftRowIdSchema.and(updateImportDraftRowSchema)).min(1),
+});
+
+export type BatchUpdateImportDraftRowsInput = z.infer<
+  typeof batchUpdateImportDraftRowsSchema
+>;
+
+export const continueImportDraftSchema = z.object({
+  rowIds: z.array(z.string().uuid()).min(1),
+});
+
+export type ContinueImportDraftInput = z.infer<
+  typeof continueImportDraftSchema
 >;
 
 export const reviewedImportValuesSchema = z.object({
@@ -133,7 +143,7 @@ export const importPreparedOutcomeSchema = z.enum(
 );
 
 export const finalizeImportDraftSchema = z.object({
-  preparedSetId: z.string().uuid(),
+  rowIds: z.array(z.string().uuid()).min(1),
 });
 
 export type FinalizeImportDraftInput = z.infer<

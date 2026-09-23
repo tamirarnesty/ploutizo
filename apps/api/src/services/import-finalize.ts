@@ -1,27 +1,26 @@
 import { db } from '@ploutizo/db';
-import { verifyPreparedImportSetForFinalize } from '@ploutizo/utils/import-set-verification';
+import {
+  verifyImportSetForContinue,
+  verifyPreparedImportSetForFinalize,
+} from '@ploutizo/utils/import-set-verification';
 import { countPreparedOutcomes } from '@ploutizo/types';
 import type { Transaction } from '@ploutizo/db';
 import type {
   ImportCompletedResult,
+  ImportPreparedOutcome,
   ImportRequirementFailure,
   ImportRequirementFailureDetails,
   ImportTransactionLinkOutcome,
+  PreparedImportRowSnapshot,
 } from '@ploutizo/types';
 import type { ImportDraftSummaryRow } from '@/lib/queries/imports';
-import type { ImportPreparedOutcomeRecord } from '@/lib/queries/import-prepared-sets';
 import { DomainError, NotFoundError } from '@/lib/errors';
 import {
   completeImportBatch,
   fetchImportBatchSummaryById,
+  listDraftRows,
+  lockImportDraftBatch,
 } from '@/lib/queries/imports';
-import {
-  deleteImportPreparedSetsForBatch,
-  fetchPreparedSetById,
-  isCompletePreparedProjection,
-  listPreparedOutcomesForSet,
-  lockPreparedSetRevisionForBatch,
-} from '@/lib/queries/import-prepared-sets';
 import { insertImportTransactionLinks } from '@/lib/queries/import-transaction-links';
 import {
   sortCreatedImportOutcomes,
@@ -29,9 +28,9 @@ import {
 } from '@/services/import-create-input';
 import { toImportCompletedResult } from '@/services/import-history';
 import {
-  invalidatePreparedStagingForDraft,
+  loadImportContinueDraftFacts,
   loadImportFinalizeExternalFacts,
-} from '@/services/import-prepared-sets';
+} from '@/services/import-continue';
 import { createTransactionInTx } from '@/services/transactions';
 
 const notReadyError = (rows: ImportRequirementFailure[]) =>
@@ -42,18 +41,10 @@ const notReadyError = (rows: ImportRequirementFailure[]) =>
     { rows }
   );
 
-const staleError = (rows: ImportRequirementFailure[] = []) =>
-  new DomainError<ImportRequirementFailureDetails>(
-    409,
-    'Prepared import set is no longer active.',
-    'IMPORT_FINALIZE_STALE',
-    { rows }
-  );
-
 const conflictError = () =>
   new DomainError(
     409,
-    'This prepared import set cannot be finalized.',
+    'This import draft cannot be finalized.',
     'IMPORT_FINALIZE_CONFLICT'
   );
 
@@ -61,12 +52,16 @@ type FinalizeTxResult =
   | { kind: 'ok'; result: ImportCompletedResult }
   | { kind: 'fail'; error: DomainError };
 
-const applyPreparedOutcomes = async (
+const applyVerifiedProjection = async (
   tx: Transaction,
   orgId: string,
   batch: ImportDraftSummaryRow,
-  preparedSetId: string,
-  outcomes: ImportPreparedOutcomeRecord[]
+  verified: readonly {
+    batchRowId: string;
+    outcome: string;
+    transactionId: string | null;
+    snapshot: PreparedImportRowSnapshot;
+  }[]
 ): Promise<FinalizeTxResult> => {
   if (!batch.accountId) {
     throw new DomainError(500, 'Import draft is missing an account.');
@@ -75,26 +70,25 @@ const applyPreparedOutcomes = async (
   const externalFacts = await loadImportFinalizeExternalFacts(
     orgId,
     batch.accountId,
-    outcomes,
+    verified,
     batch.rowCount,
     tx
   );
-  const preparedRows = outcomes.map((outcome) => ({
-    batchRowId: outcome.batchRowId,
-    outcome: outcome.outcome,
-    transactionId: outcome.transactionId,
-    snapshot: outcome.snapshot,
+  const preparedRows = verified.map((row) => ({
+    batchRowId: row.batchRowId,
+    outcome: row.outcome as ImportPreparedOutcome,
+    transactionId: row.transactionId,
+    snapshot: row.snapshot,
   }));
-  const verified = verifyPreparedImportSetForFinalize(
+  const finalizeCheck = verifyPreparedImportSetForFinalize(
     preparedRows,
     externalFacts
   );
-  if (!verified.ready) {
-    await invalidatePreparedStagingForDraft(tx, orgId, batch.id);
-    return { kind: 'fail', error: notReadyError(verified.failures) };
+  if (!finalizeCheck.ready) {
+    return { kind: 'fail', error: notReadyError(finalizeCheck.failures) };
   }
 
-  const counts = countPreparedOutcomes(outcomes);
+  const counts = countPreparedOutcomes(preparedRows);
   if (
     counts.created + counts.matched + counts.skipped + counts.invalid !==
     batch.rowCount
@@ -106,13 +100,13 @@ const applyPreparedOutcomes = async (
   }
 
   const transactionIdByRowId = new Map<string, string>();
-  for (const outcome of outcomes) {
+  for (const outcome of preparedRows) {
     if (outcome.outcome === 'matched' && outcome.transactionId) {
       transactionIdByRowId.set(outcome.batchRowId, outcome.transactionId);
     }
   }
 
-  const createdOutcomes = outcomes.filter(
+  const createdOutcomes = preparedRows.filter(
     (outcome) => outcome.outcome === 'created'
   );
   const links: {
@@ -150,7 +144,7 @@ const applyPreparedOutcomes = async (
     });
   }
 
-  for (const outcome of outcomes) {
+  for (const outcome of preparedRows) {
     if (outcome.outcome !== 'matched' || !outcome.transactionId) continue;
     links.push({
       orgId,
@@ -167,7 +161,6 @@ const applyPreparedOutcomes = async (
   const completed = await completeImportBatch(tx, {
     orgId,
     batchId: batch.id,
-    preparedSetId,
     completedAt,
     createdCount: counts.created,
     matchedCount: counts.matched,
@@ -177,8 +170,6 @@ const applyPreparedOutcomes = async (
   if (!completed) {
     throw conflictError();
   }
-
-  await deleteImportPreparedSetsForBatch(tx, orgId, batch.id);
 
   const summary = await fetchImportBatchSummaryById(orgId, batch.id, tx);
   if (!summary) {
@@ -191,10 +182,11 @@ const applyPreparedOutcomes = async (
 export const finalizeImportDraft = async (
   orgId: string,
   batchId: string,
-  preparedSetId: string
+  rowIds: string[]
 ): Promise<ImportCompletedResult> => {
+  const uniqueRowIds = [...new Set(rowIds)];
   const outcome = await db.transaction(async (tx) => {
-    await lockPreparedSetRevisionForBatch(tx, orgId, batchId);
+    await lockImportDraftBatch(tx, orgId, batchId);
 
     const batch = await fetchImportBatchSummaryById(orgId, batchId, tx, {
       forUpdate: true,
@@ -202,38 +194,38 @@ export const finalizeImportDraft = async (
     if (!batch) throw new NotFoundError('Import draft not found.');
 
     if (batch.status === 'completed') {
-      if (batch.finalizedPreparedSetId === preparedSetId) {
-        return { kind: 'ok' as const, result: toImportCompletedResult(batch) };
-      }
-      throw conflictError();
+      return { kind: 'ok' as const, result: toImportCompletedResult(batch) };
     }
 
     if (batch.status !== 'draft') {
       throw conflictError();
     }
 
-    const prepared = await fetchPreparedSetById(orgId, preparedSetId, tx);
-    if (!prepared || prepared.batchId !== batchId) {
-      throw new NotFoundError('Prepared import set not found.');
+    if (!batch.accountId) {
+      throw new DomainError(500, 'Import draft is missing an account.');
     }
 
-    const outcomes = await listPreparedOutcomesForSet(orgId, prepared.id, tx);
-    if (
-      prepared.revision !== batch.revision ||
-      !isCompletePreparedProjection(outcomes, batch.rowCount)
-    ) {
-      await invalidatePreparedStagingForDraft(tx, orgId, batchId);
-      return { kind: 'fail' as const, error: staleError() };
+    const draftRows = await listDraftRows(orgId, batchId, tx);
+    const rowIdSet = new Set(uniqueRowIds);
+    const matching = draftRows.filter((row) => rowIdSet.has(row.id));
+    if (matching.length !== uniqueRowIds.length) {
+      throw new NotFoundError('Import draft row not found.');
     }
 
-    const applyResult = await applyPreparedOutcomes(
-      tx,
+    const draftFacts = await loadImportContinueDraftFacts(
       orgId,
+      batch.accountId,
       batch,
-      prepared.id,
-      outcomes
+      draftRows,
+      rowIdSet,
+      tx
     );
-    return applyResult;
+    const verified = verifyImportSetForContinue(draftFacts);
+    if (!verified.ready) {
+      return { kind: 'fail' as const, error: notReadyError(verified.failures) };
+    }
+
+    return applyVerifiedProjection(tx, orgId, batch, verified.projection);
   });
 
   if (outcome.kind === 'fail') throw outcome.error;

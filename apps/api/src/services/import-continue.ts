@@ -1,52 +1,27 @@
 import { db } from '@ploutizo/db';
 import { importMatchTargetQueryInput } from '@ploutizo/utils';
 import { verifyImportSetForContinue } from '@ploutizo/utils/import-set-verification';
-import { preparedImportRowSnapshotSchema } from '@ploutizo/validators';
 import type {
   ImportContinueDraftFacts,
   ImportExternalFacts,
   ImportFinalizeExternalFacts,
-  PreparedImportOutcomeProjection,
 } from '@ploutizo/utils/import-set-verification';
 import type { Transaction } from '@ploutizo/db';
 import type {
-  ImportPreparedConfirmation,
-  ImportPreparedSet,
-  ImportPreparedSetSummary,
+  ImportFinalizePreview,
   ImportRequirementFailureDetails,
-  PreparedImportRowSnapshot,
 } from '@ploutizo/types';
 import type { ImportDraftRowRecord } from '@/lib/queries/imports';
-import type {
-  ImportPreparedOutcomeRecord,
-  ImportPreparedSetRecord,
-} from '@/lib/queries/import-prepared-sets';
 import type { AccountWriteReference } from '@/lib/queries/scope';
 import type { ImportMatchTargetQueryInput } from '@/lib/queries/import-match-targets';
 import { DomainError, NotFoundError } from '@/lib/errors';
 import {
-  deleteImportPreparedSet,
-  fetchPreparedSetById,
-  fetchPreparedSetForBatchRevision,
-  insertImportPreparedOutcomes,
-  insertImportPreparedSet,
-  isCompletePreparedProjection,
-  listPreparedOutcomesForSet,
-  lockPreparedSetRevisionForBatch,
-  toImportPreparedConfirmation,
-  toImportPreparedSet,
-  toImportPreparedSetSummary,
-} from '@/lib/queries/import-prepared-sets';
-import {
-  bumpImportDraftRevision,
   fetchDraftSummaryById,
   listDraftRows,
+  lockImportDraftBatch,
 } from '@/lib/queries/imports';
 import { listOrgMembers } from '@/lib/queries/households';
-import {
-  allTransactionsInOrg,
-  fetchAccountWriteReference,
-} from '@/lib/queries/scope';
+import { fetchAccountWriteReference } from '@/lib/queries/scope';
 import {
   listActiveExternalIdOwners,
   listImportMatchTargets,
@@ -56,10 +31,7 @@ import {
   sumPriorRefundTotalsByTransactionTarget,
 } from '@/lib/queries/import-refund-targets';
 import { toImportDraftDurableRow } from '@/services/import-draft-view';
-
-const parsePreparedSnapshot = (
-  snapshot: PreparedImportRowSnapshot
-): PreparedImportRowSnapshot => preparedImportRowSnapshotSchema.parse(snapshot);
+import { toImportFinalizePreview } from '@/services/import-preview';
 
 export const loadCounterpartAccounts = async (
   orgId: string,
@@ -68,8 +40,6 @@ export const loadCounterpartAccounts = async (
 ) => {
   const counterparts = new Map<string, AccountWriteReference>();
   for (const accountId of [...new Set(counterpartIds)]) {
-    // Default requireActive:true — import settlement funding stays fenced
-    // from transaction create/edit archive-date loading.
     const account = await fetchAccountWriteReference(orgId, accountId, {}, tx);
     if (account) counterparts.set(accountId, account);
   }
@@ -128,14 +98,25 @@ const loadImportExternalFacts = async (
   };
 };
 
+const withSelectionOverlay = (
+  draftRows: readonly ImportDraftRowRecord[],
+  selectedRowIds: ReadonlySet<string>
+) =>
+  draftRows.map((row) =>
+    toImportDraftDurableRow(row, {
+      selectedForImport: selectedRowIds.has(row.id),
+    })
+  );
+
 export const loadImportContinueDraftFacts = async (
   orgId: string,
   targetAccountId: string,
   draft: { rowCount: number },
   draftRows: readonly ImportDraftRowRecord[],
+  selectedRowIds: ReadonlySet<string>,
   tx: Transaction
 ): Promise<ImportContinueDraftFacts> => {
-  const durableRows = draftRows.map(toImportDraftDurableRow);
+  const durableRows = withSelectionOverlay(draftRows, selectedRowIds);
   const createdExternalIds = durableRows.flatMap((row) => {
     if (!row.selectedForImport) return [];
     const externalId = row.externalId?.trim();
@@ -166,7 +147,18 @@ export const loadImportContinueDraftFacts = async (
 export const loadImportFinalizeExternalFacts = async (
   orgId: string,
   targetAccountId: string,
-  preparedOutcomes: readonly ImportPreparedOutcomeRecord[],
+  projection: readonly {
+    outcome: string;
+    transactionId: string | null;
+    snapshot: {
+      reviewedValues: {
+        refundOf: string | null;
+        counterpartAccountId: string | null;
+        date: string | null;
+      };
+      provenance: { externalId: string | null };
+    };
+  }[],
   rowCount: number,
   tx: Transaction
 ): Promise<ImportFinalizeExternalFacts> =>
@@ -174,13 +166,13 @@ export const loadImportFinalizeExternalFacts = async (
     orgId,
     targetAccountId,
     {
-      refundOfIds: preparedOutcomes.flatMap((row) =>
+      refundOfIds: projection.flatMap((row) =>
         row.snapshot.reviewedValues.refundOf
           ? [row.snapshot.reviewedValues.refundOf]
           : []
       ),
       matchQuery: importMatchTargetQueryInput(
-        preparedOutcomes.map((row) => ({
+        projection.map((row) => ({
           reviewDate: row.snapshot.reviewedValues.date,
           parsedDate: row.snapshot.reviewedValues.date,
           externalId: row.snapshot.provenance.externalId,
@@ -188,12 +180,12 @@ export const loadImportFinalizeExternalFacts = async (
             row.outcome === 'matched' ? row.transactionId : null,
         }))
       ),
-      counterpartIds: preparedOutcomes.flatMap((row) =>
+      counterpartIds: projection.flatMap((row) =>
         row.snapshot.reviewedValues.counterpartAccountId
           ? [row.snapshot.reviewedValues.counterpartAccountId]
           : []
       ),
-      createdExternalIds: preparedOutcomes.flatMap((row) => {
+      createdExternalIds: projection.flatMap((row) => {
         if (row.outcome !== 'created') return [];
         const externalId = row.snapshot.provenance.externalId?.trim();
         return externalId ? [externalId] : [];
@@ -203,53 +195,13 @@ export const loadImportFinalizeExternalFacts = async (
     tx
   );
 
-const insertPreparedSetFromProjection = async (
-  tx: Transaction,
-  input: {
-    orgId: string;
-    batchId: string;
-    revision: number;
-    projection: readonly PreparedImportOutcomeProjection[];
-  }
-): Promise<ImportPreparedSet> => {
-  const transactionIds = input.projection.flatMap((row) =>
-    row.transactionId ? [row.transactionId] : []
-  );
-  if (!(await allTransactionsInOrg(input.orgId, transactionIds, tx))) {
-    throw new NotFoundError('Transaction not found');
-  }
-
-  const set = await insertImportPreparedSet(tx, {
-    orgId: input.orgId,
-    batchId: input.batchId,
-    revision: input.revision,
-  });
-
-  const insertedOutcomes = await insertImportPreparedOutcomes(
-    tx,
-    input.projection.map((row) => ({
-      orgId: input.orgId,
-      preparedSetId: set.id,
-      batchRowId: row.batchRowId,
-      outcome: row.outcome,
-      transactionId: row.transactionId,
-      snapshot: parsePreparedSnapshot(row.snapshot),
-    }))
-  );
-
-  return toImportPreparedSet(set, insertedOutcomes);
-};
-
-/**
- * Continue gate: re-evaluate the selected Import set under the prepared-set
- * lock, then snapshot a revision-bound full-file prepared projection.
- */
 export const continueImportDraft = async (
   orgId: string,
-  batchId: string
-): Promise<ImportPreparedSetSummary> =>
+  batchId: string,
+  rowIds: string[]
+): Promise<ImportFinalizePreview> =>
   db.transaction(async (tx) => {
-    await lockPreparedSetRevisionForBatch(tx, orgId, batchId);
+    await lockImportDraftBatch(tx, orgId, batchId);
 
     const draft = await fetchDraftSummaryById(orgId, batchId, tx);
     if (!draft) throw new NotFoundError('Import draft not found.');
@@ -257,14 +209,12 @@ export const continueImportDraft = async (
       throw new DomainError(500, 'Import draft is missing an account.');
     }
 
+    const uniqueRowIds = [...new Set(rowIds)];
     const draftRows = await listDraftRows(orgId, batchId, tx);
-    const selectedRows = draftRows.filter((row) => row.selectedForImport);
-    if (selectedRows.length === 0) {
-      throw new DomainError(
-        400,
-        'Select at least one row to continue.',
-        'IMPORT_CONTINUE_NONE_SELECTED'
-      );
+    const rowIdSet = new Set(uniqueRowIds);
+    const matching = draftRows.filter((row) => rowIdSet.has(row.id));
+    if (matching.length !== uniqueRowIds.length) {
+      throw new NotFoundError('Import draft row not found.');
     }
 
     const draftFacts = await loadImportContinueDraftFacts(
@@ -272,6 +222,7 @@ export const continueImportDraft = async (
       draft.accountId,
       draft,
       draftRows,
+      rowIdSet,
       tx
     );
     const verified = verifyImportSetForContinue(draftFacts);
@@ -284,95 +235,9 @@ export const continueImportDraft = async (
       );
     }
 
-    const existing = await fetchPreparedSetForBatchRevision(
-      orgId,
+    return toImportFinalizePreview(
       batchId,
-      draft.revision,
-      tx
+      draft.rowCount,
+      verified.projection
     );
-    if (existing) {
-      const existingOutcomes = await listPreparedOutcomesForSet(
-        orgId,
-        existing.id,
-        tx
-      );
-      if (isCompletePreparedProjection(existingOutcomes, draft.rowCount)) {
-        return toImportPreparedSetSummary(existing);
-      }
-      await deleteImportPreparedSet(tx, orgId, existing.id);
-    }
-
-    const prepared = await insertPreparedSetFromProjection(tx, {
-      orgId,
-      batchId,
-      revision: draft.revision,
-      projection: verified.projection,
-    });
-
-    return {
-      id: prepared.id,
-      batchId: prepared.batchId,
-      revision: prepared.revision,
-      createdAt: prepared.createdAt,
-    };
   });
-
-export const getActiveImportPreparedConfirmation = async (
-  orgId: string,
-  batchId: string
-): Promise<ImportPreparedConfirmation> => {
-  const draft = await fetchDraftSummaryById(orgId, batchId);
-  if (!draft) throw new NotFoundError('Import draft not found.');
-
-  const set = await fetchPreparedSetForBatchRevision(
-    orgId,
-    batchId,
-    draft.revision
-  );
-  if (!set) throw new NotFoundError('Prepared import set not found.');
-
-  const outcomes = await listPreparedOutcomesForSet(orgId, set.id);
-  if (!isCompletePreparedProjection(outcomes, draft.rowCount)) {
-    throw new NotFoundError('Prepared import set not found.');
-  }
-
-  const currentDraft = await fetchDraftSummaryById(orgId, batchId);
-  if (!currentDraft || currentDraft.revision !== draft.revision) {
-    throw new NotFoundError('Prepared import set not found.');
-  }
-
-  return toImportPreparedConfirmation(set, outcomes, currentDraft.rowCount);
-};
-
-/** Invalidate active prepared staging by advancing the draft revision. */
-export const invalidatePreparedStagingForDraft = async (
-  tx: Transaction,
-  orgId: string,
-  batchId: string
-) => {
-  await lockPreparedSetRevisionForBatch(tx, orgId, batchId);
-  await bumpImportDraftRevision(orgId, batchId, tx);
-};
-
-export const invalidateImportPreparedSet = async (
-  orgId: string,
-  batchId: string
-): Promise<void> => {
-  await db.transaction(async (tx) => {
-    const draft = await fetchDraftSummaryById(orgId, batchId, tx);
-    if (!draft) throw new NotFoundError('Import draft not found.');
-    await invalidatePreparedStagingForDraft(tx, orgId, batchId);
-  });
-};
-
-export const getImportPreparedSet = async (
-  orgId: string,
-  preparedSetId: string
-): Promise<ImportPreparedSet | null> => {
-  const set = await fetchPreparedSetById(orgId, preparedSetId);
-  if (!set) return null;
-  const outcomes = await listPreparedOutcomesForSet(orgId, set.id);
-  return toImportPreparedSet(set, outcomes);
-};
-
-export type { ImportPreparedSetRecord };

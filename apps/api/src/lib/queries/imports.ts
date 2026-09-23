@@ -26,8 +26,6 @@ const IMPORT_SUMMARY_COLUMNS = {
   importedAt: importBatches.importedAt,
   completedAt: importBatches.completedAt,
   discardedAt: importBatches.discardedAt,
-  revision: importBatches.revision,
-  finalizedPreparedSetId: importBatches.finalizedPreparedSetId,
   createdCount: importBatches.createdCount,
   matchedCount: importBatches.matchedCount,
   skippedCount: importBatches.skippedCount,
@@ -142,7 +140,6 @@ export const completeImportBatch = async (
   input: {
     orgId: string;
     batchId: string;
-    preparedSetId: string;
     completedAt: Date;
     createdCount: number;
     matchedCount: number;
@@ -156,7 +153,6 @@ export const completeImportBatch = async (
       status: 'completed',
       completedAt: input.completedAt,
       updatedAt: input.completedAt,
-      finalizedPreparedSetId: input.preparedSetId,
       createdCount: input.createdCount,
       matchedCount: input.matchedCount,
       skippedCount: input.skippedCount,
@@ -356,19 +352,15 @@ export const updateImportDraftRowQuery = async (
   return rows.at(0) ?? null;
 };
 
-export const bumpImportDraftRevision = async (
+/** Advisory lock for Continue/Finalize on one import draft. */
+export const lockImportDraftBatch = async (
+  tx: Transaction,
   orgId: string,
-  draftId: string,
-  client: DbClient = db
+  batchId: string
 ) => {
-  const rows = await client
-    .update(importBatches)
-    .set({
-      revision: sql`${importBatches.revision} + 1`,
-      updatedAt: new Date(),
-    })
-    .where(and(eq(importBatches.id, draftId), eq(importBatches.orgId, orgId)));
-  return rows;
+  await tx.execute(
+    sql`select pg_advisory_xact_lock(abs(hashtext(${`import-draft:${orgId}:${batchId}`})::bigint))`
+  );
 };
 
 const draftRowInActiveDraftCondition = (orgId: string) =>
@@ -402,28 +394,6 @@ export const listDraftRowIdsForDraft = async (
         draftRowInActiveDraftCondition(orgId)
       )
     );
-};
-
-export const updateImportDraftRowSelectionQuery = async (
-  orgId: string,
-  draftId: string,
-  rowIds: string[],
-  selectedForImport: boolean,
-  client: DbClient = db
-) => {
-  if (rowIds.length === 0) return [];
-  return client
-    .update(importBatchRows)
-    .set({ selectedForImport, updatedAt: new Date() })
-    .where(
-      and(
-        eq(importBatchRows.orgId, orgId),
-        eq(importBatchRows.batchId, draftId),
-        inArray(importBatchRows.id, rowIds),
-        draftRowInActiveDraftCondition(orgId)
-      )
-    )
-    .returning();
 };
 
 export type ImportDraftSummaryRow = Awaited<

@@ -23,9 +23,3 @@ export const importDraftQueryKey = (id: string | null) => [
   'draft',
   id,
 ];
-
-export const importPreparedQueryKey = (id: string) => [
-  'imports',
-  'prepared',
-  id,
-];

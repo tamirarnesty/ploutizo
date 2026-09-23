@@ -71,6 +71,13 @@
       "when": 1788897736485,
       "tag": "0009_prepared_row_snapshot",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788900000000,
+      "tag": "0010_import_review_session_schema",
+      "breakpoints": true
     }
   ]
 }

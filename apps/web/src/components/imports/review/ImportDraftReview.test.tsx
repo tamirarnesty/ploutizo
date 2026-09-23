@@ -180,12 +180,11 @@ describe('ImportDraftReview', () => {
     continueMocks.isPending = false;
     continueMocks.error = null;
     continueMocks.continueImport.mockResolvedValue({
-      id: 'prep_1',
-      orgId: 'org_1',
       batchId: 'draft_1',
-      revision: 1,
-      createdAt: '2026-05-20T12:00:00.000Z',
-      outcomes: [],
+      rowCount: 1,
+      counts: { created: 0, matched: 0, skipped: 0, invalid: 0 },
+      created: [],
+      matched: [],
     });
     flush.mockResolvedValue(true);
     accountsQueryMocks.data = defaultAccountsQueryData;

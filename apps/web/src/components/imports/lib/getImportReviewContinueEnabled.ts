@@ -28,5 +28,13 @@ export const getImportReviewContinueEnabled = ({
   const persistenceBlocked =
     autosaveStatus === 'failed' || autosaveStatus === 'saving';
 
-  return canContinueImportReview(rows, continueOptions) && !persistenceBlocked;
+  const selectionRows = rows.map((row) => ({
+    ...row,
+    selectedForImport: row.selectedForImport ?? false,
+  }));
+
+  return (
+    canContinueImportReview(selectionRows, continueOptions) &&
+    !persistenceBlocked
+  );
 };
