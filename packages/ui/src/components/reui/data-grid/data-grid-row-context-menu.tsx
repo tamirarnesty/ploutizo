@@ -1,13 +1,6 @@
 'use client';
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
   ContextMenu,
@@ -17,6 +10,11 @@ import {
 import { useDataGrid } from '@/components/reui/data-grid/data-grid';
 
 export const DATA_GRID_ROW_ID_ATTR = 'data-grid-row-id';
+
+/** Stamped on body and expanded `<tr>` when `renderRowContextMenu` is enabled. */
+export const getDataGridRowContextMenuRowProps = (rowId: string) => ({
+  [DATA_GRID_ROW_ID_ATTR]: rowId,
+});
 
 const resolveRowFromContextMenuTarget = <TData extends object>(
   target: EventTarget | null,
@@ -31,92 +29,54 @@ const resolveRowFromContextMenuTarget = <TData extends object>(
   return row?.original ?? null;
 };
 
-type RowContextMenuRegistration<TData> = {
-  registerRowContextMenu: (row: TData) => void;
-};
-
-const DataGridRowContextMenuContext =
-  createContext<RowContextMenuRegistration<unknown> | null>(null);
-
-/** Registers the TanStack row before the viewport context menu opens. */
-export const useDataGridRowContextMenuRegistration = <
-  TData,
->(): RowContextMenuRegistration<TData> | null => {
-  const context = useContext(DataGridRowContextMenuContext);
-  return context as RowContextMenuRegistration<TData> | null;
-};
-
 type DataGridRowContextMenuShellProps<TData extends object> = {
   renderRowContextMenu: (row: TData) => ReactNode;
   children: ReactNode;
 };
 
 /**
- * Single context menu for a data grid table viewport. Body and expanded rows call
- * `registerRowContextMenu` on `contextmenu`; header right-clicks cancel open.
- * Native browser menu may still be suppressed inside the trigger.
+ * Single viewport context menu for a data grid. On open, resolves the TanStack row
+ * from the event target via `data-grid-row-id` on the nearest body `<tr>`; header
+ * and other targets cancel open. `select-text` on the trigger preserves cell copy;
+ * the native browser menu is suppressed inside the trigger.
  */
 export const DataGridRowContextMenuShell = <TData extends object>({
   renderRowContextMenu,
   children,
 }: DataGridRowContextMenuShellProps<TData>) => {
   const { table } = useDataGrid();
-  const [activeRow, setActiveRow] = useState<TData | null>(null);
-  const activeRowRef = useRef<TData | null>(null);
-  const pendingRowRef = useRef<TData | null>(null);
+  const [openRow, setOpenRow] = useState<TData | null>(null);
+  const contentRowRef = useRef<TData | null>(null);
 
-  const registerRowContextMenu = useCallback((row: TData) => {
-    pendingRowRef.current = row;
-    activeRowRef.current = row;
-    setActiveRow(row);
-  }, []);
-
-  const registration = useMemo(
-    () => ({ registerRowContextMenu }),
-    [registerRowContextMenu]
-  );
-
-  const displayedRow = activeRow ?? activeRowRef.current;
+  const displayedRow = openRow ?? contentRowRef.current;
 
   return (
-    <DataGridRowContextMenuContext.Provider
-      value={registration as RowContextMenuRegistration<unknown>}
+    <ContextMenu
+      onOpenChange={(open, eventDetails) => {
+        if (!open) {
+          setOpenRow(null);
+          return;
+        }
+
+        const resolved = resolveRowFromContextMenuTarget<TData>(
+          eventDetails.event.target,
+          table
+        );
+        if (!resolved) {
+          eventDetails.cancel();
+          return;
+        }
+
+        contentRowRef.current = resolved;
+        setOpenRow(resolved);
+      }}
     >
-      <ContextMenu
-        onOpenChange={(open, eventDetails) => {
-          if (!open) {
-            activeRowRef.current = null;
-            pendingRowRef.current = null;
-            setActiveRow(null);
-            return;
-          }
-
-          if (!pendingRowRef.current) {
-            const resolved = resolveRowFromContextMenuTarget<TData>(
-              eventDetails.event.target,
-              table
-            );
-            if (resolved) {
-              activeRowRef.current = resolved;
-              setActiveRow(resolved);
-            }
-          }
-
-          if (!pendingRowRef.current && !activeRowRef.current) {
-            eventDetails.cancel();
-            return;
-          }
-
-          pendingRowRef.current = null;
-        }}
-      >
-        <ContextMenuTrigger className="block w-full min-w-0 select-text">
-          {children}
-        </ContextMenuTrigger>
-        <ContextMenuContent>
-          {displayedRow ? renderRowContextMenu(displayedRow) : null}
-        </ContextMenuContent>
-      </ContextMenu>
-    </DataGridRowContextMenuContext.Provider>
+      <ContextMenuTrigger className="block w-full min-w-0 select-text">
+        {children}
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        {displayedRow ? renderRowContextMenu(displayedRow) : null}
+      </ContextMenuContent>
+    </ContextMenu>
   );
 };

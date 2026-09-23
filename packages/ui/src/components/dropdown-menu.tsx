@@ -1,3 +1,4 @@
+// Ploutizo fork: destructive menu styling is per-item (`data-[variant=destructive]`), not popover `**:` selectors — see docs/stack-and-conventions.md.
 import * as React from 'react';
 import { Menu as MenuPrimitive } from '@base-ui/react/menu';
 

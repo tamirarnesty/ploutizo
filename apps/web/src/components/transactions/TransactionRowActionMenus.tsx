@@ -11,6 +11,7 @@ import type { TransactionRowAction } from './transactionRowActions';
 
 type RowActionMenuItemProps = {
   variant?: TransactionRowAction['variant'];
+  disabled?: boolean;
   onClick?: () => void;
   children: ReactNode;
 };
@@ -26,6 +27,7 @@ export const TransactionRowActionMenuItems = ({
     <MenuItem
       key={action.id}
       variant={action.variant}
+      disabled={action.disabled}
       onClick={action.onSelect}
     >
       {action.label}

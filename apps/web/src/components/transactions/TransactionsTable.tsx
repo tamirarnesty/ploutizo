@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import {
   DataGrid,
@@ -99,6 +99,19 @@ export const TransactionsTable = ({
     isLoading
   );
 
+  const renderRowContextMenu = useCallback(
+    (transaction: TransactionRow) => (
+      <TransactionRowActionMenuItems
+        actions={getTransactionRowActions(transaction, {
+          onEdit,
+          onDelete: setDeleteId,
+        })}
+        MenuItem={ContextMenuItem}
+      />
+    ),
+    [onEdit]
+  );
+
   const table = useReactTable({
     data: transactions,
     columns,
@@ -158,15 +171,7 @@ export const TransactionsTable = ({
         recordCount={total}
         isLoading={isLoading}
         emptyMessage="No transactions yet"
-        renderRowContextMenu={(transaction) => (
-          <TransactionRowActionMenuItems
-            actions={getTransactionRowActions(transaction, {
-              onEdit,
-              onDelete: setDeleteId,
-            })}
-            MenuItem={ContextMenuItem}
-          />
-        )}
+        renderRowContextMenu={renderRowContextMenu}
         tableLayout={{
           width: 'fixed',
           columnsFill: true,

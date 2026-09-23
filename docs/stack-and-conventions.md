@@ -26,6 +26,8 @@
 
 - **Default:** Prefer usage-site overrides (`className`, wrappers, exposed props such as `DataGrid`’s `onRowClick`) before editing shadcn-generated files or `packages/ui/src/components/reui/`.
 - **Shadcn-generated files:** Do not edit unless regenerating from the CLI; override at the usage site instead.
+- **Menu destructive styling (Ploutizo fork):** Popover shells (`dropdown-menu`, `select`, `combobox`, `context-menu` content) do not use global `**:data-[variant=destructive]` overrides. Use per-item `variant="destructive"` on `DropdownMenuItem` / `ContextMenuItem`. Re-merge intentionally after shadcn CLI regen.
+- **`DataGrid.renderRowContextMenu`:** The viewport trigger uses `select-text` so users can still select cell text; right-click/long-press opens app row actions and suppresses the native browser menu inside the table trigger. Document product tradeoffs in the PR when adding a grid context menu.
 - **ReUI (`packages/ui/src/components/reui/`):** Edits are allowed for **product-agnostic** grid/primitive capabilities (typed public props, no app-specific copy or domain types). Document the API briefly at the prop/site of change and add a bullet under **Ploutizo fork capabilities** in [docs/research/tanstack-table-v9-reui-grid-migration.md](research/tanstack-table-v9-reui-grid-migration.md) so registry reinstalls can re-merge.
 - Leave a comment explaining any non-obvious override at usage sites.
 

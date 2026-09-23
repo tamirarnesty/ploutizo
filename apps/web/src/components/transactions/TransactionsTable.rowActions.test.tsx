@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { mockTransactionRow } from '@/test/overlayFixtures';
 import { TransactionsTable } from './TransactionsTable';
+import { expectTransactionRowActionMenuLabels } from './transactionRowActionTestHelpers';
 
 vi.mock('@/lib/data-access/transactions/useDeleteTransaction', () => ({
   useDeleteTransaction: () => ({ mutate: vi.fn(), isPending: false }),
@@ -60,11 +61,7 @@ describe('TransactionsTable row context menu', () => {
     fireEvent.contextMenu(screen.getByText(transaction.description));
 
     const menu = await screen.findByRole('menu');
-    expect(
-      within(menu)
-        .getAllByRole('menuitem')
-        .map((item) => item.textContent)
-    ).toEqual(['Edit', 'Delete']);
+    expectTransactionRowActionMenuLabels(menu);
 
     expect(
       within(menu).getByRole('menuitem', { name: 'Delete' })
@@ -85,11 +82,7 @@ describe('TransactionsTable row context menu', () => {
       await vi.advanceTimersByTimeAsync(500);
 
       const menu = screen.getByRole('menu');
-      expect(
-        within(menu)
-          .getAllByRole('menuitem')
-          .map((item) => item.textContent)
-      ).toEqual(['Edit', 'Delete']);
+      expectTransactionRowActionMenuLabels(menu);
 
       fireEvent.click(within(menu).getByRole('menuitem', { name: 'Edit' }));
       expect(onEdit).toHaveBeenCalledWith(transaction);
@@ -104,11 +97,18 @@ describe('TransactionsTable row context menu', () => {
     fireEvent.contextMenu(screen.getByText(/jun/i));
 
     const menu = await screen.findByRole('menu');
-    expect(
-      within(menu)
-        .getAllByRole('menuitem')
-        .map((item) => item.textContent)
-    ).toEqual(['Edit', 'Delete']);
+    expectTransactionRowActionMenuLabels(menu);
+  });
+
+  it('opens the row menu from a right-click on the actions column', async () => {
+    renderTable();
+
+    fireEvent.contextMenu(
+      screen.getByRole('button', { name: 'Transaction actions' })
+    );
+
+    const menu = await screen.findByRole('menu');
+    expectTransactionRowActionMenuLabels(menu);
   });
 
   it('does not open the row menu from a header right-click', () => {
@@ -155,10 +155,6 @@ describe('TransactionsTable row context menu', () => {
     );
 
     const menu = await screen.findByRole('menu');
-    expect(
-      within(menu)
-        .getAllByRole('menuitem')
-        .map((item) => item.textContent)
-    ).toEqual(['Edit', 'Delete']);
+    expectTransactionRowActionMenuLabels(menu);
   });
 });

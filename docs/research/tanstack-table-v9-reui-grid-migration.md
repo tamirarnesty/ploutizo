@@ -81,7 +81,7 @@ The migration must update them together and verify the lockfile resolves no v8 c
 
 Capabilities added or changed locally in `packages/ui/src/components/reui/` (reconcile after `npx shadcn@latest add @reui/data-grid`):
 
-- **`DataGrid.renderRowContextMenu`** — Optional `(row) => ReactNode` menu content; `data-grid-row-context-menu.tsx` wraps the table viewport in a single context menu, registers the TanStack row from body and expanded `<tr>` `onContextMenu`, and cancels open when no row was registered (e.g. header right-click).
+- **`DataGrid.renderRowContextMenu`** — Optional `(row) => ReactNode` menu content; `data-grid-row-context-menu.tsx` wraps the table viewport in a single context menu, stamps `data-grid-row-id` on body/expanded `<tr>` via `data-grid-table-body-row.tsx`, resolves the TanStack row from the open event target on open, and cancels when no body row matches (e.g. header right-click).
 
 ## Verification checklist
 

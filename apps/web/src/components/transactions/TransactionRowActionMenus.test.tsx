@@ -7,6 +7,10 @@ import type { TransactionRow } from '@/lib/data-access/transactions';
 import { buildColumns } from './TransactionColumns';
 import { TransactionRowActionsDropdown } from './TransactionRowActionMenus';
 import { getTransactionRowActions } from './transactionRowActions';
+import {
+  TRANSACTION_ROW_ACTION_LABELS,
+  expectTransactionRowActionMenuLabels,
+} from './transactionRowActionTestHelpers';
 import type { CellContext } from '@tanstack/react-table';
 
 const renderDescriptionCell = (
@@ -46,8 +50,8 @@ describe('transaction row action menus', () => {
     );
 
     const menu = await screen.findByRole('menu');
+    expectTransactionRowActionMenuLabels(menu);
     const items = within(menu).getAllByRole('menuitem');
-    expect(items.map((item) => item.textContent)).toEqual(['Edit', 'Delete']);
     expect(items[1]).toHaveAttribute('data-variant', 'destructive');
 
     await user.click(within(menu).getByRole('menuitem', { name: 'Delete' }));
@@ -76,5 +80,30 @@ describe('transaction row action menus', () => {
 
     expect(onOpenOriginal).toHaveBeenCalledWith('tx-original');
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  });
+
+  it('forwards disabled to menu items when set on an action', async () => {
+    const user = userEvent.setup();
+    const transaction = mockTransactionRow();
+    const actions = getTransactionRowActions(transaction, {
+      onEdit: vi.fn(),
+      onDelete: vi.fn(),
+    }).map((action) =>
+      action.id === 'delete' ? { ...action, disabled: true } : action
+    );
+
+    render(<TransactionRowActionsDropdown actions={actions} />);
+
+    await user.click(
+      screen.getByRole('button', { name: 'Transaction actions' })
+    );
+
+    const menu = await screen.findByRole('menu');
+    expectTransactionRowActionMenuLabels(menu);
+    expect(
+      within(menu).getByRole('menuitem', {
+        name: TRANSACTION_ROW_ACTION_LABELS[1],
+      })
+    ).toHaveAttribute('data-disabled');
   });
 });

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { mockTransactionRow } from '@/test/overlayFixtures';
 import { getTransactionRowActions } from './transactionRowActions';
+import { TRANSACTION_ROW_ACTION_LABELS } from './transactionRowActionTestHelpers';
 
 describe('getTransactionRowActions', () => {
   it('returns Edit then Delete with shared labels and variants', () => {
@@ -10,7 +11,10 @@ describe('getTransactionRowActions', () => {
     });
 
     expect(actions.map((action) => action.id)).toEqual(['edit', 'delete']);
-    expect(actions.map((action) => action.label)).toEqual(['Edit', 'Delete']);
+    expect(actions.map((action) => action.label)).toEqual([
+      ...TRANSACTION_ROW_ACTION_LABELS,
+    ]);
+    expect(actions.every((action) => action.disabled === undefined)).toBe(true);
     expect(actions.map((action) => action.variant)).toEqual([
       'default',
       'destructive',

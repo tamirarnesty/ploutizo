@@ -14,6 +14,7 @@ export type TransactionRowAction = {
   label: string;
   variant: TransactionRowActionVariant;
   onSelect: () => void;
+  disabled?: boolean;
 };
 
 export const getTransactionRowActions = (
