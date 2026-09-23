@@ -1,6 +1,6 @@
 import type {
   ImportBatchStatus,
-  ImportPreparedOutcome,
+  ImportRowOutcome,
   ImportRowStatus,
   ImportTransactionType,
   MerchantMatchType,
@@ -144,10 +144,14 @@ export interface ImportDraftRow {
   reviewMatchDismissed: boolean;
   reviewNotes: string | null;
   reviewTagIds: string[];
-  selectedForImport: boolean;
   createdAt: string;
   updatedAt: string;
 }
+
+/** Import draft row in the review session working copy, with session-only selection. */
+export type ImportReviewRow = ImportDraftRow & {
+  selectedForImport: boolean;
+};
 
 /** Durable import draft row persisted in Postgres — no derived status fields. */
 export type ImportDraftPersistedRow = Omit<
@@ -171,6 +175,11 @@ export type CreateImportDraftResponse =
 
 export interface UpdateImportDraftRowResult {
   row: ImportDraftPersistedRow;
+  refundTargetFacts?: Record<string, RefundTargetFact>;
+}
+
+export interface BatchUpdateImportDraftRowsResult {
+  rows: ImportDraftPersistedRow[];
   refundTargetFacts?: Record<string, RefundTargetFact>;
 }
 
@@ -246,79 +255,49 @@ export interface ImportRowProvenance {
   parsedDescription: string | null;
 }
 
-/** Revision-bound prepared-row snapshot. Selection lives on the outcome, not here. */
-export interface PreparedImportRowSnapshot {
+/** Reviewed values and provenance for one verified row. Selection lives on the outcome, not here. */
+export interface ImportRowSnapshot {
   reviewedValues: ReviewedImportValues;
   provenance: ImportRowProvenance;
 }
 
-export interface ImportPreparedSetSummary {
-  id: string;
-  batchId: string;
-  revision: number;
-  createdAt: string;
-}
-
-export interface ImportPreparedOutcomeRow {
-  id: string;
-  preparedSetId: string;
-  batchRowId: string;
-  outcome: ImportPreparedOutcome;
-  transactionId: string | null;
-  snapshot: PreparedImportRowSnapshot;
-  createdAt: string;
-}
-
-export interface ImportPreparedSet extends ImportPreparedSetSummary {
-  outcomes: ImportPreparedOutcomeRow[];
-}
-
-export const IMPORT_PREPARED_CONFIRMATION_OUTCOME_VALUES = [
+export const IMPORT_FINALIZE_PREVIEW_OUTCOME_VALUES = [
   'created',
   'matched',
 ] as const;
 
-export type ImportPreparedConfirmationOutcome =
-  (typeof IMPORT_PREPARED_CONFIRMATION_OUTCOME_VALUES)[number];
+export type ImportFinalizePreviewOutcome =
+  (typeof IMPORT_FINALIZE_PREVIEW_OUTCOME_VALUES)[number];
 
-export interface ImportPreparedOutcomeCounts {
-  created: number;
-  matched: number;
-  skipped: number;
-  invalid: number;
-}
+export type ImportOutcomeCounts = Record<ImportRowOutcome, number>;
 
-export const countPreparedOutcomes = (
-  outcomes: readonly { outcome: string }[]
-): ImportPreparedOutcomeCounts => {
-  const counts: ImportPreparedOutcomeCounts = {
+export const countImportOutcomes = (
+  outcomes: readonly { outcome: ImportRowOutcome }[]
+): ImportOutcomeCounts => {
+  const counts: ImportOutcomeCounts = {
     created: 0,
     matched: 0,
     skipped: 0,
     invalid: 0,
   };
-  for (const { outcome } of outcomes) {
-    if (outcome === 'created') counts.created += 1;
-    else if (outcome === 'matched') counts.matched += 1;
-    else if (outcome === 'skipped') counts.skipped += 1;
-    else if (outcome === 'invalid') counts.invalid += 1;
-  }
+  for (const { outcome } of outcomes) counts[outcome] += 1;
   return counts;
 };
 
-export interface ImportPreparedConfirmationRow {
+export interface ImportFinalizePreviewRow {
   batchRowId: string;
-  outcome: ImportPreparedConfirmationOutcome;
+  outcome: ImportFinalizePreviewOutcome;
   transactionId: string | null;
-  snapshot: PreparedImportRowSnapshot;
+  snapshot: ImportRowSnapshot;
 }
 
-/** Read-only Finalize confirmation DTO for the active prepared revision. */
-export interface ImportPreparedConfirmation extends ImportPreparedSetSummary {
+/** Stateless Continue response — full-file outcome projection for Finalize import. */
+export interface ImportFinalizePreview {
+  batchId: string;
   rowCount: number;
-  counts: ImportPreparedOutcomeCounts;
-  created: ImportPreparedConfirmationRow[];
-  matched: ImportPreparedConfirmationRow[];
+  counts: ImportOutcomeCounts;
+  created: ImportFinalizePreviewRow[];
+  matched: ImportFinalizePreviewRow[];
 }
 
 /** Shared identity facts for completed and discarded Import history. */
@@ -360,7 +339,5 @@ export interface ImportHistoryPage {
   nextCursor: string | null;
 }
 
-/** Successful Finalize summary — completed history plus the claimed prepared-set id. */
-export interface ImportCompletedResult extends ImportCompletedHistoryItem {
-  preparedSetId: string;
-}
+/** Successful Finalize summary — completed import batch. */
+export type ImportCompletedResult = ImportCompletedHistoryItem;

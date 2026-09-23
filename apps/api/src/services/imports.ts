@@ -1,26 +1,23 @@
 import { db } from '@ploutizo/db';
 import { INTERNAL_IMPORT_EXAMPLE_CSV } from '@ploutizo/types';
-import {
-  createImportRowClassifier,
-  importMatchTargetQueryInput,
-  matchDecisionsForSelectedRows,
-} from '@ploutizo/utils';
+import { createImportRowClassifier } from '@ploutizo/utils';
 import { resolveReviewedImportValues } from '@ploutizo/utils/reviewed-import-values';
 import { validateTransactionAccountPolicy } from '@ploutizo/utils/transaction-policy';
 import type { Transaction } from '@ploutizo/db';
 import type {
+  BatchUpdateImportDraftRowsResult,
   CreateImportDraftResponse,
   ImportDraft,
   ImportDraftPersistedRow,
   ImportDraftSummary,
   ImportTargetAccount,
-  UpdateImportDraftRowResult,
 } from '@ploutizo/types';
 import type {
+  BatchUpdateImportDraftRowsInput,
   CreateImportDraftInput,
   UpdateImportDraftRowInput,
-  UpdateImportDraftRowSelectionInput,
 } from '@ploutizo/validators';
+import type { ImportDraftRowRecord } from '@/lib/queries/imports';
 import { assertOrgWriteReferences } from '@/lib/assertOrgWriteReferences';
 import { DomainError, NotFoundError } from '@/lib/errors';
 import { isUniqueViolation } from '@/lib/isUniqueViolation';
@@ -28,17 +25,15 @@ import {
   discardImportDraftQuery,
   fetchActiveCreditCardAccount,
   fetchActiveDraftByAccount,
-  fetchDraftRowById,
   fetchDraftSummaryById,
   insertImportBatch,
   insertImportBatchRows,
   listActiveImportDraftSummaries,
-  listDraftRowIdsForDraft,
   listDraftRows,
   listDraftRowsForBatches,
   listImportTargetAccounts,
+  lockImportDraftBatch,
   updateImportDraftRowQuery,
-  updateImportDraftRowSelectionQuery,
 } from '@/lib/queries/imports';
 import { listAccountMemberDetails } from '@/lib/queries/accounts';
 import { listCategories } from '@/lib/queries/categories';
@@ -53,9 +48,7 @@ import { listTags } from '@/lib/queries/tags';
 import { parseImportUpload } from '@/lib/imports/parse';
 import { toImportTargetAccount } from '@/lib/accounts/accountResponse';
 import { toImportDraftSummary } from '@/services/import-batch-mappers';
-import { invalidatePreparedStagingForDraft } from '@/services/import-prepared-sets';
 import { listRefundTargetExpensesByIds } from '@/lib/queries/import-refund-targets';
-import { listImportMatchTargets } from '@/lib/queries/import-match-targets';
 import {
   buildImportDraftView,
   loadDraftEvaluationContext,
@@ -233,38 +226,44 @@ export const discardImportDraft = async (orgId: string, draftId: string) => {
   return row;
 };
 
-export const updateImportDraftRow = async (
+const validateImportDraftRowPatch = async (
+  tx: Transaction,
   orgId: string,
-  rowId: string,
+  existing: ImportDraftRowRecord,
+  draftRowIds: ReadonlySet<string>,
+  draftAccountId: string,
   input: UpdateImportDraftRowInput
-): Promise<UpdateImportDraftRowResult> => {
-  const existing = await fetchDraftRowById(orgId, rowId);
-  if (!existing) throw new NotFoundError('Import draft row not found.');
-
-  const draft = await fetchDraftSummaryById(orgId, existing.batchId);
-  if (!draft?.accountId) throw new NotFoundError('Import draft not found.');
-
+) => {
   const merged = { ...existing, ...input };
 
-  await assertOrgWriteReferences(orgId, {
-    categoryId: merged.reviewCategoryId ?? null,
-    tagIds: merged.reviewTagIds,
-    memberIds: merged.reviewAssigneeMemberIds,
-  });
+  await assertOrgWriteReferences(
+    orgId,
+    {
+      categoryId: merged.reviewCategoryId ?? null,
+      tagIds: merged.reviewTagIds,
+      memberIds: merged.reviewAssigneeMemberIds,
+    },
+    tx
+  );
 
   if (merged.reviewCounterpartAccountId) {
     const funding = await fetchAccountWriteReference(
       orgId,
-      merged.reviewCounterpartAccountId
+      merged.reviewCounterpartAccountId,
+      {},
+      tx
     );
     if (!funding) throw new NotFoundError('Account not found');
 
     const { type } = resolveReviewedImportValues(merged);
     if (type === 'settlement') {
-      const card = await fetchAccountWriteReference(orgId, draft.accountId);
+      const card = await fetchAccountWriteReference(
+        orgId,
+        draftAccountId,
+        {},
+        tx
+      );
       if (!card) throw new NotFoundError('Account not found');
-      // Import settlement funding stays on account-type policy only. Do not
-      // apply transaction create/edit archive-date availability here.
       const policy = validateTransactionAccountPolicy({
         type: 'settlement',
         account: card,
@@ -281,7 +280,7 @@ export const updateImportDraftRow = async (
   }
 
   if (merged.reviewRefundOf) {
-    const ok = await transactionExistsInOrg(orgId, merged.reviewRefundOf);
+    const ok = await transactionExistsInOrg(orgId, merged.reviewRefundOf, tx);
     if (!ok) throw new NotFoundError('Transaction not found');
   }
 
@@ -289,122 +288,75 @@ export const updateImportDraftRow = async (
     await requireMatchTargetOnDraftAccount(
       orgId,
       input.reviewMatchedTransactionId,
-      draft.accountId
+      draftAccountId,
+      tx
     );
   }
 
-  if (input.reviewRefundOfBatchRowId) {
-    const target = await fetchDraftRowById(
-      orgId,
-      input.reviewRefundOfBatchRowId
-    );
-    if (!target || target.batchId !== existing.batchId) {
-      throw new NotFoundError('Import draft row not found.');
-    }
-  }
-
-  const updated = await db.transaction(async (tx) => {
-    const next = await updateImportDraftRowQuery(orgId, rowId, input, tx);
-    if (!next) throw new NotFoundError('Import draft row not found.');
-    await invalidatePreparedStagingForDraft(tx, orgId, existing.batchId);
-    return next;
-  });
-
-  const row = toImportDraftPersistedRow(updated);
-
-  let refundTargetFacts: UpdateImportDraftRowResult['refundTargetFacts'];
-  if (Object.prototype.hasOwnProperty.call(input, 'reviewRefundOf')) {
-    const refundOf = input.reviewRefundOf;
-    if (refundOf) {
-      const expenses = await listRefundTargetExpensesByIds(orgId, [refundOf]);
-      refundTargetFacts = refundTargetFactsRecordFromMap(expenses);
-    }
-  }
-
-  return refundTargetFacts ? { row, refundTargetFacts } : { row };
-};
-
-export const updateImportDraftRowSelection = async (
-  orgId: string,
-  draftId: string,
-  input: UpdateImportDraftRowSelectionInput
-): Promise<ImportDraftPersistedRow[]> => {
-  const draft = await fetchDraftSummaryById(orgId, draftId);
-  if (!draft) throw new NotFoundError('Import draft not found.');
-  const accountId = draft.accountId;
-  if (!accountId) throw new NotFoundError('Import draft not found.');
-
-  const uniqueRowIds = [...new Set(input.rowIds)];
-  const matchingRows = await listDraftRowIdsForDraft(
-    orgId,
-    draftId,
-    uniqueRowIds
-  );
-  if (matchingRows.length !== uniqueRowIds.length) {
+  if (
+    input.reviewRefundOfBatchRowId &&
+    !draftRowIds.has(input.reviewRefundOfBatchRowId)
+  ) {
     throw new NotFoundError('Import draft row not found.');
   }
+};
 
-  let persistedRows: Awaited<
-    ReturnType<typeof updateImportDraftRowSelectionQuery>
-  > = [];
+/** Load, validate, write, and read refund facts under the draft lock so Continue/Finalize never interleave. */
+export const updateImportDraftRows = async (
+  orgId: string,
+  draftId: string,
+  input: BatchUpdateImportDraftRowsInput
+): Promise<BatchUpdateImportDraftRowsResult> => {
+  const uniqueIds = new Set(input.rows.map((row) => row.id));
+  if (uniqueIds.size !== input.rows.length) {
+    throw new DomainError(400, 'Duplicate row ids in batch update.');
+  }
 
-  await db.transaction(async (tx) => {
-    persistedRows = await updateImportDraftRowSelectionQuery(
-      orgId,
-      draftId,
-      uniqueRowIds,
-      input.selectedForImport,
-      tx
-    );
-    if (persistedRows.length !== uniqueRowIds.length) {
-      throw new NotFoundError('Import draft row not found.');
-    }
+  return db.transaction(async (tx) => {
+    await lockImportDraftBatch(tx, orgId, draftId);
 
-    const draftRows = await listDraftRows(orgId, draftId, tx);
-    const existingTransactions = await listImportMatchTargets(
-      orgId,
-      accountId,
-      importMatchTargetQueryInput(draftRows),
-      tx
-    );
-    const matchPatches = matchDecisionsForSelectedRows(draftRows, {
-      rowIds: uniqueRowIds,
-      selectedForImport: input.selectedForImport,
-      targetAccountId: accountId,
-      existingTransactions: [...existingTransactions.values()],
-    });
+    const draft = await fetchDraftSummaryById(orgId, draftId, tx);
+    if (!draft?.accountId) throw new NotFoundError('Import draft not found.');
 
-    const nextPersisted = [...persistedRows];
-    for (const [index, persisted] of persistedRows.entries()) {
-      const nextMatchedTransactionId = matchPatches.get(persisted.id);
-      if (
-        nextMatchedTransactionId === undefined ||
-        nextMatchedTransactionId === persisted.reviewMatchedTransactionId
-      ) {
-        continue;
-      }
-      if (nextMatchedTransactionId) {
-        await requireMatchTargetOnDraftAccount(
-          orgId,
-          nextMatchedTransactionId,
-          accountId,
-          tx
-        );
-      }
-      const updated = await updateImportDraftRowQuery(
+    const existingRows = await listDraftRows(orgId, draftId, tx);
+    const existingById = new Map(existingRows.map((row) => [row.id, row]));
+    const draftRowIds = new Set(existingById.keys());
+
+    for (const { id, ...patch } of input.rows) {
+      const existing = existingById.get(id);
+      if (!existing) throw new NotFoundError('Import draft row not found.');
+      await validateImportDraftRowPatch(
+        tx,
         orgId,
-        persisted.id,
-        { reviewMatchedTransactionId: nextMatchedTransactionId },
-        tx
+        existing,
+        draftRowIds,
+        draft.accountId,
+        patch
       );
-      if (updated) nextPersisted[index] = updated;
     }
-    persistedRows = nextPersisted;
 
-    await invalidatePreparedStagingForDraft(tx, orgId, draftId);
+    const rows: ImportDraftPersistedRow[] = [];
+    for (const { id, ...patch } of input.rows) {
+      const next = await updateImportDraftRowQuery(orgId, id, patch, tx);
+      if (!next) throw new NotFoundError('Import draft row not found.');
+      rows.push(toImportDraftPersistedRow(next));
+    }
+
+    const refundOfIds = input.rows.flatMap((row) =>
+      'reviewRefundOf' in row && row.reviewRefundOf ? [row.reviewRefundOf] : []
+    );
+    if (refundOfIds.length === 0) return { rows };
+
+    const expenses = await listRefundTargetExpensesByIds(
+      orgId,
+      refundOfIds,
+      tx
+    );
+    return {
+      rows,
+      refundTargetFacts: refundTargetFactsRecordFromMap(expenses),
+    };
   });
-
-  return persistedRows.map(toImportDraftPersistedRow);
 };
 
 export const getImportExampleCsv = () => INTERNAL_IMPORT_EXAMPLE_CSV;

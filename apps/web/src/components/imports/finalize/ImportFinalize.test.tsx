@@ -1,34 +1,29 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ImportPreparedConfirmation } from '@ploutizo/types';
+import type { ImportFinalizePreview } from '@ploutizo/types';
 import {
   importDraftReviewPathname,
   importDraftReviewRoute,
 } from '@/lib/navigation';
+import {
+  clearImportFinalizePreviewSession,
+  getImportFinalizePreviewSession,
+  setImportFinalizePreviewSession,
+} from '@/lib/data-access/imports/importFinalizePreviewSession';
 import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
 import {
   makeImportDraft,
   makeImportDraftRow,
 } from '../test-fixtures/importDraft';
-import { ImportFinalize, preparedNotFoundRedirect } from './ImportFinalize';
+import { ImportFinalize, importDraftNotFoundRedirect } from './ImportFinalize';
 
 const finalizeMocks = vi.hoisted(() => ({
   toastSuccess: vi.fn(),
-  prepared: {
-    data: undefined as ImportPreparedConfirmation | undefined,
-    isLoading: false,
-    isError: false,
-    error: null as unknown,
-  },
   draft: {
     data: undefined as ReturnType<typeof makeImportDraft> | undefined,
     isLoading: false,
     isError: false,
-  },
-  invalidate: {
-    mutateAsync: vi.fn(),
-    isPending: false,
   },
   finalize: {
     mutateAsync: vi.fn(),
@@ -42,16 +37,8 @@ vi.mock('@ploutizo/ui/components/sonner', () => ({
   },
 }));
 
-vi.mock('@/lib/data-access/imports/useGetPreparedImport', () => ({
-  useGetPreparedImport: () => finalizeMocks.prepared,
-}));
-
 vi.mock('@/lib/data-access/imports/useGetImportDraft', () => ({
   useGetImportDraft: () => finalizeMocks.draft,
-}));
-
-vi.mock('@/lib/data-access/imports/useInvalidatePreparedImport', () => ({
-  useInvalidatePreparedImport: () => finalizeMocks.invalidate,
 }));
 
 vi.mock('@/lib/data-access/imports/useFinalizeImportDraft', () => ({
@@ -79,11 +66,8 @@ const snapshot = {
   },
 };
 
-const confirmation: ImportPreparedConfirmation = {
-  id: 'prep_1',
+const preview: ImportFinalizePreview = {
   batchId: 'draft_1',
-  revision: 1,
-  createdAt: '2026-05-20T12:00:00.000Z',
   rowCount: 4,
   counts: {
     created: 1,
@@ -115,21 +99,16 @@ const confirmation: ImportPreparedConfirmation = {
   ],
 };
 
+const rowIds = ['row_1', 'row_2'];
+
 const completedResult = {
   id: 'batch_1',
-  account: confirmation.created[0]
-    ? {
-        id: 'acct_1',
-        name: 'Visa',
-        institutionId: 'td',
-        lastFour: '1234',
-      }
-    : {
-        id: 'acct_1',
-        name: 'Visa',
-        institutionId: 'td',
-        lastFour: '1234',
-      },
+  account: {
+    id: 'acct_1',
+    name: 'Visa',
+    institutionId: 'td',
+    lastFour: '1234',
+  },
   contentProfileId: null,
   status: 'completed' as const,
   fileName: 'statement.csv',
@@ -143,27 +122,23 @@ const completedResult = {
   discardedAt: null,
   createdAt: '2026-05-20T12:00:00.000Z',
   updatedAt: '2026-05-21T12:00:00.000Z',
-  preparedSetId: 'prep_1',
 };
 
-describe('preparedNotFoundRedirect', () => {
-  it('sends missing staging back to Review import', () => {
+describe('importDraftNotFoundRedirect', () => {
+  it('sends a missing draft to the Import hub', () => {
     expect(
-      preparedNotFoundRedirect({
-        error: {
-          code: 'NOT_FOUND',
-          message: 'Prepared import set not found.',
-        },
-      })
-    ).toBe('review');
-  });
-
-  it('sends a missing or completed draft to the Import hub', () => {
-    expect(
-      preparedNotFoundRedirect({
+      importDraftNotFoundRedirect({
         error: { code: 'NOT_FOUND', message: 'Import draft not found.' },
       })
     ).toBe('hub');
+  });
+
+  it('returns null for other not-found messages', () => {
+    expect(
+      importDraftNotFoundRedirect({
+        error: { code: 'NOT_FOUND', message: 'Something else.' },
+      })
+    ).toBe(null);
   });
 });
 
@@ -171,12 +146,8 @@ describe('ImportFinalize', () => {
   beforeEach(() => {
     resetRouterMocks();
     vi.clearAllMocks();
-    finalizeMocks.prepared = {
-      data: confirmation,
-      isLoading: false,
-      isError: false,
-      error: null,
-    };
+    clearImportFinalizePreviewSession('draft_1');
+    setImportFinalizePreviewSession('draft_1', { rowIds, preview });
     finalizeMocks.draft = {
       data: makeImportDraft({
         rows: [makeImportDraftRow({ selectedForImport: true })],
@@ -184,8 +155,6 @@ describe('ImportFinalize', () => {
       isLoading: false,
       isError: false,
     };
-    finalizeMocks.invalidate.mutateAsync.mockResolvedValue(undefined);
-    finalizeMocks.invalidate.isPending = false;
     finalizeMocks.finalize.mutateAsync.mockResolvedValue(completedResult);
     finalizeMocks.finalize.isPending = false;
   });
@@ -207,7 +176,6 @@ describe('ImportFinalize', () => {
     expect(screen.getByText('Coffee')).toBeInTheDocument();
     expect(screen.getByText('Lunch')).toBeInTheDocument();
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'Finalize import' })
     ).toBeEnabled();
@@ -235,22 +203,6 @@ describe('ImportFinalize', () => {
     });
     expect(heading).toHaveClass('wrap-break-word');
     expect(heading).not.toHaveClass('truncate');
-  });
-
-  it('uses direct recovery copy when discarding the prepared import fails without a message', async () => {
-    const user = userEvent.setup();
-    finalizeMocks.invalidate.mutateAsync.mockRejectedValueOnce({
-      error: { code: 'UNKNOWN' },
-    });
-
-    render(<ImportFinalize draftId="draft_1" />);
-    await user.click(screen.getByRole('button', { name: 'Back to Review' }));
-
-    await waitFor(() =>
-      expect(screen.getByRole('alert')).toHaveTextContent(
-        'Could not discard this prepared import. Please retry.'
-      )
-    );
   });
 
   it('uses direct recovery copy when finalizing fails without a message', async () => {
@@ -283,7 +235,7 @@ describe('ImportFinalize', () => {
     await user.click(screen.getByRole('button', { name: 'Finalize import' }));
 
     expect(finalizeMocks.finalize.mutateAsync).toHaveBeenCalledWith({
-      preparedSetId: 'prep_1',
+      rowIds,
     });
 
     finalizeMocks.finalize.isPending = true;
@@ -296,22 +248,22 @@ describe('ImportFinalize', () => {
     release(completedResult);
   });
 
-  it('invalidates prepared staging before returning to Review import', async () => {
+  it('returns to Review import when Back to Review is clicked', async () => {
     const user = userEvent.setup();
     render(<ImportFinalize draftId="draft_1" />);
 
     await user.click(screen.getByRole('button', { name: 'Back to Review' }));
 
     await waitFor(() =>
-      expect(finalizeMocks.invalidate.mutateAsync).toHaveBeenCalledTimes(1)
+      expect(routerMocks.navigate).toHaveBeenCalledWith({
+        ...importDraftReviewRoute('draft_1'),
+        ignoreBlocker: true,
+        state: { importReview: { prepareAgain: true } },
+      })
     );
-    expect(routerMocks.navigate).toHaveBeenCalledWith({
-      ...importDraftReviewRoute('draft_1'),
-      ignoreBlocker: true,
-    });
   });
 
-  it('invalidates prepared staging when browser Back returns to Review import', async () => {
+  it('clears preview when browser Back returns to Review import', async () => {
     render(<ImportFinalize draftId="draft_1" />);
 
     await expect(
@@ -321,96 +273,15 @@ describe('ImportFinalize', () => {
       })
     ).resolves.toBe(false);
 
-    expect(finalizeMocks.invalidate.mutateAsync).toHaveBeenCalledTimes(1);
+    expect(getImportFinalizePreviewSession('draft_1')).toBeUndefined();
   });
 
-  it('stays on Finalize when discarding the prepared import fails', async () => {
-    const user = userEvent.setup();
-    finalizeMocks.invalidate.mutateAsync.mockRejectedValueOnce({
-      error: { code: 'UNKNOWN', message: 'The connection dropped.' },
-    });
-
-    render(<ImportFinalize draftId="draft_1" />);
-    await user.click(screen.getByRole('button', { name: 'Back to Review' }));
-
-    await waitFor(() =>
-      expect(screen.getByRole('alert')).toHaveTextContent(
-        'The connection dropped.'
-      )
-    );
-    expect(routerMocks.navigate).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: 'Retry' })).toBeEnabled();
-    expect(
-      screen.getByRole('button', { name: 'Finalize import' })
-    ).toBeEnabled();
-
-    finalizeMocks.invalidate.mutateAsync.mockResolvedValue(undefined);
-    await user.click(screen.getByRole('button', { name: 'Retry' }));
-
-    await waitFor(() =>
-      expect(routerMocks.navigate).toHaveBeenCalledWith({
-        ...importDraftReviewRoute('draft_1'),
-        ignoreBlocker: true,
-      })
-    );
-    expect(finalizeMocks.invalidate.mutateAsync).toHaveBeenCalledTimes(2);
-  });
-
-  it('returns to Review import when discard finds the prepared set already gone', async () => {
-    const user = userEvent.setup();
-    finalizeMocks.invalidate.mutateAsync.mockRejectedValue({
-      error: { code: 'NOT_FOUND', message: 'Import draft not found.' },
-    });
-
-    render(<ImportFinalize draftId="draft_1" />);
-    await user.click(screen.getByRole('button', { name: 'Back to Review' }));
-
-    await waitFor(() =>
-      expect(routerMocks.navigate).toHaveBeenCalledWith({
-        ...importDraftReviewRoute('draft_1'),
-        ignoreBlocker: true,
-      })
-    );
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-  });
-
-  it('blocks browser Back when discarding the prepared import fails', async () => {
-    finalizeMocks.invalidate.mutateAsync.mockRejectedValue({
-      error: { code: 'UNKNOWN', message: 'The connection dropped.' },
-    });
-
-    render(<ImportFinalize draftId="draft_1" />);
-
-    await expect(
-      routerMocks.shouldBlockFn?.({
-        current: { pathname: '/import/draft_1/finalize' },
-        next: { pathname: importDraftReviewPathname('draft_1') },
-      })
-    ).resolves.toBe(true);
-
-    await waitFor(() =>
-      expect(screen.getByRole('alert')).toHaveTextContent(
-        'The connection dropped.'
-      )
-    );
-    expect(finalizeMocks.invalidate.mutateAsync).toHaveBeenCalledTimes(1);
-
-    finalizeMocks.invalidate.mutateAsync.mockResolvedValue(undefined);
-    await expect(
-      routerMocks.shouldBlockFn?.({
-        current: { pathname: '/import/draft_1/finalize' },
-        next: { pathname: importDraftReviewPathname('draft_1') },
-      })
-    ).resolves.toBe(false);
-    expect(finalizeMocks.invalidate.mutateAsync).toHaveBeenCalledTimes(2);
-  });
-
-  it('returns stale finalize failures to Review import with affected rows', async () => {
+  it('returns finalize requirement failures to Review import with affected rows', async () => {
     const user = userEvent.setup();
     finalizeMocks.finalize.mutateAsync.mockRejectedValue({
       error: {
-        code: 'IMPORT_FINALIZE_STALE',
-        message: 'This prepared import is stale.',
+        code: 'IMPORT_FINALIZE_NOT_READY',
+        message: 'Category is required.',
         details: {
           rows: [
             {
@@ -467,6 +338,10 @@ describe('ImportFinalize', () => {
 
   it('redirects a successful finalize to the Import hub with a view-transactions toast', async () => {
     const user = userEvent.setup();
+    finalizeMocks.finalize.mutateAsync.mockImplementation(async () => {
+      clearImportFinalizePreviewSession('draft_1');
+      return completedResult;
+    });
     render(<ImportFinalize draftId="draft_1" />);
 
     await user.click(screen.getByRole('button', { name: 'Finalize import' }));
@@ -483,6 +358,9 @@ describe('ImportFinalize', () => {
       to: '/import',
       ignoreBlocker: true,
     });
+    expect(routerMocks.navigate).not.toHaveBeenCalledWith(
+      expect.objectContaining(importDraftReviewRoute('draft_1'))
+    );
 
     const toastArg = finalizeMocks.toastSuccess.mock.calls[0]?.[1] as {
       action?: { onClick?: () => void };
@@ -494,47 +372,22 @@ describe('ImportFinalize', () => {
     });
   });
 
-  it('redirects missing staging to Review import with a prepare-again message', async () => {
-    finalizeMocks.prepared = {
-      data: undefined,
-      isLoading: false,
-      isError: true,
+  it('redirects a completed batch to the Import hub on finalize not-found', async () => {
+    const user = userEvent.setup();
+    finalizeMocks.finalize.mutateAsync.mockRejectedValue({
       error: {
-        error: {
-          code: 'NOT_FOUND',
-          message: 'Prepared import set not found.',
-        },
+        code: 'NOT_FOUND',
+        message: 'Import draft not found.',
       },
-    };
+    });
 
     render(<ImportFinalize draftId="draft_1" />);
-
-    await waitFor(() =>
-      expect(routerMocks.navigate).toHaveBeenCalledWith({
-        ...importDraftReviewRoute('draft_1'),
-        state: { importReview: { prepareAgain: true } },
-      })
-    );
-  });
-
-  it('redirects a completed batch to the Import hub', async () => {
-    finalizeMocks.prepared = {
-      data: undefined,
-      isLoading: false,
-      isError: true,
-      error: {
-        error: {
-          code: 'NOT_FOUND',
-          message: 'Import draft not found.',
-        },
-      },
-    };
-
-    render(<ImportFinalize draftId="draft_1" />);
+    await user.click(screen.getByRole('button', { name: 'Finalize import' }));
 
     await waitFor(() =>
       expect(routerMocks.navigate).toHaveBeenCalledWith({
         to: '/import',
+        ignoreBlocker: true,
       })
     );
   });

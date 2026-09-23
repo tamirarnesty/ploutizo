@@ -4,7 +4,7 @@ import type {
 } from '@ploutizo/types';
 import { toImportTransactionType } from './import-coercion';
 
-/** Import row fields consumed by value resolution and prepared snapshots. */
+/** Import row fields consumed by value resolution and import row snapshots. */
 export type ImportRowResolvableFields = {
   reviewDate?: string | null;
   parsedDate?: string | null;

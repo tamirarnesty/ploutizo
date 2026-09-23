@@ -47,15 +47,8 @@ export const importBatches = pgTable(
     fileName: text('file_name'),
     importedAt: timestamp('imported_at', { withTimezone: true }).notNull(),
     rowCount: integer('row_count').notNull(),
-    /**
-     * Content revision incremented on every draft mutation. Prepared sets are
-     * bound to this value; a mismatch means staging is stale.
-     */
-    revision: integer('revision').notNull().default(1),
     completedAt: timestamp('completed_at', { withTimezone: true }),
     discardedAt: timestamp('discarded_at', { withTimezone: true }),
-    /** Claimed prepared-set id for Finalize idempotency after staging cleanup. */
-    finalizedPreparedSetId: uuid('finalized_prepared_set_id'),
     createdCount: integer('created_count'),
     matchedCount: integer('matched_count'),
     skippedCount: integer('skipped_count'),
@@ -95,7 +88,6 @@ export const importBatches = pgTable(
           status = 'draft'
           AND completed_at IS NULL
           AND discarded_at IS NULL
-          AND finalized_prepared_set_id IS NULL
           AND created_count IS NULL
           AND matched_count IS NULL
           AND skipped_count IS NULL
@@ -105,7 +97,6 @@ export const importBatches = pgTable(
           status = 'discarded'
           AND discarded_at IS NOT NULL
           AND completed_at IS NULL
-          AND finalized_prepared_set_id IS NULL
           AND created_count IS NULL
           AND matched_count IS NULL
           AND skipped_count IS NULL
@@ -115,7 +106,6 @@ export const importBatches = pgTable(
           status = 'completed'
           AND completed_at IS NOT NULL
           AND discarded_at IS NULL
-          AND finalized_prepared_set_id IS NOT NULL
           AND created_count IS NOT NULL
           AND matched_count IS NOT NULL
           AND skipped_count IS NOT NULL
@@ -201,7 +191,6 @@ export const importBatchRows = pgTable(
       .$type<string[]>()
       .notNull()
       .default([]),
-    selectedForImport: boolean('selected_for_import').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),

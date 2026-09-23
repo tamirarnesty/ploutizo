@@ -1,27 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { verifyPreparedImportSetForFinalize } from '@ploutizo/utils/import-set-verification';
-import type {
-  PreparedImportRowSnapshot,
-  ReviewedImportValues,
-} from '@ploutizo/types';
-import type { ImportPreparedOutcomeRecord } from '@/lib/queries/import-prepared-sets';
+import type { ImportRowSnapshot, ReviewedImportValues } from '@ploutizo/types';
 import { DomainError, NotFoundError } from '@/lib/errors';
+import { verifyImportSetForDraft } from '@/services/import-set';
 import { finalizeImportDraft } from '@/services/import-finalize';
-import {
-  invalidatePreparedStagingForDraft,
-  loadImportFinalizeExternalFacts,
-} from '@/services/import-prepared-sets';
 import { createTransactionInTx } from '@/services/transactions';
 import {
   completeImportBatch,
   fetchImportBatchSummaryById,
+  lockImportDraftBatch,
 } from '@/lib/queries/imports';
-import {
-  deleteImportPreparedSetsForBatch,
-  fetchPreparedSetById,
-  listPreparedOutcomesForSet,
-  lockPreparedSetRevisionForBatch,
-} from '@/lib/queries/import-prepared-sets';
 import { insertImportTransactionLinks } from '@/lib/queries/import-transaction-links';
 
 const mockTx = {
@@ -49,22 +36,7 @@ vi.mock('@/lib/queries/imports', async (importOriginal) => {
     ...actual,
     fetchImportBatchSummaryById: vi.fn(),
     completeImportBatch: vi.fn(),
-  };
-});
-
-vi.mock('@/lib/queries/import-prepared-sets', async (importOriginal) => {
-  const actual = await importOriginal();
-  if (typeof actual !== 'object' || actual === null) {
-    throw new Error(
-      'Unexpected @/lib/queries/import-prepared-sets module shape.'
-    );
-  }
-  return {
-    ...actual,
-    lockPreparedSetRevisionForBatch: vi.fn(),
-    fetchPreparedSetById: vi.fn(),
-    listPreparedOutcomesForSet: vi.fn(),
-    deleteImportPreparedSetsForBatch: vi.fn(),
+    lockImportDraftBatch: vi.fn(),
   };
 });
 
@@ -72,30 +44,9 @@ vi.mock('@/lib/queries/import-transaction-links', () => ({
   insertImportTransactionLinks: vi.fn(),
 }));
 
-vi.mock('@ploutizo/utils/import-set-verification', async (importOriginal) => {
-  const actual = await importOriginal();
-  if (typeof actual !== 'object' || actual === null) {
-    throw new Error(
-      'Unexpected @ploutizo/utils/import-set-verification module shape.'
-    );
-  }
-  return {
-    ...actual,
-    verifyPreparedImportSetForFinalize: vi.fn(),
-  };
-});
-
-vi.mock('@/services/import-prepared-sets', async (importOriginal) => {
-  const actual = await importOriginal();
-  if (typeof actual !== 'object' || actual === null) {
-    throw new Error('Unexpected @/services/import-prepared-sets module shape.');
-  }
-  return {
-    ...actual,
-    loadImportFinalizeExternalFacts: vi.fn(),
-    invalidatePreparedStagingForDraft: vi.fn(),
-  };
-});
+vi.mock('@/services/import-set', () => ({
+  verifyImportSetForDraft: vi.fn(),
+}));
 
 vi.mock('@/services/transactions', async (importOriginal) => {
   const actual = await importOriginal();
@@ -113,8 +64,6 @@ const ACCOUNT = '550e8400-e29b-41d4-a716-446655440010';
 const MEMBER = '550e8400-e29b-41d4-a716-446655440020';
 const CATEGORY = '550e8400-e29b-41d4-a716-446655440030';
 const BATCH = '550e8400-e29b-41d4-a716-446655440040';
-const PREP = '550e8400-e29b-41d4-a716-446655440060';
-const OTHER_PREP = '550e8400-e29b-41d4-a716-446655440061';
 const ROW_CREATED = '550e8400-e29b-41d4-a716-446655440050';
 const ROW_MATCHED = '550e8400-e29b-41d4-a716-446655440051';
 const ROW_SKIPPED = '550e8400-e29b-41d4-a716-446655440052';
@@ -123,11 +72,12 @@ const ROW_REFUND = '550e8400-e29b-41d4-a716-446655440054';
 const EXISTING_TX = '550e8400-e29b-41d4-a716-446655440070';
 const CREATED_TX = '550e8400-e29b-41d4-a716-446655440071';
 const REFUND_TX = '550e8400-e29b-41d4-a716-446655440072';
+const SELECTED_ROW_IDS = [ROW_CREATED, ROW_MATCHED, ROW_SKIPPED, ROW_INVALID];
 
 const snapshot = (
   overrides: Partial<ReviewedImportValues> = {},
-  provenance: Partial<PreparedImportRowSnapshot['provenance']> = {}
-): PreparedImportRowSnapshot => ({
+  provenance: Partial<ImportRowSnapshot['provenance']> = {}
+): ImportRowSnapshot => ({
   reviewedValues: {
     date: '2026-05-02',
     amount: 4218,
@@ -163,8 +113,6 @@ const draftBatch = {
   importedAt: new Date('2026-05-20T12:00:00Z'),
   completedAt: null,
   discardedAt: null,
-  revision: 1,
-  finalizedPreparedSetId: null,
   createdCount: null,
   matchedCount: null,
   skippedCount: null,
@@ -178,29 +126,24 @@ const completedBatch = {
   status: 'completed' as const,
   completedAt: new Date('2026-05-21T12:00:00Z'),
   updatedAt: new Date('2026-05-21T12:00:00Z'),
-  finalizedPreparedSetId: PREP,
   createdCount: 1,
   matchedCount: 1,
   skippedCount: 1,
   invalidCount: 1,
 };
 
-const preparedSet = {
-  id: PREP,
-  orgId: ORG,
-  batchId: BATCH,
-  revision: 1,
-  createdAt: new Date('2026-05-20T12:00:00Z'),
+type ProjectedOutcome = {
+  batchRowId: string;
+  outcome: 'created' | 'matched' | 'skipped' | 'invalid';
+  transactionId: string | null;
+  snapshot: ImportRowSnapshot;
 };
 
 const outcome = (
   batchRowId: string,
-  kind: 'created' | 'matched' | 'skipped' | 'invalid',
-  extra: Partial<ImportPreparedOutcomeRecord> = {}
-): ImportPreparedOutcomeRecord => ({
-  id: `out_${batchRowId}`,
-  orgId: ORG,
-  preparedSetId: PREP,
+  kind: ProjectedOutcome['outcome'],
+  extra: Partial<ProjectedOutcome> = {}
+): ProjectedOutcome => ({
   batchRowId,
   outcome: kind,
   transactionId: kind === 'matched' ? EXISTING_TX : null,
@@ -217,7 +160,6 @@ const outcome = (
             : null,
     }
   ),
-  createdAt: new Date('2026-05-20T12:00:00Z'),
   ...extra,
 });
 
@@ -243,52 +185,34 @@ const mixedOutcomes = [
 describe('finalizeImportDraft', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(lockPreparedSetRevisionForBatch).mockResolvedValue(undefined);
+    vi.mocked(lockImportDraftBatch).mockResolvedValue(undefined);
     vi.mocked(fetchImportBatchSummaryById).mockResolvedValue(
       draftBatch as never
     );
-    vi.mocked(fetchPreparedSetById).mockResolvedValue(preparedSet as never);
-    vi.mocked(listPreparedOutcomesForSet).mockResolvedValue(
-      mixedOutcomes as never
-    );
-    vi.mocked(loadImportFinalizeExternalFacts).mockResolvedValue({
-      rowCount: 4,
-      targetAccount: { id: ACCOUNT, type: 'credit_card' },
-      counterpartAccounts: new Map(),
-      validAssigneeMemberIds: new Set([MEMBER]),
-      existingTransactions: [],
-      existingExpenses: new Map(),
-    });
-    vi.mocked(verifyPreparedImportSetForFinalize).mockReturnValue({
+    vi.mocked(verifyImportSetForDraft).mockResolvedValue({
       ready: true,
-      verified: mixedOutcomes.map((preparedOutcome) => ({
-        batchRowId: preparedOutcome.batchRowId,
-        outcome: preparedOutcome.outcome,
-        transactionId: preparedOutcome.transactionId,
-        snapshot: preparedOutcome.snapshot,
-      })),
+      draft: draftBatch as never,
+      projection: mixedOutcomes,
     });
     vi.mocked(createTransactionInTx).mockResolvedValue({
       id: CREATED_TX,
     } as never);
     vi.mocked(insertImportTransactionLinks).mockResolvedValue([]);
     vi.mocked(completeImportBatch).mockResolvedValue({ id: BATCH } as never);
-    vi.mocked(deleteImportPreparedSetsForBatch).mockResolvedValue(undefined);
-    vi.mocked(invalidatePreparedStagingForDraft).mockResolvedValue(undefined);
   });
 
-  it('creates transactions, matched links, completed facts, and staging cleanup atomically', async () => {
+  it('creates transactions, matched links, and completed facts atomically', async () => {
     vi.mocked(fetchImportBatchSummaryById)
       .mockResolvedValueOnce(draftBatch as never)
       .mockResolvedValueOnce(completedBatch as never);
 
-    const result = await finalizeImportDraft(ORG, BATCH, PREP);
+    const result = await finalizeImportDraft({
+      orgId: ORG,
+      batchId: BATCH,
+      rowIds: SELECTED_ROW_IDS,
+    });
 
-    expect(lockPreparedSetRevisionForBatch).toHaveBeenCalledWith(
-      mockTx,
-      ORG,
-      BATCH
-    );
+    expect(lockImportDraftBatch).toHaveBeenCalledWith(mockTx, ORG, BATCH);
     expect(createTransactionInTx).toHaveBeenCalledOnce();
     expect(createTransactionInTx).toHaveBeenCalledWith(
       mockTx,
@@ -319,21 +243,14 @@ describe('finalizeImportDraft', () => {
     expect(completeImportBatch).toHaveBeenCalledWith(
       mockTx,
       expect.objectContaining({
-        preparedSetId: PREP,
         createdCount: 1,
         matchedCount: 1,
         skippedCount: 1,
         invalidCount: 1,
       })
     );
-    expect(deleteImportPreparedSetsForBatch).toHaveBeenCalledWith(
-      mockTx,
-      ORG,
-      BATCH
-    );
     expect(result).toMatchObject({
       status: 'completed',
-      preparedSetId: PREP,
       rowCount: 4,
       createdCount: 1,
       matchedCount: 1,
@@ -353,16 +270,16 @@ describe('finalizeImportDraft', () => {
       new Error('write failed')
     );
 
-    const err = await finalizeImportDraft(ORG, BATCH, PREP).catch(
-      (error: unknown) => error
-    );
+    const err = await finalizeImportDraft({
+      orgId: ORG,
+      batchId: BATCH,
+      rowIds: SELECTED_ROW_IDS,
+    }).catch((error: unknown) => error);
 
     expect(err).toBeInstanceOf(Error);
     expect(err).not.toBeInstanceOf(DomainError);
     expect((err as Error).message).toBe('write failed');
     expect(completeImportBatch).not.toHaveBeenCalled();
-    expect(deleteImportPreparedSetsForBatch).not.toHaveBeenCalled();
-    expect(invalidatePreparedStagingForDraft).not.toHaveBeenCalled();
   });
 
   it('returns the same completed summary on idempotent retry without additional writes', async () => {
@@ -370,62 +287,20 @@ describe('finalizeImportDraft', () => {
       completedBatch as never
     );
 
-    const result = await finalizeImportDraft(ORG, BATCH, PREP);
+    const result = await finalizeImportDraft({
+      orgId: ORG,
+      batchId: BATCH,
+      rowIds: SELECTED_ROW_IDS,
+    });
 
     expect(createTransactionInTx).not.toHaveBeenCalled();
     expect(insertImportTransactionLinks).not.toHaveBeenCalled();
     expect(completeImportBatch).not.toHaveBeenCalled();
-    expect(result.preparedSetId).toBe(PREP);
     expect(result.createdCount).toBe(1);
   });
 
-  it('rejects a different prepared-set identifier after completion', async () => {
-    vi.mocked(fetchImportBatchSummaryById).mockResolvedValue(
-      completedBatch as never
-    );
-
-    const err = await finalizeImportDraft(ORG, BATCH, OTHER_PREP).catch(
-      (error: unknown) => error
-    );
-
-    expect(err).toBeInstanceOf(DomainError);
-    expect(err).toMatchObject({
-      statusCode: 409,
-      code: 'IMPORT_FINALIZE_CONFLICT',
-    });
-    expect(createTransactionInTx).not.toHaveBeenCalled();
-  });
-
-  it('rejects a stale prepared revision and invalidates staging', async () => {
-    vi.mocked(fetchPreparedSetById).mockResolvedValue({
-      ...preparedSet,
-      revision: 1,
-    } as never);
-    vi.mocked(fetchImportBatchSummaryById).mockResolvedValue({
-      ...draftBatch,
-      revision: 2,
-    } as never);
-
-    const err = await finalizeImportDraft(ORG, BATCH, PREP).catch(
-      (error: unknown) => error
-    );
-
-    expect(err).toBeInstanceOf(DomainError);
-    expect(err).toMatchObject({
-      statusCode: 409,
-      code: 'IMPORT_FINALIZE_STALE',
-    });
-    expect(invalidatePreparedStagingForDraft).toHaveBeenCalledWith(
-      mockTx,
-      ORG,
-      BATCH
-    );
-    expect(createTransactionInTx).not.toHaveBeenCalled();
-    expect(completeImportBatch).not.toHaveBeenCalled();
-  });
-
   it('rejects an active external-id conflict with structured row issues', async () => {
-    vi.mocked(verifyPreparedImportSetForFinalize).mockReturnValue({
+    vi.mocked(verifyImportSetForDraft).mockResolvedValue({
       ready: false,
       failures: [
         {
@@ -436,9 +311,11 @@ describe('finalizeImportDraft', () => {
       ],
     });
 
-    const err = await finalizeImportDraft(ORG, BATCH, PREP).catch(
-      (error: unknown) => error
-    );
+    const err = await finalizeImportDraft({
+      orgId: ORG,
+      batchId: BATCH,
+      rowIds: SELECTED_ROW_IDS,
+    }).catch((error: unknown) => error);
 
     expect(err).toBeInstanceOf(DomainError);
     expect(err).toMatchObject({
@@ -453,12 +330,11 @@ describe('finalizeImportDraft', () => {
         ],
       },
     });
-    expect(invalidatePreparedStagingForDraft).toHaveBeenCalled();
     expect(createTransactionInTx).not.toHaveBeenCalled();
   });
 
   it('rejects duplicate matched transaction ids with structured row issues', async () => {
-    vi.mocked(verifyPreparedImportSetForFinalize).mockReturnValue({
+    vi.mocked(verifyImportSetForDraft).mockResolvedValue({
       ready: false,
       failures: [
         {
@@ -472,16 +348,17 @@ describe('finalizeImportDraft', () => {
       ],
     });
 
-    const err = await finalizeImportDraft(ORG, BATCH, PREP).catch(
-      (error: unknown) => error
-    );
+    const err = await finalizeImportDraft({
+      orgId: ORG,
+      batchId: BATCH,
+      rowIds: SELECTED_ROW_IDS,
+    }).catch((error: unknown) => error);
 
     expect(err).toBeInstanceOf(DomainError);
     expect(err).toMatchObject({
       statusCode: 400,
       code: 'IMPORT_FINALIZE_NOT_READY',
     });
-    expect(invalidatePreparedStagingForDraft).toHaveBeenCalled();
     expect(insertImportTransactionLinks).not.toHaveBeenCalled();
   });
 
@@ -495,10 +372,15 @@ describe('finalizeImportDraft', () => {
       },
       { externalId: 'visa-refund' }
     );
-    vi.mocked(listPreparedOutcomesForSet).mockResolvedValue([
+    const refundProjection = [
       outcome(ROW_REFUND, 'created', { snapshot: refundSnapshot }),
       outcome(ROW_CREATED, 'created'),
-    ] as never);
+    ];
+    vi.mocked(verifyImportSetForDraft).mockResolvedValue({
+      ready: true,
+      draft: { ...draftBatch, rowCount: 2 } as never,
+      projection: refundProjection,
+    });
     vi.mocked(fetchImportBatchSummaryById)
       .mockResolvedValueOnce({ ...draftBatch, rowCount: 2 } as never)
       .mockResolvedValueOnce({
@@ -509,19 +391,6 @@ describe('finalizeImportDraft', () => {
         skippedCount: 0,
         invalidCount: 0,
       } as never);
-    const refundOutcomes: ImportPreparedOutcomeRecord[] = [
-      outcome(ROW_REFUND, 'created', { snapshot: refundSnapshot }),
-      outcome(ROW_CREATED, 'created'),
-    ];
-    vi.mocked(verifyPreparedImportSetForFinalize).mockReturnValue({
-      ready: true,
-      verified: refundOutcomes.map((row) => ({
-        batchRowId: row.batchRowId,
-        outcome: row.outcome,
-        transactionId: row.transactionId,
-        snapshot: row.snapshot,
-      })),
-    });
 
     const createdIds = [CREATED_TX, REFUND_TX];
     vi.mocked(createTransactionInTx).mockImplementation((_tx, _org, data) =>
@@ -530,7 +399,11 @@ describe('finalizeImportDraft', () => {
       } as never)
     );
 
-    await finalizeImportDraft(ORG, BATCH, PREP);
+    await finalizeImportDraft({
+      orgId: ORG,
+      batchId: BATCH,
+      rowIds: [ROW_REFUND, ROW_CREATED],
+    });
 
     const types = vi
       .mocked(createTransactionInTx)
@@ -557,10 +430,15 @@ describe('finalizeImportDraft', () => {
       },
       { externalId: 'visa-refund' }
     );
-    vi.mocked(listPreparedOutcomesForSet).mockResolvedValue([
+    const matchedRefundProjection = [
       outcome(ROW_MATCHED, 'matched'),
       outcome(ROW_REFUND, 'created', { snapshot: refundSnapshot }),
-    ] as never);
+    ];
+    vi.mocked(verifyImportSetForDraft).mockResolvedValue({
+      ready: true,
+      draft: { ...draftBatch, rowCount: 2 } as never,
+      projection: matchedRefundProjection,
+    });
     vi.mocked(fetchImportBatchSummaryById)
       .mockResolvedValueOnce({ ...draftBatch, rowCount: 2 } as never)
       .mockResolvedValueOnce({
@@ -571,24 +449,15 @@ describe('finalizeImportDraft', () => {
         skippedCount: 0,
         invalidCount: 0,
       } as never);
-    const matchedRefundOutcomes: ImportPreparedOutcomeRecord[] = [
-      outcome(ROW_MATCHED, 'matched'),
-      outcome(ROW_REFUND, 'created', { snapshot: refundSnapshot }),
-    ];
-    vi.mocked(verifyPreparedImportSetForFinalize).mockReturnValue({
-      ready: true,
-      verified: matchedRefundOutcomes.map((row) => ({
-        batchRowId: row.batchRowId,
-        outcome: row.outcome,
-        transactionId: row.transactionId,
-        snapshot: row.snapshot,
-      })),
-    });
     vi.mocked(createTransactionInTx).mockResolvedValue({
       id: REFUND_TX,
     } as never);
 
-    await finalizeImportDraft(ORG, BATCH, PREP);
+    await finalizeImportDraft({
+      orgId: ORG,
+      batchId: BATCH,
+      rowIds: [ROW_MATCHED, ROW_REFUND],
+    });
 
     expect(createTransactionInTx).toHaveBeenCalledWith(
       mockTx,
@@ -605,7 +474,11 @@ describe('finalizeImportDraft', () => {
       .mockResolvedValueOnce(draftBatch as never)
       .mockResolvedValueOnce(completedBatch as never);
 
-    await finalizeImportDraft(ORG, BATCH, PREP);
+    await finalizeImportDraft({
+      orgId: ORG,
+      batchId: BATCH,
+      rowIds: SELECTED_ROW_IDS,
+    });
 
     const createdPayloads = vi
       .mocked(createTransactionInTx)
@@ -625,14 +498,18 @@ describe('finalizeImportDraft', () => {
     );
   });
 
-  it('404s when the prepared set is missing or belongs to another batch', async () => {
-    vi.mocked(fetchPreparedSetById).mockResolvedValue(null);
-
-    const err = await finalizeImportDraft(ORG, BATCH, PREP).catch(
-      (error: unknown) => error
+  it('404s when a selected row id is not on the draft', async () => {
+    vi.mocked(verifyImportSetForDraft).mockRejectedValue(
+      new NotFoundError('Import draft row not found.')
     );
 
-    expect(err).toBeInstanceOf(NotFoundError);
+    await expect(
+      finalizeImportDraft({
+        orgId: ORG,
+        batchId: BATCH,
+        rowIds: SELECTED_ROW_IDS,
+      })
+    ).rejects.toBeInstanceOf(NotFoundError);
     expect(createTransactionInTx).not.toHaveBeenCalled();
   });
 
@@ -643,12 +520,13 @@ describe('finalizeImportDraft', () => {
       discardedAt: new Date('2026-05-21T12:00:00.000Z'),
     } as never);
 
-    const err = await finalizeImportDraft(ORG, BATCH, PREP).catch(
-      (error: unknown) => error
-    );
-
-    expect(err).toBeInstanceOf(DomainError);
-    expect(err).toMatchObject({
+    await expect(
+      finalizeImportDraft({
+        orgId: ORG,
+        batchId: BATCH,
+        rowIds: SELECTED_ROW_IDS,
+      })
+    ).rejects.toMatchObject({
       statusCode: 409,
       code: 'IMPORT_FINALIZE_CONFLICT',
     });

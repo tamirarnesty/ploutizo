@@ -1,6 +1,6 @@
 import { createCollection } from '@tanstack/react-db';
 import { queryCollectionOptions } from '@tanstack/query-db-collection';
-import type { ImportDraftRow } from '@ploutizo/types';
+import type { ImportReviewRow } from '@ploutizo/types';
 import { getActiveQueryClient } from '@/lib/access/working-set-registry';
 import { importDraftQueryKey } from './queryKeys';
 import { fetchImportDraft } from './useGetImportDraft';
@@ -11,9 +11,12 @@ const createImportDraftRowsCollection = (draftId: string) =>
       id: `import-draft-rows:${draftId}`,
       queryKey: importDraftQueryKey(draftId),
       queryFn: ({ signal }) => fetchImportDraft(draftId, signal),
-      select: (draft) => draft.rows,
+      // Direct writes are mirrored into the draft query cache and re-selected,
+      // so session selection must survive; server rows start unselected.
+      select: (draft): ImportReviewRow[] =>
+        draft.rows.map((row) => ({ selectedForImport: false, ...row })),
       queryClient: getActiveQueryClient(),
-      getKey: (row: ImportDraftRow) => row.id,
+      getKey: (row: ImportReviewRow) => row.id,
       retry: 1,
     })
   );

@@ -1,4 +1,4 @@
-import type { ImportDraftRow } from '@ploutizo/types';
+import type { ImportReviewRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import type { WorkingSetScope } from '@/lib/access/working-set-registry';
 import { fetchUpdateImportDraftRow } from './fetchUpdateImportDraftRow';
@@ -20,14 +20,14 @@ type PersistImportDraftRowPatchInput = {
   rowId: string;
   scope: WorkingSetScope;
   patch: UpdateImportDraftRowInput;
-  attempted: ImportDraftRow;
-  original: ImportDraftRow;
+  attempted: ImportReviewRow;
+  original: ImportReviewRow;
 };
 
 export const buildImportDraftRowPersistPatch = (
   draftId: string,
   rowId: string,
-  live: ImportDraftRow,
+  live: ImportReviewRow,
   changedPatch: UpdateImportDraftRowInput | null
 ): UpdateImportDraftRowInput =>
   sanitizeImportMatchPatch(draftId, {
@@ -61,7 +61,7 @@ export const persistImportDraftRowPatch = async ({
   return runImportDraftPersist({
     scope,
     onStart: () => markImportReviewPersistStart(draftId, rowId),
-    persist: () => fetchUpdateImportDraftRow(rowId, patch),
+    persist: () => fetchUpdateImportDraftRow(draftId, rowId, patch),
     onSuccess: (server) => {
       confirmPersistIntoCollection(
         collection,

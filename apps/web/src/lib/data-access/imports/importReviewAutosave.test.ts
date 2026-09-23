@@ -3,13 +3,10 @@ import {
   endImportReviewAutosave,
   getImportReviewAutosaveSnapshot,
   markImportReviewPending,
-  markImportReviewSelectionFailure,
-  markImportReviewSelectionStart,
-  markImportReviewSelectionSuccess,
   subscribeImportReviewAutosave,
 } from './importReviewAutosave';
 
-describe('importReviewAutosave selection failures', () => {
+describe('importReviewAutosave', () => {
   afterEach(() => {
     endImportReviewAutosave();
   });
@@ -27,50 +24,5 @@ describe('importReviewAutosave selection failures', () => {
     unsubscribe();
     markImportReviewPending(draftId, 'row_b');
     expect(listener).toHaveBeenCalledTimes(1);
-  });
-
-  it('notifies autosave listeners when selection persistence starts', () => {
-    const draftId = 'draft_1';
-    const listener = vi.fn();
-    const unsubscribe = subscribeImportReviewAutosave(draftId, listener);
-
-    markImportReviewSelectionStart(draftId);
-
-    expect(listener).toHaveBeenCalledTimes(1);
-    expect(getImportReviewAutosaveSnapshot(draftId).status).toBe('saving');
-    unsubscribe();
-  });
-
-  it('accumulates failed selection row ids across bulk failures', () => {
-    const draftId = 'draft_1';
-
-    markImportReviewSelectionStart(draftId);
-    markImportReviewSelectionFailure(draftId, ['row_a']);
-
-    markImportReviewSelectionStart(draftId);
-    markImportReviewSelectionFailure(draftId, ['row_b']);
-
-    const snapshot = getImportReviewAutosaveSnapshot(draftId);
-    expect(snapshot.status).toBe('failed');
-    expect(snapshot.failedSelectionRowIds).toEqual(
-      expect.arrayContaining(['row_a', 'row_b'])
-    );
-    expect(snapshot.failedRowIds).toEqual(
-      expect.arrayContaining(['row_a', 'row_b'])
-    );
-  });
-
-  it('clears only succeeded rows from failed selection tracking', () => {
-    const draftId = 'draft_1';
-
-    markImportReviewSelectionStart(draftId);
-    markImportReviewSelectionFailure(draftId, ['row_a', 'row_b']);
-
-    markImportReviewSelectionStart(draftId);
-    markImportReviewSelectionSuccess(draftId, ['row_a']);
-
-    const snapshot = getImportReviewAutosaveSnapshot(draftId);
-    expect(snapshot.failedSelectionRowIds).toEqual(['row_b']);
-    expect(snapshot.failedRowIds).toEqual(['row_b']);
   });
 });

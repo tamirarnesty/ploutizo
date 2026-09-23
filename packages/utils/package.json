@@ -30,7 +30,7 @@
     "./import-coercion": "./src/import-coercion.ts",
     "./import-row-status": "./src/import-row-status.ts",
     "./reviewed-import-values": "./src/reviewed-import-values.ts",
-    "./prepared-import-snapshot": "./src/prepared-import-snapshot.ts",
+    "./import-row-snapshot": "./src/import-row-snapshot.ts",
     "./import-row-readiness": "./src/import-row-readiness.ts",
     "./import-requirements": "./src/import-requirements.ts",
     "./import-set-verification": "./src/import-set-verification.ts",

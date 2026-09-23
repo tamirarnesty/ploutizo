@@ -4,6 +4,7 @@ import type {
   ImportDraftPersistedRow,
   ImportDraftRow,
   ImportDraftSummary,
+  ImportReviewRow,
 } from '@ploutizo/types';
 
 export const DRAFT_ID = 'draft_1';
@@ -17,8 +18,8 @@ export const toPersistedImportDraftRow = (
 };
 
 export const makeImportDraftRow = (
-  overrides: Partial<ImportDraftRow> = {}
-): ImportDraftRow => ({
+  overrides: Partial<ImportReviewRow> = {}
+): ImportReviewRow => ({
   id: 'row_1',
   batchId: DRAFT_ID,
   rowNumber: 2,
@@ -78,9 +79,13 @@ export const makeImportDraftSummary = (
   ...overrides,
 });
 
+export type ImportReviewDraft = Omit<ImportDraft, 'rows'> & {
+  rows: ImportReviewRow[];
+};
+
 export const makeImportDraft = (
-  overrides: Partial<ImportDraft> = {}
-): ImportDraft => {
+  overrides: Partial<ImportReviewDraft> = {}
+): ImportReviewDraft => {
   const rows = overrides.rows ?? [
     makeImportDraftRow({
       id: 'row_ready',

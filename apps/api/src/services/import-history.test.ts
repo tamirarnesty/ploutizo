@@ -24,8 +24,6 @@ vi.mock('@/lib/queries/imports', async (importOriginal) => {
 const ACCOUNT = '550e8400-e29b-41d4-a716-446655440010';
 const COMPLETED = '550e8400-e29b-41d4-a716-446655440040';
 const DISCARDED = '550e8400-e29b-41d4-a716-446655440041';
-const PREP = '550e8400-e29b-41d4-a716-446655440060';
-
 const identity = {
   accountId: ACCOUNT,
   accountName: 'Visa',
@@ -46,7 +44,6 @@ const completedRow = {
   status: 'completed' as const,
   completedAt: new Date('2026-05-21T12:00:00.000Z'),
   discardedAt: null,
-  finalizedPreparedSetId: PREP,
   createdCount: 1,
   matchedCount: 1,
   skippedCount: 1,
@@ -61,7 +58,6 @@ const discardedRow = {
   rowCount: 8,
   completedAt: null,
   discardedAt: new Date('2026-05-11T12:00:00.000Z'),
-  finalizedPreparedSetId: null,
   createdCount: null,
   matchedCount: null,
   skippedCount: null,

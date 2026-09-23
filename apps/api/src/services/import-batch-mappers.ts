@@ -72,8 +72,7 @@ const requireCompletedCounts = (row: ImportDraftSummaryRow) => {
     row.matchedCount == null ||
     row.skippedCount == null ||
     row.invalidCount == null ||
-    !row.completedAt ||
-    !row.finalizedPreparedSetId
+    !row.completedAt
   ) {
     throw new DomainError(500, 'Completed import is missing result facts.');
   }
@@ -83,7 +82,6 @@ const requireCompletedCounts = (row: ImportDraftSummaryRow) => {
     skippedCount: row.skippedCount,
     invalidCount: row.invalidCount,
     completedAt: row.completedAt,
-    preparedSetId: row.finalizedPreparedSetId,
   };
 };
 
@@ -100,17 +98,12 @@ export const toImportCompletedResult = (
     matchedCount: counts.matchedCount,
     skippedCount: counts.skippedCount,
     invalidCount: counts.invalidCount,
-    preparedSetId: counts.preparedSetId,
   };
 };
 
 export const toImportCompletedHistoryItem = (
   row: ImportDraftSummaryRow
-): ImportCompletedHistoryItem => {
-  const { preparedSetId: _preparedSetId, ...item } =
-    toImportCompletedResult(row);
-  return item;
-};
+): ImportCompletedHistoryItem => toImportCompletedResult(row);
 
 export const toImportDiscardedHistoryItem = (
   row: ImportDraftSummaryRow

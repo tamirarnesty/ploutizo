@@ -1,10 +1,10 @@
 import { Hono } from 'hono';
 import {
+  batchUpdateImportDraftRowsSchema,
+  continueImportDraftSchema,
   createImportDraftSchema,
   finalizeImportDraftSchema,
   importHistoryQuerySchema,
-  updateImportDraftRowSchema,
-  updateImportDraftRowSelectionSchema,
 } from '@ploutizo/validators';
 import type { AppEnv } from '@/types';
 import { appValidator } from '@/lib/validator';
@@ -15,15 +15,10 @@ import {
   getImportExampleCsv,
   listActiveImportDrafts,
   listImportTargets,
-  updateImportDraftRow,
-  updateImportDraftRowSelection,
+  updateImportDraftRows,
 } from '@/services/imports';
 import { listImportHistory } from '@/services/import-history';
-import {
-  continueImportDraft,
-  getActiveImportPreparedConfirmation,
-  invalidateImportPreparedSet,
-} from '@/services/import-prepared-sets';
+import { continueImportDraft } from '@/services/import-continue';
 import { finalizeImportDraft } from '@/services/import-finalize';
 
 const importsRouter = new Hono<AppEnv>();
@@ -66,70 +61,49 @@ importsRouter.delete('/drafts/:id', async (c) => {
   return c.json({ data: row });
 });
 
-importsRouter.post('/drafts/:id/continue', async (c) => {
-  const orgId = c.get('principal').activeHouseholdId;
-  const preparedSet = await continueImportDraft(orgId, c.req.param('id'));
-  return c.json({ data: preparedSet }, 201);
-});
-
-importsRouter.get('/drafts/:id/prepared', async (c) => {
-  const orgId = c.get('principal').activeHouseholdId;
-  const prepared = await getActiveImportPreparedConfirmation(
-    orgId,
-    c.req.param('id')
-  );
-  return c.json({ data: prepared });
-});
-
-importsRouter.delete('/drafts/:id/prepared', async (c) => {
-  const orgId = c.get('principal').activeHouseholdId;
-  await invalidateImportPreparedSet(orgId, c.req.param('id'));
-  return new Response(null, { status: 204 });
-});
+importsRouter.post(
+  '/drafts/:id/continue',
+  appValidator('json', continueImportDraftSchema),
+  async (c) => {
+    const orgId = c.get('principal').activeHouseholdId;
+    const { rowIds } = c.req.valid('json');
+    const preview = await continueImportDraft({
+      orgId,
+      batchId: c.req.param('id'),
+      rowIds,
+    });
+    return c.json({ data: preview });
+  }
+);
 
 importsRouter.post(
   '/drafts/:id/finalize',
   appValidator('json', finalizeImportDraftSchema),
   async (c) => {
     const orgId = c.get('principal').activeHouseholdId;
-    const { preparedSetId } = c.req.valid('json');
-    const result = await finalizeImportDraft(
+    const { rowIds } = c.req.valid('json');
+    const result = await finalizeImportDraft({
       orgId,
-      c.req.param('id'),
-      preparedSetId
-    );
+      batchId: c.req.param('id'),
+      rowIds,
+    });
     return c.json({ data: result });
   }
 );
 
 importsRouter.patch(
-  '/rows/:id',
-  appValidator('json', updateImportDraftRowSchema),
+  '/drafts/:id/rows',
+  appValidator('json', batchUpdateImportDraftRowsSchema),
   async (c) => {
     const orgId = c.get('principal').activeHouseholdId;
     const input = c.req.valid('json');
-    const result = await updateImportDraftRow(orgId, c.req.param('id'), input);
+    const result = await updateImportDraftRows(orgId, c.req.param('id'), input);
     return c.json({
-      data: result.row,
+      data: result.rows,
       ...(result.refundTargetFacts
         ? { refundTargetFacts: result.refundTargetFacts }
         : {}),
     });
-  }
-);
-
-importsRouter.patch(
-  '/drafts/:id/rows/selection',
-  appValidator('json', updateImportDraftRowSelectionSchema),
-  async (c) => {
-    const orgId = c.get('principal').activeHouseholdId;
-    const input = c.req.valid('json');
-    const rows = await updateImportDraftRowSelection(
-      orgId,
-      c.req.param('id'),
-      input
-    );
-    return c.json({ data: rows });
   }
 );
 

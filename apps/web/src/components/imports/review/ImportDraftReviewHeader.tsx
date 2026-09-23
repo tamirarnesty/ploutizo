@@ -2,7 +2,7 @@ import { Button } from '@ploutizo/ui/components/button';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
 import { formatAccountLabel } from '@ploutizo/utils';
-import type { ImportDraftRow, OrgMember } from '@ploutizo/types';
+import type { ImportReviewRow } from '@ploutizo/types';
 import type { ImportDraftMeta } from '@/lib/data-access/imports';
 import { useImportReviewAutosaveStatus } from '@/lib/data-access/imports/useImportReviewAutosave';
 import { formatImportDraftReviewSubtitle } from '../lib/importPresentation';
@@ -14,8 +14,7 @@ import {
 
 interface ImportDraftReviewHeaderProps {
   meta?: ImportDraftMeta;
-  rows?: ImportDraftRow[];
-  orgMembers?: OrgMember[];
+  rows?: ImportReviewRow[];
   isLoading?: boolean;
   isContinuing: boolean;
   onRetryAutosave: () => void;
@@ -24,7 +23,7 @@ interface ImportDraftReviewHeaderProps {
 
 const toLiveSubtitleMeta = (
   meta: ImportDraftMeta,
-  rows: ImportDraftRow[]
+  rows: ImportReviewRow[]
 ): ImportDraftMeta => ({
   ...meta,
   rowCount: rows.length,
@@ -35,7 +34,6 @@ const toLiveSubtitleMeta = (
 export const ImportDraftReviewHeader = ({
   meta,
   rows = [],
-  orgMembers = [],
   isLoading = false,
   isContinuing,
   onRetryAutosave,
@@ -46,7 +44,6 @@ export const ImportDraftReviewHeader = ({
   const continueEnabled = getImportReviewContinueEnabled({
     meta,
     rows,
-    orgMembers,
     autosaveStatus,
     isContinuing,
   });

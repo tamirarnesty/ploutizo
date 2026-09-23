@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { useLiveQuery } from '@tanstack/react-db';
-import type { ImportDraftRow } from '@ploutizo/types';
+import type { ImportReviewRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import {
@@ -10,10 +10,7 @@ import {
   retryFailedImportDraftRowPersists,
 } from './getImportDraftRowPacedMutations';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
-import {
-  persistImportDraftSelection,
-  retryFailedImportDraftSelection,
-} from './persistImportDraftSelection';
+import { setImportDraftSelection } from './setImportDraftSelection';
 import {
   getImportReviewAutosaveSnapshot,
   releaseImportReviewAutosave,
@@ -25,12 +22,12 @@ import type { ImportDraftMeta } from './toImportDraftMeta';
 
 export interface ImportReviewSession {
   meta: ImportDraftMeta | undefined;
-  rows: ImportDraftRow[];
+  rows: ImportReviewRow[];
   isLoading: boolean;
   isError: boolean;
   /** Single write surface for reviewed import values (ADR 0005). */
   updateRow: (rowId: string, patch: UpdateImportDraftRowInput) => void;
-  /** Import-set selection: collection first, then bulk selection API. */
+  /** Session-only import-set selection (match decisions in working copy; server re-verifies at Continue). */
   setSelection: (rowIds: string[], selectedForImport: boolean) => void;
   retryAutosave: () => void;
   /** Flush pending paced work. Returns false when Failed remains. */
@@ -80,16 +77,13 @@ export const useImportReviewSession = (
 
   const setSelection = useCallback(
     (rowIds: string[], selectedForImport: boolean) => {
-      persistImportDraftSelection(draftId, rowIds, selectedForImport);
+      setImportDraftSelection(draftId, rowIds, selectedForImport);
     },
     [draftId]
   );
 
   const retryAutosave = useCallback(() => {
-    void (async () => {
-      await retryFailedImportDraftRowPersists(draftId);
-      retryFailedImportDraftSelection(draftId);
-    })();
+    void retryFailedImportDraftRowPersists(draftId);
   }, [draftId]);
 
   const flush = useCallback(async () => {

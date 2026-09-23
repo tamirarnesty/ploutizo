@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Account, ImportDraftRow } from '@ploutizo/types';
+import type { Account, ImportReviewRow } from '@ploutizo/types';
 import { makeImportDraftRow } from '../test-fixtures/importDraft';
 import '@/test/mockTanstackRouter';
 import { ImportDraftReviewProvider } from './ImportDraftReviewContext';
@@ -102,7 +102,7 @@ vi.mock('@ploutizo/ui/components/select', async () => {
 });
 
 const renderPaidFromCell = (
-  row: ImportDraftRow,
+  row: ImportReviewRow,
   {
     accounts = [chequingAccount],
     accountsStatus,

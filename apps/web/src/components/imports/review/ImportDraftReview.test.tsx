@@ -180,12 +180,11 @@ describe('ImportDraftReview', () => {
     continueMocks.isPending = false;
     continueMocks.error = null;
     continueMocks.continueImport.mockResolvedValue({
-      id: 'prep_1',
-      orgId: 'org_1',
       batchId: 'draft_1',
-      revision: 1,
-      createdAt: '2026-05-20T12:00:00.000Z',
-      outcomes: [],
+      rowCount: 1,
+      counts: { created: 0, matched: 0, skipped: 0, invalid: 0 },
+      created: [],
+      matched: [],
     });
     flush.mockResolvedValue(true);
     accountsQueryMocks.data = defaultAccountsQueryData;
@@ -505,6 +504,55 @@ describe('ImportDraftReview', () => {
         importDraftFinalizeRoute('draft_1')
       )
     );
+  });
+
+  it('continues with rows selected after the review table has updated', async () => {
+    const user = userEvent.setup();
+    const unselectedDraft = makeImportDraft({
+      rows: [
+        makeImportDraftRow({
+          id: 'row_ready',
+          status: 'ready',
+          reviewDescription: 'Coffee',
+          selectedForImport: false,
+        }),
+      ],
+    });
+    const { rows: unselectedRows, ...meta } = unselectedDraft;
+    const { rerender } = render(
+      <TooltipProvider delay={0}>
+        <ImportDraftReview
+          meta={meta}
+          rows={unselectedRows}
+          {...reviewSessionProps}
+        />
+      </TooltipProvider>
+    );
+
+    const selectedDraft = makeImportDraft({
+      rows: [
+        makeImportDraftRow({
+          id: 'row_ready',
+          status: 'ready',
+          reviewDescription: 'Coffee',
+          selectedForImport: true,
+        }),
+      ],
+    });
+    const { rows: selectedRows } = selectedDraft;
+    rerender(
+      <TooltipProvider delay={0}>
+        <ImportDraftReview
+          meta={meta}
+          rows={selectedRows}
+          {...reviewSessionProps}
+        />
+      </TooltipProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(continueMocks.continueImport).toHaveBeenCalledWith(['row_ready']);
   });
 
   it('does not continue when persistence flush fails', async () => {

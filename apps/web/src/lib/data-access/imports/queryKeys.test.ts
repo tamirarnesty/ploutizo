@@ -1,23 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { importDraftQueryKey, importPreparedQueryKey } from './queryKeys';
+import {
+  importDraftQueryKey,
+  importFinalizePreviewSessionQueryKey,
+} from './queryKeys';
 
-describe('import draft and prepared query keys', () => {
-  it('names a draft by topic and id', () => {
+describe('import draft query keys', () => {
+  it('names a draft by id', () => {
     expect(importDraftQueryKey('draft_1')).toEqual([
       'imports',
       'draft',
       'draft_1',
     ]);
+    expect(importDraftQueryKey(null)).toEqual(['imports', 'draft', null]);
   });
 
-  it('names a prepared import separately from the live draft', () => {
-    expect(importPreparedQueryKey('draft_1')).toEqual([
+  it('names a finalize preview session handoff', () => {
+    expect(importFinalizePreviewSessionQueryKey('draft_1')).toEqual([
       'imports',
-      'prepared',
+      'draft',
       'draft_1',
+      'finalize-preview-session',
     ]);
-    expect(importPreparedQueryKey('draft_1')).not.toEqual(
-      importDraftQueryKey('draft_1')
-    );
   });
 });

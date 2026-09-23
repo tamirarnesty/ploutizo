@@ -1,7 +1,6 @@
 import {
   IMPORT_CONTENT_PROFILE_IDS,
   IMPORT_CUSTOM_MAPPING_DATE_FORMATS,
-  IMPORT_PREPARED_PROJECTION_OUTCOME_VALUES,
   IMPORT_TRANSACTION_LINK_OUTCOME_VALUES,
   IMPORT_TRANSACTION_TYPE_VALUES,
 } from '@ploutizo/types';
@@ -83,7 +82,6 @@ export const updateImportDraftRowSchema = z
     reviewMatchDismissed: z.boolean().optional(),
     reviewNotes: z.string().trim().nullable().optional(),
     reviewTagIds: z.array(z.string().uuid()).optional(),
-    selectedForImport: z.boolean().optional(),
   })
   .refine((value) => Object.keys(value).length > 0, {
     message: 'At least one field is required.',
@@ -94,46 +92,28 @@ export type UpdateImportDraftRowInput = z.infer<
   typeof updateImportDraftRowSchema
 >;
 
-export const updateImportDraftRowSelectionSchema = z.object({
-  rowIds: z.array(z.string().uuid()).min(1),
-  selectedForImport: z.boolean(),
+const importDraftRowIdSchema = z.object({
+  id: z.string().uuid(),
 });
 
-export type UpdateImportDraftRowSelectionInput = z.infer<
-  typeof updateImportDraftRowSelectionSchema
+export const batchUpdateImportDraftRowsSchema = z.object({
+  rows: z.array(importDraftRowIdSchema.and(updateImportDraftRowSchema)).min(1),
+});
+
+export type BatchUpdateImportDraftRowsInput = z.infer<
+  typeof batchUpdateImportDraftRowsSchema
 >;
 
-export const reviewedImportValuesSchema = z.object({
-  date: z.string().nullable(),
-  amount: z.number().int().nullable(),
-  type: importTransactionTypeSchema.nullable(),
-  description: z.string().nullable(),
-  categoryId: z.string().uuid().nullable(),
-  assigneeMemberIds: z.array(z.string().uuid()),
-  counterpartAccountId: z.string().uuid().nullable(),
-  refundOf: z.string().uuid().nullable(),
-  refundOfBatchRowId: z.string().uuid().nullable(),
-  notes: z.string().nullable(),
-  tagIds: z.array(z.string().uuid()),
+export const continueImportDraftSchema = z.object({
+  rowIds: z.array(z.string().uuid()).min(1),
 });
 
-export const importRowProvenanceSchema = z.object({
-  externalId: z.string().nullable(),
-  rawDescription: z.string().nullable(),
-  parsedDescription: z.string().nullable(),
-});
-
-export const preparedImportRowSnapshotSchema = z.object({
-  reviewedValues: reviewedImportValuesSchema,
-  provenance: importRowProvenanceSchema,
-});
-
-export const importPreparedOutcomeSchema = z.enum(
-  IMPORT_PREPARED_PROJECTION_OUTCOME_VALUES
-);
+export type ContinueImportDraftInput = z.infer<
+  typeof continueImportDraftSchema
+>;
 
 export const finalizeImportDraftSchema = z.object({
-  preparedSetId: z.string().uuid(),
+  rowIds: z.array(z.string().uuid()).min(1),
 });
 
 export type FinalizeImportDraftInput = z.infer<

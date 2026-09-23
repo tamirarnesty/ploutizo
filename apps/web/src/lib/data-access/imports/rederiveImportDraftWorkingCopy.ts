@@ -1,11 +1,12 @@
 import { evaluateImportDraft } from '@ploutizo/utils';
 import type {
   ExistingRefundTargetExpense,
+  ImportDraftDurableRow,
   ImportDraftRowEvaluation,
 } from '@ploutizo/utils';
 import type {
   ImportDraft,
-  ImportDraftRow,
+  ImportReviewRow,
   RefundTargetFact,
 } from '@ploutizo/types';
 import { getActiveQueryClient } from '@/lib/access/working-set-registry';
@@ -25,7 +26,7 @@ export const refundTargetFactsToExpenseMap = (
 /** Shared evaluator over working-copy rows + session facts. */
 export const evaluateImportDraftWorkingCopy = (
   draftId: string,
-  rows?: readonly ImportDraftRow[]
+  rows?: readonly ImportReviewRow[]
 ): Map<string, ImportDraftRowEvaluation> | null => {
   const draft = getActiveQueryClient().getQueryData<ImportDraft>(
     importDraftQueryKey(draftId)
@@ -35,7 +36,29 @@ export const evaluateImportDraftWorkingCopy = (
   const workingRows = rows ?? getImportDraftRowsCollection(draftId).toArray;
   if (workingRows.length === 0) return null;
 
-  return evaluateImportDraft(workingRows, {
+  const durableRows: ImportDraftDurableRow[] = workingRows.map((row) => ({
+    id: row.id,
+    reviewDate: row.reviewDate,
+    reviewAmount: row.reviewAmount,
+    reviewType: row.reviewType,
+    reviewDescription: row.reviewDescription,
+    parsedDate: row.parsedDate,
+    parsedAmount: row.parsedAmount,
+    parsedType: row.parsedType,
+    parsedDescription: row.parsedDescription,
+    reviewCategoryId: row.reviewCategoryId,
+    reviewAssigneeMemberIds: row.reviewAssigneeMemberIds,
+    reviewCounterpartAccountId: row.reviewCounterpartAccountId,
+    reviewRefundOf: row.reviewRefundOf,
+    reviewRefundOfBatchRowId: row.reviewRefundOfBatchRowId,
+    selectedForImport: row.selectedForImport,
+    externalId: row.externalId,
+    sourceDescription: row.sourceDescription,
+    reviewMatchedTransactionId: row.reviewMatchedTransactionId,
+    reviewMatchDismissed: row.reviewMatchDismissed,
+  }));
+
+  return evaluateImportDraft(durableRows, {
     targetAccountId: draft.account.id,
     existingExpenses: refundTargetFactsToExpenseMap(draft.refundTargetFacts),
     existingTransactions: Object.values(draft.matchTargetFacts),
@@ -77,7 +100,7 @@ const applyEvaluationsToCollection = (
 export const rederiveImportDraftWorkingCopy = (
   draftId: string,
   options?: {
-    rows?: readonly ImportDraftRow[];
+    rows?: readonly ImportReviewRow[];
     skipIds?: ReadonlySet<string>;
     evaluations?: Map<string, ImportDraftRowEvaluation> | null;
   }

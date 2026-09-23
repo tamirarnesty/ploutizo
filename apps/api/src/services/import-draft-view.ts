@@ -51,7 +51,8 @@ export const refundTargetFactsRecordFromMap = (
 };
 
 export const toImportDraftDurableRow = (
-  row: ImportDraftRowRecord
+  row: ImportDraftRowRecord,
+  selectedForImport: boolean
 ): ImportDraftDurableRow => ({
   id: row.id,
   reviewDate: row.reviewDate ?? null,
@@ -67,7 +68,7 @@ export const toImportDraftDurableRow = (
   reviewCounterpartAccountId: row.reviewCounterpartAccountId,
   reviewRefundOf: row.reviewRefundOf,
   reviewRefundOfBatchRowId: row.reviewRefundOfBatchRowId,
-  selectedForImport: row.selectedForImport,
+  selectedForImport,
   externalId: row.externalId,
   sourceDescription: row.sourceDescription,
   reviewMatchedTransactionId: row.reviewMatchedTransactionId,
@@ -104,7 +105,6 @@ export const toImportDraftPersistedRow = (
   reviewMatchDismissed: row.reviewMatchDismissed,
   reviewNotes: row.reviewNotes,
   reviewTagIds: row.reviewTagIds,
-  selectedForImport: row.selectedForImport,
   createdAt: row.createdAt.toISOString(),
   updatedAt: row.updatedAt.toISOString(),
 });
@@ -146,8 +146,9 @@ export const loadDraftEvaluationContext = async (
           )
         : Promise.resolve(new Map()),
     ]);
+  // Selection is session-only; row status derivation ignores selectedForImport.
   const evaluations = evaluateImportDraft(
-    rows.map((row) => toImportDraftDurableRow(row)),
+    rows.map((row) => toImportDraftDurableRow(row, false)),
     {
       targetAccountId,
       existingExpenses,

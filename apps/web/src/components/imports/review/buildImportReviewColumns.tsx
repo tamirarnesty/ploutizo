@@ -17,7 +17,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
-import type { ImportDraftRow } from '@ploutizo/types';
+import type { ImportReviewRow } from '@ploutizo/types';
 import { ImportDraftReviewRowDetails } from './ImportDraftReviewRowDetails';
 import {
   ImportReviewAmountCell,
@@ -40,8 +40,8 @@ export interface BuildImportReviewColumnsOptions {
   onHeaderCheckedChange: (checked: boolean) => void;
   isLoading: boolean;
   hasSelectableRowsOnPage: boolean;
-  onSelectionChange: (row: ImportDraftRow, selected: boolean) => void;
-  isRowSelectable: (row: ImportDraftRow) => boolean;
+  onSelectionChange: (row: ImportReviewRow, selected: boolean) => void;
+  isRowSelectable: (row: ImportReviewRow) => boolean;
 }
 
 export const buildImportReviewColumns = ({
@@ -52,7 +52,7 @@ export const buildImportReviewColumns = ({
   hasSelectableRowsOnPage,
   onSelectionChange,
   isRowSelectable,
-}: BuildImportReviewColumnsOptions): ColumnDef<ImportDraftRow>[] => {
+}: BuildImportReviewColumnsOptions): ColumnDef<ImportReviewRow>[] => {
   const headerCheckboxLabel = headerIndeterminate
     ? 'Select all rows on this page'
     : headerChecked

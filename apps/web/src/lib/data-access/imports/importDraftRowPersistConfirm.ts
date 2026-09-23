@@ -1,6 +1,6 @@
 import type {
   ImportDraftPersistedRow,
-  ImportDraftRow,
+  ImportReviewRow,
   UpdateImportDraftRowResult,
 } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
@@ -22,9 +22,9 @@ const patchKeys = (patch: UpdateImportDraftRowInput) =>
 
 /** Live diverged from this mutation on a patched field after the attempt snapshot. */
 const isLiveNewerField = (
-  live: ImportDraftRow,
-  attempted: ImportDraftRow,
-  original: ImportDraftRow,
+  live: ImportReviewRow,
+  attempted: ImportReviewRow,
+  original: ImportReviewRow,
   key: keyof UpdateImportDraftRowInput
 ) =>
   !valuesEqual(live[key], attempted[key]) &&
@@ -33,7 +33,7 @@ const isLiveNewerField = (
 const syncRefundTargetFacts = (
   draftId: string,
   patch: UpdateImportDraftRowInput,
-  original: ImportDraftRow,
+  original: ImportReviewRow,
   refundTargetFacts?: UpdateImportDraftRowResult['refundTargetFacts']
 ) => {
   const touchedRefundOf = Object.prototype.hasOwnProperty.call(
@@ -56,8 +56,8 @@ const syncRefundTargetFacts = (
 export const confirmPersistIntoCollection = (
   collection: ReturnType<typeof getImportDraftRowsCollection>,
   server: UpdateImportDraftRowResult | null,
-  attempted: ImportDraftRow,
-  original: ImportDraftRow,
+  attempted: ImportReviewRow,
+  original: ImportReviewRow,
   patch: UpdateImportDraftRowInput,
   draftId: string
 ) => {
@@ -74,7 +74,7 @@ export const confirmPersistIntoCollection = (
   const preferLive =
     live !== undefined &&
     keys.some((key) => isLiveNewerField(live, attempted, original, key));
-  const next: ImportDraftRow = { ...(preferLive ? live : attempted) };
+  const next: ImportReviewRow = { ...(preferLive ? live : attempted) };
 
   for (const key of keys) {
     Object.assign(next, {
@@ -92,6 +92,8 @@ export const confirmPersistIntoCollection = (
     }
   }
 
+  // Selection is session-only; a toggle during the debounce must survive the confirm.
+  if (live) next.selectedForImport = live.selectedForImport;
   collection.utils.writeUpdate(next);
   syncRefundTargetFacts(draftId, patch, original, server?.refundTargetFacts);
   rederiveImportDraftWorkingCopy(draftId);

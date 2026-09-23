@@ -1,5 +1,5 @@
 import { useCallback, useRef } from 'react';
-import type { ImportPreparedSetSummary } from '@ploutizo/types';
+import type { ImportFinalizePreview } from '@ploutizo/types';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import type { ApiErrorBody } from '@/lib/queryClient';
 import {
@@ -38,11 +38,11 @@ export const useContinueImportDraft = (draftId: string) => {
   }, []);
 
   const mutation = useHouseholdMutation<
-    ImportPreparedSetSummary,
+    ImportFinalizePreview,
     ApiErrorBody | ObsoleteContinueError,
-    void
+    { rowIds: string[] }
   >({
-    mutationFn: async () => {
+    mutationFn: async ({ rowIds }) => {
       const controller = new AbortController();
       abortRef.current = controller;
       const generation = generationRef.current;
@@ -57,14 +57,15 @@ export const useContinueImportDraft = (draftId: string) => {
       );
 
       try {
-        const preparedSet = await fetchContinueImportDraft(
+        const preview = await fetchContinueImportDraft(
           draftId,
+          rowIds,
           controller.signal
         );
         if (generation !== generationRef.current) {
           throw new ObsoleteContinueError();
         }
-        return preparedSet;
+        return preview;
       } catch (error) {
         if (generation !== generationRef.current || controller.signal.aborted) {
           throw new ObsoleteContinueError();
@@ -84,15 +85,17 @@ export const useContinueImportDraft = (draftId: string) => {
     mutation.reset();
   }, [invalidateInFlightContinue, mutation.reset]);
 
-  const continueImport =
-    useCallback(async (): Promise<ImportPreparedSetSummary | null> => {
+  const continueImport = useCallback(
+    async (rowIds: string[]): Promise<ImportFinalizePreview | null> => {
       try {
-        return await mutation.mutateAsync();
+        return await mutation.mutateAsync({ rowIds });
       } catch (error) {
         if (isObsoleteContinueError(error)) return null;
         throw error;
       }
-    }, [mutation.mutateAsync]);
+    },
+    [mutation.mutateAsync]
+  );
 
   return {
     ...withoutObsoleteMutationState(mutation),

@@ -5,7 +5,6 @@ interface DraftAutosaveState {
   inFlightCount: number;
   failedRowIds: Set<string>;
   failedFieldKeys: Map<string, string[]>;
-  failedSelectionRowIds: Set<string>;
   hasSaved: boolean;
 }
 
@@ -13,7 +12,6 @@ export interface ImportReviewAutosaveSnapshot {
   status: ImportReviewAutosaveStatus;
   failedRowIds: string[];
   hasUnsavedWork: boolean;
-  failedSelectionRowIds: string[];
   failedFieldKeys: ReadonlyMap<string, string[]>;
 }
 
@@ -21,7 +19,6 @@ const emptySnapshot: ImportReviewAutosaveSnapshot = {
   status: 'idle',
   failedRowIds: [],
   hasUnsavedWork: false,
-  failedSelectionRowIds: [],
   failedFieldKeys: new Map(),
 };
 
@@ -37,7 +34,6 @@ const getOrCreateState = (draftId: string): DraftAutosaveState => {
     inFlightCount: 0,
     failedRowIds: new Set(),
     failedFieldKeys: new Map(),
-    failedSelectionRowIds: new Set(),
     hasSaved: false,
   };
   draftStates.set(draftId, created);
@@ -70,7 +66,6 @@ const toSnapshot = (
         ? previous.failedRowIds
         : failedRowIds,
     hasUnsavedWork: status === 'saving' || status === 'failed',
-    failedSelectionRowIds: [...state.failedSelectionRowIds],
     failedFieldKeys: state.failedFieldKeys,
   };
 };
@@ -91,10 +86,7 @@ const refreshFailedRowMembership = (
   state: DraftAutosaveState,
   rowId: string
 ) => {
-  if (
-    state.failedFieldKeys.has(rowId) ||
-    state.failedSelectionRowIds.has(rowId)
-  ) {
+  if (state.failedFieldKeys.has(rowId)) {
     state.failedRowIds.add(rowId);
     return;
   }
@@ -185,39 +177,6 @@ export const markImportReviewPersistFailure = (
   const previous = state.failedFieldKeys.get(rowId) ?? [];
   state.failedFieldKeys.set(rowId, [...new Set([...previous, ...fieldKeys])]);
   state.failedRowIds.add(rowId);
-  emit(draftId);
-};
-
-export const markImportReviewSelectionStart = (draftId: string) => {
-  const state = getOrCreateState(draftId);
-  state.inFlightCount += 1;
-  emit(draftId);
-};
-
-export const markImportReviewSelectionSuccess = (
-  draftId: string,
-  rowIds: string[]
-) => {
-  const state = getOrCreateState(draftId);
-  state.inFlightCount = Math.max(0, state.inFlightCount - 1);
-  for (const rowId of rowIds) {
-    state.failedSelectionRowIds.delete(rowId);
-    refreshFailedRowMembership(state, rowId);
-  }
-  state.hasSaved = true;
-  emit(draftId);
-};
-
-export const markImportReviewSelectionFailure = (
-  draftId: string,
-  rowIds: string[]
-) => {
-  const state = getOrCreateState(draftId);
-  state.inFlightCount = Math.max(0, state.inFlightCount - 1);
-  for (const rowId of rowIds) {
-    state.failedSelectionRowIds.add(rowId);
-    state.failedRowIds.add(rowId);
-  }
   emit(draftId);
 };
 

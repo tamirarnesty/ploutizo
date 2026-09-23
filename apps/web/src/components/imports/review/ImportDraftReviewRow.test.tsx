@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ImportDraftRow } from '@ploutizo/types';
+import type { ImportReviewRow } from '@ploutizo/types';
 import type { Category } from '@/lib/data-access/categories';
 import { evaluateImportDraftWorkingCopy } from '@/lib/data-access/imports/rederiveImportDraftWorkingCopy';
 import '@/test/mockTanstackRouter';
@@ -54,7 +54,7 @@ vi.mock('@/lib/data-access/imports/useImportReviewAutosave', () => ({
   useImportReviewAutosaveFailedRowIds: () => [],
 }));
 
-const baseRow = (): ImportDraftRow => ({
+const baseRow = (): ImportReviewRow => ({
   id: '33333333-3333-4333-8333-333333333333',
   batchId: '11111111-1111-4111-8111-111111111111',
   rowNumber: 1,
@@ -89,7 +89,7 @@ const baseRow = (): ImportDraftRow => ({
   updatedAt: '2026-05-20T12:00:00Z',
 });
 
-const renderRowFields = (row: ImportDraftRow) =>
+const renderRowFields = (row: ImportReviewRow) =>
   render(
     <TooltipProvider delay={0}>
       <ImportDraftReviewProvider

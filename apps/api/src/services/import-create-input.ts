@@ -1,13 +1,17 @@
 import { lrmSplit } from '@ploutizo/utils/assignee-split';
 import { createTransactionSchema } from '@ploutizo/validators';
 import type {
+  ImportRowSnapshot,
   ImportTransactionType,
-  PreparedImportRowSnapshot,
   ReviewedImportValues,
 } from '@ploutizo/types';
 import type { CreateTransactionInput } from '@ploutizo/validators';
-import type { ImportPreparedOutcomeRecord } from '@/lib/queries/import-prepared-sets';
 import { DomainError } from '@/lib/errors';
+
+type CreatedImportOutcome = {
+  batchRowId: string;
+  snapshot: ImportRowSnapshot;
+};
 
 export const IMPORT_TYPE_CREATE_ORDER: Record<ImportTransactionType, number> = {
   expense: 0,
@@ -23,16 +27,16 @@ const requireImportType = (
     values.type !== 'refund' &&
     values.type !== 'settlement'
   ) {
-    throw new DomainError(500, 'Prepared create outcome is missing a type.');
+    throw new DomainError(500, 'Created import row is missing a type.');
   }
   return values.type;
 };
 
-/** Project a prepared create-outcome snapshot onto the normal create contract. */
+/** Project a created import row snapshot onto the normal create contract. */
 export const toImportCreateTransactionInput = (input: {
   accountId: string;
   batchId: string;
-  snapshot: PreparedImportRowSnapshot;
+  snapshot: ImportRowSnapshot;
   refundOf: string | null;
 }): CreateTransactionInput => {
   const { accountId, batchId, snapshot, refundOf } = input;
@@ -40,7 +44,7 @@ export const toImportCreateTransactionInput = (input: {
   if (values.date == null || values.amount == null || !values.description) {
     throw new DomainError(
       500,
-      'Prepared create outcome is missing required reviewed values.'
+      'Created import row is missing required reviewed values.'
     );
   }
 
@@ -81,15 +85,13 @@ export const toImportCreateTransactionInput = (input: {
   if (!parsed.success) {
     throw new DomainError(
       500,
-      'Prepared create outcome is missing required reviewed values.'
+      'Created import row is missing required reviewed values.'
     );
   }
   return parsed.data;
 };
 
-export const sortCreatedImportOutcomes = (
-  outcomes: ImportPreparedOutcomeRecord[]
-) =>
+export const sortCreatedImportOutcomes = (outcomes: CreatedImportOutcome[]) =>
   [...outcomes].sort((left, right) => {
     const order =
       IMPORT_TYPE_CREATE_ORDER[

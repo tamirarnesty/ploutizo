@@ -9,7 +9,7 @@ import {
   TXN,
   baseAssignees,
   mockTx,
-} from './import-prepared-sets-fixtures';
+} from './import-test-fixtures';
 import { DomainError, NotFoundError } from '@/lib/errors';
 import { fetchImportBatchInOrg } from '@/lib/queries/imports';
 import {

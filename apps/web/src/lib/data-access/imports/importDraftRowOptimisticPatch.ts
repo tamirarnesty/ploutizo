@@ -1,4 +1,4 @@
-import type { ImportDraftRow } from '@ploutizo/types';
+import type { ImportReviewRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
 import {
@@ -24,7 +24,7 @@ export const REVIEW_PATCH_KEYS = [
 ] as const satisfies readonly (keyof UpdateImportDraftRowInput)[];
 
 export const toValidatorPatch = (
-  changes: Partial<ImportDraftRow>
+  changes: Partial<ImportReviewRow>
 ): UpdateImportDraftRowInput | null => {
   const patch: Record<string, unknown> = {};
   for (const key of REVIEW_PATCH_KEYS) {
@@ -38,16 +38,16 @@ export const toValidatorPatch = (
 };
 
 export const patchFromLiveKeys = (
-  live: ImportDraftRow,
+  live: ImportReviewRow,
   keys: string[]
 ): UpdateImportDraftRowInput | null => {
   const changes: Record<string, unknown> = {};
   for (const key of keys) {
     if ((REVIEW_PATCH_KEYS as readonly string[]).includes(key)) {
-      changes[key] = live[key as keyof ImportDraftRow];
+      changes[key] = live[key as keyof ImportReviewRow];
     }
   }
-  return toValidatorPatch(changes as Partial<ImportDraftRow>);
+  return toValidatorPatch(changes as Partial<ImportReviewRow>);
 };
 
 export const applyOptimisticRowPatch = (
