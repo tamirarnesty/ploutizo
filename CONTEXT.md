@@ -353,8 +353,25 @@ _Avoid_: Statement period balance, monthly settlement, as-of balance
 Lists every non-archived credit card in the household, always showing the live **card balance** (owed, zero, or credit). Every **household member** appears on each card with their **personal balance**; **shared balance** appears once per card. Cards are never hidden for being at zero — only **archived** cards are omitted entirely. Signed amounts at a glance are the primary insight.
 _Avoid_: Hiding zero-balance cards, statement snapshot table
 
+**Card balances total**:
+The signed sum of every **card balance** in the **card balances view**, shown once as **Total** in that view's header. Credit on one card nets against amounts owed on another.
+_Avoid_: Total outstanding, account balance total, total balance card
+
 **Dashboard period**:
-The date range picker applies only to summary analytics (income, expenses, spend by category, monthly spend, etc.). It does not affect settlement balances. Card balances are labeled **All time** to signal they are outside the period picker.
+The inclusive calendar-date window that scopes dashboard spend analytics (spend trend, spend by category). Either a **period shortcut** or an explicit custom from–to. It never affects **card balances**, the **card balances total**, the settlement summary, or recent transactions — those are always live.
+_Avoid_: Filter, statement period, date filter on balances
+
+**Period shortcut**:
+A named rolling window re-resolved against today's date on every visit: MTD, 30d, 6m (last six calendar months including the current partial month), YTD, or All (no date limit). Only a custom from–to is stored as literal dates.
+_Avoid_: Fixed month, saved dates for shortcuts
+
+**Prior period**:
+The window a **dashboard period** is compared against: the immediately preceding window of equal length, with month-length clamping for MTD and YTD. **All** has no prior period.
+_Avoid_: Last year, baseline
+
+**Net spend**:
+Expense amounts minus refund amounts within a **dashboard period**, attributed to each row's own category. Transfers, settlements, contributions, and income are excluded. Can be negative for a bucket.
+_Avoid_: Total spend, gross spend, outflow
 
 ## Example dialogue
 
