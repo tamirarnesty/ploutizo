@@ -27,13 +27,15 @@ import { useDataGrid } from '@/components/reui/data-grid/data-grid';
 import { DataGridRowContextMenuShell } from '@/components/reui/data-grid/data-grid-row-context-menu';
 import {
   DataGridTableBodyRow,
-  DataGridTableBodyRowExpandded,
+  DataGridTableBodyRowExpanded,
   type DataGridTablePinnedBoundary,
 } from '@/components/reui/data-grid/data-grid-table-body-row';
 import { getDataGridTablePinningStyles } from '@/components/reui/data-grid/data-grid-table-pinning';
 import {
   assignDataGridTableRef,
+  dataGridBodyCellSpacingVariants,
   dataGridRowBorderClasses,
+  dataGridTablePinnedBodyCellClasses,
 } from '@/components/reui/data-grid/data-grid-table-shared';
 import {
   DataGridTableFillBodyCell,
@@ -55,18 +57,6 @@ const headerCellSpacingVariants = cva('', {
     size: {
       dense: 'h-8 px-2',
       default: 'px-3',
-    },
-  },
-  defaultVariants: {
-    size: 'default',
-  },
-});
-
-const bodyCellSpacingVariants = cva('', {
-  variants: {
-    size: {
-      dense: 'px-2 py-1.5',
-      default: 'px-3 py-2',
     },
   },
   defaultVariants: {
@@ -843,7 +833,7 @@ function DataGridTableBodyRowSkeletonCell<TData>({
   column: Column<TData>;
 }) {
   const { props, table } = useDataGrid();
-  const bodyCellSpacing = bodyCellSpacingVariants({
+  const bodyCellSpacing = dataGridBodyCellSpacingVariants({
     size: props.tableLayout?.dense ? 'dense' : 'default',
   });
 
@@ -869,7 +859,7 @@ function DataGridTableBodyRowSkeletonCell<TData>({
         column.columnDef.meta?.cellClassName,
         props.tableLayout?.columnsPinnable &&
           column.getCanPin() &&
-          'data-pinned:backdrop-blur-xs" data-pinned:bg-background/90 [&[data-pinned=left][data-last-col=left]]:border-e! [&[data-pinned=right][data-last-col=right]]:border-s! [&[data-pinned][data-last-col]]:border-border',
+          dataGridTablePinnedBodyCellClasses,
         column.getIndex() === 0 ||
           column.getIndex() === table.getVisibleFlatColumns().length - 1
           ? props.tableClassNames?.edgeCell
@@ -900,7 +890,7 @@ function DataGridTableBodyRowCell<TData>({
     isPinned === 'left' && column.getIsLastColumn('left');
   const isFirstRightPinned =
     isPinned === 'right' && column.getIsFirstColumn('right');
-  const bodyCellSpacing = bodyCellSpacingVariants({
+  const bodyCellSpacing = dataGridBodyCellSpacingVariants({
     size: props.tableLayout?.dense ? 'dense' : 'default',
   });
 
@@ -935,7 +925,7 @@ function DataGridTableBodyRowCell<TData>({
         cell.column.columnDef.meta?.cellClassName,
         props.tableLayout?.columnsPinnable &&
           column.getCanPin() &&
-          'data-pinned:backdrop-blur-xs" data-pinned:bg-background/90 [&[data-pinned=left][data-last-col=left]]:border-e! [&[data-pinned=right][data-last-col=right]]:border-s! [&[data-pinned][data-last-col]]:border-border',
+          dataGridTablePinnedBodyCellClasses,
         column.getIndex() === 0 ||
           column.getIndex() === row.getVisibleCells().length - 1
           ? props.tableClassNames?.edgeCell
@@ -956,16 +946,12 @@ function DataGridTableRenderedRow<TData>({
   pinnedBoundary?: DataGridTablePinnedBoundary;
   rowRef?: React.Ref<HTMLTableRowElement>;
 }) {
-  const { props } = useDataGrid();
-  const stampRowContextMenuIdentity = Boolean(props.renderRowContextMenu);
-
   return (
     <Fragment>
       <DataGridTableBodyRow
         row={row}
         pinnedBoundary={pinnedBoundary}
         rowRef={rowRef}
-        stampRowContextMenuIdentity={stampRowContextMenuIdentity}
       >
         {row.getVisibleCells().map((cell: Cell<TData, unknown>) => (
           <DataGridTableBodyRowCell cell={cell} key={cell.id}>
@@ -973,12 +959,7 @@ function DataGridTableRenderedRow<TData>({
           </DataGridTableBodyRowCell>
         ))}
       </DataGridTableBodyRow>
-      {row.getIsExpanded() && (
-        <DataGridTableBodyRowExpandded
-          row={row}
-          stampRowContextMenuIdentity={stampRowContextMenuIdentity}
-        />
-      )}
+      {row.getIsExpanded() && <DataGridTableBodyRowExpanded row={row} />}
     </Fragment>
   );
 }
@@ -1316,7 +1297,7 @@ export {
   DataGridTableBody,
   DataGridTableBodyRow,
   DataGridTableBodyRowCell,
-  DataGridTableBodyRowExpandded,
+  DataGridTableBodyRowExpanded,
   DataGridTableRenderedRow,
   DataGridTableBodyRowSkeleton,
   DataGridTableBodyRowSkeletonCell,

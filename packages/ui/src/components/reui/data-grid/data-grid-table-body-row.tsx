@@ -1,4 +1,3 @@
-import { cva } from 'class-variance-authority';
 import type { Cell, Row, Table } from '@tanstack/react-table';
 import type { CSSProperties, ReactNode, Ref } from 'react';
 import { useDataGrid } from '@/components/reui/data-grid/data-grid';
@@ -11,23 +10,13 @@ import {
 import { getDataGridTablePinningStyles } from '@/components/reui/data-grid/data-grid-table-pinning';
 import {
   assignDataGridTableRef,
+  dataGridBodyCellSpacingVariants,
   dataGridRowBorderClasses,
+  dataGridTablePinnedBodyCellClasses,
   getDataGridBodyRowBorderEnabled,
 } from '@/components/reui/data-grid/data-grid-table-shared';
 import { DataGridTableFillBodyCell } from '@/components/reui/data-grid/data-grid-table-trailing-fill';
 import { cn } from '@/lib/utils';
-
-const bodyCellSpacingVariants = cva('', {
-  variants: {
-    size: {
-      dense: 'px-2 py-1.5',
-      default: 'px-3 py-2',
-    },
-  },
-  defaultVariants: {
-    size: 'default',
-  },
-});
 
 export type DataGridTablePinnedBoundary = 'top' | 'bottom';
 
@@ -45,7 +34,7 @@ const DataGridTableBodyRowExpandedPinnedCell = <TData,>({
     isPinned === 'left' && column.getIsLastColumn('left');
   const isFirstRightPinned =
     isPinned === 'right' && column.getIsFirstColumn('right');
-  const bodyCellSpacing = bodyCellSpacingVariants({
+  const bodyCellSpacing = dataGridBodyCellSpacingVariants({
     size: props.tableLayout?.dense ? 'dense' : 'default',
   });
 
@@ -77,7 +66,7 @@ const DataGridTableBodyRowExpandedPinnedCell = <TData,>({
         cell.column.columnDef.meta?.cellClassName,
         props.tableLayout?.columnsPinnable &&
           column.getCanPin() &&
-          'data-pinned:backdrop-blur-xs" data-pinned:bg-background/90 [&[data-pinned=left][data-last-col=left]]:border-e! [&[data-pinned=right][data-last-col=right]]:border-s! [&[data-pinned][data-last-col]]:border-border',
+          dataGridTablePinnedBodyCellClasses,
         column.getIndex() === 0 ||
           column.getIndex() === row.getVisibleCells().length - 1
           ? props.tableClassNames?.edgeCell
@@ -103,7 +92,6 @@ export const DataGridTableBodyRow = <TData,>({
   rowRef,
   dndRef,
   dndStyle,
-  stampRowContextMenuIdentity = false,
 }: {
   children: ReactNode;
   row: Row<TData>;
@@ -111,9 +99,9 @@ export const DataGridTableBodyRow = <TData,>({
   rowRef?: Ref<HTMLTableRowElement>;
   dndRef?: Ref<HTMLTableRowElement>;
   dndStyle?: CSSProperties;
-  stampRowContextMenuIdentity?: boolean;
 }) => {
   const { props, table } = useDataGrid();
+  const stampRowContextMenuIdentity = Boolean(props.renderRowContextMenu);
   const isRowPinned = row.getIsPinned();
   const rowBorder = props.tableLayout?.rowBorder ?? false;
   const isExpanded = row.getIsExpanded();
@@ -166,14 +154,13 @@ export const DataGridTableBodyRow = <TData,>({
   );
 };
 
-export const DataGridTableBodyRowExpandded = <TData,>({
+export const DataGridTableBodyRowExpanded = <TData,>({
   row,
-  stampRowContextMenuIdentity = false,
 }: {
   row: Row<TData>;
-  stampRowContextMenuIdentity?: boolean;
 }) => {
   const { props, table } = useDataGrid();
+  const stampRowContextMenuIdentity = Boolean(props.renderRowContextMenu);
   const expandedContent = getDataGridTableExpandedContent(table, row);
 
   if (!expandedContent) return null;
