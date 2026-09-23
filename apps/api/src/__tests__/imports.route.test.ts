@@ -296,7 +296,7 @@ describe('imports router', () => {
       data: { batchId: string; rowCount: number };
     };
 
-    expect(res.status).toBe(201);
+    expect(res.status).toBe(200);
     expect(continueImportDraft).toHaveBeenCalledWith({
       orgId: 'org_1',
       batchId: 'draft_1',

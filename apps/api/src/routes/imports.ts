@@ -72,7 +72,7 @@ importsRouter.post(
       batchId: c.req.param('id'),
       rowIds,
     });
-    return c.json({ data: preview }, 201);
+    return c.json({ data: preview });
   }
 );
 
