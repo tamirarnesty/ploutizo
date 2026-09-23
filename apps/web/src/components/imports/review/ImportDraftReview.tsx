@@ -9,6 +9,10 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@ploutizo/ui/components/empty';
+import {
+  formatImportReviewContinueBlocker,
+  getImportReviewContinueBlockerReason,
+} from '@ploutizo/utils/import-row-readiness';
 import type {
   ImportRequirementFailure,
   ImportReviewRow,
@@ -148,6 +152,11 @@ const ImportDraftReviewContent = ({
     const rowIds = rows
       .filter((row) => row.selectedForImport)
       .map((row) => row.id);
+    const noneSelected = getImportReviewContinueBlockerReason(rows);
+    if (noneSelected) {
+      toast.error(formatImportReviewContinueBlocker(noneSelected));
+      return;
+    }
     try {
       const preview = await continueImport(rowIds);
       if (!preview) return;
@@ -163,7 +172,7 @@ const ImportDraftReviewContent = ({
         toast.error(getImportContinueGateMessage(error));
       }
     }
-  }, [draftId, flush, flushPendingInputs, continueImport, navigate]);
+  }, [draftId, flush, flushPendingInputs, continueImport, navigate, rows]);
 
   const showEmptyState = !isLoading && meta && !hasReviewableRows;
 

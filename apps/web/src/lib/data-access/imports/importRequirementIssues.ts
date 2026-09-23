@@ -131,6 +131,9 @@ export const isImportStaleFinalizeError = (error: unknown): boolean => {
 
 export const getImportContinueGateMessage = (error: unknown): string => {
   const code = getApiErrorCode(error);
+  if (code === 'VALIDATION_ERROR') {
+    return 'Could not prepare this import for finalize.';
+  }
   if (code && DOMAIN_ISSUE_CODES.has(code)) {
     const summary = summarizeImportRequirementIssues(
       getImportRequirementFailures(error)

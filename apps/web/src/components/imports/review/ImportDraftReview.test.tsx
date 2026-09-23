@@ -506,6 +506,55 @@ describe('ImportDraftReview', () => {
     );
   });
 
+  it('continues with rows selected after the review table has updated', async () => {
+    const user = userEvent.setup();
+    const unselectedDraft = makeImportDraft({
+      rows: [
+        makeImportDraftRow({
+          id: 'row_ready',
+          status: 'ready',
+          reviewDescription: 'Coffee',
+          selectedForImport: false,
+        }),
+      ],
+    });
+    const { rows: unselectedRows, ...meta } = unselectedDraft;
+    const { rerender } = render(
+      <TooltipProvider delay={0}>
+        <ImportDraftReview
+          meta={meta}
+          rows={unselectedRows}
+          {...reviewSessionProps}
+        />
+      </TooltipProvider>
+    );
+
+    const selectedDraft = makeImportDraft({
+      rows: [
+        makeImportDraftRow({
+          id: 'row_ready',
+          status: 'ready',
+          reviewDescription: 'Coffee',
+          selectedForImport: true,
+        }),
+      ],
+    });
+    const { rows: selectedRows } = selectedDraft;
+    rerender(
+      <TooltipProvider delay={0}>
+        <ImportDraftReview
+          meta={meta}
+          rows={selectedRows}
+          {...reviewSessionProps}
+        />
+      </TooltipProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(continueMocks.continueImport).toHaveBeenCalledWith(['row_ready']);
+  });
+
   it('does not continue when persistence flush fails', async () => {
     const user = userEvent.setup();
     flush.mockResolvedValueOnce(false);

@@ -86,6 +86,17 @@ describe('getImportContinueGateMessage', () => {
       })
     ).toBe('Some selected rows are not ready to import.');
   });
+
+  it('does not surface raw validator copy for VALIDATION_ERROR', () => {
+    expect(
+      getImportContinueGateMessage({
+        error: {
+          code: 'VALIDATION_ERROR',
+          errors: [{ message: 'Too small: expected array to have >=1 items' }],
+        },
+      })
+    ).toBe('Could not prepare this import for finalize.');
+  });
 });
 
 describe('import requirement issue helpers', () => {
