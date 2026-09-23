@@ -24,7 +24,10 @@
 
 ## Base components
 
-- Never modify components in `packages/ui/src/components/reui/` or shadcn-generated files. Override behavior at the usage site via `className` props (Tailwind arbitrary variants), wrapper elements, or exposed component props. Leave a comment explaining any non-obvious override.
+- **Default:** Prefer usage-site overrides (`className`, wrappers, exposed props such as `DataGrid`’s `onRowClick`) before editing shadcn-generated files or `packages/ui/src/components/reui/`.
+- **Shadcn-generated files:** Do not edit unless regenerating from the CLI; override at the usage site instead.
+- **ReUI (`packages/ui/src/components/reui/`):** Edits are allowed for **product-agnostic** grid/primitive capabilities (typed public props, no app-specific copy or domain types). Document the API briefly at the prop/site of change and add a bullet under **Ploutizo fork capabilities** in [docs/research/tanstack-table-v9-reui-grid-migration.md](research/tanstack-table-v9-reui-grid-migration.md) so registry reinstalls can re-merge.
+- Leave a comment explaining any non-obvious override at usage sites.
 
 ## Build and type checking
 

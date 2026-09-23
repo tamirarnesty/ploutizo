@@ -111,6 +111,41 @@ describe('TransactionsTable row context menu', () => {
     ).toEqual(['Edit', 'Delete']);
   });
 
+  it('does not open the row menu from a header right-click', () => {
+    renderTable();
+
+    fireEvent.contextMenu(screen.getByText('Date'));
+
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  });
+
+  it('activates context menu items with the keyboard', async () => {
+    const user = userEvent.setup();
+    const { transaction, onEdit } = renderTable();
+
+    fireEvent.contextMenu(screen.getByText(transaction.description));
+
+    const menu = await screen.findByRole('menu');
+    within(menu).getByRole('menuitem', { name: 'Edit' }).focus();
+    await user.keyboard('{Enter}');
+
+    expect(onEdit).toHaveBeenCalledWith(transaction);
+  });
+
+  it('closes the context menu on Escape', async () => {
+    const user = userEvent.setup();
+    const { transaction } = renderTable();
+
+    const menu = await (async () => {
+      fireEvent.contextMenu(screen.getByText(transaction.description));
+      return screen.findByRole('menu');
+    })();
+
+    await user.keyboard('{Escape}');
+
+    expect(menu).toHaveAttribute('data-closed');
+  });
+
   it('keeps the end-of-row actions button and opens the same items', async () => {
     const user = userEvent.setup();
     renderTable();

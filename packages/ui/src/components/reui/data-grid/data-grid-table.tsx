@@ -25,6 +25,11 @@ import type {
 } from 'react';
 import { useDataGrid } from '@/components/reui/data-grid/data-grid';
 import {
+  DATA_GRID_ROW_ID_ATTR,
+  DataGridRowContextMenuShell,
+  useDataGridRowContextMenuRegistration,
+} from '@/components/reui/data-grid/data-grid-row-context-menu';
+import {
   getDataGridCssColumnWidth,
   getDataGridShowTrailingFillColumn,
   getDataGridUsesCssColumnSizing,
@@ -45,6 +50,19 @@ const headerCellSpacingVariants = cva('', {
     size: 'default',
   },
 });
+
+const useDataGridBodyRowContextMenuProps = <TData,>(row: TData) => {
+  const registration = useDataGridRowContextMenuRegistration<TData>();
+  if (!registration) {
+    return {};
+  }
+
+  return {
+    onContextMenu: () => {
+      registration.registerRowContextMenu(row);
+    },
+  };
+};
 
 const bodyCellSpacingVariants = cva('', {
   variants: {
@@ -972,16 +990,17 @@ function DataGridTableBodyRow<TData>({
     props.tableLayout?.rowBorderWhenExpanded,
     isExpanded
   );
-  const bodyRowProps = props.getBodyRowProps?.(row.original) ?? {};
+  const rowContextMenuProps = useDataGridBodyRowContextMenuProps(row.original);
 
   return (
     <tr
-      {...bodyRowProps}
+      {...{ [DATA_GRID_ROW_ID_ATTR]: row.id }}
+      {...rowContextMenuProps}
       ref={(node) => {
         assignRef(rowRef, node);
         assignRef(dndRef, node);
       }}
-      style={{ ...(dndStyle ? dndStyle : null), ...bodyRowProps.style }}
+      style={dndStyle ?? undefined}
       data-state={
         table.options.enableRowSelection && row.getIsSelected()
           ? 'selected'
@@ -1084,6 +1103,7 @@ function getDataGridTableExpandedContent<TData>(
 function DataGridTableBodyRowExpandded<TData>({ row }: { row: Row<TData> }) {
   const { props, table } = useDataGrid();
   const expandedContent = getDataGridTableExpandedContent(table, row);
+  const rowContextMenuProps = useDataGridBodyRowContextMenuProps(row.original);
 
   if (!expandedContent) return null;
 
@@ -1102,6 +1122,8 @@ function DataGridTableBodyRowExpandded<TData>({ row }: { row: Row<TData> }) {
   if (!props.tableLayout?.columnsPinnable) {
     return (
       <tr
+        {...{ [DATA_GRID_ROW_ID_ATTR]: row.id }}
+        {...rowContextMenuProps}
         data-row-border={rowBorder || undefined}
         className={expandedRowClassName}
       >
@@ -1122,6 +1144,8 @@ function DataGridTableBodyRowExpandded<TData>({ row }: { row: Row<TData> }) {
 
   return (
     <tr
+      {...{ [DATA_GRID_ROW_ID_ATTR]: row.id }}
+      {...rowContextMenuProps}
       data-row-border={rowBorder || undefined}
       className={expandedRowClassName}
     >
@@ -1162,6 +1186,9 @@ function DataGridTableBodyRowCell<TData>({
   dndStyle?: CSSProperties;
 }) {
   const { props } = useDataGrid();
+  const rowContextMenuProps = useDataGridBodyRowContextMenuProps(
+    cell.row.original
+  );
 
   const { column, row } = cell;
   const isPinned = column.getIsPinned();
@@ -1177,6 +1204,7 @@ function DataGridTableBodyRowCell<TData>({
     <td
       key={cell.id}
       ref={dndRef}
+      {...rowContextMenuProps}
       {...(props.tableLayout?.columnsDraggable && !isPinned ? { cell } : {})}
       style={{
         ...(props.tableLayout?.columnsPinnable &&
@@ -1499,7 +1527,7 @@ function DataGridTable<TData>({
 }) {
   const { table, props } = useDataGrid();
 
-  return (
+  const tableMarkup = (
     <DataGridTableViewport>
       <DataGridTableBase>
         {renderHeader && (
@@ -1556,6 +1584,18 @@ function DataGridTable<TData>({
       </DataGridTableBase>
     </DataGridTableViewport>
   );
+
+  if (props.renderRowContextMenu) {
+    return (
+      <DataGridRowContextMenuShell
+        renderRowContextMenu={props.renderRowContextMenu}
+      >
+        {tableMarkup}
+      </DataGridRowContextMenuShell>
+    );
+  }
+
+  return tableMarkup;
 }
 
 export {

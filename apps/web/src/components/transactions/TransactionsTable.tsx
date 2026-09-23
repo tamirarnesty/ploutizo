@@ -7,6 +7,7 @@ import {
 import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-table';
 import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-grid-scroll-area';
 import { DataGridPagination } from '@ploutizo/ui/components/reui/data-grid/data-grid-pagination';
+import { ContextMenuItem } from '@ploutizo/ui/components/context-menu';
 import { toast } from '@ploutizo/ui/components/sonner';
 import {
   useDeleteTransaction,
@@ -20,8 +21,8 @@ import {
 import { useEffectiveTablePageSize } from '@/hooks/useEffectiveTablePageSize';
 import { usePreloadLucideIcons } from '@/components/categories/usePreloadLucideIcons';
 import { buildColumns } from './TransactionColumns';
-import { TransactionTableContextMenu } from './TransactionRowActionMenus';
-import { getTransactionRowBodyRowProps } from './transactionRowActions';
+import { TransactionRowActionMenuItems } from './TransactionRowActionMenus';
+import { getTransactionRowActions } from './transactionRowActions';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import { TransactionsTableEmpty } from './TransactionTableEmpty';
 import { TransactionsTableEmptyFiltered } from './TransactionTableEmptyFiltered';
@@ -157,7 +158,15 @@ export const TransactionsTable = ({
         recordCount={total}
         isLoading={isLoading}
         emptyMessage="No transactions yet"
-        getBodyRowProps={getTransactionRowBodyRowProps}
+        renderRowContextMenu={(transaction) => (
+          <TransactionRowActionMenuItems
+            actions={getTransactionRowActions(transaction, {
+              onEdit,
+              onDelete: setDeleteId,
+            })}
+            MenuItem={ContextMenuItem}
+          />
+        )}
         tableLayout={{
           width: 'fixed',
           columnsFill: true,
@@ -169,13 +178,7 @@ export const TransactionsTable = ({
             <DataGridScrollArea
               orientation={PAGINATED_DATA_GRID_SCROLL_ORIENTATION}
             >
-              <TransactionTableContextMenu
-                transactions={transactions}
-                onEdit={onEdit}
-                onDelete={setDeleteId}
-              >
-                <DataGridTable />
-              </TransactionTableContextMenu>
+              <DataGridTable />
             </DataGridScrollArea>
           </DataGridContainer>
           <DataGridPagination className={DATA_GRID_PAGINATION_ROW_CLASSNAME} />
