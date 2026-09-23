@@ -36,6 +36,12 @@ const openContextMenuFrom = async (target: HTMLElement) => {
   return screen.findByRole('menu');
 };
 
+const longPress = (target: HTMLElement) => {
+  fireEvent.touchStart(target, {
+    touches: [{ identifier: 1, clientX: 12, clientY: 24 }],
+  });
+};
+
 const ContextMenuHarness = ({
   transaction,
   onEdit = vi.fn(),
@@ -82,7 +88,7 @@ describe('transaction row action parity', () => {
     const items = within(menu).getAllByRole('menuitem');
 
     expect(items.map((item) => item.textContent)).toEqual(['Edit', 'Delete']);
-    expect(items[1]).toHaveClass('text-destructive');
+    expect(items[1]).toHaveAttribute('data-variant', 'destructive');
 
     await user.click(within(menu).getByRole('menuitem', { name: 'Edit' }));
     expect(onEdit).toHaveBeenCalledWith(transaction);
@@ -113,6 +119,48 @@ describe('transaction row action parity', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
 
+  it('opens the same Edit / Delete actions from a long press', async () => {
+    vi.useFakeTimers();
+    try {
+      const transaction = mockTransactionRow();
+      const onEdit = vi.fn();
+
+      render(<ContextMenuHarness transaction={transaction} onEdit={onEdit} />);
+
+      longPress(screen.getByText(transaction.description));
+      await vi.advanceTimersByTimeAsync(500);
+
+      const menu = screen.getByRole('menu');
+      expect(
+        within(menu)
+          .getAllByRole('menuitem')
+          .map((item) => item.textContent)
+      ).toEqual(['Edit', 'Delete']);
+      expect(
+        within(menu).getByRole('menuitem', { name: 'Delete' })
+      ).toHaveAttribute('data-variant', 'destructive');
+
+      fireEvent.click(within(menu).getByRole('menuitem', { name: 'Edit' }));
+      expect(onEdit).toHaveBeenCalledWith(transaction);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not open the row menu from a header long press', async () => {
+    vi.useFakeTimers();
+    try {
+      render(<ContextMenuHarness transaction={mockTransactionRow()} />);
+
+      longPress(screen.getByText('Date'));
+      await vi.advanceTimersByTimeAsync(500);
+
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('keeps end-of-row dropdown labels, order, handlers, and Delete color', async () => {
     const user = userEvent.setup();
     const transaction = mockTransactionRow();
@@ -137,7 +185,7 @@ describe('transaction row action parity', () => {
     const menu = await screen.findByRole('menu');
     const items = within(menu).getAllByRole('menuitem');
     expect(items.map((item) => item.textContent)).toEqual(['Edit', 'Delete']);
-    expect(items[1]).toHaveClass('text-destructive');
+    expect(items[1]).toHaveAttribute('data-variant', 'destructive');
 
     await user.click(within(menu).getByRole('menuitem', { name: 'Delete' }));
     expect(onDelete).toHaveBeenCalledWith(transaction.id);

@@ -66,12 +66,36 @@ describe('TransactionsTable row context menu', () => {
         .map((item) => item.textContent)
     ).toEqual(['Edit', 'Delete']);
 
-    expect(within(menu).getByRole('menuitem', { name: 'Delete' })).toHaveClass(
-      'text-destructive'
-    );
+    expect(
+      within(menu).getByRole('menuitem', { name: 'Delete' })
+    ).toHaveAttribute('data-variant', 'destructive');
 
     await user.click(within(menu).getByRole('menuitem', { name: 'Edit' }));
     expect(onEdit).toHaveBeenCalledWith(transaction);
+  });
+
+  it('opens the same menu from a long press on row content', async () => {
+    vi.useFakeTimers();
+    try {
+      const { transaction, onEdit } = renderTable();
+
+      fireEvent.touchStart(screen.getByText(transaction.description), {
+        touches: [{ identifier: 1, clientX: 12, clientY: 24 }],
+      });
+      await vi.advanceTimersByTimeAsync(500);
+
+      const menu = screen.getByRole('menu');
+      expect(
+        within(menu)
+          .getAllByRole('menuitem')
+          .map((item) => item.textContent)
+      ).toEqual(['Edit', 'Delete']);
+
+      fireEvent.click(within(menu).getByRole('menuitem', { name: 'Edit' }));
+      expect(onEdit).toHaveBeenCalledWith(transaction);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('opens the same menu from a right-click on another cell in the row', async () => {

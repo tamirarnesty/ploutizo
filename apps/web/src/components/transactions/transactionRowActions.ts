@@ -36,14 +36,6 @@ export const getTransactionRowActions = (
   },
 ];
 
-/** Matches the pre-PLO-108 ⋯ Delete classes. Kit `variant="destructive"` is washed out by popup `!text-accent-foreground`. */
-export const getTransactionRowActionItemClassName = (
-  action: Pick<TransactionRowAction, 'variant'>
-) =>
-  action.variant === 'destructive'
-    ? 'text-destructive focus:text-destructive'
-    : undefined;
-
 export const resolveTransactionRowFromEventTarget = (
   target: EventTarget | null,
   transactions: readonly TransactionRow[]

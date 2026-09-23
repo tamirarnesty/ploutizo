@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { mockTransactionRow } from '@/test/overlayFixtures';
 import {
-  getTransactionRowActionItemClassName,
   getTransactionRowActions,
   resolveTransactionRowFromEventTarget,
 } from './transactionRowActions';
@@ -37,17 +36,6 @@ describe('getTransactionRowActions', () => {
     expect(onEdit).toHaveBeenCalledWith(transaction);
     expect(onDelete).toHaveBeenCalledTimes(1);
     expect(onDelete).toHaveBeenCalledWith(transaction.id);
-  });
-
-  it('styles Delete with the pre-existing destructive classes', () => {
-    const [, remove] = getTransactionRowActions(mockTransactionRow(), {
-      onEdit: vi.fn(),
-      onDelete: vi.fn(),
-    });
-
-    expect(getTransactionRowActionItemClassName(remove)).toBe(
-      'text-destructive focus:text-destructive'
-    );
   });
 });
 

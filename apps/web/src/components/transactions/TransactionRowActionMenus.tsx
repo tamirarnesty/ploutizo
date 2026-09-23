@@ -15,7 +15,6 @@ import {
 } from '@ploutizo/ui/components/dropdown-menu';
 import type { TransactionRow } from '@/lib/data-access/transactions';
 import {
-  getTransactionRowActionItemClassName,
   getTransactionRowActions,
   resolveTransactionRowFromEventTarget,
 } from './transactionRowActions';
@@ -40,7 +39,8 @@ export const TransactionRowActionsDropdown = ({
             variant="ghost"
             size="icon-sm"
             aria-label="Transaction actions"
-            className="opacity-0 focus-visible:opacity-100 data-popup-open:opacity-100 [tr:hover_&]:opacity-100"
+            // Touch has no hover, so the button stays visible. A mouse hides it until the row is hovered.
+            className="pointer-fine:opacity-0 pointer-fine:focus-visible:opacity-100 pointer-fine:data-popup-open:opacity-100 pointer-fine:[tr:hover_&]:opacity-100"
           >
             <MoreHorizontal className="size-4" />
           </Button>
@@ -50,7 +50,7 @@ export const TransactionRowActionsDropdown = ({
         {actions.map((action) => (
           <DropdownMenuItem
             key={action.id}
-            className={getTransactionRowActionItemClassName(action)}
+            variant={action.variant}
             onClick={action.onSelect}
           >
             {action.label}
@@ -75,25 +75,37 @@ export const TransactionTableContextMenu = ({
     ? getTransactionRowActions(transaction, { onEdit, onDelete })
     : [];
 
+  const trackRow = (event: {
+    target: EventTarget | null;
+    stopPropagation: () => void;
+  }) => {
+    const next = resolveTransactionRowFromEventTarget(
+      event.target,
+      transactions
+    );
+    setTransaction(next);
+    if (!next) event.stopPropagation();
+    return next;
+  };
+
   return (
     <ContextMenu
-      onOpenChange={(open) => {
-        if (!open) setTransaction(null);
+      onOpenChange={(open, eventDetails) => {
+        if (!open) {
+          setTransaction(null);
+          return;
+        }
+
+        // Right-click and long-press both open here. Items always come from
+        // getTransactionRowActions; this only picks which row they apply to.
+        if (!trackRow(eventDetails.event)) eventDetails.cancel();
       }}
     >
       <ContextMenuTrigger
         // Kit trigger defaults to select-none; keep ordinary cell text selection.
         className="block w-full min-w-0 select-text"
-        onContextMenuCapture={(event) => {
-          const next = resolveTransactionRowFromEventTarget(
-            event.target,
-            transactions
-          );
-          setTransaction(next);
-          if (!next) {
-            event.stopPropagation();
-          }
-        }}
+        onContextMenuCapture={trackRow}
+        onTouchStartCapture={trackRow}
       >
         {children}
       </ContextMenuTrigger>
@@ -101,7 +113,7 @@ export const TransactionTableContextMenu = ({
         {actions.map((action) => (
           <ContextMenuItem
             key={action.id}
-            className={getTransactionRowActionItemClassName(action)}
+            variant={action.variant}
             onClick={action.onSelect}
           >
             {action.label}
