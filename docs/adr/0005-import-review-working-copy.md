@@ -13,7 +13,7 @@ During **Review import**, the UI must feel instant while corrections persist ont
 | Layer                              | Role                                                                                                                                                                                                                                       |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Postgres via API                   | Durable **import draft facts**: source provenance, parsed values, reviewed import values, refund references, tags, assignees, settlement funding, `rowCount`, and batch lifecycle. Does not persist selection, review status, or previews. |
-| TanStack DB rows `queryCollection` | Session working copy while review is mounted; the only place components write row data, including session selection                                                                                                                       |
+| TanStack DB rows `queryCollection` | Session working copy while review is mounted; the only place components write row data, including session selection                                                                                                                        |
 | Slim TanStack Query (draft meta)   | Account, file name, batch lifecycle, `rowCount`, live derived review counts, and other non-row context                                                                                                                                     |
 | Review session                     | Session-only facts: the checkbox **import set**, the **Import finalize preview**, and save status                                                                                                                                          |
 | Controlled inputs                  | Presentation only, never a second store or authority                                                                                                                                                                                       |
@@ -35,14 +35,14 @@ All review cells (text, discrete picks, tags) and selection update the rows coll
 
 ### Persistence
 
-| Rule         | Choice                                                                                                  |
-| ------------ | ------------------------------------------------------------------------------------------------------- |
-| Endpoint     | `PATCH /imports/drafts/:id/rows`, batch only, one database transaction (all-or-nothing)                 |
-| Payload      | Only dirty rows; per row, only fields changed since the last server acknowledgement                     |
-| Pacing       | One paced mutation per draft, `debounceStrategy({ wait: 3000, trailing: true })`                        |
-| Merge        | Edits across rows within the window merge into one batch request                                        |
-| On success   | Advance per-row persist baselines; confirm server values without clobbering newer live edits            |
-| On failure   | Keep collection edits; mark the draft Failed; Retry re-sends the current dirty diff                     |
+| Rule       | Choice                                                                                       |
+| ---------- | -------------------------------------------------------------------------------------------- |
+| Endpoint   | `PATCH /imports/drafts/:id/rows`, batch only, one database transaction (all-or-nothing)      |
+| Payload    | Only dirty rows; per row, only fields changed since the last server acknowledgement          |
+| Pacing     | One paced mutation per draft, `debounceStrategy({ wait: 3000, trailing: true })`             |
+| Merge      | Edits across rows within the window merge into one batch request                             |
+| On success | Advance per-row persist baselines; confirm server values without clobbering newer live edits |
+| On failure | Keep collection edits; mark the draft Failed; Retry re-sends the current dirty diff          |
 
 ### Selection
 
@@ -54,17 +54,28 @@ Selection is session-only: toggles write the collection and apply the shared mat
 - **Finalize import** reads the preview from the session (redirecting to Review when it is missing), then `POST /imports/drafts/:id/finalize` with `{ rowIds }`. The server re-verifies and completes idempotently.
 - Going back to Review, discarding, finalizing, or leaving import scope clears the preview.
 
+### Ephemeral handoff channels
+
+Review uses two **non-persisted** transports; do not add a third without updating this ADR.
+
+| Channel                     | Storage                                                   | Lifetime                                                                  | Carries                                                                                                                    |
+| --------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **Import finalize preview** | TanStack Query cache (`importFinalizePreviewSession` key) | From successful Continue until Finalize, discard, or leaving import scope | Server-verified preview payload and `rowIds` for the Finalize route                                                        |
+| **Review router state**     | TanStack Router `location.state.importReview`             | One navigation (often `replace: true` after consume)                      | UX signals only: `prepareAgain` (reset selection defaults on Review), optional `issues` when redirected from a failed gate |
+
+Continue/Finalize authority stays on the API; the preview cache is the product handoff to Finalize. Router state is not a second preview store.
+
 ### Autosave UX
 
-| Concern                 | Behavior                                                                                                                                              |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Concern                 | Behavior                                                                                                                                                   |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Status surface          | **Draft-level** status in a fixed-height slot below Continue: Saving → Saved (brief) → Failed · Retry. The slot stays mounted so the header does not shift |
-| Render isolation        | Autosave store subscriptions live in the review header, leave guard, and row provider, **not** the session hook or grid state hook                      |
-| Persist failure         | **Keep collection edits**; do not roll back the working copy                                                                                          |
-| Continue gate           | Disabled with no selection, pending debounce, save in flight, or Failed (until Retry succeeds). In-flight Continue aborts when new work starts saving   |
-| In-app leave            | Flush pending work; block leave if flush fails or Failed remains                                                                                      |
-| Tab close / refresh     | Best-effort flush (`visibilitychange` / `beforeunload`); warn when pending or failed. Browsers cannot reliably await                                   |
-| Text vs discrete writes | Same path and same debounce. Text inputs may keep focused chrome so typing is not clobbered; they are not a second store                               |
+| Render isolation        | Autosave store subscriptions live in the review header, leave guard, and row provider, **not** the session hook or grid state hook                         |
+| Persist failure         | **Keep collection edits**; do not roll back the working copy                                                                                               |
+| Continue gate           | Disabled with no selection, pending debounce, save in flight, or Failed (until Retry succeeds). In-flight Continue aborts when new work starts saving      |
+| In-app leave            | Flush pending work; block leave if flush fails or Failed remains                                                                                           |
+| Tab close / refresh     | Best-effort flush (`visibilitychange` / `beforeunload`); warn when pending or failed. Browsers cannot reliably await                                       |
+| Text vs discrete writes | Same path and same debounce. Text inputs may keep focused chrome so typing is not clobbered; they are not a second store                                   |
 
 Continue and Finalize action labels are self-explanatory; do not add subtitle hints beneath those buttons.
 
@@ -80,19 +91,19 @@ Continue and Finalize action labels are self-explanatory; do not add subtitle hi
 
 ## Considered options
 
-| Option                                               | Rejected because                                                                                    |
-| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Durable selection (`selected_for_import`)            | Resumed drafts restore an import set the user no longer intends; adds a write path and a bulk API    |
-| Database-staged prepared import set with revisions   | Duplicates verification, forces Continue → Finalize round-trips, and needs revision invalidation     |
-| Per-row paced queues and per-row PATCH               | Many small writes; edits across rows cannot share one atomic save                                    |
-| RQ nested `ImportDraft` as the live edit model       | Manual merge/rollback; encourages a second local buffer; caused whole-draft restore clobber          |
-| Local field state as authority for text              | Multiple truths and flush rules; keep only as short-lived input chrome                               |
-| Dual debounce (short discrete / long text)           | Minor UX gain for extra branching and a second store                                                 |
-| Full-row blind server merge on success               | Clobbers in-flight fields; confirm only acknowledged fields                                          |
-| Working-copy rollback on PATCH failure               | Forces re-entry of edits; fights standard autosave expectations                                      |
-| IndexedDB + sync engine                              | Wrong scale; the server import draft already provides resume                                         |
-| Split GET meta / rows APIs now                       | Extra round-trip without pagination need; revisit later                                              |
-| Zustand draft store                                  | Violates server-state-via-Query convention; duplicates the collection                                |
+| Option                                             | Rejected because                                                                                  |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Durable selection (`selected_for_import`)          | Resumed drafts restore an import set the user no longer intends; adds a write path and a bulk API |
+| Database-staged prepared import set with revisions | Duplicates verification, forces Continue → Finalize round-trips, and needs revision invalidation  |
+| Per-row paced queues and per-row PATCH             | Many small writes; edits across rows cannot share one atomic save                                 |
+| RQ nested `ImportDraft` as the live edit model     | Manual merge/rollback; encourages a second local buffer; caused whole-draft restore clobber       |
+| Local field state as authority for text            | Multiple truths and flush rules; keep only as short-lived input chrome                            |
+| Dual debounce (short discrete / long text)         | Minor UX gain for extra branching and a second store                                              |
+| Full-row blind server merge on success             | Clobbers in-flight fields; confirm only acknowledged fields                                       |
+| Working-copy rollback on PATCH failure             | Forces re-entry of edits; fights standard autosave expectations                                   |
+| IndexedDB + sync engine                            | Wrong scale; the server import draft already provides resume                                      |
+| Split GET meta / rows APIs now                     | Extra round-trip without pagination need; revisit later                                           |
+| Zustand draft store                                | Violates server-state-via-Query convention; duplicates the collection                             |
 
 ## Consequences
 

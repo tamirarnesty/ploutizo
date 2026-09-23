@@ -1,7 +1,10 @@
 import {
   computeImportDraftRowCounts,
   evaluateImportDraft,
+  importDraftDurableRowFieldsFrom,
   importMatchTargetQueryInput,
+  priorRefundsByTargetToRecord,
+  toImportDraftDurableRow,
 } from '@ploutizo/utils';
 import { toImportTransactionType } from '@ploutizo/utils/import-coercion';
 import { db } from '@ploutizo/db';
@@ -50,30 +53,33 @@ export const refundTargetFactsRecordFromMap = (
   return record;
 };
 
-export const toImportDraftDurableRow = (
+export const toImportDraftDurableRowFromRecord = (
   row: ImportDraftRowRecord,
   selectedForImport: boolean
-): ImportDraftDurableRow => ({
-  id: row.id,
-  reviewDate: row.reviewDate ?? null,
-  reviewAmount: row.reviewAmount,
-  reviewType: row.reviewType,
-  reviewDescription: row.reviewDescription,
-  parsedDate: row.parsedDate ?? null,
-  parsedAmount: row.parsedAmount,
-  parsedType: row.parsedType,
-  parsedDescription: row.parsedDescription,
-  reviewCategoryId: row.reviewCategoryId,
-  reviewAssigneeMemberIds: row.reviewAssigneeMemberIds,
-  reviewCounterpartAccountId: row.reviewCounterpartAccountId,
-  reviewRefundOf: row.reviewRefundOf,
-  reviewRefundOfBatchRowId: row.reviewRefundOfBatchRowId,
-  selectedForImport,
-  externalId: row.externalId,
-  sourceDescription: row.sourceDescription,
-  reviewMatchedTransactionId: row.reviewMatchedTransactionId,
-  reviewMatchDismissed: row.reviewMatchDismissed,
-});
+): ImportDraftDurableRow =>
+  toImportDraftDurableRow(
+    importDraftDurableRowFieldsFrom({
+      id: row.id,
+      reviewDate: row.reviewDate ?? null,
+      reviewAmount: row.reviewAmount,
+      reviewType: row.reviewType,
+      reviewDescription: row.reviewDescription,
+      parsedDate: row.parsedDate ?? null,
+      parsedAmount: row.parsedAmount,
+      parsedType: row.parsedType,
+      parsedDescription: row.parsedDescription,
+      reviewCategoryId: row.reviewCategoryId,
+      reviewAssigneeMemberIds: row.reviewAssigneeMemberIds,
+      reviewCounterpartAccountId: row.reviewCounterpartAccountId,
+      reviewRefundOf: row.reviewRefundOf,
+      reviewRefundOfBatchRowId: row.reviewRefundOfBatchRowId,
+      externalId: row.externalId,
+      sourceDescription: row.sourceDescription,
+      reviewMatchedTransactionId: row.reviewMatchedTransactionId,
+      reviewMatchDismissed: row.reviewMatchDismissed,
+    }),
+    selectedForImport
+  );
 
 export const toImportDraftPersistedRow = (
   row: ImportDraftRowRecord
@@ -149,7 +155,7 @@ export const loadDraftEvaluationContext = async (
     ]);
   // Selection is session-only; row status derivation ignores selectedForImport.
   const evaluations = evaluateImportDraft(
-    rows.map((row) => toImportDraftDurableRow(row, false)),
+    rows.map((row) => toImportDraftDurableRowFromRecord(row, false)),
     {
       targetAccountId,
       existingExpenses,
@@ -226,6 +232,6 @@ export const buildImportDraftView = async (
     rows: apiRows,
     refundTargetFacts,
     matchTargetFacts,
-    priorRefundsByTarget: Object.fromEntries(priorRefundsByTarget ?? new Map()),
+    priorRefundsByTarget: priorRefundsByTargetToRecord(priorRefundsByTarget),
   };
 };

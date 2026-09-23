@@ -8,7 +8,6 @@ export type ImportReviewAutosaveStatus =
 interface DraftAutosaveState {
   pendingRowIds: Set<string>;
   inFlightCount: number;
-  failedRowIds: Set<string>;
   failedFieldKeys: Map<string, string[]>;
   hasSaved: boolean;
 }
@@ -31,13 +30,16 @@ const draftStates = new Map<string, DraftAutosaveState>();
 const draftSnapshots = new Map<string, ImportReviewAutosaveSnapshot>();
 const listeners = new Map<string, Set<() => void>>();
 
+const failedRowIdsFromState = (state: DraftAutosaveState): string[] => [
+  ...state.failedFieldKeys.keys(),
+];
+
 const getOrCreateState = (draftId: string): DraftAutosaveState => {
   const existing = draftStates.get(draftId);
   if (existing) return existing;
   const created: DraftAutosaveState = {
     pendingRowIds: new Set(),
     inFlightCount: 0,
-    failedRowIds: new Set(),
     failedFieldKeys: new Map(),
     hasSaved: false,
   };
@@ -50,7 +52,7 @@ const deriveStatus = (
 ): ImportReviewAutosaveStatus => {
   if (state.inFlightCount > 0) return 'saving';
   if (state.pendingRowIds.size > 0) return 'pending';
-  if (state.failedRowIds.size > 0) return 'failed';
+  if (state.failedFieldKeys.size > 0) return 'failed';
   if (state.hasSaved) return 'saved';
   return 'idle';
 };
@@ -64,7 +66,7 @@ const toSnapshot = (
   previous?: ImportReviewAutosaveSnapshot
 ): ImportReviewAutosaveSnapshot => {
   const status = deriveStatus(state);
-  const failedRowIds = [...state.failedRowIds];
+  const failedRowIds = failedRowIdsFromState(state);
   return {
     status,
     failedRowIds:
@@ -87,17 +89,6 @@ const emit = (draftId: string) => {
   const draftListeners = listeners.get(draftId);
   if (!draftListeners) return;
   for (const listener of draftListeners) listener();
-};
-
-const refreshFailedRowMembership = (
-  state: DraftAutosaveState,
-  rowId: string
-) => {
-  if (state.failedFieldKeys.has(rowId)) {
-    state.failedRowIds.add(rowId);
-    return;
-  }
-  state.failedRowIds.delete(rowId);
 };
 
 export const getImportReviewAutosaveSnapshot = (
@@ -176,7 +167,6 @@ export const markImportReviewPersistSuccess = (
     }
   }
 
-  refreshFailedRowMembership(state, rowId);
   state.hasSaved = true;
   emit(draftId);
 };
@@ -190,7 +180,6 @@ export const markImportReviewPersistFailure = (
   state.inFlightCount = Math.max(0, state.inFlightCount - 1);
   const previous = state.failedFieldKeys.get(rowId) ?? [];
   state.failedFieldKeys.set(rowId, [...new Set([...previous, ...fieldKeys])]);
-  state.failedRowIds.add(rowId);
   emit(draftId);
 };
 

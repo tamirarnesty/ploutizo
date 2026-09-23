@@ -42,7 +42,6 @@ export {
 } from './importReviewLocationState';
 export { useContinueImportDraft } from './useContinueImportDraft';
 export { useFinalizeImportDraft } from './useFinalizeImportDraft';
-export { fetchUpdateImportDraftRow } from './fetchUpdateImportDraftRow';
 export type { ImportReviewAutosaveStatus } from './importReviewAutosave';
 export {
   useImportReviewSession,

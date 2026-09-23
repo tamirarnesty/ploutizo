@@ -7,7 +7,6 @@ import {
   getSelectableImportRows,
   getSelectedImportRows,
   isImportRowReadyForImport,
-  isImportRowResolved,
   isImportRowSelectable,
 } from './import-row-readiness';
 
@@ -41,7 +40,7 @@ describe('import-row-readiness', () => {
 
     expect(getSelectedImportRows(rows)).toHaveLength(2);
     expect(canContinueImportReview(rows)).toBe(true);
-    expect(isImportRowResolved(rows[1])).toBe(false);
+    expect(isImportRowSelectable(rows[1])).toBe(false);
     expect(getImportReviewContinueBlockerReason(rows)).toBeNull();
   });
 

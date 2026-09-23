@@ -14,7 +14,7 @@ import {
   applyOptimisticRowPatch,
   toValidatorPatch,
 } from './importDraftRowOptimisticPatch';
-import { buildImportDraftRowPersistPatch } from './persistImportDraftRowPatch';
+import { buildImportDraftRowPersistPatch } from './buildImportDraftPersistPatch';
 import { persistImportDraftBatchPatch } from './persistImportDraftBatchPatch';
 import type { PendingMutation, Transaction } from '@tanstack/db';
 
@@ -131,10 +131,7 @@ export const flushImportDraftPacedMutations = async (draftId: string) => {
 export const retryFailedImportDraftPersists = async (draftId: string) => {
   const snapshot = getImportReviewAutosaveSnapshot(draftId);
   const collection = getImportDraftRowsCollection(draftId);
-  const rowIds = new Set([
-    ...snapshot.failedRowIds,
-    ...snapshot.failedFieldKeys.keys(),
-  ]);
+  const rowIds = new Set(snapshot.failedFieldKeys.keys());
 
   const attempts = [...rowIds]
     .map((rowId) => {

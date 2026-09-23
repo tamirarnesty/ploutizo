@@ -330,6 +330,7 @@ export const updateImportDraftRows = async (
         )
       : await listDraftRows(orgId, draftId, tx);
     const existingById = new Map(existingRows.map((row) => [row.id, row]));
+    // Refund same-import targets must be validated against every row id on the draft.
     const draftRowIds = new Set(
       useTargetedLookup
         ? await listAllDraftRowIdsForDraft(orgId, draftId, tx)

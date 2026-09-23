@@ -61,18 +61,14 @@ export const endImportDraftPersistBaselines = () => {
 
 export const buildDirtyRowPatchFromBaseline = (
   live: ImportReviewRow,
-  draftId: string,
-  extraKeys: readonly string[] = []
+  draftId: string
 ): UpdateImportDraftRowInput | null => {
   const baseline = getDraftBaselines(draftId).get(live.id);
   if (!baseline) return null;
 
   const patch: Record<string, unknown> = {};
-  const keys = new Set<string>([...REVIEW_PATCH_KEYS, ...extraKeys]);
 
-  for (const key of keys) {
-    if (!(REVIEW_PATCH_KEYS as readonly string[]).includes(key)) continue;
-    const field = key as (typeof REVIEW_PATCH_KEYS)[number];
+  for (const field of REVIEW_PATCH_KEYS) {
     if (!valuesEqual(live[field], baseline[field])) {
       patch[field] = live[field];
     }

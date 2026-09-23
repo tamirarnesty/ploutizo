@@ -7,25 +7,20 @@ import { useGetHouseholdSettings } from '@/lib/data-access/household';
 import {
   flushImportDraftPacedMutations,
   getImportDraftPacedMutations,
-  releaseImportDraftPacedMutations,
   retryFailedImportDraftPersists,
 } from './getImportDraftPacedMutations';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
 import { setImportDraftSelection } from './setImportDraftSelection';
-import {
-  releaseImportDraftPersistBaselines,
-  seedImportDraftPersistBaselines,
-} from './importDraftPersistBaselines';
+import { seedImportDraftPersistBaselines } from './importDraftPersistBaselines';
 import {
   applyImportReviewEntrySelection,
   syncImportReviewSelectionOnStatusChange,
 } from './importReviewSelectionSession';
 import {
   getImportReviewAutosaveSnapshot,
-  releaseImportReviewAutosave,
   waitForImportReviewAutosaveSettled,
 } from './importReviewAutosave';
-import { releaseImportDraftWorkingCopyRederive } from './scheduleImportDraftWorkingCopyRederive';
+import { releaseImportDraftReviewRuntime } from './releaseImportDraftReviewRuntime';
 import { importDraftQueryOptions } from './useGetImportDraft';
 import { toImportDraftMeta } from './toImportDraftMeta';
 import type { ImportDraftMeta } from './toImportDraftMeta';
@@ -68,10 +63,7 @@ export const useImportReviewSession = (
 
   useEffect(() => {
     return () => {
-      releaseImportDraftPacedMutations(draftId);
-      releaseImportReviewAutosave(draftId);
-      releaseImportDraftPersistBaselines(draftId);
-      releaseImportDraftWorkingCopyRederive(draftId);
+      releaseImportDraftReviewRuntime(draftId);
     };
   }, [draftId]);
 

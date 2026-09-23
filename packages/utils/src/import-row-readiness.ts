@@ -11,11 +11,8 @@ export interface ImportReviewContinueOptions {
   validAssigneeMemberIds?: ReadonlySet<string>;
 }
 
+/** Review row is ready to import and eligible for the import-set checkbox. */
 export const isImportRowSelectable = (
-  row: Pick<ImportRowSelectionFields, 'status'>
-): boolean => row.status === 'ready';
-
-export const isImportRowResolved = (
   row: Pick<ImportRowSelectionFields, 'status'>
 ): boolean => row.status === 'ready';
 
@@ -46,7 +43,7 @@ export const isImportRowReadyForImport = (
   row: Pick<ImportRowSelectionFields, 'status' | 'reviewAssigneeMemberIds'>,
   options?: ImportReviewContinueOptions
 ): boolean => {
-  if (!isImportRowResolved(row)) return false;
+  if (!isImportRowSelectable(row)) return false;
   if (!options?.validAssigneeMemberIds) return true;
   return rowHasLiveAssignee(row, options.validAssigneeMemberIds);
 };

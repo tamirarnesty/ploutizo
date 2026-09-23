@@ -1,4 +1,4 @@
-import { isImportRowResolved } from '@ploutizo/utils/import-row-readiness';
+import { isImportRowSelectable } from '@ploutizo/utils/import-row-readiness';
 import type { ImportReviewRow } from '@ploutizo/types';
 import { setImportDraftSelection } from './setImportDraftSelection';
 
@@ -14,11 +14,11 @@ export const applyImportReviewEntrySelection = (
 ) => {
   const selectedNotReady = rowIdsWhere(
     rows,
-    (row) => row.selectedForImport && !isImportRowResolved(row)
+    (row) => row.selectedForImport && !isImportRowSelectable(row)
   );
   const readyUnchecked = rowIdsWhere(
     rows,
-    (row) => isImportRowResolved(row) && !row.selectedForImport
+    (row) => isImportRowSelectable(row) && !row.selectedForImport
   );
 
   if (selectedNotReady.length > 0) {

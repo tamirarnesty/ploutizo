@@ -1,10 +1,17 @@
-import type { ImportReviewRow } from '@ploutizo/types';
+import type { ImportDraftRow, ImportReviewRow } from '@ploutizo/types';
 import type { ImportDraftDurableRow } from './evaluate-import-draft';
 
-/** Map a review working-copy row to durable evaluation fields (shared web + API). */
-export const toImportDraftDurableRowFromReview = (
-  row: ImportReviewRow
-): ImportDraftDurableRow => ({
+export type ImportDraftDurableRowSource = Omit<
+  ImportDraftDurableRow,
+  'selectedForImport'
+>;
+
+/** Fields required to build durable evaluation input (draft row, review row, or API record). */
+export type ImportDraftDurableRowFieldSource = ImportDraftDurableRowSource;
+
+export const importDraftDurableRowFieldsFrom = (
+  row: ImportDraftDurableRowFieldSource
+): ImportDraftDurableRowSource => ({
   id: row.id,
   reviewDate: row.reviewDate,
   reviewAmount: row.reviewAmount,
@@ -19,9 +26,31 @@ export const toImportDraftDurableRowFromReview = (
   reviewCounterpartAccountId: row.reviewCounterpartAccountId,
   reviewRefundOf: row.reviewRefundOf,
   reviewRefundOfBatchRowId: row.reviewRefundOfBatchRowId,
-  selectedForImport: row.selectedForImport,
   externalId: row.externalId,
   sourceDescription: row.sourceDescription,
   reviewMatchedTransactionId: row.reviewMatchedTransactionId,
   reviewMatchDismissed: row.reviewMatchDismissed,
 });
+
+export const toImportDraftDurableRow = (
+  source: ImportDraftDurableRowSource,
+  selectedForImport: boolean
+): ImportDraftDurableRow => ({
+  ...source,
+  selectedForImport,
+});
+
+export const toImportDraftDurableRowFromDraftRow = (
+  row: ImportDraftRow,
+  selectedForImport: boolean
+): ImportDraftDurableRow =>
+  toImportDraftDurableRow(
+    importDraftDurableRowFieldsFrom(row),
+    selectedForImport
+  );
+
+/** Map a review working-copy row to durable evaluation fields (shared web + API). */
+export const toImportDraftDurableRowFromReview = (
+  row: ImportReviewRow
+): ImportDraftDurableRow =>
+  toImportDraftDurableRowFromDraftRow(row, row.selectedForImport);
