@@ -25,7 +25,7 @@ import { getColourBadgeClassFromRaw } from '@/components/colour/colour-token-cla
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
 import { RightAlignedColumnHeader } from '@/components/dashboard/card-balances/RightAlignedColumnHeader';
 import type { TransactionRow } from '@/lib/data-access/transactions';
-import { TransactionRowActionsDropdown } from './TransactionRowActions';
+import { TransactionRowActionsDropdown } from './TransactionRowActionMenus';
 import { getTransactionRowActions } from './transactionRowActions';
 import type { ColumnDef } from '@tanstack/react-table';
 

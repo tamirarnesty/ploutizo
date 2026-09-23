@@ -8,7 +8,7 @@ import { buildColumns } from './TransactionColumns';
 import {
   TransactionRowActionsDropdown,
   TransactionTableContextMenu,
-} from './TransactionRowActions';
+} from './TransactionRowActionMenus';
 import { getTransactionRowActions } from './transactionRowActions';
 import type { CellContext } from '@tanstack/react-table';
 
