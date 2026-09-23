@@ -10,16 +10,12 @@ import {
   retryFailedImportDraftRowPersists,
 } from './getImportDraftRowPacedMutations';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
-import {
-  persistImportDraftSelection,
-  retryFailedImportDraftSelection,
-} from './persistImportDraftSelection';
+import { setImportDraftSelection } from './setImportDraftSelection';
 import {
   getImportReviewAutosaveSnapshot,
   releaseImportReviewAutosave,
   waitForImportReviewAutosaveSettled,
 } from './importReviewAutosave';
-import { isImportRowSelectedForImport } from './importReviewSelection';
 import { importDraftQueryOptions } from './useGetImportDraft';
 import { toImportDraftMeta } from './toImportDraftMeta';
 import type { ImportDraftMeta } from './toImportDraftMeta';
@@ -70,14 +66,7 @@ export const useImportReviewSession = (
     [rowsCollection]
   );
 
-  const rows = useMemo(
-    () =>
-      liveRows.data.map((row) => ({
-        ...row,
-        selectedForImport: isImportRowSelectedForImport(row.selectedForImport),
-      })),
-    [liveRows.data]
-  );
+  const rows = liveRows.data;
 
   const updateRow = useCallback(
     (rowId: string, patch: UpdateImportDraftRowInput) => {
@@ -88,16 +77,13 @@ export const useImportReviewSession = (
 
   const setSelection = useCallback(
     (rowIds: string[], selectedForImport: boolean) => {
-      persistImportDraftSelection(draftId, rowIds, selectedForImport);
+      setImportDraftSelection(draftId, rowIds, selectedForImport);
     },
     [draftId]
   );
 
   const retryAutosave = useCallback(() => {
-    void (async () => {
-      await retryFailedImportDraftRowPersists(draftId);
-      retryFailedImportDraftSelection(draftId);
-    })();
+    void retryFailedImportDraftRowPersists(draftId);
   }, [draftId]);
 
   const flush = useCallback(async () => {

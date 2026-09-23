@@ -168,7 +168,7 @@ export const isImportRowStructurallyInvalid = (
 
 /**
  * Single evaluation of review status + blockers from durable/optimistic facts.
- * Selection is not a review status; `skipped` is a prepared/finalized outcome.
+ * Selection is not a review status; `skipped` is an import row outcome.
  */
 export const evaluateImportRow = (
   row: ImportRowStatusFields

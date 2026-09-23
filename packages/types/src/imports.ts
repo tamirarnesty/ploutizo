@@ -1,5 +1,6 @@
 import type {
   ImportBatchStatus,
+  ImportRowOutcome,
   ImportRowStatus,
   ImportTransactionType,
   MerchantMatchType,
@@ -143,16 +144,11 @@ export interface ImportDraftRow {
   reviewMatchDismissed: boolean;
   reviewNotes: string | null;
   reviewTagIds: string[];
-  /**
-   * Review-session selection only. Omitted from draft GET; the web client
-   * derives defaults when hydrating a draft.
-   */
-  selectedForImport?: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
-/** Import draft row in the review session — selection is always defined locally. */
+/** Import draft row in the review session working copy, with session-only selection. */
 export type ImportReviewRow = ImportDraftRow & {
   selectedForImport: boolean;
 };
@@ -259,8 +255,8 @@ export interface ImportRowProvenance {
   parsedDescription: string | null;
 }
 
-/** Revision-bound prepared-row snapshot. Selection lives on the outcome, not here. */
-export interface PreparedImportRowSnapshot {
+/** Reviewed values and provenance for one verified row. Selection lives on the outcome, not here. */
+export interface ImportRowSnapshot {
   reviewedValues: ReviewedImportValues;
   provenance: ImportRowProvenance;
 }
@@ -273,28 +269,18 @@ export const IMPORT_FINALIZE_PREVIEW_OUTCOME_VALUES = [
 export type ImportFinalizePreviewOutcome =
   (typeof IMPORT_FINALIZE_PREVIEW_OUTCOME_VALUES)[number];
 
-export interface ImportPreparedOutcomeCounts {
-  created: number;
-  matched: number;
-  skipped: number;
-  invalid: number;
-}
+export type ImportOutcomeCounts = Record<ImportRowOutcome, number>;
 
-export const countPreparedOutcomes = (
-  outcomes: readonly { outcome: string }[]
-): ImportPreparedOutcomeCounts => {
-  const counts: ImportPreparedOutcomeCounts = {
+export const countImportOutcomes = (
+  outcomes: readonly { outcome: ImportRowOutcome }[]
+): ImportOutcomeCounts => {
+  const counts: ImportOutcomeCounts = {
     created: 0,
     matched: 0,
     skipped: 0,
     invalid: 0,
   };
-  for (const { outcome } of outcomes) {
-    if (outcome === 'created') counts.created += 1;
-    else if (outcome === 'matched') counts.matched += 1;
-    else if (outcome === 'skipped') counts.skipped += 1;
-    else if (outcome === 'invalid') counts.invalid += 1;
-  }
+  for (const { outcome } of outcomes) counts[outcome] += 1;
   return counts;
 };
 
@@ -302,14 +288,14 @@ export interface ImportFinalizePreviewRow {
   batchRowId: string;
   outcome: ImportFinalizePreviewOutcome;
   transactionId: string | null;
-  snapshot: PreparedImportRowSnapshot;
+  snapshot: ImportRowSnapshot;
 }
 
 /** Stateless Continue response — full-file outcome projection for Finalize import. */
 export interface ImportFinalizePreview {
   batchId: string;
   rowCount: number;
-  counts: ImportPreparedOutcomeCounts;
+  counts: ImportOutcomeCounts;
   created: ImportFinalizePreviewRow[];
   matched: ImportFinalizePreviewRow[];
 }

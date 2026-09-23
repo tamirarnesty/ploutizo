@@ -1,11 +1,9 @@
-import { isImportPreparedProjectionOutcome } from '@ploutizo/types';
 import type {
-  ImportPreparedOutcome,
-  ImportPreparedProjectionOutcome,
   ImportRequirementFailure,
   ImportRequirementKey,
+  ImportRowOutcome,
+  ImportRowSnapshot,
   MatchTargetFact,
-  PreparedImportRowSnapshot,
 } from '@ploutizo/types';
 import { evaluateImportMatches } from './import-matches';
 import { evaluateImportRefundLinks } from './import-refund-links';
@@ -16,7 +14,7 @@ import {
 } from './import-row-status';
 import { toImportTransactionType } from './import-coercion';
 import { resolveReviewedImportValues } from './reviewed-import-values';
-import { buildPreparedImportRowSnapshot } from './prepared-import-snapshot';
+import { buildImportRowSnapshot } from './import-row-snapshot';
 import { validateTransactionAccountPolicy } from './transaction-policy';
 import type {
   EvaluateImportRefundLinksOptions,
@@ -74,32 +72,19 @@ export interface ImportExternalFacts {
   activeExternalIdOwners?: ReadonlyMap<string, string>;
 }
 
-export type ImportContinueDraftFacts = ImportExternalFacts & {
+export type ImportSetFacts = ImportExternalFacts & {
   rows: readonly ImportDraftDurableRow[];
 };
 
-export interface PreparedImportOutcomeProjection {
+export interface ImportRowProjection {
   batchRowId: string;
-  outcome: ImportPreparedProjectionOutcome;
+  outcome: ImportRowOutcome;
   transactionId: string | null;
-  snapshot: PreparedImportRowSnapshot;
+  snapshot: ImportRowSnapshot;
 }
 
-export type VerifyImportSetForContinueResult =
-  | { ready: true; projection: readonly PreparedImportOutcomeProjection[] }
-  | { ready: false; failures: ImportRequirementFailure[] };
-
-export interface PreparedImportSetRow {
-  batchRowId: string;
-  outcome: ImportPreparedOutcome;
-  transactionId: string | null;
-  snapshot: PreparedImportRowSnapshot;
-}
-
-export type ImportFinalizeExternalFacts = ImportExternalFacts;
-
-export type VerifyPreparedImportSetForFinalizeResult =
-  | { ready: true; verified: readonly PreparedImportSetRow[] }
+export type VerifyImportSetResult =
+  | { ready: true; projection: readonly ImportRowProjection[] }
   | { ready: false; failures: ImportRequirementFailure[] };
 
 interface EvaluateImportSetRequirementsInput {
@@ -238,10 +223,10 @@ const evaluateImportSetRequirements = (
   return failures;
 };
 
-const projectImportPreparedOutcome = (
+const projectImportRowOutcome = (
   row: ImportDraftDurableRow,
   match: ImportMatchEvaluation | undefined
-): ImportPreparedProjectionOutcome => {
+): ImportRowOutcome => {
   if (row.selectedForImport && match?.acceptedMatch) return 'matched';
   if (isImportRowStructurallyInvalid(toStatusFields(row))) return 'invalid';
   if (!row.selectedForImport) return 'skipped';
@@ -277,122 +262,46 @@ const completenessFailure = (
  * Match classification uses sourceDescription ?? parsedDescription, so those
  * come from provenance — never reviewedValues.description.
  *
- * Advisory unresolved is suppressed via evaluateImportMatches
- * `{ ignoreUnresolvedAdvisories: true }`, not by forging reviewMatchDismissed.
- */
-const toFinalizeEvaluationRow = (
-  row: PreparedImportSetRow
-): ImportDraftDurableRow => {
-  const { reviewedValues, provenance } = row.snapshot;
-  const selectedForImport =
-    row.outcome === 'created' || row.outcome === 'matched';
+const UNKNOWN_ROW_ID = 'unknown';
 
-  return {
-    id: row.batchRowId,
-    reviewDate: reviewedValues.date,
-    reviewAmount: reviewedValues.amount,
-    reviewType: reviewedValues.type,
-    reviewDescription: reviewedValues.description,
-    parsedDate: reviewedValues.date,
-    parsedAmount: reviewedValues.amount,
-    parsedType: reviewedValues.type,
-    parsedDescription: provenance.parsedDescription,
-    reviewCategoryId: reviewedValues.categoryId,
-    reviewAssigneeMemberIds: reviewedValues.assigneeMemberIds,
-    reviewCounterpartAccountId: reviewedValues.counterpartAccountId,
-    reviewRefundOf: reviewedValues.refundOf,
-    reviewRefundOfBatchRowId: reviewedValues.refundOfBatchRowId,
-    selectedForImport,
-    externalId: provenance.externalId,
-    sourceDescription: provenance.rawDescription,
-    reviewMatchedTransactionId:
-      row.outcome === 'matched' ? row.transactionId : null,
-    reviewMatchDismissed: false,
-  };
-};
-
-const verifyMatchedTransactionIds = (
-  preparedRows: readonly PreparedImportSetRow[],
-  matchEvaluations: ReadonlyMap<string, ImportMatchEvaluation>
-): ImportRequirementFailure[] => {
-  const failures: ImportRequirementFailure[] = [];
-
-  for (const row of preparedRows) {
-    if (row.outcome !== 'matched') continue;
-
-    const acceptedMatch = matchEvaluations.get(row.batchRowId)?.acceptedMatch;
-    if (!acceptedMatch) {
-      failures.push(
-        failure(row.batchRowId, 'import.match.invalidated_decision')
-      );
-      continue;
-    }
-
-    if (row.transactionId !== acceptedMatch.transactionId) {
-      failures.push(
-        failure(row.batchRowId, 'import.match.invalidated_decision')
-      );
-    }
-  }
-
-  return failures;
-};
-
-const verifyPreparedSetShape = (
-  preparedRows: readonly PreparedImportSetRow[]
-): ImportRequirementFailure[] => {
-  const failures: ImportRequirementFailure[] = [];
-
-  for (const row of preparedRows) {
-    if (!isImportPreparedProjectionOutcome(row.outcome)) {
-      failures.push(
-        failure(row.batchRowId, 'import.match.invalidated_decision')
-      );
-      continue;
-    }
-    if (row.outcome === 'matched' && !row.transactionId) {
-      failures.push(
-        failure(row.batchRowId, 'import.match.invalidated_decision')
-      );
-    }
-  }
-
-  return failures;
-};
+const completenessFailure = (
+  batchRowId: string | undefined
+): ImportRequirementFailure =>
+  failure(batchRowId ?? UNKNOWN_ROW_ID, 'import.match.invalidated_decision');
 
 /**
- * Continue gate: evaluate the selected Import set and project a complete
- * full-file prepared import set when ready.
+ * Import set verification shared by Continue and Finalize: evaluate the
+ * selected import set and project a complete full-file outcome per source row.
  */
-export const verifyImportSetForContinue = (
-  draftFacts: ImportContinueDraftFacts
-): VerifyImportSetForContinueResult => {
+export const verifyImportSet = (
+  facts: ImportSetFacts
+): VerifyImportSetResult => {
   const refundEvaluations = evaluateImportRefundLinks(
-    draftFacts.rows,
-    buildRefundLinkOptions(draftFacts.targetAccount.id, draftFacts)
+    facts.rows,
+    buildRefundLinkOptions(facts.targetAccount.id, facts)
   );
-  const matchEvaluations = evaluateImportMatches(draftFacts.rows, {
-    targetAccountId: draftFacts.targetAccount.id,
-    existingTransactions: draftFacts.existingTransactions,
+  const matchEvaluations = evaluateImportMatches(facts.rows, {
+    targetAccountId: facts.targetAccount.id,
+    existingTransactions: facts.existingTransactions,
   });
 
   const failures = evaluateImportSetRequirements({
-    rows: draftFacts.rows,
-    targetAccount: draftFacts.targetAccount,
-    counterpartAccounts: draftFacts.counterpartAccounts,
-    validAssigneeMemberIds: draftFacts.validAssigneeMemberIds,
+    rows: facts.rows,
+    targetAccount: facts.targetAccount,
+    counterpartAccounts: facts.counterpartAccounts,
+    validAssigneeMemberIds: facts.validAssigneeMemberIds,
     refundEvaluations,
     matchEvaluations,
-    activeExternalIdOwners: draftFacts.activeExternalIdOwners,
+    activeExternalIdOwners: facts.activeExternalIdOwners,
   });
 
   if (failures.length > 0) {
     return { ready: false, failures };
   }
 
-  const projection = draftFacts.rows.map((row) => {
+  const projection = facts.rows.map((row) => {
     const match = matchEvaluations.get(row.id);
-    const outcome = projectImportPreparedOutcome(row, match);
+    const outcome = projectImportRowOutcome(row, match);
     return {
       batchRowId: row.id,
       outcome,
@@ -400,70 +309,16 @@ export const verifyImportSetForContinue = (
         outcome === 'matched'
           ? (match?.acceptedMatch?.transactionId ?? null)
           : null,
-      snapshot: buildPreparedImportRowSnapshot(row),
+      snapshot: buildImportRowSnapshot(row),
     };
   });
 
-  if (projection.length !== draftFacts.rowCount) {
+  if (projection.length !== facts.rowCount) {
     return {
       ready: false,
-      failures: [completenessFailure(draftFacts.rows[0]?.id)],
+      failures: [completenessFailure(facts.rows[0]?.id)],
     };
   }
 
   return { ready: true, projection };
-};
-
-/**
- * Finalize gate: revalidate immutable prepared snapshots against current
- * external facts without consulting mutable draft values.
- */
-export const verifyPreparedImportSetForFinalize = (
-  preparedRows: readonly PreparedImportSetRow[],
-  currentExternalFacts: ImportFinalizeExternalFacts
-): VerifyPreparedImportSetForFinalizeResult => {
-  if (preparedRows.length !== currentExternalFacts.rowCount) {
-    return {
-      ready: false,
-      failures: [completenessFailure(preparedRows[0]?.batchRowId)],
-    };
-  }
-
-  const shapeFailures = verifyPreparedSetShape(preparedRows);
-  if (shapeFailures.length > 0) {
-    return { ready: false, failures: shapeFailures };
-  }
-
-  const evaluationRows = preparedRows.map(toFinalizeEvaluationRow);
-  const refundEvaluations = evaluateImportRefundLinks(
-    evaluationRows,
-    buildRefundLinkOptions(
-      currentExternalFacts.targetAccount.id,
-      currentExternalFacts
-    )
-  );
-  const matchEvaluations = evaluateImportMatches(evaluationRows, {
-    targetAccountId: currentExternalFacts.targetAccount.id,
-    existingTransactions: currentExternalFacts.existingTransactions,
-    ignoreUnresolvedAdvisories: true,
-  });
-
-  const failures = [
-    ...evaluateImportSetRequirements({
-      rows: evaluationRows,
-      targetAccount: currentExternalFacts.targetAccount,
-      counterpartAccounts: currentExternalFacts.counterpartAccounts,
-      validAssigneeMemberIds: currentExternalFacts.validAssigneeMemberIds,
-      refundEvaluations,
-      matchEvaluations,
-      activeExternalIdOwners: currentExternalFacts.activeExternalIdOwners,
-    }),
-    ...verifyMatchedTransactionIds(preparedRows, matchEvaluations),
-  ];
-
-  if (failures.length > 0) {
-    return { ready: false, failures };
-  }
-
-  return { ready: true, verified: preparedRows };
 };

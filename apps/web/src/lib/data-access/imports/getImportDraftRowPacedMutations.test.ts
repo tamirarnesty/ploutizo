@@ -253,7 +253,6 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
       status: 'idle',
       failedRowIds: [],
       hasUnsavedWork: false,
-      failedSelectionRowIds: [],
       failedFieldKeys: new Map(),
     });
   });
@@ -293,7 +292,6 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
       status: 'idle',
       failedRowIds: [],
       hasUnsavedWork: false,
-      failedSelectionRowIds: [],
       failedFieldKeys: new Map(),
     });
   });

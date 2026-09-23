@@ -1,24 +1,19 @@
-import {
-  countPreparedOutcomes,
-  isImportPreparedProjectionOutcome,
-} from '@ploutizo/types';
+import { countImportOutcomes } from '@ploutizo/types';
 import type {
   ImportFinalizePreview,
   ImportFinalizePreviewRow,
 } from '@ploutizo/types';
-import type { PreparedImportOutcomeProjection } from '@ploutizo/utils/import-set-verification';
+import type { ImportRowProjection } from '@ploutizo/utils/import-set-verification';
 
 export const toImportFinalizePreview = (
   batchId: string,
   rowCount: number,
-  projection: readonly PreparedImportOutcomeProjection[]
+  projection: readonly ImportRowProjection[]
 ): ImportFinalizePreview => {
-  const counts = countPreparedOutcomes(projection);
   const created: ImportFinalizePreviewRow[] = [];
   const matched: ImportFinalizePreviewRow[] = [];
 
   for (const row of projection) {
-    if (!isImportPreparedProjectionOutcome(row.outcome)) continue;
     if (row.outcome !== 'created' && row.outcome !== 'matched') continue;
     const item: ImportFinalizePreviewRow = {
       batchRowId: row.batchRowId,
@@ -33,7 +28,7 @@ export const toImportFinalizePreview = (
   return {
     batchId,
     rowCount,
-    counts,
+    counts: countImportOutcomes(projection),
     created,
     matched,
   };

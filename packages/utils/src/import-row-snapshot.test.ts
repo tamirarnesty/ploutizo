@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildPreparedImportRowSnapshot } from './prepared-import-snapshot';
+import { buildImportRowSnapshot } from './import-row-snapshot';
 
 const parsedRow = {
   parsedDate: '2026-05-02',
@@ -21,10 +21,10 @@ const parsedRow = {
   sourceDescription: 'COFFEE SHOP #42',
 };
 
-describe('buildPreparedImportRowSnapshot', () => {
+describe('buildImportRowSnapshot', () => {
   it('trims provenance strings and collapses empty values to null', () => {
     expect(
-      buildPreparedImportRowSnapshot({
+      buildImportRowSnapshot({
         ...parsedRow,
         externalId: ' visa-1001 ',
         sourceDescription: '   ',
@@ -43,7 +43,7 @@ describe('buildPreparedImportRowSnapshot', () => {
 
   it('keeps parsedDescription when the reviewed description differs', () => {
     expect(
-      buildPreparedImportRowSnapshot({
+      buildImportRowSnapshot({
         ...parsedRow,
         reviewDescription: 'Neighborhood Coffee',
         sourceDescription: null,

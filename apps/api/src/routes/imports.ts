@@ -67,7 +67,11 @@ importsRouter.post(
   async (c) => {
     const orgId = c.get('principal').activeHouseholdId;
     const { rowIds } = c.req.valid('json');
-    const preview = await continueImportDraft(orgId, c.req.param('id'), rowIds);
+    const preview = await continueImportDraft({
+      orgId,
+      batchId: c.req.param('id'),
+      rowIds,
+    });
     return c.json({ data: preview }, 201);
   }
 );
@@ -78,7 +82,11 @@ importsRouter.post(
   async (c) => {
     const orgId = c.get('principal').activeHouseholdId;
     const { rowIds } = c.req.valid('json');
-    const result = await finalizeImportDraft(orgId, c.req.param('id'), rowIds);
+    const result = await finalizeImportDraft({
+      orgId,
+      batchId: c.req.param('id'),
+      rowIds,
+    });
     return c.json({ data: result });
   }
 );

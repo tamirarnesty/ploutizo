@@ -297,11 +297,11 @@ describe('imports router', () => {
     };
 
     expect(res.status).toBe(201);
-    expect(continueImportDraft).toHaveBeenCalledWith(
-      'org_1',
-      'draft_1',
-      SELECTED_ROW_IDS
-    );
+    expect(continueImportDraft).toHaveBeenCalledWith({
+      orgId: 'org_1',
+      batchId: 'draft_1',
+      rowIds: SELECTED_ROW_IDS,
+    });
     expect(body.data.batchId).toBe('draft_1');
     expect(body.data.rowCount).toBe(4);
   });
@@ -392,11 +392,11 @@ describe('imports router', () => {
     };
 
     expect(res.status).toBe(200);
-    expect(finalizeImportDraft).toHaveBeenCalledWith(
-      'org_1',
-      'draft_1',
-      SELECTED_ROW_IDS
-    );
+    expect(finalizeImportDraft).toHaveBeenCalledWith({
+      orgId: 'org_1',
+      batchId: 'draft_1',
+      rowIds: SELECTED_ROW_IDS,
+    });
     expect(body.data.createdCount).toBe(1);
   });
 

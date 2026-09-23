@@ -280,7 +280,7 @@ describe('rederiveImportDraftWorkingCopy', () => {
       canContinueImportReview(
         collection.toArray.map((row) => ({
           ...row,
-          selectedForImport: row.selectedForImport ?? false,
+          selectedForImport: row.selectedForImport,
         }))
       )
     ).toBe(true);
@@ -306,7 +306,7 @@ describe('rederiveImportDraftWorkingCopy', () => {
       canContinueImportReview(
         collection.toArray.map((row) => ({
           ...row,
-          selectedForImport: row.selectedForImport ?? false,
+          selectedForImport: row.selectedForImport,
         }))
       )
     ).toBe(true);
@@ -333,7 +333,7 @@ describe('rederiveImportDraftWorkingCopy', () => {
       canContinueImportReview(
         collection.toArray.map((row) => ({
           ...row,
-          selectedForImport: row.selectedForImport ?? false,
+          selectedForImport: row.selectedForImport,
         }))
       )
     ).toBe(true);

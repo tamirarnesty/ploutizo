@@ -1,8 +1,8 @@
-import type { PreparedImportRowSnapshot } from '@ploutizo/types';
+import type { ImportRowSnapshot } from '@ploutizo/types';
 import { resolveReviewedImportValues } from './reviewed-import-values';
 import type { ImportRowResolvableFields } from './reviewed-import-values';
 
-export type PreparedImportRowSnapshotSource = ImportRowResolvableFields & {
+export type ImportRowSnapshotSource = ImportRowResolvableFields & {
   externalId?: string | null;
   sourceDescription?: string | null;
 };
@@ -14,10 +14,10 @@ const normalizeNullableTrimmed = (
   return trimmed ? trimmed : null;
 };
 
-/** Revision-bound prepared-row snapshot from durable draft row fields. */
-export const buildPreparedImportRowSnapshot = (
-  row: PreparedImportRowSnapshotSource
-): PreparedImportRowSnapshot => ({
+/** Reviewed values and provenance snapshot from durable draft row fields. */
+export const buildImportRowSnapshot = (
+  row: ImportRowSnapshotSource
+): ImportRowSnapshot => ({
   reviewedValues: resolveReviewedImportValues(row),
   provenance: {
     externalId: normalizeNullableTrimmed(row.externalId),

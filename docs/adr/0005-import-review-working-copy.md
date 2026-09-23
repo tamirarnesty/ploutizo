@@ -2,161 +2,101 @@
 status: accepted
 ---
 
-# Import review working copy
+# Import review session
 
-During **Review import**, the UI must feel instant while still persisting corrections onto the durable **import draft** so drafts remain resumable. Hand-rolled React Query cache surgery plus per-field local state created multiple write paths, overlapping PATCHes, and rollback that could clobber unrelated successful edits. We need one client working copy and paced persistence without inventing a custom sync engine.
+During **Review import**, the UI must feel instant while corrections persist onto the durable **import draft** so drafts remain resumable. Earlier designs layered per-row paced saves, durable selection, database-backed prepared import set staging, and revision invalidation; each added a write path and a way for stores to disagree. Review now runs as one **draft-scoped client session** in which only **reviewed import values** are durable.
 
 ## Decision
 
 ### Authority
 
-| Layer                              | Role                                                                                                                                                                                                                                                                                                                                                                                       |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Postgres via API                   | Durable **import draft facts** — source provenance, parsed values, reviewed import values, refund references, tags, assignees, settlement funding, selection, `rowCount`, and batch lifecycle. Resumable across sessions. Does not persist review status, invalid reasons, or upload-time valid/invalid counts.                                                                            |
-| TanStack DB rows `queryCollection` | Session working copy while review is mounted — only place components write row data                                                                                                                                                                                                                                                                                                        |
-| Slim TanStack Query (draft meta)   | Account, file name, batch lifecycle, `rowCount`, live derived review counts, and other non-row context                                                                                                                                                                                                                                                                                     |
-| Controlled inputs                  | Presentation only — never a second store or authority                                                                                                                                                                                                                                                                                                                                      |
-| **Import row status** / counts     | Derived from durable facts plus external facts by the shared evaluator. Client writers: `rederiveImportDraftWorkingCopy` (and optimistic paced patches that delegate to it). `canContinueImportReview` gates on selection only so the server can return authoritative requirement failures at Continue. Server **import set verification** remains authoritative at Continue and Finalize. |
+| Layer                              | Role                                                                                                                                                                                                                                       |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Postgres via API                   | Durable **import draft facts**: source provenance, parsed values, reviewed import values, refund references, tags, assignees, settlement funding, `rowCount`, and batch lifecycle. Does not persist selection, review status, or previews. |
+| TanStack DB rows `queryCollection` | Session working copy while review is mounted; the only place components write row data, including session selection                                                                                                                       |
+| Slim TanStack Query (draft meta)   | Account, file name, batch lifecycle, `rowCount`, live derived review counts, and other non-row context                                                                                                                                     |
+| Review session                     | Session-only facts: the checkbox **import set**, the **Import finalize preview**, and save status                                                                                                                                          |
+| Controlled inputs                  | Presentation only, never a second store or authority                                                                                                                                                                                       |
+| **Import row status** / counts     | Derived from durable facts plus external facts by the shared evaluator. Client writer: `rederiveImportDraftWorkingCopy`. Server **import set verification** (ADR 0004) is authoritative at Continue and Finalize.                          |
 
-Hub create / discard / list stay on TanStack Query and are **outside** the working-copy contract. The Import hub read module still uses the same evaluator to derive live review counts from current draft rows.
+Hub create / discard / list stay on TanStack Query and are **outside** the session contract. The Import hub derives live review counts from current draft rows with the same evaluator.
 
 ### Session boundary
 
-Working-copy rules apply only while `/import/$draftId` is mounted and the draft is still active. Leaving review ends the session contract (cache/collection may stay warm in memory, but editing authority ends). Returning to review re-hydrates from GET (or warm data + reconcile). Hub ↔ review navigation does **not** extend the working-copy lifecycle.
-
-### Shape: rows collection + meta query
-
-- **Rows:** `queryCollection` keyed by row id, loaded for one `draftId`.
-- **Meta:** slim Query for draft header context — not a second editable store.
-- **Rejected:** keeping a nested `ImportDraft.rows[]` blob in React Query as the live edit model (two truths).
+Session rules apply while the import routes for one draft are mounted and the draft is still active. Leaving import scope ends the session: selection and the Import finalize preview are dropped, and reviewed import values remain on the draft. Returning re-hydrates from GET.
 
 ### Hydration
 
-Keep a single `GET /drafts/:id` that returns meta + rows. The client splits on load: seed the rows collection from `rows`, set the meta query from the rest. Do **not** split the API into meta + rows endpoints until pagination or payload size requires it. Query dedupes if meta and collection `queryFn`s share the same fetch.
-
-```text
-GET /drafts/:id
-  → seed importDraftRows collection (getKey: row.id)
-  → set draft meta query (no live row edits here)
-```
+Keep a single `GET /drafts/:id` that returns meta + rows. The client seeds the rows collection from `rows` and the meta query from the rest. Rows arrive without selection; the session applies selection defaults. Do **not** split the API into meta + rows endpoints until pagination or payload size requires it.
 
 ### Write path (one surface)
 
-All review cells — text, discrete picks, tags, selection — update the collection only. No detours through `patchImportDraftCache`, per-field React authority, or direct `setQueryData` for row edits.
+All review cells (text, discrete picks, tags) and selection update the rows collection only. Components call the session's `updateRow` / `setSelection`; they never choose between local state, cache, and API.
 
-Conceptual shape (implementation may vary; contract must not):
+### Persistence
 
-```tsx
-// Shared per-row paced instance (factory keyed by rowId)
-const mutateRow = getRowPacedMutations(rowId) // createPacedMutations + debounceStrategy
+| Rule         | Choice                                                                                                  |
+| ------------ | ------------------------------------------------------------------------------------------------------- |
+| Endpoint     | `PATCH /imports/drafts/:id/rows`, batch only, one database transaction (all-or-nothing)                 |
+| Payload      | Only dirty rows; per row, only fields changed since the last server acknowledgement                     |
+| Pacing       | One paced mutation per draft, `debounceStrategy({ wait: 3000, trailing: true })`                        |
+| Merge        | Edits across rows within the window merge into one batch request                                        |
+| On success   | Advance per-row persist baselines; confirm server values without clobbering newer live edits            |
+| On failure   | Keep collection edits; mark the draft Failed; Retry re-sends the current dirty diff                     |
 
-// Discrete or text — same API
-mutateRow({
-  patch: { reviewCategoryId: id }, // or reviewDescription, etc.
-})
+### Selection
 
-// onMutate (immediate):
-importRowsCollection.update(rowId, (draft) => {
-  Object.assign(draft, patch)
-})
+Selection is session-only: toggles write the collection and apply the shared match-decision helpers in the working copy, with no network call. There is no selection API. Continue sends the checked `rowIds`; the server re-applies the same match decisions during import set verification.
 
-// after debounce settle — mutationFn:
-// PATCH /api/imports/rows/:rowId with merged diff since last persisted
-```
+### Continue and Finalize
 
-Components call `mutate({ patch })` / collection update helpers only. They do not choose “local vs cache vs API.”
+- **Continue** flushes pending saves, then `POST /imports/drafts/:id/continue` with `{ rowIds }`. The response is the **Import finalize preview**, held in the session.
+- **Finalize import** reads the preview from the session (redirecting to Review when it is missing), then `POST /imports/drafts/:id/finalize` with `{ rowIds }`. The server re-verifies and completes idempotently.
+- Going back to Review, discarding, finalizing, or leaving import scope clears the preview.
 
-### Persistence pacing
+### Autosave UX
 
-| Rule             | Choice                                                                                                            |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Strategy         | `debounceStrategy` (TanStack DB paced mutations)                                                                  |
-| Wait             | **500ms** — TanStack auto-save default; UX consensus for typed input                                              |
-| Text vs discrete | **Same delay and same path** — dual delays rejected as complexity without payoff for single-user review           |
-| Queue scope      | **Per row** (`createPacedMutations` per `rowId`) so edits on row A never block or incorrectly coalesce with row B |
-| Merge            | Rapid patches on the same row merge into one transaction / one PATCH of the settled diff                          |
-| PATCH body       | Diff of changed fields (validator-shaped partial), not necessarily every column on the row                        |
-
-`usePacedMutations` per cell without a shared factory creates **isolated queues** — wrong for a grid. Use **`createPacedMutations` per row**, shared across cells of that row.
-
-### Selection (hybrid)
-
-1. Checkbox / select-all updates `selectedForImport` on the **collection** immediately (same working copy).
-2. Persist select-all (and multi-id selection) via the existing **bulk selection** endpoint as an optimization in `mutationFn`.
-3. Single-row selection may use the same bulk endpoint with one id or the row PATCH; either way the UI still writes the collection first.
-4. Flush pending per-row paced field persists before running bulk selection persist when ordering matters (e.g. before Continue).
-
-Rejected: selection-only path that bypasses the collection; select-all as N independent row PATCHes with no bulk optimization.
-
-### Autosave UX (standard patterns)
-
-| Concern                 | Behavior                                                                                                                                                |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Status surface          | **Draft-level** status in a fixed-height slot below Continue: Saving → Saved (brief) → Failed · Retry — slot stays mounted so the header does not shift |
-| Render isolation        | Autosave store subscriptions live in the review header, leave guard, and row provider — **not** the session hook or grid state hook                     |
-| Persist failure         | **Keep collection edits** — do not roll back the working copy                                                                                           |
-| Retry                   | Re-persist current collection diff; further edits reset the debounce and may succeed on their own                                                       |
-| Row failure signal      | Optional status icon + explanation on the row (same presentation family as ready / needs review) — **not** a second retry control                       |
-| Continue / in-app leave | Flush pending paced work; **block** leave or Continue if flush fails or Failed remains. In-flight Continue **aborts** when autosave status becomes `saving` (the user started new work). |
-| Tab close / refresh     | Best-effort flush (`visibilitychange` / `beforeunload`); warn when pending or failed — browsers cannot reliably await                                   |
-| Text vs discrete writes | **Same path.** Every field calls the working-copy write on change. Text inputs may keep focused chrome so typing is not clobbered; they are not a second store and must not add a second debounce. |
+| Concern                 | Behavior                                                                                                                                              |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Status surface          | **Draft-level** status in a fixed-height slot below Continue: Saving → Saved (brief) → Failed · Retry. The slot stays mounted so the header does not shift |
+| Render isolation        | Autosave store subscriptions live in the review header, leave guard, and row provider, **not** the session hook or grid state hook                      |
+| Persist failure         | **Keep collection edits**; do not roll back the working copy                                                                                          |
+| Continue gate           | Disabled with no selection, pending debounce, save in flight, or Failed (until Retry succeeds). In-flight Continue aborts when new work starts saving   |
+| In-app leave            | Flush pending work; block leave if flush fails or Failed remains                                                                                      |
+| Tab close / refresh     | Best-effort flush (`visibilitychange` / `beforeunload`); warn when pending or failed. Browsers cannot reliably await                                   |
+| Text vs discrete writes | Same path and same debounce. Text inputs may keep focused chrome so typing is not clobbered; they are not a second store                               |
 
 Continue and Finalize action labels are self-explanatory; do not add subtitle hints beneath those buttons.
 
-If TanStack DB’s default is to drop optimistic state when `mutationFn` throws, adapt the persistence adapter so product behavior stays keep-edits-and-retry (beta API constraint, not a product compromise).
+### Fact model
 
-### Sequencing
+1. **Import draft facts**: source provenance, parsed values, and reviewed import values. Durable and resumable.
+2. **Review evaluation**: derived status, blockers, invalid reasons, refund-link and match issues, live review counts. GET, the working copy, the Import hub, and import set verification share the evaluator.
+3. **Session facts**: the import set and the Import finalize preview. Never persisted.
+4. **Completed import result**: batch lifecycle and finalized outcome counts (`created`, `matched`, `skipped`, `invalid`) for Import history. These are separate from review-status counts.
+5. **Transaction provenance**: links from created or matched transactions back to the import batch and source identity.
 
-1. **Done / hotfix:** scoped React Query rollback + freshness guards on the current per-field PATCH path — stops clobbering; **not** the destination.
-2. **Next:** migrate review row editing to collection + paced mutations; remove dual field authority and draft-wide cache restore.
-3. **Done:** Continue / Finalize wired against the working-copy flush contract and server-authoritative prepared-set lifecycle (PLO-56).
+`rowCount` is an immutable upload/source fact. `skipped` is an import row outcome, not a Review import status. Import history answers “what happened to this uploaded file?” for completed and discarded batches; active drafts stay on the Import hub.
 
 ## Considered options
 
-| Option                                             | Rejected / deferred because                                                                             |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| RQ nested `ImportDraft` as long-term working copy  | Manual merge/rollback; encourages second local buffer; caused whole-draft restore clobber               |
-| Local field state as authority for text            | Multi-truth; flush rules; keep only as short-lived input chrome if a widget requires it, never as store |
-| Cache-on-every-keystroke into RQ                   | Grid rerender cost; still leaves persistence policy hand-rolled                                         |
-| Dual debounce (short discrete / long text, or a UI timer in front of paced mutations) | Minor UX gain; extra factory branching and a second store — single 500ms paced debounce is enough |
-| Per-row TanStack Query `mutationKey` only          | Patch on per-field PATCH design; subsumed by paced merge + per-row queues                               |
-| Draft-level single paced queue                     | Cross-row edits block or coalesce incorrectly                                                           |
-| Full-row blind server merge on success             | Clobbers in-flight fields; prefer merged paced diff / scoped apply                                      |
-| Working-copy rollback on PATCH failure             | Forces re-entry of edits; fights standard autosave expectations                                         |
-| Linear-style IndexedDB + sync engine               | Wrong scale; server **import draft** already provides resume                                            |
-| Custom `Map<rowId, RowEditState>` + Query debounce | Reinvents paced mutations                                                                               |
-| Split GET meta / rows APIs now                     | Extra round-trip without pagination need — revisit later                                                |
-| Zustand draft store                                | Violates server-state-via-Query convention; duplicates collection                                       |
-
-### Fact model
-
-The import module has one durable fact store and adapters that derive presentation from those facts:
-
-1. **Import draft facts** — source provenance, parsed values, reviewed import values, and import-set selection.
-2. **Review evaluation** — derived status, blockers, invalid reasons, refund-link issues, and live review counts. GET, the client working copy, the Import hub, and Continue all use the shared evaluator.
-3. **Prepared import set** — temporary Continue → Finalize staging with a stable reviewed-value snapshot. Not Import history.
-4. **Completed import result** — durable batch lifecycle and finalized outcome facts for Import history (implemented in PLO-56).
-5. **Transaction provenance** — links from created or matched transactions back to the import batch and source identity (implemented in PLO-56).
-
-`rowCount` is an immutable upload/source fact. Valid/invalid review counts are derived. Finalized outcome counts (`created`, `matched`, `skipped`, `invalid`) are a separate completed-result fact and must not reuse review-status columns.
-
-Selection (`selectedForImport`) is the durable import-set fact. `skipped` is a prepared/finalized outcome, not a Review import status.
-
-### Prepared staging and Import history
-
-Delivered in PLO-56 (see [Spec: Normalized Import Finalization Stack](https://linear.app/ploutizo/document/spec-normalized-import-finalization-stack-12fb7409837e)):
-
-- Continue re-evaluates the selected import set server-side and creates a revision-bound prepared set with a full-file outcome projection (`created`, `matched`, `skipped`, `invalid`).
-- Finalize consumes only the named prepared revision (`preparedSetId`).
-- Staging cleanup is atomic with Finalize: transaction creation, matched-transaction linkage, completed result recording, and staging cleanup must not leave a partially finalized state.
-- Import history answers “what happened to this uploaded file?” for **completed** and **discarded** batches, plus finalized outcome counts. Active drafts remain on the Import hub. It excludes incomplete Review import state.
-- History may retain successful transaction provenance for created and matched outcomes without retaining full dropped-row draft payloads.
-- Expired and undone lifecycle states are out of scope for history v1.
+| Option                                               | Rejected because                                                                                    |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Durable selection (`selected_for_import`)            | Resumed drafts restore an import set the user no longer intends; adds a write path and a bulk API    |
+| Database-staged prepared import set with revisions   | Duplicates verification, forces Continue → Finalize round-trips, and needs revision invalidation     |
+| Per-row paced queues and per-row PATCH               | Many small writes; edits across rows cannot share one atomic save                                    |
+| RQ nested `ImportDraft` as the live edit model       | Manual merge/rollback; encourages a second local buffer; caused whole-draft restore clobber          |
+| Local field state as authority for text              | Multiple truths and flush rules; keep only as short-lived input chrome                               |
+| Dual debounce (short discrete / long text)           | Minor UX gain for extra branching and a second store                                                 |
+| Full-row blind server merge on success               | Clobbers in-flight fields; confirm only acknowledged fields                                          |
+| Working-copy rollback on PATCH failure               | Forces re-entry of edits; fights standard autosave expectations                                      |
+| IndexedDB + sync engine                              | Wrong scale; the server import draft already provides resume                                         |
+| Split GET meta / rows APIs now                       | Extra round-trip without pagination need; revisit later                                              |
+| Zustand draft store                                  | Violates server-state-via-Query convention; duplicates the collection                                |
 
 ## Consequences
 
-- Add TanStack DB (beta accepted for this surface) under the web app’s import review data layer; hub remains Query-only.
-- `patchImportDraftCache` and `useImportRowFieldState`-as-authority are transitional; delete once the collection path owns review edits.
-- ADR / PR text should describe hotfix vs destination so reviewers do not treat scoped RQ helpers as the final design.
-- Flush-before-Continue is a hard prerequisite for import set verification trust.
-- No new domain glossary terms for “working copy” — domain language stays **Import draft** / **Review import** / **Reviewed import value** / **Import history** in `CONTEXT.md`.
+- TanStack DB (beta accepted for this surface) backs the review session; the hub remains Query-only.
+- Flush-before-Continue is a hard prerequisite for trusting import set verification.
+- If TanStack DB drops optimistic state when a `mutationFn` throws, adapt the persistence adapter so product behavior stays keep-edits-and-retry.
+- No new glossary terms for “working copy” or “session”. Domain language stays **Import draft** / **Review import** / **Reviewed import value** / **Import finalize preview** / **Import history** in `CONTEXT.md`.

@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type {
-  PreparedImportRowSnapshot,
-  ReviewedImportValues,
-} from '@ploutizo/types';
+import type { ImportRowSnapshot, ReviewedImportValues } from '@ploutizo/types';
 import { DomainError } from '@/lib/errors';
 import { toImportCreateTransactionInput } from '@/services/import-create-input';
 
@@ -15,7 +12,7 @@ const EXPENSE = '550e8400-e29b-41d4-a716-446655440070';
 
 const snapshot = (
   overrides: Partial<ReviewedImportValues> = {}
-): PreparedImportRowSnapshot => ({
+): ImportRowSnapshot => ({
   reviewedValues: {
     date: '2026-05-02',
     amount: 4218,

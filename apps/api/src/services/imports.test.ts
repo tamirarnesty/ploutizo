@@ -45,7 +45,6 @@ vi.mock('@ploutizo/db', () => ({
 vi.mock('@/lib/queries/imports', () => ({
   fetchActiveCreditCardAccount: vi.fn(),
   fetchActiveDraftByAccount: vi.fn(),
-  fetchDraftRowById: vi.fn(),
   fetchDraftSummaryById: vi.fn(),
   insertImportBatch: vi.fn(),
   insertImportBatchRows: vi.fn(),

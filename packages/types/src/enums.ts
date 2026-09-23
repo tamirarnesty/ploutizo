@@ -70,33 +70,15 @@ export const IMPORT_ROW_STATUS_VALUES = [
 
 export type ImportRowStatus = (typeof IMPORT_ROW_STATUS_VALUES)[number];
 
-/** Durable finalize outcomes for a revision-bound prepared import set. */
-export const IMPORT_PREPARED_PROJECTION_OUTCOME_VALUES = [
+/** Mutually exclusive full-file outcome for one source row of an import set. */
+export const IMPORT_ROW_OUTCOME_VALUES = [
   'created',
   'matched',
   'skipped',
   'invalid',
 ] as const;
 
-export type ImportPreparedProjectionOutcome =
-  (typeof IMPORT_PREPARED_PROJECTION_OUTCOME_VALUES)[number];
-
-/** Postgres enum includes obsolete values that Continue no longer writes. */
-export const IMPORT_PREPARED_OUTCOME_VALUES = [
-  ...IMPORT_PREPARED_PROJECTION_OUTCOME_VALUES,
-  'unresolved',
-  'unprocessed',
-] as const;
-
-export type ImportPreparedOutcome =
-  (typeof IMPORT_PREPARED_OUTCOME_VALUES)[number];
-
-export const isImportPreparedProjectionOutcome = (
-  value: string
-): value is ImportPreparedProjectionOutcome =>
-  (IMPORT_PREPARED_PROJECTION_OUTCOME_VALUES as readonly string[]).includes(
-    value
-  );
+export type ImportRowOutcome = (typeof IMPORT_ROW_OUTCOME_VALUES)[number];
 
 /** Durable created/matched relationship from an import batch to a transaction. */
 export const IMPORT_TRANSACTION_LINK_OUTCOME_VALUES = [

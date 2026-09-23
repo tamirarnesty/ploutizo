@@ -38,7 +38,6 @@ const baseRow = {
   reviewMatchDismissed: false,
   reviewNotes: null,
   reviewTagIds: [],
-  selectedForImport: false,
   status: 'ready' as const,
   createdAt: '2026-05-20T12:00:00.000Z',
   updatedAt: '2026-05-20T12:00:00.000Z',

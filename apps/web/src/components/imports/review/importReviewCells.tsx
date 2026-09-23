@@ -23,7 +23,7 @@ import { formatTransactionTypeLabel } from '@ploutizo/utils';
 import { centsToDollars, dollarsToCents } from '@ploutizo/utils/currency';
 import { resolveReviewedImportValues } from '@ploutizo/utils/reviewed-import-values';
 import { IMPORT_TRANSACTION_TYPE_VALUES } from '@ploutizo/types';
-import type { ImportDraftRow, ImportTransactionType } from '@ploutizo/types';
+import type { ImportReviewRow, ImportTransactionType } from '@ploutizo/types';
 import { CategorySelect } from '@/components/categories/CategorySelect';
 import { CurrencyInput } from '@/components/currency/CurrencyInput';
 import { getSettlementSourceAccounts } from '@/lib/settlements/settlementSourceAccounts';
@@ -88,7 +88,7 @@ const ImportTransactionTypeSelect = ({
 );
 
 interface ImportReviewSelectionCellProps {
-  row: ImportDraftRow;
+  row: ImportReviewRow;
   expanded: boolean;
   selectable: boolean;
   onExpandedChange: (expanded: boolean) => void;
@@ -143,7 +143,7 @@ export const ImportReviewSelectionCell = ({
 };
 
 interface ImportReviewDateCellProps {
-  row: ImportDraftRow;
+  row: ImportReviewRow;
 }
 
 export const ImportReviewDateCell = ({ row }: ImportReviewDateCellProps) => {
@@ -167,7 +167,7 @@ export const ImportReviewDateCell = ({ row }: ImportReviewDateCellProps) => {
 };
 
 interface ImportReviewAmountCellProps {
-  row: ImportDraftRow;
+  row: ImportReviewRow;
 }
 
 export const ImportReviewAmountCell = ({
@@ -212,7 +212,7 @@ export const ImportReviewAmountCell = ({
 };
 
 interface ImportReviewTypeCellProps {
-  row: ImportDraftRow;
+  row: ImportReviewRow;
 }
 
 export const ImportReviewTypeCell = ({ row }: ImportReviewTypeCellProps) => {
@@ -235,7 +235,7 @@ export const ImportReviewTypeCell = ({ row }: ImportReviewTypeCellProps) => {
 };
 
 interface ImportReviewDescriptionCellProps {
-  row: ImportDraftRow;
+  row: ImportReviewRow;
 }
 
 export const ImportReviewDescriptionCell = ({
@@ -296,7 +296,7 @@ export const ImportReviewDescriptionCell = ({
 };
 
 interface ImportReviewCategoryCellProps {
-  row: ImportDraftRow;
+  row: ImportReviewRow;
 }
 
 export const ImportReviewCategoryCell = ({
@@ -324,7 +324,7 @@ export const ImportReviewCategoryCell = ({
 };
 
 interface ImportReviewPaidFromCellProps {
-  row: ImportDraftRow;
+  row: ImportReviewRow;
 }
 
 const UNAVAILABLE_PAID_FROM_LABEL = 'Unavailable account';
@@ -468,7 +468,7 @@ export const ImportReviewCategoryOrPaidFromCell = ({
   );
 
 interface ImportReviewAssigneeCellProps {
-  row: ImportDraftRow;
+  row: ImportReviewRow;
 }
 
 export const ImportReviewAssigneeCell = ({

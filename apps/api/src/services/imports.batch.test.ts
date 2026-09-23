@@ -3,7 +3,6 @@ import { db } from '@ploutizo/db';
 import { DomainError, NotFoundError } from '@/lib/errors';
 import { updateImportDraftRows } from '@/services/imports';
 import {
-  fetchDraftRowById,
   fetchDraftSummaryById,
   listDraftRows,
   lockImportDraftBatch,
@@ -25,7 +24,6 @@ vi.mock('@ploutizo/db', () => ({
 vi.mock('@/lib/queries/imports', () => ({
   fetchDraftSummaryById: vi.fn(),
   listDraftRows: vi.fn(),
-  fetchDraftRowById: vi.fn(),
   lockImportDraftBatch: vi.fn(),
   updateImportDraftRowQuery: vi.fn(),
 }));
@@ -169,7 +167,6 @@ describe('updateImportDraftRows', () => {
     ).rejects.toBeInstanceOf(NotFoundError);
 
     expect(updateImportDraftRowQuery).not.toHaveBeenCalled();
-    expect(db.transaction).not.toHaveBeenCalled();
   });
 
   it('returns refundTargetFacts when reviewRefundOf is patched', async () => {
@@ -236,9 +233,48 @@ describe('updateImportDraftRows', () => {
     expect(updateImportDraftRowQuery).toHaveBeenCalledTimes(2);
   });
 
-  it('validates each row before opening the transaction', async () => {
-    vi.mocked(fetchDraftRowById).mockResolvedValue(null);
+  it('loads and validates rows only after taking the draft lock', async () => {
+    const order: string[] = [];
+    vi.mocked(lockImportDraftBatch).mockImplementation(async () => {
+      order.push('lock');
+    });
+    vi.mocked(listDraftRows).mockImplementation(async () => {
+      order.push('load');
+      return [draftRow];
+    });
+    vi.mocked(assertOrgWriteReferences).mockImplementation(async () => {
+      order.push('validate');
+    });
+    vi.mocked(updateImportDraftRowQuery).mockResolvedValue(draftRow);
 
+    await updateImportDraftRows('org_1', summaryRow.id, {
+      rows: [{ id: draftRow.id, reviewNotes: 'a' }],
+    });
+
+    expect(order).toEqual(['lock', 'load', 'validate']);
+  });
+
+  it('reads refund target facts inside the locked transaction', async () => {
+    const tx = { id: 'tx' };
+    vi.mocked(db.transaction).mockImplementation(async (fn) => fn(tx as never));
+    const refundTargetId = '77777777-7777-4777-8777-777777777777';
+    vi.mocked(updateImportDraftRowQuery).mockResolvedValue({
+      ...draftRow,
+      reviewRefundOf: refundTargetId,
+    });
+
+    await updateImportDraftRows('org_1', summaryRow.id, {
+      rows: [{ id: draftRow.id, reviewRefundOf: refundTargetId }],
+    });
+
+    expect(listRefundTargetExpensesByIds).toHaveBeenCalledWith(
+      'org_1',
+      [refundTargetId],
+      tx
+    );
+  });
+
+  it('rejects a same-import refund target that is not on this draft', async () => {
     await expect(
       updateImportDraftRows('org_1', summaryRow.id, {
         rows: [
@@ -250,6 +286,6 @@ describe('updateImportDraftRows', () => {
       })
     ).rejects.toBeInstanceOf(NotFoundError);
 
-    expect(db.transaction).not.toHaveBeenCalled();
+    expect(updateImportDraftRowQuery).not.toHaveBeenCalled();
   });
 });

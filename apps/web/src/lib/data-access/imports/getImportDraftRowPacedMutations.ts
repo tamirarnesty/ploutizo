@@ -1,5 +1,5 @@
 import { createPacedMutations, debounceStrategy } from '@tanstack/db';
-import type { ImportDraftRow } from '@ploutizo/types';
+import type { ImportReviewRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import { beginWorkingSetScope } from '@/lib/access/working-set-registry';
 import type { WorkingSetScope } from '@/lib/access/working-set-registry';
@@ -28,18 +28,18 @@ export interface ImportDraftRowPatchVariables {
 }
 
 const isRowUpdateMutation = (
-  mutation: PendingMutation<ImportDraftRow> | undefined
-): mutation is PendingMutation<ImportDraftRow, 'update'> =>
+  mutation: PendingMutation<ImportReviewRow> | undefined
+): mutation is PendingMutation<ImportReviewRow, 'update'> =>
   mutation?.type === 'update';
 
 const createRowPacedMutations = (draftId: string, rowId: string) => {
   const strategy = debounceStrategy({ wait: IMPORT_ROW_PACE_WAIT_MS });
-  let latestTx: Transaction<ImportDraftRow> | null = null;
+  let latestTx: Transaction<ImportReviewRow> | null = null;
   let persistScope: WorkingSetScope | null = null;
 
   const mutate = createPacedMutations<
     ImportDraftRowPatchVariables,
-    ImportDraftRow
+    ImportReviewRow
   >({
     onMutate: ({ patch }) => {
       markImportReviewPending(draftId, rowId);

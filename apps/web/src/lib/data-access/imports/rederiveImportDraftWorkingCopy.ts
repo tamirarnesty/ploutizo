@@ -6,12 +6,11 @@ import type {
 } from '@ploutizo/utils';
 import type {
   ImportDraft,
-  ImportDraftRow,
+  ImportReviewRow,
   RefundTargetFact,
 } from '@ploutizo/types';
 import { getActiveQueryClient } from '@/lib/access/working-set-registry';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
-import { isImportRowSelectedForImport } from './importReviewSelection';
 import { importDraftQueryKey } from './queryKeys';
 
 export const refundTargetFactsToExpenseMap = (
@@ -27,7 +26,7 @@ export const refundTargetFactsToExpenseMap = (
 /** Shared evaluator over working-copy rows + session facts. */
 export const evaluateImportDraftWorkingCopy = (
   draftId: string,
-  rows?: readonly ImportDraftRow[]
+  rows?: readonly ImportReviewRow[]
 ): Map<string, ImportDraftRowEvaluation> | null => {
   const draft = getActiveQueryClient().getQueryData<ImportDraft>(
     importDraftQueryKey(draftId)
@@ -52,7 +51,7 @@ export const evaluateImportDraftWorkingCopy = (
     reviewCounterpartAccountId: row.reviewCounterpartAccountId,
     reviewRefundOf: row.reviewRefundOf,
     reviewRefundOfBatchRowId: row.reviewRefundOfBatchRowId,
-    selectedForImport: isImportRowSelectedForImport(row.selectedForImport),
+    selectedForImport: row.selectedForImport,
     externalId: row.externalId,
     sourceDescription: row.sourceDescription,
     reviewMatchedTransactionId: row.reviewMatchedTransactionId,
@@ -101,7 +100,7 @@ const applyEvaluationsToCollection = (
 export const rederiveImportDraftWorkingCopy = (
   draftId: string,
   options?: {
-    rows?: readonly ImportDraftRow[];
+    rows?: readonly ImportReviewRow[];
     skipIds?: ReadonlySet<string>;
     evaluations?: Map<string, ImportDraftRowEvaluation> | null;
   }

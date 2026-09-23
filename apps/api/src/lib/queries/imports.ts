@@ -293,34 +293,6 @@ export const discardImportDraftQuery = async (
   return rows.at(0) ?? null;
 };
 
-export const fetchDraftRowForUpdate = async (orgId: string, rowId: string) => {
-  const rows = await db
-    .select({ id: importBatchRows.id, batchId: importBatchRows.batchId })
-    .from(importBatchRows)
-    .innerJoin(importBatches, eq(importBatches.id, importBatchRows.batchId))
-    .where(
-      and(
-        eq(importBatchRows.id, rowId),
-        eq(importBatchRows.orgId, orgId),
-        eq(importBatches.orgId, orgId),
-        eq(importBatches.status, 'draft')
-      )
-    )
-    .limit(1);
-  return rows.at(0) ?? null;
-};
-
-export const fetchDraftRowById = async (orgId: string, rowId: string) => {
-  const access = await fetchDraftRowForUpdate(orgId, rowId);
-  if (!access) return null;
-  const rows = await db
-    .select()
-    .from(importBatchRows)
-    .where(and(eq(importBatchRows.id, rowId), eq(importBatchRows.orgId, orgId)))
-    .limit(1);
-  return rows.at(0) ?? null;
-};
-
 export const updateImportDraftRowQuery = async (
   orgId: string,
   rowId: string,

@@ -1,14 +1,13 @@
 import { canContinueImportReview } from '@ploutizo/utils/import-row-readiness';
-import type { ImportDraftRow, OrgMember } from '@ploutizo/types';
+import type { ImportReviewRow, OrgMember } from '@ploutizo/types';
 import type {
   ImportDraftMeta,
   ImportReviewAutosaveStatus,
 } from '@/lib/data-access/imports';
-import { isImportRowSelectedForImport } from '@/lib/data-access/imports/importReviewSelection';
 
 interface GetImportReviewContinueEnabledOptions {
   meta: ImportDraftMeta | undefined;
-  rows: readonly ImportDraftRow[];
+  rows: readonly ImportReviewRow[];
   orgMembers: readonly OrgMember[];
   autosaveStatus: ImportReviewAutosaveStatus;
   isContinuing: boolean;
@@ -29,13 +28,5 @@ export const getImportReviewContinueEnabled = ({
   const persistenceBlocked =
     autosaveStatus === 'failed' || autosaveStatus === 'saving';
 
-  const selectionRows = rows.map((row) => ({
-    ...row,
-    selectedForImport: isImportRowSelectedForImport(row.selectedForImport),
-  }));
-
-  return (
-    canContinueImportReview(selectionRows, continueOptions) &&
-    !persistenceBlocked
-  );
+  return canContinueImportReview(rows, continueOptions) && !persistenceBlocked;
 };

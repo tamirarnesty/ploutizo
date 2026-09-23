@@ -12,12 +12,9 @@ import {
   endImportDraftRowsCollections,
   getImportDraftRowsCollection,
 } from './getImportDraftRowsCollection';
-import {
-  endImportReviewAutosave,
-  getImportReviewAutosaveSnapshot,
-} from './importReviewAutosave';
+import { endImportReviewAutosave } from './importReviewAutosave';
 import { importDraftQueryKey } from './queryKeys';
-import { persistImportDraftSelection } from './persistImportDraftSelection';
+import { setImportDraftSelection } from './setImportDraftSelection';
 import { fetchImportDraft } from './useGetImportDraft';
 
 vi.mock('./useGetImportDraft', () => ({
@@ -36,7 +33,7 @@ const draft = makeImportDraft({
   ],
 });
 
-describe('persistImportDraftSelection', () => {
+describe('setImportDraftSelection', () => {
   beforeEach(() => {
     getActiveQueryClient().clear();
     getActiveQueryClient().setQueryData(importDraftQueryKey(draft.id), draft);
@@ -53,13 +50,9 @@ describe('persistImportDraftSelection', () => {
     const collection = getImportDraftRowsCollection(draft.id);
     await collection.preload();
 
-    persistImportDraftSelection(draft.id, ['row_1'], true);
+    setImportDraftSelection(draft.id, ['row_1'], true);
     await vi.waitFor(() => {
       expect(collection.get('row_1')?.selectedForImport).toBe(true);
     });
-
-    expect(
-      getImportReviewAutosaveSnapshot(draft.id).failedSelectionRowIds
-    ).toEqual([]);
   });
 });

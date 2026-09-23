@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { verifyImportSetForContinue } from '@ploutizo/utils/import-set-verification';
+import { verifyImportSet } from '@ploutizo/utils/import-set-verification';
 import { DomainError, NotFoundError } from '@/lib/errors';
-import { verifyImportDraftProjectionForRowIds } from '@/services/import-draft-projection';
-import { loadImportContinueDraftFacts } from '@/services/import-continue';
+import { verifyImportSetForDraft } from '@/services/import-set';
+import { loadImportSetFacts } from '@/services/import-set-facts';
 import { fetchDraftSummaryById, listDraftRows } from '@/lib/queries/imports';
 
 vi.mock('@/lib/queries/imports', () => ({
@@ -10,16 +10,9 @@ vi.mock('@/lib/queries/imports', () => ({
   listDraftRows: vi.fn(),
 }));
 
-vi.mock('@/services/import-continue', async (importOriginal) => {
-  const actual = await importOriginal();
-  if (typeof actual !== 'object' || actual === null) {
-    throw new Error('Unexpected @/services/import-continue module shape.');
-  }
-  return {
-    ...actual,
-    loadImportContinueDraftFacts: vi.fn(),
-  };
-});
+vi.mock('@/services/import-set-facts', () => ({
+  loadImportSetFacts: vi.fn(),
+}));
 
 vi.mock('@ploutizo/utils/import-set-verification', async (importOriginal) => {
   const actual = await importOriginal();
@@ -30,7 +23,7 @@ vi.mock('@ploutizo/utils/import-set-verification', async (importOriginal) => {
   }
   return {
     ...actual,
-    verifyImportSetForContinue: vi.fn(),
+    verifyImportSet: vi.fn(),
   };
 });
 
@@ -41,14 +34,14 @@ const draft = {
   rowCount: 1,
 };
 
-describe('verifyImportDraftProjectionForRowIds', () => {
+describe('verifyImportSetForDraft', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(fetchDraftSummaryById).mockResolvedValue(draft as never);
     vi.mocked(listDraftRows).mockResolvedValue([
       { id: 'row-1', batchId: 'batch-1' },
     ] as never);
-    vi.mocked(loadImportContinueDraftFacts).mockResolvedValue({
+    vi.mocked(loadImportSetFacts).mockResolvedValue({
       rowCount: 1,
       rows: [],
     } as never);
@@ -56,27 +49,25 @@ describe('verifyImportDraftProjectionForRowIds', () => {
 
   it('404s when a row id is not on the draft', async () => {
     await expect(
-      verifyImportDraftProjectionForRowIds(
-        'org_1',
-        'batch-1',
-        ['row-missing'],
-        mockTx
-      )
+      verifyImportSetForDraft(mockTx, {
+        orgId: 'org_1',
+        batchId: 'batch-1',
+        rowIds: ['row-missing'],
+      })
     ).rejects.toBeInstanceOf(NotFoundError);
   });
 
   it('returns structured failures when verification is not ready', async () => {
-    vi.mocked(verifyImportSetForContinue).mockReturnValue({
+    vi.mocked(verifyImportSet).mockReturnValue({
       ready: false,
       failures: [{ batchRowId: 'row-1', key: 'transaction.category.required' }],
     });
 
-    const result = await verifyImportDraftProjectionForRowIds(
-      'org_1',
-      'batch-1',
-      ['row-1'],
-      mockTx
-    );
+    const result = await verifyImportSetForDraft(mockTx, {
+      orgId: 'org_1',
+      batchId: 'batch-1',
+      rowIds: ['row-1'],
+    });
 
     expect(result).toEqual({
       ready: false,
@@ -93,17 +84,16 @@ describe('verifyImportDraftProjectionForRowIds', () => {
         snapshot: {} as never,
       },
     ];
-    vi.mocked(verifyImportSetForContinue).mockReturnValue({
+    vi.mocked(verifyImportSet).mockReturnValue({
       ready: true,
       projection,
     });
 
-    const result = await verifyImportDraftProjectionForRowIds(
-      'org_1',
-      'batch-1',
-      ['row-1'],
-      mockTx
-    );
+    const result = await verifyImportSetForDraft(mockTx, {
+      orgId: 'org_1',
+      batchId: 'batch-1',
+      rowIds: ['row-1'],
+    });
 
     expect(result).toEqual({ ready: true, draft, projection });
   });
@@ -115,12 +105,11 @@ describe('verifyImportDraftProjectionForRowIds', () => {
     } as never);
 
     await expect(
-      verifyImportDraftProjectionForRowIds(
-        'org_1',
-        'batch-1',
-        ['row-1'],
-        mockTx
-      )
+      verifyImportSetForDraft(mockTx, {
+        orgId: 'org_1',
+        batchId: 'batch-1',
+        rowIds: ['row-1'],
+      })
     ).rejects.toBeInstanceOf(DomainError);
   });
 });
