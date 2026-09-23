@@ -135,11 +135,10 @@ export const getImportDraftRowPacedMutations = (
 
 export const flushImportDraftRowPacedMutations = async (draftId: string) => {
   const prefix = pacedDraftPrefix(draftId);
-  await Promise.all(
-    [...rowPacedMutations.entries()]
-      .filter(([key]) => key.startsWith(prefix))
-      .map(([, entry]) => entry.flush())
-  );
+  for (const [key, entry] of rowPacedMutations) {
+    if (!key.startsWith(prefix)) continue;
+    await entry.flush();
+  }
 };
 
 export const retryFailedImportDraftRowPersists = async (draftId: string) => {
@@ -147,27 +146,25 @@ export const retryFailedImportDraftRowPersists = async (draftId: string) => {
   const collection = getImportDraftRowsCollection(draftId);
   const failures = [...snapshot.failedFieldKeys.entries()];
 
-  await Promise.all(
-    failures.map(async ([rowId]) => {
-      const live = collection.get(rowId);
-      if (!live) return;
+  for (const [rowId] of failures) {
+    const live = collection.get(rowId);
+    if (!live) continue;
 
-      const patch = buildImportDraftRowPersistPatch(draftId, rowId, live, null);
-      if (Object.keys(patch).length === 0) return;
+    const patch = buildImportDraftRowPersistPatch(draftId, rowId, live, null);
+    if (Object.keys(patch).length === 0) continue;
 
-      const scope = beginWorkingSetScope();
-      if (!scope.isCurrent()) return;
+    const scope = beginWorkingSetScope();
+    if (!scope.isCurrent()) continue;
 
-      await persistImportDraftRowPatch({
-        draftId,
-        rowId,
-        scope,
-        patch,
-        attempted: live,
-        original: live,
-      });
-    })
-  );
+    await persistImportDraftRowPatch({
+      draftId,
+      rowId,
+      scope,
+      patch,
+      attempted: live,
+      original: live,
+    });
+  }
 };
 
 export const releaseImportDraftRowPacedMutations = (draftId: string) => {

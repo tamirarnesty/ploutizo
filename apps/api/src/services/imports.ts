@@ -343,10 +343,7 @@ export const updateImportDraftRows = async (
     }
 
     const refundOfIds = input.rows.flatMap((row) =>
-      Object.prototype.hasOwnProperty.call(row, 'reviewRefundOf') &&
-      row.reviewRefundOf
-        ? [row.reviewRefundOf]
-        : []
+      'reviewRefundOf' in row && row.reviewRefundOf ? [row.reviewRefundOf] : []
     );
     if (refundOfIds.length === 0) return { rows };
 

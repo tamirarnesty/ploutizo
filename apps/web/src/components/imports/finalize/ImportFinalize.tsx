@@ -136,9 +136,7 @@ const ImportFinalizePreviewRowsTable = ({
   );
 };
 
-export const importDraftNotFoundRedirect = (
-  error: unknown
-): 'review' | 'hub' | null => {
+export const importDraftNotFoundRedirect = (error: unknown): 'hub' | null => {
   if (getApiErrorCode(error) !== 'NOT_FOUND') return null;
   const message = getApiErrorMessage(error, '');
   return message === 'Import draft not found.' ? 'hub' : null;

@@ -247,27 +247,15 @@ const buildRefundLinkOptions = (
     : {}),
 });
 
-const PREPARED_SET_UNKNOWN_ROW_ID = 'unknown';
+const UNKNOWN_BATCH_ROW_ID = 'unknown';
 
 const completenessFailure = (
   batchRowId: string | undefined
 ): ImportRequirementFailure =>
   failure(
-    batchRowId ?? PREPARED_SET_UNKNOWN_ROW_ID,
+    batchRowId ?? UNKNOWN_BATCH_ROW_ID,
     'import.match.invalidated_decision'
   );
-
-/**
- * Reconstruct a durable row from the immutable snapshot for revalidation.
- * Match classification uses sourceDescription ?? parsedDescription, so those
- * come from provenance — never reviewedValues.description.
- *
-const UNKNOWN_ROW_ID = 'unknown';
-
-const completenessFailure = (
-  batchRowId: string | undefined
-): ImportRequirementFailure =>
-  failure(batchRowId ?? UNKNOWN_ROW_ID, 'import.match.invalidated_decision');
 
 /**
  * Import set verification shared by Continue and Finalize: evaluate the

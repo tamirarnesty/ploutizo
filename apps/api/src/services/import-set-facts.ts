@@ -34,10 +34,16 @@ const loadCounterpartAccounts = async (
   counterpartIds: readonly string[],
   tx: Transaction
 ) => {
+  const uniqueIds = [...new Set(counterpartIds)];
+  const accounts = await Promise.all(
+    uniqueIds.map((accountId) =>
+      fetchAccountWriteReference(orgId, accountId, {}, tx)
+    )
+  );
   const counterparts = new Map<string, AccountWriteReference>();
-  for (const accountId of [...new Set(counterpartIds)]) {
-    const account = await fetchAccountWriteReference(orgId, accountId, {}, tx);
-    if (account) counterparts.set(accountId, account);
+  for (let index = 0; index < uniqueIds.length; index++) {
+    const account = accounts[index];
+    if (account) counterparts.set(uniqueIds[index], account);
   }
   return counterparts;
 };

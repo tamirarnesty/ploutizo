@@ -276,12 +276,12 @@ describe('ImportFinalize', () => {
     expect(getImportFinalizePreviewSession('draft_1')).toBeUndefined();
   });
 
-  it('returns stale finalize failures to Review import with affected rows', async () => {
+  it('returns finalize requirement failures to Review import with affected rows', async () => {
     const user = userEvent.setup();
     finalizeMocks.finalize.mutateAsync.mockRejectedValue({
       error: {
-        code: 'IMPORT_FINALIZE_STALE',
-        message: 'This prepared import is stale.',
+        code: 'IMPORT_FINALIZE_NOT_READY',
+        message: 'Category is required.',
         details: {
           rows: [
             {

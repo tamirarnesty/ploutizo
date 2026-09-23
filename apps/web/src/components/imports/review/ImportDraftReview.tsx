@@ -172,7 +172,6 @@ const ImportDraftReviewContent = ({
       <ImportDraftReviewHeader
         meta={meta}
         rows={rows}
-        orgMembers={orgMembers}
         isLoading={isLoading}
         isContinuing={isPending}
         onRetryAutosave={retryAutosave}

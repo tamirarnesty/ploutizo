@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { getSelectableImportRows } from '@ploutizo/utils/import-row-readiness';
-import type { ImportReviewRow, OrgMember } from '@ploutizo/types';
+import type { ImportReviewRow } from '@ploutizo/types';
 import type { ImportDraftMeta } from '@/lib/data-access/imports';
 import { usePersistedPageSize } from '@/hooks/persistedPageSize';
 import { useFlushPendingInputs } from '@/lib/money/pending-input-flush';
