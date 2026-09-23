@@ -9,7 +9,10 @@ import {
   TransactionRowActionsDropdown,
   TransactionTableContextMenu,
 } from './TransactionRowActionMenus';
-import { getTransactionRowActions } from './transactionRowActions';
+import {
+  TRANSACTION_ROW_ID_ATTR,
+  getTransactionRowActions,
+} from './transactionRowActions';
 import type { CellContext } from '@tanstack/react-table';
 
 const renderDescriptionCell = (
@@ -63,11 +66,8 @@ const ContextMenuHarness = ({
         </tr>
       </thead>
       <tbody>
-        <tr>
+        <tr {...{ [TRANSACTION_ROW_ID_ATTR]: transaction.id }}>
           <td>{transaction.description}</td>
-          <td>
-            <div data-transaction-id={transaction.id} />
-          </td>
         </tr>
       </tbody>
     </table>
@@ -171,12 +171,7 @@ describe('transaction row action parity', () => {
       onDelete,
     });
 
-    render(
-      <TransactionRowActionsDropdown
-        transactionId={transaction.id}
-        actions={actions}
-      />
-    );
+    render(<TransactionRowActionsDropdown actions={actions} />);
 
     await user.click(
       screen.getByRole('button', { name: 'Transaction actions' })

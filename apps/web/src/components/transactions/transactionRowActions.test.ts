@@ -45,18 +45,41 @@ describe('resolveTransactionRowFromEventTarget', () => {
     document.body.innerHTML = `
       <table>
         <tbody>
-          <tr>
+          <tr data-transaction-id="${transaction.id}">
             <td><span id="desc">${transaction.description}</span></td>
-            <td><div data-transaction-id="${transaction.id}"></div></td>
           </tr>
         </tbody>
       </table>
     `;
 
     expect(
-      resolveTransactionRowFromEventTarget(document.getElementById('desc'), [
-        transaction,
-      ])
+      resolveTransactionRowFromEventTarget(
+        document.getElementById('desc'),
+        new Map([[transaction.id, transaction]])
+      )
+    ).toEqual(transaction);
+  });
+
+  it('resolves the parent row from expanded-row content', () => {
+    const transaction = mockTransactionRow();
+    document.body.innerHTML = `
+      <table>
+        <tbody>
+          <tr data-transaction-id="${transaction.id}">
+            <td>Coffee</td>
+          </tr>
+          <tr>
+            <td colspan="1"><span id="expanded">Expanded details</span></td>
+          </tr>
+        </tbody>
+      </table>
+    `;
+
+    expect(
+      resolveTransactionRowFromEventTarget(
+        document.getElementById('expanded'),
+        new Map([[transaction.id, transaction]])
+      )
     ).toEqual(transaction);
   });
 
@@ -65,18 +88,19 @@ describe('resolveTransactionRowFromEventTarget', () => {
       <table>
         <thead><tr><th id="header">Date</th></tr></thead>
         <tbody>
-          <tr>
+          <tr data-transaction-id="tx-1">
             <td>Coffee</td>
-            <td><div data-transaction-id="tx-1"></div></td>
           </tr>
         </tbody>
       </table>
     `;
 
+    const transaction = mockTransactionRow();
     expect(
-      resolveTransactionRowFromEventTarget(document.getElementById('header'), [
-        mockTransactionRow(),
-      ])
+      resolveTransactionRowFromEventTarget(
+        document.getElementById('header'),
+        new Map([[transaction.id, transaction]])
+      )
     ).toBeNull();
   });
 });

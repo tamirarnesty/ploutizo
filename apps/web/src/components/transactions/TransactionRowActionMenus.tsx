@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { MoreHorizontal } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import {
@@ -18,20 +18,41 @@ import {
   getTransactionRowActions,
   resolveTransactionRowFromEventTarget,
 } from './transactionRowActions';
-import type { ReactNode } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import type {
   TransactionRowAction,
   TransactionRowActionHandlers,
 } from './transactionRowActions';
 
+type RowActionMenuItemProps = {
+  variant?: TransactionRowAction['variant'];
+  onClick?: () => void;
+  children: ReactNode;
+};
+
+const TransactionRowActionMenuItems = ({
+  actions,
+  MenuItem,
+}: {
+  actions: readonly TransactionRowAction[];
+  MenuItem: ComponentType<RowActionMenuItemProps>;
+}) =>
+  actions.map((action) => (
+    <MenuItem
+      key={action.id}
+      variant={action.variant}
+      onClick={action.onSelect}
+    >
+      {action.label}
+    </MenuItem>
+  ));
+
 export const TransactionRowActionsDropdown = ({
-  transactionId,
   actions,
 }: {
-  transactionId: string;
   actions: readonly TransactionRowAction[];
 }) => (
-  <div className="flex justify-center" data-transaction-id={transactionId}>
+  <div className="flex justify-center">
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
@@ -47,15 +68,10 @@ export const TransactionRowActionsDropdown = ({
         }
       />
       <DropdownMenuContent align="end">
-        {actions.map((action) => (
-          <DropdownMenuItem
-            key={action.id}
-            variant={action.variant}
-            onClick={action.onSelect}
-          >
-            {action.label}
-          </DropdownMenuItem>
-        ))}
+        <TransactionRowActionMenuItems
+          actions={actions}
+          MenuItem={DropdownMenuItem}
+        />
       </DropdownMenuContent>
     </DropdownMenu>
   </div>
@@ -71,54 +87,49 @@ export const TransactionTableContextMenu = ({
   children: ReactNode;
 }) => {
   const [transaction, setTransaction] = useState<TransactionRow | null>(null);
-  const actions = transaction
-    ? getTransactionRowActions(transaction, { onEdit, onDelete })
+  const transactionRef = useRef<TransactionRow | null>(null);
+  const transactionsById = useMemo(
+    () => new Map(transactions.map((entry) => [entry.id, entry])),
+    [transactions]
+  );
+  const activeTransaction = transaction ?? transactionRef.current;
+  const actions = activeTransaction
+    ? getTransactionRowActions(activeTransaction, { onEdit, onDelete })
     : [];
-
-  const trackRow = (event: {
-    target: EventTarget | null;
-    stopPropagation: () => void;
-  }) => {
-    const next = resolveTransactionRowFromEventTarget(
-      event.target,
-      transactions
-    );
-    setTransaction(next);
-    if (!next) event.stopPropagation();
-    return next;
-  };
 
   return (
     <ContextMenu
       onOpenChange={(open, eventDetails) => {
         if (!open) {
+          transactionRef.current = null;
           setTransaction(null);
           return;
         }
 
-        // Right-click and long-press both open here. Items always come from
-        // getTransactionRowActions; this only picks which row they apply to.
-        if (!trackRow(eventDetails.event)) eventDetails.cancel();
+        const next = resolveTransactionRowFromEventTarget(
+          eventDetails.event.target,
+          transactionsById
+        );
+        if (!next) {
+          eventDetails.cancel();
+          return;
+        }
+
+        transactionRef.current = next;
+        setTransaction(next);
       }}
     >
       <ContextMenuTrigger
         // Kit trigger defaults to select-none; keep ordinary cell text selection.
         className="block w-full min-w-0 select-text"
-        onContextMenuCapture={trackRow}
-        onTouchStartCapture={trackRow}
       >
         {children}
       </ContextMenuTrigger>
       <ContextMenuContent>
-        {actions.map((action) => (
-          <ContextMenuItem
-            key={action.id}
-            variant={action.variant}
-            onClick={action.onSelect}
-          >
-            {action.label}
-          </ContextMenuItem>
-        ))}
+        <TransactionRowActionMenuItems
+          actions={actions}
+          MenuItem={ContextMenuItem}
+        />
       </ContextMenuContent>
     </ContextMenu>
   );

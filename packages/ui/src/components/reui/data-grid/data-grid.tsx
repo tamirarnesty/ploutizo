@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useMemo } from 'react';
-import type { ReactNode } from 'react';
+import type { ComponentPropsWithoutRef, ReactNode } from 'react';
 import type {
   Column,
   ColumnFiltersState,
@@ -59,6 +59,12 @@ export interface DataGridContextProps<TData extends object> {
   isLoading: boolean;
 }
 
+export type DataGridBodyRowProps = Omit<
+  ComponentPropsWithoutRef<'tr'>,
+  'children'
+> &
+  Partial<Record<`data-${string}`, string>>;
+
 export type DataGridRequestParams = {
   pageIndex: number;
   pageSize: number;
@@ -72,6 +78,8 @@ export interface DataGridProps<TData extends object> {
   recordCount: number;
   children?: ReactNode;
   onRowClick?: (row: TData) => void;
+  /** Extra attributes for each body `<tr>` (e.g. row identity for context menus). */
+  getBodyRowProps?: (row: TData) => DataGridBodyRowProps;
   isLoading?: boolean;
   loadingMode?: 'skeleton' | 'spinner';
   loadingMessage?: ReactNode | string;
@@ -160,6 +168,7 @@ function DataGridProvider<TData extends object>({
       props.allRowsLoadedMessage,
       props.emptyMessage,
       props.onRowClick,
+      props.getBodyRowProps,
       props.className,
       JSON.stringify(props.tableLayout),
       JSON.stringify(props.tableClassNames),

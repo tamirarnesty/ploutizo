@@ -21,6 +21,7 @@ import { useEffectiveTablePageSize } from '@/hooks/useEffectiveTablePageSize';
 import { usePreloadLucideIcons } from '@/components/categories/usePreloadLucideIcons';
 import { buildColumns } from './TransactionColumns';
 import { TransactionTableContextMenu } from './TransactionRowActionMenus';
+import { getTransactionRowBodyRowProps } from './transactionRowActions';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import { TransactionsTableEmpty } from './TransactionTableEmpty';
 import { TransactionsTableEmptyFiltered } from './TransactionTableEmptyFiltered';
@@ -156,6 +157,7 @@ export const TransactionsTable = ({
         recordCount={total}
         isLoading={isLoading}
         emptyMessage="No transactions yet"
+        getBodyRowProps={getTransactionRowBodyRowProps}
         tableLayout={{
           width: 'fixed',
           columnsFill: true,

@@ -972,14 +972,16 @@ function DataGridTableBodyRow<TData>({
     props.tableLayout?.rowBorderWhenExpanded,
     isExpanded
   );
+  const bodyRowProps = props.getBodyRowProps?.(row.original) ?? {};
 
   return (
     <tr
+      {...bodyRowProps}
       ref={(node) => {
         assignRef(rowRef, node);
         assignRef(dndRef, node);
       }}
-      style={{ ...(dndStyle ? dndStyle : null) }}
+      style={{ ...(dndStyle ? dndStyle : null), ...bodyRowProps.style }}
       data-state={
         table.options.enableRowSelection && row.getIsSelected()
           ? 'selected'

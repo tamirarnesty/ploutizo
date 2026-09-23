@@ -475,7 +475,6 @@ export const buildColumns = (
       },
       cell: ({ row }) => (
         <TransactionRowActionsDropdown
-          transactionId={row.original.id}
           actions={getTransactionRowActions(row.original, handlers)}
         />
       ),
