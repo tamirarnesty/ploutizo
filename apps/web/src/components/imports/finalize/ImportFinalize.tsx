@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Link, useBlocker, useNavigate } from '@tanstack/react-router';
 import { toast } from '@ploutizo/ui/components/sonner';
 import { Button } from '@ploutizo/ui/components/button';
@@ -148,7 +148,6 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
   const finalizeImport = useFinalizeImportDraft(draftId);
   const [transportError, setTransportError] = useState<string | null>(null);
   const leavingRef = useRef(false);
-  const redirectedRef = useRef(false);
   const session = getImportFinalizePreviewSession(draftId);
   const preview = session?.preview;
   const rowIds = session?.rowIds ?? [];
@@ -168,15 +167,6 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
     [draftId, navigate]
   );
 
-  useEffect(() => {
-    if (redirectedRef.current || preview) return;
-    redirectedRef.current = true;
-    void navigate({
-      ...importDraftReviewRoute(draftId),
-      state: { importReview: { prepareAgain: true } },
-    });
-  }, [draftId, navigate, preview]);
-
   const backToReview = useCallback(() => {
     if (leavingRef.current) return;
     leavingRef.current = true;
@@ -187,6 +177,11 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
       state: { importReview: { prepareAgain: true } },
     });
   }, [draftId, navigate]);
+
+  const leaveToImportHub = useCallback(() => {
+    leavingRef.current = true;
+    void navigate({ to: '/import', ignoreBlocker: true });
+  }, [navigate]);
 
   useBlocker({
     shouldBlockFn: async ({ current, next }) => {
@@ -207,7 +202,6 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
     setTransportError(null);
     try {
       const result = await finalizeImport.mutateAsync({ rowIds });
-      leavingRef.current = true;
       const viewOutcome =
         result.createdCount > 0
           ? 'created'
@@ -230,10 +224,7 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
             }
           : undefined,
       });
-      void navigate({
-        to: '/import',
-        ignoreBlocker: true,
-      });
+      leaveToImportHub();
     } catch (error) {
       if (isImportStaleFinalizeError(error)) {
         returnToReview(getImportRequirementFailures(error));
@@ -244,7 +235,7 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
         notFoundRedirect === 'hub' ||
         getApiErrorCode(error) === 'NOT_FOUND'
       ) {
-        void navigate({ to: '/import' });
+        leaveToImportHub();
         return;
       }
       setTransportError(

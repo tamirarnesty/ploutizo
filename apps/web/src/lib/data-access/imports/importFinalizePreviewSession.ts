@@ -1,5 +1,6 @@
 import type { ImportFinalizePreview } from '@ploutizo/types';
 import { getActiveQueryClient } from '@/lib/access/working-set-registry';
+import { readImportFinalizePreviewSession } from './importFinalizeRouteGuard';
 import { importFinalizePreviewSessionQueryKey } from './queryKeys';
 
 export interface ImportFinalizePreviewSession {
@@ -20,9 +21,7 @@ export const setImportFinalizePreviewSession = (
 export const getImportFinalizePreviewSession = (
   draftId: string
 ): ImportFinalizePreviewSession | undefined =>
-  getActiveQueryClient().getQueryData(
-    importFinalizePreviewSessionQueryKey(draftId)
-  );
+  readImportFinalizePreviewSession(getActiveQueryClient(), draftId);
 
 export const clearImportFinalizePreviewSession = (draftId: string) => {
   getActiveQueryClient().removeQueries({

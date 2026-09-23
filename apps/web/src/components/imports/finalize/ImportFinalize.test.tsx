@@ -338,6 +338,10 @@ describe('ImportFinalize', () => {
 
   it('redirects a successful finalize to the Import hub with a view-transactions toast', async () => {
     const user = userEvent.setup();
+    finalizeMocks.finalize.mutateAsync.mockImplementation(async () => {
+      clearImportFinalizePreviewSession('draft_1');
+      return completedResult;
+    });
     render(<ImportFinalize draftId="draft_1" />);
 
     await user.click(screen.getByRole('button', { name: 'Finalize import' }));
@@ -354,6 +358,9 @@ describe('ImportFinalize', () => {
       to: '/import',
       ignoreBlocker: true,
     });
+    expect(routerMocks.navigate).not.toHaveBeenCalledWith(
+      expect.objectContaining(importDraftReviewRoute('draft_1'))
+    );
 
     const toastArg = finalizeMocks.toastSuccess.mock.calls[0]?.[1] as {
       action?: { onClick?: () => void };
@@ -363,19 +370,6 @@ describe('ImportFinalize', () => {
       to: '/transactions',
       search: { importBatchId: 'batch_1', importOutcome: 'created' },
     });
-  });
-
-  it('redirects to Review import when preview session is missing', async () => {
-    clearImportFinalizePreviewSession('draft_1');
-
-    render(<ImportFinalize draftId="draft_1" />);
-
-    await waitFor(() =>
-      expect(routerMocks.navigate).toHaveBeenCalledWith({
-        ...importDraftReviewRoute('draft_1'),
-        state: { importReview: { prepareAgain: true } },
-      })
-    );
   });
 
   it('redirects a completed batch to the Import hub on finalize not-found', async () => {
@@ -393,6 +387,7 @@ describe('ImportFinalize', () => {
     await waitFor(() =>
       expect(routerMocks.navigate).toHaveBeenCalledWith({
         to: '/import',
+        ignoreBlocker: true,
       })
     );
   });
