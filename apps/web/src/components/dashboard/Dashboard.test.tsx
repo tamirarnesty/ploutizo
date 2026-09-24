@@ -117,10 +117,8 @@ const fetchMock = vi.fn((input: RequestInfo | URL) => {
   return Promise.reject(new Error(`Unexpected request: ${url}`));
 });
 
-const settlementsRequestCount = () =>
-  fetchMock.mock.calls.filter((call) =>
-    String(call[0]).includes('/api/settlements')
-  ).length;
+const requestCount = (path: string) =>
+  fetchMock.mock.calls.filter((call) => String(call[0]).includes(path)).length;
 
 const renderDashboard = () => {
   const queryClient = new QueryClient({
@@ -190,12 +188,14 @@ describe('Dashboard', () => {
     renderDashboard();
 
     await screen.findByText('Visa');
-    expect(settlementsRequestCount()).toBe(1);
+    expect(requestCount('/api/settlements')).toBe(1);
+    expect(requestCount('/api/households/members')).toBe(1);
 
     await user.click(screen.getByRole('button', { name: 'Retry' }));
 
     await waitFor(() => {
-      expect(settlementsRequestCount()).toBe(2);
+      expect(requestCount('/api/settlements')).toBe(2);
+      expect(requestCount('/api/households/members')).toBe(2);
     });
   });
 
