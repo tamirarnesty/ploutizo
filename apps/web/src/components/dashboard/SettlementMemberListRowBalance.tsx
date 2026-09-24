@@ -32,6 +32,7 @@ export const SettlementMemberListRowBalance = ({
 
   return (
     <Item
+      role="listitem"
       variant="default"
       size="xs"
       className="w-full flex-nowrap border-0 bg-transparent p-1 shadow-none transition-colors hover:bg-muted/40"

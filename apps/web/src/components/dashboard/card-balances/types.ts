@@ -9,5 +9,6 @@ export type CardBalancesSettleClickHandler = (
 export interface CardBalancesGridProps {
   rows: CardBalanceRowViewModel[];
   isLoading: boolean;
+  isError: boolean;
   onSettleClick: CardBalancesSettleClickHandler;
 }

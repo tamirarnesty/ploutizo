@@ -1,12 +1,19 @@
-import { Text } from '@ploutizo/ui/components/text';
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from '@ploutizo/ui/components/empty';
 
 export const CardBalancesEmpty = () => (
-  <div className="p-6 text-center">
-    <Text variant="body" className="font-semibold">
-      No credit card accounts
-    </Text>
-    <Text variant="caption" className="mt-1">
-      Add a credit card account to see balance breakdowns.
-    </Text>
-  </div>
+  <Empty>
+    <EmptyHeader className="gap-1">
+      <EmptyTitle className="text-base font-semibold">
+        No credit card accounts
+      </EmptyTitle>
+      <EmptyDescription className="text-xs">
+        Add a credit card account to see balance breakdowns.
+      </EmptyDescription>
+    </EmptyHeader>
+  </Empty>
 );
