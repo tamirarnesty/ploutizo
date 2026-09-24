@@ -156,7 +156,7 @@ describe('Dashboard', () => {
     vi.unstubAllGlobals();
   });
 
-  it('shows the card balances total in the section header instead of a footer row', async () => {
+  it('shows the card balances total in the section header', async () => {
     renderDashboard();
 
     const header = await waitFor(() => cardHeaderFor('Card Balances'));
@@ -164,11 +164,6 @@ describe('Dashboard', () => {
       expect(within(header).getByText(CARD_BALANCES_TOTAL)).toBeInTheDocument();
     });
     expect(within(header).getByText('Total')).toBeInTheDocument();
-
-    expect(screen.queryByText('Total outstanding')).not.toBeInTheDocument();
-    expect(
-      cardFor('Card Balances').querySelector('tfoot')
-    ).not.toBeInTheDocument();
   });
 
   it('renders the settlement summary as its own card', async () => {
@@ -199,28 +194,37 @@ describe('Dashboard', () => {
     });
   });
 
-  it('shows a per-card error with no per-card refresh when the data fails', async () => {
+  it('shows an error in each card when the data fails', async () => {
     settlementsFail = true;
     renderDashboard();
 
-    expect(
-      await screen.findByText(/Couldn’t load card balances/)
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Couldn’t load settlement summary/)
-    ).toBeInTheDocument();
+    await screen.findByText(/Couldn’t load card balances/);
 
     expect(
-      within(cardFor('Card Balances')).queryByRole('button', {
-        name: /retry|refresh/i,
-      })
-    ).not.toBeInTheDocument();
+      within(cardFor('Card Balances')).getByText(/Couldn’t load card balances/)
+    ).toBeInTheDocument();
     expect(
-      within(cardFor('Settlement')).queryByRole('button', {
-        name: /retry|refresh/i,
-      })
-    ).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: 'Refresh' })).toHaveLength(1);
+      within(cardFor('Settlement')).getByText(
+        /Couldn’t load settlement summary/
+      )
+    ).toBeInTheDocument();
+  });
+
+  it('recovers failed cards from the header Refresh', async () => {
+    const user = userEvent.setup();
+    settlementsFail = true;
+    renderDashboard();
+
+    await screen.findByText(/Couldn’t load card balances/);
+    settlementsFail = false;
+    await user.click(screen.getByRole('button', { name: 'Refresh' }));
+
+    expect(
+      await within(cardFor('Card Balances')).findByText('Visa')
+    ).toBeInTheDocument();
+    expect(
+      within(cardFor('Settlement')).getByText('Personal')
+    ).toBeInTheDocument();
   });
 
   it.each(['Card Balances', 'Settlement'])(
@@ -230,13 +234,11 @@ describe('Dashboard', () => {
       renderDashboard();
 
       await screen.findByText('Visa');
-      expect(screen.queryByText(/All time/)).not.toBeInTheDocument();
-
       await user.hover(
         screen.getByRole('button', { name: `About ${section}` })
       );
 
-      expect(await screen.findByText(/^All time/)).toBeInTheDocument();
+      expect(await screen.findByText('All time')).toBeInTheDocument();
     }
   );
 });

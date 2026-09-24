@@ -36,8 +36,6 @@ export const SettlementSummaryPane = ({
             ? 'Add a credit card to track exposure.'
             : 'On credit cards'
         }
-        totalCents={hasBalances ? householdSummary.cardTotalCents : undefined}
-        isLoading={!error && isLoading}
       />
       {error ? (
         <DashboardCardError message="Couldn’t load settlement summary. Check your connection and try again." />

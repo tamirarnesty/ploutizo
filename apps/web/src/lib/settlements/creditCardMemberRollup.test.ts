@@ -23,7 +23,6 @@ describe('computeCreditCardMemberRollup', () => {
     expect(result.memberRollup.size).toBe(0);
     expect(result.householdSummary).toEqual({
       sharedRollupCents: 0,
-      cardTotalCents: 0,
     });
   });
 
@@ -80,7 +79,6 @@ describe('computeCreditCardMemberRollup', () => {
     });
     expect(result.householdSummary).toEqual({
       sharedRollupCents: 2500,
-      cardTotalCents: 8000,
     });
   });
 });
