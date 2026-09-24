@@ -5,22 +5,16 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@ploutizo/ui/components/card';
-import { Text } from '@ploutizo/ui/components/text';
+import { Card, CardContent, CardFooter } from '@ploutizo/ui/components/card';
 import { DataGrid } from '@ploutizo/ui/components/reui/data-grid/data-grid';
 import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-grid-scroll-area';
 import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-table';
 import { DataGridPagination } from '@ploutizo/ui/components/reui/data-grid/data-grid-pagination';
 import type { CardBalancesGridProps } from '@/components/dashboard/card-balances/types';
 import { buildCardBalancesColumns } from '@/components/dashboard/card-balances/buildCardBalancesColumns';
-import { CardBalancesGridFooter } from '@/components/dashboard/card-balances/CardBalancesGridFooter';
 import { CardBalancesEmpty } from '@/components/dashboard/card-balances/CardBalancesEmpty';
+import { DashboardCardError } from '@/components/dashboard/DashboardCardError';
+import { DashboardLiveCardHeader } from '@/components/dashboard/DashboardLiveCardHeader';
 import { usePersistedPageSize } from '@/hooks/persistedPageSize';
 import { CARD_BALANCES_PAGE_SIZE_OPTIONS } from '@/lib/prefs/pageSizeConfig';
 import {
@@ -29,16 +23,10 @@ import {
 } from '@/components/data-grid/dataGridSharedLayout';
 import type { SortingState } from '@tanstack/react-table';
 
-const CardBalancesGridHeader = () => (
-  <CardHeader className="border-b px-3.5 pt-3 [.border-b]:pb-3">
-    <CardTitle className="text-lg leading-tight">Card Balances</CardTitle>
-    <Text variant="caption">All time</Text>
-  </CardHeader>
-);
-
 export const CardBalancesGrid = ({
   rows,
   isLoading,
+  isError,
   onSettleClick,
 }: CardBalancesGridProps) => {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -60,20 +48,33 @@ export const CardBalancesGrid = ({
     getPaginationRowModel: getPaginationRowModel(),
   });
 
+  /** Card balances total: credit nets against amounts owed. */
   const balanceTotalCents = useMemo(
     () => rows.reduce((sum, row) => sum + row.totalBalanceCents, 0),
     [rows]
   );
 
-  const footer =
-    rows.length === 0 ? undefined : (
-      <CardBalancesGridFooter balanceTotalCents={balanceTotalCents} />
+  const header = (
+    <DashboardLiveCardHeader
+      title="Card Balances"
+      totalCents={isError || rows.length === 0 ? undefined : balanceTotalCents}
+      isLoading={!isError && isLoading}
+    />
+  );
+
+  if (isError) {
+    return (
+      <Card className="w-full gap-0 py-0">
+        {header}
+        <DashboardCardError message="Couldn’t load card balances. Check your connection and try again." />
+      </Card>
     );
+  }
 
   if (rows.length === 0 && !isLoading) {
     return (
       <Card className="w-full gap-0 py-0">
-        <CardBalancesGridHeader />
+        {header}
         <CardBalancesEmpty />
       </Card>
     );
@@ -93,12 +94,12 @@ export const CardBalancesGrid = ({
       }}
     >
       <Card className="w-full gap-0 py-0">
-        <CardBalancesGridHeader />
+        {header}
         <CardContent className="border-b px-0">
           <DataGridScrollArea
             orientation={PAGINATED_DATA_GRID_SCROLL_ORIENTATION}
           >
-            <DataGridTable footerContent={footer} />
+            <DataGridTable />
           </DataGridScrollArea>
         </CardContent>
         <CardFooter className="border-none bg-transparent px-3.5 py-2">

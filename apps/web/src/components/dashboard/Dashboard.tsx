@@ -1,5 +1,4 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Text } from '@ploutizo/ui/components/text';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';
 import type { CardBalanceRowViewModel } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
 import type { CardBalancesSettleClickHandler } from '@/components/dashboard/card-balances/types';
@@ -8,6 +7,7 @@ import { useGetHouseholdMembers } from '@/lib/data-access/household';
 import { useGetSettlements } from '@/lib/data-access/settlements';
 import { selectCreditCardAccounts } from '@/lib/settlements';
 import { CardBalancesGrid } from '@/components/dashboard/card-balances/CardBalancesGrid';
+import { DashboardHeader } from './DashboardHeader';
 import { SettleDialog } from './SettleDialog';
 import { SettlementSummaryPane } from './SettlementSummaryPane';
 
@@ -17,10 +17,20 @@ export const Dashboard = () => {
     data: settlements,
     isLoading: settlementsLoading,
     isError: settlementsError,
+    isFetching: settlementsFetching,
+    refetch: refetchSettlements,
   } = useGetSettlements();
-  const { data: members = [], isLoading: membersLoading } =
-    useGetHouseholdMembers();
-  const summaryPaneLoading = settlementsLoading || membersLoading;
+  const {
+    data: members = [],
+    isLoading: membersLoading,
+    isError: membersError,
+    isFetching: membersFetching,
+    refetch: refetchMembers,
+  } = useGetHouseholdMembers();
+
+  // Both live cards read the same two queries, so they share loading and error state.
+  const liveSectionsLoading = settlementsLoading || membersLoading;
+  const liveSectionsError = settlementsError || membersError;
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [activeAccount, setActiveAccount] =
@@ -52,38 +62,40 @@ export const Dashboard = () => {
     setDialogOpen(false);
   }, []);
 
+  const handleRetry = useCallback(() => {
+    void refetchSettlements();
+    void refetchMembers();
+  }, [refetchSettlements, refetchMembers]);
+
   return (
     <div className="space-y-6">
-      <div className="min-w-0">
-        <Text as="h1" variant="h2" className="min-w-0 truncate">
-          Dashboard
-        </Text>
-        <Text variant="caption" className="text-muted-foreground">
-          {`Family overview · ${members.length} member${members.length === 1 ? '' : 's'}`}
-        </Text>
-      </div>
+      <DashboardHeader
+        onRetry={handleRetry}
+        isRefreshing={settlementsFetching || membersFetching}
+      />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <div className="min-w-0 md:col-span-3">
-          {settlementsError ? (
-            <Text variant="error">
-              Couldn’t load card balances. Check your connection and try again.
-            </Text>
-          ) : (
+      {/*
+        Container query, not a viewport breakpoint: cards must also reflow when
+        the sidebar opens or closes, which only changes the available width.
+      */}
+      <div className="@container/dashboard">
+        <div className="grid grid-cols-1 items-start gap-4 @4xl/dashboard:grid-cols-4">
+          <div className="min-w-0 @4xl/dashboard:col-span-3">
             <CardBalancesGrid
               rows={cardBalanceRows}
-              isLoading={settlementsLoading}
+              isLoading={liveSectionsLoading}
+              isError={liveSectionsError}
               onSettleClick={handleSettleClick}
             />
-          )}
-        </div>
-        <div className="min-w-0 md:col-span-1">
-          <SettlementSummaryPane
-            accounts={settlements?.accounts}
-            error={settlementsError}
-            isLoading={summaryPaneLoading}
-            members={members}
-          />
+          </div>
+          <div className="min-w-0 @4xl/dashboard:col-span-1">
+            <SettlementSummaryPane
+              accounts={settlements?.accounts}
+              error={liveSectionsError}
+              isLoading={liveSectionsLoading}
+              members={members}
+            />
+          </div>
         </div>
       </div>
 
