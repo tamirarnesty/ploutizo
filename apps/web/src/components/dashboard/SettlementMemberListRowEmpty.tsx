@@ -21,6 +21,7 @@ export const SettlementMemberListRowEmpty = ({
   household,
 }: SettlementMemberListRowEmptyProps) => (
   <Item
+    role="listitem"
     variant="default"
     size="xs"
     className="w-full flex-nowrap border-0 bg-transparent px-0 py-1 shadow-none transition-colors hover:bg-muted/40"

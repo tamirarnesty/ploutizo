@@ -7,7 +7,6 @@ export {
 export {
   computeCreditCardMemberRollup,
   type CreditCardMemberRollupResult,
-  type HouseholdSettlementSummary,
   type MemberSettlementRollup,
 } from './creditCardMemberRollup';
 export {

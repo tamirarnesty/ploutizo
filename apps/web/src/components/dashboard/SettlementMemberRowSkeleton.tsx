@@ -9,6 +9,7 @@ import { Skeleton } from '@ploutizo/ui/components/skeleton';
 /** Mirrors SettlementMemberListRow Item layout (avatar + two-line stack + amount). */
 export const SettlementMemberRowSkeleton = () => (
   <Item
+    role="listitem"
     variant="default"
     size="xs"
     className="w-full flex-nowrap border-0 bg-transparent px-0 py-1 shadow-none hover:bg-transparent"

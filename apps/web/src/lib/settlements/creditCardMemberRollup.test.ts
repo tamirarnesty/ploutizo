@@ -21,9 +21,7 @@ describe('computeCreditCardMemberRollup', () => {
     const result = computeCreditCardMemberRollup([]);
     expect(result.hasHouseholdCreditCards).toBe(false);
     expect(result.memberRollup.size).toBe(0);
-    expect(result.householdSummary).toEqual({
-      sharedRollupCents: 0,
-    });
+    expect(result.sharedRollupCents).toBe(0);
   });
 
   it('aggregates personal and shared balances across cards', () => {
@@ -77,8 +75,6 @@ describe('computeCreditCardMemberRollup', () => {
       cents: 1500,
       cardCount: 2,
     });
-    expect(result.householdSummary).toEqual({
-      sharedRollupCents: 2500,
-    });
+    expect(result.sharedRollupCents).toBe(2500);
   });
 });

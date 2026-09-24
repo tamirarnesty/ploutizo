@@ -6,14 +6,10 @@ export type MemberSettlementRollup = {
   cardCount: number;
 };
 
-export type HouseholdSettlementSummary = {
-  sharedRollupCents: number;
-};
-
 export type CreditCardMemberRollupResult = {
   hasHouseholdCreditCards: boolean;
   memberRollup: Map<string, MemberSettlementRollup>;
-  householdSummary: HouseholdSettlementSummary;
+  sharedRollupCents: number;
 };
 
 export const computeCreditCardMemberRollup = (
@@ -44,6 +40,6 @@ export const computeCreditCardMemberRollup = (
   return {
     hasHouseholdCreditCards,
     memberRollup,
-    householdSummary: { sharedRollupCents },
+    sharedRollupCents,
   };
 };

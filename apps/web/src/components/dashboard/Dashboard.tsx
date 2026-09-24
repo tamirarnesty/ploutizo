@@ -1,4 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
+import { toast } from '@ploutizo/ui/components/sonner';
+import type { OrgMember } from '@ploutizo/types';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';
 import type { CardBalanceRowViewModel } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
 import type { CardBalancesSettleClickHandler } from '@/components/dashboard/card-balances/types';
@@ -11,6 +13,8 @@ import { DashboardHeader } from './DashboardHeader';
 import { SettleDialog } from './SettleDialog';
 import { SettlementSummaryPane } from './SettlementSummaryPane';
 
+const NO_MEMBERS: OrgMember[] = [];
+
 // All queries fire at top level — no waterfalls (vercel-react-best-practices).
 export const Dashboard = () => {
   const {
@@ -21,16 +25,25 @@ export const Dashboard = () => {
     refetch: refetchSettlements,
   } = useGetSettlements();
   const {
-    data: members = [],
+    data: membersData,
     isLoading: membersLoading,
     isError: membersError,
     isFetching: membersFetching,
     refetch: refetchMembers,
   } = useGetHouseholdMembers();
 
+  const members = membersData ?? NO_MEMBERS;
+  const isRefreshing = settlementsFetching || membersFetching;
+
   // Both live cards read the same two queries, so they share loading and error state.
-  const liveSectionsLoading = settlementsLoading || membersLoading;
-  const liveSectionsError = settlementsError || membersError;
+  // A failed refetch keeps cached data on screen; only a failed first load replaces the cards.
+  const hasLoadFailure =
+    (settlementsError && settlements === undefined) ||
+    (membersError && membersData === undefined);
+  // Refreshing after a failed first load shows skeletons until it settles.
+  const liveSectionsLoading =
+    settlementsLoading || membersLoading || (hasLoadFailure && isRefreshing);
+  const liveSectionsError = hasLoadFailure && !isRefreshing;
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [activeAccount, setActiveAccount] =
@@ -62,16 +75,24 @@ export const Dashboard = () => {
     setDialogOpen(false);
   }, []);
 
-  const handleRetry = useCallback(() => {
-    void refetchSettlements();
-    void refetchMembers();
+  const handleRefresh = useCallback(() => {
+    void Promise.all([refetchSettlements(), refetchMembers()]).then(
+      (results) => {
+        // A failed refetch keeps cached data on screen, so flag it as out of date.
+        if (results.some((r) => r.isError && r.data !== undefined)) {
+          toast.error('Refresh failed.', {
+            description: 'Balances may be out of date.',
+          });
+        }
+      }
+    );
   }, [refetchSettlements, refetchMembers]);
 
   return (
     <div className="space-y-6">
       <DashboardHeader
-        onRetry={handleRetry}
-        isRefreshing={settlementsFetching || membersFetching}
+        onRefresh={handleRefresh}
+        isRefreshing={isRefreshing || liveSectionsLoading}
       />
 
       {/*
@@ -91,7 +112,7 @@ export const Dashboard = () => {
           <div className="min-w-0 @4xl/dashboard:col-span-1">
             <SettlementSummaryPane
               accounts={settlements?.accounts}
-              error={liveSectionsError}
+              isError={liveSectionsError}
               isLoading={liveSectionsLoading}
               members={members}
             />

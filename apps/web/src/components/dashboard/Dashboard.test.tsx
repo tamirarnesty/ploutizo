@@ -5,10 +5,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import type {
   GetSettlementBalancesResponse,
+  MemberIdentity,
   OrgMember,
   SettlementAccountRow,
 } from '@ploutizo/types';
 import { Dashboard } from '@/components/dashboard/Dashboard';
+import { settlementMember } from '@/test/settlementFixtures';
+
+const toastMocks = vi.hoisted(() => ({ error: vi.fn() }));
+
+vi.mock('@ploutizo/ui/components/sonner', () => ({
+  toast: { error: toastMocks.error },
+}));
 
 vi.mock('@/lib/access/AccessProvider', async () => {
   const { householdAccessProviderMock } =
@@ -20,29 +28,20 @@ vi.mock('@/lib/access/working-set', () => ({
   getHouseholdBearer: () => Promise.resolve('test-household-bearer'),
 }));
 
-const member = (id: string, firstName: string): OrgMember => ({
-  id,
+const SETTLEMENTS_PATH = '/api/settlements';
+const MEMBERS_PATH = '/api/households/members';
+
+const orgMember = (identity: MemberIdentity): OrgMember => ({
+  ...identity,
   orgId: 'org_a',
   role: 'admin',
   joinedAt: '2026-01-01T00:00:00.000Z',
-  externalId: `user_${id}`,
-  email: `${firstName.toLowerCase()}@example.com`,
-  imageUrl: null,
-  firstName,
-  lastName: null,
+  externalId: `user_${identity.id}`,
 });
 
-const ada = member('m_ada', 'Ada');
-const alan = member('m_alan', 'Alan');
-const members = [ada, alan];
-
-const identity = ({ id, firstName, lastName, email, imageUrl }: OrgMember) => ({
-  id,
-  firstName,
-  lastName,
-  email,
-  imageUrl,
-});
+const adaIdentity = settlementMember('m_ada', 'Ada', 'ada@example.com');
+const alanIdentity = settlementMember('m_alan', 'Alan', 'alan@example.com');
+const members = [orgMember(adaIdentity), orgMember(alanIdentity)];
 
 const visa: SettlementAccountRow = {
   account: {
@@ -52,14 +51,14 @@ const visa: SettlementAccountRow = {
     institutionId: null,
     lastFour: '1234',
     statementDueDay: null,
-    owners: [identity(ada)],
+    owners: [adaIdentity],
   },
   totalBalanceCents: 30000,
   sharedBalanceCents: 10000,
-  sharedParticipantIds: [ada.id, alan.id],
+  sharedParticipantIds: [adaIdentity.id, alanIdentity.id],
   members: [
-    { member: identity(ada), personalBalanceCents: 20000 },
-    { member: identity(alan), personalBalanceCents: 0 },
+    { member: adaIdentity, personalBalanceCents: 20000 },
+    { member: alanIdentity, personalBalanceCents: 0 },
   ],
   dueDate: null,
   status: null,
@@ -73,14 +72,14 @@ const amex: SettlementAccountRow = {
     institutionId: null,
     lastFour: '5678',
     statementDueDay: null,
-    owners: [identity(alan)],
+    owners: [alanIdentity],
   },
   totalBalanceCents: -5000,
   sharedBalanceCents: 0,
   sharedParticipantIds: [],
   members: [
-    { member: identity(ada), personalBalanceCents: -5000 },
-    { member: identity(alan), personalBalanceCents: 0 },
+    { member: adaIdentity, personalBalanceCents: -5000 },
+    { member: alanIdentity, personalBalanceCents: 0 },
   ],
   dueDate: null,
   status: null,
@@ -90,6 +89,8 @@ const settlements: GetSettlementBalancesResponse = { accounts: [visa, amex] };
 
 /** $300.00 owed + $50.00 credit nets to the card balances total. */
 const CARD_BALANCES_TOTAL = '$250.00';
+/** Ada owes $200.00 personally on Visa, less $50.00 credit on Amex. */
+const ADA_PERSONAL = '$150.00';
 
 const jsonResponse = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -97,24 +98,37 @@ const jsonResponse = (body: unknown, status = 200) =>
     headers: { 'Content-Type': 'application/json' },
   });
 
-let settlementsFail = false;
+let settlementsBody = settlements;
+let membersBody = members;
+const failingPaths = new Set<string>();
+let requestGate: Promise<void> | null = null;
 
-const fetchMock = vi.fn((input: RequestInfo | URL) => {
+/** Holds every request until the returned release is called. */
+const holdRequests = () => {
+  let release = () => {};
+  requestGate = new Promise((resolve) => {
+    release = resolve;
+  });
+  return () => {
+    requestGate = null;
+    release();
+  };
+};
+
+const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
   const url = String(input);
-  if (url.includes('/api/settlements')) {
-    return Promise.resolve(
-      settlementsFail
-        ? jsonResponse(
-            { error: { code: 'SERVER_ERROR', message: 'boom' } },
-            500
-          )
-        : jsonResponse(settlements)
+  await requestGate;
+  const path = [SETTLEMENTS_PATH, MEMBERS_PATH].find((p) => url.includes(p));
+  if (!path) throw new Error(`Unexpected request: ${url}`);
+  if (failingPaths.has(path)) {
+    return jsonResponse(
+      { error: { code: 'SERVER_ERROR', message: 'boom' } },
+      500
     );
   }
-  if (url.includes('/api/households/members')) {
-    return Promise.resolve(jsonResponse({ data: members }));
-  }
-  return Promise.reject(new Error(`Unexpected request: ${url}`));
+  return jsonResponse(
+    path === SETTLEMENTS_PATH ? settlementsBody : { data: membersBody }
+  );
 });
 
 const requestCount = (path: string) =>
@@ -133,6 +147,8 @@ const renderDashboard = () => {
   );
 };
 
+const refreshButton = () => screen.getByRole('button', { name: 'Refresh' });
+
 const cardFor = (title: string) => {
   const card = screen.getByText(title).closest('[data-slot="card"]');
   if (!card) throw new Error(`No card found for "${title}"`);
@@ -147,8 +163,12 @@ const cardHeaderFor = (title: string) => {
 
 describe('Dashboard', () => {
   beforeEach(() => {
-    settlementsFail = false;
+    settlementsBody = settlements;
+    membersBody = members;
+    failingPaths.clear();
+    requestGate = null;
     fetchMock.mockClear();
+    toastMocks.error.mockClear();
     vi.stubGlobal('fetch', fetchMock);
   });
 
@@ -172,52 +192,111 @@ describe('Dashboard', () => {
     await screen.findByText('Visa');
 
     const settlementCard = cardFor('Settlement');
-    expect(settlementCard).not.toBe(cardFor('Card Balances'));
     expect(within(settlementCard).getByText('Personal')).toBeInTheDocument();
     expect(within(settlementCard).getByText('Shared')).toBeInTheDocument();
-    expect(within(settlementCard).getByText('$150.00')).toBeInTheDocument();
+    expect(within(settlementCard).getByText(ADA_PERSONAL)).toBeInTheDocument();
   });
 
-  it('refetches the settlements query from the header Refresh', async () => {
+  it('marks both cards busy and disables Refresh while the data loads', async () => {
+    const release = holdRequests();
+    renderDashboard();
+
+    expect(refreshButton()).toHaveAttribute('aria-disabled', 'true');
+    expect(cardFor('Card Balances')).toHaveAttribute('aria-busy', 'true');
+    expect(cardFor('Settlement')).toHaveAttribute('aria-busy', 'true');
+
+    release();
+
+    expect(
+      await within(cardFor('Card Balances')).findByText('Visa')
+    ).toBeInTheDocument();
+    expect(cardFor('Settlement')).toHaveAttribute('aria-busy', 'false');
+    expect(refreshButton()).toHaveAttribute('aria-disabled', 'false');
+  });
+
+  it('shows the latest data for both cards after the header Refresh', async () => {
     const user = userEvent.setup();
     renderDashboard();
 
     await screen.findByText('Visa');
-    expect(requestCount('/api/settlements')).toBe(1);
-    expect(requestCount('/api/households/members')).toBe(1);
+    settlementsBody = {
+      accounts: [{ ...visa, totalBalanceCents: 40000 }, amex],
+    };
+    membersBody = [
+      ...members,
+      orgMember(settlementMember('m_grace', 'Grace', 'grace@example.com')),
+    ];
 
-    await user.click(screen.getByRole('button', { name: 'Refresh' }));
+    await user.click(refreshButton());
 
+    expect(
+      await within(cardHeaderFor('Card Balances')).findByText('$350.00')
+    ).toBeInTheDocument();
+    expect(
+      await within(cardFor('Settlement')).findByText('Grace')
+    ).toBeInTheDocument();
+  });
+
+  it('keeps loaded data and flags it as out of date when a refresh fails', async () => {
+    const user = userEvent.setup();
+    renderDashboard();
+
+    await screen.findByText('Visa');
+    failingPaths.add(SETTLEMENTS_PATH);
+    failingPaths.add(MEMBERS_PATH);
+
+    await user.click(refreshButton());
     await waitFor(() => {
-      expect(requestCount('/api/settlements')).toBe(2);
-      expect(requestCount('/api/households/members')).toBe(2);
+      expect(requestCount(SETTLEMENTS_PATH)).toBe(2);
+    });
+    await waitFor(() => {
+      expect(refreshButton()).toHaveAttribute('aria-disabled', 'false');
+    });
+
+    expect(within(cardFor('Card Balances')).getByText('Visa')).toBeVisible();
+    expect(
+      within(cardHeaderFor('Card Balances')).getByText(CARD_BALANCES_TOTAL)
+    ).toBeVisible();
+    expect(within(cardFor('Settlement')).getByText(ADA_PERSONAL)).toBeVisible();
+    expect(toastMocks.error).toHaveBeenCalledWith('Refresh failed.', {
+      description: 'Balances may be out of date.',
     });
   });
 
-  it('shows an error in each card when the data fails', async () => {
-    settlementsFail = true;
-    renderDashboard();
+  it.each([
+    ['settlements', SETTLEMENTS_PATH],
+    ['household members', MEMBERS_PATH],
+  ])(
+    'shows an error in each card when %s fail to load',
+    async (_label, path) => {
+      failingPaths.add(path);
+      renderDashboard();
 
-    await screen.findByText(/Couldn’t load card balances/);
-
-    expect(
-      within(cardFor('Card Balances')).getByText(/Couldn’t load card balances/)
-    ).toBeInTheDocument();
-    expect(
-      within(cardFor('Settlement')).getByText(
-        /Couldn’t load settlement summary/
-      )
-    ).toBeInTheDocument();
-  });
+      expect(
+        await within(cardFor('Card Balances')).findByRole('alert')
+      ).toHaveTextContent(/Couldn’t load card balances/);
+      expect(
+        within(cardFor('Settlement')).getByRole('alert')
+      ).toHaveTextContent(/Couldn’t load settlement summary/);
+    }
+  );
 
   it('recovers failed cards from the header Refresh', async () => {
     const user = userEvent.setup();
-    settlementsFail = true;
+    failingPaths.add(SETTLEMENTS_PATH);
     renderDashboard();
 
     await screen.findByText(/Couldn’t load card balances/);
-    settlementsFail = false;
-    await user.click(screen.getByRole('button', { name: 'Refresh' }));
+    failingPaths.clear();
+    const release = holdRequests();
+    await user.click(refreshButton());
+
+    await waitFor(() => {
+      expect(cardFor('Card Balances')).toHaveAttribute('aria-busy', 'true');
+    });
+    expect(cardFor('Settlement')).toHaveAttribute('aria-busy', 'true');
+
+    release();
 
     expect(
       await within(cardFor('Card Balances')).findByText('Visa')
@@ -228,13 +307,13 @@ describe('Dashboard', () => {
   });
 
   it.each(['Card Balances', 'Settlement'])(
-    'explains that %s is all time',
+    'explains that %s is all time when its hint is tapped',
     async (section) => {
       const user = userEvent.setup();
       renderDashboard();
 
       await screen.findByText('Visa');
-      await user.hover(
+      await user.click(
         screen.getByRole('button', { name: `About ${section}` })
       );
 
