@@ -1,6 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { resolveFixedMtdOverviewRange } from '@ploutizo/utils/dashboard-period';
 import { isHouseholdLoaderReady } from '@/lib/access/household-loader-ready';
 import { Dashboard } from '@/components/dashboard/Dashboard';
+import { dashboardOverviewQueryOptions } from '@/lib/data-access/dashboard';
 import { householdMembersQueryOptions } from '@/lib/data-access/household';
 import { settlementsQueryOptions } from '@/lib/data-access/settlements';
 
@@ -17,6 +19,9 @@ export const Route = createFileRoute('/_layout/dashboard')({
       return;
     }
     await Promise.all([
+      context.queryClient.ensureQueryData(
+        dashboardOverviewQueryOptions(resolveFixedMtdOverviewRange())
+      ),
       context.queryClient.ensureQueryData(settlementsQueryOptions),
       context.queryClient.ensureQueryData(householdMembersQueryOptions),
     ]);

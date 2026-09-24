@@ -8,3 +8,4 @@ export * from './settlements';
 export * from './transactions';
 export * from './imports';
 export * from './import-formats';
+export * from './dashboard';

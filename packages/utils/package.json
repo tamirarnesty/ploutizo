@@ -38,6 +38,7 @@
     "./settlement-threshold": "./src/settlement-threshold.ts",
     "./member-label": "./src/member-label.ts",
     "./assignee-split": "./src/assignee-split/index.ts",
-    "./transaction-policy": "./src/transaction-policy/index.ts"
+    "./transaction-policy": "./src/transaction-policy/index.ts",
+    "./dashboard-period": "./src/dashboard-period/index.ts"
   }
 }
