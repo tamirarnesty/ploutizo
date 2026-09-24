@@ -13,7 +13,7 @@ type DashboardHeaderProps = {
   isRefreshing: boolean;
 };
 
-/** One Retry for the whole page — individual cards never own a retry control. */
+/** One Refresh for the whole page — individual cards never own a refresh control. */
 export const DashboardHeader = ({
   onRetry,
   isRefreshing,
@@ -29,7 +29,7 @@ export const DashboardHeader = ({
             type="button"
             variant="ghost"
             size="icon"
-            aria-label="Retry"
+            aria-label="Refresh"
             className="shrink-0"
             disabled={isRefreshing}
             onClick={onRetry}
@@ -38,7 +38,7 @@ export const DashboardHeader = ({
       >
         <RefreshCw className={cn(isRefreshing && 'motion-safe:animate-spin')} />
       </TooltipTrigger>
-      <TooltipContent>Refetch Dashboard data.</TooltipContent>
+      <TooltipContent>Refresh</TooltipContent>
     </Tooltip>
   </div>
 );

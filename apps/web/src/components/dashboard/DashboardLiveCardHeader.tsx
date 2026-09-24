@@ -10,7 +10,7 @@ import {
 } from '@ploutizo/ui/components/tooltip';
 import { SignedBalanceText } from '@/components/dashboard/SignedBalanceText';
 
-const ALL_TIME_HINT = 'All time — every transaction to date, not a date range.';
+const ALL_TIME_HINT = 'All time';
 
 type DashboardLiveCardHeaderProps = {
   title: string;
@@ -31,7 +31,7 @@ export const DashboardLiveCardHeader = ({
   isLoading = false,
 }: DashboardLiveCardHeaderProps) => (
   <CardHeader className="gap-0 border-b border-border px-3.5 pt-3 [.border-b]:pb-3">
-    <div className="flex w-full min-w-0 items-end justify-between gap-3">
+    <div className="flex w-full min-w-0 items-start justify-between gap-3">
       <div className="flex min-w-0 flex-col gap-1">
         <div className="flex min-w-0 items-center gap-0.5">
           <CardTitle className="truncate text-lg leading-tight">

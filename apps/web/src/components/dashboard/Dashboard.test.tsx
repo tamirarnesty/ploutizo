@@ -183,7 +183,7 @@ describe('Dashboard', () => {
     expect(within(settlementCard).getByText('$150.00')).toBeInTheDocument();
   });
 
-  it('refetches the settlements query from the header Retry', async () => {
+  it('refetches the settlements query from the header Refresh', async () => {
     const user = userEvent.setup();
     renderDashboard();
 
@@ -191,7 +191,7 @@ describe('Dashboard', () => {
     expect(requestCount('/api/settlements')).toBe(1);
     expect(requestCount('/api/households/members')).toBe(1);
 
-    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    await user.click(screen.getByRole('button', { name: 'Refresh' }));
 
     await waitFor(() => {
       expect(requestCount('/api/settlements')).toBe(2);
@@ -199,7 +199,7 @@ describe('Dashboard', () => {
     });
   });
 
-  it('shows a per-card error with no per-card retry when the data fails', async () => {
+  it('shows a per-card error with no per-card refresh when the data fails', async () => {
     settlementsFail = true;
     renderDashboard();
 
@@ -211,12 +211,16 @@ describe('Dashboard', () => {
     ).toBeInTheDocument();
 
     expect(
-      within(cardFor('Card Balances')).queryByRole('button', { name: /retry/i })
+      within(cardFor('Card Balances')).queryByRole('button', {
+        name: /retry|refresh/i,
+      })
     ).not.toBeInTheDocument();
     expect(
-      within(cardFor('Settlement')).queryByRole('button', { name: /retry/i })
+      within(cardFor('Settlement')).queryByRole('button', {
+        name: /retry|refresh/i,
+      })
     ).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: 'Retry' })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Refresh' })).toHaveLength(1);
   });
 
   it.each(['Card Balances', 'Settlement'])(
