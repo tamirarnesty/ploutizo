@@ -20,11 +20,11 @@ export interface ImportDraftReviewState {
   pagination: PaginationState;
   setPagination: (updater: Updater<PaginationState>) => void;
   rows: ImportReviewRow[];
-  currentPageSelectableRows: ImportReviewRow[];
   headerChecked: boolean;
   headerIndeterminate: boolean;
   setRowSelection: (rowId: string, selectedForImport: boolean) => void;
   setAllSelection: (selectedForImport: boolean) => void;
+  hasSelectableRows: boolean;
   hasReviewableRows: boolean;
   isLoading: boolean;
 }
@@ -47,14 +47,6 @@ export const useImportDraftReviewState = ({
 
   const { pageIndex, pageSize } = pagination;
   const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
-  const currentPageRows = useMemo(
-    () => rows.slice(pageIndex * pageSize, pageIndex * pageSize + pageSize),
-    [pageIndex, pageSize, rows]
-  );
-  const currentPageSelectableRows = useMemo(
-    () => getSelectableImportRows(currentPageRows),
-    [currentPageRows]
-  );
 
   const hasReviewableRows = computeImportDraftRowCounts(rows).validRowCount > 0;
 
@@ -68,10 +60,10 @@ export const useImportDraftReviewState = ({
     setPagination({ pageIndex: pageCount - 1, pageSize });
   }, [pageCount, pageIndex, pageSize, setPagination]);
 
-  const selectedCount = currentPageSelectableRows.filter(
+  const selectedCount = selectableRows.filter(
     (row) => row.selectedForImport
   ).length;
-  const totalSelectable = currentPageSelectableRows.length;
+  const totalSelectable = selectableRows.length;
   const headerChecked =
     totalSelectable > 0 && selectedCount === totalSelectable;
   const headerIndeterminate =
@@ -97,23 +89,23 @@ export const useImportDraftReviewState = ({
 
   const setAllSelection = useCallback(
     (selectedForImport: boolean) => {
-      const rowIds = currentPageSelectableRows
+      const rowIds = selectableRows
         .filter((row) => row.selectedForImport !== selectedForImport)
         .map((row) => row.id);
       applySelection(rowIds, selectedForImport);
     },
-    [applySelection, currentPageSelectableRows]
+    [applySelection, selectableRows]
   );
 
   return {
     pagination,
     setPagination,
     rows,
-    currentPageSelectableRows,
     headerChecked,
     headerIndeterminate,
     setRowSelection,
     setAllSelection,
+    hasSelectableRows: totalSelectable > 0,
     hasReviewableRows,
     isLoading,
   };

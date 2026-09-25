@@ -14,7 +14,7 @@ const orderEqual = (left: readonly string[], right: readonly string[]) =>
   left.every((id, index) => id === right[index]);
 
 export const useStableImportReviewTableRows = (
-  rows: ImportReviewRow[]
+  rows: readonly ImportReviewRow[]
 ): ImportReviewTableRow[] => {
   const idStubCacheRef = useRef(new Map<string, ImportReviewTableRow>());
   const arrayCacheRef = useRef<ImportReviewTableRow[]>([]);

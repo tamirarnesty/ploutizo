@@ -230,7 +230,23 @@ describe('ImportDraftReview', () => {
     expect(updateRow).not.toHaveBeenCalled();
   });
 
-  it('selects all rows on the page with a single batch mutation', async () => {
+  it('explains the header checkbox in a tooltip', async () => {
+    const user = userEvent.setup();
+    renderReview(makeImportDraft({ rows: [makeImportDraftRow()] }));
+
+    const checkbox = screen.getByRole('checkbox', {
+      name: 'Select ready rows',
+    });
+    await user.hover(checkbox);
+
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-slot="tooltip-content"]')
+      ).toHaveTextContent('Select ready rows');
+    });
+  });
+
+  it('selects every ready row in the draft from the header checkbox', async () => {
     const user = userEvent.setup();
     renderReview(
       makeImportDraft({
@@ -251,12 +267,121 @@ describe('ImportDraftReview', () => {
     );
 
     await user.click(
-      screen.getByRole('checkbox', { name: 'Select all rows on this page' })
+      screen.getByRole('checkbox', { name: 'Select ready rows' })
     );
 
     expect(setSelection).toHaveBeenCalledTimes(1);
     expect(setSelection).toHaveBeenCalledWith(['row_a', 'row_b'], true);
     expect(updateRow).not.toHaveBeenCalled();
+  });
+
+  it('selects ready rows on other pages and skips rows that are not ready', async () => {
+    paginationMocks.pagination = { pageIndex: 0, pageSize: 1 };
+    const user = userEvent.setup();
+    renderReview(
+      makeImportDraft({
+        rows: [
+          makeImportDraftRow({
+            id: 'row_invalid',
+            rowNumber: 1,
+            status: 'invalid',
+            reviewDescription: 'Broken',
+            selectedForImport: false,
+          }),
+          makeImportDraftRow({
+            id: 'row_a',
+            rowNumber: 2,
+            reviewDescription: 'Coffee',
+            selectedForImport: false,
+          }),
+          makeImportDraftRow({
+            id: 'row_b',
+            rowNumber: 3,
+            reviewDescription: 'Lunch',
+            selectedForImport: false,
+          }),
+        ],
+      })
+    );
+
+    expect(
+      screen.queryByRole('textbox', { name: 'Description for Coffee' })
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole('checkbox', { name: 'Select ready rows' })
+    );
+
+    expect(setSelection).toHaveBeenCalledWith(['row_a', 'row_b'], true);
+  });
+
+  it('sorts the draft so earlier dates come first', async () => {
+    const user = userEvent.setup();
+    renderReview(
+      makeImportDraft({
+        rows: [
+          makeImportDraftRow({
+            id: 'row_later',
+            rowNumber: 1,
+            reviewDescription: 'Lunch',
+            reviewDate: '2026-06-01',
+            parsedDate: '2026-06-01',
+          }),
+          makeImportDraftRow({
+            id: 'row_earlier',
+            rowNumber: 2,
+            reviewDescription: 'Coffee',
+            reviewDate: '2026-01-01',
+            parsedDate: '2026-01-01',
+          }),
+        ],
+      })
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Date' }));
+    const menu = await screen.findByRole('menu');
+    await user.click(
+      within(menu).getByRole('menuitem', { name: 'Oldest first' })
+    );
+
+    const descriptions = screen
+      .getAllByRole('textbox', { name: /Description for/ })
+      .map((input) => input.getAttribute('aria-label'));
+    expect(descriptions).toEqual([
+      'Description for Coffee',
+      'Description for Lunch',
+    ]);
+  });
+
+  it('sorts invalid rows ahead of ready rows', async () => {
+    const user = userEvent.setup();
+    renderReview(
+      makeImportDraft({
+        rows: [
+          makeImportDraftRow({
+            id: 'row_ready',
+            rowNumber: 1,
+            status: 'ready',
+            reviewDescription: 'Coffee',
+          }),
+          makeImportDraftRow({
+            id: 'row_invalid',
+            rowNumber: 2,
+            status: 'invalid',
+            reviewDescription: 'Broken',
+          }),
+        ],
+      })
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: 'Needs attention first' })
+    );
+
+    const descriptions = screen
+      .getAllByRole('textbox', { name: /Description for/ })
+      .map((input) => input.getAttribute('aria-label'));
+    expect(descriptions[0]).toBe('Description for Broken');
   });
 
   it('expands a row to show the notes field', async () => {
@@ -322,7 +447,7 @@ describe('ImportDraftReview', () => {
     );
 
     const headerCheckbox = screen.getByRole('checkbox', {
-      name: 'Select all rows on this page',
+      name: 'Select ready rows',
     });
     expect(headerCheckbox).toHaveAttribute('aria-checked', 'mixed');
   });
@@ -481,7 +606,7 @@ describe('ImportDraftReview', () => {
     await user.type(descriptionInput, 'Updated coffee');
 
     await user.click(
-      screen.getByRole('checkbox', { name: 'Select all rows on this page' })
+      screen.getByRole('checkbox', { name: 'Select ready rows' })
     );
 
     expect(updateRow).toHaveBeenCalledWith('row_a', {

@@ -22,13 +22,16 @@ import {
 import { useEffectiveTablePageSize } from '@/hooks/useEffectiveTablePageSize';
 import { IMPORT_REVIEW_PAGE_SIZE_OPTIONS } from '@/lib/prefs';
 import { shouldDefaultExpandImportRow } from '../lib/importPresentation';
+import { sortImportReviewRows } from '../lib/sortImportReviewRows';
 import {
   countImportReviewPageRows,
   resolveImportReviewTablePagination,
 } from '../lib/useImportDraftReviewState';
+import { useOptionalImportDraftReviewContext } from './ImportDraftReviewContext';
 import { buildImportReviewColumns } from './buildImportReviewColumns';
 import { ImportReviewRowScope } from './ImportReviewRowScope';
 import { useStableImportReviewTableRows } from './useStableImportReviewTableRows';
+import type { SortingState, Updater } from '@tanstack/react-table';
 import type { ImportReviewTableRow } from './useStableImportReviewTableRows';
 import type { ReactNode } from 'react';
 import type { ImportDraftReviewState } from '../lib/useImportDraftReviewState';
@@ -55,11 +58,11 @@ export const ImportDraftReviewTable = ({
     pagination,
     setPagination,
     rows,
-    currentPageSelectableRows,
     headerChecked,
     headerIndeterminate,
     setRowSelection,
     setAllSelection,
+    hasSelectableRows,
     isLoading,
   } = reviewState;
 
@@ -81,7 +84,37 @@ export const ImportDraftReviewTable = ({
     [pagination, effectivePageSize]
   );
 
-  const tableRows = useStableImportReviewTableRows(rows);
+  const reviewContext = useOptionalImportDraftReviewContext();
+  const [sorting, setSorting] = useState<SortingState>([]);
+  useEffect(() => {
+    if (!focusRowId) return;
+    setSorting([]);
+  }, [focusRowId]);
+  const onSortingChange = useCallback(
+    (updater: Updater<SortingState>) => {
+      setSorting(updater);
+      setPagination((current) =>
+        current.pageIndex === 0 ? current : { ...current, pageIndex: 0 }
+      );
+    },
+    [setPagination]
+  );
+  const sortedRows = useMemo(
+    () =>
+      sortImportReviewRows(rows, sorting, {
+        categories: reviewContext?.categories ?? [],
+        accounts: reviewContext?.accounts ?? [],
+        orgMembers: reviewContext?.orgMembers ?? [],
+      }),
+    [
+      reviewContext?.accounts,
+      reviewContext?.categories,
+      reviewContext?.orgMembers,
+      rows,
+      sorting,
+    ]
+  );
+  const tableRows = useStableImportReviewTableRows(sortedRows);
 
   const columns = useMemo(
     () =>
@@ -90,11 +123,11 @@ export const ImportDraftReviewTable = ({
         headerIndeterminate,
         onHeaderCheckedChange: setAllSelection,
         isLoading,
-        hasSelectableRowsOnPage: currentPageSelectableRows.length > 0,
+        hasSelectableRows,
         onSelectionChange: setRowSelection,
       }),
     [
-      currentPageSelectableRows.length,
+      hasSelectableRows,
       headerChecked,
       headerIndeterminate,
       isLoading,
@@ -123,8 +156,11 @@ export const ImportDraftReviewTable = ({
     },
     state: {
       pagination: tablePagination,
+      sorting,
       columnPinning: { left: ['selection'] },
     },
+    manualSorting: true,
+    onSortingChange,
     onPaginationChange: setPagination,
     getRowId: (row) => row.id,
     getRowCanExpand: () => true,

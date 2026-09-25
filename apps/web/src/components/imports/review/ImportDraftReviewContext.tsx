@@ -86,8 +86,11 @@ export const ImportDraftReviewProvider = ({
   );
 };
 
+export const useOptionalImportDraftReviewContext = () =>
+  useContext(ImportDraftReviewContext);
+
 export const useImportDraftReviewContext = () => {
-  const context = useContext(ImportDraftReviewContext);
+  const context = useOptionalImportDraftReviewContext();
   if (!context) {
     throw new Error(
       'useImportDraftReviewContext must be used within ImportDraftReviewProvider'
