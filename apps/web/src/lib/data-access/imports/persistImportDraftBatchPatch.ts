@@ -64,6 +64,26 @@ export const persistImportDraftBatchPatch = async ({
     },
     onSuccess: (result) => {
       const serverById = new Map(result.rows.map((row) => [row.id, row]));
+      // #region agent log
+      fetch(
+        'http://127.0.0.1:7685/ingest/139f1bc1-2326-4777-9423-3307c3c9b05f',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Debug-Session-Id': 'ea4b96',
+          },
+          body: JSON.stringify({
+            sessionId: 'ea4b96',
+            hypothesisId: 'H1',
+            location: 'persistImportDraftBatchPatch.ts:onSuccess',
+            message: 'batch persist success',
+            data: { persistedRowIds: nonEmpty.map((e) => e.rowId) },
+            timestamp: Date.now(),
+          }),
+        }
+      ).catch(() => {});
+      // #endregion
 
       for (const entry of nonEmpty) {
         const serverRow = serverById.get(entry.rowId);

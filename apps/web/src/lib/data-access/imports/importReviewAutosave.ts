@@ -1,14 +1,11 @@
-export type ImportReviewAutosaveStatus =
-  | 'idle'
-  | 'pending'
-  | 'saving'
-  | 'saved'
-  | 'failed';
+export type ImportReviewAutosaveStatus = 'idle' | 'saving' | 'saved' | 'failed';
 
 interface DraftAutosaveState {
   pendingRowIds: Set<string>;
   inFlightCount: number;
+  failedRowIds: Set<string>;
   failedFieldKeys: Map<string, string[]>;
+  failedSelectionRowIds: Set<string>;
   hasSaved: boolean;
 }
 
@@ -16,6 +13,7 @@ export interface ImportReviewAutosaveSnapshot {
   status: ImportReviewAutosaveStatus;
   failedRowIds: string[];
   hasUnsavedWork: boolean;
+  failedSelectionRowIds: string[];
   failedFieldKeys: ReadonlyMap<string, string[]>;
 }
 
@@ -23,6 +21,7 @@ const emptySnapshot: ImportReviewAutosaveSnapshot = {
   status: 'idle',
   failedRowIds: [],
   hasUnsavedWork: false,
+  failedSelectionRowIds: [],
   failedFieldKeys: new Map(),
 };
 
@@ -30,17 +29,15 @@ const draftStates = new Map<string, DraftAutosaveState>();
 const draftSnapshots = new Map<string, ImportReviewAutosaveSnapshot>();
 const listeners = new Map<string, Set<() => void>>();
 
-const failedRowIdsFromState = (state: DraftAutosaveState): string[] => [
-  ...state.failedFieldKeys.keys(),
-];
-
 const getOrCreateState = (draftId: string): DraftAutosaveState => {
   const existing = draftStates.get(draftId);
   if (existing) return existing;
   const created: DraftAutosaveState = {
     pendingRowIds: new Set(),
     inFlightCount: 0,
+    failedRowIds: new Set(),
     failedFieldKeys: new Map(),
+    failedSelectionRowIds: new Set(),
     hasSaved: false,
   };
   draftStates.set(draftId, created);
@@ -50,9 +47,8 @@ const getOrCreateState = (draftId: string): DraftAutosaveState => {
 const deriveStatus = (
   state: DraftAutosaveState
 ): ImportReviewAutosaveStatus => {
-  if (state.inFlightCount > 0) return 'saving';
-  if (state.pendingRowIds.size > 0) return 'pending';
-  if (state.failedFieldKeys.size > 0) return 'failed';
+  if (state.pendingRowIds.size > 0 || state.inFlightCount > 0) return 'saving';
+  if (state.failedRowIds.size > 0) return 'failed';
   if (state.hasSaved) return 'saved';
   return 'idle';
 };
@@ -66,15 +62,15 @@ const toSnapshot = (
   previous?: ImportReviewAutosaveSnapshot
 ): ImportReviewAutosaveSnapshot => {
   const status = deriveStatus(state);
-  const failedRowIds = failedRowIdsFromState(state);
+  const failedRowIds = [...state.failedRowIds];
   return {
     status,
     failedRowIds:
       previous && arraysEqual(previous.failedRowIds, failedRowIds)
         ? previous.failedRowIds
         : failedRowIds,
-    hasUnsavedWork:
-      status === 'pending' || status === 'saving' || status === 'failed',
+    hasUnsavedWork: status === 'saving' || status === 'failed',
+    failedSelectionRowIds: [...state.failedSelectionRowIds],
     failedFieldKeys: state.failedFieldKeys,
   };
 };
@@ -91,6 +87,20 @@ const emit = (draftId: string) => {
   for (const listener of draftListeners) listener();
 };
 
+const refreshFailedRowMembership = (
+  state: DraftAutosaveState,
+  rowId: string
+) => {
+  if (
+    state.failedFieldKeys.has(rowId) ||
+    state.failedSelectionRowIds.has(rowId)
+  ) {
+    state.failedRowIds.add(rowId);
+    return;
+  }
+  state.failedRowIds.delete(rowId);
+};
+
 export const getImportReviewAutosaveSnapshot = (
   draftId: string
 ): ImportReviewAutosaveSnapshot => {
@@ -100,6 +110,22 @@ export const getImportReviewAutosaveSnapshot = (
   if (!state) return emptySnapshot;
   cacheSnapshot(draftId, state);
   return draftSnapshots.get(draftId) ?? emptySnapshot;
+};
+
+/** Fires when draft autosave status newly becomes `failed`. */
+export const subscribeImportReviewAutosaveFailure = (
+  draftId: string,
+  listener: () => void
+) => {
+  let lastStatus = getImportReviewAutosaveSnapshot(draftId).status;
+  const onChange = () => {
+    const snapshot = getImportReviewAutosaveSnapshot(draftId);
+    if (snapshot.status === 'failed' && lastStatus !== 'failed') {
+      listener();
+    }
+    lastStatus = snapshot.status;
+  };
+  return subscribeImportReviewAutosave(draftId, onChange);
 };
 
 export const subscribeImportReviewAutosave = (
@@ -167,6 +193,7 @@ export const markImportReviewPersistSuccess = (
     }
   }
 
+  refreshFailedRowMembership(state, rowId);
   state.hasSaved = true;
   emit(draftId);
 };
@@ -180,6 +207,40 @@ export const markImportReviewPersistFailure = (
   state.inFlightCount = Math.max(0, state.inFlightCount - 1);
   const previous = state.failedFieldKeys.get(rowId) ?? [];
   state.failedFieldKeys.set(rowId, [...new Set([...previous, ...fieldKeys])]);
+  state.failedRowIds.add(rowId);
+  emit(draftId);
+};
+
+export const markImportReviewSelectionStart = (draftId: string) => {
+  const state = getOrCreateState(draftId);
+  state.inFlightCount += 1;
+  emit(draftId);
+};
+
+export const markImportReviewSelectionSuccess = (
+  draftId: string,
+  rowIds: string[]
+) => {
+  const state = getOrCreateState(draftId);
+  state.inFlightCount = Math.max(0, state.inFlightCount - 1);
+  for (const rowId of rowIds) {
+    state.failedSelectionRowIds.delete(rowId);
+    refreshFailedRowMembership(state, rowId);
+  }
+  state.hasSaved = true;
+  emit(draftId);
+};
+
+export const markImportReviewSelectionFailure = (
+  draftId: string,
+  rowIds: string[]
+) => {
+  const state = getOrCreateState(draftId);
+  state.inFlightCount = Math.max(0, state.inFlightCount - 1);
+  for (const rowId of rowIds) {
+    state.failedSelectionRowIds.add(rowId);
+    state.failedRowIds.add(rowId);
+  }
   emit(draftId);
 };
 
@@ -194,7 +255,7 @@ export const waitForImportReviewAutosaveSettled = (draftId: string) =>
   new Promise<void>((resolve) => {
     const check = () => {
       const snapshot = getImportReviewAutosaveSnapshot(draftId);
-      if (snapshot.status !== 'saving' && snapshot.status !== 'pending') {
+      if (snapshot.status !== 'saving') {
         unsubscribe();
         resolve();
       }

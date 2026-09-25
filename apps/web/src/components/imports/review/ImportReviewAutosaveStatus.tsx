@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Button } from '@ploutizo/ui/components/button';
-import { Text } from '@ploutizo/ui/components/text';
+import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { cn } from '@ploutizo/ui/lib/utils';
 import type { ImportReviewAutosaveStatus as ImportReviewAutosaveStatusValue } from '@/lib/data-access/imports';
 
 export const IMPORT_REVIEW_AUTOSAVE_STATUS_ID = 'import-review-autosave-status';
@@ -9,12 +9,10 @@ const SAVED_ACK_MS = 2000;
 
 interface ImportReviewAutosaveStatusProps {
   status: ImportReviewAutosaveStatusValue;
-  onRetryAutosave: () => void;
 }
 
 export const ImportReviewAutosaveStatus = ({
   status,
-  onRetryAutosave,
 }: ImportReviewAutosaveStatusProps) => {
   const [showSavedAck, setShowSavedAck] = useState(false);
 
@@ -34,65 +32,35 @@ export const ImportReviewAutosaveStatus = ({
     };
   }, [status]);
 
-  const isPending = status === 'pending';
   const isSaving = status === 'saving';
   const isFailed = status === 'failed';
-  const hasStatus = isPending || isSaving || isFailed || showSavedAck;
+  const hasStatus = isSaving || isFailed || showSavedAck;
 
   return (
     <div
-      className="flex min-h-5 min-w-32 items-center justify-end"
+      id={IMPORT_REVIEW_AUTOSAVE_STATUS_ID}
+      className="flex size-9 shrink-0 items-center justify-center"
       aria-hidden={!hasStatus}
+      aria-live={isFailed ? 'assertive' : 'polite'}
     >
-      {isPending ? (
-        <Text
-          id={IMPORT_REVIEW_AUTOSAVE_STATUS_ID}
-          variant="body-sm"
-          className="text-muted-foreground"
-          aria-live="polite"
-        >
-          Unsaved changes
-        </Text>
-      ) : null}
       {isSaving ? (
-        <Text
-          id={IMPORT_REVIEW_AUTOSAVE_STATUS_ID}
-          variant="body-sm"
-          className="text-muted-foreground"
-          aria-live="polite"
-        >
-          Saving…
-        </Text>
+        <Loader2
+          className="size-4 animate-spin text-muted-foreground"
+          aria-hidden="true"
+        />
       ) : null}
       {isFailed ? (
-        <div
-          id={IMPORT_REVIEW_AUTOSAVE_STATUS_ID}
-          className="flex items-center justify-end gap-2"
-          aria-live="assertive"
-        >
-          <Text variant="body-sm" className="text-destructive">
-            Save failed
-          </Text>
-          <Button
-            type="button"
-            variant="link"
-            size="sm"
-            onClick={onRetryAutosave}
-          >
-            Retry
-          </Button>
-        </div>
+        <AlertCircle className="size-4 text-destructive" aria-hidden="true" />
       ) : null}
       {showSavedAck ? (
-        <Text
-          id={IMPORT_REVIEW_AUTOSAVE_STATUS_ID}
-          variant="body-sm"
-          className="text-muted-foreground"
-          aria-live="polite"
-        >
-          Saved
-        </Text>
+        <CheckCircle2
+          className={cn('size-4 text-emerald-600 dark:text-emerald-400')}
+          aria-hidden="true"
+        />
       ) : null}
+      {isSaving ? <span className="sr-only">Saving changes</span> : null}
+      {isFailed ? <span className="sr-only">Save failed</span> : null}
+      {showSavedAck ? <span className="sr-only">Saved</span> : null}
     </div>
   );
 };

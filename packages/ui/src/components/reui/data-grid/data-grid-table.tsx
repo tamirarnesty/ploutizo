@@ -946,7 +946,9 @@ function DataGridTableRenderedRow<TData>({
   pinnedBoundary?: DataGridTablePinnedBoundary;
   rowRef?: React.Ref<HTMLTableRowElement>;
 }) {
-  return (
+  const { props } = useDataGrid();
+
+  const body = (
     <Fragment>
       <DataGridTableBodyRow
         row={row}
@@ -962,6 +964,8 @@ function DataGridTableRenderedRow<TData>({
       {row.getIsExpanded() && <DataGridTableBodyRowExpanded row={row} />}
     </Fragment>
   );
+
+  return props.renderBodyRow ? props.renderBodyRow(row.original, body) : body;
 }
 
 function DataGridTableEmpty() {

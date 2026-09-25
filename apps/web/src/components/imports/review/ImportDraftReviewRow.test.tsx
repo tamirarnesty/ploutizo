@@ -3,12 +3,14 @@ import userEvent from '@testing-library/user-event';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ImportReviewRow } from '@ploutizo/types';
+import type { ImportDraftRowEvaluation } from '@ploutizo/utils';
 import type { Category } from '@/lib/data-access/categories';
 import { evaluateImportDraftWorkingCopy } from '@/lib/data-access/imports/rederiveImportDraftWorkingCopy';
 import '@/test/mockTanstackRouter';
 import { ImportDraftReviewProvider } from './ImportDraftReviewContext';
 import { ImportDraftReviewRowDetails } from './ImportDraftReviewRowDetails';
 import { ImportReviewDescriptionCell } from './importReviewCells';
+import { ImportReviewRowScopeFixture } from './ImportReviewRowScope';
 
 const mockCategory: Category = {
   id: 'cat_1',
@@ -24,6 +26,17 @@ const mockCategory: Category = {
 const cardAccountId = '99999999-9999-4999-8999-999999999999';
 
 const updateRow = vi.fn();
+
+const evaluationByRowId = vi.hoisted(
+  () => new Map<string, ImportDraftRowEvaluation>()
+);
+
+vi.mock('@/lib/data-access/imports/importReviewEvaluations', () => ({
+  getImportReviewRowEvaluation: (_draftId: string, rowId: string) =>
+    evaluationByRowId.get(rowId) ?? null,
+  subscribeImportReviewEvaluations: () => () => undefined,
+  publishImportReviewEvaluations: vi.fn(),
+}));
 
 vi.mock('@ploutizo/ui/components/date-picker', () => ({
   DatePicker: () => <div>Date picker</div>,
@@ -52,6 +65,7 @@ vi.mock('@/lib/data-access/imports/rederiveImportDraftWorkingCopy', () => ({
 
 vi.mock('@/lib/data-access/imports/useImportReviewAutosave', () => ({
   useImportReviewAutosaveFailedRowIds: () => [],
+  useImportReviewAutosaveRowFailed: () => false,
 }));
 
 const baseRow = (): ImportReviewRow => ({
@@ -100,8 +114,10 @@ const renderRowFields = (row: ImportReviewRow) =>
         orgMembers={[]}
         updateRow={updateRow}
       >
-        <ImportReviewDescriptionCell row={row} />
-        <ImportDraftReviewRowDetails row={row} />
+        <ImportReviewRowScopeFixture row={row}>
+          <ImportReviewDescriptionCell />
+          <ImportDraftReviewRowDetails />
+        </ImportReviewRowScopeFixture>
       </ImportDraftReviewProvider>
     </TooltipProvider>
   );
@@ -109,6 +125,7 @@ const renderRowFields = (row: ImportReviewRow) =>
 describe('ImportDraftReviewRow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    evaluationByRowId.clear();
   });
 
   it('writes description and notes through the working-copy write API', async () => {
@@ -153,39 +170,32 @@ describe('ImportDraftReviewRow', () => {
   });
 
   it('explains an exact match and keeps it as a suggestion until selected', () => {
-    vi.mocked(evaluateImportDraftWorkingCopy).mockReturnValue(
-      new Map([
-        [
-          baseRow().id,
+    evaluationByRowId.set(baseRow().id, {
+      status: 'ready',
+      blockers: [],
+      invalidReason: null,
+      refundLink: null,
+      refundSuggestion: null,
+      match: {
+        candidates: [
           {
-            status: 'ready',
-            blockers: [],
-            invalidReason: null,
-            refundLink: null,
-            refundSuggestion: null,
-            match: {
-              candidates: [
-                {
-                  transactionId: 'tx-1',
-                  kind: 'external_id',
-                  explanation: 'Exact external ID match on this card.',
-                },
-              ],
-              exactCandidate: {
-                transactionId: 'tx-1',
-                kind: 'external_id',
-                explanation: 'Exact external ID match on this card.',
-              },
-              advisoryCandidates: [],
-              collisionRowIds: [],
-              acceptedMatch: null,
-              acceptedMatchValid: true,
-              issues: [],
-            },
+            transactionId: 'tx-1',
+            kind: 'external_id',
+            explanation: 'Exact external ID match on this card.',
           },
         ],
-      ])
-    );
+        exactCandidate: {
+          transactionId: 'tx-1',
+          kind: 'external_id',
+          explanation: 'Exact external ID match on this card.',
+        },
+        advisoryCandidates: [],
+        collisionRowIds: [],
+        acceptedMatch: null,
+        acceptedMatchValid: true,
+        issues: [],
+      },
+    });
 
     renderRowFields(baseRow());
 
@@ -199,43 +209,34 @@ describe('ImportDraftReviewRow', () => {
   it('lets the user accept or dismiss an advisory match without mutating the existing transaction', async () => {
     const user = userEvent.setup();
     const row = baseRow();
-    vi.mocked(evaluateImportDraftWorkingCopy).mockReturnValue(
-      new Map([
-        [
-          row.id,
+    evaluationByRowId.set(row.id, {
+      status: 'needs_review',
+      blockers: ['match'],
+      invalidReason: null,
+      refundLink: null,
+      refundSuggestion: null,
+      match: {
+        candidates: [
           {
-            status: 'needs_review',
-            blockers: ['match'],
-            invalidReason: null,
-            refundLink: null,
-            refundSuggestion: null,
-            match: {
-              candidates: [
-                {
-                  transactionId: 'tx-1',
-                  kind: 'fuzzy_description',
-                  explanation:
-                    'Similar description on the same date and amount.',
-                },
-              ],
-              exactCandidate: null,
-              advisoryCandidates: [
-                {
-                  transactionId: 'tx-1',
-                  kind: 'fuzzy_description',
-                  explanation:
-                    'Similar description on the same date and amount.',
-                },
-              ],
-              collisionRowIds: ['row-other'],
-              acceptedMatch: null,
-              acceptedMatchValid: true,
-              issues: ['collision'],
-            },
+            transactionId: 'tx-1',
+            kind: 'fuzzy_description',
+            explanation: 'Similar description on the same date and amount.',
           },
         ],
-      ])
-    );
+        exactCandidate: null,
+        advisoryCandidates: [
+          {
+            transactionId: 'tx-1',
+            kind: 'fuzzy_description',
+            explanation: 'Similar description on the same date and amount.',
+          },
+        ],
+        collisionRowIds: ['row-other'],
+        acceptedMatch: null,
+        acceptedMatchValid: true,
+        issues: ['collision'],
+      },
+    });
 
     renderRowFields(row);
 
@@ -267,29 +268,22 @@ describe('ImportDraftReviewRow', () => {
       ...baseRow(),
       reviewMatchedTransactionId: 'tx-1',
     };
-    vi.mocked(evaluateImportDraftWorkingCopy).mockReturnValue(
-      new Map([
-        [
-          row.id,
-          {
-            status: 'needs_review',
-            blockers: ['match'],
-            invalidReason: null,
-            refundLink: null,
-            refundSuggestion: null,
-            match: {
-              candidates: [],
-              exactCandidate: null,
-              advisoryCandidates: [],
-              collisionRowIds: [],
-              acceptedMatch: null,
-              acceptedMatchValid: false,
-              issues: ['invalidated_decision'],
-            },
-          },
-        ],
-      ])
-    );
+    evaluationByRowId.set(row.id, {
+      status: 'needs_review',
+      blockers: ['match'],
+      invalidReason: null,
+      refundLink: null,
+      refundSuggestion: null,
+      match: {
+        candidates: [],
+        exactCandidate: null,
+        advisoryCandidates: [],
+        collisionRowIds: [],
+        acceptedMatch: null,
+        acceptedMatchValid: false,
+        issues: ['invalidated_decision'],
+      },
+    });
 
     renderRowFields(row);
 
@@ -311,43 +305,34 @@ describe('ImportDraftReviewRow', () => {
       ...baseRow(),
       reviewMatchedTransactionId: 'tx-1',
     };
-    vi.mocked(evaluateImportDraftWorkingCopy).mockReturnValue(
-      new Map([
-        [
-          row.id,
+    evaluationByRowId.set(row.id, {
+      status: 'needs_review',
+      blockers: ['match'],
+      invalidReason: null,
+      refundLink: null,
+      refundSuggestion: null,
+      match: {
+        candidates: [
           {
-            status: 'needs_review',
-            blockers: ['match'],
-            invalidReason: null,
-            refundLink: null,
-            refundSuggestion: null,
-            match: {
-              candidates: [
-                {
-                  transactionId: 'tx-2',
-                  kind: 'fuzzy_description',
-                  explanation:
-                    'Similar description on the same date and amount.',
-                },
-              ],
-              exactCandidate: null,
-              advisoryCandidates: [
-                {
-                  transactionId: 'tx-2',
-                  kind: 'fuzzy_description',
-                  explanation:
-                    'Similar description on the same date and amount.',
-                },
-              ],
-              collisionRowIds: [],
-              acceptedMatch: null,
-              acceptedMatchValid: false,
-              issues: ['invalidated_decision'],
-            },
+            transactionId: 'tx-2',
+            kind: 'fuzzy_description',
+            explanation: 'Similar description on the same date and amount.',
           },
         ],
-      ])
-    );
+        exactCandidate: null,
+        advisoryCandidates: [
+          {
+            transactionId: 'tx-2',
+            kind: 'fuzzy_description',
+            explanation: 'Similar description on the same date and amount.',
+          },
+        ],
+        collisionRowIds: [],
+        acceptedMatch: null,
+        acceptedMatchValid: false,
+        issues: ['invalidated_decision'],
+      },
+    });
 
     renderRowFields(row);
 

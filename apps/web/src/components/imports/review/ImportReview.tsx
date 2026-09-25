@@ -28,6 +28,7 @@ import {
 } from '@/lib/data-access/imports';
 import { importDraftReviewRoute } from '@/lib/navigation';
 import { ImportDraftReview } from './ImportDraftReview';
+import { ImportReviewAutosaveFailureNotifier } from './ImportReviewAutosaveFailureNotifier';
 import { ImportReviewLeaveGuard } from './ImportReviewLeaveGuard';
 
 interface ImportReviewProps {
@@ -55,13 +56,12 @@ const sessionReviewProps = (
 ) => ({
   updateRow: session.updateRow,
   setSelection: session.setSelection,
-  retryAutosave: session.retryAutosave,
   flush: session.flush,
 });
 
 export const ImportReview = ({ draftId }: ImportReviewProps) => {
   const session = useImportReviewSession(draftId);
-  const { meta, rows, isLoading, isError, flush } = session;
+  const { meta, rows, isLoading, isError, flush, retryAutosave } = session;
   const reviewProps = sessionReviewProps(session);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -143,6 +143,10 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
   return (
     <div className={importReviewPageClassName}>
       <ImportReviewLeaveGuard draftId={draftId} flush={flush} />
+      <ImportReviewAutosaveFailureNotifier
+        draftId={draftId}
+        retryAutosave={retryAutosave}
+      />
       <ImportReviewBreadcrumbs />
       {body}
     </div>

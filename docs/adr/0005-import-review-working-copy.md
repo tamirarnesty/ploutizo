@@ -69,8 +69,9 @@ Continue/Finalize authority stays on the API; the preview cache is the product h
 
 | Concern                 | Behavior                                                                                                                                                   |
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Status surface          | **Draft-level** status in a fixed-height slot below Continue: Saving → Saved (brief) → Failed · Retry. The slot stays mounted so the header does not shift |
-| Render isolation        | Autosave store subscriptions live in the review header, leave guard, and row provider, **not** the session hook or grid state hook                         |
+| Status surface          | **Draft-level** icon slot beside Continue (spinner / saved check / error). Failed shows a toast with **Retry**; the action row height stays fixed              |
+| Render isolation        | Session `useLiveQuery` supplies list order and selection only. TanStack Table `data` is **stable `{ id }` stubs** so session row reference churn does not remount rows. One **`ImportReviewRowScope`** per body row (main + expanded rows) via DataGrid `renderBodyRow`. Cells use row-scoped live queries; evaluation and persist-failure use external stores with per-row selectors. Provider holds static session inputs only — not the full collection |
+| Persist ACK             | Skip collection `writeUpdate` when the merged row equals live; batch refund merge and `rederive` still run                                                     |
 | Persist failure         | **Keep collection edits**; do not roll back the working copy                                                                                               |
 | Continue gate           | Disabled with no selection, pending debounce, save in flight, or Failed (until Retry succeeds). In-flight Continue aborts when new work starts saving      |
 | In-app leave            | Flush pending work; block leave if flush fails or Failed remains                                                                                           |

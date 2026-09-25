@@ -1,12 +1,18 @@
-import { createContext, useContext, useMemo } from 'react';
-import { useLiveQuery } from '@tanstack/react-db';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useSyncExternalStore,
+} from 'react';
 import type { Account, OrgMember } from '@ploutizo/types';
 import type { ImportDraftRowEvaluation } from '@ploutizo/utils';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import type { Category } from '@/lib/data-access/categories';
-import { getImportDraftRowsCollection } from '@/lib/data-access/imports/getImportDraftRowsCollection';
-import { evaluateImportDraftWorkingCopy } from '@/lib/data-access/imports/rederiveImportDraftWorkingCopy';
-import { useImportReviewAutosaveFailedRowIds } from '@/lib/data-access/imports/useImportReviewAutosave';
+import {
+  getImportReviewRowEvaluation,
+  subscribeImportReviewEvaluations,
+} from '@/lib/data-access/imports/importReviewEvaluations';
 import type { ReactNode } from 'react';
 
 export type ImportReviewAccountsStatus = 'pending' | 'error' | 'success';
@@ -20,8 +26,6 @@ interface ImportDraftReviewContextValue {
   categories: Category[];
   orgMembers: OrgMember[];
   updateRow: (rowId: string, patch: UpdateImportDraftRowInput) => void;
-  failedRowIds: readonly string[];
-  evaluations: Map<string, ImportDraftRowEvaluation> | null;
 }
 
 const ImportDraftReviewContext =
@@ -52,19 +56,6 @@ export const ImportDraftReviewProvider = ({
   updateRow,
   children,
 }: ImportDraftReviewProviderProps) => {
-  const failedRowIds = useImportReviewAutosaveFailedRowIds(draftId);
-  const rowsCollection = useMemo(
-    () => getImportDraftRowsCollection(draftId),
-    [draftId]
-  );
-  const liveRows = useLiveQuery(
-    (q) => q.from({ row: rowsCollection }),
-    [rowsCollection]
-  );
-  const evaluations = useMemo(
-    () => evaluateImportDraftWorkingCopy(draftId),
-    [draftId, liveRows.data]
-  );
   const value = useMemo(
     () => ({
       draftId,
@@ -75,8 +66,6 @@ export const ImportDraftReviewProvider = ({
       categories,
       orgMembers,
       updateRow,
-      failedRowIds,
-      evaluations,
     }),
     [
       draftId,
@@ -87,8 +76,6 @@ export const ImportDraftReviewProvider = ({
       categories,
       orgMembers,
       updateRow,
-      failedRowIds,
-      evaluations,
     ]
   );
 
@@ -109,9 +96,19 @@ export const useImportDraftReviewContext = () => {
   return context;
 };
 
-export const useImportDraftRowEvaluation = (rowId: string) =>
-  useImportDraftReviewContext().evaluations?.get(rowId) ?? null;
+export const useImportDraftRowEvaluation = (
+  rowId: string
+): ImportDraftRowEvaluation | null => {
+  const { draftId } = useImportDraftReviewContext();
+  const subscribe = useCallback(
+    (onStoreChange: () => void) =>
+      subscribeImportReviewEvaluations(draftId, onStoreChange),
+    [draftId]
+  );
+  const getSnapshot = useCallback(
+    () => getImportReviewRowEvaluation(draftId, rowId),
+    [draftId, rowId]
+  );
 
-/** Persist-failure cue — empty outside the review provider (e.g. loading shell). */
-export const useImportDraftReviewFailedRowIds = (): readonly string[] =>
-  useContext(ImportDraftReviewContext)?.failedRowIds ?? [];
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+};

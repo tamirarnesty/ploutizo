@@ -515,7 +515,7 @@ describe('useImportReviewSession', () => {
       });
     });
 
-    expect(autosaveSnapshot().status).toBe('pending');
+    expect(autosaveSnapshot().status).toBe('saving');
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(IMPORT_DRAFT_PACE_WAIT_MS);
@@ -557,7 +557,7 @@ describe('useImportReviewSession', () => {
     });
 
     expect(autosaveSnapshot().hasUnsavedWork).toBe(true);
-    expect(autosaveSnapshot().status).toBe('pending');
+    expect(autosaveSnapshot().status).toBe('saving');
 
     let flushOk = false;
     await act(async () => {

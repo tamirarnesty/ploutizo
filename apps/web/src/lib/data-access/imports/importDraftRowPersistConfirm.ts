@@ -7,6 +7,7 @@ import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
 import { applyImportDraftRefundTargetFactDelta } from './mergeImportDraftRefundTargetFacts';
 import { importReviewFieldValuesEqual } from './importReviewFieldEqual';
+import { importReviewRowsEqual } from './importReviewRowsEqual';
 import { rederiveImportDraftWorkingCopy } from './rederiveImportDraftWorkingCopy';
 
 const patchKeys = (patch: UpdateImportDraftRowInput) =>
@@ -89,7 +90,9 @@ export const confirmPersistIntoCollection = (
 
   // Selection is session-only; a toggle during the debounce must survive the confirm.
   if (live) next.selectedForImport = live.selectedForImport;
-  collection.utils.writeUpdate(next);
+  if (!live || !importReviewRowsEqual(live, next)) {
+    collection.utils.writeUpdate(next);
+  }
   if (!options?.deferRefundFactsMerge) {
     syncRefundTargetFacts(draftId, patch, original, server?.refundTargetFacts);
   }

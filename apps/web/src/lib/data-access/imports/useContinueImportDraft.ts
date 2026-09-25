@@ -48,7 +48,7 @@ export const useContinueImportDraft = (draftId: string) => {
       const generation = generationRef.current;
       const abortIfReviewSaving = () => {
         const autosaveStatus = getImportReviewAutosaveSnapshot(draftId).status;
-        if (autosaveStatus === 'saving' || autosaveStatus === 'pending') {
+        if (autosaveStatus === 'saving') {
           invalidateInFlightContinue();
         }
       };

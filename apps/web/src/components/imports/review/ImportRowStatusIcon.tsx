@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import {
@@ -7,11 +8,13 @@ import {
 } from '@ploutizo/ui/components/tooltip';
 import { cn } from '@ploutizo/ui/lib/utils';
 import type { ImportDraftRow } from '@ploutizo/types';
+import { useImportReviewAutosaveRowFailed } from '@/lib/data-access/imports/useImportReviewAutosave';
 import { getImportRowStatusTooltip } from '../lib/importPresentation';
 import {
-  useImportDraftReviewFailedRowIds,
+  useImportDraftReviewContext,
   useImportDraftRowEvaluation,
 } from './ImportDraftReviewContext';
+import { useImportReviewRowScope } from './ImportReviewRowScope';
 
 const statusIconClassName: Record<ImportDraftRow['status'], string> = {
   ready: 'text-emerald-600 dark:text-emerald-400',
@@ -47,16 +50,13 @@ const StatusIcon = ({
   }
 };
 
-interface ImportRowStatusIconProps {
-  row: ImportDraftRow;
-}
-
-export const ImportRowStatusIcon = ({ row }: ImportRowStatusIconProps) => {
-  const failedRowIds = useImportDraftReviewFailedRowIds();
-  const persistFailed = failedRowIds.includes(row.id);
-  const evaluation = useImportDraftRowEvaluation(row.id);
+export const ImportRowStatusIcon = memo(() => {
+  const { draftId } = useImportDraftReviewContext();
+  const { rowId, row } = useImportReviewRowScope();
+  const persistFailed = useImportReviewAutosaveRowFailed(draftId, rowId);
+  const evaluation = useImportDraftRowEvaluation(rowId);
   const tooltip = persistFailed
-    ? 'Could not save this row. Use Retry below Continue.'
+    ? 'Could not save this row. Use Retry on the save error toast.'
     : getImportRowStatusTooltip(row, evaluation?.blockers, evaluation?.match);
 
   return (
@@ -76,4 +76,6 @@ export const ImportRowStatusIcon = ({ row }: ImportRowStatusIconProps) => {
       <TooltipContent>{tooltip}</TooltipContent>
     </Tooltip>
   );
-};
+});
+
+ImportRowStatusIcon.displayName = 'ImportRowStatusIcon';

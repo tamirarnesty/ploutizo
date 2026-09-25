@@ -17,7 +17,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
-import type { ImportReviewRow } from '@ploutizo/types';
 import { ImportDraftReviewRowDetails } from './ImportDraftReviewRowDetails';
 import {
   ImportReviewAmountCell,
@@ -28,6 +27,7 @@ import {
   ImportReviewSelectionCell,
   ImportReviewTypeCell,
 } from './importReviewCells';
+import type { ImportReviewTableRow } from './useStableImportReviewTableRows';
 import type { ColumnDef } from '@tanstack/react-table';
 
 const columnHeaderIcon = (Icon: typeof CalendarDays) => (
@@ -40,8 +40,7 @@ export interface BuildImportReviewColumnsOptions {
   onHeaderCheckedChange: (checked: boolean) => void;
   isLoading: boolean;
   hasSelectableRowsOnPage: boolean;
-  onSelectionChange: (row: ImportReviewRow, selected: boolean) => void;
-  isRowSelectable: (row: ImportReviewRow) => boolean;
+  onSelectionChange: (rowId: string, selected: boolean) => void;
 }
 
 export const buildImportReviewColumns = ({
@@ -51,8 +50,7 @@ export const buildImportReviewColumns = ({
   isLoading,
   hasSelectableRowsOnPage,
   onSelectionChange,
-  isRowSelectable,
-}: BuildImportReviewColumnsOptions): ColumnDef<ImportReviewRow>[] => {
+}: BuildImportReviewColumnsOptions): ColumnDef<ImportReviewTableRow>[] => {
   const headerCheckboxLabel = headerIndeterminate
     ? 'Select all rows on this page'
     : headerChecked
@@ -110,16 +108,14 @@ export const buildImportReviewColumns = ({
         headerClassName: 'min-w-22',
         cellClassName: 'min-w-22',
         skeleton: <Skeleton className="h-4 w-4" />,
-        expandedContent: (row) => <ImportDraftReviewRowDetails row={row} />,
+        expandedContent: () => <ImportDraftReviewRowDetails />,
       },
       cell: ({ row }) => (
         <ImportReviewSelectionCell
-          row={row.original}
           expanded={row.getIsExpanded()}
-          selectable={isRowSelectable(row.original)}
           onExpandedChange={(expanded) => row.toggleExpanded(expanded)}
           onSelectionChange={(selected) =>
-            onSelectionChange(row.original, selected)
+            onSelectionChange(row.original.id, selected)
           }
         />
       ),
@@ -141,7 +137,7 @@ export const buildImportReviewColumns = ({
         cellClassName: 'min-w-48',
         skeleton: <Skeleton className="h-4 w-24" />,
       },
-      cell: ({ row }) => <ImportReviewDateCell row={row.original} />,
+      cell: () => <ImportReviewDateCell />,
     },
     {
       id: 'amount',
@@ -160,7 +156,7 @@ export const buildImportReviewColumns = ({
         cellClassName: 'min-w-36',
         skeleton: <Skeleton className="ml-auto h-4 w-20" />,
       },
-      cell: ({ row }) => <ImportReviewAmountCell row={row.original} />,
+      cell: () => <ImportReviewAmountCell />,
     },
     {
       id: 'type',
@@ -179,7 +175,7 @@ export const buildImportReviewColumns = ({
         cellClassName: 'min-w-40',
         skeleton: <Skeleton className="h-4 w-16" />,
       },
-      cell: ({ row }) => <ImportReviewTypeCell row={row.original} />,
+      cell: () => <ImportReviewTypeCell />,
     },
     {
       id: 'description',
@@ -199,7 +195,7 @@ export const buildImportReviewColumns = ({
         cellClassName: 'min-w-68',
         skeleton: <Skeleton className="h-4 w-48" />,
       },
-      cell: ({ row }) => <ImportReviewDescriptionCell row={row.original} />,
+      cell: () => <ImportReviewDescriptionCell />,
     },
     {
       id: 'category',
@@ -218,9 +214,7 @@ export const buildImportReviewColumns = ({
         cellClassName: 'min-w-48',
         skeleton: <Skeleton className="h-4 w-28" />,
       },
-      cell: ({ row }) => (
-        <ImportReviewCategoryOrPaidFromCell row={row.original} />
-      ),
+      cell: () => <ImportReviewCategoryOrPaidFromCell />,
     },
     {
       id: 'assignee',
@@ -238,7 +232,7 @@ export const buildImportReviewColumns = ({
         cellClassName: 'min-w-56',
         skeleton: <Skeleton className="h-4 w-32" />,
       },
-      cell: ({ row }) => <ImportReviewAssigneeCell row={row.original} />,
+      cell: () => <ImportReviewAssigneeCell />,
     },
   ];
 };

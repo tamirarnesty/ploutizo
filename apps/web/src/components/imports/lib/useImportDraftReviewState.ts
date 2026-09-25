@@ -23,7 +23,7 @@ export interface ImportDraftReviewState {
   currentPageSelectableRows: ImportReviewRow[];
   headerChecked: boolean;
   headerIndeterminate: boolean;
-  setRowSelection: (row: ImportReviewRow, selectedForImport: boolean) => void;
+  setRowSelection: (rowId: string, selectedForImport: boolean) => void;
   setAllSelection: (selectedForImport: boolean) => void;
   hasReviewableRows: boolean;
   isLoading: boolean;
@@ -87,11 +87,12 @@ export const useImportDraftReviewState = ({
   );
 
   const setRowSelection = useCallback(
-    (row: ImportReviewRow, selectedForImport: boolean) => {
-      if (row.selectedForImport === selectedForImport) return;
-      applySelection([row.id], selectedForImport);
+    (rowId: string, selectedForImport: boolean) => {
+      const live = rows.find((row) => row.id === rowId);
+      if (live?.selectedForImport === selectedForImport) return;
+      applySelection([rowId], selectedForImport);
     },
-    [applySelection]
+    [applySelection, rows]
   );
 
   const setAllSelection = useCallback(

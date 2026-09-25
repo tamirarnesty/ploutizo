@@ -6,6 +6,7 @@ import { makeImportDraftRow } from '../test-fixtures/importDraft';
 import '@/test/mockTanstackRouter';
 import { ImportDraftReviewProvider } from './ImportDraftReviewContext';
 import { ImportReviewPaidFromCell } from './importReviewCells';
+import { ImportReviewRowScopeFixture } from './ImportReviewRowScope';
 
 const cardAccountId = '99999999-9999-4999-8999-999999999999';
 const chequingId = '22222222-2222-4222-8222-222222222222';
@@ -122,7 +123,9 @@ const renderPaidFromCell = (
       orgMembers={[]}
       updateRow={updateRow}
     >
-      <ImportReviewPaidFromCell row={row} />
+      <ImportReviewRowScopeFixture row={row}>
+        <ImportReviewPaidFromCell />
+      </ImportReviewRowScopeFixture>
     </ImportDraftReviewProvider>
   );
 

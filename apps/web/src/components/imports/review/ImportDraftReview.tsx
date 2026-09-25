@@ -51,7 +51,6 @@ interface ImportDraftReviewProps {
   isLoading?: boolean;
   updateRow: (rowId: string, patch: UpdateImportDraftRowInput) => void;
   setSelection: (rowIds: string[], selectedForImport: boolean) => void;
-  retryAutosave: () => void;
   flush: () => Promise<boolean>;
   inboundIssues?: ImportRequirementFailure[];
 }
@@ -92,7 +91,6 @@ const ImportDraftReviewContent = ({
   isLoading = false,
   updateRow,
   setSelection,
-  retryAutosave,
   flush,
   inboundIssues = [],
 }: ImportDraftReviewProps) => {
@@ -183,7 +181,6 @@ const ImportDraftReviewContent = ({
         rows={rows}
         isLoading={isLoading}
         isContinuing={isPending}
-        onRetryAutosave={retryAutosave}
         onContinue={handleContinue}
       />
 
@@ -219,12 +216,14 @@ const ImportDraftReviewContent = ({
           >
             <ImportDraftReviewTable
               key={meta.id}
+              draftId={meta.id}
               reviewState={reviewState}
               focusRowId={focusRowId}
             />
           </ImportDraftReviewProvider>
         ) : (
           <ImportDraftReviewTable
+            draftId=""
             reviewState={reviewState}
             focusRowId={focusRowId}
           />

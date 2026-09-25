@@ -6,8 +6,12 @@ export {
 } from './getImportDraftRowsCollection';
 export { releaseImportDraftSession } from './releaseImportDraftSession';
 export {
+  endImportDraftPacedMutations,
+  flushImportDraftPacedMutations,
   getImportDraftPacedMutations,
   IMPORT_DRAFT_PACE_WAIT_MS,
+  releaseImportDraftPacedMutations,
+  retryFailedImportDraftPersists,
 } from './getImportDraftPacedMutations';
 export {
   evaluateImportDraftWorkingCopy,
@@ -15,12 +19,7 @@ export {
 } from './rederiveImportDraftWorkingCopy';
 export { fetchContinueImportDraft } from './fetchContinueImportDraft';
 export { fetchFinalizeImportDraft } from './fetchFinalizeImportDraft';
-export {
-  clearImportFinalizePreviewSession,
-  getImportFinalizePreviewSession,
-  setImportFinalizePreviewSession,
-  type ImportFinalizePreviewSession,
-} from './importFinalizePreviewSession';
+export { fetchUpdateImportDraftRows } from './fetchUpdateImportDraftRows';
 export {
   getImportContinueGateMessage,
   getImportContinueNotReadyDetails,
@@ -50,6 +49,7 @@ export {
 export {
   useImportReviewAutosaveFailedRowIds,
   useImportReviewAutosaveHasUnsavedWork,
+  useImportReviewAutosaveRowFailed,
   useImportReviewAutosaveStatus,
 } from './useImportReviewAutosave';
 export * from './useGetImportTargets';

@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Account } from '@ploutizo/types';
+import type { Account, ImportReviewRow } from '@ploutizo/types';
 import { importDraftFinalizeRoute } from '@/lib/navigation';
 import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
 import {
@@ -13,7 +13,6 @@ import { ImportDraftReview } from './ImportDraftReview';
 
 const updateRow = vi.fn();
 const setSelection = vi.fn();
-const retryAutosave = vi.fn();
 const flush = vi.fn(() => Promise.resolve(true));
 
 const paginationMocks = vi.hoisted(() => ({
@@ -138,20 +137,37 @@ const autosaveStatusMock = vi.hoisted(() => ({
   current: 'idle' as 'idle' | 'saving' | 'saved' | 'failed',
 }));
 
+const reviewRowsById = vi.hoisted(() => new Map<string, ImportReviewRow>());
+
+vi.mock('@/lib/data-access/imports/useImportReviewRow', () => ({
+  useImportReviewRow: (_draftId: string, rowId: string) =>
+    reviewRowsById.get(rowId),
+}));
+
+vi.mock('@/lib/data-access/imports/importReviewEvaluations', () => ({
+  getImportReviewRowEvaluation: () => null,
+  subscribeImportReviewEvaluations: () => () => undefined,
+  publishImportReviewEvaluations: vi.fn(),
+}));
+
 vi.mock('@/lib/data-access/imports/useImportReviewAutosave', () => ({
   useImportReviewAutosaveStatus: () => autosaveStatusMock.current,
   useImportReviewAutosaveFailedRowIds: () => [],
+  useImportReviewAutosaveRowFailed: () => false,
 }));
 
 const reviewSessionProps = {
   updateRow,
   setSelection,
-  retryAutosave,
   flush,
 };
 
 const renderReview = (draft = makeImportDraft()) => {
   const { rows, ...meta } = draft;
+  reviewRowsById.clear();
+  for (const row of rows) {
+    reviewRowsById.set(row.id, row);
+  }
   return render(
     <TooltipProvider delay={0}>
       <ImportDraftReview meta={meta} rows={rows} {...reviewSessionProps} />
@@ -618,7 +634,6 @@ describe('ImportDraftReview', () => {
 
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
     expect(screen.getByText('Save failed')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
   });
 
   it('disables Continue while review persistence is in flight', () => {
@@ -641,7 +656,7 @@ describe('ImportDraftReview', () => {
     );
 
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
-    expect(screen.getByText('Saving…')).toBeInTheDocument();
+    expect(screen.getByText('Saving changes')).toBeInTheDocument();
   });
 
   it('shows server continue issues inline, toasts a summary, and focuses the first row', async () => {
@@ -763,6 +778,10 @@ describe('ImportDraftReview', () => {
       ],
     });
     const { rows, ...meta } = draft;
+    reviewRowsById.clear();
+    for (const row of rows) {
+      reviewRowsById.set(row.id, row);
+    }
 
     render(
       <TooltipProvider delay={0}>

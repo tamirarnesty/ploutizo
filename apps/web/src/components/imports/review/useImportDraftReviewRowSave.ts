@@ -1,10 +1,11 @@
 import { useCallback } from 'react';
-import type { ImportDraftRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import { useImportDraftReviewContext } from './ImportDraftReviewContext';
+import { useImportReviewRowScope } from './ImportReviewRowScope';
 
-export const useImportDraftReviewRowSave = (row: ImportDraftRow) => {
+export const useImportDraftReviewRowSave = () => {
   const { updateRow } = useImportDraftReviewContext();
+  const { row } = useImportReviewRowScope();
   const disabled = row.status === 'invalid';
 
   const saveField = useCallback(
@@ -14,5 +15,5 @@ export const useImportDraftReviewRowSave = (row: ImportDraftRow) => {
     [row.id, updateRow]
   );
 
-  return { saveField, disabled };
+  return { saveField, disabled, row };
 };
