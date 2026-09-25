@@ -10,6 +10,7 @@ import {
   retryFailedImportDraftPersists,
 } from './getImportDraftPacedMutations';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
+import { seedImportDraftPersistBaselines } from './importDraftPersistBaselines';
 import { applyImportReviewEntrySelection } from './importReviewSelectionSession';
 import { setImportDraftSelection } from './setImportDraftSelection';
 import {
@@ -70,12 +71,20 @@ export const useImportReviewSession = (
     [rowsCollection]
   );
 
+  useEffect(() => {
+    seedImportDraftPersistBaselines(draftId, liveRows.data);
+  }, [draftId, liveRows.data]);
+
   const rows = useMemo(
     () =>
-      liveRows.data.map((row) => ({
-        ...row,
-        selectedForImport: isImportRowSelectedForImport(row.selectedForImport),
-      })),
+      liveRows.data.map((row) => {
+        const selectedForImport = isImportRowSelectedForImport(
+          row.selectedForImport
+        );
+        return row.selectedForImport === selectedForImport
+          ? row
+          : { ...row, selectedForImport };
+      }),
     [liveRows.data]
   );
 

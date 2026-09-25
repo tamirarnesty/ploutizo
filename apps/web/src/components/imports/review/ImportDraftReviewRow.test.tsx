@@ -64,7 +64,6 @@ vi.mock('@/lib/data-access/imports/rederiveImportDraftWorkingCopy', () => ({
 }));
 
 vi.mock('@/lib/data-access/imports/useImportReviewAutosave', () => ({
-  useImportReviewAutosaveFailedRowIds: () => [],
   useImportReviewAutosaveRowFailed: () => false,
 }));
 

@@ -152,7 +152,6 @@ vi.mock('@/lib/data-access/imports/importReviewEvaluations', () => ({
 
 vi.mock('@/lib/data-access/imports/useImportReviewAutosave', () => ({
   useImportReviewAutosaveStatus: () => autosaveStatusMock.current,
-  useImportReviewAutosaveFailedRowIds: () => [],
   useImportReviewAutosaveRowFailed: () => false,
 }));
 

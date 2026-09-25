@@ -223,7 +223,6 @@ const ImportDraftReviewContent = ({
           </ImportDraftReviewProvider>
         ) : (
           <ImportDraftReviewTable
-            draftId=""
             reviewState={reviewState}
             focusRowId={focusRowId}
           />

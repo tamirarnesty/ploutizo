@@ -57,4 +57,69 @@ describe('importReviewEvaluations', () => {
     expect(listener).toHaveBeenCalledTimes(2);
     unsubscribe();
   });
+
+  it('reuses the prior evaluation when nested match data is unchanged', () => {
+    const draftId = 'draft_1';
+    const match = {
+      candidates: [],
+      exactCandidate: null,
+      advisoryCandidates: [],
+      collisionRowIds: [],
+      acceptedMatch: null,
+      acceptedMatchValid: true,
+      issues: ['advisory_unresolved' as const],
+    };
+    publishImportReviewEvaluations(
+      draftId,
+      new Map([['row_a', evaluation({ match })]])
+    );
+    const stable = getImportReviewRowEvaluation(draftId, 'row_a');
+
+    publishImportReviewEvaluations(
+      draftId,
+      new Map([
+        [
+          'row_a',
+          evaluation({
+            match: { ...match, issues: ['advisory_unresolved'] },
+          }),
+        ],
+      ])
+    );
+
+    expect(getImportReviewRowEvaluation(draftId, 'row_a')).toBe(stable);
+  });
+
+  it('replaces the evaluation when a nested match issue changes', () => {
+    const draftId = 'draft_1';
+    const match = {
+      candidates: [],
+      exactCandidate: null,
+      advisoryCandidates: [],
+      collisionRowIds: [],
+      acceptedMatch: null,
+      acceptedMatchValid: true,
+      issues: ['advisory_unresolved' as const],
+    };
+    publishImportReviewEvaluations(
+      draftId,
+      new Map([['row_a', evaluation({ match })]])
+    );
+
+    publishImportReviewEvaluations(
+      draftId,
+      new Map([
+        [
+          'row_a',
+          evaluation({
+            match: { ...match, issues: ['collision'] },
+          }),
+        ],
+      ])
+    );
+
+    expect(
+      getImportReviewRowEvaluation(draftId, 'row_a')?.match?.issues
+    ).toEqual(['collision']);
+  });
 });

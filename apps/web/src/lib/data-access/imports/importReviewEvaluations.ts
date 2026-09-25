@@ -1,4 +1,12 @@
-import type { ImportDraftRowEvaluation } from '@ploutizo/utils';
+import type {
+  ImportAcceptedMatch,
+  ImportDraftRowEvaluation,
+  ImportMatchCandidate,
+  ImportMatchEvaluation,
+  ImportRefundLinkEvaluation,
+  ImportRefundSuggestion,
+} from '@ploutizo/utils';
+import { importReviewFieldValuesEqual } from './importReviewFieldEqual';
 
 const evaluationSnapshots = new Map<
   string,
@@ -6,15 +14,138 @@ const evaluationSnapshots = new Map<
 >();
 const listeners = new Map<string, Set<() => void>>();
 
-const evaluationSignature = (evaluation: ImportDraftRowEvaluation) =>
-  JSON.stringify({
-    status: evaluation.status,
-    invalidReason: evaluation.invalidReason,
-    blockers: evaluation.blockers,
-    refundLink: evaluation.refundLink,
-    refundSuggestion: evaluation.refundSuggestion,
-    match: evaluation.match,
+const sameItems = <T>(
+  left: readonly T[],
+  right: readonly T[],
+  equal: (leftItem: T, rightItem: T) => boolean
+) => {
+  if (left.length !== right.length) return false;
+  return left.every((item, index) => {
+    const other = right[index];
+    return other !== undefined && equal(item, other);
   });
+};
+
+const nullableEqual = <T>(
+  left: T | null,
+  right: T | null,
+  equal: (leftValue: T, rightValue: T) => boolean
+) => {
+  if (Object.is(left, right)) return true;
+  if (left == null || right == null) return false;
+  return equal(left, right);
+};
+
+const matchCandidateEqual = (
+  left: ImportMatchCandidate,
+  right: ImportMatchCandidate
+) => {
+  const compared = {
+    transactionId: left.transactionId === right.transactionId,
+    kind: left.kind === right.kind,
+    explanation: left.explanation === right.explanation,
+  } satisfies Record<keyof ImportMatchCandidate, boolean>;
+  return Object.values(compared).every(Boolean);
+};
+
+const acceptedMatchEqual = (
+  left: ImportAcceptedMatch,
+  right: ImportAcceptedMatch
+) => {
+  const compared = {
+    transactionId: left.transactionId === right.transactionId,
+    kind: left.kind === right.kind,
+  } satisfies Record<keyof ImportAcceptedMatch, boolean>;
+  return Object.values(compared).every(Boolean);
+};
+
+const matchEqual = (
+  left: ImportMatchEvaluation,
+  right: ImportMatchEvaluation
+) => {
+  const compared = {
+    candidates: sameItems(
+      left.candidates,
+      right.candidates,
+      matchCandidateEqual
+    ),
+    exactCandidate: nullableEqual(
+      left.exactCandidate,
+      right.exactCandidate,
+      matchCandidateEqual
+    ),
+    advisoryCandidates: sameItems(
+      left.advisoryCandidates,
+      right.advisoryCandidates,
+      matchCandidateEqual
+    ),
+    collisionRowIds: importReviewFieldValuesEqual(
+      left.collisionRowIds,
+      right.collisionRowIds
+    ),
+    acceptedMatch: nullableEqual(
+      left.acceptedMatch,
+      right.acceptedMatch,
+      acceptedMatchEqual
+    ),
+    acceptedMatchValid: left.acceptedMatchValid === right.acceptedMatchValid,
+    issues: importReviewFieldValuesEqual(left.issues, right.issues),
+  } satisfies Record<keyof ImportMatchEvaluation, boolean>;
+  return Object.values(compared).every(Boolean);
+};
+
+const refundLinkEqual = (
+  left: ImportRefundLinkEvaluation,
+  right: ImportRefundLinkEvaluation
+) => {
+  const compared = {
+    linked: left.linked === right.linked,
+    valid: left.valid === right.valid,
+    issues: importReviewFieldValuesEqual(left.issues, right.issues),
+    inheritedCategoryId: left.inheritedCategoryId === right.inheritedCategoryId,
+    inheritedAssigneeMemberIds: importReviewFieldValuesEqual(
+      left.inheritedAssigneeMemberIds,
+      right.inheritedAssigneeMemberIds
+    ),
+  } satisfies Record<keyof ImportRefundLinkEvaluation, boolean>;
+  return Object.values(compared).every(Boolean);
+};
+
+const refundSuggestionEqual = (
+  left: ImportRefundSuggestion,
+  right: ImportRefundSuggestion
+) => {
+  const compared = {
+    kind: left.kind === right.kind,
+    transactionId: left.transactionId === right.transactionId,
+    batchRowId: left.batchRowId === right.batchRowId,
+    explanation: left.explanation === right.explanation,
+  } satisfies Record<keyof ImportRefundSuggestion, boolean>;
+  return Object.values(compared).every(Boolean);
+};
+
+const evaluationsEqual = (
+  left: ImportDraftRowEvaluation,
+  right: ImportDraftRowEvaluation
+) => {
+  const compared = {
+    status: left.status === right.status,
+    blockers: importReviewFieldValuesEqual(left.blockers, right.blockers),
+    invalidReason: Object.is(left.invalidReason, right.invalidReason),
+    refundLink: nullableEqual(
+      left.refundLink,
+      right.refundLink,
+      refundLinkEqual
+    ),
+    refundSuggestion: nullableEqual(
+      left.refundSuggestion,
+      right.refundSuggestion,
+      refundSuggestionEqual
+    ),
+    match: nullableEqual(left.match, right.match, matchEqual),
+  } satisfies Record<keyof ImportDraftRowEvaluation, boolean>;
+  return Object.values(compared).every(Boolean);
+};
 
 const mergeStableEvaluations = (
   previous: ReadonlyMap<string, ImportDraftRowEvaluation>,
@@ -26,9 +157,7 @@ const mergeStableEvaluations = (
   for (const [rowId, evaluation] of next) {
     const prior = previous.get(rowId);
     const stable =
-      prior && evaluationSignature(prior) === evaluationSignature(evaluation)
-        ? prior
-        : evaluation;
+      prior && evaluationsEqual(prior, evaluation) ? prior : evaluation;
     if (stable !== prior) changed = true;
     merged.set(rowId, stable);
   }

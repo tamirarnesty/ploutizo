@@ -37,10 +37,6 @@ const archivedSavingsAccount: Account = {
   archivedAt: '2026-01-01T00:00:00Z',
 };
 
-vi.mock('@/lib/data-access/imports/useImportReviewAutosave', () => ({
-  useImportReviewAutosaveFailedRowIds: () => [],
-}));
-
 vi.mock('@ploutizo/ui/components/select', async () => {
   const React = await import('react');
   const SelectChangeContext = React.createContext<(value: string) => void>(

@@ -34,7 +34,7 @@ import type { ReactNode } from 'react';
 import type { ImportDraftReviewState } from '../lib/useImportDraftReviewState';
 
 interface ImportDraftReviewTableProps {
-  draftId: string;
+  draftId?: string;
   reviewState: ImportDraftReviewState;
   focusRowId?: string | null;
 }
@@ -82,15 +82,6 @@ export const ImportDraftReviewTable = ({
   );
 
   const tableRows = useStableImportReviewTableRows(rows);
-
-  const renderBodyRow = useCallback(
-    (row: ImportReviewTableRow, content: ReactNode) => (
-      <ImportReviewRowScope draftId={draftId} rowId={row.id}>
-        {content}
-      </ImportReviewRowScope>
-    ),
-    [draftId]
-  );
 
   const columns = useMemo(
     () =>
@@ -141,6 +132,24 @@ export const ImportDraftReviewTable = ({
     getPaginationRowModel: getPaginationRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
   });
+
+  const renderBodyRow = useCallback(
+    (row: ImportReviewTableRow, content: ReactNode) => {
+      if (!draftId) return content;
+      const expandedState = table.getState().expanded;
+      const expanded = expandedState === true || Boolean(expandedState[row.id]);
+      return (
+        <ImportReviewRowScope
+          draftId={draftId}
+          rowId={row.id}
+          expanded={expanded}
+        >
+          {content}
+        </ImportReviewRowScope>
+      );
+    },
+    [draftId, table]
+  );
 
   useEffect(() => {
     if (!focusRowId) return;

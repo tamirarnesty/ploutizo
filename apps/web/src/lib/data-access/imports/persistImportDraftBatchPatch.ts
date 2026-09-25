@@ -5,9 +5,9 @@ import { fetchUpdateImportDraftRows } from './fetchUpdateImportDraftRows';
 import { confirmPersistIntoCollection } from './importDraftRowPersistConfirm';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
 import {
-  markImportReviewPersistFailure,
-  markImportReviewPersistStart,
-  markImportReviewPersistSuccess,
+  markImportReviewPersistFailureMany,
+  markImportReviewPersistStartMany,
+  markImportReviewPersistSuccessMany,
 } from './importReviewAutosave';
 import { rederiveImportDraftWorkingCopy } from './rederiveImportDraftWorkingCopy';
 import { runImportDraftPersist } from './runImportDraftPersist';
@@ -37,10 +37,12 @@ export const persistImportDraftBatchPatch = async ({
   );
 
   if (nonEmpty.length === 0) {
-    for (const entry of attempts) {
-      markImportReviewPersistStart(draftId, entry.rowId);
-      markImportReviewPersistSuccess(draftId, entry.rowId);
-    }
+    const rowIds = attempts.map((entry) => entry.rowId);
+    markImportReviewPersistStartMany(draftId, rowIds);
+    markImportReviewPersistSuccessMany(
+      draftId,
+      rowIds.map((rowId) => ({ rowId }))
+    );
     return true;
   }
 
@@ -52,9 +54,7 @@ export const persistImportDraftBatchPatch = async ({
   return runImportDraftPersist({
     scope,
     onStart: () => {
-      for (const rowId of rowIds) {
-        markImportReviewPersistStart(draftId, rowId);
-      }
+      markImportReviewPersistStartMany(draftId, rowIds);
     },
     persist: () => {
       const rows: ImportDraftRowBatchUpdate[] = nonEmpty.map(
@@ -64,26 +64,6 @@ export const persistImportDraftBatchPatch = async ({
     },
     onSuccess: (result) => {
       const serverById = new Map(result.rows.map((row) => [row.id, row]));
-      // #region agent log
-      fetch(
-        'http://127.0.0.1:7685/ingest/139f1bc1-2326-4777-9423-3307c3c9b05f',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Debug-Session-Id': 'ea4b96',
-          },
-          body: JSON.stringify({
-            sessionId: 'ea4b96',
-            hypothesisId: 'H1',
-            location: 'persistImportDraftBatchPatch.ts:onSuccess',
-            message: 'batch persist success',
-            data: { persistedRowIds: nonEmpty.map((e) => e.rowId) },
-            timestamp: Date.now(),
-          }),
-        }
-      ).catch(() => {});
-      // #endregion
 
       for (const entry of nonEmpty) {
         const serverRow = serverById.get(entry.rowId);
@@ -100,9 +80,14 @@ export const persistImportDraftBatchPatch = async ({
           const live = collection.get(entry.rowId);
           if (live) advanceImportDraftPersistBaseline(draftId, live);
         }
-        const keys = persistedKeysByRow.get(entry.rowId) ?? [];
-        markImportReviewPersistSuccess(draftId, entry.rowId, keys);
       }
+      markImportReviewPersistSuccessMany(
+        draftId,
+        nonEmpty.map((entry) => ({
+          rowId: entry.rowId,
+          succeededKeys: persistedKeysByRow.get(entry.rowId) ?? [],
+        }))
+      );
 
       if (result.refundTargetFacts) {
         applyImportDraftRefundTargetFactDelta(draftId, {
@@ -123,9 +108,14 @@ export const persistImportDraftBatchPatch = async ({
           draftId,
           { deferRederive: true }
         );
-        const keys = persistedKeysByRow.get(entry.rowId) ?? [];
-        markImportReviewPersistFailure(draftId, entry.rowId, keys);
       }
+      markImportReviewPersistFailureMany(
+        draftId,
+        nonEmpty.map((entry) => ({
+          rowId: entry.rowId,
+          fieldKeys: persistedKeysByRow.get(entry.rowId) ?? [],
+        }))
+      );
       rederiveImportDraftWorkingCopy(draftId);
     },
   });

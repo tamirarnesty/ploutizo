@@ -15,15 +15,15 @@ import {
   releaseImportReviewEvaluations,
 } from './importReviewEvaluations';
 import {
+  cancelScheduledImportDraftWorkingCopyRederive,
   endImportDraftWorkingCopyRederive,
-  releaseImportDraftWorkingCopyRederive,
 } from './scheduleImportDraftWorkingCopyRederive';
 
 /** Paced persist, autosave, baselines, and debounced rederive for one draft. */
 export const releaseImportDraftReviewRuntime = (draftId: string) => {
   releaseImportDraftPacedMutations(draftId);
   releaseImportDraftPersistBaselines(draftId);
-  releaseImportDraftWorkingCopyRederive(draftId);
+  cancelScheduledImportDraftWorkingCopyRederive(draftId);
   releaseImportReviewAutosave(draftId);
   releaseImportReviewEvaluations(draftId);
 };

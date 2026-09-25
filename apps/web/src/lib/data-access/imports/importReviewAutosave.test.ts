@@ -3,8 +3,8 @@ import {
   endImportReviewAutosave,
   getImportReviewAutosaveSnapshot,
   markImportReviewPending,
-  markImportReviewPersistFailure,
-  markImportReviewPersistStart,
+  markImportReviewPersistFailureMany,
+  markImportReviewPersistStartMany,
   subscribeImportReviewAutosave,
   subscribeImportReviewAutosaveFailure,
 } from './importReviewAutosave';
@@ -33,20 +33,35 @@ describe('importReviewAutosave', () => {
     const draftId = 'draft_1';
     const failureListener = vi.fn();
 
+    const listener = vi.fn();
+    const unsubscribeStatus = subscribeImportReviewAutosave(draftId, listener);
     const unsubscribe = subscribeImportReviewAutosaveFailure(
       draftId,
       failureListener
     );
 
-    markImportReviewPersistStart(draftId, 'row_a');
-    markImportReviewPersistFailure(draftId, 'row_a', ['reviewDescription']);
+    markImportReviewPersistStartMany(draftId, ['row_a', 'row_b']);
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(failureListener).not.toHaveBeenCalled();
+
+    markImportReviewPersistFailureMany(draftId, [
+      { rowId: 'row_a', fieldKeys: ['reviewDescription'] },
+      { rowId: 'row_b', fieldKeys: ['reviewDescription'] },
+    ]);
 
     expect(failureListener).toHaveBeenCalledTimes(1);
     expect(getImportReviewAutosaveSnapshot(draftId).status).toBe('failed');
+    expect(getImportReviewAutosaveSnapshot(draftId).failedRowIds).toEqual([
+      'row_a',
+      'row_b',
+    ]);
 
-    markImportReviewPersistFailure(draftId, 'row_b', ['reviewDescription']);
+    markImportReviewPersistFailureMany(draftId, [
+      { rowId: 'row_b', fieldKeys: ['reviewDescription'] },
+    ]);
     expect(failureListener).toHaveBeenCalledTimes(1);
 
+    unsubscribeStatus();
     unsubscribe();
   });
 });

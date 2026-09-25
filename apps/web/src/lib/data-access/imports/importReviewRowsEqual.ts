@@ -61,6 +61,7 @@ const rawDataEqual = (
   left: Record<string, string>,
   right: Record<string, string>
 ) => {
+  if (left === right) return true;
   const leftKeys = Object.keys(left);
   const rightKeys = Object.keys(right);
   if (leftKeys.length !== rightKeys.length) return false;

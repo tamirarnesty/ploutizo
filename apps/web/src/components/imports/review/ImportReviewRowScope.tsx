@@ -25,6 +25,8 @@ export const useImportReviewRowScope = () => {
 interface ImportReviewRowScopeProps {
   draftId: string;
   rowId: string;
+  /** Busts the children memo when this row expands or collapses. */
+  expanded?: boolean;
   children: ReactNode;
   fallback?: ReactNode;
 }
@@ -48,10 +50,16 @@ const ImportReviewRowScopeInner = ({
   );
 };
 
-/** Ignore `children` identity so table body re-renders do not remount row cells. */
+/**
+ * Ignore `children` identity so unrelated table re-renders do not remount row cells.
+ * Expansion is a prop so expand and collapse still replace the row body.
+ */
 export const ImportReviewRowScope = memo(
   ImportReviewRowScopeInner,
-  (prev, next) => prev.draftId === next.draftId && prev.rowId === next.rowId
+  (prev, next) =>
+    prev.draftId === next.draftId &&
+    prev.rowId === next.rowId &&
+    prev.expanded === next.expanded
 );
 
 ImportReviewRowScope.displayName = 'ImportReviewRowScope';

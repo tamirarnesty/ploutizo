@@ -26,10 +26,6 @@ export const cancelScheduledImportDraftWorkingCopyRederive = (
   timers.delete(draftId);
 };
 
-export const releaseImportDraftWorkingCopyRederive = (draftId: string) => {
-  cancelScheduledImportDraftWorkingCopyRederive(draftId);
-};
-
 export const endImportDraftWorkingCopyRederive = () => {
   for (const timer of timers.values()) {
     clearTimeout(timer);

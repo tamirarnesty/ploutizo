@@ -16,6 +16,7 @@ import {
   endImportDraftPacedMutations,
 } from './getImportDraftPacedMutations';
 import { endImportDraftRowsCollections } from './getImportDraftRowsCollection';
+import { endImportDraftPersistBaselines } from './importDraftPersistBaselines';
 import {
   endImportReviewAutosave,
   getImportReviewAutosaveSnapshot,
@@ -118,6 +119,7 @@ describe('useImportReviewSession', () => {
   afterEach(async () => {
     vi.useRealTimers();
     endImportDraftPacedMutations();
+    endImportDraftPersistBaselines();
     endImportReviewAutosave();
     await endImportDraftRowsCollections();
     getActiveQueryClient().clear();

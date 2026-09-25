@@ -4,7 +4,7 @@ import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import { beginWorkingSetScope } from '@/lib/access/working-set-registry';
 import type { WorkingSetScope } from '@/lib/access/working-set-registry';
 import {
-  clearImportReviewPendingRow,
+  clearImportReviewPendingRows,
   getImportReviewAutosaveSnapshot,
   markImportReviewPending,
 } from './importReviewAutosave';
@@ -73,9 +73,10 @@ const createDraftPacedMutations = (draftId: string) => {
         });
 
       if (!scope.isCurrent()) {
-        for (const entry of attempts) {
-          clearImportReviewPendingRow(draftId, entry.rowId);
-        }
+        clearImportReviewPendingRows(
+          draftId,
+          attempts.map((entry) => entry.rowId)
+        );
         return;
       }
 
