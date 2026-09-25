@@ -330,6 +330,26 @@ describe('ImportDraftReview', () => {
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 
+  it('shows the review grid when rows need review but none are ready yet', () => {
+    renderReview(
+      makeImportDraft({
+        rows: [
+          makeImportDraftRow({
+            id: 'row_needs_review',
+            status: 'needs_review',
+            reviewCategoryId: null,
+            selectedForImport: false,
+          }),
+        ],
+      })
+    );
+
+    expect(
+      screen.queryByText('No transactions to review')
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('table')).toBeInTheDocument();
+  });
+
   it('shows pagination controls when the draft has more rows than one page', () => {
     const rows = Array.from({ length: 26 }, (_, index) =>
       makeImportDraftRow({

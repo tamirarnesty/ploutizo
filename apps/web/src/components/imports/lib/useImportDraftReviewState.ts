@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo } from 'react';
+import { computeImportDraftRowCounts } from '@ploutizo/utils/import-row-status';
 import { getSelectableImportRows } from '@ploutizo/utils/import-row-readiness';
 import type { ImportReviewRow } from '@ploutizo/types';
 import type { ImportDraftMeta } from '@/lib/data-access/imports';
@@ -55,7 +56,7 @@ export const useImportDraftReviewState = ({
     [currentPageRows]
   );
 
-  const hasReviewableRows = selectableRows.length > 0;
+  const hasReviewableRows = computeImportDraftRowCounts(rows).validRowCount > 0;
 
   useEffect(() => {
     if (priorityRowIds.length === 0 || pageIndex === 0) return;
