@@ -6,7 +6,6 @@ import {
   FieldLabel,
   FieldTitle,
 } from '@ploutizo/ui/components/field';
-import { Checkbox } from '@ploutizo/ui/components/checkbox';
 import { LoadingButton } from '@ploutizo/ui/components/loading-button';
 import { HouseholdSettingsFormSchema } from '@ploutizo/validators';
 import {
@@ -33,25 +32,21 @@ import {
 
 interface HouseholdSettingsFormFieldsProps {
   settlementThreshold: number | null;
-  autoCheckImportRowWhenReady: boolean;
 }
 
 const toHouseholdSettingsFormDefaults = (
-  settlementThreshold: number | null,
-  autoCheckImportRowWhenReady: boolean
+  settlementThreshold: number | null
 ): HouseholdSettingsFormType => {
   const thresholdMode = settlementThresholdModeFromCents(settlementThreshold);
-  const autoCheck = { autoCheckImportRowWhenReady };
 
   if (thresholdMode === 'app_default' || thresholdMode === 'immediate') {
-    return { thresholdMode, ...autoCheck };
+    return { thresholdMode };
   }
 
   return {
     thresholdMode,
     thresholdDollars:
       settlementThresholdDollarsFromCents(settlementThreshold) ?? 0,
-    ...autoCheck,
   };
 };
 
@@ -89,7 +84,6 @@ const ThresholdModeOption = ({
 
 const HouseholdSettingsFormFields = ({
   settlementThreshold,
-  autoCheckImportRowWhenReady,
 }: HouseholdSettingsFormFieldsProps) => {
   const mutation = useUpdateHouseholdSettings();
   const { locale, currency } = useMoneyLocale();
@@ -101,10 +95,7 @@ const HouseholdSettingsFormFields = ({
   );
 
   const form = useAppForm({
-    defaultValues: toHouseholdSettingsFormDefaults(
-      settlementThreshold,
-      autoCheckImportRowWhenReady
-    ),
+    defaultValues: toHouseholdSettingsFormDefaults(settlementThreshold),
     validators: {
       onSubmit: ({ value }: { value: HouseholdSettingsFormType }) => {
         const result = HouseholdSettingsFormSchema.safeParse(value);
@@ -120,7 +111,6 @@ const HouseholdSettingsFormFields = ({
             value.thresholdMode,
             value.thresholdDollars
           ),
-          autoCheckImportRowWhenReady: value.autoCheckImportRowWhenReady,
         },
         {
           onError: () =>
@@ -171,39 +161,8 @@ const HouseholdSettingsFormFields = ({
           )}
         </form.AppField>
 
-        <form.AppField name="autoCheckImportRowWhenReady">
-          {(field) => (
-            <Field orientation="horizontal">
-              <Checkbox
-                id="auto-check-import-row-when-ready"
-                checked={field.state.value}
-                onCheckedChange={(checked) =>
-                  field.handleChange(checked === true)
-                }
-              />
-              <FieldContent>
-                <FieldLabel htmlFor="auto-check-import-row-when-ready">
-                  Auto-check import rows when ready
-                </FieldLabel>
-                <Text variant="caption" className="text-muted-foreground">
-                  During Review import, rows that become ready are checked
-                  automatically.
-                </Text>
-              </FieldContent>
-            </Field>
-          )}
-        </form.AppField>
-
-        <form.Subscribe
-          selector={(s) => ({
-            thresholdMode: s.values.thresholdMode,
-            autoCheckImportRowWhenReady: s.values.autoCheckImportRowWhenReady,
-          })}
-        >
-          {({
-            thresholdMode,
-            autoCheckImportRowWhenReady: autoCheckFromForm,
-          }) =>
+        <form.Subscribe selector={(s) => s.values.thresholdMode}>
+          {(thresholdMode) =>
             thresholdMode === 'custom' ? (
               <form.AppField
                 name="thresholdDollars"
@@ -212,7 +171,6 @@ const HouseholdSettingsFormFields = ({
                     const result = HouseholdSettingsFormSchema.safeParse({
                       thresholdMode: 'custom',
                       thresholdDollars: value,
-                      autoCheckImportRowWhenReady: autoCheckFromForm,
                     });
                     if (!result.success) {
                       return result.error.issues
@@ -279,9 +237,8 @@ export const HouseholdSettingsForm = () => {
 
   return (
     <HouseholdSettingsFormFields
-      key={`${String(data?.settlementThreshold ?? 'unset')}-${String(data?.autoCheckImportRowWhenReady ?? true)}`}
+      key={String(data?.settlementThreshold ?? 'unset')}
       settlementThreshold={data?.settlementThreshold ?? null}
-      autoCheckImportRowWhenReady={data?.autoCheckImportRowWhenReady ?? true}
     />
   );
 };

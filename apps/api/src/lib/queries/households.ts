@@ -15,26 +15,20 @@ export const fetchOrg = async (orgId: string) => {
 // GET /settings — fetch org settlementThreshold
 export const fetchOrgSettings = async (orgId: string) => {
   const rows = await db
-    .select({
-      settlementThreshold: orgs.settlementThreshold,
-      autoCheckImportRowWhenReady: orgs.autoCheckImportRowWhenReady,
-    })
+    .select({ settlementThreshold: orgs.settlementThreshold })
     .from(orgs)
     .where(eq(orgs.id, orgId));
   return rows.at(0) ?? null;
 };
 
-// PATCH /settings — partial household settings update
+// PATCH /settings — update settlementThreshold; returns updated row or null
 export const updateOrgSettings = async (
   orgId: string,
-  patch: {
-    settlementThreshold?: number | null;
-    autoCheckImportRowWhenReady?: boolean;
-  }
+  settlementThreshold: number | null
 ) => {
   const rows = await db
     .update(orgs)
-    .set({ ...patch, updatedAt: new Date() })
+    .set({ settlementThreshold, updatedAt: new Date() })
     .where(eq(orgs.id, orgId))
     .returning();
   return rows.at(0) ?? null;

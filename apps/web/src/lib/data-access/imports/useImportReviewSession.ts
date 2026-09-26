@@ -57,7 +57,11 @@ export const useImportReviewSession = (
   );
   const settingsQuery = useGetHouseholdSettings();
   const autoCheckImportRowWhenReady =
-    settingsQuery.data?.autoCheckImportRowWhenReady ?? false;
+    (
+      settingsQuery.data as
+        | { autoCheckImportRowWhenReady?: boolean }
+        | undefined
+    )?.autoCheckImportRowWhenReady ?? false;
   const previousStatusByIdRef = useRef<Map<string, ImportReviewRow['status']>>(
     new Map()
   );

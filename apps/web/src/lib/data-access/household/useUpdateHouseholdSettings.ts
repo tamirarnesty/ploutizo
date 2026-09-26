@@ -1,11 +1,14 @@
 import { useQueryClient } from '@tanstack/react-query';
-import type { UpdateHouseholdSettingsInput } from '@ploutizo/validators';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { HouseholdSettings } from './useGetHouseholdSettings';
 
+interface UpdateHouseholdSettingsBody {
+  settlementThreshold: number | null;
+}
+
 export const updateHouseholdSettings = async (
-  body: UpdateHouseholdSettingsInput
+  body: UpdateHouseholdSettingsBody
 ): Promise<HouseholdSettings> => {
   const r = await apiFetch<{ data: HouseholdSettings }>(
     '/api/households/settings',

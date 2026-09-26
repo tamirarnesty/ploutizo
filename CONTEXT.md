@@ -81,7 +81,7 @@ The primary place for credit card import work. A household member uploads a stat
 _Avoid_: Import wizard, import review page, treating Import as a transaction-list subpage, trusting persisted valid/invalid counts
 
 **Import draft**:
-A durable in-progress import for one **settlement-scoped account**. A household member can resume or discard it before confirm; **reviewed import values** persist on the draft, while checkbox **import set** selection is a session decision until **Continue**. Only one active import draft may exist for a credit card account at a time.
+A durable in-progress import for one **settlement-scoped account**. A household member can resume or discard it before confirm; mid-review corrections and selection are saved on the draft so resume continues from the last persisted state. Only one active import draft may exist for a credit card account at a time.
 _Avoid_: Temporary upload, local preview, partial import, review-only buffer that is lost on leave
 
 **Review import**:
@@ -120,16 +120,16 @@ _Avoid_: Blocker, warning, UI status
 An import set with at least one selected row whose selected rows all satisfy their **import row requirements**. Only an import set ready state can move into **Finalize import**.
 _Avoid_: File valid, draft complete
 
-**Import finalize preview**:
-The full-file outcome projection returned by **Continue** after **import set verification**: counts of rows that would be `created`, `matched`, `skipped`, or `invalid`, plus per-row preview detail. Held in the client session until **Finalize import**, back to **Review import**, or leaving import scope — not stored in Postgres.
-_Avoid_: Prepared import set staging, durable selection, trusting a preview after draft edits without re-verifying
+**Prepared import set**:
+Temporary Continue → Finalize staging: a stable, immutable, revision-bound snapshot of mutually exclusive finalize outcomes for every source row (`created`, `matched`, `skipped`, `invalid`), created after the **import set** passes requirement evaluation. Outcome counts sum to the immutable source `rowCount`. The user reviews this prepared set during **Finalize import** before committing new transactions and recording matched/no-op, skipped, and invalid outcomes. Returning to **Review import**, or any intervening draft edit, discards the prepared import set; another Continue must verify and create a new prepared set from the current reviewed values and selection. After Finalize confirms and transaction writes complete, staging is cleaned up; it is not Import history.
+_Avoid_: Live draft rows, temporary UI selection, permanent history store
 
 **Import set verification**:
 The server-side requirement evaluation that confirms a selected **import set** can move from **Review import** to **Finalize import**. Verification uses the shared transaction requirements plus import-specific requirements and is repeated before bulk transaction creation.
 _Avoid_: Client-only status check, trusting cached readiness
 
 **Finalize import**:
-The last confirmation checkpoint for an import draft. It shows the **Import finalize preview** from the session, then commits new transactions, records matched/no-op rows, skipped and invalid outcomes, and closes the draft. Confirm is idempotent: repeat requests after success return the same completed summary without creating further transactions.
+The last confirmation checkpoint for an import draft. It lets the user review the **prepared import set** before committing new transactions, recording matched/no-op rows, recording skipped and invalid outcomes, and closing the draft completely. Confirm is idempotent: the first request claims the prepared set; later requests return its completed summary without creating further transactions.
 _Avoid_: Partial confirm, background import
 
 **Bill payment row**:
@@ -141,7 +141,7 @@ An imported row that Ploutizo can align to exactly one existing same-kind transa
 _Avoid_: Silent duplicate removal, fuzzy auto-match
 
 **Matched import row**:
-An imported row accepted as representing an existing transaction, either by external id or by matching criteria such as amount, date, description, and type. During **Review import**, **ready** rows start checked by household default; the user may uncheck before **Continue**. At finalize, an unselected matched row is recorded as skipped; an explicitly selected match finalizes as a no-op for transaction creation.
+An imported row accepted as representing an existing transaction, either by external id or by matching criteria such as amount, date, description, and type. It is unselected by default and recorded as a skipped matched row; if the user selects it explicitly, it finalizes as a no-op for transaction creation.
 _Avoid_: Duplicate to import, new transaction
 
 **Needs review import row**:
@@ -353,25 +353,8 @@ _Avoid_: Statement period balance, monthly settlement, as-of balance
 Lists every non-archived credit card in the household, always showing the live **card balance** (owed, zero, or credit). Every **household member** appears on each card with their **personal balance**; **shared balance** appears once per card. Cards are never hidden for being at zero — only **archived** cards are omitted entirely. Signed amounts at a glance are the primary insight.
 _Avoid_: Hiding zero-balance cards, statement snapshot table
 
-**Card balances total**:
-The signed sum of every **card balance** in the **card balances view**, shown once as **Total** in that view's header. Credit on one card nets against amounts owed on another.
-_Avoid_: Total outstanding, account balance total, total balance card
-
 **Dashboard period**:
-The inclusive calendar-date window that scopes dashboard spend analytics (spend trend, spend by category). Either a **period shortcut** or an explicit custom from–to. It never affects **card balances**, the **card balances total**, the settlement summary, or recent transactions — those are always live.
-_Avoid_: Filter, statement period, date filter on balances
-
-**Period shortcut**:
-A named rolling window re-resolved against today's date on every visit: MTD, 30d, 6m (last six calendar months including the current partial month), YTD, or All (no date limit). Only a custom from–to is stored as literal dates.
-_Avoid_: Fixed month, saved dates for shortcuts
-
-**Prior period**:
-The window a **dashboard period** is compared against: the immediately preceding window of equal length, with month-length clamping for MTD and YTD. **All** has no prior period.
-_Avoid_: Last year, baseline
-
-**Net spend**:
-Expense amounts minus refund amounts within a **dashboard period**, attributed to each row's own category. Transfers, settlements, contributions, and income are excluded. Can be negative for a bucket.
-_Avoid_: Total spend, gross spend, outflow
+The date range picker applies only to summary analytics (income, expenses, spend by category, monthly spend, etc.). It does not affect settlement balances. Card balances are labeled **All time** to signal they are outside the period picker.
 
 ## Example dialogue
 

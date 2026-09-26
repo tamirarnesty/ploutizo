@@ -78,13 +78,6 @@
       "when": 1788900000000,
       "tag": "0010_import_review_session_schema",
       "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "7",
-      "when": 1788903600000,
-      "tag": "0011_household_auto_check_import_row",
-      "breakpoints": true
     }
   ]
 }

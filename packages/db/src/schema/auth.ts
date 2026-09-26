@@ -8,7 +8,6 @@
 
 import { sql } from 'drizzle-orm';
 import {
-  boolean,
   index,
   integer,
   pgTable,
@@ -69,9 +68,6 @@ export const orgs = pgTable('orgs', {
   name: text('name'),
   imageUrl: text('image_url'),
   settlementThreshold: cents(),
-  autoCheckImportRowWhenReady: boolean('auto_check_import_row_when_ready')
-    .notNull()
-    .default(true),
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()
     .defaultNow(),
