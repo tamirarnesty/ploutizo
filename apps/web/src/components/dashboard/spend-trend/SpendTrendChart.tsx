@@ -1,5 +1,5 @@
 import { format, isValid, parseISO } from 'date-fns';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   CartesianGrid,
   Line,
@@ -25,19 +25,10 @@ import type { SpendTrendChartPoint } from '@/components/dashboard/spend-trend/sp
 
 type SpendTrendChartProps = {
   data: SpendTrendChartPoint[];
+  currentLabel?: string;
+  priorLabel?: string;
   isAnimationActive?: boolean;
 };
-
-const chartConfig = {
-  current: {
-    label: 'This',
-    color: 'var(--chart-1)',
-  },
-  prior: {
-    label: 'Prior',
-    color: 'var(--chart-2)',
-  },
-} satisfies ChartConfig;
 
 const formatBucketLabel = (bucketStart: string): string => {
   const [, month, day] = bucketStart.split('-');
@@ -54,11 +45,32 @@ const formatTooltipBucketLabel = (bucketStart: string): string => {
 
 export const SpendTrendChart = ({
   data,
+  currentLabel = 'Current period',
+  priorLabel = 'Previous period',
   isAnimationActive = true,
 }: SpendTrendChartProps) => {
+  const [isMounted, setIsMounted] = useState(false);
+  const chartConfig = {
+    current: {
+      label: currentLabel,
+      color: 'var(--chart-1)',
+    },
+    prior: {
+      label: priorLabel,
+      color: 'var(--chart-2)',
+    },
+  } satisfies ChartConfig;
   const hasPriorSeries = useMemo(() => spendTrendHasPriorSeries(data), [data]);
   const yDomain = useMemo(() => spendTrendYDomain(data), [data]);
   const showZeroReferenceLine = yDomain[0] < 0;
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return <div className="h-56 min-h-48 w-full" aria-hidden />;
+  }
 
   return (
     <ChartContainer
@@ -108,7 +120,22 @@ export const SpendTrendChart = ({
                   ? formatTooltipBucketLabel(bucketStart)
                   : '';
               }}
-              valueFormatter={(cents) => formatTrendCurrency(cents)}
+              formatter={(value, name, item) => (
+                <div className="flex w-full items-center gap-2">
+                  <div
+                    className="size-2.5 shrink-0 rounded-[2px]"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <span className="flex-1 text-muted-foreground">
+                    {name === 'current' ? 'Current' : 'Previous'}
+                  </span>
+                  <span className="font-mono font-medium text-foreground tabular-nums">
+                    {typeof value === 'number'
+                      ? formatTrendCurrency(value)
+                      : String(value)}
+                  </span>
+                </div>
+              )}
             />
           }
         />

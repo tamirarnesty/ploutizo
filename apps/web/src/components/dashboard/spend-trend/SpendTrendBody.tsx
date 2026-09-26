@@ -37,7 +37,14 @@ export const SpendTrendBody = ({
   );
 
   if (isPending) {
-    return <SpendTrendChart data={[]} isAnimationActive={false} />;
+    return (
+      <SpendTrendChart
+        data={[]}
+        currentLabel="Current period"
+        priorLabel="Previous period"
+        isAnimationActive={false}
+      />
+    );
   }
 
   if (!trend || !hasSpendActivity(trend)) {
