@@ -2,6 +2,7 @@ import { queryOptions } from '@tanstack/react-query';
 import type { ImportDraft } from '@ploutizo/types';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
+import { importDraftClientQueryPolicy } from './importDraftClientQueryPolicy';
 import { importDraftQueryKey } from './queryKeys';
 import type { UseQueryResult } from '@tanstack/react-query';
 
@@ -19,6 +20,7 @@ export const importDraftQueryOptions = (id: string) =>
   queryOptions({
     queryKey: importDraftQueryKey(id),
     queryFn: ({ signal }) => fetchImportDraft(id, signal),
+    ...importDraftClientQueryPolicy,
   });
 
 export const useGetImportDraft = (

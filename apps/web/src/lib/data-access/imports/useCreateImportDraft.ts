@@ -4,11 +4,7 @@ import type { CreateImportDraftResponse } from '@ploutizo/types';
 import type { CreateImportDraftInput } from '@ploutizo/validators';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
-import {
-  activeImportDraftsQueryKey,
-  importDraftQueryKey,
-  importHistoryQueryKey,
-} from './queryKeys';
+import { importDraftQueryKey, importHistoryQueryKey } from './queryKeys';
 
 export const useCreateImportDraft = () => {
   const qc = useQueryClient();
@@ -20,11 +16,10 @@ export const useCreateImportDraft = () => {
       }),
     onSuccess: (response) => {
       if (response.kind === 'mapping_required') return;
-      void qc.invalidateQueries({
-        queryKey: activeImportDraftsQueryKey,
-      });
-      void qc.invalidateQueries({ queryKey: importHistoryQueryKey });
+      // Active drafts refresh when the user returns to the hub loader; skipping
+      // invalidate here avoids flashing the hub before review navigation.
       qc.setQueryData(importDraftQueryKey(response.data.id), response.data);
+      void qc.invalidateQueries({ queryKey: importHistoryQueryKey });
       if (response.meta.reusedExisting) {
         toast.info('Resumed existing draft for this card.');
       } else {

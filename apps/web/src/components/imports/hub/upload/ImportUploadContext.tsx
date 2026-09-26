@@ -76,9 +76,10 @@ export const ImportUploadProvider = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [step, setStep] = useState<ImportUploadStep>({ kind: 'idle' });
+  const [redirectingToReview, setRedirectingToReview] = useState(false);
 
   const createDraft = useCreateImportDraft();
-  const isSubmitting = createDraft.isPending;
+  const isSubmitting = createDraft.isPending || redirectingToReview;
   const firstTargetId = targets[0]?.id ?? '';
 
   const activeDraftByAccount = useMemo(() => {
@@ -117,12 +118,11 @@ export const ImportUploadProvider = ({
               });
               return;
             }
-            setSelectedFile(null);
-            setUploadError(null);
-            setStep({ kind: 'idle' });
+            setRedirectingToReview(true);
             goToDraftReview(response.data.id);
           },
           onError: (error) => {
+            setRedirectingToReview(false);
             setUploadError(
               getApiErrorMessage(error, "Couldn't process that CSV.")
             );
