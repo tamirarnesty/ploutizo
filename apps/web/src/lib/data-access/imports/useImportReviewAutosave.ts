@@ -12,8 +12,6 @@ const selectStatus = (snapshot: ImportReviewAutosaveSnapshot) =>
   snapshot.status;
 const selectHasUnsavedWork = (snapshot: ImportReviewAutosaveSnapshot) =>
   snapshot.hasUnsavedWork;
-const selectFailedRowIds = (snapshot: ImportReviewAutosaveSnapshot) =>
-  snapshot.failedRowIds;
 
 const useImportReviewAutosaveSlice = <T>(
   draftId: string,
@@ -43,8 +41,15 @@ export const useImportReviewAutosaveHasUnsavedWork = (
   draftId: string
 ): boolean => useImportReviewAutosaveSlice(draftId, selectHasUnsavedWork);
 
-/** Row persist failures for status icons; reference-stable when ids unchanged. */
-export const useImportReviewAutosaveFailedRowIds = (
-  draftId: string
-): readonly string[] =>
-  useImportReviewAutosaveSlice(draftId, selectFailedRowIds);
+/** Per-row persist failure for status icons without draft-wide array subscriptions. */
+export const useImportReviewAutosaveRowFailed = (
+  draftId: string,
+  rowId: string
+): boolean => {
+  const selectRowFailed = useCallback(
+    (snapshot: ImportReviewAutosaveSnapshot) =>
+      snapshot.failedFieldKeys.has(rowId),
+    [rowId]
+  );
+  return useImportReviewAutosaveSlice(draftId, selectRowFailed);
+};

@@ -258,6 +258,13 @@ describe('imports router', () => {
       }),
     });
     expect(good.status).toBe(200);
+    const goodBody = (await good.json()) as {
+      data: { id: string }[];
+      refundTargetFacts?: Record<string, unknown>;
+    };
+    expect(Array.isArray(goodBody.data)).toBe(true);
+    expect(goodBody.data[0]?.id).toBe(ROW_ID);
+    expect(goodBody).not.toHaveProperty('rows');
     expect(updateImportDraftRows).toHaveBeenCalledWith('org_1', 'draft_1', {
       rows: [
         {

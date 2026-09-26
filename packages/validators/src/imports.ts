@@ -1,12 +1,54 @@
 import {
   IMPORT_CONTENT_PROFILE_IDS,
   IMPORT_CUSTOM_MAPPING_DATE_FORMATS,
+  IMPORT_ROW_STATUS_VALUES,
   IMPORT_TRANSACTION_LINK_OUTCOME_VALUES,
   IMPORT_TRANSACTION_TYPE_VALUES,
 } from '@ploutizo/types';
 import { z } from 'zod';
 
 const importTransactionTypeSchema = z.enum(IMPORT_TRANSACTION_TYPE_VALUES);
+const importRowStatusSchema = z.enum(IMPORT_ROW_STATUS_VALUES);
+
+/** Full import draft row as returned by GET draft (derived status fields included). */
+export const importDraftRowSchema = z.object({
+  id: z.string().min(1),
+  batchId: z.string().min(1),
+  rowNumber: z.number().int().positive(),
+  status: importRowStatusSchema,
+  invalidReason: z.string().nullable(),
+  rawData: z.record(z.string(), z.string()),
+  externalId: z.string().nullable(),
+  sourceDate: z.string().nullable(),
+  sourceAmount: z.string().nullable(),
+  sourceDescription: z.string().nullable(),
+  sourceType: z.string().nullable(),
+  parsedDate: z.string().nullable(),
+  parsedAmount: z.number().nullable(),
+  parsedType: importTransactionTypeSchema.nullable(),
+  parsedDescription: z.string().nullable(),
+  reviewDate: z.string().nullable(),
+  reviewAmount: z.number().nullable(),
+  reviewType: importTransactionTypeSchema.nullable(),
+  reviewDescription: z.string().nullable(),
+  reviewCategoryId: z.string().nullable(),
+  reviewAssigneeMemberIds: z.array(z.string()),
+  reviewCounterpartAccountId: z.string().nullable(),
+  reviewRefundOf: z.string().nullable(),
+  reviewRefundOfBatchRowId: z.string().nullable(),
+  reviewRefundLinkHint: z.string().nullable(),
+  reviewMatchedTransactionId: z.string().nullable(),
+  reviewMatchDismissed: z.boolean(),
+  reviewNotes: z.string().nullable(),
+  reviewTagIds: z.array(z.string()),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+/** Review working-copy row (durable fields + session-only selection). */
+export const importReviewRowSchema = importDraftRowSchema.extend({
+  selectedForImport: z.boolean(),
+});
 
 // ---------------------------------------------------------------------------
 // Content selection schemas

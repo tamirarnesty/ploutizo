@@ -29,7 +29,6 @@ describe('ImportDraftReviewHeader', () => {
         meta={meta}
         rows={[]}
         isContinuing={false}
-        onRetryAutosave={vi.fn()}
         onContinue={vi.fn()}
       />
     );

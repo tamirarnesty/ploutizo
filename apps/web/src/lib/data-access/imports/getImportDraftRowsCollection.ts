@@ -1,8 +1,10 @@
 import { createCollection } from '@tanstack/react-db';
 import { queryCollectionOptions } from '@tanstack/query-db-collection';
+import { importReviewRowSchema } from '@ploutizo/validators';
 import type { ImportReviewRow } from '@ploutizo/types';
 import { getActiveQueryClient } from '@/lib/access/working-set-registry';
 import { importDraftQueryKey } from './queryKeys';
+import { importDraftClientQueryPolicy } from './importDraftClientQueryPolicy';
 import { fetchImportDraft } from './useGetImportDraft';
 
 const createImportDraftRowsCollection = (draftId: string) =>
@@ -16,8 +18,10 @@ const createImportDraftRowsCollection = (draftId: string) =>
       select: (draft): ImportReviewRow[] =>
         draft.rows.map((row) => ({ selectedForImport: false, ...row })),
       queryClient: getActiveQueryClient(),
-      getKey: (row: ImportReviewRow) => row.id,
+      schema: importReviewRowSchema,
+      getKey: (row) => row.id,
       retry: 1,
+      ...importDraftClientQueryPolicy,
     })
   );
 
@@ -38,7 +42,11 @@ export const getImportDraftRowsCollection = (
   return collection;
 };
 
-/** Drop a draft's working copy after discard, finalize, or in tests. Hub ↔ review nav keeps it warm. */
+/**
+ * Drop a draft's working copy after discard, finalize, or in tests.
+ * Hub ↔ review and review ↔ finalize keep the collection warm; only call
+ * while no useLiveQuery still reads this collection (not on route transitions).
+ */
 export const releaseImportDraftRowsCollection = async (draftId: string) => {
   const collection = importDraftRowsCollections.get(draftId);
   if (!collection) {

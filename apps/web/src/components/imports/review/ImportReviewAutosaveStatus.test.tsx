@@ -6,15 +6,11 @@ describe('ImportReviewAutosaveStatus', () => {
   it('shows a brief saved acknowledgment then clears', () => {
     vi.useFakeTimers();
 
-    const { rerender } = render(
-      <ImportReviewAutosaveStatus status="saving" onRetryAutosave={vi.fn()} />
-    );
+    const { rerender } = render(<ImportReviewAutosaveStatus status="saving" />);
 
-    expect(screen.getByText('Saving…')).toBeInTheDocument();
+    expect(screen.getByText('Saving changes')).toBeInTheDocument();
 
-    rerender(
-      <ImportReviewAutosaveStatus status="saved" onRetryAutosave={vi.fn()} />
-    );
+    rerender(<ImportReviewAutosaveStatus status="saved" />);
 
     expect(screen.getByText('Saved')).toBeInTheDocument();
 

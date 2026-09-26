@@ -19,7 +19,7 @@ import {
   listRefundTargetExpensesByIds,
   sumPriorRefundTotalsByTransactionTarget,
 } from '@/lib/queries/import-refund-targets';
-import { toImportDraftDurableRow } from '@/services/import-draft-view';
+import { toImportDraftDurableRowFromRecord } from '@/services/import-draft-view';
 
 export interface ImportSetFactsInput {
   orgId: string;
@@ -85,7 +85,7 @@ export const loadImportSetFacts = async (
 ): Promise<ImportSetFacts> => {
   const { orgId, accountId, draftRows, selectedRowIds } = input;
   const durableRows = draftRows.map((row) =>
-    toImportDraftDurableRow(row, selectedRowIds.has(row.id))
+    toImportDraftDurableRowFromRecord(row, selectedRowIds.has(row.id))
   );
   const refundOfIds = draftRows.flatMap((row) =>
     row.reviewRefundOf ? [row.reviewRefundOf] : []

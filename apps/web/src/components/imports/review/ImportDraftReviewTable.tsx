@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   getCoreRowModel,
   getExpandedRowModel,
@@ -12,7 +12,6 @@ import {
 import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-grid-scroll-area';
 import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-table';
 import { DataGridPagination } from '@ploutizo/ui/components/reui/data-grid/data-grid-pagination';
-import { isImportRowSelectable } from '@ploutizo/utils/import-row-readiness';
 import {
   VIEWPORT_FILLED_DATA_GRID_CONTAINER_CLASSNAME,
   VIEWPORT_FILLED_DATA_GRID_PAGINATION_CLASSNAME,
@@ -23,14 +22,22 @@ import {
 import { useEffectiveTablePageSize } from '@/hooks/useEffectiveTablePageSize';
 import { IMPORT_REVIEW_PAGE_SIZE_OPTIONS } from '@/lib/prefs';
 import { shouldDefaultExpandImportRow } from '../lib/importPresentation';
+import { sortImportReviewRows } from '../lib/sortImportReviewRows';
 import {
   countImportReviewPageRows,
   resolveImportReviewTablePagination,
 } from '../lib/useImportDraftReviewState';
+import { useOptionalImportDraftReviewContext } from './ImportDraftReviewContext';
 import { buildImportReviewColumns } from './buildImportReviewColumns';
+import { ImportReviewRowScope } from './ImportReviewRowScope';
+import { useStableImportReviewTableRows } from './useStableImportReviewTableRows';
+import type { SortingState, Updater } from '@tanstack/react-table';
+import type { ImportReviewTableRow } from './useStableImportReviewTableRows';
+import type { ReactNode } from 'react';
 import type { ImportDraftReviewState } from '../lib/useImportDraftReviewState';
 
 interface ImportDraftReviewTableProps {
+  draftId?: string;
   reviewState: ImportDraftReviewState;
   focusRowId?: string | null;
 }
@@ -43,6 +50,7 @@ export const focusImportReviewRow = (rowId: string) => {
 };
 
 export const ImportDraftReviewTable = ({
+  draftId,
   reviewState,
   focusRowId = null,
 }: ImportDraftReviewTableProps) => {
@@ -50,11 +58,11 @@ export const ImportDraftReviewTable = ({
     pagination,
     setPagination,
     rows,
-    currentPageSelectableRows,
     headerChecked,
     headerIndeterminate,
     setRowSelection,
     setAllSelection,
+    hasSelectableRows,
     isLoading,
   } = reviewState;
 
@@ -76,19 +84,52 @@ export const ImportDraftReviewTable = ({
     [pagination, effectivePageSize]
   );
 
+  const reviewContext = useOptionalImportDraftReviewContext();
+  const [sorting, setSorting] = useState<SortingState>([]);
+  useEffect(() => {
+    if (!focusRowId) return;
+    setSorting([]);
+  }, [focusRowId]);
+  const onSortingChange = useCallback(
+    (updater: Updater<SortingState>) => {
+      setSorting(updater);
+      setPagination((current) =>
+        current.pageIndex === 0 ? current : { ...current, pageIndex: 0 }
+      );
+    },
+    [setPagination]
+  );
+  const sortedRows = useMemo(
+    () =>
+      sortImportReviewRows(rows, sorting, {
+        categories: reviewContext?.categories ?? [],
+        accounts: reviewContext?.accounts ?? [],
+        orgMembers: reviewContext?.orgMembers ?? [],
+      }),
+    [
+      reviewContext?.accounts,
+      reviewContext?.categories,
+      reviewContext?.orgMembers,
+      rows,
+      sorting,
+    ]
+  );
+  const tableRows = useStableImportReviewTableRows(sortedRows);
+
   const columns = useMemo(
     () =>
       buildImportReviewColumns({
+        draftId: draftId ?? '',
         headerChecked,
         headerIndeterminate,
         onHeaderCheckedChange: setAllSelection,
         isLoading,
-        hasSelectableRowsOnPage: currentPageSelectableRows.length > 0,
+        hasSelectableRows,
         onSelectionChange: setRowSelection,
-        isRowSelectable: isImportRowSelectable,
       }),
     [
-      currentPageSelectableRows.length,
+      draftId,
+      hasSelectableRows,
       headerChecked,
       headerIndeterminate,
       isLoading,
@@ -109,7 +150,7 @@ export const ImportDraftReviewTable = ({
   );
 
   const table = useReactTable({
-    data: rows,
+    data: tableRows,
     columns,
     enableColumnResizing: false,
     initialState: {
@@ -117,8 +158,11 @@ export const ImportDraftReviewTable = ({
     },
     state: {
       pagination: tablePagination,
+      sorting,
       columnPinning: { left: ['selection'] },
     },
+    manualSorting: true,
+    onSortingChange,
     onPaginationChange: setPagination,
     getRowId: (row) => row.id,
     getRowCanExpand: () => true,
@@ -126,6 +170,24 @@ export const ImportDraftReviewTable = ({
     getPaginationRowModel: getPaginationRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
   });
+
+  const renderBodyRow = useCallback(
+    (row: ImportReviewTableRow, content: ReactNode) => {
+      if (!draftId) return content;
+      const expandedState = table.getState().expanded;
+      const expanded = expandedState === true || Boolean(expandedState[row.id]);
+      return (
+        <ImportReviewRowScope
+          draftId={draftId}
+          rowId={row.id}
+          expanded={expanded}
+        >
+          {content}
+        </ImportReviewRowScope>
+      );
+    },
+    [draftId, table]
+  );
 
   useEffect(() => {
     if (!focusRowId) return;
@@ -140,10 +202,11 @@ export const ImportDraftReviewTable = ({
 
   return (
     <div className="flex max-h-full min-h-0 w-full min-w-0 flex-col">
-      <DataGrid
+      <DataGrid<ImportReviewTableRow>
         table={table}
         recordCount={rows.length}
         isLoading={isLoading}
+        renderBodyRow={renderBodyRow}
         tableLayout={{
           width: 'fixed',
           dense: true,

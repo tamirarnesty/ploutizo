@@ -12,6 +12,7 @@ import {
   setImportFinalizePreviewSession,
 } from '@/lib/data-access/imports/importFinalizePreviewSession';
 import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
+import { useGetImportDraft } from '@/lib/data-access/imports/useGetImportDraft';
 import {
   makeImportDraft,
   makeImportDraftRow,
@@ -28,6 +29,7 @@ const finalizeMocks = vi.hoisted(() => ({
   finalize: {
     mutateAsync: vi.fn(),
     isPending: false,
+    isSuccess: false,
   },
 }));
 
@@ -38,7 +40,7 @@ vi.mock('@ploutizo/ui/components/sonner', () => ({
 }));
 
 vi.mock('@/lib/data-access/imports/useGetImportDraft', () => ({
-  useGetImportDraft: () => finalizeMocks.draft,
+  useGetImportDraft: vi.fn(() => finalizeMocks.draft),
 }));
 
 vi.mock('@/lib/data-access/imports/useFinalizeImportDraft', () => ({
@@ -157,6 +159,7 @@ describe('ImportFinalize', () => {
     };
     finalizeMocks.finalize.mutateAsync.mockResolvedValue(completedResult);
     finalizeMocks.finalize.isPending = false;
+    finalizeMocks.finalize.isSuccess = false;
   });
 
   it('renders a read-only confirmation with reconciling counts', () => {
@@ -246,6 +249,27 @@ describe('ImportFinalize', () => {
       screen.getByRole('button', { name: 'Back to Review' })
     ).toBeDisabled();
     release(completedResult);
+  });
+
+  it('unsubscribes from the draft GET while finalize is pending or succeeded', () => {
+    const { rerender } = render(<ImportFinalize draftId="draft_1" />);
+
+    expect(useGetImportDraft).toHaveBeenCalledWith('draft_1', {
+      enabled: true,
+    });
+
+    finalizeMocks.finalize.isPending = true;
+    rerender(<ImportFinalize draftId="draft_1" />);
+    expect(useGetImportDraft).toHaveBeenLastCalledWith('draft_1', {
+      enabled: false,
+    });
+
+    finalizeMocks.finalize.isPending = false;
+    finalizeMocks.finalize.isSuccess = true;
+    rerender(<ImportFinalize draftId="draft_1" />);
+    expect(useGetImportDraft).toHaveBeenLastCalledWith('draft_1', {
+      enabled: false,
+    });
   });
 
   it('returns to Review import when Back to Review is clicked', async () => {

@@ -47,6 +47,9 @@ interface DataGridColumnHeaderProps<
   pinnable?: boolean;
   filter?: ReactNode;
   visibility?: boolean;
+  /** Sort-menu labels. Defaults are the registry copy, "Asc" and "Desc". */
+  ascendingLabel?: string;
+  descendingLabel?: string;
 }
 
 function DataGridColumnHeaderInner<TData, TValue>({
@@ -56,6 +59,8 @@ function DataGridColumnHeaderInner<TData, TValue>({
   className,
   filter,
   visibility = false,
+  ascendingLabel = 'Asc',
+  descendingLabel = 'Desc',
 }: DataGridColumnHeaderProps<TData, TValue>) {
   const { isLoading, table, props, recordCount } = useDataGrid();
   const resolvedTitle = title ?? getColumnHeaderLabel(column);
@@ -140,7 +145,7 @@ function DataGridColumnHeaderInner<TData, TValue>({
           disabled={!canSort}
         >
           <ArrowUpIcon className="size-3.5!" />
-          <span className="grow">Asc</span>
+          <span className="grow">{ascendingLabel}</span>
           {isSorted === 'asc' && (
             <CheckIcon className="size-4 text-primary opacity-100!" />
           )}
@@ -157,7 +162,7 @@ function DataGridColumnHeaderInner<TData, TValue>({
           disabled={!canSort}
         >
           <ArrowDownIcon className="size-3.5!" />
-          <span className="grow">Desc</span>
+          <span className="grow">{descendingLabel}</span>
           {isSorted === 'desc' && (
             <CheckIcon className="size-4 text-primary opacity-100!" />
           )}
@@ -285,6 +290,8 @@ function DataGridColumnHeaderInner<TData, TValue>({
     columnIndex,
     columnOrder,
     columnVisibilityKey, // Needed to update checkbox states when visibility changes
+    ascendingLabel,
+    descendingLabel,
   ]);
 
   if (hasControls) {

@@ -1,6 +1,6 @@
 import '@/lib/access/working-set-cleanup';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { UpdateImportDraftRowResult } from '@ploutizo/types';
+import type { BatchUpdateImportDraftRowsResult } from '@ploutizo/types';
 import {
   makeImportDraft,
   makeImportDraftRow,
@@ -11,12 +11,13 @@ import {
   replaceActiveWorkingSet,
   resetWorkingSetRegistryForTests,
 } from '@/lib/access/working-set-registry';
-import { fetchUpdateImportDraftRow } from './fetchUpdateImportDraftRow';
+import { fetchUpdateImportDraftRows } from './fetchUpdateImportDraftRows';
 import {
-  IMPORT_ROW_PACE_WAIT_MS,
-  endImportDraftRowPacedMutations,
-  getImportDraftRowPacedMutations,
-} from './getImportDraftRowPacedMutations';
+  IMPORT_DRAFT_PACE_WAIT_MS,
+  endImportDraftPacedMutations,
+  getImportDraftPacedMutations,
+} from './getImportDraftPacedMutations';
+import { seedImportDraftPersistBaselines } from './importDraftPersistBaselines';
 import {
   endImportDraftRowsCollections,
   getImportDraftRowsCollection,
@@ -33,11 +34,11 @@ vi.mock('./useGetImportDraft', () => ({
   useGetImportDraft: vi.fn(),
 }));
 
-vi.mock('./fetchUpdateImportDraftRow', () => ({
-  fetchUpdateImportDraftRow: vi.fn(),
+vi.mock('./fetchUpdateImportDraftRows', () => ({
+  fetchUpdateImportDraftRows: vi.fn(),
 }));
 
-describe('getImportDraftRowPacedMutations confirm persist', () => {
+describe('getImportDraftPacedMutations confirm persist', () => {
   const draft = makeImportDraft({
     id: 'draft_paced_1',
     rows: [
@@ -55,14 +56,14 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
     getActiveQueryClient().setQueryData(importDraftQueryKey(draft.id), draft);
     vi.mocked(fetchImportDraft).mockReset();
     vi.mocked(fetchImportDraft).mockResolvedValue(draft);
-    vi.mocked(fetchUpdateImportDraftRow).mockReset();
+    vi.mocked(fetchUpdateImportDraftRows).mockReset();
     endImportReviewAutosave();
-    endImportDraftRowPacedMutations();
+    endImportDraftPacedMutations();
   });
 
   afterEach(async () => {
     vi.useRealTimers();
-    endImportDraftRowPacedMutations();
+    endImportDraftPacedMutations();
     endImportReviewAutosave();
     await endImportDraftRowsCollections();
     resetWorkingSetRegistryForTests();
@@ -73,23 +74,26 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
     const collection = getImportDraftRowsCollection(draft.id);
     await collection.preload();
 
-    vi.mocked(fetchUpdateImportDraftRow).mockResolvedValue({
-      row: toPersistedImportDraftRow(draft.rows[0], {
-        reviewCategoryId: null,
-        updatedAt: '2026-05-20T12:00:05.000Z',
-      }),
-    } satisfies UpdateImportDraftRowResult);
+    vi.mocked(fetchUpdateImportDraftRows).mockResolvedValue({
+      rows: [
+        toPersistedImportDraftRow(draft.rows[0], {
+          reviewCategoryId: null,
+          updatedAt: '2026-05-20T12:00:05.000Z',
+        }),
+      ],
+    } satisfies BatchUpdateImportDraftRowsResult);
 
     vi.useFakeTimers();
-    const mutate = getImportDraftRowPacedMutations(draft.id, 'row_1');
-    mutate({ patch: { reviewCategoryId: null } });
+    const mutate = getImportDraftPacedMutations(draft.id);
+    seedImportDraftPersistBaselines(draft.id, collection.toArray);
+    mutate({ rowId: 'row_1', patch: { reviewCategoryId: null } });
 
-    await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
+    await vi.advanceTimersByTimeAsync(IMPORT_DRAFT_PACE_WAIT_MS);
     await vi.runAllTimersAsync();
 
-    expect(fetchUpdateImportDraftRow).toHaveBeenCalledWith(draftId, 'row_1', {
-      reviewCategoryId: null,
-    });
+    expect(fetchUpdateImportDraftRows).toHaveBeenCalledWith(draftId, [
+      { id: 'row_1', reviewCategoryId: null },
+    ]);
     const live = collection.get('row_1');
     expect(live?.reviewCategoryId).toBeNull();
     expect(live?.status).toBe('needs_review');
@@ -100,27 +104,34 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
     const collection = getImportDraftRowsCollection(draft.id);
     await collection.preload();
 
-    let resolveFirst: ((value: UpdateImportDraftRowResult) => void) | undefined;
-    const firstPersist = new Promise<UpdateImportDraftRowResult>((resolve) => {
-      resolveFirst = resolve;
-    });
-    vi.mocked(fetchUpdateImportDraftRow).mockImplementationOnce(
+    let resolveFirst:
+      | ((value: BatchUpdateImportDraftRowsResult) => void)
+      | undefined;
+    const firstPersist = new Promise<BatchUpdateImportDraftRowsResult>(
+      (resolve) => {
+        resolveFirst = resolve;
+      }
+    );
+    vi.mocked(fetchUpdateImportDraftRows).mockImplementationOnce(
       () => firstPersist
     );
 
     vi.useFakeTimers();
-    const mutate = getImportDraftRowPacedMutations(draft.id, 'row_1');
-    mutate({ patch: { reviewDescription: 'Attempt A' } });
-    await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
+    const mutate = getImportDraftPacedMutations(draft.id);
+    seedImportDraftPersistBaselines(draft.id, collection.toArray);
+    mutate({ rowId: 'row_1', patch: { reviewDescription: 'Attempt A' } });
+    await vi.advanceTimersByTimeAsync(IMPORT_DRAFT_PACE_WAIT_MS);
 
-    mutate({ patch: { reviewDescription: 'Live wins' } });
+    mutate({ rowId: 'row_1', patch: { reviewDescription: 'Live wins' } });
     expect(collection.get('row_1')?.reviewDescription).toBe('Live wins');
 
     resolveFirst?.({
-      row: toPersistedImportDraftRow(draft.rows[0], {
-        reviewDescription: 'Attempt A',
-        updatedAt: '2026-05-20T12:00:02.000Z',
-      }),
+      rows: [
+        toPersistedImportDraftRow(draft.rows[0], {
+          reviewDescription: 'Attempt A',
+          updatedAt: '2026-05-20T12:00:02.000Z',
+        }),
+      ],
     });
     await firstPersist;
     await vi.runAllTimersAsync();
@@ -132,14 +143,15 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
     const collection = getImportDraftRowsCollection(draft.id);
     await collection.preload();
 
-    vi.mocked(fetchUpdateImportDraftRow).mockRejectedValue(
+    vi.mocked(fetchUpdateImportDraftRows).mockRejectedValue(
       new Error('network')
     );
 
     vi.useFakeTimers();
-    const mutate = getImportDraftRowPacedMutations(draft.id, 'row_1');
-    mutate({ patch: { reviewDescription: 'Kept locally' } });
-    await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
+    const mutate = getImportDraftPacedMutations(draft.id);
+    seedImportDraftPersistBaselines(draft.id, collection.toArray);
+    mutate({ rowId: 'row_1', patch: { reviewDescription: 'Kept locally' } });
+    await vi.advanceTimersByTimeAsync(IMPORT_DRAFT_PACE_WAIT_MS);
     await vi.runAllTimersAsync();
 
     expect(collection.get('row_1')?.reviewDescription).toBe('Kept locally');
@@ -178,13 +190,17 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
     await collection.preload();
 
     vi.useFakeTimers();
-    const mutate = getImportDraftRowPacedMutations(guardedDraft.id, 'row_1');
-    mutate({ patch: { reviewMatchedTransactionId: 'tx_other' } });
-    await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
+    const mutate = getImportDraftPacedMutations(guardedDraft.id);
+    seedImportDraftPersistBaselines(guardedDraft.id, collection.toArray);
+    mutate({
+      rowId: 'row_1',
+      patch: { reviewMatchedTransactionId: 'tx_other' },
+    });
+    await vi.advanceTimersByTimeAsync(IMPORT_DRAFT_PACE_WAIT_MS);
     await vi.runAllTimersAsync();
 
     expect(collection.get('row_1')?.reviewMatchedTransactionId).toBeNull();
-    expect(fetchUpdateImportDraftRow).not.toHaveBeenCalled();
+    expect(fetchUpdateImportDraftRows).not.toHaveBeenCalled();
   });
 
   it('persists a same-account match id', async () => {
@@ -216,24 +232,30 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
       guardedDraft
     );
     vi.mocked(fetchImportDraft).mockResolvedValue(guardedDraft);
-    vi.mocked(fetchUpdateImportDraftRow).mockResolvedValue({
-      row: toPersistedImportDraftRow(guardedDraft.rows[0], {
-        reviewMatchedTransactionId: 'tx_same',
-        updatedAt: '2026-05-20T12:00:05.000Z',
-      }),
-    } satisfies UpdateImportDraftRowResult);
+    vi.mocked(fetchUpdateImportDraftRows).mockResolvedValue({
+      rows: [
+        toPersistedImportDraftRow(guardedDraft.rows[0], {
+          reviewMatchedTransactionId: 'tx_same',
+          updatedAt: '2026-05-20T12:00:05.000Z',
+        }),
+      ],
+    } satisfies BatchUpdateImportDraftRowsResult);
     const collection = getImportDraftRowsCollection(guardedDraft.id);
     await collection.preload();
 
     vi.useFakeTimers();
-    const mutate = getImportDraftRowPacedMutations(guardedDraft.id, 'row_1');
-    mutate({ patch: { reviewMatchedTransactionId: 'tx_same' } });
-    await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
+    const mutate = getImportDraftPacedMutations(guardedDraft.id);
+    seedImportDraftPersistBaselines(guardedDraft.id, collection.toArray);
+    mutate({
+      rowId: 'row_1',
+      patch: { reviewMatchedTransactionId: 'tx_same' },
+    });
+    await vi.advanceTimersByTimeAsync(IMPORT_DRAFT_PACE_WAIT_MS);
     await vi.runAllTimersAsync();
 
-    expect(fetchUpdateImportDraftRow).toHaveBeenCalledWith(draftId, 'row_1', {
-      reviewMatchedTransactionId: 'tx_same',
-    });
+    expect(fetchUpdateImportDraftRows).toHaveBeenCalledWith(draftId, [
+      { id: 'row_1', reviewMatchedTransactionId: 'tx_same' },
+    ]);
     expect(collection.get('row_1')?.reviewMatchedTransactionId).toBe('tx_same');
   });
 
@@ -242,13 +264,14 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
     await collection.preload();
 
     vi.useFakeTimers();
-    const mutate = getImportDraftRowPacedMutations(draft.id, 'row_1');
-    mutate({ patch: { reviewDescription: 'Stale scope' } });
+    const mutate = getImportDraftPacedMutations(draft.id);
+    seedImportDraftPersistBaselines(draft.id, collection.toArray);
+    mutate({ rowId: 'row_1', patch: { reviewDescription: 'Stale scope' } });
     replaceActiveWorkingSet();
-    await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
+    await vi.advanceTimersByTimeAsync(IMPORT_DRAFT_PACE_WAIT_MS);
     await vi.runAllTimersAsync();
 
-    expect(fetchUpdateImportDraftRow).not.toHaveBeenCalled();
+    expect(fetchUpdateImportDraftRows).not.toHaveBeenCalled();
     expect(getImportReviewAutosaveSnapshot(draft.id)).toEqual({
       status: 'idle',
       failedRowIds: [],
@@ -261,32 +284,42 @@ describe('getImportDraftRowPacedMutations confirm persist', () => {
     const collection = getImportDraftRowsCollection(draft.id);
     await collection.preload();
 
-    let resolvePatch: ((value: UpdateImportDraftRowResult) => void) | undefined;
-    const patchPersist = new Promise<UpdateImportDraftRowResult>((resolve) => {
-      resolvePatch = resolve;
-    });
-    vi.mocked(fetchUpdateImportDraftRow).mockImplementationOnce(
+    let resolvePatch:
+      | ((value: BatchUpdateImportDraftRowsResult) => void)
+      | undefined;
+    const patchPersist = new Promise<BatchUpdateImportDraftRowsResult>(
+      (resolve) => {
+        resolvePatch = resolve;
+      }
+    );
+    vi.mocked(fetchUpdateImportDraftRows).mockImplementationOnce(
       () => patchPersist
     );
 
     vi.useFakeTimers();
-    const mutate = getImportDraftRowPacedMutations(draft.id, 'row_1');
-    mutate({ patch: { reviewDescription: 'Held across switch' } });
-    await vi.advanceTimersByTimeAsync(IMPORT_ROW_PACE_WAIT_MS);
+    const mutate = getImportDraftPacedMutations(draft.id);
+    seedImportDraftPersistBaselines(draft.id, collection.toArray);
+    mutate({
+      rowId: 'row_1',
+      patch: { reviewDescription: 'Held across switch' },
+    });
+    await vi.advanceTimersByTimeAsync(IMPORT_DRAFT_PACE_WAIT_MS);
 
     expect(getImportReviewAutosaveSnapshot(draft.id).status).toBe('saving');
     replaceActiveWorkingSet();
 
     resolvePatch?.({
-      row: toPersistedImportDraftRow(draft.rows[0], {
-        reviewDescription: 'Held across switch',
-        updatedAt: '2026-05-20T12:00:05.000Z',
-      }),
+      rows: [
+        toPersistedImportDraftRow(draft.rows[0], {
+          reviewDescription: 'Held across switch',
+          updatedAt: '2026-05-20T12:00:05.000Z',
+        }),
+      ],
     });
     await patchPersist;
     await vi.runAllTimersAsync();
 
-    expect(fetchUpdateImportDraftRow).toHaveBeenCalledTimes(1);
+    expect(fetchUpdateImportDraftRows).toHaveBeenCalledTimes(1);
     expect(getImportDraftRowsCollection(draft.id).get('row_1')).toBeUndefined();
     expect(getImportReviewAutosaveSnapshot(draft.id)).toEqual({
       status: 'idle',

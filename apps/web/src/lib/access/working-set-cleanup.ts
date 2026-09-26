@@ -1,10 +1,8 @@
-import { endImportDraftRowPacedMutations } from '@/lib/data-access/imports/getImportDraftRowPacedMutations';
+import { endImportDraftReviewRuntime } from '@/lib/data-access/imports/releaseImportDraftReviewRuntime';
 import { endImportDraftRowsCollections } from '@/lib/data-access/imports/getImportDraftRowsCollection';
-import { endImportReviewAutosave } from '@/lib/data-access/imports/importReviewAutosave';
 import { registerWorkingSetCleanup } from './working-set-registry';
 
-registerWorkingSetCleanup(endImportDraftRowPacedMutations);
+registerWorkingSetCleanup(endImportDraftReviewRuntime);
 registerWorkingSetCleanup(() => {
   void endImportDraftRowsCollections();
 });
-registerWorkingSetCleanup(endImportReviewAutosave);

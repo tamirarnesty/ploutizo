@@ -11,6 +11,7 @@ import type {
 } from '@ploutizo/types';
 import { getActiveQueryClient } from '@/lib/access/working-set-registry';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
+import { isImportRowSelectedForImport } from './importReviewSelection';
 import { importDraftQueryKey } from './queryKeys';
 
 export const refundTargetFactsToExpenseMap = (
@@ -51,7 +52,7 @@ export const evaluateImportDraftWorkingCopy = (
     reviewCounterpartAccountId: row.reviewCounterpartAccountId,
     reviewRefundOf: row.reviewRefundOf,
     reviewRefundOfBatchRowId: row.reviewRefundOfBatchRowId,
-    selectedForImport: row.selectedForImport,
+    selectedForImport: isImportRowSelectedForImport(row.selectedForImport),
     externalId: row.externalId,
     sourceDescription: row.sourceDescription,
     reviewMatchedTransactionId: row.reviewMatchedTransactionId,

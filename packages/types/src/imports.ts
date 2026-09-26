@@ -163,6 +163,8 @@ export interface ImportDraft extends ImportDraftSummary {
   rows: ImportDraftRow[];
   refundTargetFacts: Record<string, RefundTargetFact>;
   matchTargetFacts: Record<string, MatchTargetFact>;
+  /** Posted refund totals per `tx:${transactionId}` for cross-import caps. */
+  priorRefundsByTarget: Record<string, number>;
 }
 
 export type CreateImportDraftResponse =

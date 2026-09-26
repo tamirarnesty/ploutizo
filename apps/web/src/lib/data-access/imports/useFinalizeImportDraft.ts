@@ -4,8 +4,8 @@ import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import type { ApiErrorBody } from '@/lib/queryClient';
 import { fetchFinalizeImportDraft } from './fetchFinalizeImportDraft';
 import { releaseImportDraftSession } from './releaseImportDraftSession';
-import { clearImportFinalizePreviewSession } from './importFinalizePreviewSession';
 import { activeImportDraftsQueryKey, importHistoryQueryKey } from './queryKeys';
+import { cancelImportDraftQueryFetches } from './cancelImportDraftQueryFetches';
 
 export const useFinalizeImportDraft = (draftId: string) => {
   const queryClient = useQueryClient();
@@ -15,8 +15,10 @@ export const useFinalizeImportDraft = (draftId: string) => {
     { rowIds: string[] }
   >({
     mutationFn: ({ rowIds }) => fetchFinalizeImportDraft(draftId, rowIds),
+    onMutate: async () => {
+      await cancelImportDraftQueryFetches(draftId);
+    },
     onSuccess: async () => {
-      clearImportFinalizePreviewSession(draftId);
       await releaseImportDraftSession(draftId);
       void queryClient.invalidateQueries({
         queryKey: activeImportDraftsQueryKey,

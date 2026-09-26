@@ -1,21 +1,29 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useLiveQuery } from '@tanstack/react-db';
 import type { ImportReviewRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
+import { getApiErrorCode } from '@/lib/queryClient';
+import { useGetHouseholdSettings } from '@/lib/data-access/household/useGetHouseholdSettings';
 import {
-  flushImportDraftRowPacedMutations,
-  getImportDraftRowPacedMutations,
-  releaseImportDraftRowPacedMutations,
-  retryFailedImportDraftRowPersists,
-} from './getImportDraftRowPacedMutations';
+  flushImportDraftPacedMutations,
+  getImportDraftPacedMutations,
+  retryFailedImportDraftPersists,
+} from './getImportDraftPacedMutations';
+import { releaseImportDraftReviewRuntime } from './releaseImportDraftReviewRuntime';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
+import { seedImportDraftPersistBaselines } from './importDraftPersistBaselines';
+import {
+  applyImportReviewEntrySelection,
+  syncImportReviewSelectionOnStatusChange,
+} from './importReviewSelectionSession';
 import { setImportDraftSelection } from './setImportDraftSelection';
 import {
   getImportReviewAutosaveSnapshot,
-  releaseImportReviewAutosave,
   waitForImportReviewAutosaveSettled,
 } from './importReviewAutosave';
+import { isImportRowSelectedForImport } from './importReviewSelection';
+import { cancelImportDraftQueryFetches } from './cancelImportDraftQueryFetches';
 import { importDraftQueryOptions } from './useGetImportDraft';
 import { toImportDraftMeta } from './toImportDraftMeta';
 import type { ImportDraftMeta } from './toImportDraftMeta';
@@ -32,6 +40,8 @@ export interface ImportReviewSession {
   retryAutosave: () => void;
   /** Flush pending paced work. Returns false when Failed remains. */
   flush: () => Promise<boolean>;
+  /** Re-apply entry selection defaults (e.g. after Finalize → Review). */
+  resetSelectionToEntryDefaults: () => void;
 }
 
 /**
@@ -45,11 +55,24 @@ export const useImportReviewSession = (
     () => getImportDraftRowsCollection(draftId),
     [draftId]
   );
+  const settingsQuery = useGetHouseholdSettings();
+  const autoCheckImportRowWhenReady =
+    (
+      settingsQuery.data as
+        | { autoCheckImportRowWhenReady?: boolean }
+        | undefined
+    )?.autoCheckImportRowWhenReady ?? false;
+  const previousStatusByIdRef = useRef<Map<string, ImportReviewRow['status']>>(
+    new Map()
+  );
+
+  useEffect(() => {
+    previousStatusByIdRef.current = new Map();
+  }, [draftId]);
 
   useEffect(() => {
     return () => {
-      releaseImportDraftRowPacedMutations(draftId);
-      releaseImportReviewAutosave(draftId);
+      releaseImportDraftReviewRuntime(draftId);
     };
   }, [draftId]);
 
@@ -57,6 +80,14 @@ export const useImportReviewSession = (
     ...importDraftQueryOptions(draftId),
     select: toImportDraftMeta,
   });
+
+  const draftNotFound =
+    metaQuery.isError && getApiErrorCode(metaQuery.error) === 'NOT_FOUND';
+
+  useEffect(() => {
+    if (!draftNotFound) return;
+    void cancelImportDraftQueryFetches(draftId);
+  }, [draftId, draftNotFound]);
 
   const liveRows = useLiveQuery(
     (q) =>
@@ -66,13 +97,45 @@ export const useImportReviewSession = (
     [rowsCollection]
   );
 
-  const rows = liveRows.data;
+  useEffect(() => {
+    seedImportDraftPersistBaselines(draftId, liveRows.data);
+  }, [draftId, liveRows.data]);
+
+  const rows = useMemo(
+    () =>
+      liveRows.data.map((row) => {
+        const selectedForImport = isImportRowSelectedForImport(
+          row.selectedForImport
+        );
+        return row.selectedForImport === selectedForImport
+          ? row
+          : { ...row, selectedForImport };
+      }),
+    [liveRows.data]
+  );
+
+  useEffect(() => {
+    syncImportReviewSelectionOnStatusChange({
+      draftId,
+      rows,
+      previousStatusById: previousStatusByIdRef.current,
+      autoCheckImportRowWhenReady,
+    });
+    previousStatusByIdRef.current = new Map(
+      rows.map((row) => [row.id, row.status])
+    );
+  }, [draftId, rows, autoCheckImportRowWhenReady]);
+
+  const pacedMutate = useMemo(
+    () => getImportDraftPacedMutations(draftId),
+    [draftId]
+  );
 
   const updateRow = useCallback(
     (rowId: string, patch: UpdateImportDraftRowInput) => {
-      getImportDraftRowPacedMutations(draftId, rowId)({ patch });
+      pacedMutate({ rowId, patch });
     },
-    [draftId]
+    [pacedMutate]
   );
 
   const setSelection = useCallback(
@@ -82,12 +145,17 @@ export const useImportReviewSession = (
     [draftId]
   );
 
+  const resetSelectionToEntryDefaults = useCallback(() => {
+    const currentRows = rowsCollection.toArray;
+    applyImportReviewEntrySelection(draftId, currentRows);
+  }, [draftId, rowsCollection]);
+
   const retryAutosave = useCallback(() => {
-    void retryFailedImportDraftRowPersists(draftId);
+    void retryFailedImportDraftPersists(draftId);
   }, [draftId]);
 
   const flush = useCallback(async () => {
-    await flushImportDraftRowPacedMutations(draftId);
+    await flushImportDraftPacedMutations(draftId);
     await waitForImportReviewAutosaveSettled(draftId);
     return getImportReviewAutosaveSnapshot(draftId).status !== 'failed';
   }, [draftId]);
@@ -106,5 +174,6 @@ export const useImportReviewSession = (
     setSelection,
     retryAutosave,
     flush,
+    resetSelectionToEntryDefaults,
   };
 };

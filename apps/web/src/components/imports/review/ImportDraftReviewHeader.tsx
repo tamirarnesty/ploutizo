@@ -17,7 +17,6 @@ interface ImportDraftReviewHeaderProps {
   rows?: ImportReviewRow[];
   isLoading?: boolean;
   isContinuing: boolean;
-  onRetryAutosave: () => void;
   onContinue: () => void | Promise<void>;
 }
 
@@ -36,11 +35,11 @@ export const ImportDraftReviewHeader = ({
   rows = [],
   isLoading = false,
   isContinuing,
-  onRetryAutosave,
   onContinue,
 }: ImportDraftReviewHeaderProps) => {
   const draftId = meta?.id ?? '';
   const autosaveStatus = useImportReviewAutosaveStatus(draftId);
+  const iconStatus = meta ? autosaveStatus : 'idle';
   const continueEnabled = getImportReviewContinueEnabled({
     meta,
     rows,
@@ -70,7 +69,8 @@ export const ImportDraftReviewHeader = ({
           </div>
         )}
       </div>
-      <div className="flex flex-col items-end gap-1.5">
+      <div className="flex items-center gap-2">
+        <ImportReviewAutosaveStatus status={iconStatus} />
         {isLoading ? (
           <Skeleton className="h-9 w-24" />
         ) : (
@@ -84,14 +84,6 @@ export const ImportDraftReviewHeader = ({
           >
             {isContinuing ? 'Preparing…' : 'Continue'}
           </Button>
-        )}
-        {meta ? (
-          <ImportReviewAutosaveStatus
-            status={autosaveStatus}
-            onRetryAutosave={onRetryAutosave}
-          />
-        ) : (
-          <div className="min-h-5 min-w-32" aria-hidden />
         )}
       </div>
     </div>

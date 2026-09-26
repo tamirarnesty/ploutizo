@@ -27,7 +27,7 @@ export const Route = createFileRoute('/_layout/import/$draftId/')({
       ),
       context.queryClient.ensureQueryData(accountsQueryOptions(true)),
     ]);
-    if (import.meta.env.SSR) {
+    if (!import.meta.env.SSR) {
       await getImportDraftRowsCollection(params.draftId)
         .preload()
         .catch(() => undefined);

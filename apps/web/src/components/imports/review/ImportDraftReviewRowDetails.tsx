@@ -1,25 +1,21 @@
+import { memo } from 'react';
 import { Button } from '@ploutizo/ui/components/button';
 import { Text } from '@ploutizo/ui/components/text';
 import { Textarea } from '@ploutizo/ui/components/textarea';
-import type { ImportDraftRow } from '@ploutizo/types';
 import { TransactionTagPicker } from '@/components/transactions/TransactionTagPicker';
 import { getImportRowLabel } from '../lib/importPresentation';
 import { ImportMatchReviewPanel } from './ImportMatchReviewPanel';
 import { useImportDraftRowEvaluation } from './ImportDraftReviewContext';
 import { useImportReviewTextDraft } from './useImportReviewTextDraft';
 import { useImportDraftReviewRowSave } from './useImportDraftReviewRowSave';
+import { useImportReviewRowScope } from './ImportReviewRowScope';
 
-interface ImportDraftReviewRowDetailsProps {
-  row: ImportDraftRow;
-}
-
-export const ImportDraftReviewRowDetails = ({
-  row,
-}: ImportDraftReviewRowDetailsProps) => {
-  const { saveField, disabled } = useImportDraftReviewRowSave(row);
+export const ImportDraftReviewRowDetails = memo(() => {
+  const { rowId, row } = useImportReviewRowScope();
+  const { saveField, disabled } = useImportDraftReviewRowSave();
   const rowLabel = getImportRowLabel(row);
   const tagsInputId = `import-row-tags-${row.id}`;
-  const evaluation = useImportDraftRowEvaluation(row.id);
+  const evaluation = useImportDraftRowEvaluation(rowId);
   const refundSuggestion = evaluation?.refundSuggestion;
   const {
     draft: notesDraft,
@@ -41,7 +37,6 @@ export const ImportDraftReviewRowDetails = ({
   return (
     <div className="bg-muted/10 px-3 py-2">
       <ImportMatchReviewPanel
-        row={row}
         disabled={disabled}
         onAcceptAdvisory={(transactionId) =>
           saveField({
@@ -123,4 +118,6 @@ export const ImportDraftReviewRowDetails = ({
       </div>
     </div>
   );
-};
+});
+
+ImportDraftReviewRowDetails.displayName = 'ImportDraftReviewRowDetails';

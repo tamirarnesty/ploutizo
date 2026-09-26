@@ -27,9 +27,11 @@ export type VerifyImportSetForDraftResult =
 /** Import set verification over current draft rows. Callers hold the draft lock. */
 export const verifyImportSetForDraft = async (
   tx: Transaction,
-  { orgId, batchId, rowIds }: ImportSetRequest
+  { orgId, batchId, rowIds }: ImportSetRequest,
+  options?: { summary?: ImportDraftSummaryRow | null }
 ): Promise<VerifyImportSetForDraftResult> => {
-  const summary = await fetchDraftSummaryById(orgId, batchId, tx);
+  const summary =
+    options?.summary ?? (await fetchDraftSummaryById(orgId, batchId, tx));
   if (!summary) throw new NotFoundError('Import draft not found.');
   const { accountId } = summary;
   if (!accountId) {

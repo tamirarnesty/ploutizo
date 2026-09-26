@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import { DatePicker } from '@ploutizo/ui/components/date-picker';
@@ -21,9 +21,12 @@ import {
 import { cn } from '@ploutizo/ui/lib/utils';
 import { formatTransactionTypeLabel } from '@ploutizo/utils';
 import { centsToDollars, dollarsToCents } from '@ploutizo/utils/currency';
+import { isImportRowSelectable } from '@ploutizo/utils/import-row-readiness';
 import { resolveReviewedImportValues } from '@ploutizo/utils/reviewed-import-values';
 import { IMPORT_TRANSACTION_TYPE_VALUES } from '@ploutizo/types';
 import type { ImportReviewRow, ImportTransactionType } from '@ploutizo/types';
+import { useImportReviewRow } from '@/lib/data-access/imports/useImportReviewRow';
+import { isImportRowSelectedForImport } from '@/lib/data-access/imports/importReviewSelection';
 import { CategorySelect } from '@/components/categories/CategorySelect';
 import { CurrencyInput } from '@/components/currency/CurrencyInput';
 import { getSettlementSourceAccounts } from '@/lib/settlements/settlementSourceAccounts';
@@ -34,6 +37,10 @@ import {
 import { ImportAssigneeField } from './ImportAssigneeField';
 import { useImportDraftReviewContext } from './ImportDraftReviewContext';
 import { ImportRowStatusIcon } from './ImportRowStatusIcon';
+import {
+  useImportReviewRowScope,
+  useOptionalImportReviewRowScope,
+} from './ImportReviewRowScope';
 import { useImportDraftReviewRowSave } from './useImportDraftReviewRowSave';
 import { useImportReviewTextDraft } from './useImportReviewTextDraft';
 
@@ -88,24 +95,29 @@ const ImportTransactionTypeSelect = ({
 );
 
 interface ImportReviewSelectionCellProps {
-  row: ImportReviewRow;
+  draftId: string;
+  rowId: string;
   expanded: boolean;
-  selectable: boolean;
   onExpandedChange: (expanded: boolean) => void;
   onSelectionChange: (selected: boolean) => void;
 }
 
 export const ImportReviewSelectionCell = ({
-  row,
+  draftId,
+  rowId,
   expanded,
-  selectable,
   onExpandedChange,
   onSelectionChange,
 }: ImportReviewSelectionCellProps) => {
+  const liveRow = useImportReviewRow(draftId, rowId);
+  const scopedRow = useOptionalImportReviewRowScope()?.row;
+  const row = liveRow ?? scopedRow;
+  if (!row) return null;
+
+  const selectable = isImportRowSelectable(row);
+  const checked = isImportRowSelectedForImport(row.selectedForImport);
+  const selectionDisabled = !selectable && !checked;
   const rowLabel = getImportRowLabel(row);
-  const expandLabel = expanded
-    ? `Collapse details for ${rowLabel}`
-    : `Expand details for ${rowLabel}`;
 
   return (
     <div
@@ -115,19 +127,23 @@ export const ImportReviewSelectionCell = ({
     >
       <Checkbox
         aria-label={`Select ${rowLabel}`}
-        checked={row.selectedForImport}
-        disabled={!selectable}
-        onCheckedChange={(checked) => {
-          onSelectionChange(checked === true);
+        checked={checked}
+        disabled={selectionDisabled}
+        onCheckedChange={(nextChecked) => {
+          onSelectionChange(nextChecked === true);
         }}
       />
-      <ImportRowStatusIcon row={row} />
+      <ImportRowStatusIcon />
       <Button
         type="button"
         variant="ghost"
         size="icon-xs"
         aria-expanded={expanded}
-        aria-label={expandLabel}
+        aria-label={
+          expanded
+            ? `Collapse details for ${rowLabel}`
+            : `Expand details for ${rowLabel}`
+        }
         onClick={() => onExpandedChange(!expanded)}
       >
         <ChevronDown
@@ -142,12 +158,9 @@ export const ImportReviewSelectionCell = ({
   );
 };
 
-interface ImportReviewDateCellProps {
-  row: ImportReviewRow;
-}
-
-export const ImportReviewDateCell = ({ row }: ImportReviewDateCellProps) => {
-  const { saveField, disabled } = useImportDraftReviewRowSave(row);
+export const ImportReviewDateCell = memo(() => {
+  const { row } = useImportReviewRowScope();
+  const { saveField, disabled } = useImportDraftReviewRowSave();
   const rowLabel = getImportRowLabel(row);
   const { date } = resolveReviewedImportValues(row);
 
@@ -164,16 +177,13 @@ export const ImportReviewDateCell = ({ row }: ImportReviewDateCellProps) => {
       }}
     />
   );
-};
+});
 
-interface ImportReviewAmountCellProps {
-  row: ImportReviewRow;
-}
+ImportReviewDateCell.displayName = 'ImportReviewDateCell';
 
-export const ImportReviewAmountCell = ({
-  row,
-}: ImportReviewAmountCellProps) => {
-  const { saveField, disabled } = useImportDraftReviewRowSave(row);
+export const ImportReviewAmountCell = memo(() => {
+  const { row } = useImportReviewRowScope();
+  const { saveField, disabled } = useImportDraftReviewRowSave();
   const { amount } = resolveReviewedImportValues(row);
   const [amountDraft, setAmountDraft] = useState<number | undefined>(() =>
     amount != null ? centsToDollars(amount) : undefined
@@ -209,14 +219,13 @@ export const ImportReviewAmountCell = ({
       }}
     />
   );
-};
+});
 
-interface ImportReviewTypeCellProps {
-  row: ImportReviewRow;
-}
+ImportReviewAmountCell.displayName = 'ImportReviewAmountCell';
 
-export const ImportReviewTypeCell = ({ row }: ImportReviewTypeCellProps) => {
-  const { saveField, disabled } = useImportDraftReviewRowSave(row);
+export const ImportReviewTypeCell = memo(() => {
+  const { row } = useImportReviewRowScope();
+  const { saveField, disabled } = useImportDraftReviewRowSave();
   const rowLabel = getImportRowLabel(row);
   const { type } = resolveReviewedImportValues(row);
 
@@ -232,16 +241,13 @@ export const ImportReviewTypeCell = ({ row }: ImportReviewTypeCellProps) => {
       }}
     />
   );
-};
+});
 
-interface ImportReviewDescriptionCellProps {
-  row: ImportReviewRow;
-}
+ImportReviewTypeCell.displayName = 'ImportReviewTypeCell';
 
-export const ImportReviewDescriptionCell = ({
-  row,
-}: ImportReviewDescriptionCellProps) => {
-  const { saveField, disabled } = useImportDraftReviewRowSave(row);
+export const ImportReviewDescriptionCell = memo(() => {
+  const { row } = useImportReviewRowScope();
+  const { saveField, disabled } = useImportDraftReviewRowSave();
   const { description } = resolveReviewedImportValues(row);
   const rowLabel = getImportRowLabel(row);
   const originalDescription = resolveImportRowOriginalDescription(row);
@@ -293,17 +299,14 @@ export const ImportReviewDescriptionCell = ({
       ) : null}
     </>
   );
-};
+});
 
-interface ImportReviewCategoryCellProps {
-  row: ImportReviewRow;
-}
+ImportReviewDescriptionCell.displayName = 'ImportReviewDescriptionCell';
 
-export const ImportReviewCategoryCell = ({
-  row,
-}: ImportReviewCategoryCellProps) => {
+export const ImportReviewCategoryCell = memo(() => {
+  const { row } = useImportReviewRowScope();
   const { categories } = useImportDraftReviewContext();
-  const { saveField, disabled } = useImportDraftReviewRowSave(row);
+  const { saveField, disabled } = useImportDraftReviewRowSave();
   const rowLabel = getImportRowLabel(row);
 
   return (
@@ -321,11 +324,9 @@ export const ImportReviewCategoryCell = ({
       }}
     />
   );
-};
+});
 
-interface ImportReviewPaidFromCellProps {
-  row: ImportReviewRow;
-}
+ImportReviewCategoryCell.displayName = 'ImportReviewCategoryCell';
 
 const UNAVAILABLE_PAID_FROM_LABEL = 'Unavailable account';
 
@@ -334,12 +335,11 @@ const getPaidFromAccountLabel = (account: {
   archivedAt: string | null;
 }) => (account.archivedAt ? `${account.name} (archived)` : account.name);
 
-export const ImportReviewPaidFromCell = ({
-  row,
-}: ImportReviewPaidFromCellProps) => {
+export const ImportReviewPaidFromCell = memo(() => {
+  const { row } = useImportReviewRowScope();
   const { accounts, accountsStatus, cardAccountId, refetchAccounts } =
     useImportDraftReviewContext();
-  const { saveField, disabled } = useImportDraftReviewRowSave(row);
+  const { saveField, disabled } = useImportDraftReviewRowSave();
   const rowLabel = getImportRowLabel(row);
   const selectedAccountId = row.reviewCounterpartAccountId ?? '';
   const sourceAccounts = useMemo(
@@ -456,26 +456,26 @@ export const ImportReviewPaidFromCell = ({
       ) : null}
     </div>
   );
-};
+});
 
-export const ImportReviewCategoryOrPaidFromCell = ({
-  row,
-}: ImportReviewCategoryCellProps) =>
-  resolveReviewedImportValues(row).type === 'settlement' ? (
-    <ImportReviewPaidFromCell row={row} />
+ImportReviewPaidFromCell.displayName = 'ImportReviewPaidFromCell';
+
+export const ImportReviewCategoryOrPaidFromCell = memo(() => {
+  const { row } = useImportReviewRowScope();
+  return resolveReviewedImportValues(row).type === 'settlement' ? (
+    <ImportReviewPaidFromCell />
   ) : (
-    <ImportReviewCategoryCell row={row} />
+    <ImportReviewCategoryCell />
   );
+});
 
-interface ImportReviewAssigneeCellProps {
-  row: ImportReviewRow;
-}
+ImportReviewCategoryOrPaidFromCell.displayName =
+  'ImportReviewCategoryOrPaidFromCell';
 
-export const ImportReviewAssigneeCell = ({
-  row,
-}: ImportReviewAssigneeCellProps) => {
+export const ImportReviewAssigneeCell = memo(() => {
+  const { row } = useImportReviewRowScope();
   const { orgMembers } = useImportDraftReviewContext();
-  const { saveField, disabled } = useImportDraftReviewRowSave(row);
+  const { saveField, disabled } = useImportDraftReviewRowSave();
   const rowLabel = getImportRowLabel(row);
   const { type } = resolveReviewedImportValues(row);
   const assigneeLabel =
@@ -497,4 +497,6 @@ export const ImportReviewAssigneeCell = ({
       }}
     />
   );
-};
+});
+
+ImportReviewAssigneeCell.displayName = 'ImportReviewAssigneeCell';

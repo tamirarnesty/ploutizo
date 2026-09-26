@@ -144,8 +144,10 @@ export const importDraftNotFoundRedirect = (error: unknown): 'hub' | null => {
 
 export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
   const navigate = useNavigate();
-  const draftQuery = useGetImportDraft(draftId);
   const finalizeImport = useFinalizeImportDraft(draftId);
+  const draftQuery = useGetImportDraft(draftId, {
+    enabled: !finalizeImport.isPending && !finalizeImport.isSuccess,
+  });
   const [transportError, setTransportError] = useState<string | null>(null);
   const leavingRef = useRef(false);
   const session = getImportFinalizePreviewSession(draftId);

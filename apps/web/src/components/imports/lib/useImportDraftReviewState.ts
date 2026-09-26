@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo } from 'react';
+import { computeImportDraftRowCounts } from '@ploutizo/utils/import-row-status';
 import { getSelectableImportRows } from '@ploutizo/utils/import-row-readiness';
 import type { ImportReviewRow } from '@ploutizo/types';
 import type { ImportDraftMeta } from '@/lib/data-access/imports';
+import { getImportDraftRowsCollection } from '@/lib/data-access/imports/getImportDraftRowsCollection';
+import { isImportRowSelectedForImport } from '@/lib/data-access/imports/importReviewSelection';
 import { usePersistedPageSize } from '@/hooks/persistedPageSize';
 import { useFlushPendingInputs } from '@/lib/money/pending-input-flush';
 import { prioritizeImportRows } from './importPresentation';
@@ -19,11 +22,11 @@ export interface ImportDraftReviewState {
   pagination: PaginationState;
   setPagination: (updater: Updater<PaginationState>) => void;
   rows: ImportReviewRow[];
-  currentPageSelectableRows: ImportReviewRow[];
   headerChecked: boolean;
   headerIndeterminate: boolean;
-  setRowSelection: (row: ImportReviewRow, selectedForImport: boolean) => void;
+  setRowSelection: (rowId: string, selectedForImport: boolean) => void;
   setAllSelection: (selectedForImport: boolean) => void;
+  hasSelectableRows: boolean;
   hasReviewableRows: boolean;
   isLoading: boolean;
 }
@@ -46,16 +49,8 @@ export const useImportDraftReviewState = ({
 
   const { pageIndex, pageSize } = pagination;
   const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
-  const currentPageRows = useMemo(
-    () => rows.slice(pageIndex * pageSize, pageIndex * pageSize + pageSize),
-    [pageIndex, pageSize, rows]
-  );
-  const currentPageSelectableRows = useMemo(
-    () => getSelectableImportRows(currentPageRows),
-    [currentPageRows]
-  );
 
-  const hasReviewableRows = selectableRows.length > 0;
+  const hasReviewableRows = computeImportDraftRowCounts(rows).validRowCount > 0;
 
   useEffect(() => {
     if (priorityRowIds.length === 0 || pageIndex === 0) return;
@@ -67,10 +62,10 @@ export const useImportDraftReviewState = ({
     setPagination({ pageIndex: pageCount - 1, pageSize });
   }, [pageCount, pageIndex, pageSize, setPagination]);
 
-  const selectedCount = currentPageSelectableRows.filter(
+  const selectedCount = selectableRows.filter(
     (row) => row.selectedForImport
   ).length;
-  const totalSelectable = currentPageSelectableRows.length;
+  const totalSelectable = selectableRows.length;
   const headerChecked =
     totalSelectable > 0 && selectedCount === totalSelectable;
   const headerIndeterminate =
@@ -86,32 +81,39 @@ export const useImportDraftReviewState = ({
   );
 
   const setRowSelection = useCallback(
-    (row: ImportReviewRow, selectedForImport: boolean) => {
-      if (row.selectedForImport === selectedForImport) return;
-      applySelection([row.id], selectedForImport);
+    (rowId: string, selectedForImport: boolean) => {
+      if (!meta?.id) return;
+      const live = getImportDraftRowsCollection(meta.id).get(rowId);
+      if (
+        isImportRowSelectedForImport(live?.selectedForImport) ===
+        selectedForImport
+      ) {
+        return;
+      }
+      applySelection([rowId], selectedForImport);
     },
-    [applySelection]
+    [applySelection, meta?.id]
   );
 
   const setAllSelection = useCallback(
     (selectedForImport: boolean) => {
-      const rowIds = currentPageSelectableRows
+      const rowIds = selectableRows
         .filter((row) => row.selectedForImport !== selectedForImport)
         .map((row) => row.id);
       applySelection(rowIds, selectedForImport);
     },
-    [applySelection, currentPageSelectableRows]
+    [applySelection, selectableRows]
   );
 
   return {
     pagination,
     setPagination,
     rows,
-    currentPageSelectableRows,
     headerChecked,
     headerIndeterminate,
     setRowSelection,
     setAllSelection,
+    hasSelectableRows: totalSelectable > 0,
     hasReviewableRows,
     isLoading,
   };

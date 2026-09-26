@@ -5,6 +5,8 @@ import {
   evaluateImportDraftWorkingCopy,
   rederiveImportDraftWorkingCopy,
 } from './rederiveImportDraftWorkingCopy';
+import { publishImportReviewEvaluations } from './importReviewEvaluations';
+import { scheduleImportDraftWorkingCopyRederive } from './scheduleImportDraftWorkingCopyRederive';
 
 export const REVIEW_PATCH_KEYS = [
   'reviewDate',
@@ -60,6 +62,9 @@ export const applyOptimisticRowPatch = (
     row.id === rowId ? { ...row, ...patch } : row
   );
   const evaluations = evaluateImportDraftWorkingCopy(draftId, rowsForEval);
+  if (evaluations) {
+    publishImportReviewEvaluations(draftId, evaluations);
+  }
 
   collection.update(rowId, (draft) => {
     Object.assign(draft, patch);
@@ -69,10 +74,10 @@ export const applyOptimisticRowPatch = (
     draft.invalidReason = evaluation.invalidReason;
   });
 
-  if (evaluations) {
+  scheduleImportDraftWorkingCopyRederive(draftId, () => {
     rederiveImportDraftWorkingCopy(draftId, {
       evaluations,
       skipIds: new Set([rowId]),
     });
-  }
+  });
 };

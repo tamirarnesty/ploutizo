@@ -29,7 +29,9 @@ import {
   insertImportBatch,
   insertImportBatchRows,
   listActiveImportDraftSummaries,
+  listAllDraftRowIdsForDraft,
   listDraftRows,
+  listDraftRowsByIds,
   listDraftRowsForBatches,
   listImportTargetAccounts,
   lockImportDraftBatch,
@@ -51,6 +53,7 @@ import { toImportDraftSummary } from '@/services/import-batch-mappers';
 import { listRefundTargetExpensesByIds } from '@/lib/queries/import-refund-targets';
 import {
   buildImportDraftView,
+  collectReviewRefundOfIds,
   loadDraftEvaluationContext,
   refundTargetFactsRecordFromMap,
   toImportDraftPersistedRow,
@@ -318,9 +321,16 @@ export const updateImportDraftRows = async (
     const draft = await fetchDraftSummaryById(orgId, draftId, tx);
     if (!draft?.accountId) throw new NotFoundError('Import draft not found.');
 
-    const existingRows = await listDraftRows(orgId, draftId, tx);
+    const existingRows = await listDraftRowsByIds(
+      orgId,
+      draftId,
+      input.rows.map((row) => row.id),
+      tx
+    );
     const existingById = new Map(existingRows.map((row) => [row.id, row]));
-    const draftRowIds = new Set(existingById.keys());
+    const draftRowIds = new Set(
+      await listAllDraftRowIdsForDraft(orgId, draftId, tx)
+    );
 
     for (const { id, ...patch } of input.rows) {
       const existing = existingById.get(id);
@@ -342,9 +352,7 @@ export const updateImportDraftRows = async (
       rows.push(toImportDraftPersistedRow(next));
     }
 
-    const refundOfIds = input.rows.flatMap((row) =>
-      'reviewRefundOf' in row && row.reviewRefundOf ? [row.reviewRefundOf] : []
-    );
+    const refundOfIds = collectReviewRefundOfIds(input.rows);
     if (refundOfIds.length === 0) return { rows };
 
     const expenses = await listRefundTargetExpensesByIds(

@@ -7,7 +7,6 @@ import {
   getSelectableImportRows,
   getSelectedImportRows,
   isImportRowReadyForImport,
-  isImportRowResolved,
   isImportRowSelectable,
 } from './import-row-readiness';
 
@@ -18,9 +17,9 @@ const baseRow = {
 };
 
 describe('import-row-readiness', () => {
-  it('treats invalid rows as not selectable', () => {
+  it('treats only ready rows as selectable', () => {
     expect(isImportRowSelectable({ status: 'ready' })).toBe(true);
-    expect(isImportRowSelectable({ status: 'needs_review' })).toBe(true);
+    expect(isImportRowSelectable({ status: 'needs_review' })).toBe(false);
     expect(isImportRowSelectable({ status: 'invalid' })).toBe(false);
   });
 
@@ -41,7 +40,7 @@ describe('import-row-readiness', () => {
 
     expect(getSelectedImportRows(rows)).toHaveLength(2);
     expect(canContinueImportReview(rows)).toBe(true);
-    expect(isImportRowResolved(rows[1])).toBe(false);
+    expect(isImportRowSelectable(rows[1])).toBe(false);
     expect(getImportReviewContinueBlockerReason(rows)).toBeNull();
   });
 

@@ -6,6 +6,7 @@ import { makeImportDraftRow } from '../test-fixtures/importDraft';
 import '@/test/mockTanstackRouter';
 import { ImportDraftReviewProvider } from './ImportDraftReviewContext';
 import { ImportReviewPaidFromCell } from './importReviewCells';
+import { ImportReviewRowScopeFixture } from './ImportReviewRowScope';
 
 const cardAccountId = '99999999-9999-4999-8999-999999999999';
 const chequingId = '22222222-2222-4222-8222-222222222222';
@@ -35,10 +36,6 @@ const archivedSavingsAccount: Account = {
   type: 'savings',
   archivedAt: '2026-01-01T00:00:00Z',
 };
-
-vi.mock('@/lib/data-access/imports/useImportReviewAutosave', () => ({
-  useImportReviewAutosaveFailedRowIds: () => [],
-}));
 
 vi.mock('@ploutizo/ui/components/select', async () => {
   const React = await import('react');
@@ -122,7 +119,9 @@ const renderPaidFromCell = (
       orgMembers={[]}
       updateRow={updateRow}
     >
-      <ImportReviewPaidFromCell row={row} />
+      <ImportReviewRowScopeFixture row={row}>
+        <ImportReviewPaidFromCell />
+      </ImportReviewRowScopeFixture>
     </ImportDraftReviewProvider>
   );
 

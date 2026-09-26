@@ -119,6 +119,7 @@ describe('buildImportDraftView', () => {
     expect(draft.refundTargetFacts).toEqual({});
     expect(draft.matchTargetFacts).toEqual({});
     expect(sumPriorRefundTotalsByTransactionTarget).not.toHaveBeenCalled();
+    expect(draft.priorRefundsByTarget).toEqual({});
     expect(draft.rows[0]).not.toHaveProperty('selectedForImport');
   });
 

@@ -17,6 +17,17 @@ export {
   type ImportRowStructuralFields,
 } from './import-row-status';
 export {
+  importDraftDurableRowFieldsFrom,
+  toImportDraftDurableRow,
+  toImportDraftDurableRowFromDraftRow,
+  toImportDraftDurableRowFromReview,
+  type ImportDraftDurableRowSource,
+} from './to-import-draft-durable-row';
+export {
+  priorRefundsByTargetFromRecord,
+  priorRefundsByTargetToRecord,
+} from './prior-refunds-by-target-record';
+export {
   evaluateImportDraft,
   evaluateImportDraftRow,
   buildImportDraftRowView,
@@ -76,7 +87,6 @@ export {
   getSelectableImportRows,
   getSelectedImportRows,
   isImportRowReadyForImport,
-  isImportRowResolved,
   isImportRowSelectable,
   rowHasLiveAssignee,
   type ImportReviewContinueBlockerReason,
