@@ -122,6 +122,7 @@ export const Dashboard = () => {
         <SpendTrendCard
           data={overview}
           isLoading={overviewLoadingState}
+          isFetching={overviewFetching}
           isError={overviewLoadFailure && !overviewFetching}
         />
         <div className="grid grid-cols-1 items-start gap-4 @4xl/dashboard:grid-cols-4">

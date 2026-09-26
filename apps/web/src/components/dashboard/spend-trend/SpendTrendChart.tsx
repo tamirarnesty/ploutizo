@@ -1,3 +1,4 @@
+import { format, isValid, parseISO } from 'date-fns';
 import { useMemo } from 'react';
 import {
   CartesianGrid,
@@ -38,6 +39,24 @@ const chartConfig = {
 const formatBucketLabel = (bucketStart: string): string => {
   const [, month, day] = bucketStart.split('-');
   return `${month}/${day}`;
+};
+
+const formatTooltipBucketLabel = (bucketStart: string): string => {
+  const parsed = parseISO(bucketStart);
+  if (isValid(parsed)) {
+    return format(parsed, 'MMM d, yyyy');
+  }
+  return formatBucketLabel(bucketStart);
+};
+
+const seriesLabelForDataKey = (dataKey: string): string => {
+  if (dataKey === 'current') {
+    return chartConfig.current.label;
+  }
+  if (dataKey === 'prior') {
+    return chartConfig.prior.label;
+  }
+  return dataKey;
 };
 
 export const SpendTrendChart = ({ data }: SpendTrendChartProps) => {
@@ -84,14 +103,32 @@ export const SpendTrendChart = ({ data }: SpendTrendChartProps) => {
         <ChartTooltip
           content={
             <ChartTooltipContent
-              labelFormatter={(label) => String(label)}
-              formatter={(value) => formatTrendCurrency(Number(value))}
+              labelFormatter={(_label, payload) => {
+                const bucketStart = payload[0]?.payload?.bucketStart;
+                return typeof bucketStart === 'string'
+                  ? formatTooltipBucketLabel(bucketStart)
+                  : '';
+              }}
+              formatter={(value, _name, item) => {
+                const dataKey = String(item.dataKey ?? item.name ?? '');
+                return (
+                  <div className="flex w-full flex-1 items-center justify-between gap-4 leading-none">
+                    <span className="text-muted-foreground">
+                      {seriesLabelForDataKey(dataKey)}
+                    </span>
+                    <span className="font-mono font-medium text-foreground tabular-nums">
+                      {formatTrendCurrency(Number(value))}
+                    </span>
+                  </div>
+                );
+              }}
             />
           }
         />
         <Line
           type="monotone"
           dataKey="current"
+          name="current"
           stroke="var(--color-current)"
           strokeWidth={2}
           dot={false}
@@ -100,6 +137,7 @@ export const SpendTrendChart = ({ data }: SpendTrendChartProps) => {
         <Line
           type="monotone"
           dataKey="prior"
+          name="prior"
           stroke="var(--color-prior)"
           strokeWidth={2}
           strokeDasharray="6 4"
