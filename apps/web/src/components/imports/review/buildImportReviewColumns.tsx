@@ -38,6 +38,7 @@ const columnHeaderIcon = (Icon: typeof CalendarDays) => (
 );
 
 export interface BuildImportReviewColumnsOptions {
+  draftId: string;
   headerChecked: boolean;
   headerIndeterminate: boolean;
   onHeaderCheckedChange: (checked: boolean) => void;
@@ -47,6 +48,7 @@ export interface BuildImportReviewColumnsOptions {
 }
 
 export const buildImportReviewColumns = ({
+  draftId,
   headerChecked,
   headerIndeterminate,
   onHeaderCheckedChange,
@@ -159,6 +161,8 @@ export const buildImportReviewColumns = ({
       },
       cell: ({ row }) => (
         <ImportReviewSelectionCell
+          draftId={draftId}
+          rowId={row.original.id}
           expanded={row.getIsExpanded()}
           onExpandedChange={(expanded) => row.toggleExpanded(expanded)}
           onSelectionChange={(selected) =>

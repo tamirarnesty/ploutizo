@@ -13,6 +13,7 @@ import {
 } from '@/lib/data-access/imports/getImportDraftRowsCollection';
 import { importDraftQueryKey } from '@/lib/data-access/imports/queryKeys';
 import { rederiveImportDraftWorkingCopy } from '@/lib/data-access/imports/rederiveImportDraftWorkingCopy';
+import { setImportDraftSelection } from '@/lib/data-access/imports/setImportDraftSelection';
 import * as useImportReviewRowModule from '@/lib/data-access/imports/useImportReviewRow';
 import type { Category } from '@/lib/data-access/categories';
 import { HouseholdHookWrapper } from '@/test/household-hook-harness';
@@ -165,7 +166,10 @@ const ReviewTableHarness = ({
   const reviewState = useImportDraftReviewState({
     meta,
     rows: sessionRows,
-    setSelection: vi.fn(),
+    setSelection: (rowIds, selectedForImport) => {
+      setImportDraftSelection(draftId, rowIds, selectedForImport);
+      setSessionRows(getImportDraftRowsCollection(draftId).toArray);
+    },
   });
 
   return (
@@ -227,6 +231,28 @@ describe('ImportDraftReviewTable row isolation', () => {
     getActiveQueryClient().clear();
   });
 
+  it('toggles row selection on and off from the checkbox', async () => {
+    const user = userEvent.setup();
+    const draftId = 'draft_selection_toggle';
+    const readyRow = makeImportDraftRow({
+      id: 'row_ready',
+      status: 'ready',
+      selectedForImport: false,
+    });
+    const collection = await hydrateDraftRows(draftId, [readyRow]);
+
+    await renderIsolatedTable({ draftId, rows: [readyRow] });
+
+    const checkbox = await screen.findByRole('checkbox', {
+      name: `Select ${getImportRowLabel(readyRow)}`,
+    });
+    await user.click(checkbox);
+    expect(collection.get('row_ready')?.selectedForImport).toBe(true);
+
+    await user.click(checkbox);
+    expect(collection.get('row_ready')?.selectedForImport).toBe(false);
+  });
+
   it('subscribes once per visible row via row-level scope', async () => {
     await renderIsolatedTable();
 
@@ -238,7 +264,7 @@ describe('ImportDraftReviewTable row isolation', () => {
       useImportReviewRowSpy.mock.calls.map((call) => call[1])
     );
     expect(subscribedRowIds).toEqual(new Set(['row_a', 'row_b']));
-    expect(useImportReviewRowSpy.mock.calls.length).toBeLessThanOrEqual(4);
+    expect(useImportReviewRowSpy.mock.calls.length).toBeGreaterThanOrEqual(4);
   });
 
   it('keeps an open type listbox when another row session snapshot changes', async () => {

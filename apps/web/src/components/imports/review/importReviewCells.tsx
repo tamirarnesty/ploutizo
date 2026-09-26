@@ -25,6 +25,8 @@ import { isImportRowSelectable } from '@ploutizo/utils/import-row-readiness';
 import { resolveReviewedImportValues } from '@ploutizo/utils/reviewed-import-values';
 import { IMPORT_TRANSACTION_TYPE_VALUES } from '@ploutizo/types';
 import type { ImportReviewRow, ImportTransactionType } from '@ploutizo/types';
+import { useImportReviewRow } from '@/lib/data-access/imports/useImportReviewRow';
+import { isImportRowSelectedForImport } from '@/lib/data-access/imports/importReviewSelection';
 import { CategorySelect } from '@/components/categories/CategorySelect';
 import { CurrencyInput } from '@/components/currency/CurrencyInput';
 import { getSettlementSourceAccounts } from '@/lib/settlements/settlementSourceAccounts';
@@ -35,7 +37,10 @@ import {
 import { ImportAssigneeField } from './ImportAssigneeField';
 import { useImportDraftReviewContext } from './ImportDraftReviewContext';
 import { ImportRowStatusIcon } from './ImportRowStatusIcon';
-import { useImportReviewRowScope } from './ImportReviewRowScope';
+import {
+  useImportReviewRowScope,
+  useOptionalImportReviewRowScope,
+} from './ImportReviewRowScope';
 import { useImportDraftReviewRowSave } from './useImportDraftReviewRowSave';
 import { useImportReviewTextDraft } from './useImportReviewTextDraft';
 
@@ -90,63 +95,68 @@ const ImportTransactionTypeSelect = ({
 );
 
 interface ImportReviewSelectionCellProps {
+  draftId: string;
+  rowId: string;
   expanded: boolean;
   onExpandedChange: (expanded: boolean) => void;
   onSelectionChange: (selected: boolean) => void;
 }
 
-export const ImportReviewSelectionCell = memo(
-  ({
-    expanded,
-    onExpandedChange,
-    onSelectionChange,
-  }: ImportReviewSelectionCellProps) => {
-    const { row } = useImportReviewRowScope();
-    const selectable = isImportRowSelectable(row);
-    const checked = row.selectedForImport;
-    const selectionDisabled = !selectable && !checked;
-    const rowLabel = getImportRowLabel(row);
-    const expandLabel = expanded
-      ? `Collapse details for ${rowLabel}`
-      : `Expand details for ${rowLabel}`;
+export const ImportReviewSelectionCell = ({
+  draftId,
+  rowId,
+  expanded,
+  onExpandedChange,
+  onSelectionChange,
+}: ImportReviewSelectionCellProps) => {
+  const liveRow = useImportReviewRow(draftId, rowId);
+  const scopedRow = useOptionalImportReviewRowScope()?.row;
+  const row = liveRow ?? scopedRow;
+  if (!row) return null;
 
-    return (
-      <div
-        id={`import-row-${row.id}`}
-        tabIndex={-1}
-        className="flex items-center gap-1 outline-none"
+  const selectable = isImportRowSelectable(row);
+  const checked = isImportRowSelectedForImport(row.selectedForImport);
+  const selectionDisabled = !selectable && !checked;
+  const rowLabel = getImportRowLabel(row);
+
+  return (
+    <div
+      id={`import-row-${row.id}`}
+      tabIndex={-1}
+      className="flex items-center gap-1 outline-none"
+    >
+      <Checkbox
+        aria-label={`Select ${rowLabel}`}
+        checked={checked}
+        disabled={selectionDisabled}
+        onCheckedChange={(nextChecked) => {
+          onSelectionChange(nextChecked === true);
+        }}
+      />
+      <ImportRowStatusIcon />
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-xs"
+        aria-expanded={expanded}
+        aria-label={
+          expanded
+            ? `Collapse details for ${rowLabel}`
+            : `Expand details for ${rowLabel}`
+        }
+        onClick={() => onExpandedChange(!expanded)}
       >
-        <Checkbox
-          aria-label={`Select ${rowLabel}`}
-          checked={checked}
-          disabled={selectionDisabled}
-          onCheckedChange={(nextChecked) => {
-            onSelectionChange(nextChecked === true);
-          }}
+        <ChevronDown
+          className={cn(
+            'size-4 transition-transform',
+            !expanded && '-rotate-90'
+          )}
+          aria-hidden="true"
         />
-        <ImportRowStatusIcon />
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-xs"
-          aria-expanded={expanded}
-          aria-label={expandLabel}
-          onClick={() => onExpandedChange(!expanded)}
-        >
-          <ChevronDown
-            className={cn(
-              'size-4 transition-transform',
-              !expanded && '-rotate-90'
-            )}
-            aria-hidden="true"
-          />
-        </Button>
-      </div>
-    );
-  }
-);
-
-ImportReviewSelectionCell.displayName = 'ImportReviewSelectionCell';
+      </Button>
+    </div>
+  );
+};
 
 export const ImportReviewDateCell = memo(() => {
   const { row } = useImportReviewRowScope();

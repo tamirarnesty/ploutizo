@@ -34,6 +34,8 @@ const renderSelectionCell = (row: ImportReviewRow) => {
       >
         <ImportReviewRowScopeFixture row={row}>
           <ImportReviewSelectionCell
+            draftId={row.batchId}
+            rowId={row.id}
             expanded={false}
             onExpandedChange={() => undefined}
             onSelectionChange={onSelectionChange}

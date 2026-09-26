@@ -3,6 +3,8 @@ import { computeImportDraftRowCounts } from '@ploutizo/utils/import-row-status';
 import { getSelectableImportRows } from '@ploutizo/utils/import-row-readiness';
 import type { ImportReviewRow } from '@ploutizo/types';
 import type { ImportDraftMeta } from '@/lib/data-access/imports';
+import { getImportDraftRowsCollection } from '@/lib/data-access/imports/getImportDraftRowsCollection';
+import { isImportRowSelectedForImport } from '@/lib/data-access/imports/importReviewSelection';
 import { usePersistedPageSize } from '@/hooks/persistedPageSize';
 import { useFlushPendingInputs } from '@/lib/money/pending-input-flush';
 import { prioritizeImportRows } from './importPresentation';
@@ -80,11 +82,17 @@ export const useImportDraftReviewState = ({
 
   const setRowSelection = useCallback(
     (rowId: string, selectedForImport: boolean) => {
-      const live = rows.find((row) => row.id === rowId);
-      if (live?.selectedForImport === selectedForImport) return;
+      if (!meta?.id) return;
+      const live = getImportDraftRowsCollection(meta.id).get(rowId);
+      if (
+        isImportRowSelectedForImport(live?.selectedForImport) ===
+        selectedForImport
+      ) {
+        return;
+      }
       applySelection([rowId], selectedForImport);
     },
-    [applySelection, rows]
+    [applySelection, meta?.id]
   );
 
   const setAllSelection = useCallback(

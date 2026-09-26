@@ -22,6 +22,9 @@ export const useImportReviewRowScope = () => {
   return context;
 };
 
+export const useOptionalImportReviewRowScope = () =>
+  useContext(ImportReviewRowScopeContext);
+
 interface ImportReviewRowScopeProps {
   draftId: string;
   rowId: string;

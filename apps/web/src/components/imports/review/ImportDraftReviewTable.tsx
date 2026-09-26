@@ -119,6 +119,7 @@ export const ImportDraftReviewTable = ({
   const columns = useMemo(
     () =>
       buildImportReviewColumns({
+        draftId: draftId ?? '',
         headerChecked,
         headerIndeterminate,
         onHeaderCheckedChange: setAllSelection,
@@ -127,6 +128,7 @@ export const ImportDraftReviewTable = ({
         onSelectionChange: setRowSelection,
       }),
     [
+      draftId,
       hasSelectableRows,
       headerChecked,
       headerIndeterminate,
