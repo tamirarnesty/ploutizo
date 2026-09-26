@@ -38,7 +38,11 @@ export const getImportDraftRowsCollection = (
   return collection;
 };
 
-/** Drop a draft's working copy after discard, finalize, or in tests. Hub ↔ review nav keeps it warm. */
+/**
+ * Drop a draft's working copy after discard, finalize, or in tests.
+ * Hub ↔ review and review ↔ finalize keep the collection warm; only call
+ * while no useLiveQuery still reads this collection (not on route transitions).
+ */
 export const releaseImportDraftRowsCollection = async (draftId: string) => {
   const collection = importDraftRowsCollections.get(draftId);
   if (!collection) {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Link, useBlocker, useNavigate } from '@tanstack/react-router';
 import { toast } from '@ploutizo/ui/components/sonner';
 import { Button } from '@ploutizo/ui/components/button';
@@ -30,7 +30,6 @@ import {
 import {
   getImportRequirementFailures,
   isImportStaleFinalizeError,
-  releaseImportDraftWorkingCopyForFinalize,
   toImportDraftMeta,
   useFinalizeImportDraft,
   useGetImportDraft,
@@ -155,10 +154,6 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
   const preview = session?.preview;
   const rowIds = session?.rowIds ?? [];
   const meta = draftQuery.data ? toImportDraftMeta(draftQuery.data) : undefined;
-
-  useEffect(() => {
-    void releaseImportDraftWorkingCopyForFinalize(draftId);
-  }, [draftId]);
 
   const returnToReview = useCallback(
     (issues?: ReturnType<typeof getImportRequirementFailures>) => {

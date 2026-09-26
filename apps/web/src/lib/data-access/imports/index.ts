@@ -5,10 +5,7 @@ export {
   releaseImportDraftRowsCollection,
 } from './getImportDraftRowsCollection';
 export { cancelImportDraftQueryFetches } from './cancelImportDraftQueryFetches';
-export {
-  releaseImportDraftSession,
-  releaseImportDraftWorkingCopyForFinalize,
-} from './releaseImportDraftSession';
+export { releaseImportDraftSession } from './releaseImportDraftSession';
 export {
   resolveImportContinueRowIds,
   resolveImportContinueRows,

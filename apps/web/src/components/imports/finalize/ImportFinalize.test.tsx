@@ -19,8 +19,6 @@ import {
 } from '../test-fixtures/importDraft';
 import { ImportFinalize, importDraftNotFoundRedirect } from './ImportFinalize';
 
-const releaseWorkingCopyForFinalize = vi.hoisted(() => vi.fn());
-
 const finalizeMocks = vi.hoisted(() => ({
   toastSuccess: vi.fn(),
   draft: {
@@ -48,14 +46,6 @@ vi.mock('@/lib/data-access/imports/useGetImportDraft', () => ({
 vi.mock('@/lib/data-access/imports/useFinalizeImportDraft', () => ({
   useFinalizeImportDraft: () => finalizeMocks.finalize,
 }));
-
-vi.mock('@/lib/data-access/imports', async () => {
-  const actual = await vi.importActual('@/lib/data-access/imports');
-  return {
-    ...actual,
-    releaseImportDraftWorkingCopyForFinalize: releaseWorkingCopyForFinalize,
-  };
-});
 
 const snapshot = {
   reviewedValues: {
@@ -170,12 +160,6 @@ describe('ImportFinalize', () => {
     finalizeMocks.finalize.mutateAsync.mockResolvedValue(completedResult);
     finalizeMocks.finalize.isPending = false;
     finalizeMocks.finalize.isSuccess = false;
-    releaseWorkingCopyForFinalize.mockResolvedValue(undefined);
-  });
-
-  it('releases the review working copy after Review unmounts', () => {
-    render(<ImportFinalize draftId="draft_1" />);
-    expect(releaseWorkingCopyForFinalize).toHaveBeenCalledWith('draft_1');
   });
 
   it('renders a read-only confirmation with reconciling counts', () => {
