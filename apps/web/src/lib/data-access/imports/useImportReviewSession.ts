@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useLiveQuery } from '@tanstack/react-db';
 import type { ImportReviewRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
+import { getApiErrorCode } from '@/lib/queryClient';
 import {
   flushImportDraftPacedMutations,
   getImportDraftPacedMutations,
@@ -19,6 +20,7 @@ import {
   waitForImportReviewAutosaveSettled,
 } from './importReviewAutosave';
 import { isImportRowSelectedForImport } from './importReviewSelection';
+import { cancelImportDraftQueryFetches } from './cancelImportDraftQueryFetches';
 import { importDraftQueryOptions } from './useGetImportDraft';
 import { toImportDraftMeta } from './toImportDraftMeta';
 import type { ImportDraftMeta } from './toImportDraftMeta';
@@ -50,6 +52,21 @@ export const useImportReviewSession = (
     () => getImportDraftRowsCollection(draftId),
     [draftId]
   );
+  const selectionSyncRef = useRef(Promise.resolve());
+
+  const enqueueSelectionSync = useCallback(
+    (task: () => void | Promise<void>) => {
+      selectionSyncRef.current = selectionSyncRef.current
+        .then(task)
+        .catch(() => undefined);
+      return selectionSyncRef.current;
+    },
+    []
+  );
+
+  const waitForSelectionSync = useCallback(async () => {
+    await selectionSyncRef.current;
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -62,6 +79,14 @@ export const useImportReviewSession = (
     ...importDraftQueryOptions(draftId),
     select: toImportDraftMeta,
   });
+
+  const draftNotFound =
+    metaQuery.isError && getApiErrorCode(metaQuery.error) === 'NOT_FOUND';
+
+  useEffect(() => {
+    if (!draftNotFound) return;
+    void cancelImportDraftQueryFetches(draftId);
+  }, [draftId, draftNotFound]);
 
   const liveRows = useLiveQuery(
     (q) =>
@@ -102,12 +127,12 @@ export const useImportReviewSession = (
 
   const setSelection = useCallback(
     (rowIds: string[], selectedForImport: boolean) => {
-      void (async () => {
+      void enqueueSelectionSync(async () => {
         await flushImportDraftPacedMutations(draftId);
         setImportDraftSelection(draftId, rowIds, selectedForImport);
-      })();
+      });
     },
-    [draftId]
+    [draftId, enqueueSelectionSync]
   );
 
   const resetSelectionToEntryDefaults = useCallback(() => {
@@ -121,8 +146,9 @@ export const useImportReviewSession = (
   const flush = useCallback(async () => {
     await flushImportDraftPacedMutations(draftId);
     await waitForImportReviewAutosaveSettled(draftId);
+    await waitForSelectionSync();
     return getImportReviewAutosaveSnapshot(draftId).status !== 'failed';
-  }, [draftId]);
+  }, [draftId, waitForSelectionSync]);
 
   // Draft GET failure is authoritative — collection sync may not surface the same error flag.
   return {

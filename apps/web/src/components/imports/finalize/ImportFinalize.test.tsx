@@ -12,11 +12,14 @@ import {
   setImportFinalizePreviewSession,
 } from '@/lib/data-access/imports/importFinalizePreviewSession';
 import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
+import { useGetImportDraft } from '@/lib/data-access/imports/useGetImportDraft';
 import {
   makeImportDraft,
   makeImportDraftRow,
 } from '../test-fixtures/importDraft';
 import { ImportFinalize, importDraftNotFoundRedirect } from './ImportFinalize';
+
+const releaseWorkingCopyForFinalize = vi.hoisted(() => vi.fn());
 
 const finalizeMocks = vi.hoisted(() => ({
   toastSuccess: vi.fn(),
@@ -28,6 +31,7 @@ const finalizeMocks = vi.hoisted(() => ({
   finalize: {
     mutateAsync: vi.fn(),
     isPending: false,
+    isSuccess: false,
   },
 }));
 
@@ -38,12 +42,20 @@ vi.mock('@ploutizo/ui/components/sonner', () => ({
 }));
 
 vi.mock('@/lib/data-access/imports/useGetImportDraft', () => ({
-  useGetImportDraft: () => finalizeMocks.draft,
+  useGetImportDraft: vi.fn(() => finalizeMocks.draft),
 }));
 
 vi.mock('@/lib/data-access/imports/useFinalizeImportDraft', () => ({
   useFinalizeImportDraft: () => finalizeMocks.finalize,
 }));
+
+vi.mock('@/lib/data-access/imports', async () => {
+  const actual = await vi.importActual('@/lib/data-access/imports');
+  return {
+    ...actual,
+    releaseImportDraftWorkingCopyForFinalize: releaseWorkingCopyForFinalize,
+  };
+});
 
 const snapshot = {
   reviewedValues: {
@@ -157,6 +169,13 @@ describe('ImportFinalize', () => {
     };
     finalizeMocks.finalize.mutateAsync.mockResolvedValue(completedResult);
     finalizeMocks.finalize.isPending = false;
+    finalizeMocks.finalize.isSuccess = false;
+    releaseWorkingCopyForFinalize.mockResolvedValue(undefined);
+  });
+
+  it('releases the review working copy after Review unmounts', () => {
+    render(<ImportFinalize draftId="draft_1" />);
+    expect(releaseWorkingCopyForFinalize).toHaveBeenCalledWith('draft_1');
   });
 
   it('renders a read-only confirmation with reconciling counts', () => {
@@ -246,6 +265,27 @@ describe('ImportFinalize', () => {
       screen.getByRole('button', { name: 'Back to Review' })
     ).toBeDisabled();
     release(completedResult);
+  });
+
+  it('unsubscribes from the draft GET while finalize is pending or succeeded', () => {
+    const { rerender } = render(<ImportFinalize draftId="draft_1" />);
+
+    expect(useGetImportDraft).toHaveBeenCalledWith('draft_1', {
+      enabled: true,
+    });
+
+    finalizeMocks.finalize.isPending = true;
+    rerender(<ImportFinalize draftId="draft_1" />);
+    expect(useGetImportDraft).toHaveBeenLastCalledWith('draft_1', {
+      enabled: false,
+    });
+
+    finalizeMocks.finalize.isPending = false;
+    finalizeMocks.finalize.isSuccess = true;
+    rerender(<ImportFinalize draftId="draft_1" />);
+    expect(useGetImportDraft).toHaveBeenLastCalledWith('draft_1', {
+      enabled: false,
+    });
   });
 
   it('returns to Review import when Back to Review is clicked', async () => {

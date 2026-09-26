@@ -100,11 +100,13 @@ const continueMocks = vi.hoisted(() => ({
 
 const reviewToastMocks = vi.hoisted(() => ({
   error: vi.fn(),
+  info: vi.fn(),
 }));
 
 vi.mock('@ploutizo/ui/components/sonner', () => ({
   toast: {
     error: reviewToastMocks.error,
+    info: reviewToastMocks.info,
   },
 }));
 
@@ -852,6 +854,9 @@ describe('ImportDraftReview', () => {
     expect(continueMocks.continueImport).toHaveBeenCalledTimes(1);
     expect(routerMocks.navigate).not.toHaveBeenCalled();
     expect(reviewToastMocks.error).not.toHaveBeenCalled();
+    expect(reviewToastMocks.info).toHaveBeenCalledWith(
+      'Review changed before continue finished. Try again.'
+    );
   });
 
   it('renders disabled assignee toggles for invalid rows in the grid', () => {

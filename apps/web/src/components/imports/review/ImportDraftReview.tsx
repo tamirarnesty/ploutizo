@@ -25,6 +25,11 @@ import {
   getImportRequirementIssueRowIds,
   summarizeImportRequirementIssues,
 } from '@/lib/data-access/imports/importRequirementIssues';
+import {
+  IMPORT_REVIEW_CONTINUE_SUPERSEDED_MESSAGE,
+  resolveImportContinueRowIds,
+  resolveImportContinueRows,
+} from '@/lib/data-access/imports';
 import { setImportFinalizePreviewSession } from '@/lib/data-access/imports/importFinalizePreviewSession';
 import { useContinueImportDraft } from '@/lib/data-access/imports/useContinueImportDraft';
 import { useGetAccounts } from '@/lib/data-access/accounts';
@@ -147,17 +152,19 @@ const ImportDraftReviewContent = ({
     const ok = await flush();
     if (!ok) return;
 
-    const rowIds = rows
-      .filter((row) => row.selectedForImport)
-      .map((row) => row.id);
-    const noneSelected = getImportReviewContinueBlockerReason(rows);
+    const continueRows = resolveImportContinueRows(draftId, rows);
+    const rowIds = resolveImportContinueRowIds(draftId, rows);
+    const noneSelected = getImportReviewContinueBlockerReason(continueRows);
     if (noneSelected) {
       toast.error(formatImportReviewContinueBlocker(noneSelected));
       return;
     }
     try {
       const preview = await continueImport(rowIds);
-      if (!preview) return;
+      if (!preview) {
+        toast.info(IMPORT_REVIEW_CONTINUE_SUPERSEDED_MESSAGE);
+        return;
+      }
       setImportFinalizePreviewSession(draftId, { rowIds, preview });
       setIssues([]);
       await navigate(importDraftFinalizeRoute(draftId));

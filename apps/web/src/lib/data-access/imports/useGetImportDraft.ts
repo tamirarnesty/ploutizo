@@ -22,10 +22,11 @@ export const importDraftQueryOptions = (id: string) =>
   });
 
 export const useGetImportDraft = (
-  id: string | null
+  id: string | null,
+  options?: { enabled?: boolean }
 ): UseQueryResult<ImportDraft> => {
   return useHouseholdQuery({
     ...importDraftQueryOptions(id ?? ''),
-    enabled: Boolean(id),
+    enabled: Boolean(id) && (options?.enabled ?? true),
   });
 };

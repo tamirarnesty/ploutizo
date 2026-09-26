@@ -157,6 +157,23 @@ describe('useImportReviewSession', () => {
     unmount();
   });
 
+  it('flush waits for queued selection updates before resolving', async () => {
+    const { result } = await hydrateSession();
+
+    act(() => {
+      result.current.setSelection(['row_ready'], false);
+    });
+
+    await act(async () => {
+      await result.current.flush();
+    });
+
+    expect(
+      result.current.rows.find((row) => row.id === 'row_ready')
+        ?.selectedForImport
+    ).toBe(false);
+  });
+
   it('keeps the session collection on unmount so remount still has live rows', async () => {
     const { unmount } = await hydrateSession();
     unmount();

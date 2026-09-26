@@ -4,7 +4,15 @@ export {
   getImportDraftRowsCollection,
   releaseImportDraftRowsCollection,
 } from './getImportDraftRowsCollection';
-export { releaseImportDraftSession } from './releaseImportDraftSession';
+export { cancelImportDraftQueryFetches } from './cancelImportDraftQueryFetches';
+export {
+  releaseImportDraftSession,
+  releaseImportDraftWorkingCopyForFinalize,
+} from './releaseImportDraftSession';
+export {
+  resolveImportContinueRowIds,
+  resolveImportContinueRows,
+} from './resolveImportContinueRowIds';
 export {
   endImportDraftPacedMutations,
   flushImportDraftPacedMutations,
@@ -36,6 +44,7 @@ export {
   IMPORT_FINALIZE_STALE,
 } from './importRequirementIssues';
 export {
+  IMPORT_REVIEW_CONTINUE_SUPERSEDED_MESSAGE,
   IMPORT_REVIEW_PREPARE_AGAIN_MESSAGE,
   type ImportReviewLocationState,
 } from './importReviewLocationState';

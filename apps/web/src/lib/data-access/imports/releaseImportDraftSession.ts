@@ -1,3 +1,4 @@
+import { cancelImportDraftQueryFetches } from './cancelImportDraftQueryFetches';
 import { releaseImportDraftRowsCollection } from './getImportDraftRowsCollection';
 import { clearImportFinalizePreviewSession } from './importFinalizePreviewSession';
 import { releaseImportDraftReviewRuntime } from './releaseImportDraftReviewRuntime';
@@ -8,7 +9,18 @@ import { releaseImportDraftReviewRuntime } from './releaseImportDraftReviewRunti
  * does not (hub discard before review), release still clears cached draft data.
  */
 export const releaseImportDraftSession = async (draftId: string) => {
+  await cancelImportDraftQueryFetches(draftId);
   releaseImportDraftReviewRuntime(draftId);
   clearImportFinalizePreviewSession(draftId);
+  await releaseImportDraftRowsCollection(draftId);
+};
+
+/**
+ * After Continue succeeds, drop the rows collection on Finalize mount (Review unmounted).
+ */
+export const releaseImportDraftWorkingCopyForFinalize = async (
+  draftId: string
+) => {
+  await cancelImportDraftQueryFetches(draftId);
   await releaseImportDraftRowsCollection(draftId);
 };
