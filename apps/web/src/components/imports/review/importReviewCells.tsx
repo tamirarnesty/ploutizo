@@ -103,6 +103,8 @@ export const ImportReviewSelectionCell = memo(
   }: ImportReviewSelectionCellProps) => {
     const { row } = useImportReviewRowScope();
     const selectable = isImportRowSelectable(row);
+    const checked = row.selectedForImport;
+    const selectionDisabled = !selectable && !checked;
     const rowLabel = getImportRowLabel(row);
     const expandLabel = expanded
       ? `Collapse details for ${rowLabel}`
@@ -116,10 +118,10 @@ export const ImportReviewSelectionCell = memo(
       >
         <Checkbox
           aria-label={`Select ${rowLabel}`}
-          checked={row.selectedForImport}
-          disabled={!selectable}
-          onCheckedChange={(checked) => {
-            onSelectionChange(checked === true);
+          checked={checked}
+          disabled={selectionDisabled}
+          onCheckedChange={(nextChecked) => {
+            onSelectionChange(nextChecked === true);
           }}
         />
         <ImportRowStatusIcon />

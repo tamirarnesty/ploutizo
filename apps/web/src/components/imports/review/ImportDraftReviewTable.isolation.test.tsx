@@ -6,7 +6,7 @@ import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Account, OrgMember } from '@ploutizo/types';
 import { getActiveQueryClient } from '@/lib/access/working-set-registry';
-import { confirmPersistIntoCollection } from '@/lib/data-access/imports/importDraftRowPersistConfirm';
+import { confirmPersistIntoCollection } from '@/lib/data-access/imports/persistImportDraftBatch';
 import {
   endImportDraftRowsCollections,
   getImportDraftRowsCollection,
@@ -289,7 +289,7 @@ describe('ImportDraftReviewTable row isolation', () => {
         liveB,
         { reviewDescription: liveB.reviewDescription },
         draftId,
-        { deferRederive: true, deferRefundFactsMerge: true }
+        { skipRederive: true, skipRefundFacts: true }
       );
     });
 

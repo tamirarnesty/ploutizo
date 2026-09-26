@@ -79,17 +79,19 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
     if (consumedStateKey.current === stateKey) return;
     consumedStateKey.current = stateKey;
 
-    if (importReviewState.prepareAgain) {
-      toast.info(IMPORT_REVIEW_PREPARE_AGAIN_MESSAGE);
-      session.resetSelectionToEntryDefaults();
-    }
     if (importReviewState.issues && importReviewState.issues.length > 0) {
       setInboundIssues(importReviewState.issues);
     }
 
-    void queryClient.invalidateQueries({
-      queryKey: importDraftQueryKey(draftId),
-    });
+    void (async () => {
+      await queryClient.refetchQueries({
+        queryKey: importDraftQueryKey(draftId),
+      });
+      if (importReviewState.prepareAgain) {
+        toast.info(IMPORT_REVIEW_PREPARE_AGAIN_MESSAGE);
+        session.resetSelectionToEntryDefaults();
+      }
+    })();
 
     void navigate({
       ...importDraftReviewRoute(draftId),

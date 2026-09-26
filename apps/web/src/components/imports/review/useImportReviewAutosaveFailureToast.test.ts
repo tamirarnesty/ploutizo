@@ -2,8 +2,8 @@ import { renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   endImportReviewAutosave,
-  markImportReviewPersistFailure,
-  markImportReviewPersistStart,
+  markImportReviewPersistFailureMany,
+  markImportReviewPersistStartMany,
 } from '@/lib/data-access/imports/importReviewAutosave';
 import {
   IMPORT_REVIEW_AUTOSAVE_FAILED_TOAST_ID,
@@ -32,8 +32,10 @@ describe('useImportReviewAutosaveFailureToast', () => {
       useImportReviewAutosaveFailureToast({ draftId, retryAutosave })
     );
 
-    markImportReviewPersistStart(draftId, 'row_a');
-    markImportReviewPersistFailure(draftId, 'row_a', ['reviewDescription']);
+    markImportReviewPersistStartMany(draftId, ['row_a']);
+    markImportReviewPersistFailureMany(draftId, [
+      { rowId: 'row_a', fieldKeys: ['reviewDescription'] },
+    ]);
 
     expect(toastError).toHaveBeenCalledTimes(1);
     expect(toastError).toHaveBeenCalledWith('Could not save changes.', {
@@ -47,7 +49,9 @@ describe('useImportReviewAutosaveFailureToast', () => {
     toastError.mock.calls[0]?.[1]?.action?.onClick();
     expect(retryAutosave).toHaveBeenCalledTimes(1);
 
-    markImportReviewPersistFailure(draftId, 'row_b', ['reviewDescription']);
+    markImportReviewPersistFailureMany(draftId, [
+      { rowId: 'row_b', fieldKeys: ['reviewDescription'] },
+    ]);
     expect(toastError).toHaveBeenCalledTimes(1);
   });
 });

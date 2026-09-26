@@ -321,21 +321,15 @@ export const updateImportDraftRows = async (
     const draft = await fetchDraftSummaryById(orgId, draftId, tx);
     if (!draft?.accountId) throw new NotFoundError('Import draft not found.');
 
-    const useTargetedLookup = input.rows.length <= 20;
-    const existingRows = useTargetedLookup
-      ? await listDraftRowsByIds(
-          orgId,
-          draftId,
-          input.rows.map((row) => row.id),
-          tx
-        )
-      : await listDraftRows(orgId, draftId, tx);
+    const existingRows = await listDraftRowsByIds(
+      orgId,
+      draftId,
+      input.rows.map((row) => row.id),
+      tx
+    );
     const existingById = new Map(existingRows.map((row) => [row.id, row]));
-    // Refund same-import targets must be validated against every row id on the draft.
     const draftRowIds = new Set(
-      useTargetedLookup
-        ? await listAllDraftRowIdsForDraft(orgId, draftId, tx)
-        : existingRows.map((row) => row.id)
+      await listAllDraftRowIdsForDraft(orgId, draftId, tx)
     );
 
     for (const { id, ...patch } of input.rows) {

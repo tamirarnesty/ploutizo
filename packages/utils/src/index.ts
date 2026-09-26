@@ -21,7 +21,6 @@ export {
   toImportDraftDurableRow,
   toImportDraftDurableRowFromDraftRow,
   toImportDraftDurableRowFromReview,
-  type ImportDraftDurableRowFieldSource,
   type ImportDraftDurableRowSource,
 } from './to-import-draft-durable-row';
 export {

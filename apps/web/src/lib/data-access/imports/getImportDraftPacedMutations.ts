@@ -15,7 +15,11 @@ import {
   toValidatorPatch,
 } from './importDraftRowOptimisticPatch';
 import { buildImportDraftRowPersistPatch } from './buildImportDraftPersistPatch';
-import { persistImportDraftBatchPatch } from './persistImportDraftBatchPatch';
+import { persistImportDraftBatch } from './persistImportDraftBatch';
+import {
+  eachImportDraftReviewRuntime,
+  getImportDraftReviewRuntime,
+} from './importDraftReviewRuntime';
 import type { PendingMutation, Transaction } from '@tanstack/db';
 
 export const IMPORT_DRAFT_PACE_WAIT_MS = 3000;
@@ -80,7 +84,7 @@ const createDraftPacedMutations = (draftId: string) => {
         return;
       }
 
-      await persistImportDraftBatchPatch({
+      await persistImportDraftBatch({
         draftId,
         scope,
         attempts,
@@ -120,20 +124,17 @@ const createDraftPacedMutations = (draftId: string) => {
 
 type DraftPacedEntry = ReturnType<typeof createDraftPacedMutations>;
 
-const draftPacedMutations = new Map<string, DraftPacedEntry>();
-
 export const getImportDraftPacedMutations = (draftId: string) => {
-  const existing = draftPacedMutations.get(draftId);
-  if (existing) return existing.mutate;
+  const runtime = getImportDraftReviewRuntime(draftId);
+  if (runtime.paced) return runtime.paced.mutate;
 
   const entry = createDraftPacedMutations(draftId);
-  draftPacedMutations.set(draftId, entry);
+  runtime.paced = entry;
   return entry.mutate;
 };
 
 export const flushImportDraftPacedMutations = async (draftId: string) => {
-  const entry = draftPacedMutations.get(draftId);
-  await entry?.flush();
+  await getImportDraftReviewRuntime(draftId).paced?.flush();
 };
 
 export const retryFailedImportDraftPersists = async (draftId: string) => {
@@ -147,12 +148,10 @@ export const retryFailedImportDraftPersists = async (draftId: string) => {
       if (!live) return null;
       const patch = buildImportDraftRowPersistPatch(draftId, rowId, live, null);
       if (Object.keys(patch).length === 0) return null;
-      // Retry uses live for both attempted and original — no in-flight overlap to resolve.
       return {
         rowId,
         patch,
         attempted: live,
-        original: live,
       };
     })
     .filter((entry) => entry !== null);
@@ -162,7 +161,7 @@ export const retryFailedImportDraftPersists = async (draftId: string) => {
   const scope = beginWorkingSetScope();
   if (!scope.isCurrent()) return;
 
-  await persistImportDraftBatchPatch({
+  await persistImportDraftBatch({
     draftId,
     scope,
     attempts,
@@ -170,14 +169,14 @@ export const retryFailedImportDraftPersists = async (draftId: string) => {
 };
 
 export const releaseImportDraftPacedMutations = (draftId: string) => {
-  const entry = draftPacedMutations.get(draftId);
-  entry?.cleanup();
-  draftPacedMutations.delete(draftId);
+  const runtime = getImportDraftReviewRuntime(draftId);
+  runtime.paced?.cleanup();
+  runtime.paced = undefined;
 };
 
 export const endImportDraftPacedMutations = () => {
-  for (const entry of draftPacedMutations.values()) {
-    entry.cleanup();
-  }
-  draftPacedMutations.clear();
+  eachImportDraftReviewRuntime((runtime) => {
+    runtime.paced?.cleanup();
+    runtime.paced = undefined;
+  });
 };

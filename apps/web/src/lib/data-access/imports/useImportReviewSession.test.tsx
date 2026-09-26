@@ -46,11 +46,16 @@ vi.mock('./fetchUpdateImportDraftRows', () => ({
   fetchUpdateImportDraftRows: vi.fn(),
 }));
 
+const householdSettingsMock = vi.hoisted(() => ({
+  autoCheckImportRowWhenReady: true,
+}));
+
 vi.mock('@/lib/data-access/household', () => ({
   useGetHouseholdSettings: () => ({
     data: {
       settlementThreshold: null,
-      autoCheckImportRowWhenReady: true,
+      autoCheckImportRowWhenReady:
+        householdSettingsMock.autoCheckImportRowWhenReady,
     },
   }),
 }));
@@ -96,6 +101,7 @@ const hydrateSession = async () => {
 
 describe('useImportReviewSession', () => {
   beforeEach(() => {
+    householdSettingsMock.autoCheckImportRowWhenReady = true;
     getActiveQueryClient().clear();
     vi.mocked(fetchImportDraft).mockReset();
     vi.mocked(fetchImportDraft).mockResolvedValue(draft);
@@ -479,26 +485,9 @@ describe('useImportReviewSession', () => {
     unmount();
   });
 
-  it('flushes pending field persists before applying selection', async () => {
-    const callOrder: string[] = [];
-    vi.mocked(fetchUpdateImportDraftRows).mockImplementation(
-      (_draftId, updates) => {
-        callOrder.push('row');
-        return Promise.resolve({
-          rows: updates.map((entry) => {
-            const { id, ...body } = entry;
-            const row = draft.rows.find((r) => r.id === id);
-            if (!row) throw new Error(`missing row ${id}`);
-            return toPersistedImportDraftRow(row, {
-              ...body,
-              updatedAt: '2026-05-20T12:00:01.000Z',
-            });
-          }),
-        });
-      }
-    );
-
+  it('applies selection immediately without flushing pending field persists', async () => {
     const { result, unmount } = await hydrateSession();
+    getActiveQueryClient().setQueryData(importDraftQueryKey(draftId), draft);
 
     act(() => {
       result.current.updateRow('row_ready', {
@@ -506,14 +495,14 @@ describe('useImportReviewSession', () => {
       });
     });
 
-    expect(fetchUpdateImportDraftRows).not.toHaveBeenCalled();
-
     act(() => {
       result.current.setSelection(['row_ready'], true);
     });
 
-    await waitFor(() => {
-      expect(callOrder).toEqual(['row']);
+    expect(fetchUpdateImportDraftRows).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await result.current.flush();
     });
 
     expect(fetchUpdateImportDraftRows).toHaveBeenCalledWith(draftId, [

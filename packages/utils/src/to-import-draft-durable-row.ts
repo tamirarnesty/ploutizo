@@ -6,11 +6,8 @@ export type ImportDraftDurableRowSource = Omit<
   'selectedForImport'
 >;
 
-/** Fields required to build durable evaluation input (draft row, review row, or API record). */
-export type ImportDraftDurableRowFieldSource = ImportDraftDurableRowSource;
-
 export const importDraftDurableRowFieldsFrom = (
-  row: ImportDraftDurableRowFieldSource
+  row: ImportDraftDurableRowSource
 ): ImportDraftDurableRowSource => ({
   id: row.id,
   reviewDate: row.reviewDate,

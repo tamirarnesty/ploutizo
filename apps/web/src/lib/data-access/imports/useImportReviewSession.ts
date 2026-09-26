@@ -4,19 +4,22 @@ import type { ImportReviewRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { getApiErrorCode } from '@/lib/queryClient';
+import { useGetHouseholdSettings } from '@/lib/data-access/household/useGetHouseholdSettings';
 import {
   flushImportDraftPacedMutations,
   getImportDraftPacedMutations,
-  releaseImportDraftPacedMutations,
   retryFailedImportDraftPersists,
 } from './getImportDraftPacedMutations';
+import { releaseImportDraftReviewRuntime } from './releaseImportDraftReviewRuntime';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
 import { seedImportDraftPersistBaselines } from './importDraftPersistBaselines';
-import { applyImportReviewEntrySelection } from './importReviewSelectionSession';
+import {
+  applyImportReviewEntrySelection,
+  syncImportReviewSelectionOnStatusChange,
+} from './importReviewSelectionSession';
 import { setImportDraftSelection } from './setImportDraftSelection';
 import {
   getImportReviewAutosaveSnapshot,
-  releaseImportReviewAutosave,
   waitForImportReviewAutosaveSettled,
 } from './importReviewAutosave';
 import { isImportRowSelectedForImport } from './importReviewSelection';
@@ -52,26 +55,20 @@ export const useImportReviewSession = (
     () => getImportDraftRowsCollection(draftId),
     [draftId]
   );
-  const selectionSyncRef = useRef(Promise.resolve());
-
-  const enqueueSelectionSync = useCallback(
-    (task: () => void | Promise<void>) => {
-      selectionSyncRef.current = selectionSyncRef.current
-        .then(task)
-        .catch(() => undefined);
-      return selectionSyncRef.current;
-    },
-    []
+  const settingsQuery = useGetHouseholdSettings();
+  const autoCheckImportRowWhenReady =
+    settingsQuery.data?.autoCheckImportRowWhenReady ?? false;
+  const previousStatusByIdRef = useRef<Map<string, ImportReviewRow['status']>>(
+    new Map()
   );
 
-  const waitForSelectionSync = useCallback(async () => {
-    await selectionSyncRef.current;
-  }, []);
+  useEffect(() => {
+    previousStatusByIdRef.current = new Map();
+  }, [draftId]);
 
   useEffect(() => {
     return () => {
-      releaseImportDraftPacedMutations(draftId);
-      releaseImportReviewAutosave(draftId);
+      releaseImportDraftReviewRuntime(draftId);
     };
   }, [draftId]);
 
@@ -113,6 +110,18 @@ export const useImportReviewSession = (
     [liveRows.data]
   );
 
+  useEffect(() => {
+    syncImportReviewSelectionOnStatusChange({
+      draftId,
+      rows,
+      previousStatusById: previousStatusByIdRef.current,
+      autoCheckImportRowWhenReady,
+    });
+    previousStatusByIdRef.current = new Map(
+      rows.map((row) => [row.id, row.status])
+    );
+  }, [draftId, rows, autoCheckImportRowWhenReady]);
+
   const pacedMutate = useMemo(
     () => getImportDraftPacedMutations(draftId),
     [draftId]
@@ -127,17 +136,15 @@ export const useImportReviewSession = (
 
   const setSelection = useCallback(
     (rowIds: string[], selectedForImport: boolean) => {
-      void enqueueSelectionSync(async () => {
-        await flushImportDraftPacedMutations(draftId);
-        setImportDraftSelection(draftId, rowIds, selectedForImport);
-      });
+      setImportDraftSelection(draftId, rowIds, selectedForImport);
     },
-    [draftId, enqueueSelectionSync]
+    [draftId]
   );
 
   const resetSelectionToEntryDefaults = useCallback(() => {
-    applyImportReviewEntrySelection(draftId, rows);
-  }, [draftId, rows]);
+    const currentRows = rowsCollection.toArray;
+    applyImportReviewEntrySelection(draftId, currentRows);
+  }, [draftId, rowsCollection]);
 
   const retryAutosave = useCallback(() => {
     void retryFailedImportDraftPersists(draftId);
@@ -146,9 +153,8 @@ export const useImportReviewSession = (
   const flush = useCallback(async () => {
     await flushImportDraftPacedMutations(draftId);
     await waitForImportReviewAutosaveSettled(draftId);
-    await waitForSelectionSync();
     return getImportReviewAutosaveSnapshot(draftId).status !== 'failed';
-  }, [draftId, waitForSelectionSync]);
+  }, [draftId]);
 
   // Draft GET failure is authoritative — collection sync may not surface the same error flag.
   return {
