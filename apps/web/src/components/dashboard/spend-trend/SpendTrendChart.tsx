@@ -1,4 +1,3 @@
-import { format, isValid, parseISO } from 'date-fns';
 import { useMemo } from 'react';
 import {
   CartesianGrid,
@@ -10,6 +9,8 @@ import {
 } from 'recharts';
 import {
   ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
 } from '@ploutizo/ui/components/chart';
@@ -41,47 +42,6 @@ const formatBucketLabel = (bucketStart: string): string => {
   return `${month}/${day}`;
 };
 
-const formatTooltipBucketLabel = (bucketStart: string): string => {
-  const parsed = parseISO(bucketStart);
-  if (isValid(parsed)) {
-    return format(parsed, 'MMM d, yyyy');
-  }
-  return formatBucketLabel(bucketStart);
-};
-
-const seriesLabelForDataKey = (dataKey: string): string => {
-  if (dataKey === 'current') {
-    return chartConfig.current.label;
-  }
-  if (dataKey === 'prior') {
-    return chartConfig.prior.label;
-  }
-  return dataKey;
-};
-
-const SpendTrendCompactLegend = () => (
-  <div
-    className="flex items-center justify-center gap-2 pt-1 text-[11px] leading-none text-muted-foreground"
-    aria-label="Chart legend"
-  >
-    <span className="flex items-center gap-1.5">
-      <span
-        className="h-0.5 w-3 shrink-0 rounded-full bg-(--color-current)"
-        aria-hidden
-      />
-      {chartConfig.current.label}
-    </span>
-    <span aria-hidden>·</span>
-    <span className="flex items-center gap-1.5">
-      <span
-        className="h-0 w-3 shrink-0 border-t-[1.5px] border-dashed border-(--color-prior)"
-        aria-hidden
-      />
-      {chartConfig.prior.label}
-    </span>
-  </div>
-);
-
 export const SpendTrendChart = ({ data }: SpendTrendChartProps) => {
   const hasPriorSeries = useMemo(() => spendTrendHasPriorSeries(data), [data]);
   const yDomain = useMemo(() => spendTrendYDomain(data), [data]);
@@ -94,7 +54,12 @@ export const SpendTrendChart = ({ data }: SpendTrendChartProps) => {
     >
       <RechartsLineChart
         data={data}
-        margin={{ left: 8, right: 8, top: 8, bottom: 0 }}
+        margin={{
+          left: 8,
+          right: 8,
+          top: 8,
+          bottom: hasPriorSeries ? 8 : 0,
+        }}
       >
         <CartesianGrid vertical={false} />
         <XAxis
@@ -121,40 +86,7 @@ export const SpendTrendChart = ({ data }: SpendTrendChartProps) => {
             strokeWidth={1}
           />
         ) : null}
-        <ChartTooltip
-          content={
-            <ChartTooltipContent
-              labelFormatter={(_label, payload) => {
-                const bucketStart = payload[0]?.payload?.bucketStart;
-                return typeof bucketStart === 'string'
-                  ? formatTooltipBucketLabel(bucketStart)
-                  : '';
-              }}
-              formatter={(value, _name, item) => {
-                const dataKey = String(item.dataKey ?? item.name ?? '');
-                if (
-                  dataKey === 'prior' &&
-                  item.payload &&
-                  typeof item.payload === 'object' &&
-                  'prior' in item.payload &&
-                  item.payload.prior === null
-                ) {
-                  return null;
-                }
-                return (
-                  <div className="flex w-full flex-1 items-center justify-between gap-4 leading-none">
-                    <span className="text-muted-foreground">
-                      {seriesLabelForDataKey(dataKey)}
-                    </span>
-                    <span className="font-mono font-medium text-foreground tabular-nums">
-                      {formatTrendCurrency(Number(value))}
-                    </span>
-                  </div>
-                );
-              }}
-            />
-          }
-        />
+        <ChartTooltip content={<ChartTooltipContent />} />
         <Line
           type="monotone"
           dataKey="current"
@@ -176,8 +108,10 @@ export const SpendTrendChart = ({ data }: SpendTrendChartProps) => {
             connectNulls
           />
         ) : null}
+        {hasPriorSeries ? (
+          <ChartLegend content={<ChartLegendContent />} />
+        ) : null}
       </RechartsLineChart>
-      {hasPriorSeries ? <SpendTrendCompactLegend /> : null}
     </ChartContainer>
   );
 };
