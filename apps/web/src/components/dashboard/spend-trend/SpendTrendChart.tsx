@@ -4,6 +4,7 @@ import {
   CartesianGrid,
   Line,
   LineChart as RechartsLineChart,
+  ReferenceLine,
   XAxis,
   YAxis,
 } from 'recharts';
@@ -14,12 +15,11 @@ import {
 } from '@ploutizo/ui/components/chart';
 import type { ChartConfig } from '@ploutizo/ui/components/chart';
 import { formatTrendCurrency } from '@/components/dashboard/spend-trend/SpendTrendBody';
-
-type SpendTrendChartPoint = {
-  bucketStart: string;
-  current: number;
-  prior: number | null;
-};
+import {
+  spendTrendHasPriorSeries,
+  spendTrendYDomain,
+} from '@/components/dashboard/spend-trend/spendTrendChartUtils';
+import type { SpendTrendChartPoint } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
 
 type SpendTrendChartProps = {
   data: SpendTrendChartPoint[];
@@ -27,11 +27,11 @@ type SpendTrendChartProps = {
 
 const chartConfig = {
   current: {
-    label: 'This period',
+    label: 'This',
     color: 'var(--chart-1)',
   },
   prior: {
-    label: 'Prior period',
+    label: 'Prior',
     color: 'var(--chart-2)',
   },
 } satisfies ChartConfig;
@@ -59,20 +59,33 @@ const seriesLabelForDataKey = (dataKey: string): string => {
   return dataKey;
 };
 
+const SpendTrendCompactLegend = () => (
+  <div
+    className="flex items-center justify-center gap-2 pt-1 text-[11px] leading-none text-muted-foreground"
+    aria-label="Chart legend"
+  >
+    <span className="flex items-center gap-1.5">
+      <span
+        className="h-0.5 w-3 shrink-0 rounded-full bg-(--color-current)"
+        aria-hidden
+      />
+      This
+    </span>
+    <span aria-hidden>·</span>
+    <span className="flex items-center gap-1.5">
+      <span
+        className="h-0 w-3 shrink-0 border-t-[1.5px] border-dashed border-(--color-prior)"
+        aria-hidden
+      />
+      Prior
+    </span>
+  </div>
+);
+
 export const SpendTrendChart = ({ data }: SpendTrendChartProps) => {
-  const yDomain = useMemo(() => {
-    const values = data.flatMap((point) =>
-      [point.current, point.prior ?? 0].filter((value) =>
-        Number.isFinite(value)
-      )
-    );
-    const min = Math.min(...values, 0);
-    const max = Math.max(...values, 0);
-    if (min === max) {
-      return [min - 1, max + 1] as [number, number];
-    }
-    return [min, max] as [number, number];
-  }, [data]);
+  const hasPriorSeries = useMemo(() => spendTrendHasPriorSeries(data), [data]);
+  const yDomain = useMemo(() => spendTrendYDomain(data), [data]);
+  const showZeroReferenceLine = yDomain[0] < 0;
 
   return (
     <ChartContainer
@@ -100,6 +113,14 @@ export const SpendTrendChart = ({ data }: SpendTrendChartProps) => {
           domain={yDomain}
           tickFormatter={(value: number) => formatTrendCurrency(value)}
         />
+        {showZeroReferenceLine ? (
+          <ReferenceLine
+            y={0}
+            stroke="var(--border)"
+            strokeOpacity={0.85}
+            strokeWidth={1}
+          />
+        ) : null}
         <ChartTooltip
           content={
             <ChartTooltipContent
@@ -134,17 +155,20 @@ export const SpendTrendChart = ({ data }: SpendTrendChartProps) => {
           dot={false}
           connectNulls
         />
-        <Line
-          type="monotone"
-          dataKey="prior"
-          name="prior"
-          stroke="var(--color-prior)"
-          strokeWidth={2}
-          strokeDasharray="6 4"
-          dot={false}
-          connectNulls
-        />
+        {hasPriorSeries ? (
+          <Line
+            type="monotone"
+            dataKey="prior"
+            name="prior"
+            stroke="var(--color-prior)"
+            strokeWidth={2}
+            strokeDasharray="6 4"
+            dot={false}
+            connectNulls
+          />
+        ) : null}
       </RechartsLineChart>
+      {hasPriorSeries ? <SpendTrendCompactLegend /> : null}
     </ChartContainer>
   );
 };
