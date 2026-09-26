@@ -4,19 +4,17 @@ export type DashboardOverviewTrendPoint = {
   priorAmountCents: number | null;
 };
 
-export type DashboardOverviewGrain = 'daily' | 'weekly' | 'monthly';
-
-export type DashboardOverviewRangeMeta = {
-  from: string | null;
-  to: string | null;
-  priorFrom: string | null;
-  priorTo: string | null;
-  grain: DashboardOverviewGrain;
+/** Inclusive calendar dates (`yyyy-MM-dd`) for the current and comparison windows. */
+export type DashboardOverviewRange = {
+  from: string;
+  to: string;
+  priorFrom: string;
+  priorTo: string;
 };
 
 export type GetDashboardOverviewResponse = {
   meta: {
-    range: DashboardOverviewRangeMeta;
+    range: DashboardOverviewRange;
   };
   trend: DashboardOverviewTrendPoint[];
 };

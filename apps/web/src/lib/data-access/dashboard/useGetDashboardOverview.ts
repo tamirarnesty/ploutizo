@@ -1,50 +1,31 @@
 import { queryOptions } from '@tanstack/react-query';
 import {
-  overviewQueryKeyRange,
-  resolveFixedMtdOverviewRange,
+  parseCalendarDate,
+  resolveMonthToDateRange,
 } from '@ploutizo/utils/dashboard-period';
-import type { DashboardPeriodRange } from '@ploutizo/utils/dashboard-period';
 import type { GetDashboardOverviewResponse } from '@ploutizo/types';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
 
-export const buildDashboardOverviewQueryString = (
-  range: DashboardPeriodRange
-): string => {
-  if (!range.from || !range.to) {
-    return '';
-  }
-  const params = new URLSearchParams({
-    from: range.from,
-    to: range.to,
-  });
-  return `?${params.toString()}`;
-};
+export const dashboardOverviewQueryKey = ['dashboard-overview'] as const;
 
-export const fetchDashboardOverview = async (
-  range: DashboardPeriodRange,
-  signal?: AbortSignal
-): Promise<GetDashboardOverviewResponse> => {
-  const query = buildDashboardOverviewQueryString(range);
-  return apiFetch<GetDashboardOverviewResponse>(
-    `/api/dashboard/overview${query}`,
-    {
-      signal,
-    }
-  );
-};
-
-export const dashboardOverviewQueryOptions = (
-  range: DashboardPeriodRange = resolveFixedMtdOverviewRange()
-) =>
-  queryOptions({
-    queryKey: ['dashboard-overview', ...overviewQueryKeyRange(range)],
-    queryFn: ({ signal }) => fetchDashboardOverview(range, signal),
+/** `today` is a local calendar date (`yyyy-MM-dd`); the overview covers its month to date. */
+export const dashboardOverviewQueryOptions = (today: string) => {
+  const { from, to } = resolveMonthToDateRange(parseCalendarDate(today));
+  const params = new URLSearchParams({ from, to });
+  return queryOptions({
+    queryKey: [...dashboardOverviewQueryKey, from, to],
+    queryFn: ({ signal }) =>
+      apiFetch<GetDashboardOverviewResponse>(
+        `/api/dashboard/overview?${params.toString()}`,
+        { signal }
+      ),
     placeholderData: (previousData) => previousData,
   });
+};
 
 export const useGetDashboardOverview = (
-  range: DashboardPeriodRange = resolveFixedMtdOverviewRange()
+  today: string
 ): UseQueryResult<GetDashboardOverviewResponse> =>
-  useHouseholdQuery(dashboardOverviewQueryOptions(range));
+  useHouseholdQuery(dashboardOverviewQueryOptions(today));

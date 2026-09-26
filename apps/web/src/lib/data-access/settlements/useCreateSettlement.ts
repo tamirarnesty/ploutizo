@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '@ploutizo/ui/components/sonner';
 import type { CreateSettlementInput } from '@ploutizo/validators';
+import { invalidateSpendQueries } from '@/lib/data-access/invalidateSpendQueries';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 
@@ -18,12 +19,7 @@ export const useCreateSettlement = () => {
       }),
     onSuccess: () => {
       toast.success('Settlement recorded');
-      void qc.invalidateQueries({
-        queryKey: ['settlements'],
-      });
-      void qc.invalidateQueries({
-        queryKey: ['transactions'],
-      });
+      invalidateSpendQueries(qc);
     },
     onError: () => {
       toast.error('Failed to record settlement. Try again.');

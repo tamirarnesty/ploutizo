@@ -2,19 +2,12 @@ import { z } from 'zod';
 
 export const dashboardOverviewQuerySchema = z
   .object({
-    from: z.string().date().optional(),
-    to: z.string().date().optional(),
+    from: z.iso.date(),
+    to: z.iso.date(),
   })
-  .superRefine((value, ctx) => {
-    const hasFrom = value.from !== undefined;
-    const hasTo = value.to !== undefined;
-    if (hasFrom !== hasTo) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'from and to must both be provided or both omitted',
-        path: hasFrom ? ['to'] : ['from'],
-      });
-    }
+  .refine((value) => value.from === `${value.to.slice(0, 7)}-01`, {
+    message: 'from must be the first day of the month containing to',
+    path: ['from'],
   });
 
 export type DashboardOverviewQuery = z.infer<

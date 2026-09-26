@@ -147,7 +147,7 @@ importers:
         version: 1.0.13(@tanstack/react-router@1.170.8(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@tanstack/react-start@1.168.11(crossws@0.4.12(srvx@1.0.5))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(supports-color@8.1.1)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@clerk/ui':
         specifier: latest
-        version: 1.34.0(@solana/web3.js@1.98.4(bufferutil@4.1.0)(typescript@6.0.2)(utf-8-validate@6.0.6))(@types/react@19.2.14)(bs58@6.0.0)(react-dom@19.2.5(react@19.2.5))(react-native@0.85.1(@babel/core@7.29.0(supports-color@8.1.1))(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.5)(supports-color@8.1.1)(utf-8-validate@6.0.6))(react@19.2.5)(supports-color@8.1.1)(typescript@6.0.2)
+        version: 1.36.0(@solana/web3.js@1.98.4(bufferutil@4.1.0)(typescript@6.0.2)(utf-8-validate@6.0.6))(@types/react@19.2.14)(bs58@6.0.0)(react-dom@19.2.5(react@19.2.5))(react-native@0.85.1(@babel/core@7.29.0(supports-color@8.1.1))(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.5)(supports-color@8.1.1)(utf-8-validate@6.0.6))(react@19.2.5)(supports-color@8.1.1)(typescript@6.0.2)
       '@ploutizo/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -417,9 +417,6 @@ importers:
       cmdk:
         specifier: ^1.1.1
         version: 1.1.1(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      cn:
-        specifier: ^0.4.0
-        version: 0.4.0
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
@@ -442,8 +439,8 @@ importers:
         specifier: ^19.2.4
         version: 19.2.5(react@19.2.5)
       recharts:
-        specifier: ^3.8.0
-        version: 3.8.0(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react-is@18.3.1)(react@19.2.5)(redux@5.0.1)
+        specifier: ^3.10.1
+        version: 3.10.1(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react-is@18.3.1)(react@19.2.5)(redux@5.0.1)
       shadcn:
         specifier: ^4.2.0
         version: 4.2.0(@types/node@25.6.0)(babel-plugin-macros@3.1.0)(supports-color@8.1.1)(typescript@6.0.2)
@@ -754,8 +751,8 @@ packages:
     peerDependencies:
       hono: '>=4'
 
-  '@clerk/localizations@4.18.0':
-    resolution: {integrity: sha512-g/WFSM+7jD2nuCsSQdsy9hjsXMc1LyYYNGg/GnAKDkap3t3gsIkWwBWMc7RYD7jkv85Hrn59V7TVj8DIeUWhyw==}
+  '@clerk/localizations@4.20.0':
+    resolution: {integrity: sha512-2JKJHSvfhtXiJXckCZRuy5sRNlJVXv7zKg42Z1G0IPUJKAhsVu5WtH4q6y3kDUxOkIibabx8Oe1BEYc/Kdp8rw==}
     engines: {node: '>=20.9.0'}
 
   '@clerk/localizations@4.4.1':
@@ -769,8 +766,8 @@ packages:
       react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
       react-dom: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
 
-  '@clerk/shared@4.33.0':
-    resolution: {integrity: sha512-7urfRaaXPHeIWJuEIqy70NvMoi2EmschcEQt36MtbEAswttvgYc9KzwkE5fm5RqSvfq1R057uz/FR9SaOmqoLA==}
+  '@clerk/shared@4.34.0':
+    resolution: {integrity: sha512-zzpCsm25gJFFg0G5MKcEEaFHRbKCaywlsorbuD70RiC2ySVOaIYoy6tn6cLoBNpV2nXusk4sR9EQpMQYZr6+uA==}
     engines: {node: '>=20.9.0'}
     peerDependencies:
       react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
@@ -781,8 +778,8 @@ packages:
       react-dom:
         optional: true
 
-  '@clerk/shared@4.34.0':
-    resolution: {integrity: sha512-zzpCsm25gJFFg0G5MKcEEaFHRbKCaywlsorbuD70RiC2ySVOaIYoy6tn6cLoBNpV2nXusk4sR9EQpMQYZr6+uA==}
+  '@clerk/shared@4.36.0':
+    resolution: {integrity: sha512-K0RAZxGe2otl5FDl6NkhmwI05deN/lO2KFqaObhCRvtw8L1DJMaXUQVfvsJ8D7eDu+0ORiYeC3FcY8cHgI/2Mg==}
     engines: {node: '>=20.9.0'}
     peerDependencies:
       react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
@@ -826,8 +823,8 @@ packages:
       react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
       react-dom: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
 
-  '@clerk/ui@1.34.0':
-    resolution: {integrity: sha512-EP6Wcf+iqV5hJRMjfmVSOb7wWEgt2DuUOnR3Yv/ULPdmGgGWa64oc4tB4VfD66z8nXgtXqHEXNNnGURAOfQ7vQ==}
+  '@clerk/ui@1.36.0':
+    resolution: {integrity: sha512-uI96zYCh5jISLOt1mdpIPy/Y31P0kwFxjUFOxLUwFfTHFmGUcRjbqN6bbb+75tdI2Bz6ARGws3rhspDer+xIfQ==}
     engines: {node: '>=20.9.0'}
     peerDependencies:
       react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
@@ -4473,11 +4470,6 @@ packages:
       react: ^18 || ^19 || ^19.0.0-rc
       react-dom: ^18 || ^19 || ^19.0.0-rc
 
-  cn@0.4.0:
-    resolution: {integrity: sha512-qOAeUhPwPzBxx6jaeQdo646XIKliKHc2j1ZF7Ngb1o0pJZKH5gq8FkA0aVdUdPFUDXNXyUCXpCtoJISo6dhizg==}
-    engines: {node: '>=20'}
-    hasBin: true
-
   code-block-writer@13.0.3:
     resolution: {integrity: sha512-Oofo0pq3IKnsFtuHqSF7TqBfr71aeyZDVJ0HpmqB7FBM2qEigL0iPONSCZSO9pE9dZTAxANe5XHG9Uy0YMv8cg==}
 
@@ -5465,9 +5457,6 @@ packages:
     resolution: {integrity: sha512-rH+46sQJ2dlwfjfhCyNx5thzrv+dtmBIhPHk0zgRUukHzZ/kRueTJXoYYsclBaKcSMBWuGbOFXtioLpzTb5euw==}
     engines: {node: '>=16.x'}
     hasBin: true
-
-  immer@10.2.0:
-    resolution: {integrity: sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw==}
 
   immer@11.1.18:
     resolution: {integrity: sha512-EQyQtLiYW029lyoczMl/Hh4Xu7cDecSc58JRYpHyL4tIAu3eqd1yJzQX04d2BZHDkzFFvm6qJEJWOtfDSWAXbQ==}
@@ -6629,14 +6618,6 @@ packages:
       react-dom: ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-is: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
-  recharts@3.8.0:
-    resolution: {integrity: sha512-Z/m38DX3L73ExO4Tpc9/iZWHmHnlzWG4njQbxsF5aSjwqmHNDDIm0rdEBArkwsBvR8U6EirlEHiQNYWCVh9sGQ==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-      react-dom: ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-      react-is: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-
   redent@3.0.0:
     resolution: {integrity: sha512-6tDA8g98We0zd0GvVeMT9arEOnTw9qM03L9cJXaCjrip1OO764RDBLBfrB4cwzNGDj5OA5ioymC9GkizgWJDUg==}
     engines: {node: '>=8'}
@@ -6665,9 +6646,6 @@ packages:
 
   require-main-filename@2.0.0:
     resolution: {integrity: sha512-NKN5kMDylKuldxYLSUfrbo5Tuzh4hd+2E8NPPX02mZtn1VuREQToYe/ZdlJy+J3uCpfaiGF05e7B8W0iXbQHmg==}
-
-  reselect@5.1.1:
-    resolution: {integrity: sha512-K/BG6eIky/SBpzfHZv/dd+9JBFiS4SWV7FIujVyJRux6e45+73RaUHXLmIR1f7WOMaQ0U1km6qwklRQxpJJY0w==}
 
   reselect@5.2.0:
     resolution: {integrity: sha512-AgZ3UOZm3YndfrJ4OYjgrT7bmCm/1iqkjvEfH/oYjzh6PD2qw4QuT3jjnXIrpdt4MTpMXclMT3lXbmRY+XRakw==}
@@ -7836,7 +7814,7 @@ snapshots:
 
   '@clerk/backend@3.4.4(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
     dependencies:
-      '@clerk/shared': 4.33.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@clerk/shared': 4.34.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       standardwebhooks: 1.0.0
       tslib: 2.8.1
     transitivePeerDependencies:
@@ -7852,28 +7830,28 @@ snapshots:
       - react
       - react-dom
 
-  '@clerk/localizations@4.18.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
+  '@clerk/localizations@4.20.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
     dependencies:
-      '@clerk/shared': 4.34.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@clerk/shared': 4.36.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
     transitivePeerDependencies:
       - react
       - react-dom
 
   '@clerk/localizations@4.4.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
     dependencies:
-      '@clerk/shared': 4.33.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@clerk/shared': 4.34.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
     transitivePeerDependencies:
       - react
       - react-dom
 
   '@clerk/react@6.3.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
     dependencies:
-      '@clerk/shared': 4.33.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@clerk/shared': 4.34.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       react: 19.2.5
       react-dom: 19.2.5(react@19.2.5)
       tslib: 2.8.1
 
-  '@clerk/shared@4.33.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
+  '@clerk/shared@4.34.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
     dependencies:
       '@tanstack/query-core': 5.102.8
       dequal: 2.0.3
@@ -7883,7 +7861,7 @@ snapshots:
       react: 19.2.5
       react-dom: 19.2.5(react@19.2.5)
 
-  '@clerk/shared@4.34.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
+  '@clerk/shared@4.36.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
     dependencies:
       '@tanstack/query-core': 5.102.8
       dequal: 2.0.3
@@ -7926,10 +7904,10 @@ snapshots:
       react-dom: 19.2.5(react@19.2.5)
       tslib: 2.8.1
 
-  '@clerk/ui@1.34.0(@solana/web3.js@1.98.4(bufferutil@4.1.0)(typescript@6.0.2)(utf-8-validate@6.0.6))(@types/react@19.2.14)(bs58@6.0.0)(react-dom@19.2.5(react@19.2.5))(react-native@0.85.1(@babel/core@7.29.0(supports-color@8.1.1))(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.5)(supports-color@8.1.1)(utf-8-validate@6.0.6))(react@19.2.5)(supports-color@8.1.1)(typescript@6.0.2)':
+  '@clerk/ui@1.36.0(@solana/web3.js@1.98.4(bufferutil@4.1.0)(typescript@6.0.2)(utf-8-validate@6.0.6))(@types/react@19.2.14)(bs58@6.0.0)(react-dom@19.2.5(react@19.2.5))(react-native@0.85.1(@babel/core@7.29.0(supports-color@8.1.1))(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.5)(supports-color@8.1.1)(utf-8-validate@6.0.6))(react@19.2.5)(supports-color@8.1.1)(typescript@6.0.2)':
     dependencies:
-      '@clerk/localizations': 4.18.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@clerk/shared': 4.34.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@clerk/localizations': 4.20.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@clerk/shared': 4.36.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@emotion/cache': 11.11.0
       '@emotion/react': 11.11.1(@types/react@19.2.14)(react@19.2.5)(supports-color@8.1.1)
       '@floating-ui/react': 0.27.20(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -11482,8 +11460,6 @@ snapshots:
       - '@types/react'
       - '@types/react-dom'
 
-  cn@0.4.0: {}
-
   code-block-writer@13.0.3: {}
 
   color-convert@2.0.1:
@@ -12416,8 +12392,6 @@ snapshots:
   image-size@1.2.1:
     dependencies:
       queue: 6.0.2
-
-  immer@10.2.0: {}
 
   immer@11.1.18: {}
 
@@ -13645,26 +13619,6 @@ snapshots:
       - '@types/react'
       - redux
 
-  recharts@3.8.0(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react-is@18.3.1)(react@19.2.5)(redux@5.0.1):
-    dependencies:
-      '@reduxjs/toolkit': 2.12.0(react-redux@9.3.0(@types/react@19.2.14)(react@19.2.5)(redux@5.0.1))(react@19.2.5)
-      clsx: 2.1.1
-      decimal.js-light: 2.5.1
-      es-toolkit: 1.52.0
-      eventemitter3: 5.0.4
-      immer: 10.2.0
-      react: 19.2.5
-      react-dom: 19.2.5(react@19.2.5)
-      react-is: 18.3.1
-      react-redux: 9.3.0(@types/react@19.2.14)(react@19.2.5)(redux@5.0.1)
-      reselect: 5.1.1
-      tiny-invariant: 1.3.3
-      use-sync-external-store: 1.6.0(react@19.2.5)
-      victory-vendor: 37.3.6
-    transitivePeerDependencies:
-      - '@types/react'
-      - redux
-
   redent@3.0.0:
     dependencies:
       indent-string: 4.0.0
@@ -13685,8 +13639,6 @@ snapshots:
   require-from-string@2.0.2: {}
 
   require-main-filename@2.0.0: {}
-
-  reselect@5.1.1: {}
 
   reselect@5.2.0: {}
 

@@ -39,7 +39,6 @@ const emptyOverview = {
       to: '2026-03-24',
       priorFrom: '2026-02-01',
       priorTo: '2026-02-24',
-      grain: 'daily' as const,
     },
   },
   trend: [],
@@ -285,7 +284,7 @@ describe('Dashboard', () => {
     ).toBeVisible();
     expect(within(cardFor('Settlement')).getByText(ADA_PERSONAL)).toBeVisible();
     expect(toastMocks.error).toHaveBeenCalledWith('Refresh failed.', {
-      description: 'Balances may be out of date.',
+      description: 'The dashboard may be out of date.',
     });
   });
 

@@ -1,5 +1,5 @@
-import { format, isValid, parseISO } from 'date-fns';
-import { useEffect, useMemo, useState } from 'react';
+import { format } from 'date-fns';
+import { useMemo } from 'react';
 import {
   CartesianGrid,
   Line,
@@ -15,6 +15,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@ploutizo/ui/components/chart';
+import { parseCalendarDate } from '@ploutizo/utils/dashboard-period';
 import type { ChartConfig } from '@ploutizo/ui/components/chart';
 import {
   formatTrendCurrency,
@@ -25,52 +26,28 @@ import type { SpendTrendChartPoint } from '@/components/dashboard/spend-trend/sp
 
 type SpendTrendChartProps = {
   data: SpendTrendChartPoint[];
-  currentLabel?: string;
-  priorLabel?: string;
-  isAnimationActive?: boolean;
 };
 
-const formatBucketLabel = (bucketStart: string): string => {
-  const [, month, day] = bucketStart.split('-');
-  return `${month}/${day}`;
-};
+const chartConfig = {
+  current: {
+    label: 'This month',
+    color: 'var(--chart-1)',
+  },
+  prior: {
+    label: 'Last month',
+    color: 'var(--chart-2)',
+  },
+} satisfies ChartConfig;
 
-const formatTooltipBucketLabel = (bucketStart: string): string => {
-  const parsed = parseISO(bucketStart);
-  if (isValid(parsed)) {
-    return format(parsed, 'MMM d, yyyy');
-  }
-  return formatBucketLabel(bucketStart);
-};
+const formatAxisDay = (bucketStart: string): string =>
+  format(parseCalendarDate(bucketStart), 'MMM d');
 
-export const SpendTrendChart = ({
-  data,
-  currentLabel = 'Current period',
-  priorLabel = 'Previous period',
-  isAnimationActive = true,
-}: SpendTrendChartProps) => {
-  const [isMounted, setIsMounted] = useState(false);
-  const chartConfig = {
-    current: {
-      label: currentLabel,
-      color: 'var(--chart-1)',
-    },
-    prior: {
-      label: priorLabel,
-      color: 'var(--chart-2)',
-    },
-  } satisfies ChartConfig;
+const formatTooltipDay = (bucketStart: string): string =>
+  format(parseCalendarDate(bucketStart), 'MMM d, yyyy');
+
+export const SpendTrendChart = ({ data }: SpendTrendChartProps) => {
   const hasPriorSeries = useMemo(() => spendTrendHasPriorSeries(data), [data]);
   const yDomain = useMemo(() => spendTrendYDomain(data), [data]);
-  const showZeroReferenceLine = yDomain[0] < 0;
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  if (!isMounted) {
-    return <div className="h-56 min-h-48 w-full" aria-hidden />;
-  }
 
   return (
     <ChartContainer
@@ -79,12 +56,7 @@ export const SpendTrendChart = ({
     >
       <RechartsLineChart
         data={data}
-        margin={{
-          left: 8,
-          right: 8,
-          top: 8,
-          bottom: hasPriorSeries ? 8 : 0,
-        }}
+        margin={{ left: 8, right: 8, top: 8, bottom: hasPriorSeries ? 8 : 0 }}
       >
         <CartesianGrid vertical={false} />
         <XAxis
@@ -93,7 +65,7 @@ export const SpendTrendChart = ({
           axisLine={false}
           tickMargin={8}
           minTickGap={24}
-          tickFormatter={formatBucketLabel}
+          tickFormatter={formatAxisDay}
         />
         <YAxis
           tickLine={false}
@@ -101,9 +73,9 @@ export const SpendTrendChart = ({
           tickMargin={8}
           width={56}
           domain={yDomain}
-          tickFormatter={(value: number) => formatTrendCurrency(value)}
+          tickFormatter={formatTrendCurrency}
         />
-        {showZeroReferenceLine ? (
+        {yDomain[0] < 0 ? (
           <ReferenceLine
             y={0}
             stroke="var(--border)"
@@ -117,48 +89,28 @@ export const SpendTrendChart = ({
               labelFormatter={(_label, payload) => {
                 const bucketStart = payload[0]?.payload?.bucketStart;
                 return typeof bucketStart === 'string'
-                  ? formatTooltipBucketLabel(bucketStart)
+                  ? formatTooltipDay(bucketStart)
                   : '';
               }}
-              formatter={(value, name, item) => (
-                <div className="flex w-full items-center gap-2">
-                  <div
-                    className="size-2.5 shrink-0 rounded-[2px]"
-                    style={{ backgroundColor: item.color }}
-                  />
-                  <span className="flex-1 text-muted-foreground">
-                    {name === 'current' ? 'Current' : 'Previous'}
-                  </span>
-                  <span className="font-mono font-medium text-foreground tabular-nums">
-                    {typeof value === 'number'
-                      ? formatTrendCurrency(value)
-                      : String(value)}
-                  </span>
-                </div>
-              )}
+              valueFormatter={formatTrendCurrency}
             />
           }
         />
         <Line
           type="monotone"
           dataKey="current"
-          name="current"
           stroke="var(--color-current)"
           strokeWidth={2}
           dot={false}
-          connectNulls
-          isAnimationActive={isAnimationActive}
         />
         {hasPriorSeries ? (
           <Line
             type="monotone"
             dataKey="prior"
-            name="prior"
             stroke="var(--color-prior)"
             strokeWidth={2}
             strokeDasharray="6 4"
             dot={false}
-            isAnimationActive={isAnimationActive}
           />
         ) : null}
         {hasPriorSeries ? (

@@ -5,7 +5,7 @@ import {
 } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
 
 describe('spendTrendHasPriorSeries', () => {
-  it('is false when every prior value is null (all-time / no prior series)', () => {
+  it('is false when every prior value is null (no prior series)', () => {
     expect(
       spendTrendHasPriorSeries([
         { bucketStart: '2026-03-01', current: 100, prior: null },
@@ -25,6 +25,13 @@ describe('spendTrendHasPriorSeries', () => {
 });
 
 describe('spendTrendYDomain', () => {
+  it('returns a non-degenerate domain for empty or all-zero data', () => {
+    expect(spendTrendYDomain([])).toEqual([-1, 1]);
+    expect(
+      spendTrendYDomain([{ bucketStart: '2026-03-01', current: 0, prior: 0 }])
+    ).toEqual([-1, 1]);
+  });
+
   it('includes zero and extends below when values are negative', () => {
     const [min, max] = spendTrendYDomain([
       { bucketStart: '2026-03-01', current: -500, prior: 100 },

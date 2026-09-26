@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from '@ploutizo/ui/components/sonner';
-import { resolveFixedMtdOverviewRange } from '@ploutizo/utils/dashboard-period';
+import { toCalendarDate } from '@ploutizo/utils/dashboard-period';
 import type { OrgMember } from '@ploutizo/types';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';
 import type { CardBalanceRowViewModel } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
@@ -20,14 +20,9 @@ const NO_MEMBERS: OrgMember[] = [];
 
 // All queries fire at top level — no waterfalls (vercel-react-best-practices).
 export const Dashboard = () => {
-  const overviewRange = useMemo(() => resolveFixedMtdOverviewRange(), []);
-  const {
-    data: overview,
-    isLoading: overviewLoading,
-    isError: overviewError,
-    isFetching: overviewFetching,
-    refetch: refetchOverview,
-  } = useGetDashboardOverview(overviewRange);
+  // Re-read every render so a tab left open rolls into the new day on its next refresh.
+  const overviewQuery = useGetDashboardOverview(toCalendarDate(new Date()));
+  const { refetch: refetchOverview } = overviewQuery;
   const {
     data: settlements,
     isLoading: settlementsLoading,
@@ -45,10 +40,7 @@ export const Dashboard = () => {
 
   const members = membersData ?? NO_MEMBERS;
   const isRefreshing =
-    settlementsFetching || membersFetching || overviewFetching;
-  const overviewLoadFailure = overviewError && overview === undefined;
-  const overviewLoadingState =
-    overviewLoading || (overviewLoadFailure && overviewFetching);
+    settlementsFetching || membersFetching || overviewQuery.isFetching;
 
   // Both live cards read the same two queries, so they share loading and error state.
   // A failed refetch keeps cached data on screen; only a failed first load replaces the cards.
@@ -99,7 +91,7 @@ export const Dashboard = () => {
       // A failed refetch keeps cached data on screen, so flag it as out of date.
       if (results.some((r) => r.isError && r.data !== undefined)) {
         toast.error('Refresh failed.', {
-          description: 'Balances may be out of date.',
+          description: 'The dashboard may be out of date.',
         });
       }
     });
@@ -109,9 +101,7 @@ export const Dashboard = () => {
     <div className="space-y-6">
       <DashboardHeader
         onRefresh={handleRefresh}
-        isRefreshing={
-          isRefreshing || liveSectionsLoading || overviewLoadingState
-        }
+        isRefreshing={isRefreshing || liveSectionsLoading}
       />
 
       {/*
@@ -119,12 +109,7 @@ export const Dashboard = () => {
         the sidebar opens or closes, which only changes the available width.
       */}
       <div className="@container/dashboard space-y-4">
-        <SpendTrendCard
-          data={overview}
-          isLoading={overviewLoadingState}
-          isFetching={overviewFetching}
-          isError={overviewLoadFailure && !overviewFetching}
-        />
+        <SpendTrendCard query={overviewQuery} />
         <div className="grid grid-cols-1 items-start gap-4 @4xl/dashboard:grid-cols-4">
           <div className="min-w-0 @4xl/dashboard:col-span-3">
             <CardBalancesGrid
