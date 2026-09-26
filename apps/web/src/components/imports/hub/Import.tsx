@@ -1,6 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { AlertCircle, CheckCircle2, CreditCard } from 'lucide-react';
-import { Badge } from '@ploutizo/ui/components/badge';
+import { CreditCard } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import {
   Empty,
@@ -20,36 +19,6 @@ import {
 import { ImportDraftList } from './ImportDraftList';
 import { ImportHistoryList } from './ImportHistoryList';
 import { ImportUploadForm } from './ImportUploadForm';
-
-interface ImportStatusBadgeProps {
-  activeDraftCount: number;
-  isLoading: boolean;
-}
-
-const ImportStatusBadge = ({
-  activeDraftCount,
-  isLoading,
-}: ImportStatusBadgeProps) => {
-  if (isLoading) {
-    return <Badge variant="outline">Checking drafts</Badge>;
-  }
-
-  if (activeDraftCount > 0) {
-    return (
-      <Badge variant="outline">
-        <AlertCircle />
-        {activeDraftCount} active
-      </Badge>
-    );
-  }
-
-  return (
-    <Badge variant="outline">
-      <CheckCircle2 />
-      Ready
-    </Badge>
-  );
-};
 
 const NoImportTargetsEmptyState = () => (
   <Empty className="min-h-[460px] border border-dashed">
@@ -128,22 +97,9 @@ export const Import = () => {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Text as="h1" variant="h3">
-          Import
-        </Text>
-        <div className="flex gap-2">
-          <div className="flex flex-col items-end gap-1">
-            <span className="text-xs font-medium text-muted-foreground">
-              Import status
-            </span>
-            <ImportStatusBadge
-              activeDraftCount={activeDrafts.length}
-              isLoading={draftsLoading}
-            />
-          </div>
-        </div>
-      </div>
+      <Text as="h1" variant="h3">
+        Import
+      </Text>
 
       <ImportUploadForm
         targets={targets}

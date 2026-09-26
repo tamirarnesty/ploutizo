@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import type { Account } from '@ploutizo/types';
+import { invalidateImportTargetsQuery } from '@/lib/data-access/imports/invalidateImportTargetsQuery';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 
@@ -32,6 +33,7 @@ export const useUpdateAccount = (id: string) => {
       qc.invalidateQueries({
         queryKey: ['account-members', id],
       });
+      invalidateImportTargetsQuery(qc);
     },
   });
 };
