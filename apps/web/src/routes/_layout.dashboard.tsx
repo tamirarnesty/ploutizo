@@ -1,10 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { toCalendarDate } from '@ploutizo/utils/dashboard-period';
 import { isHouseholdLoaderReady } from '@/lib/access/household-loader-ready';
 import { Dashboard } from '@/components/dashboard/Dashboard';
-import { dashboardOverviewQueryOptions } from '@/lib/data-access/dashboard';
 import { householdMembersQueryOptions } from '@/lib/data-access/household';
 import { settlementsQueryOptions } from '@/lib/data-access/settlements';
+import { validateDashboardSearch } from '@/lib/dashboard-period/validateDashboardSearch';
+import { preloadPersistedDashboardOverview } from '@/lib/dashboard-period/preloadPersistedDashboardOverview';
 
 export const Route = createFileRoute('/_layout/dashboard')({
   staticData: {
@@ -14,14 +14,14 @@ export const Route = createFileRoute('/_layout/dashboard')({
       order: 0,
     },
   },
-  loader: async ({ context }) => {
+  validateSearch: validateDashboardSearch,
+  loaderDeps: ({ search }) => search,
+  loader: async ({ context, deps: search }) => {
     if (!(await isHouseholdLoaderReady(context))) {
       return;
     }
     await Promise.all([
-      context.queryClient.ensureQueryData(
-        dashboardOverviewQueryOptions(toCalendarDate(new Date()))
-      ),
+      preloadPersistedDashboardOverview(context.queryClient, search),
       context.queryClient.ensureQueryData(settlementsQueryOptions),
       context.queryClient.ensureQueryData(householdMembersQueryOptions),
     ]);

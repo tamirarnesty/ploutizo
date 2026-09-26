@@ -1,7 +1,6 @@
 import {
   eachCalendarDate,
-  parseCalendarDate,
-  resolveMonthToDateRange,
+  eachCalendarMonthStart,
 } from '@ploutizo/utils/dashboard-period';
 import type { GetDashboardOverviewResponse } from '@ploutizo/types';
 import { fetchDailyNetSpend } from '@/lib/queries/dashboard';
@@ -15,12 +14,17 @@ const amountsByDay = async (
   return new Map(rows.map((row) => [row.bucketStart, row.amountCents]));
 };
 
-/** Month-to-date daily net spend ending on `to`, paired by day index with the prior month. */
-export const getDashboardOverview = async (
+type RangedOverviewQuery = {
+  from: string;
+  to: string;
+  priorFrom: string;
+  priorTo: string;
+};
+
+const buildDailyTrend = async (
   orgId: string,
-  to: string
+  range: RangedOverviewQuery
 ): Promise<GetDashboardOverviewResponse> => {
-  const range = resolveMonthToDateRange(parseCalendarDate(to));
   const [current, prior] = await Promise.all([
     amountsByDay(orgId, range.from, range.to),
     amountsByDay(orgId, range.priorFrom, range.priorTo),
@@ -30,7 +34,6 @@ export const getDashboardOverview = async (
   return {
     meta: { range },
     trend: eachCalendarDate(range.from, range.to).map((day, index) => {
-      // Past the end of a shorter prior month there is no comparable day.
       const priorDay = priorDays.at(index);
       return {
         bucketStart: day,
@@ -40,4 +43,59 @@ export const getDashboardOverview = async (
       };
     }),
   };
+};
+
+const buildAllTimeMonthlyTrend = async (
+  orgId: string
+): Promise<GetDashboardOverviewResponse> => {
+  const rows = await fetchDailyNetSpend(orgId, {});
+  if (rows.length === 0) {
+    return {
+      meta: {
+        range: {
+          from: '',
+          to: '',
+          priorFrom: '',
+          priorTo: '',
+        },
+      },
+      trend: [],
+    };
+  }
+
+  const sortedDays = rows.map((row) => row.bucketStart).sort();
+  const from = sortedDays[0];
+  const to = sortedDays.at(-1)!;
+  const byMonth = new Map<string, number>();
+  for (const row of rows) {
+    const monthStart = row.bucketStart.slice(0, 7) + '-01';
+    byMonth.set(monthStart, (byMonth.get(monthStart) ?? 0) + row.amountCents);
+  }
+
+  return {
+    meta: {
+      range: {
+        from,
+        to,
+        priorFrom: '',
+        priorTo: '',
+      },
+    },
+    trend: eachCalendarMonthStart(from, to).map((monthStart) => ({
+      bucketStart: monthStart,
+      amountCents: byMonth.get(monthStart) ?? 0,
+      priorAmountCents: null,
+    })),
+  };
+};
+
+export const getDashboardOverview = async (
+  orgId: string,
+  query: Record<string, never> | RangedOverviewQuery
+): Promise<GetDashboardOverviewResponse> => {
+  if (!('from' in query)) {
+    return buildAllTimeMonthlyTrend(orgId);
+  }
+
+  return buildDailyTrend(orgId, query as RangedOverviewQuery);
 };
