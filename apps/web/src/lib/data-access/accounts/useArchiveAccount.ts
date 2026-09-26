@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import type { Account } from '@ploutizo/types';
+import { invalidateImportTargetsQuery } from '@/lib/data-access/imports/invalidateImportTargetsQuery';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 
@@ -14,6 +15,9 @@ export const useArchiveAccount = () => {
   const qc = useQueryClient();
   return useHouseholdMutation({
     mutationFn: archiveAccount,
-    onSettled: () => qc.invalidateQueries({ queryKey: ['accounts'] }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['accounts'] });
+      invalidateImportTargetsQuery(qc);
+    },
   });
 };
