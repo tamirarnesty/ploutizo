@@ -9,3 +9,4 @@ export * from './transactions';
 export * from './shared';
 export * from './settlements';
 export * from './imports';
+export * from './dashboard';

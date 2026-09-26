@@ -16,6 +16,7 @@ import { merchantRulesRouter } from './routes/merchant-rules';
 import { transactionsRouter } from './routes/transactions';
 import { settlementsRouter } from './routes/settlements';
 import { importsRouter } from './routes/imports';
+import { dashboardRouter } from './routes/dashboard';
 import { registerApiErrorHandlers } from './lib/apiErrorResponse';
 import {
   TELEMETRY_EXPOSE_HEADERS,
@@ -82,6 +83,7 @@ app.route('/api/merchant-rules', merchantRulesRouter);
 app.route('/api/transactions', transactionsRouter);
 app.route('/api/settlements', settlementsRouter);
 app.route('/api/imports', importsRouter);
+app.route('/api/dashboard', dashboardRouter);
 
 // Centralized error handler (D-04) — registered AFTER routes, BEFORE serve()
 registerApiErrorHandlers(app);

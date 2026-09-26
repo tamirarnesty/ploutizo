@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '@ploutizo/ui/components/sonner';
+import { invalidateSpendQueries } from '@/lib/data-access/invalidateSpendQueries';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { TransactionRow } from './useGetTransactions';
@@ -17,12 +18,7 @@ export const useCreateTransaction = () => {
       }).then((r: { data: TransactionRow }) => r.data),
     onSuccess: () => {
       toast.success('Transaction created.');
-      void qc.invalidateQueries({
-        queryKey: ['transactions'],
-      });
-      void qc.invalidateQueries({
-        queryKey: ['settlements'],
-      });
+      invalidateSpendQueries(qc);
     },
     onError: () => {
       toast.error('Failed to create transaction.');

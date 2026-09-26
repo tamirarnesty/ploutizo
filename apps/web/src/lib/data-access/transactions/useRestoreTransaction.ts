@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { invalidateSpendQueries } from '@/lib/data-access/invalidateSpendQueries';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 
@@ -10,12 +11,7 @@ export const useRestoreTransaction = () => {
         method: 'PATCH',
       }),
     onSettled: () => {
-      void qc.invalidateQueries({
-        queryKey: ['transactions'],
-      });
-      void qc.invalidateQueries({
-        queryKey: ['settlements'],
-      });
+      invalidateSpendQueries(qc);
     },
   });
 };

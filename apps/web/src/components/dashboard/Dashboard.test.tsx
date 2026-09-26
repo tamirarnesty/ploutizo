@@ -30,6 +30,19 @@ vi.mock('@/lib/access/working-set', () => ({
 
 const SETTLEMENTS_PATH = '/api/settlements';
 const MEMBERS_PATH = '/api/households/members';
+const OVERVIEW_PATH = '/api/dashboard/overview';
+
+const emptyOverview = {
+  meta: {
+    range: {
+      from: '2026-03-01',
+      to: '2026-03-24',
+      priorFrom: '2026-02-01',
+      priorTo: '2026-02-24',
+    },
+  },
+  trend: [],
+};
 
 const orgMember = (identity: MemberIdentity): OrgMember => ({
   ...identity,
@@ -118,7 +131,9 @@ const holdRequests = () => {
 const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
   const url = String(input);
   await requestGate;
-  const path = [SETTLEMENTS_PATH, MEMBERS_PATH].find((p) => url.includes(p));
+  const path = [SETTLEMENTS_PATH, MEMBERS_PATH, OVERVIEW_PATH].find((p) =>
+    url.includes(p)
+  );
   if (!path) throw new Error(`Unexpected request: ${url}`);
   if (failingPaths.has(path)) {
     return jsonResponse(
@@ -127,7 +142,11 @@ const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     );
   }
   return jsonResponse(
-    path === SETTLEMENTS_PATH ? settlementsBody : { data: membersBody }
+    path === SETTLEMENTS_PATH
+      ? settlementsBody
+      : path === MEMBERS_PATH
+        ? { data: membersBody }
+        : emptyOverview
   );
 });
 
@@ -174,6 +193,11 @@ describe('Dashboard', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it('renders the spend trend card', async () => {
+    renderDashboard();
+    expect(await screen.findByText('Spend trend')).toBeInTheDocument();
   });
 
   it('shows the card balances total in the section header', async () => {
@@ -229,6 +253,7 @@ describe('Dashboard', () => {
 
     await user.click(refreshButton());
 
+    expect(requestCount(OVERVIEW_PATH)).toBeGreaterThanOrEqual(1);
     expect(
       await within(cardHeaderFor('Card Balances')).findByText('$350.00')
     ).toBeInTheDocument();
@@ -259,7 +284,7 @@ describe('Dashboard', () => {
     ).toBeVisible();
     expect(within(cardFor('Settlement')).getByText(ADA_PERSONAL)).toBeVisible();
     expect(toastMocks.error).toHaveBeenCalledWith('Refresh failed.', {
-      description: 'Balances may be out of date.',
+      description: 'The dashboard may be out of date.',
     });
   });
 

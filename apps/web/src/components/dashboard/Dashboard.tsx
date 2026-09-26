@@ -1,14 +1,17 @@
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from '@ploutizo/ui/components/sonner';
+import { toCalendarDate } from '@ploutizo/utils/dashboard-period';
 import type { OrgMember } from '@ploutizo/types';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';
 import type { CardBalanceRowViewModel } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
 import type { CardBalancesSettleClickHandler } from '@/components/dashboard/card-balances/types';
 import { buildCardBalanceViewModels } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
 import { useGetHouseholdMembers } from '@/lib/data-access/household';
+import { useGetDashboardOverview } from '@/lib/data-access/dashboard';
 import { useGetSettlements } from '@/lib/data-access/settlements';
 import { selectCreditCardAccounts } from '@/lib/settlements';
 import { CardBalancesGrid } from '@/components/dashboard/card-balances/CardBalancesGrid';
+import { SpendTrendCard } from '@/components/dashboard/spend-trend/SpendTrendCard';
 import { DashboardHeader } from './DashboardHeader';
 import { SettleDialog } from './SettleDialog';
 import { SettlementSummaryPane } from './SettlementSummaryPane';
@@ -17,6 +20,9 @@ const NO_MEMBERS: OrgMember[] = [];
 
 // All queries fire at top level — no waterfalls (vercel-react-best-practices).
 export const Dashboard = () => {
+  // Re-read every render so a tab left open rolls into the new day on its next refresh.
+  const overviewQuery = useGetDashboardOverview(toCalendarDate(new Date()));
+  const { refetch: refetchOverview } = overviewQuery;
   const {
     data: settlements,
     isLoading: settlementsLoading,
@@ -33,7 +39,8 @@ export const Dashboard = () => {
   } = useGetHouseholdMembers();
 
   const members = membersData ?? NO_MEMBERS;
-  const isRefreshing = settlementsFetching || membersFetching;
+  const isRefreshing =
+    settlementsFetching || membersFetching || overviewQuery.isFetching;
 
   // Both live cards read the same two queries, so they share loading and error state.
   // A failed refetch keeps cached data on screen; only a failed first load replaces the cards.
@@ -76,17 +83,19 @@ export const Dashboard = () => {
   }, []);
 
   const handleRefresh = useCallback(() => {
-    void Promise.all([refetchSettlements(), refetchMembers()]).then(
-      (results) => {
-        // A failed refetch keeps cached data on screen, so flag it as out of date.
-        if (results.some((r) => r.isError && r.data !== undefined)) {
-          toast.error('Refresh failed.', {
-            description: 'Balances may be out of date.',
-          });
-        }
+    void Promise.all([
+      refetchOverview(),
+      refetchSettlements(),
+      refetchMembers(),
+    ]).then((results) => {
+      // A failed refetch keeps cached data on screen, so flag it as out of date.
+      if (results.some((r) => r.isError && r.data !== undefined)) {
+        toast.error('Refresh failed.', {
+          description: 'The dashboard may be out of date.',
+        });
       }
-    );
-  }, [refetchSettlements, refetchMembers]);
+    });
+  }, [refetchOverview, refetchSettlements, refetchMembers]);
 
   return (
     <div className="space-y-6">
@@ -99,7 +108,8 @@ export const Dashboard = () => {
         Container query, not a viewport breakpoint: cards must also reflow when
         the sidebar opens or closes, which only changes the available width.
       */}
-      <div className="@container/dashboard">
+      <div className="@container/dashboard space-y-4">
+        <SpendTrendCard query={overviewQuery} />
         <div className="grid grid-cols-1 items-start gap-4 @4xl/dashboard:grid-cols-4">
           <div className="min-w-0 @4xl/dashboard:col-span-3">
             <CardBalancesGrid

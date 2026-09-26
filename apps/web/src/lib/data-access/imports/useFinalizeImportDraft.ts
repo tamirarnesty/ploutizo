@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import type { ImportCompletedResult } from '@ploutizo/types';
+import { invalidateSpendQueries } from '@/lib/data-access/invalidateSpendQueries';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import type { ApiErrorBody } from '@/lib/queryClient';
 import { fetchFinalizeImportDraft } from './fetchFinalizeImportDraft';
@@ -26,6 +27,7 @@ export const useFinalizeImportDraft = (draftId: string) => {
       void queryClient.invalidateQueries({
         queryKey: importHistoryQueryKey,
       });
+      invalidateSpendQueries(queryClient);
     },
   });
 };
