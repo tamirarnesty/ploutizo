@@ -92,9 +92,11 @@ export const ImportUploadProvider = ({
 
   const goToDraftReview = useCallback(
     (draftId: string) => {
-      void navigate(importDraftReviewRoute(draftId)).then(() => {
-        invalidateActiveImportDraftsQuery(getActiveQueryClient());
-      });
+      void Promise.resolve(navigate(importDraftReviewRoute(draftId))).then(
+        () => {
+          invalidateActiveImportDraftsQuery(getActiveQueryClient());
+        }
+      );
     },
     [navigate]
   );
