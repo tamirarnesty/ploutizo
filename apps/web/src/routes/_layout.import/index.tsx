@@ -15,7 +15,10 @@ export const Route = createFileRoute('/_layout/import/')({
     await Promise.all([
       context.queryClient.ensureQueryData(importTargetsQueryOptions),
       context.queryClient.ensureQueryData(importHistoryPageQueryOptions()),
-      context.queryClient.ensureQueryData(activeImportDraftsQueryOptions),
+      context.queryClient.fetchQuery({
+        ...activeImportDraftsQueryOptions,
+        staleTime: 0,
+      }),
     ]);
   },
   component: Import,

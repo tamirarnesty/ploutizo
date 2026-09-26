@@ -13,6 +13,8 @@ import type {
   ImportTargetAccount,
 } from '@ploutizo/types';
 import { useCreateImportDraft } from '@/lib/data-access/imports';
+import { getActiveQueryClient } from '@/lib/access/working-set-registry';
+import { invalidateActiveImportDraftsQuery } from '@/lib/data-access/imports/invalidateActiveImportDraftsQuery';
 import { importDraftReviewRoute } from '@/lib/navigation';
 import { getApiErrorMessage } from '@/lib/queryClient';
 import type { ReactNode } from 'react';
@@ -90,7 +92,9 @@ export const ImportUploadProvider = ({
 
   const goToDraftReview = useCallback(
     (draftId: string) => {
-      void navigate(importDraftReviewRoute(draftId));
+      void navigate(importDraftReviewRoute(draftId)).then(() => {
+        invalidateActiveImportDraftsQuery(getActiveQueryClient());
+      });
     },
     [navigate]
   );
