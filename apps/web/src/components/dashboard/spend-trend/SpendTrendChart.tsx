@@ -1,3 +1,4 @@
+import { format, isValid, parseISO } from 'date-fns';
 import { useMemo } from 'react';
 import {
   CartesianGrid,
@@ -40,6 +41,14 @@ const chartConfig = {
 const formatBucketLabel = (bucketStart: string): string => {
   const [, month, day] = bucketStart.split('-');
   return `${month}/${day}`;
+};
+
+const formatTooltipBucketLabel = (bucketStart: string): string => {
+  const parsed = parseISO(bucketStart);
+  if (isValid(parsed)) {
+    return format(parsed, 'MMM d, yyyy');
+  }
+  return formatBucketLabel(bucketStart);
 };
 
 export const SpendTrendChart = ({ data }: SpendTrendChartProps) => {
@@ -86,7 +95,19 @@ export const SpendTrendChart = ({ data }: SpendTrendChartProps) => {
             strokeWidth={1}
           />
         ) : null}
-        <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartTooltip
+          content={
+            <ChartTooltipContent
+              labelFormatter={(_label, payload) => {
+                const bucketStart = payload[0]?.payload?.bucketStart;
+                return typeof bucketStart === 'string'
+                  ? formatTooltipBucketLabel(bucketStart)
+                  : '';
+              }}
+              valueFormatter={(cents) => formatTrendCurrency(cents)}
+            />
+          }
+        />
         <Line
           type="monotone"
           dataKey="current"
@@ -105,7 +126,6 @@ export const SpendTrendChart = ({ data }: SpendTrendChartProps) => {
             strokeWidth={2}
             strokeDasharray="6 4"
             dot={false}
-            connectNulls
           />
         ) : null}
         {hasPriorSeries ? (
