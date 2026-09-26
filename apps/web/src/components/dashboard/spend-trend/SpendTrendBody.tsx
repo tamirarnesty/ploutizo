@@ -8,7 +8,6 @@ import {
   EmptyTitle,
 } from '@ploutizo/ui/components/empty';
 import { Text } from '@ploutizo/ui/components/text';
-import { formatCurrency } from '@ploutizo/utils/currency';
 import type { DashboardOverviewTrendPoint } from '@ploutizo/types';
 import { SpendTrendChart } from '@/components/dashboard/spend-trend/SpendTrendChart';
 
@@ -61,7 +60,4 @@ export const SpendTrendError = () => (
   </Text>
 );
 
-export const formatTrendCurrency = (amountCents: number): string =>
-  formatCurrency(amountCents, undefined, undefined, {
-    maximumFractionDigits: 0,
-  });
+export { formatTrendCurrency } from '@/components/dashboard/spend-trend/spendTrendChartUtils';

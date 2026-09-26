@@ -1,3 +1,5 @@
+import { formatCurrency } from '@ploutizo/utils/currency';
+
 export type SpendTrendChartPoint = {
   bucketStart: string;
   current: number;
@@ -21,3 +23,8 @@ export const spendTrendYDomain = (
   }
   return [min, max];
 };
+
+export const formatTrendCurrency = (amountCents: number): string =>
+  formatCurrency(amountCents, undefined, undefined, {
+    maximumFractionDigits: 0,
+  });

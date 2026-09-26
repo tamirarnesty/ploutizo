@@ -14,8 +14,8 @@ import {
   ChartTooltipContent,
 } from '@ploutizo/ui/components/chart';
 import type { ChartConfig } from '@ploutizo/ui/components/chart';
-import { formatTrendCurrency } from '@/components/dashboard/spend-trend/SpendTrendBody';
 import {
+  formatTrendCurrency,
   spendTrendHasPriorSeries,
   spendTrendYDomain,
 } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
@@ -69,7 +69,7 @@ const SpendTrendCompactLegend = () => (
         className="h-0.5 w-3 shrink-0 rounded-full bg-(--color-current)"
         aria-hidden
       />
-      This
+      {chartConfig.current.label}
     </span>
     <span aria-hidden>·</span>
     <span className="flex items-center gap-1.5">
@@ -77,7 +77,7 @@ const SpendTrendCompactLegend = () => (
         className="h-0 w-3 shrink-0 border-t-[1.5px] border-dashed border-(--color-prior)"
         aria-hidden
       />
-      Prior
+      {chartConfig.prior.label}
     </span>
   </div>
 );
@@ -132,6 +132,15 @@ export const SpendTrendChart = ({ data }: SpendTrendChartProps) => {
               }}
               formatter={(value, _name, item) => {
                 const dataKey = String(item.dataKey ?? item.name ?? '');
+                if (
+                  dataKey === 'prior' &&
+                  item.payload &&
+                  typeof item.payload === 'object' &&
+                  'prior' in item.payload &&
+                  item.payload.prior === null
+                ) {
+                  return null;
+                }
                 return (
                   <div className="flex w-full flex-1 items-center justify-between gap-4 leading-none">
                     <span className="text-muted-foreground">
