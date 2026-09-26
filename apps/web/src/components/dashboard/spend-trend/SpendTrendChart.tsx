@@ -25,6 +25,7 @@ import type { SpendTrendChartPoint } from '@/components/dashboard/spend-trend/sp
 
 type SpendTrendChartProps = {
   data: SpendTrendChartPoint[];
+  isAnimationActive?: boolean;
 };
 
 const chartConfig = {
@@ -51,7 +52,10 @@ const formatTooltipBucketLabel = (bucketStart: string): string => {
   return formatBucketLabel(bucketStart);
 };
 
-export const SpendTrendChart = ({ data }: SpendTrendChartProps) => {
+export const SpendTrendChart = ({
+  data,
+  isAnimationActive = true,
+}: SpendTrendChartProps) => {
   const hasPriorSeries = useMemo(() => spendTrendHasPriorSeries(data), [data]);
   const yDomain = useMemo(() => spendTrendYDomain(data), [data]);
   const showZeroReferenceLine = yDomain[0] < 0;
@@ -116,6 +120,7 @@ export const SpendTrendChart = ({ data }: SpendTrendChartProps) => {
           strokeWidth={2}
           dot={false}
           connectNulls
+          isAnimationActive={isAnimationActive}
         />
         {hasPriorSeries ? (
           <Line
@@ -126,6 +131,7 @@ export const SpendTrendChart = ({ data }: SpendTrendChartProps) => {
             strokeWidth={2}
             strokeDasharray="6 4"
             dot={false}
+            isAnimationActive={isAnimationActive}
           />
         ) : null}
         {hasPriorSeries ? (

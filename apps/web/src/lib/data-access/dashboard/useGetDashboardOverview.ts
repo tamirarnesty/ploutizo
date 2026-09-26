@@ -41,6 +41,7 @@ export const dashboardOverviewQueryOptions = (
   queryOptions({
     queryKey: ['dashboard-overview', ...overviewQueryKeyRange(range)],
     queryFn: ({ signal }) => fetchDashboardOverview(range, signal),
+    placeholderData: (previousData) => previousData,
   });
 
 export const useGetDashboardOverview = (

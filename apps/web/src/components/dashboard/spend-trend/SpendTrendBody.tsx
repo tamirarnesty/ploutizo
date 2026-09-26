@@ -13,6 +13,8 @@ import { SpendTrendChart } from '@/components/dashboard/spend-trend/SpendTrendCh
 
 type SpendTrendBodyProps = {
   trend: DashboardOverviewTrendPoint[] | undefined;
+  /** True while overview data has not arrived; shows chart shell instead of empty. */
+  isPending?: boolean;
 };
 
 const hasSpendActivity = (trend: DashboardOverviewTrendPoint[]): boolean =>
@@ -20,7 +22,10 @@ const hasSpendActivity = (trend: DashboardOverviewTrendPoint[]): boolean =>
     (point) => point.amountCents !== 0 || (point.priorAmountCents ?? 0) !== 0
   );
 
-export const SpendTrendBody = ({ trend }: SpendTrendBodyProps) => {
+export const SpendTrendBody = ({
+  trend,
+  isPending = false,
+}: SpendTrendBodyProps) => {
   const chartData = useMemo(
     () =>
       (trend ?? []).map((point) => ({
@@ -30,6 +35,10 @@ export const SpendTrendBody = ({ trend }: SpendTrendBodyProps) => {
       })),
     [trend]
   );
+
+  if (isPending) {
+    return <SpendTrendChart data={[]} isAnimationActive={false} />;
+  }
 
   if (!trend || !hasSpendActivity(trend)) {
     return (
@@ -47,7 +56,7 @@ export const SpendTrendBody = ({ trend }: SpendTrendBodyProps) => {
     );
   }
 
-  return <SpendTrendChart data={chartData} />;
+  return <SpendTrendChart data={chartData} isAnimationActive />;
 };
 
 export const SpendTrendError = () => (
