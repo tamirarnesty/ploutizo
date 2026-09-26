@@ -9,8 +9,33 @@ import type {
   OrgMember,
   SettlementAccountRow,
 } from '@ploutizo/types';
+import type {
+  DashboardPeriodSelection,
+  ResolvedDashboardPeriod,
+} from '@ploutizo/utils/dashboard-period';
 import { Dashboard } from '@/components/dashboard/Dashboard';
 import { settlementMember } from '@/test/settlementFixtures';
+
+const periodMocks = vi.hoisted(() => ({
+  selection: {
+    kind: 'shortcut',
+    shortcut: 'mtd',
+  } as DashboardPeriodSelection,
+  resolved: {
+    kind: 'ranged',
+    from: '2026-03-01',
+    to: '2026-03-24',
+    priorFrom: '2026-02-01',
+    priorTo: '2026-02-24',
+  } as ResolvedDashboardPeriod,
+  label: 'MTD',
+  selectShortcut: vi.fn(),
+  applyCustomRange: vi.fn(),
+}));
+
+vi.mock('@/components/dashboard/useDashboardPeriod', () => ({
+  useDashboardPeriod: () => periodMocks,
+}));
 
 const toastMocks = vi.hoisted(() => ({ error: vi.fn() }));
 
@@ -126,6 +151,20 @@ const holdRequests = () => {
     requestGate = null;
     release();
   };
+};
+
+const overviewMatchesPeriod = (url: string) => {
+  const resolved = periodMocks.resolved;
+  if (resolved.kind === 'all') {
+    return url.includes(OVERVIEW_PATH) && !url.includes('from=');
+  }
+  const { from, to, priorFrom, priorTo } = resolved;
+  return (
+    url.includes(`from=${from}`) &&
+    url.includes(`to=${to}`) &&
+    url.includes(`priorFrom=${priorFrom}`) &&
+    url.includes(`priorTo=${priorTo}`)
+  );
 };
 
 const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
@@ -329,6 +368,74 @@ describe('Dashboard', () => {
     expect(
       within(cardFor('Settlement')).getByText('Personal')
     ).toBeInTheDocument();
+  });
+
+  it('requests overview for the active dashboard period', async () => {
+    renderDashboard();
+    await screen.findByText('Spend trend');
+
+    const overviewCall = fetchMock.mock.calls.find((call) =>
+      String(call[0]).includes(OVERVIEW_PATH)
+    );
+    expect(overviewCall).toBeDefined();
+    expect(overviewMatchesPeriod(String(overviewCall![0]))).toBe(true);
+  });
+
+  it('hides the prior spend trend series for All', async () => {
+    periodMocks.selection = {
+      kind: 'shortcut',
+      shortcut: 'all',
+    } as DashboardPeriodSelection;
+    periodMocks.resolved = { kind: 'all' };
+    periodMocks.label = 'All';
+
+    const allOverview = {
+      meta: {
+        range: {
+          from: '2026-01-01',
+          to: '2026-03-01',
+          priorFrom: '',
+          priorTo: '',
+        },
+      },
+      trend: [
+        {
+          bucketStart: '2026-01-01',
+          amountCents: 100,
+          priorAmountCents: null,
+        },
+        {
+          bucketStart: '2026-02-01',
+          amountCents: 200,
+          priorAmountCents: null,
+        },
+      ],
+    };
+
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      await requestGate;
+      if (url.includes(OVERVIEW_PATH)) {
+        return jsonResponse(allOverview);
+      }
+      const path = [SETTLEMENTS_PATH, MEMBERS_PATH].find((p) =>
+        url.includes(p)
+      );
+      if (!path) throw new Error(`Unexpected request: ${url}`);
+      if (failingPaths.has(path)) {
+        return jsonResponse(
+          { error: { code: 'SERVER_ERROR', message: 'boom' } },
+          500
+        );
+      }
+      return jsonResponse(
+        path === SETTLEMENTS_PATH ? settlementsBody : { data: membersBody }
+      );
+    });
+
+    renderDashboard();
+    await screen.findByText('Spend trend');
+    expect(screen.queryByText('Last month')).not.toBeInTheDocument();
   });
 
   it.each(['Card Balances', 'Settlement'])(

@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from '@ploutizo/ui/components/sonner';
-import { toCalendarDate } from '@ploutizo/utils/dashboard-period';
 import type { OrgMember } from '@ploutizo/types';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';
 import type { CardBalanceRowViewModel } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
@@ -13,6 +12,7 @@ import { selectCreditCardAccounts } from '@/lib/settlements';
 import { CardBalancesGrid } from '@/components/dashboard/card-balances/CardBalancesGrid';
 import { SpendTrendCard } from '@/components/dashboard/spend-trend/SpendTrendCard';
 import { DashboardHeader } from './DashboardHeader';
+import { useDashboardPeriod } from './useDashboardPeriod';
 import { SettleDialog } from './SettleDialog';
 import { SettlementSummaryPane } from './SettlementSummaryPane';
 
@@ -20,8 +20,14 @@ const NO_MEMBERS: OrgMember[] = [];
 
 // All queries fire at top level — no waterfalls (vercel-react-best-practices).
 export const Dashboard = () => {
-  // Re-read every render so a tab left open rolls into the new day on its next refresh.
-  const overviewQuery = useGetDashboardOverview(toCalendarDate(new Date()));
+  const {
+    selection: periodSelection,
+    resolved: period,
+    label: periodLabel,
+    selectShortcut,
+    applyCustomRange,
+  } = useDashboardPeriod();
+  const overviewQuery = useGetDashboardOverview(period);
   const { refetch: refetchOverview } = overviewQuery;
   const {
     data: settlements,
@@ -100,6 +106,10 @@ export const Dashboard = () => {
   return (
     <div className="space-y-6">
       <DashboardHeader
+        periodLabel={periodLabel}
+        periodSelection={periodSelection}
+        onSelectShortcut={selectShortcut}
+        onApplyCustomRange={applyCustomRange}
         onRefresh={handleRefresh}
         isRefreshing={isRefreshing || liveSectionsLoading}
       />

@@ -21,10 +21,17 @@ export type SpendTrendBucketRow = {
 
 export const fetchDailyNetSpend = async (
   orgId: string,
-  input: { from: string; to: string },
+  input: { from?: string; to?: string },
   client: DbClient = db
 ): Promise<SpendTrendBucketRow[]> => {
   const bucketStart = dayBucketSql.as('bucket_start');
+  const dateFilters = [
+    input.from ? gte(transactions.date, input.from) : undefined,
+    input.to ? lte(transactions.date, input.to) : undefined,
+  ].filter(
+    (filter): filter is NonNullable<typeof filter> => filter !== undefined
+  );
+
   return client
     .select({
       bucketStart,
@@ -36,8 +43,7 @@ export const fetchDailyNetSpend = async (
         eq(transactions.orgId, orgId),
         isNull(transactions.deletedAt),
         sql`${transactions.type} in ('expense', 'refund')`,
-        gte(transactions.date, input.from),
-        lte(transactions.date, input.to)
+        ...dateFilters
       )
     )
     .groupBy(bucketStart)

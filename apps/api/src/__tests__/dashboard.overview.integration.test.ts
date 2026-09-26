@@ -47,6 +47,16 @@ const seedAccount = async (orgId: string) => {
   return account.id;
 };
 
+const overviewQuery = (range: {
+  from: string;
+  to: string;
+  priorFrom: string;
+  priorTo: string;
+}) => {
+  const params = new URLSearchParams(range);
+  return `/dashboard/overview?${params.toString()}`;
+};
+
 const insertTxn = async (
   orgId: string,
   accountId: string,
@@ -125,7 +135,12 @@ describe.runIf(Boolean(process.env.DATABASE_URL))(
       });
 
       const res = await app.request(
-        '/dashboard/overview?from=2026-03-01&to=2026-03-31'
+        overviewQuery({
+          from: '2026-03-01',
+          to: '2026-03-31',
+          priorFrom: '2026-02-01',
+          priorTo: '2026-02-28',
+        })
       );
       expect(res.status).toBe(200);
       const body = (await res.json()) as GetDashboardOverviewResponse;
@@ -146,7 +161,12 @@ describe.runIf(Boolean(process.env.DATABASE_URL))(
       });
 
       const res = await app.request(
-        '/dashboard/overview?from=2026-03-01&to=2026-03-31'
+        overviewQuery({
+          from: '2026-03-01',
+          to: '2026-03-31',
+          priorFrom: '2026-02-01',
+          priorTo: '2026-02-28',
+        })
       );
       const body = (await res.json()) as GetDashboardOverviewResponse;
       const day = body.trend.find((row) => row.bucketStart === '2026-03-05');
@@ -155,7 +175,12 @@ describe.runIf(Boolean(process.env.DATABASE_URL))(
 
     it('returns the prior month-to-date window in meta', async () => {
       const res = await app.request(
-        '/dashboard/overview?from=2026-03-01&to=2026-03-15'
+        overviewQuery({
+          from: '2026-03-01',
+          to: '2026-03-15',
+          priorFrom: '2026-02-01',
+          priorTo: '2026-02-15',
+        })
       );
       expect(res.status).toBe(200);
       const body = (await res.json()) as GetDashboardOverviewResponse;
@@ -170,7 +195,12 @@ describe.runIf(Boolean(process.env.DATABASE_URL))(
 
     it('has no prior amount past the end of a shorter prior month', async () => {
       const res = await app.request(
-        '/dashboard/overview?from=2026-03-01&to=2026-03-31'
+        overviewQuery({
+          from: '2026-03-01',
+          to: '2026-03-31',
+          priorFrom: '2026-02-01',
+          priorTo: '2026-02-28',
+        })
       );
       const body = (await res.json()) as GetDashboardOverviewResponse;
       expect(body.trend.at(27)?.priorAmountCents).toBe(0);
@@ -191,7 +221,12 @@ describe.runIf(Boolean(process.env.DATABASE_URL))(
       });
 
       const res = await app.request(
-        '/dashboard/overview?from=2026-04-01&to=2026-04-30'
+        overviewQuery({
+          from: '2026-04-01',
+          to: '2026-04-30',
+          priorFrom: '2026-03-01',
+          priorTo: '2026-03-30',
+        })
       );
       const body = (await res.json()) as GetDashboardOverviewResponse;
       const total = body.trend.reduce((sum, row) => sum + row.amountCents, 0);
@@ -203,17 +238,43 @@ describe.runIf(Boolean(process.env.DATABASE_URL))(
       expect(partial.status).toBe(400);
 
       const invalid = await app.request(
-        '/dashboard/overview?from=2026-13-40&to=2026-01-31'
+        '/dashboard/overview?from=2026-13-40&to=2026-01-31&priorFrom=2026-01-01&priorTo=2026-01-31'
       );
       expect(invalid.status).toBe(400);
 
-      const missing = await app.request('/dashboard/overview');
-      expect(missing.status).toBe(400);
-
-      const notMonthToDate = await app.request(
+      const missingPrior = await app.request(
         '/dashboard/overview?from=2026-03-05&to=2026-03-20'
       );
-      expect(notMonthToDate.status).toBe(400);
+      expect(missingPrior.status).toBe(400);
+    });
+
+    it('returns all-time monthly buckets when no range is provided', async () => {
+      await insertTxn(TEST_HOUSEHOLD_PRINCIPAL.activeHouseholdId, accountId, {
+        type: 'expense',
+        amount: 500,
+        date: '2026-01-15',
+      });
+      await insertTxn(TEST_HOUSEHOLD_PRINCIPAL.activeHouseholdId, accountId, {
+        type: 'expense',
+        amount: 700,
+        date: '2026-02-10',
+      });
+
+      const res = await app.request('/dashboard/overview');
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as GetDashboardOverviewResponse;
+      expect(body.trend).toEqual([
+        {
+          bucketStart: '2026-01-01',
+          amountCents: 500,
+          priorAmountCents: null,
+        },
+        {
+          bucketStart: '2026-02-01',
+          amountCents: 700,
+          priorAmountCents: null,
+        },
+      ]);
     });
 
     it('maps prior-period amounts onto the current buckets by index', async () => {
@@ -229,7 +290,12 @@ describe.runIf(Boolean(process.env.DATABASE_URL))(
       });
 
       const res = await app.request(
-        '/dashboard/overview?from=2026-03-01&to=2026-03-05'
+        overviewQuery({
+          from: '2026-03-01',
+          to: '2026-03-05',
+          priorFrom: '2026-02-01',
+          priorTo: '2026-02-05',
+        })
       );
       const body = (await res.json()) as GetDashboardOverviewResponse;
       const marchThird = body.trend.find(
