@@ -10,11 +10,10 @@ import type {
 } from '@ploutizo/utils/dashboard-period';
 import type {
   DashboardOverviewBucket,
-  DashboardOverviewTrendPoint,
   GetDashboardOverviewResponse,
 } from '@ploutizo/types';
 
-export type SpendTrendChartPoint = {
+type SpendTrendChartPoint = {
   bucketStart: string;
   current: number;
   prior: number | null;
@@ -26,9 +25,7 @@ export type SpendTrendSegmentedPoint = SpendTrendChartPoint & {
   partial: number | null;
 };
 
-export type PartialMonthEdges = { first: boolean; last: boolean };
-
-const NO_PARTIAL_EDGES: PartialMonthEdges = { first: false, last: false };
+type PartialMonthEdges = { first: boolean; last: boolean };
 
 /**
  * Month buckets the chart only partly covers: the first when the range starts mid-month, and the last when that
@@ -39,7 +36,7 @@ export const partialMonthEdges = (
   through: string
 ): PartialMonthEdges => {
   if (meta.bucket !== 'month' || !meta.range) {
-    return NO_PARTIAL_EDGES;
+    return { first: false, last: false };
   }
   const lastMonthEnd = toCalendarDate(
     endOfMonth(parseCalendarDate(meta.range.to))
@@ -106,10 +103,11 @@ export const spendTrendCaption = (
  * A comparison charts running totals, so each point reads "spent so far" against the prior window.
  * Without one, each point is that bucket's own spend.
  */
-export const toSpendTrendChartData = (
-  trend: DashboardOverviewTrendPoint[]
-): SpendTrendChartPoint[] => {
-  if (trend.every((point) => point.priorAmountCents === null)) {
+export const toSpendTrendChartData = ({
+  meta,
+  trend,
+}: GetDashboardOverviewResponse): SpendTrendChartPoint[] => {
+  if (meta.prior === null) {
     return trend.map((point) => ({
       bucketStart: point.bucketStart,
       current: point.amountCents,
@@ -131,10 +129,6 @@ export const toSpendTrendChartData = (
     };
   });
 };
-
-export const spendTrendHasPriorSeries = (
-  data: SpendTrendChartPoint[]
-): boolean => data.some((point) => point.prior !== null);
 
 export const spendTrendYDomain = (
   data: SpendTrendChartPoint[]

@@ -28,13 +28,13 @@ const mtdPeriodMocks = () => ({
     bucket: 'day',
     prior: { from: '2026-02-01', to: '2026-02-24' },
   } as ResolvedDashboardPeriod,
-  label: 'Mar 1 – Mar 24, 2026',
+  today: '2026-03-24',
 });
 
 const periodMocks = vi.hoisted(() => ({
   selection: undefined as unknown as DashboardPeriodSelection,
   resolved: undefined as unknown as ResolvedDashboardPeriod,
-  label: '',
+  today: '',
   selectShortcut: vi.fn(),
   applyCustomRange: vi.fn(),
 }));
@@ -141,6 +141,7 @@ const jsonResponse = (body: unknown, status = 200) =>
 
 let settlementsBody = settlements;
 let membersBody = members;
+let overviewBody: unknown = emptyOverview;
 const failingPaths = new Set<string>();
 let requestGate: Promise<void> | null = null;
 
@@ -154,21 +155,6 @@ const holdRequests = () => {
     requestGate = null;
     release();
   };
-};
-
-const overviewMatchesPeriod = (url: string) => {
-  const resolved = periodMocks.resolved;
-  if (resolved.kind === 'all') {
-    return url.includes(OVERVIEW_PATH) && !url.includes('from=');
-  }
-  const { from, to, bucket, prior } = resolved;
-  return (
-    url.includes(`from=${from}`) &&
-    url.includes(`to=${to}`) &&
-    url.includes(`bucket=${bucket}`) &&
-    url.includes(`priorFrom=${prior?.from}`) &&
-    url.includes(`priorTo=${prior?.to}`)
-  );
 };
 
 const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
@@ -189,7 +175,7 @@ const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       ? settlementsBody
       : path === MEMBERS_PATH
         ? { data: membersBody }
-        : emptyOverview
+        : overviewBody
   );
 });
 
@@ -228,6 +214,7 @@ describe('Dashboard', () => {
     Object.assign(periodMocks, mtdPeriodMocks());
     settlementsBody = settlements;
     membersBody = members;
+    overviewBody = emptyOverview;
     failingPaths.clear();
     requestGate = null;
     fetchMock.mockClear();
@@ -385,8 +372,9 @@ describe('Dashboard', () => {
     const overviewCall = fetchMock.mock.calls.find((call) =>
       String(call[0]).includes(OVERVIEW_PATH)
     );
-    expect(overviewCall).toBeDefined();
-    expect(overviewMatchesPeriod(String(overviewCall![0]))).toBe(true);
+    expect(String(overviewCall?.[0])).toContain(
+      `${OVERVIEW_PATH}?from=2026-03-01&to=2026-03-24&bucket=day&priorFrom=2026-02-01&priorTo=2026-02-24`
+    );
   });
 
   it('hides the prior spend trend series for All', async () => {
@@ -395,9 +383,7 @@ describe('Dashboard', () => {
       shortcut: 'all',
     } as DashboardPeriodSelection;
     periodMocks.resolved = { kind: 'all' };
-    periodMocks.label = 'All time';
-
-    const allOverview = {
+    overviewBody = {
       meta: {
         range: { from: '2026-01-01', to: '2026-03-01' },
         prior: null,
@@ -416,27 +402,6 @@ describe('Dashboard', () => {
         },
       ],
     };
-
-    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      await requestGate;
-      if (url.includes(OVERVIEW_PATH)) {
-        return jsonResponse(allOverview);
-      }
-      const path = [SETTLEMENTS_PATH, MEMBERS_PATH].find((p) =>
-        url.includes(p)
-      );
-      if (!path) throw new Error(`Unexpected request: ${url}`);
-      if (failingPaths.has(path)) {
-        return jsonResponse(
-          { error: { code: 'SERVER_ERROR', message: 'boom' } },
-          500
-        );
-      }
-      return jsonResponse(
-        path === SETTLEMENTS_PATH ? settlementsBody : { data: membersBody }
-      );
-    });
 
     renderDashboard();
     expect(await screen.findByText('Spend per month')).toBeInTheDocument();

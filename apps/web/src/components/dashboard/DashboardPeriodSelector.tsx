@@ -1,9 +1,11 @@
 import { CalendarDays } from 'lucide-react';
-import { format, max, startOfMonth, subMonths } from 'date-fns';
-import { useEffect, useRef, useState } from 'react';
+import { max, startOfMonth, subMonths } from 'date-fns';
+import { useState } from 'react';
 import {
   DASHBOARD_PERIOD_SHORTCUTS,
+  formatDashboardPeriodLabel,
   parseCalendarDate,
+  toCalendarDate,
 } from '@ploutizo/utils/dashboard-period';
 import { Button } from '@ploutizo/ui/components/button';
 import { Calendar } from '@ploutizo/ui/components/calendar';
@@ -34,7 +36,6 @@ const SHORTCUT_LABELS: Record<DashboardPeriodShortcut, string> = {
 type DashboardPeriodSelectorProps = {
   selection: DashboardPeriodSelection;
   period: ResolvedDashboardPeriod;
-  label: string;
   onSelectShortcut: (shortcut: DashboardPeriodShortcut) => void;
   onApplyCustomRange: (from: string, to: string) => void;
 };
@@ -55,28 +56,27 @@ const calendarStartMonth = (range: DateRange | undefined): Date | undefined =>
 export const DashboardPeriodSelector = ({
   selection,
   period,
-  label,
   onSelectShortcut,
   onApplyCustomRange,
 }: DashboardPeriodSelectorProps) => {
   const [open, setOpen] = useState(false);
   const committed = committedRange(period);
   const [pending, setPending] = useState<DateRange | undefined>(committed);
-  const prevOpen = useRef(false);
+  const label = formatDashboardPeriodLabel(period);
 
-  useEffect(() => {
-    if (open && !prevOpen.current) {
+  const handleOpenChange = (next: boolean) => {
+    if (next) {
       setPending(committed);
     }
-    prevOpen.current = open;
-  }, [open, committed]);
+    setOpen(next);
+  };
 
   const activeShortcut =
     selection.kind === 'shortcut' ? selection.shortcut : undefined;
 
   const handleApply = () => {
-    const from = pending?.from ? format(pending.from, 'yyyy-MM-dd') : '';
-    const to = pending?.to ? format(pending.to, 'yyyy-MM-dd') : '';
+    const from = pending?.from ? toCalendarDate(pending.from) : '';
+    const to = pending?.to ? toCalendarDate(pending.to) : '';
     if (!from || !to || from > to) {
       return;
     }
@@ -85,7 +85,6 @@ export const DashboardPeriodSelector = ({
   };
 
   const handleCancel = () => {
-    setPending(committed);
     setOpen(false);
   };
 
@@ -114,7 +113,7 @@ export const DashboardPeriodSelector = ({
         ))}
       </ToggleGroup>
 
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={handleOpenChange}>
         <PopoverTrigger
           render={
             <Button

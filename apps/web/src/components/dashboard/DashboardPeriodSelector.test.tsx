@@ -28,7 +28,6 @@ describe('DashboardPeriodSelector', () => {
       <DashboardPeriodSelector
         selection={{ kind: 'shortcut', shortcut: 'mtd' }}
         period={MTD_PERIOD}
-        label="Mar 1 – Mar 24, 2026"
         onSelectShortcut={vi.fn()}
         onApplyCustomRange={onApplyCustomRange}
       />
@@ -61,7 +60,6 @@ describe('DashboardPeriodSelector', () => {
       <DashboardPeriodSelector
         selection={{ kind: 'shortcut', shortcut: 'mtd' }}
         period={MTD_PERIOD}
-        label="Mar 1 – Mar 24, 2026"
         onSelectShortcut={onSelectShortcut}
         onApplyCustomRange={vi.fn()}
       />

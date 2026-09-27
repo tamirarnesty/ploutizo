@@ -32,20 +32,20 @@ const hasSpendActivity = (trend: DashboardOverviewTrendPoint[]): boolean =>
   );
 
 export const SpendTrendBody = ({
-  overview: { meta, trend },
+  overview,
   through,
   seriesLabels,
 }: SpendTrendBodyProps) => {
   const chartData = useMemo(
     () =>
       segmentPartialMonths(
-        toSpendTrendChartData(trend),
-        partialMonthEdges(meta, through)
+        toSpendTrendChartData(overview),
+        partialMonthEdges(overview.meta, through)
       ),
-    [meta, trend, through]
+    [overview, through]
   );
 
-  if (!hasSpendActivity(trend)) {
+  if (!hasSpendActivity(overview.trend)) {
     return (
       <Empty className="border-0 py-8">
         <EmptyHeader>
@@ -64,7 +64,8 @@ export const SpendTrendBody = ({
   return (
     <SpendTrendChart
       data={chartData}
-      bucket={meta.bucket}
+      bucket={overview.meta.bucket}
+      hasPriorSeries={overview.meta.prior !== null}
       seriesLabels={seriesLabels}
     />
   );

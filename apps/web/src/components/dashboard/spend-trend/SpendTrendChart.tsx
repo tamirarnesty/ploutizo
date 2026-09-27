@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import {
   CartesianGrid,
   Line,
@@ -19,7 +18,6 @@ import type { DashboardOverviewBucket } from '@ploutizo/types';
 import {
   formatTrendBucket,
   formatTrendCurrency,
-  spendTrendHasPriorSeries,
   spendTrendYDomain,
 } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
 import type {
@@ -30,26 +28,21 @@ import type {
 type SpendTrendChartProps = {
   data: SpendTrendSegmentedPoint[];
   bucket: DashboardOverviewBucket;
+  hasPriorSeries: boolean;
   seriesLabels: SpendTrendSeriesLabels;
 };
-
-const chartConfigFor = (labels: SpendTrendSeriesLabels) =>
-  ({
-    current: { label: labels.current, color: 'var(--chart-1)' },
-    prior: { label: labels.prior, color: 'var(--chart-2)' },
-  }) satisfies ChartConfig;
 
 export const SpendTrendChart = ({
   data,
   bucket,
+  hasPriorSeries,
   seriesLabels,
 }: SpendTrendChartProps) => {
-  const chartConfig = useMemo(
-    () => chartConfigFor(seriesLabels),
-    [seriesLabels]
-  );
-  const hasPriorSeries = useMemo(() => spendTrendHasPriorSeries(data), [data]);
-  const yDomain = useMemo(() => spendTrendYDomain(data), [data]);
+  const chartConfig = {
+    current: { label: seriesLabels.current, color: 'var(--chart-1)' },
+    prior: { label: seriesLabels.prior, color: 'var(--chart-2)' },
+  } satisfies ChartConfig;
+  const yDomain = spendTrendYDomain(data);
 
   return (
     <ChartContainer
@@ -131,17 +124,17 @@ export const SpendTrendChart = ({
           legendType="none"
         />
         {hasPriorSeries ? (
-          <Line
-            type="monotone"
-            dataKey="prior"
-            stroke="var(--color-prior)"
-            strokeWidth={2}
-            strokeDasharray="6 4"
-            dot={false}
-          />
-        ) : null}
-        {hasPriorSeries ? (
-          <ChartLegend content={<ChartLegendContent />} />
+          <>
+            <Line
+              type="monotone"
+              dataKey="prior"
+              stroke="var(--color-prior)"
+              strokeWidth={2}
+              strokeDasharray="6 4"
+              dot={false}
+            />
+            <ChartLegend content={<ChartLegendContent />} />
+          </>
         ) : null}
       </RechartsLineChart>
     </ChartContainer>

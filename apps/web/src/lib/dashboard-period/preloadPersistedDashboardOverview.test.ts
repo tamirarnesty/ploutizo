@@ -1,6 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { DASHBOARD_PERIOD_STORAGE_KEY } from '@/lib/dashboard-period/constants';
+import { DASHBOARD_PERIOD_STORAGE_KEY } from '@/lib/dashboard-period/storage';
 import { preloadPersistedDashboardOverview } from '@/lib/dashboard-period/preloadPersistedDashboardOverview';
 
 vi.mock('@/lib/data-access/dashboard', () => ({
@@ -19,7 +19,7 @@ describe('preloadPersistedDashboardOverview', () => {
   it('prefetches overview for the persisted period when the URL is empty', async () => {
     window.localStorage.setItem(
       DASHBOARD_PERIOD_STORAGE_KEY,
-      JSON.stringify({ kind: 'shortcut', shortcut: '30d' })
+      JSON.stringify({ range: '30d' })
     );
 
     const queryClient = new QueryClient();

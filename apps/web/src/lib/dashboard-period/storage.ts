@@ -1,46 +1,13 @@
-import { DASHBOARD_PERIOD_SHORTCUTS } from '@ploutizo/utils/dashboard-period';
-import type {
-  DashboardPeriodSelection,
-  DashboardPeriodShortcut,
+import {
+  dashboardSearchFromSelection,
+  parseDashboardPeriodSearch,
+  selectionFromDashboardSearch,
 } from '@ploutizo/utils/dashboard-period';
-import { DASHBOARD_PERIOD_STORAGE_KEY } from '@/lib/dashboard-period/constants';
+import type { DashboardPeriodSelection } from '@ploutizo/utils/dashboard-period';
 
-const isCalendarDate = (value: unknown): value is string =>
-  typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
+export const DASHBOARD_PERIOD_STORAGE_KEY = 'ploutizo:dashboard-period';
 
-const parsePersisted = (raw: string): DashboardPeriodSelection | null => {
-  try {
-    const value = JSON.parse(raw) as unknown;
-    if (!value || typeof value !== 'object' || !('kind' in value)) {
-      return null;
-    }
-    const record = value as { kind?: unknown };
-    if (record.kind === 'shortcut') {
-      const shortcut = (value as { shortcut?: unknown }).shortcut;
-      if (
-        typeof shortcut !== 'string' ||
-        !(DASHBOARD_PERIOD_SHORTCUTS as readonly string[]).includes(shortcut)
-      ) {
-        return null;
-      }
-      return {
-        kind: 'shortcut',
-        shortcut: shortcut as DashboardPeriodShortcut,
-      };
-    }
-    if (record.kind !== 'custom') {
-      return null;
-    }
-    const { from, to } = value as { from?: unknown; to?: unknown };
-    if (!isCalendarDate(from) || !isCalendarDate(to) || from > to) {
-      return null;
-    }
-    return { kind: 'custom', from, to };
-  } catch {
-    return null;
-  }
-};
-
+/** Stored in URL search shape so it is read back through the same validation as the URL. */
 export const readPersistedDashboardPeriod =
   (): DashboardPeriodSelection | null => {
     if (typeof window === 'undefined') {
@@ -50,7 +17,17 @@ export const readPersistedDashboardPeriod =
     if (!raw) {
       return null;
     }
-    return parsePersisted(raw);
+    try {
+      const value = JSON.parse(raw) as unknown;
+      if (!value || typeof value !== 'object') {
+        return null;
+      }
+      return selectionFromDashboardSearch(
+        parseDashboardPeriodSearch(value as Record<string, unknown>)
+      );
+    } catch {
+      return null;
+    }
   };
 
 export const persistDashboardPeriod = (selection: DashboardPeriodSelection) => {
@@ -59,6 +36,6 @@ export const persistDashboardPeriod = (selection: DashboardPeriodSelection) => {
   }
   window.localStorage.setItem(
     DASHBOARD_PERIOD_STORAGE_KEY,
-    JSON.stringify(selection)
+    JSON.stringify(dashboardSearchFromSelection(selection))
   );
 };

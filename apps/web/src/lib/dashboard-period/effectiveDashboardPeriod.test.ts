@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { resolveEffectiveDashboardPeriod } from '@/lib/dashboard-period/effectiveDashboardPeriod';
-import { DASHBOARD_PERIOD_STORAGE_KEY } from '@/lib/dashboard-period/constants';
+import { DASHBOARD_PERIOD_STORAGE_KEY } from '@/lib/dashboard-period/storage';
 
 describe('resolveEffectiveDashboardPeriod', () => {
   beforeEach(() => {
@@ -10,7 +10,7 @@ describe('resolveEffectiveDashboardPeriod', () => {
   it('prefers URL search params over localStorage', () => {
     window.localStorage.setItem(
       DASHBOARD_PERIOD_STORAGE_KEY,
-      JSON.stringify({ kind: 'shortcut', shortcut: 'all' })
+      JSON.stringify({ range: 'all' })
     );
 
     expect(resolveEffectiveDashboardPeriod({ range: '30d' })).toEqual({
@@ -23,7 +23,6 @@ describe('resolveEffectiveDashboardPeriod', () => {
     window.localStorage.setItem(
       DASHBOARD_PERIOD_STORAGE_KEY,
       JSON.stringify({
-        kind: 'custom',
         from: '2026-01-01',
         to: '2026-01-15',
       })
@@ -46,7 +45,7 @@ describe('resolveEffectiveDashboardPeriod', () => {
   it('ignores invalid URL params and uses localStorage', () => {
     window.localStorage.setItem(
       DASHBOARD_PERIOD_STORAGE_KEY,
-      JSON.stringify({ kind: 'shortcut', shortcut: 'ytd' })
+      JSON.stringify({ range: 'ytd' })
     );
 
     expect(

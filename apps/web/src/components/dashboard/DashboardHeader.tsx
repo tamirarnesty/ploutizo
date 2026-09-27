@@ -15,7 +15,6 @@ import type {
 import { DashboardPeriodSelector } from '@/components/dashboard/DashboardPeriodSelector';
 
 type DashboardHeaderProps = {
-  periodLabel: string;
   periodSelection: DashboardPeriodSelection;
   period: ResolvedDashboardPeriod;
   onSelectShortcut: (shortcut: DashboardPeriodShortcut) => void;
@@ -27,7 +26,6 @@ type DashboardHeaderProps = {
 
 /** One Refresh for the whole page — individual cards never own a refresh control. */
 export const DashboardHeader = ({
-  periodLabel,
   periodSelection,
   period,
   onSelectShortcut,
@@ -43,7 +41,6 @@ export const DashboardHeader = ({
       <DashboardPeriodSelector
         selection={periodSelection}
         period={period}
-        label={periodLabel}
         onSelectShortcut={onSelectShortcut}
         onApplyCustomRange={onApplyCustomRange}
       />

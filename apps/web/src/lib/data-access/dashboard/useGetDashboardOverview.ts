@@ -22,27 +22,22 @@ const overviewSearch = (period: ResolvedDashboardPeriod): string => {
   }).toString();
 };
 
-const overviewQueryKey = (period: ResolvedDashboardPeriod) =>
-  [...dashboardOverviewQueryKey, overviewSearch(period) || 'all'] as const;
-
-const overviewRequestPath = (period: ResolvedDashboardPeriod) => {
-  const search = overviewSearch(period);
-  return search
-    ? `/api/dashboard/overview?${search}`
-    : '/api/dashboard/overview';
-};
-
 export const dashboardOverviewQueryOptions = (
   period: ResolvedDashboardPeriod
-) =>
-  queryOptions({
-    queryKey: overviewQueryKey(period),
+) => {
+  const search = overviewSearch(period);
+  return queryOptions({
+    queryKey: [...dashboardOverviewQueryKey, search || 'all'],
     queryFn: ({ signal }) =>
-      apiFetch<GetDashboardOverviewResponse>(overviewRequestPath(period), {
-        signal,
-      }),
+      apiFetch<GetDashboardOverviewResponse>(
+        search
+          ? `/api/dashboard/overview?${search}`
+          : '/api/dashboard/overview',
+        { signal }
+      ),
     placeholderData: (previousData) => previousData,
   });
+};
 
 export const useGetDashboardOverview = (
   period: ResolvedDashboardPeriod

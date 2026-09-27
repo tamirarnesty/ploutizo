@@ -1,8 +1,7 @@
 import {
-  addMonths,
   differenceInCalendarDays,
   eachDayOfInterval,
-  endOfMonth,
+  eachMonthOfInterval,
   format,
   getDate,
   getDaysInMonth,
@@ -62,23 +61,8 @@ export const parseCalendarDate = (value: string): Date =>
   parse(value, CALENDAR_DATE_PATTERN, new Date());
 
 const isCalendarDate = (value: string): boolean => {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-  const parsed = parse(value, CALENDAR_DATE_PATTERN, new Date());
-  if (Number.isNaN(parsed.getTime())) return false;
-  return toCalendarDate(parsed) === value;
-};
-
-const inclusiveDayCount = (from: string, to: string): number =>
-  differenceInCalendarDays(parseCalendarDate(to), parseCalendarDate(from)) + 1;
-
-const previousEqualLengthRange = (
-  from: string,
-  to: string
-): DashboardOverviewRange => {
-  const days = inclusiveDayCount(from, to);
-  const priorTo = subDays(parseCalendarDate(from), 1);
-  const priorFrom = subDays(priorTo, days - 1);
-  return { from: toCalendarDate(priorFrom), to: toCalendarDate(priorTo) };
+  const parsed = parseCalendarDate(value);
+  return !Number.isNaN(parsed.getTime()) && toCalendarDate(parsed) === value;
 };
 
 /** Month to date through `today`, compared with the same days of the previous month (clamped to its length). */
@@ -113,11 +97,16 @@ const resolveYearToDateRange = (today: Date): RangedDashboardPeriod => {
   };
 };
 
-const resolveRolling30DayRange = (today: Date): RangedDashboardPeriod => {
-  const to = toCalendarDate(today);
-  const from = toCalendarDate(subDays(today, 29));
-  return { from, to, bucket: 'day', prior: previousEqualLengthRange(from, to) };
-};
+/** Last 30 days through `today`, compared with the 30 days before them. */
+const resolveRolling30DayRange = (today: Date): RangedDashboardPeriod => ({
+  from: toCalendarDate(subDays(today, 29)),
+  to: toCalendarDate(today),
+  bucket: 'day',
+  prior: {
+    from: toCalendarDate(subDays(today, 59)),
+    to: toCalendarDate(subDays(today, 30)),
+  },
+});
 
 /** Last six calendar months including the current partial month. */
 const resolveSixMonthRange = (today: Date): RangedDashboardPeriod => ({
@@ -127,6 +116,16 @@ const resolveSixMonthRange = (today: Date): RangedDashboardPeriod => ({
   prior: null,
 });
 
+const SHORTCUT_RESOLVERS: Record<
+  Exclude<DashboardPeriodShortcut, 'all'>,
+  (today: Date) => RangedDashboardPeriod
+> = {
+  mtd: resolveMonthToDateRange,
+  '30d': resolveRolling30DayRange,
+  '6m': resolveSixMonthRange,
+  ytd: resolveYearToDateRange,
+};
+
 const resolveCustomRange = (
   from: string,
   to: string
@@ -134,31 +133,24 @@ const resolveCustomRange = (
   from,
   to,
   bucket:
-    inclusiveDayCount(from, to) <= CUSTOM_DAILY_BUCKET_MAX_DAYS
+    differenceInCalendarDays(parseCalendarDate(to), parseCalendarDate(from)) <
+    CUSTOM_DAILY_BUCKET_MAX_DAYS
       ? 'day'
       : 'month',
   prior: null,
 });
 
-export const defaultDashboardPeriodSelection =
-  (): DashboardPeriodSelection => ({
-    kind: 'shortcut',
-    shortcut: 'mtd',
-  });
-
-export const parseDashboardPeriodShortcut = (
+const isDashboardPeriodShortcut = (
   value: unknown
-): DashboardPeriodShortcut | undefined => {
-  if (typeof value !== 'string') return undefined;
-  return (DASHBOARD_PERIOD_SHORTCUTS as readonly string[]).includes(value)
-    ? (value as DashboardPeriodShortcut)
-    : undefined;
-};
+): value is DashboardPeriodShortcut =>
+  (DASHBOARD_PERIOD_SHORTCUTS as readonly unknown[]).includes(value);
 
 export const parseDashboardPeriodSearch = (
   search: Record<string, unknown>
 ): DashboardPeriodSearch => {
-  const range = parseDashboardPeriodShortcut(search.range);
+  const range = isDashboardPeriodShortcut(search.range)
+    ? search.range
+    : undefined;
   const from = typeof search.from === 'string' ? search.from : undefined;
   const to = typeof search.to === 'string' ? search.to : undefined;
   return { range, from, to };
@@ -167,33 +159,22 @@ export const parseDashboardPeriodSearch = (
 export const selectionFromDashboardSearch = (
   search: DashboardPeriodSearch
 ): DashboardPeriodSelection | null => {
-  const hasRange = search.range !== undefined;
-  const hasFrom = search.from !== undefined;
-  const hasTo = search.to !== undefined;
-
-  if (hasRange && (hasFrom || hasTo)) {
+  const { range, from, to } = search;
+  if (range !== undefined) {
+    return from === undefined && to === undefined
+      ? { kind: 'shortcut', shortcut: range }
+      : null;
+  }
+  if (
+    from === undefined ||
+    to === undefined ||
+    !isCalendarDate(from) ||
+    !isCalendarDate(to) ||
+    from > to
+  ) {
     return null;
   }
-
-  if (hasRange) {
-    return { kind: 'shortcut', shortcut: search.range! };
-  }
-
-  if (hasFrom && hasTo) {
-    if (!isCalendarDate(search.from!) || !isCalendarDate(search.to!)) {
-      return null;
-    }
-    if (search.from! > search.to!) {
-      return null;
-    }
-    return { kind: 'custom', from: search.from!, to: search.to! };
-  }
-
-  if (hasFrom || hasTo) {
-    return null;
-  }
-
-  return null;
+  return { kind: 'custom', from, to };
 };
 
 export const dashboardSearchFromSelection = (
@@ -209,26 +190,16 @@ export const resolveDashboardPeriod = (
   selection: DashboardPeriodSelection,
   today: Date
 ): ResolvedDashboardPeriod => {
-  if (selection.kind === 'shortcut' && selection.shortcut === 'all') {
+  if (selection.kind === 'custom') {
+    return {
+      kind: 'ranged',
+      ...resolveCustomRange(selection.from, selection.to),
+    };
+  }
+  if (selection.shortcut === 'all') {
     return { kind: 'all' };
   }
-
-  const range =
-    selection.kind === 'shortcut'
-      ? selection.shortcut === 'mtd'
-        ? resolveMonthToDateRange(today)
-        : selection.shortcut === '30d'
-          ? resolveRolling30DayRange(today)
-          : selection.shortcut === '6m'
-            ? resolveSixMonthRange(today)
-            : selection.shortcut === 'ytd'
-              ? resolveYearToDateRange(today)
-              : (() => {
-                  throw new Error(`Unhandled shortcut: ${selection.shortcut}`);
-                })()
-      : resolveCustomRange(selection.from, selection.to);
-
-  return { kind: 'ranged', ...range };
+  return { kind: 'ranged', ...SHORTCUT_RESOLVERS[selection.shortcut](today) };
 };
 
 export const formatDashboardPeriodLabel = (
@@ -253,13 +224,8 @@ export const eachCalendarDate = (from: string, to: string): string[] =>
   }).map(toCalendarDate);
 
 /** Inclusive month starts from `from` through the month containing `to`. */
-export const eachCalendarMonthStart = (from: string, to: string): string[] => {
-  const months: string[] = [];
-  let cursor = startOfMonth(parseCalendarDate(from));
-  const end = endOfMonth(parseCalendarDate(to));
-  while (cursor <= end) {
-    months.push(toCalendarDate(cursor));
-    cursor = startOfMonth(addMonths(cursor, 1));
-  }
-  return months;
-};
+export const eachCalendarMonthStart = (from: string, to: string): string[] =>
+  eachMonthOfInterval({
+    start: parseCalendarDate(from),
+    end: parseCalendarDate(to),
+  }).map(toCalendarDate);

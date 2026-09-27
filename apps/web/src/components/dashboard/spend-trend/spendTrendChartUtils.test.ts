@@ -4,31 +4,10 @@ import {
   partialMonthEdges,
   segmentPartialMonths,
   spendTrendCaption,
-  spendTrendHasPriorSeries,
   spendTrendSeriesLabels,
   spendTrendYDomain,
   toSpendTrendChartData,
 } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
-
-describe('spendTrendHasPriorSeries', () => {
-  it('is false when every prior value is null (no prior series)', () => {
-    expect(
-      spendTrendHasPriorSeries([
-        { bucketStart: '2026-03-01', current: 100, prior: null },
-        { bucketStart: '2026-03-02', current: 200, prior: null },
-      ])
-    ).toBe(false);
-  });
-
-  it('is true when any bucket has prior data', () => {
-    expect(
-      spendTrendHasPriorSeries([
-        { bucketStart: '2026-03-01', current: 100, prior: null },
-        { bucketStart: '2026-03-02', current: 200, prior: 50 },
-      ])
-    ).toBe(true);
-  });
-});
 
 describe('spendTrendYDomain', () => {
   it('returns a non-degenerate domain for empty or all-zero data', () => {
@@ -66,11 +45,22 @@ describe('formatTrendBucket', () => {
 describe('toSpendTrendChartData', () => {
   it('charts running totals for both series when there is a comparison', () => {
     expect(
-      toSpendTrendChartData([
-        { bucketStart: '2026-03-01', amountCents: 100, priorAmountCents: 50 },
-        { bucketStart: '2026-03-02', amountCents: 0, priorAmountCents: 70 },
-        { bucketStart: '2026-03-03', amountCents: -30, priorAmountCents: null },
-      ])
+      toSpendTrendChartData({
+        meta: {
+          range: { from: '2026-03-01', to: '2026-03-03' },
+          prior: { from: '2026-02-01', to: '2026-02-02' },
+          bucket: 'day',
+        },
+        trend: [
+          { bucketStart: '2026-03-01', amountCents: 100, priorAmountCents: 50 },
+          { bucketStart: '2026-03-02', amountCents: 0, priorAmountCents: 70 },
+          {
+            bucketStart: '2026-03-03',
+            amountCents: -30,
+            priorAmountCents: null,
+          },
+        ],
+      })
     ).toEqual([
       { bucketStart: '2026-03-01', current: 100, prior: 50 },
       { bucketStart: '2026-03-02', current: 100, prior: 120 },
@@ -80,10 +70,25 @@ describe('toSpendTrendChartData', () => {
 
   it('charts each bucket on its own when there is no comparison', () => {
     expect(
-      toSpendTrendChartData([
-        { bucketStart: '2026-01-01', amountCents: 500, priorAmountCents: null },
-        { bucketStart: '2026-02-01', amountCents: 700, priorAmountCents: null },
-      ])
+      toSpendTrendChartData({
+        meta: {
+          range: { from: '2026-01-01', to: '2026-02-28' },
+          prior: null,
+          bucket: 'month',
+        },
+        trend: [
+          {
+            bucketStart: '2026-01-01',
+            amountCents: 500,
+            priorAmountCents: null,
+          },
+          {
+            bucketStart: '2026-02-01',
+            amountCents: 700,
+            priorAmountCents: null,
+          },
+        ],
+      })
     ).toEqual([
       { bucketStart: '2026-01-01', current: 500, prior: null },
       { bucketStart: '2026-02-01', current: 700, prior: null },

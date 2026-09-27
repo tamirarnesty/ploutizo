@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from '@ploutizo/ui/components/sonner';
-import { toCalendarDate } from '@ploutizo/utils/dashboard-period';
 import type { OrgMember } from '@ploutizo/types';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';
 import type { CardBalanceRowViewModel } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
@@ -25,15 +24,12 @@ export const Dashboard = () => {
   const {
     selection: periodSelection,
     resolved: period,
-    label: periodLabel,
+    today,
     selectShortcut,
     applyCustomRange,
   } = useDashboardPeriod();
   const overviewQuery = useGetDashboardOverview(period);
-  const seriesLabels = useMemo(
-    () => spendTrendSeriesLabels(periodSelection),
-    [periodSelection]
-  );
+  const seriesLabels = spendTrendSeriesLabels(periodSelection);
   const { refetch: refetchOverview } = overviewQuery;
   const {
     data: settlements,
@@ -112,7 +108,6 @@ export const Dashboard = () => {
   return (
     <div className="space-y-6">
       <DashboardHeader
-        periodLabel={periodLabel}
         periodSelection={periodSelection}
         period={period}
         onSelectShortcut={selectShortcut}
@@ -129,9 +124,7 @@ export const Dashboard = () => {
         <SpendTrendCard
           query={overviewQuery}
           seriesLabels={seriesLabels}
-          through={
-            period.kind === 'all' ? toCalendarDate(new Date()) : period.to
-          }
+          through={period.kind === 'all' ? today : period.to}
         />
         <div className="grid grid-cols-1 items-start gap-4 @4xl/dashboard:grid-cols-4">
           <div className="min-w-0 @4xl/dashboard:col-span-3">

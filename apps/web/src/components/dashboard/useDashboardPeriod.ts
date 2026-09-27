@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { getRouteApi, useNavigate } from '@tanstack/react-router';
 import {
   dashboardSearchFromSelection,
-  formatDashboardPeriodLabel,
   parseCalendarDate,
   resolveDashboardPeriod,
   toCalendarDate,
@@ -31,8 +30,6 @@ export const useDashboardPeriod = () => {
     [selection, today]
   );
 
-  const label = useMemo(() => formatDashboardPeriodLabel(resolved), [resolved]);
-
   useEffect(() => {
     persistDashboardPeriod(selection);
   }, [selection]);
@@ -51,7 +48,6 @@ export const useDashboardPeriod = () => {
 
   const setSelection = useCallback(
     (next: DashboardPeriodSelection) => {
-      persistDashboardPeriod(next);
       void navigate({ search: dashboardSearchFromSelection(next) });
     },
     [navigate]
@@ -74,7 +70,7 @@ export const useDashboardPeriod = () => {
   return {
     selection,
     resolved,
-    label,
+    today,
     selectShortcut,
     applyCustomRange,
   };

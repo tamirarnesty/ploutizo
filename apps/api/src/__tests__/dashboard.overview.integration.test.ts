@@ -54,28 +54,38 @@ const overviewQuery = (range: {
   return `/dashboard/overview?${params.toString()}`;
 };
 
-const insertTxn = async (
-  orgId: string,
-  accountId: string,
-  input: {
-    type: (typeof transactions.$inferInsert)['type'];
-    amount: number;
-    date: string;
-    description?: string;
-  }
+type TxnInput = {
+  type: (typeof transactions.$inferInsert)['type'];
+  amount: number;
+  date: string;
+};
+
+const insertTxns = async (
+  rows: TxnInput[],
+  target: { orgId: string; accountId: string }
 ) => {
-  await db.insert(transactions).values({
-    orgId,
-    accountId,
-    type: input.type,
-    amount: input.amount,
-    date: input.date,
-    description: input.description ?? input.type,
-  });
+  await db.insert(transactions).values(
+    rows.map((row) => ({
+      ...target,
+      ...row,
+      description: row.type,
+    }))
+  );
+};
+
+const MARCH_VS_FEBRUARY = {
+  from: '2026-03-01',
+  to: '2026-03-31',
+  priorFrom: '2026-02-01',
+  priorTo: '2026-02-28',
 };
 
 describe('GET /api/dashboard/overview integration', () => {
   let accountId: string;
+  const household = () => ({
+    orgId: TEST_HOUSEHOLD_PRINCIPAL.activeHouseholdId,
+    accountId,
+  });
 
   beforeAll(async () => {
     await seedOrg(TEST_HOUSEHOLD_PRINCIPAL.activeHouseholdId);
@@ -98,45 +108,19 @@ describe('GET /api/dashboard/overview integration', () => {
   });
 
   it('aggregates net spend from expenses minus refunds only', async () => {
-    await insertTxn(TEST_HOUSEHOLD_PRINCIPAL.activeHouseholdId, accountId, {
-      type: 'expense',
-      amount: 5000,
-      date: '2026-03-10',
-    });
-    await insertTxn(TEST_HOUSEHOLD_PRINCIPAL.activeHouseholdId, accountId, {
-      type: 'refund',
-      amount: 1500,
-      date: '2026-03-11',
-    });
-    await insertTxn(TEST_HOUSEHOLD_PRINCIPAL.activeHouseholdId, accountId, {
-      type: 'transfer',
-      amount: 9000,
-      date: '2026-03-11',
-    });
-    await insertTxn(TEST_HOUSEHOLD_PRINCIPAL.activeHouseholdId, accountId, {
-      type: 'income',
-      amount: 12000,
-      date: '2026-03-12',
-    });
-    await insertTxn(TEST_HOUSEHOLD_PRINCIPAL.activeHouseholdId, accountId, {
-      type: 'settlement',
-      amount: 2000,
-      date: '2026-03-12',
-    });
-    await insertTxn(TEST_HOUSEHOLD_PRINCIPAL.activeHouseholdId, accountId, {
-      type: 'contribution',
-      amount: 3000,
-      date: '2026-03-13',
-    });
-
-    const res = await app.request(
-      overviewQuery({
-        from: '2026-03-01',
-        to: '2026-03-31',
-        priorFrom: '2026-02-01',
-        priorTo: '2026-02-28',
-      })
+    await insertTxns(
+      [
+        { type: 'expense', amount: 5000, date: '2026-03-10' },
+        { type: 'refund', amount: 1500, date: '2026-03-11' },
+        { type: 'transfer', amount: 9000, date: '2026-03-11' },
+        { type: 'income', amount: 12000, date: '2026-03-12' },
+        { type: 'settlement', amount: 2000, date: '2026-03-12' },
+        { type: 'contribution', amount: 3000, date: '2026-03-13' },
+      ],
+      household()
     );
+
+    const res = await app.request(overviewQuery(MARCH_VS_FEBRUARY));
     expect(res.status).toBe(200);
     const body = (await res.json()) as GetDashboardOverviewResponse;
     const total = body.trend.reduce((sum, row) => sum + row.amountCents, 0);
@@ -144,25 +128,15 @@ describe('GET /api/dashboard/overview integration', () => {
   });
 
   it('allows negative bucket totals when refunds exceed expenses', async () => {
-    await insertTxn(TEST_HOUSEHOLD_PRINCIPAL.activeHouseholdId, accountId, {
-      type: 'expense',
-      amount: 1000,
-      date: '2026-03-05',
-    });
-    await insertTxn(TEST_HOUSEHOLD_PRINCIPAL.activeHouseholdId, accountId, {
-      type: 'refund',
-      amount: 2500,
-      date: '2026-03-05',
-    });
-
-    const res = await app.request(
-      overviewQuery({
-        from: '2026-03-01',
-        to: '2026-03-31',
-        priorFrom: '2026-02-01',
-        priorTo: '2026-02-28',
-      })
+    await insertTxns(
+      [
+        { type: 'expense', amount: 1000, date: '2026-03-05' },
+        { type: 'refund', amount: 2500, date: '2026-03-05' },
+      ],
+      household()
     );
+
+    const res = await app.request(overviewQuery(MARCH_VS_FEBRUARY));
     const body = (await res.json()) as GetDashboardOverviewResponse;
     const day = body.trend.find((row) => row.bucketStart === '2026-03-05');
     expect(day?.amountCents).toBe(-1500);
@@ -188,14 +162,7 @@ describe('GET /api/dashboard/overview integration', () => {
   });
 
   it('has no prior amount past the end of a shorter prior month', async () => {
-    const res = await app.request(
-      overviewQuery({
-        from: '2026-03-01',
-        to: '2026-03-31',
-        priorFrom: '2026-02-01',
-        priorTo: '2026-02-28',
-      })
-    );
+    const res = await app.request(overviewQuery(MARCH_VS_FEBRUARY));
     const body = (await res.json()) as GetDashboardOverviewResponse;
     expect(body.trend.at(27)?.priorAmountCents).toBe(0);
     expect(body.trend.at(28)?.priorAmountCents).toBeNull();
@@ -203,16 +170,17 @@ describe('GET /api/dashboard/overview integration', () => {
 
   it('scopes results to the active household', async () => {
     const otherAccountId = await seedAccount(OTHER_ORG_ID);
-    await insertTxn(TEST_HOUSEHOLD_PRINCIPAL.activeHouseholdId, accountId, {
-      type: 'expense',
-      amount: 100,
-      date: '2026-04-01',
-    });
-    await insertTxn(OTHER_ORG_ID, otherAccountId, {
-      type: 'expense',
-      amount: 999999,
-      date: '2026-04-01',
-    });
+    await insertTxns(
+      [{ type: 'expense', amount: 100, date: '2026-04-01' }],
+      household()
+    );
+    await insertTxns(
+      [{ type: 'expense', amount: 999999, date: '2026-04-01' }],
+      {
+        orgId: OTHER_ORG_ID,
+        accountId: otherAccountId,
+      }
+    );
 
     const res = await app.request(
       overviewQuery({
@@ -252,16 +220,13 @@ describe('GET /api/dashboard/overview integration', () => {
   });
 
   it('returns monthly buckets without a comparison when no prior window is given', async () => {
-    await insertTxn(TEST_HOUSEHOLD_PRINCIPAL.activeHouseholdId, accountId, {
-      type: 'expense',
-      amount: 500,
-      date: '2026-01-15',
-    });
-    await insertTxn(TEST_HOUSEHOLD_PRINCIPAL.activeHouseholdId, accountId, {
-      type: 'expense',
-      amount: 700,
-      date: '2026-03-10',
-    });
+    await insertTxns(
+      [
+        { type: 'expense', amount: 500, date: '2026-01-15' },
+        { type: 'expense', amount: 700, date: '2026-03-10' },
+      ],
+      household()
+    );
 
     const res = await app.request(
       overviewQuery({ from: '2026-01-01', to: '2026-03-24', bucket: 'month' })
@@ -281,16 +246,13 @@ describe('GET /api/dashboard/overview integration', () => {
   });
 
   it('returns all-time monthly buckets when no range is provided', async () => {
-    await insertTxn(TEST_HOUSEHOLD_PRINCIPAL.activeHouseholdId, accountId, {
-      type: 'expense',
-      amount: 500,
-      date: '2026-01-15',
-    });
-    await insertTxn(TEST_HOUSEHOLD_PRINCIPAL.activeHouseholdId, accountId, {
-      type: 'expense',
-      amount: 700,
-      date: '2026-02-10',
-    });
+    await insertTxns(
+      [
+        { type: 'expense', amount: 500, date: '2026-01-15' },
+        { type: 'expense', amount: 700, date: '2026-02-10' },
+      ],
+      household()
+    );
 
     const res = await app.request('/dashboard/overview');
     expect(res.status).toBe(200);
@@ -324,16 +286,13 @@ describe('GET /api/dashboard/overview integration', () => {
   });
 
   it('maps prior-period amounts onto the current buckets by index', async () => {
-    await insertTxn(TEST_HOUSEHOLD_PRINCIPAL.activeHouseholdId, accountId, {
-      type: 'expense',
-      amount: 400,
-      date: '2026-03-03',
-    });
-    await insertTxn(TEST_HOUSEHOLD_PRINCIPAL.activeHouseholdId, accountId, {
-      type: 'expense',
-      amount: 900,
-      date: '2026-02-03',
-    });
+    await insertTxns(
+      [
+        { type: 'expense', amount: 400, date: '2026-03-03' },
+        { type: 'expense', amount: 900, date: '2026-02-03' },
+      ],
+      household()
+    );
 
     const res = await app.request(
       overviewQuery({
