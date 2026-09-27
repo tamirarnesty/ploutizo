@@ -16,8 +16,8 @@ describe('resolveMonthToDateRange', () => {
     expect(resolveMonthToDateRange(d('2026-03-15'))).toEqual({
       from: '2026-03-01',
       to: '2026-03-15',
-      priorFrom: '2026-02-01',
-      priorTo: '2026-02-15',
+      bucket: 'day',
+      prior: { from: '2026-02-01', to: '2026-02-15' },
     });
   });
 
@@ -25,21 +25,23 @@ describe('resolveMonthToDateRange', () => {
     expect(resolveMonthToDateRange(d('2026-03-31'))).toEqual({
       from: '2026-03-01',
       to: '2026-03-31',
-      priorFrom: '2026-02-01',
-      priorTo: '2026-02-28',
+      bucket: 'day',
+      prior: { from: '2026-02-01', to: '2026-02-28' },
     });
   });
 
   it('handles leap years', () => {
-    expect(resolveMonthToDateRange(d('2024-03-31')).priorTo).toBe('2024-02-29');
+    expect(resolveMonthToDateRange(d('2024-03-31')).prior?.to).toBe(
+      '2024-02-29'
+    );
   });
 
   it('crosses the year boundary in January', () => {
     expect(resolveMonthToDateRange(d('2026-01-10'))).toEqual({
       from: '2026-01-01',
       to: '2026-01-10',
-      priorFrom: '2025-12-01',
-      priorTo: '2025-12-10',
+      bucket: 'day',
+      prior: { from: '2025-12-01', to: '2025-12-10' },
     });
   });
 });
@@ -54,8 +56,8 @@ describe('resolveDashboardPeriod', () => {
       kind: 'ranged',
       from: '2026-03-01',
       to: '2026-03-24',
-      priorFrom: '2026-02-01',
-      priorTo: '2026-02-24',
+      bucket: 'day',
+      prior: { from: '2026-02-01', to: '2026-02-24' },
     });
   });
 
@@ -66,20 +68,20 @@ describe('resolveDashboardPeriod', () => {
       kind: 'ranged',
       from: '2026-02-23',
       to: '2026-03-24',
-      priorFrom: '2026-01-24',
-      priorTo: '2026-02-22',
+      bucket: 'day',
+      prior: { from: '2026-01-24', to: '2026-02-22' },
     });
   });
 
-  it('resolves 6m from the start of the month five months ago', () => {
+  it('resolves 6m monthly from the start of the month five months ago, without a comparison', () => {
     expect(
       resolveDashboardPeriod({ kind: 'shortcut', shortcut: '6m' }, today)
     ).toEqual({
       kind: 'ranged',
       from: '2025-10-01',
       to: '2026-03-24',
-      priorFrom: '2025-04-09',
-      priorTo: '2025-09-30',
+      bucket: 'month',
+      prior: null,
     });
   });
 
@@ -90,8 +92,8 @@ describe('resolveDashboardPeriod', () => {
       kind: 'ranged',
       from: '2026-01-01',
       to: '2026-03-24',
-      priorFrom: '2025-01-01',
-      priorTo: '2025-03-24',
+      bucket: 'day',
+      prior: { from: '2025-01-01', to: '2025-03-24' },
     });
   });
 
@@ -101,7 +103,7 @@ describe('resolveDashboardPeriod', () => {
     ).toEqual({ kind: 'all' });
   });
 
-  it('resolves custom ranges with an equal-length prior window', () => {
+  it('resolves short custom ranges daily, without a comparison', () => {
     expect(
       resolveDashboardPeriod(
         { kind: 'custom', from: '2026-02-10', to: '2026-02-20' },
@@ -111,9 +113,18 @@ describe('resolveDashboardPeriod', () => {
       kind: 'ranged',
       from: '2026-02-10',
       to: '2026-02-20',
-      priorFrom: '2026-01-30',
-      priorTo: '2026-02-09',
+      bucket: 'day',
+      prior: null,
     });
+  });
+
+  it('resolves custom ranges longer than two months monthly', () => {
+    expect(
+      resolveDashboardPeriod(
+        { kind: 'custom', from: '2025-11-01', to: '2026-02-20' },
+        today
+      )
+    ).toMatchObject({ bucket: 'month', prior: null });
   });
 });
 
@@ -184,19 +195,27 @@ describe('dashboard period search round-trip', () => {
     ).toBeNull();
   });
 
-  it('formats shortcut and custom labels', () => {
+  it('labels a ranged period by its resolved dates', () => {
     expect(
       formatDashboardPeriodLabel(
-        { kind: 'shortcut', shortcut: 'mtd' },
-        d('2026-03-24')
+        resolveDashboardPeriod(
+          { kind: 'shortcut', shortcut: 'mtd' },
+          d('2026-03-24')
+        )
       )
-    ).toBe('MTD');
+    ).toBe('Mar 1 – Mar 24, 2026');
     expect(
       formatDashboardPeriodLabel(
-        { kind: 'custom', from: '2026-01-15', to: '2026-02-03' },
-        d('2026-03-24')
+        resolveDashboardPeriod(
+          { kind: 'custom', from: '2025-12-15', to: '2026-02-03' },
+          d('2026-03-24')
+        )
       )
-    ).toBe('Jan 15 – Feb 3, 2026');
+    ).toBe('Dec 15, 2025 – Feb 3, 2026');
+  });
+
+  it('labels All as all time', () => {
+    expect(formatDashboardPeriodLabel({ kind: 'all' })).toBe('All time');
   });
 });
 

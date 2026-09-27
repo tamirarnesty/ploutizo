@@ -7,25 +7,29 @@ import type { UseQueryResult } from '@tanstack/react-query';
 
 export const dashboardOverviewQueryKey = ['dashboard-overview'] as const;
 
-const overviewQueryKey = (period: ResolvedDashboardPeriod) => {
+/** Empty for All, which the API resolves from the household's spend. */
+const overviewSearch = (period: ResolvedDashboardPeriod): string => {
   if (period.kind === 'all') {
-    return [...dashboardOverviewQueryKey, 'all'] as const;
+    return '';
   }
-  const { from, to, priorFrom, priorTo } = period;
-  return [...dashboardOverviewQueryKey, from, to, priorFrom, priorTo] as const;
-};
-
-const overviewRequestPath = (period: ResolvedDashboardPeriod) => {
-  if (period.kind === 'all') {
-    return '/api/dashboard/overview';
-  }
-  const params = new URLSearchParams({
+  return new URLSearchParams({
     from: period.from,
     to: period.to,
-    priorFrom: period.priorFrom,
-    priorTo: period.priorTo,
-  });
-  return `/api/dashboard/overview?${params.toString()}`;
+    bucket: period.bucket,
+    ...(period.prior
+      ? { priorFrom: period.prior.from, priorTo: period.prior.to }
+      : {}),
+  }).toString();
+};
+
+const overviewQueryKey = (period: ResolvedDashboardPeriod) =>
+  [...dashboardOverviewQueryKey, overviewSearch(period) || 'all'] as const;
+
+const overviewRequestPath = (period: ResolvedDashboardPeriod) => {
+  const search = overviewSearch(period);
+  return search
+    ? `/api/dashboard/overview?${search}`
+    : '/api/dashboard/overview';
 };
 
 export const dashboardOverviewQueryOptions = (

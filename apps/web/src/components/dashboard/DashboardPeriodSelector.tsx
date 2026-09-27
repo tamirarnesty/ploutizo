@@ -1,7 +1,10 @@
 import { CalendarDays } from 'lucide-react';
-import { format, isValid, parseISO } from 'date-fns';
+import { format, max, startOfMonth, subMonths } from 'date-fns';
 import { useEffect, useRef, useState } from 'react';
-import { DASHBOARD_PERIOD_SHORTCUTS } from '@ploutizo/utils/dashboard-period';
+import {
+  DASHBOARD_PERIOD_SHORTCUTS,
+  parseCalendarDate,
+} from '@ploutizo/utils/dashboard-period';
 import { Button } from '@ploutizo/ui/components/button';
 import { Calendar } from '@ploutizo/ui/components/calendar';
 import {
@@ -16,6 +19,7 @@ import {
 import type {
   DashboardPeriodSelection,
   DashboardPeriodShortcut,
+  ResolvedDashboardPeriod,
 } from '@ploutizo/utils/dashboard-period';
 import type { DateRange } from 'react-day-picker';
 
@@ -29,33 +33,34 @@ const SHORTCUT_LABELS: Record<DashboardPeriodShortcut, string> = {
 
 type DashboardPeriodSelectorProps = {
   selection: DashboardPeriodSelection;
+  period: ResolvedDashboardPeriod;
   label: string;
   onSelectShortcut: (shortcut: DashboardPeriodShortcut) => void;
   onApplyCustomRange: (from: string, to: string) => void;
 };
 
-const committedCustomRange = (
-  selection: DashboardPeriodSelection
-): DateRange | undefined => {
-  if (selection.kind !== 'custom') {
-    return undefined;
-  }
-  const from = parseISO(selection.from);
-  const to = parseISO(selection.to);
-  if (!isValid(from) || !isValid(to)) {
-    return undefined;
-  }
-  return { from, to };
-};
+const committedRange = (
+  period: ResolvedDashboardPeriod
+): DateRange | undefined =>
+  period.kind === 'ranged'
+    ? { from: parseCalendarDate(period.from), to: parseCalendarDate(period.to) }
+    : undefined;
+
+/** First of the two visible months: the range start, unless that would hide the range end. */
+const calendarStartMonth = (range: DateRange | undefined): Date | undefined =>
+  range?.from && range.to
+    ? max([startOfMonth(range.from), subMonths(startOfMonth(range.to), 1)])
+    : undefined;
 
 export const DashboardPeriodSelector = ({
   selection,
+  period,
   label,
   onSelectShortcut,
   onApplyCustomRange,
 }: DashboardPeriodSelectorProps) => {
   const [open, setOpen] = useState(false);
-  const committed = committedCustomRange(selection);
+  const committed = committedRange(period);
   const [pending, setPending] = useState<DateRange | undefined>(committed);
   const prevOpen = useRef(false);
 
@@ -130,6 +135,7 @@ export const DashboardPeriodSelector = ({
             selected={pending}
             onSelect={setPending}
             numberOfMonths={2}
+            defaultMonth={calendarStartMonth(committed)}
           />
           <div className="flex justify-end gap-2 border-t border-border px-3 py-2">
             <Button variant="outline" size="sm" onClick={handleCancel}>

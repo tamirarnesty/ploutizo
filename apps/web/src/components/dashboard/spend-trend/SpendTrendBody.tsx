@@ -7,11 +7,23 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@ploutizo/ui/components/empty';
-import type { DashboardOverviewTrendPoint } from '@ploutizo/types';
+import type {
+  DashboardOverviewTrendPoint,
+  GetDashboardOverviewResponse,
+} from '@ploutizo/types';
 import { SpendTrendChart } from '@/components/dashboard/spend-trend/SpendTrendChart';
+import {
+  partialMonthEdges,
+  segmentPartialMonths,
+  toSpendTrendChartData,
+} from '@/components/dashboard/spend-trend/spendTrendChartUtils';
+import type { SpendTrendSeriesLabels } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
 
 type SpendTrendBodyProps = {
-  trend: DashboardOverviewTrendPoint[];
+  overview: GetDashboardOverviewResponse;
+  /** Date the chart runs to, which decides whether its last month is still in progress. */
+  through: string;
+  seriesLabels: SpendTrendSeriesLabels;
 };
 
 const hasSpendActivity = (trend: DashboardOverviewTrendPoint[]): boolean =>
@@ -19,15 +31,18 @@ const hasSpendActivity = (trend: DashboardOverviewTrendPoint[]): boolean =>
     (point) => point.amountCents !== 0 || (point.priorAmountCents ?? 0) !== 0
   );
 
-export const SpendTrendBody = ({ trend }: SpendTrendBodyProps) => {
+export const SpendTrendBody = ({
+  overview: { meta, trend },
+  through,
+  seriesLabels,
+}: SpendTrendBodyProps) => {
   const chartData = useMemo(
     () =>
-      trend.map((point) => ({
-        bucketStart: point.bucketStart,
-        current: point.amountCents,
-        prior: point.priorAmountCents,
-      })),
-    [trend]
+      segmentPartialMonths(
+        toSpendTrendChartData(trend),
+        partialMonthEdges(meta, through)
+      ),
+    [meta, trend, through]
   );
 
   if (!hasSpendActivity(trend)) {
@@ -37,14 +52,20 @@ export const SpendTrendBody = ({ trend }: SpendTrendBodyProps) => {
           <EmptyMedia variant="icon">
             <LineChart />
           </EmptyMedia>
-          <EmptyTitle>No spend this month</EmptyTitle>
+          <EmptyTitle>No spend in this period</EmptyTitle>
           <EmptyDescription>
-            Expenses and refunds from this month will appear here.
+            Expenses and refunds in this period will appear here.
           </EmptyDescription>
         </EmptyHeader>
       </Empty>
     );
   }
 
-  return <SpendTrendChart data={chartData} />;
+  return (
+    <SpendTrendChart
+      data={chartData}
+      bucket={meta.bucket}
+      seriesLabels={seriesLabels}
+    />
+  );
 };

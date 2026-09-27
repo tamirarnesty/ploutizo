@@ -31,6 +31,7 @@ All commands run via Turborepo from the workspace root:
 pnpm turbo lint          # ESLint across all apps/packages
 pnpm turbo typecheck     # tsc --noEmit in dependency order
 pnpm test                # vitest run in all apps/packages (all mocked — no secrets needed)
+pnpm test:integration    # API integration tests against DATABASE_URL from apps/api/.env
 pnpm turbo format:check  # Prettier check across all apps/packages
 pnpm turbo format        # Prettier write + eslint --fix across all apps/packages
 ```

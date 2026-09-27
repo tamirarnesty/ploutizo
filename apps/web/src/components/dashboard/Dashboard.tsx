@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from '@ploutizo/ui/components/sonner';
+import { toCalendarDate } from '@ploutizo/utils/dashboard-period';
 import type { OrgMember } from '@ploutizo/types';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';
 import type { CardBalanceRowViewModel } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
@@ -11,6 +12,7 @@ import { useGetSettlements } from '@/lib/data-access/settlements';
 import { selectCreditCardAccounts } from '@/lib/settlements';
 import { CardBalancesGrid } from '@/components/dashboard/card-balances/CardBalancesGrid';
 import { SpendTrendCard } from '@/components/dashboard/spend-trend/SpendTrendCard';
+import { spendTrendSeriesLabels } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
 import { DashboardHeader } from './DashboardHeader';
 import { useDashboardPeriod } from './useDashboardPeriod';
 import { SettleDialog } from './SettleDialog';
@@ -28,6 +30,10 @@ export const Dashboard = () => {
     applyCustomRange,
   } = useDashboardPeriod();
   const overviewQuery = useGetDashboardOverview(period);
+  const seriesLabels = useMemo(
+    () => spendTrendSeriesLabels(periodSelection),
+    [periodSelection]
+  );
   const { refetch: refetchOverview } = overviewQuery;
   const {
     data: settlements,
@@ -108,6 +114,7 @@ export const Dashboard = () => {
       <DashboardHeader
         periodLabel={periodLabel}
         periodSelection={periodSelection}
+        period={period}
         onSelectShortcut={selectShortcut}
         onApplyCustomRange={applyCustomRange}
         onRefresh={handleRefresh}
@@ -119,7 +126,13 @@ export const Dashboard = () => {
         the sidebar opens or closes, which only changes the available width.
       */}
       <div className="@container/dashboard space-y-4">
-        <SpendTrendCard query={overviewQuery} />
+        <SpendTrendCard
+          query={overviewQuery}
+          seriesLabels={seriesLabels}
+          through={
+            period.kind === 'all' ? toCalendarDate(new Date()) : period.to
+          }
+        />
         <div className="grid grid-cols-1 items-start gap-4 @4xl/dashboard:grid-cols-4">
           <div className="min-w-0 @4xl/dashboard:col-span-3">
             <CardBalancesGrid

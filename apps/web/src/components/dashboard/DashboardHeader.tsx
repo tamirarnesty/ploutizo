@@ -10,12 +10,14 @@ import { cn } from '@ploutizo/ui/lib/utils';
 import type {
   DashboardPeriodSelection,
   DashboardPeriodShortcut,
+  ResolvedDashboardPeriod,
 } from '@ploutizo/utils/dashboard-period';
 import { DashboardPeriodSelector } from '@/components/dashboard/DashboardPeriodSelector';
 
 type DashboardHeaderProps = {
   periodLabel: string;
   periodSelection: DashboardPeriodSelection;
+  period: ResolvedDashboardPeriod;
   onSelectShortcut: (shortcut: DashboardPeriodShortcut) => void;
   onApplyCustomRange: (from: string, to: string) => void;
   onRefresh: () => void;
@@ -27,6 +29,7 @@ type DashboardHeaderProps = {
 export const DashboardHeader = ({
   periodLabel,
   periodSelection,
+  period,
   onSelectShortcut,
   onApplyCustomRange,
   onRefresh,
@@ -39,6 +42,7 @@ export const DashboardHeader = ({
     <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
       <DashboardPeriodSelector
         selection={periodSelection}
+        period={period}
         label={periodLabel}
         onSelectShortcut={onSelectShortcut}
         onApplyCustomRange={onApplyCustomRange}

@@ -12,6 +12,7 @@
     "format:check": "turbo format:check",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
+    "test:integration": "turbo test:integration",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "pnpm --filter @ploutizo/db --silent migrate",
     "db:push": "drizzle-kit push"

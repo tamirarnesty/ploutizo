@@ -2,100 +2,123 @@ import {
   eachCalendarDate,
   eachCalendarMonthStart,
 } from '@ploutizo/utils/dashboard-period';
-import type { GetDashboardOverviewResponse } from '@ploutizo/types';
+import type {
+  DashboardOverviewQuery,
+  RangedDashboardOverviewQuery,
+} from '@ploutizo/validators';
+import type {
+  DashboardOverviewBucket,
+  DashboardOverviewRange,
+  DashboardOverviewTrendPoint,
+  GetDashboardOverviewResponse,
+} from '@ploutizo/types';
+import type { SpendTrendBucketRow } from '@/lib/queries/dashboard';
 import { fetchDailyNetSpend } from '@/lib/queries/dashboard';
 
-const amountsByDay = async (
-  orgId: string,
-  from: string,
-  to: string
-): Promise<Map<string, number>> => {
-  const rows = await fetchDailyNetSpend(orgId, { from, to });
-  return new Map(rows.map((row) => [row.bucketStart, row.amountCents]));
+const bucketStartOf = (day: string, bucket: DashboardOverviewBucket): string =>
+  bucket === 'day' ? day : `${day.slice(0, 7)}-01`;
+
+const bucketStartsIn = (
+  range: DashboardOverviewRange,
+  bucket: DashboardOverviewBucket
+): string[] =>
+  bucket === 'day'
+    ? eachCalendarDate(range.from, range.to)
+    : eachCalendarMonthStart(range.from, range.to);
+
+const sumByBucket = (
+  rows: SpendTrendBucketRow[],
+  bucket: DashboardOverviewBucket
+): Map<string, number> => {
+  const amounts = new Map<string, number>();
+  for (const row of rows) {
+    const start = bucketStartOf(row.bucketStart, bucket);
+    amounts.set(start, (amounts.get(start) ?? 0) + row.amountCents);
+  }
+  return amounts;
 };
 
-type RangedOverviewQuery = {
-  from: string;
-  to: string;
-  priorFrom: string;
-  priorTo: string;
+const fetchAmountsByBucket = async (
+  orgId: string,
+  range: DashboardOverviewRange,
+  bucket: DashboardOverviewBucket
+): Promise<Map<string, number>> =>
+  sumByBucket(await fetchDailyNetSpend(orgId, range), bucket);
+
+type PriorAmounts = {
+  range: DashboardOverviewRange;
+  amounts: Map<string, number>;
 };
 
-const buildDailyTrend = async (
+/** Prior buckets map onto current buckets by index; buckets past the prior window's end have no prior amount. */
+const buildTrend = (
+  range: DashboardOverviewRange,
+  bucket: DashboardOverviewBucket,
+  amounts: Map<string, number>,
+  prior: PriorAmounts | null
+): DashboardOverviewTrendPoint[] => {
+  const priorStarts = prior ? bucketStartsIn(prior.range, bucket) : [];
+  return bucketStartsIn(range, bucket).map((start, index) => {
+    const priorStart = priorStarts.at(index);
+    return {
+      bucketStart: start,
+      amountCents: amounts.get(start) ?? 0,
+      priorAmountCents:
+        prior && priorStart !== undefined
+          ? (prior.amounts.get(priorStart) ?? 0)
+          : null,
+    };
+  });
+};
+
+const getRangedOverview = async (
   orgId: string,
-  range: RangedOverviewQuery
+  query: RangedDashboardOverviewQuery
 ): Promise<GetDashboardOverviewResponse> => {
-  const [current, prior] = await Promise.all([
-    amountsByDay(orgId, range.from, range.to),
-    amountsByDay(orgId, range.priorFrom, range.priorTo),
+  const { bucket } = query;
+  const range = { from: query.from, to: query.to };
+  const priorRange =
+    query.priorFrom && query.priorTo
+      ? { from: query.priorFrom, to: query.priorTo }
+      : null;
+  const [amounts, priorAmounts] = await Promise.all([
+    fetchAmountsByBucket(orgId, range, bucket),
+    priorRange ? fetchAmountsByBucket(orgId, priorRange, bucket) : null,
   ]);
-  const priorDays = eachCalendarDate(range.priorFrom, range.priorTo);
 
   return {
-    meta: { range },
-    trend: eachCalendarDate(range.from, range.to).map((day, index) => {
-      const priorDay = priorDays.at(index);
-      return {
-        bucketStart: day,
-        amountCents: current.get(day) ?? 0,
-        priorAmountCents:
-          priorDay === undefined ? null : (prior.get(priorDay) ?? 0),
-      };
-    }),
+    meta: { range, prior: priorRange, bucket },
+    trend: buildTrend(
+      range,
+      bucket,
+      amounts,
+      priorRange && priorAmounts
+        ? { range: priorRange, amounts: priorAmounts }
+        : null
+    ),
   };
 };
 
-const buildAllTimeMonthlyTrend = async (
+const getAllTimeOverview = async (
   orgId: string
 ): Promise<GetDashboardOverviewResponse> => {
   const rows = await fetchDailyNetSpend(orgId, {});
   if (rows.length === 0) {
-    return {
-      meta: {
-        range: {
-          from: '',
-          to: '',
-          priorFrom: '',
-          priorTo: '',
-        },
-      },
-      trend: [],
-    };
+    return { meta: { range: null, prior: null, bucket: 'month' }, trend: [] };
   }
 
-  const sortedDays = rows.map((row) => row.bucketStart).sort();
-  const from = sortedDays[0];
-  const to = sortedDays.at(-1)!;
-  const byMonth = new Map<string, number>();
-  for (const row of rows) {
-    const monthStart = row.bucketStart.slice(0, 7) + '-01';
-    byMonth.set(monthStart, (byMonth.get(monthStart) ?? 0) + row.amountCents);
-  }
-
+  const days = rows.map((row) => row.bucketStart).sort();
+  const range = { from: days[0], to: days.at(-1)! };
   return {
-    meta: {
-      range: {
-        from,
-        to,
-        priorFrom: '',
-        priorTo: '',
-      },
-    },
-    trend: eachCalendarMonthStart(from, to).map((monthStart) => ({
-      bucketStart: monthStart,
-      amountCents: byMonth.get(monthStart) ?? 0,
-      priorAmountCents: null,
-    })),
+    meta: { range, prior: null, bucket: 'month' },
+    trend: buildTrend(range, 'month', sumByBucket(rows, 'month'), null),
   };
 };
 
 export const getDashboardOverview = async (
   orgId: string,
-  query: Record<string, never> | RangedOverviewQuery
-): Promise<GetDashboardOverviewResponse> => {
-  if (!('from' in query)) {
-    return buildAllTimeMonthlyTrend(orgId);
-  }
-
-  return buildDailyTrend(orgId, query as RangedOverviewQuery);
-};
+  query: DashboardOverviewQuery
+): Promise<GetDashboardOverviewResponse> =>
+  'from' in query
+    ? getRangedOverview(orgId, query as RangedDashboardOverviewQuery)
+    : getAllTimeOverview(orgId);

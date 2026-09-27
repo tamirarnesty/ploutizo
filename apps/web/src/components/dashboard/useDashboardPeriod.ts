@@ -31,10 +31,7 @@ export const useDashboardPeriod = () => {
     [selection, today]
   );
 
-  const label = useMemo(
-    () => formatDashboardPeriodLabel(selection, parseCalendarDate(today)),
-    [selection, today]
-  );
+  const label = useMemo(() => formatDashboardPeriodLabel(resolved), [resolved]);
 
   useEffect(() => {
     persistDashboardPeriod(selection);
@@ -76,7 +73,7 @@ export const useDashboardPeriod = () => {
 
   return {
     selection,
-    resolved: resolved,
+    resolved,
     label,
     selectShortcut,
     applyCustomRange,

@@ -16,7 +16,7 @@ import type {
 import { Dashboard } from '@/components/dashboard/Dashboard';
 import { settlementMember } from '@/test/settlementFixtures';
 
-const periodMocks = vi.hoisted(() => ({
+const mtdPeriodMocks = () => ({
   selection: {
     kind: 'shortcut',
     shortcut: 'mtd',
@@ -25,10 +25,16 @@ const periodMocks = vi.hoisted(() => ({
     kind: 'ranged',
     from: '2026-03-01',
     to: '2026-03-24',
-    priorFrom: '2026-02-01',
-    priorTo: '2026-02-24',
+    bucket: 'day',
+    prior: { from: '2026-02-01', to: '2026-02-24' },
   } as ResolvedDashboardPeriod,
-  label: 'MTD',
+  label: 'Mar 1 – Mar 24, 2026',
+});
+
+const periodMocks = vi.hoisted(() => ({
+  selection: undefined as unknown as DashboardPeriodSelection,
+  resolved: undefined as unknown as ResolvedDashboardPeriod,
+  label: '',
   selectShortcut: vi.fn(),
   applyCustomRange: vi.fn(),
 }));
@@ -59,12 +65,9 @@ const OVERVIEW_PATH = '/api/dashboard/overview';
 
 const emptyOverview = {
   meta: {
-    range: {
-      from: '2026-03-01',
-      to: '2026-03-24',
-      priorFrom: '2026-02-01',
-      priorTo: '2026-02-24',
-    },
+    range: { from: '2026-03-01', to: '2026-03-24' },
+    prior: { from: '2026-02-01', to: '2026-02-24' },
+    bucket: 'day',
   },
   trend: [],
 };
@@ -158,12 +161,13 @@ const overviewMatchesPeriod = (url: string) => {
   if (resolved.kind === 'all') {
     return url.includes(OVERVIEW_PATH) && !url.includes('from=');
   }
-  const { from, to, priorFrom, priorTo } = resolved;
+  const { from, to, bucket, prior } = resolved;
   return (
     url.includes(`from=${from}`) &&
     url.includes(`to=${to}`) &&
-    url.includes(`priorFrom=${priorFrom}`) &&
-    url.includes(`priorTo=${priorTo}`)
+    url.includes(`bucket=${bucket}`) &&
+    url.includes(`priorFrom=${prior?.from}`) &&
+    url.includes(`priorTo=${prior?.to}`)
   );
 };
 
@@ -221,6 +225,7 @@ const cardHeaderFor = (title: string) => {
 
 describe('Dashboard', () => {
   beforeEach(() => {
+    Object.assign(periodMocks, mtdPeriodMocks());
     settlementsBody = settlements;
     membersBody = members;
     failingPaths.clear();
@@ -237,6 +242,9 @@ describe('Dashboard', () => {
   it('renders the spend trend card', async () => {
     renderDashboard();
     expect(await screen.findByText('Spend trend')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Running total vs last month')
+    ).toBeInTheDocument();
   });
 
   it('shows the card balances total in the section header', async () => {
@@ -387,16 +395,13 @@ describe('Dashboard', () => {
       shortcut: 'all',
     } as DashboardPeriodSelection;
     periodMocks.resolved = { kind: 'all' };
-    periodMocks.label = 'All';
+    periodMocks.label = 'All time';
 
     const allOverview = {
       meta: {
-        range: {
-          from: '2026-01-01',
-          to: '2026-03-01',
-          priorFrom: '',
-          priorTo: '',
-        },
+        range: { from: '2026-01-01', to: '2026-03-01' },
+        prior: null,
+        bucket: 'month',
       },
       trend: [
         {
@@ -434,7 +439,7 @@ describe('Dashboard', () => {
     });
 
     renderDashboard();
-    await screen.findByText('Spend trend');
+    expect(await screen.findByText('Spend per month')).toBeInTheDocument();
     expect(screen.queryByText('Last month')).not.toBeInTheDocument();
   });
 

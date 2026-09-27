@@ -4,17 +4,22 @@ export type DashboardOverviewTrendPoint = {
   priorAmountCents: number | null;
 };
 
-/** Inclusive calendar dates (`yyyy-MM-dd`) for the current and comparison windows. */
+/** Inclusive calendar dates (`yyyy-MM-dd`). */
 export type DashboardOverviewRange = {
   from: string;
   to: string;
-  priorFrom: string;
-  priorTo: string;
 };
+
+/** Calendar unit each trend point's `bucketStart` represents. */
+export type DashboardOverviewBucket = 'day' | 'month';
 
 export type GetDashboardOverviewResponse = {
   meta: {
-    range: DashboardOverviewRange;
+    /** Null for an all-time request with no spend. */
+    range: DashboardOverviewRange | null;
+    /** Comparison window mapped onto the current buckets by index; null when there is none. */
+    prior: DashboardOverviewRange | null;
+    bucket: DashboardOverviewBucket;
   };
   trend: DashboardOverviewTrendPoint[];
 };

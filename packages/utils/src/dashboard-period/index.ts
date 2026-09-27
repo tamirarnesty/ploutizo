@@ -14,7 +14,10 @@ import {
   subMonths,
   subYears,
 } from 'date-fns';
-import type { DashboardOverviewRange } from '@ploutizo/types';
+import type {
+  DashboardOverviewBucket,
+  DashboardOverviewRange,
+} from '@ploutizo/types';
 
 const CALENDAR_DATE_PATTERN = 'yyyy-MM-dd';
 
@@ -39,15 +42,18 @@ export type DashboardPeriodSearch = {
   to?: string;
 };
 
+type RangedDashboardPeriod = DashboardOverviewRange & {
+  bucket: DashboardOverviewBucket;
+  /** Window compared against the current one, bucket by bucket; null when the period has no comparison. */
+  prior: DashboardOverviewRange | null;
+};
+
 export type ResolvedDashboardPeriod =
   | { kind: 'all' }
-  | {
-      kind: 'ranged';
-      from: string;
-      to: string;
-      priorFrom: string;
-      priorTo: string;
-    };
+  | ({ kind: 'ranged' } & RangedDashboardPeriod);
+
+/** Custom ranges up to this many days chart daily; longer ones chart monthly. */
+const CUSTOM_DAILY_BUCKET_MAX_DAYS = 62;
 
 export const toCalendarDate = (date: Date): string =>
   format(date, CALENDAR_DATE_PATTERN);
@@ -65,23 +71,18 @@ const isCalendarDate = (value: string): boolean => {
 const inclusiveDayCount = (from: string, to: string): number =>
   differenceInCalendarDays(parseCalendarDate(to), parseCalendarDate(from)) + 1;
 
-const resolveEqualLengthPrior = (
+const previousEqualLengthRange = (
   from: string,
   to: string
-): Pick<DashboardOverviewRange, 'priorFrom' | 'priorTo'> => {
+): DashboardOverviewRange => {
   const days = inclusiveDayCount(from, to);
   const priorTo = subDays(parseCalendarDate(from), 1);
   const priorFrom = subDays(priorTo, days - 1);
-  return {
-    priorFrom: toCalendarDate(priorFrom),
-    priorTo: toCalendarDate(priorTo),
-  };
+  return { from: toCalendarDate(priorFrom), to: toCalendarDate(priorTo) };
 };
 
 /** Month to date through `today`, compared with the same days of the previous month (clamped to its length). */
-export const resolveMonthToDateRange = (
-  today: Date
-): DashboardOverviewRange => {
+export const resolveMonthToDateRange = (today: Date): RangedDashboardPeriod => {
   const priorMonth = startOfMonth(subMonths(today, 1));
   const priorTo = setDate(
     priorMonth,
@@ -90,45 +91,53 @@ export const resolveMonthToDateRange = (
   return {
     from: toCalendarDate(startOfMonth(today)),
     to: toCalendarDate(today),
-    priorFrom: toCalendarDate(priorMonth),
-    priorTo: toCalendarDate(priorTo),
+    bucket: 'day',
+    prior: {
+      from: toCalendarDate(priorMonth),
+      to: toCalendarDate(priorTo),
+    },
   };
 };
 
-const resolveYearToDateRange = (today: Date): DashboardOverviewRange => {
+/** Year to date through `today`, compared with the same days of the previous year. */
+const resolveYearToDateRange = (today: Date): RangedDashboardPeriod => {
   const priorYear = subYears(today, 1);
-  const priorTo = setDate(
-    priorYear,
-    Math.min(getDate(today), getDaysInMonth(priorYear))
-  );
   return {
     from: toCalendarDate(startOfYear(today)),
     to: toCalendarDate(today),
-    priorFrom: toCalendarDate(startOfYear(priorYear)),
-    priorTo: toCalendarDate(priorTo),
+    bucket: 'day',
+    prior: {
+      from: toCalendarDate(startOfYear(priorYear)),
+      to: toCalendarDate(priorYear),
+    },
   };
 };
 
-const resolveRolling30DayRange = (today: Date): DashboardOverviewRange => {
+const resolveRolling30DayRange = (today: Date): RangedDashboardPeriod => {
   const to = toCalendarDate(today);
   const from = toCalendarDate(subDays(today, 29));
-  return { from, to, ...resolveEqualLengthPrior(from, to) };
+  return { from, to, bucket: 'day', prior: previousEqualLengthRange(from, to) };
 };
 
 /** Last six calendar months including the current partial month. */
-const resolveSixMonthRange = (today: Date): DashboardOverviewRange => {
-  const to = toCalendarDate(today);
-  const from = toCalendarDate(startOfMonth(subMonths(today, 5)));
-  return { from, to, ...resolveEqualLengthPrior(from, to) };
-};
+const resolveSixMonthRange = (today: Date): RangedDashboardPeriod => ({
+  from: toCalendarDate(startOfMonth(subMonths(today, 5))),
+  to: toCalendarDate(today),
+  bucket: 'month',
+  prior: null,
+});
 
 const resolveCustomRange = (
   from: string,
   to: string
-): DashboardOverviewRange => ({
+): RangedDashboardPeriod => ({
   from,
   to,
-  ...resolveEqualLengthPrior(from, to),
+  bucket:
+    inclusiveDayCount(from, to) <= CUSTOM_DAILY_BUCKET_MAX_DAYS
+      ? 'day'
+      : 'month',
+  prior: null,
 });
 
 export const defaultDashboardPeriodSelection =
@@ -219,33 +228,14 @@ export const resolveDashboardPeriod = (
                 })()
       : resolveCustomRange(selection.from, selection.to);
 
-  return {
-    kind: 'ranged',
-    from: range.from,
-    to: range.to,
-    priorFrom: range.priorFrom,
-    priorTo: range.priorTo,
-  };
+  return { kind: 'ranged', ...range };
 };
 
 export const formatDashboardPeriodLabel = (
-  selection: DashboardPeriodSelection,
-  today: Date
+  resolved: ResolvedDashboardPeriod
 ): string => {
-  if (selection.kind === 'shortcut') {
-    const labels: Record<DashboardPeriodShortcut, string> = {
-      mtd: 'MTD',
-      '30d': '30d',
-      '6m': '6m',
-      ytd: 'YTD',
-      all: 'All',
-    };
-    return labels[selection.shortcut];
-  }
-
-  const resolved = resolveDashboardPeriod(selection, today);
   if (resolved.kind === 'all') {
-    return 'All';
+    return 'All time';
   }
 
   const fromDate = parseCalendarDate(resolved.from);

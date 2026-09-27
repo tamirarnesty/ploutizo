@@ -1,6 +1,7 @@
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from '@ploutizo/ui/components/card';
@@ -9,6 +10,8 @@ import { Text } from '@ploutizo/ui/components/text';
 import { cn } from '@ploutizo/ui/lib/utils';
 import type { GetDashboardOverviewResponse } from '@ploutizo/types';
 import { SpendTrendBody } from '@/components/dashboard/spend-trend/SpendTrendBody';
+import { spendTrendCaption } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
+import type { SpendTrendSeriesLabels } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
 import type { UseQueryResult } from '@tanstack/react-query';
 
 type SpendTrendCardProps = {
@@ -16,10 +19,15 @@ type SpendTrendCardProps = {
     UseQueryResult<GetDashboardOverviewResponse>,
     'data' | 'isError' | 'isFetching'
   >;
+  seriesLabels: SpendTrendSeriesLabels;
+  /** Date the chart runs to: the period end, or today for All. */
+  through: string;
 };
 
 export const SpendTrendCard = ({
   query: { data, isError, isFetching },
+  seriesLabels,
+  through,
 }: SpendTrendCardProps) => {
   // A failed refetch keeps cached data on screen; only a settled failed first load shows the error.
   const showError = isError && data === undefined && !isFetching;
@@ -29,6 +37,11 @@ export const SpendTrendCard = ({
     <Card aria-busy={isBusy} className="w-full gap-0 py-0">
       <CardHeader className="gap-y-1 border-b border-border px-3.5 pt-3 [.border-b]:pb-3">
         <CardTitle className="text-lg leading-tight">Spend trend</CardTitle>
+        {data ? (
+          <CardDescription className="text-xs leading-normal">
+            {spendTrendCaption(seriesLabels, data.meta.bucket)}
+          </CardDescription>
+        ) : null}
       </CardHeader>
       <CardContent className="px-3.5 py-4">
         {showError ? (
@@ -48,7 +61,11 @@ export const SpendTrendCard = ({
                     'pointer-events-none opacity-50 motion-safe:transition-opacity'
                 )}
               >
-                <SpendTrendBody trend={data.trend} />
+                <SpendTrendBody
+                  overview={data}
+                  through={through}
+                  seriesLabels={seriesLabels}
+                />
               </div>
             ) : null}
             {isBusy ? (
