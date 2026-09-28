@@ -17,7 +17,11 @@ const overviewSearch = (period: ResolvedDashboardPeriod): string => {
     to: period.to,
     bucket: period.bucket,
     ...(period.prior
-      ? { priorFrom: period.prior.from, priorTo: period.prior.to }
+      ? {
+          priorFrom: period.prior.from,
+          priorTo: period.prior.to,
+          comparison: period.prior.comparison,
+        }
       : {}),
   }).toString();
 };

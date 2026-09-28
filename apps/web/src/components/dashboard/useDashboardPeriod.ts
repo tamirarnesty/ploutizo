@@ -11,7 +11,7 @@ import type {
   DashboardPeriodShortcut,
 } from '@ploutizo/utils/dashboard-period';
 import { resolveEffectiveDashboardPeriod } from '@/lib/dashboard-period/effectiveDashboardPeriod';
-import { persistDashboardPeriod } from '@/lib/dashboard-period/storage';
+import { persistDashboardPeriod } from '@/lib/dashboard-period/cookie';
 
 const dashboardRouteApi = getRouteApi('/_layout/dashboard');
 
@@ -30,21 +30,10 @@ export const useDashboardPeriod = () => {
     [selection, today]
   );
 
+  // Also covers periods arriving by URL, so a shared link becomes the viewer's period.
   useEffect(() => {
     persistDashboardPeriod(selection);
   }, [selection]);
-
-  useEffect(() => {
-    const hasUrlSelection = Object.keys(search).length > 0;
-    if (hasUrlSelection) {
-      return;
-    }
-
-    void navigate({
-      search: dashboardSearchFromSelection(selection),
-      replace: true,
-    });
-  }, [navigate, search, selection]);
 
   const setSelection = useCallback(
     (next: DashboardPeriodSelection) => {

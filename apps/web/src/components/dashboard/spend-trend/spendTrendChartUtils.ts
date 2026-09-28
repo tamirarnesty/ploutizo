@@ -5,11 +5,9 @@ import {
   toCalendarDate,
 } from '@ploutizo/utils/dashboard-period';
 import type {
-  DashboardPeriodSelection,
-  DashboardPeriodShortcut,
-} from '@ploutizo/utils/dashboard-period';
-import type {
   DashboardOverviewBucket,
+  DashboardOverviewComparison,
+  DashboardOverviewMeta,
   GetDashboardOverviewResponse,
 } from '@ploutizo/types';
 
@@ -29,15 +27,17 @@ type PartialMonthEdges = { first: boolean; last: boolean };
 
 /**
  * Month buckets the chart only partly covers: the first when the range starts mid-month, and the last when that
- * month is not over by `through` (the date the chart runs to — today for All, whose range ends at the latest spend).
+ * month is not over by the date the chart runs to — the range end, or `today` for All, whose range ends at the
+ * latest spend.
  */
 export const partialMonthEdges = (
-  meta: GetDashboardOverviewResponse['meta'],
-  through: string
+  meta: DashboardOverviewMeta,
+  today: string
 ): PartialMonthEdges => {
   if (meta.bucket !== 'month' || !meta.range) {
     return { first: false, last: false };
   }
+  const through = meta.kind === 'all' ? today : meta.range.to;
   const lastMonthEnd = toCalendarDate(
     endOfMonth(parseCalendarDate(meta.range.to))
   );
@@ -74,30 +74,28 @@ const STANDALONE_SERIES_LABELS: SpendTrendSeriesLabels = {
   prior: '',
 };
 
-// Only these periods resolve with a prior window; every other period charts spend on its own.
-const COMPARISON_SERIES_LABELS: Partial<
-  Record<DashboardPeriodShortcut, SpendTrendSeriesLabels>
+const COMPARISON_SERIES_LABELS: Record<
+  DashboardOverviewComparison,
+  SpendTrendSeriesLabels
 > = {
-  mtd: { current: 'This month', prior: 'Last month' },
-  '30d': { current: 'Last 30 days', prior: 'Previous 30 days' },
-  ytd: { current: 'This year', prior: 'Last year' },
+  'previous-month': { current: 'This month', prior: 'Last month' },
+  'previous-30-days': { current: 'Last 30 days', prior: 'Previous 30 days' },
+  'previous-year': { current: 'This year', prior: 'Last year' },
 };
 
+/** Named from the response, so labels always match the data on screen, including while a new period loads. */
 export const spendTrendSeriesLabels = (
-  selection: DashboardPeriodSelection
+  meta: DashboardOverviewMeta
 ): SpendTrendSeriesLabels =>
-  (selection.kind === 'shortcut'
-    ? COMPARISON_SERIES_LABELS[selection.shortcut]
-    : undefined) ?? STANDALONE_SERIES_LABELS;
+  meta.prior
+    ? COMPARISON_SERIES_LABELS[meta.prior.comparison]
+    : STANDALONE_SERIES_LABELS;
 
 /** Says what the y-axis measures, since comparisons chart running totals and other periods chart per-bucket spend. */
-export const spendTrendCaption = (
-  labels: SpendTrendSeriesLabels,
-  bucket: DashboardOverviewBucket
-): string =>
-  labels.prior
-    ? `Running total vs ${labels.prior.toLowerCase()}`
-    : `Spend per ${bucket}`;
+export const spendTrendCaption = (meta: DashboardOverviewMeta): string =>
+  meta.prior
+    ? `Running total vs ${COMPARISON_SERIES_LABELS[meta.prior.comparison].prior.toLowerCase()}`
+    : `Spend per ${meta.bucket}`;
 
 /**
  * A comparison charts running totals, so each point reads "spent so far" against the prior window.

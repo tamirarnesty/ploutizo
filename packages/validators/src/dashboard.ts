@@ -7,6 +7,9 @@ const rangedOverviewQuerySchema = z
     bucket: z.enum(['day', 'month']),
     priorFrom: z.iso.date().optional(),
     priorTo: z.iso.date().optional(),
+    comparison: z
+      .enum(['previous-month', 'previous-30-days', 'previous-year'])
+      .optional(),
   })
   .strict()
   .refine((value) => value.from <= value.to, {
@@ -15,9 +18,10 @@ const rangedOverviewQuerySchema = z
   })
   .refine(
     (value) =>
-      (value.priorFrom === undefined) === (value.priorTo === undefined),
+      (value.priorFrom === undefined) === (value.priorTo === undefined) &&
+      (value.priorFrom === undefined) === (value.comparison === undefined),
     {
-      message: 'priorFrom and priorTo must be provided together',
+      message: 'priorFrom, priorTo and comparison must be provided together',
       path: ['priorFrom'],
     }
   )
@@ -32,15 +36,32 @@ const rangedOverviewQuerySchema = z
     }
   );
 
+/** No params means All; otherwise a range, optionally compared bucket by bucket with a prior window. */
 export const dashboardOverviewQuerySchema = z.union([
-  z.object({}).strict(),
-  rangedOverviewQuerySchema,
+  z
+    .object({})
+    .strict()
+    .transform(() => ({ kind: 'all' as const })),
+  rangedOverviewQuerySchema.transform(
+    ({ from, to, bucket, priorFrom, priorTo, comparison }) => ({
+      kind: 'ranged' as const,
+      range: { from, to },
+      bucket,
+      prior:
+        priorFrom !== undefined &&
+        priorTo !== undefined &&
+        comparison !== undefined
+          ? { from: priorFrom, to: priorTo, comparison }
+          : null,
+    })
+  ),
 ]);
 
-export type DashboardOverviewQuery = z.infer<
+export type DashboardOverviewQuery = z.output<
   typeof dashboardOverviewQuerySchema
 >;
 
-export type RangedDashboardOverviewQuery = z.infer<
-  typeof rangedOverviewQuerySchema
+export type RangedDashboardOverviewQuery = Extract<
+  DashboardOverviewQuery,
+  { kind: 'ranged' }
 >;

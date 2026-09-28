@@ -17,7 +17,11 @@ describe('resolveMonthToDateRange', () => {
       from: '2026-03-01',
       to: '2026-03-15',
       bucket: 'day',
-      prior: { from: '2026-02-01', to: '2026-02-15' },
+      prior: {
+        from: '2026-02-01',
+        to: '2026-02-15',
+        comparison: 'previous-month',
+      },
     });
   });
 
@@ -26,7 +30,11 @@ describe('resolveMonthToDateRange', () => {
       from: '2026-03-01',
       to: '2026-03-31',
       bucket: 'day',
-      prior: { from: '2026-02-01', to: '2026-02-28' },
+      prior: {
+        from: '2026-02-01',
+        to: '2026-02-28',
+        comparison: 'previous-month',
+      },
     });
   });
 
@@ -41,7 +49,11 @@ describe('resolveMonthToDateRange', () => {
       from: '2026-01-01',
       to: '2026-01-10',
       bucket: 'day',
-      prior: { from: '2025-12-01', to: '2025-12-10' },
+      prior: {
+        from: '2025-12-01',
+        to: '2025-12-10',
+        comparison: 'previous-month',
+      },
     });
   });
 });
@@ -57,7 +69,11 @@ describe('resolveDashboardPeriod', () => {
       from: '2026-03-01',
       to: '2026-03-24',
       bucket: 'day',
-      prior: { from: '2026-02-01', to: '2026-02-24' },
+      prior: {
+        from: '2026-02-01',
+        to: '2026-02-24',
+        comparison: 'previous-month',
+      },
     });
   });
 
@@ -69,7 +85,11 @@ describe('resolveDashboardPeriod', () => {
       from: '2026-02-23',
       to: '2026-03-24',
       bucket: 'day',
-      prior: { from: '2026-01-24', to: '2026-02-22' },
+      prior: {
+        from: '2026-01-24',
+        to: '2026-02-22',
+        comparison: 'previous-30-days',
+      },
     });
   });
 
@@ -93,7 +113,11 @@ describe('resolveDashboardPeriod', () => {
       from: '2026-01-01',
       to: '2026-03-24',
       bucket: 'day',
-      prior: { from: '2025-01-01', to: '2025-03-24' },
+      prior: {
+        from: '2025-01-01',
+        to: '2025-03-24',
+        comparison: 'previous-year',
+      },
     });
   });
 

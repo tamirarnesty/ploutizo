@@ -11,7 +11,6 @@ import { cn } from '@ploutizo/ui/lib/utils';
 import type { GetDashboardOverviewResponse } from '@ploutizo/types';
 import { SpendTrendBody } from '@/components/dashboard/spend-trend/SpendTrendBody';
 import { spendTrendCaption } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
-import type { SpendTrendSeriesLabels } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
 import type { UseQueryResult } from '@tanstack/react-query';
 
 type SpendTrendCardProps = {
@@ -19,15 +18,12 @@ type SpendTrendCardProps = {
     UseQueryResult<GetDashboardOverviewResponse>,
     'data' | 'isError' | 'isFetching'
   >;
-  seriesLabels: SpendTrendSeriesLabels;
-  /** Date the chart runs to: the period end, or today for All. */
-  through: string;
+  today: string;
 };
 
 export const SpendTrendCard = ({
   query: { data, isError, isFetching },
-  seriesLabels,
-  through,
+  today,
 }: SpendTrendCardProps) => {
   // A failed refetch keeps cached data on screen; only a settled failed first load shows the error.
   const showError = isError && data === undefined && !isFetching;
@@ -39,7 +35,7 @@ export const SpendTrendCard = ({
         <CardTitle className="text-lg leading-tight">Spend trend</CardTitle>
         {data ? (
           <CardDescription className="text-xs leading-normal">
-            {spendTrendCaption(seriesLabels, data.meta.bucket)}
+            {spendTrendCaption(data.meta)}
           </CardDescription>
         ) : null}
       </CardHeader>
@@ -61,11 +57,7 @@ export const SpendTrendCard = ({
                     'pointer-events-none opacity-50 motion-safe:transition-opacity'
                 )}
               >
-                <SpendTrendBody
-                  overview={data}
-                  through={through}
-                  seriesLabels={seriesLabels}
-                />
+                <SpendTrendBody overview={data} today={today} />
               </div>
             ) : null}
             {isBusy ? (

@@ -1,19 +1,18 @@
 import { CalendarDays } from 'lucide-react';
-import { max, startOfMonth, subMonths } from 'date-fns';
-import { useState } from 'react';
 import {
   DASHBOARD_PERIOD_SHORTCUTS,
   formatDashboardPeriodLabel,
-  parseCalendarDate,
-  toCalendarDate,
 } from '@ploutizo/utils/dashboard-period';
 import { Button } from '@ploutizo/ui/components/button';
-import { Calendar } from '@ploutizo/ui/components/calendar';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@ploutizo/ui/components/popover';
+  DateRangePicker,
+  DateRangePickerApply,
+  DateRangePickerCalendar,
+  DateRangePickerCancel,
+  DateRangePickerContent,
+  DateRangePickerFooter,
+  DateRangePickerTrigger,
+} from '@ploutizo/ui/components/date-range-picker';
 import {
   ToggleGroup,
   ToggleGroupItem,
@@ -23,7 +22,6 @@ import type {
   DashboardPeriodShortcut,
   ResolvedDashboardPeriod,
 } from '@ploutizo/utils/dashboard-period';
-import type { DateRange } from 'react-day-picker';
 
 const SHORTCUT_LABELS: Record<DashboardPeriodShortcut, string> = {
   mtd: 'MTD',
@@ -40,53 +38,15 @@ type DashboardPeriodSelectorProps = {
   onApplyCustomRange: (from: string, to: string) => void;
 };
 
-const committedRange = (
-  period: ResolvedDashboardPeriod
-): DateRange | undefined =>
-  period.kind === 'ranged'
-    ? { from: parseCalendarDate(period.from), to: parseCalendarDate(period.to) }
-    : undefined;
-
-/** First of the two visible months: the range start, unless that would hide the range end. */
-const calendarStartMonth = (range: DateRange | undefined): Date | undefined =>
-  range?.from && range.to
-    ? max([startOfMonth(range.from), subMonths(startOfMonth(range.to), 1)])
-    : undefined;
-
 export const DashboardPeriodSelector = ({
   selection,
   period,
   onSelectShortcut,
   onApplyCustomRange,
 }: DashboardPeriodSelectorProps) => {
-  const [open, setOpen] = useState(false);
-  const committed = committedRange(period);
-  const [pending, setPending] = useState<DateRange | undefined>(committed);
   const label = formatDashboardPeriodLabel(period);
-
-  const handleOpenChange = (next: boolean) => {
-    if (next) {
-      setPending(committed);
-    }
-    setOpen(next);
-  };
-
   const activeShortcut =
     selection.kind === 'shortcut' ? selection.shortcut : undefined;
-
-  const handleApply = () => {
-    const from = pending?.from ? toCalendarDate(pending.from) : '';
-    const to = pending?.to ? toCalendarDate(pending.to) : '';
-    if (!from || !to || from > to) {
-      return;
-    }
-    onApplyCustomRange(from, to);
-    setOpen(false);
-  };
-
-  const handleCancel = () => {
-    setOpen(false);
-  };
 
   return (
     <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
@@ -113,8 +73,11 @@ export const DashboardPeriodSelector = ({
         ))}
       </ToggleGroup>
 
-      <Popover open={open} onOpenChange={handleOpenChange}>
-        <PopoverTrigger
+      <DateRangePicker
+        value={period.kind === 'ranged' ? period : undefined}
+        onApply={({ from, to }) => onApplyCustomRange(from, to)}
+      >
+        <DateRangePickerTrigger
           render={
             <Button
               type="button"
@@ -128,24 +91,14 @@ export const DashboardPeriodSelector = ({
             </Button>
           }
         />
-        <PopoverContent className="w-auto p-0" align="end" side="bottom">
-          <Calendar
-            mode="range"
-            selected={pending}
-            onSelect={setPending}
-            numberOfMonths={2}
-            defaultMonth={calendarStartMonth(committed)}
-          />
-          <div className="flex justify-end gap-2 border-t border-border px-3 py-2">
-            <Button variant="outline" size="sm" onClick={handleCancel}>
-              Cancel
-            </Button>
-            <Button size="sm" onClick={handleApply}>
-              Apply
-            </Button>
-          </div>
-        </PopoverContent>
-      </Popover>
+        <DateRangePickerContent align="end">
+          <DateRangePickerCalendar />
+          <DateRangePickerFooter>
+            <DateRangePickerCancel />
+            <DateRangePickerApply />
+          </DateRangePickerFooter>
+        </DateRangePickerContent>
+      </DateRangePicker>
     </div>
   );
 };

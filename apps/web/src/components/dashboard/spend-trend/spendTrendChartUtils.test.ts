@@ -1,4 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import type {
+  DashboardOverviewComparison,
+  DashboardOverviewMeta,
+} from '@ploutizo/types';
 import {
   formatTrendBucket,
   partialMonthEdges,
@@ -47,8 +51,13 @@ describe('toSpendTrendChartData', () => {
     expect(
       toSpendTrendChartData({
         meta: {
+          kind: 'ranged',
           range: { from: '2026-03-01', to: '2026-03-03' },
-          prior: { from: '2026-02-01', to: '2026-02-02' },
+          prior: {
+            from: '2026-02-01',
+            to: '2026-02-02',
+            comparison: 'previous-month',
+          },
           bucket: 'day',
         },
         trend: [
@@ -72,6 +81,7 @@ describe('toSpendTrendChartData', () => {
     expect(
       toSpendTrendChartData({
         meta: {
+          kind: 'ranged',
           range: { from: '2026-01-01', to: '2026-02-28' },
           prior: null,
           bucket: 'month',
@@ -96,76 +106,98 @@ describe('toSpendTrendChartData', () => {
   });
 });
 
+const comparisonMeta = (
+  comparison: DashboardOverviewComparison
+): DashboardOverviewMeta => ({
+  kind: 'ranged',
+  range: { from: '2026-03-01', to: '2026-03-24' },
+  prior: { from: '2026-02-01', to: '2026-02-24', comparison },
+  bucket: 'day',
+});
+
+const monthlyMeta = (
+  kind: 'all' | 'ranged',
+  from: string,
+  to: string
+): DashboardOverviewMeta =>
+  kind === 'all'
+    ? { kind, range: { from, to }, prior: null, bucket: 'month' }
+    : { kind, range: { from, to }, prior: null, bucket: 'month' };
+
 describe('spendTrendSeriesLabels', () => {
   it.each([
-    ['mtd', 'This month', 'Last month'],
-    ['30d', 'Last 30 days', 'Previous 30 days'],
-    ['ytd', 'This year', 'Last year'],
-  ] as const)('names the %s comparison', (shortcut, current, prior) => {
-    expect(spendTrendSeriesLabels({ kind: 'shortcut', shortcut })).toEqual({
+    ['previous-month', 'This month', 'Last month'],
+    ['previous-30-days', 'Last 30 days', 'Previous 30 days'],
+    ['previous-year', 'This year', 'Last year'],
+  ] as const)('names the %s comparison', (comparison, current, prior) => {
+    expect(spendTrendSeriesLabels(comparisonMeta(comparison))).toEqual({
       current,
       prior,
     });
   });
 
-  it.each([
-    { kind: 'shortcut', shortcut: '6m' },
-    { kind: 'shortcut', shortcut: 'all' },
-    { kind: 'custom', from: '2026-01-01', to: '2026-01-31' },
-  ] as const)('labels a period without a comparison as Spend', (selection) => {
-    expect(spendTrendSeriesLabels(selection).current).toBe('Spend');
+  it('labels a response without a comparison as Spend', () => {
+    expect(
+      spendTrendSeriesLabels(monthlyMeta('ranged', '2026-04-01', '2026-09-27'))
+        .current
+    ).toBe('Spend');
   });
 });
 
 describe('spendTrendCaption', () => {
   it('describes a comparison as a running total against the prior window', () => {
-    expect(
-      spendTrendCaption({ current: 'This month', prior: 'Last month' }, 'day')
-    ).toBe('Running total vs last month');
+    expect(spendTrendCaption(comparisonMeta('previous-month'))).toBe(
+      'Running total vs last month'
+    );
   });
 
   it('describes a standalone period as spend per bucket', () => {
-    expect(spendTrendCaption({ current: 'Spend', prior: '' }, 'month')).toBe(
-      'Spend per month'
-    );
+    expect(
+      spendTrendCaption(monthlyMeta('all', '2026-01-15', '2026-03-12'))
+    ).toBe('Spend per month');
   });
 });
 
 describe('partialMonthEdges', () => {
-  const monthly = (from: string, to: string) => ({
-    range: { from, to },
-    prior: null,
-    bucket: 'month' as const,
-  });
-
   it('marks the current month as partial while it is in progress', () => {
     expect(
-      partialMonthEdges(monthly('2026-04-01', '2026-09-27'), '2026-09-27')
+      partialMonthEdges(
+        monthlyMeta('ranged', '2026-04-01', '2026-09-27'),
+        '2026-09-27'
+      )
     ).toEqual({ first: false, last: true });
   });
 
-  it('treats an earlier last month as whole once it has ended', () => {
+  it('marks the last month of a range that ends partway through it', () => {
     expect(
-      partialMonthEdges(monthly('2026-01-01', '2026-03-12'), '2026-09-27')
+      partialMonthEdges(
+        monthlyMeta('ranged', '2026-01-01', '2026-03-12'),
+        '2026-09-27'
+      )
+    ).toEqual({ first: false, last: true });
+  });
+
+  it('treats All’s last month as whole once it has ended, whenever the last spend fell', () => {
+    expect(
+      partialMonthEdges(
+        monthlyMeta('all', '2026-01-01', '2026-03-12'),
+        '2026-09-27'
+      )
     ).toEqual({ first: false, last: false });
   });
 
   it('marks a first month the range starts partway through', () => {
     expect(
-      partialMonthEdges(monthly('2025-11-15', '2026-02-28'), '2026-02-28')
+      partialMonthEdges(
+        monthlyMeta('ranged', '2025-11-15', '2026-02-28'),
+        '2026-02-28'
+      )
     ).toEqual({ first: true, last: false });
   });
 
   it('never marks daily buckets', () => {
     expect(
-      partialMonthEdges(
-        {
-          range: { from: '2026-09-01', to: '2026-09-27' },
-          prior: null,
-          bucket: 'day',
-        },
-        '2026-09-27'
-      )
+      partialMonthEdges(comparisonMeta('previous-month'), '2026-03-24')
     ).toEqual({ first: false, last: false });
   });
 });

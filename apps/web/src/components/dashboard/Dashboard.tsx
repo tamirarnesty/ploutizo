@@ -11,7 +11,6 @@ import { useGetSettlements } from '@/lib/data-access/settlements';
 import { selectCreditCardAccounts } from '@/lib/settlements';
 import { CardBalancesGrid } from '@/components/dashboard/card-balances/CardBalancesGrid';
 import { SpendTrendCard } from '@/components/dashboard/spend-trend/SpendTrendCard';
-import { spendTrendSeriesLabels } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
 import { DashboardHeader } from './DashboardHeader';
 import { useDashboardPeriod } from './useDashboardPeriod';
 import { SettleDialog } from './SettleDialog';
@@ -29,7 +28,6 @@ export const Dashboard = () => {
     applyCustomRange,
   } = useDashboardPeriod();
   const overviewQuery = useGetDashboardOverview(period);
-  const seriesLabels = spendTrendSeriesLabels(periodSelection);
   const { refetch: refetchOverview } = overviewQuery;
   const {
     data: settlements,
@@ -121,11 +119,7 @@ export const Dashboard = () => {
         the sidebar opens or closes, which only changes the available width.
       */}
       <div className="@container/dashboard space-y-4">
-        <SpendTrendCard
-          query={overviewQuery}
-          seriesLabels={seriesLabels}
-          through={period.kind === 'all' ? today : period.to}
-        />
+        <SpendTrendCard query={overviewQuery} today={today} />
         <div className="grid grid-cols-1 items-start gap-4 @4xl/dashboard:grid-cols-4">
           <div className="min-w-0 @4xl/dashboard:col-span-3">
             <CardBalancesGrid

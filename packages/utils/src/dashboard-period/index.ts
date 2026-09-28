@@ -15,6 +15,7 @@ import {
 } from 'date-fns';
 import type {
   DashboardOverviewBucket,
+  DashboardOverviewPrior,
   DashboardOverviewRange,
 } from '@ploutizo/types';
 
@@ -44,7 +45,7 @@ export type DashboardPeriodSearch = {
 type RangedDashboardPeriod = DashboardOverviewRange & {
   bucket: DashboardOverviewBucket;
   /** Window compared against the current one, bucket by bucket; null when the period has no comparison. */
-  prior: DashboardOverviewRange | null;
+  prior: DashboardOverviewPrior | null;
 };
 
 export type ResolvedDashboardPeriod =
@@ -79,6 +80,7 @@ export const resolveMonthToDateRange = (today: Date): RangedDashboardPeriod => {
     prior: {
       from: toCalendarDate(priorMonth),
       to: toCalendarDate(priorTo),
+      comparison: 'previous-month',
     },
   };
 };
@@ -93,6 +95,7 @@ const resolveYearToDateRange = (today: Date): RangedDashboardPeriod => {
     prior: {
       from: toCalendarDate(startOfYear(priorYear)),
       to: toCalendarDate(priorYear),
+      comparison: 'previous-year',
     },
   };
 };
@@ -105,6 +108,7 @@ const resolveRolling30DayRange = (today: Date): RangedDashboardPeriod => ({
   prior: {
     from: toCalendarDate(subDays(today, 59)),
     to: toCalendarDate(subDays(today, 30)),
+    comparison: 'previous-30-days',
   },
 });
 

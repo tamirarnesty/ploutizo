@@ -57,29 +57,21 @@ const buildTrend = (
 
 const getRangedOverview = async (
   orgId: string,
-  query: RangedDashboardOverviewQuery
+  { range, bucket, prior }: RangedDashboardOverviewQuery
 ): Promise<GetDashboardOverviewResponse> => {
-  const { bucket } = query;
-  const range = { from: query.from, to: query.to };
-  const priorRange =
-    query.priorFrom && query.priorTo
-      ? { from: query.priorFrom, to: query.priorTo }
-      : null;
-  const [amounts, prior] = await Promise.all([
+  const [amounts, priorAmounts] = await Promise.all([
     fetchAmountsByBucket(orgId, bucket, range),
-    priorRange
-      ? fetchAmountsByBucket(orgId, bucket, priorRange).then(
-          (priorAmounts) => ({
-            range: priorRange,
-            amounts: priorAmounts,
-          })
-        )
-      : null,
+    prior ? fetchAmountsByBucket(orgId, bucket, prior) : null,
   ]);
 
   return {
-    meta: { range, prior: priorRange, bucket },
-    trend: buildTrend(range, bucket, amounts, prior),
+    meta: { kind: 'ranged', range, prior, bucket },
+    trend: buildTrend(
+      range,
+      bucket,
+      amounts,
+      prior && priorAmounts ? { range: prior, amounts: priorAmounts } : null
+    ),
   };
 };
 
@@ -91,12 +83,15 @@ const getAllTimeOverview = async (
     fetchAmountsByBucket(orgId, 'month', {}),
   ]);
   if (first === null || last === null) {
-    return { meta: { range: null, prior: null, bucket: 'month' }, trend: [] };
+    return {
+      meta: { kind: 'all', range: null, prior: null, bucket: 'month' },
+      trend: [],
+    };
   }
 
   const range = { from: first, to: last };
   return {
-    meta: { range, prior: null, bucket: 'month' },
+    meta: { kind: 'all', range, prior: null, bucket: 'month' },
     trend: buildTrend(range, 'month', amounts, null),
   };
 };
@@ -105,6 +100,6 @@ export const getDashboardOverview = async (
   orgId: string,
   query: DashboardOverviewQuery
 ): Promise<GetDashboardOverviewResponse> =>
-  'from' in query
-    ? getRangedOverview(orgId, query as RangedDashboardOverviewQuery)
+  query.kind === 'ranged'
+    ? getRangedOverview(orgId, query)
     : getAllTimeOverview(orgId);

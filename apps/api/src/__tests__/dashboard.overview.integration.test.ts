@@ -49,6 +49,7 @@ const overviewQuery = (range: {
   bucket?: 'day' | 'month';
   priorFrom?: string;
   priorTo?: string;
+  comparison?: 'previous-month' | 'previous-30-days' | 'previous-year';
 }) => {
   const params = new URLSearchParams({ bucket: 'day', ...range });
   return `/dashboard/overview?${params.toString()}`;
@@ -78,6 +79,7 @@ const MARCH_VS_FEBRUARY = {
   to: '2026-03-31',
   priorFrom: '2026-02-01',
   priorTo: '2026-02-28',
+  comparison: 'previous-month' as const,
 };
 
 describe('GET /api/dashboard/overview integration', () => {
@@ -149,13 +151,19 @@ describe('GET /api/dashboard/overview integration', () => {
         to: '2026-03-15',
         priorFrom: '2026-02-01',
         priorTo: '2026-02-15',
+        comparison: 'previous-month',
       })
     );
     expect(res.status).toBe(200);
     const body = (await res.json()) as GetDashboardOverviewResponse;
     expect(body.meta).toEqual({
+      kind: 'ranged',
       range: { from: '2026-03-01', to: '2026-03-15' },
-      prior: { from: '2026-02-01', to: '2026-02-15' },
+      prior: {
+        from: '2026-02-01',
+        to: '2026-02-15',
+        comparison: 'previous-month',
+      },
       bucket: 'day',
     });
     expect(body.trend).toHaveLength(15);
@@ -188,6 +196,7 @@ describe('GET /api/dashboard/overview integration', () => {
         to: '2026-04-30',
         priorFrom: '2026-03-01',
         priorTo: '2026-03-30',
+        comparison: 'previous-month',
       })
     );
     const body = (await res.json()) as GetDashboardOverviewResponse;
@@ -217,6 +226,16 @@ describe('GET /api/dashboard/overview integration', () => {
       })
     );
     expect(halfPrior.status).toBe(400);
+
+    const unnamedPrior = await app.request(
+      overviewQuery({
+        from: '2026-03-05',
+        to: '2026-03-20',
+        priorFrom: '2026-02-05',
+        priorTo: '2026-02-20',
+      })
+    );
+    expect(unnamedPrior.status).toBe(400);
   });
 
   it('returns monthly buckets without a comparison when no prior window is given', async () => {
@@ -234,6 +253,7 @@ describe('GET /api/dashboard/overview integration', () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as GetDashboardOverviewResponse;
     expect(body.meta).toEqual({
+      kind: 'ranged',
       range: { from: '2026-01-01', to: '2026-03-24' },
       prior: null,
       bucket: 'month',
@@ -258,6 +278,7 @@ describe('GET /api/dashboard/overview integration', () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as GetDashboardOverviewResponse;
     expect(body.meta).toEqual({
+      kind: 'all',
       range: { from: '2026-01-15', to: '2026-02-10' },
       prior: null,
       bucket: 'month',
@@ -280,7 +301,7 @@ describe('GET /api/dashboard/overview integration', () => {
     const res = await app.request('/dashboard/overview');
     const body = (await res.json()) as GetDashboardOverviewResponse;
     expect(body).toEqual({
-      meta: { range: null, prior: null, bucket: 'month' },
+      meta: { kind: 'all', range: null, prior: null, bucket: 'month' },
       trend: [],
     });
   });
@@ -300,6 +321,7 @@ describe('GET /api/dashboard/overview integration', () => {
         to: '2026-03-05',
         priorFrom: '2026-02-01',
         priorTo: '2026-02-05',
+        comparison: 'previous-month',
       })
     );
     const body = (await res.json()) as GetDashboardOverviewResponse;

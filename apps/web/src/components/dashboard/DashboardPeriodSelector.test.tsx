@@ -8,7 +8,11 @@ const MTD_PERIOD = {
   from: '2026-03-01',
   to: '2026-03-24',
   bucket: 'day',
-  prior: { from: '2026-02-01', to: '2026-02-24' },
+  prior: {
+    from: '2026-02-01',
+    to: '2026-02-24',
+    comparison: 'previous-month',
+  },
 } as const;
 
 describe('DashboardPeriodSelector', () => {

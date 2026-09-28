@@ -26,7 +26,11 @@ const mtdPeriodMocks = () => ({
     from: '2026-03-01',
     to: '2026-03-24',
     bucket: 'day',
-    prior: { from: '2026-02-01', to: '2026-02-24' },
+    prior: {
+      from: '2026-02-01',
+      to: '2026-02-24',
+      comparison: 'previous-month',
+    },
   } as ResolvedDashboardPeriod,
   today: '2026-03-24',
 });
@@ -65,8 +69,13 @@ const OVERVIEW_PATH = '/api/dashboard/overview';
 
 const emptyOverview = {
   meta: {
+    kind: 'ranged',
     range: { from: '2026-03-01', to: '2026-03-24' },
-    prior: { from: '2026-02-01', to: '2026-02-24' },
+    prior: {
+      from: '2026-02-01',
+      to: '2026-02-24',
+      comparison: 'previous-month',
+    },
     bucket: 'day',
   },
   trend: [],
@@ -186,13 +195,16 @@ const renderDashboard = () => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(
+  const tree = () => (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider delay={0}>
         <Dashboard />
       </TooltipProvider>
     </QueryClientProvider>
   );
+  const result = render(tree());
+  /** Re-renders with the same query cache, e.g. after changing the mocked period. */
+  return { ...result, rerender: () => result.rerender(tree()) };
 };
 
 const refreshButton = () => screen.getByRole('button', { name: 'Refresh' });
@@ -373,7 +385,7 @@ describe('Dashboard', () => {
       String(call[0]).includes(OVERVIEW_PATH)
     );
     expect(String(overviewCall?.[0])).toContain(
-      `${OVERVIEW_PATH}?from=2026-03-01&to=2026-03-24&bucket=day&priorFrom=2026-02-01&priorTo=2026-02-24`
+      `${OVERVIEW_PATH}?from=2026-03-01&to=2026-03-24&bucket=day&priorFrom=2026-02-01&priorTo=2026-02-24&comparison=previous-month`
     );
   });
 
@@ -385,6 +397,7 @@ describe('Dashboard', () => {
     periodMocks.resolved = { kind: 'all' };
     overviewBody = {
       meta: {
+        kind: 'all',
         range: { from: '2026-01-01', to: '2026-03-01' },
         prior: null,
         bucket: 'month',
@@ -406,6 +419,42 @@ describe('Dashboard', () => {
     renderDashboard();
     expect(await screen.findByText('Spend per month')).toBeInTheDocument();
     expect(screen.queryByText('Last month')).not.toBeInTheDocument();
+  });
+
+  it('keeps the caption naming the data on screen while a new period loads', async () => {
+    const { rerender } = renderDashboard();
+    expect(
+      await screen.findByText('Running total vs last month')
+    ).toBeInTheDocument();
+
+    const release = holdRequests();
+    periodMocks.selection = {
+      kind: 'shortcut',
+      shortcut: '6m',
+    } as DashboardPeriodSelection;
+    periodMocks.resolved = {
+      kind: 'ranged',
+      from: '2025-10-01',
+      to: '2026-03-24',
+      bucket: 'month',
+      prior: null,
+    };
+    overviewBody = {
+      meta: {
+        kind: 'ranged',
+        range: { from: '2025-10-01', to: '2026-03-24' },
+        prior: null,
+        bucket: 'month',
+      },
+      trend: [],
+    };
+    rerender();
+
+    expect(cardFor('Spend trend')).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByText('Running total vs last month')).toBeInTheDocument();
+
+    release();
+    expect(await screen.findByText('Spend per month')).toBeInTheDocument();
   });
 
   it.each(['Card Balances', 'Settlement'])(

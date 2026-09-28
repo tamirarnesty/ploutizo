@@ -15,15 +15,14 @@ import { SpendTrendChart } from '@/components/dashboard/spend-trend/SpendTrendCh
 import {
   partialMonthEdges,
   segmentPartialMonths,
+  spendTrendSeriesLabels,
   toSpendTrendChartData,
 } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
-import type { SpendTrendSeriesLabels } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
 
 type SpendTrendBodyProps = {
   overview: GetDashboardOverviewResponse;
-  /** Date the chart runs to, which decides whether its last month is still in progress. */
-  through: string;
-  seriesLabels: SpendTrendSeriesLabels;
+  /** Decides whether All's last month is still in progress. */
+  today: string;
 };
 
 const hasSpendActivity = (trend: DashboardOverviewTrendPoint[]): boolean =>
@@ -31,18 +30,14 @@ const hasSpendActivity = (trend: DashboardOverviewTrendPoint[]): boolean =>
     (point) => point.amountCents !== 0 || (point.priorAmountCents ?? 0) !== 0
   );
 
-export const SpendTrendBody = ({
-  overview,
-  through,
-  seriesLabels,
-}: SpendTrendBodyProps) => {
+export const SpendTrendBody = ({ overview, today }: SpendTrendBodyProps) => {
   const chartData = useMemo(
     () =>
       segmentPartialMonths(
         toSpendTrendChartData(overview),
-        partialMonthEdges(overview.meta, through)
+        partialMonthEdges(overview.meta, today)
       ),
-    [overview, through]
+    [overview, today]
   );
 
   if (!hasSpendActivity(overview.trend)) {
@@ -66,7 +61,7 @@ export const SpendTrendBody = ({
       data={chartData}
       bucket={overview.meta.bucket}
       hasPriorSeries={overview.meta.prior !== null}
-      seriesLabels={seriesLabels}
+      seriesLabels={spendTrendSeriesLabels(overview.meta)}
     />
   );
 };
