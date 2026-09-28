@@ -1,22 +1,18 @@
-import { createIsomorphicFn } from '@tanstack/react-start';
 import type { DashboardPeriodSelection } from '@ploutizo/utils/dashboard-period';
-import { getRequestDashboardPeriodCookie } from './cookie.server';
+import { readCookie, writeCookie } from '@/lib/cookies/persistent-cookie';
 import {
   DASHBOARD_PERIOD_COOKIE,
-  dashboardPeriodCookieFrom,
   parseDashboardPeriodCookie,
   serializeDashboardPeriodCookie,
 } from './cookie-value';
 
-const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
-
-/** The last period the viewer picked, readable on the server so the first render already uses it. */
-export const readPersistedDashboardPeriod = createIsomorphicFn()
-  .client(() =>
-    parseDashboardPeriodCookie(dashboardPeriodCookieFrom(document.cookie))
-  )
-  .server(() => parseDashboardPeriodCookie(getRequestDashboardPeriodCookie()));
+/** The last period the viewer picked. */
+export const readPersistedDashboardPeriod = () =>
+  parseDashboardPeriodCookie(readCookie(DASHBOARD_PERIOD_COOKIE));
 
 export const persistDashboardPeriod = (selection: DashboardPeriodSelection) => {
-  document.cookie = `${DASHBOARD_PERIOD_COOKIE}=${serializeDashboardPeriodCookie(selection)}; path=/; max-age=${ONE_YEAR_SECONDS}; samesite=lax`;
+  writeCookie(
+    DASHBOARD_PERIOD_COOKIE,
+    serializeDashboardPeriodCookie(selection)
+  );
 };

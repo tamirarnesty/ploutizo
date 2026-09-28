@@ -68,7 +68,7 @@ export const SpendTrendChart = ({
           tickLine={false}
           axisLine={false}
           tickMargin={8}
-          width={56}
+          width="auto"
           domain={yDomain}
           tickFormatter={formatTrendCurrency}
         />

@@ -1,4 +1,8 @@
-import { createFileRoute, redirect } from '@tanstack/react-router';
+import {
+  createFileRoute,
+  redirect,
+  retainSearchParams,
+} from '@tanstack/react-router';
 import {
   DEFAULT_DASHBOARD_PERIOD,
   dashboardSearchFromSelection,
@@ -12,6 +16,10 @@ import { householdMembersQueryOptions } from '@/lib/data-access/household';
 import { settlementsQueryOptions } from '@/lib/data-access/settlements';
 import { readPersistedDashboardPeriod } from '@/lib/dashboard-period/cookie';
 import { validateDashboardSearch } from '@/lib/dashboard-period/validateDashboardSearch';
+import {
+  DEFAULT_SPEND_TREND_MODE,
+  readPersistedSpendTrendMode,
+} from '@/lib/spend-trend-mode';
 
 export const Route = createFileRoute('/_layout/dashboard')({
   staticData: {
@@ -22,21 +30,34 @@ export const Route = createFileRoute('/_layout/dashboard')({
     },
   },
   validateSearch: validateDashboardSearch,
-  // A URL without a period redirects to the viewer's last one, else the default, so the URL always names it.
+  // Period links name only the period; the mode stays as it was.
+  search: { middlewares: [retainSearchParams(['trend'])] },
+  // A URL missing the period or the mode redirects to the viewer's last ones, else the defaults, so the URL
+  // always names both and a shared link opens on the same chart.
   beforeLoad: ({ search }) => {
     const periodSelection = selectionFromDashboardSearch(search);
-    if (!periodSelection) {
+    const spendTrendMode = search.trend;
+    if (!periodSelection || !spendTrendMode) {
       throw redirect({
         to: '/dashboard',
-        search: dashboardSearchFromSelection(
-          readPersistedDashboardPeriod() ?? DEFAULT_DASHBOARD_PERIOD
-        ),
+        search: {
+          ...dashboardSearchFromSelection(
+            periodSelection ??
+              readPersistedDashboardPeriod() ??
+              DEFAULT_DASHBOARD_PERIOD
+          ),
+          trend:
+            spendTrendMode ??
+            readPersistedSpendTrendMode() ??
+            DEFAULT_SPEND_TREND_MODE,
+        },
         replace: true,
       });
     }
-    return { periodSelection };
+    return { periodSelection, spendTrendMode };
   },
-  loaderDeps: ({ search }) => search,
+  // The mode only changes how the chart draws the same data.
+  loaderDeps: ({ search: { range, from, to } }) => ({ range, from, to }),
   loader: async ({ context }) => {
     if (!(await isHouseholdLoaderReady(context))) {
       return;

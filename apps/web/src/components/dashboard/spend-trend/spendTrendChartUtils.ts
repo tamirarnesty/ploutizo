@@ -11,6 +11,7 @@ import type {
   DashboardOverviewMeta,
   GetDashboardOverviewResponse,
 } from '@ploutizo/types';
+import type { SpendTrendMode } from '@/lib/spend-trend-mode';
 
 type SpendTrendChartPoint = {
   bucketStart: string;
@@ -29,7 +30,7 @@ type PartialBucketEdges = { first: boolean; last: boolean };
 /**
  * Week or month buckets the chart only partly covers: the first when the range starts partway into it, and the
  * last when it is not over by the date the chart runs to — the range end, or `today` for All, whose range ends at
- * the latest spend.
+ * the latest spend. All's first bucket is always whole: its range starts at the first spend, with none before it.
  */
 export const partialBucketEdges = (
   meta: DashboardOverviewMeta,
@@ -41,7 +42,7 @@ export const partialBucketEdges = (
   const { from, to, grain } = meta.range;
   const through = meta.kind === 'all' ? today : to;
   return {
-    first: from !== bucketBounds(from, grain).from,
+    first: meta.kind !== 'all' && from !== bucketBounds(from, grain).from,
     last: through < bucketBounds(to, grain).to,
   };
 };
@@ -89,28 +90,36 @@ export const spendTrendSeriesLabels = (
     ? { current: 'This period', prior: 'Prior period' }
     : { current: 'Spend', prior: '' };
 
-/** Says what the y-axis measures, since comparisons chart running totals and All charts per-bucket spend. */
-export const spendTrendCaption = (meta: DashboardOverviewMeta): string => {
+/** Names each mode in the chart's toggle, per bucket in the grain on screen. */
+export const spendTrendModeLabel = (
+  mode: SpendTrendMode,
+  grain: DashboardOverviewGrain
+): string => (mode === 'running' ? 'Running total' : `Per ${grain}`);
+
+/** Says what the y-axis measures and, when there is one, the window it is compared against. */
+export const spendTrendCaption = (
+  meta: DashboardOverviewMeta,
+  mode: SpendTrendMode
+): string => {
+  const measure =
+    mode === 'running' ? 'Running total' : `Spend per ${spendTrendGrain(meta)}`;
   const prior = spendTrendPriorRange(meta);
-  if (prior) {
-    return `Running total vs ${formatCalendarDateRange(prior)}`;
-  }
-  return `Spend per ${spendTrendGrain(meta)}`;
+  return prior ? `${measure} vs ${formatCalendarDateRange(prior)}` : measure;
 };
 
 /**
- * A comparison charts running totals, so each point reads "spent so far" against the prior window.
- * Without one, each point is that bucket's own spend.
+ * Running mode reads each point as "spent so far", for both series. Bucket mode charts each bucket's own spend
+ * against the prior window's matching bucket. Buckets with no prior counterpart have no prior point in either.
  */
-export const toSpendTrendChartData = ({
-  meta,
-  trend,
-}: GetDashboardOverviewResponse): SpendTrendChartPoint[] => {
-  if (spendTrendPriorRange(meta) === null) {
+export const toSpendTrendChartData = (
+  { trend }: GetDashboardOverviewResponse,
+  mode: SpendTrendMode
+): SpendTrendChartPoint[] => {
+  if (mode === 'bucket') {
     return trend.map((point) => ({
       bucketStart: point.bucketStart,
       current: point.amountCents,
-      prior: null,
+      prior: point.priorAmountCents,
     }));
   }
 

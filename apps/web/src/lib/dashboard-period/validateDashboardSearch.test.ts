@@ -29,4 +29,19 @@ describe('validateDashboardSearch', () => {
       validateDashboardSearch({ from: '2026-01-01', to: '2026-01-01' })
     ).toEqual({ from: '2026-01-01', to: '2026-01-01' });
   });
+
+  it('keeps the spend trend mode alongside the period', () => {
+    expect(validateDashboardSearch({ range: 'ytd', trend: 'running' })).toEqual(
+      { range: 'ytd', trend: 'running' }
+    );
+  });
+
+  it('reads the period and the mode independently', () => {
+    expect(validateDashboardSearch({ range: 'nope', trend: 'bucket' })).toEqual(
+      { trend: 'bucket' }
+    );
+    expect(validateDashboardSearch({ range: '6m', trend: 'nope' })).toEqual({
+      range: '6m',
+    });
+  });
 });

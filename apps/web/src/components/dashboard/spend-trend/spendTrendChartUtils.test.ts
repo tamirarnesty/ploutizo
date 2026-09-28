@@ -8,6 +8,7 @@ import {
   partialBucketEdges,
   segmentPartialBuckets,
   spendTrendCaption,
+  spendTrendModeLabel,
   spendTrendSeriesLabels,
   spendTrendYDomain,
   toSpendTrendChartData,
@@ -68,57 +69,62 @@ describe('formatTrendBucket', () => {
 });
 
 describe('toSpendTrendChartData', () => {
-  it('charts running totals for both series when there is a comparison', () => {
-    expect(
-      toSpendTrendChartData({
-        meta: {
-          kind: 'ranged',
-          range: {
-            from: '2026-03-01',
-            to: '2026-03-03',
-            priorFrom: '2026-02-01',
-            priorTo: '2026-02-02',
-            grain: 'day',
-          },
-        },
-        trend: [
-          { bucketStart: '2026-03-01', amountCents: 100, priorAmountCents: 50 },
-          { bucketStart: '2026-03-02', amountCents: 0, priorAmountCents: 70 },
-          {
-            bucketStart: '2026-03-03',
-            amountCents: -30,
-            priorAmountCents: null,
-          },
-        ],
-      })
-    ).toEqual([
+  const comparison = {
+    meta: rangedMeta('day', '2026-03-01', '2026-03-03'),
+    trend: [
+      { bucketStart: '2026-03-01', amountCents: 100, priorAmountCents: 50 },
+      { bucketStart: '2026-03-02', amountCents: 0, priorAmountCents: 70 },
+      { bucketStart: '2026-03-03', amountCents: -30, priorAmountCents: null },
+    ],
+  };
+  const allTime = {
+    meta: allMeta('2026-01-01', '2026-02-28'),
+    trend: [
+      { bucketStart: '2026-01-01', amountCents: 500, priorAmountCents: null },
+      { bucketStart: '2026-02-01', amountCents: 700, priorAmountCents: null },
+    ],
+  };
+
+  it('charts running totals for both series in running mode', () => {
+    expect(toSpendTrendChartData(comparison, 'running')).toEqual([
       { bucketStart: '2026-03-01', current: 100, prior: 50 },
       { bucketStart: '2026-03-02', current: 100, prior: 120 },
       { bucketStart: '2026-03-03', current: 70, prior: null },
     ]);
   });
 
-  it('charts each bucket on its own for All, which has no comparison', () => {
-    expect(
-      toSpendTrendChartData({
-        meta: allMeta('2026-01-01', '2026-02-28'),
-        trend: [
-          {
-            bucketStart: '2026-01-01',
-            amountCents: 500,
-            priorAmountCents: null,
-          },
-          {
-            bucketStart: '2026-02-01',
-            amountCents: 700,
-            priorAmountCents: null,
-          },
-        ],
-      })
-    ).toEqual([
+  it('charts each bucket against its matching prior bucket in bucket mode', () => {
+    expect(toSpendTrendChartData(comparison, 'bucket')).toEqual([
+      { bucketStart: '2026-03-01', current: 100, prior: 50 },
+      { bucketStart: '2026-03-02', current: 0, prior: 70 },
+      { bucketStart: '2026-03-03', current: -30, prior: null },
+    ]);
+  });
+
+  it('charts All’s running total from its first month in running mode', () => {
+    expect(toSpendTrendChartData(allTime, 'running')).toEqual([
+      { bucketStart: '2026-01-01', current: 500, prior: null },
+      { bucketStart: '2026-02-01', current: 1200, prior: null },
+    ]);
+  });
+
+  it('charts each of All’s months on its own in bucket mode', () => {
+    expect(toSpendTrendChartData(allTime, 'bucket')).toEqual([
       { bucketStart: '2026-01-01', current: 500, prior: null },
       { bucketStart: '2026-02-01', current: 700, prior: null },
     ]);
+  });
+});
+
+describe('spendTrendModeLabel', () => {
+  it('names bucket mode by the grain on screen', () => {
+    expect(spendTrendModeLabel('bucket', 'day')).toBe('Per day');
+    expect(spendTrendModeLabel('bucket', 'week')).toBe('Per week');
+    expect(spendTrendModeLabel('bucket', 'month')).toBe('Per month');
+  });
+
+  it('names running mode the same at every grain', () => {
+    expect(spendTrendModeLabel('running', 'week')).toBe('Running total');
   });
 });
 
@@ -138,17 +144,23 @@ describe('spendTrendSeriesLabels', () => {
 });
 
 describe('spendTrendCaption', () => {
-  it('names the prior window the running total is compared against', () => {
-    expect(spendTrendCaption(rangedMeta('day'))).toBe(
+  it('names the measure and the prior window it is compared against', () => {
+    expect(spendTrendCaption(rangedMeta('day'), 'running')).toBe(
       'Running total vs Feb 1 – Feb 24, 2026'
+    );
+    expect(spendTrendCaption(rangedMeta('week'), 'bucket')).toBe(
+      'Spend per week vs Feb 1 – Feb 24, 2026'
     );
   });
 
-  it('describes All as spend per month', () => {
-    expect(spendTrendCaption(allMeta('2026-01-15', '2026-03-12'))).toBe(
-      'Spend per month'
-    );
-    expect(spendTrendCaption({ kind: 'all', range: null })).toBe(
+  it('names only the measure for All, which has no comparison', () => {
+    expect(
+      spendTrendCaption(allMeta('2026-01-15', '2026-03-12'), 'bucket')
+    ).toBe('Spend per month');
+    expect(
+      spendTrendCaption(allMeta('2026-01-15', '2026-03-12'), 'running')
+    ).toBe('Running total');
+    expect(spendTrendCaption({ kind: 'all', range: null }, 'bucket')).toBe(
       'Spend per month'
     );
   });
@@ -174,6 +186,12 @@ describe('partialBucketEdges', () => {
     expect(
       partialBucketEdges(allMeta('2026-01-01', '2026-09-12'), '2026-09-27')
     ).toEqual({ first: false, last: true });
+  });
+
+  it('treats All’s first month as whole, though its first spend falls partway through', () => {
+    expect(
+      partialBucketEdges(allMeta('2026-01-07', '2026-03-12'), '2026-09-27')
+    ).toEqual({ first: false, last: false });
   });
 
   it('marks a first month the range starts partway through', () => {

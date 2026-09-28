@@ -20,9 +20,11 @@ import {
   spendTrendSeriesLabels,
   toSpendTrendChartData,
 } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
+import type { SpendTrendMode } from '@/lib/spend-trend-mode';
 
 type SpendTrendBodyProps = {
   overview: GetDashboardOverviewResponse;
+  mode: SpendTrendMode;
   /** Decides whether All's last bucket is still in progress. */
   today: string;
 };
@@ -32,14 +34,18 @@ const hasSpendActivity = (trend: DashboardOverviewTrendPoint[]): boolean =>
     (point) => point.amountCents !== 0 || (point.priorAmountCents ?? 0) !== 0
   );
 
-export const SpendTrendBody = ({ overview, today }: SpendTrendBodyProps) => {
+export const SpendTrendBody = ({
+  overview,
+  mode,
+  today,
+}: SpendTrendBodyProps) => {
   const chartData = useMemo(
     () =>
       segmentPartialBuckets(
-        toSpendTrendChartData(overview),
+        toSpendTrendChartData(overview, mode),
         partialBucketEdges(overview.meta, today)
       ),
-    [overview, today]
+    [overview, mode, today]
   );
 
   if (!hasSpendActivity(overview.trend)) {

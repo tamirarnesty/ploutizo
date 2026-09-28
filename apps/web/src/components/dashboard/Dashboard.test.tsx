@@ -37,12 +37,10 @@ vi.mock('@/lib/access/household-loader-ready', async (importOriginal) => ({
   isHouseholdLoaderReady: () => Promise.resolve(loaderReady.value),
 }));
 
-vi.mock('@/lib/dashboard-period/cookie.server', async () => {
-  const { dashboardPeriodCookieFrom } =
-    await import('@/lib/dashboard-period/cookie-value');
+vi.mock('@/lib/cookies/request-cookie.server', async () => {
+  const { cookieValueFrom } = await import('@/lib/cookies/cookie-value');
   return {
-    getRequestDashboardPeriodCookie: () =>
-      dashboardPeriodCookieFrom(document.cookie),
+    getRequestCookie: (name: string) => cookieValueFrom(document.cookie, name),
   };
 });
 
@@ -220,11 +218,19 @@ const setPeriodCookie = (value: string) => {
   document.cookie = `dashboard_period=${value}; path=/`;
 };
 
-const periodCookie = () =>
+const setModeCookie = (value: string) => {
+  document.cookie = `spend_trend_mode=${value}; path=/`;
+};
+
+const cookieNamed = (name: string) =>
   document.cookie
     .split('; ')
-    .find((entry) => entry.startsWith('dashboard_period='))
+    .find((entry) => entry.startsWith(`${name}=`))
     ?.split('=')[1];
+
+const periodCookie = () => cookieNamed('dashboard_period');
+
+const modeCookie = () => cookieNamed('spend_trend_mode');
 
 const createDashboardRouter = (initialLocation: string) => {
   const queryClient = new QueryClient({
@@ -307,6 +313,7 @@ describe('Dashboard', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-03-24T12:00:00'));
     document.cookie = 'dashboard_period=; path=/; max-age=0';
+    document.cookie = 'spend_trend_mode=; path=/; max-age=0';
     loaderReady.value = false;
     settlementsBody = settlements;
     membersBody = members;
@@ -326,14 +333,17 @@ describe('Dashboard', () => {
     it('opens on month to date when neither the URL nor a past visit names a period', async () => {
       const router = await renderDashboard();
 
-      expect(router.state.location.search).toEqual({ range: 'mtd' });
+      expect(router.state.location.search).toEqual({
+        range: 'mtd',
+        trend: 'bucket',
+      });
       await waitFor(() => {
         expect(overviewRequests()).toEqual([
           `${OVERVIEW_PATH}?from=2026-03-01&to=2026-03-24`,
         ]);
       });
       expect(
-        await screen.findByText('Running total vs Feb 1 – Feb 24, 2026')
+        await screen.findByText('Spend per day vs Feb 1 – Feb 24, 2026')
       ).toBeInTheDocument();
     });
 
@@ -344,6 +354,7 @@ describe('Dashboard', () => {
       expect(router.state.location.search).toEqual({
         from: '2026-01-01',
         to: '2026-01-15',
+        trend: 'bucket',
       });
       await waitFor(() => {
         expect(overviewRequests()).toEqual([
@@ -372,7 +383,10 @@ describe('Dashboard', () => {
       setPeriodCookie('6m');
       const router = await renderDashboard('/dashboard?range=30d');
 
-      expect(router.state.location.search).toEqual({ range: '30d' });
+      expect(router.state.location.search).toEqual({
+        range: '30d',
+        trend: 'bucket',
+      });
       await waitFor(() => {
         expect(overviewRequests()).toEqual([
           `${OVERVIEW_PATH}?from=2026-02-23&to=2026-03-24`,
@@ -386,7 +400,10 @@ describe('Dashboard', () => {
         '/dashboard?range=ytd&from=2026-01-01&to=2026-01-31'
       );
 
-      expect(router.state.location.search).toEqual({ range: 'mtd' });
+      expect(router.state.location.search).toEqual({
+        range: 'mtd',
+        trend: 'bucket',
+      });
     });
 
     it('refetches the overview for the new range when a shortcut is picked', async () => {
@@ -403,10 +420,13 @@ describe('Dashboard', () => {
           `${OVERVIEW_PATH}?from=2026-01-01&to=2026-03-24`
         );
       });
-      expect(router.state.location.search).toEqual({ range: 'ytd' });
+      expect(router.state.location.search).toEqual({
+        range: 'ytd',
+        trend: 'bucket',
+      });
       expect(periodCookie()).toBe('ytd');
       expect(
-        await screen.findByText('Running total vs Oct 1 – Dec 24, 2025')
+        await screen.findByText('Spend per week vs Oct 1 – Dec 24, 2025')
       ).toBeInTheDocument();
     });
 
@@ -424,7 +444,10 @@ describe('Dashboard', () => {
       await user.click(day(/March 10th, 2026/));
       await user.click(screen.getByRole('button', { name: 'Cancel' }));
 
-      expect(router.state.location.search).toEqual({ range: 'mtd' });
+      expect(router.state.location.search).toEqual({
+        range: 'mtd',
+        trend: 'bucket',
+      });
       expect(overviewRequests()).toHaveLength(1);
 
       await user.click(trigger());
@@ -435,6 +458,7 @@ describe('Dashboard', () => {
         expect(router.state.location.search).toEqual({
           from: '2026-03-01',
           to: '2026-03-10',
+          trend: 'bucket',
         });
       });
       await waitFor(() => {
@@ -460,7 +484,7 @@ describe('Dashboard', () => {
       const user = userEvent.setup();
       await renderDashboard();
       expect(
-        await screen.findByText('Running total vs Feb 1 – Feb 24, 2026')
+        await screen.findByText('Spend per day vs Feb 1 – Feb 24, 2026')
       ).toBeInTheDocument();
 
       const release = holdRequests();
@@ -470,12 +494,12 @@ describe('Dashboard', () => {
         expect(cardFor('Spend trend')).toHaveAttribute('aria-busy', 'true');
       });
       expect(
-        screen.getByText('Running total vs Feb 1 – Feb 24, 2026')
+        screen.getByText('Spend per day vs Feb 1 – Feb 24, 2026')
       ).toBeInTheDocument();
 
       release();
       expect(
-        await screen.findByText('Running total vs Apr 1 – Sep 24, 2025')
+        await screen.findByText('Spend per week vs Apr 1 – Sep 24, 2025')
       ).toBeInTheDocument();
     });
 
@@ -493,6 +517,109 @@ describe('Dashboard', () => {
         `${OVERVIEW_PATH}?from=2026-01-01&to=2026-03-24`,
       ]);
       expect(requestCount(SETTLEMENTS_PATH)).toBe(1);
+    });
+  });
+
+  describe('spend trend mode', () => {
+    const modeButton = (name: string) => screen.getByRole('button', { name });
+
+    it('opens per bucket when neither the URL nor a past visit names a mode', async () => {
+      await renderDashboard();
+
+      expect(
+        await screen.findByRole('button', { name: 'Per day' })
+      ).toHaveAttribute('aria-pressed', 'true');
+      expect(modeButton('Running total')).toHaveAttribute(
+        'aria-pressed',
+        'false'
+      );
+    });
+
+    it('restores the last visit’s mode when the URL names none', async () => {
+      setModeCookie('running');
+      const router = await renderDashboard('/dashboard?range=mtd');
+
+      expect(router.state.location.search).toEqual({
+        range: 'mtd',
+        trend: 'running',
+      });
+      expect(
+        await screen.findByText('Running total vs Feb 1 – Feb 24, 2026')
+      ).toBeInTheDocument();
+    });
+
+    it('prefers the URL’s mode over the last visit’s and remembers it', async () => {
+      setModeCookie('bucket');
+      await renderDashboard('/dashboard?range=mtd&trend=running');
+
+      expect(
+        await screen.findByText('Running total vs Feb 1 – Feb 24, 2026')
+      ).toBeInTheDocument();
+      expect(modeCookie()).toBe('running');
+    });
+
+    it('redraws the same data in the picked mode and remembers it', async () => {
+      const user = userEvent.setup();
+      const router = await renderDashboard();
+      await waitFor(() => {
+        expect(overviewRequests()).toHaveLength(1);
+      });
+
+      await user.click(
+        await screen.findByRole('button', { name: 'Running total' })
+      );
+
+      expect(
+        await screen.findByText('Running total vs Feb 1 – Feb 24, 2026')
+      ).toBeInTheDocument();
+      expect(router.state.location.search).toEqual({
+        range: 'mtd',
+        trend: 'running',
+      });
+      expect(modeCookie()).toBe('running');
+      expect(overviewRequests()).toHaveLength(1);
+    });
+
+    it('keeps the mode when the active option is clicked again', async () => {
+      const user = userEvent.setup();
+      const router = await renderDashboard();
+
+      await user.click(await screen.findByRole('button', { name: 'Per day' }));
+
+      expect(router.state.location.search).toEqual({
+        range: 'mtd',
+        trend: 'bucket',
+      });
+      expect(modeButton('Per day')).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('keeps the mode when the period changes', async () => {
+      const user = userEvent.setup();
+      const router = await renderDashboard(
+        '/dashboard?from=2026-03-01&to=2026-03-10&trend=running'
+      );
+
+      await user.click(screen.getByRole('button', { name: 'YTD' }));
+
+      await waitFor(() => {
+        expect(router.state.location.search).toEqual({
+          range: 'ytd',
+          trend: 'running',
+        });
+      });
+      expect(
+        await screen.findByText('Running total vs Oct 1 – Dec 24, 2025')
+      ).toBeInTheDocument();
+    });
+
+    it('keeps the URL’s mode when the URL names no period', async () => {
+      setPeriodCookie('6m');
+      const router = await renderDashboard('/dashboard?trend=running');
+
+      expect(router.state.location.search).toEqual({
+        range: '6m',
+        trend: 'running',
+      });
     });
   });
 

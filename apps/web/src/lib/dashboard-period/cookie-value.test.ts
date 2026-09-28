@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  dashboardPeriodCookieFrom,
   parseDashboardPeriodCookie,
   serializeDashboardPeriodCookie,
 } from '@/lib/dashboard-period/cookie-value';
@@ -21,12 +20,4 @@ describe('dashboard period cookie value', () => {
       expect(parseDashboardPeriodCookie(value)).toBeNull();
     }
   );
-
-  it('reads its entry from a cookie string', () => {
-    expect(
-      dashboardPeriodCookieFrom(
-        'sidebar_state=true; dashboard_period=2026-01-01_2026-01-15; other=1'
-      )
-    ).toBe('2026-01-01_2026-01-15');
-  });
 });

@@ -25,12 +25,3 @@ export const parseDashboardPeriodCookie = (
   );
   return parsed.success ? selectionFromDashboardSearch(parsed.data) : null;
 };
-
-/** Reads the cookie from a `document.cookie` string. */
-export const dashboardPeriodCookieFrom = (
-  cookieHeader: string
-): string | undefined =>
-  cookieHeader
-    .split('; ')
-    .find((entry) => entry.startsWith(`${DASHBOARD_PERIOD_COOKIE}=`))
-    ?.slice(DASHBOARD_PERIOD_COOKIE.length + 1);
