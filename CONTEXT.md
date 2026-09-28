@@ -366,7 +366,7 @@ A named rolling window re-resolved against today's date on every visit: MTD, 30d
 _Avoid_: Fixed month, saved dates for shortcuts
 
 **Prior period**:
-The window a **dashboard period** is compared against: the immediately preceding window of equal length, derived from the period's dates alone. A period starting on the 1st steps back its number of calendar months, keeping its end day clamped to shorter months (so MTD, 6m, and YTD compare with the months just before them); any other period steps back its own number of days. **All** has no prior period.
+The window a **dashboard period** is compared against, chosen by its **period shortcut**. MTD, 6m, and YTD compare with the same stretch one month, six months, or one year earlier, keeping the end day (clamped to a shorter month; month-end to month-end). 30d and custom ranges compare with the immediately preceding window of equal length. **All** has no prior period.
 _Avoid_: Last year, baseline
 
 **Net spend**:

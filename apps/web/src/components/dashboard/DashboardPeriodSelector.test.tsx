@@ -5,6 +5,7 @@ import { DashboardPeriodSelector } from '@/components/dashboard/DashboardPeriodS
 
 const MTD_PERIOD = {
   kind: 'ranged',
+  shortcut: 'mtd',
   from: '2026-03-01',
   to: '2026-03-24',
 } as const;
@@ -47,7 +48,10 @@ describe('DashboardPeriodSelector', () => {
     await user.click(trigger);
     await user.click(dayButton(/March 20th, 2026/));
     await user.click(screen.getByRole('button', { name: 'Apply' }));
-    expect(onApplyCustomRange).toHaveBeenCalledWith('2026-03-01', '2026-03-20');
+    expect(onApplyCustomRange).toHaveBeenCalledWith({
+      from: '2026-03-01',
+      to: '2026-03-20',
+    });
   });
 
   it('calls shortcut handlers from the toggle group', async () => {

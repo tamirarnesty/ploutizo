@@ -1,6 +1,6 @@
 import { Layers2 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
-import { Calendar } from '@ploutizo/ui/components/calendar';
+import { DatePicker } from '@ploutizo/ui/components/date-picker';
 import {
   DateRangePicker,
   DateRangePickerApply,
@@ -11,7 +11,7 @@ import {
   DateRangePickerTrigger,
   useDateRangePicker,
 } from '@ploutizo/ui/components/date-range-picker';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 import { memberFullLabel } from '@ploutizo/utils';
 import type { FilterFieldConfig } from '@ploutizo/ui/components/reui/filters';
 
@@ -49,13 +49,18 @@ interface DateRangeFilterRendererProps {
 
 const formatFilterDate = (date: Date) => format(date, 'MMM d, yyyy');
 
+/** Filter values are ISO `yyyy-MM-dd` strings from the URL; anything else reads as unset. */
+const parseFilterDate = (value: string): Date | undefined => {
+  const date = parseISO(value);
+  return value && isValid(date) ? date : undefined;
+};
+
+const toFilterValue = (date: Date) => format(date, 'yyyy-MM-dd');
+
 // Shows the in-popover selection while open, and the committed filter otherwise.
-const DateFilterLabel = ({ operator }: { operator: string }) => {
+const DateRangeFilterLabel = () => {
   const { open, pending, committed } = useDateRangePicker();
   const range = open ? pending : committed;
-  if (isSingleDateOp(operator)) {
-    return range?.from ? formatFilterDate(range.from) : 'Pick a date';
-  }
   if (range?.from && range.to) {
     return `${formatFilterDate(range.from)} – ${formatFilterDate(range.to)}`;
   }
@@ -64,23 +69,11 @@ const DateFilterLabel = ({ operator }: { operator: string }) => {
     : 'Pick a date range';
 };
 
-const SingleDateCalendar = () => {
-  const { pending, setPending } = useDateRangePicker();
-  return (
-    <Calendar
-      mode="single"
-      selected={pending?.from}
-      onSelect={(date) =>
-        setPending(date ? { from: date, to: date } : undefined)
-      }
-    />
-  );
-};
-
 // DateRangeFilterRenderer receives operator from the filter chip's active operator.
-// It controls calendar mode, label computation, and value migration on operator switch.
-// DateRangePicker holds the selection until Apply, preventing the onChange → navigate →
-// URL sync → chip remount cycle that would reset the open state after each click.
+// It picks the single-date or range picker and migrates values on operator switch.
+// DateRangePicker holds a range until Apply, preventing the onChange → navigate →
+// URL sync → chip remount cycle that would reset the open state after the first click.
+// DatePicker commits and closes on the one click a single date needs.
 const DateRangeFilterRenderer = ({
   values,
   onChange,
@@ -113,20 +106,35 @@ const DateRangeFilterRenderer = ({
   }, [operator]);
   // valuesRef.current is the correct way to read the current values snapshot here.
 
-  const singleDate = isSingleDateOp(operator);
+  if (isSingleDateOp(operator)) {
+    return (
+      <DatePicker
+        value={from}
+        // Clicking the picked day again reports '', which would drop the operator; keep the date instead.
+        onChange={(isoDate) => {
+          if (isoDate) onChange([isoDate]);
+        }}
+        // Sits inside the filter chip, which draws the border and hover.
+        className="h-auto w-auto border-0 bg-transparent p-0 font-normal shadow-none hover:bg-transparent dark:bg-transparent dark:hover:bg-transparent"
+      />
+    );
+  }
+
+  const fromDate = parseFilterDate(from);
+  const toDate = parseFilterDate(to);
 
   return (
     <DateRangePicker
-      value={singleDate ? { from, to: from } : { from, to }}
+      value={{ from: fromDate, to: toDate }}
       onApply={(range) =>
-        onChange(singleDate ? [range.from] : [range.from, range.to])
+        onChange([toFilterValue(range.from), toFilterValue(range.to)])
       }
     >
       <DateRangePickerTrigger>
-        <DateFilterLabel operator={operator} />
+        <DateRangeFilterLabel />
       </DateRangePickerTrigger>
       <DateRangePickerContent side="bottom">
-        {singleDate ? <SingleDateCalendar /> : <DateRangePickerCalendar />}
+        <DateRangePickerCalendar />
         <DateRangePickerFooter>
           <DateRangePickerCancel />
           <DateRangePickerApply />

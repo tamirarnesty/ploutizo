@@ -3,6 +3,8 @@ import {
   DASHBOARD_PERIOD_SHORTCUTS,
   formatDashboardPeriodLabel,
   isDashboardPeriodShortcut,
+  parseCalendarDate,
+  toCalendarDate,
 } from '@ploutizo/utils/dashboard-period';
 import { Button } from '@ploutizo/ui/components/button';
 import {
@@ -18,11 +20,13 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from '@ploutizo/ui/components/toggle-group';
+import type { CalendarDateRange } from '@ploutizo/types';
 import type {
   DashboardPeriodSelection,
   DashboardPeriodShortcut,
   ResolvedDashboardPeriod,
 } from '@ploutizo/utils/dashboard-period';
+import { singleSelectToggle } from '@/lib/single-select-toggle';
 
 const SHORTCUT_LABELS: Record<DashboardPeriodShortcut, string> = {
   mtd: 'MTD',
@@ -36,7 +40,7 @@ type DashboardPeriodSelectorProps = {
   selection: DashboardPeriodSelection;
   period: ResolvedDashboardPeriod;
   onSelectShortcut: (shortcut: DashboardPeriodShortcut) => void;
-  onApplyCustomRange: (from: string, to: string) => void;
+  onApplyCustomRange: (range: CalendarDateRange) => void;
 };
 
 export const DashboardPeriodSelector = ({
@@ -56,12 +60,10 @@ export const DashboardPeriodSelector = ({
         size="sm"
         spacing={0}
         value={activeShortcut ? [activeShortcut] : []}
-        onValueChange={(values) => {
-          const shortcut = values.at(-1);
-          if (shortcut && isDashboardPeriodShortcut(shortcut)) {
-            onSelectShortcut(shortcut);
-          }
-        }}
+        onValueChange={singleSelectToggle(
+          isDashboardPeriodShortcut,
+          onSelectShortcut
+        )}
       >
         {DASHBOARD_PERIOD_SHORTCUTS.map((shortcut) => (
           <ToggleGroupItem
@@ -76,8 +78,20 @@ export const DashboardPeriodSelector = ({
       </ToggleGroup>
 
       <DateRangePicker
-        value={period.kind === 'ranged' ? period : undefined}
-        onApply={({ from, to }) => onApplyCustomRange(from, to)}
+        value={
+          period.kind === 'ranged'
+            ? {
+                from: parseCalendarDate(period.from),
+                to: parseCalendarDate(period.to),
+              }
+            : undefined
+        }
+        onApply={({ from, to }) =>
+          onApplyCustomRange({
+            from: toCalendarDate(from),
+            to: toCalendarDate(to),
+          })
+        }
       >
         <DateRangePickerTrigger
           render={

@@ -1,14 +1,7 @@
 'use client';
 
 import { createContext, use, useState } from 'react';
-import {
-  format,
-  isValid,
-  max,
-  parseISO,
-  startOfMonth,
-  subMonths,
-} from 'date-fns';
+import { max, startOfMonth, subMonths } from 'date-fns';
 import { type DateRange } from 'react-day-picker';
 import { type ComponentProps, type ReactNode } from 'react';
 import { Button } from '@/components/button';
@@ -16,8 +9,8 @@ import { Calendar } from '@/components/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/popover';
 import { cn } from '@/lib/utils';
 
-/** ISO `yyyy-MM-dd` bounds, inclusive. */
-export type DateRangeValue = { from: string; to: string };
+/** Inclusive bounds; callers convert to and from however they store dates. */
+export type DateRangeValue = { from: Date; to: Date };
 
 type DateRangePickerContextValue = {
   open: boolean;
@@ -41,19 +34,10 @@ export const useDateRangePicker = (): DateRangePickerContextValue => {
   return context;
 };
 
-const parseIsoDate = (value: string | undefined): Date | undefined => {
-  if (!value) return undefined;
-  const date = parseISO(value);
-  return isValid(date) ? date : undefined;
-};
-
 const toDateRange = (
   value: Partial<DateRangeValue> | undefined
-): DateRange | undefined => {
-  const from = parseIsoDate(value?.from);
-  const to = parseIsoDate(value?.to);
-  return from || to ? { from, to } : undefined;
-};
+): DateRange | undefined =>
+  value?.from || value?.to ? { from: value.from, to: value.to } : undefined;
 
 type DateRangePickerProps = {
   /** The committed range; the calendar opens on it. */
@@ -85,10 +69,7 @@ export const DateRangePicker = ({
 
   const apply = () => {
     if (!pending?.from || !pending.to) return;
-    onApply({
-      from: format(pending.from, 'yyyy-MM-dd'),
-      to: format(pending.to, 'yyyy-MM-dd'),
-    });
+    onApply({ from: pending.from, to: pending.to });
     setOpen(false);
   };
 

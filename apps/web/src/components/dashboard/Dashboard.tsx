@@ -11,9 +11,8 @@ import { useGetSettlements } from '@/lib/data-access/settlements';
 import { selectCreditCardAccounts } from '@/lib/settlements';
 import { CardBalancesGrid } from '@/components/dashboard/card-balances/CardBalancesGrid';
 import { SpendTrendCard } from '@/components/dashboard/spend-trend/SpendTrendCard';
-import { useSpendTrendMode } from '@/components/dashboard/spend-trend/useSpendTrendMode';
 import { DashboardHeader } from './DashboardHeader';
-import { useDashboardPeriod } from './useDashboardPeriod';
+import { useDashboardSearch } from './useDashboardSearch';
 import { SettleDialog } from './SettleDialog';
 import { SettlementSummaryPane } from './SettlementSummaryPane';
 
@@ -22,14 +21,14 @@ const NO_MEMBERS: OrgMember[] = [];
 // All queries fire at top level — no waterfalls (vercel-react-best-practices).
 export const Dashboard = () => {
   const {
-    selection: periodSelection,
-    resolved: period,
+    periodSelection,
+    period,
     today,
+    spendTrendMode,
     selectShortcut,
     applyCustomRange,
-  } = useDashboardPeriod();
-  const { mode: spendTrendMode, setMode: setSpendTrendMode } =
-    useSpendTrendMode();
+    selectSpendTrendMode,
+  } = useDashboardSearch();
   const overviewQuery = useGetDashboardOverview(period);
   const { refetch: refetchOverview } = overviewQuery;
   const {
@@ -125,7 +124,7 @@ export const Dashboard = () => {
         <SpendTrendCard
           query={overviewQuery}
           mode={spendTrendMode}
-          onModeChange={setSpendTrendMode}
+          onModeChange={selectSpendTrendMode}
           today={today}
         />
         <div className="grid grid-cols-1 items-start gap-4 @4xl/dashboard:grid-cols-4">

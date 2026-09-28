@@ -16,10 +16,8 @@ import { householdMembersQueryOptions } from '@/lib/data-access/household';
 import { settlementsQueryOptions } from '@/lib/data-access/settlements';
 import { readPersistedDashboardPeriod } from '@/lib/dashboard-period/cookie';
 import { validateDashboardSearch } from '@/lib/dashboard-period/validateDashboardSearch';
-import {
-  DEFAULT_SPEND_TREND_MODE,
-  readPersistedSpendTrendMode,
-} from '@/lib/spend-trend-mode';
+import { DEFAULT_SPEND_TREND_MODE } from '@/lib/spend-trend-mode';
+import { readPersistedSpendTrendMode } from '@/lib/spend-trend-mode/cookie';
 
 export const Route = createFileRoute('/_layout/dashboard')({
   staticData: {

@@ -46,19 +46,41 @@ describe('dashboardOverviewQuerySchema', () => {
     expect(dashboardOverviewQuerySchema.parse({})).toEqual({ kind: 'all' });
   });
 
-  it('reads a from–to range', () => {
+  it('reads a from–to range without a shortcut as custom', () => {
     expect(
       dashboardOverviewQuerySchema.parse({
         from: '2026-03-01',
         to: '2026-03-15',
       })
-    ).toEqual({ kind: 'ranged', from: '2026-03-01', to: '2026-03-15' });
+    ).toEqual({
+      kind: 'ranged',
+      shortcut: null,
+      from: '2026-03-01',
+      to: '2026-03-15',
+    });
+  });
+
+  it('reads the shortcut a range came from', () => {
+    expect(
+      dashboardOverviewQuerySchema.parse({
+        from: '2026-01-01',
+        to: '2026-01-10',
+        shortcut: 'ytd',
+      })
+    ).toEqual({
+      kind: 'ranged',
+      shortcut: 'ytd',
+      from: '2026-01-01',
+      to: '2026-01-10',
+    });
   });
 
   it.each([
     { from: '2026-03-01' },
     { from: '2026-03-15', to: '2026-03-01' },
     { from: '2026-03-01', to: '2026-03-15', bucket: 'day' },
+    { from: '2026-03-01', to: '2026-03-15', shortcut: 'all' },
+    { shortcut: 'mtd' },
   ])('rejects %o', (query) => {
     expect(dashboardOverviewQuerySchema.safeParse(query).success).toBe(false);
   });

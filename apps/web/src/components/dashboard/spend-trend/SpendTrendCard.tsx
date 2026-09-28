@@ -22,6 +22,7 @@ import {
 } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
 import { SPEND_TREND_MODES, isSpendTrendMode } from '@/lib/spend-trend-mode';
 import type { SpendTrendMode } from '@/lib/spend-trend-mode';
+import { singleSelectToggle } from '@/lib/single-select-toggle';
 import type { UseQueryResult } from '@tanstack/react-query';
 
 type SpendTrendCardProps = {
@@ -61,13 +62,10 @@ export const SpendTrendCard = ({
                 size="sm"
                 spacing={0}
                 value={[mode]}
-                onValueChange={(values) => {
-                  // Clicking the active option emits no value; keep the mode.
-                  const next = values.at(-1);
-                  if (isSpendTrendMode(next)) {
-                    onModeChange(next);
-                  }
-                }}
+                onValueChange={singleSelectToggle(
+                  isSpendTrendMode,
+                  onModeChange
+                )}
               >
                 {SPEND_TREND_MODES.map((option) => (
                   <ToggleGroupItem

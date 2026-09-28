@@ -1,35 +1,36 @@
 import {
   addMonths,
   differenceInCalendarDays,
-  differenceInCalendarMonths,
   eachDayOfInterval,
   eachMonthOfInterval,
   eachWeekOfInterval,
   endOfMonth,
   endOfWeek,
   format,
-  getDate,
   isLastDayOfMonth,
   parse,
   startOfMonth,
   startOfWeek,
   startOfYear,
+  sub,
   subDays,
-  subMonths,
 } from 'date-fns';
 import type {
   CalendarDateRange,
   DashboardOverviewGrain,
 } from '@ploutizo/types';
-import type { Interval } from 'date-fns';
+import type { Duration, Interval } from 'date-fns';
 
 const CALENDAR_DATE_PATTERN = 'yyyy-MM-dd';
 
+/** Shortcuts that resolve to dates; the API also takes one to choose the **prior period**. */
+export const DASHBOARD_RANGED_SHORTCUTS = ['mtd', '30d', '6m', 'ytd'] as const;
+
+export type DashboardRangedShortcut =
+  (typeof DASHBOARD_RANGED_SHORTCUTS)[number];
+
 export const DASHBOARD_PERIOD_SHORTCUTS = [
-  'mtd',
-  '30d',
-  '6m',
-  'ytd',
+  ...DASHBOARD_RANGED_SHORTCUTS,
   'all',
 ] as const;
 
@@ -53,10 +54,17 @@ export type DashboardPeriodSearch = {
   to?: string;
 };
 
-/** Calendar dates to chart; All has none and covers the household's whole history. */
+/**
+ * Calendar dates to chart, and the shortcut they came from (null for a custom range), which picks the prior
+ * period; the same dates can come from different shortcuts, such as MTD and YTD in January. All has no dates and
+ * covers the household's whole history.
+ */
 export type ResolvedDashboardPeriod =
   | { kind: 'all' }
-  | ({ kind: 'ranged' } & CalendarDateRange);
+  | ({
+      kind: 'ranged';
+      shortcut: DashboardRangedShortcut | null;
+    } & CalendarDateRange);
 
 export const toCalendarDate = (date: Date): string =>
   format(date, CALENDAR_DATE_PATTERN);
@@ -68,6 +76,11 @@ export const isDashboardPeriodShortcut = (
   value: string
 ): value is DashboardPeriodShortcut =>
   (DASHBOARD_PERIOD_SHORTCUTS as readonly string[]).includes(value);
+
+export const isDashboardRangedShortcut = (
+  value: string
+): value is DashboardRangedShortcut =>
+  (DASHBOARD_RANGED_SHORTCUTS as readonly string[]).includes(value);
 
 const WEEK_OPTIONS = { weekStartsOn: 1 } as const;
 
@@ -133,23 +146,31 @@ export const dashboardRangeGrain = ({
   return end < addMonths(start, WEEKLY_MAX_MONTHS) ? 'week' : 'month';
 };
 
+/** To-date shortcuts compare with the same stretch one calendar step earlier. */
+const TO_DATE_STEPS: Partial<Record<DashboardRangedShortcut, Duration>> = {
+  mtd: { months: 1 },
+  '6m': { months: 6 },
+  ytd: { years: 1 },
+};
+
 /**
- * The window just before the range. A range starting on the 1st steps back whole calendar months, keeping its
- * end day (clamped to shorter months, and month-end to month-end); any other range steps back its own length.
+ * The window the range is compared against. MTD, 6m, and YTD compare with the same stretch a month, six months,
+ * or a year earlier: the end day clamps to a shorter month, and a month-end maps to month-end. 30d and custom
+ * ranges compare with the equal-length window just before them.
  */
-export const dashboardPriorRange = ({
-  from,
-  to,
-}: CalendarDateRange): CalendarDateRange => {
+export const dashboardPriorRange = (
+  { from, to }: CalendarDateRange,
+  shortcut: DashboardRangedShortcut | null
+): CalendarDateRange => {
   const start = parseCalendarDate(from);
   const end = parseCalendarDate(to);
-  if (getDate(start) === 1) {
-    const months = differenceInCalendarMonths(end, start) + 1;
+  const step = shortcut ? TO_DATE_STEPS[shortcut] : undefined;
+  if (step) {
     const priorEnd = isLastDayOfMonth(end)
-      ? endOfMonth(subMonths(end, months))
-      : subMonths(end, months);
+      ? endOfMonth(sub(end, step))
+      : sub(end, step);
     return {
-      from: toCalendarDate(subMonths(start, months)),
+      from: toCalendarDate(sub(start, step)),
       to: toCalendarDate(priorEnd),
     };
   }
@@ -160,15 +181,13 @@ export const dashboardPriorRange = ({
   };
 };
 
-const SHORTCUT_RANGES: Record<
-  Exclude<DashboardPeriodShortcut, 'all'>,
-  (today: Date) => Date
-> = {
-  mtd: (today) => startOfMonth(today),
-  '30d': (today) => subDays(today, 29),
-  '6m': (today) => startOfMonth(subMonths(today, 5)),
-  ytd: (today) => startOfYear(today),
-};
+const SHORTCUT_RANGES: Record<DashboardRangedShortcut, (today: Date) => Date> =
+  {
+    mtd: (today) => startOfMonth(today),
+    '30d': (today) => subDays(today, 29),
+    '6m': (today) => startOfMonth(sub(today, { months: 5 })),
+    ytd: (today) => startOfYear(today),
+  };
 
 /** Shortcuts roll with `today`, each ending on it; custom ranges keep their dates. */
 export const resolveDashboardPeriod = (
@@ -176,13 +195,19 @@ export const resolveDashboardPeriod = (
   today: Date
 ): ResolvedDashboardPeriod => {
   if (selection.kind === 'custom') {
-    return { kind: 'ranged', from: selection.from, to: selection.to };
+    return {
+      kind: 'ranged',
+      shortcut: null,
+      from: selection.from,
+      to: selection.to,
+    };
   }
   if (selection.shortcut === 'all') {
     return { kind: 'all' };
   }
   return {
     kind: 'ranged',
+    shortcut: selection.shortcut,
     from: toCalendarDate(SHORTCUT_RANGES[selection.shortcut](today)),
     to: toCalendarDate(today),
   };

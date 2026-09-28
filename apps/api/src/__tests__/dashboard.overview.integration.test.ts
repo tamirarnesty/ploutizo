@@ -11,6 +11,7 @@ import {
 import { db } from '@ploutizo/db';
 import { accounts, orgs, transactions } from '@ploutizo/db/schema';
 import type { GetDashboardOverviewResponse } from '@ploutizo/types';
+import type { DashboardRangedShortcut } from '@ploutizo/utils/dashboard-period';
 import { dashboardRouter } from '../routes/dashboard';
 import { TEST_HOUSEHOLD_PRINCIPAL, createRouteTestApp } from './testUtils';
 
@@ -43,8 +44,12 @@ const seedAccount = async (orgId: string) => {
   return account.id;
 };
 
-const overviewQuery = (range: { from: string; to: string }) =>
-  `/dashboard/overview?${new URLSearchParams(range).toString()}`;
+/** Without a shortcut the range is custom. */
+const overviewQuery = (range: {
+  from: string;
+  to: string;
+  shortcut?: DashboardRangedShortcut;
+}) => `/dashboard/overview?${new URLSearchParams(range).toString()}`;
 
 type TxnInput = {
   type: (typeof transactions.$inferInsert)['type'];
@@ -65,7 +70,11 @@ const insertTxns = async (
   );
 };
 
-const MARCH = { from: '2026-03-01', to: '2026-03-31' };
+const MARCH = {
+  from: '2026-03-01',
+  to: '2026-03-31',
+  shortcut: 'mtd',
+} as const;
 
 const fetchOverview = async (path: string) => {
   const res = await app.request(path);
@@ -134,7 +143,7 @@ describe('GET /api/dashboard/overview integration', () => {
 
   it('compares month to date with the same days of the previous month', async () => {
     const body = await fetchOverview(
-      overviewQuery({ from: '2026-03-01', to: '2026-03-15' })
+      overviewQuery({ from: '2026-03-01', to: '2026-03-15', shortcut: 'mtd' })
     );
     expect(body.meta).toEqual({
       kind: 'ranged',
@@ -157,6 +166,32 @@ describe('GET /api/dashboard/overview integration', () => {
     });
     expect(body.trend.at(27)?.priorAmountCents).toBe(0);
     expect(body.trend.at(28)?.priorAmountCents).toBeNull();
+  });
+
+  it('compares year to date with the same dates last year', async () => {
+    await insertTxns(
+      [
+        { type: 'expense', amount: 400, date: '2026-02-10' },
+        { type: 'expense', amount: 900, date: '2025-02-11' },
+      ],
+      household()
+    );
+
+    const body = await fetchOverview(
+      overviewQuery({ from: '2026-01-01', to: '2026-03-24', shortcut: 'ytd' })
+    );
+    expect(body.meta.range).toEqual({
+      from: '2026-01-01',
+      to: '2026-03-24',
+      priorFrom: '2025-01-01',
+      priorTo: '2025-03-24',
+      grain: 'week',
+    });
+    const weekOfFeb9 = body.trend.find(
+      (row) => row.bucketStart === '2026-02-09'
+    );
+    expect(weekOfFeb9?.amountCents).toBe(400);
+    expect(weekOfFeb9?.priorAmountCents).toBe(900);
   });
 
   it('compares a custom range with the equal-length window before it', async () => {
@@ -199,7 +234,7 @@ describe('GET /api/dashboard/overview integration', () => {
     );
 
     const body = await fetchOverview(
-      overviewQuery({ from: '2025-10-01', to: '2026-03-24' })
+      overviewQuery({ from: '2025-10-01', to: '2026-03-24', shortcut: '6m' })
     );
     expect(body.meta.range).toEqual({
       from: '2025-10-01',
@@ -267,6 +302,10 @@ describe('GET /api/dashboard/overview integration', () => {
     [
       'an impossible date',
       overviewQuery({ from: '2026-13-40', to: '2026-01-31' }),
+    ],
+    [
+      'an unknown shortcut',
+      '/dashboard/overview?from=2026-03-01&to=2026-03-15&shortcut=all',
     ],
     [
       'a reversed range',

@@ -3,6 +3,7 @@ import {
   dashboardPriorRange,
   dashboardRangeGrain,
 } from '@ploutizo/utils/dashboard-period';
+import type { DashboardRangedShortcut } from '@ploutizo/utils/dashboard-period';
 import type { DashboardOverviewQuery } from '@ploutizo/validators';
 import type {
   CalendarDateRange,
@@ -47,10 +48,11 @@ const buildTrend = (
 
 const getRangedOverview = async (
   orgId: string,
-  range: CalendarDateRange
+  range: CalendarDateRange,
+  shortcut: DashboardRangedShortcut | null
 ): Promise<GetDashboardOverviewResponse> => {
   const grain = dashboardRangeGrain(range);
-  const prior = dashboardPriorRange(range);
+  const prior = dashboardPriorRange(range, shortcut);
   const [amounts, priorAmounts] = await Promise.all([
     fetchAmountsByBucket(orgId, grain, range),
     fetchAmountsByBucket(orgId, grain, prior),
@@ -94,5 +96,9 @@ export const getDashboardOverview = async (
   query: DashboardOverviewQuery
 ): Promise<GetDashboardOverviewResponse> =>
   query.kind === 'ranged'
-    ? getRangedOverview(orgId, { from: query.from, to: query.to })
+    ? getRangedOverview(
+        orgId,
+        { from: query.from, to: query.to },
+        query.shortcut
+      )
     : getAllTimeOverview(orgId);

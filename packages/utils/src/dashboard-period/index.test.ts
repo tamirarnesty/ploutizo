@@ -4,8 +4,10 @@ import {
   bucketStartsIn,
   dashboardPriorRange,
   dashboardRangeGrain,
+  dashboardSearchFromSelection,
   formatDashboardPeriodLabel,
   resolveDashboardPeriod,
+  selectionFromDashboardSearch,
 } from './index';
 import type { DashboardPeriodShortcut } from './index';
 
@@ -28,6 +30,7 @@ describe('resolveDashboardPeriod', () => {
     (name, today, from) => {
       expect(shortcut(name, today)).toEqual({
         kind: 'ranged',
+        shortcut: name,
         from,
         to: today,
       });
@@ -44,62 +47,127 @@ describe('resolveDashboardPeriod', () => {
         { kind: 'custom', from: '2025-02-10', to: '2025-02-20' },
         d('2026-03-24')
       )
-    ).toEqual({ kind: 'ranged', from: '2025-02-10', to: '2025-02-20' });
+    ).toEqual({
+      kind: 'ranged',
+      shortcut: null,
+      from: '2025-02-10',
+      to: '2025-02-20',
+    });
   });
 });
 
 describe('dashboardPriorRange', () => {
   it.each([
-    ['MTD mid-month', '2026-03-01', '2026-03-15', '2026-02-01', '2026-02-15'],
     [
-      'MTD at month end',
+      'mtd',
+      'mid-month',
+      '2026-03-01',
+      '2026-03-15',
+      '2026-02-01',
+      '2026-02-15',
+    ],
+    [
+      'mtd',
+      'at month end',
       '2026-03-01',
       '2026-03-31',
       '2026-02-01',
       '2026-02-28',
     ],
     [
-      'MTD in a leap year',
+      'mtd',
+      'in a leap year',
       '2024-03-01',
       '2024-03-31',
       '2024-02-01',
       '2024-02-29',
     ],
     [
-      'a whole leap February',
+      'mtd',
+      'at a leap February’s end',
       '2024-02-01',
       '2024-02-29',
       '2024-01-01',
       '2024-01-31',
     ],
     [
-      'MTD across the year boundary',
+      'mtd',
+      'across the year boundary',
       '2026-01-01',
       '2026-01-10',
       '2025-12-01',
       '2025-12-10',
     ],
-    ['6m', '2025-10-01', '2026-03-24', '2025-04-01', '2025-09-24'],
-    ['YTD', '2026-01-01', '2026-03-24', '2025-10-01', '2025-12-24'],
-    ['30d', '2026-02-23', '2026-03-24', '2026-01-24', '2026-02-22'],
     [
-      'a custom mid-month range',
+      'mtd',
+      'on a day the prior month lacks',
+      '2026-03-01',
+      '2026-03-30',
+      '2026-02-01',
+      '2026-02-28',
+    ],
+    ['6m', 'mid-month', '2025-10-01', '2026-03-24', '2025-04-01', '2025-09-24'],
+    ['ytd', 'mid-year', '2026-01-01', '2026-03-24', '2025-01-01', '2025-03-24'],
+    [
+      'ytd',
+      'on a leap day',
+      '2024-01-01',
+      '2024-02-29',
+      '2023-01-01',
+      '2023-02-28',
+    ],
+    [
+      '30d',
+      'mid-month',
+      '2026-02-23',
+      '2026-03-24',
+      '2026-01-24',
+      '2026-02-22',
+    ],
+    [
+      '30d',
+      'starting on the 1st',
+      '2026-03-01',
+      '2026-03-30',
+      '2026-01-30',
+      '2026-02-28',
+    ],
+    [
+      null,
+      'custom mid-month',
       '2026-02-10',
       '2026-02-20',
       '2026-01-30',
       '2026-02-09',
     ],
-  ])('steps back from %s (%s – %s)', (_label, from, to, priorFrom, priorTo) => {
-    expect(dashboardPriorRange({ from, to })).toEqual({
-      from: priorFrom,
-      to: priorTo,
-    });
-  });
+    [
+      null,
+      'custom starting on the 1st',
+      '2026-01-01',
+      '2026-02-15',
+      '2025-11-16',
+      '2025-12-31',
+    ],
+  ] as const)(
+    'compares %s %s (%s – %s) with %s – %s',
+    (rangedShortcut, _label, from, to, priorFrom, priorTo) => {
+      expect(dashboardPriorRange({ from, to }, rangedShortcut)).toEqual({
+        from: priorFrom,
+        to: priorTo,
+      });
+    }
+  );
 
-  it('clamps the end day to a shorter prior month', () => {
-    expect(
-      dashboardPriorRange({ from: '2026-03-01', to: '2026-03-30' })
-    ).toEqual({ from: '2026-02-01', to: '2026-02-28' });
+  it('compares the same January dates differently for MTD and YTD', () => {
+    const january = { from: '2026-01-01', to: '2026-01-20' };
+    expect(dashboardPriorRange(january, 'mtd')).toEqual({
+      from: '2025-12-01',
+      to: '2025-12-20',
+    });
+    expect(dashboardPriorRange(january, 'ytd')).toEqual({
+      from: '2025-01-01',
+      to: '2025-01-20',
+    });
   });
 });
 
@@ -159,6 +227,7 @@ describe('formatDashboardPeriodLabel', () => {
     expect(
       formatDashboardPeriodLabel({
         kind: 'ranged',
+        shortcut: null,
         from: '2025-12-15',
         to: '2026-02-03',
       })
@@ -167,5 +236,22 @@ describe('formatDashboardPeriodLabel', () => {
 
   it('labels All as all time', () => {
     expect(formatDashboardPeriodLabel({ kind: 'all' })).toBe('All time');
+  });
+});
+
+describe('dashboard period search params', () => {
+  it.each([
+    { kind: 'shortcut', shortcut: 'mtd' },
+    { kind: 'shortcut', shortcut: 'all' },
+    { kind: 'custom', from: '2026-01-01', to: '2026-01-15' },
+  ] as const)('round-trips %o', (selection) => {
+    expect(
+      selectionFromDashboardSearch(dashboardSearchFromSelection(selection))
+    ).toEqual(selection);
+  });
+
+  it('names no period when the search has neither a shortcut nor both dates', () => {
+    expect(selectionFromDashboardSearch({})).toBeNull();
+    expect(selectionFromDashboardSearch({ from: '2026-01-01' })).toBeNull();
   });
 });

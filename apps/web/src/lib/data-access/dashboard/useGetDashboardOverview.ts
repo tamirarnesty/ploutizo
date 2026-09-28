@@ -7,19 +7,28 @@ import type { UseQueryResult } from '@tanstack/react-query';
 
 export const dashboardOverviewQueryKey = ['dashboard-overview'] as const;
 
-/** The API derives the prior window and grain from the dates; All sends none. */
+/** The API derives the prior window from the dates and shortcut, and the grain from the dates; All sends none. */
 export const dashboardOverviewQueryOptions = (
   period: ResolvedDashboardPeriod
 ) => {
   const search =
     period.kind === 'all'
       ? ''
-      : `?${new URLSearchParams({ from: period.from, to: period.to }).toString()}`;
+      : `?${new URLSearchParams({
+          from: period.from,
+          to: period.to,
+          ...(period.shortcut ? { shortcut: period.shortcut } : {}),
+        }).toString()}`;
   return queryOptions({
     queryKey:
       period.kind === 'all'
         ? [...dashboardOverviewQueryKey, 'all']
-        : [...dashboardOverviewQueryKey, period.from, period.to],
+        : [
+            ...dashboardOverviewQueryKey,
+            period.from,
+            period.to,
+            period.shortcut,
+          ],
     queryFn: ({ signal }) =>
       apiFetch<GetDashboardOverviewResponse>(
         `/api/dashboard/overview${search}`,

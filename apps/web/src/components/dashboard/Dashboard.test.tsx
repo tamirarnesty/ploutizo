@@ -14,6 +14,7 @@ import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import {
   dashboardPriorRange,
   dashboardRangeGrain,
+  isDashboardRangedShortcut,
 } from '@ploutizo/utils/dashboard-period';
 import type {
   GetDashboardOverviewResponse,
@@ -28,6 +29,7 @@ import type { RouterContext } from '@/router';
 // eslint-disable-next-line import/extensions
 import { Route as DashboardRoute } from '@/routes/_layout.dashboard';
 import { settlementMember } from '@/test/settlementFixtures';
+import { cookieValueFrom } from '@/lib/cookies/cookie-value';
 
 const loaderReady = vi.hoisted(() => ({ value: false }));
 
@@ -38,9 +40,10 @@ vi.mock('@/lib/access/household-loader-ready', async (importOriginal) => ({
 }));
 
 vi.mock('@/lib/cookies/request-cookie.server', async () => {
-  const { cookieValueFrom } = await import('@/lib/cookies/cookie-value');
+  const cookies = await import('@/lib/cookies/cookie-value');
   return {
-    getRequestCookie: (name: string) => cookieValueFrom(document.cookie, name),
+    getRequestCookie: (name: string) =>
+      cookies.cookieValueFrom(document.cookie, name),
   };
 });
 
@@ -64,7 +67,7 @@ const SETTLEMENTS_PATH = '/api/settlements';
 const MEMBERS_PATH = '/api/households/members';
 const OVERVIEW_PATH = '/api/dashboard/overview';
 
-/** Answers like the API: the prior window and grain follow from the requested dates. */
+/** Answers like the API: the prior window follows from the dates and shortcut, the grain from the dates. */
 const overviewFor = (url: URL): GetDashboardOverviewResponse => {
   const from = url.searchParams.get('from');
   const to = url.searchParams.get('to');
@@ -83,7 +86,11 @@ const overviewFor = (url: URL): GetDashboardOverviewResponse => {
       trend: [],
     };
   }
-  const prior = dashboardPriorRange({ from, to });
+  const shortcut = url.searchParams.get('shortcut');
+  const prior = dashboardPriorRange(
+    { from, to },
+    shortcut !== null && isDashboardRangedShortcut(shortcut) ? shortcut : null
+  );
   return {
     meta: {
       kind: 'ranged',
@@ -222,15 +229,9 @@ const setModeCookie = (value: string) => {
   document.cookie = `spend_trend_mode=${value}; path=/`;
 };
 
-const cookieNamed = (name: string) =>
-  document.cookie
-    .split('; ')
-    .find((entry) => entry.startsWith(`${name}=`))
-    ?.split('=')[1];
+const periodCookie = () => cookieValueFrom(document.cookie, 'dashboard_period');
 
-const periodCookie = () => cookieNamed('dashboard_period');
-
-const modeCookie = () => cookieNamed('spend_trend_mode');
+const modeCookie = () => cookieValueFrom(document.cookie, 'spend_trend_mode');
 
 const createDashboardRouter = (initialLocation: string) => {
   const queryClient = new QueryClient({
@@ -339,7 +340,7 @@ describe('Dashboard', () => {
       });
       await waitFor(() => {
         expect(overviewRequests()).toEqual([
-          `${OVERVIEW_PATH}?from=2026-03-01&to=2026-03-24`,
+          `${OVERVIEW_PATH}?from=2026-03-01&to=2026-03-24&shortcut=mtd`,
         ]);
       });
       expect(
@@ -374,7 +375,7 @@ describe('Dashboard', () => {
 
       await waitFor(() => {
         expect(overviewRequests()).toEqual([
-          `${OVERVIEW_PATH}?from=2025-10-01&to=2026-03-24`,
+          `${OVERVIEW_PATH}?from=2025-10-01&to=2026-03-24&shortcut=6m`,
         ]);
       });
     });
@@ -389,16 +390,33 @@ describe('Dashboard', () => {
       });
       await waitFor(() => {
         expect(overviewRequests()).toEqual([
-          `${OVERVIEW_PATH}?from=2026-02-23&to=2026-03-24`,
+          `${OVERVIEW_PATH}?from=2026-02-23&to=2026-03-24&shortcut=30d`,
         ]);
       });
       expect(periodCookie()).toBe('30d');
     });
 
-    it('opens on the default when the URL mixes a shortcut with dates', async () => {
-      const router = await renderDashboard(
-        '/dashboard?range=ytd&from=2026-01-01&to=2026-01-31'
-      );
+    it.each([
+      [
+        'mixes a shortcut with dates',
+        '?range=ytd&from=2026-01-01&to=2026-01-31',
+      ],
+      ['names an unknown shortcut', '?range=nope'],
+    ])(
+      'restores the last visit’s period when the URL %s',
+      async (_label, search) => {
+        setPeriodCookie('6m');
+        const router = await renderDashboard(`/dashboard${search}`);
+
+        expect(router.state.location.search).toEqual({
+          range: '6m',
+          trend: 'bucket',
+        });
+      }
+    );
+
+    it('opens on month to date when the URL is invalid and there is no past visit', async () => {
+      const router = await renderDashboard('/dashboard?range=nope');
 
       expect(router.state.location.search).toEqual({
         range: 'mtd',
@@ -417,7 +435,7 @@ describe('Dashboard', () => {
 
       await waitFor(() => {
         expect(overviewRequests()).toContain(
-          `${OVERVIEW_PATH}?from=2026-01-01&to=2026-03-24`
+          `${OVERVIEW_PATH}?from=2026-01-01&to=2026-03-24&shortcut=ytd`
         );
       });
       expect(router.state.location.search).toEqual({
@@ -426,7 +444,7 @@ describe('Dashboard', () => {
       });
       expect(periodCookie()).toBe('ytd');
       expect(
-        await screen.findByText('Spend per week vs Oct 1 – Dec 24, 2025')
+        await screen.findByText('Spend per week vs Jan 1 – Mar 24, 2025')
       ).toBeInTheDocument();
     });
 
@@ -514,7 +532,7 @@ describe('Dashboard', () => {
       await act(() => router.preloadRoute({ to: '/dashboard' }));
 
       expect(overviewRequests()).toEqual([
-        `${OVERVIEW_PATH}?from=2026-01-01&to=2026-03-24`,
+        `${OVERVIEW_PATH}?from=2026-01-01&to=2026-03-24&shortcut=ytd`,
       ]);
       expect(requestCount(SETTLEMENTS_PATH)).toBe(1);
     });
@@ -608,7 +626,7 @@ describe('Dashboard', () => {
         });
       });
       expect(
-        await screen.findByText('Running total vs Oct 1 – Dec 24, 2025')
+        await screen.findByText('Running total vs Jan 1 – Mar 24, 2025')
       ).toBeInTheDocument();
     });
 

@@ -4,10 +4,8 @@ export type DashboardOverviewTrendPoint = {
   priorAmountCents: number | null;
 };
 
-export const DASHBOARD_OVERVIEW_GRAINS = ['day', 'week', 'month'] as const;
-
 /** Calendar unit each trend point's `bucketStart` represents; weeks start on Monday. */
-export type DashboardOverviewGrain = (typeof DASHBOARD_OVERVIEW_GRAINS)[number];
+export type DashboardOverviewGrain = 'day' | 'week' | 'month';
 
 /** Inclusive calendar dates (`yyyy-MM-dd`). */
 export type CalendarDateRange = {

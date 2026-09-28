@@ -7,6 +7,7 @@ import {
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
 import { cn } from '@ploutizo/ui/lib/utils';
+import type { CalendarDateRange } from '@ploutizo/types';
 import type {
   DashboardPeriodSelection,
   DashboardPeriodShortcut,
@@ -18,7 +19,7 @@ type DashboardHeaderProps = {
   periodSelection: DashboardPeriodSelection;
   period: ResolvedDashboardPeriod;
   onSelectShortcut: (shortcut: DashboardPeriodShortcut) => void;
-  onApplyCustomRange: (from: string, to: string) => void;
+  onApplyCustomRange: (range: CalendarDateRange) => void;
   onRefresh: () => void;
   /** True while any dashboard data is loading; disables Refresh. */
   isRefreshing: boolean;
