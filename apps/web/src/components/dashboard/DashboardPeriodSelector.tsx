@@ -2,6 +2,7 @@ import { CalendarDays } from 'lucide-react';
 import {
   DASHBOARD_PERIOD_SHORTCUTS,
   formatDashboardPeriodLabel,
+  isDashboardPeriodShortcut,
 } from '@ploutizo/utils/dashboard-period';
 import { Button } from '@ploutizo/ui/components/button';
 import {
@@ -57,8 +58,9 @@ export const DashboardPeriodSelector = ({
         value={activeShortcut ? [activeShortcut] : []}
         onValueChange={(values) => {
           const shortcut = values.at(-1);
-          if (!shortcut) return;
-          onSelectShortcut(shortcut as DashboardPeriodShortcut);
+          if (shortcut && isDashboardPeriodShortcut(shortcut)) {
+            onSelectShortcut(shortcut);
+          }
         }}
       >
         {DASHBOARD_PERIOD_SHORTCUTS.map((shortcut) => (

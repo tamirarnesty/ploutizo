@@ -1,23 +1,27 @@
 import {
+  addMonths,
   differenceInCalendarDays,
+  differenceInCalendarMonths,
   eachDayOfInterval,
   eachMonthOfInterval,
+  eachWeekOfInterval,
+  endOfMonth,
+  endOfWeek,
   format,
   getDate,
-  getDaysInMonth,
+  isLastDayOfMonth,
   parse,
-  setDate,
   startOfMonth,
+  startOfWeek,
   startOfYear,
   subDays,
   subMonths,
-  subYears,
 } from 'date-fns';
 import type {
-  DashboardOverviewBucket,
-  DashboardOverviewPrior,
-  DashboardOverviewRange,
+  CalendarDateRange,
+  DashboardOverviewGrain,
 } from '@ploutizo/types';
+import type { Interval } from 'date-fns';
 
 const CALENDAR_DATE_PATTERN = 'yyyy-MM-dd';
 
@@ -36,24 +40,23 @@ export type DashboardPeriodSelection =
   | { kind: 'shortcut'; shortcut: DashboardPeriodShortcut }
   | { kind: 'custom'; from: string; to: string };
 
+/** Opened when neither the URL nor the viewer's last visit names a period. */
+export const DEFAULT_DASHBOARD_PERIOD: DashboardPeriodSelection = {
+  kind: 'shortcut',
+  shortcut: 'mtd',
+};
+
+/** Validated dashboard search: a shortcut, a custom range, or nothing (redirected to the persisted period). */
 export type DashboardPeriodSearch = {
   range?: DashboardPeriodShortcut;
   from?: string;
   to?: string;
 };
 
-type RangedDashboardPeriod = DashboardOverviewRange & {
-  bucket: DashboardOverviewBucket;
-  /** Window compared against the current one, bucket by bucket; null when the period has no comparison. */
-  prior: DashboardOverviewPrior | null;
-};
-
+/** Calendar dates to chart; All has none and covers the household's whole history. */
 export type ResolvedDashboardPeriod =
   | { kind: 'all' }
-  | ({ kind: 'ranged' } & RangedDashboardPeriod);
-
-/** Custom ranges up to this many days chart daily; longer ones chart monthly. */
-const CUSTOM_DAILY_BUCKET_MAX_DAYS = 62;
+  | ({ kind: 'ranged' } & CalendarDateRange);
 
 export const toCalendarDate = (date: Date): string =>
   format(date, CALENDAR_DATE_PATTERN);
@@ -61,175 +64,164 @@ export const toCalendarDate = (date: Date): string =>
 export const parseCalendarDate = (value: string): Date =>
   parse(value, CALENDAR_DATE_PATTERN, new Date());
 
-const isCalendarDate = (value: string): boolean => {
-  const parsed = parseCalendarDate(value);
-  return !Number.isNaN(parsed.getTime()) && toCalendarDate(parsed) === value;
+export const isDashboardPeriodShortcut = (
+  value: string
+): value is DashboardPeriodShortcut =>
+  (DASHBOARD_PERIOD_SHORTCUTS as readonly string[]).includes(value);
+
+const WEEK_OPTIONS = { weekStartsOn: 1 } as const;
+
+type GrainCalendar = {
+  startOf: (date: Date) => Date;
+  endOf: (date: Date) => Date;
+  each: (interval: Interval) => Date[];
 };
 
-/** Month to date through `today`, compared with the same days of the previous month (clamped to its length). */
-export const resolveMonthToDateRange = (today: Date): RangedDashboardPeriod => {
-  const priorMonth = startOfMonth(subMonths(today, 1));
-  const priorTo = setDate(
-    priorMonth,
-    Math.min(getDate(today), getDaysInMonth(priorMonth))
-  );
-  return {
-    from: toCalendarDate(startOfMonth(today)),
-    to: toCalendarDate(today),
-    bucket: 'day',
-    prior: {
-      from: toCalendarDate(priorMonth),
-      to: toCalendarDate(priorTo),
-      comparison: 'previous-month',
-    },
-  };
-};
-
-/** Year to date through `today`, compared with the same days of the previous year. */
-const resolveYearToDateRange = (today: Date): RangedDashboardPeriod => {
-  const priorYear = subYears(today, 1);
-  return {
-    from: toCalendarDate(startOfYear(today)),
-    to: toCalendarDate(today),
-    bucket: 'day',
-    prior: {
-      from: toCalendarDate(startOfYear(priorYear)),
-      to: toCalendarDate(priorYear),
-      comparison: 'previous-year',
-    },
-  };
-};
-
-/** Last 30 days through `today`, compared with the 30 days before them. */
-const resolveRolling30DayRange = (today: Date): RangedDashboardPeriod => ({
-  from: toCalendarDate(subDays(today, 29)),
-  to: toCalendarDate(today),
-  bucket: 'day',
-  prior: {
-    from: toCalendarDate(subDays(today, 59)),
-    to: toCalendarDate(subDays(today, 30)),
-    comparison: 'previous-30-days',
+const GRAIN_CALENDARS: Record<DashboardOverviewGrain, GrainCalendar> = {
+  day: {
+    startOf: (date) => date,
+    endOf: (date) => date,
+    each: (interval) => eachDayOfInterval(interval),
   },
-});
-
-/** Last six calendar months including the current partial month. */
-const resolveSixMonthRange = (today: Date): RangedDashboardPeriod => ({
-  from: toCalendarDate(startOfMonth(subMonths(today, 5))),
-  to: toCalendarDate(today),
-  bucket: 'month',
-  prior: null,
-});
-
-const SHORTCUT_RESOLVERS: Record<
-  Exclude<DashboardPeriodShortcut, 'all'>,
-  (today: Date) => RangedDashboardPeriod
-> = {
-  mtd: resolveMonthToDateRange,
-  '30d': resolveRolling30DayRange,
-  '6m': resolveSixMonthRange,
-  ytd: resolveYearToDateRange,
+  week: {
+    startOf: (date) => startOfWeek(date, WEEK_OPTIONS),
+    endOf: (date) => endOfWeek(date, WEEK_OPTIONS),
+    each: (interval) => eachWeekOfInterval(interval, WEEK_OPTIONS),
+  },
+  month: {
+    startOf: startOfMonth,
+    endOf: endOfMonth,
+    each: (interval) => eachMonthOfInterval(interval),
+  },
 };
 
-const resolveCustomRange = (
-  from: string,
-  to: string
-): RangedDashboardPeriod => ({
+/** Start of every bucket the range touches; the first can start before `from`. */
+export const bucketStartsIn = (
+  { from, to }: CalendarDateRange,
+  grain: DashboardOverviewGrain
+): string[] =>
+  GRAIN_CALENDARS[grain]
+    .each({ start: parseCalendarDate(from), end: parseCalendarDate(to) })
+    .map(toCalendarDate);
+
+/** First and last calendar date of the bucket containing `date`. */
+export const bucketBounds = (
+  date: string,
+  grain: DashboardOverviewGrain
+): CalendarDateRange => {
+  const parsed = parseCalendarDate(date);
+  const calendar = GRAIN_CALENDARS[grain];
+  return {
+    from: toCalendarDate(calendar.startOf(parsed)),
+    to: toCalendarDate(calendar.endOf(parsed)),
+  };
+};
+
+const DAILY_MAX_DAYS = 45;
+const WEEKLY_MAX_MONTHS = 6;
+
+/** Daily up to 45 days, weekly within six months, monthly beyond. */
+export const dashboardRangeGrain = ({
   from,
   to,
-  bucket:
-    differenceInCalendarDays(parseCalendarDate(to), parseCalendarDate(from)) <
-    CUSTOM_DAILY_BUCKET_MAX_DAYS
-      ? 'day'
-      : 'month',
-  prior: null,
-});
-
-const isDashboardPeriodShortcut = (
-  value: unknown
-): value is DashboardPeriodShortcut =>
-  (DASHBOARD_PERIOD_SHORTCUTS as readonly unknown[]).includes(value);
-
-export const parseDashboardPeriodSearch = (
-  search: Record<string, unknown>
-): DashboardPeriodSearch => {
-  const range = isDashboardPeriodShortcut(search.range)
-    ? search.range
-    : undefined;
-  const from = typeof search.from === 'string' ? search.from : undefined;
-  const to = typeof search.to === 'string' ? search.to : undefined;
-  return { range, from, to };
+}: CalendarDateRange): DashboardOverviewGrain => {
+  const start = parseCalendarDate(from);
+  const end = parseCalendarDate(to);
+  if (differenceInCalendarDays(end, start) + 1 <= DAILY_MAX_DAYS) {
+    return 'day';
+  }
+  return end < addMonths(start, WEEKLY_MAX_MONTHS) ? 'week' : 'month';
 };
 
-export const selectionFromDashboardSearch = (
-  search: DashboardPeriodSearch
-): DashboardPeriodSelection | null => {
-  const { range, from, to } = search;
-  if (range !== undefined) {
-    return from === undefined && to === undefined
-      ? { kind: 'shortcut', shortcut: range }
-      : null;
+/**
+ * The window just before the range. A range starting on the 1st steps back whole calendar months, keeping its
+ * end day (clamped to shorter months, and month-end to month-end); any other range steps back its own length.
+ */
+export const dashboardPriorRange = ({
+  from,
+  to,
+}: CalendarDateRange): CalendarDateRange => {
+  const start = parseCalendarDate(from);
+  const end = parseCalendarDate(to);
+  if (getDate(start) === 1) {
+    const months = differenceInCalendarMonths(end, start) + 1;
+    const priorEnd = isLastDayOfMonth(end)
+      ? endOfMonth(subMonths(end, months))
+      : subMonths(end, months);
+    return {
+      from: toCalendarDate(subMonths(start, months)),
+      to: toCalendarDate(priorEnd),
+    };
   }
-  if (
-    from === undefined ||
-    to === undefined ||
-    !isCalendarDate(from) ||
-    !isCalendarDate(to) ||
-    from > to
-  ) {
-    return null;
-  }
-  return { kind: 'custom', from, to };
+  const days = differenceInCalendarDays(end, start) + 1;
+  return {
+    from: toCalendarDate(subDays(start, days)),
+    to: toCalendarDate(subDays(start, 1)),
+  };
 };
 
-export const dashboardSearchFromSelection = (
-  selection: DashboardPeriodSelection
-): DashboardPeriodSearch => {
-  if (selection.kind === 'shortcut') {
-    return { range: selection.shortcut };
-  }
-  return { from: selection.from, to: selection.to };
+const SHORTCUT_RANGES: Record<
+  Exclude<DashboardPeriodShortcut, 'all'>,
+  (today: Date) => Date
+> = {
+  mtd: (today) => startOfMonth(today),
+  '30d': (today) => subDays(today, 29),
+  '6m': (today) => startOfMonth(subMonths(today, 5)),
+  ytd: (today) => startOfYear(today),
 };
 
+/** Shortcuts roll with `today`, each ending on it; custom ranges keep their dates. */
 export const resolveDashboardPeriod = (
   selection: DashboardPeriodSelection,
   today: Date
 ): ResolvedDashboardPeriod => {
   if (selection.kind === 'custom') {
-    return {
-      kind: 'ranged',
-      ...resolveCustomRange(selection.from, selection.to),
-    };
+    return { kind: 'ranged', from: selection.from, to: selection.to };
   }
   if (selection.shortcut === 'all') {
     return { kind: 'all' };
   }
-  return { kind: 'ranged', ...SHORTCUT_RESOLVERS[selection.shortcut](today) };
+  return {
+    kind: 'ranged',
+    from: toCalendarDate(SHORTCUT_RANGES[selection.shortcut](today)),
+    to: toCalendarDate(today),
+  };
 };
 
-export const formatDashboardPeriodLabel = (
-  resolved: ResolvedDashboardPeriod
-): string => {
-  if (resolved.kind === 'all') {
-    return 'All time';
+export const selectionFromDashboardSearch = ({
+  range,
+  from,
+  to,
+}: DashboardPeriodSearch): DashboardPeriodSelection | null => {
+  if (range !== undefined) {
+    return { kind: 'shortcut', shortcut: range };
   }
+  if (from !== undefined && to !== undefined) {
+    return { kind: 'custom', from, to };
+  }
+  return null;
+};
 
-  const fromDate = parseCalendarDate(resolved.from);
-  const toDate = parseCalendarDate(resolved.to);
+export const dashboardSearchFromSelection = (
+  selection: DashboardPeriodSelection
+): DashboardPeriodSearch =>
+  selection.kind === 'shortcut'
+    ? { range: selection.shortcut }
+    : { from: selection.from, to: selection.to };
+
+export const formatCalendarDateRange = ({
+  from,
+  to,
+}: CalendarDateRange): string => {
+  const fromDate = parseCalendarDate(from);
+  const toDate = parseCalendarDate(to);
   const sameYear = fromDate.getFullYear() === toDate.getFullYear();
   const fromLabel = format(fromDate, sameYear ? 'MMM d' : 'MMM d, yyyy');
   const toLabel = format(toDate, 'MMM d, yyyy');
   return `${fromLabel} – ${toLabel}`;
 };
 
-export const eachCalendarDate = (from: string, to: string): string[] =>
-  eachDayOfInterval({
-    start: parseCalendarDate(from),
-    end: parseCalendarDate(to),
-  }).map(toCalendarDate);
-
-/** Inclusive month starts from `from` through the month containing `to`. */
-export const eachCalendarMonthStart = (from: string, to: string): string[] =>
-  eachMonthOfInterval({
-    start: parseCalendarDate(from),
-    end: parseCalendarDate(to),
-  }).map(toCalendarDate);
+export const formatDashboardPeriodLabel = (
+  resolved: ResolvedDashboardPeriod
+): string =>
+  resolved.kind === 'all' ? 'All time' : formatCalendarDateRange(resolved);

@@ -20,6 +20,7 @@
 - Form state always uses `useAppForm` from `@ploutizo/ui/components/form` (TanStack Form + Zod). Never use `useState` for form field values.
 - `packages/db` uses `@neondatabase/serverless` WebSocket Pool (not postgres.js). Set `neonConfig.webSocketConstructor` before constructing the Pool.
 - Client-side persistence in `apps/web` must use Zustand stores in `@/lib/prefs/` for localStorage-backed prefs and `@/lib/prefs/sessionPref` for ephemeral sessionStorage prefs. Never call `localStorage`/`sessionStorage` directly in components or hooks. Exception: theme via next-themes. Key naming: `ploutizo:{feature}:{preference}`.
+- Exception: a preference the server must read for the first render (so SSR matches the client) is a cookie, read with `createIsomorphicFn` (`getCookie` on the server, `document.cookie` on the client) and written from one module per feature. Example: the dashboard period in `@/lib/dashboard-period/cookie.ts`.
 - API middleware order is invariant: **CORS → request telemetry → Clerk → tenant guard** (see `apps/api/src/index.ts`). Request telemetry owns `X-Request-Id` and one wide `api.request.complete` record per request.
 
 ## Base components
@@ -30,6 +31,7 @@
 - **`DataGrid.renderRowContextMenu`:** The viewport trigger uses `select-text` so users can still select cell text; right-click/long-press opens app row actions and suppresses the native browser menu inside the table trigger. Document product tradeoffs in the PR when adding a grid context menu.
 - **ReUI (`packages/ui/src/components/reui/`):** Edits are allowed for **product-agnostic** grid/primitive capabilities (typed public props, no app-specific copy or domain types). Document the API briefly at the prop/site of change and add a bullet under **Ploutizo fork capabilities** in [docs/research/tanstack-table-v9-reui-grid-migration.md](research/tanstack-table-v9-reui-grid-migration.md) so registry reinstalls can re-merge.
 - **Chart (`packages/ui/src/components/chart.tsx`):** Ploutizo fork adds `ChartTooltipContent` `valueFormatter` (value-only tooltip formatting) and keeps shadcn's `function` declarations (vendored file, exempt from the arrow-function rule). Re-merge intentionally after shadcn CLI regen. Composition and customization: [STANDARDS.md § UI library composition](STANDARDS.md#ui-library-composition-and-customization).
+- **Date range picker (`packages/ui/src/components/date-range-picker.tsx`):** Ploutizo composition of `Popover` + `Calendar` (range mode) + `Button`, not a shadcn registry file. Edits to the pending range stay local until Apply; Cancel or dismiss discards them. Used by the dashboard period selector and the transactions date filter.
 - Leave a comment explaining any non-obvious override at usage sites.
 
 ## Build and type checking

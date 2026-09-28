@@ -1,14 +1,12 @@
 import {
-  eachCalendarDate,
-  eachCalendarMonthStart,
+  bucketStartsIn,
+  dashboardPriorRange,
+  dashboardRangeGrain,
 } from '@ploutizo/utils/dashboard-period';
+import type { DashboardOverviewQuery } from '@ploutizo/validators';
 import type {
-  DashboardOverviewQuery,
-  RangedDashboardOverviewQuery,
-} from '@ploutizo/validators';
-import type {
-  DashboardOverviewBucket,
-  DashboardOverviewRange,
+  CalendarDateRange,
+  DashboardOverviewGrain,
   DashboardOverviewTrendPoint,
   GetDashboardOverviewResponse,
 } from '@ploutizo/types';
@@ -17,32 +15,24 @@ import {
   fetchSpendDateBounds,
 } from '@/lib/queries/dashboard';
 
-const bucketStartsIn = (
-  range: DashboardOverviewRange,
-  bucket: DashboardOverviewBucket
-): string[] =>
-  bucket === 'day'
-    ? eachCalendarDate(range.from, range.to)
-    : eachCalendarMonthStart(range.from, range.to);
-
 const fetchAmountsByBucket = async (
   orgId: string,
-  bucket: DashboardOverviewBucket,
-  range: Partial<DashboardOverviewRange>
+  grain: DashboardOverviewGrain,
+  range: Partial<CalendarDateRange>
 ): Promise<Map<string, number>> => {
-  const rows = await fetchNetSpendByBucket(orgId, bucket, range);
+  const rows = await fetchNetSpendByBucket(orgId, grain, range);
   return new Map(rows.map((row) => [row.bucketStart, row.amountCents]));
 };
 
 /** Prior buckets map onto current buckets by index; buckets past the prior window's end have no prior amount. */
 const buildTrend = (
-  range: DashboardOverviewRange,
-  bucket: DashboardOverviewBucket,
+  range: CalendarDateRange,
+  grain: DashboardOverviewGrain,
   amounts: Map<string, number>,
-  prior: { range: DashboardOverviewRange; amounts: Map<string, number> } | null
+  prior: { range: CalendarDateRange; amounts: Map<string, number> } | null
 ): DashboardOverviewTrendPoint[] => {
-  const priorStarts = prior ? bucketStartsIn(prior.range, bucket) : [];
-  return bucketStartsIn(range, bucket).map((start, index) => {
+  const priorStarts = prior ? bucketStartsIn(prior.range, grain) : [];
+  return bucketStartsIn(range, grain).map((start, index) => {
     const priorStart = priorStarts.at(index);
     return {
       bucketStart: start,
@@ -57,21 +47,24 @@ const buildTrend = (
 
 const getRangedOverview = async (
   orgId: string,
-  { range, bucket, prior }: RangedDashboardOverviewQuery
+  range: CalendarDateRange
 ): Promise<GetDashboardOverviewResponse> => {
+  const grain = dashboardRangeGrain(range);
+  const prior = dashboardPriorRange(range);
   const [amounts, priorAmounts] = await Promise.all([
-    fetchAmountsByBucket(orgId, bucket, range),
-    prior ? fetchAmountsByBucket(orgId, bucket, prior) : null,
+    fetchAmountsByBucket(orgId, grain, range),
+    fetchAmountsByBucket(orgId, grain, prior),
   ]);
 
   return {
-    meta: { kind: 'ranged', range, prior, bucket },
-    trend: buildTrend(
-      range,
-      bucket,
-      amounts,
-      prior && priorAmounts ? { range: prior, amounts: priorAmounts } : null
-    ),
+    meta: {
+      kind: 'ranged',
+      range: { ...range, priorFrom: prior.from, priorTo: prior.to, grain },
+    },
+    trend: buildTrend(range, grain, amounts, {
+      range: prior,
+      amounts: priorAmounts,
+    }),
   };
 };
 
@@ -83,15 +76,15 @@ const getAllTimeOverview = async (
     fetchAmountsByBucket(orgId, 'month', {}),
   ]);
   if (first === null || last === null) {
-    return {
-      meta: { kind: 'all', range: null, prior: null, bucket: 'month' },
-      trend: [],
-    };
+    return { meta: { kind: 'all', range: null }, trend: [] };
   }
 
   const range = { from: first, to: last };
   return {
-    meta: { kind: 'all', range, prior: null, bucket: 'month' },
+    meta: {
+      kind: 'all',
+      range: { ...range, priorFrom: null, priorTo: null, grain: 'month' },
+    },
     trend: buildTrend(range, 'month', amounts, null),
   };
 };
@@ -101,5 +94,5 @@ export const getDashboardOverview = async (
   query: DashboardOverviewQuery
 ): Promise<GetDashboardOverviewResponse> =>
   query.kind === 'ranged'
-    ? getRangedOverview(orgId, query)
+    ? getRangedOverview(orgId, { from: query.from, to: query.to })
     : getAllTimeOverview(orgId);

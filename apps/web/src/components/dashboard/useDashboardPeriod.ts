@@ -10,20 +10,16 @@ import type {
   DashboardPeriodSelection,
   DashboardPeriodShortcut,
 } from '@ploutizo/utils/dashboard-period';
-import { resolveEffectiveDashboardPeriod } from '@/lib/dashboard-period/effectiveDashboardPeriod';
 import { persistDashboardPeriod } from '@/lib/dashboard-period/cookie';
 
 const dashboardRouteApi = getRouteApi('/_layout/dashboard');
 
 export const useDashboardPeriod = () => {
-  const search = dashboardRouteApi.useSearch();
+  const selection = dashboardRouteApi.useRouteContext({
+    select: (context) => context.periodSelection,
+  });
   const navigate = useNavigate({ from: '/dashboard' });
   const today = toCalendarDate(new Date());
-
-  const selection = useMemo(
-    () => resolveEffectiveDashboardPeriod(search),
-    [search]
-  );
 
   const resolved = useMemo(
     () => resolveDashboardPeriod(selection, parseCalendarDate(today)),

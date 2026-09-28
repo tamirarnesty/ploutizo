@@ -43,17 +43,8 @@ const seedAccount = async (orgId: string) => {
   return account.id;
 };
 
-const overviewQuery = (range: {
-  from: string;
-  to: string;
-  bucket?: 'day' | 'month';
-  priorFrom?: string;
-  priorTo?: string;
-  comparison?: 'previous-month' | 'previous-30-days' | 'previous-year';
-}) => {
-  const params = new URLSearchParams({ bucket: 'day', ...range });
-  return `/dashboard/overview?${params.toString()}`;
-};
+const overviewQuery = (range: { from: string; to: string }) =>
+  `/dashboard/overview?${new URLSearchParams(range).toString()}`;
 
 type TxnInput = {
   type: (typeof transactions.$inferInsert)['type'];
@@ -74,12 +65,12 @@ const insertTxns = async (
   );
 };
 
-const MARCH_VS_FEBRUARY = {
-  from: '2026-03-01',
-  to: '2026-03-31',
-  priorFrom: '2026-02-01',
-  priorTo: '2026-02-28',
-  comparison: 'previous-month' as const,
+const MARCH = { from: '2026-03-01', to: '2026-03-31' };
+
+const fetchOverview = async (path: string) => {
+  const res = await app.request(path);
+  expect(res.status).toBe(200);
+  return (await res.json()) as GetDashboardOverviewResponse;
 };
 
 describe('GET /api/dashboard/overview integration', () => {
@@ -122,9 +113,7 @@ describe('GET /api/dashboard/overview integration', () => {
       household()
     );
 
-    const res = await app.request(overviewQuery(MARCH_VS_FEBRUARY));
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as GetDashboardOverviewResponse;
+    const body = await fetchOverview(overviewQuery(MARCH));
     const total = body.trend.reduce((sum, row) => sum + row.amountCents, 0);
     expect(total).toBe(3500);
   });
@@ -138,42 +127,118 @@ describe('GET /api/dashboard/overview integration', () => {
       household()
     );
 
-    const res = await app.request(overviewQuery(MARCH_VS_FEBRUARY));
-    const body = (await res.json()) as GetDashboardOverviewResponse;
+    const body = await fetchOverview(overviewQuery(MARCH));
     const day = body.trend.find((row) => row.bucketStart === '2026-03-05');
     expect(day?.amountCents).toBe(-1500);
   });
 
-  it('returns the prior month-to-date window in meta', async () => {
-    const res = await app.request(
-      overviewQuery({
+  it('compares month to date with the same days of the previous month', async () => {
+    const body = await fetchOverview(
+      overviewQuery({ from: '2026-03-01', to: '2026-03-15' })
+    );
+    expect(body.meta).toEqual({
+      kind: 'ranged',
+      range: {
         from: '2026-03-01',
         to: '2026-03-15',
         priorFrom: '2026-02-01',
         priorTo: '2026-02-15',
-        comparison: 'previous-month',
-      })
-    );
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as GetDashboardOverviewResponse;
-    expect(body.meta).toEqual({
-      kind: 'ranged',
-      range: { from: '2026-03-01', to: '2026-03-15' },
-      prior: {
-        from: '2026-02-01',
-        to: '2026-02-15',
-        comparison: 'previous-month',
+        grain: 'day',
       },
-      bucket: 'day',
     });
     expect(body.trend).toHaveLength(15);
   });
 
-  it('has no prior amount past the end of a shorter prior month', async () => {
-    const res = await app.request(overviewQuery(MARCH_VS_FEBRUARY));
-    const body = (await res.json()) as GetDashboardOverviewResponse;
+  it('clamps the prior window to a shorter previous month', async () => {
+    const body = await fetchOverview(overviewQuery(MARCH));
+    expect(body.meta.range).toMatchObject({
+      priorFrom: '2026-02-01',
+      priorTo: '2026-02-28',
+    });
     expect(body.trend.at(27)?.priorAmountCents).toBe(0);
     expect(body.trend.at(28)?.priorAmountCents).toBeNull();
+  });
+
+  it('compares a custom range with the equal-length window before it', async () => {
+    await insertTxns(
+      [
+        { type: 'expense', amount: 400, date: '2026-03-12' },
+        { type: 'expense', amount: 900, date: '2026-03-02' },
+      ],
+      household()
+    );
+
+    const body = await fetchOverview(
+      overviewQuery({ from: '2026-03-10', to: '2026-03-19' })
+    );
+    expect(body.meta.range).toEqual({
+      from: '2026-03-10',
+      to: '2026-03-19',
+      priorFrom: '2026-02-28',
+      priorTo: '2026-03-09',
+      grain: 'day',
+    });
+    const marchTwelfth = body.trend.find(
+      (row) => row.bucketStart === '2026-03-12'
+    );
+    expect(marchTwelfth).toEqual({
+      bucketStart: '2026-03-12',
+      amountCents: 400,
+      priorAmountCents: 900,
+    });
+  });
+
+  it('buckets ranges up to six months by Monday-start week', async () => {
+    await insertTxns(
+      [
+        { type: 'expense', amount: 300, date: '2025-10-01' },
+        { type: 'expense', amount: 200, date: '2025-10-05' },
+        { type: 'expense', amount: 700, date: '2025-04-02' },
+      ],
+      household()
+    );
+
+    const body = await fetchOverview(
+      overviewQuery({ from: '2025-10-01', to: '2026-03-24' })
+    );
+    expect(body.meta.range).toEqual({
+      from: '2025-10-01',
+      to: '2026-03-24',
+      priorFrom: '2025-04-01',
+      priorTo: '2025-09-24',
+      grain: 'week',
+    });
+    expect(body.trend.at(0)).toEqual({
+      bucketStart: '2025-09-29',
+      amountCents: 500,
+      priorAmountCents: 700,
+    });
+    expect(body.trend.at(-1)?.bucketStart).toBe('2026-03-23');
+  });
+
+  it('buckets ranges longer than six months by month', async () => {
+    await insertTxns(
+      [
+        { type: 'expense', amount: 500, date: '2026-01-15' },
+        { type: 'expense', amount: 700, date: '2026-03-10' },
+      ],
+      household()
+    );
+
+    const body = await fetchOverview(
+      overviewQuery({ from: '2025-10-01', to: '2026-04-15' })
+    );
+    expect(body.meta.range).toMatchObject({ grain: 'month' });
+    expect(body.trend.map((row) => row.bucketStart)).toEqual([
+      '2025-10-01',
+      '2025-11-01',
+      '2025-12-01',
+      '2026-01-01',
+      '2026-02-01',
+      '2026-03-01',
+      '2026-04-01',
+    ]);
+    expect(body.trend.at(3)?.amountCents).toBe(500);
   });
 
   it('scopes results to the active household', async () => {
@@ -190,82 +255,33 @@ describe('GET /api/dashboard/overview integration', () => {
       }
     );
 
-    const res = await app.request(
-      overviewQuery({
-        from: '2026-04-01',
-        to: '2026-04-30',
-        priorFrom: '2026-03-01',
-        priorTo: '2026-03-30',
-        comparison: 'previous-month',
-      })
+    const body = await fetchOverview(
+      overviewQuery({ from: '2026-04-01', to: '2026-04-30' })
     );
-    const body = (await res.json()) as GetDashboardOverviewResponse;
     const total = body.trend.reduce((sum, row) => sum + row.amountCents, 0);
     expect(total).toBe(100);
   });
 
-  it('rejects partial or invalid params', async () => {
-    const partial = await app.request('/dashboard/overview?from=2026-01-01');
-    expect(partial.status).toBe(400);
-
-    const invalid = await app.request(
-      overviewQuery({ from: '2026-13-40', to: '2026-01-31' })
-    );
-    expect(invalid.status).toBe(400);
-
-    const missingBucket = await app.request(
-      '/dashboard/overview?from=2026-03-05&to=2026-03-20'
-    );
-    expect(missingBucket.status).toBe(400);
-
-    const halfPrior = await app.request(
-      overviewQuery({
-        from: '2026-03-05',
-        to: '2026-03-20',
-        priorFrom: '2026-02-05',
-      })
-    );
-    expect(halfPrior.status).toBe(400);
-
-    const unnamedPrior = await app.request(
-      overviewQuery({
-        from: '2026-03-05',
-        to: '2026-03-20',
-        priorFrom: '2026-02-05',
-        priorTo: '2026-02-20',
-      })
-    );
-    expect(unnamedPrior.status).toBe(400);
+  it.each([
+    ['a half range', '/dashboard/overview?from=2026-01-01'],
+    [
+      'an impossible date',
+      overviewQuery({ from: '2026-13-40', to: '2026-01-31' }),
+    ],
+    [
+      'a reversed range',
+      overviewQuery({ from: '2026-03-20', to: '2026-03-05' }),
+    ],
+    [
+      'client-chosen bucketing',
+      '/dashboard/overview?from=2026-03-05&to=2026-03-20&bucket=day',
+    ],
+  ])('rejects %s', async (_label, path) => {
+    const res = await app.request(path);
+    expect(res.status).toBe(400);
   });
 
-  it('returns monthly buckets without a comparison when no prior window is given', async () => {
-    await insertTxns(
-      [
-        { type: 'expense', amount: 500, date: '2026-01-15' },
-        { type: 'expense', amount: 700, date: '2026-03-10' },
-      ],
-      household()
-    );
-
-    const res = await app.request(
-      overviewQuery({ from: '2026-01-01', to: '2026-03-24', bucket: 'month' })
-    );
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as GetDashboardOverviewResponse;
-    expect(body.meta).toEqual({
-      kind: 'ranged',
-      range: { from: '2026-01-01', to: '2026-03-24' },
-      prior: null,
-      bucket: 'month',
-    });
-    expect(body.trend).toEqual([
-      { bucketStart: '2026-01-01', amountCents: 500, priorAmountCents: null },
-      { bucketStart: '2026-02-01', amountCents: 0, priorAmountCents: null },
-      { bucketStart: '2026-03-01', amountCents: 700, priorAmountCents: null },
-    ]);
-  });
-
-  it('returns all-time monthly buckets when no range is provided', async () => {
+  it('returns all-time monthly buckets with no prior when no range is provided', async () => {
     await insertTxns(
       [
         { type: 'expense', amount: 500, date: '2026-01-15' },
@@ -274,61 +290,25 @@ describe('GET /api/dashboard/overview integration', () => {
       household()
     );
 
-    const res = await app.request('/dashboard/overview');
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as GetDashboardOverviewResponse;
+    const body = await fetchOverview('/dashboard/overview');
     expect(body.meta).toEqual({
       kind: 'all',
-      range: { from: '2026-01-15', to: '2026-02-10' },
-      prior: null,
-      bucket: 'month',
+      range: {
+        from: '2026-01-15',
+        to: '2026-02-10',
+        priorFrom: null,
+        priorTo: null,
+        grain: 'month',
+      },
     });
     expect(body.trend).toEqual([
-      {
-        bucketStart: '2026-01-01',
-        amountCents: 500,
-        priorAmountCents: null,
-      },
-      {
-        bucketStart: '2026-02-01',
-        amountCents: 700,
-        priorAmountCents: null,
-      },
+      { bucketStart: '2026-01-01', amountCents: 500, priorAmountCents: null },
+      { bucketStart: '2026-02-01', amountCents: 700, priorAmountCents: null },
     ]);
   });
 
   it('returns an empty all-time trend with no range when there is no spend', async () => {
-    const res = await app.request('/dashboard/overview');
-    const body = (await res.json()) as GetDashboardOverviewResponse;
-    expect(body).toEqual({
-      meta: { kind: 'all', range: null, prior: null, bucket: 'month' },
-      trend: [],
-    });
-  });
-
-  it('maps prior-period amounts onto the current buckets by index', async () => {
-    await insertTxns(
-      [
-        { type: 'expense', amount: 400, date: '2026-03-03' },
-        { type: 'expense', amount: 900, date: '2026-02-03' },
-      ],
-      household()
-    );
-
-    const res = await app.request(
-      overviewQuery({
-        from: '2026-03-01',
-        to: '2026-03-05',
-        priorFrom: '2026-02-01',
-        priorTo: '2026-02-05',
-        comparison: 'previous-month',
-      })
-    );
-    const body = (await res.json()) as GetDashboardOverviewResponse;
-    const marchThird = body.trend.find(
-      (row) => row.bucketStart === '2026-03-03'
-    );
-    expect(marchThird?.amountCents).toBe(400);
-    expect(marchThird?.priorAmountCents).toBe(900);
+    const body = await fetchOverview('/dashboard/overview');
+    expect(body).toEqual({ meta: { kind: 'all', range: null }, trend: [] });
   });
 });

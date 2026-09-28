@@ -14,7 +14,7 @@ import {
   ChartTooltipContent,
 } from '@ploutizo/ui/components/chart';
 import type { ChartConfig } from '@ploutizo/ui/components/chart';
-import type { DashboardOverviewBucket } from '@ploutizo/types';
+import type { DashboardOverviewGrain } from '@ploutizo/types';
 import {
   formatTrendBucket,
   formatTrendCurrency,
@@ -27,14 +27,14 @@ import type {
 
 type SpendTrendChartProps = {
   data: SpendTrendSegmentedPoint[];
-  bucket: DashboardOverviewBucket;
+  grain: DashboardOverviewGrain;
   hasPriorSeries: boolean;
   seriesLabels: SpendTrendSeriesLabels;
 };
 
 export const SpendTrendChart = ({
   data,
-  bucket,
+  grain,
   hasPriorSeries,
   seriesLabels,
 }: SpendTrendChartProps) => {
@@ -61,7 +61,7 @@ export const SpendTrendChart = ({
           tickMargin={8}
           minTickGap={24}
           tickFormatter={(bucketStart: string) =>
-            formatTrendBucket(bucketStart, bucket, 'axis')
+            formatTrendBucket(bucketStart, grain, 'axis')
           }
         />
         <YAxis
@@ -86,7 +86,7 @@ export const SpendTrendChart = ({
               labelFormatter={(_label, payload) => {
                 const bucketStart = payload[0]?.payload?.bucketStart;
                 return typeof bucketStart === 'string'
-                  ? formatTrendBucket(bucketStart, bucket, 'tooltip')
+                  ? formatTrendBucket(bucketStart, grain, 'tooltip')
                   : '';
               }}
               valueFormatter={formatTrendCurrency}

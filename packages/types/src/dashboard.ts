@@ -4,40 +4,30 @@ export type DashboardOverviewTrendPoint = {
   priorAmountCents: number | null;
 };
 
+export const DASHBOARD_OVERVIEW_GRAINS = ['day', 'week', 'month'] as const;
+
+/** Calendar unit each trend point's `bucketStart` represents; weeks start on Monday. */
+export type DashboardOverviewGrain = (typeof DASHBOARD_OVERVIEW_GRAINS)[number];
+
 /** Inclusive calendar dates (`yyyy-MM-dd`). */
-export type DashboardOverviewRange = {
+export type CalendarDateRange = {
   from: string;
   to: string;
 };
 
-/** Calendar unit each trend point's `bucketStart` represents. */
-export type DashboardOverviewBucket = 'day' | 'month';
-
-/** What the prior window is, relative to the current range. */
-export type DashboardOverviewComparison =
-  | 'previous-month'
-  | 'previous-30-days'
-  | 'previous-year';
-
-/** Window compared against the current range, bucket by bucket. */
-export type DashboardOverviewPrior = DashboardOverviewRange & {
-  comparison: DashboardOverviewComparison;
+/** A charted window, the prior window it is compared with (null when there is none), and its bucket grain. */
+export type DashboardOverviewRange = CalendarDateRange & {
+  priorFrom: string | null;
+  priorTo: string | null;
+  grain: DashboardOverviewGrain;
 };
 
 export type DashboardOverviewMeta =
+  | { kind: 'ranged'; range: DashboardOverviewRange }
   | {
       kind: 'all';
-      /** First to last day with spend; null when there is none. */
+      /** First to last day with spend, monthly with no prior; null when there is none. */
       range: DashboardOverviewRange | null;
-      prior: null;
-      bucket: 'month';
-    }
-  | {
-      kind: 'ranged';
-      range: DashboardOverviewRange;
-      /** Mapped onto the current buckets by index; null when there is no comparison. */
-      prior: DashboardOverviewPrior | null;
-      bucket: DashboardOverviewBucket;
     };
 
 export type GetDashboardOverviewResponse = {

@@ -7,36 +7,22 @@ import type { UseQueryResult } from '@tanstack/react-query';
 
 export const dashboardOverviewQueryKey = ['dashboard-overview'] as const;
 
-/** Empty for All, which the API resolves from the household's spend. */
-const overviewSearch = (period: ResolvedDashboardPeriod): string => {
-  if (period.kind === 'all') {
-    return '';
-  }
-  return new URLSearchParams({
-    from: period.from,
-    to: period.to,
-    bucket: period.bucket,
-    ...(period.prior
-      ? {
-          priorFrom: period.prior.from,
-          priorTo: period.prior.to,
-          comparison: period.prior.comparison,
-        }
-      : {}),
-  }).toString();
-};
-
+/** The API derives the prior window and grain from the dates; All sends none. */
 export const dashboardOverviewQueryOptions = (
   period: ResolvedDashboardPeriod
 ) => {
-  const search = overviewSearch(period);
+  const search =
+    period.kind === 'all'
+      ? ''
+      : `?${new URLSearchParams({ from: period.from, to: period.to }).toString()}`;
   return queryOptions({
-    queryKey: [...dashboardOverviewQueryKey, search || 'all'],
+    queryKey:
+      period.kind === 'all'
+        ? [...dashboardOverviewQueryKey, 'all']
+        : [...dashboardOverviewQueryKey, period.from, period.to],
     queryFn: ({ signal }) =>
       apiFetch<GetDashboardOverviewResponse>(
-        search
-          ? `/api/dashboard/overview?${search}`
-          : '/api/dashboard/overview',
+        `/api/dashboard/overview${search}`,
         { signal }
       ),
     placeholderData: (previousData) => previousData,

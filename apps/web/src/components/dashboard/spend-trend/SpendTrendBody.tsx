@@ -13,15 +13,17 @@ import type {
 } from '@ploutizo/types';
 import { SpendTrendChart } from '@/components/dashboard/spend-trend/SpendTrendChart';
 import {
-  partialMonthEdges,
-  segmentPartialMonths,
+  partialBucketEdges,
+  segmentPartialBuckets,
+  spendTrendGrain,
+  spendTrendPriorRange,
   spendTrendSeriesLabels,
   toSpendTrendChartData,
 } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
 
 type SpendTrendBodyProps = {
   overview: GetDashboardOverviewResponse;
-  /** Decides whether All's last month is still in progress. */
+  /** Decides whether All's last bucket is still in progress. */
   today: string;
 };
 
@@ -33,9 +35,9 @@ const hasSpendActivity = (trend: DashboardOverviewTrendPoint[]): boolean =>
 export const SpendTrendBody = ({ overview, today }: SpendTrendBodyProps) => {
   const chartData = useMemo(
     () =>
-      segmentPartialMonths(
+      segmentPartialBuckets(
         toSpendTrendChartData(overview),
-        partialMonthEdges(overview.meta, today)
+        partialBucketEdges(overview.meta, today)
       ),
     [overview, today]
   );
@@ -59,8 +61,8 @@ export const SpendTrendBody = ({ overview, today }: SpendTrendBodyProps) => {
   return (
     <SpendTrendChart
       data={chartData}
-      bucket={overview.meta.bucket}
-      hasPriorSeries={overview.meta.prior !== null}
+      grain={spendTrendGrain(overview.meta)}
+      hasPriorSeries={spendTrendPriorRange(overview.meta) !== null}
       seriesLabels={spendTrendSeriesLabels(overview.meta)}
     />
   );

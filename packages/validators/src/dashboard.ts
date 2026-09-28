@@ -1,67 +1,51 @@
 import { z } from 'zod';
+import { DASHBOARD_PERIOD_SHORTCUTS } from '@ploutizo/utils/dashboard-period';
 
-const rangedOverviewQuerySchema = z
-  .object({
-    from: z.iso.date(),
-    to: z.iso.date(),
-    bucket: z.enum(['day', 'month']),
-    priorFrom: z.iso.date().optional(),
-    priorTo: z.iso.date().optional(),
-    comparison: z
-      .enum(['previous-month', 'previous-30-days', 'previous-year'])
-      .optional(),
-  })
+const calendarDates = {
+  from: z.iso.date(),
+  to: z.iso.date(),
+};
+
+const isOrderedRange = (value: { from: string; to: string }) =>
+  value.from <= value.to;
+
+const orderedRangeError = {
+  message: 'from must be on or before to',
+  path: ['from'],
+};
+
+const calendarDateRangeSchema = z
+  .object(calendarDates)
   .strict()
-  .refine((value) => value.from <= value.to, {
-    message: 'from must be on or before to',
-    path: ['from'],
-  })
-  .refine(
-    (value) =>
-      (value.priorFrom === undefined) === (value.priorTo === undefined) &&
-      (value.priorFrom === undefined) === (value.comparison === undefined),
-    {
-      message: 'priorFrom, priorTo and comparison must be provided together',
-      path: ['priorFrom'],
-    }
-  )
-  .refine(
-    (value) =>
-      value.priorFrom === undefined ||
-      value.priorTo === undefined ||
-      value.priorFrom <= value.priorTo,
-    {
-      message: 'priorFrom must be on or before priorTo',
-      path: ['priorFrom'],
-    }
-  );
+  .refine(isOrderedRange, orderedRangeError);
 
-/** No params means All; otherwise a range, optionally compared bucket by bucket with a prior window. */
+// Not strict: the router re-validates its own output, which carries the unused keys as undefined.
+const absent = z.never().optional();
+
+/** Dashboard URL search: a shortcut name or a custom from–to, never both. */
+export const dashboardPeriodSearchSchema = z.union([
+  z.object({
+    range: z.enum(DASHBOARD_PERIOD_SHORTCUTS),
+    from: absent,
+    to: absent,
+  }),
+  z
+    .object({ range: absent, ...calendarDates })
+    .refine(isOrderedRange, orderedRangeError),
+]);
+
+/** No params means All; otherwise the range to chart, whose prior window and grain the API derives. */
 export const dashboardOverviewQuerySchema = z.union([
   z
     .object({})
     .strict()
     .transform(() => ({ kind: 'all' as const })),
-  rangedOverviewQuerySchema.transform(
-    ({ from, to, bucket, priorFrom, priorTo, comparison }) => ({
-      kind: 'ranged' as const,
-      range: { from, to },
-      bucket,
-      prior:
-        priorFrom !== undefined &&
-        priorTo !== undefined &&
-        comparison !== undefined
-          ? { from: priorFrom, to: priorTo, comparison }
-          : null,
-    })
-  ),
+  calendarDateRangeSchema.transform((range) => ({
+    kind: 'ranged' as const,
+    ...range,
+  })),
 ]);
 
 export type DashboardOverviewQuery = z.output<
   typeof dashboardOverviewQuerySchema
->;
-
-export type RangedDashboardOverviewQuery = Extract<
-  DashboardOverviewQuery,
-  { kind: 'ranged' }
 >;

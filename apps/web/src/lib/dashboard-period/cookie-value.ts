@@ -1,7 +1,5 @@
-import {
-  parseDashboardPeriodSearch,
-  selectionFromDashboardSearch,
-} from '@ploutizo/utils/dashboard-period';
+import { selectionFromDashboardSearch } from '@ploutizo/utils/dashboard-period';
+import { dashboardPeriodSearchSchema } from '@ploutizo/validators';
 import type { DashboardPeriodSelection } from '@ploutizo/utils/dashboard-period';
 
 export const DASHBOARD_PERIOD_COOKIE = 'dashboard_period';
@@ -22,11 +20,10 @@ export const parseDashboardPeriodCookie = (
   const parts = value.split('_');
   if (parts.length > 2) return null;
   const [from, to] = parts;
-  return selectionFromDashboardSearch(
-    parseDashboardPeriodSearch(
-      parts.length === 1 ? { range: from } : { from, to }
-    )
+  const parsed = dashboardPeriodSearchSchema.safeParse(
+    parts.length === 1 ? { range: from } : { from, to }
   );
+  return parsed.success ? selectionFromDashboardSearch(parsed.data) : null;
 };
 
 /** Reads the cookie from a `document.cookie` string. */

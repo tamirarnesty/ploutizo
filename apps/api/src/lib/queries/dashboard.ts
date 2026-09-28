@@ -1,8 +1,10 @@
-import { and, eq, gte, isNull, lte, sql } from 'drizzle-orm';
+import { and, gte, lte, sql } from 'drizzle-orm';
 import { db } from '@ploutizo/db';
 import { transactions } from '@ploutizo/db/schema';
-import type { DashboardOverviewBucket } from '@ploutizo/types';
+import type { DashboardOverviewGrain } from '@ploutizo/types';
 import type { DbClient } from '@ploutizo/db';
+import type { SQL } from 'drizzle-orm';
+import { activeTransactions } from '@/lib/queries/scope';
 
 const netSpendAmountSql = sql<number>`coalesce(sum(
   case
@@ -13,15 +15,16 @@ const netSpendAmountSql = sql<number>`coalesce(sum(
 ), 0)::bigint`.mapWith(Number);
 
 // Text, not `date`: pg parses `date` into a local-midnight JS Date, which shifts the day off UTC.
-const bucketStartSql = (bucket: DashboardOverviewBucket) =>
-  bucket === 'day'
-    ? sql<string>`to_char(${transactions.date}, 'YYYY-MM-DD')`
-    : sql<string>`to_char(${transactions.date}, 'YYYY-MM-01')`;
+// `date_trunc('week')` starts weeks on Monday, matching the shared bucket calendar.
+const BUCKET_START_SQL: Record<DashboardOverviewGrain, SQL<string>> = {
+  day: sql<string>`to_char(${transactions.date}, 'YYYY-MM-DD')`,
+  week: sql<string>`to_char(date_trunc('week', ${transactions.date}), 'YYYY-MM-DD')`,
+  month: sql<string>`to_char(${transactions.date}, 'YYYY-MM-01')`,
+};
 
 const spendFilter = (orgId: string) =>
   and(
-    eq(transactions.orgId, orgId),
-    isNull(transactions.deletedAt),
+    ...activeTransactions(orgId),
     sql`${transactions.type} in ('expense', 'refund')`
   );
 
@@ -32,11 +35,11 @@ export type SpendTrendBucketRow = {
 
 export const fetchNetSpendByBucket = async (
   orgId: string,
-  bucket: DashboardOverviewBucket,
+  grain: DashboardOverviewGrain,
   input: { from?: string; to?: string },
   client: DbClient = db
 ): Promise<SpendTrendBucketRow[]> => {
-  const bucketStart = bucketStartSql(bucket).as('bucket_start');
+  const bucketStart = BUCKET_START_SQL[grain].as('bucket_start');
   return client
     .select({
       bucketStart,
