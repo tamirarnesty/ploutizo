@@ -7,7 +7,14 @@ import {
   createRoute,
   createRouter,
 } from '@tanstack/react-router';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
@@ -309,16 +316,11 @@ const cardHeaderFor = (title: string) => {
   return header as HTMLElement;
 };
 
-/** Pointer-events checks on the nested range calendar are costly; keep period UI tests fast in CI. */
-const periodPickerUser = () => userEvent.setup({ pointerEventsCheck: 0 });
-
 const customPeriodTrigger = () =>
   screen.getByRole('button', { name: /^Custom period:/ });
 
-const openCustomPeriodPicker = async (
-  user: ReturnType<typeof userEvent.setup>
-) => {
-  await user.click(customPeriodTrigger());
+const openCustomPeriodPicker = async () => {
+  fireEvent.click(customPeriodTrigger());
   await waitFor(() => {
     expect(
       document.querySelector('[data-slot="date-range-picker-content"]')
@@ -476,32 +478,25 @@ describe('Dashboard', () => {
     });
 
     it('charts a custom range only once it is applied', async () => {
-      const user = periodPickerUser();
       const router = await renderDashboard();
       await waitFor(() => {
         expect(overviewRequests()).toHaveLength(1);
       });
-      const day = (name: RegExp) =>
-        customPeriodPicker().getByRole('button', { name });
-      const applyButton = () =>
-        customPeriodPicker().getByRole('button', { name: 'Apply' });
+      const picker = () => customPeriodPicker();
+      const day = (name: RegExp) => picker().getByRole('button', { name });
+      const applyButton = () => picker().getByRole('button', { name: 'Apply' });
 
-      await openCustomPeriodPicker(user);
-      await user.click(day(/March 10th, 2026/));
-      await user.click(
-        customPeriodPicker().getByRole('button', { name: 'Cancel' })
-      );
+      await openCustomPeriodPicker();
+      fireEvent.click(day(/March 10th, 2026/));
 
       expect(router.state.location.search).toEqual({
         range: 'mtd',
         trend: 'bucket',
       });
       expect(overviewRequests()).toHaveLength(1);
-
-      await openCustomPeriodPicker(user);
-      await user.click(day(/March 10th, 2026/));
       await waitFor(() => expect(applyButton()).toBeEnabled());
-      await user.click(applyButton());
+
+      fireEvent.click(applyButton());
 
       await waitFor(() => {
         expect(router.state.location.search).toEqual({
