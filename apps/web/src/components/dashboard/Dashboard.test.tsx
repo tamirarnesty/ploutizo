@@ -1,16 +1,58 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import {
+  Outlet,
+  RouterProvider,
+  createMemoryHistory,
+  createRootRouteWithContext,
+  createRoute,
+  createRouter,
+} from '@tanstack/react-router';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
+import {
+  dashboardPriorRange,
+  dashboardRangeGrain,
+  isDashboardRangedShortcut,
+} from '@ploutizo/utils/dashboard-period';
 import type {
+  GetDashboardOverviewResponse,
   GetSettlementBalancesResponse,
   MemberIdentity,
   OrgMember,
   SettlementAccountRow,
 } from '@ploutizo/types';
-import { Dashboard } from '@/components/dashboard/Dashboard';
+import type * as HouseholdLoaderReady from '@/lib/access/household-loader-ready';
+import type { RouterContext } from '@/router';
+// `.dashboard` is part of the route file name, not an extension.
+// eslint-disable-next-line import/extensions
+import { Route as DashboardRoute } from '@/routes/_layout.dashboard';
 import { settlementMember } from '@/test/settlementFixtures';
+import { cookieValueFrom } from '@/lib/cookies/cookie-value';
+
+const loaderReady = vi.hoisted(() => ({ value: false }));
+
+// Isomorphic helpers run their server branch outside the Start compiler; give them the browser's view instead.
+vi.mock('@/lib/access/household-loader-ready', async (importOriginal) => ({
+  ...(await importOriginal<typeof HouseholdLoaderReady>()),
+  isHouseholdLoaderReady: () => Promise.resolve(loaderReady.value),
+}));
+
+vi.mock('@/lib/cookies/request-cookie.server', async () => {
+  const cookies = await import('@/lib/cookies/cookie-value');
+  return {
+    getRequestCookie: (name: string) =>
+      cookies.cookieValueFrom(document.cookie, name),
+  };
+});
 
 const toastMocks = vi.hoisted(() => ({ error: vi.fn() }));
 
@@ -32,16 +74,43 @@ const SETTLEMENTS_PATH = '/api/settlements';
 const MEMBERS_PATH = '/api/households/members';
 const OVERVIEW_PATH = '/api/dashboard/overview';
 
-const emptyOverview = {
-  meta: {
-    range: {
-      from: '2026-03-01',
-      to: '2026-03-24',
-      priorFrom: '2026-02-01',
-      priorTo: '2026-02-24',
+/** Answers like the API: the prior window follows from the dates and shortcut, the grain from the dates. */
+const overviewFor = (url: URL): GetDashboardOverviewResponse => {
+  const from = url.searchParams.get('from');
+  const to = url.searchParams.get('to');
+  if (!from || !to) {
+    return {
+      meta: {
+        kind: 'all',
+        range: {
+          from: '2026-01-15',
+          to: '2026-03-10',
+          priorFrom: null,
+          priorTo: null,
+          grain: 'month',
+        },
+      },
+      trend: [],
+    };
+  }
+  const shortcut = url.searchParams.get('shortcut');
+  const prior = dashboardPriorRange(
+    { from, to },
+    shortcut !== null && isDashboardRangedShortcut(shortcut) ? shortcut : null
+  );
+  return {
+    meta: {
+      kind: 'ranged',
+      range: {
+        from,
+        to,
+        priorFrom: prior.from,
+        priorTo: prior.to,
+        grain: dashboardRangeGrain({ from, to }),
+      },
     },
-  },
-  trend: [],
+    trend: [],
+  };
 };
 
 const orgMember = (identity: MemberIdentity): OrgMember => ({
@@ -146,24 +215,91 @@ const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       ? settlementsBody
       : path === MEMBERS_PATH
         ? { data: membersBody }
-        : emptyOverview
+        : overviewFor(new URL(url, 'http://localhost'))
   );
 });
 
 const requestCount = (path: string) =>
   fetchMock.mock.calls.filter((call) => String(call[0]).includes(path)).length;
 
-const renderDashboard = () => {
+const overviewRequests = () =>
+  fetchMock.mock.calls
+    .map((call) => String(call[0]))
+    .filter((url) => url.includes(OVERVIEW_PATH))
+    .map((url) => url.slice(url.indexOf(OVERVIEW_PATH)));
+
+const setPeriodCookie = (value: string) => {
+  document.cookie = `dashboard_period=${value}; path=/`;
+};
+
+const setModeCookie = (value: string) => {
+  document.cookie = `spend_trend_mode=${value}; path=/`;
+};
+
+const periodCookie = () => cookieValueFrom(document.cookie, 'dashboard_period');
+
+const modeCookie = () => cookieValueFrom(document.cookie, 'spend_trend_mode');
+
+const createDashboardRouter = (initialLocation: string) => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider delay={0}>
-        <Dashboard />
-      </TooltipProvider>
-    </QueryClientProvider>
-  );
+  const rootRoute = createRootRouteWithContext<RouterContext>()({
+    component: () => (
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider delay={0}>
+          <Outlet />
+        </TooltipProvider>
+      </QueryClientProvider>
+    ),
+  });
+  const indexRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/',
+    component: () => <div>Home</div>,
+  });
+  const layoutRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    id: '_layout',
+    component: Outlet,
+  });
+  const { validateSearch, beforeLoad, loaderDeps, loader, component } =
+    DashboardRoute.options;
+  const dashboardRoute = createRoute({
+    getParentRoute: () => layoutRoute,
+    path: 'dashboard',
+    validateSearch,
+    beforeLoad,
+    loaderDeps,
+    loader,
+    component,
+  } as never);
+
+  return createRouter({
+    routeTree: rootRoute.addChildren([
+      indexRoute,
+      layoutRoute.addChildren([dashboardRoute]),
+    ]),
+    history: createMemoryHistory({ initialEntries: [initialLocation] }),
+    context: {
+      queryClient,
+      access: {
+        status: 'signed-in-with-active-household',
+        signedInMemberId: 'user_a',
+        activeHouseholdId: 'org_a',
+      },
+      identityLoaded: true,
+      isReady: true,
+    },
+  });
+};
+
+/** Renders the real dashboard route, so its search validation, redirect, and period plumbing all run. */
+const renderDashboard = async (initialLocation = '/dashboard') => {
+  const router = createDashboardRouter(initialLocation);
+  render(<RouterProvider router={router} />);
+  await screen.findByText('Spend trend');
+  return router;
 };
 
 const refreshButton = () => screen.getByRole('button', { name: 'Refresh' });
@@ -180,8 +316,35 @@ const cardHeaderFor = (title: string) => {
   return header as HTMLElement;
 };
 
+const customPeriodTrigger = () =>
+  screen.getByRole('button', { name: /^Custom period:/ });
+
+const openCustomPeriodPicker = async () => {
+  fireEvent.click(customPeriodTrigger());
+  await waitFor(() => {
+    expect(
+      document.querySelector('[data-slot="date-range-picker-content"]')
+    ).not.toBeNull();
+  });
+};
+
+const customPeriodPicker = () => {
+  const root = document.querySelector(
+    '[data-slot="date-range-picker-content"]'
+  );
+  if (!root) {
+    throw new Error('Custom period picker is not open');
+  }
+  return within(root as HTMLElement);
+};
+
 describe('Dashboard', () => {
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-03-24T12:00:00'));
+    document.cookie = 'dashboard_period=; path=/; max-age=0';
+    document.cookie = 'spend_trend_mode=; path=/; max-age=0';
+    loaderReady.value = false;
     settlementsBody = settlements;
     membersBody = members;
     failingPaths.clear();
@@ -192,16 +355,325 @@ describe('Dashboard', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
+  describe('period', () => {
+    it('opens on month to date when neither the URL nor a past visit names a period', async () => {
+      const router = await renderDashboard();
+
+      expect(router.state.location.search).toEqual({
+        range: 'mtd',
+        trend: 'bucket',
+      });
+      await waitFor(() => {
+        expect(overviewRequests()).toEqual([
+          `${OVERVIEW_PATH}?from=2026-03-01&to=2026-03-24&shortcut=mtd`,
+        ]);
+      });
+      expect(
+        await screen.findByText('Spend per day vs Feb 1 – Feb 24, 2026')
+      ).toBeInTheDocument();
+    });
+
+    it('restores the last visit’s period when the URL names none', async () => {
+      setPeriodCookie('2026-01-01_2026-01-15');
+      const router = await renderDashboard();
+
+      expect(router.state.location.search).toEqual({
+        from: '2026-01-01',
+        to: '2026-01-15',
+        trend: 'bucket',
+      });
+      await waitFor(() => {
+        expect(overviewRequests()).toEqual([
+          `${OVERVIEW_PATH}?from=2026-01-01&to=2026-01-15`,
+        ]);
+      });
+      expect(
+        screen.getByRole('button', {
+          name: 'Custom period: Jan 1 – Jan 15, 2026',
+        })
+      ).toBeInTheDocument();
+    });
+
+    it('re-resolves a restored shortcut against today', async () => {
+      setPeriodCookie('6m');
+      await renderDashboard();
+
+      await waitFor(() => {
+        expect(overviewRequests()).toEqual([
+          `${OVERVIEW_PATH}?from=2025-10-01&to=2026-03-24&shortcut=6m`,
+        ]);
+      });
+    });
+
+    it('prefers the URL’s period over the last visit’s and remembers it', async () => {
+      setPeriodCookie('6m');
+      const router = await renderDashboard('/dashboard?range=30d');
+
+      expect(router.state.location.search).toEqual({
+        range: '30d',
+        trend: 'bucket',
+      });
+      await waitFor(() => {
+        expect(overviewRequests()).toEqual([
+          `${OVERVIEW_PATH}?from=2026-02-23&to=2026-03-24&shortcut=30d`,
+        ]);
+      });
+      expect(periodCookie()).toBe('30d');
+    });
+
+    it.each([
+      [
+        'mixes a shortcut with dates',
+        '?range=ytd&from=2026-01-01&to=2026-01-31',
+      ],
+      ['names an unknown shortcut', '?range=nope'],
+    ])(
+      'restores the last visit’s period when the URL %s',
+      async (_label, search) => {
+        setPeriodCookie('6m');
+        const router = await renderDashboard(`/dashboard${search}`);
+
+        expect(router.state.location.search).toEqual({
+          range: '6m',
+          trend: 'bucket',
+        });
+      }
+    );
+
+    it('opens on month to date when the URL is invalid and there is no past visit', async () => {
+      const router = await renderDashboard('/dashboard?range=nope');
+
+      expect(router.state.location.search).toEqual({
+        range: 'mtd',
+        trend: 'bucket',
+      });
+    });
+
+    it('refetches the overview for the new range when a shortcut is picked', async () => {
+      const user = userEvent.setup();
+      const router = await renderDashboard();
+      await waitFor(() => {
+        expect(overviewRequests()).toHaveLength(1);
+      });
+
+      await user.click(screen.getByRole('button', { name: 'YTD' }));
+
+      await waitFor(() => {
+        expect(overviewRequests()).toContain(
+          `${OVERVIEW_PATH}?from=2026-01-01&to=2026-03-24&shortcut=ytd`
+        );
+      });
+      expect(router.state.location.search).toEqual({
+        range: 'ytd',
+        trend: 'bucket',
+      });
+      expect(periodCookie()).toBe('ytd');
+      expect(
+        await screen.findByText('Spend per week vs Jan 1 – Mar 24, 2025')
+      ).toBeInTheDocument();
+    });
+
+    it('charts a custom range only once it is applied', async () => {
+      const router = await renderDashboard();
+      await waitFor(() => {
+        expect(overviewRequests()).toHaveLength(1);
+      });
+      const picker = () => customPeriodPicker();
+      const day = (name: RegExp) => picker().getByRole('button', { name });
+      const applyButton = () => picker().getByRole('button', { name: 'Apply' });
+
+      await openCustomPeriodPicker();
+      fireEvent.click(day(/March 10th, 2026/));
+
+      expect(router.state.location.search).toEqual({
+        range: 'mtd',
+        trend: 'bucket',
+      });
+      expect(overviewRequests()).toHaveLength(1);
+      await waitFor(() => expect(applyButton()).toBeEnabled());
+
+      fireEvent.click(applyButton());
+
+      await waitFor(() => {
+        expect(router.state.location.search).toEqual({
+          from: '2026-03-01',
+          to: '2026-03-10',
+          trend: 'bucket',
+        });
+      });
+      await waitFor(() => {
+        expect(overviewRequests()).toContain(
+          `${OVERVIEW_PATH}?from=2026-03-01&to=2026-03-10`
+        );
+      });
+    });
+
+    it('charts All as spend per month over the whole history', async () => {
+      const user = userEvent.setup();
+      await renderDashboard();
+
+      await user.click(screen.getByRole('button', { name: 'All' }));
+
+      await waitFor(() => {
+        expect(overviewRequests()).toContain(OVERVIEW_PATH);
+      });
+      expect(await screen.findByText('Spend per month')).toBeInTheDocument();
+    });
+
+    it('keeps the caption naming the data on screen while a new period loads', async () => {
+      const user = userEvent.setup();
+      await renderDashboard();
+      expect(
+        await screen.findByText('Spend per day vs Feb 1 – Feb 24, 2026')
+      ).toBeInTheDocument();
+
+      const release = holdRequests();
+      await user.click(screen.getByRole('button', { name: '6m' }));
+
+      await waitFor(() => {
+        expect(cardFor('Spend trend')).toHaveAttribute('aria-busy', 'true');
+      });
+      expect(
+        screen.getByText('Spend per day vs Feb 1 – Feb 24, 2026')
+      ).toBeInTheDocument();
+
+      release();
+      expect(
+        await screen.findByText('Spend per week vs Apr 1 – Sep 24, 2025')
+      ).toBeInTheDocument();
+    });
+
+    it('preloads the overview for the remembered period when the dashboard link is hovered', async () => {
+      loaderReady.value = true;
+      setPeriodCookie('ytd');
+      const router = createDashboardRouter('/');
+      render(<RouterProvider router={router} />);
+      await screen.findByText('Home');
+
+      // What a nav link's intent preload does: it names no period, like the link itself.
+      await act(() => router.preloadRoute({ to: '/dashboard' }));
+
+      expect(overviewRequests()).toEqual([
+        `${OVERVIEW_PATH}?from=2026-01-01&to=2026-03-24&shortcut=ytd`,
+      ]);
+      expect(requestCount(SETTLEMENTS_PATH)).toBe(1);
+    });
+  });
+
+  describe('spend trend mode', () => {
+    const modeButton = (name: string) => screen.getByRole('button', { name });
+
+    it('opens per bucket when neither the URL nor a past visit names a mode', async () => {
+      await renderDashboard();
+
+      expect(
+        await screen.findByRole('button', { name: 'Per day' })
+      ).toHaveAttribute('aria-pressed', 'true');
+      expect(modeButton('Running total')).toHaveAttribute(
+        'aria-pressed',
+        'false'
+      );
+    });
+
+    it('restores the last visit’s mode when the URL names none', async () => {
+      setModeCookie('running');
+      const router = await renderDashboard('/dashboard?range=mtd');
+
+      expect(router.state.location.search).toEqual({
+        range: 'mtd',
+        trend: 'running',
+      });
+      expect(
+        await screen.findByText('Running total vs Feb 1 – Feb 24, 2026')
+      ).toBeInTheDocument();
+    });
+
+    it('prefers the URL’s mode over the last visit’s and remembers it', async () => {
+      setModeCookie('bucket');
+      await renderDashboard('/dashboard?range=mtd&trend=running');
+
+      expect(
+        await screen.findByText('Running total vs Feb 1 – Feb 24, 2026')
+      ).toBeInTheDocument();
+      expect(modeCookie()).toBe('running');
+    });
+
+    it('redraws the same data in the picked mode and remembers it', async () => {
+      const user = userEvent.setup();
+      const router = await renderDashboard();
+      await waitFor(() => {
+        expect(overviewRequests()).toHaveLength(1);
+      });
+
+      await user.click(
+        await screen.findByRole('button', { name: 'Running total' })
+      );
+
+      expect(
+        await screen.findByText('Running total vs Feb 1 – Feb 24, 2026')
+      ).toBeInTheDocument();
+      expect(router.state.location.search).toEqual({
+        range: 'mtd',
+        trend: 'running',
+      });
+      expect(modeCookie()).toBe('running');
+      expect(overviewRequests()).toHaveLength(1);
+    });
+
+    it('keeps the mode when the active option is clicked again', async () => {
+      const user = userEvent.setup();
+      const router = await renderDashboard();
+
+      await user.click(await screen.findByRole('button', { name: 'Per day' }));
+
+      expect(router.state.location.search).toEqual({
+        range: 'mtd',
+        trend: 'bucket',
+      });
+      expect(modeButton('Per day')).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('keeps the mode when the period changes', async () => {
+      const user = userEvent.setup();
+      const router = await renderDashboard(
+        '/dashboard?from=2026-03-01&to=2026-03-10&trend=running'
+      );
+
+      await user.click(screen.getByRole('button', { name: 'YTD' }));
+
+      await waitFor(() => {
+        expect(router.state.location.search).toEqual({
+          range: 'ytd',
+          trend: 'running',
+        });
+      });
+      expect(
+        await screen.findByText('Running total vs Jan 1 – Mar 24, 2025')
+      ).toBeInTheDocument();
+    });
+
+    it('keeps the URL’s mode when the URL names no period', async () => {
+      setPeriodCookie('6m');
+      const router = await renderDashboard('/dashboard?trend=running');
+
+      expect(router.state.location.search).toEqual({
+        range: '6m',
+        trend: 'running',
+      });
+    });
+  });
+
   it('renders the spend trend card', async () => {
-    renderDashboard();
-    expect(await screen.findByText('Spend trend')).toBeInTheDocument();
+    await renderDashboard();
+    expect(screen.getByText('Spend trend')).toBeInTheDocument();
   });
 
   it('shows the card balances total in the section header', async () => {
-    renderDashboard();
+    await renderDashboard();
 
     const header = await waitFor(() => cardHeaderFor('Card Balances'));
     await waitFor(() => {
@@ -211,7 +683,7 @@ describe('Dashboard', () => {
   });
 
   it('renders the settlement summary as its own card', async () => {
-    renderDashboard();
+    await renderDashboard();
 
     await screen.findByText('Visa');
 
@@ -223,7 +695,7 @@ describe('Dashboard', () => {
 
   it('marks both cards busy and disables Refresh while the data loads', async () => {
     const release = holdRequests();
-    renderDashboard();
+    await renderDashboard();
 
     expect(refreshButton()).toHaveAttribute('aria-disabled', 'true');
     expect(cardFor('Card Balances')).toHaveAttribute('aria-busy', 'true');
@@ -240,7 +712,7 @@ describe('Dashboard', () => {
 
   it('shows the latest data for both cards after the header Refresh', async () => {
     const user = userEvent.setup();
-    renderDashboard();
+    await renderDashboard();
 
     await screen.findByText('Visa');
     settlementsBody = {
@@ -264,7 +736,7 @@ describe('Dashboard', () => {
 
   it('keeps loaded data and flags it as out of date when a refresh fails', async () => {
     const user = userEvent.setup();
-    renderDashboard();
+    await renderDashboard();
 
     await screen.findByText('Visa');
     failingPaths.add(SETTLEMENTS_PATH);
@@ -295,7 +767,7 @@ describe('Dashboard', () => {
     'shows an error in each card when %s fail to load',
     async (_label, path) => {
       failingPaths.add(path);
-      renderDashboard();
+      await renderDashboard();
 
       expect(
         await within(cardFor('Card Balances')).findByRole('alert')
@@ -309,7 +781,7 @@ describe('Dashboard', () => {
   it('recovers failed cards from the header Refresh', async () => {
     const user = userEvent.setup();
     failingPaths.add(SETTLEMENTS_PATH);
-    renderDashboard();
+    await renderDashboard();
 
     await screen.findByText(/Couldn’t load card balances/);
     failingPaths.clear();
@@ -335,7 +807,7 @@ describe('Dashboard', () => {
     'explains that %s is all time when its hint is tapped',
     async (section) => {
       const user = userEvent.setup();
-      renderDashboard();
+      await renderDashboard();
 
       await screen.findByText('Visa');
       await user.click(

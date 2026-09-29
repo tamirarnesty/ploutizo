@@ -4,17 +4,31 @@ export type DashboardOverviewTrendPoint = {
   priorAmountCents: number | null;
 };
 
-/** Inclusive calendar dates (`yyyy-MM-dd`) for the current and comparison windows. */
-export type DashboardOverviewRange = {
+/** Calendar unit each trend point's `bucketStart` represents; weeks start on Monday. */
+export type DashboardOverviewGrain = 'day' | 'week' | 'month';
+
+/** Inclusive calendar dates (`yyyy-MM-dd`). */
+export type CalendarDateRange = {
   from: string;
   to: string;
-  priorFrom: string;
-  priorTo: string;
 };
 
+/** A charted window, the prior window it is compared with (null when there is none), and its bucket grain. */
+export type DashboardOverviewRange = CalendarDateRange & {
+  priorFrom: string | null;
+  priorTo: string | null;
+  grain: DashboardOverviewGrain;
+};
+
+export type DashboardOverviewMeta =
+  | { kind: 'ranged'; range: DashboardOverviewRange }
+  | {
+      kind: 'all';
+      /** First to last day with spend, monthly with no prior; null when there is none. */
+      range: DashboardOverviewRange | null;
+    };
+
 export type GetDashboardOverviewResponse = {
-  meta: {
-    range: DashboardOverviewRange;
-  };
+  meta: DashboardOverviewMeta;
   trend: DashboardOverviewTrendPoint[];
 };

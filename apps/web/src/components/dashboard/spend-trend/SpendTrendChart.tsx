@@ -1,5 +1,3 @@
-import { format } from 'date-fns';
-import { useMemo } from 'react';
 import {
   CartesianGrid,
   Line,
@@ -15,39 +13,36 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@ploutizo/ui/components/chart';
-import { parseCalendarDate } from '@ploutizo/utils/dashboard-period';
 import type { ChartConfig } from '@ploutizo/ui/components/chart';
+import type { DashboardOverviewGrain } from '@ploutizo/types';
 import {
+  formatTrendBucket,
   formatTrendCurrency,
-  spendTrendHasPriorSeries,
   spendTrendYDomain,
 } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
-import type { SpendTrendChartPoint } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
+import type {
+  SpendTrendSegmentedPoint,
+  SpendTrendSeriesLabels,
+} from '@/components/dashboard/spend-trend/spendTrendChartUtils';
 
 type SpendTrendChartProps = {
-  data: SpendTrendChartPoint[];
+  data: SpendTrendSegmentedPoint[];
+  grain: DashboardOverviewGrain;
+  hasPriorSeries: boolean;
+  seriesLabels: SpendTrendSeriesLabels;
 };
 
-const chartConfig = {
-  current: {
-    label: 'This month',
-    color: 'var(--chart-1)',
-  },
-  prior: {
-    label: 'Last month',
-    color: 'var(--chart-2)',
-  },
-} satisfies ChartConfig;
-
-const formatAxisDay = (bucketStart: string): string =>
-  format(parseCalendarDate(bucketStart), 'MMM d');
-
-const formatTooltipDay = (bucketStart: string): string =>
-  format(parseCalendarDate(bucketStart), 'MMM d, yyyy');
-
-export const SpendTrendChart = ({ data }: SpendTrendChartProps) => {
-  const hasPriorSeries = useMemo(() => spendTrendHasPriorSeries(data), [data]);
-  const yDomain = useMemo(() => spendTrendYDomain(data), [data]);
+export const SpendTrendChart = ({
+  data,
+  grain,
+  hasPriorSeries,
+  seriesLabels,
+}: SpendTrendChartProps) => {
+  const chartConfig = {
+    current: { label: seriesLabels.current, color: 'var(--chart-1)' },
+    prior: { label: seriesLabels.prior, color: 'var(--chart-2)' },
+  } satisfies ChartConfig;
+  const yDomain = spendTrendYDomain(data);
 
   return (
     <ChartContainer
@@ -65,13 +60,15 @@ export const SpendTrendChart = ({ data }: SpendTrendChartProps) => {
           axisLine={false}
           tickMargin={8}
           minTickGap={24}
-          tickFormatter={formatAxisDay}
+          tickFormatter={(bucketStart: string) =>
+            formatTrendBucket(bucketStart, grain, 'axis')
+          }
         />
         <YAxis
           tickLine={false}
           axisLine={false}
           tickMargin={8}
-          width={56}
+          width="auto"
           domain={yDomain}
           tickFormatter={formatTrendCurrency}
         />
@@ -89,32 +86,55 @@ export const SpendTrendChart = ({ data }: SpendTrendChartProps) => {
               labelFormatter={(_label, payload) => {
                 const bucketStart = payload[0]?.payload?.bucketStart;
                 return typeof bucketStart === 'string'
-                  ? formatTooltipDay(bucketStart)
+                  ? formatTrendBucket(bucketStart, grain, 'tooltip')
                   : '';
               }}
               valueFormatter={formatTrendCurrency}
             />
           }
         />
+        {/* Carries the tooltip and active dot; the two strokes below draw the visible line. */}
         <Line
           type="monotone"
           dataKey="current"
           stroke="var(--color-current)"
-          strokeWidth={2}
+          strokeOpacity={0}
           dot={false}
         />
+        <Line
+          type="monotone"
+          dataKey="complete"
+          stroke="var(--color-current)"
+          strokeWidth={2}
+          dot={false}
+          activeDot={false}
+          tooltipType="none"
+          legendType="none"
+        />
+        <Line
+          type="monotone"
+          dataKey="partial"
+          stroke="var(--color-current)"
+          strokeWidth={2}
+          strokeDasharray="4 4"
+          strokeOpacity={0.6}
+          dot={false}
+          activeDot={false}
+          tooltipType="none"
+          legendType="none"
+        />
         {hasPriorSeries ? (
-          <Line
-            type="monotone"
-            dataKey="prior"
-            stroke="var(--color-prior)"
-            strokeWidth={2}
-            strokeDasharray="6 4"
-            dot={false}
-          />
-        ) : null}
-        {hasPriorSeries ? (
-          <ChartLegend content={<ChartLegendContent />} />
+          <>
+            <Line
+              type="monotone"
+              dataKey="prior"
+              stroke="var(--color-prior)"
+              strokeWidth={2}
+              strokeDasharray="6 4"
+              dot={false}
+            />
+            <ChartLegend content={<ChartLegendContent />} />
+          </>
         ) : null}
       </RechartsLineChart>
     </ChartContainer>

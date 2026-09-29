@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from '@ploutizo/ui/components/sonner';
-import { toCalendarDate } from '@ploutizo/utils/dashboard-period';
 import type { OrgMember } from '@ploutizo/types';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';
 import type { CardBalanceRowViewModel } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
@@ -13,6 +12,7 @@ import { selectCreditCardAccounts } from '@/lib/settlements';
 import { CardBalancesGrid } from '@/components/dashboard/card-balances/CardBalancesGrid';
 import { SpendTrendCard } from '@/components/dashboard/spend-trend/SpendTrendCard';
 import { DashboardHeader } from './DashboardHeader';
+import { useDashboardSearch } from './useDashboardSearch';
 import { SettleDialog } from './SettleDialog';
 import { SettlementSummaryPane } from './SettlementSummaryPane';
 
@@ -20,8 +20,16 @@ const NO_MEMBERS: OrgMember[] = [];
 
 // All queries fire at top level — no waterfalls (vercel-react-best-practices).
 export const Dashboard = () => {
-  // Re-read every render so a tab left open rolls into the new day on its next refresh.
-  const overviewQuery = useGetDashboardOverview(toCalendarDate(new Date()));
+  const {
+    periodSelection,
+    period,
+    today,
+    spendTrendMode,
+    selectShortcut,
+    applyCustomRange,
+    selectSpendTrendMode,
+  } = useDashboardSearch();
+  const overviewQuery = useGetDashboardOverview(period);
   const { refetch: refetchOverview } = overviewQuery;
   const {
     data: settlements,
@@ -100,6 +108,10 @@ export const Dashboard = () => {
   return (
     <div className="space-y-6">
       <DashboardHeader
+        periodSelection={periodSelection}
+        period={period}
+        onSelectShortcut={selectShortcut}
+        onApplyCustomRange={applyCustomRange}
         onRefresh={handleRefresh}
         isRefreshing={isRefreshing || liveSectionsLoading}
       />
@@ -109,7 +121,12 @@ export const Dashboard = () => {
         the sidebar opens or closes, which only changes the available width.
       */}
       <div className="@container/dashboard space-y-4">
-        <SpendTrendCard query={overviewQuery} />
+        <SpendTrendCard
+          query={overviewQuery}
+          mode={spendTrendMode}
+          onModeChange={selectSpendTrendMode}
+          today={today}
+        />
         <div className="grid grid-cols-1 items-start gap-4 @4xl/dashboard:grid-cols-4">
           <div className="min-w-0 @4xl/dashboard:col-span-3">
             <CardBalancesGrid

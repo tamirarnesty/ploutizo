@@ -1,16 +1,19 @@
 import { Layers2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
+import { DatePicker } from '@ploutizo/ui/components/date-picker';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@ploutizo/ui/components/popover';
-import { Calendar } from '@ploutizo/ui/components/calendar';
-import { Button } from '@ploutizo/ui/components/button';
+  DateRangePicker,
+  DateRangePickerApply,
+  DateRangePickerCalendar,
+  DateRangePickerCancel,
+  DateRangePickerContent,
+  DateRangePickerFooter,
+  DateRangePickerTrigger,
+  useDateRangePicker,
+} from '@ploutizo/ui/components/date-range-picker';
 import { format, isValid, parseISO } from 'date-fns';
 import { memberFullLabel } from '@ploutizo/utils';
 import type { FilterFieldConfig } from '@ploutizo/ui/components/reui/filters';
-import type { DateRange } from 'react-day-picker';
 
 const SINGLE_DATE_OPS = new Set(['is', 'is_not', 'before', 'after']);
 const RANGE_OPS = new Set(['between', 'not_between']);
@@ -44,36 +47,39 @@ interface DateRangeFilterRendererProps {
   operator: string;
 }
 
+const formatFilterDate = (date: Date) => format(date, 'MMM d, yyyy');
+
+/** Filter values are ISO `yyyy-MM-dd` strings from the URL; anything else reads as unset. */
+const parseFilterDate = (value: string): Date | undefined => {
+  const date = parseISO(value);
+  return value && isValid(date) ? date : undefined;
+};
+
+const toFilterValue = (date: Date) => format(date, 'yyyy-MM-dd');
+
+// Shows the in-popover selection while open, and the committed filter otherwise.
+const DateRangeFilterLabel = () => {
+  const { open, pending, committed } = useDateRangePicker();
+  const range = open ? pending : committed;
+  if (range?.from && range.to) {
+    return `${formatFilterDate(range.from)} – ${formatFilterDate(range.to)}`;
+  }
+  return range?.from
+    ? `${formatFilterDate(range.from)} –`
+    : 'Pick a date range';
+};
+
 // DateRangeFilterRenderer receives operator from the filter chip's active operator.
-// It controls calendar mode, label computation, and value migration on operator switch.
-// Local selection state means date clicks don't fire onChange until Apply,
-// preventing the onChange → navigate → URL sync → chip remount cycle that
-// would reset the open state after each click.
+// It picks the single-date or range picker and migrates values on operator switch.
+// DateRangePicker holds a range until Apply, preventing the onChange → navigate →
+// URL sync → chip remount cycle that would reset the open state after the first click.
+// DatePicker commits and closes on the one click a single date needs.
 const DateRangeFilterRenderer = ({
   values,
   onChange,
   operator,
 }: DateRangeFilterRendererProps) => {
-  const [open, setOpen] = useState(false);
   const [from = '', to = ''] = values;
-  const fromDate = from && isValid(parseISO(from)) ? parseISO(from) : undefined;
-  const toDate = to && isValid(parseISO(to)) ? parseISO(to) : undefined;
-
-  // pending tracks in-popover selection before Apply is clicked.
-  const [pending, setPending] = useState<DateRange | undefined>(
-    (fromDate ?? toDate) ? { from: fromDate, to: toDate } : undefined
-  );
-
-  // Reset pending to committed values when popover opens (prevents stale pending after cancel).
-  const prevOpen = useRef(false);
-  useEffect(() => {
-    if (open && !prevOpen.current) {
-      setPending(
-        (fromDate ?? toDate) ? { from: fromDate, to: toDate } : undefined
-      );
-    }
-    prevOpen.current = open;
-  }, [open, fromDate, toDate]);
 
   // Operator-change value migration.
   // valuesRef keeps a fresh snapshot of `values` so the migration effect reads
@@ -100,74 +106,41 @@ const DateRangeFilterRenderer = ({
   }, [operator]);
   // valuesRef.current is the correct way to read the current values snapshot here.
 
-  // Compute trigger label from pending (real-time) or committed values when closed.
-  const effectiveFrom = open ? pending?.from : fromDate;
-  const effectiveTo = open ? pending?.to : toDate;
-
-  let label: string;
   if (isSingleDateOp(operator)) {
-    label = effectiveFrom
-      ? format(effectiveFrom, 'MMM d, yyyy')
-      : 'Pick a date';
-  } else {
-    if (effectiveFrom && effectiveTo) {
-      label = `${format(effectiveFrom, 'MMM d, yyyy')} – ${format(effectiveTo, 'MMM d, yyyy')}`;
-    } else if (effectiveFrom) {
-      label = `${format(effectiveFrom, 'MMM d, yyyy')} –`;
-    } else {
-      label = 'Pick a date range';
-    }
+    return (
+      <DatePicker
+        value={from}
+        // Clicking the picked day again reports '', which would drop the operator; keep the date instead.
+        onChange={(isoDate) => {
+          if (isoDate) onChange([isoDate]);
+        }}
+        // Sits inside the filter chip, which draws the border and hover.
+        className="h-auto w-auto border-0 bg-transparent p-0 font-normal shadow-none hover:bg-transparent dark:bg-transparent dark:hover:bg-transparent"
+      />
+    );
   }
 
-  const handleApply = () => {
-    if (isSingleDateOp(operator)) {
-      const newFrom = pending?.from ? format(pending.from, 'yyyy-MM-dd') : '';
-      onChange([newFrom]);
-    } else {
-      const newFrom = pending?.from ? format(pending.from, 'yyyy-MM-dd') : '';
-      const newTo = pending?.to ? format(pending.to, 'yyyy-MM-dd') : '';
-      onChange([newFrom, newTo]);
-    }
-    setOpen(false);
-  };
-
-  const handleCancel = () => {
-    setPending(
-      (fromDate ?? toDate) ? { from: fromDate, to: toDate } : undefined
-    );
-    setOpen(false);
-  };
+  const fromDate = parseFilterDate(from);
+  const toDate = parseFilterDate(to);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger>{label}</PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start" side="bottom">
-        {isSingleDateOp(operator) ? (
-          <Calendar
-            mode="single"
-            selected={pending?.from}
-            onSelect={(date) =>
-              setPending(date ? { from: date, to: date } : undefined)
-            }
-          />
-        ) : (
-          <Calendar
-            mode="range"
-            selected={pending}
-            onSelect={setPending}
-            numberOfMonths={2}
-          />
-        )}
-        <div className="flex justify-end gap-2 border-t border-border px-3 py-2">
-          <Button variant="outline" size="sm" onClick={handleCancel}>
-            Cancel
-          </Button>
-          <Button size="sm" onClick={handleApply}>
-            Apply
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
+    <DateRangePicker
+      value={{ from: fromDate, to: toDate }}
+      onApply={(range) =>
+        onChange([toFilterValue(range.from), toFilterValue(range.to)])
+      }
+    >
+      <DateRangePickerTrigger>
+        <DateRangeFilterLabel />
+      </DateRangePickerTrigger>
+      <DateRangePickerContent side="bottom">
+        <DateRangePickerCalendar />
+        <DateRangePickerFooter>
+          <DateRangePickerCancel />
+          <DateRangePickerApply />
+        </DateRangePickerFooter>
+      </DateRangePickerContent>
+    </DateRangePicker>
   );
 };
 

@@ -9,6 +9,23 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          include: ['src/**/*.test.ts'],
+          exclude: ['src/**/*.integration.test.ts'],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'integration',
+          include: ['src/**/*.integration.test.ts'],
+          setupFiles: ['src/__tests__/integrationEnv.ts'],
+        },
+      },
+    ],
   },
 });

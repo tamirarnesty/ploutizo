@@ -1,43 +1,104 @@
 import {
-  eachCalendarDate,
-  parseCalendarDate,
-  resolveMonthToDateRange,
+  bucketStartsIn,
+  dashboardPriorRange,
+  dashboardRangeGrain,
 } from '@ploutizo/utils/dashboard-period';
-import type { GetDashboardOverviewResponse } from '@ploutizo/types';
-import { fetchDailyNetSpend } from '@/lib/queries/dashboard';
+import type { DashboardRangedShortcut } from '@ploutizo/utils/dashboard-period';
+import type { DashboardOverviewQuery } from '@ploutizo/validators';
+import type {
+  CalendarDateRange,
+  DashboardOverviewGrain,
+  DashboardOverviewTrendPoint,
+  GetDashboardOverviewResponse,
+} from '@ploutizo/types';
+import {
+  fetchNetSpendByBucket,
+  fetchSpendDateBounds,
+} from '@/lib/queries/dashboard';
 
-const amountsByDay = async (
+const fetchAmountsByBucket = async (
   orgId: string,
-  from: string,
-  to: string
+  grain: DashboardOverviewGrain,
+  range: Partial<CalendarDateRange>
 ): Promise<Map<string, number>> => {
-  const rows = await fetchDailyNetSpend(orgId, { from, to });
+  const rows = await fetchNetSpendByBucket(orgId, grain, range);
   return new Map(rows.map((row) => [row.bucketStart, row.amountCents]));
 };
 
-/** Month-to-date daily net spend ending on `to`, paired by day index with the prior month. */
-export const getDashboardOverview = async (
+/** Prior buckets map onto current buckets by index; buckets past the prior window's end have no prior amount. */
+const buildTrend = (
+  range: CalendarDateRange,
+  grain: DashboardOverviewGrain,
+  amounts: Map<string, number>,
+  prior: { range: CalendarDateRange; amounts: Map<string, number> } | null
+): DashboardOverviewTrendPoint[] => {
+  const priorStarts = prior ? bucketStartsIn(prior.range, grain) : [];
+  return bucketStartsIn(range, grain).map((start, index) => {
+    const priorStart = priorStarts.at(index);
+    return {
+      bucketStart: start,
+      amountCents: amounts.get(start) ?? 0,
+      priorAmountCents:
+        prior && priorStart !== undefined
+          ? (prior.amounts.get(priorStart) ?? 0)
+          : null,
+    };
+  });
+};
+
+const getRangedOverview = async (
   orgId: string,
-  to: string
+  range: CalendarDateRange,
+  shortcut: DashboardRangedShortcut | null
 ): Promise<GetDashboardOverviewResponse> => {
-  const range = resolveMonthToDateRange(parseCalendarDate(to));
-  const [current, prior] = await Promise.all([
-    amountsByDay(orgId, range.from, range.to),
-    amountsByDay(orgId, range.priorFrom, range.priorTo),
+  const grain = dashboardRangeGrain(range);
+  const prior = dashboardPriorRange(range, shortcut);
+  const [amounts, priorAmounts] = await Promise.all([
+    fetchAmountsByBucket(orgId, grain, range),
+    fetchAmountsByBucket(orgId, grain, prior),
   ]);
-  const priorDays = eachCalendarDate(range.priorFrom, range.priorTo);
 
   return {
-    meta: { range },
-    trend: eachCalendarDate(range.from, range.to).map((day, index) => {
-      // Past the end of a shorter prior month there is no comparable day.
-      const priorDay = priorDays.at(index);
-      return {
-        bucketStart: day,
-        amountCents: current.get(day) ?? 0,
-        priorAmountCents:
-          priorDay === undefined ? null : (prior.get(priorDay) ?? 0),
-      };
+    meta: {
+      kind: 'ranged',
+      range: { ...range, priorFrom: prior.from, priorTo: prior.to, grain },
+    },
+    trend: buildTrend(range, grain, amounts, {
+      range: prior,
+      amounts: priorAmounts,
     }),
   };
 };
+
+const getAllTimeOverview = async (
+  orgId: string
+): Promise<GetDashboardOverviewResponse> => {
+  const [{ first, last }, amounts] = await Promise.all([
+    fetchSpendDateBounds(orgId),
+    fetchAmountsByBucket(orgId, 'month', {}),
+  ]);
+  if (first === null || last === null) {
+    return { meta: { kind: 'all', range: null }, trend: [] };
+  }
+
+  const range = { from: first, to: last };
+  return {
+    meta: {
+      kind: 'all',
+      range: { ...range, priorFrom: null, priorTo: null, grain: 'month' },
+    },
+    trend: buildTrend(range, 'month', amounts, null),
+  };
+};
+
+export const getDashboardOverview = async (
+  orgId: string,
+  query: DashboardOverviewQuery
+): Promise<GetDashboardOverviewResponse> =>
+  query.kind === 'ranged'
+    ? getRangedOverview(
+        orgId,
+        { from: query.from, to: query.to },
+        query.shortcut
+      )
+    : getAllTimeOverview(orgId);

@@ -33,6 +33,10 @@
       "inputs": ["$TURBO_DEFAULT$"],
       "outputs": []
     },
+    "test:integration": {
+      "cache": false,
+      "dependsOn": ["^build"]
+    },
     "db:migrate": {
       "cache": false
     },

@@ -11,8 +11,8 @@ dashboardRouter.get(
   appValidator('query', dashboardOverviewQuerySchema),
   async (c) => {
     const orgId = c.get('principal').activeHouseholdId;
-    const { to } = c.req.valid('query');
-    return c.json(await getDashboardOverview(orgId, to));
+    const query = c.req.valid('query');
+    return c.json(await getDashboardOverview(orgId, query));
   }
 );
 
