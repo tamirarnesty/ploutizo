@@ -309,6 +309,33 @@ const cardHeaderFor = (title: string) => {
   return header as HTMLElement;
 };
 
+/** Pointer-events checks on the nested range calendar are costly; keep period UI tests fast in CI. */
+const periodPickerUser = () => userEvent.setup({ pointerEventsCheck: 0 });
+
+const customPeriodTrigger = () =>
+  screen.getByRole('button', { name: /^Custom period:/ });
+
+const openCustomPeriodPicker = async (
+  user: ReturnType<typeof userEvent.setup>
+) => {
+  await user.click(customPeriodTrigger());
+  await waitFor(() => {
+    expect(
+      document.querySelector('[data-slot="date-range-picker-content"]')
+    ).not.toBeNull();
+  });
+};
+
+const customPeriodPicker = () => {
+  const root = document.querySelector(
+    '[data-slot="date-range-picker-content"]'
+  );
+  if (!root) {
+    throw new Error('Custom period picker is not open');
+  }
+  return within(root as HTMLElement);
+};
+
 describe('Dashboard', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] });
@@ -449,18 +476,21 @@ describe('Dashboard', () => {
     });
 
     it('charts a custom range only once it is applied', async () => {
-      const user = userEvent.setup();
+      const user = periodPickerUser();
       const router = await renderDashboard();
       await waitFor(() => {
         expect(overviewRequests()).toHaveLength(1);
       });
-      const trigger = () =>
-        screen.getByRole('button', { name: /^Custom period:/ });
-      const day = (name: RegExp) => screen.getByRole('button', { name });
+      const day = (name: RegExp) =>
+        customPeriodPicker().getByRole('button', { name });
+      const applyButton = () =>
+        customPeriodPicker().getByRole('button', { name: 'Apply' });
 
-      await user.click(trigger());
+      await openCustomPeriodPicker(user);
       await user.click(day(/March 10th, 2026/));
-      await user.click(screen.getByRole('button', { name: 'Cancel' }));
+      await user.click(
+        customPeriodPicker().getByRole('button', { name: 'Cancel' })
+      );
 
       expect(router.state.location.search).toEqual({
         range: 'mtd',
@@ -468,9 +498,10 @@ describe('Dashboard', () => {
       });
       expect(overviewRequests()).toHaveLength(1);
 
-      await user.click(trigger());
+      await openCustomPeriodPicker(user);
       await user.click(day(/March 10th, 2026/));
-      await user.click(screen.getByRole('button', { name: 'Apply' }));
+      await waitFor(() => expect(applyButton()).toBeEnabled());
+      await user.click(applyButton());
 
       await waitFor(() => {
         expect(router.state.location.search).toEqual({
