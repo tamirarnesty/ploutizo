@@ -399,7 +399,7 @@ describe('GET /api/dashboard/overview integration', () => {
       const other = body.categories.at(-1);
       expect(other).toMatchObject({
         categoryId: null,
-        name: 'Other',
+        name: 'All other categories',
         colour: 'slate-500',
         amountCents: 300,
       });
@@ -498,6 +498,63 @@ describe('GET /api/dashboard/overview integration', () => {
       expect(
         again.categories.find((row) => row.categoryId === plainId)?.colour
       ).toBe(gas?.colour);
+    });
+
+    it('maps prior-period amounts onto category rows for ranged windows', async () => {
+      const categoryId = await seedCategory(household().orgId, 'Dining');
+      await insertTxns(
+        [
+          {
+            type: 'expense',
+            amount: 400,
+            date: '2026-03-03',
+            categoryId,
+          },
+          {
+            type: 'expense',
+            amount: 900,
+            date: '2026-02-03',
+            categoryId,
+          },
+        ],
+        household()
+      );
+
+      const body = await fetchOverview(
+        overviewQuery({ from: '2026-03-01', to: '2026-03-05', shortcut: 'mtd' })
+      );
+      expect(body.categories).toEqual([
+        expect.objectContaining({
+          categoryId,
+          amountCents: 400,
+          priorAmountCents: 900,
+        }),
+      ]);
+    });
+
+    it('keeps the household category named Other separate from the aggregate bucket', async () => {
+      const otherCategoryId = await seedCategory(household().orgId, 'Other');
+      const ids = [otherCategoryId];
+      for (let i = 0; i < 9; i++) {
+        ids.push(await seedCategory(household().orgId, `Extra ${i}`));
+      }
+      await insertTxns(
+        ids.map((categoryId, index) => ({
+          type: 'expense' as const,
+          amount: (10 - index) * 100,
+          date: '2026-03-10',
+          categoryId,
+        })),
+        household()
+      );
+
+      const body = await fetchOverview(overviewQuery(MARCH));
+      const namedOther = body.categories.find(
+        (row) => row.categoryId === otherCategoryId
+      );
+      const aggregate = body.categories.find((row) => row.categoryId === null);
+      expect(namedOther?.name).toBe('Other');
+      expect(aggregate?.name).toBe('All other categories');
     });
 
     it('has null prior amounts on All', async () => {

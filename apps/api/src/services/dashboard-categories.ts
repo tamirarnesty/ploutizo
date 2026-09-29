@@ -5,7 +5,8 @@ import {
   resolveCategoryColour,
 } from '@/lib/category-colour';
 
-const OTHER_BUCKET_NAME = 'Other';
+/** Distinct from the household default category named "Other". */
+const OTHER_BUCKET_NAME = 'All other categories';
 
 export const buildOverviewCategories = (
   current: CategoryNetSpendRow[],

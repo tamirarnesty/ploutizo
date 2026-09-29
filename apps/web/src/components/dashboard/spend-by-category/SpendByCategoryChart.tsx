@@ -1,6 +1,9 @@
 import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from 'recharts';
-import { ChartContainer, ChartTooltip } from '@ploutizo/ui/components/chart';
-import { Text } from '@ploutizo/ui/components/text';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@ploutizo/ui/components/chart';
 import type { ChartConfig } from '@ploutizo/ui/components/chart';
 import { barFillClassFromRaw } from '@/components/colour/colour-token-classes';
 import {
@@ -15,38 +18,8 @@ type SpendByCategoryChartProps = {
 };
 
 const chartConfig = {
-  amount: { label: 'Spend', color: 'var(--chart-1)' },
+  amountCents: { label: 'Spend', color: 'var(--chart-1)' },
 } satisfies ChartConfig;
-
-const CategoryTooltip = ({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: readonly { payload: SpendByCategoryChartRow }[];
-}) => {
-  if (!active || !payload?.length) {
-    return null;
-  }
-  const row = payload[0].payload;
-  const change = formatCategoryChangeVsPrior(
-    row.amountCents,
-    row.priorAmountCents
-  );
-
-  return (
-    <div className="grid min-w-40 gap-1 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl">
-      <Text variant="caption" className="font-medium text-foreground">
-        {row.name}
-      </Text>
-      <div className="grid gap-0.5 text-muted-foreground">
-        <span>{formatCategoryAmount(row.amountCents)}</span>
-        <span>{formatCategoryShare(row.shareOfPeriod)} of spend</span>
-        {change ? <span>{change}</span> : null}
-      </div>
-    </div>
-  );
-};
 
 export const SpendByCategoryChart = ({ data }: SpendByCategoryChartProps) => (
   <ChartContainer
@@ -74,7 +47,32 @@ export const SpendByCategoryChart = ({ data }: SpendByCategoryChartProps) => (
         axisLine={false}
         tickMargin={8}
       />
-      <ChartTooltip cursor={false} content={<CategoryTooltip />} />
+      <ChartTooltip
+        cursor={false}
+        content={
+          <ChartTooltipContent
+            hideIndicator
+            labelFormatter={(_label, payload) => {
+              const row = payload[0].payload as SpendByCategoryChartRow;
+              return row.name;
+            }}
+            formatter={(_value, _name, item) => {
+              const row = item.payload as SpendByCategoryChartRow;
+              const change = formatCategoryChangeVsPrior(
+                row.amountCents,
+                row.priorAmountCents
+              );
+              return (
+                <div className="grid w-full gap-0.5 text-muted-foreground">
+                  <span>{formatCategoryAmount(row.amountCents)}</span>
+                  <span>{formatCategoryShare(row.shareOfPeriod)} of spend</span>
+                  {change ? <span>{change}</span> : null}
+                </div>
+              );
+            }}
+          />
+        }
+      />
       <Bar dataKey="amountCents" radius={4}>
         {data.map((row) => (
           <Cell

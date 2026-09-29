@@ -1,4 +1,4 @@
-import { and, eq, gte, lte, sql } from 'drizzle-orm';
+import { and, eq, gte, isNotNull, lte, sql } from 'drizzle-orm';
 import { db } from '@ploutizo/db';
 import { categories, transactions } from '@ploutizo/db/schema';
 import type { DashboardOverviewGrain } from '@ploutizo/types';
@@ -77,6 +77,7 @@ export const fetchSpendDateBounds = async (
   return bounds;
 };
 
+/** Net spend grouped by category. Rows without `category_id` are omitted (orphans are out of scope for category bars). */
 export const fetchNetSpendByCategory = async (
   orgId: string,
   input: { from?: string; to?: string },
@@ -100,16 +101,23 @@ export const fetchNetSpendByCategory = async (
     .where(
       and(
         spendFilter(orgId),
+        isNotNull(transactions.categoryId),
         input.from ? gte(transactions.date, input.from) : undefined,
         input.to ? lte(transactions.date, input.to) : undefined
       )
     )
     .groupBy(transactions.categoryId, categories.name, categories.colour);
 
-  return rows.map((row) => ({
-    categoryId: row.categoryId!,
-    name: row.name,
-    configuredColour: row.configuredColour,
-    amountCents: row.amountCents,
-  }));
+  return rows.flatMap((row) =>
+    row.categoryId === null
+      ? []
+      : [
+          {
+            categoryId: row.categoryId,
+            name: row.name,
+            configuredColour: row.configuredColour,
+            amountCents: row.amountCents,
+          },
+        ]
+  );
 };

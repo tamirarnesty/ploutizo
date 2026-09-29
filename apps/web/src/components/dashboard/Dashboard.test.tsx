@@ -701,7 +701,7 @@ describe('Dashboard', () => {
           },
           {
             categoryId: null,
-            name: 'Other',
+            name: 'All other categories',
             colour: 'slate-500',
             amountCents: 1800,
             shareOfPeriod: 0.3,

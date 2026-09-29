@@ -14,7 +14,7 @@ describe('buildOverviewCategories', () => {
     expect(result).toHaveLength(9);
     expect(result.at(-1)).toMatchObject({
       categoryId: null,
-      name: 'Other',
+      name: 'All other categories',
       amountCents: 100,
     });
   });
