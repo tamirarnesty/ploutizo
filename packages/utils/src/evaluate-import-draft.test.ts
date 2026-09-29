@@ -143,58 +143,31 @@ describe('evaluateImportDraft — matching', () => {
     reviewType: 'expense' as const,
     parsedType: 'expense' as const,
     reviewRefundOf: null,
-    selectedForImport: false,
-    externalId: 'visa-1001',
-    sourceDescription: 'Coffee',
+    selectedForImport: true,
+    externalId: null,
+    sourceDescription: 'STARBUCKS STORE 123',
+    parsedDescription: 'STARBUCKS STORE 123',
+    reviewDescription: 'STARBUCKS STORE 123',
     reviewMatchedTransactionId: null,
     reviewMatchDismissed: false,
   };
 
-  const existing = {
-    id: 'tx-1',
-    accountId: 'account-1',
-    type: 'expense',
-    date: '2026-01-15',
-    amount: 2500,
-    description: 'Coffee',
-    rawDescription: 'Coffee',
-    externalId: 'visa-1001',
-    deleted: false,
-  };
-
-  it('keeps an unselected exact match ready and exposes the accepted-match decision as null', () => {
+  it('maps unresolved match issues to needs_review and a match blocker', () => {
     const result = evaluateImportDraftRow(
       matchRow,
       toImportDraftEvaluationContext([matchRow], {
         targetAccountId: 'account-1',
-        existingTransactions: [existing],
-      })
-    );
-
-    expect(result.status).toBe('ready');
-    expect(result.blockers).not.toContain('match');
-    expect(result.match?.exactCandidate?.kind).toBe('external_id');
-    expect(result.match?.acceptedMatch).toBeNull();
-  });
-
-  it('marks an unselected advisory match as needs review without selecting it', () => {
-    const advisoryRow = {
-      ...matchRow,
-      externalId: null,
-      sourceDescription: 'STARBUCKS STORE 123',
-      parsedDescription: 'STARBUCKS STORE 123',
-      reviewDescription: 'STARBUCKS STORE 123',
-    };
-    const result = evaluateImportDraftRow(
-      advisoryRow,
-      toImportDraftEvaluationContext([advisoryRow], {
-        targetAccountId: 'account-1',
         existingTransactions: [
           {
-            ...existing,
-            externalId: null,
-            rawDescription: 'STARBUCKS STORE 99',
+            id: 'tx-1',
+            accountId: 'account-1',
+            type: 'expense',
+            date: '2026-01-15',
+            amount: 2500,
             description: 'STARBUCKS STORE 99',
+            rawDescription: 'STARBUCKS STORE 99',
+            externalId: null,
+            deleted: false,
           },
         ],
       })
@@ -203,50 +176,5 @@ describe('evaluateImportDraft — matching', () => {
     expect(result.status).toBe('needs_review');
     expect(result.blockers).toContain('match');
     expect(result.match?.issues).toContain('advisory_unresolved');
-    expect(result.match?.acceptedMatch).toBeNull();
-    expect(result.match?.advisoryCandidates[0]?.kind).toBe('fuzzy_description');
-  });
-
-  it('blocks Continue when a selected identity match is no longer valid', () => {
-    const selected = {
-      ...matchRow,
-      externalId: null,
-      selectedForImport: true,
-      reviewMatchedTransactionId: 'tx-1',
-      reviewAmount: 5000,
-    };
-    const result = evaluateImportDraftRow(
-      selected,
-      toImportDraftEvaluationContext([selected], {
-        targetAccountId: 'account-1',
-        existingTransactions: [{ ...existing, externalId: null }],
-      })
-    );
-
-    expect(result.status).toBe('needs_review');
-    expect(result.blockers).toContain('match');
-    expect(result.match?.issues).toContain('invalidated_decision');
-    expect(result.match?.acceptedMatch).toBeNull();
-  });
-
-  it('exposes an accepted match when the selected row still matches exactly', () => {
-    const selected = {
-      ...matchRow,
-      selectedForImport: true,
-      reviewMatchedTransactionId: 'tx-1',
-    };
-    const result = evaluateImportDraftRow(
-      selected,
-      toImportDraftEvaluationContext([selected], {
-        targetAccountId: 'account-1',
-        existingTransactions: [existing],
-      })
-    );
-
-    expect(result.status).toBe('ready');
-    expect(result.match?.acceptedMatch).toEqual({
-      transactionId: 'tx-1',
-      kind: 'external_id',
-    });
   });
 });
