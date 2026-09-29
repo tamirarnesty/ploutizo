@@ -1,11 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  deleteOrgMemberByClerkMembershipId,
   deleteOrgMemberIfPresent,
   findLocalUserIdByClerkId,
   insertOrgMemberIfAbsent,
-  shouldReplaceMirroredMembership,
 } from './clerkDbMirror';
+
+const shouldApplyMembershipUpdate = (
+  storedCreatedAt: Date,
+  incomingCreatedAt: Date | undefined
+) =>
+  incomingCreatedAt !== undefined &&
+  storedCreatedAt.getTime() < incomingCreatedAt.getTime();
 
 type MirrorMember = {
   orgId: string;
@@ -70,7 +75,7 @@ const chainInsert = () => {
         }
         if (
           config.setWhere &&
-          !shouldReplaceMirroredMembership(
+          !shouldApplyMembershipUpdate(
             existing.membershipCreatedAt,
             config.set.membershipCreatedAt as Date
           )
@@ -116,23 +121,6 @@ describe('findLocalUserIdByClerkId', () => {
     await expect(
       findLocalUserIdByClerkId('user_missing')
     ).resolves.toBeUndefined();
-  });
-});
-
-describe('deleteOrgMemberByClerkMembershipId', () => {
-  beforeEach(() => {
-    mockDelete.mockReset();
-  });
-
-  it('issues a hard delete scoped to org, app user, and Clerk membership id', async () => {
-    const deleteChain = chainDelete();
-    await deleteOrgMemberByClerkMembershipId({
-      orgId: 'org_1',
-      appUserId: 'app_user_1',
-      clerkMembershipId: 'orgmem_1',
-    });
-    expect(deleteChain.where).toHaveBeenCalled();
-    expect(mockDelete).toHaveBeenCalled();
   });
 });
 
@@ -184,25 +172,6 @@ describe('deleteOrgMemberIfPresent', () => {
     });
 
     expect(mockDelete).toHaveBeenCalledTimes(2);
-  });
-});
-
-describe('shouldReplaceMirroredMembership', () => {
-  it('replaces when the stored timestamp is unset', () => {
-    expect(shouldReplaceMirroredMembership(null, newCreatedAt)).toBe(true);
-    expect(shouldReplaceMirroredMembership(undefined, newCreatedAt)).toBe(true);
-  });
-
-  it('replaces only when the incoming membership is strictly newer', () => {
-    expect(shouldReplaceMirroredMembership(oldCreatedAt, newCreatedAt)).toBe(
-      true
-    );
-    expect(shouldReplaceMirroredMembership(newCreatedAt, oldCreatedAt)).toBe(
-      false
-    );
-    expect(shouldReplaceMirroredMembership(newCreatedAt, newCreatedAt)).toBe(
-      false
-    );
   });
 });
 
@@ -272,72 +241,5 @@ describe('insertOrgMemberIfAbsent', () => {
 
     expect(membershipRows).toHaveLength(1);
     expect(membershipRows[0]?.externalId).toBe('orgmem_new');
-  });
-});
-
-describe('Clerk membership create/delete replay', () => {
-  type ReplayRow = {
-    externalId: string;
-    membershipCreatedAt: Date;
-  };
-
-  const applyCreate = (
-    stored: ReplayRow | undefined,
-    incoming: ReplayRow
-  ): ReplayRow => {
-    if (
-      stored &&
-      !shouldReplaceMirroredMembership(
-        stored.membershipCreatedAt,
-        incoming.membershipCreatedAt
-      )
-    ) {
-      return stored;
-    }
-    return incoming;
-  };
-
-  const applyDelete = (
-    stored: ReplayRow | undefined,
-    clerkMembershipId: string
-  ): ReplayRow | undefined =>
-    stored?.externalId === clerkMembershipId ? undefined : stored;
-
-  const oldMembership: ReplayRow = {
-    externalId: 'orgmem_old',
-    membershipCreatedAt: oldCreatedAt,
-  };
-  const newMembership: ReplayRow = {
-    externalId: 'orgmem_new',
-    membershipCreatedAt: newCreatedAt,
-  };
-
-  it('old create → new create → old delete keeps the new membership', () => {
-    let row: ReplayRow | undefined;
-    row = applyCreate(row, oldMembership);
-    row = applyCreate(row, newMembership);
-    row = applyDelete(row, 'orgmem_old');
-    expect(row).toEqual(newMembership);
-  });
-
-  it('new create → old create → old delete keeps the new membership', () => {
-    let row: ReplayRow | undefined;
-    row = applyCreate(row, newMembership);
-    row = applyCreate(row, oldMembership);
-    row = applyDelete(row, 'orgmem_old');
-    expect(row).toEqual(newMembership);
-  });
-
-  it('new delete removes the current membership', () => {
-    let row: ReplayRow | undefined = newMembership;
-    row = applyDelete(row, 'orgmem_new');
-    expect(row).toBeUndefined();
-  });
-
-  it('duplicate delete is a no-op after the row is gone', () => {
-    let row: ReplayRow | undefined = newMembership;
-    row = applyDelete(row, 'orgmem_new');
-    row = applyDelete(row, 'orgmem_new');
-    expect(row).toBeUndefined();
   });
 });

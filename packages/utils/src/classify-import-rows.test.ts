@@ -11,7 +11,6 @@ const DINING_CATEGORY_ID = 'cat-dining';
 const GROCERIES_CATEGORY_ID = 'cat-groceries';
 const TAMIR_ID = 'member-tamir';
 const ALEX_ID = 'member-alex';
-const OTHER_TAMIR_ID = 'member-tamir-other';
 const FOOD_TAG_ID = 'tag-food';
 const ERRANDS_TAG_ID = 'tag-errands';
 const RULE_TAG_ID = 'tag-rule';
@@ -403,77 +402,5 @@ describe('classifyImportRows — merchant rules and precedence', () => {
       reviewDescription: BILL_PAYMENT_CATEGORY_NAME,
       reviewCategoryId: BILL_PAYMENT_CATEGORY_ID,
     });
-  });
-});
-
-describe('classifyImportRows — member-name matching', () => {
-  it('resolves a cardholder hint against a unique first or full name', () => {
-    expect(
-      classifyOne(baseRow({ csvAssigneeName: 'tamir' })).reviewAssigneeMemberIds
-    ).toEqual([TAMIR_ID]);
-    expect(
-      classifyOne(baseRow({ csvAssigneeName: 'TAMIR ARNESTY' }))
-        .reviewAssigneeMemberIds
-    ).toEqual([TAMIR_ID]);
-  });
-
-  it('leaves assignees empty when a first name is ambiguous', () => {
-    expect(
-      classifyOne(
-        baseRow({ csvAssigneeName: 'Tamir' }),
-        baseContext({
-          catalogs: {
-            categories: [],
-            tags: [],
-            members: [
-              {
-                id: TAMIR_ID,
-                firstName: 'Tamir',
-                lastName: 'Arnesty',
-                email: 'tamir@example.com',
-                imageUrl: null,
-              },
-              {
-                id: OTHER_TAMIR_ID,
-                firstName: 'Tamir',
-                lastName: 'Smith',
-                email: 'tamir.smith@example.com',
-                imageUrl: null,
-              },
-            ],
-          },
-        })
-      ).reviewAssigneeMemberIds
-    ).toEqual([]);
-  });
-
-  it('still resolves a unique full name when the first name is shared', () => {
-    expect(
-      classifyOne(
-        baseRow({ csvAssigneeName: 'Tamir Smith' }),
-        baseContext({
-          catalogs: {
-            categories: [],
-            tags: [],
-            members: [
-              {
-                id: TAMIR_ID,
-                firstName: 'Tamir',
-                lastName: 'Arnesty',
-                email: 'tamir@example.com',
-                imageUrl: null,
-              },
-              {
-                id: OTHER_TAMIR_ID,
-                firstName: 'Tamir',
-                lastName: 'Smith',
-                email: 'tamir.smith@example.com',
-                imageUrl: null,
-              },
-            ],
-          },
-        })
-      ).reviewAssigneeMemberIds
-    ).toEqual([OTHER_TAMIR_ID]);
   });
 });

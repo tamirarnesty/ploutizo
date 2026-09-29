@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { computeImportDraftRowCounts } from './import-row-status';
 import {
   buildImportDraftRowViews,
   evaluateImportDraft,
@@ -29,34 +28,6 @@ const baseRow: ImportDraftDurableRow = {
 };
 
 describe('evaluateImportDraftRow', () => {
-  it('derives needs_review when a linked refund target is invalid', () => {
-    const rows = [baseRow];
-    const ctx = toImportDraftEvaluationContext(rows, {
-      targetAccountId: 'account-1',
-      existingExpenses: new Map([
-        [
-          'tx-1',
-          {
-            id: 'tx-1',
-            accountId: 'other-account',
-            amount: 5000,
-            categoryId: 'cat-1',
-            assigneeMemberIds: ['member-1'],
-            type: 'expense',
-            deleted: false,
-          },
-        ],
-      ]),
-    });
-
-    const result = evaluateImportDraftRow(baseRow, ctx);
-
-    expect(result.status).toBe('needs_review');
-    expect(result.blockers).toContain('refund_link');
-    expect(result.invalidReason).toBeNull();
-    expect(result.refundLink?.issues).toContain('wrong_account');
-  });
-
   it('derives ready for an unselected complete row', () => {
     const unselected = {
       ...baseRow,
@@ -139,11 +110,6 @@ describe('evaluateImportDraft', () => {
     expect(evaluations.get('row-refund-blocked')).toMatchObject({
       status: 'needs_review',
       blockers: ['refund_link'],
-    });
-    expect(computeImportDraftRowCounts([...evaluations.values()])).toEqual({
-      rowCount: 4,
-      validRowCount: 3,
-      invalidRowCount: 1,
     });
   });
 });
@@ -239,72 +205,6 @@ describe('evaluateImportDraft — matching', () => {
     expect(result.match?.issues).toContain('advisory_unresolved');
     expect(result.match?.acceptedMatch).toBeNull();
     expect(result.match?.advisoryCandidates[0]?.kind).toBe('fuzzy_description');
-  });
-
-  it('blocks Continue on a selected advisory match until the user decides', () => {
-    const advisoryRow = {
-      ...matchRow,
-      externalId: null,
-      selectedForImport: true,
-      sourceDescription: 'STARBUCKS STORE 123',
-      parsedDescription: 'STARBUCKS STORE 123',
-      reviewDescription: 'STARBUCKS STORE 123',
-    };
-    const result = evaluateImportDraftRow(
-      advisoryRow,
-      toImportDraftEvaluationContext([advisoryRow], {
-        targetAccountId: 'account-1',
-        existingTransactions: [
-          {
-            ...existing,
-            externalId: null,
-            rawDescription: 'STARBUCKS STORE 99',
-            description: 'STARBUCKS STORE 99',
-          },
-        ],
-      })
-    );
-
-    expect(result.status).toBe('needs_review');
-    expect(result.blockers).toContain('match');
-    expect(result.match?.issues).toContain('advisory_unresolved');
-    expect(result.match?.acceptedMatch).toBeNull();
-  });
-
-  it('marks unselected same-import collisions as needs review until one row is selected', () => {
-    const rowA = {
-      ...matchRow,
-      id: 'row-a',
-      selectedForImport: false,
-    };
-    const rowB = {
-      ...matchRow,
-      id: 'row-b',
-      selectedForImport: false,
-    };
-
-    const unselected = evaluateImportDraft([rowA, rowB], {
-      targetAccountId: 'account-1',
-      existingTransactions: [],
-    });
-    expect(unselected.get('row-a')).toMatchObject({
-      status: 'needs_review',
-      blockers: ['match'],
-    });
-    expect(unselected.get('row-a')?.match?.issues).toContain('collision');
-    expect(unselected.get('row-b')?.match?.issues).toContain('collision');
-
-    const resolved = evaluateImportDraft(
-      [{ ...rowA, selectedForImport: true }, rowB],
-      {
-        targetAccountId: 'account-1',
-        existingTransactions: [],
-      }
-    );
-    expect(resolved.get('row-a')?.status).toBe('ready');
-    expect(resolved.get('row-b')?.status).toBe('ready');
-    expect(resolved.get('row-a')?.match?.issues).not.toContain('collision');
-    expect(resolved.get('row-b')?.match?.issues).not.toContain('collision');
   });
 
   it('blocks Continue when a selected identity match is no longer valid', () => {

@@ -116,17 +116,6 @@ export const upsertLocalUser = async (
 };
 
 /**
- * True when an incoming Clerk membership should replace the stored mirror identity.
- * `null` stored timestamps are treated as unset so the first post-migration create can populate.
- */
-export const shouldReplaceMirroredMembership = (
-  storedCreatedAt: Date | null | undefined,
-  incomingCreatedAt: Date
-): boolean =>
-  storedCreatedAt == null ||
-  storedCreatedAt.getTime() < incomingCreatedAt.getTime();
-
-/**
  * Insert local `org_members` row if absent — same semantics as
  * `organizationMembership.created` webhook. On conflict, replace the stored
  * Clerk membership identity only when the incoming membership is newer.

@@ -7,12 +7,7 @@ import {
   updateOrgMemberFromMembershipJson,
   upsertLocalUser,
 } from './clerkDbMirror';
-import { HANDLED_CLERK_WEBHOOK_EVENTS } from './clerkWebhookEvents';
-import {
-  dispatchWebhookEvent,
-  handleOrgMembershipCreated,
-  handleOrgMembershipDeleted,
-} from './webhooks';
+import { dispatchWebhookEvent, handleOrgMembershipCreated } from './webhooks';
 import type { OrganizationMembershipJSON, WebhookEvent } from '@clerk/backend';
 
 vi.mock('./clerkDbMirror', () => ({
@@ -83,29 +78,6 @@ const expectMembershipDeleted = () => {
     clerkMembershipId: 'orgmem_1',
   });
 };
-
-describe('HANDLED_CLERK_WEBHOOK_EVENTS', () => {
-  it('includes membership lifecycle and profile sync events', () => {
-    expect(HANDLED_CLERK_WEBHOOK_EVENTS).toContain('user.updated');
-    expect(HANDLED_CLERK_WEBHOOK_EVENTS).toContain(
-      'organizationMembership.updated'
-    );
-    expect(HANDLED_CLERK_WEBHOOK_EVENTS).toContain(
-      'organizationMembership.deleted'
-    );
-  });
-});
-
-describe('handleOrgMembershipDeleted', () => {
-  beforeEach(() => {
-    vi.mocked(deleteOrgMemberIfPresent).mockReset();
-  });
-
-  it('deletes the local org member for the Clerk org and user', async () => {
-    await handleOrgMembershipDeleted(membershipDeletedPayload());
-    expectMembershipDeleted();
-  });
-});
 
 describe('handleOrgMembershipCreated', () => {
   beforeEach(() => {

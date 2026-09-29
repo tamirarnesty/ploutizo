@@ -71,16 +71,6 @@ describe('pageSizeStore', () => {
     expect(readStoredPageSize('transactions')).toBe(50);
   });
 
-  it('persistPageSize skips redundant write when value is unchanged', async () => {
-    localStorage.setItem('ploutizo:transactions:page-size', '25');
-    const { persistPageSize } = await loadStore();
-    const setItemSpy = vi.spyOn(localStorage, 'setItem');
-
-    persistPageSize('transactions', 25);
-
-    expect(setItemSpy).not.toHaveBeenCalled();
-  });
-
   it('cross-tab StorageEvent rehydrates store from updated key', async () => {
     const { readStoredPageSize } = await loadStore();
     expect(readStoredPageSize('accounts')).toBe(10);

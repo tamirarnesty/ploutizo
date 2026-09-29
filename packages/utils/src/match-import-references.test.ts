@@ -55,6 +55,13 @@ describe('createImportReferenceResolver', () => {
       reviewTagIds: [],
       reviewAssigneeMemberIds: [],
     });
+    expect(
+      resolve({
+        csvCategoryName: 'Travel',
+        csvAssigneeName: null,
+        csvTagNames: [],
+      }).reviewCategoryId
+    ).toBeNull();
   });
 
   it('resolves a unique first name', () => {
@@ -65,16 +72,6 @@ describe('createImportReferenceResolver', () => {
         csvTagNames: [],
       }).reviewAssigneeMemberIds
     ).toEqual(['member-1']);
-  });
-
-  it('returns null category for unknown names', () => {
-    expect(
-      resolve({
-        csvCategoryName: 'Travel',
-        csvAssigneeName: null,
-        csvTagNames: [],
-      }).reviewCategoryId
-    ).toBeNull();
   });
 
   it('leaves assignees empty when a first name matches more than one member', () => {
