@@ -9,7 +9,7 @@ import {
   vi,
 } from 'vitest';
 import { db } from '@ploutizo/db';
-import { accounts, orgs, transactions } from '@ploutizo/db/schema';
+import { accounts, categories, orgs, transactions } from '@ploutizo/db/schema';
 import type { GetDashboardOverviewResponse } from '@ploutizo/types';
 import type { DashboardRangedShortcut } from '@ploutizo/utils/dashboard-period';
 import { dashboardRouter } from '../routes/dashboard';
@@ -55,6 +55,7 @@ type TxnInput = {
   type: (typeof transactions.$inferInsert)['type'];
   amount: number;
   date: string;
+  categoryId?: string;
 };
 
 const insertTxns = async (
@@ -64,10 +65,21 @@ const insertTxns = async (
   await db.insert(transactions).values(
     rows.map((row) => ({
       ...target,
-      ...row,
+      type: row.type,
+      amount: row.amount,
+      date: row.date,
+      categoryId: row.categoryId,
       description: row.type,
     }))
   );
+};
+
+const seedCategory = async (orgId: string, name: string, colour?: string) => {
+  const [category] = await db
+    .insert(categories)
+    .values({ orgId, name, colour, sortOrder: 0 })
+    .returning({ id: categories.id });
+  return category.id;
 };
 
 const MARCH = {
@@ -344,10 +356,206 @@ describe('GET /api/dashboard/overview integration', () => {
       { bucketStart: '2026-01-01', amountCents: 500, priorAmountCents: null },
       { bucketStart: '2026-02-01', amountCents: 700, priorAmountCents: null },
     ]);
+    expect(body.categories).toEqual([]);
   });
 
   it('returns an empty all-time trend with no range when there is no spend', async () => {
     const body = await fetchOverview('/dashboard/overview');
-    expect(body).toEqual({ meta: { kind: 'all', range: null }, trend: [] });
+    expect(body).toEqual({
+      meta: { kind: 'all', range: null },
+      trend: [],
+      categories: [],
+    });
+  });
+
+  describe('categories', () => {
+    it('returns the top eight categories by net spend plus Other', async () => {
+      const ids: string[] = [];
+      for (let i = 0; i < 10; i++) {
+        ids.push(await seedCategory(household().orgId, `Cat ${i}`));
+      }
+      await insertTxns(
+        ids.map((categoryId, index) => ({
+          type: 'expense' as const,
+          amount: (10 - index) * 100,
+          date: '2026-03-10',
+          categoryId,
+        })),
+        household()
+      );
+
+      const body = await fetchOverview(overviewQuery(MARCH));
+      expect(body.categories).toHaveLength(9);
+      expect(body.categories.slice(0, 8).map((row) => row.name)).toEqual([
+        'Cat 0',
+        'Cat 1',
+        'Cat 2',
+        'Cat 3',
+        'Cat 4',
+        'Cat 5',
+        'Cat 6',
+        'Cat 7',
+      ]);
+      const other = body.categories.at(-1);
+      expect(other).toMatchObject({
+        categoryId: null,
+        name: 'Other',
+        colour: 'slate-500',
+        amountCents: 300,
+      });
+      const shareTotal = body.categories.reduce(
+        (sum, row) => sum + row.shareOfPeriod,
+        0
+      );
+      expect(shareTotal).toBeCloseTo(1, 5);
+    });
+
+    it('excludes categories with zero or negative net spend before ranking', async () => {
+      const positiveId = await seedCategory(household().orgId, 'Groceries');
+      const zeroId = await seedCategory(household().orgId, 'Flat');
+      const negativeId = await seedCategory(household().orgId, 'Refunded');
+      await insertTxns(
+        [
+          {
+            type: 'expense',
+            amount: 5000,
+            date: '2026-03-05',
+            categoryId: positiveId,
+          },
+          {
+            type: 'expense',
+            amount: 1000,
+            date: '2026-03-06',
+            categoryId: zeroId,
+          },
+          {
+            type: 'refund',
+            amount: 1000,
+            date: '2026-03-07',
+            categoryId: zeroId,
+          },
+          {
+            type: 'expense',
+            amount: 2000,
+            date: '2026-03-08',
+            categoryId: negativeId,
+          },
+          {
+            type: 'refund',
+            amount: 3000,
+            date: '2026-03-09',
+            categoryId: negativeId,
+          },
+        ],
+        household()
+      );
+
+      const body = await fetchOverview(overviewQuery(MARCH));
+      expect(body.categories).toEqual([
+        expect.objectContaining({
+          categoryId: positiveId,
+          name: 'Groceries',
+          amountCents: 5000,
+          shareOfPeriod: 1,
+        }),
+      ]);
+    });
+
+    it('passes through configured category colours and stable defaults otherwise', async () => {
+      const colouredId = await seedCategory(
+        household().orgId,
+        'Travel',
+        'violet-500'
+      );
+      const plainId = await seedCategory(household().orgId, 'Gas');
+      await insertTxns(
+        [
+          {
+            type: 'expense',
+            amount: 100,
+            date: '2026-03-01',
+            categoryId: colouredId,
+          },
+          {
+            type: 'expense',
+            amount: 200,
+            date: '2026-03-02',
+            categoryId: plainId,
+          },
+        ],
+        household()
+      );
+
+      const body = await fetchOverview(overviewQuery(MARCH));
+      const travel = body.categories.find(
+        (row) => row.categoryId === colouredId
+      );
+      const gas = body.categories.find((row) => row.categoryId === plainId);
+      expect(travel?.colour).toBe('violet-500');
+      expect(gas?.colour).toBeTruthy();
+      expect(gas?.colour).not.toBe('violet-500');
+      const again = await fetchOverview(overviewQuery(MARCH));
+      expect(
+        again.categories.find((row) => row.categoryId === plainId)?.colour
+      ).toBe(gas?.colour);
+    });
+
+    it('has null prior amounts on All', async () => {
+      const categoryId = await seedCategory(household().orgId, 'Dining');
+      await insertTxns(
+        [
+          {
+            type: 'expense',
+            amount: 900,
+            date: '2026-01-10',
+            categoryId,
+          },
+        ],
+        household()
+      );
+
+      const body = await fetchOverview('/dashboard/overview');
+      expect(body.categories).toEqual([
+        expect.objectContaining({
+          categoryId,
+          priorAmountCents: null,
+        }),
+      ]);
+    });
+
+    it('scopes category totals to the active household', async () => {
+      const mine = await seedCategory(household().orgId, 'Mine');
+      const otherAccountId = await seedAccount(OTHER_ORG_ID);
+      const theirs = await seedCategory(OTHER_ORG_ID, 'Theirs');
+      await insertTxns(
+        [
+          {
+            type: 'expense',
+            amount: 100,
+            date: '2026-04-01',
+            categoryId: mine,
+          },
+        ],
+        household()
+      );
+      await insertTxns(
+        [
+          {
+            type: 'expense',
+            amount: 999999,
+            date: '2026-04-01',
+            categoryId: theirs,
+          },
+        ],
+        { orgId: OTHER_ORG_ID, accountId: otherAccountId }
+      );
+
+      const body = await fetchOverview(
+        overviewQuery({ from: '2026-04-01', to: '2026-04-30' })
+      );
+      expect(body.categories).toEqual([
+        expect.objectContaining({ categoryId: mine, amountCents: 100 }),
+      ]);
+    });
   });
 });

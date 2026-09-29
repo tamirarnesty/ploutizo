@@ -13,8 +13,10 @@ import type {
 } from '@ploutizo/types';
 import {
   fetchNetSpendByBucket,
+  fetchNetSpendByCategory,
   fetchSpendDateBounds,
 } from '@/lib/queries/dashboard';
+import { buildOverviewCategories } from '@/services/dashboard-categories';
 
 const fetchAmountsByBucket = async (
   orgId: string,
@@ -53,10 +55,17 @@ const getRangedOverview = async (
 ): Promise<GetDashboardOverviewResponse> => {
   const grain = dashboardRangeGrain(range);
   const prior = dashboardPriorRange(range, shortcut);
-  const [amounts, priorAmounts] = await Promise.all([
-    fetchAmountsByBucket(orgId, grain, range),
-    fetchAmountsByBucket(orgId, grain, prior),
-  ]);
+  const [amounts, priorAmounts, categoryRows, priorCategoryRows] =
+    await Promise.all([
+      fetchAmountsByBucket(orgId, grain, range),
+      fetchAmountsByBucket(orgId, grain, prior),
+      fetchNetSpendByCategory(orgId, range),
+      fetchNetSpendByCategory(orgId, prior),
+    ]);
+
+  const priorByCategoryId = new Map(
+    priorCategoryRows.map((row) => [row.categoryId, row.amountCents])
+  );
 
   return {
     meta: {
@@ -67,6 +76,7 @@ const getRangedOverview = async (
       range: prior,
       amounts: priorAmounts,
     }),
+    categories: buildOverviewCategories(categoryRows, priorByCategoryId),
   };
 };
 
@@ -78,16 +88,18 @@ const getAllTimeOverview = async (
     fetchAmountsByBucket(orgId, 'month', {}),
   ]);
   if (first === null || last === null) {
-    return { meta: { kind: 'all', range: null }, trend: [] };
+    return { meta: { kind: 'all', range: null }, trend: [], categories: [] };
   }
 
   const range = { from: first, to: last };
+  const categoryRows = await fetchNetSpendByCategory(orgId, range);
   return {
     meta: {
       kind: 'all',
       range: { ...range, priorFrom: null, priorTo: null, grain: 'month' },
     },
     trend: buildTrend(range, 'month', amounts, null),
+    categories: buildOverviewCategories(categoryRows, null),
   };
 };
 

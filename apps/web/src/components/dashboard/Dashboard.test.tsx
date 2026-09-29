@@ -91,6 +91,7 @@ const overviewFor = (url: URL): GetDashboardOverviewResponse => {
         },
       },
       trend: [],
+      categories: [],
     };
   }
   const shortcut = url.searchParams.get('shortcut');
@@ -110,6 +111,7 @@ const overviewFor = (url: URL): GetDashboardOverviewResponse => {
       },
     },
     trend: [],
+    categories: [],
   };
 };
 
@@ -182,6 +184,7 @@ const jsonResponse = (body: unknown, status = 200) =>
 
 let settlementsBody = settlements;
 let membersBody = members;
+let overviewFixture: ((url: URL) => GetDashboardOverviewResponse) | null = null;
 const failingPaths = new Set<string>();
 let requestGate: Promise<void> | null = null;
 
@@ -215,7 +218,7 @@ const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       ? settlementsBody
       : path === MEMBERS_PATH
         ? { data: membersBody }
-        : overviewFor(new URL(url, 'http://localhost'))
+        : (overviewFixture ?? overviewFor)(new URL(url, 'http://localhost'))
   );
 });
 
@@ -347,6 +350,7 @@ describe('Dashboard', () => {
     loaderReady.value = false;
     settlementsBody = settlements;
     membersBody = members;
+    overviewFixture = null;
     failingPaths.clear();
     requestGate = null;
     fetchMock.mockClear();
@@ -670,6 +674,75 @@ describe('Dashboard', () => {
   it('renders the spend trend card', async () => {
     await renderDashboard();
     expect(screen.getByText('Spend trend')).toBeInTheDocument();
+  });
+
+  describe('spend by category', () => {
+    it('renders the spend by category card', async () => {
+      await renderDashboard();
+      expect(await screen.findByText('Spend by category')).toBeInTheDocument();
+    });
+
+    it('shows category bars when the overview includes spend', async () => {
+      overviewFixture = () => ({
+        ...overviewFor(
+          new URL(
+            `${OVERVIEW_PATH}?from=2026-03-01&to=2026-03-24&shortcut=mtd`,
+            'http://localhost'
+          )
+        ),
+        categories: [
+          {
+            categoryId: 'cat_groceries',
+            name: 'Groceries',
+            colour: 'green-500',
+            amountCents: 4200,
+            shareOfPeriod: 0.7,
+            priorAmountCents: 3000,
+          },
+          {
+            categoryId: null,
+            name: 'Other',
+            colour: 'slate-500',
+            amountCents: 1800,
+            shareOfPeriod: 0.3,
+            priorAmountCents: 900,
+          },
+        ],
+      });
+      await renderDashboard();
+      const card = cardFor('Spend by category');
+      expect(
+        within(card).queryByText('No spend this period')
+      ).not.toBeInTheDocument();
+    });
+
+    it('shows an empty state when the period has no category spend', async () => {
+      await renderDashboard();
+      expect(
+        await screen.findByText('No spend this period')
+      ).toBeInTheDocument();
+    });
+
+    it('shows a muted error when the overview fails to load', async () => {
+      failingPaths.add(OVERVIEW_PATH);
+      await renderDashboard();
+      expect(
+        await within(cardFor('Spend by category')).findByRole('alert')
+      ).toHaveTextContent(/Couldn’t load spend by category/);
+    });
+
+    it('marks the card busy while the overview loads', async () => {
+      const release = holdRequests();
+      void renderDashboard();
+      expect(await screen.findByText('Spend by category')).toBeInTheDocument();
+      expect(cardFor('Spend by category')).toHaveAttribute('aria-busy', 'true');
+      release();
+      await screen.findByText('No spend this period');
+      expect(cardFor('Spend by category')).toHaveAttribute(
+        'aria-busy',
+        'false'
+      );
+    });
   });
 
   it('shows the card balances total in the section header', async () => {

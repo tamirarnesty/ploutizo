@@ -28,7 +28,20 @@ export type DashboardOverviewMeta =
       range: DashboardOverviewRange | null;
     };
 
+export type DashboardOverviewCategoryRow = {
+  /** Null only for the aggregated Other bucket. */
+  categoryId: string | null;
+  name: string;
+  /** Tailwind palette token (e.g. `green-500`). Other uses a neutral token. */
+  colour: string;
+  amountCents: number;
+  /** This row's share of total positive net spend in the period (0–1). */
+  shareOfPeriod: number;
+  priorAmountCents: number | null;
+};
+
 export type GetDashboardOverviewResponse = {
   meta: DashboardOverviewMeta;
   trend: DashboardOverviewTrendPoint[];
+  categories: DashboardOverviewCategoryRow[];
 };

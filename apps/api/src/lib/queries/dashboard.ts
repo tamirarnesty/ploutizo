@@ -1,9 +1,10 @@
-import { and, gte, lte, sql } from 'drizzle-orm';
+import { and, eq, gte, lte, sql } from 'drizzle-orm';
 import { db } from '@ploutizo/db';
-import { transactions } from '@ploutizo/db/schema';
+import { categories, transactions } from '@ploutizo/db/schema';
 import type { DashboardOverviewGrain } from '@ploutizo/types';
 import type { DbClient } from '@ploutizo/db';
 import type { SQL } from 'drizzle-orm';
+import type { CategoryNetSpendRow } from '@/lib/queries/dashboard-types';
 import { activeTransactions } from '@/lib/queries/scope';
 
 const netSpendAmountSql = sql<number>`coalesce(sum(
@@ -74,4 +75,41 @@ export const fetchSpendDateBounds = async (
     .from(transactions)
     .where(spendFilter(orgId));
   return bounds;
+};
+
+export const fetchNetSpendByCategory = async (
+  orgId: string,
+  input: { from?: string; to?: string },
+  client: DbClient = db
+): Promise<CategoryNetSpendRow[]> => {
+  const rows = await client
+    .select({
+      categoryId: transactions.categoryId,
+      name: categories.name,
+      configuredColour: categories.colour,
+      amountCents: netSpendAmountSql.as('amount_cents'),
+    })
+    .from(transactions)
+    .innerJoin(
+      categories,
+      and(
+        eq(categories.id, transactions.categoryId),
+        eq(categories.orgId, transactions.orgId)
+      )
+    )
+    .where(
+      and(
+        spendFilter(orgId),
+        input.from ? gte(transactions.date, input.from) : undefined,
+        input.to ? lte(transactions.date, input.to) : undefined
+      )
+    )
+    .groupBy(transactions.categoryId, categories.name, categories.colour);
+
+  return rows.map((row) => ({
+    categoryId: row.categoryId!,
+    name: row.name,
+    configuredColour: row.configuredColour,
+    amountCents: row.amountCents,
+  }));
 };

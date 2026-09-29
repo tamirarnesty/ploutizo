@@ -11,6 +11,7 @@ import { useGetSettlements } from '@/lib/data-access/settlements';
 import { selectCreditCardAccounts } from '@/lib/settlements';
 import { CardBalancesGrid } from '@/components/dashboard/card-balances/CardBalancesGrid';
 import { SpendTrendCard } from '@/components/dashboard/spend-trend/SpendTrendCard';
+import { SpendByCategoryCard } from '@/components/dashboard/spend-by-category/SpendByCategoryCard';
 import { DashboardHeader } from './DashboardHeader';
 import { useDashboardSearch } from './useDashboardSearch';
 import { SettleDialog } from './SettleDialog';
@@ -121,12 +122,17 @@ export const Dashboard = () => {
         the sidebar opens or closes, which only changes the available width.
       */}
       <div className="@container/dashboard space-y-4">
-        <SpendTrendCard
-          query={overviewQuery}
-          mode={spendTrendMode}
-          onModeChange={selectSpendTrendMode}
-          today={today}
-        />
+        <div className="grid grid-cols-1 items-start gap-4 @3xl/dashboard:grid-cols-3">
+          <div className="min-w-0 @3xl/dashboard:col-span-2">
+            <SpendTrendCard
+              query={overviewQuery}
+              mode={spendTrendMode}
+              onModeChange={selectSpendTrendMode}
+              today={today}
+            />
+          </div>
+          <SpendByCategoryCard query={overviewQuery} />
+        </div>
         <div className="grid grid-cols-1 items-start gap-4 @4xl/dashboard:grid-cols-4">
           <div className="min-w-0 @4xl/dashboard:col-span-3">
             <CardBalancesGrid

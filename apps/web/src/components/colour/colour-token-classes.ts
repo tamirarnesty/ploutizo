@@ -35,6 +35,29 @@ export const COLOUR_BADGE_CLASS: Record<ColourToken, string> = {
   'pink-500': 'border-pink-500/25 bg-pink-500/12 text-pink-500',
 };
 
+/** SVG bar fills for category charts — complete Tailwind literals for build detection. */
+export const COLOUR_BAR_FILL: Record<ColourToken, string> = {
+  'slate-500': 'fill-slate-500',
+  'red-500': 'fill-red-500',
+  'orange-500': 'fill-orange-500',
+  'amber-500': 'fill-amber-500',
+  'yellow-500': 'fill-yellow-500',
+  'lime-500': 'fill-lime-500',
+  'green-500': 'fill-green-500',
+  'teal-500': 'fill-teal-500',
+  'cyan-500': 'fill-cyan-500',
+  'blue-500': 'fill-blue-500',
+  'violet-500': 'fill-violet-500',
+  'pink-500': 'fill-pink-500',
+};
+
+export const barFillClassFromRaw = (
+  raw: string | null | undefined
+): string | undefined => {
+  const token = parseColourToken(raw);
+  return token ? COLOUR_BAR_FILL[token] : undefined;
+};
+
 export const getColourBadgeClassFromRaw = (
   raw: string | null | undefined
 ): string | undefined => {

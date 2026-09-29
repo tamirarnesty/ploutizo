@@ -76,6 +76,7 @@ describe('toSpendTrendChartData', () => {
       { bucketStart: '2026-03-02', amountCents: 0, priorAmountCents: 70 },
       { bucketStart: '2026-03-03', amountCents: -30, priorAmountCents: null },
     ],
+    categories: [],
   };
   const allTime = {
     meta: allMeta('2026-01-01', '2026-02-28'),
@@ -83,6 +84,7 @@ describe('toSpendTrendChartData', () => {
       { bucketStart: '2026-01-01', amountCents: 500, priorAmountCents: null },
       { bucketStart: '2026-02-01', amountCents: 700, priorAmountCents: null },
     ],
+    categories: [],
   };
 
   it('charts running totals for both series in running mode', () => {
