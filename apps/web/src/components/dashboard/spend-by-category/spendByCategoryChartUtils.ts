@@ -1,5 +1,5 @@
 import { formatCurrency } from '@ploutizo/utils/currency';
-import type { DashboardOverviewCategoryRow } from '@ploutizo/types';
+import type { DashboardOverviewCategoryRow } from '@ploutizo/validators';
 
 export type SpendByCategoryChartRow = DashboardOverviewCategoryRow & {
   rowKey: string;
@@ -42,3 +42,33 @@ export const formatCategoryChangeVsPrior = (
 export const hasCategorySpend = (
   categories: DashboardOverviewCategoryRow[]
 ): boolean => categories.some((row) => row.amountCents > 0);
+
+/**
+ * Tooltip rows for one category: this period, plus the prior period when there is one. Each row carries its
+ * own dot colour — the category's, faded for the prior period — so the native tooltip rows render as-is.
+ */
+export const toCategoryTooltipItems = (row: SpendByCategoryChartRow) => {
+  const colour = `var(--color-${row.colour})`;
+  return [
+    {
+      name: 'This period',
+      dataKey: 'amountCents',
+      graphicalItemId: 'amountCents',
+      value: row.amountCents,
+      color: colour,
+      payload: row,
+    },
+    ...(row.priorAmountCents === null
+      ? []
+      : [
+          {
+            name: 'Prior period',
+            dataKey: 'priorAmountCents',
+            graphicalItemId: 'priorAmountCents',
+            value: row.priorAmountCents,
+            color: `color-mix(in oklab, ${colour} 40%, transparent)`,
+            payload: row,
+          },
+        ]),
+  ];
+};

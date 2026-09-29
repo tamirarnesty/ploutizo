@@ -4,12 +4,14 @@ import {
   dashboardRangeGrain,
 } from '@ploutizo/utils/dashboard-period';
 import type { DashboardRangedShortcut } from '@ploutizo/utils/dashboard-period';
-import type { DashboardOverviewQuery } from '@ploutizo/validators';
+import type {
+  DashboardOverviewQuery,
+  DashboardOverviewTrendPoint,
+  GetDashboardOverviewResponse,
+} from '@ploutizo/validators';
 import type {
   CalendarDateRange,
   DashboardOverviewGrain,
-  DashboardOverviewTrendPoint,
-  GetDashboardOverviewResponse,
 } from '@ploutizo/types';
 import {
   fetchNetSpendByBucket,

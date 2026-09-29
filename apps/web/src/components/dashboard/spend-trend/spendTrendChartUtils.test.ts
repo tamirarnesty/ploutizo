@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type {
-  DashboardOverviewGrain,
-  DashboardOverviewMeta,
-} from '@ploutizo/types';
+import type { DashboardOverviewGrain } from '@ploutizo/types';
+import type { DashboardOverviewMeta } from '@ploutizo/validators';
 import {
   formatTrendBucket,
   partialBucketEdges,

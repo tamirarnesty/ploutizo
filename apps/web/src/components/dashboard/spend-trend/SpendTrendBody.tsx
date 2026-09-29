@@ -10,7 +10,7 @@ import {
 import type {
   DashboardOverviewTrendPoint,
   GetDashboardOverviewResponse,
-} from '@ploutizo/types';
+} from '@ploutizo/validators';
 import { SpendTrendChart } from '@/components/dashboard/spend-trend/SpendTrendChart';
 import {
   partialBucketEdges,

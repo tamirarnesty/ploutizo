@@ -10,7 +10,7 @@ import {
 } from 'vitest';
 import { db } from '@ploutizo/db';
 import { accounts, categories, orgs, transactions } from '@ploutizo/db/schema';
-import type { GetDashboardOverviewResponse } from '@ploutizo/types';
+import { dashboardOverviewResponseSchema } from '@ploutizo/validators';
 import type { DashboardRangedShortcut } from '@ploutizo/utils/dashboard-period';
 import { dashboardRouter } from '../routes/dashboard';
 import { TEST_HOUSEHOLD_PRINCIPAL, createRouteTestApp } from './testUtils';
@@ -91,7 +91,7 @@ const MARCH = {
 const fetchOverview = async (path: string) => {
   const res = await app.request(path);
   expect(res.status).toBe(200);
-  return (await res.json()) as GetDashboardOverviewResponse;
+  return dashboardOverviewResponseSchema.parse(await res.json());
 };
 
 describe('GET /api/dashboard/overview integration', () => {

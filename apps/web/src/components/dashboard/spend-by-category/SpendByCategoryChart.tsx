@@ -10,6 +10,7 @@ import {
   formatCategoryAmount,
   formatCategoryChangeVsPrior,
   formatCategoryShare,
+  toCategoryTooltipItems,
 } from '@/components/dashboard/spend-by-category/spendByCategoryChartUtils';
 import type { SpendByCategoryChartRow } from '@/components/dashboard/spend-by-category/spendByCategoryChartUtils';
 
@@ -24,7 +25,7 @@ const chartConfig = {
 export const SpendByCategoryChart = ({ data }: SpendByCategoryChartProps) => (
   <ChartContainer
     config={chartConfig}
-    className="aspect-auto h-56 min-h-48 w-full"
+    className="aspect-auto h-full min-h-56 w-full"
   >
     <BarChart
       data={data}
@@ -49,29 +50,38 @@ export const SpendByCategoryChart = ({ data }: SpendByCategoryChartProps) => (
       />
       <ChartTooltip
         cursor={false}
-        content={
-          <ChartTooltipContent
-            hideIndicator
-            labelFormatter={(_label, payload) => {
-              const row = payload[0].payload as SpendByCategoryChartRow;
-              return row.name;
-            }}
-            formatter={(_value, _name, item) => {
-              const row = item.payload as SpendByCategoryChartRow;
-              const change = formatCategoryChangeVsPrior(
-                row.amountCents,
-                row.priorAmountCents
-              );
-              return (
-                <div className="grid w-full gap-0.5 text-muted-foreground">
-                  <span>{formatCategoryAmount(row.amountCents)}</span>
-                  <span>{formatCategoryShare(row.shareOfPeriod)} of spend</span>
-                  {change ? <span>{change}</span> : null}
-                </div>
-              );
-            }}
-          />
-        }
+        content={({ active, payload }) => {
+          const row = payload[0]?.payload as
+            | SpendByCategoryChartRow
+            | undefined;
+          if (!row) {
+            return null;
+          }
+          const change = formatCategoryChangeVsPrior(
+            row.amountCents,
+            row.priorAmountCents
+          );
+          return (
+            <ChartTooltipContent
+              active={active}
+              payload={toCategoryTooltipItems(row)}
+              labelFormatter={() => (
+                <>
+                  <div>{row.name}</div>
+                  <div className="font-normal text-muted-foreground">
+                    {[
+                      `${formatCategoryShare(row.shareOfPeriod)} of spend`,
+                      change,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </div>
+                </>
+              )}
+              valueFormatter={formatCategoryAmount}
+            />
+          );
+        }}
       />
       <Bar dataKey="amountCents" radius={4}>
         {data.map((row) => (

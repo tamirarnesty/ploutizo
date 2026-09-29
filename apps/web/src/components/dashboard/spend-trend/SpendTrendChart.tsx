@@ -47,7 +47,7 @@ export const SpendTrendChart = ({
   return (
     <ChartContainer
       config={chartConfig}
-      className="aspect-auto h-56 min-h-48 w-full"
+      className="aspect-auto h-full min-h-56 w-full"
     >
       <RechartsLineChart
         data={data}

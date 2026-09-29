@@ -1,4 +1,4 @@
-import type { DashboardOverviewCategoryRow } from '@ploutizo/types';
+import type { DashboardOverviewCategoryRow } from '@ploutizo/validators';
 import type { CategoryNetSpendRow } from '@/lib/queries/dashboard-types';
 import {
   OTHER_CATEGORY_COLOUR,

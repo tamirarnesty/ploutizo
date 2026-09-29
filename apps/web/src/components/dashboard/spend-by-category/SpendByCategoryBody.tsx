@@ -7,7 +7,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@ploutizo/ui/components/empty';
-import type { DashboardOverviewCategoryRow } from '@ploutizo/types';
+import type { DashboardOverviewCategoryRow } from '@ploutizo/validators';
 import { SpendByCategoryChart } from '@/components/dashboard/spend-by-category/SpendByCategoryChart';
 import {
   hasCategorySpend,

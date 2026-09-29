@@ -8,9 +8,11 @@ import {
 import type {
   CalendarDateRange,
   DashboardOverviewGrain,
+} from '@ploutizo/types';
+import type {
   DashboardOverviewMeta,
   GetDashboardOverviewResponse,
-} from '@ploutizo/types';
+} from '@ploutizo/validators';
 import type { SpendTrendMode } from '@/lib/spend-trend-mode';
 
 type SpendTrendChartPoint = {

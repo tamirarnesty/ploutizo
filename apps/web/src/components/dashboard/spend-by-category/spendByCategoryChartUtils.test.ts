@@ -3,6 +3,7 @@ import {
   formatCategoryChangeVsPrior,
   formatCategoryShare,
   hasCategorySpend,
+  toCategoryTooltipItems,
   toSpendByCategoryChartData,
 } from '@/components/dashboard/spend-by-category/spendByCategoryChartUtils';
 
@@ -52,5 +53,36 @@ describe('toSpendByCategoryChartData', () => {
 describe('hasCategorySpend', () => {
   it('is false for an empty list', () => {
     expect(hasCategorySpend([])).toBe(false);
+  });
+});
+
+describe('toCategoryTooltipItems', () => {
+  const row = {
+    categoryId: 'c1',
+    name: 'Transport',
+    colour: 'blue-500',
+    amountCents: 12000,
+    shareOfPeriod: 0.65,
+    priorAmountCents: 1800,
+    rowKey: 'c1',
+  } as const;
+
+  it('lists this period then prior period, each with a dot colour', () => {
+    expect(toCategoryTooltipItems(row)).toEqual([
+      expect.objectContaining({
+        name: 'This period',
+        value: 12000,
+        color: 'var(--color-blue-500)',
+      }),
+      expect.objectContaining({ name: 'Prior period', value: 1800 }),
+    ]);
+  });
+
+  it('has only this period when there is no prior window', () => {
+    expect(
+      toCategoryTooltipItems({ ...row, priorAmountCents: null }).map(
+        (item) => item.name
+      )
+    ).toEqual(['This period']);
   });
 });
