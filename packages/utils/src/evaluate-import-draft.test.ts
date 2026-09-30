@@ -22,6 +22,8 @@ const baseRow: ImportDraftDurableRow = {
   reviewCounterpartAccountId: null,
   reviewRefundOf: 'tx-1',
   reviewRefundOfBatchRowId: null,
+  reviewNotes: null,
+  reviewTagIds: [],
   selectedForImport: true,
   reviewMatchedTransactionId: null,
   reviewMatchDismissed: false,

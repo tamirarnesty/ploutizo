@@ -26,6 +26,8 @@ const expenseRow = (
   selectedForImport: true,
   reviewMatchedTransactionId: null,
   reviewMatchDismissed: false,
+  reviewNotes: null,
+  reviewTagIds: [],
   externalId: 'visa-1001',
   sourceDescription: null,
   ...overrides,
