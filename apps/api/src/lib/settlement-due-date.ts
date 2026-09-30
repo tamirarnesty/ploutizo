@@ -1,3 +1,4 @@
+import type { SettlementStatus } from '@ploutizo/validators';
 /**
  * Pure function: given an account's statementDueDay (1-31, nullable) and the current date,
  * compute the next upcoming due date and its status badge.
@@ -15,7 +16,6 @@
  * @param statementDueDay - integer 1-31 or null
  * @param today - reference Date (UTC date is used for day-arithmetic)
  */
-import type { SettlementStatus } from '@ploutizo/types';
 
 export const computeNextDueDate = (
   statementDueDay: number | null,

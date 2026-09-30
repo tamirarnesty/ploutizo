@@ -1,8 +1,5 @@
-import type {
-  ImportDraft,
-  ImportDraftRow,
-  RefundTargetFact,
-} from '@ploutizo/types';
+import type { ImportDraftRow } from '@ploutizo/types';
+import type { ImportDraft, RefundTargetFact } from '@ploutizo/validators';
 import { getActiveQueryClient } from '@/lib/access/working-set-registry';
 import { importDraftQueryKey } from './queryKeys';
 

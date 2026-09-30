@@ -2,7 +2,7 @@ import {
   getLastAvailableCalendarDate,
   validateArchivedAccountAvailability,
 } from '@ploutizo/utils/transaction-policy';
-import type { Account } from '@ploutizo/types';
+import type { Account } from '@ploutizo/validators';
 
 const findAccount = (
   accounts: readonly Account[],

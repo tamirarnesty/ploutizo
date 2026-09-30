@@ -1,9 +1,9 @@
 import { countImportOutcomes } from '@ploutizo/types';
+import type { ImportRowProjection } from '@ploutizo/utils/import-set-verification';
 import type {
   ImportFinalizePreview,
   ImportFinalizePreviewRow,
-} from '@ploutizo/types';
-import type { ImportRowProjection } from '@ploutizo/utils/import-set-verification';
+} from '@ploutizo/validators';
 
 export const toImportFinalizePreview = (
   batchId: string,

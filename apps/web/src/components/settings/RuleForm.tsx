@@ -17,13 +17,15 @@ import {
   FieldLabel,
 } from '@ploutizo/ui/components/field';
 import { Text } from '@ploutizo/ui/components/text';
-import type { RuleForm as RuleFormType } from '@ploutizo/validators';
+import type {
+  MerchantRule,
+  RuleForm as RuleFormType,
+} from '@ploutizo/validators';
 import {
   useCreateMerchantRule,
   useUpdateMerchantRule,
 } from '@/lib/data-access/merchant-rules';
 import { useGetCategories } from '@/lib/data-access/categories';
-import type { MerchantRule } from '@/lib/data-access/merchant-rules';
 import { MATCH_TYPE_LABELS } from './merchant-rule-labels';
 import type { MerchantRuleMatchType } from './merchant-rule-labels';
 

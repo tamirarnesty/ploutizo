@@ -14,12 +14,12 @@ import type {
   ImportDraftDurableRow,
   ImportDraftRowEvaluation,
 } from '@ploutizo/utils';
+import type { ImportDraftRow } from '@ploutizo/types';
 import type {
   ImportDraft,
   ImportDraftPersistedRow,
-  ImportDraftRow,
   RefundTargetFact,
-} from '@ploutizo/types';
+} from '@ploutizo/validators';
 import type {
   ImportDraftRowRecord,
   ImportDraftSummaryRow,

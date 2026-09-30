@@ -1,23 +1,16 @@
+import type { MerchantRule } from '@ploutizo/validators';
 import { reorderByIds } from '@/lib/reorderByIds';
-import { apiFetch } from '@/lib/queryClient';
+import { apiSend } from '@/lib/queryClient';
 import { useOptimisticListMutation } from '../optimisticListMutation';
-import type { MerchantRule } from './useGetMerchantRules';
 
-export const reorderMerchantRules = async (
-  orderedIds: string[]
-): Promise<{ ok: boolean }> => {
-  const r = await apiFetch<{ data: { ok: boolean } }>(
-    '/api/merchant-rules/reorder',
-    {
-      method: 'PATCH',
-      body: JSON.stringify({ orderedIds }),
-    }
-  );
-  return r.data;
-};
+export const reorderMerchantRules = (orderedIds: string[]): Promise<void> =>
+  apiSend('/api/merchant-rules/reorder', {
+    method: 'PATCH',
+    body: JSON.stringify({ orderedIds }),
+  });
 
 export const useReorderMerchantRules = () => {
-  return useOptimisticListMutation<MerchantRule, string[], { ok: boolean }>({
+  return useOptimisticListMutation<MerchantRule, string[], void>({
     queryKey: ['merchant-rules'],
     mutationFn: reorderMerchantRules,
     updateCache: (items, orderedIds) => reorderByIds(items, orderedIds),

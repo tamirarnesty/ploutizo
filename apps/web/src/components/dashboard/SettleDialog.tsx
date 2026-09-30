@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Dialog, DialogContent } from '@ploutizo/ui/components/dialog';
-import type { SettlementAccountRow } from '@ploutizo/types';
+import type { SettlementAccountRow } from '@ploutizo/validators';
 import { SettleDialogForm } from '@/components/dashboard/settle-dialog/SettleDialogForm';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';
 

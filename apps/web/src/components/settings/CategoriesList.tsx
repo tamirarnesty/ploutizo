@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Text } from '@ploutizo/ui/components/text';
+import type { Category } from '@ploutizo/validators';
 import { usePreloadLucideIcons } from '@/components/categories/usePreloadLucideIcons';
-import type { Category } from '@/lib/data-access/categories';
 import { CategoryRow } from './CategoryRow';
 import { SortableSettingsList } from './SortableSettingsList';
 

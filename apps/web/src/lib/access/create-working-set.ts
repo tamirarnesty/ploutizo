@@ -1,4 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
+import { shouldRetryApiRequest } from '@/lib/queryClient';
 
 export type WorkingSet = {
   id: number;
@@ -13,7 +14,7 @@ export const createWorkingSet = (): WorkingSet => {
     defaultOptions: {
       queries: {
         staleTime: 1000 * 60,
-        retry: 1,
+        retry: shouldRetryApiRequest,
       },
     },
   });

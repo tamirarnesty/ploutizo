@@ -2,7 +2,7 @@ import { CardContent } from '@ploutizo/ui/components/card';
 import { ItemGroup } from '@ploutizo/ui/components/item';
 import { Separator } from '@ploutizo/ui/components/separator';
 import { Text } from '@ploutizo/ui/components/text';
-import type { OrgMember, SettlementAccountRow } from '@ploutizo/types';
+import type { OrgMember, SettlementAccountRow } from '@ploutizo/validators';
 import { DashboardLiveCard } from '@/components/dashboard/DashboardLiveCard';
 import { SettlementMemberListRowBalance } from '@/components/dashboard/SettlementMemberListRowBalance';
 import { SettlementMemberListRowEmpty } from '@/components/dashboard/SettlementMemberListRowEmpty';

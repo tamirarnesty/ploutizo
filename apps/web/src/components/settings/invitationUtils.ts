@@ -1,4 +1,4 @@
-import type { PendingInvitationStatus } from '@ploutizo/types';
+import type { PendingInvitationStatus } from '@ploutizo/validators';
 
 export interface ExpiryInfo {
   label: string;

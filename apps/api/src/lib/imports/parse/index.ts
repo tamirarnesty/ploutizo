@@ -2,10 +2,8 @@ import {
   MAPPING_REQUIRED_SAMPLE_ROW_COUNT,
   MAX_IMPORT_ROWS,
 } from '@ploutizo/types';
-import type {
-  ImportContentSelection,
-  ImportUploadMappingRequired,
-} from '@ploutizo/types';
+import type { ImportContentSelection } from '@ploutizo/types';
+import type { ImportUploadMappingRequired } from '@ploutizo/validators';
 import { coerceImportRows } from './coerce';
 import { buildCustomMappingNormalizer } from './normalizers/custom-mapping';
 import {

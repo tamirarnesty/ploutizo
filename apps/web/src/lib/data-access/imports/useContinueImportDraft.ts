@@ -1,7 +1,7 @@
 import { useCallback, useRef } from 'react';
-import type { ImportFinalizePreview } from '@ploutizo/types';
+import type { ImportFinalizePreview } from '@ploutizo/validators';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
-import type { ApiErrorBody } from '@/lib/queryClient';
+import type { ApiErrorBody, ApiResponseContractError } from '@/lib/queryClient';
 import {
   getImportReviewAutosaveSnapshot,
   subscribeImportReviewAutosave,
@@ -39,7 +39,7 @@ export const useContinueImportDraft = (draftId: string) => {
 
   const mutation = useHouseholdMutation<
     ImportFinalizePreview,
-    ApiErrorBody | ObsoleteContinueError,
+    ApiErrorBody | ApiResponseContractError | ObsoleteContinueError,
     { rowIds: string[] }
   >({
     mutationFn: async ({ rowIds }) => {

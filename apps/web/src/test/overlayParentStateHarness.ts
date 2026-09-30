@@ -5,13 +5,13 @@
  * - Transactions.tsx (transaction sheet)
  */
 import { useCallback, useState } from 'react';
+import type { AccountType } from '@ploutizo/types';
 import type {
   Account,
-  AccountType,
   SettlementAccountRow,
-} from '@ploutizo/types';
+  TransactionRow,
+} from '@ploutizo/validators';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';
-import type { TransactionRow } from '@/lib/data-access/transactions';
 
 /** @see apps/web/src/components/dashboard/Dashboard.tsx */
 export const useDashboardSettleDialogParentState = () => {

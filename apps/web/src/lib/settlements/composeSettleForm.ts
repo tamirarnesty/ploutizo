@@ -1,4 +1,4 @@
-import type { Account, SettlementAccountRow } from '@ploutizo/types';
+import type { Account, SettlementAccountRow } from '@ploutizo/validators';
 import { getSettlementSourceAccounts } from './settlementSourceAccounts';
 
 /** Member id, or `'shared'` for the card’s shared bucket. */

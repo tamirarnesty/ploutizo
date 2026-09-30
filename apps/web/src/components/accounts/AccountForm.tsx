@@ -40,14 +40,13 @@ import {
   FINANCIAL_INSTITUTIONS,
   accountRequiresFinancialInstitution,
 } from '@ploutizo/types';
+import type { AccountType, FinancialInstitutionId } from '@ploutizo/types';
 import type {
   Account,
+  AccountFormValues,
   AccountMember,
-  AccountType,
-  FinancialInstitutionId,
   OrgMember,
-} from '@ploutizo/types';
-import type { AccountFormValues } from '@ploutizo/validators';
+} from '@ploutizo/validators';
 import {
   useCreateAccount,
   useGetAccountMembers,

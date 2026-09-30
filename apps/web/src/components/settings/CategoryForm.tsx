@@ -11,7 +11,10 @@ import {
   FieldLabel,
 } from '@ploutizo/ui/components/field';
 import { Text } from '@ploutizo/ui/components/text';
-import type { CategoryForm as CategoryFormType } from '@ploutizo/validators';
+import type {
+  Category,
+  CategoryForm as CategoryFormType,
+} from '@ploutizo/validators';
 import {
   useCreateCategory,
   useGetCategories,
@@ -19,7 +22,6 @@ import {
 } from '@/lib/data-access/categories';
 import { ColourTokenPicker } from '@/components/colour/ColourTokenPicker';
 import { LucideIconPicker } from '@/components/categories/LucideIconPicker';
-import type { Category } from '@/lib/data-access/categories';
 
 interface CategoryFormProps {
   category: Category | null;

@@ -1,26 +1,19 @@
 import { queryOptions } from '@tanstack/react-query';
-import type { ColourToken } from '@ploutizo/types';
+import { z } from 'zod';
+import { categorySchema, dataEnvelope } from '@ploutizo/validators';
+import type { Category } from '@ploutizo/validators';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
 
-export interface Category {
-  id: string;
-  orgId: string;
-  name: string;
-  icon: string | null;
-  colour: ColourToken;
-  sortOrder: number;
-  archivedAt: string | null;
-  createdAt: string;
-}
-
 export const fetchCategories = async (
   signal?: AbortSignal
 ): Promise<Category[]> => {
-  const r = await apiFetch<{ data: Category[] }>('/api/categories', {
-    signal,
-  });
+  const r = await apiFetch(
+    '/api/categories',
+    dataEnvelope(z.array(categorySchema)),
+    { signal }
+  );
   return r.data;
 };
 

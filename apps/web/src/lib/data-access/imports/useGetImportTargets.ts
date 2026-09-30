@@ -1,5 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
-import type { ImportTargetAccount } from '@ploutizo/types';
+import { z } from 'zod';
+import { dataEnvelope, importTargetAccountSchema } from '@ploutizo/validators';
+import type { ImportTargetAccount } from '@ploutizo/validators';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import { importTargetsQueryKey } from './queryKeys';
@@ -8,8 +10,9 @@ import type { UseQueryResult } from '@tanstack/react-query';
 export const fetchImportTargets = async (
   signal?: AbortSignal
 ): Promise<ImportTargetAccount[]> => {
-  const r = await apiFetch<{ data: ImportTargetAccount[] }>(
+  const r = await apiFetch(
     '/api/imports/targets',
+    dataEnvelope(z.array(importTargetAccountSchema)),
     { signal }
   );
   return r.data;

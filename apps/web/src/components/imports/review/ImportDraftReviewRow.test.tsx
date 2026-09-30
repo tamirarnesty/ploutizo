@@ -4,7 +4,7 @@ import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ImportReviewRow } from '@ploutizo/types';
 import type { ImportDraftRowEvaluation } from '@ploutizo/utils';
-import type { Category } from '@/lib/data-access/categories';
+import type { Category } from '@ploutizo/validators';
 import { evaluateImportDraftWorkingCopy } from '@/lib/data-access/imports/rederiveImportDraftWorkingCopy';
 import '@/test/mockTanstackRouter';
 import { ImportDraftReviewProvider } from './ImportDraftReviewContext';

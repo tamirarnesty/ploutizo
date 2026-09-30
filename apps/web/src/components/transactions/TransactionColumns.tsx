@@ -20,11 +20,11 @@ import {
 import { cn } from '@ploutizo/ui/lib/utils';
 import { formatCurrency } from '@ploutizo/utils/currency';
 import { memberFullLabel } from '@ploutizo/utils';
+import type { TransactionRow } from '@ploutizo/validators';
 import { CachedLucideIcon } from '@/components/categories/CachedLucideIcon';
 import { colourTokenBadgeStyle } from '@/components/colour/colour-token-style';
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
 import { RightAlignedColumnHeader } from '@/components/dashboard/card-balances/RightAlignedColumnHeader';
-import type { TransactionRow } from '@/lib/data-access/transactions';
 import { TransactionRowActionsDropdown } from './TransactionRowActionMenus';
 import { getTransactionRowActions } from './transactionRowActions';
 import type { ColumnDef } from '@tanstack/react-table';

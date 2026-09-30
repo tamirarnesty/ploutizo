@@ -1,5 +1,5 @@
 import { matchDecisionsForSelectedRows } from '@ploutizo/utils';
-import type { ImportDraft } from '@ploutizo/types';
+import type { ImportDraft } from '@ploutizo/validators';
 import { getActiveQueryClient } from '@/lib/access/working-set-registry';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
 import { importMatchTransactionIdForDraft } from './importMatchTargetOnAccount';

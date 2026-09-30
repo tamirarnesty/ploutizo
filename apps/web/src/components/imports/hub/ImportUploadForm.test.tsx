@@ -2,7 +2,10 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ImportDraftSummary, ImportTargetAccount } from '@ploutizo/types';
+import type {
+  ImportDraftSummary,
+  ImportTargetAccount,
+} from '@ploutizo/validators';
 import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
 import { ImportUploadForm } from './ImportUploadForm';
 

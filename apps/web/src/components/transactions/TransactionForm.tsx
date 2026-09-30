@@ -28,7 +28,13 @@ import {
 } from '@ploutizo/ui/components/tooltip';
 import { dollarsToCents } from '@ploutizo/utils/currency';
 import { formatGeneratedTransactionDescriptionFromAccounts } from '@ploutizo/utils/transaction-policy';
-import type { Account, OrgMember, TransactionType } from '@ploutizo/types';
+import type { TransactionType } from '@ploutizo/types';
+import type {
+  Account,
+  Category,
+  OrgMember,
+  TransactionRow,
+} from '@ploutizo/validators';
 import { useGetHouseholdMembers } from '@/lib/data-access/household';
 import { useGetCategories } from '@/lib/data-access/categories';
 import { useGetAccounts } from '@/lib/data-access/accounts';
@@ -38,8 +44,6 @@ import {
   useGetTransaction,
   useUpdateTransaction,
 } from '@/lib/data-access/transactions';
-import type { TransactionRow } from '@/lib/data-access/transactions';
-import type { Category } from '@/lib/data-access/categories';
 import { CurrencyInput } from '@/components/currency/CurrencyInput';
 import {
   PendingInputFlushProvider,

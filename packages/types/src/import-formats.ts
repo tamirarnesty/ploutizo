@@ -98,16 +98,6 @@ export type ImportContentSelection =
   | { kind: 'profile'; profileId: ImportContentProfileId }
   | { kind: 'mapping'; mapping: ImportCustomMapping };
 
-export type ImportUploadMappingRequired = {
-  kind: 'mapping_required';
-  /** Known profiles that match this file; empty when only custom mapping applies. */
-  candidateProfileIds: ImportContentProfileId[];
-  /** Column lookup keys: header names, or `Column N` for headerless files. */
-  columns: string[];
-  /** First data rows, for the mapping preview. */
-  sampleRows: string[][];
-};
-
 export const MAPPING_REQUIRED_SAMPLE_ROW_COUNT = 3;
 
 export const MAX_IMPORT_BYTES = 512 * 1024;

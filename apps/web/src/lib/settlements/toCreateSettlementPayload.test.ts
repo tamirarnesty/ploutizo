@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { createSettlementSchema } from '@ploutizo/validators';
-import type { SettlementAccountRow, SettlementStatus } from '@ploutizo/types';
+import type {
+  SettlementAccountRow,
+  SettlementStatus,
+} from '@ploutizo/validators';
 import { settlementMember } from '@/test/settlementFixtures';
 import { toCreateSettlementPayload } from './toCreateSettlementPayload';
 

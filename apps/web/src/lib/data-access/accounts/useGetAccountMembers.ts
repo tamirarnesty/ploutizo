@@ -1,4 +1,6 @@
-import type { AccountMember } from '@ploutizo/types';
+import { z } from 'zod';
+import { accountMemberSchema, dataEnvelope } from '@ploutizo/validators';
+import type { AccountMember } from '@ploutizo/validators';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
@@ -7,8 +9,9 @@ export const fetchAccountMembers = async (
   accountId: string,
   signal?: AbortSignal
 ): Promise<AccountMember[]> => {
-  const r = await apiFetch<{ data: AccountMember[] }>(
+  const r = await apiFetch(
     `/api/accounts/${accountId}/members`,
+    dataEnvelope(z.array(accountMemberSchema)),
     { signal }
   );
   return r.data;

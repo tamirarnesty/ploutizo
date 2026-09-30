@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { OrgMember, SettlementAccountRow } from '@ploutizo/types';
+import type { OrgMember, SettlementAccountRow } from '@ploutizo/validators';
 import { buildCardBalanceViewModels } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
 
 const household: OrgMember[] = [

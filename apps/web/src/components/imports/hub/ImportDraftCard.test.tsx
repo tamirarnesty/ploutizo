@@ -3,7 +3,7 @@ import '@/test/mockTanstackRouter';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ImportDraftSummary } from '@ploutizo/types';
+import type { ImportDraftSummary } from '@ploutizo/validators';
 import { HouseholdHookWrapper } from '@/test/household-hook-harness';
 import { expectOverlayMounted } from '@/test/overlayCloseContract';
 import { useFinalizeImportDraft } from '@/lib/data-access/imports/useFinalizeImportDraft';

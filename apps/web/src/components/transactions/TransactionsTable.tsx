@@ -9,11 +9,11 @@ import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-
 import { DataGridPagination } from '@ploutizo/ui/components/reui/data-grid/data-grid-pagination';
 import { ContextMenuItem } from '@ploutizo/ui/components/context-menu';
 import { toast } from '@ploutizo/ui/components/sonner';
+import type { TransactionRow } from '@ploutizo/validators';
 import {
   useDeleteTransaction,
   useRestoreTransaction,
 } from '@/lib/data-access/transactions';
-import type { TransactionRow } from '@/lib/data-access/transactions';
 import {
   DATA_GRID_PAGINATION_ROW_CLASSNAME,
   PAGINATED_DATA_GRID_SCROLL_ORIENTATION,

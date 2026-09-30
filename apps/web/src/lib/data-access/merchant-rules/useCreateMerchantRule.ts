@@ -1,7 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { dataEnvelope, merchantRuleSchema } from '@ploutizo/validators';
+import type { MerchantRule } from '@ploutizo/validators';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
-import type { MerchantRule } from './useGetMerchantRules';
 
 interface CreateMerchantRuleBody {
   pattern: string;
@@ -14,10 +15,14 @@ interface CreateMerchantRuleBody {
 export const createMerchantRule = async (
   body: CreateMerchantRuleBody
 ): Promise<MerchantRule> => {
-  const r = await apiFetch<{ data: MerchantRule }>('/api/merchant-rules', {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
+  const r = await apiFetch(
+    '/api/merchant-rules',
+    dataEnvelope(merchantRuleSchema),
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }
+  );
   return r.data;
 };
 

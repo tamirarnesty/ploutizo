@@ -2,8 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { lrmSplit } from '@ploutizo/utils/assignee-split';
 import { formatGeneratedTransactionDescriptionFromAccounts } from '@ploutizo/utils/transaction-policy';
-import type { Account } from '@ploutizo/types';
-import type { TransactionRow } from '@/lib/data-access/transactions';
+import type { Account, TransactionRow } from '@ploutizo/validators';
 import { buildDefaultValues, useTransactionForm } from './useTransactionForm';
 
 const accounts: Account[] = [
@@ -55,6 +54,7 @@ const settlementTransaction = (): TransactionRow =>
     counterpartAccountId: 'bank-1',
     counterpartAccountName: 'Emily WS',
     rawDescription: null,
+    externalId: null,
     notes: 'pay bill',
     refundOfId: null,
     refundOfDate: null,

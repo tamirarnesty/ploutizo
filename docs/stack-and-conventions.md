@@ -16,12 +16,23 @@
 
 - **React SPA** (TanStack Start/Router) — NOT Next.js. No RSC patterns, server actions, `React.cache()`, `next/dynamic`, `"use server"`.
 - React 19 project. Pass `ref` as a regular prop — no `forwardRef` in new/refactored components in `apps/web`. Shadcn components in `packages/ui` may retain it.
-- All data fetching in `apps/web` uses TanStack Query hooks from `apps/web/src/lib/data-access/`. Never add raw `fetch()` calls to components. All API requests call `apiFetch`, never raw `fetch()` directly.
+- All data fetching in `apps/web` uses TanStack Query hooks from `apps/web/src/lib/data-access/`. Never add raw `fetch()` calls to components. All API requests go through `apiFetch` (with a response schema) or `apiSend`, never raw `fetch()` — see [Response contracts](#response-contracts).
 - Form state always uses `useAppForm` from `@ploutizo/ui/components/form` (TanStack Form + Zod). Never use `useState` for form field values.
 - `packages/db` uses `@neondatabase/serverless` WebSocket Pool (not postgres.js). Set `neonConfig.webSocketConstructor` before constructing the Pool.
 - Client-side persistence in `apps/web` must use Zustand stores in `@/lib/prefs/` for localStorage-backed prefs and `@/lib/prefs/sessionPref` for ephemeral sessionStorage prefs. Never call `localStorage`/`sessionStorage` directly in components or hooks. Exception: theme via next-themes. Key naming: `ploutizo:{feature}:{preference}`.
 - Exception: a preference the server must read for the first render (so SSR matches the client) is a cookie, read with `createIsomorphicFn` (`getCookie` on the server, `document.cookie` on the client) and written from one module per feature. Example: the dashboard period in `@/lib/dashboard-period/cookie.ts`.
 - API middleware order is invariant: **CORS → request telemetry → Clerk → tenant guard** (see `apps/api/src/index.ts`). Request telemetry owns `X-Request-Id` and one wide `api.request.complete` record per request.
+
+## Response contracts
+
+Every API response the web reads is validated at runtime against a Zod schema.
+
+- **`apiFetch(path, schema, options?)`** (`apps/web/src/lib/queryClient.ts`) requires a schema and returns its parsed output (`z.output<typeof schema>`); unknown keys are stripped. There is no untyped or generic-cast variant.
+- **`apiSend(path, options?)`** is for calls whose body the caller does not use, including 204s. It resolves to `void` and never reads the body.
+- **Schemas live in `@ploutizo/validators`**, in the domain file beside that domain's request schemas (`categorySchema` in `categories.ts`, `importDraftSchema` in `imports.ts`, …). They describe the wire exactly: ISO-8601 instants (`isoTimestampSchema`), `yyyy-MM-dd` calendar dates (`z.iso.date()`), integer cents, enums from the shared `*_VALUES` tuples, and `z.string()` for ids (orgs, invitations, and bank references are not UUIDs).
+- **Envelopes:** wrap `{ data }` bodies with `dataEnvelope(schema)`; model bare bodies (`{ accounts }`, list pages, the import-draft `kind` union) as their own schema.
+- **One source of truth for types:** response types are `z.infer` exports from `@ploutizo/validators`; do not declare parallel interfaces in `apps/web` or `@ploutizo/types`. Exception: wire types that `@ploutizo/utils` consumes (`MemberIdentity`, `ImportDraftRow`, `ImportReviewRow`, `MatchTargetFact`, `ImportRowSnapshot` and its parts) stay as interfaces in `@ploutizo/types`, because validators depends on utils. Their schemas call `assertSchemaOutput<typeof schema, Interface>()`, which fails typecheck when either side drifts — including an interface field the schema would silently strip.
+- **Contract failures:** a body that fails its schema throws `ApiResponseContractError` (web-local; `kind: 'malformed'`, method, path, status, Zod issues). It is deterministic, so the working-set `QueryClient` retry policy (`shouldRetryApiRequest`) does not retry it, and `classifyApiOutcome` treats it as reportable for Error Tracking ([ADR 0006](adr/0006-cross-stack-telemetry.md)). The path and issues are diagnostics only — never put them in telemetry attributes or UI; `getApiErrorMessage` returns the caller's generic fallback for it.
 
 ## Base components
 

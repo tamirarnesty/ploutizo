@@ -1,12 +1,12 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
-import { apiFetch } from '@/lib/queryClient';
+import { apiSend } from '@/lib/queryClient';
 
 export const useInviteMember = () => {
   const qc = useQueryClient();
   return useHouseholdMutation({
     mutationFn: (email: string) =>
-      apiFetch('/api/households/invitations', {
+      apiSend('/api/households/invitations', {
         method: 'POST',
         body: JSON.stringify({ email }),
       }),

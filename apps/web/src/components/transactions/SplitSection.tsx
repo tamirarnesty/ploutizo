@@ -7,7 +7,7 @@ import {
 import { lrmSplit } from '@ploutizo/utils/assignee-split';
 import { formatCurrency } from '@ploutizo/utils/currency';
 import { memberFullLabel } from '@ploutizo/utils';
-import type { OrgMember } from '@ploutizo/types';
+import type { OrgMember } from '@ploutizo/validators';
 import { AssigneeRow } from './AssigneeRow';
 import type { AssigneeFormRow } from './types';
 

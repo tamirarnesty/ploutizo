@@ -5,7 +5,7 @@ import {
 } from '@ploutizo/ui/components/reui/sortable';
 import { Button } from '@ploutizo/ui/components/button';
 import { Text } from '@ploutizo/ui/components/text';
-import type { MerchantRule } from '@/lib/data-access/merchant-rules';
+import type { MerchantRule } from '@ploutizo/validators';
 import { MATCH_TYPE_LABELS } from './merchant-rule-labels';
 import { SettingsRowAlertDialog } from './SettingsRowAlertDialog';
 

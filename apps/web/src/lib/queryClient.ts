@@ -1,4 +1,6 @@
+import type { HttpMethod } from '@ploutizo/telemetry';
 import { getHouseholdBearer } from '@/lib/access/working-set';
+import type { z } from 'zod';
 
 // API base URL from env var — never hardcode ploutizo.app or localhost
 const API_BASE_URL = import.meta.env.VITE_API_URL as string;
@@ -13,11 +15,42 @@ export const createHouseholdBearerUnavailableError = () => {
   return error;
 };
 
-// Typed API fetch helper — all API calls go through this, never raw fetch
-export const apiFetch = async <T>(
+/**
+ * A success response whose body does not match its schema. Deterministic, so it is never retried, and
+ * `kind: 'malformed'` classifies it as reportable under ADR 0006. `path` and `issues` are diagnostics for
+ * error tracking only: the path carries entity ids and the issue paths can carry record keys, so neither
+ * belongs in the message, telemetry attributes, or UI.
+ */
+export class ApiResponseContractError extends Error {
+  readonly kind = 'malformed';
+  readonly method: HttpMethod;
+  readonly path: string;
+  readonly status: number;
+  readonly issues: z.core.$ZodIssue[];
+
+  constructor(input: {
+    method: HttpMethod;
+    path: string;
+    status: number;
+    issues: z.core.$ZodIssue[];
+  }) {
+    super('API response did not match its contract');
+    this.name = 'ApiResponseContractError';
+    this.method = input.method;
+    this.path = input.path;
+    this.status = input.status;
+    this.issues = input.issues;
+  }
+}
+
+const requestMethod = (options?: ApiFetchOptions): HttpMethod =>
+  (options?.method?.toUpperCase() ?? 'GET') as HttpMethod;
+
+/** Sends an authorised request; a non-OK response throws its parsed error body. */
+const request = async (
   path: string,
   options?: ApiFetchOptions
-): Promise<T> => {
+): Promise<Response> => {
   const token = await getHouseholdBearer();
   if (!token) {
     throw createHouseholdBearerUnavailableError();
@@ -36,11 +69,46 @@ export const apiFetch = async <T>(
       .catch(() => ({ error: { code: 'UNKNOWN', message: res.statusText } }));
     throw error;
   }
-  if (res.status === 204) {
-    return undefined as T;
-  }
-  return res.json() as Promise<T>;
+  return res;
 };
+
+/**
+ * Fetches a response body and returns it parsed by `schema` — every API read goes through this, never raw
+ * fetch. A body that fails the schema throws {@link ApiResponseContractError}.
+ */
+export const apiFetch = async <TSchema extends z.ZodType>(
+  path: string,
+  schema: TSchema,
+  options?: ApiFetchOptions
+): Promise<z.output<TSchema>> => {
+  const res = await request(path, options);
+  const body: unknown =
+    res.status === 204 ? undefined : await res.json().catch(() => undefined);
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) {
+    throw new ApiResponseContractError({
+      method: requestMethod(options),
+      path,
+      status: res.status,
+      issues: parsed.error.issues,
+    });
+  }
+  return parsed.data;
+};
+
+/** Sends a request whose response body the caller does not use (including 204). */
+export const apiSend = async (
+  path: string,
+  options?: ApiFetchOptions
+): Promise<void> => {
+  await request(path, options);
+};
+
+/** Query retry policy: one retry, except contract failures, which would fail the same way again. */
+export const shouldRetryApiRequest = (
+  failureCount: number,
+  error: unknown
+): boolean => !(error instanceof ApiResponseContractError) && failureCount < 1;
 
 export interface ApiErrorBody {
   error?: {
@@ -61,6 +129,9 @@ export const getApiErrorMessage = (
   error: unknown,
   fallback = "Couldn't process that request."
 ): string => {
+  // The contract message is a developer diagnostic; users get the caller's generic copy.
+  if (error instanceof ApiResponseContractError) return fallback;
+
   const nativeMessage =
     typeof error === 'object' &&
     error !== null &&

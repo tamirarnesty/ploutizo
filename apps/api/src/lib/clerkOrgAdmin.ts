@@ -1,5 +1,5 @@
 import { isClerkAPIResponseError } from '@clerk/backend/errors';
-import type { PendingInvitation } from '@ploutizo/types';
+import type { PendingInvitation } from '@ploutizo/validators';
 import type { ClerkClient } from '@clerk/backend';
 import { getClerkServerClient } from '@/lib/clerkServerClient';
 

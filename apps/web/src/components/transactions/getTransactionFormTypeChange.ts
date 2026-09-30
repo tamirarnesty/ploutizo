@@ -2,7 +2,8 @@ import {
   getTransactionFieldsToClear,
   getTransactionTypePolicy,
 } from '@ploutizo/utils/transaction-policy';
-import type { Account, TransactionType } from '@ploutizo/types';
+import type { TransactionType } from '@ploutizo/types';
+import type { Account } from '@ploutizo/validators';
 import { resolveTransactionFormAccountIdForSlot } from './getTransactionFormAccountOptions';
 import type { TransactionFormValues } from './types';
 

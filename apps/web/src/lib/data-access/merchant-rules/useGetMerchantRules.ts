@@ -1,26 +1,19 @@
 import { queryOptions } from '@tanstack/react-query';
+import { z } from 'zod';
+import { dataEnvelope, merchantRuleSchema } from '@ploutizo/validators';
+import type { MerchantRule } from '@ploutizo/validators';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
 
-export interface MerchantRule {
-  id: string;
-  orgId: string;
-  pattern: string;
-  matchType: 'exact' | 'contains' | 'starts_with' | 'ends_with' | 'regex';
-  renameTo: string | null;
-  categoryId: string | null;
-  assigneeId: string | null;
-  priority: number;
-  createdAt: string;
-}
-
 export const fetchMerchantRules = async (
   signal?: AbortSignal
 ): Promise<MerchantRule[]> => {
-  const r = await apiFetch<{ data: MerchantRule[] }>('/api/merchant-rules', {
-    signal,
-  });
+  const r = await apiFetch(
+    '/api/merchant-rules',
+    dataEnvelope(z.array(merchantRuleSchema)),
+    { signal }
+  );
   return r.data;
 };
 

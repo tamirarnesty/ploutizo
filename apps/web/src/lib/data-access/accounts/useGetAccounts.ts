@@ -1,5 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
-import type { Account } from '@ploutizo/types';
+import { z } from 'zod';
+import { accountSchema, dataEnvelope } from '@ploutizo/validators';
+import type { Account } from '@ploutizo/validators';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
@@ -9,9 +11,11 @@ export const fetchAccounts = async (
   signal?: AbortSignal
 ): Promise<Account[]> => {
   const qs = includeArchived ? '?include=archived' : '';
-  const r = await apiFetch<{ data: Account[] }>(`/api/accounts${qs}`, {
-    signal,
-  });
+  const r = await apiFetch(
+    `/api/accounts${qs}`,
+    dataEnvelope(z.array(accountSchema)),
+    { signal }
+  );
   return r.data;
 };
 

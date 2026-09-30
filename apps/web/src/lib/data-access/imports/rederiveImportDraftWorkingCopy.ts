@@ -6,11 +6,8 @@ import type {
   ExistingRefundTargetExpense,
   ImportDraftRowEvaluation,
 } from '@ploutizo/utils';
-import type {
-  ImportDraft,
-  ImportReviewRow,
-  RefundTargetFact,
-} from '@ploutizo/types';
+import type { ImportReviewRow } from '@ploutizo/types';
+import type { ImportDraft, RefundTargetFact } from '@ploutizo/validators';
 import { getActiveQueryClient } from '@/lib/access/working-set-registry';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
 import { isImportRowSelectedForImport } from './importReviewSelection';

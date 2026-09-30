@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '@ploutizo/ui/components/sonner';
-import type { CreateImportDraftResponse } from '@ploutizo/types';
+import { createImportDraftResponseSchema } from '@ploutizo/validators';
 import type { CreateImportDraftInput } from '@ploutizo/validators';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
@@ -10,7 +10,7 @@ export const useCreateImportDraft = () => {
   const qc = useQueryClient();
   return useHouseholdMutation({
     mutationFn: (body: CreateImportDraftInput) =>
-      apiFetch<CreateImportDraftResponse>('/api/imports/drafts', {
+      apiFetch('/api/imports/drafts', createImportDraftResponseSchema, {
         method: 'POST',
         body: JSON.stringify(body),
       }),

@@ -2,7 +2,8 @@ import '@/test/mockTanstackRouter';
 import { render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
-import type { Account, ImportReviewRow } from '@ploutizo/types';
+import type { ImportReviewRow } from '@ploutizo/types';
+import type { Account } from '@ploutizo/validators';
 import { makeImportDraft } from '../test-fixtures/importDraft';
 import { ImportDraftReview } from './ImportDraftReview';
 

@@ -10,11 +10,11 @@ import {
 } from '@ploutizo/ui/components/combobox';
 import { Spinner } from '@ploutizo/ui/components/spinner';
 import { formatCurrency } from '@ploutizo/utils/currency';
+import type { TransactionRow } from '@ploutizo/validators';
 import {
   useGetTransactions,
   useSearchTransactions,
 } from '@/lib/data-access/transactions';
-import type { TransactionRow } from '@/lib/data-access/transactions';
 import type { AssigneeFormRow } from './types';
 import type { TransactionFormInstance } from './hooks/useTransactionForm';
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { ImportDraftRow, OrgMember } from '@ploutizo/types';
+import type { ImportDraftRow } from '@ploutizo/types';
+import type { OrgMember } from '@ploutizo/validators';
 import {
   formatImportBatchStatusLabel,
   getImportRowStatusTooltip,

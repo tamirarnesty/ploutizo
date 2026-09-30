@@ -1,7 +1,7 @@
 import '@/lib/access/working-set-cleanup';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ImportFinalizePreview } from '@ploutizo/types';
+import type { ImportFinalizePreview } from '@ploutizo/validators';
 import { getActiveQueryClient } from '@/lib/access/working-set-registry';
 import { HouseholdHookWrapper } from '@/test/household-hook-harness';
 

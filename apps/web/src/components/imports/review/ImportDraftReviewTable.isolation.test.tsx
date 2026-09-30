@@ -4,7 +4,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Account, OrgMember } from '@ploutizo/types';
+import type { Account, Category, OrgMember } from '@ploutizo/validators';
 import { getActiveQueryClient } from '@/lib/access/working-set-registry';
 import { confirmPersistIntoCollection } from '@/lib/data-access/imports/persistImportDraftBatch';
 import {
@@ -15,7 +15,6 @@ import { importDraftQueryKey } from '@/lib/data-access/imports/queryKeys';
 import { rederiveImportDraftWorkingCopy } from '@/lib/data-access/imports/rederiveImportDraftWorkingCopy';
 import { setImportDraftSelection } from '@/lib/data-access/imports/setImportDraftSelection';
 import * as useImportReviewRowModule from '@/lib/data-access/imports/useImportReviewRow';
-import type { Category } from '@/lib/data-access/categories';
 import { HouseholdHookWrapper } from '@/test/household-hook-harness';
 import { getImportRowLabel } from '../lib/importPresentation';
 import { useImportDraftReviewState } from '../lib/useImportDraftReviewState';

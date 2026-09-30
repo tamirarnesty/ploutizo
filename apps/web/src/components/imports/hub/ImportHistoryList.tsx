@@ -5,7 +5,7 @@ import { Empty, EmptyDescription } from '@ploutizo/ui/components/empty';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
 import { formatAccountLabel } from '@ploutizo/utils';
-import type { ImportHistoryItem } from '@ploutizo/types';
+import type { ImportHistoryItem } from '@ploutizo/validators';
 import {
   formatImportBatchStatusLabel,
   formatImportCompletedCounts,

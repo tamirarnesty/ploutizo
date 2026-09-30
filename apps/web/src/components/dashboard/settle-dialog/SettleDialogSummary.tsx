@@ -6,7 +6,7 @@ import {
 import { Text } from '@ploutizo/ui/components/text';
 import { formatCurrency } from '@ploutizo/utils/currency';
 import { formatAccountInstitutionMeta } from '@ploutizo/utils';
-import type { SettlementAccountRow } from '@ploutizo/types';
+import type { SettlementAccountRow } from '@ploutizo/validators';
 
 type SettleDialogSummaryProps = {
   account: SettlementAccountRow;

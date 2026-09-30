@@ -7,7 +7,7 @@ import {
   ItemTitle,
 } from '@ploutizo/ui/components/item';
 import { memberFullLabel, memberShortLabel } from '@ploutizo/utils';
-import type { OrgMember } from '@ploutizo/types';
+import type { OrgMember } from '@ploutizo/validators';
 import type { MemberSettlementRollup } from '@/lib/settlements';
 import { SignedBalanceText } from '@/components/dashboard/SignedBalanceText';
 import { UserAvatar } from '@/components/members/UserAvatar';

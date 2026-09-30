@@ -2,11 +2,11 @@ import { lrmSplit } from '@ploutizo/utils/assignee-split';
 import { formatSettlementDescription } from '@ploutizo/utils/transaction-policy';
 import { toFinancialInstitutionId } from '@ploutizo/types';
 import type {
+  CreateSettlementInput,
   GetSettlementBalancesResponse,
   SettlementAccountRow,
   SettlementMemberRow,
-} from '@ploutizo/types';
-import type { CreateSettlementInput } from '@ploutizo/validators';
+} from '@ploutizo/validators';
 import type { SettlementBalanceRow } from '@/lib/queries/settlements';
 import { fetchOwnersByAccountId } from '@/lib/accounts/accountResponse';
 import { DomainError, NotFoundError } from '@/lib/errors';

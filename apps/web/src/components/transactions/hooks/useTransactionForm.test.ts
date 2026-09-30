@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { formatGeneratedTransactionDescriptionFromAccounts } from '@ploutizo/utils/transaction-policy';
-import type { Account } from '@ploutizo/types';
-import type { TransactionRow } from '@/lib/data-access/transactions';
+import type { Account, TransactionRow } from '@ploutizo/validators';
 import { buildDefaultValues, toApiPayload } from './useTransactionForm';
 import type { TransactionFormValues } from '../types';
 

@@ -1,4 +1,4 @@
-import type { Category } from '@/lib/data-access/categories';
+import type { Category } from '@ploutizo/validators';
 import { CategoryForm } from './CategoryForm';
 import { SettingsFormDialog } from './SettingsFormDialog';
 

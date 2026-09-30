@@ -1,10 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { invalidateSpendQueries } from '@/lib/data-access/invalidateSpendQueries';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
-import { apiFetch } from '@/lib/queryClient';
-import type { TransactionRow } from './useGetTransactions';
-
-type PatchTransactionResponse = Omit<TransactionRow, 'tags' | 'assignees'>;
+import { apiSend } from '@/lib/queryClient';
 
 // body: unknown is intentional — payload is produced by toApiPayload in useTransactionForm,
 // which validates via createTransactionSchema.safeParse before calling mutate.
@@ -13,10 +10,10 @@ export const useUpdateTransaction = (id: string) => {
   const qc = useQueryClient();
   return useHouseholdMutation({
     mutationFn: (body: unknown) =>
-      apiFetch<{ data: PatchTransactionResponse }>(`/api/transactions/${id}`, {
+      apiSend(`/api/transactions/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(body),
-      }).then((r: { data: PatchTransactionResponse }) => r.data),
+      }),
     onSuccess: () => {
       invalidateSpendQueries(qc);
       // PATCH returns scalar row only; merging prev assignees/tags would keep stale splits

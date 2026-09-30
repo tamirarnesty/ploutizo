@@ -1,7 +1,7 @@
 import { FileUp } from 'lucide-react';
 
 import { formatAccountLabel } from '@ploutizo/utils';
-import type { ImportDraftSummary } from '@ploutizo/types';
+import type { ImportDraftSummary } from '@ploutizo/validators';
 import type { CollectNavRouter } from '@/lib/navigation/collect-nav';
 import { collectNav } from '@/lib/navigation/collect-nav';
 import type {

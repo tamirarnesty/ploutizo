@@ -1,4 +1,4 @@
-import type { TransactionRow } from '@/lib/data-access/transactions';
+import type { TransactionRow } from '@ploutizo/validators';
 
 export type TransactionRowActionId = 'edit' | 'delete';
 

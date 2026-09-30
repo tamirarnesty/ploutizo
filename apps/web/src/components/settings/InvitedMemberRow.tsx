@@ -2,7 +2,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '@ploutizo/ui/components/badge';
 import { Item, ItemActions } from '@ploutizo/ui/components/item';
 import { Text } from '@ploutizo/ui/components/text';
-import type { PendingInvitation } from '@ploutizo/types';
+import type { PendingInvitation } from '@ploutizo/validators';
 import { UserAvatar } from '@/components/members/UserAvatar';
 import { ConfirmDialog } from './ConfirmDialog';
 import { getExpiryInfo } from './invitationUtils';

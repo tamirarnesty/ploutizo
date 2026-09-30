@@ -1,13 +1,13 @@
+import { categorySchema, dataEnvelope } from '@ploutizo/validators';
+import type { Category } from '@ploutizo/validators';
 import { apiFetch } from '@/lib/queryClient';
 import { useOptimisticListMutation } from '../optimisticListMutation';
-import type { Category } from './useGetCategories';
 
 export const archiveCategory = async (id: string): Promise<Category> => {
-  const r = await apiFetch<{ data: Category }>(
+  const r = await apiFetch(
     `/api/categories/${id}/archive`,
-    {
-      method: 'DELETE',
-    }
+    dataEnvelope(categorySchema),
+    { method: 'DELETE' }
   );
   return r.data;
 };

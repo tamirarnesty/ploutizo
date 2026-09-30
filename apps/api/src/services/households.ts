@@ -1,8 +1,8 @@
 import type {
   InviteMemberFormSchema,
+  PendingInvitation,
   updateHouseholdSettingsSchema,
 } from '@ploutizo/validators';
-import type { PendingInvitation } from '@ploutizo/types';
 import { ClerkOrgAdminError, clerkOrgAdmin } from '../lib/clerkOrgAdmin';
 import { DomainError, NotFoundError } from '../lib/errors';
 import {

@@ -5,10 +5,13 @@ import {
   useMemo,
   useSyncExternalStore,
 } from 'react';
-import type { Account, OrgMember } from '@ploutizo/types';
 import type { ImportDraftRowEvaluation } from '@ploutizo/utils';
-import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
-import type { Category } from '@/lib/data-access/categories';
+import type {
+  Account,
+  Category,
+  OrgMember,
+  UpdateImportDraftRowInput,
+} from '@ploutizo/validators';
 import {
   getImportReviewRowEvaluation,
   subscribeImportReviewEvaluations,

@@ -1,13 +1,13 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { invalidateSpendQueries } from '@/lib/data-access/invalidateSpendQueries';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
-import { apiFetch } from '@/lib/queryClient';
+import { apiSend } from '@/lib/queryClient';
 
 export const useRestoreTransaction = () => {
   const qc = useQueryClient();
   return useHouseholdMutation({
     mutationFn: (id: string) =>
-      apiFetch<{ data: { id: string } }>(`/api/transactions/${id}/restore`, {
+      apiSend(`/api/transactions/${id}/restore`, {
         method: 'PATCH',
       }),
     onSettled: () => {

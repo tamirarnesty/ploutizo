@@ -1,7 +1,7 @@
 import { Badge } from '@ploutizo/ui/components/reui/badge';
 import { Text } from '@ploutizo/ui/components/text';
 import { AlertCircle, CircleCheck } from 'lucide-react';
-import type { SettlementStatus } from '@ploutizo/types';
+import type { SettlementStatus } from '@ploutizo/validators';
 import type { LucideIcon } from 'lucide-react';
 
 const SETTLEMENT_STATUS_BADGE = {

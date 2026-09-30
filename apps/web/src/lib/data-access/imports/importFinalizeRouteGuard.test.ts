@@ -1,7 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { isRedirect } from '@tanstack/react-router';
 import { describe, expect, it } from 'vitest';
-import type { ImportFinalizePreview } from '@ploutizo/types';
+import type { ImportFinalizePreview } from '@ploutizo/validators';
 import { importDraftReviewRoute } from '@/lib/navigation';
 import {
   assertImportFinalizePreviewSession,

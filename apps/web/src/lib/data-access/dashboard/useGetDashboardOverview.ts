@@ -30,9 +30,11 @@ export const dashboardOverviewQueryOptions = (
             period.to,
             period.shortcut,
           ],
-    queryFn: async ({ signal }) =>
-      dashboardOverviewResponseSchema.parse(
-        await apiFetch<unknown>(`/api/dashboard/overview${search}`, { signal })
+    queryFn: ({ signal }) =>
+      apiFetch(
+        `/api/dashboard/overview${search}`,
+        dashboardOverviewResponseSchema,
+        { signal }
       ),
     placeholderData: (previousData) => previousData,
   });

@@ -1,5 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
-import type { ImportDraft } from '@ploutizo/types';
+import { dataEnvelope, importDraftSchema } from '@ploutizo/validators';
+import type { ImportDraft } from '@ploutizo/validators';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import { importDraftClientQueryPolicy } from './importDraftClientQueryPolicy';
@@ -10,9 +11,11 @@ export const fetchImportDraft = async (
   id: string,
   signal?: AbortSignal
 ): Promise<ImportDraft> => {
-  const r = await apiFetch<{ data: ImportDraft }>(`/api/imports/drafts/${id}`, {
-    signal,
-  });
+  const r = await apiFetch(
+    `/api/imports/drafts/${id}`,
+    dataEnvelope(importDraftSchema),
+    { signal }
+  );
   return r.data;
 };
 

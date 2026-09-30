@@ -1,6 +1,6 @@
 import { Text } from '@ploutizo/ui/components/text';
 import { formatAccountInstitutionMeta } from '@ploutizo/utils';
-import type { SettlementAccountRow } from '@ploutizo/types';
+import type { SettlementAccountRow } from '@ploutizo/validators';
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
 import { SignedBalanceText } from '@/components/dashboard/SignedBalanceText';
 import { RightAlignedCell } from '@/components/dashboard/card-balances/RightAlignedColumnHeader';

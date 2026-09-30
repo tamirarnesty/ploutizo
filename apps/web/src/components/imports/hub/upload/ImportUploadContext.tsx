@@ -9,9 +9,11 @@ import { useNavigate } from '@tanstack/react-router';
 import type {
   ImportContentProfileId,
   ImportContentSelection,
+} from '@ploutizo/types';
+import type {
   ImportDraftSummary,
   ImportTargetAccount,
-} from '@ploutizo/types';
+} from '@ploutizo/validators';
 import { useCreateImportDraft } from '@/lib/data-access/imports';
 import { getActiveQueryClient } from '@/lib/access/working-set-registry';
 import { invalidateActiveImportDraftsQuery } from '@/lib/data-access/imports/invalidateActiveImportDraftsQuery';

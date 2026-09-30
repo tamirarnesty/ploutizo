@@ -1,23 +1,16 @@
+import type { Category } from '@ploutizo/validators';
 import { reorderByIds } from '@/lib/reorderByIds';
-import { apiFetch } from '@/lib/queryClient';
+import { apiSend } from '@/lib/queryClient';
 import { useOptimisticListMutation } from '../optimisticListMutation';
-import type { Category } from './useGetCategories';
 
-export const reorderCategories = async (
-  orderedIds: string[]
-): Promise<{ ok: boolean }> => {
-  const r = await apiFetch<{ data: { ok: boolean } }>(
-    '/api/categories/reorder',
-    {
-      method: 'PATCH',
-      body: JSON.stringify({ orderedIds }),
-    }
-  );
-  return r.data;
-};
+export const reorderCategories = (orderedIds: string[]): Promise<void> =>
+  apiSend('/api/categories/reorder', {
+    method: 'PATCH',
+    body: JSON.stringify({ orderedIds }),
+  });
 
 export const useReorderCategories = () => {
-  return useOptimisticListMutation<Category, string[], { ok: boolean }>({
+  return useOptimisticListMutation<Category, string[], void>({
     queryKey: ['categories'],
     mutationFn: reorderCategories,
     updateCache: (items, orderedIds) => reorderByIds(items, orderedIds),

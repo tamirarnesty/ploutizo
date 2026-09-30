@@ -59,3 +59,19 @@ export const InviteMemberFormSchema = z.object({
   email: z.string().email('Enter a valid email address'),
 });
 export type InviteMemberForm = z.infer<typeof InviteMemberFormSchema>;
+
+/** `GET /api/households` body. */
+export const householdOverviewSchema = z.object({
+  name: z.string().nullable(),
+  imageUrl: z.string().nullable(),
+});
+
+export type HouseholdOverview = z.infer<typeof householdOverviewSchema>;
+
+/** `GET`/`PATCH /api/households/settings` body; the threshold is integer cents. */
+export const householdSettingsSchema = z.object({
+  settlementThreshold: z.number().int().nullable(),
+  autoCheckImportRowWhenReady: z.boolean(),
+});
+
+export type HouseholdSettings = z.infer<typeof householdSettingsSchema>;

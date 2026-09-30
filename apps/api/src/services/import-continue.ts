@@ -1,8 +1,6 @@
 import { db } from '@ploutizo/db';
-import type {
-  ImportFinalizePreview,
-  ImportRequirementFailureDetails,
-} from '@ploutizo/types';
+import type { ImportRequirementFailureDetails } from '@ploutizo/types';
+import type { ImportFinalizePreview } from '@ploutizo/validators';
 import type { ImportSetRequest } from '@/services/import-set';
 import { DomainError } from '@/lib/errors';
 import { lockImportDraftBatch } from '@/lib/queries/imports';

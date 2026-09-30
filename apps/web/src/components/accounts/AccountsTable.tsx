@@ -17,7 +17,7 @@ import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
 import { getFinancialInstitutionName } from '@ploutizo/types';
 import { memberFullLabel } from '@ploutizo/utils';
-import type { Account } from '@ploutizo/types';
+import type { Account } from '@ploutizo/validators';
 import {
   DATA_GRID_PAGINATION_ROW_CLASSNAME,
   PAGINATED_DATA_GRID_SCROLL_ORIENTATION,

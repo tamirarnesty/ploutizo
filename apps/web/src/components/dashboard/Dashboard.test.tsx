@@ -23,13 +23,13 @@ import {
   dashboardRangeGrain,
   isDashboardRangedShortcut,
 } from '@ploutizo/utils/dashboard-period';
+import type { MemberIdentity } from '@ploutizo/types';
 import type {
+  GetDashboardOverviewResponse,
   GetSettlementBalancesResponse,
-  MemberIdentity,
   OrgMember,
   SettlementAccountRow,
-} from '@ploutizo/types';
-import type { GetDashboardOverviewResponse } from '@ploutizo/validators';
+} from '@ploutizo/validators';
 import type * as HouseholdLoaderReady from '@/lib/access/household-loader-ready';
 import type { RouterContext } from '@/router';
 // `.dashboard` is part of the route file name, not an extension.

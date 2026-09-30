@@ -1,5 +1,5 @@
 import { Text } from '@ploutizo/ui/components/text';
-import type { MerchantRule } from '@/lib/data-access/merchant-rules';
+import type { MerchantRule } from '@ploutizo/validators';
 import { MerchantRuleRow } from './MerchantRuleRow';
 import { SortableSettingsList } from './SortableSettingsList';
 
