@@ -15,6 +15,7 @@ import {
 } from '@ploutizo/ui/components/chart';
 import type { ChartConfig } from '@ploutizo/ui/components/chart';
 import type { DashboardOverviewGrain } from '@ploutizo/types';
+import { priorColour } from '@/components/dashboard/dashboardChartColour';
 import { amountDomain } from '@/components/dashboard/dashboardChartDomain';
 import { formatWholeCurrency } from '@/components/dashboard/dashboardFormat';
 import { formatTrendBucket } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
@@ -36,9 +37,10 @@ export const SpendTrendChart = ({
   hasPriorSeries,
   seriesLabels,
 }: SpendTrendChartProps) => {
+  // Prior is the current colour, faded (and dashed below), as on every dashboard chart; legend and tooltip follow.
   const chartConfig = {
     current: { label: seriesLabels.current, color: 'var(--chart-1)' },
-    prior: { label: seriesLabels.prior, color: 'var(--chart-2)' },
+    prior: { label: seriesLabels.prior, color: priorColour('var(--chart-1)') },
   } satisfies ChartConfig;
   const yDomain = amountDomain(
     data.flatMap((point) => [point.current, point.prior])

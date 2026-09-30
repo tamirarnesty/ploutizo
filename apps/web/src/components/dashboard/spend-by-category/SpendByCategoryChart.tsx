@@ -17,10 +17,16 @@ import {
 } from '@ploutizo/ui/components/chart';
 import type { ChartConfig } from '@ploutizo/ui/components/chart';
 import type { DashboardOverviewCategoryRow } from '@ploutizo/validators';
+import {
+  PRIOR_OPACITY,
+  priorColour,
+} from '@/components/dashboard/dashboardChartColour';
 import { amountDomain } from '@/components/dashboard/dashboardChartDomain';
 import { formatWholeCurrency } from '@/components/dashboard/dashboardFormat';
 import {
+  NEUTRAL_SERIES_COLOUR,
   formatCategorySummary,
+  spendByCategoryIndicatorColor,
   toSpendByCategoryChartRows,
 } from '@/components/dashboard/spend-by-category/spendByCategoryChartUtils';
 import type { SpendByCategoryChartRow } from '@/components/dashboard/spend-by-category/spendByCategoryChartUtils';
@@ -39,17 +45,24 @@ export const SpendByCategoryChart = ({
 }: SpendByCategoryChartProps) => {
   // Unique per chart so two instances' patterns never collide; colons stripped as in chart.tsx, for `url(#…)`.
   const hatchId = `uncategorised-hatch-${useId().replace(/:/g, '')}`;
-  const data = toSpendByCategoryChartRows(categories, `url(#${hatchId})`);
+  const priorHatchId = `${hatchId}-prior`;
+  const data = toSpendByCategoryChartRows(categories, {
+    current: `url(#${hatchId})`,
+    prior: `url(#${priorHatchId})`,
+  });
   const labelByKey = new Map(data.map((row) => [row.key, row.label]));
   // Rows net refunds against spend, so a bar can run left of zero; prior bars are only drawn with a prior window.
   const xDomain = amountDomain(
     data.flatMap((row) => [row.current, hasPriorSeries ? row.prior : null])
   );
-  // Same series colours as the spend trend. Tooltip dots and legend swatches read each <Bar>'s `fill`: Recharts
-  // never passes <Cell> fills to the tooltip, so this period's dot is the series colour, not the category's.
+  // Each row paints its own colour (<Cell>s), so the series colours only reach the legend, which explains the
+  // treatment: solid for this period, faded for the prior one. Tooltip dots resolve the row's colours instead.
   const chartConfig = {
-    current: { label: seriesLabels.current, color: 'var(--chart-1)' },
-    prior: { label: seriesLabels.prior, color: 'var(--chart-2)' },
+    current: { label: seriesLabels.current, color: NEUTRAL_SERIES_COLOUR },
+    prior: {
+      label: seriesLabels.prior,
+      color: priorColour(NEUTRAL_SERIES_COLOUR),
+    },
   } satisfies ChartConfig;
 
   return (
@@ -63,21 +76,30 @@ export const SpendByCategoryChart = ({
         margin={{ left: 4, right: 12, top: 4, bottom: 4 }}
       >
         <defs>
-          <pattern
-            id={hatchId}
-            width={6}
-            height={6}
-            patternUnits="userSpaceOnUse"
-            patternTransform="rotate(45)"
-          >
-            <rect
+          {/* Uncategorised's hatch, and the same hatch faded like every prior bar. */}
+          {[
+            { id: hatchId, opacity: 1 },
+            { id: priorHatchId, opacity: PRIOR_OPACITY },
+          ].map(({ id, opacity }) => (
+            <pattern
+              key={id}
+              id={id}
               width={6}
               height={6}
-              fill="var(--muted-foreground)"
-              fillOpacity={0.3}
-            />
-            <rect width={3} height={6} fill="var(--muted-foreground)" />
-          </pattern>
+              patternUnits="userSpaceOnUse"
+              patternTransform="rotate(45)"
+            >
+              <g opacity={opacity}>
+                <rect
+                  width={6}
+                  height={6}
+                  fill={NEUTRAL_SERIES_COLOUR}
+                  fillOpacity={0.3}
+                />
+                <rect width={3} height={6} fill={NEUTRAL_SERIES_COLOUR} />
+              </g>
+            </pattern>
+          ))}
         </defs>
         <CartesianGrid horizontal={false} />
         <XAxis
@@ -124,12 +146,13 @@ export const SpendByCategoryChart = ({
                 ) : null;
               }}
               valueFormatter={formatWholeCurrency}
+              indicatorColor={spendByCategoryIndicatorColor}
             />
           }
         />
         <Bar dataKey="current" fill="var(--color-current)" radius={4}>
           {data.map((row) => (
-            <Cell key={row.key} fill={row.barFill} />
+            <Cell key={row.key} fill={row.fill.current} />
           ))}
         </Bar>
         {hasPriorSeries ? (
@@ -137,10 +160,13 @@ export const SpendByCategoryChart = ({
             <Bar
               dataKey="prior"
               fill="var(--color-prior)"
-              fillOpacity={0.6}
               barSize={6}
               radius={3}
-            />
+            >
+              {data.map((row) => (
+                <Cell key={row.key} fill={row.fill.prior} />
+              ))}
+            </Bar>
             <ChartLegend content={<ChartLegendContent />} />
           </>
         ) : null}

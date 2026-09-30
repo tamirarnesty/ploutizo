@@ -65,7 +65,7 @@ General workflow:
 | ---- | ---- | -------- |
 | **Usage-site props** | Default looks need small tweaks | `className`, `labelFormatter`, `tickFormatter`, `variant`, `nameKey` |
 | **Shared config objects** | Repeated labels, colors, keys | `chartConfig`, column defs, theme tokens (`var(--color-*)`) |
-| **Library extension points** | One field or region changes | `ChartTooltipContent` `valueFormatter` (value text only); not the full-row `formatter` unless the whole row is custom |
+| **Library extension points** | One field or region changes | `ChartTooltipContent` `valueFormatter` (value text only) or `indicatorColor` (dot colour only); not the full-row `formatter` unless the whole row is custom |
 | **Fork `packages/ui`** | No hook exists; any feature could use it | New optional prop on a primitive; document under **Base components** in [stack-and-conventions.md](stack-and-conventions.md) |
 | **New app component** | Orchestration only | Wire data fetching + library pieces; no reimplemented primitive UI |
 
@@ -100,6 +100,8 @@ See [shadcn chart docs](https://ui.shadcn.com/docs/components/chart).
 | Series labels and colors | `chartConfig`; keys match `dataKey` / `name`; colors `var(--color-<key>)` |
 | Tooltip date header | `labelFormatter` |
 | Tooltip amounts | `valueFormatter` (Ploutizo fork on `ChartTooltipContent`) |
+| Prior period | The current series' colour, faded to 40% (`priorColour` in `dashboardChartColour.ts`), plus dashed for lines; legend and tooltip take it from `chartConfig` |
+| Per-point colours (`<Cell>`) | Tooltip dots via `indicatorColor` (Ploutizo fork on `ChartTooltipContent`): Recharts passes the tooltip each series' own colour, never its cells'. The legend then explains the treatment (solid vs faded neutral), not a hue |
 | Axis amounts | `tickFormatter` on `YAxis` / `XAxis` |
 | Missing series in tooltip | Recharts `filterNull` (default); `null` in data, not `0` |
 | Gaps in lines | Do not use `connectNulls` when absence is meaningful |
