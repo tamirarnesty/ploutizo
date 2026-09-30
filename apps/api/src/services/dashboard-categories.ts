@@ -10,26 +10,31 @@ const sumAmounts = (rows: CategoryNetSpendRow[]) =>
   rows.reduce((sum, row) => sum + row.amountCents, 0);
 
 /**
- * Top eight categories by positive net spend, then the rest as one `other` row, then `uncategorised` when it is
- * positive. Uncategorised never takes a top-eight slot. Shares are of all positive spend on screen, so they sum
- * to 1.
+ * Every category with non-zero net spend, so the rows sum to the period's net spend; refunds can make a row
+ * negative. The eight largest by absolute net are shown, highest net first; the rest become one `other` row, then
+ * `uncategorised` when it is non-zero. Uncategorised never takes a top-eight slot. Shares are of positive spend
+ * only (each positive category plus positive uncategorised), and rows that net to zero or less have none.
  */
 export const buildOverviewCategories = (
   current: NetSpendByCategory,
   /** The prior window's net spend; null on All, which has no prior. */
   prior: NetSpendByCategory | null
 ): DashboardOverviewCategoryRow[] => {
-  const positive = current.categories
-    .filter((row) => row.amountCents > 0)
+  const nonZero = current.categories
+    .filter((row) => row.amountCents !== 0)
+    .sort((a, b) => Math.abs(b.amountCents) - Math.abs(a.amountCents));
+  const top = nonZero
+    .slice(0, TOP_CATEGORY_COUNT)
     .sort((a, b) => b.amountCents - a.amountCents);
-  const uncategorisedCents = Math.max(current.uncategorisedCents, 0);
-  const totalPositive = sumAmounts(positive) + uncategorisedCents;
-  const top = positive.slice(0, TOP_CATEGORY_COUNT);
-  const remainder = positive.slice(TOP_CATEGORY_COUNT);
+  const remainder = nonZero.slice(TOP_CATEGORY_COUNT);
+  const { uncategorisedCents } = current;
+  const totalPositive =
+    sumAmounts(nonZero.filter((row) => row.amountCents > 0)) +
+    Math.max(uncategorisedCents, 0);
 
   const amounts = (amountCents: number, priorAmountCents: number | null) => ({
     amountCents,
-    shareOfPeriod: amountCents / totalPositive,
+    shareOfPeriod: amountCents > 0 ? amountCents / totalPositive : null,
     priorAmountCents,
   });
   const priorByCategoryId = new Map(
@@ -58,7 +63,7 @@ export const buildOverviewCategories = (
     });
   }
 
-  if (uncategorisedCents > 0) {
+  if (uncategorisedCents !== 0) {
     rows.push({
       kind: 'uncategorised',
       ...amounts(uncategorisedCents, prior && prior.uncategorisedCents),

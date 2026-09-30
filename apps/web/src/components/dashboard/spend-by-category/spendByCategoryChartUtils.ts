@@ -34,7 +34,8 @@ export type SpendByCategoryChartRow = {
   barFill: string;
   current: number;
   prior: number | null;
-  shareOfPeriod: number;
+  /** Null when the row nets to zero or less, as when refunds exceed spend. */
+  shareOfPeriod: number | null;
 };
 
 /**
@@ -81,10 +82,12 @@ export const toSpendByCategoryChartRows = (
     shareOfPeriod: row.shareOfPeriod,
   }));
 
-/** The tooltip subtitle: the row's share of spend and, when there is a prior window, its change. */
+/** The tooltip subtitle: the row's share of spend when it has one and, when there is a prior window, its change. */
 export const formatCategorySummary = (row: SpendByCategoryChartRow): string =>
   [
-    `${formatCategoryShare(row.shareOfPeriod)} of spend`,
+    row.shareOfPeriod === null
+      ? null
+      : `${formatCategoryShare(row.shareOfPeriod)} of spend`,
     formatCategoryChangeVsPrior(row.current, row.prior),
   ]
     .filter(Boolean)

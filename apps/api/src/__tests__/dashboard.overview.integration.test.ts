@@ -415,13 +415,13 @@ describe('GET /api/dashboard/overview integration', () => {
         amountCents: 300,
       });
       const shareTotal = body.categories.reduce(
-        (sum, row) => sum + row.shareOfPeriod,
+        (sum, row) => sum + (row.shareOfPeriod ?? 0),
         0
       );
       expect(shareTotal).toBeCloseTo(1, 5);
     });
 
-    it('excludes categories with zero or negative net spend before ranking', async () => {
+    it('drops categories that net to zero and shows those refunds exceed, with no share', async () => {
       const positiveId = await seedCategory(household().orgId, 'Groceries');
       const zeroId = await seedCategory(household().orgId, 'Flat');
       const negativeId = await seedCategory(household().orgId, 'Refunded');
@@ -469,6 +469,13 @@ describe('GET /api/dashboard/overview integration', () => {
           name: 'Groceries',
           amountCents: 5000,
           shareOfPeriod: 1,
+        }),
+        expect.objectContaining({
+          kind: 'category',
+          categoryId: negativeId,
+          name: 'Refunded',
+          amountCents: -1000,
+          shareOfPeriod: null,
         }),
       ]);
     });
@@ -657,7 +664,7 @@ describe('GET /api/dashboard/overview integration', () => {
       });
       expect(body.categories.at(0)?.shareOfPeriod).toBe(100 / 5000);
       const shareTotal = body.categories.reduce(
-        (sum, row) => sum + row.shareOfPeriod,
+        (sum, row) => sum + (row.shareOfPeriod ?? 0),
         0
       );
       expect(shareTotal).toBeCloseTo(1, 5);
@@ -686,7 +693,7 @@ describe('GET /api/dashboard/overview integration', () => {
       ]);
     });
 
-    it('is left out when it nets to zero or less', async () => {
+    it('is shown with no share when refunds exceed its spend', async () => {
       const categoryId = await seedCategory(household().orgId, 'Dining');
       await insertTxns(
         [
@@ -704,6 +711,29 @@ describe('GET /api/dashboard/overview integration', () => {
           categoryId,
           shareOfPeriod: 1,
         }),
+        {
+          kind: 'uncategorised',
+          amountCents: -500,
+          shareOfPeriod: null,
+          priorAmountCents: 0,
+        },
+      ]);
+    });
+
+    it('is left out when it nets to exactly zero', async () => {
+      const categoryId = await seedCategory(household().orgId, 'Dining');
+      await insertTxns(
+        [
+          { type: 'expense', amount: 300, date: '2026-03-03', categoryId },
+          { type: 'expense', amount: 1000, date: '2026-03-04' },
+          { type: 'refund', amount: 1000, date: '2026-03-05' },
+        ],
+        household()
+      );
+
+      const body = await fetchOverview(overviewQuery(MARCH));
+      expect(body.categories).toEqual([
+        expect.objectContaining({ kind: 'category', categoryId }),
       ]);
     });
 

@@ -74,11 +74,17 @@ const dashboardOverviewRangeSchema = z.object({
   grain: dashboardOverviewGrainSchema,
 });
 
-/** Net spend and share shared by every category row; `priorAmountCents` is null on All, which has no prior. */
+/**
+ * Net spend and share shared by every category row. `amountCents` may be negative when refunds exceed spend;
+ * `priorAmountCents` is null on All, which has no prior.
+ */
 const categoryRowAmounts = {
   amountCents: z.number().int(),
-  /** This row's share of total positive net spend in the period, uncategorised included (0–1). */
-  shareOfPeriod: z.number().min(0).max(1),
+  /**
+   * This row's share of the period's positive net spend: every category and uncategorised that nets above zero
+   * (0–1). Null when the row nets to zero or less, as when refunds exceed spend.
+   */
+  shareOfPeriod: z.number().min(0).max(1).nullable(),
   priorAmountCents: z.number().int().nullable(),
 };
 

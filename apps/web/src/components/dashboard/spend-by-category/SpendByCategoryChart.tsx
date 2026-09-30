@@ -1,5 +1,13 @@
 import { useId } from 'react';
-import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from 'recharts';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ReferenceLine,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import {
   ChartContainer,
   ChartLegend,
@@ -9,6 +17,7 @@ import {
 } from '@ploutizo/ui/components/chart';
 import type { ChartConfig } from '@ploutizo/ui/components/chart';
 import type { DashboardOverviewCategoryRow } from '@ploutizo/validators';
+import { amountDomain } from '@/components/dashboard/dashboardChartDomain';
 import { formatWholeCurrency } from '@/components/dashboard/dashboardFormat';
 import {
   formatCategorySummary,
@@ -32,6 +41,10 @@ export const SpendByCategoryChart = ({
   const hatchId = `uncategorised-hatch-${useId().replace(/:/g, '')}`;
   const data = toSpendByCategoryChartRows(categories, `url(#${hatchId})`);
   const labelByKey = new Map(data.map((row) => [row.key, row.label]));
+  // Rows net refunds against spend, so a bar can run left of zero; prior bars are only drawn with a prior window.
+  const xDomain = amountDomain(
+    data.flatMap((row) => [row.current, hasPriorSeries ? row.prior : null])
+  );
   // Same series colours as the spend trend. Tooltip dots and legend swatches read each <Bar>'s `fill`: Recharts
   // never passes <Cell> fills to the tooltip, so this period's dot is the series colour, not the category's.
   const chartConfig = {
@@ -72,6 +85,7 @@ export const SpendByCategoryChart = ({
           tickLine={false}
           axisLine={false}
           tickMargin={8}
+          domain={xDomain}
           tickFormatter={formatWholeCurrency}
         />
         {/* Keyed by id, not label, so a category named like a synthetic row still gets its own bar and tooltip. */}
@@ -84,6 +98,14 @@ export const SpendByCategoryChart = ({
           tickMargin={8}
           tickFormatter={(key: string) => labelByKey.get(key) ?? key}
         />
+        {xDomain[0] < 0 ? (
+          <ReferenceLine
+            x={0}
+            stroke="var(--border)"
+            strokeOpacity={0.85}
+            strokeWidth={1}
+          />
+        ) : null}
         <ChartTooltip
           cursor={false}
           content={

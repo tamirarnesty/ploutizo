@@ -107,4 +107,15 @@ describe('formatCategorySummary', () => {
       /^38% of spend$/
     );
   });
+
+  it('shows only the change vs prior for a row refunds exceed, which has no share', () => {
+    expect(
+      formatCategorySummary({
+        ...row,
+        current: -2000,
+        prior: 500,
+        shareOfPeriod: null,
+      })
+    ).toMatch(/^−.+ vs prior$/);
+  });
 });

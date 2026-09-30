@@ -15,11 +15,9 @@ import {
 } from '@ploutizo/ui/components/chart';
 import type { ChartConfig } from '@ploutizo/ui/components/chart';
 import type { DashboardOverviewGrain } from '@ploutizo/types';
+import { amountDomain } from '@/components/dashboard/dashboardChartDomain';
 import { formatWholeCurrency } from '@/components/dashboard/dashboardFormat';
-import {
-  formatTrendBucket,
-  spendTrendYDomain,
-} from '@/components/dashboard/spend-trend/spendTrendChartUtils';
+import { formatTrendBucket } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
 import type {
   SpendTrendSegmentedPoint,
   SpendTrendSeriesLabels,
@@ -42,7 +40,9 @@ export const SpendTrendChart = ({
     current: { label: seriesLabels.current, color: 'var(--chart-1)' },
     prior: { label: seriesLabels.prior, color: 'var(--chart-2)' },
   } satisfies ChartConfig;
-  const yDomain = spendTrendYDomain(data);
+  const yDomain = amountDomain(
+    data.flatMap((point) => [point.current, point.prior])
+  );
 
   return (
     <ChartContainer

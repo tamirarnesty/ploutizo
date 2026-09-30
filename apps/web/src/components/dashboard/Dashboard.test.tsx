@@ -764,6 +764,37 @@ describe('Dashboard', () => {
       ).toBeInTheDocument();
     });
 
+    it('charts categories that refunds exceed alongside spend', async () => {
+      giveChartsRoomToDraw();
+      overviewFixture = () => ({
+        ...overviewFor(new URL(OVERVIEW_PATH, 'http://localhost')),
+        categories: [
+          {
+            kind: 'category',
+            categoryId: 'cat_groceries',
+            name: 'Groceries',
+            colour: 'green-500',
+            amountCents: 4200,
+            shareOfPeriod: 1,
+            priorAmountCents: null,
+          },
+          {
+            kind: 'category',
+            categoryId: 'cat_travel',
+            name: 'Travel',
+            colour: 'blue-500',
+            amountCents: -1500,
+            shareOfPeriod: null,
+            priorAmountCents: null,
+          },
+        ],
+      });
+      await renderDashboard();
+      const card = cardFor('Spend by category');
+      expect(await within(card).findByText('Groceries')).toBeInTheDocument();
+      expect(within(card).getByText('Travel')).toBeInTheDocument();
+    });
+
     it('shows an empty state when the period has no category spend', async () => {
       await renderDashboard();
       expect(

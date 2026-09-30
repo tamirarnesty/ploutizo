@@ -20,7 +20,7 @@ export const SpendByCategoryCard = ({
     title="Spend by category"
     label="spend by category"
     query={query}
-    // The API returns only rows with positive spend.
+    // The API drops only rows that net to exactly zero.
     isEmpty={(data) => data.categories.length === 0}
     emptyIcon={<BarChart3 />}
     className={className}

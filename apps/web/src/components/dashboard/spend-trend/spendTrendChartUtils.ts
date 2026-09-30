@@ -147,20 +147,6 @@ export const toSpendTrendChartData = (
   });
 };
 
-export const spendTrendYDomain = (
-  data: SpendTrendChartPoint[]
-): [number, number] => {
-  const values = data.flatMap((point) =>
-    [point.current, point.prior ?? 0].filter((value) => Number.isFinite(value))
-  );
-  const min = Math.min(...values, 0);
-  const max = Math.max(...values, 0);
-  if (min === max) {
-    return [min - 1, max + 1];
-  }
-  return [min, max];
-};
-
 const bucketFormats = {
   day: { axis: 'MMM d', tooltip: 'MMM d, yyyy' },
   week: { axis: 'MMM d', tooltip: "'Week of' MMM d, yyyy" },
