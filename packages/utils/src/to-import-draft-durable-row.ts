@@ -24,7 +24,7 @@ export const importDraftDurableRowFieldsFrom = (
   reviewRefundOf: row.reviewRefundOf,
   reviewRefundOfBatchRowId: row.reviewRefundOfBatchRowId,
   reviewNotes: row.reviewNotes,
-  reviewTagIds: row.reviewTagIds,
+  reviewTagIds: [...new Set(row.reviewTagIds)],
   externalId: row.externalId,
   sourceDescription: row.sourceDescription,
   reviewMatchedTransactionId: row.reviewMatchedTransactionId,
