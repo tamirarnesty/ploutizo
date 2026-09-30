@@ -90,6 +90,36 @@ describe('evaluateImportRefundLinks', () => {
     expect(evaluations.get('refund-1')?.issues).toContain('missing_target');
   });
 
+  it('flags existing expense targets on another account', () => {
+    const evaluations = evaluateImportRefundLinks(
+      [
+        refundRow({
+          reviewRefundOf: 'tx-other-account',
+          reviewRefundOfBatchRowId: null,
+        }),
+      ],
+      {
+        targetAccountId: 'account-1',
+        existingExpenses: new Map([
+          [
+            'tx-other-account',
+            {
+              id: 'tx-other-account',
+              accountId: 'other-account',
+              amount: 5000,
+              categoryId: 'cat-1',
+              assigneeMemberIds: ['member-1'],
+              type: 'expense',
+              deleted: false,
+            },
+          ],
+        ]),
+      }
+    );
+
+    expect(evaluations.get('refund-1')?.issues).toContain('wrong_account');
+  });
+
   it('includes prior refunds from other imports in cumulative cap', () => {
     const evaluations = evaluateImportRefundLinks(
       [expenseRow, refundRow({ reviewAmount: 2000 })],

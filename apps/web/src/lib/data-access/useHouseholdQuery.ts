@@ -8,10 +8,7 @@ import {
 } from '@/lib/access/working-set-registry';
 import type { WorkingSetScope } from '@/lib/access/working-set-registry';
 import { createHouseholdBearerUnavailableError } from '@/lib/queryClient';
-import {
-  isHouseholdQueryBearerReady,
-  whileHouseholdBearerPending,
-} from './household-query-enabled';
+import { whileHouseholdBearerPending } from './household-query-enabled';
 import type {
   InfiniteData,
   MutateOptions,
@@ -81,7 +78,7 @@ export const useHouseholdQuery = <
   options: UseQueryOptions<TQueryFnData, TError, TData, TQueryKey>
 ): UseQueryResult<TData, TError> => {
   const { isReady, access } = useAccess();
-  const householdReady = isHouseholdQueryBearerReady(isReady, access);
+  const householdReady = isHouseholdBearerReady(isReady, access);
   const result = useQuery({
     ...options,
     enabled: householdReady && (options.enabled ?? true),
@@ -110,7 +107,7 @@ export const useHouseholdInfiniteQuery = <
   >
 ): UseInfiniteQueryResult<TData, TError> => {
   const { isReady, access } = useAccess();
-  const householdReady = isHouseholdQueryBearerReady(isReady, access);
+  const householdReady = isHouseholdBearerReady(isReady, access);
   const result = useInfiniteQuery({
     ...options,
     enabled: householdReady && (options.enabled ?? true),

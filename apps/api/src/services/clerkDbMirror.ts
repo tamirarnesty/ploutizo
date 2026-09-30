@@ -116,6 +116,17 @@ export const upsertLocalUser = async (
 };
 
 /**
+ * JS mirror of `onConflictDoUpdate` `setWhere` (`isNull(membershipCreatedAt)` OR
+ * `lt(membershipCreatedAt, incoming)`). Shared with unit tests that simulate upserts.
+ */
+export const shouldReplaceMirroredMembership = (
+  storedCreatedAt: Date | null | undefined,
+  incomingCreatedAt: Date
+): boolean =>
+  storedCreatedAt == null ||
+  storedCreatedAt.getTime() < incomingCreatedAt.getTime();
+
+/**
  * Insert local `org_members` row if absent — same semantics as
  * `organizationMembership.created` webhook. On conflict, replace the stored
  * Clerk membership identity only when the incoming membership is newer.

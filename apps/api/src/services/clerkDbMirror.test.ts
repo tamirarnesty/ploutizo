@@ -3,20 +3,14 @@ import {
   deleteOrgMemberIfPresent,
   findLocalUserIdByClerkId,
   insertOrgMemberIfAbsent,
+  shouldReplaceMirroredMembership,
 } from './clerkDbMirror';
-
-const shouldApplyMembershipUpdate = (
-  storedCreatedAt: Date,
-  incomingCreatedAt: Date | undefined
-) =>
-  incomingCreatedAt !== undefined &&
-  storedCreatedAt.getTime() < incomingCreatedAt.getTime();
 
 type MirrorMember = {
   orgId: string;
   userId: string;
   externalId: string;
-  membershipCreatedAt: Date;
+  membershipCreatedAt: Date | null;
   role: string;
 };
 
@@ -73,11 +67,12 @@ const chainInsert = () => {
           membershipRows.push({ ...row });
           return Promise.resolve();
         }
+        const incomingCreatedAt = config.set.membershipCreatedAt as Date;
         if (
           config.setWhere &&
-          !shouldApplyMembershipUpdate(
+          !shouldReplaceMirroredMembership(
             existing.membershipCreatedAt,
-            config.set.membershipCreatedAt as Date
+            incomingCreatedAt
           )
         ) {
           return Promise.resolve();
@@ -223,6 +218,24 @@ describe('insertOrgMemberIfAbsent', () => {
     await insertMembership({
       clerkMembershipId: 'orgmem_old',
       membershipCreatedAt: oldCreatedAt,
+    });
+
+    expect(membershipRows[0]?.externalId).toBe('orgmem_new');
+    expect(membershipRows[0]?.membershipCreatedAt).toEqual(newCreatedAt);
+  });
+
+  it('replaces membership identity when the stored created_at is unset', async () => {
+    membershipRows.push({
+      orgId: 'org_1',
+      userId: 'app_user_1',
+      externalId: 'orgmem_old',
+      membershipCreatedAt: null,
+      role: 'admin',
+    });
+
+    await insertMembership({
+      clerkMembershipId: 'orgmem_new',
+      membershipCreatedAt: newCreatedAt,
     });
 
     expect(membershipRows[0]?.externalId).toBe('orgmem_new');
