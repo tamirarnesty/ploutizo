@@ -66,6 +66,10 @@ export interface ImportExternalFacts {
   targetAccount: ImportRequirementAccount;
   counterpartAccounts: ReadonlyMap<string, ImportRequirementAccount>;
   validAssigneeMemberIds: ReadonlySet<string>;
+  /** Org categories (active and archived) among the ids the draft references. */
+  validCategoryIds: ReadonlySet<string>;
+  /** Org tags among the ids the draft references. */
+  validTagIds: ReadonlySet<string>;
   existingTransactions: readonly MatchTargetFact[];
   existingExpenses: ReadonlyMap<string, ExistingRefundTargetExpense>;
   priorRefundsByTarget?: ReadonlyMap<string, number>;
@@ -92,6 +96,8 @@ interface EvaluateImportSetRequirementsInput {
   targetAccount: ImportRequirementAccount;
   counterpartAccounts: ReadonlyMap<string, ImportRequirementAccount>;
   validAssigneeMemberIds: ReadonlySet<string>;
+  validCategoryIds: ReadonlySet<string>;
+  validTagIds: ReadonlySet<string>;
   refundEvaluations: ReadonlyMap<string, ImportRefundLinkEvaluation>;
   matchEvaluations: ReadonlyMap<string, ImportMatchEvaluation>;
   activeExternalIdOwners?: ReadonlyMap<string, string>;
@@ -139,6 +145,21 @@ const evaluateCreateRequirements = (
     if (!values.categoryId) {
       failures.push(failure(row.id, 'transaction.category.required'));
     }
+  }
+  if (values.categoryId && !input.validCategoryIds.has(values.categoryId)) {
+    failures.push(
+      failure(row.id, 'transaction.category.unknown', {
+        categoryId: values.categoryId,
+      })
+    );
+  }
+  const unknownTagIds = values.tagIds.filter(
+    (tagId) => !input.validTagIds.has(tagId)
+  );
+  if (unknownTagIds.length > 0) {
+    failures.push(
+      failure(row.id, 'transaction.tag.unknown', { tagIds: unknownTagIds })
+    );
   }
 
   const liveAssignees = getLiveAssigneeMemberIds(
@@ -278,6 +299,8 @@ export const verifyImportSet = (
     targetAccount: facts.targetAccount,
     counterpartAccounts: facts.counterpartAccounts,
     validAssigneeMemberIds: facts.validAssigneeMemberIds,
+    validCategoryIds: facts.validCategoryIds,
+    validTagIds: facts.validTagIds,
     refundEvaluations,
     matchEvaluations,
     activeExternalIdOwners: facts.activeExternalIdOwners,

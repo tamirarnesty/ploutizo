@@ -1,23 +1,15 @@
 import { lrmSplit } from '@ploutizo/utils/assignee-split';
 import { createTransactionSchema } from '@ploutizo/validators';
+import type { ImportRowProjection } from '@ploutizo/utils/import-set-verification';
 import type {
   ImportRowSnapshot,
   ImportTransactionType,
   ReviewedImportValues,
 } from '@ploutizo/types';
 import type { CreateTransactionInput } from '@ploutizo/validators';
+import type { ImportTransactionLinkInsert } from '@/lib/queries/import-transaction-links';
+import type { TransactionCreate } from '@/services/transaction-create';
 import { DomainError } from '@/lib/errors';
-
-type CreatedImportOutcome = {
-  batchRowId: string;
-  snapshot: ImportRowSnapshot;
-};
-
-export const IMPORT_TYPE_CREATE_ORDER: Record<ImportTransactionType, number> = {
-  expense: 0,
-  settlement: 1,
-  refund: 2,
-};
 
 const requireImportType = (
   values: ReviewedImportValues
@@ -91,15 +83,68 @@ export const toImportCreateTransactionInput = (input: {
   return parsed.data;
 };
 
-export const sortCreatedImportOutcomes = (outcomes: CreatedImportOutcome[]) =>
-  [...outcomes].sort((left, right) => {
-    const order =
-      IMPORT_TYPE_CREATE_ORDER[
-        requireImportType(left.snapshot.reviewedValues)
-      ] -
-      IMPORT_TYPE_CREATE_ORDER[
-        requireImportType(right.snapshot.reviewedValues)
-      ];
-    if (order !== 0) return order;
-    return left.batchRowId.localeCompare(right.batchRowId);
-  });
+export type PreparedImportCreates = {
+  readonly items: readonly TransactionCreate[];
+  readonly links: readonly ImportTransactionLinkInsert[];
+};
+
+/**
+ * Projection to transaction creates plus created and matched links, built
+ * from one row id to transaction id map. Verification already guaranteed
+ * every same-batch refund target is finalizable.
+ */
+export const prepareImportTransactionCreates = (input: {
+  orgId: string;
+  draft: { id: string; accountId: string };
+  projection: readonly ImportRowProjection[];
+}): PreparedImportCreates => {
+  const { orgId, draft, projection } = input;
+  const transactionIdByRowId = new Map<string, string>();
+  for (const row of projection) {
+    if (row.outcome === 'matched' && row.transactionId) {
+      transactionIdByRowId.set(row.batchRowId, row.transactionId);
+    } else if (row.outcome === 'created') {
+      transactionIdByRowId.set(row.batchRowId, crypto.randomUUID());
+    }
+  }
+
+  const resolveRefundOf = (values: ReviewedImportValues): string | null => {
+    if (values.refundOf) return values.refundOf;
+    if (!values.refundOfBatchRowId) return null;
+    const target = transactionIdByRowId.get(values.refundOfBatchRowId);
+    if (!target) {
+      throw new DomainError(
+        500,
+        'Created import refund is linked to a row that is not finalized.'
+      );
+    }
+    return target;
+  };
+
+  const items: TransactionCreate[] = [];
+  const links: ImportTransactionLinkInsert[] = [];
+  for (const row of projection) {
+    const transactionId = transactionIdByRowId.get(row.batchRowId);
+    if (!transactionId) continue;
+    if (row.outcome === 'created') {
+      items.push({
+        id: transactionId,
+        input: toImportCreateTransactionInput({
+          accountId: draft.accountId,
+          batchId: draft.id,
+          snapshot: row.snapshot,
+          refundOf: resolveRefundOf(row.snapshot.reviewedValues),
+        }),
+      });
+    }
+    links.push({
+      orgId,
+      batchId: draft.id,
+      batchRowId: row.batchRowId,
+      transactionId,
+      outcome: row.outcome === 'created' ? 'created' : 'matched',
+    });
+  }
+
+  return { items, links };
+};

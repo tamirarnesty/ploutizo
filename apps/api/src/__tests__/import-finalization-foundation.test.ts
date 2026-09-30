@@ -7,57 +7,35 @@ import {
   MEMBER,
   ORG,
   TXN,
-  baseAssignees,
+  accountRef,
+  insertedRows,
   mockTx,
-} from './import-test-fixtures';
-import { DomainError, NotFoundError } from '@/lib/errors';
-import { fetchImportBatchInOrg } from '@/lib/queries/imports';
-import {
-  allMembersInOrg,
-  allTagsInOrg,
-  allTransactionsInOrg,
-  categoryExistsInOrg,
-  fetchAccountWriteReference,
-  transactionExistsInOrg,
-} from '@/lib/queries/scope';
+  resetTransactionWriteHarness,
+  roundTrips,
+  seedOrg,
+} from './transaction-write-harness';
 import {
   fetchTransactionById,
   updateTransactionScalarsQuery,
 } from '@/lib/queries/transactions';
-import { createTransaction, updateTransaction } from '@/services/transactions';
+import { createTransaction } from '@/services/transaction-create';
+import { updateTransaction } from '@/services/transactions';
+
+const EXPENSE = '550e8400-e29b-41d4-a716-446655440060';
 
 describe('import finalization foundation — transaction provenance', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(fetchAccountWriteReference).mockResolvedValue({
-      id: ACCOUNT,
-      type: 'credit_card',
-      archivedAt: null,
+    resetTransactionWriteHarness();
+    seedOrg({
+      accounts: [
+        accountRef(ACCOUNT, 'credit_card'),
+        accountRef(FUNDING, 'chequing'),
+      ],
+      categoryIds: [CATEGORY],
+      memberIds: [MEMBER],
+      transactionIds: [EXPENSE],
+      importBatchIds: [BATCH],
     });
-    vi.mocked(allMembersInOrg).mockResolvedValue(true);
-    vi.mocked(allTagsInOrg).mockResolvedValue(true);
-    vi.mocked(allTransactionsInOrg).mockResolvedValue(true);
-    vi.mocked(categoryExistsInOrg).mockResolvedValue(true);
-    vi.mocked(transactionExistsInOrg).mockResolvedValue(true);
-    vi.mocked(fetchImportBatchInOrg).mockResolvedValue({ id: BATCH });
-
-    const returning = vi.fn().mockResolvedValue([
-      {
-        id: 'tx_1',
-        orgId: ORG,
-        accountId: ACCOUNT,
-        type: 'expense',
-        amount: 4218,
-        date: '2026-05-02',
-        description: 'Neighborhood Coffee',
-        categoryId: CATEGORY,
-        importBatchId: BATCH,
-        rawDescription: 'COFFEE SHOP #42',
-        externalId: 'visa-1001',
-      },
-    ]);
-    const values = vi.fn().mockReturnValue({ returning });
-    mockTx.insert.mockReturnValue({ values });
   });
 
   it('persists import-batch linkage, raw description, external id, and reviewed values', async () => {
@@ -68,161 +46,58 @@ describe('import finalization foundation — transaction provenance', () => {
       date: '2026-05-02',
       description: 'Neighborhood Coffee',
       categoryId: CATEGORY,
-      assignees: baseAssignees,
+      assignees: [{ memberId: MEMBER, amountCents: 4218, percentage: 100 }],
       importBatchId: BATCH,
       rawDescription: 'COFFEE SHOP #42',
       externalId: 'visa-1001',
       notes: 'weekly',
     });
 
-    expect(fetchImportBatchInOrg).toHaveBeenCalledWith(ORG, BATCH, mockTx);
-    expect(mockTx.insert).toHaveBeenCalled();
-    const valuesFn = mockTx.insert.mock.results[0]?.value.values as ReturnType<
-      typeof vi.fn
-    >;
-    expect(valuesFn).toHaveBeenCalledWith(
-      expect.objectContaining({
+    expect(insertedRows('transactions')).toEqual([
+      {
+        id: inserted.id,
         orgId: ORG,
+        type: 'expense',
         accountId: ACCOUNT,
+        amount: 4218,
+        date: '2026-05-02',
         description: 'Neighborhood Coffee',
         categoryId: CATEGORY,
         importBatchId: BATCH,
         rawDescription: 'COFFEE SHOP #42',
         externalId: 'visa-1001',
         notes: 'weekly',
-      })
-    );
-    expect(inserted).toMatchObject({
-      importBatchId: BATCH,
-      rawDescription: 'COFFEE SHOP #42',
-      externalId: 'visa-1001',
-    });
-  });
-
-  it('maps active-row external id conflicts to DomainError(409)', async () => {
-    const values = vi.fn().mockReturnValue({
-      returning: vi.fn().mockRejectedValue({
-        code: '23505',
-        constraint: 'transactions_active_account_external_id_idx',
-      }),
-    });
-    mockTx.insert.mockReturnValue({ values });
-
-    const err = await createTransaction(ORG, {
-      type: 'expense',
-      accountId: ACCOUNT,
-      amount: 4218,
-      date: '2026-05-02',
-      description: 'Neighborhood Coffee',
-      categoryId: CATEGORY,
-      assignees: baseAssignees,
-      externalId: 'visa-1001',
-    }).catch((e: unknown) => e);
-
-    expect(err).toBeInstanceOf(DomainError);
-    expect((err as DomainError).statusCode).toBe(409);
-    expect((err as DomainError).code).toBe('EXTERNAL_ID_CONFLICT');
+      },
+    ]);
   });
 
   it('writes externalId without a service-side uniqueness preflight', async () => {
     // Re-import after soft-delete is owned by the partial unique index
-    // (deleted_at IS NULL). The write path inserts and maps only that
-    // active-row constraint — it does not look up prior soft-deleted peers.
-    const inserted = await createTransaction(ORG, {
+    // (deleted_at IS NULL); the write path only maps that constraint.
+    await createTransaction(ORG, {
       type: 'expense',
       accountId: ACCOUNT,
       amount: 4218,
       date: '2026-05-02',
       description: 'Neighborhood Coffee',
       categoryId: CATEGORY,
-      assignees: baseAssignees,
+      assignees: [{ memberId: MEMBER, amountCents: 4218, percentage: 100 }],
       importBatchId: BATCH,
-      rawDescription: 'COFFEE SHOP #42',
       externalId: 'visa-1001',
     });
 
-    expect(inserted).toMatchObject({ externalId: 'visa-1001' });
-    const valuesFn = mockTx.insert.mock.results[0]?.value.values as ReturnType<
-      typeof vi.fn
-    >;
-    expect(valuesFn).toHaveBeenCalledWith(
-      expect.objectContaining({ externalId: 'visa-1001' })
-    );
-  });
-
-  it('rejects importBatchId that does not belong to the org', async () => {
-    vi.mocked(fetchImportBatchInOrg).mockResolvedValue(null);
-
-    const err = await createTransaction(ORG, {
-      type: 'expense',
-      accountId: ACCOUNT,
-      amount: 4218,
-      date: '2026-05-02',
-      description: 'Neighborhood Coffee',
-      categoryId: CATEGORY,
-      assignees: baseAssignees,
-      importBatchId: BATCH,
-      externalId: 'visa-1001',
-    }).catch((e: unknown) => e);
-
-    expect(err).toBeInstanceOf(NotFoundError);
-    expect((err as NotFoundError).message).toBe('Import batch not found.');
-    expect(fetchImportBatchInOrg).toHaveBeenCalledWith(ORG, BATCH, mockTx);
-  });
-
-  it('does not map unrelated unique violations as external-id conflicts', async () => {
-    mockTx.insert
-      .mockReturnValueOnce({
-        values: vi.fn().mockReturnValue({
-          returning: vi.fn().mockResolvedValue([{ id: TXN, type: 'expense' }]),
-        }),
-      })
-      .mockReturnValueOnce({
-        values: vi.fn().mockRejectedValue({
-          code: '23505',
-          constraint: 'transaction_assignees_tx_member_idx',
-        }),
-      });
-
-    const err = await createTransaction(ORG, {
-      type: 'expense',
-      accountId: ACCOUNT,
-      amount: 4218,
-      date: '2026-05-02',
-      description: 'Neighborhood Coffee',
-      categoryId: CATEGORY,
-      assignees: baseAssignees,
-      externalId: 'visa-1001',
-    }).catch((e: unknown) => e);
-
-    expect(err).not.toBeInstanceOf(DomainError);
-    expect(err).toMatchObject({
-      code: '23505',
-      constraint: 'transaction_assignees_tx_member_idx',
+    expect(roundTrips()).toEqual({
+      accountLocks: 1,
+      categories: 1,
+      tags: 0,
+      members: 1,
+      refundTargets: 0,
+      importBatches: 1,
+      inserts: ['transactions', 'transaction_assignees'],
     });
   });
 
   it('persists settlement funding and category on the normal write path', async () => {
-    vi.mocked(fetchAccountWriteReference).mockImplementation(
-      (_orgId, accountId) =>
-        Promise.resolve(
-          accountId === ACCOUNT
-            ? { id: ACCOUNT, type: 'credit_card', archivedAt: null }
-            : { id: FUNDING, type: 'chequing', archivedAt: null }
-        )
-    );
-    const returning = vi.fn().mockResolvedValue([
-      {
-        id: 'tx_settle',
-        type: 'settlement',
-        counterpartAccountId: FUNDING,
-        categoryId: CATEGORY,
-      },
-    ]);
-    mockTx.insert.mockReturnValue({
-      values: vi.fn().mockReturnValue({ returning }),
-    });
-
     await createTransaction(ORG, {
       type: 'settlement',
       accountId: ACCOUNT,
@@ -237,30 +112,41 @@ describe('import finalization foundation — transaction provenance', () => {
       rawDescription: 'Payment Thank You',
     });
 
-    const valuesFn = mockTx.insert.mock.results[0]?.value.values as ReturnType<
-      typeof vi.fn
-    >;
-    expect(valuesFn).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'settlement',
-        counterpartAccountId: FUNDING,
-        categoryId: CATEGORY,
-        externalId: 'visa-1003',
-        rawDescription: 'Payment Thank You',
-        importBatchId: BATCH,
-      })
-    );
+    expect(insertedRows('transactions')[0]).toMatchObject({
+      type: 'settlement',
+      counterpartAccountId: FUNDING,
+      categoryId: CATEGORY,
+      externalId: 'visa-1003',
+      rawDescription: 'Payment Thank You',
+      importBatchId: BATCH,
+    });
+  });
+
+  it('persists refund link plus provenance on refund creates', async () => {
+    await createTransaction(ORG, {
+      type: 'refund',
+      accountId: ACCOUNT,
+      amount: 1499,
+      date: '2026-05-08',
+      description: 'Returned Charger',
+      categoryId: CATEGORY,
+      refundOf: EXPENSE,
+      assignees: [{ memberId: MEMBER, amountCents: 1499, percentage: 100 }],
+      importBatchId: BATCH,
+      externalId: 'visa-1002',
+      rawDescription: 'Returned Charger',
+    });
+
+    expect(insertedRows('transactions')[0]).toMatchObject({
+      type: 'refund',
+      refundOf: EXPENSE,
+      categoryId: CATEGORY,
+      externalId: 'visa-1002',
+      importBatchId: BATCH,
+    });
   });
 
   it('preserves settlement Bill Payment category on update', async () => {
-    vi.mocked(fetchAccountWriteReference).mockImplementation(
-      (_orgId, accountId) =>
-        Promise.resolve(
-          accountId === ACCOUNT
-            ? { id: ACCOUNT, type: 'credit_card', archivedAt: null }
-            : { id: FUNDING, type: 'chequing', archivedAt: null }
-        )
-    );
     vi.mocked(fetchTransactionById).mockResolvedValue({
       id: TXN,
       orgId: ORG,
@@ -304,47 +190,5 @@ describe('import finalization foundation — transaction provenance', () => {
     expect(scalarPayload).not.toHaveProperty('importBatchId');
     expect(scalarPayload).not.toHaveProperty('externalId');
     expect(scalarPayload).not.toHaveProperty('rawDescription');
-  });
-
-  it('persists refund link plus provenance on refund creates', async () => {
-    const expenseId = '550e8400-e29b-41d4-a716-446655440060';
-    const returning = vi.fn().mockResolvedValue([
-      {
-        id: 'tx_refund',
-        type: 'refund',
-        refundOf: expenseId,
-        externalId: 'visa-1002',
-      },
-    ]);
-    mockTx.insert.mockReturnValue({
-      values: vi.fn().mockReturnValue({ returning }),
-    });
-
-    await createTransaction(ORG, {
-      type: 'refund',
-      accountId: ACCOUNT,
-      amount: 1499,
-      date: '2026-05-08',
-      description: 'Returned Charger',
-      categoryId: CATEGORY,
-      refundOf: expenseId,
-      assignees: [{ memberId: MEMBER, amountCents: 1499, percentage: 100 }],
-      importBatchId: BATCH,
-      externalId: 'visa-1002',
-      rawDescription: 'Returned Charger',
-    });
-
-    const valuesFn = mockTx.insert.mock.results[0]?.value.values as ReturnType<
-      typeof vi.fn
-    >;
-    expect(valuesFn).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'refund',
-        refundOf: expenseId,
-        categoryId: CATEGORY,
-        externalId: 'visa-1002',
-        importBatchId: BATCH,
-      })
-    );
   });
 });

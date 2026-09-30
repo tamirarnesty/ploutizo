@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { DomainError, NotFoundError } from '../lib/errors';
 import { transactionsRouter } from '../routes/transactions';
+import { createTransaction } from '../services/transaction-create';
 import {
-  createTransaction,
   deleteTransaction,
   getTransaction,
   listTransactions,
@@ -118,7 +118,7 @@ vi.mock('@ploutizo/db/schema', () => ({
 }));
 
 // Mock the service layer — routes are thin HTTP handlers; all business logic tested via services
-vi.mock('../services/transactions', () => ({
+vi.mock('../services/transaction-create', () => ({
   createTransaction: vi.fn().mockResolvedValue({
     id: 'txn_1',
     orgId: 'org_test123',
@@ -141,6 +141,9 @@ vi.mock('../services/transactions', () => ({
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   }),
+}));
+
+vi.mock('../services/transactions', () => ({
   listTransactions: vi.fn().mockResolvedValue({
     data: [],
     total: 0,

@@ -1,24 +1,10 @@
 import { db } from '@ploutizo/db';
-import {
-  transactionAssignees,
-  transactionTags,
-  transactions,
-} from '@ploutizo/db/schema';
-import {
-  validateArchivedAccountAvailability,
-  validateTransactionAccountPolicy,
-} from '@ploutizo/utils/transaction-policy';
 import type { Transaction } from '@ploutizo/db';
-import type { TransactionType } from '@ploutizo/types';
-import type {
-  CreateTransactionInput,
-  UpdateTransactionServiceInput,
-} from '@ploutizo/validators';
-import type { AccountWriteReference } from '@/lib/queries/scope';
+import type { UpdateTransactionServiceInput } from '@ploutizo/validators';
 import type { ListQueryParams } from '@/lib/queries/transactions';
+import type { TransactionWriteAccounts } from '@/services/transaction-write-planner';
 import { assertOrgWriteReferences } from '@/lib/assertOrgWriteReferences';
-import { DomainError, NotFoundError } from '@/lib/errors';
-import { isExternalIdUniqueViolation } from '@/lib/isUniqueViolation';
+import { NotFoundError } from '@/lib/errors';
 import {
   fetchAccountWriteReference,
   transactionExistsInOrg,
@@ -34,19 +20,15 @@ import {
   softDeleteTransactionQuery,
   updateTransactionScalarsQuery,
 } from '@/lib/queries/transactions';
-import { fetchImportBatchInOrg } from '@/lib/queries/imports';
 import {
+  assertArchivedAccountAvailability,
+  assertTransactionAccountPolicy,
   assertTransactionWriteOrgRefs,
-  planCreateTransactionWrite,
   planUpdateTransactionWrite,
+  runTransactionWrite,
 } from '@/services/transaction-write-planner';
 
 export type { ListQueryParams };
-
-type LoadedTransactionWriteReferences = {
-  account: AccountWriteReference;
-  counterpartAccount: AccountWriteReference | null;
-};
 
 const TRANSACTION_WRITE_ACCOUNT_REF_OPTIONS = {
   requireActive: false,
@@ -64,7 +46,7 @@ const loadTransactionWriteReferences = async (
     assignees?: { memberId: string }[];
   },
   tx: Transaction
-): Promise<LoadedTransactionWriteReferences> => {
+): Promise<TransactionWriteAccounts> => {
   const counterpartId = data.counterpartAccountId ?? null;
   // Lock in stable id order so concurrent opposite-direction writes cannot deadlock.
   const idsToLock =
@@ -72,7 +54,7 @@ const loadTransactionWriteReferences = async (
       ? [data.accountId, counterpartId].sort()
       : [data.accountId];
 
-  const refs = new Map<string, AccountWriteReference>();
+  const refs = new Map<string, TransactionWriteAccounts['account']>();
   for (const accountId of idsToLock) {
     const loaded = await fetchAccountWriteReference(
       orgId,
@@ -119,138 +101,6 @@ const loadTransactionWriteReferences = async (
 
   return { account, counterpartAccount };
 };
-
-const assertTransactionAccountPolicy = (
-  type: TransactionType,
-  refs: LoadedTransactionWriteReferences
-) => {
-  const result = validateTransactionAccountPolicy({
-    type,
-    account: refs.account,
-    counterpartAccount: refs.counterpartAccount,
-  });
-
-  if (!result.valid) {
-    throw new DomainError(
-      400,
-      result.violations.map((violation) => violation.message).join(' '),
-      'TRANSACTION_ACCOUNT_POLICY_VIOLATION'
-    );
-  }
-};
-
-const assertArchivedAccountAvailability = (
-  date: string,
-  refs: LoadedTransactionWriteReferences
-) => {
-  const result = validateArchivedAccountAvailability({
-    date,
-    account: refs.account,
-    counterpartAccount: refs.counterpartAccount,
-  });
-
-  if (!result.valid) {
-    throw new DomainError(
-      400,
-      result.violations.map((violation) => violation.message).join(' '),
-      'ARCHIVED_ACCOUNT_DATE'
-    );
-  }
-};
-
-const assertImportBatchProvenance = async (
-  orgId: string,
-  importBatchId: string | undefined,
-  tx: Transaction
-) => {
-  if (!importBatchId) return;
-  const batch = await fetchImportBatchInOrg(orgId, importBatchId, tx);
-  if (!batch) {
-    throw new NotFoundError('Import batch not found.');
-  }
-};
-
-const mapExternalIdConflict = (error: unknown): never => {
-  if (isExternalIdUniqueViolation(error)) {
-    throw new DomainError(
-      409,
-      'An active transaction with this external id already exists on this account.',
-      'EXTERNAL_ID_CONFLICT'
-    );
-  }
-  throw error;
-};
-
-const runTransactionWrite = async <T>(write: () => Promise<T>): Promise<T> => {
-  try {
-    return await write();
-  } catch (error) {
-    return mapExternalIdConflict(error);
-  }
-};
-
-export const createTransactionInTx = async (
-  tx: Transaction,
-  orgId: string,
-  data: CreateTransactionInput
-) => {
-  const { transactionData, tagIds, normalizedAssignees } =
-    planCreateTransactionWrite(data);
-  await assertTransactionWriteOrgRefs(orgId, data, tx);
-  await assertImportBatchProvenance(orgId, transactionData.importBatchId, tx);
-
-  const writeReferences = await loadTransactionWriteReferences(
-    orgId,
-    {
-      accountId: transactionData.accountId,
-      counterpartAccountId:
-        'counterpartAccountId' in transactionData
-          ? transactionData.counterpartAccountId
-          : undefined,
-      refundOf:
-        'refundOf' in transactionData ? transactionData.refundOf : undefined,
-      categoryId:
-        'categoryId' in transactionData
-          ? transactionData.categoryId
-          : undefined,
-      tagIds,
-      assignees: normalizedAssignees,
-    },
-    tx
-  );
-  assertTransactionAccountPolicy(transactionData.type, writeReferences);
-  assertArchivedAccountAvailability(transactionData.date, writeReferences);
-
-  const inserted = await runTransactionWrite(async () => {
-    const [row] = await tx
-      .insert(transactions)
-      .values({ orgId, ...transactionData })
-      .returning();
-    return row;
-  });
-
-  await tx.insert(transactionAssignees).values(
-    normalizedAssignees.map((a) => ({
-      transactionId: inserted.id,
-      memberId: a.memberId,
-      amountCents: a.amountCents,
-      percentage: a.percentage.toString(),
-    }))
-  );
-
-  if (tagIds && tagIds.length > 0) {
-    await tx
-      .insert(transactionTags)
-      .values(tagIds.map((tagId) => ({ transactionId: inserted.id, tagId })));
-  }
-
-  return inserted;
-};
-
-export const createTransaction = async (
-  orgId: string,
-  data: CreateTransactionInput
-) => db.transaction(async (tx) => createTransactionInTx(tx, orgId, data));
 
 export const listTransactions = async (params: ListQueryParams) => {
   const [baseRows, total] = await Promise.all([

@@ -10,7 +10,11 @@ import type { ImportDraftRowRecord } from '@/lib/queries/imports';
 import type { AccountWriteReference } from '@/lib/queries/scope';
 import { DomainError } from '@/lib/errors';
 import { listOrgMembers } from '@/lib/queries/households';
-import { fetchAccountWriteReference } from '@/lib/queries/scope';
+import {
+  fetchAccountWriteReference,
+  listCategoryIdsInOrg,
+  listTagIdsInOrg,
+} from '@/lib/queries/scope';
 import {
   listActiveExternalIdOwners,
   listImportMatchTargets,
@@ -93,6 +97,10 @@ export const loadImportSetFacts = async (
   const counterpartIds = draftRows.flatMap((row) =>
     row.reviewCounterpartAccountId ? [row.reviewCounterpartAccountId] : []
   );
+  const categoryIds = draftRows.flatMap((row) =>
+    row.reviewCategoryId ? [row.reviewCategoryId] : []
+  );
+  const tagIds = draftRows.flatMap((row) => row.reviewTagIds);
 
   const [
     existingExpenses,
@@ -102,6 +110,8 @@ export const loadImportSetFacts = async (
     targetAccount,
     counterpartAccounts,
     activeExternalIdOwners,
+    validCategoryIds,
+    validTagIds,
   ] = await Promise.all([
     listRefundTargetExpensesByIds(orgId, refundOfIds, tx),
     sumPriorRefundTotalsByTransactionTarget(orgId, refundOfIds, tx),
@@ -120,6 +130,8 @@ export const loadImportSetFacts = async (
       selectedExternalIds(durableRows),
       tx
     ),
+    listCategoryIdsInOrg(orgId, categoryIds, tx),
+    listTagIdsInOrg(orgId, tagIds, tx),
   ]);
 
   if (!targetAccount) {
@@ -132,6 +144,8 @@ export const loadImportSetFacts = async (
     targetAccount,
     counterpartAccounts,
     validAssigneeMemberIds: new Set(members.map((member) => member.id)),
+    validCategoryIds,
+    validTagIds,
     existingTransactions: matchTargets,
     existingExpenses,
     priorRefundsByTarget,

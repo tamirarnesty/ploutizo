@@ -12,7 +12,7 @@ import {
   createSettlement,
   getSettlementBalances,
 } from '@/services/settlements';
-import { createTransaction } from '@/services/transactions';
+import { createTransaction } from '@/services/transaction-create';
 
 vi.mock('@/lib/queries/settlements', () => ({
   fetchSettlementBalances: vi.fn(),
@@ -25,7 +25,7 @@ vi.mock('@/lib/queries/accounts', () => ({
   listAccountMemberDetails: vi.fn(),
 }));
 
-vi.mock('@/services/transactions', () => ({
+vi.mock('@/services/transaction-create', () => ({
   createTransaction: vi.fn(),
 }));
 
