@@ -17,6 +17,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 
+import type { ColourToken } from '@ploutizo/types';
 import { merchantMatchTypeEnum } from './enums';
 import { orgMembers, orgs } from './auth';
 
@@ -40,8 +41,8 @@ export const categories = pgTable(
     name: text('name').notNull(),
     /** Lucide icon name (e.g. "ShoppingCart") or emoji character. */
     icon: text('icon'),
-    /** Tailwind palette token id (e.g. "green-500") for category swatches and badges. */
-    colour: text('colour'),
+    /** Palette token id (e.g. "green-500") for category swatches, badges and chart bars. */
+    colour: text('colour').notNull().$type<ColourToken>(),
     sortOrder: integer('sort_order').notNull().default(0),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true })

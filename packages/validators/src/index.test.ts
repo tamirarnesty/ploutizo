@@ -493,13 +493,27 @@ describe('mergeAccountStatementDueDay', () => {
 });
 
 describe('CategoryFormSchema', () => {
-  it('accepts name-only payload', () => {
-    const result = CategoryFormSchema.safeParse({ name: 'Food' });
+  it('accepts a name with a colour', () => {
+    const result = CategoryFormSchema.safeParse({
+      name: 'Food',
+      colour: 'green-500',
+    });
     expect(result.success).toBe(true);
   });
 
+  it('requires a colour', () => {
+    const result = CategoryFormSchema.safeParse({ name: 'Food' });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.map((i) => i.path)).toEqual([['colour']]);
+    }
+  });
+
   it('rejects empty name with correct message', () => {
-    const result = CategoryFormSchema.safeParse({ name: '' });
+    const result = CategoryFormSchema.safeParse({
+      name: '',
+      colour: 'green-500',
+    });
     expect(result.success).toBe(false);
     if (!result.success) {
       const nameErrors = result.error.issues.filter((i) =>
@@ -509,7 +523,7 @@ describe('CategoryFormSchema', () => {
     }
   });
 
-  it('accepts optional icon and colour fields', () => {
+  it('accepts an optional icon', () => {
     const result = CategoryFormSchema.safeParse({
       name: 'Food',
       icon: 'Utensils',

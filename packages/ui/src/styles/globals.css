@@ -12,7 +12,7 @@
  *   !flex            ✗  (use flex! in v4 — postfix important modifier)
  */
 
-@import 'tailwindcss';
+@import 'tailwindcss' theme(static);
 @import '@clerk/ui/themes/shadcn.css';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
@@ -23,7 +23,11 @@
 @source '../../../components/**/*.{ts,tsx}';
 @source '../**/*.{ts,tsx}';
 
-/* Category preset palette (D-18): literals live in apps/web/src/components/colour/colour-token-classes.ts */
+/*
+ * Category palette (D-18): `theme(static)` emits every theme variable, not only those used by
+ * utility classes, so category colours render as `var(--color-<hue>-<shade>)` inline styles
+ * (apps/web/src/components/colour/colour-token-style.ts). Palette: @ploutizo/types colours.ts.
+ */
 
 @theme inline {
   --color-background: var(--background);

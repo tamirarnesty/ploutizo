@@ -57,17 +57,13 @@ const getRangedOverview = async (
 ): Promise<GetDashboardOverviewResponse> => {
   const grain = dashboardRangeGrain(range);
   const prior = dashboardPriorRange(range, shortcut);
-  const [amounts, priorAmounts, categoryRows, priorCategoryRows] =
+  const [amounts, priorAmounts, categorySpend, priorCategorySpend] =
     await Promise.all([
       fetchAmountsByBucket(orgId, grain, range),
       fetchAmountsByBucket(orgId, grain, prior),
       fetchNetSpendByCategory(orgId, range),
       fetchNetSpendByCategory(orgId, prior),
     ]);
-
-  const priorByCategoryId = new Map(
-    priorCategoryRows.map((row) => [row.categoryId, row.amountCents])
-  );
 
   return {
     meta: {
@@ -78,14 +74,14 @@ const getRangedOverview = async (
       range: prior,
       amounts: priorAmounts,
     }),
-    categories: buildOverviewCategories(categoryRows, priorByCategoryId),
+    categories: buildOverviewCategories(categorySpend, priorCategorySpend),
   };
 };
 
 const getAllTimeOverview = async (
   orgId: string
 ): Promise<GetDashboardOverviewResponse> => {
-  const [{ first, last }, amounts, categoryRows] = await Promise.all([
+  const [{ first, last }, amounts, categorySpend] = await Promise.all([
     fetchSpendDateBounds(orgId),
     fetchAmountsByBucket(orgId, 'month', {}),
     fetchNetSpendByCategory(orgId, {}),
@@ -101,7 +97,7 @@ const getAllTimeOverview = async (
       range: { ...range, priorFrom: null, priorTo: null, grain: 'month' },
     },
     trend: buildTrend(range, 'month', amounts, null),
-    categories: buildOverviewCategories(categoryRows, null),
+    categories: buildOverviewCategories(categorySpend, null),
   };
 };
 

@@ -677,12 +677,33 @@ describe('Dashboard', () => {
   });
 
   describe('spend by category', () => {
+    /**
+     * jsdom lays nothing out, and Recharts draws nothing in a container it measures at 0×0 on mount. Only the
+     * container gets a size: Recharts also measures tick labels, and oversized labels would be dropped.
+     */
+    const giveChartsRoomToDraw = () => {
+      const measure = HTMLElement.prototype.getBoundingClientRect;
+      vi.spyOn(
+        HTMLElement.prototype,
+        'getBoundingClientRect'
+      ).mockImplementation(function (this: HTMLElement) {
+        return this.classList.contains('recharts-responsive-container')
+          ? DOMRect.fromRect({ width: 480, height: 320 })
+          : measure.call(this);
+      });
+    };
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
     it('renders the spend by category card', async () => {
       await renderDashboard();
       expect(await screen.findByText('Spend by category')).toBeInTheDocument();
     });
 
     it('shows category bars when the overview includes spend', async () => {
+      giveChartsRoomToDraw();
       overviewFixture = () => ({
         ...overviewFor(
           new URL(
@@ -692,28 +713,55 @@ describe('Dashboard', () => {
         ),
         categories: [
           {
+            kind: 'category',
             categoryId: 'cat_groceries',
             name: 'Groceries',
             colour: 'green-500',
             amountCents: 4200,
-            shareOfPeriod: 0.7,
+            shareOfPeriod: 0.6,
             priorAmountCents: 3000,
           },
           {
-            categoryId: null,
-            name: 'All other categories',
-            colour: 'slate-500',
+            kind: 'other',
+            categoryCount: 2,
             amountCents: 1800,
             shareOfPeriod: 0.3,
             priorAmountCents: 900,
+          },
+          {
+            kind: 'uncategorised',
+            amountCents: 700,
+            shareOfPeriod: 0.1,
+            priorAmountCents: 0,
           },
         ],
       });
       await renderDashboard();
       const card = cardFor('Spend by category');
+      expect(await within(card).findByText('Groceries')).toBeInTheDocument();
       expect(
-        within(card).queryByText('No spend in this period')
-      ).not.toBeInTheDocument();
+        within(card).getByText('All other categories')
+      ).toBeInTheDocument();
+      expect(within(card).getByText('Uncategorised')).toBeInTheDocument();
+    });
+
+    it('charts spend that is all uncategorised', async () => {
+      giveChartsRoomToDraw();
+      overviewFixture = () => ({
+        ...overviewFor(new URL(OVERVIEW_PATH, 'http://localhost')),
+        categories: [
+          {
+            kind: 'uncategorised',
+            amountCents: 700,
+            shareOfPeriod: 1,
+            priorAmountCents: null,
+          },
+        ],
+      });
+      await renderDashboard();
+      expect(
+        await within(cardFor('Spend by category')).findByText('Uncategorised')
+      ).toBeInTheDocument();
     });
 
     it('shows an empty state when the period has no category spend', async () => {

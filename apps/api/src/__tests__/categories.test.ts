@@ -39,7 +39,7 @@ vi.mock('@ploutizo/db', () => ({
               orgId: 'org_test123',
               name: 'Food Updated',
               icon: null,
-              colour: null,
+              colour: 'green-500',
               sortOrder: 0,
               archivedAt: null,
               createdAt: new Date().toISOString(),
@@ -88,6 +88,16 @@ describe('POST /api/categories', () => {
     expect(res.status).toBe(201);
     const body = (await res.json()) as { data: { id: string } };
     expect(body.data).toHaveProperty('id');
+  });
+  it('returns 400 on missing colour', async () => {
+    const res = await app.request('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Food' }),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe('VALIDATION_ERROR');
   });
   it('returns 400 on missing name', async () => {
     const res = await app.request('/', {

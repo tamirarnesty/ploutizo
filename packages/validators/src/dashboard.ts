@@ -74,6 +74,38 @@ const dashboardOverviewRangeSchema = z.object({
   grain: dashboardOverviewGrainSchema,
 });
 
+/** Net spend and share shared by every category row; `priorAmountCents` is null on All, which has no prior. */
+const categoryRowAmounts = {
+  amountCents: z.number().int(),
+  /** This row's share of total positive net spend in the period, uncategorised included (0–1). */
+  shareOfPeriod: z.number().min(0).max(1),
+  priorAmountCents: z.number().int().nullable(),
+};
+
+/**
+ * One bar in "Spend by category": a top category, the aggregate of the categories beyond the top eight, or
+ * spend with no category. The web owns the labels and colours of the two synthetic kinds.
+ */
+const dashboardOverviewCategoryRowSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('category'),
+    categoryId: z.string(),
+    name: z.string(),
+    colour: colourTokenSchema,
+    ...categoryRowAmounts,
+  }),
+  z.object({
+    kind: z.literal('other'),
+    /** How many categories the aggregate covers. */
+    categoryCount: z.number().int().positive(),
+    ...categoryRowAmounts,
+  }),
+  z.object({
+    kind: z.literal('uncategorised'),
+    ...categoryRowAmounts,
+  }),
+]);
+
 export const dashboardOverviewResponseSchema = z.object({
   meta: z.discriminatedUnion('kind', [
     z.object({
@@ -93,18 +125,7 @@ export const dashboardOverviewResponseSchema = z.object({
       priorAmountCents: z.number().int().nullable(),
     })
   ),
-  categories: z.array(
-    z.object({
-      /** Null only for the aggregated "All other categories" bucket. */
-      categoryId: z.string().nullable(),
-      name: z.string(),
-      colour: colourTokenSchema,
-      amountCents: z.number().int(),
-      /** This row's share of total positive net spend in the period (0–1). */
-      shareOfPeriod: z.number().min(0).max(1),
-      priorAmountCents: z.number().int().nullable(),
-    })
-  ),
+  categories: z.array(dashboardOverviewCategoryRowSchema),
 });
 
 export type GetDashboardOverviewResponse = z.infer<

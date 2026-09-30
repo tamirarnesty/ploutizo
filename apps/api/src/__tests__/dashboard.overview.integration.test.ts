@@ -11,6 +11,7 @@ import {
 import { db } from '@ploutizo/db';
 import { accounts, categories, orgs, transactions } from '@ploutizo/db/schema';
 import { dashboardOverviewResponseSchema } from '@ploutizo/validators';
+import type { ColourToken } from '@ploutizo/types';
 import type { DashboardRangedShortcut } from '@ploutizo/utils/dashboard-period';
 import { dashboardRouter } from '../routes/dashboard';
 import { TEST_HOUSEHOLD_PRINCIPAL, createRouteTestApp } from './testUtils';
@@ -71,7 +72,11 @@ const insertTxns = async (
   );
 };
 
-const seedCategory = async (orgId: string, name: string, colour?: string) => {
+const seedCategory = async (
+  orgId: string,
+  name: string,
+  colour: ColourToken = 'blue-500'
+) => {
   const [category] = await db
     .insert(categories)
     .values({ orgId, name, colour, sortOrder: 0 })
@@ -352,7 +357,14 @@ describe('GET /api/dashboard/overview integration', () => {
       { bucketStart: '2026-01-01', amountCents: 500, priorAmountCents: null },
       { bucketStart: '2026-02-01', amountCents: 700, priorAmountCents: null },
     ]);
-    expect(body.categories).toEqual([]);
+    expect(body.categories).toEqual([
+      {
+        kind: 'uncategorised',
+        amountCents: 1200,
+        shareOfPeriod: 1,
+        priorAmountCents: null,
+      },
+    ]);
   });
 
   it('returns an empty all-time trend with no range when there is no spend', async () => {
@@ -382,7 +394,11 @@ describe('GET /api/dashboard/overview integration', () => {
 
       const body = await fetchOverview(overviewQuery(MARCH));
       expect(body.categories).toHaveLength(9);
-      expect(body.categories.slice(0, 8).map((row) => row.name)).toEqual([
+      expect(
+        body.categories
+          .slice(0, 8)
+          .map((row) => (row.kind === 'category' ? row.name : row.kind))
+      ).toEqual([
         'Cat 0',
         'Cat 1',
         'Cat 2',
@@ -394,9 +410,8 @@ describe('GET /api/dashboard/overview integration', () => {
       ]);
       const other = body.categories.at(-1);
       expect(other).toMatchObject({
-        categoryId: null,
-        name: 'All other categories',
-        colour: 'slate-500',
+        kind: 'other',
+        categoryCount: 2,
         amountCents: 300,
       });
       const shareTotal = body.categories.reduce(
@@ -449,6 +464,7 @@ describe('GET /api/dashboard/overview integration', () => {
       const body = await fetchOverview(overviewQuery(MARCH));
       expect(body.categories).toEqual([
         expect.objectContaining({
+          kind: 'category',
           categoryId: positiveId,
           name: 'Groceries',
           amountCents: 5000,
@@ -457,43 +473,36 @@ describe('GET /api/dashboard/overview integration', () => {
       ]);
     });
 
-    it('passes through configured category colours and stable defaults otherwise', async () => {
-      const colouredId = await seedCategory(
+    it('returns each category with its configured colour', async () => {
+      const travelId = await seedCategory(
         household().orgId,
         'Travel',
         'violet-500'
       );
-      const plainId = await seedCategory(household().orgId, 'Gas');
+      const gasId = await seedCategory(household().orgId, 'Gas', 'amber-300');
       await insertTxns(
         [
           {
             type: 'expense',
             amount: 100,
             date: '2026-03-01',
-            categoryId: colouredId,
+            categoryId: travelId,
           },
           {
             type: 'expense',
             amount: 200,
             date: '2026-03-02',
-            categoryId: plainId,
+            categoryId: gasId,
           },
         ],
         household()
       );
 
       const body = await fetchOverview(overviewQuery(MARCH));
-      const travel = body.categories.find(
-        (row) => row.categoryId === colouredId
-      );
-      const gas = body.categories.find((row) => row.categoryId === plainId);
-      expect(travel?.colour).toBe('violet-500');
-      expect(gas?.colour).toBeTruthy();
-      expect(gas?.colour).not.toBe('violet-500');
-      const again = await fetchOverview(overviewQuery(MARCH));
-      expect(
-        again.categories.find((row) => row.categoryId === plainId)?.colour
-      ).toBe(gas?.colour);
+      expect(body.categories).toEqual([
+        expect.objectContaining({ categoryId: gasId, colour: 'amber-300' }),
+        expect.objectContaining({ categoryId: travelId, colour: 'violet-500' }),
+      ]);
     });
 
     it('maps prior-period amounts onto category rows for ranged windows', async () => {
@@ -545,12 +554,15 @@ describe('GET /api/dashboard/overview integration', () => {
       );
 
       const body = await fetchOverview(overviewQuery(MARCH));
-      const namedOther = body.categories.find(
-        (row) => row.categoryId === otherCategoryId
-      );
-      const aggregate = body.categories.find((row) => row.categoryId === null);
-      expect(namedOther?.name).toBe('Other');
-      expect(aggregate?.name).toBe('All other categories');
+      expect(body.categories.at(0)).toMatchObject({
+        kind: 'category',
+        categoryId: otherCategoryId,
+        name: 'Other',
+      });
+      expect(body.categories.at(-1)).toMatchObject({
+        kind: 'other',
+        categoryCount: 2,
+      });
     });
 
     it('has null prior amounts on All', async () => {
@@ -608,6 +620,114 @@ describe('GET /api/dashboard/overview integration', () => {
       );
       expect(body.categories).toEqual([
         expect.objectContaining({ categoryId: mine, amountCents: 100 }),
+      ]);
+    });
+  });
+
+  describe('uncategorised spend', () => {
+    it('comes last, after other, and counts towards every share', async () => {
+      const ids: string[] = [];
+      for (let i = 0; i < 9; i++) {
+        ids.push(await seedCategory(household().orgId, `Cat ${i}`));
+      }
+      await insertTxns(
+        [
+          ...ids.map((categoryId) => ({
+            type: 'expense' as const,
+            amount: 100,
+            date: '2026-03-10',
+            categoryId,
+          })),
+          { type: 'expense', amount: 5000, date: '2026-03-11' },
+          { type: 'refund', amount: 900, date: '2026-03-12' },
+        ],
+        household()
+      );
+
+      const body = await fetchOverview(overviewQuery(MARCH));
+      expect(body.categories.map((row) => row.kind)).toEqual([
+        ...Array<'category'>(8).fill('category'),
+        'other',
+        'uncategorised',
+      ]);
+      expect(body.categories.at(-1)).toMatchObject({
+        kind: 'uncategorised',
+        amountCents: 4100,
+        shareOfPeriod: 4100 / 5000,
+      });
+      expect(body.categories.at(0)?.shareOfPeriod).toBe(100 / 5000);
+      const shareTotal = body.categories.reduce(
+        (sum, row) => sum + row.shareOfPeriod,
+        0
+      );
+      expect(shareTotal).toBeCloseTo(1, 5);
+    });
+
+    it('carries the prior window’s uncategorised net spend on ranged windows', async () => {
+      await insertTxns(
+        [
+          { type: 'expense', amount: 400, date: '2026-03-03' },
+          { type: 'expense', amount: 900, date: '2026-02-03' },
+          { type: 'refund', amount: 200, date: '2026-02-04' },
+        ],
+        household()
+      );
+
+      const body = await fetchOverview(
+        overviewQuery({ from: '2026-03-01', to: '2026-03-05', shortcut: 'mtd' })
+      );
+      expect(body.categories).toEqual([
+        {
+          kind: 'uncategorised',
+          amountCents: 400,
+          shareOfPeriod: 1,
+          priorAmountCents: 700,
+        },
+      ]);
+    });
+
+    it('is left out when it nets to zero or less', async () => {
+      const categoryId = await seedCategory(household().orgId, 'Dining');
+      await insertTxns(
+        [
+          { type: 'expense', amount: 300, date: '2026-03-03', categoryId },
+          { type: 'expense', amount: 1000, date: '2026-03-04' },
+          { type: 'refund', amount: 1500, date: '2026-03-05' },
+        ],
+        household()
+      );
+
+      const body = await fetchOverview(overviewQuery(MARCH));
+      expect(body.categories).toEqual([
+        expect.objectContaining({
+          kind: 'category',
+          categoryId,
+          shareOfPeriod: 1,
+        }),
+      ]);
+    });
+
+    it('is scoped to the active household', async () => {
+      const otherAccountId = await seedAccount(OTHER_ORG_ID);
+      await insertTxns(
+        [{ type: 'expense', amount: 100, date: '2026-04-01' }],
+        household()
+      );
+      await insertTxns(
+        [{ type: 'expense', amount: 999999, date: '2026-04-01' }],
+        { orgId: OTHER_ORG_ID, accountId: otherAccountId }
+      );
+
+      const body = await fetchOverview(
+        overviewQuery({ from: '2026-04-01', to: '2026-04-30' })
+      );
+      expect(body.categories).toEqual([
+        {
+          kind: 'uncategorised',
+          amountCents: 100,
+          shareOfPeriod: 1,
+          priorAmountCents: 0,
+        },
       ]);
     });
   });

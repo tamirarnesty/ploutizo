@@ -1,4 +1,5 @@
 import { queryOptions } from '@tanstack/react-query';
+import type { ColourToken } from '@ploutizo/types';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { fetchTransactions } from './queries';
 import type { UseQueryResult } from '@tanstack/react-query';
@@ -37,7 +38,7 @@ export interface TransactionRow {
   categoryId: string | null;
   categoryName: string | null;
   categoryIcon: string | null;
-  categoryColour: string | null;
+  categoryColour: ColourToken | null;
   accountId: string;
   accountName: string | null;
   accountType: string | null;

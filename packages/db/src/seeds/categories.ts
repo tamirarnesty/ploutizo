@@ -26,6 +26,7 @@ export const seedCategoryRowsForOrg = (orgId: string) =>
     orgId,
     name: cat.name,
     icon: cat.icon,
+    colour: cat.colour,
     sortOrder,
   }));
 
@@ -73,6 +74,7 @@ export const ensureBillPaymentCategoryForOrg = async (
       orgId,
       name: BILL_PAYMENT_CATEGORY.name,
       icon: BILL_PAYMENT_CATEGORY.icon,
+      colour: BILL_PAYMENT_CATEGORY.colour,
       sortOrder: BILL_PAYMENT_SORT_ORDER,
     })
     .onConflictDoNothing({

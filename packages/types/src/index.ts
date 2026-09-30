@@ -1,4 +1,5 @@
 export * from './categories';
+export * from './colours';
 export * from './enums';
 export * from './financial-institutions';
 export * from './accounts';

@@ -85,6 +85,7 @@ export const ensureFixtureCategories = async (
       return api.post<CategoryRow>('/api/categories', {
         name: category.name,
         icon: category.icon,
+        colour: category.colour,
         sortOrder,
       });
     })

@@ -4,7 +4,7 @@ import { colourTokenSchema } from './colour-tokens';
 export const createCategorySchema = z.object({
   name: z.string().min(1, 'Category name is required.'),
   icon: z.string().optional(),
-  colour: colourTokenSchema.optional(),
+  colour: colourTokenSchema,
   sortOrder: z.number().int().optional(),
 });
 export const updateCategorySchema = createCategorySchema.partial();

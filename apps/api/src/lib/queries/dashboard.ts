@@ -1,7 +1,7 @@
 import { and, eq, gte, lte, sql } from 'drizzle-orm';
 import { db } from '@ploutizo/db';
 import { categories, transactions } from '@ploutizo/db/schema';
-import type { DashboardOverviewGrain } from '@ploutizo/types';
+import type { ColourToken, DashboardOverviewGrain } from '@ploutizo/types';
 import type { DbClient } from '@ploutizo/db';
 import type { SQL } from 'drizzle-orm';
 import { activeTransactions, categoriesForOrg } from '@/lib/queries/scope';
@@ -82,25 +82,31 @@ export const fetchSpendDateBounds = async (
 export type CategoryNetSpendRow = {
   categoryId: string;
   name: string;
-  configuredColour: string | null;
+  colour: ColourToken;
   amountCents: number;
 };
 
-/** Net spend grouped by category. Rows without `category_id` drop out of the inner join (orphans are out of scope for category bars). */
+export type NetSpendByCategory = {
+  categories: CategoryNetSpendRow[];
+  /** Net spend on transactions with no category. */
+  uncategorisedCents: number;
+};
+
+/** Net spend per category, plus the net spend with no category, in one grouped query. */
 export const fetchNetSpendByCategory = async (
   orgId: string,
   window: SpendWindow,
   client: DbClient = db
-): Promise<CategoryNetSpendRow[]> =>
-  client
+): Promise<NetSpendByCategory> => {
+  const rows = await client
     .select({
-      categoryId: categories.id,
+      categoryId: transactions.categoryId,
       name: categories.name,
-      configuredColour: categories.colour,
+      colour: categories.colour,
       amountCents: netSpendAmountSql.as('amount_cents'),
     })
     .from(transactions)
-    .innerJoin(
+    .leftJoin(
       categories,
       and(
         eq(categories.id, transactions.categoryId),
@@ -108,4 +114,16 @@ export const fetchNetSpendByCategory = async (
       )
     )
     .where(spendWindowFilter(orgId, window))
-    .groupBy(categories.id, categories.name, categories.colour);
+    .groupBy(transactions.categoryId, categories.name, categories.colour);
+
+  const result: NetSpendByCategory = { categories: [], uncategorisedCents: 0 };
+  for (const { categoryId, name, colour, amountCents } of rows) {
+    if (categoryId === null) {
+      result.uncategorisedCents = amountCents;
+    } else if (name !== null && colour !== null) {
+      // A category outside the org does not join; its spend is neither a category nor uncategorised.
+      result.categories.push({ categoryId, name, colour, amountCents });
+    }
+  }
+  return result;
+};

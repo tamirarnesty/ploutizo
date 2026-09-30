@@ -1,57 +1,67 @@
+import type { DashboardOverviewCategoryRow } from '@ploutizo/validators';
 import type {
-  ColourToken,
-  DashboardOverviewCategoryRow,
-} from '@ploutizo/validators';
-import type { CategoryNetSpendRow } from '@/lib/queries/dashboard';
-import { resolveCategoryColour } from '@/lib/category-colour';
+  CategoryNetSpendRow,
+  NetSpendByCategory,
+} from '@/lib/queries/dashboard';
 
 const TOP_CATEGORY_COUNT = 8;
-
-/** Distinct from the household default category named "Other". */
-const OTHER_BUCKET_NAME = 'All other categories';
-
-/** Neutral bar colour for the aggregated Other bucket. */
-const OTHER_BUCKET_COLOUR: ColourToken = 'slate-500';
 
 const sumAmounts = (rows: CategoryNetSpendRow[]) =>
   rows.reduce((sum, row) => sum + row.amountCents, 0);
 
+/**
+ * Top eight categories by positive net spend, then the rest as one `other` row, then `uncategorised` when it is
+ * positive. Uncategorised never takes a top-eight slot. Shares are of all positive spend on screen, so they sum
+ * to 1.
+ */
 export const buildOverviewCategories = (
-  current: CategoryNetSpendRow[],
-  priorByCategoryId: Map<string, number> | null
+  current: NetSpendByCategory,
+  /** The prior window's net spend; null on All, which has no prior. */
+  prior: NetSpendByCategory | null
 ): DashboardOverviewCategoryRow[] => {
-  const positive = current
+  const positive = current.categories
     .filter((row) => row.amountCents > 0)
     .sort((a, b) => b.amountCents - a.amountCents);
-  const totalPositive = sumAmounts(positive);
+  const uncategorisedCents = Math.max(current.uncategorisedCents, 0);
+  const totalPositive = sumAmounts(positive) + uncategorisedCents;
   const top = positive.slice(0, TOP_CATEGORY_COUNT);
   const remainder = positive.slice(TOP_CATEGORY_COUNT);
 
+  const amounts = (amountCents: number, priorAmountCents: number | null) => ({
+    amountCents,
+    shareOfPeriod: amountCents / totalPositive,
+    priorAmountCents,
+  });
+  const priorByCategoryId = new Map(
+    prior?.categories.map((row) => [row.categoryId, row.amountCents])
+  );
   const priorAmountFor = (rows: CategoryNetSpendRow[]) =>
-    priorByCategoryId &&
+    prior &&
     rows.reduce(
       (sum, row) => sum + (priorByCategoryId.get(row.categoryId) ?? 0),
       0
     );
 
   const rows: DashboardOverviewCategoryRow[] = top.map((row) => ({
+    kind: 'category',
     categoryId: row.categoryId,
     name: row.name,
-    colour: resolveCategoryColour(row.configuredColour, row.categoryId),
-    amountCents: row.amountCents,
-    shareOfPeriod: row.amountCents / totalPositive,
-    priorAmountCents: priorAmountFor([row]),
+    colour: row.colour,
+    ...amounts(row.amountCents, priorAmountFor([row])),
   }));
 
   if (remainder.length > 0) {
-    const amountCents = sumAmounts(remainder);
     rows.push({
-      categoryId: null,
-      name: OTHER_BUCKET_NAME,
-      colour: OTHER_BUCKET_COLOUR,
-      amountCents,
-      shareOfPeriod: amountCents / totalPositive,
-      priorAmountCents: priorAmountFor(remainder),
+      kind: 'other',
+      categoryCount: remainder.length,
+      ...amounts(sumAmounts(remainder), priorAmountFor(remainder)),
+    });
+  }
+
+  if (uncategorisedCents > 0) {
+    rows.push({
+      kind: 'uncategorised',
+      ...amounts(uncategorisedCents, prior && prior.uncategorisedCents),
     });
   }
 
