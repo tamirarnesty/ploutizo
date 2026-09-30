@@ -1,7 +1,9 @@
+import '@/lib/access/working-set-cleanup';
 import '@/test/mockTanstackRouter';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { ImportDraftSummary } from '@ploutizo/types';
+import { HouseholdHookWrapper } from '@/test/household-hook-harness';
 import { ImportDraftList } from './ImportDraftList';
 
 vi.mock('@ploutizo/ui/components/loading-button', () => ({
@@ -54,12 +56,14 @@ describe('ImportDraftList', () => {
 
   it('renders draft cards when drafts exist', () => {
     render(
-      <ImportDraftList
-        drafts={[draftSummary]}
-        discardingDraftId={undefined}
-        isDiscarding={false}
-        onDiscard={vi.fn()}
-      />
+      <HouseholdHookWrapper>
+        <ImportDraftList
+          drafts={[draftSummary]}
+          discardingDraftId={undefined}
+          isDiscarding={false}
+          onDiscard={vi.fn()}
+        />
+      </HouseholdHookWrapper>
     );
 
     expect(screen.queryByText('No active drafts.')).not.toBeInTheDocument();

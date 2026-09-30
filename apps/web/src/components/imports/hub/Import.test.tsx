@@ -1,6 +1,8 @@
+import '@/lib/access/working-set-cleanup';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { HouseholdHookWrapper } from '@/test/household-hook-harness';
 import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
 import {
   useDiscardImportDraft,
@@ -147,6 +149,13 @@ const setImportPageData = ({
   } as never);
 };
 
+const renderImport = () =>
+  render(
+    <HouseholdHookWrapper>
+      <Import />
+    </HouseholdHookWrapper>
+  );
+
 describe('Import', () => {
   const createdDraftResponse = {
     kind: 'draft' as const,
@@ -196,7 +205,7 @@ describe('Import', () => {
       isPending: false,
     } as never);
 
-    render(<Import />);
+    renderImport();
 
     expect(screen.getByText('No credit cards')).toBeInTheDocument();
     expect(
@@ -224,7 +233,7 @@ describe('Import', () => {
       isPending: false,
     } as never);
 
-    render(<Import />);
+    renderImport();
 
     expect(screen.getByRole('heading', { name: 'Import' })).toBeInTheDocument();
     expect(screen.getByText('Credit card')).toBeInTheDocument();
@@ -261,7 +270,7 @@ describe('Import', () => {
       isPending: false,
     } as never);
 
-    render(<Import />);
+    renderImport();
 
     expect(screen.getByLabelText('CSV file')).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Upload' })).toBeDisabled();
@@ -272,7 +281,7 @@ describe('Import', () => {
     const user = userEvent.setup();
     setImportPageData();
 
-    render(<Import />);
+    renderImport();
 
     const dialog = screen
       .getByText('CSV import guide')
@@ -290,7 +299,7 @@ describe('Import', () => {
     const user = userEvent.setup();
     setImportPageData();
 
-    render(<Import />);
+    renderImport();
 
     const content =
       'date,amount,description,type\n2026-05-02,42.18,Coffee,expense';
@@ -330,7 +339,7 @@ describe('Import', () => {
       }
     );
 
-    render(<Import />);
+    renderImport();
 
     const content =
       'date,amount,description,type\n2026-05-02,42.18,Coffee,expense';
@@ -349,7 +358,7 @@ describe('Import', () => {
   it('links active draft cards to the review route', () => {
     setImportPageData({ activeDrafts: [draftSummary] });
 
-    render(<Import />);
+    renderImport();
 
     expect(screen.getByRole('link', { name: /continue/i })).toHaveAttribute(
       'href',
@@ -370,7 +379,7 @@ describe('Import', () => {
       discardingDraftId: 'draft_1',
     });
 
-    render(<Import />);
+    renderImport();
 
     expect(
       screen.getByRole('button', { name: /Loading Discard/i })
@@ -381,7 +390,7 @@ describe('Import', () => {
   it('links the compact recent-history list to View all history', () => {
     setImportPageData();
 
-    render(<Import />);
+    renderImport();
 
     expect(
       screen.getByRole('link', { name: 'View all history' })
