@@ -1,12 +1,14 @@
+import { LineChart } from 'lucide-react';
 import { CardAction, CardDescription } from '@ploutizo/ui/components/card';
 import {
   ToggleGroup,
   ToggleGroupItem,
 } from '@ploutizo/ui/components/toggle-group';
 import { DashboardOverviewMetricCard } from '@/components/dashboard/DashboardOverviewMetricCard';
-import type { DashboardOverviewQuery } from '@/components/dashboard/DashboardOverviewMetricCard';
+import type { DashboardOverviewQueryState } from '@/components/dashboard/DashboardOverviewMetricCard';
 import { SpendTrendBody } from '@/components/dashboard/spend-trend/SpendTrendBody';
 import {
+  hasSpendActivity,
   spendTrendCaption,
   spendTrendGrain,
   spendTrendModeLabel,
@@ -16,7 +18,7 @@ import type { SpendTrendMode } from '@/lib/spend-trend-mode';
 import { singleSelectToggle } from '@/lib/single-select-toggle';
 
 type SpendTrendCardProps = {
-  query: DashboardOverviewQuery;
+  query: DashboardOverviewQueryState;
   mode: SpendTrendMode;
   onModeChange: (mode: SpendTrendMode) => void;
   today: string;
@@ -34,6 +36,8 @@ export const SpendTrendCard = ({
     title="Spend trend"
     label="spend trend"
     query={query}
+    isEmpty={(data) => !hasSpendActivity(data.trend)}
+    emptyIcon={<LineChart />}
     className={className}
     header={(data) => (
       <>

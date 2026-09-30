@@ -1,5 +1,4 @@
 import { format } from 'date-fns';
-import { formatCurrency } from '@ploutizo/utils/currency';
 import {
   bucketBounds,
   formatCalendarDateRange,
@@ -11,9 +10,17 @@ import type {
 } from '@ploutizo/types';
 import type {
   DashboardOverviewMeta,
+  DashboardOverviewTrendPoint,
   GetDashboardOverviewResponse,
 } from '@ploutizo/validators';
 import type { SpendTrendMode } from '@/lib/spend-trend-mode';
+
+export const hasSpendActivity = (
+  trend: DashboardOverviewTrendPoint[]
+): boolean =>
+  trend.some(
+    (point) => point.amountCents !== 0 || (point.priorAmountCents ?? 0) !== 0
+  );
 
 type SpendTrendChartPoint = {
   bucketStart: string;
@@ -153,11 +160,6 @@ export const spendTrendYDomain = (
   }
   return [min, max];
 };
-
-export const formatTrendCurrency = (amountCents: number): string =>
-  formatCurrency(amountCents, undefined, undefined, {
-    maximumFractionDigits: 0,
-  });
 
 const bucketFormats = {
   day: { axis: 'MMM d', tooltip: 'MMM d, yyyy' },

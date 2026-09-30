@@ -28,6 +28,7 @@ export const CardBalancesGrid = ({
   isLoading,
   isError,
   onSettleClick,
+  className,
 }: CardBalancesGridProps) => {
   const [sorting, setSorting] = useState<SortingState>([]);
   const { pagination, setPagination } = usePersistedPageSize('card-balances');
@@ -82,6 +83,7 @@ export const CardBalancesGrid = ({
         isLoading={isLoading}
         isError={isError}
         errorMessage="Couldn’t load card balances. Check your connection and try again."
+        className={className}
       >
         {isEmpty ? (
           <CardBalancesEmpty />

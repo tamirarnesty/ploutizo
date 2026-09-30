@@ -5,17 +5,17 @@ import {
   ChartTooltipContent,
 } from '@ploutizo/ui/components/chart';
 import type { ChartConfig } from '@ploutizo/ui/components/chart';
-import { barFillClassFromRaw } from '@/components/colour/colour-token-classes';
+import type { DashboardOverviewCategoryRow } from '@ploutizo/validators';
+import { COLOUR_BAR_FILL } from '@/components/colour/colour-token-classes';
+import { formatWholeCurrency } from '@/components/dashboard/dashboardFormat';
 import {
-  formatCategoryAmount,
   formatCategoryChangeVsPrior,
   formatCategoryShare,
   toCategoryTooltipItems,
 } from '@/components/dashboard/spend-by-category/spendByCategoryChartUtils';
-import type { SpendByCategoryChartRow } from '@/components/dashboard/spend-by-category/spendByCategoryChartUtils';
 
 type SpendByCategoryChartProps = {
-  data: SpendByCategoryChartRow[];
+  data: DashboardOverviewCategoryRow[];
 };
 
 const chartConfig = {
@@ -38,7 +38,7 @@ export const SpendByCategoryChart = ({ data }: SpendByCategoryChartProps) => (
         tickLine={false}
         axisLine={false}
         tickMargin={8}
-        tickFormatter={formatCategoryAmount}
+        tickFormatter={formatWholeCurrency}
       />
       <YAxis
         type="category"
@@ -52,7 +52,7 @@ export const SpendByCategoryChart = ({ data }: SpendByCategoryChartProps) => (
         cursor={false}
         content={({ active, payload }) => {
           const row = payload[0]?.payload as
-            | SpendByCategoryChartRow
+            | DashboardOverviewCategoryRow
             | undefined;
           if (!row) {
             return null;
@@ -78,7 +78,7 @@ export const SpendByCategoryChart = ({ data }: SpendByCategoryChartProps) => (
                   </div>
                 </>
               )}
-              valueFormatter={formatCategoryAmount}
+              valueFormatter={formatWholeCurrency}
             />
           );
         }}
@@ -86,10 +86,8 @@ export const SpendByCategoryChart = ({ data }: SpendByCategoryChartProps) => (
       <Bar dataKey="amountCents" radius={4}>
         {data.map((row) => (
           <Cell
-            key={row.rowKey}
-            className={
-              barFillClassFromRaw(row.colour) ?? 'fill-muted-foreground'
-            }
+            key={row.categoryId ?? 'other'}
+            className={COLOUR_BAR_FILL[row.colour]}
           />
         ))}
       </Bar>

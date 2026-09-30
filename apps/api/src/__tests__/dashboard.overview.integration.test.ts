@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import {
   afterAll,
   beforeAll,
@@ -65,10 +65,7 @@ const insertTxns = async (
   await db.insert(transactions).values(
     rows.map((row) => ({
       ...target,
-      type: row.type,
-      amount: row.amount,
-      date: row.date,
-      categoryId: row.categoryId,
+      ...row,
       description: row.type,
     }))
   );
@@ -107,16 +104,15 @@ describe('GET /api/dashboard/overview integration', () => {
   });
 
   beforeEach(async () => {
-    await db
-      .delete(transactions)
-      .where(
-        eq(transactions.orgId, TEST_HOUSEHOLD_PRINCIPAL.activeHouseholdId)
-      );
+    const orgIds = [TEST_HOUSEHOLD_PRINCIPAL.activeHouseholdId, OTHER_ORG_ID];
+    await db.delete(transactions).where(inArray(transactions.orgId, orgIds));
+    await db.delete(categories).where(inArray(categories.orgId, orgIds));
     accountId = await seedAccount(TEST_HOUSEHOLD_PRINCIPAL.activeHouseholdId);
   });
 
   afterAll(async () => {
     await db.delete(transactions).where(eq(transactions.orgId, OTHER_ORG_ID));
+    await db.delete(categories).where(eq(categories.orgId, OTHER_ORG_ID));
     await db.delete(accounts).where(eq(accounts.orgId, OTHER_ORG_ID));
     await db.delete(orgs).where(eq(orgs.id, OTHER_ORG_ID));
   });

@@ -1,12 +1,20 @@
-import type { DashboardOverviewCategoryRow } from '@ploutizo/validators';
-import type { CategoryNetSpendRow } from '@/lib/queries/dashboard-types';
-import {
-  OTHER_CATEGORY_COLOUR,
-  resolveCategoryColour,
-} from '@/lib/category-colour';
+import type {
+  ColourToken,
+  DashboardOverviewCategoryRow,
+} from '@ploutizo/validators';
+import type { CategoryNetSpendRow } from '@/lib/queries/dashboard';
+import { resolveCategoryColour } from '@/lib/category-colour';
+
+const TOP_CATEGORY_COUNT = 8;
 
 /** Distinct from the household default category named "Other". */
 const OTHER_BUCKET_NAME = 'All other categories';
+
+/** Neutral bar colour for the aggregated Other bucket. */
+const OTHER_BUCKET_COLOUR: ColourToken = 'slate-500';
+
+const sumAmounts = (rows: CategoryNetSpendRow[]) =>
+  rows.reduce((sum, row) => sum + row.amountCents, 0);
 
 export const buildOverviewCategories = (
   current: CategoryNetSpendRow[],
@@ -15,17 +23,16 @@ export const buildOverviewCategories = (
   const positive = current
     .filter((row) => row.amountCents > 0)
     .sort((a, b) => b.amountCents - a.amountCents);
+  const totalPositive = sumAmounts(positive);
+  const top = positive.slice(0, TOP_CATEGORY_COUNT);
+  const remainder = positive.slice(TOP_CATEGORY_COUNT);
 
-  const totalPositive = positive.reduce((sum, row) => sum + row.amountCents, 0);
-  if (totalPositive === 0) {
-    return [];
-  }
-
-  const top = positive.slice(0, 8);
-  const remainder = positive.slice(8);
-
-  const priorFor = (categoryId: string) =>
-    priorByCategoryId?.get(categoryId) ?? 0;
+  const priorAmountFor = (rows: CategoryNetSpendRow[]) =>
+    priorByCategoryId &&
+    rows.reduce(
+      (sum, row) => sum + (priorByCategoryId.get(row.categoryId) ?? 0),
+      0
+    );
 
   const rows: DashboardOverviewCategoryRow[] = top.map((row) => ({
     categoryId: row.categoryId,
@@ -33,25 +40,18 @@ export const buildOverviewCategories = (
     colour: resolveCategoryColour(row.configuredColour, row.categoryId),
     amountCents: row.amountCents,
     shareOfPeriod: row.amountCents / totalPositive,
-    priorAmountCents:
-      priorByCategoryId === null ? null : priorFor(row.categoryId),
+    priorAmountCents: priorAmountFor([row]),
   }));
 
   if (remainder.length > 0) {
-    const amountCents = remainder.reduce(
-      (sum, row) => sum + row.amountCents,
-      0
-    );
+    const amountCents = sumAmounts(remainder);
     rows.push({
       categoryId: null,
       name: OTHER_BUCKET_NAME,
-      colour: OTHER_CATEGORY_COLOUR,
+      colour: OTHER_BUCKET_COLOUR,
       amountCents,
       shareOfPeriod: amountCents / totalPositive,
-      priorAmountCents:
-        priorByCategoryId === null
-          ? null
-          : remainder.reduce((sum, row) => sum + priorFor(row.categoryId), 0),
+      priorAmountCents: priorAmountFor(remainder),
     });
   }
 

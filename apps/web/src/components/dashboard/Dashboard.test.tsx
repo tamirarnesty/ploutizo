@@ -712,14 +712,16 @@ describe('Dashboard', () => {
       await renderDashboard();
       const card = cardFor('Spend by category');
       expect(
-        within(card).queryByText('No spend this period')
+        within(card).queryByText('No spend in this period')
       ).not.toBeInTheDocument();
     });
 
     it('shows an empty state when the period has no category spend', async () => {
       await renderDashboard();
       expect(
-        await screen.findByText('No spend this period')
+        await within(cardFor('Spend by category')).findByText(
+          'No spend in this period'
+        )
       ).toBeInTheDocument();
     });
 
@@ -737,7 +739,9 @@ describe('Dashboard', () => {
       expect(await screen.findByText('Spend by category')).toBeInTheDocument();
       expect(cardFor('Spend by category')).toHaveAttribute('aria-busy', 'true');
       release();
-      await screen.findByText('No spend this period');
+      await within(cardFor('Spend by category')).findByText(
+        'No spend in this period'
+      );
       expect(cardFor('Spend by category')).toHaveAttribute(
         'aria-busy',
         'false'

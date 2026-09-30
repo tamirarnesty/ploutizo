@@ -85,16 +85,16 @@ const getRangedOverview = async (
 const getAllTimeOverview = async (
   orgId: string
 ): Promise<GetDashboardOverviewResponse> => {
-  const [{ first, last }, amounts] = await Promise.all([
+  const [{ first, last }, amounts, categoryRows] = await Promise.all([
     fetchSpendDateBounds(orgId),
     fetchAmountsByBucket(orgId, 'month', {}),
+    fetchNetSpendByCategory(orgId, {}),
   ]);
   if (first === null || last === null) {
     return { meta: { kind: 'all', range: null }, trend: [], categories: [] };
   }
 
   const range = { from: first, to: last };
-  const categoryRows = await fetchNetSpendByCategory(orgId, range);
   return {
     meta: {
       kind: 'all',

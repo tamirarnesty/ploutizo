@@ -103,7 +103,7 @@ See [shadcn chart docs](https://ui.shadcn.com/docs/components/chart).
 | Axis amounts | `tickFormatter` on `YAxis` / `XAxis` |
 | Missing series in tooltip | Recharts `filterNull` (default); `null` in data, not `0` |
 | Gaps in lines | Do not use `connectNulls` when absence is meaningful |
-| Loading / refetch | Fixed-height chart slot; `Spinner` overlay (no skeleton block); empty state only after fetch settles; `placeholderData` on queries when keys change; reference: `SpendTrendCard` |
+| Loading / refetch | Flexible chart slot (`min-h-56 flex-1`, chart at `h-full`); `Spinner` overlay (no skeleton block); empty state only after fetch settles; `placeholderData` on queries when keys change; reference: `DashboardOverviewMetricCard` |
 
 ```tsx
 // Compose primitives; format at edges; keep data numeric

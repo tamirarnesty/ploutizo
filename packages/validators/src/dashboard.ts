@@ -3,7 +3,7 @@ import {
   DASHBOARD_PERIOD_SHORTCUTS,
   DASHBOARD_RANGED_SHORTCUTS,
 } from '@ploutizo/utils/dashboard-period';
-import type { DashboardOverviewGrain } from '@ploutizo/types';
+import { DASHBOARD_OVERVIEW_GRAIN_VALUES } from '@ploutizo/types';
 import { colourTokenSchema } from './colour-tokens';
 
 const calendarDates = {
@@ -65,11 +65,7 @@ export type DashboardOverviewQuery = z.output<
  * The `GET /api/dashboard/overview` response. The API tests and the web client parse against it, so a
  * drifting server or client fails loudly instead of rendering wrong data.
  */
-const dashboardOverviewGrainSchema = z.enum([
-  'day',
-  'week',
-  'month',
-]) satisfies z.ZodType<DashboardOverviewGrain>;
+const dashboardOverviewGrainSchema = z.enum(DASHBOARD_OVERVIEW_GRAIN_VALUES);
 
 const dashboardOverviewRangeSchema = z.object({
   ...calendarDates,

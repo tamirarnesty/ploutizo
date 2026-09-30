@@ -15,9 +15,9 @@ import {
 } from '@ploutizo/ui/components/chart';
 import type { ChartConfig } from '@ploutizo/ui/components/chart';
 import type { DashboardOverviewGrain } from '@ploutizo/types';
+import { formatWholeCurrency } from '@/components/dashboard/dashboardFormat';
 import {
   formatTrendBucket,
-  formatTrendCurrency,
   spendTrendYDomain,
 } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
 import type {
@@ -70,7 +70,7 @@ export const SpendTrendChart = ({
           tickMargin={8}
           width="auto"
           domain={yDomain}
-          tickFormatter={formatTrendCurrency}
+          tickFormatter={formatWholeCurrency}
         />
         {yDomain[0] < 0 ? (
           <ReferenceLine
@@ -89,7 +89,7 @@ export const SpendTrendChart = ({
                   ? formatTrendBucket(bucketStart, grain, 'tooltip')
                   : '';
               }}
-              valueFormatter={formatTrendCurrency}
+              valueFormatter={formatWholeCurrency}
             />
           }
         />

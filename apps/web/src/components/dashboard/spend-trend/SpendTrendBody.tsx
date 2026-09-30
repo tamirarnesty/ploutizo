@@ -1,16 +1,5 @@
-import { LineChart } from 'lucide-react';
 import { useMemo } from 'react';
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '@ploutizo/ui/components/empty';
-import type {
-  DashboardOverviewTrendPoint,
-  GetDashboardOverviewResponse,
-} from '@ploutizo/validators';
+import type { GetDashboardOverviewResponse } from '@ploutizo/validators';
 import { SpendTrendChart } from '@/components/dashboard/spend-trend/SpendTrendChart';
 import {
   partialBucketEdges,
@@ -29,11 +18,6 @@ type SpendTrendBodyProps = {
   today: string;
 };
 
-const hasSpendActivity = (trend: DashboardOverviewTrendPoint[]): boolean =>
-  trend.some(
-    (point) => point.amountCents !== 0 || (point.priorAmountCents ?? 0) !== 0
-  );
-
 export const SpendTrendBody = ({
   overview,
   mode,
@@ -47,22 +31,6 @@ export const SpendTrendBody = ({
       ),
     [overview, mode, today]
   );
-
-  if (!hasSpendActivity(overview.trend)) {
-    return (
-      <Empty className="border-0 py-8">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <LineChart />
-          </EmptyMedia>
-          <EmptyTitle>No spend in this period</EmptyTitle>
-          <EmptyDescription>
-            Expenses and refunds in this period will appear here.
-          </EmptyDescription>
-        </EmptyHeader>
-      </Empty>
-    );
-  }
 
   return (
     <SpendTrendChart

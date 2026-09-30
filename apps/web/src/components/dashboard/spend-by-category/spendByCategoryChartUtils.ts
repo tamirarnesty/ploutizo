@@ -1,28 +1,13 @@
-import { formatCurrency } from '@ploutizo/utils/currency';
 import type { DashboardOverviewCategoryRow } from '@ploutizo/validators';
+import { formatWholeCurrency } from '@/components/dashboard/dashboardFormat';
 
-export type SpendByCategoryChartRow = DashboardOverviewCategoryRow & {
-  rowKey: string;
-};
-
-export const toSpendByCategoryChartData = (
-  categories: DashboardOverviewCategoryRow[]
-): SpendByCategoryChartRow[] =>
-  categories.map((row) => ({
-    ...row,
-    rowKey: row.categoryId ?? 'other',
-  }));
+const shareFormatter = new Intl.NumberFormat(undefined, {
+  style: 'percent',
+  maximumFractionDigits: 0,
+});
 
 export const formatCategoryShare = (shareOfPeriod: number): string =>
-  new Intl.NumberFormat(undefined, {
-    style: 'percent',
-    maximumFractionDigits: 0,
-  }).format(shareOfPeriod);
-
-export const formatCategoryAmount = (amountCents: number): string =>
-  formatCurrency(amountCents, undefined, undefined, {
-    maximumFractionDigits: 0,
-  });
+  shareFormatter.format(shareOfPeriod);
 
 export const formatCategoryChangeVsPrior = (
   amountCents: number,
@@ -35,19 +20,15 @@ export const formatCategoryChangeVsPrior = (
   if (delta === 0) {
     return 'No change vs prior';
   }
-  const formatted = formatCategoryAmount(Math.abs(delta));
+  const formatted = formatWholeCurrency(Math.abs(delta));
   return delta > 0 ? `+${formatted} vs prior` : `−${formatted} vs prior`;
 };
-
-export const hasCategorySpend = (
-  categories: DashboardOverviewCategoryRow[]
-): boolean => categories.some((row) => row.amountCents > 0);
 
 /**
  * Tooltip rows for one category: this period, plus the prior period when there is one. Each row carries its
  * own dot colour — the category's, faded for the prior period — so the native tooltip rows render as-is.
  */
-export const toCategoryTooltipItems = (row: SpendByCategoryChartRow) => {
+export const toCategoryTooltipItems = (row: DashboardOverviewCategoryRow) => {
   const colour = `var(--color-${row.colour})`;
   return [
     {

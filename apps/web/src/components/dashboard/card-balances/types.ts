@@ -11,4 +11,5 @@ export interface CardBalancesGridProps {
   isLoading: boolean;
   isError: boolean;
   onSettleClick: CardBalancesSettleClickHandler;
+  className?: string;
 }

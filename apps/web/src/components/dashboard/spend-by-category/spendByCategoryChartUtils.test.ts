@@ -2,9 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   formatCategoryChangeVsPrior,
   formatCategoryShare,
-  hasCategorySpend,
   toCategoryTooltipItems,
-  toSpendByCategoryChartData,
 } from '@/components/dashboard/spend-by-category/spendByCategoryChartUtils';
 
 describe('formatCategoryShare', () => {
@@ -28,34 +26,6 @@ describe('formatCategoryChangeVsPrior', () => {
   });
 });
 
-describe('toSpendByCategoryChartData', () => {
-  it('uses a stable key for the aggregate bucket', () => {
-    expect(
-      toSpendByCategoryChartData([
-        {
-          categoryId: null,
-          name: 'All other categories',
-          colour: 'slate-500',
-          amountCents: 100,
-          shareOfPeriod: 1,
-          priorAmountCents: null,
-        },
-      ])
-    ).toEqual([
-      expect.objectContaining({
-        rowKey: 'other',
-        name: 'All other categories',
-      }),
-    ]);
-  });
-});
-
-describe('hasCategorySpend', () => {
-  it('is false for an empty list', () => {
-    expect(hasCategorySpend([])).toBe(false);
-  });
-});
-
 describe('toCategoryTooltipItems', () => {
   const row = {
     categoryId: 'c1',
@@ -64,7 +34,6 @@ describe('toCategoryTooltipItems', () => {
     amountCents: 12000,
     shareOfPeriod: 0.65,
     priorAmountCents: 1800,
-    rowKey: 'c1',
   } as const;
 
   it('lists this period then prior period, each with a dot colour', () => {

@@ -1,9 +1,10 @@
+import { BarChart3 } from 'lucide-react';
 import { DashboardOverviewMetricCard } from '@/components/dashboard/DashboardOverviewMetricCard';
-import type { DashboardOverviewQuery } from '@/components/dashboard/DashboardOverviewMetricCard';
-import { SpendByCategoryBody } from '@/components/dashboard/spend-by-category/SpendByCategoryBody';
+import type { DashboardOverviewQueryState } from '@/components/dashboard/DashboardOverviewMetricCard';
+import { SpendByCategoryChart } from '@/components/dashboard/spend-by-category/SpendByCategoryChart';
 
 type SpendByCategoryCardProps = {
-  query: DashboardOverviewQuery;
+  query: DashboardOverviewQueryState;
   className?: string;
 };
 
@@ -15,8 +16,11 @@ export const SpendByCategoryCard = ({
     title="Spend by category"
     label="spend by category"
     query={query}
+    // The API returns only categories with positive spend.
+    isEmpty={(data) => data.categories.length === 0}
+    emptyIcon={<BarChart3 />}
     className={className}
   >
-    {(data) => <SpendByCategoryBody categories={data.categories} />}
+    {(data) => <SpendByCategoryChart data={data.categories} />}
   </DashboardOverviewMetricCard>
 );

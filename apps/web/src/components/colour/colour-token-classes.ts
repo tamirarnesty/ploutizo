@@ -51,13 +51,6 @@ export const COLOUR_BAR_FILL: Record<ColourToken, string> = {
   'pink-500': 'fill-pink-500',
 };
 
-export const barFillClassFromRaw = (
-  raw: string | null | undefined
-): string | undefined => {
-  const token = parseColourToken(raw);
-  return token ? COLOUR_BAR_FILL[token] : undefined;
-};
-
 export const getColourBadgeClassFromRaw = (
   raw: string | null | undefined
 ): string | undefined => {

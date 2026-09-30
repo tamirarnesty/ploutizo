@@ -118,10 +118,6 @@ export const Dashboard = () => {
       />
 
       {/*
-        Container query, not a viewport breakpoint: cards must also reflow when
-        the sidebar opens or closes, which only changes the available width.
-      */}
-      {/*
         Flex-wrap, not a fixed grid: each card has a preferred width and grows
         into free space, wrapping to the next line when it no longer fits — so
         cards also reflow when the sidebar opens or closes. Cards on the same
@@ -139,22 +135,20 @@ export const Dashboard = () => {
           className="min-w-0 flex-[1_1_20rem]"
           query={overviewQuery}
         />
-        <div className="min-w-0 flex-[3_1_36rem]">
-          <CardBalancesGrid
-            rows={cardBalanceRows}
-            isLoading={liveSectionsLoading}
-            isError={liveSectionsError}
-            onSettleClick={handleSettleClick}
-          />
-        </div>
-        <div className="min-w-0 flex-[1_1_18rem]">
-          <SettlementSummaryPane
-            accounts={settlements?.accounts}
-            isError={liveSectionsError}
-            isLoading={liveSectionsLoading}
-            members={members}
-          />
-        </div>
+        <CardBalancesGrid
+          className="min-w-0 flex-[3_1_36rem]"
+          rows={cardBalanceRows}
+          isLoading={liveSectionsLoading}
+          isError={liveSectionsError}
+          onSettleClick={handleSettleClick}
+        />
+        <SettlementSummaryPane
+          className="min-w-0 flex-[1_1_18rem]"
+          accounts={settlements?.accounts}
+          isError={liveSectionsError}
+          isLoading={liveSectionsLoading}
+          members={members}
+        />
       </div>
 
       <SettleDialog
