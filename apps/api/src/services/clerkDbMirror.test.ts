@@ -99,6 +99,18 @@ const insertMembership = (params: {
 const oldCreatedAt = new Date('2026-01-01T00:00:00.000Z');
 const newCreatedAt = new Date('2026-02-01T00:00:00.000Z');
 
+describe('shouldReplaceMirroredMembership', () => {
+  it('does not replace when stored created_at equals incoming', () => {
+    expect(shouldReplaceMirroredMembership(newCreatedAt, newCreatedAt)).toBe(
+      false
+    );
+  });
+
+  it('replaces when stored created_at is unset', () => {
+    expect(shouldReplaceMirroredMembership(null, newCreatedAt)).toBe(true);
+  });
+});
+
 describe('findLocalUserIdByClerkId', () => {
   beforeEach(() => {
     mockSelect.mockReset();
@@ -254,5 +266,19 @@ describe('insertOrgMemberIfAbsent', () => {
 
     expect(membershipRows).toHaveLength(1);
     expect(membershipRows[0]?.externalId).toBe('orgmem_new');
+  });
+
+  it('keeps membership identity when a replay shares the same created_at', async () => {
+    await insertMembership({
+      clerkMembershipId: 'orgmem_first',
+      membershipCreatedAt: newCreatedAt,
+    });
+    await insertMembership({
+      clerkMembershipId: 'orgmem_replay',
+      membershipCreatedAt: newCreatedAt,
+    });
+
+    expect(membershipRows[0]?.externalId).toBe('orgmem_first');
+    expect(membershipRows[0]?.membershipCreatedAt).toEqual(newCreatedAt);
   });
 });

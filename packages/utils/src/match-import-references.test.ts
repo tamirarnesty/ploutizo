@@ -104,4 +104,35 @@ describe('createImportReferenceResolver', () => {
       }).reviewAssigneeMemberIds
     ).toEqual([]);
   });
+
+  it('resolves assignee by full name when first names collide', () => {
+    const resolveAmbiguous = createImportReferenceResolver({
+      categories: [],
+      tags: [],
+      members: [
+        {
+          id: 'member-1',
+          firstName: 'Tamir',
+          lastName: 'Arnesty',
+          email: 'tamir@example.com',
+          imageUrl: null,
+        },
+        {
+          id: 'member-3',
+          firstName: 'Tamir',
+          lastName: 'Smith',
+          email: 'tamir.smith@example.com',
+          imageUrl: null,
+        },
+      ],
+    });
+
+    expect(
+      resolveAmbiguous({
+        csvCategoryName: null,
+        csvAssigneeName: 'Tamir Smith',
+        csvTagNames: [],
+      }).reviewAssigneeMemberIds
+    ).toEqual(['member-3']);
+  });
 });
