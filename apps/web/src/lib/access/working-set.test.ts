@@ -15,6 +15,14 @@ import {
 } from './working-set';
 import type { AccessState } from './access-state';
 
+const deferred = <T>() => {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((res) => {
+    resolve = res;
+  });
+  return { promise, resolve };
+};
+
 const alexInHouseholdA: AccessState = {
   status: 'signed-in-with-active-household',
   signedInMemberId: 'user_alex',
@@ -73,6 +81,24 @@ describe('replaceActiveWorkingSet', () => {
     expect(priorClient.getQueryCache().getAll()).toHaveLength(0);
     expect(getActiveQueryClient().getQueryCache().getAll()).toHaveLength(0);
     setClientBearerGetter(() => Promise.resolve(null));
+  });
+
+  it('does not restore a late in-flight response after the working set is discarded', async () => {
+    const priorClient = getActiveQueryClient();
+    const pending = deferred<{ id: string }[]>();
+    const fetchPromise = priorClient.fetchQuery({
+      queryKey: ['transactions'],
+      queryFn: () => pending.promise,
+    });
+
+    replaceActiveWorkingSet();
+    pending.resolve([{ id: 'txn_prior' }]);
+    await fetchPromise.catch(() => undefined);
+
+    expect(priorClient.getQueryData(['transactions'])).toBeUndefined();
+    expect(
+      getActiveQueryClient().getQueryData(['transactions'])
+    ).toBeUndefined();
   });
 
   it('assigns a new working set id on replacement', () => {

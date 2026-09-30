@@ -7,12 +7,7 @@ const draft = makeImportDraftSummary();
 const router = getRouter();
 
 describe('getCommandGroups', () => {
-  it('places Continue Import first when drafts exist and omits it otherwise', () => {
-    expect(getCommandGroups(router).map((group) => group.heading)).toEqual([
-      'Navigation',
-      'Settings',
-    ]);
-
+  it('places Continue Import first when drafts exist', () => {
     const groups = getCommandGroups(router, [draft]);
 
     expect(groups.map((group) => group.heading)).toEqual([

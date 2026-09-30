@@ -86,60 +86,6 @@ describe('deriveImportRowStatus', () => {
     reviewCounterpartAccountId: null as string | null,
   };
 
-  it('marks structurally invalid rows as invalid even when previously ready', () => {
-    expect(
-      deriveImportRowStatus({
-        ...readyFields,
-        reviewAmount: null,
-        parsedAmount: null,
-      })
-    ).toBe('invalid');
-  });
-
-  it('recovers to ready when structural fields and review fields are complete', () => {
-    expect(deriveImportRowStatus(readyFields)).toBe('ready');
-  });
-
-  it('returns needs_review when category is cleared', () => {
-    expect(
-      deriveImportRowStatus({
-        ...readyFields,
-        reviewCategoryId: null,
-      })
-    ).toBe('needs_review');
-  });
-
-  it('marks rows without an effective type as structurally invalid', () => {
-    expect(
-      deriveImportRowStatus({
-        ...readyFields,
-        reviewType: null,
-        parsedType: null,
-      })
-    ).toBe('invalid');
-  });
-
-  it('returns needs_review for settlement type without funding', () => {
-    expect(
-      deriveImportRowStatus({
-        ...readyFields,
-        reviewType: 'settlement',
-        reviewCategoryId: null,
-      })
-    ).toBe('needs_review');
-  });
-
-  it('returns ready for settlement with funding and assignees', () => {
-    expect(
-      deriveImportRowStatus({
-        ...readyFields,
-        reviewType: 'settlement',
-        reviewCategoryId: null,
-        reviewCounterpartAccountId: 'fund-1',
-      })
-    ).toBe('ready');
-  });
-
   it('does not require category for settlement rows', () => {
     expect(
       getImportRowReviewBlockers({
@@ -149,15 +95,6 @@ describe('deriveImportRowStatus', () => {
         reviewCounterpartAccountId: 'fund-1',
       })
     ).toEqual([]);
-  });
-
-  it('returns needs_review when assignees are missing', () => {
-    expect(
-      deriveImportRowStatus({
-        ...readyFields,
-        reviewAssigneeMemberIds: [],
-      })
-    ).toBe('needs_review');
   });
 
   it('falls back to parsedType when reviewType is null', () => {

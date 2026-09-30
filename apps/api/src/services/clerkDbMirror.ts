@@ -116,8 +116,8 @@ export const upsertLocalUser = async (
 };
 
 /**
- * True when an incoming Clerk membership should replace the stored mirror identity.
- * `null` stored timestamps are treated as unset so the first post-migration create can populate.
+ * JS mirror of `onConflictDoUpdate` `setWhere` (`isNull(membershipCreatedAt)` OR
+ * `lt(membershipCreatedAt, incoming)`). Shared with unit tests that simulate upserts.
  */
 export const shouldReplaceMirroredMembership = (
   storedCreatedAt: Date | null | undefined,

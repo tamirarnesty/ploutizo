@@ -1,11 +1,3 @@
-import type { AccessState } from '@/lib/access/access-state';
-import { isHouseholdBearerReady } from '@/lib/access/household-loader-ready';
-
-export const isHouseholdQueryBearerReady = (
-  isReady: boolean,
-  access: AccessState
-): boolean => isHouseholdBearerReady(isReady, access);
-
 /** Present bearer-pending queries as loading so route skeletons render during SSR/hydration. */
 export const whileHouseholdBearerPending = <TResult extends { data: unknown }>(
   result: TResult

@@ -55,6 +55,13 @@ describe('createImportReferenceResolver', () => {
       reviewTagIds: [],
       reviewAssigneeMemberIds: [],
     });
+    expect(
+      resolve({
+        csvCategoryName: 'Travel',
+        csvAssigneeName: null,
+        csvTagNames: [],
+      }).reviewCategoryId
+    ).toBeNull();
   });
 
   it('resolves a unique first name', () => {
@@ -65,16 +72,6 @@ describe('createImportReferenceResolver', () => {
         csvTagNames: [],
       }).reviewAssigneeMemberIds
     ).toEqual(['member-1']);
-  });
-
-  it('returns null category for unknown names', () => {
-    expect(
-      resolve({
-        csvCategoryName: 'Travel',
-        csvAssigneeName: null,
-        csvTagNames: [],
-      }).reviewCategoryId
-    ).toBeNull();
   });
 
   it('leaves assignees empty when a first name matches more than one member', () => {
@@ -106,5 +103,36 @@ describe('createImportReferenceResolver', () => {
         csvTagNames: [],
       }).reviewAssigneeMemberIds
     ).toEqual([]);
+  });
+
+  it('resolves assignee by full name when first names collide', () => {
+    const resolveAmbiguous = createImportReferenceResolver({
+      categories: [],
+      tags: [],
+      members: [
+        {
+          id: 'member-1',
+          firstName: 'Tamir',
+          lastName: 'Arnesty',
+          email: 'tamir@example.com',
+          imageUrl: null,
+        },
+        {
+          id: 'member-3',
+          firstName: 'Tamir',
+          lastName: 'Smith',
+          email: 'tamir.smith@example.com',
+          imageUrl: null,
+        },
+      ],
+    });
+
+    expect(
+      resolveAmbiguous({
+        csvCategoryName: null,
+        csvAssigneeName: 'Tamir Smith',
+        csvTagNames: [],
+      }).reviewAssigneeMemberIds
+    ).toEqual(['member-3']);
   });
 });

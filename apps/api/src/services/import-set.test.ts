@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { verifyImportSet } from '@ploutizo/utils/import-set-verification';
+import type { ImportDraftDurableRow } from '@ploutizo/utils';
+import type { ImportSetFacts } from '@ploutizo/utils/import-set-verification';
 import { DomainError, NotFoundError } from '@/lib/errors';
 import { verifyImportSetForDraft } from '@/services/import-set';
 import { loadImportSetFacts } from '@/services/import-set-facts';
@@ -14,25 +15,46 @@ vi.mock('@/services/import-set-facts', () => ({
   loadImportSetFacts: vi.fn(),
 }));
 
-vi.mock('@ploutizo/utils/import-set-verification', async (importOriginal) => {
-  const actual = await importOriginal();
-  if (typeof actual !== 'object' || actual === null) {
-    throw new Error(
-      'Unexpected @ploutizo/utils/import-set-verification module shape.'
-    );
-  }
-  return {
-    ...actual,
-    verifyImportSet: vi.fn(),
-  };
-});
-
 const mockTx = {} as never;
 const draft = {
   id: 'batch-1',
   accountId: 'account-1',
   rowCount: 1,
 };
+
+const expenseRow = (): ImportDraftDurableRow => ({
+  id: 'row-1',
+  reviewDate: '2026-05-02',
+  reviewAmount: 4218,
+  reviewType: 'expense',
+  reviewDescription: 'Coffee',
+  parsedDate: '2026-05-02',
+  parsedAmount: 4218,
+  parsedType: 'expense',
+  parsedDescription: 'Coffee',
+  reviewCategoryId: 'cat-1',
+  reviewAssigneeMemberIds: ['member-1'],
+  reviewCounterpartAccountId: null,
+  reviewRefundOf: null,
+  reviewRefundOfBatchRowId: null,
+  selectedForImport: true,
+  reviewMatchedTransactionId: null,
+  reviewMatchDismissed: false,
+  externalId: null,
+  sourceDescription: null,
+});
+
+const readyFacts = (): ImportSetFacts => ({
+  rowCount: 1,
+  rows: [expenseRow()],
+  targetAccount: { id: 'account-1', type: 'credit_card' },
+  counterpartAccounts: new Map(),
+  validAssigneeMemberIds: new Set(['member-1']),
+  existingTransactions: [],
+  existingExpenses: new Map(),
+  priorRefundsByTarget: new Map(),
+  activeExternalIdOwners: new Map(),
+});
 
 describe('verifyImportSetForDraft', () => {
   beforeEach(() => {
@@ -41,10 +63,7 @@ describe('verifyImportSetForDraft', () => {
     vi.mocked(listDraftRows).mockResolvedValue([
       { id: 'row-1', batchId: 'batch-1' },
     ] as never);
-    vi.mocked(loadImportSetFacts).mockResolvedValue({
-      rowCount: 1,
-      rows: [],
-    } as never);
+    vi.mocked(loadImportSetFacts).mockResolvedValue(readyFacts());
   });
 
   it('404s when a row id is not on the draft', async () => {
@@ -55,47 +74,6 @@ describe('verifyImportSetForDraft', () => {
         rowIds: ['row-missing'],
       })
     ).rejects.toBeInstanceOf(NotFoundError);
-  });
-
-  it('returns structured failures when verification is not ready', async () => {
-    vi.mocked(verifyImportSet).mockReturnValue({
-      ready: false,
-      failures: [{ batchRowId: 'row-1', key: 'transaction.category.required' }],
-    });
-
-    const result = await verifyImportSetForDraft(mockTx, {
-      orgId: 'org_1',
-      batchId: 'batch-1',
-      rowIds: ['row-1'],
-    });
-
-    expect(result).toEqual({
-      ready: false,
-      failures: [{ batchRowId: 'row-1', key: 'transaction.category.required' }],
-    });
-  });
-
-  it('returns projection when verification succeeds', async () => {
-    const projection = [
-      {
-        batchRowId: 'row-1',
-        outcome: 'skipped' as const,
-        transactionId: null,
-        snapshot: {} as never,
-      },
-    ];
-    vi.mocked(verifyImportSet).mockReturnValue({
-      ready: true,
-      projection,
-    });
-
-    const result = await verifyImportSetForDraft(mockTx, {
-      orgId: 'org_1',
-      batchId: 'batch-1',
-      rowIds: ['row-1'],
-    });
-
-    expect(result).toEqual({ ready: true, draft, projection });
   });
 
   it('500s when the draft has no account', async () => {
@@ -111,5 +89,50 @@ describe('verifyImportSetForDraft', () => {
         rowIds: ['row-1'],
       })
     ).rejects.toBeInstanceOf(DomainError);
+  });
+
+  it('loads facts and returns verifyImportSet projection when ready', async () => {
+    const draftRows = [{ id: 'row-1', batchId: 'batch-1' }];
+    const result = await verifyImportSetForDraft(mockTx, {
+      orgId: 'org_1',
+      batchId: 'batch-1',
+      rowIds: ['row-1'],
+    });
+
+    expect(loadImportSetFacts).toHaveBeenCalledWith(mockTx, {
+      orgId: 'org_1',
+      accountId: 'account-1',
+      rowCount: 1,
+      draftRows,
+      selectedRowIds: new Set(['row-1']),
+    });
+    expect(result).toEqual({
+      ready: true,
+      draft: { ...draft, accountId: 'account-1' },
+      projection: [
+        expect.objectContaining({
+          batchRowId: 'row-1',
+          outcome: 'created',
+        }),
+      ],
+    });
+  });
+
+  it('returns structured failures when verification is not ready', async () => {
+    vi.mocked(loadImportSetFacts).mockResolvedValue({
+      ...readyFacts(),
+      rows: [{ ...expenseRow(), reviewCategoryId: null }],
+    });
+
+    const result = await verifyImportSetForDraft(mockTx, {
+      orgId: 'org_1',
+      batchId: 'batch-1',
+      rowIds: ['row-1'],
+    });
+
+    expect(result).toEqual({
+      ready: false,
+      failures: [{ batchRowId: 'row-1', key: 'transaction.category.required' }],
+    });
   });
 });
