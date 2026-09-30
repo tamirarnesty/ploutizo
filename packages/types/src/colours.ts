@@ -60,6 +60,10 @@ export const COLOUR_TOKENS: readonly ColourToken[] = COLOUR_SWATCHES.map(
   (swatch) => swatch.token
 );
 
+/** Keep the `categories` colour CHECK constraint in sync with `COLOUR_TOKENS`. */
+export const categoryColourCheckSql = () =>
+  `colour in (${COLOUR_TOKENS.map((token) => `'${token}'`).join(', ')})`;
+
 /** Shade tiers tried in order when picking a default colour for a new category. */
 const DEFAULT_SHADE_ORDER = [
   '500',

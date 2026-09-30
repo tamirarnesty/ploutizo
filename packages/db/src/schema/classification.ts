@@ -8,6 +8,7 @@
 
 import { sql } from 'drizzle-orm';
 import {
+  check,
   index,
   integer,
   pgTable,
@@ -17,6 +18,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 
+import { categoryColourCheckSql } from '@ploutizo/types';
 import type { ColourToken } from '@ploutizo/types';
 import { merchantMatchTypeEnum } from './enums';
 import { orgMembers, orgs } from './auth';
@@ -53,6 +55,7 @@ export const categories = pgTable(
     uniqueIndex('categories_org_name_idx').on(t.orgId, t.name),
     uniqueIndex('categories_id_org_id_idx').on(t.id, t.orgId),
     index('categories_org_idx').on(t.orgId),
+    check('categories_colour_check', sql.raw(categoryColourCheckSql())),
   ]
 );
 

@@ -1,7 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DEFAULT_CATEGORY_COLOUR_ORDER } from '@ploutizo/types';
+import {
+  DEFAULT_CATEGORY_COLOUR_ORDER,
+  categoryColourCheckSql,
+} from '@ploutizo/types';
 import { describe, expect, it } from 'vitest';
 
 const drizzleDir = join(
@@ -136,5 +139,13 @@ describe('required category colour migration', () => {
     );
     expect(backfillAt).toBeGreaterThan(-1);
     expect(notNullAt).toBeGreaterThan(backfillAt);
+  });
+});
+
+describe('category colour check migration', () => {
+  it('limits category colours to the current palette', () => {
+    expect(sqlFile('0013_category_colour_check.sql')).toContain(
+      `CHECK (${categoryColourCheckSql()})`
+    );
   });
 });
