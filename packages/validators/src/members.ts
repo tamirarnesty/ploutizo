@@ -25,12 +25,12 @@ export const orgMemberSchema = memberIdentitySchema.extend({
 
 export type OrgMember = z.infer<typeof orgMemberSchema>;
 
-export const pendingInvitationStatusSchema = z.enum([
-  'pending',
-  'accepted',
-  'revoked',
-  'expired',
-]);
+/** Statuses the invitations list requests from Clerk, and so the only ones it returns. */
+export const PENDING_INVITATION_STATUS_VALUES = ['pending', 'expired'] as const;
+
+export const pendingInvitationStatusSchema = z.enum(
+  PENDING_INVITATION_STATUS_VALUES
+);
 
 export type PendingInvitationStatus = z.infer<
   typeof pendingInvitationStatusSchema

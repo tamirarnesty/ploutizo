@@ -1,4 +1,8 @@
 import { isClerkAPIResponseError } from '@clerk/backend/errors';
+import {
+  PENDING_INVITATION_STATUS_VALUES,
+  pendingInvitationStatusSchema,
+} from '@ploutizo/validators';
 import type { PendingInvitation } from '@ploutizo/validators';
 import type { ClerkClient } from '@clerk/backend';
 import { getClerkServerClient } from '@/lib/clerkServerClient';
@@ -6,7 +10,6 @@ import { getClerkServerClient } from '@/lib/clerkServerClient';
 /** Clerk org role used for household member invitations. */
 export const HOUSEHOLD_INVITE_ORG_ROLE = 'org:admin' as const;
 
-const INVITATION_LIST_STATUSES = ['pending', 'expired'] as const;
 const INVITATION_LIST_LIMIT = 100;
 
 export type ClerkOrgAdminErrorCode =
@@ -51,20 +54,6 @@ const toIsoTimestamp = (unixMs: number): string =>
 const toOptionalIsoTimestamp = (
   unixMs: number | null | undefined
 ): string | null => (unixMs == null ? null : toIsoTimestamp(unixMs));
-
-const toInvitationStatus = (
-  status: string | undefined
-): PendingInvitation['status'] => {
-  if (
-    status === 'pending' ||
-    status === 'accepted' ||
-    status === 'revoked' ||
-    status === 'expired'
-  ) {
-    return status;
-  }
-  return (status ?? 'pending') as PendingInvitation['status'];
-};
 
 const clerkErrorCode = (err: unknown): string | undefined => {
   if (!isClerkAPIResponseError(err)) return undefined;
@@ -133,16 +122,26 @@ export const createClerkOrgAdminAdapter = (
     try {
       const { data } = await clerk.organizations.getOrganizationInvitationList({
         organizationId,
-        status: [...INVITATION_LIST_STATUSES],
+        status: [...PENDING_INVITATION_STATUS_VALUES],
         limit: INVITATION_LIST_LIMIT,
       });
-      return data.map((invitation) => ({
-        id: invitation.id,
-        email: invitation.emailAddress,
-        status: toInvitationStatus(invitation.status),
-        createdAt: toIsoTimestamp(invitation.createdAt),
-        expiresAt: toOptionalIsoTimestamp(invitation.expiresAt),
-      }));
+      // Clerk filters by the requested statuses; skip anything else rather than mislabel it.
+      return data.flatMap((invitation) => {
+        const status = pendingInvitationStatusSchema.safeParse(
+          invitation.status
+        );
+        return status.success
+          ? [
+              {
+                id: invitation.id,
+                email: invitation.emailAddress,
+                status: status.data,
+                createdAt: toIsoTimestamp(invitation.createdAt),
+                expiresAt: toOptionalIsoTimestamp(invitation.expiresAt),
+              },
+            ]
+          : [];
+      });
     } catch (err) {
       if (err instanceof ClerkOrgAdminError) throw err;
       throw new ClerkOrgAdminError('unknown');
