@@ -1,6 +1,5 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef } from 'react';
 import { Link, useBlocker, useNavigate } from '@tanstack/react-router';
-import { toast } from '@ploutizo/ui/components/sonner';
 import { Button } from '@ploutizo/ui/components/button';
 import { LoadingButton } from '@ploutizo/ui/components/loading-button';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
@@ -22,14 +21,13 @@ import type {
   ImportFinalizePreview,
   ImportFinalizePreviewRow,
 } from '@ploutizo/types';
-import { getApiErrorCode, getApiErrorMessage } from '@/lib/queryClient';
 import {
   clearImportFinalizePreviewSession,
   getImportFinalizePreviewSession,
 } from '@/lib/data-access/imports/importFinalizePreviewSession';
 import {
+  classifyImportFinalizeError,
   getImportRequirementFailures,
-  isImportStaleFinalizeError,
   toImportDraftMeta,
   useFinalizeImportDraft,
   useGetImportDraft,
@@ -136,19 +134,17 @@ const ImportFinalizePreviewRowsTable = ({
   );
 };
 
-export const importDraftNotFoundRedirect = (error: unknown): 'hub' | null => {
-  if (getApiErrorCode(error) !== 'NOT_FOUND') return null;
-  const message = getApiErrorMessage(error, '');
-  return message === 'Import draft not found.' ? 'hub' : null;
-};
-
 export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
   const navigate = useNavigate();
-  const finalizeImport = useFinalizeImportDraft(draftId);
+  const handleFinalizeRef = useRef<() => Promise<void>>(async () => {});
+  const finalizeImport = useFinalizeImportDraft(draftId, {
+    onUncertainFailureRetry: () => {
+      void handleFinalizeRef.current();
+    },
+  });
   const draftQuery = useGetImportDraft(draftId, {
     enabled: !finalizeImport.isPending && !finalizeImport.isSuccess,
   });
-  const [transportError, setTransportError] = useState<string | null>(null);
   const leavingRef = useRef(false);
   const session = getImportFinalizePreviewSession(draftId);
   const preview = session?.preview;
@@ -199,62 +195,34 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
     enableBeforeUnload: false,
   });
 
-  const handleFinalize = async () => {
+  const handleFinalize = useCallback(async () => {
     if (!preview || rowIds.length === 0 || finalizeImport.isPending) return;
-    setTransportError(null);
     try {
-      const result = await finalizeImport.mutateAsync({ rowIds });
-      const viewOutcome =
-        result.createdCount > 0
-          ? 'created'
-          : result.matchedCount > 0
-            ? 'matched'
-            : null;
-      toast.success('Import completed.', {
-        action: viewOutcome
-          ? {
-              label: 'View transactions',
-              onClick: () => {
-                void navigate({
-                  to: '/transactions',
-                  search: {
-                    importBatchId: result.id,
-                    importOutcome: viewOutcome,
-                  },
-                });
-              },
-            }
-          : undefined,
+      await finalizeImport.mutateAsync({
+        rowIds,
+        counts: preview.counts,
       });
       leaveToImportHub();
     } catch (error) {
-      if (isImportStaleFinalizeError(error)) {
+      const outcome = classifyImportFinalizeError(error);
+      if (outcome === 'return-to-review') {
         returnToReview(getImportRequirementFailures(error));
         return;
       }
-      const notFoundRedirect = importDraftNotFoundRedirect(error);
-      if (
-        notFoundRedirect === 'hub' ||
-        getApiErrorCode(error) === 'NOT_FOUND'
-      ) {
+      if (outcome === 'not-found') {
         leaveToImportHub();
-        return;
       }
-      setTransportError(
-        getApiErrorMessage(
-          error,
-          'Could not finalize this import. Please retry.'
-        )
-      );
     }
-  };
+  }, [finalizeImport, leaveToImportHub, preview, returnToReview, rowIds]);
+
+  handleFinalizeRef.current = handleFinalize;
 
   const finalizeBusy = finalizeImport.isPending;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-8">
+    <div className="flex flex-col gap-8">
       <ImportFinalizeBreadcrumbs />
-      <section className="flex min-h-0 flex-1 flex-col gap-6">
+      <section className="flex flex-col gap-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             {meta ? (
@@ -295,22 +263,11 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
                   void handleFinalize();
                 }}
               >
-                {transportError ? 'Retry' : 'Finalize import'}
+                Finalize import
               </LoadingButton>
             </div>
           </div>
         </div>
-
-        {transportError ? (
-          <div
-            className="rounded-md border border-destructive/30 bg-destructive/5 p-3"
-            role="alert"
-          >
-            <Text variant="body-sm" className="text-destructive">
-              {transportError}
-            </Text>
-          </div>
-        ) : null}
 
         {preview ? (
           <>

@@ -17,10 +17,9 @@ import {
   makeImportDraft,
   makeImportDraftRow,
 } from '../test-fixtures/importDraft';
-import { ImportFinalize, importDraftNotFoundRedirect } from './ImportFinalize';
+import { ImportFinalize } from './ImportFinalize';
 
 const finalizeMocks = vi.hoisted(() => ({
-  toastSuccess: vi.fn(),
   draft: {
     data: undefined as ReturnType<typeof makeImportDraft> | undefined,
     isLoading: false,
@@ -30,12 +29,6 @@ const finalizeMocks = vi.hoisted(() => ({
     mutateAsync: vi.fn(),
     isPending: false,
     isSuccess: false,
-  },
-}));
-
-vi.mock('@ploutizo/ui/components/sonner', () => ({
-  toast: {
-    success: finalizeMocks.toastSuccess,
   },
 }));
 
@@ -126,24 +119,6 @@ const completedResult = {
   updatedAt: '2026-05-21T12:00:00.000Z',
 };
 
-describe('importDraftNotFoundRedirect', () => {
-  it('sends a missing draft to the Import hub', () => {
-    expect(
-      importDraftNotFoundRedirect({
-        error: { code: 'NOT_FOUND', message: 'Import draft not found.' },
-      })
-    ).toBe('hub');
-  });
-
-  it('returns null for other not-found messages', () => {
-    expect(
-      importDraftNotFoundRedirect({
-        error: { code: 'NOT_FOUND', message: 'Something else.' },
-      })
-    ).toBe(null);
-  });
-});
-
 describe('ImportFinalize', () => {
   beforeEach(() => {
     resetRouterMocks();
@@ -208,22 +183,6 @@ describe('ImportFinalize', () => {
     expect(heading).not.toHaveClass('truncate');
   });
 
-  it('uses direct recovery copy when finalizing fails without a message', async () => {
-    const user = userEvent.setup();
-    finalizeMocks.finalize.mutateAsync.mockRejectedValueOnce({
-      error: { code: 'UNKNOWN' },
-    });
-
-    render(<ImportFinalize draftId="draft_1" />);
-    await user.click(screen.getByRole('button', { name: 'Finalize import' }));
-
-    await waitFor(() =>
-      expect(screen.getByRole('alert')).toHaveTextContent(
-        'Could not finalize this import. Please retry.'
-      )
-    );
-  });
-
   it('disables Finalize import and shows loading after the first click', async () => {
     const user = userEvent.setup();
     let release!: (value: typeof completedResult) => void;
@@ -239,6 +198,7 @@ describe('ImportFinalize', () => {
 
     expect(finalizeMocks.finalize.mutateAsync).toHaveBeenCalledWith({
       rowIds,
+      counts: preview.counts,
     });
 
     finalizeMocks.finalize.isPending = true;
@@ -337,7 +297,7 @@ describe('ImportFinalize', () => {
     );
   });
 
-  it('stays on Finalize with Retry after an uncertain transport failure', async () => {
+  it('stays on Finalize after an uncertain transport failure so the user can click again', async () => {
     const user = userEvent.setup();
     finalizeMocks.finalize.mutateAsync.mockRejectedValueOnce({
       error: { code: 'UNKNOWN', message: 'The connection dropped.' },
@@ -347,20 +307,15 @@ describe('ImportFinalize', () => {
     await user.click(screen.getByRole('button', { name: 'Finalize import' }));
 
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Retry' })).toBeEnabled()
+      expect(
+        screen.getByRole('button', { name: 'Finalize import' })
+      ).toBeEnabled()
     );
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      'The connection dropped.'
-    );
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(routerMocks.navigate).not.toHaveBeenCalled();
-
-    finalizeMocks.finalize.mutateAsync.mockResolvedValue(completedResult);
-    await user.click(screen.getByRole('button', { name: 'Retry' }));
-
-    expect(finalizeMocks.finalize.mutateAsync).toHaveBeenCalledTimes(2);
   });
 
-  it('redirects a successful finalize to the Import hub with a view-transactions toast', async () => {
+  it('redirects a successful finalize to the Import hub', async () => {
     const user = userEvent.setup();
     finalizeMocks.finalize.mutateAsync.mockImplementation(async () => {
       clearImportFinalizePreviewSession('draft_1');
@@ -371,29 +326,14 @@ describe('ImportFinalize', () => {
     await user.click(screen.getByRole('button', { name: 'Finalize import' }));
 
     await waitFor(() =>
-      expect(finalizeMocks.toastSuccess).toHaveBeenCalledWith(
-        'Import completed.',
-        expect.objectContaining({
-          action: expect.objectContaining({ label: 'View transactions' }),
-        })
-      )
+      expect(routerMocks.navigate).toHaveBeenCalledWith({
+        to: '/import',
+        ignoreBlocker: true,
+      })
     );
-    expect(routerMocks.navigate).toHaveBeenCalledWith({
-      to: '/import',
-      ignoreBlocker: true,
-    });
     expect(routerMocks.navigate).not.toHaveBeenCalledWith(
       expect.objectContaining(importDraftReviewRoute('draft_1'))
     );
-
-    const toastArg = finalizeMocks.toastSuccess.mock.calls[0]?.[1] as {
-      action?: { onClick?: () => void };
-    };
-    toastArg.action?.onClick?.();
-    expect(routerMocks.navigate).toHaveBeenCalledWith({
-      to: '/transactions',
-      search: { importBatchId: 'batch_1', importOutcome: 'created' },
-    });
   });
 
   it('redirects a completed batch to the Import hub on finalize not-found', async () => {

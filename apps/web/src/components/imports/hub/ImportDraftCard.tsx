@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
+import { useIsMutating } from '@tanstack/react-query';
 import { RotateCcw, Trash2 } from 'lucide-react';
 import {
   AlertDialog,
@@ -17,6 +18,7 @@ import { LoadingButton } from '@ploutizo/ui/components/loading-button';
 import { Text } from '@ploutizo/ui/components/text';
 import { formatAccountLabel } from '@ploutizo/utils';
 import type { ImportDraftSummary } from '@ploutizo/types';
+import { importFinalizeMutationKey } from '@/lib/data-access/imports/queryKeys';
 import { importDraftReviewRoute } from '@/lib/navigation';
 
 interface ImportDraftCardProps {
@@ -34,6 +36,8 @@ export const ImportDraftCard = ({
 }: ImportDraftCardProps) => {
   const [discardOpen, setDiscardOpen] = useState(false);
   const discardingThisDraft = isDiscarding && discardingDraftId === draft.id;
+  const finalizing =
+    useIsMutating({ mutationKey: importFinalizeMutationKey(draft.id) }) > 0;
 
   return (
     <div className="rounded-md border border-border p-4">
@@ -49,7 +53,9 @@ export const ImportDraftCard = ({
             {draft.fileName ?? 'Untitled CSV'}
           </Text>
         </div>
-        <Badge variant="secondary">Draft</Badge>
+        <Badge variant="secondary">
+          {finalizing ? 'Finalizing…' : 'Draft'}
+        </Badge>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         <Text as="span" variant="body-sm" className="text-muted-foreground">
@@ -63,19 +69,27 @@ export const ImportDraftCard = ({
         </Text>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
-        <Button
-          variant="outline"
-          nativeButton={false}
-          render={<Link {...importDraftReviewRoute(draft.id)} />}
-        >
-          <RotateCcw />
-          Continue
-        </Button>
+        {finalizing ? (
+          <Button variant="outline" disabled>
+            <RotateCcw />
+            Continue
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            nativeButton={false}
+            render={<Link {...importDraftReviewRoute(draft.id)} />}
+          >
+            <RotateCcw />
+            Continue
+          </Button>
+        )}
         <LoadingButton
           type="button"
           variant="destructive"
           icon={<Trash2 />}
           loading={discardingThisDraft}
+          disabled={finalizing}
           onClick={() => setDiscardOpen(true)}
         >
           Discard
@@ -96,7 +110,7 @@ export const ImportDraftCard = ({
                 onOpenChange(false) explicitly so the dialog dismisses after confirming. */}
             <AlertDialogAction
               variant="destructive"
-              disabled={discardingThisDraft}
+              disabled={discardingThisDraft || finalizing}
               onClick={() => {
                 onDiscard(draft.id);
                 setDiscardOpen(false);

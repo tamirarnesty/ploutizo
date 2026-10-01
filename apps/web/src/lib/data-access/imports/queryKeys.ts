@@ -31,3 +31,6 @@ export const importFinalizePreviewSessionQueryKey = (draftId: string) => [
   draftId,
   'finalize-preview-session',
 ];
+
+export const importFinalizeMutationKey = (draftId: string) =>
+  ['imports', 'finalize', draftId] as const;

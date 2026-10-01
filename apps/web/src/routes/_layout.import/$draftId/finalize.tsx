@@ -8,6 +8,10 @@ const ImportFinalizeRoute = () => {
 };
 
 export const Route = createFileRoute('/_layout/import/$draftId/finalize')({
+  staticData: {
+    /** Document-style preview tables; review keeps viewport layout for the grid. */
+    mainContentLayout: 'scroll',
+  },
   beforeLoad: ({ context, params }) => {
     assertImportFinalizePreviewSession(context.queryClient, params.draftId);
   },

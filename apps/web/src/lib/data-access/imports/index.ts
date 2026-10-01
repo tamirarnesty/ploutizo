@@ -46,7 +46,19 @@ export {
   type ImportReviewLocationState,
 } from './importReviewLocationState';
 export { useContinueImportDraft } from './useContinueImportDraft';
-export { useFinalizeImportDraft } from './useFinalizeImportDraft';
+export {
+  useFinalizeImportDraft,
+  type FinalizeImportVariables,
+} from './useFinalizeImportDraft';
+export {
+  importFinalizePendingMessage,
+  importFinalizeToastId,
+} from './importFinalizeToast';
+export {
+  classifyImportFinalizeError,
+  type ImportFinalizeErrorOutcome,
+} from './importFinalizeOutcome';
+export { importFinalizeMutationKey } from './queryKeys';
 export type { ImportReviewAutosaveStatus } from './importReviewAutosave';
 export {
   useImportReviewSession,
