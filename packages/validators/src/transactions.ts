@@ -178,17 +178,14 @@ export type TransactionForm = z.infer<typeof TransactionFormSchema>;
 // Responses
 // ---------------------------------------------------------------------------
 
-/** Split row on a listed transaction; `percentage` is Postgres `numeric(6,3)`, a decimal string on the wire. */
+/** Split row on a listed transaction; `percentage` is a display value from Postgres `numeric(6,3)`. */
 export const transactionRowAssigneeSchema = memberIdentitySchema
   .omit({ id: true })
   .extend({
     transactionId: z.string(),
     memberId: z.string(),
     amountCents: z.number().int(),
-    percentage: z
-      .string()
-      .regex(/^-?\d+(\.\d+)?$/)
-      .nullable(),
+    percentage: z.number().nullable(),
   });
 
 export type TransactionAssignee = z.infer<typeof transactionRowAssigneeSchema>;

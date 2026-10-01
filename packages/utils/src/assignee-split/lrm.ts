@@ -4,8 +4,6 @@
  * sum exactly to totalCents. Remainder cents go to the first N assignees.
  *
  * percentage returned is a display value (number). Never use for balance math.
- * The stored `transactionAssignees.percentage` Drizzle column returns a string —
- * always parseFloat() before any arithmetic on stored values.
  */
 export const lrmSplit = (
   totalCents: number,

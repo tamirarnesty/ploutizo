@@ -45,9 +45,8 @@ export interface TransactionFormValues {
 /**
  * One row in the SplitSection assignee list.
  *
- * percentage is stored as a number here (not string).
- * When reading from a GET response, always parseFloat(row.percentage ?? '0')
- * before populating form state — Drizzle returns numeric columns as strings.
+ * percentage is a number, as in GET responses. A null percentage on a
+ * response row (display cache not populated) maps to 0 in form state.
  */
 export interface AssigneeFormRow {
   memberId: string;

@@ -47,7 +47,7 @@ const transactionRow = (overrides: Record<string, unknown> = {}) => ({
   deletedAt: null,
   createdAt: TIMESTAMP,
   updatedAt: TIMESTAMP,
-  assignees: [assignee('33.333'), assignee(null)],
+  assignees: [assignee(33.333), assignee(null)],
   tags: [{ transactionId: 'tx_1', id: 'tag_1', name: 'Home', colour: null }],
   ...overrides,
 });
@@ -60,20 +60,19 @@ const listPage = (row: Record<string, unknown>) => ({
 });
 
 describe('transactionListResponseSchema', () => {
-  it('parses a page whose split percentages are numeric strings', () => {
+  it('parses a page whose split percentages are numbers or null', () => {
     const parsed = transactionListResponseSchema.parse(
       listPage(transactionRow())
     );
 
     expect(parsed.data[0]?.assignees.map((a) => a.percentage)).toEqual([
-      '33.333',
+      33.333,
       null,
     ]);
   });
 
   it.each([
-    ['a numeric percentage', { assignees: [assignee(33.333)] }],
-    ['a non-decimal percentage', { assignees: [assignee('a third')] }],
+    ['a string percentage', { assignees: [assignee('33.333')] }],
     ['a timestamp as the calendar date', { date: TIMESTAMP }],
     ['a Postgres-format timestamp', { createdAt: '2026-06-01 12:00:00+00' }],
     ['an unknown transaction type', { type: 'gift' }],

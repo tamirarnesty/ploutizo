@@ -97,7 +97,7 @@ describe('web response schemas against the real API output', () => {
     expect(res.status).toBe(200);
     const page = transactionListResponseSchema.parse(await res.json());
 
-    expect(page.data[0]?.assignees).toHaveLength(1);
+    expect(page.data[0]?.assignees.map((a) => a.percentage)).toEqual([100]);
     expect(page.data[0]?.tags).toHaveLength(1);
   });
 

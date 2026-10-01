@@ -69,7 +69,7 @@ const settlementTransaction = (): TransactionRow =>
         transactionId: 'tx-settlement-1',
         memberId: 'member-emily',
         amountCents: 1976,
-        percentage: '100',
+        percentage: 100,
         firstName: 'Emily Gauvreau',
         lastName: null,
         email: 'Emily Gauvreau@example.com',
