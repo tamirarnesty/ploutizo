@@ -8,6 +8,8 @@ import {
   orgMembers,
   orgs,
   tags,
+  transactionAssignees,
+  transactions,
   users,
 } from '@ploutizo/db/schema';
 import {
@@ -99,6 +101,57 @@ describe('web response schemas against the real API output', () => {
 
     expect(page.data[0]?.assignees.map((a) => a.percentage)).toEqual([100]);
     expect(page.data[0]?.tags).toHaveLength(1);
+  });
+
+  it('returns fractional and null split percentages as numbers', async () => {
+    const accountId = await seedCreditCard('Split card');
+    const [user] = await db
+      .insert(users)
+      .values({
+        externalId: `user_${crypto.randomUUID()}`,
+        email: `${crypto.randomUUID()}@example.test`,
+      })
+      .returning({ id: users.id });
+    const [otherMember] = await db
+      .insert(orgMembers)
+      .values({ orgId: ORG_ID, userId: user.id })
+      .returning({ id: orgMembers.id });
+    const [txn] = await db
+      .insert(transactions)
+      .values({
+        orgId: ORG_ID,
+        type: 'expense',
+        accountId,
+        amount: 1000,
+        date: '2026-05-03',
+        description: 'Fractional split',
+        categoryId,
+      })
+      .returning({ id: transactions.id });
+    await db.insert(transactionAssignees).values([
+      {
+        transactionId: txn.id,
+        memberId,
+        amountCents: 333,
+        percentage: '33.333',
+      },
+      {
+        transactionId: txn.id,
+        memberId: otherMember.id,
+        amountCents: 667,
+        percentage: null,
+      },
+    ]);
+
+    const res = await app.request('/transactions');
+    expect(res.status).toBe(200);
+    const page = transactionListResponseSchema.parse(await res.json());
+    const row = page.data.find((r) => r.id === txn.id);
+
+    const assignees = [...(row?.assignees ?? [])].sort(
+      (a, b) => a.amountCents - b.amountCents
+    );
+    expect(assignees.map((a) => a.percentage)).toEqual([33.333, null]);
   });
 
   it('parses a created draft and its reuse', async () => {
