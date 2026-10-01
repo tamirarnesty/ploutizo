@@ -1,6 +1,6 @@
 import type { DashboardOverviewCategoryRow } from '@ploutizo/validators';
 import { colourTokenVar } from '@/components/colour/colour-token-style';
-import { priorColour } from '@/components/dashboard/dashboardChartColour';
+import { fadedColour } from '@/components/dashboard/dashboardChartColour';
 import { formatWholeCurrency } from '@/components/dashboard/dashboardFormat';
 import type { TooltipPayloadEntry } from 'recharts';
 
@@ -53,7 +53,7 @@ export const NEUTRAL_SERIES_COLOUR = 'var(--muted-foreground)';
 
 const solidPaint = (colour: string): SeriesPaint => ({
   current: colour,
-  prior: priorColour(colour),
+  prior: fadedColour(colour),
 });
 
 const displayFor = (

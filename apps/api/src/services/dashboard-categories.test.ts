@@ -118,8 +118,11 @@ describe('buildOverviewCategories', () => {
       shareOfPeriod: null,
       priorAmountCents: null,
     });
-    // The positive category inside other still counts towards everyone's share.
-    expect(result.at(0)?.shareOfPeriod).toBe(1000 / 8100);
+    // Shares are of the positive rows shown, so they sum to 1 even when other nets negative.
+    expect(result.at(0)?.shareOfPeriod).toBe(1000 / 8000);
+    expect(
+      result.reduce((sum, row) => sum + (row.shareOfPeriod ?? 0), 0)
+    ).toBeCloseTo(1);
   });
 
   it('shows uncategorised last when refunds exceed its spend, with no share', () => {

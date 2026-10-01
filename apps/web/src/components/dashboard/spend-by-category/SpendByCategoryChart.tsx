@@ -18,8 +18,8 @@ import {
 import type { ChartConfig } from '@ploutizo/ui/components/chart';
 import type { DashboardOverviewCategoryRow } from '@ploutizo/validators';
 import {
-  PRIOR_OPACITY,
-  priorColour,
+  FADED_OPACITY,
+  fadedColour,
 } from '@/components/dashboard/dashboardChartColour';
 import { amountDomain } from '@/components/dashboard/dashboardChartDomain';
 import { formatWholeCurrency } from '@/components/dashboard/dashboardFormat';
@@ -61,7 +61,7 @@ export const SpendByCategoryChart = ({
     current: { label: seriesLabels.current, color: NEUTRAL_SERIES_COLOUR },
     prior: {
       label: seriesLabels.prior,
-      color: priorColour(NEUTRAL_SERIES_COLOUR),
+      color: fadedColour(NEUTRAL_SERIES_COLOUR),
     },
   } satisfies ChartConfig;
 
@@ -79,7 +79,7 @@ export const SpendByCategoryChart = ({
           {/* Uncategorised's hatch, and the same hatch faded like every prior bar. */}
           {[
             { id: hatchId, opacity: 1 },
-            { id: priorHatchId, opacity: PRIOR_OPACITY },
+            { id: priorHatchId, opacity: FADED_OPACITY },
           ].map(({ id, opacity }) => (
             <pattern
               key={id}

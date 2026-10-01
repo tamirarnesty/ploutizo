@@ -15,7 +15,7 @@ import {
 } from '@ploutizo/ui/components/chart';
 import type { ChartConfig } from '@ploutizo/ui/components/chart';
 import type { DashboardOverviewGrain } from '@ploutizo/types';
-import { priorColour } from '@/components/dashboard/dashboardChartColour';
+import { fadedColour } from '@/components/dashboard/dashboardChartColour';
 import { amountDomain } from '@/components/dashboard/dashboardChartDomain';
 import { formatWholeCurrency } from '@/components/dashboard/dashboardFormat';
 import { formatTrendBucket } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
@@ -40,7 +40,7 @@ export const SpendTrendChart = ({
   // Prior is the current colour, faded (and dashed below), as on every dashboard chart; legend and tooltip follow.
   const chartConfig = {
     current: { label: seriesLabels.current, color: 'var(--chart-1)' },
-    prior: { label: seriesLabels.prior, color: priorColour('var(--chart-1)') },
+    prior: { label: seriesLabels.prior, color: fadedColour('var(--chart-1)') },
   } satisfies ChartConfig;
   const yDomain = amountDomain(
     data.flatMap((point) => [point.current, point.prior])
@@ -113,13 +113,14 @@ export const SpendTrendChart = ({
           tooltipType="none"
           legendType="none"
         />
+        {/* In-progress buckets: faded like prior, but dotted so the two never read alike. */}
         <Line
           type="monotone"
           dataKey="partial"
-          stroke="var(--color-current)"
+          stroke={fadedColour('var(--color-current)')}
           strokeWidth={2}
-          strokeDasharray="4 4"
-          strokeOpacity={0.6}
+          strokeDasharray="0 5"
+          strokeLinecap="round"
           dot={false}
           activeDot={false}
           tooltipType="none"

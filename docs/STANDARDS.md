@@ -100,7 +100,8 @@ See [shadcn chart docs](https://ui.shadcn.com/docs/components/chart).
 | Series labels and colors | `chartConfig`; keys match `dataKey` / `name`; colors `var(--color-<key>)` |
 | Tooltip date header | `labelFormatter` |
 | Tooltip amounts | `valueFormatter` (Ploutizo fork on `ChartTooltipContent`) |
-| Prior period | The current series' colour, faded to 40% (`priorColour` in `dashboardChartColour.ts`), plus dashed for lines; legend and tooltip take it from `chartConfig` |
+| Prior period | The current series' colour, faded (`fadedColour` in `dashboardChartColour.ts`), plus dashed (`6 4`) for lines; legend and tooltip take it from `chartConfig` |
+| In-progress buckets | The same fade, dotted (`0 5`, round caps) so it never reads as prior; one `FADED_OPACITY` for every de-emphasised mark |
 | Per-point colours (`<Cell>`) | Tooltip dots via `indicatorColor` (Ploutizo fork on `ChartTooltipContent`): Recharts passes the tooltip each series' own colour, never its cells'. The legend then explains the treatment (solid vs faded neutral), not a hue |
 | Axis amounts | `tickFormatter` on `YAxis` / `XAxis` |
 | Missing series in tooltip | Recharts `filterNull` (default); `null` in data, not `0` |
