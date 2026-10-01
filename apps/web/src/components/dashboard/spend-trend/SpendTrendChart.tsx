@@ -15,11 +15,10 @@ import {
 } from '@ploutizo/ui/components/chart';
 import type { ChartConfig } from '@ploutizo/ui/components/chart';
 import type { DashboardOverviewGrain } from '@ploutizo/types';
-import {
-  formatTrendBucket,
-  formatTrendCurrency,
-  spendTrendYDomain,
-} from '@/components/dashboard/spend-trend/spendTrendChartUtils';
+import { fadedColour } from '@/components/dashboard/dashboardChartColour';
+import { amountDomain } from '@/components/dashboard/dashboardChartDomain';
+import { formatWholeCurrency } from '@/components/dashboard/dashboardFormat';
+import { formatTrendBucket } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
 import type {
   SpendTrendSegmentedPoint,
   SpendTrendSeriesLabels,
@@ -38,16 +37,19 @@ export const SpendTrendChart = ({
   hasPriorSeries,
   seriesLabels,
 }: SpendTrendChartProps) => {
+  // Prior is the current colour, faded (and dashed below), as on every dashboard chart; legend and tooltip follow.
   const chartConfig = {
     current: { label: seriesLabels.current, color: 'var(--chart-1)' },
-    prior: { label: seriesLabels.prior, color: 'var(--chart-2)' },
+    prior: { label: seriesLabels.prior, color: fadedColour('var(--chart-1)') },
   } satisfies ChartConfig;
-  const yDomain = spendTrendYDomain(data);
+  const yDomain = amountDomain(
+    data.flatMap((point) => [point.current, point.prior])
+  );
 
   return (
     <ChartContainer
       config={chartConfig}
-      className="aspect-auto h-56 min-h-48 w-full"
+      className="aspect-auto h-full min-h-56 w-full"
     >
       <RechartsLineChart
         data={data}
@@ -70,7 +72,7 @@ export const SpendTrendChart = ({
           tickMargin={8}
           width="auto"
           domain={yDomain}
-          tickFormatter={formatTrendCurrency}
+          tickFormatter={formatWholeCurrency}
         />
         {yDomain[0] < 0 ? (
           <ReferenceLine
@@ -89,7 +91,7 @@ export const SpendTrendChart = ({
                   ? formatTrendBucket(bucketStart, grain, 'tooltip')
                   : '';
               }}
-              valueFormatter={formatTrendCurrency}
+              valueFormatter={formatWholeCurrency}
             />
           }
         />
@@ -111,13 +113,14 @@ export const SpendTrendChart = ({
           tooltipType="none"
           legendType="none"
         />
+        {/* In-progress buckets: faded like prior, but dotted so the two never read alike. */}
         <Line
           type="monotone"
           dataKey="partial"
-          stroke="var(--color-current)"
+          stroke={fadedColour('var(--color-current)')}
           strokeWidth={2}
-          strokeDasharray="4 4"
-          strokeOpacity={0.6}
+          strokeDasharray="0 5"
+          strokeLinecap="round"
           dot={false}
           activeDot={false}
           tooltipType="none"

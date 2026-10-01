@@ -1,6 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
+import { dashboardOverviewResponseSchema } from '@ploutizo/validators';
 import type { ResolvedDashboardPeriod } from '@ploutizo/utils/dashboard-period';
-import type { GetDashboardOverviewResponse } from '@ploutizo/types';
+import type { GetDashboardOverviewResponse } from '@ploutizo/validators';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
@@ -29,10 +30,9 @@ export const dashboardOverviewQueryOptions = (
             period.to,
             period.shortcut,
           ],
-    queryFn: ({ signal }) =>
-      apiFetch<GetDashboardOverviewResponse>(
-        `/api/dashboard/overview${search}`,
-        { signal }
+    queryFn: async ({ signal }) =>
+      dashboardOverviewResponseSchema.parse(
+        await apiFetch<unknown>(`/api/dashboard/overview${search}`, { signal })
       ),
     placeholderData: (previousData) => previousData,
   });

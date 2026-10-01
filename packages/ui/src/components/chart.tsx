@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-condition -- Recharts tooltip payloads are loosely typed */
 import * as React from 'react';
 import * as RechartsPrimitive from 'recharts';
-import { type TooltipValueType } from 'recharts';
+import { type TooltipPayloadEntry, type TooltipValueType } from 'recharts';
 import { cn } from '@/lib/utils';
 
 // Format: { THEME_NAME: CSS_SELECTOR }
@@ -126,6 +126,7 @@ function ChartTooltipContent({
   labelClassName,
   formatter,
   valueFormatter,
+  indicatorColor: resolveIndicatorColor,
   color,
   nameKey,
   labelKey,
@@ -137,6 +138,8 @@ function ChartTooltipContent({
     nameKey?: string;
     labelKey?: string;
     valueFormatter?: (value: number, name: string) => React.ReactNode;
+    /** Ploutizo fork: per-item indicator colour; `undefined` falls back to `color`, the item's fill, then its series colour. */
+    indicatorColor?: (item: TooltipPayloadEntry) => string | undefined;
   } & Omit<
     RechartsPrimitive.DefaultTooltipContentProps<
       TooltipValueType,
@@ -202,7 +205,11 @@ function ChartTooltipContent({
           .map((item, index) => {
             const key = `${nameKey ?? item.name ?? item.dataKey ?? 'value'}`;
             const itemConfig = getPayloadConfigFromPayload(config, item, key);
-            const indicatorColor = color ?? item.payload?.fill ?? item.color;
+            const indicatorColor =
+              resolveIndicatorColor?.(item) ??
+              color ??
+              item.payload?.fill ??
+              item.color;
 
             return (
               <div

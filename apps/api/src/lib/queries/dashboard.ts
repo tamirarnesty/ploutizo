@@ -1,10 +1,10 @@
-import { and, gte, lte, sql } from 'drizzle-orm';
+import { and, eq, gte, lte, sql } from 'drizzle-orm';
 import { db } from '@ploutizo/db';
-import { transactions } from '@ploutizo/db/schema';
-import type { DashboardOverviewGrain } from '@ploutizo/types';
+import { categories, transactions } from '@ploutizo/db/schema';
+import type { ColourToken, DashboardOverviewGrain } from '@ploutizo/types';
 import type { DbClient } from '@ploutizo/db';
 import type { SQL } from 'drizzle-orm';
-import { activeTransactions } from '@/lib/queries/scope';
+import { activeTransactions, categoriesForOrg } from '@/lib/queries/scope';
 
 const netSpendAmountSql = sql<number>`coalesce(sum(
   case
@@ -28,6 +28,15 @@ const spendFilter = (orgId: string) =>
     sql`${transactions.type} in ('expense', 'refund')`
   );
 
+type SpendWindow = { from?: string; to?: string };
+
+const spendWindowFilter = (orgId: string, window: SpendWindow) =>
+  and(
+    spendFilter(orgId),
+    window.from ? gte(transactions.date, window.from) : undefined,
+    window.to ? lte(transactions.date, window.to) : undefined
+  );
+
 export type SpendTrendBucketRow = {
   bucketStart: string;
   amountCents: number;
@@ -36,7 +45,7 @@ export type SpendTrendBucketRow = {
 export const fetchNetSpendByBucket = async (
   orgId: string,
   grain: DashboardOverviewGrain,
-  input: { from?: string; to?: string },
+  window: SpendWindow,
   client: DbClient = db
 ): Promise<SpendTrendBucketRow[]> => {
   const bucketStart = BUCKET_START_SQL[grain].as('bucket_start');
@@ -46,13 +55,7 @@ export const fetchNetSpendByBucket = async (
       amountCents: netSpendAmountSql.as('amount_cents'),
     })
     .from(transactions)
-    .where(
-      and(
-        spendFilter(orgId),
-        input.from ? gte(transactions.date, input.from) : undefined,
-        input.to ? lte(transactions.date, input.to) : undefined
-      )
-    )
+    .where(spendWindowFilter(orgId, window))
     .groupBy(bucketStart)
     .orderBy(bucketStart);
 };
@@ -74,4 +77,53 @@ export const fetchSpendDateBounds = async (
     .from(transactions)
     .where(spendFilter(orgId));
   return bounds;
+};
+
+export type CategoryNetSpendRow = {
+  categoryId: string;
+  name: string;
+  colour: ColourToken;
+  amountCents: number;
+};
+
+export type NetSpendByCategory = {
+  categories: CategoryNetSpendRow[];
+  /** Net spend on transactions with no category. */
+  uncategorisedCents: number;
+};
+
+/** Net spend per category, plus the net spend with no category, in one grouped query. */
+export const fetchNetSpendByCategory = async (
+  orgId: string,
+  window: SpendWindow,
+  client: DbClient = db
+): Promise<NetSpendByCategory> => {
+  const rows = await client
+    .select({
+      categoryId: transactions.categoryId,
+      name: categories.name,
+      colour: categories.colour,
+      amountCents: netSpendAmountSql.as('amount_cents'),
+    })
+    .from(transactions)
+    .leftJoin(
+      categories,
+      and(
+        eq(categories.id, transactions.categoryId),
+        ...categoriesForOrg(orgId)
+      )
+    )
+    .where(spendWindowFilter(orgId, window))
+    .groupBy(transactions.categoryId, categories.name, categories.colour);
+
+  const result: NetSpendByCategory = { categories: [], uncategorisedCents: 0 };
+  for (const { categoryId, name, colour, amountCents } of rows) {
+    if (categoryId !== null && name !== null && colour !== null) {
+      result.categories.push({ categoryId, name, colour, amountCents });
+    } else {
+      // No category, or one outside the org (the join finds nothing): spend still counts, as uncategorised.
+      result.uncategorisedCents += amountCents;
+    }
+  }
+  return result;
 };

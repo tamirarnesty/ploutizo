@@ -15,6 +15,7 @@ type SettlementSummaryPaneProps = {
   isError: boolean;
   isLoading: boolean;
   members: OrgMember[];
+  className?: string;
 };
 
 export const SettlementSummaryPane = ({
@@ -22,6 +23,7 @@ export const SettlementSummaryPane = ({
   isError,
   isLoading,
   members,
+  className,
 }: SettlementSummaryPaneProps) => {
   const { hasHouseholdCreditCards, memberRollup, sharedRollupCents } =
     useCreditCardMemberRollup(accounts);
@@ -38,6 +40,7 @@ export const SettlementSummaryPane = ({
       isLoading={isLoading}
       isError={isError}
       errorMessage="Couldn’t load settlement summary. Check your connection and try again."
+      className={className}
     >
       <CardContent className="space-y-2 px-3.5 py-2">
         {hasHouseholdCreditCards ? (

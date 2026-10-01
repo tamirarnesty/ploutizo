@@ -1,3 +1,4 @@
+import { nextCategoryColour } from '@ploutizo/types';
 import { CategoryFormSchema } from '@ploutizo/validators';
 import { useAppForm } from '@ploutizo/ui/components/form';
 import { Button } from '@ploutizo/ui/components/button';
@@ -13,6 +14,7 @@ import { Text } from '@ploutizo/ui/components/text';
 import type { CategoryForm as CategoryFormType } from '@ploutizo/validators';
 import {
   useCreateCategory,
+  useGetCategories,
   useUpdateCategory,
 } from '@/lib/data-access/categories';
 import { ColourTokenPicker } from '@/components/colour/ColourTokenPicker';
@@ -28,12 +30,16 @@ export const CategoryForm = ({ category, onClose }: CategoryFormProps) => {
   const isEditing = category !== null;
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory(category?.id ?? '');
+  const { data: categories = [] } = useGetCategories();
 
   const form = useAppForm({
     defaultValues: {
       name: category?.name ?? '',
       icon: category?.icon ?? undefined,
-      colour: category?.colour ?? undefined,
+      // New categories start on the first palette colour no other category uses yet.
+      colour:
+        category?.colour ??
+        nextCategoryColour(categories.map((existing) => existing.colour)),
     } satisfies CategoryFormType,
     validators: {
       onSubmit: ({ value }: { value: CategoryFormType }) => {
@@ -47,7 +53,7 @@ export const CategoryForm = ({ category, onClose }: CategoryFormProps) => {
       const payload = {
         name: value.name.trim(),
         icon: value.icon ?? undefined,
-        colour: value.colour ?? undefined,
+        colour: value.colour,
       };
       const mutation = isEditing ? updateCategory : createCategory;
       mutation.mutate(payload, {
@@ -113,7 +119,7 @@ export const CategoryForm = ({ category, onClose }: CategoryFormProps) => {
             <Field>
               <FieldLabel>Colour</FieldLabel>
               <ColourTokenPicker
-                value={field.state.value ?? null}
+                value={field.state.value}
                 onChange={(v) => field.handleChange(v)}
               />
             </Field>

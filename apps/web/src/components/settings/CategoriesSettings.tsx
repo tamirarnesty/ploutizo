@@ -32,7 +32,12 @@ export const CategoriesSettings = () => {
           <Text as="h2" variant="label" className="font-semibold">
             Categories
           </Text>
-          <Button type="button" size="sm" onClick={dialog.openCreate}>
+          <Button
+            type="button"
+            size="sm"
+            disabled={catLoading}
+            onClick={dialog.openCreate}
+          >
             Add category
           </Button>
         </div>

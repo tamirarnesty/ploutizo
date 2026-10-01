@@ -85,6 +85,20 @@
       "when": 1788903600000,
       "tag": "0011_household_auto_check_import_row",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1788907200000,
+      "tag": "0012_required_category_colour",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1788910800000,
+      "tag": "0013_category_colour_check",
+      "breakpoints": true
     }
   ]
 }

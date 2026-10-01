@@ -178,7 +178,7 @@ describe('import service', () => {
         orgId: 'org_1',
         name: 'Dining',
         icon: null,
-        colour: null,
+        colour: 'rose-500',
         sortOrder: 0,
         archivedAt: null,
         createdAt: new Date('2026-01-01T00:00:00Z'),

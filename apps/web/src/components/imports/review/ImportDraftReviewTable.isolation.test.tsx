@@ -93,7 +93,7 @@ const defaultCategories: Category[] = [
     orgId: 'org_1',
     name: 'Dining',
     icon: null,
-    colour: null,
+    colour: 'rose-500',
     sortOrder: 0,
     archivedAt: null,
     createdAt: '2026-05-20T12:00:00Z',

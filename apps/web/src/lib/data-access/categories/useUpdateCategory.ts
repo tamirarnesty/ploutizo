@@ -1,12 +1,14 @@
 import { useQueryClient } from '@tanstack/react-query';
+import type { ColourToken } from '@ploutizo/types';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
+import { dashboardOverviewQueryKey } from '@/lib/data-access/dashboard/useGetDashboardOverview';
 import { apiFetch } from '@/lib/queryClient';
 import type { Category } from './useGetCategories';
 
 interface UpdateCategoryBody {
   name?: string;
   icon?: string;
-  colour?: string;
+  colour?: ColourToken;
 }
 
 export const updateCategory = async (
@@ -24,9 +26,11 @@ export const useUpdateCategory = (id: string) => {
   const qc = useQueryClient();
   return useHouseholdMutation({
     mutationFn: (body: UpdateCategoryBody) => updateCategory(id, body),
+    // The dashboard overview carries category names and colours, so a rename or recolour must refresh it too.
     onSettled: () =>
-      qc.invalidateQueries({
-        queryKey: ['categories'],
-      }),
+      Promise.all([
+        qc.invalidateQueries({ queryKey: ['categories'] }),
+        qc.invalidateQueries({ queryKey: dashboardOverviewQueryKey }),
+      ]),
   });
 };

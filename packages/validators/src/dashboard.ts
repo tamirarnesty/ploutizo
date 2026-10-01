@@ -3,6 +3,8 @@ import {
   DASHBOARD_PERIOD_SHORTCUTS,
   DASHBOARD_RANGED_SHORTCUTS,
 } from '@ploutizo/utils/dashboard-period';
+import { DASHBOARD_OVERVIEW_GRAIN_VALUES } from '@ploutizo/types';
+import { colourTokenSchema } from './colour-tokens';
 
 const calendarDates = {
   from: z.iso.date(),
@@ -58,3 +60,85 @@ export const dashboardOverviewQuerySchema = z.union([
 export type DashboardOverviewQuery = z.output<
   typeof dashboardOverviewQuerySchema
 >;
+
+/**
+ * The `GET /api/dashboard/overview` response. The API tests and the web client parse against it, so a
+ * drifting server or client fails loudly instead of rendering wrong data.
+ */
+const dashboardOverviewGrainSchema = z.enum(DASHBOARD_OVERVIEW_GRAIN_VALUES);
+
+const dashboardOverviewRangeSchema = z.object({
+  ...calendarDates,
+  priorFrom: z.iso.date().nullable(),
+  priorTo: z.iso.date().nullable(),
+  grain: dashboardOverviewGrainSchema,
+});
+
+/**
+ * Net spend and share shared by every category row. `amountCents` may be negative when refunds exceed spend;
+ * `priorAmountCents` is null on All, which has no prior.
+ */
+const categoryRowAmounts = {
+  amountCents: z.number().int(),
+  /**
+   * This row's share of the period's positive net spend: every category and uncategorised that nets above zero
+   * (0–1). Null when the row nets to zero or less, as when refunds exceed spend.
+   */
+  shareOfPeriod: z.number().min(0).max(1).nullable(),
+  priorAmountCents: z.number().int().nullable(),
+};
+
+/**
+ * One bar in "Spend by category": a top category, the aggregate of the categories beyond the top eight, or
+ * spend with no category. The web owns the labels and colours of the two synthetic kinds.
+ */
+const dashboardOverviewCategoryRowSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('category'),
+    categoryId: z.string(),
+    name: z.string(),
+    colour: colourTokenSchema,
+    ...categoryRowAmounts,
+  }),
+  z.object({
+    kind: z.literal('other'),
+    /** How many categories the aggregate covers. */
+    categoryCount: z.number().int().positive(),
+    ...categoryRowAmounts,
+  }),
+  z.object({
+    kind: z.literal('uncategorised'),
+    ...categoryRowAmounts,
+  }),
+]);
+
+export const dashboardOverviewResponseSchema = z.object({
+  meta: z.discriminatedUnion('kind', [
+    z.object({
+      kind: z.literal('ranged'),
+      range: dashboardOverviewRangeSchema,
+    }),
+    z.object({
+      kind: z.literal('all'),
+      /** First to last day with spend, monthly with no prior; null when there is none. */
+      range: dashboardOverviewRangeSchema.nullable(),
+    }),
+  ]),
+  trend: z.array(
+    z.object({
+      bucketStart: z.iso.date(),
+      amountCents: z.number().int(),
+      priorAmountCents: z.number().int().nullable(),
+    })
+  ),
+  categories: z.array(dashboardOverviewCategoryRowSchema),
+});
+
+export type GetDashboardOverviewResponse = z.infer<
+  typeof dashboardOverviewResponseSchema
+>;
+export type DashboardOverviewMeta = GetDashboardOverviewResponse['meta'];
+export type DashboardOverviewTrendPoint =
+  GetDashboardOverviewResponse['trend'][number];
+export type DashboardOverviewCategoryRow =
+  GetDashboardOverviewResponse['categories'][number];

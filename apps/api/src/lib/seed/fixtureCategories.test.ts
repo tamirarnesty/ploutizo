@@ -134,6 +134,25 @@ describe('ensureFixtureCategories', () => {
     ]);
   });
 
+  it('posts missing defaults with their default icon and colour', async () => {
+    const api = createMockApi({
+      activeCategories: activeDefaults().filter(
+        (category) => category.name !== 'Travel'
+      ),
+    });
+
+    await ensureFixtureCategories(api);
+
+    expect(api.post).toHaveBeenCalledWith(
+      '/api/categories',
+      expect.objectContaining({
+        name: 'Travel',
+        icon: 'Plane',
+        colour: 'sky-500',
+      })
+    );
+  });
+
   it('restores an archived default instead of posting a duplicate name', async () => {
     const archivedGroceries = {
       id: 'cat-archived-groceries',

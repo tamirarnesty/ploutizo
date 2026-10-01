@@ -24,12 +24,12 @@ import {
   isDashboardRangedShortcut,
 } from '@ploutizo/utils/dashboard-period';
 import type {
-  GetDashboardOverviewResponse,
   GetSettlementBalancesResponse,
   MemberIdentity,
   OrgMember,
   SettlementAccountRow,
 } from '@ploutizo/types';
+import type { GetDashboardOverviewResponse } from '@ploutizo/validators';
 import type * as HouseholdLoaderReady from '@/lib/access/household-loader-ready';
 import type { RouterContext } from '@/router';
 // `.dashboard` is part of the route file name, not an extension.
@@ -91,6 +91,7 @@ const overviewFor = (url: URL): GetDashboardOverviewResponse => {
         },
       },
       trend: [],
+      categories: [],
     };
   }
   const shortcut = url.searchParams.get('shortcut');
@@ -110,6 +111,7 @@ const overviewFor = (url: URL): GetDashboardOverviewResponse => {
       },
     },
     trend: [],
+    categories: [],
   };
 };
 
@@ -182,6 +184,7 @@ const jsonResponse = (body: unknown, status = 200) =>
 
 let settlementsBody = settlements;
 let membersBody = members;
+let overviewFixture: ((url: URL) => GetDashboardOverviewResponse) | null = null;
 const failingPaths = new Set<string>();
 let requestGate: Promise<void> | null = null;
 
@@ -215,7 +218,7 @@ const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       ? settlementsBody
       : path === MEMBERS_PATH
         ? { data: membersBody }
-        : overviewFor(new URL(url, 'http://localhost'))
+        : (overviewFixture ?? overviewFor)(new URL(url, 'http://localhost'))
   );
 });
 
@@ -347,6 +350,7 @@ describe('Dashboard', () => {
     loaderReady.value = false;
     settlementsBody = settlements;
     membersBody = members;
+    overviewFixture = null;
     failingPaths.clear();
     requestGate = null;
     fetchMock.mockClear();
@@ -670,6 +674,158 @@ describe('Dashboard', () => {
   it('renders the spend trend card', async () => {
     await renderDashboard();
     expect(screen.getByText('Spend trend')).toBeInTheDocument();
+  });
+
+  describe('spend by category', () => {
+    /**
+     * jsdom lays nothing out, and Recharts draws nothing in a container it measures at 0×0 on mount. Only the
+     * container gets a size: Recharts also measures tick labels, and oversized labels would be dropped.
+     */
+    const giveChartsRoomToDraw = () => {
+      const measure = HTMLElement.prototype.getBoundingClientRect;
+      vi.spyOn(
+        HTMLElement.prototype,
+        'getBoundingClientRect'
+      ).mockImplementation(function (this: HTMLElement) {
+        return this.classList.contains('recharts-responsive-container')
+          ? DOMRect.fromRect({ width: 480, height: 320 })
+          : measure.call(this);
+      });
+    };
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('renders the spend by category card', async () => {
+      await renderDashboard();
+      expect(await screen.findByText('Spend by category')).toBeInTheDocument();
+    });
+
+    it('shows category bars when the overview includes spend', async () => {
+      giveChartsRoomToDraw();
+      overviewFixture = () => ({
+        ...overviewFor(
+          new URL(
+            `${OVERVIEW_PATH}?from=2026-03-01&to=2026-03-24&shortcut=mtd`,
+            'http://localhost'
+          )
+        ),
+        categories: [
+          {
+            kind: 'category',
+            categoryId: 'cat_groceries',
+            name: 'Groceries',
+            colour: 'green-500',
+            amountCents: 4200,
+            shareOfPeriod: 0.6,
+            priorAmountCents: 3000,
+          },
+          {
+            kind: 'other',
+            categoryCount: 2,
+            amountCents: 1800,
+            shareOfPeriod: 0.3,
+            priorAmountCents: 900,
+          },
+          {
+            kind: 'uncategorised',
+            amountCents: 700,
+            shareOfPeriod: 0.1,
+            priorAmountCents: 0,
+          },
+        ],
+      });
+      await renderDashboard();
+      const card = cardFor('Spend by category');
+      expect(await within(card).findByText('Groceries')).toBeInTheDocument();
+      expect(
+        within(card).getByText('All other categories')
+      ).toBeInTheDocument();
+      expect(within(card).getByText('Uncategorised')).toBeInTheDocument();
+    });
+
+    it('charts spend that is all uncategorised', async () => {
+      giveChartsRoomToDraw();
+      overviewFixture = () => ({
+        ...overviewFor(new URL(OVERVIEW_PATH, 'http://localhost')),
+        categories: [
+          {
+            kind: 'uncategorised',
+            amountCents: 700,
+            shareOfPeriod: 1,
+            priorAmountCents: null,
+          },
+        ],
+      });
+      await renderDashboard();
+      expect(
+        await within(cardFor('Spend by category')).findByText('Uncategorised')
+      ).toBeInTheDocument();
+    });
+
+    it('charts categories that refunds exceed alongside spend', async () => {
+      giveChartsRoomToDraw();
+      overviewFixture = () => ({
+        ...overviewFor(new URL(OVERVIEW_PATH, 'http://localhost')),
+        categories: [
+          {
+            kind: 'category',
+            categoryId: 'cat_groceries',
+            name: 'Groceries',
+            colour: 'green-500',
+            amountCents: 4200,
+            shareOfPeriod: 1,
+            priorAmountCents: null,
+          },
+          {
+            kind: 'category',
+            categoryId: 'cat_travel',
+            name: 'Travel',
+            colour: 'blue-500',
+            amountCents: -1500,
+            shareOfPeriod: null,
+            priorAmountCents: null,
+          },
+        ],
+      });
+      await renderDashboard();
+      const card = cardFor('Spend by category');
+      expect(await within(card).findByText('Groceries')).toBeInTheDocument();
+      expect(within(card).getByText('Travel')).toBeInTheDocument();
+    });
+
+    it('shows an empty state when the period has no category spend', async () => {
+      await renderDashboard();
+      expect(
+        await within(cardFor('Spend by category')).findByText(
+          'No spend in this period'
+        )
+      ).toBeInTheDocument();
+    });
+
+    it('shows a muted error when the overview fails to load', async () => {
+      failingPaths.add(OVERVIEW_PATH);
+      await renderDashboard();
+      expect(
+        await within(cardFor('Spend by category')).findByRole('alert')
+      ).toHaveTextContent(/Couldn’t load spend by category/);
+    });
+
+    it('marks the card busy while the overview loads', async () => {
+      const release = holdRequests();
+      void renderDashboard();
+      expect(await screen.findByText('Spend by category')).toBeInTheDocument();
+      expect(cardFor('Spend by category')).toHaveAttribute('aria-busy', 'true');
+      release();
+      await within(cardFor('Spend by category')).findByText(
+        'No spend in this period'
+      );
+      expect(cardFor('Spend by category')).toHaveAttribute(
+        'aria-busy',
+        'false'
+      );
+    });
   });
 
   it('shows the card balances total in the section header', async () => {

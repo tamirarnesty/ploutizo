@@ -1,6 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  DEFAULT_CATEGORY_COLOUR_ORDER,
+  categoryColourCheckSql,
+} from '@ploutizo/types';
 import { describe, expect, it } from 'vitest';
 
 const drizzleDir = join(
@@ -112,5 +116,36 @@ describe('prepared row snapshot cutover migration', () => {
       'UPDATE "import_prepared_outcomes"'
     );
     expect(snapshotCutoverMigration).not.toContain('reviewed_values ->');
+  });
+});
+
+describe('required category colour migration', () => {
+  const colourMigration = sqlFile('0012_required_category_colour.sql');
+
+  it('backfills from the same default ordering new categories use', () => {
+    const paletteArray = /ARRAY\[([\s\S]*?)\]::text\[\]/.exec(
+      colourMigration
+    )?.[1];
+    const tokens = [...(paletteArray ?? '').matchAll(/'([a-z]+-\d{3})'/g)].map(
+      (match) => match[1]
+    );
+    expect(tokens).toEqual(DEFAULT_CATEGORY_COLOUR_ORDER);
+  });
+
+  it('requires a colour once rows are backfilled', () => {
+    const backfillAt = colourMigration.indexOf('UPDATE "categories"');
+    const notNullAt = colourMigration.indexOf(
+      'ALTER COLUMN "colour" SET NOT NULL'
+    );
+    expect(backfillAt).toBeGreaterThan(-1);
+    expect(notNullAt).toBeGreaterThan(backfillAt);
+  });
+});
+
+describe('category colour check migration', () => {
+  it('limits category colours to the current palette', () => {
+    expect(sqlFile('0013_category_colour_check.sql')).toContain(
+      `CHECK (${categoryColourCheckSql()})`
+    );
   });
 });

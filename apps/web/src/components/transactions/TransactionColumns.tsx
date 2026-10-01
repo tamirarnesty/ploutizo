@@ -21,7 +21,7 @@ import { cn } from '@ploutizo/ui/lib/utils';
 import { formatCurrency } from '@ploutizo/utils/currency';
 import { memberFullLabel } from '@ploutizo/utils';
 import { CachedLucideIcon } from '@/components/categories/CachedLucideIcon';
-import { getColourBadgeClassFromRaw } from '@/components/colour/colour-token-classes';
+import { colourTokenBadgeStyle } from '@/components/colour/colour-token-style';
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
 import { RightAlignedColumnHeader } from '@/components/dashboard/card-balances/RightAlignedColumnHeader';
 import type { TransactionRow } from '@/lib/data-access/transactions';
@@ -257,10 +257,10 @@ export const buildColumns = (
         return showCategory ? (
           <Badge
             variant="outline"
-            className={cn(
-              'gap-1 px-1.5 py-0.5 text-xs font-normal',
-              getColourBadgeClassFromRaw(categoryColour)
-            )}
+            className="gap-1 px-1.5 py-0.5 text-xs font-normal"
+            style={
+              categoryColour ? colourTokenBadgeStyle(categoryColour) : undefined
+            }
           >
             <CachedLucideIcon name={categoryIcon} size={12} />
             <span className="min-w-0 truncate">{categoryName}</span>

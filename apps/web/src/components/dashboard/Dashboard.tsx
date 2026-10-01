@@ -11,6 +11,7 @@ import { useGetSettlements } from '@/lib/data-access/settlements';
 import { selectCreditCardAccounts } from '@/lib/settlements';
 import { CardBalancesGrid } from '@/components/dashboard/card-balances/CardBalancesGrid';
 import { SpendTrendCard } from '@/components/dashboard/spend-trend/SpendTrendCard';
+import { SpendByCategoryCard } from '@/components/dashboard/spend-by-category/SpendByCategoryCard';
 import { DashboardHeader } from './DashboardHeader';
 import { useDashboardSearch } from './useDashboardSearch';
 import { SettleDialog } from './SettleDialog';
@@ -117,34 +118,37 @@ export const Dashboard = () => {
       />
 
       {/*
-        Container query, not a viewport breakpoint: cards must also reflow when
-        the sidebar opens or closes, which only changes the available width.
+        Flex-wrap, not a fixed grid: each card has a preferred width and grows
+        into free space, wrapping to the next line when it no longer fits — so
+        cards also reflow when the sidebar opens or closes. Cards on the same
+        line stretch to equal height.
       */}
-      <div className="@container/dashboard space-y-4">
+      <div className="flex flex-wrap gap-4">
         <SpendTrendCard
+          className="min-w-0 flex-[2_1_32rem]"
           query={overviewQuery}
           mode={spendTrendMode}
           onModeChange={selectSpendTrendMode}
           today={today}
         />
-        <div className="grid grid-cols-1 items-start gap-4 @4xl/dashboard:grid-cols-4">
-          <div className="min-w-0 @4xl/dashboard:col-span-3">
-            <CardBalancesGrid
-              rows={cardBalanceRows}
-              isLoading={liveSectionsLoading}
-              isError={liveSectionsError}
-              onSettleClick={handleSettleClick}
-            />
-          </div>
-          <div className="min-w-0 @4xl/dashboard:col-span-1">
-            <SettlementSummaryPane
-              accounts={settlements?.accounts}
-              isError={liveSectionsError}
-              isLoading={liveSectionsLoading}
-              members={members}
-            />
-          </div>
-        </div>
+        <SpendByCategoryCard
+          className="min-w-0 flex-[1_1_20rem]"
+          query={overviewQuery}
+        />
+        <CardBalancesGrid
+          className="min-w-0 flex-[3_1_36rem]"
+          rows={cardBalanceRows}
+          isLoading={liveSectionsLoading}
+          isError={liveSectionsError}
+          onSettleClick={handleSettleClick}
+        />
+        <SettlementSummaryPane
+          className="min-w-0 flex-[1_1_18rem]"
+          accounts={settlements?.accounts}
+          isError={liveSectionsError}
+          isLoading={liveSectionsLoading}
+          members={members}
+        />
       </div>
 
       <SettleDialog

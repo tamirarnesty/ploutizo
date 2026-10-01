@@ -4,17 +4,21 @@ import {
   dashboardRangeGrain,
 } from '@ploutizo/utils/dashboard-period';
 import type { DashboardRangedShortcut } from '@ploutizo/utils/dashboard-period';
-import type { DashboardOverviewQuery } from '@ploutizo/validators';
+import type {
+  DashboardOverviewQuery,
+  DashboardOverviewTrendPoint,
+  GetDashboardOverviewResponse,
+} from '@ploutizo/validators';
 import type {
   CalendarDateRange,
   DashboardOverviewGrain,
-  DashboardOverviewTrendPoint,
-  GetDashboardOverviewResponse,
 } from '@ploutizo/types';
 import {
   fetchNetSpendByBucket,
+  fetchNetSpendByCategory,
   fetchSpendDateBounds,
 } from '@/lib/queries/dashboard';
+import { buildOverviewCategories } from '@/services/dashboard-categories';
 
 const fetchAmountsByBucket = async (
   orgId: string,
@@ -53,10 +57,13 @@ const getRangedOverview = async (
 ): Promise<GetDashboardOverviewResponse> => {
   const grain = dashboardRangeGrain(range);
   const prior = dashboardPriorRange(range, shortcut);
-  const [amounts, priorAmounts] = await Promise.all([
-    fetchAmountsByBucket(orgId, grain, range),
-    fetchAmountsByBucket(orgId, grain, prior),
-  ]);
+  const [amounts, priorAmounts, categorySpend, priorCategorySpend] =
+    await Promise.all([
+      fetchAmountsByBucket(orgId, grain, range),
+      fetchAmountsByBucket(orgId, grain, prior),
+      fetchNetSpendByCategory(orgId, range),
+      fetchNetSpendByCategory(orgId, prior),
+    ]);
 
   return {
     meta: {
@@ -67,18 +74,20 @@ const getRangedOverview = async (
       range: prior,
       amounts: priorAmounts,
     }),
+    categories: buildOverviewCategories(categorySpend, priorCategorySpend),
   };
 };
 
 const getAllTimeOverview = async (
   orgId: string
 ): Promise<GetDashboardOverviewResponse> => {
-  const [{ first, last }, amounts] = await Promise.all([
+  const [{ first, last }, amounts, categorySpend] = await Promise.all([
     fetchSpendDateBounds(orgId),
     fetchAmountsByBucket(orgId, 'month', {}),
+    fetchNetSpendByCategory(orgId, {}),
   ]);
   if (first === null || last === null) {
-    return { meta: { kind: 'all', range: null }, trend: [] };
+    return { meta: { kind: 'all', range: null }, trend: [], categories: [] };
   }
 
   const range = { from: first, to: last };
@@ -88,6 +97,7 @@ const getAllTimeOverview = async (
       range: { ...range, priorFrom: null, priorTo: null, grain: 'month' },
     },
     trend: buildTrend(range, 'month', amounts, null),
+    categories: buildOverviewCategories(categorySpend, null),
   };
 };
 

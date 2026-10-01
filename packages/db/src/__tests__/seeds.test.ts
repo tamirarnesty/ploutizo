@@ -78,13 +78,20 @@ describe('seed rows', () => {
     );
   });
 
-  it('inserts all household default categories with icons and sequential sortOrder', () => {
+  it('inserts all household default categories with icons, colours and sequential sortOrder', () => {
     const rows = seedCategoryRowsForOrg('org_test123');
 
-    expect(rows.map((row) => ({ name: row.name, icon: row.icon }))).toEqual(
+    expect(
+      rows.map((row) => ({
+        name: row.name,
+        icon: row.icon,
+        colour: row.colour,
+      }))
+    ).toEqual(
       HOUSEHOLD_DEFAULT_CATEGORIES.map((category) => ({
         name: category.name,
         icon: category.icon,
+        colour: category.colour,
       }))
     );
     expect(rows.map((row) => row.sortOrder)).toEqual(

@@ -1,5 +1,4 @@
 import { format } from 'date-fns';
-import { formatCurrency } from '@ploutizo/utils/currency';
 import {
   bucketBounds,
   formatCalendarDateRange,
@@ -8,10 +7,20 @@ import {
 import type {
   CalendarDateRange,
   DashboardOverviewGrain,
-  DashboardOverviewMeta,
-  GetDashboardOverviewResponse,
 } from '@ploutizo/types';
+import type {
+  DashboardOverviewMeta,
+  DashboardOverviewTrendPoint,
+  GetDashboardOverviewResponse,
+} from '@ploutizo/validators';
 import type { SpendTrendMode } from '@/lib/spend-trend-mode';
+
+export const hasSpendActivity = (
+  trend: DashboardOverviewTrendPoint[]
+): boolean =>
+  trend.some(
+    (point) => point.amountCents !== 0 || (point.priorAmountCents ?? 0) !== 0
+  );
 
 type SpendTrendChartPoint = {
   bucketStart: string;
@@ -137,25 +146,6 @@ export const toSpendTrendChartData = (
     };
   });
 };
-
-export const spendTrendYDomain = (
-  data: SpendTrendChartPoint[]
-): [number, number] => {
-  const values = data.flatMap((point) =>
-    [point.current, point.prior ?? 0].filter((value) => Number.isFinite(value))
-  );
-  const min = Math.min(...values, 0);
-  const max = Math.max(...values, 0);
-  if (min === max) {
-    return [min - 1, max + 1];
-  }
-  return [min, max];
-};
-
-export const formatTrendCurrency = (amountCents: number): string =>
-  formatCurrency(amountCents, undefined, undefined, {
-    maximumFractionDigits: 0,
-  });
 
 const bucketFormats = {
   day: { axis: 'MMM d', tooltip: 'MMM d, yyyy' },
