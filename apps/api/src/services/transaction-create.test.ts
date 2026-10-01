@@ -300,7 +300,8 @@ describe('createTransactionsInTx', () => {
       error: {
         statusCode: 400,
         code: 'INVALID_COUNTERPART_ACCOUNT',
-        message: 'counterpartAccountId references an account not in this org',
+        message:
+          'counterpartAccountId references an account not in this household',
       },
     },
     {
@@ -318,7 +319,7 @@ describe('createTransactionsInTx', () => {
       error: {
         statusCode: 400,
         code: 'INVALID_REFUND_REFERENCE',
-        message: 'refundOf transaction not found in this org',
+        message: 'refundOf transaction not found in this household',
       },
     },
     {

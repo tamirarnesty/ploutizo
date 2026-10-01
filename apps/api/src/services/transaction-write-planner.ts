@@ -89,14 +89,14 @@ export const assertSplitSum = (
 export const invalidCounterpartAccountError = () =>
   new DomainError(
     400,
-    'counterpartAccountId references an account not in this org',
+    'counterpartAccountId references an account not in this household',
     'INVALID_COUNTERPART_ACCOUNT'
   );
 
 export const invalidRefundReferenceError = () =>
   new DomainError(
     400,
-    'refundOf transaction not found in this org',
+    'refundOf transaction not found in this household',
     'INVALID_REFUND_REFERENCE'
   );
 
