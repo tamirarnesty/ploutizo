@@ -1,7 +1,7 @@
 import type { DashboardOverviewCategoryRow } from '@ploutizo/validators';
 import { colourTokenVar } from '@/components/colour/colour-token-style';
 import { fadedColour } from '@/components/dashboard/dashboardChartColour';
-import { formatWholeCurrency } from '@/components/dashboard/dashboardFormat';
+import { formatPreciseCurrency } from '@/components/dashboard/dashboardFormat';
 import type { TooltipPayloadEntry } from 'recharts';
 
 const shareFormatter = new Intl.NumberFormat(undefined, {
@@ -23,7 +23,7 @@ export const formatCategoryChangeVsPrior = (
   if (delta === 0) {
     return 'No change vs prior';
   }
-  const formatted = formatWholeCurrency(Math.abs(delta));
+  const formatted = formatPreciseCurrency(Math.abs(delta));
   return delta > 0 ? `+${formatted} vs prior` : `−${formatted} vs prior`;
 };
 

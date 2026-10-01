@@ -22,7 +22,10 @@ import {
   fadedColour,
 } from '@/components/dashboard/dashboardChartColour';
 import { amountDomain } from '@/components/dashboard/dashboardChartDomain';
-import { formatWholeCurrency } from '@/components/dashboard/dashboardFormat';
+import {
+  formatPreciseCurrency,
+  formatWholeCurrency,
+} from '@/components/dashboard/dashboardFormat';
 import {
   NEUTRAL_SERIES_COLOUR,
   formatCategorySummary,
@@ -145,7 +148,7 @@ export const SpendByCategoryChart = ({
                   </>
                 ) : null;
               }}
-              valueFormatter={formatWholeCurrency}
+              valueFormatter={formatPreciseCurrency}
               indicatorColor={spendByCategoryIndicatorColor}
             />
           }

@@ -18,6 +18,10 @@ describe('formatCategoryShare', () => {
 });
 
 describe('formatCategoryChangeVsPrior', () => {
+  it('keeps sub-dollar changes visible', () => {
+    expect(formatCategoryChangeVsPrior(501, 500)).toBe('+$0.01 vs prior');
+  });
+
   it('returns null when there is no prior window', () => {
     expect(formatCategoryChangeVsPrior(500, null)).toBeNull();
   });

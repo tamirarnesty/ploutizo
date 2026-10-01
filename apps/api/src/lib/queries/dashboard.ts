@@ -118,11 +118,11 @@ export const fetchNetSpendByCategory = async (
 
   const result: NetSpendByCategory = { categories: [], uncategorisedCents: 0 };
   for (const { categoryId, name, colour, amountCents } of rows) {
-    if (categoryId === null) {
-      result.uncategorisedCents = amountCents;
-    } else if (name !== null && colour !== null) {
-      // A category outside the org does not join; its spend is neither a category nor uncategorised.
+    if (categoryId !== null && name !== null && colour !== null) {
       result.categories.push({ categoryId, name, colour, amountCents });
+    } else {
+      // No category, or one outside the org (the join finds nothing): spend still counts, as uncategorised.
+      result.uncategorisedCents += amountCents;
     }
   }
   return result;
