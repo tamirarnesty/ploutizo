@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import { toast } from '@ploutizo/ui/components/sonner';
@@ -29,6 +30,11 @@ export type FinalizeImportVariables = {
   counts: ImportOutcomeCounts;
 };
 
+export type UseFinalizeImportDraftOptions = {
+  /** Finalize page: toast Retry should run the same handler as the primary action. */
+  onUncertainFailureRetry?: () => void;
+};
+
 const importCompletedViewOutcome = (
   result: ImportCompletedResult
 ): 'created' | 'matched' | null =>
@@ -38,10 +44,15 @@ const importCompletedViewOutcome = (
       ? 'matched'
       : null;
 
-export const useFinalizeImportDraft = (draftId: string) => {
+export const useFinalizeImportDraft = (
+  draftId: string,
+  options?: UseFinalizeImportDraftOptions
+) => {
   const queryClient = useQueryClient();
   const router = useRouter();
   const toastId = importFinalizeToastId(draftId);
+  const uncertainFailureRetryRef = useRef(options?.onUncertainFailureRetry);
+  uncertainFailureRetryRef.current = options?.onUncertainFailureRetry;
 
   const mutation = useHouseholdMutation<
     ImportCompletedResult,
@@ -97,7 +108,14 @@ export const useFinalizeImportDraft = (draftId: string) => {
         description: "Retry is safe — a finished import won't be duplicated.",
         action: {
           label: 'Retry',
-          onClick: () => mutation.mutate(variables),
+          onClick: () => {
+            const retry = uncertainFailureRetryRef.current;
+            if (retry) {
+              retry();
+              return;
+            }
+            mutation.mutate(variables);
+          },
         },
       });
     },

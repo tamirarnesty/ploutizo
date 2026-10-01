@@ -187,4 +187,35 @@ describe('useFinalizeImportDraft', () => {
     });
     expect(fetchFinalizeImportDraft).toHaveBeenCalledTimes(2);
   });
+
+  it('prefers onUncertainFailureRetry over mutating again when the Finalize page is mounted', async () => {
+    const onUncertainFailureRetry = vi.fn();
+    vi.mocked(fetchFinalizeImportDraft).mockRejectedValueOnce({
+      error: { code: 'UNKNOWN', message: 'The connection dropped.' },
+    });
+    const { result } = renderHook(
+      () =>
+        useFinalizeImportDraft('draft_1', {
+          onUncertainFailureRetry,
+        }),
+      { wrapper: HouseholdHookWrapper }
+    );
+
+    await act(async () => {
+      await expect(
+        result.current.mutateAsync({ rowIds, counts })
+      ).rejects.toBeDefined();
+    });
+
+    const retryAction = toastMocks.error.mock.calls[0]?.[1]?.action as {
+      onClick?: () => void;
+    };
+
+    act(() => {
+      retryAction.onClick?.();
+    });
+
+    expect(onUncertainFailureRetry).toHaveBeenCalledTimes(1);
+    expect(fetchFinalizeImportDraft).toHaveBeenCalledTimes(1);
+  });
 });

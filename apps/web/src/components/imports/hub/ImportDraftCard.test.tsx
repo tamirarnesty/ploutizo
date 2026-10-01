@@ -207,6 +207,60 @@ describe('ImportDraftCard', () => {
     });
   });
 
+  it('disables discard confirmation while finalize is pending', async () => {
+    const user = userEvent.setup();
+    let release!: () => void;
+    vi.mocked(fetchFinalizeImportDraft).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          release = () =>
+            resolve({
+              id: 'batch_1',
+              account: draft.account,
+              contentProfileId: null,
+              status: 'completed',
+              fileName: draft.fileName,
+              rowCount: 2,
+              createdCount: 1,
+              matchedCount: 0,
+              skippedCount: 0,
+              invalidCount: 1,
+              importedAt: draft.importedAt,
+              completedAt: '2026-05-21T12:00:00.000Z',
+              discardedAt: null,
+              createdAt: draft.createdAt,
+              updatedAt: draft.updatedAt,
+            });
+        })
+    );
+
+    render(
+      <HouseholdHookWrapper>
+        <PendingFinalize draftId="draft_1" />
+        <ImportDraftCard
+          draft={draft}
+          discardingDraftId={undefined}
+          isDiscarding={false}
+          onDiscard={vi.fn()}
+        />
+      </HouseholdHookWrapper>
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Discard' }));
+    await user.click(screen.getByRole('button', { name: 'Start finalize' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Finalizing…')).toBeInTheDocument();
+    });
+    expect(
+      screen.getByRole('button', { name: 'Discard draft' })
+    ).toBeDisabled();
+
+    act(() => {
+      release();
+    });
+  });
+
   it('keeps long account names and filenames readable by wrapping', () => {
     renderCard({
       draft: {

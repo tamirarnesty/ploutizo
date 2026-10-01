@@ -110,7 +110,7 @@ export const ImportDraftCard = ({
                 onOpenChange(false) explicitly so the dialog dismisses after confirming. */}
             <AlertDialogAction
               variant="destructive"
-              disabled={discardingThisDraft}
+              disabled={discardingThisDraft || finalizing}
               onClick={() => {
                 onDiscard(draft.id);
                 setDiscardOpen(false);

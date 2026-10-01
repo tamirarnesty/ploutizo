@@ -136,7 +136,12 @@ const ImportFinalizePreviewRowsTable = ({
 
 export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
   const navigate = useNavigate();
-  const finalizeImport = useFinalizeImportDraft(draftId);
+  const handleFinalizeRef = useRef<() => Promise<void>>(async () => {});
+  const finalizeImport = useFinalizeImportDraft(draftId, {
+    onUncertainFailureRetry: () => {
+      void handleFinalizeRef.current();
+    },
+  });
   const draftQuery = useGetImportDraft(draftId, {
     enabled: !finalizeImport.isPending && !finalizeImport.isSuccess,
   });
@@ -190,7 +195,7 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
     enableBeforeUnload: false,
   });
 
-  const handleFinalize = async () => {
+  const handleFinalize = useCallback(async () => {
     if (!preview || rowIds.length === 0 || finalizeImport.isPending) return;
     try {
       await finalizeImport.mutateAsync({
@@ -208,7 +213,9 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
         leaveToImportHub();
       }
     }
-  };
+  }, [finalizeImport, leaveToImportHub, preview, returnToReview, rowIds]);
+
+  handleFinalizeRef.current = handleFinalize;
 
   const finalizeBusy = finalizeImport.isPending;
 
