@@ -72,6 +72,19 @@ const insertTxns = async (
   );
 };
 
+const txn = (
+  type: TxnInput['type'],
+  amount: number,
+  date: string,
+  categoryId?: string
+): TxnInput => ({ type, amount, date, categoryId });
+
+const expense = (amount: number, date: string, categoryId?: string) =>
+  txn('expense', amount, date, categoryId);
+
+const refund = (amount: number, date: string, categoryId?: string) =>
+  txn('refund', amount, date, categoryId);
+
 const seedCategory = async (
   orgId: string,
   name: string,
@@ -83,6 +96,23 @@ const seedCategory = async (
     .returning({ id: categories.id });
   return category.id;
 };
+
+/** Seeds one category per name, in order, returning their ids. */
+const seedCategories = async (orgId: string, names: string[]) => {
+  const ids: string[] = [];
+  for (const name of names) ids.push(await seedCategory(orgId, name));
+  return ids;
+};
+
+/** Numbered category names: `${prefix} 0` … `${prefix} ${count - 1}`. */
+const numberedNames = (prefix: string, count: number) =>
+  Array.from({ length: count }, (_, i) => `${prefix} ${i}`);
+
+/** One expense per category, largest first: 100 × (count − index) cents. */
+const rankedExpenses = (categoryIds: string[], date: string) =>
+  categoryIds.map((categoryId, index) =>
+    expense((categoryIds.length - index) * 100, date, categoryId)
+  );
 
 const MARCH = {
   from: '2026-03-01',
@@ -125,12 +155,12 @@ describe('GET /api/dashboard/overview integration', () => {
   it('aggregates net spend from expenses minus refunds only', async () => {
     await insertTxns(
       [
-        { type: 'expense', amount: 5000, date: '2026-03-10' },
-        { type: 'refund', amount: 1500, date: '2026-03-11' },
-        { type: 'transfer', amount: 9000, date: '2026-03-11' },
-        { type: 'income', amount: 12000, date: '2026-03-12' },
-        { type: 'settlement', amount: 2000, date: '2026-03-12' },
-        { type: 'contribution', amount: 3000, date: '2026-03-13' },
+        expense(5000, '2026-03-10'),
+        refund(1500, '2026-03-11'),
+        txn('transfer', 9000, '2026-03-11'),
+        txn('income', 12000, '2026-03-12'),
+        txn('settlement', 2000, '2026-03-12'),
+        txn('contribution', 3000, '2026-03-13'),
       ],
       household()
     );
@@ -142,10 +172,7 @@ describe('GET /api/dashboard/overview integration', () => {
 
   it('allows negative bucket totals when refunds exceed expenses', async () => {
     await insertTxns(
-      [
-        { type: 'expense', amount: 1000, date: '2026-03-05' },
-        { type: 'refund', amount: 2500, date: '2026-03-05' },
-      ],
+      [expense(1000, '2026-03-05'), refund(2500, '2026-03-05')],
       household()
     );
 
@@ -183,10 +210,7 @@ describe('GET /api/dashboard/overview integration', () => {
 
   it('compares year to date with the same dates last year', async () => {
     await insertTxns(
-      [
-        { type: 'expense', amount: 400, date: '2026-02-10' },
-        { type: 'expense', amount: 900, date: '2025-02-11' },
-      ],
+      [expense(400, '2026-02-10'), expense(900, '2025-02-11')],
       household()
     );
 
@@ -209,10 +233,7 @@ describe('GET /api/dashboard/overview integration', () => {
 
   it('compares a custom range with the equal-length window before it', async () => {
     await insertTxns(
-      [
-        { type: 'expense', amount: 400, date: '2026-03-12' },
-        { type: 'expense', amount: 900, date: '2026-03-02' },
-      ],
+      [expense(400, '2026-03-12'), expense(900, '2026-03-02')],
       household()
     );
 
@@ -239,9 +260,9 @@ describe('GET /api/dashboard/overview integration', () => {
   it('buckets ranges up to six months by Monday-start week', async () => {
     await insertTxns(
       [
-        { type: 'expense', amount: 300, date: '2025-10-01' },
-        { type: 'expense', amount: 200, date: '2025-10-05' },
-        { type: 'expense', amount: 700, date: '2025-04-02' },
+        expense(300, '2025-10-01'),
+        expense(200, '2025-10-05'),
+        expense(700, '2025-04-02'),
       ],
       household()
     );
@@ -266,10 +287,7 @@ describe('GET /api/dashboard/overview integration', () => {
 
   it('buckets ranges longer than six months by month', async () => {
     await insertTxns(
-      [
-        { type: 'expense', amount: 500, date: '2026-01-15' },
-        { type: 'expense', amount: 700, date: '2026-03-10' },
-      ],
+      [expense(500, '2026-01-15'), expense(700, '2026-03-10')],
       household()
     );
 
@@ -291,17 +309,11 @@ describe('GET /api/dashboard/overview integration', () => {
 
   it('scopes results to the active household', async () => {
     const otherAccountId = await seedAccount(OTHER_ORG_ID);
-    await insertTxns(
-      [{ type: 'expense', amount: 100, date: '2026-04-01' }],
-      household()
-    );
-    await insertTxns(
-      [{ type: 'expense', amount: 999999, date: '2026-04-01' }],
-      {
-        orgId: OTHER_ORG_ID,
-        accountId: otherAccountId,
-      }
-    );
+    await insertTxns([expense(100, '2026-04-01')], household());
+    await insertTxns([expense(999999, '2026-04-01')], {
+      orgId: OTHER_ORG_ID,
+      accountId: otherAccountId,
+    });
 
     const body = await fetchOverview(
       overviewQuery({ from: '2026-04-01', to: '2026-04-30' })
@@ -335,10 +347,7 @@ describe('GET /api/dashboard/overview integration', () => {
 
   it('returns all-time monthly buckets with no prior when no range is provided', async () => {
     await insertTxns(
-      [
-        { type: 'expense', amount: 500, date: '2026-01-15' },
-        { type: 'expense', amount: 700, date: '2026-02-10' },
-      ],
+      [expense(500, '2026-01-15'), expense(700, '2026-02-10')],
       household()
     );
 
@@ -378,19 +387,11 @@ describe('GET /api/dashboard/overview integration', () => {
 
   describe('categories', () => {
     it('returns the top eight categories by net spend plus Other', async () => {
-      const ids: string[] = [];
-      for (let i = 0; i < 10; i++) {
-        ids.push(await seedCategory(household().orgId, `Cat ${i}`));
-      }
-      await insertTxns(
-        ids.map((categoryId, index) => ({
-          type: 'expense' as const,
-          amount: (10 - index) * 100,
-          date: '2026-03-10',
-          categoryId,
-        })),
-        household()
+      const ids = await seedCategories(
+        household().orgId,
+        numberedNames('Cat', 10)
       );
+      await insertTxns(rankedExpenses(ids, '2026-03-10'), household());
 
       const body = await fetchOverview(overviewQuery(MARCH));
       expect(body.categories).toHaveLength(9);
@@ -427,36 +428,11 @@ describe('GET /api/dashboard/overview integration', () => {
       const negativeId = await seedCategory(household().orgId, 'Refunded');
       await insertTxns(
         [
-          {
-            type: 'expense',
-            amount: 5000,
-            date: '2026-03-05',
-            categoryId: positiveId,
-          },
-          {
-            type: 'expense',
-            amount: 1000,
-            date: '2026-03-06',
-            categoryId: zeroId,
-          },
-          {
-            type: 'refund',
-            amount: 1000,
-            date: '2026-03-07',
-            categoryId: zeroId,
-          },
-          {
-            type: 'expense',
-            amount: 2000,
-            date: '2026-03-08',
-            categoryId: negativeId,
-          },
-          {
-            type: 'refund',
-            amount: 3000,
-            date: '2026-03-09',
-            categoryId: negativeId,
-          },
+          expense(5000, '2026-03-05', positiveId),
+          expense(1000, '2026-03-06', zeroId),
+          refund(1000, '2026-03-07', zeroId),
+          expense(2000, '2026-03-08', negativeId),
+          refund(3000, '2026-03-09', negativeId),
         ],
         household()
       );
@@ -489,18 +465,8 @@ describe('GET /api/dashboard/overview integration', () => {
       const gasId = await seedCategory(household().orgId, 'Gas', 'amber-300');
       await insertTxns(
         [
-          {
-            type: 'expense',
-            amount: 100,
-            date: '2026-03-01',
-            categoryId: travelId,
-          },
-          {
-            type: 'expense',
-            amount: 200,
-            date: '2026-03-02',
-            categoryId: gasId,
-          },
+          expense(100, '2026-03-01', travelId),
+          expense(200, '2026-03-02', gasId),
         ],
         household()
       );
@@ -516,18 +482,8 @@ describe('GET /api/dashboard/overview integration', () => {
       const categoryId = await seedCategory(household().orgId, 'Dining');
       await insertTxns(
         [
-          {
-            type: 'expense',
-            amount: 400,
-            date: '2026-03-03',
-            categoryId,
-          },
-          {
-            type: 'expense',
-            amount: 900,
-            date: '2026-02-03',
-            categoryId,
-          },
+          expense(400, '2026-03-03', categoryId),
+          expense(900, '2026-02-03', categoryId),
         ],
         household()
       );
@@ -545,20 +501,12 @@ describe('GET /api/dashboard/overview integration', () => {
     });
 
     it('keeps the household category named Other separate from the aggregate bucket', async () => {
-      const otherCategoryId = await seedCategory(household().orgId, 'Other');
-      const ids = [otherCategoryId];
-      for (let i = 0; i < 9; i++) {
-        ids.push(await seedCategory(household().orgId, `Extra ${i}`));
-      }
-      await insertTxns(
-        ids.map((categoryId, index) => ({
-          type: 'expense' as const,
-          amount: (10 - index) * 100,
-          date: '2026-03-10',
-          categoryId,
-        })),
-        household()
-      );
+      const ids = await seedCategories(household().orgId, [
+        'Other',
+        ...numberedNames('Extra', 9),
+      ]);
+      const otherCategoryId = ids[0];
+      await insertTxns(rankedExpenses(ids, '2026-03-10'), household());
 
       const body = await fetchOverview(overviewQuery(MARCH));
       expect(body.categories.at(0)).toMatchObject({
@@ -574,17 +522,7 @@ describe('GET /api/dashboard/overview integration', () => {
 
     it('has null prior amounts on All', async () => {
       const categoryId = await seedCategory(household().orgId, 'Dining');
-      await insertTxns(
-        [
-          {
-            type: 'expense',
-            amount: 900,
-            date: '2026-01-10',
-            categoryId,
-          },
-        ],
-        household()
-      );
+      await insertTxns([expense(900, '2026-01-10', categoryId)], household());
 
       const body = await fetchOverview('/dashboard/overview');
       expect(body.categories).toEqual([
@@ -599,28 +537,11 @@ describe('GET /api/dashboard/overview integration', () => {
       const mine = await seedCategory(household().orgId, 'Mine');
       const otherAccountId = await seedAccount(OTHER_ORG_ID);
       const theirs = await seedCategory(OTHER_ORG_ID, 'Theirs');
-      await insertTxns(
-        [
-          {
-            type: 'expense',
-            amount: 100,
-            date: '2026-04-01',
-            categoryId: mine,
-          },
-        ],
-        household()
-      );
-      await insertTxns(
-        [
-          {
-            type: 'expense',
-            amount: 999999,
-            date: '2026-04-01',
-            categoryId: theirs,
-          },
-        ],
-        { orgId: OTHER_ORG_ID, accountId: otherAccountId }
-      );
+      await insertTxns([expense(100, '2026-04-01', mine)], household());
+      await insertTxns([expense(999999, '2026-04-01', theirs)], {
+        orgId: OTHER_ORG_ID,
+        accountId: otherAccountId,
+      });
 
       const body = await fetchOverview(
         overviewQuery({ from: '2026-04-01', to: '2026-04-30' })
@@ -633,20 +554,15 @@ describe('GET /api/dashboard/overview integration', () => {
 
   describe('uncategorised spend', () => {
     it('comes last, after other, and counts towards every share', async () => {
-      const ids: string[] = [];
-      for (let i = 0; i < 9; i++) {
-        ids.push(await seedCategory(household().orgId, `Cat ${i}`));
-      }
+      const ids = await seedCategories(
+        household().orgId,
+        numberedNames('Cat', 9)
+      );
       await insertTxns(
         [
-          ...ids.map((categoryId) => ({
-            type: 'expense' as const,
-            amount: 100,
-            date: '2026-03-10',
-            categoryId,
-          })),
-          { type: 'expense', amount: 5000, date: '2026-03-11' },
-          { type: 'refund', amount: 900, date: '2026-03-12' },
+          ...ids.map((categoryId) => expense(100, '2026-03-10', categoryId)),
+          expense(5000, '2026-03-11'),
+          refund(900, '2026-03-12'),
         ],
         household()
       );
@@ -673,9 +589,9 @@ describe('GET /api/dashboard/overview integration', () => {
     it('carries the prior window’s uncategorised net spend on ranged windows', async () => {
       await insertTxns(
         [
-          { type: 'expense', amount: 400, date: '2026-03-03' },
-          { type: 'expense', amount: 900, date: '2026-02-03' },
-          { type: 'refund', amount: 200, date: '2026-02-04' },
+          expense(400, '2026-03-03'),
+          expense(900, '2026-02-03'),
+          refund(200, '2026-02-04'),
         ],
         household()
       );
@@ -697,9 +613,9 @@ describe('GET /api/dashboard/overview integration', () => {
       const categoryId = await seedCategory(household().orgId, 'Dining');
       await insertTxns(
         [
-          { type: 'expense', amount: 300, date: '2026-03-03', categoryId },
-          { type: 'expense', amount: 1000, date: '2026-03-04' },
-          { type: 'refund', amount: 1500, date: '2026-03-05' },
+          expense(300, '2026-03-03', categoryId),
+          expense(1000, '2026-03-04'),
+          refund(1500, '2026-03-05'),
         ],
         household()
       );
@@ -724,9 +640,9 @@ describe('GET /api/dashboard/overview integration', () => {
       const categoryId = await seedCategory(household().orgId, 'Dining');
       await insertTxns(
         [
-          { type: 'expense', amount: 300, date: '2026-03-03', categoryId },
-          { type: 'expense', amount: 1000, date: '2026-03-04' },
-          { type: 'refund', amount: 1000, date: '2026-03-05' },
+          expense(300, '2026-03-03', categoryId),
+          expense(1000, '2026-03-04'),
+          refund(1000, '2026-03-05'),
         ],
         household()
       );
@@ -739,14 +655,11 @@ describe('GET /api/dashboard/overview integration', () => {
 
     it('is scoped to the active household', async () => {
       const otherAccountId = await seedAccount(OTHER_ORG_ID);
-      await insertTxns(
-        [{ type: 'expense', amount: 100, date: '2026-04-01' }],
-        household()
-      );
-      await insertTxns(
-        [{ type: 'expense', amount: 999999, date: '2026-04-01' }],
-        { orgId: OTHER_ORG_ID, accountId: otherAccountId }
-      );
+      await insertTxns([expense(100, '2026-04-01')], household());
+      await insertTxns([expense(999999, '2026-04-01')], {
+        orgId: OTHER_ORG_ID,
+        accountId: otherAccountId,
+      });
 
       const body = await fetchOverview(
         overviewQuery({ from: '2026-04-01', to: '2026-04-30' })

@@ -1,52 +1,8 @@
+import '@/test/mockPopover';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { cloneElement, createContext, isValidElement, useContext } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { LucideIconPicker } from '@/components/categories/LucideIconPicker';
-import type { ReactElement, ReactNode } from 'react';
-
-const PopoverContext = createContext<{
-  open: boolean;
-  setOpen: (open: boolean) => void;
-} | null>(null);
-
-vi.mock('@ploutizo/ui/components/popover', () => ({
-  Popover: ({
-    open,
-    onOpenChange,
-    children,
-  }: {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    children: ReactNode;
-  }) => (
-    <PopoverContext.Provider
-      value={{ open, setOpen: (nextOpen) => onOpenChange(nextOpen) }}
-    >
-      <div data-open={open}>{children}</div>
-    </PopoverContext.Provider>
-  ),
-  PopoverTrigger: ({
-    render: trigger,
-    children,
-  }: {
-    render?: ReactElement;
-    children?: ReactNode;
-  }) => {
-    const popover = useContext(PopoverContext);
-
-    if (trigger && isValidElement<{ onClick?: () => void }>(trigger)) {
-      return cloneElement(trigger, {
-        onClick: () => popover?.setOpen(true),
-      });
-    }
-
-    return <div onClick={() => popover?.setOpen(true)}>{children}</div>;
-  },
-  PopoverContent: ({ children }: { children: ReactNode }) => (
-    <div>{children}</div>
-  ),
-}));
 
 describe('LucideIconPicker', () => {
   it('searches the full Lucide catalog for icons outside the old whitelist', async () => {
