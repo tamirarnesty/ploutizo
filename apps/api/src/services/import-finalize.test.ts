@@ -3,7 +3,7 @@ import type { ImportRowSnapshot, ReviewedImportValues } from '@ploutizo/types';
 import { DomainError, NotFoundError } from '@/lib/errors';
 import { verifyImportSetForDraft } from '@/services/import-set';
 import { finalizeImportDraft } from '@/services/import-finalize';
-import { createTransactionInTx } from '@/services/transactions';
+import { createTransactionsInTx } from '@/services/transaction-create';
 import {
   completeImportBatch,
   fetchImportBatchSummaryById,
@@ -48,16 +48,9 @@ vi.mock('@/services/import-set', () => ({
   verifyImportSetForDraft: vi.fn(),
 }));
 
-vi.mock('@/services/transactions', async (importOriginal) => {
-  const actual = await importOriginal();
-  if (typeof actual !== 'object' || actual === null) {
-    throw new Error('Unexpected @/services/transactions module shape.');
-  }
-  return {
-    ...actual,
-    createTransactionInTx: vi.fn(),
-  };
-});
+vi.mock('@/services/transaction-create', () => ({
+  createTransactionsInTx: vi.fn(),
+}));
 
 const ORG = 'org_a';
 const ACCOUNT = '550e8400-e29b-41d4-a716-446655440010';
@@ -70,8 +63,8 @@ const ROW_SKIPPED = '550e8400-e29b-41d4-a716-446655440052';
 const ROW_INVALID = '550e8400-e29b-41d4-a716-446655440053';
 const ROW_REFUND = '550e8400-e29b-41d4-a716-446655440054';
 const EXISTING_TX = '550e8400-e29b-41d4-a716-446655440070';
-const CREATED_TX = '550e8400-e29b-41d4-a716-446655440071';
-const REFUND_TX = '550e8400-e29b-41d4-a716-446655440072';
+const UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const SELECTED_ROW_IDS = [ROW_CREATED, ROW_MATCHED, ROW_SKIPPED, ROW_INVALID];
 
 const snapshot = (
@@ -182,6 +175,8 @@ const mixedOutcomes = [
   }),
 ];
 
+const createdItems = () => vi.mocked(createTransactionsInTx).mock.calls[0][2];
+
 describe('finalizeImportDraft', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -194,9 +189,7 @@ describe('finalizeImportDraft', () => {
       draft: draftBatch as never,
       projection: mixedOutcomes,
     });
-    vi.mocked(createTransactionInTx).mockResolvedValue({
-      id: CREATED_TX,
-    } as never);
+    vi.mocked(createTransactionsInTx).mockResolvedValue([]);
     vi.mocked(insertImportTransactionLinks).mockResolvedValue([]);
     vi.mocked(completeImportBatch).mockResolvedValue({ id: BATCH } as never);
   });
@@ -213,33 +206,42 @@ describe('finalizeImportDraft', () => {
     });
 
     expect(lockImportDraftBatch).toHaveBeenCalledWith(mockTx, ORG, BATCH);
-    expect(createTransactionInTx).toHaveBeenCalledOnce();
-    expect(createTransactionInTx).toHaveBeenCalledWith(
-      mockTx,
-      ORG,
-      expect.objectContaining({
-        type: 'expense',
-        importBatchId: BATCH,
-        rawDescription: 'COFFEE SHOP #42',
-        externalId: 'visa-created',
-        description: 'Neighborhood Coffee',
-      })
-    );
-    expect(insertImportTransactionLinks).toHaveBeenCalledWith(
-      mockTx,
-      expect.arrayContaining([
-        expect.objectContaining({
-          batchRowId: ROW_CREATED,
-          transactionId: CREATED_TX,
-          outcome: 'created',
-        }),
-        expect.objectContaining({
-          batchRowId: ROW_MATCHED,
-          transactionId: EXISTING_TX,
-          outcome: 'matched',
-        }),
-      ])
-    );
+    expect(createTransactionsInTx).toHaveBeenCalledOnce();
+    const [item] = createdItems();
+    expect(createdItems()).toEqual([
+      {
+        id: expect.stringMatching(UUID),
+        input: {
+          type: 'expense',
+          accountId: ACCOUNT,
+          amount: 4218,
+          date: '2026-05-02',
+          description: 'Neighborhood Coffee',
+          notes: 'weekly',
+          categoryId: CATEGORY,
+          assignees: [{ memberId: MEMBER, amountCents: 4218, percentage: 100 }],
+          importBatchId: BATCH,
+          rawDescription: 'COFFEE SHOP #42',
+          externalId: 'visa-created',
+        },
+      },
+    ]);
+    expect(insertImportTransactionLinks).toHaveBeenCalledWith(mockTx, [
+      {
+        orgId: ORG,
+        batchId: BATCH,
+        batchRowId: ROW_CREATED,
+        transactionId: item.id,
+        outcome: 'created',
+      },
+      {
+        orgId: ORG,
+        batchId: BATCH,
+        batchRowId: ROW_MATCHED,
+        transactionId: EXISTING_TX,
+        outcome: 'matched',
+      },
+    ]);
     expect(completeImportBatch).toHaveBeenCalledWith(
       mockTx,
       expect.objectContaining({
@@ -266,7 +268,7 @@ describe('finalizeImportDraft', () => {
   });
 
   it('rolls back without completing when transaction creation fails', async () => {
-    vi.mocked(createTransactionInTx).mockRejectedValue(
+    vi.mocked(createTransactionsInTx).mockRejectedValue(
       new Error('write failed')
     );
 
@@ -293,7 +295,7 @@ describe('finalizeImportDraft', () => {
       rowIds: SELECTED_ROW_IDS,
     });
 
-    expect(createTransactionInTx).not.toHaveBeenCalled();
+    expect(createTransactionsInTx).not.toHaveBeenCalled();
     expect(insertImportTransactionLinks).not.toHaveBeenCalled();
     expect(completeImportBatch).not.toHaveBeenCalled();
     expect(result.createdCount).toBe(1);
@@ -330,7 +332,7 @@ describe('finalizeImportDraft', () => {
         ],
       },
     });
-    expect(createTransactionInTx).not.toHaveBeenCalled();
+    expect(createTransactionsInTx).not.toHaveBeenCalled();
   });
 
   it('rejects duplicate matched transaction ids with structured row issues', async () => {
@@ -362,7 +364,7 @@ describe('finalizeImportDraft', () => {
     expect(insertImportTransactionLinks).not.toHaveBeenCalled();
   });
 
-  it('creates same-import expenses before linked refunds', async () => {
+  it('points same-import refunds at the expense id prepared in the same batch', async () => {
     const refundSnapshot = snapshot(
       {
         type: 'refund',
@@ -392,32 +394,30 @@ describe('finalizeImportDraft', () => {
         invalidCount: 0,
       } as never);
 
-    const createdIds = [CREATED_TX, REFUND_TX];
-    vi.mocked(createTransactionInTx).mockImplementation((_tx, _org, data) =>
-      Promise.resolve({
-        id: data.type === 'expense' ? createdIds[0] : createdIds[1],
-      } as never)
-    );
-
     await finalizeImportDraft({
       orgId: ORG,
       batchId: BATCH,
       rowIds: [ROW_REFUND, ROW_CREATED],
     });
 
-    const types = vi
-      .mocked(createTransactionInTx)
-      .mock.calls.map(([, , payload]) => payload.type);
-    expect(types).toEqual(['expense', 'refund']);
-    expect(createTransactionInTx).toHaveBeenNthCalledWith(
-      2,
-      mockTx,
-      ORG,
-      expect.objectContaining({
-        type: 'refund',
-        refundOf: CREATED_TX,
-      })
-    );
+    expect(createTransactionsInTx).toHaveBeenCalledOnce();
+    const [refund, expense] = createdItems();
+    expect(expense.input.type).toBe('expense');
+    expect(refund.input).toMatchObject({
+      type: 'refund',
+      refundOf: expense.id,
+    });
+    expect(
+      vi
+        .mocked(insertImportTransactionLinks)
+        .mock.calls[0][1].map(({ batchRowId, transactionId }) => [
+          batchRowId,
+          transactionId,
+        ])
+    ).toEqual([
+      [ROW_REFUND, refund.id],
+      [ROW_CREATED, expense.id],
+    ]);
   });
 
   it('links same-import refunds to matched expense transaction ids', async () => {
@@ -449,24 +449,15 @@ describe('finalizeImportDraft', () => {
         skippedCount: 0,
         invalidCount: 0,
       } as never);
-    vi.mocked(createTransactionInTx).mockResolvedValue({
-      id: REFUND_TX,
-    } as never);
-
     await finalizeImportDraft({
       orgId: ORG,
       batchId: BATCH,
       rowIds: [ROW_MATCHED, ROW_REFUND],
     });
 
-    expect(createTransactionInTx).toHaveBeenCalledWith(
-      mockTx,
-      ORG,
-      expect.objectContaining({
-        type: 'refund',
-        refundOf: EXISTING_TX,
-      })
-    );
+    expect(createdItems().map((created) => created.input)).toEqual([
+      expect.objectContaining({ type: 'refund', refundOf: EXISTING_TX }),
+    ]);
   });
 
   it('does not overwrite matched transaction provenance', async () => {
@@ -480,9 +471,7 @@ describe('finalizeImportDraft', () => {
       rowIds: SELECTED_ROW_IDS,
     });
 
-    const createdPayloads = vi
-      .mocked(createTransactionInTx)
-      .mock.calls.map(([, , payload]) => payload);
+    const createdPayloads = createdItems().map((created) => created.input);
     expect(createdPayloads).toHaveLength(1);
     expect(createdPayloads[0]).toMatchObject({
       importBatchId: BATCH,
@@ -491,11 +480,6 @@ describe('finalizeImportDraft', () => {
     const links = vi.mocked(insertImportTransactionLinks).mock.calls[0][1];
     const matched = links.find((link) => link.outcome === 'matched');
     expect(matched?.transactionId).toBe(EXISTING_TX);
-    expect(createTransactionInTx).not.toHaveBeenCalledWith(
-      mockTx,
-      ORG,
-      expect.objectContaining({ importBatchId: BATCH, externalId: 'visa-1001' })
-    );
   });
 
   it('404s when a selected row id is not on the draft', async () => {
@@ -510,7 +494,7 @@ describe('finalizeImportDraft', () => {
         rowIds: SELECTED_ROW_IDS,
       })
     ).rejects.toBeInstanceOf(NotFoundError);
-    expect(createTransactionInTx).not.toHaveBeenCalled();
+    expect(createTransactionsInTx).not.toHaveBeenCalled();
   });
 
   it('rejects finalize against a discarded import', async () => {
@@ -530,6 +514,6 @@ describe('finalizeImportDraft', () => {
       statusCode: 409,
       code: 'IMPORT_FINALIZE_CONFLICT',
     });
-    expect(createTransactionInTx).not.toHaveBeenCalled();
+    expect(createTransactionsInTx).not.toHaveBeenCalled();
   });
 });

@@ -17,7 +17,7 @@ import {
   memberBelongsToOrg,
 } from '@/lib/queries/settlements';
 import { computeNextDueDate } from '@/lib/settlement-due-date';
-import { createTransaction } from '@/services/transactions';
+import { createTransaction } from '@/services/transaction-create';
 
 const sameMemberIdSet = (a: string[], b: string[]): boolean => {
   if (a.length !== b.length) return false;

@@ -237,22 +237,105 @@ export const transactionExistsOnAccount = async (
 ): Promise<boolean> =>
   findTransactionInScope(orgId, transactionId, accountId, tx);
 
-/** True when every transaction id exists under orgId. Empty list is vacuously true. */
-export const allTransactionsInOrg = async (
+/**
+ * Locks org-scoped account write references (active and archived) in one
+ * statement. Rows lock in id order, so concurrent writers touching
+ * overlapping accounts acquire locks in the same global order and cannot
+ * deadlock.
+ */
+export const lockAccountWriteReferences = async (
+  tx: Transaction,
   orgId: string,
-  transactionIds: string[],
+  accountIds: readonly string[]
+): Promise<AccountWriteReference[]> => {
+  if (accountIds.length === 0) return [];
+  return tx
+    .select({
+      id: accounts.id,
+      type: accounts.type,
+      archivedAt: accounts.archivedAt,
+    })
+    .from(accounts)
+    .where(
+      and(eq(accounts.orgId, orgId), inArray(accounts.id, [...accountIds]))
+    )
+    .orderBy(accounts.id)
+    .for('update');
+};
+
+/** Category ids (active and archived) from the list that exist under orgId. */
+export const listCategoryIdsInOrg = async (
+  orgId: string,
+  categoryIds: readonly string[],
   tx?: Transaction
-): Promise<boolean> => {
-  if (transactionIds.length === 0) return true;
-  const unique = [...new Set(transactionIds)];
+): Promise<Set<string>> => {
+  if (categoryIds.length === 0) return new Set();
+  const ex = tx ?? db;
+  const rows = await ex
+    .select({ id: categories.id })
+    .from(categories)
+    .where(
+      and(
+        ...categoriesForOrg(orgId),
+        inArray(categories.id, [...new Set(categoryIds)])
+      )
+    );
+  return new Set(rows.map((row) => row.id));
+};
+
+/** Transaction ids (including soft-deleted) from the list that exist under orgId. */
+export const listTransactionIdsInOrg = async (
+  orgId: string,
+  transactionIds: readonly string[],
+  tx?: Transaction
+): Promise<Set<string>> => {
+  if (transactionIds.length === 0) return new Set();
   const ex = tx ?? db;
   const rows = await ex
     .select({ id: transactions.id })
     .from(transactions)
     .where(
-      and(eq(transactions.orgId, orgId), inArray(transactions.id, unique))
+      and(
+        eq(transactions.orgId, orgId),
+        inArray(transactions.id, [...new Set(transactionIds)])
+      )
     );
-  return rows.length === unique.length;
+  return new Set(rows.map((row) => row.id));
+};
+
+/** Tag ids from the list that exist under orgId. */
+export const listTagIdsInOrg = async (
+  orgId: string,
+  tagIds: readonly string[],
+  tx?: Transaction
+): Promise<Set<string>> => {
+  if (tagIds.length === 0) return new Set();
+  const ex = tx ?? db;
+  const rows = await ex
+    .select({ id: tags.id })
+    .from(tags)
+    .where(and(eq(tags.orgId, orgId), inArray(tags.id, [...new Set(tagIds)])));
+  return new Set(rows.map((row) => row.id));
+};
+
+/** Member ids from the list that exist under orgId. */
+export const listMemberIdsInOrg = async (
+  orgId: string,
+  memberIds: readonly string[],
+  tx?: Transaction
+): Promise<Set<string>> => {
+  if (memberIds.length === 0) return new Set();
+  const ex = tx ?? db;
+  const rows = await ex
+    .select({ id: orgMembers.id })
+    .from(orgMembers)
+    .where(
+      and(
+        eq(orgMembers.orgId, orgId),
+        inArray(orgMembers.id, [...new Set(memberIds)])
+      )
+    );
+  return new Set(rows.map((row) => row.id));
 };
 
 /** True when every tag id exists under orgId. Empty list is vacuously true. */
@@ -260,29 +343,14 @@ export const allTagsInOrg = async (
   orgId: string,
   tagIds: string[],
   tx?: Transaction
-): Promise<boolean> => {
-  if (tagIds.length === 0) return true;
-  const unique = [...new Set(tagIds)];
-  const ex = tx ?? db;
-  const rows = await ex
-    .select({ id: tags.id })
-    .from(tags)
-    .where(and(eq(tags.orgId, orgId), inArray(tags.id, unique)));
-  return rows.length === unique.length;
-};
+): Promise<boolean> =>
+  (await listTagIdsInOrg(orgId, tagIds, tx)).size === new Set(tagIds).size;
 
 /** True when every member id exists under orgId. Empty list is vacuously true. */
 export const allMembersInOrg = async (
   orgId: string,
   memberIds: string[],
   tx?: Transaction
-): Promise<boolean> => {
-  if (memberIds.length === 0) return true;
-  const unique = [...new Set(memberIds)];
-  const ex = tx ?? db;
-  const rows = await ex
-    .select({ id: orgMembers.id })
-    .from(orgMembers)
-    .where(and(eq(orgMembers.orgId, orgId), inArray(orgMembers.id, unique)));
-  return rows.length === unique.length;
-};
+): Promise<boolean> =>
+  (await listMemberIdsInOrg(orgId, memberIds, tx)).size ===
+  new Set(memberIds).size;

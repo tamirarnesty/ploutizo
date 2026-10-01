@@ -195,6 +195,8 @@ export const IMPORT_REQUIREMENT_KEY_VALUES = [
   'transaction.description.required',
   'transaction.type.required',
   'transaction.category.required',
+  'transaction.category.unknown',
+  'transaction.tag.unknown',
   'transaction.assignee.required',
   'transaction.assignee.unknown',
   'transaction.account.missing',

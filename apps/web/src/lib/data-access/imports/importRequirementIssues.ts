@@ -19,6 +19,9 @@ const REQUIREMENT_COPY: Record<ImportRequirementKey, string> = {
   'transaction.description.required': 'Description is required.',
   'transaction.type.required': 'Type must be expense, refund, or settlement.',
   'transaction.category.required': 'Category is required.',
+  'transaction.category.unknown':
+    'The category is no longer in this household.',
+  'transaction.tag.unknown': 'A tag is no longer in this household.',
   'transaction.assignee.required': 'At least one assignee is required.',
   'transaction.assignee.unknown': 'An assignee is no longer in this household.',
   'transaction.account.missing': 'A required account is missing.',

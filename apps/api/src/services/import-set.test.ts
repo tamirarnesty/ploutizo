@@ -40,10 +40,10 @@ const expenseRow = (): ImportDraftDurableRow => ({
   selectedForImport: true,
   reviewMatchedTransactionId: null,
   reviewMatchDismissed: false,
-  reviewNotes: null,
-  reviewTagIds: [],
   externalId: null,
   sourceDescription: null,
+  reviewNotes: null,
+  reviewTagIds: [],
 });
 
 const readyFacts = (): ImportSetFacts => ({
@@ -52,6 +52,8 @@ const readyFacts = (): ImportSetFacts => ({
   targetAccount: { id: 'account-1', type: 'credit_card' },
   counterpartAccounts: new Map(),
   validAssigneeMemberIds: new Set(['member-1']),
+  validCategoryIds: new Set(['cat-1']),
+  validTagIds: new Set(),
   existingTransactions: [],
   existingExpenses: new Map(),
   priorRefundsByTarget: new Map(),

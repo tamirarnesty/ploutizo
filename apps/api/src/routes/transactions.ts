@@ -8,8 +8,8 @@ import type { ListQueryParams } from '@/services/transactions';
 import type { AppEnv } from '@/types';
 import { DomainError } from '@/lib/errors';
 import { appValidator } from '@/lib/validator';
+import { createTransaction } from '@/services/transaction-create';
 import {
-  createTransaction,
   deleteTransaction,
   getTransaction,
   listTransactions,

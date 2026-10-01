@@ -234,7 +234,8 @@ describe('assertTransactionWriteOrgRefs', () => {
     expect(err).toMatchObject({
       statusCode: 400,
       code: 'INVALID_COUNTERPART_ACCOUNT',
-      message: 'counterpartAccountId references an account not in this org',
+      message:
+        'counterpartAccountId references an account not in this household',
     });
     expect(counterpartAccountBelongsToOrg).toHaveBeenCalledWith(
       ORG_ID,
@@ -261,7 +262,7 @@ describe('assertTransactionWriteOrgRefs', () => {
     expect(err).toMatchObject({
       statusCode: 400,
       code: 'INVALID_REFUND_REFERENCE',
-      message: 'refundOf transaction not found in this org',
+      message: 'refundOf transaction not found in this household',
     });
     expect(refundOfExists).toHaveBeenCalledWith(ORG_ID, REFUND_OF, undefined);
   });

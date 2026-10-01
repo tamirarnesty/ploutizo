@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { verifyImportSet } from './import-set-verification';
-import type { ImportSetFacts } from './import-set-verification';
 import type { ImportDraftDurableRow } from './evaluate-import-draft';
+import type { ImportSetFacts } from './import-set-verification';
 
 const TARGET_ACCOUNT = { id: 'account-1', type: 'credit_card' as const };
 
@@ -38,6 +38,8 @@ const continueFacts = (
   targetAccount: TARGET_ACCOUNT,
   counterpartAccounts: new Map(),
   validAssigneeMemberIds: new Set(['member-1']),
+  validCategoryIds: new Set(['cat-1']),
+  validTagIds: new Set(['tag-1']),
   existingTransactions: [],
   existingExpenses: new Map(),
   ...overrides,
@@ -106,6 +108,58 @@ describe('verifyImportSet', () => {
         },
       ],
     });
+  });
+
+  it('flags a category that is not in the org', () => {
+    const result = verifyImportSet(
+      continueFacts({ rows: [expenseRow({ reviewCategoryId: 'cat-gone' })] })
+    );
+
+    expect(result).toEqual({
+      ready: false,
+      failures: [
+        {
+          batchRowId: 'row-expense',
+          key: 'transaction.category.unknown',
+          params: { categoryId: 'cat-gone' },
+        },
+      ],
+    });
+  });
+
+  it('flags tags that are not in the org', () => {
+    const result = verifyImportSet(
+      continueFacts({
+        rows: [expenseRow({ reviewTagIds: ['tag-1', 'tag-gone'] })],
+      })
+    );
+
+    expect(result).toEqual({
+      ready: false,
+      failures: [
+        {
+          batchRowId: 'row-expense',
+          key: 'transaction.tag.unknown',
+          params: { tagIds: ['tag-gone'] },
+        },
+      ],
+    });
+  });
+
+  it('projects reviewed notes and tags onto the created snapshot', () => {
+    const result = verifyImportSet(
+      continueFacts({
+        rows: [expenseRow({ reviewNotes: 'weekly', reviewTagIds: ['tag-1'] })],
+      })
+    );
+
+    expect(result.ready).toBe(true);
+    if (result.ready) {
+      expect(result.projection[0].snapshot.reviewedValues).toMatchObject({
+        notes: 'weekly',
+        tagIds: ['tag-1'],
+      });
+    }
   });
 
   it('maps duplicate match targets to namespaced keys', () => {

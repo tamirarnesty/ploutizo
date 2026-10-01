@@ -5,7 +5,6 @@ import type { Transaction } from '@ploutizo/db';
 import type {
   ImportCompletedResult,
   ImportRequirementFailureDetails,
-  ImportTransactionLinkOutcome,
 } from '@ploutizo/types';
 import type {
   ImportSetRequest,
@@ -19,12 +18,9 @@ import {
 } from '@/lib/queries/imports';
 import { verifyImportSetForDraft } from '@/services/import-set';
 import { insertImportTransactionLinks } from '@/lib/queries/import-transaction-links';
-import {
-  sortCreatedImportOutcomes,
-  toImportCreateTransactionInput,
-} from '@/services/import-create-input';
+import { prepareImportTransactionCreates } from '@/services/import-create-input';
 import { toImportCompletedResult } from '@/services/import-history';
-import { createTransactionInTx } from '@/services/transactions';
+import { createTransactionsInTx } from '@/services/transaction-create';
 
 const conflictError = () =>
   new DomainError(
@@ -39,61 +35,13 @@ const applyImportSetProjection = async (
   draft: VerifiedImportDraft,
   projection: readonly ImportRowProjection[]
 ): Promise<ImportCompletedResult> => {
-  const transactionIdByRowId = new Map<string, string>();
-  for (const row of projection) {
-    if (row.outcome === 'matched' && row.transactionId) {
-      transactionIdByRowId.set(row.batchRowId, row.transactionId);
-    }
-  }
-
-  const links: {
-    orgId: string;
-    batchId: string;
-    batchRowId: string;
-    transactionId: string;
-    outcome: ImportTransactionLinkOutcome;
-  }[] = [];
-
-  const createdRows = projection.filter((row) => row.outcome === 'created');
-  for (const row of sortCreatedImportOutcomes(createdRows)) {
-    const values = row.snapshot.reviewedValues;
-    const refundOf =
-      values.refundOf ??
-      (values.refundOfBatchRowId
-        ? (transactionIdByRowId.get(values.refundOfBatchRowId) ?? null)
-        : null);
-    const inserted = await createTransactionInTx(
-      tx,
-      orgId,
-      toImportCreateTransactionInput({
-        accountId: draft.accountId,
-        batchId: draft.id,
-        snapshot: row.snapshot,
-        refundOf,
-      })
-    );
-    transactionIdByRowId.set(row.batchRowId, inserted.id);
-    links.push({
-      orgId,
-      batchId: draft.id,
-      batchRowId: row.batchRowId,
-      transactionId: inserted.id,
-      outcome: 'created',
-    });
-  }
-
-  for (const row of projection) {
-    if (row.outcome !== 'matched' || !row.transactionId) continue;
-    links.push({
-      orgId,
-      batchId: draft.id,
-      batchRowId: row.batchRowId,
-      transactionId: row.transactionId,
-      outcome: 'matched',
-    });
-  }
-
-  await insertImportTransactionLinks(tx, links);
+  const prepared = prepareImportTransactionCreates({
+    orgId,
+    draft,
+    projection,
+  });
+  await createTransactionsInTx(tx, orgId, prepared.items);
+  await insertImportTransactionLinks(tx, prepared.links);
 
   const counts = countImportOutcomes(projection);
   const completed = await completeImportBatch(tx, {
