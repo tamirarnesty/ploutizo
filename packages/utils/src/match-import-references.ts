@@ -78,6 +78,33 @@ const matchUniqueMemberId = (
   return ids?.length === 1 ? (ids[0] ?? null) : null;
 };
 
+const parseAssigneeHintSegments = (
+  value: string | null | undefined
+): string[] => {
+  if (!value?.trim()) return [];
+  return value
+    .split(';')
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+};
+
+const resolveAssigneeMemberIds = (
+  csvAssigneeName: string | null | undefined,
+  index: Map<string, string[]>
+): string[] => {
+  const memberIds: string[] = [];
+  const seen = new Set<string>();
+
+  for (const segment of parseAssigneeHintSegments(csvAssigneeName)) {
+    const memberId = matchUniqueMemberId(segment, index);
+    if (!memberId || seen.has(memberId)) continue;
+    seen.add(memberId);
+    memberIds.push(memberId);
+  }
+
+  return memberIds;
+};
+
 export const createImportReferenceResolver = (
   catalogs: ImportReferenceCatalogs
 ) => {
@@ -89,7 +116,10 @@ export const createImportReferenceResolver = (
   const membersByName = indexMemberNames(catalogs.members);
 
   return (hints: ImportCsvHints): ResolvedImportReferences => {
-    const memberId = matchUniqueMemberId(hints.csvAssigneeName, membersByName);
+    const reviewAssigneeMemberIds = resolveAssigneeMemberIds(
+      hints.csvAssigneeName,
+      membersByName
+    );
     const reviewTagIds = [
       ...new Set(
         hints.csvTagNames
@@ -101,7 +131,7 @@ export const createImportReferenceResolver = (
     return {
       reviewCategoryId: matchIdByName(hints.csvCategoryName, categoriesByName),
       reviewTagIds,
-      reviewAssigneeMemberIds: memberId ? [memberId] : [],
+      reviewAssigneeMemberIds,
     };
   };
 };
