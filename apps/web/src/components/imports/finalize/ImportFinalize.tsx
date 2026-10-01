@@ -220,9 +220,9 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
   const finalizeBusy = finalizeImport.isPending;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-8">
+    <div className="flex flex-col gap-8">
       <ImportFinalizeBreadcrumbs />
-      <section className="flex min-h-0 flex-1 flex-col gap-6">
+      <section className="flex flex-col gap-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             {meta ? (
