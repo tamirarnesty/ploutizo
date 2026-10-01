@@ -91,6 +91,44 @@ describe('createImportReferenceResolver', () => {
     ).toEqual(['member-1', 'member-3']);
   });
 
+  it('skips an ambiguous segment while keeping uniquely matched segments', () => {
+    const resolveAmbiguous = createImportReferenceResolver({
+      categories: [],
+      tags: [],
+      members: [
+        {
+          id: 'member-1',
+          firstName: 'Tamir',
+          lastName: 'Arnesty',
+          email: 'tamir@example.com',
+          imageUrl: null,
+        },
+        {
+          id: 'member-3',
+          firstName: 'Tamir',
+          lastName: 'Smith',
+          email: 'tamir.smith@example.com',
+          imageUrl: null,
+        },
+        {
+          id: 'member-4',
+          firstName: 'Emily',
+          lastName: 'Example',
+          email: 'emily@example.com',
+          imageUrl: null,
+        },
+      ],
+    });
+
+    expect(
+      resolveAmbiguous({
+        csvCategoryName: null,
+        csvAssigneeName: 'Tamir; emily',
+        csvTagNames: [],
+      }).reviewAssigneeMemberIds
+    ).toEqual(['member-4']);
+  });
+
   it('returns empty assignees when every segment is unknown', () => {
     expect(
       resolve({
