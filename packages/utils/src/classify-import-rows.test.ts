@@ -297,6 +297,28 @@ describe('classifyImportRows — merchant rules and precedence', () => {
     });
   });
 
+  it('applies multiple resolved CSV assignee hints as shared assignees', () => {
+    expect(
+      classifyOne(
+        baseRow({
+          csvAssigneeName: 'Tamir; Alex',
+        }),
+        baseContext({ accountOwnerMemberIds: [TAMIR_ID] })
+      ).reviewAssigneeMemberIds
+    ).toEqual([TAMIR_ID, ALEX_ID]);
+  });
+
+  it('uses partially resolved multi-hint assignees without falling back to account owners', () => {
+    expect(
+      classifyOne(
+        baseRow({
+          csvAssigneeName: 'Tamir; nobody',
+        }),
+        baseContext({ accountOwnerMemberIds: [ALEX_ID] })
+      ).reviewAssigneeMemberIds
+    ).toEqual([TAMIR_ID]);
+  });
+
   it('treats unresolved CSV hints as absent and continues to the next fallback', () => {
     expect(
       classifyOne(

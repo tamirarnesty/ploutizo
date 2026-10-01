@@ -26,6 +26,13 @@ describe('createImportReferenceResolver', () => {
         email: 'alex@example.com',
         imageUrl: null,
       },
+      {
+        id: 'member-3',
+        firstName: 'Emily',
+        lastName: 'Example',
+        email: 'emily@example.com',
+        imageUrl: null,
+      },
     ],
   });
 
@@ -62,6 +69,84 @@ describe('createImportReferenceResolver', () => {
         csvTagNames: [],
       }).reviewCategoryId
     ).toBeNull();
+  });
+
+  it('resolves multiple semicolon-separated assignee hints', () => {
+    expect(
+      resolve({
+        csvCategoryName: null,
+        csvAssigneeName: 'tamir ; emily',
+        csvTagNames: [],
+      }).reviewAssigneeMemberIds
+    ).toEqual(['member-1', 'member-3']);
+  });
+
+  it('skips unknown or ambiguous segments without discarding matched ones', () => {
+    expect(
+      resolve({
+        csvCategoryName: null,
+        csvAssigneeName: 'tamir; unknown; emily',
+        csvTagNames: [],
+      }).reviewAssigneeMemberIds
+    ).toEqual(['member-1', 'member-3']);
+  });
+
+  it('skips an ambiguous segment while keeping uniquely matched segments', () => {
+    const resolveAmbiguous = createImportReferenceResolver({
+      categories: [],
+      tags: [],
+      members: [
+        {
+          id: 'member-1',
+          firstName: 'Tamir',
+          lastName: 'Arnesty',
+          email: 'tamir@example.com',
+          imageUrl: null,
+        },
+        {
+          id: 'member-3',
+          firstName: 'Tamir',
+          lastName: 'Smith',
+          email: 'tamir.smith@example.com',
+          imageUrl: null,
+        },
+        {
+          id: 'member-4',
+          firstName: 'Emily',
+          lastName: 'Example',
+          email: 'emily@example.com',
+          imageUrl: null,
+        },
+      ],
+    });
+
+    expect(
+      resolveAmbiguous({
+        csvCategoryName: null,
+        csvAssigneeName: 'Tamir; emily',
+        csvTagNames: [],
+      }).reviewAssigneeMemberIds
+    ).toEqual(['member-4']);
+  });
+
+  it('returns empty assignees when every segment is unknown', () => {
+    expect(
+      resolve({
+        csvCategoryName: null,
+        csvAssigneeName: 'nobody; also-nobody',
+        csvTagNames: [],
+      }).reviewAssigneeMemberIds
+    ).toEqual([]);
+  });
+
+  it('dedupes repeated segments to one member id', () => {
+    expect(
+      resolve({
+        csvCategoryName: null,
+        csvAssigneeName: 'Tamir; tamir arnesty',
+        csvTagNames: [],
+      }).reviewAssigneeMemberIds
+    ).toEqual(['member-1']);
   });
 
   it('resolves a unique first name', () => {

@@ -139,6 +139,10 @@ export const INTERNAL_IMPORT_FORMAT_RULES: readonly (readonly [
   ['description', 'Use the merchant or statement description.'],
   ['type', 'Use expense, refund, or settlement.'],
   ['tags', 'Separate multiple tags with semicolons.'],
+  [
+    'assignee hint',
+    'Optional. Separate multiple household members with semicolons (flexible spacing). Each segment resolves like a single name: case-insensitive first name, full name, or email. Unmatched segments are skipped.',
+  ],
 ];
 
 export const INTERNAL_IMPORT_EXAMPLE_CSV = [

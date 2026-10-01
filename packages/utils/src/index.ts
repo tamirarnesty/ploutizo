@@ -105,6 +105,7 @@ export {
 } from './format-account-label';
 export { memberFullLabel, memberShortLabel } from './member-label';
 export { parseImportTags } from './parse-import-tags';
+export { parseImportAssigneeHints } from './parse-import-assignee-hints';
 export {
   tryParseImportAmountToCents,
   tryParseImportIsoDate,

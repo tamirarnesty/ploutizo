@@ -1,5 +1,6 @@
 import type { MemberIdentity } from '@ploutizo/types';
 import { memberFullLabel } from './member-label';
+import { parseImportAssigneeHints } from './parse-import-assignee-hints';
 
 interface Identified {
   id: string;
@@ -89,7 +90,15 @@ export const createImportReferenceResolver = (
   const membersByName = indexMemberNames(catalogs.members);
 
   return (hints: ImportCsvHints): ResolvedImportReferences => {
-    const memberId = matchUniqueMemberId(hints.csvAssigneeName, membersByName);
+    const reviewAssigneeMemberIds = hints.csvAssigneeName?.trim()
+      ? [
+          ...new Set(
+            parseImportAssigneeHints(hints.csvAssigneeName)
+              .map((segment) => matchUniqueMemberId(segment, membersByName))
+              .filter((id): id is string => id !== null)
+          ),
+        ]
+      : [];
     const reviewTagIds = [
       ...new Set(
         hints.csvTagNames
@@ -101,7 +110,7 @@ export const createImportReferenceResolver = (
     return {
       reviewCategoryId: matchIdByName(hints.csvCategoryName, categoriesByName),
       reviewTagIds,
-      reviewAssigneeMemberIds: memberId ? [memberId] : [],
+      reviewAssigneeMemberIds,
     };
   };
 };
