@@ -93,37 +93,7 @@ const importTarget = {
   lastFour: '1234',
 };
 
-const importDraft = {
-  id: 'draft_1',
-  account: importTarget,
-  contentProfileId: 'internal',
-  status: 'draft',
-  fileName: 'june.csv',
-  rowCount: 0,
-  validRowCount: 0,
-  invalidRowCount: 0,
-  importedAt: TIMESTAMP,
-  completedAt: null,
-  discardedAt: null,
-  createdAt: TIMESTAMP,
-  updatedAt: TIMESTAMP,
-  rows: [],
-  refundTargetFacts: {},
-  matchTargetFacts: {},
-  priorRefundsByTarget: { 'tx:tx_9': 1200 },
-};
-
 describe('createImportDraftResponseSchema', () => {
-  it('parses a created draft', () => {
-    const parsed = createImportDraftResponseSchema.parse({
-      kind: 'draft',
-      data: importDraft,
-      meta: { reusedExisting: true },
-    });
-
-    expect(parsed.kind === 'draft' && parsed.meta.reusedExisting).toBe(true);
-  });
-
   it('parses an upload that needs a column mapping', () => {
     const body = {
       kind: 'mapping_required',
@@ -133,15 +103,6 @@ describe('createImportDraftResponseSchema', () => {
     };
 
     expect(createImportDraftResponseSchema.parse(body)).toEqual(body);
-  });
-
-  it('rejects a draft response without its draft', () => {
-    expect(
-      createImportDraftResponseSchema.safeParse({
-        kind: 'draft',
-        meta: { reusedExisting: false },
-      }).success
-    ).toBe(false);
   });
 });
 

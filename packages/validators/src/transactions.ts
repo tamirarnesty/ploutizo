@@ -5,6 +5,7 @@ import {
 } from '@ploutizo/types';
 import { z } from 'zod';
 import { colourTokenSchema } from './colour-tokens';
+import { memberIdentitySchema } from './members';
 import { isoTimestampSchema } from './shared';
 
 /** Common assignee object used in split payloads (Phase 3.2 writes these). */
@@ -178,19 +179,17 @@ export type TransactionForm = z.infer<typeof TransactionFormSchema>;
 // ---------------------------------------------------------------------------
 
 /** Split row on a listed transaction; `percentage` is Postgres `numeric(6,3)`, a decimal string on the wire. */
-export const transactionRowAssigneeSchema = z.object({
-  transactionId: z.string(),
-  memberId: z.string(),
-  amountCents: z.number().int(),
-  percentage: z
-    .string()
-    .regex(/^-?\d+(\.\d+)?$/)
-    .nullable(),
-  firstName: z.string().nullable(),
-  lastName: z.string().nullable(),
-  email: z.string(),
-  imageUrl: z.string().nullable(),
-});
+export const transactionRowAssigneeSchema = memberIdentitySchema
+  .omit({ id: true })
+  .extend({
+    transactionId: z.string(),
+    memberId: z.string(),
+    amountCents: z.number().int(),
+    percentage: z
+      .string()
+      .regex(/^-?\d+(\.\d+)?$/)
+      .nullable(),
+  });
 
 export type TransactionAssignee = z.infer<typeof transactionRowAssigneeSchema>;
 

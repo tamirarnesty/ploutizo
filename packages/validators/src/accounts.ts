@@ -207,7 +207,7 @@ export const accountSchema = z.object({
   archivedAt: isoTimestampSchema.nullable(),
   createdAt: isoTimestampSchema,
   updatedAt: isoTimestampSchema,
-  /** Household members on this account (may be empty on legacy rows). */
+  /** Household members on this account (may be empty). */
   owners: z.array(memberIdentitySchema),
 });
 
