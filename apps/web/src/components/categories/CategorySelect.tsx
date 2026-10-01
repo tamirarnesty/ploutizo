@@ -6,7 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@ploutizo/ui/components/select';
-import type { Category } from '@/lib/data-access/categories';
+import type { Category } from '@ploutizo/validators';
 
 interface CategorySelectProps {
   categories: Category[];

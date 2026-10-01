@@ -2,13 +2,11 @@ import { useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import { toast } from '@ploutizo/ui/components/sonner';
-import type {
-  ImportCompletedResult,
-  ImportOutcomeCounts,
-} from '@ploutizo/types';
+import type { ImportCompletedResult } from '@ploutizo/validators';
+import type { ImportOutcomeCounts } from '@ploutizo/types';
 import { invalidateSpendQueries } from '@/lib/data-access/invalidateSpendQueries';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
-import type { ApiErrorBody } from '@/lib/queryClient';
+import type { ApiErrorBody, ApiResponseContractError } from '@/lib/queryClient';
 import { cancelImportDraftQueryFetches } from './cancelImportDraftQueryFetches';
 import { fetchFinalizeImportDraft } from './fetchFinalizeImportDraft';
 import { classifyImportFinalizeError } from './importFinalizeOutcome';
@@ -56,7 +54,7 @@ export const useFinalizeImportDraft = (
 
   const mutation = useHouseholdMutation<
     ImportCompletedResult,
-    ApiErrorBody,
+    ApiErrorBody | ApiResponseContractError,
     FinalizeImportVariables
   >({
     mutationKey: importFinalizeMutationKey(draftId),

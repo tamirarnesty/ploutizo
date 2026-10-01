@@ -3,8 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import type { OrgMember } from '@ploutizo/types';
-import type { TransactionRow } from '@/lib/data-access/transactions';
+import type { OrgMember, TransactionRow } from '@ploutizo/validators';
 import { AssigneeSection } from './AssigneeSection';
 import type { AssigneeFormRow } from './types';
 

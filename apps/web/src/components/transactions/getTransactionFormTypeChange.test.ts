@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Account } from '@ploutizo/types';
+import type { Account } from '@ploutizo/validators';
 import { getTransactionFormTypeChangePatch } from './getTransactionFormTypeChange';
 
 const account = (

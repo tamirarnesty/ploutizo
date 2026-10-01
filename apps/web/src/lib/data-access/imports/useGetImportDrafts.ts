@@ -1,5 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
-import type { ImportDraftSummary } from '@ploutizo/types';
+import { z } from 'zod';
+import { dataEnvelope, importDraftSummarySchema } from '@ploutizo/validators';
+import type { ImportDraftSummary } from '@ploutizo/validators';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import { activeImportDraftsQueryKey } from './queryKeys';
@@ -8,8 +10,9 @@ import type { UseQueryResult } from '@tanstack/react-query';
 export const fetchActiveImportDrafts = async (
   signal?: AbortSignal
 ): Promise<ImportDraftSummary[]> => {
-  const r = await apiFetch<{ data: ImportDraftSummary[] }>(
+  const r = await apiFetch(
     '/api/imports/drafts',
+    dataEnvelope(z.array(importDraftSummarySchema)),
     { signal }
   );
   return r.data;

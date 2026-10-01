@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { OrgMember } from '@ploutizo/types';
+import type { OrgMember } from '@ploutizo/validators';
 import { makeImportDraftRow } from '../test-fixtures/importDraft';
 import { ImportAssigneeField } from './ImportAssigneeField';
 

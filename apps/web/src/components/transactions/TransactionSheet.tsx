@@ -15,7 +15,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@ploutizo/ui/components/sheet';
-import type { TransactionRow } from '@/lib/data-access/transactions';
+import type { TransactionRow } from '@ploutizo/validators';
 import { TransactionForm } from './TransactionForm';
 
 interface TransactionSheetProps {

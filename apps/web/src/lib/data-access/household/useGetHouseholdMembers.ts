@@ -1,5 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
-import type { OrgMember } from '@ploutizo/types';
+import { z } from 'zod';
+import { dataEnvelope, orgMemberSchema } from '@ploutizo/validators';
+import type { OrgMember } from '@ploutizo/validators';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
@@ -7,9 +9,11 @@ import type { UseQueryResult } from '@tanstack/react-query';
 export const fetchHouseholdMembers = async (
   signal?: AbortSignal
 ): Promise<OrgMember[]> => {
-  const r = await apiFetch<{ data: OrgMember[] }>('/api/households/members', {
-    signal,
-  });
+  const r = await apiFetch(
+    '/api/households/members',
+    dataEnvelope(z.array(orgMemberSchema)),
+    { signal }
+  );
   return r.data;
 };
 

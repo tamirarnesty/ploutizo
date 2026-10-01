@@ -2,7 +2,7 @@ import '@/lib/access/working-set-cleanup';
 import '@/test/mockTanstackRouter';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { ImportDraftSummary } from '@ploutizo/types';
+import type { ImportDraftSummary } from '@ploutizo/validators';
 import { HouseholdHookWrapper } from '@/test/household-hook-harness';
 import { ImportDraftList } from './ImportDraftList';
 

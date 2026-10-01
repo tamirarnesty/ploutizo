@@ -180,6 +180,29 @@ describe('createClerkOrgAdminAdapter.listInvitations', () => {
     expect(rows[0]?.expiresAt).toBeNull();
   });
 
+  it('keeps only invitations in a listed status', async () => {
+    getOrganizationInvitationList.mockResolvedValue({
+      data: [
+        {
+          id: 'inv_pending',
+          emailAddress: 'a@example.com',
+          status: 'pending',
+          createdAt: 1678886400000,
+          expiresAt: null,
+        },
+        {
+          id: 'inv_new_status',
+          emailAddress: 'b@example.com',
+          status: 'some_future_status',
+          createdAt: 1678886400000,
+          expiresAt: null,
+        },
+      ],
+    });
+    const rows = await orgAdmin.listInvitations('org_1');
+    expect(rows.map((row) => row.id)).toEqual(['inv_pending']);
+  });
+
   it('throws unknown when Clerk listing fails', async () => {
     getOrganizationInvitationList.mockRejectedValue(clerkError(500, 'boom'));
     await expect(orgAdmin.listInvitations('org_1')).rejects.toMatchObject({

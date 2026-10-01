@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { SettlementAccountRow } from '@ploutizo/types';
+import type { SettlementAccountRow } from '@ploutizo/validators';
 import { computeCreditCardMemberRollup } from '@/lib/settlements';
 
 export const useCreditCardMemberRollup = (

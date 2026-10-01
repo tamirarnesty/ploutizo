@@ -1,19 +1,23 @@
-import { apiFetch } from '@/lib/queryClient';
+import {
+  dataEnvelope,
+  transactionListResponseSchema,
+  transactionRowSchema,
+} from '@ploutizo/validators';
 import type {
   TransactionListResponse,
-  TransactionQueryParams,
   TransactionRow,
-} from './useGetTransactions';
+} from '@ploutizo/validators';
+import { apiFetch } from '@/lib/queryClient';
+import type { TransactionQueryParams } from './useGetTransactions';
 
 export const fetchTransaction = async (
   id: string,
   signal?: AbortSignal
 ): Promise<TransactionRow> => {
-  const r = await apiFetch<{ data: TransactionRow }>(
+  const r = await apiFetch(
     `/api/transactions/${id}`,
-    {
-      signal,
-    }
+    dataEnvelope(transactionRowSchema),
+    { signal }
   );
   return r.data;
 };
@@ -46,8 +50,9 @@ export const fetchTransactions = async (
     qs.set('importBatchId', params.importLink.batchId);
     qs.set('importOutcome', params.importLink.outcome);
   }
-  return apiFetch<TransactionListResponse>(
+  return apiFetch(
     `/api/transactions?${qs.toString()}`,
+    transactionListResponseSchema,
     { signal }
   );
 };
@@ -61,8 +66,9 @@ export const fetchSearchTransactions = async (
   qs.set('description', description);
   qs.set('limit', '20');
   if (type) qs.set('type', type);
-  const r = await apiFetch<TransactionListResponse>(
+  const r = await apiFetch(
     `/api/transactions?${qs.toString()}`,
+    transactionListResponseSchema,
     { signal }
   );
   return r.data;

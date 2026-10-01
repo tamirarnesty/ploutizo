@@ -1,6 +1,6 @@
 import '@/lib/access/working-set-cleanup';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { BatchUpdateImportDraftRowsResult } from '@ploutizo/types';
+import type { BatchUpdateImportDraftRowsResult } from '@ploutizo/validators';
 import {
   makeImportDraft,
   makeImportDraftRow,

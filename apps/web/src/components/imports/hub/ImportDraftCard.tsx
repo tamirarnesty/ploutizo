@@ -17,7 +17,7 @@ import { Button } from '@ploutizo/ui/components/button';
 import { LoadingButton } from '@ploutizo/ui/components/loading-button';
 import { Text } from '@ploutizo/ui/components/text';
 import { formatAccountLabel } from '@ploutizo/utils';
-import type { ImportDraftSummary } from '@ploutizo/types';
+import type { ImportDraftSummary } from '@ploutizo/validators';
 import { importFinalizeMutationKey } from '@/lib/data-access/imports/queryKeys';
 import { importDraftReviewRoute } from '@/lib/navigation';
 

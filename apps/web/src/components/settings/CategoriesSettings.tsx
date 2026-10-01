@@ -1,11 +1,11 @@
 import { Button } from '@ploutizo/ui/components/button';
 import { Text } from '@ploutizo/ui/components/text';
+import type { Category } from '@ploutizo/validators';
 import {
   useArchiveCategory,
   useGetCategories,
   useReorderCategories,
 } from '@/lib/data-access/categories';
-import type { Category } from '@/lib/data-access/categories';
 import { useSettingsEntityDialog } from '@/hooks/useSettingsEntityDialog';
 import { CategoriesList } from './CategoriesList';
 import { CategoryDialog } from './CategoryDialog';

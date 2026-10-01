@@ -1,5 +1,12 @@
-import { INCOME_TYPE_VALUES } from '@ploutizo/types';
+import {
+  ACCOUNT_TYPE_VALUES,
+  INCOME_TYPE_VALUES,
+  TRANSACTION_TYPE_VALUES,
+} from '@ploutizo/types';
 import { z } from 'zod';
+import { colourTokenSchema } from './colour-tokens';
+import { memberIdentitySchema } from './members';
+import { isoTimestampSchema } from './shared';
 
 /** Common assignee object used in split payloads (Phase 3.2 writes these). */
 export const assigneeSchema = z.object({
@@ -166,3 +173,80 @@ export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>;
 // TransactionFormSchema — for TanStack Form in Phase 3.4 (type field present as discriminated union)
 export const TransactionFormSchema = createTransactionSchema;
 export type TransactionForm = z.infer<typeof TransactionFormSchema>;
+
+// ---------------------------------------------------------------------------
+// Responses
+// ---------------------------------------------------------------------------
+
+/** Split row on a listed transaction; `percentage` is Postgres `numeric(6,3)`, a decimal string on the wire. */
+export const transactionRowAssigneeSchema = memberIdentitySchema
+  .omit({ id: true })
+  .extend({
+    transactionId: z.string(),
+    memberId: z.string(),
+    amountCents: z.number().int(),
+    percentage: z
+      .string()
+      .regex(/^-?\d+(\.\d+)?$/)
+      .nullable(),
+  });
+
+export type TransactionAssignee = z.infer<typeof transactionRowAssigneeSchema>;
+
+export const transactionRowTagSchema = z.object({
+  transactionId: z.string(),
+  id: z.string(),
+  name: z.string(),
+  colour: z.string().nullable(),
+});
+
+export type TransactionTag = z.infer<typeof transactionRowTagSchema>;
+
+/** Transaction with its joined category/account/refund facts, splits, and tags (list and detail reads). */
+export const transactionRowSchema = z.object({
+  id: z.string(),
+  orgId: z.string(),
+  type: z.enum(TRANSACTION_TYPE_VALUES),
+  amount: z.number().int(),
+  date: z.iso.date(),
+  description: z.string(),
+  categoryId: z.string().nullable(),
+  categoryName: z.string().nullable(),
+  categoryIcon: z.string().nullable(),
+  categoryColour: colourTokenSchema.nullable(),
+  accountId: z.string(),
+  accountName: z.string().nullable(),
+  accountType: z.enum(ACCOUNT_TYPE_VALUES).nullable(),
+  refundOf: z.string().nullable(),
+  incomeType: z.enum(INCOME_TYPE_VALUES).nullable(),
+  counterpartAccountId: z.string().nullable(),
+  counterpartAccountName: z.string().nullable(),
+  rawDescription: z.string().nullable(),
+  /** Immutable bank reference from import; not a uuid. */
+  externalId: z.string().nullable(),
+  notes: z.string().nullable(),
+  refundOfId: z.string().nullable(),
+  refundOfDate: z.iso.date().nullable(),
+  refundOfAmountCents: z.number().int().nullable(),
+  importBatchId: z.string().nullable(),
+  recurringTemplateId: z.string().nullable(),
+  deletedAt: isoTimestampSchema.nullable(),
+  createdAt: isoTimestampSchema,
+  updatedAt: isoTimestampSchema,
+  assignees: z.array(transactionRowAssigneeSchema),
+  tags: z.array(transactionRowTagSchema),
+});
+
+export type TransactionRow = z.infer<typeof transactionRowSchema>;
+
+/** `GET /api/transactions` body — the page plus paging facts, no nested envelope. */
+export const transactionListResponseSchema = z.object({
+  data: z.array(transactionRowSchema),
+  total: z.number().int(),
+  page: z.number().int(),
+  limit: z.number().int(),
+});
+
+export type TransactionListResponse = z.infer<
+  typeof transactionListResponseSchema
+>;

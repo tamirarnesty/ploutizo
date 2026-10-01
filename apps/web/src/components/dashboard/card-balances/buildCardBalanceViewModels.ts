@@ -1,9 +1,6 @@
 import { memberFullLabel, memberShortLabel } from '@ploutizo/utils';
-import type {
-  MemberIdentity,
-  OrgMember,
-  SettlementAccountRow,
-} from '@ploutizo/types';
+import type { MemberIdentity } from '@ploutizo/types';
+import type { OrgMember, SettlementAccountRow } from '@ploutizo/validators';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';
 
 export type CardBalanceAttributionChip =

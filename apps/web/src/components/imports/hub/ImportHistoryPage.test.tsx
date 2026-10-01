@@ -2,7 +2,7 @@ import '@/test/mockTanstackRouter';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ImportHistoryItem } from '@ploutizo/types';
+import type { ImportHistoryItem } from '@ploutizo/validators';
 import { useGetImportHistoryInfinite } from '@/lib/data-access/imports';
 import { ImportHistoryPage } from './ImportHistoryPage';
 

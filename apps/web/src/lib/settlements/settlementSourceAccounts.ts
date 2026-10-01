@@ -2,7 +2,7 @@ import {
   getAccountOptionsForTransactionSlot,
   getTransactionTypePolicy,
 } from '@ploutizo/utils/transaction-policy';
-import type { Account } from '@ploutizo/types';
+import type { Account } from '@ploutizo/validators';
 
 export const SETTLEMENT_SOURCE_ACCOUNT_TYPES = new Set(
   getTransactionTypePolicy('settlement').accountSlots.find(

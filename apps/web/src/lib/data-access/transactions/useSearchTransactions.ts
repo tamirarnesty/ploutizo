@@ -1,7 +1,7 @@
+import type { TransactionRow } from '@ploutizo/validators';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { fetchSearchTransactions } from './queries';
 import type { UseQueryResult } from '@tanstack/react-query';
-import type { TransactionRow } from './useGetTransactions';
 
 export const useSearchTransactions = (
   description: string,

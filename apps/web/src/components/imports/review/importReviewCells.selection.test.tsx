@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { describe, expect, it, vi } from 'vitest';
 import type { ImportReviewRow } from '@ploutizo/types';
-import type { Category } from '@/lib/data-access/categories';
+import type { Category } from '@ploutizo/validators';
 import { makeImportDraftRow } from '../test-fixtures/importDraft';
 import { ImportDraftReviewProvider } from './ImportDraftReviewContext';
 import { ImportReviewSelectionCell } from './importReviewCells';

@@ -1,4 +1,5 @@
-import type { ImportDraftRow, OrgMember } from '@ploutizo/types';
+import type { ImportDraftRow } from '@ploutizo/types';
+import type { OrgMember } from '@ploutizo/validators';
 import { MemberToggleGroup } from '@/components/members/MemberToggleGroup';
 import { resolveImportRowAssigneeMemberIds } from '../lib/importPresentation';
 

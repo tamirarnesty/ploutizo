@@ -1,7 +1,7 @@
 import '@/test/mockTanstackRouter';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { ImportHistoryItem } from '@ploutizo/types';
+import type { ImportHistoryItem } from '@ploutizo/validators';
 import { ImportHistoryList } from './ImportHistoryList';
 
 const completedItem: ImportHistoryItem = {

@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { accountSchema } from './accounts';
+import { memberIdentitySchema } from './members';
 
 const settlementAssigneeSchema = z.object({
   memberId: z.string().uuid(),
@@ -43,3 +45,49 @@ export const createSettlementSchema = z
   });
 
 export type CreateSettlementInput = z.infer<typeof createSettlementSchema>;
+
+// ---------------------------------------------------------------------------
+// Responses
+// ---------------------------------------------------------------------------
+
+export const settlementStatusSchema = z.enum(['due_soon', 'on_track']);
+
+export type SettlementStatus = z.infer<typeof settlementStatusSchema>;
+
+export const settlementMemberRowSchema = z.object({
+  member: memberIdentitySchema,
+  personalBalanceCents: z.number().int(),
+});
+
+export type SettlementMemberRow = z.infer<typeof settlementMemberRowSchema>;
+
+/** One credit card in `GET /api/settlements`; `owners` mirrors `account_members`, as on `GET /api/accounts`. */
+export const settlementAccountRowSchema = z.object({
+  account: accountSchema.pick({
+    id: true,
+    name: true,
+    type: true,
+    institutionId: true,
+    lastFour: true,
+    statementDueDay: true,
+    owners: true,
+  }),
+  totalBalanceCents: z.number().int(),
+  sharedBalanceCents: z.number().int(),
+  sharedParticipantIds: z.array(z.string()),
+  members: z.array(settlementMemberRowSchema),
+  dueDate: z.iso.date().nullable(),
+  status: settlementStatusSchema.nullable(),
+});
+
+export type SettlementAccountRow = z.infer<typeof settlementAccountRowSchema>;
+export type SettlementAccountRowAccount = SettlementAccountRow['account'];
+
+/** `GET /api/settlements` body — bare, no `{ data }` envelope. */
+export const settlementBalancesResponseSchema = z.object({
+  accounts: z.array(settlementAccountRowSchema),
+});
+
+export type GetSettlementBalancesResponse = z.infer<
+  typeof settlementBalancesResponseSchema
+>;

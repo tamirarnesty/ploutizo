@@ -2,7 +2,7 @@ import { Badge } from '@ploutizo/ui/components/badge';
 import { Item, ItemActions } from '@ploutizo/ui/components/item';
 import { Text } from '@ploutizo/ui/components/text';
 import { memberFullLabel, memberShortLabel } from '@ploutizo/utils';
-import type { OrgMember } from '@ploutizo/types';
+import type { OrgMember } from '@ploutizo/validators';
 import { UserAvatar } from '@/components/members/UserAvatar';
 import { ConfirmDialog } from './ConfirmDialog';
 

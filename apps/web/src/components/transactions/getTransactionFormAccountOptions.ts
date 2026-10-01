@@ -1,6 +1,7 @@
 import { getAccountOptionsForTransactionSlot } from '@ploutizo/utils/transaction-policy';
-import type { Account, TransactionType } from '@ploutizo/types';
+import type { TransactionType } from '@ploutizo/types';
 import type { TransactionAccountSlot } from '@ploutizo/utils/transaction-policy';
+import type { Account } from '@ploutizo/validators';
 
 export interface GetTransactionFormAccountOptionsInput {
   type: TransactionType;

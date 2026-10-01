@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import type { MerchantRule } from '@ploutizo/validators';
 import { RuleDialog } from '@/components/settings/RuleDialog';
 import { expectOverlayMounted } from '@/test/overlayCloseContract';
-import type { MerchantRule } from '@/lib/data-access/merchant-rules';
 
 vi.mock('@/components/settings/RuleForm', () => ({
   RuleForm: () => <div data-testid="rule-form" />,

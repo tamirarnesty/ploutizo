@@ -6,7 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@ploutizo/ui/components/select';
-import type { Account } from '@ploutizo/types';
+import type { Account } from '@ploutizo/validators';
 import type { SettleFieldErrors } from '@/components/dashboard/settle-dialog/settleDialogFieldTypes';
 
 export type SettlePaidFromFieldProps = {

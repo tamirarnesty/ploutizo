@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Account, ImportReviewRow } from '@ploutizo/types';
+import type { ImportReviewRow } from '@ploutizo/types';
+import type { Account } from '@ploutizo/validators';
 import { makeImportDraftRow } from '../test-fixtures/importDraft';
 import '@/test/mockTanstackRouter';
 import { ImportDraftReviewProvider } from './ImportDraftReviewContext';

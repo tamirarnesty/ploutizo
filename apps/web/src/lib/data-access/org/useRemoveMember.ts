@@ -1,12 +1,12 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
-import { apiFetch } from '@/lib/queryClient';
+import { apiSend } from '@/lib/queryClient';
 
 export const useRemoveMember = () => {
   const qc = useQueryClient();
   return useHouseholdMutation({
     mutationFn: (memberId: string) =>
-      apiFetch(`/api/households/members/${memberId}`, {
+      apiSend(`/api/households/members/${memberId}`, {
         method: 'DELETE',
       }),
     onSettled: () =>

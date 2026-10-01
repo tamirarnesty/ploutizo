@@ -1,4 +1,4 @@
-import type { Account, SettlementAccountRow } from '@ploutizo/types';
+import type { Account, SettlementAccountRow } from '@ploutizo/validators';
 import {
   composeSettleAmountForPayToward,
   composeSettleFormValues,

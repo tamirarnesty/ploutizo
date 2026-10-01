@@ -1,10 +1,7 @@
 import { toFinancialInstitutionId } from '@ploutizo/types';
-import type {
-  Account,
-  ImportTargetAccount,
-  MemberIdentity,
-} from '@ploutizo/types';
+import type { MemberIdentity } from '@ploutizo/types';
 import type { accounts } from '@ploutizo/db/schema';
+import type { Account, ImportTargetAccount } from '@ploutizo/validators';
 import { listAccountMemberDetails } from '@/lib/queries/accounts';
 
 type AccountRow = typeof accounts.$inferSelect;

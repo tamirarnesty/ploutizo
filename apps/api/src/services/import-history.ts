@@ -1,4 +1,7 @@
-import type { ImportHistoryItem, ImportHistoryPage } from '@ploutizo/types';
+import type {
+  ImportHistoryItem,
+  ImportHistoryPage,
+} from '@ploutizo/validators';
 import { DomainError } from '@/lib/errors';
 import {
   decodeImportHistoryCursor,

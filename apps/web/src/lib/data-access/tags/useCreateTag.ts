@@ -1,7 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { dataEnvelope, tagSchema } from '@ploutizo/validators';
+import type { Tag } from '@ploutizo/validators';
 import { apiFetch } from '@/lib/queryClient';
 import { useOptimisticListMutation } from '../optimisticListMutation';
-import type { Tag } from './useGetTags';
 
 interface CreateTagBody {
   name: string;
@@ -12,7 +13,7 @@ const optimisticTagId = (name: string) =>
   `optimistic-${name.trim().toLowerCase()}`;
 
 export const createTag = async (body: CreateTagBody): Promise<Tag> => {
-  const r = await apiFetch<{ data: Tag }>('/api/tags', {
+  const r = await apiFetch('/api/tags', dataEnvelope(tagSchema), {
     method: 'POST',
     body: JSON.stringify(body),
   });

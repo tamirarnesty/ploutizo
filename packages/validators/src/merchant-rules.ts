@@ -1,5 +1,6 @@
 import { MERCHANT_MATCH_TYPE_VALUES } from '@ploutizo/types';
 import { z } from 'zod';
+import { isoTimestampSchema } from './shared';
 
 export const createMerchantRuleSchema = z.object({
   pattern: z.string().min(1, 'Pattern is required.'),
@@ -22,3 +23,18 @@ export const RuleFormSchema = createMerchantRuleSchema
     pattern: z.string().min(1, 'Pattern is required.'),
   });
 export type RuleForm = z.infer<typeof RuleFormSchema>;
+
+/** `GET /api/merchant-rules` row and the body of every rule write. */
+export const merchantRuleSchema = z.object({
+  id: z.string(),
+  orgId: z.string(),
+  pattern: z.string(),
+  matchType: z.enum(MERCHANT_MATCH_TYPE_VALUES),
+  renameTo: z.string().nullable(),
+  categoryId: z.string().nullable(),
+  assigneeId: z.string().nullable(),
+  priority: z.number().int(),
+  createdAt: isoTimestampSchema,
+});
+
+export type MerchantRule = z.infer<typeof merchantRuleSchema>;

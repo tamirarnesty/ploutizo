@@ -10,7 +10,7 @@ import {
 } from '@ploutizo/ui/components/radio-group';
 import { Users } from 'lucide-react';
 import { memberFullLabel } from '@ploutizo/utils';
-import type { SettlementAccountRow } from '@ploutizo/types';
+import type { SettlementAccountRow } from '@ploutizo/validators';
 import { SignedBalanceText } from '@/components/dashboard/SignedBalanceText';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';
 import { UserAvatar } from '@/components/members/UserAvatar';

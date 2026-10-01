@@ -2,16 +2,16 @@ import {
   isImportContentProfileId,
   toFinancialInstitutionId,
 } from '@ploutizo/types';
+import type { ImportContentProfileId } from '@ploutizo/types';
 import type {
   ImportCompletedHistoryItem,
   ImportCompletedResult,
-  ImportContentProfileId,
   ImportDiscardedHistoryItem,
   ImportDraftSummary,
   ImportHistoryIdentity,
   ImportHistoryItem,
   ImportTargetAccount,
-} from '@ploutizo/types';
+} from '@ploutizo/validators';
 import type { ImportDraftSummaryRow } from '@/lib/queries/imports';
 import { DomainError } from '@/lib/errors';
 

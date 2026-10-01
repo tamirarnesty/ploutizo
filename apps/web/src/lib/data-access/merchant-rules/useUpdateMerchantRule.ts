@@ -1,7 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { dataEnvelope, merchantRuleSchema } from '@ploutizo/validators';
+import type { MerchantRule } from '@ploutizo/validators';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
-import type { MerchantRule } from './useGetMerchantRules';
 
 type UpdateMerchantRuleBody = Partial<{
   pattern: string;
@@ -15,8 +16,9 @@ export const updateMerchantRule = async (
   id: string,
   body: UpdateMerchantRuleBody
 ): Promise<MerchantRule> => {
-  const r = await apiFetch<{ data: MerchantRule }>(
+  const r = await apiFetch(
     `/api/merchant-rules/${id}`,
+    dataEnvelope(merchantRuleSchema),
     {
       method: 'PATCH',
       body: JSON.stringify(body),

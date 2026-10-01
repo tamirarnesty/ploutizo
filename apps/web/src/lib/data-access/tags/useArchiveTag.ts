@@ -1,9 +1,10 @@
+import { dataEnvelope, tagSchema } from '@ploutizo/validators';
+import type { Tag } from '@ploutizo/validators';
 import { apiFetch } from '@/lib/queryClient';
 import { useOptimisticListMutation } from '../optimisticListMutation';
-import type { Tag } from './useGetTags';
 
 export const archiveTag = async (id: string): Promise<Tag> => {
-  const r = await apiFetch<{ data: Tag }>(`/api/tags/${id}/archive`, {
+  const r = await apiFetch(`/api/tags/${id}/archive`, dataEnvelope(tagSchema), {
     method: 'DELETE',
   });
   return r.data;

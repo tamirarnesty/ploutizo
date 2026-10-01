@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@ploutizo/ui/components/select';
-import type { Category } from '@/lib/data-access/categories';
+import type { Category } from '@ploutizo/validators';
 import type { TransactionFormInstance } from './hooks/useTransactionForm';
 
 export interface ExpenseFieldsProps {

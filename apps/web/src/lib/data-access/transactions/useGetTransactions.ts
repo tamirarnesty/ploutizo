@@ -1,64 +1,8 @@
 import { queryOptions } from '@tanstack/react-query';
-import type { ColourToken } from '@ploutizo/types';
+import type { TransactionListResponse } from '@ploutizo/validators';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { fetchTransactions } from './queries';
 import type { UseQueryResult } from '@tanstack/react-query';
-
-export interface TransactionAssignee {
-  transactionId: string;
-  memberId: string;
-  amountCents: number;
-  percentage: string | null;
-  firstName: string | null;
-  lastName: string | null;
-  email: string;
-  imageUrl: string | null;
-}
-
-export interface TransactionTag {
-  transactionId: string;
-  id: string;
-  name: string;
-  colour: string | null;
-}
-
-export interface TransactionRow {
-  id: string;
-  orgId: string;
-  type:
-    | 'expense'
-    | 'income'
-    | 'transfer'
-    | 'settlement'
-    | 'refund'
-    | 'contribution';
-  amount: number;
-  date: string;
-  description: string;
-  categoryId: string | null;
-  categoryName: string | null;
-  categoryIcon: string | null;
-  categoryColour: ColourToken | null;
-  accountId: string;
-  accountName: string | null;
-  accountType: string | null;
-  refundOf: string | null;
-  incomeType: string | null;
-  counterpartAccountId: string | null;
-  counterpartAccountName: string | null;
-  rawDescription: string | null;
-  notes: string | null;
-  refundOfId: string | null;
-  refundOfDate: string | null;
-  refundOfAmountCents: number | null;
-  importBatchId: string | null;
-  recurringTemplateId: string | null;
-  deletedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-  assignees: TransactionAssignee[];
-  tags: TransactionTag[];
-}
 
 export interface TransactionQueryParams {
   page: number;
@@ -81,13 +25,6 @@ export interface TransactionQueryParams {
   tagIds_op?: string; // 'is_any_of' | 'is_not_any_of' | 'includes_all' | 'excludes_all' | 'empty' | 'not_empty'
   dateRange_op?: string; // 'between' | 'after' | 'before'
   importLink?: { batchId: string; outcome: 'created' | 'matched' };
-}
-
-export interface TransactionListResponse {
-  data: TransactionRow[];
-  total: number;
-  page: number;
-  limit: number;
 }
 
 export const transactionsQueryOptions = (params: TransactionQueryParams) =>

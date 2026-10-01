@@ -4,7 +4,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@ploutizo/ui/components/sheet';
-import type { Account, AccountType } from '@ploutizo/types';
+import type { AccountType } from '@ploutizo/types';
+import type { Account } from '@ploutizo/validators';
 import { useArchiveAccount } from '@/lib/data-access/accounts';
 import { AccountForm } from './AccountForm';
 

@@ -1,9 +1,9 @@
+import type { MemberIdentity } from '@ploutizo/types';
 import type {
   Account,
-  MemberIdentity,
   SettlementAccountRow,
   SettlementStatus,
-} from '@ploutizo/types';
+} from '@ploutizo/validators';
 
 export const settlementMember = (
   id: string,

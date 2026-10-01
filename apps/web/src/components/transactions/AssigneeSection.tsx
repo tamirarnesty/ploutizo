@@ -11,9 +11,8 @@ import {
   lrmSplit,
   scaleAssigneeSplitProportionally,
 } from '@ploutizo/utils/assignee-split';
-import type { OrgMember } from '@ploutizo/types';
+import type { OrgMember, TransactionRow } from '@ploutizo/validators';
 import { MemberToggleGroup } from '@/components/members/MemberToggleGroup';
-import type { TransactionRow } from '@/lib/data-access/transactions';
 import { SplitSection } from './SplitSection';
 import type { AssigneeFormRow } from './types';
 

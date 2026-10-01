@@ -3,9 +3,8 @@ import { createTransactionSchema } from '@ploutizo/validators';
 import { normalizeTransactionAssignees } from '@ploutizo/utils/assignee-split';
 import { formatGeneratedTransactionDescriptionFromAccounts } from '@ploutizo/utils/transaction-policy';
 import { centsToDollars } from '@ploutizo/utils/currency';
-import type { Account } from '@ploutizo/types';
+import type { Account, TransactionRow } from '@ploutizo/validators';
 import type {
-  TransactionRow,
   useCreateTransaction,
   useUpdateTransaction,
 } from '@/lib/data-access/transactions';

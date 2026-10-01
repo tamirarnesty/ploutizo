@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
-import type { ImportDraftSummary } from '@ploutizo/types';
+import type { ImportDraftSummary } from '@ploutizo/validators';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
-import { apiFetch } from '@/lib/queryClient';
+import { apiSend } from '@/lib/queryClient';
 import { cancelImportDraftQueryFetches } from './cancelImportDraftQueryFetches';
 import { releaseImportDraftSession } from './releaseImportDraftSession';
 import { activeImportDraftsQueryKey, importHistoryQueryKey } from './queryKeys';
@@ -10,7 +10,7 @@ export const useDiscardImportDraft = () => {
   const qc = useQueryClient();
   return useHouseholdMutation({
     mutationFn: (id: string) =>
-      apiFetch<{ data: { id: string } }>(`/api/imports/drafts/${id}`, {
+      apiSend(`/api/imports/drafts/${id}`, {
         method: 'DELETE',
       }),
     onMutate: async (draftId) => {

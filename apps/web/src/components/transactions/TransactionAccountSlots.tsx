@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@ploutizo/ui/components/select';
-import type { Account } from '@ploutizo/types';
+import type { Account } from '@ploutizo/validators';
 import { AccountSlotEmptyState } from './AccountSlotEmptyState';
 import {
   getTransactionFormAccountOptionLabel,

@@ -1,4 +1,4 @@
-import type { ImportDraft, ImportDraftSummary } from '@ploutizo/types';
+import type { ImportDraft, ImportDraftSummary } from '@ploutizo/validators';
 
 /** Draft session header + refund/match facts for local evaluation (no live row edits). */
 export type ImportDraftMeta = ImportDraftSummary &

@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Button } from '@ploutizo/ui/components/button';
 import { Text } from '@ploutizo/ui/components/text';
-import type { Account, AccountType } from '@ploutizo/types';
+import type { AccountType } from '@ploutizo/types';
+import type { Account } from '@ploutizo/validators';
 import { useGetAccounts } from '@/lib/data-access/accounts';
 import {
   accountsRoute,

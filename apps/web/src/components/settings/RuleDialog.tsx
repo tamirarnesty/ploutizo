@@ -1,4 +1,4 @@
-import type { MerchantRule } from '@/lib/data-access/merchant-rules';
+import type { MerchantRule } from '@ploutizo/validators';
 import { RuleForm } from './RuleForm';
 import { SettingsFormDialog } from './SettingsFormDialog';
 

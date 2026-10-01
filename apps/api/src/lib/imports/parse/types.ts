@@ -1,9 +1,6 @@
-import type {
-  ImportContentProfileId,
-  ImportDraftRow,
-  ImportUploadMappingRequired,
-} from '@ploutizo/types';
+import type { ImportContentProfileId, ImportDraftRow } from '@ploutizo/types';
 import type { ImportClassificationHint, ImportCsvHints } from '@ploutizo/utils';
+import type { ImportUploadMappingRequired } from '@ploutizo/validators';
 
 export type CsvRecord = {
   cells: string[];

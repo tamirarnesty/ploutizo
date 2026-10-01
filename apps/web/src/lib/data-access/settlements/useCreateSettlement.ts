@@ -3,17 +3,16 @@ import { toast } from '@ploutizo/ui/components/sonner';
 import type { CreateSettlementInput } from '@ploutizo/validators';
 import { invalidateSpendQueries } from '@/lib/data-access/invalidateSpendQueries';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
-import { apiFetch } from '@/lib/queryClient';
+import { apiSend } from '@/lib/queryClient';
 
-// POST /api/settlements returns { data: TransactionRow } envelope per
-// apps/api/src/routes/settlements.ts line 21. Settlement POST creates a
-// transaction row — invalidate both settlements and transactions so
-// card balances and the transactions table stay in sync without a refresh.
+// Settlement POST creates a transaction row — invalidate both settlements and
+// transactions so card balances and the transactions table stay in sync without a refresh.
+// The created row is not used, so the body is not read.
 export const useCreateSettlement = () => {
   const qc = useQueryClient();
   return useHouseholdMutation({
     mutationFn: (body: CreateSettlementInput) =>
-      apiFetch<{ data: unknown }>('/api/settlements', {
+      apiSend('/api/settlements', {
         method: 'POST',
         body: JSON.stringify(body),
       }),

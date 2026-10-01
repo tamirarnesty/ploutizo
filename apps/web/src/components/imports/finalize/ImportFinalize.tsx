@@ -20,7 +20,7 @@ import {
 import type {
   ImportFinalizePreview,
   ImportFinalizePreviewRow,
-} from '@ploutizo/types';
+} from '@ploutizo/validators';
 import {
   clearImportFinalizePreviewSession,
   getImportFinalizePreviewSession,

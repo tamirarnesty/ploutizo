@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import type { Category } from '@ploutizo/validators';
 import { CategoryDialog } from '@/components/settings/CategoryDialog';
 import { expectOverlayMounted } from '@/test/overlayCloseContract';
-import type { Category } from '@/lib/data-access/categories';
 
 vi.mock('@/components/settings/CategoryForm', () => ({
   CategoryForm: () => <div data-testid="category-form" />,

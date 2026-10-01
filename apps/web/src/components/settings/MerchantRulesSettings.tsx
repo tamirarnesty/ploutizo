@@ -1,11 +1,11 @@
 import { Button } from '@ploutizo/ui/components/button';
 import { Text } from '@ploutizo/ui/components/text';
+import type { MerchantRule } from '@ploutizo/validators';
 import {
   useDeleteMerchantRule,
   useGetMerchantRules,
   useReorderMerchantRules,
 } from '@/lib/data-access/merchant-rules';
-import type { MerchantRule } from '@/lib/data-access/merchant-rules';
 import { useSettingsEntityDialog } from '@/hooks/useSettingsEntityDialog';
 import { MerchantRulesList } from './MerchantRulesList';
 import { RuleDialog } from './RuleDialog';

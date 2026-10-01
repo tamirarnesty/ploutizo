@@ -1,4 +1,4 @@
-import type { SettlementAccountRow } from '@ploutizo/types';
+import type { SettlementAccountRow } from '@ploutizo/validators';
 
 export const selectCreditCardAccounts = (
   accounts: SettlementAccountRow[] | undefined

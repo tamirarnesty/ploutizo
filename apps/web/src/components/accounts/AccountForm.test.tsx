@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Account, AccountMember } from '@ploutizo/types';
+import type { Account, AccountMember } from '@ploutizo/validators';
 import { AccountForm } from '@/components/accounts/AccountForm';
 
 const ADA_ID = '123e4567-e89b-12d3-a456-426614174000';

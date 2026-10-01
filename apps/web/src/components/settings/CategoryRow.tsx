@@ -5,9 +5,9 @@ import {
 } from '@ploutizo/ui/components/reui/sortable';
 import { Button } from '@ploutizo/ui/components/button';
 import { Text } from '@ploutizo/ui/components/text';
+import type { Category } from '@ploutizo/validators';
 import { ColourTokenDot } from '@/components/colour/ColourTokenDot';
 import { CachedLucideIcon } from '@/components/categories/CachedLucideIcon';
-import type { Category } from '@/lib/data-access/categories';
 import { SettingsRowAlertDialog } from './SettingsRowAlertDialog';
 
 interface CategoryRowProps {

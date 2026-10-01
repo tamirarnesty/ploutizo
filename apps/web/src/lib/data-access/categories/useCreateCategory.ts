@@ -1,8 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { categorySchema, dataEnvelope } from '@ploutizo/validators';
 import type { ColourToken } from '@ploutizo/types';
+import type { Category } from '@ploutizo/validators';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import { apiFetch } from '@/lib/queryClient';
-import type { Category } from './useGetCategories';
 
 interface CreateCategoryBody {
   name: string;
@@ -13,7 +14,7 @@ interface CreateCategoryBody {
 export const createCategory = async (
   body: CreateCategoryBody
 ): Promise<Category> => {
-  const r = await apiFetch<{ data: Category }>('/api/categories', {
+  const r = await apiFetch('/api/categories', dataEnvelope(categorySchema), {
     method: 'POST',
     body: JSON.stringify(body),
   });

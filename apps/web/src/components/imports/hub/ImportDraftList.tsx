@@ -1,6 +1,6 @@
 import { Empty, EmptyDescription } from '@ploutizo/ui/components/empty';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
-import type { ImportDraftSummary } from '@ploutizo/types';
+import type { ImportDraftSummary } from '@ploutizo/validators';
 import { ImportDraftCard } from './ImportDraftCard';
 
 interface ImportDraftListProps {

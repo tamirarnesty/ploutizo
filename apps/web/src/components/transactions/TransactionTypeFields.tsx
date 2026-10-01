@@ -8,8 +8,7 @@ import {
   SelectValue,
 } from '@ploutizo/ui/components/select';
 import { getTransactionTypePolicy } from '@ploutizo/utils/transaction-policy';
-import type { Account } from '@ploutizo/types';
-import type { Category } from '@/lib/data-access/categories';
+import type { Account, Category } from '@ploutizo/validators';
 import { ExpenseFields } from './ExpenseFields';
 import { RefundLinker } from './RefundLinker';
 import { getTransactionFormTypeChangePatch } from './getTransactionFormTypeChange';

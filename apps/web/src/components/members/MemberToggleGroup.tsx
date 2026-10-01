@@ -4,7 +4,7 @@ import {
   ToggleGroupItem,
 } from '@ploutizo/ui/components/toggle-group';
 import { memberFullLabel, memberShortLabel } from '@ploutizo/utils';
-import type { OrgMember } from '@ploutizo/types';
+import type { OrgMember } from '@ploutizo/validators';
 import { UserAvatar } from './UserAvatar';
 
 interface MemberToggleGroupProps {

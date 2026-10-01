@@ -10,7 +10,7 @@ import {
   CommandList,
 } from '@ploutizo/ui/components/command';
 
-import type { ImportDraftSummary } from '@ploutizo/types';
+import type { ImportDraftSummary } from '@ploutizo/validators';
 import type { CommandDefinition } from '@/lib/command/types';
 import { getCommandGroups } from '@/lib/command/getCommandGroups';
 import { useCommandPalette } from '@/lib/command/useCommandPalette';

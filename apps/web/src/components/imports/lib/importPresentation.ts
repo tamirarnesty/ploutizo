@@ -3,13 +3,12 @@ import { getImportRowReviewBlockers } from '@ploutizo/utils/import-row-status';
 import { resolveReviewedImportValues } from '@ploutizo/utils/reviewed-import-values';
 import type { ImportRowReviewBlocker } from '@ploutizo/utils/import-row-status';
 import type { ImportMatchEvaluation } from '@ploutizo/utils';
+import type { ImportBatchStatus, ImportDraftRow } from '@ploutizo/types';
 import type {
-  ImportBatchStatus,
   ImportDraft,
-  ImportDraftRow,
   ImportDraftSummary,
   OrgMember,
-} from '@ploutizo/types';
+} from '@ploutizo/validators';
 
 type ImportRowMissingBlocker = Exclude<
   ImportRowReviewBlocker,

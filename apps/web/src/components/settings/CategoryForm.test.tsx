@@ -2,8 +2,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ColourToken } from '@ploutizo/types';
+import type { Category } from '@ploutizo/validators';
 import { CategoryForm } from '@/components/settings/CategoryForm';
-import type { Category } from '@/lib/data-access/categories';
 
 const mocks = vi.hoisted(() => ({
   createMutate: vi.fn(),

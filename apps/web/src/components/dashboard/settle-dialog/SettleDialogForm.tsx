@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { FieldGroup } from '@ploutizo/ui/components/field';
 import { useAppForm } from '@ploutizo/ui/components/form';
-import type { SettlementAccountRow } from '@ploutizo/types';
+import type { SettlementAccountRow } from '@ploutizo/validators';
 import {
   getSettleAmountForPayToward,
   getSettleInitialValues,

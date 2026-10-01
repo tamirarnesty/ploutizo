@@ -4,7 +4,7 @@ import {
   FieldLegend,
   FieldSet,
 } from '@ploutizo/ui/components/field';
-import type { SettlementAccountRow } from '@ploutizo/types';
+import type { SettlementAccountRow } from '@ploutizo/validators';
 import type { SettleFieldErrors } from '@/components/dashboard/settle-dialog/settleDialogFieldTypes';
 import { SettleMemberRadioList } from '@/components/dashboard/settle-dialog/SettleMemberRadioList';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';

@@ -1,5 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
-import type { ImportHistoryPage } from '@ploutizo/types';
+import { importHistoryPageSchema } from '@ploutizo/validators';
+import type { ImportHistoryPage } from '@ploutizo/validators';
 import {
   useHouseholdInfiniteQuery,
   useHouseholdQuery,
@@ -28,9 +29,11 @@ export const fetchImportHistoryPage = async (
   const qs = new URLSearchParams();
   qs.set('limit', String(input.limit));
   if (input.cursor) qs.set('cursor', input.cursor);
-  return apiFetch<ImportHistoryPage>(`/api/imports/history?${qs.toString()}`, {
-    signal,
-  });
+  return apiFetch(
+    `/api/imports/history?${qs.toString()}`,
+    importHistoryPageSchema,
+    { signal }
+  );
 };
 
 export const importHistoryPageQueryOptions = (

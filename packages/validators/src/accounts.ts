@@ -5,6 +5,8 @@ import {
 } from '@ploutizo/types';
 import { z } from 'zod';
 import type { AccountType } from '@ploutizo/types';
+import { memberIdentitySchema } from './members';
+import { isoTimestampSchema } from './shared';
 
 const emptyToNull = (value: unknown) => (value === '' ? null : value);
 
@@ -187,3 +189,35 @@ export const AccountFormSchema = accountFormFieldsSchema.transform(
 
 export type AccountFormValues = z.input<typeof accountFormFieldsSchema>;
 export type AccountForm = z.output<typeof AccountFormSchema>;
+
+// ---------------------------------------------------------------------------
+// Responses
+// ---------------------------------------------------------------------------
+
+/** `GET /api/accounts` row and the body of every account write. */
+export const accountSchema = z.object({
+  id: z.string(),
+  orgId: z.string(),
+  name: z.string(),
+  type: z.enum(ACCOUNT_TYPE_VALUES),
+  institutionId: z.enum(FINANCIAL_INSTITUTION_IDS).nullable(),
+  lastFour: z.string().nullable(),
+  /** Day of month 1–31 on credit cards; null when unset or the account is not a card. */
+  statementDueDay: z.number().int().nullable(),
+  archivedAt: isoTimestampSchema.nullable(),
+  createdAt: isoTimestampSchema,
+  updatedAt: isoTimestampSchema,
+  /** Household members on this account (may be empty). */
+  owners: z.array(memberIdentitySchema),
+});
+
+export type Account = z.infer<typeof accountSchema>;
+
+/** `GET /api/accounts/:id/members` row. */
+export const accountMemberSchema = z.object({
+  id: z.string(),
+  accountId: z.string(),
+  memberId: z.string(),
+});
+
+export type AccountMember = z.infer<typeof accountMemberSchema>;

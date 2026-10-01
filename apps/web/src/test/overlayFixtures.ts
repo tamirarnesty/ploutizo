@@ -2,8 +2,8 @@ import type {
   Account,
   SettlementAccountRow,
   SettlementStatus,
-} from '@ploutizo/types';
-import type { TransactionRow } from '@/lib/data-access/transactions';
+  TransactionRow,
+} from '@ploutizo/validators';
 
 export const mockSettlementAccount = (): SettlementAccountRow => ({
   account: {
@@ -69,12 +69,13 @@ export const mockTransactionRow = (): TransactionRow => ({
   categoryColour: null,
   accountId: 'acct-1',
   accountName: 'Chequing',
-  accountType: 'checking',
+  accountType: 'chequing',
   refundOf: null,
   incomeType: null,
   counterpartAccountId: null,
   counterpartAccountName: null,
   rawDescription: null,
+  externalId: null,
   notes: null,
   refundOfId: null,
   refundOfDate: null,

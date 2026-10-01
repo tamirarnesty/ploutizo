@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { SettlementAccountRow } from '@ploutizo/types';
+import type { SettlementAccountRow } from '@ploutizo/validators';
 import { computeCreditCardMemberRollup } from './creditCardMemberRollup';
 
 const row = (

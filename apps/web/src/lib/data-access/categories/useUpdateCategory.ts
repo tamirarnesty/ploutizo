@@ -1,9 +1,10 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { categorySchema, dataEnvelope } from '@ploutizo/validators';
 import type { ColourToken } from '@ploutizo/types';
+import type { Category } from '@ploutizo/validators';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import { dashboardOverviewQueryKey } from '@/lib/data-access/dashboard/useGetDashboardOverview';
 import { apiFetch } from '@/lib/queryClient';
-import type { Category } from './useGetCategories';
 
 interface UpdateCategoryBody {
   name?: string;
@@ -15,10 +16,11 @@ export const updateCategory = async (
   id: string,
   body: UpdateCategoryBody
 ): Promise<Category> => {
-  const r = await apiFetch<{ data: Category }>(`/api/categories/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(body),
-  });
+  const r = await apiFetch(
+    `/api/categories/${id}`,
+    dataEnvelope(categorySchema),
+    { method: 'PATCH', body: JSON.stringify(body) }
+  );
   return r.data;
 };
 

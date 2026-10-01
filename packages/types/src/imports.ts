@@ -1,15 +1,9 @@
 import type {
-  ImportBatchStatus,
   ImportRowOutcome,
   ImportRowStatus,
   ImportTransactionType,
   MerchantMatchType,
 } from './enums';
-import type { FinancialInstitutionId } from './financial-institutions';
-import type {
-  ImportContentProfileId,
-  ImportUploadMappingRequired,
-} from './import-formats';
 
 /** Review-field blockers from the shared import draft evaluator. */
 export type ImportRowReviewBlocker =
@@ -58,41 +52,6 @@ export interface ImportClassificationMerchantRule {
   categoryId: string | null;
   assigneeId: string | null;
   tagIds: readonly string[];
-}
-
-export interface ImportTargetAccount {
-  id: string;
-  name: string;
-  institutionId: FinancialInstitutionId | null;
-  lastFour: string | null;
-}
-
-export interface ImportDraftSummary {
-  id: string;
-  account: ImportTargetAccount;
-  /** Content profile used to parse the uploaded CSV; null for custom-mapped uploads. */
-  contentProfileId: ImportContentProfileId | null;
-  status: ImportBatchStatus;
-  fileName: string | null;
-  rowCount: number;
-  validRowCount: number;
-  invalidRowCount: number;
-  importedAt: string;
-  completedAt: string | null;
-  discardedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-/** Server-loaded facts for existing-expense refund link validation. */
-export interface RefundTargetFact {
-  id: string;
-  accountId: string;
-  amount: number;
-  categoryId: string | null;
-  assigneeMemberIds: string[];
-  type: string;
-  deleted: boolean;
 }
 
 /** Existing ledger row used for import match and refund-link suggestions. */
@@ -152,38 +111,6 @@ export interface ImportDraftRow {
 export type ImportReviewRow = ImportDraftRow & {
   selectedForImport: boolean;
 };
-
-/** Durable import draft row persisted in Postgres — no derived status fields. */
-export type ImportDraftPersistedRow = Omit<
-  ImportDraftRow,
-  'status' | 'invalidReason'
->;
-
-export interface ImportDraft extends ImportDraftSummary {
-  rows: ImportDraftRow[];
-  refundTargetFacts: Record<string, RefundTargetFact>;
-  matchTargetFacts: Record<string, MatchTargetFact>;
-  /** Posted refund totals per `tx:${transactionId}` for cross-import caps. */
-  priorRefundsByTarget: Record<string, number>;
-}
-
-export type CreateImportDraftResponse =
-  | {
-      kind: 'draft';
-      data: ImportDraft;
-      meta: { reusedExisting: boolean };
-    }
-  | ImportUploadMappingRequired;
-
-export interface UpdateImportDraftRowResult {
-  row: ImportDraftPersistedRow;
-  refundTargetFacts?: Record<string, RefundTargetFact>;
-}
-
-export interface BatchUpdateImportDraftRowsResult {
-  rows: ImportDraftPersistedRow[];
-  refundTargetFacts?: Record<string, RefundTargetFact>;
-}
 
 /**
  * Namespaced requirement keys returned by Continue/Finalize. Presentation copy
@@ -287,61 +214,3 @@ export const countImportOutcomes = (
   for (const { outcome } of outcomes) counts[outcome] += 1;
   return counts;
 };
-
-export interface ImportFinalizePreviewRow {
-  batchRowId: string;
-  outcome: ImportFinalizePreviewOutcome;
-  transactionId: string | null;
-  snapshot: ImportRowSnapshot;
-}
-
-/** Stateless Continue response — full-file outcome projection for Finalize import. */
-export interface ImportFinalizePreview {
-  batchId: string;
-  rowCount: number;
-  counts: ImportOutcomeCounts;
-  created: ImportFinalizePreviewRow[];
-  matched: ImportFinalizePreviewRow[];
-}
-
-/** Shared identity facts for completed and discarded Import history. */
-export interface ImportHistoryIdentity {
-  id: string;
-  account: ImportTargetAccount;
-  contentProfileId: ImportContentProfileId | null;
-  fileName: string | null;
-  rowCount: number;
-  importedAt: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-/** Durable completed-result facts recorded when Finalize succeeds. */
-export interface ImportCompletedHistoryItem extends ImportHistoryIdentity {
-  status: 'completed';
-  completedAt: string;
-  discardedAt: null;
-  createdCount: number;
-  matchedCount: number;
-  skippedCount: number;
-  invalidCount: number;
-}
-
-/** Discarded history: lifecycle/source facts only — no synthesized outcome counts. */
-export interface ImportDiscardedHistoryItem extends ImportHistoryIdentity {
-  status: 'discarded';
-  completedAt: null;
-  discardedAt: string;
-}
-
-export type ImportHistoryItem =
-  | ImportCompletedHistoryItem
-  | ImportDiscardedHistoryItem;
-
-export interface ImportHistoryPage {
-  data: ImportHistoryItem[];
-  nextCursor: string | null;
-}
-
-/** Successful Finalize summary — completed import batch. */
-export type ImportCompletedResult = ImportCompletedHistoryItem;

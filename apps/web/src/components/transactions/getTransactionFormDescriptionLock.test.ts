@@ -4,8 +4,7 @@ import {
   resolveTransactionDescriptionPolicy,
 } from '@ploutizo/utils/transaction-policy';
 import type * as TransactionPolicyModule from '@ploutizo/utils/transaction-policy';
-import type { Account } from '@ploutizo/types';
-import type { TransactionRow } from '@/lib/data-access/transactions';
+import type { Account, TransactionRow } from '@ploutizo/validators';
 import { resolveTransactionFormDescriptionLock } from './getTransactionFormDescriptionLock';
 import { buildDefaultValues } from './hooks/useTransactionForm';
 

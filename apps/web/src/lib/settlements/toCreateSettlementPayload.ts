@@ -1,6 +1,8 @@
 import { dollarsToCents } from '@ploutizo/utils/currency';
-import type { SettlementAccountRow } from '@ploutizo/types';
-import type { CreateSettlementInput } from '@ploutizo/validators';
+import type {
+  CreateSettlementInput,
+  SettlementAccountRow,
+} from '@ploutizo/validators';
 import type { SettlePayToward } from './composeSettleForm';
 
 export type SettleFormPayloadValues = {

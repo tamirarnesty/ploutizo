@@ -1,8 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query';
+import type { TransactionListResponse } from '@ploutizo/validators';
 import { invalidateSpendQueries } from '@/lib/data-access/invalidateSpendQueries';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
-import { apiFetch } from '@/lib/queryClient';
-import type { TransactionListResponse } from './useGetTransactions';
+import { apiSend } from '@/lib/queryClient';
 
 type Snapshot = [unknown[], TransactionListResponse | undefined][];
 
@@ -11,7 +11,7 @@ export const useDeleteTransaction = () => {
   const transactionsQueryKey = ['transactions'];
   return useHouseholdMutation({
     mutationFn: (id: string) =>
-      apiFetch<{ data: { id: string } }>(`/api/transactions/${id}`, {
+      apiSend(`/api/transactions/${id}`, {
         method: 'DELETE',
       }),
 

@@ -1,11 +1,10 @@
 import { computeImportDraftRowCounts } from '@ploutizo/utils/import-row-status';
+import type { ImportDraftRow, ImportReviewRow } from '@ploutizo/types';
 import type {
   ImportDraft,
   ImportDraftPersistedRow,
-  ImportDraftRow,
   ImportDraftSummary,
-  ImportReviewRow,
-} from '@ploutizo/types';
+} from '@ploutizo/validators';
 
 export const DRAFT_ID = 'draft_1';
 

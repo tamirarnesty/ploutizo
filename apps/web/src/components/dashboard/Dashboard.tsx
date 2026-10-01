@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from '@ploutizo/ui/components/sonner';
-import type { OrgMember } from '@ploutizo/types';
+import type { OrgMember } from '@ploutizo/validators';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';
 import type { CardBalanceRowViewModel } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
 import type { CardBalancesSettleClickHandler } from '@/components/dashboard/card-balances/types';

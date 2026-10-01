@@ -2,10 +2,8 @@ import { db } from '@ploutizo/db';
 import { countImportOutcomes } from '@ploutizo/types';
 import type { ImportRowProjection } from '@ploutizo/utils/import-set-verification';
 import type { Transaction } from '@ploutizo/db';
-import type {
-  ImportCompletedResult,
-  ImportRequirementFailureDetails,
-} from '@ploutizo/types';
+import type { ImportRequirementFailureDetails } from '@ploutizo/types';
+import type { ImportCompletedResult } from '@ploutizo/validators';
 import type {
   ImportSetRequest,
   VerifiedImportDraft,
