@@ -40,6 +40,8 @@ const expenseRow = (): ImportDraftDurableRow => ({
   selectedForImport: true,
   reviewMatchedTransactionId: null,
   reviewMatchDismissed: false,
+  reviewNotes: null,
+  reviewTagIds: [],
   externalId: null,
   sourceDescription: null,
 });

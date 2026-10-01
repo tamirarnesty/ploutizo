@@ -37,6 +37,8 @@ export interface ImportDraftDurableRow {
   reviewCounterpartAccountId: string | null;
   reviewRefundOf: string | null;
   reviewRefundOfBatchRowId: string | null;
+  reviewNotes: string | null;
+  reviewTagIds: readonly string[];
   selectedForImport: boolean;
   externalId?: string | null;
   sourceDescription?: string | null;

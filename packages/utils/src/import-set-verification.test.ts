@@ -25,6 +25,8 @@ const expenseRow = (
   selectedForImport: true,
   reviewMatchedTransactionId: null,
   reviewMatchDismissed: false,
+  reviewNotes: null,
+  reviewTagIds: [],
   ...overrides,
 });
 
