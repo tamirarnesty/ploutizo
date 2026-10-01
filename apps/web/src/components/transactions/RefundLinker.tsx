@@ -100,8 +100,7 @@ export const RefundLinker = ({
                     tx.assignees.map((a) => ({
                       memberId: a.memberId,
                       amountCents: a.amountCents,
-                      percentage:
-                        a.percentage !== null ? parseFloat(a.percentage) : 0,
+                      percentage: a.percentage ?? 0,
                     }))
                   );
                 }

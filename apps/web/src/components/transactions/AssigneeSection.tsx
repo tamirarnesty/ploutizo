@@ -118,13 +118,11 @@ export const AssigneeSection = ({
     }
   }, [refundAssigneeIds]);
 
-  const isNonEven = (
-    assignees: { percentage: number | string | null }[]
-  ): boolean => {
+  const isNonEven = (assignees: { percentage: number | null }[]): boolean => {
     if (assignees.length <= 1) return false;
     const expectedPct = parseFloat((100 / assignees.length).toFixed(3));
     return assignees.some(
-      (a) => Math.abs(Number(a.percentage) - expectedPct) > 0.1
+      (a) => Math.abs((a.percentage ?? 0) - expectedPct) > 0.1
     );
   };
 

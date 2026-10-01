@@ -407,7 +407,9 @@ export const enrichTransactions = async (
         transactionId: transactionAssignees.transactionId,
         memberId: transactionAssignees.memberId,
         amountCents: transactionAssignees.amountCents,
-        percentage: transactionAssignees.percentage, // string — display only
+        percentage: sql<
+          number | null
+        >`${transactionAssignees.percentage}`.mapWith(Number), // numeric column → number; display only
         firstName: users.firstName,
         lastName: users.lastName,
         email: users.email,
