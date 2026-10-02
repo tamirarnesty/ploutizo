@@ -1,99 +1,20 @@
+import { useCallback, useMemo } from 'react';
 import { Link } from '@tanstack/react-router';
+import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { Button } from '@ploutizo/ui/components/button';
 import { CardAction, CardContent } from '@ploutizo/ui/components/card';
-import { Skeleton } from '@ploutizo/ui/components/skeleton';
+import { DataGrid } from '@ploutizo/ui/components/reui/data-grid/data-grid';
+import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-grid-scroll-area';
+import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-table';
 import { Text } from '@ploutizo/ui/components/text';
-import { cn } from '@ploutizo/ui/lib/utils';
-import type { TransactionRow } from '@ploutizo/validators';
-import { DashboardLiveCard } from '@/components/dashboard/DashboardLiveCard';
 import { DASHBOARD_RECENT_TRANSACTIONS_PARAMS } from '@/lib/data-access/transactions/dashboardRecentTransactions';
 import { useGetTransactions } from '@/lib/data-access/transactions';
-import {
-  formatRecentTransactionAccount,
-  formatRecentTransactionAmount,
-  formatRecentTransactionDate,
-  recentTransactionCategoryClassName,
-  recentTransactionCategoryDotStyle,
-  recentTransactionCategoryLabel,
-} from './recentTransactionsDisplay';
+import { usePreloadLucideIcons } from '@/components/categories/usePreloadLucideIcons';
+import { DashboardLiveCard } from '@/components/dashboard/DashboardLiveCard';
+import { PAGINATED_DATA_GRID_SCROLL_ORIENTATION } from '@/components/data-grid/dataGridSharedLayout';
+import { buildRecentTransactionColumns } from '@/components/transactions/transactionColumnFactories';
 
-type RecentTransactionsCardProps = {
-  className?: string;
-};
-
-const RecentTransactionsRowSkeleton = () => (
-  <tr className="border-b border-border last:border-0">
-    {Array.from({ length: 5 }, (_, i) => (
-      <td key={i} className="px-3 py-2">
-        <Skeleton className="h-4 w-full max-w-24 motion-safe:animate-pulse" />
-      </td>
-    ))}
-  </tr>
-);
-
-const RecentTransactionsRow = ({ row }: { row: TransactionRow }) => {
-  const categoryLabel = recentTransactionCategoryLabel(row);
-  const { displayValue, colorClass } = formatRecentTransactionAmount(row);
-
-  return (
-    <tr className="border-b border-border last:border-0">
-      <td className="px-3 py-2 whitespace-nowrap">
-        <Text as="span" variant="body-sm" className="text-muted-foreground">
-          {formatRecentTransactionDate(row.date)}
-        </Text>
-      </td>
-      <td className="max-w-[12rem] px-3 py-2">
-        <Text
-          as="span"
-          variant="body-sm"
-          className="block truncate font-medium"
-        >
-          {row.description}
-        </Text>
-      </td>
-      <td className="px-3 py-2">
-        <div className="flex min-w-0 items-center gap-2">
-          <span
-            className={recentTransactionCategoryClassName(
-              categoryLabel !== null
-            )}
-            style={
-              categoryLabel !== null
-                ? recentTransactionCategoryDotStyle(row.categoryColour)
-                : undefined
-            }
-            aria-hidden="true"
-          />
-          <Text as="span" variant="body-sm" className="min-w-0 truncate">
-            {categoryLabel ?? '—'}
-          </Text>
-        </div>
-      </td>
-      <td className="max-w-[10rem] px-3 py-2">
-        <Text
-          as="span"
-          variant="body-sm"
-          className="block truncate text-muted-foreground"
-        >
-          {formatRecentTransactionAccount(row)}
-        </Text>
-      </td>
-      <td className="px-3 py-2 text-right whitespace-nowrap">
-        <Text
-          as="span"
-          variant="body-sm"
-          className={cn('font-medium', colorClass)}
-        >
-          {displayValue}
-        </Text>
-      </td>
-    </tr>
-  );
-};
-
-export const RecentTransactionsCard = ({
-  className,
-}: RecentTransactionsCardProps) => {
+export const RecentTransactionsCard = () => {
   const { data, isLoading, isError, isFetching } = useGetTransactions(
     DASHBOARD_RECENT_TRANSACTIONS_PARAMS
   );
@@ -104,27 +25,55 @@ export const RecentTransactionsCard = ({
   const showError = hasLoadFailure && !isFetching;
   const isEmpty = !showError && !isBusy && rows.length === 0;
 
+  const onOpenOriginal = useCallback((_id: string) => {}, []);
+
+  const columns = useMemo(
+    () => buildRecentTransactionColumns(onOpenOriginal),
+    [onOpenOriginal]
+  );
+
+  const categoryIcons = useMemo(
+    () => rows.map((transaction) => transaction.categoryIcon),
+    [rows]
+  );
+  usePreloadLucideIcons(categoryIcons);
+
+  const table = useReactTable({
+    data: rows,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
+
+  const skeletonRowCount = DASHBOARD_RECENT_TRANSACTIONS_PARAMS.limit;
+
   return (
-    <DashboardLiveCard
-      title="Recent transactions"
-      action={
-        <CardAction className="row-span-1 self-center">
-          <Button
-            nativeButton={false}
-            variant="link"
-            size="sm"
-            render={<Link to="/transactions" />}
-          >
-            View all
-          </Button>
-        </CardAction>
-      }
+    <DataGrid
+      table={table}
+      recordCount={isBusy ? skeletonRowCount : rows.length}
       isLoading={isBusy}
-      isError={showError}
-      errorMessage="Couldn’t load recent transactions. Check your connection and try again."
-      className={className}
+      tableLayout={{
+        width: 'auto',
+        dense: true,
+      }}
     >
-      <CardContent className="px-0 py-0">
+      <DashboardLiveCard
+        title="Recent transactions"
+        action={
+          <CardAction className="row-span-1 self-center">
+            <Button
+              nativeButton={false}
+              variant="link"
+              size="sm"
+              render={<Link to="/transactions" />}
+            >
+              View all
+            </Button>
+          </CardAction>
+        }
+        isLoading={isBusy}
+        isError={showError}
+        errorMessage="Couldn’t load recent transactions. Check your connection and try again."
+      >
         {isEmpty ? (
           <Text
             as="p"
@@ -134,31 +83,15 @@ export const RecentTransactionsCard = ({
             No transactions yet
           </Text>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[36rem] text-left text-sm">
-              <thead>
-                <tr className="border-b border-border text-muted-foreground">
-                  <th className="px-3 py-2 font-medium">Date</th>
-                  <th className="px-3 py-2 font-medium">Description</th>
-                  <th className="px-3 py-2 font-medium">Category</th>
-                  <th className="px-3 py-2 font-medium">Account</th>
-                  <th className="px-3 py-2 text-right font-medium">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {isBusy
-                  ? Array.from(
-                      { length: DASHBOARD_RECENT_TRANSACTIONS_PARAMS.limit },
-                      (_, i) => <RecentTransactionsRowSkeleton key={i} />
-                    )
-                  : rows.map((row) => (
-                      <RecentTransactionsRow key={row.id} row={row} />
-                    ))}
-              </tbody>
-            </table>
-          </div>
+          <CardContent className="border-b px-0 py-0">
+            <DataGridScrollArea
+              orientation={PAGINATED_DATA_GRID_SCROLL_ORIENTATION}
+            >
+              <DataGridTable />
+            </DataGridScrollArea>
+          </CardContent>
         )}
-      </CardContent>
-    </DashboardLiveCard>
+      </DashboardLiveCard>
+    </DataGrid>
   );
 };

@@ -1,16 +1,16 @@
 import { formatCurrency } from '@ploutizo/utils/currency';
-import { cn } from '@ploutizo/ui/lib/utils';
 import type { TransactionRow } from '@ploutizo/validators';
-import { colourTokenVar } from '@/components/colour/colour-token-style';
 
-export const formatRecentTransactionDate = (isoDate: string) =>
+export const formatTransactionDate = (isoDate: string) =>
   new Date(isoDate + 'T00:00:00').toLocaleDateString('en-CA', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   });
 
-export const formatRecentTransactionAccount = (row: TransactionRow) => {
+export const formatTransactionAccount = (
+  row: Pick<TransactionRow, 'type' | 'accountName' | 'counterpartAccountName'>
+) => {
   const { type, accountName, counterpartAccountName } = row;
   if (type === 'contribution') {
     return counterpartAccountName ?? accountName ?? '';
@@ -24,7 +24,9 @@ export const formatRecentTransactionAccount = (row: TransactionRow) => {
   return accountName ?? '';
 };
 
-export const formatRecentTransactionAmount = (row: TransactionRow) => {
+export const formatTransactionAmount = (
+  row: Pick<TransactionRow, 'type' | 'amount'>
+) => {
   const { type, amount } = row;
   const isExpense = type === 'expense';
   const isPositive = type === 'income' || type === 'refund';
@@ -42,17 +44,9 @@ export const formatRecentTransactionAmount = (row: TransactionRow) => {
   return { displayValue, colorClass };
 };
 
-export const recentTransactionCategoryDotStyle = (
-  colour: TransactionRow['categoryColour']
-) => (colour ? { backgroundColor: colourTokenVar(colour) } : undefined);
-
-export const recentTransactionCategoryLabel = (row: TransactionRow) => {
-  const { categoryName, type } = row;
-  if (categoryName && (type === 'expense' || type === 'refund')) {
-    return categoryName;
-  }
-  return null;
-};
-
-export const recentTransactionCategoryClassName = (hasCategory: boolean) =>
-  cn('size-2 shrink-0 rounded-full', !hasCategory && 'bg-muted');
+export const shouldShowTransactionCategory = (
+  row: Pick<TransactionRow, 'categoryName' | 'type'>
+) =>
+  Boolean(
+    row.categoryName && (row.type === 'expense' || row.type === 'refund')
+  );
