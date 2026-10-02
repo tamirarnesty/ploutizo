@@ -131,17 +131,23 @@ const ImportFinalizePreviewRowsTable = ({
 export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
   const navigate = useNavigate();
   const handleFinalizeRef = useRef<() => Promise<void>>(async () => {});
+  const leavingRef = useRef(false);
   const finalizeImport = useFinalizeImportDraft(draftId, {
     onUncertainFailureRetry: () => {
       void handleFinalizeRef.current();
     },
   });
-  const { discard, discardingThisDraft } =
-    useImportDiscardInProgressDraft(draftId);
+  const { discard, discardingThisDraft } = useImportDiscardInProgressDraft(
+    draftId,
+    {
+      onDiscardSuccess: () => {
+        leavingRef.current = true;
+      },
+    }
+  );
   const draftQuery = useGetImportDraft(draftId, {
     enabled: !finalizeImport.isPending && !finalizeImport.isSuccess,
   });
-  const leavingRef = useRef(false);
   const session = getImportFinalizePreviewSession(draftId);
   const preview = session?.preview;
   const rowIds = session?.rowIds ?? [];
@@ -243,15 +249,12 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
               <ImportDiscardDraftAction
                 discardingThisDraft={discardingThisDraft}
                 disabled={finalizeBusy}
-                onDiscard={() => {
-                  leavingRef.current = true;
-                  discard();
-                }}
+                onDiscard={discard}
               />
               <Button
                 type="button"
                 variant="outline"
-                disabled={finalizeBusy}
+                disabled={finalizeBusy || discardingThisDraft}
                 onClick={() => {
                   backToReview();
                 }}
@@ -262,7 +265,7 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
                 type="button"
                 loading={finalizeBusy}
                 loadingText="Finalizing…"
-                disabled={!preview}
+                disabled={!preview || discardingThisDraft}
                 onClick={() => {
                   void handleFinalize();
                 }}

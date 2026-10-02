@@ -21,6 +21,7 @@ interface ImportDraftReviewHeaderProps {
   isContinuing: boolean;
   onContinue: () => void | Promise<void>;
   discard?: ImportDiscardDraftActionProps;
+  discardInProgress?: boolean;
 }
 
 const toLiveSubtitleMeta = (
@@ -40,6 +41,7 @@ export const ImportDraftReviewHeader = ({
   isContinuing,
   onContinue,
   discard,
+  discardInProgress = false,
 }: ImportDraftReviewHeaderProps) => {
   const draftId = meta?.id ?? '';
   const autosaveStatus = useImportReviewAutosaveStatus(draftId);
@@ -87,7 +89,7 @@ export const ImportDraftReviewHeader = ({
               />
             ) : null}
             <Button
-              disabled={!continueEnabled}
+              disabled={!continueEnabled || discardInProgress}
               type="button"
               aria-describedby={IMPORT_REVIEW_AUTOSAVE_STATUS_ID}
               onClick={() => {

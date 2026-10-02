@@ -207,6 +207,7 @@ const ImportDraftReviewContent = ({
               }
             : undefined
         }
+        discardInProgress={discardingThisDraft}
       />
 
       <ImportRequirementIssueList
