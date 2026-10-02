@@ -45,7 +45,12 @@ export const buildCardBalancesColumns = (
     meta: {
       headerClassName: 'min-w-[160px]',
       cellClassName: 'min-w-[160px]',
-      skeleton: <Skeleton className="h-4 w-28 motion-safe:animate-pulse" />,
+      skeleton: (
+        <div className="flex flex-col gap-1">
+          <Skeleton className="h-4 w-28 motion-safe:animate-pulse" />
+          <Skeleton className="h-3 w-20 motion-safe:animate-pulse" />
+        </div>
+      ),
     },
     cell: ({ row }) => renderCardBalancesCardCell(row.original.account),
   },
