@@ -5,12 +5,14 @@ import { formatAccountLabel } from '@ploutizo/utils';
 import type { ImportReviewRow } from '@ploutizo/types';
 import type { ImportDraftMeta } from '@/lib/data-access/imports';
 import { useImportReviewAutosaveStatus } from '@/lib/data-access/imports/useImportReviewAutosave';
+import { ImportDiscardDraftAction } from '../lib/ImportDiscardDraftAction';
 import { formatImportDraftReviewSubtitle } from '../lib/importPresentation';
 import { getImportReviewContinueEnabled } from '../lib/getImportReviewContinueEnabled';
 import {
   IMPORT_REVIEW_AUTOSAVE_STATUS_ID,
   ImportReviewAutosaveStatus,
 } from './ImportReviewAutosaveStatus';
+import type { ImportDiscardDraftActionProps } from '../lib/ImportDiscardDraftAction';
 
 interface ImportDraftReviewHeaderProps {
   meta?: ImportDraftMeta;
@@ -18,6 +20,7 @@ interface ImportDraftReviewHeaderProps {
   isLoading?: boolean;
   isContinuing: boolean;
   onContinue: () => void | Promise<void>;
+  discard?: ImportDiscardDraftActionProps;
 }
 
 const toLiveSubtitleMeta = (
@@ -36,6 +39,7 @@ export const ImportDraftReviewHeader = ({
   isLoading = false,
   isContinuing,
   onContinue,
+  discard,
 }: ImportDraftReviewHeaderProps) => {
   const draftId = meta?.id ?? '';
   const autosaveStatus = useImportReviewAutosaveStatus(draftId);
@@ -69,21 +73,30 @@ export const ImportDraftReviewHeader = ({
           </div>
         )}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <ImportReviewAutosaveStatus status={iconStatus} />
         {isLoading ? (
           <Skeleton className="h-9 w-24" />
         ) : (
-          <Button
-            disabled={!continueEnabled}
-            type="button"
-            aria-describedby={IMPORT_REVIEW_AUTOSAVE_STATUS_ID}
-            onClick={() => {
-              void onContinue();
-            }}
-          >
-            {isContinuing ? 'Preparing…' : 'Continue'}
-          </Button>
+          <>
+            {discard ? (
+              <ImportDiscardDraftAction
+                discardingThisDraft={discard.discardingThisDraft}
+                disabled={discard.disabled}
+                onDiscard={discard.onDiscard}
+              />
+            ) : null}
+            <Button
+              disabled={!continueEnabled}
+              type="button"
+              aria-describedby={IMPORT_REVIEW_AUTOSAVE_STATUS_ID}
+              onClick={() => {
+                void onContinue();
+              }}
+            >
+              {isContinuing ? 'Preparing…' : 'Continue'}
+            </Button>
+          </>
         )}
       </div>
     </div>

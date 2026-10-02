@@ -31,12 +31,14 @@ import {
   toImportDraftMeta,
   useFinalizeImportDraft,
   useGetImportDraft,
+  useImportDiscardInProgressDraft,
 } from '@/lib/data-access/imports';
 import {
   importDraftReviewPathname,
   importDraftReviewRoute,
 } from '@/lib/navigation';
 import { formatTransactionDate } from '@/components/transactions/transactionRowDisplay';
+import { ImportDiscardDraftAction } from '../lib/ImportDiscardDraftAction';
 
 interface ImportFinalizeProps {
   draftId: string;
@@ -134,6 +136,8 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
       void handleFinalizeRef.current();
     },
   });
+  const { discard, discardingThisDraft } =
+    useImportDiscardInProgressDraft(draftId);
   const draftQuery = useGetImportDraft(draftId, {
     enabled: !finalizeImport.isPending && !finalizeImport.isSuccess,
   });
@@ -236,6 +240,14 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
           </div>
           <div className="flex flex-col items-end gap-2">
             <div className="flex flex-wrap justify-end gap-2">
+              <ImportDiscardDraftAction
+                discardingThisDraft={discardingThisDraft}
+                disabled={finalizeBusy}
+                onDiscard={() => {
+                  leavingRef.current = true;
+                  discard();
+                }}
+              />
               <Button
                 type="button"
                 variant="outline"

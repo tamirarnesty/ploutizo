@@ -1,25 +1,14 @@
-import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useIsMutating } from '@tanstack/react-query';
-import { RotateCcw, Trash2 } from 'lucide-react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@ploutizo/ui/components/alert-dialog';
+import { RotateCcw } from 'lucide-react';
 import { Badge } from '@ploutizo/ui/components/badge';
 import { Button } from '@ploutizo/ui/components/button';
-import { LoadingButton } from '@ploutizo/ui/components/loading-button';
 import { Text } from '@ploutizo/ui/components/text';
 import { formatAccountLabel } from '@ploutizo/utils';
 import type { ImportDraftSummary } from '@ploutizo/validators';
 import { importFinalizeMutationKey } from '@/lib/data-access/imports/queryKeys';
 import { importDraftReviewRoute } from '@/lib/navigation';
+import { ImportDiscardDraftAction } from '../lib/ImportDiscardDraftAction';
 
 interface ImportDraftCardProps {
   draft: ImportDraftSummary;
@@ -34,7 +23,6 @@ export const ImportDraftCard = ({
   isDiscarding,
   onDiscard,
 }: ImportDraftCardProps) => {
-  const [discardOpen, setDiscardOpen] = useState(false);
   const discardingThisDraft = isDiscarding && discardingDraftId === draft.id;
   const finalizing =
     useIsMutating({ mutationKey: importFinalizeMutationKey(draft.id) }) > 0;
@@ -84,43 +72,12 @@ export const ImportDraftCard = ({
             Continue
           </Button>
         )}
-        <LoadingButton
-          type="button"
-          variant="destructive"
-          icon={<Trash2 />}
-          loading={discardingThisDraft}
+        <ImportDiscardDraftAction
+          discardingThisDraft={discardingThisDraft}
           disabled={finalizing}
-          onClick={() => setDiscardOpen(true)}
-        >
-          Discard
-        </LoadingButton>
+          onDiscard={() => onDiscard(draft.id)}
+        />
       </div>
-      <AlertDialog open={discardOpen} onOpenChange={setDiscardOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Discard draft?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently remove this in-progress import and any
-              review work. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            {/* AlertDialogAction is a plain Button (not a Close primitive) — call
-                onOpenChange(false) explicitly so the dialog dismisses after confirming. */}
-            <AlertDialogAction
-              variant="destructive"
-              disabled={discardingThisDraft || finalizing}
-              onClick={() => {
-                onDiscard(draft.id);
-                setDiscardOpen(false);
-              }}
-            >
-              Discard draft
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };

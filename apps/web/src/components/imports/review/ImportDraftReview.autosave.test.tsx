@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { importDraftFinalizeRoute } from '@/lib/navigation';
 import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
 import {
@@ -9,6 +8,7 @@ import {
   makeImportDraftRow,
 } from '../test-fixtures/importDraft';
 import {
+  ReviewTestProviders,
   flush,
   importDraftReviewTestControls,
   renderReview,
@@ -91,13 +91,13 @@ describe('ImportDraftReview autosave and continue', () => {
     });
     const { rows: unselectedRows, ...meta } = unselectedDraft;
     const { rerender } = render(
-      <TooltipProvider delay={0}>
+      <ReviewTestProviders>
         <ImportDraftReview
           meta={meta}
           rows={unselectedRows}
           {...reviewSessionProps}
         />
-      </TooltipProvider>
+      </ReviewTestProviders>
     );
 
     const selectedDraft = makeImportDraft({
@@ -112,13 +112,13 @@ describe('ImportDraftReview autosave and continue', () => {
     });
     const { rows: selectedRows } = selectedDraft;
     rerender(
-      <TooltipProvider delay={0}>
+      <ReviewTestProviders>
         <ImportDraftReview
           meta={meta}
           rows={selectedRows}
           {...reviewSessionProps}
         />
-      </TooltipProvider>
+      </ReviewTestProviders>
     );
 
     await user.click(screen.getByRole('button', { name: 'Continue' }));
@@ -162,9 +162,9 @@ describe('ImportDraftReview autosave and continue', () => {
     });
     const { rows, ...meta } = draft;
     render(
-      <TooltipProvider delay={0}>
+      <ReviewTestProviders>
         <ImportDraftReview meta={meta} rows={rows} {...reviewSessionProps} />
-      </TooltipProvider>
+      </ReviewTestProviders>
     );
 
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
@@ -185,9 +185,9 @@ describe('ImportDraftReview autosave and continue', () => {
     });
     const { rows, ...meta } = draft;
     render(
-      <TooltipProvider delay={0}>
+      <ReviewTestProviders>
         <ImportDraftReview meta={meta} rows={rows} {...reviewSessionProps} />
-      </TooltipProvider>
+      </ReviewTestProviders>
     );
 
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();

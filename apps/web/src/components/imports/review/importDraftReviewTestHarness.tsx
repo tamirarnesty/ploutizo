@@ -4,8 +4,10 @@ import { vi } from 'vitest';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import type { ImportReviewRow } from '@ploutizo/types';
 import type { Account } from '@ploutizo/validators';
+import { HouseholdHookWrapper } from '@/test/household-hook-harness';
 import { makeImportDraft } from '../test-fixtures/importDraft';
 import { ImportDraftReview } from './ImportDraftReview';
+import type { ReactNode } from 'react';
 
 export const updateRow = vi.fn();
 export const setSelection = vi.fn();
@@ -70,6 +72,14 @@ vi.mock('@/lib/data-access/accounts', () => ({
 vi.mock('@/lib/data-access/categories', () => ({
   useGetCategories: () => ({
     data: [{ id: 'cat_1', name: 'Dining' }],
+  }),
+}));
+
+vi.mock('@/lib/data-access/imports/useImportDiscardInProgressDraft', () => ({
+  useImportDiscardInProgressDraft: () => ({
+    discard: vi.fn(),
+    isDiscarding: false,
+    discardingThisDraft: false,
   }),
 }));
 
@@ -159,6 +169,12 @@ export const reviewSessionProps = {
   flush,
 };
 
+export const ReviewTestProviders = ({ children }: { children: ReactNode }) => (
+  <HouseholdHookWrapper>
+    <TooltipProvider delay={0}>{children}</TooltipProvider>
+  </HouseholdHookWrapper>
+);
+
 export const renderReview = (draft = makeImportDraft()) => {
   const { rows, ...meta } = draft;
   reviewRowsById.clear();
@@ -166,17 +182,17 @@ export const renderReview = (draft = makeImportDraft()) => {
     reviewRowsById.set(row.id, row);
   }
   return render(
-    <TooltipProvider delay={0}>
+    <ReviewTestProviders>
       <ImportDraftReview meta={meta} rows={rows} {...reviewSessionProps} />
-    </TooltipProvider>
+    </ReviewTestProviders>
   );
 };
 
 export const renderLoadingReview = () =>
   render(
-    <TooltipProvider delay={0}>
+    <ReviewTestProviders>
       <ImportDraftReview isLoading {...reviewSessionProps} />
-    </TooltipProvider>
+    </ReviewTestProviders>
   );
 
 export const getRowExpandButtons = () =>
