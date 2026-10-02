@@ -156,7 +156,7 @@ const ImportDraftReviewContent = ({
   const focusRowId = priorityRowIds[0] ?? null;
 
   const handleContinue = useCallback(async () => {
-    if (!draftId) return;
+    if (!draftId || discardingThisDraft) return;
     flushPendingInputs();
     const ok = await flush();
     if (!ok) return;
@@ -186,7 +186,15 @@ const ImportDraftReviewContent = ({
         toast.error(getImportContinueGateMessage(error));
       }
     }
-  }, [draftId, flush, flushPendingInputs, continueImport, navigate, rows]);
+  }, [
+    discardingThisDraft,
+    draftId,
+    flush,
+    flushPendingInputs,
+    continueImport,
+    navigate,
+    rows,
+  ]);
 
   const showEmptyState = !isLoading && meta && !hasReviewableRows;
 

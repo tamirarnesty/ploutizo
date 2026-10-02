@@ -198,7 +198,14 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
   });
 
   const handleFinalize = useCallback(async () => {
-    if (!preview || rowIds.length === 0 || finalizeImport.isPending) return;
+    if (
+      !preview ||
+      rowIds.length === 0 ||
+      finalizeImport.isPending ||
+      discardingThisDraft
+    ) {
+      return;
+    }
     try {
       await finalizeImport.mutateAsync({
         rowIds,
@@ -215,7 +222,14 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
         leaveToImportHub();
       }
     }
-  }, [finalizeImport, leaveToImportHub, preview, returnToReview, rowIds]);
+  }, [
+    discardingThisDraft,
+    finalizeImport,
+    leaveToImportHub,
+    preview,
+    returnToReview,
+    rowIds,
+  ]);
 
   handleFinalizeRef.current = handleFinalize;
 
