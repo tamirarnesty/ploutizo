@@ -3,6 +3,7 @@ import { Button } from '@ploutizo/ui/components/button';
 import { CardAction, CardContent } from '@ploutizo/ui/components/card';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
+import { cn } from '@ploutizo/ui/lib/utils';
 import type { TransactionRow } from '@ploutizo/validators';
 import { DashboardLiveCard } from '@/components/dashboard/DashboardLiveCard';
 import { DASHBOARD_RECENT_TRANSACTIONS_PARAMS } from '@/lib/data-access/transactions/dashboardRecentTransactions';
@@ -77,7 +78,7 @@ const RecentTransactionsRow = ({ row }: { row: TransactionRow }) => {
         <Text
           as="span"
           variant="body-sm"
-          className={`font-medium ${colorClass}`}
+          className={cn('font-medium', colorClass)}
         >
           {displayValue}
         </Text>
@@ -142,9 +143,10 @@ export const RecentTransactionsCard = ({
               </thead>
               <tbody>
                 {isBusy
-                  ? Array.from({ length: 6 }, (_, i) => (
-                      <RecentTransactionsRowSkeleton key={i} />
-                    ))
+                  ? Array.from(
+                      { length: DASHBOARD_RECENT_TRANSACTIONS_PARAMS.limit },
+                      (_, i) => <RecentTransactionsRowSkeleton key={i} />
+                    )
                   : rows.map((row) => (
                       <RecentTransactionsRow key={row.id} row={row} />
                     ))}
