@@ -1053,6 +1053,17 @@ describe('Dashboard', () => {
       ).toHaveTextContent(/Couldn’t load recent transactions/);
     });
 
+    it('still renders the dashboard when transactions fail on first load with a ready household', async () => {
+      loaderReady.value = true;
+      failingPaths.add(TRANSACTIONS_PATH);
+      await renderDashboard();
+
+      expect(await screen.findByText('Spend trend')).toBeInTheDocument();
+      expect(
+        await within(cardFor('Recent transactions')).findByRole('alert')
+      ).toHaveTextContent(/Couldn’t load recent transactions/);
+    });
+
     it('marks the card busy while recent transactions load', async () => {
       const release = holdRequests();
       void renderDashboard();

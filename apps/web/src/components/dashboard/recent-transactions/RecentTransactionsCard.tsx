@@ -57,7 +57,11 @@ const RecentTransactionsRow = ({ row }: { row: TransactionRow }) => {
             className={recentTransactionCategoryClassName(
               categoryLabel !== null
             )}
-            style={recentTransactionCategoryDotStyle(row.categoryColour)}
+            style={
+              categoryLabel !== null
+                ? recentTransactionCategoryDotStyle(row.categoryColour)
+                : undefined
+            }
             aria-hidden="true"
           />
           <Text as="span" variant="body-sm" className="min-w-0 truncate">

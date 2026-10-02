@@ -68,10 +68,11 @@ export const Route = createFileRoute('/_layout/dashboard')({
       ),
       context.queryClient.ensureQueryData(settlementsQueryOptions),
       context.queryClient.ensureQueryData(householdMembersQueryOptions),
-      context.queryClient.ensureQueryData(
-        dashboardRecentTransactionsQueryOptions()
-      ),
     ]);
+    // Warm the strip without blocking the route when transactions fail.
+    void context.queryClient.prefetchQuery(
+      dashboardRecentTransactionsQueryOptions()
+    );
   },
   component: Dashboard,
 });
