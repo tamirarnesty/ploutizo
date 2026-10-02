@@ -165,9 +165,8 @@ export const Dashboard = () => {
           isLoading={liveSectionsLoading}
           members={members}
         />
+        <RecentTransactionsCard />
       </div>
-
-      <RecentTransactionsCard />
 
       <SettleDialog
         open={dialogOpen}

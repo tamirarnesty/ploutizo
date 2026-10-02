@@ -97,7 +97,9 @@ export const createTransactionCategoryColumn = ({
   meta: {
     headerClassName: 'min-w-[140px]',
     cellClassName: 'min-w-[140px]',
-    skeleton: <Skeleton className="h-4 w-24 motion-safe:animate-pulse" />,
+    skeleton: (
+      <Skeleton className="h-5 w-24 rounded-full motion-safe:animate-pulse" />
+    ),
   },
   cell: ({ row }) => <TransactionCategoryCell row={row.original} />,
 });

@@ -36,6 +36,7 @@ import {
   dataGridBodyCellSpacingVariants,
   dataGridRowBorderClasses,
   dataGridTablePinnedBodyCellClasses,
+  getDataGridSkeletonRowCount,
 } from '@/components/reui/data-grid/data-grid-table-shared';
 import {
   DataGridTableFillBodyCell,
@@ -1087,13 +1088,17 @@ function DataGridTableRowSelectAll() {
 }
 
 function DataGridTableBodyRows<TData>({ table }: { table: Table<TData> }) {
-  const { isLoading, props } = useDataGrid();
+  const { isLoading, props, recordCount } = useDataGrid();
   const pagination = table.getState().pagination;
 
   if (isLoading && props.loadingMode === 'skeleton' && pagination?.pageSize) {
+    const skeletonRowCount = getDataGridSkeletonRowCount(
+      pagination.pageSize,
+      recordCount
+    );
     return (
       <>
-        {Array.from({ length: pagination.pageSize }).map((_, rowIndex) => (
+        {Array.from({ length: skeletonRowCount }).map((_, rowIndex) => (
           <DataGridTableBodyRowSkeleton key={rowIndex}>
             {table.getVisibleFlatColumns().map((column, colIndex) => (
               <DataGridTableBodyRowSkeletonCell column={column} key={colIndex}>

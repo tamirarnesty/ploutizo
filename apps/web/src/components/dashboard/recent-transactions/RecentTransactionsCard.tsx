@@ -38,18 +38,21 @@ export const RecentTransactionsCard = () => {
   );
   usePreloadLucideIcons(categoryIcons);
 
+  const recentLimit = DASHBOARD_RECENT_TRANSACTIONS_PARAMS.limit;
+
   const table = useReactTable({
     data: rows,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    initialState: {
+      pagination: { pageSize: recentLimit },
+    },
   });
-
-  const skeletonRowCount = DASHBOARD_RECENT_TRANSACTIONS_PARAMS.limit;
 
   return (
     <DataGrid
       table={table}
-      recordCount={isBusy ? skeletonRowCount : rows.length}
+      recordCount={isBusy ? recentLimit : rows.length}
       isLoading={isBusy}
       tableLayout={{
         width: 'auto',
