@@ -12,10 +12,13 @@ import { selectCreditCardAccounts } from '@/lib/settlements';
 import { CardBalancesGrid } from '@/components/dashboard/card-balances/CardBalancesGrid';
 import { SpendTrendCard } from '@/components/dashboard/spend-trend/SpendTrendCard';
 import { SpendByCategoryCard } from '@/components/dashboard/spend-by-category/SpendByCategoryCard';
+import { DASHBOARD_RECENT_TRANSACTIONS_PARAMS } from '@/lib/data-access/transactions/dashboardRecentTransactions';
+import { useGetTransactions } from '@/lib/data-access/transactions';
 import { DashboardHeader } from './DashboardHeader';
 import { useDashboardSearch } from './useDashboardSearch';
 import { SettleDialog } from './SettleDialog';
 import { SettlementSummaryPane } from './SettlementSummaryPane';
+import { RecentTransactionsCard } from './recent-transactions/RecentTransactionsCard';
 
 const NO_MEMBERS: OrgMember[] = [];
 
@@ -46,10 +49,17 @@ export const Dashboard = () => {
     isFetching: membersFetching,
     refetch: refetchMembers,
   } = useGetHouseholdMembers();
+  const {
+    isFetching: recentTransactionsFetching,
+    refetch: refetchRecentTransactions,
+  } = useGetTransactions(DASHBOARD_RECENT_TRANSACTIONS_PARAMS);
 
   const members = membersData ?? NO_MEMBERS;
   const isRefreshing =
-    settlementsFetching || membersFetching || overviewQuery.isFetching;
+    settlementsFetching ||
+    membersFetching ||
+    overviewQuery.isFetching ||
+    recentTransactionsFetching;
 
   // Both live cards read the same two queries, so they share loading and error state.
   // A failed refetch keeps cached data on screen; only a failed first load replaces the cards.
@@ -96,6 +106,7 @@ export const Dashboard = () => {
       refetchOverview(),
       refetchSettlements(),
       refetchMembers(),
+      refetchRecentTransactions(),
     ]).then((results) => {
       // A failed refetch keeps cached data on screen, so flag it as out of date.
       if (results.some((r) => r.isError && r.data !== undefined)) {
@@ -104,7 +115,12 @@ export const Dashboard = () => {
         });
       }
     });
-  }, [refetchOverview, refetchSettlements, refetchMembers]);
+  }, [
+    refetchOverview,
+    refetchSettlements,
+    refetchMembers,
+    refetchRecentTransactions,
+  ]);
 
   return (
     <div className="space-y-6">
@@ -150,6 +166,8 @@ export const Dashboard = () => {
           members={members}
         />
       </div>
+
+      <RecentTransactionsCard />
 
       <SettleDialog
         open={dialogOpen}

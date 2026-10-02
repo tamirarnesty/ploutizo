@@ -29,7 +29,10 @@ import type {
   GetSettlementBalancesResponse,
   OrgMember,
   SettlementAccountRow,
+  TransactionListResponse,
+  TransactionRow,
 } from '@ploutizo/validators';
+import { mockTransactionRow } from '@/test/overlayFixtures';
 import type * as HouseholdLoaderReady from '@/lib/access/household-loader-ready';
 import type { RouterContext } from '@/router';
 // `.dashboard` is part of the route file name, not an extension.
@@ -73,6 +76,7 @@ vi.mock('@/lib/access/working-set', () => ({
 const SETTLEMENTS_PATH = '/api/settlements';
 const MEMBERS_PATH = '/api/households/members';
 const OVERVIEW_PATH = '/api/dashboard/overview';
+const TRANSACTIONS_PATH = '/api/transactions';
 
 /** Answers like the API: the prior window follows from the dates and shortcut, the grain from the dates. */
 const overviewFor = (url: URL): GetDashboardOverviewResponse => {
@@ -184,6 +188,12 @@ const jsonResponse = (body: unknown, status = 200) =>
 
 let settlementsBody = settlements;
 let membersBody = members;
+let transactionsBody: TransactionListResponse = {
+  data: [],
+  total: 0,
+  page: 1,
+  limit: 6,
+};
 let overviewFixture: ((url: URL) => GetDashboardOverviewResponse) | null = null;
 const failingPaths = new Set<string>();
 let requestGate: Promise<void> | null = null;
@@ -203,15 +213,21 @@ const holdRequests = () => {
 const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
   const url = String(input);
   await requestGate;
-  const path = [SETTLEMENTS_PATH, MEMBERS_PATH, OVERVIEW_PATH].find((p) =>
-    url.includes(p)
-  );
+  const path = [
+    SETTLEMENTS_PATH,
+    MEMBERS_PATH,
+    OVERVIEW_PATH,
+    TRANSACTIONS_PATH,
+  ].find((p) => url.includes(p));
   if (!path) throw new Error(`Unexpected request: ${url}`);
   if (failingPaths.has(path)) {
     return jsonResponse(
       { error: { code: 'SERVER_ERROR', message: 'boom' } },
       500
     );
+  }
+  if (path === TRANSACTIONS_PATH) {
+    return jsonResponse(transactionsBody);
   }
   return jsonResponse(
     path === SETTLEMENTS_PATH
@@ -230,6 +246,23 @@ const overviewRequests = () =>
     .map((call) => String(call[0]))
     .filter((url) => url.includes(OVERVIEW_PATH))
     .map((url) => url.slice(url.indexOf(OVERVIEW_PATH)));
+
+const transactionRequests = () =>
+  fetchMock.mock.calls
+    .map((call) => String(call[0]))
+    .filter((url) => url.includes(TRANSACTIONS_PATH))
+    .map((url) => url.slice(url.indexOf(TRANSACTIONS_PATH)));
+
+const makeRecentTransaction = (
+  id: string,
+  description: string,
+  overrides: Partial<TransactionRow> = {}
+): TransactionRow => ({
+  ...mockTransactionRow(),
+  id,
+  description,
+  ...overrides,
+});
 
 const setPeriodCookie = (value: string) => {
   document.cookie = `dashboard_period=${value}; path=/`;
@@ -351,6 +384,7 @@ describe('Dashboard', () => {
     settlementsBody = settlements;
     membersBody = members;
     overviewFixture = null;
+    transactionsBody = { data: [], total: 0, page: 1, limit: 6 };
     failingPaths.clear();
     requestGate = null;
     fetchMock.mockClear();
@@ -565,6 +599,9 @@ describe('Dashboard', () => {
         `${OVERVIEW_PATH}?from=2026-01-01&to=2026-03-24&shortcut=ytd`,
       ]);
       expect(requestCount(SETTLEMENTS_PATH)).toBe(1);
+      expect(transactionRequests()).toEqual([
+        `${TRANSACTIONS_PATH}?page=1&limit=6&sort=date&order=desc`,
+      ]);
     });
   });
 
@@ -959,7 +996,7 @@ describe('Dashboard', () => {
     ).toBeInTheDocument();
   });
 
-  it.each(['Card Balances', 'Settlement'])(
+  it.each(['Card Balances', 'Settlement', 'Recent transactions'])(
     'explains that %s is all time when its hint is tapped',
     async (section) => {
       const user = userEvent.setup();
@@ -973,4 +1010,116 @@ describe('Dashboard', () => {
       expect(await screen.findByText('All time')).toBeInTheDocument();
     }
   );
+
+  describe('recent transactions', () => {
+    it('renders the six newest transactions from the list endpoint', async () => {
+      transactionsBody = {
+        data: Array.from({ length: 6 }, (_, i) =>
+          makeRecentTransaction(`tx_${i}`, `Purchase ${i}`)
+        ),
+        total: 12,
+        page: 1,
+        limit: 6,
+      };
+      await renderDashboard();
+
+      await waitFor(() => {
+        expect(transactionRequests()).toContain(
+          `${TRANSACTIONS_PATH}?page=1&limit=6&sort=date&order=desc`
+        );
+      });
+      const card = cardFor('Recent transactions');
+      for (let i = 0; i < 6; i++) {
+        expect(within(card).getByText(`Purchase ${i}`)).toBeInTheDocument();
+      }
+    });
+
+    it('links View all to the transactions page and shows an empty state', async () => {
+      await renderDashboard();
+      const card = await waitFor(() => cardFor('Recent transactions'));
+
+      expect(
+        within(card).getByRole('button', { name: 'View all' })
+      ).toHaveAttribute('href', '/transactions');
+      expect(within(card).getByText('No transactions yet')).toBeInTheDocument();
+    });
+
+    it('shows a muted error when the transactions list fails to load', async () => {
+      failingPaths.add(TRANSACTIONS_PATH);
+      await renderDashboard();
+
+      expect(
+        await within(cardFor('Recent transactions')).findByRole('alert')
+      ).toHaveTextContent(/Couldn’t load recent transactions/);
+    });
+
+    it('marks the card busy while recent transactions load', async () => {
+      const release = holdRequests();
+      void renderDashboard();
+      expect(
+        await screen.findByText('Recent transactions')
+      ).toBeInTheDocument();
+      expect(cardFor('Recent transactions')).toHaveAttribute(
+        'aria-busy',
+        'true'
+      );
+      release();
+      await within(cardFor('Recent transactions')).findByText(
+        'No transactions yet'
+      );
+      expect(cardFor('Recent transactions')).toHaveAttribute(
+        'aria-busy',
+        'false'
+      );
+    });
+
+    it('refetches recent transactions from the header Refresh', async () => {
+      const user = userEvent.setup();
+      transactionsBody = {
+        data: [makeRecentTransaction('tx_a', 'Groceries')],
+        total: 1,
+        page: 1,
+        limit: 6,
+      };
+      await renderDashboard();
+      await within(cardFor('Recent transactions')).findByText('Groceries');
+
+      transactionsBody = {
+        data: [makeRecentTransaction('tx_b', 'Updated purchase')],
+        total: 1,
+        page: 1,
+        limit: 6,
+      };
+      await user.click(refreshButton());
+      expect(
+        await within(cardFor('Recent transactions')).findByText(
+          'Updated purchase'
+        )
+      ).toBeInTheDocument();
+      expect(requestCount(TRANSACTIONS_PATH)).toBeGreaterThanOrEqual(2);
+    });
+
+    it('does not refetch recent transactions when the dashboard period changes', async () => {
+      const user = userEvent.setup();
+      transactionsBody = {
+        data: [makeRecentTransaction('tx_a', 'Stable row')],
+        total: 1,
+        page: 1,
+        limit: 6,
+      };
+      await renderDashboard();
+      await within(cardFor('Recent transactions')).findByText('Stable row');
+      const countBefore = requestCount(TRANSACTIONS_PATH);
+
+      await user.click(screen.getByRole('button', { name: 'YTD' }));
+
+      await waitFor(() => {
+        expect(overviewRequests().length).toBeGreaterThan(1);
+      });
+      expect(requestCount(TRANSACTIONS_PATH)).toBe(countBefore);
+      expect(transactionRequests().every((q) => !q.includes('dateFrom'))).toBe(
+        true
+      );
+    });
+  });
 });
