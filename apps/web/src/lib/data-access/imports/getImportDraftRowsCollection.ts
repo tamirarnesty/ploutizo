@@ -100,13 +100,21 @@ export const releaseImportDraftRowsCollection = async (draftId: string) => {
   });
   pendingIdleCleanups.set(draftId, releasePromise);
 
-  if (subscribersAtRelease > 0) return;
+  if (subscribersAtRelease > 0) return releasePromise;
 
   await releasePromise;
+};
+
+const awaitPendingImportDraftRowsCollectionReleases = async () => {
+  while (pendingIdleCleanups.size > 0) {
+    const pending = [...pendingIdleCleanups.values()];
+    await Promise.all(pending);
+  }
 };
 
 export const endImportDraftRowsCollections = async () => {
   await Promise.all(
     [...importDraftRowsCollections.keys()].map(releaseImportDraftRowsCollection)
   );
+  await awaitPendingImportDraftRowsCollectionReleases();
 };

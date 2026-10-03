@@ -1,5 +1,5 @@
 import '@/lib/access/working-set-cleanup';
-import { act, renderHook, waitFor } from '@testing-library/react';
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BatchUpdateImportDraftRowsResult } from '@ploutizo/validators';
 import {
@@ -15,6 +15,7 @@ import {
   IMPORT_DRAFT_PACE_WAIT_MS,
   endImportDraftPacedMutations,
 } from './getImportDraftPacedMutations';
+import { endImportDraftReviewRuntime } from './releaseImportDraftReviewRuntime';
 import { endImportDraftRowsCollections } from './getImportDraftRowsCollection';
 import { endImportDraftPersistBaselines } from './importDraftPersistBaselines';
 import {
@@ -123,10 +124,20 @@ describe('useImportReviewSession', () => {
   });
 
   afterEach(async () => {
+    if (vi.isFakeTimers()) {
+      await act(async () => {
+        await vi.runAllTimersAsync();
+      });
+    }
     vi.useRealTimers();
+    cleanup();
+    await act(async () => {
+      await Promise.resolve();
+    });
     endImportDraftPacedMutations();
     endImportDraftPersistBaselines();
     endImportReviewAutosave();
+    endImportDraftReviewRuntime();
     await endImportDraftRowsCollections();
     getActiveQueryClient().clear();
   });
@@ -164,7 +175,7 @@ describe('useImportReviewSession', () => {
   });
 
   it('flush waits for queued selection updates before resolving', async () => {
-    const { result } = await hydrateSession();
+    const { result, unmount } = await hydrateSession();
 
     act(() => {
       result.current.setSelection(['row_ready'], false);
@@ -178,6 +189,7 @@ describe('useImportReviewSession', () => {
       result.current.rows.find((row) => row.id === 'row_ready')
         ?.selectedForImport
     ).toBe(false);
+    unmount();
   });
 
   it('keeps the session collection on unmount so remount still has live rows', async () => {
