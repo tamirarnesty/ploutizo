@@ -149,7 +149,7 @@ vi.mock('../services/transactions', () => ({
     total: 0,
     page: 1,
     limit: 50,
-    amountSum: 0,
+    amountSumCents: 0,
   }),
   getTransaction: vi.fn().mockResolvedValue({
     id: 'txn_1',

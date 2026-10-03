@@ -107,7 +107,7 @@ export const listTransactions = async (params: ListQueryParams) => {
     buildListQuery(params),
     listAggregatesQuery(params),
   ]);
-  const { total, amountSum } = aggregates;
+  const { total, amountSumCents } = aggregates;
   const { assigneeMap, tagMap } = await enrichTransactions(
     params.orgId,
     baseRows
@@ -122,7 +122,7 @@ export const listTransactions = async (params: ListQueryParams) => {
     total,
     page: params.page,
     limit: params.limit,
-    amountSum,
+    amountSumCents,
   };
 };
 
