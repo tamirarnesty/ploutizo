@@ -1612,12 +1612,6 @@ export function Filters<T = unknown>({
     [fieldsMap, filters, onChange]
   );
 
-  useEffect(() => {
-    if (addFilterOpen && activeMenu === 'root') {
-      rootInputRef.current?.focus();
-    }
-  }, [addFilterOpen, activeMenu]);
-
   const selectableFields = useMemo(() => {
     const flatFields = flattenFields(fields);
     return flatFields.filter((field) => {

@@ -1,7 +1,6 @@
 import {
   createPinnedFilterId,
   getDefaultFilterOperator,
-  isFilterValueActive,
 } from '@ploutizo/ui/components/reui/filters';
 import type { Filter } from '@ploutizo/ui/components/reui/filters';
 import { buildFilterFields } from './TransactionFilterFields';
@@ -47,7 +46,7 @@ export const createEmptyPinnedTransactionFilter = (
 /**
  * Materializes pinned row entries in local filter state so ReUI `updateFilter`
  * can mutate them (synthetic pinned chips alone are display-only).
- * Inactive empties are omitted from the URL via `activeTransactionFiltersForSearch`.
+ * Inactive empties are omitted from the URL via `isFilterValueActive` at map time.
  */
 export const withPinnedTransactionFilters = (
   filters: Filter<string>[]
@@ -59,7 +58,3 @@ export const withPinnedTransactionFilters = (
   });
   return [...pinned, ...unpinned];
 };
-
-export const activeTransactionFiltersForSearch = (
-  filters: Filter<string>[]
-): Filter<string>[] => filters.filter(isFilterValueActive);

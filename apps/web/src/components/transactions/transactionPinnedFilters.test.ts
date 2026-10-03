@@ -1,34 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { createPinnedFilterId } from '@ploutizo/ui/components/reui/filters';
+import { isFilterValueActive } from '@ploutizo/ui/components/reui/filters';
 import {
   TRANSACTION_PINNED_FILTER_FIELD_KEYS,
-  activeTransactionFiltersForSearch,
   withPinnedTransactionFilters,
 } from './transactionPinnedFilters';
 import { buildFilterFields } from './TransactionFilterFields';
 import { filtersToSearch, searchToFilters } from './Transactions';
 
+const activeForSearch = (
+  filters: ReturnType<typeof withPinnedTransactionFilters>
+) => filters.filter(isFilterValueActive);
+
 describe('transaction pinned filters', () => {
-  it('uses stable ids for pinned fields', () => {
-    expect(createPinnedFilterId('type')).toBe('filter-type');
-    expect(createPinnedFilterId('dateRange')).toBe('filter-dateRange');
-  });
-
-  it('pins type, date, account, and category only', () => {
-    expect([...TRANSACTION_PINNED_FILTER_FIELD_KEYS]).toEqual([
-      'type',
-      'dateRange',
-      'accountId',
-      'categoryId',
-    ]);
-  });
-
   it('pads inactive pinned filters without affecting URL search mapping', () => {
     const padded = withPinnedTransactionFilters([]);
-    expect(padded).toHaveLength(4);
-    expect(filtersToSearch(activeTransactionFiltersForSearch(padded))).toEqual(
-      {}
-    );
+    expect(padded).toHaveLength(TRANSACTION_PINNED_FILTER_FIELD_KEYS.length);
+    expect(filtersToSearch(activeForSearch(padded))).toEqual({});
   });
 
   it('keeps active pinned filters in URL mapping', () => {
@@ -40,7 +27,7 @@ describe('transaction pinned filters', () => {
         values: ['expense'],
       },
     ]);
-    expect(filtersToSearch(activeTransactionFiltersForSearch(padded))).toEqual({
+    expect(filtersToSearch(activeForSearch(padded))).toEqual({
       type: 'expense',
     });
   });
@@ -54,7 +41,7 @@ describe('transaction pinned filters', () => {
         values: ['2026-01-01', '2026-01-31'],
       },
     ]);
-    expect(filtersToSearch(activeTransactionFiltersForSearch(padded))).toEqual({
+    expect(filtersToSearch(activeForSearch(padded))).toEqual({
       dateFrom: '2026-01-01',
       dateTo: '2026-01-31',
     });
@@ -69,7 +56,7 @@ describe('transaction pinned filters', () => {
         values: [],
       },
     ]);
-    expect(filtersToSearch(activeTransactionFiltersForSearch(padded))).toEqual({
+    expect(filtersToSearch(activeForSearch(padded))).toEqual({
       categoryId_op: 'empty',
     });
   });

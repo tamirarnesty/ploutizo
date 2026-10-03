@@ -2,7 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { ListFilterIcon } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
-import { Filters } from '@ploutizo/ui/components/reui/filters';
+import {
+  Filters,
+  createPinnedFilterId,
+  isFilterValueActive,
+} from '@ploutizo/ui/components/reui/filters';
 import { Text } from '@ploutizo/ui/components/text';
 import type { Filter } from '@ploutizo/ui/components/reui/filters';
 import type { TransactionRow } from '@ploutizo/validators';
@@ -18,7 +22,6 @@ import { buildFilterFields } from './TransactionFilterFields';
 import { buildTransactionQueryParams } from './transactionSearch';
 import {
   TRANSACTION_PINNED_FILTER_FIELD_KEYS_LIST,
-  activeTransactionFiltersForSearch,
   withPinnedTransactionFilters,
 } from './transactionPinnedFilters';
 import type { TransactionSearch } from './transactionSearch';
@@ -132,7 +135,7 @@ export const searchToFilters = (
   const filters: Filter<string>[] = [];
   if (search.type) {
     filters.push({
-      id: 'filter-type',
+      id: createPinnedFilterId('type'),
       field: 'type',
       operator: search.type_op ?? 'is',
       values: [search.type],
@@ -144,14 +147,14 @@ export const searchToFilters = (
     search.categoryId_op === 'not_empty'
   ) {
     filters.push({
-      id: 'filter-categoryId',
+      id: createPinnedFilterId('categoryId'),
       field: 'categoryId',
       operator: search.categoryId_op,
       values: [],
     });
   } else if (search.categoryId) {
     filters.push({
-      id: 'filter-categoryId',
+      id: createPinnedFilterId('categoryId'),
       field: 'categoryId',
       operator: search.categoryId_op ?? 'is',
       values: [search.categoryId],
@@ -163,14 +166,14 @@ export const searchToFilters = (
     search.assigneeId_op === 'not_empty'
   ) {
     filters.push({
-      id: 'filter-assigneeId',
+      id: createPinnedFilterId('assigneeId'),
       field: 'assigneeId',
       operator: search.assigneeId_op,
       values: [],
     });
   } else if (search.assigneeId) {
     filters.push({
-      id: 'filter-assigneeId',
+      id: createPinnedFilterId('assigneeId'),
       field: 'assigneeId',
       operator: search.assigneeId_op ?? 'is',
       values: [search.assigneeId],
@@ -178,7 +181,7 @@ export const searchToFilters = (
   }
   if (search.accountId) {
     filters.push({
-      id: 'filter-accountId',
+      id: createPinnedFilterId('accountId'),
       field: 'accountId',
       operator: search.accountId_op ?? 'is',
       values: [search.accountId],
@@ -187,14 +190,14 @@ export const searchToFilters = (
   // tagIds — handle empty/not_empty
   if (search.tagIds_op === 'empty' || search.tagIds_op === 'not_empty') {
     filters.push({
-      id: 'filter-tagIds',
+      id: createPinnedFilterId('tagIds'),
       field: 'tagIds',
       operator: search.tagIds_op,
       values: [],
     });
   } else if (search.tagIds) {
     filters.push({
-      id: 'filter-tagIds',
+      id: createPinnedFilterId('tagIds'),
       field: 'tagIds',
       operator: search.tagIds_op ?? 'is_any_of',
       values: search.tagIds.split(','),
@@ -204,42 +207,42 @@ export const searchToFilters = (
   const dateOp = search.dateRange_op ?? 'between';
   if (dateOp === 'after' && search.dateFrom) {
     filters.push({
-      id: 'filter-dateRange',
+      id: createPinnedFilterId('dateRange'),
       field: 'dateRange',
       operator: 'after',
       values: [search.dateFrom],
     });
   } else if (dateOp === 'before' && search.dateTo) {
     filters.push({
-      id: 'filter-dateRange',
+      id: createPinnedFilterId('dateRange'),
       field: 'dateRange',
       operator: 'before',
       values: [search.dateTo],
     });
   } else if (dateOp === 'is' && search.dateFrom) {
     filters.push({
-      id: 'filter-dateRange',
+      id: createPinnedFilterId('dateRange'),
       field: 'dateRange',
       operator: 'is',
       values: [search.dateFrom],
     });
   } else if (dateOp === 'is_not' && search.dateFrom) {
     filters.push({
-      id: 'filter-dateRange',
+      id: createPinnedFilterId('dateRange'),
       field: 'dateRange',
       operator: 'is_not',
       values: [search.dateFrom],
     });
   } else if (dateOp === 'not_between' && (search.dateFrom || search.dateTo)) {
     filters.push({
-      id: 'filter-dateRange',
+      id: createPinnedFilterId('dateRange'),
       field: 'dateRange',
       operator: 'not_between',
       values: [search.dateFrom ?? '', search.dateTo ?? ''],
     });
   } else if (search.dateFrom || search.dateTo) {
     filters.push({
-      id: 'filter-dateRange',
+      id: createPinnedFilterId('dateRange'),
       field: 'dateRange',
       operator: 'between',
       values: [search.dateFrom ?? '', search.dateTo ?? ''],
@@ -247,7 +250,7 @@ export const searchToFilters = (
   }
   if (search.importBatchId && search.importOutcome) {
     filters.push({
-      id: 'filter-importOutcome',
+      id: createPinnedFilterId('importOutcome'),
       field: 'importOutcome',
       operator: 'is',
       values: [search.importOutcome],
@@ -356,9 +359,7 @@ export const Transactions = () => {
       // while URL search params catch up.
       const nextFilters = withPinnedTransactionFilters(filters);
       setActiveFilters(nextFilters);
-      const mapped = filtersToSearch(
-        activeTransactionFiltersForSearch(nextFilters)
-      );
+      const mapped = filtersToSearch(nextFilters.filter(isFilterValueActive));
       void navigate({
         to: '/transactions',
         // Rebuild from scratch — only keep sort/pagination from prev.
