@@ -47,6 +47,32 @@ describe('TransactionsTable amount footer', () => {
     expect(screen.getAllByText('−$0.05').length).toBeGreaterThanOrEqual(2);
   });
 
+  it('shows $0.00 in the footer when the loaded page has no rows', () => {
+    render(
+      <TooltipProvider delay={0}>
+        <TransactionsTable
+          transactions={[]}
+          total={0}
+          pageAmountSumCents={0}
+          isLoading={false}
+          page={1}
+          limit={25}
+          sort="date"
+          order="desc"
+          onPageChange={vi.fn()}
+          onLimitChange={vi.fn()}
+          onSortChange={vi.fn()}
+          onFilteredEmpty={true}
+          onClearFilters={vi.fn()}
+          onEdit={vi.fn()}
+          onOpenOriginal={vi.fn()}
+        />
+      </TooltipProvider>
+    );
+
+    expect(screen.getByText('$0.00')).toBeInTheDocument();
+  });
+
   it('omits the footer while the list response is missing', () => {
     render(
       <TooltipProvider delay={0}>
