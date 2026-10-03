@@ -1,11 +1,11 @@
 import { type Ref } from 'react';
 import { cva } from 'class-variance-authority';
 
-/** Skeleton rows: cap at `recordCount` when the grid shows fewer rows than `pageSize`. */
-export const getDataGridSkeletonRowCount = (
-  pageSize: number,
+export const resolveDataGridSkeletonRowCount = (
+  pageSize: number | undefined,
   recordCount: number
-) => {
+): number | undefined => {
+  if (!pageSize) return undefined;
   if (recordCount > 0 && recordCount < pageSize) {
     return recordCount;
   }

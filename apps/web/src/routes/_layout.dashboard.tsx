@@ -71,7 +71,7 @@ export const Route = createFileRoute('/_layout/dashboard')({
     ]);
     // Warm the strip without blocking the route when transactions fail.
     void context.queryClient.prefetchQuery(
-      dashboardRecentTransactionsQueryOptions()
+      dashboardRecentTransactionsQueryOptions
     );
   },
   component: Dashboard,

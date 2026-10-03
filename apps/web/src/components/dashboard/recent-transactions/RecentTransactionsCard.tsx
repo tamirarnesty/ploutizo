@@ -1,49 +1,54 @@
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Link } from '@tanstack/react-router';
-import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import { useReactTable } from '@tanstack/react-table';
 import { Button } from '@ploutizo/ui/components/button';
 import { CardAction, CardContent } from '@ploutizo/ui/components/card';
 import { DataGrid } from '@ploutizo/ui/components/reui/data-grid/data-grid';
 import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-grid-scroll-area';
 import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-table';
 import { Text } from '@ploutizo/ui/components/text';
+import type { TransactionRow } from '@ploutizo/validators';
 import { DASHBOARD_RECENT_TRANSACTIONS_PARAMS } from '@/lib/data-access/transactions/dashboardRecentTransactions';
-import { useGetTransactions } from '@/lib/data-access/transactions';
+import type { DashboardRecentTransactionsQuery } from '@/lib/data-access/transactions/dashboardRecentTransactions';
 import { usePreloadLucideIcons } from '@/components/categories/usePreloadLucideIcons';
 import { DashboardLiveCard } from '@/components/dashboard/DashboardLiveCard';
+import { getDashboardQueryLiveState } from '@/components/dashboard/dashboardQueryLiveState';
+import { dataGridCoreRowModel } from '@/components/data-grid/dataGridTableModels';
 import { PAGINATED_DATA_GRID_SCROLL_ORIENTATION } from '@/components/data-grid/dataGridSharedLayout';
-import { buildRecentTransactionColumns } from '@/components/transactions/transactionColumnFactories';
+import { RECENT_TRANSACTION_COLUMNS } from '@/components/transactions/transactionColumnFactories';
 
-export const RecentTransactionsCard = () => {
-  const { data, isLoading, isError, isFetching } = useGetTransactions(
-    DASHBOARD_RECENT_TRANSACTIONS_PARAMS
-  );
+const EMPTY_TRANSACTION_ROWS: TransactionRow[] = [];
+const EMPTY_CATEGORY_ICONS: TransactionRow['categoryIcon'][] = [];
 
-  const rows = data?.data ?? [];
-  const hasLoadFailure = isError && data === undefined;
-  const isBusy = isLoading || (hasLoadFailure && isFetching);
-  const showError = hasLoadFailure && !isFetching;
+type RecentTransactionsCardProps = {
+  query: DashboardRecentTransactionsQuery;
+};
+
+export const RecentTransactionsCard = ({
+  query,
+}: RecentTransactionsCardProps) => {
+  const { data } = query;
+  const { showError, isBusy } = getDashboardQueryLiveState(query, {
+    busyWhileRefetching: false,
+  });
+
+  const rows = data?.data ?? EMPTY_TRANSACTION_ROWS;
+  const recentLimit = DASHBOARD_RECENT_TRANSACTIONS_PARAMS.limit;
   const isEmpty = !showError && !isBusy && rows.length === 0;
 
-  const onOpenOriginal = useCallback((_id: string) => {}, []);
-
-  const columns = useMemo(
-    () => buildRecentTransactionColumns(onOpenOriginal),
-    [onOpenOriginal]
-  );
-
   const categoryIcons = useMemo(
-    () => rows.map((transaction) => transaction.categoryIcon),
-    [rows]
+    () =>
+      data === undefined
+        ? EMPTY_CATEGORY_ICONS
+        : rows.map((transaction) => transaction.categoryIcon),
+    [data, rows]
   );
   usePreloadLucideIcons(categoryIcons);
 
-  const recentLimit = DASHBOARD_RECENT_TRANSACTIONS_PARAMS.limit;
-
   const table = useReactTable({
     data: rows,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
+    columns: RECENT_TRANSACTION_COLUMNS,
+    getCoreRowModel: dataGridCoreRowModel,
     initialState: {
       pagination: { pageSize: recentLimit },
     },

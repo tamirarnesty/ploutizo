@@ -33,7 +33,7 @@ export const TransactionDescriptionCell = ({
   onOpenOriginal,
 }: {
   row: TransactionRow;
-  onOpenOriginal: (id: string) => void;
+  onOpenOriginal?: (id: string) => void;
 }) => {
   const {
     description,
@@ -78,7 +78,7 @@ export const TransactionDescriptionCell = ({
           </Tooltip>
         ) : null}
       </div>
-      {hasRefundLink ? (
+      {hasRefundLink && onOpenOriginal ? (
         <button
           type="button"
           className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"

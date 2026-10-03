@@ -20,11 +20,8 @@ import {
 } from '@/components/dashboard/card-balances/cardBalancesColumnCells';
 import { SettlementStatusBadge } from '@/components/dashboard/card-balances/SettlementStatusBadge';
 import { RightAlignedColumnHeader } from '@/components/dashboard/card-balances/RightAlignedColumnHeader';
+import { columnHeaderIcon } from '@/components/data-grid/columnHeaderIcon';
 import type { ColumnDef } from '@tanstack/react-table';
-
-const columnHeaderIcon = (Icon: typeof CreditCard) => (
-  <Icon aria-hidden="true" />
-);
 
 /** Sketch 006 / grid-structure-and-density.md column order */
 export const buildCardBalancesColumns = (

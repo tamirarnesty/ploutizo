@@ -36,7 +36,7 @@ import {
   dataGridBodyCellSpacingVariants,
   dataGridRowBorderClasses,
   dataGridTablePinnedBodyCellClasses,
-  getDataGridSkeletonRowCount,
+  resolveDataGridSkeletonRowCount,
 } from '@/components/reui/data-grid/data-grid-table-shared';
 import {
   DataGridTableFillBodyCell,
@@ -1091,24 +1091,29 @@ function DataGridTableBodyRows<TData>({ table }: { table: Table<TData> }) {
   const { isLoading, props, recordCount } = useDataGrid();
   const pagination = table.getState().pagination;
 
-  if (isLoading && props.loadingMode === 'skeleton' && pagination?.pageSize) {
-    const skeletonRowCount = getDataGridSkeletonRowCount(
-      pagination.pageSize,
+  if (isLoading && props.loadingMode === 'skeleton') {
+    const skeletonRowCount = resolveDataGridSkeletonRowCount(
+      pagination?.pageSize,
       recordCount
     );
-    return (
-      <>
-        {Array.from({ length: skeletonRowCount }).map((_, rowIndex) => (
-          <DataGridTableBodyRowSkeleton key={rowIndex}>
-            {table.getVisibleFlatColumns().map((column, colIndex) => (
-              <DataGridTableBodyRowSkeletonCell column={column} key={colIndex}>
-                {column.columnDef.meta?.skeleton}
-              </DataGridTableBodyRowSkeletonCell>
-            ))}
-          </DataGridTableBodyRowSkeleton>
-        ))}
-      </>
-    );
+    if (skeletonRowCount !== undefined) {
+      return (
+        <>
+          {Array.from({ length: skeletonRowCount }).map((_, rowIndex) => (
+            <DataGridTableBodyRowSkeleton key={rowIndex}>
+              {table.getVisibleFlatColumns().map((column, colIndex) => (
+                <DataGridTableBodyRowSkeletonCell
+                  column={column}
+                  key={colIndex}
+                >
+                  {column.columnDef.meta?.skeleton}
+                </DataGridTableBodyRowSkeletonCell>
+              ))}
+            </DataGridTableBodyRowSkeleton>
+          ))}
+        </>
+      );
+    }
   }
 
   if (isLoading && props.loadingMode === 'spinner') {

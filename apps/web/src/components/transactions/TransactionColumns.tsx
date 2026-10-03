@@ -6,17 +6,11 @@ import { Text } from '@ploutizo/ui/components/text';
 import { cn } from '@ploutizo/ui/lib/utils';
 import { memberFullLabel } from '@ploutizo/utils';
 import type { TransactionRow } from '@ploutizo/validators';
+import { columnHeaderIcon } from '@/components/data-grid/columnHeaderIcon';
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
-import {
-  createTransactionAccountColumn,
-  createTransactionAmountColumn,
-  createTransactionCategoryColumn,
-  createTransactionDateColumn,
-  createTransactionDescriptionColumn,
-} from './transactionColumnFactories';
+import { createCoreTransactionColumnDefs } from './transactionColumnFactories';
 import { TransactionRowActionsDropdown } from './TransactionRowActionMenus';
 import { getTransactionRowActions } from './transactionRowActions';
-import type { CalendarDays } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 
 // Per-type badge className map (per UI-SPEC.md)
@@ -45,19 +39,22 @@ export const typeBadgeVariant: Record<
 const isInternalType = (t: string) =>
   ['transfer', 'settlement', 'contribution'].includes(t);
 
-const columnHeaderIcon = (Icon: typeof CalendarDays) => (
-  <Icon aria-hidden="true" />
-);
-
 export const buildColumns = (
   setDeleteId: (id: string) => void,
   onEdit: (transaction: TransactionRow) => void,
   onOpenOriginal: (id: string) => void
 ): ColumnDef<TransactionRow>[] => {
   const handlers = { onEdit, onDelete: setDeleteId };
+  const core = createCoreTransactionColumnDefs({
+    date: { enableSorting: true },
+    description: { enableSorting: false, onOpenOriginal },
+    category: { enableSorting: true },
+    account: { enableSorting: true },
+    amount: { enableSorting: true },
+  });
 
   return [
-    createTransactionDateColumn({ enableSorting: true }),
+    core.date,
     // 2. Type
     {
       id: 'type',
@@ -99,12 +96,9 @@ export const buildColumns = (
         );
       },
     },
-    createTransactionDescriptionColumn({
-      enableSorting: false,
-      onOpenOriginal,
-    }),
-    createTransactionCategoryColumn({ enableSorting: true }),
-    createTransactionAccountColumn({ enableSorting: true }),
+    core.description,
+    core.category,
+    core.account,
     // 6. Assignees
     {
       id: 'assignees',
@@ -196,7 +190,7 @@ export const buildColumns = (
         );
       },
     },
-    createTransactionAmountColumn({ enableSorting: true }),
+    core.amount,
     // 9. Actions — chrome column, not a data column (no resize handle)
     {
       id: 'actions',

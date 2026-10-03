@@ -40,7 +40,7 @@ import {
   DataGridTableViewport,
 } from '@/components/reui/data-grid/data-grid-table';
 import { useDataGrid } from '@/components/reui/data-grid/data-grid';
-import { getDataGridSkeletonRowCount } from '@/components/reui/data-grid/data-grid-table-shared';
+import { resolveDataGridSkeletonRowCount } from '@/components/reui/data-grid/data-grid-table-shared';
 
 function DataGridTableDndHeader<TData>({
   header,
@@ -148,9 +148,10 @@ function DataGridTableDnd<TData>({
 }) {
   const { table, isLoading, props, recordCount } = useDataGrid();
   const pagination = table.getState().pagination;
-  const skeletonRowCount =
-    pagination?.pageSize &&
-    getDataGridSkeletonRowCount(pagination.pageSize, recordCount);
+  const skeletonRowCount = resolveDataGridSkeletonRowCount(
+    pagination?.pageSize,
+    recordCount
+  );
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDraggingColumn, setIsDraggingColumn] = useState(false);
 

@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import {
-  getCoreRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
@@ -21,6 +20,7 @@ import {
   DATA_GRID_PAGINATION_ROW_CLASSNAME,
   PAGINATED_DATA_GRID_SCROLL_ORIENTATION,
 } from '@/components/data-grid/dataGridSharedLayout';
+import { dataGridCoreRowModel } from '@/components/data-grid/dataGridTableModels';
 import type { SortingState } from '@tanstack/react-table';
 
 export const CardBalancesGrid = ({
@@ -44,7 +44,7 @@ export const CardBalancesGrid = ({
     state: { sorting, pagination },
     onSortingChange: setSorting,
     onPaginationChange: setPagination,
-    getCoreRowModel: getCoreRowModel(),
+    getCoreRowModel: dataGridCoreRowModel,
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
   });

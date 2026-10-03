@@ -52,7 +52,7 @@ import {
   DataGridTableViewport,
 } from '@/components/reui/data-grid/data-grid-table';
 import { useDataGrid } from '@/components/reui/data-grid/data-grid';
-import { getDataGridSkeletonRowCount } from '@/components/reui/data-grid/data-grid-table-shared';
+import { resolveDataGridSkeletonRowCount } from '@/components/reui/data-grid/data-grid-table-shared';
 
 // Context to share sortable listeners from row to handle
 type SortableContextValue = ReturnType<typeof useSortable>;
@@ -149,9 +149,10 @@ function DataGridTableDndRows<TData>({
 }) {
   const { table, isLoading, props, recordCount } = useDataGrid();
   const pagination = table.getState().pagination;
-  const skeletonRowCount =
-    pagination?.pageSize &&
-    getDataGridSkeletonRowCount(pagination.pageSize, recordCount);
+  const skeletonRowCount = resolveDataGridSkeletonRowCount(
+    pagination?.pageSize,
+    recordCount
+  );
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [isDraggingRow, setIsDraggingRow] = useState(false);
 

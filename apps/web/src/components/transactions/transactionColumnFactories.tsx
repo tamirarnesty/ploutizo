@@ -9,6 +9,7 @@ import { DataGridColumnHeader } from '@ploutizo/ui/components/reui/data-grid/dat
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import type { TransactionRow } from '@ploutizo/validators';
 import { RightAlignedColumnHeader } from '@/components/dashboard/card-balances/RightAlignedColumnHeader';
+import { columnHeaderIcon } from '@/components/data-grid/columnHeaderIcon';
 import {
   TransactionAccountCell,
   TransactionAmountCell,
@@ -24,12 +25,8 @@ export type TransactionColumnSortOptions = {
 
 export type TransactionDescriptionColumnOptions =
   TransactionColumnSortOptions & {
-    onOpenOriginal: (id: string) => void;
+    onOpenOriginal?: (id: string) => void;
   };
-
-const columnHeaderIcon = (Icon: typeof CalendarDays) => (
-  <Icon aria-hidden="true" />
-);
 
 export const createTransactionDateColumn = ({
   enableSorting,
@@ -149,15 +146,38 @@ export const createTransactionAmountColumn = ({
   cell: ({ row }) => <TransactionAmountCell row={row.original} />,
 });
 
-export const buildRecentTransactionColumns = (
-  onOpenOriginal: (id: string) => void
-): ColumnDef<TransactionRow>[] => {
-  const sortOff = { enableSorting: false };
-  return [
-    createTransactionDateColumn(sortOff),
-    createTransactionDescriptionColumn({ ...sortOff, onOpenOriginal }),
-    createTransactionCategoryColumn(sortOff),
-    createTransactionAccountColumn(sortOff),
-    createTransactionAmountColumn(sortOff),
-  ];
+export type CoreTransactionColumnOptions = {
+  date: TransactionColumnSortOptions;
+  description: TransactionDescriptionColumnOptions;
+  category: TransactionColumnSortOptions;
+  account: TransactionColumnSortOptions;
+  amount: TransactionColumnSortOptions;
 };
+
+export const createCoreTransactionColumnDefs = (
+  options: CoreTransactionColumnOptions
+) => ({
+  date: createTransactionDateColumn(options.date),
+  description: createTransactionDescriptionColumn(options.description),
+  category: createTransactionCategoryColumn(options.category),
+  account: createTransactionAccountColumn(options.account),
+  amount: createTransactionAmountColumn(options.amount),
+});
+
+const recentTransactionSortOff = { enableSorting: false };
+
+const recentTransactionCoreColumns = createCoreTransactionColumnDefs({
+  date: recentTransactionSortOff,
+  description: recentTransactionSortOff,
+  category: recentTransactionSortOff,
+  account: recentTransactionSortOff,
+  amount: recentTransactionSortOff,
+});
+
+export const RECENT_TRANSACTION_COLUMNS: ColumnDef<TransactionRow>[] = [
+  recentTransactionCoreColumns.date,
+  recentTransactionCoreColumns.description,
+  recentTransactionCoreColumns.category,
+  recentTransactionCoreColumns.account,
+  recentTransactionCoreColumns.amount,
+];
