@@ -1050,6 +1050,23 @@ export interface Filter<T = unknown> {
   values: T[];
 }
 
+export const getDefaultFilterOperator = <T = unknown,>(
+  field: FilterFieldConfig<T>
+): string =>
+  field.defaultOperator || (field.type === 'multiselect' ? 'is_any_of' : 'is');
+
+export const createPinnedFilterId = (fieldKey: string): string =>
+  `filter-${fieldKey}`;
+
+export const isFilterValueActive = <T = unknown,>(
+  filter: Filter<T>
+): boolean => {
+  if (filter.operator === 'empty' || filter.operator === 'not_empty') {
+    return true;
+  }
+  return filter.values.some((value) => String(value ?? '').trim().length > 0);
+};
+
 export interface FilterGroup<T = unknown> {
   id: string;
   label?: string;
@@ -1159,6 +1176,9 @@ interface FiltersProps<T = unknown> {
   collapseAddButton?: boolean;
   enableShortcut?: boolean;
   shortcutKey?: Hotkey;
+  /** Always-visible filter controls; excluded from the add-filter menu and trailing chip list. */
+  pinnedFieldKeys?: string[];
+  getPinnedFilterId?: (fieldKey: string) => string;
 }
 
 interface FilterSubmenuContentProps<T = unknown> {
@@ -1399,6 +1419,8 @@ export function Filters<T = unknown>({
   menuPopupClassName,
   enableShortcut = false,
   shortcutKey = 'F',
+  pinnedFieldKeys = [],
+  getPinnedFilterId = createPinnedFilterId,
 }: FiltersProps<T>) {
   const [addFilterOpen, setAddFilterOpen] = useState(false);
   const [menuSearchInput, setMenuSearchInput] = useState('');
@@ -1471,6 +1493,47 @@ export function Filters<T = unknown>({
   };
 
   const fieldsMap = useMemo(() => getFieldsMap(fields), [fields]);
+  const pinnedFieldKeySet = useMemo(
+    () => new Set(pinnedFieldKeys),
+    [pinnedFieldKeys]
+  );
+
+  const resolvePinnedFilter = useCallback(
+    (fieldKey: string): Filter<T> | null => {
+      const field = fieldsMap[fieldKey];
+      if (!field) return null;
+      const existing = filters.find((filter) => filter.field === fieldKey);
+      if (existing) return existing;
+      return {
+        id: getPinnedFilterId(fieldKey),
+        field: fieldKey,
+        operator: getDefaultFilterOperator(field),
+        values: [] as T[],
+      };
+    },
+    [fieldsMap, filters, getPinnedFilterId]
+  );
+
+  const resetPinnedFilter = useCallback(
+    (fieldKey: string) => {
+      const field = fieldsMap[fieldKey];
+      if (!field) return;
+      const emptyFilter: Filter<T> = {
+        id: getPinnedFilterId(fieldKey),
+        field: fieldKey,
+        operator: getDefaultFilterOperator(field),
+        values: [] as T[],
+      };
+      const hasPinned = filters.some((filter) => filter.field === fieldKey);
+      if (!hasPinned) return;
+      onChange(
+        filters.map((filter) =>
+          filter.field === fieldKey ? emptyFilter : filter
+        )
+      );
+    },
+    [fieldsMap, filters, getPinnedFilterId, onChange]
+  );
 
   const updateFilter = useCallback(
     (filterId: string, updates: Partial<Filter<T>>) => {
@@ -1532,10 +1595,11 @@ export function Filters<T = unknown>({
     const flatFields = flattenFields(fields);
     return flatFields.filter((field) => {
       if (!field.key || field.type === 'separator') return false;
+      if (pinnedFieldKeySet.has(field.key)) return false;
       if (allowMultiple) return true;
       return !filters.some((filter) => filter.field === field.key);
     });
-  }, [fields, filters, allowMultiple]);
+  }, [fields, filters, allowMultiple, pinnedFieldKeySet]);
 
   const filteredFields = useMemo(() => {
     return selectableFields.filter(
@@ -1556,6 +1620,46 @@ export function Filters<T = unknown>({
     defaultTagName: 'button',
   });
 
+  const trailingFilters = useMemo(
+    () => filters.filter((filter) => !pinnedFieldKeySet.has(filter.field)),
+    [filters, pinnedFieldKeySet]
+  );
+
+  const renderFilterChip = (filter: Filter<T>, pinned: boolean) => {
+    const field = fieldsMap[filter.field];
+    if (!field) return null;
+    const showRemove = pinned ? isFilterValueActive(filter) : true;
+
+    return (
+      <ButtonGroup key={filter.id}>
+        <ButtonGroupText className="bg-background dark:bg-input/30">
+          {field.icon && field.icon}
+          {field.label}
+        </ButtonGroupText>
+        <FilterOperatorDropdown<T>
+          field={field}
+          operator={filter.operator}
+          values={filter.values}
+          onChange={(operator) => updateFilter(filter.id, { operator })}
+        />
+        <FilterValueSelector<T>
+          field={field}
+          values={filter.values}
+          operator={filter.operator}
+          onChange={(values) => updateFilter(filter.id, { values })}
+          autoFocus={filter.id === lastAddedFilterId}
+        />
+        {showRemove && (
+          <FilterRemoveButton
+            onClick={() =>
+              pinned ? resetPinnedFilter(filter.field) : removeFilter(filter.id)
+            }
+          />
+        )}
+      </ButtonGroup>
+    );
+  };
+
   return (
     <FilterContext.Provider
       value={{
@@ -1571,6 +1675,12 @@ export function Filters<T = unknown>({
       <div
         className={cn(filtersContainerVariants({ variant, size }), className)}
       >
+        {pinnedFieldKeys.map((fieldKey) => {
+          const filter = resolvePinnedFilter(fieldKey);
+          if (!filter) return null;
+          return renderFilterChip(filter, true);
+        })}
+
         {selectableFields.length > 0 && (
           <DropdownMenu
             open={addFilterOpen}
@@ -1852,32 +1962,7 @@ export function Filters<T = unknown>({
           </DropdownMenu>
         )}
 
-        {filters.map((filter) => {
-          const field = fieldsMap[filter.field];
-          if (!field) return null;
-          return (
-            <ButtonGroup key={filter.id}>
-              <ButtonGroupText className="bg-background dark:bg-input/30">
-                {field.icon && field.icon}
-                {field.label}
-              </ButtonGroupText>
-              <FilterOperatorDropdown<T>
-                field={field}
-                operator={filter.operator}
-                values={filter.values}
-                onChange={(operator) => updateFilter(filter.id, { operator })}
-              />
-              <FilterValueSelector<T>
-                field={field}
-                values={filter.values}
-                operator={filter.operator}
-                onChange={(values) => updateFilter(filter.id, { values })}
-                autoFocus={filter.id === lastAddedFilterId}
-              />
-              <FilterRemoveButton onClick={() => removeFilter(filter.id)} />
-            </ButtonGroup>
-          );
-        })}
+        {trailingFilters.map((filter) => renderFilterChip(filter, false))}
       </div>
     </FilterContext.Provider>
   );

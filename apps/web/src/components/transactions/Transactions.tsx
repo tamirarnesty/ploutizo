@@ -16,6 +16,12 @@ import { TransactionsTable } from './TransactionsTable';
 import { TransactionSheet } from './TransactionSheet';
 import { buildFilterFields } from './TransactionFilterFields';
 import { buildTransactionQueryParams } from './transactionSearch';
+import {
+  TRANSACTION_PINNED_FILTER_FIELD_KEYS,
+  activeTransactionFiltersForSearch,
+  transactionPinnedFilterId,
+  withPinnedTransactionFilters,
+} from './transactionPinnedFilters';
 import type { TransactionSearch } from './transactionSearch';
 
 // Strips URL params that match their defaults to keep the URL clean (D-04)
@@ -297,7 +303,7 @@ export const Transactions = () => {
   const [selectedTx, setSelectedTx] = useState<TransactionRow | null>(null);
 
   const [activeFilters, setActiveFilters] = useState<Filter<string>[]>(() =>
-    searchToFilters(search)
+    withPinnedTransactionFilters(searchToFilters(search))
   );
 
   // When URL-encoded filter values change externally (e.g. browser back/forward,
@@ -332,7 +338,7 @@ export const Transactions = () => {
 
     // Re-derive from URL including operators (operators now persist in URL)
     const fromUrl = searchToFilters(search);
-    setActiveFilters(fromUrl);
+    setActiveFilters(withPinnedTransactionFilters(fromUrl));
   }, [search]);
 
   // Build FilterFieldConfig for the Filters component (6 fields per D-28).
@@ -350,8 +356,11 @@ export const Transactions = () => {
       // Update local state immediately so operators aren't snapped back by
       // the URL-sync effect. The effect only overwrites values, not operators,
       // but updating local state first prevents any intermediate flicker.
-      setActiveFilters(filters);
-      const mapped = filtersToSearch(filters);
+      const nextFilters = withPinnedTransactionFilters(filters);
+      setActiveFilters(nextFilters);
+      const mapped = filtersToSearch(
+        activeTransactionFiltersForSearch(nextFilters)
+      );
       void navigate({
         to: '/transactions',
         // Rebuild from scratch — only keep sort/pagination from prev.
@@ -409,7 +418,7 @@ export const Transactions = () => {
   );
 
   const handleClearFilters = useCallback(() => {
-    setActiveFilters([]);
+    setActiveFilters(withPinnedTransactionFilters([]));
     void navigate({
       to: '/transactions',
       search: () => buildCleanSearch({}),
@@ -460,6 +469,8 @@ export const Transactions = () => {
         filters={activeFilters}
         fields={filterFields}
         onChange={handleFiltersChange}
+        pinnedFieldKeys={[...TRANSACTION_PINNED_FILTER_FIELD_KEYS]}
+        getPinnedFilterId={transactionPinnedFilterId}
         trigger={
           <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs">
             <ListFilterIcon className="size-3.5" />
