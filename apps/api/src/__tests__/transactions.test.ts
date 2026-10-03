@@ -149,6 +149,7 @@ vi.mock('../services/transactions', () => ({
     total: 0,
     page: 1,
     limit: 50,
+    amountSum: 0,
   }),
   getTransaction: vi.fn().mockResolvedValue({
     id: 'txn_1',
@@ -393,6 +394,26 @@ describe('GET /api/transactions', () => {
       | ListQueryParams
       | undefined;
     expect(callArgs?.description).toBeUndefined();
+  });
+
+  it('TXN-LIST-SEARCH-01: GET /?search=groceries — passes trimmed search to listTransactions', async () => {
+    vi.mocked(listTransactions).mockClear();
+    const res = await app.request('/?search=groceries');
+    expect(res.status).toBe(200);
+    const callArgs = vi.mocked(listTransactions).mock.calls[0]?.[0] as
+      | ListQueryParams
+      | undefined;
+    expect(callArgs?.search).toBe('groceries');
+  });
+
+  it('TXN-LIST-SEARCH-02: GET /?search=   — search is undefined when blank', async () => {
+    vi.mocked(listTransactions).mockClear();
+    const res = await app.request('/?search=%20%20');
+    expect(res.status).toBe(200);
+    const callArgs = vi.mocked(listTransactions).mock.calls[0]?.[0] as
+      | ListQueryParams
+      | undefined;
+    expect(callArgs?.search).toBeUndefined();
   });
 
   it('passes created/matched import provenance filters to listTransactions', async () => {
