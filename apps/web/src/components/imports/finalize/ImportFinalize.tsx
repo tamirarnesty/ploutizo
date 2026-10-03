@@ -31,12 +31,14 @@ import {
   toImportDraftMeta,
   useFinalizeImportDraft,
   useGetImportDraft,
+  useImportDiscardInProgressDraft,
 } from '@/lib/data-access/imports';
 import {
   importDraftReviewPathname,
   importDraftReviewRoute,
 } from '@/lib/navigation';
 import { formatTransactionDate } from '@/components/transactions/transactionRowDisplay';
+import { ImportDiscardDraftAction } from '../lib/ImportDiscardDraftAction';
 
 interface ImportFinalizeProps {
   draftId: string;
@@ -129,15 +131,23 @@ const ImportFinalizePreviewRowsTable = ({
 export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
   const navigate = useNavigate();
   const handleFinalizeRef = useRef<() => Promise<void>>(async () => {});
+  const leavingRef = useRef(false);
   const finalizeImport = useFinalizeImportDraft(draftId, {
     onUncertainFailureRetry: () => {
       void handleFinalizeRef.current();
     },
   });
+  const { discard, discardingThisDraft } = useImportDiscardInProgressDraft(
+    draftId,
+    {
+      onDiscardSuccess: () => {
+        leavingRef.current = true;
+      },
+    }
+  );
   const draftQuery = useGetImportDraft(draftId, {
     enabled: !finalizeImport.isPending && !finalizeImport.isSuccess,
   });
-  const leavingRef = useRef(false);
   const session = getImportFinalizePreviewSession(draftId);
   const preview = session?.preview;
   const rowIds = session?.rowIds ?? [];
@@ -188,7 +198,14 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
   });
 
   const handleFinalize = useCallback(async () => {
-    if (!preview || rowIds.length === 0 || finalizeImport.isPending) return;
+    if (
+      !preview ||
+      rowIds.length === 0 ||
+      finalizeImport.isPending ||
+      discardingThisDraft
+    ) {
+      return;
+    }
     try {
       await finalizeImport.mutateAsync({
         rowIds,
@@ -205,7 +222,14 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
         leaveToImportHub();
       }
     }
-  }, [finalizeImport, leaveToImportHub, preview, returnToReview, rowIds]);
+  }, [
+    discardingThisDraft,
+    finalizeImport,
+    leaveToImportHub,
+    preview,
+    returnToReview,
+    rowIds,
+  ]);
 
   handleFinalizeRef.current = handleFinalize;
 
@@ -236,10 +260,15 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
           </div>
           <div className="flex flex-col items-end gap-2">
             <div className="flex flex-wrap justify-end gap-2">
+              <ImportDiscardDraftAction
+                discardingThisDraft={discardingThisDraft}
+                disabled={finalizeBusy}
+                onDiscard={discard}
+              />
               <Button
                 type="button"
                 variant="outline"
-                disabled={finalizeBusy}
+                disabled={finalizeBusy || discardingThisDraft}
                 onClick={() => {
                   backToReview();
                 }}
@@ -250,7 +279,7 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
                 type="button"
                 loading={finalizeBusy}
                 loadingText="Finalizing…"
-                disabled={!preview}
+                disabled={!preview || discardingThisDraft}
                 onClick={() => {
                   void handleFinalize();
                 }}

@@ -40,6 +40,15 @@ vi.mock('@/lib/data-access/imports/useFinalizeImportDraft', () => ({
   useFinalizeImportDraft: () => finalizeMocks.finalize,
 }));
 
+const discardMocks = vi.hoisted(() => ({
+  discard: vi.fn(),
+  discardingThisDraft: false,
+}));
+
+vi.mock('@/lib/data-access/imports/useImportDiscardInProgressDraft', () => ({
+  useImportDiscardInProgressDraft: () => discardMocks,
+}));
+
 const snapshot = {
   reviewedValues: {
     date: '2026-05-02',
@@ -135,6 +144,16 @@ describe('ImportFinalize', () => {
     finalizeMocks.finalize.mutateAsync.mockResolvedValue(completedResult);
     finalizeMocks.finalize.isPending = false;
     finalizeMocks.finalize.isSuccess = false;
+  });
+
+  it('offers discard with the same confirmation as the import hub', async () => {
+    const user = userEvent.setup();
+    render(<ImportFinalize draftId="draft_1" />);
+
+    await user.click(screen.getByRole('button', { name: 'Discard' }));
+    expect(discardMocks.discard).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Discard draft' }));
+    expect(discardMocks.discard).toHaveBeenCalledTimes(1);
   });
 
   it('renders a read-only confirmation with reconciling counts', () => {

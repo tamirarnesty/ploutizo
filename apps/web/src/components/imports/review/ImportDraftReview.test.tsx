@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { resetRouterMocks } from '@/test/mockTanstackRouter';
 import {
   makeImportDraft,
   makeImportDraftRow,
 } from '../test-fixtures/importDraft';
 import {
+  ReviewTestProviders,
   getRowExpandButtons,
   importDraftReviewTestControls,
   renderLoadingReview,
@@ -267,7 +267,7 @@ describe('ImportDraftReview', () => {
     }
 
     render(
-      <TooltipProvider delay={0}>
+      <ReviewTestProviders>
         <ImportDraftReview
           meta={meta}
           rows={rows}
@@ -279,7 +279,7 @@ describe('ImportDraftReview', () => {
           ]}
           {...reviewSessionProps}
         />
-      </TooltipProvider>
+      </ReviewTestProviders>
     );
 
     expect(reviewToast.error).toHaveBeenCalledWith('Category is required.');

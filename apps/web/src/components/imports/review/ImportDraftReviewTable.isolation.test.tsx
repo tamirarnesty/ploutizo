@@ -1,6 +1,6 @@
 import '@/lib/access/working-set-cleanup';
 import { useEffect, useState } from 'react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -11,6 +11,7 @@ import {
   endImportDraftRowsCollections,
   getImportDraftRowsCollection,
 } from '@/lib/data-access/imports/getImportDraftRowsCollection';
+import { endImportDraftReviewRuntime } from '@/lib/data-access/imports/releaseImportDraftReviewRuntime';
 import { importDraftQueryKey } from '@/lib/data-access/imports/queryKeys';
 import { rederiveImportDraftWorkingCopy } from '@/lib/data-access/imports/rederiveImportDraftWorkingCopy';
 import { setImportDraftSelection } from '@/lib/data-access/imports/setImportDraftSelection';
@@ -226,6 +227,11 @@ describe('ImportDraftReviewTable row isolation', () => {
   });
 
   afterEach(async () => {
+    cleanup();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    endImportDraftReviewRuntime();
     await endImportDraftRowsCollections();
     getActiveQueryClient().clear();
   });

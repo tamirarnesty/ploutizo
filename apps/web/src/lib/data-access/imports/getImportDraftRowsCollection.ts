@@ -31,6 +31,29 @@ type ImportDraftRowsCollection = ReturnType<
 >;
 
 const importDraftRowsCollections = new Map<string, ImportDraftRowsCollection>();
+const pendingIdleCleanups = new Map<string, Promise<void>>();
+
+const waitForRowsCollectionSubscribersToClear = (
+  collection: ImportDraftRowsCollection
+) =>
+  new Promise<void>((resolve) => {
+    if (collection.subscriberCount === 0) {
+      resolve();
+      return;
+    }
+
+    const onSubscribersChange = () => {
+      if (collection.subscriberCount > 0) return;
+      collection.off('subscribers:change', onSubscribersChange);
+      resolve();
+    };
+
+    collection.on('subscribers:change', onSubscribersChange);
+    if (collection.subscriberCount === 0) {
+      collection.off('subscribers:change', onSubscribersChange);
+      resolve();
+    }
+  });
 
 export const getImportDraftRowsCollection = (
   draftId: string
@@ -45,10 +68,18 @@ export const getImportDraftRowsCollection = (
 
 /**
  * Drop a draft's working copy after discard, finalize, or in tests.
- * Hub ↔ review and review ↔ finalize keep the collection warm; only call
- * while no useLiveQuery still reads this collection (not on route transitions).
+ * Hub ↔ review and review ↔ finalize keep the collection warm.
+ *
+ * Live queries keep this collection subscribed until they unsubscribe.
+ * cleanup() while that count is above zero is a manual teardown and logs a
+ * Live Query error, so cleanup waits for subscribers:change to reach zero.
+ * That wait must not block the caller: discard navigates only after release
+ * returns, and navigation is what unmounts the queries.
  */
 export const releaseImportDraftRowsCollection = async (draftId: string) => {
+  const inflight = pendingIdleCleanups.get(draftId);
+  if (inflight) return inflight;
+
   const collection = importDraftRowsCollections.get(draftId);
   if (!collection) {
     getActiveQueryClient().removeQueries({
@@ -57,11 +88,33 @@ export const releaseImportDraftRowsCollection = async (draftId: string) => {
     return;
   }
   importDraftRowsCollections.delete(draftId);
-  await collection.cleanup();
+
+  const subscribersAtRelease = collection.subscriberCount;
+  const releasePromise = (async () => {
+    if (collection.subscriberCount > 0) {
+      await waitForRowsCollectionSubscribersToClear(collection);
+    }
+    await collection.cleanup();
+  })().finally(() => {
+    pendingIdleCleanups.delete(draftId);
+  });
+  pendingIdleCleanups.set(draftId, releasePromise);
+
+  if (subscribersAtRelease > 0) return releasePromise;
+
+  await releasePromise;
+};
+
+const awaitPendingImportDraftRowsCollectionReleases = async () => {
+  while (pendingIdleCleanups.size > 0) {
+    const pending = [...pendingIdleCleanups.values()];
+    await Promise.all(pending);
+  }
 };
 
 export const endImportDraftRowsCollections = async () => {
   await Promise.all(
     [...importDraftRowsCollections.keys()].map(releaseImportDraftRowsCollection)
   );
+  await awaitPendingImportDraftRowsCollectionReleases();
 };

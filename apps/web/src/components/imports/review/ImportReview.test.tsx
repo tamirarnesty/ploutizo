@@ -65,6 +65,14 @@ vi.mock('@/lib/data-access/imports/useContinueImportDraft', () => ({
   }),
 }));
 
+vi.mock('@/lib/data-access/imports/useImportDiscardInProgressDraft', () => ({
+  useImportDiscardInProgressDraft: () => ({
+    discard: vi.fn(),
+    isDiscarding: false,
+    discardingThisDraft: false,
+  }),
+}));
+
 vi.mock('@/lib/data-access/categories', () => ({
   useGetCategories: () => ({
     data: [{ id: 'cat_1', name: 'Dining' }],

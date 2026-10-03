@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useIsMutating } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { Inbox } from 'lucide-react';
 import { toast } from '@ploutizo/ui/components/sonner';
@@ -29,8 +30,10 @@ import {
   IMPORT_REVIEW_CONTINUE_SUPERSEDED_MESSAGE,
   resolveImportContinueRowIds,
   resolveImportContinueRows,
+  useImportDiscardInProgressDraft,
 } from '@/lib/data-access/imports';
 import { setImportFinalizePreviewSession } from '@/lib/data-access/imports/importFinalizePreviewSession';
+import { importFinalizeMutationKey } from '@/lib/data-access/imports/queryKeys';
 import { useContinueImportDraft } from '@/lib/data-access/imports/useContinueImportDraft';
 import { useGetAccounts } from '@/lib/data-access/accounts';
 import { importDraftFinalizeRoute } from '@/lib/navigation';
@@ -132,6 +135,12 @@ const ImportDraftReviewContent = ({
   const draftId = meta?.id ?? '';
   const flushPendingInputs = useFlushPendingInputs();
   const { continueImport, isPending } = useContinueImportDraft(draftId);
+  const finalizing =
+    useIsMutating({
+      mutationKey: importFinalizeMutationKey(draftId || '__none__'),
+    }) > 0 && draftId.length > 0;
+  const { discard, discardingThisDraft } =
+    useImportDiscardInProgressDraft(draftId);
 
   useEffect(() => {
     if (inboundIssues.length === 0) return;
@@ -147,7 +156,7 @@ const ImportDraftReviewContent = ({
   const focusRowId = priorityRowIds[0] ?? null;
 
   const handleContinue = useCallback(async () => {
-    if (!draftId) return;
+    if (!draftId || discardingThisDraft) return;
     flushPendingInputs();
     const ok = await flush();
     if (!ok) return;
@@ -177,7 +186,15 @@ const ImportDraftReviewContent = ({
         toast.error(getImportContinueGateMessage(error));
       }
     }
-  }, [draftId, flush, flushPendingInputs, continueImport, navigate, rows]);
+  }, [
+    discardingThisDraft,
+    draftId,
+    flush,
+    flushPendingInputs,
+    continueImport,
+    navigate,
+    rows,
+  ]);
 
   const showEmptyState = !isLoading && meta && !hasReviewableRows;
 
@@ -189,6 +206,16 @@ const ImportDraftReviewContent = ({
         isLoading={isLoading}
         isContinuing={isPending}
         onContinue={handleContinue}
+        discard={
+          meta
+            ? {
+                onDiscard: discard,
+                discardingThisDraft,
+                disabled: finalizing || isPending,
+              }
+            : undefined
+        }
+        discardInProgress={discardingThisDraft}
       />
 
       <ImportRequirementIssueList

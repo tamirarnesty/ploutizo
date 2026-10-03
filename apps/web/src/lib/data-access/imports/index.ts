@@ -75,3 +75,4 @@ export * from './useGetImportDraft';
 export * from './useGetImportHistory';
 export * from './useCreateImportDraft';
 export * from './useDiscardImportDraft';
+export * from './useImportDiscardInProgressDraft';
