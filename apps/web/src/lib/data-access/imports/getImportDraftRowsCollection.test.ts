@@ -45,6 +45,23 @@ describe('getImportDraftRowsCollection', () => {
     expect(getImportDraftRowsCollection(draft.id)).toBe(next);
   });
 
+  it('defers cleanup until live-query subscribers unsubscribe', async () => {
+    const collection = getImportDraftRowsCollection(draft.id);
+    const subscription = collection.subscribeChanges(() => undefined, {
+      includeInitialState: false,
+    });
+
+    const release = releaseImportDraftRowsCollection(draft.id);
+    await Promise.resolve();
+    expect(collection.status).not.toBe('cleaned-up');
+
+    subscription.unsubscribe();
+    await vi.waitFor(() => {
+      expect(collection.status).toBe('cleaned-up');
+    });
+    await release;
+  });
+
   it('removes cached draft query data when no collection exists', async () => {
     const queryClient = getActiveQueryClient();
     expect(queryClient.getQueryData(importDraftQueryKey(draft.id))).toEqual(
