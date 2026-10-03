@@ -11,7 +11,7 @@ import { fetchFinalizeImportDraft } from '@/lib/data-access/imports/fetchFinaliz
 import { ImportDraftCard } from './ImportDraftCard';
 import type { ComponentProps } from 'react';
 
-vi.mock('@/lib/access/AccessProvider', async () => {
+vi.mock('@/lib/access/access-context', async () => {
   const { householdAccessProviderMock } =
     await import('@/test/householdAccessMock');
   return householdAccessProviderMock;

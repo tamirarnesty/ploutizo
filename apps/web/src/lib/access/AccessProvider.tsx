@@ -1,14 +1,13 @@
 import './working-set-cleanup';
 import { useAuth } from '@clerk/tanstack-react-start';
 import {
-  createContext,
   useCallback,
-  useContext,
   useLayoutEffect,
   useMemo,
   useState,
   useSyncExternalStore,
 } from 'react';
+import { AccessContext } from './access-context';
 import { accessKey } from './access-key';
 import { toAccessState } from './access-state';
 import {
@@ -17,31 +16,7 @@ import {
 } from './working-set-registry';
 import { publishAccessRouterContext } from './access-router-context-store';
 import { useAccessSnapshotLifecycle } from './use-access-snapshot-lifecycle';
-import type { AccessState } from './access-state';
-import type { QueryClient } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-
-export type AccessSnapshot = {
-  access: AccessState;
-  identityLoaded: boolean;
-  isReady: boolean;
-  queryClient: QueryClient;
-};
-
-export type AccessContextValue = AccessSnapshot & {
-  bearerError: boolean;
-  retryBearer: () => void;
-};
-
-const AccessContext = createContext<AccessContextValue | null>(null);
-
-export const useAccess = (): AccessContextValue => {
-  const context = useContext(AccessContext);
-  if (!context) {
-    throw new Error('useAccess must be used within AccessProvider');
-  }
-  return context;
-};
 
 export const AccessProvider = ({ children }: { children: ReactNode }) => {
   const { isLoaded, isSignedIn, userId, orgId, getToken } = useAuth();

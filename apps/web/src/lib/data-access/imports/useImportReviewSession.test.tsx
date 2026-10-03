@@ -28,7 +28,7 @@ import { fetchImportDraft } from './useGetImportDraft';
 import { useImportReviewSession } from './useImportReviewSession';
 import type * as useGetImportDraftModule from './useGetImportDraft';
 
-vi.mock('@/lib/access/AccessProvider', async () => {
+vi.mock('@/lib/access/access-context', async () => {
   const { householdAccessProviderMock } =
     await import('@/test/householdAccessMock');
   return householdAccessProviderMock;

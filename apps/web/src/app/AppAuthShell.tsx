@@ -1,7 +1,8 @@
 import { ClerkProvider } from '@clerk/tanstack-react-start';
 import { shadcn } from '@clerk/ui/themes';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { AccessProvider, useAccess } from '@/lib/access/AccessProvider';
+import { useAccess } from '@/lib/access/access-context';
+import { AccessProvider } from '@/lib/access/AccessProvider';
 import { useAccessRouterInvalidation } from '@/lib/access/use-access-router-invalidation';
 import { MoneyLocaleProvider } from '@/lib/money/money-locale';
 import type { ComponentProps, ReactNode } from 'react';

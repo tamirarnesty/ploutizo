@@ -63,7 +63,7 @@ vi.mock('@ploutizo/ui/components/sonner', () => ({
   toast: { error: toastMocks.error },
 }));
 
-vi.mock('@/lib/access/AccessProvider', async () => {
+vi.mock('@/lib/access/access-context', async () => {
   const { householdAccessProviderMock } =
     await import('@/test/householdAccessMock');
   return householdAccessProviderMock;

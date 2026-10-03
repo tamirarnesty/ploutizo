@@ -6,5 +6,6 @@ export type {
   AccessState,
 } from './access-state';
 export { BearerReadinessBoundary } from './BearerReadinessBoundary';
-export { AccessProvider, useAccess } from './AccessProvider';
-export type { AccessContextValue, AccessSnapshot } from './AccessProvider';
+export { AccessProvider } from './AccessProvider';
+export { useAccess } from './access-context';
+export type { AccessContextValue, AccessSnapshot } from './access-context';
