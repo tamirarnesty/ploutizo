@@ -31,6 +31,12 @@ describe('validateTransactionSearch', () => {
     expect(validateTransactionSearch({ page: 1.5 })).toEqual({});
   });
 
+  it('preserves filter-row search query', () => {
+    expect(validateTransactionSearch({ search: 'groceries' })).toEqual({
+      search: 'groceries',
+    });
+  });
+
   it('preserves filter and operator params', () => {
     expect(
       validateTransactionSearch({
@@ -113,6 +119,7 @@ describe('buildTransactionQueryParams', () => {
       tagIds_op: undefined,
       dateRange_op: undefined,
       importLink: undefined,
+      search: undefined,
     });
 
     expect(
@@ -146,6 +153,19 @@ describe('buildTransactionQueryParams', () => {
       tagIds_op: undefined,
       dateRange_op: undefined,
       importLink: { batchId: 'batch_1', outcome: 'matched' },
+      search: undefined,
     });
+  });
+
+  it('forwards search to the list API query params', () => {
+    expect(
+      buildTransactionQueryParams({ search: 'groceries' }, 25).search
+    ).toBe('groceries');
+  });
+
+  it('trims search before sending to the API', () => {
+    expect(
+      buildTransactionQueryParams({ search: '  groceries  ' }, 25).search
+    ).toBe('groceries');
   });
 });

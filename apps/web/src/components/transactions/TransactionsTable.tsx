@@ -26,11 +26,14 @@ import { getTransactionRowActions } from './transactionRowActions';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import { TransactionsTableEmpty } from './TransactionTableEmpty';
 import { TransactionsTableEmptyFiltered } from './TransactionTableEmptyFiltered';
+import { buildTransactionsAmountFooter } from './transactionsTableAmountFooter';
 import type { TransactionSearch } from './transactionSearch';
 
 interface TransactionsTableProps {
   transactions: TransactionRow[];
   total: number;
+  /** Signed cents for rows on the loaded page; omit while the list response is missing. */
+  pageAmountSumCents?: number;
   isLoading: boolean;
   page: number;
   limit: number;
@@ -48,6 +51,7 @@ interface TransactionsTableProps {
 export const TransactionsTable = ({
   transactions,
   total,
+  pageAmountSumCents,
   isLoading,
   page,
   limit,
@@ -147,6 +151,14 @@ export const TransactionsTable = ({
     },
   });
 
+  const footerContent = useMemo(
+    () =>
+      pageAmountSumCents === undefined
+        ? null
+        : buildTransactionsAmountFooter(table, pageAmountSumCents),
+    [table, pageAmountSumCents]
+  );
+
   // Empty states (D-24, D-25) — rendered before DataGrid
   if (!isLoading && transactions.length === 0) {
     if (onFilteredEmpty) {
@@ -183,10 +195,14 @@ export const TransactionsTable = ({
             <DataGridScrollArea
               orientation={PAGINATED_DATA_GRID_SCROLL_ORIENTATION}
             >
-              <DataGridTable />
+              <DataGridTable footerContent={footerContent} />
             </DataGridScrollArea>
           </DataGridContainer>
-          <DataGridPagination className={DATA_GRID_PAGINATION_ROW_CLASSNAME} />
+          {total > 0 ? (
+            <DataGridPagination
+              className={DATA_GRID_PAGINATION_ROW_CLASSNAME}
+            />
+          ) : null}
         </div>
       </DataGrid>
     </>
