@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Button } from '@/components/button';
 import {
@@ -95,5 +95,34 @@ describe('Filters pinnedFieldKeys', () => {
     );
 
     expect(screen.getAllByText('Type')).toHaveLength(1);
+  });
+
+  it('upserts a pinned filter row on first value change when filters are empty', () => {
+    const onChange = vi.fn();
+    render(
+      <Filters
+        filters={[]}
+        fields={fields}
+        onChange={onChange}
+        pinnedFieldKeys={['type']}
+        trigger={
+          <Button variant="outline" size="sm">
+            Filters
+          </Button>
+        }
+      />
+    );
+
+    fireEvent.click(screen.getByText('Select...'));
+    fireEvent.click(screen.getByText('Expense'));
+
+    expect(onChange).toHaveBeenCalledWith([
+      {
+        id: 'filter-type',
+        field: 'type',
+        operator: 'is',
+        values: ['expense'],
+      },
+    ]);
   });
 });

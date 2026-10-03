@@ -1176,7 +1176,11 @@ interface FiltersProps<T = unknown> {
   collapseAddButton?: boolean;
   enableShortcut?: boolean;
   shortcutKey?: Hotkey;
-  /** Always-visible filter controls; excluded from the add-filter menu and trailing chip list. */
+  /**
+   * Always-visible filter controls; excluded from the add-filter menu and trailing chip list.
+   * Callers should include a filter row per pinned key in `filters` so edits persist; the
+   * component also upserts on first edit when a pinned row is missing.
+   */
   pinnedFieldKeys?: string[];
   getPinnedFilterId?: (fieldKey: string) => string;
 }
@@ -1525,21 +1529,27 @@ export function Filters<T = unknown>({
         values: [] as T[],
       };
       const hasPinned = filters.some((filter) => filter.field === fieldKey);
-      if (!hasPinned) return;
+      if (!hasPinned) {
+        if (!pinnedFieldKeySet.has(fieldKey)) return;
+        onChange([...filters, emptyFilter]);
+        return;
+      }
       onChange(
         filters.map((filter) =>
           filter.field === fieldKey ? emptyFilter : filter
         )
       );
     },
-    [fieldsMap, filters, getPinnedFilterId, onChange]
+    [fieldsMap, filters, getPinnedFilterId, onChange, pinnedFieldKeySet]
   );
 
   const updateFilter = useCallback(
     (filterId: string, updates: Partial<Filter<T>>) => {
-      onChange(
-        filters.map((filter) => {
-          if (filter.id === filterId) {
+      const existing = filters.find((filter) => filter.id === filterId);
+      if (existing) {
+        onChange(
+          filters.map((filter) => {
+            if (filter.id !== filterId) return filter;
             const updatedFilter = { ...filter, ...updates };
             if (
               updates.operator === 'empty' ||
@@ -1548,12 +1558,32 @@ export function Filters<T = unknown>({
               updatedFilter.values = [] as T[];
             }
             return updatedFilter;
-          }
-          return filter;
-        })
+          })
+        );
+        return;
+      }
+
+      const pinnedFieldKey = pinnedFieldKeys.find(
+        (fieldKey) => getPinnedFilterId(fieldKey) === filterId
       );
+      if (!pinnedFieldKey) return;
+
+      const field = fieldsMap[pinnedFieldKey];
+      if (!field) return;
+
+      const updatedFilter: Filter<T> = {
+        id: getPinnedFilterId(pinnedFieldKey),
+        field: pinnedFieldKey,
+        operator: getDefaultFilterOperator(field),
+        values: [] as T[],
+        ...updates,
+      };
+      if (updates.operator === 'empty' || updates.operator === 'not_empty') {
+        updatedFilter.values = [] as T[];
+      }
+      onChange([...filters, updatedFilter]);
     },
-    [filters, onChange]
+    [fieldsMap, filters, getPinnedFilterId, onChange, pinnedFieldKeys]
   );
 
   const removeFilter = useCallback(
