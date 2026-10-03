@@ -36,6 +36,7 @@ import {
   dataGridBodyCellSpacingVariants,
   dataGridRowBorderClasses,
   dataGridTablePinnedBodyCellClasses,
+  resolveDataGridSkeletonRowCount,
 } from '@/components/reui/data-grid/data-grid-table-shared';
 import {
   DataGridTableFillBodyCell,
@@ -1087,23 +1088,32 @@ function DataGridTableRowSelectAll() {
 }
 
 function DataGridTableBodyRows<TData>({ table }: { table: Table<TData> }) {
-  const { isLoading, props } = useDataGrid();
+  const { isLoading, props, recordCount } = useDataGrid();
   const pagination = table.getState().pagination;
 
-  if (isLoading && props.loadingMode === 'skeleton' && pagination?.pageSize) {
-    return (
-      <>
-        {Array.from({ length: pagination.pageSize }).map((_, rowIndex) => (
-          <DataGridTableBodyRowSkeleton key={rowIndex}>
-            {table.getVisibleFlatColumns().map((column, colIndex) => (
-              <DataGridTableBodyRowSkeletonCell column={column} key={colIndex}>
-                {column.columnDef.meta?.skeleton}
-              </DataGridTableBodyRowSkeletonCell>
-            ))}
-          </DataGridTableBodyRowSkeleton>
-        ))}
-      </>
+  if (isLoading && props.loadingMode === 'skeleton') {
+    const skeletonRowCount = resolveDataGridSkeletonRowCount(
+      pagination?.pageSize,
+      recordCount
     );
+    if (skeletonRowCount !== undefined) {
+      return (
+        <>
+          {Array.from({ length: skeletonRowCount }).map((_, rowIndex) => (
+            <DataGridTableBodyRowSkeleton key={rowIndex}>
+              {table.getVisibleFlatColumns().map((column, colIndex) => (
+                <DataGridTableBodyRowSkeletonCell
+                  column={column}
+                  key={colIndex}
+                >
+                  {column.columnDef.meta?.skeleton}
+                </DataGridTableBodyRowSkeletonCell>
+              ))}
+            </DataGridTableBodyRowSkeleton>
+          ))}
+        </>
+      );
+    }
   }
 
   if (isLoading && props.loadingMode === 'spinner') {

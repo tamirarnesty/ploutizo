@@ -1,6 +1,18 @@
 import { type Ref } from 'react';
 import { cva } from 'class-variance-authority';
 
+/** Loading skeleton length. A short page draws `recordCount` rows; otherwise a full `pageSize`. No `pageSize` means the caller skips skeletons. */
+export const resolveDataGridSkeletonRowCount = (
+  pageSize: number | undefined,
+  recordCount: number
+): number | undefined => {
+  if (!pageSize) return undefined;
+  if (recordCount > 0 && recordCount < pageSize) {
+    return recordCount;
+  }
+  return pageSize;
+};
+
 export const dataGridBodyCellSpacingVariants = cva('', {
   variants: {
     size: {

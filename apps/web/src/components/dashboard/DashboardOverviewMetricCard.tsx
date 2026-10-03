@@ -10,12 +10,13 @@ import { Spinner } from '@ploutizo/ui/components/spinner';
 import { cn } from '@ploutizo/ui/lib/utils';
 import type { GetDashboardOverviewResponse } from '@ploutizo/validators';
 import { DashboardCard } from '@/components/dashboard/DashboardCard';
+import { getDashboardQueryLiveState } from '@/components/dashboard/dashboardQueryLiveState';
 import type { ReactNode } from 'react';
 import type { UseQueryResult } from '@tanstack/react-query';
 
 export type DashboardOverviewQueryState = Pick<
   UseQueryResult<GetDashboardOverviewResponse>,
-  'data' | 'isError' | 'isFetching'
+  'data' | 'isError' | 'isFetching' | 'isPending'
 >;
 
 type DashboardOverviewMetricCardProps = {
@@ -36,16 +37,15 @@ type DashboardOverviewMetricCardProps = {
 export const DashboardOverviewMetricCard = ({
   title,
   label,
-  query: { data, isError, isFetching },
+  query,
   header,
   isEmpty,
   emptyIcon,
   children,
   className,
 }: DashboardOverviewMetricCardProps) => {
-  // A failed refetch keeps cached data on screen; only a settled failed first load shows the error.
-  const showError = isError && data === undefined && !isFetching;
-  const isBusy = !showError && (isFetching || data === undefined);
+  const { data } = query;
+  const { showError, isBusy } = getDashboardQueryLiveState(query);
 
   return (
     <DashboardCard

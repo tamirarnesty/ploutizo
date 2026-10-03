@@ -83,6 +83,7 @@ Capabilities added or changed locally in `packages/ui/src/components/reui/` (rec
 
 - **`DataGrid.renderRowContextMenu`** — Optional `(row) => ReactNode` menu content; `data-grid-row-context-menu.tsx` wraps the table viewport in a single context menu, stamps `data-grid-row-id` on body/expanded `<tr>` via `data-grid-table-body-row.tsx`, resolves the TanStack row from the open event target on open, and cancels when no body row matches (e.g. header right-click).
 - **`DataGridColumnHeader` `ascendingLabel` / `descendingLabel`** — Optional sort-menu copy. Omitted labels stay "Asc" and "Desc".
+- **Loading skeleton row count** — `resolveDataGridSkeletonRowCount` in `data-grid-table-shared.ts`, used by `data-grid-table.tsx`, `data-grid-table-dnd.tsx`, and `data-grid-table-dnd-rows.tsx`. When `recordCount` is greater than 0 and less than `pageSize`, the skeleton draws that many rows; otherwise it draws `pageSize`.
 
 ## Verification checklist
 

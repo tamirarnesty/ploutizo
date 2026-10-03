@@ -14,6 +14,7 @@ import { Dashboard } from '@/components/dashboard/Dashboard';
 import { dashboardOverviewQueryOptions } from '@/lib/data-access/dashboard';
 import { householdMembersQueryOptions } from '@/lib/data-access/household';
 import { settlementsQueryOptions } from '@/lib/data-access/settlements';
+import { dashboardRecentTransactionsQueryOptions } from '@/lib/data-access/transactions/dashboardRecentTransactions';
 import { readPersistedDashboardPeriod } from '@/lib/dashboard-period/cookie';
 import { validateDashboardSearch } from '@/lib/dashboard-period/validateDashboardSearch';
 import { DEFAULT_SPEND_TREND_MODE } from '@/lib/spend-trend-mode';
@@ -68,6 +69,10 @@ export const Route = createFileRoute('/_layout/dashboard')({
       context.queryClient.ensureQueryData(settlementsQueryOptions),
       context.queryClient.ensureQueryData(householdMembersQueryOptions),
     ]);
+    // Warm the strip without blocking the route when transactions fail.
+    void context.queryClient.prefetchQuery(
+      dashboardRecentTransactionsQueryOptions
+    );
   },
   component: Dashboard,
 });

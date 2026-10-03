@@ -1,30 +1,14 @@
-import {
-  CalendarDays,
-  Coins,
-  CreditCard,
-  Layers2,
-  NotepadText,
-  Tag,
-  Tags,
-  Users,
-} from 'lucide-react';
+import { Layers2, Tag, Tags, Users } from 'lucide-react';
 import { DataGridColumnHeader } from '@ploutizo/ui/components/reui/data-grid/data-grid-column-header';
 import { Badge } from '@ploutizo/ui/components/badge';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@ploutizo/ui/components/tooltip';
 import { cn } from '@ploutizo/ui/lib/utils';
-import { formatCurrency } from '@ploutizo/utils/currency';
 import { memberFullLabel } from '@ploutizo/utils';
 import type { TransactionRow } from '@ploutizo/validators';
-import { CachedLucideIcon } from '@/components/categories/CachedLucideIcon';
-import { colourTokenBadgeStyle } from '@/components/colour/colour-token-style';
+import { columnHeaderIcon } from '@/components/data-grid/columnHeaderIcon';
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
-import { RightAlignedColumnHeader } from '@/components/dashboard/card-balances/RightAlignedColumnHeader';
+import { createCoreTransactionColumnDefs } from './transactionColumnFactories';
 import { TransactionRowActionsDropdown } from './TransactionRowActionMenus';
 import { getTransactionRowActions } from './transactionRowActions';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -55,53 +39,22 @@ export const typeBadgeVariant: Record<
 const isInternalType = (t: string) =>
   ['transfer', 'settlement', 'contribution'].includes(t);
 
-const columnHeaderIcon = (Icon: typeof CalendarDays) => (
-  <Icon aria-hidden="true" />
-);
-
 export const buildColumns = (
   setDeleteId: (id: string) => void,
   onEdit: (transaction: TransactionRow) => void,
   onOpenOriginal: (id: string) => void
 ): ColumnDef<TransactionRow>[] => {
   const handlers = { onEdit, onDelete: setDeleteId };
+  const core = createCoreTransactionColumnDefs({
+    date: { enableSorting: true },
+    description: { enableSorting: false, onOpenOriginal },
+    category: { enableSorting: true },
+    account: { enableSorting: true },
+    amount: { enableSorting: true },
+  });
 
   return [
-    // 1. Date
-    {
-      id: 'date',
-      accessorKey: 'date',
-      enableSorting: true,
-      header: ({ column }) => (
-        <DataGridColumnHeader
-          column={column}
-          title="Date"
-          icon={columnHeaderIcon(CalendarDays)}
-        />
-      ),
-      size: 120,
-      meta: {
-        headerClassName: 'min-w-[100px]',
-        cellClassName: 'min-w-[100px]',
-        skeleton: <Skeleton className="h-4 w-20 motion-safe:animate-pulse" />,
-      },
-      cell: ({ row }) => (
-        <Text
-          as="span"
-          variant="body-sm"
-          className="whitespace-nowrap text-muted-foreground"
-        >
-          {new Date(row.original.date + 'T00:00:00').toLocaleDateString(
-            'en-CA',
-            {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            }
-          )}
-        </Text>
-      ),
-    },
+    core.date,
     // 2. Type
     {
       id: 'type',
@@ -143,179 +96,9 @@ export const buildColumns = (
         );
       },
     },
-    // 3. Description — includes refund sub-line (D-24) for refund rows with a linked original
-    {
-      id: 'description',
-      enableSorting: false,
-      header: ({ column }) => (
-        <DataGridColumnHeader
-          column={column}
-          title="Description"
-          icon={columnHeaderIcon(NotepadText)}
-        />
-      ),
-      size: 200,
-      meta: {
-        grow: true,
-        headerClassName: 'min-w-[200px]',
-        cellClassName: 'min-w-[200px]',
-        skeleton: <Skeleton className="h-4 w-40 motion-safe:animate-pulse" />,
-      },
-      cell: ({ row }) => {
-        const {
-          description,
-          notes,
-          type,
-          refundOfId,
-          refundOfDate,
-          refundOfAmountCents,
-        } = row.original;
-        const hasRefundLink = type === 'refund' && refundOfId !== null;
-
-        // Format refund original date as "MMM D, YYYY" (e.g. "Apr 3, 2025")
-        const formattedRefundDate =
-          hasRefundLink && refundOfDate
-            ? new Date(refundOfDate + 'T00:00:00').toLocaleDateString('en-CA', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-              })
-            : null;
-
-        const notePreview = notes
-          ? notes.length > 80
-            ? notes.slice(0, 80) + '…'
-            : notes
-          : null;
-
-        return (
-          <div className="min-w-0">
-            <div className="flex min-w-0 items-center gap-1.5">
-              <Text
-                as="span"
-                variant="body-sm"
-                className="min-w-0 truncate font-semibold"
-              >
-                {description}
-              </Text>
-              {notePreview ? (
-                <Tooltip>
-                  <TooltipTrigger
-                    render={
-                      <span className="shrink-0 cursor-default text-muted-foreground hover:text-foreground" />
-                    }
-                    aria-label="Has note"
-                  >
-                    <NotepadText className="size-3.5" aria-hidden="true" />
-                  </TooltipTrigger>
-                  <TooltipContent>{notePreview}</TooltipContent>
-                </Tooltip>
-              ) : null}
-            </div>
-            {hasRefundLink ? (
-              <button
-                type="button"
-                className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                onClick={() => onOpenOriginal(refundOfId)}
-                aria-label={`View original transaction from ${formattedRefundDate}`}
-              >
-                {/* ↩ U+21A9 LEFTWARDS ARROW WITH HOOK */}
-                <span aria-hidden="true">↩</span>
-                {/* · U+00B7 MIDDLE DOT */}
-                <span>
-                  {formattedRefundDate} ·{' '}
-                  {formatCurrency(refundOfAmountCents ?? 0)}
-                </span>
-              </button>
-            ) : null}
-          </div>
-        );
-      },
-    },
-    // 4. Category
-    {
-      id: 'category',
-      enableSorting: true,
-      header: ({ column }) => (
-        <DataGridColumnHeader
-          column={column}
-          title="Category"
-          icon={columnHeaderIcon(Tag)}
-        />
-      ),
-      size: 160,
-      meta: {
-        headerClassName: 'min-w-[140px]',
-        cellClassName: 'min-w-[140px]',
-        skeleton: <Skeleton className="h-4 w-24 motion-safe:animate-pulse" />,
-      },
-      cell: ({ row }) => {
-        const { categoryName, categoryIcon, categoryColour, type } =
-          row.original;
-        const showCategory =
-          categoryName && (type === 'expense' || type === 'refund');
-        return showCategory ? (
-          <Badge
-            variant="outline"
-            className="gap-1 px-1.5 py-0.5 text-xs font-normal"
-            style={
-              categoryColour ? colourTokenBadgeStyle(categoryColour) : undefined
-            }
-          >
-            <CachedLucideIcon name={categoryIcon} size={12} />
-            <span className="min-w-0 truncate">{categoryName}</span>
-          </Badge>
-        ) : (
-          <Text as="span" variant="caption">
-            —
-          </Text>
-        );
-      },
-    },
-    // 5. Account — shows "A → B" (U+2192) when counterpart present (D-23)
-    {
-      id: 'account',
-      enableSorting: true,
-      header: ({ column }) => (
-        <DataGridColumnHeader
-          column={column}
-          title="Account"
-          icon={columnHeaderIcon(CreditCard)}
-        />
-      ),
-      size: 220,
-      meta: {
-        headerClassName: 'min-w-[180px]',
-        cellClassName: 'min-w-[180px]',
-        skeleton: <Skeleton className="h-4 w-24 motion-safe:animate-pulse" />,
-      },
-      cell: ({ row }) => {
-        const { type, accountName, counterpartAccountName } = row.original;
-        // Account column always shows the destination account:
-        //   contribution → counterpartAccountId (investment acct)
-        //   settlement   → accountId (credit card)
-        //   transfer     → A → B
-        //   others       → accountId
-        const displayText =
-          type === 'contribution'
-            ? (counterpartAccountName ?? accountName ?? '')
-            : type === 'settlement'
-              ? (accountName ?? '')
-              : counterpartAccountName
-                ? `${accountName} → ${counterpartAccountName}`
-                : (accountName ?? '');
-        return (
-          <div className="min-w-0">
-            <Text
-              variant="body-sm"
-              className="min-w-0 truncate text-muted-foreground"
-            >
-              {displayText}
-            </Text>
-          </div>
-        );
-      },
-    },
+    core.description,
+    core.category,
+    core.account,
     // 6. Assignees
     {
       id: 'assignees',
@@ -407,58 +190,7 @@ export const buildColumns = (
         );
       },
     },
-    // 8. Amount — signed and color-coded per type (D-22)
-    {
-      id: 'amount',
-      accessorKey: 'amount',
-      enableSorting: true,
-      header: ({ column }) => (
-        <RightAlignedColumnHeader
-          column={column}
-          title="Amount"
-          icon={columnHeaderIcon(Coins)}
-        />
-      ),
-      size: 120,
-      meta: {
-        headerClassName: 'min-w-[100px]',
-        cellClassName: 'min-w-[100px]',
-        skeleton: (
-          <Skeleton className="ml-auto h-4 w-16 motion-safe:animate-pulse" />
-        ),
-      },
-      cell: ({ row }) => {
-        const { type, amount } = row.original;
-        const isExpense = type === 'expense';
-        const isPositive = type === 'income' || type === 'refund';
-
-        const formatted = formatCurrency(amount);
-        // U+2212 MINUS SIGN for expense (not hyphen-minus)
-        const displayValue = isExpense
-          ? `−${formatted}`
-          : isPositive
-            ? `+${formatted}`
-            : formatted;
-
-        const colorClass = isExpense
-          ? 'text-destructive'
-          : isPositive
-            ? 'text-emerald-600 dark:text-emerald-400'
-            : 'text-muted-foreground';
-
-        return (
-          <Text
-            variant="body-sm"
-            className={cn(
-              'block text-right font-medium whitespace-nowrap',
-              colorClass
-            )}
-          >
-            {displayValue}
-          </Text>
-        );
-      },
-    },
+    core.amount,
     // 9. Actions — chrome column, not a data column (no resize handle)
     {
       id: 'actions',

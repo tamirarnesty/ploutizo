@@ -4,6 +4,7 @@ import { Separator } from '@ploutizo/ui/components/separator';
 import { Text } from '@ploutizo/ui/components/text';
 import type { OrgMember, SettlementAccountRow } from '@ploutizo/validators';
 import { DashboardLiveCard } from '@/components/dashboard/DashboardLiveCard';
+import { dashboardLiveCardErrorMessage } from '@/components/dashboard/dashboardLiveCardErrorMessage';
 import { SettlementMemberListRowBalance } from '@/components/dashboard/SettlementMemberListRowBalance';
 import { SettlementMemberListRowEmpty } from '@/components/dashboard/SettlementMemberListRowEmpty';
 import { SettlementMemberRowSkeleton } from '@/components/dashboard/SettlementMemberRowSkeleton';
@@ -39,7 +40,7 @@ export const SettlementSummaryPane = ({
       }
       isLoading={isLoading}
       isError={isError}
-      errorMessage="Couldn’t load settlement summary. Check your connection and try again."
+      errorMessage={dashboardLiveCardErrorMessage('settlement summary')}
       className={className}
     >
       <CardContent className="space-y-2 px-3.5 py-2">

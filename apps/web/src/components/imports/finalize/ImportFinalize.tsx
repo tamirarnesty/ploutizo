@@ -36,19 +36,11 @@ import {
   importDraftReviewPathname,
   importDraftReviewRoute,
 } from '@/lib/navigation';
+import { formatTransactionDate } from '@/components/transactions/transactionRowDisplay';
 
 interface ImportFinalizeProps {
   draftId: string;
 }
-
-const formatReviewedDate = (value: string | null): string => {
-  if (!value) return '—';
-  return new Date(`${value}T00:00:00`).toLocaleDateString('en-CA', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-};
 
 const ImportFinalizeBreadcrumbs = () => (
   <Breadcrumb>
@@ -111,7 +103,7 @@ const ImportFinalizePreviewRowsTable = ({
               return (
                 <tr key={row.batchRowId} className="border-t border-border">
                   <td className="px-3 py-2">
-                    {formatReviewedDate(values.date)}
+                    {values.date ? formatTransactionDate(values.date) : '—'}
                   </td>
                   <td className="px-3 py-2">{values.description ?? '—'}</td>
                   <td className="px-3 py-2">

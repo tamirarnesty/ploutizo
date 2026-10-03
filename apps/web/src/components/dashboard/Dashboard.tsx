@@ -12,10 +12,13 @@ import { selectCreditCardAccounts } from '@/lib/settlements';
 import { CardBalancesGrid } from '@/components/dashboard/card-balances/CardBalancesGrid';
 import { SpendTrendCard } from '@/components/dashboard/spend-trend/SpendTrendCard';
 import { SpendByCategoryCard } from '@/components/dashboard/spend-by-category/SpendByCategoryCard';
+import { getCombinedDashboardQueryLiveState } from '@/components/dashboard/dashboardQueryLiveState';
+import { useDashboardRecentTransactions } from '@/lib/data-access/transactions/dashboardRecentTransactions';
 import { DashboardHeader } from './DashboardHeader';
 import { useDashboardSearch } from './useDashboardSearch';
 import { SettleDialog } from './SettleDialog';
 import { SettlementSummaryPane } from './SettlementSummaryPane';
+import { RecentTransactionsCard } from './recent-transactions/RecentTransactionsCard';
 
 const NO_MEMBERS: OrgMember[] = [];
 
@@ -34,32 +37,49 @@ export const Dashboard = () => {
   const { refetch: refetchOverview } = overviewQuery;
   const {
     data: settlements,
-    isLoading: settlementsLoading,
     isError: settlementsError,
     isFetching: settlementsFetching,
+    isPending: settlementsPending,
     refetch: refetchSettlements,
   } = useGetSettlements();
   const {
     data: membersData,
-    isLoading: membersLoading,
     isError: membersError,
     isFetching: membersFetching,
+    isPending: membersPending,
     refetch: refetchMembers,
   } = useGetHouseholdMembers();
+  const recentTransactionsQuery = useDashboardRecentTransactions();
+  const {
+    isFetching: recentTransactionsFetching,
+    refetch: refetchRecentTransactions,
+  } = recentTransactionsQuery;
 
   const members = membersData ?? NO_MEMBERS;
   const isRefreshing =
-    settlementsFetching || membersFetching || overviewQuery.isFetching;
+    settlementsFetching ||
+    membersFetching ||
+    overviewQuery.isFetching ||
+    recentTransactionsFetching;
 
-  // Both live cards read the same two queries, so they share loading and error state.
-  // A failed refetch keeps cached data on screen; only a failed first load replaces the cards.
-  const hasLoadFailure =
-    (settlementsError && settlements === undefined) ||
-    (membersError && membersData === undefined);
-  // Refreshing after a failed first load shows skeletons until it settles.
-  const liveSectionsLoading =
-    settlementsLoading || membersLoading || (hasLoadFailure && isRefreshing);
-  const liveSectionsError = hasLoadFailure && !isRefreshing;
+  const { isBusy: liveSectionsLoading, showError: liveSectionsError } =
+    getCombinedDashboardQueryLiveState(
+      [
+        {
+          data: settlements,
+          isError: settlementsError,
+          isFetching: settlementsFetching,
+          isPending: settlementsPending,
+        },
+        {
+          data: membersData,
+          isError: membersError,
+          isFetching: membersFetching,
+          isPending: membersPending,
+        },
+      ],
+      { busyWhileRefetching: false }
+    );
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [activeAccount, setActiveAccount] =
@@ -96,6 +116,7 @@ export const Dashboard = () => {
       refetchOverview(),
       refetchSettlements(),
       refetchMembers(),
+      refetchRecentTransactions(),
     ]).then((results) => {
       // A failed refetch keeps cached data on screen, so flag it as out of date.
       if (results.some((r) => r.isError && r.data !== undefined)) {
@@ -104,7 +125,12 @@ export const Dashboard = () => {
         });
       }
     });
-  }, [refetchOverview, refetchSettlements, refetchMembers]);
+  }, [
+    refetchOverview,
+    refetchSettlements,
+    refetchMembers,
+    refetchRecentTransactions,
+  ]);
 
   return (
     <div className="space-y-6">
@@ -149,6 +175,7 @@ export const Dashboard = () => {
           isLoading={liveSectionsLoading}
           members={members}
         />
+        <RecentTransactionsCard query={recentTransactionsQuery} />
       </div>
 
       <SettleDialog
