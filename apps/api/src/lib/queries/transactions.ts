@@ -95,6 +95,8 @@ export type ListQueryParams = {
   tagIds?: string[];
   /** D-18: case-insensitive substring match on description OR rawDescription — T-03.4-01 */
   description?: string;
+  /** Free-text search across description, category, account, and tags (not assignee, amount, or date). */
+  search?: string;
   // Operator params — T-03.4.1-OP1: unrecognised values fall through to default (eq/is) behaviour
   type_op?: string; // 'is' | 'is_not'
   accountId_op?: string; // 'is' | 'is_not'
@@ -103,6 +105,66 @@ export type ListQueryParams = {
   tagIds_op?: string; // 'is_any_of' | 'is_not_any_of' | 'includes_all' | 'excludes_all' | 'empty' | 'not_empty'
   dateRange_op?: string; // 'between' | 'after' | 'before' | 'is' | 'is_not' | 'not_between'
   importLink?: { batchId: string; outcome: 'created' | 'matched' };
+};
+
+const ilikePattern = (value: string) => `%${value}%`;
+
+const listedAmountCentsSql = sql<number>`case
+  when ${transactions.type} = 'expense' then -${transactions.amount}
+  when ${transactions.type} in ('income', 'refund') then ${transactions.amount}
+  else ${transactions.amount}
+end`;
+
+const searchMatchesCondition = (orgId: string, term: string): SQL => {
+  const pattern = ilikePattern(term);
+  return or(
+    sql`(${transactions.description} ILIKE ${pattern} OR ${transactions.rawDescription} ILIKE ${pattern})`,
+    exists(
+      db
+        .select({ one: sql`1` })
+        .from(categories)
+        .where(
+          and(
+            eq(categories.id, transactions.categoryId),
+            eq(categories.orgId, orgId),
+            sql`${categories.name} ILIKE ${pattern}`
+          )
+        )
+    ),
+    exists(
+      db
+        .select({ one: sql`1` })
+        .from(accounts)
+        .where(
+          and(
+            eq(accounts.orgId, orgId),
+            or(
+              and(
+                eq(accounts.id, transactions.accountId),
+                sql`${accounts.name} ILIKE ${pattern}`
+              ),
+              and(
+                eq(accounts.id, transactions.counterpartAccountId),
+                sql`${accounts.name} ILIKE ${pattern}`
+              )
+            )
+          )
+        )
+    ),
+    exists(
+      db
+        .select({ one: sql`1` })
+        .from(transactionTags)
+        .innerJoin(tags, eq(transactionTags.tagId, tags.id))
+        .where(
+          and(
+            eq(transactionTags.transactionId, transactions.id),
+            eq(tags.orgId, orgId),
+            sql`${tags.name} ILIKE ${pattern}`
+          )
+        )
+    )
+  )!;
 };
 
 const importTransactionLinkExists = (
@@ -305,8 +367,12 @@ export const buildConditions = (params: ListQueryParams): SQL[] => {
   // Searches both description (user-visible) and rawDescription (original bank/import memo).
   if (params.description) {
     conditions.push(
-      sql`(${transactions.description} ILIKE ${'%' + params.description + '%'} OR ${transactions.rawDescription} ILIKE ${'%' + params.description + '%'})`
+      sql`(${transactions.description} ILIKE ${ilikePattern(params.description)} OR ${transactions.rawDescription} ILIKE ${ilikePattern(params.description)})`
     );
+  }
+
+  if (params.search) {
+    conditions.push(searchMatchesCondition(params.orgId, params.search));
   }
 
   if (params.importLink) {
@@ -358,6 +424,19 @@ export const countQuery = async (params: ListQueryParams): Promise<number> => {
     .from(transactions)
     .where(and(...conditions));
   return total;
+};
+
+export const amountSumQuery = async (
+  params: ListQueryParams
+): Promise<number> => {
+  const conditions = buildConditions(params);
+  const [{ amountSum }] = await db
+    .select({
+      amountSum: sql<number>`coalesce(sum(${listedAmountCentsSql}), 0)::int`,
+    })
+    .from(transactions)
+    .where(and(...conditions));
+  return amountSum;
 };
 
 // Single transaction by id — same column projection as list (D-05)
