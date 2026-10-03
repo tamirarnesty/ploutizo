@@ -24,24 +24,46 @@ export const formatTransactionAccount = (
   return accountName ?? '';
 };
 
+export const signedAmountCentsForColumn = (
+  row: Pick<TransactionRow, 'type' | 'amount'>
+): number => {
+  const { type, amount } = row;
+  if (type === 'expense') return -Math.abs(amount);
+  if (type === 'income' || type === 'refund') return Math.abs(amount);
+  return amount;
+};
+
+export const formatSignedAmountCents = (amountCents: number) => {
+  const formatted = formatCurrency(Math.abs(amountCents));
+  if (amountCents < 0) {
+    return {
+      displayValue: `−${formatted}`,
+      colorClass: 'text-destructive',
+    };
+  }
+  if (amountCents > 0) {
+    return {
+      displayValue: `+${formatted}`,
+      colorClass: 'text-emerald-600 dark:text-emerald-400',
+    };
+  }
+  return {
+    displayValue: formatCurrency(0),
+    colorClass: 'text-muted-foreground',
+  };
+};
+
 export const formatTransactionAmount = (
   row: Pick<TransactionRow, 'type' | 'amount'>
 ) => {
   const { type, amount } = row;
   const isExpense = type === 'expense';
   const isPositive = type === 'income' || type === 'refund';
+  if (isExpense || isPositive) {
+    return formatSignedAmountCents(signedAmountCentsForColumn(row));
+  }
   const formatted = formatCurrency(amount);
-  const displayValue = isExpense
-    ? `−${formatted}`
-    : isPositive
-      ? `+${formatted}`
-      : formatted;
-  const colorClass = isExpense
-    ? 'text-destructive'
-    : isPositive
-      ? 'text-emerald-600 dark:text-emerald-400'
-      : 'text-muted-foreground';
-  return { displayValue, colorClass };
+  return { displayValue: formatted, colorClass: 'text-muted-foreground' };
 };
 
 export const shouldShowTransactionCategory = (

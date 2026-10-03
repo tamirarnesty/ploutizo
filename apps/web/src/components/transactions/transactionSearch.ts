@@ -18,6 +18,13 @@ const TRANSACTION_SORT_FIELDS = [
 
 const TRANSACTION_SORT_ORDERS = ['asc', 'desc'] as const;
 
+export const normalizeTransactionSearchQuery = (
+  value?: string
+): string | undefined => {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+};
+
 export type TransactionSearch = {
   page?: number;
   sort?: (typeof TRANSACTION_SORT_FIELDS)[number];
@@ -39,6 +46,8 @@ export type TransactionSearch = {
   dateRange_op?: string; // 'between' | 'after' | 'before' | 'is' | 'is_not' | 'not_between'
   importBatchId?: string;
   importOutcome?: 'created' | 'matched';
+  /** Filter-row text query — forwarded as API `search`. */
+  search?: string;
 };
 
 const TRANSACTION_SEARCH_STRING_FIELDS = [
@@ -55,6 +64,7 @@ const TRANSACTION_SEARCH_STRING_FIELDS = [
   'assigneeId_op',
   'tagIds_op',
   'dateRange_op',
+  'search',
 ] as const satisfies readonly (keyof TransactionSearch)[];
 
 const parseOptionalPage = (value: unknown): number | undefined => {
@@ -108,6 +118,7 @@ export const buildTransactionQueryParams = (
   categoryId: search.categoryId,
   assigneeId: search.assigneeId,
   tagIds: search.tagIds,
+  search: normalizeTransactionSearchQuery(search.search),
   type_op: search.type_op,
   accountId_op: search.accountId_op,
   categoryId_op: search.categoryId_op,

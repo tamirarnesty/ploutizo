@@ -17,6 +17,8 @@ export interface TransactionQueryParams {
   assigneeId?: string;
   tagIds?: string; // comma-separated UUIDs
   description?: string;
+  /** Filter-row text search (description, category, account, tags). */
+  search?: string;
   // Operator params — forwarded to API to control filter semantics
   type_op?: string; // 'is' | 'is_not'
   accountId_op?: string; // 'is' | 'is_not'

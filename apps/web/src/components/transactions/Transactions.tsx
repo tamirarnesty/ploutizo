@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { ListFilterIcon } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
@@ -15,6 +15,8 @@ import { useTablePageSize } from '@/hooks/persistedPageSize';
 import { TransactionsTable } from './TransactionsTable';
 import { TransactionSheet } from './TransactionSheet';
 import { buildFilterFields } from './TransactionFilterFields';
+import { TransactionFilterSearch } from './TransactionFilterSearch';
+import { sumLoadedPageAmountCents } from './transactionsPageAmountSum';
 import { buildTransactionQueryParams } from './transactionSearch';
 import {
   TRANSACTION_PINNED_FILTER_FIELD_KEYS_LIST,
@@ -49,6 +51,11 @@ export const Transactions = () => {
 
   const transactions = txData?.data ?? NO_TRANSACTIONS;
   const total = txData?.total ?? 0;
+  const pageAmountSumCents = useMemo(
+    () =>
+      txData === undefined ? undefined : sumLoadedPageAmountCents(transactions),
+    [txData, transactions]
+  );
   const page = search.page ?? 1;
   const sort = search.sort ?? 'date';
   const order = search.order ?? 'desc';
@@ -61,6 +68,32 @@ export const Transactions = () => {
     () => withPinnedTransactionFilters(searchToFilters(search)),
     [search]
   );
+  const [searchInput, setSearchInput] = useState(() => search.search ?? '');
+
+  // Back/forward and other external URL changes update the search box.
+  // Filter chips stay derived from the URL, so they do not need a local copy.
+  useEffect(() => {
+    setSearchInput(search.search ?? '');
+  }, [search.search]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const trimmed = searchInput.trim();
+      const urlQuery = search.search?.trim() ?? '';
+      if (trimmed === urlQuery) return;
+      void navigate({
+        to: '/transactions',
+        search: (prev) =>
+          buildCleanSearch({
+            ...prev,
+            search: trimmed || undefined,
+            page: 1,
+          }),
+        replace: true,
+      });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [navigate, search.search, searchInput]);
 
   // Build FilterFieldConfig for the Filters component (6 fields per D-28).
   // Import result is only offered when a provenance batch is already in the URL.
@@ -88,6 +121,7 @@ export const Transactions = () => {
             page: 1,
             sort: prev.sort,
             order: prev.order,
+            search: prev.search,
             ...mapped,
             importBatchId: mapped.importOutcome
               ? prev.importBatchId
@@ -135,6 +169,7 @@ export const Transactions = () => {
   );
 
   const handleClearFilters = useCallback(() => {
+    setSearchInput('');
     void navigate({
       to: '/transactions',
       search: () => buildCleanSearch({}),
@@ -181,22 +216,30 @@ export const Transactions = () => {
 
       {/* Filter bar — full-width, no sticky */}
       {/* trigger prop required: useRender renders an empty invisible button without it */}
-      <Filters<string>
-        filters={activeFilters}
-        fields={filterFields}
-        onChange={handleFiltersChange}
-        pinnedFieldKeys={TRANSACTION_PINNED_FILTER_FIELD_KEYS_LIST}
-        trigger={
-          <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs">
-            <ListFilterIcon className="size-3.5" />
-            Filters
-          </Button>
-        }
-      />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <Filters<string>
+          filters={activeFilters}
+          fields={filterFields}
+          onChange={handleFiltersChange}
+          pinnedFieldKeys={TRANSACTION_PINNED_FILTER_FIELD_KEYS_LIST}
+          className="min-w-0 flex-1"
+          trigger={
+            <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs">
+              <ListFilterIcon className="size-3.5" />
+              Filters
+            </Button>
+          }
+        />
+        <TransactionFilterSearch
+          value={searchInput}
+          onChange={setSearchInput}
+        />
+      </div>
 
       <TransactionsTable
         transactions={transactions}
         total={total}
+        pageAmountSumCents={pageAmountSumCents}
         isLoading={isLoading}
         page={page}
         limit={limit}
