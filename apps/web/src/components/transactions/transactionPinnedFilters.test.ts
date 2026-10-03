@@ -6,7 +6,7 @@ import {
   withPinnedTransactionFilters,
 } from './transactionPinnedFilters';
 import { buildFilterFields } from './TransactionFilterFields';
-import { filtersToSearch } from './Transactions';
+import { filtersToSearch, searchToFilters } from './Transactions';
 
 describe('transaction pinned filters', () => {
   it('uses stable ids for pinned fields', () => {
@@ -43,6 +43,72 @@ describe('transaction pinned filters', () => {
     expect(filtersToSearch(activeTransactionFiltersForSearch(padded))).toEqual({
       type: 'expense',
     });
+  });
+
+  it('maps pinned date range between to URL params', () => {
+    const padded = withPinnedTransactionFilters([
+      {
+        id: 'filter-dateRange',
+        field: 'dateRange',
+        operator: 'between',
+        values: ['2026-01-01', '2026-01-31'],
+      },
+    ]);
+    expect(filtersToSearch(activeTransactionFiltersForSearch(padded))).toEqual({
+      dateFrom: '2026-01-01',
+      dateTo: '2026-01-31',
+    });
+  });
+
+  it('maps pinned category empty operator without a category id', () => {
+    const padded = withPinnedTransactionFilters([
+      {
+        id: 'filter-categoryId',
+        field: 'categoryId',
+        operator: 'empty',
+        values: [],
+      },
+    ]);
+    expect(filtersToSearch(activeTransactionFiltersForSearch(padded))).toEqual({
+      categoryId_op: 'empty',
+    });
+  });
+
+  it('restores pinned filters from URL search including category empty', () => {
+    expect(
+      withPinnedTransactionFilters(
+        searchToFilters({
+          dateFrom: '2026-02-01',
+          dateTo: '2026-02-28',
+          categoryId_op: 'empty',
+        })
+      )
+    ).toEqual([
+      {
+        id: 'filter-type',
+        field: 'type',
+        operator: 'is',
+        values: [],
+      },
+      {
+        id: 'filter-dateRange',
+        field: 'dateRange',
+        operator: 'between',
+        values: ['2026-02-01', '2026-02-28'],
+      },
+      {
+        id: 'filter-accountId',
+        field: 'accountId',
+        operator: 'is',
+        values: [],
+      },
+      {
+        id: 'filter-categoryId',
+        field: 'categoryId',
+        operator: 'empty',
+        values: [],
+      },
+    ]);
   });
 
   it('keeps assignee, tags, and import result in the add-filter field list', () => {
