@@ -39,12 +39,14 @@ export const Dashboard = () => {
     data: settlements,
     isError: settlementsError,
     isFetching: settlementsFetching,
+    isPending: settlementsPending,
     refetch: refetchSettlements,
   } = useGetSettlements();
   const {
     data: membersData,
     isError: membersError,
     isFetching: membersFetching,
+    isPending: membersPending,
     refetch: refetchMembers,
   } = useGetHouseholdMembers();
   const recentTransactionsQuery = useDashboardRecentTransactions();
@@ -67,11 +69,13 @@ export const Dashboard = () => {
           data: settlements,
           isError: settlementsError,
           isFetching: settlementsFetching,
+          isPending: settlementsPending,
         },
         {
           data: membersData,
           isError: membersError,
           isFetching: membersFetching,
+          isPending: membersPending,
         },
       ],
       { busyWhileRefetching: false }

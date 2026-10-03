@@ -4,23 +4,43 @@ import {
   getDashboardQueryLiveState,
 } from './dashboardQueryLiveState';
 
+const pendingIdle = {
+  isPending: false,
+  isFetching: false,
+  isError: false,
+};
+
 describe('getDashboardQueryLiveState', () => {
   it('is busy on first load', () => {
     expect(
       getDashboardQueryLiveState({
+        ...pendingIdle,
         data: undefined,
-        isError: false,
         isFetching: true,
+        isPending: true,
       })
+    ).toEqual({ showError: false, isBusy: true });
+  });
+
+  it('is busy while pending before the first fetch starts', () => {
+    expect(
+      getDashboardQueryLiveState(
+        {
+          ...pendingIdle,
+          data: undefined,
+          isPending: true,
+        },
+        { busyWhileRefetching: false }
+      )
     ).toEqual({ showError: false, isBusy: true });
   });
 
   it('shows error after a failed first load settles', () => {
     expect(
       getDashboardQueryLiveState({
+        ...pendingIdle,
         data: undefined,
         isError: true,
-        isFetching: false,
       })
     ).toEqual({ showError: true, isBusy: false });
   });
@@ -28,9 +48,11 @@ describe('getDashboardQueryLiveState', () => {
   it('is busy while retrying after a failed first load', () => {
     expect(
       getDashboardQueryLiveState({
+        ...pendingIdle,
         data: undefined,
         isError: true,
         isFetching: true,
+        isPending: true,
       })
     ).toEqual({ showError: false, isBusy: true });
   });
@@ -38,8 +60,8 @@ describe('getDashboardQueryLiveState', () => {
   it('is busy while refetching when busyWhileRefetching is true', () => {
     expect(
       getDashboardQueryLiveState({
+        ...pendingIdle,
         data: { ok: true },
-        isError: false,
         isFetching: true,
       })
     ).toEqual({ showError: false, isBusy: true });
@@ -49,14 +71,14 @@ describe('getDashboardQueryLiveState', () => {
     expect(
       getCombinedDashboardQueryLiveState([
         {
+          ...pendingIdle,
           data: { ok: true },
-          isError: false,
-          isFetching: false,
         },
         {
+          ...pendingIdle,
           data: undefined,
-          isError: false,
           isFetching: true,
+          isPending: true,
         },
       ])
     ).toEqual({ showError: false, isBusy: true });
@@ -66,8 +88,8 @@ describe('getDashboardQueryLiveState', () => {
     expect(
       getDashboardQueryLiveState(
         {
+          ...pendingIdle,
           data: { ok: true },
-          isError: false,
           isFetching: true,
         },
         { busyWhileRefetching: false }

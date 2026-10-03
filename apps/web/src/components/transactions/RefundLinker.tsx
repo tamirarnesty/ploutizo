@@ -15,6 +15,7 @@ import {
   useGetTransactions,
   useSearchTransactions,
 } from '@/lib/data-access/transactions';
+import { formatTransactionDate } from './transactionRowDisplay';
 import type { AssigneeFormRow } from './types';
 import type { TransactionFormInstance } from './hooks/useTransactionForm';
 
@@ -25,7 +26,7 @@ export interface RefundLinkerProps {
 
 /** Stable unique key used as Combobox value for selection matching */
 const buildLabel = (tx: TransactionRow) =>
-  `${tx.description || '—'} \u2022 ${new Date(tx.date + 'T00:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })} \u2022 ${formatCurrency(tx.amount)}`;
+  `${tx.description || '—'} \u2022 ${formatTransactionDate(tx.date)} \u2022 ${formatCurrency(tx.amount)}`;
 
 /** Human-readable display name shown in the input after selection */
 const buildDisplayName = (tx: TransactionRow) => tx.description || '—';

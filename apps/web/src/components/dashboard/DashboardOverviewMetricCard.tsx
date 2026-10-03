@@ -16,7 +16,7 @@ import type { UseQueryResult } from '@tanstack/react-query';
 
 export type DashboardOverviewQueryState = Pick<
   UseQueryResult<GetDashboardOverviewResponse>,
-  'data' | 'isError' | 'isFetching'
+  'data' | 'isError' | 'isFetching' | 'isPending'
 >;
 
 type DashboardOverviewMetricCardProps = {

@@ -20,7 +20,7 @@ export const dashboardRecentTransactionsQueryOptions = transactionsQueryOptions(
 
 export type DashboardRecentTransactionsQuery = Pick<
   UseQueryResult<TransactionListResponse>,
-  'data' | 'isError' | 'isFetching' | 'refetch'
+  'data' | 'isError' | 'isFetching' | 'isPending' | 'refetch'
 >;
 
 export const useDashboardRecentTransactions =

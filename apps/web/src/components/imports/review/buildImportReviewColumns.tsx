@@ -20,6 +20,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
+import { columnHeaderIcon } from '@/components/data-grid/columnHeaderIcon';
 import { ImportDraftReviewRowDetails } from './ImportDraftReviewRowDetails';
 import {
   ImportReviewAmountCell,
@@ -32,10 +33,6 @@ import {
 } from './importReviewCells';
 import type { ImportReviewTableRow } from './useStableImportReviewTableRows';
 import type { ColumnDef } from '@tanstack/react-table';
-
-const columnHeaderIcon = (Icon: typeof CalendarDays) => (
-  <Icon aria-hidden="true" />
-);
 
 export interface BuildImportReviewColumnsOptions {
   draftId: string;
