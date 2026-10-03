@@ -13,7 +13,7 @@ import { HouseholdHookWrapper } from '@/test/household-hook-harness';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import type { HouseholdMutationFunctionContext } from '@/lib/data-access/useHouseholdQuery';
 
-vi.mock('@/lib/access/AccessProvider', async () => {
+vi.mock('@/lib/access/access-context', async () => {
   const { householdAccessProviderMock } =
     await import('@/test/householdAccessMock');
   return householdAccessProviderMock;

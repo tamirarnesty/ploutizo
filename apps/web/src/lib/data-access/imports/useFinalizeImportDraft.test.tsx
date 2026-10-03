@@ -7,7 +7,7 @@ import { HouseholdHookWrapper } from '@/test/household-hook-harness';
 import { fetchFinalizeImportDraft } from './fetchFinalizeImportDraft';
 import { useFinalizeImportDraft } from './useFinalizeImportDraft';
 
-vi.mock('@/lib/access/AccessProvider', async () => {
+vi.mock('@/lib/access/access-context', async () => {
   const { householdAccessProviderMock } =
     await import('@/test/householdAccessMock');
   return householdAccessProviderMock;

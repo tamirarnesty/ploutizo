@@ -1,5 +1,5 @@
 import { AccessBearerBlocked } from './AccessBearerBlocked';
-import { useAccess } from './AccessProvider';
+import { useAccess } from './access-context';
 import type { ReactNode } from 'react';
 
 type BearerReadinessBoundaryProps = {

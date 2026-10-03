@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { useCallback, useRef } from 'react';
-import { useAccess } from '@/lib/access/AccessProvider';
+import { useAccess } from '@/lib/access/access-context';
 import { isHouseholdBearerReady } from '@/lib/access/household-loader-ready';
 import {
   beginWorkingSetScope,

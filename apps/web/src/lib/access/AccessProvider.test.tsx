@@ -7,7 +7,8 @@ import {
   getActiveQueryClient,
   resetWorkingSetRegistryForTests,
 } from './working-set-registry';
-import { AccessProvider, useAccess } from './AccessProvider';
+import { useAccess } from './access-context';
+import { AccessProvider } from './AccessProvider';
 import {
   getClientHouseholdBearer,
   resetBearerStateForTests,

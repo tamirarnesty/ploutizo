@@ -9,7 +9,7 @@ import { markImportReviewPending } from './importReviewAutosave';
 import { fetchContinueImportDraft } from './fetchContinueImportDraft';
 import { useContinueImportDraft } from './useContinueImportDraft';
 
-vi.mock('@/lib/access/AccessProvider', async () => {
+vi.mock('@/lib/access/access-context', async () => {
   const { householdAccessProviderMock } =
     await import('@/test/householdAccessMock');
   return householdAccessProviderMock;
