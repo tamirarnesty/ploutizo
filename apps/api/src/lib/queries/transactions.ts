@@ -107,7 +107,10 @@ export type ListQueryParams = {
   importLink?: { batchId: string; outcome: 'created' | 'matched' };
 };
 
-const ilikePattern = (value: string) => `%${value}%`;
+const escapeIlikeLiteral = (value: string) =>
+  value.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+
+const ilikePattern = (value: string) => `%${escapeIlikeLiteral(value)}%`;
 
 const descriptionOrRawDescriptionIlike = (pattern: string) =>
   sql`(${transactions.description} ILIKE ${pattern} OR ${transactions.rawDescription} ILIKE ${pattern})`;
@@ -364,17 +367,9 @@ export const buildConditions = (params: ListQueryParams): SQL[] => {
     }
   }
 
-  // T-03.4-01: D-18 description filter — parameterized ILIKE (NOT string interpolation) — safe from SQL injection
-  // '%' + value + '%' is passed as a Drizzle bound parameter to the DB driver, not concatenated into SQL text.
-  // Searches both description (user-visible) and rawDescription (original bank/import memo).
-  if (params.description) {
-    conditions.push(
-      descriptionOrRawDescriptionIlike(ilikePattern(params.description))
-    );
-  }
-
-  if (params.search) {
-    conditions.push(searchMatchesCondition(params.orgId, params.search));
+  const freeTextSearch = params.search ?? params.description;
+  if (freeTextSearch) {
+    conditions.push(searchMatchesCondition(params.orgId, freeTextSearch));
   }
 
   if (params.importLink) {
@@ -421,19 +416,19 @@ export const buildListQuery = async (params: ListQueryParams) => {
 // Count + amount sum over the filtered set (D-07, PLO-131) — one scan for both aggregates.
 export const listAggregatesQuery = async (
   params: ListQueryParams
-): Promise<{ total: number; amountSum: number }> => {
+): Promise<{ total: number; amountSumCents: number }> => {
   const conditions = buildConditions(params);
-  const [{ total, amountSum }] = await db
+  const [{ total, amountSumCents }] = await db
     .select({
       total: sql<number>`count(*)::int`,
-      amountSum:
-        sql<number>`coalesce(sum(${listedAmountCentsSql}), 0)::int`.mapWith(
+      amountSumCents:
+        sql<number>`coalesce(sum(${listedAmountCentsSql}), 0)::bigint`.mapWith(
           Number
         ),
     })
     .from(transactions)
     .where(and(...conditions));
-  return { total, amountSum };
+  return { total, amountSumCents };
 };
 
 // Single transaction by id — same column projection as list (D-05)
