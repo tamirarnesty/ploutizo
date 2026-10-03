@@ -157,7 +157,7 @@ const TransactionAmountCell = ({ row }: { row: TransactionRow }) => {
   );
 };
 
-export const createTransactionDateColumn = ({
+const createTransactionDateColumn = ({
   enableSorting,
 }: TransactionColumnSortOptions): ColumnDef<TransactionRow> => ({
   id: 'date',
@@ -179,7 +179,7 @@ export const createTransactionDateColumn = ({
   cell: ({ row }) => <TransactionDateCell row={row.original} />,
 });
 
-export const createTransactionDescriptionColumn = ({
+const createTransactionDescriptionColumn = ({
   enableSorting,
   onOpenOriginal,
 }: TransactionDescriptionColumnOptions): ColumnDef<TransactionRow> => ({
@@ -207,7 +207,7 @@ export const createTransactionDescriptionColumn = ({
   ),
 });
 
-export const createTransactionCategoryColumn = ({
+const createTransactionCategoryColumn = ({
   enableSorting,
 }: TransactionColumnSortOptions): ColumnDef<TransactionRow> => ({
   id: 'category',
@@ -230,7 +230,7 @@ export const createTransactionCategoryColumn = ({
   cell: ({ row }) => <TransactionCategoryCell row={row.original} />,
 });
 
-export const createTransactionAccountColumn = ({
+const createTransactionAccountColumn = ({
   enableSorting,
 }: TransactionColumnSortOptions): ColumnDef<TransactionRow> => ({
   id: 'account',
@@ -251,7 +251,7 @@ export const createTransactionAccountColumn = ({
   cell: ({ row }) => <TransactionAccountCell row={row.original} />,
 });
 
-export const createTransactionAmountColumn = ({
+const createTransactionAmountColumn = ({
   enableSorting,
 }: TransactionColumnSortOptions): ColumnDef<TransactionRow> => ({
   id: 'amount',

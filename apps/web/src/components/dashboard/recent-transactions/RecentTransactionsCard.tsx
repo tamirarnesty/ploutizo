@@ -3,7 +3,11 @@ import { Link } from '@tanstack/react-router';
 import { useReactTable } from '@tanstack/react-table';
 import { Button } from '@ploutizo/ui/components/button';
 import { CardAction } from '@ploutizo/ui/components/card';
-import { Text } from '@ploutizo/ui/components/text';
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+} from '@ploutizo/ui/components/empty';
 import type { TransactionRow } from '@ploutizo/validators';
 import { DASHBOARD_RECENT_TRANSACTIONS_PARAMS } from '@/lib/data-access/transactions/dashboardRecentTransactions';
 import type { DashboardRecentTransactionsQuery } from '@/lib/data-access/transactions/dashboardRecentTransactions';
@@ -75,13 +79,11 @@ export const RecentTransactionsCard = ({
       }
     >
       {isEmpty ? (
-        <Text
-          as="p"
-          variant="body-sm"
-          className="px-3.5 py-6 text-center text-muted-foreground"
-        >
-          No transactions yet
-        </Text>
+        <Empty>
+          <EmptyHeader>
+            <EmptyDescription>No transactions yet</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
         <DashboardLiveDataGridScrollTable />
       )}
