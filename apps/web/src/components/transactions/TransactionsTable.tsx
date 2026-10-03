@@ -159,8 +159,12 @@ export const TransactionsTable = ({
     [table, pageAmountSumCents]
   );
 
-  // Empty states (D-24, D-25) — rendered before DataGrid
-  if (!isLoading && transactions.length === 0) {
+  // Empty states (D-24, D-25) — only while the list response is still missing
+  if (
+    !isLoading &&
+    transactions.length === 0 &&
+    pageAmountSumCents === undefined
+  ) {
     if (onFilteredEmpty) {
       return <TransactionsTableEmptyFiltered onClearFilters={onClearFilters} />;
     }
