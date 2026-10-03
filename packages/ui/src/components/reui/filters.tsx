@@ -1567,13 +1567,10 @@ export function Filters<T = unknown>({
     (fieldKey: string) => {
       const field = fieldsMap[fieldKey];
       if (field && field.key) {
-        const defaultOperator =
-          field.defaultOperator ||
-          (field.type === 'multiselect' ? 'is_any_of' : 'is');
         const defaultValues: unknown[] = field.type === 'text' ? [''] : [];
         const newFilter = createFilter<T>(
           fieldKey,
-          defaultOperator,
+          getDefaultFilterOperator(field),
           defaultValues as T[]
         );
         setLastAddedFilterId(newFilter.id);

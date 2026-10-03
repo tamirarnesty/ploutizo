@@ -17,9 +17,8 @@ import { TransactionSheet } from './TransactionSheet';
 import { buildFilterFields } from './TransactionFilterFields';
 import { buildTransactionQueryParams } from './transactionSearch';
 import {
-  TRANSACTION_PINNED_FILTER_FIELD_KEYS,
+  TRANSACTION_PINNED_FILTER_FIELD_KEYS_LIST,
   activeTransactionFiltersForSearch,
-  transactionPinnedFilterId,
   withPinnedTransactionFilters,
 } from './transactionPinnedFilters';
 import type { TransactionSearch } from './transactionSearch';
@@ -353,9 +352,8 @@ export const Transactions = () => {
 
   const handleFiltersChange = useCallback(
     (filters: Filter<string>[]) => {
-      // Update local state immediately so operators aren't snapped back by
-      // the URL-sync effect. The effect only overwrites values, not operators,
-      // but updating local state first prevents any intermediate flicker.
+      // Update local state before navigate so the filter row does not flicker
+      // while URL search params catch up.
       const nextFilters = withPinnedTransactionFilters(filters);
       setActiveFilters(nextFilters);
       const mapped = filtersToSearch(
@@ -469,8 +467,7 @@ export const Transactions = () => {
         filters={activeFilters}
         fields={filterFields}
         onChange={handleFiltersChange}
-        pinnedFieldKeys={[...TRANSACTION_PINNED_FILTER_FIELD_KEYS]}
-        getPinnedFilterId={transactionPinnedFilterId}
+        pinnedFieldKeys={TRANSACTION_PINNED_FILTER_FIELD_KEYS_LIST}
         trigger={
           <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs">
             <ListFilterIcon className="size-3.5" />

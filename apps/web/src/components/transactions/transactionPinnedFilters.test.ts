@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { createPinnedFilterId } from '@ploutizo/ui/components/reui/filters';
 import {
   TRANSACTION_PINNED_FILTER_FIELD_KEYS,
   activeTransactionFiltersForSearch,
-  createEmptyPinnedTransactionFilter,
-  transactionPinnedFilterId,
   withPinnedTransactionFilters,
 } from './transactionPinnedFilters';
 import { buildFilterFields } from './TransactionFilterFields';
@@ -11,8 +10,8 @@ import { filtersToSearch } from './Transactions';
 
 describe('transaction pinned filters', () => {
   it('uses stable ids for pinned fields', () => {
-    expect(transactionPinnedFilterId('type')).toBe('filter-type');
-    expect(transactionPinnedFilterId('dateRange')).toBe('filter-dateRange');
+    expect(createPinnedFilterId('type')).toBe('filter-type');
+    expect(createPinnedFilterId('dateRange')).toBe('filter-dateRange');
   });
 
   it('pins type, date, account, and category only', () => {
