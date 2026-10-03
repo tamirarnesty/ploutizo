@@ -145,14 +145,19 @@ describe('GET /transactions — search and amountSum', () => {
   });
 
   it('TXN-LIST-SEARCH-02: search matches description across the full filtered set, not the page', async () => {
-    const page = await list('?search=groceries&limit=1&page=1');
+    const page = await list('?description=groceries&limit=1&page=1');
     expect(page.total).toBe(1);
     expect(page.data).toHaveLength(1);
     expect(page.data[0]?.description).toContain('groceries');
   });
 
+  it('TXN-LIST-SEARCH-02b: explicit search param matches like description', async () => {
+    const page = await list('?search=groceries&limit=1&page=1');
+    expect(page.total).toBe(1);
+  });
+
   it('TXN-LIST-SEARCH-03: search matches category name', async () => {
-    const page = await list('?search=GROCER');
+    const page = await list('?description=GROCER');
     expect(page.total).toBe(1);
     expect(page.data[0]?.categoryName).toBe('Groceries');
   });
@@ -179,7 +184,7 @@ describe('GET /transactions — search and amountSum', () => {
   it('TXN-LIST-AMOUNTSUM-01: amountSum uses displayed signs and ignores page/limit', async () => {
     const page = await list('?limit=1&page=1');
     // expense -2500, income +500000, transfer +10000, expense -9999
-    expect(page.amountSum).toBe(-2500 + 500_000 + 10_000 - 9999);
+    expect(page.amountSumCents).toBe(-2500 + 500_000 + 10_000 - 9999);
     expect(page.total).toBe(4);
     expect(page.data).toHaveLength(1);
   });
@@ -187,13 +192,13 @@ describe('GET /transactions — search and amountSum', () => {
   it('TXN-LIST-AMOUNTSUM-02: amountSum respects search and other filters', async () => {
     const page = await list('?search=groceries');
     expect(page.total).toBe(1);
-    expect(page.amountSum).toBe(-2500);
+    expect(page.amountSumCents).toBe(-2500);
   });
 
   it('TXN-LIST-AMOUNTSUM-03: empty set yields amountSum 0', async () => {
     const page = await list('?search=definitely-no-match');
     expect(page.total).toBe(0);
     expect(page.data).toHaveLength(0);
-    expect(page.amountSum).toBe(0);
+    expect(page.amountSumCents).toBe(0);
   });
 });
