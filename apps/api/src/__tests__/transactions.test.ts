@@ -396,7 +396,7 @@ describe('GET /api/transactions', () => {
     expect(callArgs?.description).toBeUndefined();
   });
 
-  it('TXN-LIST-SEARCH-01: GET /?search=groceries — passes trimmed search to listTransactions', async () => {
+  it('TXN-LIST-ROUTE-SEARCH-01: GET /?search=groceries — passes trimmed search to listTransactions', async () => {
     vi.mocked(listTransactions).mockClear();
     const res = await app.request('/?search=groceries');
     expect(res.status).toBe(200);
@@ -406,7 +406,7 @@ describe('GET /api/transactions', () => {
     expect(callArgs?.search).toBe('groceries');
   });
 
-  it('TXN-LIST-SEARCH-02: GET /?search=   — search is undefined when blank', async () => {
+  it('TXN-LIST-ROUTE-SEARCH-02: GET /?search=   — search is undefined when blank', async () => {
     vi.mocked(listTransactions).mockClear();
     const res = await app.request('/?search=%20%20');
     expect(res.status).toBe(200);

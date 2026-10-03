@@ -109,16 +109,18 @@ export type ListQueryParams = {
 
 const ilikePattern = (value: string) => `%${value}%`;
 
+const descriptionOrRawDescriptionIlike = (pattern: string) =>
+  sql`(${transactions.description} ILIKE ${pattern} OR ${transactions.rawDescription} ILIKE ${pattern})`;
+
 const listedAmountCentsSql = sql<number>`case
   when ${transactions.type} = 'expense' then -${transactions.amount}
-  when ${transactions.type} in ('income', 'refund') then ${transactions.amount}
   else ${transactions.amount}
 end`;
 
 const searchMatchesCondition = (orgId: string, term: string): SQL => {
   const pattern = ilikePattern(term);
   return or(
-    sql`(${transactions.description} ILIKE ${pattern} OR ${transactions.rawDescription} ILIKE ${pattern})`,
+    descriptionOrRawDescriptionIlike(pattern),
     exists(
       db
         .select({ one: sql`1` })
@@ -367,7 +369,7 @@ export const buildConditions = (params: ListQueryParams): SQL[] => {
   // Searches both description (user-visible) and rawDescription (original bank/import memo).
   if (params.description) {
     conditions.push(
-      sql`(${transactions.description} ILIKE ${ilikePattern(params.description)} OR ${transactions.rawDescription} ILIKE ${ilikePattern(params.description)})`
+      descriptionOrRawDescriptionIlike(ilikePattern(params.description))
     );
   }
 
@@ -416,27 +418,22 @@ export const buildListQuery = async (params: ListQueryParams) => {
     .offset(offset);
 };
 
-// Count query — returns total matching rows for pagination envelope (D-07)
-export const countQuery = async (params: ListQueryParams): Promise<number> => {
-  const conditions = buildConditions(params);
-  const [{ total }] = await db
-    .select({ total: sql<number>`count(*)::int` })
-    .from(transactions)
-    .where(and(...conditions));
-  return total;
-};
-
-export const amountSumQuery = async (
+// Count + amount sum over the filtered set (D-07, PLO-131) — one scan for both aggregates.
+export const listAggregatesQuery = async (
   params: ListQueryParams
-): Promise<number> => {
+): Promise<{ total: number; amountSum: number }> => {
   const conditions = buildConditions(params);
-  const [{ amountSum }] = await db
+  const [{ total, amountSum }] = await db
     .select({
-      amountSum: sql<number>`coalesce(sum(${listedAmountCentsSql}), 0)::int`,
+      total: sql<number>`count(*)::int`,
+      amountSum:
+        sql<number>`coalesce(sum(${listedAmountCentsSql}), 0)::int`.mapWith(
+          Number
+        ),
     })
     .from(transactions)
     .where(and(...conditions));
-  return amountSum;
+  return { total, amountSum };
 };
 
 // Single transaction by id — same column projection as list (D-05)

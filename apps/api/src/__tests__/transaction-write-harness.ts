@@ -100,7 +100,7 @@ vi.mock('@/lib/queries/transactions', () => ({
   replaceAssignees: vi.fn(),
   replaceTags: vi.fn(),
   buildListQuery: vi.fn(),
-  countQuery: vi.fn(),
+  listAggregatesQuery: vi.fn(),
   counterpartAccountBelongsToOrg: vi.fn().mockResolvedValue(true),
   refundOfExists: vi.fn().mockResolvedValue(true),
   softDeleteTransactionQuery: vi.fn(),

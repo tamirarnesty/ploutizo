@@ -10,11 +10,10 @@ import {
   transactionExistsInOrg,
 } from '@/lib/queries/scope';
 import {
-  amountSumQuery,
   buildListQuery,
-  countQuery,
   enrichTransactions,
   fetchTransactionById,
+  listAggregatesQuery,
   replaceAssignees,
   replaceTags,
   restoreTransactionQuery,
@@ -104,11 +103,11 @@ const loadTransactionWriteReferences = async (
 };
 
 export const listTransactions = async (params: ListQueryParams) => {
-  const [baseRows, total, amountSum] = await Promise.all([
+  const [baseRows, aggregates] = await Promise.all([
     buildListQuery(params),
-    countQuery(params),
-    amountSumQuery(params),
+    listAggregatesQuery(params),
   ]);
+  const { total, amountSum } = aggregates;
   const { assigneeMap, tagMap } = await enrichTransactions(
     params.orgId,
     baseRows
