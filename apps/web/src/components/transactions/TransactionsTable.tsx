@@ -186,7 +186,13 @@ export const TransactionsTable = ({
         table={table}
         recordCount={total}
         isLoading={isLoading}
-        emptyMessage="No transactions yet"
+        emptyMessage={
+          onFilteredEmpty ? (
+            <TransactionsTableEmptyFiltered onClearFilters={onClearFilters} />
+          ) : (
+            'No transactions yet'
+          )
+        }
         renderRowContextMenu={renderRowContextMenu}
         tableLayout={{
           width: 'fixed',
