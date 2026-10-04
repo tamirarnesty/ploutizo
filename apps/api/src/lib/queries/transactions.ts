@@ -95,6 +95,8 @@ export type ListQueryParams = {
   tagIds?: string[];
   /** D-18: case-insensitive substring match on description OR rawDescription — T-03.4-01 */
   description?: string;
+  /** Free-text search across description, category, account, and tags (not assignee, amount, or date). */
+  search?: string;
   // Operator params — T-03.4.1-OP1: unrecognised values fall through to default (eq/is) behaviour
   type_op?: string; // 'is' | 'is_not'
   accountId_op?: string; // 'is' | 'is_not'
@@ -103,6 +105,71 @@ export type ListQueryParams = {
   tagIds_op?: string; // 'is_any_of' | 'is_not_any_of' | 'includes_all' | 'excludes_all' | 'empty' | 'not_empty'
   dateRange_op?: string; // 'between' | 'after' | 'before' | 'is' | 'is_not' | 'not_between'
   importLink?: { batchId: string; outcome: 'created' | 'matched' };
+};
+
+const escapeIlikeLiteral = (value: string) =>
+  value.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+
+const ilikePattern = (value: string) => `%${escapeIlikeLiteral(value)}%`;
+
+const descriptionOrRawDescriptionIlike = (pattern: string) =>
+  sql`(${transactions.description} ILIKE ${pattern} OR ${transactions.rawDescription} ILIKE ${pattern})`;
+
+const listedAmountCentsSql = sql<number>`case
+  when ${transactions.type} = 'expense' then -${transactions.amount}
+  else ${transactions.amount}
+end`;
+
+const searchMatchesCondition = (orgId: string, term: string): SQL => {
+  const pattern = ilikePattern(term);
+  return or(
+    descriptionOrRawDescriptionIlike(pattern),
+    exists(
+      db
+        .select({ one: sql`1` })
+        .from(categories)
+        .where(
+          and(
+            eq(categories.id, transactions.categoryId),
+            eq(categories.orgId, orgId),
+            sql`${categories.name} ILIKE ${pattern}`
+          )
+        )
+    ),
+    exists(
+      db
+        .select({ one: sql`1` })
+        .from(accounts)
+        .where(
+          and(
+            eq(accounts.orgId, orgId),
+            or(
+              and(
+                eq(accounts.id, transactions.accountId),
+                sql`${accounts.name} ILIKE ${pattern}`
+              ),
+              and(
+                eq(accounts.id, transactions.counterpartAccountId),
+                sql`${accounts.name} ILIKE ${pattern}`
+              )
+            )
+          )
+        )
+    ),
+    exists(
+      db
+        .select({ one: sql`1` })
+        .from(transactionTags)
+        .innerJoin(tags, eq(transactionTags.tagId, tags.id))
+        .where(
+          and(
+            eq(transactionTags.transactionId, transactions.id),
+            eq(tags.orgId, orgId),
+            sql`${tags.name} ILIKE ${pattern}`
+          )
+        )
+    )
+  )!;
 };
 
 const importTransactionLinkExists = (
@@ -300,13 +367,9 @@ export const buildConditions = (params: ListQueryParams): SQL[] => {
     }
   }
 
-  // T-03.4-01: D-18 description filter — parameterized ILIKE (NOT string interpolation) — safe from SQL injection
-  // '%' + value + '%' is passed as a Drizzle bound parameter to the DB driver, not concatenated into SQL text.
-  // Searches both description (user-visible) and rawDescription (original bank/import memo).
-  if (params.description) {
-    conditions.push(
-      sql`(${transactions.description} ILIKE ${'%' + params.description + '%'} OR ${transactions.rawDescription} ILIKE ${'%' + params.description + '%'})`
-    );
+  const freeTextSearch = params.search ?? params.description;
+  if (freeTextSearch) {
+    conditions.push(searchMatchesCondition(params.orgId, freeTextSearch));
   }
 
   if (params.importLink) {
@@ -350,14 +413,22 @@ export const buildListQuery = async (params: ListQueryParams) => {
     .offset(offset);
 };
 
-// Count query — returns total matching rows for pagination envelope (D-07)
-export const countQuery = async (params: ListQueryParams): Promise<number> => {
+// Count + amount sum over the filtered set (D-07, PLO-131) — one scan for both aggregates.
+export const listAggregatesQuery = async (
+  params: ListQueryParams
+): Promise<{ total: number; amountSumCents: number }> => {
   const conditions = buildConditions(params);
-  const [{ total }] = await db
-    .select({ total: sql<number>`count(*)::int` })
+  const [{ total, amountSumCents }] = await db
+    .select({
+      total: sql<number>`count(*)::int`,
+      amountSumCents:
+        sql<number>`coalesce(sum(${listedAmountCentsSql}), 0)::bigint`.mapWith(
+          Number
+        ),
+    })
     .from(transactions)
     .where(and(...conditions));
-  return total;
+  return { total, amountSumCents };
 };
 
 // Single transaction by id — same column projection as list (D-05)

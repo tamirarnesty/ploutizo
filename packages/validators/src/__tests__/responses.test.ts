@@ -57,6 +57,7 @@ const listPage = (row: Record<string, unknown>) => ({
   total: 1,
   page: 1,
   limit: 25,
+  amountSumCents: -3000,
 });
 
 describe('transactionListResponseSchema', () => {

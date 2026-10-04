@@ -11,9 +11,9 @@ import {
 } from '@/lib/queries/scope';
 import {
   buildListQuery,
-  countQuery,
   enrichTransactions,
   fetchTransactionById,
+  listAggregatesQuery,
   replaceAssignees,
   replaceTags,
   restoreTransactionQuery,
@@ -103,10 +103,11 @@ const loadTransactionWriteReferences = async (
 };
 
 export const listTransactions = async (params: ListQueryParams) => {
-  const [baseRows, total] = await Promise.all([
+  const [baseRows, aggregates] = await Promise.all([
     buildListQuery(params),
-    countQuery(params),
+    listAggregatesQuery(params),
   ]);
+  const { total, amountSumCents } = aggregates;
   const { assigneeMap, tagMap } = await enrichTransactions(
     params.orgId,
     baseRows
@@ -116,7 +117,13 @@ export const listTransactions = async (params: ListQueryParams) => {
     assignees: assigneeMap[row.id] ?? [],
     tags: tagMap[row.id] ?? [],
   }));
-  return { data, total, page: params.page, limit: params.limit };
+  return {
+    data,
+    total,
+    page: params.page,
+    limit: params.limit,
+    amountSumCents,
+  };
 };
 
 export const getTransaction = async (orgId: string, id: string) => {
