@@ -73,6 +73,67 @@ describe('TransactionsTable amount footer', () => {
     expect(screen.getByText('$0.00')).toBeInTheDocument();
   });
 
+  it('shows filtered empty state when onFilteredEmpty is true', () => {
+    render(
+      <TooltipProvider delay={0}>
+        <TransactionsTable
+          transactions={[]}
+          total={0}
+          pageAmountSumCents={0}
+          isLoading={false}
+          page={1}
+          limit={25}
+          sort="date"
+          order="desc"
+          onPageChange={vi.fn()}
+          onLimitChange={vi.fn()}
+          onSortChange={vi.fn()}
+          onFilteredEmpty={true}
+          onClearFilters={vi.fn()}
+          onEdit={vi.fn()}
+          onOpenOriginal={vi.fn()}
+        />
+      </TooltipProvider>
+    );
+
+    expect(
+      screen.getByText('No transactions match your filters')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Clear filters' })
+    ).toBeInTheDocument();
+  });
+
+  it('shows plain empty copy when onFilteredEmpty is false and page sum is zero', () => {
+    render(
+      <TooltipProvider delay={0}>
+        <TransactionsTable
+          transactions={[]}
+          total={0}
+          pageAmountSumCents={0}
+          isLoading={false}
+          page={1}
+          limit={25}
+          sort="date"
+          order="desc"
+          onPageChange={vi.fn()}
+          onLimitChange={vi.fn()}
+          onSortChange={vi.fn()}
+          onFilteredEmpty={false}
+          onClearFilters={vi.fn()}
+          onEdit={vi.fn()}
+          onOpenOriginal={vi.fn()}
+        />
+      </TooltipProvider>
+    );
+
+    expect(screen.getByText('No transactions yet')).toBeInTheDocument();
+    expect(screen.getByText('$0.00')).toBeInTheDocument();
+    expect(
+      screen.queryByText('No transactions match your filters')
+    ).not.toBeInTheDocument();
+  });
+
   it('omits the footer while the list response is missing', () => {
     render(
       <TooltipProvider delay={0}>
