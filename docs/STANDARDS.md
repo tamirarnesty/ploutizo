@@ -86,6 +86,33 @@ documents (shadcn chart tooltips: `labelKey`, `nameKey`, `labelFormatter`,
 Use the **same domain formatter** everywhere a value is shown (axis + tooltip +
 grid) so the product stays consistent.
 
+### Input groups
+
+Search fields, prefixes, suffixes, and inline actions belong in shadcn
+**InputGroup** primitives from `@ploutizo/ui/components/input-group` — not a
+wrapper `div` with a standalone `Input` and absolutely positioned icons or
+labels.
+
+| Piece | Use |
+| ----- | --- |
+| Border, focus ring, disabled shell | `InputGroup` |
+| Leading / trailing icon, text, or button | `InputGroupAddon` (+ `InputGroupText` or `InputGroupButton` when needed) |
+| The actual field | `InputGroupInput` or `InputGroupTextarea` |
+
+```tsx
+<InputGroup className="h-7! w-full sm:w-64">
+  <InputGroupAddon>
+    <SearchIcon className="size-3.5" aria-hidden />
+  </InputGroupAddon>
+  <InputGroupInput type="search" aria-label="Search transactions" />
+</InputGroup>
+```
+
+Reference implementations: `CurrencyInput` and `PercentInput` in `apps/web`,
+filter text fields in `packages/ui/src/components/reui/filters.tsx`, and command
+search in `packages/ui/src/components/command.tsx`. See [shadcn input group
+docs](https://ui.shadcn.com/docs/components/input-group).
+
 ### Charts
 
 Charts are the reference implementation of the rules above. Build with shadcn
