@@ -31,14 +31,41 @@ migration; do not rewrite an already-applied migration.
 
 `@ploutizo/ui` (shadcn, ReUI, and thin wrappers over libraries such as Recharts)
 is the default toolset for product UI. **Compose** exported primitives and their
-documented capabilities; do not rebuild the same surfaces by hand in `apps/web`.
+documented capabilities; do not rebuild the same surfaces by hand.
+
+This applies in **`apps/web`** and in **`packages/ui`** whenever you build or
+change UI that imports from `@ploutizo/ui` — feature components, shared app
+widgets, and higher-level primitives inside the UI package (for example
+`date-range-picker`, `command`, ReUI filters).
+
+### shadcn composition (normative)
+
+shadcn-derived exports in `@ploutizo/ui` follow the **Composition** trees and
+subcomponents documented on [shadcn/ui](https://ui.shadcn.com/docs/components).
+Before you wire a primitive, open its component page (and types in
+`packages/ui`) and match that structure — root, children, slots, and documented
+`data-slot` / `asChild` / `render` patterns.
+
+| Rule | Meaning |
+| ---- | ------- |
+| **Use the documented tree** | Put the parts the docs name inside the root they belong to (`Dialog` → `DialogContent` → `DialogHeader`; `InputGroup` → `InputGroupInput` + `InputGroupAddon`; `Field` → `FieldLabel` + control). |
+| **Use group subcomponents, not siblings** | Do not swap in a standalone primitive where the registry exposes a group-specific one (`Input` + absolutely positioned icon instead of `InputGroup` + `InputGroupInput` + `InputGroupAddon`). |
+| **Do not reimplement the shell** | Borders, focus rings, disabled states, roles, and spacing that subcomponents apply stay on those subcomponents — not duplicated on wrapper `div`s or raw HTML. |
+| **Respect document order when docs require it** | Some groups (for example input-group addons and focus) depend on DOM order and `align`; follow the page, do not reorder for convenience. |
+| **ReUI and forks** | ReUI blocks under `packages/ui/src/components/reui/` and Ploutizo forks still compose underlying shadcn primitives the same way; use [ReUI](https://reui.io) / inline APIs when the surface is ReUI-specific. |
+
+ReUI-only or engine-wrapped surfaces (for example `ChartContainer` over
+Recharts, `DataGrid`) follow that wrapper’s documented composition the same way
+— read **its** page and types, then compose; do not bypass to the underlying
+engine when a wrapper exists.
 
 General workflow:
 
 1. **Find the library entry point** — component, hook, or config type from
-   `@ploutizo/ui` (and the underlying library docs when needed).
-2. **Use built-in composition** — slots, subcomponents, and props the library
-   already exposes (`ChartTooltipContent`, `ChartLegendContent`, `Empty`,
+   `@ploutizo/ui` (shadcn component page, ReUI API, or underlying library docs
+   when needed).
+2. **Match documented composition** — slots, subcomponents, and props the
+   registry already exposes (`ChartTooltipContent`, `InputGroupInput`, `Field`,
    `DataGrid` props, form field APIs, and so on).
 3. **Customize through the narrowest supported extension** — prefer targeted
    props over replacing whole UI trees.
@@ -51,13 +78,14 @@ General workflow:
 
 ### Do not hand-roll what the library already provides
 
-- Do not duplicate layout, accessibility, or styling that a library component
-  already implements (tooltips, legends, dialogs, tables, empty states).
+- Do not duplicate layout, accessibility, or styling that a composed primitive
+  already implements (tooltips, legends, dialogs, tables, empty states, input
+  group chrome).
 - Do not bypass the library to talk to the underlying engine when a wrapper
   exists (for example raw Recharts tooltip markup next to `ChartContainer`).
-- If the library places a subpart in a specific tree (legend inside the chart,
-  tooltip `content` component), follow that structure. Siblings or parallel DOM
-  often break sizing, focus, or theming.
+- If the docs place a subpart in a specific tree (legend inside the chart,
+  tooltip `content` component, addon after `InputGroupInput`), follow that
+  structure. Siblings or parallel DOM often break sizing, focus, or theming.
 
 ### How to customize (in order)
 
@@ -86,36 +114,10 @@ documents (shadcn chart tooltips: `labelKey`, `nameKey`, `labelFormatter`,
 Use the **same domain formatter** everywhere a value is shown (axis + tooltip +
 grid) so the product stays consistent.
 
-### Input groups
-
-Search fields, prefixes, suffixes, and inline actions belong in shadcn
-**InputGroup** primitives from `@ploutizo/ui/components/input-group` — not a
-wrapper `div` with a standalone `Input` and absolutely positioned icons or
-labels.
-
-| Piece | Use |
-| ----- | --- |
-| Border, focus ring, disabled shell | `InputGroup` |
-| Leading / trailing icon, text, or button | `InputGroupAddon` (+ `InputGroupText` or `InputGroupButton` when needed) |
-| The actual field | `InputGroupInput` or `InputGroupTextarea` |
-
-```tsx
-<InputGroup className="h-7! w-full sm:w-64">
-  <InputGroupAddon>
-    <SearchIcon className="size-3.5" aria-hidden />
-  </InputGroupAddon>
-  <InputGroupInput type="search" aria-label="Search transactions" />
-</InputGroup>
-```
-
-Reference implementations: `CurrencyInput` and `PercentInput` in `apps/web`,
-filter text fields in `packages/ui/src/components/reui/filters.tsx`, and command
-search in `packages/ui/src/components/command.tsx`. See [shadcn input group
-docs](https://ui.shadcn.com/docs/components/input-group).
-
 ### Charts
 
-Charts are the reference implementation of the rules above. Build with shadcn
+Charts apply the same shadcn composition rules; the table below is **product**
+guidance on top of the chart primitives. Build with shadcn
 Chart primitives in `@ploutizo/ui` over Recharts (`ChartContainer`,
 `ChartTooltip`, `ChartTooltipContent`, `ChartLegend`, `ChartLegendContent`).
 See [shadcn chart docs](https://ui.shadcn.com/docs/components/chart).
