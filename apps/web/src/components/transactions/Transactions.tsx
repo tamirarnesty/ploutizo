@@ -19,7 +19,12 @@ import { useTablePageSize } from '@/hooks/persistedPageSize';
 import { TransactionsTable } from './TransactionsTable';
 import { TransactionSheet } from './TransactionSheet';
 import { buildFilterFields } from './TransactionFilterFields';
-import { buildTransactionQueryParams } from './transactionSearch';
+import { TransactionFilterSearch } from './TransactionFilterSearch';
+import { sumLoadedPageAmountCents } from './transactionsPageAmountSum';
+import {
+  buildTransactionQueryParams,
+  normalizeTransactionSearchQuery,
+} from './transactionSearch';
 import {
   TRANSACTION_PINNED_FILTER_FIELD_KEYS_LIST,
   withPinnedTransactionFilters,
@@ -51,6 +56,9 @@ export const buildCleanSearch = (
   if (result.dateRange_op === 'between') delete result.dateRange_op;
   if (!result.importBatchId) delete result.importBatchId;
   if (!result.importOutcome) delete result.importOutcome;
+  const normalizedSearch = normalizeTransactionSearchQuery(result.search);
+  if (normalizedSearch) result.search = normalizedSearch;
+  else delete result.search;
   return result;
 };
 
@@ -274,7 +282,8 @@ export const hasActiveFilters = (search: TransactionSearch): boolean =>
   search.assigneeId_op === 'not_empty' ||
   search.tagIds_op === 'empty' ||
   search.tagIds_op === 'not_empty' ||
-  Boolean(search.importBatchId && search.importOutcome);
+  Boolean(search.importBatchId && search.importOutcome) ||
+  Boolean(normalizeTransactionSearchQuery(search.search));
 
 export const Transactions = () => {
   const search = useSearch({ from: '/_layout/transactions' });
@@ -294,6 +303,11 @@ export const Transactions = () => {
 
   const transactions = txData?.data ?? [];
   const total = txData?.total ?? 0;
+  const pageAmountSumCents = useMemo(
+    () =>
+      txData === undefined ? undefined : sumLoadedPageAmountCents(transactions),
+    [txData, transactions]
+  );
   const page = search.page ?? 1;
   const sort = search.sort ?? 'date';
   const order = search.order ?? 'desc';
@@ -307,6 +321,7 @@ export const Transactions = () => {
   const [activeFilters, setActiveFilters] = useState<Filter<string>[]>(() =>
     withPinnedTransactionFilters(searchToFilters(search))
   );
+  const [searchInput, setSearchInput] = useState(() => search.search ?? '');
 
   // When URL-encoded filter values change externally (e.g. browser back/forward,
   // or programmatic navigation) sync the local filter state. We detect changes by
@@ -335,13 +350,37 @@ export const Transactions = () => {
       'importBatchId',
       'importOutcome',
     ] as const;
-    const changed = filterKeys.some((k) => prev[k] !== search[k]);
-    if (!changed) return;
+    const searchChanged = prev.search !== search.search;
+    const filtersChanged = filterKeys.some((k) => prev[k] !== search[k]);
+    if (!filtersChanged && !searchChanged) return;
 
-    // Re-derive from URL including operators (operators now persist in URL)
-    const fromUrl = searchToFilters(search);
-    setActiveFilters(withPinnedTransactionFilters(fromUrl));
+    if (filtersChanged) {
+      const fromUrl = searchToFilters(search);
+      setActiveFilters(withPinnedTransactionFilters(fromUrl));
+    }
+    if (searchChanged) {
+      setSearchInput(search.search ?? '');
+    }
   }, [search]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const trimmed = searchInput.trim();
+      const urlQuery = search.search?.trim() ?? '';
+      if (trimmed === urlQuery) return;
+      void navigate({
+        to: '/transactions',
+        search: (prev) =>
+          buildCleanSearch({
+            ...prev,
+            search: trimmed || undefined,
+            page: 1,
+          }),
+        replace: true,
+      });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [navigate, search.search, searchInput]);
 
   // Build FilterFieldConfig for the Filters component (6 fields per D-28).
   // Import result is only offered when a provenance batch is already in the URL.
@@ -370,6 +409,7 @@ export const Transactions = () => {
             page: 1,
             sort: prev.sort,
             order: prev.order,
+            search: prev.search,
             ...mapped,
             importBatchId: mapped.importOutcome
               ? prev.importBatchId
@@ -418,6 +458,7 @@ export const Transactions = () => {
 
   const handleClearFilters = useCallback(() => {
     setActiveFilters(withPinnedTransactionFilters([]));
+    setSearchInput('');
     void navigate({
       to: '/transactions',
       search: () => buildCleanSearch({}),
@@ -464,22 +505,30 @@ export const Transactions = () => {
 
       {/* Filter bar — full-width, no sticky */}
       {/* trigger prop required: useRender renders an empty invisible button without it */}
-      <Filters<string>
-        filters={activeFilters}
-        fields={filterFields}
-        onChange={handleFiltersChange}
-        pinnedFieldKeys={TRANSACTION_PINNED_FILTER_FIELD_KEYS_LIST}
-        trigger={
-          <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs">
-            <ListFilterIcon className="size-3.5" />
-            Filters
-          </Button>
-        }
-      />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <Filters<string>
+          filters={activeFilters}
+          fields={filterFields}
+          onChange={handleFiltersChange}
+          pinnedFieldKeys={TRANSACTION_PINNED_FILTER_FIELD_KEYS_LIST}
+          className="min-w-0 flex-1"
+          trigger={
+            <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs">
+              <ListFilterIcon className="size-3.5" />
+              Filters
+            </Button>
+          }
+        />
+        <TransactionFilterSearch
+          value={searchInput}
+          onChange={setSearchInput}
+        />
+      </div>
 
       <TransactionsTable
         transactions={transactions}
         total={total}
+        pageAmountSumCents={pageAmountSumCents}
         isLoading={isLoading}
         page={page}
         limit={limit}
