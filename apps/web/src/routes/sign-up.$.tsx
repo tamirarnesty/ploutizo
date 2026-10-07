@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { enforceAccessPolicy } from '@/lib/access/enforce-access-policy';
 
 const Page = () => (
-  <div className="flex min-h-screen items-center justify-center">
+  <div data-safe-page className="flex items-center justify-center">
     <SignUp fallbackRedirectUrl="/dashboard" />
   </div>
 );

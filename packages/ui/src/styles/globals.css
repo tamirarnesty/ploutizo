@@ -18,6 +18,15 @@
 @import 'shadcn/tailwind.css';
 @import '@fontsource-variable/geist';
 
+/* Tailwind's hover: variant is (hover: hover) only. A fine pointer keeps a tap from leaving :hover stuck. */
+@custom-variant hover {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @slot;
+    }
+  }
+}
+
 @custom-variant dark (&:is(.dark *));
 @source '../../../apps/**/*.{ts,tsx}';
 @source '../../../components/**/*.{ts,tsx}';
@@ -85,11 +94,11 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
+  --background: oklch(1 0 none);
   --foreground: oklch(0.147 0.004 49.25);
-  --card: oklch(1 0 0);
+  --card: oklch(1 0 none);
   --card-foreground: oklch(0.147 0.004 49.25);
-  --popover: oklch(1 0 0);
+  --popover: oklch(1 0 none);
   --popover-foreground: oklch(0.147 0.004 49.25);
   --primary: oklch(0.5 0.134 242.749);
   --primary-foreground: oklch(0.977 0.013 236.62);
@@ -147,8 +156,8 @@
   --accent: oklch(0.268 0.007 34.298);
   --accent-foreground: oklch(0.985 0.001 106.423);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
+  --border: oklch(1 0 none / 10%);
+  --input: oklch(1 0 none / 15%);
   --ring: oklch(0.553 0.013 58.071);
   --chart-1: oklch(0.855 0.138 181.071);
   --chart-2: oklch(0.704 0.14 182.503);
@@ -162,7 +171,7 @@
   --sidebar-primary-foreground: oklch(0.293 0.066 243.157);
   --sidebar-accent: oklch(0.268 0.007 34.298);
   --sidebar-accent-foreground: oklch(0.985 0.001 106.423);
-  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-border: oklch(1 0 none / 10%);
   --sidebar-ring: oklch(0.553 0.013 58.071);
   /* ReUI extended semantic tokens — https://reui.io/docs/styling */
   --destructive-foreground: var(--color-red-600);
@@ -180,14 +189,152 @@
   * {
     @apply border-border outline-ring/50;
   }
+
+  /*
+   * Flex and grid items shrink below their content. Table boxes keep the
+   * content minimum so a fixed data grid and an automatic table do not collapse.
+   */
+  *,
+  *::before,
+  *::after {
+    min-width: 0;
+  }
+
+  :where(table, thead, tbody, tfoot, tr, th, td) {
+    min-width: auto;
+  }
+
+  :root {
+    interpolate-size: allow-keywords;
+    scrollbar-gutter: stable;
+    text-wrap: pretty;
+    overflow-wrap: break-word;
+    font-synthesis: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    color-scheme: light dark;
+  }
+
+  .light {
+    color-scheme: light;
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
+
   body {
     @apply bg-background text-foreground;
+    margin: 0;
+    min-block-size: 100svh;
   }
+
   html {
     @apply font-sans;
+    overscroll-behavior-y: none;
   }
+
+  @media (any-pointer: coarse) {
+    html {
+      overscroll-behavior-y: auto;
+    }
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: balance;
+  }
+
+  /* Sized icons and images keep their box. max-width: 100% on svg shrinks icon utilities. */
+  img,
+  svg,
+  video {
+    flex: none;
+  }
+
+  textarea,
+  [contenteditable='true'] {
+    text-wrap: stable;
+  }
+
+  input,
+  textarea,
+  select {
+    font-size: max(16px, 1rem);
+  }
+
+  button,
+  a,
+  [role='button'] {
+    touch-action: manipulation;
+  }
+
+  button,
+  [role='button'] {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
   button:not(:disabled),
   [role='button']:not(:disabled) {
     cursor: pointer;
+  }
+
+  :where(td, time),
+  :where([data-slot='chart']),
+  :where(input[inputmode='decimal'], input[inputmode='numeric']) {
+    font-variant-numeric: tabular-nums;
+  }
+
+  :where(
+    main.overflow-auto,
+    [data-slot='sidebar-content'],
+    [data-slot='scroll-area-viewport'],
+    [data-slot='dialog-content'],
+    [data-slot='sheet-content']
+  ) {
+    overscroll-behavior: contain;
+  }
+
+  main.overflow-auto {
+    scrollbar-gutter: stable;
+  }
+
+  [data-app-shell] {
+    padding-block-end: env(safe-area-inset-bottom, 0px);
+    padding-inline: env(safe-area-inset-left, 0px)
+      env(safe-area-inset-right, 0px);
+  }
+
+  [data-app-header] {
+    padding-block-start: calc(0.5rem + env(safe-area-inset-top, 0px));
+  }
+
+  [data-slot='sheet-content'] {
+    padding-block-end: env(safe-area-inset-bottom, 0px);
+  }
+
+  [data-safe-page] {
+    min-block-size: 100svh;
+    padding-block: max(1.5rem, env(safe-area-inset-top, 0px))
+      max(1.5rem, env(safe-area-inset-bottom, 0px));
+    padding-inline: max(1.5rem, env(safe-area-inset-left, 0px))
+      max(1.5rem, env(safe-area-inset-right, 0px));
+  }
+
+  @media (pointer: coarse) {
+    :where([data-slot='button']:is(.size-6, .size-7, .size-8, .size-9)) {
+      position: relative;
+    }
+
+    :where([data-slot='button']:is(.size-6, .size-7, .size-8, .size-9))::after {
+      content: '';
+      position: absolute;
+      inset: min(0px, calc((100% - 2.75rem) / 2));
+    }
   }
 }

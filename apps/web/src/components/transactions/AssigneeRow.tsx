@@ -103,7 +103,7 @@ export const AssigneeRow = ({
       <Text
         as="span"
         variant="body-sm"
-        className="w-20 text-right text-muted-foreground"
+        className="w-20 text-right text-muted-foreground tabular-nums"
       >
         {mode === 'percent'
           ? formatCurrency(amountCents)
