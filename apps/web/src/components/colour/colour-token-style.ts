@@ -107,8 +107,8 @@ export const colourTokenVar = (token: ColourToken): string =>
 export const colourTokenBadgeStyle = (token: ColourToken): CSSProperties => {
   const colour = colourTokenVar(token);
   return {
-    backgroundColor: `color-mix(in oklab, ${colour} 12%, transparent)`,
-    borderColor: `color-mix(in oklab, ${colour} 25%, transparent)`,
+    backgroundColor: `color-mix(in oklch, ${colour} 12%, transparent)`,
+    borderColor: `color-mix(in oklch, ${colour} 25%, transparent)`,
     color: colour,
   };
 };

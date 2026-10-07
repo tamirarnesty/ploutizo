@@ -36,6 +36,7 @@ export const SettleDialogFormFooter = ({
         </Button>
         <LoadingButton
           type="submit"
+          className="tabular-nums"
           loading={isSubmitting}
           loadingText="Settling…"
           disabled={isAmountInvalid}

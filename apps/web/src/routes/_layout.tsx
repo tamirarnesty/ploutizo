@@ -32,7 +32,7 @@ const LayoutShell = () => {
 
   return (
     <CommandPaletteProvider>
-      <div className="flex h-dvh flex-col overflow-hidden">
+      <div data-app-shell className="flex h-dvh flex-col overflow-hidden">
         <SidebarProvider
           defaultOpen={defaultOpen}
           className="min-h-0 flex-1 flex-col"

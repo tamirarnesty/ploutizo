@@ -152,7 +152,9 @@ export const RefundLinker = ({
                             }
                           )}
                         </span>
-                        <span>{formatCurrency(tx.amount)}</span>
+                        <span className="tabular-nums">
+                          {formatCurrency(tx.amount)}
+                        </span>
                       </span>
                     </div>
                   </ComboboxItem>

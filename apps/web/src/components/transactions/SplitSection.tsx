@@ -155,7 +155,7 @@ export const SplitSection = ({
 
       {/* Totals row */}
       <div className="flex items-center justify-between gap-2">
-        <Text variant="caption" className="text-muted-foreground">
+        <Text variant="caption" className="text-muted-foreground tabular-nums">
           Total: {totalPct.toFixed(1)}% · {formatCurrency(totalAmountCents)}
         </Text>
         {value.length > 0 && Math.abs(totalPct - 100) > 0.5 ? (
