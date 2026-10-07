@@ -6,7 +6,7 @@ import { enforceAccessPolicy } from '@/lib/access/enforce-access-policy';
 const Page = () => {
   const { redirect: returnPath } = Route.useSearch();
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div data-safe-page className="flex items-center justify-center">
       <SignIn
         fallbackRedirectUrl="/dashboard"
         {...(returnPath ? { forceRedirectUrl: returnPath } : {})}

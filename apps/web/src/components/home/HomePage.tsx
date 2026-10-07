@@ -4,7 +4,10 @@ import { Text } from '@ploutizo/ui/components/text';
 
 export const HomePage = () => {
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center gap-8 p-6">
+    <div
+      data-safe-page
+      className="flex flex-col items-center justify-center gap-8"
+    >
       <div className="flex max-w-lg flex-col items-center gap-3 text-center">
         <Text as="h1" variant="h2">
           ploutizo
