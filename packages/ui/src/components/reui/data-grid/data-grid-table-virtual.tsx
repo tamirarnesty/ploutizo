@@ -412,38 +412,39 @@ function DataGridTableVirtual<TData>({
       <DataGridTableBase>
         {renderHeader && (
           <DataGridTableHead>
-            {table
-              .getHeaderGroups()
-              .map((headerGroup: HeaderGroup<TData>, index) => (
-                <DataGridTableHeadRow headerGroup={headerGroup} key={index}>
-                  {headerGroup.headers.map((header, hIndex) => {
-                    const { column } = header;
+            {table.getHeaderGroups().map((headerGroup: HeaderGroup<TData>) => (
+              <DataGridTableHeadRow
+                headerGroup={headerGroup}
+                key={headerGroup.id}
+              >
+                {headerGroup.headers.map((header) => {
+                  const { column } = header;
 
-                    return (
-                      <DataGridTableHeadRowCell header={header} key={hIndex}>
-                        {header.isPlaceholder ? null : props.tableLayout
-                            ?.columnsResizable && column.getCanResize() ? (
-                          <div className="truncate">
-                            {flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                          </div>
-                        ) : (
-                          flexRender(
+                  return (
+                    <DataGridTableHeadRowCell header={header} key={header.id}>
+                      {header.isPlaceholder ? null : props.tableLayout
+                          ?.columnsResizable && column.getCanResize() ? (
+                        <div className="truncate">
+                          {flexRender(
                             header.column.columnDef.header,
                             header.getContext()
-                          )
-                        )}
-                        {props.tableLayout?.columnsResizable &&
-                          column.getCanResize() && (
-                            <DataGridTableHeadRowCellResize header={header} />
                           )}
-                      </DataGridTableHeadRowCell>
-                    );
-                  })}
-                </DataGridTableHeadRow>
-              ))}
+                        </div>
+                      ) : (
+                        flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )
+                      )}
+                      {props.tableLayout?.columnsResizable &&
+                        column.getCanResize() && (
+                          <DataGridTableHeadRowCellResize header={header} />
+                        )}
+                    </DataGridTableHeadRowCell>
+                  );
+                })}
+              </DataGridTableHeadRow>
+            ))}
           </DataGridTableHead>
         )}
 
