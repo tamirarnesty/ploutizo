@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, use, useState } from 'react';
+import { createContext, use, useCallback, useMemo, useState } from 'react';
 import { max, startOfMonth, subMonths } from 'date-fns';
 import { type DateRange } from 'react-day-picker';
 import { type ComponentProps, type ReactNode } from 'react';
@@ -56,7 +56,7 @@ export const DateRangePicker = ({
   onApply,
   children,
 }: DateRangePickerProps) => {
-  const committed = toDateRange(value);
+  const committed = useMemo(() => toDateRange(value), [value?.from, value?.to]);
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState<DateRange | undefined>(committed);
 
@@ -67,23 +67,30 @@ export const DateRangePicker = ({
     setOpen(next);
   };
 
-  const apply = () => {
+  const apply = useCallback(() => {
     if (!pending?.from || !pending.to) return;
     onApply({ from: pending.from, to: pending.to });
     setOpen(false);
-  };
+  }, [onApply, pending]);
+
+  const cancel = useCallback(() => {
+    setOpen(false);
+  }, []);
+
+  const contextValue = useMemo(
+    () => ({
+      open,
+      pending,
+      setPending,
+      committed,
+      apply,
+      cancel,
+    }),
+    [apply, cancel, committed, open, pending]
+  );
 
   return (
-    <DateRangePickerContext
-      value={{
-        open,
-        pending,
-        setPending,
-        committed,
-        apply,
-        cancel: () => setOpen(false),
-      }}
-    >
+    <DateRangePickerContext value={contextValue}>
       <Popover open={open} onOpenChange={handleOpenChange}>
         {children}
       </Popover>

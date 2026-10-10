@@ -1488,13 +1488,29 @@ export function Filters<T = unknown>({
     }
   }, [lastAddedFilterId]);
 
-  const mergedI18n: FilterI18nConfig = {
-    ...DEFAULT_I18N,
-    ...i18n,
-    operators: { ...DEFAULT_I18N.operators, ...i18n?.operators },
-    placeholders: { ...DEFAULT_I18N.placeholders, ...i18n?.placeholders },
-    validation: { ...DEFAULT_I18N.validation, ...i18n?.validation },
-  };
+  const mergedI18n = useMemo<FilterI18nConfig>(
+    () => ({
+      ...DEFAULT_I18N,
+      ...i18n,
+      operators: { ...DEFAULT_I18N.operators, ...i18n?.operators },
+      placeholders: { ...DEFAULT_I18N.placeholders, ...i18n?.placeholders },
+      validation: { ...DEFAULT_I18N.validation, ...i18n?.validation },
+    }),
+    [i18n]
+  );
+
+  const filterContextValue = useMemo(
+    () => ({
+      variant,
+      size,
+      radius,
+      i18n: mergedI18n,
+      className,
+      trigger,
+      allowMultiple,
+    }),
+    [allowMultiple, className, mergedI18n, radius, size, trigger, variant]
+  );
 
   const fieldsMap = useMemo(() => getFieldsMap(fields), [fields]);
   const pinnedFieldKeySet = useMemo(
@@ -1682,17 +1698,7 @@ export function Filters<T = unknown>({
   };
 
   return (
-    <FilterContext.Provider
-      value={{
-        variant,
-        size,
-        radius,
-        i18n: mergedI18n,
-        className,
-        trigger,
-        allowMultiple,
-      }}
-    >
+    <FilterContext.Provider value={filterContextValue}>
       <div
         className={cn(filtersContainerVariants({ variant, size }), className)}
       >
