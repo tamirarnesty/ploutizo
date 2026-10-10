@@ -1,6 +1,6 @@
 # 003 — Memoize shared UI context values
 
-- **Status**: TODO
+- **Status**: DONE
 - **Commit**: 7eae72e
 - **Severity**: HIGH
 - **Category**: Performance
