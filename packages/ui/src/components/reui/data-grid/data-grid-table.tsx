@@ -1185,16 +1185,72 @@ function DataGridTableHeader<TData>() {
     <DataGridTableViewport>
       <DataGridTableBase>
         <DataGridTableHead>
-          {table
-            .getHeaderGroups()
-            .map((headerGroup: HeaderGroup<TData>, index) => {
+          {table.getHeaderGroups().map((headerGroup: HeaderGroup<TData>) => {
+            return (
+              <DataGridTableHeadRow
+                headerGroup={headerGroup}
+                key={headerGroup.id}
+              >
+                {headerGroup.headers.map((header) => {
+                  const { column } = header;
+
+                  return (
+                    <DataGridTableHeadRowCell header={header} key={header.id}>
+                      {header.isPlaceholder ? null : props.tableLayout
+                          ?.columnsResizable && column.getCanResize() ? (
+                        <div className="truncate">
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                        </div>
+                      ) : (
+                        flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )
+                      )}
+                      {props.tableLayout?.columnsResizable &&
+                        column.getCanResize() && (
+                          <DataGridTableHeadRowCellResize header={header} />
+                        )}
+                    </DataGridTableHeadRowCell>
+                  );
+                })}
+              </DataGridTableHeadRow>
+            );
+          })}
+        </DataGridTableHead>
+      </DataGridTableBase>
+    </DataGridTableViewport>
+  );
+}
+
+function DataGridTable<TData>({
+  footerContent,
+  renderHeader = true,
+}: {
+  footerContent?: ReactNode;
+  renderHeader?: boolean;
+}) {
+  const { table, props } = useDataGrid();
+
+  const tableMarkup = (
+    <DataGridTableViewport>
+      <DataGridTableBase>
+        {renderHeader && (
+          <DataGridTableHead>
+            {table.getHeaderGroups().map((headerGroup: HeaderGroup<TData>) => {
               return (
-                <DataGridTableHeadRow headerGroup={headerGroup} key={index}>
-                  {headerGroup.headers.map((header, index) => {
+                <DataGridTableHeadRow
+                  headerGroup={headerGroup}
+                  key={headerGroup.id}
+                >
+                  {headerGroup.headers.map((header) => {
                     const { column } = header;
 
                     return (
-                      <DataGridTableHeadRowCell header={header} key={index}>
+                      <DataGridTableHeadRowCell header={header} key={header.id}>
                         {header.isPlaceholder ? null : props.tableLayout
                             ?.columnsResizable && column.getCanResize() ? (
                           <div className="truncate">
@@ -1219,60 +1275,6 @@ function DataGridTableHeader<TData>() {
                 </DataGridTableHeadRow>
               );
             })}
-        </DataGridTableHead>
-      </DataGridTableBase>
-    </DataGridTableViewport>
-  );
-}
-
-function DataGridTable<TData>({
-  footerContent,
-  renderHeader = true,
-}: {
-  footerContent?: ReactNode;
-  renderHeader?: boolean;
-}) {
-  const { table, props } = useDataGrid();
-
-  const tableMarkup = (
-    <DataGridTableViewport>
-      <DataGridTableBase>
-        {renderHeader && (
-          <DataGridTableHead>
-            {table
-              .getHeaderGroups()
-              .map((headerGroup: HeaderGroup<TData>, index) => {
-                return (
-                  <DataGridTableHeadRow headerGroup={headerGroup} key={index}>
-                    {headerGroup.headers.map((header, index) => {
-                      const { column } = header;
-
-                      return (
-                        <DataGridTableHeadRowCell header={header} key={index}>
-                          {header.isPlaceholder ? null : props.tableLayout
-                              ?.columnsResizable && column.getCanResize() ? (
-                            <div className="truncate">
-                              {flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
-                            </div>
-                          ) : (
-                            flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )
-                          )}
-                          {props.tableLayout?.columnsResizable &&
-                            column.getCanResize() && (
-                              <DataGridTableHeadRowCellResize header={header} />
-                            )}
-                        </DataGridTableHeadRowCell>
-                      );
-                    })}
-                  </DataGridTableHeadRow>
-                );
-              })}
           </DataGridTableHead>
         )}
 
