@@ -71,7 +71,7 @@ Leave the `function` declaration. This file is the Ploutizo chart fork.
 Add `useCallback` and `useMemo` to the existing react import. Replace the inline `apply` and the inline context:
 
 ```tsx
-const committed = useMemo(() => toDateRange(value), [value?.from, value?.to]);
+const committed = useMemo(() => toDateRange(value), [value]);
 
 const apply = useCallback(() => {
   if (!pending?.from || !pending.to) return;
@@ -151,7 +151,7 @@ const contextValue = React.useMemo(
 ## Steps
 
 1. Apply the four targets above. Do not restyle, rename exports, or change context type fields.
-2. If `react-hooks/exhaustive-deps` wants `value` instead of `value?.from` / `value?.to` on the date-range memo, depend on `value` as well.
+2. Depend on `value` for the committed range. React Doctor treats `value?.from` / `value?.to` as a stale `value` dependency.
 3. Re-read the diff and drop anything that is not a memo wrapper or an import.
 
 ## Boundaries

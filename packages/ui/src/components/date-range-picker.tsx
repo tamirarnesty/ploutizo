@@ -56,7 +56,7 @@ export const DateRangePicker = ({
   onApply,
   children,
 }: DateRangePickerProps) => {
-  const committed = useMemo(() => toDateRange(value), [value?.from, value?.to]);
+  const committed = useMemo(() => toDateRange(value), [value]);
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState<DateRange | undefined>(committed);
 
