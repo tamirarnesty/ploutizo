@@ -12,9 +12,17 @@ The workspace score is the lower package score. These three plans are the highes
 
 | Plan                                                                       | Status | Order | Depends on | Why this one                                                                                                            |
 | -------------------------------------------------------------------------- | ------ | ----- | ---------- | ----------------------------------------------------------------------------------------------------------------------- |
-| [001-sortable-unconditional-hooks.md](001-sortable-unconditional-hooks.md) | TODO   | 1     | none       | P0 `rules-of-hooks`. Drag overlay can attach hook state to the wrong `useRender`.                                       |
-| [002-data-grid-stable-header-keys.md](002-data-grid-stable-header-keys.md) | TODO   | 1     | none       | P2 index keys on headers. Column reorder reuses the wrong header cell. Also memoizes the drag-row context in that file. |
-| [003-memoize-ui-context-values.md](003-memoize-ui-context-values.md)       | TODO   | 1     | none       | P2 inline context values on chart, date range, filters, and toggle group.                                               |
+| [001-sortable-unconditional-hooks.md](001-sortable-unconditional-hooks.md) | DONE   | 1     | none       | P0 `rules-of-hooks`. Drag overlay can attach hook state to the wrong `useRender`.                                       |
+| [002-data-grid-stable-header-keys.md](002-data-grid-stable-header-keys.md) | DONE   | 1     | none       | P2 index keys on headers. Column reorder reuses the wrong header cell. Also memoizes the drag-row context in that file. |
+| [003-memoize-ui-context-values.md](003-memoize-ui-context-values.md)       | DONE   | 1     | none       | P2 inline context values on chart, date range, filters, and toggle group.                                               |
+
+After, on this branch:
+
+| Scope                     | Score | Label      | Errors | Warnings |
+| ------------------------- | ----- | ---------- | ------ | -------- |
+| Workspace (worst package) | 57    | Critical   | 14     | 118      |
+| `packages/ui`             | 57    | Critical   | 0      | 61       |
+| `apps/web`                | 65    | Needs work | 14     | 57       |
 
 Files do not overlap. Run them in parallel.
 

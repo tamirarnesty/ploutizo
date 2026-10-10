@@ -1,6 +1,6 @@
 # 001 — Call useRender once in SortableItem
 
-- **Status**: TODO
+- **Status**: DONE
 - **Commit**: 7eae72e
 - **Severity**: HIGH
 - **Category**: Bugs & correctness
