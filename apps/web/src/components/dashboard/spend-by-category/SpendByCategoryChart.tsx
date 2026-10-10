@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, useMemo } from 'react';
 import {
   Bar,
   BarChart,
@@ -60,13 +60,17 @@ export const SpendByCategoryChart = ({
   );
   // Each row paints its own colour (<Cell>s), so the series colours only reach the legend, which explains the
   // treatment: solid for this period, faded for the prior one. Tooltip dots resolve the row's colours instead.
-  const chartConfig = {
-    current: { label: seriesLabels.current, color: NEUTRAL_SERIES_COLOUR },
-    prior: {
-      label: seriesLabels.prior,
-      color: fadedColour(NEUTRAL_SERIES_COLOUR),
-    },
-  } satisfies ChartConfig;
+  const chartConfig = useMemo(
+    () =>
+      ({
+        current: { label: seriesLabels.current, color: NEUTRAL_SERIES_COLOUR },
+        prior: {
+          label: seriesLabels.prior,
+          color: fadedColour(NEUTRAL_SERIES_COLOUR),
+        },
+      }) satisfies ChartConfig,
+    [seriesLabels.current, seriesLabels.prior]
+  );
 
   return (
     <ChartContainer
