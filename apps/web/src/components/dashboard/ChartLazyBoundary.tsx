@@ -30,7 +30,7 @@ export class ChartLazyBoundary extends Component<
           className="flex min-h-56 items-center justify-center text-muted-foreground"
           role="status"
         >
-          Couldn&apos;t load {this.props.label}. Refresh the page to try again.
+          Couldn't load {this.props.label}. Refresh the page to try again.
         </Text>
       );
     }
