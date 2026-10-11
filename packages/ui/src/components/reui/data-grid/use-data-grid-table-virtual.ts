@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { type Row, type Table } from '@tanstack/react-table';
 import { type VirtualItem } from '@tanstack/react-virtual';
@@ -139,21 +139,6 @@ export const useDataGridTableVirtual = <TData>({
       fetchMoreIfNeeded(instance.getVirtualItems());
     },
   }) as DataGridTableVirtualizerInstance;
-
-  useEffect(() => {
-    if (!isVirtualizationEnabled || !isInfiniteMode) {
-      return;
-    }
-    fetchMoreIfNeeded(virtualizer.getVirtualItems());
-  }, [
-    centerRows.length,
-    fetchMoreIfNeeded,
-    hasMore,
-    isFetchingMore,
-    isInfiniteMode,
-    isVirtualizationEnabled,
-    virtualizer,
-  ]);
 
   const virtualItems = isVirtualizationEnabled
     ? virtualizer.getVirtualItems()
