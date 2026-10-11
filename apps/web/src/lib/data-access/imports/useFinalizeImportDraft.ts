@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
-import { toast } from '@ploutizo/ui/components/sonner';
+import { toast } from '@ploutizo/ui/components/sonner-api';
 import type { ImportCompletedResult } from '@ploutizo/validators';
 import type { ImportOutcomeCounts } from '@ploutizo/types';
 import { invalidateSpendQueries } from '@/lib/data-access/invalidateSpendQueries';

@@ -13,6 +13,13 @@ import {
 import { type TooltipPayloadEntry } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/chart';
 
+vi.mock('@/components/use-recharts', async () => {
+  const recharts = await import('recharts');
+  return {
+    useRechartsModule: () => recharts,
+  };
+});
+
 const payload: TooltipPayloadEntry[] = [
   {
     dataKey: 'current',

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 import { useTheme } from 'next-themes';
 import {
   type ColorScheme,
@@ -23,11 +23,11 @@ export const currentTogglePreference = (): ThemePreference =>
 
 export const useReversibleThemeToggle = () => {
   const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   const resolvedAppearance = toColorScheme(resolvedTheme);
   const label = themeToggleLabel(resolvedAppearance);

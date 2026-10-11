@@ -284,14 +284,24 @@ function SortableItem({
     animateLayoutChanges,
   });
 
-  const itemContextValue = useMemo(
-    () => ({
-      listeners: isOverlay ? undefined : listeners,
-      isDragging: isOverlay ? true : isSortableDragging,
-      disabled: isOverlay ? false : disabled,
-    }),
+  const overlayContextValue = useMemo(
+    () =>
+      isOverlay
+        ? { listeners: undefined, isDragging: true, disabled: false }
+        : {
+            listeners,
+            isDragging: isSortableDragging,
+            disabled: Boolean(disabled),
+          },
     [disabled, isOverlay, isSortableDragging, listeners]
   );
+
+  const style = isOverlay
+    ? undefined
+    : ({
+        transition,
+        transform: CSS.Transform.toString(transform),
+      } as CSSProperties);
 
   const defaultProps = isOverlay
     ? {
@@ -307,10 +317,7 @@ function SortableItem({
         'data-dragging': isSortableDragging,
         'data-disabled': disabled,
         ref: setNodeRef,
-        style: {
-          transition,
-          transform: CSS.Transform.toString(transform),
-        } satisfies CSSProperties,
+        style,
         ...attributes,
         className: cn(
           isSortableDragging && 'z-50 opacity-50',
@@ -320,13 +327,15 @@ function SortableItem({
         children: props.children,
       };
 
+  const rendered = useRender({
+    defaultTagName: 'div',
+    render,
+    props: mergeProps<'div'>(defaultProps, props),
+  });
+
   return (
-    <SortableItemContext.Provider value={itemContextValue}>
-      {useRender({
-        defaultTagName: 'div',
-        render,
-        props: mergeProps<'div'>(defaultProps, props),
-      })}
+    <SortableItemContext.Provider value={overlayContextValue}>
+      {rendered}
     </SortableItemContext.Provider>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { toast } from '@ploutizo/ui/components/sonner';
+import { toast } from '@ploutizo/ui/components/sonner-api';
 import { subscribeImportReviewAutosaveFailure } from '@/lib/data-access/imports/importReviewAutosave';
 
 export const IMPORT_REVIEW_AUTOSAVE_FAILED_TOAST_ID =

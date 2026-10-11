@@ -4,11 +4,11 @@ import { ListFilterIcon } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import { Filters } from '@ploutizo/ui/components/reui/filters';
 import { Text } from '@ploutizo/ui/components/text';
-import type { Filter } from '@ploutizo/ui/components/reui/filters-types';
 import {
   createPinnedFilterId,
   isFilterValueActive,
 } from '@ploutizo/ui/components/reui/filters-utils';
+import type { Filter } from '@ploutizo/ui/components/reui/filters-types';
 import type { TransactionRow } from '@ploutizo/validators';
 import { useGetTransactions } from '@/lib/data-access/transactions';
 import { useGetAccounts } from '@/lib/data-access/accounts';

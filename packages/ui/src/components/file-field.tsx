@@ -139,6 +139,7 @@ export const FileField = ({
           type="file"
           accept={accept}
           disabled={disabled}
+          aria-label={label}
           aria-invalid={invalid || undefined}
           className="sr-only"
           onChange={(event) => {

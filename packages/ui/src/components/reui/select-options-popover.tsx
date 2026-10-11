@@ -46,8 +46,10 @@ export const SelectOptionsPopover = <T = unknown,>({
   }, [searchInput, open]);
 
   const isMultiSelect = field.type === 'multiselect' || values.length > 1;
-  const effectiveValues =
-    (field.value !== undefined ? field.value : values) || [];
+  const effectiveValues = useMemo(
+    () => (field.value !== undefined ? field.value : values) || [],
+    [field.value, values]
+  );
 
   const effectiveValueSet = useMemo(
     () => new Set(effectiveValues),
