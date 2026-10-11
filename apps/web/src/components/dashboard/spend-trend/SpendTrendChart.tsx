@@ -39,16 +39,18 @@ export const SpendTrendChart = ({
   seriesLabels,
 }: SpendTrendChartProps) => {
   // Prior is the current colour, faded (and dashed below), as on every dashboard chart; legend and tooltip follow.
+  // Depend on the label strings, not `seriesLabels.current`: the parent builds a new labels object every render.
+  const { current: currentLabel, prior: priorLabel } = seriesLabels;
   const chartConfig = useMemo(
     () =>
       ({
-        current: { label: seriesLabels.current, color: 'var(--chart-1)' },
+        current: { label: currentLabel, color: 'var(--chart-1)' },
         prior: {
-          label: seriesLabels.prior,
+          label: priorLabel,
           color: fadedColour('var(--chart-1)'),
         },
       }) satisfies ChartConfig,
-    [seriesLabels.current, seriesLabels.prior]
+    [currentLabel, priorLabel]
   );
   const yDomain = amountDomain(
     data.flatMap((point) => [point.current, point.prior])
