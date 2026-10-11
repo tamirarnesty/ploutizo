@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { AlertDialog } from '@ploutizo/ui/components/alert-dialog';
 import {
   Sheet,
@@ -26,6 +26,12 @@ export const TransactionSheet = ({
   // for another transaction starts clean.
   const isDirtyRef = useRef(false);
   const [discardOpen, setDiscardOpen] = useState(false);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    isDirtyRef.current = false;
+    setDiscardOpen(false);
+  }, [open, transaction?.id]);
 
   const handleClose = () => {
     if (isDirtyRef.current) {
@@ -65,15 +71,17 @@ export const TransactionSheet = ({
             </SheetTitle>
           </SheetHeader>
 
-          {/* key resets form state when switching between transactions (D-09) */}
-          <TransactionForm
-            key={transaction?.id ?? 'new'}
-            transaction={transaction}
-            onClose={closeClean}
-            onDirtyChange={(dirty) => {
-              isDirtyRef.current = dirty;
-            }}
-          />
+          {/* Mount only while open so a closed sheet cannot keep a stale form (D-09). */}
+          {open ? (
+            <TransactionForm
+              key={transaction?.id ?? 'new'}
+              transaction={transaction}
+              onClose={closeClean}
+              onDirtyChange={(dirty) => {
+                isDirtyRef.current = dirty;
+              }}
+            />
+          ) : null}
         </SheetContent>
       </Sheet>
 

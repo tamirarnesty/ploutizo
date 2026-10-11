@@ -177,12 +177,8 @@ function DataGridProvider<TData extends object>({
         renderRowContextMenu,
         renderBodyRow,
         className,
-        tableLayout: JSON.parse(
-          tableLayoutKey
-        ) as DataGridProps<TData>['tableLayout'],
-        tableClassNames: JSON.parse(
-          tableClassNamesKey
-        ) as DataGridProps<TData>['tableClassNames'],
+        tableLayout,
+        tableClassNames,
       },
       table,
       recordCount,
@@ -201,6 +197,8 @@ function DataGridProvider<TData extends object>({
       renderRowContextMenu,
       renderBodyRow,
       className,
+      tableLayout,
+      tableClassNames,
       tableLayoutKey,
       tableClassNamesKey,
       sorting,

@@ -93,14 +93,15 @@ export const RefundLinker = ({ form }: RefundLinkerProps) => {
                   if (!values.accountId) {
                     form.setFieldValue('accountId', tx.accountId);
                   }
-                  // Refund the same members, split evenly across the refund amount.
-                  form.setFieldValue(
-                    'assignees',
-                    splitAssigneesEvenly(
-                      formAmountToCents(form.getFieldValue('amount')),
-                      tx.assignees.map((a) => a.memberId)
-                    )
-                  );
+                  if (values.assignees.length === 0) {
+                    form.setFieldValue(
+                      'assignees',
+                      splitAssigneesEvenly(
+                        formAmountToCents(form.getFieldValue('amount')),
+                        tx.assignees.map((a) => a.memberId)
+                      )
+                    );
+                  }
                 }
               } else {
                 setSelectedTx(null);

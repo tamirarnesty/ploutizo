@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { TransactionSheet } from '@/components/transactions/TransactionSheet';
 import { expectOverlayMounted } from '@/test/overlayCloseContract';
@@ -13,7 +14,7 @@ vi.mock('@/components/transactions/TransactionForm', () => ({
     onClose: () => void;
     onDirtyChange?: (dirty: boolean) => void;
   }) => (
-    <div>
+    <div data-testid="transaction-form-mock">
       <button type="button" onClick={onClose}>
         Close transaction form
       </button>
@@ -52,6 +53,67 @@ describe('TransactionSheet overlay contract', () => {
 
     await user.click(screen.getByRole('button', { name: /close sheet/i }));
 
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('unmounts the form while the sheet is closed', () => {
+    const { rerender } = render(
+      <TransactionSheet
+        open
+        transaction={mockTransactionRow()}
+        onClose={vi.fn()}
+      />
+    );
+
+    expect(screen.getByTestId('transaction-form-mock')).toBeInTheDocument();
+
+    rerender(
+      <TransactionSheet
+        open={false}
+        transaction={mockTransactionRow()}
+        onClose={vi.fn()}
+      />
+    );
+
+    expect(
+      screen.queryByTestId('transaction-form-mock')
+    ).not.toBeInTheDocument();
+  });
+
+  it('reopens clean after discard so closing does not prompt again', async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    const Harness = () => {
+      const [open, setOpen] = useState(true);
+      return (
+        <>
+          <button type="button" onClick={() => setOpen(true)}>
+            Reopen sheet
+          </button>
+          <TransactionSheet
+            open={open}
+            transaction={null}
+            onClose={() => {
+              onClose();
+              setOpen(false);
+            }}
+          />
+        </>
+      );
+    };
+
+    render(<Harness />);
+
+    await user.click(screen.getByRole('button', { name: /mark dirty/i }));
+    await user.click(screen.getByRole('button', { name: /close sheet/i }));
+    await user.click(screen.getByRole('button', { name: /^discard$/i }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+
+    onClose.mockClear();
+    await user.click(screen.getByRole('button', { name: /reopen sheet/i }));
+    await user.click(screen.getByRole('button', { name: /close sheet/i }));
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
