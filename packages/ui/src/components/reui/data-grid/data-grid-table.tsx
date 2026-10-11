@@ -31,10 +31,8 @@ import {
   type DataGridTablePinnedBoundary,
 } from '@/components/reui/data-grid/data-grid-table-body-row';
 import { getDataGridTablePinningStyles } from '@/components/reui/data-grid/data-grid-table-pinning';
-import {
-  getDataGridTableResolvedRows,
-  getDataGridTableRowSections,
-} from '@/components/reui/data-grid/data-grid-table-rows';
+import { getDataGridTableResolvedRows } from '@/components/reui/data-grid/data-grid-table-resolved-rows';
+import { getDataGridTableRowSections } from '@/components/reui/data-grid/data-grid-table-row-sections';
 import {
   assignDataGridTableRef,
   dataGridBodyCellSpacingVariants,
@@ -60,8 +58,6 @@ import {
   DataGridTableHeadRowCell,
   DataGridTableHeadRowCellResize,
 } from '@/components/reui/data-grid/data-grid-table-head-row-cell';
-import { getDataGridTableResolvedRows } from '@/components/reui/data-grid/data-grid-table-resolved-rows';
-
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/checkbox';
 import { Spinner } from '@/components/spinner';
