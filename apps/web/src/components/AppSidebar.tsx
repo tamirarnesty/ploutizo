@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useRouter, useRouterState } from '@tanstack/react-router';
 import { ChevronRight } from 'lucide-react';
 import {
@@ -121,15 +121,11 @@ export const AppSidebar = () => {
     select: (state) => state.location.pathname,
   });
 
-  // Store sidebar context in a ref so closeMobile has stable [] deps (advanced-event-handler-refs)
-  const sidebarCtx = useSidebar();
-  const sidebarRef = useRef(sidebarCtx);
-  sidebarRef.current = sidebarCtx;
+  const { isMobile, setOpenMobile } = useSidebar();
 
   const closeMobile = useCallback(() => {
-    const { isMobile, setOpenMobile } = sidebarRef.current;
     if (isMobile) setOpenMobile(false);
-  }, []);
+  }, [isMobile, setOpenMobile]);
 
   return (
     <Sidebar

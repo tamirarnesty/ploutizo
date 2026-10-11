@@ -35,7 +35,9 @@ export const useDecimalDisplayInput = <T>({
   const displayValueRef = useRef('');
   const [displayValue, setDisplayValue] = useState(() => formatBlur(value));
 
-  displayValueRef.current = displayValue;
+  useEffect(() => {
+    displayValueRef.current = displayValue;
+  }, [displayValue]);
 
   useEffect(() => {
     if (!focused.current) {

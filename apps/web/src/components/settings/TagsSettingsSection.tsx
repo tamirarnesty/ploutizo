@@ -68,11 +68,13 @@ export const TagsSettingsSection = () => {
                   items={tagNames}
                   value={tagNames}
                   onValueChange={(newNames) => {
-                    const removed = tagNames.filter(
-                      (n) => !newNames.includes(n)
+                    const remaining = new Set(newNames);
+                    const tagsByName = new Map(
+                      tags.map((t) => [t.name, t] as const)
                     );
-                    for (const name of removed) {
-                      const tag = tags.find((t) => t.name === name);
+                    for (const name of tagNames) {
+                      if (remaining.has(name)) continue;
+                      const tag = tagsByName.get(name);
                       if (tag) archiveTag.mutate(tag.id);
                     }
                   }}

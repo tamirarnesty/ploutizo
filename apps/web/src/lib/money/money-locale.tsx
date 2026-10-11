@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useMemo } from 'react';
 import {
   DEFAULT_CURRENCY,
   DEFAULT_MONEY_LOCALE,
@@ -22,10 +22,15 @@ export const MoneyLocaleProvider = ({
 }: {
   children: React.ReactNode;
   value?: Partial<MoneyLocale>;
-}) => (
-  <MoneyLocaleContext.Provider value={{ ...defaultMoneyLocale, ...value }}>
-    {children}
-  </MoneyLocaleContext.Provider>
-);
+}) => {
+  const locale = value?.locale ?? defaultMoneyLocale.locale;
+  const currency = value?.currency ?? defaultMoneyLocale.currency;
+  const moneyLocale = useMemo(() => ({ locale, currency }), [locale, currency]);
+  return (
+    <MoneyLocaleContext.Provider value={moneyLocale}>
+      {children}
+    </MoneyLocaleContext.Provider>
+  );
+};
 
 export const useMoneyLocale = () => useContext(MoneyLocaleContext);

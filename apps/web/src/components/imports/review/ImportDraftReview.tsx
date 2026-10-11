@@ -24,7 +24,6 @@ import {
   getImportContinueGateMessage,
   getImportRequirementFailures,
   getImportRequirementIssueRowIds,
-  summarizeImportRequirementIssues,
 } from '@/lib/data-access/imports/importRequirementIssues';
 import {
   IMPORT_REVIEW_CONTINUE_SUPERSEDED_MESSAGE,
@@ -47,11 +46,13 @@ import { getImportRowLabel } from '../lib/importPresentation';
 import { useImportDraftReviewState } from '../lib/useImportDraftReviewState';
 import { ImportDraftReviewHeader } from './ImportDraftReviewHeader';
 import { ImportDraftReviewProvider } from './ImportDraftReviewContext';
-import {
-  ImportDraftReviewTable,
-  focusImportReviewRow,
-} from './ImportDraftReviewTable';
+import { ImportDraftReviewTable } from './ImportDraftReviewTable';
+import { focusImportReviewRow } from './focusImportReviewRow';
+import { presentImportRequirementIssues } from './importDraftReviewHelpers';
 import { ImportRequirementIssueList } from './ImportRequirementIssueList';
+
+const NO_ROWS: ImportReviewRow[] = [];
+const NO_INBOUND_ISSUES: ImportRequirementFailure[] = [];
 
 interface ImportDraftReviewProps {
   meta?: ImportDraftMeta;
@@ -80,13 +81,6 @@ const getEmptyDraftDescription = (rows: ImportReviewRow[]): string => {
   return parts.join(' ');
 };
 
-export const presentImportRequirementIssues = (
-  failures: readonly ImportRequirementFailure[]
-) => {
-  if (failures.length === 0) return;
-  toast.error(summarizeImportRequirementIssues(failures));
-};
-
 export const ImportDraftReview = (props: ImportDraftReviewProps) => (
   <PendingInputFlushProvider>
     <ImportDraftReviewContent {...props} />
@@ -95,12 +89,12 @@ export const ImportDraftReview = (props: ImportDraftReviewProps) => (
 
 const ImportDraftReviewContent = ({
   meta,
-  rows = [],
+  rows = NO_ROWS,
   isLoading = false,
   updateRow,
   setSelection,
   flush,
-  inboundIssues = [],
+  inboundIssues = NO_INBOUND_ISSUES,
 }: ImportDraftReviewProps) => {
   const navigate = useNavigate();
   const { data: categories = [] } = useGetCategories();

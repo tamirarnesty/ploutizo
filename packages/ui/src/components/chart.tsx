@@ -1,12 +1,16 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-condition -- Recharts tooltip payloads are loosely typed */
 import * as React from 'react';
-import * as RechartsPrimitive from 'recharts';
 import {
   type DefaultLegendContentProps,
   type DefaultTooltipContentProps,
   type TooltipPayloadEntry,
   type TooltipValueType,
 } from 'recharts';
+import {
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+} from '@/components/recharts-primitives';
 import { type ChartConfig, THEMES } from '@/components/chart-types';
 import { cn } from '@/lib/utils';
 
@@ -64,11 +68,9 @@ function ChartContainer({
         {...props}
       >
         <ChartStyle id={chartId} config={config} />
-        <RechartsPrimitive.ResponsiveContainer
-          initialDimension={initialDimension}
-        >
+        <ResponsiveContainer initialDimension={initialDimension}>
           {children}
-        </RechartsPrimitive.ResponsiveContainer>
+        </ResponsiveContainer>
       </div>
     </ChartContext.Provider>
   );
@@ -107,10 +109,8 @@ ${colorConfig
   );
 }
 
-function ChartTooltip(
-  props: React.ComponentProps<typeof RechartsPrimitive.Tooltip>
-) {
-  return <RechartsPrimitive.Tooltip {...props} />;
+function ChartTooltip(props: React.ComponentProps<typeof Tooltip>) {
+  return <Tooltip {...props} />;
 }
 
 type ChartTooltipContentProps = React.ComponentProps<'div'> & {
@@ -282,10 +282,8 @@ function ChartTooltipContent({
   );
 }
 
-function ChartLegend(
-  props: React.ComponentProps<typeof RechartsPrimitive.Legend>
-) {
-  return <RechartsPrimitive.Legend {...props} />;
+function ChartLegend(props: React.ComponentProps<typeof Legend>) {
+  return <Legend {...props} />;
 }
 
 function ChartLegendContent({

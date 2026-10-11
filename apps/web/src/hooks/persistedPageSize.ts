@@ -1,5 +1,9 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { persistPageSize, usePageSizeStore } from '@/lib/prefs';
+import { useCallback, useMemo, useState } from 'react';
+import {
+  persistPageSize,
+  readStoredPageSize,
+  usePageSizeStore,
+} from '@/lib/prefs';
 import type { PageSizeScope } from '@/lib/prefs';
 import type { PaginationState, Updater } from '@tanstack/react-table';
 
@@ -8,8 +12,6 @@ const useStoredPageSize = (scope: PageSizeScope) =>
 
 export const usePersistedPageSize = (scope: PageSizeScope) => {
   const pageSize = useStoredPageSize(scope);
-  const pageSizeRef = useRef(pageSize);
-  pageSizeRef.current = pageSize;
   const [pageIndex, setPageIndex] = useState(0);
 
   const pagination = useMemo(
@@ -19,20 +21,17 @@ export const usePersistedPageSize = (scope: PageSizeScope) => {
 
   const setPagination = useCallback(
     (updater: Updater<PaginationState>) => {
-      setPageIndex((prevIndex) => {
-        const currentPageSize = pageSizeRef.current;
-        const prev: PaginationState = {
-          pageIndex: prevIndex,
-          pageSize: currentPageSize,
-        };
-        const next = typeof updater === 'function' ? updater(prev) : updater;
-        if (next.pageSize !== currentPageSize) {
-          persistPageSize(scope, next.pageSize);
-        }
-        return next.pageIndex;
-      });
+      const currentPageSize = readStoredPageSize(scope);
+      const next =
+        typeof updater === 'function'
+          ? updater({ pageIndex, pageSize: currentPageSize })
+          : updater;
+      if (next.pageSize !== currentPageSize) {
+        persistPageSize(scope, next.pageSize);
+      }
+      setPageIndex(next.pageIndex);
     },
-    [scope]
+    [scope, pageIndex]
   );
 
   return { pagination, setPagination };

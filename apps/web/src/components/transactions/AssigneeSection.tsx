@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import {
   Collapsible,
@@ -7,12 +7,9 @@ import {
 } from '@ploutizo/ui/components/collapsible';
 import { Text } from '@ploutizo/ui/components/text';
 import { cn } from '@ploutizo/ui/lib/utils';
-import {
-  lrmSplit,
-  scaleAssigneeSplitProportionally,
-} from '@ploutizo/utils/assignee-split';
 import type { OrgMember, TransactionRow } from '@ploutizo/validators';
 import { MemberToggleGroup } from '@/components/members/MemberToggleGroup';
+import { splitAssigneesEvenly } from './assigneeSplit';
 import { SplitSection } from './SplitSection';
 import type { AssigneeFormRow } from './types';
 
@@ -22,27 +19,23 @@ interface AssigneeSectionProps {
   amountCents: number;
   orgMembers: OrgMember[];
   transaction?: TransactionRow | null;
-  refundAssigneeIds?: string[];
 }
 
-const matchesLrmSplit = (
-  assignees: AssigneeFormRow[],
-  totalCents: number,
-  memberIds: string[]
-): boolean => {
-  if (memberIds.length === 0) {
-    return assignees.length === 0;
-  }
-  const expected = lrmSplit(totalCents, memberIds);
-  return JSON.stringify(expected) === JSON.stringify(assignees);
+const isNonEven = (assignees: { percentage: number | null }[]): boolean => {
+  if (assignees.length <= 1) return false;
+  const expectedPct = parseFloat((100 / assignees.length).toFixed(3));
+  return assignees.some(
+    (a) => Math.abs((a.percentage ?? 0) - expectedPct) > 0.1
+  );
 };
 
 /**
  * Toggle-based assignee section that replaces SplitSection at the top level.
  *
- * Each org member gets a Toggle. Pressing a Toggle adds them to the split and
- * recalculates an LRM even split across all pressed members. The "Customize split"
- * Collapsible exposes the full SplitSection row editor when needed.
+ * Each org member gets a Toggle; the pressed members are the split's rows.
+ * Pressing a Toggle re-splits the amount evenly across all pressed members.
+ * The "Customize split" Collapsible exposes the full SplitSection row editor
+ * when needed. Amount changes are carried over to the split by the amount field.
  *
  * Pressed defaults (D-17):
  *   - 1 org member → auto-pressed (100% split) in create mode
@@ -58,93 +51,14 @@ export const AssigneeSection = ({
   amountCents,
   orgMembers,
   transaction,
-  refundAssigneeIds,
 }: AssigneeSectionProps) => {
-  const initialPressedIds = transaction
-    ? transaction.assignees.map((a) => a.memberId)
-    : orgMembers.length === 1
-      ? [orgMembers[0].id]
-      : [];
-
-  const [pressedMemberIds, setPressedMemberIds] =
-    useState<string[]>(initialPressedIds);
-
-  const splitCustomized = useRef(
-    transaction
-      ? !matchesLrmSplit(value, amountCents, initialPressedIds)
-      : false
-  );
-
-  const valueRef = useRef(value);
-  valueRef.current = value;
-
-  const isInitialRender = useRef(true);
-  useEffect(() => {
-    if (isInitialRender.current) {
-      isInitialRender.current = false;
-      return;
-    }
-    if (pressedMemberIds.length === 0) return;
-
-    const current = valueRef.current;
-
-    if (amountCents === 0) {
-      const next = current.map((row) => ({
-        ...row,
-        amountCents: 0,
-      }));
-      if (JSON.stringify(next) !== JSON.stringify(current)) {
-        onChange(next);
-      }
-      return;
-    }
-
-    const next = splitCustomized.current
-      ? scaleAssigneeSplitProportionally(current, amountCents)
-      : lrmSplit(amountCents, pressedMemberIds);
-
-    if (JSON.stringify(next) !== JSON.stringify(current)) {
-      onChange(next);
-    }
-  }, [amountCents, pressedMemberIds, onChange]);
-
-  useEffect(() => {
-    if (!transaction && refundAssigneeIds && refundAssigneeIds.length > 0) {
-      setPressedMemberIds(refundAssigneeIds);
-      splitCustomized.current = false;
-      if (amountCents > 0) {
-        onChange(lrmSplit(amountCents, refundAssigneeIds));
-      }
-    }
-  }, [refundAssigneeIds]);
-
-  const isNonEven = (assignees: { percentage: number | null }[]): boolean => {
-    if (assignees.length <= 1) return false;
-    const expectedPct = parseFloat((100 / assignees.length).toFixed(3));
-    return assignees.some(
-      (a) => Math.abs((a.percentage ?? 0) - expectedPct) > 0.1
-    );
-  };
-
   const [customizeOpen, setCustomizeOpen] = useState(() =>
     transaction ? isNonEven(transaction.assignees) : false
   );
 
-  const pressedMembers = orgMembers.filter((m) =>
-    pressedMemberIds.includes(m.id)
-  );
-
-  const handleSplitChange = useCallback(
-    (next: AssigneeFormRow[]) => {
-      splitCustomized.current = !matchesLrmSplit(
-        next,
-        amountCents,
-        pressedMemberIds
-      );
-      onChange(next);
-    },
-    [amountCents, onChange, pressedMemberIds]
-  );
+  const pressedMemberIds = value.map((row) => row.memberId);
+  const pressedSet = new Set(pressedMemberIds);
+  const pressedMembers = orgMembers.filter((m) => pressedSet.has(m.id));
 
   return (
     <div className="flex flex-col gap-3">
@@ -154,17 +68,7 @@ export const AssigneeSection = ({
         members={orgMembers}
         value={pressedMemberIds}
         onChange={(newIds) => {
-          setPressedMemberIds(newIds);
-          splitCustomized.current = false;
-          if (newIds.length === 0) {
-            onChange([]);
-            return;
-          }
-          if (amountCents <= 0) return;
-          const next = lrmSplit(amountCents, newIds);
-          if (JSON.stringify(next) !== JSON.stringify(value)) {
-            onChange(next);
-          }
+          onChange(splitAssigneesEvenly(amountCents, newIds));
         }}
       />
 
@@ -189,7 +93,7 @@ export const AssigneeSection = ({
           <CollapsibleContent className="pt-3">
             <SplitSection
               value={value}
-              onChange={handleSplitChange}
+              onChange={onChange}
               amountCents={amountCents}
               orgMembers={pressedMembers}
             />

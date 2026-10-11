@@ -13,7 +13,7 @@ import { ExpenseFields } from './ExpenseFields';
 import { RefundLinker } from './RefundLinker';
 import { getTransactionFormTypeChangePatch } from './getTransactionFormTypeChange';
 import type { TransactionFormInstance } from './hooks/useTransactionForm';
-import type { AssigneeFormRow, TransactionFormValues } from './types';
+import type { TransactionFormValues } from './types';
 
 // TODO(03.4-deferred): originalDescription column — add when schema patch lands
 // D-19: import caption (└ Original: ...) is deferred because originalDescription
@@ -40,7 +40,6 @@ interface TransactionTypeFieldsProps {
   form: TransactionFormInstance;
   accounts: Account[];
   categories: Category[];
-  onAssigneesChange: (assignees: AssigneeFormRow[]) => void;
   /** Called after any type-switch, before field clears. Plan 06 passes () => setIsDescriptionUnlocked(false). */
   onTypeChange?: () => void;
 }
@@ -248,7 +247,6 @@ export const TransactionTypeFields = ({
   form,
   accounts,
   categories,
-  onAssigneesChange,
   onTypeChange,
 }: TransactionTypeFieldsProps) => (
   <form.Subscribe selector={(s) => s.values.type}>
@@ -278,7 +276,7 @@ export const TransactionTypeFields = ({
           )}
 
           {'refundOf' in policy.scalarFields ? (
-            <RefundLinker form={form} onAssigneesChange={onAssigneesChange} />
+            <RefundLinker form={form} />
           ) : null}
         </>
       );

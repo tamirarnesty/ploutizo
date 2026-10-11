@@ -38,9 +38,8 @@ export const ImportFormatChoiceForm = () => {
   return (
     <form
       className="space-y-4 rounded-md border border-border p-4"
-      onSubmit={(event) => {
-        event.preventDefault();
-        form.handleSubmit();
+      action={() => {
+        void form.handleSubmit();
       }}
     >
       <div>

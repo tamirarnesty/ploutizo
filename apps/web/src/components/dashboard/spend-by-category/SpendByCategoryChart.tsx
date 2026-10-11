@@ -1,14 +1,5 @@
 import { useId, useMemo } from 'react';
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  ReferenceLine,
-  XAxis,
-  YAxis,
-} from 'recharts';
-import {
   ChartContainer,
   ChartLegend,
   ChartLegendContent,
@@ -17,6 +8,15 @@ import {
 } from '@ploutizo/ui/components/chart';
 import type { ChartConfig } from '@ploutizo/ui/components/chart';
 import type { DashboardOverviewCategoryRow } from '@ploutizo/validators';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ReferenceLine,
+  XAxis,
+  YAxis,
+} from '@/components/dashboard/dashboardRecharts';
 import {
   FADED_OPACITY,
   fadedColour,

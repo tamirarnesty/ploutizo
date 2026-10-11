@@ -29,6 +29,7 @@ import {
 } from '../lib/useImportDraftReviewState';
 import { useOptionalImportDraftReviewContext } from './ImportDraftReviewContext';
 import { buildImportReviewColumns } from './buildImportReviewColumns';
+import { focusImportReviewRow } from './focusImportReviewRow';
 import { ImportReviewRowScope } from './ImportReviewRowScope';
 import { useStableImportReviewTableRows } from './useStableImportReviewTableRows';
 import type { SortingState, Updater } from '@tanstack/react-table';
@@ -36,18 +37,13 @@ import type { ImportReviewTableRow } from './useStableImportReviewTableRows';
 import type { ReactNode } from 'react';
 import type { ImportDraftReviewState } from '../lib/useImportDraftReviewState';
 
+const NO_SORTING: SortingState = [];
+
 interface ImportDraftReviewTableProps {
   draftId?: string;
   reviewState: ImportDraftReviewState;
   focusRowId?: string | null;
 }
-
-export const focusImportReviewRow = (rowId: string) => {
-  const target = document.getElementById(`import-row-${rowId}`);
-  if (!target) return;
-  target.focus();
-  target.scrollIntoView({ block: 'nearest' });
-};
 
 export const ImportDraftReviewTable = ({
   draftId,
@@ -85,19 +81,26 @@ export const ImportDraftReviewTable = ({
   );
 
   const reviewContext = useOptionalImportDraftReviewContext();
-  const [sorting, setSorting] = useState<SortingState>([]);
-  useEffect(() => {
-    if (!focusRowId) return;
-    setSorting([]);
-  }, [focusRowId]);
+  // A newly focused row clears the sort so the row shows where the issue list points.
+  const [sortingState, setSortingState] = useState<{
+    value: SortingState;
+    focusRowId: string | null;
+  }>({ value: [], focusRowId });
+  const sorting =
+    focusRowId !== null && sortingState.focusRowId !== focusRowId
+      ? NO_SORTING
+      : sortingState.value;
   const onSortingChange = useCallback(
     (updater: Updater<SortingState>) => {
-      setSorting(updater);
+      setSortingState({
+        value: typeof updater === 'function' ? updater(sorting) : updater,
+        focusRowId,
+      });
       setPagination((current) =>
         current.pageIndex === 0 ? current : { ...current, pageIndex: 0 }
       );
     },
-    [setPagination]
+    [focusRowId, setPagination, sorting]
   );
   const sortedRows = useMemo(
     () =>

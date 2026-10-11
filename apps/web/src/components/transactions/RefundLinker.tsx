@@ -15,13 +15,12 @@ import {
   useGetTransactions,
   useSearchTransactions,
 } from '@/lib/data-access/transactions';
+import { formAmountToCents, splitAssigneesEvenly } from './assigneeSplit';
 import { formatTransactionDate } from './transactionRowDisplay';
-import type { AssigneeFormRow } from './types';
 import type { TransactionFormInstance } from './hooks/useTransactionForm';
 
 export interface RefundLinkerProps {
   form: TransactionFormInstance;
-  onAssigneesChange: (assignees: AssigneeFormRow[]) => void;
 }
 
 /** Stable unique key used as Combobox value for selection matching */
@@ -31,10 +30,7 @@ const buildLabel = (tx: TransactionRow) =>
 /** Human-readable display name shown in the input after selection */
 const buildDisplayName = (tx: TransactionRow) => tx.description || '—';
 
-export const RefundLinker = ({
-  form,
-  onAssigneesChange,
-}: RefundLinkerProps) => {
+export const RefundLinker = ({ form }: RefundLinkerProps) => {
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [inputValue, setInputValue] = useState('');
   const debounceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
@@ -97,12 +93,13 @@ export const RefundLinker = ({
                   if (!values.accountId) {
                     form.setFieldValue('accountId', tx.accountId);
                   }
-                  onAssigneesChange(
-                    tx.assignees.map((a) => ({
-                      memberId: a.memberId,
-                      amountCents: a.amountCents,
-                      percentage: a.percentage ?? 0,
-                    }))
+                  // Refund the same members, split evenly across the refund amount.
+                  form.setFieldValue(
+                    'assignees',
+                    splitAssigneesEvenly(
+                      formAmountToCents(form.getFieldValue('amount')),
+                      tx.assignees.map((a) => a.memberId)
+                    )
                   );
                 }
               } else {

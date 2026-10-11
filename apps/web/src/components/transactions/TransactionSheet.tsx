@@ -1,14 +1,5 @@
-import { useEffect, useState } from 'react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@ploutizo/ui/components/alert-dialog';
+import { useRef, useState } from 'react';
+import { AlertDialog } from '@ploutizo/ui/components/alert-dialog';
 import {
   Sheet,
   SheetContent,
@@ -16,6 +7,7 @@ import {
   SheetTitle,
 } from '@ploutizo/ui/components/sheet';
 import type { TransactionRow } from '@ploutizo/validators';
+import { DestructiveAlertDialogContent } from '@/components/DestructiveAlertDialogContent';
 import { TransactionForm } from './TransactionForm';
 
 interface TransactionSheetProps {
@@ -30,28 +22,27 @@ export const TransactionSheet = ({
   onClose,
 }: TransactionSheetProps) => {
   const isEditing = transaction !== null;
-  const [isDirty, setIsDirty] = useState(false);
+  // The form reports its dirtiness on mount and on change, so remounting it
+  // for another transaction starts clean.
+  const isDirtyRef = useRef(false);
   const [discardOpen, setDiscardOpen] = useState(false);
 
-  useEffect(() => {
-    if (open) {
-      setIsDirty(false);
-      setDiscardOpen(false);
-    }
-  }, [open, transaction?.id]);
-
   const handleClose = () => {
-    if (isDirty) {
+    if (isDirtyRef.current) {
       setDiscardOpen(true);
     } else {
       onClose();
     }
   };
 
+  const closeClean = () => {
+    isDirtyRef.current = false;
+    onClose();
+  };
+
   const handleDiscard = () => {
     setDiscardOpen(false);
-    setIsDirty(false);
-    onClose();
+    closeClean();
   };
 
   return (
@@ -78,28 +69,22 @@ export const TransactionSheet = ({
           <TransactionForm
             key={transaction?.id ?? 'new'}
             transaction={transaction}
-            onClose={onClose}
-            onDirtyChange={setIsDirty}
+            onClose={closeClean}
+            onDirtyChange={(dirty) => {
+              isDirtyRef.current = dirty;
+            }}
           />
         </SheetContent>
       </Sheet>
 
       <AlertDialog open={discardOpen} onOpenChange={setDiscardOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Discard changes?</AlertDialogTitle>
-            <AlertDialogDescription>
-              You have unsaved changes. They will be lost if you close without
-              saving.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Keep editing</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={handleDiscard}>
-              Discard
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
+        <DestructiveAlertDialogContent
+          title="Discard changes?"
+          description="You have unsaved changes. They will be lost if you close without saving."
+          cancelLabel="Keep editing"
+          confirmLabel="Discard"
+          onConfirm={handleDiscard}
+        />
       </AlertDialog>
     </>
   );

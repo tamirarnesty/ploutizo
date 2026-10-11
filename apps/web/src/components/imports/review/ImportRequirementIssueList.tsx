@@ -24,10 +24,12 @@ export const ImportRequirementIssueList = ({
         Fix these import issues
       </Text>
       <ul className="mt-2 space-y-1">
-        {issues.map((issue, index) => {
+        {issues.map((issue) => {
           const rowLabel = rowLabels.get(issue.batchRowId) ?? 'this row';
           return (
-            <li key={`${issue.batchRowId}-${issue.key}-${index}`}>
+            <li
+              key={`${issue.batchRowId}-${issue.key}-${JSON.stringify(issue.params ?? null)}`}
+            >
               <button
                 type="button"
                 className="text-left text-sm text-destructive underline-offset-2 hover:underline"

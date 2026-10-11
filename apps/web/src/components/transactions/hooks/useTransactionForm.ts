@@ -3,12 +3,13 @@ import { createTransactionSchema } from '@ploutizo/validators';
 import { normalizeTransactionAssignees } from '@ploutizo/utils/assignee-split';
 import { formatGeneratedTransactionDescriptionFromAccounts } from '@ploutizo/utils/transaction-policy';
 import { centsToDollars } from '@ploutizo/utils/currency';
-import type { Account, TransactionRow } from '@ploutizo/validators';
+import type { Account, OrgMember, TransactionRow } from '@ploutizo/validators';
 import type {
   useCreateTransaction,
   useUpdateTransaction,
 } from '@/lib/data-access/transactions';
 import { resolveTransactionFormDescriptionLock } from '../getTransactionFormDescriptionLock';
+import { splitAssigneesEvenly } from '../assigneeSplit';
 import { toTransactionApiPayload } from '../toTransactionApiPayload';
 import type { TransactionFormValues } from '../types';
 
@@ -35,7 +36,8 @@ const buildAssigneeDefaults = (
 
 export const buildDefaultValues = (
   transaction: TransactionRow | null,
-  accounts: Account[] = []
+  accounts: Account[] = [],
+  orgMembers: readonly OrgMember[] = []
 ): TransactionFormValues => {
   if (transaction === null) {
     return {
@@ -53,7 +55,11 @@ export const buildDefaultValues = (
       incomeType: '',
       counterpartAccountId: '',
       notes: '',
-      assignees: [],
+      // A household of one has nobody to choose between (D-17).
+      assignees:
+        orgMembers.length === 1
+          ? splitAssigneesEvenly(0, [orgMembers[0].id])
+          : [],
     };
   }
 
@@ -99,6 +105,7 @@ export const buildDefaultValues = (
 interface UseTransactionFormOptions {
   transaction: TransactionRow | null;
   accounts: Account[];
+  orgMembers?: readonly OrgMember[];
   onClose: () => void;
   createMutation: CreateMutation;
   updateMutation: UpdateMutation;
@@ -107,6 +114,7 @@ interface UseTransactionFormOptions {
 export const useTransactionForm = ({
   transaction,
   accounts,
+  orgMembers,
   onClose,
   createMutation,
   updateMutation,
@@ -114,7 +122,7 @@ export const useTransactionForm = ({
   const isEditing = transaction !== null;
 
   const form = useAppForm({
-    defaultValues: buildDefaultValues(transaction, accounts),
+    defaultValues: buildDefaultValues(transaction, accounts, orgMembers),
     validators: {
       onSubmit: ({ value }: { value: TransactionFormValues }) => {
         const payload = toTransactionApiPayload(value);

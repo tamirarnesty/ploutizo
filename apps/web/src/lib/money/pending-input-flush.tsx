@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useId,
+  useMemo,
   useRef,
 } from 'react';
 
@@ -37,10 +38,13 @@ export const PendingInputFlushProvider = ({
     }
   }, []);
 
+  const value = useMemo(
+    () => ({ register, unregister, flushAll }),
+    [register, unregister, flushAll]
+  );
+
   return (
-    <PendingInputFlushContext.Provider
-      value={{ register, unregister, flushAll }}
-    >
+    <PendingInputFlushContext.Provider value={value}>
       {children}
     </PendingInputFlushContext.Provider>
   );

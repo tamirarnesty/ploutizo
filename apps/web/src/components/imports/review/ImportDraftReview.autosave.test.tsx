@@ -8,7 +8,6 @@ import {
   makeImportDraftRow,
 } from '../test-fixtures/importDraft';
 import {
-  ReviewTestProviders,
   flush,
   importDraftReviewTestControls,
   renderReview,
@@ -16,6 +15,7 @@ import {
   setupImportDraftReviewTests,
 } from './importDraftReviewTestHarness';
 import { ImportDraftReview } from './ImportDraftReview';
+import { ReviewTestProviders } from './ReviewTestProviders';
 
 const {
   continue: continueMocks,

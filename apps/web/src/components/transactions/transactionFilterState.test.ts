@@ -5,7 +5,7 @@ import {
   filtersToSearch,
   hasActiveFilters,
   searchToFilters,
-} from './Transactions';
+} from './transactionFilterUrl';
 
 const importSearch = {
   importBatchId: 'batch_1',

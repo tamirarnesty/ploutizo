@@ -129,8 +129,9 @@ const applyPersistSuccess = (
     return;
   }
 
+  const succeeded = new Set(succeededKeys);
   const remaining = (state.failedFieldKeys.get(rowId) ?? []).filter(
-    (key) => !succeededKeys.includes(key)
+    (key) => !succeeded.has(key)
   );
   if (remaining.length === 0) {
     state.failedFieldKeys.delete(rowId);

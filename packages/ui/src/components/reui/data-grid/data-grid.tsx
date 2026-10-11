@@ -121,52 +121,97 @@ function useDataGrid() {
 function DataGridProvider<TData extends object>({
   children,
   table,
-  ...props
+  recordCount,
+  isLoading = false,
+  loadingMode,
+  loadingMessage,
+  fetchingMoreMessage,
+  allRowsLoadedMessage,
+  emptyMessage,
+  onRowClick,
+  renderRowContextMenu,
+  renderBodyRow,
+  className,
+  tableLayout,
+  tableClassNames,
 }: DataGridProps<TData> & { table: Table<TData> }) {
   const tableState = table.getState();
-  const resolvedColumnsResizeMode =
-    props.tableLayout?.columnsResizeMode ?? 'onEnd';
+  const resolvedColumnsResizeMode = tableLayout?.columnsResizeMode ?? 'onEnd';
 
   // Keep resize mode aligned with the DataGrid contract every render so
   // consumer-level useReactTable options cannot flip it back between drags.
-  if (props.tableLayout?.columnsResizable) {
+  if (tableLayout?.columnsResizable) {
     table.options.columnResizeMode = resolvedColumnsResizeMode;
   }
+
+  // Layout and class-name objects are rebuilt by DataGrid every render, so
+  // they are tracked by serialized value to keep the context value stable.
+  const tableLayoutKey = JSON.stringify(tableLayout);
+  const tableClassNamesKey = JSON.stringify(tableClassNames);
+  const { sorting, pagination, columnFilters } = tableState;
+  const {
+    rowSelection,
+    expanded,
+    columnVisibility,
+    columnOrder,
+    columnPinning,
+    globalFilter,
+  } = tableState;
 
   // Memoize context value so consumers don't re-render during column resize.
   // Column sizing state is intentionally excluded from deps -- CSS variables
   // on the <table> element handle width updates without React re-renders.
+  // The table state fields below are deps only: they invalidate the value
+  // when row models derived from them change.
   const value = useMemo(
     () => ({
-      props,
+      props: {
+        recordCount,
+        isLoading,
+        loadingMode,
+        loadingMessage,
+        fetchingMoreMessage,
+        allRowsLoadedMessage,
+        emptyMessage,
+        onRowClick,
+        renderRowContextMenu,
+        renderBodyRow,
+        className,
+        tableLayout: JSON.parse(
+          tableLayoutKey
+        ) as DataGridProps<TData>['tableLayout'],
+        tableClassNames: JSON.parse(
+          tableClassNamesKey
+        ) as DataGridProps<TData>['tableClassNames'],
+      },
       table,
-      recordCount: props.recordCount,
-      isLoading: props.isLoading || false,
+      recordCount,
+      isLoading,
     }),
     [
       table,
-      props.recordCount,
-      props.isLoading,
-      props.loadingMode,
-      props.loadingMessage,
-      props.fetchingMoreMessage,
-      props.allRowsLoadedMessage,
-      props.emptyMessage,
-      props.onRowClick,
-      props.renderRowContextMenu,
-      props.renderBodyRow,
-      props.className,
-      JSON.stringify(props.tableLayout),
-      JSON.stringify(props.tableClassNames),
-      tableState.sorting,
-      tableState.pagination,
-      tableState.columnFilters,
-      tableState.rowSelection,
-      tableState.expanded,
-      tableState.columnVisibility,
-      tableState.columnOrder,
-      tableState.columnPinning,
-      tableState.globalFilter,
+      recordCount,
+      isLoading,
+      loadingMode,
+      loadingMessage,
+      fetchingMoreMessage,
+      allRowsLoadedMessage,
+      emptyMessage,
+      onRowClick,
+      renderRowContextMenu,
+      renderBodyRow,
+      className,
+      tableLayoutKey,
+      tableClassNamesKey,
+      sorting,
+      pagination,
+      columnFilters,
+      rowSelection,
+      expanded,
+      columnVisibility,
+      columnOrder,
+      columnPinning,
+      globalFilter,
     ]
   );
 

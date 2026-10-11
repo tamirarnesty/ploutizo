@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
+import { Suspense, lazy, useMemo } from 'react';
+import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import type { GetDashboardOverviewResponse } from '@ploutizo/validators';
-import { SpendTrendChart } from '@/components/dashboard/spend-trend/SpendTrendChart';
 import {
   partialBucketEdges,
   segmentPartialBuckets,
@@ -10,6 +10,12 @@ import {
   toSpendTrendChartData,
 } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
 import type { SpendTrendMode } from '@/lib/spend-trend-mode';
+
+const SpendTrendChart = lazy(() =>
+  import('@/components/dashboard/spend-trend/SpendTrendChart').then(
+    (module) => ({ default: module.SpendTrendChart })
+  )
+);
 
 type SpendTrendBodyProps = {
   overview: GetDashboardOverviewResponse;
@@ -33,11 +39,17 @@ export const SpendTrendBody = ({
   );
 
   return (
-    <SpendTrendChart
-      data={chartData}
-      grain={spendTrendGrain(overview.meta)}
-      hasPriorSeries={spendTrendPriorRange(overview.meta) !== null}
-      seriesLabels={spendTrendSeriesLabels(overview.meta)}
-    />
+    <Suspense
+      fallback={
+        <Skeleton className="h-full min-h-56 w-full motion-safe:animate-pulse" />
+      }
+    >
+      <SpendTrendChart
+        data={chartData}
+        grain={spendTrendGrain(overview.meta)}
+        hasPriorSeries={spendTrendPriorRange(overview.meta) !== null}
+        seriesLabels={spendTrendSeriesLabels(overview.meta)}
+      />
+    </Suspense>
   );
 };
