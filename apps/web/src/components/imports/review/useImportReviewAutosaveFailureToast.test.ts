@@ -12,7 +12,7 @@ import {
 
 const toastError = vi.hoisted(() => vi.fn());
 
-vi.mock('@ploutizo/ui/components/sonner', () => ({
+vi.mock('@ploutizo/ui/components/sonner-api', () => ({
   toast: {
     error: toastError,
   },

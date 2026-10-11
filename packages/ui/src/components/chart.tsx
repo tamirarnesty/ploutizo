@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-condition -- Recharts tooltip payloads are loosely typed */
 import * as React from 'react';
+import * as RechartsPrimitive from 'recharts';
 import {
   type DefaultLegendContentProps,
   type DefaultTooltipContentProps,
@@ -7,7 +8,6 @@ import {
   type TooltipValueType,
 } from 'recharts';
 import { type ChartConfig, THEMES } from '@/components/chart-types';
-import { useRechartsModule } from '@/components/use-recharts';
 import { cn } from '@/lib/utils';
 
 export type { ChartConfig } from '@/components/chart-types';
@@ -46,7 +46,6 @@ function ChartContainer({
     height: number;
   };
 }) {
-  const RechartsPrimitive = useRechartsModule();
   const uniqueId = React.useId();
   const chartId = `chart-${id ?? uniqueId.replace(/:/g, '')}`;
   const contextValue = React.useMemo(() => ({ config }), [config]);
@@ -109,9 +108,8 @@ ${colorConfig
 }
 
 function ChartTooltip(
-  props: React.ComponentProps<ReturnType<typeof useRechartsModule>['Tooltip']>
+  props: React.ComponentProps<typeof RechartsPrimitive.Tooltip>
 ) {
-  const RechartsPrimitive = useRechartsModule();
   return <RechartsPrimitive.Tooltip {...props} />;
 }
 
@@ -285,9 +283,8 @@ function ChartTooltipContent({
 }
 
 function ChartLegend(
-  props: React.ComponentProps<ReturnType<typeof useRechartsModule>['Legend']>
+  props: React.ComponentProps<typeof RechartsPrimitive.Legend>
 ) {
-  const RechartsPrimitive = useRechartsModule();
   return <RechartsPrimitive.Legend {...props} />;
 }
 

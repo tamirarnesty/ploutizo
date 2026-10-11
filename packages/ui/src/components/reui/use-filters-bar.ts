@@ -199,20 +199,24 @@ export const useFiltersBar = <T = unknown>({
 
   const addFilter = useCallback(
     (fieldKey: string) => {
-      const field = fieldsMap[fieldKey];
-      if (field.key) {
-        const defaultValues: unknown[] = field.type === 'text' ? [''] : [];
-        const newFilter = createFilter<T>(
-          fieldKey,
-          getDefaultFilterOperator(field),
-          defaultValues as T[]
-        );
-        setLastAddedFilterId(newFilter.id);
-        onChange([...filters, newFilter]);
-        setAddFilterOpen(false);
-        setMenuSearchInput('');
-        setHighlightedIndex(-1);
+      if (!(fieldKey in fieldsMap)) {
+        return;
       }
+      const field = fieldsMap[fieldKey];
+      if (!field.key) {
+        return;
+      }
+      const defaultValues: unknown[] = field.type === 'text' ? [''] : [];
+      const newFilter = createFilter<T>(
+        fieldKey,
+        getDefaultFilterOperator(field),
+        defaultValues as T[]
+      );
+      setLastAddedFilterId(newFilter.id);
+      onChange([...filters, newFilter]);
+      setAddFilterOpen(false);
+      setMenuSearchInput('');
+      setHighlightedIndex(-1);
     },
     [fieldsMap, filters, onChange]
   );

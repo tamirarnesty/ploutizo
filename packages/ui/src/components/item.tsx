@@ -27,7 +27,9 @@ function ItemSeparator({
   className,
   ...props
 }: React.ComponentProps<typeof Separator>) {
-  return (
+  const inItemGroup = React.useContext(ItemGroupContext);
+
+  const separator = (
     <Separator
       data-slot="item-separator"
       orientation="horizontal"
@@ -35,6 +37,12 @@ function ItemSeparator({
       {...props}
     />
   );
+
+  if (inItemGroup) {
+    return <li className="list-none">{separator}</li>;
+  }
+
+  return separator;
 }
 
 const itemVariants = cva(
@@ -69,7 +77,7 @@ function Item({
   const inItemGroup = React.useContext(ItemGroupContext);
   const tag = inItemGroup ? 'li' : 'div';
 
-  return useRender({
+  const element = useRender({
     defaultTagName: tag,
     props: mergeProps<typeof tag>(
       {
@@ -84,6 +92,12 @@ function Item({
       size,
     },
   });
+
+  return (
+    <ItemGroupContext.Provider value={false}>
+      {element}
+    </ItemGroupContext.Provider>
+  );
 }
 
 const itemMediaVariants = cva(

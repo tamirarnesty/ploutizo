@@ -1,6 +1,7 @@
 'use client';
 
 import { useFilterContext } from './filters-context';
+import { resolveHighlightedIndex } from './filters-utils';
 import type { Dispatch, RefObject, SetStateAction } from 'react';
 
 import type { FilterFieldConfig, FilterOption } from './filters-types';
@@ -52,6 +53,12 @@ export const SelectOptionsMenuContent = <T = unknown,>({
 }: SelectOptionsMenuContentProps<T>) => {
   const context = useFilterContext();
 
+  const displayHighlightedIndex = resolveHighlightedIndex(
+    highlightedIndex,
+    open,
+    allFilteredOptions.length
+  );
+
   const applySelection = (next: T[], closeOnSelect: boolean) => {
     if (field.onValueChange) {
       field.onValueChange(next);
@@ -75,8 +82,8 @@ export const SelectOptionsMenuContent = <T = unknown,>({
             aria-haspopup="listbox"
             aria-controls={`${baseId}-listbox`}
             aria-activedescendant={
-              highlightedIndex >= 0
-                ? `${baseId}-item-${highlightedIndex}`
+              displayHighlightedIndex >= 0
+                ? `${baseId}-item-${displayHighlightedIndex}`
                 : undefined
             }
             placeholder={context.i18n.placeholders.searchField(
@@ -95,23 +102,37 @@ export const SelectOptionsMenuContent = <T = unknown,>({
               if (e.key === 'ArrowDown') {
                 e.preventDefault();
                 if (allFilteredOptions.length > 0) {
-                  onHighlightedIndexChange((prev) =>
-                    prev < allFilteredOptions.length - 1 ? prev + 1 : 0
-                  );
+                  onHighlightedIndexChange((prev) => {
+                    const current = resolveHighlightedIndex(
+                      prev,
+                      open,
+                      allFilteredOptions.length
+                    );
+                    return current < allFilteredOptions.length - 1
+                      ? current + 1
+                      : 0;
+                  });
                 }
               } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
                 if (allFilteredOptions.length > 0) {
-                  onHighlightedIndexChange((prev) =>
-                    prev > 0 ? prev - 1 : allFilteredOptions.length - 1
-                  );
+                  onHighlightedIndexChange((prev) => {
+                    const current = resolveHighlightedIndex(
+                      prev,
+                      open,
+                      allFilteredOptions.length
+                    );
+                    return current > 0
+                      ? current - 1
+                      : allFilteredOptions.length - 1;
+                  });
                 }
               } else if (e.key === 'ArrowLeft') {
                 e.preventDefault();
                 onClose();
-              } else if (e.key === 'Enter' && highlightedIndex >= 0) {
+              } else if (e.key === 'Enter' && displayHighlightedIndex >= 0) {
                 e.preventDefault();
-                const option = allFilteredOptions[highlightedIndex];
+                const option = allFilteredOptions[displayHighlightedIndex];
                 if (option) {
                   const isSelected = effectiveValueSet.has(option.value);
                   const next = isSelected
@@ -154,7 +175,7 @@ export const SelectOptionsMenuContent = <T = unknown,>({
             {filteredSelectedOptions.length > 0 && (
               <DropdownMenuGroup className="px-1">
                 {filteredSelectedOptions.map((option, index) => {
-                  const isHighlighted = highlightedIndex === index;
+                  const isHighlighted = displayHighlightedIndex === index;
                   const itemId = `${baseId}-item-${index}`;
 
                   return (
@@ -197,7 +218,8 @@ export const SelectOptionsMenuContent = <T = unknown,>({
               <DropdownMenuGroup className="px-1">
                 {filteredUnselectedOptions.map((option, index) => {
                   const overallIndex = index + filteredSelectedOptions.length;
-                  const isHighlighted = highlightedIndex === overallIndex;
+                  const isHighlighted =
+                    displayHighlightedIndex === overallIndex;
                   const itemId = `${baseId}-item-${overallIndex}`;
 
                   return (
