@@ -16,7 +16,15 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import {
   dashboardPriorRange,
@@ -346,6 +354,12 @@ const cardFor = (title: string) => {
   return card as HTMLElement;
 };
 
+/** Lazy chart chunks can exceed RTL’s default 1s timeout under CI load. */
+const CHART_CONTENT_TIMEOUT_MS = 10_000;
+
+const findChartTextInCard = (card: HTMLElement, text: string | RegExp) =>
+  within(card).findByText(text, {}, { timeout: CHART_CONTENT_TIMEOUT_MS });
+
 const cardHeaderFor = (title: string) => {
   const header = screen.getByText(title).closest('[data-slot="card-header"]');
   if (!header) throw new Error(`No card header found for "${title}"`);
@@ -375,6 +389,13 @@ const customPeriodPicker = () => {
 };
 
 describe('Dashboard', () => {
+  beforeAll(async () => {
+    await Promise.all([
+      import('@/components/dashboard/spend-by-category/SpendByCategoryChart'),
+      import('@/components/dashboard/spend-trend/SpendTrendChart'),
+    ]);
+  });
+
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-03-24T12:00:00'));
@@ -775,7 +796,7 @@ describe('Dashboard', () => {
       });
       await renderDashboard();
       const card = cardFor('Spend by category');
-      expect(await within(card).findByText('Groceries')).toBeInTheDocument();
+      expect(await findChartTextInCard(card, 'Groceries')).toBeInTheDocument();
       expect(
         within(card).getByText('All other categories')
       ).toBeInTheDocument();
@@ -797,7 +818,7 @@ describe('Dashboard', () => {
       });
       await renderDashboard();
       expect(
-        await within(cardFor('Spend by category')).findByText('Uncategorised')
+        await findChartTextInCard(cardFor('Spend by category'), 'Uncategorised')
       ).toBeInTheDocument();
     });
 
@@ -828,7 +849,7 @@ describe('Dashboard', () => {
       });
       await renderDashboard();
       const card = cardFor('Spend by category');
-      expect(await within(card).findByText('Groceries')).toBeInTheDocument();
+      expect(await findChartTextInCard(card, 'Groceries')).toBeInTheDocument();
       expect(within(card).getByText('Travel')).toBeInTheDocument();
     });
 
