@@ -251,12 +251,12 @@ function DataGridTableDnd<TData>({
             isLoading &&
             skeletonRowCount ? (
               Array.from({ length: skeletonRowCount }).map((_, rowIndex) => (
-                <DataGridTableBodyRowSkeleton key={rowIndex}>
-                  {table.getVisibleFlatColumns().map((column, colIndex) => {
+                <DataGridTableBodyRowSkeleton key={`skeleton-row-${rowIndex}`}>
+                  {table.getVisibleFlatColumns().map((column) => {
                     return (
                       <DataGridTableBodyRowSkeletonCell
                         column={column}
-                        key={colIndex}
+                        key={column.id}
                       >
                         {column.columnDef.meta?.skeleton}
                       </DataGridTableBodyRowSkeletonCell>

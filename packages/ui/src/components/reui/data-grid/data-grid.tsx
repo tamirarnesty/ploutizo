@@ -24,17 +24,6 @@ declare module '@tanstack/react-table' {
   }
 }
 
-/** Label for headers / column visibility: `meta.headerTitle`, string `columnDef.header`, or `column.id`. */
-export function getColumnHeaderLabel<TData, TValue>(
-  column: Column<TData, TValue>
-): string {
-  const meta = column.columnDef.meta as { headerTitle?: string } | undefined;
-  if (typeof meta?.headerTitle === 'string') return meta.headerTitle;
-  const defHeader = column.columnDef.header;
-  if (typeof defHeader === 'string') return defHeader;
-  return String(column.id);
-}
-
 export type DataGridApiFetchParams = {
   pageIndex: number;
   pageSize: number;
@@ -155,20 +144,8 @@ function DataGridProvider<TData extends object>({
       isLoading: props.isLoading || false,
     }),
     [
+      props,
       table,
-      props.recordCount,
-      props.isLoading,
-      props.loadingMode,
-      props.loadingMessage,
-      props.fetchingMoreMessage,
-      props.allRowsLoadedMessage,
-      props.emptyMessage,
-      props.onRowClick,
-      props.renderRowContextMenu,
-      props.renderBodyRow,
-      props.className,
-      JSON.stringify(props.tableLayout),
-      JSON.stringify(props.tableClassNames),
       tableState.sorting,
       tableState.pagination,
       tableState.columnFilters,

@@ -9,6 +9,7 @@ import {
 } from '@testing-library/react';
 import { afterEach } from 'vitest';
 import { describe, expect, it } from 'vitest';
+import { useMemo } from 'react';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import type { ColumnDef } from '@tanstack/react-table';
 import { ContextMenuItem } from '@/components/context-menu';
@@ -22,10 +23,11 @@ const columns: ColumnDef<DemoRow>[] = [
 ];
 
 const DataGridContextMenuHarness = () => {
-  const data: DemoRow[] = [{ id: '1', label: 'Coffee' }];
+  const data = useMemo<DemoRow[]>(() => [{ id: '1', label: 'Coffee' }], []);
+  const tableColumns = useMemo(() => columns, []);
   const table = useReactTable({
     data,
-    columns,
+    columns: tableColumns,
     getCoreRowModel: getCoreRowModel(),
   });
 

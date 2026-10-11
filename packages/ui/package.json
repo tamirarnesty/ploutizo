@@ -59,6 +59,7 @@
     "./lib/*": "./src/lib/*.ts",
     "./components/reui/filter-helpers": "./src/components/reui/filter-helpers.ts",
     "./components/*": "./src/components/*.tsx",
+    "./components/reui/data-grid/*": "./src/components/reui/data-grid/*",
     "./components/reui/filters-types": "./src/components/reui/filters-types.ts",
     "./components/reui/filters-constants": "./src/components/reui/filters-constants.ts",
     "./components/reui/filters-utils": "./src/components/reui/filters-utils.ts",

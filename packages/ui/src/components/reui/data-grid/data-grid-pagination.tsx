@@ -36,22 +36,37 @@ interface DataGridPaginationProps {
 function DataGridPagination(props: DataGridPaginationProps): React.JSX.Element {
   const { table, recordCount, isLoading } = useDataGrid();
 
-  const defaultProps: Partial<DataGridPaginationProps> = {
-    sizes: [5, 10, 25, 50, 100],
-    sizesLabel: 'Show',
-    sizesDescription: 'per page',
-    sizesSkeleton: <Skeleton className="h-8 w-44" />,
-    moreLimit: 5,
-    more: false,
-    info: '{from} - {to} of {count}',
-    infoSkeleton: <Skeleton className="h-8 w-60" />,
-    rowsPerPageLabel: 'Rows per page',
-    previousPageLabel: 'Go to previous page',
-    nextPageLabel: 'Go to next page',
-    ellipsisText: '...',
-  };
+  const {
+    sizes = [5, 10, 25, 50, 100],
+    sizesLabel = 'Show',
+    sizesDescription = 'per page',
+    sizesSkeleton = <Skeleton className="h-8 w-44" />,
+    moreLimit = 5,
+    more = false,
+    info = '{from} - {to} of {count}',
+    infoSkeleton = <Skeleton className="h-8 w-60" />,
+    rowsPerPageLabel = 'Rows per page',
+    previousPageLabel = 'Go to previous page',
+    nextPageLabel = 'Go to next page',
+    ellipsisText = '...',
+    className,
+  } = props;
 
-  const mergedProps: DataGridPaginationProps = { ...defaultProps, ...props };
+  const mergedProps: DataGridPaginationProps = {
+    sizes,
+    sizesLabel,
+    sizesDescription,
+    sizesSkeleton,
+    moreLimit,
+    more,
+    info,
+    infoSkeleton,
+    rowsPerPageLabel,
+    previousPageLabel,
+    nextPageLabel,
+    ellipsisText,
+    className,
+  };
 
   const btnBaseClasses = 'size-7 p-0 text-sm';
   const btnArrowClasses = btnBaseClasses + ' rtl:transform rtl:rotate-180';
