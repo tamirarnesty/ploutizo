@@ -191,18 +191,11 @@
   }
 
   /*
-   * Flex and grid items shrink below their content. Table boxes keep the
-   * content minimum so a fixed data grid and an automatic table do not collapse.
+   * Leave min-width at auto. A universal min-width: 0 collapses content-sized
+   * flex items: settings tabs are flex-1 inside a w-fit list, so the labels
+   * overlap and the active underline stretches. Shells that must shrink
+   * already set min-w-0.
    */
-  *,
-  *::before,
-  *::after {
-    min-width: 0;
-  }
-
-  :where(table, thead, tbody, tfoot, tr, th, td) {
-    min-width: auto;
-  }
 
   :root {
     interpolate-size: allow-keywords;
@@ -290,10 +283,15 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /*
+   * Contain the page, sidebar, and overlays. Data-grid and other scroll areas
+   * stay at the initial overscroll-behavior so a wheel over a table that does
+   * not scroll vertically still reaches the page. Containing those viewports
+   * swallows the wheel everywhere the pointer is over the table.
+   */
   :where(
     main.overflow-auto,
     [data-slot='sidebar-content'],
-    [data-slot='scroll-area-viewport'],
     [data-slot='dialog-content'],
     [data-slot='sheet-content']
   ) {
