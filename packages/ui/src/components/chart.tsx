@@ -21,7 +21,7 @@ type ChartContextProps = {
 
 const ChartContext = React.createContext<ChartContextProps | null>(null);
 
-const useChart = () => {
+function useChart() {
   const context = React.useContext(ChartContext);
 
   if (!context) {
@@ -29,9 +29,9 @@ const useChart = () => {
   }
 
   return context;
-};
+}
 
-const ChartContainer = ({
+function ChartContainer({
   id,
   className,
   children,
@@ -45,7 +45,7 @@ const ChartContainer = ({
     width: number;
     height: number;
   };
-}) => {
+}) {
   const RechartsPrimitive = useRechartsModule();
   const uniqueId = React.useId();
   const chartId = `chart-${id ?? uniqueId.replace(/:/g, '')}`;
@@ -73,9 +73,9 @@ const ChartContainer = ({
       </div>
     </ChartContext.Provider>
   );
-};
+}
 
-const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
+function ChartStyle({ id, config }: { id: string; config: ChartConfig }) {
   const colorConfig = Object.entries(config).filter(
     ([, config]) => config.theme ?? config.color
   );
@@ -106,14 +106,14 @@ ${colorConfig
       }}
     />
   );
-};
+}
 
-const ChartTooltip = (
+function ChartTooltip(
   props: React.ComponentProps<ReturnType<typeof useRechartsModule>['Tooltip']>
-) => {
+) {
   const RechartsPrimitive = useRechartsModule();
   return <RechartsPrimitive.Tooltip {...props} />;
-};
+}
 
 type ChartTooltipContentProps = React.ComponentProps<'div'> & {
   active?: boolean;
@@ -138,7 +138,7 @@ type ChartTooltipContentProps = React.ComponentProps<'div'> & {
   color?: string;
 };
 
-const ChartTooltipContent = ({
+function ChartTooltipContent({
   active,
   payload,
   className,
@@ -154,7 +154,7 @@ const ChartTooltipContent = ({
   color,
   nameKey,
   labelKey,
-}: ChartTooltipContentProps) => {
+}: ChartTooltipContentProps) {
   const { config } = useChart();
 
   if (!active || !payload?.length) {
@@ -282,16 +282,16 @@ const ChartTooltipContent = ({
       </div>
     </div>
   );
-};
+}
 
-const ChartLegend = (
+function ChartLegend(
   props: React.ComponentProps<ReturnType<typeof useRechartsModule>['Legend']>
-) => {
+) {
   const RechartsPrimitive = useRechartsModule();
   return <RechartsPrimitive.Legend {...props} />;
-};
+}
 
-const ChartLegendContent = ({
+function ChartLegendContent({
   className,
   hideIcon = false,
   payload,
@@ -300,7 +300,7 @@ const ChartLegendContent = ({
 }: React.ComponentProps<'div'> & {
   hideIcon?: boolean;
   nameKey?: string;
-} & DefaultLegendContentProps) => {
+} & DefaultLegendContentProps) {
   const { config } = useChart();
 
   if (!payload?.length) {
@@ -349,13 +349,13 @@ const ChartLegendContent = ({
         })}
     </div>
   );
-};
+}
 
-const getPayloadConfigFromPayload = (
+function getPayloadConfigFromPayload(
   config: ChartConfig,
   payload: unknown,
   key: string
-) => {
+) {
   if (typeof payload !== 'object' || payload === null) {
     return undefined;
   }
@@ -385,7 +385,7 @@ const getPayloadConfigFromPayload = (
   }
 
   return configLabelKey in config ? config[configLabelKey] : config[key];
-};
+}
 
 export {
   ChartContainer,

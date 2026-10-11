@@ -68,6 +68,8 @@ export const useFiltersBar = <T = unknown>({
     shortcutKey,
     () => {
       setAddFilterOpen(true);
+      setActiveMenu('root');
+      setHighlightedIndex(-1);
     },
     {
       enabled: enableShortcut && !addFilterOpen,
@@ -209,6 +211,7 @@ export const useFiltersBar = <T = unknown>({
         onChange([...filters, newFilter]);
         setAddFilterOpen(false);
         setMenuSearchInput('');
+        setHighlightedIndex(-1);
       }
     },
     [fieldsMap, filters, onChange]
@@ -319,6 +322,7 @@ export const useFiltersBar = <T = unknown>({
         setLastAddedFilterId(newFilter.id);
         onChange([...filters, newFilter]);
         setAddFilterOpen(false);
+        setHighlightedIndex(-1);
       }
     },
     [filters, onChange]

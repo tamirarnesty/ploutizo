@@ -158,10 +158,13 @@ export const resolveHighlightedIndex = (
   isActive: boolean,
   optionCount: number
 ): number => {
-  if (highlightedIndex >= 0) {
-    return highlightedIndex;
+  if (optionCount <= 0) {
+    return -1;
   }
-  if (isActive && optionCount > 0) {
+  if (highlightedIndex >= 0) {
+    return Math.min(highlightedIndex, optionCount - 1);
+  }
+  if (isActive) {
     return 0;
   }
   return -1;

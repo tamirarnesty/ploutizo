@@ -4,6 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { SelectOptionsMenuContent } from './select-options-menu-content';
 import { useFilterContext } from './filters-context';
+import { resolveHighlightedIndex } from './filters-utils';
 import type { FilterFieldConfig } from './filters-types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/button';
@@ -71,6 +72,21 @@ export const SelectOptionsPopover = <T = unknown,>({
     [filteredSelectedOptions, filteredUnselectedOptions]
   );
 
+  const displayHighlightedIndex = resolveHighlightedIndex(
+    highlightedIndex,
+    open,
+    allFilteredOptions.length
+  );
+
+  useEffect(() => {
+    if (displayHighlightedIndex >= 0 && open) {
+      const element = document.getElementById(
+        `${baseId}-item-${displayHighlightedIndex}`
+      );
+      element?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [baseId, displayHighlightedIndex, open]);
+
   const handleClose = () => {
     setOpen(false);
     onClose?.();
@@ -84,7 +100,7 @@ export const SelectOptionsPopover = <T = unknown,>({
       searchInput={searchInput}
       onSearchInputChange={setSearchInput}
       inputRef={inputRef}
-      highlightedIndex={highlightedIndex}
+      highlightedIndex={displayHighlightedIndex}
       onHighlightedIndexChange={setHighlightedIndex}
       isMultiSelect={isMultiSelect}
       effectiveValues={effectiveValues}
