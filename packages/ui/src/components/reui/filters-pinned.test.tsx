@@ -3,11 +3,8 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Button } from '@/components/button';
-import {
-  type FilterFieldConfig,
-  Filters,
-  isFilterValueActive,
-} from '@/components/reui/filters';
+import { isFilterValueActive } from '@/components/reui/filter-helpers';
+import { type FilterFieldConfig, Filters } from '@/components/reui/filters';
 
 afterEach(() => {
   cleanup();

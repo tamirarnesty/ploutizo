@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   CartesianGrid,
   Line,
@@ -38,10 +39,19 @@ export const SpendTrendChart = ({
   seriesLabels,
 }: SpendTrendChartProps) => {
   // Prior is the current colour, faded (and dashed below), as on every dashboard chart; legend and tooltip follow.
-  const chartConfig = {
-    current: { label: seriesLabels.current, color: 'var(--chart-1)' },
-    prior: { label: seriesLabels.prior, color: fadedColour('var(--chart-1)') },
-  } satisfies ChartConfig;
+  // Depend on the label strings, not `seriesLabels.current`: the parent builds a new labels object every render.
+  const { current: currentLabel, prior: priorLabel } = seriesLabels;
+  const chartConfig = useMemo(
+    () =>
+      ({
+        current: { label: currentLabel, color: 'var(--chart-1)' },
+        prior: {
+          label: priorLabel,
+          color: fadedColour('var(--chart-1)'),
+        },
+      }) satisfies ChartConfig,
+    [currentLabel, priorLabel]
+  );
   const yDomain = amountDomain(
     data.flatMap((point) => [point.current, point.prior])
   );

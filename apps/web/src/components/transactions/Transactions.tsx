@@ -3,10 +3,10 @@ import { useNavigate, useSearch } from '@tanstack/react-router';
 import { ListFilterIcon } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import {
-  Filters,
   createPinnedFilterId,
   isFilterValueActive,
-} from '@ploutizo/ui/components/reui/filters';
+} from '@ploutizo/ui/components/reui/filter-helpers';
+import { Filters } from '@ploutizo/ui/components/reui/filters';
 import { Text } from '@ploutizo/ui/components/text';
 import type { Filter } from '@ploutizo/ui/components/reui/filters';
 import type { TransactionRow } from '@ploutizo/validators';
