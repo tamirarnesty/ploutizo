@@ -46,6 +46,11 @@ import {
 import { Kbd } from '@/components/kbd';
 import { ScrollArea } from '@/components/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/tooltip';
+import {
+  createPinnedFilterId,
+  getDefaultFilterOperator,
+  isFilterValueActive,
+} from '@/components/reui/filter-helpers';
 
 // i18n Configuration Interface
 export interface FilterI18nConfig {
@@ -122,7 +127,7 @@ export interface FilterI18nConfig {
 }
 
 // Default English i18n configuration
-export const DEFAULT_I18N: FilterI18nConfig = {
+const DEFAULT_I18N: FilterI18nConfig = {
   // UI Labels
   addFilter: 'Filter',
   searchFields: 'Filter...',
@@ -586,10 +591,6 @@ const createOperatorsFromI18n = (
   ],
 });
 
-// Default operators for different field types (using default i18n)
-export const DEFAULT_OPERATORS: Record<string, FilterOperator[]> =
-  createOperatorsFromI18n(DEFAULT_I18N);
-
 // Helper function to get operators for a field
 const getOperatorsForField = <T = unknown,>(
   field: FilterFieldConfig<T>,
@@ -1049,23 +1050,6 @@ export interface Filter<T = unknown> {
   operator: string;
   values: T[];
 }
-
-export const getDefaultFilterOperator = <T = unknown,>(
-  field: FilterFieldConfig<T>
-): string =>
-  field.defaultOperator || (field.type === 'multiselect' ? 'is_any_of' : 'is');
-
-export const createPinnedFilterId = (fieldKey: string): string =>
-  `filter-${fieldKey}`;
-
-export const isFilterValueActive = <T = unknown,>(
-  filter: Filter<T>
-): boolean => {
-  if (filter.operator === 'empty' || filter.operator === 'not_empty') {
-    return true;
-  }
-  return filter.values.some((value) => String(value ?? '').trim().length > 0);
-};
 
 export interface FilterGroup<T = unknown> {
   id: string;
@@ -1995,7 +1979,7 @@ export function Filters<T = unknown>({
   );
 }
 
-export const createFilter = <T = unknown,>(
+const createFilter = <T = unknown,>(
   field: string,
   operator?: string,
   values: T[] = []
@@ -2004,16 +1988,4 @@ export const createFilter = <T = unknown,>(
   field,
   operator: operator || 'is',
   values,
-});
-
-export const createFilterGroup = <T = unknown,>(
-  id: string,
-  label: string,
-  fields: FilterFieldConfig<T>[],
-  initialFilters: Filter<T>[] = []
-): FilterGroup<T> => ({
-  id,
-  label,
-  filters: initialFilters,
-  fields,
 });

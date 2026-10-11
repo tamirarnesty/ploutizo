@@ -23,8 +23,8 @@ import {
   DataGridTableRenderedRow,
   DataGridTableRowSpacer,
   DataGridTableViewport,
-  getDataGridTableRowSections,
 } from '@/components/reui/data-grid/data-grid-table';
+import { getDataGridTableRowSections } from '@/components/reui/data-grid/data-grid-table-rows';
 
 import { cn } from '@/lib/utils';
 import { Spinner } from '@/components/spinner';

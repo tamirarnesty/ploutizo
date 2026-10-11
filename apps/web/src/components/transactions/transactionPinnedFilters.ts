@@ -1,7 +1,7 @@
 import {
   createPinnedFilterId,
   getDefaultFilterOperator,
-} from '@ploutizo/ui/components/reui/filters';
+} from '@ploutizo/ui/components/reui/filter-helpers';
 import type { Filter } from '@ploutizo/ui/components/reui/filters';
 import { buildFilterFields } from './TransactionFilterFields';
 

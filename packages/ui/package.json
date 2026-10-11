@@ -57,6 +57,7 @@
   "exports": {
     "./globals.css": "./src/styles/globals.css",
     "./lib/*": "./src/lib/*.ts",
+    "./components/reui/filter-helpers": "./src/components/reui/filter-helpers.ts",
     "./components/*": "./src/components/*.tsx",
     "./hooks/*": "./src/hooks/*.ts"
   }
