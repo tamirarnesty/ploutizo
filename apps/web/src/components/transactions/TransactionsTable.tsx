@@ -8,7 +8,7 @@ import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-
 import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-grid-scroll-area';
 import { DataGridPagination } from '@ploutizo/ui/components/reui/data-grid/data-grid-pagination';
 import { ContextMenuItem } from '@ploutizo/ui/components/context-menu';
-import { toast } from '@ploutizo/ui/components/sonner';
+import { toast } from '@ploutizo/ui/components/sonner-api';
 import type { TransactionRow } from '@ploutizo/validators';
 import {
   useDeleteTransaction,

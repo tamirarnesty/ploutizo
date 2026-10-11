@@ -4,7 +4,7 @@ import { ToggleGroup as ToggleGroupPrimitive } from '@base-ui/react/toggle-group
 import { type VariantProps } from 'class-variance-authority';
 
 import { cn } from '@ploutizo/ui/lib/utils';
-import { toggleVariants } from '@ploutizo/ui/components/toggle';
+import { toggleVariants } from '@/components/toggle-variants';
 
 const ToggleGroupContext = React.createContext<
   VariantProps<typeof toggleVariants> & {
@@ -50,7 +50,12 @@ function ToggleGroup({
       )}
       {...props}
     >
-      <ToggleGroupContext.Provider value={contextValue}>
+      <ToggleGroupContext.Provider
+        value={React.useMemo(
+          () => ({ variant, size, spacing, orientation }),
+          [orientation, size, spacing, variant]
+        )}
+      >
         {children}
       </ToggleGroupContext.Provider>
     </ToggleGroupPrimitive>

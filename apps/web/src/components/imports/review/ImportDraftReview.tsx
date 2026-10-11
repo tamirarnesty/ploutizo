@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useIsMutating } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { Inbox } from 'lucide-react';
-import { toast } from '@ploutizo/ui/components/sonner';
+import { toast } from '@ploutizo/ui/components/sonner-api';
 import {
   Empty,
   EmptyDescription,

@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { toast } from '@ploutizo/ui/components/sonner';
+import { toast } from '@ploutizo/ui/components/sonner-api';
 import { invalidateSpendQueries } from '@/lib/data-access/invalidateSpendQueries';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import { apiSend } from '@/lib/queryClient';

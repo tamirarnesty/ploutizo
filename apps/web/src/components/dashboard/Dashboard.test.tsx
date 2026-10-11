@@ -59,7 +59,7 @@ vi.mock('@/lib/cookies/request-cookie.server', async () => {
 
 const toastMocks = vi.hoisted(() => ({ error: vi.fn() }));
 
-vi.mock('@ploutizo/ui/components/sonner', () => ({
+vi.mock('@ploutizo/ui/components/sonner-api', () => ({
   toast: { error: toastMocks.error },
 }));
 

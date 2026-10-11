@@ -17,7 +17,7 @@ vi.mock('@/lib/access/access-context', async () => {
   return householdAccessProviderMock;
 });
 
-vi.mock('@ploutizo/ui/components/sonner', () => ({
+vi.mock('@ploutizo/ui/components/sonner-api', () => ({
   toast: {
     loading: vi.fn(),
     success: vi.fn(),

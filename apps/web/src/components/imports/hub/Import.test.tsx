@@ -19,7 +19,7 @@ const importMocks = vi.hoisted(() => ({
   toastSuccess: vi.fn(),
 }));
 
-vi.mock('@ploutizo/ui/components/sonner', () => ({
+vi.mock('@ploutizo/ui/components/sonner-api', () => ({
   toast: {
     info: importMocks.toastInfo,
     success: importMocks.toastSuccess,

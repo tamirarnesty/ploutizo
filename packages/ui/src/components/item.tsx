@@ -6,17 +6,20 @@ import { type VariantProps, cva } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/separator';
 
-function ItemGroup({ className, ...props }: React.ComponentProps<'div'>) {
+const ItemGroupContext = React.createContext(false);
+
+function ItemGroup({ className, ...props }: React.ComponentProps<'ul'>) {
   return (
-    <div
-      role="list"
-      data-slot="item-group"
-      className={cn(
-        'group/item-group flex w-full flex-col gap-4 has-data-[size=sm]:gap-2.5 has-data-[size=xs]:gap-2',
-        className
-      )}
-      {...props}
-    />
+    <ItemGroupContext.Provider value={true}>
+      <ul
+        data-slot="item-group"
+        className={cn(
+          'group/item-group flex w-full flex-col gap-4 has-data-[size=sm]:gap-2.5 has-data-[size=xs]:gap-2',
+          className
+        )}
+        {...props}
+      />
+    </ItemGroupContext.Provider>
   );
 }
 
@@ -24,7 +27,9 @@ function ItemSeparator({
   className,
   ...props
 }: React.ComponentProps<typeof Separator>) {
-  return (
+  const inItemGroup = React.useContext(ItemGroupContext);
+
+  const separator = (
     <Separator
       data-slot="item-separator"
       orientation="horizontal"
@@ -32,6 +37,12 @@ function ItemSeparator({
       {...props}
     />
   );
+
+  if (inItemGroup) {
+    return <li className="list-none">{separator}</li>;
+  }
+
+  return separator;
 }
 
 const itemVariants = cva(
@@ -63,9 +74,12 @@ function Item({
   render,
   ...props
 }: useRender.ComponentProps<'div'> & VariantProps<typeof itemVariants>) {
-  return useRender({
-    defaultTagName: 'div',
-    props: mergeProps<'div'>(
+  const inItemGroup = React.useContext(ItemGroupContext);
+  const tag = inItemGroup ? 'li' : 'div';
+
+  const element = useRender({
+    defaultTagName: tag,
+    props: mergeProps<typeof tag>(
       {
         className: cn(itemVariants({ variant, size, className })),
       },
@@ -78,6 +92,12 @@ function Item({
       size,
     },
   });
+
+  return (
+    <ItemGroupContext.Provider value={false}>
+      {element}
+    </ItemGroupContext.Provider>
+  );
 }
 
 const itemMediaVariants = cva(

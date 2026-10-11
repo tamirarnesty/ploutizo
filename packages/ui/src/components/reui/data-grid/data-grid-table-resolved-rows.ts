@@ -1,26 +1,6 @@
 import { type Row, type Table } from '@tanstack/react-table';
 import { type DataGridTablePinnedBoundary } from '@/components/reui/data-grid/data-grid-table-body-row';
-
-/** Row grouping for the data grid table. Kept out of the component module so that file only exports components. */
-
-export const getDataGridTableRowSections = <TData>(
-  table: Table<TData>,
-  rowsPinnable?: boolean
-) => {
-  if (!rowsPinnable) {
-    return {
-      topRows: [] as Row<TData>[],
-      centerRows: table.getRowModel().rows,
-      bottomRows: [] as Row<TData>[],
-    };
-  }
-
-  return {
-    topRows: table.getTopRows(),
-    centerRows: table.getCenterRows(),
-    bottomRows: table.getBottomRows(),
-  };
-};
+import { getDataGridTableRowSections } from '@/components/reui/data-grid/data-grid-table-row-sections';
 
 export const getDataGridTableResolvedRows = <TData>(
   table: Table<TData>,
@@ -35,7 +15,7 @@ export const getDataGridTableResolvedRows = <TData>(
     pinnedBoundary?: DataGridTablePinnedBoundary;
   }[] = [];
 
-  for (const [index, row] of topRows.entries()) {
+  topRows.forEach((row, index) => {
     resolvedRows.push({
       row,
       pinnedBoundary:
@@ -44,13 +24,13 @@ export const getDataGridTableResolvedRows = <TData>(
           ? 'top'
           : undefined,
     });
-  }
+  });
 
-  for (const row of centerRows) {
+  centerRows.forEach((row) => {
     resolvedRows.push({ row });
-  }
+  });
 
-  for (const [index, row] of bottomRows.entries()) {
+  bottomRows.forEach((row, index) => {
     resolvedRows.push({
       row,
       pinnedBoundary:
@@ -58,7 +38,7 @@ export const getDataGridTableResolvedRows = <TData>(
           ? 'bottom'
           : undefined,
     });
-  }
+  });
 
   return resolvedRows;
 };

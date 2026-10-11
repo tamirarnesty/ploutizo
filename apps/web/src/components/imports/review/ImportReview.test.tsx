@@ -18,7 +18,7 @@ const reviewToastMocks = vi.hoisted(() => ({
   error: vi.fn(),
 }));
 
-vi.mock('@ploutizo/ui/components/sonner', () => ({
+vi.mock('@ploutizo/ui/components/sonner-api', () => ({
   toast: {
     info: reviewToastMocks.info,
     error: reviewToastMocks.error,

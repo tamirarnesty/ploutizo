@@ -1,4 +1,4 @@
-import { toast } from '@ploutizo/ui/components/sonner';
+import { toast } from '@ploutizo/ui/components/sonner-api';
 import { InviteMemberFormSchema } from '@ploutizo/validators';
 import { Button } from '@ploutizo/ui/components/button';
 import { FieldError } from '@ploutizo/ui/components/field';

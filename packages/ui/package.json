@@ -57,8 +57,20 @@
   "exports": {
     "./globals.css": "./src/styles/globals.css",
     "./lib/*": "./src/lib/*.ts",
-    "./components/reui/filter-helpers": "./src/components/reui/filter-helpers.ts",
     "./components/*": "./src/components/*.tsx",
+    "./components/badge-variants": "./src/components/badge-variants.ts",
+    "./components/button-variants": "./src/components/button-variants.ts",
+    "./components/button-group-variants": "./src/components/button-group-variants.ts",
+    "./components/toggle-variants": "./src/components/toggle-variants.ts",
+    "./components/tabs-variants": "./src/components/tabs-variants.ts",
+    "./components/sonner-api": "./src/components/sonner-api.ts",
+    "./components/chart-types": "./src/components/chart-types.ts",
+    "./components/reui/badge-variants": "./src/components/reui/badge-variants.ts",
+    "./components/reui/badge-types": "./src/components/reui/badge-types.ts",
+    "./components/reui/data-grid/*": "./src/components/reui/data-grid/*",
+    "./components/reui/filters-types": "./src/components/reui/filters-types.ts",
+    "./components/reui/filters-constants": "./src/components/reui/filters-constants.ts",
+    "./components/reui/filters-utils": "./src/components/reui/filters-utils.ts",
     "./hooks/*": "./src/hooks/*.ts"
   }
 }

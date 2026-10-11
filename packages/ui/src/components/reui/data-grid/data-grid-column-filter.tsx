@@ -97,7 +97,8 @@ function DataGridColumnFilter<TData, TValue>({
               {filteredOptions.map((option) => {
                 const isSelected = selectedValues.has(option.value);
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={option.value}
                     onClick={() => {
                       if (isSelected) {
@@ -111,7 +112,7 @@ function DataGridColumnFilter<TData, TValue>({
                       );
                     }}
                     className={cn(
-                      'relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none',
+                      'relative flex w-full cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none',
                       'hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground'
                     )}
                   >
@@ -134,7 +135,7 @@ function DataGridColumnFilter<TData, TValue>({
                         {facets.get(option.value)}
                       </span>
                     )}
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -143,12 +144,13 @@ function DataGridColumnFilter<TData, TValue>({
             <>
               <div className="-mx-1 my-1 h-px bg-border" />
               <div className="p-1">
-                <div
+                <button
+                  type="button"
                   onClick={() => column?.setFilterValue(undefined)}
-                  className="relative flex cursor-default items-center justify-center rounded-sm px-2 py-1.5 text-sm outline-hidden select-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                  className="relative flex w-full cursor-default items-center justify-center rounded-sm px-2 py-1.5 text-sm outline-hidden select-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                 >
                   Clear filters
-                </div>
+                </button>
               </div>
             </>
           )}

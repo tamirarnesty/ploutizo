@@ -8,13 +8,7 @@ import {
   ContextMenuTrigger,
 } from '@/components/context-menu';
 import { useDataGrid } from '@/components/reui/data-grid/data-grid';
-
-export const DATA_GRID_ROW_ID_ATTR = 'data-grid-row-id';
-
-/** Stamped on body and expanded `<tr>` when `renderRowContextMenu` is enabled. */
-export const getDataGridRowContextMenuRowProps = (rowId: string) => ({
-  [DATA_GRID_ROW_ID_ATTR]: rowId,
-});
+import { DATA_GRID_ROW_ID_ATTR } from '@/components/reui/data-grid/data-grid-row-context-menu-props';
 
 const resolveRowFromContextMenuTarget = <TData extends object>(
   target: EventTarget | null,

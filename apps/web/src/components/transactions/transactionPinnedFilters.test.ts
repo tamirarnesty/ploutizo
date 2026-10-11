@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isFilterValueActive } from '@ploutizo/ui/components/reui/filter-helpers';
+import { isFilterValueActive } from '@ploutizo/ui/components/reui/filters-utils';
 import {
   TRANSACTION_PINNED_FILTER_FIELD_KEYS,
   withPinnedTransactionFilters,

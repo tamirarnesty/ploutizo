@@ -18,7 +18,7 @@ vi.mock('@/components/categories/usePreloadLucideIcons', () => ({
   usePreloadLucideIcons: () => undefined,
 }));
 
-vi.mock('@ploutizo/ui/components/sonner', () => ({
+vi.mock('@ploutizo/ui/components/sonner-api', () => ({
   toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() }),
 }));
 

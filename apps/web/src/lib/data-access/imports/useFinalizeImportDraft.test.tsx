@@ -20,7 +20,7 @@ const toastMocks = vi.hoisted(() => ({
   dismiss: vi.fn(),
 }));
 
-vi.mock('@ploutizo/ui/components/sonner', () => ({
+vi.mock('@ploutizo/ui/components/sonner-api', () => ({
   toast: toastMocks,
 }));
 

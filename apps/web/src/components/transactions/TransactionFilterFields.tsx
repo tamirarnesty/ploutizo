@@ -13,7 +13,7 @@ import {
 } from '@ploutizo/ui/components/date-range-picker';
 import { format, isValid, parseISO } from 'date-fns';
 import { memberFullLabel } from '@ploutizo/utils';
-import type { FilterFieldConfig } from '@ploutizo/ui/components/reui/filters';
+import type { FilterFieldConfig } from '@ploutizo/ui/components/reui/filters-types';
 
 const SINGLE_DATE_OPS = new Set(['is', 'is_not', 'before', 'after']);
 const RANGE_OPS = new Set(['between', 'not_between']);

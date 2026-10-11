@@ -1,8 +1,8 @@
 import {
   createPinnedFilterId,
   getDefaultFilterOperator,
-} from '@ploutizo/ui/components/reui/filter-helpers';
-import type { Filter } from '@ploutizo/ui/components/reui/filters';
+} from '@ploutizo/ui/components/reui/filters-utils';
+import type { Filter } from '@ploutizo/ui/components/reui/filters-types';
 import { buildFilterFields } from './TransactionFilterFields';
 
 /** Pinned filter field keys on `/transactions` (always visible on the filter row). */

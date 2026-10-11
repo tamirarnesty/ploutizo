@@ -17,7 +17,7 @@ vi.mock('@/lib/access/access-context', async () => {
 
 const toastSuccess = vi.hoisted(() => vi.fn());
 
-vi.mock('@ploutizo/ui/components/sonner', () => ({
+vi.mock('@ploutizo/ui/components/sonner-api', () => ({
   toast: {
     success: toastSuccess,
   },
