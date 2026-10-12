@@ -22,17 +22,20 @@ export const TransactionRowActionMenuItems = ({
 }: {
   actions: readonly TransactionRowAction[];
   MenuItem: ComponentType<RowActionMenuItemProps>;
-}) =>
-  actions.map((action) => (
-    <MenuItem
-      key={action.id}
-      variant={action.variant}
-      disabled={action.disabled}
-      onClick={action.onSelect}
-    >
-      {action.label}
-    </MenuItem>
-  ));
+}) => (
+  <>
+    {actions.map((action) => (
+      <MenuItem
+        key={action.id}
+        variant={action.variant}
+        disabled={action.disabled}
+        onClick={action.onSelect}
+      >
+        {action.label}
+      </MenuItem>
+    ))}
+  </>
+);
 
 export const TransactionRowActionsDropdown = ({
   actions,

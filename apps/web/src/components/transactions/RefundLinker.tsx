@@ -15,13 +15,16 @@ import {
   useGetTransactions,
   useSearchTransactions,
 } from '@/lib/data-access/transactions';
+import {
+  formAmountToCents,
+  rescaleAssigneesForAmount,
+  splitAssigneesEvenly,
+} from './assigneeSplit';
 import { formatTransactionDate } from './transactionRowDisplay';
-import type { AssigneeFormRow } from './types';
 import type { TransactionFormInstance } from './hooks/useTransactionForm';
 
 export interface RefundLinkerProps {
   form: TransactionFormInstance;
-  onAssigneesChange: (assignees: AssigneeFormRow[]) => void;
 }
 
 /** Stable unique key used as Combobox value for selection matching */
@@ -31,16 +34,20 @@ const buildLabel = (tx: TransactionRow) =>
 /** Human-readable display name shown in the input after selection */
 const buildDisplayName = (tx: TransactionRow) => tx.description || '—';
 
-export const RefundLinker = ({
-  form,
-  onAssigneesChange,
-}: RefundLinkerProps) => {
+export const RefundLinker = ({ form }: RefundLinkerProps) => {
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [inputValue, setInputValue] = useState('');
   const debounceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
   const [selectedTx, setSelectedTx] = useState<TransactionRow | null>(null);
+
+  React.useEffect(
+    () => () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    },
+    []
+  );
 
   const { data: recentExpensesResponse } = useGetTransactions({
     page: 1,
@@ -91,19 +98,28 @@ export const RefundLinker = ({
                       'Refund of ' + tx.description
                     );
                   }
-                  if (!values.amount) {
+                  const hadAmount = Boolean(values.amount);
+                  if (!hadAmount) {
                     form.setFieldValue('amount', tx.amount / 100);
                   }
                   if (!values.accountId) {
                     form.setFieldValue('accountId', tx.accountId);
                   }
-                  onAssigneesChange(
-                    tx.assignees.map((a) => ({
-                      memberId: a.memberId,
-                      amountCents: a.amountCents,
-                      percentage: a.percentage ?? 0,
-                    }))
+                  const amountCents = formAmountToCents(
+                    form.getFieldValue('amount')
                   );
+                  const memberIds = tx.assignees.map((a) => a.memberId);
+                  if (values.assignees.length === 0) {
+                    form.setFieldValue(
+                      'assignees',
+                      splitAssigneesEvenly(amountCents, memberIds)
+                    );
+                  } else if (!hadAmount) {
+                    form.setFieldValue(
+                      'assignees',
+                      rescaleAssigneesForAmount(values.assignees, amountCents)
+                    );
+                  }
                 }
               } else {
                 setSelectedTx(null);

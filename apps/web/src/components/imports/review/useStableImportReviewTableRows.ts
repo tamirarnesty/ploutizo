@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useMemo, useState } from 'react';
 import type { ImportReviewRow } from '@ploutizo/types';
 
 /**
@@ -9,38 +9,29 @@ import type { ImportReviewRow } from '@ploutizo/types';
  */
 export type ImportReviewTableRow = { id: string };
 
-const orderEqual = (left: readonly string[], right: readonly string[]) =>
-  left.length === right.length &&
-  left.every((id, index) => id === right[index]);
+const ORDER_KEY_SEPARATOR = '\u0000';
 
 export const useStableImportReviewTableRows = (
   rows: readonly ImportReviewRow[]
 ): ImportReviewTableRow[] => {
-  const idStubCacheRef = useRef(new Map<string, ImportReviewTableRow>());
-  const arrayCacheRef = useRef<ImportReviewTableRow[]>([]);
-  const orderCacheRef = useRef<string[]>([]);
+  const [idStubCache] = useState(() => new Map<string, ImportReviewTableRow>());
+  const orderKey = rows.map((row) => row.id).join(ORDER_KEY_SEPARATOR);
 
-  const nextOrder = rows.map((row) => row.id);
+  return useMemo(() => {
+    const ids = orderKey ? orderKey.split(ORDER_KEY_SEPARATOR) : [];
+    const stubs = ids.map((id) => {
+      const cached = idStubCache.get(id);
+      if (cached) return cached;
+      const stub = { id };
+      idStubCache.set(id, stub);
+      return stub;
+    });
 
-  if (orderEqual(orderCacheRef.current, nextOrder)) {
-    return arrayCacheRef.current;
-  }
+    const seen = new Set(ids);
+    for (const id of idStubCache.keys()) {
+      if (!seen.has(id)) idStubCache.delete(id);
+    }
 
-  const stubs = nextOrder.map((id) => {
-    const cached = idStubCacheRef.current.get(id);
-    if (cached) return cached;
-    const stub = { id };
-    idStubCacheRef.current.set(id, stub);
-    return stub;
-  });
-
-  const seen = new Set(nextOrder);
-  for (const id of idStubCacheRef.current.keys()) {
-    if (!seen.has(id)) idStubCacheRef.current.delete(id);
-  }
-
-  orderCacheRef.current = nextOrder;
-  arrayCacheRef.current = stubs;
-
-  return stubs;
+    return stubs;
+  }, [orderKey, idStubCache]);
 };

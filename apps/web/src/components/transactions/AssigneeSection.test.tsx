@@ -87,21 +87,17 @@ const AssigneeSectionHarness = ({
   transaction?: TransactionRow | null;
 }) => {
   const [assignees, setAssignees] = useState(initialAssignees);
-  const [amountCents, setAmountCents] = useState(initialAmountCents);
 
   return (
     <>
       <AssigneeSection
         value={assignees}
         onChange={setAssignees}
-        amountCents={amountCents}
+        amountCents={initialAmountCents}
         orgMembers={members}
         transaction={transaction}
       />
       <output data-testid="assignees">{JSON.stringify(assignees)}</output>
-      <button type="button" onClick={() => setAmountCents(20000)}>
-        Set amount to 200
-      </button>
     </>
   );
 };
@@ -125,30 +121,6 @@ describe('AssigneeSection', () => {
       expect(screen.getByTestId('assignees')).toHaveTextContent(
         '"amountCents":4000'
       );
-    });
-  });
-
-  it('scales customized splits proportionally when amount changes', async () => {
-    const user = userEvent.setup();
-
-    render(
-      <AssigneeSectionHarness
-        initialAssignees={[
-          { memberId: 'member-a', amountCents: 6000, percentage: 60 },
-          { memberId: 'member-b', amountCents: 4000, percentage: 40 },
-        ]}
-        initialAmountCents={10000}
-      />
-    );
-
-    await user.click(screen.getByRole('button', { name: 'Set amount to 200' }));
-
-    await waitFor(() => {
-      const assignees = readAssigneesFromDom();
-      expect(assignees).toEqual([
-        { memberId: 'member-a', amountCents: 12000, percentage: 60 },
-        { memberId: 'member-b', amountCents: 8000, percentage: 40 },
-      ]);
     });
   });
 

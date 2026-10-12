@@ -1,13 +1,5 @@
 import { useMemo } from 'react';
 import {
-  CartesianGrid,
-  Line,
-  LineChart as RechartsLineChart,
-  ReferenceLine,
-  XAxis,
-  YAxis,
-} from 'recharts';
-import {
   ChartContainer,
   ChartLegend,
   ChartLegendContent,
@@ -16,6 +8,14 @@ import {
 } from '@ploutizo/ui/components/chart';
 import type { ChartConfig } from '@ploutizo/ui/components/chart';
 import type { DashboardOverviewGrain } from '@ploutizo/types';
+import {
+  CartesianGrid,
+  Line,
+  LineChart as RechartsLineChart,
+  ReferenceLine,
+  XAxis,
+  YAxis,
+} from '@/components/dashboard/dashboardRecharts';
 import { fadedColour } from '@/components/dashboard/dashboardChartColour';
 import { amountDomain } from '@/components/dashboard/dashboardChartDomain';
 import { formatWholeCurrency } from '@/components/dashboard/dashboardFormat';

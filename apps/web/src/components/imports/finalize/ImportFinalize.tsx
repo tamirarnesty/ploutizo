@@ -1,17 +1,9 @@
-import { useCallback, useRef } from 'react';
-import { Link, useBlocker, useNavigate } from '@tanstack/react-router';
+import { useCallback, useEffect, useRef } from 'react';
+import { useBlocker, useNavigate } from '@tanstack/react-router';
 import { Button } from '@ploutizo/ui/components/button';
 import { LoadingButton } from '@ploutizo/ui/components/loading-button';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@ploutizo/ui/components/breadcrumb';
 import {
   formatAccountLabel,
   formatCurrency,
@@ -39,24 +31,13 @@ import {
 } from '@/lib/navigation';
 import { formatTransactionDate } from '@/components/transactions/transactionRowDisplay';
 import { ImportDiscardDraftAction } from '../lib/ImportDiscardDraftAction';
+import { ImportHubBreadcrumb } from '../lib/ImportHubBreadcrumb';
+
+const NO_ROW_IDS: string[] = [];
 
 interface ImportFinalizeProps {
   draftId: string;
 }
-
-const ImportFinalizeBreadcrumbs = () => (
-  <Breadcrumb>
-    <BreadcrumbList>
-      <BreadcrumbItem>
-        <BreadcrumbLink render={<Link to="/import" />}>Import</BreadcrumbLink>
-      </BreadcrumbItem>
-      <BreadcrumbSeparator />
-      <BreadcrumbItem>
-        <BreadcrumbPage>Finalize import</BreadcrumbPage>
-      </BreadcrumbItem>
-    </BreadcrumbList>
-  </Breadcrumb>
-);
 
 const OutcomeCountSummary = ({
   preview,
@@ -150,7 +131,7 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
   });
   const session = getImportFinalizePreviewSession(draftId);
   const preview = session?.preview;
-  const rowIds = session?.rowIds ?? [];
+  const rowIds = session?.rowIds ?? NO_ROW_IDS;
   const meta = draftQuery.data ? toImportDraftMeta(draftQuery.data) : undefined;
 
   const returnToReview = useCallback(
@@ -231,13 +212,15 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
     rowIds,
   ]);
 
-  handleFinalizeRef.current = handleFinalize;
+  useEffect(() => {
+    handleFinalizeRef.current = handleFinalize;
+  }, [handleFinalize]);
 
   const finalizeBusy = finalizeImport.isPending;
 
   return (
     <div className="flex flex-col gap-8">
-      <ImportFinalizeBreadcrumbs />
+      <ImportHubBreadcrumb currentPage="Finalize import" />
       <section className="flex flex-col gap-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">

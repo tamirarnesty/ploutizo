@@ -5,7 +5,7 @@ import {
   withPinnedTransactionFilters,
 } from './transactionPinnedFilters';
 import { buildFilterFields } from './TransactionFilterFields';
-import { filtersToSearch, searchToFilters } from './Transactions';
+import { filtersToSearch, searchToFilters } from './transactionFilterUrl';
 
 const activeForSearch = (
   filters: ReturnType<typeof withPinnedTransactionFilters>

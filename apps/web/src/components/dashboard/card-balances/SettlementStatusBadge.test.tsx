@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import {
-  SettlementStatusBadge,
-  settlementStatusDisplayLabel,
-} from '@/components/dashboard/card-balances/SettlementStatusBadge';
+import { SettlementStatusBadge } from '@/components/dashboard/card-balances/SettlementStatusBadge';
+import { settlementStatusDisplayLabel } from '@/components/dashboard/card-balances/settlementStatusDisplayLabel';
 
 describe('settlementStatusDisplayLabel', () => {
   it('maps status keys to title-case labels', () => {

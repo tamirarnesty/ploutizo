@@ -1,5 +1,4 @@
 import { Layers2 } from 'lucide-react';
-import { useEffect, useRef } from 'react';
 import { DatePicker } from '@ploutizo/ui/components/date-picker';
 import {
   DateRangePicker,
@@ -29,7 +28,7 @@ const isRangeOp = (op: string): boolean => {
 // single→range:      [A]    → [A, '']
 // range→single:      [A, B] → [A]
 // same family (e.g. is↔is_not, between↔not_between): values unchanged
-const migrateValues = (
+const migrateDateFilterValues = (
   prevOp: string,
   nextOp: string,
   values: string[]
@@ -80,31 +79,6 @@ const DateRangeFilterRenderer = ({
   operator,
 }: DateRangeFilterRendererProps) => {
   const [from = '', to = ''] = values;
-
-  // Operator-change value migration.
-  // valuesRef keeps a fresh snapshot of `values` so the migration effect reads
-  // the current array and not a stale closure capture.
-  const valuesRef = useRef(values);
-  useEffect(() => {
-    valuesRef.current = values;
-  }, [values]);
-
-  const prevOperatorRef = useRef(operator);
-  useEffect(() => {
-    const prevOp = prevOperatorRef.current;
-    prevOperatorRef.current = operator;
-    if (prevOp === operator) return;
-    const migrated = migrateValues(prevOp, operator, valuesRef.current);
-    // Only call onChange if the value shape actually changes (avoids loop)
-    if (
-      migrated.length !== valuesRef.current.length ||
-      migrated.some((v, i) => v !== valuesRef.current[i])
-    ) {
-      onChange(migrated);
-    }
-    // onChange intentionally omitted — we only react to operator changes.
-  }, [operator]);
-  // valuesRef.current is the correct way to read the current values snapshot here.
 
   if (isSingleDateOp(operator)) {
     return (
@@ -191,6 +165,7 @@ export const buildFilterFields = (
         { value: 'between', label: 'between' },
         { value: 'not_between', label: 'not between' },
       ],
+      migrateValues: migrateDateFilterValues,
       customRenderer: ({ values, onChange, operator }) => (
         <DateRangeFilterRenderer
           values={values}

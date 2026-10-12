@@ -15,7 +15,9 @@ export const useImportReviewTextDraft = (
   const draftRef = useRef(draft);
   const focusedRef = useRef(false);
 
-  draftRef.current = draft;
+  useEffect(() => {
+    draftRef.current = draft;
+  }, [draft]);
 
   useEffect(() => {
     if (!focusedRef.current) {

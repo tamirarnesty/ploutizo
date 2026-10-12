@@ -156,6 +156,16 @@ export const useFiltersBar = <T = unknown>({
           filters.map((filter) => {
             if (filter.id !== filterId) return filter;
             const updatedFilter = { ...filter, ...updates };
+            if (updates.operator !== undefined && !updates.values) {
+              const migrate = fieldsMap[filter.field].migrateValues;
+              if (migrate) {
+                updatedFilter.values = migrate(
+                  filter.operator,
+                  updates.operator,
+                  filter.values
+                );
+              }
+            }
             if (
               updates.operator === 'empty' ||
               updates.operator === 'not_empty'
@@ -182,6 +192,14 @@ export const useFiltersBar = <T = unknown>({
         values: [] as T[],
         ...updates,
       };
+      if (updates.operator !== undefined && !updates.values) {
+        updatedFilter.values =
+          field.migrateValues?.(
+            getDefaultFilterOperator(field),
+            updates.operator,
+            updatedFilter.values
+          ) ?? updatedFilter.values;
+      }
       if (updates.operator === 'empty' || updates.operator === 'not_empty') {
         updatedFilter.values = [] as T[];
       }

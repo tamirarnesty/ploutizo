@@ -1,16 +1,8 @@
-import { Link } from '@tanstack/react-router';
 import { Button } from '@ploutizo/ui/components/button';
 import { LoadingButton } from '@ploutizo/ui/components/loading-button';
 import { Text } from '@ploutizo/ui/components/text';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@ploutizo/ui/components/breadcrumb';
 import { useGetImportHistoryInfinite } from '@/lib/data-access/imports';
+import { ImportHubBreadcrumb } from '../lib/ImportHubBreadcrumb';
 import { ImportHistoryList } from './ImportHistoryList';
 
 export const ImportHistoryPage = () => {
@@ -21,19 +13,7 @@ export const ImportHistoryPage = () => {
 
   return (
     <div className="space-y-8">
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink render={<Link to="/import" />}>
-              Import
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>Import history</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+      <ImportHubBreadcrumb currentPage="Import history" />
 
       <div className="space-y-3">
         <Text as="h1" variant="h3">

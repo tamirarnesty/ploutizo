@@ -1,34 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
-import { Lock, SquarePen, Trash2 } from 'lucide-react';
-import { toast } from '@ploutizo/ui/components/sonner-api';
-import { Button } from '@ploutizo/ui/components/button';
-import { LoadingButton } from '@ploutizo/ui/components/loading-button';
-import { DatePicker } from '@ploutizo/ui/components/date-picker';
-import { Input } from '@ploutizo/ui/components/input';
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupInput,
-  InputGroupText,
-} from '@ploutizo/ui/components/input-group';
+import { useEffect } from 'react';
 import { Spinner } from '@ploutizo/ui/components/spinner';
-import { Textarea } from '@ploutizo/ui/components/textarea';
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from '@ploutizo/ui/components/field';
+import { FieldGroup } from '@ploutizo/ui/components/field';
 import { Text } from '@ploutizo/ui/components/text';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@ploutizo/ui/components/tooltip';
-import { dollarsToCents } from '@ploutizo/utils/currency';
-import { formatGeneratedTransactionDescriptionFromAccounts } from '@ploutizo/utils/transaction-policy';
-import type { TransactionType } from '@ploutizo/types';
 import type {
   Account,
   Category,
@@ -40,28 +13,23 @@ import { useGetCategories } from '@/lib/data-access/categories';
 import { useGetAccounts } from '@/lib/data-access/accounts';
 import {
   useCreateTransaction,
-  useDeleteTransaction,
   useGetTransaction,
   useUpdateTransaction,
 } from '@/lib/data-access/transactions';
-import { CurrencyInput } from '@/components/currency/CurrencyInput';
 import {
   PendingInputFlushProvider,
   useFlushPendingInputs,
 } from '@/lib/money/pending-input-flush';
-import { DeleteTransactionDialog } from './DeleteTransactionDialog';
-import { resolveTransactionFormDescriptionLock } from './getTransactionFormDescriptionLock';
+import { useTransactionDescriptionLock } from './hooks/useTransactionDescriptionLock';
 import { useTransactionForm } from './hooks/useTransactionForm';
-import { TransactionTypeFields } from './TransactionTypeFields';
 import { TransactionAccountSlots } from './TransactionAccountSlots';
-import { TransactionTagPicker } from './TransactionTagPicker';
-import { AssigneeSection } from './AssigneeSection';
-import {
-  getTransactionFormArchiveDateError,
-  getTransactionFormLastAvailableDate,
-} from './getTransactionFormArchiveDate';
-import type { TransactionFormInstance } from './hooks/useTransactionForm';
-import type { AssigneeFormRow } from './types';
+import { TransactionAmountField } from './TransactionAmountField';
+import { TransactionAssigneesField } from './TransactionAssigneesField';
+import { TransactionDateField } from './TransactionDateField';
+import { TransactionDescriptionField } from './TransactionDescriptionField';
+import { TransactionFormFooter } from './TransactionFormFooter';
+import { TransactionNotesTagsFields } from './TransactionNotesTagsFields';
+import { TransactionTypeFields } from './TransactionTypeFields';
 
 interface TransactionFormProps {
   transaction: TransactionRow | null; // null = create mode
@@ -136,106 +104,6 @@ export const TransactionForm = ({
   );
 };
 
-// CR-01: syncs the locked description template to form state on change.
-// The (field) => (...) render prop cannot call hooks directly, so this helper
-// component uses useEffect to write lockedValue into field state and to unlock
-// custom/legacy text when a generated candidate first resolves.
-interface DescriptionLockControllerProps {
-  type: TransactionType;
-  refundOf: string;
-  lockedValue: string;
-  currentValue: string;
-  userUnlocked: boolean;
-  onUnlock: () => void;
-  onSync: (value: string) => void;
-}
-
-const DescriptionLockController = ({
-  type,
-  refundOf,
-  lockedValue,
-  currentValue,
-  userUnlocked,
-  onUnlock,
-  onSync,
-}: DescriptionLockControllerProps) => {
-  const currentValueRef = useRef(currentValue);
-  currentValueRef.current = currentValue;
-  const previousCandidateRef = useRef(lockedValue);
-  const previousTypeRef = useRef(type);
-  const previousRefundOfRef = useRef(refundOf);
-  const onUnlockRef = useRef(onUnlock);
-  const onSyncRef = useRef(onSync);
-  onUnlockRef.current = onUnlock;
-  onSyncRef.current = onSync;
-
-  useEffect(() => {
-    const typeChanged = previousTypeRef.current !== type;
-    const refundOfChanged = previousRefundOfRef.current !== refundOf;
-    // Type/refundOf changes start a new generated session: treat the current
-    // value as still following so leftover manual text is replaced, matching
-    // UnlockResetter. Opening an already-linked refund keeps previous='' until
-    // the original description resolves, which unlocks custom/legacy text.
-    if (typeChanged || (refundOfChanged && !userUnlocked)) {
-      previousCandidateRef.current = currentValueRef.current;
-    }
-    previousTypeRef.current = type;
-    previousRefundOfRef.current = refundOf;
-
-    const next = resolveTransactionFormDescriptionLock({
-      type,
-      refundOf,
-      currentDescription: currentValueRef.current,
-      generatedCandidate: lockedValue,
-      previousGeneratedCandidate: previousCandidateRef.current,
-      userUnlocked: typeChanged ? false : userUnlocked,
-    });
-    previousCandidateRef.current = lockedValue;
-
-    if (next.userUnlocked && !userUnlocked) {
-      onUnlockRef.current();
-    }
-
-    // Skip if the field already holds the correct value — setFieldValue
-    // unconditionally sets isDirty:true in TanStack Form, so calling it with
-    // an unchanged value would falsely mark the form dirty on edit mount.
-    if (
-      next.locked &&
-      next.description &&
-      next.description !== currentValueRef.current
-    ) {
-      onSyncRef.current(next.description);
-    }
-  }, [type, refundOf, lockedValue, userUnlocked]);
-  return null;
-};
-
-interface RefundDataLoaderProps {
-  refundOfId: string | null;
-  onDescChanged: (desc: string) => void;
-  onAssigneesChanged: (ids: string[]) => void;
-}
-
-const RefundDataLoader = ({
-  refundOfId,
-  onDescChanged,
-  onAssigneesChanged,
-}: RefundDataLoaderProps) => {
-  const { data } = useGetTransaction(refundOfId);
-  useEffect(() => {
-    if (!refundOfId) {
-      onDescChanged('');
-      onAssigneesChanged([]);
-      return;
-    }
-    if (data) {
-      onDescChanged(data.description);
-      onAssigneesChanged(data.assignees.map((a) => a.memberId));
-    }
-  }, [refundOfId, data, onDescChanged, onAssigneesChanged]);
-  return null;
-};
-
 const DirtyNotifier = ({
   isDirty,
   onChange,
@@ -255,73 +123,6 @@ const DirtyNotifier = ({
   );
 };
 
-const TransactionDateField = ({
-  form,
-  accounts,
-  accountId,
-  counterpartAccountId,
-}: {
-  form: TransactionFormInstance;
-  accounts: Account[];
-  accountId: string;
-  counterpartAccountId: string;
-}) => {
-  const lastAvailable = getTransactionFormLastAvailableDate(
-    accounts,
-    accountId,
-    counterpartAccountId
-  );
-
-  return (
-    <form.AppField
-      name="date"
-      validators={{
-        onSubmit: ({ value }: { value: string }) => {
-          if (!value) return 'Date is required.';
-          return getTransactionFormArchiveDateError({
-            accounts,
-            date: value,
-            accountId,
-            counterpartAccountId,
-          });
-        },
-      }}
-    >
-      {(field) => (
-        <Field data-invalid={field.state.meta.errors.length > 0 || undefined}>
-          <FieldLabel>Date</FieldLabel>
-          <DatePicker
-            id="tx-date"
-            value={field.state.value}
-            onChange={field.handleChange}
-            disabledDates={lastAvailable ? { after: lastAvailable } : undefined}
-          />
-          {field.state.meta.errors.length > 0 ? (
-            <FieldError
-              errors={
-                field.state.meta.errors as unknown as {
-                  message?: string;
-                }[]
-              }
-            />
-          ) : null}
-        </Field>
-      )}
-    </form.AppField>
-  );
-};
-
-const isGeneratedDescriptionType = (
-  type: TransactionType,
-  refundOf?: string | null
-): boolean =>
-  resolveTransactionFormDescriptionLock({
-    type,
-    refundOf,
-    currentDescription: '',
-    generatedCandidate: '',
-  }).shouldLock;
-
 const TransactionFormInner = ({
   transaction,
   accounts,
@@ -330,69 +131,30 @@ const TransactionFormInner = ({
   onClose,
   onDirtyChange,
 }: TransactionFormInnerProps) => {
-  const isEditing = transaction !== null;
   const createMutation = useCreateTransaction();
   const updateMutation = useUpdateTransaction(transaction?.id ?? '');
-  const deleteMutation = useDeleteTransaction();
-
-  const [alertOpen, setAlertOpen] = useState(false);
-  const [isDescriptionUnlocked, setIsDescriptionUnlocked] = useState(() => {
-    if (transaction === null) return false;
-    const generatedCandidate =
-      formatGeneratedTransactionDescriptionFromAccounts(
-        {
-          type: transaction.type,
-          accountId: transaction.accountId,
-          counterpartAccountId: transaction.counterpartAccountId ?? '',
-          refundOf: transaction.refundOf ?? '',
-          accountName: transaction.accountName,
-          counterpartAccountName: transaction.counterpartAccountName,
-        },
-        accounts
-      );
-    return resolveTransactionFormDescriptionLock({
-      type: transaction.type,
-      refundOf: transaction.refundOf ?? '',
-      currentDescription: transaction.description,
-      generatedCandidate,
-    }).userUnlocked;
-  });
-  const [refundOriginalDesc, setRefundOriginalDesc] = useState('');
-  const [refundOriginalAssigneeIds, setRefundOriginalAssigneeIds] = useState<
-    string[]
-  >([]);
-
   const flushPendingInputs = useFlushPendingInputs();
 
   const { form } = useTransactionForm({
     transaction,
     accounts,
+    orgMembers,
     onClose,
     createMutation,
     updateMutation,
   });
+  const { isLocked, lockedValue, unlockDescription } =
+    useTransactionDescriptionLock({ form, accounts, transaction });
 
   return (
     <form
       className="flex flex-1 flex-col overflow-hidden"
       data-testid="transaction-form"
-      onSubmit={(e) => {
-        e.preventDefault();
+      action={() => {
         flushPendingInputs();
-        form.handleSubmit();
+        void form.handleSubmit();
       }}
     >
-      {/* Fetch original transaction data when refundOf is set */}
-      <form.Subscribe selector={(s) => s.values.refundOf}>
-        {(refundOf) => (
-          <RefundDataLoader
-            refundOfId={refundOf || null}
-            onDescChanged={setRefundOriginalDesc}
-            onAssigneesChanged={setRefundOriginalAssigneeIds}
-          />
-        )}
-      </form.Subscribe>
-
       {/* Compare to default values, not isDirty — programmatic sync (e.g. locked
           description) can set isDirty while values still match defaults. */}
       {onDirtyChange ? (
@@ -408,58 +170,17 @@ const TransactionFormInner = ({
 
       <div className="flex-1 overflow-y-auto px-6 py-4">
         <FieldGroup>
-          {/* TransactionTypeFields: type Select + listeners + conditional type-specific fields */}
           <TransactionTypeFields
             form={form}
             accounts={accounts}
             categories={categories}
-            onAssigneesChange={(assignees) =>
-              form.setFieldValue('assignees', assignees)
-            }
           />
 
           {/* account slots — labels, options, and same-account exclusion from policy */}
           <TransactionAccountSlots form={form} accounts={accounts} />
 
           <div className="grid grid-cols-2 gap-4">
-            {/* Base field: amount */}
-            <form.AppField
-              name="amount"
-              validators={{
-                onSubmit: ({ value }: { value: number | undefined }) =>
-                  value === undefined ||
-                  !Number.isFinite(value) ||
-                  dollarsToCents(value) < 1
-                    ? 'Amount must be a finite number greater than zero and at least 1 cent.'
-                    : undefined,
-              }}
-            >
-              {(field) => (
-                <Field
-                  data-invalid={field.state.meta.errors.length > 0 || undefined}
-                >
-                  <FieldLabel htmlFor="tx-amount">Amount</FieldLabel>
-                  <CurrencyInput
-                    id="tx-amount"
-                    aria-invalid={field.state.meta.errors.length > 0}
-                    value={field.state.value}
-                    onChange={(v) => field.handleChange(v)}
-                    onBlur={field.handleBlur}
-                  />
-                  {field.state.meta.errors.length > 0 ? (
-                    <FieldError
-                      errors={
-                        field.state.meta.errors as unknown as {
-                          message?: string;
-                        }[]
-                      }
-                    />
-                  ) : null}
-                </Field>
-              )}
-            </form.AppField>
-
-            {/* Base field: date */}
+            <TransactionAmountField form={form} />
             <form.Subscribe
               selector={(s) => ({
                 accountId: s.values.accountId,
@@ -477,233 +198,20 @@ const TransactionFormInner = ({
             </form.Subscribe>
           </div>
 
-          {/* Base field: description — locked for transfer/settlement/contribution/linked-refund (D-11, D-12) */}
-          <form.Subscribe
-            selector={(s) => ({
-              type: s.values.type,
-              accountId: s.values.accountId,
-              counterpartAccountId: s.values.counterpartAccountId,
-              refundOf: s.values.refundOf,
-            })}
-          >
-            {({ type, accountId, counterpartAccountId, refundOf }) => {
-              const shouldLock = resolveTransactionFormDescriptionLock({
-                type,
-                refundOf,
-                currentDescription: '',
-                generatedCandidate: '',
-              }).shouldLock;
-              const isLocked = !isDescriptionUnlocked && shouldLock;
+          <TransactionDescriptionField
+            form={form}
+            isLocked={isLocked}
+            lockedValue={lockedValue}
+            onUnlock={unlockDescription}
+          />
 
-              const lockedValue =
-                formatGeneratedTransactionDescriptionFromAccounts(
-                  {
-                    type,
-                    accountId,
-                    counterpartAccountId,
-                    refundOf,
-                    accountName: transaction?.accountName,
-                    counterpartAccountName: transaction?.counterpartAccountName,
-                    refundOriginalDescription: refundOriginalDesc,
-                  },
-                  accounts
-                );
+          <TransactionNotesTagsFields form={form} />
 
-              return (
-                <form.AppField
-                  name="description"
-                  validators={{
-                    onSubmit: ({ value }: { value: string }) =>
-                      !isLocked && !value.trim()
-                        ? 'Description is required.'
-                        : undefined,
-                  }}
-                >
-                  {(field) => (
-                    <Field
-                      data-invalid={
-                        field.state.meta.errors.length > 0 || undefined
-                      }
-                    >
-                      <DescriptionLockController
-                        type={type}
-                        refundOf={refundOf}
-                        lockedValue={lockedValue}
-                        currentValue={field.state.value}
-                        userUnlocked={isDescriptionUnlocked}
-                        onUnlock={() => setIsDescriptionUnlocked(true)}
-                        onSync={field.handleChange}
-                      />
-                      <FieldLabel htmlFor="tx-description">
-                        Description
-                      </FieldLabel>
-                      {isLocked ? (
-                        <InputGroup>
-                          <InputGroupAddon align="inline-start">
-                            <InputGroupText>
-                              <Lock
-                                className="size-3.5 text-muted-foreground"
-                                aria-hidden="true"
-                              />
-                            </InputGroupText>
-                          </InputGroupAddon>
-                          <InputGroupInput
-                            readOnly
-                            value={lockedValue}
-                            className="cursor-default bg-muted text-muted-foreground"
-                            aria-label="Description (auto-generated)"
-                            autoComplete="off"
-                          />
-                          <InputGroupAddon align="inline-end">
-                            <Tooltip>
-                              <TooltipTrigger
-                                render={
-                                  <InputGroupButton
-                                    type="button"
-                                    aria-label="Edit description"
-                                    onClick={() =>
-                                      setIsDescriptionUnlocked(true)
-                                    }
-                                  />
-                                }
-                              >
-                                <SquarePen
-                                  className="size-3.5"
-                                  aria-hidden="true"
-                                />
-                              </TooltipTrigger>
-                              <TooltipContent>Edit description</TooltipContent>
-                            </Tooltip>
-                          </InputGroupAddon>
-                        </InputGroup>
-                      ) : (
-                        <Input
-                          id="tx-description"
-                          autoComplete="off"
-                          value={field.state.value}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          onBlur={field.handleBlur}
-                        />
-                      )}
-                      {field.state.meta.errors.length > 0 ? (
-                        <FieldError
-                          errors={
-                            field.state.meta.errors as unknown as {
-                              message?: string;
-                            }[]
-                          }
-                        />
-                      ) : null}
-                      {/* TODO(03.4-deferred): originalDescription column — add when schema patch lands */}
-                      {/* D-19: import caption (└ Original: ...) is deferred because originalDescription */}
-                      {/* and originalMerchant columns are absent from the current DB schema. */}
-                    </Field>
-                  )}
-                </form.AppField>
-              );
-            }}
-          </form.Subscribe>
-
-          {/* Reset unlock state when type changes away from a locked type (D-12) */}
-          <form.Subscribe
-            selector={(s) => ({
-              type: s.values.type,
-              refundOf: s.values.refundOf,
-            })}
-          >
-            {({ type, refundOf }) => (
-              <UnlockResetter
-                type={type}
-                refundOf={refundOf}
-                onReset={() => setIsDescriptionUnlocked(false)}
-              />
-            )}
-          </form.Subscribe>
-
-          {/* Notes + Tag picker — stacked column: Notes full-width, Tags below */}
-          <div className="flex flex-col gap-4">
-            {/* Notes field */}
-            <form.AppField name="notes">
-              {(field) => (
-                <Field>
-                  <FieldLabel htmlFor="tx-notes">Notes</FieldLabel>
-                  <Textarea
-                    id="tx-notes"
-                    rows={3}
-                    className="resize-none"
-                    autoComplete="off"
-                    placeholder="Add a note…"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                  />
-                </Field>
-              )}
-            </form.AppField>
-
-            {/* Tag picker — stacked below notes */}
-            <form.AppField name="tagIds">
-              {(field) => (
-                <Field>
-                  <FieldLabel>Tags (optional)</FieldLabel>
-                  <TransactionTagPicker
-                    value={field.state.value}
-                    onChange={(tagIds) => field.handleChange(tagIds)}
-                  />
-                </Field>
-              )}
-            </form.AppField>
-          </div>
-
-          {/* AssigneeSection — replaces SplitSection at top level (D-16, D-17, D-18) */}
-          {/* form.Subscribe wraps AppField so amountCents is reactive on amount change */}
-          <form.Subscribe selector={(s) => s.values.amount}>
-            {(amount) => (
-              <form.AppField
-                name="assignees"
-                validators={{
-                  onSubmit: ({ value }: { value: AssigneeFormRow[] }) =>
-                    value.length === 0
-                      ? 'At least one assignee is required.'
-                      : undefined,
-                }}
-              >
-                {(field) => (
-                  <Field
-                    data-invalid={
-                      field.state.meta.errors.length > 0 || undefined
-                    }
-                  >
-                    <AssigneeSection
-                      value={field.state.value}
-                      onChange={(assignees) => field.handleChange(assignees)}
-                      amountCents={
-                        amount === undefined || !Number.isFinite(amount)
-                          ? 0
-                          : dollarsToCents(amount)
-                      }
-                      orgMembers={orgMembers}
-                      transaction={transaction}
-                      refundAssigneeIds={
-                        !isEditing && refundOriginalAssigneeIds.length > 0
-                          ? refundOriginalAssigneeIds
-                          : undefined
-                      }
-                    />
-                    {field.state.meta.errors.length > 0 ? (
-                      <FieldError
-                        errors={
-                          field.state.meta.errors as unknown as {
-                            message?: string;
-                          }[]
-                        }
-                      />
-                    ) : null}
-                  </Field>
-                )}
-              </form.AppField>
-            )}
-          </form.Subscribe>
+          <TransactionAssigneesField
+            form={form}
+            orgMembers={orgMembers}
+            transaction={transaction}
+          />
 
           {/* Form-level mutation error */}
           <form.Subscribe selector={(s) => s.errorMap.onSubmit}>
@@ -716,89 +224,11 @@ const TransactionFormInner = ({
         </FieldGroup>
       </div>
 
-      {/* Footer — matches AccountForm layout exactly */}
-      <div className="flex items-center justify-between gap-2 border-t border-border px-6 py-4">
-        {isEditing ? (
-          <>
-            <Button
-              variant="ghost"
-              size="icon"
-              type="button"
-              aria-label="Delete transaction"
-              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-              onClick={() => setAlertOpen(true)}
-            >
-              <Trash2 size={16} aria-hidden="true" />
-            </Button>
-            <DeleteTransactionDialog
-              open={alertOpen}
-              onOpenChange={setAlertOpen}
-              isPending={deleteMutation.isPending}
-              onConfirm={() => {
-                deleteMutation.mutate(transaction.id, {
-                  onSuccess: () => {
-                    onClose();
-                    toast.success('Transaction deleted.');
-                  },
-                  onError: () => {
-                    toast.error('Failed to delete transaction.');
-                  },
-                });
-              }}
-            />
-          </>
-        ) : (
-          <div />
-        )}
-        <div className="flex gap-2">
-          <form.Subscribe selector={(s) => s.isSubmitting}>
-            {(isSubmitting) => (
-              <LoadingButton type="submit" loading={isSubmitting}>
-                {isEditing ? 'Save changes' : 'Add transaction'}
-              </LoadingButton>
-            )}
-          </form.Subscribe>
-        </div>
-      </div>
+      <TransactionFormFooter
+        form={form}
+        transaction={transaction}
+        onClose={onClose}
+      />
     </form>
   );
-};
-
-/**
- * Helper component that resets the description unlock state when the type
- * transitions away from a locked type (D-12: unlock persists until type changes).
- *
- * Rendered as an invisible node inside form.Subscribe — useEffect tracks type
- * transitions without violating React rules of hooks.
- */
-const UnlockResetter = ({
-  type,
-  refundOf,
-  onReset,
-}: {
-  type: TransactionType;
-  refundOf: string;
-  onReset: () => void;
-}) => {
-  const prevTypeRef = useRef(type);
-  const prevRefundOfRef = useRef(refundOf);
-
-  useEffect(() => {
-    const prevType = prevTypeRef.current;
-    const prevRefundOf = prevRefundOfRef.current;
-    prevTypeRef.current = type;
-    prevRefundOfRef.current = refundOf;
-
-    const prevWasLocked = isGeneratedDescriptionType(prevType, prevRefundOf);
-    const nowIsLocked = isGeneratedDescriptionType(type, refundOf);
-
-    if (prevWasLocked && !nowIsLocked) {
-      onReset();
-    } else if (prevWasLocked && nowIsLocked && prevType !== type) {
-      // Type changed between locked types (e.g. transfer → contribution) — reset too
-      onReset();
-    }
-  }, [type, refundOf, onReset]);
-
-  return null;
 };

@@ -7,7 +7,6 @@ import {
   makeImportDraftRow,
 } from '../test-fixtures/importDraft';
 import {
-  ReviewTestProviders,
   getRowExpandButtons,
   importDraftReviewTestControls,
   renderLoadingReview,
@@ -16,6 +15,7 @@ import {
   setupImportDraftReviewTests,
 } from './importDraftReviewTestHarness';
 import { ImportDraftReview } from './ImportDraftReview';
+import { ReviewTestProviders } from './ReviewTestProviders';
 
 const {
   accounts: accountsQueryMocks,

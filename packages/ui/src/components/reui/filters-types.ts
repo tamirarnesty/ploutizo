@@ -138,6 +138,12 @@ export interface FilterFieldConfig<T = unknown> {
   offLabel?: string;
   onInputChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   defaultOperator?: string;
+  /** Maps the chip's values when its operator changes, e.g. one date to a range. */
+  migrateValues?: (
+    prevOperator: string,
+    nextOperator: string,
+    values: T[]
+  ) => T[];
   value?: T[];
   onValueChange?: (values: T[]) => void;
 }

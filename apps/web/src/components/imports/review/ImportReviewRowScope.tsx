@@ -1,4 +1,4 @@
-import { createContext, memo, useContext } from 'react';
+import { createContext, memo, useContext, useMemo } from 'react';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import type { ImportReviewRow } from '@ploutizo/types';
 import { useImportReviewRow } from '@/lib/data-access/imports/useImportReviewRow';
@@ -41,13 +41,14 @@ const ImportReviewRowScopeInner = ({
   fallback = <Skeleton className="h-8 w-full" />,
 }: ImportReviewRowScopeProps) => {
   const row = useImportReviewRow(draftId, rowId);
+  const scope = useMemo(() => (row ? { rowId, row } : null), [rowId, row]);
 
-  if (!row) {
+  if (!scope) {
     return <>{fallback}</>;
   }
 
   return (
-    <ImportReviewRowScopeContext.Provider value={{ rowId, row }}>
+    <ImportReviewRowScopeContext.Provider value={scope}>
       {children}
     </ImportReviewRowScopeContext.Provider>
   );
@@ -74,8 +75,11 @@ export const ImportReviewRowScopeFixture = ({
 }: {
   row: ImportReviewRow;
   children: ReactNode;
-}) => (
-  <ImportReviewRowScopeContext.Provider value={{ rowId: row.id, row }}>
-    {children}
-  </ImportReviewRowScopeContext.Provider>
-);
+}) => {
+  const scope = useMemo(() => ({ rowId: row.id, row }), [row]);
+  return (
+    <ImportReviewRowScopeContext.Provider value={scope}>
+      {children}
+    </ImportReviewRowScopeContext.Provider>
+  );
+};

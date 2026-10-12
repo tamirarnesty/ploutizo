@@ -1,11 +1,19 @@
+import { Suspense, lazy } from 'react';
 import { BarChart3 } from 'lucide-react';
+import { ChartLazyBoundary } from '@/components/dashboard/ChartLazyBoundary';
+import { ChartLazyFallback } from '@/components/dashboard/ChartLazyFallback';
 import { DashboardOverviewMetricCard } from '@/components/dashboard/DashboardOverviewMetricCard';
 import type { DashboardOverviewQueryState } from '@/components/dashboard/DashboardOverviewMetricCard';
-import { SpendByCategoryChart } from '@/components/dashboard/spend-by-category/SpendByCategoryChart';
 import {
   spendTrendPriorRange,
   spendTrendSeriesLabels,
 } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
+
+const SpendByCategoryChart = lazy(() =>
+  import('@/components/dashboard/spend-by-category/SpendByCategoryChart').then(
+    (module) => ({ default: module.SpendByCategoryChart })
+  )
+);
 
 type SpendByCategoryCardProps = {
   query: DashboardOverviewQueryState;
@@ -26,11 +34,15 @@ export const SpendByCategoryCard = ({
     className={className}
   >
     {(data) => (
-      <SpendByCategoryChart
-        categories={data.categories}
-        hasPriorSeries={spendTrendPriorRange(data.meta) !== null}
-        seriesLabels={spendTrendSeriesLabels(data.meta)}
-      />
+      <ChartLazyBoundary label="spend by category chart">
+        <Suspense fallback={<ChartLazyFallback />}>
+          <SpendByCategoryChart
+            categories={data.categories}
+            hasPriorSeries={spendTrendPriorRange(data.meta) !== null}
+            seriesLabels={spendTrendSeriesLabels(data.meta)}
+          />
+        </Suspense>
+      </ChartLazyBoundary>
     )}
   </DashboardOverviewMetricCard>
 );

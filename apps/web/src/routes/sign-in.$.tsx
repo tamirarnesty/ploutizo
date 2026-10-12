@@ -16,12 +16,12 @@ const Page = () => {
 };
 
 export const Route = createFileRoute('/sign-in/$')({
-  beforeLoad: async ({ context, location }) => {
-    await enforceAccessPolicy(context, 'guest', location.href);
-  },
   validateSearch: (search: Record<string, unknown>): { redirect?: string } => {
     const redirect = sanitizeReturnPath(search.redirect);
     return redirect ? { redirect } : {};
+  },
+  beforeLoad: async ({ context, location }) => {
+    await enforceAccessPolicy(context, 'guest', location.href);
   },
   component: Page,
 });

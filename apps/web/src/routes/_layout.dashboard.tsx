@@ -31,6 +31,8 @@ export const Route = createFileRoute('/_layout/dashboard')({
   validateSearch: validateDashboardSearch,
   // Period links name only the period; the mode stays as it was.
   search: { middlewares: [retainSearchParams(['trend'])] },
+  // The mode only changes how the chart draws the same data.
+  loaderDeps: ({ search: { range, from, to } }) => ({ range, from, to }),
   // A URL missing the period or the mode redirects to the viewer's last ones, else the defaults, so the URL
   // always names both and a shared link opens on the same chart.
   beforeLoad: ({ search }) => {
@@ -55,8 +57,6 @@ export const Route = createFileRoute('/_layout/dashboard')({
     }
     return { periodSelection, spendTrendMode };
   },
-  // The mode only changes how the chart draws the same data.
-  loaderDeps: ({ search: { range, from, to } }) => ({ range, from, to }),
   loader: async ({ context }) => {
     if (!(await isHouseholdLoaderReady(context))) {
       return;

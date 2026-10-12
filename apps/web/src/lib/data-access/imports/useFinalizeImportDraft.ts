@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import { toast } from '@ploutizo/ui/components/sonner-api';
@@ -50,7 +50,10 @@ export const useFinalizeImportDraft = (
   const router = useRouter();
   const toastId = importFinalizeToastId(draftId);
   const uncertainFailureRetryRef = useRef(options?.onUncertainFailureRetry);
-  uncertainFailureRetryRef.current = options?.onUncertainFailureRetry;
+  const onUncertainFailureRetry = options?.onUncertainFailureRetry;
+  useEffect(() => {
+    uncertainFailureRetryRef.current = onUncertainFailureRetry;
+  }, [onUncertainFailureRetry]);
 
   const mutation = useHouseholdMutation<
     ImportCompletedResult,

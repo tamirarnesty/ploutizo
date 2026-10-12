@@ -4,14 +4,6 @@ import { FileQuestion } from 'lucide-react';
 import { toast } from '@ploutizo/ui/components/sonner-api';
 import { Button } from '@ploutizo/ui/components/button';
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@ploutizo/ui/components/breadcrumb';
-import {
   Empty,
   EmptyContent,
   EmptyDescription,
@@ -27,6 +19,7 @@ import {
   useImportReviewSession,
 } from '@/lib/data-access/imports';
 import { importDraftReviewRoute } from '@/lib/navigation';
+import { ImportHubBreadcrumb } from '../lib/ImportHubBreadcrumb';
 import { ImportDraftReview } from './ImportDraftReview';
 import { ImportReviewAutosaveFailureNotifier } from './ImportReviewAutosaveFailureNotifier';
 import { ImportReviewLeaveGuard } from './ImportReviewLeaveGuard';
@@ -34,20 +27,6 @@ import { ImportReviewLeaveGuard } from './ImportReviewLeaveGuard';
 interface ImportReviewProps {
   draftId: string;
 }
-
-const ImportReviewBreadcrumbs = () => (
-  <Breadcrumb>
-    <BreadcrumbList>
-      <BreadcrumbItem>
-        <BreadcrumbLink render={<Link to="/import" />}>Import</BreadcrumbLink>
-      </BreadcrumbItem>
-      <BreadcrumbSeparator />
-      <BreadcrumbItem>
-        <BreadcrumbPage>Review import</BreadcrumbPage>
-      </BreadcrumbItem>
-    </BreadcrumbList>
-  </Breadcrumb>
-);
 
 const importReviewPageClassName = 'flex min-h-0 flex-1 flex-col gap-8';
 
@@ -149,7 +128,7 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
         draftId={draftId}
         retryAutosave={retryAutosave}
       />
-      <ImportReviewBreadcrumbs />
+      <ImportHubBreadcrumb currentPage="Review import" />
       {body}
     </div>
   );

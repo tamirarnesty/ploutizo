@@ -1,13 +1,11 @@
 import '@/test/mockTanstackRouter';
 import { render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
-import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import type { ImportReviewRow } from '@ploutizo/types';
 import type { Account } from '@ploutizo/validators';
-import { HouseholdHookWrapper } from '@/test/household-hook-harness';
 import { makeImportDraft } from '../test-fixtures/importDraft';
 import { ImportDraftReview } from './ImportDraftReview';
-import type { ReactNode } from 'react';
+import { ReviewTestProviders } from './ReviewTestProviders';
 
 export const updateRow = vi.fn();
 export const setSelection = vi.fn();
@@ -168,12 +166,6 @@ export const reviewSessionProps = {
   setSelection,
   flush,
 };
-
-export const ReviewTestProviders = ({ children }: { children: ReactNode }) => (
-  <HouseholdHookWrapper>
-    <TooltipProvider delay={0}>{children}</TooltipProvider>
-  </HouseholdHookWrapper>
-);
 
 export const renderReview = (draft = makeImportDraft()) => {
   const { rows, ...meta } = draft;
