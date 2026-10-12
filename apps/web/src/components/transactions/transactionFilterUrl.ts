@@ -5,6 +5,25 @@ import {
 import type { Filter } from '@ploutizo/ui/components/reui/filters-types';
 import type { TransactionSearch } from './transactionSearch';
 
+/** Search params owned by the transaction filter codec (not sort/pagination). */
+export const TRANSACTION_FILTER_SEARCH_KEYS = [
+  'type',
+  'dateFrom',
+  'dateTo',
+  'accountId',
+  'categoryId',
+  'assigneeId',
+  'tagIds',
+  'type_op',
+  'accountId_op',
+  'categoryId_op',
+  'assigneeId_op',
+  'tagIds_op',
+  'dateRange_op',
+  'importBatchId',
+  'importOutcome',
+] as const satisfies readonly (keyof TransactionSearch)[];
+
 // Strips URL params that match their defaults to keep the URL clean (D-04)
 export const buildCleanSearch = (
   params: Partial<TransactionSearch>

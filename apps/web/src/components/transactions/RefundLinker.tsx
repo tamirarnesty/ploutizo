@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useStore } from '@tanstack/react-form';
 import { Field, FieldLabel } from '@ploutizo/ui/components/field';
 import {
   Combobox,
@@ -12,6 +13,7 @@ import { Spinner } from '@ploutizo/ui/components/spinner';
 import { formatCurrency } from '@ploutizo/utils/currency';
 import type { TransactionRow } from '@ploutizo/validators';
 import {
+  useGetTransaction,
   useGetTransactions,
   useSearchTransactions,
 } from '@/lib/data-access/transactions';
@@ -41,6 +43,20 @@ export const RefundLinker = ({ form }: RefundLinkerProps) => {
     null
   );
   const [selectedTx, setSelectedTx] = useState<TransactionRow | null>(null);
+  const refundOf = useStore(form.store, (state) => state.values.refundOf);
+  const { data: linkedOriginal } = useGetTransaction(refundOf || null);
+
+  React.useEffect(() => {
+    if (!refundOf) {
+      setSelectedTx(null);
+      setInputValue('');
+      return;
+    }
+    if (linkedOriginal?.id === refundOf) {
+      setSelectedTx(linkedOriginal);
+      setInputValue(buildDisplayName(linkedOriginal));
+    }
+  }, [linkedOriginal, refundOf]);
 
   React.useEffect(
     () => () => {
