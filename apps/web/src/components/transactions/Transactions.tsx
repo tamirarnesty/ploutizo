@@ -4,7 +4,6 @@ import { ListFilterIcon } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import { Filters } from '@ploutizo/ui/components/reui/filters';
 import { Text } from '@ploutizo/ui/components/text';
-import { isFilterValueActive } from '@ploutizo/ui/components/reui/filters-utils';
 import type { Filter } from '@ploutizo/ui/components/reui/filters-types';
 import type { TransactionRow } from '@ploutizo/validators';
 import { useGetTransactions } from '@/lib/data-access/transactions';
@@ -26,6 +25,7 @@ import {
   filtersToSearch,
   hasActiveFilters,
   searchToFilters,
+  shouldPersistTransactionFilter,
 } from './transactionFilterUrl';
 import type { TransactionSearch } from './transactionSearch';
 
@@ -75,7 +75,9 @@ export const Transactions = () => {
   const handleFiltersChange = useCallback(
     (filters: Filter<string>[]) => {
       const nextFilters = withPinnedTransactionFilters(filters);
-      const mapped = filtersToSearch(nextFilters.filter(isFilterValueActive));
+      const mapped = filtersToSearch(
+        nextFilters.filter(shouldPersistTransactionFilter)
+      );
       void navigate({
         to: '/transactions',
         // Rebuild from scratch — only keep sort/pagination from prev.

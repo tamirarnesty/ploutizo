@@ -5,6 +5,28 @@ import {
 import type { Filter } from '@ploutizo/ui/components/reui/filters-types';
 import type { TransactionSearch } from './transactionSearch';
 
+const TRANSACTION_FILTER_DEFAULT_OPERATORS: Partial<Record<string, string>> = {
+  type: 'is',
+  accountId: 'is',
+  categoryId: 'is',
+  assigneeId: 'is',
+  tagIds: 'is_any_of',
+  dateRange: 'between',
+  importOutcome: 'is',
+};
+
+/** Filters written to the URL — active values or a non-default operator still being chosen. */
+export const shouldPersistTransactionFilter = (
+  filter: Filter<string>
+): boolean => {
+  if (isFilterValueActive(filter)) {
+    return true;
+  }
+  const defaultOperator =
+    TRANSACTION_FILTER_DEFAULT_OPERATORS[filter.field] ?? 'is';
+  return filter.operator !== defaultOperator;
+};
+
 /** Search params owned by the transaction filter codec (not sort/pagination). */
 export const TRANSACTION_FILTER_SEARCH_KEYS = [
   'type',
@@ -58,27 +80,39 @@ export const filtersToSearch = (
 ): Partial<TransactionSearch> => {
   const result: Partial<TransactionSearch> = {};
   for (const f of filters) {
-    if (f.field === 'type' && f.values[0]) {
-      result.type = f.values[0];
-      if (f.operator && f.operator !== 'is') result.type_op = f.operator;
+    if (f.field === 'type') {
+      if (f.values[0]) {
+        result.type = f.values[0];
+        if (f.operator && f.operator !== 'is') result.type_op = f.operator;
+      } else if (f.operator && f.operator !== 'is') {
+        result.type_op = f.operator;
+      }
     } else if (f.field === 'dateRange') {
       const op = f.operator;
       if (op === 'after' && f.values[0]) {
         result.dateFrom = f.values[0];
         result.dateRange_op = 'after';
+      } else if (op === 'after') {
+        result.dateRange_op = 'after';
       } else if (op === 'before' && f.values[0]) {
         result.dateTo = f.values[0];
+        result.dateRange_op = 'before';
+      } else if (op === 'before') {
         result.dateRange_op = 'before';
       } else if (op === 'is' && f.values[0]) {
         // 'is X' — send as dateFrom; API uses eq on dateFrom when op=is
         result.dateFrom = f.values[0];
         result.dateRange_op = 'is';
+      } else if (op === 'is') {
+        result.dateRange_op = 'is';
       } else if (op === 'is_not' && f.values[0]) {
         result.dateFrom = f.values[0];
         result.dateRange_op = 'is_not';
+      } else if (op === 'is_not') {
+        result.dateRange_op = 'is_not';
       } else if (op === 'not_between') {
-        result.dateFrom = f.values[0] ?? '';
-        result.dateTo = f.values[1] ?? '';
+        if (f.values[0]) result.dateFrom = f.values[0];
+        if (f.values[1]) result.dateTo = f.values[1];
         result.dateRange_op = 'not_between';
       } else if (f.values.length >= 1) {
         // 'between' (default)
@@ -86,9 +120,13 @@ export const filtersToSearch = (
         result.dateTo = f.values[1] ?? '';
         // dateRange_op 'between' is the default — omit from URL
       }
-    } else if (f.field === 'accountId' && f.values[0]) {
-      result.accountId = f.values[0];
-      if (f.operator && f.operator !== 'is') result.accountId_op = f.operator;
+    } else if (f.field === 'accountId') {
+      if (f.values[0]) {
+        result.accountId = f.values[0];
+        if (f.operator && f.operator !== 'is') result.accountId_op = f.operator;
+      } else if (f.operator && f.operator !== 'is') {
+        result.accountId_op = f.operator;
+      }
     } else if (f.field === 'categoryId') {
       if (f.operator === 'empty' || f.operator === 'not_empty') {
         result.categoryId_op = f.operator; // no value needed for empty/not_empty
@@ -138,6 +176,13 @@ export const searchToFilters = (
       operator: search.type_op ?? 'is',
       values: [search.type],
     });
+  } else if (search.type_op && search.type_op !== 'is') {
+    filters.push({
+      id: createPinnedFilterId('type'),
+      field: 'type',
+      operator: search.type_op,
+      values: [],
+    });
   }
   // categoryId — handle empty/not_empty (no value needed)
   if (
@@ -184,6 +229,13 @@ export const searchToFilters = (
       operator: search.accountId_op ?? 'is',
       values: [search.accountId],
     });
+  } else if (search.accountId_op && search.accountId_op !== 'is') {
+    filters.push({
+      id: createPinnedFilterId('accountId'),
+      field: 'accountId',
+      operator: search.accountId_op,
+      values: [],
+    });
   }
   // tagIds — handle empty/not_empty
   if (search.tagIds_op === 'empty' || search.tagIds_op === 'not_empty') {
@@ -210,12 +262,26 @@ export const searchToFilters = (
       operator: 'after',
       values: [search.dateFrom],
     });
+  } else if (dateOp === 'after') {
+    filters.push({
+      id: createPinnedFilterId('dateRange'),
+      field: 'dateRange',
+      operator: 'after',
+      values: [],
+    });
   } else if (dateOp === 'before' && search.dateTo) {
     filters.push({
       id: createPinnedFilterId('dateRange'),
       field: 'dateRange',
       operator: 'before',
       values: [search.dateTo],
+    });
+  } else if (dateOp === 'before') {
+    filters.push({
+      id: createPinnedFilterId('dateRange'),
+      field: 'dateRange',
+      operator: 'before',
+      values: [],
     });
   } else if (dateOp === 'is' && search.dateFrom) {
     filters.push({
@@ -224,6 +290,13 @@ export const searchToFilters = (
       operator: 'is',
       values: [search.dateFrom],
     });
+  } else if (dateOp === 'is') {
+    filters.push({
+      id: createPinnedFilterId('dateRange'),
+      field: 'dateRange',
+      operator: 'is',
+      values: [],
+    });
   } else if (dateOp === 'is_not' && search.dateFrom) {
     filters.push({
       id: createPinnedFilterId('dateRange'),
@@ -231,7 +304,14 @@ export const searchToFilters = (
       operator: 'is_not',
       values: [search.dateFrom],
     });
-  } else if (dateOp === 'not_between' && (search.dateFrom || search.dateTo)) {
+  } else if (dateOp === 'is_not') {
+    filters.push({
+      id: createPinnedFilterId('dateRange'),
+      field: 'dateRange',
+      operator: 'is_not',
+      values: [],
+    });
+  } else if (dateOp === 'not_between') {
     filters.push({
       id: createPinnedFilterId('dateRange'),
       field: 'dateRange',

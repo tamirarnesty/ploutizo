@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { ChartLazyBoundary, ChartLazyErrorFallback } from './ChartLazyBoundary';
@@ -17,13 +17,35 @@ describe('ChartLazyErrorFallback', () => {
 });
 
 describe('ChartLazyBoundary', () => {
-  it('renders children when there is no error', () => {
+  it('renders the chart after a failed load is retried', async () => {
+    const user = userEvent.setup();
+    let loadAttempts = 0;
+    const load = vi.fn(async () => {
+      loadAttempts += 1;
+      if (loadAttempts === 1) {
+        throw new Error('chunk failed');
+      }
+      return {
+        default: () => <span>Chart loaded</span>,
+      };
+    });
+
     render(
-      <ChartLazyBoundary label="test chart">
-        <span>Chart loaded</span>
+      <ChartLazyBoundary label="test chart" load={load}>
+        {(Chart) => <Chart />}
       </ChartLazyBoundary>
     );
 
-    expect(screen.getByText('Chart loaded')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/Couldn't load test chart/)).toBeInTheDocument();
+    });
+    expect(load).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Chart loaded')).toBeInTheDocument();
+    });
+    expect(load).toHaveBeenCalledTimes(2);
   });
 });
