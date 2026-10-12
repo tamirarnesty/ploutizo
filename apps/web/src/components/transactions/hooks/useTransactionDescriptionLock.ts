@@ -138,7 +138,7 @@ export const useTransactionDescriptionLock = ({
       refundOf,
       previousGeneratedCandidate: lockedValue,
     };
-  });
+  }, [type, refundOf, lockedValue]);
 
   const isDescriptionUnlocked = manualUnlocked || lockResolution.userUnlocked;
   const shouldLock = isGeneratedDescriptionType(type, refundOf);

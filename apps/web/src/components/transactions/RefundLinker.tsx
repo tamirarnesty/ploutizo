@@ -42,6 +42,13 @@ export const RefundLinker = ({ form }: RefundLinkerProps) => {
   );
   const [selectedTx, setSelectedTx] = useState<TransactionRow | null>(null);
 
+  React.useEffect(
+    () => () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    },
+    []
+  );
+
   const { data: recentExpensesResponse } = useGetTransactions({
     page: 1,
     limit: 10,
@@ -91,27 +98,27 @@ export const RefundLinker = ({ form }: RefundLinkerProps) => {
                       'Refund of ' + tx.description
                     );
                   }
-                  if (!values.amount) {
-                    const amountDollars = tx.amount / 100;
-                    form.setFieldValue('amount', amountDollars);
-                    const amountCents = formAmountToCents(amountDollars);
-                    if (values.assignees.length === 0) {
-                      form.setFieldValue(
-                        'assignees',
-                        splitAssigneesEvenly(
-                          amountCents,
-                          tx.assignees.map((a) => a.memberId)
-                        )
-                      );
-                    } else {
-                      form.setFieldValue(
-                        'assignees',
-                        rescaleAssigneesForAmount(values.assignees, amountCents)
-                      );
-                    }
+                  const hadAmount = Boolean(values.amount);
+                  if (!hadAmount) {
+                    form.setFieldValue('amount', tx.amount / 100);
                   }
                   if (!values.accountId) {
                     form.setFieldValue('accountId', tx.accountId);
+                  }
+                  const amountCents = formAmountToCents(
+                    form.getFieldValue('amount')
+                  );
+                  const memberIds = tx.assignees.map((a) => a.memberId);
+                  if (values.assignees.length === 0) {
+                    form.setFieldValue(
+                      'assignees',
+                      splitAssigneesEvenly(amountCents, memberIds)
+                    );
+                  } else if (!hadAmount) {
+                    form.setFieldValue(
+                      'assignees',
+                      rescaleAssigneesForAmount(values.assignees, amountCents)
+                    );
                   }
                 }
               } else {

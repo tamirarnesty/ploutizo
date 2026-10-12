@@ -3,7 +3,7 @@ import type { TransactionQueryParams } from '@/lib/data-access/transactions';
 // Pagination/sort params are optional — absent means "use component default".
 // validateTransactionSearch only includes present, valid fields so defaults are
 // not injected into the URL (which would pollute every /transactions URL with
-// ?page=1&sort=date&order=desc). buildCleanSearch in Transactions.tsx strips
+// ?page=1&sort=date&order=desc). buildCleanSearch in transactionFilterUrl.ts strips
 // these before writing to the URL; defaults are applied in the component when
 // reading search params. Page size is persisted in localStorage (see
 // useTablePageSize), not the URL.
