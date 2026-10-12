@@ -118,6 +118,16 @@ function useDataGrid() {
   return context;
 }
 
+type TableLayoutOptions = NonNullable<DataGridProps<object>['tableLayout']>;
+type TableClassNameOptions = NonNullable<
+  DataGridProps<object>['tableClassNames']
+>;
+
+const parseSerializedPartial = <T extends object>(
+  serialized: string
+): Partial<T> =>
+  serialized === 'null' ? {} : (JSON.parse(serialized) as Partial<T>);
+
 function DataGridProvider<TData extends object>({
   children,
   table,
@@ -144,6 +154,9 @@ function DataGridProvider<TData extends object>({
     table.options.columnResizeMode = resolvedColumnsResizeMode;
   }
 
+  const tableLayoutKey = JSON.stringify(tableLayout ?? null);
+  const tableClassNamesKey = JSON.stringify(tableClassNames ?? null);
+
   const { sorting, pagination, columnFilters } = tableState;
   const {
     rowSelection,
@@ -159,8 +172,13 @@ function DataGridProvider<TData extends object>({
   // on the <table> element handle width updates without React re-renders.
   // The table state fields below are deps only: they invalidate the value
   // when row models derived from them change.
-  const value = useMemo(
-    () => ({
+  const value = useMemo(() => {
+    const contextTableLayout = JSON.parse(tableLayoutKey) as TableLayoutOptions;
+    const contextTableClassNames = JSON.parse(
+      tableClassNamesKey
+    ) as TableClassNameOptions;
+
+    return {
       props: {
         recordCount,
         isLoading,
@@ -173,39 +191,38 @@ function DataGridProvider<TData extends object>({
         renderRowContextMenu,
         renderBodyRow,
         className,
-        tableLayout,
-        tableClassNames,
+        tableLayout: contextTableLayout,
+        tableClassNames: contextTableClassNames,
       },
       table,
       recordCount,
       isLoading,
-    }),
-    [
-      table,
-      recordCount,
-      isLoading,
-      loadingMode,
-      loadingMessage,
-      fetchingMoreMessage,
-      allRowsLoadedMessage,
-      emptyMessage,
-      onRowClick,
-      renderRowContextMenu,
-      renderBodyRow,
-      className,
-      tableLayout,
-      tableClassNames,
-      sorting,
-      pagination,
-      columnFilters,
-      rowSelection,
-      expanded,
-      columnVisibility,
-      columnOrder,
-      columnPinning,
-      globalFilter,
-    ]
-  );
+    };
+  }, [
+    table,
+    recordCount,
+    isLoading,
+    loadingMode,
+    loadingMessage,
+    fetchingMoreMessage,
+    allRowsLoadedMessage,
+    emptyMessage,
+    onRowClick,
+    renderRowContextMenu,
+    renderBodyRow,
+    className,
+    tableLayoutKey,
+    tableClassNamesKey,
+    sorting,
+    pagination,
+    columnFilters,
+    rowSelection,
+    expanded,
+    columnVisibility,
+    columnOrder,
+    columnPinning,
+    globalFilter,
+  ]);
 
   return (
     <DataGridContext.Provider value={value}>
@@ -253,21 +270,23 @@ function DataGrid<TData extends object>({
   table,
   ...props
 }: DataGridProps<TData>) {
-  const tableLayoutKey = JSON.stringify(props.tableLayout);
-  const tableClassNamesKey = JSON.stringify(props.tableClassNames);
+  // Serialize layout props so merged objects stay referentially stable across
+  // parent re-renders (e.g. column resize) when values are unchanged.
+  const tableLayoutKey = JSON.stringify(props.tableLayout ?? null);
+  const tableClassNamesKey = JSON.stringify(props.tableClassNames ?? null);
   const tableLayout = useMemo(
     () => ({
       ...DEFAULT_TABLE_LAYOUT,
-      ...(props.tableLayout ?? {}),
+      ...parseSerializedPartial<TableLayoutOptions>(tableLayoutKey),
     }),
-    [props.tableLayout, tableLayoutKey]
+    [tableLayoutKey]
   );
   const tableClassNames = useMemo(
     () => ({
       ...DEFAULT_TABLE_CLASS_NAMES,
-      ...(props.tableClassNames ?? {}),
+      ...parseSerializedPartial<TableClassNameOptions>(tableClassNamesKey),
     }),
-    [props.tableClassNames, tableClassNamesKey]
+    [tableClassNamesKey]
   );
 
   const mergedProps: DataGridProps<TData> = {
