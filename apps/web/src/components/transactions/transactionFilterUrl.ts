@@ -134,6 +134,8 @@ export const filtersToSearch = (
         result.categoryId = f.values[0];
         if (f.operator && f.operator !== 'is')
           result.categoryId_op = f.operator;
+      } else if (f.operator && f.operator !== 'is') {
+        result.categoryId_op = f.operator;
       }
     } else if (f.field === 'assigneeId') {
       if (f.operator === 'empty' || f.operator === 'not_empty') {
@@ -142,6 +144,8 @@ export const filtersToSearch = (
         result.assigneeId = f.values[0];
         if (f.operator && f.operator !== 'is')
           result.assigneeId_op = f.operator;
+      } else if (f.operator && f.operator !== 'is') {
+        result.assigneeId_op = f.operator;
       }
     } else if (f.field === 'tagIds') {
       if (f.operator === 'empty' || f.operator === 'not_empty') {
@@ -150,6 +154,8 @@ export const filtersToSearch = (
         result.tagIds = f.values.join(',');
         if (f.operator && f.operator !== 'is_any_of')
           result.tagIds_op = f.operator;
+      } else if (f.operator && f.operator !== 'is_any_of') {
+        result.tagIds_op = f.operator;
       }
     } else if (
       f.field === 'importOutcome' &&
@@ -202,6 +208,13 @@ export const searchToFilters = (
       operator: search.categoryId_op ?? 'is',
       values: [search.categoryId],
     });
+  } else if (search.categoryId_op && search.categoryId_op !== 'is') {
+    filters.push({
+      id: createPinnedFilterId('categoryId'),
+      field: 'categoryId',
+      operator: search.categoryId_op,
+      values: [],
+    });
   }
   // assigneeId — handle empty/not_empty
   if (
@@ -220,6 +233,13 @@ export const searchToFilters = (
       field: 'assigneeId',
       operator: search.assigneeId_op ?? 'is',
       values: [search.assigneeId],
+    });
+  } else if (search.assigneeId_op && search.assigneeId_op !== 'is') {
+    filters.push({
+      id: createPinnedFilterId('assigneeId'),
+      field: 'assigneeId',
+      operator: search.assigneeId_op,
+      values: [],
     });
   }
   if (search.accountId) {
@@ -251,6 +271,13 @@ export const searchToFilters = (
       field: 'tagIds',
       operator: search.tagIds_op ?? 'is_any_of',
       values: search.tagIds.split(','),
+    });
+  } else if (search.tagIds_op && search.tagIds_op !== 'is_any_of') {
+    filters.push({
+      id: createPinnedFilterId('tagIds'),
+      field: 'tagIds',
+      operator: search.tagIds_op,
+      values: [],
     });
   }
   // dateRange

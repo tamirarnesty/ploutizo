@@ -104,6 +104,32 @@ describe('transaction pinned filters', () => {
     });
   });
 
+  it('persists is_not on empty category pinned filter', () => {
+    const padded = withPinnedTransactionFilters([
+      {
+        id: 'filter-categoryId',
+        field: 'categoryId',
+        operator: 'is_not',
+        values: [],
+      },
+    ]);
+    expect(filtersToSearch(activeForSearch(padded))).toEqual({
+      categoryId_op: 'is_not',
+    });
+    expect(
+      searchToFilters({
+        categoryId_op: 'is_not',
+      })
+    ).toEqual([
+      {
+        id: 'filter-categoryId',
+        field: 'categoryId',
+        operator: 'is_not',
+        values: [],
+      },
+    ]);
+  });
+
   it('maps pinned category empty operator without a category id', () => {
     const padded = withPinnedTransactionFilters([
       {
