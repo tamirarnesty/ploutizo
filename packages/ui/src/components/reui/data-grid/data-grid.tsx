@@ -144,10 +144,6 @@ function DataGridProvider<TData extends object>({
     table.options.columnResizeMode = resolvedColumnsResizeMode;
   }
 
-  // Layout and class-name objects are rebuilt by DataGrid every render, so
-  // they are tracked by serialized value to keep the context value stable.
-  const tableLayoutKey = JSON.stringify(tableLayout);
-  const tableClassNamesKey = JSON.stringify(tableClassNames);
   const { sorting, pagination, columnFilters } = tableState;
   const {
     rowSelection,
@@ -197,8 +193,8 @@ function DataGridProvider<TData extends object>({
       renderRowContextMenu,
       renderBodyRow,
       className,
-      tableLayoutKey,
-      tableClassNamesKey,
+      tableLayout,
+      tableClassNames,
       sorting,
       pagination,
       columnFilters,
@@ -264,14 +260,14 @@ function DataGrid<TData extends object>({
       ...DEFAULT_TABLE_LAYOUT,
       ...(props.tableLayout ?? {}),
     }),
-    [tableLayoutKey]
+    [props.tableLayout, tableLayoutKey]
   );
   const tableClassNames = useMemo(
     () => ({
       ...DEFAULT_TABLE_CLASS_NAMES,
       ...(props.tableClassNames ?? {}),
     }),
-    [tableClassNamesKey]
+    [props.tableClassNames, tableClassNamesKey]
   );
 
   const mergedProps: DataGridProps<TData> = {
