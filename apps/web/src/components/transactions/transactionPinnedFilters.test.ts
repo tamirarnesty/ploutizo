@@ -1,15 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { isFilterValueActive } from '@ploutizo/ui/components/reui/filters-utils';
 import {
   TRANSACTION_PINNED_FILTER_FIELD_KEYS,
   withPinnedTransactionFilters,
 } from './transactionPinnedFilters';
 import { buildFilterFields } from './TransactionFilterFields';
-import { filtersToSearch, searchToFilters } from './transactionFilterUrl';
+import {
+  filtersToSearch,
+  searchToFilters,
+  shouldPersistTransactionFilter,
+} from './transactionFilterUrl';
 
 const activeForSearch = (
   filters: ReturnType<typeof withPinnedTransactionFilters>
-) => filters.filter(isFilterValueActive);
+) => filters.filter(shouldPersistTransactionFilter);
 
 describe('transaction pinned filters', () => {
   it('pads inactive pinned filters without affecting URL search mapping', () => {
@@ -30,6 +33,60 @@ describe('transaction pinned filters', () => {
     expect(filtersToSearch(activeForSearch(padded))).toEqual({
       type: 'expense',
     });
+  });
+
+  it('persists non-default operators on empty pinned filters', () => {
+    const padded = withPinnedTransactionFilters([
+      {
+        id: 'filter-type',
+        field: 'type',
+        operator: 'is_not',
+        values: [],
+      },
+      {
+        id: 'filter-dateRange',
+        field: 'dateRange',
+        operator: 'after',
+        values: [],
+      },
+    ]);
+    expect(filtersToSearch(activeForSearch(padded))).toEqual({
+      type_op: 'is_not',
+      dateRange_op: 'after',
+    });
+    expect(
+      withPinnedTransactionFilters(
+        searchToFilters({
+          type_op: 'is_not',
+          dateRange_op: 'after',
+        })
+      )
+    ).toEqual([
+      {
+        id: 'filter-type',
+        field: 'type',
+        operator: 'is_not',
+        values: [],
+      },
+      {
+        id: 'filter-dateRange',
+        field: 'dateRange',
+        operator: 'after',
+        values: [],
+      },
+      {
+        id: 'filter-accountId',
+        field: 'accountId',
+        operator: 'is',
+        values: [],
+      },
+      {
+        id: 'filter-categoryId',
+        field: 'categoryId',
+        operator: 'is',
+        values: [],
+      },
+    ]);
   });
 
   it('maps pinned date range between to URL params', () => {

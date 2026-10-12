@@ -1,7 +1,6 @@
-import { Suspense, lazy, useMemo } from 'react';
+import { useMemo } from 'react';
 import type { GetDashboardOverviewResponse } from '@ploutizo/validators';
 import { ChartLazyBoundary } from '@/components/dashboard/ChartLazyBoundary';
-import { ChartLazyFallback } from '@/components/dashboard/ChartLazyFallback';
 import {
   partialBucketEdges,
   segmentPartialBuckets,
@@ -12,11 +11,10 @@ import {
 } from '@/components/dashboard/spend-trend/spendTrendChartUtils';
 import type { SpendTrendMode } from '@/lib/spend-trend-mode';
 
-const SpendTrendChart = lazy(() =>
+const loadSpendTrendChart = () =>
   import('@/components/dashboard/spend-trend/SpendTrendChart').then(
     (module) => ({ default: module.SpendTrendChart })
-  )
-);
+  );
 
 type SpendTrendBodyProps = {
   overview: GetDashboardOverviewResponse;
@@ -40,15 +38,15 @@ export const SpendTrendBody = ({
   );
 
   return (
-    <ChartLazyBoundary label="spend trend chart">
-      <Suspense fallback={<ChartLazyFallback />}>
+    <ChartLazyBoundary label="spend trend chart" load={loadSpendTrendChart}>
+      {(SpendTrendChart) => (
         <SpendTrendChart
           data={chartData}
           grain={spendTrendGrain(overview.meta)}
           hasPriorSeries={spendTrendPriorRange(overview.meta) !== null}
           seriesLabels={spendTrendSeriesLabels(overview.meta)}
         />
-      </Suspense>
+      )}
     </ChartLazyBoundary>
   );
 };

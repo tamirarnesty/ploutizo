@@ -1,12 +1,8 @@
-import { Component } from 'react';
+import { Component, Suspense, lazy, useMemo, useState } from 'react';
 import { Button } from '@ploutizo/ui/components/button';
 import { Text } from '@ploutizo/ui/components/text';
-import type { ReactNode } from 'react';
-
-type ChartLazyBoundaryProps = {
-  children: ReactNode;
-  label: string;
-};
+import { ChartLazyFallback } from '@/components/dashboard/ChartLazyFallback';
+import type { ComponentType, ReactNode } from 'react';
 
 export type ChartLazyErrorFallbackProps = {
   label: string;
@@ -30,29 +26,32 @@ export const ChartLazyErrorFallback = ({
   </div>
 );
 
-type ChartLazyBoundaryState = {
+type ChartLazyErrorBoundaryProps = {
+  label: string;
+  onRetry: () => void;
+  children: ReactNode;
+};
+
+type ChartLazyErrorBoundaryState = {
   error: Error | null;
-  retryKey: number;
 };
 
 /** Catches lazy chart chunk failures so the dashboard card can still render. */
-export class ChartLazyBoundary extends Component<
-  ChartLazyBoundaryProps,
-  ChartLazyBoundaryState
+class ChartLazyErrorBoundary extends Component<
+  ChartLazyErrorBoundaryProps,
+  ChartLazyErrorBoundaryState
 > {
-  state: ChartLazyBoundaryState = { error: null, retryKey: 0 };
+  state: ChartLazyErrorBoundaryState = { error: null };
 
   static getDerivedStateFromError(
     error: Error
-  ): Partial<ChartLazyBoundaryState> {
+  ): Partial<ChartLazyErrorBoundaryState> {
     return { error };
   }
 
   private handleRetry = () => {
-    this.setState((prev) => ({
-      error: null,
-      retryKey: prev.retryKey + 1,
-    }));
+    this.setState({ error: null });
+    this.props.onRetry();
   };
 
   render() {
@@ -65,6 +64,39 @@ export class ChartLazyBoundary extends Component<
       );
     }
 
-    return <div key={this.state.retryKey}>{this.props.children}</div>;
+    return this.props.children;
   }
 }
+
+export type ChartLazyBoundaryProps<TChartProps extends object> = {
+  label: string;
+  load: () => Promise<{ default: ComponentType<TChartProps> }>;
+  fallback?: ReactNode;
+  children: (Chart: ComponentType<TChartProps>) => ReactNode;
+};
+
+/**
+ * Lazy-loads a chart chunk behind Suspense and an error boundary. Retries recreate
+ * `lazy()` so a previously rejected dynamic import can load after recovery.
+ */
+export const ChartLazyBoundary = <TChartProps extends object>({
+  label,
+  load,
+  fallback,
+  children,
+}: ChartLazyBoundaryProps<TChartProps>) => {
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const LazyChart = useMemo(() => lazy(load), [load, loadAttempt]);
+
+  const handleRetry = () => {
+    setLoadAttempt((attempt) => attempt + 1);
+  };
+
+  return (
+    <ChartLazyErrorBoundary label={label} onRetry={handleRetry}>
+      <Suspense fallback={fallback ?? <ChartLazyFallback />}>
+        {children(LazyChart)}
+      </Suspense>
+    </ChartLazyErrorBoundary>
+  );
+};
