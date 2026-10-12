@@ -1,7 +1,7 @@
 import { Suspense, lazy, useMemo } from 'react';
-import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import type { GetDashboardOverviewResponse } from '@ploutizo/validators';
 import { ChartLazyBoundary } from '@/components/dashboard/ChartLazyBoundary';
+import { ChartLazyFallback } from '@/components/dashboard/ChartLazyFallback';
 import {
   partialBucketEdges,
   segmentPartialBuckets,
@@ -41,11 +41,7 @@ export const SpendTrendBody = ({
 
   return (
     <ChartLazyBoundary label="spend trend chart">
-      <Suspense
-        fallback={
-          <Skeleton className="h-full min-h-56 w-full motion-safe:animate-pulse" />
-        }
-      >
+      <Suspense fallback={<ChartLazyFallback />}>
         <SpendTrendChart
           data={chartData}
           grain={spendTrendGrain(overview.meta)}

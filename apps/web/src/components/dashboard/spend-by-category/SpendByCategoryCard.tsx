@@ -1,7 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { BarChart3 } from 'lucide-react';
-import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { ChartLazyBoundary } from '@/components/dashboard/ChartLazyBoundary';
+import { ChartLazyFallback } from '@/components/dashboard/ChartLazyFallback';
 import { DashboardOverviewMetricCard } from '@/components/dashboard/DashboardOverviewMetricCard';
 import type { DashboardOverviewQueryState } from '@/components/dashboard/DashboardOverviewMetricCard';
 import {
@@ -35,11 +35,7 @@ export const SpendByCategoryCard = ({
   >
     {(data) => (
       <ChartLazyBoundary label="spend by category chart">
-        <Suspense
-          fallback={
-            <Skeleton className="h-full min-h-56 w-full motion-safe:animate-pulse" />
-          }
-        >
+        <Suspense fallback={<ChartLazyFallback />}>
           <SpendByCategoryChart
             categories={data.categories}
             hasPriorSeries={spendTrendPriorRange(data.meta) !== null}

@@ -197,8 +197,6 @@ function DataGridProvider<TData extends object>({
       renderRowContextMenu,
       renderBodyRow,
       className,
-      tableLayout,
-      tableClassNames,
       tableLayoutKey,
       tableClassNamesKey,
       sorting,
@@ -220,55 +218,67 @@ function DataGridProvider<TData extends object>({
   );
 }
 
+const DEFAULT_TABLE_LAYOUT: NonNullable<DataGridProps<object>['tableLayout']> =
+  {
+    dense: false,
+    cellBorder: false,
+    rowBorder: true,
+    rowRounded: false,
+    stripped: false,
+    headerSticky: false,
+    headerBackground: true,
+    headerBorder: true,
+    width: 'fixed',
+    columnsVisibility: false,
+    columnsResizable: false,
+    columnsResizeMode: 'onEnd',
+    columnsPinnable: false,
+    columnsMovable: false,
+    columnsDraggable: false,
+    rowsDraggable: false,
+    rowsPinnable: false,
+  };
+
+const DEFAULT_TABLE_CLASS_NAMES: NonNullable<
+  DataGridProps<object>['tableClassNames']
+> = {
+  base: '',
+  header: '',
+  headerRow: '',
+  headerSticky: 'sticky top-0 z-15 bg-background/90 backdrop-blur-xs',
+  body: '',
+  bodyRow: '',
+  footer: '',
+  edgeCell: '',
+};
+
 function DataGrid<TData extends object>({
   children,
   table,
   ...props
 }: DataGridProps<TData>) {
-  const defaultProps: Partial<DataGridProps<TData>> = {
-    loadingMode: 'skeleton',
-    tableLayout: {
-      dense: false,
-      cellBorder: false,
-      rowBorder: true,
-      rowRounded: false,
-      stripped: false,
-      headerSticky: false,
-      headerBackground: true,
-      headerBorder: true,
-      width: 'fixed',
-      columnsVisibility: false,
-      columnsResizable: false,
-      columnsResizeMode: 'onEnd',
-      columnsPinnable: false,
-      columnsMovable: false,
-      columnsDraggable: false,
-      rowsDraggable: false,
-      rowsPinnable: false,
-    },
-    tableClassNames: {
-      base: '',
-      header: '',
-      headerRow: '',
-      headerSticky: 'sticky top-0 z-15 bg-background/90 backdrop-blur-xs',
-      body: '',
-      bodyRow: '',
-      footer: '',
-      edgeCell: '',
-    },
-  };
+  const tableLayoutKey = JSON.stringify(props.tableLayout);
+  const tableClassNamesKey = JSON.stringify(props.tableClassNames);
+  const tableLayout = useMemo(
+    () => ({
+      ...DEFAULT_TABLE_LAYOUT,
+      ...(props.tableLayout ?? {}),
+    }),
+    [tableLayoutKey]
+  );
+  const tableClassNames = useMemo(
+    () => ({
+      ...DEFAULT_TABLE_CLASS_NAMES,
+      ...(props.tableClassNames ?? {}),
+    }),
+    [tableClassNamesKey]
+  );
 
   const mergedProps: DataGridProps<TData> = {
-    ...defaultProps,
+    loadingMode: 'skeleton',
     ...props,
-    tableLayout: {
-      ...defaultProps.tableLayout,
-      ...(props.tableLayout || {}),
-    },
-    tableClassNames: {
-      ...defaultProps.tableClassNames,
-      ...(props.tableClassNames || {}),
-    },
+    tableLayout,
+    tableClassNames,
   };
 
   // Ensure table is provided

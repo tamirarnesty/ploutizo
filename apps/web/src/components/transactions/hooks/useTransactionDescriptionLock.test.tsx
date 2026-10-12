@@ -96,4 +96,40 @@ describe('useTransactionDescriptionLock', () => {
       expect(result.current.lock.isLocked).toBe(false);
     });
   });
+
+  it('clears a manual unlock when the transaction type changes', async () => {
+    const { result } = renderHook(() => useLockHarness());
+
+    act(() => {
+      result.current.form.setFieldValue('type', 'transfer');
+      result.current.form.setFieldValue('accountId', 'acct-a');
+      result.current.form.setFieldValue('counterpartAccountId', 'acct-b');
+    });
+
+    await waitFor(() => {
+      expect(result.current.lock.isLocked).toBe(true);
+    });
+
+    act(() => {
+      result.current.lock.unlockDescription();
+    });
+
+    await waitFor(() => {
+      expect(result.current.lock.isLocked).toBe(false);
+    });
+
+    act(() => {
+      result.current.form.setFieldValue('type', 'expense');
+    });
+
+    act(() => {
+      result.current.form.setFieldValue('type', 'transfer');
+      result.current.form.setFieldValue('accountId', 'acct-b');
+      result.current.form.setFieldValue('counterpartAccountId', 'acct-a');
+    });
+
+    await waitFor(() => {
+      expect(result.current.lock.isLocked).toBe(true);
+    });
+  });
 });

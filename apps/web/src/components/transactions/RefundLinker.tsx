@@ -15,7 +15,11 @@ import {
   useGetTransactions,
   useSearchTransactions,
 } from '@/lib/data-access/transactions';
-import { formAmountToCents, splitAssigneesEvenly } from './assigneeSplit';
+import {
+  formAmountToCents,
+  rescaleAssigneesForAmount,
+  splitAssigneesEvenly,
+} from './assigneeSplit';
 import { formatTransactionDate } from './transactionRowDisplay';
 import type { TransactionFormInstance } from './hooks/useTransactionForm';
 
@@ -88,19 +92,26 @@ export const RefundLinker = ({ form }: RefundLinkerProps) => {
                     );
                   }
                   if (!values.amount) {
-                    form.setFieldValue('amount', tx.amount / 100);
+                    const amountDollars = tx.amount / 100;
+                    form.setFieldValue('amount', amountDollars);
+                    const amountCents = formAmountToCents(amountDollars);
+                    if (values.assignees.length === 0) {
+                      form.setFieldValue(
+                        'assignees',
+                        splitAssigneesEvenly(
+                          amountCents,
+                          tx.assignees.map((a) => a.memberId)
+                        )
+                      );
+                    } else {
+                      form.setFieldValue(
+                        'assignees',
+                        rescaleAssigneesForAmount(values.assignees, amountCents)
+                      );
+                    }
                   }
                   if (!values.accountId) {
                     form.setFieldValue('accountId', tx.accountId);
-                  }
-                  if (values.assignees.length === 0) {
-                    form.setFieldValue(
-                      'assignees',
-                      splitAssigneesEvenly(
-                        formAmountToCents(form.getFieldValue('amount')),
-                        tx.assignees.map((a) => a.memberId)
-                      )
-                    );
                   }
                 }
               } else {

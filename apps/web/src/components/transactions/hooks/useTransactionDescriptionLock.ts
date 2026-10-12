@@ -130,6 +130,9 @@ export const useTransactionDescriptionLock = ({
   });
 
   useLayoutEffect(() => {
+    if (trackingRef.current.type !== type) {
+      setManualUnlockedGeneration(null);
+    }
     trackingRef.current = {
       type,
       refundOf,
