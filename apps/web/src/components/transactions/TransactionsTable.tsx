@@ -32,8 +32,8 @@ import type { TransactionSearch } from './transactionSearch';
 interface TransactionsTableProps {
   transactions: TransactionRow[];
   total: number;
-  /** Signed cents for rows on the loaded page; omit while the list response is missing. */
-  pageAmountSumCents?: number;
+  /** Signed cents for the full filtered set; omit while the list response is missing. */
+  amountSumCents?: number;
   isLoading: boolean;
   page: number;
   limit: number;
@@ -51,7 +51,7 @@ interface TransactionsTableProps {
 export const TransactionsTable = ({
   transactions,
   total,
-  pageAmountSumCents,
+  amountSumCents,
   isLoading,
   page,
   limit,
@@ -153,18 +153,14 @@ export const TransactionsTable = ({
 
   const footerContent = useMemo(
     () =>
-      pageAmountSumCents === undefined
+      amountSumCents === undefined
         ? null
-        : buildTransactionsAmountFooter(table, pageAmountSumCents),
-    [table, pageAmountSumCents]
+        : buildTransactionsAmountFooter(table, amountSumCents),
+    [table, amountSumCents]
   );
 
   // Empty states (D-24, D-25) — only while the list response is still missing
-  if (
-    !isLoading &&
-    transactions.length === 0 &&
-    pageAmountSumCents === undefined
-  ) {
+  if (!isLoading && transactions.length === 0 && amountSumCents === undefined) {
     if (onFilteredEmpty) {
       return <TransactionsTableEmptyFiltered onClearFilters={onClearFilters} />;
     }

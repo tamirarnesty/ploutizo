@@ -14,10 +14,7 @@ export const TransactionFilterSearch = ({
   value,
   onChange,
 }: TransactionFilterSearchProps) => (
-  <InputGroup className="h-7! w-full shrink-0 sm:w-64">
-    <InputGroupAddon>
-      <SearchIcon className="size-3.5" aria-hidden="true" />
-    </InputGroupAddon>
+  <InputGroup className="w-full shrink-0 sm:w-64">
     <InputGroupInput
       type="search"
       value={value}
@@ -26,5 +23,8 @@ export const TransactionFilterSearch = ({
       className="text-xs"
       aria-label="Search transactions"
     />
+    <InputGroupAddon>
+      <SearchIcon aria-hidden="true" />
+    </InputGroupAddon>
   </InputGroup>
 );

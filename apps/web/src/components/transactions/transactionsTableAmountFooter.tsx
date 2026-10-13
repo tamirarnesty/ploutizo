@@ -10,20 +10,31 @@ import type { Table } from '@tanstack/react-table';
 
 export const buildTransactionsAmountFooter = (
   table: Table<TransactionRow>,
-  pageAmountSumCents: number
+  amountSumCents: number
 ) => {
   const columns = table.getVisibleLeafColumns();
   const amountIndex = columns.findIndex((column) => column.id === 'amount');
   if (amountIndex < 0) return null;
 
-  const { displayValue, colorClass } =
-    formatSignedAmountCents(pageAmountSumCents);
+  const { displayValue, colorClass } = formatSignedAmountCents(amountSumCents);
   const trailingSpan = columns.length - amountIndex - 1;
+
+  const totalLabel = (
+    <Text
+      as="span"
+      variant="label"
+      className="font-semibold whitespace-nowrap text-foreground"
+    >
+      Total
+    </Text>
+  );
 
   return (
     <DataGridTableFootRow>
       {amountIndex > 0 ? (
-        <DataGridTableFootRowCell colSpan={amountIndex} />
+        <DataGridTableFootRowCell colSpan={amountIndex} className="text-left">
+          {totalLabel}
+        </DataGridTableFootRowCell>
       ) : null}
       <DataGridTableFootRowCell className="text-right tabular-nums">
         <Text

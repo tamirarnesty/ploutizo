@@ -21,13 +21,13 @@ vi.mock('@ploutizo/ui/components/sonner', () => ({
 }));
 
 describe('TransactionsTable amount footer', () => {
-  it('shows the loaded-page sum under the amount column', () => {
+  it('shows the full filtered-set total under the amount column', () => {
     render(
       <TooltipProvider delay={0}>
         <TransactionsTable
           transactions={[mockTransactionRow()]}
           total={1}
-          pageAmountSumCents={-5}
+          amountSumCents={-5}
           isLoading={false}
           page={1}
           limit={25}
@@ -44,16 +44,17 @@ describe('TransactionsTable amount footer', () => {
       </TooltipProvider>
     );
 
+    expect(screen.getByText('Total')).toBeInTheDocument();
     expect(screen.getAllByText('−$0.05').length).toBeGreaterThanOrEqual(2);
   });
 
-  it('shows $0.00 in the footer when the loaded page has no rows', () => {
+  it('shows $0.00 in the footer when the filtered set has no rows', () => {
     render(
       <TooltipProvider delay={0}>
         <TransactionsTable
           transactions={[]}
           total={0}
-          pageAmountSumCents={0}
+          amountSumCents={0}
           isLoading={false}
           page={1}
           limit={25}
@@ -70,6 +71,7 @@ describe('TransactionsTable amount footer', () => {
       </TooltipProvider>
     );
 
+    expect(screen.getByText('Total')).toBeInTheDocument();
     expect(screen.getByText('$0.00')).toBeInTheDocument();
   });
 
@@ -79,7 +81,7 @@ describe('TransactionsTable amount footer', () => {
         <TransactionsTable
           transactions={[]}
           total={0}
-          pageAmountSumCents={0}
+          amountSumCents={0}
           isLoading={false}
           page={1}
           limit={25}
@@ -104,13 +106,13 @@ describe('TransactionsTable amount footer', () => {
     ).toBeInTheDocument();
   });
 
-  it('shows plain empty copy when onFilteredEmpty is false and page sum is zero', () => {
+  it('shows plain empty copy when onFilteredEmpty is false and total is zero', () => {
     render(
       <TooltipProvider delay={0}>
         <TransactionsTable
           transactions={[]}
           total={0}
-          pageAmountSumCents={0}
+          amountSumCents={0}
           isLoading={false}
           page={1}
           limit={25}
@@ -128,6 +130,7 @@ describe('TransactionsTable amount footer', () => {
     );
 
     expect(screen.getByText('No transactions yet')).toBeInTheDocument();
+    expect(screen.getByText('Total')).toBeInTheDocument();
     expect(screen.getByText('$0.00')).toBeInTheDocument();
     expect(
       screen.queryByText('No transactions match your filters')
@@ -156,6 +159,7 @@ describe('TransactionsTable amount footer', () => {
       </TooltipProvider>
     );
 
+    expect(screen.queryByText('Total')).not.toBeInTheDocument();
     expect(screen.queryByText('$0.00')).not.toBeInTheDocument();
     expect(screen.queryByText('−$0.05')).not.toBeInTheDocument();
   });

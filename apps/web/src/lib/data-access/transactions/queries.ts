@@ -59,12 +59,12 @@ export const fetchTransactions = async (
 };
 
 export const fetchSearchTransactions = async (
-  description: string,
+  search: string,
   type?: string,
   signal?: AbortSignal
 ): Promise<TransactionRow[]> => {
   const qs = new URLSearchParams();
-  qs.set('description', description);
+  qs.set('search', search);
   qs.set('limit', '20');
   if (type) qs.set('type', type);
   const r = await apiFetch(

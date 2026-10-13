@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { ListFilterIcon } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
@@ -16,7 +16,7 @@ import { TransactionsTable } from './TransactionsTable';
 import { TransactionSheet } from './TransactionSheet';
 import { buildFilterFields } from './TransactionFilterFields';
 import { TransactionFilterSearch } from './TransactionFilterSearch';
-import { sumLoadedPageAmountCents } from './transactionsPageAmountSum';
+import { useDebouncedTransactionSearch } from './hooks/useDebouncedTransactionSearch';
 import { buildTransactionQueryParams } from './transactionSearch';
 import {
   TRANSACTION_PINNED_FILTER_FIELD_KEYS_LIST,
@@ -51,11 +51,7 @@ export const Transactions = () => {
 
   const transactions = txData?.data ?? NO_TRANSACTIONS;
   const total = txData?.total ?? 0;
-  const pageAmountSumCents = useMemo(
-    () =>
-      txData === undefined ? undefined : sumLoadedPageAmountCents(transactions),
-    [txData, transactions]
-  );
+  const amountSumCents = txData?.amountSumCents;
   const page = search.page ?? 1;
   const sort = search.sort ?? 'date';
   const order = search.order ?? 'desc';
@@ -68,19 +64,8 @@ export const Transactions = () => {
     () => withPinnedTransactionFilters(searchToFilters(search)),
     [search]
   );
-  const [searchInput, setSearchInput] = useState(() => search.search ?? '');
-
-  // Back/forward and other external URL changes update the search box.
-  // Filter chips stay derived from the URL, so they do not need a local copy.
-  useEffect(() => {
-    setSearchInput(search.search ?? '');
-  }, [search.search]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const trimmed = searchInput.trim();
-      const urlQuery = search.search?.trim() ?? '';
-      if (trimmed === urlQuery) return;
+  const commitSearchQuery = useCallback(
+    (trimmed: string) => {
       void navigate({
         to: '/transactions',
         search: (prev) =>
@@ -91,9 +76,17 @@ export const Transactions = () => {
           }),
         replace: true,
       });
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [navigate, search.search, searchInput]);
+    },
+    [navigate]
+  );
+  const {
+    query: searchInput,
+    setQuery: setSearchInput,
+    resetDraft: resetSearchDraft,
+  } = useDebouncedTransactionSearch({
+    urlQuery: search.search ?? '',
+    onCommit: commitSearchQuery,
+  });
 
   // Build FilterFieldConfig for the Filters component (6 fields per D-28).
   // Import result is only offered when a provenance batch is already in the URL.
@@ -169,12 +162,12 @@ export const Transactions = () => {
   );
 
   const handleClearFilters = useCallback(() => {
-    setSearchInput('');
+    resetSearchDraft();
     void navigate({
       to: '/transactions',
       search: () => buildCleanSearch({}),
     });
-  }, [navigate]);
+  }, [navigate, resetSearchDraft]);
 
   const handleAddClick = useCallback(() => {
     setSelectedTx(null);
@@ -239,7 +232,7 @@ export const Transactions = () => {
       <TransactionsTable
         transactions={transactions}
         total={total}
-        pageAmountSumCents={pageAmountSumCents}
+        amountSumCents={amountSumCents}
         isLoading={isLoading}
         page={page}
         limit={limit}

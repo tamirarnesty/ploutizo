@@ -4,13 +4,13 @@ import { fetchSearchTransactions } from './queries';
 import type { UseQueryResult } from '@tanstack/react-query';
 
 export const useSearchTransactions = (
-  description: string,
+  search: string,
   type?: string
 ): UseQueryResult<TransactionRow[]> => {
   return useHouseholdQuery({
-    queryKey: ['transactions', 'search', description, type],
+    queryKey: ['transactions', 'search', search, type],
     queryFn: ({ signal }: { signal: AbortSignal }) =>
-      fetchSearchTransactions(description, type, signal),
-    enabled: description.length >= 2,
+      fetchSearchTransactions(search, type, signal),
+    enabled: search.length >= 2,
   });
 };
