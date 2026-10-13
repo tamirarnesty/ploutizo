@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { ListFilterIcon } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import { Filters } from '@ploutizo/ui/components/reui/filters';
 import { Text } from '@ploutizo/ui/components/text';
-import { isFilterValueActive } from '@ploutizo/ui/components/reui/filters-utils';
 import type { Filter } from '@ploutizo/ui/components/reui/filters-types';
 import type { TransactionRow } from '@ploutizo/validators';
 import { useGetTransactions } from '@/lib/data-access/transactions';
@@ -26,6 +25,7 @@ import {
   filtersToSearch,
   hasActiveFilters,
   searchToFilters,
+  shouldPersistTransactionFilter,
 } from './transactionFilterUrl';
 import type { TransactionSearch } from './transactionSearch';
 
@@ -53,50 +53,14 @@ export const Transactions = () => {
   const sort = search.sort ?? 'date';
   const order = search.order ?? 'desc';
 
-  // Local filter bar state — initialized from URL on mount; updated via handleFiltersChange.
-  // Operators now round-trip through the URL (e.g. ?type_op=is_not) so they survive page refresh.
-  // The URL-sync effect restores operators from URL on external navigation (back/forward).
   const [sheetOpen, setSheetOpen] = useState<boolean>(false);
   const [selectedTx, setSelectedTx] = useState<TransactionRow | null>(null);
 
-  const [activeFilters, setActiveFilters] = useState<Filter<string>[]>(() =>
-    withPinnedTransactionFilters(searchToFilters(search))
+  // Filter bar state is derived from URL search params (single source of truth).
+  const activeFilters = useMemo(
+    () => withPinnedTransactionFilters(searchToFilters(search)),
+    [search]
   );
-
-  // When URL-encoded filter values change externally (e.g. browser back/forward,
-  // or programmatic navigation) sync the local filter state. We detect changes by
-  // comparing the serialized filter values from the URL against what we have locally,
-  // rather than replacing the whole array (which would lose operators).
-  const prevSearchRef = useRef(search);
-  useEffect(() => {
-    const prev = prevSearchRef.current;
-    prevSearchRef.current = search;
-
-    // Check whether any filter-value or operator params actually changed
-    const filterKeys = [
-      'type',
-      'dateFrom',
-      'dateTo',
-      'accountId',
-      'categoryId',
-      'assigneeId',
-      'tagIds',
-      'type_op',
-      'accountId_op',
-      'categoryId_op',
-      'assigneeId_op',
-      'tagIds_op',
-      'dateRange_op',
-      'importBatchId',
-      'importOutcome',
-    ] as const;
-    const changed = filterKeys.some((k) => prev[k] !== search[k]);
-    if (!changed) return;
-
-    // Re-derive from URL including operators (operators now persist in URL)
-    const fromUrl = searchToFilters(search);
-    setActiveFilters(withPinnedTransactionFilters(fromUrl));
-  }, [search]);
 
   // Build FilterFieldConfig for the Filters component (6 fields per D-28).
   // Import result is only offered when a provenance batch is already in the URL.
@@ -110,11 +74,10 @@ export const Transactions = () => {
 
   const handleFiltersChange = useCallback(
     (filters: Filter<string>[]) => {
-      // Update local state before navigate so the filter row does not flicker
-      // while URL search params catch up.
       const nextFilters = withPinnedTransactionFilters(filters);
-      setActiveFilters(nextFilters);
-      const mapped = filtersToSearch(nextFilters.filter(isFilterValueActive));
+      const mapped = filtersToSearch(
+        nextFilters.filter(shouldPersistTransactionFilter)
+      );
       void navigate({
         to: '/transactions',
         // Rebuild from scratch — only keep sort/pagination from prev.
@@ -172,7 +135,6 @@ export const Transactions = () => {
   );
 
   const handleClearFilters = useCallback(() => {
-    setActiveFilters(withPinnedTransactionFilters([]));
     void navigate({
       to: '/transactions',
       search: () => buildCleanSearch({}),

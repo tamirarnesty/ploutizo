@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useStore } from '@tanstack/react-form';
 import { Field, FieldLabel } from '@ploutizo/ui/components/field';
 import {
   Combobox,
@@ -12,6 +13,7 @@ import { Spinner } from '@ploutizo/ui/components/spinner';
 import { formatCurrency } from '@ploutizo/utils/currency';
 import type { TransactionRow } from '@ploutizo/validators';
 import {
+  useGetTransaction,
   useGetTransactions,
   useSearchTransactions,
 } from '@/lib/data-access/transactions';
@@ -36,11 +38,21 @@ const buildDisplayName = (tx: TransactionRow) => tx.description || '—';
 
 export const RefundLinker = ({ form }: RefundLinkerProps) => {
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [inputValue, setInputValue] = useState('');
   const debounceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
-  const [selectedTx, setSelectedTx] = useState<TransactionRow | null>(null);
+  const [pickedTx, setPickedTx] = useState<TransactionRow | null>(null);
+  const [draftInput, setDraftInput] = useState<string | null>(null);
+  const refundOf = useStore(form.store, (state) => state.values.refundOf);
+  const { data: linkedOriginal } = useGetTransaction(refundOf || null);
+
+  const linkedTx =
+    refundOf && linkedOriginal?.id === refundOf ? linkedOriginal : null;
+  const pickedMatchesRefund =
+    pickedTx && refundOf && pickedTx.id === refundOf ? pickedTx : null;
+  const selectedTx = pickedMatchesRefund ?? linkedTx;
+  const inputValue =
+    draftInput ?? (selectedTx ? buildDisplayName(selectedTx) : '');
 
   React.useEffect(
     () => () => {
@@ -82,9 +94,8 @@ export const RefundLinker = ({ form }: RefundLinkerProps) => {
               if (label) {
                 const tx = resultsByLabel.get(label);
                 if (tx) {
-                  setSelectedTx(tx);
-                  // Show only name in input — not the full "name • date • amount" key
-                  setInputValue(buildDisplayName(tx));
+                  setPickedTx(tx);
+                  setDraftInput(null);
                   // Reset query so re-opening shows recent expenses, not a stale bad search
                   if (debounceTimerRef.current)
                     clearTimeout(debounceTimerRef.current);
@@ -122,15 +133,15 @@ export const RefundLinker = ({ form }: RefundLinkerProps) => {
                   }
                 }
               } else {
-                setSelectedTx(null);
-                setInputValue('');
+                setPickedTx(null);
+                setDraftInput(null);
                 setDebouncedQuery('');
                 field.handleChange('');
                 // D-17: clearing refundOf does NOT reset split
               }
             }}
             onInputValueChange={(q: string) => {
-              setInputValue(q);
+              setDraftInput(q);
               if (debounceTimerRef.current)
                 clearTimeout(debounceTimerRef.current);
               debounceTimerRef.current = setTimeout(

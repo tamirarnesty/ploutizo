@@ -46,7 +46,7 @@ export const createEmptyPinnedTransactionFilter = (
 /**
  * Materializes pinned row entries in local filter state so ReUI `updateFilter`
  * can mutate them (synthetic pinned chips alone are display-only).
- * Inactive empties are omitted from the URL via `isFilterValueActive` at map time.
+ * Inactive empties are omitted from the URL via `shouldPersistTransactionFilter` at map time.
  */
 export const withPinnedTransactionFilters = (
   filters: Filter<string>[]
