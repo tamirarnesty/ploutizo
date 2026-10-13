@@ -8,6 +8,11 @@ type UseDebouncedTransactionSearchOptions = {
   onCommit: (trimmed: string) => void;
 };
 
+type Draft = {
+  value: string;
+  sourceUrl: string;
+};
+
 /**
  * The field owns what the user is typing. The URL owns the committed query.
  * They differ during the debounce window. A URL change replaces the draft
@@ -17,15 +22,10 @@ export const useDebouncedTransactionSearch = ({
   urlQuery,
   onCommit,
 }: UseDebouncedTransactionSearchOptions) => {
-  const [draft, setDraft] = useState(urlQuery);
+  const [draft, setDraft] = useState<Draft | null>(null);
   const pendingUrlUpdateRef = useRef<string | null>(null);
-  const urlQueryRef = useRef(urlQuery);
-  const onCommitRef = useRef(onCommit);
   const commitGenerationRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  urlQueryRef.current = urlQuery;
-  onCommitRef.current = onCommit;
 
   useEffect(() => {
     if (urlQuery === pendingUrlUpdateRef.current) {
@@ -38,21 +38,23 @@ export const useDebouncedTransactionSearch = ({
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
-    setDraft(urlQuery);
   }, [urlQuery]);
 
-  const setQuery = useCallback((value: string) => {
-    const generation = ++commitGenerationRef.current;
-    setDraft(value);
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
-      if (commitGenerationRef.current !== generation) return;
-      const trimmed = value.trim();
-      if (trimmed === urlQueryRef.current) return;
-      pendingUrlUpdateRef.current = trimmed;
-      onCommitRef.current(trimmed);
-    }, TRANSACTION_SEARCH_COMMIT_DELAY_MS);
-  }, []);
+  const setQuery = useCallback(
+    (value: string) => {
+      const generation = ++commitGenerationRef.current;
+      setDraft({ value, sourceUrl: urlQuery });
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        if (commitGenerationRef.current !== generation) return;
+        const trimmed = value.trim();
+        if (trimmed === urlQuery) return;
+        pendingUrlUpdateRef.current = trimmed;
+        onCommit(trimmed);
+      }, TRANSACTION_SEARCH_COMMIT_DELAY_MS);
+    },
+    [onCommit, urlQuery]
+  );
 
   const resetDraft = useCallback(() => {
     commitGenerationRef.current += 1;
@@ -61,7 +63,7 @@ export const useDebouncedTransactionSearch = ({
       timerRef.current = null;
     }
     pendingUrlUpdateRef.current = null;
-    setDraft('');
+    setDraft(null);
   }, []);
 
   useEffect(
@@ -71,5 +73,11 @@ export const useDebouncedTransactionSearch = ({
     []
   );
 
-  return { query: draft, setQuery, resetDraft };
+  const query =
+    draft &&
+    (draft.sourceUrl === urlQuery || pendingUrlUpdateRef.current === urlQuery)
+      ? draft.value
+      : urlQuery;
+
+  return { query, setQuery, resetDraft };
 };

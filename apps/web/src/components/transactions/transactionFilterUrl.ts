@@ -3,7 +3,6 @@ import {
   isFilterValueActive,
 } from '@ploutizo/ui/components/reui/filters-utils';
 import type { Filter } from '@ploutizo/ui/components/reui/filters-types';
-import { normalizeTransactionSearchQuery } from './transactionSearch';
 import type { TransactionSearch } from './transactionSearch';
 
 const TRANSACTION_FILTER_DEFAULT_OPERATORS: Partial<Record<string, string>> = {
