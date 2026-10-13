@@ -157,7 +157,7 @@ describe('GET /transactions — search and amountSum', () => {
   });
 
   it('TXN-LIST-SEARCH-03: search matches category name', async () => {
-    const page = await list('?description=GROCER');
+    const page = await list('?search=GROCER');
     expect(page.total).toBe(1);
     expect(page.data[0]?.categoryName).toBe('Groceries');
   });

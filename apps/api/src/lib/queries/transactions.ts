@@ -39,6 +39,7 @@ import type {
 import type { SQL } from 'drizzle-orm';
 import {
   activeTransactions,
+  categoriesForOrg,
   fetchAccountWriteReference,
   transactionExistsInOrg,
 } from '@/lib/queries/scope';
@@ -131,7 +132,7 @@ const searchMatchesCondition = (orgId: string, term: string): SQL => {
         .where(
           and(
             eq(categories.id, transactions.categoryId),
-            eq(categories.orgId, orgId),
+            ...categoriesForOrg(orgId),
             sql`${categories.name} ILIKE ${pattern}`
           )
         )
@@ -367,9 +368,13 @@ export const buildConditions = (params: ListQueryParams): SQL[] => {
     }
   }
 
-  const freeTextSearch = params.search ?? params.description;
-  if (freeTextSearch) {
-    conditions.push(searchMatchesCondition(params.orgId, freeTextSearch));
+  if (params.description) {
+    conditions.push(
+      descriptionOrRawDescriptionIlike(ilikePattern(params.description))
+    );
+  }
+  if (params.search) {
+    conditions.push(searchMatchesCondition(params.orgId, params.search));
   }
 
   if (params.importLink) {
