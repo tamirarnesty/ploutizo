@@ -242,8 +242,6 @@ export const transactionListResponseSchema = z.object({
   total: z.number().int(),
   page: z.number().int(),
   limit: z.number().int(),
-  /** Sum of list amounts as shown in the amount column (cents), for the full filtered set. */
-  amountSumCents: z.number().int(),
 });
 
 export type TransactionListResponse = z.infer<

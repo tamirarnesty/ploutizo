@@ -42,10 +42,7 @@ import {
   fetchAccountWriteReference,
   transactionExistsInOrg,
 } from '@/lib/queries/scope';
-import {
-  listedAmountCentsSql,
-  searchMatchesCondition,
-} from '@/lib/queries/transactionListSearch';
+import { searchMatchesCondition } from '@/lib/queries/transactionListSearch';
 
 // Alias for counterpart account join (D-23) — left join to accounts using counterpartAccountId FK
 const counterpartAccounts = alias(accounts, 'counterpart_accounts');
@@ -349,22 +346,14 @@ export const buildListQuery = async (params: ListQueryParams) => {
     .offset(offset);
 };
 
-// Count + amount sum over the filtered set (D-07, PLO-131) — one scan for both aggregates.
-export const listAggregatesQuery = async (
-  params: ListQueryParams
-): Promise<{ total: number; amountSumCents: number }> => {
+// Count query — returns total matching rows for pagination envelope (D-07)
+export const countQuery = async (params: ListQueryParams): Promise<number> => {
   const conditions = buildConditions(params);
-  const [{ total, amountSumCents }] = await db
-    .select({
-      total: sql<number>`count(*)::int`,
-      amountSumCents:
-        sql<number>`coalesce(sum(${listedAmountCentsSql}), 0)::bigint`.mapWith(
-          Number
-        ),
-    })
+  const [{ total }] = await db
+    .select({ total: sql<number>`count(*)::int` })
     .from(transactions)
     .where(and(...conditions));
-  return { total, amountSumCents };
+  return total;
 };
 
 // Single transaction by id — same column projection as list (D-05)

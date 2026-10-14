@@ -201,7 +201,6 @@ let transactionsBody: TransactionListResponse = {
   total: 0,
   page: 1,
   limit: 6,
-  amountSumCents: 0,
 };
 let overviewFixture: ((url: URL) => GetDashboardOverviewResponse) | null = null;
 const failingPaths = new Set<string>();
@@ -411,7 +410,6 @@ describe('Dashboard', () => {
       total: 0,
       page: 1,
       limit: 6,
-      amountSumCents: 0,
     };
     failingPaths.clear();
     requestGate = null;
@@ -1048,7 +1046,6 @@ describe('Dashboard', () => {
         total: 12,
         page: 1,
         limit: 6,
-        amountSumCents: 0,
       };
       await renderDashboard();
 
@@ -1120,7 +1117,6 @@ describe('Dashboard', () => {
         total: 1,
         page: 1,
         limit: 6,
-        amountSumCents: 0,
       };
       await renderDashboard();
       await within(cardFor('Recent transactions')).findByText('Groceries');
@@ -1130,7 +1126,6 @@ describe('Dashboard', () => {
         total: 1,
         page: 1,
         limit: 6,
-        amountSumCents: 0,
       };
       await user.click(refreshButton());
       expect(
@@ -1148,7 +1143,6 @@ describe('Dashboard', () => {
         total: 1,
         page: 1,
         limit: 6,
-        amountSumCents: 0,
       };
       await renderDashboard();
       await within(cardFor('Recent transactions')).findByText('Stable row');

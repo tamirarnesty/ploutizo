@@ -10,13 +10,13 @@ import type { Table } from '@tanstack/react-table';
 
 export const buildTransactionsAmountFooter = (
   table: Table<TransactionRow>,
-  amountSumCents: number
+  netCents: number
 ) => {
   const columns = table.getVisibleLeafColumns();
   const amountIndex = columns.findIndex((column) => column.id === 'amount');
   if (amountIndex < 0) return null;
 
-  const { displayValue, colorClass } = formatSignedAmountCents(amountSumCents);
+  const { displayValue, colorClass } = formatSignedAmountCents(netCents);
   const trailingSpan = columns.length - amountIndex - 1;
 
   const totalLabel = (
@@ -25,7 +25,7 @@ export const buildTransactionsAmountFooter = (
       variant="label"
       className="font-semibold whitespace-nowrap text-foreground"
     >
-      Total
+      Page net
     </Text>
   );
 

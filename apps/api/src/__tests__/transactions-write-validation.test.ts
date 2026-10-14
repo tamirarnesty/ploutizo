@@ -29,7 +29,7 @@ vi.mock('@/lib/queries/transactions', () => ({
   replaceAssignees: vi.fn(),
   replaceTags: vi.fn(),
   buildListQuery: vi.fn(),
-  listAggregatesQuery: vi.fn(),
+  countQuery: vi.fn(),
   counterpartAccountBelongsToOrg: vi.fn().mockResolvedValue(true),
   refundOfExists: vi.fn().mockResolvedValue(true),
   softDeleteTransactionQuery: vi.fn(),

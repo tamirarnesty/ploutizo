@@ -9,6 +9,7 @@ import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-
 import { DataGridPagination } from '@ploutizo/ui/components/reui/data-grid/data-grid-pagination';
 import { ContextMenuItem } from '@ploutizo/ui/components/context-menu';
 import { toast } from '@ploutizo/ui/components/sonner-api';
+import { netSignedAmountCents } from '@ploutizo/utils/transaction-list-amount';
 import type { TransactionRow } from '@ploutizo/validators';
 import {
   useDeleteTransaction,
@@ -33,8 +34,6 @@ import type { TransactionSearch } from './transactionSearch';
 interface TransactionsTableProps {
   transactions: TransactionRow[];
   total: number;
-  /** Signed cents for the full filtered set; omit while the list response is missing. */
-  amountSumCents?: number;
   isLoading: boolean;
   page: number;
   limit: number;
@@ -52,7 +51,6 @@ interface TransactionsTableProps {
 export const TransactionsTable = ({
   transactions,
   total,
-  amountSumCents,
   isLoading,
   page,
   limit,
@@ -153,14 +151,15 @@ export const TransactionsTable = ({
   });
 
   const footerContent =
-    amountSumCents === undefined
+    transactions.length === 0
       ? null
-      : buildTransactionsAmountFooter(table, amountSumCents);
+      : buildTransactionsAmountFooter(
+          table,
+          netSignedAmountCents(transactions)
+        );
 
-  // Full-page empty states only before the first list response (amountSumCents
-  // undefined). After load, filtered-empty copy lives in DataGrid emptyMessage
-  // so the amount footer can still show $0.00 for the filtered set.
-  if (!isLoading && transactions.length === 0 && amountSumCents === undefined) {
+  // Empty states (D-24, D-25) — rendered before DataGrid
+  if (!isLoading && transactions.length === 0) {
     if (onFilteredEmpty) {
       return <TransactionsTableEmptyFiltered onClearFilters={onClearFilters} />;
     }
@@ -182,13 +181,7 @@ export const TransactionsTable = ({
         table={table}
         recordCount={total}
         isLoading={isLoading}
-        emptyMessage={
-          onFilteredEmpty ? (
-            <TransactionsTableEmptyFiltered onClearFilters={onClearFilters} />
-          ) : (
-            'No transactions yet'
-          )
-        }
+        emptyMessage="No transactions yet"
         renderRowContextMenu={renderRowContextMenu}
         tableLayout={{
           width: 'fixed',
@@ -204,11 +197,7 @@ export const TransactionsTable = ({
               <DataGridTable footerContent={footerContent} />
             </DataGridScrollArea>
           </DataGridContainer>
-          {total > 0 ? (
-            <DataGridPagination
-              className={DATA_GRID_PAGINATION_ROW_CLASSNAME}
-            />
-          ) : null}
+          <DataGridPagination className={DATA_GRID_PAGINATION_ROW_CLASSNAME} />
         </div>
       </DataGrid>
     </>

@@ -10,13 +10,6 @@ import { and, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
 import { categoriesForOrg } from '@/lib/queries/scope';
 
-/** Keep in sync with `listAggregateSignedAmountCents` in `@ploutizo/utils`. */
-export const listedAmountCentsSql = sql<number>`case
-  when ${transactions.type} = 'expense' then -${transactions.amount}
-  when ${transactions.type} = 'transfer' then 0
-  else ${transactions.amount}
-end`;
-
 export const escapeIlikeLiteral = (value: string) =>
   value.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
 

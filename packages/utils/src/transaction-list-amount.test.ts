@@ -1,21 +1,8 @@
-import { TRANSACTION_TYPE_VALUES } from '@ploutizo/types';
 import { describe, expect, it } from 'vitest';
 import {
-  listAggregateSignedAmountCents,
+  netSignedAmountCents,
   transactionAmountDisplay,
 } from './transaction-list-amount';
-
-describe('listAggregateSignedAmountCents', () => {
-  it('matches the list SQL sign rule for every transaction type', () => {
-    const amount = 12_345;
-    for (const type of TRANSACTION_TYPE_VALUES) {
-      const signed = listAggregateSignedAmountCents(type, amount);
-      if (type === 'expense') expect(signed).toBe(-amount);
-      else if (type === 'transfer') expect(signed).toBe(0);
-      else expect(signed).toBe(amount);
-    }
-  });
-});
 
 describe('transactionAmountDisplay', () => {
   it('uses signed formatting for expense, income, and refund', () => {
@@ -40,5 +27,24 @@ describe('transactionAmountDisplay', () => {
         amountCents: 500,
       });
     }
+  });
+});
+
+describe('netSignedAmountCents', () => {
+  it('nets the signed rows and leaves out internal money movements', () => {
+    expect(
+      netSignedAmountCents([
+        { type: 'expense', amount: 2_500 },
+        { type: 'income', amount: 500_000 },
+        { type: 'refund', amount: 1_000 },
+        { type: 'transfer', amount: 10_000 },
+        { type: 'settlement', amount: 7_000 },
+        { type: 'contribution', amount: 3_000 },
+      ])
+    ).toBe(-2_500 + 500_000 + 1_000);
+  });
+
+  it('is zero for no rows', () => {
+    expect(netSignedAmountCents([])).toBe(0);
   });
 });

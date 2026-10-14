@@ -1,30 +1,5 @@
 import type { TransactionType } from '@ploutizo/types';
 
-/**
- * Signed cents for list footer aggregates (PLO-131). Transfers net to zero
- * across accounts; other types follow the amount column sign convention.
- */
-export const listAggregateSignedAmountCents = (
-  type: TransactionType,
-  amountCents: number
-): number => {
-  switch (type) {
-    case 'expense':
-      return -amountCents;
-    case 'transfer':
-      return 0;
-    case 'income':
-    case 'refund':
-    case 'settlement':
-    case 'contribution':
-      return amountCents;
-    default: {
-      const _exhaustive: never = type;
-      return _exhaustive;
-    }
-  }
-};
-
 export type TransactionAmountDisplay =
   | { kind: 'signed'; signedCents: number }
   | { kind: 'unsigned'; amountCents: number };
@@ -50,3 +25,16 @@ export const transactionAmountDisplay = (
     }
   }
 };
+
+/**
+ * Net of the signed amounts in a set of rows (PLO-131 page footer). Unsigned
+ * rows (transfers, settlements, contributions) move money within the household
+ * and render without a sign, so they do not count.
+ */
+export const netSignedAmountCents = (
+  rows: readonly { type: TransactionType; amount: number }[]
+): number =>
+  rows.reduce((net, row) => {
+    const display = transactionAmountDisplay(row.type, row.amount);
+    return display.kind === 'signed' ? net + display.signedCents : net;
+  }, 0);

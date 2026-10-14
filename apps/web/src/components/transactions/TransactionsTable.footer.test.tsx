@@ -47,47 +47,22 @@ const renderTable = (
   );
 
 const footerRow = () => {
-  const row = screen.getByText('Total').closest('tr');
-  if (!row) throw new Error('Total label is not inside a table row');
+  const row = screen.getByText('Page net').closest('tr');
+  if (!row) throw new Error('Page net label is not inside a table row');
   return within(row);
 };
 
 describe('TransactionsTable amount footer', () => {
-  it('shows the filtered-set total under the amount column, not the page sum', () => {
+  it('nets the signed amounts of the rows on screen', () => {
     renderTable({
-      transactions: [{ ...mockTransactionRow(), amount: 5 }],
-      total: 22,
-      amountSumCents: 123_456,
+      transactions: [
+        { ...mockTransactionRow(), id: 'a', type: 'expense', amount: 2_500 },
+        { ...mockTransactionRow(), id: 'b', type: 'income', amount: 10_000 },
+        { ...mockTransactionRow(), id: 'c', type: 'transfer', amount: 99_999 },
+      ],
+      total: 40,
     });
 
-    expect(footerRow().getByText('+$1,234.56')).toBeInTheDocument();
-  });
-
-  it('keeps the filtered empty copy and a $0.00 footer when filters match nothing', () => {
-    renderTable({
-      amountSumCents: 0,
-      onFilteredEmpty: true,
-    });
-
-    expect(
-      screen.getByText('No transactions match your filters')
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: 'Clear filters' })
-    ).toBeInTheDocument();
-    expect(footerRow().getByText('$0.00')).toBeInTheDocument();
-  });
-
-  it('keeps the plain empty copy and a $0.00 footer when no filters are active', () => {
-    renderTable({ amountSumCents: 0 });
-
-    expect(screen.getByText('No transactions yet')).toBeInTheDocument();
-    expect(footerRow().getByText('$0.00')).toBeInTheDocument();
-  });
-
-  it('shows no footer while the list response is missing', () => {
-    renderTable({ isLoading: true });
-
-    expect(screen.queryByText('Total')).not.toBeInTheDocument();
+    expect(footerRow().getByText('+$75.00')).toBeInTheDocument();
   });
 });

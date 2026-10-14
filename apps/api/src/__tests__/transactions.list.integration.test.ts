@@ -31,7 +31,7 @@ const list = async (query = '') => {
   return transactionListResponseSchema.parse(await res.json());
 };
 
-describe('GET /transactions — search and amountSum', () => {
+describe('GET /transactions — search', () => {
   let accountChequingId: string;
   let accountSavingsId: string;
   let groceriesCategoryId: string;
@@ -171,26 +171,5 @@ describe('GET /transactions — search and amountSum', () => {
   it('TXN-LIST-SEARCH-06: % and _ are matched literally, not as wildcards', async () => {
     expect((await list('?search=%25')).total).toBe(0);
     expect((await list('?search=_')).total).toBe(0);
-  });
-
-  it('TXN-LIST-AMOUNTSUM-01: amountSum uses displayed signs, skips transfers, and ignores page/limit', async () => {
-    const page = await list('?limit=1&page=1');
-    // expense -2500, income +500000, expense -9999; the 10000 transfer is excluded
-    expect(page.amountSumCents).toBe(-2500 + 500_000 - 9999);
-    expect(page.total).toBe(4);
-    expect(page.data).toHaveLength(1);
-  });
-
-  it('TXN-LIST-AMOUNTSUM-02: amountSum respects the search filter', async () => {
-    const page = await list('?search=groceries');
-    expect(page.total).toBe(1);
-    expect(page.amountSumCents).toBe(-2500);
-  });
-
-  it('TXN-LIST-AMOUNTSUM-03: empty set yields amountSum 0', async () => {
-    const page = await list('?search=definitely-no-match');
-    expect(page.total).toBe(0);
-    expect(page.data).toHaveLength(0);
-    expect(page.amountSumCents).toBe(0);
   });
 });
