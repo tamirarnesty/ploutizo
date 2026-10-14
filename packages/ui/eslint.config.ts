@@ -1,10 +1,13 @@
 import { tanstackConfig } from '@tanstack/eslint-config';
 
+import { reactDoctorRecommended } from '../../eslint/react-doctor.js';
+
 export default [
   {
     ignores: ['eslint.config.ts', 'vitest.config.ts'],
   },
   ...tanstackConfig,
+  reactDoctorRecommended,
   {
     rules: {
       'import/consistent-type-specifier-style': ['error', 'prefer-inline'],

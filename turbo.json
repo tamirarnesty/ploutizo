@@ -1,6 +1,7 @@
 {
   "$schema": "https://v2-10-11.turborepo.dev/schema.json",
   "ui": "tui",
+  "globalDependencies": ["eslint/**"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
