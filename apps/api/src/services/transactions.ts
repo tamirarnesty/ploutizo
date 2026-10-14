@@ -103,11 +103,10 @@ const loadTransactionWriteReferences = async (
 };
 
 export const listTransactions = async (params: ListQueryParams) => {
-  const [baseRows, aggregates] = await Promise.all([
+  const [baseRows, { total, amountSumCents }] = await Promise.all([
     buildListQuery(params),
     listAggregatesQuery(params),
   ]);
-  const { total, amountSumCents } = aggregates;
   const { assigneeMap, tagMap } = await enrichTransactions(
     params.orgId,
     baseRows
