@@ -117,9 +117,11 @@ const ilikePattern = (value: string) => `%${escapeIlikeLiteral(value)}%`;
 const descriptionOrRawDescriptionIlike = (pattern: string) =>
   sql`(${transactions.description} ILIKE ${pattern} OR ${transactions.rawDescription} ILIKE ${pattern})`;
 
-// Mirrors the sign rule in web `formatTransactionAmount`.
+// Mirrors the sign rule in web `formatTransactionAmount`. Transfers move money
+// between accounts (+x on one side, -x on the other), so they net to zero.
 const listedAmountCentsSql = sql<number>`case
   when ${transactions.type} = 'expense' then -${transactions.amount}
+  when ${transactions.type} = 'transfer' then 0
   else ${transactions.amount}
 end`;
 

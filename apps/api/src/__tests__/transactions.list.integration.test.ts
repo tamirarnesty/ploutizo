@@ -173,10 +173,10 @@ describe('GET /transactions — search and amountSum', () => {
     expect((await list('?search=_')).total).toBe(0);
   });
 
-  it('TXN-LIST-AMOUNTSUM-01: amountSum uses displayed signs and ignores page/limit', async () => {
+  it('TXN-LIST-AMOUNTSUM-01: amountSum uses displayed signs, skips transfers, and ignores page/limit', async () => {
     const page = await list('?limit=1&page=1');
-    // expense -2500, income +500000, transfer +10000, expense -9999
-    expect(page.amountSumCents).toBe(-2500 + 500_000 + 10_000 - 9999);
+    // expense -2500, income +500000, expense -9999; the 10000 transfer is excluded
+    expect(page.amountSumCents).toBe(-2500 + 500_000 - 9999);
     expect(page.total).toBe(4);
     expect(page.data).toHaveLength(1);
   });
