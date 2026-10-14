@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { ListFilterIcon } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
+import { SheetTrigger } from '@ploutizo/ui/components/sheet';
 import { Filters } from '@ploutizo/ui/components/reui/filters';
 import { Text } from '@ploutizo/ui/components/text';
 import type { Filter } from '@ploutizo/ui/components/reui/filters-types';
@@ -169,53 +170,57 @@ export const Transactions = () => {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <Text as="h1" variant="h3" className="min-w-0 truncate">
-          Transactions
-        </Text>
-        <Button type="button" onClick={handleAddClick} className="shrink-0">
-          Add transaction
-        </Button>
+    <TransactionSheet
+      open={sheetOpen}
+      onSheetOpenChange={setSheetOpen}
+      transaction={selectedTx}
+      onClose={handleSheetClose}
+    >
+      <div className="space-y-6">
+        <div className="flex items-center justify-between gap-3">
+          <Text as="h1" variant="h3" className="min-w-0 truncate">
+            Transactions
+          </Text>
+          <SheetTrigger
+            render={<Button type="button" className="shrink-0" />}
+            onClick={handleAddClick}
+          >
+            Add transaction
+          </SheetTrigger>
+        </div>
+
+        {/* Filter bar — full-width, no sticky */}
+        {/* trigger prop required: useRender renders an empty invisible button without it */}
+        <Filters<string>
+          filters={activeFilters}
+          fields={filterFields}
+          onChange={handleFiltersChange}
+          pinnedFieldKeys={TRANSACTION_PINNED_FILTER_FIELD_KEYS_LIST}
+          trigger={
+            <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs">
+              <ListFilterIcon className="size-3.5" />
+              Filters
+            </Button>
+          }
+        />
+
+        <TransactionsTable
+          transactions={transactions}
+          total={total}
+          isLoading={isLoading}
+          page={page}
+          limit={limit}
+          sort={sort}
+          order={order}
+          onPageChange={handlePageChange}
+          onLimitChange={handleLimitChange}
+          onSortChange={handleSortChange}
+          onFilteredEmpty={hasActiveFilters(search)}
+          onClearFilters={handleClearFilters}
+          onEdit={handleEdit}
+          onOpenOriginal={handleOpenOriginal}
+        />
       </div>
-
-      {/* Filter bar — full-width, no sticky */}
-      {/* trigger prop required: useRender renders an empty invisible button without it */}
-      <Filters<string>
-        filters={activeFilters}
-        fields={filterFields}
-        onChange={handleFiltersChange}
-        pinnedFieldKeys={TRANSACTION_PINNED_FILTER_FIELD_KEYS_LIST}
-        trigger={
-          <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs">
-            <ListFilterIcon className="size-3.5" />
-            Filters
-          </Button>
-        }
-      />
-
-      <TransactionsTable
-        transactions={transactions}
-        total={total}
-        isLoading={isLoading}
-        page={page}
-        limit={limit}
-        sort={sort}
-        order={order}
-        onPageChange={handlePageChange}
-        onLimitChange={handleLimitChange}
-        onSortChange={handleSortChange}
-        onFilteredEmpty={hasActiveFilters(search)}
-        onClearFilters={handleClearFilters}
-        onEdit={handleEdit}
-        onOpenOriginal={handleOpenOriginal}
-      />
-
-      <TransactionSheet
-        open={sheetOpen}
-        transaction={selectedTx}
-        onClose={handleSheetClose}
-      />
-    </div>
+    </TransactionSheet>
   );
 };

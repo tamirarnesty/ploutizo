@@ -8,8 +8,11 @@ import {
 } from '@/components/dashboard/spend-by-category/spendByCategoryChartUtils';
 
 const hatch = { current: 'url(#hatch)', prior: 'url(#hatch-prior)' };
-const faded = (colour: string) =>
-  `color-mix(in oklab, ${colour} 40%, transparent)`;
+const fadedBlue = 'color-mix(in oklch, var(--color-blue-500) 40%, transparent)';
+const fadedNeutral =
+  'color-mix(in oklch, var(--muted-foreground) 40%, transparent)';
+const fadedGreen =
+  'color-mix(in oklch, var(--color-green-500) 40%, transparent)';
 
 describe('formatCategoryShare', () => {
   it('formats fractional share as a whole percent', () => {
@@ -60,11 +63,11 @@ describe('toSpendByCategoryChartRows', () => {
       label: 'Transport',
       fill: {
         current: 'var(--color-blue-500)',
-        prior: faded('var(--color-blue-500)'),
+        prior: fadedBlue,
       },
       indicator: {
         current: 'var(--color-blue-500)',
-        prior: faded('var(--color-blue-500)'),
+        prior: fadedBlue,
       },
       current: 12000,
       prior: 900,
@@ -82,7 +85,7 @@ describe('toSpendByCategoryChartRows', () => {
   it('paints other a solid theme neutral, faded for the prior period', () => {
     expect(rows[1]?.fill).toEqual({
       current: 'var(--muted-foreground)',
-      prior: faded('var(--muted-foreground)'),
+      prior: fadedNeutral,
     });
   });
 
@@ -91,7 +94,7 @@ describe('toSpendByCategoryChartRows', () => {
       fill: hatch,
       indicator: {
         current: 'var(--muted-foreground)',
-        prior: faded('var(--muted-foreground)'),
+        prior: fadedNeutral,
       },
     });
   });
@@ -119,7 +122,7 @@ describe('formatCategorySummary', () => {
     fill: hatch,
     indicator: {
       current: 'var(--muted-foreground)',
-      prior: faded('var(--muted-foreground)'),
+      prior: fadedNeutral,
     },
     current: 600,
     prior: 400,
@@ -181,9 +184,7 @@ describe('spendByCategoryIndicatorColor', () => {
     expect(spendByCategoryIndicatorColor(item('current'))).toBe(
       'var(--color-green-500)'
     );
-    expect(spendByCategoryIndicatorColor(item('prior'))).toBe(
-      faded('var(--color-green-500)')
-    );
+    expect(spendByCategoryIndicatorColor(item('prior'))).toBe(fadedGreen);
   });
 
   it('gives hatched bars plain neutral dots, since a pattern is no CSS colour', () => {
@@ -191,7 +192,7 @@ describe('spendByCategoryIndicatorColor', () => {
       'var(--muted-foreground)'
     );
     expect(spendByCategoryIndicatorColor(item('prior', uncategorised))).toBe(
-      faded('var(--muted-foreground)')
+      fadedNeutral
     );
   });
 });

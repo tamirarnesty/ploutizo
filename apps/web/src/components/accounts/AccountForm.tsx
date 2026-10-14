@@ -15,6 +15,14 @@ import {
   FieldLabel,
 } from '@ploutizo/ui/components/field';
 import { Text } from '@ploutizo/ui/components/text';
+import { SheetFooter } from '@ploutizo/ui/components/sheet';
+import { Button } from '@ploutizo/ui/components/button';
+import { LoadingButton } from '@ploutizo/ui/components/loading-button';
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+} from '@ploutizo/ui/components/alert-dialog';
+import { Archive } from 'lucide-react';
 import { accountFormFieldsSchema } from '@ploutizo/validators';
 import type { AccountType } from '@ploutizo/types';
 import type {
@@ -23,10 +31,10 @@ import type {
   AccountMember,
   OrgMember,
 } from '@ploutizo/validators';
+import { DestructiveAlertDialogContent } from '@/components/DestructiveAlertDialogContent';
 import { useGetAccountMembers } from '@/lib/data-access/accounts';
 import { useGetHouseholdMembers } from '@/lib/data-access/household';
 import { MemberToggleGroup } from '@/components/members/MemberToggleGroup';
-import { AccountFormFooter } from './AccountFormFooter';
 import { AccountInstitutionField } from './AccountInstitutionField';
 import { AccountLastFourFields } from './AccountLastFourFields';
 import { useAccountForm } from './useAccountForm';
@@ -220,12 +228,46 @@ const AccountFormInner = ({
         </FieldGroup>
       </div>
 
-      <AccountFormFooter
-        form={form}
-        isEditing={isEditing}
-        onClose={onClose}
-        onArchive={onArchive}
-      />
+      <SheetFooter className="flex-row items-center justify-between gap-2 border-t border-border px-6">
+        {onArchive ? (
+          <AlertDialog>
+            <AlertDialogTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  type="button"
+                  className="text-destructive hover:text-destructive"
+                />
+              }
+            >
+              <Archive size={16} className="mr-1" aria-hidden="true" />
+              Archive
+            </AlertDialogTrigger>
+            <DestructiveAlertDialogContent
+              title="Archive account?"
+              description="Transactions linked to this account will not be affected."
+              confirmLabel="Archive account"
+              onConfirm={onArchive}
+            />
+          </AlertDialog>
+        ) : (
+          <div />
+        )}
+        <div className="flex gap-2">
+          <Button variant="outline" type="button" onClick={onClose}>
+            Discard
+          </Button>
+          <form.Subscribe
+            selector={(s: { isSubmitting: boolean }) => s.isSubmitting}
+          >
+            {(isSubmitting) => (
+              <LoadingButton type="submit" loading={isSubmitting}>
+                {isEditing ? 'Save changes' : 'Add account'}
+              </LoadingButton>
+            )}
+          </form.Subscribe>
+        </div>
+      </SheetFooter>
     </form>
   );
 };

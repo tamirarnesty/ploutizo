@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
 import { accountsRoute } from '@/lib/navigation';
 import { Accounts } from './Accounts';
+import type { ReactNode } from 'react';
 
 vi.mock('@/lib/data-access/accounts', () => ({
   useGetAccounts: () => ({ data: [], isLoading: false }),
@@ -17,12 +18,15 @@ vi.mock('./AccountSheet', () => ({
     open,
     account,
     defaultType,
+    children,
   }: {
     open: boolean;
     account: { id: string } | null;
     defaultType?: string;
+    children: ReactNode;
   }) => (
     <div>
+      {children}
       <span data-testid="sheet-open">{open ? 'open' : 'closed'}</span>
       <span data-testid="sheet-mode">{account?.id ?? 'create'}</span>
       <span data-testid="sheet-default-type">{defaultType ?? ''}</span>

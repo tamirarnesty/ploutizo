@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Button } from '@ploutizo/ui/components/button';
+import { SheetTrigger } from '@ploutizo/ui/components/sheet';
 import { Text } from '@ploutizo/ui/components/text';
 import type { AccountType } from '@ploutizo/types';
 import type { Account } from '@ploutizo/validators';
@@ -53,34 +54,34 @@ export const Accounts = () => {
     setEditingAccount(account);
     setSheetOpen(true);
   };
-  const handleSheetClose = () => {
-    setSheetOpen(false);
-  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <Text as="h1" variant="h3" className="min-w-0 truncate">
-          Accounts
-        </Text>
-        <Button type="button" onClick={handleAddClick} className="shrink-0">
-          Add account
-        </Button>
+    <AccountSheet
+      open={sheetOpen}
+      onOpenChange={setSheetOpen}
+      account={editingAccount}
+      defaultType={createAccountType}
+    >
+      <div className="space-y-6">
+        <div className="flex items-center justify-between gap-3">
+          <Text as="h1" variant="h3" className="min-w-0 truncate">
+            Accounts
+          </Text>
+          <SheetTrigger
+            render={<Button type="button" className="shrink-0" />}
+            onClick={handleAddClick}
+          >
+            Add account
+          </SheetTrigger>
+        </div>
+
+        <AccountsTable
+          accounts={accounts}
+          isLoading={isLoading}
+          onRowClick={handleRowClick}
+          onAddClick={handleAddClick}
+        />
       </div>
-
-      <AccountsTable
-        accounts={accounts}
-        isLoading={isLoading}
-        onRowClick={handleRowClick}
-        onAddClick={handleAddClick}
-      />
-
-      <AccountSheet
-        open={sheetOpen}
-        account={editingAccount}
-        defaultType={createAccountType}
-        onClose={handleSheetClose}
-      />
-    </div>
+    </AccountSheet>
   );
 };

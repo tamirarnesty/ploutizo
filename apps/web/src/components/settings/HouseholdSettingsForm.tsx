@@ -78,7 +78,7 @@ const ThresholdModeOption = ({
         <RadioGroupItem value={mode} id={id} className="shrink-0" />
         <FieldContent className="gap-0">
           <FieldTitle className="text-sm">{title}</FieldTitle>
-          <Text variant="caption" className="text-xs leading-snug">
+          <Text variant="caption" className="text-xs leading-snug tabular-nums">
             {description}
           </Text>
         </FieldContent>

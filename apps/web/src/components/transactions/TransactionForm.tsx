@@ -1,7 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Trash2 } from 'lucide-react';
 import { Spinner } from '@ploutizo/ui/components/spinner';
 import { FieldGroup } from '@ploutizo/ui/components/field';
 import { Text } from '@ploutizo/ui/components/text';
+import { SheetFooter } from '@ploutizo/ui/components/sheet';
+import { Button } from '@ploutizo/ui/components/button';
+import { LoadingButton } from '@ploutizo/ui/components/loading-button';
+import { toast } from '@ploutizo/ui/components/sonner-api';
 import type {
   Account,
   Category,
@@ -13,6 +18,7 @@ import { useGetCategories } from '@/lib/data-access/categories';
 import { useGetAccounts } from '@/lib/data-access/accounts';
 import {
   useCreateTransaction,
+  useDeleteTransaction,
   useGetTransaction,
   useUpdateTransaction,
 } from '@/lib/data-access/transactions';
@@ -27,7 +33,7 @@ import { TransactionAmountField } from './TransactionAmountField';
 import { TransactionAssigneesField } from './TransactionAssigneesField';
 import { TransactionDateField } from './TransactionDateField';
 import { TransactionDescriptionField } from './TransactionDescriptionField';
-import { TransactionFormFooter } from './TransactionFormFooter';
+import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import { TransactionNotesTagsFields } from './TransactionNotesTagsFields';
 import { TransactionTypeFields } from './TransactionTypeFields';
 
@@ -133,6 +139,8 @@ const TransactionFormInner = ({
 }: TransactionFormInnerProps) => {
   const createMutation = useCreateTransaction();
   const updateMutation = useUpdateTransaction(transaction?.id ?? '');
+  const deleteMutation = useDeleteTransaction();
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const flushPendingInputs = useFlushPendingInputs();
 
   const { form } = useTransactionForm({
@@ -224,11 +232,49 @@ const TransactionFormInner = ({
         </FieldGroup>
       </div>
 
-      <TransactionFormFooter
-        form={form}
-        transaction={transaction}
-        onClose={onClose}
-      />
+      <SheetFooter className="flex-row items-center justify-between gap-2 border-t border-border px-6">
+        {transaction ? (
+          <>
+            <Button
+              variant="ghost"
+              size="icon"
+              type="button"
+              aria-label="Delete transaction"
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Trash2 size={16} aria-hidden="true" />
+            </Button>
+            <DeleteTransactionDialog
+              open={deleteOpen}
+              onOpenChange={setDeleteOpen}
+              isPending={deleteMutation.isPending}
+              onConfirm={() => {
+                deleteMutation.mutate(transaction.id, {
+                  onSuccess: () => {
+                    onClose();
+                    toast.success('Transaction deleted.');
+                  },
+                  onError: () => {
+                    toast.error('Failed to delete transaction.');
+                  },
+                });
+              }}
+            />
+          </>
+        ) : (
+          <div />
+        )}
+        <div className="flex gap-2">
+          <form.Subscribe selector={(s) => s.isSubmitting}>
+            {(isSubmitting) => (
+              <LoadingButton type="submit" loading={isSubmitting}>
+                {transaction ? 'Save changes' : 'Add transaction'}
+              </LoadingButton>
+            )}
+          </form.Subscribe>
+        </div>
+      </SheetFooter>
     </form>
   );
 };
