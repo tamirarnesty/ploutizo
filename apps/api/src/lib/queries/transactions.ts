@@ -43,7 +43,6 @@ import {
   transactionExistsInOrg,
 } from '@/lib/queries/scope';
 import {
-  descriptionTextFilter,
   listedAmountCentsSql,
   searchMatchesCondition,
 } from '@/lib/queries/transactionListSearch';
@@ -98,9 +97,7 @@ export type ListQueryParams = {
   categoryId?: string;
   assigneeId?: string;
   tagIds?: string[];
-  /** D-18: case-insensitive substring match on description OR rawDescription — T-03.4-01 */
-  description?: string;
-  /** Free-text search across description, category, account, and tags (not assignee, amount, or date). */
+  /** Case-insensitive substring match on description, rawDescription, category, account, and tag names (T-03.4-01). Not assignee, amount, or date. */
   search?: string;
   // Operator params — T-03.4.1-OP1: unrecognised values fall through to default (eq/is) behaviour
   type_op?: string; // 'is' | 'is_not'
@@ -307,9 +304,6 @@ export const buildConditions = (params: ListQueryParams): SQL[] => {
     }
   }
 
-  if (params.description) {
-    conditions.push(descriptionTextFilter(params.description));
-  }
   if (params.search) {
     conditions.push(searchMatchesCondition(params.orgId, params.search));
   }

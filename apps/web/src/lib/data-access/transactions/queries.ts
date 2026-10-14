@@ -39,7 +39,6 @@ export const fetchTransactions = async (
   if (params.assigneeId) qs.set('assigneeId', params.assigneeId);
   if (params.tagIds) qs.set('tagIds', params.tagIds); // comma-separated; API splits on comma
   if (params.search) qs.set('search', params.search);
-  if (params.description) qs.set('description', params.description);
   // Operator params — only set when present (defaults are handled server-side)
   if (params.type_op) qs.set('type_op', params.type_op);
   if (params.accountId_op) qs.set('accountId_op', params.accountId_op);

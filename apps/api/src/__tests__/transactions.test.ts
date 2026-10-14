@@ -374,28 +374,6 @@ describe('GET /api/transactions', () => {
     expect(callArgs.sort).toBe('account');
   });
 
-  it('TXN-LIST-DESC-01: GET /?description=coffee — passes description param to listTransactions', async () => {
-    // D-18: description filter passed through to service layer for ILIKE matching
-    vi.mocked(listTransactions).mockClear();
-    const res = await app.request('/?description=coffee');
-    expect(res.status).toBe(200);
-    const callArgs = vi.mocked(listTransactions).mock.calls[0]?.[0] as
-      | ListQueryParams
-      | undefined;
-    expect(callArgs?.description).toBe('coffee');
-  });
-
-  it('TXN-LIST-DESC-02: GET / without description param — description is undefined in params', async () => {
-    // When absent, listTransactions should not receive a description filter
-    vi.mocked(listTransactions).mockClear();
-    const res = await app.request('/');
-    expect(res.status).toBe(200);
-    const callArgs = vi.mocked(listTransactions).mock.calls[0]?.[0] as
-      | ListQueryParams
-      | undefined;
-    expect(callArgs?.description).toBeUndefined();
-  });
-
   it('TXN-LIST-ROUTE-SEARCH-01: GET /?search=%20groceries%20 — passes trimmed search to listTransactions', async () => {
     vi.mocked(listTransactions).mockClear();
     const res = await app.request('/?search=%20groceries%20');
