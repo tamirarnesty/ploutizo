@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { fadedColour } from '@/components/dashboard/dashboardChartColour';
 import {
   formatCategoryChangeVsPrior,
   formatCategoryShare,
@@ -9,7 +8,9 @@ import {
 } from '@/components/dashboard/spend-by-category/spendByCategoryChartUtils';
 
 const hatch = { current: 'url(#hatch)', prior: 'url(#hatch-prior)' };
-const faded = fadedColour;
+/** Literal prior-period mix, not `fadedColour`, so a wrong space or percent fails. */
+const faded = (colour: string): string =>
+  `color-mix(in oklch, ${colour} 40%, transparent)`;
 
 describe('formatCategoryShare', () => {
   it('formats fractional share as a whole percent', () => {
