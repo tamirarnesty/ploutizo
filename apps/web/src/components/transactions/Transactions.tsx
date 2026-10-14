@@ -39,9 +39,11 @@ export const Transactions = () => {
 
   // Fire ALL queries at top level — no waterfalls (vercel-react-best-practices)
   const transactionQueryParams = buildTransactionQueryParams(search, limit);
-  const { data: txData, isLoading } = useGetTransactions(
-    transactionQueryParams
-  );
+  const {
+    data: txData,
+    isLoading,
+    isFetching,
+  } = useGetTransactions(transactionQueryParams);
 
   const { data: accounts = [] } = useGetAccounts();
   const { data: categories = [] } = useGetCategories();
@@ -50,7 +52,8 @@ export const Transactions = () => {
 
   const transactions = txData?.data ?? NO_TRANSACTIONS;
   const total = txData?.total ?? 0;
-  const amountSumCents = txData?.amountSumCents;
+  const amountSumCents =
+    !txData || isFetching ? undefined : txData.amountSumCents;
   const page = search.page ?? 1;
   const sort = search.sort ?? 'date';
   const order = search.order ?? 'desc';

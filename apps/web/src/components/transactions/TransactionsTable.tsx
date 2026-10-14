@@ -156,7 +156,9 @@ export const TransactionsTable = ({
       ? null
       : buildTransactionsAmountFooter(table, amountSumCents);
 
-  // Empty states (D-24, D-25) — only while the list response is still missing
+  // Full-page empty states only before the first list response (amountSumCents
+  // undefined). After load, filtered-empty copy lives in DataGrid emptyMessage
+  // so the amount footer can still show $0.00 for the filtered set.
   if (!isLoading && transactions.length === 0 && amountSumCents === undefined) {
     if (onFilteredEmpty) {
       return <TransactionsTableEmptyFiltered onClearFilters={onClearFilters} />;

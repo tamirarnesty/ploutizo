@@ -152,5 +152,11 @@ export const validateTransactionSearch = (
     result.importOutcome = importOutcome;
   }
 
+  if (result.search !== undefined) {
+    const trimmed = result.search.trim();
+    if (trimmed) result.search = trimmed;
+    else delete result.search;
+  }
+
   return result;
 };

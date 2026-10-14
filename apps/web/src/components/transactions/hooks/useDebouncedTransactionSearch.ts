@@ -9,38 +9,36 @@ type UseDebouncedTransactionSearchOptions = {
 };
 
 /**
- * The field owns what the user is typing. The URL owns the committed query.
- * A URL query this field did not write drops the draft and any pending commit.
- * The echo of a commit this field did write keeps the draft, so trailing
- * spaces and in-progress keystrokes survive the replace navigation.
+ * The field owns what the user is typing; the URL owns the committed query.
+ * When the URL changes without matching our last commit, drop the draft and
+ * cancel any pending debounced commit. Commit echoes keep the draft so trailing
+ * spaces and in-progress keystrokes survive replace navigation.
  */
 export const useDebouncedTransactionSearch = ({
   urlQuery,
   onCommit,
 }: UseDebouncedTransactionSearchOptions) => {
   const [draft, setDraft] = useState<string | null>(null);
-  const [seenUrlQuery, setSeenUrlQuery] = useState(urlQuery);
-  const committedRef = useRef(urlQuery);
+  const urlQueryRef = useRef(urlQuery);
+  const lastCommitRef = useRef(urlQuery);
+
+  urlQueryRef.current = urlQuery;
 
   const { maybeExecute: commitDebounced, cancel } = useDebouncer(
     (value: string) => {
       const trimmed = value.trim();
-      if (trimmed === urlQuery) return;
-      committedRef.current = trimmed;
+      if (trimmed === urlQueryRef.current) return;
+      lastCommitRef.current = trimmed;
       onCommit(trimmed);
     },
     { wait: TRANSACTION_SEARCH_DEBOUNCE_MS }
   );
 
-  if (urlQuery !== seenUrlQuery) {
-    setSeenUrlQuery(urlQuery);
-    if (urlQuery !== committedRef.current) setDraft(null);
-  }
-
   useEffect(() => {
-    if (urlQuery === committedRef.current) return;
-    committedRef.current = urlQuery;
+    if (urlQuery === lastCommitRef.current) return;
+    lastCommitRef.current = urlQuery;
     cancel();
+    setDraft(null);
   }, [urlQuery, cancel]);
 
   const setQuery = (value: string) => {

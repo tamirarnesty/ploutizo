@@ -33,6 +33,13 @@ describe('text search', () => {
   it('counts a search query as an active filter', () => {
     expect(hasActiveFilters({ search: 'coffee' })).toBe(true);
   });
+
+  it('strips an empty search param from cleaned URL state', () => {
+    expect(buildCleanSearch({ search: '' })).toEqual({});
+    expect(buildCleanSearch({ search: 'coffee' })).toEqual({
+      search: 'coffee',
+    });
+  });
 });
 
 describe('import result filters', () => {

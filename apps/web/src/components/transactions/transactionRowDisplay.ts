@@ -1,4 +1,5 @@
 import { formatCurrency } from '@ploutizo/utils/currency';
+import { transactionAmountDisplay } from '@ploutizo/utils/transaction-list-amount';
 import type { TransactionRow } from '@ploutizo/validators';
 
 export const formatTransactionDate = (isoDate: string) =>
@@ -47,13 +48,12 @@ export const formatSignedAmountCents = (amountCents: number) => {
 export const formatTransactionAmount = (
   row: Pick<TransactionRow, 'type' | 'amount'>
 ) => {
-  const { type, amount } = row;
-  if (type === 'expense') return formatSignedAmountCents(-amount);
-  if (type === 'income' || type === 'refund') {
-    return formatSignedAmountCents(amount);
+  const display = transactionAmountDisplay(row.type, row.amount);
+  if (display.kind === 'signed') {
+    return formatSignedAmountCents(display.signedCents);
   }
   return {
-    displayValue: formatCurrency(amount),
+    displayValue: formatCurrency(display.amountCents),
     colorClass: 'text-muted-foreground',
   };
 };

@@ -61,6 +61,7 @@ export const buildCleanSearch = (
   if (!result.categoryId) delete result.categoryId;
   if (!result.assigneeId) delete result.assigneeId;
   if (!result.tagIds) delete result.tagIds;
+  if (!result.search) delete result.search;
   // Strip default-value operators so they don't pollute the URL.
   // Only non-default operators (e.g. 'is_not', 'includes_all') appear in URL params.
   if (result.type_op === 'is') delete result.type_op;

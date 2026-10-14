@@ -37,6 +37,13 @@ describe('validateTransactionSearch', () => {
     });
   });
 
+  it('trims search and drops whitespace-only values', () => {
+    expect(validateTransactionSearch({ search: '  groceries  ' })).toEqual({
+      search: 'groceries',
+    });
+    expect(validateTransactionSearch({ search: '   ' })).toEqual({});
+  });
+
   it('preserves filter and operator params', () => {
     expect(
       validateTransactionSearch({
