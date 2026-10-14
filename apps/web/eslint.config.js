@@ -4,9 +4,18 @@ import { tanstackConfig } from '@tanstack/eslint-config';
 import importPlugin from 'eslint-plugin-import-x';
 import tseslint from 'typescript-eslint';
 
+import {
+  reactDoctorRecommended,
+  reactDoctorTanstackQuery,
+  reactDoctorTanstackStart,
+} from '../../eslint/react-doctor.js';
+
 export default [
   { ignores: ['.output/**', 'dist/**', '.vinxi/**'] },
   ...tanstackConfig,
+  reactDoctorRecommended,
+  reactDoctorTanstackStart,
+  reactDoctorTanstackQuery,
   {
     plugins: {
       import: importPlugin,
@@ -94,6 +103,13 @@ export default [
     files: ['src/lib/data-access/useHouseholdQuery.ts'],
     rules: {
       'no-restricted-imports': 'off',
+    },
+  },
+  {
+    files: ['eslint.config.js'],
+    rules: {
+      // Node ESM requires the .js extension for repo-root shared ESLint presets.
+      'import/extensions': 'off',
     },
   },
 ];
