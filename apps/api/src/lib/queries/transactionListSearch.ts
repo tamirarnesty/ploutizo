@@ -6,20 +6,14 @@ import {
   transactionTags,
   transactions,
 } from '@ploutizo/db/schema';
-import { and, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { and, eq, ilike, inArray, or } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
 import { categoriesForOrg } from '@/lib/queries/scope';
 
-export const escapeIlikeLiteral = (value: string) =>
+const escapeIlikeLiteral = (value: string) =>
   value.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
 
-export const ilikePattern = (value: string) => `%${escapeIlikeLiteral(value)}%`;
-
-const descriptionOrRawDescriptionIlike = (pattern: string) =>
-  sql`(${transactions.description} ILIKE ${pattern} OR ${transactions.rawDescription} ILIKE ${pattern})`;
-
-export const descriptionTextFilter = (description: string): SQL =>
-  descriptionOrRawDescriptionIlike(ilikePattern(description));
+const ilikePattern = (value: string) => `%${escapeIlikeLiteral(value)}%`;
 
 // Uncorrelated IN subqueries let Postgres hash each lookup once instead of
 // running correlated EXISTS lookups per row inside the OR.

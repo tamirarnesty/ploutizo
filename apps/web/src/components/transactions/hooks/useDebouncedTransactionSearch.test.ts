@@ -1,9 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  TRANSACTION_SEARCH_DEBOUNCE_MS,
-  useDebouncedTransactionSearch,
-} from './useDebouncedTransactionSearch';
+import { TRANSACTION_SEARCH_DEBOUNCE_MS } from '../transactionSearch';
+import { useDebouncedTransactionSearch } from './useDebouncedTransactionSearch';
 
 const commitDelay = () => {
   act(() => {
@@ -157,5 +155,41 @@ describe('useDebouncedTransactionSearch', () => {
 
     expect(result.current.query).toBe('dogs');
     expect(onCommit).toHaveBeenCalledExactlyOnceWith('dogs');
+  });
+
+  it('commits clearing the field while an earlier commit is still in flight', () => {
+    const { result, rerender, onCommit } = renderSearch('');
+
+    act(() => {
+      result.current.setQuery('ca');
+    });
+    commitDelay();
+    act(() => {
+      result.current.setQuery('');
+    });
+    commitDelay();
+    rerender({ url: 'ca' });
+
+    expect(onCommit).toHaveBeenNthCalledWith(2, '');
+    expect(result.current.query).toBe('');
+  });
+
+  it('keeps typing when the URL echoes an older of two in-flight commits', () => {
+    const { result, rerender, onCommit } = renderSearch('');
+
+    act(() => {
+      result.current.setQuery('ca');
+    });
+    commitDelay();
+    act(() => {
+      result.current.setQuery('cat');
+    });
+    commitDelay();
+    rerender({ url: 'ca' });
+
+    expect(result.current.query).toBe('cat');
+    rerender({ url: 'cat' });
+    expect(result.current.query).toBe('cat');
+    expect(onCommit.mock.calls).toEqual([['ca'], ['cat']]);
   });
 });

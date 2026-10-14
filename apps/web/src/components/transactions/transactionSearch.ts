@@ -8,6 +8,9 @@ import type { TransactionQueryParams } from '@/lib/data-access/transactions';
 // reading search params. Page size is persisted in localStorage (see
 // useTablePageSize), not the URL.
 
+/** Shared debounce for transaction text search (list filter, refund linker). */
+export const TRANSACTION_SEARCH_DEBOUNCE_MS = 300;
+
 const TRANSACTION_SORT_FIELDS = [
   'date',
   'amount',

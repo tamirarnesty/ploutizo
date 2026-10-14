@@ -9,7 +9,6 @@ import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-
 import { DataGridPagination } from '@ploutizo/ui/components/reui/data-grid/data-grid-pagination';
 import { ContextMenuItem } from '@ploutizo/ui/components/context-menu';
 import { toast } from '@ploutizo/ui/components/sonner-api';
-import { netSignedAmountCents } from '@ploutizo/utils/transaction-list-amount';
 import type { TransactionRow } from '@ploutizo/validators';
 import {
   useDeleteTransaction,
@@ -27,7 +26,7 @@ import { getTransactionRowActions } from './transactionRowActions';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import { TransactionsTableEmpty } from './TransactionTableEmpty';
 import { TransactionsTableEmptyFiltered } from './TransactionTableEmptyFiltered';
-import { buildTransactionsAmountFooter } from './transactionsTableAmountFooter';
+import { TransactionsAmountFooter } from './TransactionsAmountFooter';
 import { isTransactionSortField } from './transactionSearch';
 import type { TransactionSearch } from './transactionSearch';
 
@@ -150,14 +149,6 @@ export const TransactionsTable = ({
     },
   });
 
-  const footerContent =
-    transactions.length === 0
-      ? null
-      : buildTransactionsAmountFooter(
-          table,
-          netSignedAmountCents(transactions)
-        );
-
   // Empty states (D-24, D-25) — rendered before DataGrid
   if (!isLoading && transactions.length === 0) {
     if (onFilteredEmpty) {
@@ -194,7 +185,16 @@ export const TransactionsTable = ({
             <DataGridScrollArea
               orientation={PAGINATED_DATA_GRID_SCROLL_ORIENTATION}
             >
-              <DataGridTable footerContent={footerContent} />
+              <DataGridTable
+                footerContent={
+                  transactions.length > 0 ? (
+                    <TransactionsAmountFooter
+                      table={table}
+                      rows={transactions}
+                    />
+                  ) : null
+                }
+              />
             </DataGridScrollArea>
           </DataGridContainer>
           <DataGridPagination className={DATA_GRID_PAGINATION_ROW_CLASSNAME} />

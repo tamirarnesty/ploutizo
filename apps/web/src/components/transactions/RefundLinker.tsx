@@ -24,7 +24,7 @@ import {
   splitAssigneesEvenly,
 } from './assigneeSplit';
 import { formatTransactionDate } from './transactionRowDisplay';
-import { TRANSACTION_SEARCH_DEBOUNCE_MS } from './hooks/useDebouncedTransactionSearch';
+import { TRANSACTION_SEARCH_DEBOUNCE_MS } from './transactionSearch';
 import type { TransactionFormInstance } from './hooks/useTransactionForm';
 
 export interface RefundLinkerProps {

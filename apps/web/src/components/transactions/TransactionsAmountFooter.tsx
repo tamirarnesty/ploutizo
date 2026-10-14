@@ -6,17 +6,26 @@ import { Text } from '@ploutizo/ui/components/text';
 import { cn } from '@ploutizo/ui/lib/utils';
 import type { TransactionRow } from '@ploutizo/validators';
 import { formatSignedAmountCents } from './transactionRowDisplay';
+import { netSignedAmountCents } from './transactionAmount';
 import type { Table } from '@tanstack/react-table';
 
-export const buildTransactionsAmountFooter = (
-  table: Table<TransactionRow>,
-  netCents: number
-) => {
+type TransactionsAmountFooterProps = {
+  table: Table<TransactionRow>;
+  rows: TransactionRow[];
+};
+
+/** "Page net" footer row under the Amount column, over the rows on screen. */
+export const TransactionsAmountFooter = ({
+  table,
+  rows,
+}: TransactionsAmountFooterProps) => {
   const columns = table.getVisibleLeafColumns();
   const amountIndex = columns.findIndex((column) => column.id === 'amount');
   if (amountIndex < 0) return null;
 
-  const { displayValue, colorClass } = formatSignedAmountCents(netCents);
+  const { displayValue, colorClass } = formatSignedAmountCents(
+    netSignedAmountCents(rows)
+  );
   const trailingSpan = columns.length - amountIndex - 1;
 
   const totalLabel = (

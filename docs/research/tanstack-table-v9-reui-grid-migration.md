@@ -85,6 +85,8 @@ Capabilities added or changed locally in `packages/ui/src/components/reui/` (rec
 - **`DataGridColumnHeader` `ascendingLabel` / `descendingLabel`** — Optional sort-menu copy. Omitted labels stay "Asc" and "Desc".
 - **Loading skeleton row count** — `resolveDataGridSkeletonRowCount` in `data-grid-table-shared.ts`, used by `data-grid-table.tsx`, `data-grid-table-dnd.tsx`, and `data-grid-table-dnd-rows.tsx`. When `recordCount` is greater than 0 and less than `pageSize`, the skeleton draws that many rows; otherwise it draws `pageSize`.
 - **`FilterFieldConfig.migrateValues`** — Optional `(prevOperator, nextOperator, values) => values` on a filter field. `useFiltersBar` calls it when the user changes a chip’s operator so values can be reshaped (e.g. transactions date filter: `on` → `between` copies the single date into both range ends).
+- **IME-safe Enter in filter menus** — `filter-submenu-content.tsx`, `filters-add-menu.tsx`, and `select-options-menu-content.tsx` ignore Enter while `nativeEvent.isComposing`, so confirming an IME composition does not select an option.
+- **Event-driven menu resets** — `useFiltersBar` and `select-options-popover.tsx` reset the highlighted option, menu search, and open sub-menu in their open/close and search handlers instead of effects. Closing the add-filter menu (including after adding a filter) clears its search and open sub-menu.
 
 ## Verification checklist
 

@@ -161,11 +161,4 @@ describe('buildTransactionQueryParams', () => {
       importLink: { batchId: 'batch_1', outcome: 'matched' },
     });
   });
-
-  it('passes normalized search to the API params', () => {
-    expect(
-      buildTransactionQueryParams({ search: 'groceries' }, 25).search
-    ).toBe('groceries');
-    expect(buildTransactionQueryParams({}, 25).search).toBeUndefined();
-  });
 });

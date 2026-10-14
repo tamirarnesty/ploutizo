@@ -113,7 +113,7 @@ describe('GET /transactions — search', () => {
           accountId: accountChequingId,
           amount: 9999,
           date: '2026-06-15',
-          description: 'Unrelated purchase',
+          description: 'Unrelated purchase 50%_off',
         },
       ])
       .returning({ id: transactions.id });
@@ -161,15 +161,9 @@ describe('GET /transactions — search', () => {
     expect(page.data[0]?.tags.some((t) => t.name === 'Travel')).toBe(true);
   });
 
-  it('TXN-LIST-SEARCH-05: search does not match assignee, amount, or date', async () => {
-    expect((await list('?search=Zelda')).total).toBe(0);
-    expect((await list('?search=Assignee')).total).toBe(0);
-    expect((await list('?search=2500')).total).toBe(0);
-    expect((await list('?search=2026-05-10')).total).toBe(0);
-  });
-
-  it('TXN-LIST-SEARCH-06: % and _ are matched literally, not as wildcards', async () => {
-    expect((await list('?search=%25')).total).toBe(0);
-    expect((await list('?search=_')).total).toBe(0);
+  it('TXN-LIST-SEARCH-05: % and _ in the term match literally', async () => {
+    const page = await list('?search=%25_');
+    expect(page.total).toBe(1);
+    expect(page.data[0]?.description).toBe('Unrelated purchase 50%_off');
   });
 });

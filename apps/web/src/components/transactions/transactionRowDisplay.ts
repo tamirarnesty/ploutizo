@@ -1,6 +1,6 @@
 import { formatCurrency } from '@ploutizo/utils/currency';
-import { transactionAmountDisplay } from '@ploutizo/utils/transaction-list-amount';
 import type { TransactionRow } from '@ploutizo/validators';
+import { transactionAmountDisplay } from './transactionAmount';
 
 export const formatTransactionDate = (isoDate: string) =>
   new Date(isoDate + 'T00:00:00').toLocaleDateString('en-CA', {

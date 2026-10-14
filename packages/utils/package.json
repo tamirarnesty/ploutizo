@@ -39,7 +39,6 @@
     "./member-label": "./src/member-label.ts",
     "./assignee-split": "./src/assignee-split/index.ts",
     "./transaction-policy": "./src/transaction-policy/index.ts",
-    "./transaction-list-amount": "./src/transaction-list-amount.ts",
     "./dashboard-period": "./src/dashboard-period/index.ts"
   }
 }
