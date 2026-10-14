@@ -29,6 +29,12 @@ const applyFilters = (
   });
 };
 
+describe('text search', () => {
+  it('counts a search query as an active filter', () => {
+    expect(hasActiveFilters({ search: 'coffee' })).toBe(true);
+  });
+});
+
 describe('import result filters', () => {
   it('treats a created or matched import constraint as an active filter', () => {
     expect(hasActiveFilters({})).toBe(false);

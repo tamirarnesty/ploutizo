@@ -372,6 +372,7 @@ export const hasActiveFilters = (search: TransactionSearch): boolean =>
   Boolean(search.categoryId) ||
   Boolean(search.assigneeId) ||
   Boolean(search.tagIds) ||
+  Boolean(search.search) ||
   // empty/not_empty operators don't require a value param
   search.categoryId_op === 'empty' ||
   search.categoryId_op === 'not_empty' ||
