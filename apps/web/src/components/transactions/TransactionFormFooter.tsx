@@ -24,7 +24,8 @@ export const TransactionFormFooter = ({
   const [alertOpen, setAlertOpen] = useState(false);
 
   return (
-    <div className="flex items-center justify-between gap-2 border-t border-border px-6 py-4">
+    <div className="flex items-center justify-between gap-2 border-t border-border px-6 pt-4 pb-[calc(--spacing(4)+env(safe-area-inset-bottom,0px))]">
+      {/* Sheet p-0 clears the base safe-area rule, so the home-indicator inset lives here. */}
       {transaction ? (
         <>
           <Button

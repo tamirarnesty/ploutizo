@@ -312,6 +312,10 @@
     padding-block-start: calc(0.5rem + env(safe-area-inset-top, 0px));
   }
 
+  /*
+   * Utility padding such as p-0 wins over this layer. A sheet that zeros its
+   * padding keeps the home-indicator inset on an inner element instead.
+   */
   [data-slot='sheet-content'] {
     padding-block-end: env(safe-area-inset-bottom, 0px);
   }
