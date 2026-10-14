@@ -8,6 +8,9 @@ import type { TransactionQueryParams } from '@/lib/data-access/transactions';
 // reading search params. Page size is persisted in localStorage (see
 // useTablePageSize), not the URL.
 
+/** Shared by every transaction text-search box so they feel the same. */
+export const TRANSACTION_SEARCH_DEBOUNCE_MS = 300;
+
 const TRANSACTION_SORT_FIELDS = [
   'date',
   'amount',
@@ -17,13 +20,6 @@ const TRANSACTION_SORT_FIELDS = [
 ] as const;
 
 const TRANSACTION_SORT_ORDERS = ['asc', 'desc'] as const;
-
-export const normalizeTransactionSearchQuery = (
-  value?: string
-): string | undefined => {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : undefined;
-};
 
 export type TransactionSearch = {
   page?: number;
@@ -46,7 +42,6 @@ export type TransactionSearch = {
   dateRange_op?: string; // 'between' | 'after' | 'before' | 'is' | 'is_not' | 'not_between'
   importBatchId?: string;
   importOutcome?: 'created' | 'matched';
-  /** Filter-row text query — forwarded as API `search`. */
   search?: string;
 };
 
@@ -118,7 +113,7 @@ export const buildTransactionQueryParams = (
   categoryId: search.categoryId,
   assigneeId: search.assigneeId,
   tagIds: search.tagIds,
-  search: normalizeTransactionSearchQuery(search.search),
+  search: search.search?.trim() || undefined,
   type_op: search.type_op,
   accountId_op: search.accountId_op,
   categoryId_op: search.categoryId_op,

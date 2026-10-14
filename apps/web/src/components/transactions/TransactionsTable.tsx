@@ -151,13 +151,10 @@ export const TransactionsTable = ({
     },
   });
 
-  const footerContent = useMemo(
-    () =>
-      amountSumCents === undefined
-        ? null
-        : buildTransactionsAmountFooter(table, amountSumCents),
-    [table, amountSumCents]
-  );
+  const footerContent =
+    amountSumCents === undefined
+      ? null
+      : buildTransactionsAmountFooter(table, amountSumCents);
 
   // Empty states (D-24, D-25) — only while the list response is still missing
   if (!isLoading && transactions.length === 0 && amountSumCents === undefined) {

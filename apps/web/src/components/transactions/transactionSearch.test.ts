@@ -119,7 +119,6 @@ describe('buildTransactionQueryParams', () => {
       tagIds_op: undefined,
       dateRange_op: undefined,
       importLink: undefined,
-      search: undefined,
     });
 
     expect(
@@ -153,19 +152,15 @@ describe('buildTransactionQueryParams', () => {
       tagIds_op: undefined,
       dateRange_op: undefined,
       importLink: { batchId: 'batch_1', outcome: 'matched' },
-      search: undefined,
     });
   });
 
-  it('forwards search to the list API query params', () => {
-    expect(
-      buildTransactionQueryParams({ search: 'groceries' }, 25).search
-    ).toBe('groceries');
-  });
-
-  it('trims search before sending to the API', () => {
+  it('sends a trimmed search and drops a blank one', () => {
     expect(
       buildTransactionQueryParams({ search: '  groceries  ' }, 25).search
     ).toBe('groceries');
+    expect(buildTransactionQueryParams({ search: '   ' }, 25).search).toBe(
+      undefined
+    );
   });
 });

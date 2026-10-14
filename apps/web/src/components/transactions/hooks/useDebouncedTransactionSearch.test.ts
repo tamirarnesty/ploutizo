@@ -1,13 +1,11 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  TRANSACTION_SEARCH_COMMIT_DELAY_MS,
-  useDebouncedTransactionSearch,
-} from './useDebouncedTransactionSearch';
+import { TRANSACTION_SEARCH_DEBOUNCE_MS } from '../transactionSearch';
+import { useDebouncedTransactionSearch } from './useDebouncedTransactionSearch';
 
 const commitDelay = () => {
   act(() => {
-    vi.advanceTimersByTime(TRANSACTION_SEARCH_COMMIT_DELAY_MS);
+    vi.advanceTimersByTime(TRANSACTION_SEARCH_DEBOUNCE_MS);
   });
 };
 
@@ -76,7 +74,7 @@ describe('useDebouncedTransactionSearch', () => {
     expect(result.current.query).toBe('cat ');
   });
 
-  it('adopts a later external navigation to a query that was previously committed', () => {
+  it('treats navigation back to a previously committed query as external, not an echo', () => {
     const onCommit = vi.fn();
     const { result, rerender } = renderHook(
       ({ urlQuery }: { urlQuery: string }) =>
@@ -89,11 +87,13 @@ describe('useDebouncedTransactionSearch', () => {
     });
     commitDelay();
     rerender({ urlQuery: 'dog' });
-
     rerender({ urlQuery: 'rent' });
-    expect(result.current.query).toBe('rent');
+    act(() => {
+      result.current.setQuery('xyz');
+    });
 
     rerender({ urlQuery: 'dog' });
+
     expect(result.current.query).toBe('dog');
   });
 
@@ -122,11 +122,16 @@ describe('useDebouncedTransactionSearch', () => {
     );
 
     act(() => {
-      result.current.setQuery('cat');
+      result.current.setQuery('cat ');
     });
     commitDelay();
-
     expect(onCommit).not.toHaveBeenCalled();
+
+    act(() => {
+      result.current.setQuery('dog');
+    });
+    commitDelay();
+    expect(onCommit).toHaveBeenCalledExactlyOnceWith('dog');
   });
 
   it('clears the draft and cancels a pending commit', () => {

@@ -33,7 +33,6 @@ const renderTable = (
       <TransactionsTable
         transactions={[transaction]}
         total={1}
-        amountSumCents={-5}
         isLoading={false}
         page={1}
         limit={25}

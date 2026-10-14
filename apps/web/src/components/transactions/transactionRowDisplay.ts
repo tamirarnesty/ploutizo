@@ -24,15 +24,6 @@ export const formatTransactionAccount = (
   return accountName ?? '';
 };
 
-export const signedAmountCentsForColumn = (
-  row: Pick<TransactionRow, 'type' | 'amount'>
-): number => {
-  const { type, amount } = row;
-  if (type === 'expense') return -Math.abs(amount);
-  if (type === 'income' || type === 'refund') return Math.abs(amount);
-  return amount;
-};
-
 export const formatSignedAmountCents = (amountCents: number) => {
   const formatted = formatCurrency(Math.abs(amountCents));
   if (amountCents < 0) {
@@ -57,13 +48,14 @@ export const formatTransactionAmount = (
   row: Pick<TransactionRow, 'type' | 'amount'>
 ) => {
   const { type, amount } = row;
-  const isExpense = type === 'expense';
-  const isPositive = type === 'income' || type === 'refund';
-  if (isExpense || isPositive) {
-    return formatSignedAmountCents(signedAmountCentsForColumn(row));
+  if (type === 'expense') return formatSignedAmountCents(-amount);
+  if (type === 'income' || type === 'refund') {
+    return formatSignedAmountCents(amount);
   }
-  const formatted = formatCurrency(amount);
-  return { displayValue: formatted, colorClass: 'text-muted-foreground' };
+  return {
+    displayValue: formatCurrency(amount),
+    colorClass: 'text-muted-foreground',
+  };
 };
 
 export const shouldShowTransactionCategory = (
