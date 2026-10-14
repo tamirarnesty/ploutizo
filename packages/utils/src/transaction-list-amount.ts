@@ -8,9 +8,21 @@ export const listAggregateSignedAmountCents = (
   type: TransactionType,
   amountCents: number
 ): number => {
-  if (type === 'expense') return -amountCents;
-  if (type === 'transfer') return 0;
-  return amountCents;
+  switch (type) {
+    case 'expense':
+      return -amountCents;
+    case 'transfer':
+      return 0;
+    case 'income':
+    case 'refund':
+    case 'settlement':
+    case 'contribution':
+      return amountCents;
+    default: {
+      const _exhaustive: never = type;
+      return _exhaustive;
+    }
+  }
 };
 
 export type TransactionAmountDisplay =
@@ -22,11 +34,19 @@ export const transactionAmountDisplay = (
   type: TransactionType,
   amountCents: number
 ): TransactionAmountDisplay => {
-  if (type === 'expense') {
-    return { kind: 'signed', signedCents: -amountCents };
+  switch (type) {
+    case 'expense':
+      return { kind: 'signed', signedCents: -amountCents };
+    case 'income':
+    case 'refund':
+      return { kind: 'signed', signedCents: amountCents };
+    case 'transfer':
+    case 'settlement':
+    case 'contribution':
+      return { kind: 'unsigned', amountCents };
+    default: {
+      const _exhaustive: never = type;
+      return _exhaustive;
+    }
   }
-  if (type === 'income' || type === 'refund') {
-    return { kind: 'signed', signedCents: amountCents };
-  }
-  return { kind: 'unsigned', amountCents };
 };

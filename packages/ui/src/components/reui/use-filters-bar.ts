@@ -50,7 +50,7 @@ export const useFiltersBar = <T = unknown>({
   getPinnedFilterId = createPinnedFilterId,
 }: UseFiltersBarOptions<T>) => {
   const [addFilterOpen, setAddFilterOpen] = useState(false);
-  const [menuSearchInput, setMenuSearchInput] = useState('');
+  const [menuSearchInput, setMenuSearchInputState] = useState('');
   const [activeMenu, setActiveMenu] = useState<string>('root');
   const [openSubMenu, setOpenSubMenu] = useState<string | null>(null);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -83,15 +83,10 @@ export const useFiltersBar = <T = unknown>({
     }
   }, [addFilterOpen, activeMenu]);
 
-  useEffect(() => {
+  const setMenuSearchInput = useCallback((value: string) => {
+    setMenuSearchInputState(value);
     setHighlightedIndex(-1);
-  }, [menuSearchInput]);
-
-  useEffect(() => {
-    if (!addFilterOpen) {
-      setOpenSubMenu(null);
-    }
-  }, [addFilterOpen]);
+  }, []);
 
   useEffect(() => {
     if (lastAddedFilterId) {
@@ -215,30 +210,6 @@ export const useFiltersBar = <T = unknown>({
     [filters, onChange]
   );
 
-  const addFilter = useCallback(
-    (fieldKey: string) => {
-      if (!(fieldKey in fieldsMap)) {
-        return;
-      }
-      const field = fieldsMap[fieldKey];
-      if (!field.key) {
-        return;
-      }
-      const defaultValues: unknown[] = field.type === 'text' ? [''] : [];
-      const newFilter = createFilter<T>(
-        fieldKey,
-        getDefaultFilterOperator(field),
-        defaultValues as T[]
-      );
-      setLastAddedFilterId(newFilter.id);
-      onChange([...filters, newFilter]);
-      setAddFilterOpen(false);
-      setMenuSearchInput('');
-      setHighlightedIndex(-1);
-    },
-    [fieldsMap, filters, onChange]
-  );
-
   const selectableFields = useMemo(() => {
     const flatFields = flattenFields(fields);
     return flatFields.filter((field) => {
@@ -283,7 +254,7 @@ export const useFiltersBar = <T = unknown>({
       if (!open) {
         setMenuSearchInput('');
         setSessionFilterIds({});
-        setHighlightedIndex(-1);
+        setOpenSubMenu(null);
       } else {
         setActiveMenu('root');
         if (filteredFields.length > 0) {
@@ -291,7 +262,29 @@ export const useFiltersBar = <T = unknown>({
         }
       }
     },
-    [filteredFields.length]
+    [filteredFields.length, setMenuSearchInput]
+  );
+
+  const addFilter = useCallback(
+    (fieldKey: string) => {
+      if (!(fieldKey in fieldsMap)) {
+        return;
+      }
+      const field = fieldsMap[fieldKey];
+      if (!field.key) {
+        return;
+      }
+      const defaultValues: unknown[] = field.type === 'text' ? [''] : [];
+      const newFilter = createFilter<T>(
+        fieldKey,
+        getDefaultFilterOperator(field),
+        defaultValues as T[]
+      );
+      setLastAddedFilterId(newFilter.id);
+      onChange([...filters, newFilter]);
+      handleAddFilterOpenChange(false);
+    },
+    [fieldsMap, filters, onChange, handleAddFilterOpenChange]
   );
 
   const handleSubmenuToggle = useCallback(
@@ -343,11 +336,10 @@ export const useFiltersBar = <T = unknown>({
         );
         setLastAddedFilterId(newFilter.id);
         onChange([...filters, newFilter]);
-        setAddFilterOpen(false);
-        setHighlightedIndex(-1);
+        handleAddFilterOpenChange(false);
       }
     },
-    [filters, onChange]
+    [filters, onChange, handleAddFilterOpenChange]
   );
 
   return {

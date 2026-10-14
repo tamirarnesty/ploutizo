@@ -131,6 +131,7 @@ export const SelectOptionsMenuContent = <T = unknown,>({
                 e.preventDefault();
                 onClose();
               } else if (e.key === 'Enter' && displayHighlightedIndex >= 0) {
+                if (e.nativeEvent.isComposing) return;
                 e.preventDefault();
                 const option = allFilteredOptions[displayHighlightedIndex];
                 if (option) {

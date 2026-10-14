@@ -26,11 +26,15 @@ import { getTransactionRowActions } from './transactionRowActions';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import { TransactionsTableEmpty } from './TransactionTableEmpty';
 import { TransactionsTableEmptyFiltered } from './TransactionTableEmptyFiltered';
+import { buildTransactionsAmountFooter } from './transactionsTableAmountFooter';
+import { isTransactionSortField } from './transactionSearch';
 import type { TransactionSearch } from './transactionSearch';
 
 interface TransactionsTableProps {
   transactions: TransactionRow[];
   total: number;
+  /** Signed cents for the full filtered set; omit while the list response is missing. */
+  amountSumCents?: number;
   isLoading: boolean;
   page: number;
   limit: number;
@@ -48,6 +52,7 @@ interface TransactionsTableProps {
 export const TransactionsTable = ({
   transactions,
   total,
+  amountSumCents,
   isLoading,
   page,
   limit,
@@ -140,15 +145,22 @@ export const TransactionsTable = ({
           ? updater([{ id: sort ?? 'date', desc: order === 'desc' }])
           : updater;
       const col = next[0];
-      onSortChange(
-        col.id as TransactionSearch['sort'],
-        col.desc ? 'desc' : 'asc'
-      );
+      if (!isTransactionSortField(col.id)) {
+        return;
+      }
+      onSortChange(col.id, col.desc ? 'desc' : 'asc');
     },
   });
 
-  // Empty states (D-24, D-25) — rendered before DataGrid
-  if (!isLoading && transactions.length === 0) {
+  const footerContent =
+    amountSumCents === undefined
+      ? null
+      : buildTransactionsAmountFooter(table, amountSumCents);
+
+  // Full-page empty states only before the first list response (amountSumCents
+  // undefined). After load, filtered-empty copy lives in DataGrid emptyMessage
+  // so the amount footer can still show $0.00 for the filtered set.
+  if (!isLoading && transactions.length === 0 && amountSumCents === undefined) {
     if (onFilteredEmpty) {
       return <TransactionsTableEmptyFiltered onClearFilters={onClearFilters} />;
     }
@@ -170,7 +182,13 @@ export const TransactionsTable = ({
         table={table}
         recordCount={total}
         isLoading={isLoading}
-        emptyMessage="No transactions yet"
+        emptyMessage={
+          onFilteredEmpty ? (
+            <TransactionsTableEmptyFiltered onClearFilters={onClearFilters} />
+          ) : (
+            'No transactions yet'
+          )
+        }
         renderRowContextMenu={renderRowContextMenu}
         tableLayout={{
           width: 'fixed',
@@ -183,10 +201,14 @@ export const TransactionsTable = ({
             <DataGridScrollArea
               orientation={PAGINATED_DATA_GRID_SCROLL_ORIENTATION}
             >
-              <DataGridTable />
+              <DataGridTable footerContent={footerContent} />
             </DataGridScrollArea>
           </DataGridContainer>
-          <DataGridPagination className={DATA_GRID_PAGINATION_ROW_CLASSNAME} />
+          {total > 0 ? (
+            <DataGridPagination
+              className={DATA_GRID_PAGINATION_ROW_CLASSNAME}
+            />
+          ) : null}
         </div>
       </DataGrid>
     </>

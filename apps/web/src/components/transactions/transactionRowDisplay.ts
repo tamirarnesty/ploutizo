@@ -1,4 +1,5 @@
 import { formatCurrency } from '@ploutizo/utils/currency';
+import { transactionAmountDisplay } from '@ploutizo/utils/transaction-list-amount';
 import type { TransactionRow } from '@ploutizo/validators';
 
 export const formatTransactionDate = (isoDate: string) =>
@@ -24,24 +25,43 @@ export const formatTransactionAccount = (
   return accountName ?? '';
 };
 
+export const formatSignedAmountCents = (amountCents: number) => {
+  const formatted = formatCurrency(Math.abs(amountCents));
+  if (amountCents < 0) {
+    return {
+      displayValue: `−${formatted}`,
+      colorClass: 'text-destructive',
+    };
+  }
+  if (amountCents > 0) {
+    return {
+      displayValue: `+${formatted}`,
+      colorClass: 'text-emerald-600 dark:text-emerald-400',
+    };
+  }
+  return {
+    displayValue: formatCurrency(0),
+    colorClass: 'text-muted-foreground',
+  };
+};
+
 export const formatTransactionAmount = (
   row: Pick<TransactionRow, 'type' | 'amount'>
 ) => {
-  const { type, amount } = row;
-  const isExpense = type === 'expense';
-  const isPositive = type === 'income' || type === 'refund';
-  const formatted = formatCurrency(amount);
-  const displayValue = isExpense
-    ? `−${formatted}`
-    : isPositive
-      ? `+${formatted}`
-      : formatted;
-  const colorClass = isExpense
-    ? 'text-destructive'
-    : isPositive
-      ? 'text-emerald-600 dark:text-emerald-400'
-      : 'text-muted-foreground';
-  return { displayValue, colorClass };
+  const display = transactionAmountDisplay(row.type, row.amount);
+  switch (display.kind) {
+    case 'signed':
+      return formatSignedAmountCents(display.signedCents);
+    case 'unsigned':
+      return {
+        displayValue: formatCurrency(display.amountCents),
+        colorClass: 'text-muted-foreground',
+      };
+    default: {
+      const _exhaustive: never = display;
+      return _exhaustive;
+    }
+  }
 };
 
 export const shouldShowTransactionCategory = (

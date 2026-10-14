@@ -38,7 +38,7 @@ export const fetchTransactions = async (
   if (params.categoryId) qs.set('categoryId', params.categoryId);
   if (params.assigneeId) qs.set('assigneeId', params.assigneeId);
   if (params.tagIds) qs.set('tagIds', params.tagIds); // comma-separated; API splits on comma
-  if (params.description) qs.set('description', params.description);
+  if (params.search) qs.set('search', params.search);
   // Operator params — only set when present (defaults are handled server-side)
   if (params.type_op) qs.set('type_op', params.type_op);
   if (params.accountId_op) qs.set('accountId_op', params.accountId_op);
@@ -58,12 +58,12 @@ export const fetchTransactions = async (
 };
 
 export const fetchSearchTransactions = async (
-  description: string,
+  search: string,
   type?: string,
   signal?: AbortSignal
 ): Promise<TransactionRow[]> => {
   const qs = new URLSearchParams();
-  qs.set('description', description);
+  qs.set('search', search);
   qs.set('limit', '20');
   if (type) qs.set('type', type);
   const r = await apiFetch(
