@@ -20,7 +20,9 @@ vi.mock('@/components/accounts/AccountForm', () => ({
 describe('AccountSheet overlay contract', () => {
   it('keeps sheet root mounted when closed with account still set', () => {
     const { container } = render(
-      <AccountSheet open={false} account={mockAccount()} onClose={vi.fn()} />
+      <AccountSheet open={false} account={mockAccount()} onOpenChange={vi.fn()}>
+        <span />
+      </AccountSheet>
     );
 
     expectOverlayMounted(container, 'sheet');
@@ -29,24 +31,30 @@ describe('AccountSheet overlay contract', () => {
 
   it('keeps sheet root mounted when closed in create mode', () => {
     const { container } = render(
-      <AccountSheet open={false} account={null} onClose={vi.fn()} />
+      <AccountSheet open={false} account={null} onOpenChange={vi.fn()}>
+        <span />
+      </AccountSheet>
     );
 
     expectOverlayMounted(container, 'sheet');
     expect(screen.getByText('Add account')).toBeInTheDocument();
   });
 
-  it('calls onClose from form without requiring account to clear', async () => {
+  it('calls onOpenChange(false) from form without requiring account to clear', async () => {
     const user = userEvent.setup();
-    const onClose = vi.fn();
+    const onOpenChange = vi.fn();
     const account = mockAccount();
 
-    render(<AccountSheet open account={account} onClose={onClose} />);
+    render(
+      <AccountSheet open account={account} onOpenChange={onOpenChange}>
+        <span />
+      </AccountSheet>
+    );
 
     await user.click(
       screen.getByRole('button', { name: /close account form/i })
     );
 
-    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 });

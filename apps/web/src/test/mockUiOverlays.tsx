@@ -74,9 +74,22 @@ export const sheetMock = {
   ),
   SheetHeader: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   SheetTitle: ({ children }: { children: ReactNode }) => <h2>{children}</h2>,
+  SheetDescription: ({ children }: { children: ReactNode }) => (
+    <p>{children}</p>
+  ),
   SheetFooter: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   SheetClose: () => null,
-  SheetTrigger: () => null,
+  SheetTrigger: ({
+    children,
+    onClick,
+  }: {
+    children?: ReactNode;
+    onClick?: () => void;
+  }) => (
+    <button type="button" onClick={onClick}>
+      {children}
+    </button>
+  ),
   SheetPortal: ({ children }: { children: ReactNode }) => <>{children}</>,
   SheetOverlay: () => null,
 };

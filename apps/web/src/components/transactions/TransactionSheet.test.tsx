@@ -31,8 +31,11 @@ describe('TransactionSheet overlay contract', () => {
       <TransactionSheet
         open={false}
         transaction={mockTransactionRow()}
+        onSheetOpenChange={vi.fn()}
         onClose={vi.fn()}
-      />
+      >
+        <span />
+      </TransactionSheet>
     );
 
     expectOverlayMounted(container, 'sheet');
@@ -47,8 +50,11 @@ describe('TransactionSheet overlay contract', () => {
       <TransactionSheet
         open
         transaction={mockTransactionRow()}
+        onSheetOpenChange={vi.fn()}
         onClose={onClose}
-      />
+      >
+        <span />
+      </TransactionSheet>
     );
 
     await user.click(screen.getByRole('button', { name: /close sheet/i }));
@@ -61,8 +67,11 @@ describe('TransactionSheet overlay contract', () => {
       <TransactionSheet
         open
         transaction={mockTransactionRow()}
+        onSheetOpenChange={vi.fn()}
         onClose={vi.fn()}
-      />
+      >
+        <span />
+      </TransactionSheet>
     );
 
     expect(screen.getByTestId('transaction-form-mock')).toBeInTheDocument();
@@ -71,8 +80,11 @@ describe('TransactionSheet overlay contract', () => {
       <TransactionSheet
         open={false}
         transaction={mockTransactionRow()}
+        onSheetOpenChange={vi.fn()}
         onClose={vi.fn()}
-      />
+      >
+        <span />
+      </TransactionSheet>
     );
 
     expect(
@@ -93,11 +105,14 @@ describe('TransactionSheet overlay contract', () => {
           <TransactionSheet
             open={open}
             transaction={null}
+            onSheetOpenChange={setOpen}
             onClose={() => {
               onClose();
               setOpen(false);
             }}
-          />
+          >
+            <span />
+          </TransactionSheet>
         </>
       );
     };
@@ -121,7 +136,16 @@ describe('TransactionSheet overlay contract', () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
 
-    render(<TransactionSheet open transaction={null} onClose={onClose} />);
+    render(
+      <TransactionSheet
+        open
+        transaction={null}
+        onSheetOpenChange={vi.fn()}
+        onClose={onClose}
+      >
+        <span />
+      </TransactionSheet>
+    );
 
     await user.click(screen.getByRole('button', { name: /mark dirty/i }));
 
