@@ -7,7 +7,7 @@ import {
 import { useDebouncedTransactionSearch } from './hooks/useDebouncedTransactionSearch';
 
 type TransactionFilterSearchProps = {
-  /** Committed query from the URL. Remount (via `key`) on navigation to reset the draft. */
+  /** Committed query from the URL. */
   urlQuery: string;
   onCommit: (trimmed: string) => void;
 };

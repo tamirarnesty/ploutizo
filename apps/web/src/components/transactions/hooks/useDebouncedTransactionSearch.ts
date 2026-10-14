@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useDebouncer } from '@tanstack/react-pacer';
 import { TRANSACTION_SEARCH_DEBOUNCE_MS } from '../transactionSearch';
 
@@ -10,22 +10,38 @@ type UseDebouncedTransactionSearchOptions = {
 
 /**
  * The field owns what the user is typing. The URL owns the committed query.
- * The draft is never reset here: the caller remounts the field (via `key`)
- * when the user navigates, which drops the draft and any pending commit.
+ * A URL query this field did not write drops the draft and any pending commit.
+ * The echo of a commit this field did write keeps the draft, so trailing
+ * spaces and in-progress keystrokes survive the replace navigation.
  */
 export const useDebouncedTransactionSearch = ({
   urlQuery,
   onCommit,
 }: UseDebouncedTransactionSearchOptions) => {
   const [draft, setDraft] = useState<string | null>(null);
+  const [seenUrlQuery, setSeenUrlQuery] = useState(urlQuery);
+  const committedRef = useRef(urlQuery);
 
-  const { maybeExecute: commitDebounced } = useDebouncer(
+  const { maybeExecute: commitDebounced, cancel } = useDebouncer(
     (value: string) => {
       const trimmed = value.trim();
-      if (trimmed !== urlQuery) onCommit(trimmed);
+      if (trimmed === urlQuery) return;
+      committedRef.current = trimmed;
+      onCommit(trimmed);
     },
     { wait: TRANSACTION_SEARCH_DEBOUNCE_MS }
   );
+
+  if (urlQuery !== seenUrlQuery) {
+    setSeenUrlQuery(urlQuery);
+    if (urlQuery !== committedRef.current) setDraft(null);
+  }
+
+  useEffect(() => {
+    if (urlQuery === committedRef.current) return;
+    committedRef.current = urlQuery;
+    cancel();
+  }, [urlQuery, cancel]);
 
   const setQuery = (value: string) => {
     setDraft(value);

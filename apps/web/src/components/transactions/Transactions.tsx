@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { useNavigate, useRouterState, useSearch } from '@tanstack/react-router';
+import { useNavigate, useSearch } from '@tanstack/react-router';
 import { ListFilterIcon } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import { Filters } from '@ploutizo/ui/components/reui/filters';
@@ -78,12 +78,6 @@ export const Transactions = () => {
     },
     [navigate]
   );
-  // Search commits use `replace`, which keeps the history index. Any real
-  // navigation (back, forward, push) changes it, remounting the search field
-  // so its draft and pending commit are dropped.
-  const historyIndex = useRouterState({
-    select: (state) => state.location.state.__TSR_index,
-  });
 
   // Build FilterFieldConfig for the Filters component (6 fields per D-28).
   // Import result is only offered when a provenance batch is already in the URL.
@@ -220,7 +214,6 @@ export const Transactions = () => {
           }
         />
         <TransactionFilterSearch
-          key={historyIndex}
           urlQuery={search.search ?? ''}
           onCommit={commitSearchQuery}
         />

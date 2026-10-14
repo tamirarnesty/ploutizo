@@ -113,4 +113,47 @@ describe('useDebouncedTransactionSearch', () => {
 
     expect(onCommit).not.toHaveBeenCalled();
   });
+
+  it('drops the draft and pending commit when the URL query changes externally', () => {
+    const { result, rerender, onCommit } = renderSearch('');
+
+    act(() => {
+      result.current.setQuery('cat');
+    });
+    rerender({ url: 'dog' });
+
+    expect(result.current.query).toBe('dog');
+    commitDelay();
+    expect(onCommit).not.toHaveBeenCalled();
+  });
+
+  it('drops a newer draft when the URL changes to something other than the commit echo', () => {
+    const { result, rerender, onCommit } = renderSearch('');
+
+    act(() => {
+      result.current.setQuery('ca');
+    });
+    commitDelay();
+    act(() => {
+      result.current.setQuery('cat');
+    });
+    rerender({ url: 'dog' });
+
+    expect(result.current.query).toBe('dog');
+    commitDelay();
+    expect(onCommit).toHaveBeenCalledExactlyOnceWith('ca');
+  });
+
+  it('commits typing that starts after an external URL change', () => {
+    const { result, rerender, onCommit } = renderSearch('cat');
+
+    rerender({ url: 'dog' });
+    act(() => {
+      result.current.setQuery('dogs');
+    });
+    commitDelay();
+
+    expect(result.current.query).toBe('dogs');
+    expect(onCommit).toHaveBeenCalledExactlyOnceWith('dogs');
+  });
 });
