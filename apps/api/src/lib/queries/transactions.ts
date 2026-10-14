@@ -19,6 +19,7 @@ import {
   exists,
   gt,
   gte,
+  ilike,
   inArray,
   isNotNull,
   isNull,
@@ -116,59 +117,38 @@ const ilikePattern = (value: string) => `%${escapeIlikeLiteral(value)}%`;
 const descriptionOrRawDescriptionIlike = (pattern: string) =>
   sql`(${transactions.description} ILIKE ${pattern} OR ${transactions.rawDescription} ILIKE ${pattern})`;
 
+// Mirrors the sign rule in web `formatTransactionAmount`.
 const listedAmountCentsSql = sql<number>`case
   when ${transactions.type} = 'expense' then -${transactions.amount}
   else ${transactions.amount}
 end`;
 
+// Uncorrelated IN subqueries let Postgres hash each lookup once instead of
+// running correlated EXISTS lookups per row inside the OR.
 const searchMatchesCondition = (orgId: string, term: string): SQL => {
   const pattern = ilikePattern(term);
+  const matchingAccountIds = db
+    .select({ id: accounts.id })
+    .from(accounts)
+    .where(and(eq(accounts.orgId, orgId), ilike(accounts.name, pattern)));
   return or(
     descriptionOrRawDescriptionIlike(pattern),
-    exists(
+    inArray(
+      transactions.categoryId,
       db
-        .select({ one: sql`1` })
+        .select({ id: categories.id })
         .from(categories)
-        .where(
-          and(
-            eq(categories.id, transactions.categoryId),
-            ...categoriesForOrg(orgId),
-            sql`${categories.name} ILIKE ${pattern}`
-          )
-        )
+        .where(and(...categoriesForOrg(orgId), ilike(categories.name, pattern)))
     ),
-    exists(
+    inArray(transactions.accountId, matchingAccountIds),
+    inArray(transactions.counterpartAccountId, matchingAccountIds),
+    inArray(
+      transactions.id,
       db
-        .select({ one: sql`1` })
-        .from(accounts)
-        .where(
-          and(
-            eq(accounts.orgId, orgId),
-            or(
-              and(
-                eq(accounts.id, transactions.accountId),
-                sql`${accounts.name} ILIKE ${pattern}`
-              ),
-              and(
-                eq(accounts.id, transactions.counterpartAccountId),
-                sql`${accounts.name} ILIKE ${pattern}`
-              )
-            )
-          )
-        )
-    ),
-    exists(
-      db
-        .select({ one: sql`1` })
+        .select({ id: transactionTags.transactionId })
         .from(transactionTags)
         .innerJoin(tags, eq(transactionTags.tagId, tags.id))
-        .where(
-          and(
-            eq(transactionTags.transactionId, transactions.id),
-            eq(tags.orgId, orgId),
-            sql`${tags.name} ILIKE ${pattern}`
-          )
-        )
+        .where(and(eq(tags.orgId, orgId), ilike(tags.name, pattern)))
     )
   )!;
 };

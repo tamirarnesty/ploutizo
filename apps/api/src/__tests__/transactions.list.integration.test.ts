@@ -135,50 +135,42 @@ describe('GET /transactions — search and amountSum', () => {
     await db.delete(orgs).where(eq(orgs.id, ORG_ID));
   });
 
-  it('TXN-LIST-SEARCH-01: empty search leaves the filtered set unchanged', async () => {
-    const baseline = await list();
-    const withEmpty = await list('?search=');
-    expect(withEmpty.total).toBe(baseline.total);
-    expect(withEmpty.data.map((r) => r.id).sort()).toEqual(
-      baseline.data.map((r) => r.id).sort()
-    );
-  });
-
-  it('TXN-LIST-SEARCH-02: search matches description across the full filtered set, not the page', async () => {
-    const page = await list('?description=groceries&limit=1&page=1');
-    expect(page.total).toBe(1);
+  it('TXN-LIST-SEARCH-01: search total spans the full filtered set, not the page', async () => {
+    // "ro" matches "Weekly groceries run" and "Payroll" only.
+    const page = await list('?search=ro&limit=1&page=1');
+    expect(page.total).toBe(2);
     expect(page.data).toHaveLength(1);
-    expect(page.data[0]?.description).toContain('groceries');
   });
 
-  it('TXN-LIST-SEARCH-02b: explicit search param matches like description', async () => {
-    const page = await list('?search=groceries&limit=1&page=1');
-    expect(page.total).toBe(1);
-  });
-
-  it('TXN-LIST-SEARCH-03: search matches category name', async () => {
+  it('TXN-LIST-SEARCH-02: search matches category name', async () => {
     const page = await list('?search=GROCER');
     expect(page.total).toBe(1);
     expect(page.data[0]?.categoryName).toBe('Groceries');
   });
 
-  it('TXN-LIST-SEARCH-04: search matches account name', async () => {
+  it('TXN-LIST-SEARCH-03: search matches account name', async () => {
     const page = await list('?search=rainy%20day');
     expect(page.total).toBe(1);
     expect(page.data[0]?.type).toBe('transfer');
+    expect((await list('?search=chequing')).total).toBe(4);
   });
 
-  it('TXN-LIST-SEARCH-05: search matches tag name', async () => {
+  it('TXN-LIST-SEARCH-04: search matches tag name', async () => {
     const page = await list('?search=travel');
     expect(page.total).toBe(1);
     expect(page.data[0]?.tags.some((t) => t.name === 'Travel')).toBe(true);
   });
 
-  it('TXN-LIST-SEARCH-06: search does not match assignee, amount, or date', async () => {
+  it('TXN-LIST-SEARCH-05: search does not match assignee, amount, or date', async () => {
     expect((await list('?search=Zelda')).total).toBe(0);
     expect((await list('?search=Assignee')).total).toBe(0);
     expect((await list('?search=2500')).total).toBe(0);
     expect((await list('?search=2026-05-10')).total).toBe(0);
+  });
+
+  it('TXN-LIST-SEARCH-06: % and _ are matched literally, not as wildcards', async () => {
+    expect((await list('?search=%25')).total).toBe(0);
+    expect((await list('?search=_')).total).toBe(0);
   });
 
   it('TXN-LIST-AMOUNTSUM-01: amountSum uses displayed signs and ignores page/limit', async () => {
@@ -189,7 +181,7 @@ describe('GET /transactions — search and amountSum', () => {
     expect(page.data).toHaveLength(1);
   });
 
-  it('TXN-LIST-AMOUNTSUM-02: amountSum respects search and other filters', async () => {
+  it('TXN-LIST-AMOUNTSUM-02: amountSum respects the search filter', async () => {
     const page = await list('?search=groceries');
     expect(page.total).toBe(1);
     expect(page.amountSumCents).toBe(-2500);

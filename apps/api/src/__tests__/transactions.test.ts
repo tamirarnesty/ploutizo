@@ -396,9 +396,9 @@ describe('GET /api/transactions', () => {
     expect(callArgs?.description).toBeUndefined();
   });
 
-  it('TXN-LIST-ROUTE-SEARCH-01: GET /?search=groceries — passes trimmed search to listTransactions', async () => {
+  it('TXN-LIST-ROUTE-SEARCH-01: GET /?search=%20groceries%20 — passes trimmed search to listTransactions', async () => {
     vi.mocked(listTransactions).mockClear();
-    const res = await app.request('/?search=groceries');
+    const res = await app.request('/?search=%20groceries%20');
     expect(res.status).toBe(200);
     const callArgs = vi.mocked(listTransactions).mock.calls[0]?.[0] as
       | ListQueryParams
