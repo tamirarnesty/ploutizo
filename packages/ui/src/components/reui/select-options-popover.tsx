@@ -42,10 +42,6 @@ export const SelectOptionsPopover = <T = unknown,>({
     }
   }, [open]);
 
-  useEffect(() => {
-    setHighlightedIndex(-1);
-  }, [searchInput, open]);
-
   const isMultiSelect = field.type === 'multiselect' || values.length > 1;
   const effectiveValues = useMemo(
     () => (field.value !== undefined ? field.value : values) || [],
@@ -98,7 +94,10 @@ export const SelectOptionsPopover = <T = unknown,>({
       baseId={baseId}
       open={open}
       searchInput={searchInput}
-      onSearchInputChange={setSearchInput}
+      onSearchInputChange={(value) => {
+        setSearchInput(value);
+        setHighlightedIndex(-1);
+      }}
       inputRef={inputRef}
       highlightedIndex={displayHighlightedIndex}
       onHighlightedIndexChange={setHighlightedIndex}
@@ -122,6 +121,7 @@ export const SelectOptionsPopover = <T = unknown,>({
       open={open}
       onOpenChange={(nextOpen) => {
         setOpen(nextOpen);
+        setHighlightedIndex(-1);
         if (!nextOpen) {
           setTimeout(() => setSearchInput(''), 200);
         }

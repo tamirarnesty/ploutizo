@@ -8,9 +8,6 @@ import type { TransactionQueryParams } from '@/lib/data-access/transactions';
 // reading search params. Page size is persisted in localStorage (see
 // useTablePageSize), not the URL.
 
-/** Shared by every transaction text-search box so they feel the same. */
-export const TRANSACTION_SEARCH_DEBOUNCE_MS = 300;
-
 const TRANSACTION_SORT_FIELDS = [
   'date',
   'amount',
@@ -21,10 +18,23 @@ const TRANSACTION_SORT_FIELDS = [
 
 const TRANSACTION_SORT_ORDERS = ['asc', 'desc'] as const;
 
+export type TransactionSortField = (typeof TRANSACTION_SORT_FIELDS)[number];
+export type TransactionSortOrder = (typeof TRANSACTION_SORT_ORDERS)[number];
+
+export const isTransactionSortField = (
+  value: string
+): value is TransactionSortField =>
+  TRANSACTION_SORT_FIELDS.some((field) => field === value);
+
+export const isTransactionSortOrder = (
+  value: string
+): value is TransactionSortOrder =>
+  TRANSACTION_SORT_ORDERS.some((order) => order === value);
+
 export type TransactionSearch = {
   page?: number;
-  sort?: (typeof TRANSACTION_SORT_FIELDS)[number];
-  order?: (typeof TRANSACTION_SORT_ORDERS)[number];
+  sort?: TransactionSortField;
+  order?: TransactionSortOrder;
   type?: string;
   dateFrom?: string;
   dateTo?: string;
@@ -71,20 +81,16 @@ const parseOptionalPage = (value: unknown): number | undefined => {
 
 const parseOptionalSort = (
   value: unknown
-): TransactionSearch['sort'] | undefined => {
+): TransactionSortField | undefined => {
   if (typeof value !== 'string') return undefined;
-  return (TRANSACTION_SORT_FIELDS as readonly string[]).includes(value)
-    ? (value as TransactionSearch['sort'])
-    : undefined;
+  return isTransactionSortField(value) ? value : undefined;
 };
 
 const parseOptionalOrder = (
   value: unknown
-): TransactionSearch['order'] | undefined => {
+): TransactionSortOrder | undefined => {
   if (typeof value !== 'string') return undefined;
-  return (TRANSACTION_SORT_ORDERS as readonly string[]).includes(value)
-    ? (value as TransactionSearch['order'])
-    : undefined;
+  return isTransactionSortOrder(value) ? value : undefined;
 };
 
 const parseOptionalString = (value: unknown): string | undefined => {
@@ -113,7 +119,7 @@ export const buildTransactionQueryParams = (
   categoryId: search.categoryId,
   assigneeId: search.assigneeId,
   tagIds: search.tagIds,
-  search: search.search?.trim() || undefined,
+  search: search.search || undefined,
   type_op: search.type_op,
   accountId_op: search.accountId_op,
   categoryId_op: search.categoryId_op,

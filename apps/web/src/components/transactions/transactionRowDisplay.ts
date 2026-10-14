@@ -49,13 +49,19 @@ export const formatTransactionAmount = (
   row: Pick<TransactionRow, 'type' | 'amount'>
 ) => {
   const display = transactionAmountDisplay(row.type, row.amount);
-  if (display.kind === 'signed') {
-    return formatSignedAmountCents(display.signedCents);
+  switch (display.kind) {
+    case 'signed':
+      return formatSignedAmountCents(display.signedCents);
+    case 'unsigned':
+      return {
+        displayValue: formatCurrency(display.amountCents),
+        colorClass: 'text-muted-foreground',
+      };
+    default: {
+      const _exhaustive: never = display;
+      return _exhaustive;
+    }
   }
-  return {
-    displayValue: formatCurrency(display.amountCents),
-    colorClass: 'text-muted-foreground',
-  };
 };
 
 export const shouldShowTransactionCategory = (

@@ -27,6 +27,7 @@ import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import { TransactionsTableEmpty } from './TransactionTableEmpty';
 import { TransactionsTableEmptyFiltered } from './TransactionTableEmptyFiltered';
 import { buildTransactionsAmountFooter } from './transactionsTableAmountFooter';
+import { isTransactionSortField } from './transactionSearch';
 import type { TransactionSearch } from './transactionSearch';
 
 interface TransactionsTableProps {
@@ -144,10 +145,10 @@ export const TransactionsTable = ({
           ? updater([{ id: sort ?? 'date', desc: order === 'desc' }])
           : updater;
       const col = next[0];
-      onSortChange(
-        col.id as TransactionSearch['sort'],
-        col.desc ? 'desc' : 'asc'
-      );
+      if (!isTransactionSortField(col.id)) {
+        return;
+      }
+      onSortChange(col.id, col.desc ? 'desc' : 'asc');
     },
   });
 

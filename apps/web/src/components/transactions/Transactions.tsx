@@ -100,7 +100,7 @@ export const Transactions = () => {
       );
       void navigate({
         to: '/transactions',
-        // Rebuild from scratch — only keep sort/pagination from prev.
+        // Rebuild from scratch — only keep sort/pagination/text search from prev.
         // Spreading prev would leave stale filter params when a filter is removed.
         // Import batch stays only while the Import result chip remains.
         search: (prev) =>

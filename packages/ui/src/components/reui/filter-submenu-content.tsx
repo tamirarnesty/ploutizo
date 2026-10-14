@@ -57,10 +57,6 @@ export const FilterSubmenuContent = <T = unknown,>({
     }
   }, [isActive, field.searchable, baseId]);
 
-  useEffect(() => {
-    setHighlightedIndex(-1);
-  }, [searchInput]);
-
   const filteredOptions = useMemo(() => {
     return (
       field.options?.filter((option) => {
@@ -111,7 +107,10 @@ export const FilterSubmenuContent = <T = unknown,>({
             )}
             value={searchInput}
             onBlur={() => isActive && inputRef.current?.focus()}
-            onChange={(e) => setSearchInput(e.target.value)}
+            onChange={(e) => {
+              setSearchInput(e.target.value);
+              setHighlightedIndex(-1);
+            }}
             onFocus={() => onActive?.()}
             onMouseEnter={(e) => {
               onActive?.();
@@ -151,6 +150,7 @@ export const FilterSubmenuContent = <T = unknown,>({
                 e.preventDefault();
                 onBack?.();
               } else if (e.key === 'Enter' && displayHighlightedIndex >= 0) {
+                if (e.nativeEvent.isComposing) return;
                 e.preventDefault();
                 const option = filteredOptions[displayHighlightedIndex];
                 if (option) {
@@ -209,6 +209,7 @@ export const FilterSubmenuContent = <T = unknown,>({
                 e.preventDefault();
                 onBack?.();
               } else if (e.key === 'Enter' && displayHighlightedIndex >= 0) {
+                if (e.nativeEvent.isComposing) return;
                 e.preventDefault();
                 const option = filteredOptions[displayHighlightedIndex];
                 if (option) {

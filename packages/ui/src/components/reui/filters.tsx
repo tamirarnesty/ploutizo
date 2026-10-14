@@ -140,7 +140,7 @@ export const Filters = <T = unknown,>({
             enableShortcut={enableShortcut}
             shortcutKey={shortcutKey}
             onAddFilter={bar.addFilter}
-            onCloseMenu={() => bar.setAddFilterOpen(false)}
+            onCloseMenu={() => bar.handleAddFilterOpenChange(false)}
             filters={bar.filters}
             sessionFilterIds={bar.sessionFilterIds}
             onSubmenuToggle={bar.handleSubmenuToggle}

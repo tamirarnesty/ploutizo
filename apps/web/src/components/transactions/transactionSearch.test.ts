@@ -162,12 +162,10 @@ describe('buildTransactionQueryParams', () => {
     });
   });
 
-  it('sends a trimmed search and drops a blank one', () => {
+  it('passes normalized search to the API params', () => {
     expect(
-      buildTransactionQueryParams({ search: '  groceries  ' }, 25).search
+      buildTransactionQueryParams({ search: 'groceries' }, 25).search
     ).toBe('groceries');
-    expect(buildTransactionQueryParams({ search: '   ' }, 25).search).toBe(
-      undefined
-    );
+    expect(buildTransactionQueryParams({}, 25).search).toBeUndefined();
   });
 });

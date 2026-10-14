@@ -1,7 +1,9 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { TRANSACTION_SEARCH_DEBOUNCE_MS } from '../transactionSearch';
-import { useDebouncedTransactionSearch } from './useDebouncedTransactionSearch';
+import {
+  TRANSACTION_SEARCH_DEBOUNCE_MS,
+  useDebouncedTransactionSearch,
+} from './useDebouncedTransactionSearch';
 
 const commitDelay = () => {
   act(() => {

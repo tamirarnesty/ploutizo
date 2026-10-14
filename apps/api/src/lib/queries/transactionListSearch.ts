@@ -36,7 +36,7 @@ export const searchMatchesCondition = (orgId: string, term: string): SQL => {
     .select({ id: accounts.id })
     .from(accounts)
     .where(and(eq(accounts.orgId, orgId), ilike(accounts.name, pattern)));
-  return or(
+  const condition = or(
     ilike(transactions.description, pattern),
     ilike(transactions.rawDescription, pattern),
     inArray(
@@ -56,5 +56,9 @@ export const searchMatchesCondition = (orgId: string, term: string): SQL => {
         .innerJoin(tags, eq(transactionTags.tagId, tags.id))
         .where(and(eq(tags.orgId, orgId), ilike(tags.name, pattern)))
     )
-  )!;
+  );
+  if (condition === undefined) {
+    throw new Error('searchMatchesCondition: expected at least one OR branch');
+  }
+  return condition;
 };
