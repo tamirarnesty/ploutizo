@@ -19,7 +19,6 @@ import {
   exists,
   gt,
   gte,
-  ilike,
   inArray,
   isNotNull,
   isNull,
@@ -40,10 +39,14 @@ import type {
 import type { SQL } from 'drizzle-orm';
 import {
   activeTransactions,
-  categoriesForOrg,
   fetchAccountWriteReference,
   transactionExistsInOrg,
 } from '@/lib/queries/scope';
+import {
+  descriptionTextFilter,
+  listedAmountCentsSql,
+  searchMatchesCondition,
+} from '@/lib/queries/transactionListSearch';
 
 // Alias for counterpart account join (D-23) — left join to accounts using counterpartAccountId FK
 const counterpartAccounts = alias(accounts, 'counterpart_accounts');
@@ -107,52 +110,6 @@ export type ListQueryParams = {
   tagIds_op?: string; // 'is_any_of' | 'is_not_any_of' | 'includes_all' | 'excludes_all' | 'empty' | 'not_empty'
   dateRange_op?: string; // 'between' | 'after' | 'before' | 'is' | 'is_not' | 'not_between'
   importLink?: { batchId: string; outcome: 'created' | 'matched' };
-};
-
-const escapeIlikeLiteral = (value: string) =>
-  value.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
-
-const ilikePattern = (value: string) => `%${escapeIlikeLiteral(value)}%`;
-
-const descriptionOrRawDescriptionIlike = (pattern: string) =>
-  sql`(${transactions.description} ILIKE ${pattern} OR ${transactions.rawDescription} ILIKE ${pattern})`;
-
-// Mirrors the sign rule in web `formatTransactionAmount`. Transfers move money
-// between accounts (+x on one side, -x on the other), so they net to zero.
-const listedAmountCentsSql = sql<number>`case
-  when ${transactions.type} = 'expense' then -${transactions.amount}
-  when ${transactions.type} = 'transfer' then 0
-  else ${transactions.amount}
-end`;
-
-// Uncorrelated IN subqueries let Postgres hash each lookup once instead of
-// running correlated EXISTS lookups per row inside the OR.
-const searchMatchesCondition = (orgId: string, term: string): SQL => {
-  const pattern = ilikePattern(term);
-  const matchingAccountIds = db
-    .select({ id: accounts.id })
-    .from(accounts)
-    .where(and(eq(accounts.orgId, orgId), ilike(accounts.name, pattern)));
-  return or(
-    descriptionOrRawDescriptionIlike(pattern),
-    inArray(
-      transactions.categoryId,
-      db
-        .select({ id: categories.id })
-        .from(categories)
-        .where(and(...categoriesForOrg(orgId), ilike(categories.name, pattern)))
-    ),
-    inArray(transactions.accountId, matchingAccountIds),
-    inArray(transactions.counterpartAccountId, matchingAccountIds),
-    inArray(
-      transactions.id,
-      db
-        .select({ id: transactionTags.transactionId })
-        .from(transactionTags)
-        .innerJoin(tags, eq(transactionTags.tagId, tags.id))
-        .where(and(eq(tags.orgId, orgId), ilike(tags.name, pattern)))
-    )
-  )!;
 };
 
 const importTransactionLinkExists = (
@@ -351,9 +308,7 @@ export const buildConditions = (params: ListQueryParams): SQL[] => {
   }
 
   if (params.description) {
-    conditions.push(
-      descriptionOrRawDescriptionIlike(ilikePattern(params.description))
-    );
+    conditions.push(descriptionTextFilter(params.description));
   }
   if (params.search) {
     conditions.push(searchMatchesCondition(params.orgId, params.search));
