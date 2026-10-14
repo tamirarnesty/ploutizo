@@ -61,10 +61,4 @@ export default [
       'func-style': 'off',
     },
   },
-  {
-    files: ['eslint.config.ts'],
-    rules: {
-      'import/extensions': 'off',
-    },
-  },
 ];
