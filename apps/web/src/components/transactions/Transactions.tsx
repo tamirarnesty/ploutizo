@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { useNavigate, useSearch } from '@tanstack/react-router';
+import { useNavigate, useRouterState, useSearch } from '@tanstack/react-router';
 import { ListFilterIcon } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import { Filters } from '@ploutizo/ui/components/reui/filters';
@@ -16,7 +16,6 @@ import { TransactionsTable } from './TransactionsTable';
 import { TransactionSheet } from './TransactionSheet';
 import { buildFilterFields } from './TransactionFilterFields';
 import { TransactionFilterSearch } from './TransactionFilterSearch';
-import { useDebouncedTransactionSearch } from './hooks/useDebouncedTransactionSearch';
 import { buildTransactionQueryParams } from './transactionSearch';
 import {
   TRANSACTION_PINNED_FILTER_FIELD_KEYS_LIST,
@@ -79,13 +78,11 @@ export const Transactions = () => {
     },
     [navigate]
   );
-  const {
-    query: searchInput,
-    setQuery: setSearchInput,
-    resetDraft: resetSearchDraft,
-  } = useDebouncedTransactionSearch({
-    urlQuery: search.search ?? '',
-    onCommit: commitSearchQuery,
+  // Search commits use `replace`, which keeps the history index. Any real
+  // navigation (back, forward, push) changes it, remounting the search field
+  // so its draft and pending commit are dropped.
+  const historyIndex = useRouterState({
+    select: (state) => state.location.state.__TSR_index,
   });
 
   // Build FilterFieldConfig for the Filters component (6 fields per D-28).
@@ -162,12 +159,11 @@ export const Transactions = () => {
   );
 
   const handleClearFilters = useCallback(() => {
-    resetSearchDraft();
     void navigate({
       to: '/transactions',
       search: () => buildCleanSearch({}),
     });
-  }, [navigate, resetSearchDraft]);
+  }, [navigate]);
 
   const handleAddClick = useCallback(() => {
     setSelectedTx(null);
@@ -224,8 +220,9 @@ export const Transactions = () => {
           }
         />
         <TransactionFilterSearch
-          value={searchInput}
-          onChange={setSearchInput}
+          key={historyIndex}
+          urlQuery={search.search ?? ''}
+          onCommit={commitSearchQuery}
         />
       </div>
 
