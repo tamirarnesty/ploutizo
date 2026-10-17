@@ -139,7 +139,7 @@ export const fetchSharedParticipantIds = async (
 /**
  * Settlement balance rows for GET /api/settlements.
  *
- * Credit cards only — settlement is card-centric (see CONTEXT.md). Returns every
+ * Credit cards only — settlement is card-centric (see GLOSSARY.md). Returns every
  * (account × household member) pair with personal balances from aggregates (0 when no
  * personal activity). Shared bucket and participant ids are duplicated on each member row.
  */
