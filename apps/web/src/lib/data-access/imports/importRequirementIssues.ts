@@ -54,7 +54,7 @@ const REQUIREMENT_COPY: Record<ImportRequirementKey, string> = {
   'import.match.collision':
     'Several rows share this external ID. Select only one of them.',
   'import.match.invalidated_decision':
-    'The accepted match changed. Review the match again.',
+    'The accepted match is no longer valid. Clear the match.',
   'import.match.advisory_unresolved':
     'Choose “Use this match” or “Not a match”.',
   'import.match.missing_target':
@@ -64,7 +64,7 @@ const REQUIREMENT_COPY: Record<ImportRequirementKey, string> = {
   'import.match.deleted_target':
     'The matched transaction was deleted. Clear the match.',
   'import.match.ambiguous_exact':
-    'Several transactions match this row exactly. Choose one or mark it “Not a match”.',
+    'Several transactions match this row exactly. Deselect this row.',
   'import.match.duplicate_target':
     'Another selected row already matches this transaction. Deselect one of them.',
   'import.external_id.active_conflict':
