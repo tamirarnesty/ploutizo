@@ -35,7 +35,7 @@ export const ImportDraftReviewRowDetails = memo(() => {
     });
 
   return (
-    <div className="bg-muted/10 px-3 py-2">
+    <div className="@container flex flex-col gap-4 bg-muted/10 px-3 py-2">
       <ImportMatchReviewPanel
         disabled={disabled}
         onAcceptAdvisory={(transactionId) =>
@@ -49,7 +49,7 @@ export const ImportDraftReviewRowDetails = memo(() => {
       {refundSuggestion?.kind === 'existing' &&
       refundSuggestion.transactionId &&
       !row.reviewRefundOf ? (
-        <div className="mb-2 flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Text variant="body-sm" className="text-muted-foreground">
             {refundSuggestion.explanation}
           </Text>
@@ -66,13 +66,13 @@ export const ImportDraftReviewRowDetails = memo(() => {
           </Button>
         </div>
       ) : null}
-      <div className="grid min-w-[760px] grid-cols-[minmax(420px,2fr)_minmax(260px,1fr)] items-start gap-4">
+      <div className="grid grid-cols-1 items-start gap-4 @3xl:grid-cols-[2fr_1fr]">
         <div className="min-w-0">
           <Text
             as="label"
             htmlFor={`import-row-notes-${row.id}`}
             variant="body-sm"
-            className="mb-1.5 block font-medium"
+            className="mb-2 block font-medium"
           >
             Notes
           </Text>
@@ -97,7 +97,7 @@ export const ImportDraftReviewRowDetails = memo(() => {
             as="label"
             htmlFor={tagsInputId}
             variant="body-sm"
-            className="mb-1.5 block font-medium"
+            className="mb-2 block font-medium"
           >
             Tags
           </Text>

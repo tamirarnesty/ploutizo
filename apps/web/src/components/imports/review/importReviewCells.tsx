@@ -13,11 +13,6 @@ import {
   SelectValue,
 } from '@ploutizo/ui/components/select';
 import { Text } from '@ploutizo/ui/components/text';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@ploutizo/ui/components/tooltip';
 import { cn } from '@ploutizo/ui/lib/utils';
 import { formatTransactionTypeLabel } from '@ploutizo/utils';
 import { centsToDollars, dollarsToCents } from '@ploutizo/utils/currency';
@@ -74,7 +69,7 @@ const ImportTransactionTypeSelect = ({
       if (next) onChange(next);
     }}
   >
-    <SelectTrigger id={id} className="w-36" aria-label={ariaLabel}>
+    <SelectTrigger id={id} className="w-full" aria-label={ariaLabel}>
       <SelectValue>
         {(selected: string) =>
           importTransactionTypeItems.find((item) => item.value === selected)
@@ -123,7 +118,7 @@ export const ImportReviewSelectionCell = ({
     <div
       id={`import-row-${row.id}`}
       tabIndex={-1}
-      className="flex items-center gap-1 outline-none"
+      className="flex items-center gap-2 outline-none"
     >
       <Checkbox
         aria-label={`Select ${rowLabel}`}
@@ -148,7 +143,7 @@ export const ImportReviewSelectionCell = ({
       >
         <ChevronDown
           className={cn(
-            'size-4 transition-transform',
+            'size-4 transition-[rotate] motion-reduce:transition-none',
             !expanded && '-rotate-90'
           )}
           aria-hidden="true"
@@ -198,7 +193,7 @@ export const ImportReviewAmountCell = memo(() => {
     <CurrencyInput
       id={`import-row-amount-${row.id}`}
       aria-label={`Amount for ${rowLabel}`}
-      className="w-32"
+      className="w-full"
       disabled={disabled}
       value={amountDraft}
       onChange={(next) => {
@@ -281,21 +276,12 @@ export const ImportReviewDescriptionCell = memo(() => {
         onBlur={onBlur}
       />
       {showOriginalDescription ? (
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Text
-                variant="body-sm"
-                className="mt-1 block w-full min-w-0 cursor-default truncate leading-snug text-muted-foreground"
-              />
-            }
-          >
-            Original: {originalDescription}
-          </TooltipTrigger>
-          <TooltipContent className="max-w-sm">
-            Original: {originalDescription}
-          </TooltipContent>
-        </Tooltip>
+        <Text
+          variant="body-sm"
+          className="mt-1 block w-full min-w-0 leading-snug wrap-break-word text-muted-foreground"
+        >
+          Original: {originalDescription}
+        </Text>
       ) : null}
     </>
   );
@@ -313,7 +299,7 @@ export const ImportReviewCategoryCell = memo(() => {
     <CategorySelect
       id={`import-row-category-${row.id}`}
       ariaLabel={`Category for ${rowLabel}`}
-      triggerClassName="w-44"
+      triggerClassName="w-full"
       categories={categories}
       value={row.reviewCategoryId ?? ''}
       disabled={disabled}
@@ -408,7 +394,7 @@ export const ImportReviewPaidFromCell = memo(() => {
   }
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex w-full items-center gap-1">
       <Select
         items={paidFromItems}
         value={selectedAccountId || null}
@@ -420,7 +406,7 @@ export const ImportReviewPaidFromCell = memo(() => {
       >
         <SelectTrigger
           id={`import-row-paid-from-${row.id}`}
-          className="w-44"
+          className="w-full"
           aria-label={`Paid from for ${rowLabel}`}
         >
           <SelectValue placeholder="Paid from">

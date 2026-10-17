@@ -22,6 +22,7 @@ vi.mock('@ploutizo/ui/components/sonner-api', () => ({
   toast: {
     info: reviewToastMocks.info,
     error: reviewToastMocks.error,
+    dismiss: vi.fn(),
   },
 }));
 
@@ -189,7 +190,7 @@ describe('ImportReview', () => {
       screen.getByText('statement.csv · 1 transaction')
     ).toBeInTheDocument();
     expect(screen.getByRole('table')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
   });
 
   it('shows an empty state when no rows are reviewable', () => {

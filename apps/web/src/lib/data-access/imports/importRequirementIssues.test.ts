@@ -54,7 +54,9 @@ describe('getImportContinueGateMessage', () => {
           },
         },
       })
-    ).toBe('Another selected row already matches this transaction.');
+    ).toBe(
+      'Another selected row already matches this transaction. Deselect one of them.'
+    );
   });
 
   it('maps requirement keys to web-owned copy', () => {
@@ -73,7 +75,9 @@ describe('getImportContinueGateMessage', () => {
           },
         },
       })
-    ).toBe('Linked refunds exceed the original expense amount.');
+    ).toBe(
+      'Lower the refund amount so linked refunds don’t exceed the expense.'
+    );
   });
 
   it('falls back to the continue error message when details are missing', () => {
@@ -95,7 +99,7 @@ describe('getImportContinueGateMessage', () => {
           errors: [{ message: 'Too small: expected array to have >=1 items' }],
         },
       })
-    ).toBe('Could not prepare this import for finalize.');
+    ).toBe('Unable to prepare this import. Reload the page and try again.');
   });
 });
 
@@ -126,7 +130,7 @@ describe('import requirement issue helpers', () => {
   it('summarizes unique copies and preserves first-seen row ids', () => {
     const failures = getImportRequirementFailures(notReadyError);
     expect(summarizeImportRequirementIssues(failures)).toBe(
-      'Category is required. Date is required. At least one assignee is required.'
+      'Choose a category. Enter a date. Choose at least one assignee.'
     );
     expect(getImportRequirementIssueRowIds(failures)).toEqual([
       'row_b',

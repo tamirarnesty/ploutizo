@@ -25,14 +25,15 @@ export const ImportRequirementIssueList = ({
       </Text>
       <ul className="mt-2 space-y-1">
         {issues.map((issue) => {
-          const rowLabel = rowLabels.get(issue.batchRowId) ?? 'this row';
+          const rowLabel =
+            rowLabels.get(issue.batchRowId) ?? 'Row not in this review';
           return (
             <li
               key={`${issue.batchRowId}-${issue.key}-${JSON.stringify(issue.params ?? null)}`}
             >
               <button
                 type="button"
-                className="text-left text-sm text-destructive underline-offset-2 hover:underline"
+                className="text-start text-sm text-destructive underline-offset-2 hover:underline"
                 onClick={() => onFocusRow?.(issue.batchRowId)}
               >
                 {rowLabel}: {getImportRequirementCopy(issue.key)}

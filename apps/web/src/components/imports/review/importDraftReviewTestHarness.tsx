@@ -111,6 +111,7 @@ vi.mock('@ploutizo/ui/components/sonner-api', () => ({
   toast: {
     error: reviewToastMocks.error,
     info: reviewToastMocks.info,
+    dismiss: vi.fn(),
   },
 }));
 

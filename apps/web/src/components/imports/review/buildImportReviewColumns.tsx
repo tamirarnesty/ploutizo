@@ -85,7 +85,7 @@ export const buildImportReviewColumns = ({
         };
 
         return (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <Tooltip>
               <TooltipTrigger
                 render={
@@ -204,7 +204,7 @@ export const buildImportReviewColumns = ({
       meta: {
         headerClassName: 'min-w-36',
         cellClassName: 'min-w-36',
-        skeleton: <Skeleton className="ml-auto h-4 w-20" />,
+        skeleton: <Skeleton className="h-4 w-20" />,
       },
       cell: () => <ImportReviewAmountCell />,
     },

@@ -35,10 +35,17 @@ describe('ImportDraftReview', () => {
     expect(screen.getByRole('table')).toBeInTheDocument();
   });
 
-  it('keeps Continue disabled when no rows are selected', () => {
+  it('explains why Continue cannot proceed when no rows are selected', async () => {
+    const user = userEvent.setup();
     renderReview();
 
-    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await waitFor(() => {
+      expect(reviewToast.error).toHaveBeenCalledWith(
+        'Select at least one row to continue.'
+      );
+    });
   });
 
   it('expands a row to show the notes field', async () => {
@@ -282,7 +289,7 @@ describe('ImportDraftReview', () => {
       </ReviewTestProviders>
     );
 
-    expect(reviewToast.error).toHaveBeenCalledWith('Category is required.');
+    expect(reviewToast.error).toHaveBeenCalledWith('Choose a category.');
     expect(screen.getByText('Fix these import issues')).toBeInTheDocument();
     const grid = screen.getByRole('table');
     const bodyRows = within(grid).getAllByRole('row').slice(1);
