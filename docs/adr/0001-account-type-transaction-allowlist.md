@@ -8,9 +8,9 @@ Ploutizo today accepts any of the six transaction types against any account type
 
 We will introduce an explicit allowlist for each transaction account role and counterpart account role. Validation runs at create/update time and rejects disallowed pairs with a clear error before any DB write. The matrix should be **defensive** (deny by default for ambiguous cases) rather than permissive.
 
-Settlement balances on credit cards already depend only on **expense**, **refund**, and **settlement** (see `CONTEXT.md`). This ADR is the hardening work that keeps the ledger consistent with that model—e.g. credit cards must not accept income or transfer. This decision records that the constraint belongs in shared transaction policy plus API validation, not UI-only filtering.
+Settlement balances on credit cards already depend only on **expense**, **refund**, and **settlement** (see `GLOSSARY.md`). This ADR is the hardening work that keeps the ledger consistent with that model—e.g. credit cards must not accept income or transfer. This decision records that the constraint belongs in shared transaction policy plus API validation, not UI-only filtering.
 
-**Related:** Personal vs shared **balance attribution** uses assignee count only, not account ownership metadata (`CONTEXT.md`). Every transaction type must have at least one assignee (household-wide rule; validators today still allow optional assignees on some types).
+**Related:** Personal vs shared **balance attribution** uses assignee count only, not account ownership metadata (`GLOSSARY.md`). Every transaction type must have at least one assignee (household-wide rule; validators today still allow optional assignees on some types).
 
 ## Module placement
 

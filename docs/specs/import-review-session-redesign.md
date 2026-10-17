@@ -40,18 +40,18 @@ Redesign **Review import** around one **draft-scoped client session**: optimisti
 22. As a household member leaving **Review import** with unsaved edits, I want a warning and best-effort save, so that I do not lose **reviewed import values** silently.
 23. As a household member on the **Import hub**, I want live review counts from evaluation, not stale selection persisted in the database, so that hub state matches review rules.
 24. As a developer, I want one primary test seam at the import HTTP API (batch save, continue, finalize), so that behavior is verified without brittle UI coupling.
-25. As a developer, I want **ADR 0005** and **CONTEXT.md** to match the new model, so that future work does not reintroduce durable selection or **Prepared import set** staging.
+25. As a developer, I want **ADR 0005** and **GLOSSARY.md** to match the new model, so that future work does not reintroduce durable selection or **Prepared import set** staging.
 
 ## Implementation Decisions
 
 ### Durable vs session facts
 
-| Durable (Postgres) | Session (client) |
-| --- | --- |
-| **Reviewed import values** on import draft rows | Checkbox **import set** (`rowIds`) |
-| Import batch meta, lifecycle, `rowCount`, source facts | **Import finalize preview** DTO |
-| Completed **import** history after finalize | Save status: pending / saving / saved / failed |
-| | Derived **import row status** (recomputed) |
+| Durable (Postgres)                                     | Session (client)                               |
+| ------------------------------------------------------ | ---------------------------------------------- |
+| **Reviewed import values** on import draft rows        | Checkbox **import set** (`rowIds`)             |
+| Import batch meta, lifecycle, `rowCount`, source facts | **Import finalize preview** DTO                |
+| Completed **import** history after finalize            | Save status: pending / saving / saved / failed |
+|                                                        | Derived **import row status** (recomputed)     |
 
 Retire **Prepared import set** as a stored entity. Introduce **Import finalize preview** as the domain name for the Continue response held in the draft session until **Finalize import** or abandon.
 
@@ -107,7 +107,7 @@ One draft-scoped session while import routes are mounted:
 ### ADR and glossary
 
 - Amend **ADR 0005** to describe resume = **reviewed import values** only, batch persist, session selection, and **Import finalize preview**.
-- Update **CONTEXT.md**: **Import draft** no longer persists selection; retire **Prepared import set**; update **Matched import row** default-selection language; add **Import finalize preview**.
+- Update **GLOSSARY.md**: **Import draft** no longer persists selection; retire **Prepared import set**; update **Matched import row** default-selection language; add **Import finalize preview**.
 
 ### Session state machine (draft save — from design alignment)
 
