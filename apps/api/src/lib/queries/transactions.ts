@@ -42,6 +42,7 @@ import {
   fetchAccountWriteReference,
   transactionExistsInOrg,
 } from '@/lib/queries/scope';
+import { searchMatchesCondition } from '@/lib/queries/transactionListSearch';
 
 // Alias for counterpart account join (D-23) — left join to accounts using counterpartAccountId FK
 const counterpartAccounts = alias(accounts, 'counterpart_accounts');
@@ -93,8 +94,8 @@ export type ListQueryParams = {
   categoryId?: string;
   assigneeId?: string;
   tagIds?: string[];
-  /** D-18: case-insensitive substring match on description OR rawDescription — T-03.4-01 */
-  description?: string;
+  /** Case-insensitive substring match on description, rawDescription, category, account, and tag names (T-03.4-01). Not assignee, amount, or date. */
+  search?: string;
   // Operator params — T-03.4.1-OP1: unrecognised values fall through to default (eq/is) behaviour
   type_op?: string; // 'is' | 'is_not'
   accountId_op?: string; // 'is' | 'is_not'
@@ -300,13 +301,8 @@ export const buildConditions = (params: ListQueryParams): SQL[] => {
     }
   }
 
-  // T-03.4-01: D-18 description filter — parameterized ILIKE (NOT string interpolation) — safe from SQL injection
-  // '%' + value + '%' is passed as a Drizzle bound parameter to the DB driver, not concatenated into SQL text.
-  // Searches both description (user-visible) and rawDescription (original bank/import memo).
-  if (params.description) {
-    conditions.push(
-      sql`(${transactions.description} ILIKE ${'%' + params.description + '%'} OR ${transactions.rawDescription} ILIKE ${'%' + params.description + '%'})`
-    );
+  if (params.search) {
+    conditions.push(searchMatchesCondition(params.orgId, params.search));
   }
 
   if (params.importLink) {

@@ -405,7 +405,12 @@ describe('Dashboard', () => {
     settlementsBody = settlements;
     membersBody = members;
     overviewFixture = null;
-    transactionsBody = { data: [], total: 0, page: 1, limit: 6 };
+    transactionsBody = {
+      data: [],
+      total: 0,
+      page: 1,
+      limit: 6,
+    };
     failingPaths.clear();
     requestGate = null;
     fetchMock.mockClear();

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '@tanstack/react-form';
+import { useDebouncer } from '@tanstack/react-pacer';
 import { Field, FieldLabel } from '@ploutizo/ui/components/field';
 import {
   Combobox,
@@ -23,6 +24,7 @@ import {
   splitAssigneesEvenly,
 } from './assigneeSplit';
 import { formatTransactionDate } from './transactionRowDisplay';
+import { TRANSACTION_SEARCH_DEBOUNCE_MS } from './transactionSearch';
 import type { TransactionFormInstance } from './hooks/useTransactionForm';
 
 export interface RefundLinkerProps {
@@ -38,9 +40,10 @@ const buildDisplayName = (tx: TransactionRow) => tx.description || '—';
 
 export const RefundLinker = ({ form }: RefundLinkerProps) => {
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const debounceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
-    null
-  );
+  const { maybeExecute: debounceQuery, cancel: cancelDebouncedQuery } =
+    useDebouncer(setDebouncedQuery, {
+      wait: TRANSACTION_SEARCH_DEBOUNCE_MS,
+    });
   const [pickedTx, setPickedTx] = useState<TransactionRow | null>(null);
   const [draftInput, setDraftInput] = useState<string | null>(null);
   const refundOf = useStore(form.store, (state) => state.values.refundOf);
@@ -53,13 +56,6 @@ export const RefundLinker = ({ form }: RefundLinkerProps) => {
   const selectedTx = pickedMatchesRefund ?? linkedTx;
   const inputValue =
     draftInput ?? (selectedTx ? buildDisplayName(selectedTx) : '');
-
-  React.useEffect(
-    () => () => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-    },
-    []
-  );
 
   const { data: recentExpensesResponse } = useGetTransactions({
     page: 1,
@@ -97,8 +93,7 @@ export const RefundLinker = ({ form }: RefundLinkerProps) => {
                   setPickedTx(tx);
                   setDraftInput(null);
                   // Reset query so re-opening shows recent expenses, not a stale bad search
-                  if (debounceTimerRef.current)
-                    clearTimeout(debounceTimerRef.current);
+                  cancelDebouncedQuery();
                   setDebouncedQuery('');
                   field.handleChange(tx.id);
                   // Auto-fill only empty fields — never overwrite user input or edit-mode values
@@ -142,12 +137,7 @@ export const RefundLinker = ({ form }: RefundLinkerProps) => {
             }}
             onInputValueChange={(q: string) => {
               setDraftInput(q);
-              if (debounceTimerRef.current)
-                clearTimeout(debounceTimerRef.current);
-              debounceTimerRef.current = setTimeout(
-                () => setDebouncedQuery(q),
-                300
-              );
+              debounceQuery(q);
             }}
           >
             <ComboboxInput

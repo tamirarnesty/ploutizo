@@ -31,6 +31,19 @@ describe('validateTransactionSearch', () => {
     expect(validateTransactionSearch({ page: 1.5 })).toEqual({});
   });
 
+  it('preserves filter-row search query', () => {
+    expect(validateTransactionSearch({ search: 'groceries' })).toEqual({
+      search: 'groceries',
+    });
+  });
+
+  it('trims search and drops whitespace-only values', () => {
+    expect(validateTransactionSearch({ search: '  groceries  ' })).toEqual({
+      search: 'groceries',
+    });
+    expect(validateTransactionSearch({ search: '   ' })).toEqual({});
+  });
+
   it('preserves filter and operator params', () => {
     expect(
       validateTransactionSearch({

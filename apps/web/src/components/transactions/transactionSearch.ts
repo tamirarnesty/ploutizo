@@ -8,6 +8,9 @@ import type { TransactionQueryParams } from '@/lib/data-access/transactions';
 // reading search params. Page size is persisted in localStorage (see
 // useTablePageSize), not the URL.
 
+/** Shared debounce for transaction text search (list filter, refund linker). */
+export const TRANSACTION_SEARCH_DEBOUNCE_MS = 300;
+
 const TRANSACTION_SORT_FIELDS = [
   'date',
   'amount',
@@ -18,10 +21,23 @@ const TRANSACTION_SORT_FIELDS = [
 
 const TRANSACTION_SORT_ORDERS = ['asc', 'desc'] as const;
 
+export type TransactionSortField = (typeof TRANSACTION_SORT_FIELDS)[number];
+export type TransactionSortOrder = (typeof TRANSACTION_SORT_ORDERS)[number];
+
+export const isTransactionSortField = (
+  value: string
+): value is TransactionSortField =>
+  TRANSACTION_SORT_FIELDS.some((field) => field === value);
+
+export const isTransactionSortOrder = (
+  value: string
+): value is TransactionSortOrder =>
+  TRANSACTION_SORT_ORDERS.some((order) => order === value);
+
 export type TransactionSearch = {
   page?: number;
-  sort?: (typeof TRANSACTION_SORT_FIELDS)[number];
-  order?: (typeof TRANSACTION_SORT_ORDERS)[number];
+  sort?: TransactionSortField;
+  order?: TransactionSortOrder;
   type?: string;
   dateFrom?: string;
   dateTo?: string;
@@ -39,6 +55,7 @@ export type TransactionSearch = {
   dateRange_op?: string; // 'between' | 'after' | 'before' | 'is' | 'is_not' | 'not_between'
   importBatchId?: string;
   importOutcome?: 'created' | 'matched';
+  search?: string;
 };
 
 const TRANSACTION_SEARCH_STRING_FIELDS = [
@@ -55,6 +72,7 @@ const TRANSACTION_SEARCH_STRING_FIELDS = [
   'assigneeId_op',
   'tagIds_op',
   'dateRange_op',
+  'search',
 ] as const satisfies readonly (keyof TransactionSearch)[];
 
 const parseOptionalPage = (value: unknown): number | undefined => {
@@ -66,20 +84,16 @@ const parseOptionalPage = (value: unknown): number | undefined => {
 
 const parseOptionalSort = (
   value: unknown
-): TransactionSearch['sort'] | undefined => {
+): TransactionSortField | undefined => {
   if (typeof value !== 'string') return undefined;
-  return (TRANSACTION_SORT_FIELDS as readonly string[]).includes(value)
-    ? (value as TransactionSearch['sort'])
-    : undefined;
+  return isTransactionSortField(value) ? value : undefined;
 };
 
 const parseOptionalOrder = (
   value: unknown
-): TransactionSearch['order'] | undefined => {
+): TransactionSortOrder | undefined => {
   if (typeof value !== 'string') return undefined;
-  return (TRANSACTION_SORT_ORDERS as readonly string[]).includes(value)
-    ? (value as TransactionSearch['order'])
-    : undefined;
+  return isTransactionSortOrder(value) ? value : undefined;
 };
 
 const parseOptionalString = (value: unknown): string | undefined => {
@@ -108,6 +122,7 @@ export const buildTransactionQueryParams = (
   categoryId: search.categoryId,
   assigneeId: search.assigneeId,
   tagIds: search.tagIds,
+  search: search.search || undefined,
   type_op: search.type_op,
   accountId_op: search.accountId_op,
   categoryId_op: search.categoryId_op,
@@ -144,6 +159,12 @@ export const validateTransactionSearch = (
   if (importBatchId && importOutcome) {
     result.importBatchId = importBatchId;
     result.importOutcome = importOutcome;
+  }
+
+  if (result.search !== undefined) {
+    const trimmed = result.search.trim();
+    if (trimmed) result.search = trimmed;
+    else delete result.search;
   }
 
   return result;

@@ -16,6 +16,7 @@ import { useTablePageSize } from '@/hooks/persistedPageSize';
 import { TransactionsTable } from './TransactionsTable';
 import { TransactionSheet } from './TransactionSheet';
 import { buildFilterFields } from './TransactionFilterFields';
+import { TransactionFilterSearch } from './TransactionFilterSearch';
 import { buildTransactionQueryParams } from './transactionSearch';
 import {
   TRANSACTION_PINNED_FILTER_FIELD_KEYS_LIST,
@@ -62,6 +63,21 @@ export const Transactions = () => {
     () => withPinnedTransactionFilters(searchToFilters(search)),
     [search]
   );
+  const commitSearchQuery = useCallback(
+    (trimmed: string) => {
+      void navigate({
+        to: '/transactions',
+        search: (prev) =>
+          buildCleanSearch({
+            ...prev,
+            search: trimmed || undefined,
+            page: 1,
+          }),
+        replace: true,
+      });
+    },
+    [navigate]
+  );
 
   // Build FilterFieldConfig for the Filters component (6 fields per D-28).
   // Import result is only offered when a provenance batch is already in the URL.
@@ -81,7 +97,7 @@ export const Transactions = () => {
       );
       void navigate({
         to: '/transactions',
-        // Rebuild from scratch — only keep sort/pagination from prev.
+        // Rebuild from scratch — only keep sort/pagination/text search from prev.
         // Spreading prev would leave stale filter params when a filter is removed.
         // Import batch stays only while the Import result chip remains.
         search: (prev) =>
@@ -89,6 +105,7 @@ export const Transactions = () => {
             page: 1,
             sort: prev.sort,
             order: prev.order,
+            search: prev.search,
             ...mapped,
             importBatchId: mapped.importOutcome
               ? prev.importBatchId
@@ -191,18 +208,29 @@ export const Transactions = () => {
 
         {/* Filter bar — full-width, no sticky */}
         {/* trigger prop required: useRender renders an empty invisible button without it */}
-        <Filters<string>
-          filters={activeFilters}
-          fields={filterFields}
-          onChange={handleFiltersChange}
-          pinnedFieldKeys={TRANSACTION_PINNED_FILTER_FIELD_KEYS_LIST}
-          trigger={
-            <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs">
-              <ListFilterIcon className="size-3.5" />
-              Filters
-            </Button>
-          }
-        />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <Filters<string>
+            filters={activeFilters}
+            fields={filterFields}
+            onChange={handleFiltersChange}
+            pinnedFieldKeys={TRANSACTION_PINNED_FILTER_FIELD_KEYS_LIST}
+            className="min-w-0 flex-1"
+            trigger={
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1.5 text-xs"
+              >
+                <ListFilterIcon className="size-3.5" />
+                Filters
+              </Button>
+            }
+          />
+          <TransactionFilterSearch
+            urlQuery={search.search ?? ''}
+            onCommit={commitSearchQuery}
+          />
+        </div>
 
         <TransactionsTable
           transactions={transactions}

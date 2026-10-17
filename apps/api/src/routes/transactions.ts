@@ -90,7 +90,7 @@ transactionsRouter.get('/', async (c) => {
     categoryId: c.req.query('categoryId'),
     assigneeId: c.req.query('assigneeId'),
     tagIds: tagIds.length > 0 ? tagIds : undefined,
-    description: c.req.query('description'),
+    search: c.req.query('search')?.trim() || undefined,
     type_op: c.req.query('type_op'),
     accountId_op: c.req.query('accountId_op'),
     categoryId_op: c.req.query('categoryId_op'),

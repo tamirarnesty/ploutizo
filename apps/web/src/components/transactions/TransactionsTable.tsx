@@ -26,6 +26,8 @@ import { getTransactionRowActions } from './transactionRowActions';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import { TransactionsTableEmpty } from './TransactionTableEmpty';
 import { TransactionsTableEmptyFiltered } from './TransactionTableEmptyFiltered';
+import { TransactionsAmountFooter } from './TransactionsAmountFooter';
+import { isTransactionSortField } from './transactionSearch';
 import type { TransactionSearch } from './transactionSearch';
 
 interface TransactionsTableProps {
@@ -140,10 +142,10 @@ export const TransactionsTable = ({
           ? updater([{ id: sort ?? 'date', desc: order === 'desc' }])
           : updater;
       const col = next[0];
-      onSortChange(
-        col.id as TransactionSearch['sort'],
-        col.desc ? 'desc' : 'asc'
-      );
+      if (!isTransactionSortField(col.id)) {
+        return;
+      }
+      onSortChange(col.id, col.desc ? 'desc' : 'asc');
     },
   });
 
@@ -183,7 +185,16 @@ export const TransactionsTable = ({
             <DataGridScrollArea
               orientation={PAGINATED_DATA_GRID_SCROLL_ORIENTATION}
             >
-              <DataGridTable />
+              <DataGridTable
+                footerContent={
+                  transactions.length > 0 ? (
+                    <TransactionsAmountFooter
+                      table={table}
+                      rows={transactions}
+                    />
+                  ) : null
+                }
+              />
             </DataGridScrollArea>
           </DataGridContainer>
           <DataGridPagination className={DATA_GRID_PAGINATION_ROW_CLASSNAME} />

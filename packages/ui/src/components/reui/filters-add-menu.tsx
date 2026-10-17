@@ -177,6 +177,7 @@ export const FiltersAddMenu = <T = unknown,>({
                     e.key === 'Enter' &&
                     displayHighlightedIndex >= 0
                   ) {
+                    if (e.nativeEvent.isComposing) return;
                     e.preventDefault();
                     const field = filteredFields[displayHighlightedIndex];
                     if (field.key) {
