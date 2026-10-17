@@ -148,7 +148,7 @@ describe('ImportDraftReview autosave and continue', () => {
     expect(routerMocks.navigate).not.toHaveBeenCalled();
   });
 
-  it('disables Continue when persistence has failed', () => {
+  it('keeps Continue available and shows the failure when persistence has failed', () => {
     importDraftReviewTestControls.autosaveStatus.current = 'failed';
     const draft = makeImportDraft({
       rows: [
@@ -167,11 +167,11 @@ describe('ImportDraftReview autosave and continue', () => {
       </ReviewTestProviders>
     );
 
-    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
     expect(screen.getByText('Save failed')).toBeInTheDocument();
   });
 
-  it('disables Continue while review persistence is in flight', () => {
+  it('keeps Continue available while review persistence is in flight', () => {
     importDraftReviewTestControls.autosaveStatus.current = 'saving';
     const draft = makeImportDraft({
       rows: [
@@ -190,7 +190,7 @@ describe('ImportDraftReview autosave and continue', () => {
       </ReviewTestProviders>
     );
 
-    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
     expect(screen.getByText('Saving changes')).toBeInTheDocument();
   });
 
@@ -226,12 +226,12 @@ describe('ImportDraftReview autosave and continue', () => {
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     expect(reviewToast.error).toHaveBeenCalledWith(
-      'Linked refunds exceed the original expense amount.'
+      'Lower the refund amount so linked refunds don’t exceed the expense.'
     );
     expect(screen.getByText('Fix these import issues')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
-        name: 'Coffee: Linked refunds exceed the original expense amount.',
+        name: 'Coffee: Lower the refund amount so linked refunds don’t exceed the expense.',
       })
     ).toBeInTheDocument();
     await waitFor(() =>

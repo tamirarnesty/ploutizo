@@ -225,7 +225,7 @@ describe('ImportFinalize', () => {
 
     expect(screen.getByRole('button', { name: /Finalizing/ })).toBeDisabled();
     expect(
-      screen.getByRole('button', { name: 'Back to Review' })
+      screen.getByRole('button', { name: 'Back to review' })
     ).toBeDisabled();
     release(completedResult);
   });
@@ -251,11 +251,11 @@ describe('ImportFinalize', () => {
     });
   });
 
-  it('returns to Review import when Back to Review is clicked', async () => {
+  it('returns to Review import when Back to review is clicked', async () => {
     const user = userEvent.setup();
     render(<ImportFinalize draftId="draft_1" />);
 
-    await user.click(screen.getByRole('button', { name: 'Back to Review' }));
+    await user.click(screen.getByRole('button', { name: 'Back to review' }));
 
     await waitFor(() =>
       expect(routerMocks.navigate).toHaveBeenCalledWith({

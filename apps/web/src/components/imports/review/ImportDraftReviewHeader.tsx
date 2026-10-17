@@ -7,11 +7,7 @@ import type { ImportDraftMeta } from '@/lib/data-access/imports';
 import { useImportReviewAutosaveStatus } from '@/lib/data-access/imports/useImportReviewAutosave';
 import { ImportDiscardDraftAction } from '../lib/ImportDiscardDraftAction';
 import { formatImportDraftReviewSubtitle } from '../lib/importPresentation';
-import { getImportReviewContinueEnabled } from '../lib/getImportReviewContinueEnabled';
-import {
-  IMPORT_REVIEW_AUTOSAVE_STATUS_ID,
-  ImportReviewAutosaveStatus,
-} from './ImportReviewAutosaveStatus';
+import { ImportReviewAutosaveStatus } from './ImportReviewAutosaveStatus';
 import type { ImportDiscardDraftActionProps } from '../lib/ImportDiscardDraftAction';
 
 interface ImportDraftReviewHeaderProps {
@@ -46,12 +42,6 @@ export const ImportDraftReviewHeader = ({
   const draftId = meta?.id ?? '';
   const autosaveStatus = useImportReviewAutosaveStatus(draftId);
   const iconStatus = meta ? autosaveStatus : 'idle';
-  const continueEnabled = getImportReviewContinueEnabled({
-    meta,
-    rows,
-    autosaveStatus,
-    isContinuing,
-  });
 
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -89,9 +79,8 @@ export const ImportDraftReviewHeader = ({
               />
             ) : null}
             <Button
-              disabled={!continueEnabled || discardInProgress}
+              disabled={!meta || isContinuing || discardInProgress}
               type="button"
-              aria-describedby={IMPORT_REVIEW_AUTOSAVE_STATUS_ID}
               onClick={() => {
                 void onContinue();
               }}

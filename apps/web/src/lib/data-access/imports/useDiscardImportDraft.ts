@@ -16,12 +16,14 @@ export const useDiscardImportDraft = () => {
     onMutate: async (draftId) => {
       await cancelImportDraftQueryFetches(draftId);
     },
-    onSuccess: async (_response, draftId) => {
+    onSuccess: (_response, draftId) => {
       qc.setQueryData<ImportDraftSummary[]>(
         activeImportDraftsQueryKey,
         (current) => current?.filter((draft) => draft.id !== draftId)
       );
-      await releaseImportDraftSession(draftId);
+      // Review keeps live subscribers until it unmounts, which only happens
+      // after this mutation settles and navigates away.
+      void releaseImportDraftSession(draftId);
       void qc.invalidateQueries({
         queryKey: activeImportDraftsQueryKey,
       });

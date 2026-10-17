@@ -15,6 +15,7 @@ const toastError = vi.hoisted(() => vi.fn());
 vi.mock('@ploutizo/ui/components/sonner-api', () => ({
   toast: {
     error: toastError,
+    dismiss: vi.fn(),
   },
 }));
 
@@ -38,13 +39,17 @@ describe('useImportReviewAutosaveFailureToast', () => {
     ]);
 
     expect(toastError).toHaveBeenCalledTimes(1);
-    expect(toastError).toHaveBeenCalledWith('Could not save changes.', {
-      id: IMPORT_REVIEW_AUTOSAVE_FAILED_TOAST_ID,
-      action: {
-        label: 'Retry',
-        onClick: expect.any(Function) as () => void,
-      },
-    });
+    expect(toastError).toHaveBeenCalledWith(
+      'Could not save changes. Check your connection and retry.',
+      {
+        id: IMPORT_REVIEW_AUTOSAVE_FAILED_TOAST_ID,
+        duration: Infinity,
+        action: {
+          label: 'Retry',
+          onClick: expect.any(Function) as () => void,
+        },
+      }
+    );
 
     toastError.mock.calls[0]?.[1]?.action?.onClick();
     expect(retryAutosave).toHaveBeenCalledTimes(1);

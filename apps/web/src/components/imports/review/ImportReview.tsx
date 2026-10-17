@@ -104,7 +104,7 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
           </EmptyHeader>
           <EmptyContent>
             <Button nativeButton={false} render={<Link to="/import" />}>
-              Back to Import
+              Back to import
             </Button>
           </EmptyContent>
         </Empty>

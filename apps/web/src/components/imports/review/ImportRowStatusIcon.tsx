@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle2, CloudAlert, XCircle } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import {
   Tooltip,
@@ -17,8 +17,8 @@ import {
 import { useImportReviewRowScope } from './ImportReviewRowScope';
 
 const statusIconClassName: Record<ImportDraftRow['status'], string> = {
-  ready: 'text-emerald-600 dark:text-emerald-400',
-  needs_review: 'text-amber-600 dark:text-amber-400',
+  ready: 'text-success-foreground',
+  needs_review: 'text-warning-foreground',
   invalid: 'text-destructive',
 };
 
@@ -35,7 +35,7 @@ const StatusIcon = ({
   );
 
   if (persistFailed) {
-    return <AlertCircle className={className} aria-hidden="true" />;
+    return <CloudAlert className={className} aria-hidden="true" />;
   }
 
   switch (status) {
@@ -56,7 +56,7 @@ export const ImportRowStatusIcon = memo(() => {
   const persistFailed = useImportReviewAutosaveRowFailed(draftId, rowId);
   const evaluation = useImportDraftRowEvaluation(rowId);
   const tooltip = persistFailed
-    ? 'Could not save this row. Use Retry on the save error toast.'
+    ? 'Could not save this row. Select Retry in the save error notification.'
     : getImportRowStatusTooltip(row, evaluation?.blockers, evaluation?.match);
 
   return (

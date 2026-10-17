@@ -145,8 +145,7 @@ describe('ImportDraftReviewRow', () => {
     });
   });
 
-  it('truncates the original description and reveals it on hover', async () => {
-    const user = userEvent.setup();
+  it('shows the full original description when it differs', () => {
     const row = {
       ...baseRow(),
       reviewDescription: 'Amazon',
@@ -158,14 +157,7 @@ describe('ImportDraftReviewRow', () => {
     const original = screen.getByText(
       'Original: AMAZON.CA*5O5BA0SV0 866-216-1072'
     );
-    expect(original).toHaveClass('truncate');
-
-    await user.hover(original);
-    await waitFor(() => {
-      expect(
-        document.querySelector('[data-slot="tooltip-content"]')
-      ).toHaveTextContent('Original: AMAZON.CA*5O5BA0SV0 866-216-1072');
-    });
+    expect(original).not.toHaveClass('truncate');
   });
 
   it('explains an exact match and keeps it as a suggestion until selected', () => {

@@ -40,28 +40,32 @@ export const ImportMatchReviewPanel = memo(
       onDismissMatch();
     };
 
+    const issueCopies = ui.issues
+      .map((issue) => ({ issue, copy: IMPORT_MATCH_ISSUE_COPY[issue] }))
+      .filter(({ copy }) => copy);
+    const hasActionRow = Boolean(ui.advisory) || ui.actions.length > 0;
+    if (issueCopies.length === 0 && !ui.exactExplanation && !hasActionRow) {
+      return null;
+    }
+
     return (
-      <>
-        {ui.issues.map((issue) => {
-          const copy = IMPORT_MATCH_ISSUE_COPY[issue];
-          if (!copy) return null;
-          return (
-            <Text
-              key={issue}
-              variant="body-sm"
-              className="mb-2 text-amber-700 dark:text-amber-400"
-            >
-              {copy}
-            </Text>
-          );
-        })}
+      <div className="flex flex-col gap-2">
+        {issueCopies.map(({ issue, copy }) => (
+          <Text
+            key={issue}
+            variant="body-sm"
+            className="text-warning-foreground"
+          >
+            {copy}
+          </Text>
+        ))}
         {ui.exactExplanation ? (
-          <Text variant="body-sm" className="mb-2 text-muted-foreground">
+          <Text variant="body-sm" className="text-muted-foreground">
             {formatExactImportMatchCopy(ui.exactExplanation)}
           </Text>
         ) : null}
-        {ui.advisory || ui.actions.length > 0 ? (
-          <div className="mb-2 flex flex-wrap items-center gap-2">
+        {hasActionRow ? (
+          <div className="flex flex-wrap items-center gap-2">
             {ui.advisory ? (
               <Text variant="body-sm" className="text-muted-foreground">
                 {ui.advisory.explanation}
@@ -81,7 +85,7 @@ export const ImportMatchReviewPanel = memo(
             ))}
           </div>
         ) : null}
-      </>
+      </div>
     );
   }
 );

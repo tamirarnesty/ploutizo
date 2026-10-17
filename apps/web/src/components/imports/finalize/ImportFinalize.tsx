@@ -256,7 +256,7 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
                   backToReview();
                 }}
               >
-                Back to Review
+                Back to review
               </Button>
               <LoadingButton
                 type="button"

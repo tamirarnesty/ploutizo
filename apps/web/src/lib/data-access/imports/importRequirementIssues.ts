@@ -14,49 +14,61 @@ export const IMPORT_FINALIZE_STALE = 'IMPORT_FINALIZE_STALE';
 export const IMPORT_FINALIZE_CONFLICT = 'IMPORT_FINALIZE_CONFLICT';
 
 const REQUIREMENT_COPY: Record<ImportRequirementKey, string> = {
-  'transaction.date.required': 'Date is required.',
-  'transaction.amount.positive': 'Amount must be a positive number.',
-  'transaction.description.required': 'Description is required.',
-  'transaction.type.required': 'Type must be expense, refund, or settlement.',
-  'transaction.category.required': 'Category is required.',
+  'transaction.date.required': 'Enter a date.',
+  'transaction.amount.positive': 'Enter an amount greater than zero.',
+  'transaction.description.required': 'Enter a description.',
+  'transaction.type.required': 'Choose expense, refund, or settlement.',
+  'transaction.category.required': 'Choose a category.',
   'transaction.category.unknown':
-    'The category is no longer in this household.',
-  'transaction.tag.unknown': 'A tag is no longer in this household.',
-  'transaction.assignee.required': 'At least one assignee is required.',
-  'transaction.assignee.unknown': 'An assignee is no longer in this household.',
-  'transaction.account.missing': 'A required account is missing.',
+    'This category was removed from the household. Choose another category.',
+  'transaction.tag.unknown':
+    'A tag was removed from the household. Remove it from this row.',
+  'transaction.assignee.required': 'Choose at least one assignee.',
+  'transaction.assignee.unknown':
+    'An assignee left the household. Choose another assignee.',
+  'transaction.account.missing': 'Choose the account this was paid from.',
   'transaction.account.disallowed_type':
-    'The selected account type is not allowed.',
+    'Choose a chequing or savings account to pay from.',
   'transaction.account.same_account_not_allowed':
-    'Transaction account and counterpart account must differ.',
-  'import.refund_link.missing_target': 'Refund link target was not found.',
-  'import.refund_link.wrong_account': 'Refund link target is not on this card.',
-  'import.refund_link.deleted_target': 'Refund link target was deleted.',
-  'import.refund_link.not_expense': 'Refund link target is not an expense.',
+    'Choose a different account to pay from than this card.',
+  'import.refund_link.missing_target':
+    'The linked expense no longer exists. Deselect this row.',
+  'import.refund_link.wrong_account':
+    'The linked expense is on another card. Deselect this row.',
+  'import.refund_link.deleted_target':
+    'The linked expense was deleted. Deselect this row.',
+  'import.refund_link.not_expense':
+    'The linked transaction is not an expense. Deselect this row.',
   'import.refund_link.target_not_selected':
-    'Same-import refund target must be selected.',
+    'Select the linked expense row for import, or deselect this row.',
   'import.refund_link.target_not_expense':
-    'Same-import refund target must be an expense.',
+    'Change the linked row to an expense, or deselect this row.',
   'import.refund_link.target_unfinalizable':
-    'Same-import refund target is not ready to import.',
+    'Fix the linked expense row first, or deselect this row.',
   'import.refund_link.cumulative_exceeds':
-    'Linked refunds exceed the original expense amount.',
-  'import.refund_link.self_link': 'A refund cannot link to itself.',
+    'Lower the refund amount so linked refunds don’t exceed the expense.',
+  'import.refund_link.self_link':
+    'This refund is linked to itself. Deselect this row.',
   'import.refund_link.dual_link':
-    'A refund cannot link to both an existing expense and a same-import row.',
+    'This refund is linked to two expenses. Deselect this row.',
   'import.match.collision':
-    'Select exactly one row for this duplicate external id.',
-  'import.match.invalidated_decision': 'The accepted match is no longer valid.',
-  'import.match.advisory_unresolved': 'This row still needs match review.',
-  'import.match.missing_target': 'The matched transaction was not found.',
-  'import.match.wrong_account': 'The matched transaction is not on this card.',
-  'import.match.deleted_target': 'The matched transaction was deleted.',
+    'Several rows share this external ID. Select only one of them.',
+  'import.match.invalidated_decision':
+    'The accepted match is no longer valid. Clear the match.',
+  'import.match.advisory_unresolved':
+    'Choose “Use this match” or “Not a match”.',
+  'import.match.missing_target':
+    'The matched transaction no longer exists. Clear the match.',
+  'import.match.wrong_account':
+    'The matched transaction is on another account. Clear the match.',
+  'import.match.deleted_target':
+    'The matched transaction was deleted. Clear the match.',
   'import.match.ambiguous_exact':
-    'Multiple exact matches were found for this row.',
+    'Several transactions match this row exactly. Deselect this row.',
   'import.match.duplicate_target':
-    'Another selected row already matches this transaction.',
+    'Another selected row already matches this transaction. Deselect one of them.',
   'import.external_id.active_conflict':
-    'An active transaction already uses this external id.',
+    'A transaction with this external ID already exists. Deselect this row.',
 };
 
 const DOMAIN_ISSUE_CODES = new Set([
@@ -135,7 +147,7 @@ export const isImportStaleFinalizeError = (error: unknown): boolean => {
 export const getImportContinueGateMessage = (error: unknown): string => {
   const code = getApiErrorCode(error);
   if (code === 'VALIDATION_ERROR') {
-    return 'Could not prepare this import for finalize.';
+    return 'Unable to prepare this import. Reload the page and try again.';
   }
   if (code && DOMAIN_ISSUE_CODES.has(code)) {
     const summary = summarizeImportRequirementIssues(
