@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Spinner } from '@ploutizo/ui/components/spinner';
 import { FieldGroup } from '@ploutizo/ui/components/field';
@@ -7,6 +7,8 @@ import { SheetFooter } from '@ploutizo/ui/components/sheet';
 import { Button } from '@ploutizo/ui/components/button';
 import { LoadingButton } from '@ploutizo/ui/components/loading-button';
 import { toast } from '@ploutizo/ui/components/sonner-api';
+import { useIsMobile } from '@ploutizo/ui/hooks/use-mobile';
+import { cn } from '@ploutizo/ui/lib/utils';
 import type {
   Account,
   Category,
@@ -27,7 +29,10 @@ import {
   useFlushPendingInputs,
 } from '@/lib/money/pending-input-flush';
 import { useTransactionDescriptionLock } from './hooks/useTransactionDescriptionLock';
-import { useTransactionForm } from './hooks/useTransactionForm';
+import {
+  buildDefaultValues,
+  useTransactionForm,
+} from './hooks/useTransactionForm';
 import { TransactionAccountSlots } from './TransactionAccountSlots';
 import { TransactionAmountField } from './TransactionAmountField';
 import { TransactionAssigneesField } from './TransactionAssigneesField';
@@ -36,6 +41,8 @@ import { TransactionDescriptionField } from './TransactionDescriptionField';
 import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import { TransactionNotesTagsFields } from './TransactionNotesTagsFields';
 import { TransactionTypeFields } from './TransactionTypeFields';
+import { TransactionCreateFooter } from './TransactionCreateFooter';
+import type { TransactionCreateMode } from './TransactionCreateFooter';
 
 interface TransactionFormProps {
   transaction: TransactionRow | null; // null = create mode
@@ -137,20 +144,62 @@ const TransactionFormInner = ({
   onClose,
   onDirtyChange,
 }: TransactionFormInnerProps) => {
+  const isEditing = transaction !== null;
+  const isMobile = useIsMobile();
   const createMutation = useCreateTransaction();
   const updateMutation = useUpdateTransaction(transaction?.id ?? '');
   const deleteMutation = useDeleteTransaction();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [createMode, setCreateMode] = useState<TransactionCreateMode>('add');
+  const [showAdded, setShowAdded] = useState(false);
+  const createModeRef = useRef(createMode);
+  useEffect(() => {
+    createModeRef.current = createMode;
+  }, [createMode]);
+  const addedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flushPendingInputs = useFlushPendingInputs();
+
+  const resetFormRef = useRef<(() => void) | null>(null);
+
+  const handleCreateSuccess = useCallback(() => {
+    setShowAdded(true);
+    if (addedTimeoutRef.current) {
+      clearTimeout(addedTimeoutRef.current);
+    }
+    addedTimeoutRef.current = setTimeout(() => {
+      setShowAdded(false);
+      if (createModeRef.current === 'add') {
+        onClose();
+      } else {
+        resetFormRef.current?.();
+      }
+      addedTimeoutRef.current = null;
+    }, 1200);
+  }, [onClose]);
 
   const { form } = useTransactionForm({
     transaction,
     accounts,
     orgMembers,
     onClose,
+    onCreateSuccess: isEditing ? undefined : handleCreateSuccess,
     createMutation,
     updateMutation,
   });
+
+  useEffect(() => {
+    resetFormRef.current = () => {
+      form.reset(buildDefaultValues(null, accounts, orgMembers));
+    };
+  }, [form, accounts, orgMembers]);
+
+  useEffect(() => {
+    return () => {
+      if (addedTimeoutRef.current) {
+        clearTimeout(addedTimeoutRef.current);
+      }
+    };
+  }, []);
   const { isLocked, lockedValue, unlockDescription } =
     useTransactionDescriptionLock({ form, accounts, transaction });
 
@@ -232,7 +281,13 @@ const TransactionFormInner = ({
         </FieldGroup>
       </div>
 
-      <SheetFooter className="flex-row items-center justify-between gap-2 border-t border-border px-6">
+      <SheetFooter
+        className={cn(
+          'flex-row items-center justify-between gap-2 border-t border-border px-6',
+          isMobile &&
+            'sticky bottom-0 z-10 shrink-0 bg-popover pb-[max(1rem,env(safe-area-inset-bottom))]'
+        )}
+      >
         {transaction ? (
           <>
             <Button
@@ -265,14 +320,23 @@ const TransactionFormInner = ({
         ) : (
           <div />
         )}
-        <div className="flex gap-2">
-          <form.Subscribe selector={(s) => s.isSubmitting}>
-            {(isSubmitting) => (
-              <LoadingButton type="submit" loading={isSubmitting}>
-                {transaction ? 'Save changes' : 'Add transaction'}
-              </LoadingButton>
-            )}
-          </form.Subscribe>
+        <div className={cn('flex gap-2', !transaction && isMobile && 'w-full')}>
+          {transaction ? (
+            <LoadingButton
+              type="submit"
+              loading={updateMutation.isPending}
+              loadingText="Saving…"
+            >
+              Save changes
+            </LoadingButton>
+          ) : (
+            <TransactionCreateFooter
+              mode={createMode}
+              onModeChange={setCreateMode}
+              isPending={createMutation.isPending}
+              showAdded={showAdded}
+            />
+          )}
         </div>
       </SheetFooter>
     </form>

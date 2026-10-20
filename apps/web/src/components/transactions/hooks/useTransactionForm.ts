@@ -107,6 +107,8 @@ interface UseTransactionFormOptions {
   accounts: Account[];
   orgMembers?: readonly OrgMember[];
   onClose: () => void;
+  /** Create mode only — called after a successful create (sheet close / reset handled by caller). */
+  onCreateSuccess?: () => void;
   createMutation: CreateMutation;
   updateMutation: UpdateMutation;
 }
@@ -116,6 +118,7 @@ export const useTransactionForm = ({
   accounts,
   orgMembers,
   onClose,
+  onCreateSuccess,
   createMutation,
   updateMutation,
 }: UseTransactionFormOptions) => {
@@ -136,7 +139,13 @@ export const useTransactionForm = ({
       const payload = toTransactionApiPayload(value);
       const mutation = isEditing ? updateMutation : createMutation;
       mutation.mutate(payload, {
-        onSuccess: onClose,
+        onSuccess: () => {
+          if (isEditing) {
+            onClose();
+          } else {
+            onCreateSuccess?.();
+          }
+        },
         onError: () =>
           form.setErrorMap({
             onSubmit:
