@@ -69,7 +69,10 @@ export const TransactionCreateFooter = ({
             <Button
               type="button"
               size="default"
-              className={cn('shrink-0 px-3', isMobile && 'min-w-11')}
+              className={cn(
+                'shrink-0 px-3',
+                isMobile && 'size-11 min-h-11 min-w-11 px-0'
+              )}
               aria-label="More add options"
               disabled={isPending || showAdded}
             />

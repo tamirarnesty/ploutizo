@@ -77,7 +77,7 @@ export const TransactionSheet = ({
           className={cn(
             'flex flex-col gap-0',
             isMobile
-              ? 'h-[100dvh] max-h-[100dvh] w-full max-w-none rounded-none border-t'
+              ? 'inset-0 h-dvh max-h-dvh w-full max-w-none gap-0 rounded-none border-0 data-[side=bottom]:top-0 data-[side=bottom]:h-dvh! data-[side=bottom]:max-h-dvh'
               : 'w-[560px] sm:w-[560px]'
           )}
         >
