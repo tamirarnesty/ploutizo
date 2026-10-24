@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { DataGridColumnHeader } from '@ploutizo/ui/components/reui/data-grid/data-grid-column-header';
+import type { DataGridFeatures } from '@ploutizo/ui/components/reui/data-grid/data-grid';
 import type { CardBalanceRowViewModel } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
 import type { CardBalancesSettleClickHandler } from '@/components/dashboard/card-balances/types';
 import { CardBalancesActionCell } from '@/components/dashboard/card-balances/CardBalancesActionCell';
@@ -26,7 +27,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 /** Sketch 006 / grid-structure-and-density.md column order */
 export const buildCardBalancesColumns = (
   onSettleClick: CardBalancesSettleClickHandler
-): ColumnDef<CardBalanceRowViewModel>[] => [
+): ColumnDef<DataGridFeatures, CardBalanceRowViewModel>[] => [
   {
     id: 'card',
     accessorFn: (row) => row.account.name,
@@ -95,7 +96,7 @@ export const buildCardBalancesColumns = (
     id: 'due',
     accessorFn: (row) => row.dueDate,
     enableSorting: true,
-    sortingFn: (rowA, rowB) => {
+    sortFn: (rowA, rowB) => {
       const av = rowA.original.dueDate;
       const bv = rowB.original.dueDate;
       if (!av && !bv) return 0;

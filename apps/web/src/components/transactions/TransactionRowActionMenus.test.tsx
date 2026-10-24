@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import type { TransactionRow } from '@ploutizo/validators';
+import type { DataGridFeatures } from '@ploutizo/ui/components/reui/data-grid/data-grid';
 import { mockTransactionRow } from '@/test/overlayFixtures';
 import { buildColumns } from './TransactionColumns';
 import { TransactionRowActionsDropdown } from './TransactionRowActionMenus';
@@ -25,7 +26,7 @@ const renderDescriptionCell = (
 
   const context = {
     row: { original: transaction },
-  } as CellContext<TransactionRow, unknown>;
+  } as CellContext<DataGridFeatures, TransactionRow, unknown>;
 
   return render(
     <TooltipProvider delay={0}>{column.cell(context)}</TooltipProvider>

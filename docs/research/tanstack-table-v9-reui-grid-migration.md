@@ -87,6 +87,7 @@ Capabilities added or changed locally in `packages/ui/src/components/reui/` (rec
 - **`FilterFieldConfig.migrateValues`** — Optional `(prevOperator, nextOperator, values) => values` on a filter field. `useFiltersBar` calls it when the user changes a chip’s operator so values can be reshaped (e.g. transactions date filter: `on` → `between` copies the single date into both range ends).
 - **IME-safe Enter in filter menus** — `filter-submenu-content.tsx`, `filters-add-menu.tsx`, and `select-options-menu-content.tsx` ignore Enter while `nativeEvent.isComposing`, so confirming an IME composition does not select an option.
 - **Event-driven menu resets** — `useFiltersBar` and `select-options-popover.tsx` reset the highlighted option, menu search, and open sub-menu in their open/close and search handlers instead of effects. Closing the add-filter menu (including after adding a filter) clears its search and open sub-menu.
+- **Cell selection and spreadsheet editing** — `DataGrid` adds typed `cellSelection`, fill-handle, editor, and `onCellsChange` capabilities. Consumers retain ownership of row data and apply the emitted typed cell changes.
 
 ## Verification checklist
 

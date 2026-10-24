@@ -1,14 +1,18 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  getCoreRowModel,
-  getExpandedRowModel,
-  getPaginationRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { useTable } from '@tanstack/react-table';
 import {
   DataGrid,
   DataGridContainer,
 } from '@ploutizo/ui/components/reui/data-grid/data-grid';
+import { dataGridFeatures } from '@ploutizo/ui/components/reui/data-grid/data-grid-features';
 import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-grid-scroll-area';
 import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-table';
 import { DataGridPagination } from '@ploutizo/ui/components/reui/data-grid/data-grid-pagination';
@@ -28,16 +32,172 @@ import {
   resolveImportReviewTablePagination,
 } from '../lib/useImportDraftReviewState';
 import { useOptionalImportDraftReviewContext } from './ImportDraftReviewContext';
-import { buildImportReviewColumns } from './buildImportReviewColumns';
+import {
+  ImportReviewColumnsRuntimeContext,
+  buildImportReviewColumns,
+} from './buildImportReviewColumns';
 import { focusImportReviewRow } from './focusImportReviewRow';
-import { ImportReviewRowScope } from './ImportReviewRowScope';
 import { useStableImportReviewTableRows } from './useStableImportReviewTableRows';
-import type { SortingState, Updater } from '@tanstack/react-table';
+import type { ImportReviewColumnsRuntime } from './buildImportReviewColumns';
+import type { RefObject } from 'react';
+import type {
+  ColumnPinningState,
+  ExpandedState,
+  PaginationState,
+  SortingState,
+  Updater,
+} from '@tanstack/react-table';
 import type { ImportReviewTableRow } from './useStableImportReviewTableRows';
-import type { ReactNode } from 'react';
 import type { ImportDraftReviewState } from '../lib/useImportDraftReviewState';
 
 const NO_SORTING: SortingState = [];
+
+const INITIAL_COLUMN_PINNING: ColumnPinningState = {
+  start: ['selection'],
+  end: [],
+};
+
+interface ImportDraftReviewGridHandlers {
+  onSortingChange: (updater: Updater<SortingState>) => void;
+  onPaginationChange: (updater: Updater<PaginationState>) => void;
+}
+
+interface ImportDraftReviewGridProps {
+  draftId: string;
+  tableRows: ImportReviewTableRow[];
+  pageIndex: number;
+  pageSize: number;
+  sorting: SortingState;
+  recordCount: number;
+  isLoading: boolean;
+  focusRowId: string | null;
+  headerChecked: boolean;
+  headerIndeterminate: boolean;
+  hasSelectableRows: boolean;
+  initialExpanded: ExpandedState;
+  runtimeRef: RefObject<ImportReviewColumnsRuntime>;
+  handlersRef: RefObject<ImportDraftReviewGridHandlers>;
+}
+
+const ImportDraftReviewGrid = memo(
+  ({
+    draftId,
+    tableRows,
+    pageIndex,
+    pageSize,
+    sorting,
+    recordCount,
+    isLoading,
+    focusRowId,
+    initialExpanded,
+    runtimeRef,
+    handlersRef,
+  }: ImportDraftReviewGridProps) => {
+    const columns = useMemo(
+      () => buildImportReviewColumns({ draftId, runtimeRef }),
+      [draftId, runtimeRef]
+    );
+    const onSortingChange = useCallback(
+      (updater: Updater<SortingState>) => {
+        handlersRef.current.onSortingChange(updater);
+      },
+      [handlersRef]
+    );
+    const onPaginationChange = useCallback(
+      (updater: Updater<PaginationState>) => {
+        handlersRef.current.onPaginationChange(updater);
+      },
+      [handlersRef]
+    );
+    const table = useTable({
+      features: dataGridFeatures,
+      data: tableRows,
+      columns,
+      enableColumnResizing: false,
+      initialState: {
+        expanded: initialExpanded,
+        columnPinning: INITIAL_COLUMN_PINNING,
+      },
+      state: {
+        pagination: { pageIndex, pageSize },
+        sorting,
+      },
+      manualSorting: true,
+      onSortingChange,
+      onPaginationChange,
+      getRowId: (row) => row.id,
+      getRowCanExpand: () => true,
+    });
+    const tableRef = useRef(table);
+    useLayoutEffect(() => {
+      tableRef.current = table;
+    });
+
+    useEffect(() => {
+      if (!focusRowId) return;
+      tableRef.current.setExpanded((current) => {
+        if (current === true || current[focusRowId]) return current;
+        return { ...current, [focusRowId]: true };
+      });
+      const frame = window.requestAnimationFrame(() => {
+        focusImportReviewRow(focusRowId);
+      });
+      return () => window.cancelAnimationFrame(frame);
+    }, [focusRowId]);
+
+    return (
+      <div className="flex max-h-full min-h-0 w-full min-w-0 flex-col">
+        <DataGrid
+          table={table}
+          recordCount={recordCount}
+          isLoading={isLoading}
+          tableLayout={{
+            width: 'fixed',
+            dense: true,
+            columnsResizable: true,
+            columnsPinnable: true,
+            headerSticky: true,
+          }}
+          tableClassNames={{
+            bodyRow: '[&:has(+tr:not([data-row-id]))>td]:border-b-0',
+          }}
+        >
+          <div className={VIEWPORT_FILLED_DATA_GRID_SHELL_CLASSNAME}>
+            <DataGridContainer
+              className={VIEWPORT_FILLED_DATA_GRID_CONTAINER_CLASSNAME}
+            >
+              <DataGridScrollArea
+                className={VIEWPORT_FILLED_DATA_GRID_SCROLL_AREA_CLASSNAME}
+                orientation={VIEWPORT_FILLED_DATA_GRID_SCROLL_ORIENTATION}
+              >
+                <DataGridTable />
+              </DataGridScrollArea>
+            </DataGridContainer>
+            <DataGridPagination
+              sizes={[...IMPORT_REVIEW_PAGE_SIZE_OPTIONS]}
+              className={VIEWPORT_FILLED_DATA_GRID_PAGINATION_CLASSNAME}
+            />
+          </div>
+        </DataGrid>
+      </div>
+    );
+  },
+  (prev, next) =>
+    prev.draftId === next.draftId &&
+    prev.tableRows === next.tableRows &&
+    prev.pageIndex === next.pageIndex &&
+    prev.pageSize === next.pageSize &&
+    prev.sorting === next.sorting &&
+    prev.recordCount === next.recordCount &&
+    prev.isLoading === next.isLoading &&
+    prev.focusRowId === next.focusRowId &&
+    prev.headerChecked === next.headerChecked &&
+    prev.headerIndeterminate === next.headerIndeterminate &&
+    prev.hasSelectableRows === next.hasSelectableRows &&
+    prev.initialExpanded === next.initialExpanded &&
+    prev.runtimeRef === next.runtimeRef &&
+    prev.handlersRef === next.handlersRef
+);
 
 interface ImportDraftReviewTableProps {
   draftId?: string;
@@ -119,27 +279,32 @@ export const ImportDraftReviewTable = ({
   );
   const tableRows = useStableImportReviewTableRows(sortedRows);
 
-  const columns = useMemo(
-    () =>
-      buildImportReviewColumns({
-        draftId: draftId ?? '',
-        headerChecked,
-        headerIndeterminate,
-        onHeaderCheckedChange: setAllSelection,
-        isLoading,
-        hasSelectableRows,
-        onSelectionChange: setRowSelection,
-      }),
-    [
-      draftId,
-      hasSelectableRows,
+  const runtimeRef = useRef<ImportReviewColumnsRuntime>({
+    headerChecked,
+    headerIndeterminate,
+    onHeaderCheckedChange: setAllSelection,
+    isLoading,
+    hasSelectableRows,
+    onSelectionChange: setRowSelection,
+  });
+  const handlersRef = useRef<ImportDraftReviewGridHandlers>({
+    onSortingChange,
+    onPaginationChange: setPagination,
+  });
+  useLayoutEffect(() => {
+    runtimeRef.current = {
       headerChecked,
       headerIndeterminate,
+      onHeaderCheckedChange: setAllSelection,
       isLoading,
-      setAllSelection,
-      setRowSelection,
-    ]
-  );
+      hasSelectableRows,
+      onSelectionChange: setRowSelection,
+    };
+    handlersRef.current = {
+      onSortingChange,
+      onPaginationChange: setPagination,
+    };
+  });
 
   // Parent remounts this table per draft (`key={draft.id}`).
   const [initialExpanded] = useState(() =>
@@ -152,90 +317,43 @@ export const ImportDraftReviewTable = ({
     )
   );
 
-  const table = useReactTable({
-    data: tableRows,
-    columns,
-    enableColumnResizing: false,
-    initialState: {
-      expanded: initialExpanded,
-    },
-    state: {
-      pagination: tablePagination,
-      sorting,
-      columnPinning: { left: ['selection'] },
-    },
-    manualSorting: true,
-    onSortingChange,
-    onPaginationChange: setPagination,
-    getRowId: (row) => row.id,
-    getRowCanExpand: () => true,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getExpandedRowModel: getExpandedRowModel(),
-  });
-
-  const renderBodyRow = useCallback(
-    (row: ImportReviewTableRow, content: ReactNode) => {
-      if (!draftId) return content;
-      const expandedState = table.getState().expanded;
-      const expanded = expandedState === true || Boolean(expandedState[row.id]);
-      return (
-        <ImportReviewRowScope
-          draftId={draftId}
-          rowId={row.id}
-          expanded={expanded}
-        >
-          {content}
-        </ImportReviewRowScope>
-      );
-    },
-    [draftId, table]
+  const columnsRuntime = useMemo(
+    () => ({
+      headerChecked,
+      headerIndeterminate,
+      onHeaderCheckedChange: setAllSelection,
+      isLoading,
+      hasSelectableRows,
+      onSelectionChange: setRowSelection,
+    }),
+    [
+      hasSelectableRows,
+      headerChecked,
+      headerIndeterminate,
+      isLoading,
+      setAllSelection,
+      setRowSelection,
+    ]
   );
 
-  useEffect(() => {
-    if (!focusRowId) return;
-    table.setExpanded((current) =>
-      current === true ? current : { ...current, [focusRowId]: true }
-    );
-    const frame = window.requestAnimationFrame(() => {
-      focusImportReviewRow(focusRowId);
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [focusRowId, table]);
-
   return (
-    <div className="flex max-h-full min-h-0 w-full min-w-0 flex-col">
-      <DataGrid<ImportReviewTableRow>
-        table={table}
+    <ImportReviewColumnsRuntimeContext.Provider value={columnsRuntime}>
+      <ImportDraftReviewGrid
+        draftId={draftId ?? ''}
+        tableRows={tableRows}
+        pageIndex={tablePagination.pageIndex}
+        pageSize={tablePagination.pageSize}
+        sorting={sorting}
         recordCount={rows.length}
         isLoading={isLoading}
-        renderBodyRow={renderBodyRow}
-        tableLayout={{
-          width: 'fixed',
-          dense: true,
-          columnsFill: true,
-          columnsPinnable: true,
-          headerSticky: true,
-          rowBorderWhenExpanded: false,
-        }}
-      >
-        <div className={VIEWPORT_FILLED_DATA_GRID_SHELL_CLASSNAME}>
-          <DataGridContainer
-            className={VIEWPORT_FILLED_DATA_GRID_CONTAINER_CLASSNAME}
-          >
-            <DataGridScrollArea
-              className={VIEWPORT_FILLED_DATA_GRID_SCROLL_AREA_CLASSNAME}
-              orientation={VIEWPORT_FILLED_DATA_GRID_SCROLL_ORIENTATION}
-            >
-              <DataGridTable />
-            </DataGridScrollArea>
-          </DataGridContainer>
-          <DataGridPagination
-            sizes={[...IMPORT_REVIEW_PAGE_SIZE_OPTIONS]}
-            className={VIEWPORT_FILLED_DATA_GRID_PAGINATION_CLASSNAME}
-          />
-        </div>
-      </DataGrid>
-    </div>
+        focusRowId={focusRowId}
+        headerChecked={headerChecked}
+        headerIndeterminate={headerIndeterminate}
+        hasSelectableRows={hasSelectableRows}
+        initialExpanded={initialExpanded}
+        runtimeRef={runtimeRef}
+        handlersRef={handlersRef}
+      />
+    </ImportReviewColumnsRuntimeContext.Provider>
   );
 };
