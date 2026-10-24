@@ -3,10 +3,8 @@
 import type { ReactElement } from 'react';
 import type { DataGridFeatures } from '@/components/reui/data-grid/data-grid';
 import type { Table } from '@tanstack/react-table';
-import {
-  getColumnHeaderLabel,
-  useDataGrid,
-} from '@/components/reui/data-grid/data-grid';
+import { getColumnHeaderLabel } from '@/components/reui/data-grid/data-grid-cells';
+import { useDataGrid } from '@/components/reui/data-grid/data-grid';
 
 import {
   DropdownMenu,

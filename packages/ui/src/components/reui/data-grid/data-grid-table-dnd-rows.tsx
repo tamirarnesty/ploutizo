@@ -71,10 +71,12 @@ import {
   DataGridTableHeadRowCellResize,
   DataGridTableRowSpacer,
   DataGridTableViewport,
+} from '@/components/reui/data-grid/data-grid-table';
+import {
   getDataGridHeadCellResizeHeader,
   getDataGridTableMergedHeaderGroups,
   renderDataGridTableHeadCellContent,
-} from '@/components/reui/data-grid/data-grid-table';
+} from '@/components/reui/data-grid/data-grid-table-layout';
 import { useDataGrid } from '@/components/reui/data-grid/data-grid';
 
 // Context to share sortable listeners from row to handle
@@ -316,8 +318,13 @@ function DataGridTableDndRow<TData extends object>({
     </DataGridTableBodyRowCell>
   );
 
+  const sortableValue = useMemo(
+    () => ({ attributes, listeners }),
+    [attributes, listeners]
+  );
+
   return (
-    <SortableRowContext.Provider value={{ attributes, listeners }}>
+    <SortableRowContext.Provider value={sortableValue}>
       <DataGridTableBodyRow
         row={row}
         dndRef={setNodeRef}
@@ -417,7 +424,7 @@ const MemoizedDataGridTableDndRowsBody = memo(
   (_prev, next) => !!next.table.state.columnResizing?.isResizingColumn
 ) as typeof DataGridTableDndRowsBody;
 
-function DataGridTableDndRows<TData extends object>({
+function useDataGridTableDndRowsState<TData extends object>({
   handleDragEnd,
   dataIds,
   footerContent,
@@ -476,23 +483,14 @@ function DataGridTableDndRows<TData extends object>({
   const mergedHeaderGroups = getDataGridTableMergedHeaderGroups(table);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [isDraggingRow, setIsDraggingRow] = useState(false);
-  // The overlay is portalled to the document body. dnd-kit renders DragOverlay
-  // in place, and it positions with `position: fixed` against viewport
-  // coordinates - so any ancestor that establishes a containing block for fixed
-  // descendants silently re-anchors it. `content-visibility`, `contain`,
-  // `transform`, `filter` and `will-change` all do that, and the first two are
-  // exactly what a card grid uses to defer off-screen work. The clone then
-  // lands offset by that ancestor's own top/left, and the container clamp
-  // below mis-clamps too, because its rects are measured in viewport space.
-  //
-  // Resolved in an effect rather than read at render so the server and the
-  // first client render agree. A drag cannot start before hydration, so the
-  // overlay being absent for one frame costs nothing.
+  // DragOverlay positions with `position: fixed` against viewport coordinates,
+  // so any ancestor that establishes a containing block (`content-visibility`,
+  // `contain`, `transform`, `filter`, `will-change`) re-anchors it. Card grids
+  // use the first two to defer off-screen work, which offsets the clone and
+  // the container clamp. Portal to document.body once a drag starts. Reading
+  // document during render would disagree with the server, and a drag cannot
+  // start before hydration.
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
-
-  useEffect(() => {
-    setPortalTarget(document.body);
-  }, []);
   // The row being carried, plus the column widths measured off the header the
   // moment the drag starts. The clone lives outside the table, so it has no
   // columns of its own and has to be told what they are.
@@ -649,6 +647,7 @@ function DataGridTableDndRows<TData extends object>({
       onDragMove={onDragMove}
       onDragOver={onDragOver}
       onDragStart={(event) => {
+        setPortalTarget(document.body);
         setIsDraggingRow(true);
         pickUpRow(event.active.id);
         onDragStart?.(event);
@@ -693,7 +692,10 @@ function DataGridTableDndRows<TData extends object>({
               };
 
               return (
-                <DataGridTableHeadRow key={index} rowId={headerGroup.id}>
+                <DataGridTableHeadRow
+                  key={headerGroup.id}
+                  rowId={headerGroup.id}
+                >
                   {/* Every row follows DataGridTableBase's colgroup, which
                       puts the fill col between the center and end-pinned
                       groups; a fill cell appended last hands its width to
@@ -819,6 +821,12 @@ function DataGridTableDndRows<TData extends object>({
         : null}
     </DndContext>
   );
+}
+
+function DataGridTableDndRows<TData extends object>(
+  props: Parameters<typeof useDataGridTableDndRowsState<TData>>[0]
+) {
+  return useDataGridTableDndRowsState<TData>(props);
 }
 
 export { DataGridTableDndRowHandle, DataGridTableDndRows };

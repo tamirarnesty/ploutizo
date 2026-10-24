@@ -27,14 +27,30 @@ import type {
   DataGridTableInstance,
 } from '@/components/reui/data-grid/data-grid';
 import type { Cell, Column, Header, Row } from '@tanstack/react-table';
+import type { DataGridTablePinnedBoundary } from '@/components/reui/data-grid/data-grid-table-layout';
 import {
   dataGridCellSelectionCellClasses,
   getDataGridCellSelectionCellAttrs,
   getDataGridHeaderSpans,
   toDataGridDomId,
+} from '@/components/reui/data-grid/data-grid-cells';
+import {
   useDataGrid,
   useDataGridAtom,
 } from '@/components/reui/data-grid/data-grid';
+
+import {
+  getDataGridHeadCellResizeHeader,
+  getDataGridHeadCellSizeVar,
+  getDataGridScrollAreaViewport,
+  getDataGridTableMergedHeaderGroups,
+  getDataGridTableResolvedRows,
+  getDataGridTableRowSections,
+  getDataGridTreeIndentStyle,
+  getPinningStyles,
+  hasDataGridTableRightPinnedColumns,
+  renderDataGridTableHeadCellContent,
+} from '@/components/reui/data-grid/data-grid-table-layout';
 
 import { Button } from '@/components/button';
 import { Checkbox } from '@/components/checkbox';
@@ -64,40 +80,6 @@ const bodyCellTruncateWrapVariants = ({
 const footerCellSpacingVariants = ({ size }: { size?: 'dense' | 'default' }) =>
   size === 'dense' ? 'px-2 py-1.5' : 'px-3 py-2';
 
-function getPinningStyles<TData extends object>(
-  column: Column<DataGridFeatures, TData, unknown>
-): CSSProperties {
-  const isPinned = column.getIsPinned();
-
-  return {
-    // Logical offsets: TanStack's "left"/"right" buckets are start/end
-    // semantics, so pinned columns stick to the correct edge in RTL too
-    // (identical to left/right in LTR).
-    insetInlineStart:
-      isPinned === 'start' ? `${column.getStart('start')}px` : undefined,
-    insetInlineEnd:
-      isPinned === 'end' ? `${column.getAfter('end')}px` : undefined,
-    position: isPinned ? 'sticky' : undefined,
-    transform: isPinned ? 'translateZ(0)' : undefined,
-    contain: isPinned ? 'paint' : undefined,
-    width: column.getSize(),
-    zIndex: isPinned ? 30 : undefined,
-    backgroundClip: isPinned ? 'padding-box' : undefined,
-  };
-}
-
-// Shared indent contract for tree rows: DataGridTableRowExpand consumes it,
-// and fully custom cells can reuse it for depth alignment without the
-// built-in toggle.
-function getDataGridTreeIndentStyle<TData extends object>(
-  row: Row<DataGridFeatures, TData>,
-  indent: number = 20
-): CSSProperties {
-  return {
-    '--data-grid-tree-padding': `${row.depth * indent}px`,
-  } as CSSProperties;
-}
-
 function assignRef<T>(ref: Ref<T> | undefined, value: T | null) {
   if (!ref) return;
 
@@ -107,22 +89,6 @@ function assignRef<T>(ref: Ref<T> | undefined, value: T | null) {
   }
 
   (ref as { current: T | null }).current = value;
-}
-
-/**
- * Nearest scroll-area viewport that belongs to THIS grid. A viewport outside
- * the grid's own container (e.g. a page-level ScrollArea) would make the
- * width measurement - and the virtualizer - bind the wrong box.
- */
-function getDataGridScrollAreaViewport(node: HTMLElement): HTMLElement | null {
-  const scrollViewport = node.closest('[data-slot="scroll-area-viewport"]');
-
-  if (!(scrollViewport instanceof HTMLElement)) return null;
-
-  const gridContainer = node.closest('[data-slot="data-grid"]');
-  if (gridContainer && !gridContainer.contains(scrollViewport)) return null;
-
-  return scrollViewport;
 }
 
 /**
@@ -560,68 +526,6 @@ function startDataGridColumnResizeOnEnd<TData extends object>(
   return () => endResize(lastClientX);
 }
 
-type DataGridTablePinnedBoundary = 'top' | 'bottom';
-
-function getDataGridTableRowSections<TData extends object>(
-  table: DataGridTableInstance<TData>,
-  rowsPinnable?: boolean
-) {
-  if (!rowsPinnable) {
-    return {
-      topRows: [] as Row<DataGridFeatures, TData>[],
-      centerRows: table.getRowModel().rows,
-      bottomRows: [] as Row<DataGridFeatures, TData>[],
-    };
-  }
-
-  return {
-    topRows: table.getTopRows(),
-    centerRows: table.getCenterRows(),
-    bottomRows: table.getBottomRows(),
-  };
-}
-
-function getDataGridTableResolvedRows<TData extends object>(
-  table: DataGridTableInstance<TData>,
-  rowsPinnable?: boolean
-) {
-  const { topRows, centerRows, bottomRows } = getDataGridTableRowSections(
-    table,
-    rowsPinnable
-  );
-  const resolvedRows: Array<{
-    row: Row<DataGridFeatures, TData>;
-    pinnedBoundary?: DataGridTablePinnedBoundary;
-  }> = [];
-
-  topRows.forEach((row, index) => {
-    resolvedRows.push({
-      row,
-      pinnedBoundary:
-        index === topRows.length - 1 &&
-        (centerRows.length > 0 || bottomRows.length > 0)
-          ? 'top'
-          : undefined,
-    });
-  });
-
-  centerRows.forEach((row) => {
-    resolvedRows.push({ row });
-  });
-
-  bottomRows.forEach((row, index) => {
-    resolvedRows.push({
-      row,
-      pinnedBoundary:
-        index === 0 && (centerRows.length > 0 || topRows.length > 0)
-          ? 'bottom'
-          : undefined,
-    });
-  });
-
-  return resolvedRows;
-}
-
 function getDataGridTableOrderedVisibleColumns<TData extends object>(
   table: DataGridTableInstance<TData>
 ) {
@@ -662,91 +566,6 @@ function getDataGridTableOrderedVisibleCells<TData extends object>(
   ] as Cell<DataGridFeatures, TData, unknown>[];
 }
 
-function getDataGridTableMergedHeaderGroups<TData extends object>(
-  table: DataGridTableInstance<TData>
-) {
-  const leftHeaderGroups = table.getStartHeaderGroups();
-  const centerHeaderGroups = table.getCenterHeaderGroups();
-  const rightHeaderGroups = table.getEndHeaderGroups();
-  const headerGroupCount = Math.max(
-    leftHeaderGroups.length,
-    centerHeaderGroups.length,
-    rightHeaderGroups.length
-  );
-  const spans = getDataGridHeaderSpans(table);
-  // Headers a meta.headerColSpan cell covers, by that cell's header id.
-  const coveredHeaders = new Map<
-    string,
-    Header<DataGridFeatures, TData, unknown>[]
-  >();
-
-  // TanStack gives a merged run rowSpan N on its top cell and 0 on the cells
-  // it covers, so the covered ones are not rendered at all.
-  const getRenderedHeaders = (
-    headers: Header<DataGridFeatures, TData>[] = []
-  ) => {
-    const rendered = headers.filter((header) => header.rowSpan !== 0) as Header<
-      DataGridFeatures,
-      TData,
-      unknown
-    >[];
-    if (!spans.size) return rendered;
-
-    const cells: Header<DataGridFeatures, TData, unknown>[] = [];
-    for (let index = 0; index < rendered.length; index++) {
-      const header = rendered[index];
-      cells.push(header);
-      const coveredColumns = header.column.columns.length
-        ? undefined
-        : spans.get(header.column.id);
-      if (!coveredColumns) continue;
-
-      // Siblings share their header chain, so each covered cell sits right
-      // after the owner in this row with the same rowSpan.
-      const covered: Header<DataGridFeatures, TData, unknown>[] = [];
-      for (const coveredColumn of coveredColumns) {
-        const next = rendered[index + 1 + covered.length];
-        if (
-          next?.column.id !== coveredColumn.id ||
-          next.rowSpan !== header.rowSpan
-        ) {
-          break;
-        }
-        covered.push(next);
-      }
-      if (!covered.length) continue;
-
-      coveredHeaders.set(header.id, covered);
-      index += covered.length;
-    }
-
-    return cells;
-  };
-
-  return Array.from({ length: headerGroupCount }, (_, index) => {
-    const leftGroup = leftHeaderGroups[index];
-    const centerGroup = centerHeaderGroups[index];
-    const rightGroup = rightHeaderGroups[index];
-
-    return {
-      id:
-        [leftGroup?.id, centerGroup?.id, rightGroup?.id]
-          .filter(Boolean)
-          .join(':') || `header-group-${index}`,
-      headers: [
-        ...(leftGroup?.headers ?? []),
-        ...(centerGroup?.headers ?? []),
-        ...(rightGroup?.headers ?? []),
-      ] as Header<DataGridFeatures, TData, unknown>[],
-      // The cells this row renders, per pinning family.
-      startHeaders: getRenderedHeaders(leftGroup?.headers),
-      centerHeaders: getRenderedHeaders(centerGroup?.headers),
-      endHeaders: getRenderedHeaders(rightGroup?.headers),
-      coveredHeaders,
-    };
-  });
-}
-
 /**
  * Every header the head rows may render: the unpinned tree plus each
  * pinning family's, whose ids carry a family prefix above the leaf row.
@@ -780,42 +599,6 @@ function getDataGridHeaderLeafColumns<TData extends object>(
   return leafColumns.length ? leafColumns : [header.column];
 }
 
-// A placeholder heading a merged run renders its column's header; one left
-// unmerged would repeat the header of the leaf below it.
-function renderDataGridTableHeadCellContent<TData extends object>(
-  header: Header<DataGridFeatures, TData, unknown>
-) {
-  return header.isPlaceholder && header.rowSpan <= 1
-    ? null
-    : flexRender(header.column.columnDef.header, header.getContext());
-}
-
-// A span's handle drives its last covered leaf; end-pinned, it sits on the
-// start edge and drives the owner, as an end-pinned group's handle does.
-function getDataGridHeadCellResizeHeader<TData extends object>(
-  header: Header<DataGridFeatures, TData, unknown>,
-  coveredHeaders?: Header<DataGridFeatures, TData, unknown>[]
-) {
-  return coveredHeaders?.length && header.column.getIsPinned() !== 'end'
-    ? coveredHeaders[coveredHeaders.length - 1]
-    : header;
-}
-
-// A span sums its covered leaves' variables, so a live resize of any of them
-// moves its edge too.
-function getDataGridHeadCellSizeVar<TData extends object>(
-  header: Header<DataGridFeatures, TData, unknown>,
-  coveredHeaders: Header<DataGridFeatures, TData, unknown>[] = []
-) {
-  if (!coveredHeaders.length)
-    return `calc(var(--header-${header.id}-size) * 1px)`;
-
-  const sizes = [header, ...coveredHeaders].map(
-    (spanned) => `var(--header-${spanned.id}-size)`
-  );
-  return `calc((${sizes.join(' + ')}) * 1px)`;
-}
-
 /**
  * Which edge of a leaf column's header draws a resting divider line, or null
  * for none. Mirrors the branches of DataGridTableHeadRowCellResize, so a
@@ -843,12 +626,6 @@ function getDataGridHeaderLineEdge<TData extends object>(
   }
 
   return 'end';
-}
-
-function hasDataGridTableRightPinnedColumns<TData extends object>(
-  table: DataGridTableInstance<TData>
-) {
-  return (table.state.columnPinning.end?.length ?? 0) > 0;
 }
 
 // A meta.fillWidth column absorbs the free space itself, so the fill cells
@@ -1061,6 +838,7 @@ function DataGridTableBase({ children }: { children: ReactNode }) {
     // consumer defining columns inline the memo degrades to per-render
     // recompute, which is the safe direction.
     table.options.columns,
+    table,
   ]);
 
   // With cell selection on, the table announces as a grid so the tds compute
@@ -1309,24 +1087,23 @@ function DataGridTableHeadRow({
   );
 }
 
-function DataGridTableHeadRowCell<TData extends object>({
+const renderDataGridTableHeadRowCellView = <TData extends object>({
   children,
   header,
-  coveredHeaders = [],
+  coveredHeaders,
   dndRef,
   dndStyle,
+  props,
+  table,
 }: {
   children: ReactNode;
   header: Header<DataGridFeatures, TData, unknown>;
-  /** Headers this cell spans through meta.headerColSpan; they render none. */
-  coveredHeaders?: Header<DataGridFeatures, TData, unknown>[];
+  coveredHeaders: Header<DataGridFeatures, TData, unknown>[];
   dndRef?: React.Ref<HTMLTableCellElement>;
   dndStyle?: CSSProperties;
-}) {
-  const { props, table } = useDataGrid<TData>();
-  // Pinned offsets and the span width below are read from sizing state.
-  useDataGridAtom(table.atoms.columnSizing);
-
+  props: DataGridLayoutProps<TData>;
+  table: DataGridTableInstance<TData>;
+}) => {
   const { column } = header;
   // A group cell spans several leaves, and its own column reads pinned when
   // ANY leaf is and has no index or offsets: pin state, edges and offsets
@@ -1546,6 +1323,35 @@ function DataGridTableHeadRowCell<TData extends object>({
       ) : null}
     </th>
   );
+};
+
+function DataGridTableHeadRowCell<TData extends object>({
+  children,
+  header,
+  coveredHeaders = [],
+  dndRef,
+  dndStyle,
+}: {
+  children: ReactNode;
+  header: Header<DataGridFeatures, TData, unknown>;
+  /** Headers this cell spans through meta.headerColSpan; they render none. */
+  coveredHeaders?: Header<DataGridFeatures, TData, unknown>[];
+  dndRef?: React.Ref<HTMLTableCellElement>;
+  dndStyle?: CSSProperties;
+}) {
+  const { props, table } = useDataGrid<TData>();
+  // Pinned offsets and the span width below are read from sizing state.
+  useDataGridAtom(table.atoms.columnSizing);
+
+  return renderDataGridTableHeadRowCellView<TData>({
+    children,
+    header,
+    coveredHeaders,
+    dndRef,
+    dndStyle,
+    props,
+    table,
+  });
 }
 
 /**
@@ -1567,6 +1373,102 @@ function getDataGridColumnResizeMode(
 ) {
   return layoutMode ?? tableMode ?? DATA_GRID_DEFAULT_COLUMN_RESIZE_MODE;
 }
+
+const renderDataGridTableHeadRowCellResize = <TData extends object>({
+  column,
+  handleMouseDown,
+  handleTouchStart,
+  isPinned,
+  props,
+  isLastVisibleColumn,
+  hidesLastCenterLine,
+  isResizeModeOnEnd,
+}: {
+  column: Column<DataGridFeatures, TData, unknown>;
+  handleMouseDown: (event: ReactMouseEvent<HTMLElement>) => void;
+  handleTouchStart: (event: ReactTouchEvent<HTMLElement>) => void;
+  isPinned: ReturnType<Column<DataGridFeatures, TData, unknown>['getIsPinned']>;
+  props: DataGridLayoutProps<TData>;
+  isLastVisibleColumn: boolean;
+  hidesLastCenterLine: boolean | undefined;
+  isResizeModeOnEnd: boolean;
+}) => {
+  return (
+    // A span, deliberately: consumers stretch end-aligned header CONTENT
+    // with `[&>div]:w-full` on headerClassName, and that compiled child
+    // selector (0,1,1) beats the handle's own w-5 (0,1,0) - a div handle
+    // then covers the whole cell and swallows the menu click. Hardening
+    // w-5 with ! was rejected: the tag change removes the fight instead
+    // of escalating it.
+    <span
+      data-slot="data-grid-table-resize-handle"
+      {...{
+        onDoubleClick: () => column.resetSize(),
+        onMouseDown: handleMouseDown,
+        onTouchStart: handleTouchStart,
+        className: cn(
+          'absolute top-0 z-10 flex h-full cursor-col-resize touch-none select-none',
+          isPinned === 'end'
+            ? cn(
+                // An end-pinned column grows from its START edge (its end is
+                // anchored), so the handle lives there, inside the sticky
+                // cell.
+                'start-0 w-5 justify-start',
+                props.tableLayout?.columnsPinnable
+                  ? 'before:hidden'
+                  : 'before:absolute before:inset-y-0 before:start-0 before:w-px before:bg-border'
+              )
+            : isLastVisibleColumn
+              ? 'end-0 w-5 justify-end before:hidden'
+              : isPinned
+                ? cn(
+                    // A pinned column is sticky, so the handle sits inside the
+                    // cell instead of straddling the boundary, where the next
+                    // sticky cell would paint over it.
+                    'end-0 w-5 justify-end',
+                    // With the pin affordance on, the pinned edge already draws
+                    // its own separator and a resize line would double it. But
+                    // pinning is also usable purely as an ordering lock, with no
+                    // affordance and no separator -- and there this line is the
+                    // only thing marking the edge, so hiding it left a resizable
+                    // column showing a resize cursor and no indicator at all.
+                    props.tableLayout?.columnsPinnable
+                      ? 'before:hidden'
+                      : 'before:absolute before:inset-y-0 before:end-0 before:w-px before:bg-border'
+                  )
+                : cn(
+                    '-end-2 w-5 justify-center',
+                    // With cell borders on, the th border-e already marks every
+                    // boundary and this always-on line would double it; the wide
+                    // hit area and resize cursor stay. end-2 cancels the
+                    // handle's -end-2 overhang, so the line paints on the
+                    // cell's last pixel column, where a th border-e paints.
+                    props.tableLayout?.cellBorder || hidesLastCenterLine
+                      ? 'before:hidden'
+                      : 'before:absolute before:inset-y-0 before:end-2 before:w-px before:bg-border'
+                  ),
+          column.getIsResizing() &&
+            (isResizeModeOnEnd
+              ? 'opacity-100'
+              : isLastVisibleColumn && isPinned !== 'end'
+                ? 'opacity-100 before:absolute before:inset-y-0 before:end-0 before:block before:w-0.5 before:bg-primary'
+                : isPinned
+                  ? 'opacity-100 before:block before:w-0.5 before:bg-primary'
+                  : cn(
+                      // Positioned explicitly: under cellBorder the resting
+                      // line is hidden and unpositioned.
+                      'opacity-100 before:absolute before:inset-y-0 before:block before:w-0.5 before:bg-primary',
+                      // A th border-e ends the padding box 1px inside the
+                      // cell edge, so the line moves out by that pixel.
+                      props.tableLayout?.cellBorder && !hidesLastCenterLine
+                        ? 'before:end-[calc(--spacing(2)-1px)]'
+                        : 'before:end-2'
+                    ))
+        ),
+      }}
+    />
+  );
+};
 
 function DataGridTableHeadRowCellResize<TData extends object>({
   header,
@@ -1649,81 +1551,16 @@ function DataGridTableHeadRowCellResize<TData extends object>({
     );
   };
 
-  return (
-    // A span, deliberately: consumers stretch end-aligned header CONTENT
-    // with `[&>div]:w-full` on headerClassName, and that compiled child
-    // selector (0,1,1) beats the handle's own w-5 (0,1,0) - a div handle
-    // then covers the whole cell and swallows the menu click. Hardening
-    // w-5 with ! was rejected: the tag change removes the fight instead
-    // of escalating it.
-    <span
-      data-slot="data-grid-table-resize-handle"
-      {...{
-        onDoubleClick: () => column.resetSize(),
-        onMouseDown: handleMouseDown,
-        onTouchStart: handleTouchStart,
-        className: cn(
-          'absolute top-0 z-10 flex h-full cursor-col-resize touch-none select-none',
-          isPinned === 'end'
-            ? cn(
-                // An end-pinned column grows from its START edge (its end is
-                // anchored), so the handle lives there, inside the sticky
-                // cell.
-                'start-0 w-5 justify-start',
-                props.tableLayout?.columnsPinnable
-                  ? 'before:hidden'
-                  : 'before:absolute before:inset-y-0 before:start-0 before:w-px before:bg-border'
-              )
-            : isLastVisibleColumn
-              ? 'end-0 w-5 justify-end before:hidden'
-              : isPinned
-                ? cn(
-                    // A pinned column is sticky, so the handle sits inside the
-                    // cell instead of straddling the boundary, where the next
-                    // sticky cell would paint over it.
-                    'end-0 w-5 justify-end',
-                    // With the pin affordance on, the pinned edge already draws
-                    // its own separator and a resize line would double it. But
-                    // pinning is also usable purely as an ordering lock, with no
-                    // affordance and no separator -- and there this line is the
-                    // only thing marking the edge, so hiding it left a resizable
-                    // column showing a resize cursor and no indicator at all.
-                    props.tableLayout?.columnsPinnable
-                      ? 'before:hidden'
-                      : 'before:absolute before:inset-y-0 before:end-0 before:w-px before:bg-border'
-                  )
-                : cn(
-                    '-end-2 w-5 justify-center',
-                    // With cell borders on, the th border-e already marks every
-                    // boundary and this always-on line would double it; the wide
-                    // hit area and resize cursor stay. end-2 cancels the
-                    // handle's -end-2 overhang, so the line paints on the
-                    // cell's last pixel column, where a th border-e paints.
-                    props.tableLayout?.cellBorder || hidesLastCenterLine
-                      ? 'before:hidden'
-                      : 'before:absolute before:inset-y-0 before:end-2 before:w-px before:bg-border'
-                  ),
-          column.getIsResizing() &&
-            (isResizeModeOnEnd
-              ? 'opacity-100'
-              : isLastVisibleColumn && isPinned !== 'end'
-                ? 'opacity-100 before:absolute before:inset-y-0 before:end-0 before:block before:w-0.5 before:bg-primary'
-                : isPinned
-                  ? 'opacity-100 before:block before:w-0.5 before:bg-primary'
-                  : cn(
-                      // Positioned explicitly: under cellBorder the resting
-                      // line is hidden and unpositioned.
-                      'opacity-100 before:absolute before:inset-y-0 before:block before:w-0.5 before:bg-primary',
-                      // A th border-e ends the padding box 1px inside the
-                      // cell edge, so the line moves out by that pixel.
-                      props.tableLayout?.cellBorder && !hidesLastCenterLine
-                        ? 'before:end-[calc(--spacing(2)-1px)]'
-                        : 'before:end-2'
-                    ))
-        ),
-      }}
-    />
-  );
+  return renderDataGridTableHeadRowCellResize<TData>({
+    column,
+    handleMouseDown,
+    handleTouchStart,
+    isPinned,
+    props,
+    isLastVisibleColumn,
+    hidesLastCenterLine,
+    isResizeModeOnEnd,
+  });
 }
 
 function DataGridTableResizeIndicator({
@@ -1989,14 +1826,17 @@ function DataGridTableBodyRowSkeleton({ children }: { children: ReactNode }) {
   );
 }
 
-function DataGridTableBodyRowSkeletonCell<TData extends object>({
+const renderDataGridTableBodyRowSkeletonCell = <TData extends object>({
   children,
   column,
+  props,
+  table,
 }: {
   children: ReactNode;
   column: Column<DataGridFeatures, TData, unknown>;
-}) {
-  const { props, table } = useDataGrid();
+  props: DataGridLayoutProps<TData>;
+  table: DataGridTableInstance<TData>;
+}) => {
   const isPinned = column.getIsPinned();
   const isLastStartPinned =
     isPinned === 'start' && column.getIsLastColumn('start');
@@ -2046,9 +1886,25 @@ function DataGridTableBodyRowSkeletonCell<TData extends object>({
       {children}
     </td>
   );
+};
+
+function DataGridTableBodyRowSkeletonCell<TData extends object>({
+  children,
+  column,
+}: {
+  children: ReactNode;
+  column: Column<DataGridFeatures, TData, unknown>;
+}) {
+  const { props, table } = useDataGrid();
+  return renderDataGridTableBodyRowSkeletonCell<TData>({
+    children,
+    column,
+    props,
+    table: table as DataGridTableInstance<TData>,
+  });
 }
 
-function DataGridTableBodyRow<TData extends object>({
+const renderDataGridTableBodyRow = <TData extends object>({
   children,
   row,
   pinnedBoundary,
@@ -2057,6 +1913,8 @@ function DataGridTableBodyRow<TData extends object>({
   dndStyle,
   dndDragging,
   dataIndex,
+  props,
+  table,
 }: {
   children: ReactNode;
   row: Row<DataGridFeatures, TData>;
@@ -2066,9 +1924,9 @@ function DataGridTableBodyRow<TData extends object>({
   dndStyle?: CSSProperties;
   dndDragging?: boolean;
   dataIndex?: number;
-}) {
-  const context = useDataGrid();
-  const { props, table } = context;
+  props: DataGridLayoutProps<TData>;
+  table: DataGridTableInstance<TData>;
+}) => {
   const isRowPinned = row.getIsPinned();
   const rowStatus = props.getRowStatus?.(row.original);
 
@@ -2105,8 +1963,16 @@ function DataGridTableBodyRow<TData extends object>({
       onClick={(event) => {
         if (isDataGridPortalEvent(event)) return;
         // Through the getter, as in DataGridTableAddRow.
-        context.props.onRowClick?.(row.original);
+        props.onRowClick?.(row.original);
       }}
+      onKeyDown={(event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        if (event.target !== event.currentTarget) return;
+        if (!props.onRowClick) return;
+        event.preventDefault();
+        props.onRowClick(row.original);
+      }}
+      tabIndex={props.onRowClick ? 0 : undefined}
       className={cn(
         'hover:bg-muted/40 data-[state=selected]:bg-muted/50',
         /* With the pin affordance on, pinned cells hide scrolled content
@@ -2163,6 +2029,41 @@ function DataGridTableBodyRow<TData extends object>({
       {children}
     </tr>
   );
+};
+
+function DataGridTableBodyRow<TData extends object>({
+  children,
+  row,
+  pinnedBoundary,
+  rowRef,
+  dndRef,
+  dndStyle,
+  dndDragging,
+  dataIndex,
+}: {
+  children: ReactNode;
+  row: Row<DataGridFeatures, TData>;
+  pinnedBoundary?: DataGridTablePinnedBoundary;
+  rowRef?: React.Ref<HTMLTableRowElement>;
+  dndRef?: React.Ref<HTMLTableRowElement>;
+  dndStyle?: CSSProperties;
+  dndDragging?: boolean;
+  dataIndex?: number;
+}) {
+  const context = useDataGrid();
+  const { props, table } = context;
+  return renderDataGridTableBodyRow<TData>({
+    children,
+    row,
+    pinnedBoundary,
+    rowRef,
+    dndRef,
+    dndStyle,
+    dndDragging,
+    dataIndex,
+    props,
+    table: table as DataGridTableInstance<TData>,
+  });
 }
 
 function DataGridTableBodyRowExpandded<TData extends object>({
@@ -3082,16 +2983,6 @@ export {
   DataGridTableRowSelectAll,
   DataGridTableRowSpacer,
   DataGridTableViewport,
-  getDataGridHeadCellResizeHeader,
-  getDataGridHeadCellSizeVar,
-  getDataGridScrollAreaViewport,
-  getDataGridTableMergedHeaderGroups,
-  renderDataGridTableHeadCellContent,
-  getPinningStyles,
-  getDataGridTableResolvedRows,
-  getDataGridTableRowSections,
-  getDataGridTreeIndentStyle,
-  hasDataGridTableRightPinnedColumns,
 };
 
-export type { DataGridTablePinnedBoundary };
+export type { DataGridTablePinnedBoundary } from '@/components/reui/data-grid/data-grid-table-layout';

@@ -8,7 +8,7 @@ import {
   EmptyDescription,
   EmptyHeader,
 } from '@ploutizo/ui/components/empty';
-import { dataGridFeatures } from '@ploutizo/ui/components/reui/data-grid/data-grid';
+import { dataGridFeatures } from '@ploutizo/ui/components/reui/data-grid/data-grid-features';
 import type { TransactionRow } from '@ploutizo/validators';
 import { DASHBOARD_RECENT_TRANSACTIONS_PARAMS } from '@/lib/data-access/transactions/dashboardRecentTransactions';
 import type { DashboardRecentTransactionsQuery } from '@/lib/data-access/transactions/dashboardRecentTransactions';

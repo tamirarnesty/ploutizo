@@ -57,61 +57,70 @@ import {
   DataGridTableHeadRowCellResize,
   DataGridTableRowSpacer,
   DataGridTableViewport,
+} from '@/components/reui/data-grid/data-grid-table';
+import {
   getDataGridHeadCellResizeHeader,
   getDataGridHeadCellSizeVar,
   getDataGridTableMergedHeaderGroups,
   renderDataGridTableHeadCellContent,
-} from '@/components/reui/data-grid/data-grid-table';
-import {
-  getDataGridHeaderSpans,
-  useDataGrid,
-} from '@/components/reui/data-grid/data-grid';
+} from '@/components/reui/data-grid/data-grid-table-layout';
+import { getDataGridHeaderSpans } from '@/components/reui/data-grid/data-grid-cells';
+import { useDataGrid } from '@/components/reui/data-grid/data-grid';
 
-function DataGridTableDndHeader<TData extends object>({
+const EMPTY_COVERED_HEADERS: readonly Header<
+  DataGridFeatures,
+  never,
+  unknown
+>[] = [];
+
+const dataGridDndHeaderIsLocked = (
+  isPinned: boolean,
+  isGroup: boolean,
+  isSpan: boolean
+) => isPinned || isGroup || isSpan;
+
+const renderDataGridTableDndHeader = <TData extends object>({
   header,
-  coveredHeaders = [],
+  coveredHeaders,
+  i18n,
+  props,
+  column,
+  isPinned,
+  isGroup,
+  isSpan,
+  attributes,
+  isDragging,
+  listeners,
+  setNodeRef,
+  transform,
+  transition,
 }: {
   header: Header<DataGridFeatures, TData, unknown>;
-  /** Headers this cell spans through meta.headerColSpan. */
-  coveredHeaders?: Header<DataGridFeatures, TData, unknown>[];
-}) {
-  const { i18n, props } = useDataGrid();
-  const { column } = header;
-
-  // Pinning decides where a pinned column renders whatever columnOrder says,
-  // so dragging one could only rewrite hidden order. It gets no grip and is
-  // neither a drag source nor a drop target. Neither is a group cell: its
-  // id is not in columnOrder, which holds leaves only.
-  const isPinned = !!column.getIsPinned();
-  const isGroup = column.columns.length > 0;
-  // A span is no drag source: a drop moves one leaf, never its covered ones.
-  const isSpan = coveredHeaders.length > 0;
+  coveredHeaders: Header<DataGridFeatures, TData, unknown>[];
+  i18n: { labels: { dragToReorder: string } };
+  props: {
+    tableLayout?: { columnsPinnable?: boolean; columnsResizable?: boolean };
+  };
+  column: Header<DataGridFeatures, TData, unknown>['column'];
+  isPinned: boolean;
+  isGroup: boolean;
+  isSpan: boolean;
+  attributes: Record<string, unknown>;
+  isDragging: boolean;
+  listeners: Record<string, unknown> | undefined;
+  setNodeRef: (node: HTMLElement | null) => void;
+  transform: { x: number; y: number; scaleX: number; scaleY: number } | null;
+  transition: string | undefined;
+}) => {
   const canOrder =
     (column.columnDef as { enableColumnOrdering?: boolean })
       .enableColumnOrdering !== false &&
     !isPinned &&
     !isGroup &&
     !isSpan;
-
-  const {
-    attributes,
-    isDragging,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({
-    id: header.column.id,
-    disabled: isPinned || isGroup || isSpan,
-  });
   const resizeHeader = getDataGridHeadCellResizeHeader(header, coveredHeaders);
-
-  // This style spreads after getPinningStyles, so a sticky pinned cell must
-  // not take the drag keys: relative and z-index 0 would unstick it and sink
-  // it under the centre cells. Omitted, not undefined, which would still win.
   const isSticky =
     !!props.tableLayout?.columnsPinnable && column.getCanPin() && isPinned;
-
   const style: CSSProperties = {
     opacity: isDragging ? 0.8 : 1,
     ...(!isSticky && {
@@ -129,7 +138,6 @@ function DataGridTableDndHeader<TData extends object>({
           header.column.getSize()
         ),
   };
-
   return (
     <DataGridTableHeadRowCell
       header={header}
@@ -161,6 +169,64 @@ function DataGridTableDndHeader<TData extends object>({
       </div>
     </DataGridTableHeadRowCell>
   );
+};
+
+function DataGridTableDndHeader<TData extends object>({
+  header,
+  coveredHeaders = EMPTY_COVERED_HEADERS as unknown as Header<
+    DataGridFeatures,
+    TData,
+    unknown
+  >[],
+}: {
+  header: Header<DataGridFeatures, TData, unknown>;
+  /** Headers this cell spans through meta.headerColSpan. */
+  coveredHeaders?: Header<DataGridFeatures, TData, unknown>[];
+}) {
+  const { i18n, props } = useDataGrid();
+  const { column } = header;
+
+  // Pinning decides where a pinned column renders whatever columnOrder says,
+  // so dragging one could only rewrite hidden order. It gets no grip and is
+  // neither a drag source nor a drop target. Neither is a group cell: its
+  // id is not in columnOrder, which holds leaves only.
+  const isPinned = !!column.getIsPinned();
+  const isGroup = column.columns.length > 0;
+  // A span is no drag source: a drop moves one leaf, never its covered ones.
+  const isSpan = coveredHeaders.length > 0;
+
+  const {
+    attributes,
+    isDragging,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({
+    id: header.column.id,
+    disabled: dataGridDndHeaderIsLocked(isPinned, isGroup, isSpan),
+  });
+
+  // This style spreads after getPinningStyles, so a sticky pinned cell must
+  // not take the drag keys: relative and z-index 0 would unstick it and sink
+  // it under the centre cells. Omitted, not undefined, which would still win.
+
+  return renderDataGridTableDndHeader<TData>({
+    header,
+    coveredHeaders,
+    i18n,
+    props,
+    column,
+    isPinned,
+    isGroup,
+    isSpan,
+    attributes: attributes as unknown as Record<string, unknown>,
+    isDragging,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  });
 }
 
 function DataGridTableDndCell<TData extends object>({
@@ -484,7 +550,10 @@ function DataGridTableDnd<TData extends object>({
           <DataGridTableHead>
             {mergedHeaderGroups.map((headerGroup, index) => {
               return (
-                <DataGridTableHeadRow key={index} rowId={headerGroup.id}>
+                <DataGridTableHeadRow
+                  key={headerGroup.id}
+                  rowId={headerGroup.id}
+                >
                   <SortableContext
                     items={table.state.columnOrder}
                     strategy={horizontalListSortingStrategy}

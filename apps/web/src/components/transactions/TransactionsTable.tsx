@@ -3,8 +3,8 @@ import { useTable } from '@tanstack/react-table';
 import {
   DataGrid,
   DataGridContainer,
-  dataGridFeatures,
 } from '@ploutizo/ui/components/reui/data-grid/data-grid';
+import { dataGridFeatures } from '@ploutizo/ui/components/reui/data-grid/data-grid-features';
 import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-table';
 import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-grid-scroll-area';
 import { DataGridPagination } from '@ploutizo/ui/components/reui/data-grid/data-grid-pagination';

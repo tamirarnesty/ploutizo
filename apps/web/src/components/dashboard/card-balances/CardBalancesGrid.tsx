@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useTable } from '@tanstack/react-table';
 import { CardFooter } from '@ploutizo/ui/components/card';
-import { dataGridFeatures } from '@ploutizo/ui/components/reui/data-grid/data-grid';
+import { dataGridFeatures } from '@ploutizo/ui/components/reui/data-grid/data-grid-features';
 import { DataGridPagination } from '@ploutizo/ui/components/reui/data-grid/data-grid-pagination';
 import type { CardBalancesGridProps } from '@/components/dashboard/card-balances/types';
 import { buildCardBalancesColumns } from '@/components/dashboard/card-balances/buildCardBalancesColumns';

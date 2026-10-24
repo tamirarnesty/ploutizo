@@ -145,7 +145,18 @@ function DataGridPagination(props: DataGridPaginationProps): JSX.Element {
     ellipsisText: i18n.labels.paginationEllipsis,
   };
 
-  const mergedProps: DataGridPaginationProps = { ...defaultProps, ...props };
+  const mergedProps: DataGridPaginationProps = {
+    ...defaultProps,
+    ...props,
+    sizes: props.sizes ?? [5, 10, 25, 50, 100],
+    sizesSkeleton: props.sizesSkeleton ?? <Skeleton className="h-8 w-44" />,
+    moreLimit: props.moreLimit ?? 5,
+    infoSkeleton: props.infoSkeleton ?? <Skeleton className="h-8 w-60" />,
+    rowsPerPageLabel: props.rowsPerPageLabel ?? i18n.labels.rowsPerPage,
+    previousPageLabel: props.previousPageLabel ?? i18n.labels.previousPage,
+    nextPageLabel: props.nextPageLabel ?? i18n.labels.nextPage,
+    ellipsisText: props.ellipsisText ?? i18n.labels.paginationEllipsis,
+  };
 
   const btnBaseClasses = 'p-0 text-sm';
   const btnArrowClasses = btnBaseClasses + ' rtl:transform rtl:rotate-180';

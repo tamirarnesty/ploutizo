@@ -11,10 +11,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { useMemo } from 'react';
 import { useTable } from '@tanstack/react-table';
 import { ContextMenuItem } from '@ploutizo/ui/components/context-menu';
-import {
-  DataGrid,
-  dataGridFeatures,
-} from '@ploutizo/ui/components/reui/data-grid/data-grid';
+import { DataGrid } from '@ploutizo/ui/components/reui/data-grid/data-grid';
+import { dataGridFeatures } from '@ploutizo/ui/components/reui/data-grid/data-grid-features';
 import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-table';
 import type { DataGridFeatures } from '@ploutizo/ui/components/reui/data-grid/data-grid';
 import { DataGridRowContextMenu } from './DataGridRowContextMenu';

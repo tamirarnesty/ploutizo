@@ -118,7 +118,7 @@ function applyMetrics(element: HTMLElement, metrics: ScrollbarMetrics) {
   );
 }
 
-function DataGridScrollArea({
+function useDataGridScrollAreaState({
   children,
   className,
   orientation = 'both',
@@ -294,81 +294,89 @@ function DataGridScrollArea({
   useEffect(() => {
     const container = containerRef.current;
     const viewport = viewportRef.current;
-
-    if (!container || !viewport) return;
-
-    if (!usesCustomVerticalScrollbar) {
-      resetMetrics();
-      return;
-    }
-
     let frame = 0;
-
     const scheduleSync = () => {
       cancelAnimationFrame(frame);
       frame = window.requestAnimationFrame(syncCustomVerticalScrollbar);
     };
-
-    const observer =
+    const resizeObserver =
       typeof ResizeObserver === 'undefined'
-        ? null
+        ? { observe(_target: Element) {}, disconnect() {} }
         : new ResizeObserver(scheduleSync);
-    const observed = new Set<HTMLElement>();
-
-    const observeElement = (element: HTMLElement | null) => {
-      if (element && observer && !observed.has(element)) {
-        observer.observe(element);
-        observed.add(element);
+    const scrollTarget = viewport ?? document.createElement('div');
+    const observeTarget = container ?? document.createElement('div');
+    const readObservedElements = () => {
+      if (!container) {
+        return {
+          header: null,
+          horizontalScrollbar: null,
+          table: null,
+          tableViewport: null,
+        };
       }
-    };
-
-    const resolveObservedElements = () => {
-      observedElementsRef.current = {
-        header: container.querySelector('[data-slot="data-grid-table"] thead'),
-        horizontalScrollbar: container.querySelector(
+      return {
+        header: container.querySelector<HTMLElement>(
+          '[data-slot="data-grid-table"] thead'
+        ),
+        horizontalScrollbar: container.querySelector<HTMLElement>(
           '[data-slot="data-grid-scrollbar"][data-orientation="horizontal"]'
         ),
-        table: container.querySelector('[data-slot="data-grid-table"]'),
-        tableViewport: container.querySelector(
+        table: container.querySelector<HTMLElement>(
+          '[data-slot="data-grid-table"]'
+        ),
+        tableViewport: container.querySelector<HTMLElement>(
           '[data-slot="data-grid-table-viewport"]'
         ),
       };
-
-      observeElement(observedElementsRef.current.header);
-      observeElement(observedElementsRef.current.table);
-      observeElement(observedElementsRef.current.tableViewport);
-
-      return !!(
-        observedElementsRef.current.header && observedElementsRef.current.table
-      );
     };
+    const mutationObserver: {
+      observe: (target: Node, options: MutationObserverInit) => void;
+      disconnect: () => void;
+    } =
+      typeof MutationObserver === 'undefined'
+        ? {
+            observe(_target: Node, _options: MutationObserverInit) {},
+            disconnect() {},
+          }
+        : new MutationObserver(() => {
+            const next = readObservedElements();
+            observedElementsRef.current = next;
+            if (next.header) resizeObserver.observe(next.header);
+            if (next.table) resizeObserver.observe(next.table);
+            if (next.tableViewport) resizeObserver.observe(next.tableViewport);
+            if (next.header && next.table) {
+              mutationObserver.disconnect();
+              scheduleSync();
+            }
+          });
 
-    observeElement(viewport);
-    const resolvedOnMount = resolveObservedElements();
-
-    scheduleSync();
-    viewport.addEventListener('scroll', scheduleSync, { passive: true });
-
-    // A table that mounts after this effect (empty state swapped for data)
-    // would otherwise never be observed and the custom scrollbar would
-    // overlap the sticky header. One-shot: disconnects once resolved.
-    let mutationObserver: MutationObserver | null = null;
-    if (!resolvedOnMount && typeof MutationObserver !== 'undefined') {
-      mutationObserver = new MutationObserver(() => {
-        if (resolveObservedElements()) {
-          mutationObserver?.disconnect();
-          mutationObserver = null;
-          scheduleSync();
-        }
-      });
-      mutationObserver.observe(container, { childList: true, subtree: true });
+    if (!container || !viewport || !usesCustomVerticalScrollbar) {
+      if (container && viewport) resetMetrics();
+    } else {
+      const initial = readObservedElements();
+      observedElementsRef.current = initial;
+      resizeObserver.observe(viewport);
+      if (initial.header) resizeObserver.observe(initial.header);
+      if (initial.table) resizeObserver.observe(initial.table);
+      if (initial.tableViewport) resizeObserver.observe(initial.tableViewport);
+      scheduleSync();
+      scrollTarget.addEventListener('scroll', scheduleSync, { passive: true });
+      // A table that mounts after this effect (empty state swapped for data)
+      // would otherwise never be observed and the custom scrollbar would
+      // overlap the sticky header. One-shot: disconnects once resolved.
+      if (!(initial.header && initial.table)) {
+        mutationObserver.observe(observeTarget, {
+          childList: true,
+          subtree: true,
+        });
+      }
     }
 
     return () => {
       cancelAnimationFrame(frame);
-      observer?.disconnect();
-      mutationObserver?.disconnect();
-      viewport.removeEventListener('scroll', scheduleSync);
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
+      scrollTarget.removeEventListener('scroll', scheduleSync);
       clearDragState();
     };
   }, [
@@ -550,6 +558,10 @@ function DataGridScrollArea({
       </div>
     </DirectionProvider>
   );
+}
+
+function DataGridScrollArea(props: DataGridScrollAreaProps) {
+  return useDataGridScrollAreaState(props);
 }
 
 export { DataGridScrollArea };

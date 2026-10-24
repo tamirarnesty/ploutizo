@@ -1089,7 +1089,10 @@ function isDataGridInteractiveKeyTarget(target: EventTarget | null): boolean {
  * body viewport, which also receives focus (container-focus model), so a
  * virtualized row unmounting can never strand `document.activeElement`.
  */
-function DataGridCellSelection<TData extends object>({
+const scheduleDataGridTimer = (callback: () => void, delay: number) =>
+  setTimeout(callback, delay);
+
+function useDataGridCellSelectionController<TData extends object>({
   apiRef,
   clipboard = true,
   keyboard = true,
@@ -1119,33 +1122,53 @@ function DataGridCellSelection<TData extends object>({
   const enabled =
     !!context.props.tableLayout?.cellSelection &&
     table.atoms.cellSelection != null;
+  const [latest] = useState(() => ({
+    table,
+    onCellsChange: context.props.onCellsChange,
+    cellSelectionMode: context.props.tableLayout?.cellSelectionMode,
+    onCellEditRequest: context.props.onCellEditRequest,
+    onCellsCopy: context.props.onCellsCopy,
+    cellEditMode: context.props.tableLayout?.cellEditMode,
+    onCellSelectionChange: context.props.onCellSelectionChange,
+    apiRef,
+  }));
+  latest.table = table;
+  latest.onCellsChange = context.props.onCellsChange;
+  latest.cellSelectionMode = context.props.tableLayout?.cellSelectionMode;
+  latest.onCellEditRequest = context.props.onCellEditRequest;
+  latest.onCellsCopy = context.props.onCellsCopy;
+  latest.cellEditMode = context.props.tableLayout?.cellEditMode;
+  latest.onCellSelectionChange = context.props.onCellSelectionChange;
+  latest.apiRef = apiRef;
 
   useEffect(() => {
-    if (!enabled) return;
-    const anchor = anchorRef.current;
-    if (!anchor) return;
-
-    const root =
-      anchor.closest('[data-slot="data-grid"]') ?? anchor.parentElement;
-    if (!root) return;
-
+    const anchor = enabled ? anchorRef.current : null;
+    const root = anchor
+      ? (anchor.closest('[data-slot="data-grid"]') ?? anchor.parentElement)
+      : null;
     // Split header/body grids render two viewports; the body one owns focus.
-    const viewports = Array.from(
-      root.querySelectorAll<HTMLElement>(
-        '[data-slot="data-grid-table-viewport"]'
-      )
-    );
-    const viewport =
+    const viewports = root
+      ? Array.from(
+          root.querySelectorAll<HTMLElement>(
+            '[data-slot="data-grid-table-viewport"]'
+          )
+        )
+      : [];
+    const resolvedViewport =
       viewports.find((node) =>
         node.querySelector('[data-slot="data-grid-table-body"]')
-      ) ?? viewports[0];
-    if (!viewport) return;
+      ) ??
+      viewports[0] ??
+      null;
+    // Handlers below close over one element. When the grid is not mounted
+    // yet, that element is detached and nothing is registered on it.
+    const viewport = resolvedViewport ?? document.createElement('div');
+    const attached = resolvedViewport !== null;
 
-    const getTable = () => context.table;
-    const getOnCellsChange = () => context.props.onCellsChange ?? null;
+    const getTable = () => latest.table;
+    const getOnCellsChange = () => latest.onCellsChange ?? null;
     // "single" collapses every grow gesture to the focused cell.
-    const isRangeSelectionEnabled = () =>
-      context.props.tableLayout?.cellSelectionMode !== 'single';
+    const isRangeSelectionEnabled = () => latest.cellSelectionMode !== 'single';
 
     // The focusable element of the container-focus model. The table carries
     // role="grid", so putting DOM focus (and aria-activedescendant) on it is
@@ -1248,7 +1271,7 @@ function DataGridCellSelection<TData extends object>({
         });
         return true;
       }
-      const onCellEditRequest = context.props.onCellEditRequest;
+      const onCellEditRequest = latest.onCellEditRequest;
       if (cellEdit && onCellEditRequest) {
         onCellEditRequest({
           rowId: cell.row.id,
@@ -1294,6 +1317,7 @@ function DataGridCellSelection<TData extends object>({
     // commit that mounts the row. One bounded timer retry (timers, unlike
     // animation frames, run in background tabs) settles all of it in order.
     let focusRetryTimer: ReturnType<typeof setTimeout> | undefined;
+    let focusReclaimTimer: ReturnType<typeof setTimeout> | undefined;
     const focusCell: DataGridCellSelectionApi['focusCell'] = (
       rowId,
       columnId,
@@ -1309,7 +1333,8 @@ function DataGridCellSelection<TData extends object>({
           `tr[data-row-id="${CSS.escape(rowId)}"] td[data-col-id="${CSS.escape(columnId)}"]`
         );
         if (!cell) {
-          if (attempts-- > 0) focusRetryTimer = setTimeout(attempt, 32);
+          if (attempts-- > 0)
+            focusRetryTimer = scheduleDataGridTimer(attempt, 32);
           return;
         }
         getTable().setFocusedCell(rowId, columnId);
@@ -1326,7 +1351,7 @@ function DataGridCellSelection<TData extends object>({
           if (!cell.isConnected) return;
           if (cell.hasAttribute('data-cell-focused')) requestCellEdit();
           else if (editAttempts-- > 0) {
-            focusRetryTimer = setTimeout(attemptEdit, 32);
+            focusRetryTimer = scheduleDataGridTimer(attemptEdit, 32);
           }
         };
         attemptEdit();
@@ -1344,7 +1369,9 @@ function DataGridCellSelection<TData extends object>({
         )
       );
     };
-    if (apiRef) apiRef.current = { focusCell, clearSelection, scrollToCell };
+    if (latest.apiRef) {
+      latest.apiRef.current = { focusCell, clearSelection, scrollToCell };
+    }
 
     // Resolves jump targets (Home, End, Ctrl+Arrows, PageUp/PageDown) in the
     // feature's display-index space and lands them through the range API:
@@ -1616,7 +1643,7 @@ function DataGridCellSelection<TData extends object>({
           event.preventDefault();
           void writeSelectionToClipboard().then((written) => {
             if (!written) return;
-            context.props.onCellsCopy?.({ ...written, cut: isCut });
+            latest.onCellsCopy?.({ ...written, cut: isCut });
             if (!isCut) return;
             const onCellsChange = getOnCellsChange();
             if (!onCellsChange) return;
@@ -1913,7 +1940,7 @@ function DataGridCellSelection<TData extends object>({
         'text/html',
         renderDataGridClipboardHtml(grid)
       );
-      context.props.onCellsCopy?.({ text, grid, cut });
+      latest.onCellsCopy?.({ text, grid, cut });
       return true;
     };
 
@@ -1987,7 +2014,7 @@ function DataGridCellSelection<TData extends object>({
       pressedUnfocusedControl = false;
       if (event.button !== 0) return;
       if (event.shiftKey || event.ctrlKey || event.metaKey) return;
-      if (context.props.tableLayout?.cellEditMode === 'click') return;
+      if (latest.cellEditMode === 'click') return;
       const control = getTwoStepControl(event.target);
       const cell = control?.closest('td[data-col-id]');
       if (!control || !cell || !viewport.contains(cell)) return;
@@ -2047,6 +2074,7 @@ function DataGridCellSelection<TData extends object>({
     // in-cell control changes nothing, and its click must go through).
     let dragStartedOnCell = false;
     let dragStartSelectionKey = '';
+    let squelchTimer: ReturnType<typeof setTimeout> | undefined;
     const getSelectionKey = () => {
       const table = getTable();
       const bounds = table.getCellSelectionBounds();
@@ -2057,6 +2085,10 @@ function DataGridCellSelection<TData extends object>({
           : ''
       }`;
     };
+    const squelchClick = (clickEvent: MouseEvent) => {
+      clickEvent.stopPropagation();
+      clickEvent.preventDefault();
+    };
     const handleDragMouseUp = () => {
       const wasDrag =
         dragStartedOnCell &&
@@ -2065,12 +2097,10 @@ function DataGridCellSelection<TData extends object>({
       dragStartedOnCell = false;
       viewport.removeAttribute('data-cell-selecting');
       if (!wasDrag) return;
-      const squelch = (clickEvent: MouseEvent) => {
-        clickEvent.stopPropagation();
-        clickEvent.preventDefault();
-      };
-      viewport.addEventListener('click', squelch, { capture: true });
-      setTimeout(() => viewport.removeEventListener('click', squelch, true), 0);
+      viewport.addEventListener('click', squelchClick, { capture: true });
+      squelchTimer = scheduleDataGridTimer(() => {
+        viewport.removeEventListener('click', squelchClick, true);
+      }, 0);
     };
 
     const handleMouseDown = (event: MouseEvent) => {
@@ -2092,7 +2122,7 @@ function DataGridCellSelection<TData extends object>({
         isRangeSelectionEnabled() &&
         target?.closest?.('td[data-col-id]')
       ) {
-        setTimeout(() => focusTarget.focus(), 0);
+        focusReclaimTimer = scheduleDataGridTimer(() => focusTarget.focus(), 0);
       }
       // Any td press can become a drag; the squelch only arms when the
       // range actually grew by release time. The attribute hides the fill
@@ -2121,7 +2151,7 @@ function DataGridCellSelection<TData extends object>({
     // squelched in capture before this bubble listener, and modifier
     // clicks are selection gestures.
     const handleClickToEdit = (event: MouseEvent) => {
-      if (context.props.tableLayout?.cellEditMode !== 'click') return;
+      if (latest.cellEditMode !== 'click') return;
       if (event.shiftKey || event.ctrlKey || event.metaKey) return;
       if (isDataGridInteractiveKeyTarget(event.target)) return;
       const cell = (event.target as HTMLElement | null)?.closest?.('td');
@@ -2143,25 +2173,27 @@ function DataGridCellSelection<TData extends object>({
 
     const previousTabIndex = focusTarget.getAttribute('tabindex');
     const previousOutline = focusTarget.style.outline;
-    if (keyboard) {
+    if (attached && keyboard) {
       focusTarget.tabIndex = 0;
       // The focused CELL ring is the indicator; the browser's outline around
       // the whole grid on focus() would double it.
       focusTarget.style.outline = 'none';
       viewport.addEventListener('keydown', handleKeyDown);
     }
-    if (clipboard) {
+    if (attached && clipboard) {
       viewport.addEventListener('copy', handleCopy);
       viewport.addEventListener('cut', handleCut);
       viewport.addEventListener('paste', handlePaste);
     }
-    viewport.addEventListener('pointerdown', handleControlPointerDown);
-    viewport.addEventListener('mousedown', handleControlMouseDown);
-    viewport.addEventListener('click', handleControlClick);
-    viewport.addEventListener('mousedown', handleMouseDown);
-    viewport.addEventListener('click', handleClickToEdit);
-    viewport.addEventListener('dblclick', handleDoubleClick);
-    viewport.ownerDocument.addEventListener('mouseup', handleDragMouseUp);
+    if (attached) {
+      viewport.addEventListener('pointerdown', handleControlPointerDown);
+      viewport.addEventListener('mousedown', handleControlMouseDown);
+      viewport.addEventListener('click', handleControlClick);
+      viewport.addEventListener('mousedown', handleMouseDown);
+      viewport.addEventListener('click', handleClickToEdit);
+      viewport.addEventListener('dblclick', handleDoubleClick);
+      viewport.ownerDocument.addEventListener('mouseup', handleDragMouseUp);
+    }
     // Selection-change notifications, read through the context getter so
     // the latest callback fires without re-running this effect. The
     // snapshot is only built when a callback is actually wired.
@@ -2176,50 +2208,57 @@ function DataGridCellSelection<TData extends object>({
       minColumnIndex: bound.minColumnIndex,
       maxColumnIndex: bound.maxColumnIndex,
     });
-    const selectionSubscription = table.atoms.cellSelection?.subscribe(() => {
-      const onCellSelectionChange = context.props.onCellSelectionChange;
-      if (!onCellSelectionChange) return;
-      const tableNow = getTable();
-      const focusedCell = tableNow.getFocusedCell();
-      const activeBound = getDataGridActiveBound(tableNow);
-      onCellSelectionChange({
-        focused: focusedCell
-          ? { rowId: focusedCell.row.id, columnId: focusedCell.column.id }
-          : null,
-        bounds: tableNow.getCellSelectionBounds().map(toBound),
-        activeBound: activeBound ? toBound(activeBound) : null,
-        visibleCellCount: getDataGridVisibleSelectedCellCount(
-          tableNow,
-          viewport
-        ),
+    const cellSelectionAtom = latest.table.atoms.cellSelection;
+    let selectionSubscription: { unsubscribe: () => void } = {
+      unsubscribe() {},
+    };
+    if (attached && cellSelectionAtom) {
+      selectionSubscription = cellSelectionAtom.subscribe(() => {
+        const onCellSelectionChange = latest.onCellSelectionChange;
+        if (!onCellSelectionChange) return;
+        const tableNow = getTable();
+        const focusedCell = tableNow.getFocusedCell();
+        const activeBound = getDataGridActiveBound(tableNow);
+        onCellSelectionChange({
+          focused: focusedCell
+            ? { rowId: focusedCell.row.id, columnId: focusedCell.column.id }
+            : null,
+          bounds: tableNow.getCellSelectionBounds().map(toBound),
+          activeBound: activeBound ? toBound(activeBound) : null,
+          visibleCellCount: getDataGridVisibleSelectedCellCount(
+            tableNow,
+            viewport
+          ),
+        });
       });
-    });
-    setViewportEl(viewport);
+    }
+    if (attached) setViewportEl(viewport);
 
     return () => {
-      if (keyboard) {
+      if (attached && keyboard) {
         if (previousTabIndex === null) focusTarget.removeAttribute('tabindex');
         else focusTarget.setAttribute('tabindex', previousTabIndex);
         focusTarget.style.outline = previousOutline;
         focusTarget.removeAttribute('aria-activedescendant');
-        viewport.removeEventListener('keydown', handleKeyDown);
       }
-      if (clipboard) {
-        viewport.removeEventListener('copy', handleCopy);
-        viewport.removeEventListener('cut', handleCut);
-        viewport.removeEventListener('paste', handlePaste);
-      }
+      viewport.removeEventListener('keydown', handleKeyDown);
+      viewport.removeEventListener('copy', handleCopy);
+      viewport.removeEventListener('cut', handleCut);
+      viewport.removeEventListener('paste', handlePaste);
       viewport.removeEventListener('pointerdown', handleControlPointerDown);
       viewport.removeEventListener('mousedown', handleControlMouseDown);
       viewport.removeEventListener('click', handleControlClick);
       viewport.removeEventListener('mousedown', handleMouseDown);
       viewport.removeEventListener('click', handleClickToEdit);
       viewport.removeEventListener('dblclick', handleDoubleClick);
+      viewport.removeEventListener('click', squelchClick, true);
       viewport.ownerDocument.removeEventListener('mouseup', handleDragMouseUp);
       viewport.removeAttribute('data-cell-selecting');
-      selectionSubscription?.unsubscribe();
+      selectionSubscription.unsubscribe();
       clearTimeout(focusRetryTimer);
-      if (apiRef) apiRef.current = null;
+      clearTimeout(focusReclaimTimer);
+      clearTimeout(squelchTimer);
+      if (latest.apiRef) latest.apiRef.current = null;
       setViewportEl(null);
       setEditorSession(null);
     };
@@ -2227,7 +2266,7 @@ function DataGridCellSelection<TData extends object>({
     // effect re-runs only when the table itself is replaced. apiRef is only
     // read and written here: keeping it out of the deps means an inline ref
     // object cannot tear the listeners down every render.
-  }, [enabled, keyboard, clipboard, table.store]);
+  }, [enabled, keyboard, clipboard, table.store, latest]);
 
   // The editor overlay covers the cell but not the fill handle's
   // straddling half, which would poke out beneath it; the viewport flags
@@ -2363,6 +2402,14 @@ function DataGridCellSelection<TData extends object>({
       ) : null}
     </>
   );
+}
+
+function DataGridCellSelection<TData extends object>(props: {
+  apiRef?: RefObject<DataGridCellSelectionApi | null>;
+  clipboard?: boolean;
+  keyboard?: boolean;
+}) {
+  return useDataGridCellSelectionController<TData>(props);
 }
 
 /**
@@ -2628,18 +2675,7 @@ function DataGridSelectionBar({
   );
 }
 
-export {
-  DataGridCellSelection,
-  DataGridSelectionBar,
-  buildDataGridClearDetails,
-  buildDataGridPasteDetails,
-  getDataGridActiveRegionGrid,
-  getDataGridVisibleSelectedCellCount,
-  invertDataGridCellsChange,
-  parseDataGridClipboardText,
-  serializeDataGridClipboardText,
-  tileDataGridClipboardBlock,
-};
+export { DataGridCellSelection, DataGridSelectionBar };
 export type {
   DataGridCellSelectionApi,
   DataGridFocusCellOptions,

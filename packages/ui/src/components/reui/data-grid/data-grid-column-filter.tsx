@@ -159,20 +159,13 @@ function DataGridColumnFilter<TData extends object, TValue>({
             <>
               <div className="-mx-1 my-1 h-px bg-border" />
               <div className="p-1">
-                <div
-                  role="button"
-                  tabIndex={0}
+                <button
+                  type="button"
                   onClick={() => column?.setFilterValue(undefined)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      column?.setFilterValue(undefined);
-                    }
-                  }}
-                  className="relative flex cursor-pointer items-center justify-center rounded-md px-2 py-1.5 text-sm outline-hidden select-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                  className="relative flex w-full cursor-pointer items-center justify-center rounded-md border-0 bg-transparent px-2 py-1.5 text-sm text-inherit outline-hidden select-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                 >
                   {i18n.labels.filterClear}
-                </div>
+                </button>
               </div>
             </>
           )}
