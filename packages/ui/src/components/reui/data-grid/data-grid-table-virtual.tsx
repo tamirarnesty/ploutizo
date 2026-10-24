@@ -1,6 +1,5 @@
 'use client';
 
-// Opted out of React Compiler with the rest of the grid (see data-grid.tsx).
 'use no memo';
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -475,13 +474,6 @@ function DataGridTableVirtualStatusRow<TData extends object>({
   );
 }
 
-/**
- * A scroll frame only shifts the window, so every surviving row's inputs are
- * identical and its last render is reused; the per-frame cost is the rows
- * entering the window, not all mounted rows. Cell-level state (selection,
- * focus, row checks) repaints through each cell's own Subscribe, and any real
- * data change rebuilds the row wrappers, so identity comparison is safe.
- */
 const MemoizedRenderedRow = memo(
   DataGridTableRenderedRow,
   (prev, next) =>
@@ -513,8 +505,6 @@ const renderDataGridTableVirtualBody = <TData extends object>({
   const totalRows = topRows.length + centerRows.length + bottomRows.length;
 
   if (!totalRows) {
-    // Initial load must not flash the empty state as if the query returned
-    // nothing.
     if (isLoading) {
       return (
         <DataGridTableVirtualStatusRow table={table}>
@@ -657,14 +647,6 @@ function DataGridTableVirtualBody<TData extends object>(
   return renderDataGridTableVirtualBody<TData>({ ...props, isLoading });
 }
 
-/**
- * Memoized virtual body: skip re-renders during active column resize.
- * Column widths update via CSS variables on the <table> element,
- * so the browser handles width changes without React re-renders.
- * A cell-selection drag gets the same treatment: painting goes through each
- * cell's own Subscribe, and the virtualizer re-renders itself from inside the
- * memo boundary, so parent-driven reconciliation during the drag is waste.
- */
 const MemoizedVirtualBody = memo(
   DataGridTableVirtualBody,
   (_prev, next) =>
@@ -771,9 +753,6 @@ const dataGridVirtualViewportStyle = (
         height,
         overflow: 'auto',
         position: 'relative',
-        // Standalone mode: this node IS the scroll container, so it
-        // must stay at its parent's width (not the resizable table
-        // width) or horizontal scrolling becomes impossible.
         width: 'auto',
       };
 
@@ -810,12 +789,6 @@ function useDataGridTableVirtualModel<TData extends object>({
   const mergedHeaderGroups = getDataGridTableMergedHeaderGroups(table);
   const hasRightPinnedColumns = hasDataGridTableRightPinnedColumns(table);
   const centerVisibleColumns = table.getCenterVisibleLeafColumns();
-  // Column windows only where the geometry is provable: a fixed table
-  // layout (undefined defaults to fixed; the colgroup then owns every
-  // width, so colSpan spacers cannot drift) and a single ungrouped header
-  // row (a colSpan group or meta.headerColSpan cell cannot be windowed).
-  // Anything else falls back to full-column rendering silently, the same
-  // posture as row virtualization toward unsupported shapes.
   const columnVirtualizationActive = dataGridColumnVirtualizationActive(
     columnVirtualizerOptions?.enabled,
     props.tableLayout?.width,
@@ -957,9 +930,6 @@ function useDataGridTableVirtualModel<TData extends object>({
     columnVirtualizationActive,
     columnVirtualizer.getVirtualItems()
   );
-  // The window is a contiguous inclusive [start, end] over the center
-  // columns; before the scroll element resolves the item list is empty and
-  // the grid renders full-width for that first frame.
   const centerColumnWindow = dataGridCenterColumnWindow(
     columnVirtualizationActive,
     virtualColumns
@@ -991,17 +961,10 @@ function useDataGridTableVirtualModel<TData extends object>({
   const lastScrollRequestRef = useRef<DataGridTableVirtualScrollRequest | null>(
     null
   );
-  // Latch onFetchMore per row count: virtualItems gets a new identity every
-  // scroll frame, so without it the effect fires duplicate page requests
-  // before the consumer flips isFetchingMore, and loops at end-of-data when
-  // hasMore is never set.
   const fetchMoreFiredAtCountRef = useRef<number | null>(null);
   const lastColumnScrollRequestRef =
     useRef<DataGridTableColumnScrollRequest | null>(null);
 
-  // Controlled column reveal: same dedupe posture as the row request - the
-  // signature keeps ordinary renders from re-scrolling, and exact column
-  // sizes mean no post-measure follow-up pass is needed.
   useEffect(() => {
     if (
       !columnVirtualizationActive ||
@@ -1042,8 +1005,6 @@ function useDataGridTableVirtualModel<TData extends object>({
     viewportElements.scrollElement,
   ]);
 
-  // Resolve after every commit so a stable getter can expose a replaced ref;
-  // the request signature prevents duplicate scrolling on ordinary renders.
   useEffect(() => {
     const previousRequest = lastScrollRequestRef.current;
 
@@ -1184,10 +1145,6 @@ function useDataGridTableVirtualModel<TData extends object>({
     lastVirtualIndex,
   ]);
 
-  // The header re-renders only when its real inputs move: the table
-  // wrapper (any table state change recreates it), the layout props, and
-  // the column window. A scroll frame changes none of them, so the whole
-  // sortable-header subtree is reused instead of rebuilt per frame.
   const headerNode = useMemo(() => {
     const headerGroups = getDataGridTableMergedHeaderGroups(table);
     const centerColumnCount = table.getCenterVisibleLeafColumns().length;
@@ -1199,8 +1156,6 @@ function useDataGridTableVirtualModel<TData extends object>({
       renderHeader && (
         <DataGridTableHead>
           {headerGroups.map((headerGroup, rowIndex) => {
-            // The fill strip is one cell spanning every head row, so only
-            // the first row renders it.
             const fillHeadCell =
               props.tableLayout?.columnsResizable && rowIndex === 0 ? (
                 <DataGridTableFillHeadCell rowSpan={headerGroups.length} />
@@ -1231,10 +1186,6 @@ function useDataGridTableVirtualModel<TData extends object>({
 
             return (
               <DataGridTableHeadRow key={headerGroup.id} rowId={headerGroup.id}>
-                {/* Under an active column window the single ungrouped header
-                        row is bucketed start / windowed center / end, with each
-                        off-window flank one colSpan spacer sized by the intact
-                        colgroup - the same shape the body rows take. */}
                 {centerColumnWindow
                   ? headerGroup.startHeaders.map(renderHeadCell)
                   : null}
@@ -1318,8 +1269,6 @@ function useDataGridTableVirtualModel<TData extends object>({
             measureRowRef={measureRowRef}
             centerColumnWindow={centerColumnWindow}
           />
-          {/* Same appended region as the standard body, so onRowCreate and
-              a consumer draft work in the virtual layout too. */}
           {props.appendRow}
           <DataGridTableAddRow />
         </DataGridTableBody>

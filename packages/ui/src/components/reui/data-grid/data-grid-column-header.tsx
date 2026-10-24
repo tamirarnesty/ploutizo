@@ -1,6 +1,5 @@
 'use client';
 
-// Opted out of React Compiler with the rest of the grid (see data-grid.tsx).
 'use no memo';
 
 import { memo, useLayoutEffect, useMemo, useRef } from 'react';
@@ -53,16 +52,18 @@ interface DataGridColumnHeaderProps<
   /** When omitted, uses `column.columnDef.meta.headerTitle`, then a string `columnDef.header`, then `column.id`. */
   title?: string;
   icon?: ReactNode;
-  /** Reserved; pin controls are gated by tableLayout.columnsPinnable + column.getCanPin(). */
-  pinnable?: boolean;
   filter?: ReactNode;
   visibility?: boolean;
 }
 
-// Unpinning moves a column into another header list (pinned, windowed center),
-// which remounts its header, so the focus request outlives the button: the next
-// header rendered for that column takes it. `column` is a stable reference.
-const pendingUnpinFocus = new WeakSet<object>();
+const headersAwaitingFocusAfterUnpin = new WeakSet<object>();
+
+const holdFocusAcrossUnpin = (column: object) => {
+  headersAwaitingFocusAfterUnpin.add(column);
+};
+
+const takeFocusAfterUnpin = (column: object) =>
+  headersAwaitingFocusAfterUnpin.delete(column);
 
 const getDataGridColumnMovePlan = <TData extends object, TValue>(
   column: Column<DataGridFeatures, TData, TValue>,
@@ -132,8 +133,6 @@ const getDataGridColumnMovePlan = <TData extends object, TValue>(
       ? renderedPeers[renderedIndex + 1]
       : undefined;
 
-  /** Re-seats this column, with the leaves its header spans, beside a rendered
-   * neighbour; every other column, hidden or pinned, keeps its place. */
   const moveBeside = (neighbour: string[], side: 'before' | 'after') => {
     const moving = renderedPeers[renderedIndex] ?? [column.id];
     const movingIds = new Set(moving);
@@ -208,7 +207,6 @@ const buildDataGridColumnHeaderMenuItems = <TData extends object, TValue>({
   const items: ReactNode[] = [];
   let hasPreviousSection = false;
 
-  // Filter section
   if (filter) {
     items.push(
       <DropdownMenuGroup key="group-filter">
@@ -218,7 +216,6 @@ const buildDataGridColumnHeaderMenuItems = <TData extends object, TValue>({
     hasPreviousSection = true;
   }
 
-  // Sort section
   if (canSort) {
     if (hasPreviousSection) {
       items.push(<DropdownMenuSeparator key="sep-sort" />);
@@ -262,7 +259,6 @@ const buildDataGridColumnHeaderMenuItems = <TData extends object, TValue>({
     hasPreviousSection = true;
   }
 
-  // Pin section
   if (tableLayout?.columnsPinnable && canPin) {
     if (hasPreviousSection) {
       items.push(<DropdownMenuSeparator key="sep-pin" />);
@@ -292,7 +288,6 @@ const buildDataGridColumnHeaderMenuItems = <TData extends object, TValue>({
     hasPreviousSection = true;
   }
 
-  // Move section
   if (tableLayout?.columnsMovable) {
     if (hasPreviousSection) {
       items.push(<DropdownMenuSeparator key="sep-move" />);
@@ -322,7 +317,6 @@ const buildDataGridColumnHeaderMenuItems = <TData extends object, TValue>({
     hasPreviousSection = true;
   }
 
-  // Visibility section
   if (tableLayout?.columnsVisibility && visibility) {
     if (hasPreviousSection) {
       items.push(<DropdownMenuSeparator key="sep-visibility" />);
@@ -490,12 +484,10 @@ const renderDataGridColumnHeaderFace = ({
                 const scrollArea = event.currentTarget.closest<HTMLElement>(
                   '[data-slot="scroll-area-viewport"]'
                 );
-                pendingUnpinFocus.add(column);
+                holdFocusAcrossUnpin(column);
                 column.pin(false);
-                // A column the virtual window leaves unmounted claims nothing,
-                // so the grid's scroll area takes focus instead of the page.
                 requestAnimationFrame(() => {
-                  if (pendingUnpinFocus.delete(column)) scrollArea?.focus();
+                  if (takeFocusAfterUnpin(column)) scrollArea?.focus();
                 });
               }}
               aria-label={unpinLabel}
@@ -556,7 +548,7 @@ function DataGridColumnHeaderInner<TData extends object, TValue>({
   const isPinned = column.getIsPinned();
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
   useLayoutEffect(() => {
-    if (pendingUnpinFocus.delete(column)) menuTriggerRef.current?.focus();
+    if (takeFocusAfterUnpin(column)) menuTriggerRef.current?.focus();
   });
   const canSort = column.getCanSort();
   const canPin = column.getCanPin();
@@ -687,7 +679,6 @@ const DataGridColumnHeaderMemo = memo(DataGridColumnHeaderInner) as <
   TValue,
 >(
   props: DataGridColumnHeaderProps<TData, TValue> & {
-    /** Internal: the state slices the header re-renders on. Not part of the public API. */
     subscribedState?: unknown;
   }
 ) => ReactNode;

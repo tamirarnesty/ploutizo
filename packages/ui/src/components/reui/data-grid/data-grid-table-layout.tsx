@@ -31,9 +31,6 @@ export function getPinningStyles<TData extends object>(
   };
 }
 
-// Shared indent contract for tree rows: DataGridTableRowExpand consumes it,
-// and fully custom cells can reuse it for depth alignment without the
-// built-in toggle.
 export function getDataGridTreeIndentStyle<TData extends object>(
   row: Row<DataGridFeatures, TData>,
   indent: number = 20
@@ -133,7 +130,6 @@ export function getDataGridTableMergedHeaderGroups<TData extends object>(
     rightHeaderGroups.length
   );
   const spans = getDataGridHeaderSpans(table);
-  // Headers a meta.headerColSpan cell covers, by that cell's header id.
   const coveredHeaders = new Map<
     string,
     Header<DataGridFeatures, TData, unknown>[]
@@ -160,8 +156,6 @@ export function getDataGridTableMergedHeaderGroups<TData extends object>(
         : spans.get(header.column.id);
       if (!coveredColumns) continue;
 
-      // Siblings share their header chain, so each covered cell sits right
-      // after the owner in this row with the same rowSpan.
       const covered: Header<DataGridFeatures, TData, unknown>[] = [];
       for (const coveredColumn of coveredColumns) {
         const next = rendered[index + 1 + covered.length];
@@ -197,7 +191,6 @@ export function getDataGridTableMergedHeaderGroups<TData extends object>(
         ...(centerGroup?.headers ?? []),
         ...(rightGroup?.headers ?? []),
       ] as Header<DataGridFeatures, TData, unknown>[],
-      // The cells this row renders, per pinning family.
       startHeaders: getRenderedHeaders(leftGroup?.headers),
       centerHeaders: getRenderedHeaders(centerGroup?.headers),
       endHeaders: getRenderedHeaders(rightGroup?.headers),
@@ -206,8 +199,6 @@ export function getDataGridTableMergedHeaderGroups<TData extends object>(
   });
 }
 
-// A placeholder heading a merged run renders its column's header; one left
-// unmerged would repeat the header of the leaf below it.
 export function renderDataGridTableHeadCellContent<TData extends object>(
   header: Header<DataGridFeatures, TData, unknown>
 ) {
@@ -216,8 +207,6 @@ export function renderDataGridTableHeadCellContent<TData extends object>(
     : flexRender(header.column.columnDef.header, header.getContext());
 }
 
-// A span's handle drives its last covered leaf; end-pinned, it sits on the
-// start edge and drives the owner, as an end-pinned group's handle does.
 export function getDataGridHeadCellResizeHeader<TData extends object>(
   header: Header<DataGridFeatures, TData, unknown>,
   coveredHeaders?: Header<DataGridFeatures, TData, unknown>[]
@@ -227,8 +216,6 @@ export function getDataGridHeadCellResizeHeader<TData extends object>(
     : header;
 }
 
-// A span sums its covered leaves' variables, so a live resize of any of them
-// moves its edge too.
 export function getDataGridHeadCellSizeVar<TData extends object>(
   header: Header<DataGridFeatures, TData, unknown>,
   coveredHeaders: Header<DataGridFeatures, TData, unknown>[] = []

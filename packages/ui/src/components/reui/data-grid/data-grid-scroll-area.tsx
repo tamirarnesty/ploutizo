@@ -19,8 +19,6 @@ import { useDataGrid } from '@/components/reui/data-grid/data-grid';
 
 const MIN_THUMB_SIZE = 24;
 const FALLBACK_SCROLLBAR_SIZE = 12;
-// Gap between each track and the grid edge: the mb-px / me-px on the tracks and
-// the overlay's inset-e-px. The overlay's height math adds it below the bar.
 const SCROLLBAR_EDGE_GAP = 1;
 
 const INITIAL_METRICS = {
@@ -32,16 +30,9 @@ const INITIAL_METRICS = {
   trackHeight: 0,
 } as const;
 
-// Track footprint: --data-grid-scrollbar-size (10px by default) in both
-// orientations, less 1px for the transparent border and 2px for p-px, so every
-// thumb lands at that size less 3px (7px), held 1px off the grid edge. Thinner
-// was hard to grab; the tracks overlay the last row and column, so the default
-// stays under 12px. The sticky-header overlay below follows the same variable.
 const SCROLLBAR_CLASSNAME =
   'flex touch-none p-px transition-colors select-none data-[orientation=horizontal]:mb-px data-[orientation=horizontal]:h-[var(--data-grid-scrollbar-size,0.625rem)] data-[orientation=horizontal]:flex-col data-[orientation=horizontal]:border-t data-[orientation=horizontal]:border-t-transparent data-[orientation=vertical]:me-px data-[orientation=vertical]:h-full data-[orientation=vertical]:w-[var(--data-grid-scrollbar-size,0.625rem)] data-[orientation=vertical]:border-s data-[orientation=vertical]:border-s-transparent';
 
-// The ::before reaches the track's outer edge, so the whole track thickness
-// grabs the thumb rather than only its painted 7px.
 const SCROLLBAR_THUMB_CLASSNAME =
   'bg-border rounded-full relative flex-1 before:absolute before:-inset-0.5';
 
@@ -86,9 +77,6 @@ function areMetricsEqual(next: ScrollbarMetrics, prev: ScrollbarMetrics) {
   );
 }
 
-// A footer held at the bottom (its tfoot or its cells are sticky, however the
-// consumer made them so) takes the track's lower end the way the sticky header
-// takes its top, so the thumb never paints over the totals.
 function getStickyFooterHeight(table: HTMLElement | null) {
   const footer = table instanceof HTMLTableElement ? table.tFoot : null;
   if (!footer) return 0;
@@ -145,8 +133,6 @@ function useDataGridScrollAreaState({
   const showVertical = orientation !== 'horizontal';
   const usesCustomVerticalScrollbar =
     showVertical && !!dataGridProps.tableLayout?.headerSticky;
-  // Pinned columns are sticky and never scroll, so the horizontal scrollbar
-  // track is inset to span only the scrollable center region between them.
   const isColumnsPinnable = !!dataGridProps.tableLayout?.columnsPinnable;
   const scrollbarInsetStart = isColumnsPinnable ? table.getStartTotalSize() : 0;
   const scrollbarInsetEnd = isColumnsPinnable ? table.getEndTotalSize() : 0;
@@ -173,7 +159,6 @@ function useDataGridScrollAreaState({
     readDirection();
     if (typeof MutationObserver === 'undefined') return;
 
-    // Only a dir attribute flips it at runtime (an RTL toggle on <html>).
     const observer = new MutationObserver(readDirection);
     observer.observe(document.documentElement, {
       attributes: true,
@@ -189,9 +174,6 @@ function useDataGridScrollAreaState({
     document.body.style.webkitUserSelect = '';
   }, []);
 
-  // The overlay is mounted one commit after the sync that detected overflow,
-  // so it misses that sync's write. Seeding it from the ref callback lands the
-  // geometry during commit, before the browser paints the track.
   const setOverlayRef = useCallback((node: HTMLDivElement | null) => {
     overlayRef.current = node;
 
@@ -229,8 +211,6 @@ function useDataGridScrollAreaState({
       ? (horizontalScrollbar?.offsetHeight || FALLBACK_SCROLLBAR_SIZE) +
         SCROLLBAR_EDGE_GAP
       : 0;
-    // The horizontal bar overlays the bottom of the viewport, which a sticky
-    // footer already covers, so only the larger of the two is taken off.
     const trackHeight = Math.max(
       0,
       viewportHeight -
@@ -361,9 +341,6 @@ function useDataGridScrollAreaState({
       if (initial.tableViewport) resizeObserver.observe(initial.tableViewport);
       scheduleSync();
       scrollTarget.addEventListener('scroll', scheduleSync, { passive: true });
-      // A table that mounts after this effect (empty state swapped for data)
-      // would otherwise never be observed and the custom scrollbar would
-      // overlap the sticky header. One-shot: disconnects once resolved.
       if (!(initial.header && initial.table)) {
         mutationObserver.observe(observeTarget, {
           childList: true,

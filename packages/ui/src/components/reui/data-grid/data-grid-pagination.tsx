@@ -1,6 +1,5 @@
 'use client';
 
-// Opted out of React Compiler with the rest of the grid (see data-grid.tsx).
 'use no memo';
 
 import { cn } from 'cn';
@@ -37,42 +36,19 @@ interface DataGridPaginationProps {
   ellipsisText?: string;
 }
 
-/**
- * One slot in the page row: a page button, or an ellipsis that jumps over the
- * pages it stands for.
- */
 type DataGridPaginationItem =
   | { type: 'page'; index: number }
   | { type: 'ellipsis'; direction: 'previous'; target: number }
   | { type: 'ellipsis'; direction: 'next'; target: number };
 
-/**
- * The adaptive window: first page, the run around the current one, last page,
- * with an ellipsis standing in for each hidden stretch. It replaced fixed
- * BLOCKS (1-5, then 6-10) because a block never shows the last page, so on a
- * 50-page grid there was no way to reach the end - the primitive wires only
- * `previousPage()` / `nextPage()`, so there is no last-page arrow either.
- *
- * `limit` is `moreLimit`: how many page buttons the truncated middle shows.
- * At the default of 5 this emits exactly the same rows as the block version
- * did at `moreLimit: 5`, so the prop keeps both its meaning and its default.
- * An ellipsis never stands for a single page, because the early return covers
- * every count a full row could hold.
- */
 function getDataGridPaginationItems(
   pageIndex: number,
   pageCount: number,
   limit: number
 ): DataGridPaginationItem[] {
-  // Pages flanking the current one, per side. The run is rebuilt from it so
-  // the count is always odd: an even `limit` would make the head and tail
-  // rows one slot wider than the middle, and the footer would twitch as the
-  // user pages through.
   const sibling = Math.max(0, Math.floor(((Math.floor(limit) || 3) - 3) / 2));
   const pages = sibling * 2 + 3;
 
-  // Two ellipses cost the width of two pages, so below this there is nothing
-  // to gain by hiding any.
   if (pageCount <= pages + 2) {
     return Array.from({ length: pageCount }, (_, index) => ({
       type: 'page' as const,
@@ -122,13 +98,6 @@ function getDataGridPaginationItems(
   ];
 }
 
-/**
- * A page button is square at one digit and grows from there, so the row does
- * not reflow when the count crosses 10 or 100. The floor is each style's own
- * `icon-sm` square, which is also its `sm` HEIGHT, so the numbers stay square
- * and keep the arrows' height. Hardcoding one value would be right in three
- * styles and wrong in five.
- */
 const PAGE_BUTTON_WIDTH_CLASS = 'min-w-7';
 
 function DataGridPagination(props: DataGridPaginationProps): JSX.Element {
@@ -166,8 +135,6 @@ function DataGridPagination(props: DataGridPaginationProps): JSX.Element {
   const to = Math.min((pageIndex + 1) * pageSize, recordCount);
   const pageCount = table.getPageCount();
 
-  // A supplied `info` keeps its placeholder-template contract; the default
-  // routes through the i18n label function, where word order is free.
   const paginationInfo = mergedProps.info
     ? mergedProps.info
         .replaceAll('{from}', from.toString())
@@ -204,10 +171,6 @@ function DataGridPagination(props: DataGridPaginationProps): JSX.Element {
                 table.setPageSize(newPageSize);
               }}
             >
-              {/* w-fit with a min, never a fixed width: a fixed w-16 clipped
-                  the value "100" by 1px at nova's paddings, while fit-content
-                  grows the trigger for 3-digit sizes and the min keeps the
-                  1-2 digit ones from collapsing narrower than 64px. */}
               <SelectTrigger
                 aria-label={mergedProps.rowsPerPageLabel}
                 className="w-fit min-w-16"
@@ -281,9 +244,6 @@ function DataGridPagination(props: DataGridPaginationProps): JSX.Element {
                       {item.index + 1}
                     </Button>
                   ) : (
-                    /* Clickable, unlike the shadcn PaginationEllipsis, which is
-                       an aria-hidden span. This one MOVES the user, so it needs
-                       a name saying where. */
                     <Button
                       key={`ellipsis-${item.direction}`}
                       size="icon-sm"

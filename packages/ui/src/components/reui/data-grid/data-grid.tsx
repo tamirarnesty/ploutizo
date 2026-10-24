@@ -38,14 +38,6 @@ import {
 export type { DataGridFeatures };
 
 /**
- * Per-column extras the grid reads off `columnDef.meta`.
- *
- * TanStack v9 resolves this through the `columnMeta` slot on the feature
- * bundle below instead of a global `declare module` augmentation, so
- * installing the data grid no longer widens `ColumnMeta` for every other
- * table in the consuming app.
- */
-/**
  * Per-column write contract for the spreadsheet operations (paste, fill,
  * clear, cut). Presence marks the column writable; every write still flows
  * through `onCellsChange`, so the consumer's state stays the only data owner.
@@ -223,6 +215,34 @@ function getDataGridAutoSizeState(store: object): DataGridAutoSizeReflowState {
   return state;
 }
 
+const readLiveColumnSizing = <TData extends object>(
+  table: DataGridTableInstance<TData>
+) => table.atoms.columnSizing?.get() ?? table.state.columnSizing;
+
+type DataGridColumnSizing = NonNullable<
+  ReturnType<typeof readLiveColumnSizing>
+>;
+
+const userResizedSinceGrowth = (
+  columnSizing: DataGridColumnSizing,
+  columnId: string,
+  grown: number | undefined
+) => {
+  const currentSize = columnSizing[columnId];
+  return currentSize !== undefined && currentSize !== grown;
+};
+
+const autoSizeEntryWasCleared = (
+  columnSizing: DataGridColumnSizing,
+  columnId: string
+) => columnSizing[columnId] === undefined;
+
+const growthToRevertIfStillOurs = (
+  applied: DataGridAutoSizeReflowState['applied'],
+  columnSizing: DataGridColumnSizing
+) =>
+  applied && columnSizing[applied.columnId] === applied.grown ? applied : null;
+
 function createDataGridAutoSizeController<TData extends object>(
   /**
    * A getter, not the table itself.
@@ -236,25 +256,15 @@ function createDataGridAutoSizeController<TData extends object>(
    */
   getTable: () => DataGridTableInstance<TData>
 ): DataGridAutoSizeController {
-  // Reflow coalescing: a live window drag streams a measurement per frame,
-  // and every accepted commit re-renders the table. One leading commit
-  // keeps single snaps (a maximize) instant; the rest of the stream parks
-  // its latest value behind one trailing timer, so a continuous drag costs
-  // two commits instead of sixty a second. The trailing timer may fire
-  // after the grid unmounts; it re-reads the table then, and a sizing
-  // write to the consumer's store is inert once nothing renders it.
   const SETTLE_MS = 150;
 
-  // The armed column's reflow target at this free space. Shared by reflow,
-  // which commits it, and preview, which only reports it.
   const resolveReflow = (freeSpace: number) => {
     const table = getTable();
     const state = getDataGridAutoSizeState(table.store);
     // LIVE state, never the render snapshot: a measurement can run between
     // our own sizing commit and React's re-render, and the stale snapshot
     // would hide the width this controller just wrote.
-    const columnSizing =
-      table.atoms.columnSizing?.get() ?? table.state.columnSizing;
+    const columnSizing = readLiveColumnSizing(table);
     if (!state.applied) return null;
     const autoSizeColumn = table
       .getVisibleLeafColumns()
@@ -263,10 +273,13 @@ function createDataGridAutoSizeController<TData extends object>(
       );
     if (!autoSizeColumn || autoSizeColumn.id !== state.applied.columnId)
       return null;
-    // A width this coordinator did not write belongs to the user's drag;
-    // reflow stands down until a reset re-arms the column.
-    const currentSize = columnSizing[state.applied.columnId];
-    if (currentSize !== undefined && currentSize !== state.applied.grown) {
+    if (
+      userResizedSinceGrowth(
+        columnSizing,
+        state.applied.columnId,
+        state.applied.grown
+      )
+    ) {
       return null;
     }
     // The free space as it would measure with our growth removed; the
@@ -309,6 +322,25 @@ function createDataGridAutoSizeController<TData extends object>(
     return true;
   };
 
+  const coalesceReflow = (
+    state: DataGridAutoSizeReflowState,
+    freeSpace: number
+  ) => {
+    state.pendingFreeSpace = freeSpace;
+    const now = Date.now();
+    if (now - state.lastCommitAt > SETTLE_MS) {
+      state.lastCommitAt = now;
+      return reflow(freeSpace);
+    }
+    if (state.settleTimer !== null) clearTimeout(state.settleTimer);
+    state.settleTimer = setTimeout(() => {
+      state.settleTimer = null;
+      state.lastCommitAt = Date.now();
+      reflow(state.pendingFreeSpace);
+    }, SETTLE_MS);
+    return false;
+  };
+
   return {
     preview(freeSpace: number) {
       const resolved = resolveReflow(freeSpace);
@@ -331,15 +363,12 @@ function createDataGridAutoSizeController<TData extends object>(
     apply(freeSpace: number) {
       const table = getTable();
       const state = getDataGridAutoSizeState(table.store);
-      // Same live read as `reflow`; the snapshot race is what made the
-      // re-arm check clear the bookkeeping right after the first absorb.
-      const columnSizing =
-        table.atoms.columnSizing?.get() ?? table.state.columnSizing;
+      const columnSizing = readLiveColumnSizing(table);
 
-      // Re-arm after reset flows (double-click resetSize, resetColumnSizing,
-      // controlled state replacement) so the column re-fills instead of
-      // leaving a dead blank strip.
-      if (state.applied && columnSizing[state.applied.columnId] === undefined) {
+      if (
+        state.applied &&
+        autoSizeEntryWasCleared(columnSizing, state.applied.columnId)
+      ) {
         state.applied = null;
       }
 
@@ -350,19 +379,7 @@ function createDataGridAutoSizeController<TData extends object>(
         );
 
       if (autoSizeColumn && state.applied?.columnId === autoSizeColumn.id) {
-        state.pendingFreeSpace = freeSpace;
-        const now = Date.now();
-        if (now - state.lastCommitAt > SETTLE_MS) {
-          state.lastCommitAt = now;
-          return reflow(freeSpace);
-        }
-        if (state.settleTimer !== null) clearTimeout(state.settleTimer);
-        state.settleTimer = setTimeout(() => {
-          state.settleTimer = null;
-          state.lastCommitAt = Date.now();
-          reflow(state.pendingFreeSpace);
-        }, SETTLE_MS);
-        return false;
+        return coalesceReflow(state, freeSpace);
       }
 
       const fillWidth = Math.max(0, freeSpace);
@@ -372,31 +389,17 @@ function createDataGridAutoSizeController<TData extends object>(
         return false;
       }
 
-      // A width this coordinator did not write belongs to someone else -
-      // almost always the user, who just dragged the column's resize handle.
-      // Filling over it is what made a `meta.autoSize` column look
-      // un-resizable: the drag committed, the next viewport measurement
-      // stamped the fill back on top, and the column snapped to its old width.
-      //
-      // Deliberately keyed on observed state rather than on `state.applied`, which
-      // is per-coordinator memory: anything that rebuilds the coordinator
-      // (a remount, a new table store) forgets what it did, and the guard has
-      // to survive that. An explicit reset clears the entry and re-arms the
-      // fill, which is what makes double-click-to-reset still work.
-      const currentSize = columnSizing[autoSizeColumn.id];
-      if (currentSize !== undefined && currentSize !== state.applied?.grown) {
+      if (
+        userResizedSinceGrowth(
+          columnSizing,
+          autoSizeColumn.id,
+          state.applied?.grown
+        )
+      ) {
         return false;
       }
 
-      // Candidate switched (e.g. the grown column was hidden and another
-      // meta.autoSize column took over): revert the previous growth if the
-      // user hasn't manually resized that column since, so visibility
-      // toggles cannot ratchet the table wider than its container forever.
-      const revert =
-        state.applied &&
-        columnSizing[state.applied.columnId] === state.applied.grown
-          ? state.applied
-          : null;
+      const revert = growthToRevertIfStillOurs(state.applied, columnSizing);
       const base = columnSizing[autoSizeColumn.id] ?? autoSizeColumn.getSize();
       const grown = base + fillWidth;
 
@@ -719,8 +722,6 @@ function useDataGridAtom<TValue, TSelected = TValue | undefined>(
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
-// Slices kept out of the inputs: cells paint cell selection through their
-// own Subscribe, and a resize drag paints through useDataGridAtom.
 const DATA_GRID_UNPUBLISHED_STATE = new Set([
   'cellSelection',
   'columnResizing',
@@ -732,16 +733,12 @@ const isDataGridPropNode = (value: unknown) =>
   !Array.isArray(value) &&
   ('$$typeof' in value || Object.getPrototypeOf(value) !== Object.prototype);
 
-// Functions and React nodes count by presence here; their identity is a
-// callback input.
 function dataGridPropsSignatureReplacer(_key: string, value: unknown) {
   if (typeof value === 'function') return 'fn';
   if (isDataGridPropNode(value)) return 'node';
   return value;
 }
 
-// Inputs that always publish: every state slice but the two above, `data`
-// and `columns` (TanStack needs both stable already), and props by value.
 function getDataGridStateInputs<TData extends object>(
   table: DataGridTableInstance<TData>,
   props: DataGridLayoutProps<TData>,
@@ -759,7 +756,6 @@ function getDataGridStateInputs<TData extends object>(
   return inputs;
 }
 
-// Every callback and React node prop, compared by identity.
 function getDataGridCallbackInputs<TData extends object>(
   props: DataGridLayoutProps<TData>
 ): unknown[] {
@@ -780,17 +776,8 @@ function DataGridProvider<TData extends object>({
   table: DataGridTableInstance<TData>;
   children?: ReactNode;
 }) {
-  // Stable for the grid's lifetime; ARIA ids and relations hang off it.
   const gridId = useId();
-  // Latest-value refs behind the context getters: a reader always gets the
-  // current props, labels and table, while the published value changes only
-  // when its inputs do (below). v9 re-creates the table on every state
-  // change, including each resize tick.
   const i18n = mergeDataGridI18n(props.i18n);
-  // One box for the grid's lifetime. Getters on the cached context value
-  // close over it, and each render writes the latest props, labels, and
-  // table onto the box. useState (not a ref write) keeps that assignment
-  // off the render-time ref path React can replay.
   const [latest] = useState(() => ({ props, i18n, table }));
   latest.props = props;
   latest.i18n = i18n;
@@ -824,10 +811,6 @@ function DataGridProvider<TData extends object>({
     table.setOptions((old) => ({ ...old, autoResetCellSelection: false }));
   }, [table, cellSelectionOn]);
 
-  // Rendered row indexes re-base per page, so a range kept across a page flip
-  // re-lights the same positions over different rows. A page change clears
-  // the selection instead - the rule Excel-family grids apply to paginated
-  // range selection.
   const pageKey = `${table.state.pagination?.pageIndex}:${table.state.pagination?.pageSize}`;
   const previousPageKeyRef = useRef(pageKey);
   useEffect(() => {
@@ -943,8 +926,6 @@ function DataGrid<TFeatures extends TableFeatures, TData extends object>({
       width: 'fixed',
       columnsVisibility: false,
       columnsResizable: false,
-      // columnsResizeMode has no default on purpose: when unset, the
-      // consumer's tanstack columnResizeMode (default "onEnd") is honored.
       columnsPinnable: false,
       columnsMovable: false,
       columnsDraggable: false,
@@ -957,9 +938,6 @@ function DataGrid<TFeatures extends TableFeatures, TData extends object>({
       base: '',
       header: '',
       headerRow: '',
-      // z-40 keeps the sticky header above pinned body cells (zIndex 30 in
-      // getPinningStyles), which would otherwise paint over it while
-      // scrolling vertically with columnsPinnable enabled.
       headerSticky: 'sticky top-0 z-40 bg-background/90 backdrop-blur-xs',
       body: '',
       bodyRow: '',
@@ -981,7 +959,6 @@ function DataGrid<TFeatures extends TableFeatures, TData extends object>({
     },
   };
 
-  // Ensure table is provided
   if (!table) {
     throw new Error('DataGrid requires a "table" prop');
   }
@@ -1006,14 +983,10 @@ function DataGridContainer({
 }: {
   children: ReactNode;
   className?: string;
-  /** Accepted for backwards compatibility; currently has no effect. */
-  border?: boolean;
 }) {
   return (
     <div
       data-slot="data-grid"
-      // relative: anchors floating chrome composed inside the container,
-      // like the fill-drag preview outline.
       className={cn('relative w-full overflow-hidden', className)}
     >
       {children}

@@ -38,8 +38,6 @@ export const getDataGridHeaderSpans = <TData extends object>(
       const span = Math.floor(owner.columnDef.meta?.headerColSpan ?? 1);
       if (span < 2) continue;
 
-      // The next span - 1 siblings in definition order, so a span never
-      // leaves its parent group; a hidden one is skipped, not a gap.
       const siblings = owner.parent?.columns ?? table.getAllColumns();
       const at = siblings.findIndex((sibling) => sibling.id === owner.id);
       const intended =
@@ -132,11 +130,6 @@ export const dataGridCellSelectionCellClasses = cn(
   // equal-specificity variants leave shorthand-vs-longhand to sort order.
   "data-[cell-selected]:before:pointer-events-none data-[cell-selected]:before:absolute data-[cell-selected]:before:start-[var(--data-grid-overlay-start,-1px)] data-[cell-selected]:before:end-[var(--data-grid-overlay-end,-1px)] data-[cell-selected]:before:top-[var(--data-grid-overlay-top,-1px)] data-[cell-selected]:before:bottom-[var(--data-grid-overlay-bottom,-1px)] data-[cell-selected]:before:border-primary data-[cell-selected]:before:content-['']",
   "data-[cell-focused]:before:pointer-events-none data-[cell-focused]:before:absolute data-[cell-focused]:before:start-[var(--data-grid-overlay-start,-1px)] data-[cell-focused]:before:end-[var(--data-grid-overlay-end,-1px)] data-[cell-focused]:before:top-[var(--data-grid-overlay-top,-1px)] data-[cell-focused]:before:bottom-[var(--data-grid-overlay-bottom,-1px)] data-[cell-focused]:before:border-primary data-[cell-focused]:before:content-['']",
-  // Interior dividers: selected cells repaint their own end and bottom
-  // gridlines on the overlay, so gridline-less grids still divide a range.
-  // The gray color is guarded by not- variants (higher specificity), so a
-  // side that belongs to the range perimeter deterministically stays
-  // primary.
   'data-[cell-selected]:before:border-e data-[cell-selected]:before:border-b',
   'data-[cell-selected]:not-data-[cell-edge-right]:before:border-e-border',
   'data-[cell-selected]:not-data-[cell-edge-bottom]:before:border-b-border',
@@ -148,16 +141,8 @@ export const dataGridCellSelectionCellClasses = cn(
   // from display-order column indexes, which mirror in RTL.
   'data-[cell-focused]:not-data-[cell-selected]:before:border',
   'data-[cell-edge-bottom]:before:border-b data-[cell-edge-left]:before:border-s data-[cell-edge-right]:before:border-e data-[cell-edge-top]:before:border-t',
-  // While a fill drag is live the preview border is the ONE painter for
-  // the whole pending region, so the source cells' own chrome rests -
-  // otherwise its lines double against the region border at every shared
-  // edge. display is the no-cascade-fight switch (see below).
   'in-data-[cell-filling]:data-[cell-selected]:before:hidden',
   'in-data-[cell-filling]:data-[cell-focused]:before:hidden',
-  // While the built-in editor is open its outline is the one border; the
-  // edited cell's own overlay chrome hides so nothing peeks around the
-  // flush editor. display is the switch because no other before: rule
-  // sets it, so there is no cascade order to lose.
   'in-data-[cell-editing]:data-[cell-focused]:before:hidden',
   // Clamped to the cell edge at the grid's own boundary, the overlay's
   // lines sit flush against the container border instead of being clipped
@@ -183,8 +168,6 @@ export const dataGridCellSelectionCellClasses = cn(
   '[&:has(+[data-slot=data-grid-table-fill-body-cell]:last-child)]:[--data-grid-overlay-end:0px]',
   '[&:has(+[data-slot=data-grid-table-fill-body-cell]+td[data-pinned])]:[--data-grid-overlay-end:0px]',
   '[td[data-pinned]+&]:[--data-grid-overlay-start:0px]',
-  // Tint only: the dashed region outline is one overlay element drawn by
-  // the fill session, so neighboring target cells never double their edges.
   'data-[cell-fill-target]:bg-primary/4',
   'data-[cell-fill-target]:data-pinned:bg-[color-mix(in_oklab,var(--primary)_4%,var(--data-grid-surface,var(--data-grid-card-surface,var(--background))))]'
 );

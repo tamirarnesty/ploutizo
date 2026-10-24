@@ -1,5 +1,4 @@
 export interface DataGridI18nLabels {
-  /* The column header menu. */
   sortAscending: string;
   sortDescending: string;
   pinColumnStart: string;
@@ -9,7 +8,6 @@ export interface DataGridI18nLabels {
   columnsMenu: string;
   unpinColumn: (title: string) => string;
   toggleColumns: string;
-  /* Row and cell affordances. */
   rowCreate: string;
   pinRow: string;
   unpinRow: string;
@@ -20,18 +18,15 @@ export interface DataGridI18nLabels {
   dragToReorder: string;
   dragToReorderRow: string;
   reorderingUnavailable: string;
-  /* Grid states. */
   loading: string;
   empty: string;
   allRowsLoaded: string;
-  /* Pagination. */
   rowsPerPage: string;
   paginationInfo: (info: { from: number; to: number; count: number }) => string;
   previousPage: string;
   nextPage: string;
   goToPage: (page: number) => string;
   paginationEllipsis: string;
-  /* The faceted column filter. */
   filterSelectedCount: (count: number) => string;
   filterNoResults: string;
   filterClear: string;

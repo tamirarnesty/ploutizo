@@ -180,19 +180,13 @@ function DataGridTableDndHeader<TData extends object>({
   >[],
 }: {
   header: Header<DataGridFeatures, TData, unknown>;
-  /** Headers this cell spans through meta.headerColSpan. */
   coveredHeaders?: Header<DataGridFeatures, TData, unknown>[];
 }) {
   const { i18n, props } = useDataGrid();
   const { column } = header;
 
-  // Pinning decides where a pinned column renders whatever columnOrder says,
-  // so dragging one could only rewrite hidden order. It gets no grip and is
-  // neither a drag source nor a drop target. Neither is a group cell: its
-  // id is not in columnOrder, which holds leaves only.
   const isPinned = !!column.getIsPinned();
   const isGroup = column.columns.length > 0;
-  // A span is no drag source: a drop moves one leaf, never its covered ones.
   const isSpan = coveredHeaders.length > 0;
 
   const {
@@ -206,10 +200,6 @@ function DataGridTableDndHeader<TData extends object>({
     id: header.column.id,
     disabled: dataGridDndHeaderIsLocked(isPinned, isGroup, isSpan),
   });
-
-  // This style spreads after getPinningStyles, so a sticky pinned cell must
-  // not take the drag keys: relative and z-index 0 would unstick it and sink
-  // it under the centre cells. Omitted, not undefined, which would still win.
 
   return renderDataGridTableDndHeader<TData>({
     header,
@@ -240,7 +230,6 @@ function DataGridTableDndCell<TData extends object>({
     disabled: !!cell.column.getIsPinned(),
   });
 
-  // Same rule as the header: a sticky pinned cell keeps its pinning styles.
   const isSticky =
     !!props.tableLayout?.columnsPinnable &&
     cell.column.getCanPin() &&
@@ -320,8 +309,6 @@ function DataGridTableDndBodyRows<TData extends object>({
                 items={table.state.columnOrder}
                 strategy={horizontalListSortingStrategy}
               >
-                {/* One keyed list with the fill in the middle, as in the
-                    head row below. */}
                 {[
                   ...[
                     ...row.getStartVisibleCells(),
@@ -346,11 +333,6 @@ function DataGridTableDndBodyRows<TData extends object>({
   );
 }
 
-/**
- * Memoized body rows: skip re-renders during active column resize.
- * Column widths update via CSS variables on the <table> element,
- * so the browser handles width changes without React re-renders.
- */
 const MemoizedDataGridTableDndBodyRows = memo(
   DataGridTableDndBodyRows,
   (_prev, next) => !!next.table.state.columnResizing?.isResizingColumn
@@ -392,8 +374,6 @@ function toLtrScrollView(element: Element): Element {
   });
 }
 
-/** A drop on a span's leaves targets its far edge, after its last leaf moving
- *  forward and before its owner moving back, so no move lands inside it. */
 function getDataGridDropBesideSpans<TData extends object>(
   table: DataGridTableInstance<TData>,
   event: DragEndEvent
@@ -494,7 +474,6 @@ function DataGridTableDnd<TData extends object>({
     };
   }, [isDraggingColumn]);
 
-  // Custom modifier to restrict dragging within table bounds with edge offset
   const modifiers = useMemo(() => {
     const restrictToTableBounds: Modifier = ({
       draggingNodeRect,
@@ -558,14 +537,6 @@ function DataGridTableDnd<TData extends object>({
                     items={table.state.columnOrder}
                     strategy={horizontalListSortingStrategy}
                   >
-                    {/* Every row follows DataGridTableBase's colgroup,
-                        which puts the fill col between the center and
-                        end-pinned groups; a fill cell appended last hands
-                        its width to the end-pinned column. One keyed
-                        list, not three, so a column pinned into or out of
-                        the end group moves instead of remounting, which
-                        would drop keyboard focus. The fill spans every
-                        head row, so only the first renders it. */}
                     {[
                       ...[
                         ...headerGroup.startHeaders,

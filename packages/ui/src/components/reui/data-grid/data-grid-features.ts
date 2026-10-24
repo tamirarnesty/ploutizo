@@ -77,9 +77,6 @@ export const dataGridFeatures = tableFeatures({
   rowSelectionFeature,
   rowExpandingFeature,
   rowPinningFeature,
-  // Registration alone is inert: it seeds a `cellSelection: []` slice and
-  // prototype methods but binds no DOM handlers, so grids without
-  // `tableLayout.cellSelection` render and behave exactly as before.
   cellSelectionFeature,
   sortedRowModel: createSortedRowModel(),
   filteredRowModel: createFilteredRowModel(),

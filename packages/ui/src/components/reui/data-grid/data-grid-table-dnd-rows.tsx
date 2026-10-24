@@ -1,6 +1,5 @@
 'use client';
 
-// Opted out of React Compiler with the rest of the grid (see data-grid.tsx).
 'use no memo';
 
 import {
@@ -79,7 +78,6 @@ import {
 } from '@/components/reui/data-grid/data-grid-table-layout';
 import { useDataGrid } from '@/components/reui/data-grid/data-grid';
 
-// Context to share sortable listeners from row to handle
 type SortableContextValue = ReturnType<typeof useSortable>;
 const SortableRowContext = createContext<Pick<
   SortableContextValue,
@@ -140,9 +138,6 @@ function DataGridTableDndRowHandle({
         size="icon-sm"
         className={cn(
           'size-7 cursor-grab opacity-70 hover:bg-transparent hover:opacity-100 active:cursor-grabbing',
-          // The Button's own disabled treatment supplies the muting; only the
-          // cursor needs saying, so the grip reads as unavailable rather than
-          // merely unresponsive.
           disabled && 'cursor-not-allowed',
           className
         )}
@@ -174,20 +169,6 @@ function DataGridTableDndRowHandle({
   );
 }
 
-/**
- * The rows do not move while one is being carried.
- *
- * Sliding the siblings apart opens a gap the carried row could go into, which
- * reads well in a list of identical rows and badly in a table: the gap is the
- * height of the row you are holding, so with rows of unequal height it never
- * matches the slot it claims to be, and the row you picked up slides away from
- * where it started - which is exactly the position you need to remember if you
- * decide not to drop it.
- *
- * Holding everything still keeps the origin legible, and nothing is lost: the
- * DragOverlay clone follows the pointer and the drop indicator names the seam.
- * Pass `verticalListSortingStrategy` as `sortingStrategy` for the old feel.
- */
 const holdRowsInPlaceStrategy: SortingStrategy = () => null;
 
 function DataGridTableDndRow<TData extends object>({
@@ -221,13 +202,6 @@ function DataGridTableDndRow<TData extends object>({
     data: rowData,
   });
 
-  // Which edge of THIS row the carried row would land on, or null when it is
-  // not the drop target. Nothing slides apart any more, so the bar is the only
-  // thing that says where the drop goes: it marks the row at the destination
-  // index, on the side the carried row comes to rest.
-  //
-  // Dragging down it lands after the target, dragging up before it, so the
-  // edge follows the direction of travel.
   const dropEdge =
     dropIndicator && activeIndex !== -1 && index === overIndex && !isDragging
       ? activeIndex < overIndex
@@ -247,15 +221,8 @@ function DataGridTableDndRow<TData extends object>({
     zIndex: isDragging ? 1 : 0,
     position: 'relative',
     cursor: isDragging ? 'grabbing' : undefined,
-    // The row you are holding is drawn by the DragOverlay, so the one left
-    // behind is not a second copy of it - it is the slot you came from, and it
-    // stays exactly where it was. Fading alone read as "this row is busy";
-    // the outline says "this is the space you are moving out of", which is the
-    // thing you need if you change your mind mid-drag.
     ...(isDragging && {
       opacity: 0.4,
-      // Inset so the dashes sit inside the row box and cannot be clipped by
-      // the neighbouring row's border.
       outline: '1px dashed var(--border)',
       outlineOffset: '-1px',
     }),
@@ -289,29 +256,12 @@ function DataGridTableDndRow<TData extends object>({
         </div>
       ) : null}
       {dropEdge && cell === lastCell ? (
-        // Same anchoring trick as the decoration above: a plain
-        // element inside the last cell, so it adds no column and
-        // cannot disturb `table-layout: fixed`. It spans the row, with
-        // the same sticky end-pinned exception.
         <div
           aria-hidden="true"
           data-slot="data-grid-table-row-drop-indicator"
           data-edge={dropEdge}
           className="pointer-events-none absolute inset-0 z-20"
         >
-          {/* Two solid pixels down the leading edge, the same marker
-              the tree drag uses for its drop target. A wash across
-              the row has to stay faint enough not to read as a
-              selected row, and in the achromatic styles primary
-              carries no chroma at all, so faint plus colourless is
-              just grey. The bar reads at any weight and leaves the
-              row's own background to hover and selection.
-
-              The bar is the whole indicator: the gap the rows have
-              already opened says which side, so a rule across the
-              seam as well only competes with the row borders it sits
-              between. `data-edge` still carries the direction for
-              anyone styling their own. */}
           <span className="absolute inset-y-0 start-0 w-0.5 bg-primary" />
         </div>
       ) : null}
@@ -331,7 +281,6 @@ function DataGridTableDndRow<TData extends object>({
         dndStyle={style}
         dndDragging={isDragging}
       >
-        {/* One keyed list with the fill in the middle, as in the head row. */}
         {[
           ...cells
             .filter((cell) => cell.column.getIsPinned() !== 'end')
@@ -414,11 +363,6 @@ function DataGridTableDndRowsBody<TData extends object>({
   );
 }
 
-/**
- * Memoized body rows: skip re-renders during active column resize.
- * Column widths update via CSS variables on the <table> element,
- * so the browser handles width changes without React re-renders.
- */
 const MemoizedDataGridTableDndRowsBody = memo(
   DataGridTableDndRowsBody,
   (_prev, next) => !!next.table.state.columnResizing?.isResizingColumn
@@ -491,9 +435,6 @@ function useDataGridTableDndRowsState<TData extends object>({
   // document during render would disagree with the server, and a drag cannot
   // start before hydration.
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
-  // The row being carried, plus the column widths measured off the header the
-  // moment the drag starts. The clone lives outside the table, so it has no
-  // columns of its own and has to be told what they are.
   const [carried, setCarried] = useState<{
     id: UniqueIdentifier;
     width: number;
@@ -510,23 +451,11 @@ function useDataGridTableDndRowsState<TData extends object>({
       return;
     }
 
-    // The clone has to be exactly as tall as the row it was lifted from.
-    // A fixed height reads as the grid growing under the pointer the moment
-    // you pick a row up, and it is wrong in both directions: rows whose
-    // content wraps are taller than any constant, and dense rows are shorter.
     const source = Array.from(
       container.querySelectorAll<HTMLElement>('tbody tr[data-row-id]')
     ).find((candidate) => candidate.dataset.rowId === String(id));
     const height = source?.getBoundingClientRect().height ?? 0;
 
-    // The fill cell is a spacer that soaks up the surplus a column resize
-    // leaves behind, and the clone renders data cells only. Measuring it in
-    // would make the clone's table wider than the cells it actually holds,
-    // and `table-fixed` hands that orphaned width back out across every column
-    // -- the carried row comes out visibly wider than the row it was lifted
-    // from. So the width is the sum of what we render, never the header's own.
-    // Read off the source row, one cell per column: a head cell can span
-    // several (a group, a merged or a meta.headerColSpan cell).
     const columns = Array.from(source?.children ?? head.children)
       .filter(
         (cell) =>
@@ -535,9 +464,6 @@ function useDataGridTableDndRowsState<TData extends object>({
       )
       .map((cell) => cell.getBoundingClientRect().width);
 
-    // Inline padding is read off the source cells for the same reason. A fixed
-    // px-3 ignored edgeCell and cellClassName, so a 44px grip column holding a
-    // 28px handle overflowed by 8px and truncate painted an ellipsis beside it.
     const padding = Array.from(source?.children ?? [])
       .filter(
         (cell) =>
@@ -608,20 +534,11 @@ function useDataGridTableDndRowsState<TData extends object>({
 
       return {
         ...transform,
-        // The horizontal rail only engages while the default axis restriction
-        // is in force. A row is exactly as wide as the viewport, so minX and
-        // maxX both collapse to 0 and clamping x erases it entirely: harmless
-        // under restrictToVerticalAxis, which zeroes x anyway, but fatal for a
-        // caller that replaced the restriction precisely to READ x, as a tree
-        // does to resolve drop depth. Vertical is railed either way, which is
-        // what actually keeps a dragged row inside the grid.
         x: modifiers ? x : Math.max(minX, Math.min(maxX, x)),
         y: Math.max(minY, Math.min(maxY, y)),
       };
     };
 
-    // The container clamp is a safety rail rather than a policy, so it stays
-    // applied even when the caller replaces the axis restriction.
     return [
       ...(modifiers ?? [restrictToVerticalAxis]),
       restrictToTableContainer,
@@ -696,14 +613,6 @@ function useDataGridTableDndRowsState<TData extends object>({
                   key={headerGroup.id}
                   rowId={headerGroup.id}
                 >
-                  {/* Every row follows DataGridTableBase's colgroup, which
-                      puts the fill col between the center and end-pinned
-                      groups; a fill cell appended last hands its width to
-                      the end-pinned column. One keyed list, not three, so
-                      a column pinned into or out of the end group moves
-                      instead of remounting, which would drop keyboard
-                      focus. The fill spans every head row, so only the
-                      first renders it. */}
                   {[
                     ...[
                       ...headerGroup.startHeaders,
@@ -744,16 +653,6 @@ function useDataGridTableDndRowsState<TData extends object>({
         </DataGridTableBase>
       </DataGridTableViewport>
 
-      {/* The row you are actually holding. It is a real clone rendered outside
-          the table, which is the only way a dragged row can follow the pointer
-          without disturbing the grid: it adds no cell, so it cannot alter the
-          column widths, and it floats above the rows rather than through them.
-          Its presence also tells dnd-kit to stop translating the source row, so
-          the row left behind simply dims in place.
-
-          Portalled to the body so the fixed positioning resolves against the
-          viewport wherever the grid is mounted. React context crosses a portal,
-          so DndContext still reaches it. */}
       {portalTarget
         ? createPortal(
             <DragOverlay dropAnimation={null}>
@@ -783,9 +682,6 @@ function useDataGridTableDndRowsState<TData extends object>({
                           ) => (
                             <td
                               key={cell.id}
-                              // Falls back to the column's own size so an unforeseen
-                              // header/cell count mismatch degrades to a real width
-                              // rather than to `auto`.
                               style={{
                                 width:
                                   carried.columns[index] ??

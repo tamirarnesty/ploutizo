@@ -1,6 +1,5 @@
 'use client';
 
-// Opted out of React Compiler with the rest of the grid (see data-grid.tsx).
 'use no memo';
 
 import { useEffect, useRef, useState } from 'react';
@@ -52,22 +51,14 @@ interface DataGridCellSelectionApi {
   scrollToCell: (rowId: string, columnId: string) => void;
 }
 
-/** One open built-in editor: which cell, which control, and its text. */
 interface DataGridEditorSession {
   rowId: string;
   columnId: string;
   control: 'text' | 'textarea';
-  /** What the editor opens with: the typed seed or the formatted value. */
   initialValue: string;
-  /** The formatted current value; an unchanged commit dispatches nothing. */
   baseline: string;
-  /** Accessible name for the overlay control, from the column's header. */
   label: string;
 }
-
-/* ------------------------------------------------------------------------- *
- * Clipboard text: pure, node-testable.
- * ------------------------------------------------------------------------- */
 
 function serializeDataGridClipboardField(field: string): string {
   // Excel and Sheets quote a field containing a delimiter and double inner
@@ -147,7 +138,6 @@ function parseDataGridClipboardText(text: string): string[][] {
   return rows;
 }
 
-/** Repeats a block cyclically to fill rowCount x columnCount. */
 function tileDataGridClipboardBlock(
   block: string[][],
   rowCount: number,
@@ -198,14 +188,6 @@ function renderDataGridClipboardHtml(grid: string[][]): string {
   return '<table><tbody>' + body + '</tbody></table>';
 }
 
-/* ------------------------------------------------------------------------- *
- * Selection geometry: walks in the feature's own index space.
- * ------------------------------------------------------------------------- */
-
-/**
- * Columns in render order, the same [start, center, end] space
- * cellSelectionFeature resolves its bounds against.
- */
 function getDataGridDisplayOrderedColumns<TData extends object>(
   table: DataGridTableInstance<TData>
 ) {
@@ -220,11 +202,6 @@ function getDataGridWritableCellEdit<TData extends object>(
   column: {
     columnDef: { meta?: { cellEdit?: DataGridColumnCellEdit<TData> } };
   },
-  /**
-   * The row a write targets. Function-form `editable` is evaluated against
-   * it; without a row the column counts as writable in principle, the
-   * coarse check the fill preview's column filter uses.
-   */
   row?: TData
 ): DataGridColumnCellEdit<TData> | null {
   const cellEdit = column.columnDef.meta?.cellEdit;
@@ -239,22 +216,11 @@ function getDataGridWritableCellEdit<TData extends object>(
   return cellEdit;
 }
 
-/**
- * Ids of the rows the view can actually show: the page slice plus rows the
- * DOM renders outside it (pinned rows under keepPinnedRows). Selection
- * bounds live in pre-paginated display order, so a range whose corners are
- * both visible can still span off-page rows in between - a page-boundary
- * range to a bottom-pinned draft is the standing example. Every batch walk
- * (copy, clear, paste, fill) filters rows through this set so the cells a
- * batch touches are exactly the cells the selection paints.
- */
 function getDataGridRenderedRowIds<TData extends object>(
   table: DataGridTableInstance<TData>,
   viewport: HTMLElement | null | undefined
 ): Set<string> | null {
   if (!viewport) return null;
-  // When the page slice covers the whole display order (manual pagination,
-  // virtualization, no pagination) no row can be off-page: skip the walk.
   if (
     table.getRowModel().rows.length === table.getRowsInDisplayOrder().length
   ) {
@@ -272,15 +238,8 @@ function getDataGridRenderedRowIds<TData extends object>(
   return rendered;
 }
 
-/**
- * Cells of the current selection the view can actually show, under the
- * same row filter the batch builders use, so a count shown next to the
- * selection always matches what is painted and what a batch will touch.
- * The feature's own getSelectedCellCount spans off-page rows instead.
- */
 function getDataGridVisibleSelectedCellCount<TData extends object>(
   table: DataGridTableInstance<TData>,
-  /** The grid's body viewport; null falls back to the full-range count. */
   viewport: HTMLElement | null
 ): number {
   const bounds = table.getCellSelectionBounds();
@@ -382,9 +341,6 @@ function extendDataGridSelection<TData extends object>(
   viewport: HTMLElement,
   direction: 'up' | 'down' | 'left' | 'right'
 ): { rowId: string; columnId: string } | null {
-  // The range's active corner: focus stays the anchor, so the corner is
-  // the bound's opposite one. Returned to the caller so the view can
-  // follow the growing edge rather than the anchor.
   const activeCorner = () => {
     const focused = table.getFocusedCell();
     if (!focused) return null;
@@ -439,12 +395,6 @@ function extendDataGridSelection<TData extends object>(
   return target;
 }
 
-/**
- * The active region as formatted strings, row-major. Columns opted out of
- * selection are compacted away, matching the feature's own ranges-data
- * behavior, and rows the view cannot show are skipped when a viewport is
- * given. Null when nothing is selected.
- */
 function getDataGridActiveRegionGrid<TData extends object>(
   table: DataGridTableInstance<TData>,
   viewport?: HTMLElement | null
@@ -475,11 +425,6 @@ function getDataGridActiveRegionGrid<TData extends object>(
   return grid.length ? grid : null;
 }
 
-/**
- * A clear/cut batch over the selection's writable cells. Non-writable columns
- * are skipped silently: clearing is an intent over what the grid owns, and a
- * rejection per read-only cell would be noise. Null when nothing clears.
- */
 function buildDataGridClearDetails<TData extends object>(
   table: DataGridTableInstance<TData>,
   source: 'clear' | 'cut',
@@ -538,12 +483,6 @@ type DataGridPasteTarget = {
   endColumnIndex: number;
 };
 
-/**
- * Resolves a parsed clipboard block into a paste batch, Excel semantics:
- * a 1x1 block fills the whole selected region; a block tiles when the region
- * is an exact multiple of it; otherwise it pastes once from the region's
- * top-left, clamped at the grid edges (rows are never grown).
- */
 function buildDataGridPasteDetails<TData extends object>(
   table: DataGridTableInstance<TData>,
   block: string[][],
@@ -560,11 +499,6 @@ function buildDataGridPasteDetails<TData extends object>(
   const columns = getDataGridDisplayOrderedColumns(table);
   const rendered = getDataGridRenderedRowIds(table, viewport);
 
-  // Copy COMPACTS opt-out columns away, so paste maps block columns over the
-  // same compacted space: selectable columns only, starting at the region's
-  // first selectable column and running past the region for a wider block,
-  // clamped at the grid edge. Walking raw display offsets instead would let
-  // an interior opt-out column swallow a block column silently.
   const targetColumns: Array<{
     column: (typeof columns)[number];
     displayIndex: number;
@@ -604,9 +538,6 @@ function buildDataGridPasteDetails<TData extends object>(
   const tiled = tileDataGridClipboardBlock(block, rowCount, columnCount);
   const startRowIndex = bound.minRowIndex;
 
-  // Rows the block maps onto: the next rowCount rows the view can show,
-  // starting at the region's top. Off-page rows between a page's tail and
-  // a pinned draft are skipped rather than silently written.
   const targetRows: Array<{
     row: (typeof rows)[number];
     displayIndex: number;
@@ -674,11 +605,6 @@ function buildDataGridPasteDetails<TData extends object>(
   };
 }
 
-/**
- * The inverse batch: every change's value and previousValue swapped and
- * rejections dropped. Feed it through the same state update onCellsChange
- * uses to implement undo; inverting the inverse is redo.
- */
 function invertDataGridCellsChange<TData extends object>(
   details: DataGridCellsChangeDetails<TData>
 ): DataGridCellsChangeDetails<TData> {
@@ -715,34 +641,6 @@ function selectDataGridRegion<TData extends object>(
   );
 }
 
-/* ------------------------------------------------------------------------- *
- * Fill handle drag session.
- * ------------------------------------------------------------------------- */
-
-/**
- * Imperative document-level session, the column-resize pattern: preview state
- * is written as `data-cell-fill-target` attributes outside React, so the drag
- * costs zero re-renders until release. v1 fills down or right (dominant axis)
- * by repeating the source region's values; rows outside the rendered
- * viewport of a virtualized body cannot be targeted mid-drag.
- *
- * Vertical distance is measured over the rows the view can show, so a drag
- * onto a pinned draft fills exactly the rows the preview marked and never
- * the off-page rows between. A cross-column fill round-trips through the
- * source's format and the target's parse - the paste contract - because
- * adjacent grid columns are heterogeneous; a parse rejection lands in the
- * batch's rejected list, while cells that cannot be written are skipped
- * and never tinted by the preview.
- */
-// The fill drag's feedback: ONE dashed border (the Sheets fill marquee)
-// around the whole pending region - the source PLUS the extension - so the
-// drag reads as one growing region, never as a second box glued under the
-// source. While the session runs
-// the viewport carries data-cell-filling and the source cells' own
-// selection chrome rests, so this element is the only painter and nothing
-// can double at the junction. z-[35]: above the sticky pinned cells
-// (z 30) so the border survives crossing a pinned column; below the
-// sticky header (z-40).
 const dataGridGestureOutlineClasses =
   'outline-primary pointer-events-none absolute z-[35] outline-1 outline-dashed -outline-offset-1';
 
@@ -752,18 +650,12 @@ function startDataGridFillSession<TData extends object>(options: {
   onCellsChange: ((details: DataGridCellsChangeDetails<TData>) => void) | null;
 }) {
   const { table, viewport, onCellsChange } = options;
-  // Fill over a multi-region selection is undefined territory; Excel refuses
-  // it too.
   if (table.getCellSelectionBounds().length > 1) return;
   const bound = getDataGridActiveBound(table);
   if (!bound) return;
 
   const rows = table.getRowsInDisplayOrder();
   const columns = getDataGridDisplayOrderedColumns(table);
-  // The vertical walk space: rows the view can show, in display order. The
-  // DOM ids seed it (a drag can only target rendered rows), and one pass
-  // over the cached display array resolves them without building per-row
-  // wrappers for a 50k-row model.
   const domRowIds = new Set<string>();
   for (const rowEl of Array.from(
     viewport.querySelectorAll('tbody tr[data-row-id]')
@@ -784,7 +676,6 @@ function startDataGridFillSession<TData extends object>(options: {
   const visibleIndexById = new Map(
     visibleRows.map((entry, index) => [entry.row.id, index])
   );
-  // The source region and its last row, both in visible space.
   const sourceRows = visibleRows.filter(
     ({ displayIndex }) =>
       displayIndex >= bound.minRowIndex && displayIndex <= bound.maxRowIndex
@@ -810,9 +701,6 @@ function startDataGridFillSession<TData extends object>(options: {
   viewport.appendChild(previewOutline);
   viewport.setAttribute('data-cell-filling', '');
 
-  // The region border wraps source plus extension: its corners are the
-  // source region's first cell and the farthest cell the drag reaches
-  // (the source's own last cell while nothing is extended).
   const sourceCorner = (rowId: string, columnId: string | undefined) =>
     columnId
       ? viewport.querySelector(
@@ -855,9 +743,6 @@ function startDataGridFillSession<TData extends object>(options: {
     positionPreviewOutline();
   };
 
-  // Target rows and columns for the current extension: rows in visible
-  // space, and only the columns the commit would actually write, so the
-  // preview never tints a cell the release will skip.
   const getExtensionTargets = () => {
     if (!extension) return null;
     const columnEntries = columns.map((column, displayIndex) => ({
@@ -990,9 +875,6 @@ function startDataGridFillSession<TData extends object>(options: {
           if (!targetEdit) continue;
           const sourceValue = cells[sourceColumn.id]?.getValue();
           let value: unknown = sourceValue;
-          // Crossing columns is a type boundary: round-trip through the
-          // source's format and the target's parse, exactly what pasting
-          // the same cells would do. Same-column fills keep raw values.
           if (targetColumn.id !== sourceColumn.id && targetEdit.parse) {
             const sourceFormat = sourceColumn.columnDef.meta?.cellEdit?.format;
             const raw = sourceFormat
@@ -1025,8 +907,6 @@ function startDataGridFillSession<TData extends object>(options: {
       onCellsChange({ source: 'fill', changes, rejected });
     }
 
-    // Grow the selection over source plus filled cells, Excel's post-fill
-    // shape.
     selectDataGridRegion(table, {
       startRowIndex: bound.minRowIndex,
       endRowIndex:
@@ -1041,8 +921,6 @@ function startDataGridFillSession<TData extends object>(options: {
   };
 
   const handleUp = () => finish(true);
-  // Capture phase so a cancel cannot also reach the grid's own Escape
-  // handling and clear the selection underneath the drag.
   const handleKey = (event: KeyboardEvent) => {
     if (event.key !== 'Escape') return;
     event.stopPropagation();
@@ -1054,13 +932,7 @@ function startDataGridFillSession<TData extends object>(options: {
   document.addEventListener('keydown', handleKey, true);
 }
 
-/* ------------------------------------------------------------------------- *
- * Controller.
- * ------------------------------------------------------------------------- */
-
 function isDataGridEditableTarget(target: EventTarget | null): boolean {
-  // data-cell-interactive is the same opt-out the mousedown guard honors, so
-  // a custom widget keeps its own keys and clipboard as well as its clicks.
   return (
     target instanceof Element &&
     target.closest(
@@ -1069,11 +941,6 @@ function isDataGridEditableTarget(target: EventTarget | null): boolean {
   );
 }
 
-// Keys belong to a focused in-cell control the same way clicks do: the
-// button, link and checkbox set the mousedown guard exempts must keep its
-// native Enter, Space and Tab, or an in-cell button is keyboard-dead.
-// Clipboard stays on the narrower guard: copying the grid selection while a
-// button happens to hold focus is what a spreadsheet user expects.
 function isDataGridInteractiveKeyTarget(target: EventTarget | null): boolean {
   return (
     isDataGridEditableTarget(target) ||
@@ -1107,14 +974,9 @@ function useDataGridCellSelectionController<TData extends object>({
    */
   keyboard?: boolean;
 }) {
-  // The context value serves `table` and `props` through getters over the
-  // provider's own refs, so a context object captured at mount keeps handing
-  // out the CURRENT instances; no ref mirror is needed here.
   const context = useDataGrid<TData>();
 
   const anchorRef = useRef<HTMLSpanElement | null>(null);
-  // The body viewport, once the wiring effect resolves it; the built-in
-  // editor overlay portals into it so it scrolls with the cells.
   const [viewportEl, setViewportEl] = useState<HTMLElement | null>(null);
   const [editorSession, setEditorSession] =
     useState<DataGridEditorSession | null>(null);
@@ -1146,7 +1008,6 @@ function useDataGridCellSelectionController<TData extends object>({
     const root = anchor
       ? (anchor.closest('[data-slot="data-grid"]') ?? anchor.parentElement)
       : null;
-    // Split header/body grids render two viewports; the body one owns focus.
     const viewports = root
       ? Array.from(
           root.querySelectorAll<HTMLElement>(
@@ -1160,14 +1021,11 @@ function useDataGridCellSelectionController<TData extends object>({
       ) ??
       viewports[0] ??
       null;
-    // Handlers below close over one element. When the grid is not mounted
-    // yet, that element is detached and nothing is registered on it.
     const viewport = resolvedViewport ?? document.createElement('div');
     const attached = resolvedViewport !== null;
 
     const getTable = () => latest.table;
     const getOnCellsChange = () => latest.onCellsChange ?? null;
-    // "single" collapses every grow gesture to the focused cell.
     const isRangeSelectionEnabled = () => latest.cellSelectionMode !== 'single';
 
     // The focusable element of the container-focus model. The table carries
@@ -1187,7 +1045,6 @@ function useDataGridCellSelectionController<TData extends object>({
         behavior: 'instant',
       });
 
-    // Points assistive tech at the virtually focused cell.
     const syncActiveDescendant = () => {
       const cell = viewport.querySelector<HTMLElement>('td[data-cell-focused]');
       if (cell?.id) focusTarget.setAttribute('aria-activedescendant', cell.id);
@@ -1197,9 +1054,6 @@ function useDataGridCellSelectionController<TData extends object>({
     const scrollFocusedIntoView = (
       targetRowIndex?: number,
       rowCount?: number,
-      // A Shift-extend grows away from the focused cell, which stays the
-      // anchor; the caller names the range's active corner so the view
-      // follows the growing edge instead of snapping back to the anchor.
       explicitCell?: { rowId: string; columnId: string }
     ) => {
       const queryScrollCell = () =>
@@ -1218,10 +1072,6 @@ function useDataGridCellSelectionController<TData extends object>({
           scrollTdIntoView(cell);
           return;
         }
-        // Virtualization: the jump target is not mounted, so there is no td
-        // to scroll to. The spacer rows keep scrollHeight proportional to
-        // the row count, so estimate the offset, let the virtualizer mount
-        // the region, then finish with a precise nearest-scroll.
         let scroller: HTMLElement | null = viewport;
         while (scroller && scroller.scrollHeight <= scroller.clientHeight) {
           scroller = scroller.parentElement;
@@ -1237,11 +1087,6 @@ function useDataGridCellSelectionController<TData extends object>({
       });
     };
 
-    // Opens an editor for the focused writable cell: the grid's own overlay
-    // for a column with a built-in `control`, the consumer's via
-    // `onCellEditRequest` otherwise, and as a last resort the cell's own
-    // interactive content (activated the way a mouse would). Returns false
-    // when nothing can open so the caller falls back to plain navigation.
     const requestCellEdit = (initialText?: string): boolean => {
       const table = getTable();
       const cell = table.getFocusedCell();
@@ -1282,15 +1127,6 @@ function useDataGridCellSelectionController<TData extends object>({
         });
         return true;
       }
-      // Generic activation: a custom control rendered in the cell (a
-      // select trigger, a combobox input, a button) toggles from the
-      // keyboard without any consumer wiring - focus it and click it,
-      // the same gesture the mouse performs. The lookup is ORDERED so an
-      // incidental button (a chip's remove button before a combobox
-      // input) never outranks the cell's primary control.
-      // Deliberate activation only (Enter, F2, double-click): typing a
-      // printable character must never toggle a control it cannot type
-      // into, and there is nowhere to put the character.
       if (initialText !== undefined) return false;
       const focusedCell = viewport.querySelector('td[data-cell-focused]');
       const control = focusedCell
@@ -1311,11 +1147,6 @@ function useDataGridCellSelectionController<TData extends object>({
       return true;
     };
 
-    // The imperative surface. A consumer that creates a row cannot focus
-    // its cell through state alone: setFocusedCell needs the row in the
-    // table model, DOM focus needs the focus target, and both race the
-    // commit that mounts the row. One bounded timer retry (timers, unlike
-    // animation frames, run in background tabs) settles all of it in order.
     let focusRetryTimer: ReturnType<typeof setTimeout> | undefined;
     let focusReclaimTimer: ReturnType<typeof setTimeout> | undefined;
     const focusCell: DataGridCellSelectionApi['focusCell'] = (
@@ -1323,11 +1154,9 @@ function useDataGridCellSelectionController<TData extends object>({
       columnId,
       options
     ) => {
-      // A newer call supersedes any chain still polling for an older row.
       clearTimeout(focusRetryTimer);
       let attempts = 12;
       const attempt = () => {
-        // The grid can unmount mid-retry; a stale timer must go quiet.
         if (!viewport.isConnected) return;
         const cell = viewport.querySelector<HTMLElement>(
           `tr[data-row-id="${CSS.escape(rowId)}"] td[data-col-id="${CSS.escape(columnId)}"]`
@@ -1339,13 +1168,9 @@ function useDataGridCellSelectionController<TData extends object>({
         }
         getTable().setFocusedCell(rowId, columnId);
         focusTarget.focus();
-        // The cell's id is static, so assistive tech can point at it ahead
-        // of the data-cell-focused commit the rAF sync waits for.
         if (cell.id) focusTarget.setAttribute('aria-activedescendant', cell.id);
         scrollTdIntoView(cell);
         if (!options?.edit) return;
-        // The built-in overlay measures td[data-cell-focused], so the edit
-        // request waits for that attribute to land.
         let editAttempts = 12;
         const attemptEdit = () => {
           if (!cell.isConnected) return;
@@ -1373,10 +1198,6 @@ function useDataGridCellSelectionController<TData extends object>({
       latest.apiRef.current = { focusCell, clearSelection, scrollToCell };
     }
 
-    // Resolves jump targets (Home, End, Ctrl+Arrows, PageUp/PageDown) in the
-    // feature's display-index space and lands them through the range API:
-    // plain jumps collapse to the target cell, Shift jumps keep the active
-    // range's opposite corner as the anchor, the Excel model.
     const jumpFocus = (
       rowTarget: 'first' | 'last' | 'same' | { delta: number },
       columnTarget: 'first' | 'last' | 'same',
@@ -1403,13 +1224,7 @@ function useDataGridCellSelectionController<TData extends object>({
                   rows.length - 1,
                   Math.max(0, rowIndex + rowTarget.delta)
                 );
-      // Pagination renders a window of the display order; walk the target
-      // back toward the focus until it lands on a rendered row, so a jump
-      // can never focus an off-page row the view cannot show. DOM rows
-      // join the set so pinned rows outside the page slice stay reachable.
       let clampedRowIndex = targetRowIndex;
-      // With the whole display order in the page slice nothing is off-page
-      // and the clamp cannot move, so skip building the id set.
       if (table.getRowModel().rows.length !== rows.length) {
         const rendered = new Set<string | null>(
           table.getRowModel().rows.map((row: { id: string }) => row.id)
@@ -1472,14 +1287,11 @@ function useDataGridCellSelectionController<TData extends object>({
       scrollFocusedIntoView(
         clampedRowIndex,
         rows.length,
-        // The extend keeps focus on the anchor; follow the jump target.
         extend ? { rowId: targetRow.id, columnId: targetColumn.id } : undefined
       );
       return true;
     };
 
-    // One visual-space focus step with the feature's move as the fallback
-    // for unresolvable positions; at an edge the focus stays put.
     const moveFocusVisual = (
       direction: 'up' | 'down' | 'left' | 'right'
     ): void => {
@@ -1501,15 +1313,8 @@ function useDataGridCellSelectionController<TData extends object>({
       table.moveCellSelection(direction);
     };
 
-    // One viewport's worth of rows for PageUp/PageDown, measured from the
-    // live layout; 10 when nothing is measurable (jsdom). Data rows only:
-    // the virtual table's spacer rows carry the whole scroll offset as
-    // height and would collapse the page size to a single row.
     const getPageJumpSize = (): number => {
       const row = viewport.querySelector('tbody tr[data-row-id]');
-      // The nearest ancestor that actually scrolls; in the scroll-area
-      // layout the viewport's parent is a full-height content wrapper
-      // whose clientHeight would make the page span the whole table.
       let scroller: HTMLElement | null = viewport;
       while (scroller && scroller.scrollHeight <= scroller.clientHeight) {
         scroller = scroller.parentElement;
@@ -1520,16 +1325,9 @@ function useDataGridCellSelectionController<TData extends object>({
       return Math.max(1, Math.floor(viewHeight / rowHeight) - 1);
     };
 
-    // The rows appended after the data rows: the add-row affordance and a
-    // consumer appendRow draft. Positional, because an id-less tr is not
-    // enough - expanded-detail rows interleave BETWEEN data rows and the
-    // empty-state row stands alone, and neither belongs to this region.
-    // Virtual spacer rows are aria-hidden and never match.
     const getAppendedRows = (): HTMLElement[] => {
       const body = viewport.querySelector('tbody');
       const appended: HTMLElement[] = [];
-      // Backwards from the end, stopping at the first data row: O(appended)
-      // instead of an array of every rendered row per keystroke.
       let rowEl = body?.lastElementChild;
       while (rowEl && !rowEl.hasAttribute('data-row-id')) {
         if (
@@ -1549,17 +1347,12 @@ function useDataGridCellSelectionController<TData extends object>({
       );
       if (!focusable) return false;
       focusable.focus();
-      // A control that refuses focus (hidden, inert) must not report
-      // success, or the arrow key that called this dead-ends.
       return row!.ownerDocument.activeElement === focusable;
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return;
 
-      // Unified keyboard for the appended region: ArrowDown/ArrowUp walk
-      // between its rows, and ArrowUp from its first row returns to the
-      // grid's cell navigation. Every other key stays native there.
       const appendedRow =
         event.target instanceof Element
           ? event.target.closest('tbody > tr:not([data-row-id])')
@@ -1570,8 +1363,6 @@ function useDataGridCellSelectionController<TData extends object>({
       ) {
         const appended = getAppendedRows();
         const index = appended.indexOf(appendedRow);
-        // An id-less row that is NOT appended (expanded detail content,
-        // the empty-state row) keeps every key native.
         if (index === -1) return;
         if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
         if (event.key === 'ArrowDown') {
@@ -1582,7 +1373,6 @@ function useDataGridCellSelectionController<TData extends object>({
           event.preventDefault();
           return;
         }
-        // Back into the grid, on whatever cell was focused last.
         focusTarget.focus();
         syncActiveDescendant();
         event.preventDefault();
@@ -1623,8 +1413,6 @@ function useDataGridCellSelectionController<TData extends object>({
       ) {
         if (isRangeSelectionEnabled()) {
           table.selectAllCells();
-          // Select-all moves the feature's focus to the range corner,
-          // which can sit off-page; keep assistive tech pointed right.
           requestAnimationFrame(syncActiveDescendant);
         }
         event.preventDefault();
@@ -1671,7 +1459,6 @@ function useDataGridCellSelectionController<TData extends object>({
                 ? ('down' as const)
                 : horizontal(event.key === 'ArrowLeft' ? 'left' : 'right');
           if (event.metaKey || event.ctrlKey) {
-            // Ctrl/Cmd+Arrow jumps to the grid edge in that direction.
             const jumped =
               direction === 'up'
                 ? jumpFocus(
@@ -1693,9 +1480,6 @@ function useDataGridCellSelectionController<TData extends object>({
             if (jumped) event.preventDefault();
             return;
           }
-          // ArrowDown on the last rendered row steps into the appended
-          // region (a draft row, or the add-row affordance), keeping one
-          // keyboard model across the whole table.
           if (direction === 'down' && !event.shiftKey) {
             const focused = table.getFocusedCell();
             const renderedRows = viewport.querySelectorAll(
@@ -1721,9 +1505,6 @@ function useDataGridCellSelectionController<TData extends object>({
             scrollFocusedIntoView(undefined, undefined, corner ?? undefined);
             return;
           }
-          // Plain arrows step in visual space so navigation crosses
-          // pinned rows and pagination windows the feature's own move
-          // cannot resolve; at a visual edge the focus stays put.
           const focused = table.getFocusedCell();
           const target = focused
             ? getDataGridStepTarget(
@@ -1750,7 +1531,6 @@ function useDataGridCellSelectionController<TData extends object>({
         }
         case 'Home':
         case 'End': {
-          // Home/End: row start or end; with Ctrl/Cmd, the grid's corners.
           const edge =
             event.key === 'Home' ? ('first' as const) : ('last' as const);
           const jumped =
@@ -1783,8 +1563,6 @@ function useDataGridCellSelectionController<TData extends object>({
           return;
         }
         case 'Enter': {
-          // The Notion/Airtable flow: Enter opens the editor when one is
-          // wired; the Excel move-down stays the fallback.
           if (!event.shiftKey && requestCellEdit()) {
             event.preventDefault();
             return;
@@ -1800,12 +1578,8 @@ function useDataGridCellSelectionController<TData extends object>({
         }
         case 'Tab': {
           const before = table.getFocusedCell();
-          // Logical directions, no RTL swap: Tab means "next cell" in both
-          // reading directions, exactly like DOM tab order.
           moveFocusVisual(event.shiftKey ? 'left' : 'right');
           const after = table.getFocusedCell();
-          // Trap Tab only while it moved; at the edges focus leaves the grid,
-          // which keyboard users need to escape it at all.
           if (after && after.id !== before?.id) {
             event.preventDefault();
             scrollFocusedIntoView();
@@ -1827,12 +1601,8 @@ function useDataGridCellSelectionController<TData extends object>({
           return;
         }
         case 'Escape': {
-          // Consume the key only while it has a selection to clear, so a
-          // grid inside a dialog still lets Escape close the dialog.
           if (table.getCellSelectionBounds().length) {
             table.resetCellSelection(true);
-            // The focused-cell attribute is gone after the commit;
-            // aria-activedescendant must not keep naming it.
             requestAnimationFrame(syncActiveDescendant);
             event.preventDefault();
             event.stopPropagation();
@@ -1841,8 +1611,6 @@ function useDataGridCellSelectionController<TData extends object>({
         }
       }
 
-      // Space on a cell whose content is a checkbox toggles it, the
-      // row-select idiom, so the selection column works by keyboard too.
       if (event.key === ' ') {
         const checkbox = viewport
           .querySelector('td[data-cell-focused]')
@@ -1870,8 +1638,6 @@ function useDataGridCellSelectionController<TData extends object>({
         return;
       }
 
-      // Space that opened nothing (read-only cell) must not scroll the page
-      // out from under the focused cell.
       if (event.key === ' ' && table.getFocusedCell()) {
         event.preventDefault();
       }
@@ -1909,9 +1675,7 @@ function useDataGridCellSelectionController<TData extends object>({
           await navigator.clipboard.writeText(text);
           return { text, grid };
         }
-      } catch {
-        // Denied or unavailable; the legacy path below still applies.
-      }
+      } catch {}
       const doc = viewport.ownerDocument;
       const scratch = doc.createElement('textarea');
       scratch.value = text;
@@ -1978,8 +1742,6 @@ function useDataGridCellSelectionController<TData extends object>({
       );
       if (!result) return;
       onCellsChange(result.details);
-      // The pasted region becomes the selection, the documented contract;
-      // single mode keeps just the focused cell instead.
       if (isRangeSelectionEnabled()) {
         selectDataGridRegion(table, result.target);
       }
@@ -2066,12 +1828,6 @@ function useDataGridCellSelectionController<TData extends object>({
       requestAnimationFrame(syncActiveDescendant);
     };
 
-    // Drag-to-select outranks in-cell controls: when a drag grew the
-    // range, the click that fires on release is swallowed in capture so a
-    // trigger under the pointer never opens. The selection key comparison
-    // is what distinguishes a drag from a motionless click made while a
-    // multi-cell selection already exists (a press on "+ Add row" or an
-    // in-cell control changes nothing, and its click must go through).
     let dragStartedOnCell = false;
     let dragStartSelectionKey = '';
     let squelchTimer: ReturnType<typeof setTimeout> | undefined;
@@ -2105,7 +1861,6 @@ function useDataGridCellSelectionController<TData extends object>({
 
     const handleMouseDown = (event: MouseEvent) => {
       if (event.button !== 0) return;
-      // The cell a click focuses reaches assistive tech once React commits.
       requestAnimationFrame(syncActiveDescendant);
       const target = event.target as Element | null;
       // A modifier press is a selection gesture all the way through, the
@@ -2124,10 +1879,6 @@ function useDataGridCellSelectionController<TData extends object>({
       ) {
         focusReclaimTimer = scheduleDataGridTimer(() => focusTarget.focus(), 0);
       }
-      // Any td press can become a drag; the squelch only arms when the
-      // range actually grew by release time. The attribute hides the fill
-      // handle for the session, so its overhang never sits in the drag
-      // path or churns from cell to cell while the range grows.
       dragStartedOnCell = !!target?.closest?.('td');
       if (dragStartedOnCell) {
         dragStartSelectionKey = getSelectionKey();
@@ -2146,10 +1897,6 @@ function useDataGridCellSelectionController<TData extends object>({
       });
     };
 
-    // Single-click editing, the opt-in mode: a plain click that landed
-    // on the (now) focused cell opens its editor immediately. Drags were
-    // squelched in capture before this bubble listener, and modifier
-    // clicks are selection gestures.
     const handleClickToEdit = (event: MouseEvent) => {
       if (latest.cellEditMode !== 'click') return;
       if (event.shiftKey || event.ctrlKey || event.metaKey) return;
@@ -2159,10 +1906,6 @@ function useDataGridCellSelectionController<TData extends object>({
       requestCellEdit();
     };
 
-    // Double-click opens the editor on the cell the first click focused,
-    // matching Sheets. Interactive content keeps its own double-clicks, and
-    // the clicked cell must BE the focused one, or a double-click on a
-    // non-selectable cell would edit whichever cell held focus before.
     const handleDoubleClick = (event: MouseEvent) => {
       if (isDataGridInteractiveKeyTarget(event.target)) return;
       const target = event.target as HTMLElement | null;
@@ -2175,8 +1918,6 @@ function useDataGridCellSelectionController<TData extends object>({
     const previousOutline = focusTarget.style.outline;
     if (attached && keyboard) {
       focusTarget.tabIndex = 0;
-      // The focused CELL ring is the indicator; the browser's outline around
-      // the whole grid on focus() would double it.
       focusTarget.style.outline = 'none';
       viewport.addEventListener('keydown', handleKeyDown);
     }
@@ -2194,9 +1935,6 @@ function useDataGridCellSelectionController<TData extends object>({
       viewport.addEventListener('dblclick', handleDoubleClick);
       viewport.ownerDocument.addEventListener('mouseup', handleDragMouseUp);
     }
-    // Selection-change notifications, read through the context getter so
-    // the latest callback fires without re-running this effect. The
-    // snapshot is only built when a callback is actually wired.
     const toBound = (bound: {
       minRowIndex: number;
       maxRowIndex: number;
@@ -2262,36 +2000,20 @@ function useDataGridCellSelectionController<TData extends object>({
       setViewportEl(null);
       setEditorSession(null);
     };
-    // Context getters serve fresh table/props inside every handler, so the
-    // effect re-runs only when the table itself is replaced. apiRef is only
-    // read and written here: keeping it out of the deps means an inline ref
-    // object cannot tear the listeners down every render.
   }, [enabled, keyboard, clipboard, table.store, latest]);
 
-  // The editor overlay covers the cell but not the fill handle's
-  // straddling half, which would poke out beneath it; the viewport flags
-  // the session so the handle hides, as it does during a drag.
   useEffect(() => {
     if (!viewportEl || !editorSession) return;
     viewportEl.setAttribute('data-cell-editing', '');
     return () => viewportEl.removeAttribute('data-cell-editing');
   }, [viewportEl, editorSession]);
 
-  // Closing an editor the user finished with keys hands focus back to the
-  // viewport so navigation continues where the edit left off; a commit can
-  // advance first (Tab across, and Enter down or up when
-  // cellEditEnterAdvance opts into the Sheets flow). A blur-initiated close
-  // must NOT refocus: the browser already moved focus where the user
-  // clicked, and yanking it back would reroute their next keystrokes into
-  // the grid.
   const closeEditorSession = (
     advance: DataGridEditorAdvance,
     refocus = true
   ) => {
     setEditorSession(null);
     if (advance) {
-      // Same visual-space step as keyboard navigation, so a commit on a
-      // pinned row advances like any other row.
       const tableNow = context.table;
       const focused = tableNow.getFocusedCell();
       const target =
@@ -2328,8 +2050,6 @@ function useDataGridCellSelectionController<TData extends object>({
     });
   };
 
-  // An unchanged commit dispatches nothing, the Excel model; a parse
-  // rejection reports through the batch's rejected list instead of writing.
   const commitEditorSession = (
     raw: string,
     advance: DataGridEditorAdvance,
@@ -2412,12 +2132,6 @@ function DataGridCellSelection<TData extends object>(props: {
   return useDataGridCellSelectionController<TData>(props);
 }
 
-/**
- * The built-in free-text editor: a portal into the body viewport, positioned
- * flush over the focused cell with the cell's own font, alignment and
- * padding, so the text keeps its exact place - the Sheets model. The
- * `textarea` control grows downward over the rows below as the text wraps.
- */
 function measureDataGridCellEditorStyle(
   viewport: HTMLElement
 ): CSSProperties | null {
@@ -2426,10 +2140,6 @@ function measureDataGridCellEditorStyle(
   const cellRect = cell.getBoundingClientRect();
   const viewportRect = viewport.getBoundingClientRect();
   const cellStyle = getComputedStyle(cell);
-  // The td centers its one line vertically (align-middle); the editor must
-  // put the text in exactly the same place or opening it shifts the value.
-  // Symmetric block padding sized to center one line does that for the
-  // textarea too, and keeps holding as it grows line by line.
   const lineHeight =
     Number.parseFloat(cellStyle.lineHeight) ||
     Number.parseFloat(cellStyle.fontSize) * 1.5 ||
@@ -2483,9 +2193,6 @@ function DataGridCellEditorOverlay({
   ) => void;
   onCancel: () => void;
 }) {
-  // Measured lazily at first render: the focused td was committed before the
-  // session opened, and the overlay remounts per cell via its key, so one
-  // measurement holds for the editor's lifetime.
   const [style] = useState<CSSProperties | null>(() =>
     measureDataGridCellEditorStyle(viewport)
   );
@@ -2506,10 +2213,6 @@ function DataGridCellEditorOverlay({
     if (!style) onCancel();
   }, [style, onCancel]);
 
-  // External row changes mid-edit (a live update, a re-sort) move or remove
-  // the cell underneath the overlay; the measured position is then a lie and
-  // a commit could land visually elsewhere. Cancel instead: predictable, and
-  // nothing is written that the user cannot see.
   useEffect(() => {
     const body = viewport.querySelector('tbody');
     if (!body) return;
@@ -2528,8 +2231,6 @@ function DataGridCellEditorOverlay({
     advance: DataGridEditorAdvance = null,
     refocus = true
   ) => {
-    // One finish per session: an Enter commit can be chased by the blur the
-    // unmount produces, and a doubled commit would write twice.
     if (finishedRef.current) return;
     finishedRef.current = true;
     if (commit) onCommit(element.value, advance, refocus);
@@ -2552,13 +2253,10 @@ function DataGridCellEditorOverlay({
       return;
     }
     if (event.key !== 'Enter') return;
-    // A textarea keeps Shift/Alt+Enter as a newline, the Sheets convention.
     if (session.control === 'textarea' && (event.shiftKey || event.altKey)) {
       return;
     }
     event.preventDefault();
-    // The default keeps focus on the edited cell, so a corrected value can
-    // be reviewed in place; enterAdvance restores the Sheets move-down.
     finish(
       element,
       true,
@@ -2566,11 +2264,6 @@ function DataGridCellEditorOverlay({
     );
   };
 
-  // z-[35]: above the sticky pinned cells (zIndex 30), or editing a pinned
-  // cell renders invisibly underneath them; below the sticky header (z-40).
-  // Primary outline at the same 1px weight as the focused cell's box: with
-  // the overlay covering that box, opening the editor reads as the same
-  // border becoming editable.
   const sharedClassName =
     'text-foreground bg-background outline-primary absolute z-[35] box-border resize-none outline-1 outline-solid -outline-offset-1';
 
@@ -2604,10 +2297,6 @@ function DataGridCellEditorOverlay({
     viewport
   );
 }
-
-/* ------------------------------------------------------------------------- *
- * Bulk edit bar.
- * ------------------------------------------------------------------------- */
 
 /**
  * Thin shell over row selection for bulk actions: selected count, a slot for

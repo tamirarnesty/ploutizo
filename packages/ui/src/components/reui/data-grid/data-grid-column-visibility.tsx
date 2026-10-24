@@ -39,8 +39,6 @@ function DataGridColumnVisibility<TData extends object>({
               return (
                 <DropdownMenuCheckboxItem
                   key={column.id}
-                  // Title-casing is for a raw column id only; an authored
-                  // label keeps its own casing.
                   className={
                     getColumnHeaderLabel(column) === column.id
                       ? 'capitalize'
