@@ -41,11 +41,11 @@ type DataGridPaginationItem =
   | { type: 'ellipsis'; direction: 'previous'; target: number }
   | { type: 'ellipsis'; direction: 'next'; target: number };
 
-function getDataGridPaginationItems(
+const getDataGridPaginationItems = (
   pageIndex: number,
   pageCount: number,
   limit: number
-): DataGridPaginationItem[] {
+): DataGridPaginationItem[] => {
   const sibling = Math.max(0, Math.floor(((Math.floor(limit) || 3) - 3) / 2));
   const pages = sibling * 2 + 3;
 
@@ -96,11 +96,11 @@ function getDataGridPaginationItems(
     { type: 'ellipsis', direction: 'next', target: pageIndex + sibling + 1 },
     { type: 'page', index: pageCount - 1 },
   ];
-}
+};
 
 const PAGE_BUTTON_WIDTH_CLASS = 'min-w-7';
 
-function DataGridPagination(props: DataGridPaginationProps): JSX.Element {
+const DataGridPagination = (props: DataGridPaginationProps): JSX.Element => {
   const { i18n, table, recordCount, isLoading } = useDataGrid();
 
   const defaultProps: Partial<DataGridPaginationProps> = {
@@ -274,6 +274,6 @@ function DataGridPagination(props: DataGridPaginationProps): JSX.Element {
       </div>
     </div>
   );
-}
+};
 
 export { DataGridPagination, type DataGridPaginationProps };

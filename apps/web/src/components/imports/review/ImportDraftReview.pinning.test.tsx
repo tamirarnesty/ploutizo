@@ -35,7 +35,7 @@ describe('ImportDraftReview pinning', () => {
     await user.click(screen.getByRole('button', { name: 'Date' }));
     const menu = await screen.findByRole('menu');
     await user.click(
-      within(menu).getByRole('menuitem', { name: 'Pin to left' })
+      within(menu).getByRole('menuitem', { name: 'Pin to start' })
     );
 
     expect(columnHeader('Date')).toHaveAttribute('data-pinned', 'start');

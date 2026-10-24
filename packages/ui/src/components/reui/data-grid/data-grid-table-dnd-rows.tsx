@@ -110,7 +110,7 @@ type DataGridTableDndRowDecoration<TData extends object> = (context: {
   isOver: boolean;
 }) => ReactNode;
 
-function DataGridTableDndRowHandle({
+const DataGridTableDndRowHandle = ({
   className,
   disabled,
   disabledLabel,
@@ -125,7 +125,7 @@ function DataGridTableDndRowHandle({
   disabled?: boolean;
   /** Announced and shown on hover in place of the drag affordance. */
   disabledLabel?: string;
-}) {
+}) => {
   const { i18n } = useDataGrid();
   const context = useContext(SortableRowContext);
   const resolvedDisabledLabel =
@@ -167,11 +167,11 @@ function DataGridTableDndRowHandle({
       <GripHorizontalIcon aria-hidden="true" />
     </Button>
   );
-}
+};
 
 const holdRowsInPlaceStrategy: SortingStrategy = () => null;
 
-function DataGridTableDndRow<TData extends object>({
+const DataGridTableDndRow = <TData extends object>({
   row,
   renderRowDecoration,
   dropIndicator = true,
@@ -179,7 +179,7 @@ function DataGridTableDndRow<TData extends object>({
   row: Row<DataGridFeatures, TData>;
   renderRowDecoration?: DataGridTableDndRowDecoration<TData>;
   dropIndicator?: boolean;
-}) {
+}) => {
   const rowData: DataGridTableDndRowData = {
     type: 'data-grid-row',
     depth: row.depth,
@@ -294,9 +294,9 @@ function DataGridTableDndRow<TData extends object>({
       {row.getIsExpanded() && <DataGridTableBodyRowExpandded row={row} />}
     </SortableRowContext.Provider>
   );
-}
+};
 
-function DataGridTableDndRowsBody<TData extends object>({
+const DataGridTableDndRowsBody = <TData extends object>({
   table,
   dataIds,
   renderRowDecoration,
@@ -308,7 +308,7 @@ function DataGridTableDndRowsBody<TData extends object>({
   renderRowDecoration?: DataGridTableDndRowDecoration<TData>;
   dropIndicator?: boolean;
   sortingStrategy: SortingStrategy;
-}) {
+}) => {
   const { isLoading, props } = useDataGrid();
   const pagination = table.state.pagination;
 
@@ -361,14 +361,14 @@ function DataGridTableDndRowsBody<TData extends object>({
       })}
     </SortableContext>
   );
-}
+};
 
 const MemoizedDataGridTableDndRowsBody = memo(
   DataGridTableDndRowsBody,
   (_prev, next) => !!next.table.state.columnResizing?.isResizingColumn
 ) as typeof DataGridTableDndRowsBody;
 
-function useDataGridTableDndRowsState<TData extends object>({
+const useDataGridTableDndRowsState = <TData extends object>({
   handleDragEnd,
   dataIds,
   footerContent,
@@ -422,7 +422,7 @@ function useDataGridTableDndRowsState<TData extends object>({
    * live-region announcements, which default to dnd-kit's English strings.
    */
   accessibility?: DndContextProps['accessibility'];
-}) {
+}) => {
   const { table, props } = useDataGrid<TData>();
   const mergedHeaderGroups = getDataGridTableMergedHeaderGroups(table);
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -717,13 +717,13 @@ function useDataGridTableDndRowsState<TData extends object>({
         : null}
     </DndContext>
   );
-}
+};
 
-function DataGridTableDndRows<TData extends object>(
+const DataGridTableDndRows = <TData extends object>(
   props: Parameters<typeof useDataGridTableDndRowsState<TData>>[0]
-) {
+) => {
   return useDataGridTableDndRowsState<TData>(props);
-}
+};
 
 export { DataGridTableDndRowHandle, DataGridTableDndRows };
 export type { DataGridTableDndRowData, DataGridTableDndRowDecoration };

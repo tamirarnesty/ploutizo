@@ -201,7 +201,9 @@ const dataGridAutoSizeStates = new WeakMap<
   DataGridAutoSizeReflowState
 >();
 
-function getDataGridAutoSizeState(store: object): DataGridAutoSizeReflowState {
+const getDataGridAutoSizeState = (
+  store: object
+): DataGridAutoSizeReflowState => {
   let state = dataGridAutoSizeStates.get(store);
   if (!state) {
     state = {
@@ -213,7 +215,7 @@ function getDataGridAutoSizeState(store: object): DataGridAutoSizeReflowState {
     dataGridAutoSizeStates.set(store, state);
   }
   return state;
-}
+};
 
 const readLiveColumnSizing = <TData extends object>(
   table: DataGridTableInstance<TData>
@@ -243,19 +245,9 @@ const growthToRevertIfStillOurs = (
 ) =>
   applied && columnSizing[applied.columnId] === applied.grown ? applied : null;
 
-function createDataGridAutoSizeController<TData extends object>(
-  /**
-   * A getter, not the table itself.
-   *
-   * v8 handed back one stable table whose state mutated in place, so a
-   * controller could close over it. v9 returns a NEW table wrapper on every
-   * state change, and a captured one keeps reporting the state it was built
-   * with - here that meant `columnSizing` looked permanently empty, the
-   * applied-once guard re-armed on every measurement, and the fill overwrote
-   * whatever width the user had just dragged the column to.
-   */
+const createDataGridAutoSizeController = <TData extends object>(
   getTable: () => DataGridTableInstance<TData>
-): DataGridAutoSizeController {
+): DataGridAutoSizeController => {
   const SETTLE_MS = 150;
 
   const resolveReflow = (freeSpace: number) => {
@@ -415,7 +407,7 @@ function createDataGridAutoSizeController<TData extends object>(
       return true;
     },
   };
-}
+};
 
 export type DataGridRequestParams = {
   pageIndex: number;
@@ -678,9 +670,9 @@ const DataGridContext = createContext<DataGridContextProps<any> | undefined>(
  * shape: v9 declares `TData` invariant, so the default `any` no longer
  * unifies with a concrete row type the way it did on v8.
  */
-function useDataGrid<
+const useDataGrid = <
   TData extends object = any,
->(): DataGridContextProps<TData> {
+>(): DataGridContextProps<TData> => {
   const context = useContext(DataGridContext) as
     | DataGridContextProps<TData>
     | undefined;
@@ -688,7 +680,7 @@ function useDataGrid<
     throw new Error('useDataGrid must be used within a DataGridProvider');
   }
   return context;
-}
+};
 
 type DataGridStateAtom<TValue> = {
   get: () => TValue;
@@ -705,11 +697,11 @@ const noopUnsubscribe = () => {};
  * variables, the resize line and indicator) subscribes here. `select` must
  * return the slice itself or a primitive, or every write re-renders.
  */
-function useDataGridAtom<TValue, TSelected = TValue | undefined>(
+const useDataGridAtom = <TValue, TSelected = TValue | undefined>(
   atom: DataGridStateAtom<TValue> | undefined,
   select: (value: TValue | undefined) => TSelected = (value) =>
     value as TSelected
-): TSelected {
+): TSelected => {
   const subscribe = useCallback(
     (onChange: () => void) => {
       if (!atom) return noopUnsubscribe;
@@ -720,7 +712,7 @@ function useDataGridAtom<TValue, TSelected = TValue | undefined>(
   );
   const getSnapshot = () => select(atom?.get());
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-}
+};
 
 const DATA_GRID_UNPUBLISHED_STATE = new Set([
   'cellSelection',
@@ -733,17 +725,17 @@ const isDataGridPropNode = (value: unknown) =>
   !Array.isArray(value) &&
   ('$$typeof' in value || Object.getPrototypeOf(value) !== Object.prototype);
 
-function dataGridPropsSignatureReplacer(_key: string, value: unknown) {
+const dataGridPropsSignatureReplacer = (_key: string, value: unknown) => {
   if (typeof value === 'function') return 'fn';
   if (isDataGridPropNode(value)) return 'node';
   return value;
-}
+};
 
-function getDataGridStateInputs<TData extends object>(
+const getDataGridStateInputs = <TData extends object>(
   table: DataGridTableInstance<TData>,
   props: DataGridLayoutProps<TData>,
   autoSize: DataGridAutoSizeController
-): unknown[] {
+): unknown[] => {
   const inputs: unknown[] = [
     autoSize,
     table.options.data,
@@ -754,28 +746,28 @@ function getDataGridStateInputs<TData extends object>(
     if (!DATA_GRID_UNPUBLISHED_STATE.has(key)) inputs.push(key, slice);
   }
   return inputs;
-}
+};
 
-function getDataGridCallbackInputs<TData extends object>(
+const getDataGridCallbackInputs = <TData extends object>(
   props: DataGridLayoutProps<TData>
-): unknown[] {
+): unknown[] => {
   return Object.values(props).filter(
     (value) => typeof value === 'function' || isDataGridPropNode(value)
   );
-}
+};
 
 const isSameDataGridInputs = (previous: unknown[], next: unknown[]) =>
   previous.length === next.length &&
   next.every((input, index) => Object.is(input, previous[index]));
 
-function DataGridProvider<TData extends object>({
+const DataGridProvider = <TData extends object>({
   children,
   table,
   ...props
 }: DataGridLayoutProps<TData> & {
   table: DataGridTableInstance<TData>;
   children?: ReactNode;
-}) {
+}) => {
   const gridId = useId();
   const i18n = mergeDataGridI18n(props.i18n);
   const [latest] = useState(() => ({ props, i18n, table }));
@@ -904,13 +896,13 @@ function DataGridProvider<TData extends object>({
       {children}
     </DataGridContext.Provider>
   );
-}
+};
 
-function DataGrid<TFeatures extends TableFeatures, TData extends object>({
+const DataGrid = <TFeatures extends TableFeatures, TData extends object>({
   children,
   table,
   ...props
-}: DataGridProps<TFeatures, TData>) {
+}: DataGridProps<TFeatures, TData>) => {
   const defaultProps: Partial<DataGridProps<TFeatures, TData>> = {
     loadingMode: 'skeleton',
     tableLayout: {
@@ -975,15 +967,15 @@ function DataGrid<TFeatures extends TableFeatures, TData extends object>({
       {children}
     </DataGridProvider>
   );
-}
+};
 
-function DataGridContainer({
+const DataGridContainer = ({
   children,
   className,
 }: {
   children: ReactNode;
   className?: string;
-}) {
+}) => {
   return (
     <div
       data-slot="data-grid"
@@ -992,7 +984,7 @@ function DataGridContainer({
       {children}
     </div>
   );
-}
+};
 
 export {
   useDataGrid,

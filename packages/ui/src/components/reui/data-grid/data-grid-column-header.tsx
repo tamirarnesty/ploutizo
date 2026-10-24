@@ -437,7 +437,7 @@ const renderDataGridColumnHeaderFace = ({
   menuItems: ReactNode;
   columnsPinnable?: boolean;
   canPin: boolean;
-  isPinned: false | 'start' | 'end' | 'left' | 'right';
+  isPinned: false | 'start' | 'end';
   unpinClearsResizeHandle: boolean;
   column: { pin: (value: false | 'start' | 'end') => void };
   unpinLabel: string;
@@ -529,14 +529,14 @@ const renderDataGridColumnHeaderFace = ({
   );
 };
 
-function DataGridColumnHeaderInner<TData extends object, TValue>({
+const DataGridColumnHeaderInner = <TData extends object, TValue>({
   column,
   title,
   icon,
   className,
   filter,
   visibility = false,
-}: DataGridColumnHeaderProps<TData, TValue>) {
+}: DataGridColumnHeaderProps<TData, TValue>) => {
   const { i18n, isLoading, table, props } = useDataGrid();
   const resolvedTitle = columnHeaderTitle(title, column);
   const columnVisibilityKey = columnHeaderVisibilityKey(
@@ -672,7 +672,7 @@ function DataGridColumnHeaderInner<TData extends object, TValue>({
     handleSort,
     headerLabelClassName,
   });
-}
+};
 
 const DataGridColumnHeaderMemo = memo(DataGridColumnHeaderInner) as <
   TData extends object,
@@ -692,9 +692,9 @@ const DataGridColumnHeaderMemo = memo(DataGridColumnHeaderInner) as <
  * reads into a real reactive dependency, and threading the selection through
  * as a prop is what lets it past the `memo`.
  */
-function DataGridColumnHeader<TData extends object, TValue>(
+const DataGridColumnHeader = <TData extends object, TValue>(
   props: DataGridColumnHeaderProps<TData, TValue>
-) {
+) => {
   const { table } = useDataGrid();
 
   return (
@@ -712,7 +712,7 @@ function DataGridColumnHeader<TData extends object, TValue>(
       )}
     </Subscribe>
   );
-}
+};
 
 export { DataGridColumnHeader };
 export type { DataGridColumnHeaderProps };

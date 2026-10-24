@@ -43,10 +43,10 @@ export type DataGridI18nOverrides = {
 const DEFAULT_DATA_GRID_LABELS: DataGridI18nLabels = {
   sortAscending: 'Asc',
   sortDescending: 'Desc',
-  pinColumnStart: 'Pin to left',
-  pinColumnEnd: 'Pin to right',
-  moveColumnStart: 'Move to left',
-  moveColumnEnd: 'Move to right',
+  pinColumnStart: 'Pin to start',
+  pinColumnEnd: 'Pin to end',
+  moveColumnStart: 'Move to start',
+  moveColumnEnd: 'Move to end',
   columnsMenu: 'Columns',
   unpinColumn: (title) => `Unpin ${title} column`,
   toggleColumns: 'Toggle Columns',
@@ -84,11 +84,11 @@ const DEFAULT_DATA_GRID_I18N: DataGridI18nConfig = Object.freeze({
  * overrides the frozen default is returned as-is, so the merge is free to
  * run on every render without producing a new identity.
  */
-export function mergeDataGridI18n(
+export const mergeDataGridI18n = (
   overrides?: DataGridI18nOverrides
-): DataGridI18nConfig {
+): DataGridI18nConfig => {
   if (!overrides?.labels) return DEFAULT_DATA_GRID_I18N;
   return {
     labels: { ...DEFAULT_DATA_GRID_LABELS, ...overrides.labels },
   };
-}
+};

@@ -48,6 +48,12 @@ export default [
     },
   },
   {
+    files: ['src/components/reui/data-grid/**/*.{ts,tsx}'],
+    rules: {
+      'func-style': ['error', 'expression'],
+    },
+  },
+  {
     files: ['src/components/reui/**/*.tsx'],
     ignores: ['src/components/reui/data-grid/**'],
     rules: {

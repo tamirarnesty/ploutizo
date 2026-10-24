@@ -15,13 +15,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/dropdown-menu';
 
-function DataGridColumnVisibility<TData extends object>({
+const DataGridColumnVisibility = <TData extends object>({
   table,
   trigger,
 }: {
   table: Table<DataGridFeatures, TData>;
   trigger: ReactElement<Record<string, unknown>>;
-}) {
+}) => {
   const { i18n } = useDataGrid();
 
   return (
@@ -56,6 +56,6 @@ function DataGridColumnVisibility<TData extends object>({
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
+};
 
 export { DataGridColumnVisibility };

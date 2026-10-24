@@ -23,11 +23,11 @@ interface DataGridColumnFilterProps<TData extends object, TValue> {
   }[];
 }
 
-function DataGridColumnFilter<TData extends object, TValue>({
+const DataGridColumnFilter = <TData extends object, TValue>({
   column,
   title,
   options,
-}: DataGridColumnFilterProps<TData, TValue>) {
+}: DataGridColumnFilterProps<TData, TValue>) => {
   const { i18n } = useDataGrid();
   const facets = column?.getFacetedUniqueValues();
   const filterValue = column?.getFilterValue();
@@ -173,6 +173,6 @@ function DataGridColumnFilter<TData extends object, TValue>({
       </PopoverContent>
     </Popover>
   );
-}
+};
 
 export { DataGridColumnFilter, type DataGridColumnFilterProps };

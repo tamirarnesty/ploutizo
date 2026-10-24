@@ -9,9 +9,9 @@ import { getDataGridHeaderSpans } from '@/components/reui/data-grid/data-grid-ce
 
 export type DataGridTablePinnedBoundary = 'top' | 'bottom';
 
-export function getPinningStyles<TData extends object>(
+export const getPinningStyles = <TData extends object>(
   column: Column<DataGridFeatures, TData, unknown>
-): CSSProperties {
+): CSSProperties => {
   const isPinned = column.getIsPinned();
 
   return {
@@ -29,25 +29,25 @@ export function getPinningStyles<TData extends object>(
     zIndex: isPinned ? 30 : undefined,
     backgroundClip: isPinned ? 'padding-box' : undefined,
   };
-}
+};
 
-export function getDataGridTreeIndentStyle<TData extends object>(
+export const getDataGridTreeIndentStyle = <TData extends object>(
   row: Row<DataGridFeatures, TData>,
   indent: number = 20
-): CSSProperties {
+): CSSProperties => {
   return {
     '--data-grid-tree-padding': `${row.depth * indent}px`,
   } as CSSProperties;
-}
+};
 
 /**
  * Nearest scroll-area viewport that belongs to THIS grid. A viewport outside
  * the grid's own container (e.g. a page-level ScrollArea) would make the
  * width measurement - and the virtualizer - bind the wrong box.
  */
-export function getDataGridScrollAreaViewport(
+export const getDataGridScrollAreaViewport = (
   node: HTMLElement
-): HTMLElement | null {
+): HTMLElement | null => {
   const scrollViewport = node.closest('[data-slot="scroll-area-viewport"]');
 
   if (!(scrollViewport instanceof HTMLElement)) return null;
@@ -56,12 +56,12 @@ export function getDataGridScrollAreaViewport(
   if (gridContainer && !gridContainer.contains(scrollViewport)) return null;
 
   return scrollViewport;
-}
+};
 
-export function getDataGridTableRowSections<TData extends object>(
+export const getDataGridTableRowSections = <TData extends object>(
   table: DataGridTableInstance<TData>,
   rowsPinnable?: boolean
-) {
+) => {
   if (!rowsPinnable) {
     return {
       topRows: [] as Row<DataGridFeatures, TData>[],
@@ -75,12 +75,12 @@ export function getDataGridTableRowSections<TData extends object>(
     centerRows: table.getCenterRows(),
     bottomRows: table.getBottomRows(),
   };
-}
+};
 
-export function getDataGridTableResolvedRows<TData extends object>(
+export const getDataGridTableResolvedRows = <TData extends object>(
   table: DataGridTableInstance<TData>,
   rowsPinnable?: boolean
-) {
+) => {
   const { topRows, centerRows, bottomRows } = getDataGridTableRowSections(
     table,
     rowsPinnable
@@ -116,11 +116,11 @@ export function getDataGridTableResolvedRows<TData extends object>(
   });
 
   return resolvedRows;
-}
+};
 
-export function getDataGridTableMergedHeaderGroups<TData extends object>(
+export const getDataGridTableMergedHeaderGroups = <TData extends object>(
   table: DataGridTableInstance<TData>
-) {
+) => {
   const leftHeaderGroups = table.getStartHeaderGroups();
   const centerHeaderGroups = table.getCenterHeaderGroups();
   const rightHeaderGroups = table.getEndHeaderGroups();
@@ -197,29 +197,29 @@ export function getDataGridTableMergedHeaderGroups<TData extends object>(
       coveredHeaders,
     };
   });
-}
+};
 
-export function renderDataGridTableHeadCellContent<TData extends object>(
+export const renderDataGridTableHeadCellContent = <TData extends object>(
   header: Header<DataGridFeatures, TData, unknown>
-) {
+) => {
   return header.isPlaceholder && header.rowSpan <= 1
     ? null
     : flexRender(header.column.columnDef.header, header.getContext());
-}
+};
 
-export function getDataGridHeadCellResizeHeader<TData extends object>(
+export const getDataGridHeadCellResizeHeader = <TData extends object>(
   header: Header<DataGridFeatures, TData, unknown>,
   coveredHeaders?: Header<DataGridFeatures, TData, unknown>[]
-) {
+) => {
   return coveredHeaders?.length && header.column.getIsPinned() !== 'end'
     ? coveredHeaders[coveredHeaders.length - 1]
     : header;
-}
+};
 
-export function getDataGridHeadCellSizeVar<TData extends object>(
+export const getDataGridHeadCellSizeVar = <TData extends object>(
   header: Header<DataGridFeatures, TData, unknown>,
   coveredHeaders: Header<DataGridFeatures, TData, unknown>[] = []
-) {
+) => {
   if (!coveredHeaders.length)
     return `calc(var(--header-${header.id}-size) * 1px)`;
 
@@ -227,10 +227,10 @@ export function getDataGridHeadCellSizeVar<TData extends object>(
     (spanned) => `var(--header-${spanned.id}-size)`
   );
   return `calc((${sizes.join(' + ')}) * 1px)`;
-}
+};
 
-export function hasDataGridTableRightPinnedColumns<TData extends object>(
+export const hasDataGridTableRightPinnedColumns = <TData extends object>(
   table: DataGridTableInstance<TData>
-) {
+) => {
   return (table.state.columnPinning.end?.length ?? 0) > 0;
-}
+};

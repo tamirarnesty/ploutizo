@@ -171,7 +171,7 @@ const renderDataGridTableDndHeader = <TData extends object>({
   );
 };
 
-function DataGridTableDndHeader<TData extends object>({
+const DataGridTableDndHeader = <TData extends object>({
   header,
   coveredHeaders = EMPTY_COVERED_HEADERS as unknown as Header<
     DataGridFeatures,
@@ -181,7 +181,7 @@ function DataGridTableDndHeader<TData extends object>({
 }: {
   header: Header<DataGridFeatures, TData, unknown>;
   coveredHeaders?: Header<DataGridFeatures, TData, unknown>[];
-}) {
+}) => {
   const { i18n, props } = useDataGrid();
   const { column } = header;
 
@@ -217,13 +217,13 @@ function DataGridTableDndHeader<TData extends object>({
     transform,
     transition,
   });
-}
+};
 
-function DataGridTableDndCell<TData extends object>({
+const DataGridTableDndCell = <TData extends object>({
   cell,
 }: {
   cell: Cell<DataGridFeatures, TData, unknown>;
-}) {
+}) => {
   const { props } = useDataGrid();
   const { isDragging, setNodeRef, transform, transition } = useSortable({
     id: cell.column.id,
@@ -254,13 +254,13 @@ function DataGridTableDndCell<TData extends object>({
       {flexRender(cell.column.columnDef.cell, cell.getContext())}
     </DataGridTableBodyRowCell>
   );
-}
+};
 
-function DataGridTableDndBodyRows<TData extends object>({
+const DataGridTableDndBodyRows = <TData extends object>({
   table,
 }: {
   table: DataGridTableInstance<TData>;
-}) {
+}) => {
   const { isLoading, props } = useDataGrid();
   const pagination = table.state.pagination;
 
@@ -331,7 +331,7 @@ function DataGridTableDndBodyRows<TData extends object>({
       })}
     </>
   );
-}
+};
 
 const MemoizedDataGridTableDndBodyRows = memo(
   DataGridTableDndBodyRows,
@@ -345,7 +345,7 @@ const MemoizedDataGridTableDndBodyRows = memo(
 // of RTL scrollers, scrolled instantly: a smooth scroll drops a key pressed
 // before it settles. The document scroller and the coordinate getter's copy
 // stay real elements: both are matched by identity inside dnd-kit.
-function toLtrScrollView(element: Element): Element {
+const toLtrScrollView = (element: Element): Element => {
   if (
     element === element.ownerDocument.scrollingElement ||
     getComputedStyle(element).direction !== 'rtl'
@@ -372,12 +372,12 @@ function toLtrScrollView(element: Element): Element {
       return typeof value === 'function' ? value.bind(target) : value;
     },
   });
-}
+};
 
-function getDataGridDropBesideSpans<TData extends object>(
+const getDataGridDropBesideSpans = <TData extends object>(
   table: DataGridTableInstance<TData>,
   event: DragEndEvent
-): DragEndEvent {
+): DragEndEvent => {
   const { active, over } = event;
   if (!over || active.id === over.id) return event;
 
@@ -401,7 +401,7 @@ function getDataGridDropBesideSpans<TData extends object>(
   }
 
   return event;
-}
+};
 
 class DataGridKeyboardSensor extends KeyboardSensor {
   constructor(props: KeyboardSensorProps) {
@@ -430,7 +430,7 @@ class DataGridKeyboardSensor extends KeyboardSensor {
   }
 }
 
-function DataGridTableDnd<TData extends object>({
+const DataGridTableDnd = <TData extends object>({
   handleDragEnd,
   footerContent,
   accessibility,
@@ -442,7 +442,7 @@ function DataGridTableDnd<TData extends object>({
    * live-region announcements, which default to dnd-kit's English strings.
    */
   accessibility?: DndContextProps['accessibility'];
-}) {
+}) => {
   const { table, props } = useDataGrid();
   const mergedHeaderGroups = getDataGridTableMergedHeaderGroups(table);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -589,6 +589,6 @@ function DataGridTableDnd<TData extends object>({
       </DataGridTableViewport>
     </DndContext>
   );
-}
+};
 
 export { DataGridTableDnd };

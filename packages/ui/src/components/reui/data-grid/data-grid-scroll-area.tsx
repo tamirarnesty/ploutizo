@@ -62,11 +62,11 @@ type DataGridScrollAreaProps = Omit<
   orientation?: DataGridScrollAreaOrientation;
 };
 
-function clamp(value: number, min: number, max: number) {
+const clamp = (value: number, min: number, max: number) => {
   return Math.min(max, Math.max(min, value));
-}
+};
 
-function areMetricsEqual(next: ScrollbarMetrics, prev: ScrollbarMetrics) {
+const areMetricsEqual = (next: ScrollbarMetrics, prev: ScrollbarMetrics) => {
   return (
     next.hasVerticalOverflow === prev.hasVerticalOverflow &&
     next.headerHeight === prev.headerHeight &&
@@ -75,9 +75,9 @@ function areMetricsEqual(next: ScrollbarMetrics, prev: ScrollbarMetrics) {
     next.thumbTop === prev.thumbTop &&
     next.trackHeight === prev.trackHeight
   );
-}
+};
 
-function getStickyFooterHeight(table: HTMLElement | null) {
+const getStickyFooterHeight = (table: HTMLElement | null) => {
   const footer = table instanceof HTMLTableElement ? table.tFoot : null;
   if (!footer) return 0;
 
@@ -85,9 +85,9 @@ function getStickyFooterHeight(table: HTMLElement | null) {
     (element) => element && getComputedStyle(element).position === 'sticky'
   );
   return isSticky ? footer.getBoundingClientRect().height : 0;
-}
+};
 
-function applyMetrics(element: HTMLElement, metrics: ScrollbarMetrics) {
+const applyMetrics = (element: HTMLElement, metrics: ScrollbarMetrics) => {
   element.style.setProperty(
     '--data-grid-scrollbar-header-height',
     `${metrics.headerHeight}px`
@@ -104,14 +104,14 @@ function applyMetrics(element: HTMLElement, metrics: ScrollbarMetrics) {
     '--data-grid-scrollbar-track-height',
     `${metrics.trackHeight}px`
   );
-}
+};
 
-function useDataGridScrollAreaState({
+const useDataGridScrollAreaState = ({
   children,
   className,
   orientation = 'both',
   ...props
-}: DataGridScrollAreaProps) {
+}: DataGridScrollAreaProps) => {
   const { props: dataGridProps, table } = useDataGrid();
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
@@ -535,11 +535,11 @@ function useDataGridScrollAreaState({
       </div>
     </DirectionProvider>
   );
-}
+};
 
-function DataGridScrollArea(props: DataGridScrollAreaProps) {
+const DataGridScrollArea = (props: DataGridScrollAreaProps) => {
   return useDataGridScrollAreaState(props);
-}
+};
 
 export { DataGridScrollArea };
 export type { DataGridScrollAreaOrientation, DataGridScrollAreaProps };

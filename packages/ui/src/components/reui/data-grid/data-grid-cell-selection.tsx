@@ -60,27 +60,27 @@ interface DataGridEditorSession {
   label: string;
 }
 
-function serializeDataGridClipboardField(field: string): string {
+const serializeDataGridClipboardField = (field: string): string => {
   // Excel and Sheets quote a field containing a delimiter and double inner
   // quotes; everything else ships bare.
   return /[\t\n\r"]/.test(field)
     ? '"' + field.replaceAll('"', '""') + '"'
     : field;
-}
+};
 
 /** Row-major grid to TSV, CRLF rows, Excel-style quoting. */
-function serializeDataGridClipboardText(grid: string[][]): string {
+const serializeDataGridClipboardText = (grid: string[][]): string => {
   return grid
     .map((line) => line.map(serializeDataGridClipboardField).join('\t'))
     .join('\r\n');
-}
+};
 
 /**
  * TSV to a row-major grid. A stateful scan, not a split: a quoted field may
  * contain tabs, quotes and both newline flavors, which is exactly what Excel
  * emits for a multi-line cell.
  */
-function parseDataGridClipboardText(text: string): string[][] {
+const parseDataGridClipboardText = (text: string): string[][] => {
   const rows: string[][] = [];
   let row: string[] = [];
   let field = '';
@@ -136,13 +136,13 @@ function parseDataGridClipboardText(text: string): string[][] {
   if (rows.length > 1 && last?.length === 1 && last[0] === '') rows.pop();
 
   return rows;
-}
+};
 
-function tileDataGridClipboardBlock(
+const tileDataGridClipboardBlock = (
   block: string[][],
   rowCount: number,
   columnCount: number
-): string[][] {
+): string[][] => {
   const tiled: string[][] = [];
   for (let r = 0; r < rowCount; r++) {
     const source = block[r % block.length] ?? [];
@@ -153,20 +153,20 @@ function tileDataGridClipboardBlock(
     tiled.push(line);
   }
   return tiled;
-}
+};
 
-function escapeDataGridClipboardHtml(value: string): string {
+const escapeDataGridClipboardHtml = (value: string): string => {
   return value
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;');
-}
+};
 
 // A minimal text/html flavor alongside the TSV keeps type fidelity when the
 // paste target is Excel or Sheets. Newlines inside a field become <br>, the
 // HTML representation of a multi-line cell; raw newlines would collapse to
 // spaces on paste.
-function renderDataGridClipboardHtml(grid: string[][]): string {
+const renderDataGridClipboardHtml = (grid: string[][]): string => {
   const body = grid
     .map(
       (line) =>
@@ -186,24 +186,24 @@ function renderDataGridClipboardHtml(grid: string[][]): string {
     )
     .join('');
   return '<table><tbody>' + body + '</tbody></table>';
-}
+};
 
-function getDataGridDisplayOrderedColumns<TData extends object>(
+const getDataGridDisplayOrderedColumns = <TData extends object>(
   table: DataGridTableInstance<TData>
-) {
+) => {
   return [
     ...table.getStartVisibleLeafColumns(),
     ...table.getCenterVisibleLeafColumns(),
     ...table.getEndVisibleLeafColumns(),
   ];
-}
+};
 
-function getDataGridWritableCellEdit<TData extends object>(
+const getDataGridWritableCellEdit = <TData extends object>(
   column: {
     columnDef: { meta?: { cellEdit?: DataGridColumnCellEdit<TData> } };
   },
   row?: TData
-): DataGridColumnCellEdit<TData> | null {
+): DataGridColumnCellEdit<TData> | null => {
   const cellEdit = column.columnDef.meta?.cellEdit;
   if (!cellEdit || cellEdit.editable === false) return null;
   if (
@@ -214,12 +214,12 @@ function getDataGridWritableCellEdit<TData extends object>(
     return null;
   }
   return cellEdit;
-}
+};
 
-function getDataGridRenderedRowIds<TData extends object>(
+const getDataGridRenderedRowIds = <TData extends object>(
   table: DataGridTableInstance<TData>,
   viewport: HTMLElement | null | undefined
-): Set<string> | null {
+): Set<string> | null => {
   if (!viewport) return null;
   if (
     table.getRowModel().rows.length === table.getRowsInDisplayOrder().length
@@ -236,12 +236,12 @@ function getDataGridRenderedRowIds<TData extends object>(
     if (id) rendered.add(id);
   }
   return rendered;
-}
+};
 
-function getDataGridVisibleSelectedCellCount<TData extends object>(
+const getDataGridVisibleSelectedCellCount = <TData extends object>(
   table: DataGridTableInstance<TData>,
   viewport: HTMLElement | null
-): number {
+): number => {
   const bounds = table.getCellSelectionBounds();
   if (!bounds.length) return 0;
   const rows = table.getRowsInDisplayOrder();
@@ -264,7 +264,7 @@ function getDataGridVisibleSelectedCellCount<TData extends object>(
     count += rowCount * columnCount;
   }
   return count;
-}
+};
 
 /**
  * The bound of the ACTIVE (most recent) region. getCellSelectionBounds()
@@ -273,9 +273,9 @@ function getDataGridVisibleSelectedCellCount<TData extends object>(
  * containing it is the active one. Falls back to the geometric last when
  * the focused cell sits in no bound (the newest range was an exclude).
  */
-function getDataGridActiveBound<TData extends object>(
+const getDataGridActiveBound = <TData extends object>(
   table: DataGridTableInstance<TData>
-) {
+) => {
   const bounds = table.getCellSelectionBounds();
   if (!bounds.length) return null;
   const focused = table.getFocusedCell();
@@ -295,7 +295,7 @@ function getDataGridActiveBound<TData extends object>(
     if (containing) return containing;
   }
   return bounds[bounds.length - 1] ?? null;
-}
+};
 
 /**
  * Resolves the cell one visual step away from a given cell: selectable
@@ -305,12 +305,12 @@ function getDataGridActiveBound<TData extends object>(
  * "edge" means the step is at the grid boundary; null means the position
  * is not resolvable here and the caller should use the feature's move.
  */
-function getDataGridStepTarget<TData extends object>(
+const getDataGridStepTarget = <TData extends object>(
   table: DataGridTableInstance<TData>,
   viewport: HTMLElement,
   from: { rowId: string; columnId: string },
   direction: 'up' | 'down' | 'left' | 'right'
-): { rowId: string; columnId: string } | 'edge' | null {
+): { rowId: string; columnId: string } | 'edge' | null => {
   if (direction === 'left' || direction === 'right') {
     const selectable = getDataGridDisplayOrderedColumns(table).filter(
       (column) => column.columnDef.enableCellSelection !== false
@@ -327,7 +327,7 @@ function getDataGridStepTarget<TData extends object>(
   if (index === -1) return null;
   const nextId = renderedIds[index + (direction === 'down' ? 1 : -1)];
   return nextId ? { rowId: nextId, columnId: from.columnId } : 'edge';
-}
+};
 
 /**
  * Shift+Arrow: the feature keeps focus on the anchor and grows the range
@@ -336,11 +336,11 @@ function getDataGridStepTarget<TData extends object>(
  * pinned row outside the page slice), re-derive the active corner from
  * the bounds and step it in visual space through selectCellRange.
  */
-function extendDataGridSelection<TData extends object>(
+const extendDataGridSelection = <TData extends object>(
   table: DataGridTableInstance<TData>,
   viewport: HTMLElement,
   direction: 'up' | 'down' | 'left' | 'right'
-): { rowId: string; columnId: string } | null {
+): { rowId: string; columnId: string } | null => {
   const activeCorner = () => {
     const focused = table.getFocusedCell();
     if (!focused) return null;
@@ -393,12 +393,12 @@ function extendDataGridSelection<TData extends object>(
     { mode: 'replace' }
   );
   return target;
-}
+};
 
-function getDataGridActiveRegionGrid<TData extends object>(
+const getDataGridActiveRegionGrid = <TData extends object>(
   table: DataGridTableInstance<TData>,
   viewport?: HTMLElement | null
-): string[][] | null {
+): string[][] | null => {
   const bound = getDataGridActiveBound(table);
   if (!bound) return null;
 
@@ -423,14 +423,14 @@ function getDataGridActiveRegionGrid<TData extends object>(
   }
 
   return grid.length ? grid : null;
-}
+};
 
-function buildDataGridClearDetails<TData extends object>(
+const buildDataGridClearDetails = <TData extends object>(
   table: DataGridTableInstance<TData>,
   source: 'clear' | 'cut',
   activeRegionOnly: boolean,
   viewport?: HTMLElement | null
-): DataGridCellsChangeDetails<TData> | null {
+): DataGridCellsChangeDetails<TData> | null => {
   const allBounds = table.getCellSelectionBounds();
   const activeBound = getDataGridActiveBound(table);
   const bounds = activeRegionOnly
@@ -470,7 +470,7 @@ function buildDataGridClearDetails<TData extends object>(
   }
 
   return changes.length ? { source, changes, rejected: [] } : null;
-}
+};
 
 type DataGridPasteTarget = {
   /** Display indexes of the pasted region's first and last row. */
@@ -483,14 +483,14 @@ type DataGridPasteTarget = {
   endColumnIndex: number;
 };
 
-function buildDataGridPasteDetails<TData extends object>(
+const buildDataGridPasteDetails = <TData extends object>(
   table: DataGridTableInstance<TData>,
   block: string[][],
   viewport?: HTMLElement | null
 ): {
   details: DataGridCellsChangeDetails<TData>;
   target: DataGridPasteTarget;
-} | null {
+} | null => {
   if (!block.length) return null;
   const bound = getDataGridActiveBound(table);
   if (!bound) return null;
@@ -603,11 +603,11 @@ function buildDataGridPasteDetails<TData extends object>(
       endColumnIndex: lastTarget.displayIndex,
     },
   };
-}
+};
 
-function invertDataGridCellsChange<TData extends object>(
+const invertDataGridCellsChange = <TData extends object>(
   details: DataGridCellsChangeDetails<TData>
-): DataGridCellsChangeDetails<TData> {
+): DataGridCellsChangeDetails<TData> => {
   return {
     source: details.source,
     changes: details.changes.map((change) => ({
@@ -617,12 +617,12 @@ function invertDataGridCellsChange<TData extends object>(
     })),
     rejected: [],
   };
-}
+};
 
-function selectDataGridRegion<TData extends object>(
+const selectDataGridRegion = <TData extends object>(
   table: DataGridTableInstance<TData>,
   target: DataGridPasteTarget
-) {
+) => {
   const rows = table.getRowsInDisplayOrder();
   const columns = getDataGridDisplayOrderedColumns(table);
   const anchorRow = rows[target.startRowIndex];
@@ -639,16 +639,16 @@ function selectDataGridRegion<TData extends object>(
     },
     { mode: 'replace' }
   );
-}
+};
 
 const dataGridGestureOutlineClasses =
   'outline-primary pointer-events-none absolute z-[35] outline-1 outline-dashed -outline-offset-1';
 
-function startDataGridFillSession<TData extends object>(options: {
+const startDataGridFillSession = <TData extends object>(options: {
   table: DataGridTableInstance<TData>;
   viewport: HTMLElement;
   onCellsChange: ((details: DataGridCellsChangeDetails<TData>) => void) | null;
-}) {
+}) => {
   const { table, viewport, onCellsChange } = options;
   if (table.getCellSelectionBounds().length > 1) return;
   const bound = getDataGridActiveBound(table);
@@ -930,24 +930,26 @@ function startDataGridFillSession<TData extends object>(options: {
   document.addEventListener('mousemove', handleMove);
   document.addEventListener('mouseup', handleUp);
   document.addEventListener('keydown', handleKey, true);
-}
+};
 
-function isDataGridEditableTarget(target: EventTarget | null): boolean {
+const isDataGridEditableTarget = (target: EventTarget | null): boolean => {
   return (
     target instanceof Element &&
     target.closest(
       'input, textarea, select, [contenteditable], [data-cell-interactive]'
     ) != null
   );
-}
+};
 
-function isDataGridInteractiveKeyTarget(target: EventTarget | null): boolean {
+const isDataGridInteractiveKeyTarget = (
+  target: EventTarget | null
+): boolean => {
   return (
     isDataGridEditableTarget(target) ||
     (target instanceof Element &&
       target.closest('button, a, [role="checkbox"]') != null)
   );
-}
+};
 
 /**
  * Headless spreadsheet controller: keyboard navigation, clipboard, clear and
@@ -959,7 +961,7 @@ function isDataGridInteractiveKeyTarget(target: EventTarget | null): boolean {
 const scheduleDataGridTimer = (callback: () => void, delay: number) =>
   setTimeout(callback, delay);
 
-function useDataGridCellSelectionController<TData extends object>({
+const useDataGridCellSelectionController = <TData extends object>({
   apiRef,
   clipboard = true,
   keyboard = true,
@@ -973,7 +975,7 @@ function useDataGridCellSelectionController<TData extends object>({
    * F2, type-to-edit, Tab, Ctrl/Cmd+A, Delete, Escape. Defaults to true.
    */
   keyboard?: boolean;
-}) {
+}) => {
   const context = useDataGrid<TData>();
 
   const anchorRef = useRef<HTMLSpanElement | null>(null);
@@ -2122,19 +2124,19 @@ function useDataGridCellSelectionController<TData extends object>({
       ) : null}
     </>
   );
-}
+};
 
-function DataGridCellSelection<TData extends object>(props: {
+const DataGridCellSelection = <TData extends object>(props: {
   apiRef?: RefObject<DataGridCellSelectionApi | null>;
   clipboard?: boolean;
   keyboard?: boolean;
-}) {
+}) => {
   return useDataGridCellSelectionController<TData>(props);
-}
+};
 
-function measureDataGridCellEditorStyle(
+const measureDataGridCellEditorStyle = (
   viewport: HTMLElement
-): CSSProperties | null {
+): CSSProperties | null => {
   const cell = viewport.querySelector<HTMLElement>('td[data-cell-focused]');
   if (!cell) return null;
   const cellRect = cell.getBoundingClientRect();
@@ -2174,9 +2176,9 @@ function measureDataGridCellEditorStyle(
     paddingTop: centeredBlockPadding,
     paddingBottom: centeredBlockPadding,
   };
-}
+};
 
-function DataGridCellEditorOverlay({
+const DataGridCellEditorOverlay = ({
   viewport,
   session,
   enterAdvance,
@@ -2192,7 +2194,7 @@ function DataGridCellEditorOverlay({
     refocus?: boolean
   ) => void;
   onCancel: () => void;
-}) {
+}) => {
   const [style] = useState<CSSProperties | null>(() =>
     measureDataGridCellEditorStyle(viewport)
   );
@@ -2296,7 +2298,7 @@ function DataGridCellEditorOverlay({
     ),
     viewport
   );
-}
+};
 
 /**
  * Thin shell over row selection for bulk actions: selected count, a slot for
@@ -2307,7 +2309,7 @@ function DataGridCellEditorOverlay({
  * centered, elevated, and sticky to the viewport bottom with breathing room,
  * so bulk actions stay reachable while the grid scrolls.
  */
-function DataGridSelectionBar({
+const DataGridSelectionBar = ({
   children,
   className,
   label,
@@ -2319,7 +2321,7 @@ function DataGridSelectionBar({
   label?: (count: number) => ReactNode;
   clearLabel?: ReactNode;
   onClear?: () => void;
-}) {
+}) => {
   const context = useDataGrid();
   const rowSelectionAtom = context.table.atoms.rowSelection;
   if (rowSelectionAtom == null) return null;
@@ -2362,7 +2364,7 @@ function DataGridSelectionBar({
       }}
     </Subscribe>
   );
-}
+};
 
 export { DataGridCellSelection, DataGridSelectionBar };
 export type {
