@@ -11,7 +11,6 @@ import { createHouseholdBearerUnavailableError } from '@/lib/queryClient';
 import { whileHouseholdBearerPending } from './household-query-enabled';
 import type {
   InfiniteData,
-  MutateOptions,
   MutationFunctionContext,
   UseInfiniteQueryOptions,
   UseInfiniteQueryResult,
@@ -177,23 +176,17 @@ export const useHouseholdMutation = <
   });
 
   const mutate = useCallback(
-    (
-      variables: TVariables,
-      mutateOptions?: MutateOptions<TData, TError, TVariables, TContext>
-    ) => {
+    (...args: Parameters<typeof mutation.mutate>) => {
       captureWorkingSetScope();
-      return mutation.mutate(variables, mutateOptions);
+      mutation.mutate(...args);
     },
     [captureWorkingSetScope, mutation.mutate]
   );
 
   const mutateAsync = useCallback(
-    (
-      variables: TVariables,
-      mutateOptions?: MutateOptions<TData, TError, TVariables, TContext>
-    ) => {
+    (...args: Parameters<typeof mutation.mutateAsync>) => {
       captureWorkingSetScope();
-      return mutation.mutateAsync(variables, mutateOptions);
+      return mutation.mutateAsync(...args);
     },
     [captureWorkingSetScope, mutation.mutateAsync]
   );
