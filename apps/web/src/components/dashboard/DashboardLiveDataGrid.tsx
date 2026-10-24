@@ -1,5 +1,8 @@
 import { CardContent } from '@ploutizo/ui/components/card';
-import { DataGrid } from '@ploutizo/ui/components/reui/data-grid/data-grid';
+import {
+  DataGrid,
+  DataGridContainer,
+} from '@ploutizo/ui/components/reui/data-grid/data-grid';
 import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-grid-scroll-area';
 import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-table';
 import type {
@@ -69,8 +72,10 @@ export const DashboardLiveDataGridScrollTable = ({
   cardContentClassName = 'border-b px-0 py-0',
 }: DashboardLiveDataGridScrollTableProps) => (
   <CardContent className={cardContentClassName}>
-    <DataGridScrollArea orientation={PAGINATED_DATA_GRID_SCROLL_ORIENTATION}>
-      <DataGridTable />
-    </DataGridScrollArea>
+    <DataGridContainer>
+      <DataGridScrollArea orientation={PAGINATED_DATA_GRID_SCROLL_ORIENTATION}>
+        <DataGridTable />
+      </DataGridScrollArea>
+    </DataGridContainer>
   </CardContent>
 );
