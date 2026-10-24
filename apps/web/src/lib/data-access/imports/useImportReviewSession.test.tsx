@@ -36,9 +36,15 @@ vi.mock('@/lib/access/access-context', async () => {
 
 vi.mock('./useGetImportDraft', async (importOriginal) => {
   const actual = await importOriginal<typeof useGetImportDraftModule>();
+  const fetchImportDraftMock = vi.fn();
   return {
     ...actual,
-    fetchImportDraft: vi.fn(),
+    fetchImportDraft: fetchImportDraftMock,
+    importDraftQueryOptions: (id: string) => ({
+      ...actual.importDraftQueryOptions(id),
+      queryFn: ({ signal }: { signal?: AbortSignal }) =>
+        fetchImportDraftMock(id, signal),
+    }),
     useGetImportDraft: vi.fn(),
   };
 });

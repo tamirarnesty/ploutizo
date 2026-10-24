@@ -1,4 +1,4 @@
-import { createPacedMutations, debounceStrategy } from '@tanstack/db';
+import { createTransaction } from '@tanstack/db';
 import type { ImportReviewRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import { beginWorkingSetScope } from '@/lib/access/working-set-registry';
@@ -40,70 +40,52 @@ const isRowUpdateMutation = (
 ): mutation is PendingMutation<ImportReviewRow, 'update'> =>
   mutation?.type === 'update';
 
+/** Trailing timer so Continue can commit before the wait elapses, and a newer edit can persist while an older save is still in flight. */
 const createDraftPacedMutations = (draftId: string) => {
-  const strategy = debounceStrategy({
-    wait: IMPORT_DRAFT_PACE_WAIT_MS,
-    trailing: true,
-  });
   let latestTx: Transaction<ImportReviewRow> | null = null;
   /** Latest household working-set scope wins for the whole debounced batch commit. */
   let persistScope: WorkingSetScope | null = null;
+  let commitTimer: ReturnType<typeof setTimeout> | undefined;
 
-  const mutate = createPacedMutations<
-    ImportDraftRowPatchVariables,
-    ImportReviewRow
-  >({
-    onMutate: ({ rowId, patch }) => {
-      markImportReviewPending(draftId, rowId);
-      applyOptimisticRowPatch(draftId, rowId, patch);
-    },
-    mutationFn: async ({ transaction }) => {
-      const scope = persistScope ?? beginWorkingSetScope();
-      const collection = getImportDraftRowsCollection(draftId);
-      const attempts = transaction.mutations
-        .filter(isRowUpdateMutation)
-        .map((mutation) => {
-          const rowId = mutation.key;
-          const attempted = mutation.modified;
-          const original = mutation.original;
-          const live = collection.get(rowId) ?? attempted;
-          const patch = buildImportDraftRowPersistPatch(
-            draftId,
-            rowId,
-            live,
-            toValidatorPatch(mutation.changes)
-          );
-          return { rowId, patch, attempted, original };
-        });
-
-      if (!scope.isCurrent()) {
-        clearImportReviewPendingRows(
+  const mutationFn = async ({
+    transaction,
+  }: {
+    transaction: Transaction<ImportReviewRow>;
+  }) => {
+    const scope = persistScope ?? beginWorkingSetScope();
+    const collection = getImportDraftRowsCollection(draftId);
+    const attempts = transaction.mutations
+      .filter(isRowUpdateMutation)
+      .map((mutation) => {
+        const rowId = mutation.key;
+        const attempted = mutation.modified;
+        const original = mutation.original;
+        const live = collection.get(rowId) ?? attempted;
+        const patch = buildImportDraftRowPersistPatch(
           draftId,
-          attempts.map((entry) => entry.rowId)
+          rowId,
+          live,
+          toValidatorPatch(mutation.changes)
         );
-        return;
-      }
-
-      await persistImportDraftBatch({
-        draftId,
-        scope,
-        attempts,
+        return { rowId, patch, attempted, original };
       });
-    },
-    strategy,
-  });
 
-  const wrappedMutate = (variables: ImportDraftRowPatchVariables) => {
-    const patch = sanitizeImportMatchPatch(draftId, variables.patch);
-    if (Object.keys(patch).length === 0) return;
-    persistScope = beginWorkingSetScope();
-    const tx = mutate({ rowId: variables.rowId, patch });
-    latestTx = tx;
-    return tx;
+    if (!scope.isCurrent()) {
+      clearImportReviewPendingRows(
+        draftId,
+        attempts.map((entry) => entry.rowId)
+      );
+      return;
+    }
+
+    await persistImportDraftBatch({
+      draftId,
+      scope,
+      attempts,
+    });
   };
 
-  const flush = async () => {
-    strategy.cleanup();
+  const commitLatest = async () => {
     const tx = latestTx;
     if (!tx) return;
     if (tx.state === 'pending') {
@@ -111,14 +93,57 @@ const createDraftPacedMutations = (draftId: string) => {
       return;
     }
     if (tx.state === 'persisting') {
-      await tx.isPersisted.promise.catch(() => undefined);
+      await tx.when('settled').catch(() => undefined);
     }
+  };
+
+  const scheduleCommit = () => {
+    if (commitTimer !== undefined) clearTimeout(commitTimer);
+    commitTimer = setTimeout(() => {
+      commitTimer = undefined;
+      void commitLatest();
+    }, IMPORT_DRAFT_PACE_WAIT_MS);
+  };
+
+  const wrappedMutate = (variables: ImportDraftRowPatchVariables) => {
+    const patch = sanitizeImportMatchPatch(draftId, variables.patch);
+    if (Object.keys(patch).length === 0) return;
+    persistScope = beginWorkingSetScope();
+
+    const tx =
+      latestTx?.state === 'pending'
+        ? latestTx
+        : createTransaction<ImportReviewRow>({
+            autoCommit: false,
+            mutationFn,
+          });
+    latestTx = tx;
+    tx.mutate(() => {
+      markImportReviewPending(draftId, variables.rowId);
+      applyOptimisticRowPatch(draftId, variables.rowId, patch);
+    });
+    scheduleCommit();
+    return tx;
+  };
+
+  const flush = async () => {
+    if (commitTimer !== undefined) {
+      clearTimeout(commitTimer);
+      commitTimer = undefined;
+    }
+    await commitLatest();
   };
 
   return {
     mutate: wrappedMutate,
     flush,
-    cleanup: () => strategy.cleanup(),
+    cleanup: () => {
+      if (commitTimer !== undefined) {
+        clearTimeout(commitTimer);
+        commitTimer = undefined;
+      }
+      if (latestTx?.state === 'pending') latestTx.rollback();
+    },
   };
 };
 
