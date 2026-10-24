@@ -13,6 +13,9 @@ const ART_ERR = ` ███████╗██████╗ █████�
 
 export const ErrorBoundary = ({ error, reset }: ErrorComponentProps) => {
   const [showDetails, setShowDetails] = useState(false);
+  const devErrorMessage =
+    error instanceof Error ? error.message : String(error);
+  const devErrorStack = error instanceof Error ? error.stack : undefined;
 
   return (
     <div
@@ -67,7 +70,7 @@ export const ErrorBoundary = ({ error, reset }: ErrorComponentProps) => {
         {import.meta.env.DEV && (
           <div className="mt-6 space-y-2">
             <p className="font-mono text-xs text-muted-foreground">
-              {error.message}
+              {devErrorMessage}
             </p>
             <Button
               variant="link"
@@ -78,7 +81,7 @@ export const ErrorBoundary = ({ error, reset }: ErrorComponentProps) => {
             </Button>
             {showDetails && (
               <pre className="max-h-[200px] overflow-y-auto rounded bg-muted p-3 font-mono text-xs whitespace-pre-wrap text-muted-foreground">
-                {error.stack}
+                {devErrorStack}
               </pre>
             )}
           </div>
