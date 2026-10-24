@@ -947,7 +947,9 @@ const isDataGridInteractiveKeyTarget = (
   return (
     isDataGridEditableTarget(target) ||
     (target instanceof Element &&
-      target.closest('button, a, [role="checkbox"]') != null)
+      target.closest(
+        'button, a, [role="checkbox"], [data-slot="data-grid-table-resize-handle"]'
+      ) != null)
   );
 };
 
@@ -1431,19 +1433,24 @@ const useDataGridCellSelectionController = <TData extends object>({
           event.key === 'x' || event.key === 'X' || event.code === 'KeyX';
         if (isCopy || isCut) {
           event.preventDefault();
+          // Clipboard writes are async. Snapshot the cut region now so a
+          // selection change while the write is pending cannot clear cells
+          // this chord never copied.
+          const cutDetails = isCut
+            ? buildDataGridClearDetails<TData>(
+                getTable(),
+                'cut',
+                true,
+                viewport
+              )
+            : null;
           void writeSelectionToClipboard().then((written) => {
             if (!written) return;
             latest.onCellsCopy?.({ ...written, cut: isCut });
-            if (!isCut) return;
+            if (!cutDetails) return;
             const onCellsChange = getOnCellsChange();
             if (!onCellsChange) return;
-            const details = buildDataGridClearDetails<TData>(
-              getTable(),
-              'cut',
-              true,
-              viewport
-            );
-            if (details) onCellsChange(details);
+            onCellsChange(cutDetails);
           });
           return;
         }
@@ -2242,6 +2249,8 @@ const DataGridCellEditorOverlay = ({
   const handleKeyDown = (
     event: ReactKeyboardEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
+    // Enter confirms an IME composition before it finishes the edit.
+    if (event.nativeEvent.isComposing) return;
     const element = event.currentTarget;
     if (event.key === 'Escape') {
       event.preventDefault();

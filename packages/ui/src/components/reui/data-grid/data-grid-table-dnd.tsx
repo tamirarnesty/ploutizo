@@ -302,8 +302,8 @@ const DataGridTableDndBodyRows = <TData extends object>({
   return (
     <>
       {table.getRowModel().rows.map((row: Row<DataGridFeatures, TData>) => {
-        return (
-          <Fragment key={row.id}>
+        const body = (
+          <Fragment>
             <DataGridTableBodyRow row={row}>
               <SortableContext
                 items={table.state.columnOrder}
@@ -326,6 +326,13 @@ const DataGridTableDndBodyRows = <TData extends object>({
               </SortableContext>
             </DataGridTableBodyRow>
             {row.getIsExpanded() && <DataGridTableBodyRowExpandded row={row} />}
+          </Fragment>
+        );
+        return (
+          <Fragment key={row.id}>
+            {props.renderBodyRow
+              ? props.renderBodyRow(row.original, body)
+              : body}
           </Fragment>
         );
       })}

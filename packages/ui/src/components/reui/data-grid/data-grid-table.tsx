@@ -1268,52 +1268,60 @@ const renderDataGridTableHeadRowCellResize = <TData extends object>({
     // of escalating it.
     <span
       data-slot="data-grid-table-resize-handle"
-      {...{
-        onDoubleClick: () => column.resetSize(),
-        onMouseDown: handleMouseDown,
-        onTouchStart: handleTouchStart,
-        className: cn(
-          'absolute top-0 z-10 flex h-full cursor-col-resize touch-none select-none',
-          isPinned === 'end'
-            ? cn(
-                'start-0 w-5 justify-start',
-                props.tableLayout?.columnsPinnable
-                  ? 'before:hidden'
-                  : 'before:absolute before:inset-y-0 before:start-0 before:w-px before:bg-border'
-              )
-            : isLastVisibleColumn
-              ? 'end-0 w-5 justify-end before:hidden'
-              : isPinned
-                ? cn(
-                    // A pinned column is sticky, so the handle sits inside the
-                    // cell instead of straddling the boundary, where the next
-                    // sticky cell would paint over it.
-                    'end-0 w-5 justify-end',
-                    props.tableLayout?.columnsPinnable
-                      ? 'before:hidden'
-                      : 'before:absolute before:inset-y-0 before:end-0 before:w-px before:bg-border'
-                  )
-                : cn(
-                    '-end-2 w-5 justify-center',
-                    props.tableLayout?.cellBorder || hidesLastCenterLine
-                      ? 'before:hidden'
-                      : 'before:absolute before:inset-y-0 before:end-2 before:w-px before:bg-border'
-                  ),
-          column.getIsResizing() &&
-            (isResizeModeOnEnd
-              ? 'opacity-100'
-              : isLastVisibleColumn && isPinned !== 'end'
-                ? 'opacity-100 before:absolute before:inset-y-0 before:end-0 before:block before:w-0.5 before:bg-primary'
-                : isPinned
-                  ? 'opacity-100 before:block before:w-0.5 before:bg-primary'
-                  : cn(
-                      'opacity-100 before:absolute before:inset-y-0 before:block before:w-0.5 before:bg-primary',
-                      props.tableLayout?.cellBorder && !hidesLastCenterLine
-                        ? 'before:end-[calc(--spacing(2)-1px)]'
-                        : 'before:end-2'
-                    ))
-        ),
+      role="separator"
+      aria-orientation="vertical"
+      aria-label={`Resize ${column.id} column`}
+      tabIndex={0}
+      onDoubleClick={() => column.resetSize()}
+      onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          column.resetSize();
+        }
       }}
+      className={cn(
+        'absolute top-0 z-10 flex h-full cursor-col-resize touch-none select-none',
+        isPinned === 'end'
+          ? cn(
+              'start-0 w-5 justify-start',
+              props.tableLayout?.columnsPinnable
+                ? 'before:hidden'
+                : 'before:absolute before:inset-y-0 before:start-0 before:w-px before:bg-border'
+            )
+          : isLastVisibleColumn
+            ? 'end-0 w-5 justify-end before:hidden'
+            : isPinned
+              ? cn(
+                  // A pinned column is sticky, so the handle sits inside the
+                  // cell instead of straddling the boundary, where the next
+                  // sticky cell would paint over it.
+                  'end-0 w-5 justify-end',
+                  props.tableLayout?.columnsPinnable
+                    ? 'before:hidden'
+                    : 'before:absolute before:inset-y-0 before:end-0 before:w-px before:bg-border'
+                )
+              : cn(
+                  '-end-2 w-5 justify-center',
+                  props.tableLayout?.cellBorder || hidesLastCenterLine
+                    ? 'before:hidden'
+                    : 'before:absolute before:inset-y-0 before:end-2 before:w-px before:bg-border'
+                ),
+        column.getIsResizing() &&
+          (isResizeModeOnEnd
+            ? 'opacity-100'
+            : isLastVisibleColumn && isPinned !== 'end'
+              ? 'opacity-100 before:absolute before:inset-y-0 before:end-0 before:block before:w-0.5 before:bg-primary'
+              : isPinned
+                ? 'opacity-100 before:block before:w-0.5 before:bg-primary'
+                : cn(
+                    'opacity-100 before:absolute before:inset-y-0 before:block before:w-0.5 before:bg-primary',
+                    props.tableLayout?.cellBorder && !hidesLastCenterLine
+                      ? 'before:end-[calc(--spacing(2)-1px)]'
+                      : 'before:end-2'
+                  ))
+      )}
     />
   );
 };
@@ -2141,7 +2149,7 @@ const DataGridTableRenderedRow = <TData extends object>({
     ? Math.max(0, centerVisibleCells.length - 1 - centerWindow.end)
     : 0;
 
-  return (
+  const body = (
     <Fragment>
       <DataGridTableBodyRow
         row={row}
@@ -2202,6 +2210,8 @@ const DataGridTableRenderedRow = <TData extends object>({
       {row.getIsExpanded() && <DataGridTableBodyRowExpandded row={row} />}
     </Fragment>
   );
+
+  return props.renderBodyRow ? props.renderBodyRow(row.original, body) : body;
 };
 
 const DataGridTableEmpty = () => {

@@ -37,9 +37,10 @@ import {
   buildImportReviewColumns,
 } from './buildImportReviewColumns';
 import { focusImportReviewRow } from './focusImportReviewRow';
+import { ImportReviewRowScope } from './ImportReviewRowScope';
 import { useStableImportReviewTableRows } from './useStableImportReviewTableRows';
 import type { ImportReviewColumnsRuntime } from './buildImportReviewColumns';
-import type { RefObject } from 'react';
+import type { ReactNode, RefObject } from 'react';
 import type {
   ColumnPinningState,
   ExpandedState,
@@ -132,6 +133,24 @@ const ImportDraftReviewGrid = memo(
     useLayoutEffect(() => {
       tableRef.current = table;
     });
+    const renderBodyRow = useCallback(
+      (row: ImportReviewTableRow, content: ReactNode) => {
+        if (!draftId) return content;
+        const expandedState = table.state.expanded;
+        const expanded =
+          expandedState === true || Boolean(expandedState[row.id]);
+        return (
+          <ImportReviewRowScope
+            draftId={draftId}
+            rowId={row.id}
+            expanded={expanded}
+          >
+            {content}
+          </ImportReviewRowScope>
+        );
+      },
+      [draftId, table]
+    );
 
     useEffect(() => {
       if (!focusRowId) return;
@@ -151,6 +170,7 @@ const ImportDraftReviewGrid = memo(
           table={table}
           recordCount={recordCount}
           isLoading={isLoading}
+          renderBodyRow={renderBodyRow}
           tableLayout={{
             width: 'fixed',
             dense: true,

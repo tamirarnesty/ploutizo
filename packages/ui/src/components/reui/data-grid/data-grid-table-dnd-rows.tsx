@@ -180,6 +180,7 @@ const DataGridTableDndRow = <TData extends object>({
   renderRowDecoration?: DataGridTableDndRowDecoration<TData>;
   dropIndicator?: boolean;
 }) => {
+  const { props } = useDataGrid<TData>();
   const rowData: DataGridTableDndRowData = {
     type: 'data-grid-row',
     depth: row.depth,
@@ -262,7 +263,12 @@ const DataGridTableDndRow = <TData extends object>({
           data-edge={dropEdge}
           className="pointer-events-none absolute inset-0 z-20"
         >
-          <span className="absolute inset-y-0 start-0 w-0.5 bg-primary" />
+          <span
+            className={cn(
+              'absolute inset-x-0 h-0.5 bg-primary',
+              dropEdge === 'bottom' ? 'bottom-0' : 'top-0'
+            )}
+          />
         </div>
       ) : null}
     </DataGridTableBodyRowCell>
@@ -273,8 +279,8 @@ const DataGridTableDndRow = <TData extends object>({
     [attributes, listeners]
   );
 
-  return (
-    <SortableRowContext.Provider value={sortableValue}>
+  const body = (
+    <>
       <DataGridTableBodyRow
         row={row}
         dndRef={setNodeRef}
@@ -292,6 +298,12 @@ const DataGridTableDndRow = <TData extends object>({
         ]}
       </DataGridTableBodyRow>
       {row.getIsExpanded() && <DataGridTableBodyRowExpandded row={row} />}
+    </>
+  );
+
+  return (
+    <SortableRowContext.Provider value={sortableValue}>
+      {props.renderBodyRow ? props.renderBodyRow(row.original, body) : body}
     </SortableRowContext.Provider>
   );
 };

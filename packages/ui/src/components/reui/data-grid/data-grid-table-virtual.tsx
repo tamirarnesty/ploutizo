@@ -1128,12 +1128,24 @@ const useDataGridTableVirtualModel = <TData extends object>({
 
     if (lastVirtualIndex == null) return;
 
+    const nearEnd =
+      lastVirtualIndex >= centerRows.length - 1 - resolvedFetchMoreOffset;
+
+    // A failed page leaves the row count unchanged. The guard above already
+    // waits out `isFetchingMore`. Once that attempt is over, drop it when the
+    // viewport leaves the threshold so scrolling back can request again,
+    // without immediately retrying while the user is still parked at the end.
+    if (!nearEnd) {
+      if (fetchMoreFiredAtCountRef.current === centerRows.length) {
+        fetchMoreFiredAtCountRef.current = null;
+      }
+      return;
+    }
+
     if (fetchMoreFiredAtCountRef.current === centerRows.length) return;
 
-    if (lastVirtualIndex >= centerRows.length - 1 - resolvedFetchMoreOffset) {
-      fetchMoreFiredAtCountRef.current = centerRows.length;
-      onFetchMore?.();
-    }
+    fetchMoreFiredAtCountRef.current = centerRows.length;
+    onFetchMore?.();
   }, [
     centerRows.length,
     hasMore,

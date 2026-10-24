@@ -524,6 +524,11 @@ export interface DataGridProps<
   children?: ReactNode;
   onRowClick?: (row: TData) => void;
   /**
+   * Wraps each body row — the main `<tr>` and its expanded sibling — without
+   * adding a DOM node, so one provider can cover every cell and the details.
+   */
+  renderBodyRow?: (row: TData, content: ReactNode) => ReactNode;
+  /**
    * Receives every spreadsheet write batch (paste, cut, clear, fill, edit).
    * Served through the props getter like `onRowClick`, so an inline identity
    * never republishes the context. Absent: copy still works, writes no-op.

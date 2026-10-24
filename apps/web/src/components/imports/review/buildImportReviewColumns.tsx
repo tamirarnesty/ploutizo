@@ -24,7 +24,6 @@ import { createContext, useContext } from 'react';
 import type { DataGridFeatures } from '@ploutizo/ui/components/reui/data-grid/data-grid';
 import { columnHeaderIcon } from '@/components/data-grid/columnHeaderIcon';
 import { ImportDraftReviewRowDetails } from './ImportDraftReviewRowDetails';
-import { ImportReviewRowScope } from './ImportReviewRowScope';
 import {
   ImportReviewAmountCell,
   ImportReviewAssigneeCell,
@@ -35,7 +34,7 @@ import {
   ImportReviewTypeCell,
 } from './importReviewCells';
 import type { ImportReviewTableRow } from './useStableImportReviewTableRows';
-import type { ReactNode, RefObject } from 'react';
+import type { RefObject } from 'react';
 import type { ColumnDef, HeaderContext } from '@tanstack/react-table';
 
 export interface ImportReviewColumnsRuntime {
@@ -173,16 +172,6 @@ export const buildImportReviewColumns = ({
   DataGridFeatures,
   ImportReviewTableRow
 >[] => {
-  const withRowScope = (
-    rowId: string,
-    content: ReactNode,
-    expanded?: boolean
-  ) => (
-    <ImportReviewRowScope draftId={draftId} rowId={rowId} expanded={expanded}>
-      {content}
-    </ImportReviewRowScope>
-  );
-
   return [
     {
       id: 'selection',
@@ -194,23 +183,19 @@ export const buildImportReviewColumns = ({
         headerClassName: 'min-w-28',
         cellClassName: 'min-w-28',
         skeleton: <Skeleton className="h-4 w-4" />,
-        expandedContent: (row) =>
-          withRowScope(row.id, <ImportDraftReviewRowDetails />),
+        expandedContent: () => <ImportDraftReviewRowDetails />,
       },
-      cell: ({ row }) =>
-        withRowScope(
-          row.original.id,
-          <ImportReviewSelectionCell
-            draftId={draftId}
-            rowId={row.original.id}
-            expanded={row.getIsExpanded()}
-            onExpandedChange={(expanded) => row.toggleExpanded(expanded)}
-            onSelectionChange={(selected) =>
-              runtimeRef.current.onSelectionChange(row.original.id, selected)
-            }
-          />,
-          row.getIsExpanded()
-        ),
+      cell: ({ row }) => (
+        <ImportReviewSelectionCell
+          draftId={draftId}
+          rowId={row.original.id}
+          expanded={row.getIsExpanded()}
+          onExpandedChange={(expanded) => row.toggleExpanded(expanded)}
+          onSelectionChange={(selected) =>
+            runtimeRef.current.onSelectionChange(row.original.id, selected)
+          }
+        />
+      ),
     },
     {
       id: 'date',
@@ -228,8 +213,7 @@ export const buildImportReviewColumns = ({
         cellClassName: 'min-w-48',
         skeleton: <Skeleton className="h-4 w-24" />,
       },
-      cell: ({ row }) =>
-        withRowScope(row.original.id, <ImportReviewDateCell />),
+      cell: () => <ImportReviewDateCell />,
     },
     {
       id: 'amount',
@@ -247,8 +231,7 @@ export const buildImportReviewColumns = ({
         cellClassName: 'min-w-36',
         skeleton: <Skeleton className="h-4 w-20" />,
       },
-      cell: ({ row }) =>
-        withRowScope(row.original.id, <ImportReviewAmountCell />),
+      cell: () => <ImportReviewAmountCell />,
     },
     {
       id: 'type',
@@ -266,8 +249,7 @@ export const buildImportReviewColumns = ({
         cellClassName: 'min-w-40',
         skeleton: <Skeleton className="h-4 w-16" />,
       },
-      cell: ({ row }) =>
-        withRowScope(row.original.id, <ImportReviewTypeCell />),
+      cell: () => <ImportReviewTypeCell />,
     },
     {
       id: 'description',
@@ -286,8 +268,7 @@ export const buildImportReviewColumns = ({
         cellClassName: 'min-w-68',
         skeleton: <Skeleton className="h-4 w-48" />,
       },
-      cell: ({ row }) =>
-        withRowScope(row.original.id, <ImportReviewDescriptionCell />),
+      cell: () => <ImportReviewDescriptionCell />,
     },
     {
       id: 'category',
@@ -305,8 +286,7 @@ export const buildImportReviewColumns = ({
         cellClassName: 'min-w-48',
         skeleton: <Skeleton className="h-4 w-28" />,
       },
-      cell: ({ row }) =>
-        withRowScope(row.original.id, <ImportReviewCategoryOrPaidFromCell />),
+      cell: () => <ImportReviewCategoryOrPaidFromCell />,
     },
     {
       id: 'assignee',
@@ -323,8 +303,7 @@ export const buildImportReviewColumns = ({
         cellClassName: 'min-w-56',
         skeleton: <Skeleton className="h-4 w-32" />,
       },
-      cell: ({ row }) =>
-        withRowScope(row.original.id, <ImportReviewAssigneeCell />),
+      cell: () => <ImportReviewAssigneeCell />,
     },
   ];
 };
