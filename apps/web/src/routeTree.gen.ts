@@ -9,53 +9,43 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as OnboardingRouteImport } from './routes/onboarding'
-import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as SignUpSplatRouteImport } from './routes/sign-up.$'
-import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
-import { Route as LayoutTransactionsRouteImport } from './routes/_layout.transactions'
-import { Route as LayoutDashboardRouteImport } from './routes/_layout.dashboard'
+import { Route as LayoutRouteImport } from './routes/_layout'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LayoutAccountsRouteImport } from './routes/_layout.accounts'
-import { Route as LayoutSettingsRouteRouteImport } from './routes/_layout.settings/route'
+import { Route as LayoutDashboardRouteImport } from './routes/_layout.dashboard'
 import { Route as LayoutImportRouteRouteImport } from './routes/_layout.import/route'
-import { Route as LayoutSettingsIndexRouteImport } from './routes/_layout.settings/index'
+import { Route as LayoutSettingsRouteRouteImport } from './routes/_layout.settings/route'
+import { Route as LayoutTransactionsRouteImport } from './routes/_layout.transactions'
+import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
+import { Route as SignUpSplatRouteImport } from './routes/sign-up.$'
 import { Route as LayoutImportIndexRouteImport } from './routes/_layout.import/index'
-import { Route as LayoutSettingsMerchantRulesRouteImport } from './routes/_layout.settings/merchant-rules'
-import { Route as LayoutSettingsHouseholdRouteImport } from './routes/_layout.settings/household'
-import { Route as LayoutSettingsCategoriesRouteImport } from './routes/_layout.settings/categories'
-import { Route as LayoutImportHistoryRouteImport } from './routes/_layout.import/history'
 import { Route as LayoutImportDraftIdRouteRouteImport } from './routes/_layout.import/$draftId/route'
+import { Route as LayoutImportHistoryRouteImport } from './routes/_layout.import/history'
+import { Route as LayoutSettingsIndexRouteImport } from './routes/_layout.settings/index'
+import { Route as LayoutSettingsCategoriesRouteImport } from './routes/_layout.settings/categories'
+import { Route as LayoutSettingsHouseholdRouteImport } from './routes/_layout.settings/household'
+import { Route as LayoutSettingsMerchantRulesRouteImport } from './routes/_layout.settings/merchant-rules'
 import { Route as LayoutImportDraftIdIndexRouteImport } from './routes/_layout.import/$draftId/index'
 import { Route as LayoutImportDraftIdFinalizeRouteImport } from './routes/_layout.import/$draftId/finalize'
 
-const OnboardingRoute = OnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LayoutRoute = LayoutRouteImport.update({
   id: '/_layout',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SignUpSplatRoute = SignUpSplatRouteImport.update({
-  id: '/sign-up/$',
-  path: '/sign-up/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SignInSplatRoute = SignInSplatRouteImport.update({
-  id: '/sign-in/$',
-  path: '/sign-in/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LayoutTransactionsRoute = LayoutTransactionsRouteImport.update({
-  id: '/transactions',
-  path: '/transactions',
+const LayoutAccountsRoute = LayoutAccountsRouteImport.update({
+  id: '/accounts',
+  path: '/accounts',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutDashboardRoute = LayoutDashboardRouteImport.update({
@@ -63,9 +53,9 @@ const LayoutDashboardRoute = LayoutDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutAccountsRoute = LayoutAccountsRouteImport.update({
-  id: '/accounts',
-  path: '/accounts',
+const LayoutImportRouteRoute = LayoutImportRouteRouteImport.update({
+  id: '/import',
+  path: '/import',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutSettingsRouteRoute = LayoutSettingsRouteRouteImport.update({
@@ -73,30 +63,40 @@ const LayoutSettingsRouteRoute = LayoutSettingsRouteRouteImport.update({
   path: '/settings',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutImportRouteRoute = LayoutImportRouteRouteImport.update({
-  id: '/import',
-  path: '/import',
+const LayoutTransactionsRoute = LayoutTransactionsRouteImport.update({
+  id: '/transactions',
+  path: '/transactions',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutSettingsIndexRoute = LayoutSettingsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => LayoutSettingsRouteRoute,
+const SignInSplatRoute = SignInSplatRouteImport.update({
+  id: '/sign-in/$',
+  path: '/sign-in/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignUpSplatRoute = SignUpSplatRouteImport.update({
+  id: '/sign-up/$',
+  path: '/sign-up/$',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const LayoutImportIndexRoute = LayoutImportIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => LayoutImportRouteRoute,
 } as any)
-const LayoutSettingsMerchantRulesRoute =
-  LayoutSettingsMerchantRulesRouteImport.update({
-    id: '/merchant-rules',
-    path: '/merchant-rules',
-    getParentRoute: () => LayoutSettingsRouteRoute,
+const LayoutImportDraftIdRouteRoute =
+  LayoutImportDraftIdRouteRouteImport.update({
+    id: '/$draftId',
+    path: '/$draftId',
+    getParentRoute: () => LayoutImportRouteRoute,
   } as any)
-const LayoutSettingsHouseholdRoute = LayoutSettingsHouseholdRouteImport.update({
-  id: '/household',
-  path: '/household',
+const LayoutImportHistoryRoute = LayoutImportHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => LayoutImportRouteRoute,
+} as any)
+const LayoutSettingsIndexRoute = LayoutSettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => LayoutSettingsRouteRoute,
 } as any)
 const LayoutSettingsCategoriesRoute =
@@ -105,16 +105,16 @@ const LayoutSettingsCategoriesRoute =
     path: '/categories',
     getParentRoute: () => LayoutSettingsRouteRoute,
   } as any)
-const LayoutImportHistoryRoute = LayoutImportHistoryRouteImport.update({
-  id: '/history',
-  path: '/history',
-  getParentRoute: () => LayoutImportRouteRoute,
+const LayoutSettingsHouseholdRoute = LayoutSettingsHouseholdRouteImport.update({
+  id: '/household',
+  path: '/household',
+  getParentRoute: () => LayoutSettingsRouteRoute,
 } as any)
-const LayoutImportDraftIdRouteRoute =
-  LayoutImportDraftIdRouteRouteImport.update({
-    id: '/$draftId',
-    path: '/$draftId',
-    getParentRoute: () => LayoutImportRouteRoute,
+const LayoutSettingsMerchantRulesRoute =
+  LayoutSettingsMerchantRulesRouteImport.update({
+    id: '/merchant-rules',
+    path: '/merchant-rules',
+    getParentRoute: () => LayoutSettingsRouteRoute,
   } as any)
 const LayoutImportDraftIdIndexRoute =
   LayoutImportDraftIdIndexRouteImport.update({
@@ -259,11 +259,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/onboarding': {
-      id: '/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof OnboardingRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_layout': {
@@ -273,32 +273,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/sign-up/$': {
-      id: '/sign-up/$'
-      path: '/sign-up/$'
-      fullPath: '/sign-up/$'
-      preLoaderRoute: typeof SignUpSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sign-in/$': {
-      id: '/sign-in/$'
-      path: '/sign-in/$'
-      fullPath: '/sign-in/$'
-      preLoaderRoute: typeof SignInSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_layout/transactions': {
-      id: '/_layout/transactions'
-      path: '/transactions'
-      fullPath: '/transactions'
-      preLoaderRoute: typeof LayoutTransactionsRouteImport
+    '/_layout/accounts': {
+      id: '/_layout/accounts'
+      path: '/accounts'
+      fullPath: '/accounts'
+      preLoaderRoute: typeof LayoutAccountsRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/dashboard': {
@@ -308,11 +294,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutDashboardRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/accounts': {
-      id: '/_layout/accounts'
-      path: '/accounts'
-      fullPath: '/accounts'
-      preLoaderRoute: typeof LayoutAccountsRouteImport
+    '/_layout/import': {
+      id: '/_layout/import'
+      path: '/import'
+      fullPath: '/import'
+      preLoaderRoute: typeof LayoutImportRouteRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/settings': {
@@ -322,19 +308,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsRouteRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/import': {
-      id: '/_layout/import'
-      path: '/import'
-      fullPath: '/import'
-      preLoaderRoute: typeof LayoutImportRouteRouteImport
+    '/_layout/transactions': {
+      id: '/_layout/transactions'
+      path: '/transactions'
+      fullPath: '/transactions'
+      preLoaderRoute: typeof LayoutTransactionsRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/settings/': {
-      id: '/_layout/settings/'
-      path: '/'
-      fullPath: '/settings/'
-      preLoaderRoute: typeof LayoutSettingsIndexRouteImport
-      parentRoute: typeof LayoutSettingsRouteRoute
+    '/sign-in/$': {
+      id: '/sign-in/$'
+      path: '/sign-in/$'
+      fullPath: '/sign-in/$'
+      preLoaderRoute: typeof SignInSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sign-up/$': {
+      id: '/sign-up/$'
+      path: '/sign-up/$'
+      fullPath: '/sign-up/$'
+      preLoaderRoute: typeof SignUpSplatRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_layout/import/': {
       id: '/_layout/import/'
@@ -343,18 +336,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutImportIndexRouteImport
       parentRoute: typeof LayoutImportRouteRoute
     }
-    '/_layout/settings/merchant-rules': {
-      id: '/_layout/settings/merchant-rules'
-      path: '/merchant-rules'
-      fullPath: '/settings/merchant-rules'
-      preLoaderRoute: typeof LayoutSettingsMerchantRulesRouteImport
-      parentRoute: typeof LayoutSettingsRouteRoute
+    '/_layout/import/$draftId': {
+      id: '/_layout/import/$draftId'
+      path: '/$draftId'
+      fullPath: '/import/$draftId'
+      preLoaderRoute: typeof LayoutImportDraftIdRouteRouteImport
+      parentRoute: typeof LayoutImportRouteRoute
     }
-    '/_layout/settings/household': {
-      id: '/_layout/settings/household'
-      path: '/household'
-      fullPath: '/settings/household'
-      preLoaderRoute: typeof LayoutSettingsHouseholdRouteImport
+    '/_layout/import/history': {
+      id: '/_layout/import/history'
+      path: '/history'
+      fullPath: '/import/history'
+      preLoaderRoute: typeof LayoutImportHistoryRouteImport
+      parentRoute: typeof LayoutImportRouteRoute
+    }
+    '/_layout/settings/': {
+      id: '/_layout/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof LayoutSettingsIndexRouteImport
       parentRoute: typeof LayoutSettingsRouteRoute
     }
     '/_layout/settings/categories': {
@@ -364,19 +364,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsCategoriesRouteImport
       parentRoute: typeof LayoutSettingsRouteRoute
     }
-    '/_layout/import/history': {
-      id: '/_layout/import/history'
-      path: '/history'
-      fullPath: '/import/history'
-      preLoaderRoute: typeof LayoutImportHistoryRouteImport
-      parentRoute: typeof LayoutImportRouteRoute
+    '/_layout/settings/household': {
+      id: '/_layout/settings/household'
+      path: '/household'
+      fullPath: '/settings/household'
+      preLoaderRoute: typeof LayoutSettingsHouseholdRouteImport
+      parentRoute: typeof LayoutSettingsRouteRoute
     }
-    '/_layout/import/$draftId': {
-      id: '/_layout/import/$draftId'
-      path: '/$draftId'
-      fullPath: '/import/$draftId'
-      preLoaderRoute: typeof LayoutImportDraftIdRouteRouteImport
-      parentRoute: typeof LayoutImportRouteRoute
+    '/_layout/settings/merchant-rules': {
+      id: '/_layout/settings/merchant-rules'
+      path: '/merchant-rules'
+      fullPath: '/settings/merchant-rules'
+      preLoaderRoute: typeof LayoutSettingsMerchantRulesRouteImport
+      parentRoute: typeof LayoutSettingsRouteRoute
     }
     '/_layout/import/$draftId/': {
       id: '/_layout/import/$draftId/'
