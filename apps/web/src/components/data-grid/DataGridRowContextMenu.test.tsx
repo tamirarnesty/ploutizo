@@ -7,42 +7,48 @@ import {
   screen,
   within,
 } from '@testing-library/react';
-import { afterEach } from 'vitest';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { useMemo } from 'react';
-import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import { useTable } from '@tanstack/react-table';
+import { ContextMenuItem } from '@ploutizo/ui/components/context-menu';
+import {
+  DataGrid,
+  dataGridFeatures,
+} from '@ploutizo/ui/components/reui/data-grid/data-grid';
+import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-table';
+import type { DataGridFeatures } from '@ploutizo/ui/components/reui/data-grid/data-grid';
+import { DataGridRowContextMenu } from './DataGridRowContextMenu';
 import type { ColumnDef } from '@tanstack/react-table';
-import { ContextMenuItem } from '@/components/context-menu';
-import { DataGrid } from '@/components/reui/data-grid/data-grid';
-import { DataGridTable } from '@/components/reui/data-grid/data-grid-table';
 
 type DemoRow = { id: string; label: string };
 
-const columns: ColumnDef<DemoRow>[] = [
+const columns: ColumnDef<DataGridFeatures, DemoRow>[] = [
   { accessorKey: 'label', header: 'Label' },
 ];
 
 const DataGridContextMenuHarness = () => {
   const data = useMemo<DemoRow[]>(() => [{ id: '1', label: 'Coffee' }], []);
   const tableColumns = useMemo(() => columns, []);
-  const table = useReactTable({
+  const table = useTable({
+    features: dataGridFeatures,
     data,
     columns: tableColumns,
-    getCoreRowModel: getCoreRowModel(),
+    manualPagination: true,
+    getRowId: (row) => row.id,
   });
 
   return (
-    <DataGrid
-      table={table}
-      recordCount={data.length}
-      renderRowContextMenu={(row) => (
-        <>
-          <ContextMenuItem>Edit {row.label}</ContextMenuItem>
-          <ContextMenuItem variant="destructive">Delete</ContextMenuItem>
-        </>
-      )}
-    >
-      <DataGridTable />
+    <DataGrid table={table} recordCount={data.length}>
+      <DataGridRowContextMenu<DemoRow>
+        renderMenu={(row) => (
+          <>
+            <ContextMenuItem>Edit {row.label}</ContextMenuItem>
+            <ContextMenuItem variant="destructive">Delete</ContextMenuItem>
+          </>
+        )}
+      >
+        <DataGridTable />
+      </DataGridRowContextMenu>
     </DataGrid>
   );
 };
@@ -51,7 +57,7 @@ afterEach(() => {
   cleanup();
 });
 
-describe('DataGrid renderRowContextMenu', () => {
+describe('DataGridRowContextMenu', () => {
   it('opens menu items from a body row right-click', async () => {
     render(<DataGridContextMenuHarness />);
 

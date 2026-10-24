@@ -42,9 +42,7 @@ describe('ImportDraftReview sorting', () => {
 
     await user.click(screen.getByRole('button', { name: 'Date' }));
     const menu = await screen.findByRole('menu');
-    await user.click(
-      within(menu).getByRole('menuitem', { name: 'Oldest first' })
-    );
+    await user.click(within(menu).getByRole('menuitem', { name: 'Asc' }));
 
     const descriptions = screen
       .getAllByRole('textbox', { name: /Description for/ })

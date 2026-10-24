@@ -1,8 +1,9 @@
 import { useCallback, useMemo, useState } from 'react';
-import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import { useTable } from '@tanstack/react-table';
 import {
   DataGrid,
   DataGridContainer,
+  dataGridFeatures,
 } from '@ploutizo/ui/components/reui/data-grid/data-grid';
 import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-table';
 import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-grid-scroll-area';
@@ -14,6 +15,7 @@ import {
   useDeleteTransaction,
   useRestoreTransaction,
 } from '@/lib/data-access/transactions';
+import { DataGridRowContextMenu } from '@/components/data-grid/DataGridRowContextMenu';
 import {
   DATA_GRID_PAGINATION_ROW_CLASSNAME,
   PAGINATED_DATA_GRID_SCROLL_ORIENTATION,
@@ -114,13 +116,13 @@ export const TransactionsTable = ({
     [onEdit]
   );
 
-  const table = useReactTable({
+  const table = useTable({
+    features: dataGridFeatures,
     data: transactions,
     columns,
-    getCoreRowModel: getCoreRowModel(),
-    manualPagination: true, // server-side pagination
-    manualSorting: true, // server-side sort (RESEARCH Pitfall 8)
-    rowCount: total, // TanStack Table server-side total for page math (RESEARCH Pitfall 3)
+    manualPagination: true,
+    manualSorting: true,
+    rowCount: total,
     state: {
       pagination: { pageIndex: page - 1, pageSize: effectivePageSize },
       sorting: [{ id: sort ?? 'date', desc: order === 'desc' }],
@@ -173,29 +175,29 @@ export const TransactionsTable = ({
         recordCount={total}
         isLoading={isLoading}
         emptyMessage="No transactions yet"
-        renderRowContextMenu={renderRowContextMenu}
         tableLayout={{
           width: 'fixed',
-          columnsFill: true,
           columnsResizable: true,
         }}
       >
         <div className="w-full space-y-2.5">
           <DataGridContainer>
-            <DataGridScrollArea
-              orientation={PAGINATED_DATA_GRID_SCROLL_ORIENTATION}
-            >
-              <DataGridTable
-                footerContent={
-                  transactions.length > 0 ? (
-                    <TransactionsAmountFooter
-                      table={table}
-                      rows={transactions}
-                    />
-                  ) : null
-                }
-              />
-            </DataGridScrollArea>
+            <DataGridRowContextMenu renderMenu={renderRowContextMenu}>
+              <DataGridScrollArea
+                orientation={PAGINATED_DATA_GRID_SCROLL_ORIENTATION}
+              >
+                <DataGridTable
+                  footerContent={
+                    transactions.length > 0 ? (
+                      <TransactionsAmountFooter
+                        table={table}
+                        rows={transactions}
+                      />
+                    ) : null
+                  }
+                />
+              </DataGridScrollArea>
+            </DataGridRowContextMenu>
           </DataGridContainer>
           <DataGridPagination className={DATA_GRID_PAGINATION_ROW_CLASSNAME} />
         </div>

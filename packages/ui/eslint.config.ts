@@ -52,6 +52,11 @@ export default [
       'no-shadow': 'off',
       'react-hooks/exhaustive-deps': 'off',
       'func-style': 'off',
+      // Registry components assign refs during render and subscribe in effects
+      // on purpose. Don't fork that code to satisfy React Doctor.
+      'react-doctor/effect-needs-cleanup': 'off',
+      'react-doctor/no-effect-with-fresh-deps': 'off',
+      'react-doctor/no-ref-current-in-render': 'off',
     },
   },
   {
