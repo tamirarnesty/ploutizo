@@ -1,6 +1,10 @@
-import type { Table } from '@tanstack/react-table';
+'use no memo';
+
 import type { ReactElement } from 'react';
-import { getColumnHeaderLabel } from '@/components/reui/data-grid/data-grid-column-label';
+import type { DataGridFeatures } from '@/components/reui/data-grid/data-grid';
+import type { Table } from '@tanstack/react-table';
+import { getColumnHeaderLabel } from '@/components/reui/data-grid/data-grid-cells';
+import { useDataGrid } from '@/components/reui/data-grid/data-grid';
 
 import {
   DropdownMenu,
@@ -11,20 +15,22 @@ import {
   DropdownMenuTrigger,
 } from '@/components/dropdown-menu';
 
-function DataGridColumnVisibility<TData>({
+const DataGridColumnVisibility = <TData extends object>({
   table,
   trigger,
 }: {
-  table: Table<TData>;
+  table: Table<DataGridFeatures, TData>;
   trigger: ReactElement<Record<string, unknown>>;
-}) {
+}) => {
+  const { i18n } = useDataGrid();
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={trigger} />
       <DropdownMenuContent align="end" className="min-w-[150px]">
         <DropdownMenuGroup>
           <DropdownMenuLabel className="font-medium">
-            Toggle Columns
+            {i18n.labels.toggleColumns}
           </DropdownMenuLabel>
           {table
             .getAllColumns()
@@ -33,7 +39,11 @@ function DataGridColumnVisibility<TData>({
               return (
                 <DropdownMenuCheckboxItem
                   key={column.id}
-                  className="capitalize"
+                  className={
+                    getColumnHeaderLabel(column) === column.id
+                      ? 'capitalize'
+                      : undefined
+                  }
                   checked={column.getIsVisible()}
                   onSelect={(event) => event.preventDefault()}
                   onCheckedChange={(value) => column.toggleVisibility(!!value)}
@@ -46,6 +56,6 @@ function DataGridColumnVisibility<TData>({
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
+};
 
 export { DataGridColumnVisibility };

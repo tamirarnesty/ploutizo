@@ -1,8 +1,14 @@
 import { CardContent } from '@ploutizo/ui/components/card';
-import { DataGrid } from '@ploutizo/ui/components/reui/data-grid/data-grid';
+import {
+  DataGrid,
+  DataGridContainer,
+} from '@ploutizo/ui/components/reui/data-grid/data-grid';
 import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-grid-scroll-area';
 import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-table';
-import type { DataGridProps } from '@ploutizo/ui/components/reui/data-grid/data-grid';
+import type {
+  DataGridFeatures,
+  DataGridProps,
+} from '@ploutizo/ui/components/reui/data-grid/data-grid';
 import { DashboardLiveCard } from '@/components/dashboard/DashboardLiveCard';
 import { dashboardLiveCardErrorMessage } from '@/components/dashboard/dashboardLiveCardErrorMessage';
 import { PAGINATED_DATA_GRID_SCROLL_ORIENTATION } from '@/components/data-grid/dataGridSharedLayout';
@@ -10,7 +16,7 @@ import type { ReactNode } from 'react';
 import type { Table } from '@tanstack/react-table';
 
 type DashboardLiveDataGridProps<TData extends object> = {
-  table: Table<TData>;
+  table: Table<DataGridFeatures, TData>;
   recordCount: number;
   isLoading: boolean;
   title: string;
@@ -19,7 +25,7 @@ type DashboardLiveDataGridProps<TData extends object> = {
   isError: boolean;
   action?: ReactNode;
   className?: string;
-  tableClassNames?: DataGridProps<TData>['tableClassNames'];
+  tableClassNames?: DataGridProps<DataGridFeatures, TData>['tableClassNames'];
   children: ReactNode;
 };
 
@@ -66,8 +72,10 @@ export const DashboardLiveDataGridScrollTable = ({
   cardContentClassName = 'border-b px-0 py-0',
 }: DashboardLiveDataGridScrollTableProps) => (
   <CardContent className={cardContentClassName}>
-    <DataGridScrollArea orientation={PAGINATED_DATA_GRID_SCROLL_ORIENTATION}>
-      <DataGridTable />
-    </DataGridScrollArea>
+    <DataGridContainer>
+      <DataGridScrollArea orientation={PAGINATED_DATA_GRID_SCROLL_ORIENTATION}>
+        <DataGridTable />
+      </DataGridScrollArea>
+    </DataGridContainer>
   </CardContent>
 );

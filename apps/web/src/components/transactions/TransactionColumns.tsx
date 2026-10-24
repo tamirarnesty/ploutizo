@@ -5,6 +5,7 @@ import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
 import { cn } from '@ploutizo/ui/lib/utils';
 import { memberFullLabel } from '@ploutizo/utils';
+import type { DataGridFeatures } from '@ploutizo/ui/components/reui/data-grid/data-grid';
 import type { TransactionRow } from '@ploutizo/validators';
 import { columnHeaderIcon } from '@/components/data-grid/columnHeaderIcon';
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
@@ -43,7 +44,7 @@ export const buildColumns = (
   setDeleteId: (id: string) => void,
   onEdit: (transaction: TransactionRow) => void,
   onOpenOriginal: (id: string) => void
-): ColumnDef<TransactionRow>[] => {
+): ColumnDef<DataGridFeatures, TransactionRow>[] => {
   const handlers = { onEdit, onDelete: setDeleteId };
   const core = createCoreTransactionColumnDefs({
     date: { enableSorting: true },

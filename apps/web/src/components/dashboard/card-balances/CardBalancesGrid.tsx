@@ -1,10 +1,7 @@
 import { useMemo, useState } from 'react';
-import {
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
+import { useTable } from '@tanstack/react-table';
 import { CardFooter } from '@ploutizo/ui/components/card';
+import { dataGridFeatures } from '@ploutizo/ui/components/reui/data-grid/data-grid-features';
 import { DataGridPagination } from '@ploutizo/ui/components/reui/data-grid/data-grid-pagination';
 import type { CardBalancesGridProps } from '@/components/dashboard/card-balances/types';
 import { buildCardBalancesColumns } from '@/components/dashboard/card-balances/buildCardBalancesColumns';
@@ -17,7 +14,6 @@ import {
 import { usePersistedPageSize } from '@/hooks/persistedPageSize';
 import { CARD_BALANCES_PAGE_SIZE_OPTIONS } from '@/lib/prefs/pageSizeConfig';
 import { DATA_GRID_PAGINATION_ROW_CLASSNAME } from '@/components/data-grid/dataGridSharedLayout';
-import { dataGridCoreRowModel } from '@/components/data-grid/dataGridTableModels';
 import type { SortingState } from '@tanstack/react-table';
 
 export const CardBalancesGrid = ({
@@ -35,15 +31,13 @@ export const CardBalancesGrid = ({
     [onSettleClick]
   );
 
-  const table = useReactTable({
+  const table = useTable({
+    features: dataGridFeatures,
     data: rows,
     columns,
     state: { sorting, pagination },
     onSortingChange: setSorting,
     onPaginationChange: setPagination,
-    getCoreRowModel: dataGridCoreRowModel,
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
   });
 
   /** Card balances total: credit nets against amounts owed. */

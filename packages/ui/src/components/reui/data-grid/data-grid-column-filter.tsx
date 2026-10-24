@@ -1,31 +1,39 @@
+'use no memo';
+
 import { useMemo, useState } from 'react';
+import { cn } from 'cn';
 import { CheckIcon, CirclePlusIcon } from 'lucide-react';
+import type { DataGridFeatures } from '@/components/reui/data-grid/data-grid';
 import type { Column } from '@tanstack/react-table';
 import { Badge } from '@/components/reui/badge';
+import { useDataGrid } from '@/components/reui/data-grid/data-grid';
 
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/button';
 import { Input } from '@/components/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/popover';
 import { Separator } from '@/components/separator';
 
-interface DataGridColumnFilterProps<TData, TValue> {
-  column?: Column<TData, TValue>;
+interface DataGridColumnFilterProps<TData extends object, TValue> {
+  column?: Column<DataGridFeatures, TData, TValue>;
   title?: string;
-  options: Array<{
+  options: {
     label: string;
     value: string;
     icon?: React.ComponentType<{ className?: string }>;
-  }>;
+  }[];
 }
 
-function DataGridColumnFilter<TData, TValue>({
+const DataGridColumnFilter = <TData extends object, TValue>({
   column,
   title,
   options,
-}: DataGridColumnFilterProps<TData, TValue>) {
+}: DataGridColumnFilterProps<TData, TValue>) => {
+  const { i18n } = useDataGrid();
   const facets = column?.getFacetedUniqueValues();
-  const selectedValues = new Set(column?.getFilterValue() as Array<string>);
+  const filterValue = column?.getFilterValue();
+  const selectedValues = new Set(
+    Array.isArray(filterValue) ? (filterValue as string[]) : []
+  );
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredOptions = useMemo(() => {
@@ -47,17 +55,14 @@ function DataGridColumnFilter<TData, TValue>({
                 <Separator orientation="vertical" className="mx-2 h-4" />
                 <Badge
                   variant="secondary"
-                  className="rounded-sm px-1 font-normal lg:hidden"
+                  className="px-1 font-normal lg:hidden"
                 >
                   {selectedValues.size}
                 </Badge>
-                <div className="hidden space-x-1 lg:flex">
+                <div className="hidden gap-x-1 lg:flex">
                   {selectedValues.size > 2 ? (
-                    <Badge
-                      variant="secondary"
-                      className="rounded-sm px-1 font-normal"
-                    >
-                      {selectedValues.size} selected
+                    <Badge variant="secondary" className="px-1 font-normal">
+                      {i18n.labels.filterSelectedCount(selectedValues.size)}
                     </Badge>
                   ) : (
                     options
@@ -66,7 +71,7 @@ function DataGridColumnFilter<TData, TValue>({
                         <Badge
                           variant="secondary"
                           key={option.value}
-                          className="rounded-sm px-1 font-normal"
+                          className="px-1 font-normal"
                         >
                           {option.label}
                         </Badge>
@@ -90,35 +95,45 @@ function DataGridColumnFilter<TData, TValue>({
         <div className="max-h-[300px] overflow-y-auto">
           {filteredOptions.length === 0 ? (
             <div className="py-6 text-center text-sm text-muted-foreground">
-              No results found.
+              {i18n.labels.filterNoResults}
             </div>
           ) : (
             <div className="p-1">
               {filteredOptions.map((option) => {
                 const isSelected = selectedValues.has(option.value);
+                const facetCount = facets?.get(option.value);
+                const toggleOption = () => {
+                  if (isSelected) {
+                    selectedValues.delete(option.value);
+                  } else {
+                    selectedValues.add(option.value);
+                  }
+                  const filterValues = Array.from(selectedValues);
+                  column?.setFilterValue(
+                    filterValues.length ? filterValues : undefined
+                  );
+                };
                 return (
-                  <button
-                    type="button"
+                  <div
                     key={option.value}
-                    onClick={() => {
-                      if (isSelected) {
-                        selectedValues.delete(option.value);
-                      } else {
-                        selectedValues.add(option.value);
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={isSelected}
+                    onClick={toggleOption}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggleOption();
                       }
-                      const filterValues = Array.from(selectedValues);
-                      column?.setFilterValue(
-                        filterValues.length ? filterValues : undefined
-                      );
                     }}
                     className={cn(
-                      'relative flex w-full cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none',
+                      'relative flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-hidden select-none',
                       'hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground'
                     )}
                   >
                     <div
                       className={cn(
-                        'me-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
+                        'flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
                         isSelected
                           ? 'bg-primary text-primary-foreground'
                           : 'opacity-50 [&_svg]:invisible'
@@ -127,15 +142,15 @@ function DataGridColumnFilter<TData, TValue>({
                       <CheckIcon className="h-4 w-4" />
                     </div>
                     {option.icon && (
-                      <option.icon className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <option.icon className="h-4 w-4 text-muted-foreground" />
                     )}
                     <span>{option.label}</span>
-                    {facets?.get(option.value) && (
+                    {facetCount !== undefined && (
                       <span className="ms-auto flex h-4 w-4 items-center justify-center font-mono text-xs">
-                        {facets.get(option.value)}
+                        {facetCount}
                       </span>
                     )}
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -147,9 +162,9 @@ function DataGridColumnFilter<TData, TValue>({
                 <button
                   type="button"
                   onClick={() => column?.setFilterValue(undefined)}
-                  className="relative flex w-full cursor-default items-center justify-center rounded-sm px-2 py-1.5 text-sm outline-hidden select-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                  className="relative flex w-full cursor-pointer items-center justify-center rounded-md border-0 bg-transparent px-2 py-1.5 text-sm text-inherit outline-hidden select-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                 >
-                  Clear filters
+                  {i18n.labels.filterClear}
                 </button>
               </div>
             </>
@@ -158,6 +173,6 @@ function DataGridColumnFilter<TData, TValue>({
       </PopoverContent>
     </Popover>
   );
-}
+};
 
 export { DataGridColumnFilter, type DataGridColumnFilterProps };

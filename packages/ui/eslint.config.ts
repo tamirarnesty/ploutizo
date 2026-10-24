@@ -11,11 +11,8 @@ export default [
   {
     rules: {
       'import/consistent-type-specifier-style': ['error', 'prefer-inline'],
-      // Forbid file extensions on relative imports — use bare specifiers (e.g. './foo', not './foo.js')
       'import/extensions': ['error', 'never'],
-      // Enforce T[] over Array<T>
       '@typescript-eslint/array-type': ['error', { default: 'array' }],
-      // Enforce import order: 1) third-party 2) @ploutizo/* workspace 3) relative
       'import/order': [
         'error',
         {
@@ -35,13 +32,10 @@ export default [
           pathGroupsExcludedImportTypes: ['builtin', 'external', 'object'],
         },
       ],
-      // Prefer const arrow functions over function declarations
       'func-style': ['error', 'expression'],
     },
   },
   {
-    // ReUI components are third-party vendor files — suppress rules that
-    // require invasive changes to code we don't own.
     files: ['src/components/reui/**/*.tsx'],
     rules: {
       '@typescript-eslint/no-unnecessary-condition': 'off',
@@ -50,8 +44,23 @@ export default [
       'import/no-duplicates': 'off',
       'import/consistent-type-specifier-style': 'off',
       'no-shadow': 'off',
-      'react-hooks/exhaustive-deps': 'off',
       'func-style': 'off',
+    },
+  },
+  {
+    files: ['src/components/reui/data-grid/**/*.{ts,tsx}'],
+    rules: {
+      'func-style': ['error', 'expression'],
+    },
+  },
+  {
+    files: ['src/components/reui/**/*.tsx'],
+    ignores: ['src/components/reui/data-grid/**'],
+    rules: {
+      'react-hooks/exhaustive-deps': 'off',
+      'react-doctor/effect-needs-cleanup': 'off',
+      'react-doctor/no-effect-with-fresh-deps': 'off',
+      'react-doctor/no-ref-current-in-render': 'off',
     },
   },
   {

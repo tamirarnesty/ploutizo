@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Link } from '@tanstack/react-router';
-import { useReactTable } from '@tanstack/react-table';
+import { useTable } from '@tanstack/react-table';
 import { Button } from '@ploutizo/ui/components/button';
 import { CardAction } from '@ploutizo/ui/components/card';
 import {
@@ -8,6 +8,7 @@ import {
   EmptyDescription,
   EmptyHeader,
 } from '@ploutizo/ui/components/empty';
+import { dataGridFeatures } from '@ploutizo/ui/components/reui/data-grid/data-grid-features';
 import type { TransactionRow } from '@ploutizo/validators';
 import { DASHBOARD_RECENT_TRANSACTIONS_PARAMS } from '@/lib/data-access/transactions/dashboardRecentTransactions';
 import type { DashboardRecentTransactionsQuery } from '@/lib/data-access/transactions/dashboardRecentTransactions';
@@ -17,7 +18,6 @@ import {
   DashboardLiveDataGridScrollTable,
 } from '@/components/dashboard/DashboardLiveDataGrid';
 import { getDashboardQueryLiveState } from '@/components/dashboard/dashboardQueryLiveState';
-import { dataGridCoreRowModel } from '@/components/data-grid/dataGridTableModels';
 import { RECENT_TRANSACTION_COLUMNS } from '@/components/transactions/transactionColumnFactories';
 
 const EMPTY_TRANSACTION_ROWS: TransactionRow[] = [];
@@ -48,12 +48,14 @@ export const RecentTransactionsCard = ({
   );
   usePreloadLucideIcons(categoryIcons);
 
-  const table = useReactTable({
+  const table = useTable({
+    features: dataGridFeatures,
     data: rows,
     columns: RECENT_TRANSACTION_COLUMNS,
-    getCoreRowModel: dataGridCoreRowModel,
+    manualPagination: true,
+    rowCount: rows.length,
     initialState: {
-      pagination: { pageSize: recentLimit },
+      pagination: { pageIndex: 0, pageSize: recentLimit },
     },
   });
 

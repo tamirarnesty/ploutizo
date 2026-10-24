@@ -16,6 +16,7 @@ import {
 } from '@ploutizo/ui/components/tooltip';
 import { cn } from '@ploutizo/ui/lib/utils';
 import { formatCurrency } from '@ploutizo/utils/currency';
+import type { DataGridFeatures } from '@ploutizo/ui/components/reui/data-grid/data-grid';
 import type { TransactionRow } from '@ploutizo/validators';
 import { CachedLucideIcon } from '@/components/categories/CachedLucideIcon';
 import { colourTokenBadgeStyle } from '@/components/colour/colour-token-style';
@@ -159,7 +160,10 @@ const TransactionAmountCell = ({ row }: { row: TransactionRow }) => {
 
 const createTransactionDateColumn = ({
   enableSorting,
-}: TransactionColumnSortOptions): ColumnDef<TransactionRow> => ({
+}: TransactionColumnSortOptions): ColumnDef<
+  DataGridFeatures,
+  TransactionRow
+> => ({
   id: 'date',
   accessorKey: 'date',
   enableSorting,
@@ -182,7 +186,10 @@ const createTransactionDateColumn = ({
 const createTransactionDescriptionColumn = ({
   enableSorting,
   onOpenOriginal,
-}: TransactionDescriptionColumnOptions): ColumnDef<TransactionRow> => ({
+}: TransactionDescriptionColumnOptions): ColumnDef<
+  DataGridFeatures,
+  TransactionRow
+> => ({
   id: 'description',
   enableSorting,
   header: ({ column }) => (
@@ -194,7 +201,7 @@ const createTransactionDescriptionColumn = ({
   ),
   size: 200,
   meta: {
-    grow: true,
+    fillWidth: true,
     headerClassName: 'min-w-[200px]',
     cellClassName: 'min-w-[200px]',
     skeleton: <Skeleton className="h-4 w-40 motion-safe:animate-pulse" />,
@@ -209,7 +216,10 @@ const createTransactionDescriptionColumn = ({
 
 const createTransactionCategoryColumn = ({
   enableSorting,
-}: TransactionColumnSortOptions): ColumnDef<TransactionRow> => ({
+}: TransactionColumnSortOptions): ColumnDef<
+  DataGridFeatures,
+  TransactionRow
+> => ({
   id: 'category',
   enableSorting,
   header: ({ column }) => (
@@ -232,7 +242,10 @@ const createTransactionCategoryColumn = ({
 
 const createTransactionAccountColumn = ({
   enableSorting,
-}: TransactionColumnSortOptions): ColumnDef<TransactionRow> => ({
+}: TransactionColumnSortOptions): ColumnDef<
+  DataGridFeatures,
+  TransactionRow
+> => ({
   id: 'account',
   enableSorting,
   header: ({ column }) => (
@@ -253,7 +266,10 @@ const createTransactionAccountColumn = ({
 
 const createTransactionAmountColumn = ({
   enableSorting,
-}: TransactionColumnSortOptions): ColumnDef<TransactionRow> => ({
+}: TransactionColumnSortOptions): ColumnDef<
+  DataGridFeatures,
+  TransactionRow
+> => ({
   id: 'amount',
   accessorKey: 'amount',
   enableSorting,
@@ -303,7 +319,10 @@ const recentTransactionCoreColumns = createCoreTransactionColumnDefs({
   amount: recentTransactionSortOff,
 });
 
-export const RECENT_TRANSACTION_COLUMNS: ColumnDef<TransactionRow>[] = [
+export const RECENT_TRANSACTION_COLUMNS: ColumnDef<
+  DataGridFeatures,
+  TransactionRow
+>[] = [
   recentTransactionCoreColumns.date,
   recentTransactionCoreColumns.description,
   recentTransactionCoreColumns.category,
