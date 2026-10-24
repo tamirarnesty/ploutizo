@@ -20,6 +20,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@ploutizo/ui/components/tooltip';
+import { createContext, useContext } from 'react';
+import type { DataGridFeatures } from '@ploutizo/ui/components/reui/data-grid/data-grid';
 import { columnHeaderIcon } from '@/components/data-grid/columnHeaderIcon';
 import { ImportDraftReviewRowDetails } from './ImportDraftReviewRowDetails';
 import {
@@ -32,10 +34,10 @@ import {
   ImportReviewTypeCell,
 } from './importReviewCells';
 import type { ImportReviewTableRow } from './useStableImportReviewTableRows';
-import type { ColumnDef } from '@tanstack/react-table';
+import type { RefObject } from 'react';
+import type { ColumnDef, HeaderContext } from '@tanstack/react-table';
 
-export interface BuildImportReviewColumnsOptions {
-  draftId: string;
+export interface ImportReviewColumnsRuntime {
   headerChecked: boolean;
   headerIndeterminate: boolean;
   onHeaderCheckedChange: (checked: boolean) => void;
@@ -44,111 +46,138 @@ export interface BuildImportReviewColumnsOptions {
   onSelectionChange: (rowId: string, selected: boolean) => void;
 }
 
-export const buildImportReviewColumns = ({
-  draftId,
-  headerChecked,
-  headerIndeterminate,
-  onHeaderCheckedChange,
-  isLoading,
-  hasSelectableRows,
-  onSelectionChange,
-}: BuildImportReviewColumnsOptions): ColumnDef<ImportReviewTableRow>[] => {
+export const ImportReviewColumnsRuntimeContext =
+  createContext<ImportReviewColumnsRuntime | null>(null);
+
+const useImportReviewColumnsRuntime = () => {
+  const runtime = useContext(ImportReviewColumnsRuntimeContext);
+  if (!runtime) {
+    throw new Error(
+      'Import review column headers must render inside ImportReviewColumnsRuntimeContext'
+    );
+  }
+  return runtime;
+};
+
+export interface BuildImportReviewColumnsOptions {
+  draftId: string;
+  runtimeRef: RefObject<ImportReviewColumnsRuntime>;
+}
+
+const ImportReviewSelectionHeader = ({
+  column,
+  table,
+}: HeaderContext<DataGridFeatures, ImportReviewTableRow>) => {
+  const {
+    headerChecked,
+    headerIndeterminate,
+    onHeaderCheckedChange,
+    isLoading,
+    hasSelectableRows,
+  } = useImportReviewColumnsRuntime();
   const headerCheckboxLabel = headerChecked
     ? 'Clear ready rows'
     : 'Select ready rows';
+  const allRowsExpanded = table.getIsAllRowsExpanded();
+  const toggleAllRowsLabel = allRowsExpanded
+    ? 'Collapse all rows'
+    : 'Expand all rows';
+  const statusSort = column.getIsSorted();
+  const statusSortLabel =
+    statusSort === 'asc'
+      ? 'Ready first'
+      : statusSort === 'desc'
+        ? 'Clear sort'
+        : 'Needs attention first';
+  const cycleStatusSort = () => {
+    if (statusSort === 'asc') {
+      column.toggleSorting(true);
+    } else if (statusSort === 'desc') {
+      column.clearSorting();
+    } else {
+      column.toggleSorting(false);
+    }
+  };
 
+  return (
+    <div className="flex items-center gap-2">
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Checkbox
+              aria-label={headerCheckboxLabel}
+              checked={headerChecked}
+              indeterminate={headerIndeterminate}
+              disabled={isLoading || !hasSelectableRows}
+              onCheckedChange={(checked) => {
+                onHeaderCheckedChange(checked === true);
+              }}
+            />
+          }
+        />
+        <TooltipContent>{headerCheckboxLabel}</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              disabled={isLoading}
+              aria-label={statusSortLabel}
+              onClick={cycleStatusSort}
+            />
+          }
+        >
+          {statusSort === 'desc' ? (
+            <ArrowDown className="size-3.5" aria-hidden="true" />
+          ) : statusSort === 'asc' ? (
+            <ArrowUp className="size-3.5" aria-hidden="true" />
+          ) : (
+            <ChevronsUpDown className="size-3.5" aria-hidden="true" />
+          )}
+        </TooltipTrigger>
+        <TooltipContent>{statusSortLabel}</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              disabled={isLoading}
+              aria-label={toggleAllRowsLabel}
+              onClick={table.getToggleAllRowsExpandedHandler()}
+            />
+          }
+        >
+          {allRowsExpanded ? (
+            <ChevronsUp className="size-3.5" aria-hidden="true" />
+          ) : (
+            <ChevronsDown className="size-3.5" aria-hidden="true" />
+          )}
+        </TooltipTrigger>
+        <TooltipContent>{toggleAllRowsLabel}</TooltipContent>
+      </Tooltip>
+    </div>
+  );
+};
+
+export const buildImportReviewColumns = ({
+  draftId,
+  runtimeRef,
+}: BuildImportReviewColumnsOptions): ColumnDef<
+  DataGridFeatures,
+  ImportReviewTableRow
+>[] => {
   return [
     {
       id: 'selection',
       enableSorting: true,
       enablePinning: true,
-      header: ({ column, table }) => {
-        const allRowsExpanded = table.getIsAllRowsExpanded();
-        const toggleAllRowsLabel = allRowsExpanded
-          ? 'Collapse all rows'
-          : 'Expand all rows';
-        const statusSort = column.getIsSorted();
-        const statusSortLabel =
-          statusSort === 'asc'
-            ? 'Ready first'
-            : statusSort === 'desc'
-              ? 'Clear sort'
-              : 'Needs attention first';
-        const cycleStatusSort = () => {
-          if (statusSort === 'asc') {
-            column.toggleSorting(true);
-          } else if (statusSort === 'desc') {
-            column.clearSorting();
-          } else {
-            column.toggleSorting(false);
-          }
-        };
-
-        return (
-          <div className="flex items-center gap-2">
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Checkbox
-                    aria-label={headerCheckboxLabel}
-                    checked={headerChecked}
-                    indeterminate={headerIndeterminate}
-                    disabled={isLoading || !hasSelectableRows}
-                    onCheckedChange={(checked) => {
-                      onHeaderCheckedChange(checked === true);
-                    }}
-                  />
-                }
-              />
-              <TooltipContent>{headerCheckboxLabel}</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    disabled={isLoading}
-                    aria-label={statusSortLabel}
-                    onClick={cycleStatusSort}
-                  />
-                }
-              >
-                {statusSort === 'desc' ? (
-                  <ArrowDown className="size-3.5" aria-hidden="true" />
-                ) : statusSort === 'asc' ? (
-                  <ArrowUp className="size-3.5" aria-hidden="true" />
-                ) : (
-                  <ChevronsUpDown className="size-3.5" aria-hidden="true" />
-                )}
-              </TooltipTrigger>
-              <TooltipContent>{statusSortLabel}</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    disabled={isLoading}
-                    aria-label={toggleAllRowsLabel}
-                    onClick={table.getToggleAllRowsExpandedHandler()}
-                  />
-                }
-              >
-                {allRowsExpanded ? (
-                  <ChevronsUp className="size-3.5" aria-hidden="true" />
-                ) : (
-                  <ChevronsDown className="size-3.5" aria-hidden="true" />
-                )}
-              </TooltipTrigger>
-              <TooltipContent>{toggleAllRowsLabel}</TooltipContent>
-            </Tooltip>
-          </div>
-        );
-      },
+      header: ImportReviewSelectionHeader,
       size: 112,
       meta: {
         headerClassName: 'min-w-28',
@@ -163,7 +192,7 @@ export const buildImportReviewColumns = ({
           expanded={row.getIsExpanded()}
           onExpandedChange={(expanded) => row.toggleExpanded(expanded)}
           onSelectionChange={(selected) =>
-            onSelectionChange(row.original.id, selected)
+            runtimeRef.current.onSelectionChange(row.original.id, selected)
           }
         />
       ),
@@ -176,8 +205,6 @@ export const buildImportReviewColumns = ({
           column={column}
           title="Date"
           icon={columnHeaderIcon(CalendarDays)}
-          ascendingLabel="Oldest first"
-          descendingLabel="Newest first"
         />
       ),
       size: 192,
@@ -196,8 +223,6 @@ export const buildImportReviewColumns = ({
           column={column}
           title="Amount"
           icon={columnHeaderIcon(Coins)}
-          ascendingLabel="Smallest first"
-          descendingLabel="Largest first"
         />
       ),
       size: 144,
@@ -216,8 +241,6 @@ export const buildImportReviewColumns = ({
           column={column}
           title="Type"
           icon={columnHeaderIcon(Layers2)}
-          ascendingLabel="A to Z"
-          descendingLabel="Z to A"
         />
       ),
       size: 160,
@@ -236,13 +259,11 @@ export const buildImportReviewColumns = ({
           column={column}
           title="Description"
           icon={columnHeaderIcon(NotepadText)}
-          ascendingLabel="A to Z"
-          descendingLabel="Z to A"
         />
       ),
       size: 272,
       meta: {
-        grow: true,
+        fillWidth: true,
         headerClassName: 'min-w-68',
         cellClassName: 'min-w-68',
         skeleton: <Skeleton className="h-4 w-48" />,
@@ -257,8 +278,6 @@ export const buildImportReviewColumns = ({
           column={column}
           title="Category / Paid from"
           icon={columnHeaderIcon(Tag)}
-          ascendingLabel="A to Z"
-          descendingLabel="Z to A"
         />
       ),
       size: 192,
@@ -276,8 +295,6 @@ export const buildImportReviewColumns = ({
           column={column}
           title="Assignee / Pay toward"
           icon={columnHeaderIcon(Users)}
-          ascendingLabel="A to Z"
-          descendingLabel="Z to A"
         />
       ),
       size: 224,

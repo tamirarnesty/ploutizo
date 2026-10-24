@@ -1,47 +1,41 @@
-'use client';
-
 import { useRef, useState } from 'react';
-import type { ReactNode } from 'react';
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuTrigger,
-} from '@/components/context-menu';
-import { useDataGrid } from '@/components/reui/data-grid/data-grid';
-import { DATA_GRID_ROW_ID_ATTR } from '@/components/reui/data-grid/data-grid-row-context-menu-props';
+} from '@ploutizo/ui/components/context-menu';
+import { useDataGrid } from '@ploutizo/ui/components/reui/data-grid/data-grid';
+import type { ReactNode } from 'react';
 
 const resolveRowFromContextMenuTarget = <TData extends object>(
   target: EventTarget | null,
-  table: ReturnType<typeof useDataGrid>['table']
+  rows: readonly { id: string; original: TData }[]
 ): TData | null => {
   if (!(target instanceof Element)) return null;
-  const rowElement = target.closest(`tbody tr[${DATA_GRID_ROW_ID_ATTR}]`);
+  const rowElement = target.closest('tbody tr[data-row-id]');
   if (!(rowElement instanceof HTMLTableRowElement)) return null;
-  const rowId = rowElement.getAttribute(DATA_GRID_ROW_ID_ATTR);
+  const rowId = rowElement.getAttribute('data-row-id');
   if (!rowId) return null;
-  const row = table.getRowModel().rows.find((entry) => entry.id === rowId);
+  const row = rows.find((entry) => entry.id === rowId);
   return row?.original ?? null;
 };
 
-type DataGridRowContextMenuShellProps<TData extends object> = {
-  renderRowContextMenu: (row: TData) => ReactNode;
+type DataGridRowContextMenuProps<TData extends object> = {
+  renderMenu: (row: TData) => ReactNode;
   children: ReactNode;
 };
 
 /**
- * Single viewport context menu for a data grid. On open, resolves the TanStack row
- * from the event target via `data-grid-row-id` on the nearest body `<tr>`; header
- * and other targets cancel open. `select-text` on the trigger preserves cell copy;
- * the native browser menu is suppressed inside the trigger.
+ * Right-click menu for body rows. The grid stamps `data-row-id` on each body
+ * `<tr>`; header clicks and anything outside a body row cancel the menu.
  */
-export const DataGridRowContextMenuShell = <TData extends object>({
-  renderRowContextMenu,
+export const DataGridRowContextMenu = <TData extends object>({
+  renderMenu,
   children,
-}: DataGridRowContextMenuShellProps<TData>) => {
-  const { table } = useDataGrid();
+}: DataGridRowContextMenuProps<TData>) => {
+  const { table } = useDataGrid<TData>();
   const [openRow, setOpenRow] = useState<TData | null>(null);
   const contentRowRef = useRef<TData | null>(null);
-
   const displayedRow = openRow ?? contentRowRef.current;
 
   return (
@@ -54,7 +48,7 @@ export const DataGridRowContextMenuShell = <TData extends object>({
 
         const resolved = resolveRowFromContextMenuTarget<TData>(
           eventDetails.event.target,
-          table
+          table.getRowModel().rows
         );
         if (!resolved) {
           eventDetails.cancel();
@@ -69,7 +63,7 @@ export const DataGridRowContextMenuShell = <TData extends object>({
         {children}
       </ContextMenuTrigger>
       <ContextMenuContent>
-        {displayedRow ? renderRowContextMenu(displayedRow) : null}
+        {displayedRow ? renderMenu(displayedRow) : null}
       </ContextMenuContent>
     </ContextMenu>
   );

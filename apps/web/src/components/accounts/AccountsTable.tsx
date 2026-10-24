@@ -1,13 +1,10 @@
 import { useMemo } from 'react';
-import {
-  getCoreRowModel,
-  getPaginationRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
+import { useTable } from '@tanstack/react-table';
 import {
   DataGrid,
   DataGridContainer,
 } from '@ploutizo/ui/components/reui/data-grid/data-grid';
+import { dataGridFeatures } from '@ploutizo/ui/components/reui/data-grid/data-grid-features';
 import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-table';
 import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-grid-scroll-area';
 import { DataGridPagination } from '@ploutizo/ui/components/reui/data-grid/data-grid-pagination';
@@ -17,6 +14,7 @@ import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
 import { getFinancialInstitutionName } from '@ploutizo/types';
 import { memberFullLabel } from '@ploutizo/utils';
+import type { DataGridFeatures } from '@ploutizo/ui/components/reui/data-grid/data-grid';
 import type { Account } from '@ploutizo/validators';
 import {
   DATA_GRID_PAGINATION_ROW_CLASSNAME,
@@ -84,7 +82,7 @@ export const AccountsTable = ({
     [pagination, effectivePageSize]
   );
 
-  const columns = useMemo<ColumnDef<Account>[]>(
+  const columns = useMemo<ColumnDef<DataGridFeatures, Account>[]>(
     () => [
       {
         accessorKey: 'name',
@@ -195,13 +193,12 @@ export const AccountsTable = ({
     []
   );
 
-  const table = useReactTable({
+  const table = useTable({
+    features: dataGridFeatures,
     data: accounts,
     columns,
     state: { pagination: tablePagination },
     onPaginationChange: setPagination,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
   });
 
   if (!isLoading && accounts.length === 0) {
