@@ -41,6 +41,7 @@ import { useStableImportReviewTableRows } from './useStableImportReviewTableRows
 import type { ImportReviewColumnsRuntime } from './buildImportReviewColumns';
 import type { RefObject } from 'react';
 import type {
+  ColumnPinningState,
   ExpandedState,
   PaginationState,
   SortingState,
@@ -50,6 +51,11 @@ import type { ImportReviewTableRow } from './useStableImportReviewTableRows';
 import type { ImportDraftReviewState } from '../lib/useImportDraftReviewState';
 
 const NO_SORTING: SortingState = [];
+
+const INITIAL_COLUMN_PINNING: ColumnPinningState = {
+  start: ['selection'],
+  end: [],
+};
 
 interface ImportDraftReviewGridHandlers {
   onSortingChange: (updater: Updater<SortingState>) => void;
@@ -110,11 +116,11 @@ const ImportDraftReviewGrid = memo(
       enableColumnResizing: false,
       initialState: {
         expanded: initialExpanded,
+        columnPinning: INITIAL_COLUMN_PINNING,
       },
       state: {
         pagination: { pageIndex, pageSize },
         sorting,
-        columnPinning: { start: ['selection'], end: [] },
       },
       manualSorting: true,
       onSortingChange,
