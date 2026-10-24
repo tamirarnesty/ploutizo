@@ -1,8 +1,6 @@
 //  @ts-check
 
 import { tanstackConfig } from '@tanstack/eslint-config';
-import importPlugin from 'eslint-plugin-import-x';
-import tseslint from 'typescript-eslint';
 
 import {
   reactDoctorRecommended,
@@ -17,10 +15,6 @@ export default [
   reactDoctorTanstackStart,
   reactDoctorTanstackQuery,
   {
-    plugins: {
-      import: importPlugin,
-      '@typescript-eslint': tseslint.plugin,
-    },
     rules: {
       // Forbid file extensions on relative imports — use bare specifiers (e.g. './foo', not './foo.js')
       // Exception: TanStack Router auto-generates routeTree.gen — the .gen extension is intentional

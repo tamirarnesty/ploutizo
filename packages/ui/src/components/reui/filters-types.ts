@@ -101,8 +101,7 @@ export interface FilterFieldGroup<T = unknown> {
 }
 
 export type FilterFieldsConfig<T = unknown> =
-  | FilterFieldConfig<T>[]
-  | FilterFieldGroup<T>[];
+  FilterFieldConfig<T>[] | FilterFieldGroup<T>[];
 
 export interface FilterFieldConfig<T = unknown> {
   key?: string;

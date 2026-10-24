@@ -105,8 +105,7 @@ describe('getImportDraftPacedMutations confirm persist', () => {
     await collection.preload();
 
     let resolveFirst:
-      | ((value: BatchUpdateImportDraftRowsResult) => void)
-      | undefined;
+      ((value: BatchUpdateImportDraftRowsResult) => void) | undefined;
     const firstPersist = new Promise<BatchUpdateImportDraftRowsResult>(
       (resolve) => {
         resolveFirst = resolve;
@@ -285,8 +284,7 @@ describe('getImportDraftPacedMutations confirm persist', () => {
     await collection.preload();
 
     let resolvePatch:
-      | ((value: BatchUpdateImportDraftRowsResult) => void)
-      | undefined;
+      ((value: BatchUpdateImportDraftRowsResult) => void) | undefined;
     const patchPersist = new Promise<BatchUpdateImportDraftRowsResult>(
       (resolve) => {
         resolvePatch = resolve;

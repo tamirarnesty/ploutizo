@@ -213,8 +213,7 @@ describe('ImportUploadForm', () => {
       (_payload: unknown, options: Record<string, unknown> | undefined) => {
         (
           options?.onSuccess as
-            | ((r: typeof createdDraftResponse) => void)
-            | undefined
+            ((r: typeof createdDraftResponse) => void) | undefined
         )?.(createdDraftResponse);
       }
     );
@@ -352,8 +351,7 @@ describe('ImportUploadForm', () => {
       (_payload: unknown, options: Record<string, unknown> | undefined) => {
         (
           options?.onSuccess as
-            | ((r: typeof createdDraftResponse) => void)
-            | undefined
+            ((r: typeof createdDraftResponse) => void) | undefined
         )?.(createdDraftResponse);
       }
     );
@@ -435,8 +433,7 @@ describe('ImportUploadForm', () => {
       (_payload: unknown, options: Record<string, unknown> | undefined) => {
         (
           options?.onSuccess as
-            | ((r: typeof createdDraftResponse) => void)
-            | undefined
+            ((r: typeof createdDraftResponse) => void) | undefined
         )?.(createdDraftResponse);
       }
     );

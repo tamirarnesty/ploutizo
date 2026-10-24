@@ -143,8 +143,7 @@ export const SpendByCategoryChart = ({
             <ChartTooltipContent
               labelFormatter={(_label, payload) => {
                 const row = payload[0]?.payload as
-                  | SpendByCategoryChartRow
-                  | undefined;
+                  SpendByCategoryChartRow | undefined;
                 return row ? (
                   <>
                     <div>{row.label}</div>

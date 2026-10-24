@@ -63,8 +63,7 @@ export interface ParsedImport {
 }
 
 export type ParseImportUploadResult =
-  | ParsedImport
-  | ImportUploadMappingRequired;
+  ParsedImport | ImportUploadMappingRequired;
 
 /**
  * A content profile: parsing semantics for one CSV layout.

@@ -16,14 +16,10 @@ export type TransactionAccountSlot = 'accountId' | 'counterpartAccountId';
 export type ScalarFieldRelevance = 'required' | 'optional';
 
 export type TransactionScalarField =
-  | 'categoryId'
-  | 'refundOf'
-  | 'incomeType'
-  | 'notes';
+  'categoryId' | 'refundOf' | 'incomeType' | 'notes';
 
 export type TransactionFieldToClear =
-  | TransactionScalarField
-  | TransactionAccountSlot;
+  TransactionScalarField | TransactionAccountSlot;
 
 export type DescriptionMode = 'manual' | 'generated' | 'conditional_generated';
 
@@ -101,9 +97,7 @@ export interface ValidateTransactionAccountPolicyInput {
 export interface TransactionAccountPolicyViolation {
   field: TransactionAccountSlot;
   code:
-    | 'missing_account'
-    | 'disallowed_account_type'
-    | 'same_account_not_allowed';
+    'missing_account' | 'disallowed_account_type' | 'same_account_not_allowed';
   message: string;
 }
 

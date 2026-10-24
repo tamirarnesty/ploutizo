@@ -28,7 +28,8 @@ export const webhookAuth = () =>
       };
       let event: WebhookEvent;
       try {
-        event = svix.verify(payload, headers) as WebhookEvent;
+        svix.verify(payload, headers);
+        event = JSON.parse(payload) as WebhookEvent;
       } catch (err) {
         const detail = err instanceof Error ? err.message : String(err);
         if (process.env.NODE_ENV !== 'production') {

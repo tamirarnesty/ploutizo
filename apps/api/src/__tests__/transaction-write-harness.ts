@@ -30,10 +30,7 @@ export const BATCH = '550e8400-e29b-41d4-a716-446655440040';
 export const TXN = '550e8400-e29b-41d4-a716-446655440080';
 
 type InsertTable =
-  | 'transactions'
-  | 'transaction_assignees'
-  | 'transaction_tags'
-  | 'other';
+  'transactions' | 'transaction_assignees' | 'transaction_tags' | 'other';
 
 type InsertCall = { table: InsertTable; rows: Record<string, unknown>[] };
 

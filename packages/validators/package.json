@@ -14,14 +14,14 @@
   "dependencies": {
     "@ploutizo/types": "workspace:*",
     "@ploutizo/utils": "workspace:*",
-    "zod": "^4.3.6"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@tanstack/eslint-config": "^0.4.0",
-    "@types/node": "^25.5.2",
-    "eslint": "^10.1.0",
-    "typescript": "^6.0.2",
-    "vitest": "^4.1.2"
+    "@types/node": "^26.6.5",
+    "eslint": "^10.13.0",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.5"
   },
   "exports": {
     ".": "./src/index.ts"

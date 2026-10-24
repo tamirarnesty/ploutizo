@@ -89,7 +89,7 @@ export const DatePicker = ({
             onChange(isoDate);
             setOpen(false);
           }}
-          initialFocus
+          autoFocus
         />
       </PopoverContent>
     </Popover>

@@ -112,12 +112,10 @@ const isDataGridPortalEvent = (event: {
 };
 
 type DataGridResizeStartEvent =
-  | ReactMouseEvent<HTMLElement>
-  | ReactTouchEvent<HTMLElement>;
+  ReactMouseEvent<HTMLElement> | ReactTouchEvent<HTMLElement>;
 
 type DataGridResizeDocumentEvent =
-  | globalThis.MouseEvent
-  | globalThis.TouchEvent;
+  globalThis.MouseEvent | globalThis.TouchEvent;
 
 const isDataGridTouchEvent = (
   event: DataGridResizeStartEvent | DataGridResizeDocumentEvent

@@ -60,9 +60,7 @@ export const matchDecisionsForSelectedRows = (
 };
 
 export type ImportMatchReviewAction =
-  | 'accept_advisory'
-  | 'dismiss_match'
-  | 'clear_invalid_match';
+  'accept_advisory' | 'dismiss_match' | 'clear_invalid_match';
 
 export interface ImportMatchReviewUiState {
   issues: ImportMatchIssue[];

@@ -2,9 +2,7 @@ import { getApiErrorCode } from '@/lib/queryClient';
 import { isImportStaleFinalizeError } from './importRequirementIssues';
 
 export type ImportFinalizeErrorOutcome =
-  | 'return-to-review'
-  | 'not-found'
-  | 'unknown';
+  'return-to-review' | 'not-found' | 'unknown';
 
 const IMPORT_FINALIZE_ERROR_OUTCOME: readonly {
   match: (error: unknown) => boolean;
