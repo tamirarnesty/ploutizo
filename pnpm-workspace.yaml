@@ -15,5 +15,3 @@ allowBuilds:
 overrides:
   iconv-lite@0.6.3: 0.7.2
   ws@7.5.10: 8.21.3
-  '@tanstack/react-router': 1.170.8
-  '@tanstack/router-core': 1.171.6
