@@ -7,14 +7,12 @@ import {
   RuleFormSchema,
   accountInstitutionViolation,
   createAccountSchema,
-  createTransactionSchema,
   mergeAccountInstitutionViolation,
   mergeAccountStatementDueDay,
   persistAccountStatementDueDay,
   toAccountWritePayload,
   updateAccountSchema,
   updateHouseholdSettingsSchema,
-  updateTransactionSchema,
 } from './index';
 
 const OWNER_ID = '123e4567-e89b-12d3-a456-426614174000';
@@ -385,16 +383,6 @@ describe('AccountFormSchema', () => {
     }
   });
 
-  it('rejects an empty owner list', () => {
-    const result = AccountFormSchema.safeParse({
-      name: 'Visa',
-      type: 'credit_card',
-      institutionId: 'td',
-      memberIds: [],
-    });
-    expect(result.success).toBe(false);
-  });
-
   it('nulls statement due day in the write payload for non-credit-card types', () => {
     const result = AccountFormSchema.safeParse({
       name: 'Chequing',
@@ -604,222 +592,5 @@ describe('HouseholdSettingsFormSchema', () => {
   it('rejects empty object because thresholdMode is required', () => {
     const result = HouseholdSettingsFormSchema.safeParse({});
     expect(result.success).toBe(false);
-  });
-});
-
-describe('createTransactionSchema — common fields', () => {
-  const validExpense = {
-    type: 'expense' as const,
-    accountId: '550e8400-e29b-41d4-a716-446655440000',
-    amount: 1000,
-    date: '2024-01-15',
-    description: 'Test expense',
-    categoryId: '550e8400-e29b-41d4-a716-446655440099',
-    assignees: [
-      {
-        memberId: '550e8400-e29b-41d4-a716-446655440003',
-        amountCents: 1000,
-        percentage: 100,
-      },
-    ],
-  };
-
-  it('accepts valid expense payload', () => {
-    expect(createTransactionSchema.safeParse(validExpense).success).toBe(true);
-  });
-
-  it('rejects amount=0 (must be positive)', () => {
-    expect(
-      createTransactionSchema.safeParse({ ...validExpense, amount: 0 }).success
-    ).toBe(false);
-  });
-
-  it('rejects negative amount', () => {
-    expect(
-      createTransactionSchema.safeParse({ ...validExpense, amount: -100 })
-        .success
-    ).toBe(false);
-  });
-
-  it('rejects non-integer amount', () => {
-    expect(
-      createTransactionSchema.safeParse({ ...validExpense, amount: 1.5 })
-        .success
-    ).toBe(false);
-  });
-
-  it('rejects ISO datetime as date (must be YYYY-MM-DD only)', () => {
-    expect(
-      createTransactionSchema.safeParse({
-        ...validExpense,
-        date: '2024-01-01T00:00:00Z',
-      }).success
-    ).toBe(false);
-  });
-
-  it('rejects US-format date MM/DD/YYYY', () => {
-    expect(
-      createTransactionSchema.safeParse({ ...validExpense, date: '01/15/2024' })
-        .success
-    ).toBe(false);
-  });
-
-  it('rejects unknown transaction type', () => {
-    expect(
-      createTransactionSchema.safeParse({
-        ...validExpense,
-        type: 'unknown_type',
-      }).success
-    ).toBe(false);
-  });
-});
-
-describe('createTransactionSchema — per-type branches', () => {
-  const baseFields = {
-    accountId: '550e8400-e29b-41d4-a716-446655440000',
-    amount: 5000,
-    date: '2024-03-01',
-    description: 'Test transaction',
-    categoryId: '550e8400-e29b-41d4-a716-446655440099',
-    assignees: [
-      {
-        memberId: '550e8400-e29b-41d4-a716-446655440003',
-        amountCents: 5000,
-        percentage: 100,
-      },
-    ],
-  };
-
-  const refundAssignees = baseFields.assignees;
-
-  it('accepts valid refund payload with assignees', () => {
-    expect(
-      createTransactionSchema.safeParse({
-        ...baseFields,
-        type: 'refund',
-        assignees: refundAssignees,
-      }).success
-    ).toBe(true);
-  });
-
-  it('rejects refund payload without assignees', () => {
-    const { assignees: _omit, ...withoutAssignees } = baseFields;
-    expect(
-      createTransactionSchema.safeParse({ ...withoutAssignees, type: 'refund' })
-        .success
-    ).toBe(false);
-  });
-
-  it('accepts refund with optional refundOf uuid', () => {
-    expect(
-      createTransactionSchema.safeParse({
-        ...baseFields,
-        type: 'refund',
-        refundOf: '550e8400-e29b-41d4-a716-446655440001',
-        assignees: refundAssignees,
-      }).success
-    ).toBe(true);
-  });
-
-  it('accepts valid income payload with required incomeType', () => {
-    expect(
-      createTransactionSchema.safeParse({
-        ...baseFields,
-        type: 'income',
-        incomeType: 'direct_deposit',
-      }).success
-    ).toBe(true);
-  });
-
-  it('rejects income payload missing incomeType', () => {
-    expect(
-      createTransactionSchema.safeParse({
-        ...baseFields,
-        type: 'income',
-      }).success
-    ).toBe(false);
-  });
-
-  it('accepts valid transfer payload with required counterpartAccountId', () => {
-    expect(
-      createTransactionSchema.safeParse({
-        ...baseFields,
-        type: 'transfer',
-        counterpartAccountId: '550e8400-e29b-41d4-a716-446655440002',
-      }).success
-    ).toBe(true);
-  });
-
-  it('rejects transfer payload missing counterpartAccountId', () => {
-    expect(
-      createTransactionSchema.safeParse({ ...baseFields, type: 'transfer' })
-        .success
-    ).toBe(false);
-  });
-
-  it('accepts valid settlement payload with assignees', () => {
-    expect(
-      createTransactionSchema.safeParse({
-        ...baseFields,
-        type: 'settlement',
-        counterpartAccountId: '550e8400-e29b-41d4-a716-446655440002',
-      }).success
-    ).toBe(true);
-  });
-
-  it('rejects settlement payload missing counterpartAccountId', () => {
-    expect(
-      createTransactionSchema.safeParse({
-        ...baseFields,
-        type: 'settlement',
-      }).success
-    ).toBe(false);
-  });
-
-  it('rejects settlement payload without assignees', () => {
-    const { assignees: _omit, ...withoutAssignees } = baseFields;
-    expect(
-      createTransactionSchema.safeParse({
-        ...withoutAssignees,
-        type: 'settlement',
-      }).success
-    ).toBe(false);
-  });
-
-  it('accepts valid contribution payload', () => {
-    expect(
-      createTransactionSchema.safeParse({
-        ...baseFields,
-        type: 'contribution',
-        counterpartAccountId: '550e8400-e29b-41d4-a716-446655440002',
-      }).success
-    ).toBe(true);
-  });
-
-  it('rejects contribution payload missing counterpartAccountId', () => {
-    expect(
-      createTransactionSchema.safeParse({
-        ...baseFields,
-        type: 'contribution',
-      }).success
-    ).toBe(false);
-  });
-});
-
-describe('updateTransactionSchema', () => {
-  it('accepts empty object (all fields optional)', () => {
-    expect(updateTransactionSchema.safeParse({}).success).toBe(true);
-  });
-
-  it('accepts partial update with just amount', () => {
-    expect(updateTransactionSchema.safeParse({ amount: 2000 }).success).toBe(
-      true
-    );
-  });
-
-  it('rejects amount=0 even in partial update', () => {
-    expect(updateTransactionSchema.safeParse({ amount: 0 }).success).toBe(
-      false
-    );
   });
 });

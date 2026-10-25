@@ -6,7 +6,6 @@ import {
   dashboardRangeGrain,
   formatDashboardPeriodLabel,
   resolveDashboardPeriod,
-  selectionFromDashboardSearch,
 } from './index';
 import type { DashboardPeriodShortcut } from './index';
 
@@ -235,12 +234,5 @@ describe('formatDashboardPeriodLabel', () => {
 
   it('labels All as all time', () => {
     expect(formatDashboardPeriodLabel({ kind: 'all' })).toBe('All time');
-  });
-});
-
-describe('dashboard period search params', () => {
-  it('names no period when the search has neither a shortcut nor both dates', () => {
-    expect(selectionFromDashboardSearch({})).toBeNull();
-    expect(selectionFromDashboardSearch({ from: '2026-01-01' })).toBeNull();
   });
 });

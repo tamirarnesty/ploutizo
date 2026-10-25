@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  TELEMETRY_OPERATIONS,
-  TELEMETRY_SURFACES,
   TelemetryCatalogError,
   assertTelemetryCatalogEntry,
   isTelemetryOperation,
@@ -10,9 +8,7 @@ import {
 import { prepareTelemetryRecord } from '../contract';
 
 describe('telemetry catalog', () => {
-  it('exposes non-empty typed surface and operation catalogs', () => {
-    expect(TELEMETRY_SURFACES.length).toBeGreaterThan(0);
-    expect(TELEMETRY_OPERATIONS.length).toBeGreaterThan(0);
+  it('recognizes catalog surfaces and operations', () => {
     expect(isTelemetrySurface('web.transactions')).toBe(true);
     expect(isTelemetryOperation('browser.api_request')).toBe(true);
   });

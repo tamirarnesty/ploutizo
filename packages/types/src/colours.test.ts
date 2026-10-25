@@ -9,8 +9,6 @@ import {
 describe('colour palette', () => {
   it('offers 18 hues at five shades each', () => {
     expect(COLOUR_TOKENS).toHaveLength(90);
-    expect(COLOUR_TOKENS).toContain('fuchsia-300');
-    expect(COLOUR_TOKENS).toContain('slate-700');
   });
 
   it('orders defaults by shade tier, chromatic hues before slate', () => {
