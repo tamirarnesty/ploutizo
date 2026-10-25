@@ -18,10 +18,7 @@ export const ErrorBoundary = ({ error, reset }: ErrorComponentProps) => {
   const devErrorStack = error instanceof Error ? error.stack : undefined;
 
   return (
-    <div
-      data-safe-page
-      className="flex flex-col items-center justify-center bg-background"
-    >
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6">
       <div className="flex w-full max-w-lg flex-col items-center">
         {/* Status bar */}
         <div className="mb-8 flex w-full items-center justify-between border-b border-border pb-3">

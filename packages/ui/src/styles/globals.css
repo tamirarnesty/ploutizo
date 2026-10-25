@@ -18,15 +18,6 @@
 @import 'shadcn/tailwind.css';
 @import '@fontsource-variable/geist';
 
-/* Tailwind's hover: variant is (hover: hover) only. A fine pointer keeps a tap from leaving :hover stuck. */
-@custom-variant hover {
-  @media (hover: hover) and (pointer: fine) {
-    &:hover {
-      @slot;
-    }
-  }
-}
-
 @custom-variant dark (&:is(.dark *));
 @source '../../../apps/**/*.{ts,tsx}';
 @source '../../../components/**/*.{ts,tsx}';
@@ -190,23 +181,7 @@
     @apply border-border outline-ring/50;
   }
 
-  /*
-   * Leave min-width at auto. A universal min-width: 0 collapses content-sized
-   * flex items: settings tabs are flex-1 inside a w-fit list, so the labels
-   * overlap and the active underline stretches. Shells that must shrink
-   * already set min-w-0.
-   */
-
   :root {
-    interpolate-size: allow-keywords;
-    scrollbar-gutter: stable;
-    text-wrap: pretty;
-    overflow-wrap: break-word;
-    font-synthesis: none;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    -webkit-text-size-adjust: 100%;
-    -webkit-tap-highlight-color: transparent;
     color-scheme: light dark;
   }
 
@@ -220,19 +195,10 @@
 
   body {
     @apply bg-background text-foreground;
-    margin: 0;
-    min-block-size: 100svh;
   }
 
   html {
     @apply font-sans;
-    overscroll-behavior-y: none;
-  }
-
-  @media (any-pointer: coarse) {
-    html {
-      overscroll-behavior-y: auto;
-    }
   }
 
   h1,
@@ -240,36 +206,6 @@
   h3,
   h4 {
     text-wrap: balance;
-  }
-
-  /* Sized icons and images keep their box. max-width: 100% on svg shrinks icon utilities. */
-  img,
-  svg,
-  video {
-    flex: none;
-  }
-
-  textarea,
-  [contenteditable='true'] {
-    text-wrap: stable;
-  }
-
-  input,
-  textarea,
-  select {
-    font-size: max(16px, 1rem);
-  }
-
-  button,
-  a,
-  [role='button'] {
-    touch-action: manipulation;
-  }
-
-  button,
-  [role='button'] {
-    user-select: none;
-    -webkit-user-select: none;
   }
 
   button:not(:disabled),
@@ -281,86 +217,5 @@
   :where([data-slot='chart']),
   :where(input[inputmode='decimal'], input[inputmode='numeric']) {
     font-variant-numeric: tabular-nums;
-  }
-
-  /*
-   * Contain the page, sidebar, and overlays. Data-grid and other scroll areas
-   * stay at the initial overscroll-behavior so a wheel over a table that does
-   * not scroll vertically still reaches the page. Containing those viewports
-   * swallows the wheel everywhere the pointer is over the table.
-   */
-  :where(
-    main.overflow-auto,
-    [data-slot='sidebar-content'],
-    [data-slot='dialog-content'],
-    [data-slot='sheet-content']
-  ) {
-    overscroll-behavior: contain;
-  }
-
-  main.overflow-auto {
-    scrollbar-gutter: stable;
-  }
-
-  [data-app-shell] {
-    padding-block-end: env(safe-area-inset-bottom, 0px);
-    padding-inline: env(safe-area-inset-left, 0px)
-      env(safe-area-inset-right, 0px);
-  }
-
-  [data-app-header] {
-    padding-block-start: calc(0.5rem + env(safe-area-inset-top, 0px));
-  }
-
-  [data-slot='sheet-content'] {
-    padding-block-end: env(safe-area-inset-bottom, 0px);
-  }
-
-  /*
-   * The phone sidebar replaces data-slot with "sidebar" and portals outside
-   * the app shell, so the rules above never reach it.
-   */
-  [data-slot='sidebar'][data-mobile='true'] [data-slot='sidebar-inner'] {
-    padding-block: env(safe-area-inset-top, 0px)
-      env(safe-area-inset-bottom, 0px);
-  }
-
-  [data-slot='sidebar'][data-mobile='true'][data-side='left']
-    [data-slot='sidebar-inner'] {
-    padding-inline-start: env(safe-area-inset-left, 0px);
-  }
-
-  [data-slot='sidebar'][data-mobile='true'][data-side='right']
-    [data-slot='sidebar-inner'] {
-    padding-inline-end: env(safe-area-inset-right, 0px);
-  }
-
-  [data-safe-page] {
-    min-block-size: 100svh;
-    padding-block: max(1.5rem, env(safe-area-inset-top, 0px))
-      max(1.5rem, env(safe-area-inset-bottom, 0px));
-    padding-inline: max(1.5rem, env(safe-area-inset-left, 0px))
-      max(1.5rem, env(safe-area-inset-right, 0px));
-  }
-
-  /* Isolated icon buttons only. A row of them, such as pagination, would overlap. */
-  @media (pointer: coarse) {
-    :where([data-slot='button']:is(.size-6, .size-7, .size-8, .size-9)):not(
-      :has(~ :is([data-slot='button']:is(.size-6, .size-7, .size-8, .size-9))),
-      :is([data-slot='button']:is(.size-6, .size-7, .size-8, .size-9)) ~ *
-    ) {
-      position: relative;
-    }
-
-    :where([data-slot='button']:is(.size-6, .size-7, .size-8, .size-9)):not(
-        :has(
-          ~ :is([data-slot='button']:is(.size-6, .size-7, .size-8, .size-9))
-        ),
-        :is([data-slot='button']:is(.size-6, .size-7, .size-8, .size-9)) ~ *
-      )::after {
-      content: '';
-      position: absolute;
-      inset: min(0px, calc((100% - 2.75rem) / 2));
-    }
   }
 }
