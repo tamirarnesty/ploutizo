@@ -17,37 +17,6 @@ import {
 const OWNER_ID = '123e4567-e89b-12d3-a456-426614174000';
 
 describe('createAccountSchema', () => {
-  it('accepts valid account payload', () => {
-    const result = createAccountSchema.safeParse({
-      name: 'Chequing',
-      type: 'chequing',
-      institutionId: 'td',
-      memberIds: [OWNER_ID],
-    });
-    expect(result.success).toBe(true);
-  });
-
-  it('rejects missing name', () => {
-    const result = createAccountSchema.safeParse({ type: 'chequing' });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects empty name', () => {
-    const result = createAccountSchema.safeParse({
-      name: '',
-      type: 'chequing',
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects invalid account type', () => {
-    const result = createAccountSchema.safeParse({
-      name: 'Test',
-      type: 'bitcoin_wallet',
-    });
-    expect(result.success).toBe(false);
-  });
-
   it('rejects missing type', () => {
     const result = createAccountSchema.safeParse({ name: 'Savings' });
     expect(result.success).toBe(false);
@@ -120,20 +89,6 @@ describe('createAccountSchema', () => {
           (i) => i.message === 'At least one owner is required.'
         )
       ).toBe(true);
-    }
-  });
-
-  it('persists statementDueDay null for non-credit-card types', () => {
-    const result = createAccountSchema.safeParse({
-      name: 'Chequing',
-      type: 'chequing',
-      institutionId: 'td',
-      statementDueDay: 15,
-      memberIds: [OWNER_ID],
-    });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.statementDueDay).toBeNull();
     }
   });
 

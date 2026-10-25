@@ -2,58 +2,11 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SidebarProvider } from '@ploutizo/ui/components/sidebar';
-import { History, Settings } from 'lucide-react';
+import { resetRouterMocks } from '@/test/mockTanstackRouter';
+import { getRouter } from '@/router';
 import { fireModKey } from '@/test/keyboard';
-import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
+import { routerMocks, useRouterMock } from '@/test/tanstackRouterMocks';
 import { AppSidebar } from './AppSidebar';
-
-vi.mock('@/lib/navigation/collect-nav', () => ({
-  collectNav: () => ({
-    primary: [
-      {
-        label: 'Dashboard',
-        to: '/dashboard',
-        icon: () => null,
-        keywords: ['home', 'overview'],
-      },
-      {
-        label: 'Transactions',
-        to: '/transactions',
-        icon: () => null,
-        keywords: ['tx', 'list'],
-      },
-      {
-        label: 'Import',
-        to: '/import',
-        icon: () => null,
-        keywords: ['import', 'upload'],
-        children: [
-          {
-            label: 'Import History',
-            to: '/import/history',
-            icon: History,
-            keywords: ['import', 'history'],
-          },
-        ],
-      },
-      {
-        label: 'Accounts',
-        to: '/accounts',
-        icon: () => null,
-        keywords: ['accounts', 'cards'],
-      },
-    ],
-    footer: [
-      {
-        label: 'Settings',
-        to: '/settings',
-        icon: Settings,
-        keywords: ['preferences', 'theme'],
-      },
-    ],
-    commandGroups: [],
-  }),
-}));
 
 vi.mock('@/lib/command', () => ({
   CommandPaletteTrigger: () => (
@@ -62,6 +15,8 @@ vi.mock('@/lib/command', () => ({
     </button>
   ),
 }));
+
+const appRouter = getRouter();
 
 const SidebarHarness = ({ pathname }: { pathname: string }) => {
   routerMocks.pathname = pathname;
@@ -78,6 +33,7 @@ const renderSidebar = (pathname = '/dashboard') =>
 describe('AppSidebar', () => {
   beforeEach(() => {
     resetRouterMocks();
+    useRouterMock.mockReturnValue(appRouter);
     routerMocks.pathname = '/dashboard';
     Object.defineProperty(window, 'matchMedia', {
       writable: true,

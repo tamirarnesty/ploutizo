@@ -1,19 +1,16 @@
 import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { resetRouterMocks, routerMocks } from '@/test/mockTanstackRouter';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { resetRouterMocks } from '@/test/mockTanstackRouter';
+import { getRouter } from '@/router';
+import { routerMocks, useRouterMock } from '@/test/tanstackRouterMocks';
 import { SettingsTabs } from './SettingsTabs';
 
-vi.mock('@/lib/navigation/collect-nav', () => ({
-  collectSettingsSectionNav: () => [
-    { label: 'Categories & Tags', to: '/settings/categories' },
-    { label: 'Merchant Rules', to: '/settings/merchant-rules' },
-    { label: 'Household', to: '/settings/household' },
-  ],
-}));
+const appRouter = getRouter();
 
 describe('SettingsTabs', () => {
   beforeEach(() => {
     resetRouterMocks();
+    useRouterMock.mockReturnValue(appRouter);
     routerMocks.pathname = '/settings/categories';
   });
 
