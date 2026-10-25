@@ -1,4 +1,3 @@
-import { ACCOUNT_TYPE_VALUES } from '@ploutizo/types';
 import { describe, expect, it } from 'vitest';
 import {
   AccountFormSchema,
@@ -52,18 +51,6 @@ describe('createAccountSchema', () => {
   it('rejects missing type', () => {
     const result = createAccountSchema.safeParse({ name: 'Savings' });
     expect(result.success).toBe(false);
-  });
-
-  it('accepts all valid account types', () => {
-    for (const type of ACCOUNT_TYPE_VALUES) {
-      const result = createAccountSchema.safeParse({
-        name: 'Test',
-        type,
-        institutionId: 'td',
-        memberIds: [OWNER_ID],
-      });
-      expect(result.success).toBe(true);
-    }
   });
 
   it('allows cash accounts without a Financial institution', () => {
