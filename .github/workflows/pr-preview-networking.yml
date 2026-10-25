@@ -129,7 +129,6 @@ jobs:
                 end;
               def entries:
                 if (.domains | type) == "array" then .domains[]
-                elif (.domain | type) == "object" then .domain
                 elif (.domain | type) == "string" then .
                 else empty end;
               entries | row | select(.host != "") | "\(.host)\t\(.kind)"
@@ -211,13 +210,11 @@ jobs:
               exit 1
             fi
 
-            if [[ "$current" != "$expected" ]]; then
-              echo "Renaming Railway domain ${current} to ${expected}" >&2
-              railway domain update "$current" --domain "$expected" --port 8080 --json \
-                --project "$project" \
-                --environment "$environment" \
-                --service "$service" >&2
-            fi
+            echo "Renaming Railway domain ${current} to ${expected}" >&2
+            railway domain update "$current" --domain "$expected" --port 8080 --json \
+              --project "$project" \
+              --environment "$environment" \
+              --service "$service" >&2
 
             listed=$(list_domains "$service")
             rows=$(domain_rows "$listed") || exit 1
@@ -238,11 +235,6 @@ jobs:
           expected_web_host="web-ploutizo-pr-${PR_NUMBER}.up.railway.app"
           api_host=$(service_domain "$API_SERVICE_ID" "$expected_api_host")
           web_host=$(service_domain "$WEB_SERVICE_ID" "$expected_web_host")
-          if [[ "$api_host" != "$expected_api_host" || "$web_host" != "$expected_web_host" ]]; then
-            echo "Refusing to set VITE_API_URL. API host '${api_host}' must be ${expected_api_host}, and web host '${web_host}' must be ${expected_web_host}." >&2
-            exit 1
-          fi
-
           api_url="https://${api_host}"
           echo "Preview web: ${web_host}"
           echo "Preview API: ${api_url}"
