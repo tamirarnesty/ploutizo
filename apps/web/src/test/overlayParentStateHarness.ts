@@ -1,9 +1,3 @@
-/**
- * State harnesses mirroring parent screens — keep in sync with:
- * - Dashboard.tsx (settle dialog)
- * - Accounts.tsx (account sheet)
- * - Transactions.tsx (transaction sheet)
- */
 import { useCallback, useState } from 'react';
 import type { AccountType } from '@ploutizo/types';
 import type {
@@ -13,7 +7,6 @@ import type {
 } from '@ploutizo/validators';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';
 
-/** @see apps/web/src/components/dashboard/Dashboard.tsx */
 export const useDashboardSettleDialogParentState = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [activeAccount, setActiveAccount] =
@@ -44,7 +37,6 @@ export const useDashboardSettleDialogParentState = () => {
   };
 };
 
-/** @see apps/web/src/components/accounts/Accounts.tsx */
 export const useAccountsSheetParentState = () => {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
@@ -84,7 +76,6 @@ export const useAccountsSheetParentState = () => {
   };
 };
 
-/** @see apps/web/src/components/transactions/Transactions.tsx */
 export const useTransactionsSheetParentState = () => {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedTx, setSelectedTx] = useState<TransactionRow | null>(null);

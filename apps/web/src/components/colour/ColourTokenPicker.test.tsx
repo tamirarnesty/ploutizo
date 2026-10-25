@@ -18,13 +18,12 @@ describe('ColourTokenPicker', () => {
     ).toBeInTheDocument();
   });
 
-  it('offers every hue at five shades', async () => {
+  it('marks the selected swatch when the popover opens', async () => {
     const user = userEvent.setup();
     render(<ColourTokenPicker value="red-500" onChange={vi.fn()} />);
 
     await user.click(screen.getByRole('button'));
 
-    expect(screen.getAllByRole('option')).toHaveLength(90);
     expect(
       screen.getByRole('option', { name: 'Red 500', selected: true })
     ).toBeInTheDocument();

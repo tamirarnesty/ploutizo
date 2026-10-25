@@ -1,4 +1,3 @@
-/** Unsigned JWT-shaped string for access/bearer tests (no signature verification). */
 export const unsignedJwt = (payload: Record<string, unknown>) => {
   const body = btoa(JSON.stringify(payload))
     .replaceAll('+', '-')

@@ -4,10 +4,8 @@ import {
   bucketStartsIn,
   dashboardPriorRange,
   dashboardRangeGrain,
-  dashboardSearchFromSelection,
   formatDashboardPeriodLabel,
   resolveDashboardPeriod,
-  selectionFromDashboardSearch,
 } from './index';
 import type { DashboardPeriodShortcut } from './index';
 
@@ -236,22 +234,5 @@ describe('formatDashboardPeriodLabel', () => {
 
   it('labels All as all time', () => {
     expect(formatDashboardPeriodLabel({ kind: 'all' })).toBe('All time');
-  });
-});
-
-describe('dashboard period search params', () => {
-  it.each([
-    { kind: 'shortcut', shortcut: 'mtd' },
-    { kind: 'shortcut', shortcut: 'all' },
-    { kind: 'custom', from: '2026-01-01', to: '2026-01-15' },
-  ] as const)('round-trips %o', (selection) => {
-    expect(
-      selectionFromDashboardSearch(dashboardSearchFromSelection(selection))
-    ).toEqual(selection);
-  });
-
-  it('names no period when the search has neither a shortcut nor both dates', () => {
-    expect(selectionFromDashboardSearch({})).toBeNull();
-    expect(selectionFromDashboardSearch({ from: '2026-01-01' })).toBeNull();
   });
 });

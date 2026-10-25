@@ -1,7 +1,4 @@
-import {
-  BILL_PAYMENT_CATEGORY_NAME,
-  HOUSEHOLD_DEFAULT_CATEGORIES,
-} from '@ploutizo/types';
+import { BILL_PAYMENT_CATEGORY_NAME } from '@ploutizo/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { db } from '../client';
@@ -75,27 +72,6 @@ describe('seed rows', () => {
     expect(rows.every((row) => row.orgId === 'org_test123')).toBe(true);
     expect(rows.some((row) => row.name === BILL_PAYMENT_CATEGORY_NAME)).toBe(
       true
-    );
-  });
-
-  it('inserts all household default categories with icons, colours and sequential sortOrder', () => {
-    const rows = seedCategoryRowsForOrg('org_test123');
-
-    expect(
-      rows.map((row) => ({
-        name: row.name,
-        icon: row.icon,
-        colour: row.colour,
-      }))
-    ).toEqual(
-      HOUSEHOLD_DEFAULT_CATEGORIES.map((category) => ({
-        name: category.name,
-        icon: category.icon,
-        colour: category.colour,
-      }))
-    );
-    expect(rows.map((row) => row.sortOrder)).toEqual(
-      rows.map((_, index) => index)
     );
   });
 

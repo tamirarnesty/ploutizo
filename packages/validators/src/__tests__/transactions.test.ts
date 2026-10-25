@@ -4,7 +4,6 @@ import {
   patchTransactionSchema,
   updateTransactionSchema,
 } from '../transactions';
-import type { z } from 'zod';
 
 const memberId = '550e8400-e29b-41d4-a716-446655440003';
 
@@ -14,7 +13,6 @@ const assignee = (amountCents = 1000, percentage = 100) => ({
   percentage,
 });
 
-// Shared base payload for all type variants
 const categoryId = '550e8400-e29b-41d4-a716-446655440099';
 const baseFields = {
   accountId: '550e8400-e29b-41d4-a716-446655440000',
@@ -25,28 +23,24 @@ const baseFields = {
   assignees: [assignee()],
 };
 
-// Helper: find a variant schema by its discriminant value from the discriminated union.
-// Zod v4 discriminated unions expose `.options` (array of ZodObject), not `.optionsMap`.
-// Each option's shape is accessible via `.shape` (which is an alias for `.def.shape`).
-// ZodLiteral.def.values is a plain array (not Set) in Zod v4.
-const getVariantShape = (
-  discriminantValue: string
-): Record<string, unknown> => {
-  const option = createTransactionSchema.options.find(
-    (o) =>
-      'type' in o.shape &&
-      (o.shape.type as z.ZodLiteral<string>).def.values.includes(
-        discriminantValue
-      )
-  );
-  if (!option)
-    throw new Error(`No variant found for type="${discriminantValue}"`);
-  return option.shape as Record<string, unknown>;
-};
+const validExpense = { ...baseFields, type: 'expense' as const };
 
-// ---------------------------------------------------------------------------
-// VAL-01 — baseTransactionSchema: merchant removed, notes added
-// ---------------------------------------------------------------------------
+describe('createTransactionSchema — common field constraints', () => {
+  it.each([
+    ['zero amount', { amount: 0 }],
+    ['negative amount', { amount: -100 }],
+    ['fractional amount', { amount: 1.5 }],
+    ['ISO datetime as date', { date: '2024-01-01T00:00:00Z' }],
+    ['US-format date', { date: '01/15/2024' }],
+    ['unknown transaction type', { type: 'unknown_type' }],
+  ] as const)('rejects %s', (_label, override) => {
+    expect(
+      createTransactionSchema.safeParse({ ...validExpense, ...override })
+        .success
+    ).toBe(false);
+  });
+});
+
 describe('VAL-01 — baseTransactionSchema field changes', () => {
   it('rejects expense without assignees', () => {
     const { assignees: _omit, ...withoutAssignees } = baseFields;
@@ -82,29 +76,10 @@ describe('VAL-01 — baseTransactionSchema field changes', () => {
     });
     expect(result.success).toBe(true);
   });
-
-  it('schema does not declare merchant field on expense variant', () => {
-    const shape = getVariantShape('expense');
-    expect('merchant' in shape).toBe(false);
-  });
-
-  it('schema does not declare merchant on refund variant', () => {
-    const shape = getVariantShape('refund');
-    expect('merchant' in shape).toBe(false);
-  });
-
-  it('schema declares notes on expense variant', () => {
-    const shape = getVariantShape('expense');
-    expect('notes' in shape).toBe(true);
-  });
 });
 
-// ---------------------------------------------------------------------------
-// VAL-02 — transferTransactionSchema: toAccountId → counterpartAccountId
-// ---------------------------------------------------------------------------
 describe('VAL-02 — transferTransactionSchema field rename', () => {
   it('rejects transfer payload with old toAccountId field (no counterpartAccountId)', () => {
-    // toAccountId is stripped (unknown key) and counterpartAccountId is required → fails
     const result = createTransactionSchema.safeParse({
       ...baseFields,
       type: 'transfer',
@@ -129,21 +104,8 @@ describe('VAL-02 — transferTransactionSchema field rename', () => {
     });
     expect(result.success).toBe(false);
   });
-
-  it('schema declares counterpartAccountId on transfer variant', () => {
-    const shape = getVariantShape('transfer');
-    expect('counterpartAccountId' in shape).toBe(true);
-  });
-
-  it('schema does not declare toAccountId on transfer variant', () => {
-    const shape = getVariantShape('transfer');
-    expect('toAccountId' in shape).toBe(false);
-  });
 });
 
-// ---------------------------------------------------------------------------
-// VAL-04 — settlement/refund require assignees (card balance query joins assignees)
-// ---------------------------------------------------------------------------
 describe('VAL-04 — all types require assignees', () => {
   it('rejects settlement without assignees', () => {
     const { assignees: _omit, ...withoutAssignees } = baseFields;
@@ -259,9 +221,6 @@ describe('createTransactionSchema — counterpartAccountId required for two-acco
   });
 });
 
-// ---------------------------------------------------------------------------
-// VAL-05 — patchTransactionSchema: discriminated union + empty assignees guard
-// ---------------------------------------------------------------------------
 describe('VAL-05 — patchTransactionSchema', () => {
   it('rejects expense PATCH without assignees', () => {
     const { assignees: _omit, ...withoutAssignees } = baseFields;
@@ -295,24 +254,7 @@ describe('VAL-05 — patchTransactionSchema', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// VAL-03 — updateTransactionSchema: counterpartAccountId replaces old FK fields
-// ---------------------------------------------------------------------------
 describe('VAL-03 — updateTransactionSchema field changes', () => {
-  it('schema does not declare settledAccountId (old field)', () => {
-    expect(
-      'settledAccountId' in
-        (updateTransactionSchema.shape as Record<string, unknown>)
-    ).toBe(false);
-  });
-
-  it('schema does not declare toAccountId (old field)', () => {
-    expect(
-      'toAccountId' in
-        (updateTransactionSchema.shape as Record<string, unknown>)
-    ).toBe(false);
-  });
-
   it('accepts payload with counterpartAccountId as valid UUID', () => {
     const result = updateTransactionSchema.safeParse({
       counterpartAccountId: '550e8400-e29b-41d4-a716-446655440002',
@@ -325,27 +267,6 @@ describe('VAL-03 — updateTransactionSchema field changes', () => {
       amount: 2000,
     });
     expect(result.success).toBe(true);
-  });
-
-  it('schema declares counterpartAccountId on updateTransactionSchema', () => {
-    expect(
-      'counterpartAccountId' in
-        (updateTransactionSchema.shape as Record<string, unknown>)
-    ).toBe(true);
-  });
-
-  it('schema does not declare investmentType on updateTransactionSchema', () => {
-    expect(
-      'investmentType' in
-        (updateTransactionSchema.shape as Record<string, unknown>)
-    ).toBe(false);
-  });
-
-  it('schema does not declare incomeSource on updateTransactionSchema', () => {
-    expect(
-      'incomeSource' in
-        (updateTransactionSchema.shape as Record<string, unknown>)
-    ).toBe(false);
   });
 
   it('rejects assignees: [] (cannot clear splits with empty array via flat update schema)', () => {

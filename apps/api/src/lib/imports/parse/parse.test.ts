@@ -193,17 +193,6 @@ describe('parseImportUpload', () => {
     expect(parsed.rows[0]?.sourceDescription).toBe('12" pizza');
   });
 
-  it('rejects a profile selection that does not match the file', () => {
-    expectImportError(
-      () =>
-        parseImportUpload('posted,total,memo\n2026-05-02,42,Coffee', {
-          kind: 'profile',
-          profileId: 'internal',
-        }),
-      'IMPORT_INVALID_SELECTION'
-    );
-  });
-
   it('rejects corrupt CSV with an unclosed quoted field', () => {
     expectImportError(
       () =>

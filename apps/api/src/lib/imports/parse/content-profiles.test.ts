@@ -1,10 +1,3 @@
-/**
- * Content-profile parsing tests.
- *
- * Each fixture identifies a content profile, never a financial institution.
- * The generic positional profiles (mdy_debit_credit_balance,
- * iso_debit_credit_masked_card) must not produce any institution result.
- */
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -420,7 +413,7 @@ describe('parseImportUpload — mapping_required', () => {
 });
 
 describe('parseImportUpload — confirmed generic positional selection', () => {
-  it('parses a confirmed generic positional file when some rows fail the detection signature', () => {
+  it('parses a confirmed generic positional file and keeps signature-breaking rows invalid', () => {
     const parsed = requireParsed(
       parseImportUpload(
         [
@@ -436,19 +429,6 @@ describe('parseImportUpload — confirmed generic positional selection', () => {
     expect(parsed.rows[0]?.parsedDate).toBe('2026-05-02');
     expect(parsed.rows[1]?.parsedDate).toBeNull();
     expect(parsed.rows[1]?.parsedDescription).toBe('BROKEN SIGNATURE');
-  });
-
-  it('keeps signature-breaking rows structurally invalid after generic confirmation', () => {
-    const parsed = requireParsed(
-      parseImportUpload(
-        [
-          '05/02/2026,NEIGHBORHOOD GROCERY,12.34,,100.00',
-          'not-a-date,BROKEN SIGNATURE,12.34,,100.00',
-        ].join('\n'),
-        { kind: 'profile', profileId: 'mdy_debit_credit_balance' }
-      )
-    );
-
     expect(isImportRowStructurallyInvalid(parsed.rows[0])).toBe(false);
     expect(isImportRowStructurallyInvalid(parsed.rows[1])).toBe(true);
   });
