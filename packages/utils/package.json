@@ -39,6 +39,7 @@
     "./member-label": "./src/member-label.ts",
     "./assignee-split": "./src/assignee-split/index.ts",
     "./transaction-policy": "./src/transaction-policy/index.ts",
-    "./dashboard-period": "./src/dashboard-period/index.ts"
+    "./dashboard-period": "./src/dashboard-period/index.ts",
+    "./private-network-ipv4": "./src/private-network-ipv4.ts"
   }
 }

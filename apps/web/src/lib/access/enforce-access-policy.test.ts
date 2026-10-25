@@ -65,6 +65,27 @@ describe('resolveAccessRedirect', () => {
   });
 });
 
+describe('resolveAccessNavigation', () => {
+  it('preserves a local return path when sending a signed-out visitor to sign-in', () => {
+    expect(
+      resolveAccessNavigation(signedOut, 'active-household', '/accounts')
+    ).toEqual({
+      to: '/sign-in/$',
+      search: { redirect: '/accounts' },
+    });
+  });
+
+  it('omits an external return path when sending a signed-out visitor to sign-in', () => {
+    expect(
+      resolveAccessNavigation(
+        signedOut,
+        'active-household',
+        'https://evil.example'
+      )
+    ).toEqual({ to: '/sign-in/$' });
+  });
+});
+
 describe('enforceAccessPolicy', () => {
   it('does not redirect while Clerk identity is still loading on the client', async () => {
     await expect(
@@ -84,25 +105,6 @@ describe('enforceAccessPolicy', () => {
         '/sign-in'
       )
     ).rejects.toThrow();
-  });
-
-  it('preserves a local return path when sending a signed-out visitor to sign-in', () => {
-    expect(
-      resolveAccessNavigation(signedOut, 'active-household', '/accounts')
-    ).toEqual({
-      to: '/sign-in/$',
-      search: { redirect: '/accounts' },
-    });
-  });
-
-  it('omits an external return path when sending a signed-out visitor to sign-in', () => {
-    expect(
-      resolveAccessNavigation(
-        signedOut,
-        'active-household',
-        'https://evil.example'
-      )
-    ).toEqual({ to: '/sign-in/$' });
   });
 });
 

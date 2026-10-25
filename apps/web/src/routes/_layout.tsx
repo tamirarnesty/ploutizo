@@ -3,25 +3,18 @@ import {
   createFileRoute,
   useRouterState,
 } from '@tanstack/react-router';
-import { createServerFn } from '@tanstack/react-start';
-import { getCookie } from '@tanstack/react-start/server';
 import { SidebarInset, SidebarProvider } from '@ploutizo/ui/components/sidebar';
 import { cn } from '@ploutizo/ui/lib/utils';
 import { BearerReadinessBoundary } from '@/lib/access';
 import { enforceAccessPolicy } from '@/lib/access/enforce-access-policy';
 import { isHouseholdLoaderReady } from '@/lib/access/household-loader-ready';
+import { readCookie } from '@/lib/cookies/persistent-cookie';
 import { CommandPaletteProvider } from '@/lib/command';
 import { activeImportDraftsQueryOptions } from '@/lib/data-access/imports';
 import { resolveMainContentLayout } from '@/lib/layout/main-content-layout';
 import { AppSidebar } from '../components/AppSidebar';
 import { TopBar } from '../components/TopBar';
 import { useThemeKeyboardShortcut } from '../hooks/useThemeKeyboardShortcut';
-
-/** Public: sidebar open/closed cookie only. No signed-in member or household data. */
-const getPublicSidebarState = createServerFn().handler(() => {
-  const value = getCookie('sidebar_state');
-  return value !== 'false';
-});
 
 const LayoutShell = () => {
   useThemeKeyboardShortcut();
@@ -68,7 +61,7 @@ export const Route = createFileRoute('/_layout')({
     if (await isHouseholdLoaderReady(context)) {
       await context.queryClient.ensureQueryData(activeImportDraftsQueryOptions);
     }
-    return getPublicSidebarState();
+    return readCookie('sidebar_state') !== 'false';
   },
   component: LayoutShell,
 });

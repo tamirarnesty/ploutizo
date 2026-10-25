@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "vite dev --port 3000",
+    "dev:host": "vite dev --port 3000 --host",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint",

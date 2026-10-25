@@ -6,6 +6,7 @@
     "prepare": "test -d .git && lefthook install || true",
     "build": "turbo build",
     "dev": "turbo dev",
+    "dev:host": "turbo dev:host",
     "lint": "turbo lint",
     "lint:fix": "turbo lint:fix",
     "format": "turbo format",

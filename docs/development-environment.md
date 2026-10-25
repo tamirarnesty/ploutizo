@@ -11,6 +11,10 @@ Guidance for local development and Cursor Cloud agents.
 
 Both can be started together with `pnpm turbo dev` from the workspace root. Turborepo runs them concurrently.
 
+Use `pnpm dev:host` from the repo root when a phone or tablet on the same network should open the app. `pnpm dev` stays on loopback and does not accept those origins.
+
+Vite prints a Network URL. Open that host, for example `http://192.168.1.42:3000`. The page and the API share it: the web app is port 3000, and in dev a loopback `VITE_API_URL` is rewritten to `http://192.168.1.42:8080`. The API already listens on every interface; `dev:host` sets `ALLOW_LAN_DEV_ORIGINS=1`, which is the only switch that allows `http://<private-ipv4>:3000`. Production never sets that variable, and `NODE_ENV=production` disables it even if the variable is present. If Clerk sign-in fails, add the same origin in the Clerk dashboard.
+
 ## Required secrets (env vars)
 
 Three `.env` files must exist — see `.env.example` in `apps/web/`, `apps/api/`, and the repo root. Key secrets:

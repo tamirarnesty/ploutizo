@@ -1,9 +1,7 @@
 import type { HttpMethod } from '@ploutizo/telemetry';
+import { getApiBaseUrl } from '@/lib/api-base-url';
 import { getHouseholdBearer } from '@/lib/access/working-set';
 import type { z } from 'zod';
-
-// API base URL from env var — never hardcode ploutizo.app or localhost
-const API_BASE_URL = import.meta.env.VITE_API_URL as string;
 
 export type ApiFetchOptions = RequestInit & {
   signal?: AbortSignal;
@@ -55,7 +53,7 @@ const request = async (
   if (!token) {
     throw createHouseholdBearerUnavailableError();
   }
-  const res = await fetch(`${API_BASE_URL}${path}`, {
+  const res = await fetch(`${getApiBaseUrl()}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
