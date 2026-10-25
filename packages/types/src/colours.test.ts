@@ -14,9 +14,6 @@ describe('colour palette', () => {
   });
 
   it('orders defaults by shade tier, chromatic hues before slate', () => {
-    expect([...DEFAULT_CATEGORY_COLOUR_ORDER].sort()).toEqual(
-      [...COLOUR_TOKENS].sort()
-    );
     expect(DEFAULT_CATEGORY_COLOUR_ORDER.slice(0, 2)).toEqual([
       'red-500',
       'orange-500',

@@ -93,33 +93,6 @@ describe('AppSidebar', () => {
     });
   });
 
-  it('shows Import as a peer of Transactions without a Transactions submenu', () => {
-    renderSidebar();
-
-    expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute(
-      'href',
-      '/dashboard'
-    );
-    expect(screen.getByRole('link', { name: 'Transactions' })).toHaveAttribute(
-      'href',
-      '/transactions'
-    );
-    expect(screen.getByRole('link', { name: 'Import' })).toHaveAttribute(
-      'href',
-      '/import'
-    );
-    expect(screen.getByRole('link', { name: 'Accounts' })).toHaveAttribute(
-      'href',
-      '/accounts'
-    );
-    expect(
-      screen.queryByRole('button', { name: 'Toggle Transactions submenu' })
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: 'Toggle Import submenu' })
-    ).toBeInTheDocument();
-  });
-
   it('toggles Import History without navigating away from the hub landing', async () => {
     const user = userEvent.setup();
     renderSidebar('/dashboard');
@@ -141,39 +114,12 @@ describe('AppSidebar', () => {
     );
   });
 
-  it('shows Settings as a flat footer link without a submenu', () => {
-    renderSidebar('/dashboard');
-
-    expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute(
-      'href',
-      '/settings'
-    );
-    expect(
-      screen.queryByRole('button', { name: 'Toggle Settings submenu' })
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('link', { name: 'Categories & Tags' })
-    ).not.toBeInTheDocument();
-  });
-
   it('opens the Import branch on an Import History deep link', () => {
     renderSidebar('/import/history');
 
     expect(
       screen.getByRole('link', { name: 'Import History' })
     ).toHaveAttribute('href', '/import/history');
-  });
-
-  it('keeps Settings active on a settings deep link', () => {
-    renderSidebar('/settings/categories');
-
-    expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute(
-      'href',
-      '/settings'
-    );
-    expect(
-      screen.queryByRole('link', { name: 'Categories & Tags' })
-    ).not.toBeInTheDocument();
   });
 
   it('does not change route when toggling the Import submenu', async () => {

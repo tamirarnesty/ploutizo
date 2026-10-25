@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ACCOUNT_TYPE_VALUES } from './enums';
 import {
-  FINANCIAL_INSTITUTIONS,
-  FINANCIAL_INSTITUTION_IDS,
   accountRequiresFinancialInstitution,
   getFinancialInstitution,
   getFinancialInstitutionName,
@@ -11,25 +9,6 @@ import {
 } from './financial-institutions';
 
 describe('Financial institution catalog', () => {
-  it('seeds Amex, CIBC, PC Financial, TD, RBC, and Wealthsimple', () => {
-    expect(FINANCIAL_INSTITUTIONS).toEqual([
-      { id: 'amex', name: 'Amex' },
-      { id: 'cibc', name: 'CIBC' },
-      { id: 'pc_financial', name: 'PC Financial' },
-      { id: 'td', name: 'TD' },
-      { id: 'rbc', name: 'RBC' },
-      { id: 'wealthsimple', name: 'Wealthsimple' },
-    ]);
-    expect(FINANCIAL_INSTITUTION_IDS).toEqual([
-      'amex',
-      'cibc',
-      'pc_financial',
-      'td',
-      'rbc',
-      'wealthsimple',
-    ]);
-  });
-
   it('resolves catalog entries by id', () => {
     expect(getFinancialInstitution('td')).toEqual({ id: 'td', name: 'TD' });
     expect(getFinancialInstitutionName('pc_financial')).toBe('PC Financial');

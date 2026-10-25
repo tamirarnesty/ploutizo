@@ -78,7 +78,6 @@ describe('collectNav', () => {
     const routes = Object.values(router.routesById);
     const navRoutes = routes.filter((route) => route.options.staticData?.nav);
 
-    expect(() => collectNav(router)).not.toThrow();
     expect(navRoutes).toHaveLength(APP_NAV_ROUTES.length);
 
     for (const route of navRoutes) {

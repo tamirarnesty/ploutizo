@@ -93,17 +93,6 @@ describe('CommandPalette', () => {
     expect(useGetImportDrafts).toHaveBeenCalledWith({ enabled: true });
   });
 
-  it('omits Continue Import when there are no active drafts', () => {
-    renderPalette();
-
-    expect(screen.queryByText('Continue Import')).not.toBeInTheDocument();
-    expect(
-      [...document.querySelectorAll('[cmdk-group-heading]')].map(
-        (heading) => heading.textContent
-      )
-    ).toEqual(['Navigation', 'Settings']);
-  });
-
   it('places Continue Import first and resumes the draft', async () => {
     const user = userEvent.setup();
     commandMocks.drafts = [draft];

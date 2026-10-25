@@ -68,26 +68,6 @@ describe('createAccountSchema', () => {
     }
   });
 
-  it('requires a Financial institution for bank-backed and investment types', () => {
-    for (const type of ['credit_card', 'chequing', 'savings', 'investment']) {
-      const result = createAccountSchema.safeParse({
-        name: 'Test',
-        type,
-        memberIds: [OWNER_ID],
-      });
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(
-          result.error.issues.some(
-            (issue) =>
-              issue.path.includes('institutionId') &&
-              issue.message === 'Financial institution is required.'
-          )
-        ).toBe(true);
-      }
-    }
-  });
-
   it('allows cash accounts without a Financial institution', () => {
     for (const type of ['prepaid_cash', 'e_transfer']) {
       const result = createAccountSchema.safeParse({

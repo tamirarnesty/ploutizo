@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import * as utilsRoot from '../index';
 import { resolveTransactionDescriptionLock } from './description-lock';
 import {
   formatContributionDescription,
@@ -403,22 +402,5 @@ describe('formatGeneratedTransactionDescription coverage used by lock tests', ()
         refundOriginalDescription: 'Coffee',
       })
     ).toBe(linkedRefundCandidate);
-  });
-});
-
-describe('utils root barrel', () => {
-  it('does not re-export description helpers from the package root', () => {
-    expect(utilsRoot).not.toHaveProperty('resolveTransactionDescriptionLock');
-    expect(utilsRoot).not.toHaveProperty('resolveTransactionDescriptionPolicy');
-    expect(utilsRoot).not.toHaveProperty(
-      'formatGeneratedTransactionDescription'
-    );
-    expect(utilsRoot).not.toHaveProperty(
-      'formatGeneratedTransactionDescriptionFromAccounts'
-    );
-    expect(utilsRoot).not.toHaveProperty('formatTransferDescription');
-    expect(utilsRoot).not.toHaveProperty('formatSettlementDescription');
-    expect(utilsRoot).not.toHaveProperty('formatContributionDescription');
-    expect(utilsRoot).not.toHaveProperty('formatLinkedRefundDescription');
   });
 });

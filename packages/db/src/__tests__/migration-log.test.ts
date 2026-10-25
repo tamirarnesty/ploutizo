@@ -46,27 +46,17 @@ describe('migration log', () => {
     errorSpy.mockRestore();
   });
 
-  it('logs generic errors as a cause line', () => {
+  it.each([
+    [new Error('connection refused'), 'connection refused'],
+    ['DATABASE_URL is not set', 'DATABASE_URL is not set'],
+  ])('logs %s as the cause', (error, cause) => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    logMigrationError(new Error('connection refused'));
+    logMigrationError(error);
 
     expect(errorSpy.mock.calls).toEqual([
       ['db:migrate: failed'],
-      ['db:migrate: cause: connection refused'],
-    ]);
-
-    errorSpy.mockRestore();
-  });
-
-  it('logs a string as the cause', () => {
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-    logMigrationError('DATABASE_URL is not set');
-
-    expect(errorSpy.mock.calls).toEqual([
-      ['db:migrate: failed'],
-      ['db:migrate: cause: DATABASE_URL is not set'],
+      [`db:migrate: cause: ${cause}`],
     ]);
 
     errorSpy.mockRestore();

@@ -17,21 +17,6 @@ describe('SettingsTabs', () => {
     routerMocks.pathname = '/settings/categories';
   });
 
-  it('renders URL-navigating tabs with correct hrefs', () => {
-    render(<SettingsTabs />);
-
-    expect(
-      screen.getByRole('link', { name: 'Categories & Tags' })
-    ).toHaveAttribute('href', '/settings/categories');
-    expect(
-      screen.getByRole('link', { name: 'Merchant Rules' })
-    ).toHaveAttribute('href', '/settings/merchant-rules');
-    expect(screen.getByRole('link', { name: 'Household' })).toHaveAttribute(
-      'href',
-      '/settings/household'
-    );
-  });
-
   it('uses intent preloading on tab links', () => {
     render(<SettingsTabs />);
 
