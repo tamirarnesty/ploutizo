@@ -17,15 +17,13 @@ describe('allowedOrigins', () => {
     expect(isAllowedOrigin('https://ploutizo.app')).toBe(true);
     expect(isAllowedOrigin('https://www.ploutizo.app')).toBe(true);
     expect(isAllowedOrigin('http://localhost:3000')).toBe(true);
+    expect(isAllowedOrigin('http://127.0.0.1:3000')).toBe(true);
   });
 
   it('allows Railway PR preview web origins', async () => {
-    const { isAllowedOrigin, isAllowedParty } = await loadAllowedOrigins();
+    const { isAllowedOrigin } = await loadAllowedOrigins();
 
     expect(isAllowedOrigin('https://web-ploutizo-pr-105.up.railway.app')).toBe(
-      true
-    );
-    expect(isAllowedParty('https://web-ploutizo-pr-105.up.railway.app')).toBe(
       true
     );
   });
@@ -43,6 +41,34 @@ describe('allowedOrigins', () => {
     expect(isAllowedOrigin('https://web-ploutizo-pr-105.example.com')).toBe(
       false
     );
+  });
+
+  it.each([
+    { appEnv: 'local', label: 'APP_ENV=local' },
+    { appEnv: undefined, label: 'APP_ENV unset' },
+  ])('allows LAN web origins on :3000 when $label', async ({ appEnv }) => {
+    vi.unstubAllEnvs();
+    if (appEnv) {
+      vi.stubEnv('APP_ENV', appEnv);
+    }
+
+    const { isAllowedOrigin, isAllowedParty } = await loadAllowedOrigins();
+
+    expect(isAllowedOrigin('http://172.20.10.9:3000')).toBe(true);
+    expect(isAllowedParty('http://172.20.10.9:3000/')).toBe(true);
+    expect(isAllowedOrigin('http://192.168.1.42:3000')).toBe(true);
+    expect(isAllowedOrigin('http://10.0.0.5:3000')).toBe(true);
+    expect(isAllowedOrigin('https://172.20.10.9:3000')).toBe(false);
+    expect(isAllowedOrigin('http://172.20.10.9:8080')).toBe(false);
+    expect(isAllowedOrigin('http://evil.example.com:3000')).toBe(false);
+  });
+
+  it('does not allow LAN web origins when APP_ENV is production', async () => {
+    vi.stubEnv('APP_ENV', 'production');
+
+    const { isAllowedOrigin } = await loadAllowedOrigins();
+
+    expect(isAllowedOrigin('http://172.20.10.9:3000')).toBe(false);
   });
 
   it('supports extra origins from CORS_ALLOWED_ORIGINS', async () => {

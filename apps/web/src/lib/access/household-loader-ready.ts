@@ -1,4 +1,3 @@
-import { createIsomorphicFn } from '@tanstack/react-start';
 import type { RouterContext } from '@/router';
 import { getRequestAccess, getRequestHouseholdBearer } from './resolve.server';
 import type { AccessState } from './access-state';
@@ -18,6 +17,10 @@ const resolveServerHouseholdLoaderReady = async (): Promise<boolean> => {
 export const isClientHouseholdLoaderReady = (context: RouterContext) =>
   isHouseholdBearerReady(context.isReady, context.access);
 
-export const isHouseholdLoaderReady = createIsomorphicFn()
-  .client(isClientHouseholdLoaderReady)
-  .server(resolveServerHouseholdLoaderReady);
+/** Route loaders: server reads request auth; client uses router context (no Start RPC). */
+export const isHouseholdLoaderReady = (
+  context: RouterContext
+): boolean | Promise<boolean> =>
+  import.meta.env.SSR
+    ? resolveServerHouseholdLoaderReady()
+    : isClientHouseholdLoaderReady(context);
