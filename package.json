@@ -30,7 +30,7 @@
   },
   "packageManager": "pnpm@12.14.0",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.22.2"
   },
   "intent": {
     "skills": [

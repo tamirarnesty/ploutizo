@@ -69,7 +69,7 @@ Use Clerk test email mode ([docs](https://clerk.com/docs/guides/development/test
 
 ## Gotchas
 
-- **Node version:** Must be `>=22` (`.node-version` specifies 22.14.0). The API dev script uses `node --env-file=.env`, which requires Node >=20.6.
+- **Node version:** Must be `>=22.22.2` (`.node-version` specifies 22.23.4). `jsdom` and `tsup` reject older 22.x releases. The API dev script uses `node --env-file=.env`, which requires Node >=20.6.
 - **Package manager:** pnpm 11.22.0 (`packageManager` field). Use `corepack enable && corepack prepare pnpm@11.22.0 --activate` to match.
 - **No Docker required:** All external services (Neon DB, Clerk auth) are cloud-hosted. No local containers needed.
 - **Never run `npx tsc` at repo root** — it emits JS files. Always use `pnpm turbo typecheck`.
