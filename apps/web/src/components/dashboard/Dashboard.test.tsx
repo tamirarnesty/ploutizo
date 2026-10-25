@@ -51,6 +51,7 @@ import { cookieValueFrom } from '@/lib/cookies/cookie-value';
 
 const loaderReady = vi.hoisted(() => ({ value: false }));
 
+// Isomorphic helpers run their server branch outside the Start compiler; give them the browser's view instead.
 vi.mock('@/lib/access/household-loader-ready', async (importOriginal) => ({
   ...(await importOriginal<typeof HouseholdLoaderReady>()),
   isHouseholdLoaderReady: () => Promise.resolve(loaderReady.value),

@@ -1,4 +1,4 @@
-import { readCookieValue, writeCookie } from '@/lib/cookies/persistent-cookie';
+import { readCookie, writeCookie } from '@/lib/cookies/persistent-cookie';
 import { isSpendTrendMode } from '@/lib/spend-trend-mode';
 import type { SpendTrendMode } from '@/lib/spend-trend-mode';
 
@@ -6,7 +6,7 @@ const SPEND_TREND_MODE_COOKIE = 'spend_trend_mode';
 
 /** The last mode the viewer picked. */
 export const readPersistedSpendTrendMode = (): SpendTrendMode | null => {
-  const value = readCookieValue(SPEND_TREND_MODE_COOKIE);
+  const value = readCookie(SPEND_TREND_MODE_COOKIE);
   return value !== undefined && isSpendTrendMode(value) ? value : null;
 };
 

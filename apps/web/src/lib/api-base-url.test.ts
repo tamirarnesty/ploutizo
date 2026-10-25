@@ -26,6 +26,36 @@ describe('getApiBaseUrl', () => {
     expect(getApiBaseUrl()).toBe('http://localhost:8080');
   });
 
+  it('rewrites localhost API host to a 10.x page host in dev', async () => {
+    vi.stubEnv('VITE_API_URL', 'http://localhost:8080');
+    vi.stubGlobal('window', {
+      location: { hostname: '10.0.0.5' },
+    } as Window);
+
+    const { getApiBaseUrl } = await import('./api-base-url');
+    expect(getApiBaseUrl()).toBe('http://10.0.0.5:8080');
+  });
+
+  it('keeps the configured API when the page host is not a private IPv4 address', async () => {
+    vi.stubEnv('VITE_API_URL', 'http://localhost:8080');
+    vi.stubGlobal('window', {
+      location: { hostname: '10.evil.com' },
+    } as Window);
+
+    const { getApiBaseUrl } = await import('./api-base-url');
+    expect(getApiBaseUrl()).toBe('http://localhost:8080');
+  });
+
+  it('keeps a non-loopback API URL when the page is opened on the LAN', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://api.ploutizo.app');
+    vi.stubGlobal('window', {
+      location: { hostname: '172.20.10.9' },
+    } as Window);
+
+    const { getApiBaseUrl } = await import('./api-base-url');
+    expect(getApiBaseUrl()).toBe('https://api.ploutizo.app');
+  });
+
   it('rewrites 127.0.0.1 API host to the page host in dev', async () => {
     vi.stubEnv('VITE_API_URL', 'http://127.0.0.1:8080');
     vi.stubGlobal('window', {

@@ -8,7 +8,7 @@ import { cn } from '@ploutizo/ui/lib/utils';
 import { BearerReadinessBoundary } from '@/lib/access';
 import { enforceAccessPolicy } from '@/lib/access/enforce-access-policy';
 import { isHouseholdLoaderReady } from '@/lib/access/household-loader-ready';
-import { readCookieValue } from '@/lib/cookies/persistent-cookie';
+import { readCookie } from '@/lib/cookies/persistent-cookie';
 import { CommandPaletteProvider } from '@/lib/command';
 import { activeImportDraftsQueryOptions } from '@/lib/data-access/imports';
 import { resolveMainContentLayout } from '@/lib/layout/main-content-layout';
@@ -61,7 +61,7 @@ export const Route = createFileRoute('/_layout')({
     if (await isHouseholdLoaderReady(context)) {
       await context.queryClient.ensureQueryData(activeImportDraftsQueryOptions);
     }
-    return readCookieValue('sidebar_state') !== 'false';
+    return readCookie('sidebar_state') !== 'false';
   },
   component: LayoutShell,
 });

@@ -1,3 +1,5 @@
+import { isPrivateNetworkIpv4 } from '@ploutizo/utils/private-network-ipv4';
+
 const STATIC_ALLOWED_ORIGINS = [
   'https://ploutizo.app',
   'https://www.ploutizo.app',
@@ -8,6 +10,8 @@ const STATIC_ALLOWED_ORIGINS = [
 // Railway PR preview web deployments, e.g. web-ploutizo-pr-105.up.railway.app
 const RAILWAY_PR_PREVIEW_ORIGIN =
   /^https:\/\/web-ploutizo-pr-\d+\.up\.railway\.app$/;
+
+const LAN_DEV_WEB_PORT = '3000';
 
 const parseExtraOrigins = (value: string | undefined): string[] => {
   if (!value) return [];
@@ -27,51 +31,29 @@ const normalizeWebOrigin = (origin: string): string => {
   }
 };
 
-/** Laptop `pnpm dev` — not production/preview deploys. */
-const isLocalDeveloperDeployment = (): boolean => {
-  const appEnv = process.env.APP_ENV?.trim().toLowerCase();
-  if (appEnv === 'local') {
-    return true;
-  }
-  if (appEnv === 'production' || appEnv === 'preview') {
-    return false;
-  }
-  return true;
-};
+/** `apps/api` `dev:host` sets this. Production and `pnpm dev` leave it unset. */
+const lanDevOriginsEnabled = (): boolean =>
+  process.env.ALLOW_LAN_DEV_ORIGINS === '1' &&
+  process.env.NODE_ENV !== 'production';
 
-const isPrivateNetworkIpv4 = (hostname: string): boolean => {
-  if (hostname.startsWith('10.')) {
-    return true;
-  }
-  if (hostname.startsWith('192.168.')) {
-    return true;
-  }
-  const octets = hostname.match(/^172\.(\d+)\./);
-  if (!octets) {
+/** `pnpm dev:host`: `http://<private-ipv4>:3000` only. */
+const isLanDevWebOrigin = (origin: string): boolean => {
+  if (!lanDevOriginsEnabled()) {
     return false;
   }
-  const secondOctet = Number(octets[1]);
-  return secondOctet >= 16 && secondOctet <= 31;
-};
-
-/** `pnpm dev:host`: allow http://<lan-ip>:3000 on local developer machines. */
-const isLocalAreaNetworkDevWebOrigin = (origin: string): boolean => {
-  if (!isLocalDeveloperDeployment()) {
-    return false;
-  }
+  let url: URL;
   try {
-    const url = new URL(origin);
-    if (url.protocol !== 'http:') {
-      return false;
-    }
-    const port = url.port || '80';
-    if (port !== '3000') {
-      return false;
-    }
-    return isPrivateNetworkIpv4(url.hostname);
+    url = new URL(origin);
   } catch {
     return false;
   }
+  if (url.protocol !== 'http:') {
+    return false;
+  }
+  if ((url.port || '80') !== LAN_DEV_WEB_PORT) {
+    return false;
+  }
+  return isPrivateNetworkIpv4(url.hostname);
 };
 
 export const isAllowedOrigin = (origin: string): boolean => {
@@ -86,14 +68,13 @@ export const isAllowedOrigin = (origin: string): boolean => {
   ) {
     return true;
   }
-  if (isLocalAreaNetworkDevWebOrigin(normalized)) {
+  if (isLanDevWebOrigin(normalized)) {
     return true;
   }
   return RAILWAY_PR_PREVIEW_ORIGIN.test(normalized);
 };
 
-export const isAllowedParty = (azp: string): boolean =>
-  isAllowedOrigin(normalizeWebOrigin(azp));
+export const isAllowedParty = (azp: string): boolean => isAllowedOrigin(azp);
 
 export const resolveAllowedOrigin = (
   origin: string | undefined

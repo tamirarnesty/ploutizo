@@ -1,5 +1,5 @@
 import type { DashboardPeriodSelection } from '@ploutizo/utils/dashboard-period';
-import { readCookieValue, writeCookie } from '@/lib/cookies/persistent-cookie';
+import { readCookie, writeCookie } from '@/lib/cookies/persistent-cookie';
 import {
   DASHBOARD_PERIOD_COOKIE,
   parseDashboardPeriodCookie,
@@ -8,7 +8,7 @@ import {
 
 /** The last period the viewer picked. */
 export const readPersistedDashboardPeriod = () =>
-  parseDashboardPeriodCookie(readCookieValue(DASHBOARD_PERIOD_COOKIE));
+  parseDashboardPeriodCookie(readCookie(DASHBOARD_PERIOD_COOKIE));
 
 export const persistDashboardPeriod = (selection: DashboardPeriodSelection) => {
   writeCookie(

@@ -43,28 +43,68 @@ describe('allowedOrigins', () => {
     );
   });
 
-  it.each([
-    { appEnv: 'local', label: 'APP_ENV=local' },
-    { appEnv: undefined, label: 'APP_ENV unset' },
-  ])('allows LAN web origins on :3000 when $label', async ({ appEnv }) => {
-    vi.unstubAllEnvs();
-    if (appEnv) {
-      vi.stubEnv('APP_ENV', appEnv);
+  it.each(['local', 'preview', 'production', undefined])(
+    'rejects private-network origins when dev:host is off (APP_ENV=%s)',
+    async (appEnv) => {
+      vi.unstubAllEnvs();
+      if (appEnv) {
+        vi.stubEnv('APP_ENV', appEnv);
+      }
+
+      const { isAllowedOrigin } = await loadAllowedOrigins();
+
+      expect(isAllowedOrigin('http://172.20.10.9:3000')).toBe(false);
     }
+  );
 
-    const { isAllowedOrigin, isAllowedParty } = await loadAllowedOrigins();
+  it.each([
+    'http://10.0.0.5:3000',
+    'http://172.16.0.1:3000',
+    'http://172.20.10.9:3000',
+    'http://172.31.255.255:3000',
+    'http://192.168.1.42:3000',
+  ])('allows %s when dev:host opts in', async (origin) => {
+    vi.stubEnv('ALLOW_LAN_DEV_ORIGINS', '1');
 
-    expect(isAllowedOrigin('http://172.20.10.9:3000')).toBe(true);
-    expect(isAllowedParty('http://172.20.10.9:3000/')).toBe(true);
-    expect(isAllowedOrigin('http://192.168.1.42:3000')).toBe(true);
-    expect(isAllowedOrigin('http://10.0.0.5:3000')).toBe(true);
-    expect(isAllowedOrigin('https://172.20.10.9:3000')).toBe(false);
-    expect(isAllowedOrigin('http://172.20.10.9:8080')).toBe(false);
-    expect(isAllowedOrigin('http://evil.example.com:3000')).toBe(false);
+    const { isAllowedOrigin } = await loadAllowedOrigins();
+
+    expect(isAllowedOrigin(origin)).toBe(true);
   });
 
-  it('does not allow LAN web origins when APP_ENV is production', async () => {
-    vi.stubEnv('APP_ENV', 'production');
+  it('accepts a private-network authorized party and echoes the normalized origin', async () => {
+    vi.stubEnv('ALLOW_LAN_DEV_ORIGINS', '1');
+
+    const { isAllowedParty, resolveAllowedOrigin } = await loadAllowedOrigins();
+
+    expect(isAllowedParty('http://172.20.10.9:3000/')).toBe(true);
+    expect(resolveAllowedOrigin('http://172.20.10.9:3000/')).toBe(
+      'http://172.20.10.9:3000'
+    );
+  });
+
+  it.each([
+    'https://172.20.10.9:3000',
+    'http://172.20.10.9:8080',
+    'http://10.evil.com:3000',
+    'http://192.168.evil.com:3000',
+    'http://172.16.not-an-ip:3000',
+    'http://192.168.1.1.nip.io:3000',
+    'http://8.8.8.8:3000',
+    'http://172.15.0.1:3000',
+    'http://172.32.0.1:3000',
+    'http://10.0.0.256:3000',
+    'http://evil.example.com:3000',
+  ])('rejects %s even when dev:host opts in', async (origin) => {
+    vi.stubEnv('ALLOW_LAN_DEV_ORIGINS', '1');
+
+    const { isAllowedOrigin } = await loadAllowedOrigins();
+
+    expect(isAllowedOrigin(origin)).toBe(false);
+  });
+
+  it('rejects private-network origins in production even if the dev:host flag is set', async () => {
+    vi.stubEnv('ALLOW_LAN_DEV_ORIGINS', '1');
+    vi.stubEnv('NODE_ENV', 'production');
 
     const { isAllowedOrigin } = await loadAllowedOrigins();
 
