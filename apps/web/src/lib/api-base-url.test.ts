@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 describe('getApiBaseUrl', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
     vi.resetModules();
   });
 
@@ -64,5 +65,34 @@ describe('getApiBaseUrl', () => {
 
     const { getApiBaseUrl } = await import('./api-base-url');
     expect(getApiBaseUrl()).toBe('http://192.168.1.10:8080');
+  });
+
+  it('sends a Railway PR preview page to that preview API', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://api.ploutizo.app');
+    vi.stubGlobal('window', {
+      location: { hostname: 'web-ploutizo-pr-223.up.railway.app' },
+    } as Window);
+
+    const { getApiBaseUrl } = await import('./api-base-url');
+    expect(getApiBaseUrl()).toBe('https://api-ploutizo-pr-223.up.railway.app');
+  });
+
+  it('keeps the configured API for a production page', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://api.ploutizo.app');
+    vi.stubGlobal('window', {
+      location: { hostname: 'ploutizo.app' },
+    } as Window);
+
+    const { getApiBaseUrl } = await import('./api-base-url');
+    expect(getApiBaseUrl()).toBe('https://api.ploutizo.app');
+  });
+
+  it('uses the Railway environment name when the page host is unavailable', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://api.ploutizo.app');
+    vi.stubEnv('RAILWAY_ENVIRONMENT_NAME', 'ploutizo-pr-223');
+    vi.stubGlobal('window', undefined);
+
+    const { getApiBaseUrl } = await import('./api-base-url');
+    expect(getApiBaseUrl()).toBe('https://api-ploutizo-pr-223.up.railway.app');
   });
 });

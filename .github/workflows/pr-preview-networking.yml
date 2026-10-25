@@ -1,0 +1,151 @@
+# Gives each Railway PR environment public hostnames and points the web build
+# at that environment's API.
+#
+# Production only has custom domains. Railway copies a public URL into a PR
+# environment when the base service has a Railway-provided domain, so these
+# previews otherwise deploy with no hostname and the web bundle keeps
+# production's VITE_API_URL (https://api.ploutizo.app).
+#
+# The shell below is inlined. Detect never checks out PR-controlled files
+# while holding Railway credentials.
+name: PR Preview Networking
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number to wire a preview API for
+        required: true
+        type: number
+
+concurrency:
+  group: pr-preview-networking-${{ github.event.pull_request.head.ref || (github.event_name == 'workflow_dispatch' && format('pr-{0}', inputs.pr_number)) || github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  detect:
+    name: Detect whether to wire
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
+    runs-on: ubuntu-latest
+    outputs:
+      should_wire: ${{ steps.decide.outputs.should_wire }}
+      pr_number: ${{ steps.decide.outputs.pr_number }}
+    steps:
+      - name: Decide whether to wire
+        id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ -z "$PR_NUMBER" ]]; then
+              echo "PR number is required" >&2
+              exit 1
+            fi
+            state=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}" --jq '.state')
+            draft=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}" --jq '.draft')
+            if [[ "$state" != "open" || "$draft" == "true" ]]; then
+              echo "PR ${PR_NUMBER} is not an open non-draft; skipping" >&2
+              exit 1
+            fi
+          fi
+
+          echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "should_wire=true" >> "$GITHUB_OUTPUT"
+
+  wire:
+    name: Wire preview web to preview API
+    needs: detect
+    if: needs.detect.outputs.should_wire == 'true'
+    runs-on: ubuntu-latest
+    env:
+      RAILWAY_ENVIRONMENT_NAME: ${{ vars.RAILWAY_PR_ENV_PREFIX != '' && vars.RAILWAY_PR_ENV_PREFIX || 'ploutizo-pr' }}-${{ needs.detect.outputs.pr_number }}
+    steps:
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli@5.30.1
+
+      - name: Wait for Railway PR environment
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          target_name="${{ env.RAILWAY_ENVIRONMENT_NAME }}"
+          railway link -p "${{ vars.RAILWAY_PROJECT_ID }}" -e production >/dev/null
+          for attempt in $(seq 1 36); do
+            if railway environment list --ephemeral --json \
+              | jq -e --arg name "$target_name" '.environments[] | select(.name == $name)' >/dev/null; then
+              echo "Found Railway PR environment: ${target_name}"
+              exit 0
+            fi
+            echo "Waiting for Railway PR environment ${target_name} (${attempt}/36)..."
+            sleep 10
+          done
+          echo "Railway PR environment ${target_name} not found after 6 minutes" >&2
+          exit 1
+
+      - name: Publish preview domains and point web at the API
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+          API_SERVICE_ID: ${{ vars.RAILWAY_API_SERVICE_ID }}
+          WEB_SERVICE_ID: ${{ vars.RAILWAY_WEB_SERVICE_ID }}
+        run: |
+          set -euo pipefail
+          project="${{ vars.RAILWAY_PROJECT_ID }}"
+          environment="${{ env.RAILWAY_ENVIRONMENT_NAME }}"
+
+          service_domain() {
+            local service="$1"
+            local listed created host
+            listed=$(railway domain list --json \
+              --project "$project" \
+              --environment "$environment" \
+              --service "$service" || true)
+            if [[ -z "$listed" ]]; then
+              listed='{"domains":[]}'
+            fi
+            host=$(jq -r '[.domains[]? | select(test("up\\.railway\\.app"))] | .[0] // empty' <<<"$listed")
+            if [[ -z "$host" ]]; then
+              created=$(railway domain --port 8080 --json \
+                --project "$project" \
+                --environment "$environment" \
+                --service "$service")
+              host=$(jq -r '.domain // .domains[0] // empty' <<<"$created")
+            fi
+            if [[ -z "$host" ]]; then
+              echo "No Railway domain for ${service} in ${environment}" >&2
+              exit 1
+            fi
+            printf '%s' "$host"
+          }
+
+          api_url=$(service_domain "$API_SERVICE_ID")
+          web_url=$(service_domain "$WEB_SERVICE_ID")
+          echo "Preview web: ${web_url}"
+          echo "Preview API: ${api_url}"
+
+          current=$(railway variable list --json \
+            --project "$project" \
+            --environment "$environment" \
+            --service "$WEB_SERVICE_ID" | jq -r '.VITE_API_URL // empty')
+          if [[ "$current" == "$api_url" ]]; then
+            echo "VITE_API_URL already points at the preview API"
+            exit 0
+          fi
+
+          printf '%s' "$api_url" | railway variable set VITE_API_URL --stdin \
+            --project "$project" \
+            --environment "$environment" \
+            --service "$WEB_SERVICE_ID"
+          echo "Set VITE_API_URL and triggered a web rebuild"
