@@ -13,7 +13,6 @@ const assignee = (amountCents = 1000, percentage = 100) => ({
   percentage,
 });
 
-// Shared base payload for all type variants
 const categoryId = '550e8400-e29b-41d4-a716-446655440099';
 const baseFields = {
   accountId: '550e8400-e29b-41d4-a716-446655440000',
@@ -24,9 +23,6 @@ const baseFields = {
   assignees: [assignee()],
 };
 
-// ---------------------------------------------------------------------------
-// VAL-01 — baseTransactionSchema: merchant removed, notes added
-// ---------------------------------------------------------------------------
 describe('VAL-01 — baseTransactionSchema field changes', () => {
   it('rejects expense without assignees', () => {
     const { assignees: _omit, ...withoutAssignees } = baseFields;
@@ -64,12 +60,8 @@ describe('VAL-01 — baseTransactionSchema field changes', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// VAL-02 — transferTransactionSchema: toAccountId → counterpartAccountId
-// ---------------------------------------------------------------------------
 describe('VAL-02 — transferTransactionSchema field rename', () => {
   it('rejects transfer payload with old toAccountId field (no counterpartAccountId)', () => {
-    // toAccountId is stripped (unknown key) and counterpartAccountId is required → fails
     const result = createTransactionSchema.safeParse({
       ...baseFields,
       type: 'transfer',
@@ -96,9 +88,6 @@ describe('VAL-02 — transferTransactionSchema field rename', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// VAL-04 — settlement/refund require assignees (card balance query joins assignees)
-// ---------------------------------------------------------------------------
 describe('VAL-04 — all types require assignees', () => {
   it('rejects settlement without assignees', () => {
     const { assignees: _omit, ...withoutAssignees } = baseFields;
@@ -214,9 +203,6 @@ describe('createTransactionSchema — counterpartAccountId required for two-acco
   });
 });
 
-// ---------------------------------------------------------------------------
-// VAL-05 — patchTransactionSchema: discriminated union + empty assignees guard
-// ---------------------------------------------------------------------------
 describe('VAL-05 — patchTransactionSchema', () => {
   it('rejects expense PATCH without assignees', () => {
     const { assignees: _omit, ...withoutAssignees } = baseFields;
@@ -250,9 +236,6 @@ describe('VAL-05 — patchTransactionSchema', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// VAL-03 — updateTransactionSchema: counterpartAccountId replaces old FK fields
-// ---------------------------------------------------------------------------
 describe('VAL-03 — updateTransactionSchema field changes', () => {
   it('accepts payload with counterpartAccountId as valid UUID', () => {
     const result = updateTransactionSchema.safeParse({

@@ -1,10 +1,11 @@
 import { vi } from 'vitest';
+import type { getRouter } from '@/router';
+import type { HistoryState } from '@tanstack/history';
 import type { ReactNode } from 'react';
 
-type RouterLocationState = {
-  importReview?: unknown;
-  createAccount?: unknown;
-};
+type NavTestRouter = ReturnType<typeof getRouter>;
+
+type RouterLocationState = HistoryState;
 
 const resolveLinkHref = (
   to: string,
@@ -101,6 +102,13 @@ const { routerMocks, tanstackRouterMock, useRouterMock } = vi.hoisted(() => {
 
 export { routerMocks, tanstackRouterMock, useRouterMock };
 
+let navTestRouter: NavTestRouter | undefined;
+
+export const registerNavTestRouter = (router: NavTestRouter) => {
+  navTestRouter = router;
+  useRouterMock.mockReturnValue(router);
+};
+
 export const resetTanstackRouterMocks = () => {
   routerMocks.pathname = '/';
   routerMocks.navigate.mockReset();
@@ -108,4 +116,7 @@ export const resetTanstackRouterMocks = () => {
   routerMocks.shouldBlockFn = undefined;
   routerMocks.useBlocker.mockReset();
   useRouterMock.mockReset();
+  if (navTestRouter) {
+    useRouterMock.mockReturnValue(navTestRouter);
+  }
 };

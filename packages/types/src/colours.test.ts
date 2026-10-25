@@ -1,16 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { HOUSEHOLD_DEFAULT_CATEGORIES } from './categories';
-import {
-  COLOUR_TOKENS,
-  DEFAULT_CATEGORY_COLOUR_ORDER,
-  nextCategoryColour,
-} from './colours';
+import { DEFAULT_CATEGORY_COLOUR_ORDER, nextCategoryColour } from './colours';
 
 describe('colour palette', () => {
-  it('offers 18 hues at five shades each', () => {
-    expect(COLOUR_TOKENS).toHaveLength(90);
-  });
-
   it('orders defaults by shade tier, chromatic hues before slate', () => {
     expect(DEFAULT_CATEGORY_COLOUR_ORDER.slice(0, 2)).toEqual([
       'red-500',

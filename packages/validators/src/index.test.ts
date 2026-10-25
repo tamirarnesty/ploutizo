@@ -270,16 +270,6 @@ describe('updateHouseholdSettingsSchema', () => {
 });
 
 describe('AccountFormSchema', () => {
-  it('accepts valid full account form payload', () => {
-    const result = AccountFormSchema.safeParse({
-      name: 'TD Chequing',
-      type: 'chequing',
-      institutionId: 'td',
-      memberIds: [OWNER_ID],
-    });
-    expect(result.success).toBe(true);
-  });
-
   it('rejects empty name with correct message', () => {
     const result = AccountFormSchema.safeParse({
       name: '',

@@ -86,7 +86,11 @@ describe('Accounts router-state create handoff', () => {
   });
 
   it('does not reopen from invalid or empty create intent', () => {
-    routerMocks.locationState.createAccount = { type: 'other' };
+    routerMocks.locationState.createAccount = {
+      type: 'other',
+    } as unknown as NonNullable<
+      (typeof routerMocks.locationState)['createAccount']
+    >;
 
     render(<Accounts />);
 

@@ -2,15 +2,14 @@ import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { resetRouterMocks } from '@/test/mockTanstackRouter';
 import { getRouter } from '@/router';
-import { routerMocks, useRouterMock } from '@/test/tanstackRouterMocks';
+import { registerNavTestRouter, routerMocks } from '@/test/tanstackRouterMocks';
 import { SettingsTabs } from './SettingsTabs';
 
-const appRouter = getRouter();
+registerNavTestRouter(getRouter());
 
 describe('SettingsTabs', () => {
   beforeEach(() => {
     resetRouterMocks();
-    useRouterMock.mockReturnValue(appRouter);
     routerMocks.pathname = '/settings/categories';
   });
 

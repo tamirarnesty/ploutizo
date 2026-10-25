@@ -1,6 +1,5 @@
 import { expect } from 'vitest';
 
-/** Selectors for overlay roots (`data-slot` on Dialog / Sheet / AlertDialog). */
 export const OVERLAY_SLOTS = {
   dialog: '[data-slot="dialog"]',
   dialogContent: '[data-slot="dialog-content"]',

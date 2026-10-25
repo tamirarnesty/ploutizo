@@ -58,10 +58,9 @@ describe('telemetry catalog', () => {
   it('prepareTelemetryRecord enforces catalog membership', () => {
     expect(() =>
       prepareTelemetryRecord({
-        // @ts-expect-error intentional invalid operation for runtime enforcement
         operation: 'invented.operation',
         surface: 'web.dashboard',
-      })
+      } as unknown as Parameters<typeof prepareTelemetryRecord>[0])
     ).toThrow(TelemetryCatalogError);
   });
 });

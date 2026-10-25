@@ -1,10 +1,3 @@
-/**
- * Content-profile parsing tests.
- *
- * Each fixture identifies a content profile, never a financial institution.
- * The generic positional profiles (mdy_debit_credit_balance,
- * iso_debit_credit_masked_card) must not produce any institution result.
- */
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';

@@ -5,8 +5,10 @@ import { SidebarProvider } from '@ploutizo/ui/components/sidebar';
 import { resetRouterMocks } from '@/test/mockTanstackRouter';
 import { getRouter } from '@/router';
 import { fireModKey } from '@/test/keyboard';
-import { routerMocks, useRouterMock } from '@/test/tanstackRouterMocks';
+import { registerNavTestRouter, routerMocks } from '@/test/tanstackRouterMocks';
 import { AppSidebar } from './AppSidebar';
+
+registerNavTestRouter(getRouter());
 
 vi.mock('@/lib/command', () => ({
   CommandPaletteTrigger: () => (
@@ -15,8 +17,6 @@ vi.mock('@/lib/command', () => ({
     </button>
   ),
 }));
-
-const appRouter = getRouter();
 
 const SidebarHarness = ({ pathname }: { pathname: string }) => {
   routerMocks.pathname = pathname;
@@ -33,7 +33,6 @@ const renderSidebar = (pathname = '/dashboard') =>
 describe('AppSidebar', () => {
   beforeEach(() => {
     resetRouterMocks();
-    useRouterMock.mockReturnValue(appRouter);
     routerMocks.pathname = '/dashboard';
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
