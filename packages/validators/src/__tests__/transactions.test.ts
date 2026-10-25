@@ -23,6 +23,24 @@ const baseFields = {
   assignees: [assignee()],
 };
 
+const validExpense = { ...baseFields, type: 'expense' as const };
+
+describe('createTransactionSchema — common field constraints', () => {
+  it.each([
+    ['zero amount', { amount: 0 }],
+    ['negative amount', { amount: -100 }],
+    ['fractional amount', { amount: 1.5 }],
+    ['ISO datetime as date', { date: '2024-01-01T00:00:00Z' }],
+    ['US-format date', { date: '01/15/2024' }],
+    ['unknown transaction type', { type: 'unknown_type' }],
+  ] as const)('rejects %s', (_label, override) => {
+    expect(
+      createTransactionSchema.safeParse({ ...validExpense, ...override })
+        .success
+    ).toBe(false);
+  });
+});
+
 describe('VAL-01 — baseTransactionSchema field changes', () => {
   it('rejects expense without assignees', () => {
     const { assignees: _omit, ...withoutAssignees } = baseFields;
