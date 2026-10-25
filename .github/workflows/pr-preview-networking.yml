@@ -1,0 +1,255 @@
+# Gives each Railway PR environment public hostnames and points the web build
+# at that environment's API.
+#
+# Production only has custom domains. Railway copies a public URL into a PR
+# environment when the base service has a Railway-provided domain, so these
+# previews otherwise deploy with no hostname and the web bundle keeps
+# production's VITE_API_URL (https://api.ploutizo.app).
+#
+# The web app calls api-ploutizo-pr-{N}.up.railway.app, and the API allowlists
+# https://web-ploutizo-pr-{N}.up.railway.app. Railway assigns its own hostname,
+# so this job renames that domain to the required name. It does not set
+# VITE_API_URL unless both services are on those hostnames.
+#
+# The shell below is inlined. Detect never checks out PR-controlled files
+# while holding Railway credentials.
+name: PR Preview Networking
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number to wire a preview API for
+        required: true
+        type: number
+
+concurrency:
+  group: pr-preview-networking-${{ github.event.pull_request.head.ref || (github.event_name == 'workflow_dispatch' && format('pr-{0}', inputs.pr_number)) || github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  detect:
+    name: Detect whether to wire
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
+    runs-on: ubuntu-latest
+    outputs:
+      should_wire: ${{ steps.decide.outputs.should_wire }}
+      pr_number: ${{ steps.decide.outputs.pr_number }}
+    steps:
+      - name: Decide whether to wire
+        id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ -z "$PR_NUMBER" ]]; then
+              echo "PR number is required" >&2
+              exit 1
+            fi
+            state=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}" --jq '.state')
+            draft=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}" --jq '.draft')
+            if [[ "$state" != "open" || "$draft" == "true" ]]; then
+              echo "PR ${PR_NUMBER} is not an open non-draft; skipping" >&2
+              exit 1
+            fi
+          fi
+
+          echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "should_wire=true" >> "$GITHUB_OUTPUT"
+
+  wire:
+    name: Wire preview web to preview API
+    needs: detect
+    if: needs.detect.outputs.should_wire == 'true'
+    runs-on: ubuntu-latest
+    env:
+      RAILWAY_ENVIRONMENT_NAME: ${{ vars.RAILWAY_PR_ENV_PREFIX != '' && vars.RAILWAY_PR_ENV_PREFIX || 'ploutizo-pr' }}-${{ needs.detect.outputs.pr_number }}
+    steps:
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli@5.30.1
+
+      - name: Wait for Railway PR environment
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          target_name="${{ env.RAILWAY_ENVIRONMENT_NAME }}"
+          railway link -p "${{ vars.RAILWAY_PROJECT_ID }}" -e production >/dev/null
+          for attempt in $(seq 1 36); do
+            if railway environment list --ephemeral --json \
+              | jq -e --arg name "$target_name" '.environments[] | select(.name == $name)' >/dev/null; then
+              echo "Found Railway PR environment: ${target_name}"
+              exit 0
+            fi
+            echo "Waiting for Railway PR environment ${target_name} (${attempt}/36)..."
+            sleep 10
+          done
+          echo "Railway PR environment ${target_name} not found after 6 minutes" >&2
+          exit 1
+
+      - name: Publish preview domains and point web at the API
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+          API_SERVICE_ID: ${{ vars.RAILWAY_API_SERVICE_ID }}
+          WEB_SERVICE_ID: ${{ vars.RAILWAY_WEB_SERVICE_ID }}
+          PR_NUMBER: ${{ needs.detect.outputs.pr_number }}
+        run: |
+          set -euo pipefail
+          project="${{ vars.RAILWAY_PROJECT_ID }}"
+          environment="${{ env.RAILWAY_ENVIRONMENT_NAME }}"
+
+          # `domain list --json` returns objects. Create returns a URL string,
+          # and an existing domain returns an array of URL strings.
+          domain_rows() {
+            local json="$1"
+            local parsed
+            if ! parsed=$(jq -r '
+              def strip:
+                sub("^https?://"; "") | sub("/.*$"; "") | sub("\\.$"; "");
+              def row:
+                if type == "string" then
+                  {host: strip, kind: "unknown"}
+                elif type == "object" and ((.domain | type) == "string") then
+                  {host: (.domain | strip), kind: (.type // "unknown")}
+                else
+                  empty
+                end;
+              def entries:
+                if (.domains | type) == "array" then .domains[]
+                elif (.domain | type) == "string" then .
+                else empty end;
+              entries | row | select(.host != "") | "\(.host)\t\(.kind)"
+            ' <<<"$json"); then
+              echo "Could not parse Railway domain JSON" >&2
+              return 1
+            fi
+            if [[ -n "$parsed" ]]; then
+              printf '%s\n' "$parsed"
+            fi
+          }
+
+          rows_include_host() {
+            local rows="$1"
+            local expected="$2"
+            local host kind
+            while IFS=$'\t' read -r host kind; do
+              if [[ "$host" == "$expected" ]]; then
+                return 0
+              fi
+            done <<<"$rows"
+            return 1
+          }
+
+          pick_renamable_host() {
+            local rows="$1"
+            local host kind
+            while IFS=$'\t' read -r host kind; do
+              [[ -z "$host" || "$kind" == "custom" ]] && continue
+              if [[ "$kind" == "service" || "$host" == *.up.railway.app ]]; then
+                printf '%s\n' "$host"
+                return 0
+              fi
+            done <<<"$rows"
+            return 1
+          }
+
+          list_domains() {
+            local service="$1"
+            local listed
+            listed=$(railway domain list --json \
+              --project "$project" \
+              --environment "$environment" \
+              --service "$service" || true)
+            if [[ -z "$listed" ]]; then
+              listed='{"domains":[]}'
+            fi
+            printf '%s' "$listed"
+          }
+
+          service_domain() {
+            local service="$1"
+            local expected="$2"
+            local listed created rows current
+
+            listed=$(list_domains "$service")
+            rows=$(domain_rows "$listed") || exit 1
+            if rows_include_host "$rows" "$expected"; then
+              printf '%s\n' "$expected"
+              return 0
+            fi
+
+            current=$(pick_renamable_host "$rows") || true
+            if [[ -z "$current" ]]; then
+              created=$(railway domain --port 8080 --json \
+                --project "$project" \
+                --environment "$environment" \
+                --service "$service")
+              rows=$(domain_rows "$created") || exit 1
+              if rows_include_host "$rows" "$expected"; then
+                printf '%s\n' "$expected"
+                return 0
+              fi
+              current=$(pick_renamable_host "$rows") || true
+            fi
+
+            if [[ -z "$current" ]]; then
+              echo "No Railway domain for ${service} in ${environment}; expected ${expected}" >&2
+              exit 1
+            fi
+
+            echo "Renaming Railway domain ${current} to ${expected}" >&2
+            railway domain update "$current" --domain "$expected" --port 8080 --json \
+              --project "$project" \
+              --environment "$environment" \
+              --service "$service" >&2
+
+            listed=$(list_domains "$service")
+            rows=$(domain_rows "$listed") || exit 1
+            if ! rows_include_host "$rows" "$expected"; then
+              echo "Railway domain for ${service} in ${environment} is not ${expected}" >&2
+              printf '%s\n' "$rows" >&2
+              exit 1
+            fi
+            printf '%s\n' "$expected"
+          }
+
+          if [[ ! "$PR_NUMBER" =~ ^[0-9]+$ ]]; then
+            echo "PR number must be numeric" >&2
+            exit 1
+          fi
+
+          expected_api_host="api-ploutizo-pr-${PR_NUMBER}.up.railway.app"
+          expected_web_host="web-ploutizo-pr-${PR_NUMBER}.up.railway.app"
+          api_host=$(service_domain "$API_SERVICE_ID" "$expected_api_host")
+          web_host=$(service_domain "$WEB_SERVICE_ID" "$expected_web_host")
+          api_url="https://${api_host}"
+          echo "Preview web: ${web_host}"
+          echo "Preview API: ${api_url}"
+
+          current=$(railway variable list --json \
+            --project "$project" \
+            --environment "$environment" \
+            --service "$WEB_SERVICE_ID" | jq -r '.VITE_API_URL // empty')
+          if [[ "$current" == "$api_url" ]]; then
+            echo "VITE_API_URL already points at the preview API"
+            exit 0
+          fi
+
+          printf '%s' "$api_url" | railway variable set VITE_API_URL --stdin \
+            --project "$project" \
+            --environment "$environment" \
+            --service "$WEB_SERVICE_ID"
+          echo "Set VITE_API_URL and triggered a web rebuild"
