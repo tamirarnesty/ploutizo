@@ -7,9 +7,7 @@ import type {
 import type { AccountType, TransactionType } from '@ploutizo/types';
 
 export type TransactionFormAccountSlotLabel =
-  | 'Account'
-  | 'Source'
-  | 'Destination';
+  'Account' | 'Source' | 'Destination';
 
 export interface TransactionFormAccountSlot {
   field: TransactionAccountSlot;

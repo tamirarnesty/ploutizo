@@ -16,7 +16,7 @@ const config = defineConfig({
     alias: {
       // Required for ReUI DataGrid internal imports (uses @ploutizo/components/* alias)
       '@ploutizo/components': path.resolve(
-        __dirname,
+        import.meta.dirname,
         '../../packages/ui/src/components'
       ),
     },

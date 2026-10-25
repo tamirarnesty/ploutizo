@@ -36,9 +36,15 @@ vi.mock('@/lib/access/access-context', async () => {
 
 vi.mock('./useGetImportDraft', async (importOriginal) => {
   const actual = await importOriginal<typeof useGetImportDraftModule>();
+  const fetchImportDraftMock = vi.fn();
   return {
     ...actual,
-    fetchImportDraft: vi.fn(),
+    fetchImportDraft: fetchImportDraftMock,
+    importDraftQueryOptions: (id: string) => ({
+      ...actual.importDraftQueryOptions(id),
+      queryFn: ({ signal }: { signal?: AbortSignal }) =>
+        fetchImportDraftMock(id, signal),
+    }),
     useGetImportDraft: vi.fn(),
   };
 });
@@ -381,8 +387,7 @@ describe('useImportReviewSession', () => {
       rejectFirst = reject;
     });
     let resolveSecond:
-      | ((result: BatchUpdateImportDraftRowsResult) => void)
-      | undefined;
+      ((result: BatchUpdateImportDraftRowsResult) => void) | undefined;
     const secondPersist = new Promise<BatchUpdateImportDraftRowsResult>(
       (resolve) => {
         resolveSecond = resolve;
@@ -722,8 +727,7 @@ describe('useImportReviewSession', () => {
 
   it('does not let a stale success overwrite a reverted same-row value', async () => {
     let resolveFirst:
-      | ((result: BatchUpdateImportDraftRowsResult) => void)
-      | undefined;
+      ((result: BatchUpdateImportDraftRowsResult) => void) | undefined;
     const firstPersist = new Promise<BatchUpdateImportDraftRowsResult>(
       (resolve) => {
         resolveFirst = resolve;

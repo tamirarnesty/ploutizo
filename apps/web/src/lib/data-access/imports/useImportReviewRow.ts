@@ -12,16 +12,15 @@ export const useImportReviewRow = (
     [draftId]
   );
 
-  const liveRow = useLiveQuery(
-    (q) => {
+  const liveRow = useLiveQuery({
+    query: (q) => {
       if (!rowId) return undefined;
       return q
         .from({ row: collection })
         .where(({ row }) => eq(row.id, rowId))
         .findOne();
     },
-    [collection, rowId]
-  );
+  });
 
   return liveRow.data;
 };

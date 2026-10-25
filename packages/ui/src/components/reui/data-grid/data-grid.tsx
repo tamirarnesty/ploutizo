@@ -418,11 +418,7 @@ export type DataGridRequestParams = {
 
 /** Which spreadsheet operation produced a cell change batch. */
 export type DataGridCellsChangeSource =
-  | 'paste'
-  | 'cut'
-  | 'clear'
-  | 'fill'
-  | 'edit';
+  'paste' | 'cut' | 'clear' | 'fill' | 'edit';
 
 export interface DataGridCellChange<TData> {
   rowId: string;
@@ -679,8 +675,7 @@ const useDataGrid = <
   TData extends object = any,
 >(): DataGridContextProps<TData> => {
   const context = useContext(DataGridContext) as
-    | DataGridContextProps<TData>
-    | undefined;
+    DataGridContextProps<TData> | undefined;
   if (!context) {
     throw new Error('useDataGrid must be used within a DataGridProvider');
   }

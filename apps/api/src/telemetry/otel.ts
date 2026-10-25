@@ -1,4 +1,6 @@
+import { context, trace } from '@opentelemetry/api';
 import { logs } from '@opentelemetry/api-logs';
+import { AsyncLocalStorageContextManager } from '@opentelemetry/context-async-hooks';
 import { resourceFromAttributes } from '@opentelemetry/resources';
 import {
   BatchLogRecordProcessor,
@@ -6,13 +8,11 @@ import {
 } from '@opentelemetry/sdk-logs';
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
-import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
-import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
+import { BatchSpanProcessor, TracerProvider } from '@opentelemetry/sdk-trace';
 import {
   ATTR_SERVICE_NAME,
   ATTR_SERVICE_VERSION,
 } from '@opentelemetry/semantic-conventions';
-import { trace } from '@opentelemetry/api';
 import { resolveApiTelemetryEnv } from './env';
 import type { Tracer } from '@opentelemetry/api';
 import type { ApiTelemetryEnv } from './env';
@@ -79,10 +79,14 @@ export const initApiOtel = (
 
   const resource = resourceFromAttributes(resourceAttrs);
 
-  let tracerProvider: NodeTracerProvider | undefined;
+  let tracerProvider: TracerProvider | undefined;
   let loggerProvider: LoggerProvider | undefined;
 
   try {
+    const contextManager = new AsyncLocalStorageContextManager();
+    contextManager.enable();
+    context.setGlobalContextManager(contextManager);
+
     if (env.exportEnabled && env.posthogToken) {
       const authHeaders = {
         Authorization: `Bearer ${env.posthogToken}`,
@@ -93,10 +97,11 @@ export const initApiOtel = (
         headers: authHeaders,
       });
 
-      tracerProvider = new NodeTracerProvider({
+      tracerProvider = new TracerProvider({
         resource,
         spanProcessors: [
-          new BatchSpanProcessor(traceExporter, {
+          new BatchSpanProcessor({
+            exporter: traceExporter,
             maxQueueSize: 2048,
             maxExportBatchSize: 512,
             scheduledDelayMillis: 5_000,
@@ -104,7 +109,7 @@ export const initApiOtel = (
           }),
         ],
       });
-      tracerProvider.register();
+      trace.setGlobalTracerProvider(tracerProvider);
 
       const logExporter = new OTLPLogExporter({
         url: `${env.posthogHost}/i/v1/logs`,
@@ -126,8 +131,8 @@ export const initApiOtel = (
     } else {
       // Local/no-token: still register a tracer provider so spans form locally
       // without exporting. Completion logs go through the console client.
-      tracerProvider = new NodeTracerProvider({ resource });
-      tracerProvider.register();
+      tracerProvider = new TracerProvider({ resource });
+      trace.setGlobalTracerProvider(tracerProvider);
     }
   } catch (error) {
     console.error(
@@ -137,8 +142,8 @@ export const initApiOtel = (
       }
     );
     try {
-      tracerProvider = new NodeTracerProvider({ resource });
-      tracerProvider.register();
+      tracerProvider = new TracerProvider({ resource });
+      trace.setGlobalTracerProvider(tracerProvider);
     } catch {
       // Absolute fallback — getTracer still returns a no-op tracer.
     }

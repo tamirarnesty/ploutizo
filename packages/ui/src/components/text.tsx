@@ -3,25 +3,9 @@ import * as React from 'react';
 import { cn } from '@ploutizo/ui/lib/utils';
 
 export type TextAs =
-  | 'h1'
-  | 'h2'
-  | 'h3'
-  | 'h4'
-  | 'h5'
-  | 'h6'
-  | 'p'
-  | 'span'
-  | 'div'
-  | 'label';
+  'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'span' | 'div' | 'label';
 export type TextVariant =
-  | 'h1'
-  | 'h2'
-  | 'h3'
-  | 'body'
-  | 'body-sm'
-  | 'caption'
-  | 'label'
-  | 'error';
+  'h1' | 'h2' | 'h3' | 'body' | 'body-sm' | 'caption' | 'label' | 'error';
 
 const variantClasses: Record<TextVariant, string> = {
   h1: 'font-heading text-3xl font-semibold tracking-tight leading-tight',

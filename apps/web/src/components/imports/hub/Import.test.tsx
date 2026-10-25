@@ -172,8 +172,7 @@ describe('Import', () => {
       (_payload: unknown, options: Record<string, unknown> | undefined) => {
         (
           options?.onSuccess as
-            | ((r: typeof createdDraftResponse) => void)
-            | undefined
+            ((r: typeof createdDraftResponse) => void) | undefined
         )?.(createdDraftResponse);
       }
     );
@@ -333,8 +332,7 @@ describe('Import', () => {
       (_payload: unknown, options: Record<string, unknown> | undefined) => {
         (
           options?.onSuccess as
-            | ((r: typeof createdDraftResponse) => void)
-            | undefined
+            ((r: typeof createdDraftResponse) => void) | undefined
         )?.(createdDraftResponse);
       }
     );

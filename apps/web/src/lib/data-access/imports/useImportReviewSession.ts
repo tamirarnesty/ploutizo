@@ -85,13 +85,12 @@ export const useImportReviewSession = (
     void cancelImportDraftQueryFetches(draftId);
   }, [draftId, draftNotFound]);
 
-  const liveRows = useLiveQuery(
-    (q) =>
+  const liveRows = useLiveQuery({
+    query: (q) =>
       q
         .from({ row: rowsCollection })
         .orderBy(({ row }) => row.rowNumber, 'asc'),
-    [rowsCollection]
-  );
+  });
 
   useEffect(() => {
     seedImportDraftPersistBaselines(draftId, liveRows.data);
