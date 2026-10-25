@@ -109,6 +109,21 @@ describe('allowedOrigins', () => {
     const { isAllowedOrigin } = await loadAllowedOrigins();
 
     expect(isAllowedOrigin('http://172.20.10.9:3000')).toBe(false);
+    expect(isAllowedOrigin('http://127.0.0.1:3000')).toBe(false);
+    expect(isAllowedOrigin('http://localhost:3000')).toBe(true);
+  });
+
+  it.each([
+    'http://127.1:3000',
+    'http://2130706433:3000',
+    'http://0177.0.0.1:3000',
+    'http://0x7f.0.0.1:3000',
+  ])('rejects rewritten loopback origin %s', async (origin) => {
+    const { isAllowedOrigin, resolveAllowedOrigin } =
+      await loadAllowedOrigins();
+
+    expect(isAllowedOrigin(origin)).toBe(false);
+    expect(resolveAllowedOrigin(origin)).toBeNull();
   });
 
   it('supports extra origins from CORS_ALLOWED_ORIGINS', async () => {
