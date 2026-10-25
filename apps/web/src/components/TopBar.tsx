@@ -12,10 +12,7 @@ export const TopBar = () => {
   const showClerkChrome = isLoaded && isSignedIn;
 
   return (
-    <header
-      data-app-header
-      className="z-20 flex min-h-12 shrink-0 items-center gap-3 bg-sidebar px-4"
-    >
+    <header className="z-20 flex min-h-12 shrink-0 items-center gap-3 bg-sidebar px-4 pt-2">
       {/* Mobile-only sidebar trigger — left of logo */}
       <SidebarTrigger className="md:hidden" />
       <AppLogo />
