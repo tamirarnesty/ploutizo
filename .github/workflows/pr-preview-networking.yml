@@ -6,6 +6,11 @@
 # previews otherwise deploy with no hostname and the web bundle keeps
 # production's VITE_API_URL (https://api.ploutizo.app).
 #
+# The web app calls api-ploutizo-pr-{N}.up.railway.app, and the API allowlists
+# https://web-ploutizo-pr-{N}.up.railway.app. Railway assigns its own hostname,
+# so this job renames that domain to the required name. It does not set
+# VITE_API_URL unless both services are on those hostnames.
+#
 # The shell below is inlined. Detect never checks out PR-controlled files
 # while holding Railway credentials.
 name: PR Preview Networking
@@ -100,14 +105,71 @@ jobs:
           RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
           API_SERVICE_ID: ${{ vars.RAILWAY_API_SERVICE_ID }}
           WEB_SERVICE_ID: ${{ vars.RAILWAY_WEB_SERVICE_ID }}
+          PR_NUMBER: ${{ needs.detect.outputs.pr_number }}
         run: |
           set -euo pipefail
           project="${{ vars.RAILWAY_PROJECT_ID }}"
           environment="${{ env.RAILWAY_ENVIRONMENT_NAME }}"
 
-          service_domain() {
+          # `domain list --json` returns objects. Create returns a URL string,
+          # and an existing domain returns an array of URL strings.
+          domain_rows() {
+            local json="$1"
+            local parsed
+            if ! parsed=$(jq -r '
+              def strip:
+                sub("^https?://"; "") | sub("/.*$"; "") | sub("\\.$"; "");
+              def row:
+                if type == "string" then
+                  {host: strip, kind: "unknown"}
+                elif type == "object" and ((.domain | type) == "string") then
+                  {host: (.domain | strip), kind: (.type // "unknown")}
+                else
+                  empty
+                end;
+              def entries:
+                if (.domains | type) == "array" then .domains[]
+                elif (.domain | type) == "object" then .domain
+                elif (.domain | type) == "string" then .
+                else empty end;
+              entries | row | select(.host != "") | "\(.host)\t\(.kind)"
+            ' <<<"$json"); then
+              echo "Could not parse Railway domain JSON" >&2
+              return 1
+            fi
+            if [[ -n "$parsed" ]]; then
+              printf '%s\n' "$parsed"
+            fi
+          }
+
+          rows_include_host() {
+            local rows="$1"
+            local expected="$2"
+            local host kind
+            while IFS=$'\t' read -r host kind; do
+              if [[ "$host" == "$expected" ]]; then
+                return 0
+              fi
+            done <<<"$rows"
+            return 1
+          }
+
+          pick_renamable_host() {
+            local rows="$1"
+            local host kind
+            while IFS=$'\t' read -r host kind; do
+              [[ -z "$host" || "$kind" == "custom" ]] && continue
+              if [[ "$kind" == "service" || "$host" == *.up.railway.app ]]; then
+                printf '%s\n' "$host"
+                return 0
+              fi
+            done <<<"$rows"
+            return 1
+          }
+
+          list_domains() {
             local service="$1"
-            local listed created host
+            local listed
             listed=$(railway domain list --json \
               --project "$project" \
               --environment "$environment" \
@@ -115,24 +177,74 @@ jobs:
             if [[ -z "$listed" ]]; then
               listed='{"domains":[]}'
             fi
-            host=$(jq -r '[.domains[]? | select(test("up\\.railway\\.app"))] | .[0] // empty' <<<"$listed")
-            if [[ -z "$host" ]]; then
+            printf '%s' "$listed"
+          }
+
+          service_domain() {
+            local service="$1"
+            local expected="$2"
+            local listed created rows current
+
+            listed=$(list_domains "$service")
+            rows=$(domain_rows "$listed") || exit 1
+            if rows_include_host "$rows" "$expected"; then
+              printf '%s\n' "$expected"
+              return 0
+            fi
+
+            current=$(pick_renamable_host "$rows") || true
+            if [[ -z "$current" ]]; then
               created=$(railway domain --port 8080 --json \
                 --project "$project" \
                 --environment "$environment" \
                 --service "$service")
-              host=$(jq -r '.domain // .domains[0] // empty' <<<"$created")
+              rows=$(domain_rows "$created") || exit 1
+              if rows_include_host "$rows" "$expected"; then
+                printf '%s\n' "$expected"
+                return 0
+              fi
+              current=$(pick_renamable_host "$rows") || true
             fi
-            if [[ -z "$host" ]]; then
-              echo "No Railway domain for ${service} in ${environment}" >&2
+
+            if [[ -z "$current" ]]; then
+              echo "No Railway domain for ${service} in ${environment}; expected ${expected}" >&2
               exit 1
             fi
-            printf '%s' "$host"
+
+            if [[ "$current" != "$expected" ]]; then
+              echo "Renaming Railway domain ${current} to ${expected}" >&2
+              railway domain update "$current" --domain "$expected" --port 8080 --json \
+                --project "$project" \
+                --environment "$environment" \
+                --service "$service" >&2
+            fi
+
+            listed=$(list_domains "$service")
+            rows=$(domain_rows "$listed") || exit 1
+            if ! rows_include_host "$rows" "$expected"; then
+              echo "Railway domain for ${service} in ${environment} is not ${expected}" >&2
+              printf '%s\n' "$rows" >&2
+              exit 1
+            fi
+            printf '%s\n' "$expected"
           }
 
-          api_url=$(service_domain "$API_SERVICE_ID")
-          web_url=$(service_domain "$WEB_SERVICE_ID")
-          echo "Preview web: ${web_url}"
+          if [[ ! "$PR_NUMBER" =~ ^[0-9]+$ ]]; then
+            echo "PR number must be numeric" >&2
+            exit 1
+          fi
+
+          expected_api_host="api-ploutizo-pr-${PR_NUMBER}.up.railway.app"
+          expected_web_host="web-ploutizo-pr-${PR_NUMBER}.up.railway.app"
+          api_host=$(service_domain "$API_SERVICE_ID" "$expected_api_host")
+          web_host=$(service_domain "$WEB_SERVICE_ID" "$expected_web_host")
+          if [[ "$api_host" != "$expected_api_host" || "$web_host" != "$expected_web_host" ]]; then
+            echo "Refusing to set VITE_API_URL. API host '${api_host}' must be ${expected_api_host}, and web host '${web_host}' must be ${expected_web_host}." >&2
+            exit 1
+          fi
+
+          api_url="https://${api_host}"
+          echo "Preview web: ${web_host}"
           echo "Preview API: ${api_url}"
 
           current=$(railway variable list --json \
