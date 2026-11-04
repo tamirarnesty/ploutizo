@@ -100,6 +100,14 @@ export default [
     },
   },
   {
+    files: ['src/sw.ts'],
+    languageOptions: {
+      parserOptions: {
+        project: './tsconfig.sw.json',
+      },
+    },
+  },
+  {
     files: ['eslint.config.js'],
     rules: {
       // Node ESM requires the .js extension for repo-root shared ESLint presets.
