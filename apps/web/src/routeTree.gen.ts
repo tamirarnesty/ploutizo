@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LayoutRouteImport } from './routes/_layout'
+import { Route as OfflineDothtmlRouteImport } from './routes/offline[.]html'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LayoutAccountsRouteImport } from './routes/_layout.accounts'
 import { Route as LayoutDashboardRouteImport } from './routes/_layout.dashboard'
@@ -36,6 +37,11 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const LayoutRoute = LayoutRouteImport.update({
   id: '/_layout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OfflineDothtmlRoute = OfflineDothtmlRouteImport.update({
+  id: '/offline.html',
+  path: '/offline.html',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -131,6 +137,7 @@ const LayoutImportDraftIdFinalizeRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/offline.html': typeof OfflineDothtmlRoute
   '/onboarding': typeof OnboardingRoute
   '/import': typeof LayoutImportRouteRouteWithChildren
   '/settings': typeof LayoutSettingsRouteRouteWithChildren
@@ -151,6 +158,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/offline.html': typeof OfflineDothtmlRoute
   '/onboarding': typeof OnboardingRoute
   '/accounts': typeof LayoutAccountsRoute
   '/dashboard': typeof LayoutDashboardRoute
@@ -170,6 +178,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_layout': typeof LayoutRouteWithChildren
+  '/offline.html': typeof OfflineDothtmlRoute
   '/onboarding': typeof OnboardingRoute
   '/_layout/import': typeof LayoutImportRouteRouteWithChildren
   '/_layout/settings': typeof LayoutSettingsRouteRouteWithChildren
@@ -192,6 +201,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/offline.html'
     | '/onboarding'
     | '/import'
     | '/settings'
@@ -212,6 +222,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/offline.html'
     | '/onboarding'
     | '/accounts'
     | '/dashboard'
@@ -230,6 +241,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_layout'
+    | '/offline.html'
     | '/onboarding'
     | '/_layout/import'
     | '/_layout/settings'
@@ -252,6 +264,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LayoutRoute: typeof LayoutRouteWithChildren
+  OfflineDothtmlRoute: typeof OfflineDothtmlRoute
   OnboardingRoute: typeof OnboardingRoute
   SignInSplatRoute: typeof SignInSplatRoute
   SignUpSplatRoute: typeof SignUpSplatRoute
@@ -271,6 +284,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof LayoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/offline.html': {
+      id: '/offline.html'
+      path: '/offline.html'
+      fullPath: '/offline.html'
+      preLoaderRoute: typeof OfflineDothtmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -465,6 +485,7 @@ const LayoutRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LayoutRoute: LayoutRouteWithChildren,
+  OfflineDothtmlRoute: OfflineDothtmlRoute,
   OnboardingRoute: OnboardingRoute,
   SignInSplatRoute: SignInSplatRoute,
   SignUpSplatRoute: SignUpSplatRoute,
