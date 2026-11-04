@@ -9,7 +9,11 @@ import { nitro } from 'nitro/vite';
 const config = defineConfig({
   plugins: [devtools(), nitro(), tailwindcss(), tanstackStart(), viteReact()],
   optimizeDeps: {
-    exclude: ['@clerk/ui'],
+    exclude: [
+      '@clerk/ui',
+      // Prebundling rewrites the published OPFS worker URL and breaks wa-sqlite.
+      '@tanstack/browser-db-sqlite-persistence',
+    ],
   },
   resolve: {
     tsconfigPaths: true,

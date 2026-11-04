@@ -11,6 +11,9 @@ allowBuilds:
   core-js: false
   msw: false
   utf-8-validate: false
+  # TanStack's browser worker already vendors wa-sqlite. The package postinstall
+  # only downloads PowerSync's dynamic-link cores, which this app does not use.
+  '@journeyapps/wa-sqlite': false
 
 overrides:
   '@opentelemetry/api': 1.10.0

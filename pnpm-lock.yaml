@@ -310,6 +310,9 @@ importers:
       '@clerk/ui':
         specifier: ^1.41.2
         version: 1.41.2(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@8.1.1)
+      '@journeyapps/wa-sqlite':
+        specifier: 1.5.0
+        version: 1.5.0
       '@ploutizo/telemetry':
         specifier: workspace:*
         version: link:../../packages/telemetry
@@ -328,6 +331,9 @@ importers:
       '@tailwindcss/vite':
         specifier: ^4.3.3
         version: 4.3.3(vite@8.3.5(@types/node@26.6.5)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))
+      '@tanstack/browser-db-sqlite-persistence':
+        specifier: 0.2.37
+        version: 0.2.37(@journeyapps/wa-sqlite@1.5.0)(typescript@6.0.3)
       '@tanstack/db':
         specifier: ^0.15.2
         version: 0.15.2(typescript@6.0.3)
@@ -2026,6 +2032,9 @@ packages:
 
   '@internationalized/number@3.6.9':
     resolution: {integrity: sha512-GgWy2caO/+hV9sT/oCTWGHvbjmJMPT9kkXzoKRLnkEq7adghhR7UprhvY9sXrKfrp3NcDfhF6QQHXR1KfQbB8g==}
+
+  '@journeyapps/wa-sqlite@1.5.0':
+    resolution: {integrity: sha512-oASXW/9Ktbhn6kJjxCJzRKxNnlOyj7GKBLF/59dkz1kbOLw7kAXBTwWTUvqfT97OEshtrK/J8bJUYbpggdCZ9Q==}
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -4061,8 +4070,19 @@ packages:
     peerDependencies:
       vite: ^5.2.0 || ^6 || ^7 || ^8
 
+  '@tanstack/browser-db-sqlite-persistence@0.2.37':
+    resolution: {integrity: sha512-ftGMP5X906NoOi/S9TSwSQJ3saemgdF9kJbD9016kGQFSXwYwlvLFZx1QxoHh+AI5bpWGqxq8WwKbJaYcNrJ0A==}
+    peerDependencies:
+      '@journeyapps/wa-sqlite': ^1.4.1
+      typescript: '>=4.7'
+
   '@tanstack/db-ivm@0.2.0':
     resolution: {integrity: sha512-AuMuGzVdWR5qzJPRYajmrUp95vMo0duvMZ0zBjMOvaI9rkh2GHZWCsJ/p7s81UN4Lep6HHJjahnYUF+XVL0+AQ==}
+    peerDependencies:
+      typescript: '>=4.7'
+
+  '@tanstack/db-sqlite-persistence-core@0.4.12':
+    resolution: {integrity: sha512-lGBkWTtnKB5ZE7rN87S3O1SSNNhGRDokHGil3UyR+YRcjk52JeZzVYufXJGs12I31L+6srTRM6/sWBUPg3e27Q==}
     peerDependencies:
       typescript: '>=4.7'
 
@@ -8969,6 +8989,8 @@ snapshots:
     dependencies:
       '@swc/helpers': 0.5.21
 
+  '@journeyapps/wa-sqlite@1.5.0': {}
+
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
@@ -10710,9 +10732,21 @@ snapshots:
       tailwindcss: 4.3.3
       vite: 8.3.5(@types/node@26.6.5)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
 
+  '@tanstack/browser-db-sqlite-persistence@0.2.37(@journeyapps/wa-sqlite@1.5.0)(typescript@6.0.3)':
+    dependencies:
+      '@journeyapps/wa-sqlite': 1.5.0
+      '@tanstack/db-sqlite-persistence-core': 0.4.12(typescript@6.0.3)
+      typescript: 6.0.3
+
   '@tanstack/db-ivm@0.2.0(typescript@6.0.3)':
     dependencies:
       fractional-indexing: 3.4.0
+      typescript: 6.0.3
+
+  '@tanstack/db-sqlite-persistence-core@0.4.12(typescript@6.0.3)':
+    dependencies:
+      '@standard-schema/spec': 1.1.0
+      '@tanstack/db': 0.15.2(typescript@6.0.3)
       typescript: 6.0.3
 
   '@tanstack/db@0.15.2(typescript@6.0.3)':
