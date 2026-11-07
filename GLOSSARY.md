@@ -184,6 +184,10 @@ _Avoid_: Live rule reapplication, automatic overwrite during review
 The actual transaction value selected during **Review import**, either accepted from the parsed import row or edited by the user. Every parsed value is an editable initial value except the **External id**, which remains immutable provenance. Original import values remain provenance; reviewed values are what new transactions use. They persist on the **import draft** during review so a resumed draft shows the same corrections.
 _Avoid_: Temporary override, display-only value, unsaved local-only edit
 
+**Review persistence**:
+The draft-scoped lifecycle of saving **reviewed import values** while the user is in **Review import**. Edits wait briefly so nearby changes save together, then the draft is **saving**, **saved**, or **failed**. A failed save keeps the user's edits and can be retried. **Continue** and leaving Review first commit any pending edits instead of waiting out the delay. One **Review persistence** exists per **import draft** and ends when the draft's review ends.
+_Avoid_: Autosave pipeline, paced mutation, persist queue, working-copy sync
+
 **Raw import description**:
 The original credit card statement description retained on every resulting transaction as `raw_description`, alongside the reviewed `description`. When the user does not edit the description during **Review import**, both fields contain the original statement description. When they do, `raw_description` remains the original value while `description` contains the user’s cleaned or corrected value. Later transaction editing surfaces and changes `description` only; `raw_description` remains import provenance.
 _Avoid_: Alternate display description, canonical merchant name
