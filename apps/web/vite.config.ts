@@ -6,6 +6,7 @@ import { nitro } from 'nitro/vite';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import viteReact from '@vitejs/plugin-react';
+import { precacheGlobPatterns } from './src/pwa/precache';
 
 const noCache = { headers: { 'cache-control': 'no-cache' } };
 
@@ -13,6 +14,8 @@ const config = defineConfig({
   plugins: [
     devtools(),
     nitro({
+      // No COOP or COEP. Later OPFS persistence uses OPFSCoopSyncVFS and
+      // must not require cross-origin isolation.
       routeRules: {
         '/sw.js': noCache,
         '/manifest.webmanifest': noCache,
@@ -48,11 +51,13 @@ const config = defineConfig({
       srcDir: 'src',
       filename: 'sw.ts',
       outDir: '.output/public',
+      scope: '/',
       injectRegister: false,
       manifest: false,
+      includeManifestIcons: false,
       registerType: 'prompt',
       injectManifest: {
-        globPatterns: ['**/*.{js,css,ico,png,svg,webp,woff2}'],
+        globPatterns: [...precacheGlobPatterns],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
       },
     }).map((plugin) => ({
