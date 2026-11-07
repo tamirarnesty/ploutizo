@@ -264,4 +264,33 @@ describe('deriveReviewPersistence', () => {
     expect(snapshot.status).toBe('failed');
     expect(snapshot.failedFieldKeys.get(ROW)).toEqual(['reviewDescription']);
   });
+
+  it('stays saving until every overlapping save finishes, and keeps a failed field', () => {
+    const overlapping = reduceReviewPersistence(
+      reduceReviewPersistence(initialReviewPersistenceState, {
+        type: 'persist_started',
+        rowIds: [ROW],
+      }),
+      { type: 'persist_started', rowIds: [ROW] }
+    );
+
+    const afterFailure = reduceReviewPersistence(overlapping, {
+      type: 'persist_failed',
+      entries: [{ rowId: ROW, fieldKeys: ['reviewDescription'] }],
+    });
+    const whileOtherSaveRuns = deriveReviewPersistence(afterFailure);
+    expect(whileOtherSaveRuns.status).toBe('saving');
+    expect(whileOtherSaveRuns.failedFieldKeys.get(ROW)).toEqual([
+      'reviewDescription',
+    ]);
+
+    const settled = deriveReviewPersistence(
+      reduceReviewPersistence(afterFailure, {
+        type: 'persist_succeeded',
+        entries: [{ rowId: ROW, succeededKeys: ['reviewAmount'] }],
+      })
+    );
+    expect(settled.status).toBe('failed');
+    expect(settled.failedFieldKeys.get(ROW)).toEqual(['reviewDescription']);
+  });
 });
