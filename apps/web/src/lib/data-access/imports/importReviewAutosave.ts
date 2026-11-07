@@ -2,16 +2,19 @@ import {
   eachImportDraftReviewRuntime,
   getImportDraftReviewRuntime,
 } from './importDraftReviewRuntime';
-import type { DraftAutosaveState } from './importDraftReviewRuntime';
+import {
+  deriveReviewPersistence,
+  initialReviewPersistenceState,
+  reduceReviewPersistence,
+} from './reviewPersistenceReducer';
+import type {
+  ReviewPersistenceEvent,
+  ReviewPersistenceSnapshot,
+  ReviewPersistenceStatus,
+} from './reviewPersistenceReducer';
 
-export type ImportReviewAutosaveStatus = 'idle' | 'saving' | 'saved' | 'failed';
-
-export interface ImportReviewAutosaveSnapshot {
-  status: ImportReviewAutosaveStatus;
-  failedRowIds: string[];
-  hasUnsavedWork: boolean;
-  failedFieldKeys: ReadonlyMap<string, string[]>;
-}
+export type ImportReviewAutosaveStatus = ReviewPersistenceStatus;
+export type ImportReviewAutosaveSnapshot = ReviewPersistenceSnapshot;
 
 const emptySnapshot: ImportReviewAutosaveSnapshot = {
   status: 'idle',
@@ -20,33 +23,12 @@ const emptySnapshot: ImportReviewAutosaveSnapshot = {
   failedFieldKeys: new Map(),
 };
 
-const getOrCreateState = (draftId: string): DraftAutosaveState =>
-  getImportDraftReviewRuntime(draftId).autosave;
-
-const deriveStatus = (
-  state: DraftAutosaveState
-): ImportReviewAutosaveStatus => {
-  if (state.pendingRowIds.size > 0 || state.inFlightCount > 0) return 'saving';
-  if (state.failedFieldKeys.size > 0) return 'failed';
-  if (state.hasSaved) return 'saved';
-  return 'idle';
-};
-
-const toSnapshot = (
-  state: DraftAutosaveState
-): ImportReviewAutosaveSnapshot => {
-  const status = deriveStatus(state);
-  return {
-    status,
-    failedRowIds: [...state.failedFieldKeys.keys()],
-    hasUnsavedWork: status === 'saving' || status === 'failed',
-    failedFieldKeys: state.failedFieldKeys,
-  };
-};
-
-const emit = (draftId: string) => {
+const dispatch = (draftId: string, event: ReviewPersistenceEvent) => {
   const runtime = getImportDraftReviewRuntime(draftId);
-  runtime.autosaveSnapshot = toSnapshot(runtime.autosave);
+  const next = reduceReviewPersistence(runtime.autosave, event);
+  if (next === runtime.autosave) return;
+  runtime.autosave = next;
+  runtime.autosaveSnapshot = deriveReviewPersistence(next);
   for (const listener of runtime.autosaveListeners) listener();
 };
 
@@ -83,27 +65,15 @@ export const subscribeImportReviewAutosave = (
 };
 
 export const markImportReviewPending = (draftId: string, rowId: string) => {
-  const state = getOrCreateState(draftId);
-  state.pendingRowIds.add(rowId);
-  emit(draftId);
+  dispatch(draftId, { type: 'edited', rowId });
 };
 
 export const clearImportReviewPendingRows = (
   draftId: string,
   rowIds: readonly string[]
 ) => {
-  const state = getImportDraftReviewRuntime(draftId).autosave;
   if (rowIds.length === 0) return;
-  let changed = false;
-  for (const rowId of rowIds) {
-    if (state.pendingRowIds.delete(rowId)) changed = true;
-  }
-  if (changed) emit(draftId);
-};
-
-const applyPersistStart = (state: DraftAutosaveState, rowId: string) => {
-  state.pendingRowIds.delete(rowId);
-  state.inFlightCount += 1;
+  dispatch(draftId, { type: 'edits_dropped', rowIds });
 };
 
 /** One snapshot for a whole batch, instead of one notify per row. */
@@ -112,36 +82,11 @@ export const markImportReviewPersistStartMany = (
   rowIds: readonly string[]
 ) => {
   if (rowIds.length === 0) return;
-  const state = getOrCreateState(draftId);
-  for (const rowId of rowIds) applyPersistStart(state, rowId);
-  emit(draftId);
-};
-
-const applyPersistSuccess = (
-  state: DraftAutosaveState,
-  rowId: string,
-  succeededKeys?: readonly string[]
-) => {
-  state.inFlightCount = Math.max(0, state.inFlightCount - 1);
-
-  if (succeededKeys === undefined) {
-    state.failedFieldKeys.delete(rowId);
-    return;
-  }
-
-  const succeeded = new Set(succeededKeys);
-  const remaining = (state.failedFieldKeys.get(rowId) ?? []).filter(
-    (key) => !succeeded.has(key)
-  );
-  if (remaining.length === 0) {
-    state.failedFieldKeys.delete(rowId);
-    return;
-  }
-  state.failedFieldKeys.set(rowId, remaining);
+  dispatch(draftId, { type: 'persist_started', rowIds });
 };
 
 /**
- * Mark a row persist as successful. When `succeededKeys` is provided, only those
+ * Mark row persists as successful. When `succeededKeys` is provided, only those
  * failed keys clear — so a later edit of other fields cannot hide an earlier Failed field.
  * Omit `succeededKeys` to clear all failed keys for the row (explicit Retry of known failures).
  */
@@ -153,22 +98,7 @@ export const markImportReviewPersistSuccessMany = (
   }[]
 ) => {
   if (entries.length === 0) return;
-  const state = getOrCreateState(draftId);
-  for (const entry of entries) {
-    applyPersistSuccess(state, entry.rowId, entry.succeededKeys);
-  }
-  state.hasSaved = true;
-  emit(draftId);
-};
-
-const applyPersistFailure = (
-  state: DraftAutosaveState,
-  rowId: string,
-  fieldKeys: readonly string[]
-) => {
-  state.inFlightCount = Math.max(0, state.inFlightCount - 1);
-  const previous = state.failedFieldKeys.get(rowId) ?? [];
-  state.failedFieldKeys.set(rowId, [...new Set([...previous, ...fieldKeys])]);
+  dispatch(draftId, { type: 'persist_succeeded', entries });
 };
 
 export const markImportReviewPersistFailureMany = (
@@ -176,21 +106,7 @@ export const markImportReviewPersistFailureMany = (
   entries: readonly { rowId: string; fieldKeys: readonly string[] }[]
 ) => {
   if (entries.length === 0) return;
-  const state = getOrCreateState(draftId);
-  for (const entry of entries) {
-    applyPersistFailure(state, entry.rowId, entry.fieldKeys);
-  }
-  emit(draftId);
-};
-
-export const releaseImportReviewAutosave = (draftId: string) => {
-  const runtime = getImportDraftReviewRuntime(draftId);
-  runtime.autosave.pendingRowIds.clear();
-  runtime.autosave.inFlightCount = 0;
-  runtime.autosave.failedFieldKeys.clear();
-  runtime.autosave.hasSaved = false;
-  runtime.autosaveSnapshot = undefined;
-  runtime.autosaveListeners.clear();
+  dispatch(draftId, { type: 'persist_failed', entries });
 };
 
 /** Resolve once the draft is not in the Saving state (pending/in-flight cleared). */
@@ -209,10 +125,7 @@ export const waitForImportReviewAutosaveSettled = (draftId: string) =>
 
 export const endImportReviewAutosave = () => {
   eachImportDraftReviewRuntime((runtime) => {
-    runtime.autosave.pendingRowIds.clear();
-    runtime.autosave.inFlightCount = 0;
-    runtime.autosave.failedFieldKeys.clear();
-    runtime.autosave.hasSaved = false;
+    runtime.autosave = initialReviewPersistenceState;
     runtime.autosaveSnapshot = undefined;
     runtime.autosaveListeners.clear();
   });
