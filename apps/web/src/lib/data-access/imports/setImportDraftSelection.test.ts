@@ -12,7 +12,6 @@ import {
   endImportDraftRowsCollections,
   getImportDraftRowsCollection,
 } from './getImportDraftRowsCollection';
-import { endImportReviewAutosave } from './importReviewAutosave';
 import { importDraftQueryKey } from './queryKeys';
 import { setImportDraftSelection } from './setImportDraftSelection';
 import { fetchImportDraft } from './useGetImportDraft';
@@ -41,7 +40,6 @@ describe('setImportDraftSelection', () => {
   });
 
   afterEach(async () => {
-    endImportReviewAutosave();
     await endImportDraftRowsCollections();
     resetWorkingSetRegistryForTests();
   });
