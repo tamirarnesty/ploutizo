@@ -5,25 +5,23 @@ How the engineering skills should consume this repo's domain documentation when 
 ## Before exploring, read these
 
 - **`GLOSSARY.md`** at the repo root, or
-- **`GLOSSARY-MAP.md`** at the repo root if it exists: it points at one `GLOSSARY.md` per context. Read each one relevant to the topic.
-- **`docs/adr/`**: read ADRs that touch the area you're about to work in. In multi-context repos, also check the context-specific ADR location when one exists.
+- **`GLOSSARY-MAP.md`** at the repo root if it exists: it lists the glossaries that exist. Read each one relevant to the topic.
+- **`docs/adr/`**: read ADRs that touch the area you're about to work in.
 
 If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The `/domain-modeling` skill (reached via `/grill-with-docs` and `/improve-codebase-architecture`) creates them lazily when terms or decisions actually get resolved.
 
 ## File structure
 
-Ploutizo uses a multi-context layout:
+Ploutizo has a single root glossary:
 
 ```text
 /
 ├── GLOSSARY-MAP.md
 ├── GLOSSARY.md
-├── docs/adr/                          ← system-wide decisions
-├── apps/
-│   ├── api/GLOSSARY.md                ← API, persistence, and import processing
-│   └── web/GLOSSARY.md                ← web application and review flows
-└── packages/GLOSSARY.md               ← shared types and utilities
+└── docs/adr/                          ← system-wide decisions
 ```
+
+If a context later needs its own glossary, create it lazily when a term needs one and add it to `GLOSSARY-MAP.md`.
 
 ## Use the glossary's vocabulary
 
