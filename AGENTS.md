@@ -46,7 +46,7 @@ Uses the default canonical triage labels. See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
-Uses a multi-context layout. See `docs/agents/domain.md`.
+Uses a single root glossary. See `docs/agents/domain.md`.
 
 ## Before commit/push
 

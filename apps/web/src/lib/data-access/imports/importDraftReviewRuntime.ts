@@ -1,21 +1,16 @@
 import type { ImportDraftRowEvaluation } from '@ploutizo/utils';
 import type { ImportReviewRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
+import { initialReviewPersistenceState } from './reviewPersistenceReducer';
 import type { REVIEW_PATCH_KEYS } from './importDraftRowOptimisticPatch';
 import type { Transaction } from '@tanstack/db';
 import type { ImportReviewAutosaveSnapshot } from './importReviewAutosave';
+import type { ReviewPersistenceState } from './reviewPersistenceReducer';
 
 export type BaselineFields = Record<
   (typeof REVIEW_PATCH_KEYS)[number],
   unknown
 >;
-
-export type DraftAutosaveState = {
-  pendingRowIds: Set<string>;
-  inFlightCount: number;
-  failedFieldKeys: Map<string, string[]>;
-  hasSaved: boolean;
-};
 
 export type DraftPacedEntry = {
   mutate: (variables: {
@@ -27,7 +22,7 @@ export type DraftPacedEntry = {
 };
 
 export type ImportDraftReviewRuntime = {
-  autosave: DraftAutosaveState;
+  autosave: ReviewPersistenceState;
   autosaveSnapshot: ImportReviewAutosaveSnapshot | undefined;
   autosaveListeners: Set<() => void>;
   evaluations: ReadonlyMap<string, ImportDraftRowEvaluation>;
@@ -39,12 +34,7 @@ export type ImportDraftReviewRuntime = {
 const runtimes = new Map<string, ImportDraftReviewRuntime>();
 
 const createRuntime = (): ImportDraftReviewRuntime => ({
-  autosave: {
-    pendingRowIds: new Set(),
-    inFlightCount: 0,
-    failedFieldKeys: new Map(),
-    hasSaved: false,
-  },
+  autosave: initialReviewPersistenceState,
   autosaveSnapshot: undefined,
   autosaveListeners: new Set(),
   evaluations: new Map(),
