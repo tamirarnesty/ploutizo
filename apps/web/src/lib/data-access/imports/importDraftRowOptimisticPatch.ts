@@ -41,7 +41,7 @@ export const toValidatorPatch = (
 
 export const patchFromLiveKeys = (
   live: ImportReviewRow,
-  keys: string[]
+  keys: readonly string[]
 ): UpdateImportDraftRowInput | null => {
   const changes: Record<string, unknown> = {};
   for (const key of keys) {

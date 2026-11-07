@@ -5,7 +5,6 @@ import type { ImportFinalizePreview } from '@ploutizo/validators';
 import { getActiveQueryClient } from '@/lib/access/working-set-registry';
 import { HouseholdHookWrapper } from '@/test/household-hook-harness';
 
-import { markImportReviewPending } from './importReviewAutosave';
 import { fetchContinueImportDraft } from './fetchContinueImportDraft';
 import { useContinueImportDraft } from './useContinueImportDraft';
 
@@ -25,6 +24,20 @@ vi.mock('@ploutizo/ui/components/sonner-api', () => ({
 
 vi.mock('./fetchContinueImportDraft', () => ({
   fetchContinueImportDraft: vi.fn(),
+}));
+
+/** Stands in for Review persistence: tests decide when new edits begin saving. */
+const persistence = vi.hoisted(() => ({
+  controller: undefined as AbortController | undefined,
+}));
+
+vi.mock('./reviewPersistence', () => ({
+  getReviewPersistence: () => ({
+    signalUntilDirty: () => {
+      persistence.controller = new AbortController();
+      return persistence.controller.signal;
+    },
+  }),
 }));
 
 const preview: ImportFinalizePreview = {
@@ -52,6 +65,7 @@ describe('useContinueImportDraft', () => {
     getActiveQueryClient().clear();
     toastSuccess.mockReset();
     vi.mocked(fetchContinueImportDraft).mockReset();
+    persistence.controller = undefined;
   });
 
   it('resolves the preview when continue succeeds without later review changes', async () => {
@@ -61,7 +75,9 @@ describe('useContinueImportDraft', () => {
     });
 
     await act(async () => {
-      await result.current.continueImport(rowIds);
+      await expect(result.current.continueImport(rowIds)).resolves.toEqual(
+        preview
+      );
     });
 
     await waitFor(() => {
@@ -75,7 +91,7 @@ describe('useContinueImportDraft', () => {
     expect(toastSuccess).not.toHaveBeenCalled();
   });
 
-  it('returns null when the user edits the review before continue settles', async () => {
+  it('returns null without an error when new edits begin saving before continue settles', async () => {
     const pending = deferred<ImportFinalizePreview>();
     vi.mocked(fetchContinueImportDraft).mockReturnValue(pending.promise);
     const { result } = renderHook(() => useContinueImportDraft('draft_1'), {
@@ -91,7 +107,7 @@ describe('useContinueImportDraft', () => {
     });
 
     act(() => {
-      markImportReviewPending('draft_1', 'row_1');
+      persistence.controller?.abort();
     });
 
     await act(async () => {
@@ -100,13 +116,11 @@ describe('useContinueImportDraft', () => {
     });
 
     expect(toastSuccess).not.toHaveBeenCalled();
-    await waitFor(() => {
-      expect(result.current.isError).toBe(false);
-      expect(result.current.error).toBeNull();
-    });
+    expect(result.current.isError).toBe(false);
+    expect(result.current.error).toBeNull();
   });
 
-  it('does not toast when the review changes before continue settles', async () => {
+  it('shows no error when the aborted request rejects', async () => {
     const pending = deferred<ImportFinalizePreview>();
     vi.mocked(fetchContinueImportDraft).mockReturnValue(pending.promise);
     const { result } = renderHook(() => useContinueImportDraft('draft_1'), {
@@ -122,72 +136,7 @@ describe('useContinueImportDraft', () => {
     });
 
     act(() => {
-      result.current.reset();
-    });
-
-    await act(async () => {
-      pending.resolve(preview);
-      await expect(continuePromise).resolves.toBeNull();
-    });
-
-    expect(toastSuccess).not.toHaveBeenCalled();
-    await waitFor(() => {
-      expect(result.current.isError).toBe(false);
-      expect(result.current.error).toBeNull();
-    });
-  });
-
-  it('does not toast when the request is aborted before continue settles', async () => {
-    const pending = deferred<ImportFinalizePreview>();
-    let capturedSignal: AbortSignal | undefined;
-    vi.mocked(fetchContinueImportDraft).mockImplementation(
-      (_draftId, _rowIds, signal) => {
-        capturedSignal = signal;
-        return pending.promise;
-      }
-    );
-    const { result } = renderHook(() => useContinueImportDraft('draft_1'), {
-      wrapper: HouseholdHookWrapper,
-    });
-
-    let continuePromise: Promise<ImportFinalizePreview | null> | undefined;
-    act(() => {
-      continuePromise = result.current.continueImport(rowIds);
-    });
-    await waitFor(() => {
-      expect(capturedSignal).toBeDefined();
-    });
-
-    act(() => {
-      result.current.reset();
-    });
-    expect(capturedSignal?.aborted).toBe(true);
-
-    await act(async () => {
-      pending.resolve(preview);
-      await expect(continuePromise).resolves.toBeNull();
-    });
-
-    expect(toastSuccess).not.toHaveBeenCalled();
-  });
-
-  it('does not keep a stale continue error after the review changes', async () => {
-    const pending = deferred<ImportFinalizePreview>();
-    vi.mocked(fetchContinueImportDraft).mockReturnValue(pending.promise);
-    const { result } = renderHook(() => useContinueImportDraft('draft_1'), {
-      wrapper: HouseholdHookWrapper,
-    });
-
-    let continuePromise: Promise<ImportFinalizePreview | null> | undefined;
-    act(() => {
-      continuePromise = result.current.continueImport(rowIds);
-    });
-    await waitFor(() => {
-      expect(fetchContinueImportDraft).toHaveBeenCalled();
-    });
-
-    act(() => {
-      result.current.reset();
+      persistence.controller?.abort();
     });
 
     await act(async () => {
@@ -200,10 +149,27 @@ describe('useContinueImportDraft', () => {
       await expect(continuePromise).resolves.toBeNull();
     });
 
-    await waitFor(() => {
-      expect(result.current.isError).toBe(false);
-      expect(result.current.error).toBeNull();
-    });
+    expect(result.current.isError).toBe(false);
+    expect(result.current.error).toBeNull();
     expect(toastSuccess).not.toHaveBeenCalled();
+  });
+
+  it('still surfaces a real continue error', async () => {
+    const error = {
+      error: {
+        code: 'IMPORT_CONTINUE_NOT_READY',
+        message: 'Some selected rows are not ready to import.',
+      },
+    };
+    vi.mocked(fetchContinueImportDraft).mockRejectedValue(error);
+    const { result } = renderHook(() => useContinueImportDraft('draft_1'), {
+      wrapper: HouseholdHookWrapper,
+    });
+
+    await act(async () => {
+      await expect(result.current.continueImport(rowIds)).rejects.toEqual(
+        error
+      );
+    });
   });
 });

@@ -8,14 +8,11 @@ import type { ImportReviewRow } from '@ploutizo/types';
 import type { WorkingSetScope } from '@/lib/access/working-set-registry';
 import { fetchUpdateImportDraftRows } from './fetchUpdateImportDraftRows';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
-import {
-  markImportReviewPersistFailureMany,
-  markImportReviewPersistStartMany,
-  markImportReviewPersistSuccessMany,
-} from './importReviewAutosave';
 import { rederiveImportDraftWorkingCopy } from './rederiveImportDraftWorkingCopy';
-import { advanceImportDraftPersistBaselineFromPatch } from './importDraftPersistBaselines';
+import { advancePersistBaselineFromPatch } from './importDraftPersistBaselines';
 import { applyImportDraftRefundTargetFactDelta } from './mergeImportDraftRefundTargetFacts';
+import type { PersistBaselines } from './importDraftPersistBaselines';
+import type { ReviewPersistenceEvent } from './reviewPersistenceReducer';
 import type { ImportDraftRowBatchUpdate } from './fetchUpdateImportDraftRows';
 
 export interface ImportDraftRowPersistAttempt {
@@ -113,14 +110,19 @@ export const confirmPersistIntoCollection = (
   }
 };
 
+/** Internal adapter of Review persistence: sends a batch and reports outcomes to its state machine. */
 export const persistImportDraftBatch = async ({
   draftId,
   scope,
   attempts,
+  baselines,
+  dispatch,
 }: {
   draftId: string;
   scope: WorkingSetScope;
   attempts: ImportDraftRowPersistAttempt[];
+  baselines: PersistBaselines;
+  dispatch: (event: ReviewPersistenceEvent) => void;
 }): Promise<boolean> => {
   const collection = getImportDraftRowsCollection(draftId);
   const nonEmpty = attempts.filter(
@@ -129,11 +131,11 @@ export const persistImportDraftBatch = async ({
 
   if (nonEmpty.length === 0) {
     const rowIds = attempts.map((entry) => entry.rowId);
-    markImportReviewPersistStartMany(draftId, rowIds);
-    markImportReviewPersistSuccessMany(
-      draftId,
-      rowIds.map((rowId) => ({ rowId }))
-    );
+    dispatch({ type: 'persist_started', rowIds });
+    dispatch({
+      type: 'persist_succeeded',
+      entries: rowIds.map((rowId) => ({ rowId })),
+    });
     return true;
   }
 
@@ -146,7 +148,7 @@ export const persistImportDraftBatch = async ({
     nonEmpty.map((entry) => [entry.rowId, Object.keys(entry.patch)])
   );
 
-  markImportReviewPersistStartMany(draftId, rowIds);
+  dispatch({ type: 'persist_started', rowIds });
 
   try {
     const rows: ImportDraftRowBatchUpdate[] = nonEmpty.map(
@@ -172,21 +174,17 @@ export const persistImportDraftBatch = async ({
         { skipRederive: true, skipRefundFacts: true }
       );
       if (serverRow) {
-        advanceImportDraftPersistBaselineFromPatch(
-          draftId,
-          entry.rowId,
-          entry.patch
-        );
+        advancePersistBaselineFromPatch(baselines, entry.rowId, entry.patch);
       }
     }
 
-    markImportReviewPersistSuccessMany(
-      draftId,
-      nonEmpty.map((entry) => ({
+    dispatch({
+      type: 'persist_succeeded',
+      entries: nonEmpty.map((entry) => ({
         rowId: entry.rowId,
         succeededKeys: persistedKeysByRow.get(entry.rowId) ?? [],
-      }))
-    );
+      })),
+    });
 
     if (result.refundTargetFacts) {
       applyImportDraftRefundTargetFactDelta(draftId, {
@@ -212,13 +210,13 @@ export const persistImportDraftBatch = async ({
         { skipRederive: true }
       );
     }
-    markImportReviewPersistFailureMany(
-      draftId,
-      nonEmpty.map((entry) => ({
+    dispatch({
+      type: 'persist_failed',
+      entries: nonEmpty.map((entry) => ({
         rowId: entry.rowId,
         fieldKeys: persistedKeysByRow.get(entry.rowId) ?? [],
-      }))
-    );
+      })),
+    });
     rederiveImportDraftWorkingCopy(draftId);
     return false;
   }

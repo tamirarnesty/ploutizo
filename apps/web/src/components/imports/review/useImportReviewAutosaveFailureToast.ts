@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { toast } from '@ploutizo/ui/components/sonner-api';
-import { subscribeImportReviewAutosaveFailure } from '@/lib/data-access/imports/importReviewAutosave';
+import { getReviewPersistence } from '@/lib/data-access/imports/reviewPersistence';
 import { useImportReviewAutosaveStatus } from '@/lib/data-access/imports/useImportReviewAutosave';
 
 export const IMPORT_REVIEW_AUTOSAVE_FAILED_TOAST_ID =
@@ -18,17 +18,26 @@ export const useImportReviewAutosaveFailureToast = ({
   const status = useImportReviewAutosaveStatus(draftId);
 
   useEffect(() => {
-    const unsubscribe = subscribeImportReviewAutosaveFailure(draftId, () => {
-      toast.error('Could not save changes. Check your connection and retry.', {
-        id: IMPORT_REVIEW_AUTOSAVE_FAILED_TOAST_ID,
-        duration: Infinity,
-        action: {
-          label: 'Retry',
-          onClick: () => {
-            retryAutosave();
-          },
-        },
-      });
+    const persistence = getReviewPersistence(draftId);
+    let lastStatus = persistence.getSnapshot().status;
+    const unsubscribe = persistence.subscribe(() => {
+      const { status: nextStatus } = persistence.getSnapshot();
+      if (nextStatus === 'failed' && lastStatus !== 'failed') {
+        toast.error(
+          'Could not save changes. Check your connection and retry.',
+          {
+            id: IMPORT_REVIEW_AUTOSAVE_FAILED_TOAST_ID,
+            duration: Infinity,
+            action: {
+              label: 'Retry',
+              onClick: () => {
+                retryAutosave();
+              },
+            },
+          }
+        );
+      }
+      lastStatus = nextStatus;
     });
     return () => {
       unsubscribe();

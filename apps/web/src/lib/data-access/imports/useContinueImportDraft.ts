@@ -1,106 +1,37 @@
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 import type { ImportFinalizePreview } from '@ploutizo/validators';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import type { ApiErrorBody, ApiResponseContractError } from '@/lib/queryClient';
-import {
-  getImportReviewAutosaveSnapshot,
-  subscribeImportReviewAutosave,
-} from './importReviewAutosave';
 import { fetchContinueImportDraft } from './fetchContinueImportDraft';
-import type { UseMutationResult } from '@tanstack/react-query';
+import { getReviewPersistence } from './reviewPersistence';
 
-class ObsoleteContinueError extends Error {
-  constructor() {
-    super('Continue request is obsolete.');
-    this.name = 'ObsoleteContinueError';
-  }
-}
-
-const isObsoleteContinueError = (
-  error: unknown
-): error is ObsoleteContinueError => error instanceof ObsoleteContinueError;
-
-const withoutObsoleteMutationState = <TData, TError, TVariables, TContext>(
-  mutation: UseMutationResult<TData, TError, TVariables, TContext>
-) => ({
-  ...mutation,
-  error: isObsoleteContinueError(mutation.error) ? null : mutation.error,
-  isError: isObsoleteContinueError(mutation.error) ? false : mutation.isError,
-});
-
+/**
+ * Continue is obsolete once new review edits begin saving: its request is
+ * aborted and resolves to `null` instead of surfacing an error.
+ */
 export const useContinueImportDraft = (draftId: string) => {
-  const generationRef = useRef(0);
-  const abortRef = useRef<AbortController | null>(null);
-
-  const invalidateInFlightContinue = useCallback(() => {
-    generationRef.current += 1;
-    abortRef.current?.abort();
-  }, []);
-
   const mutation = useHouseholdMutation<
-    ImportFinalizePreview,
-    ApiErrorBody | ApiResponseContractError | ObsoleteContinueError,
+    ImportFinalizePreview | null,
+    ApiErrorBody | ApiResponseContractError,
     { rowIds: string[] }
   >({
     mutationFn: async ({ rowIds }) => {
-      const controller = new AbortController();
-      abortRef.current = controller;
-      const generation = generationRef.current;
-      const abortIfReviewSaving = () => {
-        const autosaveStatus = getImportReviewAutosaveSnapshot(draftId).status;
-        if (autosaveStatus === 'saving') {
-          invalidateInFlightContinue();
-        }
-      };
-      const unsubscribeAutosave = subscribeImportReviewAutosave(
-        draftId,
-        abortIfReviewSaving
-      );
-
+      const signal = getReviewPersistence(draftId).signalUntilDirty();
       try {
-        const preview = await fetchContinueImportDraft(
-          draftId,
-          rowIds,
-          controller.signal
-        );
-        if (generation !== generationRef.current) {
-          throw new ObsoleteContinueError();
-        }
-        return preview;
+        const preview = await fetchContinueImportDraft(draftId, rowIds, signal);
+        return signal.aborted ? null : preview;
       } catch (error) {
-        if (generation !== generationRef.current || controller.signal.aborted) {
-          throw new ObsoleteContinueError();
-        }
+        if (signal.aborted) return null;
         throw error;
-      } finally {
-        unsubscribeAutosave();
-        if (abortRef.current === controller) {
-          abortRef.current = null;
-        }
       }
     },
   });
 
-  const reset = useCallback(() => {
-    invalidateInFlightContinue();
-    mutation.reset();
-  }, [invalidateInFlightContinue, mutation.reset]);
-
+  const { mutateAsync } = mutation;
   const continueImport = useCallback(
-    async (rowIds: string[]): Promise<ImportFinalizePreview | null> => {
-      try {
-        return await mutation.mutateAsync({ rowIds });
-      } catch (error) {
-        if (isObsoleteContinueError(error)) return null;
-        throw error;
-      }
-    },
-    [mutation.mutateAsync]
+    (rowIds: string[]) => mutateAsync({ rowIds }),
+    [mutateAsync]
   );
 
-  return {
-    ...withoutObsoleteMutationState(mutation),
-    continueImport,
-    reset,
-  };
+  return { ...mutation, continueImport };
 };
