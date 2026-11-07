@@ -2,13 +2,11 @@ import { replaceEqualDeep } from '@tanstack/react-query';
 import type { ImportReviewRow } from '@ploutizo/types';
 import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import { REVIEW_PATCH_KEYS } from './importDraftRowOptimisticPatch';
-import {
-  eachImportDraftReviewRuntime,
-  getImportDraftReviewRuntime,
-} from './importDraftReviewRuntime';
-import type { BaselineFields } from './importDraftReviewRuntime';
 
-export type { BaselineFields };
+type BaselineFields = Record<(typeof REVIEW_PATCH_KEYS)[number], unknown>;
+
+/** Last server-acknowledged reviewed values per row; the dirty diff is measured against these. */
+export type PersistBaselines = Map<string, BaselineFields>;
 
 const pickBaselineFields = (row: ImportReviewRow): BaselineFields => {
   const baseline = {} as BaselineFields;
@@ -18,28 +16,22 @@ const pickBaselineFields = (row: ImportReviewRow): BaselineFields => {
   return baseline;
 };
 
-const getDraftBaselines = (draftId: string) =>
-  getImportDraftReviewRuntime(draftId).baselines;
-
-export const seedImportDraftPersistBaselines = (
-  draftId: string,
-  rows: readonly ImportReviewRow[]
+/** Keeps an existing baseline; only the first sighting of a row seeds it. */
+export const seedPersistBaseline = (
+  baselines: PersistBaselines,
+  row: ImportReviewRow
 ) => {
-  const map = getDraftBaselines(draftId);
-  for (const row of rows) {
-    if (!map.has(row.id)) {
-      map.set(row.id, pickBaselineFields(row));
-    }
+  if (!baselines.has(row.id)) {
+    baselines.set(row.id, pickBaselineFields(row));
   }
 };
 
-export const advanceImportDraftPersistBaselineFromPatch = (
-  draftId: string,
+export const advancePersistBaselineFromPatch = (
+  baselines: PersistBaselines,
   rowId: string,
   patch: UpdateImportDraftRowInput
 ) => {
-  const map = getDraftBaselines(draftId);
-  const current = map.get(rowId);
+  const current = baselines.get(rowId);
   if (!current) return;
   const next = { ...current };
   for (const key of Object.keys(patch) as (keyof UpdateImportDraftRowInput)[]) {
@@ -47,25 +39,17 @@ export const advanceImportDraftPersistBaselineFromPatch = (
       next[key] = patch[key];
     }
   }
-  map.set(rowId, next);
-};
-
-export const releaseImportDraftPersistBaselines = (draftId: string) => {
-  getDraftBaselines(draftId).clear();
-};
-
-export const endImportDraftPersistBaselines = () => {
-  eachImportDraftReviewRuntime((runtime) => runtime.baselines.clear());
+  baselines.set(rowId, next);
 };
 
 const fieldValuesEqual = (left: unknown, right: unknown) =>
   replaceEqualDeep(left, right) === left;
 
 export const buildDirtyRowPatchFromBaseline = (
-  live: ImportReviewRow,
-  draftId: string
+  baselines: PersistBaselines,
+  live: ImportReviewRow
 ): UpdateImportDraftRowInput | null => {
-  const baseline = getDraftBaselines(draftId).get(live.id);
+  const baseline = baselines.get(live.id);
   if (!baseline) return null;
 
   const patch: Record<string, unknown> = {};

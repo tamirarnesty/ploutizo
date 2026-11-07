@@ -1,46 +1,15 @@
 import type { ImportDraftRowEvaluation } from '@ploutizo/utils';
-import type { ImportReviewRow } from '@ploutizo/types';
-import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
-import { initialReviewPersistenceState } from './reviewPersistenceReducer';
-import type { REVIEW_PATCH_KEYS } from './importDraftRowOptimisticPatch';
-import type { Transaction } from '@tanstack/db';
-import type { ImportReviewAutosaveSnapshot } from './importReviewAutosave';
-import type { ReviewPersistenceState } from './reviewPersistenceReducer';
-
-export type BaselineFields = Record<
-  (typeof REVIEW_PATCH_KEYS)[number],
-  unknown
->;
-
-export type DraftPacedEntry = {
-  mutate: (variables: {
-    rowId: string;
-    patch: UpdateImportDraftRowInput;
-  }) => Transaction<ImportReviewRow> | undefined;
-  flush: () => Promise<void>;
-  cleanup: () => void;
-};
 
 export type ImportDraftReviewRuntime = {
-  autosave: ReviewPersistenceState;
-  autosaveSnapshot: ImportReviewAutosaveSnapshot | undefined;
-  autosaveListeners: Set<() => void>;
   evaluations: ReadonlyMap<string, ImportDraftRowEvaluation>;
   evaluationListeners: Set<() => void>;
-  baselines: Map<string, BaselineFields>;
-  paced: DraftPacedEntry | undefined;
 };
 
 const runtimes = new Map<string, ImportDraftReviewRuntime>();
 
 const createRuntime = (): ImportDraftReviewRuntime => ({
-  autosave: initialReviewPersistenceState,
-  autosaveSnapshot: undefined,
-  autosaveListeners: new Set(),
   evaluations: new Map(),
   evaluationListeners: new Set(),
-  baselines: new Map(),
-  paced: undefined,
 });
 
 export const getImportDraftReviewRuntime = (
@@ -54,15 +23,10 @@ export const getImportDraftReviewRuntime = (
 };
 
 export const deleteImportDraftReviewRuntime = (draftId: string) => {
-  const runtime = runtimes.get(draftId);
-  runtime?.paced?.cleanup();
   runtimes.delete(draftId);
 };
 
 export const clearAllImportDraftReviewRuntimes = () => {
-  for (const runtime of runtimes.values()) {
-    runtime.paced?.cleanup();
-  }
   runtimes.clear();
 };
 

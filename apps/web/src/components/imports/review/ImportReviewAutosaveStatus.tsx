@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { cn } from '@ploutizo/ui/lib/utils';
-import type { ImportReviewAutosaveStatus as ImportReviewAutosaveStatusValue } from '@/lib/data-access/imports';
+import type { ReviewPersistenceStatus } from '@/lib/data-access/imports';
 
 const SAVED_ACK_MS = 2000;
 
@@ -11,7 +11,7 @@ const iconVisible = 'scale-100 opacity-100 blur-0';
 const iconHidden = 'scale-25 opacity-0 blur-[4px]';
 
 interface ImportReviewAutosaveStatusProps {
-  status: ImportReviewAutosaveStatusValue;
+  status: ReviewPersistenceStatus;
 }
 
 export const ImportReviewAutosaveStatus = ({
