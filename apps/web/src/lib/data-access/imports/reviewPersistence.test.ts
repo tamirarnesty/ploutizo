@@ -380,6 +380,19 @@ describe('Review persistence', () => {
       expect(persistence.signalUntilDirty().aborted).toBe(false);
     });
 
+    it('aborts when the same pending row is edited again', async () => {
+      await loadCollection();
+      vi.useFakeTimers();
+      const persistence = getReviewPersistence(draftId);
+
+      persistence.edit('row_1', { reviewDescription: 'First' });
+      const signal = persistence.signalUntilDirty();
+      expect(signal.aborted).toBe(false);
+
+      persistence.edit('row_1', { reviewDescription: 'Second' });
+      expect(signal.aborted).toBe(true);
+    });
+
     it('does not abort when a pending save merely starts and finishes', async () => {
       await loadCollection();
       vi.mocked(fetchUpdateImportDraftRows).mockResolvedValue(

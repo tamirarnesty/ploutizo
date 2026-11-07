@@ -80,20 +80,28 @@ const createReviewPersistence = (draftId: string): ReviewPersistence => {
     for (const listener of listeners) listener();
   };
 
+  const abortDirtySignal = () => {
+    if (!dirtyController) return;
+    const controller = dirtyController;
+    dirtyController = undefined;
+    controller.abort();
+  };
+
   const dispatch = (event: ReviewPersistenceEvent) => {
     const next = reduceReviewPersistence(state, event);
-    if (next === state) return;
+    // A later edit on an already-pending row leaves state unchanged, but it is
+    // still new work that makes an in-flight request stale.
+    if (next === state) {
+      if (event.type === 'edited') abortDirtySignal();
+      return;
+    }
     const previousStatus = snapshot.status;
     state = next;
     snapshot = deriveReviewPersistence(next);
     const beganNewWork =
       event.type === 'edited' ||
       (snapshot.status === 'saving' && previousStatus !== 'saving');
-    if (beganNewWork && dirtyController) {
-      const controller = dirtyController;
-      dirtyController = undefined;
-      controller.abort();
-    }
+    if (beganNewWork) abortDirtySignal();
     notify();
   };
 
