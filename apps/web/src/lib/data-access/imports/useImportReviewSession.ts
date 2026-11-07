@@ -5,23 +5,14 @@ import type { UpdateImportDraftRowInput } from '@ploutizo/validators';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
 import { getApiErrorCode } from '@/lib/queryClient';
 import { useGetHouseholdSettings } from '@/lib/data-access/household/useGetHouseholdSettings';
-import {
-  flushImportDraftPacedMutations,
-  getImportDraftPacedMutations,
-  retryFailedImportDraftPersists,
-} from './getImportDraftPacedMutations';
 import { releaseImportDraftReviewRuntime } from './releaseImportDraftReviewRuntime';
 import { getImportDraftRowsCollection } from './getImportDraftRowsCollection';
-import { seedImportDraftPersistBaselines } from './importDraftPersistBaselines';
 import {
   applyImportReviewEntrySelection,
   syncImportReviewSelectionOnStatusChange,
 } from './importReviewSelectionSession';
 import { setImportDraftSelection } from './setImportDraftSelection';
-import {
-  getImportReviewAutosaveSnapshot,
-  waitForImportReviewAutosaveSettled,
-} from './importReviewAutosave';
+import { getReviewPersistence } from './reviewPersistence';
 import { isImportRowSelectedForImport } from './importReviewSelection';
 import { cancelImportDraftQueryFetches } from './cancelImportDraftQueryFetches';
 import { importDraftQueryOptions } from './useGetImportDraft';
@@ -38,7 +29,7 @@ export interface ImportReviewSession {
   /** Session-only import-set selection (match decisions in working copy; server re-verifies at Continue). */
   setSelection: (rowIds: string[], selectedForImport: boolean) => void;
   retryAutosave: () => void;
-  /** Flush pending paced work. Returns false when Failed remains. */
+  /** Save queued edits now. Returns false when Failed remains. */
   flush: () => Promise<boolean>;
   /** Re-apply entry selection defaults (e.g. after Finalize → Review). */
   resetSelectionToEntryDefaults: () => void;
@@ -92,10 +83,6 @@ export const useImportReviewSession = (
         .orderBy(({ row }) => row.rowNumber, 'asc'),
   });
 
-  useEffect(() => {
-    seedImportDraftPersistBaselines(draftId, liveRows.data);
-  }, [draftId, liveRows.data]);
-
   const rows = useMemo(
     () =>
       liveRows.data.map((row) => {
@@ -121,16 +108,11 @@ export const useImportReviewSession = (
     );
   }, [draftId, rows, autoCheckImportRowWhenReady]);
 
-  const pacedMutate = useMemo(
-    () => getImportDraftPacedMutations(draftId),
-    [draftId]
-  );
-
   const updateRow = useCallback(
     (rowId: string, patch: UpdateImportDraftRowInput) => {
-      pacedMutate({ rowId, patch });
+      getReviewPersistence(draftId).edit(rowId, patch);
     },
-    [pacedMutate]
+    [draftId]
   );
 
   const setSelection = useCallback(
@@ -146,13 +128,12 @@ export const useImportReviewSession = (
   }, [draftId, rowsCollection]);
 
   const retryAutosave = useCallback(() => {
-    void retryFailedImportDraftPersists(draftId);
+    void getReviewPersistence(draftId).retry();
   }, [draftId]);
 
   const flush = useCallback(async () => {
-    await flushImportDraftPacedMutations(draftId);
-    await waitForImportReviewAutosaveSettled(draftId);
-    return getImportReviewAutosaveSnapshot(draftId).status !== 'failed';
+    const { ok } = await getReviewPersistence(draftId).flush();
+    return ok;
   }, [draftId]);
 
   // Draft GET failure is authoritative — collection sync may not surface the same error flag.

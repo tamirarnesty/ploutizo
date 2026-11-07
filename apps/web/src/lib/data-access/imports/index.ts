@@ -10,14 +10,7 @@ export {
   resolveImportContinueRowIds,
   resolveImportContinueRows,
 } from './resolveImportContinueRowIds';
-export {
-  endImportDraftPacedMutations,
-  flushImportDraftPacedMutations,
-  getImportDraftPacedMutations,
-  IMPORT_DRAFT_PACE_WAIT_MS,
-  releaseImportDraftPacedMutations,
-  retryFailedImportDraftPersists,
-} from './getImportDraftPacedMutations';
+export type { ReviewPersistenceStatus } from './reviewPersistence';
 export {
   evaluateImportDraftWorkingCopy,
   rederiveImportDraftWorkingCopy,
@@ -59,7 +52,6 @@ export {
   type ImportFinalizeErrorOutcome,
 } from './importFinalizeOutcome';
 export { importFinalizeMutationKey } from './queryKeys';
-export type { ImportReviewAutosaveStatus } from './importReviewAutosave';
 export {
   useImportReviewSession,
   type ImportReviewSession,

@@ -12,16 +12,11 @@ import '@/test/mockTanstackRouter';
 import { HouseholdHookWrapper } from '@/test/household-hook-harness';
 
 import {
-  IMPORT_DRAFT_PACE_WAIT_MS,
-  endImportDraftPacedMutations,
-} from './getImportDraftPacedMutations';
+  REVIEW_PERSISTENCE_PACE_WAIT_MS,
+  getReviewPersistence,
+} from './reviewPersistence';
 import { endImportDraftReviewRuntime } from './releaseImportDraftReviewRuntime';
 import { endImportDraftRowsCollections } from './getImportDraftRowsCollection';
-import { endImportDraftPersistBaselines } from './importDraftPersistBaselines';
-import {
-  endImportReviewAutosave,
-  getImportReviewAutosaveSnapshot,
-} from './importReviewAutosave';
 import { importDraftQueryKey } from './queryKeys';
 import { fetchUpdateImportDraftRows } from './fetchUpdateImportDraftRows';
 import { fetchImportDraft } from './useGetImportDraft';
@@ -93,7 +88,7 @@ const draft = makeImportDraft({
 });
 
 const draftId = 'draft_session_1';
-const autosaveSnapshot = () => getImportReviewAutosaveSnapshot(draftId);
+const autosaveSnapshot = () => getReviewPersistence(draftId).getSnapshot();
 
 const hydrateSession = async () => {
   const hook = renderHook(() => useImportReviewSession(draftId), {
@@ -140,9 +135,6 @@ describe('useImportReviewSession', () => {
     await act(async () => {
       await Promise.resolve();
     });
-    endImportDraftPacedMutations();
-    endImportDraftPersistBaselines();
-    endImportReviewAutosave();
     endImportDraftReviewRuntime();
     await endImportDraftRowsCollections();
     getActiveQueryClient().clear();
@@ -317,7 +309,7 @@ describe('useImportReviewSession', () => {
     expect(fetchUpdateImportDraftRows).not.toHaveBeenCalled();
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(IMPORT_DRAFT_PACE_WAIT_MS);
+      await vi.advanceTimersByTimeAsync(REVIEW_PERSISTENCE_PACE_WAIT_MS);
     });
 
     expect(fetchUpdateImportDraftRows).toHaveBeenCalledTimes(1);
@@ -345,7 +337,7 @@ describe('useImportReviewSession', () => {
     });
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(IMPORT_DRAFT_PACE_WAIT_MS);
+      await vi.advanceTimersByTimeAsync(REVIEW_PERSISTENCE_PACE_WAIT_MS);
     });
 
     expect(fetchUpdateImportDraftRows).toHaveBeenCalledTimes(1);
@@ -370,7 +362,7 @@ describe('useImportReviewSession', () => {
     });
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(IMPORT_DRAFT_PACE_WAIT_MS);
+      await vi.advanceTimersByTimeAsync(REVIEW_PERSISTENCE_PACE_WAIT_MS);
     });
 
     expect(fetchUpdateImportDraftRows).toHaveBeenCalledTimes(1);
@@ -406,7 +398,7 @@ describe('useImportReviewSession', () => {
     });
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(IMPORT_DRAFT_PACE_WAIT_MS);
+      await vi.advanceTimersByTimeAsync(REVIEW_PERSISTENCE_PACE_WAIT_MS);
     });
 
     expect(fetchUpdateImportDraftRows).toHaveBeenCalledTimes(1);
@@ -416,7 +408,7 @@ describe('useImportReviewSession', () => {
     });
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(IMPORT_DRAFT_PACE_WAIT_MS);
+      await vi.advanceTimersByTimeAsync(REVIEW_PERSISTENCE_PACE_WAIT_MS);
     });
 
     expect(fetchUpdateImportDraftRows).toHaveBeenCalledTimes(2);
@@ -543,7 +535,7 @@ describe('useImportReviewSession', () => {
     expect(autosaveSnapshot().status).toBe('saving');
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(IMPORT_DRAFT_PACE_WAIT_MS);
+      await vi.advanceTimersByTimeAsync(REVIEW_PERSISTENCE_PACE_WAIT_MS);
     });
 
     expect(autosaveSnapshot().status).toBe('saved');
@@ -559,7 +551,7 @@ describe('useImportReviewSession', () => {
     });
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(IMPORT_DRAFT_PACE_WAIT_MS);
+      await vi.advanceTimersByTimeAsync(REVIEW_PERSISTENCE_PACE_WAIT_MS);
     });
 
     expect(autosaveSnapshot().status).toBe('failed');
@@ -609,7 +601,7 @@ describe('useImportReviewSession', () => {
     });
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(IMPORT_DRAFT_PACE_WAIT_MS);
+      await vi.advanceTimersByTimeAsync(REVIEW_PERSISTENCE_PACE_WAIT_MS);
     });
 
     expect(autosaveSnapshot().status).toBe('failed');
@@ -667,7 +659,7 @@ describe('useImportReviewSession', () => {
     });
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(IMPORT_DRAFT_PACE_WAIT_MS);
+      await vi.advanceTimersByTimeAsync(REVIEW_PERSISTENCE_PACE_WAIT_MS);
     });
 
     expect(autosaveSnapshot().status).toBe('failed');
@@ -683,7 +675,7 @@ describe('useImportReviewSession', () => {
     });
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(IMPORT_DRAFT_PACE_WAIT_MS);
+      await vi.advanceTimersByTimeAsync(REVIEW_PERSISTENCE_PACE_WAIT_MS);
     });
 
     expect(fetchUpdateImportDraftRows).toHaveBeenLastCalledWith(draftId, [
@@ -746,7 +738,7 @@ describe('useImportReviewSession', () => {
     });
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(IMPORT_DRAFT_PACE_WAIT_MS);
+      await vi.advanceTimersByTimeAsync(REVIEW_PERSISTENCE_PACE_WAIT_MS);
     });
 
     act(() => {
@@ -848,7 +840,7 @@ describe('useImportReviewSession', () => {
     ).toBe('needs_review');
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(IMPORT_DRAFT_PACE_WAIT_MS);
+      await vi.advanceTimersByTimeAsync(REVIEW_PERSISTENCE_PACE_WAIT_MS);
     });
 
     expect(fetchUpdateImportDraftRows).toHaveBeenCalledWith(draftId, [
