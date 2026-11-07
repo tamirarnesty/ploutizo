@@ -1,22 +1,12 @@
-import { useQueryClient } from '@tanstack/react-query';
-import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
+import { useInvalidatingMutation } from '@/lib/data-access/useInvalidatingMutation';
 import { apiSend } from '@/lib/queryClient';
 
-export const useInviteMember = () => {
-  const qc = useQueryClient();
-  return useHouseholdMutation({
-    mutationFn: (email: string) =>
+export const useInviteMember = () =>
+  useInvalidatingMutation(
+    (email: string) =>
       apiSend('/api/households/invitations', {
         method: 'POST',
         body: JSON.stringify({ email }),
       }),
-    onSettled: () => {
-      void qc.invalidateQueries({
-        queryKey: ['members'],
-      });
-      void qc.invalidateQueries({
-        queryKey: ['invitations'],
-      });
-    },
-  });
-};
+    [['members'], ['invitations']]
+  );

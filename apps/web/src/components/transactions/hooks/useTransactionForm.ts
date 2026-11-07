@@ -1,4 +1,3 @@
-import { useAppForm } from '@ploutizo/ui/components/form';
 import { createTransactionSchema } from '@ploutizo/validators';
 import { normalizeTransactionAssignees } from '@ploutizo/utils/assignee-split';
 import { formatGeneratedTransactionDescriptionFromAccounts } from '@ploutizo/utils/transaction-policy';
@@ -8,6 +7,10 @@ import type {
   useCreateTransaction,
   useUpdateTransaction,
 } from '@/lib/data-access/transactions';
+import {
+  schemaSubmitValidator,
+  useEntityForm,
+} from '@/lib/forms/useEntityForm';
 import { resolveTransactionFormDescriptionLock } from '../getTransactionFormDescriptionLock';
 import { splitAssigneesEvenly } from '../assigneeSplit';
 import { toTransactionApiPayload } from '../toTransactionApiPayload';
@@ -121,29 +124,17 @@ export const useTransactionForm = ({
 }: UseTransactionFormOptions) => {
   const isEditing = transaction !== null;
 
-  const form = useAppForm({
+  const { form } = useEntityForm({
     defaultValues: buildDefaultValues(transaction, accounts, orgMembers),
-    validators: {
-      onSubmit: ({ value }: { value: TransactionFormValues }) => {
-        const payload = toTransactionApiPayload(value);
-        const result = createTransactionSchema.safeParse(payload);
-        if (!result.success) {
-          return result.error.issues.map((i) => i.message).join(', ');
-        }
-      },
-    },
-    onSubmit: ({ value }: { value: TransactionFormValues }) => {
-      const payload = toTransactionApiPayload(value);
-      const mutation = isEditing ? updateMutation : createMutation;
-      mutation.mutate(payload, {
-        onSuccess: onClose,
-        onError: () =>
-          form.setErrorMap({
-            onSubmit:
-              "Couldn't save changes. Check your connection and try again.",
-          }),
-      });
-    },
+    validate: (value) =>
+      schemaSubmitValidator(createTransactionSchema)(
+        toTransactionApiPayload(value)
+      ),
+    toPayload: toTransactionApiPayload,
+    create: createMutation,
+    update: updateMutation,
+    isEditing,
+    onClose,
   });
 
   return { form, isEditing };

@@ -1,9 +1,9 @@
-import { useQueryClient } from '@tanstack/react-query';
 import { categorySchema, dataEnvelope } from '@ploutizo/validators';
 import type { ColourToken } from '@ploutizo/types';
 import type { Category } from '@ploutizo/validators';
-import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
+import { useInvalidatingMutation } from '@/lib/data-access/useInvalidatingMutation';
 import { apiFetch } from '@/lib/queryClient';
+import { categoriesQueryKey } from './useGetCategories';
 
 interface CreateCategoryBody {
   name: string;
@@ -21,13 +21,5 @@ export const createCategory = async (
   return r.data;
 };
 
-export const useCreateCategory = () => {
-  const qc = useQueryClient();
-  return useHouseholdMutation({
-    mutationFn: createCategory,
-    onSettled: () =>
-      qc.invalidateQueries({
-        queryKey: ['categories'],
-      }),
-  });
-};
+export const useCreateCategory = () =>
+  useInvalidatingMutation(createCategory, [categoriesQueryKey]);

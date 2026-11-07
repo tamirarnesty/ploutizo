@@ -1,27 +1,13 @@
-import { queryOptions } from '@tanstack/react-query';
-import { z } from 'zod';
-import { dataEnvelope, merchantRuleSchema } from '@ploutizo/validators';
-import type { MerchantRule } from '@ploutizo/validators';
-import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
-import { apiFetch } from '@/lib/queryClient';
-import type { UseQueryResult } from '@tanstack/react-query';
+import { merchantRuleSchema } from '@ploutizo/validators';
+import { defineListQuery } from '@/lib/data-access/defineListQuery';
 
-export const fetchMerchantRules = async (
-  signal?: AbortSignal
-): Promise<MerchantRule[]> => {
-  const r = await apiFetch(
-    '/api/merchant-rules',
-    dataEnvelope(z.array(merchantRuleSchema)),
-    { signal }
-  );
-  return r.data;
-};
-
-export const merchantRulesQueryOptions = queryOptions({
-  queryKey: ['merchant-rules'],
-  queryFn: ({ signal }) => fetchMerchantRules(signal),
+const list = defineListQuery({
+  key: 'merchant-rules',
+  path: '/api/merchant-rules',
+  itemSchema: merchantRuleSchema,
 });
 
-export const useGetMerchantRules = (): UseQueryResult<MerchantRule[]> => {
-  return useHouseholdQuery(merchantRulesQueryOptions);
-};
+export const merchantRulesQueryKey = list.queryKey;
+export const fetchMerchantRules = list.fetch;
+export const merchantRulesQueryOptions = list.queryOptions;
+export const useGetMerchantRules = list.useQuery;

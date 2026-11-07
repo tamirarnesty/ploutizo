@@ -22,10 +22,10 @@ import {
 } from '@/components/data-grid/dataGridSharedLayout';
 import { useEffectiveTablePageSize } from '@/hooks/useEffectiveTablePageSize';
 import { usePreloadLucideIcons } from '@/components/categories/usePreloadLucideIcons';
+import { ConfirmDestructiveDialog } from '@/components/ConfirmDestructiveDialog';
 import { buildColumns } from './TransactionColumns';
 import { TransactionRowActionMenuItems } from './TransactionRowActionMenus';
 import { getTransactionRowActions } from './transactionRowActions';
-import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import { TransactionsTableEmpty } from './TransactionTableEmpty';
 import { TransactionsTableEmptyFiltered } from './TransactionTableEmptyFiltered';
 import { TransactionsAmountFooter } from './TransactionsAmountFooter';
@@ -161,11 +161,14 @@ export const TransactionsTable = ({
 
   return (
     <>
-      <DeleteTransactionDialog
+      <ConfirmDestructiveDialog
         open={deleteId !== null}
         onOpenChange={(open) => {
           if (!open) setDeleteId(null);
         }}
+        title="Delete transaction?"
+        description="This will permanently remove this transaction. This action cannot be undone."
+        confirmLabel="Delete transaction"
         onConfirm={handleConfirmDelete}
         isPending={deleteMutation.isPending}
       />

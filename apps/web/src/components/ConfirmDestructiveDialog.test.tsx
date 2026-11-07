@@ -1,13 +1,20 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { DeleteTransactionDialog } from '@/components/transactions/DeleteTransactionDialog';
 import { expectOverlayMounted } from '@/test/overlayCloseContract';
+import { ConfirmDestructiveDialog } from './ConfirmDestructiveDialog';
 
-describe('DeleteTransactionDialog overlay contract', () => {
-  it('stays mounted when closed (open driven by parent deleteId)', () => {
+const baseProps = {
+  title: 'Delete transaction?',
+  description: 'This cannot be undone.',
+  confirmLabel: 'Delete',
+};
+
+describe('ConfirmDestructiveDialog overlay contract', () => {
+  it('stays mounted when closed (open driven by parent)', () => {
     const { container } = render(
-      <DeleteTransactionDialog
+      <ConfirmDestructiveDialog
+        {...baseProps}
         open={false}
         onOpenChange={vi.fn()}
         onConfirm={vi.fn()}
@@ -20,22 +27,21 @@ describe('DeleteTransactionDialog overlay contract', () => {
     ).toBeInTheDocument();
   });
 
-  it('calls onConfirm and onOpenChange(false) when deleting', async () => {
+  it('calls onConfirm and onOpenChange(false) when confirming', async () => {
     const user = userEvent.setup();
     const onConfirm = vi.fn();
     const onOpenChange = vi.fn();
 
     render(
-      <DeleteTransactionDialog
+      <ConfirmDestructiveDialog
+        {...baseProps}
         open
         onOpenChange={onOpenChange}
         onConfirm={onConfirm}
       />
     );
 
-    await user.click(
-      screen.getByRole('button', { name: /delete transaction/i })
-    );
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
 
     expect(onConfirm).toHaveBeenCalledTimes(1);
     expect(onOpenChange).toHaveBeenCalledWith(false);
@@ -46,7 +52,8 @@ describe('DeleteTransactionDialog overlay contract', () => {
     const onOpenChange = vi.fn();
 
     render(
-      <DeleteTransactionDialog
+      <ConfirmDestructiveDialog
+        {...baseProps}
         open
         onOpenChange={onOpenChange}
         onConfirm={vi.fn()}
@@ -56,5 +63,25 @@ describe('DeleteTransactionDialog overlay contract', () => {
     await user.click(screen.getByRole('button', { name: /cancel/i }));
 
     expect(onOpenChange.mock.calls[0]?.[0]).toBe(false);
+  });
+
+  it('opens from the icon trigger and confirms', async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+
+    render(
+      <ConfirmDestructiveDialog
+        {...baseProps}
+        trigger="icon"
+        triggerAriaLabel="Remove item"
+        triggerTooltip="Remove"
+        onConfirm={onConfirm}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Remove item' }));
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,5 +1,4 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import { AlertDialog } from '@ploutizo/ui/components/alert-dialog';
 import {
   Sheet,
   SheetContent,
@@ -8,7 +7,7 @@ import {
   SheetTitle,
 } from '@ploutizo/ui/components/sheet';
 import type { TransactionRow } from '@ploutizo/validators';
-import { DestructiveAlertDialogContent } from '@/components/DestructiveAlertDialogContent';
+import { ConfirmDestructiveDialog } from '@/components/ConfirmDestructiveDialog';
 import { TransactionForm } from './TransactionForm';
 import type { ReactNode } from 'react';
 
@@ -98,15 +97,15 @@ export const TransactionSheet = ({
         </SheetContent>
       </Sheet>
 
-      <AlertDialog open={discardOpen} onOpenChange={setDiscardOpen}>
-        <DestructiveAlertDialogContent
-          title="Discard changes?"
-          description="You have unsaved changes. They will be lost if you close without saving."
-          cancelLabel="Keep editing"
-          confirmLabel="Discard"
-          onConfirm={handleDiscard}
-        />
-      </AlertDialog>
+      <ConfirmDestructiveDialog
+        open={discardOpen}
+        onOpenChange={setDiscardOpen}
+        title="Discard changes?"
+        description="You have unsaved changes. They will be lost if you close without saving."
+        cancelLabel="Keep editing"
+        confirmLabel="Discard"
+        onConfirm={handleDiscard}
+      />
     </>
   );
 };

@@ -26,6 +26,8 @@ import {
   PendingInputFlushProvider,
   useFlushPendingInputs,
 } from '@/lib/money/pending-input-flush';
+import { ConfirmDestructiveDialog } from '@/components/ConfirmDestructiveDialog';
+import { FormSubmitError } from '@/components/FormSubmitError';
 import { useTransactionDescriptionLock } from './hooks/useTransactionDescriptionLock';
 import { useTransactionForm } from './hooks/useTransactionForm';
 import { TransactionAccountSlots } from './TransactionAccountSlots';
@@ -33,7 +35,6 @@ import { TransactionAmountField } from './TransactionAmountField';
 import { TransactionAssigneesField } from './TransactionAssigneesField';
 import { TransactionDateField } from './TransactionDateField';
 import { TransactionDescriptionField } from './TransactionDescriptionField';
-import { DeleteTransactionDialog } from './DeleteTransactionDialog';
 import { TransactionNotesTagsFields } from './TransactionNotesTagsFields';
 import { TransactionTypeFields } from './TransactionTypeFields';
 
@@ -222,13 +223,7 @@ const TransactionFormInner = ({
           />
 
           {/* Form-level mutation error */}
-          <form.Subscribe selector={(s) => s.errorMap.onSubmit}>
-            {(submitError) =>
-              submitError ? (
-                <Text variant="error">{String(submitError)}</Text>
-              ) : null
-            }
-          </form.Subscribe>
+          <FormSubmitError form={form} />
         </FieldGroup>
       </div>
 
@@ -245,9 +240,12 @@ const TransactionFormInner = ({
             >
               <Trash2 size={16} aria-hidden="true" />
             </Button>
-            <DeleteTransactionDialog
+            <ConfirmDestructiveDialog
               open={deleteOpen}
               onOpenChange={setDeleteOpen}
+              title="Delete transaction?"
+              description="This will permanently remove this transaction. This action cannot be undone."
+              confirmLabel="Delete transaction"
               isPending={deleteMutation.isPending}
               onConfirm={() => {
                 deleteMutation.mutate(transaction.id, {

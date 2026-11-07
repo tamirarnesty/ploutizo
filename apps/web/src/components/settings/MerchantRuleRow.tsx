@@ -6,8 +6,8 @@ import {
 import { Button } from '@ploutizo/ui/components/button';
 import { Text } from '@ploutizo/ui/components/text';
 import type { MerchantRule } from '@ploutizo/validators';
+import { ConfirmDestructiveDialog } from '@/components/ConfirmDestructiveDialog';
 import { MATCH_TYPE_LABELS } from './merchant-rule-labels';
-import { SettingsRowAlertDialog } from './SettingsRowAlertDialog';
 
 interface MerchantRuleRowProps {
   rule: MerchantRule;
@@ -48,8 +48,17 @@ export const MerchantRuleRow = ({
       >
         Edit
       </Button>
-      <SettingsRowAlertDialog
-        triggerLabel="Delete"
+      <ConfirmDestructiveDialog
+        trigger={
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-destructive"
+          >
+            Delete
+          </Button>
+        }
         title="Delete rule?"
         description="This rule will no longer be applied during import."
         confirmLabel="Delete rule"

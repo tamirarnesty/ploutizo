@@ -1,5 +1,5 @@
-import { createContext, useContext } from 'react';
-import type { MouseEventHandler, ReactNode } from 'react';
+import { cloneElement, createContext, useContext } from 'react';
+import type { MouseEventHandler, ReactElement, ReactNode } from 'react';
 
 type OpenChangeHandler = (open: boolean, ...rest: unknown[]) => void;
 
@@ -163,7 +163,25 @@ export const alertDialogMock = {
       {children}
     </button>
   ),
-  AlertDialogTrigger: () => null,
+  AlertDialogTrigger: ({
+    render,
+    children,
+    ...props
+  }: {
+    render?: ReactElement<Record<string, unknown>>;
+    children?: ReactNode;
+    [key: string]: unknown;
+  }) => {
+    const onOpenChange = useContext(AlertDialogOpenChangeContext);
+    const element = render ?? <button type="button">{children}</button>;
+    return cloneElement(element, {
+      ...props,
+      onClick: (event: unknown) => {
+        (element.props as { onClick?: (e: unknown) => void }).onClick?.(event);
+        onOpenChange?.(true);
+      },
+    });
+  },
   AlertDialogPortal: ({ children }: { children: ReactNode }) => <>{children}</>,
   AlertDialogOverlay: () => null,
 };

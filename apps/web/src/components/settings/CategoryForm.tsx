@@ -1,6 +1,5 @@
 import { nextCategoryColour } from '@ploutizo/types';
 import { CategoryFormSchema } from '@ploutizo/validators';
-import { useAppForm } from '@ploutizo/ui/components/form';
 import { Button } from '@ploutizo/ui/components/button';
 import { Input } from '@ploutizo/ui/components/input';
 import { DialogFooter } from '@ploutizo/ui/components/dialog';
@@ -10,11 +9,15 @@ import {
   FieldGroup,
   FieldLabel,
 } from '@ploutizo/ui/components/field';
-import { Text } from '@ploutizo/ui/components/text';
 import type {
   Category,
   CategoryForm as CategoryFormType,
 } from '@ploutizo/validators';
+import {
+  schemaSubmitValidator,
+  useEntityForm,
+} from '@/lib/forms/useEntityForm';
+import { FormSubmitError } from '@/components/FormSubmitError';
 import {
   useCreateCategory,
   useGetCategories,
@@ -34,7 +37,7 @@ export const CategoryForm = ({ category, onClose }: CategoryFormProps) => {
   const updateCategory = useUpdateCategory(category?.id ?? '');
   const { data: categories = [] } = useGetCategories();
 
-  const form = useAppForm({
+  const { form } = useEntityForm<CategoryFormType, CategoryFormType>({
     defaultValues: {
       name: category?.name ?? '',
       icon: category?.icon ?? undefined,
@@ -42,31 +45,17 @@ export const CategoryForm = ({ category, onClose }: CategoryFormProps) => {
       colour:
         category?.colour ??
         nextCategoryColour(categories.map((existing) => existing.colour)),
-    } satisfies CategoryFormType,
-    validators: {
-      onSubmit: ({ value }: { value: CategoryFormType }) => {
-        const result = CategoryFormSchema.safeParse(value);
-        if (!result.success) {
-          return result.error.issues.map((i) => i.message).join(', ');
-        }
-      },
     },
-    onSubmit: ({ value }) => {
-      const payload = {
-        name: value.name.trim(),
-        icon: value.icon ?? undefined,
-        colour: value.colour,
-      };
-      const mutation = isEditing ? updateCategory : createCategory;
-      mutation.mutate(payload, {
-        onSuccess: onClose,
-        onError: () =>
-          form.setErrorMap({
-            onSubmit:
-              "Couldn't save changes. Check your connection and try again.",
-          }),
-      });
-    },
+    validate: schemaSubmitValidator(CategoryFormSchema),
+    toPayload: (value) => ({
+      name: value.name.trim(),
+      icon: value.icon ?? undefined,
+      colour: value.colour,
+    }),
+    create: createCategory,
+    update: updateCategory,
+    isEditing,
+    onClose,
   });
 
   return (
@@ -129,9 +118,7 @@ export const CategoryForm = ({ category, onClose }: CategoryFormProps) => {
         </form.AppField>
       </FieldGroup>
 
-      <form.Subscribe selector={(s) => s.errorMap.onSubmit}>
-        {(err) => (err ? <Text variant="error">{String(err)}</Text> : null)}
-      </form.Subscribe>
+      <FormSubmitError form={form} />
 
       <DialogFooter className="mt-4">
         <Button variant="outline" type="button" onClick={onClose}>

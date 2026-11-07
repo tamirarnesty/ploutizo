@@ -1,5 +1,4 @@
 import { useUser } from '@clerk/tanstack-react-start';
-import { useAppForm } from '@ploutizo/ui/components/form';
 import {
   AccountFormSchema,
   accountFormFieldsSchema,
@@ -7,10 +6,15 @@ import {
 import type { AccountType } from '@ploutizo/types';
 import type {
   Account,
+  AccountForm,
   AccountFormValues,
   AccountMember,
   OrgMember,
 } from '@ploutizo/validators';
+import {
+  schemaSubmitValidator,
+  useEntityForm,
+} from '@/lib/forms/useEntityForm';
 import { useCreateAccount, useUpdateAccount } from '@/lib/data-access/accounts';
 
 interface UseAccountFormOptions {
@@ -37,7 +41,7 @@ export const useAccountForm = ({
 
   const loadedMemberIds = existingMembers.map((m) => m.memberId);
 
-  const form = useAppForm({
+  const { form } = useEntityForm<AccountFormValues, AccountForm>({
     defaultValues: {
       name: account?.name ?? '',
       type: account?.type ?? defaultType ?? 'chequing',
@@ -52,27 +56,15 @@ export const useAccountForm = ({
           ? [currentMemberId]
           : [],
     } as AccountFormValues,
-    validators: {
-      onSubmit: ({ value }: { value: AccountFormValues }) => {
-        const result = accountFormFieldsSchema.safeParse(value);
-        if (!result.success) {
-          return result.error.issues.map((i) => i.message).join(', ');
-        }
-      },
-    },
-    onSubmit: ({ value }: { value: AccountFormValues }) => {
+    validate: schemaSubmitValidator(accountFormFieldsSchema),
+    toPayload: (value) => {
       const result = AccountFormSchema.safeParse(value);
-      if (!result.success) return;
-      const mutation = isEditing ? updateAccount : createAccount;
-      mutation.mutate(result.data, {
-        onSuccess: onClose,
-        onError: () =>
-          form.setErrorMap({
-            onSubmit:
-              "Couldn't save changes. Check your connection and try again.",
-          }),
-      });
+      return result.success ? result.data : undefined;
     },
+    create: createAccount,
+    update: updateAccount,
+    isEditing,
+    onClose,
   });
 
   return { form, isEditing };

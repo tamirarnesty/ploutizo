@@ -4,7 +4,7 @@ import { Item, ItemActions } from '@ploutizo/ui/components/item';
 import { Text } from '@ploutizo/ui/components/text';
 import type { PendingInvitation } from '@ploutizo/validators';
 import { UserAvatar } from '@/components/members/UserAvatar';
-import { ConfirmDialog } from './ConfirmDialog';
+import { ConfirmDestructiveDialog } from '@/components/ConfirmDestructiveDialog';
 import { getExpiryInfo } from './invitationUtils';
 
 interface InvitedMemberRowProps {
@@ -51,10 +51,11 @@ export const InvitedMemberRow = ({
         <Badge variant="secondary">Invited</Badge>
       </div>
       <ItemActions className="ml-auto">
-        <ConfirmDialog
+        <ConfirmDestructiveDialog
+          trigger="icon"
           triggerAriaLabel={`Revoke invite to ${invitation.email}`}
           triggerClassName="opacity-0 group-hover/item:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
-          tooltip="Cancel invite"
+          triggerTooltip="Cancel invite"
           title={`Revoke invite to ${invitation.email}?`}
           description={`${invitation.email} will no longer be able to join this household using this invite.`}
           cancelLabel="Keep invite"

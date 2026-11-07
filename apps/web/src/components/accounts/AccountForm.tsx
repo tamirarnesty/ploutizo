@@ -18,10 +18,6 @@ import { Text } from '@ploutizo/ui/components/text';
 import { SheetFooter } from '@ploutizo/ui/components/sheet';
 import { Button } from '@ploutizo/ui/components/button';
 import { LoadingButton } from '@ploutizo/ui/components/loading-button';
-import {
-  AlertDialog,
-  AlertDialogTrigger,
-} from '@ploutizo/ui/components/alert-dialog';
 import { Archive } from 'lucide-react';
 import { accountFormFieldsSchema } from '@ploutizo/validators';
 import type { AccountType } from '@ploutizo/types';
@@ -31,7 +27,8 @@ import type {
   AccountMember,
   OrgMember,
 } from '@ploutizo/validators';
-import { DestructiveAlertDialogContent } from '@/components/DestructiveAlertDialogContent';
+import { ConfirmDestructiveDialog } from '@/components/ConfirmDestructiveDialog';
+import { FormSubmitError } from '@/components/FormSubmitError';
 import { useGetAccountMembers } from '@/lib/data-access/accounts';
 import { useGetHouseholdMembers } from '@/lib/data-access/household';
 import { MemberToggleGroup } from '@/components/members/MemberToggleGroup';
@@ -214,42 +211,28 @@ const AccountFormInner = ({
           </form.AppField>
 
           {/* Form-level mutation error */}
-          <form.Subscribe
-            selector={(s: { errorMap: { onSubmit?: unknown } }) =>
-              s.errorMap.onSubmit
-            }
-          >
-            {(submitError) =>
-              submitError ? (
-                <Text variant="error">{String(submitError)}</Text>
-              ) : null
-            }
-          </form.Subscribe>
+          <FormSubmitError form={form} />
         </FieldGroup>
       </div>
 
       <SheetFooter className="flex-row items-center justify-between gap-2 border-t border-border px-6">
         {onArchive ? (
-          <AlertDialog>
-            <AlertDialogTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  type="button"
-                  className="text-destructive hover:text-destructive"
-                />
-              }
-            >
-              <Archive size={16} className="mr-1" aria-hidden="true" />
-              Archive
-            </AlertDialogTrigger>
-            <DestructiveAlertDialogContent
-              title="Archive account?"
-              description="Transactions linked to this account will not be affected."
-              confirmLabel="Archive account"
-              onConfirm={onArchive}
-            />
-          </AlertDialog>
+          <ConfirmDestructiveDialog
+            trigger={
+              <Button
+                variant="ghost"
+                type="button"
+                className="text-destructive hover:text-destructive"
+              >
+                <Archive size={16} className="mr-1" aria-hidden="true" />
+                Archive
+              </Button>
+            }
+            title="Archive account?"
+            description="Transactions linked to this account will not be affected."
+            confirmLabel="Archive account"
+            onConfirm={onArchive}
+          />
         ) : (
           <div />
         )}
