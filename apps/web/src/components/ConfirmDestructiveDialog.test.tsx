@@ -79,9 +79,12 @@ describe('ConfirmDestructiveDialog overlay contract', () => {
       />
     );
 
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Remove item' }));
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Delete' }));
 
     expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 });

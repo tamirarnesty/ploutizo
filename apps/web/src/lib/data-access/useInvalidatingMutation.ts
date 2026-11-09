@@ -29,15 +29,15 @@ export const useInvalidatingMutation = <
   return useHouseholdMutation<TData, TError, TVariables, TContext>({
     ...options,
     mutationFn,
-    onSettled: (...args) => {
-      for (const target of invalidates) {
-        if (typeof target === 'function') {
-          void target(qc);
-        } else {
-          void qc.invalidateQueries({ queryKey: target });
-        }
-      }
-      options?.onSettled?.(...args);
+    onSettled: async (...args) => {
+      await Promise.all(
+        invalidates.map((target) =>
+          typeof target === 'function'
+            ? target(qc)
+            : qc.invalidateQueries({ queryKey: target })
+        )
+      );
+      await options?.onSettled?.(...args);
     },
   });
 };
