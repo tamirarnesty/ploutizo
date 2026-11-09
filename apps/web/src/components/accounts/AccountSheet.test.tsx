@@ -10,10 +10,21 @@ vi.mock('@/lib/data-access/accounts', () => ({
 }));
 
 vi.mock('@/components/accounts/AccountForm', () => ({
-  AccountForm: ({ onClose }: { onClose: () => void }) => (
-    <button type="button" onClick={onClose}>
-      Close account form
-    </button>
+  AccountForm: ({
+    onClose,
+    onDirtyChange,
+  }: {
+    onClose: () => void;
+    onDirtyChange?: (dirty: boolean) => void;
+  }) => (
+    <>
+      <button type="button" onClick={onClose}>
+        Close account form
+      </button>
+      <button type="button" onClick={() => onDirtyChange?.(true)}>
+        Mark dirty
+      </button>
+    </>
   ),
 }));
 
@@ -85,5 +96,23 @@ describe('AccountSheet overlay contract', () => {
     );
 
     expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('opens discard alert instead of closing when form is dirty', async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+
+    render(<AccountSheet open account={null} onOpenChange={onOpenChange} />);
+
+    await user.click(screen.getByRole('button', { name: /mark dirty/i }));
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    expect(screen.getByText(/discard changes/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /^discard$/i }));
+
+    expect(onOpenChange.mock.calls[0]?.[0]).toBe(false);
   });
 });

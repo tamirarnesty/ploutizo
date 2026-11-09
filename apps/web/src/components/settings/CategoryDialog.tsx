@@ -17,6 +17,11 @@ export const CategoryDialog = ({
     open={open}
     onOpenChange={onOpenChange}
     title={category !== null ? 'Edit category' : 'Add category'}
+    description={
+      category !== null
+        ? 'Update the category name, icon, and colour.'
+        : 'Create a new spending category.'
+    }
     formKey={category?.id ?? 'new'}
   >
     <CategoryForm category={category} onClose={() => onOpenChange(false)} />

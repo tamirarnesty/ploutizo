@@ -11,6 +11,7 @@ describe('SettingsFormDialog overlay contract', () => {
         open
         onOpenChange={vi.fn()}
         title="Edit category"
+        description="Test description"
         formKey="cat-1"
       >
         <p>Form body</p>
@@ -24,6 +25,7 @@ describe('SettingsFormDialog overlay contract', () => {
         open={false}
         onOpenChange={vi.fn()}
         title="Edit category"
+        description="Test description"
         formKey="cat-1"
       >
         <p>Form body</p>
@@ -43,6 +45,7 @@ describe('SettingsFormDialog overlay contract', () => {
         open
         onOpenChange={onOpenChange}
         title="Add category"
+        description="Test description"
         formKey="new"
       >
         <p>Form body</p>
