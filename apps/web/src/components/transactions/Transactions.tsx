@@ -1,10 +1,7 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate, useSearch } from '@tanstack/react-router';
-import { ListFilterIcon } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
-import { Filters } from '@ploutizo/ui/components/reui/filters';
 import { Page } from '@ploutizo/ui/components/page';
-import type { Filter } from '@ploutizo/ui/components/reui/filters-types';
 import type { TransactionRow } from '@ploutizo/validators';
 import { PageHeader } from '@/components/PageHeader';
 import { useGetTransactions } from '@/lib/data-access/transactions';
@@ -15,20 +12,9 @@ import { useGetTags } from '@/lib/data-access/tags';
 import { useTablePageSize } from '@/hooks/persistedPageSize';
 import { TransactionsTable } from './TransactionsTable';
 import { TransactionSheet } from './TransactionSheet';
-import { buildFilterFields } from './TransactionFilterFields';
-import { TransactionFilterSearch } from './TransactionFilterSearch';
+import { TransactionsFilterBar } from './TransactionsFilterBar';
 import { buildTransactionQueryParams } from './transactionSearch';
-import {
-  TRANSACTION_PINNED_FILTER_FIELD_KEYS_LIST,
-  withPinnedTransactionFilters,
-} from './transactionPinnedFilters';
-import {
-  buildCleanSearch,
-  filtersToSearch,
-  hasActiveFilters,
-  searchToFilters,
-  shouldPersistTransactionFilter,
-} from './transactionFilterUrl';
+import { buildCleanSearch, hasActiveFilters } from './transactionFilterUrl';
 import type { TransactionSearch } from './transactionSearch';
 
 const NO_TRANSACTIONS: TransactionRow[] = [];
@@ -58,63 +44,14 @@ export const Transactions = () => {
   const [sheetOpen, setSheetOpen] = useState<boolean>(false);
   const [selectedTx, setSelectedTx] = useState<TransactionRow | null>(null);
 
-  // Filter bar state is derived from URL search params (single source of truth).
-  const activeFilters = useMemo(
-    () => withPinnedTransactionFilters(searchToFilters(search)),
-    [search]
-  );
-  const commitSearchQuery = useCallback(
-    (trimmed: string) => {
-      void navigate({
-        to: '/transactions',
-        search: (prev) =>
-          buildCleanSearch({
-            ...prev,
-            search: trimmed || undefined,
-            page: 1,
-          }),
-        replace: true,
-      });
-    },
-    [navigate]
-  );
-
-  // Filter fields per D-28.
-  const filterFields = useMemo(
-    () =>
-      buildFilterFields(accounts, categories, members, tags, {
-        includeImportResult: Boolean(search.importBatchId),
-      }),
-    [accounts, categories, members, tags, search.importBatchId]
-  );
-
-  const handleFiltersChange = useCallback(
-    (filters: Filter<string>[]) => {
-      const nextFilters = withPinnedTransactionFilters(filters);
-      const mapped = filtersToSearch(
-        nextFilters.filter(shouldPersistTransactionFilter)
-      );
-      void navigate({
-        to: '/transactions',
-        // Rebuild from scratch — only keep sort/pagination/text search from prev.
-        // Spreading prev would leave stale filter params when a filter is removed.
-        // Import batch stays only while the Import result chip remains.
-        search: (prev) =>
-          buildCleanSearch({
-            page: 1,
-            sort: prev.sort,
-            order: prev.order,
-            search: prev.search,
-            ...mapped,
-            importBatchId: mapped.importOutcome
-              ? prev.importBatchId
-              : undefined,
-          }),
-        replace: true,
-      });
-    },
-    [navigate]
-  );
+  // Filtered-empty state clears the whole narrowing (filters + search) so the
+  // list can actually recover.
+  const handleClearAllNarrowing = useCallback(() => {
+    void navigate({
+      to: '/transactions',
+      search: () => buildCleanSearch({}),
+    });
+  }, [navigate]);
 
   const handlePageChange = useCallback(
     (newPage: number) => {
@@ -150,13 +87,6 @@ export const Transactions = () => {
     },
     [navigate]
   );
-
-  const handleClearFilters = useCallback(() => {
-    void navigate({
-      to: '/transactions',
-      search: () => buildCleanSearch({}),
-    });
-  }, [navigate]);
 
   const handleAddClick = useCallback(() => {
     setSelectedTx(null);
@@ -212,26 +142,13 @@ export const Transactions = () => {
         }
       />
 
-      {/* trigger prop required: useRender renders an empty invisible button without it */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <Filters<string>
-          filters={activeFilters}
-          fields={filterFields}
-          onChange={handleFiltersChange}
-          pinnedFieldKeys={TRANSACTION_PINNED_FILTER_FIELD_KEYS_LIST}
-          className="min-w-0 flex-1"
-          trigger={
-            <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs">
-              <ListFilterIcon className="size-3.5" />
-              Filters
-            </Button>
-          }
-        />
-        <TransactionFilterSearch
-          urlQuery={search.search ?? ''}
-          onCommit={commitSearchQuery}
-        />
-      </div>
+      <TransactionsFilterBar
+        search={search}
+        accounts={accounts}
+        categories={categories}
+        members={members}
+        tags={tags}
+      />
 
       <TransactionsTable
         transactions={transactions}
@@ -245,7 +162,8 @@ export const Transactions = () => {
         onLimitChange={handleLimitChange}
         onSortChange={handleSortChange}
         onFilteredEmpty={hasActiveFilters(search)}
-        onClearFilters={handleClearFilters}
+        onClearFilters={handleClearAllNarrowing}
+        onAddTransaction={handleAddClick}
         onEdit={handleEdit}
         onOpenOriginal={handleOpenOriginal}
       />

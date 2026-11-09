@@ -4,7 +4,6 @@ import {
   type FilterFieldConfig,
   type FilterFieldGroup,
   type FilterFieldsConfig,
-  type FilterGroup,
   type FilterI18nConfig,
   type FilterOperator,
 } from './filters-types';
@@ -92,28 +91,49 @@ export const isFilterValueActive = <T = unknown>(
   return filter.values.some((value) => String(value ?? '').trim().length > 0);
 };
 
-export const createFilter = <T = unknown>(
-  field: string,
-  operator?: string,
-  values: T[] = []
-): Filter<T> => ({
-  id: `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
-  field,
-  operator: operator || 'is',
-  values,
-});
+const EMPTY_VALUE_OPERATORS = new Set(['empty', 'not_empty']);
 
-export const createFilterGroup = <T = unknown>(
-  id: string,
-  label: string,
-  fields: FilterFieldConfig<T>[],
-  initialFilters: Filter<T>[] = []
-): FilterGroup<T> => ({
-  id,
-  label,
-  filters: initialFilters,
-  fields,
-});
+/** Short human summary of a filter's values ("Chase", "3 selected" style joins). */
+export const getFilterValueSummary = <T = unknown>(
+  filter: Filter<T>,
+  field: FilterFieldConfig<T>,
+  i18n: FilterI18nConfig,
+  emptyLabel = 'Any'
+): string => {
+  if (EMPTY_VALUE_OPERATORS.has(filter.operator)) {
+    return (
+      getOperatorsForField(field, filter.values, i18n).find(
+        (op) => op.value === filter.operator
+      )?.label ?? i18n.helpers.formatOperator(filter.operator)
+    );
+  }
+  if (filter.values.length === 0) return emptyLabel;
+  const labels = filter.values.map(
+    (value) =>
+      field.options?.find((option) => option.value === value)?.label ??
+      String(value)
+  );
+  return labels.join(', ');
+};
+
+/** "Label-ish" summary including a non-default operator prefix ("Is not Chase"). */
+export const getFilterSummary = <T = unknown>(
+  filter: Filter<T>,
+  field: FilterFieldConfig<T>,
+  i18n: FilterI18nConfig,
+  emptyLabel = 'Any'
+): string => {
+  const valueSummary = getFilterValueSummary(filter, field, i18n, emptyLabel);
+  if (EMPTY_VALUE_OPERATORS.has(filter.operator)) return valueSummary;
+  if (filter.operator === getDefaultFilterOperator(field)) {
+    return valueSummary;
+  }
+  const operatorLabel =
+    getOperatorsForField(field, filter.values, i18n).find(
+      (op) => op.value === filter.operator
+    )?.label ?? i18n.helpers.formatOperator(filter.operator);
+  return `${operatorLabel} ${valueSummary}`;
+};
 
 const stripUndefined = <T extends Record<string, unknown>>(
   obj: T
@@ -151,21 +171,4 @@ export const mergeFilterI18n = (
       ...(defined.validation ?? {}),
     },
   };
-};
-
-export const resolveHighlightedIndex = (
-  highlightedIndex: number,
-  isActive: boolean,
-  optionCount: number
-): number => {
-  if (optionCount <= 0) {
-    return -1;
-  }
-  if (highlightedIndex >= 0) {
-    return Math.min(highlightedIndex, optionCount - 1);
-  }
-  if (isActive) {
-    return 0;
-  }
-  return -1;
 };

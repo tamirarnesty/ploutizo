@@ -45,6 +45,7 @@ interface TransactionsTableProps {
   onSortChange: (col: TransactionSearch['sort'], dir: 'asc' | 'desc') => void;
   onFilteredEmpty: boolean; // true when filters active and no results
   onClearFilters: () => void;
+  onAddTransaction: () => void;
   onEdit: (transaction: TransactionRow) => void;
   onOpenOriginal: (id: string) => void;
 }
@@ -62,6 +63,7 @@ export const TransactionsTable = ({
   onSortChange,
   onFilteredEmpty,
   onClearFilters,
+  onAddTransaction,
   onEdit,
   onOpenOriginal,
 }: TransactionsTableProps) => {
@@ -156,7 +158,7 @@ export const TransactionsTable = ({
     if (onFilteredEmpty) {
       return <TransactionsTableEmptyFiltered onClearFilters={onClearFilters} />;
     }
-    return <TransactionsTableEmpty />;
+    return <TransactionsTableEmpty onAddTransaction={onAddTransaction} />;
   }
 
   return (

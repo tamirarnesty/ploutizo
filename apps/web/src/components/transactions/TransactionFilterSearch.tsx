@@ -22,7 +22,7 @@ export const TransactionFilterSearch = ({
   });
 
   return (
-    <InputGroup className="w-full shrink-0 sm:w-64">
+    <InputGroup className="min-w-0 flex-1 sm:w-64 sm:flex-none">
       <InputGroupInput
         type="search"
         value={query}

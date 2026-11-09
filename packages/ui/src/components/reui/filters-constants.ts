@@ -20,32 +20,32 @@ export const DEFAULT_I18N: FilterI18nConfig = {
   addFilterTitle: 'Add filter',
 
   operators: {
-    is: 'is',
-    isNot: 'is not',
-    isAnyOf: 'is any of',
-    isNotAnyOf: 'is not any of',
-    includesAll: 'includes all',
-    excludesAll: 'excludes all',
-    before: 'before',
-    after: 'after',
-    between: 'between',
-    notBetween: 'not between',
-    contains: 'contains',
-    notContains: 'does not contain',
-    startsWith: 'starts with',
-    endsWith: 'ends with',
-    isExactly: 'is exactly',
-    equals: 'equals',
-    notEquals: 'not equals',
-    greaterThan: 'greater than',
-    lessThan: 'less than',
-    overlaps: 'overlaps',
-    includes: 'includes',
-    excludes: 'excludes',
-    includesAllOf: 'includes all of',
-    includesAnyOf: 'includes any of',
-    empty: 'is empty',
-    notEmpty: 'is not empty',
+    is: 'Is',
+    isNot: 'Is not',
+    isAnyOf: 'Is any of',
+    isNotAnyOf: 'Is not any of',
+    includesAll: 'Includes all',
+    excludesAll: 'Excludes all',
+    before: 'Before',
+    after: 'After',
+    between: 'Between',
+    notBetween: 'Not between',
+    contains: 'Contains',
+    notContains: 'Does not contain',
+    startsWith: 'Starts with',
+    endsWith: 'Ends with',
+    isExactly: 'Is exactly',
+    equals: 'Equals',
+    notEquals: 'Does not equal',
+    greaterThan: 'Greater than',
+    lessThan: 'Less than',
+    overlaps: 'Overlaps',
+    includes: 'Includes',
+    excludes: 'Excludes',
+    includesAllOf: 'Includes all of',
+    includesAnyOf: 'Includes any of',
+    empty: 'Is empty',
+    notEmpty: 'Is not empty',
   },
 
   placeholders: {
@@ -57,7 +57,8 @@ export const DEFAULT_I18N: FilterI18nConfig = {
   },
 
   helpers: {
-    formatOperator: (operator: string) => operator.replace(/_/g, ' '),
+    formatOperator: (operator: string) =>
+      operator.replace(/_/g, ' ').replace(/^./, (char) => char.toUpperCase()),
   },
 
   validation: {
@@ -103,8 +104,3 @@ export const createOperatorsFromI18n = (
     { value: 'not_empty', label: i18n.operators.notEmpty },
   ],
 });
-
-export const DEFAULT_OPERATORS: Record<string, FilterOperator[]> =
-  createOperatorsFromI18n(DEFAULT_I18N);
-
-export const EMPTY_PINNED_FIELD_KEYS: string[] = [];

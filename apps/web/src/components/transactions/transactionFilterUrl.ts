@@ -1,7 +1,4 @@
-import {
-  createPinnedFilterId,
-  isFilterValueActive,
-} from '@ploutizo/ui/components/reui/filters-utils';
+import { createPinnedFilterId } from '@ploutizo/ui/components/reui/filters-utils';
 import type { Filter } from '@ploutizo/ui/components/reui/filters-types';
 import type { TransactionSearch } from './transactionSearch';
 
@@ -31,20 +28,6 @@ type SimpleFilterOpKey = `${SimpleFilterDescriptor['field']}_op`;
 
 const opKeyOf = (field: SimpleFilterDescriptor['field']): SimpleFilterOpKey =>
   `${field}_op`;
-
-const defaultOperatorFor = (field: string): string =>
-  TRANSACTION_SIMPLE_FILTERS.find((d) => d.field === field)?.defaultOperator ??
-  (field === 'dateRange' ? 'between' : 'is');
-
-/** Filters written to the URL — active values or a non-default operator still being chosen. */
-export const shouldPersistTransactionFilter = (
-  filter: Filter<string>
-): boolean => {
-  if (isFilterValueActive(filter)) {
-    return true;
-  }
-  return filter.operator !== defaultOperatorFor(filter.field);
-};
 
 const encodeSimpleFilter = (
   result: Partial<TransactionSearch>,
@@ -124,6 +107,7 @@ export const buildCleanSearch = (
   if (!result.search) delete result.search;
   if (!result.dateFrom) delete result.dateFrom;
   if (!result.dateTo) delete result.dateTo;
+  if (!result.dateFrom && !result.dateTo) delete result.dateRange_op;
   if (result.dateRange_op === 'between') delete result.dateRange_op;
   if (!result.importBatchId) delete result.importBatchId;
   if (!result.importOutcome) delete result.importOutcome;
@@ -145,35 +129,27 @@ export const filtersToSearch = (
       encodeSimpleFilter(result, f, descriptor);
     } else if (f.field === 'dateRange') {
       const op = f.operator;
-      if (op === 'after' && f.values[0]) {
-        result.dateFrom = f.values[0];
+      const [first = '', second = ''] = f.values;
+      // Operators without a bound date carry no meaning — emit nothing rather
+      // than a bare `dateRange_op` that decodes back as a phantom filter.
+      if (op === 'after' && first) {
+        result.dateFrom = first;
         result.dateRange_op = 'after';
-      } else if (op === 'after') {
-        result.dateRange_op = 'after';
-      } else if (op === 'before' && f.values[0]) {
-        result.dateTo = f.values[0];
+      } else if (op === 'before' && first) {
+        result.dateTo = first;
         result.dateRange_op = 'before';
-      } else if (op === 'before') {
-        result.dateRange_op = 'before';
-      } else if (op === 'is' && f.values[0]) {
+      } else if ((op === 'is' || op === 'is_not') && first) {
         // 'is X' — send as dateFrom; API uses eq on dateFrom when op=is
-        result.dateFrom = f.values[0];
-        result.dateRange_op = 'is';
-      } else if (op === 'is') {
-        result.dateRange_op = 'is';
-      } else if (op === 'is_not' && f.values[0]) {
-        result.dateFrom = f.values[0];
-        result.dateRange_op = 'is_not';
-      } else if (op === 'is_not') {
-        result.dateRange_op = 'is_not';
-      } else if (op === 'not_between') {
-        if (f.values[0]) result.dateFrom = f.values[0];
-        if (f.values[1]) result.dateTo = f.values[1];
+        result.dateFrom = first;
+        result.dateRange_op = op;
+      } else if (op === 'not_between' && (first || second)) {
+        if (first) result.dateFrom = first;
+        if (second) result.dateTo = second;
         result.dateRange_op = 'not_between';
-      } else if (f.values.length >= 1) {
+      } else if (first || second) {
         // 'between' (default)
-        result.dateFrom = f.values[0];
-        result.dateTo = f.values[1] ?? '';
+        result.dateFrom = first || undefined;
+        result.dateTo = second || undefined;
         // dateRange_op 'between' is the default — omit from URL
       }
     } else if (
@@ -198,37 +174,31 @@ export const searchToFilters = (
     const filter = decodeSimpleFilter(search, descriptor);
     if (filter) filters.push(filter);
   }
-  // dateRange — operator determines which bound(s) the values map to
+  // dateRange — operator determines which bound(s) the values map to. An
+  // operator param without its bound date is meaningless and ignored.
   const dateOp = search.dateRange_op ?? 'between';
-  if (dateOp === 'after') {
+  if (dateOp === 'after' && search.dateFrom) {
     filters.push({
       id: createPinnedFilterId('dateRange'),
       field: 'dateRange',
       operator: 'after',
-      values: search.dateFrom ? [search.dateFrom] : [],
+      values: [search.dateFrom],
     });
-  } else if (dateOp === 'before') {
+  } else if (dateOp === 'before' && search.dateTo) {
     filters.push({
       id: createPinnedFilterId('dateRange'),
       field: 'dateRange',
       operator: 'before',
-      values: search.dateTo ? [search.dateTo] : [],
+      values: [search.dateTo],
     });
-  } else if (dateOp === 'is') {
+  } else if ((dateOp === 'is' || dateOp === 'is_not') && search.dateFrom) {
     filters.push({
       id: createPinnedFilterId('dateRange'),
       field: 'dateRange',
-      operator: 'is',
-      values: search.dateFrom ? [search.dateFrom] : [],
+      operator: dateOp,
+      values: [search.dateFrom],
     });
-  } else if (dateOp === 'is_not') {
-    filters.push({
-      id: createPinnedFilterId('dateRange'),
-      field: 'dateRange',
-      operator: 'is_not',
-      values: search.dateFrom ? [search.dateFrom] : [],
-    });
-  } else if (dateOp === 'not_between') {
+  } else if (dateOp === 'not_between' && (search.dateFrom || search.dateTo)) {
     filters.push({
       id: createPinnedFilterId('dateRange'),
       field: 'dateRange',

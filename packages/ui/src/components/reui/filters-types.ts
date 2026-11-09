@@ -93,6 +93,8 @@ export interface CustomRendererProps<T = unknown> {
   values: T[];
   onChange: (values: T[]) => void;
   operator: string;
+  /** Commits operator and values in one update — preferred over separate onChange/onOperatorChange pairs. */
+  onOperatorValuesChange?: (operator: string, values: T[]) => void;
 }
 
 export interface FilterFieldGroup<T = unknown> {
@@ -113,29 +115,7 @@ export interface FilterFieldConfig<T = unknown> {
   options?: FilterOption<T>[];
   operators?: FilterOperator[];
   customRenderer?: (props: CustomRendererProps<T>) => React.ReactNode;
-  customValueRenderer?: (
-    values: T[],
-    options: FilterOption<T>[]
-  ) => React.ReactNode;
   placeholder?: string;
-  searchable?: boolean;
-  maxSelections?: number;
-  min?: number;
-  max?: number;
-  step?: number;
-  prefix?: string | React.ReactNode;
-  suffix?: string | React.ReactNode;
-  pattern?: string;
-  validation?: (
-    value: unknown
-  ) => boolean | { valid: boolean; message?: string };
-  allowCustomValues?: boolean;
-  className?: string;
-  menuPopupClassName?: string;
-  groupLabel?: string;
-  onLabel?: string;
-  offLabel?: string;
-  onInputChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   defaultOperator?: string;
   /** Maps the chip's values when its operator changes, e.g. one date to a range. */
   migrateValues?: (
@@ -143,8 +123,6 @@ export interface FilterFieldConfig<T = unknown> {
     nextOperator: string,
     values: T[]
   ) => T[];
-  value?: T[];
-  onValueChange?: (values: T[]) => void;
 }
 
 export interface Filter<T = unknown> {
@@ -152,11 +130,4 @@ export interface Filter<T = unknown> {
   field: string;
   operator: string;
   values: T[];
-}
-
-export interface FilterGroup<T = unknown> {
-  id: string;
-  label?: string;
-  filters: Filter<T>[];
-  fields: FilterFieldConfig<T>[];
 }

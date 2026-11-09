@@ -1,122 +1,46 @@
 import { Layers2 } from 'lucide-react';
-import { DatePicker } from '@ploutizo/ui/components/date-picker';
-import {
-  DateRangePicker,
-  DateRangePickerApply,
-  DateRangePickerCalendar,
-  DateRangePickerCancel,
-  DateRangePickerContent,
-  DateRangePickerFooter,
-  DateRangePickerTrigger,
-  useDateRangePicker,
-} from '@ploutizo/ui/components/date-range-picker';
-import { format, isValid, parseISO } from 'date-fns';
 import { memberFullLabel } from '@ploutizo/utils';
 import type { FilterFieldConfig } from '@ploutizo/ui/components/reui/filters-types';
+import { TransactionDateEditor } from './TransactionDateEditor';
+import {
+  TRANSACTION_DATE_OPERATORS,
+  migrateDateFilterValues,
+} from './transactionDateFilter';
 
-const SINGLE_DATE_OPS = new Set(['is', 'is_not', 'before', 'after']);
-const RANGE_OPS = new Set(['between', 'not_between']);
-
-const isSingleDateOp = (op: string): boolean => {
-  return SINGLE_DATE_OPS.has(op);
-};
-const isRangeOp = (op: string): boolean => {
-  return RANGE_OPS.has(op);
-};
-
-// State migration rules when switching operators:
-// single→range:      [A]    → [A, '']
-// range→single:      [A, B] → [A]
-// same family (e.g. is↔is_not, between↔not_between): values unchanged
-const migrateDateFilterValues = (
-  prevOp: string,
-  nextOp: string,
-  values: string[]
-): string[] => {
-  const prevIsRange = isRangeOp(prevOp);
-  const nextIsRange = isRangeOp(nextOp);
-  if (prevIsRange === nextIsRange) return values; // same family — keep values
-  if (!prevIsRange && nextIsRange) return [values[0] ?? '', '']; // single → range
-  return [values[0] ?? '']; // range → single
-};
-
-interface DateRangeFilterRendererProps {
-  values: string[];
-  onChange: (values: string[]) => void;
-  operator: string;
-}
-
-const formatFilterDate = (date: Date) => format(date, 'MMM d, yyyy');
-
-/** Filter values are ISO `yyyy-MM-dd` strings from the URL; anything else reads as unset. */
-const parseFilterDate = (value: string): Date | undefined => {
-  const date = parseISO(value);
-  return value && isValid(date) ? date : undefined;
-};
-
-const toFilterValue = (date: Date) => format(date, 'yyyy-MM-dd');
-
-// Shows the in-popover selection while open, and the committed filter otherwise.
-const DateRangeFilterLabel = () => {
-  const { open, pending, committed } = useDateRangePicker();
-  const range = open ? pending : committed;
-  if (range?.from && range.to) {
-    return `${formatFilterDate(range.from)} – ${formatFilterDate(range.to)}`;
-  }
-  return range?.from
-    ? `${formatFilterDate(range.from)} –`
-    : 'Pick a date range';
-};
-
-// DateRangeFilterRenderer receives operator from the filter chip's active operator.
-// It picks the single-date or range picker and migrates values on operator switch.
-// DateRangePicker holds a range until Apply, preventing the onChange → navigate →
-// URL sync → chip remount cycle that would reset the open state after the first click.
-// DatePicker commits and closes on the one click a single date needs.
+// DateRangeFilterRenderer receives operator from the filter's active operator.
+// The editor commits operator+values together via onOperatorValuesChange so the
+// panel emits a single filter update (one URL write, not two).
 const DateRangeFilterRenderer = ({
   values,
   onChange,
   operator,
-}: DateRangeFilterRendererProps) => {
-  const [from = '', to = ''] = values;
-
-  if (isSingleDateOp(operator)) {
-    return (
-      <DatePicker
-        value={from}
-        // Clicking the picked day again reports '', which would drop the operator; keep the date instead.
-        onChange={(isoDate) => {
-          if (isoDate) onChange([isoDate]);
-        }}
-        // Sits inside the filter chip, which draws the border and hover.
-        className="h-auto w-auto border-0 bg-transparent p-0 font-normal shadow-none hover:bg-transparent dark:bg-transparent dark:hover:bg-transparent"
-      />
-    );
-  }
-
-  const fromDate = parseFilterDate(from);
-  const toDate = parseFilterDate(to);
-
-  return (
-    <DateRangePicker
-      value={{ from: fromDate, to: toDate }}
-      onApply={(range) =>
-        onChange([toFilterValue(range.from), toFilterValue(range.to)])
+  onOperatorValuesChange,
+}: {
+  values: string[];
+  onChange: (values: string[]) => void;
+  operator: string;
+  onOperatorValuesChange?: (operator: string, values: string[]) => void;
+}) => (
+  <TransactionDateEditor
+    operator={operator}
+    values={values}
+    showOperators={false}
+    onChange={({ operator: nextOperator, values: nextValues }) => {
+      if (onOperatorValuesChange) {
+        onOperatorValuesChange(nextOperator, nextValues);
+      } else {
+        onChange(nextValues);
       }
-    >
-      <DateRangePickerTrigger>
-        <DateRangeFilterLabel />
-      </DateRangePickerTrigger>
-      <DateRangePickerContent side="bottom">
-        <DateRangePickerCalendar />
-        <DateRangePickerFooter>
-          <DateRangePickerCancel />
-          <DateRangePickerApply />
-        </DateRangePickerFooter>
-      </DateRangePickerContent>
-    </DateRangePicker>
-  );
-};
+    }}
+    onCommit={({ operator: nextOperator, values: nextValues }) => {
+      if (onOperatorValuesChange) {
+        onOperatorValuesChange(nextOperator, nextValues);
+      } else {
+        onChange(nextValues);
+      }
+    }}
+  />
+);
 
 export const buildFilterFields = (
   accounts: { id: string; name: string }[],
@@ -152,25 +76,22 @@ export const buildFilterFields = (
     },
     {
       key: 'dateRange',
-      label: 'Date Range',
+      label: 'Date',
       type: 'custom',
       defaultOperator: 'between',
-      // Explicit operators override ReUI defaults — avoids duplicate 'is' key in DEFAULT_OPERATORS
-      // for type 'custom' (filters.tsx lines 588–595) which caused a React key warning.
-      operators: [
-        { value: 'is', label: 'is' },
-        { value: 'is_not', label: 'is not' },
-        { value: 'before', label: 'before' },
-        { value: 'after', label: 'after' },
-        { value: 'between', label: 'between' },
-        { value: 'not_between', label: 'not between' },
-      ],
+      operators: [...TRANSACTION_DATE_OPERATORS],
       migrateValues: migrateDateFilterValues,
-      customRenderer: ({ values, onChange, operator }) => (
+      customRenderer: ({
+        values,
+        onChange,
+        operator,
+        onOperatorValuesChange,
+      }) => (
         <DateRangeFilterRenderer
           values={values}
           onChange={onChange}
           operator={operator}
+          onOperatorValuesChange={onOperatorValuesChange}
         />
       ),
     },
