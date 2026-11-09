@@ -21,12 +21,19 @@ const mockRule: MerchantRule = {
 };
 
 describe('RuleDialog overlay contract', () => {
-  it('keeps dialog mounted when closed with rule still set', () => {
-    const { container } = render(
+  it('keeps dialog content mounted through the close animation', () => {
+    const { rerender } = render(
+      <RuleDialog open onOpenChange={vi.fn()} rule={mockRule} />
+    );
+
+    expect(screen.getByTestId('rule-form')).toBeInTheDocument();
+    expect(screen.getByText('Edit rule')).toBeInTheDocument();
+
+    rerender(
       <RuleDialog open={false} onOpenChange={vi.fn()} rule={mockRule} />
     );
 
-    expectOverlayMounted(container, 'dialog');
+    expectOverlayMounted('dialog');
     expect(screen.getByTestId('rule-form')).toBeInTheDocument();
     expect(screen.getByText('Edit rule')).toBeInTheDocument();
   });

@@ -1,11 +1,16 @@
 import '@/lib/access/working-set-cleanup';
 import '@/test/mockTanstackRouter';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ImportDraftSummary } from '@ploutizo/validators';
 import { HouseholdHookWrapper } from '@/test/household-hook-harness';
-import { expectOverlayMounted } from '@/test/overlayCloseContract';
 import { useFinalizeImportDraft } from '@/lib/data-access/imports/useFinalizeImportDraft';
 import { fetchFinalizeImportDraft } from '@/lib/data-access/imports/fetchFinalizeImportDraft';
 import { ImportDraftCard } from './ImportDraftCard';
@@ -99,13 +104,10 @@ describe('ImportDraftCard', () => {
   beforeEach(() => {
     vi.mocked(fetchFinalizeImportDraft).mockReset();
   });
-  it('keeps the discard confirmation mounted when closed', () => {
-    const { container } = renderCard();
+  it('does not render the discard confirmation when closed', () => {
+    renderCard();
 
-    expectOverlayMounted(container, 'alertDialog');
-    expect(
-      container.querySelector('[data-slot="alert-dialog"]')
-    ).toHaveAttribute('data-open', 'false');
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
   it('does not discard until the confirmation is accepted', async () => {
@@ -129,30 +131,30 @@ describe('ImportDraftCard', () => {
   it('leaves the draft in place when discard is canceled', async () => {
     const user = userEvent.setup();
     const onDiscard = vi.fn();
-    const { container } = renderCard({ onDiscard });
+    renderCard({ onDiscard });
 
     await user.click(screen.getByRole('button', { name: 'Discard' }));
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
 
     expect(onDiscard).not.toHaveBeenCalled();
-    expect(
-      container.querySelector('[data-slot="alert-dialog"]')
-    ).toHaveAttribute('data-open', 'false');
+    await waitFor(() =>
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    );
   });
 
   it('discards the draft when confirmation is accepted', async () => {
     const user = userEvent.setup();
     const onDiscard = vi.fn();
-    const { container } = renderCard({ onDiscard });
+    renderCard({ onDiscard });
 
     await user.click(screen.getByRole('button', { name: 'Discard' }));
     await user.click(screen.getByRole('button', { name: 'Discard draft' }));
 
     expect(onDiscard).toHaveBeenCalledTimes(1);
     expect(onDiscard).toHaveBeenCalledWith('draft_1');
-    expect(
-      container.querySelector('[data-slot="alert-dialog"]')
-    ).toHaveAttribute('data-open', 'false');
+    await waitFor(() =>
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    );
   });
 
   it('shows Finalizing… and disables Continue and Discard while finalize is pending', async () => {
@@ -247,7 +249,11 @@ describe('ImportDraftCard', () => {
     );
 
     await user.click(screen.getByRole('button', { name: 'Discard' }));
-    await user.click(screen.getByRole('button', { name: 'Start finalize' }));
+    // The modal alert dialog aria-hides the page behind it, so the finalize
+    // trigger is only reachable via a synthetic click here.
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Start finalize', hidden: true })
+    );
 
     await waitFor(() => {
       expect(screen.getByText('Finalizing…')).toBeInTheDocument();

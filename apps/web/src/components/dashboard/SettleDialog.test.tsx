@@ -17,21 +17,33 @@ describe('SettleDialog overlay contract', () => {
       <SettleDialog open={false} account={null} onClose={vi.fn()} />
     );
 
-    expectOverlayUnmounted(container, 'dialog');
+    expectOverlayUnmounted('dialog');
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('stays mounted when closed but account is still set (exit animation)', () => {
-    const { container } = render(
+  it('stays mounted through the close animation when account is still set', () => {
+    const account = mockSettlementAccount();
+    const { rerender } = render(
       <SettleDialog
-        open={false}
-        account={mockSettlementAccount()}
+        open
+        account={account}
         onClose={vi.fn()}
         initialPayToward="mAda"
       />
     );
 
-    expectOverlayMounted(container, 'dialog');
+    expect(screen.getByTestId('settle-dialog-form')).toBeInTheDocument();
+
+    rerender(
+      <SettleDialog
+        open={false}
+        account={account}
+        onClose={vi.fn()}
+        initialPayToward="mAda"
+      />
+    );
+
+    expectOverlayMounted('dialog');
     expect(screen.getByTestId('settle-dialog-form')).toBeInTheDocument();
   });
 

@@ -18,25 +18,34 @@ vi.mock('@/components/accounts/AccountForm', () => ({
 }));
 
 describe('AccountSheet overlay contract', () => {
-  it('keeps sheet root mounted when closed with account still set', () => {
-    const { container } = render(
-      <AccountSheet
-        open={false}
-        account={mockAccount()}
-        onOpenChange={vi.fn()}
-      />
+  it('keeps sheet content mounted through the close animation', () => {
+    const account = mockAccount();
+    const { rerender } = render(
+      <AccountSheet open account={account} onOpenChange={vi.fn()} />
     );
 
-    expectOverlayMounted(container, 'sheet');
+    expect(screen.getByText('Edit account')).toBeInTheDocument();
+
+    rerender(
+      <AccountSheet open={false} account={account} onOpenChange={vi.fn()} />
+    );
+
+    expectOverlayMounted('sheet');
     expect(screen.getByText('Edit account')).toBeInTheDocument();
   });
 
-  it('keeps sheet root mounted when closed in create mode', () => {
-    const { container } = render(
+  it('keeps sheet content mounted through the close animation in create mode', () => {
+    const { rerender } = render(
+      <AccountSheet open account={null} onOpenChange={vi.fn()} />
+    );
+
+    expect(screen.getByText('Add account')).toBeInTheDocument();
+
+    rerender(
       <AccountSheet open={false} account={null} onOpenChange={vi.fn()} />
     );
 
-    expectOverlayMounted(container, 'sheet');
+    expectOverlayMounted('sheet');
     expect(screen.getByText('Add account')).toBeInTheDocument();
   });
 
@@ -61,7 +70,7 @@ describe('AccountSheet overlay contract', () => {
     await user.click(screen.getByRole('button', { name: 'Add account' }));
 
     expect(onTriggerClick).toHaveBeenCalledTimes(1);
-    expect(onOpenChange).toHaveBeenCalledWith(true);
+    expect(onOpenChange.mock.calls[0]?.[0]).toBe(true);
   });
 
   it('calls onOpenChange(false) from form without requiring account to clear', async () => {

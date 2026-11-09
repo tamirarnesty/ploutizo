@@ -20,8 +20,15 @@ const mockCategory: Category = {
 };
 
 describe('CategoryDialog overlay contract', () => {
-  it('keeps dialog mounted when closed with category still set', () => {
-    const { container } = render(
+  it('keeps dialog content mounted through the close animation', () => {
+    const { rerender } = render(
+      <CategoryDialog open onOpenChange={vi.fn()} category={mockCategory} />
+    );
+
+    expect(screen.getByTestId('category-form')).toBeInTheDocument();
+    expect(screen.getByText('Edit category')).toBeInTheDocument();
+
+    rerender(
       <CategoryDialog
         open={false}
         onOpenChange={vi.fn()}
@@ -29,7 +36,7 @@ describe('CategoryDialog overlay contract', () => {
       />
     );
 
-    expectOverlayMounted(container, 'dialog');
+    expectOverlayMounted('dialog');
     expect(screen.getByTestId('category-form')).toBeInTheDocument();
     expect(screen.getByText('Edit category')).toBeInTheDocument();
   });
