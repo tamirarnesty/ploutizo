@@ -1,16 +1,15 @@
 import { Outlet, createFileRoute } from '@tanstack/react-router';
-import { Text } from '@ploutizo/ui/components/text';
+import { Page } from '@ploutizo/ui/components/page';
+import { PageHeader } from '@/components/PageHeader';
 import { SettingsTabs } from '@/components/settings/SettingsTabs';
 
 const SettingsLayout = () => {
   return (
-    <div className="flex flex-col gap-6">
-      <Text as="h1" variant="h3">
-        Settings
-      </Text>
+    <Page>
+      <PageHeader title="Settings" />
       <SettingsTabs />
       <Outlet />
-    </div>
+    </Page>
   );
 };
 

@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from '@ploutizo/ui/components/sonner-api';
+import { Page } from '@ploutizo/ui/components/page';
 import type { OrgMember } from '@ploutizo/validators';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';
 import type { CardBalanceRowViewModel } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
@@ -133,7 +134,7 @@ export const Dashboard = () => {
   ]);
 
   return (
-    <div className="space-y-6">
+    <Page>
       <DashboardHeader
         periodSelection={periodSelection}
         period={period}
@@ -184,6 +185,6 @@ export const Dashboard = () => {
         initialPayToward={dialogPayToward}
         onClose={handleClose}
       />
-    </div>
+    </Page>
   );
 };

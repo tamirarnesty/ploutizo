@@ -1,6 +1,7 @@
 import { Button } from '@ploutizo/ui/components/button';
-import { Text } from '@ploutizo/ui/components/text';
+import { Page } from '@ploutizo/ui/components/page';
 import type { MerchantRule } from '@ploutizo/validators';
+import { PageHeader } from '@/components/PageHeader';
 import {
   useDeleteMerchantRule,
   useGetMerchantRules,
@@ -21,29 +22,30 @@ export const MerchantRulesSettings = () => {
   };
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <Text as="h1" variant="h3">
-          Merchant Rules
-        </Text>
-        <Button type="button" onClick={dialog.openCreate}>
-          Add rule
-        </Button>
-      </div>
-
-      <MerchantRulesList
-        isLoading={isLoading}
-        rules={rules}
-        onReorder={handleReorder}
-        onEdit={dialog.openEdit}
-        onDelete={(id) => deleteRule.mutate(id)}
+    <Page>
+      <PageHeader
+        actions={
+          <Button type="button" onClick={dialog.openCreate}>
+            Add rule
+          </Button>
+        }
       />
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <MerchantRulesList
+          isLoading={isLoading}
+          rules={rules}
+          onReorder={handleReorder}
+          onEdit={dialog.openEdit}
+          onDelete={(id) => deleteRule.mutate(id)}
+        />
+      </div>
 
       <RuleDialog
         open={dialog.open}
         onOpenChange={dialog.onOpenChange}
         rule={dialog.entity}
       />
-    </div>
+    </Page>
   );
 };

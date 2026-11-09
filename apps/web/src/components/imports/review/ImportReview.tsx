@@ -19,7 +19,6 @@ import {
   useImportReviewSession,
 } from '@/lib/data-access/imports';
 import { importDraftReviewRoute } from '@/lib/navigation';
-import { ImportHubBreadcrumb } from '../lib/ImportHubBreadcrumb';
 import { ImportDraftReview } from './ImportDraftReview';
 import { ImportReviewAutosaveFailureNotifier } from './ImportReviewAutosaveFailureNotifier';
 import { ImportReviewLeaveGuard } from './ImportReviewLeaveGuard';
@@ -128,7 +127,6 @@ export const ImportReview = ({ draftId }: ImportReviewProps) => {
         draftId={draftId}
         retryAutosave={retryAutosave}
       />
-      <ImportHubBreadcrumb currentPage="Review import" />
       {body}
     </div>
   );

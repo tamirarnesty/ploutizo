@@ -143,7 +143,7 @@ const HouseholdSettingsFormFields = ({
                   field.handleChange(next as SettlementThresholdMode);
                 }
               }}
-              className="grid-cols-3 gap-2"
+              className="grid-cols-[repeat(auto-fit,minmax(10rem,1fr))]"
             >
               <ThresholdModeOption
                 mode="app_default"

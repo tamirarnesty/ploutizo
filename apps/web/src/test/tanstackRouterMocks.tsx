@@ -91,6 +91,7 @@ const { routerMocks, tanstackRouterMock, useRouterMock } = vi.hoisted(() => {
       return mocks.useBlocker(args);
     },
     useRouteContext: () => ({}),
+    useMatches: () => [],
     useRouter: vi.fn(),
     getRouteApi: () => ({
       useRouteContext: () => ({}),

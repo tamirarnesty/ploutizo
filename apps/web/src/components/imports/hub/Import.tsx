@@ -10,6 +10,8 @@ import {
   EmptyTitle,
 } from '@ploutizo/ui/components/empty';
 import { Text } from '@ploutizo/ui/components/text';
+import { Page } from '@ploutizo/ui/components/page';
+import { PageHeader } from '@/components/PageHeader';
 import {
   useDiscardImportDraft,
   useGetImportDrafts,
@@ -70,36 +72,28 @@ export const Import = () => {
 
   if (targetsError) {
     return (
-      <div className="space-y-8">
-        <Text as="h1" variant="h3">
-          Import
-        </Text>
+      <Page>
+        <PageHeader title="Import" />
         <Text variant="error">
           Couldn&apos;t load import targets. Check your connection and try
           again.
         </Text>
-      </div>
+      </Page>
     );
   }
 
   if (!targetsLoading && targets.length === 0) {
     return (
-      <div className="space-y-8">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Text as="h1" variant="h3">
-            Import
-          </Text>
-        </div>
+      <Page>
+        <PageHeader title="Import" />
         <NoImportTargetsEmptyState />
-      </div>
+      </Page>
     );
   }
 
   return (
-    <div className="space-y-8">
-      <Text as="h1" variant="h3">
-        Import
-      </Text>
+    <Page>
+      <PageHeader title="Import" />
 
       <ImportUploadForm
         targets={targets}
@@ -151,6 +145,6 @@ export const Import = () => {
           <ImportHistoryList history={history} isLoading={historyLoading} />
         )}
       </section>
-    </div>
+    </Page>
   );
 };
