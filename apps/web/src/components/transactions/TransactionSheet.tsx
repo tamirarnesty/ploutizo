@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -34,19 +34,23 @@ export const TransactionSheet = ({
   trigger,
 }: TransactionSheetProps) => {
   const isEditing = transaction !== null;
-  // The form reports its dirtiness on mount and on change, so remounting it
-  // for another transaction starts clean.
-  const isDirtyRef = useRef(false);
+  const [isDirty, setIsDirty] = useState(false);
   const [discardOpen, setDiscardOpen] = useState(false);
 
-  useLayoutEffect(() => {
-    if (!open) return;
-    isDirtyRef.current = false;
+  // The form reports its dirtiness on mount and on change, so remounting it
+  // for another transaction starts clean. Reset dirty/discard state when a
+  // new editing session starts — adjusted during render to avoid an extra
+  // commit.
+  const sessionKey = `${open ? 'open' : 'closed'}:${transaction?.id ?? 'new'}`;
+  const [prevSessionKey, setPrevSessionKey] = useState(sessionKey);
+  if (prevSessionKey !== sessionKey) {
+    setPrevSessionKey(sessionKey);
+    setIsDirty(false);
     setDiscardOpen(false);
-  }, [open, transaction?.id]);
+  }
 
   const handleClose = () => {
-    if (isDirtyRef.current) {
+    if (isDirty) {
       setDiscardOpen(true);
     } else {
       onClose();
@@ -54,7 +58,7 @@ export const TransactionSheet = ({
   };
 
   const closeClean = () => {
-    isDirtyRef.current = false;
+    setIsDirty(false);
     onClose();
   };
 
@@ -100,9 +104,7 @@ export const TransactionSheet = ({
               key={transaction?.id ?? 'new'}
               transaction={transaction}
               onClose={closeClean}
-              onDirtyChange={(dirty) => {
-                isDirtyRef.current = dirty;
-              }}
+              onDirtyChange={setIsDirty}
             />
           ) : null}
         </SheetContent>
