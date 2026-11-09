@@ -24,6 +24,7 @@ const { routerMocks, tanstackRouterMock, useRouterMock } = vi.hoisted(() => {
     pathname: '/',
     navigate: vi.fn(),
     locationState: {} as RouterLocationState,
+    search: {} as Record<string, unknown>,
     shouldBlockFn: undefined as
       | ((args: {
           current: { pathname: string };
@@ -63,6 +64,9 @@ const { routerMocks, tanstackRouterMock, useRouterMock } = vi.hoisted(() => {
       </a>
     ),
     useNavigate: () => mocks.navigate,
+    useSearch: (options?: {
+      select?: (search: Record<string, unknown>) => unknown;
+    }) => (options?.select ? options.select(mocks.search) : mocks.search),
     useRouterState: (options?: {
       select?: (state: {
         location: { pathname: string; state: RouterLocationState };
@@ -113,6 +117,7 @@ export const resetTanstackRouterMocks = () => {
   routerMocks.pathname = '/';
   routerMocks.navigate.mockReset();
   routerMocks.locationState = {};
+  routerMocks.search = {};
   routerMocks.shouldBlockFn = undefined;
   routerMocks.useBlocker.mockReset();
   useRouterMock.mockReset();

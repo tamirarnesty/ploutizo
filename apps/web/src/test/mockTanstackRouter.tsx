@@ -9,6 +9,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
     ...actual,
     Link: tanstackRouterMock.Link,
     useNavigate: tanstackRouterMock.useNavigate,
+    useSearch: tanstackRouterMock.useSearch,
     useRouterState: tanstackRouterMock.useRouterState,
     useBlocker: tanstackRouterMock.useBlocker,
     useRouteContext: tanstackRouterMock.useRouteContext,
