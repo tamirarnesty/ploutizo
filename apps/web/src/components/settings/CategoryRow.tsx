@@ -8,7 +8,7 @@ import { Text } from '@ploutizo/ui/components/text';
 import type { Category } from '@ploutizo/validators';
 import { ColourTokenDot } from '@/components/colour/ColourTokenDot';
 import { CachedLucideIcon } from '@/components/categories/CachedLucideIcon';
-import { SettingsRowAlertDialog } from './SettingsRowAlertDialog';
+import { ConfirmDestructiveDialog } from '@/components/ConfirmDestructiveDialog';
 
 interface CategoryRowProps {
   category: Category;
@@ -45,8 +45,17 @@ export const CategoryRow = ({
       >
         Edit
       </Button>
-      <SettingsRowAlertDialog
-        triggerLabel="Archive"
+      <ConfirmDestructiveDialog
+        trigger={
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-destructive"
+          >
+            Archive
+          </Button>
+        }
         title="Archive category?"
         description="Transactions using this category will not be affected."
         confirmLabel="Archive category"

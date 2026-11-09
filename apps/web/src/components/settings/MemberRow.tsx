@@ -4,7 +4,7 @@ import { Text } from '@ploutizo/ui/components/text';
 import { memberFullLabel, memberShortLabel } from '@ploutizo/utils';
 import type { OrgMember } from '@ploutizo/validators';
 import { UserAvatar } from '@/components/members/UserAvatar';
-import { ConfirmDialog } from './ConfirmDialog';
+import { ConfirmDestructiveDialog } from '@/components/ConfirmDestructiveDialog';
 
 interface MemberRowProps {
   member: OrgMember;
@@ -41,10 +41,11 @@ export const MemberRow = ({
       </div>
       <ItemActions className="ml-auto">
         {!isCurrentUser ? (
-          <ConfirmDialog
+          <ConfirmDestructiveDialog
+            trigger="icon"
             triggerAriaLabel={`Remove ${fullName}`}
             triggerClassName="opacity-0 group-hover/item:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
-            tooltip="Remove member"
+            triggerTooltip="Remove member"
             title={`Remove ${shortName}?`}
             description={`Remove ${fullName} from this household? They will lose access immediately.`}
             cancelLabel="Keep member"

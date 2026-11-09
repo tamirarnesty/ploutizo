@@ -1,8 +1,7 @@
-import { useQueryClient } from '@tanstack/react-query';
 import { accountSchema, dataEnvelope } from '@ploutizo/validators';
 import type { Account } from '@ploutizo/validators';
 import { invalidateImportTargetsQuery } from '@/lib/data-access/imports/invalidateImportTargetsQuery';
-import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
+import { useInvalidatingMutation } from '@/lib/data-access/useInvalidatingMutation';
 import { apiFetch } from '@/lib/queryClient';
 
 interface UpdateAccountBody {
@@ -25,16 +24,8 @@ export const updateAccount = async (
   return r.data;
 };
 
-export const useUpdateAccount = (id: string) => {
-  const qc = useQueryClient();
-  return useHouseholdMutation({
-    mutationFn: (body: UpdateAccountBody) => updateAccount(id, body),
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: ['accounts'] });
-      qc.invalidateQueries({
-        queryKey: ['account-members', id],
-      });
-      invalidateImportTargetsQuery(qc);
-    },
-  });
-};
+export const useUpdateAccount = (id: string) =>
+  useInvalidatingMutation(
+    (body: UpdateAccountBody) => updateAccount(id, body),
+    [['accounts'], ['account-members', id], invalidateImportTargetsQuery]
+  );

@@ -1,8 +1,7 @@
-import { useQueryClient } from '@tanstack/react-query';
 import { accountSchema, dataEnvelope } from '@ploutizo/validators';
 import type { Account } from '@ploutizo/validators';
 import { invalidateImportTargetsQuery } from '@/lib/data-access/imports/invalidateImportTargetsQuery';
-import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
+import { useInvalidatingMutation } from '@/lib/data-access/useInvalidatingMutation';
 import { apiFetch } from '@/lib/queryClient';
 
 interface CreateAccountBody {
@@ -24,13 +23,8 @@ export const createAccount = async (
   return r.data;
 };
 
-export const useCreateAccount = () => {
-  const qc = useQueryClient();
-  return useHouseholdMutation({
-    mutationFn: createAccount,
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: ['accounts'] });
-      invalidateImportTargetsQuery(qc);
-    },
-  });
-};
+export const useCreateAccount = () =>
+  useInvalidatingMutation(createAccount, [
+    ['accounts'],
+    invalidateImportTargetsQuery,
+  ]);

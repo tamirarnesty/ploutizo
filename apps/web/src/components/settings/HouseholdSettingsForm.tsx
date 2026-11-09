@@ -1,4 +1,3 @@
-import { useAppForm } from '@ploutizo/ui/components/form';
 import {
   Field,
   FieldContent,
@@ -24,6 +23,11 @@ import {
 } from '@ploutizo/utils/settlement-threshold';
 import type { SettlementThresholdMode } from '@ploutizo/utils/settlement-threshold';
 import type { HouseholdSettingsForm as HouseholdSettingsFormType } from '@ploutizo/validators';
+import {
+  schemaSubmitValidator,
+  useEntityForm,
+} from '@/lib/forms/useEntityForm';
+import { FormSubmitError } from '@/components/FormSubmitError';
 import { CurrencyInput } from '@/components/currency/CurrencyInput';
 import { useMoneyLocale } from '@/lib/money/money-locale';
 import {
@@ -100,37 +104,26 @@ const HouseholdSettingsFormFields = ({
     { minimumFractionDigits: 0, maximumFractionDigits: 0 }
   );
 
-  const form = useAppForm({
+  const { form } = useEntityForm<
+    HouseholdSettingsFormType,
+    {
+      settlementThreshold: number | null;
+      autoCheckImportRowWhenReady: boolean;
+    }
+  >({
     defaultValues: toHouseholdSettingsFormDefaults(
       settlementThreshold,
       autoCheckImportRowWhenReady
     ),
-    validators: {
-      onSubmit: ({ value }: { value: HouseholdSettingsFormType }) => {
-        const result = HouseholdSettingsFormSchema.safeParse(value);
-        if (!result.success) {
-          return result.error.issues.map((i) => i.message).join(', ');
-        }
-      },
-    },
-    onSubmit: ({ value }) => {
-      mutation.mutate(
-        {
-          settlementThreshold: settlementThresholdCentsFromMode(
-            value.thresholdMode,
-            value.thresholdDollars
-          ),
-          autoCheckImportRowWhenReady: value.autoCheckImportRowWhenReady,
-        },
-        {
-          onError: () =>
-            form.setErrorMap({
-              onSubmit:
-                "Couldn't save changes. Check your connection and try again.",
-            }),
-        }
-      );
-    },
+    validate: schemaSubmitValidator(HouseholdSettingsFormSchema),
+    toPayload: (value) => ({
+      settlementThreshold: settlementThresholdCentsFromMode(
+        value.thresholdMode,
+        value.thresholdDollars
+      ),
+      autoCheckImportRowWhenReady: value.autoCheckImportRowWhenReady,
+    }),
+    update: mutation,
   });
 
   return (
@@ -262,9 +255,7 @@ const HouseholdSettingsFormFields = ({
             )}
           </form.Subscribe>
         </div>
-        <form.Subscribe selector={(s) => s.errorMap.onSubmit}>
-          {(err) => (err ? <Text variant="error">{String(err)}</Text> : null)}
-        </form.Subscribe>
+        <FormSubmitError form={form} />
       </div>
     </form>
   );

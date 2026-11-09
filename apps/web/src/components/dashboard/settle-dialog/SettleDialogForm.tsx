@@ -32,6 +32,9 @@ import {
   PendingInputFlushProvider,
   useFlushPendingInputs,
 } from '@/lib/money/pending-input-flush';
+import { schemaSubmitValidator } from '@/lib/forms/useEntityForm';
+
+const settleSubmitValidator = schemaSubmitValidator(settleFormSchema);
 
 export type SettleDialogFormProps = {
   account: SettlementAccountRow;
@@ -67,12 +70,8 @@ const SettleDialogFormContent = ({
       initialPayToward
     ),
     validators: {
-      onSubmit: ({ value }: { value: SettleFormValues }) => {
-        const result = settleFormSchema.safeParse(value);
-        if (!result.success) {
-          return result.error.issues.map((i) => i.message).join(', ');
-        }
-      },
+      onSubmit: ({ value }: { value: SettleFormValues }) =>
+        settleSubmitValidator(value),
     },
     onSubmit: async ({ value }) => {
       try {

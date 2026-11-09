@@ -1,10 +1,9 @@
-import { useQueryClient } from '@tanstack/react-query';
 import { dataEnvelope, householdSettingsSchema } from '@ploutizo/validators';
 import type {
   HouseholdSettings,
   UpdateHouseholdSettingsInput,
 } from '@ploutizo/validators';
-import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
+import { useInvalidatingMutation } from '@/lib/data-access/useInvalidatingMutation';
 import { apiFetch } from '@/lib/queryClient';
 
 export const updateHouseholdSettings = async (
@@ -18,13 +17,5 @@ export const updateHouseholdSettings = async (
   return r.data;
 };
 
-export const useUpdateHouseholdSettings = () => {
-  const qc = useQueryClient();
-  return useHouseholdMutation({
-    mutationFn: updateHouseholdSettings,
-    onSettled: () =>
-      void qc.invalidateQueries({
-        queryKey: ['household-settings'],
-      }),
-  });
-};
+export const useUpdateHouseholdSettings = () =>
+  useInvalidatingMutation(updateHouseholdSettings, [['household-settings']]);

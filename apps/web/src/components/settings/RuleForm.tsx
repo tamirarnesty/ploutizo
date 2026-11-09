@@ -1,4 +1,3 @@
-import { useAppForm } from '@ploutizo/ui/components/form';
 import { Button } from '@ploutizo/ui/components/button';
 import { Input } from '@ploutizo/ui/components/input';
 import { DialogFooter } from '@ploutizo/ui/components/dialog';
@@ -17,10 +16,9 @@ import {
   FieldLabel,
 } from '@ploutizo/ui/components/field';
 import { Text } from '@ploutizo/ui/components/text';
-import type {
-  MerchantRule,
-  RuleForm as RuleFormType,
-} from '@ploutizo/validators';
+import type { MerchantRule } from '@ploutizo/validators';
+import { useEntityForm } from '@/lib/forms/useEntityForm';
+import { FormSubmitError } from '@/components/FormSubmitError';
 import {
   useCreateMerchantRule,
   useUpdateMerchantRule,
@@ -40,41 +38,28 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
   const createRule = useCreateMerchantRule();
   const updateRule = useUpdateMerchantRule(rule?.id ?? '');
 
-  const form = useAppForm({
+  const { form } = useEntityForm({
     defaultValues: {
       pattern: rule?.pattern ?? '',
       matchType: rule?.matchType ?? 'contains',
       renameTo: rule?.renameTo ?? '',
       categoryId: rule?.categoryId ?? null, // null — NOT "__none__" (D-06)
-    } satisfies RuleFormType,
-    validators: {
-      onSubmit: (): string | undefined => undefined,
     },
-    onSubmit: ({ value }) => {
-      const payload = {
-        pattern: value.pattern.trim(),
-        matchType: value.matchType,
-        renameTo: value.renameTo.trim() || undefined,
-        categoryId: value.categoryId, // already null — no conversion needed
-      };
-      const mutation = isEditing ? updateRule : createRule;
-      mutation.mutate(payload, {
-        onSuccess: onClose,
-        onError: (err: unknown) => {
-          const e = err as { error?: { code: string } };
-          if (e.error?.code === 'INVALID_REGEX') {
-            form.setFieldMeta('pattern', (prev) => ({
-              ...prev,
-              errors: ['Invalid regular expression.'],
-            }));
-          } else {
-            form.setErrorMap({
-              onSubmit:
-                "Couldn't save changes. Check your connection and try again.",
-            });
-          }
-        },
-      });
+    toPayload: (value) => ({
+      pattern: value.pattern.trim(),
+      matchType: value.matchType,
+      renameTo: value.renameTo.trim() || undefined,
+      categoryId: value.categoryId, // already null — no conversion needed
+    }),
+    create: createRule,
+    update: updateRule,
+    isEditing,
+    onClose,
+    mapMutationError: (err) => {
+      const e = err as { error?: { code: string } };
+      return e.error?.code === 'INVALID_REGEX'
+        ? { field: 'pattern', message: 'Invalid regular expression.' }
+        : undefined;
     },
   });
 
@@ -225,9 +210,7 @@ export const RuleForm = ({ rule, onClose }: RuleFormProps) => {
         </form.AppField>
       </FieldGroup>
 
-      <form.Subscribe selector={(s) => s.errorMap.onSubmit}>
-        {(err) => (err ? <Text variant="error">{String(err)}</Text> : null)}
-      </form.Subscribe>
+      <FormSubmitError form={form} />
 
       <DialogFooter className="mt-4">
         <Button variant="outline" type="button" onClick={onClose}>

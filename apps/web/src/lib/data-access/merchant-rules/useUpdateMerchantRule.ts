@@ -1,8 +1,8 @@
-import { useQueryClient } from '@tanstack/react-query';
 import { dataEnvelope, merchantRuleSchema } from '@ploutizo/validators';
 import type { MerchantRule } from '@ploutizo/validators';
-import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
+import { useInvalidatingMutation } from '@/lib/data-access/useInvalidatingMutation';
 import { apiFetch } from '@/lib/queryClient';
+import { merchantRulesQueryKey } from './useGetMerchantRules';
 
 type UpdateMerchantRuleBody = Partial<{
   pattern: string;
@@ -27,13 +27,8 @@ export const updateMerchantRule = async (
   return r.data;
 };
 
-export const useUpdateMerchantRule = (id: string) => {
-  const qc = useQueryClient();
-  return useHouseholdMutation({
-    mutationFn: (body: UpdateMerchantRuleBody) => updateMerchantRule(id, body),
-    onSettled: () =>
-      qc.invalidateQueries({
-        queryKey: ['merchant-rules'],
-      }),
-  });
-};
+export const useUpdateMerchantRule = (id: string) =>
+  useInvalidatingMutation(
+    (body: UpdateMerchantRuleBody) => updateMerchantRule(id, body),
+    [merchantRulesQueryKey]
+  );
