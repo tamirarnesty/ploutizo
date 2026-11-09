@@ -3,9 +3,10 @@ import { useNavigate, useSearch } from '@tanstack/react-router';
 import { ListFilterIcon } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import { Filters } from '@ploutizo/ui/components/reui/filters';
-import { Text } from '@ploutizo/ui/components/text';
+import { Page } from '@ploutizo/ui/components/page';
 import type { Filter } from '@ploutizo/ui/components/reui/filters-types';
 import type { TransactionRow } from '@ploutizo/validators';
+import { PageHeader } from '@/components/PageHeader';
 import { useGetTransactions } from '@/lib/data-access/transactions';
 import { useGetAccounts } from '@/lib/data-access/accounts';
 import { useGetCategories } from '@/lib/data-access/categories';
@@ -186,27 +187,31 @@ export const Transactions = () => {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <Text as="h1" variant="h3" className="min-w-0 truncate">
-          Transactions
-        </Text>
-        {/* Rendered inside the header so its SheetTrigger lands where the
-            button was; Sheet/portal parts emit no inline DOM. Page content
-            must stay outside the Sheet root — dialogs inside it are marked
-            nested by Base UI and lose their backdrop overlay. */}
-        <TransactionSheet
-          open={sheetOpen}
-          onSheetOpenChange={setSheetOpen}
-          transaction={selectedTx}
-          onClose={handleSheetClose}
-          trigger={
-            <Button type="button" className="shrink-0" onClick={handleAddClick}>
-              Add transaction
-            </Button>
-          }
-        />
-      </div>
+    <Page>
+      {/* Rendered inside the header so its SheetTrigger lands where the
+          button was; Sheet/portal parts emit no inline DOM. Page content
+          must stay outside the Sheet root — dialogs inside it are marked
+          nested by Base UI and lose their backdrop overlay. */}
+      <PageHeader
+        title="Transactions"
+        actions={
+          <TransactionSheet
+            open={sheetOpen}
+            onSheetOpenChange={setSheetOpen}
+            transaction={selectedTx}
+            onClose={handleSheetClose}
+            trigger={
+              <Button
+                type="button"
+                className="shrink-0"
+                onClick={handleAddClick}
+              >
+                Add transaction
+              </Button>
+            }
+          />
+        }
+      />
 
       {/* Filter bar — full-width, no sticky */}
       {/* trigger prop required: useRender renders an empty invisible button without it */}
@@ -246,6 +251,6 @@ export const Transactions = () => {
         onEdit={handleEdit}
         onOpenOriginal={handleOpenOriginal}
       />
-    </div>
+    </Page>
   );
 };

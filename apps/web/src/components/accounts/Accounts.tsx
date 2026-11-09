@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Button } from '@ploutizo/ui/components/button';
-import { Text } from '@ploutizo/ui/components/text';
+import { Page } from '@ploutizo/ui/components/page';
 import type { AccountType } from '@ploutizo/types';
 import type { Account } from '@ploutizo/validators';
+import { PageHeader } from '@/components/PageHeader';
 import { useGetAccounts } from '@/lib/data-access/accounts';
 import {
   accountsRoute,
@@ -55,27 +56,31 @@ export const Accounts = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <Text as="h1" variant="h3" className="min-w-0 truncate">
-          Accounts
-        </Text>
-        {/* Rendered inside the header so its SheetTrigger lands where the
-            button was; Sheet/portal parts emit no inline DOM. Page content
-            must stay outside the Sheet root — dialogs inside it are marked
-            nested by Base UI and lose their backdrop overlay. */}
-        <AccountSheet
-          open={sheetOpen}
-          onOpenChange={setSheetOpen}
-          account={editingAccount}
-          defaultType={createAccountType}
-          trigger={
-            <Button type="button" className="shrink-0" onClick={handleAddClick}>
-              Add account
-            </Button>
-          }
-        />
-      </div>
+    <Page>
+      {/* Rendered inside the header so its SheetTrigger lands where the
+          button was; Sheet/portal parts emit no inline DOM. Page content
+          must stay outside the Sheet root — dialogs inside it are marked
+          nested by Base UI and lose their backdrop overlay. */}
+      <PageHeader
+        title="Accounts"
+        actions={
+          <AccountSheet
+            open={sheetOpen}
+            onOpenChange={setSheetOpen}
+            account={editingAccount}
+            defaultType={createAccountType}
+            trigger={
+              <Button
+                type="button"
+                className="shrink-0"
+                onClick={handleAddClick}
+              >
+                Add account
+              </Button>
+            }
+          />
+        }
+      />
 
       <AccountsTable
         accounts={accounts}
@@ -83,6 +88,6 @@ export const Accounts = () => {
         onRowClick={handleRowClick}
         onAddClick={handleAddClick}
       />
-    </div>
+    </Page>
   );
 };

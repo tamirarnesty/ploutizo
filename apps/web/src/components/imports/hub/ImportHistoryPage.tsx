@@ -1,8 +1,9 @@
 import { Button } from '@ploutizo/ui/components/button';
 import { LoadingButton } from '@ploutizo/ui/components/loading-button';
+import { Page } from '@ploutizo/ui/components/page';
 import { Text } from '@ploutizo/ui/components/text';
+import { PageHeader } from '@/components/PageHeader';
 import { useGetImportHistoryInfinite } from '@/lib/data-access/imports';
-import { ImportHubBreadcrumb } from '../lib/ImportHubBreadcrumb';
 import { ImportHistoryList } from './ImportHistoryList';
 
 export const ImportHistoryPage = () => {
@@ -12,13 +13,9 @@ export const ImportHistoryPage = () => {
   const hasNextPage = historyQuery.hasNextPage;
 
   return (
-    <div className="space-y-8">
-      <ImportHubBreadcrumb currentPage="Import history" />
-
+    <Page>
       <div className="space-y-3">
-        <Text as="h1" variant="h3">
-          Import history
-        </Text>
+        <PageHeader title="Import history" />
         {historyQuery.isError ? (
           <Text variant="error">
             Couldn&apos;t load import history. Check your connection and try
@@ -48,6 +45,6 @@ export const ImportHistoryPage = () => {
           </>
         )}
       </div>
-    </div>
+    </Page>
   );
 };

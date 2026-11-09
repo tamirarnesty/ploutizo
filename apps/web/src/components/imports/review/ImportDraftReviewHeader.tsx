@@ -1,8 +1,8 @@
 import { Button } from '@ploutizo/ui/components/button';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
-import { Text } from '@ploutizo/ui/components/text';
 import { formatAccountLabel } from '@ploutizo/utils';
 import type { ImportReviewRow } from '@ploutizo/types';
+import { PageHeader } from '@/components/PageHeader';
 import type { ImportDraftMeta } from '@/lib/data-access/imports';
 import { useImportReviewAutosaveStatus } from '@/lib/data-access/imports/useImportReviewAutosave';
 import { ImportDiscardDraftAction } from '../lib/ImportDiscardDraftAction';
@@ -44,52 +44,48 @@ export const ImportDraftReviewHeader = ({
   const iconStatus = meta ? autosaveStatus : 'idle';
 
   return (
-    <div className="flex flex-wrap items-start justify-between gap-3">
-      <div className="min-w-0 flex-1">
-        {meta ? (
-          <>
-            <Text as="h2" variant="h3" className="wrap-break-word">
-              {formatAccountLabel(meta.account)}
-            </Text>
-            <Text
-              variant="body-sm"
-              className="wrap-break-word text-muted-foreground"
-            >
-              {formatImportDraftReviewSubtitle(toLiveSubtitleMeta(meta, rows))}
-            </Text>
-          </>
+    <PageHeader
+      title={
+        meta ? (
+          formatAccountLabel(meta.account)
         ) : (
-          <div className="space-y-2">
-            <Skeleton className="h-7 w-48" />
-            <Skeleton className="h-4 w-56" />
-          </div>
-        )}
-      </div>
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <ImportReviewAutosaveStatus status={iconStatus} />
-        {isLoading ? (
-          <Skeleton className="h-9 w-24" />
+          <Skeleton className="h-7 w-48" />
+        )
+      }
+      description={
+        meta ? (
+          formatImportDraftReviewSubtitle(toLiveSubtitleMeta(meta, rows))
         ) : (
-          <>
-            {discard ? (
-              <ImportDiscardDraftAction
-                discardingThisDraft={discard.discardingThisDraft}
-                disabled={discard.disabled}
-                onDiscard={discard.onDiscard}
-              />
-            ) : null}
-            <Button
-              disabled={!meta || isContinuing || discardInProgress}
-              type="button"
-              onClick={() => {
-                void onContinue();
-              }}
-            >
-              {isContinuing ? 'Preparing…' : 'Continue'}
-            </Button>
-          </>
-        )}
-      </div>
-    </div>
+          <Skeleton className="h-4 w-56" />
+        )
+      }
+      actions={
+        <>
+          <ImportReviewAutosaveStatus status={iconStatus} />
+          {isLoading ? (
+            <Skeleton className="h-9 w-24" />
+          ) : (
+            <>
+              {discard ? (
+                <ImportDiscardDraftAction
+                  discardingThisDraft={discard.discardingThisDraft}
+                  disabled={discard.disabled}
+                  onDiscard={discard.onDiscard}
+                />
+              ) : null}
+              <Button
+                disabled={!meta || isContinuing || discardInProgress}
+                type="button"
+                onClick={() => {
+                  void onContinue();
+                }}
+              >
+                {isContinuing ? 'Preparing…' : 'Continue'}
+              </Button>
+            </>
+          )}
+        </>
+      }
+    />
   );
 };

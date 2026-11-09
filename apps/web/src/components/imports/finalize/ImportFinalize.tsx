@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useBlocker, useNavigate } from '@tanstack/react-router';
 import { Button } from '@ploutizo/ui/components/button';
 import { LoadingButton } from '@ploutizo/ui/components/loading-button';
+import { Page } from '@ploutizo/ui/components/page';
 import { Skeleton } from '@ploutizo/ui/components/skeleton';
 import { Text } from '@ploutizo/ui/components/text';
 import {
@@ -13,6 +14,7 @@ import type {
   ImportFinalizePreview,
   ImportFinalizePreviewRow,
 } from '@ploutizo/validators';
+import { PageHeader } from '@/components/PageHeader';
 import {
   clearImportFinalizePreviewSession,
   getImportFinalizePreviewSession,
@@ -31,7 +33,6 @@ import {
 } from '@/lib/navigation';
 import { formatTransactionDate } from '@/components/transactions/transactionRowDisplay';
 import { ImportDiscardDraftAction } from '../lib/ImportDiscardDraftAction';
-import { ImportHubBreadcrumb } from '../lib/ImportHubBreadcrumb';
 
 const NO_ROW_IDS: string[] = [];
 
@@ -219,30 +220,27 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
   const finalizeBusy = finalizeImport.isPending;
 
   return (
-    <div className="flex flex-col gap-8">
-      <ImportHubBreadcrumb currentPage="Finalize import" />
+    <Page>
       <section className="flex flex-col gap-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            {meta ? (
-              <Text as="h2" variant="h3" className="wrap-break-word">
-                {formatAccountLabel(meta.account)}
-              </Text>
+        <PageHeader
+          title={
+            meta ? (
+              formatAccountLabel(meta.account)
             ) : draftQuery.isLoading ? (
               <Skeleton className="h-7 w-48" />
             ) : (
-              <Text as="h2" variant="h3">
-                Finalize import
-              </Text>
-            )}
-            {preview ? (
+              'Finalize import'
+            )
+          }
+          description={
+            preview ? (
               <OutcomeCountSummary preview={preview} />
             ) : draftQuery.isLoading ? (
-              <Skeleton className="mt-2 h-4 w-72" />
-            ) : null}
-          </div>
-          <div className="flex flex-col items-end gap-2">
-            <div className="flex flex-wrap justify-end gap-2">
+              <Skeleton className="h-4 w-72" />
+            ) : null
+          }
+          actions={
+            <>
               <ImportDiscardDraftAction
                 discardingThisDraft={discardingThisDraft}
                 disabled={finalizeBusy}
@@ -269,9 +267,9 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
               >
                 Finalize import
               </LoadingButton>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+        />
 
         {preview ? (
           <>
@@ -286,6 +284,6 @@ export const ImportFinalize = ({ draftId }: ImportFinalizeProps) => {
           </>
         ) : null}
       </section>
-    </div>
+    </Page>
   );
 };

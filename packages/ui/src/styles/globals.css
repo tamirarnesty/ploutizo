@@ -31,6 +31,9 @@
  */
 
 @theme inline {
+  /* Between md (48rem) and lg (64rem): wide enough for two-column settings,
+     still too narrow for three-across radio cards in a half column. */
+  --breakpoint-wide: 56rem;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

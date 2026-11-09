@@ -170,10 +170,9 @@ describe('ImportReview', () => {
     renderReview('missing');
 
     expect(screen.getByText('Draft not available')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Import' })).toHaveAttribute(
-      'href',
-      '/import'
-    );
+    expect(
+      screen.getByRole('link', { name: 'Back to import' })
+    ).toHaveAttribute('href', '/import');
   });
 
   it('renders the review grid for an active draft from the working-copy session', () => {
@@ -183,9 +182,8 @@ describe('ImportReview', () => {
 
     expect(useImportReviewSession).toHaveBeenCalledWith('draft_1');
     expect(
-      screen.getByRole('navigation', { name: 'breadcrumb' })
+      screen.getByRole('heading', { name: 'Visa · TD · ••1234' })
     ).toBeInTheDocument();
-    expect(screen.getByText('Review import')).toBeInTheDocument();
     expect(
       screen.getByText('statement.csv · 1 transaction')
     ).toBeInTheDocument();

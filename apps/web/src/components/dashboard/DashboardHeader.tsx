@@ -1,6 +1,5 @@
 import { RotateCcw } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
-import { Text } from '@ploutizo/ui/components/text';
 import {
   Tooltip,
   TooltipContent,
@@ -13,6 +12,7 @@ import type {
   DashboardPeriodShortcut,
   ResolvedDashboardPeriod,
 } from '@ploutizo/utils/dashboard-period';
+import { PageHeader } from '@/components/PageHeader';
 import { DashboardPeriodSelector } from '@/components/dashboard/DashboardPeriodSelector';
 
 type DashboardHeaderProps = {
@@ -34,43 +34,43 @@ export const DashboardHeader = ({
   onRefresh,
   isRefreshing,
 }: DashboardHeaderProps) => (
-  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-    <Text as="h1" variant="h3" className="min-w-0 truncate">
-      Dashboard
-    </Text>
-    <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
-      <DashboardPeriodSelector
-        selection={periodSelection}
-        period={period}
-        onSelectShortcut={onSelectShortcut}
-        onApplyCustomRange={onApplyCustomRange}
-      />
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label="Refresh"
-              className="shrink-0"
-              // Keeps hover and focus while disabled, so the tooltip still shows.
-              focusableWhenDisabled
-              disabled={isRefreshing}
-              onClick={onRefresh}
+  <PageHeader
+    title="Dashboard"
+    actions={
+      <>
+        <DashboardPeriodSelector
+          selection={periodSelection}
+          period={period}
+          onSelectShortcut={onSelectShortcut}
+          onApplyCustomRange={onApplyCustomRange}
+        />
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Refresh"
+                className="shrink-0"
+                // Keeps hover and focus while disabled, so the tooltip still shows.
+                focusableWhenDisabled
+                disabled={isRefreshing}
+                onClick={onRefresh}
+              />
+            }
+          >
+            {/* Reverse spin so the counter-clockwise arrow turns the way it points. */}
+            <RotateCcw
+              className={cn(
+                isRefreshing &&
+                  'motion-safe:animate-spin motion-safe:[animation-direction:reverse]'
+              )}
             />
-          }
-        >
-          {/* Reverse spin so the counter-clockwise arrow turns the way it points. */}
-          <RotateCcw
-            className={cn(
-              isRefreshing &&
-                'motion-safe:animate-spin motion-safe:[animation-direction:reverse]'
-            )}
-          />
-        </TooltipTrigger>
-        <TooltipContent>Refresh</TooltipContent>
-      </Tooltip>
-    </div>
-  </div>
+          </TooltipTrigger>
+          <TooltipContent>Refresh</TooltipContent>
+        </Tooltip>
+      </>
+    }
+  />
 );
