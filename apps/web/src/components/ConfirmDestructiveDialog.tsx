@@ -86,38 +86,27 @@ export const ConfirmDestructiveDialog = ({
         <Trash2 className="size-4" />
       </button>
     );
-    if (triggerTooltip) {
-      // TooltipTrigger cannot compose with AlertDialogTrigger's render prop,
-      // so the button opens the dialog through its own onClick instead.
-      triggerNode = (
-        <Tooltip>
-          <TooltipTrigger
-            render={cloneElement(iconTrigger, {
-              onClick: () => setOpen(true),
-            })}
-          />
-          <TooltipContent>{triggerTooltip}</TooltipContent>
-        </Tooltip>
-      );
-    } else {
-      triggerNode = <AlertDialogTrigger render={iconTrigger} />;
-    }
+    triggerNode = triggerTooltip ? (
+      // Compose the triggers via render props so the button is registered as
+      // both the dialog trigger (aria-haspopup, focus return) and the tooltip
+      // trigger — a manual onClick would bypass AlertDialogTrigger entirely.
+      <Tooltip>
+        <TooltipTrigger render={<AlertDialogTrigger render={iconTrigger} />} />
+        <TooltipContent>{triggerTooltip}</TooltipContent>
+      </Tooltip>
+    ) : (
+      <AlertDialogTrigger render={iconTrigger} />
+    );
   } else if (trigger) {
+    const triggerElement = triggerTooltip
+      ? cloneElement(trigger as ReactElement<Record<string, unknown>>, {
+          'data-state': isOpen ? 'open' : 'closed',
+        })
+      : trigger;
     triggerNode = triggerTooltip ? (
       <Tooltip>
         <TooltipTrigger
-          render={cloneElement(
-            trigger as ReactElement<Record<string, unknown>>,
-            {
-              onClick: (event: unknown) => {
-                (trigger.props as { onClick?: (e: unknown) => void }).onClick?.(
-                  event
-                );
-                setOpen(true);
-              },
-              'data-state': isOpen ? 'open' : 'closed',
-            }
-          )}
+          render={<AlertDialogTrigger render={triggerElement} />}
         />
         <TooltipContent>{triggerTooltip}</TooltipContent>
       </Tooltip>

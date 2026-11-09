@@ -291,14 +291,11 @@ describe('ImportUploadForm', () => {
     const user = userEvent.setup();
     renderUploadForm();
 
-    const dialog = screen
-      .getByText('CSV import guide')
-      .closest('[data-slot="dialog"]');
-    expect(dialog).toHaveAttribute('data-open', 'false');
+    expect(screen.queryByText('CSV import guide')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Guide' }));
 
-    expect(dialog).toHaveAttribute('data-open', 'true');
+    expect(await screen.findByText('CSV import guide')).toBeInTheDocument();
     expect(screen.getByText('Required columns')).toBeInTheDocument();
   });
 

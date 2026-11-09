@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Spinner } from '@ploutizo/ui/components/spinner';
 import { FieldGroup } from '@ploutizo/ui/components/field';
@@ -27,6 +27,7 @@ import {
   useFlushPendingInputs,
 } from '@/lib/money/pending-input-flush';
 import { ConfirmDestructiveDialog } from '@/components/ConfirmDestructiveDialog';
+import { DirtyNotifier } from '@/components/DirtyNotifier';
 import { FormSubmitError } from '@/components/FormSubmitError';
 import { useTransactionDescriptionLock } from './hooks/useTransactionDescriptionLock';
 import { useTransactionForm } from './hooks/useTransactionForm';
@@ -108,25 +109,6 @@ export const TransactionForm = ({
         onDirtyChange={onDirtyChange}
       />
     </PendingInputFlushProvider>
-  );
-};
-
-const DirtyNotifier = ({
-  isDirty,
-  onChange,
-}: {
-  isDirty: boolean;
-  onChange: (d: boolean) => void;
-}) => {
-  useEffect(() => {
-    onChange(isDirty);
-  }, [isDirty, onChange]);
-  return (
-    <span
-      data-testid="transaction-form-unsaved"
-      data-unsaved={isDirty ? 'true' : 'false'}
-      hidden
-    />
   );
 };
 

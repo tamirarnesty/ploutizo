@@ -5,19 +5,34 @@ import { SettingsFormDialog } from '@/components/settings/SettingsFormDialog';
 import { expectOverlayMounted } from '@/test/overlayCloseContract';
 
 describe('SettingsFormDialog overlay contract', () => {
-  it('keeps dialog root mounted when closed (CategoryDialog / RuleDialog pattern)', () => {
-    const { container } = render(
+  it('keeps dialog content mounted through the close animation', () => {
+    const { rerender } = render(
       <SettingsFormDialog
-        open={false}
+        open
         onOpenChange={vi.fn()}
         title="Edit category"
+        description="Test description"
         formKey="cat-1"
       >
         <p>Form body</p>
       </SettingsFormDialog>
     );
 
-    expectOverlayMounted(container, 'dialog');
+    expect(screen.getByText('Form body')).toBeInTheDocument();
+
+    rerender(
+      <SettingsFormDialog
+        open={false}
+        onOpenChange={vi.fn()}
+        title="Edit category"
+        description="Test description"
+        formKey="cat-1"
+      >
+        <p>Form body</p>
+      </SettingsFormDialog>
+    );
+
+    expectOverlayMounted('dialog');
     expect(screen.getByText('Form body')).toBeInTheDocument();
   });
 
@@ -30,6 +45,7 @@ describe('SettingsFormDialog overlay contract', () => {
         open
         onOpenChange={onOpenChange}
         title="Add category"
+        description="Test description"
         formKey="new"
       >
         <p>Form body</p>
@@ -38,6 +54,6 @@ describe('SettingsFormDialog overlay contract', () => {
 
     await user.click(screen.getByRole('button', { name: /close/i }));
 
-    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(onOpenChange.mock.calls[0]?.[0]).toBe(false);
   });
 });

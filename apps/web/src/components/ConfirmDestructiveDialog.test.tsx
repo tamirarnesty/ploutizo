@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { expectOverlayMounted } from '@/test/overlayCloseContract';
@@ -11,8 +11,19 @@ const baseProps = {
 };
 
 describe('ConfirmDestructiveDialog overlay contract', () => {
-  it('stays mounted when closed (open driven by parent)', () => {
-    const { container } = render(
+  it('keeps the alert dialog mounted through the close animation', () => {
+    const { rerender } = render(
+      <ConfirmDestructiveDialog
+        {...baseProps}
+        open
+        onOpenChange={vi.fn()}
+        onConfirm={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+
+    rerender(
       <ConfirmDestructiveDialog
         {...baseProps}
         open={false}
@@ -21,7 +32,7 @@ describe('ConfirmDestructiveDialog overlay contract', () => {
       />
     );
 
-    expectOverlayMounted(container, 'alertDialog');
+    expectOverlayMounted('alertDialog');
     expect(
       screen.getByRole('heading', { name: /delete transaction/i })
     ).toBeInTheDocument();
@@ -85,6 +96,8 @@ describe('ConfirmDestructiveDialog overlay contract', () => {
     await user.click(screen.getByRole('button', { name: 'Delete' }));
 
     expect(onConfirm).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    );
   });
 });

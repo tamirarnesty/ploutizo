@@ -13,6 +13,11 @@ export const RuleDialog = ({ open, onOpenChange, rule }: RuleDialogProps) => (
     open={open}
     onOpenChange={onOpenChange}
     title={rule !== null ? 'Edit rule' : 'Add rule'}
+    description={
+      rule !== null
+        ? 'Update this merchant rule.'
+        : 'Create a new merchant rule.'
+    }
     formKey={rule?.id ?? 'new'}
   >
     <RuleForm rule={rule} onClose={() => onOpenChange(false)} />

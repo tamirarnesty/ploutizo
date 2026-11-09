@@ -28,6 +28,7 @@ import type {
   OrgMember,
 } from '@ploutizo/validators';
 import { ConfirmDestructiveDialog } from '@/components/ConfirmDestructiveDialog';
+import { DirtyNotifier } from '@/components/DirtyNotifier';
 import { FormSubmitError } from '@/components/FormSubmitError';
 import { useGetAccountMembers } from '@/lib/data-access/accounts';
 import { useGetHouseholdMembers } from '@/lib/data-access/household';
@@ -50,6 +51,7 @@ interface AccountFormProps {
   defaultType?: AccountType;
   onClose: () => void;
   onArchive?: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 interface AccountFormInnerProps {
@@ -59,6 +61,7 @@ interface AccountFormInnerProps {
   orgMembers: OrgMember[];
   onClose: () => void;
   onArchive?: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 export const AccountForm = ({
@@ -66,6 +69,7 @@ export const AccountForm = ({
   defaultType,
   onClose,
   onArchive,
+  onDirtyChange,
 }: AccountFormProps) => {
   // Both queries fire simultaneously — no sequential waterfall (async-parallel rule)
   const { data: existingMembers, isLoading: membersLoading } =
@@ -90,6 +94,7 @@ export const AccountForm = ({
       orgMembers={orgMembers}
       onClose={onClose}
       onArchive={onArchive}
+      onDirtyChange={onDirtyChange}
     />
   );
 };
@@ -101,6 +106,7 @@ const AccountFormInner = ({
   orgMembers,
   onClose,
   onArchive,
+  onDirtyChange,
 }: AccountFormInnerProps) => {
   const { form, isEditing } = useAccountForm({
     account,
@@ -118,6 +124,19 @@ const AccountFormInner = ({
         form.handleSubmit();
       }}
     >
+      {/* Compare to default values, not isDirty — programmatic value sync can
+          mark the form dirty while values still match defaults. */}
+      {onDirtyChange ? (
+        <form.Subscribe selector={(s) => !s.isDefaultValue}>
+          {(hasUnsavedChanges) => (
+            <DirtyNotifier
+              isDirty={hasUnsavedChanges}
+              onChange={onDirtyChange}
+            />
+          )}
+        </form.Subscribe>
+      ) : null}
+
       <div className="flex-1 overflow-y-auto px-6 py-4">
         <FieldGroup>
           {/* Field 1: name */}
