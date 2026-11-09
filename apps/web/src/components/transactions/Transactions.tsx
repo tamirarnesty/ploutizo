@@ -79,8 +79,7 @@ export const Transactions = () => {
     [navigate]
   );
 
-  // Build FilterFieldConfig for the Filters component (6 fields per D-28).
-  // Import result is only offered when a provenance batch is already in the URL.
+  // Filter fields per D-28.
   const filterFields = useMemo(
     () =>
       buildFilterFields(accounts, categories, members, tags, {
@@ -213,7 +212,6 @@ export const Transactions = () => {
         }
       />
 
-      {/* Filter bar — full-width, no sticky */}
       {/* trigger prop required: useRender renders an empty invisible button without it */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <Filters<string>
