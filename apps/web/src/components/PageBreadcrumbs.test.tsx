@@ -34,7 +34,7 @@ describe('PageBreadcrumbs', () => {
     matchesMock.current = [];
   });
 
-  it('renders ancestors as links and the labeled leaf as the current page', () => {
+  it('renders ancestors as links and omits the labeled leaf', () => {
     matchesMock.current = [
       match('/_layout', '/'),
       match('/_layout/import', '/import', { label: 'Import' }),
@@ -49,13 +49,8 @@ describe('PageBreadcrumbs', () => {
       'href',
       '/import'
     );
-    expect(screen.getByText('Import History')).toHaveAttribute(
-      'aria-current',
-      'page'
-    );
-    expect(
-      screen.queryByRole('link', { name: 'Import History' })
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Import History')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('listitem')).toHaveLength(1);
   });
 
   it('renders nothing on a top-level page with no labeled ancestor', () => {
@@ -76,6 +71,18 @@ describe('PageBreadcrumbs', () => {
       match('/_layout', '/'),
       match('/_layout/import', '/import', { label: 'Import' }),
       match('/_layout/import/', '/import'),
+    ];
+
+    const { container } = render(<PageBreadcrumbs />);
+
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('renders nothing when the index leaf reports a trailing-slash pathname', () => {
+    matchesMock.current = [
+      match('/_layout', '/'),
+      match('/_layout/import', '/import', { label: 'Import' }),
+      match('/_layout/import/', '/import/'),
     ];
 
     const { container } = render(<PageBreadcrumbs />);

@@ -24,8 +24,6 @@ export const MerchantRulesSettings = () => {
   return (
     <Page>
       <PageHeader
-        title="Merchant Rules"
-        titleAs="h2"
         actions={
           <Button type="button" onClick={dialog.openCreate}>
             Add rule

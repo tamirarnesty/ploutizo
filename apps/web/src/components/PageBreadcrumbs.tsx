@@ -5,65 +5,66 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
-  BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@ploutizo/ui/components/breadcrumb';
 import { isAppNavRoutePath } from '@/lib/navigation/types';
 import type { AppNavRoute } from '@/lib/navigation/types';
 
-type Crumb =
-  | { key: string; label: string; current: true }
-  | { key: string; label: string; current: false; to: AppNavRoute };
+type Crumb = { key: string; label: string; to: AppNavRoute };
 
 /**
- * Breadcrumb trail for the current page, derived from matched routes'
- * `staticData.nav`. Ancestors render as links; a labeled leaf renders as the
- * current page. Renders only on nested routes — a page with no labeled
- * ancestor gets no breadcrumb. Settings-group routes are skipped: settings
- * pages already show the "Settings" heading and tabs.
+ * Ancestor trail for the current page, derived from matched routes'
+ * `staticData.nav`. The page header's title already names the leaf, so only
+ * ancestors render here. Settings-group routes are skipped: settings pages
+ * already show the "Settings" heading and tabs.
  */
 export const PageBreadcrumbs = () => {
   const matches = useMatches();
   const leafPathname = matches.at(-1)?.pathname;
   const leafIndex = matches.length - 1;
+  // Index routes report '/import/' while their layout parent reports '/import'.
+  const stripTrailingSlash = (path?: string) =>
+    path && path !== '/' ? path.replace(/\/+$/, '') : path;
+  const leafPath = stripTrailingSlash(leafPathname);
 
   const crumbs: Crumb[] = matches.flatMap((match, index): Crumb[] => {
     const nav = match.staticData.nav;
-    if (!nav || nav.group === 'settings') return [];
-    if (index === leafIndex) {
-      return [{ key: match.routeId, label: nav.label, current: true }];
-    }
-    if (match.pathname === leafPathname) return [];
+    if (!nav || nav.group === 'settings' || index === leafIndex) return [];
+    if (stripTrailingSlash(match.pathname) === leafPath) return [];
     if (!isAppNavRoutePath(match.pathname)) return [];
     return [
       {
         key: match.routeId,
         label: nav.label,
-        current: false,
         to: match.pathname,
       },
     ];
   });
 
-  if (!crumbs.some((crumb) => !crumb.current)) return null;
+  if (crumbs.length === 0) return null;
 
   return (
     <Breadcrumb>
-      <BreadcrumbList>
+      {/* Trail renders at the page-title scale; clickability is the only
+          difference from the current page, which the header title names. */}
+      <BreadcrumbList className="font-heading text-xl leading-snug font-semibold text-foreground">
         {crumbs.map((crumb, index) => (
           <Fragment key={crumb.key}>
-            {index > 0 ? <BreadcrumbSeparator /> : null}
+            {index > 0 ? (
+              <BreadcrumbSeparator className="[&>svg]:size-5" />
+            ) : null}
             <BreadcrumbItem>
-              {crumb.current ? (
-                <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
-              ) : (
-                <BreadcrumbLink render={<Link to={crumb.to} />}>
-                  {crumb.label}
-                </BreadcrumbLink>
-              )}
+              <BreadcrumbLink
+                render={<Link to={crumb.to} />}
+                className="hover:underline hover:underline-offset-4"
+              >
+                {crumb.label}
+              </BreadcrumbLink>
             </BreadcrumbItem>
           </Fragment>
         ))}
+        {/* Trailing separator: the trail continues into the page title. */}
+        <BreadcrumbSeparator className="[&>svg]:size-5" />
       </BreadcrumbList>
     </Breadcrumb>
   );

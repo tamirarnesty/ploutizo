@@ -2,7 +2,6 @@ import { Button } from '@ploutizo/ui/components/button';
 import { Page } from '@ploutizo/ui/components/page';
 import { Text } from '@ploutizo/ui/components/text';
 import type { Category } from '@ploutizo/validators';
-import { PageHeader } from '@/components/PageHeader';
 import {
   useArchiveCategory,
   useGetCategories,
@@ -25,8 +24,6 @@ export const CategoriesSettings = () => {
 
   return (
     <Page>
-      <PageHeader title="Categories & Tags" titleAs="h2" />
-
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <section className="flex flex-col gap-4">
           <div className="flex items-center justify-between">

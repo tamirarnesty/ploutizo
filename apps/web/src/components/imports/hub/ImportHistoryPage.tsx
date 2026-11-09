@@ -14,8 +14,8 @@ export const ImportHistoryPage = () => {
 
   return (
     <Page>
+      <PageHeader title="Import history" />
       <div className="space-y-3">
-        <PageHeader title="Import history" />
         {historyQuery.isError ? (
           <Text variant="error">
             Couldn&apos;t load import history. Check your connection and try
