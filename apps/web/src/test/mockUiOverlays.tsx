@@ -7,6 +7,10 @@ const AlertDialogOpenChangeContext = createContext<
   OpenChangeHandler | undefined
 >(undefined);
 
+const SheetOpenChangeContext = createContext<OpenChangeHandler | undefined>(
+  undefined
+);
+
 const CloseControl = ({
   label,
   onClose,
@@ -64,10 +68,12 @@ export const sheetMock = {
     onOpenChange?: OpenChangeHandler;
     children: ReactNode;
   }) => (
-    <div data-slot="sheet" data-open={String(open)}>
-      <CloseControl label="Close sheet" onClose={onOpenChange} />
-      {children}
-    </div>
+    <SheetOpenChangeContext.Provider value={onOpenChange}>
+      <div data-slot="sheet" data-open={String(open)}>
+        <CloseControl label="Close sheet" onClose={onOpenChange} />
+        {children}
+      </div>
+    </SheetOpenChangeContext.Provider>
   ),
   SheetContent: ({ children }: { children: ReactNode }) => (
     <div data-slot="sheet-content">{children}</div>
@@ -80,16 +86,27 @@ export const sheetMock = {
   SheetFooter: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   SheetClose: () => null,
   SheetTrigger: ({
+    render,
     children,
     onClick,
+    ...props
   }: {
+    render?: ReactElement<Record<string, unknown>>;
     children?: ReactNode;
     onClick?: () => void;
-  }) => (
-    <button type="button" onClick={onClick}>
-      {children}
-    </button>
-  ),
+    [key: string]: unknown;
+  }) => {
+    const onOpenChange = useContext(SheetOpenChangeContext);
+    const element = render ?? <button type="button">{children}</button>;
+    return cloneElement(element, {
+      ...props,
+      onClick: (event: unknown) => {
+        (element.props as { onClick?: (e: unknown) => void }).onClick?.(event);
+        onClick?.();
+        onOpenChange?.(true);
+      },
+    });
+  },
   SheetPortal: ({ children }: { children: ReactNode }) => <>{children}</>,
   SheetOverlay: () => null,
 };

@@ -5,18 +5,25 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
+  SheetTrigger,
 } from '@ploutizo/ui/components/sheet';
 import type { TransactionRow } from '@ploutizo/validators';
 import { ConfirmDestructiveDialog } from '@/components/ConfirmDestructiveDialog';
 import { TransactionForm } from './TransactionForm';
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 interface TransactionSheetProps {
   open: boolean;
   transaction: TransactionRow | null; // null = create mode
   onSheetOpenChange: (open: boolean) => void;
   onClose: () => void;
-  children: ReactNode;
+  /**
+   * Element rendered through `SheetTrigger` inside the sheet root, so it gets
+   * trigger semantics (aria-haspopup, data-state, focus return) while page
+   * content stays outside `Dialog.Root` — dialogs inside the root are marked
+   * nested by Base UI and lose their backdrop overlay.
+   */
+  trigger?: ReactElement<{ children?: ReactNode }>;
 }
 
 export const TransactionSheet = ({
@@ -24,7 +31,7 @@ export const TransactionSheet = ({
   transaction,
   onSheetOpenChange,
   onClose,
-  children,
+  trigger,
 }: TransactionSheetProps) => {
   const isEditing = transaction !== null;
   // The form reports its dirtiness on mount and on change, so remounting it
@@ -65,7 +72,11 @@ export const TransactionSheet = ({
           else handleClose();
         }}
       >
-        {children}
+        {/* Base UI takes children from the Trigger, not the render element —
+            pass the element's children through or they are dropped. */}
+        {trigger ? (
+          <SheetTrigger render={trigger}>{trigger.props.children}</SheetTrigger>
+        ) : null}
         {/* 560px width per D-01: wider than AccountSheet (440px) to accommodate
             type-specific field groups + split section */}
         <SheetContent

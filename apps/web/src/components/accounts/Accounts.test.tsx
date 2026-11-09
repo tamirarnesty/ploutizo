@@ -18,15 +18,15 @@ vi.mock('./AccountSheet', () => ({
     open,
     account,
     defaultType,
-    children,
+    trigger,
   }: {
     open: boolean;
     account: { id: string } | null;
     defaultType?: string;
-    children: ReactNode;
+    trigger?: ReactNode;
   }) => (
     <div>
-      {children}
+      {trigger}
       <span data-testid="sheet-open">{open ? 'open' : 'closed'}</span>
       <span data-testid="sheet-mode">{account?.id ?? 'create'}</span>
       <span data-testid="sheet-default-type">{defaultType ?? ''}</span>

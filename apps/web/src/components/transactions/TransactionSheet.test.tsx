@@ -33,9 +33,7 @@ describe('TransactionSheet overlay contract', () => {
         transaction={mockTransactionRow()}
         onSheetOpenChange={vi.fn()}
         onClose={vi.fn()}
-      >
-        <span />
-      </TransactionSheet>
+      />
     );
 
     expectOverlayMounted(container, 'sheet');
@@ -52,9 +50,7 @@ describe('TransactionSheet overlay contract', () => {
         transaction={mockTransactionRow()}
         onSheetOpenChange={vi.fn()}
         onClose={onClose}
-      >
-        <span />
-      </TransactionSheet>
+      />
     );
 
     await user.click(screen.getByRole('button', { name: /close sheet/i }));
@@ -69,9 +65,7 @@ describe('TransactionSheet overlay contract', () => {
         transaction={mockTransactionRow()}
         onSheetOpenChange={vi.fn()}
         onClose={vi.fn()}
-      >
-        <span />
-      </TransactionSheet>
+      />
     );
 
     expect(screen.getByTestId('transaction-form-mock')).toBeInTheDocument();
@@ -82,9 +76,7 @@ describe('TransactionSheet overlay contract', () => {
         transaction={mockTransactionRow()}
         onSheetOpenChange={vi.fn()}
         onClose={vi.fn()}
-      >
-        <span />
-      </TransactionSheet>
+      />
     );
 
     expect(
@@ -110,9 +102,7 @@ describe('TransactionSheet overlay contract', () => {
               onClose();
               setOpen(false);
             }}
-          >
-            <span />
-          </TransactionSheet>
+          />
         </>
       );
     };
@@ -132,6 +122,31 @@ describe('TransactionSheet overlay contract', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it('renders the trigger and opens via onSheetOpenChange', async () => {
+    const user = userEvent.setup();
+    const onSheetOpenChange = vi.fn();
+    const onTriggerClick = vi.fn();
+
+    render(
+      <TransactionSheet
+        open={false}
+        transaction={null}
+        onSheetOpenChange={onSheetOpenChange}
+        onClose={vi.fn()}
+        trigger={
+          <button type="button" onClick={onTriggerClick}>
+            Add transaction
+          </button>
+        }
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Add transaction' }));
+
+    expect(onTriggerClick).toHaveBeenCalledTimes(1);
+    expect(onSheetOpenChange).toHaveBeenCalledWith(true);
+  });
+
   it('opens discard alert instead of onClose when form is dirty', async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
@@ -142,9 +157,7 @@ describe('TransactionSheet overlay contract', () => {
         transaction={null}
         onSheetOpenChange={vi.fn()}
         onClose={onClose}
-      >
-        <span />
-      </TransactionSheet>
+      />
     );
 
     await user.click(screen.getByRole('button', { name: /mark dirty/i }));

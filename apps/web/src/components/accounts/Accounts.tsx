@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Button } from '@ploutizo/ui/components/button';
-import { SheetTrigger } from '@ploutizo/ui/components/sheet';
 import { Text } from '@ploutizo/ui/components/text';
 import type { AccountType } from '@ploutizo/types';
 import type { Account } from '@ploutizo/validators';
@@ -56,32 +55,34 @@ export const Accounts = () => {
   };
 
   return (
-    <AccountSheet
-      open={sheetOpen}
-      onOpenChange={setSheetOpen}
-      account={editingAccount}
-      defaultType={createAccountType}
-    >
-      <div className="space-y-6">
-        <div className="flex items-center justify-between gap-3">
-          <Text as="h1" variant="h3" className="min-w-0 truncate">
-            Accounts
-          </Text>
-          <SheetTrigger
-            render={<Button type="button" className="shrink-0" />}
-            onClick={handleAddClick}
-          >
-            Add account
-          </SheetTrigger>
-        </div>
-
-        <AccountsTable
-          accounts={accounts}
-          isLoading={isLoading}
-          onRowClick={handleRowClick}
-          onAddClick={handleAddClick}
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <Text as="h1" variant="h3" className="min-w-0 truncate">
+          Accounts
+        </Text>
+        {/* Rendered inside the header so its SheetTrigger lands where the
+            button was; Sheet/portal parts emit no inline DOM. Page content
+            must stay outside the Sheet root — dialogs inside it are marked
+            nested by Base UI and lose their backdrop overlay. */}
+        <AccountSheet
+          open={sheetOpen}
+          onOpenChange={setSheetOpen}
+          account={editingAccount}
+          defaultType={createAccountType}
+          trigger={
+            <Button type="button" className="shrink-0" onClick={handleAddClick}>
+              Add account
+            </Button>
+          }
         />
       </div>
-    </AccountSheet>
+
+      <AccountsTable
+        accounts={accounts}
+        isLoading={isLoading}
+        onRowClick={handleRowClick}
+        onAddClick={handleAddClick}
+      />
+    </div>
   );
 };

@@ -4,19 +4,26 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
+  SheetTrigger,
 } from '@ploutizo/ui/components/sheet';
 import type { AccountType } from '@ploutizo/types';
 import type { Account } from '@ploutizo/validators';
 import { useArchiveAccount } from '@/lib/data-access/accounts';
 import { AccountForm } from './AccountForm';
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 interface AccountSheetProps {
   open: boolean;
   account: Account | null;
   defaultType?: AccountType;
   onOpenChange: (open: boolean) => void;
-  children: ReactNode;
+  /**
+   * Element rendered through `SheetTrigger` inside the sheet root, so it gets
+   * trigger semantics (aria-haspopup, data-state, focus return) while page
+   * content stays outside `Dialog.Root` — dialogs inside the root are marked
+   * nested by Base UI and lose their backdrop overlay.
+   */
+  trigger?: ReactElement<{ children?: ReactNode }>;
 }
 
 export const AccountSheet = ({
@@ -24,7 +31,7 @@ export const AccountSheet = ({
   account,
   defaultType,
   onOpenChange,
-  children,
+  trigger,
 }: AccountSheetProps) => {
   const isEditing = account !== null;
   const archiveAccount = useArchiveAccount();
@@ -38,7 +45,11 @@ export const AccountSheet = ({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      {children}
+      {/* Base UI takes children from the Trigger, not the render element —
+          pass the element's children through or they are dropped. */}
+      {trigger ? (
+        <SheetTrigger render={trigger}>{trigger.props.children}</SheetTrigger>
+      ) : null}
       <SheetContent
         side="right"
         className="flex w-[440px] flex-col gap-0 sm:w-[440px]"
