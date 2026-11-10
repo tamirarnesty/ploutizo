@@ -74,7 +74,9 @@ const TransactionDatePopoverBody = ({
       startDate: range?.from,
       endDate: range?.to,
     });
-    setFocusMonth(range?.from ?? new Date());
+    // Anchor on the range end so long presets (e.g. this year) show the
+    // period's end rather than its start.
+    setFocusMonth(range?.to ?? new Date());
   };
 
   return (
