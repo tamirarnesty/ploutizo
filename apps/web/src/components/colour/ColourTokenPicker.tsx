@@ -134,12 +134,12 @@ export const ColourTokenPicker = ({
           placeholder="Search colours…"
           aria-label="Search colours"
         />
-        {open && hueRows.length === 0 ? (
+        {hueRows.length === 0 ? (
           <Text variant="caption" className="py-2 text-center">
             No colours match "{search}".
           </Text>
         ) : null}
-        {open && hueRows.length > 0 ? (
+        {hueRows.length > 0 ? (
           <div
             className="space-y-1 overflow-y-auto"
             style={{ maxHeight: GRID_VIEWPORT_HEIGHT }}

@@ -262,12 +262,12 @@ export const LucideIconPicker = ({
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search icons…"
         />
-        {open && filteredKebabNames.length === 0 ? (
+        {filteredKebabNames.length === 0 ? (
           <Text variant="caption" className="py-2 text-center">
             No icons match "{search}".
           </Text>
         ) : null}
-        {open && filteredKebabNames.length > 0 ? (
+        {filteredKebabNames.length > 0 ? (
           <LucideIconGrid
             filteredKebabNames={filteredKebabNames}
             selectedPascalName={value}

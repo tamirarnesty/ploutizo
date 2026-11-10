@@ -48,16 +48,6 @@ const DATE_PRESETS = [
 
 type DatePresetId = (typeof DATE_PRESETS)[number]['id'];
 
-const presetSelectorValue = (id: DatePresetId): DateSelectorValue => {
-  if (id === 'all') return { operator: 'between' };
-  const range = presetDateRange(id);
-  return {
-    operator: 'between',
-    startDate: range.from,
-    endDate: range.to,
-  };
-};
-
 /** Staged editor mounted fresh each time the popover opens. */
 const TransactionDatePopoverBody = ({
   operator,
@@ -72,7 +62,20 @@ const TransactionDatePopoverBody = ({
   const [staged, setStaged] = useState<DateSelectorValue>(() =>
     filterToSelectorValue({ operator, values })
   );
+  // Presets drive the calendar month explicitly; day clicks must not, or
+  // picking a range end in the second visible month would yank the view.
+  const [focusMonth, setFocusMonth] = useState<Date>();
   const committed = selectorValueToFilter(staged);
+
+  const applyPreset = (id: DatePresetId) => {
+    const range = id === 'all' ? undefined : presetDateRange(id);
+    setStaged({
+      operator: 'between',
+      startDate: range?.from,
+      endDate: range?.to,
+    });
+    setFocusMonth(range?.from ?? new Date());
+  };
 
   return (
     <>
@@ -84,6 +87,8 @@ const TransactionDatePopoverBody = ({
           i18n={DATE_SELECTOR_I18N}
           inputHint="Try: Nov 5, 2026"
           dayDateFormat="MMM d, yyyy"
+          month={focusMonth}
+          onMonthChange={setFocusMonth}
         />
       </div>
       <div className="flex flex-wrap gap-2 px-3 pt-3">
@@ -94,7 +99,7 @@ const TransactionDatePopoverBody = ({
             variant="outline"
             size="sm"
             className="flex-1"
-            onClick={() => setStaged(presetSelectorValue(preset.id))}
+            onClick={() => applyPreset(preset.id)}
           >
             {preset.label}
           </Button>
@@ -150,16 +155,14 @@ export const TransactionDateFilterControl = ({
         }
       />
       <PopoverContent align="start" sideOffset={4} className="w-auto gap-0 p-0">
-        {open ? (
-          <TransactionDatePopoverBody
-            operator={state.operator}
-            values={state.values}
-            onApply={(next) => {
-              if (next) onChange(next);
-              onOpenChange(false);
-            }}
-          />
-        ) : null}
+        <TransactionDatePopoverBody
+          operator={state.operator}
+          values={state.values}
+          onApply={(next) => {
+            if (next) onChange(next);
+            onOpenChange(false);
+          }}
+        />
       </PopoverContent>
     </Popover>
   );
