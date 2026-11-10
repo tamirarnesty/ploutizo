@@ -1,7 +1,7 @@
 'use client';
 
 import { CheckIcon } from 'lucide-react';
-import type { FilterOption } from './filters-types';
+import { type FilterOption } from './filters-types';
 import { cn } from '@/lib/utils';
 
 interface FilterOptionListProps<T = unknown> {

@@ -1,47 +1,13 @@
-import { Layers2 } from 'lucide-react';
 import { memberFullLabel } from '@ploutizo/utils';
-import type { FilterFieldConfig } from '@ploutizo/ui/components/reui/filters-types';
-import { TransactionDateEditor } from './TransactionDateEditor';
-import {
-  TRANSACTION_DATE_OPERATORS,
-  migrateDateFilterValues,
-} from './transactionDateFilter';
+import type { FilterFieldConfig } from '@ploutizo/ui/components/filters-types';
+import { TRANSACTION_DATE_OPERATORS } from './transactionDateFilter';
 
-// DateRangeFilterRenderer receives operator from the filter's active operator.
-// The editor commits operator+values together via onOperatorValuesChange so the
-// panel emits a single filter update (one URL write, not two).
-const DateRangeFilterRenderer = ({
-  values,
-  onChange,
-  operator,
-  onOperatorValuesChange,
-}: {
-  values: string[];
-  onChange: (values: string[]) => void;
-  operator: string;
-  onOperatorValuesChange?: (operator: string, values: string[]) => void;
-}) => (
-  <TransactionDateEditor
-    operator={operator}
-    values={values}
-    showOperators={false}
-    onChange={({ operator: nextOperator, values: nextValues }) => {
-      if (onOperatorValuesChange) {
-        onOperatorValuesChange(nextOperator, nextValues);
-      } else {
-        onChange(nextValues);
-      }
-    }}
-    onCommit={({ operator: nextOperator, values: nextValues }) => {
-      if (onOperatorValuesChange) {
-        onOperatorValuesChange(nextOperator, nextValues);
-      } else {
-        onChange(nextValues);
-      }
-    }}
-  />
-);
-
+/**
+ * Field configs for every transaction filter. Type, Date, and Account have
+ * dedicated quick controls, so the Filter panel only renders the fields
+ * without quick actions — but all configs stay here so applied-filter chips
+ * can resolve labels and summaries for every active filter.
+ */
 export const buildFilterFields = (
   accounts: { id: string; name: string }[],
   categories: { id: string; name: string }[],
@@ -66,12 +32,6 @@ export const buildFilterFields = (
         { value: 'settlement', label: 'Settlement' },
         { value: 'refund', label: 'Refund' },
         { value: 'contribution', label: 'Contribution' },
-        // D-25: Internal shortcut — sets type to comma-separated internal types
-        {
-          value: 'transfer,settlement,contribution',
-          label: 'Internal',
-          icon: <Layers2 className="size-3.5" />,
-        },
       ],
     },
     {
@@ -80,20 +40,6 @@ export const buildFilterFields = (
       type: 'custom',
       defaultOperator: 'between',
       operators: [...TRANSACTION_DATE_OPERATORS],
-      migrateValues: migrateDateFilterValues,
-      customRenderer: ({
-        values,
-        onChange,
-        operator,
-        onOperatorValuesChange,
-      }) => (
-        <DateRangeFilterRenderer
-          values={values}
-          onChange={onChange}
-          operator={operator}
-          onOperatorValuesChange={onOperatorValuesChange}
-        />
-      ),
     },
     {
       key: 'accountId',

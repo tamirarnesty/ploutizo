@@ -1,18 +1,17 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { ListFilterIcon } from 'lucide-react';
+import { ArrowLeftRightIcon, ListFilterIcon, WalletIcon } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
-import { ActiveFilterChips } from '@ploutizo/ui/components/reui/active-filter-chips';
-import { FilterPanel } from '@ploutizo/ui/components/reui/filter-panel';
+import { ActiveFilterChips } from '@ploutizo/ui/components/active-filter-chips';
+import { FilterPanel } from '@ploutizo/ui/components/filter-panel';
 import {
   createPinnedFilterId,
   getDefaultFilterOperator,
-} from '@ploutizo/ui/components/reui/filters-utils';
-import type { Filter } from '@ploutizo/ui/components/reui/filters-types';
+} from '@ploutizo/ui/components/filters-utils';
+import type { Filter } from '@ploutizo/ui/components/filters-types';
 import { TransactionFilterSearch } from './TransactionFilterSearch';
-import { TransactionTypeFilter } from './TransactionTypeFilter';
 import { TransactionDateFilterControl } from './TransactionDateFilterControl';
-import { TransactionAccountFilter } from './TransactionAccountFilter';
+import { TransactionMultiSelectFilter } from './TransactionMultiSelectFilter';
 import { buildFilterFields } from './TransactionFilterFields';
 import {
   dateFilterToSearch,
@@ -23,7 +22,6 @@ import {
   filtersToSearch,
   searchToFilters,
 } from './transactionFilterUrl';
-import type { TransactionTypeSegment } from './TransactionTypeFilter';
 import type { TransactionSearch } from './transactionSearch';
 
 type Account = { id: string; name: string };
@@ -44,13 +42,28 @@ type TransactionsFilterBarProps = {
   tags: Tag[];
 };
 
-const isTypeSegment = (
-  type: string | undefined
-): TransactionTypeSegment | null => {
-  if (!type) return 'all';
-  if (type === 'income' || type === 'expense') return type;
-  return null;
+/** Fields with dedicated quick controls — excluded from the Filter panel. */
+const QUICK_FILTER_FIELDS = new Set(['type', 'dateRange', 'accountId']);
+
+type QuickEditTarget = 'type' | 'date' | 'account';
+
+const QUICK_EDIT_BY_FIELD: Partial<Record<string, QuickEditTarget>> = {
+  type: 'type',
+  dateRange: 'date',
+  accountId: 'account',
 };
+
+const splitParam = (value: string | undefined): string[] =>
+  value ? value.split(',').filter(Boolean) : [];
+
+const TYPE_OPTIONS = [
+  { value: 'expense', label: 'Expense' },
+  { value: 'income', label: 'Income' },
+  { value: 'transfer', label: 'Transfer' },
+  { value: 'settlement', label: 'Settlement' },
+  { value: 'refund', label: 'Refund' },
+  { value: 'contribution', label: 'Contribution' },
+];
 
 const getDateSummary = (filter: Filter<string>) =>
   filter.field === 'dateRange'
@@ -73,6 +86,7 @@ export const TransactionsFilterBar = ({
 
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelFocusField, setPanelFocusField] = useState<string | undefined>();
+  const [quickEdit, setQuickEdit] = useState<QuickEditTarget | null>(null);
 
   // Filter state is derived from URL search params (single source of truth).
   const activeFilters = useMemo(() => searchToFilters(search), [search]);
@@ -99,6 +113,16 @@ export const TransactionsFilterBar = ({
         }
     );
   }, [activeFilters, filterFields]);
+
+  // The panel only edits fields without a quick control; filters for the
+  // quick fields stay in `panelFilters` so panel edits preserve them.
+  const panelFields = useMemo(
+    () =>
+      filterFields.filter(
+        (field) => !field.key || !QUICK_FILTER_FIELDS.has(field.key)
+      ),
+    [filterFields]
+  );
 
   const applySearch = useCallback(
     (patch: Partial<TransactionSearch>) => {
@@ -156,6 +180,13 @@ export const TransactionsFilterBar = ({
   );
 
   const handleSelectChip = useCallback((filter: Filter<string>) => {
+    const quick = QUICK_EDIT_BY_FIELD[filter.field];
+    if (quick) {
+      setPanelOpen(false);
+      setPanelFocusField(undefined);
+      setQuickEdit(quick);
+      return;
+    }
     setPanelFocusField(filter.field);
     setPanelOpen(true);
   }, []);
@@ -174,20 +205,22 @@ export const TransactionsFilterBar = ({
     });
   }, [navigate]);
 
-  const handleTypeSelect = useCallback(
-    (segment: TransactionTypeSegment) => {
-      applySearch(
-        segment === 'all'
-          ? { type: undefined, type_op: undefined }
-          : { type: segment, type_op: undefined }
-      );
+  const handleTypeChange = useCallback(
+    (values: string[]) => {
+      applySearch({
+        type: values.length > 0 ? values.join(',') : undefined,
+        type_op: undefined,
+      });
     },
     [applySearch]
   );
 
-  const handleAccountSelect = useCallback(
-    (accountId: string | undefined) => {
-      applySearch({ accountId, accountId_op: undefined });
+  const handleAccountChange = useCallback(
+    (accountIds: string[]) => {
+      applySearch({
+        accountId: accountIds.length > 0 ? accountIds.join(',') : undefined,
+        accountId_op: undefined,
+      });
     },
     [applySearch]
   );
@@ -206,8 +239,13 @@ export const TransactionsFilterBar = ({
     [applySearch]
   );
 
-  const typeSegment = isTypeSegment(search.type);
-  const typeSegmentValue = typeSegment === null ? [] : [typeSegment];
+  const typeValues = splitParam(search.type);
+  const accountIds = splitParam(search.accountId);
+  const accountOptions = useMemo(
+    () =>
+      accounts.map((account) => ({ value: account.id, label: account.name })),
+    [accounts]
+  );
 
   return (
     <div className="flex flex-col gap-2">
@@ -216,29 +254,42 @@ export const TransactionsFilterBar = ({
           urlQuery={search.search ?? ''}
           onCommit={commitSearchQuery}
         />
-        <div className="hidden items-center gap-2 md:flex">
-          <TransactionTypeFilter
-            value={typeSegmentValue}
-            onSelect={handleTypeSelect}
+        <div className="flex items-center gap-2">
+          <TransactionMultiSelectFilter
+            icon={<ArrowLeftRightIcon className="size-3.5" />}
+            options={TYPE_OPTIONS}
+            values={typeValues}
+            operator={search.type_op}
+            allLabel="All types"
+            onChange={handleTypeChange}
+            open={quickEdit === 'type'}
+            onOpenChange={(open) => setQuickEdit(open ? 'type' : null)}
           />
           <TransactionDateFilterControl
             search={search}
             onChange={handleDateChange}
+            open={quickEdit === 'date'}
+            onOpenChange={(open) => setQuickEdit(open ? 'date' : null)}
           />
-          <TransactionAccountFilter
-            accounts={accounts}
-            accountId={search.accountId}
+          <TransactionMultiSelectFilter
+            icon={<WalletIcon className="size-3.5" />}
+            options={accountOptions}
+            values={accountIds}
             operator={search.accountId_op}
-            onSelect={handleAccountSelect}
+            allLabel="All accounts"
+            onChange={handleAccountChange}
+            open={quickEdit === 'account'}
+            onOpenChange={(open) => setQuickEdit(open ? 'account' : null)}
           />
         </div>
         <FilterPanel
           open={panelOpen}
           onOpenChange={(open) => {
             setPanelOpen(open);
+            setQuickEdit(null);
             if (!open) setPanelFocusField(undefined);
           }}
-          fields={filterFields}
+          fields={panelFields}
           filters={panelFilters}
           onChange={handlePanelChange}
           focusFieldKey={panelFocusField}
@@ -271,7 +322,10 @@ export const TransactionsFilterBar = ({
               ? `Filters, ${activeFilters.length} active`
               : 'Filters'
           }
-          onClick={() => setPanelOpen(true)}
+          onClick={() => {
+            setQuickEdit(null);
+            setPanelOpen(true);
+          }}
         >
           <ListFilterIcon />
           {activeFilters.length > 0 ? (

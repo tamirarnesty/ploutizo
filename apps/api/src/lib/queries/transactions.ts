@@ -148,13 +148,17 @@ export const buildConditions = (params: ListQueryParams): SQL[] => {
     }
   }
 
-  // accountId
+  // accountId — comma-separated values for multi-select, mirrors type (D-25)
   if (params.accountId) {
+    const accountIds = params.accountId
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean);
     const op = params.accountId_op ?? 'is';
     conditions.push(
       op === 'is_not'
-        ? ne(transactions.accountId, params.accountId)
-        : eq(transactions.accountId, params.accountId)
+        ? notInArray(transactions.accountId, accountIds)
+        : inArray(transactions.accountId, accountIds)
     );
   }
 

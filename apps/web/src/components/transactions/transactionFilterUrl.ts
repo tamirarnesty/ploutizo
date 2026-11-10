@@ -1,25 +1,25 @@
-import { createPinnedFilterId } from '@ploutizo/ui/components/reui/filters-utils';
-import type { Filter } from '@ploutizo/ui/components/reui/filters-types';
+import { createPinnedFilterId } from '@ploutizo/ui/components/filters-utils';
+import type { Filter } from '@ploutizo/ui/components/filters-types';
 import type { TransactionSearch } from './transactionSearch';
 
 /**
  * Declarative codec for the simple transaction filters. Each descriptor owns
  * one Filter field, its URL value param, its `${field}_op` param, the default
- * operator, and how values map (scalar = single value; entity = single value
- * plus empty/not_empty operators; multi = comma-joined values plus
- * empty/not_empty operators). dateRange and importOutcome have bespoke
- * semantics and are handled separately below.
+ * operator, and how values map (entity = single value plus empty/not_empty
+ * operators; multi = comma-joined values plus empty/not_empty operators).
+ * dateRange and importOutcome have bespoke semantics and are handled
+ * separately below.
  */
 const TRANSACTION_SIMPLE_FILTERS = [
-  { field: 'type', defaultOperator: 'is', kind: 'scalar' },
+  { field: 'type', defaultOperator: 'is', kind: 'multi' },
   { field: 'categoryId', defaultOperator: 'is', kind: 'entity' },
   { field: 'assigneeId', defaultOperator: 'is', kind: 'entity' },
-  { field: 'accountId', defaultOperator: 'is', kind: 'scalar' },
+  { field: 'accountId', defaultOperator: 'is', kind: 'multi' },
   { field: 'tagIds', defaultOperator: 'is_any_of', kind: 'multi' },
 ] as const satisfies readonly {
   field: keyof TransactionSearch;
   defaultOperator: string;
-  kind: 'scalar' | 'entity' | 'multi';
+  kind: 'entity' | 'multi';
 }[];
 
 type SimpleFilterDescriptor = (typeof TRANSACTION_SIMPLE_FILTERS)[number];
@@ -37,10 +37,7 @@ const encodeSimpleFilter = (
   const opKey = opKeyOf(descriptor.field);
   const operator = filter.operator;
   // empty/not_empty carry no value — the operator param alone encodes them.
-  if (
-    descriptor.kind !== 'scalar' &&
-    (operator === 'empty' || operator === 'not_empty')
-  ) {
+  if (operator === 'empty' || operator === 'not_empty') {
     result[opKey] = operator;
     return;
   }
@@ -71,10 +68,7 @@ const decodeSimpleFilter = (
     operator: op,
     values,
   });
-  if (
-    descriptor.kind !== 'scalar' &&
-    (operator === 'empty' || operator === 'not_empty')
-  ) {
+  if (operator === 'empty' || operator === 'not_empty') {
     return makeFilter(operator, []);
   }
   if (value) {
@@ -229,10 +223,7 @@ export const hasActiveFilters = (search: TransactionSearch): boolean =>
     if (search[descriptor.field]) return true;
     // empty/not_empty operators don't require a value param
     const operator = search[opKeyOf(descriptor.field)];
-    return (
-      descriptor.kind !== 'scalar' &&
-      (operator === 'empty' || operator === 'not_empty')
-    );
+    return operator === 'empty' || operator === 'not_empty';
   }) ||
   Boolean(search.dateFrom) ||
   Boolean(search.dateTo) ||

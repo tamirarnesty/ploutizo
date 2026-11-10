@@ -6,11 +6,13 @@ import {
   getFilterSummary,
   mergeFilterI18n,
 } from './filters-utils';
-import type {
-  Filter,
-  FilterFieldsConfig,
-  FilterI18nConfig,
+import {
+  type Filter,
+  type FilterFieldConfig,
+  type FilterFieldsConfig,
+  type FilterI18nConfig,
 } from './filters-types';
+import { Badge } from '@/components/badge';
 import { Button } from '@/components/button';
 import { cn } from '@/lib/utils';
 
@@ -49,7 +51,8 @@ export const ActiveFilterChips = <T = unknown,>({
   return (
     <div className={cn('flex flex-wrap items-center gap-1.5', className)}>
       {filters.map((filter) => {
-        const field = fieldsMap[filter.field];
+        const field = fieldsMap[filter.field] as
+          FilterFieldConfig<T> | undefined;
         if (!field?.key) return null;
         const label = field.label ?? filter.field;
         const summary =
@@ -62,32 +65,35 @@ export const ActiveFilterChips = <T = unknown,>({
           </>
         );
         return (
-          <span
+          <Badge
             key={filter.id}
-            className="inline-flex h-7 items-center gap-0.5 rounded-full border border-border bg-muted/40 ps-3 pe-1 text-xs"
+            variant="secondary"
+            className="h-7 max-w-full gap-1 rounded-full ps-3 pe-1 font-normal"
           >
             {onSelect ? (
               <button
                 type="button"
                 onClick={() => onSelect(filter)}
-                className="flex h-full min-w-0 items-center gap-1 rounded-full ps-0 pe-1 hover:underline"
+                className="flex min-w-0 items-center gap-1 truncate text-start hover:underline"
               >
-                <span className="truncate">{body}</span>
+                {body}
               </button>
             ) : (
               <span className="flex min-w-0 items-center gap-1 truncate">
                 {body}
               </span>
             )}
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon-xs"
               aria-label={`Remove ${label} filter`}
               onClick={() => onRemove(filter)}
-              className="-me-1 flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"
+              className="size-5 shrink-0 rounded-full text-muted-foreground hover:text-foreground"
             >
-              <XIcon aria-hidden="true" className="size-3" />
-            </button>
-          </span>
+              <XIcon aria-hidden="true" />
+            </Button>
+          </Badge>
         );
       })}
       {onClearAll ? (

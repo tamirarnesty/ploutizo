@@ -92,6 +92,7 @@ Capabilities added or changed locally in `packages/ui/src/components/reui/` (rec
 - **Column resize handle** — The handle is a `span` (`role="separator"`, accessible name, `tabIndex={0}`) so header `[&>div]:w-full` rules cannot cover it. Enter and Space call `column.resetSize()`, same as double-click.
 - **Infinite virtual rows** — `onFetchMore` will not refire at the same row count while a request is in flight. After an attempt adds no rows, leaving the fetch threshold clears that guard so scrolling back can retry.
 - **Row drop indicator** — With rows held in place, the indicator is a horizontal line on the top or bottom edge (`dropEdge`), not a vertical bar at the start.
+- **`DateSelector` is project-owned** — `components/date-selector.tsx` started as `@reui/date-selector` but is now first-party: day-only picking (no period tabs or period value model), `is_not` / `not_between` operators alongside `is` / `before` / `after` / `between`, an inline `label` header with the operator toggle, month navigation (Today + prev/next, Today slot reserved via `invisible`) in the input row, typed-date input parsing, and accessible names on icon-only controls. It is no longer tracked as a ReUI fork; there is nothing to reconcile on registry updates.
 
 ## Verification checklist
 

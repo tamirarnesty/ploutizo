@@ -6,29 +6,135 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@ploutizo/ui/components/popover';
-import { TransactionDateEditor } from './TransactionDateEditor';
+import { Separator } from '@ploutizo/ui/components/separator';
+import { DateSelector } from '@ploutizo/ui/components/date-selector';
+import type {
+  DateSelectorI18nConfig,
+  DateSelectorValue,
+} from '@ploutizo/ui/components/date-selector';
 import {
+  TRANSACTION_DATE_PRESETS,
   dateFilterFromSearch,
+  filterToSelectorValue,
   formatTransactionDateFilterLabel,
+  presetDateRange,
+  selectorValueToFilter,
 } from './transactionDateFilter';
 import type { TransactionSearch } from './transactionSearch';
+
+const DATE_SELECTOR_I18N = {
+  filterTypes: {
+    is: 'Is',
+    isNot: 'Is not',
+    before: 'Before',
+    after: 'After',
+    between: 'Between',
+    notBetween: 'Not between',
+  },
+} satisfies Partial<DateSelectorI18nConfig>;
 
 type TransactionDateFilterControlProps = {
   search: TransactionSearch;
   onChange: (next: { operator: string; values: string[] }) => void;
+  /** Controlled open state so applied chips can reopen this popover. */
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 };
 
-/** Quick date filter — presets + full operator set in one popover. */
+const DATE_PRESETS = [
+  ...TRANSACTION_DATE_PRESETS,
+  { id: 'all', label: 'All time' },
+] as const;
+
+type DatePresetId = (typeof DATE_PRESETS)[number]['id'];
+
+const presetSelectorValue = (id: DatePresetId): DateSelectorValue => {
+  if (id === 'all') return { operator: 'between' };
+  const range = presetDateRange(id);
+  return {
+    operator: 'between',
+    startDate: range.from,
+    endDate: range.to,
+  };
+};
+
+/** Staged editor mounted fresh each time the popover opens. */
+const TransactionDatePopoverBody = ({
+  operator,
+  values,
+  onApply,
+}: {
+  operator: string;
+  values: string[];
+  /** `null` means cancel — nothing is committed. */
+  onApply: (next: { operator: string; values: string[] } | null) => void;
+}) => {
+  const [staged, setStaged] = useState<DateSelectorValue>(() =>
+    filterToSelectorValue({ operator, values })
+  );
+  const committed = selectorValueToFilter(staged);
+
+  return (
+    <>
+      <div className="p-3 pb-0">
+        <DateSelector
+          value={staged}
+          onChange={setStaged}
+          label="Date"
+          i18n={DATE_SELECTOR_I18N}
+          inputHint="Try: Nov 5, 2026"
+          dayDateFormat="MMM d, yyyy"
+        />
+      </div>
+      <div className="flex flex-wrap gap-2 px-3 pt-3">
+        {DATE_PRESETS.map((preset) => (
+          <Button
+            key={preset.id}
+            type="button"
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={() => setStaged(presetSelectorValue(preset.id))}
+          >
+            {preset.label}
+          </Button>
+        ))}
+      </div>
+      <Separator className="mt-3" />
+      <div className="flex justify-end gap-2 p-3 pt-3">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => onApply(null)}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          disabled={committed === null}
+          onClick={() => committed && onApply(committed)}
+        >
+          Apply
+        </Button>
+      </div>
+    </>
+  );
+};
+
+/** Quick date filter — staged popover with calendar, presets, and operators. */
 export const TransactionDateFilterControl = ({
   search,
   onChange,
+  open,
+  onOpenChange,
 }: TransactionDateFilterControlProps) => {
-  const [open, setOpen] = useState(false);
   const state = dateFilterFromSearch(search);
   const label = formatTransactionDateFilterLabel(state.operator, state.values);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger
         render={
           <Button
@@ -43,16 +149,17 @@ export const TransactionDateFilterControl = ({
           </Button>
         }
       />
-      <PopoverContent align="start" className="w-auto p-3">
-        <TransactionDateEditor
-          operator={state.operator}
-          values={state.values}
-          onChange={onChange}
-          onCommit={(next) => {
-            onChange(next);
-            setOpen(false);
-          }}
-        />
+      <PopoverContent align="start" sideOffset={4} className="w-auto gap-0 p-0">
+        {open ? (
+          <TransactionDatePopoverBody
+            operator={state.operator}
+            values={state.values}
+            onApply={(next) => {
+              if (next) onChange(next);
+              onOpenChange(false);
+            }}
+          />
+        ) : null}
       </PopoverContent>
     </Popover>
   );

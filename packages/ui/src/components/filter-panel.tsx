@@ -19,15 +19,21 @@ import {
   isFilterValueActive,
   mergeFilterI18n,
 } from './filters-utils';
-import type {
-  Filter,
-  FilterFieldConfig,
-  FilterFieldsConfig,
-  FilterI18nConfig,
+import {
+  type Filter,
+  type FilterFieldConfig,
+  type FilterFieldsConfig,
+  type FilterI18nConfig,
 } from './filters-types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/button';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/collapsible';
+import { Input } from '@/components/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/popover';
 import {
   Sheet,
@@ -35,6 +41,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/sheet';
+import { ToggleGroup, ToggleGroupItem } from '@/components/toggle-group';
 
 const EMPTY_VALUE_OPERATORS = new Set(['empty', 'not_empty']);
 
@@ -47,27 +54,23 @@ const FilterOperatorPills = ({
   active: string;
   onChange: (operator: string) => void;
 }) => (
-  <div className="flex flex-wrap gap-1">
-    {operators.map((operator) => {
-      const isActive = operator.value === active;
-      return (
-        <button
-          key={operator.value}
-          type="button"
-          aria-pressed={isActive}
-          onClick={() => onChange(operator.value)}
-          className={cn(
-            'rounded-full border px-2 py-0.5 text-xs transition-colors',
-            isActive
-              ? 'border-primary/40 bg-primary/10 font-medium text-foreground'
-              : 'border-border text-muted-foreground hover:bg-accent hover:text-foreground'
-          )}
-        >
-          {operator.label}
-        </button>
-      );
-    })}
-  </div>
+  <ToggleGroup
+    value={[active]}
+    onValueChange={(values) => {
+      const next = values.at(-1);
+      if (next) onChange(next);
+    }}
+    variant="outline"
+    size="sm"
+    spacing={1}
+    className="flex-wrap"
+  >
+    {operators.map((operator) => (
+      <ToggleGroupItem key={operator.value} value={operator.value}>
+        {operator.label}
+      </ToggleGroupItem>
+    ))}
+  </ToggleGroup>
 );
 
 interface FilterValueEditorProps<T = unknown> {
@@ -110,12 +113,11 @@ const FilterValueEditor = <T = unknown,>({
 
   if (field.type === 'text') {
     return (
-      <input
+      <Input
         type="text"
         value={String(filter.values[0] ?? '')}
         onChange={(event) => onValuesChange([event.target.value as T])}
         placeholder={field.placeholder}
-        className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
       />
     );
   }
@@ -174,31 +176,26 @@ const FilterFieldSection = <T = unknown,>({
     getSummary?.(filter) ?? getFilterSummary(filter, field, i18n, emptyLabel);
 
   return (
-    <div className="border-b border-border/60 last:border-b-0">
-      <button
-        type="button"
-        aria-expanded={expanded}
-        onClick={() => setExpanded((prev) => !prev)}
-        className="flex w-full items-center gap-2 px-3 py-2.5 text-start text-sm hover:bg-accent/50"
-      >
-        <span className="shrink-0 font-medium">{field.label}</span>
-        <span
-          className="min-w-0 flex-1 truncate text-muted-foreground"
-          title={summary}
-        >
-          {summary}
-        </span>
-        <ChevronDownIcon
-          aria-hidden="true"
-          className={cn(
-            'size-4 shrink-0 text-muted-foreground transition-transform',
-            expanded && 'rotate-180'
-          )}
-        />
-      </button>
+    <Collapsible open={expanded} onOpenChange={setExpanded}>
+      <div className="border-b border-border/60 last:border-b-0">
+        <CollapsibleTrigger className="flex w-full items-center gap-2 px-3 py-2.5 text-start text-sm hover:bg-accent/50">
+          <span className="shrink-0 font-medium">{field.label}</span>
+          <span
+            className="min-w-0 flex-1 truncate text-muted-foreground"
+            title={summary}
+          >
+            {summary}
+          </span>
+          <ChevronDownIcon
+            aria-hidden="true"
+            className={cn(
+              'size-4 shrink-0 text-muted-foreground transition-transform',
+              expanded && 'rotate-180'
+            )}
+          />
+        </CollapsibleTrigger>
 
-      {expanded ? (
-        <div className="flex flex-col gap-2.5 px-3 pb-3">
+        <CollapsibleContent className="flex flex-col gap-2.5 px-3 pb-3">
           {operators.length > 1 ? (
             <FilterOperatorPills
               operators={operators}
@@ -229,9 +226,9 @@ const FilterFieldSection = <T = unknown,>({
               </Button>
             </div>
           ) : null}
-        </div>
-      ) : null}
-    </div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
   );
 };
 
@@ -297,7 +294,9 @@ export const FilterPanel = <T = unknown,>({
           if (filter.id !== filterId) return filter;
           const updated = { ...filter, ...updates };
           if (updates.operator !== undefined && !updates.values) {
-            const migrate = fieldsMap[filter.field]?.migrateValues;
+            const fieldConfig = fieldsMap[filter.field] as
+              FilterFieldConfig<T> | undefined;
+            const migrate = fieldConfig?.migrateValues;
             if (migrate) {
               updated.values = migrate(
                 filter.operator,
@@ -344,7 +343,7 @@ export const FilterPanel = <T = unknown,>({
           updateFilter(filter.id, { operator, values })
         }
         onClear={() => {
-          const empty = fieldsMap[key];
+          const empty = fieldsMap[key] as FilterFieldConfig<T> | undefined;
           onChange(
             filters.map((f) =>
               f.field === key

@@ -1,12 +1,14 @@
 import { format } from 'date-fns';
 import { describe, expect, it } from 'vitest';
+import type { DateSelectorValue } from '@ploutizo/ui/components/date-selector';
 import {
   dateFilterFromSearch,
   dateFilterKind,
   dateFilterToSearch,
+  filterToSelectorValue,
   formatTransactionDateFilterLabel,
-  migrateDateFilterValues,
   presetDateRange,
+  selectorValueToFilter,
 } from './transactionDateFilter';
 
 const TODAY = new Date(2026, 10, 9); // Nov 9, 2026 (local)
@@ -148,21 +150,80 @@ describe('formatTransactionDateFilterLabel', () => {
   });
 });
 
-describe('migrateDateFilterValues', () => {
-  it('expands single values into a range and collapses back', () => {
-    expect(migrateDateFilterValues('is', 'between', ['2026-11-05'])).toEqual([
-      '2026-11-05',
-      '',
-    ]);
+describe('DateSelector mapping', () => {
+  it('maps codec state to a selector value', () => {
     expect(
-      migrateDateFilterValues('between', 'is', ['2026-11-05', '2026-11-09'])
-    ).toEqual(['2026-11-05']);
+      filterToSelectorValue({
+        operator: 'between',
+        values: ['2026-11-01', '2026-11-09'],
+      })
+    ).toEqual({
+      operator: 'between',
+      startDate: new Date(2026, 10, 1),
+      endDate: new Date(2026, 10, 9),
+    });
+    expect(
+      filterToSelectorValue({ operator: 'is', values: ['2026-11-05'] })
+    ).toEqual({
+      operator: 'is',
+      startDate: new Date(2026, 10, 5),
+      endDate: undefined,
+    });
   });
 
-  it('keeps values within the same family', () => {
-    const values = ['2026-11-01', '2026-11-09'];
-    expect(migrateDateFilterValues('between', 'not_between', values)).toBe(
-      values
-    );
+  it('round-trips whole-month ranges as concrete day bounds', () => {
+    expect(
+      filterToSelectorValue({
+        operator: 'between',
+        values: ['2026-11-01', '2026-11-30'],
+      })
+    ).toEqual({
+      operator: 'between',
+      startDate: new Date(2026, 10, 1),
+      endDate: new Date(2026, 10, 30),
+    });
+    expect(
+      selectorValueToFilter(
+        filterToSelectorValue({
+          operator: 'between',
+          values: ['2026-01-01', '2026-12-31'],
+        })
+      )
+    ).toEqual({ operator: 'between', values: ['2026-01-01', '2026-12-31'] });
+  });
+
+  it('round-trips day selections through the codec', () => {
+    const value: DateSelectorValue = {
+      operator: 'not_between',
+      startDate: new Date(2026, 10, 1),
+      endDate: new Date(2026, 10, 9),
+    };
+    expect(selectorValueToFilter(value)).toEqual({
+      operator: 'not_between',
+      values: ['2026-11-01', '2026-11-09'],
+    });
+    expect(
+      selectorValueToFilter({
+        operator: 'is_not',
+        startDate: new Date(2026, 10, 5),
+      })
+    ).toEqual({ operator: 'is_not', values: ['2026-11-05'] });
+  });
+
+  it('returns null for incomplete ranges and empty state for cleared selections', () => {
+    expect(
+      selectorValueToFilter({
+        operator: 'between',
+        startDate: new Date(2026, 10, 1),
+      })
+    ).toBeNull();
+    expect(selectorValueToFilter({ operator: 'between' })).toEqual({
+      operator: 'between',
+      values: [],
+    });
+    expect(selectorValueToFilter(undefined)).toEqual({
+      operator: 'between',
+      values: [],
+    });
   });
 });

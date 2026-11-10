@@ -42,6 +42,54 @@ describe('text search', () => {
   });
 });
 
+describe('multi-value quick filters', () => {
+  it('round-trips comma-joined type and account values', () => {
+    const filters = searchToFilters({
+      type: 'expense,income',
+      accountId: 'acc_1,acc_2',
+    });
+    expect(filters).toEqual([
+      {
+        id: 'filter-type',
+        field: 'type',
+        operator: 'is',
+        values: ['expense', 'income'],
+      },
+      {
+        id: 'filter-accountId',
+        field: 'accountId',
+        operator: 'is',
+        values: ['acc_1', 'acc_2'],
+      },
+    ]);
+    expect(filtersToSearch(filters)).toEqual({
+      type: 'expense,income',
+      accountId: 'acc_1,acc_2',
+    });
+  });
+
+  it('keeps non-default operators on multi-value fields', () => {
+    expect(
+      filtersToSearch([
+        {
+          id: 'filter-type',
+          field: 'type',
+          operator: 'is_not',
+          values: ['transfer', 'settlement'],
+        },
+      ])
+    ).toEqual({ type: 'transfer,settlement', type_op: 'is_not' });
+    expect(searchToFilters({ type: 'income', type_op: 'is_not' })).toEqual([
+      {
+        id: 'filter-type',
+        field: 'type',
+        operator: 'is_not',
+        values: ['income'],
+      },
+    ]);
+  });
+});
+
 describe('import result filters', () => {
   it('treats a created or matched import constraint as an active filter', () => {
     expect(hasActiveFilters({})).toBe(false);

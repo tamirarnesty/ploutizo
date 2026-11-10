@@ -8,6 +8,10 @@ import {
   startOfYear,
   subMonths,
 } from 'date-fns';
+import type {
+  DateSelectorFilterType,
+  DateSelectorValue,
+} from '@ploutizo/ui/components/date-selector';
 import type { TransactionSearch } from './transactionSearch';
 
 /**
@@ -30,11 +34,7 @@ export const TRANSACTION_DATE_OPERATORS = [
   { value: 'not_between', label: 'Not between' },
 ] as const;
 
-const SINGLE_BOUND_OPERATORS = new Set(['is', 'is_not', 'before', 'after']);
 const RANGE_OPERATORS = new Set(['between', 'not_between']);
-
-export const isSingleBoundDateOperator = (operator: string): boolean =>
-  SINGLE_BOUND_OPERATORS.has(operator);
 
 export const isRangeDateOperator = (operator: string): boolean =>
   RANGE_OPERATORS.has(operator);
@@ -199,24 +199,33 @@ export const formatTransactionDateFilterLabel = (
   return `${operatorLabel} ${dateLabel}`.trim();
 };
 
-/** Values carried by the `dateRange` filter chip back into editor state. */
-export const dateFilterFromFilter = (filter: {
-  operator: string;
-  values: string[];
-}): TransactionDateFilterValue => ({
-  operator: filter.operator,
-  values: filter.values,
-});
+/** Codec state → DateSelector value. */
+export const filterToSelectorValue = (
+  filter: TransactionDateFilterValue
+): DateSelectorValue => {
+  const operator = filter.operator as DateSelectorFilterType;
+  const from = parseFilterDate(filter.values[0] ?? '');
+  const to = isRangeDateOperator(filter.operator)
+    ? parseFilterDate(filter.values[1] ?? '')
+    : undefined;
+  return { operator, startDate: from, endDate: to };
+};
 
-/** Operator migration when switching date operators (single ↔ range families). */
-export const migrateDateFilterValues = (
-  prevOperator: string,
-  nextOperator: string,
-  values: string[]
-): string[] => {
-  const prevIsRange = RANGE_OPERATORS.has(prevOperator);
-  const nextIsRange = RANGE_OPERATORS.has(nextOperator);
-  if (prevIsRange === nextIsRange) return values;
-  if (!prevIsRange && nextIsRange) return [values[0] ?? '', ''];
-  return [values[0] ?? ''];
+/**
+ * DateSelector value → codec state. Returns `null` for incomplete selections
+ * (e.g. one end of a range picked) so hosts can ignore them.
+ */
+export const selectorValueToFilter = (
+  value: DateSelectorValue | undefined
+): TransactionDateFilterValue | null => {
+  const operator = value?.operator ?? 'between';
+  const from = value?.startDate;
+  const to = value?.endDate;
+  if (isRangeDateOperator(operator)) {
+    if (!from && !to) return { operator: 'between', values: [] };
+    if (!from || !to) return null;
+    return { operator, values: [toFilterValue(from), toFilterValue(to)] };
+  }
+  if (!from) return { operator: 'between', values: [] };
+  return { operator, values: [toFilterValue(from)] };
 };
