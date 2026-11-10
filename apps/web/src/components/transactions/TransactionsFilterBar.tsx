@@ -13,8 +13,12 @@ import { memberFullLabel } from '@ploutizo/utils';
 import { ActiveFilterChips } from '@ploutizo/ui/components/active-filter-chips';
 import { Badge } from '@ploutizo/ui/components/badge';
 import { Button } from '@ploutizo/ui/components/button';
+import type { AccountType } from '@ploutizo/types';
 import type { Filter } from '@ploutizo/ui/components/filters-types';
+import { ACCOUNT_TYPE_OPTIONS } from '@/components/accounts/accountTypes';
+import { CachedLucideIcon } from '@/components/categories/CachedLucideIcon';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { UserAvatar } from '@/components/members/UserAvatar';
 import { TransactionFilterSearch } from './TransactionFilterSearch';
 import { TransactionDateFilterControl } from './TransactionDateFilterControl';
 import { TransactionMultiSelectFilter } from './TransactionMultiSelectFilter';
@@ -22,7 +26,9 @@ import { TransactionSingleSelectFilter } from './TransactionSingleSelectFilter';
 import { TransactionFiltersSheet } from './TransactionFiltersSheet';
 import {
   ASSIGNEE_SHAPE_OPTIONS,
+  IMPORT_OUTCOME_ICONS,
   IMPORT_OUTCOME_OPTIONS,
+  TRANSACTION_TYPE_ICONS,
   TRANSACTION_TYPE_OPTIONS,
   buildFilterFields,
 } from './TransactionFilterFields';
@@ -37,15 +43,16 @@ import {
 } from './transactionFilterUrl';
 import type { TransactionSearch } from './transactionSearch';
 
-type Account = { id: string; name: string };
-type Category = { id: string; name: string };
+type Account = { id: string; name: string; type: AccountType };
+type Category = { id: string; name: string; icon?: string | null };
 type Member = {
   id: string;
   firstName: string | null;
   lastName: string | null;
   email: string;
+  imageUrl?: string | null;
 };
-type Tag = { id: string; name: string };
+type Tag = { id: string; name: string; colour?: string | null };
 
 type TransactionsFilterBarProps = {
   search: TransactionSearch;
@@ -247,13 +254,36 @@ export const TransactionsFilterBar = ({
   );
 
   const typeValues = useMemo(() => splitParam(search.type), [search.type]);
+  const typeOptions = useMemo(
+    () =>
+      TRANSACTION_TYPE_OPTIONS.map((option) => {
+        const Icon = TRANSACTION_TYPE_ICONS[option.value];
+        return {
+          ...option,
+          icon: <Icon className="size-3.5" aria-hidden="true" />,
+        };
+      }),
+    []
+  );
   const accountIds = useMemo(
     () => splitParam(search.accountId),
     [search.accountId]
   );
-  const accountOptions = useMemo(
+  const accountGroups = useMemo(
     () =>
-      accounts.map((account) => ({ value: account.id, label: account.name })),
+      ACCOUNT_TYPE_OPTIONS.map((typeOption) => {
+        const Icon = typeOption.icon;
+        return {
+          label: typeOption.label,
+          options: accounts
+            .filter((account) => account.type === typeOption.value)
+            .map((account) => ({
+              value: account.id,
+              label: account.name,
+              icon: <Icon className="size-3.5" aria-hidden="true" />,
+            })),
+        };
+      }).filter((group) => group.options.length > 0),
     [accounts]
   );
   const assigneeValues = useMemo(
@@ -264,10 +294,21 @@ export const TransactionsFilterBar = ({
     () => [
       {
         label: 'Members',
-        options: members.map((member) => ({
-          value: member.id,
-          label: memberFullLabel(member),
-        })),
+        options: members.map((member) => {
+          const label = memberFullLabel(member);
+          return {
+            value: member.id,
+            label,
+            icon: (
+              <UserAvatar
+                name={label}
+                imageUrl={member.imageUrl}
+                size="sm"
+                className="size-5 bg-muted"
+              />
+            ),
+          };
+        }),
       },
       { label: 'Sharing', options: ASSIGNEE_SHAPE_OPTIONS },
     ],
@@ -282,13 +323,36 @@ export const TransactionsFilterBar = ({
       categories.map((category) => ({
         value: category.id,
         label: category.name,
+        icon: <CachedLucideIcon name={category.icon ?? null} size={14} />,
       })),
     [categories]
   );
   const tagValues = useMemo(() => splitParam(search.tagIds), [search.tagIds]);
   const tagOptions = useMemo(
-    () => tags.map((tag) => ({ value: tag.id, label: tag.name })),
+    () =>
+      tags.map((tag) => ({
+        value: tag.id,
+        label: tag.name,
+        icon: tag.colour ? (
+          <span
+            className="size-2.5 shrink-0 rounded-full"
+            style={{ backgroundColor: tag.colour }}
+            aria-hidden="true"
+          />
+        ) : undefined,
+      })),
     [tags]
+  );
+  const importOptions = useMemo(
+    () =>
+      IMPORT_OUTCOME_OPTIONS.map((option) => {
+        const Icon = IMPORT_OUTCOME_ICONS[option.value];
+        return {
+          ...option,
+          icon: <Icon className="size-3.5" aria-hidden="true" />,
+        };
+      }),
+    []
   );
 
   return (
@@ -327,7 +391,7 @@ export const TransactionsFilterBar = ({
           <div className="flex items-center gap-2">
             <TransactionMultiSelectFilter
               icon={<ArrowLeftRightIcon className="size-3.5" />}
-              groups={[{ options: TRANSACTION_TYPE_OPTIONS }]}
+              groups={[{ options: typeOptions }]}
               values={typeValues}
               allLabel="All types"
               onChange={handleTypeChange}
@@ -342,7 +406,7 @@ export const TransactionsFilterBar = ({
             />
             <TransactionMultiSelectFilter
               icon={<WalletIcon className="size-3.5" />}
-              groups={[{ options: accountOptions }]}
+              groups={accountGroups}
               values={accountIds}
               allLabel="All accounts"
               onChange={handleAccountChange}
@@ -379,7 +443,7 @@ export const TransactionsFilterBar = ({
             {search.importBatchId ? (
               <TransactionSingleSelectFilter
                 icon={<ImportIcon className="size-3.5" />}
-                options={IMPORT_OUTCOME_OPTIONS}
+                options={importOptions}
                 value={search.importOutcome}
                 allLabel="All results"
                 onChange={handleImportOutcomeChange}
@@ -415,11 +479,12 @@ export const TransactionsFilterBar = ({
           assigneeValues={assigneeValues}
           categoryValues={categoryValues}
           tagValues={tagValues}
-          accountOptions={accountOptions}
+          typeOptions={typeOptions}
+          accountGroups={accountGroups}
           categoryOptions={categoryOptions}
           tagOptions={tagOptions}
           assigneeGroups={assigneeGroups}
-          importOptions={IMPORT_OUTCOME_OPTIONS}
+          importOptions={importOptions}
           hasImportResult={Boolean(search.importBatchId)}
           importValue={search.importOutcome}
           onTypeChange={handleTypeChange}

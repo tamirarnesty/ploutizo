@@ -16,7 +16,10 @@ import type { ReactNode } from 'react';
 type TransactionMultiSelectFilterProps = {
   icon: ReactNode;
   /** Option groups rendered in order; a label heads each labelled group. */
-  groups: { label?: string; options: { value: string; label: string }[] }[];
+  groups: {
+    label?: string;
+    options: { value: string; label: string; icon?: ReactNode }[];
+  }[];
   /** Selected option values; empty = the "all" state. */
   values: string[];
   /** Trigger label when nothing is selected, e.g. "All types". */
@@ -112,7 +115,10 @@ export const TransactionMultiSelectFilter = ({
                   onSelect={(event) => event.preventDefault()}
                   onCheckedChange={() => handleToggle(option.value)}
                 >
-                  {option.label}
+                  <span className="flex min-w-0 items-center gap-2">
+                    {option.icon}
+                    <span className="truncate">{option.label}</span>
+                  </span>
                 </DropdownMenuCheckboxItem>
               ))}
             </DropdownMenuGroup>

@@ -33,18 +33,12 @@ import { FormSubmitError } from '@/components/FormSubmitError';
 import { useGetAccountMembers } from '@/lib/data-access/accounts';
 import { useGetHouseholdMembers } from '@/lib/data-access/household';
 import { MemberToggleGroup } from '@/components/members/MemberToggleGroup';
+import { ACCOUNT_TYPE_OPTIONS } from './accountTypes';
 import { AccountInstitutionField } from './AccountInstitutionField';
 import { AccountLastFourFields } from './AccountLastFourFields';
 import { useAccountForm } from './useAccountForm';
 
-const ACCOUNT_TYPES = [
-  { value: 'chequing', label: 'Chequing' },
-  { value: 'savings', label: 'Savings' },
-  { value: 'credit_card', label: 'Credit Card' },
-  { value: 'prepaid_cash', label: 'Prepaid / Cash' },
-  { value: 'e_transfer', label: 'e-Transfer' },
-  { value: 'investment', label: 'Investment' },
-] as const;
+const ACCOUNT_TYPES = ACCOUNT_TYPE_OPTIONS;
 
 interface AccountFormProps {
   account: Account | null;

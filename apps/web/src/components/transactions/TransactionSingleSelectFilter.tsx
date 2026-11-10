@@ -14,7 +14,7 @@ const ALL_VALUE = '__all__';
 
 type TransactionSingleSelectFilterProps = {
   icon: ReactNode;
-  options: { value: string; label: string }[];
+  options: { value: string; label: string; icon?: ReactNode }[];
   /** Selected option value; undefined = the "all" state. */
   value: string | undefined;
   /** Trigger label when nothing is selected, e.g. "All results". */
@@ -66,7 +66,10 @@ export const TransactionSingleSelectFilter = ({
           </DropdownMenuRadioItem>
           {options.map((option) => (
             <DropdownMenuRadioItem key={option.value} value={option.value}>
-              {option.label}
+              <span className="flex min-w-0 items-center gap-2">
+                {option.icon}
+                <span className="truncate">{option.label}</span>
+              </span>
             </DropdownMenuRadioItem>
           ))}
         </DropdownMenuRadioGroup>

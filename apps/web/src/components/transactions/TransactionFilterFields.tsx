@@ -1,6 +1,17 @@
+import {
+  ArrowDownLeft,
+  ArrowLeftRight,
+  ArrowUpRight,
+  Coins,
+  FilePlus,
+  Handshake,
+  Link2,
+  Undo2,
+} from 'lucide-react';
 import { memberFullLabel } from '@ploutizo/utils';
 import type { FilterFieldConfig } from '@ploutizo/ui/components/filters-types';
 import { TRANSACTION_DATE_OPERATORS } from './transactionDateFilter';
+import type { LucideIcon } from 'lucide-react';
 
 /**
  * Pseudo-options appended to the assignee filter. `personal` matches
@@ -26,6 +37,22 @@ export const TRANSACTION_TYPE_OPTIONS = [
   { value: 'refund', label: 'Refund' },
   { value: 'contribution', label: 'Contribution' },
 ];
+
+/** Icons shown next to transaction-type options in filter menus. */
+export const TRANSACTION_TYPE_ICONS: Record<string, LucideIcon> = {
+  expense: ArrowDownLeft,
+  income: ArrowUpRight,
+  transfer: ArrowLeftRight,
+  settlement: Handshake,
+  refund: Undo2,
+  contribution: Coins,
+};
+
+/** Icons shown next to import-outcome options in filter menus. */
+export const IMPORT_OUTCOME_ICONS: Record<string, LucideIcon> = {
+  created: FilePlus,
+  matched: Link2,
+};
 
 /**
  * Field configs for every transaction filter. Type, Date, and Account have
