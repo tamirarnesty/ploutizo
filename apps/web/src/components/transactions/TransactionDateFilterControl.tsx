@@ -49,7 +49,7 @@ const DATE_PRESETS = [
 type DatePresetId = (typeof DATE_PRESETS)[number]['id'];
 
 /** Staged editor mounted fresh each time the popover opens. */
-const TransactionDatePopoverBody = ({
+export const TransactionDatePopoverBody = ({
   operator,
   values,
   onApply,

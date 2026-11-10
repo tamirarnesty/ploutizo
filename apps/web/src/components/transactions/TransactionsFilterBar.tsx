@@ -4,20 +4,26 @@ import {
   ArrowLeftRightIcon,
   ImportIcon,
   Layers2Icon,
+  ListFilterIcon,
   TagsIcon,
   UsersIcon,
   WalletIcon,
 } from 'lucide-react';
 import { memberFullLabel } from '@ploutizo/utils';
 import { ActiveFilterChips } from '@ploutizo/ui/components/active-filter-chips';
+import { Badge } from '@ploutizo/ui/components/badge';
+import { Button } from '@ploutizo/ui/components/button';
 import type { Filter } from '@ploutizo/ui/components/filters-types';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { TransactionFilterSearch } from './TransactionFilterSearch';
 import { TransactionDateFilterControl } from './TransactionDateFilterControl';
 import { TransactionMultiSelectFilter } from './TransactionMultiSelectFilter';
 import { TransactionSingleSelectFilter } from './TransactionSingleSelectFilter';
+import { TransactionFiltersSheet } from './TransactionFiltersSheet';
 import {
   ASSIGNEE_SHAPE_OPTIONS,
   IMPORT_OUTCOME_OPTIONS,
+  TRANSACTION_TYPE_OPTIONS,
   buildFilterFields,
 } from './TransactionFilterFields';
 import {
@@ -56,7 +62,8 @@ type QuickEditTarget =
   | 'assignee'
   | 'category'
   | 'tag'
-  | 'importResult';
+  | 'importResult'
+  | 'all';
 
 const QUICK_EDIT_BY_FIELD: Partial<Record<string, QuickEditTarget>> = {
   type: 'type',
@@ -71,24 +78,15 @@ const QUICK_EDIT_BY_FIELD: Partial<Record<string, QuickEditTarget>> = {
 const splitParam = (value: string | undefined): string[] =>
   value ? value.split(',').filter(Boolean) : [];
 
-const TYPE_OPTIONS = [
-  { value: 'expense', label: 'Expense' },
-  { value: 'income', label: 'Income' },
-  { value: 'transfer', label: 'Transfer' },
-  { value: 'settlement', label: 'Settlement' },
-  { value: 'refund', label: 'Refund' },
-  { value: 'contribution', label: 'Contribution' },
-];
-
 const getDateSummary = (filter: Filter<string>) =>
   filter.field === 'dateRange'
     ? formatTransactionDateFilterLabel(filter.operator, filter.values)
     : undefined;
 
 /**
- * Transaction filter bar: quick controls inline on desktop, the full filter
- * panel (popover on desktop, bottom sheet on mobile), and the applied-filter
- * chips row. All state lives in the URL search params.
+ * Transaction filter bar: quick dropdown controls on desktop, a search field
+ * plus a Filters button opening the bottom-sheet filter editor on mobile, and
+ * the applied-filter chips row. All state lives in the URL search params.
  */
 export const TransactionsFilterBar = ({
   search,
@@ -98,6 +96,7 @@ export const TransactionsFilterBar = ({
   tags,
 }: TransactionsFilterBarProps) => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const [quickEdit, setQuickEdit] = useState<QuickEditTarget | null>(null);
 
@@ -294,78 +293,105 @@ export const TransactionsFilterBar = ({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <TransactionFilterSearch
-          urlQuery={search.search ?? ''}
-          onCommit={commitSearchQuery}
-        />
+      {isMobile ? (
         <div className="flex items-center gap-2">
-          <TransactionMultiSelectFilter
-            icon={<ArrowLeftRightIcon className="size-3.5" />}
-            groups={[{ options: TYPE_OPTIONS }]}
-            values={typeValues}
-            allLabel="All types"
-            onChange={handleTypeChange}
-            open={quickEdit === 'type'}
-            onOpenChange={(open) => setQuickEdit(open ? 'type' : null)}
+          <TransactionFilterSearch
+            urlQuery={search.search ?? ''}
+            onCommit={commitSearchQuery}
           />
-          <TransactionDateFilterControl
-            search={search}
-            onChange={handleDateChange}
-            open={quickEdit === 'date'}
-            onOpenChange={(open) => setQuickEdit(open ? 'date' : null)}
-          />
-          <TransactionMultiSelectFilter
-            icon={<WalletIcon className="size-3.5" />}
-            groups={[{ options: accountOptions }]}
-            values={accountIds}
-            allLabel="All accounts"
-            onChange={handleAccountChange}
-            open={quickEdit === 'account'}
-            onOpenChange={(open) => setQuickEdit(open ? 'account' : null)}
-          />
-          <TransactionMultiSelectFilter
-            icon={<UsersIcon className="size-3.5" />}
-            groups={assigneeGroups}
-            values={assigneeValues}
-            allLabel="All assignees"
-            onChange={handleAssigneeChange}
-            open={quickEdit === 'assignee'}
-            onOpenChange={(open) => setQuickEdit(open ? 'assignee' : null)}
-          />
-          <TransactionMultiSelectFilter
-            icon={<Layers2Icon className="size-3.5" />}
-            groups={[{ options: categoryOptions }]}
-            values={categoryValues}
-            allLabel="All categories"
-            onChange={handleCategoryChange}
-            open={quickEdit === 'category'}
-            onOpenChange={(open) => setQuickEdit(open ? 'category' : null)}
-          />
-          <TransactionMultiSelectFilter
-            icon={<TagsIcon className="size-3.5" />}
-            groups={[{ options: tagOptions }]}
-            values={tagValues}
-            allLabel="All tags"
-            onChange={handleTagsChange}
-            open={quickEdit === 'tag'}
-            onOpenChange={(open) => setQuickEdit(open ? 'tag' : null)}
-          />
-          {search.importBatchId ? (
-            <TransactionSingleSelectFilter
-              icon={<ImportIcon className="size-3.5" />}
-              options={IMPORT_OUTCOME_OPTIONS}
-              value={search.importOutcome}
-              allLabel="All results"
-              onChange={handleImportOutcomeChange}
-              open={quickEdit === 'importResult'}
-              onOpenChange={(open) =>
-                setQuickEdit(open ? 'importResult' : null)
-              }
-            />
-          ) : null}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="shrink-0 gap-1.5"
+            onClick={() => setQuickEdit('all')}
+          >
+            <ListFilterIcon className="size-3.5" />
+            Filters
+            {activeFilters.length > 0 ? (
+              <Badge
+                variant="secondary"
+                className="h-4 min-w-4 px-1 text-[10px]"
+              >
+                {activeFilters.length}
+              </Badge>
+            ) : null}
+          </Button>
         </div>
-      </div>
+      ) : (
+        <div className="flex flex-wrap items-center gap-2">
+          <TransactionFilterSearch
+            urlQuery={search.search ?? ''}
+            onCommit={commitSearchQuery}
+          />
+          <div className="flex items-center gap-2">
+            <TransactionMultiSelectFilter
+              icon={<ArrowLeftRightIcon className="size-3.5" />}
+              groups={[{ options: TRANSACTION_TYPE_OPTIONS }]}
+              values={typeValues}
+              allLabel="All types"
+              onChange={handleTypeChange}
+              open={quickEdit === 'type'}
+              onOpenChange={(open) => setQuickEdit(open ? 'type' : null)}
+            />
+            <TransactionDateFilterControl
+              search={search}
+              onChange={handleDateChange}
+              open={quickEdit === 'date'}
+              onOpenChange={(open) => setQuickEdit(open ? 'date' : null)}
+            />
+            <TransactionMultiSelectFilter
+              icon={<WalletIcon className="size-3.5" />}
+              groups={[{ options: accountOptions }]}
+              values={accountIds}
+              allLabel="All accounts"
+              onChange={handleAccountChange}
+              open={quickEdit === 'account'}
+              onOpenChange={(open) => setQuickEdit(open ? 'account' : null)}
+            />
+            <TransactionMultiSelectFilter
+              icon={<UsersIcon className="size-3.5" />}
+              groups={assigneeGroups}
+              values={assigneeValues}
+              allLabel="All assignees"
+              onChange={handleAssigneeChange}
+              open={quickEdit === 'assignee'}
+              onOpenChange={(open) => setQuickEdit(open ? 'assignee' : null)}
+            />
+            <TransactionMultiSelectFilter
+              icon={<Layers2Icon className="size-3.5" />}
+              groups={[{ options: categoryOptions }]}
+              values={categoryValues}
+              allLabel="All categories"
+              onChange={handleCategoryChange}
+              open={quickEdit === 'category'}
+              onOpenChange={(open) => setQuickEdit(open ? 'category' : null)}
+            />
+            <TransactionMultiSelectFilter
+              icon={<TagsIcon className="size-3.5" />}
+              groups={[{ options: tagOptions }]}
+              values={tagValues}
+              allLabel="All tags"
+              onChange={handleTagsChange}
+              open={quickEdit === 'tag'}
+              onOpenChange={(open) => setQuickEdit(open ? 'tag' : null)}
+            />
+            {search.importBatchId ? (
+              <TransactionSingleSelectFilter
+                icon={<ImportIcon className="size-3.5" />}
+                options={IMPORT_OUTCOME_OPTIONS}
+                value={search.importOutcome}
+                allLabel="All results"
+                onChange={handleImportOutcomeChange}
+                open={quickEdit === 'importResult'}
+                onOpenChange={(open) =>
+                  setQuickEdit(open ? 'importResult' : null)
+                }
+              />
+            ) : null}
+          </div>
+        </div>
+      )}
 
       <ActiveFilterChips
         filters={activeFilters}
@@ -375,6 +401,38 @@ export const TransactionsFilterBar = ({
         onClearAll={activeFilters.length > 0 ? handleClearFilters : undefined}
         getSummary={getDateSummary}
       />
+
+      {isMobile ? (
+        <TransactionFiltersSheet
+          open={quickEdit !== null}
+          focusField={quickEdit === 'all' ? null : quickEdit}
+          onOpenChange={(next) => {
+            if (!next) setQuickEdit(null);
+          }}
+          search={search}
+          typeValues={typeValues}
+          accountValues={accountIds}
+          assigneeValues={assigneeValues}
+          categoryValues={categoryValues}
+          tagValues={tagValues}
+          accountOptions={accountOptions}
+          categoryOptions={categoryOptions}
+          tagOptions={tagOptions}
+          assigneeGroups={assigneeGroups}
+          importOptions={IMPORT_OUTCOME_OPTIONS}
+          hasImportResult={Boolean(search.importBatchId)}
+          importValue={search.importOutcome}
+          onTypeChange={handleTypeChange}
+          onAccountChange={handleAccountChange}
+          onAssigneeChange={handleAssigneeChange}
+          onCategoryChange={handleCategoryChange}
+          onTagsChange={handleTagsChange}
+          onDateChange={handleDateChange}
+          onImportOutcomeChange={handleImportOutcomeChange}
+          activeFilterCount={activeFilters.length}
+          onClearAllFilters={handleClearFilters}
+        />
+      ) : null}
     </div>
   );
 };

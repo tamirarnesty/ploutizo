@@ -18,6 +18,15 @@ export const IMPORT_OUTCOME_OPTIONS = [
   { value: 'matched', label: 'Matched' },
 ];
 
+export const TRANSACTION_TYPE_OPTIONS = [
+  { value: 'expense', label: 'Expense' },
+  { value: 'income', label: 'Income' },
+  { value: 'transfer', label: 'Transfer' },
+  { value: 'settlement', label: 'Settlement' },
+  { value: 'refund', label: 'Refund' },
+  { value: 'contribution', label: 'Contribution' },
+];
+
 /**
  * Field configs for every transaction filter. Type, Date, and Account have
  * dedicated quick controls, so the Filter panel only renders the fields
@@ -41,14 +50,7 @@ export const buildFilterFields = (
       key: 'type',
       label: 'Type',
       type: 'select',
-      options: [
-        { value: 'expense', label: 'Expense' },
-        { value: 'income', label: 'Income' },
-        { value: 'transfer', label: 'Transfer' },
-        { value: 'settlement', label: 'Settlement' },
-        { value: 'refund', label: 'Refund' },
-        { value: 'contribution', label: 'Contribution' },
-      ],
+      options: TRANSACTION_TYPE_OPTIONS,
     },
     {
       key: 'dateRange',
