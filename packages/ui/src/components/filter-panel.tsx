@@ -4,6 +4,7 @@ import {
   type ReactElement,
   type ReactNode,
   useCallback,
+  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -282,40 +283,48 @@ export const FilterPanel = <T = unknown,>({
     [fields]
   );
   const fieldsMap = useMemo(() => getFieldsMap(fields), [fields]);
+  // `filters` round-trips through the URL, so it lags behind rapid edits.
+  // The draft keeps section state optimistic; it reconciles once the
+  // committed filters catch up (or an external change lands).
+  const [draftFilters, setDraftFilters] = useState<Filter<T>[] | null>(null);
+  const filtersKey = JSON.stringify(
+    filters.map((filter) => [filter.id, filter.operator, filter.values])
+  );
+  useEffect(() => {
+    setDraftFilters(null);
+  }, [filtersKey]);
+  const effectiveFilters = draftFilters ?? filters;
   const filtersMap = useMemo(
-    () => new Map(filters.map((filter) => [filter.field, filter])),
-    [filters]
+    () => new Map(effectiveFilters.map((filter) => [filter.field, filter])),
+    [effectiveFilters]
   );
 
   const updateFilter = useCallback(
     (filterId: string, updates: Partial<Filter<T>>) => {
-      onChange(
-        filters.map((filter) => {
-          if (filter.id !== filterId) return filter;
-          const updated = { ...filter, ...updates };
-          if (updates.operator !== undefined && !updates.values) {
-            const fieldConfig = fieldsMap[filter.field] as
-              FilterFieldConfig<T> | undefined;
-            const migrate = fieldConfig?.migrateValues;
-            if (migrate) {
-              updated.values = migrate(
-                filter.operator,
-                updates.operator,
-                filter.values
-              );
-            }
+      const next = effectiveFilters.map((filter) => {
+        if (filter.id !== filterId) return filter;
+        const updated = { ...filter, ...updates };
+        if (updates.operator !== undefined && !updates.values) {
+          const fieldConfig = fieldsMap[filter.field] as
+            FilterFieldConfig<T> | undefined;
+          const migrate = fieldConfig?.migrateValues;
+          if (migrate) {
+            updated.values = migrate(
+              filter.operator,
+              updates.operator,
+              filter.values
+            );
           }
-          if (
-            updates.operator === 'empty' ||
-            updates.operator === 'not_empty'
-          ) {
-            updated.values = [] as T[];
-          }
-          return updated;
-        })
-      );
+        }
+        if (updates.operator === 'empty' || updates.operator === 'not_empty') {
+          updated.values = [] as T[];
+        }
+        return updated;
+      });
+      setDraftFilters(next);
+      onChange(next);
     },
-    [fieldsMap, filters, onChange]
+    [fieldsMap, effectiveFilters, onChange]
   );
 
   const sections = flatFields.map((field) => {
@@ -344,18 +353,18 @@ export const FilterPanel = <T = unknown,>({
         }
         onClear={() => {
           const empty = fieldsMap[key] as FilterFieldConfig<T> | undefined;
-          onChange(
-            filters.map((f) =>
-              f.field === key
-                ? {
-                    id: createPinnedFilterId(key),
-                    field: key,
-                    operator: empty ? getDefaultFilterOperator(empty) : 'is',
-                    values: [],
-                  }
-                : f
-            )
+          const next = effectiveFilters.map((f) =>
+            f.field === key
+              ? {
+                  id: createPinnedFilterId(key),
+                  field: key,
+                  operator: empty ? getDefaultFilterOperator(empty) : 'is',
+                  values: [],
+                }
+              : f
           );
+          setDraftFilters(next);
+          onChange(next);
         }}
       />
     );

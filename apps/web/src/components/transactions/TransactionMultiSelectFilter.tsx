@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@ploutizo/ui/components/dropdown-menu';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
 type TransactionMultiSelectFilterProps = {
@@ -38,29 +38,49 @@ export const TransactionMultiSelectFilter = ({
   open,
   onOpenChange,
 }: TransactionMultiSelectFilterProps) => {
-  const valueSet = useMemo(() => new Set(values), [values]);
+  // `values` round-trips through the URL, so it lags behind rapid toggles.
+  // The draft keeps checked state and toggle math optimistic while open.
+  const [draftValues, setDraftValues] = useState<string[] | null>(null);
+  // Reconcile once the URL catches up (or an external change lands); the
+  // draft and committed values are identical at that point, so this is
+  // invisible. Keyed on content because `values` identity is unstable.
+  const valuesKey = values.join('\u0000');
+  useEffect(() => {
+    setDraftValues(null);
+  }, [valuesKey]);
+  const selected = draftValues ?? values;
+  const valueSet = useMemo(() => new Set(selected), [selected]);
   const isCustom = Boolean(operator && operator !== 'is');
   const label = isCustom
     ? 'Custom'
-    : values.length === 0
+    : selected.length === 0
       ? allLabel
-      : values
+      : selected
           .map(
             (value) =>
               options.find((option) => option.value === value)?.label ?? value
           )
           .join(', ');
 
+  const handleOpenChange = (next: boolean) => {
+    onOpenChange(next);
+    if (!next) setDraftValues(null);
+  };
+
   const handleToggle = (value: string) => {
-    onChange(
-      values.includes(value)
-        ? values.filter((v) => v !== value)
-        : [...values, value]
-    );
+    const next = selected.includes(value)
+      ? selected.filter((v) => v !== value)
+      : [...selected, value];
+    setDraftValues(next);
+    onChange(next);
+  };
+  const handleClear = () => {
+    setDraftValues([]);
+    onChange([]);
   };
 
   return (
-    <DropdownMenu open={open} onOpenChange={onOpenChange}>
+    <DropdownMenu open={open} onOpenChange={handleOpenChange}>
       <DropdownMenuTrigger
         render={
           <Button
@@ -89,12 +109,10 @@ export const TransactionMultiSelectFilter = ({
             </DropdownMenuCheckboxItem>
           ))}
         </DropdownMenuGroup>
-        {values.length > 0 ? (
+        {selected.length > 0 ? (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => onChange([])}>
-              Clear
-            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleClear}>Clear</DropdownMenuItem>
           </>
         ) : null}
       </DropdownMenuContent>

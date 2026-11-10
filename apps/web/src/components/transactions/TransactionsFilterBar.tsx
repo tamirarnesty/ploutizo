@@ -239,8 +239,11 @@ export const TransactionsFilterBar = ({
     [applySearch]
   );
 
-  const typeValues = splitParam(search.type);
-  const accountIds = splitParam(search.accountId);
+  const typeValues = useMemo(() => splitParam(search.type), [search.type]);
+  const accountIds = useMemo(
+    () => splitParam(search.accountId),
+    [search.accountId]
+  );
   const accountOptions = useMemo(
     () =>
       accounts.map((account) => ({ value: account.id, label: account.name })),
