@@ -74,9 +74,14 @@ const TransactionDatePopoverBody = ({
       startDate: range?.from,
       endDate: range?.to,
     });
-    // Anchor on the range end so long presets (e.g. this year) show the
-    // period's end rather than its start.
-    setFocusMonth(range?.to ?? new Date());
+    // Ranges containing today (e.g. this year) keep the default view;
+    // past/future ranges anchor on the end so it stays visible.
+    const today = new Date();
+    const anchor =
+      range && today >= range.from && today <= range.to
+        ? today
+        : (range?.to ?? today);
+    setFocusMonth(anchor);
   };
 
   return (
