@@ -133,6 +133,9 @@ interface UseDateSelectorOptions {
   onChange?: (value: DateSelectorValue) => void;
   defaultFilterType?: DateSelectorFilterType;
   allowRange?: boolean;
+  /** Controlled calendar month; omit to let the selector manage it. */
+  month?: Date;
+  onMonthChange?: (month: Date) => void;
 }
 
 // The clock has no event to subscribe to, but a store snapshot is still read
@@ -152,6 +155,8 @@ export function useDateSelector({
   onChange,
   defaultFilterType = 'is',
   allowRange = true,
+  month,
+  onMonthChange,
 }: UseDateSelectorOptions) {
   const [filterType, setFilterType] = useState<DateSelectorFilterType>(
     value?.operator ?? defaultFilterType
@@ -162,8 +167,19 @@ export function useDateSelector({
   const [selectedEndDate, setSelectedEndDate] = useState<Date | undefined>(
     value?.endDate
   );
-  const [calendarMonth, setCalendarMonth] = useState(
+  const [internalMonth, setInternalMonth] = useState(
     () => value?.startDate || new Date()
+  );
+  const calendarMonth = month ?? internalMonth;
+  const setCalendarMonth = useCallback(
+    (next: Date) => {
+      if (onMonthChange) {
+        onMonthChange(next);
+      } else {
+        setInternalMonth(next);
+      }
+    },
+    [onMonthChange]
   );
   const [hoverDate, setHoverDate] = useState<Date | undefined>();
 
@@ -204,13 +220,14 @@ export function useDateSelector({
     [filterType, allowRange, selectedDate, selectedEndDate]
   );
 
-  const handleFilterTypeChange = useCallback(
-    (type: DateSelectorFilterType) => {
-      setFilterType(type);
-      clearSelection();
-    },
-    [clearSelection]
-  );
+  const handleFilterTypeChange = useCallback((type: DateSelectorFilterType) => {
+    setFilterType(type);
+    // Switching to a single-date operator drops the range end; the start
+    // date stays so compatible operators keep the user's selection.
+    if (!isRangeFilterType(type)) {
+      setSelectedEndDate(undefined);
+    }
+  }, []);
 
   useEffect(() => {
     if (value) {
@@ -499,6 +516,9 @@ export interface DateSelectorProps {
   dayDateFormat?: string;
   dayDateFormats?: string[];
   weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  /** Controlled calendar month (e.g. jump to a preset's month). */
+  month?: Date;
+  onMonthChange?: (month: Date) => void;
 }
 
 export function DateSelector({
@@ -515,6 +535,8 @@ export function DateSelector({
   dayDateFormat = 'MM/dd/yyyy',
   dayDateFormats,
   weekStartsOn,
+  month,
+  onMonthChange,
 }: DateSelectorProps) {
   const mergedI18n = useMemo(
     () => ({ ...DEFAULT_DATE_SELECTOR_I18N, ...i18nOverride }),
@@ -538,6 +560,8 @@ export function DateSelector({
     onChange,
     defaultFilterType,
     allowRange,
+    month,
+    onMonthChange,
   });
 
   const displayValue = formatDateValue(currentValue, mergedI18n, dayDateFormat);
