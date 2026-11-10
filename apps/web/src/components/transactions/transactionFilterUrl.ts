@@ -4,55 +4,29 @@ import type { TransactionSearch } from './transactionSearch';
 
 /**
  * Declarative codec for the simple transaction filters. Each descriptor owns
- * one Filter field, its URL value param, its `${field}_op` param, the default
- * operator, and how values map (entity = single value plus empty/not_empty
- * operators; multi = comma-joined values plus empty/not_empty operators).
- * dateRange and importOutcome have bespoke semantics and are handled
- * separately below.
+ * one Filter field and its URL value param. All simple filters are positive
+ * multi-select: comma-joined values, no operator params. dateRange and
+ * importOutcome have bespoke semantics and are handled separately below.
  */
 const TRANSACTION_SIMPLE_FILTERS = [
-  { field: 'type', defaultOperator: 'is', kind: 'multi' },
-  { field: 'categoryId', defaultOperator: 'is', kind: 'entity' },
-  { field: 'assigneeId', defaultOperator: 'is', kind: 'entity' },
-  { field: 'accountId', defaultOperator: 'is', kind: 'multi' },
-  { field: 'tagIds', defaultOperator: 'is_any_of', kind: 'multi' },
+  { field: 'type' },
+  { field: 'categoryId' },
+  { field: 'assigneeId' },
+  { field: 'accountId' },
+  { field: 'tagIds' },
 ] as const satisfies readonly {
   field: keyof TransactionSearch;
-  defaultOperator: string;
-  kind: 'entity' | 'multi';
 }[];
 
 type SimpleFilterDescriptor = (typeof TRANSACTION_SIMPLE_FILTERS)[number];
-
-type SimpleFilterOpKey = `${SimpleFilterDescriptor['field']}_op`;
-
-const opKeyOf = (field: SimpleFilterDescriptor['field']): SimpleFilterOpKey =>
-  `${field}_op`;
 
 const encodeSimpleFilter = (
   result: Partial<TransactionSearch>,
   filter: Filter<string>,
   descriptor: SimpleFilterDescriptor
 ) => {
-  const opKey = opKeyOf(descriptor.field);
-  const operator = filter.operator;
-  // empty/not_empty carry no value — the operator param alone encodes them.
-  if (operator === 'empty' || operator === 'not_empty') {
-    result[opKey] = operator;
-    return;
-  }
-  const hasValue =
-    descriptor.kind === 'multi'
-      ? filter.values.length > 0
-      : Boolean(filter.values[0]);
-  if (hasValue) {
-    result[descriptor.field] =
-      descriptor.kind === 'multi' ? filter.values.join(',') : filter.values[0];
-    if (operator && operator !== descriptor.defaultOperator) {
-      result[opKey] = operator;
-    }
-  } else if (operator && operator !== descriptor.defaultOperator) {
-    result[opKey] = operator;
+  if (filter.values.length > 0) {
+    result[descriptor.field] = filter.values.join(',');
   }
 };
 
@@ -61,26 +35,13 @@ const decodeSimpleFilter = (
   descriptor: SimpleFilterDescriptor
 ): Filter<string> | null => {
   const value = search[descriptor.field];
-  const operator = search[opKeyOf(descriptor.field)];
-  const makeFilter = (op: string, values: string[]): Filter<string> => ({
+  if (!value) return null;
+  return {
     id: createPinnedFilterId(descriptor.field),
     field: descriptor.field,
-    operator: op,
-    values,
-  });
-  if (operator === 'empty' || operator === 'not_empty') {
-    return makeFilter(operator, []);
-  }
-  if (value) {
-    return makeFilter(
-      operator ?? descriptor.defaultOperator,
-      descriptor.kind === 'multi' ? value.split(',') : [value]
-    );
-  }
-  if (operator && operator !== descriptor.defaultOperator) {
-    return makeFilter(operator, []);
-  }
-  return null;
+    operator: 'is',
+    values: value.split(','),
+  };
 };
 
 // Strips URL params that match their defaults to keep the URL clean (D-04)
@@ -93,10 +54,6 @@ export const buildCleanSearch = (
   if (result.order === 'desc') delete result.order;
   for (const descriptor of TRANSACTION_SIMPLE_FILTERS) {
     if (!result[descriptor.field]) delete result[descriptor.field];
-    // Strip default-value operators so they don't pollute the URL.
-    // Only non-default operators (e.g. 'is_not', 'includes_all') appear in URL params.
-    const opKey = opKeyOf(descriptor.field);
-    if (result[opKey] === descriptor.defaultOperator) delete result[opKey];
   }
   if (!result.search) delete result.search;
   if (!result.dateFrom) delete result.dateFrom;
@@ -112,7 +69,7 @@ const SIMPLE_FILTERS_BY_FIELD = new Map<string, SimpleFilterDescriptor>(
   TRANSACTION_SIMPLE_FILTERS.map((d) => [d.field, d])
 );
 
-// Maps Filter[] state back to URL search params, including operator params
+// Maps Filter[] state back to URL search params (only dateRange carries an operator)
 export const filtersToSearch = (
   filters: Filter<string>[]
 ): Partial<TransactionSearch> => {
@@ -219,12 +176,9 @@ export const searchToFilters = (
 };
 
 export const hasActiveFilters = (search: TransactionSearch): boolean =>
-  TRANSACTION_SIMPLE_FILTERS.some((descriptor) => {
-    if (search[descriptor.field]) return true;
-    // empty/not_empty operators don't require a value param
-    const operator = search[opKeyOf(descriptor.field)];
-    return operator === 'empty' || operator === 'not_empty';
-  }) ||
+  TRANSACTION_SIMPLE_FILTERS.some((descriptor) =>
+    Boolean(search[descriptor.field])
+  ) ||
   Boolean(search.dateFrom) ||
   Boolean(search.dateTo) ||
   Boolean(search.search) ||

@@ -6,19 +6,19 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@ploutizo/ui/components/dropdown-menu';
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
 type TransactionMultiSelectFilterProps = {
   icon: ReactNode;
-  options: { value: string; label: string }[];
+  /** Option groups rendered in order; a label heads each labelled group. */
+  groups: { label?: string; options: { value: string; label: string }[] }[];
   /** Selected option values; empty = the "all" state. */
   values: string[];
-  /** Non-default operator means the URL carries an advanced filter. */
-  operator?: string;
   /** Trigger label when nothing is selected, e.g. "All types". */
   allLabel: string;
   onChange: (values: string[]) => void;
@@ -30,9 +30,8 @@ type TransactionMultiSelectFilterProps = {
 /** Quick multi-select filter — checkbox dropdown, positive match only. */
 export const TransactionMultiSelectFilter = ({
   icon,
-  options,
+  groups,
   values,
-  operator,
   allLabel,
   onChange,
   open,
@@ -50,17 +49,19 @@ export const TransactionMultiSelectFilter = ({
   }, [valuesKey]);
   const selected = draftValues ?? values;
   const valueSet = useMemo(() => new Set(selected), [selected]);
-  const isCustom = Boolean(operator && operator !== 'is');
-  const label = isCustom
-    ? 'Custom'
-    : selected.length === 0
+  const labelByValue = useMemo(
+    () =>
+      new Map(
+        groups.flatMap((group) =>
+          group.options.map((option) => [option.value, option.label])
+        )
+      ),
+    [groups]
+  );
+  const label =
+    selected.length === 0
       ? allLabel
-      : selected
-          .map(
-            (value) =>
-              options.find((option) => option.value === value)?.label ?? value
-          )
-          .join(', ');
+      : selected.map((value) => labelByValue.get(value) ?? value).join(', ');
 
   const handleOpenChange = (next: boolean) => {
     onOpenChange(next);
@@ -96,19 +97,27 @@ export const TransactionMultiSelectFilter = ({
         }
       />
       <DropdownMenuContent align="start" className="w-56">
-        <DropdownMenuGroup>
-          {options.map((option) => (
-            <DropdownMenuCheckboxItem
-              key={option.value}
-              checked={valueSet.has(option.value)}
-              // Keep the menu open while toggling multiple values.
-              onSelect={(event) => event.preventDefault()}
-              onCheckedChange={() => handleToggle(option.value)}
-            >
-              {option.label}
-            </DropdownMenuCheckboxItem>
-          ))}
-        </DropdownMenuGroup>
+        {groups.map((group, index) => (
+          <Fragment key={group.label ?? 'options'}>
+            {index > 0 ? <DropdownMenuSeparator /> : null}
+            <DropdownMenuGroup>
+              {group.label ? (
+                <DropdownMenuLabel>{group.label}</DropdownMenuLabel>
+              ) : null}
+              {group.options.map((option) => (
+                <DropdownMenuCheckboxItem
+                  key={option.value}
+                  checked={valueSet.has(option.value)}
+                  // Keep the menu open while toggling multiple values.
+                  onSelect={(event) => event.preventDefault()}
+                  onCheckedChange={() => handleToggle(option.value)}
+                >
+                  {option.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuGroup>
+          </Fragment>
+        ))}
         {selected.length > 0 ? (
           <>
             <DropdownMenuSeparator />

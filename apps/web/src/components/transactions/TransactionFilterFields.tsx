@@ -3,6 +3,22 @@ import type { FilterFieldConfig } from '@ploutizo/ui/components/filters-types';
 import { TRANSACTION_DATE_OPERATORS } from './transactionDateFilter';
 
 /**
+ * Pseudo-options appended to the assignee filter. `personal` matches
+ * transactions with exactly one assignee, `shared` matches two or more.
+ * Selected together they mean no shape constraint. Member ids are UUIDs so
+ * these sentinels can never collide.
+ */
+export const ASSIGNEE_SHAPE_OPTIONS = [
+  { value: 'personal', label: 'Personal' },
+  { value: 'shared', label: 'Shared' },
+];
+
+export const IMPORT_OUTCOME_OPTIONS = [
+  { value: 'created', label: 'Created' },
+  { value: 'matched', label: 'Matched' },
+];
+
+/**
  * Field configs for every transaction filter. Type, Date, and Account have
  * dedicated quick controls, so the Filter panel only renders the fields
  * without quick actions — but all configs stay here so applied-filter chips
@@ -50,23 +66,31 @@ export const buildFilterFields = (
     {
       key: 'categoryId',
       label: 'Category',
-      type: 'select',
+      type: 'multiselect',
+      defaultOperator: 'is',
+      operators: [{ value: 'is', label: 'Is' }],
       options: categories.map((c) => ({ value: c.id, label: c.name })),
     },
     {
       key: 'assigneeId',
       label: 'Assignee',
-      type: 'select',
-      options: members.map((m) => ({
-        value: m.id,
-        label: memberFullLabel(m),
-      })),
+      type: 'multiselect',
+      defaultOperator: 'is',
+      operators: [{ value: 'is', label: 'Is' }],
+      options: [
+        ...members.map((m) => ({
+          value: m.id,
+          label: memberFullLabel(m),
+        })),
+        ...ASSIGNEE_SHAPE_OPTIONS,
+      ],
     },
     {
       key: 'tagIds',
       label: 'Tags',
       type: 'multiselect',
-      defaultOperator: 'is_any_of',
+      defaultOperator: 'is',
+      operators: [{ value: 'is', label: 'Is' }],
       options: tags.map((t) => ({ value: t.id, label: t.name })),
     },
   ];
@@ -75,10 +99,9 @@ export const buildFilterFields = (
       key: 'importOutcome',
       label: 'Import result',
       type: 'select',
-      options: [
-        { value: 'created', label: 'Created' },
-        { value: 'matched', label: 'Matched' },
-      ],
+      defaultOperator: 'is',
+      operators: [{ value: 'is', label: 'Is' }],
+      options: IMPORT_OUTCOME_OPTIONS,
     });
   }
   return fields;

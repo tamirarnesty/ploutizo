@@ -45,13 +45,8 @@ export type TransactionSearch = {
   categoryId?: string;
   assigneeId?: string;
   tagIds?: string; // comma-separated UUIDs per RESEARCH.md Pitfall 4
-  // Operator fields — only non-default values appear in the URL (see buildCleanSearch).
-  // Defaults: type/accountId/categoryId/assigneeId → 'is'; tagIds → 'is_any_of'; dateRange → 'between'
-  type_op?: string; // 'is' | 'is_not'
-  accountId_op?: string; // 'is' | 'is_not'
-  categoryId_op?: string; // 'is' | 'is_not' | 'empty' | 'not_empty'
-  assigneeId_op?: string; // 'is' | 'is_not' | 'empty' | 'not_empty'
-  tagIds_op?: string; // 'is_any_of' | 'is_not_any_of' | 'includes_all' | 'excludes_all' | 'empty' | 'not_empty'
+  // Only the date filter carries an operator param; all other filters are
+  // positive multi-select.
   dateRange_op?: string; // 'between' | 'after' | 'before' | 'is' | 'is_not' | 'not_between'
   importBatchId?: string;
   importOutcome?: 'created' | 'matched';
@@ -66,11 +61,6 @@ const TRANSACTION_SEARCH_STRING_FIELDS = [
   'categoryId',
   'assigneeId',
   'tagIds',
-  'type_op',
-  'accountId_op',
-  'categoryId_op',
-  'assigneeId_op',
-  'tagIds_op',
   'dateRange_op',
   'search',
 ] as const satisfies readonly (keyof TransactionSearch)[];
@@ -123,11 +113,6 @@ export const buildTransactionQueryParams = (
   assigneeId: search.assigneeId,
   tagIds: search.tagIds,
   search: search.search || undefined,
-  type_op: search.type_op,
-  accountId_op: search.accountId_op,
-  categoryId_op: search.categoryId_op,
-  assigneeId_op: search.assigneeId_op,
-  tagIds_op: search.tagIds_op,
   dateRange_op: search.dateRange_op,
   importLink:
     search.importBatchId && search.importOutcome

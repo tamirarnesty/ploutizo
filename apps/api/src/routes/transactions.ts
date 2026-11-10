@@ -91,11 +91,6 @@ transactionsRouter.get('/', async (c) => {
     assigneeId: c.req.query('assigneeId'),
     tagIds: tagIds.length > 0 ? tagIds : undefined,
     search: c.req.query('search')?.trim() || undefined,
-    type_op: c.req.query('type_op'),
-    accountId_op: c.req.query('accountId_op'),
-    categoryId_op: c.req.query('categoryId_op'),
-    assigneeId_op: c.req.query('assigneeId_op'),
-    tagIds_op: c.req.query('tagIds_op'),
     dateRange_op: c.req.query('dateRange_op'),
     importLink,
   };

@@ -21,13 +21,10 @@ import {
   gte,
   inArray,
   isNotNull,
-  isNull,
   lt,
   lte,
   ne,
   not,
-  notInArray,
-  or,
   sql,
 } from 'drizzle-orm';
 import type { Transaction } from '@ploutizo/db';
@@ -96,12 +93,8 @@ export type ListQueryParams = {
   tagIds?: string[];
   /** Case-insensitive substring match on description, rawDescription, category, account, and tag names (T-03.4-01). Not assignee, amount, or date. */
   search?: string;
-  // Operator params — T-03.4.1-OP1: unrecognised values fall through to default (eq/is) behaviour
-  type_op?: string; // 'is' | 'is_not'
-  accountId_op?: string; // 'is' | 'is_not'
-  categoryId_op?: string; // 'is' | 'is_not' | 'empty' | 'not_empty'
-  assigneeId_op?: string; // 'is' | 'is_not' | 'empty' | 'not_empty'
-  tagIds_op?: string; // 'is_any_of' | 'is_not_any_of' | 'includes_all' | 'excludes_all' | 'empty' | 'not_empty'
+  // Operator params — simple filters are positive multi-select only; only
+  // the date range carries an operator.
   dateRange_op?: string; // 'between' | 'after' | 'before' | 'is' | 'is_not' | 'not_between'
   importLink?: { batchId: string; outcome: 'created' | 'matched' };
 };
@@ -128,38 +121,19 @@ const importTransactionLinkExists = (
 export const buildConditions = (params: ListQueryParams): SQL[] => {
   const conditions: SQL[] = [...activeTransactions(params.orgId)];
 
-  // type — D-25: supports comma-separated values for "Internal" shortcut
-  // T-03.4.1-OP1: unrecognised operator falls through to default 'is' (eq/inArray) behaviour
+  // type — comma-separated values, inclusive any-of
   if (params.type) {
     const types = params.type.split(',').map((t) => t.trim());
-    const op = params.type_op ?? 'is';
-    if (types.length > 1) {
-      conditions.push(
-        op === 'is_not'
-          ? notInArray(transactions.type, types as TransactionType[])
-          : inArray(transactions.type, types as TransactionType[])
-      );
-    } else {
-      conditions.push(
-        op === 'is_not'
-          ? ne(transactions.type, types[0] as TransactionType)
-          : eq(transactions.type, types[0] as TransactionType)
-      );
-    }
+    conditions.push(inArray(transactions.type, types as TransactionType[]));
   }
 
-  // accountId — comma-separated values for multi-select, mirrors type (D-25)
+  // accountId — comma-separated values, inclusive any-of
   if (params.accountId) {
     const accountIds = params.accountId
       .split(',')
       .map((id) => id.trim())
       .filter(Boolean);
-    const op = params.accountId_op ?? 'is';
-    conditions.push(
-      op === 'is_not'
-        ? notInArray(transactions.accountId, accountIds)
-        : inArray(transactions.accountId, accountIds)
-    );
+    conditions.push(inArray(transactions.accountId, accountIds));
   }
 
   // dateRange — operator determines which Drizzle condition is applied
@@ -188,121 +162,65 @@ export const buildConditions = (params: ListQueryParams): SQL[] => {
     if (params.dateTo) conditions.push(lte(transactions.date, params.dateTo));
   }
 
-  // categoryId — nullable column; supports empty/not_empty
-  const catOp = params.categoryId_op ?? 'is';
-  if (catOp === 'empty') {
-    conditions.push(isNull(transactions.categoryId));
-  } else if (catOp === 'not_empty') {
-    conditions.push(isNotNull(transactions.categoryId));
-  } else if (params.categoryId) {
-    conditions.push(
-      catOp === 'is_not'
-        ? or(
-            ne(transactions.categoryId, params.categoryId),
-            isNull(transactions.categoryId)
-          )!
-        : eq(transactions.categoryId, params.categoryId)
-    );
+  // categoryId — comma-separated values, inclusive any-of
+  if (params.categoryId) {
+    const categoryIds = params.categoryId
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean);
+    conditions.push(inArray(transactions.categoryId, categoryIds));
   }
 
-  // assigneeId — EXISTS subquery; supports empty/not_empty/is_not (T-03.4.1-OP2)
-  const assigneeOp = params.assigneeId_op ?? 'is';
-  const assigneeSubquery = db
-    .select({ one: sql`1` })
-    .from(transactionAssignees)
-    .where(
-      and(
-        eq(transactionAssignees.transactionId, transactions.id),
-        ...(params.assigneeId
-          ? [eq(transactionAssignees.memberId, params.assigneeId)]
-          : [])
-      )
-    );
-
-  if (assigneeOp === 'empty') {
-    conditions.push(not(exists(assigneeSubquery)));
-  } else if (assigneeOp === 'not_empty') {
-    conditions.push(exists(assigneeSubquery));
-  } else if (params.assigneeId) {
-    conditions.push(
-      assigneeOp === 'is_not'
-        ? not(exists(assigneeSubquery))
-        : exists(assigneeSubquery)
-    );
-  }
-
-  // tagIds — supports all 6 operators (T-03.4.1-OP3: includes_all bounded by practical UI)
-  const tagOp = params.tagIds_op ?? 'is_any_of';
-  if (tagOp === 'empty') {
-    conditions.push(
-      not(
-        exists(
-          db
-            .select({ one: sql`1` })
-            .from(transactionTags)
-            .where(eq(transactionTags.transactionId, transactions.id))
-        )
-      )
-    );
-  } else if (tagOp === 'not_empty') {
-    conditions.push(
-      exists(
-        db
-          .select({ one: sql`1` })
-          .from(transactionTags)
-          .where(eq(transactionTags.transactionId, transactions.id))
-      )
-    );
-  } else if (params.tagIds && params.tagIds.length > 0) {
-    if (tagOp === 'includes_all') {
-      // One EXISTS subquery per tag ID — all must be present
-      for (const tagId of params.tagIds) {
-        conditions.push(
-          exists(
-            db
-              .select({ one: sql`1` })
-              .from(transactionTags)
-              .where(
-                and(
-                  eq(transactionTags.transactionId, transactions.id),
-                  eq(transactionTags.tagId, tagId)
-                )
-              )
-          )
-        );
-      }
-    } else if (tagOp === 'is_not_any_of' || tagOp === 'excludes_all') {
-      conditions.push(
-        not(
-          exists(
-            db
-              .select({ one: sql`1` })
-              .from(transactionTags)
-              .where(
-                and(
-                  eq(transactionTags.transactionId, transactions.id),
-                  inArray(transactionTags.tagId, params.tagIds)
-                )
-              )
-          )
-        )
-      );
-    } else {
-      // is_any_of (default) — existing behaviour
+  // assigneeId — comma-separated member ids ANDed together (a transaction
+  // must have every selected member as an assignee), plus 'personal'/'shared'
+  // shape sentinels constraining the assignee count. Both shapes selected
+  // means no shape constraint.
+  if (params.assigneeId) {
+    const values = params.assigneeId
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean);
+    const memberIds = values.filter((v) => v !== 'personal' && v !== 'shared');
+    const wantsPersonal = values.includes('personal');
+    const wantsShared = values.includes('shared');
+    for (const memberId of memberIds) {
       conditions.push(
         exists(
           db
             .select({ one: sql`1` })
-            .from(transactionTags)
+            .from(transactionAssignees)
             .where(
               and(
-                eq(transactionTags.transactionId, transactions.id),
-                inArray(transactionTags.tagId, params.tagIds)
+                eq(transactionAssignees.transactionId, transactions.id),
+                eq(transactionAssignees.memberId, memberId)
               )
             )
         )
       );
     }
+    if (wantsPersonal !== wantsShared) {
+      const assigneeCount = sql<number>`(select count(*)::int from ${transactionAssignees} where ${transactionAssignees.transactionId} = ${transactions.id})`;
+      conditions.push(
+        wantsPersonal ? eq(assigneeCount, 1) : gte(assigneeCount, 2)
+      );
+    }
+  }
+
+  // tagIds — EXISTS subquery, inclusive any-of
+  if (params.tagIds && params.tagIds.length > 0) {
+    conditions.push(
+      exists(
+        db
+          .select({ one: sql`1` })
+          .from(transactionTags)
+          .where(
+            and(
+              eq(transactionTags.transactionId, transactions.id),
+              inArray(transactionTags.tagId, params.tagIds)
+            )
+          )
+      )
+    );
   }
 
   if (params.search) {

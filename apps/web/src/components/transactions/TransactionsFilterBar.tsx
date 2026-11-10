@@ -1,18 +1,25 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { ArrowLeftRightIcon, ListFilterIcon, WalletIcon } from 'lucide-react';
-import { Button } from '@ploutizo/ui/components/button';
-import { ActiveFilterChips } from '@ploutizo/ui/components/active-filter-chips';
-import { FilterPanel } from '@ploutizo/ui/components/filter-panel';
 import {
-  createPinnedFilterId,
-  getDefaultFilterOperator,
-} from '@ploutizo/ui/components/filters-utils';
+  ArrowLeftRightIcon,
+  ImportIcon,
+  Layers2Icon,
+  TagsIcon,
+  UsersIcon,
+  WalletIcon,
+} from 'lucide-react';
+import { memberFullLabel } from '@ploutizo/utils';
+import { ActiveFilterChips } from '@ploutizo/ui/components/active-filter-chips';
 import type { Filter } from '@ploutizo/ui/components/filters-types';
 import { TransactionFilterSearch } from './TransactionFilterSearch';
 import { TransactionDateFilterControl } from './TransactionDateFilterControl';
 import { TransactionMultiSelectFilter } from './TransactionMultiSelectFilter';
-import { buildFilterFields } from './TransactionFilterFields';
+import { TransactionSingleSelectFilter } from './TransactionSingleSelectFilter';
+import {
+  ASSIGNEE_SHAPE_OPTIONS,
+  IMPORT_OUTCOME_OPTIONS,
+  buildFilterFields,
+} from './TransactionFilterFields';
 import {
   dateFilterToSearch,
   formatTransactionDateFilterLabel,
@@ -42,15 +49,23 @@ type TransactionsFilterBarProps = {
   tags: Tag[];
 };
 
-/** Fields with dedicated quick controls — excluded from the Filter panel. */
-const QUICK_FILTER_FIELDS = new Set(['type', 'dateRange', 'accountId']);
-
-type QuickEditTarget = 'type' | 'date' | 'account';
+type QuickEditTarget =
+  | 'type'
+  | 'date'
+  | 'account'
+  | 'assignee'
+  | 'category'
+  | 'tag'
+  | 'importResult';
 
 const QUICK_EDIT_BY_FIELD: Partial<Record<string, QuickEditTarget>> = {
   type: 'type',
   dateRange: 'date',
   accountId: 'account',
+  assigneeId: 'assignee',
+  categoryId: 'category',
+  tagIds: 'tag',
+  importOutcome: 'importResult',
 };
 
 const splitParam = (value: string | undefined): string[] =>
@@ -84,8 +99,6 @@ export const TransactionsFilterBar = ({
 }: TransactionsFilterBarProps) => {
   const navigate = useNavigate();
 
-  const [panelOpen, setPanelOpen] = useState(false);
-  const [panelFocusField, setPanelFocusField] = useState<string | undefined>();
   const [quickEdit, setQuickEdit] = useState<QuickEditTarget | null>(null);
 
   // Filter state is derived from URL search params (single source of truth).
@@ -101,29 +114,6 @@ export const TransactionsFilterBar = ({
     [accounts, categories, members, tags, search.importBatchId]
   );
 
-  const panelFilters = useMemo<Filter<string>[]>(() => {
-    const byField = new Map(activeFilters.map((f) => [f.field, f]));
-    return filterFields.map(
-      (field) =>
-        byField.get(field.key as string) ?? {
-          id: createPinnedFilterId(field.key as string),
-          field: field.key as string,
-          operator: getDefaultFilterOperator(field),
-          values: [],
-        }
-    );
-  }, [activeFilters, filterFields]);
-
-  // The panel only edits fields without a quick control; filters for the
-  // quick fields stay in `panelFilters` so panel edits preserve them.
-  const panelFields = useMemo(
-    () =>
-      filterFields.filter(
-        (field) => !field.key || !QUICK_FILTER_FIELDS.has(field.key)
-      ),
-    [filterFields]
-  );
-
   const applySearch = useCallback(
     (patch: Partial<TransactionSearch>) => {
       void navigate({
@@ -135,7 +125,7 @@ export const TransactionsFilterBar = ({
     [navigate]
   );
 
-  const handlePanelChange = useCallback(
+  const applyFilters = useCallback(
     (filters: Filter<string>[]) => {
       const mapped = filtersToSearch(filters);
       void navigate({
@@ -162,33 +152,14 @@ export const TransactionsFilterBar = ({
 
   const handleRemoveFilter = useCallback(
     (filter: Filter<string>) => {
-      handlePanelChange(
-        panelFilters.map((f) =>
-          f.field === filter.field
-            ? {
-                ...f,
-                operator: getDefaultFilterOperator(
-                  filterFields.find((field) => field.key === f.field) ?? {}
-                ),
-                values: [],
-              }
-            : f
-        )
-      );
+      applyFilters(activeFilters.filter((f) => f.field !== filter.field));
     },
-    [handlePanelChange, panelFilters, filterFields]
+    [applyFilters, activeFilters]
   );
 
   const handleSelectChip = useCallback((filter: Filter<string>) => {
     const quick = QUICK_EDIT_BY_FIELD[filter.field];
-    if (quick) {
-      setPanelOpen(false);
-      setPanelFocusField(undefined);
-      setQuickEdit(quick);
-      return;
-    }
-    setPanelFocusField(filter.field);
-    setPanelOpen(true);
+    if (quick) setQuickEdit(quick);
   }, []);
 
   // "Clear all" resets filters only — the text search is a separate intent.
@@ -209,7 +180,6 @@ export const TransactionsFilterBar = ({
     (values: string[]) => {
       applySearch({
         type: values.length > 0 ? values.join(',') : undefined,
-        type_op: undefined,
       });
     },
     [applySearch]
@@ -219,8 +189,46 @@ export const TransactionsFilterBar = ({
     (accountIds: string[]) => {
       applySearch({
         accountId: accountIds.length > 0 ? accountIds.join(',') : undefined,
-        accountId_op: undefined,
       });
+    },
+    [applySearch]
+  );
+
+  const handleAssigneeChange = useCallback(
+    (values: string[]) => {
+      applySearch({
+        assigneeId: values.length > 0 ? values.join(',') : undefined,
+      });
+    },
+    [applySearch]
+  );
+
+  const handleCategoryChange = useCallback(
+    (values: string[]) => {
+      applySearch({
+        categoryId: values.length > 0 ? values.join(',') : undefined,
+      });
+    },
+    [applySearch]
+  );
+
+  const handleTagsChange = useCallback(
+    (values: string[]) => {
+      applySearch({
+        tagIds: values.length > 0 ? values.join(',') : undefined,
+      });
+    },
+    [applySearch]
+  );
+
+  const handleImportOutcomeChange = useCallback(
+    (outcome: string | undefined) => {
+      applySearch(
+        outcome
+          ? { importOutcome: outcome as TransactionSearch['importOutcome'] }
+          : // Clearing the outcome also drops the batch provenance param.
+            { importOutcome: undefined, importBatchId: undefined }
+      );
     },
     [applySearch]
   );
@@ -249,6 +257,40 @@ export const TransactionsFilterBar = ({
       accounts.map((account) => ({ value: account.id, label: account.name })),
     [accounts]
   );
+  const assigneeValues = useMemo(
+    () => splitParam(search.assigneeId),
+    [search.assigneeId]
+  );
+  const assigneeGroups = useMemo(
+    () => [
+      {
+        label: 'Members',
+        options: members.map((member) => ({
+          value: member.id,
+          label: memberFullLabel(member),
+        })),
+      },
+      { label: 'Sharing', options: ASSIGNEE_SHAPE_OPTIONS },
+    ],
+    [members]
+  );
+  const categoryValues = useMemo(
+    () => splitParam(search.categoryId),
+    [search.categoryId]
+  );
+  const categoryOptions = useMemo(
+    () =>
+      categories.map((category) => ({
+        value: category.id,
+        label: category.name,
+      })),
+    [categories]
+  );
+  const tagValues = useMemo(() => splitParam(search.tagIds), [search.tagIds]);
+  const tagOptions = useMemo(
+    () => tags.map((tag) => ({ value: tag.id, label: tag.name })),
+    [tags]
+  );
 
   return (
     <div className="flex flex-col gap-2">
@@ -260,9 +302,8 @@ export const TransactionsFilterBar = ({
         <div className="flex items-center gap-2">
           <TransactionMultiSelectFilter
             icon={<ArrowLeftRightIcon className="size-3.5" />}
-            options={TYPE_OPTIONS}
+            groups={[{ options: TYPE_OPTIONS }]}
             values={typeValues}
-            operator={search.type_op}
             allLabel="All types"
             onChange={handleTypeChange}
             open={quickEdit === 'type'}
@@ -276,67 +317,54 @@ export const TransactionsFilterBar = ({
           />
           <TransactionMultiSelectFilter
             icon={<WalletIcon className="size-3.5" />}
-            options={accountOptions}
+            groups={[{ options: accountOptions }]}
             values={accountIds}
-            operator={search.accountId_op}
             allLabel="All accounts"
             onChange={handleAccountChange}
             open={quickEdit === 'account'}
             onOpenChange={(open) => setQuickEdit(open ? 'account' : null)}
           />
-        </div>
-        <FilterPanel
-          open={panelOpen}
-          onOpenChange={(open) => {
-            setPanelOpen(open);
-            setQuickEdit(null);
-            if (!open) setPanelFocusField(undefined);
-          }}
-          fields={panelFields}
-          filters={panelFilters}
-          onChange={handlePanelChange}
-          focusFieldKey={panelFocusField}
-          getSummary={getDateSummary}
-          title="Filters"
-          trigger={
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="hidden gap-1.5 text-xs md:inline-flex"
-            >
-              <ListFilterIcon className="size-3.5" />
-              Filters
-              {activeFilters.length > 0 ? (
-                <span className="rounded-full bg-muted px-1.5 py-0.5 text-[0.65rem] leading-none font-semibold">
-                  {activeFilters.length}
-                </span>
-              ) : null}
-            </Button>
-          }
-        />
-        <Button
-          type="button"
-          variant="outline"
-          size="icon-sm"
-          className="relative md:hidden"
-          aria-label={
-            activeFilters.length > 0
-              ? `Filters, ${activeFilters.length} active`
-              : 'Filters'
-          }
-          onClick={() => {
-            setQuickEdit(null);
-            setPanelOpen(true);
-          }}
-        >
-          <ListFilterIcon />
-          {activeFilters.length > 0 ? (
-            <span className="absolute -end-1 -top-1 flex size-4 items-center justify-center rounded-full bg-primary text-[0.6rem] font-semibold text-primary-foreground">
-              {activeFilters.length}
-            </span>
+          <TransactionMultiSelectFilter
+            icon={<UsersIcon className="size-3.5" />}
+            groups={assigneeGroups}
+            values={assigneeValues}
+            allLabel="All assignees"
+            onChange={handleAssigneeChange}
+            open={quickEdit === 'assignee'}
+            onOpenChange={(open) => setQuickEdit(open ? 'assignee' : null)}
+          />
+          <TransactionMultiSelectFilter
+            icon={<Layers2Icon className="size-3.5" />}
+            groups={[{ options: categoryOptions }]}
+            values={categoryValues}
+            allLabel="All categories"
+            onChange={handleCategoryChange}
+            open={quickEdit === 'category'}
+            onOpenChange={(open) => setQuickEdit(open ? 'category' : null)}
+          />
+          <TransactionMultiSelectFilter
+            icon={<TagsIcon className="size-3.5" />}
+            groups={[{ options: tagOptions }]}
+            values={tagValues}
+            allLabel="All tags"
+            onChange={handleTagsChange}
+            open={quickEdit === 'tag'}
+            onOpenChange={(open) => setQuickEdit(open ? 'tag' : null)}
+          />
+          {search.importBatchId ? (
+            <TransactionSingleSelectFilter
+              icon={<ImportIcon className="size-3.5" />}
+              options={IMPORT_OUTCOME_OPTIONS}
+              value={search.importOutcome}
+              allLabel="All results"
+              onChange={handleImportOutcomeChange}
+              open={quickEdit === 'importResult'}
+              onOpenChange={(open) =>
+                setQuickEdit(open ? 'importResult' : null)
+              }
+            />
           ) : null}
-        </Button>
+        </div>
       </div>
 
       <ActiveFilterChips

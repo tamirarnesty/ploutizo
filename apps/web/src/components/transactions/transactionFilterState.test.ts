@@ -42,12 +42,16 @@ describe('text search', () => {
   });
 });
 
-describe('multi-value quick filters', () => {
-  it('round-trips comma-joined type and account values', () => {
-    const filters = searchToFilters({
+describe('multi-value filters', () => {
+  it('round-trips comma-joined values for every option filter', () => {
+    const search = {
       type: 'expense,income',
       accountId: 'acc_1,acc_2',
-    });
+      categoryId: 'cat_1,cat_2',
+      assigneeId: 'mem_1,mem_2',
+      tagIds: 'tag_1,tag_2',
+    };
+    const filters = searchToFilters(search);
     expect(filters).toEqual([
       {
         id: 'filter-type',
@@ -56,36 +60,59 @@ describe('multi-value quick filters', () => {
         values: ['expense', 'income'],
       },
       {
+        id: 'filter-categoryId',
+        field: 'categoryId',
+        operator: 'is',
+        values: ['cat_1', 'cat_2'],
+      },
+      {
+        id: 'filter-assigneeId',
+        field: 'assigneeId',
+        operator: 'is',
+        values: ['mem_1', 'mem_2'],
+      },
+      {
         id: 'filter-accountId',
         field: 'accountId',
         operator: 'is',
         values: ['acc_1', 'acc_2'],
       },
+      {
+        id: 'filter-tagIds',
+        field: 'tagIds',
+        operator: 'is',
+        values: ['tag_1', 'tag_2'],
+      },
     ]);
-    expect(filtersToSearch(filters)).toEqual({
-      type: 'expense,income',
-      accountId: 'acc_1,acc_2',
-    });
+    expect(filtersToSearch(filters)).toEqual(search);
   });
 
-  it('keeps non-default operators on multi-value fields', () => {
-    expect(
-      filtersToSearch([
-        {
-          id: 'filter-type',
-          field: 'type',
-          operator: 'is_not',
-          values: ['transfer', 'settlement'],
-        },
-      ])
-    ).toEqual({ type: 'transfer,settlement', type_op: 'is_not' });
-    expect(searchToFilters({ type: 'income', type_op: 'is_not' })).toEqual([
+  it('round-trips assignee shape sentinels alongside member ids', () => {
+    const filters = searchToFilters({ assigneeId: 'mem_1,shared' });
+    expect(filters).toEqual([
       {
-        id: 'filter-type',
-        field: 'type',
-        operator: 'is_not',
-        values: ['income'],
+        id: 'filter-assigneeId',
+        field: 'assigneeId',
+        operator: 'is',
+        values: ['mem_1', 'shared'],
       },
+    ]);
+    expect(filtersToSearch(filters)).toEqual({ assigneeId: 'mem_1,shared' });
+  });
+  it('offers assignee shape sentinels alongside member options', () => {
+    const member = {
+      id: 'mem_1',
+      firstName: 'Ada',
+      lastName: null,
+      email: 'ada@example.com',
+    };
+    const assigneeField = buildFilterFields([], [], [member], []).find(
+      (field) => field.key === 'assigneeId'
+    );
+    expect(assigneeField?.options?.map((o) => o.value)).toEqual([
+      'mem_1',
+      'personal',
+      'shared',
     ]);
   });
 });
