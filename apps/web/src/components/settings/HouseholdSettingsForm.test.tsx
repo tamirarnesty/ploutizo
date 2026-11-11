@@ -59,7 +59,7 @@ vi.mock('@ploutizo/ui/components/text', () => ({
 vi.mock('@/lib/data-access/household', () => ({
   useGetHouseholdSettings: mocks.getHouseholdSettings,
   useUpdateHouseholdSettings: () => ({
-    mutate: mocks.mutate,
+    mutateAsync: mocks.mutate,
   }),
 }));
 
@@ -85,10 +85,10 @@ describe('HouseholdSettingsForm', () => {
     await user.click(screen.getByRole('button', { name: /save changes/i }));
 
     await waitFor(() => {
-      expect(mocks.mutate).toHaveBeenCalledWith(
-        { settlementThreshold: null, autoCheckImportRowWhenReady: true },
-        expect.any(Object)
-      );
+      expect(mocks.mutate).toHaveBeenCalledWith({
+        settlementThreshold: null,
+        autoCheckImportRowWhenReady: true,
+      });
     });
   });
 
@@ -107,10 +107,10 @@ describe('HouseholdSettingsForm', () => {
     await user.click(screen.getByRole('button', { name: /save changes/i }));
 
     await waitFor(() => {
-      expect(mocks.mutate).toHaveBeenCalledWith(
-        { settlementThreshold: 0, autoCheckImportRowWhenReady: true },
-        expect.any(Object)
-      );
+      expect(mocks.mutate).toHaveBeenCalledWith({
+        settlementThreshold: 0,
+        autoCheckImportRowWhenReady: true,
+      });
     });
   });
 
@@ -129,10 +129,10 @@ describe('HouseholdSettingsForm', () => {
     await user.click(screen.getByRole('button', { name: /save changes/i }));
 
     await waitFor(() => {
-      expect(mocks.mutate).toHaveBeenCalledWith(
-        { settlementThreshold: 5000, autoCheckImportRowWhenReady: true },
-        expect.any(Object)
-      );
+      expect(mocks.mutate).toHaveBeenCalledWith({
+        settlementThreshold: 5000,
+        autoCheckImportRowWhenReady: true,
+      });
     });
   });
 
@@ -149,10 +149,10 @@ describe('HouseholdSettingsForm', () => {
     await user.click(screen.getByRole('button', { name: /save changes/i }));
 
     await waitFor(() => {
-      expect(mocks.mutate).toHaveBeenCalledWith(
-        { settlementThreshold: null, autoCheckImportRowWhenReady: true },
-        expect.any(Object)
-      );
+      expect(mocks.mutate).toHaveBeenCalledWith({
+        settlementThreshold: null,
+        autoCheckImportRowWhenReady: true,
+      });
     });
   });
 

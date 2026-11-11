@@ -12,8 +12,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/data-access/categories', () => ({
-  useCreateCategory: () => ({ mutate: mocks.createMutate }),
-  useUpdateCategory: () => ({ mutate: mocks.updateMutate }),
+  useCreateCategory: () => ({ mutateAsync: mocks.createMutate }),
+  useUpdateCategory: () => ({ mutateAsync: mocks.updateMutate }),
   useGetCategories: () => ({ data: mocks.categories }),
 }));
 
@@ -59,10 +59,11 @@ describe('CategoryForm', () => {
     await user.type(screen.getByLabelText('Name'), 'Pets');
     await user.click(screen.getByRole('button', { name: 'Save category' }));
 
-    expect(mocks.createMutate).toHaveBeenCalledWith(
-      { name: 'Pets', icon: undefined, colour: 'amber-500' },
-      expect.anything()
-    );
+    expect(mocks.createMutate).toHaveBeenCalledWith({
+      name: 'Pets',
+      icon: undefined,
+      colour: 'amber-500',
+    });
   });
 
   it("keeps the category's own colour when editing", () => {

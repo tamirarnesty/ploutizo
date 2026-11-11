@@ -1,6 +1,8 @@
 # ploutizo
 
-ploutizo (Greek: "to enrich") is a personal finance tracker for households
+ploutizo (Greek: "to enrich") is a personal finance tracker for households.
+
+Local setup, secrets, and quality commands: [docs/development-environment.md](docs/development-environment.md). Agent instructions: [AGENTS.md](AGENTS.md).
 
 ## Adding components
 
@@ -17,5 +19,5 @@ This will place the ui components in the `packages/ui/src/components` directory.
 To use the components in your app, import them from the `ui` package.
 
 ```tsx
-import { Button } from "@workspace/ui/components/button";
+import { Button } from "@ploutizo/ui/components/button";
 ```

@@ -24,13 +24,7 @@ export const schemaSubmitValidator =
   };
 
 interface EntityFormMutation<TPayload> {
-  mutate: (
-    payload: TPayload,
-    options?: {
-      onSuccess?: () => void;
-      onError?: (error: unknown) => void;
-    }
-  ) => void;
+  mutateAsync: (payload: TPayload) => Promise<unknown>;
 }
 
 interface UseEntityFormOptions<TValues, TPayload> {
@@ -74,27 +68,36 @@ export const useEntityForm = <TValues, TPayload>({
     validators: {
       onSubmit: ({ value }) => validate?.(value),
     },
-    onSubmit: ({ value }) => {
+    onSubmit: async ({ value }) => {
       const payload = toPayload(value);
       if (payload === undefined) return;
       const mutation = (isEditing ? update : create) ?? update ?? create;
       if (!mutation) {
         throw new Error('useEntityForm: no create or update mutation given');
       }
-      mutation.mutate(payload, {
-        onSuccess: onClose ? () => onClose() : undefined,
-        onError: (error) => {
-          const fieldError = mapMutationError?.(error);
-          if (fieldError) {
-            form.setFieldMeta(fieldError.field, (prev) => ({
-              ...prev,
-              errors: [fieldError.message],
-            }));
-          } else {
-            form.setErrorMap({ onSubmit: submitErrorMessage });
-          }
-        },
-      });
+      // Await the request so TanStack Form keeps `isSubmitting` true (and
+      // LoadingButton in a loading state) until the save settles. `mutate`
+      // returns immediately, so the button would flash idle while the
+      // request was still in flight.
+      try {
+        await mutation.mutateAsync(payload);
+        onClose?.();
+      } catch (error) {
+        const fieldError = mapMutationError?.(error);
+        if (fieldError) {
+          // Field `errors` is derived from `errorMap`; setting `errors`
+          // directly is overwritten on the next store pass.
+          form.setFieldMeta(fieldError.field, (prev) => ({
+            ...prev,
+            errorMap: {
+              ...prev.errorMap,
+              onSubmit: fieldError.message,
+            },
+          }));
+        } else {
+          form.setErrorMap({ onSubmit: submitErrorMessage });
+        }
+      }
     },
   });
 
