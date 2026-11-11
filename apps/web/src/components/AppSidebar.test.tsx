@@ -108,17 +108,13 @@ describe('AppSidebar', () => {
   it('keeps the collapse trigger left of the theme control', async () => {
     renderSidebar();
 
-    const footer = document.querySelector('[data-sidebar="footer"]');
-    expect(footer).not.toBeNull();
-
-    const trigger = footer!.querySelector('[data-sidebar="trigger"]');
+    const trigger = screen.getByRole('button', { name: 'Toggle Sidebar' });
     const themeToggle = await screen.findByRole('button', {
       name: 'Switch to dark mode',
     });
 
-    expect(trigger).not.toBeNull();
     expect(
-      trigger!.compareDocumentPosition(themeToggle) &
+      trigger.compareDocumentPosition(themeToggle) &
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
@@ -126,6 +122,8 @@ describe('AppSidebar', () => {
   it('toggles the sidebar from the keyboard shortcut', () => {
     renderSidebar();
 
+    // Collapse is exposed as data-state on the sidebar root, not aria-expanded.
+    // eslint-disable-next-line testing-library/no-node-access -- see comment
     const sidebar = document.querySelector('[data-slot="sidebar"]');
     expect(sidebar).toHaveAttribute('data-state', 'expanded');
 

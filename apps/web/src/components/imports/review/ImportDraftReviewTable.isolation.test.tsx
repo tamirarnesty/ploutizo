@@ -1,5 +1,7 @@
 import '@/lib/access/working-set-cleanup';
 import { useEffect, useState } from 'react';
+// Unmount is explicit in afterEach so review runtime teardown sees a clean tree.
+// eslint-disable-next-line testing-library/no-manual-cleanup -- see comment
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';

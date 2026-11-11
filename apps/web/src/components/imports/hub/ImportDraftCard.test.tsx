@@ -251,6 +251,7 @@ describe('ImportDraftCard', () => {
     await user.click(screen.getByRole('button', { name: 'Discard' }));
     // The modal alert dialog aria-hides the page behind it, so the finalize
     // trigger is only reachable via a synthetic click here.
+    // eslint-disable-next-line testing-library/prefer-user-event -- see comment
     fireEvent.click(
       screen.getByRole('button', { name: 'Start finalize', hidden: true })
     );

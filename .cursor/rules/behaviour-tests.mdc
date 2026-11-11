@@ -1,0 +1,31 @@
+---
+description: Tests assert behaviour given conditions, not styling or file presence
+globs: ["**/*.{test,spec}.{ts,tsx}"]
+alwaysApply: false
+---
+
+Tests assert behaviour given conditions, not styling and not the
+presence or absence of files or components.
+
+Examples of the right shape:
+
+- Given a list payload that omits the total, the UI does not present
+  $0.00 as a verified sum; a loaded empty set may still show $0.00.
+- Given a submit or discard is in flight, a second click does not start
+  another mutation (or the action is not operable).
+- After a successful save, the list (or other visible state) reflects
+  the new data once the mutation settles.
+- Given a dialog or sheet is open, it has an accessible name.
+
+Do not assert classNames, computed styles, or screenshots. Do not write
+a test whose only job is to check that a helper, file, or component
+still exists. A test that only checks a mock was called, or that the
+component rendered, is not a regression test.
+
+eslint-plugin-testing-library (prefer-user-event, awaited finds, no
+container/node access) is how we drive and query the UI. It does not
+replace the cases above and cannot require a second-click case on its
+own.
+
+See `apps/web/src/test/README.md` and `expectOpenOverlayNamed` in
+`apps/web/src/test/behaviour.ts`.

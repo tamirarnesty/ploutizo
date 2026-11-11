@@ -238,11 +238,9 @@ describe('ImportUploadForm', () => {
     await user.upload(screen.getByLabelText('CSV file'), file);
     await user.click(screen.getByRole('button', { name: 'Upload' }));
 
-    await waitFor(() =>
-      expect(
-        screen.getByText("Couldn't read that CSV file.")
-      ).toBeInTheDocument()
-    );
+    expect(
+      await screen.findByText("Couldn't read that CSV file.")
+    ).toBeInTheDocument();
     expect(uploadMocks.createImportDraftMutate).not.toHaveBeenCalled();
   });
 
@@ -259,9 +257,9 @@ describe('ImportUploadForm', () => {
     await user.upload(screen.getByLabelText('CSV file'), file);
     await user.click(screen.getByRole('button', { name: 'Upload' }));
 
-    await waitFor(() =>
-      expect(screen.getByText("Couldn't process that CSV.")).toBeInTheDocument()
-    );
+    expect(
+      await screen.findByText("Couldn't process that CSV.")
+    ).toBeInTheDocument();
   });
 
   it('disables upload and shows Continue when the account already has an active draft', async () => {
@@ -278,13 +276,11 @@ describe('ImportUploadForm', () => {
 
     await user.hover(screen.getByRole('button', { name: 'Continue' }));
 
-    await waitFor(() =>
-      expect(
-        screen.getByText(
-          'Continue reviewing the active draft for this credit card.'
-        )
-      ).toBeInTheDocument()
-    );
+    expect(
+      await screen.findByText(
+        'Continue reviewing the active draft for this credit card.'
+      )
+    ).toBeInTheDocument();
   });
 
   it('opens and closes the CSV guide dialog', async () => {
@@ -317,9 +313,7 @@ describe('ImportUploadForm', () => {
     await user.upload(screen.getByLabelText('CSV file'), file);
     await user.click(screen.getByRole('button', { name: 'Upload' }));
 
-    await waitFor(() =>
-      expect(screen.getByText('Choose import format')).toBeInTheDocument()
-    );
+    expect(await screen.findByText('Choose import format')).toBeInTheDocument();
     expect(
       screen.getByRole('columnheader', { name: 'Date' })
     ).toBeInTheDocument();
@@ -386,9 +380,7 @@ describe('ImportUploadForm', () => {
     await user.upload(screen.getByLabelText('CSV file'), file);
     await user.click(screen.getByRole('button', { name: 'Upload' }));
 
-    await waitFor(() =>
-      expect(screen.getByText('Choose import format')).toBeInTheDocument()
-    );
+    expect(await screen.findByText('Choose import format')).toBeInTheDocument();
 
     uploadMocks.createImportDraftMutate.mockImplementation(
       (_payload: unknown, options: Record<string, unknown> | undefined) => {
@@ -398,9 +390,9 @@ describe('ImportUploadForm', () => {
 
     await user.click(screen.getByRole('button', { name: 'Upload' }));
 
-    await waitFor(() =>
-      expect(screen.getByText("Couldn't process that CSV.")).toBeInTheDocument()
-    );
+    expect(
+      await screen.findByText("Couldn't process that CSV.")
+    ).toBeInTheDocument();
     expect(screen.getByText('Choose import format')).toBeInTheDocument();
   });
 
@@ -422,9 +414,7 @@ describe('ImportUploadForm', () => {
     await user.upload(screen.getByLabelText('CSV file'), file);
     await user.click(screen.getByRole('button', { name: 'Upload' }));
 
-    await waitFor(() =>
-      expect(screen.getByText('Date column')).toBeInTheDocument()
-    );
+    expect(await screen.findByText('Date column')).toBeInTheDocument();
 
     uploadMocks.createImportDraftMutate.mockImplementation(
       (_payload: unknown, options: Record<string, unknown> | undefined) => {

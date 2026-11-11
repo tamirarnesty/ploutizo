@@ -1,8 +1,4 @@
-import {
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@ploutizo/ui/components/dialog';
+import { DialogDescription } from '@ploutizo/ui/components/dialog';
 import { Text } from '@ploutizo/ui/components/text';
 import { formatCurrency } from '@ploutizo/utils/currency';
 import { formatAccountInstitutionMeta } from '@ploutizo/utils';
@@ -28,15 +24,13 @@ export const SettleDialogSummary = ({ account }: SettleDialogSummaryProps) => {
     : null;
 
   return (
-    <DialogHeader className="gap-1">
-      <DialogTitle>
-        <Text
-          as="span"
-          className="block truncate font-sans text-[1.35rem] leading-tight font-semibold text-foreground"
-        >
-          {card.name}
-        </Text>
-      </DialogTitle>
+    <div className="flex flex-col gap-1">
+      <Text
+        as="span"
+        className="block truncate font-sans text-[1.35rem] leading-tight font-semibold text-foreground"
+      >
+        {card.name}
+      </Text>
       {metaLine !== null ? (
         <DialogDescription className="truncate text-xs leading-tight">
           {metaLine}
@@ -58,6 +52,6 @@ export const SettleDialogSummary = ({ account }: SettleDialogSummaryProps) => {
           </Text>
         ) : null}
       </div>
-    </DialogHeader>
+    </div>
   );
 };

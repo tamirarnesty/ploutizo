@@ -1,4 +1,4 @@
-import { waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { householdJwt } from '@/test/jwt-fixture';
 import { AppAuthShell } from '@/app/AppAuthShell';
@@ -37,12 +37,12 @@ describe('BearerReadinessBoundary', () => {
   });
 
   it('keeps route content mounted while household bearer is not ready', async () => {
-    const { view } = await renderBoundaryShell();
-    expect(view.getByTestId('index-page')).toBeInTheDocument();
+    await renderBoundaryShell();
+    expect(screen.getByTestId('index-page')).toBeInTheDocument();
   });
 
   it('shows bearer blocked UI when household bearer cannot be resolved', async () => {
-    const { view } = await renderBoundaryShell(
+    await renderBoundaryShell(
       createTestClerk({
         isSignedIn: true,
         userId: 'user_a',
@@ -53,18 +53,16 @@ describe('BearerReadinessBoundary', () => {
 
     await waitFor(() => {
       expect(
-        view.getByRole('heading', { name: "Couldn't verify your session" })
+        screen.getByRole('heading', { name: "Couldn't verify your session" })
       ).toBeInTheDocument();
     });
   });
 
   it('shows route content once signed-out access is ready', async () => {
-    const { view } = await renderBoundaryShell(
-      createTestClerk({ isSignedIn: false })
-    );
+    await renderBoundaryShell(createTestClerk({ isSignedIn: false }));
 
     await waitFor(() => {
-      expect(view.getByTestId('index-page')).toBeInTheDocument();
+      expect(screen.getByTestId('index-page')).toBeInTheDocument();
     });
   });
 });

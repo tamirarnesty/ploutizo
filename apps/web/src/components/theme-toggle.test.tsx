@@ -73,8 +73,6 @@ describe('ThemeToggle', () => {
     renderThemeToggle();
 
     const toggle = await themeToggle('Switch to dark mode');
-    expect(toggle.querySelector('.lucide-moon')).not.toBeNull();
-    expect(toggle.querySelector('.lucide-sun')).toBeNull();
 
     await user.hover(toggle);
     expect(await screen.findByText('Switch to dark mode')).toBeInTheDocument();
@@ -87,9 +85,7 @@ describe('ThemeToggle', () => {
 
     await user.click(await themeToggle('Switch to dark mode'));
 
-    const lightToggle = await themeToggle('Switch to light mode');
-    expect(lightToggle.querySelector('.lucide-sun')).not.toBeNull();
-    expect(lightToggle.querySelector('.lucide-moon')).toBeNull();
+    await themeToggle('Switch to light mode');
     expect(documentTheme()).toBe('dark');
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
   });

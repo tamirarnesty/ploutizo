@@ -235,10 +235,11 @@ describe('ImportDraftReview autosave and continue', () => {
       })
     ).toBeInTheDocument();
     await waitFor(() =>
-      expect(document.activeElement).toHaveAttribute(
-        'id',
-        'import-row-row_ready'
-      )
+      expect(
+        // Focus moves to a tabIndex=-1 container with no role so the row scrolls into view.
+        // eslint-disable-next-line testing-library/no-node-access -- see comment
+        document.getElementById('import-row-row_ready')
+      ).toHaveFocus()
     );
   });
 

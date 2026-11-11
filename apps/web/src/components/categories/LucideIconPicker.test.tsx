@@ -16,9 +16,7 @@ describe('LucideIconPicker', () => {
     const search = screen.getByPlaceholderText('Search icons…');
     await user.type(search, 'anchor');
 
-    const anchorOption = await waitFor(() =>
-      screen.getByRole('option', { name: 'Anchor' })
-    );
+    const anchorOption = await screen.findByRole('option', { name: 'Anchor' });
     await user.click(anchorOption);
 
     expect(onChange).toHaveBeenCalledWith('Anchor');
@@ -35,9 +33,9 @@ describe('LucideIconPicker', () => {
     const search = screen.getByPlaceholderText('Search icons…');
     await user.type(search, 'ShoppingCart');
 
-    const shoppingCartOption = await waitFor(() =>
-      screen.getByRole('option', { name: 'ShoppingCart' })
-    );
+    const shoppingCartOption = await screen.findByRole('option', {
+      name: 'ShoppingCart',
+    });
     await user.click(shoppingCartOption);
 
     expect(onChange).toHaveBeenCalledWith('ShoppingCart');

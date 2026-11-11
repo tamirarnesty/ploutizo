@@ -65,9 +65,9 @@ describe('access shell integration', () => {
       </AppAuthShell>
     );
 
-    const { view } = await renderAccessShellTree({ shell });
+    await renderAccessShellTree({ shell });
 
-    expect(view.getByTestId('index-page')).toBeInTheDocument();
+    expect(screen.getByTestId('index-page')).toBeInTheDocument();
 
     await waitFor(() => {
       expect(getAccessRouterContext().isReady).toBe(true);

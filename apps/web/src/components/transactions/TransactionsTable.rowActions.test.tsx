@@ -84,6 +84,8 @@ describe('TransactionsTable row context menu', () => {
       const menu = screen.getByRole('menu');
       expectTransactionRowActionMenuLabels(menu);
 
+      // userEvent + fake timers hangs here; the menu is already open.
+      // eslint-disable-next-line testing-library/prefer-user-event -- see comment
       fireEvent.click(within(menu).getByRole('menuitem', { name: 'Edit' }));
       expect(onEdit).toHaveBeenCalledWith(transaction);
     } finally {

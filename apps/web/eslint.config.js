@@ -1,12 +1,49 @@
 //  @ts-check
 
 import { tanstackConfig } from '@tanstack/eslint-config';
+import testingLibrary from 'eslint-plugin-testing-library';
 
+import ploutizo from '../../eslint/compound-composition.js';
 import {
   reactDoctorRecommended,
   reactDoctorTanstackQuery,
   reactDoctorTanstackStart,
 } from '../../eslint/react-doctor.js';
+
+const primitiveImportBan = {
+  group: ['@base-ui/react', '@base-ui/react/*', '@radix-ui/*'],
+  message:
+    'Import UI primitives from @ploutizo/ui, not @base-ui/react or @radix-ui.',
+};
+
+const overlayImportBan = [
+  {
+    name: '@ploutizo/ui/components/dialog',
+    importNames: ['Dialog', 'DialogContent', 'DialogTitle'],
+    message:
+      'Use AppDialog from @/components/overlays/AppDialog so the dialog has a required title.',
+  },
+  {
+    name: '@ploutizo/ui/components/sheet',
+    importNames: ['Sheet', 'SheetContent', 'SheetTitle'],
+    message:
+      'Use AppSheet from @/components/overlays/AppSheet so the sheet has a required title.',
+  },
+];
+
+const clerkImportBan = [
+  {
+    name: '@clerk/tanstack-react-start',
+    importNames: ['auth'],
+    message:
+      'auth() is not isomorphic. Use getHouseholdBearer from lib/access.',
+  },
+  {
+    name: '@clerk/tanstack-react-start/server',
+    message:
+      'Clerk server auth() is not isomorphic. Use getHouseholdBearer from lib/access.',
+  },
+];
 
 export default [
   { ignores: ['.output/**', 'dist/**', '.vinxi/**'] },
@@ -15,6 +52,7 @@ export default [
   reactDoctorTanstackStart,
   reactDoctorTanstackQuery,
   {
+    plugins: { ploutizo },
     rules: {
       // Forbid file extensions on relative imports — use bare specifiers (e.g. './foo', not './foo.js')
       // Exception: TanStack Router auto-generates routeTree.gen — the .gen extension is intentional
@@ -49,22 +87,26 @@ export default [
       ],
       // Prefer const arrow functions over function declarations
       'func-style': ['error', 'expression'],
+      'ploutizo/compound-composition': 'error',
       'no-restricted-imports': [
         'error',
         {
-          paths: [
-            {
-              name: '@clerk/tanstack-react-start',
-              importNames: ['auth'],
-              message:
-                'auth() is not isomorphic. Use getHouseholdBearer from lib/access.',
-            },
-            {
-              name: '@clerk/tanstack-react-start/server',
-              message:
-                'Clerk server auth() is not isomorphic. Use getHouseholdBearer from lib/access.',
-            },
-          ],
+          paths: [...clerkImportBan, ...overlayImportBan],
+          patterns: [primitiveImportBan],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/lib/queryClient.ts'],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        {
+          name: 'fetch',
+          message:
+            'Do not call fetch() in apps/web. Use apiFetch or apiSend from lib/queryClient.ts.',
         },
       ],
     },
@@ -89,6 +131,7 @@ export default [
                 'Use useHouseholdQuery, useHouseholdInfiniteQuery, or useHouseholdMutation from useHouseholdQuery.ts.',
             },
           ],
+          patterns: [primitiveImportBan],
         },
       ],
     },
@@ -97,6 +140,30 @@ export default [
     files: ['src/lib/data-access/useHouseholdQuery.ts'],
     rules: {
       'no-restricted-imports': 'off',
+    },
+  },
+  {
+    files: [
+      'src/components/overlays/AppDialog.tsx',
+      'src/components/overlays/AppSheet.tsx',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [primitiveImportBan],
+        },
+      ],
+    },
+  },
+  {
+    files: ['**/*.{test,spec}.{ts,tsx}'],
+    ...testingLibrary.configs['flat/react'],
+    rules: {
+      ...testingLibrary.configs['flat/react'].rules,
+      // Official React config does not enable this; fireEvent can ignore
+      // disabled / pointer-events, so in-flight click tests can lie.
+      'testing-library/prefer-user-event': 'error',
     },
   },
   {

@@ -118,10 +118,10 @@ describe('AssigneeSection', () => {
       expect(screen.getByTestId('assignees')).toHaveTextContent(
         '"amountCents":6000'
       );
-      expect(screen.getByTestId('assignees')).toHaveTextContent(
-        '"amountCents":4000'
-      );
     });
+    expect(screen.getByTestId('assignees')).toHaveTextContent(
+      '"amountCents":4000'
+    );
   });
 
   it('re-evens when member toggles change', async () => {

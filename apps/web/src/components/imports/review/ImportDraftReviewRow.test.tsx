@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -131,16 +131,19 @@ describe('ImportDraftReviewRow', () => {
     const row = baseRow();
     renderRowFields(row);
 
+    const user = userEvent.setup();
     const descriptionInput = screen.getByLabelText('Description for Coffee');
     const notesInput = screen.getByLabelText('Notes for Coffee');
 
-    fireEvent.change(descriptionInput, { target: { value: 'Updated coffee' } });
-    expect(updateRow).toHaveBeenCalledWith(row.id, {
+    await user.clear(descriptionInput);
+    await user.type(descriptionInput, 'Updated coffee');
+    expect(updateRow).toHaveBeenLastCalledWith(row.id, {
       reviewDescription: 'Updated coffee',
     });
 
-    fireEvent.change(notesInput, { target: { value: 'Still editing notes' } });
-    expect(updateRow).toHaveBeenCalledWith(row.id, {
+    await user.clear(notesInput);
+    await user.type(notesInput, 'Still editing notes');
+    expect(updateRow).toHaveBeenLastCalledWith(row.id, {
       reviewNotes: 'Still editing notes',
     });
   });

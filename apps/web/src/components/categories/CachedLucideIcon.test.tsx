@@ -17,7 +17,11 @@ describe('CachedLucideIcon', () => {
     render(<CachedLucideIcon name="ShoppingCart" size={16} />);
 
     await waitFor(() => {
-      expect(document.querySelector('svg.lucide-shopping-cart')).toBeTruthy();
+      expect(
+        // Lucide glyphs are aria-hidden decorative SVGs with no accessible name.
+        // eslint-disable-next-line testing-library/no-node-access -- see comment
+        document.querySelector('svg.lucide-shopping-cart')
+      ).toBeTruthy();
     });
   });
 
@@ -25,14 +29,22 @@ describe('CachedLucideIcon', () => {
     render(<CachedLucideIcon name="Receipt" size={16} />);
 
     await waitFor(() => {
-      expect(document.querySelector('svg.lucide-receipt')).toBeTruthy();
+      expect(
+        // Lucide glyphs are aria-hidden decorative SVGs with no accessible name.
+        // eslint-disable-next-line testing-library/no-node-access -- see comment
+        document.querySelector('svg.lucide-receipt')
+      ).toBeTruthy();
     });
   });
 
   it('falls back to Tag for unknown icon names', () => {
     render(<CachedLucideIcon name="NotARealLucideIcon" size={16} />);
 
-    expect(document.querySelector('svg.lucide-tag')).toBeTruthy();
+    expect(
+      // Lucide glyphs are aria-hidden decorative SVGs with no accessible name.
+      // eslint-disable-next-line testing-library/no-node-access -- see comment
+      document.querySelector('svg.lucide-tag')
+    ).toBeTruthy();
     expect(screen.queryByTitle('NotARealLucideIcon')).toBeNull();
   });
 
@@ -43,7 +55,15 @@ describe('CachedLucideIcon', () => {
 
     render(<CachedLucideIcon name="ShoppingCart" size={16} />);
 
-    expect(document.querySelector('svg.lucide-tag')).toBeNull();
-    expect(document.querySelector('span[aria-hidden="true"]')).toBeTruthy();
+    expect(
+      // Lucide glyphs are aria-hidden decorative SVGs with no accessible name.
+      // eslint-disable-next-line testing-library/no-node-access -- see comment
+      document.querySelector('svg.lucide-tag')
+    ).toBeNull();
+    expect(
+      // Lucide glyphs are aria-hidden decorative SVGs with no accessible name.
+      // eslint-disable-next-line testing-library/no-node-access -- see comment
+      document.querySelector('span[aria-hidden="true"]')
+    ).toBeTruthy();
   });
 });

@@ -6,10 +6,12 @@ import {
   formatCurrencyInput,
   formatDollarsBlurDisplay,
   formatPercentBlurDisplay,
+  formatVerifiedCurrency,
   getCurrencySymbol,
   isIncompleteDecimalEdit,
   mergeDecimalEditPaste,
   parseCurrencyInputToCents,
+  presentVerifiedMoneyCents,
   roundPercentToOneDecimal,
   sanitizeCurrencyPaste,
   sanitizeDecimalEditString,
@@ -203,5 +205,36 @@ describe('formatPercentBlurDisplay', () => {
 describe('roundPercentToOneDecimal', () => {
   it('rounds to one decimal place', () => {
     expect(roundPercentToOneDecimal(33.333)).toBe(33.3);
+  });
+});
+
+describe('presentVerifiedMoneyCents', () => {
+  it('does not treat a missing total as 0', () => {
+    expect(presentVerifiedMoneyCents(undefined)).toBeUndefined();
+    expect(presentVerifiedMoneyCents(null)).toBeUndefined();
+    expect(presentVerifiedMoneyCents(Number.NaN)).toBeUndefined();
+  });
+
+  it('keeps a loaded empty total as 0', () => {
+    expect(presentVerifiedMoneyCents(0)).toBe(0);
+  });
+
+  it('keeps a loaded nonzero total', () => {
+    expect(presentVerifiedMoneyCents(1250)).toBe(1250);
+  });
+});
+
+describe('formatVerifiedCurrency', () => {
+  it('omits a figure when the total is missing', () => {
+    expect(formatVerifiedCurrency(undefined)).toBeUndefined();
+    expect(formatVerifiedCurrency(null)).toBeUndefined();
+  });
+
+  it('formats a loaded empty set as $0.00', () => {
+    expect(formatVerifiedCurrency(0)).toBe('$0.00');
+  });
+
+  it('formats a loaded nonzero total', () => {
+    expect(formatVerifiedCurrency(199)).toBe('$1.99');
   });
 });

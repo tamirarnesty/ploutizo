@@ -46,11 +46,7 @@ const renderTable = (
     </TooltipProvider>
   );
 
-const footerRow = () => {
-  const row = screen.getByText('Page net').closest('tr');
-  if (!row) throw new Error('Page net label is not inside a table row');
-  return within(row);
-};
+const footerRow = () => within(screen.getByRole('row', { name: /page net/i }));
 
 describe('TransactionsTable amount footer', () => {
   it('nets the signed amounts of the rows on screen', () => {

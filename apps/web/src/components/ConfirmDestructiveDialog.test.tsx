@@ -100,4 +100,24 @@ describe('ConfirmDestructiveDialog overlay contract', () => {
       expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
     );
   });
+
+  it('does not confirm again while the first confirm is pending', async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+
+    render(
+      <ConfirmDestructiveDialog
+        {...baseProps}
+        open
+        onOpenChange={vi.fn()}
+        onConfirm={onConfirm}
+        isPending
+      />
+    );
+
+    const confirm = screen.getByRole('button', { name: 'Delete' });
+    expect(confirm).toBeDisabled();
+    await user.click(confirm);
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
 });

@@ -92,8 +92,12 @@ describe('TransactionAccountSlots empty state', () => {
     expect(screen.getAllByTestId('account-slot-empty-state')).toHaveLength(1);
     expect(screen.getByText('Destination')).toBeInTheDocument();
     expect(screen.getByText('Source')).toBeInTheDocument();
-    expect(document.getElementById('tx-accountId')).toBeInTheDocument();
-    expect(document.getElementById('tx-counterpartAccountId')).toBeNull();
+    expect(
+      screen.getByRole('combobox', { name: 'Source' })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('combobox', { name: 'Destination' })
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole('link', { name: /create one in accounts/i })
     ).toHaveAttribute(
