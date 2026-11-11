@@ -27,7 +27,7 @@ Project guidance is split across `docs/`. Read the linked file when a task match
 
 | Document                                                             | Purpose                                                                                   |
 | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| [docs/stack-and-conventions.md](docs/stack-and-conventions.md)       | Stack, data/forms/persistence, base UI and ReUI fork policy, build and test commands      |
+| [docs/stack-and-conventions.md](docs/stack-and-conventions.md)       | Stack, shared API/UI field contracts, base UI and ReUI fork policy, build and test commands |
 | [docs/STANDARDS.md](docs/STANDARDS.md)                               | Normative rules: tenancy FKs, UI library composition (avoid hand-rolling; how to customize) |
 | [docs/overlay-close-animations.md](docs/overlay-close-animations.md) | Dialog, alert dialog, and sheet open/close state so exit animations are not cut off       |
 | [docs/development-environment.md](docs/development-environment.md)   | Dev servers, env secrets, Turborepo quality commands, Clerk webhooks and test credentials |
@@ -50,12 +50,14 @@ Uses a single root glossary. See `docs/agents/domain.md`.
 
 ## Before commit/push
 
-From the **workspace root**, run lint and formatting across the whole monorepo — not just the package you edited:
+From the **workspace root**, run the same quality gates CI and the Lefthook pre-commit hook run — not just the package you edited:
 
 ```bash
 pnpm turbo format        # Prettier write + eslint --fix (all packages)
 pnpm turbo format:check  # verify formatting
 pnpm turbo lint          # ESLint (all packages)
+pnpm turbo typecheck     # tsc --noEmit in dependency order
+pnpm test                # vitest across the workspace (mocked; no secrets)
 ```
 
-Fix any failures before committing or pushing. Scoped checks (e.g. `pnpm --filter web lint`) are fine while iterating; the root `pnpm turbo …` pass is required before push.
+Fix any failures before committing or pushing. Scoped checks (e.g. `pnpm --filter web lint` or `pnpm --filter web test`) are fine while iterating; the root `pnpm turbo …` / `pnpm test` pass is required before push. Lefthook already runs lint, typecheck, and format:check on commit. CI also runs tests and a build, so do not skip `pnpm test` for packages you changed.

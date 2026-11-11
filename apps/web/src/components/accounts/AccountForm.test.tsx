@@ -22,8 +22,8 @@ vi.mock('@/lib/data-access/accounts', () => ({
     data: mocks.accountMembers,
     isLoading: false,
   }),
-  useCreateAccount: () => ({ mutate: mocks.createMutate }),
-  useUpdateAccount: () => ({ mutate: mocks.updateMutate }),
+  useCreateAccount: () => ({ mutateAsync: mocks.createMutate }),
+  useUpdateAccount: () => ({ mutateAsync: mocks.updateMutate }),
 }));
 
 vi.mock('@/lib/data-access/household', () => ({
@@ -219,8 +219,7 @@ describe('AccountForm', () => {
           institutionId: 'td',
           memberIds: [ADA_ID],
           statementDueDay: null,
-        }),
-        expect.any(Object)
+        })
       );
     });
   });
@@ -254,8 +253,7 @@ describe('AccountForm', () => {
           type: 'prepaid_cash',
           institutionId: null,
           statementDueDay: null,
-        }),
-        expect.any(Object)
+        })
       );
     });
   });
@@ -335,8 +333,7 @@ describe('AccountForm', () => {
           type: 'credit_card',
           statementDueDay: 15,
           memberIds: [ADA_ID],
-        }),
-        expect.any(Object)
+        })
       );
     });
   });
@@ -358,8 +355,7 @@ describe('AccountForm', () => {
           type: 'investment',
           institutionId: 'wealthsimple',
           memberIds: [ADA_ID],
-        }),
-        expect.any(Object)
+        })
       );
     });
   });

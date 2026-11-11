@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useAppForm } from '@ploutizo/ui/components/form';
 import type { DeepKeys } from '@tanstack/react-form';
 
@@ -24,13 +25,7 @@ export const schemaSubmitValidator =
   };
 
 interface EntityFormMutation<TPayload> {
-  mutate: (
-    payload: TPayload,
-    options?: {
-      onSuccess?: () => void;
-      onError?: (error: unknown) => void;
-    }
-  ) => void;
+  mutateAsync: (payload: TPayload) => Promise<unknown>;
 }
 
 interface UseEntityFormOptions<TValues, TPayload> {
@@ -69,32 +64,54 @@ export const useEntityForm = <TValues, TPayload>({
   mapMutationError,
   submitErrorMessage = DEFAULT_SUBMIT_ERROR_MESSAGE,
 }: UseEntityFormOptions<TValues, TPayload>) => {
+  // Per-call `mutate` callbacks stop when the form unmounts. `mutateAsync`
+  // does not, so a save that finishes after discard must not close the edit
+  // that replaced this form.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   const form = useAppForm({
     defaultValues,
     validators: {
       onSubmit: ({ value }) => validate?.(value),
     },
-    onSubmit: ({ value }) => {
+    onSubmit: async ({ value }) => {
       const payload = toPayload(value);
       if (payload === undefined) return;
       const mutation = (isEditing ? update : create) ?? update ?? create;
       if (!mutation) {
         throw new Error('useEntityForm: no create or update mutation given');
       }
-      mutation.mutate(payload, {
-        onSuccess: onClose ? () => onClose() : undefined,
-        onError: (error) => {
-          const fieldError = mapMutationError?.(error);
-          if (fieldError) {
-            form.setFieldMeta(fieldError.field, (prev) => ({
-              ...prev,
-              errors: [fieldError.message],
-            }));
-          } else {
-            form.setErrorMap({ onSubmit: submitErrorMessage });
-          }
-        },
-      });
+      // Await the request so TanStack Form keeps `isSubmitting` true (and
+      // LoadingButton in a loading state) until the save settles. `mutate`
+      // returns immediately, so the button would flash idle while the
+      // request was still in flight.
+      try {
+        await mutation.mutateAsync(payload);
+        if (!mountedRef.current) return;
+        onClose?.();
+      } catch (error) {
+        if (!mountedRef.current) return;
+        const fieldError = mapMutationError?.(error);
+        if (fieldError) {
+          // Field `errors` is derived from `errorMap`; setting `errors`
+          // directly is overwritten on the next store pass.
+          form.setFieldMeta(fieldError.field, (prev) => ({
+            ...prev,
+            errorMap: {
+              ...prev.errorMap,
+              onSubmit: fieldError.message,
+            },
+          }));
+        } else {
+          form.setErrorMap({ onSubmit: submitErrorMessage });
+        }
+      }
     },
   });
 

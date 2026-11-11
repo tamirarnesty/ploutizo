@@ -33,6 +33,8 @@ Every API response the web reads is validated at runtime against a Zod schema.
 - **Envelopes:** wrap `{ data }` bodies with `dataEnvelope(schema)`; model bare bodies (`{ accounts }`, list pages, the import-draft `kind` union) as their own schema.
 - **One source of truth for types:** response types are `z.infer` exports from `@ploutizo/validators`; do not declare parallel interfaces in `apps/web` or `@ploutizo/types`. Exception: wire types that `@ploutizo/utils` consumes (`MemberIdentity`, `ImportDraftRow`, `ImportReviewRow`, `MatchTargetFact`, `ImportRowSnapshot` and its parts) stay as interfaces in `@ploutizo/types`, because validators depends on utils. Their schemas call `assertSchemaOutput<typeof schema, Interface>()`, which fails typecheck when either side drifts — including an interface field the schema would silently strip.
 - **Contract failures:** a body that fails its schema throws `ApiResponseContractError` (web-local; `kind: 'malformed'`, method, path, status, Zod issues). It is deterministic, so the working-set `QueryClient` retry policy (`shouldRetryApiRequest`) does not retry it, and `classifyApiOutcome` treats it as reportable for Error Tracking ([ADR 0006](adr/0006-cross-stack-telemetry.md)). The path and issues are diagnostics only — never put them in telemetry attributes or UI; `getApiErrorMessage` returns the caller's generic fallback for it.
+- **One name per field:** the web and the API must use the same schema field and query-param names. Do not invent a parallel name for the same value (for example `amountSum` vs `amountSumCents`, or `search` vs `description`). When a UI change and an API change land as stacked PRs, land the shared `@ploutizo/validators` schema first and point both PRs at it.
+- **Never default a missing money total to `0`.** A missing or still-loading response is not a verified `$0.00`. Omit the figure until the parsed response is present. A loaded empty set can still show `$0.00`.
 
 ## Base components
 
@@ -46,6 +48,7 @@ Every API response the web reads is validated at runtime against a Zod schema.
 - **SidebarInset (`packages/ui/src/components/sidebar.tsx`):** Ploutizo edit drops shadcn's `md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2` so the inset does not gain a left margin when the sidebar collapses to icons. Re-merge intentionally after shadcn CLI regen.
 - **Date range picker (`packages/ui/src/components/date-range-picker.tsx`):** Ploutizo composition of `Popover` + `Calendar` (range mode) + `Button`, not a shadcn registry file. Edits to the pending range stay local until Apply; Cancel or dismiss discards them. Used by the dashboard period selector and the transactions date filter.
 - Leave a comment explaining any non-obvious override at usage sites.
+- **Sheet width:** `SheetContent` applies `sm:max-w-sm` (384px) on left and right sides. A caller `className` such as `w-[560px]` or `sm:w-[440px]` sets width only and does not override that max-width, so the sheet still renders at 384px. To actually widen a sheet, also set a matching `sm:max-w-[…]`. Changing visible sheet width is a product decision; do not "fix" it opportunistically.
 
 ## Build and type checking
 
