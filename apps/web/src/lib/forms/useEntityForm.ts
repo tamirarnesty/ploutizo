@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useAppForm } from '@ploutizo/ui/components/form';
 import type { DeepKeys } from '@tanstack/react-form';
 
@@ -63,6 +64,17 @@ export const useEntityForm = <TValues, TPayload>({
   mapMutationError,
   submitErrorMessage = DEFAULT_SUBMIT_ERROR_MESSAGE,
 }: UseEntityFormOptions<TValues, TPayload>) => {
+  // Per-call `mutate` callbacks stop when the form unmounts. `mutateAsync`
+  // does not, so a save that finishes after discard must not close the edit
+  // that replaced this form.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   const form = useAppForm({
     defaultValues,
     validators: {
@@ -81,8 +93,10 @@ export const useEntityForm = <TValues, TPayload>({
       // request was still in flight.
       try {
         await mutation.mutateAsync(payload);
+        if (!mountedRef.current) return;
         onClose?.();
       } catch (error) {
+        if (!mountedRef.current) return;
         const fieldError = mapMutationError?.(error);
         if (fieldError) {
           // Field `errors` is derived from `errorMap`; setting `errors`
