@@ -1,23 +1,17 @@
 'use client';
 
 import {
+  type ChangeEvent,
+  type ComponentProps,
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   useSyncExternalStore,
 } from 'react';
-import {
-  addMonths,
-  format,
-  isBefore,
-  isSameMonth,
-  parse,
-  subMonths,
-} from 'date-fns';
-import { type DateRange, type DayButton } from 'react-day-picker';
+import { addMonths, isSameMonth, parse, subMonths } from 'date-fns';
+import { type DateRange } from 'react-day-picker';
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -25,8 +19,18 @@ import {
   CornerUpRightIcon,
   XIcon,
 } from 'lucide-react';
-import { type ChangeEvent, type ComponentProps } from 'react';
 
+import { useDateSelector } from './use-date-selector';
+import {
+  DEFAULT_DATE_SELECTOR_I18N,
+  formatDateValue,
+} from './date-selector-utils';
+import {
+  type DateSelectorFilterType,
+  type DateSelectorI18nConfig,
+  type DateSelectorValue,
+  isRangeFilterType,
+} from './date-selector-types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/button';
@@ -34,73 +38,12 @@ import { Calendar, CalendarDayButton } from '@/components/calendar';
 import { Input } from '@/components/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/tabs';
 
-export interface DateSelectorI18nConfig {
-  clear: string;
-  today: string;
-  filterTypes: {
-    is: string;
-    isNot: string;
-    before: string;
-    after: string;
-    between: string;
-    notBetween: string;
-  };
-  months: string[];
-  weekdays: string[];
-  weekdaysShort: string[];
-  placeholder: string;
-}
-
-export const DEFAULT_DATE_SELECTOR_I18N: DateSelectorI18nConfig = {
-  clear: 'Clear',
-  today: 'Today',
-  filterTypes: {
-    is: 'is',
-    isNot: 'is not',
-    before: 'before',
-    after: 'after',
-    between: 'between',
-    notBetween: 'not between',
-  },
-  months: [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ],
-  weekdays: [
-    'Sunday',
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-  ],
-  weekdaysShort: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'],
-  placeholder: 'Select date...',
-};
-
-export type DateSelectorFilterType =
-  'is' | 'is_not' | 'before' | 'after' | 'between' | 'not_between';
-
-/** `between` and `not_between` both pick a two-end range. */
-const isRangeFilterType = (type: DateSelectorFilterType): boolean =>
-  type === 'between' || type === 'not_between';
-
-export interface DateSelectorValue {
-  operator: DateSelectorFilterType;
-  startDate?: Date;
-  endDate?: Date;
-}
+export type {
+  DateSelectorFilterType,
+  DateSelectorI18nConfig,
+  DateSelectorValue,
+} from './date-selector-types';
+export { useDateSelector } from './use-date-selector';
 
 interface DateSelectorContextValue {
   i18n: DateSelectorI18nConfig;
@@ -112,148 +55,15 @@ const DateSelectorContext = createContext<DateSelectorContextValue>({
 
 const useDateSelectorContext = () => useContext(DateSelectorContext);
 
-export function formatDateValue(
-  value: DateSelectorValue,
-  i18n: DateSelectorI18nConfig = DEFAULT_DATE_SELECTOR_I18N,
-  dayDateFormat: string = 'MM/dd/yyyy'
-): string {
-  void i18n;
-  const { startDate, endDate } = value;
-  if (startDate && endDate) {
-    return `${format(startDate, dayDateFormat)} - ${format(endDate, dayDateFormat)}`;
-  }
-  if (startDate) {
-    return format(startDate, dayDateFormat);
-  }
-  return '';
-}
-
-interface UseDateSelectorOptions {
-  value?: DateSelectorValue;
-  onChange?: (value: DateSelectorValue) => void;
-  defaultFilterType?: DateSelectorFilterType;
-  allowRange?: boolean;
-  /** Controlled calendar month; omit to let the selector manage it. */
-  month?: Date;
-  onMonthChange?: (month: Date) => void;
-}
-
 // The clock has no event to subscribe to, but a store snapshot is still read
 // on every render. Compiled, a render-body clock read is cached at mount.
 const subscribeToClock = () => () => {};
-const getCurrentYear = () => new Date().getFullYear();
 
 /** Where a calendar month sits against today's month. */
 function getMonthPosition(month: Date | undefined) {
   const today = new Date();
   if (!month || isSameMonth(month, today)) return 'current';
   return month > today ? 'future' : 'past';
-}
-
-export function useDateSelector({
-  value,
-  onChange,
-  defaultFilterType = 'is',
-  allowRange = true,
-  month,
-  onMonthChange,
-}: UseDateSelectorOptions) {
-  const [filterType, setFilterType] = useState<DateSelectorFilterType>(
-    value?.operator ?? defaultFilterType
-  );
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    value?.startDate
-  );
-  const [selectedEndDate, setSelectedEndDate] = useState<Date | undefined>(
-    value?.endDate
-  );
-  const [internalMonth, setInternalMonth] = useState(
-    () => value?.startDate || new Date()
-  );
-  const calendarMonth = month ?? internalMonth;
-  const setCalendarMonth = useCallback(
-    (next: Date) => {
-      if (onMonthChange) {
-        onMonthChange(next);
-      } else {
-        setInternalMonth(next);
-      }
-    },
-    [onMonthChange]
-  );
-  const [hoverDate, setHoverDate] = useState<Date | undefined>();
-
-  const currentValue = useMemo<DateSelectorValue>(
-    () => ({
-      operator: filterType,
-      startDate: selectedDate,
-      endDate: selectedEndDate,
-    }),
-    [filterType, selectedDate, selectedEndDate]
-  );
-
-  const clearSelection = useCallback(() => {
-    setSelectedDate(undefined);
-    setSelectedEndDate(undefined);
-    setHoverDate(undefined);
-  }, []);
-
-  const handleDayClick = useCallback(
-    (day: Date) => {
-      if (isRangeFilterType(filterType) && allowRange) {
-        if (!selectedDate || selectedEndDate) {
-          setSelectedDate(day);
-          setSelectedEndDate(undefined);
-        } else {
-          if (isBefore(day, selectedDate)) {
-            setSelectedEndDate(selectedDate);
-            setSelectedDate(day);
-          } else {
-            setSelectedEndDate(day);
-          }
-        }
-      } else {
-        setSelectedDate(day);
-        setSelectedEndDate(undefined);
-      }
-    },
-    [filterType, allowRange, selectedDate, selectedEndDate]
-  );
-
-  const handleFilterTypeChange = useCallback((type: DateSelectorFilterType) => {
-    setFilterType(type);
-    // Switching to a single-date operator drops the range end; the start
-    // date stays so compatible operators keep the user's selection.
-    if (!isRangeFilterType(type)) {
-      setSelectedEndDate(undefined);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (value) {
-      setFilterType(value.operator);
-      setSelectedDate(value.startDate);
-      setSelectedEndDate(value.endDate);
-    }
-  }, [value, defaultFilterType]);
-
-  useEffect(() => {
-    onChange?.(currentValue);
-  }, [currentValue, onChange]);
-
-  return {
-    filterType,
-    selectedDate,
-    selectedEndDate,
-    calendarMonth,
-    hoverDate,
-    currentValue,
-    setFilterType: handleFilterTypeChange,
-    setCalendarMonth,
-    setHoverDate,
-    clearSelection,
-    handleDayClick,
-  };
 }
 
 interface DateSelectorFilterToggleProps {
@@ -326,11 +136,14 @@ function DateSelectorMonthNav({
   onMonthChange: (date: Date) => void;
 }) {
   const { i18n } = useDateSelectorContext();
-  const getCalendarMonthPosition = () => getMonthPosition(calendarMonth);
+  const getSnapshot = useCallback(
+    () => getMonthPosition(calendarMonth),
+    [calendarMonth]
+  );
   const monthPosition = useSyncExternalStore(
     subscribeToClock,
-    getCalendarMonthPosition,
-    getCalendarMonthPosition
+    getSnapshot,
+    getSnapshot
   );
 
   return (
@@ -369,6 +182,171 @@ function DateSelectorMonthNav({
   );
 }
 
+interface DateSelectorDayHoverContextValue {
+  enabled: boolean;
+  onDayHover?: (day: Date | undefined) => void;
+}
+
+const DateSelectorDayHoverContext =
+  createContext<DateSelectorDayHoverContextValue>({ enabled: false });
+
+function DateSelectorCalendarDayButton(
+  props: ComponentProps<typeof CalendarDayButton>
+) {
+  const { enabled, onDayHover } = useContext(DateSelectorDayHoverContext);
+
+  return (
+    <CalendarDayButton
+      {...props}
+      onMouseEnter={() => {
+        if (enabled) onDayHover?.(props.day.date);
+      }}
+      onMouseLeave={() => {
+        if (enabled) onDayHover?.(undefined);
+      }}
+    />
+  );
+}
+
+const DATE_SELECTOR_CALENDAR_COMPONENTS = {
+  DayButton: DateSelectorCalendarDayButton,
+};
+
+const DATE_SELECTOR_CALENDAR_CLASS_NAMES = {
+  months: 'flex flex-wrap items-start justify-between gap-5 w-full',
+  month: 'flex flex-col items-center min-w-0 flex-1',
+  nav: 'hidden',
+};
+
+function useDateSelectorFormatters() {
+  const { i18n } = useDateSelectorContext();
+
+  return useMemo(
+    () => ({
+      formatWeekdayName: (date: Date) => {
+        const dayIndex = date.getDay();
+        return i18n.weekdaysShort[dayIndex] || i18n.weekdays[dayIndex];
+      },
+      formatMonthCaption: (date: Date) => {
+        const monthIndex = date.getMonth();
+        const year = date.getFullYear();
+        return `${i18n.months[monthIndex]} ${year}`;
+      },
+    }),
+    [i18n]
+  );
+}
+
+interface DateSelectorCalendarBaseProps {
+  currentMonth: Date;
+  selectedDate?: Date;
+  onDayClick: (day: Date) => void;
+  numberOfMonths: number;
+  weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+}
+
+const getRangeSelection = ({
+  selectedDate,
+  selectedEndDate,
+  hoverDate,
+}: {
+  selectedDate?: Date;
+  selectedEndDate?: Date;
+  hoverDate?: Date;
+}): DateRange | undefined => {
+  if (selectedDate && selectedEndDate) {
+    return { from: selectedDate, to: selectedEndDate };
+  }
+  if (selectedDate) {
+    return { from: selectedDate, to: hoverDate || selectedDate };
+  }
+  return undefined;
+};
+
+const getRangeSelectDay = (range: DateRange | undefined) => {
+  if (!range?.from) return undefined;
+  return range.to ?? range.from;
+};
+
+function DateSelectorRangeCalendar({
+  currentMonth,
+  selectedDate,
+  selectedEndDate,
+  hoverDate,
+  onDayClick,
+  onDayHover,
+  numberOfMonths,
+  weekStartsOn,
+}: DateSelectorCalendarBaseProps & {
+  selectedEndDate?: Date;
+  hoverDate?: Date;
+  onDayHover?: (day: Date | undefined) => void;
+}) {
+  const formatters = useDateSelectorFormatters();
+  const selected = getRangeSelection({
+    selectedDate,
+    selectedEndDate,
+    hoverDate,
+  });
+  const hoverContextValue = useMemo(
+    () => ({ enabled: true, onDayHover }),
+    [onDayHover]
+  );
+
+  const handleSelect = (range: DateRange | undefined) => {
+    const day = getRangeSelectDay(range);
+    if (day) onDayClick(day);
+  };
+
+  return (
+    <DateSelectorDayHoverContext.Provider value={hoverContextValue}>
+      <Calendar
+        month={currentMonth}
+        mode="range"
+        selected={selected}
+        onSelect={handleSelect}
+        numberOfMonths={numberOfMonths}
+        showOutsideDays={true}
+        weekStartsOn={weekStartsOn}
+        formatters={formatters}
+        className="w-full shrink-0 p-0"
+        classNames={DATE_SELECTOR_CALENDAR_CLASS_NAMES}
+        components={DATE_SELECTOR_CALENDAR_COMPONENTS}
+      />
+    </DateSelectorDayHoverContext.Provider>
+  );
+}
+
+function DateSelectorSingleCalendar({
+  currentMonth,
+  selectedDate,
+  onDayClick,
+  numberOfMonths,
+  weekStartsOn,
+}: DateSelectorCalendarBaseProps) {
+  const formatters = useDateSelectorFormatters();
+
+  const handleSelect = (date: Date | undefined) => {
+    if (date) onDayClick(date);
+  };
+
+  return (
+    <Calendar
+      month={currentMonth}
+      mode="single"
+      selected={selectedDate}
+      onSelect={handleSelect}
+      numberOfMonths={numberOfMonths}
+      showOutsideDays={true}
+      weekStartsOn={weekStartsOn}
+      formatters={formatters}
+      className="w-full shrink-0 p-0"
+      classNames={DATE_SELECTOR_CALENDAR_CLASS_NAMES}
+      components={DATE_SELECTOR_CALENDAR_COMPONENTS}
+    />
+  );
+}
+
 interface DateSelectorDayPickerProps {
   currentMonth: Date;
   selectedDate?: Date;
@@ -394,109 +372,27 @@ function DateSelectorDayPicker({
   weekStartsOn,
   className,
 }: DateSelectorDayPickerProps) {
-  const { i18n } = useDateSelectorContext();
   const isMobile = useIsMobile();
-
-  // Convert to react-day-picker format
-  const selected: Date | DateRange | undefined = isRange
-    ? selectedDate && selectedEndDate
-      ? { from: selectedDate, to: selectedEndDate }
-      : selectedDate
-        ? { from: selectedDate, to: hoverDate || selectedDate }
-        : undefined
-    : selectedDate;
-
-  const handleSelect = (date: Date | DateRange | undefined) => {
-    if (!date) {
-      return;
-    }
-
-    if (isRange && 'from' in date) {
-      // For range mode
-      if (date.from && !date.to) {
-        // First click - set start date
-        onDayClick(date.from);
-      } else if (date.from && date.to) {
-        // Range selected - set end date
-        onDayClick(date.to);
-      }
-    } else if (!isRange && date instanceof Date) {
-      onDayClick(date);
-    }
+  const numberOfMonths = isMobile ? 1 : showTwoMonths ? 2 : 1;
+  const sharedProps = {
+    currentMonth,
+    selectedDate,
+    onDayClick,
+    numberOfMonths,
+    weekStartsOn,
   };
-
-  // Create custom DayButton component with hover support
-  const CustomDayButton = useCallback(
-    (props: ComponentProps<typeof DayButton>) => {
-      return (
-        <CalendarDayButton
-          {...props}
-          onMouseEnter={() => {
-            if (isRange && onDayHover) {
-              onDayHover(props.day.date);
-            }
-          }}
-          onMouseLeave={() => {
-            if (isRange && onDayHover) {
-              onDayHover(undefined);
-            }
-          }}
-        />
-      );
-    },
-    [isRange, onDayHover]
-  );
-
-  // Create custom formatters for i18n
-  const formatters = {
-    formatWeekdayName: (date: Date) => {
-      const dayIndex = date.getDay();
-      return i18n.weekdaysShort[dayIndex] || i18n.weekdays[dayIndex];
-    },
-    formatMonthCaption: (date: Date) => {
-      const monthIndex = date.getMonth();
-      const year = date.getFullYear();
-      return `${i18n.months[monthIndex]} ${year}`;
-    },
-  };
-
-  const calendarClassNames = {
-    months: 'flex flex-wrap items-start justify-between gap-5 w-full',
-    month: 'flex flex-col items-center min-w-0 flex-1',
-    nav: 'hidden',
-  };
-  const calendarComponents = { DayButton: CustomDayButton };
 
   return (
     <div className={cn('flex w-full items-center justify-between', className)}>
       {isRange ? (
-        <Calendar
-          month={currentMonth}
-          mode="range"
-          selected={selected as DateRange | undefined}
-          onSelect={handleSelect as (range: DateRange | undefined) => void}
-          numberOfMonths={isMobile ? 1 : showTwoMonths ? 2 : 1}
-          showOutsideDays={true}
-          weekStartsOn={weekStartsOn}
-          formatters={formatters}
-          className="w-full shrink-0 p-0"
-          classNames={calendarClassNames}
-          components={calendarComponents}
+        <DateSelectorRangeCalendar
+          {...sharedProps}
+          selectedEndDate={selectedEndDate}
+          hoverDate={hoverDate}
+          onDayHover={onDayHover}
         />
       ) : (
-        <Calendar
-          month={currentMonth}
-          mode="single"
-          selected={selected as Date | undefined}
-          onSelect={handleSelect as (date: Date | undefined) => void}
-          numberOfMonths={isMobile ? 1 : showTwoMonths ? 2 : 1}
-          showOutsideDays={true}
-          weekStartsOn={weekStartsOn}
-          formatters={formatters}
-          className="w-full shrink-0 p-0"
-          classNames={calendarClassNames}
-          components={calendarComponents}
-        />
+        <DateSelectorSingleCalendar {...sharedProps} />
       )}
     </div>
   );
@@ -550,6 +446,7 @@ export function DateSelector({
     calendarMonth,
     hoverDate,
     currentValue,
+    setValue,
     setFilterType,
     setCalendarMonth,
     setHoverDate,
@@ -564,16 +461,10 @@ export function DateSelector({
     onMonthChange,
   });
 
-  const displayValue = formatDateValue(currentValue, mergedI18n, dayDateFormat);
-  const [inputValue, setInputValue] = useState(displayValue);
-  const [isInputFocused, setIsInputFocused] = useState(false);
-
-  // Sync input value when displayValue changes (but not when user is typing)
-  useEffect(() => {
-    if (!isInputFocused) {
-      setInputValue(displayValue);
-    }
-  }, [displayValue, isInputFocused]);
+  const displayValue = formatDateValue(currentValue, dayDateFormat);
+  const [inputDraft, setInputDraft] = useState<string | null>(null);
+  const inputValue = inputDraft ?? displayValue;
+  const isInputFocused = inputDraft !== null;
 
   // Compute date formats for parsing
   const dateFormats = useMemo(() => {
@@ -626,28 +517,21 @@ export function DateSelector({
 
   const handleInputChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
-      const newValue = e.target.value;
-      setInputValue(newValue);
+      const nextValue = e.target.value;
+      setInputDraft(nextValue);
 
-      // Try to parse the input
-      const parsed = parseInputValue(newValue);
+      const parsed = parseInputValue(nextValue);
       if (parsed) {
-        onChange?.(parsed);
+        setValue(parsed);
       }
     },
-    [onChange, parseInputValue]
+    [parseInputValue, setValue]
   );
 
-  const handleInputBlur = useCallback(() => {
-    setIsInputFocused(false);
-    // Reset to display value if parsing failed
-    if (!parseInputValue(inputValue)) {
-      setInputValue(displayValue);
-    }
-  }, [inputValue, displayValue, parseInputValue]);
+  const contextValue = useMemo(() => ({ i18n: mergedI18n }), [mergedI18n]);
 
   return (
-    <DateSelectorContext.Provider value={{ i18n: mergedI18n }}>
+    <DateSelectorContext.Provider value={contextValue}>
       <div className={cn('w-full space-y-4 sm:w-[470px]', className)}>
         <div className="flex flex-wrap items-center gap-3">
           {label ? (
@@ -673,8 +557,8 @@ export function DateSelector({
                     ? inputHint
                     : mergedI18n.placeholder
                 }
-                onFocus={() => setIsInputFocused(true)}
-                onBlur={handleInputBlur}
+                onFocus={() => setInputDraft(inputValue)}
+                onBlur={() => setInputDraft(null)}
                 onChange={handleInputChange}
               />
               {(inputHint ? inputValue : displayValue) && (

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { CheckIcon, ChevronDownIcon } from 'lucide-react';
 import { Button } from '@ploutizo/ui/components/button';
 import {
@@ -18,11 +18,12 @@ import {
   dateFilterFromSearch,
   formatTransactionDateFilterLabel,
 } from './transactionDateFilter';
+import { useOptimisticSelection } from './useOptimisticSelection';
 import type { TransactionSearch } from './transactionSearch';
 import type { ReactNode } from 'react';
 
 type Option = { value: string; label: string; icon?: ReactNode };
-type OptionGroup = { label?: string; options: Option[] };
+type OptionGroup = { key: string; label?: string; options: Option[] };
 
 /** Fields the sheet can expand to; `dateRange` is the date section's key. */
 export type TransactionFilterSheetField =
@@ -122,26 +123,12 @@ const OptionChecklist = ({
   values: string[];
   onChange: (values: string[]) => void;
 }) => {
-  const [draft, setDraft] = useState<string[] | null>(null);
-  const valuesKey = values.join('\u0000');
-  useEffect(() => {
-    setDraft(null);
-  }, [valuesKey]);
-  const selected = draft ?? values;
-  const selectedSet = useMemo(() => new Set(selected), [selected]);
-
-  const toggle = (value: string) => {
-    const next = selectedSet.has(value)
-      ? selected.filter((v) => v !== value)
-      : [...selected, value];
-    setDraft(next);
-    onChange(next);
-  };
+  const { selectedSet, toggle } = useOptimisticSelection(values, onChange);
 
   return (
     <div className="py-1">
-      {groups.map((group, index) => (
-        <div key={group.label ?? index}>
+      {groups.map((group) => (
+        <div key={group.key}>
           {group.label ? (
             <div className="px-4 pt-3 pb-1 text-xs font-medium text-muted-foreground">
               {group.label}
@@ -173,7 +160,6 @@ const SingleChoiceList = ({
   allLabel: string;
   onChange: (value: string | undefined) => void;
 }) => {
-  const ALL = '__all__';
   return (
     <div className="py-1">
       <OptionRow
@@ -262,12 +248,15 @@ export const TransactionFiltersSheet = ({
   const [expanded, setExpanded] = useState<TransactionFilterSheetField | null>(
     null
   );
+  const [openState, setOpenState] = useState({ open, focusField });
 
   // Opening via an applied chip expands that field's section; the Filters
-  // button (focusField null) opens with every section collapsed.
-  useEffect(() => {
+  // button (focusField null) opens with every section collapsed. Adjusted
+  // during render so the sheet body never flashes the previous section.
+  if (openState.open !== open || openState.focusField !== focusField) {
+    setOpenState({ open, focusField });
     if (open) setExpanded(focusField);
-  }, [open, focusField]);
+  }
 
   const dateState = dateFilterFromSearch(search);
   const expand = (field: TransactionFilterSheetField) => (next: boolean) =>
@@ -293,14 +282,14 @@ export const TransactionFiltersSheet = ({
             title="Type"
             summary={selectionLabel(
               typeValues,
-              [{ options: typeOptions }],
+              [{ key: 'type', options: typeOptions }],
               'All types'
             )}
             open={expanded === 'type'}
             onOpenChange={expand('type')}
           >
             <OptionChecklist
-              groups={[{ options: typeOptions }]}
+              groups={[{ key: 'type', options: typeOptions }]}
               values={typeValues}
               onChange={onTypeChange}
             />
@@ -358,14 +347,14 @@ export const TransactionFiltersSheet = ({
             title="Category"
             summary={selectionLabel(
               categoryValues,
-              [{ options: categoryOptions }],
+              [{ key: 'category', options: categoryOptions }],
               'All categories'
             )}
             open={expanded === 'category'}
             onOpenChange={expand('category')}
           >
             <OptionChecklist
-              groups={[{ options: categoryOptions }]}
+              groups={[{ key: 'category', options: categoryOptions }]}
               values={categoryValues}
               onChange={onCategoryChange}
             />
@@ -374,14 +363,14 @@ export const TransactionFiltersSheet = ({
             title="Tags"
             summary={selectionLabel(
               tagValues,
-              [{ options: tagOptions }],
+              [{ key: 'tag', options: tagOptions }],
               'All tags'
             )}
             open={expanded === 'tag'}
             onOpenChange={expand('tag')}
           >
             <OptionChecklist
-              groups={[{ options: tagOptions }]}
+              groups={[{ key: 'tag', options: tagOptions }]}
               values={tagValues}
               onChange={onTagsChange}
             />

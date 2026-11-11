@@ -1,37 +1,11 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import {
-  ArrowLeftRightIcon,
-  ImportIcon,
-  Layers2Icon,
-  ListFilterIcon,
-  TagsIcon,
-  UsersIcon,
-  WalletIcon,
-} from 'lucide-react';
-import { memberFullLabel } from '@ploutizo/utils';
 import { ActiveFilterChips } from '@ploutizo/ui/components/active-filter-chips';
-import { Badge } from '@ploutizo/ui/components/badge';
-import { Button } from '@ploutizo/ui/components/button';
-import type { AccountType } from '@ploutizo/types';
 import type { Filter } from '@ploutizo/ui/components/filters-types';
-import { ACCOUNT_TYPE_OPTIONS } from '@/components/accounts/accountTypes';
-import { CachedLucideIcon } from '@/components/categories/CachedLucideIcon';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { UserAvatar } from '@/components/members/UserAvatar';
-import { TransactionFilterSearch } from './TransactionFilterSearch';
-import { TransactionDateFilterControl } from './TransactionDateFilterControl';
-import { TransactionMultiSelectFilter } from './TransactionMultiSelectFilter';
-import { TransactionSingleSelectFilter } from './TransactionSingleSelectFilter';
-import { TransactionFiltersSheet } from './TransactionFiltersSheet';
-import {
-  ASSIGNEE_SHAPE_OPTIONS,
-  IMPORT_OUTCOME_ICONS,
-  IMPORT_OUTCOME_OPTIONS,
-  TRANSACTION_TYPE_ICONS,
-  TRANSACTION_TYPE_OPTIONS,
-  buildFilterFields,
-} from './TransactionFilterFields';
+import { buildFilterFields } from './TransactionFilterFields';
+import { TransactionsDesktopFilterControls } from './TransactionsDesktopFilterControls';
+import { TransactionsMobileFilterControls } from './TransactionsMobileFilterControls';
 import {
   dateFilterToSearch,
   formatTransactionDateFilterLabel,
@@ -41,36 +15,24 @@ import {
   filtersToSearch,
   searchToFilters,
 } from './transactionFilterUrl';
+import { useTransactionFilterOptions } from './useTransactionFilterOptions';
 import type { TransactionSearch } from './transactionSearch';
-
-type Account = { id: string; name: string; type: AccountType };
-type Category = { id: string; name: string; icon?: string | null };
-type Member = {
-  id: string;
-  firstName: string | null;
-  lastName: string | null;
-  email: string;
-  imageUrl?: string | null;
-};
-type Tag = { id: string; name: string; colour?: string | null };
+import type {
+  QuickEditTarget,
+  TransactionFilterAccount,
+  TransactionFilterCategory,
+  TransactionFilterChangeHandlers,
+  TransactionFilterMember,
+  TransactionFilterTag,
+} from './transactionFilterTypes';
 
 type TransactionsFilterBarProps = {
   search: TransactionSearch;
-  accounts: Account[];
-  categories: Category[];
-  members: Member[];
-  tags: Tag[];
+  accounts: TransactionFilterAccount[];
+  categories: TransactionFilterCategory[];
+  members: TransactionFilterMember[];
+  tags: TransactionFilterTag[];
 };
-
-type QuickEditTarget =
-  | 'type'
-  | 'date'
-  | 'account'
-  | 'assignee'
-  | 'category'
-  | 'tag'
-  | 'importResult'
-  | 'all';
 
 const QUICK_EDIT_BY_FIELD: Partial<Record<string, QuickEditTarget>> = {
   type: 'type',
@@ -81,9 +43,6 @@ const QUICK_EDIT_BY_FIELD: Partial<Record<string, QuickEditTarget>> = {
   tagIds: 'tag',
   importOutcome: 'importResult',
 };
-
-const splitParam = (value: string | undefined): string[] =>
-  value ? value.split(',').filter(Boolean) : [];
 
 const getDateSummary = (filter: Filter<string>) =>
   filter.field === 'dateRange'
@@ -118,6 +77,14 @@ export const TransactionsFilterBar = ({
         includeImportResult: Boolean(search.importBatchId),
       }),
     [accounts, categories, members, tags, search.importBatchId]
+  );
+
+  const filterOptions = useTransactionFilterOptions(
+    search,
+    accounts,
+    categories,
+    members,
+    tags
   );
 
   const applySearch = useCallback(
@@ -253,208 +220,38 @@ export const TransactionsFilterBar = ({
     [applySearch]
   );
 
-  const typeValues = useMemo(() => splitParam(search.type), [search.type]);
-  const typeOptions = useMemo(
-    () =>
-      TRANSACTION_TYPE_OPTIONS.map((option) => {
-        const Icon = TRANSACTION_TYPE_ICONS[option.value];
-        return {
-          ...option,
-          icon: <Icon className="size-3.5" aria-hidden="true" />,
-        };
-      }),
-    []
-  );
-  const accountIds = useMemo(
-    () => splitParam(search.accountId),
-    [search.accountId]
-  );
-  const accountGroups = useMemo(
-    () =>
-      ACCOUNT_TYPE_OPTIONS.map((typeOption) => {
-        const Icon = typeOption.icon;
-        return {
-          label: typeOption.label,
-          options: accounts
-            .filter((account) => account.type === typeOption.value)
-            .map((account) => ({
-              value: account.id,
-              label: account.name,
-              icon: <Icon className="size-3.5" aria-hidden="true" />,
-            })),
-        };
-      }).filter((group) => group.options.length > 0),
-    [accounts]
-  );
-  const assigneeValues = useMemo(
-    () => splitParam(search.assigneeId),
-    [search.assigneeId]
-  );
-  const assigneeGroups = useMemo(
-    () => [
-      {
-        label: 'Members',
-        options: members.map((member) => {
-          const label = memberFullLabel(member);
-          return {
-            value: member.id,
-            label,
-            icon: (
-              <UserAvatar
-                name={label}
-                imageUrl={member.imageUrl}
-                size="sm"
-                className="size-5 bg-muted"
-              />
-            ),
-          };
-        }),
-      },
-      { label: 'Sharing', options: ASSIGNEE_SHAPE_OPTIONS },
-    ],
-    [members]
-  );
-  const categoryValues = useMemo(
-    () => splitParam(search.categoryId),
-    [search.categoryId]
-  );
-  const categoryOptions = useMemo(
-    () =>
-      categories.map((category) => ({
-        value: category.id,
-        label: category.name,
-        icon: <CachedLucideIcon name={category.icon ?? null} size={14} />,
-      })),
-    [categories]
-  );
-  const tagValues = useMemo(() => splitParam(search.tagIds), [search.tagIds]);
-  const tagOptions = useMemo(
-    () =>
-      tags.map((tag) => ({
-        value: tag.id,
-        label: tag.name,
-        icon: tag.colour ? (
-          <span
-            className="size-2.5 shrink-0 rounded-full"
-            style={{ backgroundColor: tag.colour }}
-            aria-hidden="true"
-          />
-        ) : undefined,
-      })),
-    [tags]
-  );
-  const importOptions = useMemo(
-    () =>
-      IMPORT_OUTCOME_OPTIONS.map((option) => {
-        const Icon = IMPORT_OUTCOME_ICONS[option.value];
-        return {
-          ...option,
-          icon: <Icon className="size-3.5" aria-hidden="true" />,
-        };
-      }),
-    []
-  );
+  const filterHandlers: TransactionFilterChangeHandlers = {
+    onTypeChange: handleTypeChange,
+    onAccountChange: handleAccountChange,
+    onAssigneeChange: handleAssigneeChange,
+    onCategoryChange: handleCategoryChange,
+    onTagsChange: handleTagsChange,
+    onDateChange: handleDateChange,
+    onImportOutcomeChange: handleImportOutcomeChange,
+  };
 
   return (
     <div className="flex flex-col gap-2">
       {isMobile ? (
-        <div className="flex items-center gap-2">
-          <TransactionFilterSearch
-            urlQuery={search.search ?? ''}
-            onCommit={commitSearchQuery}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="shrink-0 gap-1.5"
-            onClick={() => setQuickEdit('all')}
-          >
-            <ListFilterIcon className="size-3.5" />
-            Filters
-            {activeFilters.length > 0 ? (
-              <Badge
-                variant="secondary"
-                className="h-4 min-w-4 px-1 text-[10px]"
-              >
-                {activeFilters.length}
-              </Badge>
-            ) : null}
-          </Button>
-        </div>
+        <TransactionsMobileFilterControls
+          search={search}
+          options={filterOptions}
+          handlers={filterHandlers}
+          activeFilterCount={activeFilters.length}
+          quickEdit={quickEdit}
+          onQuickEditChange={setQuickEdit}
+          onSearchCommit={commitSearchQuery}
+          onClearAllFilters={handleClearFilters}
+        />
       ) : (
-        <div className="flex flex-wrap items-center gap-2">
-          <TransactionFilterSearch
-            urlQuery={search.search ?? ''}
-            onCommit={commitSearchQuery}
-          />
-          <div className="flex items-center gap-2">
-            <TransactionMultiSelectFilter
-              icon={<ArrowLeftRightIcon className="size-3.5" />}
-              groups={[{ options: typeOptions }]}
-              values={typeValues}
-              allLabel="All types"
-              onChange={handleTypeChange}
-              open={quickEdit === 'type'}
-              onOpenChange={(open) => setQuickEdit(open ? 'type' : null)}
-            />
-            <TransactionDateFilterControl
-              search={search}
-              onChange={handleDateChange}
-              open={quickEdit === 'date'}
-              onOpenChange={(open) => setQuickEdit(open ? 'date' : null)}
-            />
-            <TransactionMultiSelectFilter
-              icon={<WalletIcon className="size-3.5" />}
-              groups={accountGroups}
-              values={accountIds}
-              allLabel="All accounts"
-              onChange={handleAccountChange}
-              open={quickEdit === 'account'}
-              onOpenChange={(open) => setQuickEdit(open ? 'account' : null)}
-            />
-            <TransactionMultiSelectFilter
-              icon={<UsersIcon className="size-3.5" />}
-              groups={assigneeGroups}
-              values={assigneeValues}
-              allLabel="All assignees"
-              onChange={handleAssigneeChange}
-              open={quickEdit === 'assignee'}
-              onOpenChange={(open) => setQuickEdit(open ? 'assignee' : null)}
-            />
-            <TransactionMultiSelectFilter
-              icon={<Layers2Icon className="size-3.5" />}
-              groups={[{ options: categoryOptions }]}
-              values={categoryValues}
-              allLabel="All categories"
-              onChange={handleCategoryChange}
-              open={quickEdit === 'category'}
-              onOpenChange={(open) => setQuickEdit(open ? 'category' : null)}
-            />
-            <TransactionMultiSelectFilter
-              icon={<TagsIcon className="size-3.5" />}
-              groups={[{ options: tagOptions }]}
-              values={tagValues}
-              allLabel="All tags"
-              onChange={handleTagsChange}
-              open={quickEdit === 'tag'}
-              onOpenChange={(open) => setQuickEdit(open ? 'tag' : null)}
-            />
-            {search.importBatchId ? (
-              <TransactionSingleSelectFilter
-                icon={<ImportIcon className="size-3.5" />}
-                options={importOptions}
-                value={search.importOutcome}
-                allLabel="All results"
-                onChange={handleImportOutcomeChange}
-                open={quickEdit === 'importResult'}
-                onOpenChange={(open) =>
-                  setQuickEdit(open ? 'importResult' : null)
-                }
-              />
-            ) : null}
-          </div>
-        </div>
+        <TransactionsDesktopFilterControls
+          search={search}
+          options={filterOptions}
+          handlers={filterHandlers}
+          quickEdit={quickEdit}
+          onQuickEditChange={setQuickEdit}
+          onSearchCommit={commitSearchQuery}
+        />
       )}
 
       <ActiveFilterChips
@@ -465,39 +262,6 @@ export const TransactionsFilterBar = ({
         onClearAll={activeFilters.length > 0 ? handleClearFilters : undefined}
         getSummary={getDateSummary}
       />
-
-      {isMobile ? (
-        <TransactionFiltersSheet
-          open={quickEdit !== null}
-          focusField={quickEdit === 'all' ? null : quickEdit}
-          onOpenChange={(next) => {
-            if (!next) setQuickEdit(null);
-          }}
-          search={search}
-          typeValues={typeValues}
-          accountValues={accountIds}
-          assigneeValues={assigneeValues}
-          categoryValues={categoryValues}
-          tagValues={tagValues}
-          typeOptions={typeOptions}
-          accountGroups={accountGroups}
-          categoryOptions={categoryOptions}
-          tagOptions={tagOptions}
-          assigneeGroups={assigneeGroups}
-          importOptions={importOptions}
-          hasImportResult={Boolean(search.importBatchId)}
-          importValue={search.importOutcome}
-          onTypeChange={handleTypeChange}
-          onAccountChange={handleAccountChange}
-          onAssigneeChange={handleAssigneeChange}
-          onCategoryChange={handleCategoryChange}
-          onTagsChange={handleTagsChange}
-          onDateChange={handleDateChange}
-          onImportOutcomeChange={handleImportOutcomeChange}
-          activeFilterCount={activeFilters.length}
-          onClearAllFilters={handleClearFilters}
-        />
-      ) : null}
     </div>
   );
 };

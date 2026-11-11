@@ -10,13 +10,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@ploutizo/ui/components/dropdown-menu';
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useMemo } from 'react';
+import { useOptimisticSelection } from './useOptimisticSelection';
 import type { ReactNode } from 'react';
 
 type TransactionMultiSelectFilterProps = {
   icon: ReactNode;
   /** Option groups rendered in order; a label heads each labelled group. */
   groups: {
+    key?: string;
     label?: string;
     options: { value: string; label: string; icon?: ReactNode }[];
   }[];
@@ -41,17 +43,11 @@ export const TransactionMultiSelectFilter = ({
   onOpenChange,
 }: TransactionMultiSelectFilterProps) => {
   // `values` round-trips through the URL, so it lags behind rapid toggles.
-  // The draft keeps checked state and toggle math optimistic while open.
-  const [draftValues, setDraftValues] = useState<string[] | null>(null);
-  // Reconcile once the URL catches up (or an external change lands); the
-  // draft and committed values are identical at that point, so this is
-  // invisible. Keyed on content because `values` identity is unstable.
-  const valuesKey = values.join('\u0000');
-  useEffect(() => {
-    setDraftValues(null);
-  }, [valuesKey]);
-  const selected = draftValues ?? values;
-  const valueSet = useMemo(() => new Set(selected), [selected]);
+  // The optimistic draft keeps checked state and toggle math stable while open.
+  const { selected, selectedSet, commit, toggle } = useOptimisticSelection(
+    values,
+    onChange
+  );
   const labelByValue = useMemo(
     () =>
       new Map(
@@ -66,25 +62,8 @@ export const TransactionMultiSelectFilter = ({
       ? allLabel
       : selected.map((value) => labelByValue.get(value) ?? value).join(', ');
 
-  const handleOpenChange = (next: boolean) => {
-    onOpenChange(next);
-    if (!next) setDraftValues(null);
-  };
-
-  const handleToggle = (value: string) => {
-    const next = selected.includes(value)
-      ? selected.filter((v) => v !== value)
-      : [...selected, value];
-    setDraftValues(next);
-    onChange(next);
-  };
-  const handleClear = () => {
-    setDraftValues([]);
-    onChange([]);
-  };
-
   return (
-    <DropdownMenu open={open} onOpenChange={handleOpenChange}>
+    <DropdownMenu open={open} onOpenChange={onOpenChange}>
       <DropdownMenuTrigger
         render={
           <Button
@@ -100,9 +79,9 @@ export const TransactionMultiSelectFilter = ({
         }
       />
       <DropdownMenuContent align="start" className="w-56">
-        {groups.map((group, index) => (
-          <Fragment key={group.label ?? 'options'}>
-            {index > 0 ? <DropdownMenuSeparator /> : null}
+        {groups.map((group, groupIndex) => (
+          <Fragment key={group.key ?? group.label ?? 'options'}>
+            {groupIndex > 0 ? <DropdownMenuSeparator /> : null}
             <DropdownMenuGroup>
               {group.label ? (
                 <DropdownMenuLabel>{group.label}</DropdownMenuLabel>
@@ -110,10 +89,10 @@ export const TransactionMultiSelectFilter = ({
               {group.options.map((option) => (
                 <DropdownMenuCheckboxItem
                   key={option.value}
-                  checked={valueSet.has(option.value)}
+                  checked={selectedSet.has(option.value)}
                   // Keep the menu open while toggling multiple values.
                   onSelect={(event) => event.preventDefault()}
-                  onCheckedChange={() => handleToggle(option.value)}
+                  onCheckedChange={() => toggle(option.value)}
                 >
                   <span className="flex min-w-0 items-center gap-2">
                     {option.icon}
@@ -127,7 +106,9 @@ export const TransactionMultiSelectFilter = ({
         {selected.length > 0 ? (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleClear}>Clear</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => commit([])}>
+              Clear
+            </DropdownMenuItem>
           </>
         ) : null}
       </DropdownMenuContent>
