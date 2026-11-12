@@ -189,6 +189,11 @@ export const TransactionFiltersSheet = ({
   }
 
   const dateFilter = dateFilterFromSearch(search);
+  const dateFilterKey = [
+    search.dateFrom ?? '',
+    search.dateTo ?? '',
+    search.dateRange_op ?? '',
+  ].join(':');
   const sectionProps = (field: TransactionFilterField) => ({
     open: expanded === field,
     onOpenChange: (next: boolean) => setExpanded(next ? field : null),
@@ -237,7 +242,9 @@ export const TransactionFiltersSheet = ({
                     {...sectionProps(filter.field)}
                   >
                     <TransactionDateEditor
+                      key={dateFilterKey}
                       filter={dateFilter}
+                      numberOfMonths={1}
                       onApply={(next) => {
                         handlers.onDateChange(next);
                         setExpanded(null);
@@ -277,7 +284,10 @@ export const TransactionFiltersSheet = ({
             type="button"
             variant="ghost"
             disabled={activeFilterCount === 0}
-            onClick={onClearAllFilters}
+            onClick={() => {
+              setExpanded(null);
+              onClearAllFilters();
+            }}
           >
             Clear all
           </Button>

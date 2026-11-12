@@ -10,7 +10,12 @@ import {
 import { DATE_RANGE_OPERATORS, isDateRangeOperator } from '@ploutizo/types';
 import { Button } from '@ploutizo/ui/components/button';
 import { Calendar } from '@ploutizo/ui/components/calendar';
-import { Input } from '@ploutizo/ui/components/input';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from '@ploutizo/ui/components/input-group';
 import {
   Popover,
   PopoverContent,
@@ -18,7 +23,6 @@ import {
 } from '@ploutizo/ui/components/popover';
 import { Separator } from '@ploutizo/ui/components/separator';
 import { Tabs, TabsList, TabsTrigger } from '@ploutizo/ui/components/tabs';
-import { useIsMobile } from '@ploutizo/ui/hooks/use-mobile';
 import { useToday } from '@ploutizo/ui/hooks/use-today';
 import { cn } from '@ploutizo/ui/lib/utils';
 import type { DateRangeOperator } from '@ploutizo/types';
@@ -182,13 +186,12 @@ const DateDraftField = ({
   };
 
   return (
-    <div className="relative min-w-0 flex-1">
-      <Input
+    <InputGroup className="min-w-0 flex-1">
+      <InputGroupInput
         type="text"
         aria-label="Date"
         value={inputValue}
         placeholder="Select date..."
-        className={inputValue ? 'pe-8' : undefined}
         onFocus={() => setText(inputValue)}
         onBlur={(event) => commit(event.currentTarget.value)}
         onChange={(event) => setText(event.target.value)}
@@ -198,29 +201,26 @@ const DateDraftField = ({
         }}
       />
       {inputValue ? (
-        <button
-          type="button"
-          aria-label="Clear date"
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => {
-            setText(null);
-            onCommit({ operator: draft.operator });
-          }}
-          className={cn(
-            'absolute end-2.5 top-1/2 size-4 -translate-y-1/2 cursor-pointer rounded-xs',
-            'opacity-70 transition-opacity hover:opacity-100',
-            'ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none'
-          )}
-        >
-          <XIcon aria-hidden="true" className="size-4" />
-        </button>
+        <InputGroupAddon align="inline-end">
+          <InputGroupButton
+            aria-label="Clear date"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              setText(null);
+              onCommit({ operator: draft.operator });
+            }}
+          >
+            <XIcon aria-hidden="true" className="size-4" />
+          </InputGroupButton>
+        </InputGroupAddon>
       ) : null}
-    </div>
+    </InputGroup>
   );
 };
 
 type TransactionDateEditorProps = {
   filter: TransactionDateFilter | null;
+  numberOfMonths: number;
   onApply: (filter: TransactionDateFilter | null) => void;
   onCancel: () => void;
 };
@@ -228,11 +228,11 @@ type TransactionDateEditorProps = {
 /** Edits a local draft committed on Apply; mount fresh per editing session. */
 export const TransactionDateEditor = ({
   filter,
+  numberOfMonths,
   onApply,
   onCancel,
 }: TransactionDateEditorProps) => {
   const today = useToday();
-  const isMobile = useIsMobile();
   const [draft, setDraft] = useState(() => dateFilterToDraft(filter));
   // Presets drive the calendar month explicitly; day clicks must not, or
   // picking a range end in the second visible month would yank the view.
@@ -281,7 +281,7 @@ export const TransactionDateEditor = ({
   const calendarProps = {
     month: focusMonth,
     onMonthChange: setFocusMonth,
-    numberOfMonths: isMobile ? 1 : 2,
+    numberOfMonths,
     hideNavigation: true,
     showOutsideDays: true,
     today,
@@ -378,6 +378,11 @@ export const TransactionDateFilterControl = ({
 }: TransactionDateFilterControlProps) => {
   const today = useToday();
   const dateFilter = dateFilterFromSearch(search);
+  const dateFilterKey = [
+    search.dateFrom ?? '',
+    search.dateTo ?? '',
+    search.dateRange_op ?? '',
+  ].join(':');
 
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
@@ -391,7 +396,9 @@ export const TransactionDateFilterControl = ({
       />
       <PopoverContent align="start" sideOffset={4} className="w-auto gap-0 p-0">
         <TransactionDateEditor
+          key={dateFilterKey}
           filter={dateFilter}
+          numberOfMonths={2}
           onApply={(next) => {
             onChange(next);
             onOpenChange(false);
