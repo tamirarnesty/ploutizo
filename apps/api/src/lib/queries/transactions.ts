@@ -26,12 +26,13 @@ import {
   lte,
   ne,
   not,
-  notInArray,
   or,
   sql,
 } from 'drizzle-orm';
+import { TRANSACTION_FILTER_SENTINELS } from '@ploutizo/types';
 import type { Transaction } from '@ploutizo/db';
 import type {
+  DateRangeOperator,
   SortOrder,
   TransactionSortField,
   TransactionType,
@@ -87,22 +88,16 @@ export type ListQueryParams = {
   limit: number;
   sort: TransactionSortField;
   order: SortOrder;
-  type?: string;
-  accountId?: string;
+  types?: TransactionType[];
+  accountIds?: string[];
   dateFrom?: string;
   dateTo?: string;
-  categoryId?: string;
-  assigneeId?: string;
+  categoryIds?: string[];
+  assigneeIds?: string[];
   tagIds?: string[];
   /** Case-insensitive substring match on description, rawDescription, category, account, and tag names (T-03.4-01). Not assignee, amount, or date. */
   search?: string;
-  // Operator params — T-03.4.1-OP1: unrecognised values fall through to default (eq/is) behaviour
-  type_op?: string; // 'is' | 'is_not'
-  accountId_op?: string; // 'is' | 'is_not'
-  categoryId_op?: string; // 'is' | 'is_not' | 'empty' | 'not_empty'
-  assigneeId_op?: string; // 'is' | 'is_not' | 'empty' | 'not_empty'
-  tagIds_op?: string; // 'is_any_of' | 'is_not_any_of' | 'includes_all' | 'excludes_all' | 'empty' | 'not_empty'
-  dateRange_op?: string; // 'between' | 'after' | 'before' | 'is' | 'is_not' | 'not_between'
+  dateRange_op?: DateRangeOperator;
   importLink?: { batchId: string; outcome: 'created' | 'matched' };
 };
 
@@ -124,181 +119,130 @@ const importTransactionLinkExists = (
       )
   );
 
-// Build the WHERE conditions array for list + count queries
+const partitionNone = (values: string[]) => ({
+  ids: values.filter((value) => value !== TRANSACTION_FILTER_SENTINELS.none),
+  none: values.includes(TRANSACTION_FILTER_SENTINELS.none),
+});
+
+const pushAnyOf = (conditions: SQL[], clauses: (SQL | undefined)[]) => {
+  const defined = clauses.filter((clause) => clause !== undefined);
+  if (defined.length > 0) conditions.push(or(...defined)!);
+};
+
+// Absent operator is between. Every known operator has its own arm.
+const pushDateRangeCondition = (conditions: SQL[], params: ListQueryParams) => {
+  const operator: DateRangeOperator = params.dateRange_op ?? 'between';
+  switch (operator) {
+    case 'after':
+      if (params.dateFrom) {
+        conditions.push(gt(transactions.date, params.dateFrom));
+      }
+      return;
+    case 'before':
+      if (params.dateTo) {
+        conditions.push(lt(transactions.date, params.dateTo));
+      }
+      return;
+    case 'is':
+      if (params.dateFrom) {
+        conditions.push(eq(transactions.date, params.dateFrom));
+      }
+      return;
+    case 'is_not':
+      if (params.dateFrom) {
+        conditions.push(ne(transactions.date, params.dateFrom));
+      }
+      return;
+    case 'not_between': {
+      const clauses: SQL[] = [];
+      if (params.dateFrom) {
+        clauses.push(gte(transactions.date, params.dateFrom));
+      }
+      if (params.dateTo) clauses.push(lte(transactions.date, params.dateTo));
+      if (clauses.length > 0) conditions.push(not(and(...clauses)!));
+      return;
+    }
+    case 'between':
+      if (params.dateFrom) {
+        conditions.push(gte(transactions.date, params.dateFrom));
+      }
+      if (params.dateTo) conditions.push(lte(transactions.date, params.dateTo));
+      return;
+    default: {
+      const unreachable: never = operator;
+      throw new Error(`Unexpected date range operator: ${String(unreachable)}`);
+    }
+  }
+};
+
 export const buildConditions = (params: ListQueryParams): SQL[] => {
   const conditions: SQL[] = [...activeTransactions(params.orgId)];
 
-  // type — D-25: supports comma-separated values for "Internal" shortcut
-  // T-03.4.1-OP1: unrecognised operator falls through to default 'is' (eq/inArray) behaviour
-  if (params.type) {
-    const types = params.type.split(',').map((t) => t.trim());
-    const op = params.type_op ?? 'is';
-    if (types.length > 1) {
-      conditions.push(
-        op === 'is_not'
-          ? notInArray(transactions.type, types as TransactionType[])
-          : inArray(transactions.type, types as TransactionType[])
-      );
-    } else {
-      conditions.push(
-        op === 'is_not'
-          ? ne(transactions.type, types[0] as TransactionType)
-          : eq(transactions.type, types[0] as TransactionType)
-      );
-    }
+  if (params.types?.length) {
+    conditions.push(inArray(transactions.type, params.types));
   }
 
-  // accountId
-  if (params.accountId) {
-    const op = params.accountId_op ?? 'is';
-    conditions.push(
-      op === 'is_not'
-        ? ne(transactions.accountId, params.accountId)
-        : eq(transactions.accountId, params.accountId)
-    );
+  if (params.accountIds?.length) {
+    conditions.push(inArray(transactions.accountId, params.accountIds));
   }
 
-  // dateRange — operator determines which Drizzle condition is applied
-  const dateOp = params.dateRange_op ?? 'between';
-  if (dateOp === 'after' && params.dateFrom) {
-    conditions.push(gt(transactions.date, params.dateFrom));
-  } else if (dateOp === 'before' && params.dateTo) {
-    conditions.push(lt(transactions.date, params.dateTo));
-  } else if (dateOp === 'is' && params.dateFrom) {
-    // 'is X' = exact date match: dateFrom === dateTo === X sent by client
-    conditions.push(eq(transactions.date, params.dateFrom));
-  } else if (dateOp === 'is_not' && params.dateFrom) {
-    // 'is not X' = exclude that exact date
-    conditions.push(ne(transactions.date, params.dateFrom));
-  } else if (dateOp === 'not_between' && (params.dateFrom || params.dateTo)) {
-    // 'not between A and B' = exclude the range [A, B]
-    // not(A <= date <= B)  ≡  date < A OR date > B
-    const clauses: SQL[] = [];
-    if (params.dateFrom) clauses.push(gte(transactions.date, params.dateFrom));
-    if (params.dateTo) clauses.push(lte(transactions.date, params.dateTo));
-    if (clauses.length > 0) conditions.push(not(and(...clauses)!));
-  } else {
-    // 'between' (default) — existing behaviour
-    if (params.dateFrom)
-      conditions.push(gte(transactions.date, params.dateFrom));
-    if (params.dateTo) conditions.push(lte(transactions.date, params.dateTo));
+  pushDateRangeCondition(conditions, params);
+
+  if (params.categoryIds?.length) {
+    const { ids, none } = partitionNone(params.categoryIds);
+    pushAnyOf(conditions, [
+      ids.length > 0 ? inArray(transactions.categoryId, ids) : undefined,
+      none ? isNull(transactions.categoryId) : undefined,
+    ]);
   }
 
-  // categoryId — nullable column; supports empty/not_empty
-  const catOp = params.categoryId_op ?? 'is';
-  if (catOp === 'empty') {
-    conditions.push(isNull(transactions.categoryId));
-  } else if (catOp === 'not_empty') {
-    conditions.push(isNotNull(transactions.categoryId));
-  } else if (params.categoryId) {
-    conditions.push(
-      catOp === 'is_not'
-        ? or(
-            ne(transactions.categoryId, params.categoryId),
-            isNull(transactions.categoryId)
-          )!
-        : eq(transactions.categoryId, params.categoryId)
+  // Selected members are ANDed; selecting both shapes cancels the shape constraint.
+  if (params.assigneeIds?.length) {
+    const { personal, shared } = TRANSACTION_FILTER_SENTINELS;
+    const memberIds = params.assigneeIds.filter(
+      (value) => value !== personal && value !== shared
     );
-  }
-
-  // assigneeId — EXISTS subquery; supports empty/not_empty/is_not (T-03.4.1-OP2)
-  const assigneeOp = params.assigneeId_op ?? 'is';
-  const assigneeSubquery = db
-    .select({ one: sql`1` })
-    .from(transactionAssignees)
-    .where(
-      and(
-        eq(transactionAssignees.transactionId, transactions.id),
-        ...(params.assigneeId
-          ? [eq(transactionAssignees.memberId, params.assigneeId)]
-          : [])
-      )
-    );
-
-  if (assigneeOp === 'empty') {
-    conditions.push(not(exists(assigneeSubquery)));
-  } else if (assigneeOp === 'not_empty') {
-    conditions.push(exists(assigneeSubquery));
-  } else if (params.assigneeId) {
-    conditions.push(
-      assigneeOp === 'is_not'
-        ? not(exists(assigneeSubquery))
-        : exists(assigneeSubquery)
-    );
-  }
-
-  // tagIds — supports all 6 operators (T-03.4.1-OP3: includes_all bounded by practical UI)
-  const tagOp = params.tagIds_op ?? 'is_any_of';
-  if (tagOp === 'empty') {
-    conditions.push(
-      not(
-        exists(
-          db
-            .select({ one: sql`1` })
-            .from(transactionTags)
-            .where(eq(transactionTags.transactionId, transactions.id))
-        )
-      )
-    );
-  } else if (tagOp === 'not_empty') {
-    conditions.push(
-      exists(
-        db
-          .select({ one: sql`1` })
-          .from(transactionTags)
-          .where(eq(transactionTags.transactionId, transactions.id))
-      )
-    );
-  } else if (params.tagIds && params.tagIds.length > 0) {
-    if (tagOp === 'includes_all') {
-      // One EXISTS subquery per tag ID — all must be present
-      for (const tagId of params.tagIds) {
-        conditions.push(
-          exists(
-            db
-              .select({ one: sql`1` })
-              .from(transactionTags)
-              .where(
-                and(
-                  eq(transactionTags.transactionId, transactions.id),
-                  eq(transactionTags.tagId, tagId)
-                )
-              )
-          )
-        );
-      }
-    } else if (tagOp === 'is_not_any_of' || tagOp === 'excludes_all') {
-      conditions.push(
-        not(
-          exists(
-            db
-              .select({ one: sql`1` })
-              .from(transactionTags)
-              .where(
-                and(
-                  eq(transactionTags.transactionId, transactions.id),
-                  inArray(transactionTags.tagId, params.tagIds)
-                )
-              )
-          )
-        )
-      );
-    } else {
-      // is_any_of (default) — existing behaviour
+    const wantsPersonal = params.assigneeIds.includes(personal);
+    const wantsShared = params.assigneeIds.includes(shared);
+    for (const memberId of memberIds) {
       conditions.push(
         exists(
           db
             .select({ one: sql`1` })
-            .from(transactionTags)
+            .from(transactionAssignees)
             .where(
               and(
-                eq(transactionTags.transactionId, transactions.id),
-                inArray(transactionTags.tagId, params.tagIds)
+                eq(transactionAssignees.transactionId, transactions.id),
+                eq(transactionAssignees.memberId, memberId)
               )
             )
         )
       );
     }
+    if (wantsPersonal !== wantsShared) {
+      const assigneeCount = sql<number>`(select count(*)::int from ${transactionAssignees} where ${transactionAssignees.transactionId} = ${transactions.id})`;
+      conditions.push(
+        wantsPersonal ? eq(assigneeCount, 1) : gte(assigneeCount, 2)
+      );
+    }
+  }
+
+  if (params.tagIds?.length) {
+    const { ids, none } = partitionNone(params.tagIds);
+    const taggedWith = (tagIds?: string[]) =>
+      db
+        .select({ one: sql`1` })
+        .from(transactionTags)
+        .where(
+          and(
+            eq(transactionTags.transactionId, transactions.id),
+            tagIds ? inArray(transactionTags.tagId, tagIds) : undefined
+          )
+        );
+    pushAnyOf(conditions, [
+      ids.length > 0 ? exists(taggedWith(ids)) : undefined,
+      none ? not(exists(taggedWith())) : undefined,
+    ]);
   }
 
   if (params.search) {

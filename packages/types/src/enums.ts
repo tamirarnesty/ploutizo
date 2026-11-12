@@ -45,6 +45,9 @@ export const TRANSACTION_TYPE_VALUES = [
 
 export type TransactionType = (typeof TRANSACTION_TYPE_VALUES)[number];
 
+export const isTransactionType = (value: string): value is TransactionType =>
+  TRANSACTION_TYPE_VALUES.some((type) => type === value);
+
 export const IMPORT_TRANSACTION_TYPE_VALUES = [
   'expense',
   'refund',
