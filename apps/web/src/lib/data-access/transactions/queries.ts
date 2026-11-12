@@ -39,7 +39,6 @@ export const fetchTransactions = async (
   if (params.assigneeId) qs.set('assigneeId', params.assigneeId);
   if (params.tagIds) qs.set('tagIds', params.tagIds); // comma-separated; API splits on comma
   if (params.search) qs.set('search', params.search);
-  // Operator params — only set when present (defaults are handled server-side)
   if (params.dateRange_op) qs.set('dateRange_op', params.dateRange_op);
   if (params.importLink) {
     qs.set('importBatchId', params.importLink.batchId);

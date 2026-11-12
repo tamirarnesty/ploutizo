@@ -1,21 +1,15 @@
 import {
-  ArrowDownLeft,
   ArrowLeftRight,
-  ArrowUpRight,
   CalendarDays,
-  Coins,
   FilePlus,
-  Handshake,
   Import,
   Layers2,
   Link2,
   Tags,
-  Undo2,
   Users,
   Wallet,
 } from 'lucide-react';
 import { TRANSACTION_FILTER_SENTINELS } from '@ploutizo/types';
-import type { TransactionType } from '@ploutizo/types';
 import type { LucideIcon } from 'lucide-react';
 import type {
   TransactionListFilterParam,
@@ -127,19 +121,6 @@ export const TRANSACTION_FILTERS: readonly TransactionFilterConfig[] = [
 export const getSelectionFilter = (
   field: SelectionFilterField
 ): SelectionFilterConfig => SELECTION_FILTER_BY_FIELD[field];
-
-export const TRANSACTION_TYPE_OPTIONS = [
-  { value: 'expense', label: 'Expense', icon: ArrowDownLeft },
-  { value: 'income', label: 'Income', icon: ArrowUpRight },
-  { value: 'transfer', label: 'Transfer', icon: ArrowLeftRight },
-  { value: 'settlement', label: 'Settlement', icon: Handshake },
-  { value: 'refund', label: 'Refund', icon: Undo2 },
-  { value: 'contribution', label: 'Contribution', icon: Coins },
-] as const satisfies readonly {
-  value: TransactionType;
-  label: string;
-  icon: LucideIcon;
-}[];
 
 export const IMPORT_OUTCOME_OPTIONS = [
   { value: 'created', label: 'Created', icon: FilePlus },

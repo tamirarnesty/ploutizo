@@ -1,12 +1,5 @@
 import { useState } from 'react';
-import {
-  addMonths,
-  format,
-  isBefore,
-  isSameDay,
-  isSameMonth,
-  subMonths,
-} from 'date-fns';
+import { addMonths, isSameMonth, subMonths } from 'date-fns';
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -37,13 +30,15 @@ import {
   dateOperatorLabel,
   draftAfterDay,
   draftToDateFilter,
-  formatDraftInput,
+  formatDateDraft,
   formatTransactionDateFilterLabel,
   isDateDraftComplete,
   isRangeDateOperator,
-  parseTypedDate,
+  parseDateDraftText,
+  parseFilterDate,
   presetDateRange,
   presetFocusMonth,
+  toFilterDate,
 } from './transactionDateFilter';
 import type {
   TransactionDateDraft,
@@ -72,7 +67,7 @@ const monthPosition = (month: Date, today: Date) => {
 const dayInOpenRange = (
   date: Date,
   draft: TransactionDateDraft,
-  hover: Date | undefined
+  hover: string | undefined
 ) => {
   if (
     !isRangeDateOperator(draft.operator) ||
@@ -82,10 +77,11 @@ const dayInOpenRange = (
   ) {
     return false;
   }
-  const from = isBefore(hover, draft.start) ? hover : draft.start;
-  const to = isBefore(hover, draft.start) ? draft.start : hover;
-  if (isSameDay(date, draft.start)) return false;
-  return !isBefore(date, from) && !isBefore(to, date);
+  const day = toFilterDate(date);
+  if (day === draft.start) return false;
+  const from = hover < draft.start ? hover : draft.start;
+  const to = hover < draft.start ? draft.start : hover;
+  return day >= from && day <= to;
 };
 
 const DateOperatorTabs = ({
@@ -164,44 +160,52 @@ const DateMonthNav = ({
   );
 };
 
-const DateDraftInput = ({
+const DateDraftField = ({
   draft,
-  onChange,
-  onClear,
+  onCommit,
 }: {
   draft: TransactionDateDraft;
-  onChange: (start: Date) => void;
-  onClear: () => void;
+  onCommit: (next: TransactionDateDraft) => void;
 }) => {
-  const today = useToday();
-  const displayValue = formatDraftInput(draft);
-  const [inputDraft, setInputDraft] = useState<string | null>(null);
-  const inputValue = inputDraft ?? displayValue;
+  const display = formatDateDraft(draft);
+  const [text, setText] = useState<string | null>(null);
+  const inputValue = text ?? display;
+
+  const commit = (raw: string) => {
+    const trimmed = raw.trim();
+    if (!trimmed) onCommit({ operator: draft.operator });
+    else {
+      const next = parseDateDraftText(draft.operator, trimmed);
+      if (next) onCommit(next);
+    }
+    setText(null);
+  };
 
   return (
     <div className="relative min-w-0 flex-1">
       <Input
         type="text"
+        aria-label="Date"
         value={inputValue}
-        placeholder={
-          inputDraft !== null
-            ? `Try: ${format(today, 'MMM d, yyyy')}`
-            : 'Select date...'
-        }
-        onFocus={() => setInputDraft(inputValue)}
-        onBlur={() => setInputDraft(null)}
-        onChange={(event) => {
-          const next = event.target.value;
-          setInputDraft(next);
-          const parsed = parseTypedDate(next);
-          if (parsed) onChange(parsed);
+        placeholder="Select date..."
+        className={inputValue ? 'pe-8' : undefined}
+        onFocus={() => setText(inputValue)}
+        onBlur={(event) => commit(event.currentTarget.value)}
+        onChange={(event) => setText(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.nativeEvent.isComposing || event.key !== 'Enter') return;
+          event.currentTarget.blur();
         }}
       />
       {inputValue ? (
         <button
           type="button"
-          aria-label="Clear"
-          onClick={onClear}
+          aria-label="Clear date"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            setText(null);
+            onCommit({ operator: draft.operator });
+          }}
           className={cn(
             'absolute end-2.5 top-1/2 size-4 -translate-y-1/2 cursor-pointer rounded-xs',
             'opacity-70 transition-opacity hover:opacity-100',
@@ -233,13 +237,13 @@ export const TransactionDateEditor = ({
   // Presets drive the calendar month explicitly; day clicks must not, or
   // picking a range end in the second visible month would yank the view.
   const [focusMonth, setFocusMonth] = useState(
-    () => dateFilterToDraft(filter).start ?? today
+    () => (draft.start && parseFilterDate(draft.start)) || today
   );
-  const [hover, setHover] = useState<Date>();
+  const [hover, setHover] = useState<string>();
 
   const selectDay = (day: Date) => {
     setHover(undefined);
-    setDraft((current) => draftAfterDay(current, day));
+    setDraft((current) => draftAfterDay(current, toFilterDate(day)));
   };
 
   const setOperator = (operator: DateRangeOperator) => {
@@ -258,15 +262,21 @@ export const TransactionDateEditor = ({
       return;
     }
     const range = presetDateRange(id, today);
-    setDraft({ operator: 'between', start: range.from, end: range.to });
+    setDraft({
+      operator: 'between',
+      start: toFilterDate(range.from),
+      end: toFilterDate(range.to),
+    });
     setFocusMonth(presetFocusMonth(range, today));
   };
 
-  const rememberHover = (date: Date) => {
-    setHover((current) =>
-      current && isSameDay(current, date) ? current : date
-    );
+  const commitDraft = (next: TransactionDateDraft) => {
+    setHover(undefined);
+    setDraft(next);
   };
+
+  const selectedStart = draft.start ? parseFilterDate(draft.start) : undefined;
+  const selectedEnd = draft.end ? parseFilterDate(draft.end) : undefined;
 
   const calendarProps = {
     month: focusMonth,
@@ -287,44 +297,37 @@ export const TransactionDateEditor = ({
           <DateOperatorTabs value={draft.operator} onChange={setOperator} />
         </div>
         <div className="flex items-center gap-2">
-          <DateDraftInput
-            draft={draft}
-            onChange={(start) => {
-              setHover(undefined);
-              setDraft((current) => ({ operator: current.operator, start }));
-            }}
-            onClear={() => {
-              setHover(undefined);
-              setDraft((current) => ({ operator: current.operator }));
-            }}
-          />
+          <DateDraftField draft={draft} onCommit={commitDraft} />
           <DateMonthNav month={focusMonth} onMonthChange={setFocusMonth} />
         </div>
         {/* Hover paints a preview only. Selection stays the draft, so the
             pressed day is the one Apply stores. */}
-        {isRangeDateOperator(draft.operator) ? (
-          <Calendar
-            mode="range"
-            selected={
-              draft.start ? { from: draft.start, to: draft.end } : undefined
-            }
-            onSelect={(_range, triggerDate) => selectDay(triggerDate)}
-            onDayMouseEnter={rememberHover}
-            onDayMouseLeave={() => setHover(undefined)}
-            modifiers={{
-              preview: (date) => dayInOpenRange(date, draft, hover),
-            }}
-            modifiersClassNames={{ preview: 'bg-muted' }}
-            {...calendarProps}
-          />
-        ) : (
-          <Calendar
-            mode="single"
-            selected={draft.start}
-            onSelect={(_date, triggerDate) => selectDay(triggerDate)}
-            {...calendarProps}
-          />
-        )}
+        <div onMouseLeave={() => setHover(undefined)}>
+          {isRangeDateOperator(draft.operator) ? (
+            <Calendar
+              mode="range"
+              selected={
+                selectedStart
+                  ? { from: selectedStart, to: selectedEnd }
+                  : undefined
+              }
+              onSelect={(_range, triggerDate) => selectDay(triggerDate)}
+              onDayMouseEnter={(date) => setHover(toFilterDate(date))}
+              modifiers={{
+                preview: (date) => dayInOpenRange(date, draft, hover),
+              }}
+              modifiersClassNames={{ preview: 'bg-muted' }}
+              {...calendarProps}
+            />
+          ) : (
+            <Calendar
+              mode="single"
+              selected={selectedStart}
+              onSelect={(_date, triggerDate) => selectDay(triggerDate)}
+              {...calendarProps}
+            />
+          )}
+        </div>
       </div>
       <div className="flex flex-wrap gap-2 px-3 pt-3">
         {DATE_PRESETS.map((preset) => (

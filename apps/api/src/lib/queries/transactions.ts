@@ -175,7 +175,6 @@ const pushDateRangeCondition = (conditions: SQL[], params: ListQueryParams) => {
   }
 };
 
-// Build the WHERE conditions array for list + count queries
 export const buildConditions = (params: ListQueryParams): SQL[] => {
   const conditions: SQL[] = [...activeTransactions(params.orgId)];
 

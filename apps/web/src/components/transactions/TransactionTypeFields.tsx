@@ -12,6 +12,7 @@ import type { Account, Category } from '@ploutizo/validators';
 import { ExpenseFields } from './ExpenseFields';
 import { RefundLinker } from './RefundLinker';
 import { getTransactionFormTypeChangePatch } from './getTransactionFormTypeChange';
+import { TRANSACTION_TYPE_OPTIONS } from './transactionTypes';
 import type { TransactionFormInstance } from './hooks/useTransactionForm';
 import type { TransactionFormValues } from './types';
 
@@ -19,14 +20,9 @@ import type { TransactionFormValues } from './types';
 // D-19: import caption (└ Original: ...) is deferred because originalDescription
 // and originalMerchant columns are absent from the current DB schema.
 
-const TRANSACTION_TYPE_ITEMS = [
-  { label: 'Expense', value: 'expense' },
-  { label: 'Income', value: 'income' },
-  { label: 'Transfer', value: 'transfer' },
-  { label: 'Settlement', value: 'settlement' },
-  { label: 'Refund', value: 'refund' },
-  { label: 'Contribution', value: 'contribution' },
-] as const;
+const TRANSACTION_TYPE_ITEMS = TRANSACTION_TYPE_OPTIONS.map(
+  ({ value, label }) => ({ value, label })
+);
 
 const INCOME_TYPE_ITEMS = [
   { label: 'Direct deposit', value: 'direct_deposit' },

@@ -6,11 +6,11 @@ import { UserAvatar } from '@/components/members/UserAvatar';
 import {
   ASSIGNEE_SHAPE_OPTIONS,
   IMPORT_OUTCOME_OPTIONS,
-  TRANSACTION_TYPE_OPTIONS,
   UNCATEGORIZED_OPTION,
   UNTAGGED_OPTION,
   getSelectionFilter,
 } from './transactionFilterConfig';
+import { TRANSACTION_TYPE_OPTIONS } from './transactionTypes';
 import { parseFilterList } from './transactionSearch';
 import type {
   SelectionFilterConfig,
@@ -25,6 +25,23 @@ import type {
 } from './transactionFilterTypes';
 
 const ICON_CLASS = 'size-3.5';
+
+const TYPE_GROUPS: TransactionFilterOptionGroup[] = [
+  {
+    key: 'type',
+    options: TRANSACTION_TYPE_OPTIONS.map(({ icon: Icon, ...option }) => ({
+      ...option,
+      icon: <Icon className={ICON_CLASS} aria-hidden="true" />,
+    })),
+  },
+];
+
+const IMPORT_OPTIONS = IMPORT_OUTCOME_OPTIONS.map(
+  ({ icon: Icon, ...option }) => ({
+    ...option,
+    icon: <Icon className={ICON_CLASS} aria-hidden="true" />,
+  })
+);
 
 const buildSelection = (
   config: SelectionFilterConfig,
@@ -54,19 +71,6 @@ export const useTransactionFilterOptions = (
     loaded,
   }: TransactionFilterReferenceData
 ): TransactionFilterOptions => {
-  const typeGroups = useMemo<TransactionFilterOptionGroup[]>(
-    () => [
-      {
-        key: 'type',
-        options: TRANSACTION_TYPE_OPTIONS.map(({ icon: Icon, ...option }) => ({
-          ...option,
-          icon: <Icon className={ICON_CLASS} aria-hidden="true" />,
-        })),
-      },
-    ],
-    []
-  );
-
   const accountGroups = useMemo<TransactionFilterOptionGroup[]>(
     () =>
       ACCOUNT_TYPE_OPTIONS.map((typeOption) => {
@@ -153,15 +157,6 @@ export const useTransactionFilterOptions = (
     [tags]
   );
 
-  const importOptions = useMemo(
-    () =>
-      IMPORT_OUTCOME_OPTIONS.map(({ icon: Icon, ...option }) => ({
-        ...option,
-        icon: <Icon className={ICON_CLASS} aria-hidden="true" />,
-      })),
-    []
-  );
-
   const selections = useMemo(() => {
     const selectionFor = (
       field: SelectionFilterField,
@@ -176,7 +171,7 @@ export const useTransactionFilterOptions = (
       );
     };
     return {
-      type: selectionFor('type', typeGroups),
+      type: selectionFor('type', TYPE_GROUPS),
       account: selectionFor('account', accountGroups),
       assignee: selectionFor('assignee', assigneeGroups),
       category: selectionFor('category', categoryGroups),
@@ -184,7 +179,6 @@ export const useTransactionFilterOptions = (
     };
   }, [
     search,
-    typeGroups,
     accountGroups,
     assigneeGroups,
     categoryGroups,
@@ -192,5 +186,9 @@ export const useTransactionFilterOptions = (
     loaded,
   ]);
 
-  return { selections, importOptions, importValue: search.importOutcome };
+  return {
+    selections,
+    importOptions: IMPORT_OPTIONS,
+    importValue: search.importOutcome,
+  };
 };

@@ -6,8 +6,11 @@ import {
   dateFilterToSearch,
   draftAfterDay,
   draftToDateFilter,
+  formatDateDraft,
   formatTransactionDateFilterLabel,
   isDateDraftComplete,
+  orderDateDraft,
+  parseDateDraftText,
   parseTypedDate,
   presetDateRange,
   presetFocusMonth,
@@ -178,43 +181,98 @@ describe('date draft', () => {
   });
 
   it('holds a range with one end picked back from applying', () => {
-    const partial = {
-      operator: 'between' as const,
-      start: new Date(2026, 10, 1),
-    };
+    const partial = { operator: 'between' as const, start: '2026-11-01' };
     expect(isDateDraftComplete(partial)).toBe(false);
-    expect(isDateDraftComplete({ ...partial, end: TODAY })).toBe(true);
+    expect(isDateDraftComplete({ ...partial, end: '2026-11-09' })).toBe(true);
+    expect(isDateDraftComplete({ operator: 'is', start: '2026-11-01' })).toBe(
+      true
+    );
+  });
+
+  it('uses the clicked day, and a finished range starts again from that day', () => {
+    const open = { operator: 'between' as const, start: '2026-11-20' };
+    expect(draftAfterDay(open, '2026-11-05')).toEqual({
+      operator: 'between',
+      start: '2026-11-05',
+      end: '2026-11-20',
+    });
+    expect(draftAfterDay(open, '2026-11-20')).toEqual({
+      operator: 'between',
+      start: '2026-11-20',
+      end: '2026-11-20',
+    });
+    expect(draftAfterDay(open, '2026-11-25')).toEqual({
+      operator: 'between',
+      start: '2026-11-20',
+      end: '2026-11-25',
+    });
     expect(
-      isDateDraftComplete({
-        operator: 'is',
-        start: new Date(2026, 10, 1),
+      draftAfterDay(
+        { operator: 'between', start: '2026-11-01', end: '2026-11-09' },
+        '2026-11-15'
+      )
+    ).toEqual({ operator: 'between', start: '2026-11-15' });
+  });
+
+  it('orders a range whose typed end comes first', () => {
+    expect(
+      orderDateDraft({
+        operator: 'between',
+        start: '2026-11-20',
+        end: '2026-11-05',
       })
-    ).toBe(true);
-  });
-
-  it('uses the clicked day, including an earlier end and a one-day range', () => {
-    const start = new Date(2026, 10, 20);
-    const open = { operator: 'between' as const, start };
-    expect(draftAfterDay(open, new Date(2026, 10, 5))).toEqual({
+    ).toEqual({
       operator: 'between',
-      start: new Date(2026, 10, 5),
-      end: start,
-    });
-    expect(draftAfterDay(open, start)).toEqual({
-      operator: 'between',
-      start,
-      end: start,
-    });
-    expect(draftAfterDay(open, new Date(2026, 10, 25))).toEqual({
-      operator: 'between',
-      start,
-      end: new Date(2026, 10, 25),
+      start: '2026-11-05',
+      end: '2026-11-20',
     });
   });
 
-  it('parses the typed date formats the input accepts', () => {
-    expect(ymd(parseTypedDate('Nov 5, 2026')!)).toBe('2026-11-05');
-    expect(ymd(parseTypedDate('2026-11-05')!)).toBe('2026-11-05');
+  it('keeps one field in sync with the draft', () => {
+    const open = { operator: 'between' as const, start: '2026-11-05' };
+    const range = {
+      operator: 'between' as const,
+      start: '2026-11-01',
+      end: '2026-11-20',
+    };
+    const single = { operator: 'is' as const, start: '2026-11-05' };
+
+    expect(formatDateDraft(open)).toBe('Nov 5, 2026 –');
+    expect(parseDateDraftText('between', formatDateDraft(open))).toEqual(open);
+    expect(parseDateDraftText('between', formatDateDraft(range))).toEqual(
+      range
+    );
+    expect(parseDateDraftText('is', formatDateDraft(single))).toEqual(single);
+    expect(parseDateDraftText('between', 'Nov 20, 2026 - Nov 5, 2026')).toEqual(
+      {
+        operator: 'between',
+        start: '2026-11-05',
+        end: '2026-11-20',
+      }
+    );
+    expect(parseDateDraftText('between', '05/11/2026 to 20/11/2026')).toEqual({
+      operator: 'between',
+      start: '2026-11-05',
+      end: '2026-11-20',
+    });
+    expect(parseDateDraftText('between', 'Nov 5, 2026 – 31/02/2026')).toBe(
+      undefined
+    );
+    expect(parseDateDraftText('is', 'Nov 5, 2026 – Nov 20, 2026')).toBe(
+      undefined
+    );
+    expect(parseDateDraftText('between', '   ')).toEqual({
+      operator: 'between',
+    });
+  });
+
+  it('accepts a typed day only when it round-trips', () => {
+    expect(parseTypedDate('Nov 5, 2026')).toBe('2026-11-05');
+    expect(parseTypedDate('nov 5, 2026')).toBe('2026-11-05');
+    expect(parseTypedDate('2026-11-05')).toBe('2026-11-05');
+    expect(parseTypedDate('05/11/2026')).toBe('2026-11-05');
     expect(parseTypedDate('nope')).toBeUndefined();
+    expect(parseTypedDate('31/02/2026')).toBeUndefined();
+    expect(parseTypedDate('')).toBeUndefined();
   });
 });

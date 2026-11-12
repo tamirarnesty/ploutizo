@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { ListFilterIcon } from 'lucide-react';
 import { ActiveFilterChips } from '@ploutizo/ui/components/active-filter-chips';
@@ -50,10 +50,7 @@ export const TransactionsFilterBar = ({
   });
 
   const options = useTransactionFilterOptions(search, referenceData);
-  const chips = useMemo(
-    () => buildTransactionFilterChips(search, options, today),
-    [search, options, today]
-  );
+  const chips = buildTransactionFilterChips(search, options, today);
 
   const applySearch = (patch: Partial<TransactionSearch>) =>
     navigate({

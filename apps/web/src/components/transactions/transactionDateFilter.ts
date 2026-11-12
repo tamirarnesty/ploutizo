@@ -2,7 +2,6 @@ import {
   endOfMonth,
   endOfYear,
   format,
-  isBefore,
   isValid,
   parse,
   parseISO,
@@ -82,12 +81,15 @@ export const dateFilterToSearch = (
   };
 };
 
-const toFilterDate = (date: Date) => format(date, 'yyyy-MM-dd');
+export const toFilterDate = (date: Date) => format(date, 'yyyy-MM-dd');
 
-const parseFilterDate = (value: string): Date | undefined => {
+export const parseFilterDate = (value: string): Date | undefined => {
   const date = parseISO(value);
   return isValid(date) ? date : undefined;
 };
+
+const filterDay = (value: string): string | undefined =>
+  parseFilterDate(value) ? value : undefined;
 
 export type TransactionDatePresetId = 'this_month' | 'last_month' | 'this_year';
 
@@ -111,7 +113,7 @@ export const presetDateRange = (
     }
     case 'this_year':
       return { from: startOfYear(today), to: endOfYear(today) };
-    default:
+    case 'this_month':
       return { from: startOfMonth(today), to: endOfMonth(today) };
   }
 };
@@ -121,10 +123,7 @@ export const presetFocusMonth = (
   today: Date
 ): Date => (today >= range.from && today <= range.to ? today : range.to);
 
-const matchingPreset = (
-  filter: TransactionDateFilter | null,
-  today: Date
-): TransactionDatePresetId | undefined => {
+const matchingPreset = (filter: TransactionDateFilter | null, today: Date) => {
   if (!filter || !('from' in filter) || filter.operator !== 'between') {
     return undefined;
   }
@@ -134,7 +133,7 @@ const matchingPreset = (
       filter.from === toFilterDate(range.from) &&
       filter.to === toFilterDate(range.to)
     );
-  })?.id;
+  });
 };
 
 const formatDate = (value: string, pattern = 'MMM d, yyyy') => {
@@ -169,11 +168,7 @@ export const formatTransactionDateFilterLabel = (
 ): string => {
   if (!filter) return 'All time';
   const preset = matchingPreset(filter, today);
-  if (preset) {
-    return (
-      TRANSACTION_DATE_PRESETS.find(({ id }) => id === preset)?.label ?? preset
-    );
-  }
+  if (preset) return preset.label;
   const operator = dateOperatorLabel(filter.operator);
   if ('date' in filter) return `${operator} ${formatDate(filter.date)}`;
   const range = formatRange(filter.from, filter.to);
@@ -188,27 +183,24 @@ const TYPED_DATE_FORMATS = [
   'dd-MM-yyyy',
 ] as const;
 
-export const parseTypedDate = (text: string): Date | undefined => {
+export const parseTypedDate = (text: string): string | undefined => {
   const trimmed = text.trim();
   if (!trimmed) return undefined;
   for (const pattern of TYPED_DATE_FORMATS) {
     const parsed = parse(trimmed, pattern, new Date());
-    if (isValid(parsed)) return parsed;
+    if (!isValid(parsed)) continue;
+    if (format(parsed, pattern).toLowerCase() !== trimmed.toLowerCase()) {
+      continue;
+    }
+    return toFilterDate(parsed);
   }
   return undefined;
 };
 
 export type TransactionDateDraft = {
   operator: DateRangeOperator;
-  start?: Date;
-  end?: Date;
-};
-
-export const formatDraftInput = (draft: TransactionDateDraft) => {
-  if (draft.start && draft.end) {
-    return `${format(draft.start, 'MMM d, yyyy')} - ${format(draft.end, 'MMM d, yyyy')}`;
-  }
-  return draft.start ? format(draft.start, 'MMM d, yyyy') : '';
+  start?: string;
+  end?: string;
 };
 
 export const dateFilterToDraft = (
@@ -216,12 +208,12 @@ export const dateFilterToDraft = (
 ): TransactionDateDraft => {
   if (!filter) return { operator: 'between' };
   if ('date' in filter) {
-    return { operator: filter.operator, start: parseFilterDate(filter.date) };
+    return { operator: filter.operator, start: filterDay(filter.date) };
   }
   return {
     operator: filter.operator,
-    start: parseFilterDate(filter.from),
-    end: parseFilterDate(filter.to),
+    start: filterDay(filter.from),
+    end: filterDay(filter.to),
   };
 };
 
@@ -229,18 +221,77 @@ export const isDateDraftComplete = (draft: TransactionDateDraft): boolean =>
   !isRangeDateOperator(draft.operator) ||
   Boolean(draft.start) === Boolean(draft.end);
 
+export const orderDateDraft = (
+  draft: TransactionDateDraft
+): TransactionDateDraft => {
+  if (
+    !isRangeDateOperator(draft.operator) ||
+    !draft.start ||
+    !draft.end ||
+    draft.start <= draft.end
+  ) {
+    return draft;
+  }
+  return { ...draft, start: draft.end, end: draft.start };
+};
+
 /** Next draft after the day that was clicked. Ignores any hover preview. */
 export const draftAfterDay = (
   draft: TransactionDateDraft,
-  day: Date
+  day: string
 ): TransactionDateDraft => {
   if (!isRangeDateOperator(draft.operator) || !draft.start || draft.end) {
     return { operator: draft.operator, start: day };
   }
-  if (isBefore(day, draft.start)) {
+  if (day < draft.start) {
     return { operator: draft.operator, start: day, end: draft.start };
   }
   return { operator: draft.operator, start: draft.start, end: day };
+};
+
+const DATE_DRAFT_SEPARATOR = ' – ';
+
+/** One field for every operator. An open range keeps a trailing dash. */
+export const formatDateDraft = (draft: TransactionDateDraft): string => {
+  if (!draft.start) return '';
+  const start = formatDate(draft.start);
+  if (!isRangeDateOperator(draft.operator) || !draft.end) {
+    return isRangeDateOperator(draft.operator) ? `${start} –` : start;
+  }
+  return `${start}${DATE_DRAFT_SEPARATOR}${formatDate(draft.end)}`;
+};
+
+const RANGE_TEXT_BREAK = /\s+(?:–|-|to)\s+/i;
+const OPEN_RANGE_TEXT = /^(.*\S)\s+(?:–|-|to)\s*$/i;
+
+/** `undefined` means the text is not a day the field can keep. */
+export const parseDateDraftText = (
+  operator: DateRangeOperator,
+  text: string
+): TransactionDateDraft | undefined => {
+  const trimmed = text.trim();
+  if (!trimmed) return { operator };
+  if (!isRangeDateOperator(operator)) {
+    const start = parseTypedDate(trimmed);
+    return start ? { operator, start } : undefined;
+  }
+
+  const open = OPEN_RANGE_TEXT.exec(trimmed);
+  if (open && !RANGE_TEXT_BREAK.test(open[1])) {
+    const start = parseTypedDate(open[1]);
+    return start ? { operator, start } : undefined;
+  }
+
+  const parts = trimmed.split(RANGE_TEXT_BREAK);
+  if (parts.length === 1) {
+    const start = parseTypedDate(parts[0]);
+    return start ? { operator, start } : undefined;
+  }
+  if (parts.length !== 2) return undefined;
+  const start = parseTypedDate(parts[0]);
+  const end = parseTypedDate(parts[1]);
+  if (!start || !end) return undefined;
+  return orderDateDraft({ operator, start, end });
 };
 
 export const draftToDateFilter = (
@@ -249,9 +300,7 @@ export const draftToDateFilter = (
   const { operator, start, end } = draft;
   if (!start) return null;
   if (isRangeDateOperator(operator)) {
-    return end
-      ? { operator, from: toFilterDate(start), to: toFilterDate(end) }
-      : null;
+    return end ? { operator, from: start, to: end } : null;
   }
-  return { operator, date: toFilterDate(start) };
+  return { operator, date: start };
 };

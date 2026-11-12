@@ -1,4 +1,4 @@
-import { TRANSACTION_TYPE_VALUES } from '@ploutizo/types';
+import { isTransactionType } from '@ploutizo/types';
 import type { DateRangeOperator } from '@ploutizo/types';
 import type { TransactionQueryParams } from '@/lib/data-access/transactions';
 import {
@@ -50,16 +50,12 @@ export type TransactionSearch = {
   accountId?: string;
   categoryId?: string;
   assigneeId?: string;
-  tagIds?: string; // comma-separated UUIDs per RESEARCH.md Pitfall 4
+  tagIds?: string;
   dateRange_op?: DateRangeOperator;
   importBatchId?: string;
   importOutcome?: 'created' | 'matched';
   search?: string;
 };
-
-const TRANSACTION_SEARCH_STRING_FIELDS = [
-  'search',
-] as const satisfies readonly (keyof TransactionSearch)[];
 
 export const TRANSACTION_LIST_FILTER_PARAMS = [
   'type',
@@ -78,9 +74,6 @@ export const parseFilterList = (value: string | undefined): string[] => [
 
 export const formatFilterList = (values: string[]): string | undefined =>
   values.length > 0 ? values.join(',') : undefined;
-
-const isTransactionTypeValue = (value: string) =>
-  TRANSACTION_TYPE_VALUES.some((type) => type === value);
 
 const parseOptionalPage = (value: unknown): number | undefined => {
   if (typeof value !== 'number' || !Number.isInteger(value) || value < 1) {
@@ -151,16 +144,13 @@ export const validateTransactionSearch = (
   const order = parseOptionalOrder(search.order);
   if (order !== undefined) result.order = order;
 
-  for (const field of TRANSACTION_SEARCH_STRING_FIELDS) {
-    const value = parseOptionalString(search[field]);
-    if (value !== undefined) result[field] = value;
-  }
+  const searchText = parseOptionalString(search.search)?.trim();
+  if (searchText) result.search = searchText;
 
   // Drop malformed hand-edited values so every consumer sees clean ones.
   for (const field of TRANSACTION_LIST_FILTER_PARAMS) {
     const values = parseFilterList(parseOptionalString(search[field]));
-    const valid =
-      field === 'type' ? values.filter(isTransactionTypeValue) : values;
+    const valid = field === 'type' ? values.filter(isTransactionType) : values;
     const formatted = formatFilterList(valid);
     if (formatted !== undefined) result[field] = formatted;
   }
@@ -173,9 +163,6 @@ export const validateTransactionSearch = (
       dateRange_op: parseOptionalString(search.dateRange_op),
     })
   );
-  delete result.dateFrom;
-  delete result.dateTo;
-  delete result.dateRange_op;
   if (dateParams.dateFrom) result.dateFrom = dateParams.dateFrom;
   if (dateParams.dateTo) result.dateTo = dateParams.dateTo;
   if (dateParams.dateRange_op) result.dateRange_op = dateParams.dateRange_op;
@@ -185,12 +172,6 @@ export const validateTransactionSearch = (
   if (importBatchId && importOutcome) {
     result.importBatchId = importBatchId;
     result.importOutcome = importOutcome;
-  }
-
-  if (result.search !== undefined) {
-    const trimmed = result.search.trim();
-    if (trimmed) result.search = trimmed;
-    else delete result.search;
   }
 
   return result;

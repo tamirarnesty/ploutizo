@@ -195,12 +195,7 @@ export const TransactionFiltersSheet = ({
   });
 
   return (
-    <Sheet
-      open={open}
-      onOpenChange={(next) => {
-        if (!next) onOpenChange(false);
-      }}
-    >
+    <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="max-h-[85dvh] gap-0 p-0">
         <SheetHeader className="border-b px-4 py-3">
           <SheetTitle>Filters</SheetTitle>

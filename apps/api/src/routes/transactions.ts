@@ -6,8 +6,8 @@ import {
 } from '@ploutizo/validators';
 import {
   DATE_RANGE_OPERATORS,
-  TRANSACTION_TYPE_VALUES,
   isDateRangeOperator,
+  isTransactionType,
 } from '@ploutizo/types';
 import type { DateRangeOperator, TransactionType } from '@ploutizo/types';
 import type { ListQueryParams } from '@/services/transactions';
@@ -36,9 +36,6 @@ const parseListParam = (value: string | undefined): string[] | undefined => {
   ];
   return values.length > 0 ? values : undefined;
 };
-
-const isTransactionType = (value: string): value is TransactionType =>
-  TRANSACTION_TYPE_VALUES.some((type) => type === value);
 
 const parseTypesParam = (
   value: string | undefined
@@ -101,10 +98,7 @@ transactionsRouter.get('/', async (c) => {
       : 'date';
   const order = c.req.query('order') === 'asc' ? 'asc' : 'desc';
 
-  // tagIds: support ?tagIds[]=x&tagIds[]=y AND ?tagIds=x,y (Pitfall 5)
-  const tagIdsArr = c.req.queries('tagIds[]') ?? [];
-  const tagIdsComma = c.req.query('tagIds');
-  const tagIds = parseListParam([...tagIdsArr, tagIdsComma ?? ''].join(','));
+  const tagIds = parseListParam(c.req.query('tagIds'));
   const importBatchId = c.req.query('importBatchId');
   const importOutcome = c.req.query('importOutcome');
   let importLink: ListQueryParams['importLink'];
