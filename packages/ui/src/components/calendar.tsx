@@ -121,8 +121,9 @@ function Calendar({
           'relative isolate z-0 rounded-r-(--cell-radius) bg-muted after:absolute after:inset-y-0 after:left-0 after:w-4 after:bg-muted',
           defaultClassNames.range_end
         ),
+        // Ploutizo fork: dot under today; muted fill alone is too faint. See docs/stack-and-conventions.md.
         today: cn(
-          'rounded-(--cell-radius) bg-muted text-foreground data-[selected=true]:rounded-none',
+          "rounded-(--cell-radius) bg-muted text-foreground data-[selected=true]:rounded-none [&>button]:font-semibold [&>button]:after:absolute [&>button]:after:bottom-0.5 [&>button]:after:left-1/2 [&>button]:after:size-1 [&>button]:after:-translate-x-1/2 [&>button]:after:rounded-full [&>button]:after:bg-current [&>button]:after:content-['']",
           defaultClassNames.today
         ),
         outside: cn(

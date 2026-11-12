@@ -44,14 +44,12 @@ describe('validateTransactionSearch', () => {
     expect(validateTransactionSearch({ search: '   ' })).toEqual({});
   });
 
-  it('preserves filter and operator params', () => {
+  it('preserves filter params and drops legacy operator params', () => {
     expect(
       validateTransactionSearch({
         type: 'expense',
         accountId: 'abc',
-        type_op: 'is_not',
         tagIds: 'uuid1,uuid2',
-        tagIds_op: 'includes_all',
         dateFrom: '2026-01-01',
         dateTo: '2026-01-31',
         dateRange_op: 'between',
@@ -59,13 +57,49 @@ describe('validateTransactionSearch', () => {
     ).toEqual({
       type: 'expense',
       accountId: 'abc',
-      type_op: 'is_not',
       tagIds: 'uuid1,uuid2',
-      tagIds_op: 'includes_all',
       dateFrom: '2026-01-01',
       dateTo: '2026-01-31',
-      dateRange_op: 'between',
     });
+  });
+
+  it('drops blank and repeated values from list filters', () => {
+    expect(
+      validateTransactionSearch({
+        accountId: ',a,,a,b,',
+        categoryId: ',',
+        tagIds: 'none,t1',
+      })
+    ).toEqual({ accountId: 'a,b', tagIds: 'none,t1' });
+  });
+
+  it('keeps only known transaction types', () => {
+    expect(validateTransactionSearch({ type: 'expense,bogus,income' })).toEqual(
+      {
+        type: 'expense,income',
+      }
+    );
+    expect(validateTransactionSearch({ type: 'bogus' })).toEqual({});
+  });
+
+  it('drops date params the filter cannot express', () => {
+    expect(validateTransactionSearch({ dateFrom: '2026-01-01' })).toEqual({});
+    expect(
+      validateTransactionSearch({
+        dateTo: '2026-01-31',
+        dateRange_op: 'before',
+      })
+    ).toEqual({ dateTo: '2026-01-31', dateRange_op: 'before' });
+    expect(
+      validateTransactionSearch({ dateFrom: '2026-01-01', dateRange_op: 'is' })
+    ).toEqual({ dateFrom: '2026-01-01', dateRange_op: 'is' });
+    expect(
+      validateTransactionSearch({
+        dateFrom: '2026-01-01',
+        dateTo: '2026-01-31',
+        dateRange_op: 'bogus',
+      })
+    ).toEqual({});
   });
 
   it('ignores unknown keys and non-string filter values', () => {
@@ -75,9 +109,7 @@ describe('validateTransactionSearch', () => {
         extra: 'ignored',
         categoryId_op: 'empty',
       })
-    ).toEqual({
-      categoryId_op: 'empty',
-    });
+    ).toEqual({});
   });
 
   it('accepts all supported sort fields', () => {
@@ -119,11 +151,6 @@ describe('buildTransactionQueryParams', () => {
       categoryId: undefined,
       assigneeId: undefined,
       tagIds: undefined,
-      type_op: undefined,
-      accountId_op: undefined,
-      categoryId_op: undefined,
-      assigneeId_op: undefined,
-      tagIds_op: undefined,
       dateRange_op: undefined,
       importLink: undefined,
     });
@@ -152,11 +179,6 @@ describe('buildTransactionQueryParams', () => {
       categoryId: undefined,
       assigneeId: undefined,
       tagIds: undefined,
-      type_op: undefined,
-      accountId_op: undefined,
-      categoryId_op: undefined,
-      assigneeId_op: undefined,
-      tagIds_op: undefined,
       dateRange_op: undefined,
       importLink: { batchId: 'batch_1', outcome: 'matched' },
     });

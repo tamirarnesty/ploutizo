@@ -1,4 +1,10 @@
+import { isTransactionType } from '@ploutizo/types';
+import type { DateRangeOperator } from '@ploutizo/types';
 import type { TransactionQueryParams } from '@/lib/data-access/transactions';
+import {
+  dateFilterFromSearch,
+  dateFilterToSearch,
+} from './transactionDateFilter';
 
 // Pagination/sort params are optional — absent means "use component default".
 // validateTransactionSearch only includes present, valid fields so defaults are
@@ -44,36 +50,30 @@ export type TransactionSearch = {
   accountId?: string;
   categoryId?: string;
   assigneeId?: string;
-  tagIds?: string; // comma-separated UUIDs per RESEARCH.md Pitfall 4
-  // Operator fields — only non-default values appear in the URL (see buildCleanSearch).
-  // Defaults: type/accountId/categoryId/assigneeId → 'is'; tagIds → 'is_any_of'; dateRange → 'between'
-  type_op?: string; // 'is' | 'is_not'
-  accountId_op?: string; // 'is' | 'is_not'
-  categoryId_op?: string; // 'is' | 'is_not' | 'empty' | 'not_empty'
-  assigneeId_op?: string; // 'is' | 'is_not' | 'empty' | 'not_empty'
-  tagIds_op?: string; // 'is_any_of' | 'is_not_any_of' | 'includes_all' | 'excludes_all' | 'empty' | 'not_empty'
-  dateRange_op?: string; // 'between' | 'after' | 'before' | 'is' | 'is_not' | 'not_between'
+  tagIds?: string;
+  dateRange_op?: DateRangeOperator;
   importBatchId?: string;
   importOutcome?: 'created' | 'matched';
   search?: string;
 };
 
-const TRANSACTION_SEARCH_STRING_FIELDS = [
+export const TRANSACTION_LIST_FILTER_PARAMS = [
   'type',
-  'dateFrom',
-  'dateTo',
   'accountId',
   'categoryId',
   'assigneeId',
   'tagIds',
-  'type_op',
-  'accountId_op',
-  'categoryId_op',
-  'assigneeId_op',
-  'tagIds_op',
-  'dateRange_op',
-  'search',
 ] as const satisfies readonly (keyof TransactionSearch)[];
+
+export type TransactionListFilterParam =
+  (typeof TRANSACTION_LIST_FILTER_PARAMS)[number];
+
+export const parseFilterList = (value: string | undefined): string[] => [
+  ...new Set((value ?? '').split(',').filter(Boolean)),
+];
+
+export const formatFilterList = (values: string[]): string | undefined =>
+  values.length > 0 ? values.join(',') : undefined;
 
 const parseOptionalPage = (value: unknown): number | undefined => {
   if (typeof value !== 'number' || !Number.isInteger(value) || value < 1) {
@@ -100,7 +100,7 @@ const parseOptionalString = (value: unknown): string | undefined => {
   return typeof value === 'string' ? value : undefined;
 };
 
-const parseOptionalImportOutcome = (
+export const parseImportOutcome = (
   value: unknown
 ): TransactionSearch['importOutcome'] | undefined => {
   if (value === 'created' || value === 'matched') return value;
@@ -123,11 +123,6 @@ export const buildTransactionQueryParams = (
   assigneeId: search.assigneeId,
   tagIds: search.tagIds,
   search: search.search || undefined,
-  type_op: search.type_op,
-  accountId_op: search.accountId_op,
-  categoryId_op: search.categoryId_op,
-  assigneeId_op: search.assigneeId_op,
-  tagIds_op: search.tagIds_op,
   dateRange_op: search.dateRange_op,
   importLink:
     search.importBatchId && search.importOutcome
@@ -149,22 +144,34 @@ export const validateTransactionSearch = (
   const order = parseOptionalOrder(search.order);
   if (order !== undefined) result.order = order;
 
-  for (const field of TRANSACTION_SEARCH_STRING_FIELDS) {
-    const value = parseOptionalString(search[field]);
-    if (value !== undefined) result[field] = value;
+  const searchText = parseOptionalString(search.search)?.trim();
+  if (searchText) result.search = searchText;
+
+  // Drop malformed hand-edited values so every consumer sees clean ones.
+  for (const field of TRANSACTION_LIST_FILTER_PARAMS) {
+    const values = parseFilterList(parseOptionalString(search[field]));
+    const valid = field === 'type' ? values.filter(isTransactionType) : values;
+    const formatted = formatFilterList(valid);
+    if (formatted !== undefined) result[field] = formatted;
   }
 
+  // Round-trip through the filter model to drop operators the UI cannot express.
+  const dateParams = dateFilterToSearch(
+    dateFilterFromSearch({
+      dateFrom: parseOptionalString(search.dateFrom),
+      dateTo: parseOptionalString(search.dateTo),
+      dateRange_op: parseOptionalString(search.dateRange_op),
+    })
+  );
+  if (dateParams.dateFrom) result.dateFrom = dateParams.dateFrom;
+  if (dateParams.dateTo) result.dateTo = dateParams.dateTo;
+  if (dateParams.dateRange_op) result.dateRange_op = dateParams.dateRange_op;
+
   const importBatchId = parseOptionalString(search.importBatchId);
-  const importOutcome = parseOptionalImportOutcome(search.importOutcome);
+  const importOutcome = parseImportOutcome(search.importOutcome);
   if (importBatchId && importOutcome) {
     result.importBatchId = importBatchId;
     result.importOutcome = importOutcome;
-  }
-
-  if (result.search !== undefined) {
-    const trimmed = result.search.trim();
-    if (trimmed) result.search = trimmed;
-    else delete result.search;
   }
 
   return result;
