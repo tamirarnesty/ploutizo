@@ -87,22 +87,15 @@ export type ListQueryParams = {
   limit: number;
   sort: TransactionSortField;
   order: SortOrder;
-  /** Inclusive any-of; omit for no filter. */
   types?: TransactionType[];
-  /** Inclusive any-of. */
   accountIds?: string[];
   dateFrom?: string;
   dateTo?: string;
-  /** Inclusive any-of; `none` also matches uncategorized. */
   categoryIds?: string[];
-  /** Member ids ANDed together; `personal` / `shared` constrain the assignee count. */
   assigneeIds?: string[];
-  /** Inclusive any-of; `none` also matches untagged. */
   tagIds?: string[];
   /** Case-insensitive substring match on description, rawDescription, category, account, and tag names (T-03.4-01). Not assignee, amount, or date. */
   search?: string;
-  // Operator params — simple filters are positive multi-select only; only
-  // the date range carries an operator.
   dateRange_op?: string; // 'between' | 'after' | 'before' | 'is' | 'is_not' | 'not_between'
   importLink?: { batchId: string; outcome: 'created' | 'matched' };
 };
@@ -125,13 +118,11 @@ const importTransactionLinkExists = (
       )
   );
 
-/** Splits a filter's values into real ids and whether the `none` sentinel is present. */
 const partitionNone = (values: string[]) => ({
   ids: values.filter((value) => value !== TRANSACTION_FILTER_SENTINELS.none),
   none: values.includes(TRANSACTION_FILTER_SENTINELS.none),
 });
 
-/** Adds one condition matching any of the defined clauses; no-op when none are defined. */
 const pushAnyOf = (conditions: SQL[], clauses: (SQL | undefined)[]) => {
   const defined = clauses.filter((clause) => clause !== undefined);
   if (defined.length > 0) conditions.push(or(...defined)!);
@@ -183,9 +174,7 @@ export const buildConditions = (params: ListQueryParams): SQL[] => {
     ]);
   }
 
-  // assigneeIds — every selected member must be an assignee (AND), plus
-  // 'personal'/'shared' shape sentinels constraining the assignee count. Both
-  // shapes selected means no shape constraint.
+  // Selected members are ANDed; selecting both shapes cancels the shape constraint.
   if (params.assigneeIds?.length) {
     const { personal, shared } = TRANSACTION_FILTER_SENTINELS;
     const memberIds = params.assigneeIds.filter(

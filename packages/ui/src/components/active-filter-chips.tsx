@@ -4,23 +4,19 @@ import { Button } from '@/components/button';
 import { cn } from '@/lib/utils';
 
 export type ActiveFilterChip<TId extends string = string> = {
-  /** Stable key, also passed back to `onSelect` / `onRemove`. */
   id: TId;
   label: string;
   summary: string;
 };
 
 type ActiveFilterChipsProps<TId extends string> = {
-  /** Applied filters only — the component renders nothing when empty. */
   chips: ActiveFilterChip<TId>[];
   onRemove: (id: TId) => void;
-  /** When provided, the chip body becomes a button (e.g. reopen the filter's editor). */
   onSelect?: (id: TId) => void;
   onClearAll?: () => void;
   className?: string;
 };
 
-/** Compact applied-filter chips with per-chip remove and an optional Clear all. */
 export const ActiveFilterChips = <TId extends string>({
   chips,
   onRemove,

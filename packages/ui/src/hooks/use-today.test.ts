@@ -35,7 +35,6 @@ describe('useToday', () => {
 
   it('re-checks when the tab becomes visible again', () => {
     const { result } = renderHook(() => useToday());
-    // Simulate a sleeping tab: the clock moved on but no timer fired.
     vi.setSystemTime(new Date(2026, 10, 12, 8, 0, 0));
     act(() => {
       document.dispatchEvent(new Event('visibilitychange'));

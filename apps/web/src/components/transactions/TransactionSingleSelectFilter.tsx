@@ -12,7 +12,6 @@ import type {
   TransactionFilterOptions,
 } from './transactionFilterTypes';
 
-/** Sentinel radio value meaning "no filter". */
 const ALL_VALUE = '__all__';
 
 type TransactionSingleSelectFilterProps = {
@@ -20,12 +19,10 @@ type TransactionSingleSelectFilterProps = {
   options: TransactionFilterOption[];
   value: TransactionFilterOptions['importValue'];
   onChange: (value: string | undefined) => void;
-  /** Controlled open state so applied chips can reopen this menu. */
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
-/** Quick single-select filter — radio dropdown, one value at a time. */
 export const TransactionSingleSelectFilter = ({
   filter,
   options,

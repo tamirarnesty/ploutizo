@@ -1,12 +1,6 @@
 import { startTransition, useOptimistic } from 'react';
 
-/**
- * Multi-select state for URL-backed filters. `values` lags behind a toggle
- * until navigation settles, so the new selection is shown optimistically for
- * the lifetime of the `onChange` promise. Rapid toggles each build on the
- * latest optimistic selection, and React reverts to the committed `values`
- * only once every pending change has settled.
- */
+/** `values` lags a toggle until navigation settles; rapid toggles build on the latest optimistic selection. */
 export const useOptimisticSelection = (
   values: string[],
   onChange: (values: string[]) => Promise<void>

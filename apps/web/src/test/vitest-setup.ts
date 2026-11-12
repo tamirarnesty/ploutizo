@@ -35,11 +35,7 @@ try {
   } satisfies Storage);
 }
 
-/**
- * jsdom does not implement `window.matchMedia`. Components that read media
- * queries (`useIsMobile`, theme detection) get a desktop-sized, light-scheme
- * viewport; tests needing another answer override it per test.
- */
+// jsdom lacks `window.matchMedia`; default to a desktop, light-scheme viewport.
 Object.defineProperty(window, 'matchMedia', {
   configurable: true,
   writable: true,

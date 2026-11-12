@@ -21,7 +21,6 @@ import {
 
 const transactionsRouter = new Hono<AppEnv>();
 
-/** `?x=a,b` → distinct, trimmed, non-empty values; undefined when none remain. */
 const parseListParam = (value: string | undefined): string[] | undefined => {
   const values = [
     ...new Set(

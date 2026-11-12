@@ -11,8 +11,7 @@ const subscribe = (onChange: () => void) => {
 
 const getSnapshot = () => window.matchMedia(MOBILE_QUERY).matches;
 
-// The server cannot know the viewport. Markup that must differ by breakpoint
-// should switch with CSS (`md:` variants); this hook is for behaviour.
+// Server cannot know the viewport; breakpoint markup should use CSS `md:` instead.
 const getServerSnapshot = () => false;
 
 export const useIsMobile = () =>

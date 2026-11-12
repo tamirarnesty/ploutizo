@@ -29,9 +29,7 @@ export type TransactionFilterField =
   SelectionFilterField | 'date' | 'importResult';
 
 type FilterConfigBase = {
-  /** Section title and applied-chip label. */
   label: string;
-  /** Trigger text when nothing is selected, e.g. "All types". */
   allLabel: string;
   icon: LucideIcon;
 };
@@ -39,9 +37,7 @@ type FilterConfigBase = {
 export type SelectionFilterConfig = FilterConfigBase & {
   kind: 'selection';
   field: SelectionFilterField;
-  /** URL param holding the comma-joined selection. */
   param: TransactionListFilterParam;
-  /** Label for a selected value whose entity no longer exists. */
   missingLabel: string;
 };
 
@@ -58,9 +54,8 @@ export type ImportResultFilterConfig = FilterConfigBase & {
 export type TransactionFilterConfig =
   SelectionFilterConfig | DateFilterConfig | ImportResultFilterConfig;
 
-/** Every transaction filter, in display order. */
-export const TRANSACTION_FILTERS: readonly TransactionFilterConfig[] = [
-  {
+const SELECTION_FILTER_BY_FIELD = {
+  type: {
     kind: 'selection',
     field: 'type',
     param: 'type',
@@ -69,14 +64,7 @@ export const TRANSACTION_FILTERS: readonly TransactionFilterConfig[] = [
     icon: ArrowLeftRight,
     missingLabel: 'Unknown type',
   },
-  {
-    kind: 'date',
-    field: 'date',
-    label: 'Date',
-    allLabel: 'All time',
-    icon: CalendarDays,
-  },
-  {
+  account: {
     kind: 'selection',
     field: 'account',
     param: 'accountId',
@@ -85,7 +73,7 @@ export const TRANSACTION_FILTERS: readonly TransactionFilterConfig[] = [
     icon: Wallet,
     missingLabel: 'Deleted account',
   },
-  {
+  assignee: {
     kind: 'selection',
     field: 'assignee',
     param: 'assigneeId',
@@ -94,7 +82,7 @@ export const TRANSACTION_FILTERS: readonly TransactionFilterConfig[] = [
     icon: Users,
     missingLabel: 'Former member',
   },
-  {
+  category: {
     kind: 'selection',
     field: 'category',
     param: 'categoryId',
@@ -103,7 +91,7 @@ export const TRANSACTION_FILTERS: readonly TransactionFilterConfig[] = [
     icon: Layers2,
     missingLabel: 'Deleted category',
   },
-  {
+  tag: {
     kind: 'selection',
     field: 'tag',
     param: 'tagIds',
@@ -112,6 +100,21 @@ export const TRANSACTION_FILTERS: readonly TransactionFilterConfig[] = [
     icon: Tags,
     missingLabel: 'Deleted tag',
   },
+} satisfies Record<SelectionFilterField, SelectionFilterConfig>;
+
+export const TRANSACTION_FILTERS: readonly TransactionFilterConfig[] = [
+  SELECTION_FILTER_BY_FIELD.type,
+  {
+    kind: 'date',
+    field: 'date',
+    label: 'Date',
+    allLabel: 'All time',
+    icon: CalendarDays,
+  },
+  SELECTION_FILTER_BY_FIELD.account,
+  SELECTION_FILTER_BY_FIELD.assignee,
+  SELECTION_FILTER_BY_FIELD.category,
+  SELECTION_FILTER_BY_FIELD.tag,
   {
     kind: 'importResult',
     field: 'importResult',
@@ -121,18 +124,9 @@ export const TRANSACTION_FILTERS: readonly TransactionFilterConfig[] = [
   },
 ];
 
-export const SELECTION_FILTERS = TRANSACTION_FILTERS.filter(
-  (filter) => filter.kind === 'selection'
-);
-
-/** Maps every selection filter through `fn`, keyed by field. */
-export const mapSelectionFilters = <T>(
-  fn: (filter: SelectionFilterConfig) => T
-): Record<SelectionFilterField, T> =>
-  // Keys come from SELECTION_FILTERS, which lists exactly SelectionFilterField.
-  Object.fromEntries(
-    SELECTION_FILTERS.map((filter) => [filter.field, fn(filter)])
-  ) as Record<SelectionFilterField, T>;
+export const getSelectionFilter = (
+  field: SelectionFilterField
+): SelectionFilterConfig => SELECTION_FILTER_BY_FIELD[field];
 
 export const TRANSACTION_TYPE_OPTIONS = [
   { value: 'expense', label: 'Expense', icon: ArrowDownLeft },
@@ -156,7 +150,6 @@ export const IMPORT_OUTCOME_OPTIONS = [
   icon: LucideIcon;
 }[];
 
-/** Extra assignee options: `personal` = one assignee, `shared` = two or more. */
 export const ASSIGNEE_SHAPE_OPTIONS = [
   { value: TRANSACTION_FILTER_SENTINELS.personal, label: 'Personal' },
   { value: TRANSACTION_FILTER_SENTINELS.shared, label: 'Shared' },

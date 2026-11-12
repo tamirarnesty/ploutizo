@@ -61,7 +61,6 @@ const DateSelectorContext = createContext<DateSelectorContextValue>({
 
 const useDateSelectorContext = () => useContext(DateSelectorContext);
 
-/** Where a calendar month sits against today's month. */
 const getMonthPosition = (month: Date | undefined, today: Date) => {
   if (!month || isSameMonth(month, today)) return 'current';
   return month > today ? 'future' : 'past';
@@ -396,7 +395,6 @@ export interface DateSelectorProps {
   dayDateFormat?: string;
   dayDateFormats?: string[];
   weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
-  /** Controlled calendar month (e.g. jump to a preset's month). */
   month?: Date;
   onMonthChange?: (month: Date) => void;
 }
@@ -450,17 +448,14 @@ export const DateSelector = ({
   const inputValue = inputDraft ?? displayValue;
   const isInputFocused = inputDraft !== null;
 
-  // Compute date formats for parsing
   const dateFormats = useMemo(() => {
     if (dayDateFormats && dayDateFormats.length > 0) {
-      // Use provided formats, with dayDateFormat first if not already included
       const formats = [...dayDateFormats];
       if (!formats.includes(dayDateFormat)) {
         formats.unshift(dayDateFormat);
       }
       return formats;
     }
-    // Default formats: use dayDateFormat first, then common alternatives
     const defaultFormats = [
       dayDateFormat,
       'dd/MM/yyyy',
@@ -468,29 +463,22 @@ export const DateSelector = ({
       'MM-dd-yyyy',
       'dd-MM-yyyy',
     ];
-    // Remove duplicates while preserving order
     return Array.from(new Set(defaultFormats));
   }, [dayDateFormat, dayDateFormats]);
 
-  // Parse input text to DateSelectorValue
   const parseInputValue = useCallback(
     (text: string): DateSelectorValue | null => {
       if (!text.trim()) return null;
 
       const trimmed = text.trim();
 
-      // Try parsing as date using computed formats
       for (const dateFormat of dateFormats) {
-        try {
-          const parsed = parse(trimmed, dateFormat, new Date());
-          if (!isNaN(parsed.getTime())) {
-            return {
-              operator: filterType,
-              startDate: parsed,
-            };
-          }
-        } catch {
-          // Continue to next format
+        const parsed = parse(trimmed, dateFormat, new Date());
+        if (!isNaN(parsed.getTime())) {
+          return {
+            operator: filterType,
+            startDate: parsed,
+          };
         }
       }
 
@@ -551,11 +539,8 @@ export const DateSelector = ({
                   aria-label={mergedI18n.clear}
                   onClick={clearSelection}
                   className={cn(
-                    // Base Styles
                     'absolute end-2.5 top-1/2 size-4 -translate-y-1/2 cursor-pointer rounded-xs',
-                    // Visual States
                     'opacity-70 transition-opacity hover:opacity-100',
-                    // Focus States
                     'ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none'
                   )}
                 >

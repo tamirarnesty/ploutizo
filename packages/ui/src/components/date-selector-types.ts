@@ -15,7 +15,6 @@ export interface DateSelectorI18nConfig {
   placeholder: string;
 }
 
-/** Every operator, in toggle order. */
 export const DATE_FILTER_TYPES = [
   'is',
   'is_not',
@@ -27,7 +26,6 @@ export const DATE_FILTER_TYPES = [
 
 export type DateSelectorFilterType = (typeof DATE_FILTER_TYPES)[number];
 
-/** `between` and `not_between` both pick a two-end range. */
 export const isRangeFilterType = (type: DateSelectorFilterType): boolean =>
   type === 'between' || type === 'not_between';
 

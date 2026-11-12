@@ -2,7 +2,6 @@ import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useOptimisticSelection } from './useOptimisticSelection';
 
-/** An `onChange` whose navigation settles only when the test says so. */
 const deferredOnChange = () => {
   const settles: (() => void)[] = [];
   const onChange = vi.fn(
@@ -26,7 +25,6 @@ describe('useOptimisticSelection', () => {
     expect(result.current.selected).toEqual(['a']);
     expect(onChange).toHaveBeenLastCalledWith(['a']);
 
-    // The URL catches up, then the navigation promise resolves.
     rerender({ values: ['a'] });
     await act(() => Promise.resolve(settle(0)));
     expect(result.current.selected).toEqual(['a']);
@@ -43,12 +41,10 @@ describe('useOptimisticSelection', () => {
     act(() => result.current.toggle('b'));
     expect(result.current.selected).toEqual(['a', 'b']);
 
-    // The URL reflects only the first toggle; the second is still in flight.
     rerender({ values: ['a'] });
     await act(() => Promise.resolve(settle(0)));
     expect(result.current.selected).toEqual(['a', 'b']);
 
-    // A third toggle builds on the in-flight selection, not the stale URL.
     act(() => result.current.toggle('c'));
     expect(onChange).toHaveBeenLastCalledWith(['a', 'b', 'c']);
 

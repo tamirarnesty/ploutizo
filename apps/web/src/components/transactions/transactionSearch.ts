@@ -50,8 +50,6 @@ export type TransactionSearch = {
   categoryId?: string;
   assigneeId?: string;
   tagIds?: string; // comma-separated UUIDs per RESEARCH.md Pitfall 4
-  // Only the date filter carries an operator param; all other filters are
-  // positive multi-select.
   dateRange_op?: string; // 'between' | 'after' | 'before' | 'is' | 'is_not' | 'not_between'
   importBatchId?: string;
   importOutcome?: 'created' | 'matched';
@@ -65,7 +63,6 @@ const TRANSACTION_SEARCH_STRING_FIELDS = [
   'search',
 ] as const satisfies readonly (keyof TransactionSearch)[];
 
-/** Filters whose URL value is a comma-joined list of selected values. */
 export const TRANSACTION_LIST_FILTER_PARAMS = [
   'type',
   'accountId',
@@ -77,12 +74,10 @@ export const TRANSACTION_LIST_FILTER_PARAMS = [
 export type TransactionListFilterParam =
   (typeof TRANSACTION_LIST_FILTER_PARAMS)[number];
 
-/** `a,b` → distinct, non-empty values. */
 export const parseFilterList = (value: string | undefined): string[] => [
   ...new Set((value ?? '').split(',').filter(Boolean)),
 ];
 
-/** Inverse of `parseFilterList`; no values means no param. */
 export const formatFilterList = (values: string[]): string | undefined =>
   values.length > 0 ? values.join(',') : undefined;
 
@@ -163,8 +158,7 @@ export const validateTransactionSearch = (
     if (value !== undefined) result[field] = value;
   }
 
-  // Malformed list values from hand-edited URLs are dropped here so every
-  // consumer (chips, controls, API request) sees clean values.
+  // Drop malformed hand-edited values so every consumer sees clean ones.
   for (const field of TRANSACTION_LIST_FILTER_PARAMS) {
     const values = parseFilterList(parseOptionalString(search[field]));
     const valid =
@@ -173,8 +167,7 @@ export const validateTransactionSearch = (
     if (formatted !== undefined) result[field] = formatted;
   }
 
-  // Round-trip the date params through the filter model: operators the UI
-  // cannot express (unknown, or a range missing an end) are dropped.
+  // Round-trip through the filter model to drop operators the UI cannot express.
   const dateParams = dateFilterToSearch(dateFilterFromSearch(result));
   delete result.dateFrom;
   delete result.dateTo;

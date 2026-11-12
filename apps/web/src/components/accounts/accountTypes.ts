@@ -9,7 +9,6 @@ import {
 import type { AccountType } from '@ploutizo/types';
 import type { LucideIcon } from 'lucide-react';
 
-/** Canonical account-type presentation, ordered as ACCOUNT_TYPE_VALUES. */
 export const ACCOUNT_TYPE_OPTIONS = [
   { value: 'chequing', label: 'Chequing', icon: Landmark },
   { value: 'savings', label: 'Savings', icon: PiggyBank },

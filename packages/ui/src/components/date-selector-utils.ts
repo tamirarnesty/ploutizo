@@ -69,7 +69,6 @@ const FILTER_TYPE_LABEL_KEYS = {
   keyof DateSelectorI18nConfig['filterTypes']
 >;
 
-/** Display label for an operator — the single source for toggles and summaries. */
 export const getFilterTypeLabel = (
   i18n: Pick<DateSelectorI18nConfig, 'filterTypes'>,
   type: DateSelectorFilterType

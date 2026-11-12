@@ -35,15 +35,11 @@ const DATE_PRESETS = [
 
 type TransactionDateEditorProps = {
   filter: TransactionDateFilter | null;
-  /** `null` applies "all time". */
   onApply: (filter: TransactionDateFilter | null) => void;
   onCancel: () => void;
 };
 
-/**
- * Staged date editor: calendar, presets and operators edit a local draft that
- * only commits on Apply. Mount it fresh per editing session.
- */
+/** Edits a local draft committed on Apply; mount fresh per editing session. */
 export const TransactionDateEditor = ({
   filter,
   onApply,
@@ -120,12 +116,10 @@ type TransactionDateFilterControlProps = {
   filter: DateFilterConfig;
   search: TransactionSearch;
   onChange: (filter: TransactionDateFilter | null) => void;
-  /** Controlled open state so applied chips can reopen this popover. */
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
-/** Quick date filter — staged popover with calendar, presets, and operators. */
 export const TransactionDateFilterControl = ({
   filter,
   search,

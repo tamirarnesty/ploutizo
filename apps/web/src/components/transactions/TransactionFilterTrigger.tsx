@@ -8,7 +8,6 @@ type TransactionFilterTriggerProps = ComponentProps<typeof Button> & {
   label: string;
 };
 
-/** Trigger button shared by every desktop quick filter. Pass via a menu/popover trigger's `render`. */
 export const TransactionFilterTrigger = ({
   icon: Icon,
   label,

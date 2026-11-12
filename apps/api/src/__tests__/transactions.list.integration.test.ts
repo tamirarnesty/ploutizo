@@ -296,24 +296,20 @@ describe('GET /transactions — multi-select filters', () => {
   });
 
   it('TXN-LIST-FILTER-03: assigneeIds AND together and shape sentinels constrain count', async () => {
-    // member1 is on both transactions; member1+member2 only share txn0.
     expect((await list(`?assigneeId=${member1Id}`)).total).toBe(2);
     expect((await list(`?assigneeId=${member1Id},${member2Id}`)).total).toBe(1);
     expect((await list(`?assigneeId=${missId()}`)).total).toBe(0);
-    // Shape sentinels: txn0 is shared (2 assignees), txn1 is personal.
     const shared = await list('?assigneeId=shared');
     expect(shared.total).toBe(1);
     expect(shared.data[0]?.description).toBe('Weekly groceries run');
     const personal = await list('?assigneeId=personal');
     expect(personal.total).toBe(1);
     expect(personal.data[0]?.description).toBe('Payroll');
-    // Member + shape compose: member1's shared transactions = txn0 only.
     expect((await list(`?assigneeId=${member1Id},shared`)).total).toBe(1);
     expect((await list(`?assigneeId=${member1Id},personal`)).total).toBe(1);
     expect(
       (await list(`?assigneeId=${member1Id},shared`)).data[0]?.description
     ).toBe('Weekly groceries run');
-    // Both shapes selected = no shape constraint.
     expect((await list('?assigneeId=personal,shared')).total).toBe(2);
   });
 
@@ -325,7 +321,6 @@ describe('GET /transactions — multi-select filters', () => {
   });
 
   it('TXN-LIST-FILTER-06: none sentinel matches uncategorized and untagged', async () => {
-    // txn0 has a category and a tag; txn1 (Payroll) has neither.
     const uncategorized = await list('?categoryId=none');
     expect(uncategorized.total).toBe(1);
     expect(uncategorized.data[0]?.description).toBe('Payroll');

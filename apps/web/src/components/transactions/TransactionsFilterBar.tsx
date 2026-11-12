@@ -33,12 +33,6 @@ type TransactionsFilterBarProps = {
 
 type SheetState = { open: boolean; focus: TransactionFilterField | null };
 
-/**
- * Transaction filter bar: quick dropdown controls from `md` up, a Filters
- * button opening a bottom-sheet editor below it, and the applied-filter chips
- * row. The two layouts switch with CSS; the open state of each is independent.
- * All filter state lives in the URL search params.
- */
 export const TransactionsFilterBar = ({
   search,
   referenceData,
@@ -77,8 +71,7 @@ export const TransactionsFilterBar = ({
       void applySearch(
         outcome
           ? { importOutcome: outcome }
-          : // Clearing the outcome also drops the batch provenance param.
-            { importOutcome: undefined, importBatchId: undefined }
+          : { importOutcome: undefined, importBatchId: undefined }
       );
     },
   };
@@ -88,8 +81,6 @@ export const TransactionsFilterBar = ({
     if (filter) void applySearch(clearFilterPatch(filter));
   };
 
-  // Applied chips reopen their filter's editor: a menu on desktop, the sheet
-  // (expanded to that section) on mobile.
   const handleSelectChip = (field: TransactionFilterField) => {
     if (isMobile) setSheet({ open: true, focus: field });
     else setOpenField(field);

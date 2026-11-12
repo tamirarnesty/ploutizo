@@ -21,11 +21,7 @@ const RANGE_DATE_OPERATORS = ['between', 'not_between'] as const;
 export type SingleDateOperator = (typeof SINGLE_DATE_OPERATORS)[number];
 export type RangeDateOperator = (typeof RANGE_DATE_OPERATORS)[number];
 
-/**
- * An applied date filter; "all time" is the absence of one (`null`). Dates are
- * `yyyy-MM-dd`. Ranges always carry both ends — a lone bound is expressed with
- * `before` / `after`.
- */
+// "All time" is `null`; dates are `yyyy-MM-dd`.
 export type TransactionDateFilter =
   | { operator: SingleDateOperator; date: string }
   | { operator: RangeDateOperator; from: string; to: string };
@@ -36,7 +32,6 @@ const isSingleOperator = (value: string): value is SingleDateOperator =>
 const isRangeOperator = (value: string): value is RangeDateOperator =>
   RANGE_DATE_OPERATORS.some((operator) => operator === value);
 
-/** URL param carrying each single-date operator's date. */
 const SINGLE_DATE_PARAM = {
   is: 'dateFrom',
   is_not: 'dateFrom',
@@ -50,7 +45,6 @@ const CLEARED_DATE_PARAMS = {
   dateRange_op: undefined,
 } satisfies Partial<TransactionSearch>;
 
-/** Reads the date filter from URL params; unusable combinations read as none. */
 export const dateFilterFromSearch = (
   search: Pick<TransactionSearch, 'dateFrom' | 'dateTo' | 'dateRange_op'>
 ): TransactionDateFilter | null => {
@@ -68,7 +62,6 @@ export const dateFilterFromSearch = (
   };
 };
 
-/** Inverse of `dateFilterFromSearch`; undefined keys clear stale params on merge. */
 export const dateFilterToSearch = (
   filter: TransactionDateFilter | null
 ): Partial<TransactionSearch> => {
@@ -84,7 +77,6 @@ export const dateFilterToSearch = (
     ...CLEARED_DATE_PARAMS,
     dateFrom: filter.from,
     dateTo: filter.to,
-    // `between` is the default operator — keep it out of the URL.
     dateRange_op: filter.operator === 'between' ? undefined : filter.operator,
   };
 };
@@ -123,16 +115,11 @@ export const presetDateRange = (
   }
 };
 
-/**
- * Month the calendar should show for a preset range: ranges containing today
- * keep today in view, past or future ranges anchor on their end.
- */
 export const presetFocusMonth = (
   range: { from: Date; to: Date },
   today: Date
 ): Date => (today >= range.from && today <= range.to ? today : range.to);
 
-/** Which preset (if any) the filter is exactly equal to. */
 const matchingPreset = (
   filter: TransactionDateFilter | null,
   today: Date
@@ -163,7 +150,6 @@ const formatRange = (from: string, to: string) => {
   return `${formatDate(from)} – ${formatDate(to)}`;
 };
 
-/** Trigger/chip text: "All time", a preset name, or the operator and dates. */
 export const formatTransactionDateFilterLabel = (
   filter: TransactionDateFilter | null,
   today: Date
@@ -201,12 +187,10 @@ export const dateFilterToSelectorValue = (
   };
 };
 
-/** A range with only one end picked cannot be applied yet. */
 export const isDateSelectionComplete = (value: DateSelectorValue): boolean =>
   !isRangeOperator(value.operator) ||
   Boolean(value.startDate) === Boolean(value.endDate);
 
-/** Selector value → filter; no date picked means no filter. Check completeness first. */
 export const selectorValueToDateFilter = (
   value: DateSelectorValue
 ): TransactionDateFilter | null => {

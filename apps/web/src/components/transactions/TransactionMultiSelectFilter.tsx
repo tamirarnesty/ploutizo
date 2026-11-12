@@ -19,12 +19,10 @@ type TransactionMultiSelectFilterProps = {
   filter: SelectionFilterConfig;
   state: SelectionFilterState;
   onChange: (values: string[]) => Promise<void>;
-  /** Controlled open state so applied chips can reopen this menu. */
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
-/** Quick multi-select filter — checkbox dropdown, positive match only. */
 export const TransactionMultiSelectFilter = ({
   filter,
   state,

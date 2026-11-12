@@ -34,7 +34,6 @@ import type {
 
 type TransactionFiltersSheetProps = {
   open: boolean;
-  /** Section expanded on open; null opens with every section collapsed. */
   focusField: TransactionFilterField | null;
   onOpenChange: (open: boolean) => void;
   search: TransactionSearch;
@@ -72,7 +71,6 @@ const OptionRow = ({
   </button>
 );
 
-/** Multi-select checklist; commits on every tap, optimistically. */
 const OptionChecklist = ({
   state,
   onChange,
@@ -136,7 +134,6 @@ const SingleChoiceList = ({
   </div>
 );
 
-/** Accordion row: field name + current value summary, expands to its editor. */
 const AccordionSection = ({
   title,
   summary,
@@ -170,11 +167,6 @@ const AccordionSection = ({
   </Collapsible>
 );
 
-/**
- * Mobile filter sheet: every transaction filter as a collapsed accordion
- * section with its current value as the summary. Selection sections commit on
- * each tap; the date section stages edits behind its own Apply.
- */
 export const TransactionFiltersSheet = ({
   open,
   focusField,
@@ -189,9 +181,7 @@ export const TransactionFiltersSheet = ({
   const [expanded, setExpanded] = useState<TransactionFilterField | null>(null);
   const [openState, setOpenState] = useState({ open, focusField });
 
-  // Opening via an applied chip expands that field's section; the Filters
-  // button (focusField null) opens with every section collapsed. Adjusted
-  // during render so the sheet body never flashes the previous section.
+  // Synced during render so the sheet body never flashes the previous section.
   if (openState.open !== open || openState.focusField !== focusField) {
     setOpenState({ open, focusField });
     if (open) setExpanded(focusField);

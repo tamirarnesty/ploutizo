@@ -36,11 +36,6 @@ const subscribe = (onChange: () => void) => {
 
 const getSnapshot = () => toDayKey(new Date());
 
-/**
- * Today's date (local midnight), stable within a day. Components that derive
- * labels or presets from "today" re-render when the day rolls over instead of
- * going stale in a long-lived tab.
- */
 export const useToday = (): Date => {
   const dayKey = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   return useMemo(() => parseISO(dayKey), [dayKey]);

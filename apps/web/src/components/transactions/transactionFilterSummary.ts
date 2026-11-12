@@ -11,7 +11,6 @@ import type {
   TransactionFilterOptions,
 } from './transactionFilterTypes';
 
-/** "Alice, Shared", or `allLabel` when nothing is selected. */
 export const summarizeSelection = (
   values: string[],
   labels: SelectionFilterState['labels'],
@@ -23,7 +22,6 @@ export const summarizeSelection = (
 
 export type TransactionFilterChip = ActiveFilterChip<TransactionFilterField>;
 
-/** One chip per applied filter, in display order. */
 export const buildTransactionFilterChips = (
   search: TransactionSearch,
   options: TransactionFilterOptions,

@@ -9,10 +9,13 @@ import {
   TRANSACTION_TYPE_OPTIONS,
   UNCATEGORIZED_OPTION,
   UNTAGGED_OPTION,
-  mapSelectionFilters,
+  getSelectionFilter,
 } from './transactionFilterConfig';
 import { parseFilterList } from './transactionSearch';
-import type { SelectionFilterConfig } from './transactionFilterConfig';
+import type {
+  SelectionFilterConfig,
+  SelectionFilterField,
+} from './transactionFilterConfig';
 import type { TransactionSearch } from './transactionSearch';
 import type {
   SelectionFilterState,
@@ -34,8 +37,6 @@ const buildSelection = (
       group.options.map((option) => [option.value, option.label] as const)
     )
   );
-  // A selected value with no option is a deleted entity — or, until the
-  // reference lists arrive, simply not resolved yet.
   const unresolved = referencesLoaded ? config.missingLabel : 'Loading…';
   for (const value of values) {
     if (!labels.has(value)) labels.set(value, unresolved);
@@ -43,7 +44,6 @@ const buildSelection = (
   return { values, groups, labels };
 };
 
-/** Selected values and labelled options for every transaction filter. */
 export const useTransactionFilterOptions = (
   search: TransactionSearch,
   {
@@ -163,21 +163,25 @@ export const useTransactionFilterOptions = (
   );
 
   const selections = useMemo(() => {
-    const groupsByField = {
-      type: typeGroups,
-      account: accountGroups,
-      assignee: assigneeGroups,
-      category: categoryGroups,
-      tag: tagGroups,
-    };
-    return mapSelectionFilters((config) =>
-      buildSelection(
+    const selectionFor = (
+      field: SelectionFilterField,
+      groups: TransactionFilterOptionGroup[]
+    ) => {
+      const config = getSelectionFilter(field);
+      return buildSelection(
         config,
         parseFilterList(search[config.param]),
-        groupsByField[config.field],
+        groups,
         loaded
-      )
-    );
+      );
+    };
+    return {
+      type: selectionFor('type', typeGroups),
+      account: selectionFor('account', accountGroups),
+      assignee: selectionFor('assignee', assigneeGroups),
+      category: selectionFor('category', categoryGroups),
+      tag: selectionFor('tag', tagGroups),
+    };
   }, [
     search,
     typeGroups,

@@ -17,7 +17,6 @@ type TransactionsDesktopFilterControlsProps = {
   onOpenFieldChange: (field: TransactionFilterField | null) => void;
 };
 
-/** Desktop quick controls: every transaction filter stays one click away. */
 export const TransactionsDesktopFilterControls = ({
   search,
   options,
@@ -25,8 +24,7 @@ export const TransactionsDesktopFilterControls = ({
   openField,
   onOpenFieldChange,
 }: TransactionsDesktopFilterControlsProps) => (
-  // Breakpoint switching is CSS-only so server and client markup agree; the
-  // mobile counterpart (Filters button + sheet) is `md:hidden`.
+  // CSS-only breakpoint switch so server and client markup agree.
   <div className="hidden flex-wrap items-center gap-2 md:flex">
     {TRANSACTION_FILTERS.map((filter) => {
       const menuProps = {
@@ -56,7 +54,6 @@ export const TransactionsDesktopFilterControls = ({
             />
           );
         case 'importResult':
-          // Only meaningful while viewing an import batch.
           return search.importBatchId ? (
             <TransactionSingleSelectFilter
               key={filter.field}

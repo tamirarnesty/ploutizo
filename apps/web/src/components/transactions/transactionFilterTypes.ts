@@ -30,13 +30,11 @@ export type TransactionFilterTag = {
   colour?: string | null;
 };
 
-/** Reference lists the filters resolve ids against. */
 export type TransactionFilterReferenceData = {
   accounts: TransactionFilterAccount[];
   categories: TransactionFilterCategory[];
   members: TransactionFilterMember[];
   tags: TransactionFilterTag[];
-  /** False until every list has loaded, so unknown ids read as loading, not deleted. */
   loaded: boolean;
 };
 
@@ -52,7 +50,6 @@ export type TransactionFilterOptionGroup = {
   options: TransactionFilterOption[];
 };
 
-/** Selected values, selectable options, and a label for every selected value. */
 export type SelectionFilterState = {
   values: string[];
   groups: TransactionFilterOptionGroup[];
@@ -71,7 +68,6 @@ export type TransactionFilterHandlers = {
     filter: SelectionFilterConfig,
     values: string[]
   ) => Promise<void>;
-  /** `null` clears the date filter. */
   onDateChange: (filter: TransactionDateFilter | null) => void;
   onImportOutcomeChange: (outcome: string | undefined) => void;
 };

@@ -19,7 +19,6 @@ import type { TransactionFilterReferenceData } from './transactionFilterTypes';
 import type { TransactionSearch } from './transactionSearch';
 
 const NO_TRANSACTIONS: TransactionRow[] = [];
-// Stable empty list standing in for reference data that has not loaded yet.
 const NO_REFERENCES: never[] = [];
 
 export const Transactions = () => {
@@ -54,8 +53,6 @@ export const Transactions = () => {
   const [sheetOpen, setSheetOpen] = useState<boolean>(false);
   const [selectedTx, setSelectedTx] = useState<TransactionRow | null>(null);
 
-  // Filtered-empty state clears the whole narrowing (filters + search) so the
-  // list can actually recover.
   const handleClearAllNarrowing = useCallback(() => {
     void navigate({
       to: '/transactions',

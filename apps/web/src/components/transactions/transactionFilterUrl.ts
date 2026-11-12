@@ -27,7 +27,6 @@ export const buildCleanSearch = (
   return result;
 };
 
-/** URL params that remove one filter, for merging over the current search. */
 export const clearFilterPatch = (
   filter: TransactionFilterConfig
 ): Partial<TransactionSearch> => {
@@ -37,18 +36,15 @@ export const clearFilterPatch = (
     case 'date':
       return dateFilterToSearch(null);
     case 'importResult':
-      // The batch only scopes the import-result filter — drop it together.
       return { importOutcome: undefined, importBatchId: undefined };
   }
 };
 
-/** URL params for a selection filter's chosen values (none clears it). */
 export const selectionPatch = (
   param: (typeof TRANSACTION_LIST_FILTER_PARAMS)[number],
   values: string[]
 ): Partial<TransactionSearch> => ({ [param]: formatFilterList(values) });
 
-/** Whether anything narrows the list: a filter, or the text search. */
 export const hasActiveFilters = (search: TransactionSearch): boolean =>
   TRANSACTION_LIST_FILTER_PARAMS.some((param) => Boolean(search[param])) ||
   Boolean(search.dateFrom) ||

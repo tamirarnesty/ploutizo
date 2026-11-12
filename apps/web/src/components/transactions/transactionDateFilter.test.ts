@@ -13,7 +13,7 @@ import {
 } from './transactionDateFilter';
 import type { TransactionDateFilter } from './transactionDateFilter';
 
-const TODAY = new Date(2026, 10, 9); // Nov 9, 2026 (local)
+const TODAY = new Date(2026, 10, 9);
 
 const ymd = (date: Date) => format(date, 'yyyy-MM-dd');
 
@@ -69,7 +69,6 @@ describe('URL codec', () => {
   it('reads no filter when the params cannot express one', () => {
     expect(dateFilterFromSearch({})).toBeNull();
     expect(dateFilterFromSearch({ dateRange_op: 'after' })).toBeNull();
-    // A range needs both ends; lone bounds are what `before` / `after` are for.
     expect(dateFilterFromSearch({ dateFrom: '2026-11-01' })).toBeNull();
     expect(
       dateFilterFromSearch({

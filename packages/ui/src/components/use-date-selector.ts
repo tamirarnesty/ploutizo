@@ -11,16 +11,11 @@ interface UseDateSelectorOptions {
   onChange?: (value: DateSelectorValue) => void;
   defaultFilterType?: DateSelectorFilterType;
   allowRange?: boolean;
-  /** Controlled calendar month; omit to let the selector manage it. */
   month?: Date;
   onMonthChange?: (month: Date) => void;
 }
 
-/**
- * Date selector state. `value` is the committed selection when provided;
- * otherwise the hook owns an uncontrolled value. `onChange` fires from user
- * actions only — never from an effect — so parents can stage edits safely.
- */
+// `onChange` fires from user actions only, never effects, so parents can stage edits.
 export const useDateSelector = ({
   value,
   onChange,
@@ -66,8 +61,6 @@ export const useDateSelector = ({
       setValue({
         ...currentValue,
         operator: type,
-        // Switching to a single-date operator drops the range end; the start
-        // date stays so compatible operators keep the user's selection.
         endDate: isRangeFilterType(type) ? currentValue.endDate : undefined,
       });
     },
