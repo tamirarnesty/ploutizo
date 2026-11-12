@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 
-import { act, renderHook } from '@testing-library/react';
+import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useIsMobile } from './use-mobile';
 
@@ -29,6 +29,7 @@ const stubMatchMedia = (matches: boolean) => {
 
 describe('useIsMobile', () => {
   afterEach(() => {
+    cleanup();
     vi.unstubAllGlobals();
   });
 
