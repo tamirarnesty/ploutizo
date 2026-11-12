@@ -35,6 +35,22 @@ try {
   } satisfies Storage);
 }
 
+// jsdom lacks `window.matchMedia`; default to a desktop, light-scheme viewport.
+Object.defineProperty(window, 'matchMedia', {
+  configurable: true,
+  writable: true,
+  value: (query: string): MediaQueryList => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  }),
+});
+
 /** Base UI portals / menus rely on layout observers in browsers. */
 if (typeof ResizeObserver === 'undefined') {
   globalThis.ResizeObserver = class {

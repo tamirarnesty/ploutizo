@@ -16,6 +16,7 @@ import { getFinancialInstitutionName } from '@ploutizo/types';
 import { memberFullLabel } from '@ploutizo/utils';
 import type { DataGridFeatures } from '@ploutizo/ui/components/reui/data-grid/data-grid';
 import type { Account } from '@ploutizo/validators';
+import { getAccountTypeLabel } from '@/components/accounts/accountTypes';
 import {
   DATA_GRID_PAGINATION_ROW_CLASSNAME,
   PAGINATED_DATA_GRID_SCROLL_ORIENTATION,
@@ -24,15 +25,6 @@ import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
 import { usePersistedPageSize } from '@/hooks/persistedPageSize';
 import { useEffectiveTablePageSize } from '@/hooks/useEffectiveTablePageSize';
 import type { ColumnDef } from '@tanstack/react-table';
-
-const ACCOUNT_TYPE_LABELS: Record<string, string> = {
-  chequing: 'Chequing',
-  savings: 'Savings',
-  credit_card: 'Credit Card',
-  prepaid_cash: 'Prepaid / Cash',
-  e_transfer: 'e-Transfer',
-  investment: 'Investment',
-};
 
 const countClientPageRows = (
   totalRows: number,
@@ -110,7 +102,7 @@ export const AccountsTable = ({
         },
         cell: ({ row }) => (
           <Text as="span" variant="body-sm" className="text-muted-foreground">
-            {ACCOUNT_TYPE_LABELS[row.original.type] ?? row.original.type}
+            {getAccountTypeLabel(row.original.type)}
           </Text>
         ),
       },

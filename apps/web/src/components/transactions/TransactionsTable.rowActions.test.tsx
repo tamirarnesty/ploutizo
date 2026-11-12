@@ -43,6 +43,7 @@ const renderTable = (
         onSortChange={vi.fn()}
         onFilteredEmpty={false}
         onClearFilters={vi.fn()}
+        onAddTransaction={vi.fn()}
         onEdit={onEdit}
         onOpenOriginal={vi.fn()}
         {...overrides}
