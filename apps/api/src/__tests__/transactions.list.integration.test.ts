@@ -342,3 +342,120 @@ describe('GET /transactions — multi-select filters', () => {
     expect(one.total).toBe(1);
   });
 });
+
+describe('GET /transactions — date range operators', () => {
+  const DATE_ORG_ID = `org_txn_dates_${crypto.randomUUID()}`;
+
+  const dateApp = createRouteTestApp(
+    (testApp) => {
+      testApp.route('/transactions', transactionsRouter);
+    },
+    { signedInMemberId: 'user_clerk_abc', activeHouseholdId: DATE_ORG_ID }
+  );
+
+  const listDates = async (query: string) => {
+    const res = await dateApp.request(`/transactions${query}`);
+    expect(res.status).toBe(200);
+    return transactionListResponseSchema.parse(await res.json());
+  };
+
+  let accountId: string;
+
+  beforeAll(async () => {
+    await db.insert(orgs).values({ id: DATE_ORG_ID, name: 'Txn date ops' });
+
+    const [account] = await db
+      .insert(accounts)
+      .values({ orgId: DATE_ORG_ID, name: 'Chequing', type: 'chequing' })
+      .returning({ id: accounts.id });
+    accountId = account.id;
+
+    await db.insert(transactions).values([
+      {
+        orgId: DATE_ORG_ID,
+        type: 'expense',
+        accountId,
+        amount: 100,
+        date: '2026-01-01',
+        description: 'Jan 1',
+      },
+      {
+        orgId: DATE_ORG_ID,
+        type: 'expense',
+        accountId,
+        amount: 200,
+        date: '2026-01-15',
+        description: 'Jan 15',
+      },
+      {
+        orgId: DATE_ORG_ID,
+        type: 'expense',
+        accountId,
+        amount: 300,
+        date: '2026-01-31',
+        description: 'Jan 31',
+      },
+      {
+        orgId: DATE_ORG_ID,
+        type: 'expense',
+        accountId,
+        amount: 400,
+        date: '2026-02-10',
+        description: 'Feb 10',
+      },
+    ]);
+  });
+
+  afterAll(async () => {
+    await db.delete(orgs).where(eq(orgs.id, DATE_ORG_ID));
+  });
+
+  const descriptions = (page: { data: { description: string }[] }) =>
+    page.data.map((row) => row.description).sort();
+
+  it('TXN-LIST-DATE-01: between is inclusive on both boundaries', async () => {
+    const page = await listDates(
+      '?dateFrom=2026-01-15&dateTo=2026-01-31&dateRange_op=between'
+    );
+    expect(page.total).toBe(2);
+    expect(descriptions(page)).toEqual(['Jan 15', 'Jan 31']);
+  });
+
+  it('TXN-LIST-DATE-02: default operator is between', async () => {
+    const page = await listDates('?dateFrom=2026-01-15&dateTo=2026-01-31');
+    expect(page.total).toBe(2);
+    expect(descriptions(page)).toEqual(['Jan 15', 'Jan 31']);
+  });
+
+  it('TXN-LIST-DATE-03: after is strict on dateFrom', async () => {
+    const page = await listDates('?dateFrom=2026-01-15&dateRange_op=after');
+    expect(page.total).toBe(2);
+    expect(descriptions(page)).toEqual(['Feb 10', 'Jan 31']);
+  });
+
+  it('TXN-LIST-DATE-04: before is strict on dateTo', async () => {
+    const page = await listDates('?dateTo=2026-01-15&dateRange_op=before');
+    expect(page.total).toBe(1);
+    expect(page.data[0]?.description).toBe('Jan 1');
+  });
+
+  it('TXN-LIST-DATE-05: is matches a single day', async () => {
+    const page = await listDates('?dateFrom=2026-01-15&dateRange_op=is');
+    expect(page.total).toBe(1);
+    expect(page.data[0]?.description).toBe('Jan 15');
+  });
+
+  it('TXN-LIST-DATE-06: is_not excludes a single day', async () => {
+    const page = await listDates('?dateFrom=2026-01-15&dateRange_op=is_not');
+    expect(page.total).toBe(3);
+    expect(descriptions(page)).toEqual(['Feb 10', 'Jan 1', 'Jan 31']);
+  });
+
+  it('TXN-LIST-DATE-07: not_between excludes the closed interval', async () => {
+    const page = await listDates(
+      '?dateFrom=2026-01-15&dateTo=2026-01-31&dateRange_op=not_between'
+    );
+    expect(page.total).toBe(2);
+    expect(descriptions(page)).toEqual(['Feb 10', 'Jan 1']);
+  });
+});
