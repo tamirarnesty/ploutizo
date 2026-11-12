@@ -6,7 +6,10 @@ import { nitro } from 'nitro/vite';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import viteReact from '@vitejs/plugin-react';
-import { precacheGlobPatterns } from './src/pwa/precache';
+import {
+  offlineShellRevisionSlot,
+  stampOfflineShellRevision,
+} from './src/pwa/offline-shell-revision';
 
 const noCache = { headers: { 'cache-control': 'no-cache' } };
 
@@ -18,7 +21,6 @@ const config = defineConfig({
       // must not require cross-origin isolation.
       routeRules: {
         '/sw.js': noCache,
-        '/manifest.webmanifest': noCache,
         '/manifest.json': noCache,
         '/offline.html': noCache,
       },
@@ -57,7 +59,10 @@ const config = defineConfig({
       includeManifestIcons: false,
       registerType: 'prompt',
       injectManifest: {
-        globPatterns: [...precacheGlobPatterns],
+        globPatterns: ['assets/**/*.{js,css,woff,woff2}'],
+        additionalManifestEntries: [
+          { url: '/offline.html', revision: offlineShellRevisionSlot },
+        ],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
       },
     }).map((plugin) => ({
@@ -67,6 +72,20 @@ const config = defineConfig({
       applyToEnvironment: (environment: { name: string }) =>
         environment.name === 'client',
     })),
+    {
+      name: 'ploutizo-offline-shell',
+      enforce: 'post',
+      buildApp: {
+        order: 'post',
+        async handler() {
+          const output = path.join(import.meta.dirname, '.output/public');
+          await stampOfflineShellRevision(
+            path.join(output, 'sw.js'),
+            path.join(output, 'offline.html')
+          );
+        },
+      },
+    },
   ],
   optimizeDeps: {
     exclude: ['@clerk/ui'],

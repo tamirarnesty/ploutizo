@@ -1,7 +1,5 @@
 export const OFFLINE_ENTRY_PATH = '/offline.html';
 
-export const OFFLINE_ENTRY_CACHE = 'ploutizo-offline-entry';
-
 const deniedOfflineEntryPatterns = [
   /^\/api(?:\/|$)/,
   /^\/_serverFn(?:\/|$)/,

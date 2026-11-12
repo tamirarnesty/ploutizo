@@ -1,21 +1,17 @@
 import { readFile } from 'node:fs/promises';
-import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-export const offlineEntryCandidates = (cwd: string) => [
-  path.resolve(cwd, '.output/public/offline.html'),
-  path.resolve(cwd, 'apps/web/.output/public/offline.html'),
-];
+// The route is bundled to `.output/server/_ssr/`, so the shell is two levels up.
+export const offlineEntryPathFrom = (moduleUrl: string | URL) =>
+  fileURLToPath(new URL('../../public/offline.html', moduleUrl));
 
 export const readOfflineEntry = async () => {
-  for (const candidate of offlineEntryCandidates(process.cwd())) {
-    try {
-      return await readFile(candidate, 'utf8');
-    } catch (error) {
-      if (!isMissingFile(error)) throw error;
-    }
+  try {
+    return await readFile(offlineEntryPathFrom(import.meta.url), 'utf8');
+  } catch (error) {
+    if (!isMissingFile(error)) throw error;
+    return undefined;
   }
-
-  return undefined;
 };
 
 const isMissingFile = (error: unknown) =>

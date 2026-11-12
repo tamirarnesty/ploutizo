@@ -1,8 +1,6 @@
-/// <reference types="vite-plugin-pwa/client" />
-import { registerSW } from 'virtual:pwa-register';
-
 export const registerServiceWorker = () => {
-  if (!import.meta.env.PROD) return;
+  if (!import.meta.env.PROD || !('serviceWorker' in navigator)) return;
 
-  registerSW({ immediate: true });
+  // Updates stay waiting until the page posts SKIP_WAITING.
+  void navigator.serviceWorker.register('/sw.js', { scope: '/' });
 };

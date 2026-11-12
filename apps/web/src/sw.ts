@@ -1,32 +1,20 @@
 /// <reference lib="webworker" />
-import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
+import {
+  cleanupOutdatedCaches,
+  matchPrecache,
+  precacheAndRoute,
+} from 'workbox-precaching';
 import { registerRoute, setCatchHandler } from 'workbox-routing';
 import { NetworkOnly } from 'workbox-strategies';
-import {
-  OFFLINE_ENTRY_CACHE,
-  OFFLINE_ENTRY_PATH,
-  allowsOfflineEntry,
-} from './pwa/offline-entry';
+import { OFFLINE_ENTRY_PATH, allowsOfflineEntry } from './pwa/offline-entry';
 
 declare const self: ServiceWorkerGlobalScope;
 
+// Precache revisions are per worker. Install stores the new `/offline.html`
+// beside the old one. Activate, not install, drops entries this worker does
+// not list, so a waiting worker cannot publish its shell early.
 cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST);
-
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    (async () => {
-      const [cache, response] = await Promise.all([
-        caches.open(OFFLINE_ENTRY_CACHE),
-        fetch(OFFLINE_ENTRY_PATH, { cache: 'no-store' }),
-      ]);
-      if (!response.ok) {
-        throw new Error(`Offline entry responded ${response.status}`);
-      }
-      await cache.put(OFFLINE_ENTRY_PATH, response);
-    })()
-  );
-});
 
 self.addEventListener('message', (event) => {
   const data: unknown = event.data;
@@ -54,6 +42,6 @@ setCatchHandler(async ({ request }) => {
   const { pathname } = new URL(request.url);
   if (!allowsOfflineEntry(pathname)) return Response.error();
 
-  const shell = await caches.match(OFFLINE_ENTRY_PATH);
+  const shell = await matchPrecache(OFFLINE_ENTRY_PATH);
   return shell ?? Response.error();
 });
