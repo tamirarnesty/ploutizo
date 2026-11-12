@@ -98,7 +98,6 @@ export const ColourTokenPicker = ({
   const handleSelect = (token: ColourToken) => {
     onChange(token);
     setOpen(false);
-    setSearch('');
   };
 
   return (
@@ -106,7 +105,7 @@ export const ColourTokenPicker = ({
       open={open}
       onOpenChange={(nextOpen) => {
         setOpen(nextOpen);
-        if (!nextOpen) setSearch('');
+        if (nextOpen) setSearch('');
       }}
     >
       <PopoverTrigger

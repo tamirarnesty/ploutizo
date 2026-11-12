@@ -55,6 +55,32 @@ describe('ColourTokenPicker', () => {
     expect(optionNames()).toEqual(['Sky 300']);
   });
 
+  it('keeps the filtered view while closing after a search', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<ColourTokenPicker value="red-500" onChange={onChange} />);
+
+    await user.click(screen.getByRole('button'));
+    const search = screen.getByPlaceholderText('Search colours…');
+    await user.type(search, 'fuchsia');
+    await user.click(screen.getByRole('option', { name: 'Fuchsia 700' }));
+
+    expect(onChange).toHaveBeenCalledWith('fuchsia-700');
+    expect(search).toHaveValue('fuchsia');
+  });
+
+  it('clears search when the popover reopens', async () => {
+    const user = userEvent.setup();
+    render(<ColourTokenPicker value="red-500" onChange={vi.fn()} />);
+
+    await user.click(screen.getByRole('button'));
+    await user.type(screen.getByPlaceholderText('Search colours…'), 'fuchsia');
+    await user.click(screen.getByRole('option', { name: 'Fuchsia 700' }));
+    await user.click(screen.getByRole('button'));
+
+    expect(screen.getByPlaceholderText('Search colours…')).toHaveValue('');
+  });
+
   it('calls onChange with the clicked swatch token and closes', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

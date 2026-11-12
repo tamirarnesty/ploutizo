@@ -220,7 +220,6 @@ export const LucideIconPicker = ({
   const handleSelect = (pascalName: string) => {
     onChange(pascalName);
     setOpen(false);
-    setSearch('');
   };
 
   return (
@@ -228,7 +227,7 @@ export const LucideIconPicker = ({
       open={open}
       onOpenChange={(nextOpen) => {
         setOpen(nextOpen);
-        if (!nextOpen) setSearch('');
+        if (nextOpen) setSearch('');
       }}
     >
       <PopoverTrigger
