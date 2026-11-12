@@ -394,7 +394,12 @@ export const TransactionDateFilterControl = ({
           />
         }
       />
-      <PopoverContent align="start" sideOffset={4} className="w-auto gap-0 p-0">
+      {/* Match frosted dropdown menus; Calendar clears its own fill inside popover-content. */}
+      <PopoverContent
+        align="start"
+        sideOffset={4}
+        className="isolate w-auto gap-0 bg-popover/80 p-0 backdrop-blur-2xl backdrop-saturate-150"
+      >
         <TransactionDateEditor
           key={dateFilterKey}
           filter={dateFilter}
