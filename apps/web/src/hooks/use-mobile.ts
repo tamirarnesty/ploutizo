@@ -1,21 +1,4 @@
-import * as React from 'react';
-
-const MOBILE_BREAKPOINT = 768;
-
-export const useIsMobile = () => {
-  const [isMobile, setIsMobile] = React.useState<boolean | undefined>(
-    undefined
-  );
-
-  React.useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
-    const onChange = () => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
-    };
-    mql.addEventListener('change', onChange);
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
-    return () => mql.removeEventListener('change', onChange);
-  }, []);
-
-  return !!isMobile;
-};
+// shadcn-generated `@ploutizo/ui` components import `@/hooks/use-mobile`, which
+// resolves into this app's `src/` when the web program compiles them. Re-export
+// the UI package's hook so there is a single implementation.
+export { useIsMobile } from '@ploutizo/ui/hooks/use-mobile';

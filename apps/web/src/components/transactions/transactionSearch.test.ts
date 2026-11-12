@@ -60,8 +60,39 @@ describe('validateTransactionSearch', () => {
       tagIds: 'uuid1,uuid2',
       dateFrom: '2026-01-01',
       dateTo: '2026-01-31',
-      dateRange_op: 'between',
     });
+  });
+
+  it('drops blank and repeated values from list filters', () => {
+    expect(
+      validateTransactionSearch({
+        accountId: ',a,,a,b,',
+        categoryId: ',',
+        tagIds: 'none,t1',
+      })
+    ).toEqual({ accountId: 'a,b', tagIds: 'none,t1' });
+  });
+
+  it('keeps only known transaction types', () => {
+    expect(validateTransactionSearch({ type: 'expense,bogus,income' })).toEqual(
+      {
+        type: 'expense,income',
+      }
+    );
+    expect(validateTransactionSearch({ type: 'bogus' })).toEqual({});
+  });
+
+  it('drops date params the filter cannot express', () => {
+    expect(validateTransactionSearch({ dateFrom: '2026-01-01' })).toEqual({});
+    expect(
+      validateTransactionSearch({
+        dateTo: '2026-01-31',
+        dateRange_op: 'before',
+      })
+    ).toEqual({ dateTo: '2026-01-31', dateRange_op: 'before' });
+    expect(
+      validateTransactionSearch({ dateFrom: '2026-01-01', dateRange_op: 'is' })
+    ).toEqual({ dateFrom: '2026-01-01', dateRange_op: 'is' });
   });
 
   it('ignores unknown keys and non-string filter values', () => {

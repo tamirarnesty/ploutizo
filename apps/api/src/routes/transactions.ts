@@ -4,6 +4,8 @@ import {
   importTransactionLinkFilterSchema,
   patchTransactionSchema,
 } from '@ploutizo/validators';
+import { TRANSACTION_TYPE_VALUES } from '@ploutizo/types';
+import type { TransactionType } from '@ploutizo/types';
 import type { ListQueryParams } from '@/services/transactions';
 import type { AppEnv } from '@/types';
 import { DomainError } from '@/lib/errors';
@@ -18,6 +20,38 @@ import {
 } from '@/services/transactions';
 
 const transactionsRouter = new Hono<AppEnv>();
+
+/** `?x=a,b` → distinct, trimmed, non-empty values; undefined when none remain. */
+const parseListParam = (value: string | undefined): string[] | undefined => {
+  const values = [
+    ...new Set(
+      (value ?? '')
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean)
+    ),
+  ];
+  return values.length > 0 ? values : undefined;
+};
+
+const isTransactionType = (value: string): value is TransactionType =>
+  TRANSACTION_TYPE_VALUES.some((type) => type === value);
+
+const parseTypesParam = (
+  value: string | undefined
+): TransactionType[] | undefined => {
+  const values = parseListParam(value);
+  if (!values) return undefined;
+  const types = values.filter(isTransactionType);
+  if (types.length !== values.length) {
+    throw new DomainError(
+      400,
+      'type must be a comma-separated list of transaction types.',
+      'INVALID_TRANSACTION_TYPE_FILTER'
+    );
+  }
+  return types;
+};
 
 // POST / — create transaction (D-01, D-02, D-09, D-10, D-11, D-13)
 transactionsRouter.post(
@@ -55,10 +89,7 @@ transactionsRouter.get('/', async (c) => {
   // tagIds: support ?tagIds[]=x&tagIds[]=y AND ?tagIds=x,y (Pitfall 5)
   const tagIdsArr = c.req.queries('tagIds[]') ?? [];
   const tagIdsComma = c.req.query('tagIds');
-  const tagIds = [
-    ...tagIdsArr,
-    ...(tagIdsComma ? tagIdsComma.split(',').filter(Boolean) : []),
-  ];
+  const tagIds = parseListParam([...tagIdsArr, tagIdsComma ?? ''].join(','));
   const importBatchId = c.req.query('importBatchId');
   const importOutcome = c.req.query('importOutcome');
   let importLink: ListQueryParams['importLink'];
@@ -83,13 +114,13 @@ transactionsRouter.get('/', async (c) => {
     limit,
     sort,
     order,
-    type: c.req.query('type'),
-    accountId: c.req.query('accountId'),
+    types: parseTypesParam(c.req.query('type')),
+    accountIds: parseListParam(c.req.query('accountId')),
     dateFrom: c.req.query('dateFrom'),
     dateTo: c.req.query('dateTo'),
-    categoryId: c.req.query('categoryId'),
-    assigneeId: c.req.query('assigneeId'),
-    tagIds: tagIds.length > 0 ? tagIds : undefined,
+    categoryIds: parseListParam(c.req.query('categoryId')),
+    assigneeIds: parseListParam(c.req.query('assigneeId')),
+    tagIds,
     search: c.req.query('search')?.trim() || undefined,
     dateRange_op: c.req.query('dateRange_op'),
     importLink,

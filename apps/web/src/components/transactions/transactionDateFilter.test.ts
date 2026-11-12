@@ -3,227 +3,194 @@ import { describe, expect, it } from 'vitest';
 import type { DateSelectorValue } from '@ploutizo/ui/components/date-selector';
 import {
   dateFilterFromSearch,
-  dateFilterKind,
   dateFilterToSearch,
-  filterToSelectorValue,
+  dateFilterToSelectorValue,
   formatTransactionDateFilterLabel,
+  isDateSelectionComplete,
   presetDateRange,
-  selectorValueToFilter,
+  presetFocusMonth,
+  selectorValueToDateFilter,
 } from './transactionDateFilter';
+import type { TransactionDateFilter } from './transactionDateFilter';
 
 const TODAY = new Date(2026, 10, 9); // Nov 9, 2026 (local)
 
-describe('dateFilterFromSearch / dateFilterToSearch', () => {
-  it('round-trips a between range', () => {
-    const params = dateFilterToSearch('between', ['2026-11-01', '2026-11-09']);
-    expect(params).toEqual({
+const ymd = (date: Date) => format(date, 'yyyy-MM-dd');
+
+const allFilters: TransactionDateFilter[] = [
+  { operator: 'between', from: '2026-11-01', to: '2026-11-09' },
+  { operator: 'not_between', from: '2026-11-01', to: '2026-11-09' },
+  { operator: 'is', date: '2026-11-05' },
+  { operator: 'is_not', date: '2026-11-05' },
+  { operator: 'before', date: '2026-11-30' },
+  { operator: 'after', date: '2026-11-01' },
+];
+
+describe('URL codec', () => {
+  it('round-trips every operator', () => {
+    for (const filter of allFilters) {
+      expect(dateFilterFromSearch(dateFilterToSearch(filter))).toEqual(filter);
+    }
+  });
+
+  it('keeps the default between operator out of the URL', () => {
+    expect(dateFilterToSearch(allFilters[0])).toEqual({
       dateFrom: '2026-11-01',
       dateTo: '2026-11-09',
       dateRange_op: undefined,
     });
-    expect(
-      dateFilterFromSearch({
-        dateFrom: '2026-11-01',
-        dateTo: '2026-11-09',
-      })
-    ).toEqual({ operator: 'between', values: ['2026-11-01', '2026-11-09'] });
   });
 
-  it('maps single-bound operators to the right URL params', () => {
-    expect(dateFilterToSearch('after', ['2026-11-01'])).toEqual({
+  it('maps single-date operators to the param the API reads', () => {
+    expect(
+      dateFilterToSearch({ operator: 'after', date: '2026-11-01' })
+    ).toEqual({
       dateFrom: '2026-11-01',
       dateTo: undefined,
       dateRange_op: 'after',
     });
-    expect(dateFilterToSearch('before', ['2026-11-30'])).toEqual({
+    expect(
+      dateFilterToSearch({ operator: 'before', date: '2026-11-30' })
+    ).toEqual({
       dateFrom: undefined,
       dateTo: '2026-11-30',
       dateRange_op: 'before',
     });
-    expect(dateFilterToSearch('is', ['2026-11-05'])).toEqual({
-      dateFrom: '2026-11-05',
+  });
+
+  it('clears every date param for "all time"', () => {
+    expect(dateFilterToSearch(null)).toEqual({
+      dateFrom: undefined,
       dateTo: undefined,
-      dateRange_op: 'is',
-    });
-    expect(dateFilterToSearch('is_not', ['2026-11-05'])).toEqual({
-      dateFrom: '2026-11-05',
-      dateTo: undefined,
-      dateRange_op: 'is_not',
+      dateRange_op: undefined,
     });
   });
 
-  it('reads operator params back from the URL', () => {
+  it('reads no filter when the params cannot express one', () => {
+    expect(dateFilterFromSearch({})).toBeNull();
+    expect(dateFilterFromSearch({ dateRange_op: 'after' })).toBeNull();
+    // A range needs both ends; lone bounds are what `before` / `after` are for.
+    expect(dateFilterFromSearch({ dateFrom: '2026-11-01' })).toBeNull();
     expect(
-      dateFilterFromSearch({ dateFrom: '2026-11-01', dateRange_op: 'after' })
-    ).toEqual({ operator: 'after', values: ['2026-11-01'] });
-    expect(
-      dateFilterFromSearch({ dateTo: '2026-11-30', dateRange_op: 'before' })
-    ).toEqual({ operator: 'before', values: ['2026-11-30'] });
+      dateFilterFromSearch({
+        dateTo: '2026-11-09',
+        dateRange_op: 'not_between',
+      })
+    ).toBeNull();
+  });
+
+  it('treats an unknown operator as between', () => {
     expect(
       dateFilterFromSearch({
         dateFrom: '2026-11-01',
         dateTo: '2026-11-09',
-        dateRange_op: 'not_between',
+        dateRange_op: 'bogus',
       })
-    ).toEqual({
-      operator: 'not_between',
-      values: ['2026-11-01', '2026-11-09'],
-    });
-  });
-
-  it('clears the opposite bound when switching operator families', () => {
-    const params = dateFilterToSearch('is', ['2026-11-05']);
-    expect(params.dateTo).toBeUndefined();
-    expect(params.dateRange_op).toBe('is');
+    ).toEqual({ operator: 'between', from: '2026-11-01', to: '2026-11-09' });
   });
 });
 
 describe('presets', () => {
   it('computes month and year ranges', () => {
-    const ymd = (date: Date) => format(date, 'yyyy-MM-dd');
-    expect(
-      [
-        presetDateRange('this_month', TODAY).from,
-        presetDateRange('this_month', TODAY).to,
-      ].map(ymd)
-    ).toEqual(['2026-11-01', '2026-11-30']);
-    expect(
-      [
-        presetDateRange('last_month', TODAY).from,
-        presetDateRange('last_month', TODAY).to,
-      ].map(ymd)
-    ).toEqual(['2026-10-01', '2026-10-31']);
-    expect(
-      [
-        presetDateRange('this_year', TODAY).from,
-        presetDateRange('this_year', TODAY).to,
-      ].map(ymd)
-    ).toEqual(['2026-01-01', '2026-12-31']);
+    const range = (id: Parameters<typeof presetDateRange>[0]) => {
+      const { from, to } = presetDateRange(id, TODAY);
+      return [ymd(from), ymd(to)];
+    };
+    expect(range('this_month')).toEqual(['2026-11-01', '2026-11-30']);
+    expect(range('last_month')).toEqual(['2026-10-01', '2026-10-31']);
+    expect(range('this_year')).toEqual(['2026-01-01', '2026-12-31']);
   });
 
-  it('classifies preset, all-time and custom states', () => {
-    expect(dateFilterKind('between', [], TODAY)).toBe('all');
-    expect(dateFilterKind('between', ['2026-11-01', '2026-11-30'], TODAY)).toBe(
-      'this_month'
+  it('keeps today in view for ranges containing it, else anchors on the end', () => {
+    expect(presetFocusMonth(presetDateRange('this_year', TODAY), TODAY)).toBe(
+      TODAY
     );
-    expect(dateFilterKind('between', ['2026-10-01', '2026-10-31'], TODAY)).toBe(
-      'last_month'
-    );
-    expect(dateFilterKind('between', ['2026-01-01', '2026-12-31'], TODAY)).toBe(
-      'this_year'
-    );
-    expect(dateFilterKind('between', ['2026-11-03', '2026-11-09'], TODAY)).toBe(
-      'custom'
-    );
-    expect(dateFilterKind('is', ['2026-11-05'], TODAY)).toBe('custom');
+    const lastMonth = presetDateRange('last_month', TODAY);
+    expect(presetFocusMonth(lastMonth, TODAY)).toBe(lastMonth.to);
+  });
+
+  it('follows the day it is given, not a cached one', () => {
+    const tomorrow = new Date(2026, 10, 10);
+    const dec = new Date(2026, 11, 1);
+    expect(
+      formatTransactionDateFilterLabel(
+        { operator: 'between', from: '2026-11-01', to: '2026-11-30' },
+        tomorrow
+      )
+    ).toBe('This month');
+    expect(
+      formatTransactionDateFilterLabel(
+        { operator: 'between', from: '2026-11-01', to: '2026-11-30' },
+        dec
+      )
+    ).toBe('Last month');
   });
 });
 
 describe('formatTransactionDateFilterLabel', () => {
-  it('names presets and all time', () => {
-    expect(formatTransactionDateFilterLabel('between', [], TODAY)).toBe(
-      'All time'
-    );
+  it('names all time and presets', () => {
+    expect(formatTransactionDateFilterLabel(null, TODAY)).toBe('All time');
     expect(
       formatTransactionDateFilterLabel(
-        'between',
-        ['2026-11-01', '2026-11-30'],
+        { operator: 'between', from: '2026-01-01', to: '2026-12-31' },
         TODAY
       )
-    ).toBe('This month');
+    ).toBe('This year');
   });
 
   it('formats custom ranges and single dates', () => {
-    expect(
-      formatTransactionDateFilterLabel(
-        'between',
-        ['2026-11-03', '2026-11-09'],
-        TODAY
-      )
-    ).toBe('Nov 3 – Nov 9, 2026');
-    expect(formatTransactionDateFilterLabel('is', ['2026-11-05'], TODAY)).toBe(
+    expect(formatTransactionDateFilterLabel(allFilters[0], TODAY)).toBe(
+      'Nov 1 – Nov 9, 2026'
+    );
+    expect(formatTransactionDateFilterLabel(allFilters[1], TODAY)).toBe(
+      'Not between Nov 1 – Nov 9, 2026'
+    );
+    expect(formatTransactionDateFilterLabel(allFilters[2], TODAY)).toBe(
       'Is Nov 5, 2026'
     );
+    expect(formatTransactionDateFilterLabel(allFilters[4], TODAY)).toBe(
+      'Before Nov 30, 2026'
+    );
+  });
+
+  it('does not mistake a preset-shaped range under another operator for a preset', () => {
     expect(
-      formatTransactionDateFilterLabel('before', ['2026-11-30'], TODAY)
-    ).toBe('Before Nov 30, 2026');
+      formatTransactionDateFilterLabel(
+        { operator: 'not_between', from: '2026-11-01', to: '2026-11-30' },
+        TODAY
+      )
+    ).toBe('Not between Nov 1 – Nov 30, 2026');
   });
 });
 
 describe('DateSelector mapping', () => {
-  it('maps codec state to a selector value', () => {
-    expect(
-      filterToSelectorValue({
-        operator: 'between',
-        values: ['2026-11-01', '2026-11-09'],
-      })
-    ).toEqual({
-      operator: 'between',
-      startDate: new Date(2026, 10, 1),
-      endDate: new Date(2026, 10, 9),
-    });
-    expect(
-      filterToSelectorValue({ operator: 'is', values: ['2026-11-05'] })
-    ).toEqual({
-      operator: 'is',
-      startDate: new Date(2026, 10, 5),
-      endDate: undefined,
-    });
+  it('round-trips every filter through the selector value', () => {
+    for (const filter of allFilters) {
+      expect(
+        selectorValueToDateFilter(dateFilterToSelectorValue(filter))
+      ).toEqual(filter);
+    }
   });
 
-  it('round-trips whole-month ranges as concrete day bounds', () => {
-    expect(
-      filterToSelectorValue({
-        operator: 'between',
-        values: ['2026-11-01', '2026-11-30'],
-      })
-    ).toEqual({
-      operator: 'between',
-      startDate: new Date(2026, 10, 1),
-      endDate: new Date(2026, 10, 30),
-    });
-    expect(
-      selectorValueToFilter(
-        filterToSelectorValue({
-          operator: 'between',
-          values: ['2026-01-01', '2026-12-31'],
-        })
-      )
-    ).toEqual({ operator: 'between', values: ['2026-01-01', '2026-12-31'] });
+  it('maps "all time" to an empty between selection and back', () => {
+    const empty = dateFilterToSelectorValue(null);
+    expect(empty).toEqual({ operator: 'between' });
+    expect(isDateSelectionComplete(empty)).toBe(true);
+    expect(selectorValueToDateFilter(empty)).toBeNull();
   });
 
-  it('round-trips day selections through the codec', () => {
-    const value: DateSelectorValue = {
-      operator: 'not_between',
+  it('holds a range with one end picked back from applying', () => {
+    const partial: DateSelectorValue = {
+      operator: 'between',
       startDate: new Date(2026, 10, 1),
-      endDate: new Date(2026, 10, 9),
     };
-    expect(selectorValueToFilter(value)).toEqual({
-      operator: 'not_between',
-      values: ['2026-11-01', '2026-11-09'],
-    });
+    expect(isDateSelectionComplete(partial)).toBe(false);
+    expect(isDateSelectionComplete({ ...partial, endDate: TODAY })).toBe(true);
     expect(
-      selectorValueToFilter({
-        operator: 'is_not',
-        startDate: new Date(2026, 10, 5),
-      })
-    ).toEqual({ operator: 'is_not', values: ['2026-11-05'] });
-  });
-
-  it('returns null for incomplete ranges and empty state for cleared selections', () => {
-    expect(
-      selectorValueToFilter({
-        operator: 'between',
+      isDateSelectionComplete({
+        operator: 'is',
         startDate: new Date(2026, 10, 1),
       })
-    ).toBeNull();
-    expect(selectorValueToFilter({ operator: 'between' })).toEqual({
-      operator: 'between',
-      values: [],
-    });
-    expect(selectorValueToFilter(undefined)).toEqual({
-      operator: 'between',
-      values: [],
-    });
+    ).toBe(true);
   });
 });

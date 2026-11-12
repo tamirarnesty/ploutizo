@@ -1,142 +1,102 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
+import { ListFilterIcon } from 'lucide-react';
 import { ActiveFilterChips } from '@ploutizo/ui/components/active-filter-chips';
-import type { Filter } from '@ploutizo/ui/components/filters-types';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { buildFilterFields } from './TransactionFilterFields';
+import { Badge } from '@ploutizo/ui/components/badge';
+import { Button } from '@ploutizo/ui/components/button';
+import { useIsMobile } from '@ploutizo/ui/hooks/use-mobile';
+import { useToday } from '@ploutizo/ui/hooks/use-today';
+import { TransactionFilterSearch } from './TransactionFilterSearch';
+import { TransactionFiltersSheet } from './TransactionFiltersSheet';
 import { TransactionsDesktopFilterControls } from './TransactionsDesktopFilterControls';
-import { TransactionsMobileFilterControls } from './TransactionsMobileFilterControls';
-import {
-  dateFilterToSearch,
-  formatTransactionDateFilterLabel,
-} from './transactionDateFilter';
+import { dateFilterToSearch } from './transactionDateFilter';
+import { TRANSACTION_FILTERS } from './transactionFilterConfig';
+import { buildTransactionFilterChips } from './transactionFilterSummary';
 import {
   buildCleanSearch,
-  filtersToSearch,
-  searchToFilters,
+  clearFilterPatch,
+  selectionPatch,
 } from './transactionFilterUrl';
+import { parseImportOutcome } from './transactionSearch';
 import { useTransactionFilterOptions } from './useTransactionFilterOptions';
-import type { TransactionSearch } from './transactionSearch';
+import type { TransactionFilterField } from './transactionFilterConfig';
 import type {
-  QuickEditTarget,
-  TransactionFilterAccount,
-  TransactionFilterCategory,
-  TransactionFilterChangeHandlers,
-  TransactionFilterMember,
-  TransactionFilterTag,
+  TransactionFilterHandlers,
+  TransactionFilterReferenceData,
 } from './transactionFilterTypes';
+import type { TransactionSearch } from './transactionSearch';
 
 type TransactionsFilterBarProps = {
   search: TransactionSearch;
-  accounts: TransactionFilterAccount[];
-  categories: TransactionFilterCategory[];
-  members: TransactionFilterMember[];
-  tags: TransactionFilterTag[];
+  referenceData: TransactionFilterReferenceData;
 };
 
-const QUICK_EDIT_BY_FIELD: Partial<Record<string, QuickEditTarget>> = {
-  type: 'type',
-  dateRange: 'date',
-  accountId: 'account',
-  assigneeId: 'assignee',
-  categoryId: 'category',
-  tagIds: 'tag',
-  importOutcome: 'importResult',
-};
-
-const getDateSummary = (filter: Filter<string>) =>
-  filter.field === 'dateRange'
-    ? formatTransactionDateFilterLabel(filter.operator, filter.values)
-    : undefined;
+type SheetState = { open: boolean; focus: TransactionFilterField | null };
 
 /**
- * Transaction filter bar: quick dropdown controls on desktop, a search field
- * plus a Filters button opening the bottom-sheet filter editor on mobile, and
- * the applied-filter chips row. All state lives in the URL search params.
+ * Transaction filter bar: quick dropdown controls from `md` up, a Filters
+ * button opening a bottom-sheet editor below it, and the applied-filter chips
+ * row. The two layouts switch with CSS; the open state of each is independent.
+ * All filter state lives in the URL search params.
  */
 export const TransactionsFilterBar = ({
   search,
-  accounts,
-  categories,
-  members,
-  tags,
+  referenceData,
 }: TransactionsFilterBarProps) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const today = useToday();
 
-  const [quickEdit, setQuickEdit] = useState<QuickEditTarget | null>(null);
+  const [openField, setOpenField] = useState<TransactionFilterField | null>(
+    null
+  );
+  const [sheet, setSheet] = useState<SheetState>({
+    open: false,
+    focus: null,
+  });
 
-  // Filter state is derived from URL search params (single source of truth).
-  const activeFilters = useMemo(() => searchToFilters(search), [search]);
-
-  // The panel edits one Filter per field — materialize empty defaults for
-  // fields with no active filter so every section can render.
-  const filterFields = useMemo(
-    () =>
-      buildFilterFields(accounts, categories, members, tags, {
-        includeImportResult: Boolean(search.importBatchId),
-      }),
-    [accounts, categories, members, tags, search.importBatchId]
+  const options = useTransactionFilterOptions(search, referenceData);
+  const chips = useMemo(
+    () => buildTransactionFilterChips(search, options, today),
+    [search, options, today]
   );
 
-  const filterOptions = useTransactionFilterOptions(
-    search,
-    accounts,
-    categories,
-    members,
-    tags
-  );
+  const applySearch = (patch: Partial<TransactionSearch>) =>
+    navigate({
+      to: '/transactions',
+      search: (prev) => buildCleanSearch({ ...prev, page: 1, ...patch }),
+      replace: true,
+    });
 
-  const applySearch = useCallback(
-    (patch: Partial<TransactionSearch>) => {
-      void navigate({
-        to: '/transactions',
-        search: (prev) => buildCleanSearch({ ...prev, page: 1, ...patch }),
-        replace: true,
-      });
+  const handlers: TransactionFilterHandlers = {
+    onSelectionChange: (filter, values) =>
+      applySearch(selectionPatch(filter.param, values)),
+    onDateChange: (filter) => applySearch(dateFilterToSearch(filter)),
+    onImportOutcomeChange: (value) => {
+      const outcome = parseImportOutcome(value);
+      void applySearch(
+        outcome
+          ? { importOutcome: outcome }
+          : // Clearing the outcome also drops the batch provenance param.
+            { importOutcome: undefined, importBatchId: undefined }
+      );
     },
-    [navigate]
-  );
+  };
 
-  const applyFilters = useCallback(
-    (filters: Filter<string>[]) => {
-      const mapped = filtersToSearch(filters);
-      void navigate({
-        to: '/transactions',
-        // Rebuild from scratch — only keep sort/pagination/text search from prev.
-        // Spreading prev would leave stale filter params when a filter is removed.
-        // Import batch stays only while the Import result filter remains.
-        search: (prev) =>
-          buildCleanSearch({
-            page: 1,
-            sort: prev.sort,
-            order: prev.order,
-            search: prev.search,
-            ...mapped,
-            importBatchId: mapped.importOutcome
-              ? prev.importBatchId
-              : undefined,
-          }),
-        replace: true,
-      });
-    },
-    [navigate]
-  );
+  const handleRemoveChip = (field: TransactionFilterField) => {
+    const filter = TRANSACTION_FILTERS.find((f) => f.field === field);
+    if (filter) void applySearch(clearFilterPatch(filter));
+  };
 
-  const handleRemoveFilter = useCallback(
-    (filter: Filter<string>) => {
-      applyFilters(activeFilters.filter((f) => f.field !== filter.field));
-    },
-    [applyFilters, activeFilters]
-  );
-
-  const handleSelectChip = useCallback((filter: Filter<string>) => {
-    const quick = QUICK_EDIT_BY_FIELD[filter.field];
-    if (quick) setQuickEdit(quick);
-  }, []);
+  // Applied chips reopen their filter's editor: a menu on desktop, the sheet
+  // (expanded to that section) on mobile.
+  const handleSelectChip = (field: TransactionFilterField) => {
+    if (isMobile) setSheet({ open: true, focus: field });
+    else setOpenField(field);
+  };
 
   // "Clear all" resets filters only — the text search is a separate intent.
-  const handleClearFilters = useCallback(() => {
+  const handleClearFilters = () =>
     void navigate({
       to: '/transactions',
       search: (prev) =>
@@ -147,120 +107,56 @@ export const TransactionsFilterBar = ({
         }),
       replace: true,
     });
-  }, [navigate]);
-
-  const handleTypeChange = useCallback(
-    (values: string[]) => {
-      applySearch({
-        type: values.length > 0 ? values.join(',') : undefined,
-      });
-    },
-    [applySearch]
-  );
-
-  const handleAccountChange = useCallback(
-    (accountIds: string[]) => {
-      applySearch({
-        accountId: accountIds.length > 0 ? accountIds.join(',') : undefined,
-      });
-    },
-    [applySearch]
-  );
-
-  const handleAssigneeChange = useCallback(
-    (values: string[]) => {
-      applySearch({
-        assigneeId: values.length > 0 ? values.join(',') : undefined,
-      });
-    },
-    [applySearch]
-  );
-
-  const handleCategoryChange = useCallback(
-    (values: string[]) => {
-      applySearch({
-        categoryId: values.length > 0 ? values.join(',') : undefined,
-      });
-    },
-    [applySearch]
-  );
-
-  const handleTagsChange = useCallback(
-    (values: string[]) => {
-      applySearch({
-        tagIds: values.length > 0 ? values.join(',') : undefined,
-      });
-    },
-    [applySearch]
-  );
-
-  const handleImportOutcomeChange = useCallback(
-    (outcome: string | undefined) => {
-      applySearch(
-        outcome
-          ? { importOutcome: outcome as TransactionSearch['importOutcome'] }
-          : // Clearing the outcome also drops the batch provenance param.
-            { importOutcome: undefined, importBatchId: undefined }
-      );
-    },
-    [applySearch]
-  );
-
-  const handleDateChange = useCallback(
-    (next: { operator: string; values: string[] }) => {
-      applySearch(dateFilterToSearch(next.operator, next.values));
-    },
-    [applySearch]
-  );
-
-  const commitSearchQuery = useCallback(
-    (trimmed: string) => {
-      applySearch({ search: trimmed || undefined });
-    },
-    [applySearch]
-  );
-
-  const filterHandlers: TransactionFilterChangeHandlers = {
-    onTypeChange: handleTypeChange,
-    onAccountChange: handleAccountChange,
-    onAssigneeChange: handleAssigneeChange,
-    onCategoryChange: handleCategoryChange,
-    onTagsChange: handleTagsChange,
-    onDateChange: handleDateChange,
-    onImportOutcomeChange: handleImportOutcomeChange,
-  };
 
   return (
     <div className="flex flex-col gap-2">
-      {isMobile ? (
-        <TransactionsMobileFilterControls
-          search={search}
-          options={filterOptions}
-          handlers={filterHandlers}
-          activeFilterCount={activeFilters.length}
-          quickEdit={quickEdit}
-          onQuickEditChange={setQuickEdit}
-          onSearchCommit={commitSearchQuery}
-          onClearAllFilters={handleClearFilters}
+      <div className="flex flex-wrap items-center gap-2">
+        <TransactionFilterSearch
+          urlQuery={search.search ?? ''}
+          onCommit={(trimmed) =>
+            void applySearch({ search: trimmed || undefined })
+          }
         />
-      ) : (
         <TransactionsDesktopFilterControls
           search={search}
-          options={filterOptions}
-          handlers={filterHandlers}
-          quickEdit={quickEdit}
-          onQuickEditChange={setQuickEdit}
-          onSearchCommit={commitSearchQuery}
+          options={options}
+          handlers={handlers}
+          openField={openField}
+          onOpenFieldChange={setOpenField}
         />
-      )}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="shrink-0 gap-1.5 md:hidden"
+          onClick={() => setSheet({ open: true, focus: null })}
+        >
+          <ListFilterIcon className="size-3.5" aria-hidden="true" />
+          Filters
+          {chips.length > 0 ? (
+            <Badge variant="secondary" className="h-4 min-w-4 px-1 text-[10px]">
+              {chips.length}
+            </Badge>
+          ) : null}
+        </Button>
+      </div>
+
+      <TransactionFiltersSheet
+        open={sheet.open}
+        focusField={sheet.focus}
+        onOpenChange={(open) => setSheet((prev) => ({ ...prev, open }))}
+        search={search}
+        options={options}
+        handlers={handlers}
+        activeFilterCount={chips.length}
+        onClearAllFilters={handleClearFilters}
+      />
 
       <ActiveFilterChips
-        filters={activeFilters}
-        fields={filterFields}
-        onRemove={handleRemoveFilter}
+        chips={chips}
+        onRemove={handleRemoveChip}
         onSelect={handleSelectChip}
-        onClearAll={activeFilters.length > 0 ? handleClearFilters : undefined}
-        getSummary={getDateSummary}
+        onClearAll={chips.length > 0 ? handleClearFilters : undefined}
       />
     </div>
   );

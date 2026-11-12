@@ -21,12 +21,15 @@ import {
   gte,
   inArray,
   isNotNull,
+  isNull,
   lt,
   lte,
   ne,
   not,
+  or,
   sql,
 } from 'drizzle-orm';
+import { TRANSACTION_FILTER_SENTINELS } from '@ploutizo/types';
 import type { Transaction } from '@ploutizo/db';
 import type {
   SortOrder,
@@ -84,12 +87,17 @@ export type ListQueryParams = {
   limit: number;
   sort: TransactionSortField;
   order: SortOrder;
-  type?: string;
-  accountId?: string;
+  /** Inclusive any-of; omit for no filter. */
+  types?: TransactionType[];
+  /** Inclusive any-of. */
+  accountIds?: string[];
   dateFrom?: string;
   dateTo?: string;
-  categoryId?: string;
-  assigneeId?: string;
+  /** Inclusive any-of; `none` also matches uncategorized. */
+  categoryIds?: string[];
+  /** Member ids ANDed together; `personal` / `shared` constrain the assignee count. */
+  assigneeIds?: string[];
+  /** Inclusive any-of; `none` also matches untagged. */
   tagIds?: string[];
   /** Case-insensitive substring match on description, rawDescription, category, account, and tag names (T-03.4-01). Not assignee, amount, or date. */
   search?: string;
@@ -117,23 +125,28 @@ const importTransactionLinkExists = (
       )
   );
 
+/** Splits a filter's values into real ids and whether the `none` sentinel is present. */
+const partitionNone = (values: string[]) => ({
+  ids: values.filter((value) => value !== TRANSACTION_FILTER_SENTINELS.none),
+  none: values.includes(TRANSACTION_FILTER_SENTINELS.none),
+});
+
+/** Adds one condition matching any of the defined clauses; no-op when none are defined. */
+const pushAnyOf = (conditions: SQL[], clauses: (SQL | undefined)[]) => {
+  const defined = clauses.filter((clause) => clause !== undefined);
+  if (defined.length > 0) conditions.push(or(...defined)!);
+};
+
 // Build the WHERE conditions array for list + count queries
 export const buildConditions = (params: ListQueryParams): SQL[] => {
   const conditions: SQL[] = [...activeTransactions(params.orgId)];
 
-  // type — comma-separated values, inclusive any-of
-  if (params.type) {
-    const types = params.type.split(',').map((t) => t.trim());
-    conditions.push(inArray(transactions.type, types as TransactionType[]));
+  if (params.types?.length) {
+    conditions.push(inArray(transactions.type, params.types));
   }
 
-  // accountId — comma-separated values, inclusive any-of
-  if (params.accountId) {
-    const accountIds = params.accountId
-      .split(',')
-      .map((id) => id.trim())
-      .filter(Boolean);
-    conditions.push(inArray(transactions.accountId, accountIds));
+  if (params.accountIds?.length) {
+    conditions.push(inArray(transactions.accountId, params.accountIds));
   }
 
   // dateRange — operator determines which Drizzle condition is applied
@@ -162,27 +175,24 @@ export const buildConditions = (params: ListQueryParams): SQL[] => {
     if (params.dateTo) conditions.push(lte(transactions.date, params.dateTo));
   }
 
-  // categoryId — comma-separated values, inclusive any-of
-  if (params.categoryId) {
-    const categoryIds = params.categoryId
-      .split(',')
-      .map((id) => id.trim())
-      .filter(Boolean);
-    conditions.push(inArray(transactions.categoryId, categoryIds));
+  if (params.categoryIds?.length) {
+    const { ids, none } = partitionNone(params.categoryIds);
+    pushAnyOf(conditions, [
+      ids.length > 0 ? inArray(transactions.categoryId, ids) : undefined,
+      none ? isNull(transactions.categoryId) : undefined,
+    ]);
   }
 
-  // assigneeId — comma-separated member ids ANDed together (a transaction
-  // must have every selected member as an assignee), plus 'personal'/'shared'
-  // shape sentinels constraining the assignee count. Both shapes selected
-  // means no shape constraint.
-  if (params.assigneeId) {
-    const values = params.assigneeId
-      .split(',')
-      .map((v) => v.trim())
-      .filter(Boolean);
-    const memberIds = values.filter((v) => v !== 'personal' && v !== 'shared');
-    const wantsPersonal = values.includes('personal');
-    const wantsShared = values.includes('shared');
+  // assigneeIds — every selected member must be an assignee (AND), plus
+  // 'personal'/'shared' shape sentinels constraining the assignee count. Both
+  // shapes selected means no shape constraint.
+  if (params.assigneeIds?.length) {
+    const { personal, shared } = TRANSACTION_FILTER_SENTINELS;
+    const memberIds = params.assigneeIds.filter(
+      (value) => value !== personal && value !== shared
+    );
+    const wantsPersonal = params.assigneeIds.includes(personal);
+    const wantsShared = params.assigneeIds.includes(shared);
     for (const memberId of memberIds) {
       conditions.push(
         exists(
@@ -206,21 +216,22 @@ export const buildConditions = (params: ListQueryParams): SQL[] => {
     }
   }
 
-  // tagIds — EXISTS subquery, inclusive any-of
-  if (params.tagIds && params.tagIds.length > 0) {
-    conditions.push(
-      exists(
-        db
-          .select({ one: sql`1` })
-          .from(transactionTags)
-          .where(
-            and(
-              eq(transactionTags.transactionId, transactions.id),
-              inArray(transactionTags.tagId, params.tagIds)
-            )
+  if (params.tagIds?.length) {
+    const { ids, none } = partitionNone(params.tagIds);
+    const taggedWith = (tagIds?: string[]) =>
+      db
+        .select({ one: sql`1` })
+        .from(transactionTags)
+        .where(
+          and(
+            eq(transactionTags.transactionId, transactions.id),
+            tagIds ? inArray(transactionTags.tagId, tagIds) : undefined
           )
-      )
-    );
+        );
+    pushAnyOf(conditions, [
+      ids.length > 0 ? exists(taggedWith(ids)) : undefined,
+      none ? not(exists(taggedWith())) : undefined,
+    ]);
   }
 
   if (params.search) {

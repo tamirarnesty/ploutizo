@@ -35,6 +35,26 @@ try {
   } satisfies Storage);
 }
 
+/**
+ * jsdom does not implement `window.matchMedia`. Components that read media
+ * queries (`useIsMobile`, theme detection) get a desktop-sized, light-scheme
+ * viewport; tests needing another answer override it per test.
+ */
+Object.defineProperty(window, 'matchMedia', {
+  configurable: true,
+  writable: true,
+  value: (query: string): MediaQueryList => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  }),
+});
+
 /** Base UI portals / menus rely on layout observers in browsers. */
 if (typeof ResizeObserver === 'undefined') {
   globalThis.ResizeObserver = class {

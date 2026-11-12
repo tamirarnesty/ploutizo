@@ -8,7 +8,6 @@ import {
   useContext,
   useMemo,
   useState,
-  useSyncExternalStore,
 } from 'react';
 import { addMonths, isSameMonth, parse, subMonths } from 'date-fns';
 import { type DateRange } from 'react-day-picker';
@@ -20,18 +19,21 @@ import {
   XIcon,
 } from 'lucide-react';
 
+import { useIsMobile } from '../hooks/use-mobile';
+import { useToday } from '../hooks/use-today';
 import { useDateSelector } from './use-date-selector';
 import {
   DEFAULT_DATE_SELECTOR_I18N,
   formatDateValue,
+  getFilterTypeLabel,
 } from './date-selector-utils';
 import {
+  DATE_FILTER_TYPES,
   type DateSelectorFilterType,
   type DateSelectorI18nConfig,
   type DateSelectorValue,
   isRangeFilterType,
 } from './date-selector-types';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/button';
 import { Calendar, CalendarDayButton } from '@/components/calendar';
@@ -44,6 +46,10 @@ export type {
   DateSelectorValue,
 } from './date-selector-types';
 export { useDateSelector } from './use-date-selector';
+export {
+  DEFAULT_DATE_SELECTOR_I18N,
+  getFilterTypeLabel,
+} from './date-selector-utils';
 
 interface DateSelectorContextValue {
   i18n: DateSelectorI18nConfig;
@@ -55,16 +61,11 @@ const DateSelectorContext = createContext<DateSelectorContextValue>({
 
 const useDateSelectorContext = () => useContext(DateSelectorContext);
 
-// The clock has no event to subscribe to, but a store snapshot is still read
-// on every render. Compiled, a render-body clock read is cached at mount.
-const subscribeToClock = () => () => {};
-
 /** Where a calendar month sits against today's month. */
-function getMonthPosition(month: Date | undefined) {
-  const today = new Date();
+const getMonthPosition = (month: Date | undefined, today: Date) => {
   if (!month || isSameMonth(month, today)) return 'current';
   return month > today ? 'future' : 'past';
-}
+};
 
 interface DateSelectorFilterToggleProps {
   value: DateSelectorFilterType;
@@ -73,30 +74,13 @@ interface DateSelectorFilterToggleProps {
   className?: string;
 }
 
-function DateSelectorFilterToggle({
+const DateSelectorFilterToggle = ({
   value,
   onChange,
   showBetween = true,
   className,
-}: DateSelectorFilterToggleProps) {
+}: DateSelectorFilterToggleProps) => {
   const { i18n } = useDateSelectorContext();
-
-  const operators: {
-    value: DateSelectorFilterType;
-    label: string;
-    show: boolean;
-  }[] = [
-    { value: 'is', label: i18n.filterTypes.is, show: true },
-    { value: 'is_not', label: i18n.filterTypes.isNot, show: true },
-    { value: 'before', label: i18n.filterTypes.before, show: true },
-    { value: 'after', label: i18n.filterTypes.after, show: true },
-    { value: 'between', label: i18n.filterTypes.between, show: showBetween },
-    {
-      value: 'not_between',
-      label: i18n.filterTypes.notBetween,
-      show: showBetween,
-    },
-  ];
 
   return (
     <Tabs
@@ -109,49 +93,45 @@ function DateSelectorFilterToggle({
       className={className}
     >
       <TabsList className="bg-muted/80">
-        {operators
-          .filter((operator) => operator.show)
-          .map((operator) => (
+        {DATE_FILTER_TYPES.filter(
+          (type) => showBetween || !isRangeFilterType(type)
+        ).map((type) => {
+          const label = getFilterTypeLabel(i18n, type);
+          return (
             <TabsTrigger
-              key={operator.value}
-              value={operator.value}
-              aria-label={operator.label}
+              key={type}
+              value={type}
+              aria-label={label}
               className="py-1 font-normal"
             >
-              {operator.label}
+              {label}
             </TabsTrigger>
-          ))}
+          );
+        })}
       </TabsList>
     </Tabs>
   );
-}
+};
 
 // Month navigation sits beside the input field. The Today button keeps its
 // slot (invisible) so the row never shifts layout.
-function DateSelectorMonthNav({
+const DateSelectorMonthNav = ({
   calendarMonth,
   onMonthChange,
 }: {
   calendarMonth: Date;
   onMonthChange: (date: Date) => void;
-}) {
+}) => {
   const { i18n } = useDateSelectorContext();
-  const getSnapshot = useCallback(
-    () => getMonthPosition(calendarMonth),
-    [calendarMonth]
-  );
-  const monthPosition = useSyncExternalStore(
-    subscribeToClock,
-    getSnapshot,
-    getSnapshot
-  );
+  const today = useToday();
+  const monthPosition = getMonthPosition(calendarMonth, today);
 
   return (
     <div className="flex shrink-0 items-center">
       <Button
         variant="ghost"
         className={cn('size-8.5', monthPosition === 'current' && 'invisible')}
-        onClick={() => onMonthChange(new Date())}
+        onClick={() => onMonthChange(today)}
         title={i18n.today}
         aria-label={i18n.today}
         tabIndex={monthPosition === 'current' ? -1 : undefined}
@@ -180,7 +160,7 @@ function DateSelectorMonthNav({
       </Button>
     </div>
   );
-}
+};
 
 interface DateSelectorDayHoverContextValue {
   enabled: boolean;
@@ -190,9 +170,9 @@ interface DateSelectorDayHoverContextValue {
 const DateSelectorDayHoverContext =
   createContext<DateSelectorDayHoverContextValue>({ enabled: false });
 
-function DateSelectorCalendarDayButton(
+const DateSelectorCalendarDayButton = (
   props: ComponentProps<typeof CalendarDayButton>
-) {
+) => {
   const { enabled, onDayHover } = useContext(DateSelectorDayHoverContext);
 
   return (
@@ -206,7 +186,7 @@ function DateSelectorCalendarDayButton(
       }}
     />
   );
-}
+};
 
 const DATE_SELECTOR_CALENDAR_COMPONENTS = {
   DayButton: DateSelectorCalendarDayButton,
@@ -218,7 +198,7 @@ const DATE_SELECTOR_CALENDAR_CLASS_NAMES = {
   nav: 'hidden',
 };
 
-function useDateSelectorFormatters() {
+const useDateSelectorFormatters = () => {
   const { i18n } = useDateSelectorContext();
 
   return useMemo(
@@ -235,7 +215,7 @@ function useDateSelectorFormatters() {
     }),
     [i18n]
   );
-}
+};
 
 interface DateSelectorCalendarBaseProps {
   currentMonth: Date;
@@ -268,7 +248,7 @@ const getRangeSelectDay = (range: DateRange | undefined) => {
   return range.to ?? range.from;
 };
 
-function DateSelectorRangeCalendar({
+const DateSelectorRangeCalendar = ({
   currentMonth,
   selectedDate,
   selectedEndDate,
@@ -281,8 +261,9 @@ function DateSelectorRangeCalendar({
   selectedEndDate?: Date;
   hoverDate?: Date;
   onDayHover?: (day: Date | undefined) => void;
-}) {
+}) => {
   const formatters = useDateSelectorFormatters();
+  const today = useToday();
   const selected = getRangeSelection({
     selectedDate,
     selectedEndDate,
@@ -303,6 +284,7 @@ function DateSelectorRangeCalendar({
       <Calendar
         month={currentMonth}
         mode="range"
+        today={today}
         selected={selected}
         onSelect={handleSelect}
         numberOfMonths={numberOfMonths}
@@ -315,16 +297,17 @@ function DateSelectorRangeCalendar({
       />
     </DateSelectorDayHoverContext.Provider>
   );
-}
+};
 
-function DateSelectorSingleCalendar({
+const DateSelectorSingleCalendar = ({
   currentMonth,
   selectedDate,
   onDayClick,
   numberOfMonths,
   weekStartsOn,
-}: DateSelectorCalendarBaseProps) {
+}: DateSelectorCalendarBaseProps) => {
   const formatters = useDateSelectorFormatters();
+  const today = useToday();
 
   const handleSelect = (date: Date | undefined) => {
     if (date) onDayClick(date);
@@ -334,6 +317,7 @@ function DateSelectorSingleCalendar({
     <Calendar
       month={currentMonth}
       mode="single"
+      today={today}
       selected={selectedDate}
       onSelect={handleSelect}
       numberOfMonths={numberOfMonths}
@@ -345,7 +329,7 @@ function DateSelectorSingleCalendar({
       components={DATE_SELECTOR_CALENDAR_COMPONENTS}
     />
   );
-}
+};
 
 interface DateSelectorDayPickerProps {
   currentMonth: Date;
@@ -360,7 +344,7 @@ interface DateSelectorDayPickerProps {
   className?: string;
 }
 
-function DateSelectorDayPicker({
+const DateSelectorDayPicker = ({
   currentMonth,
   selectedDate,
   selectedEndDate,
@@ -371,7 +355,7 @@ function DateSelectorDayPicker({
   showTwoMonths = true,
   weekStartsOn,
   className,
-}: DateSelectorDayPickerProps) {
+}: DateSelectorDayPickerProps) => {
   const isMobile = useIsMobile();
   const numberOfMonths = isMobile ? 1 : showTwoMonths ? 2 : 1;
   const sharedProps = {
@@ -396,7 +380,7 @@ function DateSelectorDayPicker({
       )}
     </div>
   );
-}
+};
 
 export interface DateSelectorProps {
   value?: DateSelectorValue;
@@ -417,7 +401,7 @@ export interface DateSelectorProps {
   onMonthChange?: (month: Date) => void;
 }
 
-export function DateSelector({
+export const DateSelector = ({
   value,
   onChange,
   allowRange = true,
@@ -433,7 +417,7 @@ export function DateSelector({
   weekStartsOn,
   month,
   onMonthChange,
-}: DateSelectorProps) {
+}: DateSelectorProps) => {
   const mergedI18n = useMemo(
     () => ({ ...DEFAULT_DATE_SELECTOR_I18N, ...i18nOverride }),
     [i18nOverride]
@@ -599,4 +583,4 @@ export function DateSelector({
       </div>
     </DateSelectorContext.Provider>
   );
-}
+};

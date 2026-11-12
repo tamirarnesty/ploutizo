@@ -1,36 +1,35 @@
-import { useMemo, useState } from 'react';
+import { startTransition, useOptimistic } from 'react';
 
 /**
- * Optimistic multi-select values for URL-backed filters. `values` lags behind
- * rapid toggles, so the draft wins until the committed values catch up.
+ * Multi-select state for URL-backed filters. `values` lags behind a toggle
+ * until navigation settles, so the new selection is shown optimistically for
+ * the lifetime of the `onChange` promise. Rapid toggles each build on the
+ * latest optimistic selection, and React reverts to the committed `values`
+ * only once every pending change has settled.
  */
 export const useOptimisticSelection = (
   values: string[],
-  onChange: (values: string[]) => void
+  onChange: (values: string[]) => Promise<void>
 ) => {
-  const valuesKey = values.join('\u0000');
-  const [draftValues, setDraftValues] = useState<string[] | null>(null);
-  const [appliedValuesKey, setAppliedValuesKey] = useState(valuesKey);
-
-  if (appliedValuesKey !== valuesKey) {
-    setAppliedValuesKey(valuesKey);
-    setDraftValues(null);
-  }
-
-  const selected = draftValues ?? values;
-  const selectedSet = useMemo(() => new Set(selected), [selected]);
+  const [selected, setSelected] = useOptimistic(
+    values,
+    (_current, next: string[]) => next
+  );
 
   const commit = (next: string[]) => {
-    setDraftValues(next);
-    onChange(next);
+    startTransition(async () => {
+      setSelected(next);
+      await onChange(next);
+    });
   };
 
   const toggle = (value: string) => {
-    const next = selectedSet.has(value)
-      ? selected.filter((item) => item !== value)
-      : [...selected, value];
-    commit(next);
+    commit(
+      selected.includes(value)
+        ? selected.filter((item) => item !== value)
+        : [...selected, value]
+    );
   };
 
-  return { selected, selectedSet, commit, toggle };
+  return { selected, commit, toggle };
 };

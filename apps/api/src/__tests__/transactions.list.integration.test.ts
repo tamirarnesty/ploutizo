@@ -324,6 +324,20 @@ describe('GET /transactions — multi-select filters', () => {
     expect((await list(`?tagIds=${missId()}`)).total).toBe(0);
   });
 
+  it('TXN-LIST-FILTER-06: none sentinel matches uncategorized and untagged', async () => {
+    // txn0 has a category and a tag; txn1 (Payroll) has neither.
+    const uncategorized = await list('?categoryId=none');
+    expect(uncategorized.total).toBe(1);
+    expect(uncategorized.data[0]?.description).toBe('Payroll');
+    expect((await list(`?categoryId=none,${groceriesCategoryId}`)).total).toBe(
+      2
+    );
+    const untagged = await list('?tagIds=none');
+    expect(untagged.total).toBe(1);
+    expect(untagged.data[0]?.description).toBe('Payroll');
+    expect((await list(`?tagIds=none,${travelTagId}`)).total).toBe(2);
+  });
+
   it('TXN-LIST-FILTER-05: comma-separated accountIds match inclusively', async () => {
     const both = await list(
       `?accountId=${accountChequingId},${accountSavingsId}`

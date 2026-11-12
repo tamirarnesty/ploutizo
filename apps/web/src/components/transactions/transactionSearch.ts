@@ -1,4 +1,9 @@
+import { TRANSACTION_TYPE_VALUES } from '@ploutizo/types';
 import type { TransactionQueryParams } from '@/lib/data-access/transactions';
+import {
+  dateFilterFromSearch,
+  dateFilterToSearch,
+} from './transactionDateFilter';
 
 // Pagination/sort params are optional — absent means "use component default".
 // validateTransactionSearch only includes present, valid fields so defaults are
@@ -54,16 +59,35 @@ export type TransactionSearch = {
 };
 
 const TRANSACTION_SEARCH_STRING_FIELDS = [
-  'type',
   'dateFrom',
   'dateTo',
+  'dateRange_op',
+  'search',
+] as const satisfies readonly (keyof TransactionSearch)[];
+
+/** Filters whose URL value is a comma-joined list of selected values. */
+export const TRANSACTION_LIST_FILTER_PARAMS = [
+  'type',
   'accountId',
   'categoryId',
   'assigneeId',
   'tagIds',
-  'dateRange_op',
-  'search',
 ] as const satisfies readonly (keyof TransactionSearch)[];
+
+export type TransactionListFilterParam =
+  (typeof TRANSACTION_LIST_FILTER_PARAMS)[number];
+
+/** `a,b` → distinct, non-empty values. */
+export const parseFilterList = (value: string | undefined): string[] => [
+  ...new Set((value ?? '').split(',').filter(Boolean)),
+];
+
+/** Inverse of `parseFilterList`; no values means no param. */
+export const formatFilterList = (values: string[]): string | undefined =>
+  values.length > 0 ? values.join(',') : undefined;
+
+const isTransactionTypeValue = (value: string) =>
+  TRANSACTION_TYPE_VALUES.some((type) => type === value);
 
 const parseOptionalPage = (value: unknown): number | undefined => {
   if (typeof value !== 'number' || !Number.isInteger(value) || value < 1) {
@@ -90,7 +114,7 @@ const parseOptionalString = (value: unknown): string | undefined => {
   return typeof value === 'string' ? value : undefined;
 };
 
-const parseOptionalImportOutcome = (
+export const parseImportOutcome = (
   value: unknown
 ): TransactionSearch['importOutcome'] | undefined => {
   if (value === 'created' || value === 'matched') return value;
@@ -139,8 +163,28 @@ export const validateTransactionSearch = (
     if (value !== undefined) result[field] = value;
   }
 
+  // Malformed list values from hand-edited URLs are dropped here so every
+  // consumer (chips, controls, API request) sees clean values.
+  for (const field of TRANSACTION_LIST_FILTER_PARAMS) {
+    const values = parseFilterList(parseOptionalString(search[field]));
+    const valid =
+      field === 'type' ? values.filter(isTransactionTypeValue) : values;
+    const formatted = formatFilterList(valid);
+    if (formatted !== undefined) result[field] = formatted;
+  }
+
+  // Round-trip the date params through the filter model: operators the UI
+  // cannot express (unknown, or a range missing an end) are dropped.
+  const dateParams = dateFilterToSearch(dateFilterFromSearch(result));
+  delete result.dateFrom;
+  delete result.dateTo;
+  delete result.dateRange_op;
+  if (dateParams.dateFrom) result.dateFrom = dateParams.dateFrom;
+  if (dateParams.dateTo) result.dateTo = dateParams.dateTo;
+  if (dateParams.dateRange_op) result.dateRange_op = dateParams.dateRange_op;
+
   const importBatchId = parseOptionalString(search.importBatchId);
-  const importOutcome = parseOptionalImportOutcome(search.importOutcome);
+  const importOutcome = parseImportOutcome(search.importOutcome);
   if (importBatchId && importOutcome) {
     result.importBatchId = importBatchId;
     result.importOutcome = importOutcome;

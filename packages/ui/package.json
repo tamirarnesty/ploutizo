@@ -70,9 +70,6 @@
     "./components/reui/badge-variants": "./src/components/reui/badge-variants.ts",
     "./components/reui/badge-types": "./src/components/reui/badge-types.ts",
     "./components/reui/data-grid/*": "./src/components/reui/data-grid/*",
-    "./components/filters-types": "./src/components/filters-types.ts",
-    "./components/filters-constants": "./src/components/filters-constants.ts",
-    "./components/filters-utils": "./src/components/filters-utils.ts",
     "./hooks/*": "./src/hooks/*.ts"
   }
 }

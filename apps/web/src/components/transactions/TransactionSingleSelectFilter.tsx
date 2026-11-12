@@ -1,5 +1,3 @@
-import { ChevronDownIcon } from 'lucide-react';
-import { Button } from '@ploutizo/ui/components/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,18 +5,20 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '@ploutizo/ui/components/dropdown-menu';
-import type { ReactNode } from 'react';
+import { TransactionFilterTrigger } from './TransactionFilterTrigger';
+import type { ImportResultFilterConfig } from './transactionFilterConfig';
+import type {
+  TransactionFilterOption,
+  TransactionFilterOptions,
+} from './transactionFilterTypes';
 
 /** Sentinel radio value meaning "no filter". */
 const ALL_VALUE = '__all__';
 
 type TransactionSingleSelectFilterProps = {
-  icon: ReactNode;
-  options: { value: string; label: string; icon?: ReactNode }[];
-  /** Selected option value; undefined = the "all" state. */
-  value: string | undefined;
-  /** Trigger label when nothing is selected, e.g. "All results". */
-  allLabel: string;
+  filter: ImportResultFilterConfig;
+  options: TransactionFilterOption[];
+  value: TransactionFilterOptions['importValue'];
   onChange: (value: string | undefined) => void;
   /** Controlled open state so applied chips can reopen this menu. */
   open: boolean;
@@ -27,53 +27,44 @@ type TransactionSingleSelectFilterProps = {
 
 /** Quick single-select filter — radio dropdown, one value at a time. */
 export const TransactionSingleSelectFilter = ({
-  icon,
+  filter,
   options,
   value,
-  allLabel,
   onChange,
   open,
   onOpenChange,
-}: TransactionSingleSelectFilterProps) => {
-  const label =
-    options.find((option) => option.value === value)?.label ?? allLabel;
-
-  return (
-    <DropdownMenu open={open} onOpenChange={onOpenChange}>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="max-w-44 gap-1.5 text-xs"
-          >
-            {icon}
-            <span className="truncate">{label}</span>
-            <ChevronDownIcon className="size-3 text-muted-foreground" />
-          </Button>
-        }
-      />
-      <DropdownMenuContent align="start" className="w-56">
-        <DropdownMenuRadioGroup
-          value={value ?? ALL_VALUE}
-          onValueChange={(next) =>
-            onChange(next === ALL_VALUE ? undefined : next)
+}: TransactionSingleSelectFilterProps) => (
+  <DropdownMenu open={open} onOpenChange={onOpenChange}>
+    <DropdownMenuTrigger
+      render={
+        <TransactionFilterTrigger
+          icon={filter.icon}
+          label={
+            options.find((option) => option.value === value)?.label ??
+            filter.allLabel
           }
-        >
-          <DropdownMenuRadioItem value={ALL_VALUE}>
-            {allLabel}
+        />
+      }
+    />
+    <DropdownMenuContent align="start" className="w-56">
+      <DropdownMenuRadioGroup
+        value={value ?? ALL_VALUE}
+        onValueChange={(next) =>
+          onChange(next === ALL_VALUE ? undefined : next)
+        }
+      >
+        <DropdownMenuRadioItem value={ALL_VALUE}>
+          {filter.allLabel}
+        </DropdownMenuRadioItem>
+        {options.map((option) => (
+          <DropdownMenuRadioItem key={option.value} value={option.value}>
+            <span className="flex min-w-0 items-center gap-2">
+              {option.icon}
+              <span className="truncate">{option.label}</span>
+            </span>
           </DropdownMenuRadioItem>
-          {options.map((option) => (
-            <DropdownMenuRadioItem key={option.value} value={option.value}>
-              <span className="flex min-w-0 items-center gap-2">
-                {option.icon}
-                <span className="truncate">{option.label}</span>
-              </span>
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-};
+        ))}
+      </DropdownMenuRadioGroup>
+    </DropdownMenuContent>
+  </DropdownMenu>
+);

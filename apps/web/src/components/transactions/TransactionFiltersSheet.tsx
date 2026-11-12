@@ -13,75 +13,35 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@ploutizo/ui/components/sheet';
-import { TransactionDatePopoverBody } from './TransactionDateFilterControl';
+import { useToday } from '@ploutizo/ui/hooks/use-today';
+import { TransactionDateEditor } from './TransactionDateFilterControl';
 import {
   dateFilterFromSearch,
   formatTransactionDateFilterLabel,
 } from './transactionDateFilter';
+import { TRANSACTION_FILTERS } from './transactionFilterConfig';
+import { summarizeSelection } from './transactionFilterSummary';
 import { useOptimisticSelection } from './useOptimisticSelection';
-import type { TransactionSearch } from './transactionSearch';
 import type { ReactNode } from 'react';
-
-type Option = { value: string; label: string; icon?: ReactNode };
-type OptionGroup = { key: string; label?: string; options: Option[] };
-
-/** Fields the sheet can expand to; `dateRange` is the date section's key. */
-export type TransactionFilterSheetField =
-  | 'type'
-  | 'date'
-  | 'account'
-  | 'assignee'
-  | 'category'
-  | 'tag'
-  | 'importResult';
+import type { TransactionFilterField } from './transactionFilterConfig';
+import type { TransactionSearch } from './transactionSearch';
+import type {
+  SelectionFilterState,
+  TransactionFilterHandlers,
+  TransactionFilterOption,
+  TransactionFilterOptions,
+} from './transactionFilterTypes';
 
 type TransactionFiltersSheetProps = {
   open: boolean;
   /** Section expanded on open; null opens with every section collapsed. */
-  focusField: TransactionFilterSheetField | null;
+  focusField: TransactionFilterField | null;
   onOpenChange: (open: boolean) => void;
   search: TransactionSearch;
-  typeValues: string[];
-  accountValues: string[];
-  assigneeValues: string[];
-  categoryValues: string[];
-  tagValues: string[];
-  typeOptions: Option[];
-  accountGroups: OptionGroup[];
-  categoryOptions: Option[];
-  tagOptions: Option[];
-  assigneeGroups: OptionGroup[];
-  importOptions: Option[];
-  hasImportResult: boolean;
-  importValue: string | undefined;
-  onTypeChange: (values: string[]) => void;
-  onAccountChange: (values: string[]) => void;
-  onAssigneeChange: (values: string[]) => void;
-  onCategoryChange: (values: string[]) => void;
-  onTagsChange: (values: string[]) => void;
-  onDateChange: (next: { operator: string; values: string[] }) => void;
-  onImportOutcomeChange: (value: string | undefined) => void;
+  options: TransactionFilterOptions;
+  handlers: TransactionFilterHandlers;
   activeFilterCount: number;
   onClearAllFilters: () => void;
-};
-
-const selectionLabel = (
-  values: string[],
-  groups: OptionGroup[],
-  allLabel: string
-) => {
-  if (values.length === 0) return allLabel;
-  const byValue = new Map(
-    groups.flatMap((group) =>
-      group.options.map((option) => [option.value, option.label])
-    )
-  );
-  return values.map((value) => byValue.get(value) ?? value).join(', ');
-};
-
-const dateLabel = (search: TransactionSearch) => {
-  const state = dateFilterFromSearch(search);
-  return formatTransactionDateFilterLabel(state.operator, state.values);
 };
 
 const OptionRow = ({
@@ -112,22 +72,20 @@ const OptionRow = ({
   </button>
 );
 
-/** Multi-select checklist — draft mirrors the dropdown's optimistic toggle
- *  behavior while the URL catches up. */
+/** Multi-select checklist; commits on every tap, optimistically. */
 const OptionChecklist = ({
-  groups,
-  values,
+  state,
   onChange,
 }: {
-  groups: OptionGroup[];
-  values: string[];
-  onChange: (values: string[]) => void;
+  state: SelectionFilterState;
+  onChange: (values: string[]) => Promise<void>;
 }) => {
-  const { selectedSet, toggle } = useOptimisticSelection(values, onChange);
+  const { selected, toggle } = useOptimisticSelection(state.values, onChange);
+  const selectedSet = new Set(selected);
 
   return (
     <div className="py-1">
-      {groups.map((group) => (
+      {state.groups.map((group) => (
         <div key={group.key}>
           {group.label ? (
             <div className="px-4 pt-3 pb-1 text-xs font-medium text-muted-foreground">
@@ -155,32 +113,30 @@ const SingleChoiceList = ({
   allLabel,
   onChange,
 }: {
-  options: Option[];
+  options: TransactionFilterOption[];
   value: string | undefined;
   allLabel: string;
   onChange: (value: string | undefined) => void;
-}) => {
-  return (
-    <div className="py-1">
+}) => (
+  <div className="py-1">
+    <OptionRow
+      label={allLabel}
+      checked={value === undefined}
+      onClick={() => onChange(undefined)}
+    />
+    {options.map((option) => (
       <OptionRow
-        label={allLabel}
-        checked={value === undefined}
-        onClick={() => onChange(undefined)}
+        key={option.value}
+        label={option.label}
+        icon={option.icon}
+        checked={value === option.value}
+        onClick={() => onChange(option.value)}
       />
-      {options.map((option) => (
-        <OptionRow
-          key={option.value}
-          label={option.label}
-          icon={option.icon}
-          checked={value === option.value}
-          onClick={() => onChange(option.value)}
-        />
-      ))}
-    </div>
-  );
-};
+    ))}
+  </div>
+);
 
-/** Accordion row: field name + current value summary, expands to its options. */
+/** Accordion row: field name + current value summary, expands to its editor. */
 const AccordionSection = ({
   title,
   summary,
@@ -208,46 +164,29 @@ const AccordionSection = ({
         className={`size-4 shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`}
       />
     </CollapsibleTrigger>
+    {/* Closed panels unmount after their exit animation, so editors inside
+        start from the committed value each time a section expands. */}
     <CollapsibleContent>{children}</CollapsibleContent>
   </Collapsible>
 );
 
 /**
  * Mobile filter sheet: every transaction filter as a collapsed accordion
- * section with its current value as the summary. Multi-select sections commit
- * on each tap; the date section stages edits behind its own Apply.
+ * section with its current value as the summary. Selection sections commit on
+ * each tap; the date section stages edits behind its own Apply.
  */
 export const TransactionFiltersSheet = ({
   open,
   focusField,
   onOpenChange,
   search,
-  typeValues,
-  accountValues,
-  assigneeValues,
-  categoryValues,
-  tagValues,
-  typeOptions,
-  accountGroups,
-  categoryOptions,
-  tagOptions,
-  assigneeGroups,
-  importOptions,
-  hasImportResult,
-  importValue,
-  onTypeChange,
-  onAccountChange,
-  onAssigneeChange,
-  onCategoryChange,
-  onTagsChange,
-  onDateChange,
-  onImportOutcomeChange,
+  options,
+  handlers,
   activeFilterCount,
   onClearAllFilters,
 }: TransactionFiltersSheetProps) => {
-  const [expanded, setExpanded] = useState<TransactionFilterSheetField | null>(
-    null
-  );
+  const today = useToday();
+  const [expanded, setExpanded] = useState<TransactionFilterField | null>(null);
   const [openState, setOpenState] = useState({ open, focusField });
 
   // Opening via an applied chip expands that field's section; the Filters
@@ -258,13 +197,11 @@ export const TransactionFiltersSheet = ({
     if (open) setExpanded(focusField);
   }
 
-  const dateState = dateFilterFromSearch(search);
-  const expand = (field: TransactionFilterSheetField) => (next: boolean) =>
-    setExpanded(next ? field : null);
-
-  const importSummary =
-    importOptions.find((option) => option.value === importValue)?.label ??
-    'All results';
+  const dateFilter = dateFilterFromSearch(search);
+  const sectionProps = (field: TransactionFilterField) => ({
+    open: expanded === field,
+    onOpenChange: (next: boolean) => setExpanded(next ? field : null),
+  });
 
   return (
     <Sheet
@@ -278,121 +215,76 @@ export const TransactionFiltersSheet = ({
           <SheetTitle>Filters</SheetTitle>
         </SheetHeader>
         <div className="flex-1 overflow-y-auto pb-2">
-          <AccordionSection
-            title="Type"
-            summary={selectionLabel(
-              typeValues,
-              [{ key: 'type', options: typeOptions }],
-              'All types'
-            )}
-            open={expanded === 'type'}
-            onOpenChange={expand('type')}
-          >
-            <OptionChecklist
-              groups={[{ key: 'type', options: typeOptions }]}
-              values={typeValues}
-              onChange={onTypeChange}
-            />
-          </AccordionSection>
-          <AccordionSection
-            title="Date"
-            summary={dateLabel(search)}
-            open={expanded === 'date'}
-            onOpenChange={expand('date')}
-          >
-            {expanded === 'date' ? (
-              <TransactionDatePopoverBody
-                operator={dateState.operator}
-                values={dateState.values}
-                onApply={(next) => {
-                  if (next) onDateChange(next);
-                  setExpanded(null);
-                }}
-              />
-            ) : null}
-          </AccordionSection>
-          <AccordionSection
-            title="Account"
-            summary={selectionLabel(
-              accountValues,
-              accountGroups,
-              'All accounts'
-            )}
-            open={expanded === 'account'}
-            onOpenChange={expand('account')}
-          >
-            <OptionChecklist
-              groups={accountGroups}
-              values={accountValues}
-              onChange={onAccountChange}
-            />
-          </AccordionSection>
-          <AccordionSection
-            title="Assignee"
-            summary={selectionLabel(
-              assigneeValues,
-              assigneeGroups,
-              'All assignees'
-            )}
-            open={expanded === 'assignee'}
-            onOpenChange={expand('assignee')}
-          >
-            <OptionChecklist
-              groups={assigneeGroups}
-              values={assigneeValues}
-              onChange={onAssigneeChange}
-            />
-          </AccordionSection>
-          <AccordionSection
-            title="Category"
-            summary={selectionLabel(
-              categoryValues,
-              [{ key: 'category', options: categoryOptions }],
-              'All categories'
-            )}
-            open={expanded === 'category'}
-            onOpenChange={expand('category')}
-          >
-            <OptionChecklist
-              groups={[{ key: 'category', options: categoryOptions }]}
-              values={categoryValues}
-              onChange={onCategoryChange}
-            />
-          </AccordionSection>
-          <AccordionSection
-            title="Tags"
-            summary={selectionLabel(
-              tagValues,
-              [{ key: 'tag', options: tagOptions }],
-              'All tags'
-            )}
-            open={expanded === 'tag'}
-            onOpenChange={expand('tag')}
-          >
-            <OptionChecklist
-              groups={[{ key: 'tag', options: tagOptions }]}
-              values={tagValues}
-              onChange={onTagsChange}
-            />
-          </AccordionSection>
-          {hasImportResult ? (
-            <AccordionSection
-              title="Import result"
-              summary={importSummary}
-              open={expanded === 'importResult'}
-              onOpenChange={expand('importResult')}
-            >
-              <SingleChoiceList
-                options={importOptions}
-                value={importValue}
-                allLabel="All results"
-                onChange={(value) => {
-                  onImportOutcomeChange(value);
-                  setExpanded(null);
-                }}
-              />
-            </AccordionSection>
-          ) : null}
+          {TRANSACTION_FILTERS.map((filter) => {
+            switch (filter.kind) {
+              case 'selection': {
+                const state = options.selections[filter.field];
+                return (
+                  <AccordionSection
+                    key={filter.field}
+                    title={filter.label}
+                    summary={summarizeSelection(
+                      state.values,
+                      state.labels,
+                      filter.allLabel
+                    )}
+                    {...sectionProps(filter.field)}
+                  >
+                    <OptionChecklist
+                      state={state}
+                      onChange={(values) =>
+                        handlers.onSelectionChange(filter, values)
+                      }
+                    />
+                  </AccordionSection>
+                );
+              }
+              case 'date':
+                return (
+                  <AccordionSection
+                    key={filter.field}
+                    title={filter.label}
+                    summary={formatTransactionDateFilterLabel(
+                      dateFilter,
+                      today
+                    )}
+                    {...sectionProps(filter.field)}
+                  >
+                    <TransactionDateEditor
+                      filter={dateFilter}
+                      onApply={(next) => {
+                        handlers.onDateChange(next);
+                        setExpanded(null);
+                      }}
+                      onCancel={() => setExpanded(null)}
+                    />
+                  </AccordionSection>
+                );
+              case 'importResult':
+                return search.importBatchId ? (
+                  <AccordionSection
+                    key={filter.field}
+                    title={filter.label}
+                    summary={
+                      options.importOptions.find(
+                        (option) => option.value === options.importValue
+                      )?.label ?? filter.allLabel
+                    }
+                    {...sectionProps(filter.field)}
+                  >
+                    <SingleChoiceList
+                      options={options.importOptions}
+                      value={options.importValue}
+                      allLabel={filter.allLabel}
+                      onChange={(value) => {
+                        handlers.onImportOutcomeChange(value);
+                        setExpanded(null);
+                      }}
+                    />
+                  </AccordionSection>
+                ) : null;
+            }
+          })}
         </div>
         <SheetFooter className="flex-row justify-between border-t">
           <Button

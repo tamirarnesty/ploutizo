@@ -8,99 +8,92 @@ import {
   startOfYear,
   subMonths,
 } from 'date-fns';
-import type {
-  DateSelectorFilterType,
-  DateSelectorValue,
+import {
+  DEFAULT_DATE_SELECTOR_I18N,
+  getFilterTypeLabel,
 } from '@ploutizo/ui/components/date-selector';
+import type { DateSelectorValue } from '@ploutizo/ui/components/date-selector';
 import type { TransactionSearch } from './transactionSearch';
 
+const SINGLE_DATE_OPERATORS = ['is', 'is_not', 'before', 'after'] as const;
+const RANGE_DATE_OPERATORS = ['between', 'not_between'] as const;
+
+export type SingleDateOperator = (typeof SINGLE_DATE_OPERATORS)[number];
+export type RangeDateOperator = (typeof RANGE_DATE_OPERATORS)[number];
+
 /**
- * Date filter state shared by the quick-filter popover, the Filters panel
- * section, and the applied-filter chips. `values` mirrors the URL codec:
- * single-bound operators carry one `yyyy-MM-dd` value; range operators carry
- * `[from, to]` (either side may be an empty string while partial).
+ * An applied date filter; "all time" is the absence of one (`null`). Dates are
+ * `yyyy-MM-dd`. Ranges always carry both ends — a lone bound is expressed with
+ * `before` / `after`.
  */
-export type TransactionDateFilterValue = {
-  operator: string;
-  values: string[];
-};
+export type TransactionDateFilter =
+  | { operator: SingleDateOperator; date: string }
+  | { operator: RangeDateOperator; from: string; to: string };
 
-export const TRANSACTION_DATE_OPERATORS = [
-  { value: 'is', label: 'Is' },
-  { value: 'is_not', label: 'Is not' },
-  { value: 'before', label: 'Before' },
-  { value: 'after', label: 'After' },
-  { value: 'between', label: 'Between' },
-  { value: 'not_between', label: 'Not between' },
-] as const;
+const isSingleOperator = (value: string): value is SingleDateOperator =>
+  SINGLE_DATE_OPERATORS.some((operator) => operator === value);
 
-const RANGE_OPERATORS = new Set(['between', 'not_between']);
+const isRangeOperator = (value: string): value is RangeDateOperator =>
+  RANGE_DATE_OPERATORS.some((operator) => operator === value);
 
-export const isRangeDateOperator = (operator: string): boolean =>
-  RANGE_OPERATORS.has(operator);
+/** URL param carrying each single-date operator's date. */
+const SINGLE_DATE_PARAM = {
+  is: 'dateFrom',
+  is_not: 'dateFrom',
+  after: 'dateFrom',
+  before: 'dateTo',
+} as const satisfies Record<SingleDateOperator, 'dateFrom' | 'dateTo'>;
 
-const toFilterValue = (date: Date) => format(date, 'yyyy-MM-dd');
+const CLEARED_DATE_PARAMS = {
+  dateFrom: undefined,
+  dateTo: undefined,
+  dateRange_op: undefined,
+} satisfies Partial<TransactionSearch>;
 
-const parseFilterDate = (value: string): Date | undefined => {
-  const date = parseISO(value);
-  return value && isValid(date) ? date : undefined;
-};
-
-/** Maps URL search params to editor state — inverse of `dateFilterToSearch`. */
+/** Reads the date filter from URL params; unusable combinations read as none. */
 export const dateFilterFromSearch = (
-  search: TransactionSearch
-): TransactionDateFilterValue => {
+  search: Pick<TransactionSearch, 'dateFrom' | 'dateTo' | 'dateRange_op'>
+): TransactionDateFilter | null => {
   const operator = search.dateRange_op ?? 'between';
-  if (operator === 'after') {
-    return { operator, values: search.dateFrom ? [search.dateFrom] : [] };
+  if (isSingleOperator(operator)) {
+    const date = search[SINGLE_DATE_PARAM[operator]];
+    return date ? { operator, date } : null;
   }
-  if (operator === 'before') {
-    return { operator, values: search.dateTo ? [search.dateTo] : [] };
-  }
-  if (operator === 'is' || operator === 'is_not') {
-    return { operator, values: search.dateFrom ? [search.dateFrom] : [] };
-  }
-  if (operator === 'not_between') {
-    return {
-      operator,
-      values: [search.dateFrom ?? '', search.dateTo ?? ''],
-    };
-  }
+  const { dateFrom: from, dateTo: to } = search;
+  if (!from || !to) return null;
   return {
-    operator: 'between',
-    values: [search.dateFrom ?? '', search.dateTo ?? ''],
+    operator: isRangeOperator(operator) ? operator : 'between',
+    from,
+    to,
   };
 };
 
-/** Maps editor state back to URL params. Undefined keys clear stale params on merge. */
+/** Inverse of `dateFilterFromSearch`; undefined keys clear stale params on merge. */
 export const dateFilterToSearch = (
-  operator: string,
-  values: string[]
+  filter: TransactionDateFilter | null
 ): Partial<TransactionSearch> => {
-  const [first = '', second = ''] = values;
-  const from = first || undefined;
-  const to = second || undefined;
-  switch (operator) {
-    case 'after':
-      return { dateFrom: from, dateTo: undefined, dateRange_op: 'after' };
-    case 'before':
-      return {
-        dateFrom: undefined,
-        dateTo: first || undefined,
-        dateRange_op: 'before',
-      };
-    case 'is':
-    case 'is_not':
-      return { dateFrom: from, dateTo: undefined, dateRange_op: operator };
-    case 'not_between':
-      return {
-        dateFrom: from,
-        dateTo: to,
-        dateRange_op: 'not_between',
-      };
-    default:
-      return { dateFrom: from, dateTo: to, dateRange_op: undefined };
+  if (!filter) return CLEARED_DATE_PARAMS;
+  if ('date' in filter) {
+    return {
+      ...CLEARED_DATE_PARAMS,
+      [SINGLE_DATE_PARAM[filter.operator]]: filter.date,
+      dateRange_op: filter.operator,
+    };
   }
+  return {
+    ...CLEARED_DATE_PARAMS,
+    dateFrom: filter.from,
+    dateTo: filter.to,
+    // `between` is the default operator — keep it out of the URL.
+    dateRange_op: filter.operator === 'between' ? undefined : filter.operator,
+  };
+};
+
+const toFilterDate = (date: Date) => format(date, 'yyyy-MM-dd');
+
+const parseFilterDate = (value: string): Date | undefined => {
+  const date = parseISO(value);
+  return isValid(date) ? date : undefined;
 };
 
 export type TransactionDatePresetId = 'this_month' | 'last_month' | 'this_year';
@@ -116,7 +109,7 @@ export const TRANSACTION_DATE_PRESETS: {
 
 export const presetDateRange = (
   id: TransactionDatePresetId,
-  today: Date = new Date()
+  today: Date
 ): { from: Date; to: Date } => {
   switch (id) {
     case 'last_month': {
@@ -130,102 +123,105 @@ export const presetDateRange = (
   }
 };
 
-export type TransactionDateFilterKind =
-  TransactionDatePresetId | 'all' | 'custom';
+/**
+ * Month the calendar should show for a preset range: ranges containing today
+ * keep today in view, past or future ranges anchor on their end.
+ */
+export const presetFocusMonth = (
+  range: { from: Date; to: Date },
+  today: Date
+): Date => (today >= range.from && today <= range.to ? today : range.to);
 
-/** Classifies the current filter: a preset, the implicit all-time default, or a custom range. */
-export const dateFilterKind = (
-  operator: string,
-  values: string[],
-  today: Date = new Date()
-): TransactionDateFilterKind => {
-  if (operator !== 'between') return 'custom';
-  const [from = '', to = ''] = values;
-  if (!from && !to) return 'all';
-  for (const preset of TRANSACTION_DATE_PRESETS) {
-    const range = presetDateRange(preset.id, today);
-    if (from === toFilterValue(range.from) && to === toFilterValue(range.to)) {
-      return preset.id;
-    }
+/** Which preset (if any) the filter is exactly equal to. */
+const matchingPreset = (
+  filter: TransactionDateFilter | null,
+  today: Date
+): TransactionDatePresetId | undefined => {
+  if (!filter || !('from' in filter) || filter.operator !== 'between') {
+    return undefined;
   }
-  return 'custom';
+  return TRANSACTION_DATE_PRESETS.find(({ id }) => {
+    const range = presetDateRange(id, today);
+    return (
+      filter.from === toFilterDate(range.from) &&
+      filter.to === toFilterDate(range.to)
+    );
+  })?.id;
 };
 
-const formatShortDate = (value: string, includeYear: boolean): string => {
+const formatDate = (value: string, pattern = 'MMM d, yyyy') => {
   const date = parseFilterDate(value);
-  if (!date) return '';
-  return format(date, includeYear ? 'MMM d, yyyy' : 'MMM d');
+  return date ? format(date, pattern) : value;
 };
 
-const formatDateRangeLabel = (values: string[]): string => {
-  const [from = '', to = ''] = values;
+const formatRange = (from: string, to: string) => {
   const fromDate = parseFilterDate(from);
   const toDate = parseFilterDate(to);
-  if (!fromDate && !toDate) return '';
   if (fromDate && toDate && fromDate.getFullYear() === toDate.getFullYear()) {
     return `${format(fromDate, 'MMM d')} – ${format(toDate, 'MMM d, yyyy')}`;
   }
-  const parts = [from, to]
-    .filter(Boolean)
-    .map((value) => formatShortDate(value, true))
-    .filter(Boolean);
-  return parts.join(' – ');
+  return `${formatDate(from)} – ${formatDate(to)}`;
 };
 
-/** Button/chip label: preset name, "All time", or a formatted custom range. */
+/** Trigger/chip text: "All time", a preset name, or the operator and dates. */
 export const formatTransactionDateFilterLabel = (
-  operator: string,
-  values: string[],
-  today: Date = new Date()
+  filter: TransactionDateFilter | null,
+  today: Date
 ): string => {
-  const kind = dateFilterKind(operator, values, today);
-  if (kind === 'all') return 'All time';
-  if (kind !== 'custom') {
+  if (!filter) return 'All time';
+  const preset = matchingPreset(filter, today);
+  if (preset) {
     return (
-      TRANSACTION_DATE_PRESETS.find((preset) => preset.id === kind)?.label ??
-      'Custom'
+      TRANSACTION_DATE_PRESETS.find(({ id }) => id === preset)?.label ?? preset
     );
   }
-  const operatorLabel =
-    TRANSACTION_DATE_OPERATORS.find((op) => op.value === operator)?.label ??
-    operator;
-  if (isRangeDateOperator(operator)) {
-    const rangeLabel = formatDateRangeLabel(values);
-    return operator === 'between'
-      ? rangeLabel || 'All time'
-      : `${operatorLabel} ${rangeLabel}`.trim();
-  }
-  const dateLabel = formatShortDate(values[0] ?? '', true);
-  return `${operatorLabel} ${dateLabel}`.trim();
+  const operator = getFilterTypeLabel(
+    DEFAULT_DATE_SELECTOR_I18N,
+    filter.operator
+  );
+  if ('date' in filter) return `${operator} ${formatDate(filter.date)}`;
+  const range = formatRange(filter.from, filter.to);
+  return filter.operator === 'between' ? range : `${operator} ${range}`;
 };
 
-/** Codec state → DateSelector value. */
-export const filterToSelectorValue = (
-  filter: TransactionDateFilterValue
+export const dateFilterToSelectorValue = (
+  filter: TransactionDateFilter | null
 ): DateSelectorValue => {
-  const operator = filter.operator as DateSelectorFilterType;
-  const from = parseFilterDate(filter.values[0] ?? '');
-  const to = isRangeDateOperator(filter.operator)
-    ? parseFilterDate(filter.values[1] ?? '')
-    : undefined;
-  return { operator, startDate: from, endDate: to };
+  if (!filter) return { operator: 'between' };
+  if ('date' in filter) {
+    return {
+      operator: filter.operator,
+      startDate: parseFilterDate(filter.date),
+    };
+  }
+  return {
+    operator: filter.operator,
+    startDate: parseFilterDate(filter.from),
+    endDate: parseFilterDate(filter.to),
+  };
 };
 
-/**
- * DateSelector value → codec state. Returns `null` for incomplete selections
- * (e.g. one end of a range picked) so hosts can ignore them.
- */
-export const selectorValueToFilter = (
-  value: DateSelectorValue | undefined
-): TransactionDateFilterValue | null => {
-  const operator = value?.operator ?? 'between';
-  const from = value?.startDate;
-  const to = value?.endDate;
-  if (isRangeDateOperator(operator)) {
-    if (!from && !to) return { operator: 'between', values: [] };
-    if (!from || !to) return null;
-    return { operator, values: [toFilterValue(from), toFilterValue(to)] };
+/** A range with only one end picked cannot be applied yet. */
+export const isDateSelectionComplete = (value: DateSelectorValue): boolean =>
+  !isRangeOperator(value.operator) ||
+  Boolean(value.startDate) === Boolean(value.endDate);
+
+/** Selector value → filter; no date picked means no filter. Check completeness first. */
+export const selectorValueToDateFilter = (
+  value: DateSelectorValue
+): TransactionDateFilter | null => {
+  const { operator, startDate, endDate } = value;
+  if (!startDate) return null;
+  if (isRangeOperator(operator)) {
+    return endDate
+      ? {
+          operator,
+          from: toFilterDate(startDate),
+          to: toFilterDate(endDate),
+        }
+      : null;
   }
-  if (!from) return { operator: 'between', values: [] };
-  return { operator, values: [toFilterValue(from)] };
+  return isSingleOperator(operator)
+    ? { operator, date: toFilterDate(startDate) }
+    : null;
 };

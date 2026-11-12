@@ -15,9 +15,12 @@ import { TransactionSheet } from './TransactionSheet';
 import { TransactionsFilterBar } from './TransactionsFilterBar';
 import { buildTransactionQueryParams } from './transactionSearch';
 import { buildCleanSearch, hasActiveFilters } from './transactionFilterUrl';
+import type { TransactionFilterReferenceData } from './transactionFilterTypes';
 import type { TransactionSearch } from './transactionSearch';
 
 const NO_TRANSACTIONS: TransactionRow[] = [];
+// Stable empty list standing in for reference data that has not loaded yet.
+const NO_REFERENCES: never[] = [];
 
 export const Transactions = () => {
   const search = useSearch({ from: '/_layout/transactions' });
@@ -30,10 +33,17 @@ export const Transactions = () => {
     transactionQueryParams
   );
 
-  const { data: accounts = [] } = useGetAccounts();
-  const { data: categories = [] } = useGetCategories();
-  const { data: members = [] } = useGetHouseholdMembers();
-  const { data: tags = [] } = useGetTags();
+  const { data: accounts } = useGetAccounts();
+  const { data: categories } = useGetCategories();
+  const { data: members } = useGetHouseholdMembers();
+  const { data: tags } = useGetTags();
+  const filterReferenceData: TransactionFilterReferenceData = {
+    accounts: accounts ?? NO_REFERENCES,
+    categories: categories ?? NO_REFERENCES,
+    members: members ?? NO_REFERENCES,
+    tags: tags ?? NO_REFERENCES,
+    loaded: [accounts, categories, members, tags].every(Boolean),
+  };
 
   const transactions = txData?.data ?? NO_TRANSACTIONS;
   const total = txData?.total ?? 0;
@@ -144,10 +154,7 @@ export const Transactions = () => {
 
       <TransactionsFilterBar
         search={search}
-        accounts={accounts}
-        categories={categories}
-        members={members}
-        tags={tags}
+        referenceData={filterReferenceData}
       />
 
       <TransactionsTable

@@ -391,6 +391,28 @@ describe('GET /api/transactions', () => {
     expect(callArgs?.search).toBeUndefined();
   });
 
+  it('TXN-LIST-ROUTE-FILTER-01: comma-separated filters become distinct, trimmed lists', async () => {
+    vi.mocked(listTransactions).mockClear();
+    const res = await app.request(
+      '/?type=expense,%20income,expense&accountId=a,,b,&categoryId=none&assigneeId=,&tagIds=t1,t2'
+    );
+    expect(res.status).toBe(200);
+    const callArgs = vi.mocked(listTransactions).mock.calls[0]?.[0] as
+      ListQueryParams | undefined;
+    expect(callArgs?.types).toEqual(['expense', 'income']);
+    expect(callArgs?.accountIds).toEqual(['a', 'b']);
+    expect(callArgs?.categoryIds).toEqual(['none']);
+    expect(callArgs?.assigneeIds).toBeUndefined();
+    expect(callArgs?.tagIds).toEqual(['t1', 't2']);
+  });
+
+  it('TXN-LIST-ROUTE-FILTER-02: rejects unknown transaction types', async () => {
+    vi.mocked(listTransactions).mockClear();
+    const res = await app.request('/?type=expense,bogus');
+    expect(res.status).toBe(400);
+    expect(listTransactions).not.toHaveBeenCalled();
+  });
+
   it('passes created/matched import provenance filters to listTransactions', async () => {
     vi.mocked(listTransactions).mockClear();
     const res = await app.request(

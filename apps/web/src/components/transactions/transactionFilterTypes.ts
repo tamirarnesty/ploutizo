@@ -1,5 +1,8 @@
 import type { AccountType } from '@ploutizo/types';
 import type { ReactNode } from 'react';
+import type { SelectionFilterConfig } from './transactionFilterConfig';
+import type { TransactionDateFilter } from './transactionDateFilter';
+import type { TransactionSearch } from './transactionSearch';
 
 export type TransactionFilterAccount = {
   id: string;
@@ -27,6 +30,16 @@ export type TransactionFilterTag = {
   colour?: string | null;
 };
 
+/** Reference lists the filters resolve ids against. */
+export type TransactionFilterReferenceData = {
+  accounts: TransactionFilterAccount[];
+  categories: TransactionFilterCategory[];
+  members: TransactionFilterMember[];
+  tags: TransactionFilterTag[];
+  /** False until every list has loaded, so unknown ids read as loading, not deleted. */
+  loaded: boolean;
+};
+
 export type TransactionFilterOption = {
   value: string;
   label: string;
@@ -39,38 +52,26 @@ export type TransactionFilterOptionGroup = {
   options: TransactionFilterOption[];
 };
 
-export type QuickEditTarget =
-  | 'type'
-  | 'date'
-  | 'account'
-  | 'assignee'
-  | 'category'
-  | 'tag'
-  | 'importResult'
-  | 'all';
-
-export type TransactionFilterOptions = {
-  typeValues: string[];
-  accountValues: string[];
-  assigneeValues: string[];
-  categoryValues: string[];
-  tagValues: string[];
-  typeOptions: TransactionFilterOption[];
-  accountGroups: TransactionFilterOptionGroup[];
-  categoryOptions: TransactionFilterOption[];
-  tagOptions: TransactionFilterOption[];
-  assigneeGroups: TransactionFilterOptionGroup[];
-  importOptions: TransactionFilterOption[];
-  hasImportResult: boolean;
-  importValue: string | undefined;
+/** Selected values, selectable options, and a label for every selected value. */
+export type SelectionFilterState = {
+  values: string[];
+  groups: TransactionFilterOptionGroup[];
+  labels: ReadonlyMap<string, string>;
 };
 
-export type TransactionFilterChangeHandlers = {
-  onTypeChange: (values: string[]) => void;
-  onAccountChange: (values: string[]) => void;
-  onAssigneeChange: (values: string[]) => void;
-  onCategoryChange: (values: string[]) => void;
-  onTagsChange: (values: string[]) => void;
-  onDateChange: (next: { operator: string; values: string[] }) => void;
-  onImportOutcomeChange: (value: string | undefined) => void;
+export type TransactionFilterOptions = {
+  selections: Record<SelectionFilterConfig['field'], SelectionFilterState>;
+  importOptions: TransactionFilterOption[];
+  importValue: NonNullable<TransactionSearch['importOutcome']> | undefined;
+};
+
+export type TransactionFilterHandlers = {
+  /** Resolves once the URL reflects the new selection. */
+  onSelectionChange: (
+    filter: SelectionFilterConfig,
+    values: string[]
+  ) => Promise<void>;
+  /** `null` clears the date filter. */
+  onDateChange: (filter: TransactionDateFilter | null) => void;
+  onImportOutcomeChange: (outcome: string | undefined) => void;
 };

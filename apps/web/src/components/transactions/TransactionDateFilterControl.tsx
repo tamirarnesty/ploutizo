@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CalendarDaysIcon, ChevronDownIcon } from 'lucide-react';
+import { format } from 'date-fns';
 import { Button } from '@ploutizo/ui/components/button';
 import {
   Popover,
@@ -8,80 +8,67 @@ import {
 } from '@ploutizo/ui/components/popover';
 import { Separator } from '@ploutizo/ui/components/separator';
 import { DateSelector } from '@ploutizo/ui/components/date-selector';
-import type {
-  DateSelectorI18nConfig,
-  DateSelectorValue,
-} from '@ploutizo/ui/components/date-selector';
+import { useToday } from '@ploutizo/ui/hooks/use-today';
+import type { DateSelectorValue } from '@ploutizo/ui/components/date-selector';
+import { TransactionFilterTrigger } from './TransactionFilterTrigger';
 import {
   TRANSACTION_DATE_PRESETS,
   dateFilterFromSearch,
-  filterToSelectorValue,
+  dateFilterToSelectorValue,
   formatTransactionDateFilterLabel,
+  isDateSelectionComplete,
   presetDateRange,
-  selectorValueToFilter,
+  presetFocusMonth,
+  selectorValueToDateFilter,
 } from './transactionDateFilter';
+import type {
+  TransactionDateFilter,
+  TransactionDatePresetId,
+} from './transactionDateFilter';
+import type { DateFilterConfig } from './transactionFilterConfig';
 import type { TransactionSearch } from './transactionSearch';
-
-const DATE_SELECTOR_I18N = {
-  filterTypes: {
-    is: 'Is',
-    isNot: 'Is not',
-    before: 'Before',
-    after: 'After',
-    between: 'Between',
-    notBetween: 'Not between',
-  },
-} satisfies Partial<DateSelectorI18nConfig>;
-
-type TransactionDateFilterControlProps = {
-  search: TransactionSearch;
-  onChange: (next: { operator: string; values: string[] }) => void;
-  /** Controlled open state so applied chips can reopen this popover. */
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-};
 
 const DATE_PRESETS = [
   ...TRANSACTION_DATE_PRESETS,
   { id: 'all', label: 'All time' },
 ] as const;
 
-type DatePresetId = (typeof DATE_PRESETS)[number]['id'];
+type TransactionDateEditorProps = {
+  filter: TransactionDateFilter | null;
+  /** `null` applies "all time". */
+  onApply: (filter: TransactionDateFilter | null) => void;
+  onCancel: () => void;
+};
 
-/** Staged editor mounted fresh each time the popover opens. */
-export const TransactionDatePopoverBody = ({
-  operator,
-  values,
+/**
+ * Staged date editor: calendar, presets and operators edit a local draft that
+ * only commits on Apply. Mount it fresh per editing session.
+ */
+export const TransactionDateEditor = ({
+  filter,
   onApply,
-}: {
-  operator: string;
-  values: string[];
-  /** `null` means cancel — nothing is committed. */
-  onApply: (next: { operator: string; values: string[] } | null) => void;
-}) => {
+  onCancel,
+}: TransactionDateEditorProps) => {
+  const today = useToday();
   const [staged, setStaged] = useState<DateSelectorValue>(() =>
-    filterToSelectorValue({ operator, values })
+    dateFilterToSelectorValue(filter)
   );
   // Presets drive the calendar month explicitly; day clicks must not, or
   // picking a range end in the second visible month would yank the view.
   const [focusMonth, setFocusMonth] = useState<Date>();
-  const committed = selectorValueToFilter(staged);
 
-  const applyPreset = (id: DatePresetId) => {
-    const range = id === 'all' ? undefined : presetDateRange(id);
+  const applyPreset = (id: TransactionDatePresetId | 'all') => {
+    if (id === 'all') {
+      setStaged({ operator: 'between' });
+      return;
+    }
+    const range = presetDateRange(id, today);
     setStaged({
       operator: 'between',
-      startDate: range?.from,
-      endDate: range?.to,
+      startDate: range.from,
+      endDate: range.to,
     });
-    // Ranges containing today (e.g. this year) keep the default view;
-    // past/future ranges anchor on the end so it stays visible.
-    const today = new Date();
-    const anchor =
-      range && today >= range.from && today <= range.to
-        ? today
-        : (range?.to ?? today);
-    setFocusMonth(anchor);
+    setFocusMonth(presetFocusMonth(range, today));
   };
 
   return (
@@ -91,8 +78,7 @@ export const TransactionDatePopoverBody = ({
           value={staged}
           onChange={setStaged}
           label="Date"
-          i18n={DATE_SELECTOR_I18N}
-          inputHint="Try: Nov 5, 2026"
+          inputHint={`Try: ${format(today, 'MMM d, yyyy')}`}
           dayDateFormat="MMM d, yyyy"
           month={focusMonth}
           onMonthChange={setFocusMonth}
@@ -113,20 +99,15 @@ export const TransactionDatePopoverBody = ({
         ))}
       </div>
       <Separator className="mt-3" />
-      <div className="flex justify-end gap-2 p-3 pt-3">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => onApply(null)}
-        >
+      <div className="flex justify-end gap-2 p-3">
+        <Button type="button" variant="outline" size="sm" onClick={onCancel}>
           Cancel
         </Button>
         <Button
           type="button"
           size="sm"
-          disabled={committed === null}
-          onClick={() => committed && onApply(committed)}
+          disabled={!isDateSelectionComplete(staged)}
+          onClick={() => onApply(selectorValueToDateFilter(staged))}
         >
           Apply
         </Button>
@@ -135,40 +116,44 @@ export const TransactionDatePopoverBody = ({
   );
 };
 
+type TransactionDateFilterControlProps = {
+  filter: DateFilterConfig;
+  search: TransactionSearch;
+  onChange: (filter: TransactionDateFilter | null) => void;
+  /** Controlled open state so applied chips can reopen this popover. */
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+};
+
 /** Quick date filter — staged popover with calendar, presets, and operators. */
 export const TransactionDateFilterControl = ({
+  filter,
   search,
   onChange,
   open,
   onOpenChange,
 }: TransactionDateFilterControlProps) => {
-  const state = dateFilterFromSearch(search);
-  const label = formatTransactionDateFilterLabel(state.operator, state.values);
+  const today = useToday();
+  const dateFilter = dateFilterFromSearch(search);
 
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger
         render={
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="max-w-44 gap-1.5 text-xs"
-          >
-            <CalendarDaysIcon className="size-3.5" />
-            <span className="truncate">{label}</span>
-            <ChevronDownIcon className="size-3 text-muted-foreground" />
-          </Button>
+          <TransactionFilterTrigger
+            icon={filter.icon}
+            label={formatTransactionDateFilterLabel(dateFilter, today)}
+          />
         }
       />
       <PopoverContent align="start" sideOffset={4} className="w-auto gap-0 p-0">
-        <TransactionDatePopoverBody
-          operator={state.operator}
-          values={state.values}
+        <TransactionDateEditor
+          filter={dateFilter}
           onApply={(next) => {
-            if (next) onChange(next);
+            onChange(next);
             onOpenChange(false);
           }}
+          onCancel={() => onOpenChange(false)}
         />
       </PopoverContent>
     </Popover>

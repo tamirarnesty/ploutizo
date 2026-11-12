@@ -5,48 +5,69 @@ import { CachedLucideIcon } from '@/components/categories/CachedLucideIcon';
 import { UserAvatar } from '@/components/members/UserAvatar';
 import {
   ASSIGNEE_SHAPE_OPTIONS,
-  IMPORT_OUTCOME_ICONS,
   IMPORT_OUTCOME_OPTIONS,
-  TRANSACTION_TYPE_ICONS,
   TRANSACTION_TYPE_OPTIONS,
-} from './TransactionFilterFields';
+  UNCATEGORIZED_OPTION,
+  UNTAGGED_OPTION,
+  mapSelectionFilters,
+} from './transactionFilterConfig';
+import { parseFilterList } from './transactionSearch';
+import type { SelectionFilterConfig } from './transactionFilterConfig';
 import type { TransactionSearch } from './transactionSearch';
 import type {
-  TransactionFilterAccount,
-  TransactionFilterCategory,
-  TransactionFilterMember,
+  SelectionFilterState,
+  TransactionFilterOptionGroup,
   TransactionFilterOptions,
-  TransactionFilterTag,
+  TransactionFilterReferenceData,
 } from './transactionFilterTypes';
 
-const splitParam = (value: string | undefined): string[] =>
-  value ? value.split(',').filter(Boolean) : [];
+const ICON_CLASS = 'size-3.5';
 
-/** Selected values and labelled options for every transaction quick filter. */
+const buildSelection = (
+  config: SelectionFilterConfig,
+  values: string[],
+  groups: TransactionFilterOptionGroup[],
+  referencesLoaded: boolean
+): SelectionFilterState => {
+  const labels = new Map(
+    groups.flatMap((group) =>
+      group.options.map((option) => [option.value, option.label] as const)
+    )
+  );
+  // A selected value with no option is a deleted entity — or, until the
+  // reference lists arrive, simply not resolved yet.
+  const unresolved = referencesLoaded ? config.missingLabel : 'Loading…';
+  for (const value of values) {
+    if (!labels.has(value)) labels.set(value, unresolved);
+  }
+  return { values, groups, labels };
+};
+
+/** Selected values and labelled options for every transaction filter. */
 export const useTransactionFilterOptions = (
   search: TransactionSearch,
-  accounts: TransactionFilterAccount[],
-  categories: TransactionFilterCategory[],
-  members: TransactionFilterMember[],
-  tags: TransactionFilterTag[]
+  {
+    accounts,
+    categories,
+    members,
+    tags,
+    loaded,
+  }: TransactionFilterReferenceData
 ): TransactionFilterOptions => {
-  const typeValues = useMemo(() => splitParam(search.type), [search.type]);
-  const typeOptions = useMemo(
-    () =>
-      TRANSACTION_TYPE_OPTIONS.map((option) => {
-        const Icon = TRANSACTION_TYPE_ICONS[option.value];
-        return {
+  const typeGroups = useMemo<TransactionFilterOptionGroup[]>(
+    () => [
+      {
+        key: 'type',
+        options: TRANSACTION_TYPE_OPTIONS.map(({ icon: Icon, ...option }) => ({
           ...option,
-          icon: <Icon className="size-3.5" aria-hidden="true" />,
-        };
-      }),
+          icon: <Icon className={ICON_CLASS} aria-hidden="true" />,
+        })),
+      },
+    ],
     []
   );
-  const accountValues = useMemo(
-    () => splitParam(search.accountId),
-    [search.accountId]
-  );
-  const accountGroups = useMemo(
+
+  const accountGroups = useMemo<TransactionFilterOptionGroup[]>(
     () =>
       ACCOUNT_TYPE_OPTIONS.map((typeOption) => {
         const Icon = typeOption.icon;
@@ -58,17 +79,14 @@ export const useTransactionFilterOptions = (
             .map((account) => ({
               value: account.id,
               label: account.name,
-              icon: <Icon className="size-3.5" aria-hidden="true" />,
+              icon: <Icon className={ICON_CLASS} aria-hidden="true" />,
             })),
         };
       }).filter((group) => group.options.length > 0),
     [accounts]
   );
-  const assigneeValues = useMemo(
-    () => splitParam(search.assigneeId),
-    [search.assigneeId]
-  );
-  const assigneeGroups = useMemo(
+
+  const assigneeGroups = useMemo<TransactionFilterOptionGroup[]>(
     () => [
       {
         key: 'members',
@@ -83,74 +101,92 @@ export const useTransactionFilterOptions = (
                 name={label}
                 imageUrl={member.imageUrl}
                 size="sm"
+                // Menu popups are translucent; the muted fill keeps initials legible.
                 className="size-5 bg-muted"
               />
             ),
           };
         }),
       },
-      {
-        key: 'sharing',
-        label: 'Sharing',
-        options: ASSIGNEE_SHAPE_OPTIONS,
-      },
+      { key: 'sharing', label: 'Sharing', options: ASSIGNEE_SHAPE_OPTIONS },
     ],
     [members]
   );
-  const categoryValues = useMemo(
-    () => splitParam(search.categoryId),
-    [search.categoryId]
-  );
-  const categoryOptions = useMemo(
-    () =>
-      categories.map((category) => ({
-        value: category.id,
-        label: category.name,
-        icon: <CachedLucideIcon name={category.icon ?? null} size={14} />,
-      })),
+
+  const categoryGroups = useMemo<TransactionFilterOptionGroup[]>(
+    () => [
+      {
+        key: 'category',
+        options: [
+          UNCATEGORIZED_OPTION,
+          ...categories.map((category) => ({
+            value: category.id,
+            label: category.name,
+            icon: <CachedLucideIcon name={category.icon ?? null} size={14} />,
+          })),
+        ],
+      },
+    ],
     [categories]
   );
-  const tagValues = useMemo(() => splitParam(search.tagIds), [search.tagIds]);
-  const tagOptions = useMemo(
-    () =>
-      tags.map((tag) => ({
-        value: tag.id,
-        label: tag.name,
-        icon: tag.colour ? (
-          <span
-            className="size-2.5 shrink-0 rounded-full"
-            style={{ backgroundColor: tag.colour }}
-            aria-hidden="true"
-          />
-        ) : undefined,
-      })),
+
+  const tagGroups = useMemo<TransactionFilterOptionGroup[]>(
+    () => [
+      {
+        key: 'tag',
+        options: [
+          UNTAGGED_OPTION,
+          ...tags.map((tag) => ({
+            value: tag.id,
+            label: tag.name,
+            icon: tag.colour ? (
+              <span
+                className="size-2.5 shrink-0 rounded-full"
+                style={{ backgroundColor: tag.colour }}
+                aria-hidden="true"
+              />
+            ) : undefined,
+          })),
+        ],
+      },
+    ],
     [tags]
   );
+
   const importOptions = useMemo(
     () =>
-      IMPORT_OUTCOME_OPTIONS.map((option) => {
-        const Icon = IMPORT_OUTCOME_ICONS[option.value];
-        return {
-          ...option,
-          icon: <Icon className="size-3.5" aria-hidden="true" />,
-        };
-      }),
+      IMPORT_OUTCOME_OPTIONS.map(({ icon: Icon, ...option }) => ({
+        ...option,
+        icon: <Icon className={ICON_CLASS} aria-hidden="true" />,
+      })),
     []
   );
 
-  return {
-    typeValues,
-    accountValues,
-    assigneeValues,
-    categoryValues,
-    tagValues,
-    typeOptions,
+  const selections = useMemo(() => {
+    const groupsByField = {
+      type: typeGroups,
+      account: accountGroups,
+      assignee: assigneeGroups,
+      category: categoryGroups,
+      tag: tagGroups,
+    };
+    return mapSelectionFilters((config) =>
+      buildSelection(
+        config,
+        parseFilterList(search[config.param]),
+        groupsByField[config.field],
+        loaded
+      )
+    );
+  }, [
+    search,
+    typeGroups,
     accountGroups,
-    categoryOptions,
-    tagOptions,
     assigneeGroups,
-    importOptions,
-    hasImportResult: Boolean(search.importBatchId),
-    importValue: search.importOutcome,
-  };
+    categoryGroups,
+    tagGroups,
+    loaded,
+  ]);
+
+  return { selections, importOptions, importValue: search.importOutcome };
 };
