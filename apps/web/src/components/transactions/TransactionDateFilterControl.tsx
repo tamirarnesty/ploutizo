@@ -1,27 +1,52 @@
 import { useState } from 'react';
-import { format } from 'date-fns';
+import {
+  addMonths,
+  format,
+  isBefore,
+  isSameDay,
+  isSameMonth,
+  subMonths,
+} from 'date-fns';
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CornerUpLeftIcon,
+  CornerUpRightIcon,
+  XIcon,
+} from 'lucide-react';
+import { DATE_RANGE_OPERATORS, isDateRangeOperator } from '@ploutizo/types';
 import { Button } from '@ploutizo/ui/components/button';
+import { Calendar } from '@ploutizo/ui/components/calendar';
+import { Input } from '@ploutizo/ui/components/input';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@ploutizo/ui/components/popover';
 import { Separator } from '@ploutizo/ui/components/separator';
-import { DateSelector } from '@ploutizo/ui/components/date-selector';
+import { Tabs, TabsList, TabsTrigger } from '@ploutizo/ui/components/tabs';
+import { useIsMobile } from '@ploutizo/ui/hooks/use-mobile';
 import { useToday } from '@ploutizo/ui/hooks/use-today';
-import type { DateSelectorValue } from '@ploutizo/ui/components/date-selector';
+import { cn } from '@ploutizo/ui/lib/utils';
+import type { DateRangeOperator } from '@ploutizo/types';
 import { TransactionFilterTrigger } from './TransactionFilterTrigger';
 import {
   TRANSACTION_DATE_PRESETS,
   dateFilterFromSearch,
-  dateFilterToSelectorValue,
+  dateFilterToDraft,
+  dateOperatorLabel,
+  draftAfterDay,
+  draftToDateFilter,
+  formatDraftInput,
   formatTransactionDateFilterLabel,
-  isDateSelectionComplete,
+  isDateDraftComplete,
+  isRangeDateOperator,
+  parseTypedDate,
   presetDateRange,
   presetFocusMonth,
-  selectorValueToDateFilter,
 } from './transactionDateFilter';
 import type {
+  TransactionDateDraft,
   TransactionDateFilter,
   TransactionDatePresetId,
 } from './transactionDateFilter';
@@ -32,6 +57,163 @@ const DATE_PRESETS = [
   ...TRANSACTION_DATE_PRESETS,
   { id: 'all', label: 'All time' },
 ] as const;
+
+const CALENDAR_CLASS_NAMES = {
+  months: 'flex flex-wrap items-start justify-between gap-5 w-full',
+  month: 'flex flex-col items-center min-w-0 flex-1',
+  nav: 'hidden',
+};
+
+const monthPosition = (month: Date, today: Date) => {
+  if (isSameMonth(month, today)) return 'current';
+  return month > today ? 'future' : 'past';
+};
+
+const dayInOpenRange = (
+  date: Date,
+  draft: TransactionDateDraft,
+  hover: Date | undefined
+) => {
+  if (
+    !isRangeDateOperator(draft.operator) ||
+    !draft.start ||
+    draft.end ||
+    !hover
+  ) {
+    return false;
+  }
+  const from = isBefore(hover, draft.start) ? hover : draft.start;
+  const to = isBefore(hover, draft.start) ? draft.start : hover;
+  if (isSameDay(date, draft.start)) return false;
+  return !isBefore(date, from) && !isBefore(to, date);
+};
+
+const DateOperatorTabs = ({
+  value,
+  onChange,
+}: {
+  value: DateRangeOperator;
+  onChange: (operator: DateRangeOperator) => void;
+}) => (
+  <Tabs
+    value={value}
+    onValueChange={(next) => {
+      if (next && isDateRangeOperator(next)) onChange(next);
+    }}
+  >
+    <TabsList className="bg-muted/80">
+      {DATE_RANGE_OPERATORS.map((operator) => {
+        const label = dateOperatorLabel(operator);
+        return (
+          <TabsTrigger
+            key={operator}
+            value={operator}
+            aria-label={label}
+            className="py-1 font-normal"
+          >
+            {label}
+          </TabsTrigger>
+        );
+      })}
+    </TabsList>
+  </Tabs>
+);
+
+const DateMonthNav = ({
+  month,
+  onMonthChange,
+}: {
+  month: Date;
+  onMonthChange: (month: Date) => void;
+}) => {
+  const today = useToday();
+  const position = monthPosition(month, today);
+
+  return (
+    <div className="flex shrink-0 items-center">
+      <Button
+        type="button"
+        variant="ghost"
+        className={cn('size-8.5', position === 'current' && 'invisible')}
+        onClick={() => onMonthChange(today)}
+        title="Today"
+        aria-label="Today"
+        tabIndex={position === 'current' ? -1 : undefined}
+      >
+        {position === 'future' ? <CornerUpLeftIcon /> : <CornerUpRightIcon />}
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        className="size-8.5"
+        onClick={() => onMonthChange(subMonths(month, 1))}
+        aria-label="Previous month"
+      >
+        <ChevronLeftIcon className="size-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        className="size-8.5"
+        onClick={() => onMonthChange(addMonths(month, 1))}
+        aria-label="Next month"
+      >
+        <ChevronRightIcon className="size-4" />
+      </Button>
+    </div>
+  );
+};
+
+const DateDraftInput = ({
+  draft,
+  onChange,
+  onClear,
+}: {
+  draft: TransactionDateDraft;
+  onChange: (start: Date) => void;
+  onClear: () => void;
+}) => {
+  const today = useToday();
+  const displayValue = formatDraftInput(draft);
+  const [inputDraft, setInputDraft] = useState<string | null>(null);
+  const inputValue = inputDraft ?? displayValue;
+
+  return (
+    <div className="relative min-w-0 flex-1">
+      <Input
+        type="text"
+        value={inputValue}
+        placeholder={
+          inputDraft !== null
+            ? `Try: ${format(today, 'MMM d, yyyy')}`
+            : 'Select date...'
+        }
+        onFocus={() => setInputDraft(inputValue)}
+        onBlur={() => setInputDraft(null)}
+        onChange={(event) => {
+          const next = event.target.value;
+          setInputDraft(next);
+          const parsed = parseTypedDate(next);
+          if (parsed) onChange(parsed);
+        }}
+      />
+      {inputValue ? (
+        <button
+          type="button"
+          aria-label="Clear"
+          onClick={onClear}
+          className={cn(
+            'absolute end-2.5 top-1/2 size-4 -translate-y-1/2 cursor-pointer rounded-xs',
+            'opacity-70 transition-opacity hover:opacity-100',
+            'ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none'
+          )}
+        >
+          <XIcon aria-hidden="true" className="size-4" />
+        </button>
+      ) : null}
+    </div>
+  );
+};
 
 type TransactionDateEditorProps = {
   filter: TransactionDateFilter | null;
@@ -46,39 +228,103 @@ export const TransactionDateEditor = ({
   onCancel,
 }: TransactionDateEditorProps) => {
   const today = useToday();
-  const [staged, setStaged] = useState<DateSelectorValue>(() =>
-    dateFilterToSelectorValue(filter)
-  );
+  const isMobile = useIsMobile();
+  const [draft, setDraft] = useState(() => dateFilterToDraft(filter));
   // Presets drive the calendar month explicitly; day clicks must not, or
   // picking a range end in the second visible month would yank the view.
-  const [focusMonth, setFocusMonth] = useState<Date>();
+  const [focusMonth, setFocusMonth] = useState(
+    () => dateFilterToDraft(filter).start ?? today
+  );
+  const [hover, setHover] = useState<Date>();
+
+  const selectDay = (day: Date) => {
+    setHover(undefined);
+    setDraft((current) => draftAfterDay(current, day));
+  };
+
+  const setOperator = (operator: DateRangeOperator) => {
+    setHover(undefined);
+    setDraft((current) => ({
+      operator,
+      start: current.start,
+      end: isRangeDateOperator(operator) ? current.end : undefined,
+    }));
+  };
 
   const applyPreset = (id: TransactionDatePresetId | 'all') => {
+    setHover(undefined);
     if (id === 'all') {
-      setStaged({ operator: 'between' });
+      setDraft({ operator: 'between' });
       return;
     }
     const range = presetDateRange(id, today);
-    setStaged({
-      operator: 'between',
-      startDate: range.from,
-      endDate: range.to,
-    });
+    setDraft({ operator: 'between', start: range.from, end: range.to });
     setFocusMonth(presetFocusMonth(range, today));
+  };
+
+  const rememberHover = (date: Date) => {
+    setHover((current) =>
+      current && isSameDay(current, date) ? current : date
+    );
+  };
+
+  const calendarProps = {
+    month: focusMonth,
+    onMonthChange: setFocusMonth,
+    numberOfMonths: isMobile ? 1 : 2,
+    hideNavigation: true,
+    showOutsideDays: true,
+    today,
+    className: 'w-full shrink-0 p-0',
+    classNames: CALENDAR_CLASS_NAMES,
   };
 
   return (
     <>
-      <div className="p-3 pb-0">
-        <DateSelector
-          value={staged}
-          onChange={setStaged}
-          label="Date"
-          inputHint={`Try: ${format(today, 'MMM d, yyyy')}`}
-          dayDateFormat="MMM d, yyyy"
-          month={focusMonth}
-          onMonthChange={setFocusMonth}
-        />
+      <div className="w-full space-y-4 p-3 pb-0 sm:w-[470px]">
+        <div className="flex flex-wrap items-center gap-3">
+          <h3 className="text-sm font-medium">Date</h3>
+          <DateOperatorTabs value={draft.operator} onChange={setOperator} />
+        </div>
+        <div className="flex items-center gap-2">
+          <DateDraftInput
+            draft={draft}
+            onChange={(start) => {
+              setHover(undefined);
+              setDraft((current) => ({ operator: current.operator, start }));
+            }}
+            onClear={() => {
+              setHover(undefined);
+              setDraft((current) => ({ operator: current.operator }));
+            }}
+          />
+          <DateMonthNav month={focusMonth} onMonthChange={setFocusMonth} />
+        </div>
+        {/* Hover paints a preview only. Selection stays the draft, so the
+            pressed day is the one Apply stores. */}
+        {isRangeDateOperator(draft.operator) ? (
+          <Calendar
+            mode="range"
+            selected={
+              draft.start ? { from: draft.start, to: draft.end } : undefined
+            }
+            onSelect={(_range, triggerDate) => selectDay(triggerDate)}
+            onDayMouseEnter={rememberHover}
+            onDayMouseLeave={() => setHover(undefined)}
+            modifiers={{
+              preview: (date) => dayInOpenRange(date, draft, hover),
+            }}
+            modifiersClassNames={{ preview: 'bg-muted' }}
+            {...calendarProps}
+          />
+        ) : (
+          <Calendar
+            mode="single"
+            selected={draft.start}
+            onSelect={(_date, triggerDate) => selectDay(triggerDate)}
+            {...calendarProps}
+          />
+        )}
       </div>
       <div className="flex flex-wrap gap-2 px-3 pt-3">
         {DATE_PRESETS.map((preset) => (
@@ -102,8 +348,8 @@ export const TransactionDateEditor = ({
         <Button
           type="button"
           size="sm"
-          disabled={!isDateSelectionComplete(staged)}
-          onClick={() => onApply(selectorValueToDateFilter(staged))}
+          disabled={!isDateDraftComplete(draft)}
+          onClick={() => onApply(draftToDateFilter(draft))}
         >
           Apply
         </Button>

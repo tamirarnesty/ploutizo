@@ -4,8 +4,12 @@ import {
   importTransactionLinkFilterSchema,
   patchTransactionSchema,
 } from '@ploutizo/validators';
-import { TRANSACTION_TYPE_VALUES } from '@ploutizo/types';
-import type { TransactionType } from '@ploutizo/types';
+import {
+  DATE_RANGE_OPERATORS,
+  TRANSACTION_TYPE_VALUES,
+  isDateRangeOperator,
+} from '@ploutizo/types';
+import type { DateRangeOperator, TransactionType } from '@ploutizo/types';
 import type { ListQueryParams } from '@/services/transactions';
 import type { AppEnv } from '@/types';
 import { DomainError } from '@/lib/errors';
@@ -50,6 +54,18 @@ const parseTypesParam = (
     );
   }
   return types;
+};
+
+const parseDateRangeOp = (
+  value: string | undefined
+): DateRangeOperator | undefined => {
+  if (!value) return undefined;
+  if (isDateRangeOperator(value)) return value;
+  throw new DomainError(
+    400,
+    `dateRange_op must be one of ${DATE_RANGE_OPERATORS.join(', ')}.`,
+    'INVALID_DATE_RANGE_OPERATOR'
+  );
 };
 
 // POST / — create transaction (D-01, D-02, D-09, D-10, D-11, D-13)
@@ -121,7 +137,7 @@ transactionsRouter.get('/', async (c) => {
     assigneeIds: parseListParam(c.req.query('assigneeId')),
     tagIds,
     search: c.req.query('search')?.trim() || undefined,
-    dateRange_op: c.req.query('dateRange_op'),
+    dateRange_op: parseDateRangeOp(c.req.query('dateRange_op')),
     importLink,
   };
 

@@ -1,15 +1,16 @@
 import { format } from 'date-fns';
 import { describe, expect, it } from 'vitest';
-import type { DateSelectorValue } from '@ploutizo/ui/components/date-selector';
 import {
   dateFilterFromSearch,
+  dateFilterToDraft,
   dateFilterToSearch,
-  dateFilterToSelectorValue,
+  draftAfterDay,
+  draftToDateFilter,
   formatTransactionDateFilterLabel,
-  isDateSelectionComplete,
+  isDateDraftComplete,
+  parseTypedDate,
   presetDateRange,
   presetFocusMonth,
-  selectorValueToDateFilter,
 } from './transactionDateFilter';
 import type { TransactionDateFilter } from './transactionDateFilter';
 
@@ -78,14 +79,14 @@ describe('URL codec', () => {
     ).toBeNull();
   });
 
-  it('treats an unknown operator as between', () => {
+  it('drops an unknown operator instead of treating it as between', () => {
     expect(
       dateFilterFromSearch({
         dateFrom: '2026-11-01',
         dateTo: '2026-11-09',
         dateRange_op: 'bogus',
       })
-    ).toEqual({ operator: 'between', from: '2026-11-01', to: '2026-11-09' });
+    ).toBeNull();
   });
 });
 
@@ -162,34 +163,58 @@ describe('formatTransactionDateFilterLabel', () => {
   });
 });
 
-describe('DateSelector mapping', () => {
-  it('round-trips every filter through the selector value', () => {
+describe('date draft', () => {
+  it('round-trips every filter through the draft', () => {
     for (const filter of allFilters) {
-      expect(
-        selectorValueToDateFilter(dateFilterToSelectorValue(filter))
-      ).toEqual(filter);
+      expect(draftToDateFilter(dateFilterToDraft(filter))).toEqual(filter);
     }
   });
 
   it('maps "all time" to an empty between selection and back', () => {
-    const empty = dateFilterToSelectorValue(null);
+    const empty = dateFilterToDraft(null);
     expect(empty).toEqual({ operator: 'between' });
-    expect(isDateSelectionComplete(empty)).toBe(true);
-    expect(selectorValueToDateFilter(empty)).toBeNull();
+    expect(isDateDraftComplete(empty)).toBe(true);
+    expect(draftToDateFilter(empty)).toBeNull();
   });
 
   it('holds a range with one end picked back from applying', () => {
-    const partial: DateSelectorValue = {
-      operator: 'between',
-      startDate: new Date(2026, 10, 1),
+    const partial = {
+      operator: 'between' as const,
+      start: new Date(2026, 10, 1),
     };
-    expect(isDateSelectionComplete(partial)).toBe(false);
-    expect(isDateSelectionComplete({ ...partial, endDate: TODAY })).toBe(true);
+    expect(isDateDraftComplete(partial)).toBe(false);
+    expect(isDateDraftComplete({ ...partial, end: TODAY })).toBe(true);
     expect(
-      isDateSelectionComplete({
+      isDateDraftComplete({
         operator: 'is',
-        startDate: new Date(2026, 10, 1),
+        start: new Date(2026, 10, 1),
       })
     ).toBe(true);
+  });
+
+  it('uses the clicked day, including an earlier end and a one-day range', () => {
+    const start = new Date(2026, 10, 20);
+    const open = { operator: 'between' as const, start };
+    expect(draftAfterDay(open, new Date(2026, 10, 5))).toEqual({
+      operator: 'between',
+      start: new Date(2026, 10, 5),
+      end: start,
+    });
+    expect(draftAfterDay(open, start)).toEqual({
+      operator: 'between',
+      start,
+      end: start,
+    });
+    expect(draftAfterDay(open, new Date(2026, 10, 25))).toEqual({
+      operator: 'between',
+      start,
+      end: new Date(2026, 10, 25),
+    });
+  });
+
+  it('parses the typed date formats the input accepts', () => {
+    expect(ymd(parseTypedDate('Nov 5, 2026')!)).toBe('2026-11-05');
+    expect(ymd(parseTypedDate('2026-11-05')!)).toBe('2026-11-05');
+    expect(parseTypedDate('nope')).toBeUndefined();
   });
 });

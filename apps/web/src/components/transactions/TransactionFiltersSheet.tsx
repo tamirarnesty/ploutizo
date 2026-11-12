@@ -56,6 +56,7 @@ const OptionRow = ({
 }) => (
   <button
     type="button"
+    aria-pressed={checked}
     onClick={onClick}
     className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm transition-colors hover:bg-accent"
   >
@@ -64,7 +65,7 @@ const OptionRow = ({
       <span className="truncate">{label}</span>
     </span>
     {checked ? (
-      <CheckIcon className="size-4 shrink-0" />
+      <CheckIcon className="size-4 shrink-0" aria-hidden="true" />
     ) : (
       <span className="size-4 shrink-0" aria-hidden="true" />
     )}

@@ -406,6 +406,27 @@ describe('GET /api/transactions', () => {
     expect(callArgs?.tagIds).toEqual(['t1', 't2']);
   });
 
+  it('TXN-LIST-ROUTE-FILTER-DATE-01: passes a known dateRange_op through', async () => {
+    vi.mocked(listTransactions).mockClear();
+    const res = await app.request('/?dateFrom=2026-01-01&dateRange_op=after');
+    expect(res.status).toBe(200);
+    const callArgs = vi.mocked(listTransactions).mock.calls[0]?.[0] as
+      ListQueryParams | undefined;
+    expect(callArgs?.dateRange_op).toBe('after');
+    expect(callArgs?.dateFrom).toBe('2026-01-01');
+  });
+
+  it('TXN-LIST-ROUTE-FILTER-DATE-02: rejects an unknown dateRange_op', async () => {
+    vi.mocked(listTransactions).mockClear();
+    const res = await app.request(
+      '/?dateFrom=2026-01-01&dateTo=2026-01-31&dateRange_op=bogus'
+    );
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe('INVALID_DATE_RANGE_OPERATOR');
+    expect(listTransactions).not.toHaveBeenCalled();
+  });
+
   it('TXN-LIST-ROUTE-FILTER-02: rejects unknown transaction types', async () => {
     vi.mocked(listTransactions).mockClear();
     const res = await app.request('/?type=expense,bogus');

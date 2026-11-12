@@ -1,4 +1,5 @@
 import { TRANSACTION_TYPE_VALUES } from '@ploutizo/types';
+import type { DateRangeOperator } from '@ploutizo/types';
 import type { TransactionQueryParams } from '@/lib/data-access/transactions';
 import {
   dateFilterFromSearch,
@@ -50,16 +51,13 @@ export type TransactionSearch = {
   categoryId?: string;
   assigneeId?: string;
   tagIds?: string; // comma-separated UUIDs per RESEARCH.md Pitfall 4
-  dateRange_op?: string; // 'between' | 'after' | 'before' | 'is' | 'is_not' | 'not_between'
+  dateRange_op?: DateRangeOperator;
   importBatchId?: string;
   importOutcome?: 'created' | 'matched';
   search?: string;
 };
 
 const TRANSACTION_SEARCH_STRING_FIELDS = [
-  'dateFrom',
-  'dateTo',
-  'dateRange_op',
   'search',
 ] as const satisfies readonly (keyof TransactionSearch)[];
 
@@ -168,7 +166,13 @@ export const validateTransactionSearch = (
   }
 
   // Round-trip through the filter model to drop operators the UI cannot express.
-  const dateParams = dateFilterToSearch(dateFilterFromSearch(result));
+  const dateParams = dateFilterToSearch(
+    dateFilterFromSearch({
+      dateFrom: parseOptionalString(search.dateFrom),
+      dateTo: parseOptionalString(search.dateTo),
+      dateRange_op: parseOptionalString(search.dateRange_op),
+    })
+  );
   delete result.dateFrom;
   delete result.dateTo;
   delete result.dateRange_op;

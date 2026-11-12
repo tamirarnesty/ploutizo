@@ -32,6 +32,7 @@ import {
 import { TRANSACTION_FILTER_SENTINELS } from '@ploutizo/types';
 import type { Transaction } from '@ploutizo/db';
 import type {
+  DateRangeOperator,
   SortOrder,
   TransactionSortField,
   TransactionType,
@@ -96,7 +97,7 @@ export type ListQueryParams = {
   tagIds?: string[];
   /** Case-insensitive substring match on description, rawDescription, category, account, and tag names (T-03.4-01). Not assignee, amount, or date. */
   search?: string;
-  dateRange_op?: string; // 'between' | 'after' | 'before' | 'is' | 'is_not' | 'not_between'
+  dateRange_op?: DateRangeOperator;
   importLink?: { batchId: string; outcome: 'created' | 'matched' };
 };
 
@@ -128,6 +129,52 @@ const pushAnyOf = (conditions: SQL[], clauses: (SQL | undefined)[]) => {
   if (defined.length > 0) conditions.push(or(...defined)!);
 };
 
+// Absent operator is between. Every known operator has its own arm.
+const pushDateRangeCondition = (conditions: SQL[], params: ListQueryParams) => {
+  const operator: DateRangeOperator = params.dateRange_op ?? 'between';
+  switch (operator) {
+    case 'after':
+      if (params.dateFrom) {
+        conditions.push(gt(transactions.date, params.dateFrom));
+      }
+      return;
+    case 'before':
+      if (params.dateTo) {
+        conditions.push(lt(transactions.date, params.dateTo));
+      }
+      return;
+    case 'is':
+      if (params.dateFrom) {
+        conditions.push(eq(transactions.date, params.dateFrom));
+      }
+      return;
+    case 'is_not':
+      if (params.dateFrom) {
+        conditions.push(ne(transactions.date, params.dateFrom));
+      }
+      return;
+    case 'not_between': {
+      const clauses: SQL[] = [];
+      if (params.dateFrom) {
+        clauses.push(gte(transactions.date, params.dateFrom));
+      }
+      if (params.dateTo) clauses.push(lte(transactions.date, params.dateTo));
+      if (clauses.length > 0) conditions.push(not(and(...clauses)!));
+      return;
+    }
+    case 'between':
+      if (params.dateFrom) {
+        conditions.push(gte(transactions.date, params.dateFrom));
+      }
+      if (params.dateTo) conditions.push(lte(transactions.date, params.dateTo));
+      return;
+    default: {
+      const unreachable: never = operator;
+      throw new Error(`Unexpected date range operator: ${String(unreachable)}`);
+    }
+  }
+};
+
 // Build the WHERE conditions array for list + count queries
 export const buildConditions = (params: ListQueryParams): SQL[] => {
   const conditions: SQL[] = [...activeTransactions(params.orgId)];
@@ -140,31 +187,7 @@ export const buildConditions = (params: ListQueryParams): SQL[] => {
     conditions.push(inArray(transactions.accountId, params.accountIds));
   }
 
-  // dateRange — operator determines which Drizzle condition is applied
-  const dateOp = params.dateRange_op ?? 'between';
-  if (dateOp === 'after' && params.dateFrom) {
-    conditions.push(gt(transactions.date, params.dateFrom));
-  } else if (dateOp === 'before' && params.dateTo) {
-    conditions.push(lt(transactions.date, params.dateTo));
-  } else if (dateOp === 'is' && params.dateFrom) {
-    // 'is X' = exact date match: dateFrom === dateTo === X sent by client
-    conditions.push(eq(transactions.date, params.dateFrom));
-  } else if (dateOp === 'is_not' && params.dateFrom) {
-    // 'is not X' = exclude that exact date
-    conditions.push(ne(transactions.date, params.dateFrom));
-  } else if (dateOp === 'not_between' && (params.dateFrom || params.dateTo)) {
-    // 'not between A and B' = exclude the range [A, B]
-    // not(A <= date <= B)  ≡  date < A OR date > B
-    const clauses: SQL[] = [];
-    if (params.dateFrom) clauses.push(gte(transactions.date, params.dateFrom));
-    if (params.dateTo) clauses.push(lte(transactions.date, params.dateTo));
-    if (clauses.length > 0) conditions.push(not(and(...clauses)!));
-  } else {
-    // 'between' (default) — existing behaviour
-    if (params.dateFrom)
-      conditions.push(gte(transactions.date, params.dateFrom));
-    if (params.dateTo) conditions.push(lte(transactions.date, params.dateTo));
-  }
+  pushDateRangeCondition(conditions, params);
 
   if (params.categoryIds?.length) {
     const { ids, none } = partitionNone(params.categoryIds);

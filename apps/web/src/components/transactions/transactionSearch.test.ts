@@ -93,6 +93,13 @@ describe('validateTransactionSearch', () => {
     expect(
       validateTransactionSearch({ dateFrom: '2026-01-01', dateRange_op: 'is' })
     ).toEqual({ dateFrom: '2026-01-01', dateRange_op: 'is' });
+    expect(
+      validateTransactionSearch({
+        dateFrom: '2026-01-01',
+        dateTo: '2026-01-31',
+        dateRange_op: 'bogus',
+      })
+    ).toEqual({});
   });
 
   it('ignores unknown keys and non-string filter values', () => {
