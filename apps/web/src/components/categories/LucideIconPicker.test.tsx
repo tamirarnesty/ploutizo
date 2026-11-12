@@ -43,6 +43,37 @@ describe('LucideIconPicker', () => {
     expect(onChange).toHaveBeenCalledWith('ShoppingCart');
   });
 
+  it('keeps the filtered view while closing after a search', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+
+    render(<LucideIconPicker value={null} onChange={onChange} />);
+
+    await user.click(screen.getByRole('button'));
+
+    const search = screen.getByPlaceholderText('Search icons…');
+    await user.type(search, 'anchor');
+
+    const anchorOption = await screen.findByRole('option', { name: 'Anchor' });
+    await user.click(anchorOption);
+
+    expect(onChange).toHaveBeenCalledWith('Anchor');
+    expect(search).toHaveValue('anchor');
+  });
+
+  it('clears search when the popover reopens', async () => {
+    const user = userEvent.setup();
+
+    render(<LucideIconPicker value={null} onChange={vi.fn()} />);
+
+    await user.click(screen.getByRole('button'));
+    await user.type(screen.getByPlaceholderText('Search icons…'), 'anchor');
+    await user.click(await screen.findByRole('option', { name: 'Anchor' }));
+    await user.click(screen.getByRole('button'));
+
+    expect(screen.getByPlaceholderText('Search icons…')).toHaveValue('');
+  });
+
   it('virtualizes the full catalog instead of mounting every icon at once', async () => {
     const user = userEvent.setup();
 

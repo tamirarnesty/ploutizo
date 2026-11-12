@@ -220,7 +220,6 @@ export const LucideIconPicker = ({
   const handleSelect = (pascalName: string) => {
     onChange(pascalName);
     setOpen(false);
-    setSearch('');
   };
 
   return (
@@ -228,7 +227,7 @@ export const LucideIconPicker = ({
       open={open}
       onOpenChange={(nextOpen) => {
         setOpen(nextOpen);
-        if (!nextOpen) setSearch('');
+        if (nextOpen) setSearch('');
       }}
     >
       <PopoverTrigger
@@ -262,12 +261,12 @@ export const LucideIconPicker = ({
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search icons…"
         />
-        {open && filteredKebabNames.length === 0 ? (
+        {filteredKebabNames.length === 0 ? (
           <Text variant="caption" className="py-2 text-center">
             No icons match "{search}".
           </Text>
         ) : null}
-        {open && filteredKebabNames.length > 0 ? (
+        {filteredKebabNames.length > 0 ? (
           <LucideIconGrid
             filteredKebabNames={filteredKebabNames}
             selectedPascalName={value}
