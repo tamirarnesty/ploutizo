@@ -22,6 +22,7 @@ import { CachedLucideIcon } from '@/components/categories/CachedLucideIcon';
 import { colourTokenBadgeStyle } from '@/components/colour/colour-token-style';
 import { RightAlignedColumnHeader } from '@/components/dashboard/card-balances/RightAlignedColumnHeader';
 import { columnHeaderIcon } from '@/components/data-grid/columnHeaderIcon';
+import { TRANSACTION_COLUMN_SIZES } from '@/lib/prefs/transactionColumnLayout';
 import {
   formatTransactionAccount,
   formatTransactionAmount,
@@ -174,7 +175,7 @@ const createTransactionDateColumn = ({
       icon={columnHeaderIcon(CalendarDays)}
     />
   ),
-  size: 120,
+  size: TRANSACTION_COLUMN_SIZES.date,
   meta: {
     headerClassName: 'min-w-[100px]',
     cellClassName: 'min-w-[100px]',
@@ -199,7 +200,7 @@ const createTransactionDescriptionColumn = ({
       icon={columnHeaderIcon(NotepadText)}
     />
   ),
-  size: 200,
+  size: TRANSACTION_COLUMN_SIZES.description,
   meta: {
     fillWidth: true,
     headerClassName: 'min-w-[200px]',
@@ -229,7 +230,7 @@ const createTransactionCategoryColumn = ({
       icon={columnHeaderIcon(Tag)}
     />
   ),
-  size: 160,
+  size: TRANSACTION_COLUMN_SIZES.category,
   meta: {
     headerClassName: 'min-w-[140px]',
     cellClassName: 'min-w-[140px]',
@@ -255,7 +256,7 @@ const createTransactionAccountColumn = ({
       icon={columnHeaderIcon(CreditCard)}
     />
   ),
-  size: 220,
+  size: TRANSACTION_COLUMN_SIZES.account,
   meta: {
     headerClassName: 'min-w-[180px]',
     cellClassName: 'min-w-[180px]',
@@ -280,7 +281,7 @@ const createTransactionAmountColumn = ({
       icon={columnHeaderIcon(Coins)}
     />
   ),
-  size: 120,
+  size: TRANSACTION_COLUMN_SIZES.amount,
   meta: {
     headerClassName: 'min-w-[100px]',
     cellClassName: 'min-w-[100px]',

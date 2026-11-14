@@ -5,7 +5,7 @@ import {
   DataGridContainer,
 } from '@ploutizo/ui/components/reui/data-grid/data-grid';
 import { dataGridFeatures } from '@ploutizo/ui/components/reui/data-grid/data-grid-features';
-import { DataGridTable } from '@ploutizo/ui/components/reui/data-grid/data-grid-table';
+import { DataGridTableDnd } from '@ploutizo/ui/components/reui/data-grid/data-grid-table-dnd';
 import { DataGridScrollArea } from '@ploutizo/ui/components/reui/data-grid/data-grid-scroll-area';
 import { DataGridPagination } from '@ploutizo/ui/components/reui/data-grid/data-grid-pagination';
 import { ContextMenuItem } from '@ploutizo/ui/components/context-menu';
@@ -23,6 +23,7 @@ import {
 import { useEffectiveTablePageSize } from '@/hooks/useEffectiveTablePageSize';
 import { usePreloadLucideIcons } from '@/components/categories/usePreloadLucideIcons';
 import { ConfirmDestructiveDialog } from '@/components/ConfirmDestructiveDialog';
+import { useTransactionColumnLayout } from './useTransactionColumnLayout';
 import { buildColumns } from './TransactionColumns';
 import { TransactionRowActionMenuItems } from './TransactionRowActionMenus';
 import { getTransactionRowActions } from './transactionRowActions';
@@ -98,6 +99,25 @@ export const TransactionsTable = ({
     [setDeleteId, onEdit, onOpenOriginal]
   );
 
+  const {
+    columnOrder,
+    columnSizing,
+    moveColumn,
+    onColumnOrderChange,
+    onColumnSizingChange,
+  } = useTransactionColumnLayout();
+
+  const handleColumnDragEnd = useCallback(
+    (event: {
+      active: { id: string | number };
+      over: { id: string | number } | null;
+    }) => {
+      if (!event.over) return;
+      moveColumn(String(event.active.id), String(event.over.id));
+    },
+    [moveColumn]
+  );
+
   const effectivePageSize = useEffectiveTablePageSize(
     'transactions',
     limit,
@@ -128,7 +148,11 @@ export const TransactionsTable = ({
     state: {
       pagination: { pageIndex: page - 1, pageSize: effectivePageSize },
       sorting: [{ id: sort ?? 'date', desc: order === 'desc' }],
+      columnOrder,
+      columnSizing,
     },
+    onColumnOrderChange,
+    onColumnSizingChange,
     onPaginationChange: (updater) => {
       const next =
         typeof updater === 'function'
@@ -183,6 +207,7 @@ export const TransactionsTable = ({
         tableLayout={{
           width: 'fixed',
           columnsResizable: true,
+          columnsDraggable: true,
         }}
       >
         <div className="w-full space-y-2.5">
@@ -191,7 +216,8 @@ export const TransactionsTable = ({
               <DataGridScrollArea
                 orientation={PAGINATED_DATA_GRID_SCROLL_ORIENTATION}
               >
-                <DataGridTable
+                <DataGridTableDnd
+                  handleDragEnd={handleColumnDragEnd}
                   footerContent={
                     transactions.length > 0 ? (
                       <TransactionsAmountFooter

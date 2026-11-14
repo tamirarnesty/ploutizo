@@ -17,6 +17,7 @@ export {
   readStoredPageSize,
   usePageSizeStore,
 } from './pageSizeStore';
+export { ensureTransactionColumnLayoutHydrated } from './transactionColumnLayoutStore';
 export {
   readSessionPref,
   subscribeSessionPref,
