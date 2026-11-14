@@ -38,6 +38,15 @@ export const TransactionsAmountFooter = ({
       Page net
     </Text>
   );
+  const totalValue = (
+    <Text
+      as="span"
+      variant="body-sm"
+      className={cn('font-semibold tabular-nums', colorClass)}
+    >
+      {displayValue}
+    </Text>
+  );
 
   return (
     <DataGridTableFootRow>
@@ -46,14 +55,17 @@ export const TransactionsAmountFooter = ({
           {totalLabel}
         </DataGridTableFootRowCell>
       ) : null}
-      <DataGridTableFootRowCell className="text-right tabular-nums">
-        <Text
-          as="span"
-          variant="body-sm"
-          className={cn('font-semibold', colorClass)}
-        >
-          {displayValue}
-        </Text>
+      <DataGridTableFootRowCell
+        className={amountIndex > 0 ? 'text-right' : 'text-left'}
+      >
+        {amountIndex > 0 ? (
+          totalValue
+        ) : (
+          <span className="inline-flex items-baseline gap-3 whitespace-nowrap">
+            {totalLabel}
+            {totalValue}
+          </span>
+        )}
       </DataGridTableFootRowCell>
       {trailingSpan > 0 ? (
         <DataGridTableFootRowCell colSpan={trailingSpan} />

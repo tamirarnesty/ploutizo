@@ -1,6 +1,10 @@
 import { render, screen, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
+import {
+  ensureTransactionColumnLayoutHydrated,
+  useTransactionColumnLayoutStore,
+} from '@/lib/prefs/transactionColumnLayoutStore';
 import { mockTransactionRow } from '@/test/overlayFixtures';
 import { TransactionsTable } from './TransactionsTable';
 import type { ComponentProps } from 'react';
@@ -54,6 +58,11 @@ const footerRow = () => {
 };
 
 describe('TransactionsTable amount footer', () => {
+  beforeEach(async () => {
+    await ensureTransactionColumnLayoutHydrated();
+    useTransactionColumnLayoutStore.getState().reset();
+  });
+
   it('nets the signed amounts of the rows on screen', () => {
     renderTable({
       transactions: [
@@ -65,5 +74,31 @@ describe('TransactionsTable amount footer', () => {
     });
 
     expect(footerRow().getByText('+$75.00')).toBeInTheDocument();
+  });
+
+  it('keeps the page net label beside the total when amount is first', () => {
+    useTransactionColumnLayoutStore
+      .getState()
+      .setOrder([
+        'amount',
+        'date',
+        'type',
+        'description',
+        'category',
+        'account',
+        'assignees',
+        'tags',
+        'actions',
+      ]);
+    renderTable({
+      transactions: [
+        { ...mockTransactionRow(), id: 'a', type: 'expense', amount: 2_500 },
+        { ...mockTransactionRow(), id: 'b', type: 'income', amount: 10_000 },
+      ],
+      total: 2,
+    });
+
+    const label = screen.getByText('Page net');
+    expect(label.closest('td')).toHaveTextContent('+$75.00');
   });
 });
