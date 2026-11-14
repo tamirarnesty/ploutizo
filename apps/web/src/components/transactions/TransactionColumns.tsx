@@ -8,8 +8,10 @@ import { memberFullLabel } from '@ploutizo/utils';
 import type { DataGridFeatures } from '@ploutizo/ui/components/reui/data-grid/data-grid';
 import type { TransactionRow } from '@ploutizo/validators';
 import { columnHeaderIcon } from '@/components/data-grid/columnHeaderIcon';
+import { TRANSACTION_COLUMN_SIZES } from '@/lib/prefs/transactionColumnLayout';
 import { MemberAvatarGroup } from '@/components/members/MemberAvatarGroup';
 import { createCoreTransactionColumnDefs } from './transactionColumnFactories';
+import { ResetTransactionColumnsButton } from './ResetTransactionColumnsButton';
 import { TransactionRowActionsDropdown } from './TransactionRowActionMenus';
 import { getTransactionRowActions } from './transactionRowActions';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -68,7 +70,7 @@ export const buildColumns = (
           icon={columnHeaderIcon(Layers2)}
         />
       ),
-      size: 140,
+      size: TRANSACTION_COLUMN_SIZES.type,
       meta: {
         headerClassName: 'min-w-[120px]',
         cellClassName: 'min-w-[120px]',
@@ -111,7 +113,7 @@ export const buildColumns = (
           icon={columnHeaderIcon(Users)}
         />
       ),
-      size: 120,
+      size: TRANSACTION_COLUMN_SIZES.assignees,
       meta: {
         headerClassName: 'min-w-[100px]',
         cellClassName: 'min-w-[100px]',
@@ -145,7 +147,7 @@ export const buildColumns = (
           icon={columnHeaderIcon(Tags)}
         />
       ),
-      size: 160,
+      size: TRANSACTION_COLUMN_SIZES.tags,
       meta: {
         headerClassName: 'min-w-[140px]',
         cellClassName: 'min-w-[140px]',
@@ -192,25 +194,37 @@ export const buildColumns = (
       },
     },
     core.amount,
-    // 9. Actions — chrome column, not a data column (no resize handle)
-    {
-      id: 'actions',
-      enableSorting: false,
-      enableResizing: false,
-      enableHiding: false,
-      header: '',
-      size: 48,
-      minSize: 48,
-      maxSize: 48,
-      meta: {
-        headerClassName: 'w-12 max-w-12 px-1',
-        cellClassName: 'w-12 max-w-12 px-1',
-      },
-      cell: ({ row }) => (
-        <TransactionRowActionsDropdown
-          actions={getTransactionRowActions(row.original, handlers)}
-        />
-      ),
-    },
+    actionsColumn(handlers),
   ];
 };
+
+// ReUI's drag header reads `enableColumnOrdering` off the column def. It is
+// not a TanStack option, so the flag lives on this intersection.
+const actionsColumn = (
+  handlers: Parameters<typeof getTransactionRowActions>[1]
+): ColumnDef<DataGridFeatures, TransactionRow> & {
+  enableColumnOrdering: false;
+} => ({
+  id: 'actions',
+  enableSorting: false,
+  enableResizing: false,
+  enableHiding: false,
+  enableColumnOrdering: false,
+  header: () => (
+    <div className="flex w-full justify-center">
+      <ResetTransactionColumnsButton />
+    </div>
+  ),
+  size: TRANSACTION_COLUMN_SIZES.actions,
+  minSize: 48,
+  maxSize: 48,
+  meta: {
+    headerClassName: 'w-12 max-w-12 px-1',
+    cellClassName: 'w-12 max-w-12 px-1',
+  },
+  cell: ({ row }) => (
+    <TransactionRowActionsDropdown
+      actions={getTransactionRowActions(row.original, handlers)}
+    />
+  ),
+});

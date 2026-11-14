@@ -437,7 +437,7 @@ class DataGridKeyboardSensor extends KeyboardSensor {
   }
 }
 
-const DataGridTableDnd = <TData extends object>({
+const DataGridTableDnd = ({
   handleDragEnd,
   footerContent,
   accessibility,

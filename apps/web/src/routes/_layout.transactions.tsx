@@ -5,6 +5,7 @@ import { accountsQueryOptions } from '@/lib/data-access/accounts';
 import { categoriesQueryOptions } from '@/lib/data-access/categories';
 import { householdMembersQueryOptions } from '@/lib/data-access/household';
 import { ensurePageSizeHydrated, readStoredPageSize } from '@/lib/prefs';
+import { ensureTransactionColumnLayoutHydrated } from '@/lib/prefs/transactionColumnLayoutStore';
 import { tagsQueryOptions } from '@/lib/data-access/tags';
 import { transactionsQueryOptions } from '@/lib/data-access/transactions';
 import { Transactions } from '../components/transactions/Transactions';
@@ -21,6 +22,7 @@ const loadTransactions = async (
   const [isReady] = await Promise.all([
     isHouseholdLoaderReady(context),
     ensurePageSizeHydrated(),
+    ensureTransactionColumnLayoutHydrated(),
   ]);
   if (!isReady) {
     return;
