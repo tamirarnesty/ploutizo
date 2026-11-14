@@ -7,14 +7,7 @@ import {
   createRoute,
   createRouter,
 } from '@tanstack/react-router';
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   afterEach,
@@ -339,7 +332,7 @@ const createDashboardRouter = (initialLocation: string) => {
 };
 
 /** Renders the real dashboard route, so its search validation, redirect, and period plumbing all run. */
-const renderDashboard = async (initialLocation = '/dashboard') => {
+const mountDashboard = async (initialLocation = '/dashboard') => {
   const router = createDashboardRouter(initialLocation);
   render(<RouterProvider router={router} />);
   await screen.findByText('Spend trend');
@@ -349,6 +342,8 @@ const renderDashboard = async (initialLocation = '/dashboard') => {
 const refreshButton = () => screen.getByRole('button', { name: 'Refresh' });
 
 const cardFor = (title: string) => {
+  // Card roots are not exposed as landmarks; the slot is the query scope.
+  // eslint-disable-next-line testing-library/no-node-access -- see comment
   const card = screen.getByText(title).closest('[data-slot="card"]');
   if (!card) throw new Error(`No card found for "${title}"`);
   return card as HTMLElement;
@@ -361,6 +356,7 @@ const findChartTextInCard = (card: HTMLElement, text: string | RegExp) =>
   within(card).findByText(text, {}, { timeout: CHART_CONTENT_TIMEOUT_MS });
 
 const cardHeaderFor = (title: string) => {
+  // eslint-disable-next-line testing-library/no-node-access -- card header is not a landmark
   const header = screen.getByText(title).closest('[data-slot="card-header"]');
   if (!header) throw new Error(`No card header found for "${title}"`);
   return header as HTMLElement;
@@ -370,23 +366,12 @@ const customPeriodTrigger = () =>
   screen.getByRole('button', { name: /^Custom period:/ });
 
 const openCustomPeriodPicker = async () => {
-  fireEvent.click(customPeriodTrigger());
-  await waitFor(() => {
-    expect(
-      document.querySelector('[data-slot="date-range-picker-content"]')
-    ).not.toBeNull();
-  });
+  const user = userEvent.setup();
+  await user.click(customPeriodTrigger());
+  await screen.findByRole('dialog');
 };
 
-const customPeriodPicker = () => {
-  const root = document.querySelector(
-    '[data-slot="date-range-picker-content"]'
-  );
-  if (!root) {
-    throw new Error('Custom period picker is not open');
-  }
-  return within(root as HTMLElement);
-};
+const customPeriodPicker = () => within(screen.getByRole('dialog'));
 
 describe('Dashboard', () => {
   beforeAll(async () => {
@@ -425,7 +410,7 @@ describe('Dashboard', () => {
 
   describe('period', () => {
     it('opens on month to date when neither the URL nor a past visit names a period', async () => {
-      const router = await renderDashboard();
+      const router = await mountDashboard();
 
       expect(router.state.location.search).toEqual({
         range: 'mtd',
@@ -443,7 +428,7 @@ describe('Dashboard', () => {
 
     it('restores the last visit’s period when the URL names none', async () => {
       setPeriodCookie('2026-01-01_2026-01-15');
-      const router = await renderDashboard();
+      const router = await mountDashboard();
 
       expect(router.state.location.search).toEqual({
         from: '2026-01-01',
@@ -464,7 +449,7 @@ describe('Dashboard', () => {
 
     it('re-resolves a restored shortcut against today', async () => {
       setPeriodCookie('6m');
-      await renderDashboard();
+      await mountDashboard();
 
       await waitFor(() => {
         expect(overviewRequests()).toEqual([
@@ -475,7 +460,7 @@ describe('Dashboard', () => {
 
     it('prefers the URL’s period over the last visit’s and remembers it', async () => {
       setPeriodCookie('6m');
-      const router = await renderDashboard('/dashboard?range=30d');
+      const router = await mountDashboard('/dashboard?range=30d');
 
       expect(router.state.location.search).toEqual({
         range: '30d',
@@ -499,7 +484,7 @@ describe('Dashboard', () => {
       'restores the last visit’s period when the URL %s',
       async (_label, search) => {
         setPeriodCookie('6m');
-        const router = await renderDashboard(`/dashboard${search}`);
+        const router = await mountDashboard(`/dashboard${search}`);
 
         expect(router.state.location.search).toEqual({
           range: '6m',
@@ -509,7 +494,7 @@ describe('Dashboard', () => {
     );
 
     it('opens on month to date when the URL is invalid and there is no past visit', async () => {
-      const router = await renderDashboard('/dashboard?range=nope');
+      const router = await mountDashboard('/dashboard?range=nope');
 
       expect(router.state.location.search).toEqual({
         range: 'mtd',
@@ -519,7 +504,7 @@ describe('Dashboard', () => {
 
     it('refetches the overview for the new range when a shortcut is picked', async () => {
       const user = userEvent.setup();
-      const router = await renderDashboard();
+      const router = await mountDashboard();
       await waitFor(() => {
         expect(overviewRequests()).toHaveLength(1);
       });
@@ -542,7 +527,7 @@ describe('Dashboard', () => {
     });
 
     it('charts a custom range only once it is applied', async () => {
-      const router = await renderDashboard();
+      const router = await mountDashboard();
       await waitFor(() => {
         expect(overviewRequests()).toHaveLength(1);
       });
@@ -550,8 +535,9 @@ describe('Dashboard', () => {
       const day = (name: RegExp) => picker().getByRole('button', { name });
       const applyButton = () => picker().getByRole('button', { name: 'Apply' });
 
+      const user = userEvent.setup();
       await openCustomPeriodPicker();
-      fireEvent.click(day(/March 10th, 2026/));
+      await user.click(day(/March 10th, 2026/));
 
       expect(router.state.location.search).toEqual({
         range: 'mtd',
@@ -560,7 +546,7 @@ describe('Dashboard', () => {
       expect(overviewRequests()).toHaveLength(1);
       await waitFor(() => expect(applyButton()).toBeEnabled());
 
-      fireEvent.click(applyButton());
+      await user.click(applyButton());
 
       await waitFor(() => {
         expect(router.state.location.search).toEqual({
@@ -578,7 +564,7 @@ describe('Dashboard', () => {
 
     it('charts All as spend per month over the whole history', async () => {
       const user = userEvent.setup();
-      await renderDashboard();
+      await mountDashboard();
 
       await user.click(screen.getByRole('button', { name: 'All' }));
 
@@ -590,7 +576,7 @@ describe('Dashboard', () => {
 
     it('keeps the caption naming the data on screen while a new period loads', async () => {
       const user = userEvent.setup();
-      await renderDashboard();
+      await mountDashboard();
       expect(
         await screen.findByText('Spend per day vs Feb 1 – Feb 24, 2026')
       ).toBeInTheDocument();
@@ -635,7 +621,7 @@ describe('Dashboard', () => {
     const modeButton = (name: string) => screen.getByRole('button', { name });
 
     it('opens per bucket when neither the URL nor a past visit names a mode', async () => {
-      await renderDashboard();
+      await mountDashboard();
 
       expect(
         await screen.findByRole('button', { name: 'Per day' })
@@ -648,7 +634,7 @@ describe('Dashboard', () => {
 
     it('restores the last visit’s mode when the URL names none', async () => {
       setModeCookie('running');
-      const router = await renderDashboard('/dashboard?range=mtd');
+      const router = await mountDashboard('/dashboard?range=mtd');
 
       expect(router.state.location.search).toEqual({
         range: 'mtd',
@@ -661,7 +647,7 @@ describe('Dashboard', () => {
 
     it('prefers the URL’s mode over the last visit’s and remembers it', async () => {
       setModeCookie('bucket');
-      await renderDashboard('/dashboard?range=mtd&trend=running');
+      await mountDashboard('/dashboard?range=mtd&trend=running');
 
       expect(
         await screen.findByText('Running total vs Feb 1 – Feb 24, 2026')
@@ -671,7 +657,7 @@ describe('Dashboard', () => {
 
     it('redraws the same data in the picked mode and remembers it', async () => {
       const user = userEvent.setup();
-      const router = await renderDashboard();
+      const router = await mountDashboard();
       await waitFor(() => {
         expect(overviewRequests()).toHaveLength(1);
       });
@@ -693,7 +679,7 @@ describe('Dashboard', () => {
 
     it('keeps the mode when the active option is clicked again', async () => {
       const user = userEvent.setup();
-      const router = await renderDashboard();
+      const router = await mountDashboard();
 
       await user.click(await screen.findByRole('button', { name: 'Per day' }));
 
@@ -706,7 +692,7 @@ describe('Dashboard', () => {
 
     it('keeps the mode when the period changes', async () => {
       const user = userEvent.setup();
-      const router = await renderDashboard(
+      const router = await mountDashboard(
         '/dashboard?from=2026-03-01&to=2026-03-10&trend=running'
       );
 
@@ -725,7 +711,7 @@ describe('Dashboard', () => {
 
     it('keeps the URL’s mode when the URL names no period', async () => {
       setPeriodCookie('6m');
-      const router = await renderDashboard('/dashboard?trend=running');
+      const router = await mountDashboard('/dashboard?trend=running');
 
       expect(router.state.location.search).toEqual({
         range: '6m',
@@ -735,7 +721,7 @@ describe('Dashboard', () => {
   });
 
   it('renders the spend trend card', async () => {
-    await renderDashboard();
+    await mountDashboard();
     expect(screen.getByText('Spend trend')).toBeInTheDocument();
   });
 
@@ -761,7 +747,7 @@ describe('Dashboard', () => {
     });
 
     it('renders the spend by category card', async () => {
-      await renderDashboard();
+      await mountDashboard();
       expect(await screen.findByText('Spend by category')).toBeInTheDocument();
     });
 
@@ -799,7 +785,7 @@ describe('Dashboard', () => {
           },
         ],
       });
-      await renderDashboard();
+      await mountDashboard();
       const card = cardFor('Spend by category');
       expect(await findChartTextInCard(card, 'Groceries')).toBeInTheDocument();
       expect(
@@ -821,7 +807,7 @@ describe('Dashboard', () => {
           },
         ],
       });
-      await renderDashboard();
+      await mountDashboard();
       expect(
         await findChartTextInCard(cardFor('Spend by category'), 'Uncategorised')
       ).toBeInTheDocument();
@@ -852,14 +838,14 @@ describe('Dashboard', () => {
           },
         ],
       });
-      await renderDashboard();
+      await mountDashboard();
       const card = cardFor('Spend by category');
       expect(await findChartTextInCard(card, 'Groceries')).toBeInTheDocument();
       expect(within(card).getByText('Travel')).toBeInTheDocument();
     });
 
     it('shows an empty state when the period has no category spend', async () => {
-      await renderDashboard();
+      await mountDashboard();
       expect(
         await within(cardFor('Spend by category')).findByText(
           'No spend in this period'
@@ -869,7 +855,7 @@ describe('Dashboard', () => {
 
     it('shows a muted error when the overview fails to load', async () => {
       failingPaths.add(OVERVIEW_PATH);
-      await renderDashboard();
+      await mountDashboard();
       expect(
         await within(cardFor('Spend by category')).findByRole('alert')
       ).toHaveTextContent(/Couldn’t load spend by category/);
@@ -877,7 +863,7 @@ describe('Dashboard', () => {
 
     it('marks the card busy while the overview loads', async () => {
       const release = holdRequests();
-      void renderDashboard();
+      void mountDashboard();
       expect(await screen.findByText('Spend by category')).toBeInTheDocument();
       expect(cardFor('Spend by category')).toHaveAttribute('aria-busy', 'true');
       release();
@@ -892,7 +878,7 @@ describe('Dashboard', () => {
   });
 
   it('shows the card balances total in the section header', async () => {
-    await renderDashboard();
+    await mountDashboard();
 
     const header = await waitFor(() => cardHeaderFor('Card Balances'));
     await waitFor(() => {
@@ -902,7 +888,7 @@ describe('Dashboard', () => {
   });
 
   it('renders the settlement summary as its own card', async () => {
-    await renderDashboard();
+    await mountDashboard();
 
     await screen.findByText('Visa');
 
@@ -914,7 +900,7 @@ describe('Dashboard', () => {
 
   it('marks both cards busy and disables Refresh while the data loads', async () => {
     const release = holdRequests();
-    await renderDashboard();
+    await mountDashboard();
 
     expect(refreshButton()).toHaveAttribute('aria-disabled', 'true');
     expect(cardFor('Card Balances')).toHaveAttribute('aria-busy', 'true');
@@ -931,7 +917,7 @@ describe('Dashboard', () => {
 
   it('shows the latest data for both cards after the header Refresh', async () => {
     const user = userEvent.setup();
-    await renderDashboard();
+    await mountDashboard();
 
     await screen.findByText('Visa');
     settlementsBody = {
@@ -955,7 +941,7 @@ describe('Dashboard', () => {
 
   it('keeps loaded data and flags it as out of date when a refresh fails', async () => {
     const user = userEvent.setup();
-    await renderDashboard();
+    await mountDashboard();
 
     await screen.findByText('Visa');
     failingPaths.add(SETTLEMENTS_PATH);
@@ -986,7 +972,7 @@ describe('Dashboard', () => {
     'shows an error in each card when %s fail to load',
     async (_label, path) => {
       failingPaths.add(path);
-      await renderDashboard();
+      await mountDashboard();
 
       expect(
         await within(cardFor('Card Balances')).findByRole('alert')
@@ -1000,7 +986,7 @@ describe('Dashboard', () => {
   it('recovers failed cards from the header Refresh', async () => {
     const user = userEvent.setup();
     failingPaths.add(SETTLEMENTS_PATH);
-    await renderDashboard();
+    await mountDashboard();
 
     await screen.findByText(/Couldn’t load card balances/);
     failingPaths.clear();
@@ -1026,7 +1012,7 @@ describe('Dashboard', () => {
     'explains that %s is all time when its hint is tapped',
     async (section) => {
       const user = userEvent.setup();
-      await renderDashboard();
+      await mountDashboard();
 
       await screen.findByText('Visa');
       await user.click(
@@ -1047,7 +1033,7 @@ describe('Dashboard', () => {
         page: 1,
         limit: 6,
       };
-      await renderDashboard();
+      await mountDashboard();
 
       await waitFor(() => {
         expect(transactionRequests()).toContain(
@@ -1061,7 +1047,7 @@ describe('Dashboard', () => {
     });
 
     it('links View all to the transactions page and shows an empty state', async () => {
-      await renderDashboard();
+      await mountDashboard();
       const card = await waitFor(() => cardFor('Recent transactions'));
 
       expect(
@@ -1072,7 +1058,7 @@ describe('Dashboard', () => {
 
     it('shows a muted error when the transactions list fails to load', async () => {
       failingPaths.add(TRANSACTIONS_PATH);
-      await renderDashboard();
+      await mountDashboard();
 
       expect(
         await within(cardFor('Recent transactions')).findByRole('alert')
@@ -1082,7 +1068,7 @@ describe('Dashboard', () => {
     it('still renders the dashboard when transactions fail on first load with a ready household', async () => {
       loaderReady.value = true;
       failingPaths.add(TRANSACTIONS_PATH);
-      await renderDashboard();
+      await mountDashboard();
 
       expect(await screen.findByText('Spend trend')).toBeInTheDocument();
       expect(
@@ -1092,7 +1078,7 @@ describe('Dashboard', () => {
 
     it('marks the card busy while recent transactions load', async () => {
       const release = holdRequests();
-      void renderDashboard();
+      void mountDashboard();
       expect(
         await screen.findByText('Recent transactions')
       ).toBeInTheDocument();
@@ -1118,7 +1104,7 @@ describe('Dashboard', () => {
         page: 1,
         limit: 6,
       };
-      await renderDashboard();
+      await mountDashboard();
       await within(cardFor('Recent transactions')).findByText('Groceries');
 
       transactionsBody = {
@@ -1144,7 +1130,7 @@ describe('Dashboard', () => {
         page: 1,
         limit: 6,
       };
-      await renderDashboard();
+      await mountDashboard();
       await within(cardFor('Recent transactions')).findByText('Stable row');
       const countBefore = requestCount(TRANSACTIONS_PATH);
 

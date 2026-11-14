@@ -92,6 +92,32 @@ export const formatCurrency = (
   );
 };
 
+/**
+ * A missing money total is not a verified $0.00.
+ * Returns undefined when the value is absent so callers omit the figure.
+ * A loaded 0 is still 0.
+ */
+export const presentVerifiedMoneyCents = (
+  cents: number | undefined | null
+): number | undefined => {
+  if (cents === undefined || cents === null || !Number.isFinite(cents)) {
+    return undefined;
+  }
+  return cents;
+};
+
+/** Format a verified money total, or undefined when the amount is not present. */
+export const formatVerifiedCurrency = (
+  cents: number | undefined | null,
+  currency = DEFAULT_CURRENCY,
+  locale = DEFAULT_MONEY_LOCALE,
+  fractionDigits?: FractionDigitsOptions
+): string | undefined => {
+  const verified = presentVerifiedMoneyCents(cents);
+  if (verified === undefined) return undefined;
+  return formatCurrency(verified, currency, locale, fractionDigits);
+};
+
 /** Formats integer cents for editable fields (no currency symbol). */
 export const formatCurrencyInput = (
   cents: number,

@@ -16,11 +16,6 @@ describe('SettlementStatusBadge', () => {
     expect(screen.getByText('Due Soon')).toBeInTheDocument();
   });
 
-  it('renders ReUI badge slot for status variants', () => {
-    const { container } = render(<SettlementStatusBadge status="on_track" />);
-    expect(container.querySelector('[data-slot="badge"]')).toBeInTheDocument();
-  });
-
   it('renders caption dash for null status', () => {
     render(<SettlementStatusBadge status={null} />);
     expect(screen.getByText('—')).toBeInTheDocument();

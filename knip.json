@@ -1,0 +1,12 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreWorkspaces": [],
+  "ignore": [
+    "eslint/**",
+    "**/*.gen.ts",
+    "**/routeTree.gen.ts"
+  ],
+  "ignoreDependencies": [
+    "eslint-plugin-react-doctor"
+  ]
+}

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { Dialog, DialogContent } from '@ploutizo/ui/components/dialog';
 import type { SettlementAccountRow } from '@ploutizo/validators';
+import { AppDialog } from '@/components/overlays/AppDialog';
 import { SettleDialogForm } from '@/components/dashboard/settle-dialog/SettleDialogForm';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';
 
@@ -30,17 +30,20 @@ export const SettleDialog = ({
   if (!open && !account) return null;
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent>
-        {account && resolvedPayToward ? (
-          <SettleDialogForm
-            key={`${account.account.id}:${resolvedPayToward}`}
-            account={account}
-            initialPayToward={resolvedPayToward}
-            onClose={onClose}
-          />
-        ) : null}
-      </DialogContent>
-    </Dialog>
+    <AppDialog
+      open={open}
+      onOpenChange={(next) => !next && onClose()}
+      title={account?.account.name ?? 'Settle balance'}
+      titleClassName="sr-only"
+    >
+      {account && resolvedPayToward ? (
+        <SettleDialogForm
+          key={`${account.account.id}:${resolvedPayToward}`}
+          account={account}
+          initialPayToward={resolvedPayToward}
+          onClose={onClose}
+        />
+      ) : null}
+    </AppDialog>
   );
 };

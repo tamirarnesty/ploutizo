@@ -98,9 +98,11 @@ describe('CommandPalette', () => {
     commandMocks.drafts = [draft];
     renderPalette();
 
-    const headings = [...document.querySelectorAll('[cmdk-group-heading]')].map(
-      (heading) => heading.textContent
-    );
+    const headings = [
+      // cmdk group labels are not exposed as headings.
+      // eslint-disable-next-line testing-library/no-node-access -- see comment
+      ...document.querySelectorAll('[cmdk-group-heading]'),
+    ].map((heading) => heading.textContent);
     expect(headings).toEqual(['Continue Import', 'Navigation', 'Settings']);
 
     await user.click(screen.getByText('Visa · ••1234 — august.csv'));

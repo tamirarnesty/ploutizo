@@ -1,14 +1,7 @@
 import { useState } from 'react';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@ploutizo/ui/components/sheet';
 import type { AccountType } from '@ploutizo/types';
 import type { Account } from '@ploutizo/validators';
+import { AppSheet } from '@/components/overlays/AppSheet';
 import { useArchiveAccount } from '@/lib/data-access/accounts';
 import { ConfirmDestructiveDialog } from '@/components/ConfirmDestructiveDialog';
 import { AccountForm } from './AccountForm';
@@ -76,46 +69,36 @@ export const AccountSheet = ({
 
   return (
     <>
-      <Sheet
+      <AppSheet
         open={open}
         onOpenChange={(o) => {
           if (o) onOpenChange(true);
           else requestClose();
         }}
+        title={isEditing ? 'Edit account' : 'Add account'}
+        description={
+          isEditing
+            ? 'Edit account details and save your changes.'
+            : 'Create a new account for your household.'
+        }
+        descriptionClassName="sr-only"
+        headerClassName="border-b border-border px-6 py-4"
+        contentClassName="flex w-[440px] flex-col gap-0 sm:w-[440px]"
+        side="right"
+        trigger={trigger}
       >
-        {/* Base UI takes children from the Trigger, not the render element —
-            pass the element's children through or they are dropped. */}
-        {trigger ? (
-          <SheetTrigger render={trigger}>{trigger.props.children}</SheetTrigger>
+        {/* Mount only while open so a closed sheet cannot keep a stale form (D-09). */}
+        {open ? (
+          <AccountForm
+            key={account?.id ?? defaultType ?? 'new'}
+            account={account}
+            defaultType={defaultType}
+            onClose={closeSheet}
+            onArchive={handleArchive}
+            onDirtyChange={setIsDirty}
+          />
         ) : null}
-        <SheetContent
-          side="right"
-          className="flex w-[440px] flex-col gap-0 sm:w-[440px]"
-        >
-          <SheetHeader className="border-b border-border px-6 py-4">
-            <SheetTitle>
-              {isEditing ? 'Edit account' : 'Add account'}
-            </SheetTitle>
-            <SheetDescription className="sr-only">
-              {isEditing
-                ? 'Edit account details and save your changes.'
-                : 'Create a new account for your household.'}
-            </SheetDescription>
-          </SheetHeader>
-
-          {/* Mount only while open so a closed sheet cannot keep a stale form (D-09). */}
-          {open ? (
-            <AccountForm
-              key={account?.id ?? defaultType ?? 'new'}
-              account={account}
-              defaultType={defaultType}
-              onClose={closeSheet}
-              onArchive={handleArchive}
-              onDirtyChange={setIsDirty}
-            />
-          ) : null}
-        </SheetContent>
-      </Sheet>
+      </AppSheet>
 
       <ConfirmDestructiveDialog
         open={discardOpen}

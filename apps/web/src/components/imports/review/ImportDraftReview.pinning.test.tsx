@@ -8,13 +8,8 @@ import {
   setupImportDraftReviewTests,
 } from './importDraftReviewTestHarness';
 
-const columnHeader = (name: string) => {
-  const control = screen.getByRole('button', { name }).closest('th');
-  if (!control) {
-    throw new Error(`Missing column header for ${name}`);
-  }
-  return control;
-};
+const columnHeader = (name: string) =>
+  screen.getByRole('columnheader', { name });
 
 describe('ImportDraftReview pinning', () => {
   beforeEach(() => {
@@ -26,9 +21,9 @@ describe('ImportDraftReview pinning', () => {
     const user = userEvent.setup();
     renderReview(makeImportDraft());
 
-    const selectionHeader = screen
-      .getByRole('checkbox', { name: 'Select ready rows' })
-      .closest('th');
+    const selectionHeader = screen.getByRole('columnheader', {
+      name: 'Select ready rows',
+    });
     expect(selectionHeader).toHaveAttribute('data-pinned', 'start');
     expect(columnHeader('Date')).not.toHaveAttribute('data-pinned');
 
@@ -43,7 +38,7 @@ describe('ImportDraftReview pinning', () => {
     await user.click(screen.getByRole('button', { name: 'Unpin Date column' }));
     expect(columnHeader('Date')).not.toHaveAttribute('data-pinned');
     expect(
-      screen.getByRole('checkbox', { name: 'Select ready rows' }).closest('th')
+      screen.getByRole('columnheader', { name: 'Select ready rows' })
     ).toHaveAttribute('data-pinned', 'start');
   });
 });

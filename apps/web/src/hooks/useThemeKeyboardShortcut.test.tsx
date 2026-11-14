@@ -1,4 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ThemeProvider } from '@ploutizo/ui/components/theme-provider';
 import {
@@ -29,8 +30,8 @@ const renderShortcut = (children?: ReactNode) =>
 const documentTheme = () =>
   document.documentElement.classList.contains('dark') ? 'dark' : 'light';
 
-const pressD = (target: EventTarget = document.body) => {
-  fireEvent.keyDown(target as Element, { key: 'd' });
+const pressD = async () => {
+  await userEvent.keyboard('d');
 };
 
 describe('useThemeKeyboardShortcut', () => {
@@ -47,15 +48,15 @@ describe('useThemeKeyboardShortcut', () => {
     window.localStorage.clear();
   });
 
-  it('uses the reversible two-state toggle', () => {
+  it('uses the reversible two-state toggle', async () => {
     renderShortcut();
 
-    pressD();
+    await pressD();
 
     expect(documentTheme()).toBe('dark');
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
 
-    pressD();
+    await pressD();
 
     expect(documentTheme()).toBe('light');
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('system');
@@ -65,18 +66,18 @@ describe('useThemeKeyboardShortcut', () => {
     ['input', () => <input aria-label="Note" />],
     ['textarea', () => <textarea aria-label="Note" />],
     ['select', () => <select aria-label="Note" />],
-  ])('stays inactive while typing in a %s', (_label, Control) => {
+  ])('stays inactive while typing in a %s', async (_label, Control) => {
     renderShortcut(<Control />);
 
     const field = screen.getByLabelText('Note');
     field.focus();
-    pressD(field);
+    await pressD();
 
     expect(documentTheme()).toBe('light');
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBeNull();
   });
 
-  it('stays inactive when a nested SVG inside a contenteditable control has focus', () => {
+  it('stays inactive when a nested SVG inside a contenteditable control has focus', async () => {
     renderShortcut(
       <div contentEditable="true" suppressContentEditableWarning>
         <svg aria-label="Note" tabIndex={0}>
@@ -87,13 +88,13 @@ describe('useThemeKeyboardShortcut', () => {
 
     const field = screen.getByLabelText('Note');
     field.focus();
-    pressD(field);
+    await pressD();
 
     expect(documentTheme()).toBe('light');
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBeNull();
   });
 
-  it('stays inactive while typing in a contenteditable control', () => {
+  it('stays inactive while typing in a contenteditable control', async () => {
     renderShortcut(
       <div
         role="textbox"
@@ -105,19 +106,20 @@ describe('useThemeKeyboardShortcut', () => {
 
     const field = screen.getByLabelText('Note');
     field.focus();
-    pressD(field);
+    await pressD();
 
     expect(documentTheme()).toBe('light');
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBeNull();
   });
 
-  it('ignores the shortcut when modifiers are held', () => {
+  it('ignores the shortcut when modifiers are held', async () => {
     renderShortcut();
 
-    fireEvent.keyDown(document.body, { key: 'd', metaKey: true });
-    fireEvent.keyDown(document.body, { key: 'd', ctrlKey: true });
-    fireEvent.keyDown(document.body, { key: 'd', altKey: true });
-    fireEvent.keyDown(document.body, { key: 'd', shiftKey: true });
+    const user = userEvent.setup();
+    await user.keyboard('{Meta>}d{/Meta}');
+    await user.keyboard('{Control>}d{/Control}');
+    await user.keyboard('{Alt>}d{/Alt}');
+    await user.keyboard('{Shift>}d{/Shift}');
 
     expect(documentTheme()).toBe('light');
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBeNull();

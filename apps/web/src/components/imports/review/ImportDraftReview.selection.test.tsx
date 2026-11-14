@@ -42,6 +42,8 @@ describe('ImportDraftReview selection', () => {
 
     await waitFor(() => {
       expect(
+        // Base UI tooltip content is not always exposed as role="tooltip".
+        // eslint-disable-next-line testing-library/no-node-access -- see comment
         document.querySelector('[data-slot="tooltip-content"]')
       ).toHaveTextContent('Select ready rows');
     });

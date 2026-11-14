@@ -10,12 +10,12 @@ const commitDelay = () => {
 };
 
 const renderSearch = (urlQuery: string, onCommit = vi.fn()) => {
-  const rendered = renderHook(
+  const view = renderHook(
     ({ url }: { url: string }) =>
       useDebouncedTransactionSearch({ urlQuery: url, onCommit }),
     { initialProps: { url: urlQuery } }
   );
-  return { ...rendered, onCommit };
+  return { ...view, onCommit };
 };
 
 describe('useDebouncedTransactionSearch', () => {

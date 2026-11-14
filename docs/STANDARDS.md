@@ -49,6 +49,7 @@ Before you wire a primitive, open its component page (and types in
 | Rule | Meaning |
 | ---- | ------- |
 | **Use the documented tree** | Put the parts the docs name inside the root they belong to (`Dialog` → `DialogContent` → `DialogHeader`; `InputGroup` → `InputGroupInput` + `InputGroupAddon`; `Field` → `FieldLabel` + control). |
+| **Use the app overlay wrappers** | In `apps/web`, compose dialogs and sheets through `AppDialog` and `AppSheet` (required `title`). ESLint forbids raw `Dialog` / `Sheet` roots and `@base-ui/react` / `@radix-ui` imports, and checks InputGroup parts and document order. |
 | **Use group subcomponents, not siblings** | Do not swap in a standalone primitive where the registry exposes a group-specific one (`Input` + absolutely positioned icon instead of `InputGroup` + `InputGroupInput` + `InputGroupAddon`). |
 | **Do not reimplement the shell** | Borders, focus rings, disabled states, roles, and spacing that subcomponents apply stay on those subcomponents — not duplicated on wrapper `div`s or raw HTML. |
 | **Respect document order when docs require it** | Some groups (for example input-group addons and focus) depend on DOM order and `align`; follow the page, do not reorder for convenience. |

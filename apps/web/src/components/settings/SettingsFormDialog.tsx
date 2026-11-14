@@ -1,10 +1,4 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@ploutizo/ui/components/dialog';
+import { AppDialog } from '@/components/overlays/AppDialog';
 import type { ReactNode } from 'react';
 
 interface SettingsFormDialogProps {
@@ -24,13 +18,13 @@ export const SettingsFormDialog = ({
   formKey,
   children,
 }: SettingsFormDialogProps) => (
-  <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent className="w-[calc(100%-2rem)] max-w-md">
-      <DialogHeader>
-        <DialogTitle>{title}</DialogTitle>
-        <DialogDescription>{description}</DialogDescription>
-      </DialogHeader>
-      <div key={formKey}>{children}</div>
-    </DialogContent>
-  </Dialog>
+  <AppDialog
+    open={open}
+    onOpenChange={onOpenChange}
+    title={title}
+    description={description}
+    contentClassName="w-[calc(100%-2rem)] max-w-md"
+  >
+    <div key={formKey}>{children}</div>
+  </AppDialog>
 );

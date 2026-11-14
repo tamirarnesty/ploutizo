@@ -64,7 +64,10 @@ describe('Transactions page overlay composition', () => {
     );
 
     expect(await screen.findByRole('alertdialog')).toBeInTheDocument();
+    // Nested-dialog detection: if the sheet root wraps this dialog, the
+    // backdrop is omitted. Role alone would still pass.
     expect(
+      // eslint-disable-next-line testing-library/no-node-access -- see comment
       document.querySelector('[data-slot="alert-dialog-overlay"]')
     ).toBeInTheDocument();
   });

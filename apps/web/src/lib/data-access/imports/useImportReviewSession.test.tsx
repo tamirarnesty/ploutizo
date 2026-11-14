@@ -1,4 +1,6 @@
 import '@/lib/access/working-set-cleanup';
+// Unmount is explicit in afterEach so review runtime teardown sees a clean tree.
+// eslint-disable-next-line testing-library/no-manual-cleanup -- see comment
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BatchUpdateImportDraftRowsResult } from '@ploutizo/validators';
@@ -91,14 +93,14 @@ const draftId = 'draft_session_1';
 const autosaveSnapshot = () => getReviewPersistence(draftId).getSnapshot();
 
 const hydrateSession = async () => {
-  const hook = renderHook(() => useImportReviewSession(draftId), {
+  const view = renderHook(() => useImportReviewSession(draftId), {
     wrapper: HouseholdHookWrapper,
   });
   await waitFor(() => {
-    expect(hook.result.current.isLoading).toBe(false);
-    expect(hook.result.current.meta).toBeDefined();
+    expect(view.result.current.isLoading).toBe(false);
+    expect(view.result.current.meta).toBeDefined();
   });
-  return hook;
+  return view;
 };
 
 describe('useImportReviewSession', () => {
@@ -233,13 +235,13 @@ describe('useImportReviewSession', () => {
       draft
     );
 
-    const first = renderHook(() => useImportReviewSession('draft_session_1'), {
+    const view = renderHook(() => useImportReviewSession('draft_session_1'), {
       wrapper: HouseholdHookWrapper,
     });
     await waitFor(() => {
-      expect(first.result.current.rows).toHaveLength(2);
+      expect(view.result.current.rows).toHaveLength(2);
     });
-    first.unmount();
+    view.unmount();
 
     const { result, unmount } = renderHook(
       () => useImportReviewSession('draft_session_1'),

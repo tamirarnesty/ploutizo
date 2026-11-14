@@ -1,13 +1,7 @@
 /** @vitest-environment jsdom */
 
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  within,
-} from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
 import { useMemo } from 'react';
 import { useTable } from '@tanstack/react-table';
 import { ContextMenuItem } from '@ploutizo/ui/components/context-menu';
@@ -50,10 +44,6 @@ const DataGridContextMenuHarness = () => {
     </DataGrid>
   );
 };
-
-afterEach(() => {
-  cleanup();
-});
 
 describe('DataGridRowContextMenu', () => {
   it('opens menu items from a body row right-click', async () => {
