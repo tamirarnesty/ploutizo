@@ -6,6 +6,7 @@ import { Text } from '@ploutizo/ui/components/text';
 import { cn } from '@ploutizo/ui/lib/utils';
 import type { DataGridFeatures } from '@ploutizo/ui/components/reui/data-grid/data-grid';
 import type { TransactionRow } from '@ploutizo/validators';
+import { isTransactionAmountColumnLast } from '@/lib/prefs/transactionColumnLayout';
 import { formatSignedAmountCents } from './transactionRowDisplay';
 import { netSignedAmountCents } from './transactionAmount';
 import type { Table } from '@tanstack/react-table';
@@ -23,6 +24,9 @@ export const TransactionsAmountFooter = ({
   const columns = table.getVisibleLeafColumns();
   const amountIndex = columns.findIndex((column) => column.id === 'amount');
   if (amountIndex < 0) return null;
+  const amountAlignsEnd = isTransactionAmountColumnLast(
+    columns.map((column) => column.id)
+  );
 
   const { displayValue, colorClass } = formatSignedAmountCents(
     netSignedAmountCents(rows)
@@ -56,7 +60,9 @@ export const TransactionsAmountFooter = ({
         </DataGridTableFootRowCell>
       ) : null}
       <DataGridTableFootRowCell
-        className={amountIndex > 0 ? 'text-right' : 'text-left'}
+        className={
+          amountAlignsEnd && amountIndex > 0 ? 'text-right' : 'text-left'
+        }
       >
         {amountIndex > 0 ? (
           totalValue

@@ -16,13 +16,17 @@ import {
 } from '@ploutizo/ui/components/tooltip';
 import { cn } from '@ploutizo/ui/lib/utils';
 import { formatCurrency } from '@ploutizo/utils/currency';
+import { useDataGrid } from '@ploutizo/ui/components/reui/data-grid/data-grid';
 import type { DataGridFeatures } from '@ploutizo/ui/components/reui/data-grid/data-grid';
 import type { TransactionRow } from '@ploutizo/validators';
 import { CachedLucideIcon } from '@/components/categories/CachedLucideIcon';
 import { colourTokenBadgeStyle } from '@/components/colour/colour-token-style';
 import { RightAlignedColumnHeader } from '@/components/dashboard/card-balances/RightAlignedColumnHeader';
 import { columnHeaderIcon } from '@/components/data-grid/columnHeaderIcon';
-import { TRANSACTION_COLUMN_SIZES } from '@/lib/prefs/transactionColumnLayout';
+import {
+  TRANSACTION_COLUMN_SIZES,
+  isTransactionAmountColumnLast,
+} from '@/lib/prefs/transactionColumnLayout';
 import {
   formatTransactionAccount,
   formatTransactionAmount,
@@ -144,18 +148,40 @@ const TransactionAccountCell = ({ row }: { row: TransactionRow }) => (
   </div>
 );
 
-const TransactionAmountCell = ({ row }: { row: TransactionRow }) => {
+const TransactionAmountCell = ({
+  row,
+  alignEnd,
+}: {
+  row: TransactionRow;
+  alignEnd: boolean;
+}) => {
   const { displayValue, colorClass } = formatTransactionAmount(row);
   return (
     <Text
       variant="body-sm"
       className={cn(
-        'block text-right font-medium whitespace-nowrap',
+        'block font-medium whitespace-nowrap',
+        alignEnd && 'text-right',
         colorClass
       )}
     >
       {displayValue}
     </Text>
+  );
+};
+
+const TransactionAmountSkeleton = () => {
+  const { table } = useDataGrid();
+  const alignEnd = isTransactionAmountColumnLast(
+    table.getVisibleLeafColumns().map((column) => column.id)
+  );
+  return (
+    <Skeleton
+      className={cn(
+        'h-4 w-16 motion-safe:animate-pulse',
+        alignEnd && 'ml-auto'
+      )}
+    />
   );
 };
 
@@ -274,22 +300,34 @@ const createTransactionAmountColumn = ({
   id: 'amount',
   accessorKey: 'amount',
   enableSorting,
-  header: ({ column }) => (
-    <RightAlignedColumnHeader
-      column={column}
-      title="Amount"
-      icon={columnHeaderIcon(Coins)}
-    />
-  ),
+  header: ({ column, table }) => {
+    const title = 'Amount';
+    const icon = columnHeaderIcon(Coins);
+    if (
+      !isTransactionAmountColumnLast(
+        table.getVisibleLeafColumns().map((leaf) => leaf.id)
+      )
+    ) {
+      return <DataGridColumnHeader column={column} title={title} icon={icon} />;
+    }
+    return (
+      <RightAlignedColumnHeader column={column} title={title} icon={icon} />
+    );
+  },
   size: TRANSACTION_COLUMN_SIZES.amount,
   meta: {
     headerClassName: 'min-w-[100px]',
     cellClassName: 'min-w-[100px]',
-    skeleton: (
-      <Skeleton className="ml-auto h-4 w-16 motion-safe:animate-pulse" />
-    ),
+    skeleton: <TransactionAmountSkeleton />,
   },
-  cell: ({ row }) => <TransactionAmountCell row={row.original} />,
+  cell: ({ row, table }) => (
+    <TransactionAmountCell
+      row={row.original}
+      alignEnd={isTransactionAmountColumnLast(
+        table.getVisibleLeafColumns().map((leaf) => leaf.id)
+      )}
+    />
+  ),
 });
 
 export type CoreTransactionColumnOptions = {

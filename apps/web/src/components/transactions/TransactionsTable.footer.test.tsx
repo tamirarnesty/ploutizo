@@ -101,4 +101,43 @@ describe('TransactionsTable amount footer', () => {
     const label = screen.getByText('Page net');
     expect(label.closest('td')).toHaveTextContent('+$75.00');
   });
+
+  it('right-aligns the page net figure when amount is the last data column', () => {
+    renderTable({
+      transactions: [
+        { ...mockTransactionRow(), id: 'a', type: 'expense', amount: 2_500 },
+      ],
+      total: 1,
+    });
+
+    expect(footerRow().getByText('−$25.00').closest('td')).toHaveClass(
+      'text-right'
+    );
+  });
+
+  it('left-aligns the page net figure when another data column follows amount', () => {
+    useTransactionColumnLayoutStore
+      .getState()
+      .setOrder([
+        'date',
+        'amount',
+        'type',
+        'description',
+        'category',
+        'account',
+        'assignees',
+        'tags',
+        'actions',
+      ]);
+    renderTable({
+      transactions: [
+        { ...mockTransactionRow(), id: 'a', type: 'expense', amount: 2_500 },
+      ],
+      total: 1,
+    });
+
+    const figureCell = footerRow().getByText('−$25.00').closest('td');
+    expect(figureCell).toHaveClass('text-left');
+    expect(screen.getByText('Page net').closest('td')).not.toBe(figureCell);
+  });
 });

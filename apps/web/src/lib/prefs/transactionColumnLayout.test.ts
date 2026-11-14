@@ -3,6 +3,7 @@ import { buildColumns } from '@/components/transactions/TransactionColumns';
 import {
   TRANSACTION_COLUMN_IDS,
   TRANSACTION_COLUMN_SIZES,
+  isTransactionAmountColumnLast,
   isTransactionColumnLayoutCustom,
   moveTransactionColumn,
   parseStoredTransactionColumnLayout,
@@ -139,6 +140,12 @@ describe('transactionColumnLayout', () => {
       'actions',
     ]);
     expect(moveTransactionColumn(ids, 'actions', 'date')).toEqual(ids);
+  });
+
+  it('keeps amount trailing when a table has no actions column', () => {
+    expect(
+      isTransactionAmountColumnLast(['date', 'description', 'amount'])
+    ).toBe(true);
   });
 
   it('treats the default sequence and default widths as not customized', () => {

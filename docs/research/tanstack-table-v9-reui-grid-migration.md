@@ -89,6 +89,7 @@ Capabilities added or changed locally in `packages/ui/src/components/reui/` (rec
 - **Column resize handle** — The handle is a `span` (`role="separator"`, accessible name, `tabIndex={0}`) so header `[&>div]:w-full` rules cannot cover it. Enter and Space call `column.resetSize()`, same as double-click.
 - **Infinite virtual rows** — `onFetchMore` will not refire at the same row count while a request is in flight. After an attempt adds no rows, leaving the fetch threshold clears that guard so scrolling back can retry.
 - **Row drop indicator** — With rows held in place, the indicator is a horizontal line on the top or bottom edge (`dropEdge`), not a vertical bar at the start.
+- **Column reorder grip** — On draggable headers the grip overlays the trailing edge, just before the resize handle, and does not reserve a slot while hidden. It appears when that header is hovered, contains focus, or is being dragged, and it stays visible when the device cannot hover. While it is showing, the header title clears it.
 - **`DataGridTableDnd` row type parameter** — The component does not use a row type, so the unused `<TData>` parameter is gone. Importers typecheck with `noUnusedParameters`.
 
 ## Verification checklist

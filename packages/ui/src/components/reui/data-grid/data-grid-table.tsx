@@ -1112,7 +1112,7 @@ const renderDataGridTableHeadRowCellView = <TData extends object>({
         isLastStartPinned ? 'start' : isFirstEndPinned ? 'end' : undefined
       }
       className={cn(
-        'relative h-10 text-left align-middle font-medium text-foreground rtl:text-right [&:has([role=checkbox])]:pe-0',
+        'group/column-header relative h-10 text-left align-middle font-medium text-foreground rtl:text-right [&:has([role=checkbox])]:pe-0',
         headerCellSpacing,
         isBanded && 'align-bottom',
         props.tableLayout?.headerBackground && 'bg-muted',

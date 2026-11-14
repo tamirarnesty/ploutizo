@@ -32,6 +32,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { flexRender } from '@tanstack/react-table';
 
 import { GripVerticalIcon } from 'lucide-react';
+import { cn } from 'cn';
 import type { Cell, Header, Row } from '@tanstack/react-table';
 import type {
   DataGridFeatures,
@@ -145,23 +146,42 @@ const renderDataGridTableDndHeader = <TData extends object>({
       dndStyle={style}
       dndRef={setNodeRef}
     >
-      <div className="flex items-center justify-start gap-0.5">
-        {canOrder && (
+      <div className="flex h-full min-w-0 items-center">
+        <div
+          className={cn(
+            'min-w-0 grow',
+            canOrder &&
+              'group-focus-within/column-header:pe-8 group-hover/column-header:pe-8 data-dragging:pe-8 [@media(hover:none)]:pe-8'
+          )}
+          data-dragging={canOrder && isDragging ? '' : undefined}
+        >
+          {renderDataGridTableHeadCellContent(header)}
+        </div>
+        {canOrder ? (
+          // Overlay the trailing edge. Hidden until hover, focus, or drag so
+          // it does not reserve a slot; touch devices keep it visible.
           <Button
             size="icon-sm"
             variant="ghost"
-            className={`-ms-2 size-6 ${isDragging ? 'cursor-grabbing' : 'cursor-grab active:cursor-grabbing'}`}
+            className={cn(
+              'absolute end-5 top-1/2 z-10 size-6 -translate-y-1/2',
+              'pointer-events-none opacity-0',
+              'group-hover/column-header:pointer-events-auto group-hover/column-header:opacity-100',
+              'group-focus-within/column-header:pointer-events-auto group-focus-within/column-header:opacity-100',
+              'data-dragging:pointer-events-auto data-dragging:opacity-100',
+              '[@media(hover:none)]:pointer-events-auto [@media(hover:none)]:opacity-100',
+              isDragging
+                ? 'cursor-grabbing'
+                : 'cursor-grab active:cursor-grabbing'
+            )}
             {...attributes}
             {...listeners}
+            data-dragging={isDragging ? '' : undefined}
             aria-label={i18n.labels.dragToReorder}
           >
-            <GripVerticalIcon
-              className="opacity-60 hover:opacity-100"
-              aria-hidden="true"
-            />
+            <GripVerticalIcon aria-hidden="true" />
           </Button>
-        )}
-        <div className="grow">{renderDataGridTableHeadCellContent(header)}</div>
+        ) : null}
         {props.tableLayout?.columnsResizable &&
           resizeHeader.column.getCanResize() && (
             <DataGridTableHeadRowCellResize header={resizeHeader} />

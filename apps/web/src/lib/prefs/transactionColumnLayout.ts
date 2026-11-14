@@ -24,6 +24,15 @@ export type TransactionColumnId = (typeof TRANSACTION_COLUMN_IDS)[number];
 
 export const TRANSACTION_ACTIONS_COLUMN_ID: TransactionColumnId = 'actions';
 
+/** Amount is trailing when nothing follows it except the pinned actions column. */
+export const isTransactionAmountColumnLast = (columnIds: readonly string[]) => {
+  const amountIndex = columnIds.indexOf('amount');
+  if (amountIndex < 0) return false;
+  return columnIds
+    .slice(amountIndex + 1)
+    .every((id) => id === TRANSACTION_ACTIONS_COLUMN_ID);
+};
+
 /** Pixel sizes from the column definitions. Absent sizing state uses these. */
 export const TRANSACTION_COLUMN_SIZES: Record<TransactionColumnId, number> = {
   date: 120,
