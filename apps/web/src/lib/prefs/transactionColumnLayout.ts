@@ -35,14 +35,14 @@ export const isTransactionAmountColumnLast = (columnIds: readonly string[]) => {
 
 /** Pixel sizes from the column definitions. Absent sizing state uses these. */
 export const TRANSACTION_COLUMN_SIZES: Record<TransactionColumnId, number> = {
-  date: 120,
+  date: 160,
   type: 140,
   description: 200,
   category: 160,
   account: 220,
-  assignees: 120,
-  tags: 160,
-  amount: 120,
+  assignees: 180,
+  tags: 120,
+  amount: 160,
   actions: 48,
 };
 

@@ -6,9 +6,9 @@ import {
   isValidElement,
   useCallback,
   useContext,
-  useLayoutEffect,
   useMemo,
   useState,
+  useSyncExternalStore,
 } from 'react';
 import { mergeProps } from '@base-ui/react/merge-props';
 import { useRender } from '@base-ui/react/use-render';
@@ -46,6 +46,16 @@ import type {
 import type { CSSProperties, ReactElement, ReactNode } from 'react';
 
 import { cn } from '@/lib/utils';
+
+const subscribeToClientMount = () => () => {};
+
+/** True only after hydration, so portals are not created during SSR. */
+const useIsClient = () =>
+  useSyncExternalStore(
+    subscribeToClientMount,
+    () => true,
+    () => false
+  );
 
 // Sortable Item Context
 const SortableItemContext = createContext<{
@@ -116,9 +126,7 @@ function Sortable<T>({
   ...props
 }: SortableRootProps<T>) {
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useLayoutEffect(() => setMounted(true), []);
+  const mounted = useIsClient();
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -384,9 +392,7 @@ function SortableOverlay({
   ...props
 }: SortableOverlayProps) {
   const { activeId, modifiers } = useContext(SortableInternalContext);
-  const [mounted, setMounted] = useState(false);
-
-  useLayoutEffect(() => setMounted(true), []);
+  const mounted = useIsClient();
 
   const content =
     activeId && children

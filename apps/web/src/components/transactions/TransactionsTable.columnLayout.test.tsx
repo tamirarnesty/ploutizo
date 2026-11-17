@@ -65,7 +65,7 @@ describe('TransactionsTable column layout', () => {
     useTransactionColumnLayoutStore.getState().reset();
   });
 
-  it('overlays the reorder grip on the right until the header is hovered or focused', () => {
+  it('reserves a trailing slot for the reorder grip until the header is hovered or focused', () => {
     renderTable();
     const header = amountHeader();
     const grip = within(header).getByRole('button', {
@@ -73,22 +73,14 @@ describe('TransactionsTable column layout', () => {
     });
 
     expect(header).toHaveClass('group/column-header');
-    expect(grip).toHaveClass(
-      'absolute',
-      'end-5',
-      'pointer-events-none',
-      'opacity-0'
-    );
+    expect(grip).toHaveClass('shrink-0', 'pointer-events-none', 'opacity-0');
+    expect(grip).not.toHaveClass('absolute');
     expect(grip.className).toContain('group-hover/column-header:opacity-100');
-    expect(grip.className).toContain(
-      'group-focus-within/column-header:opacity-100'
-    );
+    expect(grip.className).toContain('focus-visible:opacity-100');
+    expect(grip.className).not.toContain('group-focus-within');
     expect(grip.className).toContain('[@media(hover:none)]:opacity-100');
     expect(grip).toHaveAttribute('tabindex', '0');
-
-    const title = header.querySelector('.grow');
-    expect(title?.className).toContain('group-hover/column-header:pe-8');
-    expect(title?.className).not.toMatch(/(?:^|\s)pe-8(?:\s|$)/);
+    expect(header.querySelector('.grow')).toHaveClass('overflow-hidden');
   });
 
   it('offers a drag grip on every data column and not on actions', () => {
@@ -134,14 +126,14 @@ describe('TransactionsTable column layout', () => {
     ).toBeInTheDocument();
   });
 
-  it('right-aligns Amount when it is the last data column', () => {
+  it('keeps the Amount name on the left and right-aligns its value when Amount is last', () => {
     renderTable({
       transactions: [
         { ...mockTransactionRow(), type: 'expense', amount: 2_500 },
       ],
     });
 
-    expect(amountHeader().querySelector('.ms-auto')).not.toBeNull();
+    expect(amountHeader().querySelector('.ms-auto')).toBeNull();
     expect(amountValue()).toHaveClass('text-right');
   });
 

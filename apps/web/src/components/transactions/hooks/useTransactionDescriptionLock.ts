@@ -73,6 +73,12 @@ export const useTransactionDescriptionLock = ({
   const previousGeneratedRef = useRef(lockedValue);
   const transitionRef = useRef({ type, refundOf });
 
+  const [trackedType, setTrackedType] = useState(type);
+  if (trackedType !== type) {
+    setTrackedType(type);
+    setManualUnlockedGeneration(null);
+  }
+
   const typeChanged = transitionRef.current.type !== type;
   const refundOfChanged = transitionRef.current.refundOf !== refundOf;
   const manualUnlocked = manualUnlockedGeneration === lockGeneration;
@@ -92,9 +98,6 @@ export const useTransactionDescriptionLock = ({
   });
 
   useLayoutEffect(() => {
-    if (transitionRef.current.type !== type) {
-      setManualUnlockedGeneration(null);
-    }
     transitionRef.current = { type, refundOf };
     previousGeneratedRef.current = lockedValue;
   }, [type, refundOf, lockedValue]);

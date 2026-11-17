@@ -506,16 +506,19 @@ const renderDataGridColumnHeaderFace = ({
 
   if (canSort || (columnsResizable && canResize)) {
     return (
-      <div className="-ms-2 flex h-full items-center">
+      <div className="-ms-2 flex h-full min-w-0 items-center">
         <Button
           variant="ghost"
-          className={headerButtonClassName}
+          className={cn(
+            headerButtonClassName,
+            'w-fit max-w-full min-w-0 shrink justify-start'
+          )}
           disabled={isLoading}
           onClick={handleSort}
         >
-          {icon && icon}
-          {resolvedTitle}
-          {sortIcon}
+          {icon ? <span className="shrink-0">{icon}</span> : null}
+          <span className="min-w-0 truncate">{resolvedTitle}</span>
+          {sortIcon ? <span className="shrink-0">{sortIcon}</span> : null}
         </Button>
       </div>
     );

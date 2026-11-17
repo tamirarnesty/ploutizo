@@ -115,8 +115,8 @@ export const buildColumns = (
       ),
       size: TRANSACTION_COLUMN_SIZES.assignees,
       meta: {
-        headerClassName: 'min-w-[100px]',
-        cellClassName: 'min-w-[100px]',
+        headerClassName: 'min-w-[180px]',
+        cellClassName: 'min-w-[180px]',
         skeleton: (
           <div className="flex gap-0.5">
             <Skeleton className="h-6 w-6 rounded-full motion-safe:animate-pulse" />
@@ -149,8 +149,8 @@ export const buildColumns = (
       ),
       size: TRANSACTION_COLUMN_SIZES.tags,
       meta: {
-        headerClassName: 'min-w-[140px]',
-        cellClassName: 'min-w-[140px]',
+        headerClassName: 'min-w-[120px]',
+        cellClassName: 'min-w-[120px]',
         skeleton: <Skeleton className="h-4 w-20 motion-safe:animate-pulse" />,
       },
       cell: ({ row }) => {

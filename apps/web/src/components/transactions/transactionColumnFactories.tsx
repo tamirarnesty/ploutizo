@@ -21,7 +21,6 @@ import type { DataGridFeatures } from '@ploutizo/ui/components/reui/data-grid/da
 import type { TransactionRow } from '@ploutizo/validators';
 import { CachedLucideIcon } from '@/components/categories/CachedLucideIcon';
 import { colourTokenBadgeStyle } from '@/components/colour/colour-token-style';
-import { RightAlignedColumnHeader } from '@/components/dashboard/card-balances/RightAlignedColumnHeader';
 import { columnHeaderIcon } from '@/components/data-grid/columnHeaderIcon';
 import {
   TRANSACTION_COLUMN_SIZES,
@@ -203,8 +202,8 @@ const createTransactionDateColumn = ({
   ),
   size: TRANSACTION_COLUMN_SIZES.date,
   meta: {
-    headerClassName: 'min-w-[100px]',
-    cellClassName: 'min-w-[100px]',
+    headerClassName: 'min-w-[160px]',
+    cellClassName: 'min-w-[160px]',
     skeleton: <Skeleton className="h-4 w-20 motion-safe:animate-pulse" />,
   },
   cell: ({ row }) => <TransactionDateCell row={row.original} />,
@@ -300,24 +299,17 @@ const createTransactionAmountColumn = ({
   id: 'amount',
   accessorKey: 'amount',
   enableSorting,
-  header: ({ column, table }) => {
-    const title = 'Amount';
-    const icon = columnHeaderIcon(Coins);
-    if (
-      !isTransactionAmountColumnLast(
-        table.getVisibleLeafColumns().map((leaf) => leaf.id)
-      )
-    ) {
-      return <DataGridColumnHeader column={column} title={title} icon={icon} />;
-    }
-    return (
-      <RightAlignedColumnHeader column={column} title={title} icon={icon} />
-    );
-  },
+  header: ({ column }) => (
+    <DataGridColumnHeader
+      column={column}
+      title="Amount"
+      icon={columnHeaderIcon(Coins)}
+    />
+  ),
   size: TRANSACTION_COLUMN_SIZES.amount,
   meta: {
-    headerClassName: 'min-w-[100px]',
-    cellClassName: 'min-w-[100px]',
+    headerClassName: 'min-w-[160px]',
+    cellClassName: 'min-w-[160px]',
     skeleton: <TransactionAmountSkeleton />,
   },
   cell: ({ row, table }) => (

@@ -146,28 +146,19 @@ const renderDataGridTableDndHeader = <TData extends object>({
       dndStyle={style}
       dndRef={setNodeRef}
     >
-      <div className="flex h-full min-w-0 items-center">
-        <div
-          className={cn(
-            'min-w-0 grow',
-            canOrder &&
-              'group-focus-within/column-header:pe-8 group-hover/column-header:pe-8 data-dragging:pe-8 [@media(hover:none)]:pe-8'
-          )}
-          data-dragging={canOrder && isDragging ? '' : undefined}
-        >
+      <div className="flex h-full min-w-0 items-center gap-0.5">
+        <div className={cn('min-w-0 grow', canOrder && 'overflow-hidden')}>
           {renderDataGridTableHeadCellContent(header)}
         </div>
         {canOrder ? (
-          // Overlay the trailing edge. Hidden until hover, focus, or drag so
-          // it does not reserve a slot; touch devices keep it visible.
           <Button
             size="icon-sm"
             variant="ghost"
             className={cn(
-              'absolute end-5 top-1/2 z-10 size-6 -translate-y-1/2',
+              'relative z-10 size-6 shrink-0',
               'pointer-events-none opacity-0',
               'group-hover/column-header:pointer-events-auto group-hover/column-header:opacity-100',
-              'group-focus-within/column-header:pointer-events-auto group-focus-within/column-header:opacity-100',
+              'focus-visible:pointer-events-auto focus-visible:opacity-100',
               'data-dragging:pointer-events-auto data-dragging:opacity-100',
               '[@media(hover:none)]:pointer-events-auto [@media(hover:none)]:opacity-100',
               isDragging
@@ -176,6 +167,7 @@ const renderDataGridTableDndHeader = <TData extends object>({
             )}
             {...attributes}
             {...listeners}
+            data-column-reorder=""
             data-dragging={isDragging ? '' : undefined}
             aria-label={i18n.labels.dragToReorder}
           >
@@ -457,6 +449,18 @@ class DataGridKeyboardSensor extends KeyboardSensor {
   }
 }
 
+/** Pointer drags focus the handle; release should leave it unfocused so it can ghost. */
+const releasePointerReorderFocus = (activatorEvent: Event) => {
+  if (activatorEvent instanceof KeyboardEvent) return;
+  const active = document.activeElement;
+  if (
+    active instanceof HTMLElement &&
+    active.hasAttribute('data-column-reorder')
+  ) {
+    active.blur();
+  }
+};
+
 const DataGridTableDnd = ({
   handleDragEnd,
   footerContent,
@@ -536,9 +540,13 @@ const DataGridTableDnd = ({
       collisionDetection={closestCenter}
       id={useId()}
       modifiers={modifiers}
-      onDragCancel={() => setIsDraggingColumn(false)}
+      onDragCancel={(event) => {
+        setIsDraggingColumn(false);
+        releasePointerReorderFocus(event.activatorEvent);
+      }}
       onDragEnd={(event) => {
         setIsDraggingColumn(false);
+        releasePointerReorderFocus(event.activatorEvent);
         handleDragEnd(getDataGridDropBesideSpans(table, event));
       }}
       onDragStart={() => setIsDraggingColumn(true)}
