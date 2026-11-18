@@ -4,6 +4,7 @@ import { ThemeProvider } from '@ploutizo/ui/components/theme-provider';
 import { Toaster } from '@ploutizo/ui/components/sonner';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { AppDevtools } from '@/components/devtools/AppDevtools';
+import { themeColorMetas } from '@/pwa/theme-color';
 import { AppAuthShell } from './AppAuthShell';
 import type { ReactNode } from 'react';
 
@@ -11,6 +12,9 @@ export const RootDocument = ({ children }: { children: ReactNode }) => {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {themeColorMetas.map((meta) => (
+          <meta key={meta.media} {...meta} />
+        ))}
         <HeadContent />
       </head>
       <body>
