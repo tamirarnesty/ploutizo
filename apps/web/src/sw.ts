@@ -7,6 +7,7 @@ import {
 import { registerRoute, setCatchHandler } from 'workbox-routing';
 import { NetworkOnly } from 'workbox-strategies';
 import { OFFLINE_ENTRY_PATH, allowsOfflineEntry } from './pwa/offline-entry';
+import { resolveOfflineNavigationFallback } from './pwa/offline-navigation';
 
 declare const self: ServiceWorkerGlobalScope;
 
@@ -39,9 +40,15 @@ registerRoute(
 setCatchHandler(async ({ request }) => {
   if (request.mode !== 'navigate') return Response.error();
 
-  const { pathname } = new URL(request.url);
-  if (!allowsOfflineEntry(pathname)) return Response.error();
+  const url = new URL(request.url);
+  const fallback = resolveOfflineNavigationFallback({
+    origin: url.origin,
+    pathname: url.pathname,
+    search: url.search,
+  });
 
+  if (fallback.kind === 'error') return Response.error();
+  if (fallback.kind === 'redirect') return Response.redirect(fallback.location);
   const shell = await matchPrecache(OFFLINE_ENTRY_PATH);
   return shell ?? Response.error();
 });

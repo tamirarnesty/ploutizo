@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readFile, writeFile } from 'node:fs/promises';
+import { isMissingFile } from '../node/is-missing-file';
+import { OFFLINE_ENTRY_PATH } from './offline-entry';
 
 /**
  * Fixed-width stand-in written into `sw.js` before Nitro records its size.
@@ -72,8 +74,31 @@ const replaceOnce = (buffer: Buffer, needle: Buffer, replacement: Buffer) => {
   ]);
 };
 
-const isMissingFile = (error: unknown) =>
-  typeof error === 'object' &&
-  error !== null &&
-  'code' in error &&
-  error.code === 'ENOENT';
+const revisionPattern = /[a-f0-9]{64}/;
+
+export const assertStampedServiceWorker = async (serviceWorkerPath: string) => {
+  const worker = await readFile(serviceWorkerPath, 'utf8');
+  if (worker.includes(offlineShellRevisionSlot)) {
+    throw new Error(
+      `Service worker still contains the offline shell revision placeholder: ${serviceWorkerPath}`
+    );
+  }
+  if (!worker.includes(OFFLINE_ENTRY_PATH)) {
+    throw new Error(
+      `Service worker does not precache ${OFFLINE_ENTRY_PATH}: ${serviceWorkerPath}`
+    );
+  }
+  const entry = `"url":"${OFFLINE_ENTRY_PATH}"`;
+  const index = worker.indexOf(entry);
+  if (index === -1) {
+    throw new Error(
+      `Missing precache manifest entry for ${OFFLINE_ENTRY_PATH}`
+    );
+  }
+  const slice = worker.slice(Math.max(0, index - 120), index + entry.length);
+  if (!revisionPattern.test(slice)) {
+    throw new Error(
+      `Offline shell precache revision is not a sha256 hex next to ${OFFLINE_ENTRY_PATH}`
+    );
+  }
+};

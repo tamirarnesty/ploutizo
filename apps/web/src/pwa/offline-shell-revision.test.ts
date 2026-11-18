@@ -3,7 +3,9 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
+import { OFFLINE_ENTRY_PATH } from './offline-entry';
 import {
+  assertStampedServiceWorker,
   offlineShellRevisionSlot,
   stampOfflineShellRevision,
 } from './offline-shell-revision';
@@ -30,7 +32,7 @@ describe('stampOfflineShellRevision', () => {
     const shellPath = path.join(dir, 'offline.html');
     const serviceWorkerPath = path.join(dir, 'sw.js');
     const html = '<!doctype html><title>shell</title>';
-    const before = `self.__WB_MANIFEST=[{"revision":"${offlineShellRevisionSlot}","url":"/offline.html"}]`;
+    const before = `self.__WB_MANIFEST=[{"revision":"${offlineShellRevisionSlot}","url":"${OFFLINE_ENTRY_PATH}"}]`;
     await writeFile(shellPath, html);
     await writeFile(serviceWorkerPath, before);
 
@@ -40,7 +42,7 @@ describe('stampOfflineShellRevision', () => {
     const revision = createHash('sha256').update(html).digest('hex');
     expect(offlineShellRevisionSlot).toHaveLength(revision.length);
     expect(after).toBe(
-      `self.__WB_MANIFEST=[{"revision":"${revision}","url":"/offline.html"}]`
+      `self.__WB_MANIFEST=[{"revision":"${revision}","url":"${OFFLINE_ENTRY_PATH}"}]`
     );
     expect(Buffer.byteLength(after)).toBe(Buffer.byteLength(before));
     expect(after).not.toContain(offlineShellRevisionSlot);
@@ -57,6 +59,20 @@ describe('stampOfflineShellRevision', () => {
         path.join(dir, 'offline.html')
       )
     ).rejects.toThrow(/was not written/);
+  });
+
+  it('asserts a stamped worker', async () => {
+    const dir = await tempDir();
+    const shellPath = path.join(dir, 'offline.html');
+    const serviceWorkerPath = path.join(dir, 'sw.js');
+    const html = '<!doctype html><title>shell</title>';
+    const before = `self.__WB_MANIFEST=[{"revision":"${offlineShellRevisionSlot}","url":"${OFFLINE_ENTRY_PATH}"}]`;
+    await writeFile(shellPath, html);
+    await writeFile(serviceWorkerPath, before);
+    await stampOfflineShellRevision(serviceWorkerPath, shellPath);
+    await expect(
+      assertStampedServiceWorker(serviceWorkerPath)
+    ).resolves.toBeUndefined();
   });
 
   it('fails when the worker has no revision slot to stamp', async () => {

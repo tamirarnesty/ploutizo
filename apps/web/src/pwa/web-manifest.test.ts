@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { installLinks } from './install-document';
+import { PWA_APP_NAME, PWA_MANIFEST } from './pwa-brand';
 
 const publicDir = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -10,16 +12,7 @@ const publicDir = path.resolve(
 
 const manifest = JSON.parse(
   readFileSync(path.join(publicDir, 'manifest.json'), 'utf8')
-) as {
-  name: string;
-  short_name: string;
-  start_url: string;
-  scope: string;
-  display: string;
-  background_color: string;
-  theme_color: string;
-  icons: { src: string; sizes: string; type: string; purpose: string }[];
-};
+) as typeof PWA_MANIFEST;
 
 const pngSize = (bytes: Buffer) => ({
   width: bytes.readUInt32BE(16),
@@ -27,22 +20,22 @@ const pngSize = (bytes: Buffer) => ({
 });
 
 describe('web manifest', () => {
-  it('is the static install manifest', () => {
-    expect(manifest).toMatchObject({
-      name: 'Ploutizo',
-      short_name: 'Ploutizo',
-      start_url: '/',
-      scope: '/',
-      display: 'standalone',
-      background_color: '#ffffff',
-      theme_color: '#ffffff',
-    });
-    expect(manifest.icons.map((icon) => icon.purpose)).toEqual([
-      'any',
-      'any',
-      'maskable',
-      'maskable',
-    ]);
+  it('matches the typed install manifest source', () => {
+    expect(manifest).toEqual(PWA_MANIFEST);
+  });
+
+  it('aligns head tags with the committed manifest', () => {
+    expect(manifest.name).toBe(PWA_APP_NAME);
+    expect(installLinks).toEqual(
+      expect.arrayContaining([
+        { rel: 'manifest', href: '/manifest.json' },
+        {
+          rel: 'apple-touch-icon',
+          href: '/pwa/apple-touch-icon.png',
+          sizes: '180x180',
+        },
+      ])
+    );
   });
 
   it('ships png icons at the sizes the manifest declares', () => {

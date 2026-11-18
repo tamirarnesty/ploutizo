@@ -1,11 +1,17 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import toIco from 'to-ico';
 import sharp from 'sharp';
+import { PWA_MANIFEST, PWA_MASKABLE_BACKGROUND } from '../src/pwa/pwa-brand.ts';
 
-const webRoot = path.resolve(import.meta.dirname, '..');
+const webRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..'
+);
 const sourcePath = path.join(webRoot, 'src/pwa/logo.svg');
 const outDir = path.join(webRoot, 'public/pwa');
-const background = { r: 0, g: 105, b: 168, alpha: 1 };
+const background = PWA_MASKABLE_BACKGROUND;
 
 const raster = async (size: number, scale: number) => {
   const svg = await readFile(sourcePath);
@@ -32,23 +38,6 @@ const writePng = async (name: string, size: number, scale: number) => {
   return png;
 };
 
-const writeIco = async (png: Buffer) => {
-  const header = Buffer.alloc(22);
-  header.writeUInt16LE(0, 0);
-  header.writeUInt16LE(1, 2);
-  header.writeUInt16LE(1, 4);
-  header.writeUInt8(32, 6);
-  header.writeUInt8(32, 7);
-  header.writeUInt16LE(1, 10);
-  header.writeUInt16LE(32, 12);
-  header.writeUInt32LE(png.length, 14);
-  header.writeUInt32LE(22, 18);
-  await writeFile(
-    path.join(webRoot, 'public/favicon.ico'),
-    Buffer.concat([header, png])
-  );
-};
-
 const main = async () => {
   await mkdir(outDir, { recursive: true });
   await writePng('icon-192.png', 192, 1);
@@ -57,7 +46,14 @@ const main = async () => {
   await writePng('icon-maskable-512.png', 512, 0.8);
   await writePng('apple-touch-icon.png', 180, 1);
   const favicon = await writePng('favicon-32.png', 32, 1);
-  await writeIco(favicon);
+  await writeFile(
+    path.join(webRoot, 'public/favicon.ico'),
+    await toIco([favicon])
+  );
+  await writeFile(
+    path.join(webRoot, 'public/manifest.json'),
+    `${JSON.stringify(PWA_MANIFEST, null, 2)}\n`
+  );
 };
 
 await main();

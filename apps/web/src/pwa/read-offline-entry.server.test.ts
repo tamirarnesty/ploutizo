@@ -1,12 +1,14 @@
-import { describe, expect, it } from 'vitest';
-import { offlineEntryPathFrom } from './read-offline-entry.server';
+import { describe, expect, it, vi } from 'vitest';
 
-describe('offlineEntryPathFrom', () => {
-  it('resolves public/offline.html from the server bundle', () => {
-    expect(
-      offlineEntryPathFrom(
-        'file:///srv/apps/web/.output/server/_ssr/router.mjs'
-      )
-    ).toBe('/srv/apps/web/.output/public/offline.html');
+vi.mock('virtual:ploutizo-offline-shell-html', () => ({
+  offlineShellHtml: '<!doctype html><title>offline shell</title>',
+}));
+
+describe('readOfflineEntry', () => {
+  it('returns the build-embedded offline shell', async () => {
+    const { readOfflineEntry } = await import('./read-offline-entry.server');
+    await expect(readOfflineEntry()).resolves.toBe(
+      '<!doctype html><title>offline shell</title>'
+    );
   });
 });

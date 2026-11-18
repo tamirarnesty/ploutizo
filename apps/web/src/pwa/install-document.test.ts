@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { installLinks, installMeta } from './install-document';
+import { PWA_APP_NAME } from './pwa-brand';
 import {
   themeColorDark,
   themeColorLight,
@@ -19,7 +20,7 @@ describe('install document head', () => {
           name: 'apple-mobile-web-app-status-bar-style',
           content: 'default',
         },
-        { name: 'apple-mobile-web-app-title', content: 'Ploutizo' },
+        { name: 'apple-mobile-web-app-title', content: PWA_APP_NAME },
       ])
     );
   });

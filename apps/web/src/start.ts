@@ -12,6 +12,7 @@ const csrfMiddleware = createCsrfMiddleware({
 
 const clerk = clerkMiddleware();
 
+/** Offline shell prerender (PLO-133): skip Clerk only for `isPrerenderedOfflineShell`. */
 const clerkExceptOfflineShell = createMiddleware().server((ctx) => {
   if (isPrerenderedOfflineShell(ctx.request)) return ctx.next();
   return clerk.options.server?.(ctx) ?? ctx.next();
