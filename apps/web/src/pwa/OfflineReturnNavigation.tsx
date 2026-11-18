@@ -19,7 +19,7 @@ export const OfflineReturnNavigation = () => {
     const { pathname } = new URL(path, window.location.origin);
     if (!allowsOfflineEntry(pathname)) return;
 
-    void router.navigate({ href: path });
+    void router.navigate({ href: path, replace: true });
   }, [router]);
 
   return null;
