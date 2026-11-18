@@ -1,3 +1,9 @@
-import { offlineShellHtml } from 'virtual:ploutizo-offline-shell-html';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 
-export const readOfflineEntry = () => Promise.resolve(offlineShellHtml);
+/** `.output/server/index.mjs` → `.output/public/offline.html`. */
+export const offlineShellPathFromServerEntry = (serverEntry: string) =>
+  path.resolve(path.dirname(serverEntry), '../public/offline.html');
+
+export const readOfflineEntry = () =>
+  readFile(offlineShellPathFromServerEntry(process.argv[1]), 'utf8');

@@ -7,9 +7,9 @@ Guidance for local development and Cursor Cloud agents.
 | Service         | Port | Start command           |
 | --------------- | ---- | ----------------------- |
 | Web (Vite SPA)  | 3000 | `pnpm --filter web dev` |
+| API (Hono/Node) | 8080 | `pnpm --filter api dev` |
 
 After changing `apps/web/src/pwa/logo.svg`, run `pnpm --filter web pwa:icons` to regenerate `public/pwa/` PNGs, `public/favicon.ico`, and `public/manifest.json` from `src/pwa/pwa-brand.ts`.
-| API (Hono/Node) | 8080 | `pnpm --filter api dev` |
 
 Both can be started together with `pnpm turbo dev` from the workspace root. Turborepo runs them concurrently.
 

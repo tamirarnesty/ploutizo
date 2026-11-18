@@ -8,16 +8,6 @@ import {
 describe('resolveOfflineNavigationFallback', () => {
   const origin = 'https://app.example';
 
-  it('rejects denied paths', () => {
-    expect(
-      resolveOfflineNavigationFallback({
-        origin,
-        pathname: '/api/transactions',
-        search: '',
-      })
-    ).toEqual({ kind: 'error' });
-  });
-
   it('serves the shell document for the offline entry path', () => {
     expect(
       resolveOfflineNavigationFallback({

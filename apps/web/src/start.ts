@@ -15,7 +15,11 @@ const clerk = clerkMiddleware();
 /** Offline shell prerender (PLO-133): skip Clerk only for `isPrerenderedOfflineShell`. */
 const clerkExceptOfflineShell = createMiddleware().server((ctx) => {
   if (isPrerenderedOfflineShell(ctx.request)) return ctx.next();
-  return clerk.options.server?.(ctx) ?? ctx.next();
+  const runClerk = clerk.options.server;
+  if (!runClerk) {
+    throw new Error('Clerk middleware has no server handler');
+  }
+  return runClerk(ctx);
 });
 
 export const startInstance = createStart(() => {

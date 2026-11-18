@@ -19,14 +19,12 @@ precacheAndRoute(self.__WB_MANIFEST);
 
 self.addEventListener('message', (event) => {
   const data: unknown = event.data;
-  const shouldSkipWaiting =
-    data === 'SKIP_WAITING' ||
-    (typeof data === 'object' &&
-      data !== null &&
-      'type' in data &&
-      data.type === 'SKIP_WAITING');
-
-  if (shouldSkipWaiting) {
+  if (
+    typeof data === 'object' &&
+    data !== null &&
+    'type' in data &&
+    data.type === 'SKIP_WAITING'
+  ) {
     void self.skipWaiting();
   }
 });
@@ -47,8 +45,9 @@ setCatchHandler(async ({ request }) => {
     search: url.search,
   });
 
-  if (fallback.kind === 'error') return Response.error();
-  if (fallback.kind === 'redirect') return Response.redirect(fallback.location);
-  const shell = await matchPrecache(OFFLINE_ENTRY_PATH);
-  return shell ?? Response.error();
+  if (fallback.kind === 'shell') {
+    const shell = await matchPrecache(OFFLINE_ENTRY_PATH);
+    return shell ?? Response.error();
+  }
+  return Response.redirect(fallback.location);
 });

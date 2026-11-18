@@ -3,7 +3,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import toIco from 'to-ico';
 import sharp from 'sharp';
-import { PWA_MANIFEST, PWA_MASKABLE_BACKGROUND } from '../src/pwa/pwa-brand.ts';
+import {
+  PWA_MANIFEST,
+  PWA_MANIFEST_ICON_SPECS,
+  PWA_MASKABLE_BACKGROUND,
+} from '../src/pwa/pwa-brand.ts';
 
 const webRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -40,10 +44,11 @@ const writePng = async (name: string, size: number, scale: number) => {
 
 const main = async () => {
   await mkdir(outDir, { recursive: true });
-  await writePng('icon-192.png', 192, 1);
-  await writePng('icon-512.png', 512, 1);
-  await writePng('icon-maskable-192.png', 192, 0.8);
-  await writePng('icon-maskable-512.png', 512, 0.8);
+  for (const icon of PWA_MANIFEST_ICON_SPECS) {
+    const size = Number(icon.sizes.slice(0, icon.sizes.indexOf('x')));
+    const scale = icon.purpose === 'maskable' ? 0.8 : 1;
+    await writePng(icon.file, size, scale);
+  }
   await writePng('apple-touch-icon.png', 180, 1);
   const favicon = await writePng('favicon-32.png', 32, 1);
   await writeFile(

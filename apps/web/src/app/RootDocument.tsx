@@ -12,7 +12,6 @@ export const RootDocument = ({ children }: { children: ReactNode }) => {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Route head keeps a single meta per name, so the pair lives here. */}
         {themeColorMetas.map((meta) => (
           <meta key={meta.media} {...meta} />
         ))}

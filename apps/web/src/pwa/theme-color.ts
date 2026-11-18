@@ -1,5 +1,7 @@
-/** Light `--background`. Also the manifest's single neutral color. */
-export const themeColorLight = '#ffffff';
+import { PWA_BACKGROUND_COLOR } from './pwa-brand';
+
+/** Light `--background`. The manifest uses this same neutral for first paint. */
+export const themeColorLight = PWA_BACKGROUND_COLOR;
 
 /** Dark `--background`. */
 export const themeColorDark = '#0c0a09';

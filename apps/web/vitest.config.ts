@@ -54,17 +54,9 @@ export default defineConfig({
       name: 'vitest-pwa-virtual-modules',
       enforce: 'pre',
       resolveId(id) {
-        if (
-          id === 'virtual:ploutizo-offline-shell-html' ||
-          id === 'virtual:pwa-register'
-        ) {
-          return id;
-        }
+        if (id === 'virtual:pwa-register') return id;
       },
       load(id) {
-        if (id === 'virtual:ploutizo-offline-shell-html') {
-          return 'export const offlineShellHtml = undefined;';
-        }
         if (id === 'virtual:pwa-register') {
           return 'export const registerSW = () => async () => {};';
         }

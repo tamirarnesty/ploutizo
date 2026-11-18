@@ -1,14 +1,12 @@
-import { describe, expect, it, vi } from 'vitest';
+import path from 'node:path';
+import { describe, expect, it } from 'vitest';
+import { offlineShellPathFromServerEntry } from './read-offline-entry.server';
 
-vi.mock('virtual:ploutizo-offline-shell-html', () => ({
-  offlineShellHtml: '<!doctype html><title>offline shell</title>',
-}));
-
-describe('readOfflineEntry', () => {
-  it('returns the build-embedded offline shell', async () => {
-    const { readOfflineEntry } = await import('./read-offline-entry.server');
-    await expect(readOfflineEntry()).resolves.toBe(
-      '<!doctype html><title>offline shell</title>'
+describe('offlineShellPathFromServerEntry', () => {
+  it('reads the public shell beside the Nitro server directory', () => {
+    const serverEntry = path.join('/srv/apps/web/.output/server/index.mjs');
+    expect(offlineShellPathFromServerEntry(serverEntry)).toBe(
+      path.join('/srv/apps/web/.output/public/offline.html')
     );
   });
 });
