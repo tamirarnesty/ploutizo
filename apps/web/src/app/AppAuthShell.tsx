@@ -5,6 +5,7 @@ import { useAccess } from '@/lib/access/access-context';
 import { AccessProvider } from '@/lib/access/AccessProvider';
 import { useAccessRouterInvalidation } from '@/lib/access/use-access-router-invalidation';
 import { MoneyLocaleProvider } from '@/lib/money/money-locale';
+import { OfflineReturnNavigation } from '@/pwa/OfflineReturnNavigation';
 import type { ComponentProps, ReactNode } from 'react';
 
 export type InjectedClerk = NonNullable<
@@ -17,7 +18,10 @@ const AppShell = ({ children }: { children: ReactNode }) => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <MoneyLocaleProvider>{children}</MoneyLocaleProvider>
+      <MoneyLocaleProvider>
+        <OfflineReturnNavigation />
+        {children}
+      </MoneyLocaleProvider>
     </QueryClientProvider>
   );
 };
