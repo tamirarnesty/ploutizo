@@ -1,10 +1,17 @@
-import { PWA_BACKGROUND_COLOR } from './pwa-brand';
+/**
+ * Light `--sidebar` (stone-50). The installed status bar sits on the top bar,
+ * which is `bg-sidebar`. The manifest keeps a separate neutral for first paint.
+ */
+export const themeColorLight = '#fafaf9';
 
-/** Light `--background`. The manifest uses this same neutral for first paint. */
-export const themeColorLight = PWA_BACKGROUND_COLOR;
+/** Dark `--sidebar` (stone-900). */
+export const themeColorDark = '#1c1917';
 
-/** Dark `--background`. */
-export const themeColorDark = '#0c0a09';
+export const themeColorForScheme = (scheme: 'light' | 'dark' | undefined) => {
+  if (scheme === 'dark') return themeColorDark;
+  if (scheme === 'light') return themeColorLight;
+  return null;
+};
 
 /**
  * Route head keeps one meta per `name`, so this pair is rendered as elements.

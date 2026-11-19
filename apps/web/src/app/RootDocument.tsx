@@ -4,6 +4,8 @@ import { ThemeProvider } from '@ploutizo/ui/components/theme-provider';
 import { Toaster } from '@ploutizo/ui/components/sonner';
 import { TooltipProvider } from '@ploutizo/ui/components/tooltip';
 import { AppDevtools } from '@/components/devtools/AppDevtools';
+import { KeyboardOverlap } from '@/pwa/KeyboardOverlap';
+import { ThemeColorSync } from '@/pwa/ThemeColorSync';
 import { themeColorMetas } from '@/pwa/theme-color';
 import { AppAuthShell } from './AppAuthShell';
 import type { ReactNode } from 'react';
@@ -27,6 +29,8 @@ export const RootDocument = ({ children }: { children: ReactNode }) => {
         >
           <HotkeysProvider>
             <TooltipProvider delay={500}>
+              <ThemeColorSync />
+              <KeyboardOverlap />
               <AppAuthShell>
                 {children}
                 <Toaster />

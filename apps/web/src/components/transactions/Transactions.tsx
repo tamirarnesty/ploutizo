@@ -139,7 +139,7 @@ export const Transactions = () => {
             trigger={
               <Button
                 type="button"
-                className="shrink-0"
+                className="h-11 shrink-0 md:h-8"
                 onClick={handleAddClick}
               >
                 Add transaction
