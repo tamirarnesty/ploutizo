@@ -3,6 +3,9 @@ import { hydrateRoot } from 'react-dom/client';
 import { Await } from '@tanstack/react-router';
 import { hydrateStart } from '@tanstack/react-start/client';
 import { AccessRouterRoot } from './app/AccessRouterRoot';
+import { registerServiceWorkerUpdatePrompt } from './pwa/register-service-worker-update';
+
+registerServiceWorkerUpdatePrompt();
 
 const hydrationPromise = hydrateStart();
 

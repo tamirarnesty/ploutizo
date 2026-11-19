@@ -50,6 +50,18 @@ export default defineConfig({
         return resolveAliasesFromAtSlash(id);
       },
     },
+    {
+      name: 'vitest-pwa-virtual-modules',
+      enforce: 'pre',
+      resolveId(id) {
+        if (id === 'virtual:pwa-register') return id;
+      },
+      load(id) {
+        if (id === 'virtual:pwa-register') {
+          return 'export const registerSW = () => async () => {};';
+        }
+      },
+    },
   ],
   // `@/` is resolved only via vitest-alias-at-slash-dual-root (uiSrc, then webSrc).
   // A static `@` → webSrc alias breaks DataGrid imports inside packages/ui.
