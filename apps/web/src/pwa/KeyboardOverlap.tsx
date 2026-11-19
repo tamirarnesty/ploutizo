@@ -27,17 +27,20 @@ export const KeyboardOverlap = () => {
     viewport?.addEventListener('scroll', applyKeyboardOverlap);
     window.addEventListener('resize', applyKeyboardOverlap);
 
+    let scrollTimer = 0;
     const onFocusIn = (event: FocusEvent) => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
       if (!target.closest(OVERLAY_SELECTOR)) return;
-      window.setTimeout(() => {
+      window.clearTimeout(scrollTimer);
+      scrollTimer = window.setTimeout(() => {
         target.scrollIntoView({ block: 'nearest' });
       }, 150);
     };
     document.addEventListener('focusin', onFocusIn);
 
     return () => {
+      window.clearTimeout(scrollTimer);
       viewport?.removeEventListener('resize', applyKeyboardOverlap);
       viewport?.removeEventListener('scroll', applyKeyboardOverlap);
       window.removeEventListener('resize', applyKeyboardOverlap);
